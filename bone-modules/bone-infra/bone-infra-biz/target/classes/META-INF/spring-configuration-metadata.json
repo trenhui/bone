@@ -1,0 +1,24 @@
+{
+  "groups": [
+    {
+      "name": "bone.codegen",
+      "type": "com.bone.infra.framework.codegen.config.CodegenProperties",
+      "sourceType": "com.bone.infra.framework.codegen.config.CodegenProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "bone.codegen.base-package",
+      "type": "java.lang.String",
+      "description": "生成的 Java 代码的基础包",
+      "sourceType": "com.bone.infra.framework.codegen.config.CodegenProperties"
+    },
+    {
+      "name": "bone.codegen.db-schemas",
+      "type": "java.util.Collection<java.lang.String>",
+      "description": "数据库名数组",
+      "sourceType": "com.bone.infra.framework.codegen.config.CodegenProperties"
+    }
+  ],
+  "hints": []
+}

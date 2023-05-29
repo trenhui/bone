@@ -1,0 +1,4 @@
+com.bone.base.apilog.config.BoneApiLogRpcAutoConfiguration
+com.bone.base.apilog.config.BoneApiLogAutoConfiguration
+com.bone.base.jackson.config.BoneJacksonAutoConfiguration
+com.bone.base.web.config.BoneWebAutoConfiguration

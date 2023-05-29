@@ -1,0 +1,296 @@
+import { add${table.className}, remove${table.className}, batchRemove${table.className},list${table.className}, update${table.className} } from '@/services/${moduleNameVar}/${classNameVar}.api';
+import { PlusOutlined } from '@ant-design/icons';
+import type { ActionType, ProColumns, ProDescriptionsItemProps } from '@ant-design/pro-components';
+import {
+  FooterToolbar,
+  PageContainer,
+  ProDescriptions,
+  ProTable,
+} from '@ant-design/pro-components';
+import { FormattedMessage, useIntl } from '@umijs/max';
+import { Button, Drawer, message } from 'antd';
+import React, { useRef, useState } from 'react';
+import ${table.className}Form from './components/${table.className}Form';
+import { CommandEnum } from '@/utils/paramUtil';
+
+/**
+ * @en-US create or update submit
+ * @zh-CN 创建或修改提交
+ *
+ * @param ${classNameVar}
+ */
+const handleSubmit = async (command:CommandEnum,${classNameVar}: ${bigModuleNameVar}.API.${table.className}) => {
+  //const hide = message.loading('修改进行中');
+  try {
+        await (command===CommandEnum.New? add${table.className}({ ...${classNameVar} }): update${table.className}(${classNameVar}));
+    //hide();
+    //message.success('修改成功');
+    return true;
+  } catch (error) {
+    //hide();
+    message.error('update failed, please try again!');
+    return false;
+  }
+};
+
+/**
+ * Batch Delete node
+ * @zh-CN 批量删除节点
+ *
+ * @param selectedRows
+ */
+const handleBatchDelete = async (selectedRows: ${bigModuleNameVar}.API.${table.className}[]) => {
+  const hide = message.loading('正在删除');
+  if (!selectedRows) return true;
+  try {
+    await batchRemove${table.className}({
+      ids: selectedRows.map((row) => row.id),
+    });
+    hide();
+    message.success('Deleted successfully and will refresh soon');
+    return true;
+  } catch (error) {
+    hide();
+    message.error('Delete failed, please try again');
+    return false;
+  }
+};
+
+/**
+ *  Delete node
+ * @zh-CN 删除节点
+ *
+ * @param selectedRows
+ */
+const handleDelete= async (id: number) => {
+  const hide = message.loading('正在删除');
+  try {
+    await remove${table.className}({
+      key: id,
+    });
+    hide();
+    message.success('Deleted successfully and will refresh soon');
+    return true;
+  } catch (error) {
+    hide();
+    message.error('Delete failed, please try again');
+    return false;
+  }
+};
+
+const TableList: React.FC = () => {
+  /**
+   * @en-US The pop-up window of the distribution update window
+   * @zh-CN 分布更新窗口的弹窗
+   * */
+  const [${classNameVar}FormOpen, handle${table.className}FormOpen] = useState<boolean>(false);
+  const [detailModalOpen, handleDetailModalOpen] = useState<boolean>(false);
+  const [submitDone, setSubmitDone] = useState<boolean>(false);
+  const [command, setCommand] = useState<CommandEnum>(CommandEnum.New);
+
+  const actionRef = useRef<ActionType>();
+  const [currentRow, setCurrentRow] = useState<${bigModuleNameVar}.API.${table.className}>();
+  const [selectedRowsState, setSelectedRows] = useState<${bigModuleNameVar}.API.${table.className}[]>([]);
+
+  /**
+   * @en-US International configuration
+   * @zh-CN 国际化配置
+   * */
+  const intl = useIntl();
+
+  const columns: ProColumns<${bigModuleNameVar}.API.${table.className}>[] = [
+   #if($uniqueKeyColumn)
+        {
+        title: (
+          <FormattedMessage
+            id="${moduleNameVar}.${classNameVar}.${uniqueKeyColumn.javaField}"
+            defaultMessage="${uniqueKeyColumn.columnComment}"
+          />
+        ),
+        dataIndex: '${uniqueKeyColumn.javaField}',
+        tip: 'The ${uniqueKeyColumn.javaField} is the unique key',
+        render: (dom, entity) => {
+          return (
+            <a
+              onClick={() => {
+                setCurrentRow(entity);
+                handleDetailModalOpen(true);
+              }}
+            >
+              {dom}
+            </a>
+          );
+        },
+      },
+  #end
+  #foreach($column in $columns)
+     #if(!${baseDOFields.contains(${column.javaField})})
+        #if(${column.javaType.toLowerCase()} == "date" || ${column.javaType.toLowerCase()} == "localdatetime")
+        {
+          title: (
+            <FormattedMessage
+              id="${moduleNameVar}.${classNameVar}.${column.javaField}"
+              defaultMessage="${column.columnComment}"
+            />
+          ),
+          sorter: true,
+          dataIndex: '${column.javaField}',
+          valueType: 'dateTime'
+        },
+        #elseif(${column.javaField}!=${uniqueKeyColumn.javaField})
+        {
+          title: <FormattedMessage id="${moduleNameVar}.${classNameVar}.${column.javaField}" defaultMessage="${column.columnComment}" />,
+          dataIndex: '${column.javaField}'
+        },
+        #end
+     #end
+   #end
+    {
+      title: (
+        <FormattedMessage
+          id="global.fields.createTime"
+          defaultMessage="CreateTime"
+        />
+      ),
+      sorter: true,
+      dataIndex: 'createTime',
+      valueType: 'dateTime'
+    },
+    {
+      title: <FormattedMessage id="global.operation.operation" defaultMessage="Operating" />,
+      dataIndex: 'option',
+      valueType: 'option',
+      render: (_, record) => [
+        <a
+          key="update"
+          onClick={() => {
+            setCommand(CommandEnum.Update);
+            handle${table.className}FormOpen(true);
+            setCurrentRow(record);
+          }}
+        >
+        <FormattedMessage id="global.operation.update" defaultMessage="Update" />
+        </a>,
+        <a key="delete"   onClick={async () => {
+          await handleDelete(record.id);
+          setSelectedRows([]);
+          actionRef.current?.reloadAndRest?.();
+        }}>
+        <FormattedMessage id="global.operation.delete" defaultMessage="Delete"/>
+        </a>,
+      ],
+    },
+  ];
+
+  return (
+    <PageContainer>
+      <ProTable<${bigModuleNameVar}.API.${table.className}, API.PageParams>
+        headerTitle={intl.formatMessage({
+          id: '${moduleNameVar}.${classNameVar}.manager',
+          defaultMessage: '${table.className} Manager',
+        })}
+        actionRef={actionRef}
+        rowKey="id"
+        search={{
+          labelWidth: 120,
+        }}
+        toolBarRender={() => [
+          <Button
+            type="primary"
+            key="primary"
+            onClick={() => {
+             setCommand(CommandEnum.New);
+             handle${table.className}FormOpen(true);
+            }}
+          >
+            <PlusOutlined /> <FormattedMessage id="global.operation.create" defaultMessage="New" />
+          </Button>,
+        ]}
+        pagination={{
+          defaultCurrent: 1,
+          defaultPageSize:10,
+        }}
+        request={list${table.className}}
+        columns={columns}
+        rowSelection={{
+          onChange: (_, selectedRows) => {
+            setSelectedRows(selectedRows);
+          },
+        }}
+      />
+      {selectedRowsState?.length > 0 && (
+        <FooterToolbar
+          extra={
+            <div>
+              <FormattedMessage id="global.operation.chosen" defaultMessage="选择" />{' '}
+              <a style={{ fontWeight: 600 }}>{selectedRowsState.length}</a>{' '}
+              <FormattedMessage id="global.operation.item" defaultMessage="项" />
+              &nbsp;&nbsp;
+            </div>
+          }
+        >
+          <Button
+            onClick={async () => {
+              await handleBatchDelete(selectedRowsState);
+              setSelectedRows([]);
+              actionRef.current?.reloadAndRest?.();
+            }}
+          >
+            <FormattedMessage
+              id="global.operation.batchDeletion"
+              defaultMessage="Batch deletion"
+            />
+          </Button>
+        </FooterToolbar>
+      )}
+
+      <${table.className}Form
+        onSubmit={async (command,value) => {
+          const success = await handleSubmit(command,value);
+          if (success) {
+            setCurrentRow(undefined);
+            setSubmitDone(true);
+            if (actionRef.current) {
+              actionRef.current.reload();
+            }
+          }
+        }}
+        command={command}
+        onDone={async () => {
+          setSubmitDone(false);
+          handle${table.className}FormOpen(false);
+          setCurrentRow(undefined);
+        }}
+        visible={${classNameVar}FormOpen}
+        current={currentRow || {}}
+        done={submitDone}
+      />
+
+      <Drawer
+        width={600}
+        open={detailModalOpen}
+        onClose={() => {
+          setCurrentRow(undefined);
+          handleDetailModalOpen(false);
+        }}
+        closable={false}
+      >
+        {currentRow?.name && (
+          <ProDescriptions<${bigModuleNameVar}.API.${table.className}>
+            column={2}
+            title={currentRow?.name}
+            request={async () => ({
+              data: currentRow || {},
+            })}
+            params={{
+              id: currentRow?.id,
+            }}
+            columns={columns as ProDescriptionsItemProps<${bigModuleNameVar}.API.${table.className}>[]}
+          />
+        )}
+      </Drawer>
+    </PageContainer>
+  );
+};
+
+export default TableList;

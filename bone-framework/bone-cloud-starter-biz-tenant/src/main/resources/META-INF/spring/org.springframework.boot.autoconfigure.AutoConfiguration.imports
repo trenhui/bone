@@ -1,0 +1,3 @@
+com.bone.base.tenant.config.BoneTenantRpcAutoConfiguration
+com.bone.base.tenant.config.BoneTenantAutoConfiguration
+com.bone.base.tenant.config.BoneTenantMQAutoConfiguration

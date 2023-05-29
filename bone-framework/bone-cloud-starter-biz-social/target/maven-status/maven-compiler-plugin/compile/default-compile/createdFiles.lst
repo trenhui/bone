@@ -1,0 +1,8 @@
+com/bone/base/social/core/request/AuthWeChatMiniProgramRequest.class
+com/bone/base/social/core/enums/AuthExtendSource$1.class
+com/bone/base/social/core/request/AuthWeChatMiniProgramRequest$CodeSessionResponse.class
+com/bone/base/social/core/enums/AuthExtendSource.class
+com/bone/base/social/config/BoneSocialAutoConfiguration.class
+com/bone/base/social/core/BoneAuthRequestFactory$1.class
+com/bone/base/social/core/model/AuthExtendToken.class
+com/bone/base/social/core/BoneAuthRequestFactory.class

@@ -1,0 +1,75 @@
+{
+  "groups": [
+    {
+      "name": "bone.web",
+      "type": "com.bone.base.web.config.WebProperties",
+      "sourceType": "com.bone.base.web.config.WebProperties"
+    },
+    {
+      "name": "bone.web.admin-api",
+      "type": "com.bone.base.web.config.WebProperties$Api",
+      "sourceType": "com.bone.base.web.config.WebProperties"
+    },
+    {
+      "name": "bone.web.admin-ui",
+      "type": "com.bone.base.web.config.WebProperties$Ui",
+      "sourceType": "com.bone.base.web.config.WebProperties"
+    },
+    {
+      "name": "bone.web.app-api",
+      "type": "com.bone.base.web.config.WebProperties$Api",
+      "sourceType": "com.bone.base.web.config.WebProperties"
+    },
+    {
+      "name": "bone.xss",
+      "type": "com.bone.base.web.config.XssProperties",
+      "sourceType": "com.bone.base.web.config.XssProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "bone.web.admin-api.controller",
+      "type": "java.lang.String",
+      "description": "Controller 所在包的 Ant 路径规则 主要目的是，给该 Controller 设置指定的 {@link #prefix}",
+      "sourceType": "com.bone.base.web.config.WebProperties$Api"
+    },
+    {
+      "name": "bone.web.admin-api.prefix",
+      "type": "java.lang.String",
+      "description": "API 前缀，实现所有 Controller 提供的 RESTFul API 的统一前缀 意义：通过该前缀，避免 Swagger、Actuator 意外通过 Nginx 暴露出来给外部，带来安全性问题      这样，Nginx 只需要配置转发到 \/api\/* 的所有接口即可。 @see BoneWebAutoConfiguration#configurePathMatch(PathMatchConfigurer)",
+      "sourceType": "com.bone.base.web.config.WebProperties$Api"
+    },
+    {
+      "name": "bone.web.admin-ui.url",
+      "type": "java.lang.String",
+      "description": "访问地址",
+      "sourceType": "com.bone.base.web.config.WebProperties$Ui"
+    },
+    {
+      "name": "bone.web.app-api.controller",
+      "type": "java.lang.String",
+      "description": "Controller 所在包的 Ant 路径规则 主要目的是，给该 Controller 设置指定的 {@link #prefix}",
+      "sourceType": "com.bone.base.web.config.WebProperties$Api"
+    },
+    {
+      "name": "bone.web.app-api.prefix",
+      "type": "java.lang.String",
+      "description": "API 前缀，实现所有 Controller 提供的 RESTFul API 的统一前缀 意义：通过该前缀，避免 Swagger、Actuator 意外通过 Nginx 暴露出来给外部，带来安全性问题      这样，Nginx 只需要配置转发到 \/api\/* 的所有接口即可。 @see BoneWebAutoConfiguration#configurePathMatch(PathMatchConfigurer)",
+      "sourceType": "com.bone.base.web.config.WebProperties$Api"
+    },
+    {
+      "name": "bone.xss.enable",
+      "type": "java.lang.Boolean",
+      "description": "是否开启，默认为 true",
+      "sourceType": "com.bone.base.web.config.XssProperties",
+      "defaultValue": true
+    },
+    {
+      "name": "bone.xss.exclude-urls",
+      "type": "java.util.List<java.lang.String>",
+      "description": "需要排除的 URL，默认为空",
+      "sourceType": "com.bone.base.web.config.XssProperties"
+    }
+  ],
+  "hints": []
+}

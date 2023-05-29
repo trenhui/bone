@@ -1,0 +1,151 @@
+import {
+  ProFormSelect,
+  ProFormText,
+  ModalForm,
+  #foreach($column in $columns)
+     #if(!${baseDOFields.contains(${column.javaField})})
+       #if(${column.javaType.toLowerCase()} == "date" || ${column.javaType.toLowerCase()} == "localdatetime")
+  ProFormDatePicker,
+       #break;
+       #end
+     #end
+  #end
+  #foreach($column in $columns)
+    #if($column.htmlType == "textarea")
+  ProFormTextArea,
+      #break;
+    #end
+  #end
+  #foreach($column in $columns)
+     #if($column.htmlType == "imageUpload")## 图片上传
+  Upload,
+     #break;
+     #end
+  #end
+} from '@ant-design/pro-components';
+import { FormattedMessage, useIntl } from '@umijs/max';
+import React from 'react';
+import styles from '@/styles/style.less';
+import { Button, Result } from 'antd';
+import { CommandEnum } from '@/utils/paramUtil';
+
+export type ${table.className}FormProps = {
+  done: boolean;
+  visible: boolean;
+  onSubmit: (command:CommandEnum,values: ${bigModuleNameVar}.API.${table.className}) => Promise<void>;
+  onDone: () => void;
+  current: Partial<${bigModuleNameVar}.API.${table.className}> | undefined;
+  command:CommandEnum;
+};
+
+const ${table.className}Form: React.FC<${table.className}FormProps> = (props) => {
+  const intl = useIntl();
+  const { done, visible, current, onDone,onSubmit,command } = props;
+  if (!visible) {
+    return null;
+  }
+  return (
+    <ModalForm<${bigModuleNameVar}.API.${table.className}>
+      open={visible}
+  #[[ title={`${command===CommandEnum.New ?'创建':'修改'}]]#${table.classComment}`}
+      className={styles.standardListForm}
+      width={400}
+      onFinish={async (values) => {
+        onSubmit(command,values);
+      }}
+      initialValues={current}
+      submitter={{
+        render: (_, dom) => (done ? null : dom),
+      }}
+      modalProps={{
+        onCancel: () => onDone(),
+        destroyOnClose: true,
+        bodyStyle: done ? { padding: '72px 0' } : {},
+      }}
+    >
+   {!done ? (
+       <>
+    #if($primaryColumn)
+     <ProFormText name="${primaryColumn.javaField}" label="${primaryColumn.columnComment}" hidden={true} />
+    #end
+    #foreach($column in $columns)
+     #if($column.javaField=="version")
+     <ProFormText name="version" label="版本" hidden={true} />
+     #end
+     #if(!${baseDOFields.contains(${column.javaField})})
+     #if(${column.javaType.toLowerCase()} == "date" || ${column.javaType.toLowerCase()} == "localdatetime")
+     <ProFormDatePicker
+            label="${column.columnComment}"
+            name="${column.javaField}"
+            fieldProps={{
+              style: {
+                width: '100%',
+              },
+            }}
+            rules={[{ required: true, message: '请选择${column.columnComment}' }]}
+      />
+     #elseif($column.htmlType == "textarea")## 文本框
+      <ProFormTextArea
+        label="${column.columnComment}"
+        name="${column.javaField}"
+        width="xl"
+        rules={[
+          {
+            required: true,
+            message: '请输入${column.columnComment}',
+          },
+        ]}
+        placeholder="请输入${column.columnComment}"
+      />
+      #elseif($column.htmlType == "imageUpload")## 图片上传
+      <div>${column.columnComment}</div>
+        <Upload showUploadList={false}>
+          <div className={styles.button_view}>
+            <Button>
+              <UploadOutlined />
+              上传
+            </Button>
+          </div>
+        </Upload>
+      #elseif(!${column.primaryKey})
+        <ProFormText
+          name="${column.javaField}"
+          label={intl.formatMessage({
+            id: '${moduleNameVar}.${classNameVar}.${column.javaField}',
+            defaultMessage: '${column.columnComment}',
+          })}
+          rules={[
+            {
+              required: true,
+              message: (
+                <FormattedMessage
+                  id="${moduleNameVar}.${classNameVar}.${column.javaField}.rule"
+                  defaultMessage="${column.javaField} is required"
+                />
+              ),
+            },
+          ]}
+          width="md"
+        />
+      #end
+     #end
+   #end
+      </>
+        ) : (
+          <Result
+            status="success"
+            title="操作成功"
+            subTitle="一系列的信息描述，很短同样也可以带标点。"
+            extra={
+              <Button type="primary" onClick={onDone}>
+                知道了
+              </Button>
+            }
+            className={styles.formResult}
+          />
+        )}
+    </ModalForm>
+  );
+};
+
+export default ${table.className}Form;

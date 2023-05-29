@@ -1,0 +1,6 @@
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-file/src/test/java/com/bone/base/file/core/enums/package-info.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-file/src/test/java/com/bone/base/file/config/package-info.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-file/src/test/java/com/bone/base/file/core/client/s3/S3FileClientTest.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-file/src/test/java/com/bone/base/file/core/client/ftp/FtpFileClientTest.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-file/src/test/java/com/bone/base/file/core/client/sftp/SftpFileClientTest.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-file/src/test/java/com/bone/base/file/core/client/local/LocalFileClientTest.java

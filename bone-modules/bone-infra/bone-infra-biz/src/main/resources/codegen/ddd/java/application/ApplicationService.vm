@@ -1,0 +1,27 @@
+package ${basePackage}.${table.moduleName}.application;
+
+import ${basePackage}.${table.moduleName}.domain.model.${table.className};
+import ${basePackage}.${table.moduleName}.domain.service.${table.className}Service;
+import jakarta.annotation.Resource;
+import jakarta.validation.Valid;
+
+/**
+ * ${table.classComment} ApplicationService
+ *
+ * @author ${table.author}
+ */
+public class ${table.className}ApplicationService {
+
+    @Resource
+    private ${table.className}Service ${classNameVar}Service;
+
+    /**
+     * 创建${table.classComment}
+     *
+     * @param ${classNameVar} ${table.classComment}
+     * @return Id
+     */
+    public Long create(@Valid ${table.className} ${classNameVar}) {
+        return ${classNameVar}Service.create(${classNameVar}).getId();
+    }
+}

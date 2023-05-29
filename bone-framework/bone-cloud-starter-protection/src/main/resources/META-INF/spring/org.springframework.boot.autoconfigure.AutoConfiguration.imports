@@ -1,0 +1,2 @@
+com.bone.base.idempotent.config.BoneIdempotentConfiguration
+com.bone.base.lock4j.config.BoneLock4jConfiguration

@@ -1,0 +1,62 @@
+package ${basePackage}.${table.moduleName}.domain.model;
+
+import com.bone.core.tenant.TenantAbstractEntity;
+import lombok.*;
+import java.util.*;
+#foreach($column in $columns)
+ #if(!${baseDOFields.contains(${column.javaField})})
+   #if(${column.javaType.toLowerCase()} == "localdatetime")
+import java.time.LocalDateTime;
+   #break;
+   #end
+ #end
+#end
+#foreach($column in $columns)
+ #if(!${baseDOFields.contains(${column.javaField})})
+   #if(${column.javaType.toLowerCase()} == "date")
+import java.util.Date;
+   #break;
+   #end
+ #end
+#end
+#foreach($column in $columns)
+ #if(!${baseDOFields.contains(${column.javaField})})
+    #if (${column.javaType} == "BigDecimal")
+import java.math.BigDecimal;
+   #break;
+   #end
+ #end
+#end
+import org.springframework.data.relational.core.mapping.Table;
+
+/**
+ * ${table.classComment}
+ *
+ * @author ${table.author}
+ */
+@Table("${table.tableName.toLowerCase()}")
+@Data
+@EqualsAndHashCode(callSuper = true)
+@ToString(callSuper = true)
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class ${table.className} extends TenantAbstractEntity<Long> {
+    #foreach ($column in $columns)
+    #if (!${baseDOFields.contains(${column.javaField})})##排除 BaseDO 的字段
+        /**
+         * ${column.columnComment}
+        #if ("$!column.dictType" != "")##处理枚举值
+         *
+         * 枚举 {@link TODO ${column.dictType} 对应的类}
+        #end
+         */
+        #if(${column.javaType.toLowerCase()} == "byte")
+    private Integer ${column.javaField};
+        #else
+    private ${column.javaType} ${column.javaField};
+        #end
+    #end
+    #end
+}
+

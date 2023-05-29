@@ -1,0 +1,17 @@
+com/bone/base/datapermission/core/db/DataPermissionDatabaseInterceptor$ContextHolder.class
+com/bone/base/datapermission/config/BoneDeptDataPermissionAutoConfiguration.class
+com/bone/base/datapermission/core/aop/DataPermissionContextHolder.class
+com/bone/base/datapermission/package-info.class
+com/bone/base/datapermission/config/BoneDataPermissionAutoConfiguration.class
+com/bone/base/datapermission/core/aop/DataPermissionAnnotationAdvisor.class
+com/bone/base/datapermission/core/rule/DataPermissionRuleFactoryImpl.class
+com/bone/base/datapermission/core/rule/DataPermissionRuleFactory.class
+com/bone/base/datapermission/core/rule/dept/package-info.class
+com/bone/base/datapermission/core/annotation/DataPermission.class
+com/bone/base/datapermission/core/aop/DataPermissionAnnotationInterceptor.class
+com/bone/base/datapermission/core/rule/DataPermissionRule.class
+com/bone/base/datapermission/core/rule/dept/DeptDataPermissionRule.class
+com/bone/base/datapermission/core/rule/dept/DeptDataPermissionRuleCustomizer.class
+com/bone/base/datapermission/core/util/DataPermissionUtils.class
+com/bone/base/datapermission/core/db/DataPermissionDatabaseInterceptor$MappedStatementCache.class
+com/bone/base/datapermission/core/db/DataPermissionDatabaseInterceptor.class

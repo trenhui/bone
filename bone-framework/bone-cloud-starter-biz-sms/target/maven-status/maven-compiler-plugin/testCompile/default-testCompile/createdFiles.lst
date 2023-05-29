@@ -1,0 +1,4 @@
+com/bone/base/sms/core/client/impl/aliyun/AliyunSmsCodeMappingTest.class
+com/bone/base/sms/core/client/impl/aliyun/AliyunSmsClientTest.class
+com/bone/base/sms/core/client/impl/tencent/TencentSmsClientTest.class
+com/bone/base/sms/core/client/impl/tencent/TencentSmsCodeMappingTest.class

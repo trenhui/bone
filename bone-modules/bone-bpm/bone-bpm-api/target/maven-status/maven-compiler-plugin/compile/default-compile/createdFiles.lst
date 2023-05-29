@@ -1,0 +1,12 @@
+com/bone/module/bpm/enums/definition/BpmTaskAssignRuleTypeEnum.class
+com/bone/module/bpm/enums/message/BpmMessageEnum.class
+com/bone/module/bpm/enums/task/BpmProcessInstanceStatusEnum.class
+com/bone/module/bpm/enums/ErrorCodeConstants.class
+com/bone/module/bpm/enums/definition/BpmModelFormTypeEnum.class
+com/bone/module/bpm/api/task/dto/BpmProcessInstanceCreateReqDTO.class
+com/bone/module/bpm/api/task/BpmProcessInstanceApi.class
+com/bone/module/bpm/enums/definition/BpmTaskRuleScriptEnum.class
+com/bone/module/bpm/enums/DictTypeConstants.class
+com/bone/module/bpm/enums/task/BpmProcessInstanceResultEnum.class
+com/bone/module/bpm/api/package-info.class
+com/bone/module/bpm/enums/task/BpmProcessInstanceDeleteReasonEnum.class

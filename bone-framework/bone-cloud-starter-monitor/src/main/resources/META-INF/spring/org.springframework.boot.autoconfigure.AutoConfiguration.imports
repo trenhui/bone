@@ -1,0 +1,2 @@
+com.bone.base.tracer.config.BoneTracerAutoConfiguration
+com.bone.base.tracer.config.BoneMetricsAutoConfiguration

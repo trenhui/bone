@@ -1,0 +1,76 @@
+// @ts-ignore
+/* eslint-disable */
+import { request } from '@umijs/max';
+import { clearInvalidParams } from '@/utils/paramUtil';
+
+//** 获取${table.classComment}列表 GET
+export async function list${table.className}(
+  params: {
+    // query
+    /** 当前的页码 */
+    current?: number;
+    /** 页面的容量 */
+    pageSize?: number;
+  },
+  sort: any,
+  filter: any,
+  options?: { [key: string]: any },
+  ) {
+  let sortParam='';
+  for (const [key, value] of Object.entries(sort)) {
+    sortParam+=key+','+(value=='descend'?'desc':'asc');
+  }
+  params=clearInvalidParams(params);
+  const result=await request('/${moduleNameVar}/${classNameVar}/page', {
+    method: 'GET',
+    params: {
+      ...params,
+      page:params?.current-1,
+      size:params?.pageSize,
+      sort: sortParam,
+      filter:filter
+    },
+    ...(options || {}),
+  });
+
+  return {
+    data:result?.data?.data,
+    success: result?.success,
+    total: result?.data?.totalCount,
+    pageSize:result?.data?.pageSize
+  };
+}
+
+//** 新建${table.classComment} PUT
+export async function update${table.className}(options?: { [key: string]: any }) {
+  return request<${bigModuleNameVar}.API.${table.className}>('/${moduleNameVar}/${classNameVar}/update', {
+    method: 'PUT',
+    data:(options || {}),
+    ...(options || {}),
+  });
+}
+
+//** 新建${table.classComment} POST
+export async function add${table.className}(options?: { [key: string]: any }) {
+  return request<${bigModuleNameVar}.API.${table.className}>('/${moduleNameVar}/${classNameVar}/create', {
+    method: 'POST',
+    data:(options || {}),
+    ...(options || {}),
+  });
+}
+
+//** 删除${table.classComment} DELETE
+export async function remove${table.className}(options?: { [key: string]: any }) {
+  return request<Record<string, any>>('/${moduleNameVar}/${classNameVar}/delete/'+options.key, {
+    method: 'DELETE',
+    ...(options || {}),
+  });
+}
+
+//** 删除${table.classComment} DELETE
+export async function batchRemove${table.className}(options?: { [key: string]: any }) {
+  return request<Record<string, any>>('/${moduleNameVar}/${classNameVar}/batchDelete/?ids='+options.ids, {
+    method: 'DELETE',
+    ...(options || {}),
+  });
+}

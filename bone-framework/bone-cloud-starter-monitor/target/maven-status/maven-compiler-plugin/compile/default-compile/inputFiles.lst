@@ -1,0 +1,8 @@
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-monitor/src/main/java/com/bone/base/tracer/config/TracerProperties.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-monitor/src/main/java/com/bone/base/tracer/core/util/TracerFrameworkUtils.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-monitor/src/main/java/com/bone/base/tracer/config/BoneTracerAutoConfiguration.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-monitor/src/main/java/com/bone/base/tracer/core/filter/TraceFilter.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-monitor/src/main/java/com/bone/base/tracer/config/BoneMetricsAutoConfiguration.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-monitor/src/main/java/com/bone/base/tracer/core/aop/BizTraceAspect.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-monitor/src/main/java/com/bone/base/tracer/core/annotation/BizTrace.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-monitor/src/main/java/com/bone/base/tracer/package-info.java

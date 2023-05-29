@@ -1,0 +1,2 @@
+com.bone.base.env.config.BoneEnvWebAutoConfiguration
+com.bone.base.env.config.BoneEnvRpcAutoConfiguration
