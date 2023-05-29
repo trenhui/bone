@@ -1,0 +1,4 @@
+com/bone/base/file/core/client/local/LocalFileClientTest.class
+com/bone/base/file/core/client/sftp/SftpFileClientTest.class
+com/bone/base/file/core/client/ftp/FtpFileClientTest.class
+com/bone/base/file/core/client/s3/S3FileClientTest.class

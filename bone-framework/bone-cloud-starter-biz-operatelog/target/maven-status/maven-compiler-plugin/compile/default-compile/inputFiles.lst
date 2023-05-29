@@ -1,0 +1,11 @@
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-biz-operatelog/src/main/java/com/bone/base/operatelog/core/enums/OperateTypeEnum.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-biz-operatelog/src/main/java/com/bone/base/operatelog/core/service/OperateLogFrameworkServiceImpl.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-biz-operatelog/src/main/java/com/bone/base/operatelog/package-info.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-biz-operatelog/src/main/java/com/bone/base/operatelog/core/package-info.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-biz-operatelog/src/main/java/com/bone/base/operatelog/core/service/OperateLogFrameworkService.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-biz-operatelog/src/main/java/com/bone/base/operatelog/core/util/OperateLogUtils.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-biz-operatelog/src/main/java/com/bone/base/operatelog/core/annotations/OperateLog.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-biz-operatelog/src/main/java/com/bone/base/operatelog/core/service/OperateLog.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-biz-operatelog/src/main/java/com/bone/base/operatelog/config/BoneOperateLogRpcAutoConfiguration.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-biz-operatelog/src/main/java/com/bone/base/operatelog/core/aop/OperateLogAspect.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-biz-operatelog/src/main/java/com/bone/base/operatelog/config/BoneOperateLogAutoConfiguration.java

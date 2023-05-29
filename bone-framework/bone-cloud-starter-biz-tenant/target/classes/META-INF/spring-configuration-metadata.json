@@ -1,0 +1,31 @@
+{
+  "groups": [
+    {
+      "name": "bone.tenant",
+      "type": "com.bone.base.tenant.config.TenantProperties",
+      "sourceType": "com.bone.base.tenant.config.TenantProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "bone.tenant.enable",
+      "type": "java.lang.Boolean",
+      "description": "是否开启",
+      "sourceType": "com.bone.base.tenant.config.TenantProperties",
+      "defaultValue": true
+    },
+    {
+      "name": "bone.tenant.ignore-tables",
+      "type": "java.util.Set<java.lang.String>",
+      "description": "需要忽略多租户的表 即默认所有表都开启多租户的功能，所以记得添加对应的 tenant_id 字段哟",
+      "sourceType": "com.bone.base.tenant.config.TenantProperties"
+    },
+    {
+      "name": "bone.tenant.ignore-urls",
+      "type": "java.util.Set<java.lang.String>",
+      "description": "需要忽略多租户的请求 默认情况下，每个请求需要带上 tenant-id 的请求头。但是，部分请求是无需带上的，例如说短信回调、支付回调等 Open API！",
+      "sourceType": "com.bone.base.tenant.config.TenantProperties"
+    }
+  ],
+  "hints": []
+}

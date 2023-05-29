@@ -1,0 +1,13 @@
+package ${basePackage}.${table.moduleName}.domain.service;
+
+import com.bone.core.domain.BaseService;
+import ${basePackage}.${table.moduleName}.domain.model.${table.className};
+
+/**
+ * ${table.classComment} Service 接口
+ *
+ * @author ${table.author}
+ */
+public interface ${table.className}Service extends BaseService<${table.className}, Long> {
+
+}

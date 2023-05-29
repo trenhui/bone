@@ -1,0 +1,12 @@
+/Users/renhui.trh/code/meishan/bone-cloud/bone-modules/bone-bpm/bone-bpm-api/src/main/java/com/bone/module/bpm/enums/task/BpmProcessInstanceResultEnum.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-modules/bone-bpm/bone-bpm-api/src/main/java/com/bone/module/bpm/api/task/BpmProcessInstanceApi.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-modules/bone-bpm/bone-bpm-api/src/main/java/com/bone/module/bpm/api/package-info.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-modules/bone-bpm/bone-bpm-api/src/main/java/com/bone/module/bpm/enums/definition/BpmTaskAssignRuleTypeEnum.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-modules/bone-bpm/bone-bpm-api/src/main/java/com/bone/module/bpm/api/task/dto/BpmProcessInstanceCreateReqDTO.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-modules/bone-bpm/bone-bpm-api/src/main/java/com/bone/module/bpm/enums/ErrorCodeConstants.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-modules/bone-bpm/bone-bpm-api/src/main/java/com/bone/module/bpm/enums/definition/BpmTaskRuleScriptEnum.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-modules/bone-bpm/bone-bpm-api/src/main/java/com/bone/module/bpm/enums/task/BpmProcessInstanceStatusEnum.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-modules/bone-bpm/bone-bpm-api/src/main/java/com/bone/module/bpm/enums/message/BpmMessageEnum.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-modules/bone-bpm/bone-bpm-api/src/main/java/com/bone/module/bpm/enums/DictTypeConstants.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-modules/bone-bpm/bone-bpm-api/src/main/java/com/bone/module/bpm/enums/definition/BpmModelFormTypeEnum.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-modules/bone-bpm/bone-bpm-api/src/main/java/com/bone/module/bpm/enums/task/BpmProcessInstanceDeleteReasonEnum.java

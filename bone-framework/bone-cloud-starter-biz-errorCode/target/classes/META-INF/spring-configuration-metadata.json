@@ -1,0 +1,25 @@
+{
+  "groups": [
+    {
+      "name": "bone.error-code",
+      "type": "com.bone.base.errorcode.config.ErrorCodeProperties",
+      "sourceType": "com.bone.base.errorcode.config.ErrorCodeProperties"
+    }
+  ],
+  "properties": [
+    {
+      "name": "bone.error-code.constants-class-list",
+      "type": "java.util.List<java.lang.String>",
+      "description": "错误码枚举类",
+      "sourceType": "com.bone.base.errorcode.config.ErrorCodeProperties"
+    },
+    {
+      "name": "bone.error-code.enable",
+      "type": "java.lang.Boolean",
+      "description": "是否开启",
+      "sourceType": "com.bone.base.errorcode.config.ErrorCodeProperties",
+      "defaultValue": true
+    }
+  ],
+  "hints": []
+}

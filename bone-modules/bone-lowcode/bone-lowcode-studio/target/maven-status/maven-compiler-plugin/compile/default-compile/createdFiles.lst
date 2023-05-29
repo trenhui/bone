@@ -1,0 +1,14 @@
+com/bone/lowcode/studio/infrastructure/config/security/SecurityConfiguration.class
+com/bone/lowcode/studio/infrastructure/config/JdbcAuditorConfig.class
+com/bone/lowcode/studio/StudioApplication.class
+com/bone/lowcode/studio/domain/repository/FormRepository.class
+com/bone/lowcode/studio/interfaces/dto/FormDTO.class
+com/bone/lowcode/studio/infrastructure/config/security/SecurityConfiguration$1.class
+com/bone/lowcode/studio/interfaces/convert/FormConvert.class
+com/bone/lowcode/studio/domain/service/impl/FormServiceImpl.class
+com/bone/lowcode/studio/interfaces/convert/FormConvertImpl.class
+com/bone/lowcode/studio/interfaces/rest/FormController.class
+com/bone/lowcode/studio/domain/model/Form.class
+com/bone/lowcode/studio/application/FormApplicationService.class
+com/bone/lowcode/studio/domain/service/FormService.class
+com/bone/lowcode/studio/domain/model/Form$FormBuilder.class

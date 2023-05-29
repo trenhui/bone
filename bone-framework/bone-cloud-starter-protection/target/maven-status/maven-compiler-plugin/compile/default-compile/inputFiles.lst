@@ -1,0 +1,13 @@
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-protection/src/main/java/com/bone/base/idempotent/config/BoneIdempotentConfiguration.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-protection/src/main/java/com/bone/base/lock4j/config/BoneLock4jConfiguration.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-protection/src/main/java/com/bone/base/idempotent/core/keyresolver/impl/DefaultIdempotentKeyResolver.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-protection/src/main/java/com/bone/base/lock4j/core/DefaultLockFailureStrategy.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-protection/src/main/java/com/bone/base/lock4j/package-info.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-protection/src/main/java/com/bone/base/resilience4j/package-info.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-protection/src/main/java/com/bone/base/idempotent/core/keyresolver/IdempotentKeyResolver.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-protection/src/main/java/com/bone/base/lock4j/core/Lock4jRedisKeyConstants.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-protection/src/main/java/com/bone/base/idempotent/core/redis/IdempotentRedisDAO.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-protection/src/main/java/com/bone/base/idempotent/core/annotation/Idempotent.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-protection/src/main/java/com/bone/base/idempotent/core/keyresolver/impl/ExpressionIdempotentKeyResolver.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-protection/src/main/java/com/bone/base/idempotent/core/aop/IdempotentAspect.java
+/Users/renhui.trh/code/meishan/bone-cloud/bone-framework/bone-cloud-starter-protection/src/main/java/com/bone/base/idempotent/package-info.java
