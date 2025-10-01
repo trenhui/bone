@@ -1,0 +1,15 @@
+.idea
+.gitee
+.DS_Store
+.idea/*
+.idea/**
+/target/
+**/target/
+**/logs/
+/logs/
+.idea/compiler.xml
+.idea/misc.xml
+
+*.iml
+*.bak
+/.idea/
