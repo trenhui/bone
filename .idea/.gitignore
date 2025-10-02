@@ -13,3 +13,8 @@
 *.iml
 *.bak
 /.idea/
+/vcs.xml
+/workspace.xml
+/encodings.xml
+/jarRepositories.xml
+/misc.xml
