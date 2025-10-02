@@ -1,3 +1,0 @@
-com.bone.base.security.config.BoneSecurityRpcAutoConfiguration
-com.bone.base.security.config.BoneSecurityAutoConfiguration
-com.bone.base.security.config.BoneWebSecurityConfigurerAdapter

@@ -1,4 +1,0 @@
-com.bone.base.datasource.config.BoneDataSourceAutoConfiguration
-com.bone.base.mybatis.config.BoneMybatisAutoConfiguration
-com.alibaba.druid.spring.boot.autoconfigure.DruidDataSourceAutoConfigure
-com.bone.base.mybatis.config.IdTypeEnvironmentPostProcessor

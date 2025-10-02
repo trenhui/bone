@@ -1,5 +1,0 @@
-
-#debug: true
-mybatis:
-  type-aliases-package: com.bone.lowcode.infra.system.domain.model
-  mapper-locations: mapper/*.xml
