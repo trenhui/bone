@@ -8,7 +8,7 @@
         <artifactId>bone-boot</artifactId>
         <version>1.0.0</version>
     </parent>
-    <artifactId>bone-auth-server</artifactId>
+    <artifactId>bone-auth</artifactId>
     <packaging>jar</packaging>
     <name>bone-auth</name>
 
