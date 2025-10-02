@@ -1,4 +1,0 @@
-com/bone/base/captcha/core/service/RedisCaptchaServiceImpl.class
-com/bone/base/captcha/package-info.class
-com/bone/base/captcha/config/BoneCaptchaConfiguration.class
-com/bone/base/captcha/core/enums/CaptchaRedisKeyConstants.class

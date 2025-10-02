@@ -1,7 +1,0 @@
-com/bone/base/redis/config/BoneRedisAutoConfiguration.class
-com/bone/base/redis/core/RedisKeyRegistry.class
-com/bone/base/redis/core/RedisKeyDefine.class
-com/bone/base/redis/config/BoneCacheAutoConfiguration.class
-com/bone/base/redis/package-info.class
-com/bone/base/redis/core/RedisKeyDefine$TimeoutTypeEnum.class
-com/bone/base/redis/core/RedisKeyDefine$KeyTypeEnum.class
