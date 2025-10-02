@@ -1,0 +1,2 @@
+com.bone.core.extension.ExtPointAutoConfiguration
+com.bone.core.integration.RequestContextAutoConfiguration

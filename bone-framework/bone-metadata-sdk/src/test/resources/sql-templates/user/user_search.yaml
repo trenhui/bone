@@ -1,0 +1,14 @@
+id: user_search
+sql: |
+  SELECT u.id, u.name, r.role_name AS role
+  FROM users u
+  LEFT JOIN roles r ON u.role_id = r.id
+  <where>
+    <if test="name != null">
+      AND LOWER(u.name) LIKE LOWER(:name)
+    </if>
+    <if test="roles != null and roles.size() > 0">
+      AND r.role_name IN (<foreach items="roles">:item</foreach>)
+    </if>
+  </where>
+mappedClassName: com.bone.metadata.sdk.test.domain.dto.UserRoleDTO

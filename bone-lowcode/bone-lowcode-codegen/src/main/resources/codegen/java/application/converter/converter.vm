@@ -1,0 +1,39 @@
+package ${table.packgeName}.application.converter;
+
+import org.mapstruct.Mapper;
+import org.mapstruct.MappingConstants;
+import java.util.List;
+
+import com.bone.core.result.PageResult;
+import ${table.packgeName}.application.dto.${table.className}DTO;
+#if (${modelType} == "1")
+import ${table.packgeName}.sdk.model.${table.className};
+#elseif (${modelType} == "2")
+import ${table.packgeName}.domain.model.${table.className};
+#end
+
+
+/**
+ * ${table.className}对象转换器
+ */
+@Mapper(componentModel = MappingConstants.ComponentModel.SPRING)
+public interface ${table.className}Converter {
+    ${table.className} toEntity(${table.className}DTO ${classNameVar}DTO);
+
+    ${table.className}DTO toDto(${table.className} ${classNameVar});
+
+    List<${table.className}> toEntityList(List<${table.className}DTO> ${classNameVar}DtoList);
+
+    List<${table.className}DTO> toDtoList(List<${table.className}> ${classNameVar}List);
+
+    // 手写的 default 方法,如果前端是从0开始分页，src.getCurrPage()-1，如处理业务规则（页码 -1 等）
+    default PageResult<${table.className}DTO> toPageDto(PageResult<${table.className}> src) {
+        if (src == null) return null;
+        return new PageResult<>(
+                toDtoList(src.getData()),
+                src.getCurrPage(),
+                src.getPageSize(),
+                src.getTotalCount()
+        );
+    }
+}

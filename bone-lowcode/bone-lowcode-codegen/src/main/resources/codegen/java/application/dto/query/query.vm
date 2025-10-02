@@ -1,0 +1,17 @@
+package ${table.packgeName}.application.dto.query;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+
+import com.bone.core.result.Query;
+
+/**
+ * ${table.classComment}查询请求类
+ */
+@Schema(description = "${table.classComment}查询请求")
+@Data
+public class ${table.className}Query implements Query {
+
+    //todo 自定义查询条件
+
+}

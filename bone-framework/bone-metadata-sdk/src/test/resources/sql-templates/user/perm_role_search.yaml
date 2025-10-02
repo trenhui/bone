@@ -1,0 +1,15 @@
+  id: perm_role_search
+  sql: |
+    SELECT p.id          AS perm_id,
+           p.perm_name,
+           p.perm_code,
+           r.role_name
+    FROM sys_permission p
+    JOIN sys_role_permission rp ON rp.perm_id = p.id
+    JOIN roles r ON r.id = rp.role_id
+    <where>
+      <if test="permCodes != null and permCodes.size() > 0">
+        AND p.perm_code IN (<foreach collection="permCodes" item="item" separator=",">:item</foreach>)
+      </if>
+    </where>
+  mappedClassName: com.bone.metadata.sdk.test.domain.dto.PermRoleDTO

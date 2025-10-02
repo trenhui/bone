@@ -1,0 +1,5 @@
+id: permission_create
+sql: |
+  INSERT INTO sys_permission (id, perm_name, perm_code, perm_type, parent_id, path, component, icon, sort_order)
+  VALUES (:id, :perm_name, :perm_code, :perm_type, :parent_id, :path, :component, :icon, :sort_order)
+mappedClassName: com.bone.metadata.sdk.test.domain.Permission

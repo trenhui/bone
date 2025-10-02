@@ -1,0 +1,104 @@
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    type: com.zaxxer.hikari.HikariDataSource
+    url: ${DB_URL:jdbc:mysql://localhost:3306/extTest?useSSL=false&autoReconnect=true&characterEncoding=utf8}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:mysql123}
+    hikari:
+      pool-name: TestDBPool
+      minimum-idle: 5
+      idle-timeout: 600000
+      maximum-pool-size: 10
+      auto-commit: true
+      max-lifetime: 1800000
+      connection-timeout: 30000
+      # Optional H2 configuration for testing
+      # url: ${DB_URL:jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;TRACE_LEVEL_SYSTEM_OUT=3}
+      # driver-class-name: org.h2.Driver
+      # username: ${DB_USERNAME:sa}
+      # password: ${DB_PASSWORD:""}
+
+metadata:
+  sdk:
+    appcode: ${APP_CODE:extTest}
+    deployment-mode: EMBEDDED
+    slow-query-threshold: 3000
+    sql:
+      enabled: true
+      executor:
+        allow:
+          dml: true
+          batch: true
+          max-rows: 10000
+      database:
+        type: ${DB_TYPE:MYSQL}
+        auto-detect-dialect: true
+        default-ds: primary
+        batch-size: 1000
+      template:
+        base-path: classpath:/sql/
+        yaml-path: classpath:/sql-templates/
+        path-strategy: "filesystem"  # 或 "method-separated", "legacy", "auto"
+        load-priority: "classpath-first"  # 或 annotation-first
+        fallback-enabled: true           # 启用多源回退
+        enable-classpath-scan: true
+        enable-annotation-templates: true
+        stale-while-revalidate: 5m
+        cache-size: 2000
+        expire-hours: 24
+        max-template-size: 1048576
+        async-preload: true
+        preload:
+          - com.bone.metadata.sdk.test.repository.proxy.UserRepository.findByName
+          - com.bone.metadata.sdk.test.repository.proxy.UserRepository.findByRoleId
+
+      cache:
+        expression-cache-size: 10000
+        ast-cache-size: 2000
+        spel-cache-size: 1000
+        expire-hours: 24
+      tenant:
+        enabled: false
+        header-name: X-Tenant-Id
+        column-name: tenant_id
+        excluded-tables: []
+      monitor:
+        enabled: true
+        endpoint: /sql-monitor
+        slow-query-threshold-ms: 500
+        prometheus-enabled: true
+      security:
+        allowed-tables:
+          - users
+          - roles
+        allowed-dollar-pattern: ^[a-zA-Z0-9_]+$
+        allowed-hosts:
+          - "*.bone.com"
+          - localhost
+    service:
+      config:
+        remote:
+          auth-mode: api-key
+          endpoint: http://localhost:9001
+          token: test-token
+          timeout: 3000
+        embedded:
+          cache-ttl: 600
+
+feign:
+  client:
+    config:
+      default:
+        logger-level: NONE
+        connect-timeout: 5000
+        read-timeout: 5000
+
+logging:
+  level:
+    root: WARN
+    feign: DEBUG
+    com.bone: TRACE

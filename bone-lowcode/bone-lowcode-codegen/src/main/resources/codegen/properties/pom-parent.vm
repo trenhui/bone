@@ -1,0 +1,171 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+#if (${modelType} == "1")
+    <modules>
+        <module>${table.moduleName}-sdk</module>
+        <module>${table.moduleName}-ext</module>
+        <module>${table.moduleName}</module>
+    </modules>
+#elseif (${modelType} == "2")
+    <modules>
+        <module>${table.moduleName}</module>
+    </modules>
+#end
+    <groupId>${groupId}</groupId>
+    <version>${revision}</version>
+    <artifactId>${table.moduleName}-boot</artifactId>
+    <packaging>pom</packaging>
+    <name>${groupId}</name>
+    <description>项目生成脚手架</description>
+
+    <properties>
+        <revision>1.0.0</revision>
+
+        <!-- ✅ 核心框架版本 -->
+        <spring.boot.version>3.2.5</spring.boot.version> <!-- 最新稳定版（2025年8月推荐） -->
+        <spring.cloud.version>2023.0.3</spring.cloud.version> <!-- 官方更新版，对应 Spring Boot 3.2 -->
+        <spring.cloud.alibaba.version>2023.0.3.3</spring.cloud.alibaba.version> <!-- 最新 GA 版 -->
+
+        <!-- ✅ 数据库 -->
+        <mysql.connector.version>8.0.33</mysql.connector.version> <!-- MySQL 官方最新稳定版（兼容性好） -->
+
+        <!-- ✅ 工具 & 第三方库 -->
+        <lombok.version>1.18.32</lombok.version> <!-- 支持 JDK 21，可兼容未来版本 -->
+        <swagger.annotations.version>2.2.21</swagger.annotations.version> <!-- 保持稳定 -->
+        <mapstruct.version>1.5.5.Final</mapstruct.version>
+        <redisson.version>3.29.0</redisson.version>
+        <bone.version>1.0.0-spic-SNAPSHOT</bone.version>
+        <hikariCP.version>5.0.1</hikariCP.version>
+        <mockito.version>5.11.0</mockito.version>
+        <h2.version>2.2.224</h2.version>
+
+
+        <!-- Java 版本 -->
+        <java.version>17</java.version>
+        <maven.compiler.source>${java.version}</maven.compiler.source>
+        <maven.compiler.target>${java.version}</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+    </properties>
+
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- 统一依赖管理 -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring.boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!-- 业务组件 -->
+            <dependency>
+                <groupId>com.bone.cloud</groupId>
+                <artifactId>bone-core</artifactId>
+                <version>${bone.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.bone.cloud</groupId>
+                <artifactId>bone-metadata-sdk</artifactId>
+                <version>${bone.version}</version>
+            </dependency>
+ #if (${modelType} == "1")
+            <dependency>
+                <groupId>${groupId}</groupId>
+                <artifactId>${table.moduleName}-sdk</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>${groupId}</groupId>
+                <artifactId>${table.moduleName}-ext</artifactId>
+                <version>${revision}</version>
+            </dependency>
+#end
+            <!-- Web 相关 -->
+            <dependency>
+                <groupId>io.swagger.core.v3</groupId>
+                <artifactId>swagger-annotations</artifactId>
+                <version>${swagger.annotations.version}</version>
+            </dependency>
+
+            <!-- DB 相关 -->
+            <dependency>
+                <groupId>com.mysql</groupId>
+                <artifactId>mysql-connector-j</artifactId>
+                <version>${mysql.connector.version}</version>
+            </dependency>
+
+            <!-- 工具类相关 -->
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct</artifactId> <!-- use mapstruct-jdk8 for Java 8 or higher -->
+                <version>${mapstruct.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct-processor</artifactId>
+                <version>${mapstruct.version}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <!-- 编译器插件 -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.11.0</version>
+                    <configuration>
+                        <source>${java.version}</source>
+                        <target>${java.version}</target>
+                        <encoding>${project.build.sourceEncoding}</encoding>
+                        <parameters>true</parameters>
+                    </configuration>
+                </plugin>
+
+                <!-- 资源处理插件 -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-resources-plugin</artifactId>
+                    <version>3.3.1</version>
+                    <configuration>
+                        <encoding>${project.build.sourceEncoding}</encoding>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+
+    <repositories>
+        <repository>
+            <id>aliyunmaven</id>
+            <name>Aliyun Maven</name>
+            <url>https://maven.aliyun.com/repository/public</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+
+        <!-- 添加私有仓库 -->
+        <repository>
+            <id>spic-private</id>
+            <name>SPIC Private Repository</name>
+            <url>http://118.190.19.181:8081/nexus/content/groups/public</url>
+            <releases><enabled>true</enabled></releases>
+            <snapshots><enabled>true</enabled></snapshots> <!-- 允许SNAPSHOT -->
+        </repository>
+    </repositories>
+</project>

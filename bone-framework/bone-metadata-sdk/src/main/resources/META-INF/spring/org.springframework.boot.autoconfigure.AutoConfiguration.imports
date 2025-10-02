@@ -1,0 +1,3 @@
+com.bone.metadata.sdk.support.config.MetadataAutoConfiguration
+com.bone.metadata.sdk.support.config.SqlRepositoryAutoConfiguration
+com.bone.metadata.sdk.support.config.InterceptorAutoConfiguration
