@@ -47,3 +47,4 @@ log
 temp/
 .idea/
 .DS_Store
+**/logs/
