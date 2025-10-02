@@ -1,0 +1,10 @@
+id: findUserByName
+sql: |
+  SELECT u.*
+  FROM users u
+  <where>
+    <if test="name != null">
+      AND u.name LIKE :name
+    </if>
+  </where>
+mappedClassName: com.bone.metadata.sdk.test.domain.dto.UserRoleDTO

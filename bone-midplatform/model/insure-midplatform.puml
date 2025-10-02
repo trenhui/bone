@@ -1,0 +1,678 @@
+@startuml
+
+' 基础主数据模块
+class SysDataDict {
+    - id: BIGINT
+    - dict_type: VARCHAR(50)
+    - dict_code: VARCHAR(50)
+    - dict_value: VARCHAR(512)
+    - description: VARCHAR(255)
+    - tenant_id: BIGINT
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+class Insurer {
+    - id: BIGINT
+    - insurer_code: VARCHAR(10)
+    - insurer_name: VARCHAR(100)
+    - contact_phone: VARCHAR(20)
+    - contact_address: VARCHAR(600)
+    - email: VARCHAR(50)
+    - license_number: VARCHAR(50)
+    - status: ENUM('ACTIVE','INACTIVE')
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+class InsuredPerson {
+    - id: BIGINT
+    - name: VARCHAR(50)
+    - id_type: ENUM('ID_CARD','PASSPORT','HKID','SSN')
+    - id_card_no: VARCHAR(256)
+    - id_card_hash: CHAR(64)
+    - nationality: VARCHAR(50)
+    - domicile: VARCHAR(50)
+    - mobile: VARCHAR(20)
+    - email: VARCHAR(50)
+    - gender: ENUM('MALE','FEMALE','UNKNOWN')
+    - birth_date: DATE
+    - occupation: VARCHAR(100)
+    - health_status: JSON
+    - source: VARCHAR(50)
+    - id_card_key_version: VARCHAR(10)
+    - family_id: BIGINT
+    - tenant_id: BIGINT
+    - biz_identity_code: VARCHAR(32)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+class Company {
+    - id: BIGINT
+    - code: VARCHAR(64)
+    - name: VARCHAR(150)
+    - parent_company_id: BIGINT
+    - industry: VARCHAR(100)
+    - employee_count: INT UNSIGNED
+    - contact_person: VARCHAR(50)
+    - contact_phone: VARCHAR(20)
+    - address: VARCHAR(500)
+    - email: VARCHAR(50)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+class Policyholder {
+    - id: BIGINT
+    - name: VARCHAR(100)
+    - code: VARCHAR(50)
+    - holder_id: BIGINT
+    - holder_type: ENUM('INDIVIDUAL','FAMILY','COMPANY')
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+' 产品工厂模块
+class ProductConfig {
+    - id: BIGINT
+    - product_code: VARCHAR(20)
+    - product_name: VARCHAR(100)
+    - insurer_id: BIGINT
+    - product_type: ENUM('LIFE','HEALTH','PROPERTY','LIABILITY')
+    - coverage_period: VARCHAR(50)
+    - premium_frequency: ENUM('ANNUAL','SEMI_ANNUAL','MONTHLY')
+    - coverage_schema: JSON
+    - pricing_model: JSON
+    - underwriting_flow: JSON
+    - status: ENUM('DRAFT','ACTIVE','RETIRED','PENDING')
+    - product_version: VARCHAR(10)
+    - effective_date: DATE
+    - expire_date: DATE
+    - max_insured_age: INT UNSIGNED
+    - min_insured_age: INT UNSIGNED
+    - tenant_id: BIGINT
+    - biz_identity_code: VARCHAR(32)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+class ProductClause {
+    - id: BIGINT
+    - product_config_id: BIGINT
+    - clause_text: TEXT
+    - effective_date: DATE
+    - expire_date: DATE
+    - tenant_id: BIGINT
+    - biz_identity_code: VARCHAR(32)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+' 承保模块
+class Proposal {
+    - id: BIGINT
+    - proposal_code: VARCHAR(32)
+    - product_config_id: BIGINT
+    - insured_type: ENUM('INDIVIDUAL','FAMILY','GROUP')
+    - policyholder_id: BIGINT
+    - proposal_channel: ENUM('ONLINE','OFFLINE')
+    - proposal_type: ENUM('NEW','RENEWAL','REINSTATEMENT')
+    - proposal_status: ENUM('DRAFT','UNDERWRITING','APPROVED','REJECTED','WITHDRAWN')
+    - health_questionnaire: JSON
+    - risk_score: DECIMAL(5,2)
+    - underwriting_result: JSON
+    - effective_date: DATE
+    - tenant_id: BIGINT
+    - biz_identity_code: VARCHAR(32)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+class UnderwritingRule {
+    - id: BIGINT
+    - rule_code: VARCHAR(20)
+    - product_config_id: BIGINT
+    - rule_type: ENUM('AUTO','MANUAL','HYBRID')
+    - underwriting_rules: JSON
+    - condition_expression: JSON
+    - action_expression: JSON
+    - priority: TINYINT UNSIGNED
+    - version: VARCHAR(10)
+    - status: ENUM('ACTIVE','INACTIVE','DEPRECATED')
+    - effective_date: DATE
+    - expire_date: DATE
+    - tenant_id: BIGINT
+    - biz_identity_code: VARCHAR(32)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+class HealthProfile {
+    - id: BIGINT
+    - person_id: BIGINT
+    - medical_history: JSON
+    - exam_data: JSON
+    - wearable_data: JSON
+    - genetic_risk: JSON
+    - last_update_time: DATETIME(3)
+    - tenant_id: BIGINT
+    - biz_identity_code: VARCHAR(32)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+' 保全模块
+class Policy {
+    - id: BIGINT
+    - policy_code: VARCHAR(32)
+    - proposal_id: BIGINT
+    - product_config_id: BIGINT
+    - policyholder_id: BIGINT
+    - type: ENUM('INDIVIDUAL','GROUP')
+    - status: ENUM('ACTIVE','LAPSED','TERMINATED','ON_HOLD','CANCELLED')
+    - premium_amount: DECIMAL(12,2)
+    - quota_control_type: ENUM('STATIC','DYNAMIC')
+    - quota_reset_cycle: ENUM('NONE','YEARLY','HALF_YEAR')
+    - total_quota: DECIMAL(18,2)
+    - used_quota: DECIMAL(18,2)
+    - coverage_detail: JSON
+    - effective_date: DATE
+    - expiry_date: DATE
+    - renewal_count: TINYINT UNSIGNED
+    - pre_policy_id: BIGINT
+    - grace_period_days: INT
+    - version: INT
+    - renewal_policy_id: BIGINT
+    - remark: VARCHAR(255)
+    - source: VARCHAR(50)
+    - last_sync_time: DATETIME(3)
+    - tenant_id: BIGINT
+    - biz_identity_code: VARCHAR(32)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+class PolicyInsured {
+    - id: BIGINT
+    - relate_id: BIGINT
+    - insured_type: ENUM('PROPOSAL','ENDORSEMENT','RENEWAL')
+    - policy_id: BIGINT
+    - person_id: BIGINT
+    - relationship: VARCHAR(50)
+    - is_main_insured: TINYINT
+    - coverage_detail: JSON
+    - individual_quota: DECIMAL(18,2)
+    - used_individual_quota: DECIMAL(18,2)
+    - tenant_id: BIGINT
+    - biz_identity_code: VARCHAR(32)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+class PolicyEndorsement {
+    - id: BIGINT
+    - endorsement_code: VARCHAR(20)
+    - policy_id: BIGINT
+    - proposal_id: BIGINT
+    - endorsement_type: ENUM('BENEFICIARY_CHANGE','COVERAGE_ADJUST','RENEWAL','PREMIUM_CHANGE','POLICY_SUSPEND')
+    - operation_source: ENUM('SYSTEM','AGENT','CUSTOMER')
+    - change_reason: VARCHAR(500)
+    - operation_data: JSON
+    - approval_status: ENUM('PENDING','APPROVED','REJECTED','CANCELLED')
+    - effective_date: DATETIME(3)
+    - operator_id: BIGINT
+    - tenant_id: BIGINT
+    - biz_identity_code: VARCHAR(32)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+class PolicyRenewal {
+    - id: BIGINT UNSIGNED
+    - original_policy_id: BIGINT
+    - renewed_policy_id: BIGINT
+    - proposal_id: BIGINT
+    - renewal_type: ENUM('AUTO','MANUAL','FORCED')
+    - premium_change: DECIMAL(10,2)
+    - coverage_change: JSON
+    - renewal_date: DATE
+    - reason_code: VARCHAR(20)
+    - underwriting_flag: BOOLEAN
+    - tenant_id: BIGINT
+    - biz_identity_code: VARCHAR(32)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+class PolicyQuotaChange {
+    - id: BIGINT
+    - change_no: VARCHAR(32)
+    - policy_id: BIGINT
+    - person_id: BIGINT
+    - quota_type: ENUM('GROUP','INDIVIDUAL')
+    - previous_value: DECIMAL(18,2)
+    - current_value: DECIMAL(18,2)
+    - effective_date: DATETIME(3)
+    - approval_status: ENUM('PENDING','APPROVED','REJECTED')
+    - risk_check_id: BIGINT
+    - change_type: ENUM('ALLOCATE','USE','ADJUST','RECOVER')
+    - operator_role: ENUM('SYSTEM','AGENT','CUSTOMER')
+    - change_reason: TEXT
+    - tenant_id: BIGINT
+    - biz_identity_code: VARCHAR(32)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+' 审计模块
+class AuditLog {
+    - id: BIGINT
+    - user_id: BIGINT
+    - operation_type: VARCHAR(50)
+    - target_table: VARCHAR(50)
+    - target_id: BIGINT
+    - before_state: JSON
+    - after_state: JSON
+    - ip_address: VARCHAR(45)
+    - device_fingerprint: VARCHAR(100)
+    - geo_location: VARCHAR(100)
+    - session_id: VARCHAR(50)
+    - tenant_id: BIGINT
+    - biz_identity_code: VARCHAR(32)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+' 交易模块
+class Merchant {
+    - id: BIGINT
+    - merchant_code: VARCHAR(50)
+    - name: VARCHAR(100)
+    - merchant_type: ENUM('INSURANCE','TPA','HOSPITAL','PHARMACY','HEALTH_SERVICE')
+    - parent_id: BIGINT
+    - service_capability: JSON
+    - settlement_config: JSON
+    - tier: ENUM('HEADQUARTER','BRANCH','SITE')
+    - is_active: TINYINT
+    - region_rules: JSON
+    - chain_config: JSON
+    - service_type: ENUM('ONLINE','OFFLINE','OTO')
+    - address: VARCHAR(255)
+    - contact_person: VARCHAR(100)
+    - contact_phone: VARCHAR(50)
+    - latitude: DECIMAL(9,6)
+    - longitude: DECIMAL(9,6)
+    - province: VARCHAR(100)
+    - city: VARCHAR(100)
+    - district: VARCHAR(100)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+class Product {
+    - id: BIGINT
+    - product_code: VARCHAR(50)
+    - product_name: VARCHAR(100)
+    - merchant_id: BIGINT
+    - product_type: ENUM('DRUG','SERVICE','CHECKUP')
+    - category_id: BIGINT
+    - pricing_model: JSON
+    - validity_period: INT
+    - insurance_price: DECIMAL(18,2)
+    - cash_price: DECIMAL(18,2)
+    - min_purchase: INT
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+class Category {
+    - id: BIGINT
+    - category_code: VARCHAR(50)
+    - category_name: VARCHAR(100)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+class Goods {
+    - id: BIGINT
+    - product_id: BIGINT
+    - quantity: INT
+    - unit_price: DECIMAL(18,2)
+    - total_price: DECIMAL(18,2)
+    - tenant_id: BIGINT
+    - biz_identity_code: VARCHAR(32)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+class Order {
+    - id: BIGINT
+    - order_no: VARCHAR(50)
+    - order_type: ENUM('DIRECT_PAY','CLAIM','REFUND')
+    - qr_code: VARCHAR(50)
+    - merchant_id: BIGINT
+    - merchant_name: VARCHAR(100)
+    - total_amount: DECIMAL(18,2)
+    - currency: VARCHAR(3)
+    - payment_policy: JSON
+    - claim_evidence: JSON
+    - payment_status: ENUM('PARTIAL_PAID','FULLY_PAID','FAILED')
+    - settlement_status: ENUM('PENDING','COMPLETED','FAILED')
+    - payment_account: VARCHAR(50)
+    - original_order_no: VARCHAR(50)
+    - policy_id: BIGINT
+    - user_id: BIGINT
+    - user_mobile: VARCHAR(20)
+    - version: INT
+    - payment_channel: ENUM('ALIPAY','WECHAT','BANK_TRANSFER','OTHER')
+    - third_party_trade_no: VARCHAR(50)
+    - bank_serial_no: VARCHAR(50)
+    - clearing_date: DATE
+    - tenant_id: BIGINT
+    - biz_identity_code: VARCHAR(32)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+class OrderItem {
+    - id: BIGINT
+    - order_id: BIGINT
+    - product_id: BIGINT
+    - goods_id: BIGINT
+    - quantity: INT
+    - unit_price: DECIMAL(18,2)
+    - total_price: DECIMAL(18,2)
+    - insurance_covered: DECIMAL(18,2)
+    - cash_payment: DECIMAL(18,2)
+    - refund_amount: DECIMAL(18,2)
+    - expire_time: DATETIME(6)
+    - tenant_id: BIGINT
+    - biz_identity_code: VARCHAR(32)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+class ConsumeRule {
+    - id: BIGINT
+    - rule_code: VARCHAR(50)
+    - rule_type: ENUM('WHITELIST','BLACKLIST')
+    - rule_condition: JSON
+    - rule_action: JSON
+    - priority: TINYINT
+    - effective_time: DATETIME
+    - expiration_time: DATE
+    - tenant_id: BIGINT
+    - biz_identity_code: VARCHAR(32)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+class RuleExecutionLog {
+    - id: BIGINT
+    - order_id: BIGINT
+    - rule_code: VARCHAR(50)
+    - decision: ENUM('ACCEPT','REJECT')
+    - evidence: JSON
+    - tenant_id: BIGINT
+    - biz_identity_code: VARCHAR(32)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+' 支付模块
+class FundAccount {
+    - id: BIGINT
+    - account_no: VARCHAR(50)
+    - account_type: ENUM('MASTER','VIRTUAL','ESCROW')
+    - currency: VARCHAR(3)
+    - init_balance: DECIMAL(18,2)
+    - balance: DECIMAL(18,2)
+    - frozen_balance: DECIMAL(18,2)
+    - quota_policy: JSON
+    - risk_policy: JSON
+    - version: INT
+    - tenant_id: BIGINT
+    - biz_identity_code: VARCHAR(32)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+class VirtualAccount {
+    - id: BIGINT
+    - va_no: VARCHAR(50)
+    - account_no: VARCHAR(50)
+    - account_type: ENUM('DIRECT_PAY','TPA','HEALTH_SERVICE')
+    - insurance_type: ENUM('MEDICAL','DENTAL','VISION')
+    - family_group_id: BIGINT
+    - total_quota: DECIMAL(18,2)
+    - used_quota: DECIMAL(18,2)
+    - daily_quota: DECIMAL(18,2)
+    - monthly_quota: DECIMAL(18,2)
+    - usage_rules: JSON
+    - last_reset_time: DATETIME(3)
+    - tenant_id: BIGINT
+    - biz_identity_code: VARCHAR(32)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+class FundLedger {
+    - id: BIGINT
+    - ledger_no: VARCHAR(50)
+    - operation_type: ENUM('PAYMENT','REFUND','ADJUSTMENT','FEE','TRANSFER')
+    - amount: DECIMAL(18,2)
+    - currency: VARCHAR(3)
+    - account_no: VARCHAR(50)
+    - related_biz_no: VARCHAR(50)
+    - original_ledger_no: VARCHAR(50)
+    - pre_balance: DECIMAL(18,2)
+    - post_balance: DECIMAL(18,2)
+    - transaction_fee: DECIMAL(18,2)
+    - version: INT
+    - tenant_id: BIGINT
+    - biz_identity_code: VARCHAR(32)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+class PaymentException {
+    - id: BIGINT
+    - order_id: BIGINT
+    - error_code: VARCHAR(20)
+    - error_detail: JSON
+    - retry_policy: JSON
+    - retry_count: INT
+    - tenant_id: BIGINT
+    - biz_identity_code: VARCHAR(32)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+class BenefitFundCard {
+    - id: BIGINT
+    - card_no: VARCHAR(50)
+    - card_type: ENUM('DIRECT_PAY_CARD','HEALTH_SERVICE_CARD')
+    - person_id: BIGINT
+    - quota: DECIMAL(18,2)
+    - restriction_rule: JSON
+    - tenant_id: BIGINT
+    - biz_identity_code: VARCHAR(32)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+class FamilyGroup {
+    - id: BIGINT
+    - group_no: VARCHAR(50)
+    - master_account_id: BIGINT
+    - sharing_mode: ENUM('FIXED','DYNAMIC')
+    - reset_cycle: ENUM('MONTHLY','QUARTERLY','YEARLY')
+    - next_reset_time: DATETIME(3)
+    - insurer_id: BIGINT
+    - employer_id: BIGINT
+    - tenant_id: BIGINT
+    - biz_identity_code: VARCHAR(32)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+class FamilyConfig {
+    - id: BIGINT
+    - config_level: ENUM('INSURER','EMPLOYER','POLICY')
+    - related_id: BIGINT
+    - is_enabled: TINYINT
+    - rules: JSON
+    - allow_override: TINYINT
+    - version: INT
+    - tenant_id: BIGINT
+    - biz_identity_code: VARCHAR(32)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+class FamilyMember {
+    - id: BIGINT
+    - family_group_id: BIGINT
+    - master_account_id: BIGINT
+    - person_id: BIGINT
+    - relation_type: VARCHAR(20)
+    - quota_ratio: DECIMAL(5,2)
+    - start_date: DATE
+    - end_date: DATE
+    - tenant_id: BIGINT
+    - biz_identity_code: VARCHAR(32)
+    - create_time: DATETIME(3)
+    - create_by: BIGINT
+    - update_time: DATETIME(3)
+    - update_by: BIGINT
+    - deleted: TINYINT
+}
+
+' 关联关系
+SysDataDict --> Policyholder
+Insurer --> ProductConfig
+InsuredPerson --> PolicyInsured
+Company --> Policyholder
+Policyholder --> Policy
+ProductConfig --> ProductClause
+ProductConfig --> Proposal
+Proposal --> Policy
+UnderwritingRule --> Proposal
+HealthProfile --> Proposal
+Policy --> PolicyInsured
+Policy --> PolicyEndorsement
+Policy --> PolicyRenewal
+Policy --> PolicyQuotaChange
+AuditLog --> Policy
+Merchant --> Product
+Product --> Category
+Goods --> Product
+Order --> Merchant
+Order --> Policy
+Order --> OrderItem
+OrderItem --> Goods
+ConsumeRule --> Order
+RuleExecutionLog --> Order
+FundAccount --> VirtualAccount
+VirtualAccount --> FamilyGroup
+FundLedger --> FundAccount
+PaymentException --> Order
+BenefitFundCard --> InsuredPerson
+FamilyGroup --> FamilyConfig
+FamilyGroup --> FamilyMember
+
+@enduml

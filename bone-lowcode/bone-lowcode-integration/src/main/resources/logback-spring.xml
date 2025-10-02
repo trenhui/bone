@@ -1,0 +1,39 @@
+<configuration>
+    <contextName>${spring.application.name}</contextName>
+    <springProperty scope="context" name="logPath" source="lowcode-integration.logs.path" defaultValue="../logs" />
+    <property name="LOG_HOME" value="${logPath}"/>
+    <!-- 定义控制台输出 -->
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 定义文件输出，文件按天滚动 -->
+    <appender name="file" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 日志文件路径 -->
+        <file>${LOG_HOME}/lowcode-integration.log</file>
+        <!-- 定义滚动策略 -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- 滚动日志文件名格式 -->
+            <fileNamePattern>${LOG_HOME}/application.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <!-- 保留历史日志文件的最大天数 -->
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 设置根日志级别和输出方式 -->
+    <root level="info">
+        <appender-ref ref="console" />
+        <appender-ref ref="file" />
+    </root>
+
+    <!-- 定义特定包的日志级别 -->
+    <logger name="com.bone.lowcode.integration" level="debug" additivity="false">
+        <appender-ref ref="console" />
+        <appender-ref ref="file" />
+    </logger>
+</configuration>

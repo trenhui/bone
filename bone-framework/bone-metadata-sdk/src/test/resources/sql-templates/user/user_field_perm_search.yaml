@@ -1,0 +1,21 @@
+id: user_field_perm_search
+sql: |
+  SELECT u.id        AS user_id,
+         u.name,
+         r.role_name,
+         f.entity_type,
+         f.field_name,
+         f.can_read,
+         f.can_write
+  FROM users u
+  JOIN roles r ON r.id = u.role_id
+  JOIN field_permission f ON f.role_code = r.role_name
+  <where>
+    <if test="userId != null">
+      AND u.id = :userId
+    </if>
+    <if test="entityType != null">
+      AND f.entity_type = :entityType
+    </if>
+  </where>
+mappedClassName: com.bone.metadata.sdk.test.domain.dto.UserFieldPermDTO

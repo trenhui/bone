@@ -1,0 +1,20 @@
+package ${table.packgeName}.application.dto.query;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+import com.bone.core.result.SortablePageParam;
+
+/**
+ * ${table.classComment}分页查询请求类
+ * <p>继承自SortablePageParam，支持分页和排序功能</p>
+ */
+@Schema(description = "${table.classComment}分页查询请求")
+@Data
+@EqualsAndHashCode(callSuper = true)
+public class ${table.className}PageQuery extends SortablePageParam {
+
+    //todo 自定义查询条件
+
+}

@@ -1,0 +1,1433 @@
+{
+	"TransInfo": {
+		"TransHeadInfo": {
+			"TransType": "L02",
+			"RequestClient": "YB",
+			"RequestType": "WBLAHQ",
+			"TransDate": "2024-06-19",
+			"TransTime": "11:00:58",
+			"BPOName": "0002-亿保",
+			"TransKeyNo": "YB202406191100588148",
+			"LAFlowFlag": "1",
+			"LAinterfaceFlag": "Y"
+		},
+		"TransBodyInfo": {
+			"BatchInfo": {
+				"BPOBatchNo": "YB202406190003",
+				"ManageCom": "C31861",
+				"CompanyName": "中国人民财产保险股份有限公司德州市分公司",
+				"CasesCount": "1",
+				"Cases": {
+					"CaseNo": "C318610002024001208",
+					"SaleFlag": "0",
+					"ClaimWay": "2",
+					"CaseType": "02",
+					"InsuredNo": "01002925316",
+					"Name": "多全包九",
+					"IDNoType": "0",
+					"IDNo": "450201200001196330",
+					"RptorName": "梁子贤",
+					"RgtantSex": "0",
+					"AppBirthday": "2001-02-22",
+					"NativePlace": "CHN",
+					"AppIDType": "0",
+					"AppIDNo": "140826200102220018",
+					"AppEffevtiveStartDate": "2024-06-13",
+					"AppEffevtiveDate": "2034-06-13",
+					"RptorPhone": "18535951294",
+					"RptorAddress": "测试",
+					"RptorRelation": "GX01",
+					"AccidentSite": "测试",
+					"ApplyDate": "2024-06-17",
+					"AcceptDate": "2024-06-17",
+					"AcceptTime": "16:52:07",
+					"AccDate": "2024-05-01",
+					"AccidentDate": "2024-05-01",
+					"AccType": "2",
+					"AccResult1": "Z00",
+					"AccResult2": "Z00.8",
+					"HospitalCode": "QTYD",
+					"CureDesc": "B",
+					"FirstDiaDate": "2024-05-01",
+					"InHospitalDate": "2024-05-01",
+					"OutHospitalDate": "2024-05-01",
+					"ClaimType": "00",
+					"RgtDate": "2024-06-17",
+					"RgtOperator": "YB",
+					"AccDesc": "被保人多全包九，因咳嗽于2024-05-01在北京普京医院接受治疗",
+					"ReceiptInfos": {
+						"CLINICRECEIPTS": {
+							"CLINICRECEIPT_ARRAY": [
+								{
+									"FEETYPE": "A",
+									"RECEIPTNO": "202405231038",
+									"HOSPITALCODE": "QTYD",
+									"CLINICDATE": "2024-05-10",
+									"MEDICALPAYMENT": "10019.30",
+									"INSURANCEPAYMENT": "10.00",
+									"SELFPAY1": "0.00",
+									"SELFPAY2": "3.70",
+									"SUMPAY": "10040.00",
+									"SELFPAYSUM": "17.00",
+									"NOTPAYSUM": "0.00",
+									"ISHISINJ": "N",
+									"CHEQUETYPE": "1",
+									"ZJWPAYAMOUNT": "0",
+									"COSTITEM_ARRAYS": {
+										"COSTITEM_ARRAY": [
+											{
+												"FEECODE": "CZ101",
+												"FEEMONEY": "10000.00",
+												"SELFMONEY": "7.00",
+												"SELFREASON": "丙吡胺自费100% 1.0元;丙卡特罗自费100% 2.0元;丙戊酸钠乳剂自费100% 4.0元",
+												"NOTPAYMONEY": "0.00",
+												"PARTSELFMONEY": "2.50",
+												"DIAGNOSIS_ARRAYS": {
+													"DIAGNOSIS_ARRAY": [
+														{
+															"FEECODE": "CZ101",
+															"DIAGNOSISNAME": "乙琥胺片",
+															"FEEAMOUNT": "10.00",
+															"CNT": "1",
+															"OWNPAYAMOUNT": "0",
+															"PARTOWNPAYAMOUNT": "1.00",
+															"PARTOWNPAYRATE": "0",
+															"UNREASONABLEFEE": "0.00"
+														},
+														{
+															"FEECODE": "CZ101",
+															"DIAGNOSISNAME": "丙吡胺",
+															"FEEAMOUNT": "1.00",
+															"CNT": "1",
+															"OWNPAYAMOUNT": "1.00",
+															"PARTOWNPAYAMOUNT": "0",
+															"PARTOWNPAYRATE": "0",
+															"UNREASONABLEFEE": "0.00"
+														},
+														{
+															"FEECODE": "CZ101",
+															"DIAGNOSISNAME": "乙琥胺胶丸",
+															"FEEAMOUNT": "15.00",
+															"CNT": "1",
+															"OWNPAYAMOUNT": "0",
+															"PARTOWNPAYAMOUNT": "1.50",
+															"PARTOWNPAYRATE": "0",
+															"UNREASONABLEFEE": "0.00"
+														},
+														{
+															"FEECODE": "CZ101",
+															"DIAGNOSISNAME": "丙卡特罗",
+															"FEEAMOUNT": "2.00",
+															"CNT": "1",
+															"OWNPAYAMOUNT": "2.00",
+															"PARTOWNPAYAMOUNT": "0",
+															"PARTOWNPAYRATE": "0",
+															"UNREASONABLEFEE": "0.00"
+														},
+														{
+															"FEECODE": "CZ101",
+															"DIAGNOSISNAME": "丙戊酸钠乳剂",
+															"FEEAMOUNT": "4.00",
+															"CNT": "1",
+															"OWNPAYAMOUNT": "4.00",
+															"PARTOWNPAYAMOUNT": "0",
+															"PARTOWNPAYRATE": "0",
+															"UNREASONABLEFEE": "0.00"
+														},
+														{
+															"FEECODE": "CZ101",
+															"DIAGNOSISNAME": "甲类无明细",
+															"FEEAMOUNT": "9968.00",
+															"CNT": "1",
+															"OWNPAYAMOUNT": "0",
+															"PARTOWNPAYAMOUNT": "0",
+															"PARTOWNPAYRATE": "0",
+															"UNREASONABLEFEE": "0"
+														}
+													]
+												}
+											},
+											{
+												"FEECODE": "CZ106",
+												"FEEMONEY": "10.00",
+												"SELFMONEY": "10.00",
+												"SELFREASON": "门(急)诊诊疗费自费100% 10.0元",
+												"NOTPAYMONEY": "0.00",
+												"PARTSELFMONEY": "0.00",
+												"DIAGNOSIS_ARRAYS": {
+													"DIAGNOSIS_ARRAY": {
+														"FEECODE": "CZ106",
+														"DIAGNOSISNAME": "门(急)诊诊疗费",
+														"FEEAMOUNT": "10.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "10.00",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													}
+												}
+											},
+											{
+												"FEECODE": "CZ108",
+												"FEEMONEY": "30.00",
+												"SELFMONEY": "0.00",
+												"NOTPAYMONEY": "0.00",
+												"PARTSELFMONEY": "1.20",
+												"DIAGNOSIS_ARRAYS": {
+													"DIAGNOSIS_ARRAY": [
+														{
+															"FEECODE": "CZ108",
+															"DIAGNOSISNAME": "乙琥胺素片",
+															"FEEAMOUNT": "5.00",
+															"CNT": "1",
+															"OWNPAYAMOUNT": "0",
+															"PARTOWNPAYAMOUNT": "1.00",
+															"PARTOWNPAYRATE": "0",
+															"UNREASONABLEFEE": "0.00"
+														},
+														{
+															"FEECODE": "CZ108",
+															"DIAGNOSISNAME": "化验乙类",
+															"FEEAMOUNT": "20.00",
+															"CNT": "1",
+															"OWNPAYAMOUNT": "0",
+															"PARTOWNPAYAMOUNT": "0.20",
+															"PARTOWNPAYRATE": "0",
+															"UNREASONABLEFEE": "0.00"
+														},
+														{
+															"FEECODE": "CZ108",
+															"DIAGNOSISNAME": "甲类无明细",
+															"FEEAMOUNT": "5.00",
+															"CNT": "1",
+															"OWNPAYAMOUNT": "0",
+															"PARTOWNPAYAMOUNT": "0",
+															"PARTOWNPAYRATE": "0",
+															"UNREASONABLEFEE": "0"
+														}
+													]
+												}
+											}
+										]
+									}
+								},
+								{
+									"FEETYPE": "A",
+									"RECEIPTNO": "202305231041",
+									"HOSPITALCODE": "QTYD",
+									"CLINICDATE": "2024-05-13",
+									"MEDICALPAYMENT": "42.90",
+									"INSURANCEPAYMENT": "6.00",
+									"SELFPAY1": "0.00",
+									"SELFPAY2": "2.10",
+									"SUMPAY": "75.00",
+									"SELFPAYSUM": "30.00",
+									"NOTPAYSUM": "0.00",
+									"ISHISINJ": "N",
+									"CHEQUETYPE": "1",
+									"ZJWPAYAMOUNT": "0",
+									"COSTITEM_ARRAYS": {
+										"COSTITEM_ARRAY": [
+											{
+												"FEECODE": "CZ103",
+												"FEEMONEY": "10.00",
+												"SELFMONEY": "0.00",
+												"NOTPAYMONEY": "0.00",
+												"PARTSELFMONEY": "0.10",
+												"DIAGNOSIS_ARRAYS": {
+													"DIAGNOSIS_ARRAY": {
+														"FEECODE": "CZ103",
+														"DIAGNOSISNAME": "知母",
+														"FEEAMOUNT": "10.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "0.10",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													}
+												}
+											},
+											{
+												"FEECODE": "CZ117",
+												"FEEMONEY": "30.00",
+												"SELFMONEY": "0.00",
+												"NOTPAYMONEY": "0.00",
+												"PARTSELFMONEY": "2.00",
+												"DIAGNOSIS_ARRAYS": {
+													"DIAGNOSIS_ARRAY": [
+														{
+															"FEECODE": "CZ117",
+															"DIAGNOSISNAME": "一次性使用无菌注射器",
+															"FEEAMOUNT": "20.00",
+															"CNT": "1",
+															"OWNPAYAMOUNT": "0",
+															"PARTOWNPAYAMOUNT": "2.00",
+															"PARTOWNPAYRATE": "0",
+															"UNREASONABLEFEE": "0.00"
+														},
+														{
+															"FEECODE": "CZ117",
+															"DIAGNOSISNAME": "甲类无明细",
+															"FEEAMOUNT": "10.00",
+															"CNT": "1",
+															"OWNPAYAMOUNT": "0",
+															"PARTOWNPAYAMOUNT": "0",
+															"PARTOWNPAYRATE": "0",
+															"UNREASONABLEFEE": "0"
+														}
+													]
+												}
+											},
+											{
+												"FEECODE": "CZ106",
+												"FEEMONEY": "35.00",
+												"SELFMONEY": "30.00",
+												"SELFREASON": "局部按摩自费100% 10.0元;关节松动治疗自费100% 5.0元普通门诊诊察费自费100% 15.0元",
+												"NOTPAYMONEY": "0.00",
+												"PARTSELFMONEY": "0.00",
+												"DIAGNOSIS_ARRAYS": {
+													"DIAGNOSIS_ARRAY": [
+														{
+															"FEECODE": "CZ106",
+															"DIAGNOSISNAME": "局部按摩",
+															"FEEAMOUNT": "10.00",
+															"CNT": "1",
+															"OWNPAYAMOUNT": "10.00",
+															"PARTOWNPAYAMOUNT": "0",
+															"PARTOWNPAYRATE": "0",
+															"UNREASONABLEFEE": "0.00"
+														},
+														{
+															"FEECODE": "CZ106",
+															"DIAGNOSISNAME": "关节松动治疗",
+															"FEEAMOUNT": "5.00",
+															"CNT": "1",
+															"OWNPAYAMOUNT": "5.00",
+															"PARTOWNPAYAMOUNT": "0",
+															"PARTOWNPAYRATE": "0",
+															"UNREASONABLEFEE": "0.00"
+														},
+														{
+															"FEECODE": "CZ106",
+															"DIAGNOSISNAME": "普通门诊诊察费",
+															"FEEAMOUNT": "15.00",
+															"CNT": "1",
+															"OWNPAYAMOUNT": "15.00",
+															"PARTOWNPAYAMOUNT": "0",
+															"PARTOWNPAYRATE": "0",
+															"UNREASONABLEFEE": "0.00"
+														},
+														{
+															"FEECODE": "CZ106",
+															"DIAGNOSISNAME": "甲类无明细",
+															"FEEAMOUNT": "5.00",
+															"CNT": "1",
+															"OWNPAYAMOUNT": "0",
+															"PARTOWNPAYAMOUNT": "0",
+															"PARTOWNPAYRATE": "0",
+															"UNREASONABLEFEE": "0"
+														}
+													]
+												}
+											}
+										]
+									}
+								}
+							]
+						},
+						"SPECIALRECEIPTS": {
+							"SPECIALRECEIPT_ARRAY": {
+								"FEETYPE": "B",
+								"RECEIPTNO": "202405231039",
+								"HOSPITALCODE": "QTYD",
+								"CLINICDATE": "2024-05-11",
+								"MEDICALPAYMENT": "121.18",
+								"INSURANCEPAYMENT": "0.00",
+								"SELFPAY1": "0.00",
+								"SELFPAY2": "3.82",
+								"SUMPAY": "230.00",
+								"SELFPAYSUM": "105.00",
+								"NOTPAYSUM": "0.00",
+								"ISHISINJ": "N",
+								"COSTITEM_ARRAYS": {
+									"COSTITEM_ARRAY": [
+										{
+											"FEECODE": "CZ101",
+											"FEEMONEY": "30.00",
+											"SELFMONEY": "0.00",
+											"NOTPAYMONEY": "0.00",
+											"PARTSELFMONEY": "2.78",
+											"DIAGNOSIS_ARRAYS": {
+												"DIAGNOSIS_ARRAY": [
+													{
+														"FEECODE": "CZ101",
+														"DIAGNOSISNAME": "盐酸罗哌卡因注射液",
+														"FEEAMOUNT": "3.80",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "0.38",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ101",
+														"DIAGNOSISNAME": "盐酸肾上腺素注射液",
+														"FEEAMOUNT": "12.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "2.40",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ101",
+														"DIAGNOSISNAME": "甲类无明细",
+														"FEEAMOUNT": "14.20",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0"
+													}
+												]
+											}
+										},
+										{
+											"FEECODE": "CZ106",
+											"FEEMONEY": "150.00",
+											"SELFMONEY": "105.00",
+											"SELFREASON": "普通拔罐治疗自费100% 5.0元;电针(普通电针)(＞20个穴位)自费100% 100.0元",
+											"NOTPAYMONEY": "0.00",
+											"PARTSELFMONEY": "1.04",
+											"DIAGNOSIS_ARRAYS": {
+												"DIAGNOSIS_ARRAY": [
+													{
+														"FEECODE": "CZ106",
+														"DIAGNOSISNAME": "冷冻治疗",
+														"FEEAMOUNT": "10.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "1.00",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ106",
+														"DIAGNOSISNAME": "普通拔罐治疗",
+														"FEEAMOUNT": "5.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "5.00",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ106",
+														"DIAGNOSISNAME": "单纯超声波治疗",
+														"FEEAMOUNT": "4.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "0.04",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ106",
+														"DIAGNOSISNAME": "电针(普通电针)(＞20个穴位)",
+														"FEEAMOUNT": "100.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "100.00",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ106",
+														"DIAGNOSISNAME": "甲类无明细",
+														"FEEAMOUNT": "31.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0"
+													}
+												]
+											}
+										},
+										{
+											"FEECODE": "CZ108",
+											"FEEMONEY": "50.00",
+											"SELFMONEY": "0.00",
+											"NOTPAYMONEY": "0.00",
+											"PARTSELFMONEY": "0.00"
+										}
+									]
+								}
+							}
+						},
+						"HOSPITALRECEIPTS": {
+							"HOSPITALRECEIPT_ARRAY": {
+								"FEETYPE": "C",
+								"RECEIPTNO": "202405231040",
+								"HOSPITALCODE": "QTYD",
+								"HOSPSTARTDATE": "2024-05-12",
+								"HOSPENDDATE": "2024-05-12",
+								"HOSPITALSTAY": "0",
+								"MEDICALPAYMENT": "104.00",
+								"INSURANCEPAYMENT": "0.00",
+								"SELFPAY1": "0.00",
+								"SELFPAY2": "11.00",
+								"SUMPAY": "130.00",
+								"SELFPAYSUM": "15.00",
+								"NOTPAYSUM": "0.00",
+								"NOTREDAY": "0",
+								"ISHISINJ": "N",
+								"CHEQUETYPE": "1",
+								"ZJWPAYAMOUNT": "0",
+								"COSTITEM_ARRAYS": {
+									"COSTITEM_ARRAY": [
+										{
+											"FEECODE": "CZ201",
+											"FEEMONEY": "100.00",
+											"SELFMONEY": "0.00",
+											"NOTPAYMONEY": "0.00",
+											"PARTSELFMONEY": "10.00",
+											"DIAGNOSIS_ARRAYS": {
+												"DIAGNOSIS_ARRAY": {
+													"FEECODE": "CZ201",
+													"DIAGNOSISNAME": "古塞奇尤单抗注射液",
+													"FEEAMOUNT": "100.00",
+													"CNT": "1",
+													"OWNPAYAMOUNT": "0",
+													"PARTOWNPAYAMOUNT": "10.00",
+													"PARTOWNPAYRATE": "0",
+													"UNREASONABLEFEE": "0.00"
+												}
+											}
+										},
+										{
+											"FEECODE": "CZ207",
+											"FEEMONEY": "30.00",
+											"SELFMONEY": "15.00",
+											"SELFREASON": "痉挛肌治疗自费100% 15.0元",
+											"NOTPAYMONEY": "0.00",
+											"PARTSELFMONEY": "1.00",
+											"DIAGNOSIS_ARRAYS": {
+												"DIAGNOSIS_ARRAY": [
+													{
+														"FEECODE": "CZ207",
+														"DIAGNOSISNAME": "痉挛肌治疗",
+														"FEEAMOUNT": "15.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "15.00",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ207",
+														"DIAGNOSISNAME": "一次性使用无菌注射器",
+														"FEEAMOUNT": "10.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "1.00",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ207",
+														"DIAGNOSISNAME": "甲类无明细",
+														"FEEAMOUNT": "5.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0"
+													}
+												]
+											}
+										}
+									]
+								}
+							}
+						},
+						"BIRTHCLINICRECEIPTS": {
+							"BIRTHCLINICRECEIPT_ARRAY": {
+								"FEETYPE": "E",
+								"RECEIPTNO": "202305231042",
+								"HOSPITALCODE": "QTYD",
+								"CLINICDATE": "2024-05-14",
+								"SUMPAY": "85.00",
+								"SELFPAYSUM": "23.80",
+								"NOTPAYSUM": "0.00",
+								"MEDICALPAYMENT": "58.95",
+								"INSURANCEPAYMENT": "4.00",
+								"SELFPAY1": "0.00",
+								"SELFPAY2": "2.25",
+								"CHEQUETYPE": "1",
+								"ZJWPAYAMOUNT": "0",
+								"COSTITEM_ARRAYS": {
+									"COSTITEM_ARRAY": [
+										{
+											"FEECODE": "CZ101",
+											"FEEMONEY": "50.00",
+											"SELFMONEY": "8.80",
+											"SELFREASON": "盐酸罗哌卡因注射液自费100% 3.8元;盐酸左西替利嗪片自费100% 5.0元",
+											"NOTPAYMONEY": "0.00",
+											"PARTSELFMONEY": "0.75",
+											"DIAGNOSIS_ARRAYS": {
+												"DIAGNOSIS_ARRAY": [
+													{
+														"FEECODE": "CZ101",
+														"DIAGNOSISNAME": "盐酸罗哌卡因注射液",
+														"FEEAMOUNT": "3.80",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "3.80",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ101",
+														"DIAGNOSISNAME": "盐酸左西替利嗪片",
+														"FEEAMOUNT": "5.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "5.00",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ101",
+														"DIAGNOSISNAME": "盐酸肾上腺素注射液",
+														"FEEAMOUNT": "2.50",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "0.25",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ101",
+														"DIAGNOSISNAME": "蓖麻油(西药)合剂",
+														"FEEAMOUNT": "10.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "0.50",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ101",
+														"DIAGNOSISNAME": "甲类无明细",
+														"FEEAMOUNT": "28.70",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0"
+													}
+												]
+											}
+										},
+										{
+											"FEECODE": "CZ103",
+											"FEEMONEY": "15.00",
+											"SELFMONEY": "0.00",
+											"NOTPAYMONEY": "0.00",
+											"PARTSELFMONEY": "1.50",
+											"DIAGNOSIS_ARRAYS": {
+												"DIAGNOSIS_ARRAY": {
+													"FEECODE": "CZ103",
+													"DIAGNOSISNAME": "中草药乙类",
+													"FEEAMOUNT": "15.00",
+													"CNT": "1",
+													"OWNPAYAMOUNT": "0",
+													"PARTOWNPAYAMOUNT": "1.50",
+													"PARTOWNPAYRATE": "0",
+													"UNREASONABLEFEE": "0.00"
+												}
+											}
+										},
+										{
+											"FEECODE": "CZ102",
+											"FEEMONEY": "20.00",
+											"SELFMONEY": "15.00",
+											"SELFREASON": "羚羊感冒胶囊自费100% 15.0元",
+											"NOTPAYMONEY": "0.00",
+											"PARTSELFMONEY": "0.00",
+											"DIAGNOSIS_ARRAYS": {
+												"DIAGNOSIS_ARRAY": [
+													{
+														"FEECODE": "CZ102",
+														"DIAGNOSISNAME": "羚羊感冒胶囊",
+														"FEEAMOUNT": "15.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "15.00",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ102",
+														"DIAGNOSISNAME": "甲类无明细",
+														"FEEAMOUNT": "5.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0"
+													}
+												]
+											}
+										}
+									]
+								}
+							}
+						},
+						"BIRTHHOSPITALRECEIPTS": {
+							"BIRTHHOSPITALRECEIPT_ARRAY": {
+								"FEETYPE": "F",
+								"RECEIPTNO": "202305231043",
+								"HOSPITALCODE": "QTYD",
+								"HOSPSTARTDATE": "2024-05-15",
+								"HOSPENDDATE": "2024-05-15",
+								"HOSPITALSTAY": "0",
+								"NOTREDAY": "0",
+								"SUMPAY": "110.00",
+								"SELFPAYSUM": "14.00",
+								"NOTPAYSUM": "0.00",
+								"MEDICALPAYMENT": "87.00",
+								"INSURANCEPAYMENT": "6.00",
+								"SELFPAY1": "0.00",
+								"SELFPAY2": "9.00",
+								"CHEQUETYPE": "1",
+								"ZJWPAYAMOUNT": "0",
+								"COSTITEM_ARRAYS": {
+									"COSTITEM_ARRAY": [
+										{
+											"FEECODE": "CZ201",
+											"FEEMONEY": "100.00",
+											"SELFMONEY": "9.00",
+											"SELFREASON": "西药诊疗丙类一自费100% 5.0元;西药诊疗丙类二自费100% 4.0元",
+											"NOTPAYMONEY": "0.00",
+											"PARTSELFMONEY": "5.00",
+											"DIAGNOSIS_ARRAYS": {
+												"DIAGNOSIS_ARRAY": [
+													{
+														"FEECODE": "CZ201",
+														"DIAGNOSISNAME": "西药诊疗乙类一",
+														"FEEAMOUNT": "10.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "1.00",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ201",
+														"DIAGNOSISNAME": "西药诊疗乙类二",
+														"FEEAMOUNT": "15.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "3.00",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ201",
+														"DIAGNOSISNAME": "西药诊疗乙类三",
+														"FEEAMOUNT": "10.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "1.00",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ201",
+														"DIAGNOSISNAME": "西药诊疗丙类一",
+														"FEEAMOUNT": "5.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "5.00",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ201",
+														"DIAGNOSISNAME": "西药诊疗丙类二",
+														"FEEAMOUNT": "4.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "4.00",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ201",
+														"DIAGNOSISNAME": "甲类无明细",
+														"FEEAMOUNT": "56.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0"
+													}
+												]
+											}
+										},
+										{
+											"FEECODE": "CZ203",
+											"FEEMONEY": "10.00",
+											"SELFMONEY": "5.00",
+											"SELFREASON": "中草药丙类一自费100% 5.0元",
+											"NOTPAYMONEY": "0.00",
+											"PARTSELFMONEY": "4.00",
+											"DIAGNOSIS_ARRAYS": {
+												"DIAGNOSIS_ARRAY": [
+													{
+														"FEECODE": "CZ203",
+														"DIAGNOSISNAME": "中草药乙类一",
+														"FEEAMOUNT": "4.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "4.00",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ203",
+														"DIAGNOSISNAME": "中草药丙类一",
+														"FEEAMOUNT": "5.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "5.00",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ203",
+														"DIAGNOSISNAME": "甲类无明细",
+														"FEEAMOUNT": "1.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0"
+													}
+												]
+											}
+										}
+									]
+								}
+							}
+						},
+						"COOPERATIONHOSPITALRECEIPTS": {
+							"COOPERATIONHOSPITALRECEIPT_ARRAY": {
+								"FEETYPE": "G",
+								"RECEIPTNO": "202305231044",
+								"HOSPITALCODE": "QTYD",
+								"HOSPSTARTDATE": "2024-05-16",
+								"HOSPENDDATE": "2024-05-16",
+								"HOSPITALSTAY": "0",
+								"NRCMSREIMBURSEMENTMONEY": "5.00",
+								"NOTREDAY": "0",
+								"SUMPAY": "60.00",
+								"SELFPAYSUM": "15.00",
+								"NOTPAYSUM": "0.00",
+								"MEDICALPAYMENT": "41.50",
+								"INSURANCEPAYMENT": "5.00",
+								"SELFPAY1": "0.00",
+								"SELFPAY2": "3.50",
+								"ISHISINJ": "N",
+								"CHEQUETYPE": "1",
+								"ZJWPAYAMOUNT": "0",
+								"COSTITEM_ARRAYS": {
+									"COSTITEM_ARRAY": [
+										{
+											"FEECODE": "CZ202",
+											"FEEMONEY": "50.00",
+											"SELFMONEY": "5.00",
+											"SELFREASON": "中成药自费一自费100% 5.0元",
+											"NOTPAYMONEY": "0.00",
+											"PARTSELFMONEY": "3.50",
+											"DIAGNOSIS_ARRAYS": {
+												"DIAGNOSIS_ARRAY": [
+													{
+														"FEECODE": "CZ202",
+														"DIAGNOSISNAME": "中成药诊疗一",
+														"FEEAMOUNT": "15.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "1.50",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ202",
+														"DIAGNOSISNAME": "中成药自费一",
+														"FEEAMOUNT": "5.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "5.00",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ202",
+														"DIAGNOSISNAME": "中成药诊疗二",
+														"FEEAMOUNT": "10.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "2.00",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ202",
+														"DIAGNOSISNAME": "甲类无明细",
+														"FEEAMOUNT": "20.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0"
+													}
+												]
+											}
+										},
+										{
+											"FEECODE": "CZ205",
+											"FEEMONEY": "10.00",
+											"SELFMONEY": "10.00",
+											"SELFREASON": "诊疗自费自费100% 10.0元",
+											"NOTPAYMONEY": "0.00",
+											"PARTSELFMONEY": "0.00",
+											"DIAGNOSIS_ARRAYS": {
+												"DIAGNOSIS_ARRAY": {
+													"FEECODE": "CZ205",
+													"DIAGNOSISNAME": "诊疗自费",
+													"FEEAMOUNT": "10.00",
+													"CNT": "1",
+													"OWNPAYAMOUNT": "10.00",
+													"PARTOWNPAYAMOUNT": "0",
+													"PARTOWNPAYRATE": "0",
+													"UNREASONABLEFEE": "0.00"
+												}
+											}
+										}
+									]
+								}
+							}
+						},
+						"ORDINARYCLINICRECEIPTS": {
+							"ORDINARYCLINICRECEIPT_ARRAY": {
+								"FEETYPE": "H",
+								"RECEIPTNO": "202405231045",
+								"HOSPITALCODE": "QTYD",
+								"CLINICDATE": "2024-05-17",
+								"SUMPAY": "35.00",
+								"SELFPAYSUM": "4.00",
+								"NOTPAYSUM": "0.00",
+								"MEDICALPAYMENT": "22.00",
+								"INSURANCEPAYMENT": "0.00",
+								"SELFPAY1": "0.00",
+								"SELFPAY2": "9.00",
+								"ISHISINJ": "N",
+								"CHEQUETYPE": "1",
+								"ZJWPAYAMOUNT": "0",
+								"COSTITEM_ARRAYS": {
+									"COSTITEM_ARRAY": [
+										{
+											"FEECODE": "CZ101",
+											"FEEMONEY": "25.00",
+											"SELFMONEY": "0.00",
+											"NOTPAYMONEY": "0.00",
+											"PARTSELFMONEY": "4.00",
+											"DIAGNOSIS_ARRAYS": {
+												"DIAGNOSIS_ARRAY": [
+													{
+														"FEECODE": "CZ101",
+														"DIAGNOSISNAME": "乙类西药一",
+														"FEEAMOUNT": "15.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "3.00",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ101",
+														"DIAGNOSISNAME": "乙类西药二",
+														"FEEAMOUNT": "10.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "1.00",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													}
+												]
+											}
+										},
+										{
+											"FEECODE": "CZ102",
+											"FEEMONEY": "10.00",
+											"SELFMONEY": "4.00",
+											"SELFREASON": "丙类中成药自费100% 4.0元",
+											"NOTPAYMONEY": "0.00",
+											"PARTSELFMONEY": "5.00",
+											"DIAGNOSIS_ARRAYS": {
+												"DIAGNOSIS_ARRAY": [
+													{
+														"FEECODE": "CZ102",
+														"DIAGNOSISNAME": "乙类中草药一",
+														"FEEAMOUNT": "5.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "5.00",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ102",
+														"DIAGNOSISNAME": "丙类中成药",
+														"FEEAMOUNT": "4.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "4.00",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ102",
+														"DIAGNOSISNAME": "甲类无明细",
+														"FEEAMOUNT": "1.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0"
+													}
+												]
+											}
+										}
+									]
+								}
+							}
+						},
+						"ORDINARYHOSPITALRECEIPTS": {
+							"ORDINARYHOSPITALRECEIPT_ARRAY": {
+								"FEETYPE": "I",
+								"RECEIPTNO": "202405231110",
+								"HOSPITALCODE": "QTYD",
+								"HOSPSTARTDATE": "2024-05-20",
+								"HOSPENDDATE": "2024-05-20",
+								"HOSPITALSTAY": "0",
+								"NOTREDAY": "0",
+								"SUMPAY": "60.00",
+								"SELFPAYSUM": "5.00",
+								"NOTPAYSUM": "0.00",
+								"MEDICALPAYMENT": "39.50",
+								"INSURANCEPAYMENT": "0.00",
+								"SELFPAY1": "0.00",
+								"SELFPAY2": "15.50",
+								"ISHISINJ": "N",
+								"CHEQUETYPE": "1",
+								"ZJWPAYAMOUNT": "0",
+								"COSTITEM_ARRAYS": {
+									"COSTITEM_ARRAY": [
+										{
+											"FEECODE": "CZ202",
+											"FEEMONEY": "50.00",
+											"SELFMONEY": "5.00",
+											"SELFREASON": "丙类中成药自费100% 5.0元",
+											"NOTPAYMONEY": "0.00",
+											"PARTSELFMONEY": "5.50",
+											"DIAGNOSIS_ARRAYS": {
+												"DIAGNOSIS_ARRAY": [
+													{
+														"FEECODE": "CZ202",
+														"DIAGNOSISNAME": "乙类中成药一",
+														"FEEAMOUNT": "10.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "1.00",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ202",
+														"DIAGNOSISNAME": "丙类中成药",
+														"FEEAMOUNT": "5.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "5.00",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ202",
+														"DIAGNOSISNAME": "乙类中成药二",
+														"FEEAMOUNT": "15.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "1.50",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ202",
+														"DIAGNOSISNAME": "乙类中成药三",
+														"FEEAMOUNT": "15.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "3.00",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ202",
+														"DIAGNOSISNAME": "甲类无明细",
+														"FEEAMOUNT": "5.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0"
+													}
+												]
+											}
+										},
+										{
+											"FEECODE": "CZ206",
+											"FEEMONEY": "10.00",
+											"SELFMONEY": "0.00",
+											"NOTPAYMONEY": "0.00",
+											"PARTSELFMONEY": "10.00",
+											"DIAGNOSIS_ARRAYS": {
+												"DIAGNOSIS_ARRAY": {
+													"FEECODE": "CZ206",
+													"DIAGNOSISNAME": "乙类检查一",
+													"FEEAMOUNT": "10.00",
+													"CNT": "1",
+													"OWNPAYAMOUNT": "0",
+													"PARTOWNPAYAMOUNT": "10.00",
+													"PARTOWNPAYRATE": "0",
+													"UNREASONABLEFEE": "0.00"
+												}
+											}
+										}
+									]
+								}
+							}
+						},
+						"CLINICLNPSES": {
+							"CLINICLNPSE_ARRAY": {
+								"FEETYPE": "O",
+								"RECEIPTNO": "202405231114",
+								"HOSPITALCODE": "QTYD",
+								"CLINICDATE": "2024-05-20",
+								"MEDICALPAYMENT": "92.40",
+								"INSURANCEPAYMENT": "6.00",
+								"SELFPAY1": "0.00",
+								"SELFPAY2": "3.60",
+								"SUMPAY": "110.00",
+								"SELFPAYSUM": "14.00",
+								"NOTPAYSUM": "0.00",
+								"ISHISINJ": "N",
+								"COSTITEM_ARRAYS": {
+									"COSTITEM_ARRAY": [
+										{
+											"FEECODE": "CZ101",
+											"FEEMONEY": "100.00",
+											"SELFMONEY": "9.00",
+											"SELFREASON": "丙类药一自费100% 4.0元;丙类药二自费100% 5.0元",
+											"NOTPAYMONEY": "0.00",
+											"PARTSELFMONEY": "1.50",
+											"DIAGNOSIS_ARRAYS": {
+												"DIAGNOSIS_ARRAY": [
+													{
+														"FEECODE": "CZ101",
+														"DIAGNOSISNAME": "乙类药一",
+														"FEEAMOUNT": "10.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "1.00",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ101",
+														"DIAGNOSISNAME": "乙类药二",
+														"FEEAMOUNT": "5.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "0.50",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ101",
+														"DIAGNOSISNAME": "丙类药一",
+														"FEEAMOUNT": "4.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "4.00",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ101",
+														"DIAGNOSISNAME": "丙类药二",
+														"FEEAMOUNT": "5.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "5.00",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ101",
+														"DIAGNOSISNAME": "甲类无明细",
+														"FEEAMOUNT": "76.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0"
+													}
+												]
+											}
+										},
+										{
+											"FEECODE": "CZ105",
+											"FEEMONEY": "10.00",
+											"SELFMONEY": "5.00",
+											"SELFREASON": "丙类检查一自费100% 5.0元",
+											"NOTPAYMONEY": "0.00",
+											"PARTSELFMONEY": "2.10",
+											"DIAGNOSIS_ARRAYS": {
+												"DIAGNOSIS_ARRAY": [
+													{
+														"FEECODE": "CZ105",
+														"DIAGNOSISNAME": "乙类检查一",
+														"FEEAMOUNT": "2.10",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "2.10",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ105",
+														"DIAGNOSISNAME": "丙类检查一",
+														"FEEAMOUNT": "5.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "5.00",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ105",
+														"DIAGNOSISNAME": "甲类无明细",
+														"FEEAMOUNT": "2.90",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0"
+													}
+												]
+											}
+										}
+									]
+								}
+							}
+						},
+						"COMMONCLINICMEDICALS": {
+							"COMMONCLINICMEDICAL_ARRAY": {
+								"FEETYPE": "P",
+								"RECEIPTNO": "202405231117",
+								"HOSPITALCODE": "QTYD",
+								"CLINICDATE": "2024-05-01",
+								"MEDICALPAYMENT": "115.00",
+								"INSURANCEPAYMENT": "10.00",
+								"SELFPAY1": "0.00",
+								"SELFPAY2": "1.00",
+								"SUMPAY": "120.00",
+								"SELFPAYSUM": "4.00",
+								"NOTPAYSUM": "0.00",
+								"COSTITEM_ARRAYS": {
+									"COSTITEM_ARRAY": [
+										{
+											"FEECODE": "CZ101",
+											"FEEMONEY": "90.00",
+											"SELFMONEY": "0.00",
+											"NOTPAYMONEY": "0.00",
+											"PARTSELFMONEY": "0.00"
+										},
+										{
+											"FEECODE": "CZ106",
+											"FEEMONEY": "30.00",
+											"SELFMONEY": "4.00",
+											"SELFREASON": "诊疗丙自费100% 4.0元",
+											"NOTPAYMONEY": "0.00",
+											"PARTSELFMONEY": "1.00",
+											"DIAGNOSIS_ARRAYS": {
+												"DIAGNOSIS_ARRAY": [
+													{
+														"FEECODE": "CZ106",
+														"DIAGNOSISNAME": "诊疗乙",
+														"FEEAMOUNT": "10.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "1.00",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ106",
+														"DIAGNOSISNAME": "诊疗丙",
+														"FEEAMOUNT": "4.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "4.00",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0.00"
+													},
+													{
+														"FEECODE": "CZ106",
+														"DIAGNOSISNAME": "甲类无明细",
+														"FEEAMOUNT": "16.00",
+														"CNT": "1",
+														"OWNPAYAMOUNT": "0",
+														"PARTOWNPAYAMOUNT": "0",
+														"PARTOWNPAYRATE": "0",
+														"UNREASONABLEFEE": "0"
+													}
+												]
+											}
+										}
+									]
+								}
+							}
+						}
+					},
+					"PayInfos": {
+						"PayInfo": {
+							"InsuredNo": "01002925316",
+							"BnfNo": "1",
+							"RelationtoInsured": "00",
+							"BnfName": "多全包九",
+							"BnfSex": "0",
+							"BnfBirthday": "2000-01-19",
+							"BnfIdType": "0",
+							"BnfIdNo": "450201200001196330",
+							"BnfEffectiveDate": "2034-06-13",
+							"BnfEffetiveDateStart": "2024-06-13",
+							"IdEffectiveDateIsLongType": "1",
+							"BnfPhone": "18535951294",
+							"BnfAddress": "测试",
+							"RelationToPayee": "30",
+							"PayeeName": "梁子贤",
+							"PayeeSex": "0",
+							"PayeeBirthday": "2001-02-22",
+							"PayeeIDType": "0",
+							"PayeeIDNo": "140826200102220018",
+							"PayEffectiveDate": "2034-06-13",
+							"EffpayeeDateStart": "2024-06-13",
+							"IdEffPayeeDateIsLongType": "1",
+							"PayeePhone": "18535951294",
+							"PayeeAddress": "测试",
+							"GetMoney": "0",
+							"CasePayMode": "4",
+							"BankCode": "02",
+							"BankAccNo": "6269162846896911",
+							"AccName": "梁子贤"
+						}
+					},
+					"ImageInfos": {
+						"Image": [
+							{
+								"SubType": "3054",
+								"NumPages": "11",
+								"PageInfos": {
+									"Page": [
+										{
+											"PageCode": "1",
+											"PageName": "YB_CLAIM_202406190003_0011_0001.jpg",
+											"PageSuffix": ".jpg",
+											"PicPath": "Image/YB_CLAIM_202406190003/YB_CLAIM_202406190003_0011_0001.jpg"
+										},
+										{
+											"PageCode": "2",
+											"PageName": "YB_CLAIM_202406190003_0011_0002.jpg",
+											"PageSuffix": ".jpg",
+											"PicPath": "Image/YB_CLAIM_202406190003/YB_CLAIM_202406190003_0011_0002.jpg"
+										},
+										{
+											"PageCode": "3",
+											"PageName": "YB_CLAIM_202406190003_0011_0003.jpg",
+											"PageSuffix": ".jpg",
+											"PicPath": "Image/YB_CLAIM_202406190003/YB_CLAIM_202406190003_0011_0003.jpg"
+										},
+										{
+											"PageCode": "4",
+											"PageName": "YB_CLAIM_202406190003_0011_0004.jpg",
+											"PageSuffix": ".jpg",
+											"PicPath": "Image/YB_CLAIM_202406190003/YB_CLAIM_202406190003_0011_0004.jpg"
+										},
+										{
+											"PageCode": "5",
+											"PageName": "YB_CLAIM_202406190003_0011_0005.jpg",
+											"PageSuffix": ".jpg",
+											"PicPath": "Image/YB_CLAIM_202406190003/YB_CLAIM_202406190003_0011_0005.jpg"
+										},
+										{
+											"PageCode": "6",
+											"PageName": "YB_CLAIM_202406190003_0011_0006.jpg",
+											"PageSuffix": ".jpg",
+											"PicPath": "Image/YB_CLAIM_202406190003/YB_CLAIM_202406190003_0011_0006.jpg"
+										},
+										{
+											"PageCode": "7",
+											"PageName": "YB_CLAIM_202406190003_0011_0007.jpg",
+											"PageSuffix": ".jpg",
+											"PicPath": "Image/YB_CLAIM_202406190003/YB_CLAIM_202406190003_0011_0007.jpg"
+										},
+										{
+											"PageCode": "8",
+											"PageName": "YB_CLAIM_202406190003_0011_0008.jpg",
+											"PageSuffix": ".jpg",
+											"PicPath": "Image/YB_CLAIM_202406190003/YB_CLAIM_202406190003_0011_0008.jpg"
+										},
+										{
+											"PageCode": "9",
+											"PageName": "YB_CLAIM_202406190003_0011_0009.jpg",
+											"PageSuffix": ".jpg",
+											"PicPath": "Image/YB_CLAIM_202406190003/YB_CLAIM_202406190003_0011_0009.jpg"
+										},
+										{
+											"PageCode": "10",
+											"PageName": "YB_CLAIM_202406190003_0011_0010.jpg",
+											"PageSuffix": ".jpg",
+											"PicPath": "Image/YB_CLAIM_202406190003/YB_CLAIM_202406190003_0011_0010.jpg"
+										},
+										{
+											"PageCode": "11",
+											"PageName": "YB_CLAIM_202406190003_0011_0011.jpg",
+											"PageSuffix": ".jpg",
+											"PicPath": "Image/YB_CLAIM_202406190003/YB_CLAIM_202406190003_0011_0011.jpg"
+										}
+									]
+								}
+							}
+						]
+					}
+				}
+			}
+		}
+	}
+}

@@ -1,0 +1,5 @@
+id: user_create
+sql: |
+  INSERT INTO users (id, name, role_id) 
+  VALUES (:id, :name, :role_id)
+mappedClassName: com.bone.metadata.sdk.test.domain.User

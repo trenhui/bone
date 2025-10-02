@@ -1,0 +1,12 @@
+name: "MySQLMetadataPlugin"
+version: "1.2.0"
+class: "com.bone.metadata.plugin.mysql.MySQLPlugin"
+description: "MySQL元数据集成插件"
+dependencies:
+  - "CommonUtils@1.0+"
+permissions:
+  - "DB_ACCESS"
+  - "NETWORK_CONNECT"
+config:
+  jdbc.url: "jdbc:mysql://localhost:3306"
+  max.pool.size: 20

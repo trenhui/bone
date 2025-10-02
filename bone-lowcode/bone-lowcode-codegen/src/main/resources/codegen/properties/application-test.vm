@@ -1,0 +1,75 @@
+#################### 数据库相关配置 ####################
+spring:
+    datasource:
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        url: ${dataSourceUrl}&useSSL=false&serverTimezone=Asia/Shanghai&autoReconnect=true&allowPublicKeyRetrieval=true&failOverReadOnly=false&maxReconnects=3
+        username: ${dataSourceUsername}
+        password: ${dataSourcePassword}
+
+        type:
+            com.zaxxer.hikari.HikariDataSource
+        hikari:
+            minimum-idle: 5
+            idle-timeout: 50000
+            maximum-pool-size: 50
+            auto-commit: true
+
+
+    # Spring Data Redis（开发：单机）
+    data:
+        redis:
+            host: 121.199.73.59
+            port: 6379
+            # password: yourStrongP@ss
+            timeout: 5s
+            lettuce:
+                pool:
+                    max-active: 32
+                    max-idle: 16
+                    min-idle: 2
+
+    # Redisson（开发：单机，内联配置，不用外部文件）
+    redis:
+        redisson:
+            config: |
+                singleServerConfig:
+                  address: "redis://121.199.73.59:6379"
+                  # password: "yourStrongP@ss"
+                  database: 0
+                  connectionMinimumIdleSize: 8
+                  connectionPoolSize: 32
+                  idleConnectionTimeout: 10000
+                  connectTimeout: 10000
+                  timeout: 10000
+                  retryAttempts: 3
+                  retryInterval: 1500
+                threads: 0
+                nettyThreads: 0
+                codec: !<org.redisson.codec.JsonJacksonCodec> {}
+
+
+# SQL配置
+sql:
+    executor:
+        allow:
+            dml: true
+    template:
+        path: classpath:/sql-templates/
+    database:
+        type: MYSQL # 自动检测（可指定H2、MYSQL等）
+
+# 元数据SDK配置
+metadata:
+    sdk:
+        appcode: ${table.moduleName}
+        #    deploymentMode: EMBEDDED
+        deploymentMode: EMBEDDED
+    service:
+        config:
+            remote:
+                auth-mode: api-key
+                endpoint: http://localhost:9001
+                token: test-token
+                timeout: 3000
+            embedded:
+                cache-ttl: 600

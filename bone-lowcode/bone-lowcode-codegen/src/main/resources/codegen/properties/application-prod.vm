@@ -1,0 +1,86 @@
+#################### 数据库相关配置 ####################
+spring:
+    datasource:
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        url: ${dataSourceUrl}&useSSL=false&serverTimezone=Asia/Shanghai&autoReconnect=true&allowPublicKeyRetrieval=true&failOverReadOnly=false&maxReconnects=3
+        username: ${dataSourceUsername}
+        password: ${dataSourcePassword}
+
+        type:
+            com.zaxxer.hikari.HikariDataSource
+        hikari:
+            minimum-idle: 5
+            idle-timeout: 50000
+            maximum-pool-size: 50
+            auto-commit: true
+
+
+    # Spring Data Redis（生产：集群）
+    data:
+        redis:
+            timeout: 5s
+            cluster:
+                nodes:
+                    - 10.0.0.11:6379
+                    - 10.0.0.12:6379
+                    - 10.0.0.13:6379
+            # username: default            # 如使用 ACL
+            # password: yourStrongP@ss
+            lettuce:
+                pool:
+                    max-active: 64
+                    max-idle: 32
+                    min-idle: 4
+
+    # Redisson（生产：集群，内联配置）
+    redis:
+        redisson:
+            config: |
+                clusterServersConfig:
+                  # 如启用 TLS，把 redis:// 改 rediss://
+                  nodeAddresses:
+                    - "redis://10.0.0.11:6379"
+                    - "redis://10.0.0.12:6379"
+                    - "redis://10.0.0.13:6379"
+                  # password: "yourStrongP@ss"    # 有密码/ACL时必填
+                  scanInterval: 1000              # 拓扑刷新间隔(ms)
+                  readMode: "SLAVE"               # 读从库（或 MASTER_SLAVE）
+                  subscriptionMode: "SLAVE"       # 订阅从库
+                  idleConnectionTimeout: 10000
+                  connectTimeout: 10000
+                  timeout: 10000
+                  retryAttempts: 3
+                  retryInterval: 1500
+                  failedSlaveReconnectionInterval: 3000
+                  failedSlaveCheckInterval: 60000
+                  pingConnectionInterval: 30000
+                  keepAlive: true
+                threads: 0
+                nettyThreads: 0
+                codec: !<org.redisson.codec.JsonJacksonCodec> {}
+
+# SQL配置
+sql:
+    executor:
+        allow:
+            dml: true
+    template:
+        path: classpath:/sql-templates/
+    database:
+        type: MYSQL # 自动检测（可指定H2、MYSQL等）
+
+# 元数据SDK配置
+metadata:
+    sdk:
+        appcode: ${table.moduleName}
+        #    deploymentMode: EMBEDDED
+        deploymentMode: EMBEDDED
+    service:
+        config:
+            remote:
+                auth-mode: api-key
+                endpoint: http://localhost:9001
+                token: test-token
+                timeout: 3000
+            embedded:
+                cache-ttl: 600

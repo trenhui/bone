@@ -1,0 +1,6 @@
+id: user_update
+sql: |
+  UPDATE users 
+  SET name = :name, role_id = :role_id 
+  WHERE id = :id
+mappedClassName: com.bone.metadata.sdk.test.domain.User

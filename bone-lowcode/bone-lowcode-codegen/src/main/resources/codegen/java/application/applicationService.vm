@@ -1,0 +1,59 @@
+package ${table.packgeName}.application;
+
+import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import com.bone.core.result.PageResult;
+
+import ${table.packgeName}.application.converter.${table.className}Converter;
+import ${table.packgeName}.application.dto.${table.className}DTO;
+import ${table.packgeName}.application.dto.query.${table.className}PageQuery;
+import ${table.packgeName}.application.dto.query.${table.className}Query;
+#if (${modelType} == "1")
+import ${table.packgeName}.sdk.model.${table.className};
+#elseif (${modelType} == "2")
+import ${table.packgeName}.domain.model.${table.className};
+#end
+import ${table.packgeName}.domain.service.${table.className}Service;
+
+/**
+ * ${table.classComment}Application Service
+ */
+@Service
+public class ${table.className}ApplicationService {
+    private final ${table.className}Service ${classNameVar}Service;
+    private final ${table.className}Converter ${classNameVar}Converter;
+
+    @Autowired
+    public ${table.className}ApplicationService(${table.className}Service ${classNameVar}Service, ${table.className}Converter ${classNameVar}Converter) {
+        this.${classNameVar}Service = ${classNameVar}Service;
+        this.${classNameVar}Converter = ${classNameVar}Converter;
+    }
+
+    public Long create${table.className}(${table.className}DTO ${classNameVar}Dto) {
+
+        return ${classNameVar}Service.create${table.className}(${classNameVar}Converter.toEntity(${classNameVar}Dto));
+    }
+
+    public ${table.className}DTO get${table.className}(Long id) {
+        return ${classNameVar}Converter.toDto(${classNameVar}Service.get${table.className}(id));
+    }
+
+    public void update${table.className}(${table.className}DTO ${classNameVar}Dto) {
+        ${classNameVar}Service.update${table.className}(${classNameVar}Converter.toEntity(${classNameVar}Dto));
+    }
+
+    public void delete${table.className}(Long id) {
+        ${classNameVar}Service.delete${table.className}(id);
+    }
+
+    public List<${table.className}DTO> query${table.className}(${table.className}Query ${classNameVar}Query) {
+        List<${table.className}> ${classNameVar}list = ${classNameVar}Service.query${table.className}(${classNameVar}Query);
+        return ${classNameVar}Converter.toDtoList(${classNameVar}list);
+    }
+
+    public PageResult<${table.className}DTO> query${table.className}Page(${table.className}PageQuery ${classNameVar}PageQuery) {
+        PageResult<${table.className}> ${classNameVar}PageResult = ${classNameVar}Service.query${table.className}Page(${classNameVar}PageQuery);
+        return ${classNameVar}Converter.toPageDto(${classNameVar}PageResult);
+    }
+}

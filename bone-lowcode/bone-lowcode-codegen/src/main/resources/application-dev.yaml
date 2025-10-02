@@ -1,0 +1,23 @@
+--- #################### 数据库相关配置 ####################
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://rds260kj5i2879nym9a9100.mysql.rds.aliyuncs.com:3306/ruoyi-vue-pro
+    username: yudao
+    password: b16k_OZtM
+
+    type:
+      com.zaxxer.hikari.HikariDataSource
+    hikari:
+      minimum-idle: 5
+      idle-timeout: 50000
+      maximum-pool-size: 50
+      auto-commit: true
+
+metadata:
+  sdk:
+    appcode: tpa
+    open: true
+    secret: vxOFX0Kt6Rl6YSbicgYlfg==
+    sqlpath: testsql/
+    url: http://metabata.dev6.pukangbao.com

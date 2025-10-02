@@ -1,0 +1,52 @@
+package com.bone.metadata.sdk.support.util;
+
+import java.lang.invoke.SerializedLambda;
+import java.lang.reflect.Method;
+import java.util.function.Function;
+
+public class SqlUtil {
+    public static <T, R> String getFieldName(Function<T, R> keyExtractor) {
+        try {
+            // 获取 SerializedLambda
+            SerializedLambda lambda = resolve(keyExtractor);
+            String methodName = lambda.getImplMethodName();  // 获取方法名，像 'getRoleId'
+
+            // 如果是 getter 方法，去掉 'get' 前缀
+            if (methodName.startsWith("get")) {
+                return methodName.substring(3);  // 去掉 'get' 前缀
+            } else {
+                throw new IllegalArgumentException("Lambda method name is not in the expected format.");
+            }
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Unable to resolve Lambda expression", e);
+        }
+    }
+
+    public static <T> SerializedLambda resolve(Function<T, ?> keyExtractor) {
+        try {
+            // 通过反射获取 'writeReplace' 方法
+            Method writeReplaceMethod = keyExtractor.getClass().getDeclaredMethod("writeReplace");
+            writeReplaceMethod.setAccessible(true);
+            return (SerializedLambda) writeReplaceMethod.invoke(keyExtractor);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Unable to resolve Lambda expression", e);
+        }
+    }
+
+    /**
+     * 将驼峰命名转为蛇形命名。
+     */
+    public static String toSnakeCase(String name) {
+        return name.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
+    }
+
+    public static String toCamelCase(String input) {
+        if (input == null || input.isEmpty()) {
+            return input;
+        }
+        if (input.length() == 1) {
+            return input.toLowerCase();
+        }
+        return Character.toLowerCase(input.charAt(0)) + input.substring(1);
+    }
+}

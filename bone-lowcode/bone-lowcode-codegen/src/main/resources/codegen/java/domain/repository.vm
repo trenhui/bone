@@ -1,0 +1,15 @@
+package ${table.packgeName}.domain.repository;
+
+#if (${modelType} == "1")
+import ${table.packgeName}.sdk.model.${table.className};
+#elseif (${modelType} == "2")
+import ${table.packgeName}.domain.model.${table.className};
+#end
+import com.bone.metadata.sdk.Repository;
+
+/**
+ * ${table.classComment} Repository 接口
+ *
+ */
+public interface ${table.className}Repository extends Repository<${table.className}, Long>{
+}

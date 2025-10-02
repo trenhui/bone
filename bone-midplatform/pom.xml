@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>com.bone.cloud</groupId>
+        <artifactId>bone-boot</artifactId>
+        <version>1.0.0</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+    <modules>
+        <module>bone-account</module>
+        <module>bone-masterdata</module>
+        <module>bone-integration</module>
+    </modules>
+    <artifactId>bone-midplatform</artifactId>
+    <packaging>pom</packaging>
+    <name>${project.artifactId}</name>
+    <description>
+        insurance-middle-platform 样板工程
+    </description>
+</project>

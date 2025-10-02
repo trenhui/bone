@@ -1,0 +1,18 @@
+package ${table.packgeName};
+
+import com.bone.core.extension.EnableExtPoints;
+import com.bone.metadata.sdk.support.config.MetadataSdkProperties;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.annotation.ComponentScan;
+
+@SpringBootApplication
+@ComponentScan(basePackages = {"com.bone.core", "com.bone.metadata.sdk","${table.packgeName}"})
+@EnableConfigurationProperties(MetadataSdkProperties.class)
+@EnableExtPoints
+public class ${modelNameVar}Application {
+    public static void main(String[] args) {
+        SpringApplication.run(${modelNameVar}Application.class, args);
+    }
+}

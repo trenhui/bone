@@ -1,0 +1,6 @@
+id: user_delete
+sql: |
+  UPDATE users 
+  SET deleted = 1
+  WHERE id = :id
+mappedClassName: com.bone.metadata.sdk.test.domain.User

@@ -1,0 +1,10 @@
+id: findActiveUsersPaged
+sql: |
+  SELECT *
+  FROM users u
+  <where>
+    <if test="id != null">
+      AND u.id = :id
+    </if>
+  </where>
+mappedClassName: com.bone.metadata.sdk.test.domain.dto.UserRoleDTO

@@ -1,0 +1,51 @@
+
+
+-- 创建 users 表
+CREATE TABLE users (
+    id BIGINT PRIMARY KEY,
+    name VARCHAR(255),
+    role_id BIGINT,
+    create_time DATETIME,
+    create_by BIGINT,
+    update_time DATETIME,
+    update_by BIGINT,
+    deleted BOOLEAN DEFAULT FALSE
+);
+
+CREATE TABLE roles (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    role_name VARCHAR(50) NOT NULL UNIQUE,
+    description VARCHAR(255)
+);
+ALTER TABLE roles ALTER COLUMN id RESTART WITH 10000;
+
+-- 用户-角色关联表
+CREATE TABLE sys_user_role (
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    role_id BIGINT NOT NULL COMMENT '角色ID',
+    PRIMARY KEY (user_id, role_id)
+);
+
+-- 系统权限表
+CREATE TABLE sys_permission (
+    id BIGINT AUTO_INCREMENT COMMENT '主键ID',
+    biz_identity_code VARCHAR(50) NOT NULL COMMENT '业务身份',
+    perm_name VARCHAR(50) NOT NULL COMMENT '权限名称',
+    perm_code VARCHAR(100) NOT NULL COMMENT '权限标识',
+    perm_type TINYINT NOT NULL COMMENT '权限类型(1:菜单 2:按钮 3:接口)',
+    parent_id BIGINT COMMENT '父权限ID',
+    path VARCHAR(200) COMMENT '访问路径',
+    component VARCHAR(200) COMMENT '前端组件',
+    icon VARCHAR(50) COMMENT '图标',
+    sort_order INT DEFAULT 0 COMMENT '排序号',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    CONSTRAINT uk_perm_code UNIQUE (perm_code)
+);
+
+-- 角色-权限关联表
+CREATE TABLE sys_role_permission (
+    role_id BIGINT NOT NULL COMMENT '角色ID',
+    perm_id BIGINT NOT NULL COMMENT '权限ID',
+    PRIMARY KEY (role_id, perm_id)
+);
