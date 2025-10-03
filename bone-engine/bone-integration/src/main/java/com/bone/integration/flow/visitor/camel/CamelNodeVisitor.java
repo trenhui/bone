@@ -6,7 +6,6 @@ import com.bone.integration.flow.visitor.INodeVisitor;
 import com.bone.integration.flow.visitor.camel.builder.BuilderFactory;
 import com.bone.integration.flow.visitor.camel.context.CamelBuilderContext;
 import com.bone.integration.flow.visitor.camel.context.FlowContext;
-import com.bone.lowcode.integration.flow.node.*;
 import com.bone.integration.flow.visitor.camel.builder.CamelNodeBuilder;
 import lombok.Getter;
 import org.apache.camel.CamelContext;

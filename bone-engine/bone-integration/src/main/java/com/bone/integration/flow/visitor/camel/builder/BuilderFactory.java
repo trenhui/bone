@@ -2,8 +2,6 @@ package com.bone.integration.flow.visitor.camel.builder;
 
 
 import com.bone.integration.flow.node.GraphNode;
-import com.bone.lowcode.integration.flow.visitor.camel.builder.component.*;
-import com.bone.lowcode.integration.flow.visitor.camel.builder.processor.*;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
