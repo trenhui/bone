@@ -5,7 +5,6 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.bone.integration.flow.node.*;
-import com.bone.lowcode.integration.flow.node.*;
 import lombok.Data;
 
 import java.util.*;
