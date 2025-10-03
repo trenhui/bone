@@ -158,14 +158,5 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
-
-        <!-- 添加私有仓库 -->
-        <repository>
-            <id>spic-private</id>
-            <name>SPIC Private Repository</name>
-            <url>http://118.190.19.181:8081/nexus/content/groups/public</url>
-            <releases><enabled>true</enabled></releases>
-            <snapshots><enabled>true</enabled></snapshots> <!-- 允许SNAPSHOT -->
-        </repository>
     </repositories>
 </project>

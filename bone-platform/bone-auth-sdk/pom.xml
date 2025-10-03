@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.bone.cloud</groupId>
-        <artifactId>bone-boot</artifactId>
+        <artifactId>bone-platform</artifactId>
         <version>1.0.0</version>
     </parent>
     <artifactId>bone-auth-sdk</artifactId>
@@ -20,7 +20,7 @@
     <dependencies>
         <dependency>
             <groupId>com.bone.cloud</groupId>
-            <artifactId>bone-core</artifactId>
+            <artifactId>bone-common</artifactId>
         </dependency>
 
         <dependency>

@@ -16,7 +16,7 @@
     <dependencies>
         <dependency>
             <groupId>com.bone.cloud</groupId>
-            <artifactId>bone-core</artifactId>
+            <artifactId>bone-common</artifactId>
             <version>1.0.0</version>
         </dependency>
 

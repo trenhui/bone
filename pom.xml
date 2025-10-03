@@ -9,12 +9,11 @@
     <packaging>pom</packaging>
     <modules>
         <module>bone-parent</module>
+        <module>bone-core</module>
         <module>bone-framework</module>
-        <module>bone-engine</module>
         <module>bone-platform</module>
         <module>bone-services</module>
         <module>bone-sdk</module>
-        <module>bone-starters</module>
         <module>bone-tools</module>
     </modules>
 
@@ -100,7 +99,7 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${maven-compiler-plugin.version}</version>
                     <configuration>
-<!--                        <release>${java.version}</release>-->
+                        <!--                        <release>${java.version}</release>-->
                         <annotationProcessorPaths>
                             <path>
                                 <groupId>org.springframework.boot</groupId>
