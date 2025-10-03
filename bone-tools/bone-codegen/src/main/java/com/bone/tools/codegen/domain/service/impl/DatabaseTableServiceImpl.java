@@ -15,9 +15,9 @@ import com.bone.tools.codegen.domain.service.DataSourceConfigService;
 import com.bone.tools.codegen.domain.service.DatabaseTableService;
 import com.bone.tools.codegen.domain.entity.DataSourceConfigDO;
 import com.bone.tools.codegen.infrastructure.util.JdbcUtils;
+import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.Resource;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;

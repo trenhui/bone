@@ -7,7 +7,7 @@
     <!-- Inherit from parent POM -->
     <parent>
         <groupId>com.bone.cloud</groupId>
-        <artifactId>bone-core</artifactId>
+        <artifactId>bone-framework</artifactId>
         <version>1.0.0</version>
     </parent>
 

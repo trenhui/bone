@@ -22,16 +22,15 @@ import com.bone.tools.codegen.domain.enums.CodegenTemplateTypeEnum;
 import com.bone.tools.codegen.domain.entity.BaseDO;
 import com.bone.tools.codegen.domain.entity.CodegenColumnDO;
 import com.bone.tools.codegen.domain.entity.CodegenTableDO;
-import com.bone.lowcode.codegen.infrastructure.util.*;
 import com.bone.tools.codegen.infrastructure.util.CollectionUtils;
 import com.bone.tools.codegen.infrastructure.util.ObjectUtils;
 import com.bone.tools.codegen.infrastructure.util.StrUtils;
 import com.google.common.collect.Maps;
+import jakarta.annotation.PostConstruct;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.*;
 
 import static cn.hutool.core.map.MapUtil.getStr;

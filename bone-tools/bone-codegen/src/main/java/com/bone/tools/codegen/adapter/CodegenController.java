@@ -8,7 +8,6 @@ import com.bone.core.result.PageResult;
 import com.bone.core.result.Result;
 import com.bone.core.util.BeanUtils;
 import com.bone.tools.codegen.application.CodegenConvert;
-import com.bone.lowcode.codegen.application.dto.*;
 import com.bone.tools.codegen.domain.entity.CodegenColumnDO;
 import com.bone.tools.codegen.domain.entity.CodegenTableDO;
 import com.bone.tools.codegen.domain.entity.DataSourceConfigDO;
