@@ -9,17 +9,21 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <modules>
-        <module>bone-account</module>
-        <module>bone-auth</module>
-        <module>bone-auth-sdk</module>
-        <module>bone-masterdata</module>
-        <module>bone-platform-alert</module>
+        <module>bone-metadata</module>
+        <module>bone-extension</module>
+        <module>bone-integration</module>
+        <module>bone-workflow</module>
     </modules>
-    <artifactId>bone-platform</artifactId>
+    <artifactId>bone-engine</artifactId>
     <packaging>pom</packaging>
 
     <name>${project.artifactId}</name>
     <description>
-        ⚙️ 可独立部署的中台/微服务。
+        核心引擎层，包含四大引擎：
+        bone-metadata: 元数据模型、解析、代码生成。
+        bone-extension: 扩展点、SPI加载、插件管理、生命周期。
+        bone-integration: 连接器、数据转换、路由、流程编排。
+        bone-workflow: BPMN、状态机、规则引擎。
     </description>
+
 </project>
