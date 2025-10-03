@@ -12,9 +12,9 @@ import com.bone.tools.codegen.domain.service.DataSourceConfigService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Resource;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Resource;
 import java.time.format.DateTimeFormatter;
 
 import static com.bone.core.result.Result.success;

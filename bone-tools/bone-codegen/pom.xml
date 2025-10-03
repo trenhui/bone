@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.bone.cloud</groupId>
-        <artifactId>bone-lowcode</artifactId>
+        <artifactId>bone-tools</artifactId>
         <version>1.0.0</version>
     </parent>
     <artifactId>bone-codegen</artifactId>
@@ -17,7 +17,6 @@
         <dependency>
             <groupId>com.bone.cloud</groupId>
             <artifactId>bone-common</artifactId>
-            <version>1.0.0</version>
         </dependency>
 
 

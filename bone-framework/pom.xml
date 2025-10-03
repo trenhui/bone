@@ -17,7 +17,6 @@
     </modules>
     <artifactId>bone-framework</artifactId>
     <packaging>pom</packaging>
-
     <name>${project.artifactId}</name>
     <description>
         核心引擎层，包含四大引擎：

@@ -16,11 +16,11 @@ import com.bone.tools.codegen.domain.service.DataSourceConfigService;
 import com.bone.tools.codegen.domain.entity.DataSourceConfigDO;
 import com.bone.tools.codegen.application.dto.DataSourceConfigSaveRequest;
 import com.bone.tools.codegen.infrastructure.util.JdbcUtils;
+import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 
-import javax.annotation.Resource;
 
 import java.util.List;
 import java.util.Objects;
