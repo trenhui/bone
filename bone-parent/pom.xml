@@ -46,9 +46,8 @@
         <lombok.version>1.18.30</lombok.version>
         <mapstruct.version>1.5.5.Final</mapstruct.version>
         <hutool.version>5.8.22</hutool.version>
-        <easyexcel.version>3.1.5</easyexcel.version> <!-- 修正拼写错误 -->
         <velocity.version>2.3</velocity.version>
-        <easyexcel.verion>4.0.1</easyexcel.verion>
+        <easyexcel.verion>3.3.3</easyexcel.verion>
         <mockito-inline.version>5.2.0</mockito-inline.version>
         <!-- 三方云服务相关 -->
     </properties>
@@ -81,7 +80,7 @@
             <!-- 业务组件 -->
             <dependency>
                 <groupId>com.bone.cloud</groupId>
-                <artifactId>bone-core</artifactId>
+                <artifactId>bone-common</artifactId>
                 <version>1.0.0-plus-SNAPSHOT</version>
             </dependency>
             <dependency>
@@ -294,18 +293,6 @@
 
             <!-- SMS SDK begin -->
             <!-- SMS SDK end -->
-
-
-            <dependency>
-                <groupId>com.yomahub</groupId>
-                <artifactId>liteflow-spring-boot-starter</artifactId>
-                <version>2.12.1</version>
-            </dependency>
-            <dependency>
-                <groupId>com.yomahub</groupId>
-                <artifactId>liteflow-rule-nacos</artifactId>
-                <version>2.12.1</version>
-            </dependency>
 
         </dependencies>
     </dependencyManagement>

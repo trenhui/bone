@@ -5,11 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.bone.cloud</groupId>
-        <artifactId>bone-platform</artifactId>
+        <artifactId>bone-framework</artifactId>
         <version>1.0.0</version>
     </parent>
 
-    <artifactId>bone-account</artifactId>
+    <artifactId>bone-workflow</artifactId>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>

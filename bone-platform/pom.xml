@@ -20,6 +20,6 @@
 
     <name>${project.artifactId}</name>
     <description>
-        ⚙️ 可独立部署的中台/微服务。
+        ⚙️平台服务层 - 企业级共享服务
     </description>
 </project>
