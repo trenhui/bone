@@ -1,0 +1,15 @@
+   {
+       "TransInfo": {
+           "TransHeadInfo": {
+               "RequestClient": "YB",
+               "RequestType": "WBAJFP",
+               "RequestKeyNo": "REDACTED_PARTNER_REQUEST_KEY"
+           },
+           "TransBodyInfo": {
+               "ClaimNo": "C318600002024000040",
+               "RptorAddress": "北京北京市市辖区北京市东城区",
+               "AccDate": "2024-02-01",
+               "AccidentDetail": "V01"
+           }
+       }
+   }

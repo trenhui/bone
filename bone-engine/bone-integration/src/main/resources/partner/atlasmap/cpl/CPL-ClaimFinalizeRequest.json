@@ -1,0 +1,253 @@
+{
+  "TransInfo": {
+    "TransHeadInfo": {
+      "TransType": "L02",
+      "TransDate": "2024-06-14",
+      "TransTime": "10:28:45",
+      "BPOName": "0002-亿保健康",
+      "TransKeyNo": "202406140004"
+    },
+    "TransBodyInfo": {
+      "BatchInfo": {
+        "BPOBatchNo": "YBR2029100",
+        "PolicyNo": "318610000100000465",
+        "ManageCom": "861000",
+        "CompanyName": "李莲娜",
+        "CasesCount": 3,
+        "SumRealPay": 435.75,
+        "Cases": [
+          {
+            "SaleFlag": "1",
+            "ClaimWay": "1",
+            "CaseNo": "H17256299000101",
+            "ClmNo": "",
+            "CaseType": "01",
+            "InsuredNo": "01003021164",
+            "Name": "下乐乐",
+            "IDNo": "110116198308011573",
+            "RptorName": "下乐乐",
+            "RgtantSex": "0",
+            "AppBirthday": "1983-08-01",
+            "NativePlace": "CHN",
+            "AppIDType": "0",
+            "AppIDNo": "110116198308011493",
+            "AppEffevtiveStartDate": "2024-06-14T10:28:46.357+08:00",
+            "AppEffevtiveDate": "2024-06-14T10:28:46.357+08:00",
+            "RptorPhone": "16545657565",
+            "RptorAddress": "测试",
+            "RptorRelation": "GX01",
+            "AccidentSite": "",
+            "ApplyDate": "2024-05-29",
+            "AcceptDate": "2024-05-29",
+            "AcceptTime": "14:27:56",
+            "AccDate": "2024-05-10",
+            "AccidentDate": "2024-05-10",
+            "AccType": "2",
+            "AccidentDetail": "",
+            "AccResult1": "J06",
+            "AccResult2": "J06.9",
+            "HospitalCode": "0003175",
+            "CureDesc": "A",
+            "FirstDiaDate": "2024-05-10",
+            "InHospitalDate": "2024-05-10",
+            "OutHospitalDate": "2024-05-10",
+            "DreadDisCode": "",
+            "SubClinicDisCode": "",
+            "AgreementGetType": "",
+            "SpecificItemAllowance": "",
+            "ClaimType": "00",
+            "ToolType": "",
+            "OnBusiness": "",
+            "RgtDate": "2024-05-29",
+            "RgtOperator": "YB",
+            "StandPay": 360.68,
+            "RealPay": 144.27,
+            "DeclinePay": 0.0,
+            "AccDesc": "因咳嗽住院治疗",
+            "Remark": "",
+            "ReceiptInfos": {
+              "CLINICRECEIPTS": {
+                "CLINICRECEIPT_ARRAY": [
+                  {
+                    "FEETYPE": "A",
+                    "RECEIPTNO": "202405231038902",
+                    "HOSPITALCODE": "0003175",
+                    "CLINICDATE": "2024-05-10",
+                    "MEDICALPAYMENT": 119.3,
+                    "INSURANCEPAYMENT": 10.0,
+                    "SELFPAY1": 0.0,
+                    "SELFPAY2": 3.7,
+                    "SUMPAY": 140.0,
+                    "SELFPAYSUM": 17.0,
+                    "NOTPAYSUM": 68.0,
+                    "ISHISINJ": "N",
+                    "INVOICEDATE": "",
+                    "CHEQUETYPE": "1",
+                    "EINVOICECODE": "",
+                    "RANDOMNUMBER": "",
+                    "ZJWPAYAMOUNT": 0,
+                    "COSTITEM_ARRAYS": {
+                      "COSTITEM_ARRAY": [
+                        {
+                          "FEECODE": "CZ101",
+                          "FEEMONEY": 100.0,
+                          "SELFMONEY": 7.0,
+                          "SELFREASON": "丙吡胺自费100% 1.0元;丙卡特罗自费100% 2.0元;丙戊酸钠乳剂自费100% 4.0元",
+                          "NOTPAYMONEY": 68.0,
+                          "NOTPAYREASON": "甲类非责任扣除",
+                          "PARTSELFMONEY": 2.5
+                        },
+                        {
+                          "FEECODE": "CZ106",
+                          "FEEMONEY": 10.0,
+                          "SELFMONEY": 10.0,
+                          "SELFREASON": "门(急)诊诊疗费自费100% 10.0元",
+                          "NOTPAYMONEY": 0.0,
+                          "NOTPAYREASON": "",
+                          "PARTSELFMONEY": 0.0
+                        },
+                        {
+                          "FEECODE": "CZ108",
+                          "FEEMONEY": 30.0,
+                          "SELFMONEY": 0.0,
+                          "SELFREASON": "",
+                          "NOTPAYMONEY": 0.0,
+                          "NOTPAYREASON": "",
+                          "PARTSELFMONEY": 1.2
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "OpertionInfos": {},
+            "ClaimDutyKindInfos": {
+              "ClaimDutyKindInfo": {
+                "ClaimDutyKind": "200",
+                "TabFeeMoney": 640.0,
+                "StandPay": 360.68,
+                "SocialPay": 27.6,
+                "OtherPay": 0.0,
+                "RealPay": 144.27,
+                "DeclinePay": 0.0
+              }
+            },
+            "ClaimRiskInfos": {
+              "ClaimRisk": {
+                "PolicyNo": "318610000100000465",
+                "ManageCom": "861000",
+                "ContNo": "0019050946",
+                "ClaimDutyKind": "200",
+                "RiskCode": "130022",
+                "StandPay": 360.68,
+                "RealPay": 144.27,
+                "PersonAccBalPay": 0.0,
+                "CompanyAccBalPay": 0.0
+              }
+            },
+            "ClaimDutyInfos": {
+              "ClaimDuty": {
+                "PolicyNo": "318610000100000465",
+                "ManageCom": "861000",
+                "Riskcode": "130022",
+                "DutyCode": "502201",
+                "ClaimDutyKind": "200",
+                "Amnt": 8877.5,
+                "GiveType": "0",
+                "GiveReason": "",
+                "DeclineAmnt": 0.0,
+                "OutDutyAmnt": 0.0,
+                "StandPay": 360.68,
+                "RealPay": 144.27,
+                "SumOutDutyAmnt": 0.0,
+                "DeductionAccType": ""
+              }
+            },
+            "PayInfos": {
+              "PayInfo": {
+                "InsuredNo": "01003021164",
+                "ContNo": "0019050946",
+                "BnfNo": "1",
+                "RelationtoInsured": "00",
+                "BnfName": "下牛",
+                "BnfSex": "0",
+                "BnfBirthday": "1983-08-01",
+                "BnfIdType": "0",
+                "BnfIdNo": "110116198308011493",
+                "BnfEffectiveDate": "2024-06-14T10:28:46.365+08:00",
+                "BnfEffetiveDateStart": "2024-06-14T10:28:46.365+08:00",
+                "IdEffectiveDateIsLongType": "",
+                "BnfPhone": "16545657565",
+                "BnfAddress": "测试",
+                "PayeeNo": "01003021163",
+                "RelationToPayee": "00",
+                "PayeeName": "下牛",
+                "PayeeSex": "0",
+                "PayeeBirthday": "1983-08-01",
+                "PayeeIDType": "0",
+                "PayeeIDNo": "110116198308011493",
+                "PayEffectiveDate": "2024-06-14T10:28:46.365+08:00",
+                "EffpayeeDateStart": "2024-06-14T10:28:46.365+08:00",
+                "IdEffPayeeDateIsLongType": "",
+                "PayeePhone": "16545657565",
+                "PayeeAddress": "测试",
+                "GetMoney": 144.27,
+                "CasePayMode": "4",
+                "BankCode": "03",
+                "BankAccNo": "23121724",
+                "AccName": "下牛",
+                "PublicAccount": "0"
+              }
+            },
+            "ClaimAuditInfo": {
+              "AuditConclusion": "0",
+              "AuditPer": "YB",
+              "AuditDate": "2024-06-13",
+              "AuditIdea": "通过",
+              "ClaimRemark": "被保险人在保险期间内出险，事实清楚，情况属实，我公司根据协议予以赔付。"
+            },
+            "ClaimExamInfo": {
+              "ExamConclusion": "0",
+              "ExamPer": "YB",
+              "ExamDate": "2024-06-13",
+              "ExamIdea": "通过"
+            },
+            "SampleInfos": {
+              "SampleInfo": {
+                "SampleConclusion": "1",
+                "SamplePer": "",
+                "SampleNoPassReason": "",
+                "SampleDate": "2024-06-14"
+              }
+            },
+            "ImageInfos": {
+              "Image": [
+                {
+                  "SubType": "3054",
+                  "NumPages": 5,
+                  "PageInfos": {
+                    "Page": [
+                      {
+                        "PageCode": "1",
+                        "PageName": "YB_CLAIM_202406140004_01C2_0001.jpg",
+                        "PageSuffix": ".jpg",
+                        "PicPath": "Image/YB_CLAIM_202406140004/YB_CLAIM_202406140004_01C2_0001.jpg"
+                      },
+                      {
+                        "PageCode": "2",
+                        "PageName": "YB_CLAIM_202406140004_01C2_0002.jpg",
+                        "PageSuffix": ".jpg",
+                        "PicPath": "Image/YB_CLAIM_202406140004/YB_CLAIM_202406140004_01C2_0002.jpg"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  }
+}
