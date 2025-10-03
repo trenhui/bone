@@ -1,0 +1,30 @@
+package com.bone.integration.infrastructure.repository;
+
+import com.bone.integration.domain.model.MockDO;
+import com.bone.integration.domain.repository.IMockRepository;
+import com.bone.integration.infrastructure.mapper.MockMapper;
+import org.springframework.stereotype.Component;
+
+import javax.annotation.Resource;
+import java.util.List;
+
+@Component
+public class MockRepositoryImpl implements IMockRepository {
+    @Resource
+    private MockMapper mockMapper;
+
+    @Override
+    public MockDO getById(Long id) {
+        return mockMapper.getById(id);
+    }
+
+    @Override
+    public List<MockDO> queryByList(MockDO mockDO) {
+        return mockMapper.queryByList(mockDO);
+    }
+
+    @Override
+    public MockDO getByMockKey(String mockKey) {
+        return mockMapper.getByMockKey(mockKey);
+    }
+}

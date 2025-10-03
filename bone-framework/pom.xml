@@ -10,16 +10,16 @@
     <modelVersion>4.0.0</modelVersion>
     <modules>
         <module>bone-core</module>
-        <module>bone-metadata-sdk</module>
-        <module>bone-metadata</module>
+        <module>bone-common</module>
+        <module>bone-datasource</module>
+        <module>bone-security</module>
     </modules>
     <artifactId>bone-framework</artifactId>
     <packaging>pom</packaging>
 
     <name>${project.artifactId}</name>
     <description>
-        通用框架 模块下，我们放通用业务，支撑上层的核心业务。
-        例如说：用户、部门、权限、数据字典等等
+        Core 原子层 (bone-core)：提供最基础的原子化公共能力。
     </description>
 
 </project>

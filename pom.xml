@@ -8,13 +8,14 @@
     <version>1.0.0</version>
     <packaging>pom</packaging>
     <modules>
-        <module>bone-dependencies</module>
+        <module>bone-parent</module>
         <module>bone-framework</module>
-        <module>bone-lowcode</module>
-        <module>bone-auth</module>
-        <module>bone-auth-sdk</module>
+        <module>bone-engine</module>
         <module>bone-platform</module>
-        <module>bone-midplatform</module>
+        <module>bone-services</module>
+        <module>bone-sdk</module>
+        <module>bone-starters</module>
+        <module>bone-tools</module>
     </modules>
 
     <name>${project.artifactId}</name>
@@ -40,7 +41,7 @@
         <dependencies>
             <dependency>
                 <groupId>com.bone.cloud</groupId>
-                <artifactId>bone-dependencies</artifactId>
+                <artifactId>bone-parent</artifactId>
                 <version>1.0.0</version>
                 <type>pom</type>
                 <scope>import</scope>
