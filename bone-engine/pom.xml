@@ -9,16 +9,21 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <modules>
-        <module>bone-common</module>
-        <module>bone-datasource</module>
-        <module>bone-security</module>
+        <module>bone-metadata</module>
+        <module>bone-metadata-sdk</module>
+        <module>bone-extension</module>
+        <module>bone-integration</module>
+        <module>bone-workflow</module>
     </modules>
-    <artifactId>bone-core</artifactId>
+    <artifactId>bone-engine</artifactId>
     <packaging>pom</packaging>
-
     <name>${project.artifactId}</name>
     <description>
-        Core 原子层 (bone-core)：提供最基础的原子化公共能力。
+        核心引擎层，包含四大引擎：
+        bone-metadata: 元数据模型、解析、代码生成。
+        bone-extension: 扩展点、SPI加载、插件管理、生命周期。
+        bone-integration: 连接器、数据转换、路由、流程编排。
+        bone-workflow: BPMN、状态机、规则引擎。
     </description>
 
 </project>

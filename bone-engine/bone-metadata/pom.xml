@@ -6,7 +6,7 @@
 
     <parent>
         <groupId>com.bone.cloud</groupId>
-        <artifactId>bone-framework</artifactId>
+        <artifactId>bone-engine</artifactId>
         <version>1.0.0</version>
     </parent>
 

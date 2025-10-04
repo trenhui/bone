@@ -5,12 +5,16 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.bone.cloud</groupId>
-        <artifactId>bone-framework</artifactId>
+        <artifactId>bone-boot</artifactId>
         <version>1.0.0</version>
     </parent>
+    <modules>
+        <module>bone-codegen</module>
+    </modules>
 
-    <artifactId>bone-security</artifactId>
-    <packaging>jar</packaging>
+    <artifactId>bone-tool</artifactId>
+    <packaging>pom</packaging>
+    <name>${project.artifactId}</name>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
