@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.bone.cloud</groupId>
-        <artifactId>bone-engine</artifactId>
+        <artifactId>bone-framework</artifactId>
         <version>1.0.0</version>
     </parent>
 
