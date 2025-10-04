@@ -95,7 +95,7 @@
             </dependency>
             <dependency>
                 <groupId>com.bone.cloud</groupId>
-                <artifactId>bone-platform-alert</artifactId>
+                <artifactId>bone-notification</artifactId>
                 <version>1.0.0</version>
             </dependency>
 

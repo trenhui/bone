@@ -5,11 +5,13 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.bone.cloud</groupId>
-        <artifactId>bone-platform</artifactId>
+        <artifactId>bone-boot</artifactId>
         <version>1.0.0</version>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>bone-account</artifactId>
+    <groupId>org.example</groupId>
+    <artifactId>bone-file</artifactId>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>

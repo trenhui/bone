@@ -286,6 +286,7 @@ com.bone.platform.
 │       └── application/             # 应用层
 │           └── service/             # 应用服务
 │               └── PermissionAppService.java # 权限应用服务
+
 ```
 
 ### 5.2 主数据服务
@@ -307,7 +308,24 @@ com.bone.platform.
 │       └── rest/                     # REST接口
 │           └── DictionaryController.java     # 字典控制器
 ```
+### 5.3 通知服务
+```java
+com.bone.platform.
+├── notification/          // 通知中心
+│   ├── sms/               // 短信通知
+│   ├── email/             // 邮件通知
+│   └── message/           // 站内消息
 
+```
+
+### 5.4 文件服务
+```java
+com.bone.platform.
+├── file/               // 文件服务
+    ├── storage/           // 存储管理
+    ├── convert/           // 格式转换
+    └── security/          // 文件安全
+```
 ---
 
 ## 🚀 **业务层 (business) - 领域驱动实现**

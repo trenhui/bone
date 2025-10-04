@@ -10,7 +10,8 @@
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>bone-api-gateway</artifactId>
+    <groupId>org.example</groupId>
+    <artifactId>bone-trade</artifactId>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
