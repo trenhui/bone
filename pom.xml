@@ -9,12 +9,12 @@
     <packaging>pom</packaging>
     <modules>
         <module>bone-parent</module>
-        <module>bone-core</module>
         <module>bone-framework</module>
+        <module>bone-engine</module>
         <module>bone-platform</module>
         <module>bone-services</module>
         <module>bone-sdk</module>
-        <module>bone-tools</module>
+        <module>bone-tool</module>
     </modules>
 
     <name>${project.artifactId}</name>
