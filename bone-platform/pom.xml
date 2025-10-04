@@ -9,11 +9,13 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <modules>
-        <module>bone-account</module>
         <module>bone-auth</module>
         <module>bone-auth-sdk</module>
+        <module>bone-iam</module>
+        <module>bone-gateway</module>
         <module>bone-masterdata</module>
-        <module>bone-platform-alert</module>
+        <module>bone-notification</module>
+        <module>bone-file</module>
     </modules>
     <artifactId>bone-platform</artifactId>
     <packaging>pom</packaging>

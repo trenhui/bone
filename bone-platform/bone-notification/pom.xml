@@ -9,7 +9,7 @@
         <version>1.0.0</version>
     </parent>
 
-    <artifactId>bone-platform-alert</artifactId>
+    <artifactId>bone-notification</artifactId>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>

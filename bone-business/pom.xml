@@ -10,15 +10,15 @@
     <modelVersion>4.0.0</modelVersion>
     <modules>
         <module>bone-admin</module>
-        <module>bone-api-gateway</module>
+        <module>bone-trade</module>
     </modules>
-    <artifactId>bone-services</artifactId>
+    <artifactId>bone-business</artifactId>
     <packaging>pom</packaging>
 
     <name>${project.artifactId}</name>
     <description>
-        业务服务层 (service)：
+        业务层 (business) - 领域模块实现
         bone-admin: 管理模块。
-        bone-api-gateway: api网关。
+        bone-trade: 交易模块。
     </description>
 </project>
