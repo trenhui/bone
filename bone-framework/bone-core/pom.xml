@@ -6,12 +6,12 @@
 
     <!-- Inherit from parent POM -->
     <parent>
-        <groupId>com.bone.cloud</groupId>
+        <groupId>com.bone</groupId>
         <artifactId>bone-framework</artifactId>
         <version>1.0.0</version>
     </parent>
 
-    <artifactId>bone-common</artifactId>
+    <artifactId>bone-core</artifactId>
     <packaging>jar</packaging>
     <version>1.0.0-plus-SNAPSHOT</version>
     <name>bone-common</name>

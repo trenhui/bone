@@ -5,11 +5,13 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.bone</groupId>
-        <artifactId>bone-engine</artifactId>
+        <artifactId>bone-boot</artifactId>
         <version>1.0.0</version>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
 
-    <artifactId>bone-workflow</artifactId>
+    <groupId>org.example</groupId>
+    <artifactId>bone-utils</artifactId>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>

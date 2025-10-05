@@ -14,7 +14,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.bone.cloud</groupId>
+            <groupId>com.bone</groupId>
             <artifactId>bone-core</artifactId>
         </dependency>
         <dependency>
