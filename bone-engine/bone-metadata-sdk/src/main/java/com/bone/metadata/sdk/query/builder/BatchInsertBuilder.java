@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 public class BatchInsertBuilder implements BatchQueryBuilder<BatchInsertContext> {
 
     @Override
-    public BatchCompiledQuery build(BatchInsertContext ctx) {
+    public BatchCompiledQuery build(BatchInsertContext ctx)  {
         var table = ctx.getTable();
         List<?> ents = ctx.getEntities();
         var cols = table.getColumns().stream()

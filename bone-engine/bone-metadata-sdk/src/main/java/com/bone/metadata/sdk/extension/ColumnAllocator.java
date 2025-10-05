@@ -1,6 +1,5 @@
 package com.bone.metadata.sdk.extension;
 
-import com.bone.core.tenant.context.UserContext;
 import com.bone.metadata.sdk.domain.enums.AllocationColumnStatus;
 import com.bone.metadata.sdk.domain.enums.DataType;
 import com.bone.metadata.sdk.domain.exception.FieldAllocationException;
@@ -88,7 +87,7 @@ public class ColumnAllocator {
     private ColumnAllocation buildAllocation(AllocationContext ctx, DataType type, int idx) {
         validateLimit(type, idx);
         String name = namingStrategy.generate(type, idx);
-        Long userId= UserContext.getCurrentUser()!=null?UserContext.getCurrentUser().getId():-10000;
+        Long userId = -1000l;//todo UserContext.getCurrentUser()!=null?UserContext.getCurrentUser().getId():-10000;
         return ColumnAllocation.builder()
                 .tenantId(ctx.getTenantId())
                 .appCode(ctx.getAppCode())

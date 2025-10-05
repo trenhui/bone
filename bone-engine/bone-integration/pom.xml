@@ -10,10 +10,10 @@
     </parent>
 
     <artifactId>bone-integration</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <packaging>jar</packaging>
-    <name>bone-lowcode-integration</name>
-    <description>bone lowcode integration system</description>
+    <name>bone-integration</name>
+    <description>bone integration system</description>
 
     <properties>
         <java.version>17</java.version>
@@ -27,6 +27,11 @@
         <dependency>
             <groupId>com.bone</groupId>
             <artifactId>bone-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.bone</groupId>
+            <artifactId>bone-extension</artifactId>
         </dependency>
 
         <dependency>

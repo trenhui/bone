@@ -2,8 +2,6 @@ package com.bone.metadata.sdk.test.config;
 
 import com.bone.metadata.sdk.domain.annotation.EnableSqlRepositories;
 import com.bone.metadata.sdk.support.config.*;
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
 import feign.RequestInterceptor;
 import org.mockito.Mockito;
 import org.redisson.api.RAtomicLong;
@@ -13,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.cloud.openfeign.FeignAutoConfiguration;
 import org.springframework.context.annotation.Bean;
@@ -66,24 +65,12 @@ public class TestConfig {
     @Bean
     @Primary
     public DataSource dataSource() {
-        // 修改点1：统一使用HikariDataSource
-        HikariConfig config = new HikariConfig();
-        config.setJdbcUrl(environment.getProperty("spring.datasource.url"));
-        config.setUsername(environment.getProperty("spring.datasource.username"));
-        config.setPassword(environment.getProperty("spring.datasource.password"));
-        config.setPoolName("TestDBPool");
-
-        // 设置数据库驱动
-        String url = environment.getProperty("spring.datasource.url", "").toLowerCase();
-        if (url.contains("mysql:")) {
-            config.setDriverClassName("com.mysql.cj.jdbc.Driver");
-        } else {
-            // H2或其他数据库
-            config.setDriverClassName("org.h2.Driver");
-        }
-
-        // 修改点2：统一返回HikariDataSource实例
-        return new HikariDataSource(config);
+        // 让 Spring Boot 自动配置 HikariCP
+        return DataSourceBuilder.create()
+                .url(environment.getProperty("spring.datasource.url"))
+                .username(environment.getProperty("spring.datasource.username"))
+                .password(environment.getProperty("spring.datasource.password"))
+                .build();
     }
 
     @Bean

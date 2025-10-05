@@ -4,7 +4,7 @@ package com.bone.tools.codegen.adapter;
 import com.bone.core.result.PageParam;
 import com.bone.core.result.PageResult;
 import com.bone.core.result.Result;
-import com.bone.core.util.BeanUtils;
+import com.bone.tools.codegen.util.BeanUtils;
 import com.bone.tools.codegen.application.dto.DataSourceConfigResponse;
 import com.bone.tools.codegen.application.dto.DataSourceConfigSaveRequest;
 import com.bone.tools.codegen.domain.entity.DataSourceConfigDO;

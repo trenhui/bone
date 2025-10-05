@@ -1,6 +1,6 @@
 package com.bone.metadata.sdk.support.cache;
 
-import com.bone.core.annotation.Column;
+import com.bone.metadata.sdk.domain.annotation.Column;
 import com.bone.metadata.sdk.support.config.MetadataSdkContext;
 import com.bone.metadata.sdk.domain.model.FieldMetadata;
 import com.github.benmanes.caffeine.cache.Cache;

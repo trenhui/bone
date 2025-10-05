@@ -1,6 +1,5 @@
 package com.bone.integration;
 
-import com.bone.core.extension.EnableExtPoints;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration;
@@ -11,6 +10,7 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
+import com.bone.engine.extension.EnableExtPoints;
 /**
  * @author renhui.trh
  */

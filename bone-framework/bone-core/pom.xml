@@ -13,8 +13,7 @@
 
     <artifactId>bone-core</artifactId>
     <packaging>jar</packaging>
-    <version>1.0.0-plus-SNAPSHOT</version>
-    <name>bone-common</name>
+    <version>1.0.0</version>
     <url>http://www.bone.com</url>
 
     <properties>

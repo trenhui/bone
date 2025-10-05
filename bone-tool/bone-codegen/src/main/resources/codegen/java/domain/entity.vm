@@ -37,7 +37,7 @@ import ${DictConvertClassName};
 #end
 #end
 
-import com.bone.core.annotation.Table;
+import com.bone.metadata.sdk.domain.annotation.Table;
 /**
  * ${table.classComment}
  *

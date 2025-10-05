@@ -10,7 +10,7 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class IdGenerator {
 
-    static  SnowFlakeIdGenerator snowFlakeIdGenerator= new SnowFlakeIdGenerator();
+    static SnowFlakeIdGenerator snowFlakeIdGenerator= new SnowFlakeIdGenerator();
 
     private static final AtomicLong sequence = new AtomicLong(0);
 

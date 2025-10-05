@@ -1,9 +1,10 @@
 package com.bone.metadata.sdk.domain.spec;
 
-import com.bone.core.annotation.*;
+import com.bone.core.annotation.Transient;
 import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.SequenceGenerator;
+import com.bone.metadata.sdk.domain.annotation.*;
 import com.bone.metadata.sdk.domain.exception.MetadataException;
 import com.bone.metadata.sdk.domain.model.ColumnMetadata;
 import com.bone.metadata.sdk.domain.model.TableMetadata;
