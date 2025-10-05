@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.bone.core.exception.BizException;
 import com.bone.core.result.PageParam;
 import com.bone.core.result.PageResult;
-import com.bone.core.util.BeanUtils;
+import com.bone.tools.codegen.util.BeanUtils;
 import com.bone.tools.codegen.application.dto.DataSourceConfigQueryRequest;
 import com.bone.tools.codegen.domain.entity.CodegenTableDO;
 import com.bone.tools.codegen.domain.mapper.CodegenTableMapper;

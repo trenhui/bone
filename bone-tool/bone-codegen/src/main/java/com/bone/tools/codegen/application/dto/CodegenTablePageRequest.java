@@ -9,7 +9,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
 
-import static com.bone.core.util.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
+import static com.bone.tools.codegen.util.DateUtils.FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND;
 
 
 @Schema(description = "管理后台 - 表定义分页 Request VO")

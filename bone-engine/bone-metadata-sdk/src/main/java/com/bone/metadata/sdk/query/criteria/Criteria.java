@@ -1,7 +1,7 @@
 package com.bone.metadata.sdk.query.criteria;
 
 import com.bone.core.enums.Operator;
-import com.bone.core.function.SFunction;
+import com.bone.metadata.sdk.support.function.SFunction;
 import com.bone.metadata.sdk.domain.enums.SortDirection;
 import com.bone.metadata.sdk.support.util.SqlUtil;
 import lombok.Data;

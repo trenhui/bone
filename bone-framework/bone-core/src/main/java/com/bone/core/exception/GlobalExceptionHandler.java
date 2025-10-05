@@ -177,15 +177,6 @@ public class GlobalExceptionHandler {
         return Result.error(TOO_MANY_REQUESTS.getCode(), String.format("[requestNotPermittedExceptionHandler][url(%s) 访问过于频繁]", req.getRequestURL()));
     }
 
-//    /**
-//     * 处理 Spring Security 权限不足的异常
-//     * <p>
-//     * 来源是，使用 @PreAuthorize 注解，AOP 进行权限拦截
-//     */
-//    @ExceptionHandler(value = AccessDeniedException.class)
-//    public Result<?> accessDeniedExceptionHandler(HttpServletRequest req, AccessDeniedException ex) {
-//        return Result.error(FORBIDDEN.toString());
-//    }
 
     /**
      * 处理服务异常 ServiceException

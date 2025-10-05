@@ -1,8 +1,5 @@
 package com.bone.core.domain.entity;
 
-import com.bone.core.annotation.CreateTime;
-import com.bone.core.annotation.UpdateTime;
-import com.bone.core.annotation.Deleted;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
@@ -23,7 +20,6 @@ public abstract class AbstractEntity<ID> extends Entity<ID> implements SoftDelet
     @JsonFormat(timezone = "GMT+8", pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Schema(description = "创建时间")
-    @CreateTime
     private Date createTime;
 
     @Schema(description = "创建人")
@@ -32,14 +28,12 @@ public abstract class AbstractEntity<ID> extends Entity<ID> implements SoftDelet
     @JsonFormat(timezone = "GMT+8", pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Schema(description = "修改时间")
-    @UpdateTime
     private Date updateTime;
 
     @Schema(description = "修改人")
     private Long updateBy;
 
     @Schema(description = "逻辑删除")
-    @Deleted
     private Boolean deleted = false;
 
     @Override

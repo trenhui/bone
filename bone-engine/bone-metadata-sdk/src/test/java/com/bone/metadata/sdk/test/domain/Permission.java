@@ -5,7 +5,9 @@ import com.bone.core.domain.entity.Entity;
 import com.bone.core.domain.extension.Extensible;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
-import com.bone.core.util.NullableConcurrentMap;
+import com.bone.metadata.sdk.domain.model.NullableConcurrentMap;
+import com.bone.metadata.sdk.domain.annotation.Id;
+import com.bone.metadata.sdk.domain.annotation.Table;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -53,14 +55,12 @@ public class Permission extends Entity<Long>  implements Extensible {
     @JsonFormat(timezone = "GMT+8", pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Schema(description = "创建时间")
-    @CreateTime
     private LocalDateTime createTime;
 
     // 修改时间：使用 LocalDateTime
     @JsonFormat(timezone = "GMT+8", pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Schema(description = "修改时间")
-    @UpdateTime
     private LocalDateTime updateTime;
 
     @Transient

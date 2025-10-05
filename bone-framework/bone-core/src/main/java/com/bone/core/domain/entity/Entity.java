@@ -1,6 +1,5 @@
 package com.bone.core.domain.entity;
 
-import com.bone.core.annotation.Id;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -23,7 +22,6 @@ public class Entity<ID> implements Serializable {
      */
     @Schema(description = "主键id")
     @JsonSerialize(using = EntityIdSerializer.class)
-    @Id
     @GeneratedValue(strategy= GenerationStrategy.IDENTITY)
     private ID id;
 

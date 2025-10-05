@@ -2,7 +2,6 @@ package com.bone.core.result;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 

@@ -9,8 +9,6 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <modules>
-        <module>bone-auth</module>
-        <module>bone-auth-sdk</module>
         <module>bone-iam</module>
         <module>bone-gateway</module>
         <module>bone-masterdata</module>

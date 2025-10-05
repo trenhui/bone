@@ -1,9 +1,9 @@
 package com.bone.metadata.sdk.domain.model;
 
-import com.bone.core.annotation.Column;
-import com.bone.core.annotation.Id;
-import com.bone.core.annotation.Table;
-import com.bone.core.annotation.Version;
+import com.bone.metadata.sdk.domain.annotation.Column;
+import com.bone.metadata.sdk.domain.annotation.Id;
+import com.bone.metadata.sdk.domain.annotation.Table;
+import com.bone.metadata.sdk.domain.annotation.Version;
 import com.bone.core.domain.entity.Entity;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;

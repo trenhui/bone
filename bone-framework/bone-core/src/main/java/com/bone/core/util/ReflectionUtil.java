@@ -1,8 +1,5 @@
 package com.bone.core.util;
 
-import com.bone.core.exception.BizException;
-import com.bone.core.exception.InvalidRequestException;
-
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -216,16 +213,16 @@ public class ReflectionUtil {
      */
     public static Object getFieldValue(Object entity, String fieldName) {
         if (entity == null) {
-            throw new InvalidRequestException("Cannot read field from null object");
+            throw new IllegalArgumentException("Cannot read field from null object");
         }
+        Field field = null;
         try {
-            Field field = findField(entity.getClass(), fieldName);
+            field = findField(entity.getClass(), fieldName);
+
             field.setAccessible(true);
             return field.get(entity);
         } catch (Exception e) {
-            throw new BizException(
-                    "Failed to access field '" + fieldName + "' on " + entity.getClass().getName(), e
-            );
+            throw new RuntimeException(e);
         }
     }
 

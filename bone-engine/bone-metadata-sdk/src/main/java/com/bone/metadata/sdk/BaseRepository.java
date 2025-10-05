@@ -12,7 +12,7 @@ import com.bone.core.result.SortablePageParam;
 import com.bone.core.result.SortableParam;
 import com.bone.core.result.SortingField;
 import com.bone.core.tenant.context.TenantContext;
-import com.bone.core.tenant.context.UserContext;
+import com.bone.core.tenant.context.BizIdentityContext;
 import com.bone.metadata.sdk.domain.enums.SortDirection;
 import com.bone.metadata.sdk.domain.exception.*;
 import com.bone.metadata.sdk.domain.model.AllocationContext;
@@ -623,8 +623,8 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
 
     private AllocationContext getAllocationContext() {
         String bizIdentityCode = "pukang";
-        if (UserContext.getCurrentUser() != null) {
-            bizIdentityCode = UserContext.getCurrentUser().getBizIdentityCode();
+        if (BizIdentityContext.getBizIdentityCode() != null) {
+            bizIdentityCode = BizIdentityContext.getBizIdentityCode();
         }
         return AllocationContext.of(
                 TenantContext.getTenantId(),

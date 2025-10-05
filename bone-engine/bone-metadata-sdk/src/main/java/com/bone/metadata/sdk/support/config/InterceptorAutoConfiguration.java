@@ -3,7 +3,6 @@ package com.bone.metadata.sdk.support.config;
 import com.bone.metadata.sdk.support.audit.AuditService;
 import com.bone.metadata.sdk.support.audit.LoggingAuditService;
 import com.bone.metadata.sdk.support.interceptor.*;
-import com.bone.metadata.sdk.support.security.auth.MetaPermissionEvaluator;
 import com.bone.metadata.sdk.support.security.service.DefaultMetaPermissionService;
 import com.bone.metadata.sdk.support.security.service.MetaPermissionService;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -51,18 +50,5 @@ public class InterceptorAutoConfiguration {
     @ConditionalOnMissingBean(MetaPermissionService.class)
     public MetaPermissionService metaPermissionService() {
         return new DefaultMetaPermissionService();
-    }
-
-
-    @Bean
-    @ConditionalOnMissingBean(MetaPermissionEvaluator.class)
-    public MetaPermissionEvaluator metaPermissionEvaluator(MetaPermissionService permissionService) {
-        return new MetaPermissionEvaluator(permissionService);
-    }
-
-    @Bean
-    @ConditionalOnMissingBean(MetaPermissionService.class)
-    public AuditInterceptor auditInterceptor(AuditService auditService, MetaPermissionService permissionService) {
-        return new AuditInterceptor(auditService, permissionService);
     }
 }

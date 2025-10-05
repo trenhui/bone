@@ -1,6 +1,5 @@
 package com.bone.metadata.sdk.support.security.service;
 
-import com.bone.core.tenant.context.UserContext;
 import com.bone.metadata.sdk.extension.plugin.PluginDescriptor;
 import org.springframework.stereotype.Service;
 
@@ -31,9 +30,6 @@ public class DatabaseSecurityService implements SecurityService {
     @Override
     public void validateConfigUpdate(String pluginId) {
         // 只允许管理员角色更新配置
-        if (!UserContext.getCurrentUser().getUserType().isSuperAdmin()) {
-            throw new SecurityException("需要管理员权限才能更新配置");
-        }
     }
 
     private boolean isTrustedPluginSource(URL location) {

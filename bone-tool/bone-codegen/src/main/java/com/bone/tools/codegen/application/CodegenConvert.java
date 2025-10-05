@@ -2,7 +2,7 @@ package com.bone.tools.codegen.application;
 
 import com.baomidou.mybatisplus.generator.config.po.TableField;
 import com.baomidou.mybatisplus.generator.config.po.TableInfo;
-import com.bone.core.util.BeanUtils;
+import com.bone.tools.codegen.util.BeanUtils;
 import com.bone.tools.codegen.application.dto.CodegenTableResponse;
 import com.bone.tools.codegen.domain.entity.CodegenColumnDO;
 import com.bone.tools.codegen.domain.entity.CodegenTableDO;

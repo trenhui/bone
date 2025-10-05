@@ -18,9 +18,6 @@ public class TenantAbstractDTO<ID> extends AbstractDTO<ID> {
 
     @Schema(description = "租户Code")
     private String tenantCode;
-
-
-    private Map<String, Object> header;
 }
 
 
