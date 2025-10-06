@@ -82,14 +82,14 @@ public class CodegenController {
     @Operation(summary = "获得表定义分页")
     public ApiResponse<PageResult<CodegenTableResponse>> getCodegenTablePage(CodegenTablePageRequest pageReqVO) {
         PageResult<CodegenTableResponse> result = BeanUtils.toBean(codegenService.getCodegenTablePage(pageReqVO), CodegenTableResponse.class);
-        if (CollectionUtil.isNotEmpty(result.getData())) {
+        if (CollectionUtil.isNotEmpty(result.getRecords())) {
             DataSourceConfigQueryRequest request = new DataSourceConfigQueryRequest();
-            request.setIdList(result.getData().stream().map(CodegenTableResponse::getDataSourceConfigId).distinct().collect(Collectors.toList()));
+            request.setIdList(result.getRecords().stream().map(CodegenTableResponse::getDataSourceConfigId).distinct().collect(Collectors.toList()));
             Map<Long, String> dataSourceConfigMap = dataSourceConfigService.getDataSourceConfigList(request).stream().collect(Collectors.toMap(DataSourceConfigDO::getId, DataSourceConfigDO::getName));
-            result.getData().forEach(x -> x.setDataSourceConfigName(dataSourceConfigMap.get((long) x.getDataSourceConfigId())));
+            result.getRecords().forEach(x -> x.setDataSourceConfigName(dataSourceConfigMap.get((long) x.getDataSourceConfigId())));
         }
-        result.getData().forEach(x -> x.setCreateTimeStr(x.getCreateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))));
-        result.getData().forEach(x -> x.setUpdateTimeStr(x.getUpdateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))));
+        result.getRecords().forEach(x -> x.setCreateTimeStr(x.getCreateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))));
+        result.getRecords().forEach(x -> x.setUpdateTimeStr(x.getUpdateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))));
         return success(result);
     }
 
