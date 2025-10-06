@@ -42,10 +42,10 @@ public interface CodegenTableMapper extends BaseMapper<CodegenTableDO> {
 
         queryWrapper.orderByDesc(CodegenTableDO::getUpdateTime);
         IPage<CodegenTableDO> page = new Page<>();
-        page.setCurrent(pageReqVO.getPageNo());
-        page.setSize(pageReqVO.getPageSize());
+        page.setCurrent(pageReqVO.getPage());
+        page.setSize(pageReqVO.getSize());
         selectPage(page, queryWrapper);
-        return new PageResult<CodegenTableDO>(page.getRecords(),pageReqVO.getPageNo(),pageReqVO.getPageSize(), (int)page.getTotal());
+        return  PageResult.of(page.getRecords(),page.getTotal(),pageReqVO.getPage(),pageReqVO.getSize());
     }
 
     default List<CodegenTableDO> selectListByDataSourceConfigId(Long dataSourceConfigId) {

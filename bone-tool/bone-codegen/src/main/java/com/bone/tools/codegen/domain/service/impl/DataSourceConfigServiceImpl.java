@@ -104,13 +104,13 @@ public class DataSourceConfigServiceImpl implements DataSourceConfigService {
     @Override
     public PageResult<DataSourceConfigDO> getDataSourceConfigList(PageParam pageParam) {
         IPage<DataSourceConfigDO> page = new Page<>();
-        page.setCurrent(pageParam.getPageNo());
-        page.setSize(pageParam.getPageSize());
+        page.setCurrent(pageParam.getPage());
+        page.setSize(pageParam.getSize());
         dataSourceConfigMapper.selectPage(page,new LambdaQueryWrapper<>());
 //        List<DataSourceConfigDO> model = dataSourceConfigMapper.selectList(new LambdaQueryWrapper<>());
 //        // 补充 master 数据源
 //        model.add(0, buildMasterDataSourceConfig());
-       return new PageResult<DataSourceConfigDO>(page.getRecords(),pageParam.getPageNo(),pageParam.getPageSize(),(int)page.getTotal());
+       return  PageResult.of(page.getRecords(),page.getTotal(),pageParam.getPage(),pageParam.getSize());
     }
 
     @Override

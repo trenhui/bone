@@ -51,10 +51,10 @@ public class BeanUtils {
         if (source == null) {
             return null;
         }
-        List<T> list = toBean(source.getData(), targetType);
+        List<T> list = toBean(source.getRecords(), targetType);
         if (peek != null) {
             list.forEach(peek);
         }
-        return new PageResult<>(list, source.getCurrPage(), source.getPageSize(), source.getTotalCount());
+        return PageResult.of(list, source.getTotal(), source.getPage(), source.getSize());
     }
 }
