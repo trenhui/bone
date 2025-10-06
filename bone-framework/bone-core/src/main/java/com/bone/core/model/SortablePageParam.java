@@ -1,4 +1,4 @@
-package com.bone.core.result;
+package com.bone.core.model;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;

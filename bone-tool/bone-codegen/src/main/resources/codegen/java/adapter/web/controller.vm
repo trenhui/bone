@@ -9,8 +9,8 @@ import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
-import com.bone.core.result.PageResult;
-import com.bone.core.result.Result;
+import com.bone.core.model.PageResult;
+import com.bone.core.model.ApiResponse;
 import com.bone.core.util.JsonUtil;
 
 import ${table.packgeName}.application.${table.className}ApplicationService;

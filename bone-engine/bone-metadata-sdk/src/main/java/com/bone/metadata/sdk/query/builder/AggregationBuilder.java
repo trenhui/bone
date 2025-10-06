@@ -73,7 +73,7 @@ public class AggregationBuilder implements QueryBuilder<AggregationContext> {
         // 添加分页逻辑（如果需要）
         if (ctx.getCriteria() != null && ctx.getCriteria().getPageSize() > 0) {
             int pageSize = ctx.getCriteria().getPageSize();
-            int page = ctx.getCriteria().getPageNumber();
+            int page = ctx.getCriteria().getPageNo();
             int offset = (page - 1) * pageSize;
 
             sql.append(" LIMIT ").append(pageSize)

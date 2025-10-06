@@ -1,6 +1,6 @@
 package com.bone.metadata.sdk.test.domain.request;
 
-import com.bone.core.result.SortablePageParam;
+import com.bone.core.model.SortablePageParam;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

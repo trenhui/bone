@@ -1,6 +1,6 @@
 package com.bone.metadata.sdk.test.testcase;
 
-import com.bone.core.id.IdGenerator;
+import com.bone.core.util.DistributedIdGenerator;
 import com.bone.core.tenant.context.TenantContext;
 import com.bone.metadata.sdk.domain.exception.FieldAllocationException;
 import com.bone.metadata.sdk.domain.model.AllocationContext;
@@ -94,7 +94,7 @@ public class ExtensionPermissionRepositoryTest {
     // 创建字段元数据
     private FieldMetadata createFieldMetadata(String entityType, String fieldName, DataType dataType) {
         FieldMetadata metadata = new FieldMetadata();
-        metadata.setId(IdGenerator.generateLongID());
+        metadata.setId(DistributedIdGenerator.generateLongId());
         metadata.setTenantId(TenantContext.getTenantId());
         metadata.setAppCode("extTest");
         metadata.setBizIdentityCode("pukang");

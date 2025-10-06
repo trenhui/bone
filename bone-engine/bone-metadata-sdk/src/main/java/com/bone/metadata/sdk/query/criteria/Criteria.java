@@ -22,7 +22,7 @@ public class Criteria<T> {
 
     private final List<String> sortItems = new ArrayList<>();
     private int pageSize = 5000;
-    private int pageNumber = 1;
+    private int pageNo = 1;
 
     private Criteria() {
     }
@@ -39,8 +39,8 @@ public class Criteria<T> {
     /**
      * 分页设置，从1开始
      */
-    public Criteria<T> page(int pageNumber, int pageSize) {
-        this.pageNumber = pageNumber;
+    public Criteria<T> page(int pageNo, int pageSize) {
+        this.pageNo = pageNo;
         this.pageSize = pageSize;
         return this;
     }
@@ -49,7 +49,7 @@ public class Criteria<T> {
      * 计算 OFFSET
      */
     public int getOffset() {
-        return (pageNumber - 1) * pageSize;
+        return (pageNo - 1) * pageSize;
     }
 
     // ------------------ 主表条件 (Lambda + String) ------------------

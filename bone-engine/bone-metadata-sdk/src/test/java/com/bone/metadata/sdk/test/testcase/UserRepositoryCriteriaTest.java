@@ -1,6 +1,6 @@
 package com.bone.metadata.sdk.test.testcase;
 
-import com.bone.core.result.PageResult;
+import com.bone.core.model.PageResult;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.test.config.TestConfig;
 import com.bone.metadata.sdk.test.domain.User;
@@ -245,7 +245,7 @@ public class UserRepositoryCriteriaTest  {
         Criteria<User> criteria = Criteria.<User>create().eq(User::getRoleId, 1L);  // 假设有多个 role_id 为 1 的用户
         // Act & Assert
         assertThrows(MultipleResultsException.class, () -> userRepository.findOneByCriteria(criteria),
-                "Should throw MultipleResultsException when more than one result is found");
+                "Should throw MultipleResultsException when more than one model is found");
     }
 
     // 6. 测试分页查询 (pageByCriteria)
@@ -254,15 +254,15 @@ public class UserRepositoryCriteriaTest  {
         // Arrange
         setUpTestData();
         Criteria<User> criteria = Criteria.<User>create().eq("role_id", 2L);  // 查询 role_id 为 2 的用户
-        criteria.setPageNumber(1);
+        criteria.setPageNo(1);
         criteria.setPageSize(2);
 
         // Act
         PageResult<User> pageResult = userRepository.pageByCriteria(criteria);
 
         // Assert
-        assertNotNull(pageResult, "Page result should not be null");
-        assertTrue(pageResult.getData().size() <= 2, "Page should contain no more than 2 users");
+        assertNotNull(pageResult, "Page model should not be null");
+        assertTrue(pageResult.getRecords().size() <= 2, "Page should contain no more than 2 users");
     }
 
     @Test
@@ -270,15 +270,15 @@ public class UserRepositoryCriteriaTest  {
         // Arrange
         setUpTestData();
         Criteria<User> criteria = Criteria.<User>create().eq("role_id", 999L);  // 查询不存在的 role_id
-        criteria.setPageNumber(1);
+        criteria.setPageNo(1);
         criteria.setPageSize(10);
 
         // Act
         PageResult<User> pageResult = userRepository.pageByCriteria(criteria);
 
         // Assert
-        assertNotNull(pageResult, "Page result should not be null");
-        assertTrue(pageResult.getData().isEmpty(), "Page should be empty when no users match the criteria");
+        assertNotNull(pageResult, "Page model should not be null");
+        assertTrue(pageResult.getRecords().isEmpty(), "Page should be empty when no users match the criteria");
     }
 
     // 7. 测试查询记录总数 (countByCriteria)

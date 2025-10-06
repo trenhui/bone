@@ -1,6 +1,6 @@
 package com.bone.integration.interfaces;
 
-import com.bone.core.result.Result;
+import com.bone.core.model.ApiResponse;
 import com.bone.integration.application.dto.FreemarkerDTO;
 import com.bone.integration.application.service.IFreemarkerToolService;
 import jakarta.annotation.Resource;
@@ -18,12 +18,12 @@ public class ToolController {
 
     @PostMapping("freemarkerExecute")
     @ResponseBody
-    public Result<String> freemarkerExecute(@RequestBody FreemarkerDTO freemarkerDTO) {
+    public ApiResponse<String> freemarkerExecute(@RequestBody FreemarkerDTO freemarkerDTO) {
         try {
-            return Result.ok(freemarkerToolService.execute(freemarkerDTO));
+            return ApiResponse.success(freemarkerToolService.execute(freemarkerDTO));
         } catch (Throwable e) {
             log.error("freemarker execute error", e);
-            return Result.error(e.getMessage());
+            return ApiResponse.error(e.getMessage());
         }
     }
 }

@@ -9,14 +9,14 @@ import cn.hutool.extra.template.engine.velocity.VelocityEngine;
 import cn.hutool.system.SystemUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.bone.core.result.Result;
+import com.bone.core.model.ApiResponse;
 import com.bone.tools.codegen.util.DateUtils;
 import com.bone.tools.codegen.util.BeanUtils;
 import com.bone.tools.codegen.domain.entity.DataSourceConfigDO;
 import com.bone.tools.codegen.domain.enums.ModelTypeEnum;
 import com.bone.tools.codegen.infrastructure.annotation.DictFormat;
-import com.bone.core.result.PageParam;
-import com.bone.core.result.PageResult;
+import com.bone.core.model.PageParam;
+import com.bone.core.model.PageResult;
 import com.bone.tools.codegen.domain.enums.CodegenSceneEnum;
 import com.bone.tools.codegen.domain.enums.CodegenTemplateTypeEnum;
 import com.bone.tools.codegen.domain.entity.BaseDO;
@@ -86,7 +86,7 @@ public class CodegenEngine {
         globalBindingMap.put("jakartaPackage", jakartaEnable ? "jakarta" : "javax");
         // 全局 Java Bean
 
-        globalBindingMap.put("CommonResultClassName", Result.class.getName());
+        globalBindingMap.put("CommonResultClassName", ApiResponse.class.getName());
         globalBindingMap.put("PageResultClassName", PageResult.class.getName());
         // VO 类，独有字段
         globalBindingMap.put("PageParamClassName", PageParam.class.getName());

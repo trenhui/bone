@@ -1,4 +1,4 @@
-package com.bone.core.result;
+package com.bone.core.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,9 +7,7 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 
 /**
- * 排序字段 DTO
- *
- * 类名加了 ing 的原因是，避免和 ES SortField 重名。
+ * 排序字段
  */
 @Data
 @NoArgsConstructor

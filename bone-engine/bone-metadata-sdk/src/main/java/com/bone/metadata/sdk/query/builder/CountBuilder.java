@@ -8,6 +8,7 @@ import com.bone.metadata.sdk.domain.query.CompiledQuery;
 import com.bone.metadata.sdk.domain.model.FieldMetadata;
 import com.bone.metadata.sdk.domain.model.TableMetadata;
 import com.bone.metadata.sdk.query.context.CountContext;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -15,6 +16,7 @@ import java.util.stream.Collectors;
 /**
  * 动态构建 COUNT 查询，支持按需 JOIN 扩展表 ext_data_reserved。
  */
+@Slf4j
 public class CountBuilder implements QueryBuilder<CountContext> {
 
     private final MetadataService metadataService;
@@ -33,7 +35,9 @@ public class CountBuilder implements QueryBuilder<CountContext> {
         StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM ").append(tbl.getName()).append(" m");
 
         Map<String, FieldMetadata> logicalToMeta = Collections.emptyMap();
-        if (c.requiresExtJoin()) {
+        boolean requiresExtJoin = c.requiresExtJoin();
+
+        if (requiresExtJoin) {
             // 获取扩展字段元数据
             List<String> logicals = c.getExtConditions().stream()
                     .map(Condition::getColumn)
@@ -61,40 +65,85 @@ public class CountBuilder implements QueryBuilder<CountContext> {
         // 构建 WHERE 条件
         List<String> where = new ArrayList<>();
 
-        // 主表条件
-//        for (Condition cond : c.getMainConditions()) {
-//            String col = cond.getColumn();
-//            String op = cond.getOperator().getSymbol();
-//            where.add("m." + col + " " + op + " :" + col);
-//        }
-        where.addAll(c.getMainConditions().stream()
-                .map(Condition::toSql)
-                .toList()
-        );
+        // 主表条件 - 使用优化后的方式
+        where.addAll(buildMainTableConditions(c));
 
         // 扩展表条件
-        if (c.requiresExtJoin()) {
-            for (Condition cond : c.getExtConditions()) {
-                FieldMetadata meta = logicalToMeta.get(cond.getColumn());
-                if (meta == null) {
-                    throw new IllegalArgumentException("Unknown extension field: " + cond.getColumn());
-                }
-                String physCol = meta.getColumnName();
-                String op = cond.getOperator().getSymbol();
-                String param = cond.getParamName();
-                where.add("ext." + physCol + " " + op + " :" + param);
-            }
+        if (requiresExtJoin) {
+            where.addAll(buildExtensionTableConditions(c, logicalToMeta));
         }
 
-        // 软删除控制
-        if (tbl.isSoftDeletable() && !ctx.isIncludeDeleted()) {
-            where.add("m.deleted = false");
+        // 软删除控制 - 修复的关键部分
+        if (shouldApplySoftDeleteFilter(tbl, ctx)) {
+            where.add(buildSoftDeleteCondition(tbl));
         }
 
+        // 组装完整的 SQL
         if (!where.isEmpty()) {
             sql.append(" WHERE ").append(String.join(" AND ", where));
         }
 
         return new CompiledQuery(sql.toString(), params);
+    }
+
+    /**
+     * 构建主表查询条件
+     */
+    private List<String> buildMainTableConditions(Criteria<?> criteria) {
+        return criteria.getMainConditions().stream()
+                .map(condition -> condition.toSql())
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 构建扩展表查询条件
+     */
+    private List<String> buildExtensionTableConditions(Criteria<?> criteria,
+                                                       Map<String, FieldMetadata> logicalToMeta) {
+        return criteria.getExtConditions().stream()
+                .map(condition -> {
+                    FieldMetadata meta = logicalToMeta.get(condition.getColumn());
+                    if (meta == null) {
+                        throw new IllegalArgumentException("Unknown extension field: " + condition.getColumn());
+                    }
+                    return "ext." + meta.getColumnName() + " " +
+                            condition.getOperator().getSymbol() + " :" + condition.getParamName();
+                })
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 判断是否需要应用软删除过滤
+     */
+    private boolean shouldApplySoftDeleteFilter(TableMetadata table, CountContext context) {
+        return table.isSoftDeletable() && !context.isIncludeDeleted();
+    }
+
+    /**
+     * 构建软删除条件
+     */
+    private String buildSoftDeleteCondition(TableMetadata table) {
+        // 根据软删除列的实际类型构建条件
+        String softDeleteColumn = table.getSoftDeleteColumn().getName();
+        Class<?> columnType = table.getSoftDeleteColumn().getType();
+
+        if (columnType == Boolean.class || columnType == boolean.class) {
+            return "m." + softDeleteColumn + " = false";
+        } else if (columnType == Integer.class || columnType == int.class) {
+            return "m." + softDeleteColumn + " = 0";
+        } else {
+            // 字符串或其他类型
+            return "m." + softDeleteColumn + " = '0'";
+        }
+    }
+
+    /**
+     * 调试方法：打印生成的SQL和参数（可选）
+     */
+    public void debugSql(CompiledQuery query) {
+        if (log.isDebugEnabled()) {
+            log.debug("Generated COUNT SQL: {}", query.getSql());
+            log.debug("COUNT Parameters: {}", query.getParameters());
+        }
     }
 }

@@ -339,7 +339,7 @@ public class MyBatisSqlProcessor implements SqlProcessor {
 
             // 评估表达式
             Boolean result = expr.getValue(evalContext, Boolean.class);
-            log.debug("SpEL evaluation result for '{}': {}", expression, result);
+            log.debug("SpEL evaluation model for '{}': {}", expression, result);
 
             return Boolean.TRUE.equals(result);
         } catch (SpelEvaluationException e) {

@@ -5,7 +5,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.generator.config.po.TableField;
 import com.baomidou.mybatisplus.generator.config.po.TableInfo;
-import com.bone.core.result.PageResult;
+import com.bone.core.model.PageResult;
 import com.bone.tools.codegen.util.BeanUtils;
 import com.bone.tools.codegen.application.dto.CodegenTablePageRequest;
 import com.bone.tools.codegen.domain.entity.DataSourceConfigDO;

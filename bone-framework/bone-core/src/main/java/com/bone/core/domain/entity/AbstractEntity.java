@@ -1,5 +1,6 @@
 package com.bone.core.domain.entity;
 
+import com.bone.core.annotation.Deleted;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
@@ -34,6 +35,7 @@ public abstract class AbstractEntity<ID> extends Entity<ID> implements SoftDelet
     private Long updateBy;
 
     @Schema(description = "逻辑删除")
+    @Deleted
     private Boolean deleted = false;
 
     @Override

@@ -1,9 +1,9 @@
 package com.bone.metadata.sdk.query.converter;
 
 import com.bone.core.enums.Operator;
-import com.bone.core.result.PageParam;
-import com.bone.core.result.SortableParam;
-import com.bone.core.result.SortingField;
+import com.bone.core.model.PageParam;
+import com.bone.core.model.SortableParam;
+import com.bone.core.model.SortingField;
 import com.bone.metadata.sdk.domain.annotation.QueryField;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.domain.enums.SortDirection;
@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -31,34 +32,48 @@ public class QueryObjectConverter {
     // 字段元数据缓存
     private static final Map<Class<?>, List<FieldMetadata>> FIELD_METADATA_CACHE = new ConcurrentHashMap<>();
 
-    // 默认操作符映射
-    private static final Map<Class<?>, Operator> DEFAULT_OPERATOR_MAP = new HashMap<>();
+    // 默认操作符映射 - 使用不可变Map
+    private static final Map<Class<?>, Operator> DEFAULT_OPERATOR_MAP;
     static {
-        DEFAULT_OPERATOR_MAP.put(String.class, Operator.LIKE);
-        DEFAULT_OPERATOR_MAP.put(List.class, Operator.IN);
-        DEFAULT_OPERATOR_MAP.put(Set.class, Operator.IN);
-        DEFAULT_OPERATOR_MAP.put(Object[].class, Operator.IN);
-        DEFAULT_OPERATOR_MAP.put(Boolean.class, Operator.EQ);
-        DEFAULT_OPERATOR_MAP.put(Integer.class, Operator.EQ);
-        DEFAULT_OPERATOR_MAP.put(Long.class, Operator.EQ);
-        DEFAULT_OPERATOR_MAP.put(Double.class, Operator.EQ);
-        DEFAULT_OPERATOR_MAP.put(Float.class, Operator.EQ);
-        DEFAULT_OPERATOR_MAP.put(LocalDate.class, Operator.EQ);
-        DEFAULT_OPERATOR_MAP.put(LocalDateTime.class, Operator.EQ);
-        DEFAULT_OPERATOR_MAP.put(Date.class, Operator.EQ);
+        Map<Class<?>, Operator> map = new HashMap<>();
+        map.put(String.class, Operator.LIKE);
+        map.put(List.class, Operator.IN);
+        map.put(Set.class, Operator.IN);
+        map.put(Collection.class, Operator.IN);
+        map.put(Object[].class, Operator.IN);
+        map.put(Boolean.class, Operator.EQ);
+        map.put(boolean.class, Operator.EQ);
+        map.put(Integer.class, Operator.EQ);
+        map.put(int.class, Operator.EQ);
+        map.put(Long.class, Operator.EQ);
+        map.put(long.class, Operator.EQ);
+        map.put(Double.class, Operator.EQ);
+        map.put(double.class, Operator.EQ);
+        map.put(Float.class, Operator.EQ);
+        map.put(float.class, Operator.EQ);
+        map.put(LocalDate.class, Operator.EQ);
+        map.put(LocalDateTime.class, Operator.EQ);
+        map.put(Date.class, Operator.EQ);
+        DEFAULT_OPERATOR_MAP = Collections.unmodifiableMap(map);
     }
 
     // 日期范围字段后缀模式
     private static final Pattern DATE_RANGE_PATTERN = Pattern.compile("(Start|End|From|To)$");
 
-    // 自定义类型转换器注册表
+    // 自定义类型转换器注册表 - 简化版本，避免复杂泛型
     private static final Map<Class<?>, Function<Object, Object>> CUSTOM_CONVERTERS = new ConcurrentHashMap<>();
+
+    // 需要忽略的字段名集合
+    private static final Set<String> IGNORED_FIELD_NAMES = Set.of(
+            "page", "size", "pageNo", "pageSize", "page_no", "page_size",
+            "sortingFields", "sorting_fields", "order", "sort"
+    );
 
     // 字段元数据类
     private static class FieldMetadata {
-        Field field;
-        String fieldName;
-        QueryField queryField;
+        final Field field;
+        final String fieldName;
+        final QueryField queryField;
 
         FieldMetadata(Field field, String fieldName, QueryField queryField) {
             this.field = field;
@@ -68,9 +83,11 @@ public class QueryObjectConverter {
     }
 
     /**
-     * 注册自定义类型转换器
+     * 注册自定义类型转换器（简化版本）
      */
+    @SuppressWarnings("unchecked")
     public static <T> void registerConverter(Class<T> type, Function<T, Object> converter) {
+        // 安全转换：Function<T, Object> 到 Function<Object, Object>
         CUSTOM_CONVERTERS.put(type, (Function<Object, Object>) converter);
     }
 
@@ -106,7 +123,7 @@ public class QueryObjectConverter {
      * 获取缓存的字段元数据
      */
     private static List<FieldMetadata> getCachedFields(Class<?> clazz) {
-        return FIELD_METADATA_CACHE.computeIfAbsent(clazz, k -> {
+        return FIELD_METADATA_CACHE.computeIfAbsent(clazz, key -> {
             List<FieldMetadata> metadataList = new ArrayList<>();
             Class<?> currentClass = clazz;
 
@@ -136,7 +153,8 @@ public class QueryObjectConverter {
     /**
      * 处理单个字段
      */
-    private static <T> void processField(Object queryObject, FieldMetadata metadata, Criteria<T> criteria, Class<T> entityClass) {
+    private static <T> void processField(Object queryObject, FieldMetadata metadata,
+                                         Criteria<T> criteria, Class<T> entityClass) {
         try {
             Object value = metadata.field.get(queryObject);
 
@@ -160,12 +178,13 @@ public class QueryObjectConverter {
             // 根据操作符添加条件
             addCondition(criteria, metadata.fieldName, operator, value);
         } catch (IllegalAccessException e) {
-            logger.warn("Failed to access field {} on {}", metadata.field.getName(), queryObject.getClass().getName(), e);
+            logger.warn("Failed to access field {} on {}", metadata.field.getName(),
+                    queryObject.getClass().getName(), e);
         }
     }
 
     /**
-     * 应用自定义类型转换
+     * 应用自定义类型转换（简化版本）
      */
     private static Object applyCustomConverter(Field field, Object value) {
         if (value == null) {
@@ -174,7 +193,12 @@ public class QueryObjectConverter {
 
         Function<Object, Object> converter = CUSTOM_CONVERTERS.get(field.getType());
         if (converter != null) {
-            return converter.apply(value);
+            try {
+                return converter.apply(value);
+            } catch (ClassCastException e) {
+                logger.warn("Type conversion failed for field {}: {}", field.getName(), e.getMessage());
+                return value; // 转换失败时返回原值
+            }
         }
 
         return value;
@@ -233,7 +257,7 @@ public class QueryObjectConverter {
             if (value instanceof Collection && !(((Collection<?>) value).isEmpty())) {
                 return Operator.IN;
             }
-            if (fieldType.isArray() && java.lang.reflect.Array.getLength(value) > 0) {
+            if (fieldType.isArray() && Array.getLength(value) > 0) {
                 return Operator.IN;
             }
         }
@@ -266,11 +290,7 @@ public class QueryObjectConverter {
      */
     private static boolean shouldIgnoreField(Object value, QueryField queryField, String fieldName) {
         // 特殊字段跳过（分页和排序字段）
-        // You'll need access to the Field object
-        if ("pageNo".equals(fieldName) || "pageSize".equals(fieldName) ||
-                "page_no".equals(fieldName) || "page_size".equals(fieldName) ||
-                "sortingFields".equals(fieldName) || "sorting_fields".equals(fieldName) ||
-                "order".equals(fieldName)) {
+        if (IGNORED_FIELD_NAMES.contains(fieldName)) {
             return true;
         }
 
@@ -286,7 +306,7 @@ public class QueryObjectConverter {
             return true;
         }
 
-        if (value.getClass().isArray() && java.lang.reflect.Array.getLength(value) == 0) {
+        if (value.getClass().isArray() && Array.getLength(value) == 0) {
             return true;
         }
 
@@ -342,7 +362,8 @@ public class QueryObjectConverter {
                 criteria.lte(baseFieldName, value);
             }
         } catch (IllegalAccessException e) {
-            logger.warn("Failed to access field {} on {}", metadata.field.getName(), queryObject.getClass().getName(), e);
+            logger.warn("Failed to access field {} on {}", metadata.field.getName(),
+                    queryObject.getClass().getName(), e);
         }
     }
 
@@ -382,7 +403,8 @@ public class QueryObjectConverter {
                         return fieldMetadata;
                     }
                 } catch (IllegalAccessException e) {
-                    logger.warn("Failed to access pair field {} on {}", pairFieldName, queryObject.getClass().getName(), e);
+                    logger.warn("Failed to access pair field {} on {}", pairFieldName,
+                            queryObject.getClass().getName(), e);
                 }
                 break;
             }
@@ -417,28 +439,25 @@ public class QueryObjectConverter {
                 break;
             case LIKE:
                 if (value instanceof String stringValue) {
-                    // 根据注解决定是否添加通配符
                     criteria.like(fieldName, stringValue);
+                } else {
+                    logger.warn("LIKE operator requires String value for field: {}, got: {}",
+                            fieldName, value != null ? value.getClass().getSimpleName() : "null");
                 }
                 break;
             case NOT_LIKE:
                 if (value instanceof String stringValue) {
                     criteria.notLike(fieldName, stringValue);
+                } else {
+                    logger.warn("NOT_LIKE operator requires String value for field: {}, got: {}",
+                            fieldName, value != null ? value.getClass().getSimpleName() : "null");
                 }
                 break;
             case IN:
-                if (value instanceof Collection) {
-                    criteria.in(fieldName, (Collection<?>) value);
-                } else if (value.getClass().isArray()) {
-                    criteria.in(fieldName, Arrays.asList((Object[]) value));
-                }
+                handleInCondition(criteria, fieldName, value);
                 break;
             case NOT_IN:
-                if (value instanceof Collection) {
-                    criteria.notIn(fieldName, (Collection<?>) value);
-                } else if (value.getClass().isArray()) {
-                    criteria.notIn(fieldName, Arrays.asList((Object[]) value));
-                }
+                handleNotInCondition(criteria, fieldName, value);
                 break;
             case BETWEEN:
                 // 已经在日期范围处理中处理了
@@ -455,25 +474,80 @@ public class QueryObjectConverter {
     }
 
     /**
+     * 处理IN条件
+     */
+    @SuppressWarnings("unchecked")
+    private static <T> void handleInCondition(Criteria<T> criteria, String fieldName, Object value) {
+        if (value instanceof Collection<?> collection) {
+            if (!collection.isEmpty()) {
+                criteria.in(fieldName, (Collection<Object>) collection);
+            }
+        } else if (value != null && value.getClass().isArray()) {
+            int length = Array.getLength(value);
+            if (length > 0) {
+                List<Object> list = new ArrayList<>(length);
+                for (int i = 0; i < length; i++) {
+                    list.add(Array.get(value, i));
+                }
+                criteria.in(fieldName, list);
+            }
+        } else if (value != null) {
+            logger.warn("IN operator requires Collection or Array for field: {}, got: {}",
+                    fieldName, value.getClass().getSimpleName());
+        }
+    }
+
+    /**
+     * 处理NOT_IN条件
+     */
+    @SuppressWarnings("unchecked")
+    private static <T> void handleNotInCondition(Criteria<T> criteria, String fieldName, Object value) {
+        if (value instanceof Collection<?> collection) {
+            if (!collection.isEmpty()) {
+                criteria.notIn(fieldName, (Collection<Object>) collection);
+            }
+        } else if (value != null && value.getClass().isArray()) {
+            int length = Array.getLength(value);
+            if (length > 0) {
+                List<Object> list = new ArrayList<>(length);
+                for (int i = 0; i < length; i++) {
+                    list.add(Array.get(value, i));
+                }
+                criteria.notIn(fieldName, list);
+            }
+        } else if (value != null) {
+            logger.warn("NOT_IN operator requires Collection or Array for field: {}, got: {}",
+                    fieldName, value.getClass().getSimpleName());
+        }
+    }
+
+    /**
      * 处理分页和排序参数
      */
     private static <T> void processPaginationAndSorting(Object queryObject, Criteria<T> criteria) {
         // 处理分页参数
         if (queryObject instanceof PageParam pageParam) {
-            if (pageParam.getPageNo() != null) {
-                criteria.setPageNumber(pageParam.getPageNo());
+            Integer page = pageParam.getPage();
+            Integer size = pageParam.getSize();
+
+            if (page != null && page > 0) {
+                criteria.setPageNo(page);
             }
 
-            if (pageParam.getPageSize() != null) {
-                criteria.setPageSize(pageParam.getPageSize());
+            if (size != null && size > 0) {
+                criteria.setPageSize(size);
             }
         }
 
         // 处理排序字段
         if (queryObject instanceof SortableParam sortableParam) {
-            if (sortableParam.getSortingFields() != null && !sortableParam.getSortingFields().isEmpty()) {
-                for (SortingField sortingField : sortableParam.getSortingFields()) {
-                    criteria.addSort(sortingField.getField(), convertSortDirection(sortingField.getOrder()));
+            List<SortingField> sortingFields = sortableParam.getSortingFields();
+            if (sortingFields != null && !sortingFields.isEmpty()) {
+                for (SortingField sortingField : sortingFields) {
+                    if (sortingField != null && StringUtils.hasText(sortingField.getField())) {
+                        criteria.addSort(sortingField.getField(),
+                                convertSortDirection(sortingField.getOrder()));
+                    }
                 }
             }
         }
@@ -483,9 +557,9 @@ public class QueryObjectConverter {
      * 转换排序方向
      */
     private static SortDirection convertSortDirection(String order) {
-        if ("desc".equalsIgnoreCase(order)) {
-            return SortDirection.DESC;
+        if (order == null) {
+            return SortDirection.ASC;
         }
-        return SortDirection.ASC;
+        return "desc".equalsIgnoreCase(order) ? SortDirection.DESC : SortDirection.ASC;
     }
 }

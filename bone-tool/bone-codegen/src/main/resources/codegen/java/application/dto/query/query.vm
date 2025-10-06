@@ -3,7 +3,7 @@ package ${table.packgeName}.application.dto.query;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-import com.bone.core.result.Query;
+import com.bone.core.model.Query;
 
 /**
  * ${table.classComment}查询请求类

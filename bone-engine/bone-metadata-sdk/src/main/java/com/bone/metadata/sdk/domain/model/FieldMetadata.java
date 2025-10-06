@@ -27,12 +27,17 @@ public class FieldMetadata {
     private String constraints;
     private boolean isVirtual;
     private boolean isExtension;
+
+    @Builder.Default
     private Boolean deleted = false;
+
     private Long createBy;
     private Long updateBy;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
-    private transient Object sampleValue;
+
+    @Builder.Default
+    private transient Object sampleValue = null;
 
     public boolean isStringType() {
         return "STRING".equalsIgnoreCase(dataType);

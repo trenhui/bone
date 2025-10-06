@@ -19,8 +19,8 @@ public class ScriptExecutor {
 //            String language = "groovy"; // 假设 Groovy 脚本
 //
 //            // 执行脚本
-//            String result = execute(null, null,null, scriptContent, language);
-//            System.out.println("Script Result: " + result);
+//            String model = execute(null, null,null, scriptContent, language);
+//            System.out.println("Script ApiResponse: " + model);
 //        }
 
     public static String execute(Exchange exchange, String debugConnId, Object body, Map<String, Object> headers, String expression, String language) throws Exception {

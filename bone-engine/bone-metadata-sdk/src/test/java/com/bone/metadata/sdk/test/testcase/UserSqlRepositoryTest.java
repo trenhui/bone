@@ -1,9 +1,9 @@
 package com.bone.metadata.sdk.test.testcase;
 
 import com.bone.core.enums.Operator;
-import com.bone.core.result.PageResult;
-import com.bone.core.result.QueryParam;
-import com.bone.core.result.SortingField;
+import com.bone.core.model.PageResult;
+import com.bone.core.model.QueryParam;
+import com.bone.core.model.SortingField;
 import com.bone.metadata.sdk.domain.enums.SortDirection;
 import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
 import com.bone.metadata.sdk.query.criteria.Criteria;
@@ -281,7 +281,7 @@ public class UserSqlRepositoryTest {
         }
 
         @Test
-        @DisplayName("Find one by criteria returns single result")
+        @DisplayName("Find one by criteria returns single model")
         void testFindOneByCriteria_WithUniqueCondition_ReturnsSingleUser() {
             // Create criteria to find user with specific ID
             Criteria<User> criteria = Criteria.<User>builder()
@@ -312,9 +312,9 @@ public class UserSqlRepositoryTest {
                     .addSort(User::getId, SortDirection.ASC);
 
             PageResult<User> page = userRepository.pageByCriteria(criteria);
-            assertNotNull(page, "Page result should not be null");
-            assertEquals(3, page.getTotalCount(), "Should have 3 total users");
-            assertEquals(2, page.getData().size(), "Should return 2 users per page");
+            assertNotNull(page, "Page model should not be null");
+            assertEquals(3, page.getTotal(), "Should have 3 total users");
+            assertEquals(2, page.getRecords().size(), "Should return 2 users per page");
         }
 
         @Test
@@ -334,7 +334,7 @@ public class UserSqlRepositoryTest {
     class NamedStatementTests {
 
         @Test
-        @DisplayName("Execute named statement with parameters returns result")
+        @DisplayName("Execute named statement with parameters returns model")
         void testExecuteNamedStatement_WithParameters_ReturnsResult() {
             Map<String, Object> params = new HashMap<>();
             params.put("name", "Alice");
@@ -399,9 +399,9 @@ public class UserSqlRepositoryTest {
             PageResult<User> page = userRepository.executePagedNamedStatement(
                     "findActiveUsersPaged", params, rowMapper, 1, 2);
 
-            assertNotNull(page, "Page result should not be null");
-            assertEquals(3, page.getTotalCount(), "Should have 3 total active users");
-            assertEquals(2, page.getData().size(), "Should return 2 users per page");
+            assertNotNull(page, "Page model should not be null");
+            assertEquals(3, page.getTotal(), "Should have 3 total active users");
+            assertEquals(2, page.getRecords().size(), "Should return 2 users per page");
         }
 
         @Test
@@ -413,8 +413,8 @@ public class UserSqlRepositoryTest {
             // Assuming there's a named statement "searchUsersPaged" that accepts UserSearchRequest
             PageResult<UserRoleDTO> page = userRepository.executePagedNamedStatement("searchUsersPaged", request);
 
-            assertNotNull(page, "Page result should not be null");
-            assertEquals(2, page.getTotalCount(), "Should have 2 total users with role ID 2");
+            assertNotNull(page, "Page model should not be null");
+            assertEquals(2, page.getTotal(), "Should have 2 total users with role ID 2");
         }
     }
 
@@ -438,9 +438,9 @@ public class UserSqlRepositoryTest {
             PageResult<User> page = userRepository.queryByCondition(
                     queryParams, sortingFields, 1, 10, "user");
 
-            assertNotNull(page, "Page result should not be null");
-            assertEquals(1, page.getTotalCount(), "Should find 1 user matching criteria");
-            assertEquals("Alice", page.getData().get(0).getName(), "User name should be Alice");
+            assertNotNull(page, "Page model should not be null");
+            assertEquals(1, page.getTotal(), "Should find 1 user matching criteria");
+            assertEquals("Alice", page.getRecords().get(0).getName(), "User name should be Alice");
         }
 
         @Test
@@ -459,14 +459,14 @@ public class UserSqlRepositoryTest {
         @DisplayName("Query page with page param returns paged results")
         void testQueryPage_WithPageParam_ReturnsPagedResults() {
             UserPageQuery pageQuery = new UserPageQuery();
-            pageQuery.setPageNo(1);
-            pageQuery.setPageSize(2);
+            pageQuery.setPage(1);
+            pageQuery.setSize(2);
             pageQuery.setUserName("A");
 
             PageResult<User> page = userRepository.queryPage(pageQuery);
-            assertNotNull(page, "Page result should not be null");
-            assertTrue(page.getTotalCount() >= 1, "Should find at least 1 user with name containing A");
-            assertEquals(2, page.getData().size(), "Should return up to 2 users per page");
+            assertNotNull(page, "Page model should not be null");
+            assertTrue(page.getTotal() >= 1, "Should find at least 1 user with name containing A");
+            assertEquals(2, page.getRecords().size(), "Should return up to 2 users per page");
         }
     }
 
@@ -476,7 +476,7 @@ public class UserSqlRepositoryTest {
     class AggregationTests {
 
         @Test
-        @DisplayName("Aggregate with simple aggregation returns result")
+        @DisplayName("Aggregate with simple aggregation returns model")
         void testAggregate_SimpleAggregation_ReturnsResult() {
             List<String> aggregations = Arrays.asList("COUNT(*)", "MAX(id)");
 
@@ -484,7 +484,7 @@ public class UserSqlRepositoryTest {
             Criteria<User> criteria = Criteria.<User>builder().eq(User::getDeleted, false);
 
             Map<String, Object> result = userRepository.aggregate(aggregations, criteria);
-            assertNotNull(result, "Aggregation result should not be null");
+            assertNotNull(result, "Aggregation model should not be null");
             assertEquals(3L, result.get("COUNT(*)"), "Should count 3 active users"); // 改为3
             assertTrue((Long) result.get("MAX(id)") >= 3L, "Max ID should be at least 3");
         }
@@ -511,7 +511,7 @@ public class UserSqlRepositoryTest {
                     })
                     .findFirst();
 
-            assertTrue(role1Result.isPresent(), "Should have result for role_id 1");
+            assertTrue(role1Result.isPresent(), "Should have model for role_id 1");
             assertEquals(1L, role1Result.get().get("COUNT(*)"), "Should have 1 user with role_id 1");
 
             // 添加对 role_id 2 的验证
@@ -522,7 +522,7 @@ public class UserSqlRepositoryTest {
                     })
                     .findFirst();
 
-            assertTrue(role2Result.isPresent(), "Should have result for role_id 2");
+            assertTrue(role2Result.isPresent(), "Should have model for role_id 2");
             assertEquals(2L, role2Result.get().get("COUNT(*)"), "Should have 2 users with role_id 2");
         }
 
@@ -557,9 +557,9 @@ public class UserSqlRepositoryTest {
             PageResult<Map<String, Object>> page = userRepository.aggregateWithPagination(
                     aggregations, criteria, groupBy, null,1, 10);
 
-            assertNotNull(page, "Page result should not be null");
-            assertEquals(2, page.getTotalCount(), "Should have 2 total groups"); // 改为2
-            assertEquals(2, page.getData().size(), "Should return 2 groups per page");
+            assertNotNull(page, "Page model should not be null");
+            assertEquals(2, page.getTotal(), "Should have 2 total groups"); // 改为2
+            assertEquals(2, page.getRecords().size(), "Should return 2 groups per page");
         }
     }
 
@@ -597,7 +597,7 @@ public class UserSqlRepositoryTest {
         }
 
         @Test
-        @DisplayName("Search users with conditions returns paged result")
+        @DisplayName("Search users with conditions returns paged model")
         void testSearchUsers_WithConditions_ReturnsPagedResult() {
             UserSearchRequest request = new UserSearchRequest();
             request.setName("Bob");
