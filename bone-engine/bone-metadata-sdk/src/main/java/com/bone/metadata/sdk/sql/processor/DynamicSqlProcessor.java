@@ -298,7 +298,7 @@ public class DynamicSqlProcessor implements SqlProcessor {
                     sql.setLength(0);
                 }
                 sql.append(processed);
-                log.debug("Closed tag: {}, result: [{}]", tagName, processed);
+                log.debug("Closed tag: {}, model: [{}]", tagName, processed);
             } else {
                 log.warn("No closures to pop for tag: {}", tagName);
             }

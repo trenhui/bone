@@ -1,6 +1,6 @@
 package com.bone.metadata.sdk.extension.repository;
 
-import com.bone.core.id.IdGenerator;
+import com.bone.core.util.DistributedIdGenerator;
 import com.bone.metadata.sdk.support.config.MetadataSdkContext;
 import com.bone.metadata.sdk.domain.enums.DatabaseType;
 import com.bone.metadata.sdk.domain.model.AllocationContext;
@@ -76,7 +76,7 @@ public class FieldMetadataRepository {
         // 为每条记录分配雪花ID（如无ID）
         for (FieldMetadata m : metadataList) {
             if (m.getId() == null) {
-                m.setId(IdGenerator.generateLongID());
+                m.setId(DistributedIdGenerator.generateLongId());
             }
         }
 

@@ -1,7 +1,7 @@
 package com.bone.metadata.sdk;
 
 import com.bone.core.domain.entity.Entity;
-import com.bone.core.result.*;
+import com.bone.core.model.*;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
 import org.springframework.jdbc.core.RowMapper;

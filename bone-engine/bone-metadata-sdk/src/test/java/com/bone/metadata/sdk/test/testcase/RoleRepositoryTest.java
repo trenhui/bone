@@ -1,9 +1,9 @@
 package com.bone.metadata.sdk.test.testcase;
 
 import com.bone.core.enums.Operator;
-import com.bone.core.result.PageResult;
-import com.bone.core.result.QueryParam;
-import com.bone.core.result.SortingField;
+import com.bone.core.model.PageResult;
+import com.bone.core.model.QueryParam;
+import com.bone.core.model.SortingField;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
 import com.bone.metadata.sdk.test.config.TestConfig;
@@ -214,18 +214,18 @@ public class RoleRepositoryTest  {
     void testFindOneByCriteria_ShouldThrowExceptionWhenMultipleResults() {
         Criteria<Role> criteria = Criteria.<Role>create().like("description", "%role%");
         assertThrows(MultipleResultsException.class, () -> roleRepository.findOneByCriteria(criteria),
-                "Should throw MultipleResultsException when more than one result is found");
+                "Should throw MultipleResultsException when more than one model is found");
     }
 
     // 14. Test pageByCriteria
     @Test
     void testPageByCriteria_ShouldReturnPagedResults() {
         Criteria<Role> criteria = Criteria.<Role>create();
-        criteria.setPageNumber(1);
+        criteria.setPageNo(1);
         criteria.setPageSize(2);
         PageResult<Role> pageResult = roleRepository.pageByCriteria(criteria);
-        assertNotNull(pageResult, "Page result should not be null");
-        assertTrue(pageResult.getData().size() <= 2, "Page should contain no more than 2 roles");
+        assertNotNull(pageResult, "Page model should not be null");
+        assertTrue(pageResult.getRecords().size() <= 2, "Page should contain no more than 2 roles");
     }
 
     // 15. Test countByCriteria
@@ -242,7 +242,7 @@ public class RoleRepositoryTest  {
         List<QueryParam> queryParams = Collections.singletonList(new QueryParam("roleName",  "ADM",Operator.LIKE));
         List<SortingField> sortingFields = Collections.singletonList(new SortingField("id", "ASC"));
         PageResult<Role> pageResult = roleRepository.queryByCondition(queryParams, sortingFields, 1, 10, null);
-        assertNotNull(pageResult, "Page result should not be null");
-        assertFalse(pageResult.getData().isEmpty(), "Should return roles matching the condition");
+        assertNotNull(pageResult, "Page model should not be null");
+        assertFalse(pageResult.getRecords().isEmpty(), "Should return roles matching the condition");
     }
 }

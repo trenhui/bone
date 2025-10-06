@@ -4,9 +4,7 @@ import com.bone.core.exception.BizException;
 import com.bone.core.util.ReflectionUtil;
 import lombok.extern.slf4j.Slf4j;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-
 
 /**
  * ExtPointInvocationHandler
@@ -15,27 +13,29 @@ import java.lang.reflect.Method;
  */
 @Slf4j
 public class ExtPointInvocationHandler {
-    public static Object invoke(Object target, Method method, Object[] args) {
 
+    public static Object invoke(Object target, Method method, Object[] args) {
         try {
             Object result = ReflectionUtil.invokeMethod(target, method.getName(), args);
-            log.info("ExtPoint " + target.getClass().getCanonicalName() + "." + method.getName() + " method invoke");
+            log.info("ExtPoint {}.{} method invoke",
+                    target.getClass().getCanonicalName(), method.getName());
             return result;
-        } catch (InvocationTargetException ex) {
-            // 捕获 InvocationTargetException 并转换为业务异常
-            Throwable cause = ex.getCause();  // 获取封装的原始异常
+        } catch (ReflectionUtil.ReflectionException ex) {
+            // 处理反射工具类抛出的异常
+            Throwable cause = ex.getCause();
             if (cause instanceof BizException) {
-                // 将具体异常转换为业务异常
-                throw BizException.of(500, "A specific error occurred: " + cause.getMessage());
+                throw (BizException) cause;
             } else {
-                // 对于其他异常，转换为通用的业务异常
-                throw BizException.of(500, "An error occurred during method invocation: " + cause.getMessage());
+                log.error("Extension point method invocation failed: {}.{}",
+                        target.getClass().getSimpleName(), method.getName(), ex);
+                throw BizException.of(500, "Extension point execution failed: " +
+                        (cause != null ? cause.getMessage() : ex.getMessage()));
             }
-        } catch (IllegalAccessException | IllegalArgumentException e) {
-            // 处理其他反射异常
-            log.error("其他反射异常", e);
-            throw BizException.of(500, "An error occurred during method invocation: " + e.getMessage());
+        } catch (Exception e) {
+            // 处理其他异常
+            log.error("Unexpected error during extension point invocation: {}.{}",
+                    target.getClass().getSimpleName(), method.getName(), e);
+            throw BizException.of(500, "Unexpected error: " + e.getMessage());
         }
-
     }
 }

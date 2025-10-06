@@ -1,17 +1,18 @@
 package com.bone.metadata.sdk.test.domain;
 
-import com.bone.core.annotation.*;
+import com.bone.core.annotation.Id;
+import com.bone.core.annotation.Transient;
 import com.bone.core.domain.entity.Entity;
 import com.bone.core.domain.extension.Extensible;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.metadata.sdk.domain.model.NullableConcurrentMap;
-import com.bone.metadata.sdk.domain.annotation.Id;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -21,10 +22,12 @@ import java.util.Map;
 import java.util.Set;
 
 @Data
+@EqualsAndHashCode(callSuper = true)
 @Table("sys_permission")
 @NoArgsConstructor
 @AllArgsConstructor
-public class Permission extends Entity<Long>  implements Extensible {
+public class Permission extends Entity<Long> implements Extensible {
+
     @Transient
     private final Map<String, Object> extraProperties = new NullableConcurrentMap<>(64);
 

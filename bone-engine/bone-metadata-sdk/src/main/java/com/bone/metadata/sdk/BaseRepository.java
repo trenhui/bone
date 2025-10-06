@@ -4,13 +4,13 @@ import com.bone.core.domain.entity.Entity;
 import com.bone.core.domain.extension.Extensible;
 import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.core.enums.Operator;
-import com.bone.core.result.PageParam;
-import com.bone.core.result.PageResult;
-import com.bone.core.result.Query;
-import com.bone.core.result.QueryParam;
-import com.bone.core.result.SortablePageParam;
-import com.bone.core.result.SortableParam;
-import com.bone.core.result.SortingField;
+import com.bone.core.model.PageParam;
+import com.bone.core.model.PageResult;
+import com.bone.core.model.Query;
+import com.bone.core.model.QueryParam;
+import com.bone.core.model.SortablePageParam;
+import com.bone.core.model.SortableParam;
+import com.bone.core.model.SortingField;
 import com.bone.core.tenant.context.TenantContext;
 import com.bone.core.tenant.context.BizIdentityContext;
 import com.bone.metadata.sdk.domain.enums.SortDirection;
@@ -54,7 +54,7 @@ import java.util.stream.IntStream;
 public abstract class BaseRepository<T extends Entity<ID>, ID> implements Repository<T, ID> {
 
     @Value("${jdbc.batch.size:1000}")
-    private final int maxBatchSize=1000;
+    private final int maxBatchSize = 1000;
 
     private static final int MAX_PAGINATION_THRESHOLD = 1000;
     private static final int DEFAULT_PAGE_SIZE = 10;
@@ -318,7 +318,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
     // ========== 条件查询 / 统计 ==========
     protected void validateCriteriaFields(Criteria<T> criteria) {
         for (Condition condition : criteria.getMainConditions()) {
-            if (FieldCache.getFieldByName(entityClass, condition.getFieldName())==null) {
+            if (FieldCache.getFieldByName(entityClass, condition.getFieldName()) == null) {
                 throw new UndefinedFieldException(
                         String.format("Field '%s' is not defined in entity %s",
                                 condition.getFieldName(), entityClass.getSimpleName()));
@@ -345,7 +345,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
         CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria);
         List<T> results = sqlExecutor.executeQuery(query, entityClass);
         if (results.size() > 1) {
-            throw new MultipleResultsException("Expected single result, found: " + results.size());
+            throw new MultipleResultsException("Expected single model, found: " + results.size());
         }
         T entity = results.stream().findFirst().orElse(null);
         if (entity != null) loadExtensionFields(entity);
@@ -356,8 +356,8 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
     @Transactional(readOnly = true)
     public PageResult<T> pageByCriteria(Criteria<T> criteria) {
         Assert.notNull(criteria, "Criteria must not be null");
-        if (criteria.getPageNumber() > MAX_PAGINATION_THRESHOLD) {
-            log.warn("Large page number: {} (consider cursor pagination).", criteria.getPageNumber());
+        if (criteria.getPageNo() > MAX_PAGINATION_THRESHOLD) {
+            log.warn("Large page number: {} (consider cursor pagination).", criteria.getPageNo());
         }
 
         // 查询当前页
@@ -366,18 +366,18 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
         content.forEach(this::loadExtensionFields);
 
         // 计数（若你的 CountBuilder 已忽略分页，可直接用 countByCriteria(criteria)）
-        Integer originalPageNumber = criteria.getPageNumber();
+        Integer originalPageNumber = criteria.getPageNo();
         Integer originalPageSize = criteria.getPageSize();
         Long total;
         try {
             total = countByCriteria(criteria);
         } finally {
-            criteria.setPageNumber(originalPageNumber);
+            criteria.setPageNo(originalPageNumber);
             criteria.setPageSize(originalPageSize);
         }
         int pageNo = originalPageNumber != null ? originalPageNumber : DEFAULT_PAGE_NUMBER;
         int pageSize = originalPageSize != null ? originalPageSize : DEFAULT_PAGE_SIZE;
-        return new PageResult<>(content, pageNo, pageSize, total);
+        return PageResult.of(content, total, pageNo, pageSize);
     }
 
     @Override
@@ -396,7 +396,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
     public <R> R executeNamedStatement(String statementId, Map<String, Object> parameters) {
         Assert.hasText(statementId, "Statement ID must not be null or empty");
         Assert.notNull(parameters, "Parameters must not be null");
-        return (R) sqlExecutor.execute(statementId, parameters, entityClass);
+        return sqlExecutor.execute(statementId, parameters, entityClass);
     }
 
     /**
@@ -448,9 +448,9 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
                 map.put(ORDER_BY_PARAM, convertSortingFieldsToOrderBy(pageParam.getSortingFields()));
             }
             PageResult<T> result = sqlExecutor.executePaged(
-                    statementId, map, entityClass, pageParam.getPageNo(), pageParam.getPageSize());
+                    statementId, map, entityClass, pageParam.getPage(), pageParam.getSize());
             // 双重擦除：满足接口签名 <R>
-            return (PageResult<R>) (PageResult) result;
+            return (PageResult<R>) result;
         }
         throw new IllegalArgumentException("Parameter must be of type SortablePageParam");
     }
@@ -477,7 +477,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
         addSortingToCriteria(criteria, processedSortingFields);
         int processedPageNo = (pageNo != null && pageNo > 0) ? pageNo : DEFAULT_PAGE_NUMBER;
         int processedPageSize = (pageSize != null && pageSize > 0) ? pageSize : DEFAULT_PAGE_SIZE;
-        criteria.setPageNumber(processedPageNo);
+        criteria.setPageNo(processedPageNo);
         criteria.setPageSize(processedPageSize);
         return pageByCriteria(criteria);
     }
@@ -545,24 +545,24 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
             total = countByCriteria(criteria);
         } else {
             // 有分组情况：使用专用计数构建器
-            total = countGroupByResultsWithHaving(criteria, groupBy,having);
+            total = countGroupByResultsWithHaving(criteria, groupBy, having);
         }
 
         // 获取当前页数据
-        criteria.setPageNumber(pageNumber);
+        criteria.setPageNo(pageNumber);
         criteria.setPageSize(pageSize);
         List<Map<String, Object>> content = aggregate(aggregations, criteria, groupBy, null);
 
-        return new PageResult<>(content, pageNumber, pageSize, total);
+        return PageResult.of(content, total, pageNumber, pageSize);
     }
 
     /**
      * 使用专用计数构建器计算带HAVING条件的分组结果总数
      */
     private Long countGroupByResultsWithHaving(Criteria<T> criteria, List<String> groupBy, List<String> having) {
-            CompiledQuery countQuery = sqlBuilder.buildCountAggregation(
-                    entityClass, criteria, groupBy, having);
-            return sqlExecutor.queryForObject(countQuery, Long.class);
+        CompiledQuery countQuery = sqlBuilder.buildCountAggregation(
+                entityClass, criteria, groupBy, having);
+        return sqlExecutor.queryForObject(countQuery, Long.class);
     }
 
     // ========== 辅助方法 ==========
@@ -667,7 +667,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
                             if (!(value instanceof List<?>)) {
                                 throw new MetadataException("IN 运算符需要一个值列表");
                             }
-                            criteria.in(fieldName, (List<?>) value);
+                            criteria.in(fieldName, value);
                             break;
                         case BETWEEN:
                             if (!(value instanceof List<?> range) || range.size() != 2) {

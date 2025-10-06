@@ -1,6 +1,6 @@
 package com.bone.core.exception;
 
-import com.bone.core.result.Result;
+import com.bone.core.model.ApiResponse;
 import com.bone.core.util.ExceptionUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
@@ -26,7 +26,7 @@ import static com.bone.core.enums.GlobalErrorCodeConstants.*;
 
 
 /**
- * 全局异常处理器，将 Exception 翻译成 Result + 对应的异常编号
+ * 全局异常处理器，将 Exception 翻译成 ApiResponse + 对应的异常编号
  */
 @RestControllerAdvice
 @AllArgsConstructor
@@ -41,7 +41,7 @@ public class GlobalExceptionHandler {
      * @param ex      异常
      * @return 通用返回
      */
-    public Result<?> allExceptionHandler(HttpServletRequest request, Throwable ex) {
+    public ApiResponse<?> allExceptionHandler(HttpServletRequest request, Throwable ex) {
         if (ex instanceof MissingServletRequestParameterException) {
             return missingServletRequestParameterExceptionHandler((MissingServletRequestParameterException) ex);
         }
@@ -87,9 +87,9 @@ public class GlobalExceptionHandler {
      * 例如说，接口上设置了 @RequestParam("xx") 参数，结果并未传递 xx 参数
      */
     @ExceptionHandler(value = MissingServletRequestParameterException.class)
-    public Result<?> missingServletRequestParameterExceptionHandler(MissingServletRequestParameterException ex) {
+    public ApiResponse<?> missingServletRequestParameterExceptionHandler(MissingServletRequestParameterException ex) {
         log.warn("[missingServletRequestParameterExceptionHandler]", ex);
-        return Result.error(BAD_REQUEST.getCode(), String.format("请求参数缺失:%s", ex.getParameterName()));
+        return ApiResponse.error(BAD_REQUEST.getCode(), String.format("请求参数缺失:%s", ex.getParameterName()));
     }
 
     /**
@@ -98,51 +98,51 @@ public class GlobalExceptionHandler {
      * 例如说，接口上设置了 @RequestParam("xx") 参数为 Integer，结果传递 xx 参数类型为 String
      */
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public Result<?> methodArgumentTypeMismatchExceptionHandler(MethodArgumentTypeMismatchException ex) {
+    public ApiResponse<?> methodArgumentTypeMismatchExceptionHandler(MethodArgumentTypeMismatchException ex) {
         log.warn("[missingServletRequestParameterExceptionHandler]", ex);
-        return Result.error(BAD_REQUEST.getCode(), String.format("请求参数类型错误:%s", ex.getMessage()));
+        return ApiResponse.error(BAD_REQUEST.getCode(), String.format("请求参数类型错误:%s", ex.getMessage()));
     }
 
     /**
      * 处理 SpringMVC 参数校验不正确
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public Result<?> methodArgumentNotValidExceptionExceptionHandler(MethodArgumentNotValidException ex) {
+    public ApiResponse<?> methodArgumentNotValidExceptionExceptionHandler(MethodArgumentNotValidException ex) {
         log.warn("[methodArgumentNotValidExceptionExceptionHandler]", ex);
         FieldError fieldError = ex.getBindingResult().getFieldError();
         assert fieldError != null; // 断言，避免告警
-        return Result.error(BAD_REQUEST.getCode(), String.format("请求参数不正确:%s", fieldError.getDefaultMessage()));
+        return ApiResponse.error(BAD_REQUEST.getCode(), String.format("请求参数不正确:%s", fieldError.getDefaultMessage()));
     }
 
     /**
      * 处理 SpringMVC 参数绑定不正确，本质上也是通过 Validator 校验
      */
     @ExceptionHandler(BindException.class)
-    public Result<?> bindExceptionHandler(BindException ex) {
+    public ApiResponse<?> bindExceptionHandler(BindException ex) {
         log.warn("[handleBindException]", ex);
         FieldError fieldError = ex.getFieldError();
         assert fieldError != null; // 断言，避免告警
-        return Result.error(BAD_REQUEST.getCode(), String.format("请求参数不正确:%s", fieldError.getDefaultMessage()));
+        return ApiResponse.error(BAD_REQUEST.getCode(), String.format("请求参数不正确:%s", fieldError.getDefaultMessage()));
     }
 
     /**
      * 处理 Validator 校验不通过产生的异常
      */
     @ExceptionHandler(value = ConstraintViolationException.class)
-    public Result<?> constraintViolationExceptionHandler(ConstraintViolationException ex) {
+    public ApiResponse<?> constraintViolationExceptionHandler(ConstraintViolationException ex) {
         log.warn("[constraintViolationExceptionHandler]", ex);
         ConstraintViolation<?> constraintViolation = ex.getConstraintViolations().iterator().next();
-        return Result.error(BAD_REQUEST.getCode(), String.format("请求参数不正确:%s", constraintViolation.getMessage()));
+        return ApiResponse.error(BAD_REQUEST.getCode(), String.format("请求参数不正确:%s", constraintViolation.getMessage()));
     }
 
     /**
      * 处理 Dubbo Consumer 本地参数校验时，抛出的 ValidationException 异常
      */
     @ExceptionHandler(value = ValidationException.class)
-    public Result<?> validationException(ValidationException ex) {
+    public ApiResponse<?> validationException(ValidationException ex) {
         log.warn("[constraintViolationExceptionHandler]", ex);
         // 无法拼接明细的错误信息，因为 Dubbo Consumer 抛出 ValidationException 异常时，是直接的字符串信息，且人类不可读
-        return Result.error(BAD_REQUEST.getCode(), "constraintViolationExceptionHandler");
+        return ApiResponse.error(BAD_REQUEST.getCode(), "constraintViolationExceptionHandler");
     }
 
     /**
@@ -153,9 +153,9 @@ public class GlobalExceptionHandler {
      * 2. spring.mvc.static-path-pattern 为 /statics/**
      */
     @ExceptionHandler(NoHandlerFoundException.class)
-    public Result<?> noHandlerFoundExceptionHandler(NoHandlerFoundException ex) {
+    public ApiResponse<?> noHandlerFoundExceptionHandler(NoHandlerFoundException ex) {
         log.warn("[noHandlerFoundExceptionHandler]", ex);
-        return Result.error(NOT_FOUND.getCode(), String.format("请求地址不存在:%s", ex.getRequestURL()));
+        return ApiResponse.error(NOT_FOUND.getCode(), String.format("请求地址不存在:%s", ex.getRequestURL()));
     }
 
     /**
@@ -164,17 +164,17 @@ public class GlobalExceptionHandler {
      * 例如说，A 接口的方法为 GET 方式，结果请求方法为 POST 方式，导致不匹配
      */
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    public Result<?> httpRequestMethodNotSupportedExceptionHandler(HttpRequestMethodNotSupportedException ex) {
+    public ApiResponse<?> httpRequestMethodNotSupportedExceptionHandler(HttpRequestMethodNotSupportedException ex) {
         log.warn("[httpRequestMethodNotSupportedExceptionHandler]", ex);
-        return Result.error(METHOD_NOT_ALLOWED.getCode(), String.format("请求方法不正确:%s", ex.getMessage()));
+        return ApiResponse.error(METHOD_NOT_ALLOWED.getCode(), String.format("请求方法不正确:%s", ex.getMessage()));
     }
 
     /**
      * 处理 Resilience4j 限流抛出的异常
      */
-    public Result<?> requestNotPermittedExceptionHandler(HttpServletRequest req, Throwable ex) {
+    public ApiResponse<?> requestNotPermittedExceptionHandler(HttpServletRequest req, Throwable ex) {
         log.warn("[requestNotPermittedExceptionHandler][url({}) 访问过于频繁]", req.getRequestURL(), ex);
-        return Result.error(TOO_MANY_REQUESTS.getCode(), String.format("[requestNotPermittedExceptionHandler][url(%s) 访问过于频繁]", req.getRequestURL()));
+        return ApiResponse.error(TOO_MANY_REQUESTS.getCode(), String.format("[requestNotPermittedExceptionHandler][url(%s) 访问过于频繁]", req.getRequestURL()));
     }
 
 
@@ -183,9 +183,9 @@ public class GlobalExceptionHandler {
      * <p>
      */
     @ExceptionHandler(value = ServiceException.class)
-    public Result<?> serviceExceptionHandler(ServiceException ex) {
+    public ApiResponse<?> serviceExceptionHandler(ServiceException ex) {
         log.info("[serviceExceptionHandler]", ex);
-        return Result.error(ex.getCode(), ex.getMessage());
+        return ApiResponse.error(ex.getCode(), ex.getMessage());
     }
 
     /**
@@ -194,9 +194,9 @@ public class GlobalExceptionHandler {
      * 例如说，商品库存不足，用户手机号已存在。
      */
     @ExceptionHandler(value = BizException.class)
-    public Result<?> bizExceptionHandler(BizException ex) {
+    public ApiResponse<?> bizExceptionHandler(BizException ex) {
         log.info("[bizExceptionHandler]", ex);
-        return Result.error(ex.getCode(), ex.getMessage());
+        return ApiResponse.error(ex.getCode(), ex.getMessage());
     }
 
 
@@ -204,9 +204,9 @@ public class GlobalExceptionHandler {
      * 处理系统异常，兜底处理所有的一切
      */
     @ExceptionHandler(value = Exception.class)
-    public Result<?> defaultExceptionHandler(HttpServletRequest req, Throwable ex) {
+    public ApiResponse<?> defaultExceptionHandler(HttpServletRequest req, Throwable ex) {
         // 情况一：处理表不存在的异常
-        Result<?> tableNotExistsResult = handleTableNotExists(ex);
+        ApiResponse<?> tableNotExistsResult = handleTableNotExists(ex);
         if (tableNotExistsResult != null) {
             return tableNotExistsResult;
         }
@@ -219,15 +219,15 @@ public class GlobalExceptionHandler {
         Throwable cause = ex.getCause();
         if (cause instanceof InvocationTargetException) {
             log.error("[handleInvocationTargetException - cause]", cause);
-            return Result.error(INTERNAL_SERVER_ERROR.getCode(), cause.getMessage());
+            return ApiResponse.error(INTERNAL_SERVER_ERROR.getCode(), cause.getMessage());
         }
 
         // 情况三：处理异常
         log.error("[defaultExceptionHandler]", ex);
         // 插入异常日志
         this.createExceptionLog(req, ex);
-        // 返回 ERROR Result
-        return Result.error(INTERNAL_SERVER_ERROR.getCode(), INTERNAL_SERVER_ERROR.getMsg());
+        // 返回 ERROR ApiResponse
+        return ApiResponse.error(INTERNAL_SERVER_ERROR.getCode(), INTERNAL_SERVER_ERROR.getMsg());
     }
 
     private void createExceptionLog(HttpServletRequest req, Throwable e) {
@@ -248,9 +248,9 @@ public class GlobalExceptionHandler {
      * 处理 Table 不存在的异常情况
      *
      * @param ex 异常
-     * @return 如果是 Table 不存在的异常，则返回对应的 Result
+     * @return 如果是 Table 不存在的异常，则返回对应的 ApiResponse
      */
-    private Result<?> handleTableNotExists(Throwable ex) {
+    private ApiResponse<?> handleTableNotExists(Throwable ex) {
         String message = ExceptionUtil.getRootCauseMessage(ex);
         if (!message.contains("doesn't exist")) {
             return null;
@@ -259,9 +259,9 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(SQLException.class)
-    public Result<?> handleSQLException(SQLException ex) {
+    public ApiResponse<?> handleSQLException(SQLException ex) {
         log.error("[SQLException]", ex);
-        return Result.error(INTERNAL_SERVER_ERROR.getCode(), ex.getMessage());
+        return ApiResponse.error(INTERNAL_SERVER_ERROR.getCode(), ex.getMessage());
     }
 
 }

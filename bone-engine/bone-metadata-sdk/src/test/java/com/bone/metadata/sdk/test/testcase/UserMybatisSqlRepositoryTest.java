@@ -1,12 +1,13 @@
 package com.bone.metadata.sdk.test.testcase;
 
 import com.bone.core.enums.Operator;
-import com.bone.core.result.PageResult;
-import com.bone.core.result.QueryParam;
-import com.bone.core.result.SortingField;
+import com.bone.core.model.PageResult;
+import com.bone.core.model.QueryParam;
+import com.bone.core.model.SortingField;
 import com.bone.metadata.sdk.domain.enums.SortDirection;
 import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
 import com.bone.metadata.sdk.query.criteria.Criteria;
+import com.bone.metadata.sdk.sql.executor.SqlExecutor;
 import com.bone.metadata.sdk.test.config.TestConfig;
 import com.bone.metadata.sdk.test.domain.User;
 import com.bone.metadata.sdk.test.domain.dto.UserRoleDTO;
@@ -30,6 +31,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.sql.DataSource;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
@@ -47,6 +49,14 @@ public class UserMybatisSqlRepositoryTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private DataSource dataSource;
+
+    @Autowired
+    private SqlExecutor sqlExecutor;
+
+
 
     @Autowired
     private UserMybatisSqlRepository userMybatisSqlRepository;
@@ -272,7 +282,7 @@ public class UserMybatisSqlRepositoryTest {
         @DisplayName("Find by criteria returns matching users")
         void testFindByCriteria_WithConditions_ReturnsMatchingUsers() {
             // Create criteria to find users with role ID 2
-            Criteria<User> criteria = Criteria.<User>create().eq(User::getRoleId,2L);
+            Criteria<User> criteria = Criteria.<User>create().eq(User::getRoleId, 2L);
             List<User> users = userMybatisSqlRepository.findByCriteria(criteria);
             assertEquals(2, users.size(), "Should find two users with role ID 2");
             assertTrue(users.stream().allMatch(u -> u.getRoleId() == 2L),
@@ -280,7 +290,7 @@ public class UserMybatisSqlRepositoryTest {
         }
 
         @Test
-        @DisplayName("Find one by criteria returns single result")
+        @DisplayName("Find one by criteria returns single model")
         void testFindOneByCriteria_WithUniqueCondition_ReturnsSingleUser() {
             // Create criteria to find user with specific ID
             Criteria<User> criteria = Criteria.<User>builder()
@@ -295,7 +305,7 @@ public class UserMybatisSqlRepositoryTest {
         @DisplayName("Find one by criteria with multiple results throws exception")
         void testFindOneByCriteria_WithMultipleResults_ThrowsException() {
             // Create criteria that will match multiple users
-            Criteria<User> criteria = Criteria.<User>builder().eq(User::getRoleId,2L);
+            Criteria<User> criteria = Criteria.<User>builder().eq(User::getRoleId, 2L);
 
             assertThrows(MultipleResultsException.class, () -> {
                 userMybatisSqlRepository.findOneByCriteria(criteria);
@@ -304,23 +314,36 @@ public class UserMybatisSqlRepositoryTest {
 
         @Test
         @DisplayName("Page by criteria returns paged results")
-        void testPageByCriteria_WithPaging_ReturnsPagedResults() {
+        void testPageByCriteria_WithPaging_ReturnsPagedResults() throws SQLException {
             // Create criteria with paging
             Criteria<User> criteria = Criteria.<User>builder()
-                    .page(1,2)
+                    .page(1, 2)
                     .addSort(User::getId, SortDirection.ASC);
+            log.info(dataSource.getConnection().toString());
+
+            // 验证数据库中的总记录数（包含已删除）
+            List<Map<String, Object>> result = sqlExecutor.executeRawQueryForMap(
+                    "SELECT COUNT(*) as total FROM users", Collections.emptyMap());
+            Long actualTotal = ((Number) result.get(0).get("total")).longValue();
+            System.out.println("数据库总记录数: " + actualTotal);
+
+// 验证未删除的记录数
+            List<Map<String, Object>> activeResult = sqlExecutor.executeRawQueryForMap(
+                    "SELECT COUNT(*) as active FROM users WHERE deleted = 0", Collections.emptyMap());
+            Long activeTotal = ((Number) activeResult.get(0).get("active")).longValue();
+            System.out.println("未删除记录数: " + activeTotal);
 
             PageResult<User> page = userMybatisSqlRepository.pageByCriteria(criteria);
-            assertNotNull(page, "Page result should not be null");
-            assertEquals(3, page.getTotalCount(), "Should have 3 total users");
-            assertEquals(2, page.getData().size(), "Should return 2 users per page");
+            assertNotNull(page, "Page model should not be null");
+            assertEquals(3, page.getTotal(), "Should have 3 total users");
+            assertEquals(2, page.getRecords().size(), "Should return 2 users per page");
         }
 
         @Test
         @DisplayName("Count by criteria returns correct count")
         void testCountByCriteria_WithConditions_ReturnsCorrectCount() {
             // Create criteria to count users with role ID 2
-            Criteria<User> criteria = Criteria.<User>builder().eq(User::getRoleId,2L);
+            Criteria<User> criteria = Criteria.<User>builder().eq(User::getRoleId, 2L);
 
             Long count = userMybatisSqlRepository.countByCriteria(criteria);
             assertEquals(2L, count, "Should count 2 users with role ID 2");
@@ -333,7 +356,7 @@ public class UserMybatisSqlRepositoryTest {
     class NamedStatementTests {
 
         @Test
-        @DisplayName("Execute named statement with parameters returns result")
+        @DisplayName("Execute named statement with parameters returns model")
         void testExecuteNamedStatement_WithParameters_ReturnsResult() {
             Map<String, Object> params = new HashMap<>();
             params.put("name", "Alice");
@@ -398,9 +421,9 @@ public class UserMybatisSqlRepositoryTest {
             PageResult<User> page = userMybatisSqlRepository.executePagedNamedStatement(
                     "findActiveUsersPaged", params, rowMapper, 1, 2);
 
-            assertNotNull(page, "Page result should not be null");
-            assertEquals(3, page.getTotalCount(), "Should have 3 total active users");
-            assertEquals(2, page.getData().size(), "Should return 2 users per page");
+            assertNotNull(page, "Page model should not be null");
+            assertEquals(3, page.getTotal(), "Should have 3 total active users");
+            assertEquals(2, page.getRecords().size(), "Should return 2 users per page");
         }
 
         @Test
@@ -412,8 +435,8 @@ public class UserMybatisSqlRepositoryTest {
             // Assuming there's a named statement "searchUsersPaged" that accepts UserSearchRequest
             PageResult<UserRoleDTO> page = userMybatisSqlRepository.executePagedNamedStatement("searchUsersPaged", request);
 
-            assertNotNull(page, "Page result should not be null");
-            assertEquals(2, page.getTotalCount(), "Should have 2 total users with role ID 2");
+            assertNotNull(page, "Page model should not be null");
+            assertEquals(2, page.getTotal(), "Should have 2 total users with role ID 2");
         }
     }
 
@@ -427,7 +450,7 @@ public class UserMybatisSqlRepositoryTest {
         void testQueryByCondition_WithParameters_ReturnsResults() {
             List<QueryParam> queryParams = Arrays.asList(
                     new QueryParam("name", "Ali", Operator.LIKE),
-                    new QueryParam("role_id", 1L,Operator.EQ)
+                    new QueryParam("role_id", 1L, Operator.EQ)
             );
 
             List<SortingField> sortingFields = Arrays.asList(
@@ -437,9 +460,9 @@ public class UserMybatisSqlRepositoryTest {
             PageResult<User> page = userMybatisSqlRepository.queryByCondition(
                     queryParams, sortingFields, 1, 10, "user");
 
-            assertNotNull(page, "Page result should not be null");
-            assertEquals(1, page.getTotalCount(), "Should find 1 user matching criteria");
-            assertEquals("Alice", page.getData().get(0).getName(), "User name should be Alice");
+            assertNotNull(page, "Page model should not be null");
+            assertEquals(1, page.getTotal(), "Should find 1 user matching criteria");
+            assertEquals("Alice", page.getRecords().get(0).getName(), "User name should be Alice");
         }
 
         @Test
@@ -458,14 +481,14 @@ public class UserMybatisSqlRepositoryTest {
         @DisplayName("Query page with page param returns paged results")
         void testQueryPage_WithPageParam_ReturnsPagedResults() {
             UserPageQuery pageQuery = new UserPageQuery();
-            pageQuery.setPageNo(1);
-            pageQuery.setPageSize(2);
+            pageQuery.setPage(1);
+            pageQuery.setSize(2);
             pageQuery.setUserName("A");
 
             PageResult<User> page = userMybatisSqlRepository.queryPage(pageQuery);
-            assertNotNull(page, "Page result should not be null");
-            assertTrue(page.getTotalCount() >= 1, "Should find at least 1 user with name containing A");
-            assertEquals(2, page.getData().size(), "Should return up to 2 users per page");
+            assertNotNull(page, "Page model should not be null");
+            assertTrue(page.getTotal() >= 1, "Should find at least 1 user with name containing A");
+            assertEquals(2, page.getRecords().size(), "Should return up to 2 users per page");
         }
     }
 
@@ -475,7 +498,7 @@ public class UserMybatisSqlRepositoryTest {
     class AggregationTests {
 
         @Test
-        @DisplayName("Aggregate with simple aggregation returns result")
+        @DisplayName("Aggregate with simple aggregation returns model")
         void testAggregate_SimpleAggregation_ReturnsResult() {
             List<String> aggregations = Arrays.asList("COUNT(*)", "MAX(id)");
 
@@ -483,7 +506,7 @@ public class UserMybatisSqlRepositoryTest {
             Criteria<User> criteria = Criteria.<User>builder().eq(User::getDeleted, false);
 
             Map<String, Object> result = userMybatisSqlRepository.aggregate(aggregations, criteria);
-            assertNotNull(result, "Aggregation result should not be null");
+            assertNotNull(result, "Aggregation model should not be null");
             assertEquals(3L, result.get("COUNT(*)"), "Should count 3 active users"); // 改为3
             assertTrue((Long) result.get("MAX(id)") >= 3L, "Max ID should be at least 3");
         }
@@ -510,7 +533,7 @@ public class UserMybatisSqlRepositoryTest {
                     })
                     .findFirst();
 
-            assertTrue(role1Result.isPresent(), "Should have result for role_id 1");
+            assertTrue(role1Result.isPresent(), "Should have model for role_id 1");
             assertEquals(1L, role1Result.get().get("COUNT(*)"), "Should have 1 user with role_id 1");
 
             // 添加对 role_id 2 的验证
@@ -521,7 +544,7 @@ public class UserMybatisSqlRepositoryTest {
                     })
                     .findFirst();
 
-            assertTrue(role2Result.isPresent(), "Should have result for role_id 2");
+            assertTrue(role2Result.isPresent(), "Should have model for role_id 2");
             assertEquals(2L, role2Result.get().get("COUNT(*)"), "Should have 2 users with role_id 2");
         }
 
@@ -554,11 +577,11 @@ public class UserMybatisSqlRepositoryTest {
             Criteria<User> criteria = Criteria.<User>builder().eq(User::getDeleted, false);
 
             PageResult<Map<String, Object>> page = userMybatisSqlRepository.aggregateWithPagination(
-                    aggregations, criteria, groupBy, null,1, 10);
+                    aggregations, criteria, groupBy, null, 1, 10);
 
-            assertNotNull(page, "Page result should not be null");
-            assertEquals(2, page.getTotalCount(), "Should have 2 total groups"); // 改为2
-            assertEquals(2, page.getData().size(), "Should return 2 groups per page");
+            assertNotNull(page, "Page model should not be null");
+            assertEquals(2, page.getTotal(), "Should have 2 total groups"); // 改为2
+            assertEquals(2, page.getRecords().size(), "Should return 2 groups per page");
         }
     }
 
@@ -596,7 +619,7 @@ public class UserMybatisSqlRepositoryTest {
         }
 
         @Test
-        @DisplayName("Search users with conditions returns paged result")
+        @DisplayName("Search users with conditions returns paged model")
         void testSearchUsers_WithConditions_ReturnsPagedResult() {
             UserSearchRequest request = new UserSearchRequest();
             request.setName("Bob");

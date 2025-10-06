@@ -1,5 +1,7 @@
 package com.bone.metadata.sdk.domain.spec;
 
+import com.bone.core.annotation.Deleted;
+import com.bone.core.annotation.Id;
 import com.bone.core.annotation.Transient;
 import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.core.domain.id.GeneratedValue;

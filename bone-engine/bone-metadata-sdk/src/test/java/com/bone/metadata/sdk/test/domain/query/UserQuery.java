@@ -1,8 +1,8 @@
 package com.bone.metadata.sdk.test.domain.query;
 
 
-import com.bone.core.result.Query;
-import com.bone.core.result.SortableParam;
+import com.bone.core.model.Query;
+import com.bone.core.model.SortableParam;
 import com.bone.metadata.sdk.domain.annotation.QueryField;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;

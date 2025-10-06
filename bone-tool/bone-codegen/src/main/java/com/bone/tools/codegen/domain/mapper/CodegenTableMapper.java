@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.bone.core.result.PageResult;
+import com.bone.core.model.PageResult;
 import com.bone.tools.codegen.domain.entity.CodegenTableDO;
 import com.bone.tools.codegen.application.dto.CodegenTablePageRequest;
 import org.apache.ibatis.annotations.Mapper;

@@ -4,7 +4,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
 import java.util.List;
 
-import com.bone.core.result.PageResult;
+import com.bone.core.model.PageResult;
 import ${table.packgeName}.application.dto.${table.className}DTO;
 #if (${modelType} == "1")
 import ${table.packgeName}.sdk.model.${table.className};

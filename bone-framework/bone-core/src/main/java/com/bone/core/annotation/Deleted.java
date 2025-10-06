@@ -1,4 +1,4 @@
-package com.bone.metadata.sdk.domain.annotation;
+package com.bone.core.annotation;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

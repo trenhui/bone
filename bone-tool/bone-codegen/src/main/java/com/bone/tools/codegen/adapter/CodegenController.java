@@ -4,8 +4,8 @@ package com.bone.tools.codegen.adapter;
 import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.io.IoUtil;
 import cn.hutool.core.util.ZipUtil;
-import com.bone.core.result.PageResult;
-import com.bone.core.result.Result;
+import com.bone.core.model.ApiResponse;
+import com.bone.core.model.PageResult;
 import com.bone.tools.codegen.util.BeanUtils;
 import com.bone.tools.codegen.application.CodegenConvert;
 import com.bone.tools.codegen.domain.entity.CodegenColumnDO;
@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static com.bone.core.result.Result.success;
+import static com.bone.core.model.ApiResponse.success;
 
 
 @Tag(name = "管理后台 - 代码生成器")
@@ -61,7 +61,7 @@ public class CodegenController {
             @Parameter(name = "name", description = "表名，模糊匹配", example = "yudao"),
             @Parameter(name = "comment", description = "描述，模糊匹配", example = "芋道")
     })
-    public Result<List<DatabaseTableResponse>> getDatabaseTableList(
+    public ApiResponse<List<DatabaseTableResponse>> getDatabaseTableList(
             @RequestParam(value = "dataSourceConfigId") Long dataSourceConfigId,
             @RequestParam(value = "name", required = false) String name,
             @RequestParam(value = "comment", required = false) String comment) {
@@ -71,7 +71,7 @@ public class CodegenController {
     @GetMapping("/table/list")
     @Operation(summary = "获得表定义列表")
     @Parameter(name = "dataSourceConfigId", description = "数据源配置的编号", required = true, example = "1")
-    public Result<List<CodegenTableResponse>> getCodegenTableList(@RequestParam(value = "dataSourceConfigId") Long dataSourceConfigId) {
+    public ApiResponse<List<CodegenTableResponse>> getCodegenTableList(@RequestParam(value = "dataSourceConfigId") Long dataSourceConfigId) {
         List<CodegenTableResponse> result = BeanUtils.toBean(codegenService.getCodegenTableList(dataSourceConfigId), CodegenTableResponse.class);
         result.forEach(x -> x.setCreateTimeStr(x.getCreateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))));
         result.forEach(x -> x.setUpdateTimeStr(x.getUpdateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))));
@@ -80,7 +80,7 @@ public class CodegenController {
 
     @GetMapping("/table/page")
     @Operation(summary = "获得表定义分页")
-    public Result<PageResult<CodegenTableResponse>> getCodegenTablePage(CodegenTablePageRequest pageReqVO) {
+    public ApiResponse<PageResult<CodegenTableResponse>> getCodegenTablePage(CodegenTablePageRequest pageReqVO) {
         PageResult<CodegenTableResponse> result = BeanUtils.toBean(codegenService.getCodegenTablePage(pageReqVO), CodegenTableResponse.class);
         if (CollectionUtil.isNotEmpty(result.getData())) {
             DataSourceConfigQueryRequest request = new DataSourceConfigQueryRequest();
@@ -96,7 +96,7 @@ public class CodegenController {
     @GetMapping("/detail")
     @Operation(summary = "获得表和字段的明细")
     @Parameter(name = "tableId", description = "表编号", required = true, example = "1024")
-    public Result<CodegenDetailResponse> getCodegenDetail(@RequestParam("tableId") Long tableId) {
+    public ApiResponse<CodegenDetailResponse> getCodegenDetail(@RequestParam("tableId") Long tableId) {
         CodegenTableDO table = codegenService.getCodegenTable(tableId);
         List<CodegenColumnDO> columns = codegenService.getCodegenColumnListByTableId(tableId);
         // 拼装返回
@@ -105,13 +105,13 @@ public class CodegenController {
 
     @Operation(summary = "基于数据库的表结构，创建代码生成器的表和字段定义")
     @PostMapping("/create-list")
-    public Result<List<Long>> createCodegenList(@Valid @RequestBody CodegenCreateListRequest reqVO) {
+    public ApiResponse<List<Long>> createCodegenList(@Valid @RequestBody CodegenCreateListRequest reqVO) {
         return success(codegenService.createCodegenList(0L, reqVO));
     }
 
     @Operation(summary = "更新数据库的表和字段定义")
     @PutMapping("/update")
-    public Result<Boolean> updateCodegen(@Valid @RequestBody CodegenUpdateRequest updateReqVO) {
+    public ApiResponse<Boolean> updateCodegen(@Valid @RequestBody CodegenUpdateRequest updateReqVO) {
         codegenService.updateCodegen(updateReqVO);
         return success(true);
     }
@@ -119,7 +119,7 @@ public class CodegenController {
     @Operation(summary = "基于数据库的表结构，同步数据库的表和字段定义")
     @PutMapping("/sync-from-db")
     @Parameter(name = "tableId", description = "表编号", required = true, example = "1024")
-    public Result<Boolean> syncCodegenFromDB(@RequestParam("tableId") Long tableId) {
+    public ApiResponse<Boolean> syncCodegenFromDB(@RequestParam("tableId") Long tableId) {
         codegenService.syncCodegenFromDB(tableId);
         return success(true);
     }
@@ -127,7 +127,7 @@ public class CodegenController {
     @Operation(summary = "删除数据库的表和字段定义")
     @DeleteMapping("/delete")
     @Parameter(name = "tableId", description = "表编号", required = true, example = "1024")
-    public Result<Boolean> deleteCodegen(@RequestParam("tableId") Long tableId) {
+    public ApiResponse<Boolean> deleteCodegen(@RequestParam("tableId") Long tableId) {
         codegenService.deleteCodegen(tableId);
         return success(true);
     }

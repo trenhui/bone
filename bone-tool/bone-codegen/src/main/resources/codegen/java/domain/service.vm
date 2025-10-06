@@ -4,7 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
 
-import com.bone.core.result.PageResult;
+import com.bone.core.model.PageResult;
 
 import ${table.packgeName}.application.dto.query.${table.className}PageQuery;
 import ${table.packgeName}.application.dto.query.${table.className}Query;

@@ -2,6 +2,7 @@ package com.bone.metadata.sdk.sql.executor;
 
 import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.core.domain.id.IdGenerator;
+import com.bone.core.util.DistributedIdGenerator;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 
 import java.util.Map;
@@ -23,8 +24,8 @@ public class DefaultIdGenerator implements IdGenerator {
                 String sequenceName = "my_sequence";
                 yield jdbc.queryForObject("SELECT nextval(:seq)", Map.of("seq", sequenceName), Long.class);
             }
-            case CUSTOM -> com.bone.core.id.IdGenerator.generateLongID();
-            case DISTRIBUTED_ID -> com.bone.core.id.IdGenerator.generateLongID();
+            case CUSTOM -> DistributedIdGenerator.generateLongId();
+            case DISTRIBUTED_ID -> DistributedIdGenerator.generateLongId();
             default -> throw new UnsupportedOperationException("Unsupported parser: " + strategy);
         };
     }

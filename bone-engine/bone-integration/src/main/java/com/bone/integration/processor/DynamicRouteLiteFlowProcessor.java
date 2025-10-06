@@ -33,8 +33,8 @@ public class DynamicRouteLiteFlowProcessor implements Processor {
 ////        List<DynamicRouteContext.Expression> expressions = DynamicRouteContext.get(id, tenantId);
 ////        for (DynamicRouteContext.Expression target : expressions) {
 ////            String expression = "(" + target.getExpression() + ") && tenantId == '" + tenantId + "'";
-////            Object result = QlExpression.execute(bodyMap, expression);
-////            if (Boolean.TRUE.equals(result)) {
+////            Object model = QlExpression.execute(bodyMap, expression);
+////            if (Boolean.TRUE.equals(model)) {
 ////                matchedTarget = target;
 ////                matchCount ++;
 ////            }

@@ -1,8 +1,8 @@
 package com.bone.tools.codegen.domain.service;
 
 
-import com.bone.core.result.PageParam;
-import com.bone.core.result.PageResult;
+import com.bone.core.model.PageParam;
+import com.bone.core.model.PageResult;
 import com.bone.tools.codegen.application.dto.DataSourceConfigQueryRequest;
 import com.bone.tools.codegen.domain.entity.DataSourceConfigDO;
 import com.bone.tools.codegen.application.dto.DataSourceConfigSaveRequest;

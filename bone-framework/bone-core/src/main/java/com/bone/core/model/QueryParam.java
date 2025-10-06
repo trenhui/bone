@@ -1,4 +1,4 @@
-package com.bone.core.result;
+package com.bone.core.model;
 
 import com.bone.core.enums.Operator;
 import lombok.Data;

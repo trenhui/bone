@@ -40,7 +40,7 @@ public class ResilienceManager extends RouteBuilder {
                 .to("direct:fallback")
                 .end()
                 .log("Processing message with Resilience4j Circuit Breaker")
-                .to("mock:result");
+                .to("mock:model");
 
         // 业务处理路由
         from("direct:processMessage")

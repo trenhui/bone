@@ -5,8 +5,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.bone.core.exception.BizException;
-import com.bone.core.result.PageParam;
-import com.bone.core.result.PageResult;
+import com.bone.core.model.PageParam;
+import com.bone.core.model.PageResult;
 import com.bone.tools.codegen.util.BeanUtils;
 import com.bone.tools.codegen.application.dto.DataSourceConfigQueryRequest;
 import com.bone.tools.codegen.domain.entity.CodegenTableDO;
@@ -107,9 +107,9 @@ public class DataSourceConfigServiceImpl implements DataSourceConfigService {
         page.setCurrent(pageParam.getPageNo());
         page.setSize(pageParam.getPageSize());
         dataSourceConfigMapper.selectPage(page,new LambdaQueryWrapper<>());
-//        List<DataSourceConfigDO> result = dataSourceConfigMapper.selectList(new LambdaQueryWrapper<>());
+//        List<DataSourceConfigDO> model = dataSourceConfigMapper.selectList(new LambdaQueryWrapper<>());
 //        // 补充 master 数据源
-//        result.add(0, buildMasterDataSourceConfig());
+//        model.add(0, buildMasterDataSourceConfig());
        return new PageResult<DataSourceConfigDO>(page.getRecords(),pageParam.getPageNo(),pageParam.getPageSize(),(int)page.getTotal());
     }
 

@@ -2,7 +2,7 @@ package com.bone.metadata.sdk.sql.executor;
 
 import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.core.domain.id.IdGenerator;
-import com.bone.core.result.PageResult;
+import com.bone.core.model.PageResult;
 import com.bone.metadata.sdk.domain.exception.QueryExecutionException;
 import com.bone.metadata.sdk.domain.model.TableMetadata;
 import com.bone.metadata.sdk.domain.query.BatchCompiledQuery;
@@ -31,7 +31,6 @@ import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.jdbc.core.namedparam.SqlParameterSourceUtils;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
-import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
@@ -87,7 +86,6 @@ public class SqlExecutor {
         return idGenerator.generateId(strategy, entity);
     }
 
-
     /**
      * 执行查询并返回对象列表（带自定义RowMapper）
      */
@@ -130,7 +128,7 @@ public class SqlExecutor {
         List<T> content = jdbc.query(pagedSql, effectiveParams, rowMapper);
         Long total = executeCountQuery(templateId, template, safeParameters);
 
-        return new PageResult<>(content, pageNumber, pageSize, total);
+        return PageResult.of(content, total, pageNumber, pageSize);
     }
 
     /**
@@ -159,7 +157,7 @@ public class SqlExecutor {
         List<T> content = jdbc.query(pagedSql, effectiveParams, rowMapper);
         Long total = executeCountQuery(templateId, template, safeParameters);
 
-        return new PageResult<>(content, pageNumber, pageSize, total);
+        return PageResult.of(content, total, pageNumber, pageSize);
     }
 
     /**
@@ -189,7 +187,7 @@ public class SqlExecutor {
         List<R> content = jdbc.query(pagedSql, effectiveParams, rowMapper);
         Long total = executeCountQuery(templateId, template, safeParameters);
 
-        return new PageResult<>(content, pageNumber, pageSize, total);
+        return PageResult.of(content, total, pageNumber, pageSize);
     }
 
     /**
@@ -273,7 +271,6 @@ public class SqlExecutor {
         SqlSecurityGuard.validateQueryParameters(filteredParams, resultType);
         SqlParameterSource parameterSource = new NestedMapSqlParameterSource(query.getParameters());
         return jdbc.query(query.getSql(), parameterSource, new SmartRowMapper<>(resultType));
-        //return jdbc.query(query.getSql(), query.getParameters(), new SmartRowMapper<>(resultType));
     }
 
     // 简单类型判断（与MethodHandler保持一致）
@@ -311,7 +308,7 @@ public class SqlExecutor {
                     new SmartRowMapper<>(resultType)
             );
         } catch (EmptyResultDataAccessException e) {
-            log.warn("No result found for query: {}", query.getSql());
+            log.warn("No model found for query: {}", query.getSql());
             return null;
         }
     }
@@ -343,7 +340,7 @@ public class SqlExecutor {
             SqlSecurityGuard.scanForInjectionKeywords(query.getSql());
             return jdbc.queryForObject(query.getSql(), query.getParameters(), requiredType);
         } catch (EmptyResultDataAccessException e) {
-            log.warn("No result found for query: {}", query.getSql());
+            log.warn("No model found for query: {}", query.getSql());
             return null;
         }
     }
@@ -351,6 +348,7 @@ public class SqlExecutor {
     /**
      * 执行插入操作并返回生成的主键
      */
+    @SuppressWarnings("unchecked")
     public <R> R executeInsert(CompiledQuery query, Class<?> entityClass) {
         SqlSecurityGuard.scanForInjectionKeywords(query.getSql());
         KeyHolder keyHolder = new GeneratedKeyHolder();
@@ -359,7 +357,6 @@ public class SqlExecutor {
                 new MapSqlParameterSource(query.getParameters()),
                 keyHolder,
                 new String[]{tableMetadata.getPrimaryKey().getName()});
-        @SuppressWarnings("unchecked")
         R key = (R) keyHolder.getKey();
         return key;
     }
@@ -414,12 +411,20 @@ public class SqlExecutor {
             int batchSize = properties.getDatabase().getBatchSize();
 
             return batchProcess(batchParams, batchSize, batch ->
-                    jdbc.batchUpdate(processedSql.getSql(), batch.toArray(new Map[0]))
+                    jdbc.batchUpdate(processedSql.getSql(), createBatchArray(batch))
             );
         } catch (Exception e) {
             log.error("Batch update failed, template: {}, error: {}", templateId, e.getMessage(), e);
             throw new QueryExecutionException("Batch update failed: " + templateId, e);
         }
+    }
+
+    /**
+     * 创建类型安全的批量参数数组
+     */
+    @SuppressWarnings("unchecked")
+    private Map<String, Object>[] createBatchArray(List<Map<String, Object>> batch) {
+        return batch.toArray(new Map[0]);
     }
 
     /**
@@ -562,8 +567,8 @@ public class SqlExecutor {
     /**
      * 批量处理
      */
-    private <T> int[] batchProcess(List<Map<String, Object>> params, int batchSize,
-                                   Function<List<Map<String, Object>>, int[]> processor) {
+    private int[] batchProcess(List<Map<String, Object>> params, int batchSize,
+                               Function<List<Map<String, Object>>, int[]> processor) {
         int[] results = new int[params.size()];
         for (int i = 0; i < params.size(); i += batchSize) {
             List<Map<String, Object>> batch = params.subList(i, Math.min(i + batchSize, params.size()));
@@ -572,7 +577,6 @@ public class SqlExecutor {
         }
         return results;
     }
-
 
     /**
      * 验证输入参数

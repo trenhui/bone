@@ -1,9 +1,9 @@
 package com.bone.metadata.sdk.test.testcase;
 
 import com.bone.core.enums.Operator;
-import com.bone.core.result.PageResult;
-import com.bone.core.result.QueryParam;
-import com.bone.core.result.SortingField;
+import com.bone.core.model.PageResult;
+import com.bone.core.model.QueryParam;
+import com.bone.core.model.SortingField;
 import com.bone.core.tenant.context.TenantContext;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
@@ -218,17 +218,17 @@ public class PermissionRepositoryTest {
     void testFindOneByCriteria_ShouldThrowExceptionWhenMultipleResults() {
         Criteria<Permission> criteria = Criteria.<Permission>create().like("permCode", "%TE%");
         assertThrows(MultipleResultsException.class, () -> permissionRepository.findOneByCriteria(criteria),
-                "Should throw MultipleResultsException when more than one result is found");
+                "Should throw MultipleResultsException when more than one model is found");
     }
 
     @Test
     void testPageByCriteria_ShouldReturnPagedResults() {
         Criteria<Permission> criteria = Criteria.<Permission>create();
-        criteria.setPageNumber(1);
+        criteria.setPageNo(1);
         criteria.setPageSize(2);
         PageResult<Permission> pageResult = permissionRepository.pageByCriteria(criteria);
-        assertNotNull(pageResult, "Page result should not be null");
-        assertTrue(pageResult.getData().size() <= 2, "Page should contain no more than 2 permissions");
+        assertNotNull(pageResult, "Page model should not be null");
+        assertTrue(pageResult.getRecords().size() <= 2, "Page should contain no more than 2 permissions");
     }
 
     @Test
@@ -243,8 +243,8 @@ public class PermissionRepositoryTest {
         List<QueryParam> queryParams = Collections.singletonList(new QueryParam("permName", "REA", Operator.LIKE));
         List<SortingField> sortingFields = Collections.singletonList(new SortingField("id", "ASC"));
         PageResult<Permission> pageResult = permissionRepository.queryByCondition(queryParams, sortingFields, 1, 10, null);
-        assertNotNull(pageResult, "Page result should not be null");
-        assertFalse(pageResult.getData().isEmpty(), "Should return permissions matching the condition");
+        assertNotNull(pageResult, "Page model should not be null");
+        assertFalse(pageResult.getRecords().isEmpty(), "Should return permissions matching the condition");
     }
 
     // ### New Tests for DataPermission Features ###

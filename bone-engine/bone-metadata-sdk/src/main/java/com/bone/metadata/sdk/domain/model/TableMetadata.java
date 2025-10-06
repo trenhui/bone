@@ -49,6 +49,15 @@ public class TableMetadata {
         return primaryKey;
     }
 
+    public ColumnMetadata getSoftDeleteColumn() {
+        if (softDeleted == null) {
+            throw new IllegalStateException(
+                    String.format("表 %s 未定义主键列", name)
+            );
+        }
+        return softDeleted;
+    }
+
     public boolean isSoftDeletable() {
         return softDeleted != null;
     }

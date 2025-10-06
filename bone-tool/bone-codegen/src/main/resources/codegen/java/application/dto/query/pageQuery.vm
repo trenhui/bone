@@ -4,7 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-import com.bone.core.result.SortablePageParam;
+import com.bone.core.model.SortablePageParam;
 
 /**
  * ${table.classComment}分页查询请求类

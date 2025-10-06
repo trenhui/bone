@@ -1,6 +1,6 @@
 package com.bone.tools.codegen.application.dto;
 
-import com.bone.core.result.PageParam;
+import com.bone.core.model.PageParam;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
