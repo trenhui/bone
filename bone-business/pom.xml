@@ -11,6 +11,7 @@
     <modules>
         <module>bone-admin</module>
         <module>bone-trade</module>
+        <module>bone-procurement</module>
     </modules>
     <artifactId>bone-business</artifactId>
     <packaging>pom</packaging>

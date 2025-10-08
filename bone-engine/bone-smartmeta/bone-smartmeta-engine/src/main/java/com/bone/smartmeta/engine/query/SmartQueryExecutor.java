@@ -1,0 +1,315 @@
+package com.bone.smartmeta.engine.query;
+
+import com.bone.smartmeta.engine.context.UserContext;
+import com.bone.smartmeta.engine.exception.QueryExecutionException;
+import com.bone.smartmeta.engine.metadata.EntityMetadata;
+import com.bone.smartmeta.engine.metadata.MetadataRegistry;
+import com.bone.smartmeta.engine.model.DynamicSmartEntity;
+import com.bone.smartmeta.engine.model.SmartBaseEntity;
+import com.bone.smartmeta.engine.security.FieldLevelSecurityFilter;
+import com.bone.smartmeta.engine.security.PermissionChecker;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.Query;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+/**
+ * 智能查询执行器，支持对动态实体和静态实体的统一查询
+ */
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class SmartQueryExecutor {
+
+    private final EntityManager entityManager;
+    private final MetadataRegistry metadataRegistry;
+    private final SmartQLParser queryParser;
+    private final SqlQueryGenerator sqlGenerator;
+    private final PermissionChecker permissionChecker;
+    private final FieldLevelSecurityFilter flsFilter;
+    private final UserContext userContext;
+    private final QueryCacheManager queryCacheManager;
+    private final AiQueryOptimizer aiQueryOptimizer;
+    private final QueryPerformanceMonitor queryMonitor;
+
+    /**
+     * 执行SmartQL查询
+     */
+    @Transactional(readOnly = true)
+    public <T extends SmartBaseEntity> List<T> executeQuery(String smartql, 
+                                                          Map<String, Object> parameters, 
+                                                          Class<T> resultType) {
+        QueryExecutionContext context = new QueryExecutionContext();
+        context.setStartTime(System.currentTimeMillis());
+        context.setSmartql(smartql);
+        context.setParameters(parameters);
+        context.setResultType(resultType);
+        context.setUserId(userContext.getCurrentUserId());
+        
+        try {
+            log.debug("执行SmartQL查询: {}", smartql);
+            
+            // 1. 解析查询
+            QueryAst queryAst = queryParser.parse(smartql);
+            context.setQueryAst(queryAst);
+            
+            // 2. 验证实体访问权限
+            if (!permissionChecker.hasEntityAccessPermission(
+                    queryAst.getObjectName(), 
+                    context.getUserId(), 
+                    "read")) {
+                throw new SecurityException("用户 " + context.getUserId() + 
+                        " 没有实体 " + queryAst.getObjectName() + " 的读取权限");
+            }
+            
+            // 3. 获取实体元数据
+            EntityMetadata entityMetadata = metadataRegistry.getEntityMetadata(queryAst.getObjectName());
+            context.setEntityMetadata(entityMetadata);
+            
+            // 4. 验证字段访问权限
+            validateFieldPermissions(queryAst, entityMetadata, context.getUserId());
+            
+            // 5. AI优化查询
+            String optimizedSmartql = aiQueryOptimizer.optimizeQuery(
+                    smartql, 
+                    entityMetadata, 
+                    parameters,
+                    context.getUserId()
+            );
+            
+            if (!optimizedSmartql.equals(smartql)) {
+                log.debug("AI优化后的查询: {}", optimizedSmartql);
+                queryAst = queryParser.parse(optimizedSmartql);
+                context.setOptimizedSmartql(optimizedSmartql);
+            }
+            
+            // 6. 检查缓存
+            String cacheKey = queryCacheManager.generateCacheKey(optimizedSmartql, parameters, context.getUserId());
+            context.setCacheKey(cacheKey);
+            
+            @SuppressWarnings("unchecked")
+            List<T> cachedResults = (List<T>) queryCacheManager.getFromCache(cacheKey);
+            if (cachedResults != null) {
+                log.debug("从缓存获取查询结果，缓存键: {}", cacheKey);
+                context.setCacheHit(true);
+                context.setResultCount(cachedResults.size());
+                queryMonitor.recordQueryMetrics(context);
+                return cachedResults;
+            }
+            
+            // 7. 生成SQL查询
+            String sql = sqlGenerator.generateSql(queryAst, entityMetadata);
+            context.setGeneratedSql(sql);
+            log.trace("生成的SQL查询: {}", sql);
+            
+            // 8. 准备查询参数
+            List<Object> sqlParameters = prepareSqlParameters(queryAst, parameters);
+            
+            // 9. 执行查询
+            Query jpaQuery = entityManager.createNativeQuery(sql, getEntityClass(entityMetadata));
+            setQueryParameters(jpaQuery, sqlParameters);
+            
+            @SuppressWarnings("unchecked")
+            List<T> results = jpaQuery.getResultList();
+            context.setResultCount(results.size());
+            
+            // 10. 应用字段级安全过滤
+            List<T> securedResults = applyFieldSecurity(results, entityMetadata, context.getUserId());
+            
+            // 11. 缓存查询结果
+            if (shouldCacheQuery(queryAst, entityMetadata)) {
+                queryCacheManager.cacheResult(
+                        cacheKey, 
+                        securedResults, 
+                        entityMetadata.getQueryCacheTtl()
+                );
+                log.debug("缓存查询结果，缓存键: {}", cacheKey);
+            }
+            
+            // 12. 记录查询指标
+            queryMonitor.recordQueryMetrics(context);
+            
+            return securedResults;
+            
+        } catch (Exception e) {
+            log.error("执行SmartQL查询失败: {}", smartql, e);
+            context.setSuccess(false);
+            context.setErrorMessage(e.getMessage());
+            queryMonitor.recordQueryMetrics(context);
+            throw new QueryExecutionException("查询执行失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 执行分页查询
+     */
+    @Transactional(readOnly = true)
+    public <T extends SmartBaseEntity> Page<T> executePaginatedQuery(String smartql,
+                                                                    Map<String, Object> parameters,
+                                                                    Class<T> resultType,
+                                                                    Pageable pageable) {
+        // 1. 执行总数查询
+        String countQuery = sqlGenerator.generateCountQuery(smartql);
+        long totalCount = executeCountQuery(countQuery, parameters);
+        
+        // 2. 如果总数为0，直接返回空页
+        if (totalCount == 0) {
+            return new PageImpl<>(new ArrayList<>(), pageable, 0);
+        }
+        
+        // 3. 应用分页
+        String paginatedQuery = sqlGenerator.applyPagination(smartql, pageable);
+        
+        // 4. 执行分页查询
+        List<T> results = executeQuery(paginatedQuery, parameters, resultType);
+        
+        return new PageImpl<>(results, pageable, totalCount);
+    }
+
+    /**
+     * 执行计数查询
+     */
+    @Transactional(readOnly = true)
+    public long executeCountQuery(String smartql, Map<String, Object> parameters) {
+        try {
+            log.debug("执行计数查询: {}", smartql);
+            
+            // 解析查询
+            QueryAst queryAst = queryParser.parse(smartql);
+            
+            // 验证权限
+            if (!permissionChecker.hasEntityAccessPermission(
+                    queryAst.getObjectName(), 
+                    userContext.getCurrentUserId(), 
+                    "read")) {
+                throw new SecurityException("用户 " + userContext.getCurrentUserId() + 
+                        " 没有实体 " + queryAst.getObjectName() + " 的读取权限");
+            }
+            
+            // 获取元数据
+            EntityMetadata entityMetadata = metadataRegistry.getEntityMetadata(queryAst.getObjectName());
+            
+            // 生成计数SQL
+            String countSql = sqlGenerator.generateCountSql(queryAst, entityMetadata);
+            log.trace("生成的计数SQL: {}", countSql);
+            
+            // 准备参数
+            List<Object> sqlParameters = prepareSqlParameters(queryAst, parameters);
+            
+            // 执行查询
+            Query query = entityManager.createNativeQuery(countSql);
+            setQueryParameters(query, sqlParameters);
+            
+            Object result = query.getSingleResult();
+            return result instanceof Number ? ((Number) result).longValue() : 0;
+            
+        } catch (Exception e) {
+            log.error("执行计数查询失败: {}", smartql, e);
+            throw new QueryExecutionException("计数查询执行失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 准备SQL查询参数
+     */
+    private List<Object> prepareSqlParameters(QueryAst queryAst, Map<String, Object> parameters) {
+        return queryAst.getParameters().stream()
+                .map(paramName -> parameters.getOrDefault(paramName, null))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 设置查询参数
+     */
+    private void setQueryParameters(Query query, List<Object> parameters) {
+        for (int i = 0; i < parameters.size(); i++) {
+            query.setParameter(i + 1, parameters.get(i));
+        }
+    }
+
+    /**
+     * 获取实体类（动态或静态）
+     */
+    private Class<? extends SmartBaseEntity> getEntityClass(EntityMetadata metadata) {
+        if (metadata.getEntityClass() != null && !metadata.getEntityClass().equals(DynamicSmartEntity.class)) {
+            return metadata.getEntityClass();
+        }
+        return DynamicSmartEntity.class;
+    }
+
+    /**
+     * 验证字段访问权限
+     */
+    private void validateFieldPermissions(QueryAst queryAst, EntityMetadata entityMetadata, String userId) {
+        List<String> requestedFields = queryAst.getSelectFields();
+        
+        // 检查是否请求了没有权限的字段
+        List<String> unauthorizedFields = requestedFields.stream()
+                .filter(field -> !permissionChecker.hasFieldAccessPermission(
+                        entityMetadata.getApiName(), 
+                        field, 
+                        userId, 
+                        "read"))
+                .collect(Collectors.toList());
+        
+        if (!unauthorizedFields.isEmpty()) {
+            throw new SecurityException("用户 " + userId + " 没有以下字段的读取权限: " + 
+                    String.join(", ", unauthorizedFields));
+        }
+    }
+
+    /**
+     * 应用字段级安全过滤
+     */
+    private <T extends SmartBaseEntity> List<T> applyFieldSecurity(List<T> results, 
+                                                                  EntityMetadata entityMetadata, 
+                                                                  String userId) {
+        if (results == null || results.isEmpty()) {
+            return results;
+        }
+        
+        // 获取用户有权限查看的字段
+        List<String> readableFields = permissionChecker.getReadableFields(
+                entityMetadata.getApiName(), 
+                userId
+        );
+        
+        // 如果用户有权限查看所有字段，则直接返回
+        if (readableFields.contains("*")) {
+            return results;
+        }
+        
+        // 对每个结果应用字段过滤
+        return results.stream()
+                .map(entity -> flsFilter.filterFields(entity, readableFields))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * 判断查询是否应该被缓存
+     */
+    private boolean shouldCacheQuery(QueryAst queryAst, EntityMetadata entityMetadata) {
+        // 不缓存包含NOW()等动态函数的查询
+        if (queryAst.containsDynamicFunctions()) {
+            return false;
+        }
+        
+        // 不缓存有复杂条件的查询
+        if (queryAst.hasComplexConditions()) {
+            return false;
+        }
+        
+        // 尊重实体的缓存设置
+        return entityMetadata.isCacheable();
+    }
+}

@@ -1,0 +1,225 @@
+# Bone SmartMeta 企业级配置
+
+# 应用基本信息
+spring:
+  application:
+    name: bone-smartmeta-enterprise
+    version: 2.5.0
+  profiles:
+    active: enterprise
+  main:
+    allow-bean-definition-overriding: true
+
+# 数据源配置
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/bone_smartmeta?currentSchema=${TENANT_ID:public}
+    username: ${DB_USERNAME:smartmeta_user}
+    password: ${DB_PASSWORD:smartmeta_pass}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      pool-name: SmartMetaHikariPool
+
+# JPA配置
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: false
+        jdbc.batch_size: 30
+        order_inserts: true
+    show-sql: false
+
+# GraphQL配置
+  graphql:
+    graphiql:
+      enabled: true
+      path: /graphiql
+    schema:
+      locations: classpath:graphql/
+    tools:
+      schema-location-pattern: "**/*.graphqls"
+
+# 缓存配置
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000
+      cache-null-values: false
+      use-key-prefix: true
+
+# Redis配置
+  redis:
+    host: ${REDIS_HOST:localhost}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    timeout: 2000
+    lettuce:
+      pool:
+        max-active: 8
+        max-idle: 8
+        min-idle: 2
+
+# 异步配置
+  task:
+    execution:
+      pool:
+        core-size: 10
+        max-size: 50
+        queue-capacity: 1000
+        keep-alive: 60s
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,smartmeta,auditevents
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when_authorized
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: db,redis
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: ${spring.application.name}
+      environment: ${ENVIRONMENT:unknown}
+
+# Bone SmartMeta 核心配置
+bone:
+  smartmeta:
+    enabled: true
+    
+    # 元数据配置
+    metadata:
+      auto-scan: true
+      base-packages:
+        - com.bone.domains.procurement
+        - com.bone.domains.hr
+        - com.bone.domains.sales
+      validation: true
+      governance: true
+      cache-ttl: 3600
+      merge-strategy: yaml-overrides-annotation
+      
+    # 查询引擎配置
+    query:
+      enabled: true
+      timeout: 30000
+      max-rows: 10000
+      audit: true
+      ai-optimization: true
+      query-plan-cache-size: 1000
+      
+    # 规则引擎配置
+    rules:
+      enabled: true
+      auto-execute: true
+      pre-rules: true
+      post-rules: true
+      engine-type: drools
+      cache-enabled: true
+      
+    # 安全配置
+    security:
+      enabled: true
+      field-level-security: true
+      record-level-security: true
+      sharing-rules: true
+      audit-logging: true
+      encryption:
+        enabled: true
+        algorithm: AES-256-GCM
+        
+    # AI增强配置
+    ai:
+      enabled: true
+      suggestions: true
+      optimizations: true
+      model: ${AI_MODEL:gpt-4o}
+      local-model: false
+      temperature: 0.3
+      timeout: 5000
+      cache-results: true
+      
+    # 工作流配置
+    workflow:
+      enabled: true
+      engine: camunda
+      history-level: full
+      async-executor:
+        enabled: true
+        core-pool-size: 5
+        max-pool-size: 20
+      locations:
+        - classpath:workflows/*.bpmn
+        - classpath:domains/*/workflows/*.bpmn
+        - classpath:domains/*/workflows/*.yaml
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.bone: INFO
+    com.bone.smartmeta.engine: INFO
+    com.bone.domains.procurement: INFO
+    org.springframework.web: WARN
+    org.hibernate: WARN
+    org.camunda: INFO
+    org.apache.kafka: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: ${LOG_FILE_PATH:./logs/smartmeta-enterprise.log}
+    max-size: 10MB
+    max-history: 30
+
+# 服务器配置
+server:
+  port: ${PORT:8080}
+  servlet:
+    context-path: /
+  compression:
+    enabled: true
+  http2:
+    enabled: true
+  shutdown: graceful
+  tomcat:
+    threads:
+      max: 200
+    connection-timeout: 20000
+    accesslog:
+      enabled: true
+      directory: ${LOG_FILE_PATH:./logs}
+      prefix: access_log
+      suffix: .log
+      pattern: "%h %l %u %t \"%r\" %s %b \"%{Referer}i\" \"%{User-Agent}i\" %D"
+    resources:
+      cache:
+        ttl: 3600s
+    max-swallow-size: 1MB
+    basedir: ${TMP_DIR:./tmp}
+    accept-count: 100
+    max-connections: 10000
+    keep-alive-timeout: 60000
+    keep-alive-max-requests: 100
+    remote-ip-header: X-Forwarded-For
+    protocol-header: X-Forwarded-Proto
+    port-header: X-Forwarded-Port
+    internal-proxies: 10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|169\.254\.\d+\.\d+|127\.\d+\.\d+\.\d+|172\.1[6-9]{1}\.\d+\.\d+|172\.2[0-9]{1}\.\d+\.\d+|172\.3[0-1]{1}\.\d+\.\d+
+    max-http-form-post-size: 10MB
