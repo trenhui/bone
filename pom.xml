@@ -8,6 +8,7 @@
         <groupId>com.bone</groupId>
         <artifactId>bone-parent</artifactId>
         <version>1.0.0</version>
+        <relativePath>./bone-parent/pom.xml</relativePath>
     </parent>
 
     <artifactId>bone-boot</artifactId>

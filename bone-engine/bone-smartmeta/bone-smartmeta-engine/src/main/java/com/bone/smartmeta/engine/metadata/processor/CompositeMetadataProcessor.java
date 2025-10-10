@@ -78,7 +78,13 @@ public class CompositeMetadataProcessor {
         
         try {
             log.info("开始处理{}元数据，位置模式: {}", sourceType, locationPattern);
-            List<EntityMetadata> metadataList = processor.processMetadata(locationPattern);
+            Object result = processor.processMetadata(locationPattern);
+            
+            // 确保返回值是预期的List类型
+            List<EntityMetadata> metadataList = new ArrayList<>();
+            if (result instanceof List) {
+                metadataList = (List<EntityMetadata>) result;
+            }
             
             // 按实体API名称分组
             for (EntityMetadata metadata : metadataList) {

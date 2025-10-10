@@ -11,7 +11,7 @@
 
     <groupId>com.bone</groupId>
     <artifactId>bone-smartmeta</artifactId>
-    <version>2.5.0</version>
+    <version>1.1.0</version>
     <packaging>pom</packaging>
     <name>Bone SmartMeta Enterprise</name>
     <description>企业级元数据操作系统，融合Salesforce、Workday和Coupa最佳实践</description>

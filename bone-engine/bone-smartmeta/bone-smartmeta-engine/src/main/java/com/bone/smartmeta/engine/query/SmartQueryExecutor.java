@@ -5,7 +5,8 @@ import com.bone.smartmeta.engine.exception.QueryExecutionException;
 import com.bone.smartmeta.engine.metadata.EntityMetadata;
 import com.bone.smartmeta.engine.metadata.MetadataRegistry;
 import com.bone.smartmeta.engine.model.DynamicSmartEntity;
-import com.bone.smartmeta.engine.model.SmartBaseEntity;
+import com.bone.smartmeta.engine.core.SmartBaseEntity;
+import com.bone.smartmeta.engine.query.ast.QueryAst;
 import com.bone.smartmeta.engine.security.FieldLevelSecurityFilter;
 import com.bone.smartmeta.engine.security.PermissionChecker;
 import jakarta.persistence.EntityManager;
@@ -242,7 +243,10 @@ public class SmartQueryExecutor {
      */
     private Class<? extends SmartBaseEntity> getEntityClass(EntityMetadata metadata) {
         if (metadata.getEntityClass() != null && !metadata.getEntityClass().equals(DynamicSmartEntity.class)) {
-            return metadata.getEntityClass();
+            // 添加类型转换，确保返回的类是SmartBaseEntity的子类
+            @SuppressWarnings("unchecked")
+            Class<? extends SmartBaseEntity> entityClass = (Class<? extends SmartBaseEntity>) metadata.getEntityClass();
+            return entityClass;
         }
         return DynamicSmartEntity.class;
     }
