@@ -140,8 +140,6 @@ public class PurchaseOrder extends SmartBaseEntity {
         name = "totalAmountWithTax",
         label = "含税总金额",
         type = FieldType.FORMULA,
-        formulaExpression = "totalAmount * (1 + OrgSettings.getTaxRate('DEFAULT'))",
-        formulaReturnType = FieldType.CURRENCY,
         description = "包含税费的订单总金额，通过公式计算"
     )
     private BigDecimal totalAmountWithTax;
@@ -150,8 +148,6 @@ public class PurchaseOrder extends SmartBaseEntity {
         name = "isHighValueOrder",
         label = "是否高价值订单",
         type = FieldType.FORMULA,
-        formulaExpression = "totalAmount >= OrgSettings.getThreshold('HIGH_VALUE_PURCHASE_ORDER')",
-        formulaReturnType = FieldType.BOOLEAN,
         description = "指示是否为高价值订单，通过公式计算"
     )
     private Boolean isHighValueOrder;

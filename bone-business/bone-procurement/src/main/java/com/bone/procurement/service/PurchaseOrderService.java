@@ -1,5 +1,6 @@
 package com.bone.procurement.service;
 
+import com.bone.procurement.mapper.PurchaseOrderMapper;
 import com.bone.smartmeta.engine.context.UserContext;
 import com.bone.smartmeta.engine.exception.BusinessRuleException;
 import com.bone.smartmeta.engine.exception.EntityNotFoundException;
@@ -15,8 +16,9 @@ import com.bone.procurement.dto.PurchaseOrderCriteria;
 import com.bone.procurement.dto.PurchaseOrderRequest;
 import com.bone.procurement.dto.PurchaseOrderResponse;
 import com.bone.procurement.entity.PurchaseOrder;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import com.bone.procurement.repository.PurchaseOrderRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -33,16 +35,14 @@ import java.util.stream.Collectors;
  * 采购订单服务
  * 处理采购订单的全生命周期管理
  */
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class PurchaseOrderService {
 
     private static final String ENTITY_NAME = "PurchaseOrder";
     private static final String WORKFLOW_NAME = "PurchaseOrderApproval";
     
     private final SmartQueryExecutor queryExecutor;
-    private final EntityDataManager entityDataManager;
+    private final PurchaseOrderRepository purchaseOrderRepository;
     private final BusinessRuleEngine ruleEngine;
     private final WorkflowEngine workflowEngine;
     private final MetadataRegistry metadataRegistry;
@@ -50,7 +50,30 @@ public class PurchaseOrderService {
     private final BudgetService budgetService;
     private final NotificationService notificationService;
     private final VendorService vendorService;
-    private final PurchaseOrderMapper purchaseOrderMapper;
+    
+    // Logger instance
+    private static final Logger log = LoggerFactory.getLogger(PurchaseOrderService.class);
+    
+    // Constructor for dependency injection
+    public PurchaseOrderService(SmartQueryExecutor queryExecutor,
+                              PurchaseOrderRepository purchaseOrderRepository,
+                              BusinessRuleEngine ruleEngine,
+                              WorkflowEngine workflowEngine,
+                              MetadataRegistry metadataRegistry,
+                              UserContext userContext,
+                              BudgetService budgetService,
+                              NotificationService notificationService,
+                              VendorService vendorService) {
+        this.queryExecutor = queryExecutor;
+        this.purchaseOrderRepository = purchaseOrderRepository;
+        this.ruleEngine = ruleEngine;
+        this.workflowEngine = workflowEngine;
+        this.metadataRegistry = metadataRegistry;
+        this.userContext = userContext;
+        this.budgetService = budgetService;
+        this.notificationService = notificationService;
+        this.vendorService = vendorService;
+    }
 
     /**
      * 创建采购订单
@@ -91,14 +114,15 @@ public class PurchaseOrderService {
             }
             
             // 6. 保存实体
-            PurchaseOrder createdOrder = entityDataManager.create(order);
+            purchaseOrderRepository.insert(order);
+            PurchaseOrder createdOrder = order;
             log.info("采购订单创建成功: {}", createdOrder.getOrderNumber());
             
             // 7. 发送创建通知
             notificationService.sendPurchaseOrderCreatedNotification(createdOrder);
             
             // 8. 转换为响应DTO并返回
-            return purchaseOrderMapper.toResponse(createdOrder);
+            return PurchaseOrderMapper.INSTANCE.toResponse(createdOrder);
             
         } catch (Exception e) {
             log.error("创建采购订单失败", e);
@@ -114,9 +138,9 @@ public class PurchaseOrderService {
         log.info("提交采购订单审批: {}", orderId);
         
         // 1. 获取采购订单
-        PurchaseOrder order = entityDataManager.getById(ENTITY_NAME, orderId, PurchaseOrder.class);
+        PurchaseOrder order = purchaseOrderRepository.findById(orderId);
         if (order == null) {
-            throw new EntityNotFoundException(ENTITY_NAME, orderId);
+            throw new EntityNotFoundException("Purchase order not found with id: " + orderId);
         }
         
         // 2. 检查当前状态
@@ -131,7 +155,8 @@ public class PurchaseOrderService {
         order.setField("submittedBy", userContext.getCurrentUserId());
         
         // 4. 保存更新
-        PurchaseOrder updatedOrder = entityDataManager.update(order);
+        purchaseOrderRepository.update(order);
+        PurchaseOrder updatedOrder = order;
         log.debug("采购订单状态更新为已提交: {}", orderId);
         
         // 5. 启动审批流程
@@ -143,7 +168,7 @@ public class PurchaseOrderService {
         // 6. 发送提交通知
         notificationService.sendPurchaseOrderSubmittedNotification(updatedOrder);
         
-        return purchaseOrderMapper.toResponse(updatedOrder);
+        return PurchaseOrderMapper.INSTANCE.toResponse(updatedOrder);
     }
 
     /**
@@ -154,9 +179,9 @@ public class PurchaseOrderService {
         log.info("审批采购订单: {}", orderId);
         
         // 1. 获取采购订单
-        PurchaseOrder order = entityDataManager.getById(ENTITY_NAME, orderId, PurchaseOrder.class);
+        PurchaseOrder order = purchaseOrderRepository.findById(orderId);
         if (order == null) {
-            throw new EntityNotFoundException(ENTITY_NAME, orderId);
+            throw new EntityNotFoundException("Purchase order not found with id: " + orderId);
         }
         
         // 2. 更新状态和审批信息
@@ -166,7 +191,8 @@ public class PurchaseOrderService {
         order.setField("approvalNotes", approvalNotes);
         
         // 3. 保存更新
-        PurchaseOrder updatedOrder = entityDataManager.update(order);
+        purchaseOrderRepository.update(order);
+        PurchaseOrder updatedOrder = order;
         log.debug("采购订单已批准: {}", orderId);
         
         // 4. 完成工作流任务
@@ -185,7 +211,7 @@ public class PurchaseOrderService {
         // 6. 发送批准通知
         notificationService.sendPurchaseOrderApprovedNotification(updatedOrder);
         
-        return purchaseOrderMapper.toResponse(updatedOrder);
+        return PurchaseOrderMapper.INSTANCE.toResponse(updatedOrder);
     }
 
     /**
@@ -196,9 +222,9 @@ public class PurchaseOrderService {
         log.info("拒绝采购订单: {}", orderId);
         
         // 1. 获取采购订单
-        PurchaseOrder order = entityDataManager.getById(ENTITY_NAME, orderId, PurchaseOrder.class);
+        PurchaseOrder order = purchaseOrderRepository.findById(orderId);
         if (order == null) {
-            throw new EntityNotFoundException(ENTITY_NAME, orderId);
+            throw new EntityNotFoundException("Purchase order not found with id: " + orderId);
         }
         
         // 2. 更新状态和拒绝信息
@@ -208,7 +234,8 @@ public class PurchaseOrderService {
         order.setField("rejectionReason", rejectionReason);
         
         // 3. 保存更新
-        PurchaseOrder updatedOrder = entityDataManager.update(order);
+        purchaseOrderRepository.update(order);
+        PurchaseOrder updatedOrder = order;
         log.debug("采购订单已拒绝: {}", orderId);
         
         // 4. 完成工作流任务
@@ -220,7 +247,7 @@ public class PurchaseOrderService {
         // 5. 发送拒绝通知
         notificationService.sendPurchaseOrderRejectedNotification(updatedOrder);
         
-        return purchaseOrderMapper.toResponse(updatedOrder);
+        return PurchaseOrderMapper.INSTANCE.toResponse(updatedOrder);
     }
 
     /**
@@ -295,7 +322,7 @@ public class PurchaseOrderService {
         );
         
         // 6. 转换结果并返回
-        return results.map(purchaseOrderMapper::toResponse);
+        return results.map(PurchaseOrderMapper.INSTANCE::toResponse);
     }
 
     /**
@@ -318,7 +345,7 @@ public class PurchaseOrderService {
         );
         
         return results.stream()
-                .map(purchaseOrderMapper::toResponse)
+                .map(PurchaseOrderMapper.INSTANCE::toResponse)
                 .collect(Collectors.toList());
     }
 }
