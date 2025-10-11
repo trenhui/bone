@@ -27,14 +27,7 @@
     <name>Bone Boot</name>
     <description>Bone Enterprise Development Platform</description>
 
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </build>
+    <!-- 根POM仅作为聚合模块，具体构建配置在各子模块中定义 -->
 
     <repositories>
         <repository>
