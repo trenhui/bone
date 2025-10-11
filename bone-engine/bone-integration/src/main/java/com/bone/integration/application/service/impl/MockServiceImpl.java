@@ -15,6 +15,7 @@ public class MockServiceImpl implements IMockService {
 
     @Override
     public MockDTO getByMockKey(String mockKey) {
-        return MockConverter.convert(mockRepository.getByMockKey(mockKey));
+        return mockRepository.getByMockKey(mockKey) != null ? 
+               MockConverter.INSTANCE.toDto(mockRepository.getByMockKey(mockKey)) : null;
     }
 }

@@ -167,6 +167,13 @@
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
         </dependency>
+        
+        <!-- MapStruct for object mapping -->
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct</artifactId>
+            <version>1.5.3.Final</version>
+        </dependency>
 
         <!-- liteflow Rules -->
         <!-- LiteFlow Spring Boot Starter (集成 Spring Boot) -->

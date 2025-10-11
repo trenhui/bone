@@ -13,6 +13,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import com.bone.core.domain.entity.Entity;
 
 /**
  * 所有实体的基类，提供通用属性和方法
@@ -21,7 +22,7 @@ import java.util.Map;
 @EntityListeners(AuditingEntityListener.class)
 @Getter
 @Setter
-public abstract class SmartBaseEntity implements Serializable {
+public abstract class SmartBaseEntity extends Entity<String> implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
