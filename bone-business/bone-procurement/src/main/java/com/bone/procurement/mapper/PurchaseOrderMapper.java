@@ -1,48 +1,119 @@
 package com.bone.procurement.mapper;
 
+import com.bone.procurement.dto.PurchaseOrderRequest;
 import com.bone.procurement.dto.PurchaseOrderResponse;
 import com.bone.procurement.entity.PurchaseOrder;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import org.mapstruct.Named;
+import org.mapstruct.factory.Mappers;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * 采购订单实体与DTO映射
  */
-public class PurchaseOrderMapper {
-    public static final PurchaseOrderMapper INSTANCE = new PurchaseOrderMapper();
+@Mapper(componentModel = "spring")
+public interface PurchaseOrderMapper {
+    PurchaseOrderMapper INSTANCE = Mappers.getMapper(PurchaseOrderMapper.class);
     
-    private PurchaseOrderMapper() {
-        // 私有构造函数，防止外部实例化
-    }
+    /**
+     * 将PurchaseOrder实体转换为PurchaseOrderResponse
+     */
+    @Mapping(source = "id", target = "id")
+    @Mapping(source = "name", target = "name")
+    @Mapping(source = "orderNumber", target = "orderNumber")
+    @Mapping(source = "orderTitle", target = "orderTitle")
+    @Mapping(source = "totalAmount", target = "totalAmount")
+    @Mapping(source = ".", target = "totalAmountWithTax", qualifiedByName = "getFieldBigDecimal")
+    @Mapping(source = ".", target = "vendorId", qualifiedByName = "getFieldString")
+    @Mapping(source = ".", target = "departmentId", qualifiedByName = "getFieldString")
+    @Mapping(source = ".", target = "orderStatus", qualifiedByName = "getFieldString")
+    @Mapping(source = ".", target = "needByDate", qualifiedByName = "getFieldLocalDate")
+    @Mapping(source = ".", target = "description", qualifiedByName = "getFieldString")
+    @Mapping(source = ".", target = "priority", qualifiedByName = "getFieldString")
+    @Mapping(source = ".", target = "isHighValueOrder", qualifiedByName = "getFieldBoolean")
+    @Mapping(source = ".", target = "createdBy", qualifiedByName = "getFieldString")
+    @Mapping(source = ".", target = "createdDate", qualifiedByName = "getFieldLocalDateTime")
+    @Mapping(source = ".", target = "submittedDate", qualifiedByName = "getFieldLocalDateTime")
+    @Mapping(source = ".", target = "submittedBy", qualifiedByName = "getFieldString")
+    @Mapping(source = ".", target = "approvedDate", qualifiedByName = "getFieldLocalDateTime")
+    @Mapping(source = ".", target = "approvedBy", qualifiedByName = "getFieldString")
+    @Mapping(source = ".", target = "approvalNotes", qualifiedByName = "getFieldString")
+    @Mapping(source = ".", target = "rejectedDate", qualifiedByName = "getFieldLocalDateTime")
+    @Mapping(source = ".", target = "rejectedBy", qualifiedByName = "getFieldString")
+    @Mapping(source = ".", target = "rejectionReason", qualifiedByName = "getFieldString")
+    PurchaseOrderResponse toResponse(PurchaseOrder purchaseOrder);
     
-    public PurchaseOrderResponse toResponse(PurchaseOrder purchaseOrder) {
+    /**
+     * 将PurchaseOrderRequest转换为PurchaseOrder
+     */
+    @Mapping(target = "id", ignore = true)
+    @Mapping(source = "orderTitle", target = "name")
+    @Mapping(source = "orderTitle", target = "orderTitle")
+    @Mapping(source = "totalAmount", target = "totalAmount")
+    @Mapping(source = "vendorId", target = ".", qualifiedByName = "setFieldString")
+    @Mapping(source = "departmentId", target = ".", qualifiedByName = "setFieldString")
+    @Mapping(source = "needByDate", target = ".", qualifiedByName = "setFieldLocalDate")
+    @Mapping(source = "description", target = ".", qualifiedByName = "setFieldString")
+    @Mapping(source = "priority", target = ".", qualifiedByName = "setFieldString")
+    PurchaseOrder toEntity(PurchaseOrderRequest request);
+    
+    // 自定义映射方法，用于处理getField调用
+    @Named("getFieldString")
+    default String getFieldString(PurchaseOrder purchaseOrder, String fieldName) {
         if (purchaseOrder == null) {
             return null;
         }
-        
-        PurchaseOrderResponse response = new PurchaseOrderResponse();
-        response.setId(purchaseOrder.getId());
-        response.setName(purchaseOrder.getName());
-        response.setOrderNumber(purchaseOrder.getOrderNumber());
-        response.setOrderTitle(purchaseOrder.getOrderTitle());
-        response.setTotalAmount(purchaseOrder.getTotalAmount());
-        response.setTotalAmountWithTax(purchaseOrder.getTotalAmountWithTax());
-        response.setVendorId(purchaseOrder.getVendorId());
-        response.setDepartmentId(purchaseOrder.getDepartmentId());
-        response.setOrderStatus(purchaseOrder.getOrderStatus());
-        response.setNeedByDate(purchaseOrder.getNeedByDate());
-        response.setDescription(purchaseOrder.getDescription());
-        response.setPriority(purchaseOrder.getPriority());
-        response.setIsHighValueOrder(purchaseOrder.getIsHighValueOrder());
-        response.setCreatedBy((String) purchaseOrder.getField("createdBy"));
-        response.setCreatedDate((java.time.LocalDateTime) purchaseOrder.getField("createdDate"));
-        response.setSubmittedDate((java.time.LocalDateTime) purchaseOrder.getField("submittedDate"));
-        response.setSubmittedBy((String) purchaseOrder.getField("submittedBy"));
-        response.setApprovedDate((java.time.LocalDateTime) purchaseOrder.getField("approvedDate"));
-        response.setApprovedBy((String) purchaseOrder.getField("approvedBy"));
-        response.setApprovalNotes((String) purchaseOrder.getField("approvalNotes"));
-        response.setRejectedDate((java.time.LocalDateTime) purchaseOrder.getField("rejectedDate"));
-        response.setRejectedBy((String) purchaseOrder.getField("rejectedBy"));
-        response.setRejectionReason((String) purchaseOrder.getField("rejectionReason"));
-        
-        return response;
+        return (String) purchaseOrder.getField(fieldName);
+    }
+    
+    @Named("getFieldBoolean")
+    default Boolean getFieldBoolean(PurchaseOrder purchaseOrder) {
+        if (purchaseOrder == null) {
+            return null;
+        }
+        return (Boolean) purchaseOrder.getField("isHighValueOrder");
+    }
+    
+    @Named("getFieldBigDecimal")
+    default BigDecimal getFieldBigDecimal(PurchaseOrder purchaseOrder) {
+        if (purchaseOrder == null) {
+            return null;
+        }
+        return (BigDecimal) purchaseOrder.getField("totalAmountWithTax");
+    }
+    
+    @Named("getFieldLocalDate")
+    default LocalDate getFieldLocalDate(PurchaseOrder purchaseOrder) {
+        if (purchaseOrder == null) {
+            return null;
+        }
+        return (LocalDate) purchaseOrder.getField("needByDate");
+    }
+    
+    @Named("getFieldLocalDateTime")
+    default LocalDateTime getFieldLocalDateTime(PurchaseOrder purchaseOrder, String fieldName) {
+        if (purchaseOrder == null) {
+            return null;
+        }
+        return (LocalDateTime) purchaseOrder.getField(fieldName);
+    }
+    
+    // 用于设置字段值的方法
+    @Named("setFieldString")
+    default void setFieldString(PurchaseOrder purchaseOrder, String value, String fieldName) {
+        if (purchaseOrder != null) {
+            purchaseOrder.setField(fieldName, value);
+        }
+    }
+    
+    @Named("setFieldLocalDate")
+    default void setFieldLocalDate(PurchaseOrder purchaseOrder, LocalDate value) {
+        if (purchaseOrder != null) {
+            purchaseOrder.setField("needByDate", value);
+        }
     }
 }
