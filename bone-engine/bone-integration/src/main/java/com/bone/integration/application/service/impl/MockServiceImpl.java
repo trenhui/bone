@@ -12,10 +12,13 @@ import javax.annotation.Resource;
 public class MockServiceImpl implements IMockService {
     @Resource
     private IMockRepository mockRepository;
+    
+    @Resource
+    private MockConverter mockConverter;
 
     @Override
     public MockDTO getByMockKey(String mockKey) {
         return mockRepository.getByMockKey(mockKey) != null ? 
-               MockConverter.INSTANCE.toDto(mockRepository.getByMockKey(mockKey)) : null;
+               mockConverter.toDto(mockRepository.getByMockKey(mockKey)) : null;
     }
 }
