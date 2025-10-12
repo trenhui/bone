@@ -1,12 +1,10 @@
 package com.bone.tools.codegen.domain.enums;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
  * 代码生成器的字段 HTML 展示枚举
  */
-@AllArgsConstructor
 @Getter
 public enum CodegenColumnHtmlTypeEnum {
 
@@ -22,8 +20,13 @@ public enum CodegenColumnHtmlTypeEnum {
     ;
 
     /**
-     * 条件
+     * 类型
      */
     private final String type;
+    
+    // 私有构造函数
+    private CodegenColumnHtmlTypeEnum(String type) {
+        this.type = type;
+    }
 
 }

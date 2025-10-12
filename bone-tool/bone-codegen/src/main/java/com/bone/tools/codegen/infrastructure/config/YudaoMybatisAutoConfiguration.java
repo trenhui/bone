@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import com.bone.tools.codegen.infrastructure.config.DefaultDBFieldHandler;
 
 /**
  * MyBaits 配置类

@@ -1,9 +1,5 @@
 package com.bone.tools.codegen.domain.enums;
 
-import com.bone.tools.codegen.infrastructure.util.ObjectUtils;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-
 import java.util.Objects;
 
 /**
@@ -11,23 +7,29 @@ import java.util.Objects;
  *
  * @author 芋道源码
  */
-@AllArgsConstructor
-@Getter
 public enum CodegenTemplateTypeEnum {
 
     ONE(1), // 单表（增删改查）
     TREE(2), // 树表（增删改查）
-
     MASTER_NORMAL(10), // 主子表 - 主表 - 普通模式
     MASTER_ERP(11), // 主子表 - 主表 - ERP 模式
     MASTER_INNER(12), // 主子表 - 主表 - 内嵌模式
-    SUB(15), // 主子表 - 子表
-    ;
+    SUB(15); // 主子表 - 子表
 
     /**
      * 类型
      */
     private final Integer type;
+
+    // 私有构造器
+    private CodegenTemplateTypeEnum(Integer type) {
+        this.type = type;
+    }
+
+    // Getter方法
+    public Integer getType() {
+        return type;
+    }
 
     /**
      * 是否为主表
@@ -36,8 +38,9 @@ public enum CodegenTemplateTypeEnum {
      * @return 是否主表
      */
     public static boolean isMaster(Integer type) {
-        return ObjectUtils.equalsAny(type,
-                MASTER_NORMAL.type, MASTER_ERP.type, MASTER_INNER.type);
+        return Objects.equals(type, MASTER_NORMAL.getType()) ||
+               Objects.equals(type, MASTER_ERP.getType()) ||
+               Objects.equals(type, MASTER_INNER.getType());
     }
 
     /**
@@ -47,7 +50,6 @@ public enum CodegenTemplateTypeEnum {
      * @return 是否树表
      */
     public static boolean isTree(Integer type) {
-        return Objects.equals(type, TREE.type);
+        return Objects.equals(type, TREE.getType());
     }
-
 }

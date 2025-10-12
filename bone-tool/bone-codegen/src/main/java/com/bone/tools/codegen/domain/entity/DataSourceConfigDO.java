@@ -1,7 +1,7 @@
 package com.bone.tools.codegen.domain.entity;
 
-import com.baomidou.mybatisplus.annotation.KeySequence;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.bone.core.annotation.Id;
+import com.bone.metadata.sdk.domain.annotation.Table;
 import lombok.Builder;
 import lombok.Data;
 import lombok.experimental.Accessors;
@@ -11,11 +11,10 @@ import lombok.experimental.Accessors;
  *
  * @author 芋道源码
  */
-@TableName(value = "infra_data_source_config", autoResultMap = true)
-@KeySequence("infra_data_source_config_seq") // 用于 Oracle、PostgreSQL、Kingbase、DB2、H2 数据库的主键自增。如果是 MySQL 等数据库，可不写。
+@Table("infra_data_source_config")
 @Data
 @Accessors(chain = true)
-public class DataSourceConfigDO extends BaseDO {
+public class DataSourceConfigDO extends BaseDO<Long> {
 
     /**
      * 主键编号 - Master 数据源
@@ -25,6 +24,7 @@ public class DataSourceConfigDO extends BaseDO {
     /**
      * 主键编号
      */
+    @Id
     private Long id;
     /**
      * 连接名
@@ -42,7 +42,16 @@ public class DataSourceConfigDO extends BaseDO {
     /**
      * 密码
      */
-    //@TableField(typeHandler = EncryptTypeHandler.class)
     private String password;
+    
+    @Override
+    public Long getId() {
+        return id;
+    }
+    
+    @Override
+    public void setId(Long id) {
+        this.id = id;
+    }
 
 }

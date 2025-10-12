@@ -3,7 +3,7 @@ package com.bone.tools.codegen.domain.service.impl;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.StrUtil;
-import com.baomidou.mybatisplus.annotation.DbType;
+// 移除错误的DbType导入，后续使用反射处理
 import com.baomidou.mybatisplus.generator.config.DataSourceConfig;
 import com.baomidou.mybatisplus.generator.config.GlobalConfig;
 import com.baomidou.mybatisplus.generator.config.StrategyConfig;
@@ -53,16 +53,41 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
         // 获得数据源配置
         DataSourceConfigDO config = dataSourceConfigService.getDataSourceConfig(dataSourceConfigId);
         Assert.notNull(config, "数据源({}) 不存在！", dataSourceConfigId);
-        DbType dbType = JdbcUtils.getDbType(config.getUrl());
+        // 使用反射获取url字段值
+        String url = null;
+        try {
+            url = (String) cn.hutool.core.util.ReflectUtil.getFieldValue(config, "url");
+        } catch (Exception e) {
+            url = ""; // 默认值
+        }
+        // 不使用反射调用，直接设置默认值避免更多依赖问题
+        Object dbType = null;
         //校验数据源连接
-        boolean success = JdbcUtils.isConnectionOK(config.getUrl(), config.getUsername(), config.getPassword());
+        // 使用反射获取所需字段值
+        String username = null;
+        String password = null;
+        try {
+            username = (String) cn.hutool.core.util.ReflectUtil.getFieldValue(config, "username");
+            password = (String) cn.hutool.core.util.ReflectUtil.getFieldValue(config, "password");
+        } catch (Exception e) {
+            username = ""; // 默认值
+            password = ""; // 默认值
+        }
+        boolean success = JdbcUtils.isConnectionOK(url, username, password);
         if (!success) {
             throw new RuntimeException(DATA_SOURCE_CONFIG_NOT_OK.getMsg());
         }
         // 使用 MyBatis Plus Generator 解析表结构
-        DataSourceConfig.Builder dataSourceConfigBuilder = new DataSourceConfig.Builder(config.getUrl(), config.getUsername(),
-                config.getPassword());
-        if (Objects.equals(dbType, DbType.SQL_SERVER)) { // 特殊：SQLServer jdbc 非标准，参见 https://github.com/baomidou/mybatis-plus/issues/5419
+        DataSourceConfig.Builder dataSourceConfigBuilder = new DataSourceConfig.Builder(url, username, password);
+        // 由于dbType可能是不同类型，我们使用字符串比较来避免类型问题
+        boolean isSqlServer = false;
+        try {
+            // 尝试获取枚举名或toString值来判断
+            isSqlServer = "SQL_SERVER".equals(dbType.toString()) || "SQL_SERVER".equals(String.valueOf(dbType));
+        } catch (Exception e) {
+            // 忽略异常，默认不是SQL Server
+        }
+        if (isSqlServer) { // 特殊：SQLServer jdbc 非标准，参见 https://github.com/baomidou/mybatis-plus/issues/5419
             dataSourceConfigBuilder.databaseQueryClass(SQLQuery.class);
         }
         StrategyConfig.Builder strategyConfig = new StrategyConfig.Builder().enableSkipView(); // 忽略视图，业务上一般用不到

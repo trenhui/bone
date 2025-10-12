@@ -99,5 +99,10 @@ public class CodegenTableSaveRequest {
         return ObjectUtil.notEqual(templateType, CodegenTemplateTypeEnum.TREE)
                 || (ObjectUtil.isAllNotEmpty(treeParentColumnId, treeNameColumnId));
     }
+    
+    // 显式添加getTemplateType方法，确保编译通过
+    public Integer getTemplateType() {
+        return templateType;
+    }
 
 }
