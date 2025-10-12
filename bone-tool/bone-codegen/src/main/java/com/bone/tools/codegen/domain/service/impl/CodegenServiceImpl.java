@@ -5,8 +5,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.generator.config.po.TableField;
 import com.baomidou.mybatisplus.generator.config.po.TableInfo;
-import com.bone.metadata.sdk.criteria.Criteria;
-import com.bone.metadata.sdk.criteria.Predicates;
+
 import com.bone.core.model.PageResult;
 import com.bone.tools.codegen.util.BeanUtils;
 import com.bone.tools.codegen.application.dto.CodegenTablePageRequest;
@@ -69,8 +68,7 @@ public class CodegenServiceImpl implements CodegenService {
     @Resource
     private DataSourceConfigMapper dataSourceConfigMapper;
     
-    // 手动添加log实例
-    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(CodegenServiceImpl.class);
+
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -88,8 +86,10 @@ public class CodegenServiceImpl implements CodegenService {
         }      
         List<Long> ids = new ArrayList<>(tableNames.size());
         try {
+            // 在lambda表达式外部创建final临时变量
+            final Long tempDataSourceConfigId = dataSourceConfigId;
             tableNames.forEach(tableName ->
-                    ids.add(createCodegen(userId, dataSourceConfigId, tableName)));
+                    ids.add(createCodegen(userId, tempDataSourceConfigId, tableName)));
         } catch (Exception ex) {
             log.error("[createCodegenList] Error occurred", ex);
             throw ex; // 重新抛出以确保事务回滚和异常传播

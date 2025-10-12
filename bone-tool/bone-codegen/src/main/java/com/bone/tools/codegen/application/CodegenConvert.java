@@ -1,5 +1,7 @@
 package com.bone.tools.codegen.application;
 
+import java.util.Map;
+
 import com.baomidou.mybatisplus.generator.config.po.TableField;
 import com.baomidou.mybatisplus.generator.config.po.TableInfo;
 import com.bone.tools.codegen.util.BeanUtils;

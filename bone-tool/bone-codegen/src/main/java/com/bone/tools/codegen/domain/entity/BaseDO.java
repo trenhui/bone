@@ -1,7 +1,7 @@
 package com.bone.tools.codegen.domain.entity;
 
 import com.bone.core.annotation.Id;
-import com.bone.core.domain.entity.Entity;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 
@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
  */
 @Data
 @JsonIgnoreProperties(value = "transMap") // 由于 Easy-Trans 会添加 transMap 属性，避免 Jackson 在 Spring Cache 反序列化报错
-public abstract class BaseDO<T extends Serializable> implements Entity<T> {
+public abstract class BaseDO<T extends Serializable> implements Serializable {
 
     /**
      * 创建时间
