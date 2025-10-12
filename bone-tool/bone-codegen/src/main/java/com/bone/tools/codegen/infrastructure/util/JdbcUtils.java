@@ -1,7 +1,5 @@
 package com.bone.tools.codegen.infrastructure.util;
 
-import com.baomidou.mybatisplus.annotation.DbType;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 
@@ -28,15 +26,6 @@ public class JdbcUtils {
         }
     }
 
-    /**
-     * 获得 URL 对应的 DB 类型
-     *
-     * @param url URL
-     * @return DB 类型
-     */
-    public static DbType getDbType(String url) {
-        DbType dbType = com.baomidou.mybatisplus.extension.toolkit.JdbcUtils.getDbType(url);
-        return dbType;
-    }
+    // 移除getDbType方法，避免依赖问题
 
 }

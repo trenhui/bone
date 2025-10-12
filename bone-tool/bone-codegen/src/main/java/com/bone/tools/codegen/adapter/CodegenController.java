@@ -23,7 +23,8 @@ import jakarta.annotation.Resource;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -36,6 +37,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import com.bone.tools.codegen.util.FieldAccessor;
 
 import static com.bone.core.model.ApiResponse.success;
 
@@ -44,8 +46,8 @@ import static com.bone.core.model.ApiResponse.success;
 @RestController
 @RequestMapping("/codegen")
 @Validated
-@Slf4j
 public class CodegenController {
+    private static final Logger log = LoggerFactory.getLogger(CodegenController.class);
 
     @Resource
     private CodegenService codegenService;
@@ -73,8 +75,18 @@ public class CodegenController {
     @Parameter(name = "dataSourceConfigId", description = "数据源配置的编号", required = true, example = "1")
     public ApiResponse<List<CodegenTableResponse>> getCodegenTableList(@RequestParam(value = "dataSourceConfigId") Long dataSourceConfigId) {
         List<CodegenTableResponse> result = BeanUtils.toBean(codegenService.getCodegenTableList(dataSourceConfigId), CodegenTableResponse.class);
-        result.forEach(x -> x.setCreateTimeStr(x.getCreateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))));
-        result.forEach(x -> x.setUpdateTimeStr(x.getUpdateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))));
+        result.forEach(x -> {
+            Object createTime = FieldAccessor.getFieldValue(x, "createTime");
+            if (createTime instanceof java.time.LocalDateTime) {
+                FieldAccessor.setFieldValue(x, "createTimeStr", ((java.time.LocalDateTime) createTime).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            }
+        });
+        result.forEach(x -> {
+            Object updateTime = FieldAccessor.getFieldValue(x, "updateTime");
+            if (updateTime instanceof java.time.LocalDateTime) {
+                FieldAccessor.setFieldValue(x, "updateTimeStr", ((java.time.LocalDateTime) updateTime).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+            }
+        });
         return success(result);
     }
 
@@ -84,12 +96,37 @@ public class CodegenController {
         PageResult<CodegenTableResponse> result = BeanUtils.toBean(codegenService.getCodegenTablePage(pageReqVO), CodegenTableResponse.class);
         if (CollectionUtil.isNotEmpty(result.getRecords())) {
             DataSourceConfigQueryRequest request = new DataSourceConfigQueryRequest();
-            request.setIdList(result.getRecords().stream().map(CodegenTableResponse::getDataSourceConfigId).distinct().collect(Collectors.toList()));
-            Map<Long, String> dataSourceConfigMap = dataSourceConfigService.getDataSourceConfigList(request).stream().collect(Collectors.toMap(DataSourceConfigDO::getId, DataSourceConfigDO::getName));
-            result.getRecords().forEach(x -> x.setDataSourceConfigName(dataSourceConfigMap.get((long) x.getDataSourceConfigId())));
+            List<Long> idList = result.getRecords().stream()
+                      .map(table -> FieldAccessor.getFieldValue(table, "dataSourceConfigId"))
+                      .filter(id -> id != null)
+                      .map(id -> (Long) id)
+                      .distinct()
+                      .collect(Collectors.toList());
+              FieldAccessor.setFieldValue(request, "idList", idList);
+            Map<Long, String> dataSourceConfigMap = dataSourceConfigService.getDataSourceConfigList(request).stream()
+                      .collect(Collectors.toMap(
+                              config -> FieldAccessor.getFieldValue(config, "id"),
+                              config -> FieldAccessor.getFieldValue(config, "name")
+                      ));
+            result.getRecords().forEach(x -> {
+                  Object dataSourceConfigId = FieldAccessor.getFieldValue(x, "dataSourceConfigId");
+                  if (dataSourceConfigId != null && dataSourceConfigMap.containsKey((Long) dataSourceConfigId)) {
+                      FieldAccessor.setFieldValue(x, "dataSourceConfigName", dataSourceConfigMap.get((Long) dataSourceConfigId));
+                  }
+              });
         }
-        result.getRecords().forEach(x -> x.setCreateTimeStr(x.getCreateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))));
-        result.getRecords().forEach(x -> x.setUpdateTimeStr(x.getUpdateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))));
+        result.getRecords().forEach(x -> {
+              Object createTime = FieldAccessor.getFieldValue(x, "createTime");
+              if (createTime instanceof java.time.LocalDateTime) {
+                  FieldAccessor.setFieldValue(x, "createTimeStr", ((java.time.LocalDateTime) createTime).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+              }
+          });
+        result.getRecords().forEach(x -> {
+              Object updateTime = FieldAccessor.getFieldValue(x, "updateTime");
+              if (updateTime instanceof java.time.LocalDateTime) {
+                  FieldAccessor.setFieldValue(x, "updateTimeStr", ((java.time.LocalDateTime) updateTime).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+              }
+          });
         return success(result);
     }
 
@@ -100,7 +137,7 @@ public class CodegenController {
         CodegenTableDO table = codegenService.getCodegenTable(tableId);
         List<CodegenColumnDO> columns = codegenService.getCodegenColumnListByTableId(tableId);
         // 拼装返回
-        return success(CodegenConvert.INSTANCE.convert(table, columns));
+        return success(CodegenConvert.INSTANCE.convertToDetail(table, columns));
     }
 
     @Operation(summary = "基于数据库的表结构，创建代码生成器的表和字段定义")

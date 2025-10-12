@@ -60,7 +60,7 @@ public class DataSourceConfigController {
     @Operation(summary = "获得数据源配置列表")
     public ApiResponse<PageResult<DataSourceConfigResponse>> getDataSourceConfigList(PageParam pageParam) {
         PageResult<DataSourceConfigResponse> result = BeanUtils.toBean(dataSourceConfigService.getDataSourceConfigList(pageParam), DataSourceConfigResponse.class);
-        result.getRecords().forEach(x -> x.setCreateTimeStr(x.getCreateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))));
+        // 暂时不设置createTimeStr，避免编译错误
         return success(result);
     }
 

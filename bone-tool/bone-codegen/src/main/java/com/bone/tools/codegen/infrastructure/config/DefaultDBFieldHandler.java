@@ -23,12 +23,12 @@ public class DefaultDBFieldHandler implements MetaObjectHandler {
 
             LocalDateTime current = LocalDateTime.now();
             // 创建时间为空，则以当前时间为插入时间
-            if (Objects.isNull(baseDO.getCreateTime())) {
-                baseDO.setCreateTime(current);
+            if (Objects.isNull(getFieldValByName("createTime", metaObject))) {
+                setFieldValByName("createTime", current, metaObject);
             }
             // 更新时间为空，则以当前时间为更新时间
-            if (Objects.isNull(baseDO.getUpdateTime())) {
-                baseDO.setUpdateTime(current);
+            if (Objects.isNull(getFieldValByName("updateTime", metaObject))) {
+                setFieldValByName("updateTime", current, metaObject);
             }
 
 //            Long userId = WebFrameworkUtils.getLoginUserId();

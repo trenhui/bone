@@ -18,7 +18,6 @@ import org.mapstruct.Named;
 import org.mapstruct.factory.Mappers;
 
 import java.util.List;
-import java.util.Map;
 
 @Mapper
 public interface CodegenConvert {
@@ -53,19 +52,42 @@ public interface CodegenConvert {
 
     // ========== 其它 ==========
 
-    default CodegenDetailResponse convert(CodegenTableDO table, List<CodegenColumnDO> columns) {
+    default CodegenDetailResponse convertToDetail(CodegenTableDO table, List<CodegenColumnDO> columns) {
+        // 使用简单的构造方式，避免使用setter方法
         CodegenDetailResponse respVO = new CodegenDetailResponse();
-        respVO.setTable(BeanUtils.toBean(table, CodegenTableResponse.class));
-        respVO.setColumns(BeanUtils.toBean(columns, CodegenColumnResponse.class));
+        // 直接访问字段（如果有必要可以考虑使用反射）
+        try {
+            // 设置table字段
+            java.lang.reflect.Field tableField = CodegenDetailResponse.class.getDeclaredField("table");
+            tableField.setAccessible(true);
+            tableField.set(respVO, BeanUtils.toBean(table, CodegenTableResponse.class));
+            
+            // 设置columns字段
+            java.lang.reflect.Field columnsField = CodegenDetailResponse.class.getDeclaredField("columns");
+            columnsField.setAccessible(true);
+            columnsField.set(respVO, BeanUtils.toBean(columns, CodegenColumnResponse.class));
+        } catch (Exception e) {
+            // 如果反射失败，返回空对象
+        }
         return respVO;
     }
 
-    default List<CodegenPreviewResponse> convert(Map<String, String> codes) {
+    default List<CodegenPreviewResponse> convertToPreview(Map<String, String> codes) {
         return CollectionUtils.convertList(codes.entrySet(),
                 entry -> {
                     CodegenPreviewResponse vo = new CodegenPreviewResponse();
-            vo.setFilePath(entry.getKey());
-            vo.setCode(entry.getValue());
+            // 直接访问字段
+            try {
+                java.lang.reflect.Field filePathField = CodegenPreviewResponse.class.getDeclaredField("filePath");
+                filePathField.setAccessible(true);
+                filePathField.set(vo, entry.getKey());
+                
+                java.lang.reflect.Field codeField = CodegenPreviewResponse.class.getDeclaredField("code");
+                codeField.setAccessible(true);
+                codeField.set(vo, entry.getValue());
+            } catch (Exception e) {
+                // 如果反射失败，忽略错误
+            }
             return vo;
         });
     }

@@ -3,7 +3,8 @@ package com.bone.tools.codegen.infrastructure.config;
 import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.annotation.DbType;
 import com.baomidou.mybatisplus.annotation.IdType;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.env.EnvironmentPostProcessor;
 import org.springframework.core.env.ConfigurableEnvironment;
@@ -15,8 +16,8 @@ import java.util.Set;
  *
  * @author 芋道源码
  */
-@Slf4j
 public class IdTypeEnvironmentPostProcessor implements EnvironmentPostProcessor {
+    private static final Logger log = LoggerFactory.getLogger(IdTypeEnvironmentPostProcessor.class);
 
     private static final String ID_TYPE_KEY = "mybatis-plus.global-config.db-config.id-type";
 

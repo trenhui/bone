@@ -11,14 +11,25 @@ import java.util.Optional;
 
 import static cn.hutool.core.util.ArrayUtil.firstMatch;
 
-@AllArgsConstructor
-@Getter
 public enum ModelTypeEnum {
     SAAS(1, "saas"),
     DDD(2, "ddd");
 
     private Integer type;
     private String name;
+    
+    private ModelTypeEnum(Integer type, String name) {
+        this.type = type;
+        this.name = name;
+    }
+    
+    public Integer getType() {
+        return type;
+    }
+    
+    public String getName() {
+        return name;
+    }
 
     // 获取模板类型
     public static ModelTypeEnum valueOf(Integer type) {

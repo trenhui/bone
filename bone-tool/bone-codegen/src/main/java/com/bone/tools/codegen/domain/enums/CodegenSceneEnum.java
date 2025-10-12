@@ -1,6 +1,5 @@
 package com.bone.tools.codegen.domain.enums;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 import static cn.hutool.core.util.ArrayUtil.firstMatch;
@@ -10,7 +9,6 @@ import static cn.hutool.core.util.ArrayUtil.firstMatch;
  *
  * @author 芋道源码
  */
-@AllArgsConstructor
 @Getter
 public enum CodegenSceneEnum {
 
@@ -34,8 +32,15 @@ public enum CodegenSceneEnum {
      */
     private final String prefixClass;
 
+    CodegenSceneEnum(int scene, String name, String basePackage, String prefixClass) {
+        this.scene = scene;
+        this.name = name;
+        this.basePackage = basePackage;
+        this.prefixClass = prefixClass;
+    }
+
     public static CodegenSceneEnum valueOf(Integer scene) {
-        return firstMatch(sceneEnum -> sceneEnum.getScene().equals(scene), values());
+        return firstMatch(sceneEnum -> sceneEnum.scene.equals(scene), values());
     }
 
 }

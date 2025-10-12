@@ -1,24 +1,22 @@
 package com.bone.tools.codegen.domain.mapper;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.bone.tools.codegen.domain.entity.CodegenColumnDO;
-import org.apache.ibatis.annotations.Mapper;
 
 import java.util.List;
+import java.util.Map;
 
-@Mapper
-public interface CodegenColumnMapper extends BaseMapper<CodegenColumnDO> {
+public interface CodegenColumnMapper {
 
-    default List<CodegenColumnDO> selectListByTableId(Long tableId) {
-        return selectList(new LambdaQueryWrapper<CodegenColumnDO>()
-                .eq(CodegenColumnDO::getTableId, tableId)
-                .orderByAsc(CodegenColumnDO::getId));
-    }
-
-    default void deleteListByTableId(Long tableId) {
-        delete(new LambdaQueryWrapper<CodegenColumnDO>()
-                .eq(CodegenColumnDO::getTableId, tableId));
-    }
+    // 直接定义需要的方法，避免使用Criteria API
+    List<CodegenColumnDO> selectListByTableId(Long tableId);
+    
+    void deleteListByTableId(Long tableId);
+    
+    // 为RepositoryImpl提供实现支持的方法
+    List<CodegenColumnDO> findByParams(Map<String, Object> params);
+    
+    void deleteByIds(List<Long> ids);
+    
+    Long save(CodegenColumnDO entity);
 
 }

@@ -15,6 +15,8 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class ServiceExceptionUtil {
+    // 手动添加log实例，避免lombok依赖问题
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(ServiceExceptionUtil.class);
 
     // ========== 和 ServiceException 的集成 ==========
 

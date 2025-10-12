@@ -1,9 +1,7 @@
 package com.bone.tools.codegen.domain.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.KeySequence;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.bone.core.annotation.Id;
+import com.bone.metadata.sdk.domain.annotation.Table;
 import com.baomidou.mybatisplus.generator.config.po.TableInfo;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -14,19 +12,27 @@ import lombok.experimental.Accessors;
  *
  * @author 芋道源码
  */
-@TableName(value = "infra_codegen_table", autoResultMap = true)
-@KeySequence("infra_codegen_table_seq") // 用于 Oracle、PostgreSQL、Kingbase、DB2、H2 数据库的主键自增。如果是 MySQL 等数据库，可不写。
+@Table("infra_codegen_table")
 @Data
 @Accessors(chain = true)
 @EqualsAndHashCode(callSuper = true)
-public class CodegenTableDO extends BaseDO {
+public class CodegenTableDO extends BaseDO<Long> {
 
     /**
      * ID 编号
      */
-    @TableId(type = IdType.AUTO)
+    @Id
     private Long id;
-
+    
+    @Override
+    public Long getId() {
+        return id;
+    }
+    
+    @Override
+    public void setId(Long id) {
+        this.id = id;
+    }
     /**
      * 数据源编号
      *

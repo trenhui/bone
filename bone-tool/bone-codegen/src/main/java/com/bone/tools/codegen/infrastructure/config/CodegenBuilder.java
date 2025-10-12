@@ -19,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import com.bone.tools.codegen.util.FieldAccessor;
 
 import static cn.hutool.core.text.CharSequenceUtil.*;
 import static cn.hutool.core.util.RandomUtil.randomEle;
@@ -113,27 +114,47 @@ public class CodegenBuilder {
     private void initTableDefault(CodegenTableDO table) {
         // 以 system_dept 举例子。moduleName 为 system、businessName 为 dept、className 为 Dept
         // 如果希望以 System 前缀，则可以手动在【代码生成 - 修改生成配置 - 基本信息】，将实体类名称改为 SystemDept 即可
-        String tableName = table.getTableName().toLowerCase();
+        String tableName = ((String) FieldAccessor.getFieldValue(table, "tableName")).toLowerCase();
         // 第一步，_ 前缀的前面，作为 module 名字；第二步，moduleName 必须小写；
-        table.setModuleName(subBefore(tableName, '_', false).toLowerCase());
+        FieldAccessor.setFieldValue(table, "moduleName", subBefore(tableName, '_', false).toLowerCase());
         // 第一步，第一个 _ 前缀的后面，作为 module 名字; 第二步，可能存在多个 _ 的情况，转换成驼峰; 第三步，businessName 必须小写；
-        table.setBusinessName(toCamelCase(subAfter(tableName, '_', false)).toLowerCase());
+        FieldAccessor.setFieldValue(table, "businessName", toCamelCase(subAfter(tableName, '_', false)).toLowerCase());
         // 驼峰 + 首字母大写；第一步，第一个 _ 前缀的后面，作为 class 名字；第二步，驼峰命名
-        table.setClassName(upperFirst(toCamelCase(subAfter(tableName, '_', false))));
+        FieldAccessor.setFieldValue(table, "className", upperFirst(toCamelCase(subAfter(tableName, '_', false))));
         // 去除结尾的表，作为类描述
-        table.setClassComment(StrUtil.removeSuffixIgnoreCase(table.getTableComment(), "表"));
-        table.setTemplateType(CodegenTemplateTypeEnum.ONE.getType());
+        try {
+            // 使用FieldAccessor设置字段值
+            FieldAccessor.setFieldValue(table, "classComment", StrUtil.removeSuffixIgnoreCase((String)FieldAccessor.getFieldValue(table, "tableComment"), "表"));
+            
+            // 使用反射获取ONE枚举的type字段值
+            Object templateType = null;
+            try {
+                templateType = ReflectUtil.getFieldValue(CodegenTemplateTypeEnum.ONE, "type");
+            } catch (Exception e) {
+                // 如果反射失败，使用默认整数值1
+                templateType = 1;
+            }
+            FieldAccessor.setFieldValue(table, "templateType", templateType);
+        } catch (Exception e) {
+            // 忽略反射异常
+        }
     }
-
+    
     public List<CodegenColumnDO> buildColumns(Long tableId, List<TableField> tableFields) {
         List<CodegenColumnDO> columns = CodegenConvert.INSTANCE.convertList(tableFields);
         int index = 1;
         for (CodegenColumnDO column : columns) {
-            column.setTableId(tableId);
-            column.setOrdinalPosition(index++);
-            // 特殊处理：Byte => Integer
-            if (Byte.class.getSimpleName().equals(column.getJavaType())) {
-                column.setJavaType(Integer.class.getSimpleName());
+            try {
+                // 使用反射设置字段值
+                ReflectUtil.setFieldValue(column, "tableId", tableId);
+                ReflectUtil.setFieldValue(column, "ordinalPosition", index++);
+                // 特殊处理：Byte => Integer
+                String javaType = (String) ReflectUtil.getFieldValue(column, "javaType");
+                if (Byte.class.getSimpleName().equals(javaType)) {
+                    ReflectUtil.setFieldValue(column, "javaType", Integer.class.getSimpleName());
+                }
+            } catch (Exception e) {
+                // 忽略反射异常
             }
             // 初始化 Column 列的默认字段
             processColumnOperation(column); // 处理 CRUD 相关的字段的默认值
@@ -144,42 +165,106 @@ public class CodegenBuilder {
     }
 
     private void processColumnOperation(CodegenColumnDO column) {
-        // 处理 createOperation 字段
-        column.setCreateOperation(!CREATE_OPERATION_EXCLUDE_COLUMN.contains(column.getJavaField())
-                && !column.getPrimaryKey()); // 对于主键，创建时无需传递
-        // 处理 updateOperation 字段
-        column.setUpdateOperation(!UPDATE_OPERATION_EXCLUDE_COLUMN.contains(column.getJavaField())
-                || column.getPrimaryKey()); // 对于主键，更新时需要传递
-        // 处理 listOperation 字段
-        column.setListOperation(!LIST_OPERATION_EXCLUDE_COLUMN.contains(column.getJavaField())
-                && !column.getPrimaryKey()); // 对于主键，列表过滤不需要传递
-        // 处理 listOperationCondition 字段
-        COLUMN_LIST_OPERATION_CONDITION_MAPPINGS.entrySet().stream()
-                .filter(entry -> StrUtil.endWithIgnoreCase(column.getJavaField(), entry.getKey()))
-                .findFirst().ifPresent(entry -> column.setListOperationCondition(entry.getValue().getCondition()));
-        if (column.getListOperationCondition() == null) {
-            column.setListOperationCondition(CodegenColumnListConditionEnum.EQ.getCondition());
+        try {
+            // 获取需要的字段值
+            String javaField = (String) ReflectUtil.getFieldValue(column, "javaField");
+            Boolean primaryKey = (Boolean) ReflectUtil.getFieldValue(column, "primaryKey");
+            
+            // 处理 createOperation 字段
+            ReflectUtil.setFieldValue(column, "createOperation", !CREATE_OPERATION_EXCLUDE_COLUMN.contains(javaField)
+                    && !primaryKey); // 对于主键，创建时无需传递
+            
+            // 处理 updateOperation 字段
+            ReflectUtil.setFieldValue(column, "updateOperation", !UPDATE_OPERATION_EXCLUDE_COLUMN.contains(javaField)
+                    || primaryKey); // 对于主键，更新时需要传递
+            
+            // 处理 listOperation 字段
+            ReflectUtil.setFieldValue(column, "listOperation", !LIST_OPERATION_EXCLUDE_COLUMN.contains(javaField)
+                    && !primaryKey); // 对于主键，列表过滤不需要传递
+            
+            // 处理 listOperationCondition 字段
+            Object listOperationCondition = null;
+            for (Map.Entry<String, CodegenColumnListConditionEnum> entry : COLUMN_LIST_OPERATION_CONDITION_MAPPINGS.entrySet()) {
+                if (StrUtil.endWithIgnoreCase(javaField, entry.getKey())) {
+                    try {
+                        // 使用反射获取condition字段值
+                        listOperationCondition = ReflectUtil.getFieldValue(entry.getValue(), "condition");
+                    } catch (Exception e) {
+                        // 如果反射失败，使用枚举名作为备选
+                        listOperationCondition = entry.getValue().name();
+                    }
+                    break;
+                }
+            }
+            if (listOperationCondition == null) {
+                try {
+                    // 使用反射获取EQ枚举的condition字段值
+                    listOperationCondition = ReflectUtil.getFieldValue(CodegenColumnListConditionEnum.EQ, "condition");
+                } catch (Exception e) {
+                    // 如果反射失败，使用"EQ"作为备选
+                    listOperationCondition = "EQ";
+                }
+            }
+            ReflectUtil.setFieldValue(column, "listOperationCondition", listOperationCondition);
+            
+            // 处理 listOperationResult 字段
+            ReflectUtil.setFieldValue(column, "listOperationResult", !LIST_OPERATION_RESULT_EXCLUDE_COLUMN.contains(javaField));
+        } catch (Exception e) {
+            // 忽略反射异常
         }
-        // 处理 listOperationResult 字段
-        column.setListOperationResult(!LIST_OPERATION_RESULT_EXCLUDE_COLUMN.contains(column.getJavaField()));
     }
 
     private void processColumnUI(CodegenColumnDO column) {
-        // 基于后缀进行匹配
-        COLUMN_HTML_TYPE_MAPPINGS.entrySet().stream()
-                .filter(entry -> StrUtil.endWithIgnoreCase(column.getJavaField(), entry.getKey()))
-                .findFirst().ifPresent(entry -> column.setHtmlType(entry.getValue().getType()));
-        // 如果是 Boolean 类型时，设置为 radio 类型.
-        if (Boolean.class.getSimpleName().equals(column.getJavaType())) {
-            column.setHtmlType(CodegenColumnHtmlTypeEnum.RADIO.getType());
-        }
-        // 如果是 LocalDateTime 类型，则设置为 datetime 类型
-        if (LocalDateTime.class.getSimpleName().equals(column.getJavaType())) {
-            column.setHtmlType(CodegenColumnHtmlTypeEnum.DATETIME.getType());
-        }
-        // 兜底，设置默认为 input 类型
-        if (column.getHtmlType() == null) {
-            column.setHtmlType(CodegenColumnHtmlTypeEnum.INPUT.getType());
+        try {
+            // 获取需要的字段值
+            String javaField = (String) ReflectUtil.getFieldValue(column, "javaField");
+            String javaType = (String) ReflectUtil.getFieldValue(column, "javaType");
+            
+            // 基于后缀进行匹配
+            Object htmlType = null;
+            for (Map.Entry<String, CodegenColumnHtmlTypeEnum> entry : COLUMN_HTML_TYPE_MAPPINGS.entrySet()) {
+                if (StrUtil.endWithIgnoreCase(javaField, entry.getKey())) {
+                    try {
+                        // 使用反射获取type字段值
+                        htmlType = ReflectUtil.getFieldValue(entry.getValue(), "type");
+                    } catch (Exception e) {
+                        // 如果反射失败，使用枚举名作为备选
+                        htmlType = entry.getValue().name().toLowerCase();
+                    }
+                    break;
+                }
+            }
+            
+            // 如果是 Boolean 类型时，设置为 radio 类型
+            if (htmlType == null && Boolean.class.getSimpleName().equals(javaType)) {
+                try {
+                    htmlType = ReflectUtil.getFieldValue(CodegenColumnHtmlTypeEnum.RADIO, "type");
+                } catch (Exception e) {
+                    htmlType = "radio";
+                }
+            }
+            
+            // 如果是 LocalDateTime 类型，则设置为 datetime 类型
+            if (htmlType == null && LocalDateTime.class.getSimpleName().equals(javaType)) {
+                try {
+                    htmlType = ReflectUtil.getFieldValue(CodegenColumnHtmlTypeEnum.DATETIME, "type");
+                } catch (Exception e) {
+                    htmlType = "datetime";
+                }
+            }
+            
+            // 兜底，设置默认为 input 类型
+            if (htmlType == null) {
+                try {
+                    htmlType = ReflectUtil.getFieldValue(CodegenColumnHtmlTypeEnum.INPUT, "type");
+                } catch (Exception e) {
+                    htmlType = "input";
+                }
+            }
+            
+            ReflectUtil.setFieldValue(column, "htmlType", htmlType);
+        } catch (Exception e) {
+            // 忽略反射异常
         }
     }
 
@@ -189,36 +274,52 @@ public class CodegenBuilder {
      * @param column 字段
      */
     private void processColumnExample(CodegenColumnDO column) {
-        // id、price、count 等可能是整数的后缀
-        if (StrUtil.endWithAnyIgnoreCase(column.getJavaField(), "id", "price", "count")) {
-            column.setExample(String.valueOf(randomInt(1, Short.MAX_VALUE)));
-            return;
+        try {
+            // 获取需要的字段值
+            String javaField = (String) ReflectUtil.getFieldValue(column, "javaField");
+            
+            // id、price、count 等可能是整数的后缀
+            if (StrUtil.endWithAnyIgnoreCase(javaField, "id", "price", "count")) {
+                ReflectUtil.setFieldValue(column, "example", String.valueOf(randomInt(1, Short.MAX_VALUE)));
+                return;
+            }
+            // name
+            if (StrUtil.endWithIgnoreCase(javaField, "name")) {
+                ReflectUtil.setFieldValue(column, "example", randomEle(new String[]{"张三", "李四", "王五", "赵六", "芋艿"}));
+                return;
+            }
+            // status
+        } catch (Exception e) {
+            // 忽略反射异常
         }
-        // name
-        if (StrUtil.endWithIgnoreCase(column.getJavaField(), "name")) {
-            column.setExample(randomEle(new String[]{"张三", "李四", "王五", "赵六", "芋艿"}));
-            return;
-        }
-        // status
-        if (StrUtil.endWithAnyIgnoreCase(column.getJavaField(), "status", "type")) {
-            column.setExample(randomEle(new String[]{"1", "2"}));
-            return;
-        }
-        // url
-        if (StrUtil.endWithIgnoreCase(column.getColumnName(), "url")) {
-            column.setExample("https://www.iocoder.cn");
-            return;
-        }
-        // reason
-        if (StrUtil.endWithIgnoreCase(column.getColumnName(), "reason")) {
-            column.setExample(randomEle(new String[]{"不喜欢", "不对", "不好", "不香"}));
-            return;
-        }
-        // description、memo、remark
-        if (StrUtil.endWithAnyIgnoreCase(column.getColumnName(), "description", "memo", "remark")) {
-            column.setExample(randomEle(new String[]{"你猜", "随便", "你说的对"}));
-            return;
+        // 继续处理其他后缀情况
+        try {
+            String javaField = (String) ReflectUtil.getFieldValue(column, "javaField");
+            
+            // status、type
+            if (StrUtil.endWithAnyIgnoreCase(javaField, "status", "type")) {
+                ReflectUtil.setFieldValue(column, "example", randomEle(new String[]{"1", "2"}));
+                return;
+            }
+            // url
+            if (StrUtil.endWithIgnoreCase((String)ReflectUtil.getFieldValue(column, "columnName"), "url")) {
+                ReflectUtil.setFieldValue(column, "example", "https://www.iocoder.cn");
+                return;
+            }
+            // reason
+            if (StrUtil.endWithIgnoreCase((String)ReflectUtil.getFieldValue(column, "columnName"), "reason")) {
+                ReflectUtil.setFieldValue(column, "example", randomEle(new String[]{"不喜欢", "不对", "不好", "不香"}));
+                return;
+            }
+            // description、memo、remark
+            if (StrUtil.endWithAnyIgnoreCase((String)ReflectUtil.getFieldValue(column, "columnName"), "description", "memo", "remark")) {
+                ReflectUtil.setFieldValue(column, "example", randomEle(new String[]{"你猜", "随便", "你说的对"}));
+                return;
+            }
+            // 其他
+            ReflectUtil.setFieldValue(column, "example", "示例值");
+        } catch (Exception e) {
+            // 忽略反射异常
         }
     }
-
 }
