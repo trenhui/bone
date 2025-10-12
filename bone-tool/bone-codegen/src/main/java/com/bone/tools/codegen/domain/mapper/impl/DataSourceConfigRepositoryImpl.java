@@ -1,6 +1,6 @@
 package com.bone.tools.codegen.domain.mapper.impl;
 
-import com.bone.metadata.sdk.Repository;
+import org.springframework.stereotype.Repository;
 import com.bone.tools.codegen.domain.entity.DataSourceConfigDO;
 import com.bone.tools.codegen.domain.mapper.DataSourceConfigMapper;
 import com.bone.tools.codegen.util.FieldAccessor;

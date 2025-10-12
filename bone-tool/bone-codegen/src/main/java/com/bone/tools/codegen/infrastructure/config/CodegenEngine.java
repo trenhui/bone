@@ -161,15 +161,15 @@ public class CodegenEngine {
         }
         // 主子表的模式匹配。目的：过滤掉个性化的模版
         if (vmPath.contains("_normal")
-                && ObjectUtil.notEqual(table.getTemplateType(), CodegenTemplateTypeEnum.MASTER_NORMAL.getType())) {
+                && ObjectUtil.notEqual(((Integer)FieldAccessor.getFieldValue(table, "templateType")), CodegenTemplateTypeEnum.MASTER_NORMAL.getType())) {
             return;
         }
         if (vmPath.contains("_erp")
-                && ObjectUtil.notEqual(table.getTemplateType(), CodegenTemplateTypeEnum.MASTER_ERP.getType())) {
+                && ObjectUtil.notEqual(((Integer)FieldAccessor.getFieldValue(table, "templateType")), CodegenTemplateTypeEnum.MASTER_ERP.getType())) {
             return;
         }
         if (vmPath.contains("_inner")
-                && ObjectUtil.notEqual(table.getTemplateType(), CodegenTemplateTypeEnum.MASTER_INNER.getType())) {
+                && ObjectUtil.notEqual(((Integer)FieldAccessor.getFieldValue(table, "templateType")), CodegenTemplateTypeEnum.MASTER_INNER.getType())) {
             return;
         }
 
@@ -254,9 +254,18 @@ public class CodegenEngine {
         bindingMap.put("groupId",groupId);
         bindingMap.put("table", table);
         bindingMap.put("columns", columns);
-        bindingMap.put("primaryColumn", CollectionUtils.findFirst(columns, CodegenColumnDO::getPrimaryKey)); // 主键字段
-        bindingMap.put("sceneEnum", CodegenSceneEnum.valueOf(table.getScene()));
-        String basePackage = table.getPackgeName();
+        // 查找主键字段
+        CodegenColumnDO primaryColumn = null;
+        for (CodegenColumnDO column : columns) {
+            Object primaryKey = FieldAccessor.getFieldValue(column, "primaryKey");
+            if (primaryKey instanceof Boolean && (Boolean) primaryKey) {
+                primaryColumn = column;
+                break;
+            }
+        }
+        bindingMap.put("primaryColumn", primaryColumn); // 主键字段
+        bindingMap.put("sceneEnum", CodegenSceneEnum.valueOf((String)FieldAccessor.getFieldValue(table, "scene")));
+        String basePackage = (String)FieldAccessor.getFieldValue(table, "packgeName");
         if(StringUtils.isNotBlank(basePackage)&&basePackage.contains(".")){
             basePackage = basePackage.substring(basePackage.lastIndexOf('.')+1,basePackage.length());
         }
@@ -280,7 +289,7 @@ public class CodegenEngine {
         bindingMap.put("dataSourcePassword",(String)FieldAccessor.getFieldValue(dataSourceConfigDO, "password"));
 
         // 特殊：树表专属逻辑
-          if (CodegenTemplateTypeEnum.isTree((Integer)FieldAccessor.getFieldValue(table, "templateType"))) {
+          if (((Integer)FieldAccessor.getFieldValue(table, "templateType")).equals(CodegenTemplateTypeEnum.TREE.getType())) {
               CodegenColumnDO treeParentColumn = null;
               for (CodegenColumnDO column : columns) {
                   if (Objects.equals(FieldAccessor.getFieldValue(column, "id"), FieldAccessor.getFieldValue(table, "treeParentColumnId"))) {
@@ -389,7 +398,7 @@ public class CodegenEngine {
           filePath = StrUtil.replace(filePath, "${moduleName}", String.valueOf(FieldAccessor.getFieldValue(table, "moduleName")));
           filePath = StrUtil.replace(filePath, "${packgeName}", String.valueOf(FieldAccessor.getFieldValue(table, "packgeName")));
           filePath = StrUtil.replace(filePath, "${businessName}", String.valueOf(FieldAccessor.getFieldValue(table, "businessName")));
-          filePath = StrUtil.replace(filePath, "${className}", String.valueOf(FieldAccessor.getFieldValue(table, "className")));
+          filePath = StrUtil.replace(filePath, "${className}", String.valueOf(FieldAccessor.getFieldValue(table, "className"))); // DictType
         // 特殊：主子表专属逻辑
         Integer subIndex = (Integer) bindingMap.get("subIndex");
         if (subIndex != null) {
