@@ -9,7 +9,7 @@ import java.util.List;
  * <p>
  * 负责数据库表结构信息的获取和处理，为代码生成提供底层数据源支持
  *
- * @author 芋道源码
+ * @author bone-team
  */
 public interface DatabaseTableService {
 

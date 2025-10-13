@@ -23,7 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
  * <p>
  * 实现数据源配置领域的核心业务逻辑，处理数据源配置的增删改查等操作
  *
- * @author 芋道源码
+ * @author bone-team
  */
 @Service
 @Validated
