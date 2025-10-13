@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import com.bone.tools.codegen.util.FieldAccessor;
+
 
 import static cn.hutool.core.text.CharSequenceUtil.*;
 import static cn.hutool.core.util.RandomUtil.randomEle;
@@ -114,29 +114,21 @@ public class CodegenBuilder {
     private void initTableDefault(CodegenTableDO table) {
         // 以 system_dept 举例子。moduleName 为 system、businessName 为 dept、className 为 Dept
         // 如果希望以 System 前缀，则可以手动在【代码生成 - 修改生成配置 - 基本信息】，将实体类名称改为 SystemDept 即可
-        String tableName = ((String) FieldAccessor.getFieldValue(table, "tableName")).toLowerCase();
+        String tableName = table.getTableName().toLowerCase();
         // 第一步，_ 前缀的前面，作为 module 名字；第二步，moduleName 必须小写；
-        FieldAccessor.setFieldValue(table, "moduleName", subBefore(tableName, '_', false).toLowerCase());
+        table.setModuleName(subBefore(tableName, '_', false).toLowerCase());
         // 第一步，第一个 _ 前缀的后面，作为 module 名字; 第二步，可能存在多个 _ 的情况，转换成驼峰; 第三步，businessName 必须小写；
-        FieldAccessor.setFieldValue(table, "businessName", toCamelCase(subAfter(tableName, '_', false)).toLowerCase());
+        table.setBusinessName(toCamelCase(subAfter(tableName, '_', false)).toLowerCase());
         // 驼峰 + 首字母大写；第一步，第一个 _ 前缀的后面，作为 class 名字；第二步，驼峰命名
-        FieldAccessor.setFieldValue(table, "className", upperFirst(toCamelCase(subAfter(tableName, '_', false))));
+        table.setClassName(upperFirst(toCamelCase(subAfter(tableName, '_', false))));
         // 去除结尾的表，作为类描述
         try {
-            // 使用FieldAccessor设置字段值
-            FieldAccessor.setFieldValue(table, "classComment", StrUtil.removeSuffixIgnoreCase((String)FieldAccessor.getFieldValue(table, "tableComment"), "表"));
+            table.setClassComment(StrUtil.removeSuffixIgnoreCase(table.getTableComment(), "表"));
             
-            // 使用反射获取ONE枚举的type字段值
-            Object templateType = null;
-            try {
-                templateType = ReflectUtil.getFieldValue(CodegenTemplateTypeEnum.ONE, "type");
-            } catch (Exception e) {
-                // 如果反射失败，使用默认整数值1
-                templateType = 1;
-            }
-            FieldAccessor.setFieldValue(table, "templateType", templateType);
+            // 使用枚举的type字段值
+            table.setTemplateType(CodegenTemplateTypeEnum.ONE.getType());
         } catch (Exception e) {
-            // 忽略反射异常
+            // 忽略异常
         }
     }
     

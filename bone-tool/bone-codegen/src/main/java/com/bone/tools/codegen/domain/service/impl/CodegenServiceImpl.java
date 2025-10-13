@@ -33,7 +33,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
-import com.bone.tools.codegen.util.FieldAccessor;
 
 import static com.bone.tools.codegen.infrastructure.util.CollectionUtils.convertMap;
 import static com.bone.tools.codegen.infrastructure.util.CollectionUtils.convertSet;
@@ -134,7 +133,7 @@ public class CodegenServiceImpl implements CodegenService {
                 codegenTableMapper.save(table);
         } catch (Exception e) {
             log.error("Failed to insert codegen table", e);
-            throw new RuntimeException("代码生成表插入失败"); // 使用字符串常量代替未定义的常量
+            throw exception(ErrorCodeConstants.CODEGEN_INSERT_ERROR);
         }
         long tableId = table.getId();
         //int tableId = codegenTableMapper.
@@ -167,7 +166,7 @@ public class CodegenServiceImpl implements CodegenService {
             }
         } catch (Exception e) {
             log.error("Failed to batch insert columns", e);
-            throw new RuntimeException("代码生成列插入失败"); // 使用字符串常量代替未定义的常量
+            throw exception(ErrorCodeConstants.CODEGEN_INSERT_ERROR);
         }
         return table.getId();
     }
@@ -511,7 +510,7 @@ public class CodegenServiceImpl implements CodegenService {
             }
         } catch (Exception e) {
             log.error("Failed to batch insert columns", e);
-            throw new RuntimeException("代码生成列插入失败"); // 使用字符串常量代替未定义的常量
+            throw exception(ErrorCodeConstants.CODEGEN_INSERT_ERROR);
         }
         // 4.2 删除不存在的字段
         if (CollUtil.isNotEmpty(deleteColumnIds)) {
@@ -675,11 +674,11 @@ public class CodegenServiceImpl implements CodegenService {
         }
         
         // 校验数据源配置是否存在
-        Long dataSourceConfigId = FieldAccessor.getFieldValue(table, "dataSourceConfigId");
+        Long dataSourceConfigId = table.getDataSourceConfigId();
         if (dataSourceConfigId == null) {
             throw exception(DATA_SOURCE_CONFIG_NOT_EXISTS);
         }
-        DataSourceConfigDO dataSourceConfigDO = FieldAccessor.invokeMapperMethod(dataSourceConfigMapper, "selectById", dataSourceConfigId);
+        DataSourceConfigDO dataSourceConfigDO = dataSourceConfigMapper.selectById(dataSourceConfigId);
         if (dataSourceConfigDO == null) {
             throw exception(DATA_SOURCE_CONFIG_NOT_EXISTS);
         }
@@ -687,7 +686,7 @@ public class CodegenServiceImpl implements CodegenService {
         // 如果是主子表，则加载对应的子表信息
         List<CodegenTableDO> subTables = null;
         List<List<CodegenColumnDO>> subColumnsList = null;
-        Integer templateType = FieldAccessor.getFieldValue(table, "templateType");
+        Integer templateType = table.getTemplateType();
         if (CodegenTemplateTypeEnum.isMaster(templateType)) {
             // 校验子表存在
             Map<String, Object> subTableCriteria = new HashMap<>();
@@ -700,17 +699,17 @@ public class CodegenServiceImpl implements CodegenService {
             // 校验子表的关联字段存在
             subColumnsList = new ArrayList<>();
             for (CodegenTableDO subTable : subTables) {
-                List<CodegenColumnDO> subColumns = FieldAccessor.invokeMapperMethod(codegenColumnMapper, "selectListByTableId", FieldAccessor.getFieldValue(subTable, "id"));
-                Long subJoinColumnId = FieldAccessor.getFieldValue(subTable, "subJoinColumnId");
+                List<CodegenColumnDO> subColumns = codegenColumnMapper.selectListByTableId(subTable.getId());
+                Long subJoinColumnId = subTable.getSubJoinColumnId();
                 boolean found = false;
                 for (CodegenColumnDO column : subColumns) {
-                    if (FieldAccessor.getFieldValue(column, "id").equals(subJoinColumnId)) {
+                    if (column.getId().equals(subJoinColumnId)) {
                         found = true;
                         break;
                     }
                 }
                 if (!found) {
-                    throw exception(CODEGEN_SUB_COLUMN_NOT_EXISTS, FieldAccessor.getFieldValue(subTable, "id"));
+                    throw exception(CODEGEN_SUB_COLUMN_NOT_EXISTS, subTable.getId());
                 }
                 subColumnsList.add(subColumns);
             }
@@ -731,8 +730,8 @@ public class CodegenServiceImpl implements CodegenService {
             
             // 设置模块名和包名
             if (table != null) {
-                FieldAccessor.setFieldValue(table, "moduleName", model);
-                FieldAccessor.setFieldValue(table, "packgeName", basePackeage);
+                table.setModuleName(model);
+                table.setPackgeName(basePackeage);
             }
             
             if (table == null) {
@@ -740,7 +739,7 @@ public class CodegenServiceImpl implements CodegenService {
             }
             
             // 校验columns是否存在
-            List<CodegenColumnDO> columns = FieldAccessor.invokeMapperMethod(codegenColumnMapper, "selectListByTableId", tableId);
+            List<CodegenColumnDO> columns = codegenColumnMapper.selectListByTableId(tableId);
             if (CollUtil.isEmpty(columns)) {
                 throw exception(CODEGEN_COLUMN_NOT_EXISTS);
             }
@@ -748,7 +747,7 @@ public class CodegenServiceImpl implements CodegenService {
             // 如果是主子表，则加载对应的子表信息
             List<CodegenTableDO> subTables = null;
             List<List<CodegenColumnDO>> subColumnsList = null;
-            if (CodegenTemplateTypeEnum.isMaster(FieldAccessor.getFieldValue(table, "templateType"))) {
+            if (CodegenTemplateTypeEnum.isMaster(table.getTemplateType())) {
                 // 校验子表存在
                 Map<String, Object> subTableCriteria = new HashMap<>();
                 subTableCriteria.put("templateType", CodegenTemplateTypeEnum.SUB.getType());
@@ -760,10 +759,10 @@ public class CodegenServiceImpl implements CodegenService {
                 // 校验子表的关联字段存在
                 subColumnsList = new ArrayList<>();
                 for (CodegenTableDO subTable : subTables) {
-                    List<CodegenColumnDO> subColumns = FieldAccessor.invokeMapperMethod(codegenColumnMapper, "selectListByTableId", FieldAccessor.getFieldValue(subTable, "id"));
+                    List<CodegenColumnDO> subColumns = codegenColumnMapper.selectListByTableId(subTable.getId());
                     boolean found = false;
                     for (CodegenColumnDO column : subColumns) {
-                        if (FieldAccessor.getFieldValue(column, "id").equals(FieldAccessor.getFieldValue(subTable, "subJoinColumnId"))) {
+                        if (column.getId().equals(subTable.getSubJoinColumnId())) {
                             found = true;
                             break;
                         }
@@ -774,7 +773,7 @@ public class CodegenServiceImpl implements CodegenService {
                     subColumnsList.add(subColumns);
                 }
             }
-            DataSourceConfigDO configDO = FieldAccessor.invokeMapperMethod(dataSourceConfigMapper, "selectById", FieldAccessor.getFieldValue(table, "dataSourceConfigId"));
+            DataSourceConfigDO configDO = dataSourceConfigMapper.selectById(table.getDataSourceConfigId());
             result.putAll(codegenEngine.execute(table, columns, subTables, subColumnsList, configDO, groupId, modelType));
         }
         // 执行生成
@@ -786,7 +785,7 @@ public class CodegenServiceImpl implements CodegenService {
         List<TableInfo> tables = databaseTableService.getTableList(dataSourceConfigId, name, comment);
         // 移除在 Codegen 中，已经存在的
         Set<String> existsTables = CollectionUtils.convertSet(
-                codegenTableMapper.selectListByDataSourceConfigId(dataSourceConfigId), table -> FieldAccessor.getFieldValue(table, "tableName"));
+                codegenTableMapper.selectListByDataSourceConfigId(dataSourceConfigId), table -> table.getTableName());
         tables.removeIf(table -> existsTables.contains(table.getName()));
         return BeanUtils.toBean(tables, DatabaseTableResponse.class);
     }

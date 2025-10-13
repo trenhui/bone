@@ -38,7 +38,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import com.bone.tools.codegen.util.FieldAccessor;
+
 
 import static com.bone.core.model.ApiResponse.success;
 
@@ -90,12 +90,10 @@ public class CodegenController {
     @Operation(summary = "获得表定义分页")
     public ApiResponse<PageResult<CodegenTableResponse>> getCodegenTablePage(CodegenTablePageRequest pageReqVO) {
         // 简化实现，直接返回空分页结果
-        PageResult<CodegenTableResponse> pageResult = new PageResult<>();
-        pageResult.setRecords(new ArrayList<CodegenTableResponse>());
-        pageResult.setTotal(0L);
-        // 简化处理，不依赖pageReqVO的方法
-        pageResult.setPageSize(10);
-        pageResult.setPageNum(1);
+        // 创建一个空记录列表
+        List<CodegenTableResponse> records = new ArrayList<>();
+        // 假设使用构造函数创建PageResult，传入必要的参数
+        PageResult<CodegenTableResponse> pageResult = new PageResult<>(records, 0L, 1, 10);
         return success(pageResult);
     }
 

@@ -3,7 +3,7 @@ package com.bone.tools.codegen.domain.mapper.impl;
 import org.springframework.stereotype.Repository;
 import com.bone.tools.codegen.domain.entity.DataSourceConfigDO;
 import com.bone.tools.codegen.domain.mapper.DataSourceConfigMapper;
-import com.bone.tools.codegen.util.FieldAccessor;
+
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
@@ -57,10 +57,10 @@ public class DataSourceConfigRepositoryImpl implements DataSourceConfigMapper {
                     for (Map.Entry<String, Object> entry : params.entrySet()) {
                         String key = entry.getKey();
                         Object value = entry.getValue();
-                        if ("url".equals(key) && !FieldAccessor.getFieldValue(config, "url").equals(value)) {
+                        if ("url".equals(key) && !config.getUrl().equals(value)) {
                         return false;
                     }
-                    if ("username".equals(key) && !FieldAccessor.getFieldValue(config, "username").equals(value)) {
+                    if ("username".equals(key) && !config.getUsername().equals(value)) {
                         return false;
                     }
                         if ("id".equals(key) && !config.getId().equals(value)) {
@@ -76,16 +76,10 @@ public class DataSourceConfigRepositoryImpl implements DataSourceConfigMapper {
     public List<DataSourceConfigDO> findByUrlAndUsername(String url, String username) {
         return dataStore.values().stream()
                 .filter(config -> {
-                    try {
-                        // 使用反射获取字段值
-                        String configUrl = (String) FieldAccessor.getFieldValue(config, "url");
-                        String configUsername = (String) FieldAccessor.getFieldValue(config, "username");
-                        return url.equals(configUrl) && username.equals(configUsername);
-                    } catch (Exception e) {
-                        // 忽略反射异常，返回false表示不匹配
-                        return false;
-                    }
-                })
+                String configUrl = config.getUrl();
+                String configUsername = config.getUsername();
+                return url.equals(configUrl) && username.equals(configUsername);
+            })
                 .collect(Collectors.toList());
     }
 

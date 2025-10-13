@@ -7,7 +7,7 @@ import com.bone.tools.codegen.domain.mapper.CodegenColumnMapper;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
-import com.bone.tools.codegen.util.FieldAccessor;
+
 
 /**
  * 列定义 数据库操作类
@@ -40,7 +40,7 @@ public class CodegenColumnRepositoryImpl implements CodegenColumnMapper {
     @Override
     public List<CodegenColumnDO> selectListByTableId(Long tableId) {
         return dataStore.values().stream()
-                .filter(column -> FieldAccessor.getFieldValue(column, "tableId").equals(tableId))
+                .filter(column -> column.getTableId().equals(tableId))
                 .sorted(Comparator.comparing(CodegenColumnDO::getId))
                 .collect(Collectors.toList());
     }
@@ -48,7 +48,7 @@ public class CodegenColumnRepositoryImpl implements CodegenColumnMapper {
     @Override
     public void deleteListByTableId(Long tableId) {
         List<Long> idsToDelete = dataStore.values().stream()
-                .filter(column -> FieldAccessor.getFieldValue(column, "tableId").equals(tableId))
+                .filter(column -> column.getTableId().equals(tableId))
                 .map(CodegenColumnDO::getId)
                 .collect(Collectors.toList());
         deleteByIds(idsToDelete);
@@ -65,7 +65,7 @@ public class CodegenColumnRepositoryImpl implements CodegenColumnMapper {
                         String field = entry.getKey();
                         Object value = entry.getValue();
                         if ("tableId".equals(field) && value instanceof Long) {
-                        if (!FieldAccessor.getFieldValue(column, "tableId").equals(value)) {
+                        if (!column.getTableId().equals(value)) {
                             return false;
                         }
                     }
