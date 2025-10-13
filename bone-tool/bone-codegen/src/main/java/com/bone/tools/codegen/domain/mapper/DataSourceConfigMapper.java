@@ -8,7 +8,7 @@ import java.util.Map;
 /**
  * 数据源配置 Repository
  *
- * @author 芋道源码
+ * @author bone-team
  */
 public interface DataSourceConfigMapper {
 

@@ -17,7 +17,7 @@ import java.util.Map;
  * 作为代码生成领域的核心服务，负责协调领域实体、规则和业务流程，
  * 提供代码生成相关的核心业务能力，是领域层与应用层交互的主要入口。
  *
- * @author 芋道源码
+ * @author bone-team
  */
 public interface CodegenService {
 

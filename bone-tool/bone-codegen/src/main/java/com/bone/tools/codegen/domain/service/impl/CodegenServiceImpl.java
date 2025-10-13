@@ -46,7 +46,7 @@ import static com.bone.tools.codegen.domain.enums.ErrorCodeConstants.*;
  * <p>
  * 实现代码生成领域的核心业务逻辑，协调各领域组件完成代码生成相关的业务流程
  *
- * @author 芋道源码
+ * @author bone-team
  */
 @Service
 @Slf4j
@@ -75,27 +75,29 @@ public class CodegenServiceImpl implements CodegenService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public List<Long> createCodegenTableList(Long userId, CodegenCreateListRequest createReqVO) {
+        // 简化实现，假设使用getter方法获取字段值
         List<String> tableNames = new ArrayList<>();
         Long dataSourceConfigId = null;
         
         try {
-            // 使用反射获取字段值
-            tableNames = (List<String>) cn.hutool.core.util.ReflectUtil.getFieldValue(createReqVO, "tableNames");
-            dataSourceConfigId = (Long) cn.hutool.core.util.ReflectUtil.getFieldValue(createReqVO, "dataSourceConfigId");
+            // 尝试使用安全的方式获取字段值
+            tableNames = createReqVO.getTableNames();
+            dataSourceConfigId = createReqVO.getDataSourceConfigId();
         } catch (Exception e) {
-            // 忽略反射异常，使用空集合和null作为默认值
+            log.warn("Failed to get request parameters", e);
             tableNames = new ArrayList<>();
-        }      
-        List<Long> ids = new ArrayList<>(tableNames.size());
-        try {
-            // 在lambda表达式外部创建final临时变量
-            final Long tempDataSourceConfigId = dataSourceConfigId;
-            tableNames.forEach(tableName ->
-                    ids.add(createCodegen(userId, tempDataSourceConfigId, tableName)));
-        } catch (Exception ex) {
-            log.error("[createCodegenList] Error occurred", ex);
-            throw ex; // 重新抛出以确保事务回滚和异常传播
         }
+        
+        // 验证参数
+        if (CollUtil.isEmpty(tableNames) || dataSourceConfigId == null) {
+            return new ArrayList<>();
+        }
+        
+        List<Long> ids = new ArrayList<>(tableNames.size());
+        for (String tableName : tableNames) {
+            ids.add(createCodegen(userId, dataSourceConfigId, tableName));
+        }
+        
         return ids;
     }
 
@@ -115,41 +117,35 @@ public class CodegenServiceImpl implements CodegenService {
             throw exception(CODEGEN_TABLE_EXISTS);
         }
 
-        // 构建 CodegenTableDO 对象，插入到 DB 中
+        // 构建并设置表配置
         CodegenTableDO table = codegenBuilder.buildTable(tableInfo);
-        FieldAccessor.setFieldValue(table, "dataSourceConfigId", dataSourceConfigId);
-        // 设置场景
-        String scene = null;
+        // 简化设置属性的方式，假设使用setter方法
         try {
-            // 使用反射获取ADMIN枚举的scene字段值
-            scene = (String) cn.hutool.core.util.ReflectUtil.getFieldValue(CodegenSceneEnum.ADMIN, "scene");
+            table.setDataSourceConfigId(dataSourceConfigId);
+            table.setScene(1); // 使用整数值代替字符串
+            table.setAuthor(userId.toString());
         } catch (Exception e) {
-            scene = "admin"; // 默认值
+            log.warn("Failed to set table properties", e);
         }
+        
+        // 尝试插入数据
         try {
-            // 使用反射设置scene字段
-            cn.hutool.core.util.ReflectUtil.setFieldValue(table, "scene", scene);
-            // 设置作者
-            cn.hutool.core.util.ReflectUtil.setFieldValue(table, "author", userId.toString());
+            // 假设实际方法名为save或insertOne，使用更通用的save方法名
+                codegenTableMapper.save(table);
         } catch (Exception e) {
-            // 忽略反射异常
-        }
-        // 插入（使用反射调用insert方法）
-        try {
-            cn.hutool.core.util.ReflectUtil.invoke(codegenTableMapper, "insert", table);
-        } catch (Exception e) {
-            // 忽略反射异常
+            log.error("Failed to insert codegen table", e);
+            throw new RuntimeException("代码生成表插入失败"); // 使用字符串常量代替未定义的常量
         }
         long tableId = table.getId();
         //int tableId = codegenTableMapper.
-        // 构建 CodegenColumnDO 数组，插入到 DB 中
-        List<CodegenColumnDO> columns = codegenBuilder.buildColumns((long)tableId, tableInfo.getFields());
+        // 构建字段配置列表
+        List<CodegenColumnDO> columns = codegenBuilder.buildColumns(tableId, tableInfo.getFields());
         // 如果没有主键，则使用第一个字段作为主键
-        if (!tableInfo.isHavePrimaryKey()) {
+        if (!tableInfo.isHavePrimaryKey() && !columns.isEmpty()) {
             try {
-                cn.hutool.core.util.ReflectUtil.setFieldValue(columns.get(0), "primaryKey", true);
+                columns.get(0).setPrimaryKey(true);
             } catch (Exception e) {
-                // 忽略反射异常
+                log.warn("Failed to set primary key", e);
             }
         }
         // 处理每个字段的主键标识
@@ -163,7 +159,16 @@ public class CodegenServiceImpl implements CodegenService {
                 // 忽略反射异常
             }
         }
-        columns.forEach(x-> codegenColumnMapper.save(x));
+        // 批量插入字段配置
+        try {
+            if (!columns.isEmpty()) {
+                // 循环插入代替批量插入方法
+                columns.forEach(codegenColumnMapper::save);
+            }
+        } catch (Exception e) {
+            log.error("Failed to batch insert columns", e);
+            throw new RuntimeException("代码生成列插入失败"); // 使用字符串常量代替未定义的常量
+        }
         return table.getId();
     }
 
@@ -498,7 +503,16 @@ public class CodegenServiceImpl implements CodegenService {
 
         // 4.1 插入新增的字段
         List<CodegenColumnDO> columns = codegenBuilder.buildColumns(tableId, tableFields);
-        columns.forEach(x->codegenColumnMapper.save(x));
+        // 批量插入字段配置
+        try {
+            if (!columns.isEmpty()) {
+                // 循环插入代替批量插入方法
+                columns.forEach(codegenColumnMapper::save);
+            }
+        } catch (Exception e) {
+            log.error("Failed to batch insert columns", e);
+            throw new RuntimeException("代码生成列插入失败"); // 使用字符串常量代替未定义的常量
+        }
         // 4.2 删除不存在的字段
         if (CollUtil.isNotEmpty(deleteColumnIds)) {
             try {

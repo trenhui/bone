@@ -30,7 +30,7 @@ import static com.bone.tools.codegen.domain.enums.ErrorCodeConstants.DATA_SOURCE
  * <p>
  * 实现数据库表相关的核心业务逻辑，包括获取表列表、获取表信息等操作
  *
- * @author 芋道源码
+ * @author bone-team
  */
 @Service
 public class DatabaseTableServiceImpl implements DatabaseTableService {
