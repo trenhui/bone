@@ -6,103 +6,90 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
-//import javax.validation.constraints.AssertTrue;
-//import javax.validation.constraints.NotNull;
-
-@Schema(description = "管理后台 - 代码生成表定义创建/修改 Response VO")
+/**
+ * 代码生成表配置 保存请求
+ * <p>
+ * 用于创建或更新代码生成表配置的应用层DTO
+ */
+@Schema(description = "代码生成表配置保存请求")
 @Data
 public class CodegenTableSaveRequest {
 
-    @Schema(description = "编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @Schema(description = "表配置ID，创建时无需填写，更新时必填", example = "1")
     private Long id;
 
-//    @Schema(description = "生成场景，参见 CodegenSceneEnum 枚举", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
-//    @NotNull(message = "导入类型不能为空")
-//    private Integer scene;
-
-    @Schema(description = "表名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "yudao")
-    //@NotNull(message = "表名称不能为空")
+    @Schema(description = "数据库表名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "sys_user")
     private String tableName;
 
-    @Schema(description = "表描述", requiredMode = Schema.RequiredMode.REQUIRED, example = "芋道")
-    //@NotNull(message = "表描述不能为空")
+    @Schema(description = "数据库表描述", requiredMode = Schema.RequiredMode.REQUIRED, example = "用户信息表")
     private String tableComment;
 
-    @Schema(description = "备注", example = "我是备注")
+    @Schema(description = "备注信息", example = "用于存储系统用户基本信息")
     private String remark;
 
-    @Schema(description = "模块名", requiredMode = Schema.RequiredMode.REQUIRED, example = "system")
-    //@NotNull(message = "模块名不能为空")
+    @Schema(description = "模块名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "system")
     private String moduleName;
 
-    @Schema(description = "包名", requiredMode = Schema.RequiredMode.REQUIRED, example = "bone")
+    @Schema(description = "Java包名", requiredMode = Schema.RequiredMode.REQUIRED, example = "com.bone.system")
     private String packgeName;
 
-    @Schema(description = "业务名", requiredMode = Schema.RequiredMode.REQUIRED, example = "codegen")
-    //@NotNull(message = "业务名不能为空")
+    @Schema(description = "业务名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "user")
     private String businessName;
 
-    @Schema(description = "类名称", requiredMode = Schema.RequiredMode.REQUIRED, example = "CodegenTable")
-    //@NotNull(message = "类名称不能为空")
+    @Schema(description = "Java类名", requiredMode = Schema.RequiredMode.REQUIRED, example = "SysUser")
     private String className;
 
-    @Schema(description = "类描述", requiredMode = Schema.RequiredMode.REQUIRED, example = "代码生成器的表定义")
-    //@NotNull(message = "类描述不能为空")
+    @Schema(description = "Java类描述", requiredMode = Schema.RequiredMode.REQUIRED, example = "用户信息")
     private String classComment;
 
-    @Schema(description = "作者", requiredMode = Schema.RequiredMode.REQUIRED, example = "芋道源码")
-    //@NotNull(message = "作者不能为空")
+    @Schema(description = "作者", requiredMode = Schema.RequiredMode.REQUIRED, example = "bone")
     private String author;
 
-    @Schema(description = "模板类型，参见 CodegenTemplateTypeEnum 枚举", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
-    //@NotNull(message = "模板类型不能为空")
+    @Schema(description = "模板类型", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
     private Integer templateType;
 
-    @Schema(description = "前端类型，参见 CodegenFrontTypeEnum 枚举", requiredMode = Schema.RequiredMode.REQUIRED, example = "20")
-    //@NotNull(message = "前端类型不能为空")
+    @Schema(description = "前端类型", requiredMode = Schema.RequiredMode.REQUIRED, example = "20")
     private Integer frontType;
 
-//    @Schema(description = "父菜单编号", example = "1024")
-//    private Long parentMenuId;
-
-    @Schema(description = "主表的编号", example = "2048")
+    @Schema(description = "主表配置ID，用于子表场景", example = "2048")
     private Long masterTableId;
-    @Schema(description = "子表关联主表的字段编号", example = "4096")
+    
+    @Schema(description = "子表关联主表的字段ID", example = "4096")
     private Long subJoinColumnId;
-    @Schema(description = "主表与子表是否一对多", example = "4096")
+    
+    @Schema(description = "是否一对多关系", example = "true")
     private Boolean subJoinMany;
 
-    @Schema(description = "树表的父字段编号", example = "8192")
+    @Schema(description = "树表父字段ID", example = "8192")
     private Long treeParentColumnId;
-    @Schema(description = "树表的名字字段编号", example = "16384")
+    
+    @Schema(description = "树表名称字段ID", example = "16384")
     private Long treeNameColumnId;
 
-//    @AssertTrue(message = "上级菜单不能为空，请前往 [修改生成配置 -> 生成信息] 界面，设置“上级菜单”字段")
+    /**
+     * 验证父菜单ID是否有效（当前版本暂不启用）
+     */
     @JsonIgnore
     public boolean isParentMenuIdValid() {
-        // 生成场景为管理后台时，必须设置上级菜单，不然生成的菜单 SQL 是无父级菜单的
-//        return ObjectUtil.notEqual(getScene(), CodegenSceneEnum.ADMIN.getScene())
-//                || getParentMenuId() != null;
         return true;
     }
 
-    //@AssertTrue(message = "关联的父表信息不全")
+    /**
+     * 验证子表配置是否完整
+     */
     @JsonIgnore
-    public boolean isSubValid() {
+    public boolean isSubConfigValid() {
         return ObjectUtil.notEqual(getTemplateType(), CodegenTemplateTypeEnum.SUB)
                 || (ObjectUtil.isAllNotEmpty(masterTableId, subJoinColumnId, subJoinMany));
     }
 
-    //@AssertTrue(message = "关联的树表信息不全")
+    /**
+     * 验证树表配置是否完整
+     */
     @JsonIgnore
-    public boolean isTreeValid() {
+    public boolean isTreeConfigValid() {
         return ObjectUtil.notEqual(templateType, CodegenTemplateTypeEnum.TREE)
                 || (ObjectUtil.isAllNotEmpty(treeParentColumnId, treeNameColumnId));
-    }
-    
-    // 显式添加getTemplateType方法，确保编译通过
-    public Integer getTemplateType() {
-        return templateType;
     }
 
 }

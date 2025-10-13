@@ -42,7 +42,9 @@ import static com.bone.tools.codegen.domain.enums.ErrorCodeConstants.*;
 
 
 /**
- * 代码生成 Service 实现类
+ * 代码生成 领域服务实现类
+ * <p>
+ * 实现代码生成领域的核心业务逻辑，协调各领域组件完成代码生成相关的业务流程
  *
  * @author 芋道源码
  */
@@ -72,14 +74,14 @@ public class CodegenServiceImpl implements CodegenService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public List<Long> createCodegenList(Long userId, CodegenCreateListRequest reqVO) {
+    public List<Long> createCodegenTableList(Long userId, CodegenCreateListRequest createReqVO) {
         List<String> tableNames = new ArrayList<>();
         Long dataSourceConfigId = null;
         
         try {
             // 使用反射获取字段值
-            tableNames = (List<String>) cn.hutool.core.util.ReflectUtil.getFieldValue(reqVO, "tableNames");
-            dataSourceConfigId = (Long) cn.hutool.core.util.ReflectUtil.getFieldValue(reqVO, "dataSourceConfigId");
+            tableNames = (List<String>) cn.hutool.core.util.ReflectUtil.getFieldValue(createReqVO, "tableNames");
+            dataSourceConfigId = (Long) cn.hutool.core.util.ReflectUtil.getFieldValue(createReqVO, "dataSourceConfigId");
         } catch (Exception e) {
             // 忽略反射异常，使用空集合和null作为默认值
             tableNames = new ArrayList<>();
@@ -185,7 +187,7 @@ public class CodegenServiceImpl implements CodegenService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void updateCodegen(CodegenUpdateRequest updateReqVO) {
+    public void updateCodegenTable(CodegenUpdateRequest updateReqVO) {
         try {
             // 使用反射获取table字段
             Object tableObj = cn.hutool.core.util.ReflectUtil.getFieldValue(updateReqVO, "table");
@@ -515,7 +517,7 @@ public class CodegenServiceImpl implements CodegenService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void deleteCodegen(Long tableId) {
+    public void deleteCodegenTable(Long tableId) {
         try {
             // 校验是否已经存在
             boolean exists = false;
@@ -642,7 +644,7 @@ public class CodegenServiceImpl implements CodegenService {
     }
 
     @Override
-    public Map<String, String> generationCodes(Long tableId, Integer modelType) {
+    public Map<String, String> generateCode(Long tableId, Integer modelType) {
         // 校验是否已经存在
         // 使用findOneByCriteria方法查询表信息
         Map<String, Object> criteria = new HashMap<>();
@@ -705,7 +707,7 @@ public class CodegenServiceImpl implements CodegenService {
     }
 
     @Override
-    public Map<String, String> generationCodes(List<Long> tableIdList, String basePackeage, String model, String groupId, Integer modelType) {
+    public Map<String, String> generateBatchCode(List<Long> tableIdList, String basePackeage, String model, String groupId, Integer modelType) {
         Map<String, String> result = new HashMap<>();
         for (long tableId : tableIdList) {
             // 校验是否已经存在

@@ -42,9 +42,14 @@ import com.bone.tools.codegen.util.FieldAccessor;
 import static com.bone.core.model.ApiResponse.success;
 
 
-@Tag(name = "管理后台 - 代码生成器")
+/**
+ * 代码生成器 控制器
+ * <p>
+ * 提供代码生成相关的RESTful API接口，作为领域服务的适配器
+ */
+@Tag(name = "代码生成器管理")
 @RestController
-@RequestMapping("/codegen")
+@RequestMapping("/api/v1/codegen")
 @Validated
 public class CodegenController {
     private static final Logger log = LoggerFactory.getLogger(CodegenController.class);
@@ -143,13 +148,15 @@ public class CodegenController {
     @Operation(summary = "基于数据库的表结构，创建代码生成器的表和字段定义")
     @PostMapping("/create-list")
     public ApiResponse<List<Long>> createCodegenList(@Valid @RequestBody CodegenCreateListRequest reqVO) {
-        return success(codegenService.createCodegenList(0L, reqVO));
+        // 从当前登录用户获取userId，这里使用固定值作为示例
+        Long userId = 1L;
+        return success(codegenService.createCodegenTableList(userId, reqVO));
     }
 
     @Operation(summary = "更新数据库的表和字段定义")
     @PutMapping("/update")
     public ApiResponse<Boolean> updateCodegen(@Valid @RequestBody CodegenUpdateRequest updateReqVO) {
-        codegenService.updateCodegen(updateReqVO);
+        codegenService.updateCodegenTable(updateReqVO);
         return success(true);
     }
 
@@ -165,7 +172,7 @@ public class CodegenController {
     @DeleteMapping("/delete")
     @Parameter(name = "tableId", description = "表编号", required = true, example = "1024")
     public ApiResponse<Boolean> deleteCodegen(@RequestParam("tableId") Long tableId) {
-        codegenService.deleteCodegen(tableId);
+        codegenService.deleteCodegenTable(tableId);
         return success(true);
     }
 
@@ -184,7 +191,7 @@ public class CodegenController {
                                 @RequestParam(value = "modelType", defaultValue = "1", required = false) Integer modelType,
                                 HttpServletResponse response) throws IOException {
         // 生成代码
-        Map<String, String> codes = codegenService.generationCodes(tableId, modelType);
+        Map<String, String> codes = codegenService.generateCode(tableId, modelType);
         // 构建 zip 包
         String[] paths = codes.keySet().toArray(new String[0]);
         ByteArrayInputStream[] ins = codes.values().stream().map(IoUtil::toUtf8Stream).toArray(ByteArrayInputStream[]::new);
@@ -211,7 +218,7 @@ public class CodegenController {
             ContextUtil.setPackagePath(basePackage); // e.g. "com.bone.tpa.policy"
 
             // 生成代码
-            Map<String, String> codes = codegenService.generationCodes(tableIdList, basePackage, model, groupId, modelType);
+            Map<String, String> codes = codegenService.generateBatchCode(tableIdList, basePackage, model, groupId, modelType);
 
             // 构建 zip 包
             String[] paths = codes.keySet().toArray(new String[0]);

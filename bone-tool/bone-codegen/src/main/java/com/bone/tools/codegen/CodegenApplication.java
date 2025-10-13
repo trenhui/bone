@@ -6,16 +6,16 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
 
 /**
- * 项目的启动类
+ * 代码生成服务启动类
  *
- * @author 芋道源码
+ * @author bone
  */
 @SpringBootApplication
 @Import(GlobalExceptionHandler.class)
-public class CodeGenServerApplication {
+public class CodegenApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(CodeGenServerApplication.class, args);
+        SpringApplication.run(CodegenApplication.class, args);
     }
 
 }
