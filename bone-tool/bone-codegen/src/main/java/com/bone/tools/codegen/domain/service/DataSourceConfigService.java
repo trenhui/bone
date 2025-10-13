@@ -11,9 +11,9 @@ import java.util.List;
 
 
 /**
- * 数据源配置 Service 接口
- *
- * @author 芋道源码
+ * 数据源配置 领域服务接口
+ * <p>
+ * 负责数据源配置相关的核心业务逻辑处理
  */
 public interface DataSourceConfigService {
 
@@ -21,38 +21,45 @@ public interface DataSourceConfigService {
      * 创建数据源配置
      *
      * @param createReqVO 创建信息
-     * @return 编号
+     * @return 配置ID
      */
-    Long createDataSourceConfig( DataSourceConfigSaveRequest createReqVO);
+    Long createDataSourceConfig(DataSourceConfigSaveRequest createReqVO);
 
     /**
      * 更新数据源配置
      *
      * @param updateReqVO 更新信息
      */
-    void updateDataSourceConfig( DataSourceConfigSaveRequest updateReqVO);
+    void updateDataSourceConfig(DataSourceConfigSaveRequest updateReqVO);
 
     /**
      * 删除数据源配置
      *
-     * @param id 编号
+     * @param id 配置ID
      */
     void deleteDataSourceConfig(Long id);
 
     /**
-     * 获得数据源配置
+     * 获取数据源配置
      *
-     * @param id 编号
+     * @param id 配置ID
      * @return 数据源配置
      */
     DataSourceConfigDO getDataSourceConfig(Long id);
 
     /**
-     * 获得数据源配置列表
+     * 分页获取数据源配置列表
      *
+     * @param pageParam 分页参数
+     * @return 数据源配置分页结果
+     */
+    PageResult<DataSourceConfigDO> getDataSourceConfigPage(PageParam pageParam);
+
+    /**
+     * 根据查询条件获取数据源配置列表
+     *
+     * @param request 查询条件
      * @return 数据源配置列表
      */
-    PageResult<DataSourceConfigDO> getDataSourceConfigList(PageParam pageParam);
-
     List<DataSourceConfigDO> getDataSourceConfigList(DataSourceConfigQueryRequest request);
 }
