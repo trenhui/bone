@@ -27,16 +27,10 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jdbc</artifactId>
-        </dependency>
+        <!-- 移除未使用的Spring Data JDBC依赖，项目使用MyBatis Plus -->
 
         <!-- Spring Cloud -->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-openfeign</artifactId>
-        </dependency>
+        <!-- 移除未使用的Feign依赖，代码生成不需要远程调用 -->
 
         <!-- 代码生成核心依赖 -->
         <dependency>
@@ -92,19 +86,7 @@
             <version>33.0.0-jre</version>
         </dependency>
 
-        <!-- 可选依赖（按需使用） -->
-        <dependency>
-            <groupId>org.apache.tika</groupId>
-            <artifactId>tika-core</artifactId>
-            <version>2.9.1</version>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>transmittable-thread-local</artifactId>
-            <version>2.14.5</version>
-            <optional>true</optional>
-        </dependency>
+        <!-- 移除不必要的可选依赖 -->
 
         <!-- 测试 -->
         <dependency>

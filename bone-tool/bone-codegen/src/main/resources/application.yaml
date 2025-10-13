@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: codegen
+    name: bone-codegen
 
   profiles:
     active: local
@@ -30,11 +30,9 @@ spring:
       write-durations-as-timestamps: true # 设置 Duration 的格式，使用时间戳
       fail-on-empty-beans: false # 允许序列化无属性的 Bean
 
-  # Cache 配置项
+  # 移除Redis缓存配置，使用更简单的内存缓存
   cache:
-    type: REDIS
-    redis:
-      time-to-live: 1h # 设置过期时间为 1 小时
+    type: simple
 
 --- #################### 接口文档配置 ####################
 
@@ -65,9 +63,7 @@ mybatis-plus:
       logic-delete-value: 1 # 逻辑已删除值(默认为 1)
       logic-not-delete-value: 0 # 逻辑未删除值(默认为 0)
     banner: false # 关闭控制台的 Banner 打印
-  type-aliases-package: ${yudao.info.base-package}.dal.dataobject
-  encryptor:
-    password: XDV71a+xqStEA3WH # 加解密的秘钥，可使用 https://www.imaegoo.com/2020/aes-key-generator/ 网站生成
+  # 移除加密器配置，简化配置
 
 mybatis-plus-join:
   banner: false # 关闭控制台的 Banner 打印
@@ -79,14 +75,11 @@ spring:
 
 
 --- #################### 芋道相关配置 ####################
-yudao:
-  info:
-    version: 1.0.0
-    base-package: cn.iocoder.yudao.module.infra
+bone:
   codegen:
     base-package: com.bone
-    db-schemas: ${spring.datasource.dynamic.datasource.master.name}
-    front-type: 10 # 前端模版的类型，参见 CodegenFrontTypeEnum 枚举类
+    # 数据库模式配置，可根据实际数据源配置调整
+    db-schemas: ${spring.datasource.dynamic.datasource.master.name:default}
 
 
 

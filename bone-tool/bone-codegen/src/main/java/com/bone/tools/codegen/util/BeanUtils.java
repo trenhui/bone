@@ -2,6 +2,7 @@ package com.bone.tools.codegen.util;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.bone.core.model.PageResult;
+import com.bone.tools.codegen.infrastructure.util.CollectionUtils;
 
 import java.util.List;
 import java.util.function.Consumer;

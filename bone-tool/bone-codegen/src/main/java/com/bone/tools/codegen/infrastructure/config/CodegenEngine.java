@@ -12,7 +12,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.bone.core.model.ApiResponse;
 import com.bone.tools.codegen.util.DateUtils;
 import com.bone.tools.codegen.util.BeanUtils;
-import com.bone.tools.codegen.util.FieldAccessor;
+
 import com.bone.tools.codegen.domain.entity.DataSourceConfigDO;
 import com.bone.tools.codegen.domain.enums.ModelTypeEnum;
 import com.bone.tools.codegen.infrastructure.annotation.DictFormat;
@@ -160,16 +160,17 @@ public class CodegenEngine {
             return;
         }
         // 主子表的模式匹配。目的：过滤掉个性化的模版
+        Integer templateType = table.getTemplateType();
         if (vmPath.contains("_normal")
-                && ObjectUtil.notEqual(((Integer)FieldAccessor.getFieldValue(table, "templateType")), CodegenTemplateTypeEnum.MASTER_NORMAL.getType())) {
+                && ObjectUtil.notEqual(templateType, CodegenTemplateTypeEnum.MASTER_NORMAL.getType())) {
             return;
         }
         if (vmPath.contains("_erp")
-                && ObjectUtil.notEqual(((Integer)FieldAccessor.getFieldValue(table, "templateType")), CodegenTemplateTypeEnum.MASTER_ERP.getType())) {
+                && ObjectUtil.notEqual(templateType, CodegenTemplateTypeEnum.MASTER_ERP.getType())) {
             return;
         }
         if (vmPath.contains("_inner")
-                && ObjectUtil.notEqual(((Integer)FieldAccessor.getFieldValue(table, "templateType")), CodegenTemplateTypeEnum.MASTER_INNER.getType())) {
+                && ObjectUtil.notEqual(templateType, CodegenTemplateTypeEnum.MASTER_INNER.getType())) {
             return;
         }
 
@@ -257,15 +258,14 @@ public class CodegenEngine {
         // 查找主键字段
         CodegenColumnDO primaryColumn = null;
         for (CodegenColumnDO column : columns) {
-            Object primaryKey = FieldAccessor.getFieldValue(column, "primaryKey");
-            if (primaryKey instanceof Boolean && (Boolean) primaryKey) {
+            if (column.getPrimaryKey() != null && column.getPrimaryKey()) {
                 primaryColumn = column;
                 break;
             }
         }
         bindingMap.put("primaryColumn", primaryColumn); // 主键字段
-        bindingMap.put("sceneEnum", CodegenSceneEnum.valueOf((String)FieldAccessor.getFieldValue(table, "scene")));
-        String basePackage = (String)FieldAccessor.getFieldValue(table, "packgeName");
+        bindingMap.put("sceneEnum", CodegenSceneEnum.valueOf(table.getScene()));
+        String basePackage = table.getPackgeName();
         if(StringUtils.isNotBlank(basePackage)&&basePackage.contains(".")){
             basePackage = basePackage.substring(basePackage.lastIndexOf('.')+1,basePackage.length());
         }
@@ -273,44 +273,44 @@ public class CodegenEngine {
         //bindingMap.put("groupId", );
         // className 相关
         // 去掉指定前缀，将 TestDictType 转换成 DictType. 因为在 create 等方法后，不需要带上 Test 前缀
-        String simpleClassName = removePrefix((String)FieldAccessor.getFieldValue(table, "className"), upperFirst((String)FieldAccessor.getFieldValue(table, "moduleName")));
+        String simpleClassName = removePrefix(table.getClassName(), upperFirst(table.getModuleName()));
         bindingMap.put("simpleClassName", simpleClassName);
         bindingMap.put("simpleClassName_underlineCase", toUnderlineCase(simpleClassName)); // 将 DictType 转换成 dict_type
         bindingMap.put("classNameVar", lowerFirst(simpleClassName)); // 将 DictType 转换成 dictType，用于变量
-        bindingMap.put("modelNameVar",upperFirst(toPascalCase((String)FieldAccessor.getFieldValue(table, "moduleName"))));
+        bindingMap.put("modelNameVar",upperFirst(toPascalCase(table.getModuleName())));
         // 将 DictType 转换成 dict-type
         String simpleClassNameStrikeCase = toSymbolCase(simpleClassName, '-');
         bindingMap.put("simpleClassName_strikeCase", simpleClassNameStrikeCase);
         // permission 前缀
-        bindingMap.put("permissionPrefix", (String)FieldAccessor.getFieldValue(table, "moduleName") + ":" + simpleClassNameStrikeCase);
+        bindingMap.put("permissionPrefix", table.getModuleName() + ":" + simpleClassNameStrikeCase);
 
-        bindingMap.put("dataSourceUrl",(String)FieldAccessor.getFieldValue(dataSourceConfigDO, "url"));
-        bindingMap.put("dataSourceUsername",(String)FieldAccessor.getFieldValue(dataSourceConfigDO, "username"));
-        bindingMap.put("dataSourcePassword",(String)FieldAccessor.getFieldValue(dataSourceConfigDO, "password"));
+        bindingMap.put("dataSourceUrl",dataSourceConfigDO.getUrl());
+        bindingMap.put("dataSourceUsername",dataSourceConfigDO.getUsername());
+        bindingMap.put("dataSourcePassword",dataSourceConfigDO.getPassword());
 
         // 特殊：树表专属逻辑
-          if (((Integer)FieldAccessor.getFieldValue(table, "templateType")).equals(CodegenTemplateTypeEnum.TREE.getType())) {
+          if (table.getTemplateType().equals(CodegenTemplateTypeEnum.TREE.getType())) {
               CodegenColumnDO treeParentColumn = null;
               for (CodegenColumnDO column : columns) {
-                  if (Objects.equals(FieldAccessor.getFieldValue(column, "id"), FieldAccessor.getFieldValue(table, "treeParentColumnId"))) {
+                  if (Objects.equals(column.getId(), table.getTreeParentColumnId())) {
                       treeParentColumn = column;
                       break;
                   }
               }
               bindingMap.put("treeParentColumn", treeParentColumn);
               if (treeParentColumn != null) {
-                  bindingMap.put("treeParentColumn_javaField_underlineCase", toUnderlineCase((String)FieldAccessor.getFieldValue(treeParentColumn, "javaField")));
+                  bindingMap.put("treeParentColumn_javaField_underlineCase", toUnderlineCase(treeParentColumn.getJavaField()));
               }
               CodegenColumnDO treeNameColumn = null;
               for (CodegenColumnDO column : columns) {
-                  if (Objects.equals(FieldAccessor.getFieldValue(column, "id"), FieldAccessor.getFieldValue(table, "treeNameColumnId"))) {
+                  if (Objects.equals(column.getId(), table.getTreeNameColumnId())) {
                       treeNameColumn = column;
                       break;
                   }
               }
               bindingMap.put("treeNameColumn", treeNameColumn);
               if (treeNameColumn != null) {
-                  bindingMap.put("treeNameColumn_javaField_underlineCase", toUnderlineCase((String)FieldAccessor.getFieldValue(treeNameColumn, "javaField")));
+                  bindingMap.put("treeNameColumn_javaField_underlineCase", toUnderlineCase(treeNameColumn.getJavaField()));
               }
           }
 
@@ -331,7 +331,7 @@ public class CodegenEngine {
                 List<CodegenColumnDO> subColumns = subColumnsList.get(i);
                 CodegenColumnDO pkColumn = null;
             for (CodegenColumnDO column : subColumns) {
-                if (Boolean.TRUE.equals(FieldAccessor.getFieldValue(column, "primaryKey"))) {
+                if (Boolean.TRUE.equals(column.getPrimaryKey())) {
                     pkColumn = column;
                     break;
                 }
@@ -339,15 +339,15 @@ public class CodegenEngine {
             subPrimaryColumns.add(pkColumn); //
                 CodegenColumnDO subColumn = null;
             for (CodegenColumnDO column : subColumns) { // 关联的字段
-                if (Objects.equals(FieldAccessor.getFieldValue(column, "id"), FieldAccessor.getFieldValue(subTable, "subJoinColumnId"))) {
+                if (Objects.equals(column.getId(), subTable.getSubJoinColumnId())) {
                     subColumn = column;
                     break;
                 }
             }
                 subJoinColumns.add(subColumn);
-                subJoinColumnStrikeCases.add(toSymbolCase((String)FieldAccessor.getFieldValue(subColumn, "javaField"), '-')); // 将 DictType 转换成 dict-type
+                subJoinColumnStrikeCases.add(toSymbolCase(subColumn.getJavaField(), '-')); // 将 DictType 转换成 dict-type
                 // className 相关
-                String subSimpleClassName = removePrefix((String)FieldAccessor.getFieldValue(subTable, "className"), upperFirst((String)FieldAccessor.getFieldValue(subTable, "moduleName")));
+                String subSimpleClassName = removePrefix(subTable.getClassName(), upperFirst(subTable.getModuleName()));
                 subSimpleClassNames.add(subSimpleClassName);
                 simpleClassNameUnderlineCases.add(toUnderlineCase(subSimpleClassName)); // 将 DictType 转换成 dict_type
                 subClassNameVars.add(lowerFirst(subSimpleClassName)); // 将 DictType 转换成 dictType，用于变量
@@ -385,27 +385,27 @@ public class CodegenEngine {
                 getStr(bindingMap, "simpleClassName"));
         // sceneEnum 包含的字段
         CodegenSceneEnum sceneEnum = (CodegenSceneEnum) bindingMap.get("sceneEnum");
-        filePath = StrUtil.replace(filePath, "${sceneEnum.prefixClass}", String.valueOf(FieldAccessor.getFieldValue(sceneEnum, "prefixClass")));
-        filePath = StrUtil.replace(filePath, "${sceneEnum.basePackage}", String.valueOf(FieldAccessor.getFieldValue(sceneEnum, "basePackage")));
-        filePath = StrUtil.replace(filePath, "${sceneEnum.scene}", String.valueOf(FieldAccessor.getFieldValue(sceneEnum, "scene")));
+        filePath = StrUtil.replace(filePath, "${sceneEnum.prefixClass}", String.valueOf(sceneEnum.getPrefixClass()));
+        filePath = StrUtil.replace(filePath, "${sceneEnum.basePackage}", String.valueOf(sceneEnum.getBasePackage()));
+        filePath = StrUtil.replace(filePath, "${sceneEnum.scene}", String.valueOf(sceneEnum.getScene()));
         // table 包含的字段
           CodegenTableDO table = (CodegenTableDO) bindingMap.get("table");
-          filePath = StrUtil.replace(filePath, "${table.moduleName}", String.valueOf(FieldAccessor.getFieldValue(table, "moduleName")));
-          filePath = StrUtil.replace(filePath, "${table.packgeName}", String.valueOf(FieldAccessor.getFieldValue(table, "packgeName")));
-          filePath = StrUtil.replace(filePath, "${table.businessName}", String.valueOf(FieldAccessor.getFieldValue(table, "businessName")));
-          filePath = StrUtil.replace(filePath, "${table.className}", String.valueOf(FieldAccessor.getFieldValue(table, "className")));
+          filePath = StrUtil.replace(filePath, "${table.moduleName}", String.valueOf(table.getModuleName()));
+          filePath = StrUtil.replace(filePath, "${table.packgeName}", String.valueOf(table.getPackgeName()));
+          filePath = StrUtil.replace(filePath, "${table.businessName}", String.valueOf(table.getBusinessName()));
+          filePath = StrUtil.replace(filePath, "${table.className}", String.valueOf(table.getClassName()));
           // 添加普通变量替换
-          filePath = StrUtil.replace(filePath, "${moduleName}", String.valueOf(FieldAccessor.getFieldValue(table, "moduleName")));
-          filePath = StrUtil.replace(filePath, "${packgeName}", String.valueOf(FieldAccessor.getFieldValue(table, "packgeName")));
-          filePath = StrUtil.replace(filePath, "${businessName}", String.valueOf(FieldAccessor.getFieldValue(table, "businessName")));
-          filePath = StrUtil.replace(filePath, "${className}", String.valueOf(FieldAccessor.getFieldValue(table, "className"))); // DictType
+          filePath = StrUtil.replace(filePath, "${moduleName}", String.valueOf(table.getModuleName()));
+          filePath = StrUtil.replace(filePath, "${packgeName}", String.valueOf(table.getPackgeName()));
+          filePath = StrUtil.replace(filePath, "${businessName}", String.valueOf(table.getBusinessName()));
+          filePath = StrUtil.replace(filePath, "${className}", String.valueOf(table.getClassName())); // DictType
         // 特殊：主子表专属逻辑
         Integer subIndex = (Integer) bindingMap.get("subIndex");
         if (subIndex != null) {
             CodegenTableDO subTable = ((List<CodegenTableDO>) bindingMap.get("subTables")).get(subIndex);
-            filePath = StrUtil.replace(filePath, "${subTable.moduleName}", String.valueOf(FieldAccessor.getFieldValue(subTable, "moduleName")));
-            filePath = StrUtil.replace(filePath, "${subTable.businessName}", String.valueOf(FieldAccessor.getFieldValue(subTable, "businessName")));
-            filePath = StrUtil.replace(filePath, "${subTable.className}", String.valueOf(FieldAccessor.getFieldValue(subTable, "className")));
+            filePath = StrUtil.replace(filePath, "${subTable.moduleName}", String.valueOf(subTable.getModuleName()));
+            filePath = StrUtil.replace(filePath, "${subTable.businessName}", String.valueOf(subTable.getBusinessName()));
+            filePath = StrUtil.replace(filePath, "${subTable.className}", String.valueOf(subTable.getClassName()));
             filePath = StrUtil.replace(filePath, "${subSimpleClassName}",
                     ((List<String>) bindingMap.get("subSimpleClassNames")).get(subIndex));
         }
