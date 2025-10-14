@@ -18,7 +18,7 @@ import com.bone.engine.extension.EnableExtPoints;
 @EnableFeignClients
 @EnableDiscoveryClient
 @EnableExtPoints
-@MapperScan(basePackages = {"com.bone.lowcode.integration.infrastructure.mapper"})
+@MapperScan(basePackages = {"com.bone.lowcode.integration.infrastructure.repository"})
 @EnableAspectJAutoProxy(exposeProxy = true, proxyTargetClass = true)
 @SpringBootApplication(exclude = {
         SecurityAutoConfiguration.class, ManagementWebSecurityAutoConfiguration.class
