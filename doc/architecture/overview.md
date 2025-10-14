@@ -532,11 +532,11 @@ com.bone.framework.utils.StringUtils    // 命名不一致
         <module>bone-platform-masterdata</module>
         <module>bone-business-order</module>
         <module>bone-business-product</module>
-        <module>bone-application-admin</module>
+        <module>bone-business-admin</module>
         <module>bone-gateway</module>
         <module>bone-starter</module>
         <module>bone-client-sdk</module>
-        <module>bone-tool-codegen</module>
+        <module>bone-codegen</module>
     </modules>
 </project>
 ```
