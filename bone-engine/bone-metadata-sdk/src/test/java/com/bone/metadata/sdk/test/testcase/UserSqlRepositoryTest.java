@@ -346,7 +346,7 @@ public class UserSqlRepositoryTest {
         }
 
         @Test
-        @DisplayName("Execute named statement with row mapper returns converted results")
+        @DisplayName("Execute named statement with row repository returns converted results")
         void testExecuteNamedStatement_WithRowMapper_ReturnsConvertedResults() {
             Map<String, Object> params = new HashMap<>();
             params.put("roleId", 2L);

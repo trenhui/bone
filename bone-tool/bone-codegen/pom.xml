@@ -12,7 +12,7 @@
     <artifactId>bone-codegen</artifactId>
     <packaging>jar</packaging>
 
-    <name>bone-lowcode-codegen</name>
+    <name>bone-codegen</name>
     <description>DDD-based codegen module</description>
 
     <dependencies>
@@ -20,6 +20,7 @@
         <dependency>
             <groupId>com.bone</groupId>
             <artifactId>bone-core</artifactId>
+            <version>1.0.0</version>
         </dependency>
 
         <!-- Spring Boot Starters -->
@@ -36,20 +37,10 @@
         <dependency>
             <groupId>com.bone</groupId>
             <artifactId>bone-metadata-sdk</artifactId>
+            <version>1.0.0</version>
         </dependency>
         
-        <!-- 代码生成器 -->
-        <dependency>
-            <groupId>com.baomidou</groupId>
-            <artifactId>mybatis-plus-generator</artifactId>
-            <version>${mybatis-plus.version}</version>
-        </dependency>
-        <!-- MyBatis-Plus 扩展 -->
-        <dependency>
-            <groupId>com.baomidou</groupId>
-            <artifactId>mybatis-plus-extension</artifactId>
-            <version>${mybatis-plus.version}</version>
-        </dependency>
+
 
         <!-- 模板引擎 -->
         <dependency>
@@ -84,6 +75,12 @@
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>33.0.0-jre</version>
+        </dependency>
+        <!-- 文件类型检测 -->
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-core</artifactId>
+            <version>2.9.0</version>
         </dependency>
 
         <!-- 移除不必要的可选依赖 -->
