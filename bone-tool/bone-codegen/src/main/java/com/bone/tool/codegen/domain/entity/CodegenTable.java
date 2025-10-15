@@ -6,6 +6,7 @@ import com.bone.metadata.sdk.domain.annotation.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
+import java.util.Map;
 
 /**
  * 代码生成表配置 领域实体
@@ -176,6 +177,13 @@ public class CodegenTable extends AbstractEntity<Long> {
      * 关联CodegenColumnDO的主键ID，表示在界面选择时展示的名称字段
      */
     private Long treeNameColumnId;
+    
+    /**
+     * 生成的代码文件集合
+     * <p>
+     * 键为文件路径，值为文件内容
+     */
+    private Map<String, String> codeFiles;
 
     public Long getDataSourceConfigId() {
         return dataSourceConfigId;
@@ -319,5 +327,13 @@ public class CodegenTable extends AbstractEntity<Long> {
     
     public void setTreeNameColumnId(Long treeNameColumnId) {
         this.treeNameColumnId = treeNameColumnId;
+    }
+    
+    public Map<String, String> getCodeFiles() {
+        return codeFiles;
+    }
+    
+    public void setCodeFiles(Map<String, String> codeFiles) {
+        this.codeFiles = codeFiles;
     }
 }
