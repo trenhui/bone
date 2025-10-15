@@ -171,6 +171,15 @@ public class DataSourceConfigService {
     }
     
     /**
+     * 获取所有数据源配置列表（与getDataSourceConfigList相同，提供别名以兼容接口调用）
+     * 
+     * @return 数据源配置列表
+     */
+    public List<DataSourceConfig> getAllDataSourceConfigs() {
+        return getDataSourceConfigList();
+    }
+    
+    /**
      * 分页查询数据源配置
      * 
      * @param queryReqVO 查询条件
