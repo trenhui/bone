@@ -39,12 +39,14 @@ public class ${table.className}ApplicationService {
         return ${classNameVar}Converter.toDto(${classNameVar}Service.get${table.className}(id));
     }
 
-    public void update${table.className}(${table.className}DTO ${classNameVar}Dto) {
+    public Boolean update${table.className}(${table.className}DTO ${classNameVar}Dto) {
         ${classNameVar}Service.update${table.className}(${classNameVar}Converter.toEntity(${classNameVar}Dto));
+        return Boolean.TRUE;
     }
 
-    public void delete${table.className}(Long id) {
+    public Boolean delete${table.className}(Long id) {
         ${classNameVar}Service.delete${table.className}(id);
+        return Boolean.TRUE;
     }
 
     public List<${table.className}DTO> query${table.className}(${table.className}Query ${classNameVar}Query) {

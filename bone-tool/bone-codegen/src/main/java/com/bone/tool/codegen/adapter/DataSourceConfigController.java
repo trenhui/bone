@@ -2,10 +2,12 @@ package com.bone.tool.codegen.adapter;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.bone.tool.codegen.application.dto.DataSourceConfigQueryRequest;
 import com.bone.tool.codegen.application.dto.DataSourceConfigSaveRequest;
-
+import com.bone.tool.codegen.application.dto.TestConnectionRequest;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.bone.core.model.ApiResponse;
@@ -23,10 +25,11 @@ import static com.bone.core.model.ApiResponse.success;
  * 数据源配置 控制器
  * <p>
  * 提供数据源配置管理的RESTful API接口，作为领域服务的适配器
+ * 支持灵活配置多种类型的数据库数据源
  * 
  * @author bone-team
  */
-@Tag(name = "数据源配置管理")
+@Tag(name = "数据源配置管理", description = "提供数据源配置的增删改查、测试连接等功能")
 @RestController
 @RequestMapping("/api/v1/data-source-configs")
 public class DataSourceConfigController {
@@ -63,16 +66,85 @@ public class DataSourceConfigController {
     @Parameter(name = "id", description = "数据源配置ID", required = true, example = "1024")
     public ApiResponse<DataSourceConfigResponse> getDataSourceConfig(@PathVariable("id") Long id) {
         DataSourceConfig config = dataSourceConfigService.getDataSourceConfig(id);
-        return success(BeanUtil.toBean(config, DataSourceConfigResponse.class));
+        DataSourceConfigResponse response = BeanUtil.toBean(config, DataSourceConfigResponse.class);
+        // 密码脱敏处理
+        if (response.getPassword() != null && !response.getPassword().isEmpty()) {
+            response.setPassword("******");
+        }
+        return success(response);
     }
 
     @GetMapping
     @Operation(summary = "获取数据源配置列表")
     public ApiResponse<List<DataSourceConfigResponse>> getDataSourceConfigList() {
-        // 调用无参的getDataSourceConfigList方法，使用空查询条件
-        List<DataSourceConfig> configList = dataSourceConfigService.getDataSourceConfigList(new DataSourceConfigQueryRequest());
-        // 简单实现，返回空列表以避免BeanUtils方法调用问题
-        return success(new ArrayList<>());
+        // 调用无参的getDataSourceConfigList方法
+        List<DataSourceConfig> configList = dataSourceConfigService.getDataSourceConfigList();
+        List<DataSourceConfigResponse> responseList = new ArrayList<>(configList.size());
+        
+        // 转换并处理密码脱敏
+        for (DataSourceConfig config : configList) {
+            DataSourceConfigResponse response = BeanUtil.toBean(config, DataSourceConfigResponse.class);
+            if (response.getPassword() != null && !response.getPassword().isEmpty()) {
+                response.setPassword("******");
+            }
+            responseList.add(response);
+        }
+        
+        return success(responseList);
+    }
+    
+    @PostMapping("/test-connection")
+    @Operation(summary = "测试数据源连接")
+    public ApiResponse<Boolean> testConnection(@RequestBody TestConnectionRequest request) {
+        DataSourceConfig config = new DataSourceConfig();
+        config.setName(request.getName());
+        config.setUrl(request.getUrl());
+        config.setUsername(request.getUsername());
+        config.setPassword(request.getPassword());
+        config.setDriverClassName(request.getDriverClassName());
+        
+        boolean success = dataSourceConfigService.testConnection(config);
+        return success(success);
+    }
+    
+    @GetMapping("/db-types")
+    @Operation(summary = "获取支持的数据库类型")
+    public ApiResponse<List<Map<String, String>>> getSupportedDbTypes() {
+        List<Map<String, String>> dbTypes = new ArrayList<>();
+        
+        // MySQL
+        Map<String, String> mysql = new HashMap<>();
+        mysql.put("type", "mysql");
+        mysql.put("name", "MySQL");
+        mysql.put("driver", "com.mysql.cj.jdbc.Driver");
+        mysql.put("urlTemplate", "jdbc:mysql://localhost:3306/test_db?useSSL=false&useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai");
+        dbTypes.add(mysql);
+        
+        // PostgreSQL
+        Map<String, String> postgresql = new HashMap<>();
+        postgresql.put("type", "postgresql");
+        postgresql.put("name", "PostgreSQL");
+        postgresql.put("driver", "org.postgresql.Driver");
+        postgresql.put("urlTemplate", "jdbc:postgresql://localhost:5432/test_db");
+        dbTypes.add(postgresql);
+        
+        // Oracle
+        Map<String, String> oracle = new HashMap<>();
+        oracle.put("type", "oracle");
+        oracle.put("name", "Oracle");
+        oracle.put("driver", "oracle.jdbc.OracleDriver");
+        oracle.put("urlTemplate", "jdbc:oracle:thin:@localhost:1521:orcl");
+        dbTypes.add(oracle);
+        
+        // SQL Server
+        Map<String, String> sqlserver = new HashMap<>();
+        sqlserver.put("type", "sqlserver");
+        sqlserver.put("name", "SQL Server");
+        sqlserver.put("driver", "com.microsoft.sqlserver.jdbc.SQLServerDriver");
+        sqlserver.put("urlTemplate", "jdbc:sqlserver://localhost:1433;databaseName=test_db");
+        dbTypes.add(sqlserver);
+        
+        return success(dbTypes);
     }
 
 }

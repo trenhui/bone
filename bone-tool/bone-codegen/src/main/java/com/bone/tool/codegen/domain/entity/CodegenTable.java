@@ -177,4 +177,147 @@ public class CodegenTable extends AbstractEntity<Long> {
      */
     private Long treeNameColumnId;
 
+    public Long getDataSourceConfigId() {
+        return dataSourceConfigId;
+    }
+    
+    public void setDataSourceConfigId(Long dataSourceConfigId) {
+        this.dataSourceConfigId = dataSourceConfigId;
+    }
+    
+    public Integer getScene() {
+        return scene;
+    }
+    
+    public void setScene(Integer scene) {
+        this.scene = scene;
+    }
+    
+    public String getTableName() {
+        return tableName;
+    }
+    
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
+    }
+    
+    public String getTableComment() {
+        return tableComment;
+    }
+    
+    public void setTableComment(String tableComment) {
+        this.tableComment = tableComment;
+    }
+    
+    public String getRemark() {
+        return remark;
+    }
+    
+    public void setRemark(String remark) {
+        this.remark = remark;
+    }
+    
+    public String getModuleName() {
+        return moduleName;
+    }
+    
+    public void setModuleName(String moduleName) {
+        this.moduleName = moduleName;
+    }
+    
+    public String getPackgeName() {
+        return packgeName;
+    }
+    
+    public void setPackgeName(String packgeName) {
+        this.packgeName = packgeName;
+    }
+    
+    public String getBusinessName() {
+        return businessName;
+    }
+    
+    public void setBusinessName(String businessName) {
+        this.businessName = businessName;
+    }
+    
+    public String getClassName() {
+        return className;
+    }
+    
+    public void setClassName(String className) {
+        this.className = className;
+    }
+    
+    public String getClassComment() {
+        return classComment;
+    }
+    
+    public void setClassComment(String classComment) {
+        this.classComment = classComment;
+    }
+    
+    public String getAuthor() {
+        return author;
+    }
+    
+    public void setAuthor(String author) {
+        this.author = author;
+    }
+    
+    public Integer getTemplateType() {
+        return templateType;
+    }
+    
+    public void setTemplateType(Integer templateType) {
+        this.templateType = templateType;
+    }
+    
+    public Long getParentMenuId() {
+        return parentMenuId;
+    }
+    
+    public void setParentMenuId(Long parentMenuId) {
+        this.parentMenuId = parentMenuId;
+    }
+    
+    public Long getMasterTableId() {
+        return masterTableId;
+    }
+    
+    public void setMasterTableId(Long masterTableId) {
+        this.masterTableId = masterTableId;
+    }
+    
+    public Long getSubJoinColumnId() {
+        return subJoinColumnId;
+    }
+    
+    public void setSubJoinColumnId(Long subJoinColumnId) {
+        this.subJoinColumnId = subJoinColumnId;
+    }
+    
+    public Boolean getSubJoinMany() {
+        return subJoinMany;
+    }
+    
+    public void setSubJoinMany(Boolean subJoinMany) {
+        this.subJoinMany = subJoinMany;
+    }
+    
+    public Long getTreeParentColumnId() {
+        return treeParentColumnId;
+    }
+    
+    public void setTreeParentColumnId(Long treeParentColumnId) {
+        this.treeParentColumnId = treeParentColumnId;
+    }
+    
+    public Long getTreeNameColumnId() {
+        return treeNameColumnId;
+    }
+    
+    public void setTreeNameColumnId(Long treeNameColumnId) {
+        this.treeNameColumnId = treeNameColumnId;
+    }
 }

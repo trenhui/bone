@@ -1,0 +1,96 @@
+package $packageName.infrastructure.service.impl;
+
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.github.pagehelper.PageHelper;
+import com.github.pagehelper.PageInfo;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import $packageName.domain.entity.$className;
+import $packageName.application.dto.${className}DTO;
+import $packageName.domain.service.${className}Service;
+import $packageName.infrastructure.mapper.${className}Mapper;
+import com.bone.metadata.sdk.query.criteria.Criteria;
+import java.util.List;
+import java.util.stream.Collectors;
+
+/**
+ * $classCommentService实现类
+ * @author $author
+ * @date $datetime
+ */
+@Service
+public class ${className}ServiceImpl extends ServiceImpl<${className}Mapper, $className> implements ${className}Service {
+    
+    @Autowired
+    private ${className}Mapper ${tool.lowerFirst(className)}Mapper;
+    
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean saveData(${className}DTO dto) {
+        $className entity = new $className();
+        BeanUtils.copyProperties(dto, entity);
+        // 设置创建人、创建时间等公共字段
+        return this.save(entity);
+    }
+    
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean updateData(${className}DTO dto) {
+        $className entity = new $className();
+        BeanUtils.copyProperties(dto, entity);
+        // 设置更新人、更新时间等公共字段
+        return this.updateById(entity);
+    }
+    
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean deleteData(Long id) {
+        return this.removeById(id);
+    }
+    
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public Boolean deleteBatch(List<Long> ids) {
+        return this.removeByIds(ids);
+    }
+    
+    @Override
+    public ${className}DTO getById(Long id) {
+        $className entity = this.getBaseMapper().selectById(id);
+        if (entity == null) {
+            return null;
+        }
+        ${className}DTO dto = new ${className}DTO();
+        BeanUtils.copyProperties(entity, dto);
+        return dto;
+    }
+    
+    @Override
+    public List<${className}DTO> getList(Criteria criteria) {
+        List<$className> entityList = ${tool.lowerFirst(className)}Mapper.selectByCriteria(criteria);
+        return entityList.stream().map(entity -> {
+            ${className}DTO dto = new ${className}DTO();
+            BeanUtils.copyProperties(entity, dto);
+            return dto;
+        }).collect(Collectors.toList());
+    }
+    
+    @Override
+    public PageInfo<${className}DTO> getPage(Criteria criteria, Integer pageNum, Integer pageSize) {
+        PageHelper.startPage(pageNum, pageSize);
+        List<$className> entityList = ${tool.lowerFirst(className)}Mapper.selectByCriteria(criteria);
+        PageInfo<$className> pageInfo = new PageInfo<>(entityList);
+        
+        List<${className}DTO> dtoList = entityList.stream().map(entity -> {
+            ${className}DTO dto = new ${className}DTO();
+            BeanUtils.copyProperties(entity, dto);
+            return dto;
+        }).collect(Collectors.toList());
+        
+        PageInfo<${className}DTO> result = new PageInfo<>(dtoList);
+        BeanUtils.copyProperties(pageInfo, result);
+        return result;
+    }
+}
