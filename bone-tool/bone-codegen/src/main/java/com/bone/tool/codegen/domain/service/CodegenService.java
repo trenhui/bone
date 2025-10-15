@@ -907,6 +907,28 @@ public class CodegenService {
     }
 
     /**
+     * 批量生成代码并直接写入输出流
+     * @param tableIds 表ID列表
+     * @param groupId 分组ID
+     * @param modelType 模板类型
+     * @param outputStream 输出流，用于写入ZIP文件
+     * @throws IOException 当写入输出流失败时抛出
+     */
+    public void generateBatchCode(List<Long> tableIds, String groupId, Integer modelType, OutputStream outputStream) throws IOException {
+        log.info("开始批量生成代码并写入输出流，表数量: {}, 分组ID: {}, 模板类型: {}", 
+                tableIds.size(), groupId, modelType);
+        
+        // 调用3参数版本生成代码
+        byte[] zipData = generateBatchCode(tableIds, groupId, modelType);
+        
+        // 将生成的ZIP数据写入输出流
+        outputStream.write(zipData);
+        outputStream.flush();
+        
+        log.info("代码成功写入输出流，数据大小: {} KB", zipData.length / 1024);
+    }
+
+    /**
      * 批量生成代码
      * @param tableIds 表ID数组
      * @return 生成的代码包（ZIP文件字节数组）

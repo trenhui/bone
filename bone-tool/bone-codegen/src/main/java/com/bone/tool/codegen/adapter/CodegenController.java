@@ -103,7 +103,7 @@ public class CodegenController {
         PageResult<CodegenTable> pageResult = codegenService.getCodegenTablePage(reqVO);
         
         // 将实体对象转换为响应对象
-        List<CodegenTableResponse> responseList = pageResult.getList().stream()
+        List<CodegenTableResponse> responseList = pageResult.getRecords().stream()
                 .map(table -> {
                     CodegenTableResponse response = new CodegenTableResponse();
                     try {

@@ -1,10 +1,17 @@
 package com.bone.tool.codegen.adapter;
 
 import com.bone.tool.codegen.application.dto.GenerateCustomCodeRequest;
+import com.bone.tool.codegen.domain.repository.CodegenColumnRepository;
+import com.bone.tool.codegen.domain.repository.CodegenTableRepository;
 import com.bone.tool.codegen.domain.service.CodegenService;
+import com.bone.tool.codegen.domain.service.DatabaseTableService;
+import com.bone.tool.codegen.domain.service.DataSourceConfigService;
+import com.bone.tool.codegen.domain.service.TemplateEngine;
+import com.bone.tool.codegen.infrastructure.config.CodegenEngine;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
+import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.Arrays;
@@ -25,12 +32,34 @@ public class GenerateCustomCodeTest {
 
     // 使用实际的CodegenService实例进行测试
     private CodegenService codegenService;
+    
+    // 模拟所有依赖项
+    @Mock
+    private CodegenTableRepository codegenTableRepository;
+    @Mock
+    private CodegenColumnRepository codegenColumnRepository;
+    @Mock
+    private CodegenEngine codegenEngine;
+    @Mock
+    private DatabaseTableService databaseTableService;
+    @Mock
+    private DataSourceConfigService dataSourceConfigService;
+    @Mock
+    private TemplateEngine templateEngine;
 
     @BeforeEach
     public void setUp() {
         // 初始化测试环境
         MockitoAnnotations.openMocks(this);
-        codegenService = new CodegenService();
+        // 通过构造函数注入所有依赖项
+        codegenService = new CodegenService(
+                codegenTableRepository,
+                codegenColumnRepository,
+                codegenEngine,
+                databaseTableService,
+                dataSourceConfigService,
+                templateEngine
+        );
     }
     
     // 辅助方法：验证基础结果

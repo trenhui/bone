@@ -4,6 +4,7 @@ import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import com.bone.tool.codegen.adapter.CodegenController;
 import com.bone.tool.codegen.application.dto.*;
+import com.bone.tool.codegen.domain.entity.CodegenTable;
 import com.bone.tool.codegen.domain.service.CodegenService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -125,10 +126,8 @@ public class CodegenControllerTest {
         // 模拟数据（Controller中直接返回空列表，无需模拟服务层行为）
 
         // 执行HTTP请求并验证结果
-        mockMvc.perform(get("/api/v1/codegen/db/table/list")
-                .param("dataSourceConfigId", "1")
-                .param("name", "table")
-                .param("comment", "注释"))
+        mockMvc.perform(get("/api/v1/codegen/database-table/list")
+                .param("dataSourceConfigId", "1"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.success").value(true))
@@ -148,6 +147,19 @@ public class CodegenControllerTest {
 
     @Test
     public void testGetCodegenTablePage() throws Exception {
+        // 模拟PageResult对象
+        List<CodegenTable> codegenTables = new ArrayList<>();
+        CodegenTable mockTable = new CodegenTable();
+        mockTable.setId(1L);
+        mockTable.setTableName("test_table");
+        mockTable.setDataSourceConfigId(1L);
+        codegenTables.add(mockTable);
+        
+        PageResult<CodegenTable> mockPageResult = PageResult.of(codegenTables, 1L, 1, 10);
+        
+        // 模拟服务层行为
+        when(codegenService.getCodegenTablePage(any(CodegenTablePageRequest.class))).thenReturn(mockPageResult);
+        
         // 执行HTTP请求并验证结果
         mockMvc.perform(get("/api/v1/codegen/table/page")
                 .param("pageNo", "1")
