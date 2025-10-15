@@ -5,7 +5,9 @@ import com.bone.core.model.PageResult;
 import com.bone.tool.codegen.adapter.CodegenController;
 import com.bone.tool.codegen.application.dto.*;
 import com.bone.tool.codegen.domain.entity.CodegenTable;
+import com.bone.tool.codegen.domain.entity.TableInfo;
 import com.bone.tool.codegen.domain.service.CodegenService;
+import com.bone.tool.codegen.domain.service.DatabaseTableService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -36,6 +38,9 @@ public class CodegenControllerTest {
 
     @Mock
     private CodegenService codegenService;
+    
+    @Mock
+    private DatabaseTableService databaseTableService;
 
     @InjectMocks
     private CodegenController codegenController;
@@ -123,7 +128,9 @@ public class CodegenControllerTest {
 
     @Test
     public void testGetDatabaseTableList() throws Exception {
-        // 模拟数据（Controller中直接返回空列表，无需模拟服务层行为）
+        // 模拟服务层行为
+        List<TableInfo> mockTableInfos = new ArrayList<>();
+        when(databaseTableService.getTableList(anyLong())).thenReturn(mockTableInfos);
 
         // 执行HTTP请求并验证结果
         mockMvc.perform(get("/api/v1/codegen/database-table/list")
@@ -132,6 +139,9 @@ public class CodegenControllerTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data").isArray());
+        
+        // 验证服务层方法是否被调用
+        verify(databaseTableService, times(1)).getTableList(1L);
     }
 
     @Test
