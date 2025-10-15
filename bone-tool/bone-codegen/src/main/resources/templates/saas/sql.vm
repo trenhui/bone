@@ -1,0 +1,53 @@
+-- $table.tableName 表结构初始化脚本
+-- 创建时间: $datetime
+
+-- 删除表（如果存在）
+DROP TABLE IF EXISTS $table.tableName;
+
+-- 创建表
+CREATE TABLE $table.tableName (
+#if($primaryKey)
+    $primaryKey.columnName $primaryKey.columnType#if($primaryKey.isAutoIncrement) AUTO_INCREMENT#elseif(!$primaryKey.nullable) NOT NULL#else NULL#end COMMENT '$primaryKey.comment',
+#end
+
+#foreach($column in $businessColumns)
+#if($column.primaryKey)
+#continue
+#end
+    $column.columnName $column.columnType#if(!$column.nullable) NOT NULL#else NULL#end COMMENT '$column.comment'#if($velocityCount < $businessColumns.size()) , #end
+#end
+
+#if($table.isCreateTime)
+    create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+#end
+#if($table.isUpdateTime)
+    update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+#end
+#if($table.isCreateBy)
+    create_by bigint DEFAULT NULL COMMENT '创建人',
+#end
+#if($table.isUpdateBy)
+    update_by bigint DEFAULT NULL COMMENT '更新人',
+#end
+#if($table.isDelFlag)
+    del_flag tinyint DEFAULT 0 COMMENT '删除标志（0正常 1删除）'
+#end
+#if($primaryKey)
+    , PRIMARY KEY ($primaryKey.columnName)
+#end
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='$table.classComment';
+
+-- 创建索引
+#if($columns)
+#foreach($column in $columns)
+#if($column.index)
+CREATE INDEX idx_${table.tableName}_${column.columnName} ON $table.tableName($column.columnName);
+#end
+#if($column.uniqueIndex)
+CREATE UNIQUE INDEX idx_${table.tableName}_${column.columnName}_unique ON $table.tableName($column.columnName);
+#end
+#end
+#end
+
+-- 插入初始数据（示例）
+-- INSERT INTO $table.tableName () VALUES ();

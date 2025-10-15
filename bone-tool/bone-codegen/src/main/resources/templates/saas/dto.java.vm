@@ -1,0 +1,50 @@
+package $packageName.application.dto;
+
+import lombok.Data;
+import java.io.Serializable;
+#foreach($column in $columns)
+#if($column.javaType == "java.util.Date" || $column.javaType == "java.time.LocalDateTime")
+import $column.javaType;
+#end
+#end
+
+/**
+ * $classCommentDTO
+ * @author $author
+ * @date $datetime
+ */
+@Data
+public class ${className}DTO implements Serializable {
+    private static final long serialVersionUID = 1L;
+
+#if($primaryKey)
+    /**
+     * $primaryKey.comment
+     */
+    private $primaryKey.javaType $primaryKey.fieldName;
+
+#end
+
+#foreach($column in $businessColumns)
+    /**
+     * $column.comment
+     */
+    private $column.javaType $column.fieldName;
+
+#end
+
+#if($table.isCreateTime)
+    /**
+     * 创建时间
+     */
+    private java.time.LocalDateTime createTime;
+
+#end
+#if($table.isUpdateTime)
+    /**
+     * 更新时间
+     */
+    private java.time.LocalDateTime updateTime;
+
+#end
+}

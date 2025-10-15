@@ -6,6 +6,7 @@ import com.bone.tool.codegen.application.dto.CodegenTableResponse;
 import com.bone.tool.codegen.application.dto.CodegenCreateListRequest;
 import com.bone.tool.codegen.application.dto.CodegenUpdateRequest;
 import com.bone.tool.codegen.application.dto.CodegenDetailResponse;
+import com.bone.tool.codegen.application.dto.GenerateCustomCodeRequest;
 import com.bone.tool.codegen.domain.entity.TableInfo;
 import com.bone.tool.codegen.domain.service.CodegenService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,6 +21,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -129,5 +131,24 @@ public class CodegenController {
                                 HttpServletResponse response) throws IOException {
         // 简化实现，不做实际操作
         response.setStatus(200);
+    }
+    
+    @PostMapping("/generate/custom")
+    @Operation(summary = "增强版批量生成代码")
+    public void generateCustomCode(HttpServletResponse response, @RequestBody @Valid GenerateCustomCodeRequest request) throws Exception {
+        // 调用服务层方法生成代码
+        byte[] zipBytes = codegenService.generateCustomCode(request);
+        
+        // 设置响应头
+        String fileName = "codegen-" + request.getProjectName() + ".zip";
+        response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(fileName, StandardCharsets.UTF_8));
+        response.setContentType("application/zip");
+        response.setContentLength(zipBytes.length);
+        
+        // 写入响应
+        try (OutputStream out = response.getOutputStream()) {
+            out.write(zipBytes);
+            out.flush();
+        }
     }
 }

@@ -1,0 +1,67 @@
+package $packageName.domain.service;
+
+import com.baomidou.mybatisplus.extension.service.IService;
+import $packageName.domain.entity.$className;
+import $packageName.application.dto.${className}DTO;
+import com.bone.metadata.sdk.query.criteria.Criteria;
+import com.github.pagehelper.PageInfo;
+import java.util.List;
+
+/**
+ * $classCommentService接口
+ * @author $author
+ * @date $datetime
+ */
+public interface ${className}Service extends IService<$className> {
+    
+    /**
+     * 保存数据
+     * @param dto 数据传输对象
+     * @return 保存结果
+     */
+    Boolean saveData(${className}DTO dto);
+    
+    /**
+     * 更新数据
+     * @param dto 数据传输对象
+     * @return 更新结果
+     */
+    Boolean updateData(${className}DTO dto);
+    
+    /**
+     * 删除数据
+     * @param id 主键ID
+     * @return 删除结果
+     */
+    Boolean deleteData(Long id);
+    
+    /**
+     * 批量删除数据
+     * @param ids 主键ID列表
+     * @return 删除结果
+     */
+    Boolean deleteBatch(List<Long> ids);
+    
+    /**
+     * 根据ID查询
+     * @param id 主键ID
+     * @return 查询结果
+     */
+    ${className}DTO getById(Long id);
+    
+    /**
+     * 根据条件查询列表
+     * @param criteria 查询条件
+     * @return 查询结果列表
+     */
+    List<${className}DTO> getList(Criteria criteria);
+    
+    /**
+     * 分页查询
+     * @param criteria 查询条件
+     * @param pageNum 页码
+     * @param pageSize 每页大小
+     * @return 分页结果
+     */
+    PageInfo<${className}DTO> getPage(Criteria criteria, Integer pageNum, Integer pageSize);
+}
