@@ -28,7 +28,7 @@ public class CodegenTableResponse {
     private String moduleName;
 
     @Schema(description = "包名", requiredMode = Schema.RequiredMode.REQUIRED, example = "bone")
-    private String packgeName;
+    private String packageName;
 
     @Schema(description = "业务名", requiredMode = Schema.RequiredMode.REQUIRED, example = "codegen")
     private String businessName;

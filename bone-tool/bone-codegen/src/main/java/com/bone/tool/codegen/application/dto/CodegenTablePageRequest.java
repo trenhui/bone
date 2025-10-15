@@ -9,32 +9,37 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDateTime;
 
-
-@Schema(description = "管理后台 - 表定义分页 Request VO")
+/**
+ * 代码生成表配置分页查询请求
+ * <p>
+ * 用于分页查询代码生成表配置的应用层DTO
+ */
+@Schema(description = "代码生成表配置分页查询请求")
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 public class CodegenTablePageRequest extends PageParam {
 
-    // 使用常量直接替换DateUtils的引用
-    private static final String FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND = "yyyy-MM-dd HH:mm:ss";
+    private static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
-    @Schema(description = "表名称，模糊匹配", example = "yudao")
+    @Schema(description = "表名称，模糊匹配", example = "sys_user")
     private String tableName;
 
-    @Schema(description = "表描述，模糊匹配", example = "芋道")
+    @Schema(description = "表描述，模糊匹配", example = "用户信息表")
     private String tableComment;
 
-    @Schema(description = "实体，模糊匹配", example = "Yudao")
+    @Schema(description = "Java类名，模糊匹配", example = "SysUser")
     private String className;
 
-    @Schema(description = "创建时间", example = "[2022-07-01 00:00:00,2022-07-01 23:59:59]")
-    @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
+    @Schema(description = "创建时间范围", example = "[2022-07-01 00:00:00,2022-07-01 23:59:59]")
+    @DateTimeFormat(pattern = DATE_TIME_PATTERN)
     private LocalDateTime[] createTime;
 
-    @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
-    private String startTime;
+    @Schema(description = "开始时间")
+    @DateTimeFormat(pattern = DATE_TIME_PATTERN)
+    private LocalDateTime startTime;
 
-    @DateTimeFormat(pattern = FORMAT_YEAR_MONTH_DAY_HOUR_MINUTE_SECOND)
-    private String endTime;
+    @Schema(description = "结束时间")
+    @DateTimeFormat(pattern = DATE_TIME_PATTERN)
+    private LocalDateTime endTime;
 }
