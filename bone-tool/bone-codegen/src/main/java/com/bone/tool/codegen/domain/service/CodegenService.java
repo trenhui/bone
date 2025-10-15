@@ -11,7 +11,7 @@ import com.bone.tool.codegen.domain.repository.CodegenColumnRepository;
 import com.bone.tool.codegen.domain.repository.CodegenTableRepository;
 import com.bone.tool.codegen.infrastructure.config.CodegenEngine;
 import com.bone.tool.codegen.domain.enums.ModelTypeEnum;
-import com.bone.metadata.sdk.DataSourceConfigService;
+import com.bone.tool.codegen.domain.service.DataSourceConfigService;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,12 +74,12 @@ public class CodegenService {
      * @throws IllegalArgumentException 当请求参数无效时抛出
      * @throws RuntimeException 当更新表配置失败时抛出
      */
-    public void updateCodegenTable(CodegenUpdateRequest request) {
+    public void updateCodegenTable(CodegenTableRequest request) {
         // 参数验证
-        validateCodegenUpdateRequest(request);
+        validateCodegenTableRequest(request);
         
         try {
-            Long tableId = request.getTable().getId();
+            Long tableId = request.getId();
             
             // 获取原表配置
             CodegenTable existingTable = codegenTableRepository.findById(tableId);
@@ -89,7 +89,7 @@ public class CodegenService {
             }
             
             // 更新表配置
-            CodegenTable codegenTable = BeanUtil.copyProperties(request.getTable(), CodegenTable.class);
+            CodegenTable codegenTable = BeanUtil.copyProperties(request, CodegenTable.class);
             codegenTable.setId(tableId);
             // 保留创建时间等不可修改字段
             // 注意：这里假设CodegenTable实体类有相应的时间字段和setter方法
@@ -110,19 +110,16 @@ public class CodegenService {
     }
     
     /**
-     * 验证表配置更新请求参数
+     * 验证表配置请求参数
      * 
-     * @param request 表配置更新请求
+     * @param request 表配置请求
      * @throws IllegalArgumentException 当参数无效时抛出
      */
-    private void validateCodegenUpdateRequest(CodegenUpdateRequest request) {
+    private void validateCodegenTableRequest(CodegenTableRequest request) {
         if (request == null) {
             throw new IllegalArgumentException("请求参数不能为空");
         }
-        if (request.getTable() == null) {
-            throw new IllegalArgumentException("表配置信息不能为空");
-        }
-        if (request.getTable().getId() == null) {
+        if (request.getId() == null) {
             throw new IllegalArgumentException("表配置ID不能为空");
         }
     }
@@ -133,9 +130,9 @@ public class CodegenService {
      * @param tableId 表ID
      * @param columnRequests 列配置请求列表
      */
-    private void updateCodegenColumns(Long tableId, List<CodegenColumnSaveRequest> columnRequests) {
+    private void updateCodegenColumns(Long tableId, List<CodegenColumnRequest> columnRequests) {
         if (columnRequests != null) {
-            for (CodegenColumnSaveRequest columnRequest : columnRequests) {
+            for (CodegenColumnRequest columnRequest : columnRequests) {
                 CodegenColumn column = BeanUtil.copyProperties(columnRequest, CodegenColumn.class);
                 column.setTableId(tableId);
                 if (columnRequest.getId() != null) {

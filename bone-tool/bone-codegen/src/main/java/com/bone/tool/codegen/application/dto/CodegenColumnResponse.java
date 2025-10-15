@@ -5,65 +5,71 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
-@Schema(description = "管理后台 - 代码生成字段定义 Response VO")
+/**
+ * 代码生成列响应DTO
+ * 用于返回代码生成中的列配置信息
+ *
+ * @author bone-team
+ */
 @Data
+@Schema(description = "代码生成列配置响应信息")
 public class CodegenColumnResponse {
 
-    @Schema(description = "编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @Schema(description = "主键ID", example = "1")
     private Long id;
 
-    @Schema(description = "表编号", requiredMode = Schema.RequiredMode.REQUIRED, example = "1")
+    @Schema(description = "表ID", example = "1")
     private Long tableId;
 
-    @Schema(description = "字段名", requiredMode = Schema.RequiredMode.REQUIRED, example = "user_age")
+    @Schema(description = "列名", example = "user_name")
     private String columnName;
 
-    @Schema(description = "字段类型", requiredMode = Schema.RequiredMode.REQUIRED, example = "int(11)")
+    @Schema(description = "数据类型", example = "varchar")
     private String dataType;
 
-    @Schema(description = "字段描述", requiredMode = Schema.RequiredMode.REQUIRED, example = "年龄")
+    @Schema(description = "列描述", example = "用户名")
     private String columnComment;
 
-    @Schema(description = "是否允许为空", requiredMode = Schema.RequiredMode.REQUIRED, example = "true")
+    @Schema(description = "是否允许为空")
     private Boolean nullable;
 
-    @Schema(description = "是否主键", requiredMode = Schema.RequiredMode.REQUIRED, example = "false")
+    @Schema(description = "是否为主键")
     private Boolean primaryKey;
 
-    @Schema(description = "排序", requiredMode = Schema.RequiredMode.REQUIRED, example = "10")
+    @Schema(description = "排序位置")
     private Integer ordinalPosition;
 
-    @Schema(description = "Java 属性类型", requiredMode = Schema.RequiredMode.REQUIRED, example = "userAge")
+    @Schema(description = "Java类型", example = "String")
     private String javaType;
 
-    @Schema(description = "Java 属性名", requiredMode = Schema.RequiredMode.REQUIRED, example = "Integer")
+    @Schema(description = "Java字段名", example = "userName")
     private String javaField;
 
-    @Schema(description = "字典类型", example = "sys_gender")
+    @Schema(description = "字典类型")
     private String dictType;
 
-    @Schema(description = "数据示例", example = "1024")
+    @Schema(description = "示例值", example = "admin")
     private String example;
 
-    @Schema(description = "是否为 Create 创建操作的字段", requiredMode = Schema.RequiredMode.REQUIRED, example = "true")
+    @Schema(description = "是否创建操作")
     private Boolean createOperation;
 
-    @Schema(description = "是否为 Update 更新操作的字段", requiredMode = Schema.RequiredMode.REQUIRED, example = "false")
+    @Schema(description = "是否更新操作")
     private Boolean updateOperation;
 
-    @Schema(description = "是否为 List 查询操作的字段", requiredMode = Schema.RequiredMode.REQUIRED, example = "true")
+    @Schema(description = "是否列表操作")
     private Boolean listOperation;
 
-    @Schema(description = "List 查询操作的条件类型，参见 CodegenColumnListConditionEnum 枚举", requiredMode = Schema.RequiredMode.REQUIRED, example = "LIKE")
+    @Schema(description = "列表操作条件", example = "eq")
     private String listOperationCondition;
 
-    @Schema(description = "是否为 List 查询操作的返回字段", requiredMode = Schema.RequiredMode.REQUIRED, example = "true")
+    @Schema(description = "列表操作结果")
     private Boolean listOperationResult;
 
-    @Schema(description = "显示类型", requiredMode = Schema.RequiredMode.REQUIRED, example = "input")
+    @Schema(description = "HTML类型", example = "input")
     private String htmlType;
 
-    @Schema(description = "创建时间", requiredMode = Schema.RequiredMode.REQUIRED)
+    @Schema(description = "创建时间")
     private LocalDateTime createTime;
 
 }

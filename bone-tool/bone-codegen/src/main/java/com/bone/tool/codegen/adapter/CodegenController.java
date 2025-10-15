@@ -6,7 +6,7 @@ import com.bone.tool.codegen.application.dto.DatabaseTableResponse;
 import com.bone.tool.codegen.application.dto.CodegenTablePageRequest;
 import com.bone.tool.codegen.application.dto.CodegenTableResponse;
 import com.bone.tool.codegen.application.dto.CodegenCreateListRequest;
-import com.bone.tool.codegen.application.dto.CodegenUpdateRequest;
+import com.bone.tool.codegen.application.dto.CodegenTableRequest;
 import com.bone.tool.codegen.application.dto.CodegenDetailResponse;
 import com.bone.tool.codegen.application.dto.GenerateCustomCodeRequest;
 import com.bone.tool.codegen.domain.entity.TableInfo;
@@ -149,7 +149,7 @@ public class CodegenController {
 
     @Operation(summary = "更新代码")
     @PutMapping("/update")
-    public ApiResponse<Boolean> updateCodegen(@Valid @RequestBody CodegenUpdateRequest reqVO) {
+    public ApiResponse<Boolean> updateCodegen(@Valid @RequestBody CodegenTableRequest reqVO) {
         codegenService.updateCodegenTable(reqVO);
         return success(true);
     }
