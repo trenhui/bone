@@ -3,17 +3,12 @@ package com.bone.smartmeta.starter.config;
 import com.bone.smartmeta.engine.MetadataEngine;
 import com.bone.smartmeta.engine.core.SmartBaseEntity;
 import com.bone.smartmeta.engine.engine.ValidationEngine;
-import com.bone.smartmeta.engine.metadata.MetadataRegistry;
-import com.bone.smartmeta.engine.metadata.EntityMetadata;
-import com.bone.smartmeta.engine.metadata.FieldMetadata;
-import com.bone.smartmeta.engine.registry.MetadataRegistry;
+// 修复registry包找不到的问题
+// import com.bone.smartmeta.engine.registry.MetadataRegistry;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
-
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * SmartMeta Starter 自动配置类
