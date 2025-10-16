@@ -4,11 +4,14 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 /**
- * AI代理元数据模型类
+ * 增强的AI代理元数据模型类
+ * 支持复杂的代理配置、参数传递和多模型支持
  */
 @Getter
 @Setter
@@ -49,6 +52,12 @@ public class AgentMetadata implements Iterable<AgentMetadata> {
     
     // 子代理列表
     private List<AgentMetadata> children = new ArrayList<>();
+    
+    // 代理参数配置
+    private Map<String, Object> parameters = new HashMap<>();
+    
+    // 模型配置（兼容新的命名）
+    private String model;
     
     /**
      * 获取触发器

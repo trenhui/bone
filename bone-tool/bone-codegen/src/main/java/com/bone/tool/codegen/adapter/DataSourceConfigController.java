@@ -5,11 +5,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.bone.tool.codegen.application.dto.DataSourceConfigQueryRequest;
 import com.bone.tool.codegen.application.dto.DataSourceConfigSaveRequest;
 import com.bone.tool.codegen.application.dto.TestConnectionRequest;
-
-import cn.hutool.core.bean.BeanUtil;
+import com.bone.tool.codegen.application.converter.CodegenConverter;
 import com.bone.core.model.ApiResponse;
 import com.bone.tool.codegen.application.dto.DataSourceConfigResponse;
 import com.bone.tool.codegen.domain.entity.DataSourceConfig;
@@ -36,6 +34,9 @@ public class DataSourceConfigController {
 
     @Resource
     private DataSourceConfigService dataSourceConfigService;
+    
+    @Resource
+    private CodegenConverter codegenConverter;
 
     @PostMapping
     @Operation(summary = "创建数据源配置")
@@ -66,7 +67,7 @@ public class DataSourceConfigController {
     @Parameter(name = "id", description = "数据源配置ID", required = true, example = "1024")
     public ApiResponse<DataSourceConfigResponse> getDataSourceConfig(@PathVariable("id") Long id) {
         DataSourceConfig config = dataSourceConfigService.getDataSourceConfig(id);
-        DataSourceConfigResponse response = BeanUtil.toBean(config, DataSourceConfigResponse.class);
+        DataSourceConfigResponse response = codegenConverter.toDataSourceConfigResponse(config);
         // 密码脱敏处理
         if (response.getPassword() != null && !response.getPassword().isEmpty()) {
             response.setPassword("******");
@@ -83,7 +84,7 @@ public class DataSourceConfigController {
         
         // 转换并处理密码脱敏
         for (DataSourceConfig config : configList) {
-            DataSourceConfigResponse response = BeanUtil.toBean(config, DataSourceConfigResponse.class);
+            DataSourceConfigResponse response = codegenConverter.toDataSourceConfigResponse(config);
             if (response.getPassword() != null && !response.getPassword().isEmpty()) {
                 response.setPassword("******");
             }

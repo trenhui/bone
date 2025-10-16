@@ -4,7 +4,7 @@ import cn.hutool.core.map.MapUtil;
 import cn.hutool.core.util.StrUtil;
 import com.bone.tool.codegen.infrastructure.util.ReflectionUtil;
 import com.bone.core.domain.extension.ExtensibleObject;
-import com.bone.tool.codegen.application.CodegenConvert;
+import static com.bone.tool.codegen.application.converter.CodegenConverter.CONVERT;
 import com.bone.tool.codegen.domain.entity.CodegenColumn;
 import com.bone.tool.codegen.domain.entity.CodegenTable;
 import com.bone.tool.codegen.domain.entity.TableInfo;
@@ -103,7 +103,7 @@ public class CodegenBuilder {
     }
 
     public CodegenTable buildTable(TableInfo tableInfo) {
-        CodegenTable table = CodegenConvert.INSTANCE.convert(tableInfo);
+        CodegenTable table = CONVERT.convert(tableInfo);
         initTableDefault(table);
         return table;
     }

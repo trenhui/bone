@@ -11,9 +11,12 @@ import com.bone.tool.codegen.infrastructure.config.CodegenEngine;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -196,6 +199,40 @@ public class GenerateCustomCodeTest {
         Executable executable = () -> codegenService.generateCustomCode(request);
         Exception exception = assertThrows(Exception.class, executable, "数据源配置ID为null时应抛出异常");
         assertTrue(exception.getMessage().contains("数据源配置ID不能为空"), "异常消息应包含'数据源配置ID不能为空'");
+    }
+    
+    /**
+     * 测试新的generateCustomCode重载方法 - 直接写入OutputStream
+     */
+    @Test
+    public void testGenerateCustomCode_WithOutputStream() throws IOException {
+        // 1. 创建请求参数和输出流
+        GenerateCustomCodeRequest request = createDefaultRequest();
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+
+        // 2. 调用服务层方法生成代码并写入输出流
+        codegenService.generateCustomCode(request, outputStream);
+
+        // 3. 验证结果
+        byte[] zipBytes = outputStream.toByteArray();
+        assertNotNull(zipBytes, "生成的ZIP字节数组不应为空");
+        assertTrue(zipBytes.length > 0, "生成的ZIP字节数组长度应大于0");
+        System.out.println("使用OutputStream生成的ZIP大小: " + zipBytes.length + " 字节");
+    }
+    
+    /**
+     * 测试generateCustomCode重载方法 - 输出流为null的情况
+     */
+    @Test
+    public void testGenerateCustomCode_WithNullOutputStream() {
+        // 1. 创建请求参数
+        GenerateCustomCodeRequest request = createDefaultRequest();
+
+        // 2. 验证异常抛出
+        Executable executable = () -> codegenService.generateCustomCode(request, null);
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, executable, 
+                "输出流为null时应抛出IllegalArgumentException");
+        assertEquals("输出流不能为空", exception.getMessage(), "异常消息应为'输出流不能为空'");
     }
 
     /**

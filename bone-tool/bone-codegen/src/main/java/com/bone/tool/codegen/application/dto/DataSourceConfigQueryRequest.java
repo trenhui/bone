@@ -20,6 +20,6 @@ public class DataSourceConfigQueryRequest {
     @Schema(description = "数据源名", example = "test")
     private String name;
 
-    @Schema(description = "连接地址", example = "jdbc:mysql://127.0.0.1:3306/ruoyi-vue-pro")
+    @Schema(description = "连接地址", example = "jdbc:mysql://127.0.0.1:3306/test-db")
     private String url;
 }

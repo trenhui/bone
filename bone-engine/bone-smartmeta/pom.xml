@@ -11,24 +11,25 @@
 
     <groupId>com.bone</groupId>
     <artifactId>bone-smartmeta</artifactId>
-    <version>1.1.0</version>
+    <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Bone SmartMeta Enterprise</name>
     <description>企业级元数据操作系统，融合Salesforce、Workday和Coupa最佳实践</description>
 
     <modules>
         <module>bone-smartmeta-engine</module>
+        <module>bone-smartmeta-starter</module>
     </modules>
 
     <properties>
-        <java.version>17</java.version>
+        <java.version>1.8</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         
         <!-- Spring Boot 版本 -->
-        <spring-boot.version>3.2.5</spring-boot.version>
-        <spring-cloud.version>2023.0.1</spring-cloud.version>
+        <spring-boot.version>2.7.15</spring-boot.version>
         
         <!-- 第三方库版本 -->
         <jjwt.version>0.11.5</jjwt.version>

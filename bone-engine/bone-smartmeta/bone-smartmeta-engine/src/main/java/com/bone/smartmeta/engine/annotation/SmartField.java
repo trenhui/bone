@@ -3,7 +3,8 @@ package com.bone.smartmeta.engine.annotation;
 import java.lang.annotation.*;
 
 /**
- * 字段注解，用于通过代码定义字段元数据
+ * 智能字段注解，用于通过代码定义字段元数据
+ * 支持AI增强、智能填充和动态计算
  */
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
@@ -94,4 +95,55 @@ public @interface SmartField {
      * 是否可排序
      */
     boolean sortable() default true;
+
+    /**
+     * 是否启用AI智能填充
+     */
+    boolean aiAutoFill() default false;
+
+    /**
+     * AI填充提示词
+     */
+    String aiPrompt() default "";
+
+    /**
+     * 是否为AI分析的关键字段
+     */
+    boolean aiKeyField() default false;
+
+    /**
+     * 字段的敏感级别
+     */
+    SensitivityLevel sensitivity() default SensitivityLevel.NORMAL;
+
+    /**
+     * 敏感级别枚举
+     */
+    enum SensitivityLevel {
+        LOW,
+        NORMAL,
+        HIGH,
+        CONFIDENTIAL
+    }
+
+    /**
+     * 动态计算表达式
+     * 支持Groovy脚本
+     */
+    String calculationExpression() default "";
+
+    /**
+     * 计算依赖的字段列表
+     */
+    String[] calculationDependencies() default {};
+
+    /**
+     * 是否为虚拟字段（不存储到数据库）
+     */
+    boolean virtual() default false;
+
+    /**
+     * 字段分组
+     */
+    String group() default "General";
 }

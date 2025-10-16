@@ -66,6 +66,20 @@ public class FieldLevelSecurityMetadata {
     }
     
     /**
+     * 获取可读角色列表
+     */
+    public List<String> getReadableRoles() {
+        return this.readableRoles;
+    }
+    
+    /**
+     * 获取可编辑角色列表
+     */
+    public List<String> getEditableRoles() {
+        return this.editableRoles;
+    }
+    
+    /**
      * 获取安全配置信息
      * 返回当前对象本身作为安全配置
      */

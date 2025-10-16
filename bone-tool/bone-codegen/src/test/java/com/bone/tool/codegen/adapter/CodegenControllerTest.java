@@ -2,7 +2,7 @@ package com.bone.tool.codegen.adapter;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
-import com.bone.tool.codegen.adapter.CodegenController;
+import com.bone.tool.codegen.adapter.CodeGenController;
 import com.bone.tool.codegen.application.dto.*;
 import com.bone.tool.codegen.domain.entity.CodegenTable;
 import com.bone.tool.codegen.domain.entity.TableInfo;
@@ -43,13 +43,12 @@ public class CodegenControllerTest {
     private DatabaseTableService databaseTableService;
 
     @InjectMocks
-    private CodegenController codegenController;
+    private CodeGenController codegenController;
 
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;
     private GenerateCustomCodeRequest mockGenerateCustomCodeRequest;
     private CodegenCreateListRequest mockCodegenCreateListRequest;
-    private CodegenUpdateRequest mockCodegenUpdateRequest;
 
     @BeforeEach
     public void setUp() {
@@ -76,15 +75,7 @@ public class CodegenControllerTest {
         mockCodegenCreateListRequest.setDataSourceConfigId(1L);
         mockCodegenCreateListRequest.setTableNames(Arrays.asList("table1", "table2"));
         
-        // 初始化CodegenUpdateRequest模拟数据
-        mockCodegenUpdateRequest = new CodegenUpdateRequest();
-        CodegenTableSaveRequest tableSaveRequest = new CodegenTableSaveRequest();
-        tableSaveRequest.setId(1L);
-        tableSaveRequest.setTableName("table1");
-        tableSaveRequest.setModuleName("system");
-        tableSaveRequest.setPackgeName("com.example");
-        mockCodegenUpdateRequest.setTable(tableSaveRequest);
-        mockCodegenUpdateRequest.setColumns(Collections.emptyList());
+        // 移除CodegenUpdateRequest相关代码
     }
 
     @Test
@@ -205,17 +196,18 @@ public class CodegenControllerTest {
                 .andExpect(jsonPath("$.data").isArray());
     }
 
-    @Test
-    public void testUpdateCodegen() throws Exception {
-        // 执行HTTP请求并验证结果
-        mockMvc.perform(put("/api/v1/codegen/update")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(mockCodegenUpdateRequest)))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").value(true));
-    }
+    // 移除update相关测试方法，因为使用了已删除的DTO类
+    // @Test
+    // public void testUpdateCodegen() throws Exception {
+    //     // 执行HTTP请求并验证结果
+    //     mockMvc.perform(put("/api/v1/codegen/update")
+    //             .contentType(MediaType.APPLICATION_JSON)
+    //             .content(objectMapper.writeValueAsString(mockCodegenUpdateRequest)))
+    //             .andExpect(status().isOk())
+    //             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+    //             .andExpect(jsonPath("$.success").value(true))
+    //             .andExpect(jsonPath("$.data").value(true));
+    // }
 
     @Test
     public void testSyncCodegenFromDB() throws Exception {
