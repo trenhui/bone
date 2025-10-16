@@ -2,6 +2,7 @@ package com.bone.tool.codegen.adapter;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.tool.codegen.application.dto.*;
+import com.bone.tool.codegen.application.converter.CodegenConverter;
 import com.bone.tool.codegen.domain.entity.DataSourceConfig;
 import com.bone.tool.codegen.domain.service.DataSourceConfigService;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,6 +33,8 @@ public class DataSourceConfigControllerTest {
 
     @Mock
     private DataSourceConfigService dataSourceConfigService;
+    @Mock
+    private CodegenConverter codegenConverter;
 
     @InjectMocks
     private DataSourceConfigController dataSourceConfigController;
@@ -78,6 +81,7 @@ public class DataSourceConfigControllerTest {
         List<DataSourceConfig> configList = new ArrayList<>();
         configList.add(mockDataSourceConfig);
         when(dataSourceConfigService.getDataSourceConfigList()).thenReturn(configList);
+        when(codegenConverter.toDataSourceConfigResponse(mockDataSourceConfig)).thenReturn(mockResponse);
 
         // 执行请求并验证响应
         mockMvc.perform(get("/api/v1/data-source-configs"))
@@ -96,6 +100,7 @@ public class DataSourceConfigControllerTest {
     void testGetDataSourceConfigDetail() throws Exception {
         // 模拟服务层返回
         when(dataSourceConfigService.getDataSourceConfig(1L)).thenReturn(mockDataSourceConfig);
+        when(codegenConverter.toDataSourceConfigResponse(mockDataSourceConfig)).thenReturn(mockResponse);
 
         // 执行请求并验证响应
         mockMvc.perform(get("/api/v1/data-source-configs/1"))

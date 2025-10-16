@@ -1,314 +1,118 @@
 package com.bone.procurement.entity;
 
-import com.bone.smartmeta.engine.annotation.BusinessRule;
-import com.bone.smartmeta.engine.annotation.FieldType;
 import com.bone.smartmeta.engine.annotation.SmartEntity;
 import com.bone.smartmeta.engine.annotation.SmartField;
-import com.bone.smartmeta.engine.core.SmartBaseEntity;
+import com.bone.smartmeta.engine.annotation.BusinessRule;
+import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 
 /**
- * 智能采购订单实体类
- * 使用SmartMeta引擎提供动态建模和AI增强功能
+ * 采购订单实体类
+ * 演示bone-smartmeta在复杂业务场景中的应用，包括多级审批、金额计算和状态流转
  */
-@SmartEntity(
-    apiName = "PurchaseOrder",
-    label = "采购订单",
-    pluralLabel = "采购订单列表",
-    table = "sm_purchase_order",
-    domain = "Procurement",
-    category = "Spend Management",
-    description = "企业采购订单管理，支持多级审批、预算控制和AI智能分析",
-    ownershipModel = "Private",
-    trackHistory = true,
-    queryCacheTtl = 300,
-    cacheable = true,
-    // AI增强配置
-    aiModel = "GPT-4",
-    aiQueryOptimization = true,
-    aiFieldAutoFill = true,
-    aiIntelligentAnalysis = true,
-    importance = SmartEntity.EntityImportance.HIGH,
-    // 动态功能配置
-    dynamicFieldsSupport = true,
-    hotReloadEnabled = true
-)
-public class PurchaseOrder extends SmartBaseEntity {
+@Data
+@SmartEntity(displayName = "采购订单", description = "企业采购物料或服务的正式订单")
+public class PurchaseOrder {
     
-    @SmartField(
-        name = "orderNumber",
-        label = "订单编号",
-        type = FieldType.AUTO_NUMBER,
-        pattern = "PO-{YYYY}{MM}{seq:5}",
-        unique = true,
-        description = "系统自动生成的采购订单编号"
-    )
-    private String orderNumber;
+    private Long id;
     
-    @SmartField(
-        name = "orderTitle",
-        label = "订单标题",
-        type = FieldType.TEXT,
-        length = 200,
-        required = true,
-        description = "采购订单的标题描述"
-    )
-    private String orderTitle;
+    @SmartField(displayName = "订单编号", required = true, unique = true, maxLength = 50)
+    private String orderCode;
     
-    @SmartField(
-        name = "totalAmount",
-        label = "订单总额",
-        type = FieldType.CURRENCY,
-        precision = 18,
-        scale = 2,
-        required = true,
-        indexed = true,
-        description = "采购订单的总金额"
-    )
-    @BusinessRule(
-        name = "totalAmountPositive",
-        expression = "totalAmount > 0",
-        errorMessage = "订单总额必须大于零",
-        severity = "ERROR"
-    )
-    private BigDecimal totalAmount;
+    @SmartField(displayName = "订单名称", required = true, maxLength = 200)
+    private String orderName;
     
-    @SmartField(
-        name = "vendorId",
-        label = "供应商ID",
-        type = FieldType.LOOKUP,
-        referenceTo = "Vendor",
-        required = true,
-        indexed = true,
-        description = "关联的供应商ID"
-    )
-    private String vendorId;
+    @SmartField(displayName = "供应商ID", required = true)
+    private Long supplierId;
     
-    @SmartField(
-        name = "departmentId",
-        label = "部门ID",
-        type = FieldType.LOOKUP,
-        referenceTo = "Department",
-        required = true,
-        indexed = true,
-        description = "申请采购的部门ID"
-    )
-    private String departmentId;
+    @SmartField(displayName = "订单类型", options = {"标准采购", "紧急采购", "战略性采购", "临时采购"})
+    private String orderType;
     
-    @SmartField(
-        name = "orderStatus",
-        label = "订单状态",
-        type = FieldType.PICKLIST,
-        required = true,
-        picklistValues = {"Draft", "Submitted", "In_Review", "Approved", "Rejected", "Ordered", "Cancelled"},
-        defaultValue = "Draft",
-        indexed = true,
-        description = "采购订单的当前状态"
-    )
+    @SmartField(displayName = "订单状态", options = {"草稿", "待审批", "已审批", "已拒绝", "已下单", "已发货", "已收货", "已完成", "已取消"})
     private String orderStatus;
     
-    @SmartField(
-        name = "needByDate",
-        label = "需求日期",
-        type = FieldType.DATE,
-        description = "期望收到采购物品的日期"
-    )
-    private LocalDate needByDate;
+    @SmartField(displayName = "预计金额", required = true)
+    private BigDecimal estimatedAmount;
     
-    @SmartField(
-        name = "description",
-        label = "订单描述",
-        type = FieldType.TEXT_AREA,
-        length = 1000,
-        description = "采购订单的详细描述"
-    )
-    private String description;
+    @SmartField(displayName = "实际金额")
+    private BigDecimal actualAmount;
     
-    @SmartField(
-        name = "priority",
-        label = "优先级",
-        type = FieldType.PICKLIST,
-        picklistValues = {"Low", "Medium", "High", "Critical"},
-        defaultValue = "Medium",
-        indexed = true,
-        description = "采购订单的优先级"
-    )
-    private String priority;
+    @SmartField(displayName = "订单创建日期")
+    private LocalDateTime creationDate;
     
-    @SmartField(
-        name = "budgetAvailable",
-        label = "预算可用",
-        type = FieldType.BOOLEAN,
-        defaultValue = "true",
-        description = "指示是否有足够的预算"
-    )
-    private Boolean budgetAvailable;
+    @SmartField(displayName = "期望交货日期", required = true)
+    private LocalDateTime expectedDeliveryDate;
     
-    @SmartField(
-        name = "totalAmountWithTax",
-        label = "含税总金额",
-        type = FieldType.FORMULA,
-        description = "包含税费的订单总金额，通过公式计算",
-        // 动态计算配置
-        calculationExpression = "totalAmount * 1.13", // 假设税率为13%
-        calculationDependencies = {"totalAmount"},
-        virtual = true,
-        group = "Financial"
-    )
+    @SmartField(displayName = "实际交货日期")
+    private LocalDateTime actualDeliveryDate;
+    
+    @SmartField(displayName = "下单人ID")
+    private Long createdBy;
+    
+    @SmartField(displayName = "审批人ID")
+    private Long approvedBy;
+    
+    @SmartField(displayName = "审批日期")
+    private LocalDateTime approvedDate;
+    
+    @SmartField(displayName = "收货地址ID")
+    private Long deliveryAddressId;
+    
+    @SmartField(displayName = "付款方式", options = {"货到付款", "预付30%", "预付50%", "全额预付", "月结30天", "月结60天"})
+    private String paymentMethod;
+    
+    @SmartField(displayName = "税率", defaultValue = "0.13")
+    private Double taxRate;
+    
+    @SmartField(displayName = "采购项目", multiple = true)
+    private List<PurchaseOrderItem> orderItems;
+    
+    // 计算字段：订单总金额（不含税）
+    @SmartField(displayName = "订单总金额（不含税）", calculated = true,
+                calculationExpression = "${orderItems.stream().mapToDouble(item -> item.getUnitPrice().multiply(new java.math.BigDecimal(item.getQuantity()))).sum()}")
+    private BigDecimal totalAmountWithoutTax;
+    
+    // 计算字段：订单税额
+    @SmartField(displayName = "订单税额", calculated = true,
+                calculationExpression = "${totalAmountWithoutTax.multiply(java.math.BigDecimal.valueOf(${taxRate}))}")
+    private BigDecimal taxAmount;
+    
+    // 计算字段：订单总金额（含税）
+    @SmartField(displayName = "订单总金额（含税）", calculated = true,
+                calculationExpression = "${totalAmountWithoutTax.add(${taxAmount})}")
     private BigDecimal totalAmountWithTax;
     
-    @SmartField(
-        name = "isHighValueOrder",
-        label = "是否高价值订单",
-        type = FieldType.FORMULA,
-        description = "指示是否为高价值订单，通过公式计算",
-        // 动态计算配置
-        calculationExpression = "totalAmount > 10000",
-        calculationDependencies = {"totalAmount"},
-        virtual = true,
-        aiKeyField = true,
-        group = "Analysis"
-    )
-    private Boolean isHighValueOrder;
+    // 计算字段：订单是否超时
+    @SmartField(displayName = "是否超时", calculated = true,
+                expression = "${orderStatus.equals('已下单') && ${expectedDeliveryDate}.isBefore(java.time.LocalDateTime.now())}")
+    private Boolean isOverdue;
     
-    @SmartField(
-        name = "intelligentSuggestion",
-        label = "智能建议",
-        type = FieldType.TEXT_AREA,
-        length = 2000,
-        description = "AI生成的智能采购建议",
-        // AI增强配置
-        aiAutoFill = true,
-        aiPrompt = "基于订单金额、供应商历史和部门预算，提供智能采购优化建议",
-        virtual = true,
-        group = "AI Insights"
-    )
-    private String intelligentSuggestion;
+    // 计算字段：订单延迟天数
+    @SmartField(displayName = "延迟天数", calculated = true,
+                expression = "${isOverdue ? java.time.temporal.ChronoUnit.DAYS.between(${expectedDeliveryDate}, java.time.LocalDateTime.now()) : 0}")
+    private Long delayDays;
     
-    @SmartField(
-        name = "riskScore",
-        label = "风险评分",
-        type = FieldType.NUMBER,
-        precision = 5,
-        scale = 2,
-        description = "AI计算的采购风险评分（0-100）",
-        // AI增强配置
-        aiKeyField = true,
-        virtual = true,
-        group = "AI Insights"
-    )
-    private BigDecimal riskScore;
+    // 业务规则验证
+    @BusinessRule(expression = "${estimatedAmount}.compareTo(java.math.BigDecimal.ZERO) > 0", message = "预计金额必须大于0")
+    @BusinessRule(expression = "${expectedDeliveryDate}.isAfter(java.time.LocalDateTime.now())", message = "期望交货日期必须晚于当前日期")
+    @BusinessRule(expression = "${orderItems != null && !${orderItems}.isEmpty()}", message = "采购订单必须包含至少一个采购项目")
     
-    @BusinessRule(
-        name = "BudgetCheck",
-        expression = "totalAmount <= department.budgetRemaining",
-        errorMessage = "申请金额超过部门预算余额",
-        severity = "ERROR"
-    )
-    private String budgetRule;
+    // 虚拟字段：订单摘要
+    @SmartField(displayName = "订单摘要", virtual = true,
+                expression = "订单${orderCode} - ${supplierName} - ${totalAmountWithTax}元 - ${orderStatus}")
+    private String orderSummary;
     
-    @BusinessRule(
-        name = "ApprovalRequired",
-        expression = "totalAmount > 5000 || priority == 'High' || priority == 'Critical'",
-        errorMessage = "需要审批流程",
-        severity = "INFO"
-    )
-    private String approvalRule;
-
-    // 构造函数
-    public PurchaseOrder() {
-        // 初始化默认值
-        this.budgetAvailable = true;
-    }
-
-    // Getters and Setters
-    public String getOrderNumber() {
-        return orderNumber;
-    }
-
-    public void setOrderNumber(String orderNumber) {
-        this.orderNumber = orderNumber;
-    }
-
-    public String getOrderTitle() {
-        return orderTitle;
-    }
-
-    public void setOrderTitle(String orderTitle) {
-        this.orderTitle = orderTitle;
-    }
-
-    public BigDecimal getTotalAmount() {
-        return totalAmount;
-    }
-
-    public void setTotalAmount(BigDecimal totalAmount) {
-        this.totalAmount = totalAmount;
-    }
-
-    public String getVendorId() {
-        return vendorId;
-    }
-
-    public void setVendorId(String vendorId) {
-        this.vendorId = vendorId;
-    }
-
-    public String getDepartmentId() {
-        return departmentId;
-    }
-
-    public void setDepartmentId(String departmentId) {
-        this.departmentId = departmentId;
-    }
-
-    public String getOrderStatus() {
-        return orderStatus;
-    }
-
-    public void setOrderStatus(String orderStatus) {
-        this.orderStatus = orderStatus;
-    }
-
-    public LocalDate getNeedByDate() {
-        return needByDate;
-    }
-
-    public void setNeedByDate(LocalDate needByDate) {
-        this.needByDate = needByDate;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public String getPriority() {
-        return priority;
-    }
-
-    public void setPriority(String priority) {
-        this.priority = priority;
-    }
-
-    public Boolean getBudgetAvailable() {
-        return budgetAvailable;
-    }
-
-    public void setBudgetAvailable(Boolean budgetAvailable) {
-        this.budgetAvailable = budgetAvailable;
-    }
-
-    public BigDecimal getTotalAmountWithTax() {
-        return totalAmountWithTax;
-    }
-
-    public Boolean getIsHighValueOrder() {
-        return isHighValueOrder;
-    }
+    // 审批流相关字段
+    @SmartField(displayName = "当前审批节点")
+    private String currentApprovalNode;
+    
+    @SmartField(displayName = "审批流程ID")
+    private String approvalProcessId;
+    
+    // 备注信息
+    @SmartField(displayName = "备注", maxLength = 1000)
+    private String remarks;
 }

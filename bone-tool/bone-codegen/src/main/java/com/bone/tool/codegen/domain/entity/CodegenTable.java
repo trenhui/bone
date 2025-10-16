@@ -38,6 +38,14 @@ public class CodegenTable extends AbstractEntity<Long> {
      */
     private Long dataSourceConfigId;
     
+    public Long getDataSourceConfigId() {
+        return dataSourceConfigId;
+    }
+    
+    public void setDataSourceConfigId(Long dataSourceConfigId) {
+        this.dataSourceConfigId = dataSourceConfigId;
+    }
+    
     /**
      * 生成场景
      */
@@ -49,6 +57,14 @@ public class CodegenTable extends AbstractEntity<Long> {
      * 表名
      */
     private String tableName;
+    
+    public String getTableName() {
+        return tableName;
+    }
+    
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
+    }
     
     /**
      * 表描述
@@ -67,6 +83,14 @@ public class CodegenTable extends AbstractEntity<Long> {
      */
     private String packageName;
     
+    public String getPackageName() {
+        return packageName;
+    }
+    
+    public void setPackageName(String packageName) {
+        this.packageName = packageName;
+    }
+    
     /**
      * 业务名称
      */
@@ -78,6 +102,14 @@ public class CodegenTable extends AbstractEntity<Long> {
      * 首字母大写的驼峰命名，如：SysUser、SysMenu、SysDictData
      */
     private String className;
+    
+    public String getClassName() {
+        return className;
+    }
+    
+    public void setClassName(String className) {
+        this.className = className;
+    }
     
     /**
      * 类描述
