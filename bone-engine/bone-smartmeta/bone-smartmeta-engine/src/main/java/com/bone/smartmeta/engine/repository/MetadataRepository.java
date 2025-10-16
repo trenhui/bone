@@ -4,9 +4,11 @@ import com.bone.smartmeta.engine.metadata.EntityMetadata;
 import com.bone.smartmeta.engine.metadata.PackageDefinition;
 import com.bone.smartmeta.engine.metadata.WorkflowMetadata;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.Map; // 添加Map导入
 
 /**
  * 元数据仓库接口，提供元数据的持久化操作

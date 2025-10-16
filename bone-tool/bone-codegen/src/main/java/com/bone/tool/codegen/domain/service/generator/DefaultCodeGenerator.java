@@ -1,9 +1,5 @@
 package com.bone.tool.codegen.domain.service.generator;
 
-import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.util.ObjectUtil;
-import cn.hutool.core.util.StrUtil;
-import cn.hutool.system.SystemUtil;
 import com.bone.tool.codegen.domain.entity.CodegenColumn;
 import com.bone.tool.codegen.domain.entity.CodegenTable;
 import com.bone.tool.codegen.domain.entity.DataSourceConfig;
@@ -13,20 +9,17 @@ import com.bone.tool.codegen.domain.enums.ModelTypeEnum;
 import com.bone.tool.codegen.domain.service.renderer.TemplateRenderer;
 import com.bone.tool.codegen.infrastructure.util.ReflectionUtil;
 
-import com.google.common.collect.Maps;
+import jakarta.annotation.PostConstruct;
 import lombok.Setter;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import javax.annotation.PostConstruct;
+import java.util.Objects;
 
 import java.io.IOException;
 import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import static cn.hutool.core.map.MapUtil.getStr;
-import static cn.hutool.core.text.CharSequenceUtil.*;
 
 /**
  * 默认代码生成器实现
@@ -54,8 +47,28 @@ public class DefaultCodeGenerator implements CodeGenerator {
     @Autowired
     public DefaultCodeGenerator(TemplateRenderer templateRenderer) {
         this.templateRenderer = templateRenderer;
-        // 设置 javaxEnable，按照是否使用 JDK17 来判断
-        this.jakartaEnable = SystemUtil.getJavaInfo().isJavaVersionAtLeast(1700); // 17.00 * 100
+        // 设置 jakartaEnable，按照是否使用 JDK17 来判断
+        String javaVersion = System.getProperty("java.version");
+        // 解析Java版本号，如 "17.0.1" -> 17
+        int majorVersion = 8; // 默认JDK8
+        if (javaVersion.startsWith("1.")) {
+            // 对于JDK 1.8及以下版本
+            majorVersion = Integer.parseInt(javaVersion.substring(2, 3));
+        } else {
+            // 对于JDK 9及以上版本
+            int dotIndex = javaVersion.indexOf('.');
+            if (dotIndex > 0) {
+                majorVersion = Integer.parseInt(javaVersion.substring(0, dotIndex));
+            } else {
+                // 处理纯数字版本号
+                try {
+                    majorVersion = Integer.parseInt(javaVersion);
+                } catch (NumberFormatException e) {
+                    // 默认使用8
+                }
+            }
+        }
+        this.jakartaEnable = majorVersion >= 17;
         initGlobalBindingMap();
     }
 
@@ -69,14 +82,11 @@ public class DefaultCodeGenerator implements CodeGenerator {
         globalBindingMap.put("baseVOPackage", "com.bone.metadata.sdk.domain.vo");
         globalBindingMap.put("baseQueryClassName", "BaseQuery");
         globalBindingMap.put("baseQueryPackage", "com.bone.metadata.sdk.query");
-        globalBindingMap.put("collectionUtilsClassName", "CollectionUtils");
-        globalBindingMap.put("collectionUtilsPackage", "org.apache.commons.collections4");
-        globalBindingMap.put("objectUtilsClassName", "ObjectUtils");
-        globalBindingMap.put("objectUtilsPackage", "org.apache.commons.lang3");
         globalBindingMap.put("dateTimeFormatterClassName", "DateTimeFormatter");
         globalBindingMap.put("dateTimeFormatterPackage", "java.time.format");
-        globalBindingMap.put("strUtil", "cn.hutool.core.util.StrUtil");
-        globalBindingMap.put("dateUtil", "cn.hutool.core.date.DateUtil");
+        // 使用Java标准库
+        globalBindingMap.put("strUtil", "java.util.Objects");
+        globalBindingMap.put("dateUtil", "java.time.LocalDateTime");
         // 保留原有必要的全局配置
         globalBindingMap.put("CommonResultClassName", "com.bone.core.model.ApiResponse");
         globalBindingMap.put("PageResultClassName", "com.bone.core.model.PageResult");
@@ -97,7 +107,7 @@ public class DefaultCodeGenerator implements CodeGenerator {
             List<List<CodegenColumn>> subColumnsList = new ArrayList<>();
             
             // 初始化子表列信息
-            if (CollUtil.isNotEmpty(subTables)) {
+            if (subTables != null && !subTables.isEmpty()) {
                 for (CodegenTable subTable : subTables) {
                     List<CodegenColumn> subColumns = (List<CodegenColumn>) ReflectionUtil.getFieldValue(subTable, "columns");
                     if (subColumns != null) {
@@ -114,7 +124,7 @@ public class DefaultCodeGenerator implements CodeGenerator {
             generateMainTableCode(zipOut, params, modelType);
             
             // 生成子表代码
-            if (CollUtil.isNotEmpty(subTables)) {
+            if (subTables != null && !subTables.isEmpty()) {
                 generateSubTableCode(zipOut, params, modelType);
             }
         } catch (Exception e) {
@@ -131,7 +141,7 @@ public class DefaultCodeGenerator implements CodeGenerator {
         templates.forEach((templatePath, filePath) -> {
             try {
                 String content = generateCode(templatePath, filePath, params);
-                if (StringUtils.isNotEmpty(content)) {
+                if (content != null && !content.isEmpty()) {
                     zipOut.putNextEntry(new ZipEntry(filePath));
                     zipOut.write(content.getBytes("UTF-8"));
                     zipOut.closeEntry();
@@ -145,7 +155,7 @@ public class DefaultCodeGenerator implements CodeGenerator {
     @Override
     public void generateSubTableCode(ZipOutputStream zipOut, Map<String, Object> params, Integer modelType) {
         List<CodegenTable> subTables = (List<CodegenTable>) params.get("subTables");
-        if (CollUtil.isEmpty(subTables)) {
+        if (subTables == null || subTables.isEmpty()) {
             return;
         }
         
@@ -165,7 +175,7 @@ public class DefaultCodeGenerator implements CodeGenerator {
                 
                 try {
                     String content = generateCode(templatePath, filePath, params);
-                    if (StringUtils.isNotEmpty(content)) {
+                    if (content != null && !content.isEmpty()) {
                         zipOut.putNextEntry(new ZipEntry(filePath));
                         zipOut.write(content.getBytes("UTF-8"));
                         zipOut.closeEntry();
@@ -210,11 +220,11 @@ public class DefaultCodeGenerator implements CodeGenerator {
             // 生成代码
             templates.forEach((templatePath, filePath) -> {
                 try {
-                    String content = generateCode(templatePath, filePath, params);
-                    if (StringUtils.isNotEmpty(content)) {
-                        result.put(filePath, content);
-                    }
-                } catch (Exception e) {
+                String content = generateCode(templatePath, filePath, params);
+                if (content != null && !content.isEmpty()) {
+                    result.put(filePath, content);
+                }
+            } catch (Exception e) {
                     throw new RuntimeException("生成代码失败: " + filePath, e);
                 }
             });
@@ -235,15 +245,15 @@ public class DefaultCodeGenerator implements CodeGenerator {
 
     private boolean shouldSkipSubTableTemplate(String templatePath, Integer templateType) {
         if (templatePath.contains("_normal")
-                && ObjectUtil.notEqual(templateType, CodegenTemplateTypeEnum.MASTER_NORMAL.getType())) {
+                && !Objects.equals(templateType, CodegenTemplateTypeEnum.MASTER_NORMAL.getType())) {
             return true;
         }
         if (templatePath.contains("_erp")
-                && ObjectUtil.notEqual(templateType, CodegenTemplateTypeEnum.MASTER_ERP.getType())) {
+                && !Objects.equals(templateType, CodegenTemplateTypeEnum.MASTER_ERP.getType())) {
             return true;
         }
         if (templatePath.contains("_inner")
-                && ObjectUtil.notEqual(templateType, CodegenTemplateTypeEnum.MASTER_INNER.getType())) {
+                && !Objects.equals(templateType, CodegenTemplateTypeEnum.MASTER_INNER.getType())) {
             return true;
         }
         return false;
@@ -281,7 +291,7 @@ public class DefaultCodeGenerator implements CodeGenerator {
         bindingMap.put("sceneEnum", CodegenSceneEnum.valueOf(scene));
         
         String basePackage = ReflectionUtil.getStringFieldValue(table, "packageName");
-        if (StringUtils.isNotBlank(basePackage) && basePackage.contains(".")) {
+        if (basePackage != null && !basePackage.trim().isEmpty() && basePackage.contains(".")) {
             basePackage = basePackage.substring(basePackage.lastIndexOf('.') + 1, basePackage.length());
         }
         bindingMap.put("basePackage", basePackage);
@@ -336,7 +346,7 @@ public class DefaultCodeGenerator implements CodeGenerator {
 
     private void initMasterSlaveBinding(Map<String, Object> bindingMap, CodegenTable table, 
                                        List<CodegenTable> subTables, List<List<CodegenColumn>> subColumnsList) {
-        if (CollUtil.isNotEmpty(subTables)) {
+        if (subTables != null && !subTables.isEmpty()) {
             bindingMap.put("subTables", subTables);
             bindingMap.put("subColumnsList", subColumnsList);
             
@@ -409,49 +419,51 @@ public class DefaultCodeGenerator implements CodeGenerator {
     }
 
     private String formatFilePath(String filePath, Map<String, Object> bindingMap) {
-        filePath = StrUtil.replace(filePath, "${basePackage}",
-                getStr(bindingMap, "basePackage").replaceAll("\\.", "/"));
-        filePath = StrUtil.replace(filePath, "${classNameVar}",
-                getStr(bindingMap, "classNameVar"));
-        filePath = StrUtil.replace(filePath, "${modelNameVar}",
-                getStr(bindingMap, "modelNameVar"));
-        filePath = StrUtil.replace(filePath, "${simpleClassName}",
-                getStr(bindingMap, "simpleClassName"));
+        // 安全地从Map中获取值并转换为字符串
+        String basePackage = bindingMap.get("basePackage") != null ? bindingMap.get("basePackage").toString() : "";
+        String classNameVar = bindingMap.get("classNameVar") != null ? bindingMap.get("classNameVar").toString() : "";
+        String modelNameVar = bindingMap.get("modelNameVar") != null ? bindingMap.get("modelNameVar").toString() : "";
+        String simpleClassName = bindingMap.get("simpleClassName") != null ? bindingMap.get("simpleClassName").toString() : "";
+        
+        filePath = filePath.replace("${basePackage}", basePackage.replaceAll("\\.", "/"));
+        filePath = filePath.replace("${classNameVar}", classNameVar);
+        filePath = filePath.replace("${modelNameVar}", modelNameVar);
+        filePath = filePath.replace("${simpleClassName}", simpleClassName);
         
         // sceneEnum 替换
         CodegenSceneEnum sceneEnum = (CodegenSceneEnum) bindingMap.get("sceneEnum");
         try {
-            filePath = StrUtil.replace(filePath, "${sceneEnum.prefixClass}", ReflectionUtil.getStringFieldValue(sceneEnum, "prefixClass"));
-            filePath = StrUtil.replace(filePath, "${sceneEnum.basePackage}", ReflectionUtil.getStringFieldValue(sceneEnum, "basePackage"));
-            filePath = StrUtil.replace(filePath, "${sceneEnum.scene}", String.valueOf(ReflectionUtil.getIntegerFieldValue(sceneEnum, "scene")));
+            filePath = filePath.replace("${sceneEnum.prefixClass}", ReflectionUtil.getStringFieldValue(sceneEnum, "prefixClass"));
+            filePath = filePath.replace("${sceneEnum.basePackage}", ReflectionUtil.getStringFieldValue(sceneEnum, "basePackage"));
+            filePath = filePath.replace("${sceneEnum.scene}", String.valueOf(ReflectionUtil.getIntegerFieldValue(sceneEnum, "scene")));
         } catch (Exception e) {
             // 使用默认值防止编译错误
-            filePath = StrUtil.replace(filePath, "${sceneEnum.prefixClass}", "");
-            filePath = StrUtil.replace(filePath, "${sceneEnum.basePackage}", "admin");
-            filePath = StrUtil.replace(filePath, "${sceneEnum.scene}", "1");
+            filePath = filePath.replace("${sceneEnum.prefixClass}", "");
+            filePath = filePath.replace("${sceneEnum.basePackage}", "admin");
+            filePath = filePath.replace("${sceneEnum.scene}", "1");
         }
         
         // table 相关替换
         CodegenTable table = (CodegenTable) bindingMap.get("table");
-        filePath = StrUtil.replace(filePath, "${table.moduleName}", String.valueOf(ReflectionUtil.getStringFieldValue(table, "moduleName")));
-        filePath = StrUtil.replace(filePath, "${table.packageName}", String.valueOf(ReflectionUtil.getStringFieldValue(table, "packageName")));
-        filePath = StrUtil.replace(filePath, "${table.businessName}", String.valueOf(ReflectionUtil.getStringFieldValue(table, "businessName")));
-        filePath = StrUtil.replace(filePath, "${table.className}", String.valueOf(ReflectionUtil.getStringFieldValue(table, "className")));
+        filePath = filePath.replace("${table.moduleName}", String.valueOf(ReflectionUtil.getStringFieldValue(table, "moduleName")));
+        filePath = filePath.replace("${table.packageName}", String.valueOf(ReflectionUtil.getStringFieldValue(table, "packageName")));
+        filePath = filePath.replace("${table.businessName}", String.valueOf(ReflectionUtil.getStringFieldValue(table, "businessName")));
+        filePath = filePath.replace("${table.className}", String.valueOf(ReflectionUtil.getStringFieldValue(table, "className")));
         
         // 普通变量替换
-        filePath = StrUtil.replace(filePath, "${moduleName}", String.valueOf(ReflectionUtil.getStringFieldValue(table, "moduleName")));
-        filePath = StrUtil.replace(filePath, "${packageName}", String.valueOf(ReflectionUtil.getStringFieldValue(table, "packageName")));
-        filePath = StrUtil.replace(filePath, "${businessName}", String.valueOf(ReflectionUtil.getStringFieldValue(table, "businessName")));
-        filePath = StrUtil.replace(filePath, "${className}", String.valueOf(ReflectionUtil.getStringFieldValue(table, "className")));
+        filePath = filePath.replace("${moduleName}", String.valueOf(ReflectionUtil.getStringFieldValue(table, "moduleName")));
+        filePath = filePath.replace("${packageName}", String.valueOf(ReflectionUtil.getStringFieldValue(table, "packageName")));
+        filePath = filePath.replace("${businessName}", String.valueOf(ReflectionUtil.getStringFieldValue(table, "businessName")));
+        filePath = filePath.replace("${className}", String.valueOf(ReflectionUtil.getStringFieldValue(table, "className")));
         
         // 子表相关替换
         Integer subIndex = (Integer) bindingMap.get("subIndex");
         if (subIndex != null) {
             CodegenTable subTable = ((List<CodegenTable>) bindingMap.get("subTables")).get(subIndex);
-            filePath = StrUtil.replace(filePath, "${subTable.moduleName}", String.valueOf(ReflectionUtil.getStringFieldValue(subTable, "moduleName")));
-            filePath = StrUtil.replace(filePath, "${subTable.businessName}", String.valueOf(ReflectionUtil.getStringFieldValue(subTable, "businessName")));
-            filePath = StrUtil.replace(filePath, "${subTable.className}", String.valueOf(ReflectionUtil.getStringFieldValue(subTable, "className")));
-            filePath = StrUtil.replace(filePath, "${subSimpleClassName}",
+            filePath = filePath.replace("${subTable.moduleName}", String.valueOf(ReflectionUtil.getStringFieldValue(subTable, "moduleName")));
+            filePath = filePath.replace("${subTable.businessName}", String.valueOf(ReflectionUtil.getStringFieldValue(subTable, "businessName")));
+            filePath = filePath.replace("${subTable.className}", String.valueOf(ReflectionUtil.getStringFieldValue(subTable, "className")));
+            filePath = filePath.replace("${subSimpleClassName}",
                     ((List<String>) bindingMap.get("subSimpleClassNames")).get(subIndex));
         }
         
@@ -463,34 +475,48 @@ public class DefaultCodeGenerator implements CodeGenerator {
         content = content.replaceAll(",\\n}", "\\n}").replaceAll(",\\n  }", "\\n  }");
         
         // Vue 界面：去除多的 dateFormatter
-        if (StrUtil.count(content, "dateFormatter") == 1) {
+        if (countOccurrencesOf(content, "dateFormatter") == 1) {
             content = removeLineContains(content, "dateFormatter");
         }
         
         // Vue2 界面：修正 $refs
-        if (StrUtil.count(content, "this.refs") >= 1) {
+        if (countOccurrencesOf(content, "this.refs") >= 1) {
             content = content.replace("this.refs", "this.$refs");
         }
         
         // Vue 界面：去除未使用的 dict 相关
-        if (StrUtil.count(content, "getIntDictOptions") == 1) {
+        if (countOccurrencesOf(content, "getIntDictOptions") == 1) {
             content = content.replace("getIntDictOptions, ", "");
         }
-        if (StrUtil.count(content, "getStrDictOptions") == 1) {
+        if (countOccurrencesOf(content, "getStrDictOptions") == 1) {
             content = content.replace("getStrDictOptions, ", "");
         }
-        if (StrUtil.count(content, "getBoolDictOptions") == 1) {
+        if (countOccurrencesOf(content, "getBoolDictOptions") == 1) {
             content = content.replace("getBoolDictOptions, ", "");
         }
-        if (StrUtil.count(content, "DICT_TYPE.") == 0) {
+        if (countOccurrencesOf(content, "DICT_TYPE.") == 0) {
             content = removeLineContains(content, "DICT_TYPE");
         }
         
         return content;
     }
+    
+    // 自定义实现字符串计数方法
+    private int countOccurrencesOf(String str, String sub) {
+        if (str == null || sub == null || str.isEmpty() || sub.isEmpty()) {
+            return 0;
+        }
+        int count = 0;
+        int index = 0;
+        while ((index = str.indexOf(sub, index)) != -1) {
+            count++;
+            index += sub.length();
+        }
+        return count;
+    }
 
     private static String removeLineContains(String content, String sequence) {
-        if (StrUtil.isEmpty(content) || StrUtil.isEmpty(sequence)) {
+        if (content == null || content.isEmpty() || sequence == null || sequence.isEmpty()) {
             return content;
         }
         return java.util.Arrays.stream(content.split("\\n"))
@@ -498,22 +524,72 @@ public class DefaultCodeGenerator implements CodeGenerator {
                 .collect(java.util.stream.Collectors.joining("\n"));
     }
 
-    public String toPascalCase(String input) {
-        if (input == null || input.isEmpty()) {
-            return input;
+    /**
+     * 将字符串转为使用指定符号分隔的格式
+     */
+    private String toSymbolCase(String str, char symbol) {
+        if (str == null || str.isEmpty()) {
+            return str;
         }
-
-        // 统一将 '-' 和 '_' 都作为分隔符
-        String[] parts = input.replaceAll("-", "_").split("_");
-
         StringBuilder result = new StringBuilder();
-        for (String part : parts) {
-            if (!part.isEmpty()) {
-                // 每个单词首字母大写，其余小写
-                result.append(Character.toUpperCase(part.charAt(0)))
-                        .append(part.substring(1).toLowerCase());
+        for (int i = 0; i < str.length(); i++) {
+            char c = str.charAt(i);
+            if (i > 0 && Character.isUpperCase(c)) {
+                result.append(symbol);
             }
+            result.append(Character.toLowerCase(c));
         }
         return result.toString();
     }
+    
+    /**
+     * 将字符串首字母转为大写
+     */
+    private String upperFirst(String str) {
+        if (str == null || str.isEmpty()) {
+            return str;
+        }
+        return str.substring(0, 1).toUpperCase() + str.substring(1);
+    }
+    
+    /**
+     * 将字符串首字母转为小写
+     */
+    private String lowerFirst(String str) {
+        if (str == null || str.isEmpty()) {
+            return str;
+        }
+        return str.substring(0, 1).toLowerCase() + str.substring(1);
+    }
+    
+    /**
+     * 将驼峰命名转为下划线命名
+     */
+    private String toUnderlineCase(String str) {
+        if (str == null || str.isEmpty()) {
+            return str;
+        }
+        return toSymbolCase(str, '_');
+    }
+    
+    /**
+     * 转为首字母大写的驼峰命名法（Pascal Case）
+     */
+    public String toPascalCase(String str) {
+        if (str == null || str.isEmpty()) {
+            return str;
+        }
+        return str.substring(0, 1).toUpperCase() + str.substring(1);
+    }
+    
+    /**
+     * 移除字符串前缀
+     */
+    private String removePrefix(String str, String prefix) {
+        if (str == null || prefix == null || !str.startsWith(prefix)) {
+            return str;
+        }
+        return str.substring(prefix.length());
+    }
+
 }

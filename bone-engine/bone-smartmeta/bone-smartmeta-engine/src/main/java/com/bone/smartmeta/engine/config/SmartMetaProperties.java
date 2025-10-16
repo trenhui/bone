@@ -47,6 +47,12 @@ public class SmartMetaProperties {
     private boolean expressionCacheEnabled = true;
     
     /**
+     * 是否启用严格模式
+     * 在严格模式下，表达式计算失败会抛出异常
+     */
+    private boolean strictMode = true;
+    
+    /**
      * 热加载间隔（毫秒）
      */
     private long hotReloadInterval = 60000; // 默认1分钟

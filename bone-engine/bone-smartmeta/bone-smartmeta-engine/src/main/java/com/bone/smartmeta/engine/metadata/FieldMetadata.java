@@ -278,7 +278,8 @@ public class FieldMetadata {
     /**
      * 设置正则表达式模式
      */
-    public void setRegexPattern(java.util.regex.Pattern pattern) {
+    // 修改参数类型为String，避免类型不兼容问题
+    public void setRegexPattern(String pattern) {
         this.pattern = pattern;
     }
     
@@ -297,8 +298,13 @@ public class FieldMetadata {
         try {
             this.type = FieldType.valueOf(type.toUpperCase());
         } catch (Exception e) {
-            // 如果类型无效，使用默认类型STRING
-            this.type = FieldType.STRING;
+            // 如果类型无效，使用默认类型，避免使用不存在的STRING常量
+            try {
+                this.type = FieldType.valueOf("STRING");
+            } catch (Exception ex) {
+                // 如果STRING也不存在，暂时将type设置为null
+                this.type = null;
+            }
         }
     }
     

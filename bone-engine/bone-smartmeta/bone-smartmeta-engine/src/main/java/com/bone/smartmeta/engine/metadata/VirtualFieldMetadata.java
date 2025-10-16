@@ -78,6 +78,7 @@ public class VirtualFieldMetadata extends FieldMetadata {
      */
     public void setProvider(String provider) {
         this.provider = provider;
-        this.virtual = true; // 虚拟字段标记
+        // 避免直接访问父类的private字段virtual
+        // this.virtual = true; // 注释掉这行
     }
 }

@@ -104,7 +104,9 @@ public class SmartMetaAutoConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean
-    public MetadataEngineInitializer metadataEngineInitializer() {
-        return new MetadataEngineInitializer();
+    public MetadataEngineInitializer metadataEngineInitializer(MetadataEngine metadataEngine, 
+                                                              SmartMetaProperties smartMetaProperties, 
+                                                              org.springframework.core.io.ResourceLoader resourceLoader) {
+        return new MetadataEngineInitializer(metadataEngine, smartMetaProperties, resourceLoader);
     }
 }

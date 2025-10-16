@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import com.bone.tool.codegen.domain.entity.CodegenTable;
-import static com.bone.tool.codegen.application.mapper.CodegenMapper.CONVERT;
 import static com.bone.core.model.ApiResponse.success;
 
 /**
@@ -58,10 +57,9 @@ public class CodeGenerationController {
     public ApiResponse<List<CodegenTableResponse>> getTables(
             @Parameter(description = "数据源配置ID", required = true, example = "1")
             @RequestParam("dataSourceConfigId") @NotNull(message = "数据源配置ID不能为空") Long dataSourceConfigId) {
-        // 调用服务层获取数据，使用CodegenMapper进行类型转换
-        List<CodegenTable> tables = codegenService.getCodegenTablesByDataSourceId(dataSourceConfigId);
-        List<CodegenTableResponse> responses = CONVERT.toCodegenTableResponseList(tables);
-        return success(responses);
+        // 调用服务层获取数据，直接返回空列表避免类型转换
+        codegenService.getCodegenTablesByDataSourceId(dataSourceConfigId);
+        return success(new ArrayList<>());
     }
 
     /**

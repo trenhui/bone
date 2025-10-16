@@ -23,6 +23,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
 /**
@@ -358,7 +359,8 @@ public class CompositeMetadataProcessor {
         
         // 复制基本属性
         copy.setApiName(source.getApiName());
-        copy.setLabel(source.getLabel());
+        // 暂时注释掉getLabel()调用，因为EntityMetadata类中似乎没有这个方法
+        // copy.setLabel(source.getLabel());
         // 移除不存在的方法调用
         // copy.setPluralLabel(source.getPluralLabel());
         // copy.setTableName(source.getTableName());

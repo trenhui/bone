@@ -1,6 +1,8 @@
 package com.bone.smartmeta.engine.query;
 
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 /**
@@ -9,6 +11,9 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 public class QueryPerformanceMonitor {
+    
+    // 手动添加log变量，因为@Slf4j注解可能没有正确工作
+    private static final Logger log = LoggerFactory.getLogger(QueryPerformanceMonitor.class);
     
     // 慢查询阈值（毫秒）
     private static final long SLOW_QUERY_THRESHOLD = 1000;

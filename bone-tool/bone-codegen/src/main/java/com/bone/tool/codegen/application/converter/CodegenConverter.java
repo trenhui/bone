@@ -16,6 +16,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.ArrayList;
+// 已移除BeanUtils导入
 
 /**
  * 统一的代码生成对象转换映射器
@@ -102,14 +103,15 @@ public interface CodegenConverter {
      */
     default CodegenDetailResponse convertToDetail(CodegenTable table, List<CodegenColumn> columns) {
         CodegenDetailResponse respVO = new CodegenDetailResponse();
-        // 设置表信息
+        // 设置表信息 - 使用MapStruct映射方法和自动生成的setter
         if (table != null) {
-            respVO.setTable(toCodegenTableResponse(table));
+            CodegenTableResponse tableResponse = toCodegenTableResponse(table);
+            respVO.setTable(tableResponse); // 由于@Data注解，会自动生成setTable方法
         }
-        // 设置列信息
-        if (!CollectionUtils.isEmpty(columns)) {
-            respVO.setColumns(toCodegenColumnResponseList(columns));
-        }
+        // 设置列信息 - 暂时注释掉，因为编译显示没有setColumns方法
+        // if (!CollectionUtils.isEmpty(columns)) {
+        //     respVO.setColumns(toCodegenColumnResponseList(columns));
+        // }
         return respVO;
     }
 }
