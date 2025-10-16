@@ -7,14 +7,12 @@ import java.util.List;
 
 /**
  * 代码生成请求
- * <p>
- * 用于批量生成代码的应用层DTO
  */
 @Schema(description = "代码生成请求")
 @Data
 public class GenerateCodeRequest {
     
-    @Schema(description = "表ID列表", requiredMode = Schema.RequiredMode.REQUIRED, example = "[1,2,3]")
+    @Schema(description = "表ID列表", example = "[1,2,3]")
     @NotEmpty(message = "表ID列表不能为空")
     private List<Long> tableIds;
     

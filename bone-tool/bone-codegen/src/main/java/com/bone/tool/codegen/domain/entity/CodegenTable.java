@@ -9,11 +9,7 @@ import lombok.experimental.Accessors;
 import java.util.Map;
 
 /**
- * 代码生成表配置 领域实体
- * <p>
- * 表示代码生成功能中的表配置信息，是代码生成领域的核心聚合根
- *
- * @author bone-team
+ * 代码生成表配置
  */
 @Table("infra_codegen_table")
 @Data
@@ -22,9 +18,7 @@ import java.util.Map;
 public class CodegenTable extends AbstractEntity<Long> {
 
     /**
-     * 表配置ID
-     * <p>
-     * 唯一标识一个代码生成表配置
+     * 主键ID
      */
     @Id
     private Long id;
@@ -41,61 +35,40 @@ public class CodegenTable extends AbstractEntity<Long> {
     
     /**
      * 数据源配置ID
-     * <p>
-     * 关联DataSourceConfigDO实体，指定表所在的数据源
      */
     private Long dataSourceConfigId;
     
     /**
-     * 生成场景类型
-     * <p>
-     * 枚举值，表示代码生成的业务场景，决定生成代码的特性和模板选择
+     * 生成场景
      */
     private Integer scene;
 
     // ========== 数据库表相关属性 ==========
 
     /**
-     * 表名称
-     * <p>
-     * 对应数据库中的实际表名
+     * 表名
      */
     private String tableName;
     
     /**
      * 表描述
-     * <p>
-     * 数据库表的注释描述
      */
     private String tableComment;
-    
-    /**
-     * 备注信息
-     * <p>
-     * 用于存储额外的说明信息
-     */
-    private String remark;
 
     // ========== Java类相关属性 ==========
 
     /**
-     * 模块名称
-     * <p>
-     * 如：system、infra、tool等，对应一级目录结构
+     * 模块名
      */
     private String moduleName;
     
     /**
-     * 包名称
-     * <p>
-     * 如：com.bone.system等
+     * 包路径
      */
-    private String packgeName;
+    private String packageName;
     
     /**
      * 业务名称
-     * <p>
-     * 如：user、permission、dict等，对应二级目录结构
      */
     private String businessName;
     
@@ -184,156 +157,4 @@ public class CodegenTable extends AbstractEntity<Long> {
      * 键为文件路径，值为文件内容
      */
     private Map<String, String> codeFiles;
-
-    public Long getDataSourceConfigId() {
-        return dataSourceConfigId;
-    }
-    
-    public void setDataSourceConfigId(Long dataSourceConfigId) {
-        this.dataSourceConfigId = dataSourceConfigId;
-    }
-    
-    public Integer getScene() {
-        return scene;
-    }
-    
-    public void setScene(Integer scene) {
-        this.scene = scene;
-    }
-    
-    public String getTableName() {
-        return tableName;
-    }
-    
-    public void setTableName(String tableName) {
-        this.tableName = tableName;
-    }
-    
-    public String getTableComment() {
-        return tableComment;
-    }
-    
-    public void setTableComment(String tableComment) {
-        this.tableComment = tableComment;
-    }
-    
-    public String getRemark() {
-        return remark;
-    }
-    
-    public void setRemark(String remark) {
-        this.remark = remark;
-    }
-    
-    public String getModuleName() {
-        return moduleName;
-    }
-    
-    public void setModuleName(String moduleName) {
-        this.moduleName = moduleName;
-    }
-    
-    public String getPackgeName() {
-        return packgeName;
-    }
-    
-    public void setPackgeName(String packgeName) {
-        this.packgeName = packgeName;
-    }
-    
-    public String getBusinessName() {
-        return businessName;
-    }
-    
-    public void setBusinessName(String businessName) {
-        this.businessName = businessName;
-    }
-    
-    public String getClassName() {
-        return className;
-    }
-    
-    public void setClassName(String className) {
-        this.className = className;
-    }
-    
-    public String getClassComment() {
-        return classComment;
-    }
-    
-    public void setClassComment(String classComment) {
-        this.classComment = classComment;
-    }
-    
-    public String getAuthor() {
-        return author;
-    }
-    
-    public void setAuthor(String author) {
-        this.author = author;
-    }
-    
-    public Integer getTemplateType() {
-        return templateType;
-    }
-    
-    public void setTemplateType(Integer templateType) {
-        this.templateType = templateType;
-    }
-    
-    public Long getParentMenuId() {
-        return parentMenuId;
-    }
-    
-    public void setParentMenuId(Long parentMenuId) {
-        this.parentMenuId = parentMenuId;
-    }
-    
-    public Long getMasterTableId() {
-        return masterTableId;
-    }
-    
-    public void setMasterTableId(Long masterTableId) {
-        this.masterTableId = masterTableId;
-    }
-    
-    public Long getSubJoinColumnId() {
-        return subJoinColumnId;
-    }
-    
-    public void setSubJoinColumnId(Long subJoinColumnId) {
-        this.subJoinColumnId = subJoinColumnId;
-    }
-    
-    public Boolean getSubJoinMany() {
-        return subJoinMany;
-    }
-    
-    public void setSubJoinMany(Boolean subJoinMany) {
-        this.subJoinMany = subJoinMany;
-    }
-    
-    public Long getTreeParentColumnId() {
-        return treeParentColumnId;
-    }
-    
-    public void setTreeParentColumnId(Long treeParentColumnId) {
-        this.treeParentColumnId = treeParentColumnId;
-    }
-    
-    public Long getTreeNameColumnId() {
-        return treeNameColumnId;
-    }
-    
-    public void setTreeNameColumnId(Long treeNameColumnId) {
-        this.treeNameColumnId = treeNameColumnId;
-    }
-    
-    public Map<String, String> getCodeFiles() {
-        return codeFiles;
-    }
-    
-    public void setCodeFiles(Map<String, String> codeFiles) {
-        this.codeFiles = codeFiles;
-    }
 }

@@ -240,9 +240,9 @@ public class CodegenService {
     /**
      * 批量保存代码生成列配置
      */
-    private void saveCodegenColumns(Long tableId, List<TableField> fields) {
-        for (TableField field : fields) {
-            CodegenColumn column = createCodegenColumn(tableId, field);
+    private void saveCodegenColumns(Long tableId, List<CodegenColumn> fields) {
+        for (CodegenColumn column : fields) {
+            column.setTableId(tableId);
             codegenColumnRepository.save(column);
         }
     }
@@ -360,7 +360,7 @@ public class CodegenService {
      * @param tableId 表ID
      * @param tableFields 数据库表字段列表
      */
-    private void syncColumns(Long tableId, List<TableField> tableFields) {
+    private void syncColumns(Long tableId, List<CodegenColumn> tableFields) {
         // 获取现有字段
         List<CodegenColumn> existingColumns = getColumnsByTableId(tableId);
         Map<String, CodegenColumn> columnMap = buildColumnMap(existingColumns);
@@ -1418,34 +1418,32 @@ public class CodegenService {
     /**
      * 更新列信息
      */
-    private void updateColumn(CodegenColumn column, TableField field) {
+    private void updateColumn(CodegenColumn column, CodegenColumn field) {
         // 保留原有配置，只更新数据库相关信息
         boolean hasUpdate = false;
         
-        if (!StrUtil.equals(column.getColumnName(), field.getName())) {
-            column.setColumnName(field.getName());
+        if (!StrUtil.equals(column.getColumnName(), field.getColumnName())) {
+            column.setColumnName(field.getColumnName());
             hasUpdate = true;
         }
         
-        if (!StrUtil.equals(column.getDataType(), field.getType())) {
-            column.setDataType(field.getType());
-            // 更新Java类型
-            column.setJavaType(getJavaTypeByDbType(field.getType()));
+        if (!StrUtil.equals(column.getDataType(), field.getDataType())) {
+            column.setDataType(field.getDataType());
             hasUpdate = true;
         }
         
-        if (!StrUtil.equals(column.getDescription(), field.getComment())) {
-            column.setDescription(field.getComment());
+        if (!StrUtil.equals(column.getColumnComment(), field.getColumnComment())) {
+            column.setColumnComment(field.getColumnComment());
             hasUpdate = true;
         }
         
-        if (column.getPrimaryKey() != field.isPrimaryKey()) {
-            column.setPrimaryKey(field.isPrimaryKey());
+        if (!Objects.equals(column.getPrimaryKey(), field.getPrimaryKey())) {
+            column.setPrimaryKey(field.getPrimaryKey());
             hasUpdate = true;
         }
         
+        // 如果有更新，保存列信息
         if (hasUpdate) {
-            // 调用Repository的update方法
             codegenColumnRepository.update(column);
         }
     }
@@ -1458,7 +1456,7 @@ public class CodegenService {
      * @return 创建的代码生成列配置对象
      * @throws IllegalArgumentException 当参数无效时抛出
      */
-    private CodegenColumn createCodegenColumn(Long tableId, TableField field) {
+    private CodegenColumn createCodegenColumn(Long tableId, CodegenColumn field) {
         // 参数验证
         if (tableId == null) {
             throw new IllegalArgumentException("表ID不能为空");
@@ -1468,12 +1466,12 @@ public class CodegenService {
             throw new IllegalArgumentException("表字段信息不能为空");
         }
         
-        String fieldName = field.getName();
+        String fieldName = field.getColumnName();
         if (StrUtil.isEmpty(fieldName)) {
             throw new IllegalArgumentException("表字段名称不能为空");
         }
         
-        String dataType = field.getType();
+        String dataType = field.getDataType();
         if (StrUtil.isEmpty(dataType)) {
             throw new IllegalArgumentException("表字段类型不能为空: " + fieldName);
         }
@@ -1484,60 +1482,43 @@ public class CodegenService {
         column.setTableId(tableId);
         column.setColumnName(fieldName);
         column.setDataType(dataType);
-        column.setDescription(StrUtil.blankToDefault(field.getComment(), ""));
+        column.setColumnComment(StrUtil.blankToDefault(field.getColumnComment(), ""));
         
         // 设置Java类型和属性名
         String javaType = getJavaTypeByDbType(dataType);
         column.setJavaType(javaType);
         
         // 设置Java属性名，如果field没有提供则自动生成
-        String javaField = field.getPropertyName();
+        String javaField = field.getJavaField();
         if (StrUtil.isEmpty(javaField)) {
             javaField = convertToCamelCase(fieldName, false);
         }
         column.setJavaField(javaField);
         
         // 设置主键信息
-        boolean isPrimaryKey = field.isPrimaryKey();
-        column.setPrimaryKey(isPrimaryKey);
+        Boolean isPrimaryKey = field.getPrimaryKey();
+        column.setPrimaryKey(isPrimaryKey != null ? isPrimaryKey : false);
         
         // 设置其他属性
-        column.setNotNull(field.isPrimaryKey()); // 使用主键信息作为必填标志
-        column.setInsertable(!isPrimaryKey && !field.isFill()); // 主键和自动填充字段不可插入
-        column.setUpdatable(!isPrimaryKey && !field.isFill()); // 主键和自动填充字段不可更新
-        column.setListable(true); // 默认在列表中显示
-        column.setQueryable(true); // 默认可查询
+        column.setNullable(field.getNullable());
+        column.setAutoIncrement(field.getAutoIncrement());
         
-        // 设置默认查询类型
-        if (isPrimaryKey) {
-            column.setQueryType("eq");
-        } else if (javaType.equals("String")) {
-            column.setQueryType("like");
-        } else if (javaType.equals("Boolean")) {
-            column.setQueryType("eq");
-        } else if (DbTypeMapping.isDateTimeType(dataType)) {
-            column.setQueryType("between");
-        } else {
-            column.setQueryType("eq");
-        }
+        // 设置操作相关属性
+        column.setCreateOperation(field.getCreateOperation());
+        column.setUpdateOperation(field.getUpdateOperation());
+        column.setListOperation(field.getListOperation());
+        column.setListOperationResult(field.getListOperationResult());
         
-        // 设置默认显示类型
-        String showType = "input";
-        if (DbTypeMapping.isDateTimeType(dataType)) {
-            showType = "date";
-        } else if (javaType.equals("Boolean")) {
-            showType = "switch";
-        }
-        column.setShowType(showType);
+        // 复制UI相关属性
+        column.setHtmlType(field.getHtmlType());
+        column.setDictType(field.getDictType());
+        column.setListOperationCondition(field.getListOperationCondition());
         
-        // 设置填充信息
-        if (field.isFill()) {
-            column.setInsertable(false);
-            column.setUpdatable(false);
-        }
-        
-        // 设置创建时间和更新时间
-        // 实际项目中，这里应该根据CodegenColumn实体类的实际字段进行调整
+        // 复制关联相关属性
+        column.setRelationTableName(field.getRelationTableName());
+        column.setRelationShowField(field.getRelationShowField());
+        column.setRelationQueryField(field.getRelationQueryField());
+        column.setExtraAttrs(field.getExtraAttrs());
         
         log.debug("创建代码生成列配置: 表ID={}, 列名={}, Java类型={}", tableId, fieldName, javaType);
         

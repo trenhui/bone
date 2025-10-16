@@ -7,11 +7,7 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 
 /**
- * 数据源配置 领域实体
- * <p>
- * 表示系统中配置的数据库连接信息，用于代码生成等操作
- *
- * @author bone-team
+ * 数据源配置
  */
 @Table("infra_data_source_config")
 @Data
@@ -20,91 +16,38 @@ public class DataSourceConfig extends AbstractEntity<Long> {
 
     /**
      * 主键编号常量 - 主数据源标识
-     * <p>
-     * 用于标识系统内置的主数据源
      */
     public static final Long ID_MASTER = 0L;
 
     /**
-     * 数据源配置ID
-     * <p>
-     * 唯一标识一个数据源配置
+     * 主键ID
      */
     @Id
     private Long id;
+    
     /**
      * 数据源名称
-     * <p>
-     * 用于显示和标识不同的数据源配置
      */
     private String name;
 
     /**
-     * 数据库连接URL
-     * <p>
-     * 包含数据库类型、主机、端口、数据库名等连接信息
+     * 连接URL
      */
     private String url;
+    
     /**
-     * 数据库用户名
+     * 用户名
      */
     private String username;
+    
     /**
-     * 数据库密码
-     * <p>
-     * 存储时通常需要加密处理
+     * 密码
      */
     private String password;
+    
+    /**
+     * 驱动类名
+     */
     private String driverClassName;
-    
-    @Override
-    public Long getId() {
-        return id;
-    }
-    
-    @Override
-    public void setId(Long id) {
-        this.id = id;
-    }
-    
-    public String getUrl() {
-        return url;
-    }
-    
-    public void setUrl(String url) {
-        this.url = url;
-    }
-    
-    public String getUsername() {
-        return username;
-    }
-    
-    public void setUsername(String username) {
-        this.username = username;
-    }
-    
-    public String getPassword() {
-        return password;
-    }
-    
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getDriverClassName() {
-        return driverClassName;
-    }
-    
-    public void setDriverClassName(String driverClassName) {
-        this.driverClassName = driverClassName;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
 
 }
