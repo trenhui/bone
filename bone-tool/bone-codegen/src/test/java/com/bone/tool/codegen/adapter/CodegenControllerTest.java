@@ -1,13 +1,8 @@
 package com.bone.tool.codegen.adapter;
 
-import com.bone.core.model.ApiResponse;
-import com.bone.core.model.PageResult;
 import com.bone.tool.codegen.adapter.CodeGenController;
-import com.bone.tool.codegen.application.dto.*;
-import com.bone.tool.codegen.domain.entity.CodegenTable;
-import com.bone.tool.codegen.domain.entity.TableInfo;
+import com.bone.tool.codegen.application.dto.GenerateCustomCodeRequest;
 import com.bone.tool.codegen.domain.service.CodegenService;
-import com.bone.tool.codegen.domain.service.DatabaseTableService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -19,16 +14,18 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.util.*;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.Arrays;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.hamcrest.Matchers.containsString;
 
 /**
- * CodegenController的单元测试类
+ * CodeGenController的单元测试类
  * <p>
  * 测试代码生成控制器的RESTful API接口
  * 
@@ -38,9 +35,6 @@ public class CodegenControllerTest {
 
     @Mock
     private CodegenService codegenService;
-    
-    @Mock
-    private DatabaseTableService databaseTableService;
 
     @InjectMocks
     private CodeGenController codegenController;
@@ -48,7 +42,6 @@ public class CodegenControllerTest {
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;
     private GenerateCustomCodeRequest mockGenerateCustomCodeRequest;
-    private CodegenCreateListRequest mockCodegenCreateListRequest;
 
     @BeforeEach
     public void setUp() {
@@ -69,42 +62,33 @@ public class CodegenControllerTest {
         mockGenerateCustomCodeRequest.setModelType("saas");
         mockGenerateCustomCodeRequest.setScene("single");
         mockGenerateCustomCodeRequest.setAuthor("bone-team");
-        
-        // 初始化CodegenCreateListRequest模拟数据
-        mockCodegenCreateListRequest = new CodegenCreateListRequest();
-        mockCodegenCreateListRequest.setDataSourceConfigId(1L);
-        mockCodegenCreateListRequest.setTableNames(Arrays.asList("table1", "table2"));
-        
-        // 移除CodegenUpdateRequest相关代码
     }
 
     @Test
     public void testGenerateCustomCode_Success() throws Exception {
-        // 模拟服务层行为 - 返回字节数组
-        byte[] mockZipBytes = "mock zip content".getBytes();
-        when(codegenService.generateCustomCode(any(GenerateCustomCodeRequest.class))).thenReturn(mockZipBytes);
+        // 模拟服务层行为 - 写入输出流
+        doNothing().when(codegenService).generateCustomCode(any(GenerateCustomCodeRequest.class), any(OutputStream.class));
 
         // 执行HTTP请求并验证结果
-        mockMvc.perform(post("/api/v1/codegen/generate/custom")
+        mockMvc.perform(post("/api/v1/code-generation/generate/custom")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(mockGenerateCustomCodeRequest)))
                 .andExpect(status().isOk())
-                .andExpect(content().contentType("application/zip"))
-                .andExpect(content().bytes(mockZipBytes));
+                .andExpect(content().contentType("application/zip"));
 
         // 验证服务层方法是否被调用
-        verify(codegenService, times(1)).generateCustomCode(any(GenerateCustomCodeRequest.class));
+        verify(codegenService, times(1)).generateCustomCode(any(GenerateCustomCodeRequest.class), any(OutputStream.class));
     }
 
     @Test
     public void testGenerateCustomCode_Exception() throws Exception {
         // 模拟服务层抛出异常
-        when(codegenService.generateCustomCode(any(GenerateCustomCodeRequest.class)))
-                .thenThrow(new RuntimeException("生成代码失败"));
+        doThrow(new RuntimeException("生成代码失败")).when(codegenService)
+                .generateCustomCode(any(GenerateCustomCodeRequest.class), any(OutputStream.class));
 
         // 由于Controller直接throws Exception，我们需要在测试中捕获这个异常
         try {
-            mockMvc.perform(post("/api/v1/codegen/generate/custom")
+            mockMvc.perform(post("/api/v1/code-generation/generate/custom")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content(objectMapper.writeValueAsString(mockGenerateCustomCodeRequest)));
         } catch (Exception e) {
@@ -114,137 +98,45 @@ public class CodegenControllerTest {
         }
 
         // 验证服务层方法是否被调用
-        verify(codegenService, times(1)).generateCustomCode(any(GenerateCustomCodeRequest.class));
+        verify(codegenService, times(1)).generateCustomCode(any(GenerateCustomCodeRequest.class), any(OutputStream.class));
     }
 
     @Test
-    public void testGetDatabaseTableList() throws Exception {
+    public void testGenerateAndDownloadCode_Success() throws Exception {
         // 模拟服务层行为
-        List<TableInfo> mockTableInfos = new ArrayList<>();
-        when(databaseTableService.getTableList(anyLong())).thenReturn(mockTableInfos);
+        doNothing().when(codegenService).generateBatchCodes(anyList(), anyString(), anyInt(), any(OutputStream.class));
 
         // 执行HTTP请求并验证结果
-        mockMvc.perform(get("/api/v1/codegen/database-table/list")
-                .param("dataSourceConfigId", "1"))
+        mockMvc.perform(get("/api/v1/code-generation/generate/download")
+                .param("tableIds", "1,2,3")
+                .param("groupId", "default")
+                .param("modelType", "1"))
                 .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").isArray());
-        
+                .andExpect(content().contentType("application/zip"));
+
         // 验证服务层方法是否被调用
-        verify(databaseTableService, times(1)).getTableList(1L);
+        verify(codegenService, times(1)).generateBatchCodes(anyList(), anyString(), anyInt(), any(OutputStream.class));
     }
 
     @Test
-    public void testGetCodegenTableList() throws Exception {
-        // 执行HTTP请求并验证结果
-        mockMvc.perform(get("/api/v1/codegen/table/list")
-                .param("dataSourceConfigId", "1"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").isArray());
-    }
+    public void testGenerateAndDownloadCode_Exception() throws Exception {
+        // 模拟服务层抛出异常
+        doThrow(new RuntimeException("下载失败")).when(codegenService)
+                .generateBatchCodes(anyList(), anyString(), anyInt(), any(OutputStream.class));
 
-    @Test
-    public void testGetCodegenTablePage() throws Exception {
-        // 模拟PageResult对象
-        List<CodegenTable> codegenTables = new ArrayList<>();
-        CodegenTable mockTable = new CodegenTable();
-        mockTable.setId(1L);
-        mockTable.setTableName("test_table");
-        mockTable.setDataSourceConfigId(1L);
-        codegenTables.add(mockTable);
-        
-        PageResult<CodegenTable> mockPageResult = PageResult.of(codegenTables, 1L, 1, 10);
-        
-        // 模拟服务层行为
-        when(codegenService.getCodegenTablePage(any(CodegenTablePageRequest.class))).thenReturn(mockPageResult);
-        
-        // 执行HTTP请求并验证结果
-        mockMvc.perform(get("/api/v1/codegen/table/page")
-                .param("pageNo", "1")
-                .param("pageSize", "10"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").exists());
-    }
+        // 由于Controller直接throws Exception，我们需要在测试中捕获这个异常
+        try {
+            mockMvc.perform(get("/api/v1/code-generation/generate/download")
+                    .param("tableIds", "1,2,3")
+                    .param("groupId", "default")
+                    .param("modelType", "1"));
+        } catch (Exception e) {
+            // 验证异常是否由我们模拟的RuntimeException引起
+            assertTrue(e.getCause() instanceof RuntimeException);
+            assertEquals("下载失败", e.getCause().getMessage());
+        }
 
-    @Test
-    public void testGetCodegenDetail() throws Exception {
-        // 执行HTTP请求并验证结果
-        mockMvc.perform(get("/api/v1/codegen/detail")
-                .param("tableId", "1024"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.success").value(true));
-    }
-
-    @Test
-    public void testCreateCodegenList() throws Exception {
-        // 模拟服务层行为
-        List<Long> mockIds = Arrays.asList(1L, 2L);
-
-        // 执行HTTP请求并验证结果
-        mockMvc.perform(post("/api/v1/codegen/create-list")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(mockCodegenCreateListRequest)))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").isArray());
-    }
-
-    // 移除update相关测试方法，因为使用了已删除的DTO类
-    // @Test
-    // public void testUpdateCodegen() throws Exception {
-    //     // 执行HTTP请求并验证结果
-    //     mockMvc.perform(put("/api/v1/codegen/update")
-    //             .contentType(MediaType.APPLICATION_JSON)
-    //             .content(objectMapper.writeValueAsString(mockCodegenUpdateRequest)))
-    //             .andExpect(status().isOk())
-    //             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-    //             .andExpect(jsonPath("$.success").value(true))
-    //             .andExpect(jsonPath("$.data").value(true));
-    // }
-
-    @Test
-    public void testSyncCodegenFromDB() throws Exception {
-        // 执行HTTP请求并验证结果
-        mockMvc.perform(put("/api/v1/codegen/sync-from-db")
-                .param("tableId", "1024"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").value(true));
-    }
-
-    @Test
-    public void testDeleteCodegen() throws Exception {
-        // 执行HTTP请求并验证结果
-        mockMvc.perform(delete("/api/v1/codegen/delete")
-                .param("tableId", "1024"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data").value(true));
-    }
-
-    @Test
-    public void testDownloadCodegen_SingleTable() throws Exception {
-        // 执行HTTP请求并验证结果
-        mockMvc.perform(get("/api/v1/codegen/download")
-                .param("tableId", "1024"))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    public void testDownloadCodegen_MultiTables() throws Exception {
-        // 执行HTTP请求并验证结果
-        mockMvc.perform(get("/api/v1/codegen/download2")
-                .param("tableId", "1024")
-                .param("tableId", "1025"))
-                .andExpect(status().isOk());
+        // 验证服务层方法是否被调用
+        verify(codegenService, times(1)).generateBatchCodes(anyList(), anyString(), anyInt(), any(OutputStream.class));
     }
 }

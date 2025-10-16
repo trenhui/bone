@@ -20,12 +20,28 @@ public class CodegenTablePageRequest extends PageParam {
 
     @Schema(description = "表名，模糊匹配", example = "sys_user")
     private String tableName;
+    
+    public String getTableName() {
+        return tableName;
+    }
+    
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
+    }
 
     @Schema(description = "表描述，模糊匹配", example = "用户信息表")
     private String tableComment;
 
     @Schema(description = "类名，模糊匹配", example = "SysUser")
     private String className;
+    
+    public String getClassName() {
+        return className;
+    }
+    
+    public void setClassName(String className) {
+        this.className = className;
+    }
 
     @Schema(description = "创建时间范围", example = "[2022-07-01 00:00:00,2022-07-01 23:59:59]")
     @DateTimeFormat(pattern = DATE_TIME_PATTERN)

@@ -1,464 +1,333 @@
 package com.bone.procurement.service;
 
-import com.bone.procurement.mapper.PurchaseOrderMapper;
-import com.bone.smartmeta.engine.context.UserContext;
-import com.bone.smartmeta.engine.exception.BusinessRuleException;
-import com.bone.smartmeta.engine.exception.EntityNotFoundException;
-import com.bone.smartmeta.engine.metadata.EntityMetadata;
-import com.bone.smartmeta.engine.metadata.MetadataRegistry;
-import com.bone.smartmeta.engine.model.DynamicSmartEntity;
-import com.bone.smartmeta.engine.model.SmartBaseEntity;
-import com.bone.smartmeta.engine.query.SmartQueryExecutor;
-import com.bone.smartmeta.engine.rule.BusinessRuleEngine;
-import com.bone.smartmeta.engine.rule.BusinessRuleResult;
-import com.bone.smartmeta.engine.workflow.WorkflowEngine;
-import com.bone.procurement.dto.PurchaseOrderCriteria;
-import com.bone.procurement.dto.PurchaseOrderRequest;
-import com.bone.procurement.dto.PurchaseOrderResponse;
 import com.bone.procurement.entity.PurchaseOrder;
-import com.bone.procurement.repository.PurchaseOrderRepository;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import com.bone.procurement.entity.PurchaseOrderItem;
+import com.bone.procurement.entity.Supplier;
+import com.bone.smartmeta.engine.MetadataEngine;
+import com.bone.smartmeta.engine.ExpressionEngine;
+import com.bone.smartmeta.engine.annotation.BusinessRule;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.*;
+import java.util.logging.Logger;
 
 /**
- * 采购订单服务
- * 处理采购订单的全生命周期管理
+ * 采购订单服务类
+ * 演示如何使用bone-smartmeta引擎进行元数据管理、表达式计算和业务规则验证
  */
 @Service
 public class PurchaseOrderService {
-
-    private static final String ENTITY_NAME = "PurchaseOrder";
-    private static final String WORKFLOW_NAME = "PurchaseOrderApproval";
     
-    private final SmartQueryExecutor queryExecutor;
-    private final PurchaseOrderRepository purchaseOrderRepository;
-    private final BusinessRuleEngine ruleEngine;
-    private final WorkflowEngine workflowEngine;
-    private final MetadataRegistry metadataRegistry;
-    private final UserContext userContext;
-    private final BudgetService budgetService;
-    private final NotificationService notificationService;
-    private final VendorService vendorService;
+    private static final Logger logger = Logger.getLogger(PurchaseOrderService.class.getName());
     
-    // Logger instance
-    private static final Logger log = LoggerFactory.getLogger(PurchaseOrderService.class);
+    private final MetadataEngine metadataEngine;
+    private final ExpressionEngine expressionEngine;
+    private final SupplierService supplierService;
     
-    // Constructor for dependency injection
-    public PurchaseOrderService(SmartQueryExecutor queryExecutor,
-                              PurchaseOrderRepository purchaseOrderRepository,
-                              BusinessRuleEngine ruleEngine,
-                              WorkflowEngine workflowEngine,
-                              MetadataRegistry metadataRegistry,
-                              UserContext userContext,
-                              BudgetService budgetService,
-                              NotificationService notificationService,
-                              VendorService vendorService) {
-        this.queryExecutor = queryExecutor;
-        this.purchaseOrderRepository = purchaseOrderRepository;
-        this.ruleEngine = ruleEngine;
-        this.workflowEngine = workflowEngine;
-        this.metadataRegistry = metadataRegistry;
-        this.userContext = userContext;
-        this.budgetService = budgetService;
-        this.notificationService = notificationService;
-        this.vendorService = vendorService;
+    // 模拟数据存储
+    private final Map<Long, PurchaseOrder> orderRepository = new HashMap<>();
+    private long nextId = 1;
+    
+    @Autowired
+    public PurchaseOrderService(MetadataEngine metadataEngine, 
+                              ExpressionEngine expressionEngine, 
+                              SupplierService supplierService) {
+        this.metadataEngine = metadataEngine;
+        this.expressionEngine = expressionEngine;
+        this.supplierService = supplierService;
     }
-
+    
     /**
-     * 创建智能采购订单
-     * 集成AI增强功能和动态字段计算
+     * 创建采购订单
+     * 使用bone-smartmeta引擎进行字段计算和业务规则验证
      */
-    @Transactional
-    public PurchaseOrderResponse createPurchaseOrder(PurchaseOrderRequest request) {
-        log.info("创建采购订单: {}", request.getOrderTitle());
+    public PurchaseOrder createOrder(PurchaseOrder order) {
+        logger.info("创建采购订单: " + order.getOrderCode());
         
-        try {
-            // 1. 验证供应商是否存在且活跃
-            vendorService.validateActiveVendor(request.getVendorId());
-            
-            // 2. 验证预算是否充足
-            budgetService.checkBudgetAvailability(
-                    request.getDepartmentId(), 
-                    request.getTotalAmount()
-            );
-            
-            // 3. 创建采购订单实体
-            PurchaseOrder order = new PurchaseOrder();
-            
-            // 4. 设置字段值
-            order.setName(request.getOrderTitle());
-            order.setOrderTitle(request.getOrderTitle());
-            order.setVendorId(request.getVendorId());
-            order.setDepartmentId(request.getDepartmentId());
-            order.setTotalAmount(request.getTotalAmount());
-            order.setOrderStatus("Draft");
-            order.setNeedByDate(request.getNeedByDate());
-            order.setDescription(request.getDescription());
-            order.setPriority(request.getPriority());
-            
-            // 5. 注册动态计算字段
-            order.registerCalculatedField("totalAmountWithTax", "totalAmount * 1.13", "totalAmount");
-            order.registerCalculatedField("isHighValueOrder", "totalAmount > 10000", "totalAmount");
-            
-            // 6. 初始化AI相关字段
-            initializeAiFields(order);
-            
-            // 7. 执行业务规则验证
-            BusinessRuleResult ruleResult = ruleEngine.executeRules(order, "CREATE");
-            if (!ruleResult.isPassed()) {
-                log.warn("采购订单业务规则验证失败: {}", ruleResult.getViolations());
-                throw new BusinessRuleException("创建采购订单失败", ruleResult.getViolations());
-            }
-            
-            // 8. 保存实体
-            purchaseOrderRepository.insert(order);
-            PurchaseOrder createdOrder = order;
-            log.info("采购订单创建成功: {}", createdOrder.getOrderNumber());
-            
-            // 9. 异步生成AI智能建议
-            generateAiSuggestionsAsync(createdOrder.getId());
-            
-            // 10. 发送创建通知
-            notificationService.sendPurchaseOrderCreatedNotification(createdOrder);
-            
-            // 11. 转换为响应DTO并返回
-            PurchaseOrderResponse response = PurchaseOrderMapper.INSTANCE.toResponse(createdOrder);
-            // 添加计算字段值到响应
-            response.setTotalAmountWithTax((BigDecimal) createdOrder.getField("totalAmountWithTax"));
-            response.setIsHighValueOrder((Boolean) createdOrder.getField("isHighValueOrder"));
-            
-            return response;
-            
-        } catch (Exception e) {
-            log.error("创建采购订单失败", e);
-            throw e;
+        // 设置创建时间
+        order.setCreationDate(LocalDateTime.now());
+        
+        // 如果没有指定状态，设置为草稿
+        if (order.getOrderStatus() == null) {
+            order.setOrderStatus("草稿");
         }
-    }
-    
-    /**
-     * 初始化AI相关字段
-     */
-    private void initializeAiFields(PurchaseOrder order) {
-        // 设置默认风险评分
-        order.setField("riskScore", BigDecimal.ZERO);
         
-        // 标记AI关键字段
-        // 这些字段将用于后续的AI分析和优化
-    }
-    
-    /**
-     * 异步生成AI智能建议
-     */
-    @Async
-    protected CompletableFuture<Void> generateAiSuggestionsAsync(String orderId) {
-        return CompletableFuture.runAsync(() -> {
-            try {
-                // 延迟执行，避免影响主流程
-                Thread.sleep(1000);
-                
-                // 获取订单
-                PurchaseOrder order = purchaseOrderRepository.findById(orderId);
-                if (order != null) {
-                    // 这里应该集成AI服务生成智能建议
-                    // 模拟AI生成的建议
-                    String suggestion = generateMockAiSuggestion(order);
-                    
-                    // 更新智能建议字段
-                    order.setField("intelligentSuggestion", suggestion);
-                    
-                    // 计算风险评分
-                    BigDecimal riskScore = calculateRiskScore(order);
-                    order.setField("riskScore", riskScore);
-                    
-                    // 保存更新
-                    purchaseOrderRepository.update(order);
-                    log.info("已为订单 {} 生成AI智能建议", orderId);
-                }
-            } catch (Exception e) {
-                log.error("生成AI智能建议失败", e);
-            }
-        });
-    }
-    
-    /**
-     * 模拟生成AI智能建议
-     */
-    private String generateMockAiSuggestion(PurchaseOrder order) {
-        StringBuilder suggestion = new StringBuilder();
+        // 使用MetadataEngine注册实体元数据
+        metadataEngine.registerEntity(PurchaseOrder.class);
         
-        // 基于订单金额提供建议
-        if (order.getTotalAmount().compareTo(new BigDecimal(10000)) > 0) {
-            suggestion.append("建议：考虑分批次采购以优化现金流。");
+        // 验证业务规则
+        validateBusinessRules(order);
+        
+        // 计算字段值
+        calculateFields(order);
+        
+        // 保存订单
+        synchronized (this) {
+            order.setId(nextId++);
+            orderRepository.put(order.getId(), order);
+        }
+        
+        logger.info("采购订单创建成功，ID: " + order.getId());
+        return order;
+    }
+    
+    /**
+     * 提交订单审批
+     * 使用表达式引擎计算审批条件和流程
+     */
+    public PurchaseOrder submitForApproval(Long orderId) {
+        PurchaseOrder order = getOrder(orderId);
+        if (order == null) {
+            throw new RuntimeException("订单不存在: " + orderId);
+        }
+        
+        logger.info("提交订单审批: " + order.getOrderCode());
+        
+        // 重新计算字段值确保最新
+        calculateFields(order);
+        
+        // 使用表达式引擎评估是否需要多级审批
+        boolean requiresMultiLevelApproval = evaluateMultiLevelApproval(order);
+        
+        // 设置审批节点
+        if (requiresMultiLevelApproval) {
+            order.setCurrentApprovalNode("部门经理审批");
         } else {
-            suggestion.append("建议：当前订单金额适中，可以按计划执行。");
+            order.setCurrentApprovalNode("采购经理审批");
         }
         
-        // 基于优先级提供建议
-        if ("Critical".equals(order.getPriority())) {
-            suggestion.append(" 优先级较高，建议加速审批流程。");
-        }
+        // 更新订单状态
+        order.setOrderStatus("待审批");
         
-        // 模拟AI分析
-        suggestion.append("\n\nAI分析：");
-        suggestion.append("根据历史数据，该类采购平均交付时间为7个工作日。");
+        // 生成审批流程ID
+        order.setApprovalProcessId("AP" + System.currentTimeMillis());
         
-        return suggestion.toString();
+        logger.info("订单已提交审批，当前节点: " + order.getCurrentApprovalNode());
+        return order;
     }
     
     /**
-     * 计算风险评分
+     * 审批订单
      */
-    private BigDecimal calculateRiskScore(PurchaseOrder order) {
-        BigDecimal baseScore = new BigDecimal(50);
-        
-        // 基于金额调整风险
-        if (order.getTotalAmount().compareTo(new BigDecimal(50000)) > 0) {
-            baseScore = baseScore.add(new BigDecimal(20));
-        }
-        
-        // 基于优先级调整风险
-        switch (order.getPriority()) {
-            case "Critical":
-                baseScore = baseScore.add(new BigDecimal(15));
-                break;
-            case "High":
-                baseScore = baseScore.add(new BigDecimal(10));
-                break;
-            default:
-                break;
-        }
-        
-        // 确保评分在合理范围内
-        return baseScore.min(new BigDecimal(100)).max(BigDecimal.ZERO);
-    }
-
-    /**
-     * 提交采购订单进行审批
-     */
-    @Transactional
-    public PurchaseOrderResponse submitPurchaseOrder(String orderId) {
-        log.info("提交采购订单审批: {}", orderId);
-        
-        // 1. 获取采购订单
-        PurchaseOrder order = purchaseOrderRepository.findById(orderId);
+    public PurchaseOrder approveOrder(Long orderId, Long approverId) {
+        PurchaseOrder order = getOrder(orderId);
         if (order == null) {
-            throw new EntityNotFoundException("Purchase order not found with id: " + orderId);
+            throw new RuntimeException("订单不存在: " + orderId);
         }
         
-        // 2. 检查当前状态
-        String currentStatus = order.getOrderStatus();
-        if (!"Draft".equals(currentStatus)) {
-            throw new IllegalStateException("只有草稿状态的采购订单可以提交审批，当前状态: " + currentStatus);
+        logger.info("审批订单: " + order.getOrderCode());
+        
+        // 检查订单状态
+        if (!"待审批".equals(order.getOrderStatus())) {
+            throw new RuntimeException("订单不在待审批状态: " + order.getOrderStatus());
         }
         
-        // 3. 更新状态
-        order.setOrderStatus("Submitted");
-        order.setField("submittedDate", LocalDateTime.now());
-        order.setField("submittedBy", userContext.getCurrentUserId());
+        // 更新审批信息
+        order.setApprovedBy(approverId);
+        order.setApprovedDate(LocalDateTime.now());
         
-        // 4. 保存更新
-        purchaseOrderRepository.update(order);
-        PurchaseOrder updatedOrder = order;
-        log.debug("采购订单状态更新为已提交: {}", orderId);
+        // 模拟审批流程
+        if ("部门经理审批".equals(order.getCurrentApprovalNode())) {
+            // 进入下一审批节点
+            order.setCurrentApprovalNode("采购总监审批");
+        } else {
+            // 审批完成
+            order.setOrderStatus("已审批");
+            order.setCurrentApprovalNode(null);
+        }
         
-        // 5. 启动审批流程
-        workflowEngine.startWorkflow(WORKFLOW_NAME, orderId, Map.of(
-            "initiator", userContext.getCurrentUserId(),
-            "orderAmount", order.getTotalAmount()
-        ));
-        
-        // 6. 发送提交通知
-        notificationService.sendPurchaseOrderSubmittedNotification(updatedOrder);
-        
-        return PurchaseOrderMapper.INSTANCE.toResponse(updatedOrder);
+        logger.info("订单审批处理完成，状态: " + order.getOrderStatus());
+        return order;
     }
-
+    
     /**
-     * 审批采购订单
+     * 执行订单（正式下单）
      */
-    @Transactional
-    public PurchaseOrderResponse approvePurchaseOrder(String orderId, String approvalNotes) {
-        log.info("审批采购订单: {}", orderId);
-        
-        // 1. 获取采购订单
-        PurchaseOrder order = purchaseOrderRepository.findById(orderId);
+    public PurchaseOrder executeOrder(Long orderId) {
+        PurchaseOrder order = getOrder(orderId);
         if (order == null) {
-            throw new EntityNotFoundException("Purchase order not found with id: " + orderId);
+            throw new RuntimeException("订单不存在: " + orderId);
         }
         
-        // 2. 更新状态和审批信息
-        order.setOrderStatus("Approved");
-        order.setField("approvedBy", userContext.getCurrentUserId());
-        order.setField("approvedDate", LocalDateTime.now());
-        order.setField("approvalNotes", approvalNotes);
+        logger.info("执行订单: " + order.getOrderCode());
         
-        // 3. 保存更新
-        purchaseOrderRepository.update(order);
-        PurchaseOrder updatedOrder = order;
-        log.debug("采购订单已批准: {}", orderId);
+        // 检查订单状态
+        if (!"已审批".equals(order.getOrderStatus())) {
+            throw new RuntimeException("订单未通过审批，无法执行");
+        }
         
-        // 4. 完成工作流任务
-        workflowEngine.completeTask(WORKFLOW_NAME, orderId, "approve", Map.of(
-            "approver", userContext.getCurrentUserId(),
-            "notes", approvalNotes
-        ));
+        // 使用表达式引擎执行订单前的最后验证
+        Map<String, Object> context = new HashMap<>();
+        context.put("order", order);
         
-        // 5. 扣减预算
-        budgetService.reserveBudget(
-                order.getDepartmentId(),
-                order.getTotalAmount(),
-                orderId
-        );
+        // 验证供应商状态
+        Supplier supplier = supplierService.getSupplier(order.getSupplierId());
+        if (supplier != null) {
+            context.put("supplier", supplier);
+            
+            boolean supplierValid = expressionEngine.evaluateBooleanExpression("${supplier.enabled}", context);
+            if (!supplierValid) {
+                throw new RuntimeException("供应商已禁用，无法下单");
+            }
+        }
         
-        // 6. 发送批准通知
-        notificationService.sendPurchaseOrderApprovedNotification(updatedOrder);
+        // 更新订单状态
+        order.setOrderStatus("已下单");
         
-        return PurchaseOrderMapper.INSTANCE.toResponse(updatedOrder);
+        logger.info("订单执行成功");
+        return order;
     }
-
+    
     /**
-     * 拒绝采购订单
+     * 获取订单
      */
-    @Transactional
-    public PurchaseOrderResponse rejectPurchaseOrder(String orderId, String rejectionReason) {
-        log.info("拒绝采购订单: {}", orderId);
-        
-        // 1. 获取采购订单
-        PurchaseOrder order = purchaseOrderRepository.findById(orderId);
-        if (order == null) {
-            throw new EntityNotFoundException("Purchase order not found with id: " + orderId);
+    public PurchaseOrder getOrder(Long orderId) {
+        PurchaseOrder order = orderRepository.get(orderId);
+        if (order != null) {
+            // 每次获取订单时重新计算虚拟字段
+            calculateVirtualFields(order);
         }
-        
-        // 2. 更新状态和拒绝信息
-        order.setOrderStatus("Rejected");
-        order.setField("rejectedBy", userContext.getCurrentUserId());
-        order.setField("rejectedDate", LocalDateTime.now());
-        order.setField("rejectionReason", rejectionReason);
-        
-        // 3. 保存更新
-        purchaseOrderRepository.update(order);
-        PurchaseOrder updatedOrder = order;
-        log.debug("采购订单已拒绝: {}", orderId);
-        
-        // 4. 完成工作流任务
-        workflowEngine.completeTask(WORKFLOW_NAME, orderId, "reject", Map.of(
-            "rejecter", userContext.getCurrentUserId(),
-            "reason", rejectionReason
-        ));
-        
-        // 5. 发送拒绝通知
-        notificationService.sendPurchaseOrderRejectedNotification(updatedOrder);
-        
-        return PurchaseOrderMapper.INSTANCE.toResponse(updatedOrder);
+        return order;
     }
-
+    
     /**
-     * 查询采购订单
+     * 计算订单中的所有计算字段
      */
-    @Transactional(readOnly = true)
-    public Page<PurchaseOrderResponse> searchPurchaseOrders(PurchaseOrderCriteria criteria, Pageable pageable) {
-        log.debug("查询采购订单: {}", criteria);
+    private void calculateFields(PurchaseOrder order) {
+        logger.info("计算订单字段值: " + order.getOrderCode());
         
-        // 1. 构建查询语句
-        StringBuilder queryBuilder = new StringBuilder("""
-            SELECT Id, Name, orderNumber, orderTitle, totalAmount, totalAmountWithTax,
-                   vendorId, departmentId, orderStatus, createdBy, createdDate,
-                   priority, isHighValueOrder
-            FROM PurchaseOrder
-            WHERE 1=1
-            """);
+        // 构建上下文
+        Map<String, Object> context = new HashMap<>();
+        context.put("order", order);
         
-        // 2. 设置查询参数
-        Map<String, Object> params = new HashMap<>();
-        
-        // 3. 构建查询条件
-        if (criteria.getStatuses() != null && !criteria.getStatuses().isEmpty()) {
-            queryBuilder.append(" AND orderStatus IN (:statuses)");
-            params.put("statuses", criteria.getStatuses());
+        // 计算订单总金额（不含税）
+        BigDecimal totalAmountWithoutTax = BigDecimal.ZERO;
+        if (order.getOrderItems() != null) {
+            for (PurchaseOrderItem item : order.getOrderItems()) {
+                // 计算每个订单项的金额
+                calculateItemFields(item);
+                // 累加总金额
+                totalAmountWithoutTax = totalAmountWithoutTax.add(item.getAmountWithoutTax());
+            }
         }
+        order.setTotalAmountWithoutTax(totalAmountWithoutTax);
         
-        if (criteria.getDepartmentId() != null) {
-            queryBuilder.append(" AND departmentId = :departmentId");
-            params.put("departmentId", criteria.getDepartmentId());
+        // 计算税额
+        Double taxRate = order.getTaxRate() != null ? order.getTaxRate() : 0.13;
+        BigDecimal taxAmount = totalAmountWithoutTax.multiply(BigDecimal.valueOf(taxRate));
+        order.setTaxAmount(taxAmount);
+        
+        // 计算含税总金额
+        order.setTotalAmountWithTax(totalAmountWithoutTax.add(taxAmount));
+        
+        // 计算是否超时
+        boolean isOverdue = "已下单".equals(order.getOrderStatus()) && 
+                           order.getExpectedDeliveryDate() != null && 
+                           order.getExpectedDeliveryDate().isBefore(LocalDateTime.now());
+        order.setIsOverdue(isOverdue);
+        
+        // 计算延迟天数
+        if (isOverdue && order.getExpectedDeliveryDate() != null) {
+            order.setDelayDays(java.time.temporal.ChronoUnit.DAYS.between(
+                order.getExpectedDeliveryDate(), LocalDateTime.now()));
+        } else {
+            order.setDelayDays(0L);
         }
-        
-        if (criteria.getVendorId() != null) {
-            queryBuilder.append(" AND vendorId = :vendorId");
-            params.put("vendorId", criteria.getVendorId());
-        }
-        
-        if (criteria.getMinAmount() != null) {
-            queryBuilder.append(" AND totalAmount >= :minAmount");
-            params.put("minAmount", criteria.getMinAmount());
-        }
-        
-        if (criteria.getMaxAmount() != null) {
-            queryBuilder.append(" AND totalAmount <= :maxAmount");
-            params.put("maxAmount", criteria.getMaxAmount());
-        }
-        
-        if (criteria.getStartDate() != null) {
-            queryBuilder.append(" AND createdDate >= :startDate");
-            params.put("startDate", criteria.getStartDate());
-        }
-        
-        if (criteria.getEndDate() != null) {
-            queryBuilder.append(" AND createdDate <= :endDate");
-            params.put("endDate", criteria.getEndDate());
-        }
-        
-        if (criteria.getIsHighValue() != null) {
-            queryBuilder.append(" AND isHighValueOrder = :isHighValue");
-            params.put("isHighValue", criteria.getIsHighValue());
-        }
-        
-        // 4. 添加排序
-        queryBuilder.append(" ORDER BY createdDate DESC");
-        
-        // 5. 执行分页查询
-        Page<PurchaseOrder> results = queryExecutor.executePaginatedQuery(
-                queryBuilder.toString(), 
-                params, 
-                PurchaseOrder.class,
-                pageable
-        );
-        
-        // 6. 转换结果并返回
-        return results.map(PurchaseOrderMapper.INSTANCE::toResponse);
     }
-
+    
     /**
-     * 获取高价值采购订单
+     * 计算订单项的字段值
      */
-    @Transactional(readOnly = true)
-    public List<PurchaseOrderResponse> getHighValuePurchaseOrders() {
-        String query = """
-            SELECT Id, Name, orderNumber, orderTitle, totalAmount, totalAmountWithTax,
-                   vendorId, departmentId, orderStatus, createdDate, priority
-            FROM PurchaseOrder
-            WHERE isHighValueOrder = true AND orderStatus IN ('Submitted', 'In_Review')
-            ORDER BY totalAmount DESC, createdDate DESC
-            """;
+    private void calculateItemFields(PurchaseOrderItem item) {
+        // 计算不含税金额
+        BigDecimal amountWithoutTax = item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
+        item.setAmountWithoutTax(amountWithoutTax);
         
-        List<PurchaseOrder> results = queryExecutor.executeQuery(
-                query, 
-                Map.of(), 
-                PurchaseOrder.class
-        );
+        // 计算税额
+        Double taxRate = item.getTaxRate() != null ? item.getTaxRate() : 0.13;
+        BigDecimal taxAmount = amountWithoutTax.multiply(BigDecimal.valueOf(taxRate));
+        item.setTaxAmount(taxAmount);
         
-        return results.stream()
-                .map(PurchaseOrderMapper.INSTANCE::toResponse)
-                .collect(Collectors.toList());
+        // 计算含税总金额
+        item.setTotalAmount(amountWithoutTax.add(taxAmount));
+    }
+    
+    /**
+     * 计算虚拟字段
+     */
+    private void calculateVirtualFields(PurchaseOrder order) {
+        // 构建上下文
+        Map<String, Object> context = new HashMap<>();
+        context.put("order", order);
+        
+        // 获取供应商信息用于订单摘要
+        Supplier supplier = supplierService.getSupplier(order.getSupplierId());
+        if (supplier != null) {
+            context.put("supplierName", supplier.getName());
+        }
+        
+        // 计算订单摘要
+        try {
+            String orderSummary = expressionEngine.evaluateExpression(
+                "订单${order.orderCode} - ${supplierName} - ${order.totalAmountWithTax}元 - ${order.orderStatus}", context);
+            order.setOrderSummary(orderSummary);
+        } catch (Exception e) {
+            logger.warning("计算订单摘要失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 验证业务规则
+     */
+    private void validateBusinessRules(PurchaseOrder order) {
+        logger.info("验证订单业务规则: " + order.getOrderCode());
+        
+        // 构建上下文
+        Map<String, Object> context = new HashMap<>();
+        context.put("order", order);
+        
+        // 验证预计金额必须大于0
+        boolean amountValid = order.getEstimatedAmount() != null && 
+                             order.getEstimatedAmount().compareTo(BigDecimal.ZERO) > 0;
+        if (!amountValid) {
+            throw new RuntimeException("预计金额必须大于0");
+        }
+        
+        // 验证期望交货日期必须晚于当前日期
+        boolean dateValid = order.getExpectedDeliveryDate() != null && 
+                           order.getExpectedDeliveryDate().isAfter(LocalDateTime.now());
+        if (!dateValid) {
+            throw new RuntimeException("期望交货日期必须晚于当前日期");
+        }
+        
+        // 验证订单必须包含至少一个采购项目
+        boolean itemsValid = order.getOrderItems() != null && !order.getOrderItems().isEmpty();
+        if (!itemsValid) {
+            throw new RuntimeException("采购订单必须包含至少一个采购项目");
+        }
+        
+        logger.info("订单业务规则验证通过");
+    }
+    
+    /**
+     * 评估是否需要多级审批
+     */
+    private boolean evaluateMultiLevelApproval(PurchaseOrder order) {
+        // 使用表达式引擎评估多级审批条件
+        // 例如：订单金额大于10万元或紧急采购需要多级审批
+        Map<String, Object> context = new HashMap<>();
+        context.put("order", order);
+        
+        String expression = "${order.totalAmountWithTax}.compareTo(java.math.BigDecimal.valueOf(100000)) > 0 || ${order.orderType}.equals('紧急采购')";
+        try {
+            return expressionEngine.evaluateBooleanExpression(expression, context);
+        } catch (Exception e) {
+            logger.warning("评估多级审批条件失败: " + e.getMessage());
+            // 默认返回true，保守处理
+            return true;
+        }
     }
 }

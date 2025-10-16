@@ -6,8 +6,9 @@ import com.bone.tool.codegen.domain.repository.CodegenTableRepository;
 import com.bone.tool.codegen.domain.service.CodegenService;
 import com.bone.tool.codegen.domain.service.DatabaseTableService;
 import com.bone.tool.codegen.domain.service.DataSourceConfigService;
-import com.bone.tool.codegen.domain.service.TemplateEngine;
-import com.bone.tool.codegen.infrastructure.config.CodegenEngine;
+import com.bone.tool.codegen.application.converter.CodegenConverter;
+import com.bone.tool.codegen.domain.service.generator.DefaultCodeGenerator;
+import com.bone.tool.codegen.domain.service.renderer.VelocityTemplateRenderer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
@@ -42,13 +43,15 @@ public class GenerateCustomCodeTest {
     @Mock
     private CodegenColumnRepository codegenColumnRepository;
     @Mock
-    private CodegenEngine codegenEngine;
+    private DefaultCodeGenerator codeGenerator;
     @Mock
     private DatabaseTableService databaseTableService;
     @Mock
     private DataSourceConfigService dataSourceConfigService;
     @Mock
-    private TemplateEngine templateEngine;
+    private VelocityTemplateRenderer templateRenderer;
+    @Mock
+    private CodegenConverter codegenConverter;
 
     @BeforeEach
     public void setUp() {
@@ -58,10 +61,11 @@ public class GenerateCustomCodeTest {
         codegenService = new CodegenService(
                 codegenTableRepository,
                 codegenColumnRepository,
-                codegenEngine,
+                codegenConverter,
+                codeGenerator,
                 databaseTableService,
                 dataSourceConfigService,
-                templateEngine
+                templateRenderer
         );
     }
     

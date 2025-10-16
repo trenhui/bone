@@ -73,10 +73,10 @@ public class DatabaseTableControllerTest {
         when(databaseTableService.getTableList(anyLong(), anyString(), anyString())).thenReturn(mockTableList);
 
         // 执行请求并验证响应（传入所有参数）
-        mockMvc.perform(get("/api/v1/database-tables")
-                .param("dataSourceId", "1")
-                .param("tableName", "test")
-                .param("tableComment", "测试"))
+        mockMvc.perform(get("/api/v1/database-tables/original")
+                .param("dataSourceConfigId", "1")
+                .param("nameLike", "test")
+                .param("commentLike", "测试"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.code").value(200))
@@ -104,8 +104,8 @@ public class DatabaseTableControllerTest {
         when(databaseTableService.getTableList(anyLong(), anyString(), anyString())).thenReturn(mockTableList);
 
         // 执行请求并验证响应（只传入必填参数）
-        mockMvc.perform(get("/api/v1/database-tables")
-                .param("dataSourceId", "1"))
+        mockMvc.perform(get("/api/v1/database-tables/original")
+                .param("dataSourceConfigId", "1"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.code").value(200))
@@ -144,11 +144,11 @@ public class DatabaseTableControllerTest {
     @Test
     void testGetAllTables() throws Exception {
         // 模拟服务层返回
-        when(databaseTableService.getTableList(1L)).thenReturn(mockTableList);
+        when(databaseTableService.getTableList(1L, null, null)).thenReturn(mockTableList);
 
         // 执行请求并验证响应
-        mockMvc.perform(get("/api/v1/database-tables/all")
-                .param("dataSourceId", "1"))
+        mockMvc.perform(get("/api/v1/database-tables/original/all")
+                .param("dataSourceConfigId", "1"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.code").value(200))
@@ -157,7 +157,7 @@ public class DatabaseTableControllerTest {
                 .andExpect(jsonPath("$.data[0].name").value("test_table"));
 
         // 验证服务层方法被调用
-        verify(databaseTableService, times(1)).getTableList(1L);
+        verify(databaseTableService, times(1)).getTableList(1L, null, null);
     }
 
     /**
@@ -171,13 +171,12 @@ public class DatabaseTableControllerTest {
      */
     @Test
     void testGetTableInfo() throws Exception {
-        // 模拟服务层返回
-        when(databaseTableService.getTable(1L, "test_table")).thenReturn(mockTableInfo);
+        // 模拟服务层返回 - 使用getTableList方法替代getTable
+        when(databaseTableService.getTableList(1L, "test_table", null)).thenReturn(mockTableList);
 
         // 执行请求并验证响应
-        mockMvc.perform(get("/api/v1/database-tables/detail")
-                .param("dataSourceId", "1")
-                .param("tableName", "test_table"))
+        mockMvc.perform(get("/api/v1/database-tables/original/test_table")
+                .param("dataSourceConfigId", "1"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.code").value(200))
@@ -185,7 +184,7 @@ public class DatabaseTableControllerTest {
                 .andExpect(jsonPath("$.data.comment").value("测试表"));
 
         // 验证服务层方法被调用
-        verify(databaseTableService, times(1)).getTable(1L, "test_table");
+        verify(databaseTableService, times(1)).getTableList(1L, "test_table", null);
     }
 
     /**
@@ -199,20 +198,19 @@ public class DatabaseTableControllerTest {
      */
     @Test
     void testGetTableWithNonExistentTable() throws Exception {
-        // 模拟服务层返回
-        when(databaseTableService.getTable(1L, "non_existent_table")).thenReturn(null);
+        // 模拟服务层返回 - 使用getTableList方法替代getTable
+        when(databaseTableService.getTableList(1L, "non_existent_table", null)).thenReturn(Collections.emptyList());
 
         // 执行请求并验证响应
-        mockMvc.perform(get("/api/v1/database-tables/detail")
-                .param("dataSourceId", "1")
-                .param("tableName", "non_existent_table"))
+        mockMvc.perform(get("/api/v1/database-tables/original/non_existent_table")
+                .param("dataSourceConfigId", "1"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data").doesNotExist());
 
         // 验证服务层方法被调用
-        verify(databaseTableService, times(1)).getTable(1L, "non_existent_table");
+        verify(databaseTableService, times(1)).getTableList(1L, "non_existent_table", null);
     }
 
     /**
@@ -268,8 +266,8 @@ public class DatabaseTableControllerTest {
         when(databaseTableService.getTables(1L, tableNames)).thenReturn(batchTableList);
 
         // 执行请求并验证响应
-        mockMvc.perform(post("/api/v1/database-tables/batch-info")
-                .param("dataSourceId", "1")
+        mockMvc.perform(post("/api/v1/database-tables/original/batch")
+                .param("dataSourceConfigId", "1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("[\"test_table\", \"another_table\"]"))
                 .andExpect(status().isOk())
@@ -295,12 +293,11 @@ public class DatabaseTableControllerTest {
      */
     @Test
     void testGetBatchTableInfoWithEmptyList() throws Exception {
-        // 模拟服务层返回
-        when(databaseTableService.getTables(1L, Collections.emptyList())).thenReturn(Collections.emptyList());
+        // 不需要模拟服务调用，因为控制器会直接返回空列表
 
         // 执行请求并验证响应
-        mockMvc.perform(post("/api/v1/database-tables/batch-info")
-                .param("dataSourceId", "1")
+        mockMvc.perform(post("/api/v1/database-tables/original/batch")
+                .param("dataSourceConfigId", "1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("[]"))
                 .andExpect(status().isOk())
@@ -308,8 +305,5 @@ public class DatabaseTableControllerTest {
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data.length()").value(0));
-
-        // 验证服务层方法被调用
-        verify(databaseTableService, times(1)).getTables(1L, Collections.emptyList());
     }
 }
