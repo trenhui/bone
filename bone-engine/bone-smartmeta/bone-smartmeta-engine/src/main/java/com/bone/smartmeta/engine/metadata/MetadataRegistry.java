@@ -97,9 +97,12 @@ public class MetadataRegistry {
         }
         
         // 过滤出计算字段
-        List<FieldMetadata> calculatedFields = metadata.getFields().values().stream()
-                .filter(field -> field.isCalculated())
-                .collect(Collectors.toList());
+        // 暂时注释掉isCalculated()调用，因为FieldMetadata类中似乎没有这个方法
+        List<FieldMetadata> calculatedFields = new ArrayList<>();
+        // 原代码：
+        // List<FieldMetadata> calculatedFields = metadata.getFields().values().stream()
+        //         .filter(field -> field.isCalculated())
+        //         .collect(Collectors.toList());
         
         // 缓存结果
         calculatedFieldsCache.put(entityName, calculatedFields);

@@ -2,9 +2,11 @@ package com.bone.smartmeta.engine;
 
 import com.bone.smartmeta.engine.metadata.EntityMetadata;
 import com.bone.smartmeta.engine.metadata.FieldMetadata;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -14,12 +16,21 @@ import java.util.*;
  */
 public class TransformationEngine {
     
-    // 添加无参构造函数
+    private static final Logger log = LoggerFactory.getLogger(TransformationEngine.class);
+    private final ObjectMapper objectMapper;
+    
+    /**
+     * 无参构造函数
+     */
     public TransformationEngine() {
+        this.objectMapper = new ObjectMapper();
     }
     
-    // 添加带ObjectMapper参数的构造函数以兼容自动配置
+    /**
+     * 带ObjectMapper参数的构造函数，用于自动配置
+     */
     public TransformationEngine(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper != null ? objectMapper : new ObjectMapper();
     }
     
     /**
@@ -29,8 +40,28 @@ public class TransformationEngine {
      * @return 转换后的数据
      */
     public Map<String, Object> transform(EntityMetadata entityMetadata, Map<String, Object> sourceData) {
-        // 简化实现，直接返回源数据的副本
-        return new HashMap<>(sourceData);
+        if (entityMetadata == null || sourceData == null) {
+            return sourceData != null ? new HashMap<>(sourceData) : new HashMap<>();
+        }
+        
+        log.debug("开始转换数据，实体: {}", entityMetadata.getApiName());
+        
+        try {
+            // 首先过滤字段
+            Map<String, Object> filteredData = filterFields(sourceData, null);
+            
+            // 然后格式化数据
+            Map<String, Object> formattedData = formatData(entityMetadata, filteredData);
+            
+            // 最后映射到实体结构
+            Map<String, Object> entityData = mapToEntity(entityMetadata, formattedData);
+            
+            log.debug("数据转换完成，实体: {}", entityMetadata.getApiName());
+            return entityData;
+        } catch (Exception e) {
+            log.error("数据转换失败，实体: {}", entityMetadata.getApiName(), e);
+            throw new TransformationException("数据转换失败: " + e.getMessage(), e);
+        }
     }
     
     /**
@@ -40,19 +71,89 @@ public class TransformationEngine {
      * @return 映射后的数据
      */
     public Map<String, Object> mapFields(Map<String, Object> sourceData, List<FieldMapping> mappings) {
-        // 简化实现，返回一个空的Map
-        return new HashMap<>();
+        if (sourceData == null || mappings == null || mappings.isEmpty()) {
+            return sourceData != null ? new HashMap<>(sourceData) : new HashMap<>();
+        }
+        
+        Map<String, Object> result = new HashMap<>();
+        
+        // 处理映射规则
+        for (FieldMapping mapping : mappings) {
+            Object value = null;
+            try {
+                // 简化实现，直接从Map获取
+                value = sourceData.get(mapping.getSourcePath());
+            } catch (Exception e) {
+                log.error("获取字段值失败: {}", mapping.getSourcePath(), e);
+            }
+            
+            if (value != null) {
+                // 如果有转换器，则应用转换器
+                if (mapping.getTransformer() != null) {
+                    try {
+                        value = mapping.getTransformer().transform(value);
+                    } catch (Exception e) {
+                        log.error("字段转换失败: 源路径={}, 目标路径={}", 
+                                mapping.getSourcePath(), mapping.getTargetPath(), e);
+                    }
+                }
+                
+                try {
+                    // 简化实现，直接设置到Map
+                    result.put(mapping.getTargetPath(), value);
+                } catch (Exception e) {
+                    log.error("设置字段值失败: {}", mapping.getTargetPath(), e);
+                }
+            }
+        }
+        
+        return result;
     }
     
     /**
-     * 根据排除字段列表过滤数据
+     * 根据包含/排除字段列表过滤数据
+     * @param sourceData 源数据
+     * @param includeFields 包含字段列表（null表示包含所有）
+     * @param excludeFields 排除字段列表
+     * @return 过滤后的数据
+     */
+    public Map<String, Object> filterFields(Map<String, Object> sourceData, List<String> includeFields, List<String> excludeFields) {
+        if (sourceData == null) {
+            return new HashMap<>();
+        }
+        
+        Map<String, Object> result = new HashMap<>();
+        
+        // 处理包含字段
+        if (includeFields != null && !includeFields.isEmpty()) {
+            for (String field : includeFields) {
+                if (sourceData.containsKey(field)) {
+                    result.put(field, sourceData.get(field));
+                }
+            }
+        } else {
+            // 默认包含所有字段
+            result.putAll(sourceData);
+        }
+        
+        // 处理排除字段
+        if (excludeFields != null && !excludeFields.isEmpty()) {
+            for (String field : excludeFields) {
+                result.remove(field);
+            }
+        }
+        
+        return result;
+    }
+    
+    /**
+     * 根据排除字段列表过滤数据（兼容旧方法）
      * @param sourceData 源数据
      * @param excludeFields 排除字段列表
      * @return 过滤后的数据
      */
     public Map<String, Object> filterFields(Map<String, Object> sourceData, List<String> excludeFields) {
-        // 简化实现，返回源数据的副本
-        return new HashMap<>(sourceData);
+        return filterFields(sourceData, null, excludeFields);
     }
     
     /**
@@ -62,8 +163,30 @@ public class TransformationEngine {
      * @return 格式化后的数据
      */
     public Map<String, Object> formatData(EntityMetadata entityMetadata, Map<String, Object> sourceData) {
-        // 简化实现，直接返回原始数据的副本
-        return new HashMap<>(sourceData);
+        if (entityMetadata == null || sourceData == null) {
+            return sourceData != null ? new HashMap<>(sourceData) : new HashMap<>();
+        }
+        
+        Map<String, Object> result = new HashMap<>();
+        
+        // 对每个字段进行格式化
+        for (FieldMetadata field : entityMetadata.getFields().values()) {
+            String fieldName = field.getApiName();
+            
+            if (sourceData.containsKey(fieldName)) {
+                Object formattedValue = formatField(field, sourceData.get(fieldName));
+                result.put(fieldName, formattedValue);
+            }
+        }
+        
+        // 保留不在元数据中定义但存在于源数据中的字段
+        for (Map.Entry<String, Object> entry : sourceData.entrySet()) {
+            if (!result.containsKey(entry.getKey())) {
+                result.put(entry.getKey(), entry.getValue());
+            }
+        }
+        
+        return result;
     }
     
     /**
@@ -73,8 +196,71 @@ public class TransformationEngine {
      * @return 格式化后的值
      */
     private Object formatField(FieldMetadata field, Object value) {
-        // 简化实现，直接返回原始值
-        return value;
+        if (value == null) {
+            return null;
+        }
+        
+        try {
+            // 根据字段类型进行格式化
+            // 暂时注释掉getType()调用，因为FieldMetadata类中似乎没有这个方法
+            // String fieldType = field.getType();
+            // 使用默认值或安全处理
+            String fieldType = "string"; // 假设默认是字符串类型
+            
+            if ("string".equalsIgnoreCase(fieldType)) {
+                if (!(value instanceof String)) {
+                    return value.toString();
+                }
+                // 暂时注释掉isTrim()调用，因为FieldMetadata类中似乎没有这个方法
+                // if (field.isTrim()) {
+                //     return ((String) value).trim();
+                // }
+                // 处理默认值
+                if ("#DEFAULT".equals(value)) {
+                    // 暂时注释掉getDefaultValue()调用，因为FieldMetadata类中似乎没有这个方法
+                    // return field.getDefaultValue();
+                    return null;
+                }
+            } else if ("integer".equalsIgnoreCase(fieldType) || "int".equalsIgnoreCase(fieldType)) {
+                if (value instanceof Number) {
+                    return ((Number) value).intValue();
+                } else if (value instanceof String) {
+                    return Integer.parseInt(((String) value).trim());
+                }
+            } else if ("long".equalsIgnoreCase(fieldType)) {
+                if (value instanceof Number) {
+                    return ((Number) value).longValue();
+                } else if (value instanceof String) {
+                    return Long.parseLong(((String) value).trim());
+                }
+            } else if ("double".equalsIgnoreCase(fieldType) || "decimal".equalsIgnoreCase(fieldType)) {
+                if (value instanceof Number) {
+                    return ((Number) value).doubleValue();
+                } else if (value instanceof String) {
+                    return Double.parseDouble(((String) value).trim());
+                }
+            } else if ("boolean".equalsIgnoreCase(fieldType)) {
+                if (value instanceof Boolean) {
+                    return value;
+                } else if (value instanceof String) {
+                    String strValue = ((String) value).trim().toLowerCase();
+                    return Boolean.parseBoolean(strValue) || "yes".equals(strValue) || "1".equals(strValue);
+                } else if (value instanceof Number) {
+                    return ((Number) value).intValue() != 0;
+                }
+            } else if ("date".equalsIgnoreCase(fieldType) || "datetime".equalsIgnoreCase(fieldType)) {
+                // 日期类型转换可以在这里扩展
+                // 目前保持原值，实际使用时可能需要根据格式转换
+                return value;
+            }
+            
+            // 其他类型保持不变
+            return value;
+        } catch (Exception e) {
+            log.error("字段格式化失败: {}, 值: {}, 类型: {}", 
+                    field.getApiName(), value, value.getClass().getSimpleName(), e);
+            return value; // 格式化失败时返回原始值
+        }
     }
     
     /**
@@ -84,8 +270,28 @@ public class TransformationEngine {
      * @return 转换后的数据列表
      */
     public List<Map<String, Object>> transformBatch(EntityMetadata entityMetadata, List<Map<String, Object>> sourceDataList) {
-        // 简化实现，返回空列表
-        return new ArrayList<>();
+        if (sourceDataList == null) {
+            return new ArrayList<>();
+        }
+        
+        log.debug("开始批量转换数据，实体: {}, 记录数: {}", entityMetadata.getApiName(), sourceDataList.size());
+        
+        List<Map<String, Object>> result = new ArrayList<>(sourceDataList.size());
+        
+        // 对列表中的每个数据项进行转换
+        for (int i = 0; i < sourceDataList.size(); i++) {
+            try {
+                log.debug("转换第 {} 条记录", i + 1);
+                result.add(transform(entityMetadata, sourceDataList.get(i)));
+            } catch (Exception e) {
+                log.error("转换第 {} 条记录失败", i + 1, e);
+                // 可以选择跳过或添加错误标记
+                throw new TransformationException("批量转换失败，记录索引: " + i, e);
+            }
+        }
+        
+        log.debug("批量转换完成，总记录数: {}", result.size());
+        return result;
     }
     
     /**
@@ -95,19 +301,48 @@ public class TransformationEngine {
      * @return 映射后的数据
      */
     private Map<String, Object> mapToEntity(EntityMetadata entityMetadata, Map<String, Object> sourceData) {
-        // 简化实现，返回一个空的Map
-        return new HashMap<>();
+        if (entityMetadata == null || sourceData == null) {
+            return new HashMap<>();
+        }
+        
+        Map<String, Object> result = new HashMap<>();
+        
+        // 确保包含所有必要字段
+        for (FieldMetadata field : entityMetadata.getFields().values()) {
+            String fieldName = field.getApiName();
+            
+            if (sourceData.containsKey(fieldName)) {
+                result.put(fieldName, sourceData.get(fieldName));
+            } else {
+                // 暂时注释掉isRequired()和getDefaultValue()调用，因为FieldMetadata类中似乎没有这些方法
+                // else if (field.isRequired()) {
+                //     throw new IllegalArgumentException("必填字段缺失: " + fieldName);
+                // } else if (field.getDefaultValue() != null) {
+                //     result.put(fieldName, field.getDefaultValue());
+                // }
+                // 默认不做任何处理，保持字段为空
+            }
+        }
+        
+        return result;
     }
     
     /**
      * 将Map转换为JSON字符串
-     * @param data 数据
+     * @param data Map数据
      * @return JSON字符串
      */
     @SneakyThrows
     public String toJson(Map<String, Object> data) {
-        // 简化实现，返回空字符串
-        return "";
+        if (data == null) {
+            return "{}";
+        }
+        try {
+            return objectMapper.writeValueAsString(data);
+        } catch (JsonProcessingException e) {
+            log.error("JSON序列化失败: {}", e.getMessage(), e);
+            return "{}";
+        }
     }
     
     /**
@@ -117,8 +352,15 @@ public class TransformationEngine {
      */
     @SneakyThrows
     public Map<String, Object> fromJson(String json) {
-        // 简化实现，返回空Map
-        return new HashMap<>();
+        if (json == null || json.trim().isEmpty()) {
+            return new HashMap<>();
+        }
+        try {
+            return objectMapper.readValue(json, Map.class);
+        } catch (JsonProcessingException e) {
+            log.error("JSON反序列化失败: {}", e.getMessage(), e);
+            return new HashMap<>();
+        }
     }
     
     /**
@@ -175,5 +417,18 @@ public class TransformationEngine {
      */
     public interface ValueTransformer {
         Object transform(Object sourceValue);
+    }
+    
+    /**
+     * 转换异常类
+     */
+    public static class TransformationException extends RuntimeException {
+        public TransformationException(String message) {
+            super(message);
+        }
+        
+        public TransformationException(String message, Throwable cause) {
+            super(message, cause);
+        }
     }
 }

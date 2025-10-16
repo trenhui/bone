@@ -260,7 +260,8 @@ public class MetadataEngineInitializer implements ApplicationRunner {
         }
         
         field.setDefaultValue(defaultValue);
-        field.setRegexPattern(regexPattern);
+        // 修复类型不兼容问题，将Pattern对象转换为String
+        field.setRegexPattern(regexPattern != null ? regexPattern.toString() : null);
         
         return field;
     }

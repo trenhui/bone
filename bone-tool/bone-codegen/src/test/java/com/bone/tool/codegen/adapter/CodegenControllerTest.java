@@ -1,6 +1,5 @@
 package com.bone.tool.codegen.adapter;
 
-import com.bone.tool.codegen.adapter.CodeGenController;
 import com.bone.tool.codegen.application.dto.GenerateCustomCodeRequest;
 import com.bone.tool.codegen.domain.service.CodegenService;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,8 +13,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Arrays;
 
