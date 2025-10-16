@@ -1,70 +1,48 @@
 package com.bone.tool.codegen.domain.entity;
 
+import java.io.Serializable;
 import java.util.List;
+import lombok.Data;
 
 /**
- * 表信息实体类
- * 封装数据库表的基本信息和字段列表，作为代码生成的核心数据模型
- *
- * @author bone-team
+ * 表信息
  */
-public class TableInfo {
-    private String name; // 表名
-    private String comment; // 表注释
-    private String entityName; // Java实体类名
-    private String fieldName; // 字段名称（驼峰命名）
-    private List<TableField> fields; // 表字段列表
+@Data
+public class TableInfo implements Serializable {
+    private static final long serialVersionUID = 1L;
     
-    // 默认构造函数
-    public TableInfo() {
-    }
+    private String tableName; // 表名
+    private String tableComment; // 表注释
+    private String entityName; // 实体类名
+    private String moduleName; // 模块名称
+    private List<CodegenColumn> fieldList; // 字段列表
     
-    // 带参数的构造函数
-    public TableInfo(String name, String comment) {
-        this.name = name;
-        this.comment = comment;
-        this.entityName = name;
-        this.fieldName = name;
-    }
-    
-    // getter和setter方法
+    // 兼容DatabaseTableService中的方法调用
     public String getName() {
-        return name;
+        return tableName;
     }
     
-    public void setName(String name) {
-        this.name = name;
+    public void setName(String tableName) {
+        this.tableName = tableName;
     }
     
     public String getComment() {
-        return comment;
+        return tableComment;
     }
     
-    public void setComment(String comment) {
-        this.comment = comment;
+    public void setComment(String tableComment) {
+        this.tableComment = tableComment;
     }
     
-    public String getEntityName() {
-        return entityName;
+    public void setFields(List<CodegenColumn> fieldList) {
+        this.fieldList = fieldList;
     }
     
-    public void setEntityName(String entityName) {
-        this.entityName = entityName;
+    public List<CodegenColumn> getFields() {
+        return fieldList;
     }
     
-    public String getFieldName() {
-        return fieldName;
-    }
-    
-    public void setFieldName(String fieldName) {
-        this.fieldName = fieldName;
-    }
-    
-    public List<TableField> getFields() {
-        return fields;
-    }
-    
-    public void setFields(List<TableField> fields) {
-        this.fields = fields;
+    public void setFieldName(String moduleName) {
+        this.moduleName = moduleName;
     }
 }

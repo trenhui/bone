@@ -2,7 +2,6 @@ package com.bone.tool.codegen.adapter;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
-import com.bone.tool.codegen.application.dto.DatabaseTableResponse;
 import com.bone.tool.codegen.application.dto.CodegenTablePageRequest;
 import com.bone.tool.codegen.application.dto.CodegenTableResponse;
 import com.bone.tool.codegen.application.dto.CodegenCreateListRequest;

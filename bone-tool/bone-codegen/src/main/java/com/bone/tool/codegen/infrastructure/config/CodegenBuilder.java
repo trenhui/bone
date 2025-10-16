@@ -7,7 +7,6 @@ import com.bone.core.domain.extension.ExtensibleObject;
 import com.bone.tool.codegen.application.CodegenConvert;
 import com.bone.tool.codegen.domain.entity.CodegenColumn;
 import com.bone.tool.codegen.domain.entity.CodegenTable;
-import com.bone.tool.codegen.domain.entity.TableField;
 import com.bone.tool.codegen.domain.entity.TableInfo;
 import com.bone.tool.codegen.domain.enums.CodegenColumnHtmlTypeEnum;
 import com.bone.tool.codegen.domain.enums.CodegenColumnListConditionEnum;
@@ -25,10 +24,10 @@ import static cn.hutool.core.util.RandomUtil.randomEle;
 import static cn.hutool.core.util.RandomUtil.randomInt;
 
 /**
- * 代码生成器的 Builder，负责：
- * 1. 将数据库的表 {@link TableInfo} 定义，构建成 {@link CodegenTable}
- * 2. 将数据库的列 {@link TableField} 构定义，建成 {@link CodegenColumn}
- */
+     * 代码生成器的 Builder，负责：
+     * 1. 将数据库的表 {@link TableInfo} 定义，构建成 {@link CodegenTable}
+     * 2. 将数据库的列信息构建成 {@link CodegenColumn}
+     */
 @Component
 public class CodegenBuilder {
 
@@ -141,8 +140,8 @@ public class CodegenBuilder {
         }
     }
     
-    public List<CodegenColumn> buildColumns(Long tableId, List<TableField> tableFields) {
-        List<CodegenColumn> columns = CodegenConvert.INSTANCE.convertList(tableFields);
+    public List<CodegenColumn> buildColumns(Long tableId, List<CodegenColumn> tableFields) {
+        List<CodegenColumn> columns = new ArrayList<>(tableFields);
         int index = 1;
         for (CodegenColumn column : columns) {
             try {

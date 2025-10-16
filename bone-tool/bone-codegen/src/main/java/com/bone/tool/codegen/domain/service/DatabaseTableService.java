@@ -4,7 +4,7 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.lang.Assert;
 import cn.hutool.core.util.StrUtil;
 import com.bone.tool.codegen.domain.entity.DataSourceConfig;
-import com.bone.tool.codegen.domain.entity.TableField;
+import com.bone.tool.codegen.domain.entity.CodegenColumn;
 import com.bone.tool.codegen.domain.entity.TableInfo;
 import com.bone.tool.codegen.domain.repository.DataSourceConfigRepository;
 import jakarta.annotation.Resource;
@@ -205,9 +205,9 @@ public class DatabaseTableService {
     /**
      * 获取表的字段信息
      */
-    private List<TableField> getTableFields(Connection conn, DatabaseMetaData metaData, 
+    private List<CodegenColumn> getTableFields(Connection conn, DatabaseMetaData metaData, 
                                            String catalog, String schema, String tableName) throws SQLException {
-        List<TableField> fields = new ArrayList<>();
+        List<CodegenColumn> fields = new ArrayList<>();
         
         // 获取主键信息
         List<String> primaryKeys = getPrimaryKeys(metaData, catalog, schema, tableName);
@@ -215,15 +215,18 @@ public class DatabaseTableService {
         // 获取字段信息
         try (ResultSet rs = metaData.getColumns(catalog, schema, tableName, null)) {
             while (rs.next()) {
-                TableField field = new TableField();
-                field.setName(rs.getString("COLUMN_NAME"));
-                field.setType(rs.getString("TYPE_NAME"));
-                field.setComment(rs.getString("REMARKS"));
-                field.setPrimaryKey(primaryKeys.contains(field.getName()));
-                field.setPropertyName(convertToFieldName(field.getName()));
-                field.setFill(isAutoFillField(field.getName()));
+                CodegenColumn column = new CodegenColumn();
+                String columnName = rs.getString("COLUMN_NAME");
+                column.setColumnName(columnName);
+                column.setDataType(rs.getString("TYPE_NAME"));
+                column.setColumnComment(rs.getString("REMARKS"));
+                column.setPrimaryKey(primaryKeys.contains(columnName));
+                column.setJavaField(convertToFieldName(columnName));
                 
-                fields.add(field);
+                // 设置其他必要的默认值
+                column.setNullable(true); // 默认可空，后续可根据元数据调整
+                
+                fields.add(column);
             }
         }
         
@@ -326,14 +329,5 @@ public class DatabaseTableService {
         return tableName;
     }
     
-    /**
-     * 判断是否为自动填充字段
-     */
-    private boolean isAutoFillField(String fieldName) {
-        String lowerFieldName = fieldName.toLowerCase();
-        return lowerFieldName.contains("create_time") || 
-               lowerFieldName.contains("update_time") || 
-               lowerFieldName.contains("create_by") || 
-               lowerFieldName.contains("update_by");
-    }
+
 }

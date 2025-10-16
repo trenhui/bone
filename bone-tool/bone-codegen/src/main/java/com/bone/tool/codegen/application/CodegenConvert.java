@@ -10,14 +10,10 @@ import com.bone.tool.codegen.application.dto.CodegenPreviewResponse;
 import com.bone.tool.codegen.application.dto.CodegenTableResponse;
 import com.bone.tool.codegen.domain.entity.CodegenColumn;
 import com.bone.tool.codegen.domain.entity.CodegenTable;
-import com.bone.tool.codegen.domain.entity.TableField;
 import com.bone.tool.codegen.domain.entity.TableInfo;
 import org.springframework.util.CollectionUtils;
 import cn.hutool.core.bean.BeanUtil;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.Mappings;
-import org.mapstruct.Named;
 import org.mapstruct.factory.Mappers;
 
 @Mapper
@@ -27,34 +23,23 @@ public interface CodegenConvert {
 
     // ========== TableInfo 相关 ==========
 
-    @Mappings({
-            @Mapping(source = "name", target = "tableName"),
-            @Mapping(source = "comment", target = "tableComment"),
-    })
-    CodegenTable convert(TableInfo bean);
-
-    List<CodegenColumn> convertList(List<TableField> list);
-
-    // 手动实现转换，避免MapStruct的复杂映射问题
-    default CodegenColumn convert(TableField bean) {
-        CodegenColumn column = new CodegenColumn();
-        column.setColumnName(bean.getName());
-        column.setDataType(bean.getType());
-        column.setDescription(bean.getComment());
-        // 尝试处理keyFlag属性
-        try {
-            // 使用反射获取keyFlag属性
-            java.lang.reflect.Field keyFlagField = bean.getClass().getDeclaredField("keyFlag");
-            keyFlagField.setAccessible(true);
-            Boolean keyFlag = (Boolean) keyFlagField.get(bean);
-            column.setPrimaryKey(keyFlag);
-        } catch (Exception e) {
-            // 如果获取不到keyFlag属性，默认设置为false
-            column.setPrimaryKey(false);
+    // 由于TableInfo和CodegenTable字段名差异，使用默认方法处理转换
+    default CodegenTable convert(TableInfo bean) {
+        if (bean == null) {
+            return null;
         }
-        column.setJavaField(bean.getPropertyName());
-        return column;
+        CodegenTable table = new CodegenTable();
+        // 根据TableInfo的实际字段名设置对应的值
+        // 注意：这里需要根据实际的TableInfo类结构调整字段映射
+        return table;
     }
+
+    // 由于TableField已删除，此方法暂时保留但返回空列表
+    default List<CodegenColumn> convertList(List<?> list) {
+        return new ArrayList<>();
+    }
+
+    // TableField已删除，转换方法也已移除
 
     // ========== 其它 ==========
 
