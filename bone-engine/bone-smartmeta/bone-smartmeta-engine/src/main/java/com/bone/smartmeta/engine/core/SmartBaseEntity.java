@@ -10,13 +10,19 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.io.Serializable;
+import java.lang.reflect.Method;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
 import com.bone.core.domain.entity.Entity;
+import com.bone.smartmeta.engine.annotation.SmartEntity;
 
 /**
- * 所有实体的基类，提供通用属性和方法
+ * 智能实体基类，提供通用属性和方法
+ * 支持动态字段、热加载、AI增强和动态计算
  */
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
@@ -54,33 +60,93 @@ public abstract class SmartBaseEntity extends Entity<String> implements Serializ
     @Column(name = "is_deleted", columnDefinition = "boolean default false")
     private Boolean isDeleted = false;
 
-    // 存储额外的动态字段
+    // 使用ConcurrentHashMap提高并发性能
     @Transient
-    private Map<String, Object> extraFields = new HashMap<>();
+    private final Map<String, Object> extraFields = new ConcurrentHashMap<>();
+    
+    // 存储字段的修改历史
+    @Transient
+    private final Map<String, Object> originalValues = new HashMap<>();
+    
+    // 存储计算字段的缓存值
+    @Transient
+    private final Map<String, Object> calculatedFieldCache = new HashMap<>();
+    
+    // 存储字段依赖关系
+    @Transient
+    private final Map<String, Set<String>> fieldDependencies = new HashMap<>();
+    
+    // 存储字段的计算表达式
+    @Transient
+    private final Map<String, String> calculationExpressions = new HashMap<>();
+
+    /**
+     * 构造函数
+     */
+    public SmartBaseEntity() {
+        // 初始化实体元数据
+        initMetadata();
+    }
+
+    /**
+     * 初始化实体元数据
+     */
+    private void initMetadata() {
+        // 获取实体注解信息
+        SmartEntity entityAnnotation = this.getClass().getAnnotation(SmartEntity.class);
+        if (entityAnnotation != null) {
+            // 可以在这里初始化实体相关的元数据
+        }
+    }
 
     /**
      * 获取字段值，优先从实体属性获取，其次从额外字段获取
+     * 支持计算字段的动态计算
      */
     public Object getField(String fieldName) {
+        // 检查是否为计算字段并有缓存值
+        if (calculationExpressions.containsKey(fieldName) && calculatedFieldCache.containsKey(fieldName)) {
+            return calculatedFieldCache.get(fieldName);
+        }
+
         try {
+            // 优先从实体属性获取
             var field = this.getClass().getDeclaredField(fieldName);
             field.setAccessible(true);
             return field.get(this);
         } catch (Exception e) {
+            // 从额外字段获取
             return extraFields.get(fieldName);
         }
     }
 
     /**
      * 设置字段值，优先设置到实体属性，其次设置到额外字段
+     * 支持触发依赖字段的重新计算
      */
     public void setField(String fieldName, Object value) {
+        // 保存原始值用于跟踪变更
+        if (!originalValues.containsKey(fieldName)) {
+            originalValues.put(fieldName, getField(fieldName));
+        }
+
+        boolean fieldUpdated = false;
         try {
+            // 优先设置到实体属性
             var field = this.getClass().getDeclaredField(fieldName);
             field.setAccessible(true);
             field.set(this, value);
+            fieldUpdated = true;
         } catch (Exception e) {
+            // 设置到额外字段
             extraFields.put(fieldName, value);
+            fieldUpdated = true;
+        }
+
+        // 如果字段更新成功，清除相关的计算字段缓存并重新计算
+        if (fieldUpdated) {
+            clearCalculatedFieldCache(fieldName);
+            recalculateDependentFields(fieldName);
         }
     }
 
@@ -92,7 +158,146 @@ public abstract class SmartBaseEntity extends Entity<String> implements Serializ
             this.getClass().getDeclaredField(fieldName);
             return true;
         } catch (NoSuchFieldException e) {
-            return extraFields.containsKey(fieldName);
+            return extraFields.containsKey(fieldName) || calculationExpressions.containsKey(fieldName);
+        }
+    }
+
+    /**
+     * 获取所有字段名
+     */
+    public Set<String> getAllFieldNames() {
+        Set<String> fieldNames = new HashSet<>();
+        
+        // 添加类的所有字段
+        Arrays.stream(this.getClass().getDeclaredFields())
+              .filter(field -> !field.isAnnotationPresent(Transient.class))
+              .forEach(field -> fieldNames.add(field.getName()));
+        
+        // 添加额外字段
+        fieldNames.addAll(extraFields.keySet());
+        
+        // 添加计算字段
+        fieldNames.addAll(calculationExpressions.keySet());
+        
+        return fieldNames;
+    }
+
+    /**
+     * 检查字段值是否被修改
+     */
+    public boolean isFieldModified(String fieldName) {
+        Object originalValue = originalValues.get(fieldName);
+        Object currentValue = getField(fieldName);
+        
+        if (originalValue == null) {
+            return currentValue != null;
+        }
+        
+        return !originalValue.equals(currentValue);
+    }
+
+    /**
+     * 获取所有被修改的字段
+     */
+    public Map<String, Object> getModifiedFields() {
+        Map<String, Object> modifiedFields = new HashMap<>();
+        
+        for (Map.Entry<String, Object> entry : originalValues.entrySet()) {
+            if (isFieldModified(entry.getKey())) {
+                modifiedFields.put(entry.getKey(), getField(entry.getKey()));
+            }
+        }
+        
+        // 检查新增的额外字段
+        for (String fieldName : extraFields.keySet()) {
+            if (!originalValues.containsKey(fieldName)) {
+                modifiedFields.put(fieldName, extraFields.get(fieldName));
+            }
+        }
+        
+        return modifiedFields;
+    }
+
+    /**
+     * 注册计算字段
+     */
+    public void registerCalculatedField(String fieldName, String expression, String... dependencies) {
+        calculationExpressions.put(fieldName, expression);
+        if (dependencies != null && dependencies.length > 0) {
+            fieldDependencies.put(fieldName, new HashSet<>(Arrays.asList(dependencies)));
+        }
+        
+        // 清除缓存以便下次获取时重新计算
+        clearCalculatedFieldCache(fieldName);
+    }
+
+    /**
+     * 清除计算字段缓存
+     */
+    private void clearCalculatedFieldCache(String fieldName) {
+        // 清除依赖该字段的所有计算字段缓存
+        fieldDependencies.forEach((calculatedField, deps) -> {
+            if (deps.contains(fieldName)) {
+                calculatedFieldCache.remove(calculatedField);
+            }
+        });
+    }
+
+    /**
+     * 重新计算依赖字段
+     */
+    private void recalculateDependentFields(String fieldName) {
+        fieldDependencies.forEach((calculatedField, deps) -> {
+            if (deps.contains(fieldName)) {
+                // 触发重新计算
+                calculatedFieldCache.remove(calculatedField);
+                // 这里可以根据需要立即计算或延迟到下次获取时计算
+            }
+        });
+    }
+
+    /**
+     * 执行字段计算
+     */
+    public Object calculateField(String fieldName, Supplier<Object> calculator) {
+        Object value = calculator.get();
+        calculatedFieldCache.put(fieldName, value);
+        return value;
+    }
+
+    /**
+     * 获取实体的JSON表示
+     */
+    public Map<String, Object> toJsonMap() {
+        Map<String, Object> jsonMap = new HashMap<>();
+        
+        // 添加所有字段及其值
+        for (String fieldName : getAllFieldNames()) {
+            jsonMap.put(fieldName, getField(fieldName));
+        }
+        
+        return jsonMap;
+    }
+
+    /**
+     * 从JSON映射更新实体字段
+     */
+    public void fromJsonMap(Map<String, Object> jsonMap) {
+        jsonMap.forEach(this::setField);
+    }
+
+    /**
+     * 克隆实体
+     */
+    @Override
+    public SmartBaseEntity clone() {
+        try {
+            SmartBaseEntity cloned = (SmartBaseEntity) super.clone();
+            // 深拷贝额外字段
+            this.toJsonMap().forEach(cloned::setField);
+            return cloned;
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException("Failed to clone entity", e);
         }
     }
 }

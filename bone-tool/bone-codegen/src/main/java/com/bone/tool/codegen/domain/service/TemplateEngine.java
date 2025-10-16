@@ -219,7 +219,7 @@ public class TemplateEngine implements InitializingBean {
      * @return 生成的代码
      */
     public String generateMapperCode(Map<String, Object> contextParams) {
-        return generate(TEMPLATE_PATH_SAAS + "mapper.java.vm", contextParams);
+        return generate(TEMPLATE_PATH_SAAS + "converter.java.vm", contextParams);
     }
 
     /**

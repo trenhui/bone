@@ -137,7 +137,7 @@ CREATE TABLE `infra_codegen_table`  (
                                         `sub_join_many` bit(1) NULL DEFAULT NULL COMMENT '主表与子表是否一对多',
                                         `tree_parent_column_id` bigint NULL DEFAULT NULL COMMENT '树表的父字段编号',
                                         `tree_name_column_id` bigint NULL DEFAULT NULL COMMENT '树表的名字字段编号',
-                                        `packge_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '' COMMENT '包名',
+                                        `package_name` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '' COMMENT '包名',
                                         `creator` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '' COMMENT '创建者',
                                         `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                                         `updater` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NULL DEFAULT '' COMMENT '更新者',

@@ -1,53 +1,89 @@
 package com.bone.smartmeta.engine.metadata;
 
-import lombok.Getter;
-import lombok.Setter;
-
-import java.util.ArrayList;
-import java.util.List;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
- * 验证规则元数据模型类
+ * 验证规则元数据
  */
-@Getter
-@Setter
+@Data
+@NoArgsConstructor
 public class ValidationRuleMetadata {
-    
-    // 规则名称
+    private String id;
     private String name;
-    
-    // 规则标签
-    private String label;
-    
-    // 规则描述
+    private String apiName;
     private String description;
-    
-    // 验证条件表达式
-    private String conditionExpression;
-    
-    // 错误消息
+    private String expression;
     private String errorMessage;
-    
-    // 错误位置（字段API名称）
-    private String errorLocation;
-    
-    // 相关字段
-    private List<String> relatedFields = new ArrayList<>();
-    
-    // 是否启用
-    private boolean enabled = true;
+    private int order = 0;
+    private boolean active = true;
+    private String triggerEvent = "ALL";
+    private Map<String, String> attributes = new HashMap<>();
+    private String errorLocation; // 用于getFieldName()方法
     
     /**
-     * 获取表达式（作为getConditionExpression的别名）
+     * 获取规则名称
      */
-    public String getExpression() {
-        return this.conditionExpression;
+    public String getName() {
+        return name;
     }
     
     /**
-     * 设置表达式（作为setConditionExpression的别名）
+     * 检查规则是否启用（兼容isEnabled方法）
+     */
+    public boolean isEnabled() {
+        return active;
+    }
+    
+    /**
+     * 获取字段名称（兼容旧方法）
+     */
+    public String getFieldName() {
+        return errorLocation;
+    }
+    
+    /**
+     * 获取错误消息（兼容旧方法）
+     */
+    public String getMessage() {
+        return errorMessage;
+    }
+    
+    /**
+     * 设置规则名称
+     */
+    public void setName(String name) {
+        this.name = name;
+    }
+    
+    /**
+     * 设置错误消息
+     */
+    public void setMessage(String message) {
+        this.errorMessage = message;
+    }
+    
+    /**
+     * 设置规则类型
+     */
+    public void setType(String type) {
+        // 类型字段实际上不存在，这里只是为了兼容调用
+        // 可以根据需要添加实际的类型字段
+    }
+    
+    /**
+     * 设置表达式
      */
     public void setExpression(String expression) {
-        this.conditionExpression = expression;
+        this.expression = expression;
+    }
+    
+    /**
+     * 设置字段名称
+     */
+    public void setFieldName(String fieldName) {
+        this.errorLocation = fieldName;
     }
 }

@@ -11,7 +11,6 @@ import lombok.experimental.Accessors;
  */
 @Table("infra_data_source_config")
 @Data
-@Accessors(chain = true)
 public class DataSourceConfig extends AbstractEntity<Long> {
 
     /**

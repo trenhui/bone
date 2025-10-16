@@ -6,6 +6,9 @@ import lombok.Data;
 
 /**
  * 数据源配置保存请求
+ * 
+ * 注：创建和更新操作共用一个请求对象，简化代码结构
+ * 通过isUpdate()方法判断操作类型，id字段为空时为创建，不为空时为更新
  */
 @Schema(description = "数据源配置保存请求")
 @Data
