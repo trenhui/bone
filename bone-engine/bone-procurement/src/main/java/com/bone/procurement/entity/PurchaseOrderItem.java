@@ -3,76 +3,73 @@ package com.bone.procurement.entity;
 import com.bone.smartmeta.engine.annotation.SmartEntity;
 import com.bone.smartmeta.engine.annotation.SmartField;
 import com.bone.smartmeta.engine.annotation.BusinessRule;
+import com.bone.smartmeta.engine.annotation.FieldType;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 /**
  * 采购订单项目实体类
- * 作为采购订单的子项，展示复杂对象关系和字段计算功能
+ * 演示bone-smartmeta在复杂业务场景中的应用，包括动态计算和业务规则验证
  */
 @Data
-@SmartEntity(displayName = "采购订单项目")
+@SmartEntity(apiName = "PurchaseOrderItem", label = "采购订单项目", description = "采购订单中的具体商品或服务项")
 public class PurchaseOrderItem {
     
     private Long id;
     
-    @SmartField(displayName = "物料编码", required = true, maxLength = 50)
+    private Long purchaseOrderId;
+    
+    @SmartField(name = "materialCode", label = "物料编码", type = FieldType.TEXT, required = true, length = 50)
     private String materialCode;
     
-    @SmartField(displayName = "物料名称", required = true, maxLength = 200)
+    @SmartField(name = "materialName", label = "物料名称", type = FieldType.TEXT, required = true, length = 200)
     private String materialName;
     
-    @SmartField(displayName = "规格型号", maxLength = 200)
+    @SmartField(name = "specification", label = "规格型号", type = FieldType.TEXT, length = 200)
     private String specification;
     
-    @SmartField(displayName = "单位", required = true, maxLength = 20)
+    @SmartField(name = "unit", label = "单位", type = FieldType.TEXT, required = true, length = 20)
     private String unit;
     
-    @SmartField(displayName = "数量", required = true)
+    @SmartField(name = "quantity", label = "数量", type = FieldType.NUMBER, required = true)
+    @BusinessRule(expression = "${quantity} > 0", errorMessage = "数量必须大于0")
     private Integer quantity;
     
-    @SmartField(displayName = "单价", required = true)
+    @SmartField(name = "unitPrice", label = "单价", type = FieldType.CURRENCY, required = true)
+    @BusinessRule(expression = "${unitPrice}.compareTo(java.math.BigDecimal.ZERO) > 0", errorMessage = "单价必须大于0")
     private BigDecimal unitPrice;
     
-    @SmartField(displayName = "税率", defaultValue = "0.13")
+    @SmartField(name = "taxRate", label = "税率", type = FieldType.PERCENT, defaultValue = "0.13")
     private Double taxRate;
     
-    @SmartField(displayName = "需求部门", maxLength = 100)
+    @SmartField(name = "requestingDepartment", label = "需求部门", type = FieldType.TEXT, length = 100)
     private String requestingDepartment;
     
-    @SmartField(displayName = "项目用途", maxLength = 500)
+    @SmartField(name = "usage", label = "项目用途", type = FieldType.TEXT, length = 500)
     private String usage;
     
-    @SmartField(displayName = "备注", maxLength = 500)
+    @SmartField(name = "remarks", label = "备注", type = FieldType.TEXT, length = 500)
     private String remarks;
     
     // 计算字段：项目金额（不含税）
-    @SmartField(displayName = "项目金额（不含税）", calculated = true,
-                calculationExpression = "${unitPrice}.multiply(java.math.BigDecimal.valueOf(${quantity}))")
+    @SmartField(name = "amountWithoutTax", label = "项目金额（不含税）", type = FieldType.CURRENCY)
     private BigDecimal amountWithoutTax;
     
     // 计算字段：项目税额
-    @SmartField(displayName = "项目税额", calculated = true,
-                calculationExpression = "${amountWithoutTax}.multiply(java.math.BigDecimal.valueOf(${taxRate}))")
+    @SmartField(name = "taxAmount", label = "项目税额", type = FieldType.CURRENCY)
     private BigDecimal taxAmount;
     
     // 计算字段：项目总金额（含税）
-    @SmartField(displayName = "项目总金额（含税）", calculated = true,
-                calculationExpression = "${amountWithoutTax}.add(${taxAmount})")
+    @SmartField(name = "totalAmount", label = "项目总金额（含税）", type = FieldType.CURRENCY)
     private BigDecimal totalAmount;
     
-    // 业务规则验证
-    @BusinessRule(expression = "${quantity} > 0", message = "采购数量必须大于0")
-    @BusinessRule(expression = "${unitPrice}.compareTo(java.math.BigDecimal.ZERO) > 0", message = "单价必须大于0")
-    
     // 虚拟字段：项目描述
-    @SmartField(displayName = "项目描述", virtual = true,
-                expression = "${materialName} (${specification}) - ${quantity}${unit} - ${totalAmount}元")
+    @SmartField(name = "itemDescription", label = "项目描述", type = FieldType.TEXT, virtual = true)
     private String itemDescription;
     
     // 虚拟字段：是否大额项目
-    @SmartField(displayName = "是否大额项目", virtual = true,
-                expression = "${totalAmount}.compareTo(java.math.BigDecimal.valueOf(10000)) > 0")
+    @SmartField(name = "isLargeAmountItem", label = "是否大额项目", type = FieldType.BOOLEAN, virtual = true)
     private Boolean isLargeAmountItem;
 }
