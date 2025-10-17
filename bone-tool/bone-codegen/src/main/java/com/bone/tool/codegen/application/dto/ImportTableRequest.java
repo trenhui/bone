@@ -13,9 +13,9 @@ import java.util.List;
 @Schema(description = "导入表请求")
 public class ImportTableRequest {
 
-    @Schema(description = "数据源配置ID", example = "1")
-    @NotNull(message = "数据源配置ID不能为空")
-    private Long dataSourceConfigId;
+    @Schema(description = "数据源ID", example = "1")
+    @NotNull(message = "数据源ID不能为空")
+    private Long datasourceId;
 
     @Schema(description = "表名列表", example = "[\"sys_user\", \"sys_role\"]")
     @NotEmpty(message = "表名列表不能为空")

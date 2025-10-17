@@ -90,8 +90,8 @@ public class CodegenService {
      */
     public Long importTableFromDatabase(Long dataSourceConfigId, String tableName, String moduleName,
                                         String packageName, Integer scene, Integer modelType) {
-        // 由于databaseTableService可能没有这个方法，返回一个模拟的Long值
-        return 1L;
+        return databaseTableService.importTableFromDatabase(dataSourceConfigId, tableName, moduleName, 
+                packageName, scene, modelType);
     }
 
     /**
@@ -100,8 +100,8 @@ public class CodegenService {
      */
     public List<Long> importTablesFromDatabase(Long dataSourceConfigId, List<String> tableNames,
                                                String moduleName, String packageName, Integer scene, Integer modelType) {
-        // 由于databaseTableService可能没有这个方法，返回一个空列表
-        return new ArrayList<>();
+        return databaseTableService.importTablesFromDatabase(dataSourceConfigId, tableNames, moduleName, 
+                packageName, scene, modelType);
     }
 
     /**
@@ -218,14 +218,14 @@ public class CodegenService {
         // 参数验证
         validateGenerateCustomCodeRequest(request);
 
-        Long dataSourceConfigId = request.getDataSourceConfigId();
+        Long datasourceId = request.getDatasourceId();
         List<String> tableNames = request.getTableNames();
         String modelType = request.getModelType();
         String scene = request.getScene();
 
         // 记录请求信息
         log.info("开始生成自定义代码: 数据源ID={}, 表数量={}, 模板类型={}, 场景={}, 项目名称={}",
-                dataSourceConfigId, tableNames.size(), modelType, scene, request.getProjectName());
+                datasourceId, tableNames.size(), modelType, scene, request.getProjectName());
 
         try {
             // 模拟表信息并生成代码
@@ -258,14 +258,14 @@ public class CodegenService {
             throw new IllegalArgumentException("输出流不能为空");
         }
 
-        Long dataSourceConfigId = request.getDataSourceConfigId();
+        Long datasourceId = request.getDatasourceId();
         List<String> tableNames = request.getTableNames();
         String modelType = request.getModelType();
         String scene = request.getScene();
 
         // 记录请求信息
         log.info("开始生成自定义代码并写入输出流: 数据源ID={}, 表数量={}, 模板类型={}, 场景={}, 项目名称={}",
-                dataSourceConfigId, tableNames.size(), modelType, scene, request.getProjectName());
+                datasourceId, tableNames.size(), modelType, scene, request.getProjectName());
 
         try (ZipOutputStream zipOutputStream = new ZipOutputStream(outputStream, StandardCharsets.UTF_8)) {
             // 模拟表信息并生成代码
@@ -308,7 +308,7 @@ public class CodegenService {
             throw new IllegalArgumentException("请求参数不能为空");
         }
 
-        if (request.getDataSourceConfigId() == null) {
+        if (request.getDatasourceId() == null) {
             throw new IllegalArgumentException("数据源配置ID不能为空");
         }
 
@@ -343,7 +343,7 @@ public class CodegenService {
     private List<CodegenTable> generateCodeForTables(GenerateCustomCodeRequest request) {
         List<CodegenTable> codegenTables = new ArrayList<>();
         List<String> tableNames = request.getTableNames();
-        Long dataSourceConfigId = request.getDataSourceConfigId();
+        Long datasourceId = request.getDatasourceId();
         Integer modelTypeInt = "saas".equals(request.getModelType()) ? 1 : 2;
 
         for (String tableName : tableNames) {
@@ -378,7 +378,7 @@ public class CodegenService {
      */
     private CodegenTable createCodegenTable(String tableName, GenerateCustomCodeRequest request) {
         CodegenTable table = new CodegenTable();
-        table.setDataSourceConfigId(request.getDataSourceConfigId());
+        table.setDatasourceId(request.getDatasourceId());
         table.setTableName(tableName);
         table.setModuleName(request.getModuleName());
         table.setPackageName(request.getBasePackage());
@@ -571,7 +571,7 @@ public class CodegenService {
      */
     private CodegenTable buildCodegenTableFromTableInfo(TableInfo tableInfo, GenerateCustomCodeRequest request) {
         CodegenTable table = new CodegenTable();
-        table.setDataSourceConfigId(request.getDataSourceConfigId());
+        table.setDatasourceId(request.getDatasourceId());
         // 使用反射方式获取和设置字段值
         try {
             // 设置CodegenTable字段
@@ -656,8 +656,8 @@ public class CodegenService {
             column.setCreateOperation(!field.getPrimaryKey());
             column.setUpdateOperation(!field.getPrimaryKey());
             column.setListOperation(true);
-            column.setListOperationResult(true);
-            column.setListOperationCondition("eq");
+            column.setListResultShow(true);
+            column.setListQueryCondition("eq");
             column.setHtmlType("input");
 
             columns.add(column);
@@ -1093,7 +1093,7 @@ public class CodegenService {
      */
     private Map<String, Object> initBindingMap(CodegenTable table, List<CodegenColumn> columns, 
                                              List<CodegenTable> subTables, List<List<CodegenColumn>> subColumnsList, 
-                                             DataSourceConfig dataSourceConfig, String groupId, Integer modelType) {
+                                             Datasource dataSourceConfig, String groupId, Integer modelType) {
         Map<String, Object> bindingMap = new HashMap<>();
         bindingMap.put("modelType", modelType);
         bindingMap.put("groupId", groupId);
@@ -1160,14 +1160,14 @@ public class CodegenService {
             }
 
             // 获取数据源配置
-            Long dataSourceConfigId = codegenTable.getDataSourceConfigId();
-            if (dataSourceConfigId == null) {
+            Long datasourceId = codegenTable.getDatasourceId();
+            if (datasourceId == null) {
                 throw new RuntimeException("表配置未关联数据源: " + tableId);
             }
 
-            DataSourceConfig dataSourceConfig = dataSourceConfigService.getDataSourceConfig(dataSourceConfigId);
+            Datasource dataSourceConfig = dataSourceConfigService.getDataSourceConfig(datasourceId);
             if (dataSourceConfig == null) {
-                throw new RuntimeException("数据源配置不存在: " + dataSourceConfigId);
+                throw new RuntimeException("数据源配置不存在: " + datasourceId);
             }
 
             // 准备参数
@@ -1837,9 +1837,9 @@ public class CodegenService {
                             BeanUtils.copyProperties(table, response);
                             
                             // 设置数据源名称
-                            if (table.getDataSourceConfigId() != null) {
+                            if (table.getDatasourceId() != null) {
                                 try {
-                                    DataSourceConfig dataSourceConfig = dataSourceConfigService.getDataSourceConfig(table.getDataSourceConfigId());
+                                    Datasource dataSourceConfig = dataSourceConfigService.getDataSourceConfig(table.getDatasourceId());
                                     if (dataSourceConfig != null) {
                                         // 使用反射设置数据源名称
                                         String dataSourceName = (String) ReflectionUtil.getFieldValue(dataSourceConfig, "name");
@@ -1848,7 +1848,7 @@ public class CodegenService {
                                         }
                                     }
                                 } catch (Exception e) {
-                                    log.warn("获取数据源名称失败，数据源ID: {}", table.getDataSourceConfigId(), e);
+                                    log.warn("获取数据源名称失败，数据源ID: {}", table.getDatasourceId(), e);
                                 }
                             }
                             
@@ -1893,8 +1893,8 @@ public class CodegenService {
             BeanUtils.copyProperties(codegenTable, response);
             
             // 设置数据源名称
-            if (codegenTable.getDataSourceConfigId() != null) {
-                DataSourceConfig dataSourceConfig = dataSourceConfigService.getDataSourceConfig(codegenTable.getDataSourceConfigId());
+            if (codegenTable.getDatasourceId() != null) {
+                Datasource dataSourceConfig = dataSourceConfigService.getDataSourceConfig(codegenTable.getDatasourceId());
                 if (dataSourceConfig != null) {
                     // 使用反射设置数据源名称，避免方法不存在的问题
                     try {

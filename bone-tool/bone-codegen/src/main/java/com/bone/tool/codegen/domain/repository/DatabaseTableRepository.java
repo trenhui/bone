@@ -19,7 +19,7 @@ public interface DatabaseTableRepository {
      * @return 数据库连接
      * @throws Exception 连接失败时抛出异常
      */
-    Connection getConnection(Long dataSourceConfigId) throws Exception;
+    Connection getConnection(Long datasourceId) throws Exception;
     
     /**
      * 获取数据库元数据

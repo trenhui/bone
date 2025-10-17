@@ -6,7 +6,7 @@ import com.bone.tool.codegen.application.dto.DataSourceConfigResponse;
 import com.bone.tool.codegen.application.dto.CodegenDetailResponse;
 import com.bone.tool.codegen.domain.entity.CodegenTable;
 import com.bone.tool.codegen.domain.entity.CodegenColumn;
-import com.bone.tool.codegen.domain.entity.DataSourceConfig;
+import com.bone.tool.codegen.domain.entity.Datasource;
 import com.bone.tool.codegen.domain.entity.TableInfo;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -63,12 +63,12 @@ public interface CodegenConverter {
      * 将DataSourceConfig转换为DataSourceConfigResponse
      */
     @Mapping(target = "createTimeStr", ignore = true)
-    DataSourceConfigResponse toDataSourceConfigResponse(DataSourceConfig config);
+    DataSourceConfigResponse toDataSourceConfigResponse(Datasource config);
 
     /**
      * 将DataSourceConfig列表转换为DataSourceConfigResponse列表
      */
-    List<DataSourceConfigResponse> toDataSourceConfigResponseList(List<DataSourceConfig> configs);
+    List<DataSourceConfigResponse> toDataSourceConfigResponseList(List<Datasource> configs);
     
     // ========== 纯转换方法，不包含业务逻辑 ==========
     // 遵循单一职责原则，Mapper只负责对象间的属性映射

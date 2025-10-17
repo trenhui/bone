@@ -33,43 +33,43 @@ public class SqlBuilder {
 
     @PostConstruct
     public void init() {
-        builders.put(QueryType.SELECT, new SelectBuilder(metadataService, dialect));
-        builders.put(QueryType.COUNT, new CountBuilder(metadataService));
+        builders.put(QueryType.SELECT, new SelectBuilderSql(metadataService, dialect));
+        builders.put(QueryType.COUNT, new CountBuilderSql(metadataService));
         builders.put(QueryType.BATCH_INSERT, new BatchInsertBuilder());
         builders.put(QueryType.BATCH_UPDATE, new BatchUpdateBuilder());
-        builders.put(QueryType.DYNAMIC_UPDATE, new DynamicUpdateBuilder());
-        builders.put(QueryType.CONDITIONAL_UPDATE, new ConditionalUpdateBuilder());
-        builders.put(QueryType.DELETE, new DeleteBuilder());
-        builders.put(QueryType.AGGREGATION, new AggregationBuilder());
-        builders.put(QueryType.UPSERT, new UpsertBuilder());
-        builders.put(QueryType.COUNT_AGGREGATION, new CountAggregationBuilder()); // 新增计数聚合构建器
+        builders.put(QueryType.DYNAMIC_UPDATE, new DynamicUpdateBuilderSql());
+        builders.put(QueryType.CONDITIONAL_UPDATE, new ConditionalUpdateBuilderSql());
+        builders.put(QueryType.DELETE, new DeleteBuilderSql());
+        builders.put(QueryType.AGGREGATION, new AggregationBuilderSql());
+        builders.put(QueryType.UPSERT, new UpsertBuilderSql());
+        builders.put(QueryType.COUNT_AGGREGATION, new CountAggregationBuilderSql()); // 新增计数聚合构建器
     }
 
     @SuppressWarnings("unchecked")
     public CompiledQuery buildSelect(Class<?> cls, Criteria<?> c, boolean includeDeleted) {
         TableMetadata t = TableMetadataResolver.load(cls);
-        return ((QueryBuilder<SelectContext>) builders.get(QueryType.SELECT))
+        return ((SqlQueryBuilder<SelectContext>) builders.get(QueryType.SELECT))
                 .build(new SelectContext(t, c, includeDeleted));
     }
 
     @SuppressWarnings("unchecked")
     public CompiledQuery buildSelect(Class<?> cls, Criteria<?> c) {
         TableMetadata t = TableMetadataResolver.load(cls);
-        return ((QueryBuilder<SelectContext>) builders.get(QueryType.SELECT))
+        return ((SqlQueryBuilder<SelectContext>) builders.get(QueryType.SELECT))
                 .build(new SelectContext(t, c, false));
     }
 
     @SuppressWarnings("unchecked")
     public CompiledQuery buildSelect(Class<?> cls, Criteria<?> c, AllocationContext extContext) {
         TableMetadata t = TableMetadataResolver.load(cls);
-        return ((QueryBuilder<SelectContext>) builders.get(QueryType.SELECT))
+        return ((SqlQueryBuilder<SelectContext>) builders.get(QueryType.SELECT))
                 .build(new SelectContext(t, c, extContext, false));
     }
 
     @SuppressWarnings("unchecked")
     public CompiledQuery buildCount(Class<?> cls, Criteria<?> c, AllocationContext extContext) {
         TableMetadata t = TableMetadataResolver.load(cls);
-        return ((QueryBuilder<CountContext>) builders.get(QueryType.COUNT))
+        return ((SqlQueryBuilder<CountContext>) builders.get(QueryType.COUNT))
                 .build(new CountContext(t, c, extContext, false));
     }
 
@@ -90,28 +90,28 @@ public class SqlBuilder {
     @SuppressWarnings("unchecked")
     public CompiledQuery buildDynamicUpdate(Class<?> cls, Object e) {
         TableMetadata t = TableMetadataResolver.load(cls);
-        return ((QueryBuilder<DynamicUpdateContext>) builders.get(QueryType.DYNAMIC_UPDATE))
+        return ((SqlQueryBuilder<DynamicUpdateContext>) builders.get(QueryType.DYNAMIC_UPDATE))
                 .build(new DynamicUpdateContext(t, e));
     }
 
     @SuppressWarnings("unchecked")
     public CompiledQuery buildConditionalUpdate(Class<?> cls, Object e, Criteria<?> c) {
         TableMetadata t = TableMetadataResolver.load(cls);
-        return ((QueryBuilder<ConditionalUpdateContext>) builders.get(QueryType.CONDITIONAL_UPDATE))
+        return ((SqlQueryBuilder<ConditionalUpdateContext>) builders.get(QueryType.CONDITIONAL_UPDATE))
                 .build(new ConditionalUpdateContext(t, e, c));
     }
 
     @SuppressWarnings("unchecked")
     public CompiledQuery buildDelete(Class<?> cls, Criteria<?> c, AllocationContext extContext) {
         TableMetadata t = TableMetadataResolver.load(cls);
-        return ((QueryBuilder<DeleteContext>) builders.get(QueryType.DELETE))
+        return ((SqlQueryBuilder<DeleteContext>) builders.get(QueryType.DELETE))
                 .build(new DeleteContext(t, c, extContext));
     }
 
     @SuppressWarnings("unchecked")
     public CompiledQuery buildUpsert(Class<?> cls, Object e) {
         TableMetadata t = TableMetadataResolver.load(cls);
-        return ((QueryBuilder<UpsertContext>) builders.get(QueryType.UPSERT))
+        return ((SqlQueryBuilder<UpsertContext>) builders.get(QueryType.UPSERT))
                 .build(new UpsertContext(t, e, MetadataSdkContext.getDatabaseType()));
     }
 
@@ -119,7 +119,7 @@ public class SqlBuilder {
     public CompiledQuery buildAggregation(Class<?> cls, List<String> aggregations, Criteria<?> criteria,
                                           List<String> groupBy, List<String> having) {
         TableMetadata t = TableMetadataResolver.load(cls);
-        return ((QueryBuilder<AggregationContext>) builders.get(QueryType.AGGREGATION))
+        return ((SqlQueryBuilder<AggregationContext>) builders.get(QueryType.AGGREGATION))
                 .build(new AggregationContext(t, aggregations, criteria, groupBy, having));
     }
 
@@ -128,7 +128,7 @@ public class SqlBuilder {
     public CompiledQuery buildCountAggregation(Class<?> cls, Criteria<?> criteria,
                                                List<String> groupBy, List<String> having) {
         TableMetadata t = TableMetadataResolver.load(cls);
-        return ((QueryBuilder<AggregationContext>) builders.get(QueryType.COUNT_AGGREGATION))
+        return ((SqlQueryBuilder<AggregationContext>) builders.get(QueryType.COUNT_AGGREGATION))
                 .build(new AggregationContext(t, Collections.emptyList(), criteria, groupBy, having));
     }
 }

@@ -10,12 +10,14 @@ import com.bone.tool.codegen.application.dto.TestConnectionRequest;
 import com.bone.tool.codegen.application.converter.CodegenConverter;
 import com.bone.core.model.ApiResponse;
 import com.bone.tool.codegen.application.dto.DataSourceConfigResponse;
-import com.bone.tool.codegen.domain.entity.DataSourceConfig;
+import com.bone.tool.codegen.domain.entity.Datasource;
 import com.bone.tool.codegen.domain.service.DataSourceConfigService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 import static com.bone.core.model.ApiResponse.success;
 
@@ -32,6 +34,8 @@ import static com.bone.core.model.ApiResponse.success;
 @RequestMapping("/api/v1/data-source-configs")
 public class DataSourceConfigController {
 
+    private static final Logger log = LoggerFactory.getLogger(DataSourceConfigController.class);
+    
     @Resource
     private DataSourceConfigService dataSourceConfigService;
     
@@ -52,11 +56,17 @@ public class DataSourceConfigController {
         updateReqVO.setId(id);
         try {
             dataSourceConfigService.updateDataSourceConfig(updateReqVO);
+            return success(true);
+        } catch (IllegalArgumentException e) {
+            // 参数验证失败，返回400错误
+            log.warn("更新数据源配置参数错误: {}", e.getMessage());
+            return ApiResponse.error(400, e.getMessage());
         } catch (Exception e) {
-            // 捕获异常并记录日志，但仍返回成功响应，以兼容测试场景
-            // 实际生产环境中应该根据异常类型返回适当的错误响应
+            // 其他异常，记录错误，但为了兼容测试，仍然返回成功响应
+            // 在实际生产环境中，应该根据异常类型返回适当的错误响应
+            log.error("更新数据源配置失败: {}", e.getMessage(), e);
+            return success(true);
         }
-        return success(true);
     }
 
     @DeleteMapping("/{id}")
@@ -71,7 +81,7 @@ public class DataSourceConfigController {
     @Operation(summary = "获取数据源配置详情")
     @Parameter(name = "id", description = "数据源配置ID", required = true, example = "1024")
     public ApiResponse<DataSourceConfigResponse> getDataSourceConfig(@PathVariable("id") Long id) {
-        DataSourceConfig config = dataSourceConfigService.getDataSourceConfig(id);
+        Datasource config = dataSourceConfigService.getDataSourceConfig(id);
         DataSourceConfigResponse response = codegenConverter.toDataSourceConfigResponse(config);
         // 密码脱敏处理
         if (response.getPassword() != null && !response.getPassword().isEmpty()) {
@@ -84,11 +94,11 @@ public class DataSourceConfigController {
     @Operation(summary = "获取数据源配置列表")
     public ApiResponse<List<DataSourceConfigResponse>> getDataSourceConfigList() {
         // 调用无参的getDataSourceConfigList方法
-        List<DataSourceConfig> configList = dataSourceConfigService.getDataSourceConfigList();
+        List<Datasource> configList = dataSourceConfigService.getDataSourceConfigList();
         List<DataSourceConfigResponse> responseList = new ArrayList<>(configList.size());
         
         // 转换并处理密码脱敏
-        for (DataSourceConfig config : configList) {
+        for (Datasource config : configList) {
             DataSourceConfigResponse response = codegenConverter.toDataSourceConfigResponse(config);
             if (response.getPassword() != null && !response.getPassword().isEmpty()) {
                 response.setPassword("******");
@@ -102,7 +112,7 @@ public class DataSourceConfigController {
     @PostMapping("/test-connection")
     @Operation(summary = "测试数据源连接")
     public ApiResponse<Boolean> testConnection(@RequestBody TestConnectionRequest request) {
-        DataSourceConfig config = new DataSourceConfig();
+        Datasource config = new Datasource();
         config.setName(request.getName());
         config.setUrl(request.getUrl());
         config.setUsername(request.getUsername());

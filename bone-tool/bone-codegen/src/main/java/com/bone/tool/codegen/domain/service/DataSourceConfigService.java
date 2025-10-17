@@ -4,7 +4,7 @@ import com.bone.core.model.PageParam;
 import com.bone.core.model.PageResult;
 import com.bone.tool.codegen.application.dto.DataSourceConfigQueryRequest;
 import com.bone.tool.codegen.application.dto.DataSourceConfigSaveRequest;
-import com.bone.tool.codegen.domain.entity.DataSourceConfig;
+import com.bone.tool.codegen.domain.entity.Datasource;
 import com.bone.tool.codegen.domain.repository.DataSourceConfigRepository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import org.slf4j.Logger;
@@ -46,7 +46,7 @@ public class DataSourceConfigService {
      */
     public Long createDataSourceConfig(DataSourceConfigSaveRequest createReqVO) {
         // 转换为领域实体并保存
-        DataSourceConfig config = new DataSourceConfig();
+        Datasource config = new Datasource();
         config.setName(createReqVO.getName());
         config.setUrl(createReqVO.getUrl());
         config.setUsername(createReqVO.getUsername());
@@ -77,7 +77,7 @@ public class DataSourceConfigService {
         validateDataSourceConfigExists(id);
         
         // 转换为领域实体并更新
-        DataSourceConfig config = new DataSourceConfig();
+        Datasource config = new Datasource();
         config.setId(id);
         config.setName(updateReqVO.getName());
         config.setUrl(updateReqVO.getUrl());
@@ -127,9 +127,9 @@ public class DataSourceConfigService {
      * @param id 配置ID
      * @return 数据源配置
      */
-    public DataSourceConfig getDataSourceConfig(Long id) {
+    public Datasource getDataSourceConfig(Long id) {
         // 获取数据源配置详情
-        DataSourceConfig config = dataSourceConfigRepository.findById(id);
+        Datasource config = dataSourceConfigRepository.findById(id);
         if (config == null) {
             throw new RuntimeException("数据源配置不存在");
         }
@@ -142,7 +142,7 @@ public class DataSourceConfigService {
      * @param pageParam 分页参数
      * @return 数据源配置分页结果
      */
-    public PageResult<DataSourceConfig> getDataSourceConfigPage(PageParam pageParam) {
+    public PageResult<Datasource> getDataSourceConfigPage(PageParam pageParam) {
         return getDataSourceConfigPage(null, pageParam);
     }
 
@@ -152,9 +152,9 @@ public class DataSourceConfigService {
      * @param request 查询条件
      * @return 数据源配置列表
      */
-    public List<DataSourceConfig> getDataSourceConfigList(DataSourceConfigQueryRequest request) {
+    public List<Datasource> getDataSourceConfigList(DataSourceConfigQueryRequest request) {
         // 简化实现，直接使用空Criteria返回所有数据
-        Criteria<DataSourceConfig> criteria = Criteria.<DataSourceConfig>builder();
+        Criteria<Datasource> criteria = Criteria.<Datasource>builder();
         return dataSourceConfigRepository.findByCriteria(criteria);
     }
 
@@ -163,9 +163,9 @@ public class DataSourceConfigService {
      * 
      * @return 数据源配置列表
      */
-    public List<DataSourceConfig> getDataSourceConfigList() {
+    public List<Datasource> getDataSourceConfigList() {
         // 使用Criteria获取所有数据源配置
-        Criteria<DataSourceConfig> criteria = Criteria.<DataSourceConfig>builder();
+        Criteria<Datasource> criteria = Criteria.<Datasource>builder();
         return dataSourceConfigRepository.findByCriteria(criteria);
     }
     
@@ -174,7 +174,7 @@ public class DataSourceConfigService {
      * 
      * @return 数据源配置列表
      */
-    public List<DataSourceConfig> getAllDataSourceConfigs() {
+    public List<Datasource> getAllDataSourceConfigs() {
         return getDataSourceConfigList();
     }
     
@@ -185,9 +185,9 @@ public class DataSourceConfigService {
      * @param pageParam 分页参数
      * @return 分页结果
      */
-    public PageResult<DataSourceConfig> getDataSourceConfigPage(DataSourceConfigQueryRequest queryReqVO, PageParam pageParam) {
+    public PageResult<Datasource> getDataSourceConfigPage(DataSourceConfigQueryRequest queryReqVO, PageParam pageParam) {
         // 构建查询条件
-        Criteria<DataSourceConfig> criteria = Criteria.<DataSourceConfig>builder();
+        Criteria<Datasource> criteria = Criteria.<Datasource>builder();
         
         // 设置分页参数
         if (pageParam != null) {
@@ -216,7 +216,7 @@ public class DataSourceConfigService {
      * @param config 数据源配置
      * @return 是否连接成功
      */
-    public boolean testConnection(DataSourceConfig config) {
+    public boolean testConnection(Datasource config) {
         Connection conn = null;
         try {
             // 加载驱动
@@ -257,16 +257,16 @@ public class DataSourceConfigService {
      * 获取数据库连接
      * 用于实际的数据库操作
      */
-    public Connection getConnection(Long dataSourceConfigId) {
+    public Connection getConnection(Long datasourceId) {
         try {
             // 先尝试从缓存获取
-            Connection cachedConn = connectionCache.get(dataSourceConfigId);
+            Connection cachedConn = connectionCache.get(datasourceId);
             if (cachedConn != null && !cachedConn.isClosed() && cachedConn.isValid(2)) {
                 return cachedConn;
             }
             
             // 获取数据源配置
-            DataSourceConfig config = getDataSourceConfig(dataSourceConfigId);
+            Datasource config = getDataSourceConfig(datasourceId);
             
             // 创建新连接
             Connection conn = DriverManager.getConnection(
@@ -276,7 +276,7 @@ public class DataSourceConfigService {
             );
             
             // 缓存连接
-            connectionCache.put(dataSourceConfigId, conn);
+            connectionCache.put(datasourceId, conn);
             
             return conn;
         } catch (Exception e) {
@@ -288,8 +288,8 @@ public class DataSourceConfigService {
     /**
      * 清除缓存的连接
      */
-    private void clearCachedConnection(Long dataSourceConfigId) {
-        Connection conn = connectionCache.remove(dataSourceConfigId);
+    private void clearCachedConnection(Long datasourceId) {
+        Connection conn = connectionCache.remove(datasourceId);
         if (conn != null) {
             try {
                 conn.close();
@@ -302,7 +302,7 @@ public class DataSourceConfigService {
     /**
      * 验证数据源配置
      */
-    private void validateDataSourceConfig(DataSourceConfig config) {
+    private void validateDataSourceConfig(Datasource config) {
         if (config == null) {
             throw new RuntimeException("数据源配置不能为空");
         }

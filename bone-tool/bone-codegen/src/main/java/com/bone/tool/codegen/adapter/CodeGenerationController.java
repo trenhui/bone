@@ -12,7 +12,10 @@ import com.bone.tool.codegen.domain.enums.ModelTypeEnum;
 import com.bone.tool.codegen.domain.service.CodegenService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -45,6 +48,8 @@ import static com.bone.core.model.ApiResponse.success;
 @Validated
 public class CodeGenerationController {
 
+    private static final Logger log = LoggerFactory.getLogger(CodeGenerationController.class);
+
     @Resource
     private CodegenService codegenService;
 
@@ -54,12 +59,29 @@ public class CodeGenerationController {
      */
     @GetMapping("/tables")
     @Operation(summary = "获取表定义列表", description = "根据数据源配置ID查询已导入的代码生成表配置")
-    public ApiResponse<List<CodegenTableResponse>> getTables(
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "成功获取表定义列表"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "请求参数无效"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "获取表定义列表失败")
+    })
+    public ApiResponse<List<CodegenTable>> getTables(
             @Parameter(description = "数据源配置ID", required = true, example = "1")
             @RequestParam("dataSourceConfigId") @NotNull(message = "数据源配置ID不能为空") Long dataSourceConfigId) {
-        // 调用服务层获取数据，直接返回空列表避免类型转换
-        codegenService.getCodegenTablesByDataSourceId(dataSourceConfigId);
-        return success(new ArrayList<>());
+        log.info("开始获取表定义列表，数据源配置ID: {}", dataSourceConfigId);
+        try {
+            // 参数验证已通过@Valid和@NotNull注解处理
+            
+            // 调用服务层获取数据
+            List<CodegenTable> tableList = codegenService.getCodegenTablesByDataSourceId(dataSourceConfigId);
+            log.info("成功获取表定义列表，数据源配置ID: {}，表数量: {}", dataSourceConfigId, tableList.size());
+            return success(tableList);
+        } catch (IllegalArgumentException e) {
+            log.warn("获取表定义列表参数错误: {}", e.getMessage());
+            return ApiResponse.error(400, e.getMessage());
+        } catch (Exception e) {
+            log.error("获取表定义列表失败: {}", e.getMessage(), e);
+            return ApiResponse.error(500, "获取表定义列表失败: " + e.getMessage());
+        }
     }
 
     /**
@@ -68,10 +90,26 @@ public class CodeGenerationController {
      */
     @GetMapping("/tables/page")
     @Operation(summary = "获取表定义分页", description = "支持多条件筛选和分页查询代码生成表配置")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "成功获取表定义分页数据"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "请求参数无效"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "获取分页数据失败")
+    })
     public ApiResponse<PageResult<CodegenTableResponse>> getTablesPage(
             @Valid CodegenTablePageRequest request) {
-        // 直接调用服务层获取分页数据
-        return success(codegenService.getCodegenTablePageResponse(request));
+        log.info("开始获取表定义分页数据，请求参数: {}", request);
+        try {
+            // 调用服务层获取分页数据
+            PageResult<CodegenTableResponse> pageResult = codegenService.getCodegenTablePageResponse(request);
+            log.info("成功获取表定义分页数据，总数: {}", pageResult.getTotal());
+            return success(pageResult);
+        } catch (IllegalArgumentException e) {
+            log.warn("获取表定义分页参数错误: {}", e.getMessage());
+            return ApiResponse.error(400, e.getMessage());
+        } catch (Exception e) {
+            log.error("获取表定义分页数据失败: {}", e.getMessage(), e);
+            return ApiResponse.error(500, "获取表定义分页数据失败: " + e.getMessage());
+        }
     }
 
     /**
@@ -80,11 +118,36 @@ public class CodeGenerationController {
      */
     @GetMapping("/tables/{tableId}")
     @Operation(summary = "获取表定义详情", description = "获取指定表的详细配置信息，包含基本信息和所有字段配置")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "成功获取表定义详情"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "请求参数无效"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "表定义不存在"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "获取表定义详情失败")
+    })
     public ApiResponse<CodegenDetailResponse> getTableDetail(
             @Parameter(description = "表ID", required = true, example = "1024")
             @PathVariable("tableId") @NotNull(message = "表ID不能为空") Long tableId) {
-        // 通过服务层获取表配置和字段列表的详细信息
-        return success(codegenService.getCodegenDetail(tableId));
+        log.info("开始获取表定义详情，表ID: {}", tableId);
+        try {
+            // 参数验证已通过@Valid和@NotNull注解处理
+            
+            // 通过服务层获取表配置和字段列表的详细信息
+            CodegenDetailResponse detailResponse = codegenService.getCodegenDetail(tableId);
+            
+            if (detailResponse == null) {
+                log.warn("表定义不存在，表ID: {}", tableId);
+                return ApiResponse.error(404, "表定义不存在");
+            }
+            
+            log.info("成功获取表定义详情，表ID: {}", tableId);
+            return success(detailResponse);
+        } catch (IllegalArgumentException e) {
+            log.warn("获取表定义详情参数错误: {}", e.getMessage());
+            return ApiResponse.error(400, e.getMessage());
+        } catch (Exception e) {
+            log.error("获取表定义详情失败: {}", e.getMessage(), e);
+            return ApiResponse.error(500, "获取表定义详情失败: " + e.getMessage());
+        }
     }
 
     /**
@@ -93,17 +156,38 @@ public class CodeGenerationController {
      */
     @PostMapping("/tables/import")
     @Operation(summary = "从数据库导入表结构", description = "基于数据库表结构，批量创建代码生成配置")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "成功导入表结构并创建配置"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "请求参数无效或导入失败"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "导入过程中出现错误")
+    })
     public ApiResponse<List<Long>> importTablesFromDatabase(
             @Valid @RequestBody CodegenCreateListRequest request) {
-        // 导入表结构，使用请求中提供的配置参数
-        List<Long> tableIds = codegenService.importTablesFromDatabase(
-                request.getDataSourceConfigId(),
-                request.getTableNames(),
-                request.getModuleName(),
-                request.getPackageName(),
-                1, // 默认场景类型 - 可以考虑从请求中获取
-                1); // 默认模型类型 - 可以考虑从请求中获取
-        return success(tableIds);
+        log.info("开始从数据库导入表结构，数据源配置ID: {}, 表数量: {}, 模块名: {}, 包名: {}", 
+                request.getDatasourceId(), request.getTableNames().size(), 
+                request.getModuleName(), request.getPackageName());
+        
+        try {
+            // 参数验证已通过@Valid注解处理
+            
+            // 导入表结构，使用默认参数
+            List<Long> tableIds = codegenService.importTablesFromDatabase(
+                    request.getDatasourceId(),
+                    request.getTableNames(),
+                    request.getModuleName(),
+                    request.getPackageName(),
+                    1, // 场景类型，默认1
+                    1); // 模型类型，默认1
+            
+            log.info("成功从数据库导入表结构，导入表数量: {}, 数据源配置ID: {}", tableIds.size(), request.getDatasourceId());
+            return success(tableIds);
+        } catch (IllegalArgumentException e) {
+            log.warn("导入表结构参数错误: {}", e.getMessage());
+            return ApiResponse.error(400, e.getMessage());
+        } catch (Exception e) {
+            log.error("导入表结构失败: {}", e.getMessage(), e);
+            return ApiResponse.error(500, "导入表结构失败: " + e.getMessage());
+        }
     }
 
     /**
@@ -112,14 +196,38 @@ public class CodeGenerationController {
      */
     @PutMapping("/tables/{tableId}")
     @Operation(summary = "更新表定义配置", description = "更新代码生成表配置信息")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "成功更新表定义配置"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "请求参数无效"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "表定义不存在"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "更新表定义配置失败")
+    })
     public ApiResponse<Boolean> updateTable(
             @Parameter(description = "表ID", required = true, example = "1024")
             @PathVariable("tableId") @NotNull(message = "表ID不能为空") Long tableId,
             @Valid @RequestBody CodegenTableRequest request) {
-        // 设置表ID并更新配置
-        request.setId(tableId);
-        codegenService.updateCodegenTable(request);
-        return success(true);
+        log.info("开始更新表定义配置，表ID: {}", tableId);
+        try {
+            // 参数验证已通过@Valid和@NotNull注解处理
+            
+            // 设置表ID并更新配置
+            request.setId(tableId);
+            codegenService.updateCodegenTable(request);
+            
+            log.info("成功更新表定义配置，表ID: {}", tableId);
+            return success(true);
+        } catch (IllegalArgumentException e) {
+            log.warn("更新表定义配置参数错误: {}", e.getMessage());
+            return ApiResponse.error(400, e.getMessage());
+        } catch (Exception e) {
+            // 判断是否为表不存在的情况
+            if (e.getMessage() != null && e.getMessage().contains("不存在")) {
+                log.warn("表定义不存在，表ID: {}", tableId);
+                return ApiResponse.error(404, "表定义不存在");
+            }
+            log.error("更新表定义配置失败: {}", e.getMessage(), e);
+            return ApiResponse.error(500, "更新表定义配置失败: " + e.getMessage());
+        }
     }
 
     /**
@@ -128,12 +236,39 @@ public class CodeGenerationController {
      */
     @PutMapping("/tables/{tableId}/sync")
     @Operation(summary = "同步数据库表结构", description = "根据最新数据库表结构更新代码生成配置")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "成功同步数据库表结构"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "请求参数无效"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "表定义不存在"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "同步表结构失败")
+    })
     public ApiResponse<Boolean> syncTableFromDb(
             @Parameter(description = "表ID", required = true, example = "1024")
             @PathVariable("tableId") @NotNull(message = "表ID不能为空") Long tableId) {
-        // 同步数据库表结构到代码生成配置
-        codegenService.syncTableFromDatabase(tableId);
-        return success(true);
+        log.info("开始同步数据库表结构，表ID: {}", tableId);
+        try {
+            // 参数验证
+            if (tableId <= 0) {
+                throw new IllegalArgumentException("表ID必须为正整数");
+            }
+            
+            // 同步数据库表结构到代码生成配置
+            codegenService.syncTableFromDatabase(tableId);
+            
+            log.info("成功同步数据库表结构，表ID: {}", tableId);
+            return success(true);
+        } catch (IllegalArgumentException e) {
+            log.warn("同步表结构参数错误: {}", e.getMessage());
+            return ApiResponse.error(400, e.getMessage());
+        } catch (Exception e) {
+            // 判断是否为表不存在的情况
+            if (e.getMessage() != null && e.getMessage().contains("不存在")) {
+                log.warn("表定义不存在，表ID: {}", tableId);
+                return ApiResponse.error(404, "表定义不存在");
+            }
+            log.error("同步表结构失败: {}", e.getMessage(), e);
+            return ApiResponse.error(500, "同步表结构失败: " + e.getMessage());
+        }
     }
 
     /**
@@ -142,12 +277,39 @@ public class CodeGenerationController {
      */
     @DeleteMapping("/tables/{tableId}")
     @Operation(summary = "删除表定义配置", description = "删除指定的代码生成表配置")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "成功删除表定义配置"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "请求参数无效"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "表定义不存在"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "删除表定义配置失败")
+    })
     public ApiResponse<Boolean> deleteTable(
             @Parameter(description = "表ID", required = true, example = "1024")
             @PathVariable("tableId") @NotNull(message = "表ID不能为空") Long tableId) {
-        // 删除表配置
-        codegenService.deleteTable(tableId);
-        return success(true);
+        log.info("开始删除表定义配置，表ID: {}", tableId);
+        try {
+            // 参数验证
+            if (tableId <= 0) {
+                throw new IllegalArgumentException("表ID必须为正整数");
+            }
+            
+            // 删除表配置
+            codegenService.deleteTable(tableId);
+            
+            log.info("成功删除表定义配置，表ID: {}", tableId);
+            return success(true);
+        } catch (IllegalArgumentException e) {
+            log.warn("删除表定义配置参数错误: {}", e.getMessage());
+            return ApiResponse.error(400, e.getMessage());
+        } catch (Exception e) {
+            // 判断是否为表不存在的情况
+            if (e.getMessage() != null && e.getMessage().contains("不存在")) {
+                log.warn("表定义不存在，表ID: {}", tableId);
+                return ApiResponse.error(404, "表定义不存在");
+            }
+            log.error("删除表定义配置失败: {}", e.getMessage(), e);
+            return ApiResponse.error(500, "删除表定义配置失败: " + e.getMessage());
+        }
     }
 
     /**
@@ -156,6 +318,11 @@ public class CodeGenerationController {
      */
     @GetMapping("/generate/download")
     @Operation(summary = "生成并下载代码", description = "基于已配置的表生成代码并下载为ZIP文件")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "成功生成并返回代码压缩包"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "请求参数无效"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "代码生成过程中出现错误")
+    })
     public void generateAndDownloadCode(
             @Parameter(description = "表ID列表", required = true, example = "1,2,3")
             @RequestParam("tableIds") @NotEmpty(message = "表ID列表不能为空") List<Long> tableIds,
@@ -164,6 +331,11 @@ public class CodeGenerationController {
             @Parameter(description = "模型类型: 1-SaaS, 2-单租户", example = "1")
             @RequestParam(value = "modelType", defaultValue = "1") Integer modelType,
             HttpServletResponse response) throws IOException {
+        // 记录日志
+        log.info("开始生成代码，表ID列表: {}, 分组: {}, 模型类型: {}", tableIds, groupId, modelType);
+        
+        // 模型类型验证已通过默认值和服务层处理
+        
         // 生成代码并写入响应流
         try (OutputStream out = response.getOutputStream()) {
             codegenService.generateBatchCodes(tableIds, groupId, modelType, out);
@@ -175,6 +347,8 @@ public class CodeGenerationController {
                 "attachment; filename=" + URLEncoder.encode(fileName, StandardCharsets.UTF_8));
             out.flush();
         }
+        
+        log.info("代码生成成功，表ID列表: {}", tableIds);
     }
     
     /**
@@ -183,11 +357,19 @@ public class CodeGenerationController {
      */
     @PostMapping("/generate/custom")
     @Operation(summary = "自定义生成代码", description = "使用自定义配置生成代码")
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "成功生成并返回自定义代码压缩包"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "请求参数无效"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "自定义代码生成失败")
+    })
     public void generateCustomCode(
             @Valid @RequestBody GenerateCustomCodeRequest request,
             HttpServletResponse response) throws IOException {
+        log.info("开始自定义生成代码");
+        
         // 设置响应头
-        String fileName = "code-" + request.getProjectName() + ".zip";
+        String projectName = request.getProjectName() != null ? request.getProjectName() : "custom";
+        String fileName = "code-" + projectName + ".zip";
         response.setHeader("Content-Disposition", 
             "attachment; filename=" + URLEncoder.encode(fileName, StandardCharsets.UTF_8));
         response.setContentType("application/zip");
@@ -197,5 +379,7 @@ public class CodeGenerationController {
             codegenService.generateCustomCode(request, out);
             out.flush();
         }
+        
+        log.info("自定义代码生成成功");
     }
 }

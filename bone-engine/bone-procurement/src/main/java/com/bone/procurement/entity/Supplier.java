@@ -1,31 +1,46 @@
 package com.bone.procurement.entity;
 
+import com.bone.core.domain.entity.Entity;
 import com.bone.smartmeta.engine.annotation.SmartEntity;
 import com.bone.smartmeta.engine.annotation.SmartField;
 import com.bone.smartmeta.engine.annotation.BusinessRule;
 import com.bone.smartmeta.engine.annotation.FieldType;
+import lombok.Data;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.math.BigDecimal;
+import java.util.Objects;
+import java.util.Arrays;
 import java.util.List;
 
 /**
  * 供应商实体类
  * 演示bone-smartmeta在供应商管理业务场景中的应用，包括评分计算和业务规则验证
  */
-@SmartEntity(apiName = "Supplier", label = "供应商", description = "提供物料或服务的企业或个人")
-public class Supplier {
+@SmartEntity(apiName = "Supplier", label = "供应商", description = "提供物料或服务的企业或个人", 
+             pluralLabel = "供应商列表", table = "procurement_supplier")
+@Data
+public class Supplier extends Entity<Long> {
     
+    @SmartField(name = "id", label = "供应商ID", type = FieldType.NUMBER)
     private Long id;
     
-    @SmartField(name = "code", label = "供应商编码", type = FieldType.TEXT, required = true, unique = true, length = 50)
+    @SmartField(name = "code", label = "供应商编码", type = FieldType.TEXT, required = true, unique = true, 
+                length = 50)
+    @BusinessRule(name = "codeRule", expression = "${code}.matches('^SUP\\d{6}$')", 
+                 errorMessage = "供应商编码格式错误，应为SUP开头加6位数字")
     private String code;
     
-    @SmartField(name = "name", label = "供应商名称", type = FieldType.TEXT, required = true, length = 200)
+    @SmartField(name = "name", label = "供应商名称", type = FieldType.TEXT, required = true, 
+                length = 200)
     private String name;
     
-    @SmartField(name = "phoneNumber", label = "联系电话", type = FieldType.TEXT, required = true, length = 50)
-    @BusinessRule(name = "phoneNumberRule", expression = "${phoneNumber}.matches('^1[3-9]\\d{9}$')", errorMessage = "联系电话格式不正确")
+    @SmartField(name = "phoneNumber", label = "联系电话", type = FieldType.TEXT, required = true, 
+                length = 50)
+    @BusinessRule(name = "phoneNumberRule", 
+                 expression = "${phoneNumber}.matches('^1[3-9]\\d{9}$') || ${phoneNumber}.matches('^\\d{3,4}-\\d{7,8}$')", 
+                 errorMessage = "联系电话格式不正确，请输入有效的手机号或固话")
     private String phoneNumber;
     
     @SmartField(name = "contactPerson", label = "联系人", type = FieldType.TEXT, required = true, length = 100)
@@ -48,10 +63,11 @@ public class Supplier {
     private String supplierLevel;
     
     @SmartField(name = "creditScore", label = "信用评分", type = FieldType.NUMBER, defaultValue = "80")
-    @BusinessRule(name = "creditScoreRule", expression = "${creditScore} >= 0 && ${creditScore} <= 100", errorMessage = "信用评分必须在0-100之间")
+    @BusinessRule(name = "creditScoreRule", expression = "${creditScore} >= 0 && ${creditScore} <= 100", 
+                 errorMessage = "信用评分必须在0-100之间")
     private Integer creditScore;
     
-    @SmartField(name = "cooperationStatus", label = "合作状态", type = FieldType.PICKLIST)
+    @SmartField(name = "cooperationStatus", label = "合作状态", type = FieldType.PICKLIST, defaultValue = "待评估")
     private String cooperationStatus;
     
     @SmartField(name = "lastCooperationDate", label = "最近合作日期", type = FieldType.DATE)
@@ -76,7 +92,7 @@ public class Supplier {
     // private List<SupplierProduct> products;
     
     @SmartField(name = "overallScore", label = "综合评分", type = FieldType.NUMBER)
-    private Double overallScore;
+    private Integer overallScore;
     
     @SmartField(name = "cooperationYears", label = "合作年限", type = FieldType.NUMBER)
     private Integer cooperationYears;
@@ -99,88 +115,124 @@ public class Supplier {
     @SmartField(name = "remarks", label = "备注", type = FieldType.TEXT, length = 1000)
     private String remarks;
     
-    // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+
     
-    public String getCode() { return code; }
-    public void setCode(String code) { this.code = code; }
+    /**
+     * 计算供应商综合评分
+     * 基于信用评分、交付率、质量合格率和投诉次数等因素
+     */
+    public Double calculateOverallScore() {
+        double score = 0;
+        
+        // 信用评分占比40%
+        score += getCreditScore() * 0.4;
+        
+        // 平均交付率占比30%
+        score += getAverageDeliveryRate() * 30;
+        
+        // 平均质量合格率占比20%
+        score += getAverageQualityRate() * 20;
+        
+        // 投诉次数扣分（每次投诉扣2分，最多扣10分）
+        int complaintDeduction = Math.min(getComplaintCount() * 2, 10);
+        score -= complaintDeduction;
+        
+        // 确保分数在0-100之间
+        return Math.max(0, Math.min(100, Math.round(score * 10) / 10.0));
+    }
     
-    public String getName() { return name; }
-    public void setName(String name) { this.name = name; }
+    /**
+     * 计算合作年限
+     */
+    public Integer calculateCooperationYears() {
+        if (registerDate == null) {
+            return 0;
+        }
+        return (int) ChronoUnit.YEARS.between(registerDate, LocalDate.now());
+    }
     
-    public String getPhoneNumber() { return phoneNumber; }
-    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+    /**
+     * 计算供应商风险等级
+     */
+    public String calculateRiskLevel() {
+        double overallScore = calculateOverallScore();
+        
+        if (overallScore >= 85) {
+            return "低风险";
+        } else if (overallScore >= 70) {
+            return "中风险";
+        } else if (overallScore >= 50) {
+            return "高风险";
+        } else {
+            return "极高风险";
+        }
+    }
     
-    public String getContactPerson() { return contactPerson; }
-    public void setContactPerson(String contactPerson) { this.contactPerson = contactPerson; }
+    /**
+     * 判断是否为活跃供应商
+     */
+    public Boolean isActive() {
+        // 合作中且近90天有合作记录
+        boolean isCooperating = "合作中".equals(getCooperationStatus());
+        boolean hasRecentCooperation = lastCooperationDate != null && 
+                                      ChronoUnit.DAYS.between(lastCooperationDate, LocalDate.now()) <= 90;
+        return isCooperating && hasRecentCooperation;
+    }
     
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
+    /**
+     * 获取单均订单金额
+     */
+    public BigDecimal getAverageOrderAmount() {
+        int count = getOrderCount();
+        if (count <= 0) {
+            return BigDecimal.ZERO;
+        }
+        return getTotalOrderAmount().divide(new BigDecimal(count), 2, BigDecimal.ROUND_HALF_UP);
+    }
     
-    public String getAddress() { return address; }
-    public void setAddress(String address) { this.address = address; }
+    /**
+     * 业务规则验证
+     */
+    public String validateBusinessRules() {
+        try {
+            // 验证必填字段
+            if (code == null || code.trim().isEmpty()) {
+                return "供应商编码不能为空";
+            }
+            if (name == null || name.trim().isEmpty()) {
+                return "供应商名称不能为空";
+            }
+            if (contactPerson == null || contactPerson.trim().isEmpty()) {
+                return "联系人不能为空";
+            }
+            if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
+                return "联系电话不能为空";
+            }
+            if (businessLicense == null || businessLicense.trim().isEmpty()) {
+                return "营业执照编号不能为空";
+            }
+            if (registerDate == null) {
+                return "注册日期不能为空";
+            }
+            
+            // 验证格式
+            setCode(code); // 会触发格式验证
+            setPhoneNumber(phoneNumber); // 会触发格式验证
+            if (email != null && !email.isEmpty()) {
+                setEmail(email); // 会触发格式验证
+            }
+            
+            // 验证数值字段
+            setCreditScore(creditScore);
+            setAverageDeliveryRate(averageDeliveryRate);
+            setAverageQualityRate(averageQualityRate);
+            setComplaintCount(complaintCount);
+            
+            return "验证通过";
+        } catch (IllegalArgumentException e) {
+            return e.getMessage();
+        }
+    }
     
-    public String getBusinessLicense() { return businessLicense; }
-    public void setBusinessLicense(String businessLicense) { this.businessLicense = businessLicense; }
-    
-    public LocalDate getRegisterDate() { return registerDate; }
-    public void setRegisterDate(LocalDate registerDate) { this.registerDate = registerDate; }
-    
-    public String getSupplierLevel() { return supplierLevel; }
-    public void setSupplierLevel(String supplierLevel) { this.supplierLevel = supplierLevel; }
-    
-    public Integer getCreditScore() { return creditScore; }
-    public void setCreditScore(Integer creditScore) { this.creditScore = creditScore; }
-    
-    public String getCooperationStatus() { return cooperationStatus; }
-    public void setCooperationStatus(String cooperationStatus) { this.cooperationStatus = cooperationStatus; }
-    
-    public LocalDate getLastCooperationDate() { return lastCooperationDate; }
-    public void setLastCooperationDate(LocalDate lastCooperationDate) { this.lastCooperationDate = lastCooperationDate; }
-    
-    public BigDecimal getTotalOrderAmount() { return totalOrderAmount; }
-    public void setTotalOrderAmount(BigDecimal totalOrderAmount) { this.totalOrderAmount = totalOrderAmount; }
-    
-    public Integer getOrderCount() { return orderCount; }
-    public void setOrderCount(Integer orderCount) { this.orderCount = orderCount; }
-    
-    public Double getAverageDeliveryRate() { return averageDeliveryRate; }
-    public void setAverageDeliveryRate(Double averageDeliveryRate) { this.averageDeliveryRate = averageDeliveryRate; }
-    
-    public Double getAverageQualityRate() { return averageQualityRate; }
-    public void setAverageQualityRate(Double averageQualityRate) { this.averageQualityRate = averageQualityRate; }
-    
-    public Integer getComplaintCount() { return complaintCount; }
-    public void setComplaintCount(Integer complaintCount) { this.complaintCount = complaintCount; }
-    
-    // 移除SupplierProduct相关getter和setter方法
-    /*
-    public List<SupplierProduct> getProducts() { return products; }
-    public void setProducts(List<SupplierProduct> products) { this.products = products; }
-    */
-    
-    public Double getOverallScore() { return overallScore; }
-    public void setOverallScore(Double overallScore) { this.overallScore = overallScore; }
-    
-    public Integer getCooperationYears() { return cooperationYears; }
-    public void setCooperationYears(Integer cooperationYears) { this.cooperationYears = cooperationYears; }
-    
-    public String getRiskLevel() { return riskLevel; }
-    public void setRiskLevel(String riskLevel) { this.riskLevel = riskLevel; }
-    
-    public String getPaymentTerms() { return paymentTerms; }
-    public void setPaymentTerms(String paymentTerms) { this.paymentTerms = paymentTerms; }
-    
-    public String getBankAccount() { return bankAccount; }
-    public void setBankAccount(String bankAccount) { this.bankAccount = bankAccount; }
-    
-    public String getBankName() { return bankName; }
-    public void setBankName(String bankName) { this.bankName = bankName; }
-    
-    public String getTaxpayerNumber() { return taxpayerNumber; }
-    public void setTaxpayerNumber(String taxpayerNumber) { this.taxpayerNumber = taxpayerNumber; }
-    
-    public String getRemarks() { return remarks; }
-    public void setRemarks(String remarks) { this.remarks = remarks; }
+
 }

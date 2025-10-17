@@ -3,7 +3,7 @@ package com.bone.tool.codegen.adapter;
 import com.bone.core.model.ApiResponse;
 import com.bone.tool.codegen.application.dto.*;
 import com.bone.tool.codegen.application.converter.CodegenConverter;
-import com.bone.tool.codegen.domain.entity.DataSourceConfig;
+import com.bone.tool.codegen.domain.entity.Datasource;
 import com.bone.tool.codegen.domain.service.DataSourceConfigService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,7 +41,7 @@ public class DataSourceConfigControllerTest {
 
     private MockMvc mockMvc;
 
-    private DataSourceConfig mockDataSourceConfig;
+    private Datasource mockDataSourceConfig;
     private DataSourceConfigResponse mockResponse;
 
     @BeforeEach
@@ -50,7 +50,7 @@ public class DataSourceConfigControllerTest {
         mockMvc = MockMvcBuilders.standaloneSetup(dataSourceConfigController).build();
 
         // 初始化模拟数据
-        mockDataSourceConfig = new DataSourceConfig();
+        mockDataSourceConfig = new Datasource();
         mockDataSourceConfig.setId(1L);
         mockDataSourceConfig.setName("test_db");
         mockDataSourceConfig.setUrl("jdbc:mysql://localhost:3306/test");
@@ -78,7 +78,7 @@ public class DataSourceConfigControllerTest {
     @Test
     void testGetDataSourceConfigList() throws Exception {
         // 模拟服务层返回
-        List<DataSourceConfig> configList = new ArrayList<>();
+        List<Datasource> configList = new ArrayList<>();
         configList.add(mockDataSourceConfig);
         when(dataSourceConfigService.getDataSourceConfigList()).thenReturn(configList);
         when(codegenConverter.toDataSourceConfigResponse(mockDataSourceConfig)).thenReturn(mockResponse);
@@ -217,7 +217,7 @@ public class DataSourceConfigControllerTest {
     @Test
     void testTestConnection() throws Exception {
         // 模拟服务层返回
-        when(dataSourceConfigService.testConnection(any(DataSourceConfig.class))).thenReturn(true);
+        when(dataSourceConfigService.testConnection(any(Datasource.class))).thenReturn(true);
 
         // 执行请求并验证响应
         mockMvc.perform(post("/api/v1/data-source-configs/test-connection")
@@ -229,7 +229,7 @@ public class DataSourceConfigControllerTest {
                 .andExpect(jsonPath("$.data").value(true));
 
         // 验证服务层方法被调用
-        verify(dataSourceConfigService, times(1)).testConnection(any(DataSourceConfig.class));
+        verify(dataSourceConfigService, times(1)).testConnection(any(Datasource.class));
     }
 
     @Test

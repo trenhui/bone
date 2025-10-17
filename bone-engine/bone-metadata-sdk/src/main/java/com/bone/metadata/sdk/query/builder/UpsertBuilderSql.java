@@ -9,9 +9,9 @@ import com.bone.metadata.sdk.domain.model.ColumnMetadata;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class UpsertBuilder implements QueryBuilder<UpsertContext> {
+public class UpsertBuilderSql implements SqlQueryBuilder<UpsertContext> {
 
-    // —— 1. 支持 QueryBuilder<UpsertContext> —— //
+    // —— 1. 支持 SqlQueryBuilder<UpsertContext> —— //
 
     @Override
     public CompiledQuery build(UpsertContext ctx) {

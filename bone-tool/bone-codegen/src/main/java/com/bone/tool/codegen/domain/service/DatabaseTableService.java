@@ -9,7 +9,7 @@ import com.bone.tool.codegen.application.dto.CodegenTablePageRequest;
 import com.bone.tool.codegen.application.dto.CodegenTableRequest;
 import com.bone.tool.codegen.application.dto.CodegenDetailResponse;
 import com.bone.tool.codegen.application.converter.CodegenConverter;
-import com.bone.tool.codegen.domain.entity.DataSourceConfig;
+import com.bone.tool.codegen.domain.entity.Datasource;
 import com.bone.tool.codegen.domain.entity.CodegenTable;
 import com.bone.tool.codegen.domain.entity.CodegenColumn;
 import com.bone.tool.codegen.domain.entity.TableInfo;
@@ -68,7 +68,7 @@ public class DatabaseTableService {
      * @throws IllegalArgumentException 当数据源配置ID为空时抛出
      */
     public List<TableInfo> getTableList(Long dataSourceConfigId, String nameLike, String commentLike) {
-        Assert.notNull(dataSourceConfigId, "数据源配置ID不能为空");
+        Assert.notNull(dataSourceConfigId, "数据源ID不能为空");
         
         List<TableInfo> tableInfoList = getTableList0(dataSourceConfigId, null);
         
@@ -161,7 +161,7 @@ public class DatabaseTableService {
         }
         // 使用Criteria构建查询条件
         Criteria<CodegenTable> criteria = Criteria.<CodegenTable>builder()
-                .eq("dataSourceConfigId", dataSourceConfigId);
+                .eq("datasourceId", dataSourceConfigId);
         return codegenTableRepository.findByCriteria(criteria);
     }
     
@@ -221,6 +221,59 @@ public class DatabaseTableService {
     }
     
     /**
+     * 从数据库导入单个表结构
+     * @param dataSourceConfigId 数据源配置ID
+     * @param tableName 表名
+     * @param moduleName 模块名
+     * @param packageName 包名
+     * @param sceneType 场景类型
+     * @param modelType 模型类型
+     * @return 导入的表ID
+     * @throws IllegalArgumentException 当必要参数为空时抛出
+     * @throws RuntimeException 当导入失败时抛出
+     */
+    public Long importTableFromDatabase(Long dataSourceConfigId, String tableName, String moduleName,
+                                       String packageName, Integer sceneType, Integer modelType) {
+        Assert.notNull(dataSourceConfigId, "数据源配置ID不能为空");
+        Assert.hasText(tableName, "表名不能为空");
+        Assert.hasText(moduleName, "模块名不能为空");
+        Assert.hasText(packageName, "包名不能为空");
+        
+        try {
+            // 获取数据库表信息
+            TableInfo tableInfo = getTable(dataSourceConfigId, tableName);
+            if (tableInfo == null) {
+                throw new RuntimeException("表不存在: " + tableName);
+            }
+            
+            // 创建代码生成表配置
+            CodegenTable codegenTable = new CodegenTable();
+            codegenTable.setDatasourceId(dataSourceConfigId);
+            codegenTable.setTableName(tableName);
+            codegenTable.setTableComment(tableInfo.getComment());
+            codegenTable.setModuleName(moduleName);
+            codegenTable.setPackageName(packageName);
+            codegenTable.setScene(sceneType);
+            codegenTable.setTemplateType(modelType);
+            codegenTable.setCreateTime(new java.util.Date());
+            codegenTable.setUpdateTime(new java.util.Date());
+            
+            // 保存表配置
+            Long savedTableId = codegenTableRepository.save(codegenTable);
+            
+            // 导入字段信息
+            importColumns(savedTableId, tableInfo.getFields());
+            
+            return savedTableId;
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("导入表失败: {}", tableName, e);
+            throw new RuntimeException("导入表失败: " + tableName, e);
+        }
+    }
+    
+    /**
      * 从数据库导入表结构
      * @param dataSourceConfigId 数据源配置ID
      * @param tableNames 表名列表
@@ -258,7 +311,7 @@ public class DatabaseTableService {
                 
                 // 创建代码生成表配置
                 CodegenTable codegenTable = new CodegenTable();
-                codegenTable.setDataSourceConfigId(dataSourceConfigId);
+                codegenTable.setDatasourceId(dataSourceConfigId);
                 codegenTable.setTableName(tableName);
                 codegenTable.setTableComment(tableInfo.getComment());
                 codegenTable.setModuleName(moduleName);
@@ -316,7 +369,7 @@ public class DatabaseTableService {
         // 获取原有表配置
         CodegenTable codegenTable = codegenTableRepository.findById(request.getId());
         if (codegenTable == null) {
-            throw new RuntimeException("表配置不存在，ID: " + request.getId());
+            throw new RuntimeException("表配置不存在");
         }
         
         // 更新表配置
@@ -348,7 +401,7 @@ public class DatabaseTableService {
 
             // 从数据库获取最新表结构
             TableInfo tableInfo = getTable(
-                    codegenTable.getDataSourceConfigId(),
+                    codegenTable.getDatasourceId(),
                     codegenTable.getTableName());
 
             if (tableInfo == null) {
@@ -509,7 +562,7 @@ public class DatabaseTableService {
         column.setCreateOperation(true);
         column.setUpdateOperation(!sourceColumn.getPrimaryKey()); // 主键不能更新
         column.setListOperation(true);
-        column.setListOperationResult(true);
+        column.setListResultShow(true);
         column.setHtmlType("input");
         
         return column;

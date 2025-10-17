@@ -12,7 +12,7 @@ import java.util.StringJoiner;
  * 专用计数查询构建器，用于生成计算分组结果总数的SQL
  * 不包含分页和字段选择，只返回总数
  */
-public class CountAggregationBuilder implements QueryBuilder<AggregationContext> {
+public class CountAggregationBuilderSql implements SqlQueryBuilder<AggregationContext> {
 
     @Override
     public CompiledQuery build(AggregationContext ctx) {

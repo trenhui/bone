@@ -69,8 +69,8 @@ public class CodegenTableResponse {
     @Schema(description = "树表名字字段ID", example = "16384")
     private Long treeNameColumnId;
 
-    @Schema(description = "数据源配置ID", example = "1024")
-    private Long dataSourceConfigId;
+    @Schema(description = "数据源ID", example = "1024")
+    private Long datasourceId;
 
     @Schema(description = "数据源名称")
     private String dataSourceConfigName;
