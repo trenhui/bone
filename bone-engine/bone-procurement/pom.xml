@@ -5,8 +5,9 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.bone</groupId>
-        <artifactId>bone-business</artifactId>
+        <artifactId>bone-engine</artifactId>
         <version>1.0.0</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>bone-procurement</artifactId>

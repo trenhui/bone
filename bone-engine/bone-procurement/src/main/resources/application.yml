@@ -2,34 +2,53 @@ server:
   port: 8885
 
 spring:
+  application:
+    name: bone-procurement
   profiles:
     active: dev
+  # 允许bean定义覆盖
   main:
     allow-bean-definition-overriding: true
+  # 完全禁用Spring Boot的数据源自动配置，使用我们自己的配置
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+      - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.JpaRepositoriesAutoConfiguration
+      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
+      - org.springframework.boot.autoconfigure.sql.init.SqlInitializationAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+      - org.redisson.spring.starter.RedissonAutoConfigurationV2
+  # 禁用Redis连接尝试
+  redis:
+    host: localhost
+    port: 6379
+    timeout: 500
   # 配置HikariCP数据源，不使用JPA
   datasource:
     url: jdbc:h2:mem:testdb
     driver-class-name: org.h2.Driver
     username: sa
     password: password
+    # 明确指定使用H2数据库，防止其他驱动干扰
+    type: com.zaxxer.hikari.HikariDataSource
     hikari:
       connection-timeout: 20000
       maximum-pool-size: 10
       minimum-idle: 5
       idle-timeout: 300000
       max-lifetime: 1800000
+      # 禁用自动提交
+      auto-commit: false
+      # 连接池名称
+      pool-name: H2HikariCP
   # 配置数据库初始化脚本
   sql:
     init:
       mode: always
       schema-locations: classpath:db/init.sql
       encoding: UTF-8
-  # 完全禁用JPA相关自动配置
-  autoconfigure:
-    exclude:
-      - org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration
-      - org.springframework.boot.autoconfigure.data.jpa.JpaRepositoriesAutoConfiguration
-      - org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration
 
 # 智能元数据引擎配置
 bone:
