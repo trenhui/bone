@@ -14,11 +14,28 @@
     <!-- 使用父POM中定义的属性 -->
 
     <dependencies>
+        <!-- Spring Boot Starter -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        
+        <!-- 智能元数据引擎 -->
         <dependency>
             <groupId>com.bone</groupId>
             <artifactId>bone-smartmeta-engine</artifactId>
             <version>1.1.0</version>
         </dependency>
+        
         <!-- 使用父POM中依赖管理的版本 -->
         <dependency>
             <groupId>org.mapstruct</groupId>
@@ -39,6 +56,20 @@
             <artifactId>lombok-mapstruct-binding</artifactId>
             <version>0.2.0</version>
             <scope>provided</scope>
+        </dependency>
+        
+        <!-- 其他必要依赖 -->
+        <dependency>
+            <groupId>javax.annotation</groupId>
+            <artifactId>javax.annotation-api</artifactId>
+            <version>1.3.2</version>
+        </dependency>
+        
+        <!-- 嵌入式H2数据库（必需，用于满足MetadataAutoConfiguration的数据源需求） -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>runtime</scope>
         </dependency>
     </dependencies>
     

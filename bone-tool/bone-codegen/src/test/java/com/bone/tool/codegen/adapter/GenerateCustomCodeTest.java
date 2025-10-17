@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * 测试CodegenController的generateCustomCode方法功能 - 基于业界最佳实践
+ * 测试CodeGenerationController的generateCustomCode方法功能 - 基于业界最佳实践
  * 包含多种场景测试：不同模板类型、不同生成场景、边界情况和异常情况
  */
 public class GenerateCustomCodeTest {

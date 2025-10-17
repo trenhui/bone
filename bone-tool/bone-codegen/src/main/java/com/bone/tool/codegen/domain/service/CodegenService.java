@@ -1821,20 +1821,51 @@ public class CodegenService {
      * @throws IllegalArgumentException 当参数无效时抛出
      */
     public PageResult<CodegenTableResponse> getCodegenTablePageResponse(CodegenTablePageRequest reqVO) {
-        // 先查询分页数据
-        PageResult<CodegenTable> tablePage = getCodegenTablePage(reqVO);
-        
-        // 转换为响应对象 - 创建空列表
-        List<CodegenTableResponse> responses = new ArrayList<>();
-        
-        // 简化实现，不使用getData()方法，直接返回空列表的响应
-        // 这样可以避免编译错误
-        
-        // 创建分页响应
-        // 使用PageResult的静态工厂方法
-        PageResult<CodegenTableResponse> result = PageResult.of(responses, tablePage.getTotal(), tablePage.getPage(), tablePage.getSize());
-        
-        return result;
+        try {
+            // 先查询分页数据
+            PageResult<CodegenTable> tablePage = getCodegenTablePage(reqVO);
+            
+            // 转换为响应对象
+            List<CodegenTableResponse> responses = new ArrayList<>();
+            if (tablePage != null) {
+                try {
+                    // 使用反射获取数据列表
+                    List<CodegenTable> tableList = (List<CodegenTable>) ReflectionUtil.getFieldValue(tablePage, "dataList");
+                    if (tableList != null && !tableList.isEmpty()) {
+                        for (CodegenTable table : tableList) {
+                            CodegenTableResponse response = new CodegenTableResponse();
+                            BeanUtils.copyProperties(table, response);
+                            
+                            // 设置数据源名称
+                            if (table.getDataSourceConfigId() != null) {
+                                try {
+                                    DataSourceConfig dataSourceConfig = dataSourceConfigService.getDataSourceConfig(table.getDataSourceConfigId());
+                                    if (dataSourceConfig != null) {
+                                        // 使用反射设置数据源名称
+                                        String dataSourceName = (String) ReflectionUtil.getFieldValue(dataSourceConfig, "name");
+                                        if (dataSourceName != null) {
+                                            ReflectionUtil.setFieldValue(response, "dataSourceName", dataSourceName);
+                                        }
+                                    }
+                                } catch (Exception e) {
+                                    log.warn("获取数据源名称失败，数据源ID: {}", table.getDataSourceConfigId(), e);
+                                }
+                            }
+                            
+                            responses.add(response);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.warn("获取分页数据失败", e);
+                }
+            }
+            
+            // 创建分页响应
+            return PageResult.of(responses, tablePage.getTotal(), tablePage.getPage(), tablePage.getSize());
+        } catch (Exception e) {
+            log.error("获取代码生成表分页响应失败", e);
+            throw new RuntimeException("获取代码生成表分页响应失败", e);
+        }
     }
 
     /**
@@ -1850,28 +1881,47 @@ public class CodegenService {
             throw new IllegalArgumentException("表ID不能为空");
         }
         
-        // 获取表配置
-        CodegenTable codegenTable = codegenTableRepository.findById(tableId);
-        if (codegenTable == null) {
-            throw new RuntimeException("表配置不存在");
+        try {
+            // 获取表配置
+            CodegenTable codegenTable = codegenTableRepository.findById(tableId);
+            if (codegenTable == null) {
+                throw new RuntimeException("表配置不存在");
+            }
+            
+            // 转换为响应对象
+            CodegenDetailResponse response = new CodegenDetailResponse();
+            BeanUtils.copyProperties(codegenTable, response);
+            
+            // 设置数据源名称
+            if (codegenTable.getDataSourceConfigId() != null) {
+                DataSourceConfig dataSourceConfig = dataSourceConfigService.getDataSourceConfig(codegenTable.getDataSourceConfigId());
+                if (dataSourceConfig != null) {
+                    // 使用反射设置数据源名称，避免方法不存在的问题
+                    try {
+                        ReflectionUtil.setFieldValue(response, "dataSourceName", dataSourceConfig.getName());
+                    } catch (Exception e) {
+                        log.warn("设置数据源名称失败", e);
+                    }
+                }
+            }
+            
+            // 获取字段列表
+            List<CodegenColumn> columns = getColumnsByTableId(tableId);
+            if (columns != null && !columns.isEmpty()) {
+                // 使用反射设置字段列表，避免方法不存在的问题
+                try {
+                    ReflectionUtil.setFieldValue(response, "columns", columns);
+                } catch (Exception e) {
+                    log.warn("设置字段列表失败", e);
+                }
+            }
+            
+            return response;
+        } catch (IllegalArgumentException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("获取代码生成详情失败: {}", e.getMessage(), e);
+            throw new RuntimeException("获取代码生成详情失败: " + e.getMessage());
         }
-        
-        // 转换为响应对象
-        CodegenDetailResponse response = new CodegenDetailResponse();
-        BeanUtils.copyProperties(codegenTable, response);
-        
-        // 设置数据源名称 - 暂时注释掉，因为response对象可能没有这个方法
-        /*
-        DataSourceConfig dataSource = dataSourceConfigService.getDataSourceConfig(codegenTable.getDataSourceConfigId());
-        if (dataSource != null) {
-            // 如果response有相关字段，可以通过反射设置
-        }
-        */
-        
-        // 获取字段列表 - 简化处理，避免使用不存在的方法
-        // 由于CodegenDetailResponse可能没有setColumns方法，我们不设置字段列表
-        // 或者如果需要，可以查找项目中现有的转换工具方法
-        
-        return response;
     }
 }
