@@ -17,11 +17,11 @@ import java.util.stream.Collectors;
  * 动态构建 COUNT 查询，支持按需 JOIN 扩展表 ext_data_reserved。
  */
 @Slf4j
-public class CountBuilder implements QueryBuilder<CountContext> {
+public class CountBuilderSql implements SqlQueryBuilder<CountContext> {
 
     private final MetadataService metadataService;
 
-    public CountBuilder(MetadataService metadataService) {
+    public CountBuilderSql(MetadataService metadataService) {
         this.metadataService = metadataService;
     }
 

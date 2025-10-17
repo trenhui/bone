@@ -1,0 +1,9 @@
+# 数据库连接测试配置
+bone:
+  codegen:
+    test:
+      datasource:
+        id: 1
+        url: jdbc:mysql://localhost:3306/bone
+        username: root
+        password: mysql123

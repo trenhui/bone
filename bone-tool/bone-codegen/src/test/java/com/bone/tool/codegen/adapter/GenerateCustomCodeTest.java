@@ -197,7 +197,7 @@ public class GenerateCustomCodeTest {
     public void testGenerateCustomCode_WithNullDataSourceConfigId() {
         // 1. 创建请求参数 - 数据源配置ID为null
         GenerateCustomCodeRequest request = createDefaultRequest();
-        request.setDataSourceConfigId(null);
+        request.setDatasourceId(null);
 
         // 2. 验证异常抛出
         Executable executable = () -> codegenService.generateCustomCode(request);
@@ -244,7 +244,7 @@ public class GenerateCustomCodeTest {
      */
     private GenerateCustomCodeRequest createDefaultRequest() {
         GenerateCustomCodeRequest request = new GenerateCustomCodeRequest();
-        request.setDataSourceConfigId(1L);
+        request.setDatasourceId(1L);
         request.setTableNames(Arrays.asList("user", "order"));
         request.setProjectName("demo-project");
         request.setModuleName("system");

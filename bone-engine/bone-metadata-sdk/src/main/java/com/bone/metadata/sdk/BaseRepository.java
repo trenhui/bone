@@ -365,7 +365,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
         List<T> content = sqlExecutor.executeQuery(select, entityClass);
         content.forEach(this::loadExtensionFields);
 
-        // 计数（若你的 CountBuilder 已忽略分页，可直接用 countByCriteria(criteria)）
+        // 计数（若你的 CountBuilderSql 已忽略分页，可直接用 countByCriteria(criteria)）
         Integer originalPageNumber = criteria.getPageNo();
         Integer originalPageSize = criteria.getPageSize();
         Long total;

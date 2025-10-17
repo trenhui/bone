@@ -3,7 +3,7 @@ package com.bone.tool.codegen.domain.repository;
 import com.bone.tool.codegen.domain.entity.TableInfo;
 import com.bone.tool.codegen.domain.entity.CodegenColumn;
 import com.bone.tool.codegen.domain.repository.DataSourceConfigRepository;
-import com.bone.tool.codegen.domain.entity.DataSourceConfig;
+import com.bone.tool.codegen.domain.entity.Datasource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
@@ -30,10 +30,10 @@ public class DefaultDatabaseTableRepository implements DatabaseTableRepository {
     private DataSourceConfigRepository dataSourceConfigRepository;
     
     @Override
-    public Connection getConnection(Long dataSourceConfigId) throws Exception {
-        DataSourceConfig config = dataSourceConfigRepository.findById(dataSourceConfigId);
+    public Connection getConnection(Long datasourceId) throws Exception {
+        Datasource config = dataSourceConfigRepository.findById(datasourceId);
         if (config == null) {
-            throw new IllegalArgumentException("数据源配置不存在: " + dataSourceConfigId);
+            throw new IllegalArgumentException("数据源配置不存在: " + datasourceId);
         }
         
         // 获取数据库连接

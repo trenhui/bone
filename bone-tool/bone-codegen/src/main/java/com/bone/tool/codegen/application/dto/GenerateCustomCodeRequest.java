@@ -15,9 +15,9 @@ import java.util.List;
 @Data
 public class GenerateCustomCodeRequest {
     
-    @Schema(description = "数据源配置ID", example = "1")
-    @NotNull(message = "数据源配置ID不能为空")
-    private Long dataSourceConfigId;
+    @Schema(description = "数据源ID", example = "1")
+    @NotNull(message = "数据源ID不能为空")
+    private Long datasourceId;
     
     @Schema(description = "表名列表", example = "[\"user\",\"order\"]")
     @NotEmpty(message = "表名列表不能为空")

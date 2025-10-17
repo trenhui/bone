@@ -105,7 +105,7 @@ public class RepositoryFactoryBean<T, E, ID> implements FactoryBean<T>, Initiali
         Assert.notNull(sqlExecutor, "SqlExecutor 不能为空");
         Assert.notNull(sqlTemplateLoader, "SqlTemplateLoader 不能为空");
         Assert.notNull(sqlProcessorFactory, "SqlProcessorFactory 不能为空");
-        Assert.notNull(sqlBuilder, "SqlBuilder 不能为空");
+        Assert.notNull(sqlBuilder, "QueryBuilder 不能为空");
         Assert.notNull(extensionCoordinator, "ExtensionCoordinator 不能为空");
         Assert.notNull(sqlFragmentLoader, "SqlFragmentLoader 不能为空");
     }

@@ -1,7 +1,7 @@
 package com.bone.tool.codegen.domain.repository;
 
 import com.bone.metadata.sdk.Repository;
-import com.bone.tool.codegen.domain.entity.DataSourceConfig;
+import com.bone.tool.codegen.domain.entity.Datasource;
 
 import java.util.List;
 
@@ -10,6 +10,6 @@ import java.util.List;
  *
  * @author bone-team
  */
-public interface DataSourceConfigRepository extends Repository<DataSourceConfig, Long> {
+public interface DataSourceConfigRepository extends Repository<Datasource, Long> {
 
 }

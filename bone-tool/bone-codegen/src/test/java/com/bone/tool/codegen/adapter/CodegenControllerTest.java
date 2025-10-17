@@ -51,7 +51,7 @@ public class CodegenControllerTest {
     private void initMockData() {
         // 初始化GenerateCustomCodeRequest模拟数据
         mockGenerateCustomCodeRequest = new GenerateCustomCodeRequest();
-        mockGenerateCustomCodeRequest.setDataSourceConfigId(1L);
+        mockGenerateCustomCodeRequest.setDatasourceId(1L);
         mockGenerateCustomCodeRequest.setTableNames(Arrays.asList("table1", "table2"));
         mockGenerateCustomCodeRequest.setProjectName("test-project");
         mockGenerateCustomCodeRequest.setModuleName("system");

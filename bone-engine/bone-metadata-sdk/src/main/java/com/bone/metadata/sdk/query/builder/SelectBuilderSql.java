@@ -17,12 +17,12 @@ import java.util.stream.Collectors;
  * 动态构建 SELECT，按需 LEFT JOIN ext_data_reserved，
  * 并且扩展字段在 WHERE 中也使用真实物理列名。
  */
-public class SelectBuilder implements QueryBuilder<SelectContext> {
+public class SelectBuilderSql implements SqlQueryBuilder<SelectContext> {
 
     private final MetadataService metadataService;
     private final DatabaseDialect dialect;
 
-    public SelectBuilder(MetadataService metadataService, DatabaseDialect dialect) {
+    public SelectBuilderSql(MetadataService metadataService, DatabaseDialect dialect) {
         this.metadataService = metadataService;
         this.dialect = dialect;
     }

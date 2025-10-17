@@ -2,7 +2,7 @@ package com.bone.tool.codegen.domain.service.generator;
 
 import com.bone.tool.codegen.domain.entity.CodegenColumn;
 import com.bone.tool.codegen.domain.entity.CodegenTable;
-import com.bone.tool.codegen.domain.entity.DataSourceConfig;
+import com.bone.tool.codegen.domain.entity.Datasource;
 import com.bone.tool.codegen.domain.enums.CodegenSceneEnum;
 import com.bone.tool.codegen.domain.enums.CodegenTemplateTypeEnum;
 import com.bone.tool.codegen.domain.enums.ModelTypeEnum;
@@ -101,7 +101,7 @@ public class DefaultCodeGenerator implements CodeGenerator {
             // 避免直接调用不存在的getter方法
             List<CodegenColumn> columns = (List<CodegenColumn>) ReflectionUtil.getFieldValue(codegenTable, "columns");
             List<CodegenTable> subTables = (List<CodegenTable>) ReflectionUtil.getFieldValue(codegenTable, "subTables");
-            DataSourceConfig dataSourceConfig = (DataSourceConfig) ReflectionUtil.getFieldValue(codegenTable, "dataSourceConfig");
+            Datasource dataSourceConfig = (Datasource) ReflectionUtil.getFieldValue(codegenTable, "dataSourceConfig");
             String groupId = (String) ReflectionUtil.getFieldValue(codegenTable, "groupId");
             
             List<List<CodegenColumn>> subColumnsList = new ArrayList<>();
@@ -195,7 +195,7 @@ public class DefaultCodeGenerator implements CodeGenerator {
     
     // 添加缺失的方法
     public Map<String, String> generateCode(List<CodegenColumn> columns, List<CodegenTable> subTables, 
-                                          DataSourceConfig dataSourceConfig, String groupId, Integer modelType) {
+                                          Datasource dataSourceConfig, String groupId, Integer modelType) {
         CodegenTable table = new CodegenTable();
         return execute(table, columns, subTables, new ArrayList<>(), dataSourceConfig, groupId, modelType);
     }
@@ -206,7 +206,7 @@ public class DefaultCodeGenerator implements CodeGenerator {
     
     // 添加execute方法作为内部实现
     private Map<String, String> execute(CodegenTable table, List<CodegenColumn> columns, List<CodegenTable> subTables,
-                                     List<List<CodegenColumn>> subColumnsList, DataSourceConfig dataSourceConfig,
+                                     List<List<CodegenColumn>> subColumnsList, Datasource dataSourceConfig,
                                      String groupId, Integer modelType) {
         Map<String, String> result = new HashMap<>();
         try {
@@ -269,7 +269,7 @@ public class DefaultCodeGenerator implements CodeGenerator {
 
     private Map<String, Object> initBindingMap(CodegenTable table, List<CodegenColumn> columns, 
                                              List<CodegenTable> subTables, List<List<CodegenColumn>> subColumnsList, 
-                                             DataSourceConfig dataSourceConfigDO, String groupId, Integer modelType) {
+                                             Datasource dataSourceConfig, String groupId, Integer modelType) {
         // 创建 bindingMap
         Map<String, Object> bindingMap = new HashMap<>(globalBindingMap);
         bindingMap.put("modelType", modelType);
@@ -310,9 +310,11 @@ public class DefaultCodeGenerator implements CodeGenerator {
         bindingMap.put("permissionPrefix", moduleName + ":" + simpleClassNameStrikeCase);
         
         // 数据源信息
-        bindingMap.put("dataSourceUrl", ReflectionUtil.getStringFieldValue(dataSourceConfigDO, "url"));
-        bindingMap.put("dataSourceUsername", ReflectionUtil.getStringFieldValue(dataSourceConfigDO, "username"));
-        bindingMap.put("dataSourcePassword", ReflectionUtil.getStringFieldValue(dataSourceConfigDO, "password"));
+        bindingMap.put("dataSourceConfig", dataSourceConfig);
+        bindingMap.put("dataSourceUrl", ReflectionUtil.getStringFieldValue(dataSourceConfig, "url"));
+        bindingMap.put("dataSourceUsername", ReflectionUtil.getStringFieldValue(dataSourceConfig, "username"));
+        bindingMap.put("dataSourcePassword", ReflectionUtil.getStringFieldValue(dataSourceConfig, "password"));
+        bindingMap.put("dbType", getDbType(ReflectionUtil.getStringFieldValue(dataSourceConfig, "url")));
         
         // 树表逻辑
         initTreeTableBinding(bindingMap, table, columns);
@@ -323,6 +325,28 @@ public class DefaultCodeGenerator implements CodeGenerator {
         return bindingMap;
     }
 
+    /**
+     * 根据数据库URL获取数据库类型
+     */
+    private String getDbType(String jdbcUrl) {
+        if (jdbcUrl == null) {
+            return "unknown";
+        }
+        if (jdbcUrl.contains("mysql")) {
+            return "mysql";
+        } else if (jdbcUrl.contains("oracle")) {
+            return "oracle";
+        } else if (jdbcUrl.contains("postgresql")) {
+            return "postgresql";
+        } else if (jdbcUrl.contains("sqlserver")) {
+            return "sqlserver";
+        } else if (jdbcUrl.contains("sqlite")) {
+            return "sqlite";
+        } else {
+            return "other";
+        }
+    }
+    
     private void initTreeTableBinding(Map<String, Object> bindingMap, CodegenTable table, List<CodegenColumn> columns) {
         Integer templateType = ReflectionUtil.getIntegerFieldValue(table, "templateType");
         if (templateType != null && templateType.equals(CodegenTemplateTypeEnum.TREE.getType())) {
