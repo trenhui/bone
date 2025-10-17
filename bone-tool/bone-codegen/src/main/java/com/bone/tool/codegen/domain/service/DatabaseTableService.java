@@ -16,6 +16,7 @@ import com.bone.tool.codegen.domain.entity.TableInfo;
 import com.bone.tool.codegen.domain.repository.DataSourceConfigRepository;
 import com.bone.tool.codegen.domain.repository.CodegenTableRepository;
 import com.bone.tool.codegen.domain.repository.CodegenColumnRepository;
+import com.bone.tool.codegen.domain.repository.DatabaseTableRepository;
 import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +51,9 @@ public class DatabaseTableService {
     private CodegenColumnRepository codegenColumnRepository;
     
     @Resource
+    private DatabaseTableRepository databaseTableRepository;
+    
+    @Resource
     private CodegenConverter codegenConverter;
 
     /**
@@ -61,6 +65,7 @@ public class DatabaseTableService {
      * @param nameLike 表名称（模糊匹配）
      * @param commentLike 表描述（模糊匹配）
      * @return 表信息列表
+     * @throws IllegalArgumentException 当数据源配置ID为空时抛出
      */
     public List<TableInfo> getTableList(Long dataSourceConfigId, String nameLike, String commentLike) {
         Assert.notNull(dataSourceConfigId, "数据源配置ID不能为空");
@@ -70,13 +75,14 @@ public class DatabaseTableService {
         // 根据条件过滤
         if (StringUtils.hasText(nameLike)) {
             tableInfoList = tableInfoList.stream()
-                    .filter(table -> table.getName().toLowerCase().contains(nameLike.toLowerCase()))
+                    .filter(table -> table != null && table.getName() != null &&
+                            table.getName().toLowerCase().contains(nameLike.toLowerCase()))
                     .collect(Collectors.toList());
         }
         
         if (StringUtils.hasText(commentLike)) {
             tableInfoList = tableInfoList.stream()
-                    .filter(table -> StringUtils.hasText(table.getComment()) && 
+                    .filter(table -> table != null && StringUtils.hasText(table.getComment()) && 
                             table.getComment().toLowerCase().contains(commentLike.toLowerCase()))
                     .collect(Collectors.toList());
         }
@@ -92,60 +98,62 @@ public class DatabaseTableService {
      * @param dataSourceConfigId 数据源配置ID
      * @param tableNames 表名列表
      * @return 表信息列表
+     * @throws IllegalArgumentException 当数据源配置ID为空时抛出
      */
     public List<TableInfo> getTables(Long dataSourceConfigId, List<String> tableNames) {
         Assert.notNull(dataSourceConfigId, "数据源配置ID不能为空");
         if (CollectionUtils.isEmpty(tableNames)) {
-            return new ArrayList<>();
+            return Collections.emptyList();
         }
         
         List<TableInfo> tableInfos = new ArrayList<>(tableNames.size());
         for (String tableName : tableNames) {
-            TableInfo tableInfo = getTable(dataSourceConfigId, tableName);
-            if (tableInfo != null) {
-                tableInfos.add(tableInfo);
+            if (StringUtils.hasText(tableName)) {
+                TableInfo tableInfo = getTable(dataSourceConfigId, tableName);
+                if (tableInfo != null) {
+                    tableInfos.add(tableInfo);
+                }
             }
         }
         
         return tableInfos;
     }
     
-    // 内部方法：获取表列表的具体实现
+    /**
+     * 内部方法：获取表列表的具体实现
+     * @param dataSourceConfigId 数据源配置ID
+     * @param schema 数据库模式
+     * @return 表信息列表
+     */
     private List<TableInfo> getTableList0(Long dataSourceConfigId, String schema) {
-        // 返回模拟数据以通过单元测试
-        List<TableInfo> tableInfos = new ArrayList<>();
-        
-        // 创建测试表信息
-        TableInfo testTable = new TableInfo();
-        testTable.setName("test_table");
-        testTable.setComment("测试表");
-        testTable.setEntityName("TestTable");
-        testTable.setFieldName("testTable");
-        
-        // 添加到列表
-        tableInfos.add(testTable);
-        
-        return tableInfos;
-    }
-    
-    // 内部方法：获取单个表信息的具体实现
-    private TableInfo getTable(Long dataSourceConfigId, String tableName) {
-        // 根据表名返回对应的表信息
-        if ("test_table".equals(tableName)) {
-            TableInfo testTable = new TableInfo();
-            testTable.setName("test_table");
-            testTable.setComment("测试表");
-            testTable.setEntityName("TestTable");
-            testTable.setFieldName("testTable");
-            return testTable;
+        try {
+            return databaseTableRepository.getTableList(dataSourceConfigId, schema);
+        } catch (Exception e) {
+            log.error("获取表列表失败，数据源ID: {}", dataSourceConfigId, e);
+            // 出错时返回空列表，避免上层调用失败
+            return Collections.emptyList();
         }
-        return null; // 表不存在时返回null
     }
     
-    // 代码生成表配置管理相关方法
+    /**
+     * 内部方法：获取单个表信息的具体实现
+     * @param dataSourceConfigId 数据源配置ID
+     * @param tableName 表名
+     * @return 表信息
+     */
+    private TableInfo getTable(Long dataSourceConfigId, String tableName) {
+        try {
+            return databaseTableRepository.getTableInfo(dataSourceConfigId, tableName);
+        } catch (Exception e) {
+            log.error("获取表信息失败，表名: {}, 数据源ID: {}", tableName, dataSourceConfigId, e);
+            return null; // 表不存在或查询失败时返回null
+        }
+    }
     
     /**
      * 根据数据源配置ID获取表定义列表
+     * @param dataSourceConfigId 数据源配置ID
+     * @return 表定义列表
      */
     public List<CodegenTable> getCodegenTablesByDataSourceId(Long dataSourceConfigId) {
         if (dataSourceConfigId == null) {
@@ -158,25 +166,51 @@ public class DatabaseTableService {
     }
     
     /**
-     * 获取代码生成表配置分页响应
+     * 获取代码生成表配置的分页响应
+     * @param request 分页请求参数
+     * @return 分页结果
      */
     public PageResult<CodegenTable> getCodegenTablePageResponse(CodegenTablePageRequest request) {
-        // 直接返回null，避免构造问题
-        return null;
+        Assert.notNull(request, "请求参数不能为空");
+        
+        // 构建查询条件
+        Criteria<CodegenTable> criteria = Criteria.<CodegenTable>builder();
+        
+        // 设置查询条件（注意：CodegenTablePageRequest中没有dataSourceConfigId字段）
+        if (request.getTableName() != null) {
+            criteria.like("tableName", "%" + request.getTableName() + "%");
+        }
+        if (request.getClassName() != null) {
+            criteria.like("className", "%" + request.getClassName() + "%");
+        }
+        if (request.getTableComment() != null) {
+            criteria.like("tableComment", "%" + request.getTableComment() + "%");
+        }
+        
+        // 使用pageByCriteria方法进行分页查询
+        PageResult<CodegenTable> result = codegenTableRepository.pageByCriteria(criteria);
+        
+        return result;
     }
     
     /**
      * 获取表定义详情
+     * @param tableId 表ID
+     * @return 表定义详情响应
+     * @throws IllegalArgumentException 当表ID为空时抛出
+     * @throws RuntimeException 当表配置不存在时抛出
      */
     public CodegenDetailResponse getCodegenDetail(Long tableId) {
+        Assert.notNull(tableId, "表ID不能为空");
+        
         // 获取表配置
         CodegenTable codegenTable = codegenTableRepository.findById(tableId);
         if (codegenTable == null) {
-            throw new RuntimeException("表配置不存在");
+            throw new RuntimeException("表配置不存在，ID: " + tableId);
         }
         
-        // 获取字段列表，使用简单查询避免排序方法错误
-        List<CodegenColumn> columns = new ArrayList<>(); // 返回空列表避免方法调用错误
+        // 获取字段列表
+        List<CodegenColumn> columns = getColumnsByTableId(tableId);
         
         // 构建详情响应
         CodegenDetailResponse response = new CodegenDetailResponse();
@@ -188,13 +222,32 @@ public class DatabaseTableService {
     
     /**
      * 从数据库导入表结构
+     * @param dataSourceConfigId 数据源配置ID
+     * @param tableNames 表名列表
+     * @param moduleName 模块名
+     * @param packageName 包名
+     * @param sceneType 场景类型
+     * @param modelType 模型类型
+     * @return 导入的表ID列表
+     * @throws IllegalArgumentException 当必要参数为空时抛出
+     * @throws RuntimeException 当导入失败时抛出
      */
     public List<Long> importTablesFromDatabase(Long dataSourceConfigId, List<String> tableNames,
                                              String moduleName, String packageName,
                                              Integer sceneType, Integer modelType) {
+        Assert.notNull(dataSourceConfigId, "数据源配置ID不能为空");
+        Assert.notEmpty(tableNames, "表名列表不能为空");
+        Assert.hasText(moduleName, "模块名不能为空");
+        Assert.hasText(packageName, "包名不能为空");
+        
         List<Long> tableIds = new ArrayList<>(tableNames.size());
         
         for (String tableName : tableNames) {
+            if (!StringUtils.hasText(tableName)) {
+                log.warn("跳过空表名");
+                continue;
+            }
+            
             try {
                 // 获取数据库表信息
                 TableInfo tableInfo = getTable(dataSourceConfigId, tableName);
@@ -210,17 +263,18 @@ public class DatabaseTableService {
                 codegenTable.setTableComment(tableInfo.getComment());
                 codegenTable.setModuleName(moduleName);
                 codegenTable.setPackageName(packageName);
-                // 移除不存在的方法调用
+                codegenTable.setScene(sceneType);
+                codegenTable.setTemplateType(modelType);
                 codegenTable.setCreateTime(new java.util.Date());
                 codegenTable.setUpdateTime(new java.util.Date());
                 
                 // 保存表配置
-                codegenTableRepository.save(codegenTable);
+                Long savedTableId = codegenTableRepository.save(codegenTable);
                 
                 // 导入字段信息
-                importColumns(codegenTable.getId(), tableInfo.getFields());
+                importColumns(savedTableId, tableInfo.getFields());
                 
-                tableIds.add(codegenTable.getId());
+                tableIds.add(savedTableId);
             } catch (Exception e) {
                 log.error("导入表失败: {}", tableName, e);
                 throw new RuntimeException("导入表失败: " + tableName, e);
@@ -232,35 +286,45 @@ public class DatabaseTableService {
     
     /**
      * 导入表字段
+     * @param tableId 表ID
+     * @param fields 字段列表
      */
     private void importColumns(Long tableId, List<CodegenColumn> fields) {
+        if (CollectionUtils.isEmpty(fields)) {
+            return;
+        }
+        
         for (CodegenColumn field : fields) {
             field.setTableId(tableId);
-            // 移除时间相关方法调用
             codegenColumnRepository.save(field);
         }
     }
     
     /**
      * 更新表定义配置
+     * @param request 更新请求
+     * @throws IllegalArgumentException 当请求参数无效时抛出
+     * @throws RuntimeException 当表配置不存在时抛出
      */
     public void updateCodegenTable(CodegenTableRequest request) {
         // 验证参数
-        if (request.getId() == null) {
-            throw new IllegalArgumentException("表ID不能为空");
-        }
+        Assert.notNull(request, "请求参数不能为空");
+        Assert.notNull(request.getId(), "表ID不能为空");
+        Assert.hasText(request.getModuleName(), "模块名不能为空");
+        Assert.hasText(request.getPackageName(), "包名不能为空");
         
         // 获取原有表配置
         CodegenTable codegenTable = codegenTableRepository.findById(request.getId());
         if (codegenTable == null) {
-            throw new RuntimeException("表配置不存在");
+            throw new RuntimeException("表配置不存在，ID: " + request.getId());
         }
         
         // 更新表配置
         codegenTable.setModuleName(request.getModuleName());
         codegenTable.setPackageName(request.getPackageName());
         codegenTable.setClassName(request.getClassName());
-        // 移除不存在的方法调用
+        codegenTable.setScene(request.getTemplateType()); // 使用templateType作为scene值
+        codegenTable.setTemplateType(request.getTemplateType());
         codegenTable.setUpdateTime(new java.util.Date());
         
         codegenTableRepository.update(codegenTable);
@@ -268,17 +332,18 @@ public class DatabaseTableService {
     
     /**
      * 同步数据库表结构到代码生成配置
+     * @param id 表配置ID
+     * @throws IllegalArgumentException 当表配置ID为空时抛出
+     * @throws RuntimeException 当同步失败时抛出
      */
     public void syncTableFromDatabase(Long id) {
-        if (id == null) {
-            throw new IllegalArgumentException("表配置ID不能为空");
-        }
+        Assert.notNull(id, "表配置ID不能为空");
 
         try {
             CodegenTable codegenTable = codegenTableRepository.findById(id);
             if (codegenTable == null) {
                 log.error("表配置不存在，ID: {}", id);
-                throw new RuntimeException("表配置不存在");
+                throw new RuntimeException("表配置不存在，ID: " + id);
             }
 
             // 从数据库获取最新表结构
@@ -305,6 +370,8 @@ public class DatabaseTableService {
     
     /**
      * 执行同步逻辑
+     * @param codegenTable 代码生成表配置
+     * @param tableInfo 表信息
      */
     private void syncCodegen0(CodegenTable codegenTable, TableInfo tableInfo) {
         try {
@@ -330,6 +397,8 @@ public class DatabaseTableService {
     
     /**
      * 同步表的字段信息
+     * @param tableId 表ID
+     * @param tableFields 表字段列表
      */
     private void syncColumns(Long tableId, List<CodegenColumn> tableFields) {
         // 获取现有字段
@@ -344,28 +413,22 @@ public class DatabaseTableService {
         // 处理新增和更新的字段
         if (!CollectionUtils.isEmpty(tableFields)) {
             for (CodegenColumn field : tableFields) {
-                // 使用反射获取columnName字段值
-                String columnName;
-                try {
-                    java.lang.reflect.Field columnNameField = CodegenColumn.class.getDeclaredField("columnName");
-                    columnNameField.setAccessible(true);
-                    columnName = (String) columnNameField.get(field);
-                } catch (Exception e) {
-                    throw new RuntimeException("Failed to get columnName", e);
-                }
-                CodegenColumn column = columnMap.get(columnName);
+                if (field != null && StringUtils.hasText(field.getColumnName())) {
+                    String columnName = field.getColumnName();
+                    CodegenColumn column = columnMap.get(columnName);
 
-                if (column == null) {
-                    // 新增字段
-                    column = createCodegenColumn(tableId, field);
-                    codegenColumnRepository.save(column);
-                    addedCount++;
-                } else {
-                    // 更新字段
-                    updateColumn(column, field);
-                    updatedCount++;
-                    // 从映射中移除，剩余的就是需要删除的
-                    columnMap.remove(columnName);
+                    if (column == null) {
+                        // 新增字段
+                        column = createCodegenColumn(tableId, field);
+                        codegenColumnRepository.save(column);
+                        addedCount++;
+                    } else {
+                        // 更新字段
+                        updateColumn(column, field);
+                        updatedCount++;
+                        // 从映射中移除，剩余的就是需要删除的
+                        columnMap.remove(columnName);
+                    }
                 }
             }
         }
@@ -379,26 +442,23 @@ public class DatabaseTableService {
     
     /**
      * 构建字段映射表
+     * @param columns 字段列表
+     * @return 字段名到字段对象的映射
      */
     private Map<String, CodegenColumn> buildColumnMap(List<CodegenColumn> columns) {
         Map<String, CodegenColumn> columnMap = new HashMap<>(columns.size());
         for (CodegenColumn column : columns) {
-            // 使用反射获取columnName字段值
-            String columnName;
-            try {
-                java.lang.reflect.Field columnNameField = CodegenColumn.class.getDeclaredField("columnName");
-                columnNameField.setAccessible(true);
-                columnName = (String) columnNameField.get(column);
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to get columnName", e);
+            if (column != null && StringUtils.hasText(column.getColumnName())) {
+                columnMap.put(column.getColumnName(), column);
             }
-            columnMap.put(columnName, column);
         }
         return columnMap;
     }
     
     /**
      * 删除过时的字段
+     * @param obsoleteColumns 过时的字段映射
+     * @return 删除的字段数量
      */
     private int deleteObsoleteColumns(Map<String, CodegenColumn> obsoleteColumns) {
         int deletedCount = 0;
@@ -407,16 +467,7 @@ public class DatabaseTableService {
                 codegenColumnRepository.deleteById(column.getId());
                 deletedCount++;
             } catch (Exception e) {
-                // 使用反射获取columnName字段值
-                String columnName;
-                try {
-                    java.lang.reflect.Field columnNameField = CodegenColumn.class.getDeclaredField("columnName");
-                    columnNameField.setAccessible(true);
-                    columnName = (String) columnNameField.get(column);
-                    log.warn("删除字段失败: {} (ID: {})", columnName, column.getId(), e);
-                } catch (Exception ex) {
-                    throw new RuntimeException("Failed to get columnName", ex);
-                }
+                log.warn("删除字段失败: {} (ID: {})", column.getColumnName(), column.getId(), e);
                 // 继续删除其他字段，单个字段删除失败不应影响整体操作
             }
         }
@@ -425,6 +476,8 @@ public class DatabaseTableService {
     
     /**
      * 获取表字段列表
+     * @param tableId 表ID
+     * @return 字段列表
      */
     public List<CodegenColumn> getColumnsByTableId(Long tableId) {
         if (tableId == null) {
@@ -438,84 +491,69 @@ public class DatabaseTableService {
     
     /**
      * 创建代码生成字段配置
+     * @param tableId 表ID
+     * @param sourceColumn 源字段
+     * @return 代码生成字段配置
      */
     private CodegenColumn createCodegenColumn(Long tableId, CodegenColumn sourceColumn) {
         CodegenColumn column = new CodegenColumn();
         column.setTableId(tableId);
+        column.setColumnName(sourceColumn.getColumnName());
+        column.setDataType(sourceColumn.getDataType());
+        column.setJavaType(sourceColumn.getJavaType());
+        column.setColumnComment(sourceColumn.getColumnComment());
+        column.setPrimaryKey(sourceColumn.getPrimaryKey());
+        column.setAutoIncrement(sourceColumn.getAutoIncrement());
         
-        // 使用反射复制字段值
-        try {
-            // 获取所有声明的字段
-            java.lang.reflect.Field[] fields = CodegenColumn.class.getDeclaredFields();
-            for (java.lang.reflect.Field field : fields) {
-                if ("tableId".equals(field.getName())) {
-                    continue; // 跳过tableId，已经设置过
-                }
-                field.setAccessible(true);
-                Object value = field.get(sourceColumn);
-                if (value != null) {
-                    field.set(column, value);
-                }
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to create CodegenColumn", e);
-        }
+        // 设置默认值
+        column.setCreateOperation(true);
+        column.setUpdateOperation(!sourceColumn.getPrimaryKey()); // 主键不能更新
+        column.setListOperation(true);
+        column.setListOperationResult(true);
+        column.setHtmlType("input");
         
         return column;
     }
     
     /**
      * 更新字段配置
+     * @param column 目标字段
+     * @param sourceColumn 源字段
      */
     private void updateColumn(CodegenColumn column, CodegenColumn sourceColumn) {
         boolean hasUpdate = false;
         
         // 比较并更新dataType字段
-        try {
-            java.lang.reflect.Field dataTypeField = CodegenColumn.class.getDeclaredField("dataType");
-            dataTypeField.setAccessible(true);
-            String sourceDataType = (String) dataTypeField.get(sourceColumn);
-            String targetDataType = (String) dataTypeField.get(column);
-            
-            if (!StringUtils.pathEquals(targetDataType, sourceDataType)) {
-                dataTypeField.set(column, sourceDataType);
-                hasUpdate = true;
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to update dataType", e);
+        if (!StringUtils.pathEquals(column.getDataType(), sourceColumn.getDataType())) {
+            column.setDataType(sourceColumn.getDataType());
+            hasUpdate = true;
         }
         
         // 比较并更新columnComment字段
-        try {
-            java.lang.reflect.Field commentField = CodegenColumn.class.getDeclaredField("columnComment");
-            commentField.setAccessible(true);
-            String sourceComment = (String) commentField.get(sourceColumn);
-            String targetComment = (String) commentField.get(column);
-            
-            if (!StringUtils.pathEquals(targetComment, sourceComment)) {
-                commentField.set(column, sourceComment);
-                hasUpdate = true;
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to update columnComment", e);
+        if (!StringUtils.pathEquals(column.getColumnComment(), sourceColumn.getColumnComment())) {
+            column.setColumnComment(sourceColumn.getColumnComment());
+            hasUpdate = true;
         }
         
         // 比较并更新primaryKey字段
-        try {
-            java.lang.reflect.Field primaryKeyField = CodegenColumn.class.getDeclaredField("primaryKey");
-            primaryKeyField.setAccessible(true);
-            Boolean sourcePrimaryKey = (Boolean) primaryKeyField.get(sourceColumn);
-            Boolean targetPrimaryKey = (Boolean) primaryKeyField.get(column);
-            
-            if (sourcePrimaryKey != null && !sourcePrimaryKey.equals(targetPrimaryKey)) {
-                primaryKeyField.set(column, sourcePrimaryKey);
-                hasUpdate = true;
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to update primaryKey", e);
+        if (sourceColumn.getPrimaryKey() != null && !sourceColumn.getPrimaryKey().equals(column.getPrimaryKey())) {
+            column.setPrimaryKey(sourceColumn.getPrimaryKey());
+            hasUpdate = true;
         }
         
-        // 如果有更新，则保存并更新时间
+        // 更新Java类型
+        if (!StringUtils.pathEquals(column.getJavaType(), sourceColumn.getJavaType())) {
+            column.setJavaType(sourceColumn.getJavaType());
+            hasUpdate = true;
+        }
+        
+        // 比较并更新autoIncrement字段
+        if (sourceColumn.getAutoIncrement() != null && !sourceColumn.getAutoIncrement().equals(column.getAutoIncrement())) {
+            column.setAutoIncrement(sourceColumn.getAutoIncrement());
+            hasUpdate = true;
+        }
+        
+        // 如果有更新，则保存
         if (hasUpdate) {
             codegenColumnRepository.update(column);
         }
@@ -523,11 +561,11 @@ public class DatabaseTableService {
     
     /**
      * 删除表配置
+     * @param tableId 表ID
+     * @throws IllegalArgumentException 当表ID为空时抛出
      */
     public void deleteTable(Long tableId) {
-        if (tableId == null) {
-            throw new IllegalArgumentException("表ID不能为空");
-        }
+        Assert.notNull(tableId, "表ID不能为空");
         
         // 先删除相关的字段配置
         Criteria<CodegenColumn> columnCriteria = Criteria.<CodegenColumn>builder()

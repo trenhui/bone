@@ -2,91 +2,185 @@ package com.bone.procurement.entity;
 
 import com.bone.smartmeta.engine.annotation.SmartEntity;
 import com.bone.smartmeta.engine.annotation.SmartField;
-import com.bone.smartmeta.engine.annotation.FieldType;
 import com.bone.smartmeta.engine.annotation.BusinessRule;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import com.bone.smartmeta.engine.annotation.FieldType;
 
+import java.time.LocalDate;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
 /**
  * 供应商实体类
- * 演示如何使用bone-smartmeta框架进行实体元数据管理、字段计算和业务规则定义
+ * 演示bone-smartmeta在供应商管理业务场景中的应用，包括评分计算和业务规则验证
  */
-@Data
-@SmartEntity(displayName = "供应商")
+@SmartEntity(apiName = "Supplier", label = "供应商", description = "提供物料或服务的企业或个人")
 public class Supplier {
     
     private Long id;
     
-    @SmartField(displayName = "供应商编码", required = true, unique = true, maxLength = 50)
+    @SmartField(name = "code", label = "供应商编码", type = FieldType.TEXT, required = true, unique = true, length = 50)
     private String code;
     
-    @SmartField(displayName = "供应商名称", required = true, maxLength = 200)
+    @SmartField(name = "name", label = "供应商名称", type = FieldType.TEXT, required = true, length = 200)
     private String name;
     
-    @SmartField(displayName = "联系人", maxLength = 50)
-    private String contactPerson;
-    
-    @SmartField(displayName = "联系电话", maxLength = 20)
+    @SmartField(name = "phoneNumber", label = "联系电话", type = FieldType.TEXT, required = true, length = 50)
+    @BusinessRule(name = "phoneNumberRule", expression = "${phoneNumber}.matches('^1[3-9]\\d{9}$')", errorMessage = "联系电话格式不正确")
     private String phoneNumber;
     
-    @SmartField(displayName = "电子邮箱", maxLength = 100)
+    @SmartField(name = "contactPerson", label = "联系人", type = FieldType.TEXT, required = true, length = 100)
+    private String contactPerson;
+    
+    @SmartField(name = "email", label = "电子邮箱", type = FieldType.TEXT, length = 200)
+    @BusinessRule(name = "emailRule", expression = "${email} == null || ${email}.matches('^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,}$')", errorMessage = "电子邮箱格式不正确")
     private String email;
     
-    @SmartField(displayName = "供应商等级", options = {"A级", "B级", "C级", "D级"})
+    @SmartField(name = "address", label = "地址", type = FieldType.TEXT, length = 500)
+    private String address;
+    
+    @SmartField(name = "businessLicense", label = "营业执照编号", type = FieldType.TEXT, required = true, unique = true, length = 50)
+    private String businessLicense;
+    
+    @SmartField(name = "registerDate", label = "注册日期", type = FieldType.DATE, required = true)
+    private LocalDate registerDate;
+    
+    @SmartField(name = "supplierLevel", label = "供应商等级", type = FieldType.PICKLIST)
     private String supplierLevel;
     
-    @SmartField(displayName = "信用评分")
+    @SmartField(name = "creditScore", label = "信用评分", type = FieldType.NUMBER, defaultValue = "80")
+    @BusinessRule(name = "creditScoreRule", expression = "${creditScore} >= 0 && ${creditScore} <= 100", errorMessage = "信用评分必须在0-100之间")
     private Integer creditScore;
     
-    @SmartField(displayName = "注册日期")
-    private LocalDateTime registrationDate;
+    @SmartField(name = "cooperationStatus", label = "合作状态", type = FieldType.PICKLIST)
+    private String cooperationStatus;
     
-    @SmartField(displayName = "合作开始日期")
-    private LocalDateTime cooperationStartDate;
+    @SmartField(name = "lastCooperationDate", label = "最近合作日期", type = FieldType.DATE)
+    private LocalDate lastCooperationDate;
     
-    @SmartField(displayName = "是否启用", defaultValue = "true")
-    private Boolean enabled;
+    @SmartField(name = "totalOrderAmount", label = "累计订单金额", type = FieldType.CURRENCY, defaultValue = "0")
+    private BigDecimal totalOrderAmount;
     
-    @SmartField(displayName = "平均交付周期（天）")
-    private Integer averageDeliveryDays;
+    @SmartField(name = "orderCount", label = "订单数量", type = FieldType.NUMBER, defaultValue = "0")
+    private Integer orderCount;
     
-    @SmartField(displayName = "主要产品类别", multiple = true)
-    private List<String> productCategories;
+    @SmartField(name = "averageDeliveryRate", label = "平均交付率", type = FieldType.PERCENT, defaultValue = "1")
+    private Double averageDeliveryRate;
     
-    @SmartField(displayName = "累计采购金额")
-    private BigDecimal totalPurchaseAmount;
+    @SmartField(name = "averageQualityRate", label = "平均质量合格率", type = FieldType.PERCENT, defaultValue = "1")
+    private Double averageQualityRate;
     
-    @SmartField(displayName = "产品合格率", description = "供应商提供产品的合格率，以百分比表示")
-    private Double productQualifiedRate;
+    @SmartField(name = "complaintCount", label = "投诉次数", type = FieldType.NUMBER, defaultValue = "0")
+    private Integer complaintCount;
     
-    // 使用计算字段功能，基于信用评分和产品合格率计算供应商综合得分
-    @SmartField(displayName = "综合得分", calculated = true, 
-                calculationExpression = "(${creditScore} * 0.6) + (${productQualifiedRate} * 100 * 0.4)")
+    // 移除SupplierProduct相关字段和注解
+    // private List<SupplierProduct> products;
+    
+    @SmartField(name = "overallScore", label = "综合评分", type = FieldType.NUMBER)
     private Double overallScore;
     
-    // 使用业务规则验证供应商信息
-    @BusinessRule(expression = "${creditScore} >= 60", message = "供应商信用评分必须大于等于60")
-    @BusinessRule(expression = "${productQualifiedRate} >= 0.9", message = "供应商产品合格率必须大于等于90%")
-    
-    // 虚拟字段，展示供应商状态描述
-    @SmartField(displayName = "供应商状态描述", virtual = true,
-                expression = "${enabled ? '已启用' : '已禁用'} - ${supplierLevel}级供应商")
-    private String statusDescription;
-    
-    // 计算字段，根据合作开始日期计算合作年限
-    @SmartField(displayName = "合作年限", calculated = true,
-                expression = "java.time.LocalDate.now().getYear() - java.time.LocalDateTime.from(${cooperationStartDate}).getYear()")
+    @SmartField(name = "cooperationYears", label = "合作年限", type = FieldType.NUMBER)
     private Integer cooperationYears;
     
-    // 最近一次评估日期
-    @SmartField(displayName = "最近评估日期")
-    private LocalDateTime lastEvaluationDate;
+    @SmartField(name = "riskLevel", label = "风险等级", type = FieldType.PICKLIST)
+    private String riskLevel;
     
-    // 备注信息
-    @SmartField(displayName = "备注", maxLength = 500)
+    @SmartField(name = "paymentTerms", label = "付款条件", type = FieldType.TEXT, length = 200)
+    private String paymentTerms;
+    
+    @SmartField(name = "bankAccount", label = "银行账户", type = FieldType.TEXT, length = 50)
+    private String bankAccount;
+    
+    @SmartField(name = "bankName", label = "开户行", type = FieldType.TEXT, length = 200)
+    private String bankName;
+    
+    @SmartField(name = "taxpayerNumber", label = "纳税人识别号", type = FieldType.TEXT, length = 50)
+    private String taxpayerNumber;
+    
+    @SmartField(name = "remarks", label = "备注", type = FieldType.TEXT, length = 1000)
     private String remarks;
+    
+    // Getters and Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    
+    public String getCode() { return code; }
+    public void setCode(String code) { this.code = code; }
+    
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    
+    public String getPhoneNumber() { return phoneNumber; }
+    public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
+    
+    public String getContactPerson() { return contactPerson; }
+    public void setContactPerson(String contactPerson) { this.contactPerson = contactPerson; }
+    
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
+    
+    public String getBusinessLicense() { return businessLicense; }
+    public void setBusinessLicense(String businessLicense) { this.businessLicense = businessLicense; }
+    
+    public LocalDate getRegisterDate() { return registerDate; }
+    public void setRegisterDate(LocalDate registerDate) { this.registerDate = registerDate; }
+    
+    public String getSupplierLevel() { return supplierLevel; }
+    public void setSupplierLevel(String supplierLevel) { this.supplierLevel = supplierLevel; }
+    
+    public Integer getCreditScore() { return creditScore; }
+    public void setCreditScore(Integer creditScore) { this.creditScore = creditScore; }
+    
+    public String getCooperationStatus() { return cooperationStatus; }
+    public void setCooperationStatus(String cooperationStatus) { this.cooperationStatus = cooperationStatus; }
+    
+    public LocalDate getLastCooperationDate() { return lastCooperationDate; }
+    public void setLastCooperationDate(LocalDate lastCooperationDate) { this.lastCooperationDate = lastCooperationDate; }
+    
+    public BigDecimal getTotalOrderAmount() { return totalOrderAmount; }
+    public void setTotalOrderAmount(BigDecimal totalOrderAmount) { this.totalOrderAmount = totalOrderAmount; }
+    
+    public Integer getOrderCount() { return orderCount; }
+    public void setOrderCount(Integer orderCount) { this.orderCount = orderCount; }
+    
+    public Double getAverageDeliveryRate() { return averageDeliveryRate; }
+    public void setAverageDeliveryRate(Double averageDeliveryRate) { this.averageDeliveryRate = averageDeliveryRate; }
+    
+    public Double getAverageQualityRate() { return averageQualityRate; }
+    public void setAverageQualityRate(Double averageQualityRate) { this.averageQualityRate = averageQualityRate; }
+    
+    public Integer getComplaintCount() { return complaintCount; }
+    public void setComplaintCount(Integer complaintCount) { this.complaintCount = complaintCount; }
+    
+    // 移除SupplierProduct相关getter和setter方法
+    /*
+    public List<SupplierProduct> getProducts() { return products; }
+    public void setProducts(List<SupplierProduct> products) { this.products = products; }
+    */
+    
+    public Double getOverallScore() { return overallScore; }
+    public void setOverallScore(Double overallScore) { this.overallScore = overallScore; }
+    
+    public Integer getCooperationYears() { return cooperationYears; }
+    public void setCooperationYears(Integer cooperationYears) { this.cooperationYears = cooperationYears; }
+    
+    public String getRiskLevel() { return riskLevel; }
+    public void setRiskLevel(String riskLevel) { this.riskLevel = riskLevel; }
+    
+    public String getPaymentTerms() { return paymentTerms; }
+    public void setPaymentTerms(String paymentTerms) { this.paymentTerms = paymentTerms; }
+    
+    public String getBankAccount() { return bankAccount; }
+    public void setBankAccount(String bankAccount) { this.bankAccount = bankAccount; }
+    
+    public String getBankName() { return bankName; }
+    public void setBankName(String bankName) { this.bankName = bankName; }
+    
+    public String getTaxpayerNumber() { return taxpayerNumber; }
+    public void setTaxpayerNumber(String taxpayerNumber) { this.taxpayerNumber = taxpayerNumber; }
+    
+    public String getRemarks() { return remarks; }
+    public void setRemarks(String remarks) { this.remarks = remarks; }
 }

@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /**
- * CodeGenController的单元测试类
+ * CodeGenerationController的单元测试类
  * <p>
  * 测试代码生成控制器的RESTful API接口
  * 
@@ -34,7 +34,7 @@ public class CodegenControllerTest {
     private CodegenService codegenService;
 
     @InjectMocks
-    private CodeGenController codegenController;
+    private CodeGenerationController codegenController;
 
     private MockMvc mockMvc;
     private ObjectMapper objectMapper;

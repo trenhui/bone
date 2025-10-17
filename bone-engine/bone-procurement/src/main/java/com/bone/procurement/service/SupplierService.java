@@ -1,212 +1,155 @@
 package com.bone.procurement.service;
 
 import com.bone.procurement.entity.Supplier;
-import com.bone.smartmeta.engine.MetadataEngine;
-import com.bone.smartmeta.engine.ExpressionEngine;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Logger;
+import java.util.Optional;
 
 /**
- * 供应商服务类
- * 演示如何使用bone-smartmeta引擎进行供应商元数据管理和评估
+ * 供应商管理服务
+ * 提供供应商信息的CRUD操作和业务逻辑处理
  */
 @Service
 public class SupplierService {
+
+    private static final Logger logger = LoggerFactory.getLogger(SupplierService.class);
     
-    private static final Logger logger = Logger.getLogger(SupplierService.class.getName());
-    
-    private final MetadataEngine metadataEngine;
-    private final ExpressionEngine expressionEngine;
-    
-    // 模拟数据存储
-    private final Map<Long, Supplier> supplierRepository = new HashMap<>();
-    private long nextId = 1;
-    
-    @Autowired
-    public SupplierService(MetadataEngine metadataEngine, ExpressionEngine expressionEngine) {
-        this.metadataEngine = metadataEngine;
-        this.expressionEngine = expressionEngine;
-        
-        // 初始化一些模拟数据
-        initMockData();
-    }
-    
+    private final Map<Long, Supplier> suppliers = new HashMap<>();
+    private Long nextId = 1L;
+
     /**
-     * 初始化模拟供应商数据
+     * 初始化模拟数据
      */
-    private void initMockData() {
-        // 注册实体元数据
-        metadataEngine.registerEntity(Supplier.class);
+    public void initMockData() {
+        // 在服务启动时手动调用此方法
         
-        // 创建一些默认供应商
+        logger.info("初始化供应商模拟数据");
+        
         Supplier supplier1 = new Supplier();
         supplier1.setId(nextId++);
-        supplier1.setName("得力办公用品有限公司");
-        supplier1.setCode("DL-001");
+        supplier1.setCode("SUP001");
+        supplier1.setName("创新科技有限公司");
+        supplier1.setPhoneNumber("13800138001");
         supplier1.setContactPerson("张经理");
-        supplier1.setContactPhone("13800138001");
-        supplier1.setEmail("contact@deli.com");
-        supplier1.setAddress("上海市浦东新区张江高科技园区");
-        supplier1.setEnabled(true);
-        supplier1.setRating(4.8);
-        supplier1.setRegistrationDate(LocalDateTime.now().minusYears(3));
-        supplier1.setBusinessLicense("91310115MA1H9YKR9K");
+        supplier1.setEmail("contact@innovtech.com");
+        supplier1.setAddress("北京市海淀区科技园路1号");
+        supplier1.setBusinessLicense("91110108MA00123456");
+        supplier1.setRegisterDate(LocalDate.of(2015, 5, 15));
+        supplier1.setSupplierLevel("A级");
+        supplier1.setCreditScore(95);
+        supplier1.setCooperationStatus("活跃");
+        supplier1.setLastCooperationDate(LocalDate.now().minusDays(10));
+        supplier1.setTotalOrderAmount(new BigDecimal("5000000.00"));
+        supplier1.setOrderCount(120);
+        supplier1.setAverageDeliveryRate(0.98);
+        supplier1.setAverageQualityRate(0.99);
+        supplier1.setComplaintCount(2);
+        supplier1.setOverallScore(97.5);
+        supplier1.setCooperationYears(8);
+        supplier1.setRiskLevel("低");
         
         Supplier supplier2 = new Supplier();
         supplier2.setId(nextId++);
-        supplier2.setName("华为技术有限公司");
-        supplier2.setCode("HW-001");
-        supplier2.setContactPerson("李总监");
-        supplier2.setContactPhone("13900139002");
-        supplier2.setEmail("sales@huawei.com");
-        supplier2.setAddress("广东省深圳市南山区科技园");
-        supplier2.setEnabled(true);
-        supplier2.setRating(4.9);
-        supplier2.setRegistrationDate(LocalDateTime.now().minusYears(5));
-        supplier2.setBusinessLicense("91440300746645251H");
+        supplier2.setCode("SUP002");
+        supplier2.setName("诚信贸易公司");
+        supplier2.setPhoneNumber("13900139002");
+        supplier2.setContactPerson("李总");
+        supplier2.setEmail("sales@chengxin.com");
+        supplier2.setAddress("上海市浦东新区贸易大道88号");
+        supplier2.setBusinessLicense("91310115MA00654321");
+        supplier2.setRegisterDate(LocalDate.of(2018, 3, 22));
+        supplier2.setSupplierLevel("B级");
+        supplier2.setCreditScore(82);
+        supplier2.setCooperationStatus("活跃");
+        supplier2.setLastCooperationDate(LocalDate.now().minusDays(5));
+        supplier2.setTotalOrderAmount(new BigDecimal("3500000.00"));
+        supplier2.setOrderCount(85);
+        supplier2.setAverageDeliveryRate(0.95);
+        supplier2.setAverageQualityRate(0.96);
+        supplier2.setComplaintCount(5);
+        supplier2.setOverallScore(88.0);
+        supplier2.setCooperationYears(5);
+        supplier2.setRiskLevel("中");
         
         Supplier supplier3 = new Supplier();
         supplier3.setId(nextId++);
-        supplier3.setName("腾讯科技(深圳)有限公司");
-        supplier3.setCode("TX-001");
-        supplier3.setContactPerson("王总");
-        supplier3.setContactPhone("13700137003");
-        supplier3.setEmail("procurement@tencent.com");
-        supplier3.setAddress("广东省深圳市南山区高新科技园");
-        supplier3.setEnabled(true);
-        supplier3.setRating(4.7);
-        supplier3.setRegistrationDate(LocalDateTime.now().minusYears(4));
-        supplier3.setBusinessLicense("91440300708461136T");
+        supplier3.setCode("SUP003");
+        supplier3.setName("快速配送中心");
+        supplier3.setPhoneNumber("13700137003");
+        supplier3.setContactPerson("王主管");
+        supplier3.setEmail("delivery@expresscenter.com");
+        supplier3.setAddress("广州市天河区物流园B区12栋");
+        supplier3.setBusinessLicense("91440106MA00789012");
+        supplier3.setRegisterDate(LocalDate.of(2020, 7, 10));
+        supplier3.setSupplierLevel("C级");
+        supplier3.setCreditScore(75);
+        supplier3.setCooperationStatus("合作中");
+        supplier3.setLastCooperationDate(LocalDate.now().minusDays(2));
+        supplier3.setTotalOrderAmount(new BigDecimal("1800000.00"));
+        supplier3.setOrderCount(200);
+        supplier3.setAverageDeliveryRate(0.99);
+        supplier3.setAverageQualityRate(0.93);
+        supplier3.setComplaintCount(8);
+        supplier3.setOverallScore(82.0);
+        supplier3.setCooperationYears(3);
+        supplier3.setRiskLevel("中");
         
-        // 保存到模拟仓库
-        supplierRepository.put(supplier1.getId(), supplier1);
-        supplierRepository.put(supplier2.getId(), supplier2);
-        supplierRepository.put(supplier3.getId(), supplier3);
+        suppliers.put(supplier1.getId(), supplier1);
+        suppliers.put(supplier2.getId(), supplier2);
+        suppliers.put(supplier3.getId(), supplier3);
         
-        logger.info("初始化供应商数据完成，共创建 " + supplierRepository.size() + " 个供应商");
+        logger.info("成功初始化{}个供应商数据", suppliers.size());
+    }
+
+    /**
+     * 根据ID获取供应商信息
+     * @param id 供应商ID
+     * @return 供应商信息
+     */
+    public Optional<Supplier> getSupplier(Long id) {
+        logger.info("查询供应商信息，ID: {}", id);
+        return Optional.ofNullable(suppliers.get(id));
     }
     
     /**
-     * 根据ID获取供应商
+     * 保存供应商信息
+     * @param supplier 供应商信息
+     * @return 保存后的供应商信息
      */
-    public Supplier getSupplier(Long supplierId) {
-        Supplier supplier = supplierRepository.get(supplierId);
-        if (supplier != null) {
-            // 重新计算计算字段
-            calculateSupplierFields(supplier);
-        }
-        return supplier;
-    }
-    
-    /**
-     * 创建新供应商
-     */
-    public Supplier createSupplier(Supplier supplier) {
-        logger.info("创建供应商: " + supplier.getName());
-        
-        // 设置创建时间
-        supplier.setCreationDate(LocalDateTime.now());
-        
-        // 如果未设置启用状态，默认为启用
-        if (supplier.getEnabled() == null) {
-            supplier.setEnabled(true);
-        }
-        
-        // 保存供应商
-        synchronized (this) {
+    public Supplier saveSupplier(Supplier supplier) {
+        if (supplier.getId() == null) {
             supplier.setId(nextId++);
-            supplierRepository.put(supplier.getId(), supplier);
+            logger.info("新增供应商，ID: {}, 名称: {}", supplier.getId(), supplier.getName());
+        } else {
+            logger.info("更新供应商，ID: {}, 名称: {}", supplier.getId(), supplier.getName());
         }
-        
-        // 计算字段值
-        calculateSupplierFields(supplier);
-        
-        logger.info("供应商创建成功，ID: " + supplier.getId());
+        suppliers.put(supplier.getId(), supplier);
         return supplier;
     }
     
     /**
-     * 评估供应商综合得分
+     * 删除供应商
+     * @param id 供应商ID
+     * @return 是否删除成功
      */
-    public double evaluateSupplierScore(Supplier supplier) {
-        // 构建上下文
-        Map<String, Object> context = new HashMap<>();
-        context.put("supplier", supplier);
-        
-        // 使用表达式引擎计算综合得分
-        // 评分规则：评分占50%，合作年限占30%，是否启用占20%
-        String expression = "(${supplier.rating} / 5.0 * 50) + " +
-                          "(Math.min(${supplier.cooperationYears}, 5) / 5.0 * 30) + " +
-                          "(${supplier.enabled} ? 20 : 0)";
-        
-        try {
-            return expressionEngine.evaluateExpression(expression, context, Double.class);
-        } catch (Exception e) {
-            logger.warning("评估供应商得分失败: " + e.getMessage());
-            return 0.0;
-        }
+    public boolean deleteSupplier(Long id) {
+        logger.info("删除供应商，ID: {}", id);
+        return suppliers.remove(id) != null;
     }
     
     /**
-     * 计算供应商的计算字段
+     * 获取所有供应商
+     * @return 供应商列表
      */
-    private void calculateSupplierFields(Supplier supplier) {
-        // 计算合作年限
-        if (supplier.getRegistrationDate() != null) {
-            long years = LocalDateTime.now().getYear() - supplier.getRegistrationDate().getYear();
-            supplier.setCooperationYears((int) years);
-        } else {
-            supplier.setCooperationYears(0);
-        }
-        
-        // 计算综合得分
-        double compositeScore = evaluateSupplierScore(supplier);
-        supplier.setCompositeScore(compositeScore);
-        
-        // 评估供应商等级
-        evaluateSupplierLevel(supplier);
-    }
-    
-    /**
-     * 评估供应商等级
-     */
-    private void evaluateSupplierLevel(Supplier supplier) {
-        double score = supplier.getCompositeScore();
-        String level;
-        
-        if (score >= 90) {
-            level = "A级-战略供应商";
-        } else if (score >= 80) {
-            level = "B级-核心供应商";
-        } else if (score >= 70) {
-            level = "C级-合格供应商";
-        } else {
-            level = "D级-观察供应商";
-        }
-        
-        supplier.setSupplierLevel(level);
-    }
-    
-    /**
-     * 启用/禁用供应商
-     */
-    public Supplier toggleSupplierStatus(Long supplierId, boolean enabled) {
-        Supplier supplier = getSupplier(supplierId);
-        if (supplier == null) {
-            throw new RuntimeException("供应商不存在: " + supplierId);
-        }
-        
-        supplier.setEnabled(enabled);
-        
-        // 重新计算字段值
-        calculateSupplierFields(supplier);
-        
-        logger.info("供应商状态已更新: " + supplier.getName() + " - " + (enabled ? "启用" : "禁用"));
-        return supplier;
+    public Map<Long, Supplier> getAllSuppliers() {
+        logger.info("获取所有供应商信息，共{}个", suppliers.size());
+        return new HashMap<>(suppliers);
     }
 }

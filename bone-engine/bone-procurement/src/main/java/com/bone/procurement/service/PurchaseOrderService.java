@@ -3,49 +3,45 @@ package com.bone.procurement.service;
 import com.bone.procurement.entity.PurchaseOrder;
 import com.bone.procurement.entity.PurchaseOrderItem;
 import com.bone.procurement.entity.Supplier;
-import com.bone.smartmeta.engine.MetadataEngine;
-import com.bone.smartmeta.engine.ExpressionEngine;
-import com.bone.smartmeta.engine.annotation.BusinessRule;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.*;
-import java.util.logging.Logger;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * 采购订单服务类
- * 演示如何使用bone-smartmeta引擎进行元数据管理、表达式计算和业务规则验证
+ * 提供采购订单的创建、审批、执行等业务逻辑
  */
 @Service
 public class PurchaseOrderService {
-    
-    private static final Logger logger = Logger.getLogger(PurchaseOrderService.class.getName());
-    
-    private final MetadataEngine metadataEngine;
-    private final ExpressionEngine expressionEngine;
-    private final SupplierService supplierService;
+
+    private static final Logger logger = LoggerFactory.getLogger(PurchaseOrderService.class);
     
     // 模拟数据存储
     private final Map<Long, PurchaseOrder> orderRepository = new HashMap<>();
     private long nextId = 1;
     
+    private final SupplierService supplierService;
+    
     @Autowired
-    public PurchaseOrderService(MetadataEngine metadataEngine, 
-                              ExpressionEngine expressionEngine, 
-                              SupplierService supplierService) {
-        this.metadataEngine = metadataEngine;
-        this.expressionEngine = expressionEngine;
+    public PurchaseOrderService(SupplierService supplierService) {
         this.supplierService = supplierService;
     }
     
     /**
      * 创建采购订单
-     * 使用bone-smartmeta引擎进行字段计算和业务规则验证
      */
     public PurchaseOrder createOrder(PurchaseOrder order) {
-        logger.info("创建采购订单: " + order.getOrderCode());
+        logger.info("创建采购订单: {}", order.getOrderCode());
         
         // 设置创建时间
         order.setCreationDate(LocalDateTime.now());
@@ -54,9 +50,6 @@ public class PurchaseOrderService {
         if (order.getOrderStatus() == null) {
             order.setOrderStatus("草稿");
         }
-        
-        // 使用MetadataEngine注册实体元数据
-        metadataEngine.registerEntity(PurchaseOrder.class);
         
         // 验证业务规则
         validateBusinessRules(order);
@@ -70,13 +63,12 @@ public class PurchaseOrderService {
             orderRepository.put(order.getId(), order);
         }
         
-        logger.info("采购订单创建成功，ID: " + order.getId());
+        logger.info("采购订单创建成功，ID: {}", order.getId());
         return order;
     }
     
     /**
      * 提交订单审批
-     * 使用表达式引擎计算审批条件和流程
      */
     public PurchaseOrder submitForApproval(Long orderId) {
         PurchaseOrder order = getOrder(orderId);
@@ -84,12 +76,12 @@ public class PurchaseOrderService {
             throw new RuntimeException("订单不存在: " + orderId);
         }
         
-        logger.info("提交订单审批: " + order.getOrderCode());
+        logger.info("提交订单审批: {}", order.getOrderCode());
         
         // 重新计算字段值确保最新
         calculateFields(order);
         
-        // 使用表达式引擎评估是否需要多级审批
+        // 评估是否需要多级审批
         boolean requiresMultiLevelApproval = evaluateMultiLevelApproval(order);
         
         // 设置审批节点
@@ -105,7 +97,7 @@ public class PurchaseOrderService {
         // 生成审批流程ID
         order.setApprovalProcessId("AP" + System.currentTimeMillis());
         
-        logger.info("订单已提交审批，当前节点: " + order.getCurrentApprovalNode());
+        logger.info("订单已提交审批，当前节点: {}", order.getCurrentApprovalNode());
         return order;
     }
     
@@ -118,7 +110,7 @@ public class PurchaseOrderService {
             throw new RuntimeException("订单不存在: " + orderId);
         }
         
-        logger.info("审批订单: " + order.getOrderCode());
+        logger.info("审批订单: {}", order.getOrderCode());
         
         // 检查订单状态
         if (!"待审批".equals(order.getOrderStatus())) {
@@ -139,7 +131,7 @@ public class PurchaseOrderService {
             order.setCurrentApprovalNode(null);
         }
         
-        logger.info("订单审批处理完成，状态: " + order.getOrderStatus());
+        logger.info("订单审批处理完成，状态: {}", order.getOrderStatus());
         return order;
     }
     
@@ -152,33 +144,28 @@ public class PurchaseOrderService {
             throw new RuntimeException("订单不存在: " + orderId);
         }
         
-        logger.info("执行订单: " + order.getOrderCode());
+        logger.info("执行订单: {}", order.getOrderCode());
         
         // 检查订单状态
         if (!"已审批".equals(order.getOrderStatus())) {
             throw new RuntimeException("订单未通过审批，无法执行");
         }
         
-        // 使用表达式引擎执行订单前的最后验证
-        Map<String, Object> context = new HashMap<>();
-        context.put("order", order);
+        // 获取供应商信息（安全处理Optional）
+        Optional<Supplier> supplierOptional = supplierService.getSupplier(order.getSupplierId());
+        Supplier supplier = supplierOptional.orElseThrow(() -> 
+            new RuntimeException("供应商不存在，无法下单: " + order.getSupplierId()));
         
-        // 验证供应商状态
-        Supplier supplier = supplierService.getSupplier(order.getSupplierId());
-        if (supplier != null) {
-            context.put("supplier", supplier);
-            
-            boolean supplierValid = expressionEngine.evaluateBooleanExpression("${supplier.enabled}", context);
-            if (!supplierValid) {
-                throw new RuntimeException("供应商已禁用，无法下单");
-            }
+        // 检查供应商合作状态
+        if (!"合作中".equals(supplier.getCooperationStatus())) {
+            throw new RuntimeException("供应商不在合作状态，无法下单");
         }
         
         // 更新订单状态
         order.setOrderStatus("已下单");
         
         logger.info("订单执行成功");
-        return order;
+        return orderRepository.put(orderId, order);
     }
     
     /**
@@ -197,11 +184,7 @@ public class PurchaseOrderService {
      * 计算订单中的所有计算字段
      */
     private void calculateFields(PurchaseOrder order) {
-        logger.info("计算订单字段值: " + order.getOrderCode());
-        
-        // 构建上下文
-        Map<String, Object> context = new HashMap<>();
-        context.put("order", order);
+        logger.info("计算订单字段值: {}", order.getOrderCode());
         
         // 计算订单总金额（不含税）
         BigDecimal totalAmountWithoutTax = BigDecimal.ZERO;
@@ -259,23 +242,17 @@ public class PurchaseOrderService {
      * 计算虚拟字段
      */
     private void calculateVirtualFields(PurchaseOrder order) {
-        // 构建上下文
-        Map<String, Object> context = new HashMap<>();
-        context.put("order", order);
-        
-        // 获取供应商信息用于订单摘要
-        Supplier supplier = supplierService.getSupplier(order.getSupplierId());
-        if (supplier != null) {
-            context.put("supplierName", supplier.getName());
-        }
+        // 获取供应商信息（安全处理Optional）
+        Optional<Supplier> supplierOptional = supplierService.getSupplier(order.getSupplierId());
+        String supplierName = supplierOptional.map(Supplier::getName).orElse("未知供应商");
         
         // 计算订单摘要
         try {
-            String orderSummary = expressionEngine.evaluateExpression(
-                "订单${order.orderCode} - ${supplierName} - ${order.totalAmountWithTax}元 - ${order.orderStatus}", context);
+            String orderSummary = String.format("订单%s - %s - %s元 - %s", 
+                order.getOrderCode(), supplierName, order.getTotalAmountWithTax(), order.getOrderStatus());
             order.setOrderSummary(orderSummary);
         } catch (Exception e) {
-            logger.warning("计算订单摘要失败: " + e.getMessage());
+            logger.warn("计算订单摘要失败: {}", e.getMessage());
         }
     }
     
@@ -283,11 +260,7 @@ public class PurchaseOrderService {
      * 验证业务规则
      */
     private void validateBusinessRules(PurchaseOrder order) {
-        logger.info("验证订单业务规则: " + order.getOrderCode());
-        
-        // 构建上下文
-        Map<String, Object> context = new HashMap<>();
-        context.put("order", order);
+        logger.info("验证订单业务规则: {}", order.getOrderCode());
         
         // 验证预计金额必须大于0
         boolean amountValid = order.getEstimatedAmount() != null && 
@@ -316,18 +289,11 @@ public class PurchaseOrderService {
      * 评估是否需要多级审批
      */
     private boolean evaluateMultiLevelApproval(PurchaseOrder order) {
-        // 使用表达式引擎评估多级审批条件
-        // 例如：订单金额大于10万元或紧急采购需要多级审批
-        Map<String, Object> context = new HashMap<>();
-        context.put("order", order);
+        // 订单金额大于10万元或紧急采购需要多级审批
+        boolean highAmount = order.getTotalAmountWithTax() != null && 
+                            order.getTotalAmountWithTax().compareTo(BigDecimal.valueOf(100000)) > 0;
+        boolean emergencyOrder = "紧急采购".equals(order.getOrderType());
         
-        String expression = "${order.totalAmountWithTax}.compareTo(java.math.BigDecimal.valueOf(100000)) > 0 || ${order.orderType}.equals('紧急采购')";
-        try {
-            return expressionEngine.evaluateBooleanExpression(expression, context);
-        } catch (Exception e) {
-            logger.warning("评估多级审批条件失败: " + e.getMessage());
-            // 默认返回true，保守处理
-            return true;
-        }
+        return highAmount || emergencyOrder;
     }
 }

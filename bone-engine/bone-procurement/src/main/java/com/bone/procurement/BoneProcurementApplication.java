@@ -10,8 +10,8 @@ import org.springframework.context.annotation.ComponentScan;
  */
 @SpringBootApplication
 @ComponentScan(basePackages = {
-    "com.bone.procurement",
-    "com.bone.smartmeta.engine"
+    "com.bone.procurement"
+    // 仅扫描本项目的包，避免扫描到外部冲突的类
 })
 public class BoneProcurementApplication {
     
