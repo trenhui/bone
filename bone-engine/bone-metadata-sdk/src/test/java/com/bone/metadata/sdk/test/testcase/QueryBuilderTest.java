@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import com.bone.metadata.sdk.query.dsl.EntitySqlBuilder;
 import com.bone.metadata.sdk.query.dsl.WhereClause;
@@ -196,30 +197,39 @@ public class QueryBuilderTest {
     @Test
     public void testWhereNullConditions() {
         // 插入一条email为null的记录进行测试
+        log.info("开始测试isNull和isNotNull条件");
         log.info("插入email为null的记录");
         jdbcTemplate.execute("INSERT INTO users(id, username, password, email, role_id, age, status) VALUES (4, 'nulluser', '123456', NULL, 2, 35, 1)");
         
         // 验证数据是否成功插入
         Integer count = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM users WHERE email IS NULL", Integer.class);
         log.info("数据库中email为null的记录数量: {}", count);
+        
+        // 查看所有用户数据进行调试
+        List<Map<String, Object>> allUsers = jdbcTemplate.queryForList("SELECT id, username, email FROM users");
+        log.info("数据库中所有用户记录: {}", allUsers);
+
+        // 手动执行SQL测试
+        List<Map<String, Object>> manualNullUsers = jdbcTemplate.queryForList("SELECT * FROM users m WHERE m.email IS NULL");
+        log.info("手动执行SQL查询结果: {}", manualNullUsers.size());
 
         // 测试isNull
-        log.info("执行isNull查询");
+        log.info("执行QueryBuilder的isNull查询");
         List<User> nullEmailUsers = QueryBuilder.from(User.class)
                 .where(User::getEmail)
                 .isNull()
                 .list();
         log.info("isNull查询结果数量: {}", nullEmailUsers.size());
-        assertEquals(1, nullEmailUsers.size());
+        assertEquals(1, nullEmailUsers.size(), "应该找到1条email为null的记录");
 
         // 测试isNotNull
-        log.info("执行isNotNull查询");
+        log.info("执行QueryBuilder的isNotNull查询");
         List<User> notNullEmailUsers = QueryBuilder.from(User.class)
                 .where(User::getEmail)
                 .isNotNull()
                 .list();
         log.info("isNotNull查询结果数量: {}", notNullEmailUsers.size());
-        assertEquals(3, notNullEmailUsers.size());
+        assertEquals(3, notNullEmailUsers.size(), "应该找到3条email不为null的记录");
     }
 
     /**

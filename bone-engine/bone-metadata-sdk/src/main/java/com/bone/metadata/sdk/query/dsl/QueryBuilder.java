@@ -443,19 +443,28 @@ public class QueryBuilder {
          * @return 添加表别名后的SQL
          */
         private String addTableAliasToCondition(String conditionSql, String tableAlias) {
+            // 添加日志记录，帮助调试
+            log.debug("处理条件SQL: '{}', 表别名: '{}'", conditionSql, tableAlias);
+            
             // 改进的实现，使用更简单可靠的方式处理所有条件类型，包括IS NULL和IS NOT NULL
             // 不再使用复杂的正则表达式，而是直接处理IS NULL和IS NOT NULL情况
             if (conditionSql.endsWith(" IS NULL") || conditionSql.endsWith(" IS NOT NULL")) {
                 // 对于IS NULL和IS NOT NULL条件，只在列名前添加表别名
+                log.debug("检测到NULL条件: {}", conditionSql);
                 int spaceIndex = conditionSql.lastIndexOf(" ");
                 String columnName = conditionSql.substring(0, spaceIndex);
                 String nullCondition = conditionSql.substring(spaceIndex).trim();
-                return tableAlias + "." + columnName + " " + nullCondition;
+                String result = tableAlias + "." + columnName + " " + nullCondition;
+                log.debug("NULL条件处理结果: {}", result);
+                return result;
             } else {
                 // 对于其他条件，使用正则表达式添加表别名
-                return conditionSql.replaceAll("(?<=^|[\\s(),])" + 
+                log.debug("处理普通条件: {}", conditionSql);
+                String result = conditionSql.replaceAll("(?<=^|[\\s(),])" + 
                                               "([a-zA-Z_][a-zA-Z0-9_]*)", 
                                               tableAlias + ".$1");
+                log.debug("普通条件处理结果: {}", result);
+                return result;
             }
         }
         
