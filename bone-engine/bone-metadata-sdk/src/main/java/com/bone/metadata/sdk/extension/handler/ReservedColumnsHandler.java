@@ -21,10 +21,11 @@ import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-@Slf4j
 public class ReservedColumnsHandler implements ExtensionStorageHandler {
+    private static final Logger LOGGER = Logger.getLogger(ReservedColumnsHandler.class.getName());
     // Configuration constants
     private static final String LOCK_KEY_PREFIX = "meta:reserved:";
     private static final int LOCK_ACQUIRE_TIMEOUT = 3;
@@ -102,15 +103,18 @@ public class ReservedColumnsHandler implements ExtensionStorageHandler {
 
         ensureValidContext(ctx);
 
-        List<FieldMetadata> defs = missing.stream().map(n -> FieldMetadata.builder()
-                .tenantId(ctx.getTenantId())
-                .appCode(ctx.getAppCode())
-                .bizIdentityCode(ctx.getBizIdentityCode())
-                .entityType(ctx.getEntityType())
-                .name(n)
-                .dataType(determineType(ctx.getExtraProperties().get(n)).name())
-                .build()
-        ).collect(Collectors.toList());
+        List<FieldMetadata> defs = new ArrayList<>();
+        for (String n : missing) {
+            DataType dataType = determineType(ctx.getExtraProperties().get(n));
+            FieldMetadata field = new FieldMetadata();
+            field.setTenantId(ctx.getTenantId());
+            field.setAppCode(ctx.getAppCode());
+            field.setBizIdentityCode(ctx.getBizIdentityCode());
+            field.setEntityType(ctx.getEntityType());
+            field.setName(n);
+            field.setDataType(dataType.name());
+            defs.add(field);
+        }
 
         List<FieldMetadata> created = metadataService.allocateAndPersistFields(defs);
         existing.addAll(created);
@@ -131,7 +135,7 @@ public class ReservedColumnsHandler implements ExtensionStorageHandler {
         try {
             return TypeConverter.convert(rawValue, DataType.valueOf(dataType));
         } catch (IllegalArgumentException e) {
-            log.warn("Unsupported data type conversion: {}", dataType);
+            LOGGER.warning("Unsupported data type conversion: " + dataType);
             return rawValue;
         }
     }
@@ -157,7 +161,7 @@ public class ReservedColumnsHandler implements ExtensionStorageHandler {
                 try {
                     return Long.parseLong(str);
                 } catch (NumberFormatException e) {
-                    log.warn("Long conversion failed for value: {}", str);
+                    LOGGER.warning("Long conversion failed for value: " + str);
                     return null;
                 }
             }
@@ -171,7 +175,7 @@ public class ReservedColumnsHandler implements ExtensionStorageHandler {
                 try {
                     return new BigDecimal(str);
                 } catch (NumberFormatException e) {
-                    log.warn("BigDecimal conversion failed for value: {}", str);
+                    LOGGER.warning("BigDecimal conversion failed for value: " + str);
                     return null;
                 }
             }
@@ -198,7 +202,7 @@ public class ReservedColumnsHandler implements ExtensionStorageHandler {
                 try {
                     return LocalDateTime.parse(str);
                 } catch (DateTimeParseException e) {
-                    log.warn("DateTime conversion failed for value: {}", str);
+                    LOGGER.warning("DateTime conversion failed for value: " + str);
                     return null;
                 }
             }

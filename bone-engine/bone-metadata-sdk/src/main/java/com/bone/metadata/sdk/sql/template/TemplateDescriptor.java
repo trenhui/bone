@@ -18,6 +18,10 @@ public class TemplateDescriptor {
     public String getSourceUri() {
         return sourceUri;
     }
+    
+    public Map<String, String> getTags() {
+        return tags;
+    }
     @Builder.Default
     private Map<String, String> tags = Collections.emptyMap(); // Metadata tags (e.g., env=prod, tenant=acme)
     private String version;              // Template version (e.g., v1.0)

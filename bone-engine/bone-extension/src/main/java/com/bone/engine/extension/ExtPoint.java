@@ -27,7 +27,7 @@ import java.lang.annotation.*;
  * }
  * 
  * // 2. 提供默认实现
- * @ExtProvider(bizCode = "DEFAULT")
+ * @Extension(bizCode = "DEFAULT")
  * public class DefaultPaymentServiceImpl implements PaymentService {
  *     @Override
  *     public PaymentResult pay(PaymentRequest request, BizContext<?> context) {
@@ -37,7 +37,7 @@ import java.lang.annotation.*;
  * }
  * 
  * // 3. 提供租户A的定制实现
- * @ExtProvider(tenantCode = "TENANT_A", bizCode = "ORDER")
+ * @Extension(tenantCode = "TENANT_A", bizCode = "ORDER")
  * public class TenantAPaymentServiceImpl implements PaymentService {
  *     @Override
  *     public PaymentResult pay(PaymentRequest request, BizContext<?> context) {

@@ -23,6 +23,10 @@ public enum DataType {
         this.symbol = symbol;
         this.description = description;
     }
+    
+    public String getSymbol() {
+        return symbol;
+    }
 
     /**
      * 根据操作符符号获取对应的枚举类型。

@@ -11,7 +11,7 @@ import lombok.Data;
  */
 @Data
 @Builder
-public class ExtProviderSpec {
+public class ExtensionSpec {
     private String tenantCode;
     private String bizCode;
     private String useCase;

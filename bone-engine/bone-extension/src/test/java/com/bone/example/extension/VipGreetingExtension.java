@@ -8,7 +8,7 @@ import com.bone.engine.extension.Extension;
  * 高优先级，针对VIP用户的特殊问候
  */
 @Extension
-public class VipGreetingImpl implements GreetingExtPoint {
+public class VipGreetingExtension implements GreetingExtPoint {
     @Override
     public String greet(BizContext<String> context) {
         String userName = context.getData();

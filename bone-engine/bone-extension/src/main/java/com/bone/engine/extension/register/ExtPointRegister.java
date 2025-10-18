@@ -31,13 +31,13 @@ import java.util.Set;
  * 实现Spring的ImportBeanDefinitionRegistrar接口，负责在Spring容器启动时自动扫描和注册扩展点及其实现。
  * 主要功能包括：
  * 1. 扫描所有带有@ExtPoint注解的接口和类
- * 2. 扫描所有带有@ExtProvider注解的实现类
+ * 2. 扫描所有带有@Extension注解的实现类
  * 3. 为扩展点创建代理Bean定义
  * </p>
  * 
  * @see EnableExtPoints 启用扩展点的核心注解
  * @see ExtPoint 扩展点标记注解
- * @see ExtProviderRegister 扩展提供者注册器
+ * @see ExtensionRegister 扩展提供者注册器
  * @since 1.0.0
  */
 public final class ExtPointRegister implements ImportBeanDefinitionRegistrar, ResourceLoaderAware, EnvironmentAware {
@@ -96,7 +96,7 @@ public final class ExtPointRegister implements ImportBeanDefinitionRegistrar, Re
      */
     private void registerExtensionProviders(@NonNull AnnotationMetadata metadata, @NonNull BeanDefinitionRegistry registry) {
         log.debug("Registering extension providers");
-        ExtProviderBeanDefinitionScanner scanner = new ExtProviderBeanDefinitionScanner(registry);
+        ExtensionBeanDefinitionScanner scanner = new ExtensionBeanDefinitionScanner(registry);
         scanner.scan(getBasePackages(metadata));
     }
 
