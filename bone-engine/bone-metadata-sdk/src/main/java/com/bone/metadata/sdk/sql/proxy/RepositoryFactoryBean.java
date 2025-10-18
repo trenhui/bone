@@ -13,7 +13,8 @@ import com.bone.metadata.sdk.sql.processor.SqlProcessorFactory;
 import com.bone.metadata.sdk.sql.template.SqlFragmentLoader;
 import com.bone.metadata.sdk.sql.template.SqlTemplate;
 import com.bone.metadata.sdk.sql.template.SqlTemplateLoader;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
@@ -41,8 +42,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * Repository 代理工厂 Bean，基于业界最佳实践实现
  * 支持注解和类路径 SQL 模板加载，集成多源回退机制
  */
-@Slf4j
 public class RepositoryFactoryBean<T, E, ID> implements FactoryBean<T>, InitializingBean, ApplicationContextAware {
+    private static final Logger log = LoggerFactory.getLogger(RepositoryFactoryBean.class);
     private static final String TEMPLATE_ID_FORMAT = "%s.%s";
     private static final int MAX_SQL_LOG_LENGTH = 500;
 

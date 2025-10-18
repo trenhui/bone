@@ -5,6 +5,7 @@ import com.bone.smartmeta.engine.MetadataEngine;
 import com.bone.smartmeta.engine.TransformationEngine;
 import com.bone.smartmeta.engine.ValidationEngine;
 import com.bone.smartmeta.engine.metadata.MetadataRegistry;
+import com.bone.smartmeta.engine.metadata.processor.CompositeMetadataProcessor;
 import com.bone.smartmeta.engine.repository.InMemoryMetadataRepository;
 import com.bone.smartmeta.engine.repository.MetadataRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -79,14 +80,27 @@ public class SmartMetaAutoConfiguration {
     }
     
     /**
+     * 配置复合元数据处理器
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public CompositeMetadataProcessor compositeMetadataProcessor() {
+        return new CompositeMetadataProcessor();
+    }
+    
+    /**
      * 配置元数据核心引擎
      */
     @Bean
     @Primary
     @ConditionalOnMissingBean
-    public MetadataEngine metadataEngine() {
-        // 使用无参构造函数创建MetadataEngine实例
-        return new MetadataEngine();
+    public MetadataEngine metadataEngine(MetadataRegistry metadataRegistry,
+                                       MetadataRepository metadataRepository,
+                                       CompositeMetadataProcessor compositeMetadataProcessor,
+                                       ApplicationEventPublisher eventPublisher) {
+        MetadataEngine engine = new MetadataEngine(metadataRegistry, metadataRepository, 
+                                                  compositeMetadataProcessor, eventPublisher);
+        return engine;
     }
     
     /**

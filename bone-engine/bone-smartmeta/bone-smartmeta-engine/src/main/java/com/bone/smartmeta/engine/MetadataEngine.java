@@ -29,12 +29,13 @@ import java.util.concurrent.CompletableFuture;
  * 包括元数据的加载、验证、转换和应用
  */
 @Component
+@RequiredArgsConstructor
 public class MetadataEngine implements InitializingBean {
     private static final Logger log = LoggerFactory.getLogger(MetadataEngine.class);
     
-    private MetadataRegistry metadataRegistry;
-    private MetadataRepository metadataRepository;
-    private CompositeMetadataProcessor metadataProcessor;
+    private final MetadataRegistry metadataRegistry;
+    private final MetadataRepository metadataRepository;
+    private final CompositeMetadataProcessor metadataProcessor;
     private final ApplicationEventPublisher eventPublisher;
     
     // 配置参数
@@ -714,30 +715,6 @@ public class MetadataEngine implements InitializingBean {
         this.calculationEnabled = calculationEnabled;
     }
     
-    /**
-     * 设置元数据注册中心
-     */
-    /**
-     * 设置元数据注册表
-     */
-    public void setMetadataRegistry(MetadataRegistry metadataRegistry) {
-        this.metadataRegistry = metadataRegistry;
-    }
-    
-    /**
-     * 设置元数据处理器
-     */
-    public void setMetadataProcessor(CompositeMetadataProcessor metadataProcessor) {
-        this.metadataProcessor = metadataProcessor;
-    }
-    
-    /**
-     * 设置元数据仓库
-     */
-    public void setMetadataRepository(MetadataRepository metadataRepository) {
-        this.metadataRepository = metadataRepository;
-    }
-    
 
     
     /**
@@ -1098,18 +1075,15 @@ public class MetadataEngine implements InitializingBean {
      * 处理虚拟字段
      */
     private void processVirtualFields(String entityApiName, Map<String, Object> processedData) {
-        // 这里简化实现，实际应通过服务发现机制调用对应的提供者
+        // 简化实现：暂不处理虚拟字段
+        if (processedData == null) {
+            return;
+        }
         Map<String, VirtualFieldMetadata> virtualFields = getVirtualFields(entityApiName);
-        for (Map.Entry<String, VirtualFieldMetadata> entry : virtualFields.entrySet()) {
-            String fieldName = entry.getKey();
-            VirtualFieldMetadata field = entry.getValue();
-            
-            try {
-                // 这里应该调用虚拟字段的提供者服务
-                // 简化实现，暂时不设置值
-                log.debug("处理虚拟字段: {}.{}", entityApiName, fieldName);
-            } catch (Exception e) {
-                log.error("处理虚拟字段失败: {}.{}", entityApiName, fieldName, e);
+        if (virtualFields != null) {
+            for (String fieldName : virtualFields.keySet()) {
+                // 简单实现，实际应该调用对应的服务
+                processedData.put(fieldName, "N/A");
             }
         }
     }

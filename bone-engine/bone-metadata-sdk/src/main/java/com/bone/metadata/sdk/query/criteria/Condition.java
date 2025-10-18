@@ -33,6 +33,15 @@ public class Condition {
     public Object[] getValues() {
         return values;
     }
+    
+    // 添加缺失的getter方法
+    public String getFieldName() {
+        return fieldName;
+    }
+    
+    public boolean isExtension() {
+        return extension;
+    }
     /**
      * 字段（snakecase）
      */

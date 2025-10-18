@@ -10,7 +10,7 @@ import java.math.BigDecimal;
  * 金融服务租户支付实现
  * 支持复杂的费率计算、手续费分配和合规检查
  */
-@Extension(tenantCode = "FINANCIAL_TENANT", priority = 100)
+@Extension(tenantCode = "FINANCIAL_TENANT")
 @Slf4j
 public class FinancialPaymentExtension implements PaymentExtPoint {
     

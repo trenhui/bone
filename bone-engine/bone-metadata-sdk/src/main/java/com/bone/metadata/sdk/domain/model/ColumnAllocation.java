@@ -113,8 +113,43 @@ public class ColumnAllocation extends Entity<Long> {
             return this;
         }
         
+        public Builder columnName(String columnName) {
+            allocation.columnName = columnName;
+            return this;
+        }
+        
+        public Builder columnIndex(Integer columnIndex) {
+            allocation.columnIndex = columnIndex;
+            return this;
+        }
+        
         public Builder status(AllocationColumnStatus status) {
             allocation.status = status;
+            return this;
+        }
+        
+        public Builder version(Integer version) {
+            allocation.version = version;
+            return this;
+        }
+        
+        public Builder createdAt(LocalDateTime createdAt) {
+            allocation.createdAt = createdAt;
+            return this;
+        }
+        
+        public Builder updatedAt(LocalDateTime updatedAt) {
+            allocation.updatedAt = updatedAt;
+            return this;
+        }
+        
+        public Builder createdBy(Long createdBy) {
+            allocation.createdBy = createdBy;
+            return this;
+        }
+        
+        public Builder updatedBy(Long updatedBy) {
+            allocation.updatedBy = updatedBy;
             return this;
         }
         

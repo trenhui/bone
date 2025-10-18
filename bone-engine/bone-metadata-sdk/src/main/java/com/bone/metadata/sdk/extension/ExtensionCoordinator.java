@@ -5,7 +5,8 @@ import com.bone.metadata.sdk.extension.handler.ExtensionStorageHandler;
 import com.bone.metadata.sdk.domain.enums.ExtensionMode;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -20,8 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class ExtensionCoordinator {
+    private static final Logger log = LoggerFactory.getLogger(ExtensionCoordinator.class);
     private final ApplicationContext context;
     private final Map<ExtensionMode, ExtensionStorageHandler> handlers = new ConcurrentHashMap<>();
     private final ExtensionMode defaultMode = ExtensionMode.RESERVED_COLUMNS;

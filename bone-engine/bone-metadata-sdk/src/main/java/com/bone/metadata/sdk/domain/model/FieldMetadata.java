@@ -68,6 +68,16 @@ public class FieldMetadata {
     public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
     public LocalDateTime getUpdateTime() { return updateTime; }
     public void setUpdateTime(LocalDateTime updateTime) { this.updateTime = updateTime; }
+    public boolean isPrimaryKey() { return isPrimaryKey; }
+    public void setPrimaryKey(boolean primaryKey) { isPrimaryKey = primaryKey; }
+    public boolean isNullable() { return isNullable; }
+    public void setNullable(boolean nullable) { isNullable = nullable; }
+    public String getDefaultValue() { return defaultValue; }
+    public void setDefaultValue(String defaultValue) { this.defaultValue = defaultValue; }
+    public String getConstraints() { return constraints; }
+    public void setConstraints(String constraints) { this.constraints = constraints; }
+    public boolean isVirtual() { return isVirtual; }
+    public void setVirtual(boolean virtual) { isVirtual = virtual; }
     public boolean isExtension() { return isExtension; }
      public void setExtension(boolean extension) { isExtension = extension; }
     public String getColumnName() { return columnName; }
