@@ -16,27 +16,67 @@ import java.util.regex.Pattern;
  * 该类设计为部分不可变（通过 Builder 构建），支持序列化以用于分布式缓存，
  * 并提供扩展性以支持多种模板来源和格式（如 YAML、SQL、MYBATIS）。
  */
-// 移除@Data注解，显式添加必要的getter方法
+// 移除@Data注解，显式添加必要的getter和setter方法
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class SqlTemplate implements Serializable {
     
-    // 显式添加getter方法
+    // 显式添加getter和setter方法
     public SqlTemplateType getSqlTemplateType() {
         return sqlTemplateType;
+    }
+    
+    public void setSqlTemplateType(SqlTemplateType sqlTemplateType) {
+        this.sqlTemplateType = sqlTemplateType;
     }
     
     public String getId() {
         return id;
     }
     
+    public void setId(String id) {
+        this.id = id;
+    }
+    
     public String getSql() {
         return sql;
     }
     
+    public void setSql(String sql) {
+        this.sql = sql;
+    }
+    
     public SqlType getSqlType() {
         return sqlType;
+    }
+    
+    public void setSqlType(SqlType sqlType) {
+        this.sqlType = sqlType;
+    }
+    
+    public String getSource() {
+        return source;
+    }
+    
+    public void setSource(String source) {
+        this.source = source;
+    }
+    
+    public Map<String, Object> getParameters() {
+        return parameters;
+    }
+    
+    public void setParameters(Map<String, Object> parameters) {
+        this.parameters = parameters;
+    }
+    
+    public Map<String, Object> getMetadata() {
+        return metadata;
+    }
+    
+    public void setMetadata(Map<String, Object> metadata) {
+        this.metadata = metadata;
     }
     @Serial
     private static final long serialVersionUID = 1L;

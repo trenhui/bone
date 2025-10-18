@@ -12,7 +12,7 @@ import java.util.Map;
  * 电商平台租户支付实现
  * 提供标准电商支付流程，包括优惠券、积分抵扣等功能
  */
-@Extension(tenantCode = "ECOMMERCE_TENANT", priority = 100)
+@Extension(tenantCode = "ECOMMERCE_TENANT")
 @Slf4j
 public class EcommercePaymentExtension implements PaymentExtPoint {
     

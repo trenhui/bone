@@ -17,7 +17,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * 支持主表和扩展表条件、排序与分页的通用查询构造器。
  */
-@Data
 public class Criteria<T> {
     private final List<Condition> mainConditions = new ArrayList<>();
     private final List<Condition> extConditions = new ArrayList<>();
@@ -28,6 +27,47 @@ public class Criteria<T> {
     private final List<JoinInfo<?>> joinInfos = new ArrayList<>();
     private int pageSize = 5000;
     private int pageNo = 1;
+    
+    // 手动添加getter和setter方法
+    public int getPageNo() {
+        return pageNo;
+    }
+    
+    public void setPageNo(int pageNo) {
+        this.pageNo = pageNo;
+    }
+    
+    public int getPageSize() {
+        return pageSize;
+    }
+    
+    public void setPageSize(int pageSize) {
+        this.pageSize = pageSize;
+    }
+    
+    public List<Condition> getMainConditions() {
+        return mainConditions;
+    }
+    
+    public List<Condition> getExtConditions() {
+        return extConditions;
+    }
+    
+    public Map<String, Object> getParameters() {
+        return parameters;
+    }
+    
+    public Map<String, AtomicInteger> getColumnCounterMap() {
+        return columnCounterMap;
+    }
+    
+    public List<String> getSortItems() {
+        return sortItems;
+    }
+    
+    public List<JoinInfo<?>> getJoinInfos() {
+        return joinInfos;
+    }
 
     private Criteria() {
     }
@@ -401,17 +441,7 @@ public class Criteria<T> {
     /**
      * 获取所有关联表信息
      */
-    public List<JoinInfo<?>> getJoinInfos() {
-        return joinInfos;
-    }
-    
-    public Map<String, Object> getParameters() { return parameters; }
-    public List<Condition> getExtConditions() { return extConditions; }
-    public boolean requiresExtJoin() { return !extConditions.isEmpty(); }
-    
-    public List<Condition> getMainConditions() { return mainConditions; }
-    public List<SortItem> getSortItems() { return sortItems; }
-    public int getPageSize() { return pageSize; }
+    // 所有getter方法已在前面定义，这里不再重复定义
     
     /**
      * 关联表信息内部类

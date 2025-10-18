@@ -1,6 +1,7 @@
 package com.bone.metadata.sdk.support.util;
 
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -13,8 +14,8 @@ import java.util.regex.Pattern;
  * 参数转换工具类：高效将JavaBean转换为查询参数Map，过滤null值和空白字符串
  * 线程安全，高性能设计，适合高频调用场景
  */
-@Slf4j
 public final class ParamConvertUtil {
+    private static final Logger log = LoggerFactory.getLogger(ParamConvertUtil.class);
 
     /**
      * 线程安全的字段元数据缓存：Class -> 字段数组

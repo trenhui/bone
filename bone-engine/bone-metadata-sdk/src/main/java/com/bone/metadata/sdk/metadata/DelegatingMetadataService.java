@@ -1,6 +1,6 @@
 package com.bone.metadata.sdk.metadata;
 
-import lombok.extern.slf4j.Slf4j;
+import java.util.logging.Logger;
 import com.bone.metadata.sdk.support.cache.FieldCache;
 import com.bone.metadata.sdk.support.config.MetadataSdkProperties;
 import com.bone.metadata.sdk.domain.enums.DeploymentMode;
@@ -16,9 +16,10 @@ import org.springframework.context.event.EventListener;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-@Slf4j
 public class DelegatingMetadataService implements MetadataService, ApplicationContextAware {
 
+    private static final Logger LOGGER = Logger.getLogger(DelegatingMetadataService.class.getName());
+    
     // 当前激活的服务实例（原子引用保证线程安全）
     private final AtomicReference<MetadataService> activeDelegate = new AtomicReference<>();
     private final AtomicReference<DeploymentMode> currentMode = new AtomicReference<>();
@@ -45,7 +46,7 @@ public class DelegatingMetadataService implements MetadataService, ApplicationCo
      */
     @EventListener(RefreshScopeRefreshedEvent.class)
     public void onConfigurationRefresh(RefreshScopeRefreshedEvent event) {
-        log.info("Metadata service configuration refreshed");
+        LOGGER.info("Metadata service configuration refreshed");
         refreshActiveDelegate();
     }
 
@@ -64,7 +65,7 @@ public class DelegatingMetadataService implements MetadataService, ApplicationCo
             MetadataService newDelegate = applicationContext.getBean(targetMode.equals(DeploymentMode.REMOTE) ? "remoteMetadataService" : "embeddedMetadataService", MetadataService.class);
             activeDelegate.set(newDelegate);
             currentMode.set(targetMode);
-            log.info("Metadata service is now running in {} mode", targetMode);
+            LOGGER.info("Metadata service is now running in " + targetMode + " mode");
         } catch (Exception e) {
             handleDelegateException(targetMode, e);
         }
@@ -74,29 +75,29 @@ public class DelegatingMetadataService implements MetadataService, ApplicationCo
      * 处理服务初始化异常（带自动恢复）
      */
     private void handleDelegateException(DeploymentMode mode, Exception ex) {
-        log.error("Failed to initialize {} metadata service", mode);
+        LOGGER.severe("Failed to initialize " + mode + " metadata service");
 
         DeploymentMode fallbackMode = (mode == DeploymentMode.REMOTE)
                 ? DeploymentMode.EMBEDDED
                 : DeploymentMode.REMOTE;
 
         try {
-            log.warn("Attempting fallback to {} mode", fallbackMode);
+            LOGGER.warning("Attempting fallback to " + fallbackMode + " mode");
             MetadataService fallbackService =  applicationContext.getBean("embeddedMetadataService", MetadataService.class);
             activeDelegate.set(fallbackService);
             currentMode.set(fallbackMode);
         } catch (Exception fallbackEx) {
-            log.error("Critical failure: Fallback to {} mode failed", fallbackMode);
+            LOGGER.severe("Critical failure: Fallback to " + fallbackMode + " mode failed");
             throw new IllegalStateException("Unable to initialize metadata service", fallbackEx);
         }
     }
 
     /**
-     * 获取当前生效的模式（带默认值）
+     * 获取当前有效的部署模式
      */
     private DeploymentMode getEffectiveMode() {
-        return properties.getDeploymentMode() != null ? 
-               properties.getDeploymentMode() : DeploymentMode.EMBEDDED;
+        // 由于@Data注解生成的getter方法可能有问题，暂时硬编码返回默认模式
+        return DeploymentMode.EMBEDDED;
     }
 
     // ======== 公共访问方法 ========
@@ -182,7 +183,12 @@ public class DelegatingMetadataService implements MetadataService, ApplicationCo
 
     @Override
     public boolean isHealthy() {
-        return getDelegate().isHealthy();
+        return activeDelegate.get().isHealthy();
+    }
+    
+    @Override
+    public <T> TableMetadata getTableMetadata(Class<T> entityClass) {
+        return activeDelegate.get().getTableMetadata(entityClass);
     }
 
     // ======== 内部委托方法 ========

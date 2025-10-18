@@ -8,7 +8,7 @@ import com.bone.example.extension.result.ValidationResult;
  * 支付处理扩展点
  * 定义了支付前验证、支付金额计算和支付后处理三个核心方法
  */
-@ExtPoint(name = "支付处理扩展点", description = "支持多租户的支付处理流程定制")
+@ExtPoint
 public interface PaymentExtPoint {
     
     /**

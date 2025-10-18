@@ -2,6 +2,7 @@ package com.bone.metadata.sdk.metadata.api;
 
 import com.bone.metadata.sdk.domain.model.AllocationContext;
 import com.bone.metadata.sdk.domain.model.FieldMetadata;
+import com.bone.metadata.sdk.domain.model.TableMetadata;
 
 import java.util.List;
 
@@ -41,4 +42,13 @@ public interface MetadataService {
      * @return 元数据服务是否健康
      */
     boolean isHealthy();
+    
+    /**
+     * 获取指定实体类的表元数据
+     * 
+     * @param entityClass 实体类
+     * @param <T> 实体类型
+     * @return 表元数据
+     */
+    <T> TableMetadata getTableMetadata(Class<T> entityClass);
 }

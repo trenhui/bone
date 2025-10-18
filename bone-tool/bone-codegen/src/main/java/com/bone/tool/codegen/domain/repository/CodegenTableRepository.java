@@ -1,14 +1,34 @@
 package com.bone.tool.codegen.domain.repository;
 
-import com.bone.metadata.sdk.Repository;
 import com.bone.tool.codegen.application.dto.CodegenTablePageRequest;
 import com.bone.tool.codegen.domain.entity.CodegenColumn;
 import com.bone.tool.codegen.domain.entity.CodegenTable;
 import com.bone.core.model.PageResult;
 
 import java.util.List;
+import java.util.Optional;
 
-public interface CodegenTableRepository extends Repository<CodegenTable, Long> {
+public interface CodegenTableRepository {
+    
+    /**
+     * 根据ID删除表配置
+     */
+    void deleteById(Long id);
+    
+    /**
+     * 根据ID查找表配置
+     */
+    Optional<CodegenTable> findById(Long id);
+    
+    /**
+     * 保存表配置
+     */
+    CodegenTable save(CodegenTable table);
+    
+    /**
+     * 更新表配置
+     */
+    void update(CodegenTable table);
 
     default CodegenTable selectByTableNameAndDataSourceConfigId(String tableName, Long dataSourceConfigId) {
         // 简化实现，直接调用findOneByCriteria

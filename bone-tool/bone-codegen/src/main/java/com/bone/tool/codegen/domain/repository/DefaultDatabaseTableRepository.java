@@ -32,10 +32,8 @@ public class DefaultDatabaseTableRepository implements DatabaseTableRepository {
     
     @Override
     public Connection getConnection(Long datasourceId) throws Exception {
-        Datasource config = dataSourceConfigRepository.findById(datasourceId);
-        if (config == null) {
-            throw new IllegalArgumentException("数据源配置不存在: " + datasourceId);
-        }
+        Datasource config = dataSourceConfigRepository.findById(datasourceId)
+                .orElseThrow(() -> new IllegalArgumentException("数据源配置不存在: " + datasourceId));
         
         // 获取数据库连接（使用反射获取连接信息）
         String url = (String) ReflectionUtil.getFieldValue(config, "url");

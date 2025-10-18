@@ -4,7 +4,8 @@ import com.bone.metadata.sdk.domain.exception.TemplateLoadException;
 import com.bone.metadata.sdk.domain.exception.TemplateNotFoundException;
 import com.bone.metadata.sdk.sql.template.TemplateDescriptor;
 import com.bone.metadata.sdk.support.config.SqlConfigProperties;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.util.FileCopyUtils;
@@ -16,8 +17,8 @@ import java.nio.charset.StandardCharsets;
 /**
  * 从类路径加载YAML SQL模板，支持结构化路径（如 sql-templates/<ClassName>/<methodName>.yaml）。
  */
-@Slf4j
 public class ClasspathYamlSourceProvider implements TemplateSourceProvider {
+    private static final Logger log = LoggerFactory.getLogger(ClasspathYamlSourceProvider.class);
     private final ResourceLoader resourceLoader;
     private final SqlConfigProperties config;
 

@@ -5,7 +5,7 @@ import com.bone.engine.extension.BizContexts;
 import com.bone.engine.extension.ExtensionExecutor;
 import com.bone.example.extension.result.ValidationResult;
 import lombok.extern.slf4j.Slf4j;
-import javax.annotation.Resource;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.UUID;
 
 /**
@@ -15,7 +15,7 @@ import java.util.UUID;
 @Slf4j
 public class PaymentService {
     
-    @Resource
+    @Autowired
     private ExtensionExecutor extensionExecutor;
     
     /**
