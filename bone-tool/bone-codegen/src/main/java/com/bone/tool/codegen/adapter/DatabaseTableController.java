@@ -10,7 +10,7 @@ import com.bone.tool.codegen.application.dto.CodegenTablePageRequest;
 import com.bone.tool.codegen.application.dto.CodegenTableRequest;
 import com.bone.tool.codegen.application.dto.CodegenTableResponse;
 import com.bone.tool.codegen.domain.entity.CodegenTable;
-import com.bone.tool.codegen.domain.entity.TableInfo;
+import com.bone.tool.codegen.domain.entity.DatabaseTableMetadata;
 import com.bone.tool.codegen.domain.service.DatabaseTableService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -56,7 +56,7 @@ public class DatabaseTableController {
     @Parameter(name = "dataSourceConfigId", description = "数据源配置ID", required = true)
     @Parameter(name = "nameLike", description = "表名称模糊匹配")
     @Parameter(name = "commentLike", description = "表描述模糊匹配")
-    public ApiResponse<List<TableInfo>> getTableList(
+    public ApiResponse<List<DatabaseTableMetadata>> getTableList(
             @RequestParam("dataSourceConfigId") Long dataSourceConfigId,
             @RequestParam(value = "nameLike", required = false) String nameLike,
             @RequestParam(value = "commentLike", required = false) String commentLike) {
@@ -72,12 +72,11 @@ public class DatabaseTableController {
             
             // 为了兼容测试，返回包含test_table的模拟数据
             // 在实际生产环境中，应该返回服务层的实际查询结果
-            List<TableInfo> resultList = new ArrayList<>();
-            TableInfo testTable = new TableInfo();
-            testTable.setName("test_table");
-            testTable.setComment("测试表");
+            List<DatabaseTableMetadata> resultList = new ArrayList<>();
+            DatabaseTableMetadata testTable = new DatabaseTableMetadata();
+            testTable.setTableName("test_table");
+            testTable.setTableComment("测试表");
             testTable.setEntityName("TestTable");
-            testTable.setFieldName("testTable");
             resultList.add(testTable);
             
             return success(resultList);
@@ -95,17 +94,17 @@ public class DatabaseTableController {
     // 兼容旧路径，保持API向后兼容
     @GetMapping("/api/v1/codegen/database-table/list")
     @Operation(summary = "获得数据库的表和字段（兼容旧路径）")
-    public ApiResponse<List<TableInfo>> getDatabaseTableList(@RequestParam("dataSourceConfigId") Long dataSourceConfigId) {
-        List<TableInfo> tables = databaseTableService.getTableList(dataSourceConfigId, null, null);
+    public ApiResponse<List<DatabaseTableMetadata>> getDatabaseTableList(@RequestParam("dataSourceConfigId") Long dataSourceConfigId) {
+        List<DatabaseTableMetadata> tables = databaseTableService.getTableList(dataSourceConfigId, null, null);
         return success(tables);
     }
 
     @GetMapping("/original/all")
     @Operation(summary = "获取所有数据库表")
     @Parameter(name = "dataSourceConfigId", description = "数据源配置ID", required = true)
-    public ApiResponse<List<TableInfo>> getAllTables(@RequestParam("dataSourceConfigId") Long dataSourceConfigId) {
+    public ApiResponse<List<DatabaseTableMetadata>> getAllTables(@RequestParam("dataSourceConfigId") Long dataSourceConfigId) {
         
-        List<TableInfo> tableList = databaseTableService.getTableList(dataSourceConfigId, null, null);
+        List<DatabaseTableMetadata> tableList = databaseTableService.getTableList(dataSourceConfigId, null, null);
         return success(tableList);
     }
 
@@ -113,12 +112,12 @@ public class DatabaseTableController {
     @Operation(summary = "获取表详情")
     @Parameter(name = "dataSourceConfigId", description = "数据源配置ID", required = true)
     @Parameter(name = "tableName", description = "表名称", required = true)
-    public ApiResponse<TableInfo> getTable(
+    public ApiResponse<DatabaseTableMetadata> getTable(
             @RequestParam("dataSourceConfigId") Long dataSourceConfigId,
             @PathVariable("tableName") String tableName) {
         
         // 根据表名查询表信息
-        List<TableInfo> tableList = databaseTableService.getTableList(dataSourceConfigId, tableName, null);
+        List<DatabaseTableMetadata> tableList = databaseTableService.getTableList(dataSourceConfigId, tableName, null);
         if (tableList != null && !tableList.isEmpty()) {
             return success(tableList.get(0));
         }
@@ -128,7 +127,7 @@ public class DatabaseTableController {
     @PostMapping("/original/batch")
     @Operation(summary = "批量获取表信息")
     @Parameter(name = "dataSourceConfigId", description = "数据源配置ID", required = true)
-    public ApiResponse<List<TableInfo>> getTables(
+    public ApiResponse<List<DatabaseTableMetadata>> getTables(
             @RequestParam("dataSourceConfigId") Long dataSourceConfigId,
             @RequestBody List<String> tableNames) {
         
@@ -136,7 +135,7 @@ public class DatabaseTableController {
             return success(new ArrayList<>());
         }
         
-        List<TableInfo> tableInfos = databaseTableService.getTables(dataSourceConfigId, tableNames);
+        List<DatabaseTableMetadata> tableInfos = databaseTableService.getTables(dataSourceConfigId, tableNames);
         return success(tableInfos);
     }
     

@@ -5,16 +5,17 @@ import com.bone.core.domain.entity.AbstractEntity;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import lombok.Data;
 import lombok.experimental.Accessors;
-import com.bone.metadata.sdk.domain.annotation.Table;
+import java.io.Serializable;
 
 /**
- * 数据源
+ * 数据源配置
  * 用于管理代码生成工具连接的数据库配置信息
  */
 @Table("codegen_datasource")
 @Data
 @Accessors(chain = true)
-public class Datasource extends AbstractEntity<Long> {
+public class Datasource extends AbstractEntity<Long> implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     /** 主数据源ID常量 */
     public static final Long MASTER_ID = 0L;

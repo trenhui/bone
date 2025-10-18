@@ -1,6 +1,6 @@
 package com.bone.tool.codegen.domain.repository;
 
-import com.bone.tool.codegen.domain.entity.TableInfo;
+import com.bone.tool.codegen.domain.entity.DatabaseTableMetadata;
 import com.bone.tool.codegen.domain.entity.CodegenColumn;
 import com.bone.tool.codegen.domain.repository.DataSourceConfigRepository;
 import com.bone.tool.codegen.domain.entity.Datasource;
@@ -54,7 +54,7 @@ public class DefaultDatabaseTableRepository implements DatabaseTableRepository {
     }
     
     @Override
-    public List<TableInfo> getTableList(Long dataSourceConfigId, String schema) throws Exception {
+    public List<DatabaseTableMetadata> getTableList(Long dataSourceConfigId, String schema) throws Exception {
         Connection connection = null;
         try {
             connection = getConnection(dataSourceConfigId);
@@ -69,7 +69,7 @@ public class DefaultDatabaseTableRepository implements DatabaseTableRepository {
             }
             
             // 查询表信息
-            List<TableInfo> tableInfos = new ArrayList<>();
+            List<DatabaseTableMetadata> tableInfos = new ArrayList<>();
             
             // 处理不同数据库的表信息查询
             try (ResultSet rs = metaData.getTables(null, schema, null, new String[]{"TABLE"})) {
@@ -77,14 +77,14 @@ public class DefaultDatabaseTableRepository implements DatabaseTableRepository {
                     String tableName = rs.getString("TABLE_NAME");
                     String tableComment = rs.getString("REMARKS");
                     
-                    TableInfo tableInfo = new TableInfo();
-                    tableInfo.setName(tableName);
-                    tableInfo.setComment(tableComment);
+                    DatabaseTableMetadata tableInfo = new DatabaseTableMetadata();
+                    tableInfo.setTableName(tableName);
+                    tableInfo.setTableComment(tableComment);
                     tableInfo.setEntityName(convertToEntityName(tableName));
                     tableInfo.setFieldName(convertToFieldName(tableName));
                     
                     // 获取表字段信息
-                    tableInfo.setFields(getTableColumns(connection, schema, tableName));
+                    tableInfo.setFieldList(getTableColumns(connection, schema, tableName));
                     
                     tableInfos.add(tableInfo);
                 }
@@ -97,7 +97,7 @@ public class DefaultDatabaseTableRepository implements DatabaseTableRepository {
     }
     
     @Override
-    public TableInfo getTableInfo(Long dataSourceConfigId, String tableName) throws Exception {
+    public DatabaseTableMetadata getTableInfo(Long dataSourceConfigId, String tableName) throws Exception {
         Connection connection = null;
         try {
             connection = getConnection(dataSourceConfigId);
@@ -114,14 +114,14 @@ public class DefaultDatabaseTableRepository implements DatabaseTableRepository {
                 if (rs.next()) {
                     String tableComment = rs.getString("REMARKS");
                     
-                    TableInfo tableInfo = new TableInfo();
-                    tableInfo.setName(tableName);
-                    tableInfo.setComment(tableComment);
+                    DatabaseTableMetadata tableInfo = new DatabaseTableMetadata();
+                    tableInfo.setTableName(tableName);
+                    tableInfo.setTableComment(tableComment);
                     tableInfo.setEntityName(convertToEntityName(tableName));
                     tableInfo.setFieldName(convertToFieldName(tableName));
                     
                     // 获取表字段信息
-                    tableInfo.setFields(getTableColumns(connection, schema, tableName));
+                    tableInfo.setFieldList(getTableColumns(connection, schema, tableName));
                     
                     return tableInfo;
                 }

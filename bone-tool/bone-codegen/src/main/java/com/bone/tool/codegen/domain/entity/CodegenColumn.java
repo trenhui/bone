@@ -42,16 +42,16 @@ public class CodegenColumn extends Entity<Long> implements Serializable {
     private Boolean nullable;
     
     /** 是否用于创建操作 */
-    private Boolean createOperation;
+    private Boolean enableCreate;
     
     /** 是否用于更新操作 */
-    private Boolean updateOperation;
+    private Boolean enableUpdate;
     
     /** 是否用于列表查询 */
-    private Boolean listOperation;
+    private Boolean enableQuery;
     
     /** 是否在列表结果中展示 */
-    private Boolean listResultShow;
+    private Boolean showInList;
     
     /** 列表查询条件类型 */
     private String listQueryCondition;

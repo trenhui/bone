@@ -30,11 +30,9 @@ import java.util.stream.Collectors;
  * AI增强的复合元数据处理器
  * 整合多种来源的元数据，支持动态计算字段、虚拟字段、AI功能和热加载
  */
-@Slf4j
 @Component
 @RequiredArgsConstructor
 public class CompositeMetadataProcessor {
-
     private static final Logger log = LoggerFactory.getLogger(CompositeMetadataProcessor.class);
     private final List<MetadataProcessor> metadataProcessors;
     private final ApplicationEventPublisher eventPublisher;

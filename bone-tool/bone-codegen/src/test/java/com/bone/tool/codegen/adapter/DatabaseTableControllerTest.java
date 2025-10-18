@@ -1,7 +1,7 @@
 package com.bone.tool.codegen.adapter;
 
 import com.bone.core.model.ApiResponse;
-import com.bone.tool.codegen.domain.entity.TableInfo;
+import com.bone.tool.codegen.domain.entity.DatabaseTableMetadata;
 import com.bone.tool.codegen.domain.service.DatabaseTableService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,8 +39,8 @@ public class DatabaseTableControllerTest {
 
     private MockMvc mockMvc;
 
-    private List<TableInfo> mockTableList;
-    private TableInfo mockTableInfo;
+    private List<DatabaseTableMetadata> mockTableList;
+    private DatabaseTableMetadata mockTableInfo;
 
     @BeforeEach
     void setUp() {
@@ -48,9 +48,9 @@ public class DatabaseTableControllerTest {
         mockMvc = MockMvcBuilders.standaloneSetup(databaseTableController).build();
 
         // 初始化模拟数据
-        mockTableInfo = new TableInfo();
-        mockTableInfo.setName("test_table");
-        mockTableInfo.setComment("测试表");
+        mockTableInfo = new DatabaseTableMetadata();
+        mockTableInfo.setTableName("test_table");
+        mockTableInfo.setTableComment("测试表");
         mockTableInfo.setEntityName("TestTable");
         mockTableInfo.setFieldName("testTable");
 
@@ -82,8 +82,8 @@ public class DatabaseTableControllerTest {
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data.length()").value(1))
-                .andExpect(jsonPath("$.data[0].name").value("test_table"))
-                .andExpect(jsonPath("$.data[0].comment").value("测试表"));
+                .andExpect(jsonPath("$.data[0].tableName").value("test_table"))
+                .andExpect(jsonPath("$.data[0].tableComment").value("测试表"));
 
         // 验证服务层方法被调用
         verify(databaseTableService, times(1)).getTableList(anyLong(), anyString(), anyString());
@@ -180,8 +180,8 @@ public class DatabaseTableControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.data.name").value("test_table"))
-                .andExpect(jsonPath("$.data.comment").value("测试表"));
+                .andExpect(jsonPath("$.data.tableName").value("test_table"))
+                .andExpect(jsonPath("$.data.tableComment").value("测试表"));
 
         // 验证服务层方法被调用
         verify(databaseTableService, times(1)).getTableList(1L, "test_table", null);
@@ -253,11 +253,11 @@ public class DatabaseTableControllerTest {
     void testGetBatchTableInfo() throws Exception {
         // 准备请求数据
         List<String> tableNames = Arrays.asList("test_table", "another_table");
-        List<TableInfo> batchTableList = new ArrayList<>(mockTableList);
+        List<DatabaseTableMetadata> batchTableList = new ArrayList<>(mockTableList);
         
-        TableInfo anotherTable = new TableInfo();
-        anotherTable.setName("another_table");
-        anotherTable.setComment("另一个测试表");
+        DatabaseTableMetadata anotherTable = new DatabaseTableMetadata();
+        anotherTable.setTableName("another_table");
+        anotherTable.setTableComment("另一个测试表");
         anotherTable.setEntityName("AnotherTable");
         anotherTable.setFieldName("anotherTable");
         batchTableList.add(anotherTable);
@@ -275,8 +275,8 @@ public class DatabaseTableControllerTest {
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data.length()").value(2))
-                .andExpect(jsonPath("$.data[0].name").value("test_table"))
-                .andExpect(jsonPath("$.data[1].name").value("another_table"));
+                .andExpect(jsonPath("$.data[0].tableName").value("test_table"))
+                .andExpect(jsonPath("$.data[1].tableName").value("another_table"));
 
         // 验证服务层方法被调用
         verify(databaseTableService, times(1)).getTables(1L, tableNames);

@@ -4,17 +4,24 @@ import com.bone.smartmeta.engine.metadata.EntityMetadata;
 import com.bone.smartmeta.engine.metadata.FieldMetadata;
 import com.bone.smartmeta.engine.model.DynamicSmartEntity;
 import com.bone.smartmeta.engine.core.SmartBaseEntity;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 import java.beans.PropertyDescriptor;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.NumberFormat;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -22,6 +29,7 @@ import java.util.regex.Pattern;
  * 表达式引擎，用于计算虚拟字段和公式字段
  * 支持SpEL风格的表达式计算
  */
+@Component
 public class ExpressionEngine {
 
     private static final Logger log = LoggerFactory.getLogger(ExpressionEngine.class);
@@ -29,14 +37,62 @@ public class ExpressionEngine {
     // 配置参数
     private boolean cacheEnabled = true;
     private boolean strictMode = true;
+    private long cacheExpirationTime = 3600000; // 默认缓存过期时间：1小时
     
     // 表达式缓存
-    private final Map<String, Method> propertyAccessorCache = new ConcurrentHashMap<>();
+    private final Map<String, MethodCacheEntry> propertyAccessorCache = new ConcurrentHashMap<>();
+    private final Map<String, String> expressionResultCache = new ConcurrentHashMap<>();
+    
+    // Spring Cache支持
+    private CacheManager cacheManager;
+    private ObjectMapper objectMapper;
+    
+    // 常量定义
+    private static final String EXPRESSION_CACHE_NAME = "expressionEngineCache";
+    private static final Pattern EXPRESSION_PATTERN = Pattern.compile("\\$\\{([^\\}]*)\\}");
+    private static final Pattern BOOLEAN_OPERATOR_PATTERN = Pattern.compile("(==|!=|>=|<=|>|<)");
+    private static final Pattern PARENTHESIS_PATTERN = Pattern.compile("\\(([^\\(\\)]+)\\)");
+    private static final Pattern MATH_OPERATOR_PATTERN = Pattern.compile("([-+*/%])");
+    private static final double DOUBLE_EPSILON = 1e-10;
+    
+    /**
+     * 方法缓存条目，包含方法实例和创建时间
+     */
+    private static class MethodCacheEntry {
+        private final Method method;
+        private final long creationTime;
+        
+        MethodCacheEntry(Method method) {
+            this.method = method;
+            this.creationTime = System.currentTimeMillis();
+        }
+        
+        boolean isExpired(long expirationTime) {
+            return System.currentTimeMillis() - creationTime > expirationTime;
+        }
+        
+        Method getMethod() {
+            return method;
+        }
+    }
     
     /**
      * 无参构造函数
      */
     public ExpressionEngine() {
+    }
+    
+    /**
+     * 构造函数，用于自动配置
+     */
+    @Autowired(required = false)
+    public void setCacheManager(CacheManager cacheManager) {
+        this.cacheManager = cacheManager;
+    }
+    
+    @Autowired(required = false)
+    public void setObjectMapper(ObjectMapper objectMapper) {
+        this.objectMapper = objectMapper;
     }
     
     /**
@@ -53,7 +109,7 @@ public class ExpressionEngine {
         this.cacheEnabled = cacheEnabled;
         if (!cacheEnabled) {
             // 清除缓存
-            propertyAccessorCache.clear();
+            clearCache();
         }
     }
     
@@ -72,12 +128,80 @@ public class ExpressionEngine {
     }
     
     /**
+     * 获取缓存过期时间（毫秒）
+     */
+    public long getCacheExpirationTime() {
+        return cacheExpirationTime;
+    }
+    
+    /**
+     * 设置缓存过期时间（毫秒）
+     */
+    public void setCacheExpirationTime(long cacheExpirationTime) {
+        this.cacheExpirationTime = cacheExpirationTime;
+    }
+    
+    /**
+     * 清除所有缓存
+     */
+    public void clearCache() {
+        propertyAccessorCache.clear();
+        expressionResultCache.clear();
+        
+        // 清除Spring缓存
+        if (cacheManager != null) {
+            Cache cache = cacheManager.getCache(EXPRESSION_CACHE_NAME);
+            if (cache != null) {
+                cache.clear();
+            }
+        }
+        
+        log.info("表达式引擎缓存已清除");
+    }
+    
+    /**
+     * 清理过期缓存条目
+     */
+    public void cleanupExpiredCache() {
+        // 清理方法缓存
+        long beforeMethodSize = propertyAccessorCache.size();
+        propertyAccessorCache.entrySet().removeIf(entry -> entry.getValue().isExpired(cacheExpirationTime));
+        long afterMethodSize = propertyAccessorCache.size();
+        
+        // 清理表达式结果缓存 (简单实现，可以根据需要添加过期逻辑)
+        long beforeResultSize = expressionResultCache.size();
+        // 这里可以添加表达式结果缓存的过期逻辑
+        
+        log.debug("清理了 {} 个过期方法缓存条目", (beforeMethodSize - afterMethodSize));
+    }
+    
+    /**
      * 评估表达式并返回结果
      * 支持${}语法的表达式，例如：${order.orderCode} - ${supplierName}
      */
     public String evaluateExpression(String expression, Map<String, Object> context) {
-        if (expression == null || context == null) {
-            return expression;
+        Assert.notNull(expression, "表达式不能为空");
+        Assert.notNull(context, "上下文对象不能为空");
+        
+        // 生成缓存键
+        String cacheKey = expression + ":" + context.hashCode();
+        
+        // 尝试从缓存获取结果
+        if (cacheEnabled) {
+            // 先检查本地缓存
+            String cachedResult = expressionResultCache.get(cacheKey);
+            if (cachedResult != null) {
+                return cachedResult;
+            }
+            
+            // 检查Spring缓存
+            Cache cache = getCache();
+            if (cache != null) {
+                String springCachedResult = cache.get(cacheKey, String.class);
+                if (springCachedResult != null) {
+                    return springCachedResult;
+                }
+            }
         }
         
         try {
@@ -112,14 +236,51 @@ public class ExpressionEngine {
             // 添加剩余文本
             result.append(expression.substring(startIndex));
             
-            return result.toString();
+            String finalResult = result.toString();
+            
+            // 缓存结果
+            if (cacheEnabled) {
+                expressionResultCache.put(cacheKey, finalResult);
+                
+                Cache cache = getCache();
+                if (cache != null) {
+                    cache.put(cacheKey, finalResult);
+                }
+            }
+            
+            return finalResult;
         } catch (Exception e) {
-            log.error("表达式计算失败: {}", expression, e);
+            String errorMsg = String.format("表达式计算失败: %s", expression);
+            log.error(errorMsg, e);
             if (strictMode) {
-                throw new RuntimeException("表达式计算失败: " + expression, e);
+                throw new ExpressionEvaluationException(errorMsg, e);
             }
             return expression; // 非严格模式下返回原始表达式
         }
+    }
+    
+    /**
+     * 批量评估表达式
+     * @param expressions 表达式映射，key为表达式标识，value为表达式
+     * @param context 上下文对象
+     * @return 评估结果映射
+     */
+    public Map<String, String> evaluateExpressions(Map<String, String> expressions, Map<String, Object> context) {
+        Assert.notNull(expressions, "表达式映射不能为空");
+        Assert.notNull(context, "上下文对象不能为空");
+        
+        Map<String, String> results = new HashMap<>(expressions.size());
+        for (Map.Entry<String, String> entry : expressions.entrySet()) {
+            results.put(entry.getKey(), evaluateExpression(entry.getValue(), context));
+        }
+        return results;
+    }
+    
+    /**
+     * 获取缓存实例
+     */
+    private Cache getCache() {
+        return cacheManager != null ? cacheManager.getCache(EXPRESSION_CACHE_NAME) : null;
     }
     
     /**
@@ -129,9 +290,8 @@ public class ExpressionEngine {
      * 支持括号嵌套
      */
     public boolean evaluateBooleanExpression(String expression, Map<String, Object> context) {
-        if (expression == null || context == null) {
-            return false;
-        }
+        Assert.notNull(expression, "表达式不能为空");
+        Assert.notNull(context, "上下文对象不能为空");
         
         try {
             // 处理${}占位符，替换为实际值
@@ -146,6 +306,34 @@ public class ExpressionEngine {
             }
             if ("false".equalsIgnoreCase(processedExpression)) {
                 return false;
+            }
+            
+            // 处理括号嵌套 (递归处理)
+            processedExpression = resolveParentheses(processedExpression, context);
+            
+            // 处理逻辑运算符 && 和 || (短路逻辑)
+            if (processedExpression.contains("&&")) {
+                String[] parts = processedExpression.split("&&");
+                for (String part : parts) {
+                    if (!evaluateBooleanExpression(part.trim(), context)) {
+                        return false; // 短路：一旦有一个为false，整个AND表达式为false
+                    }
+                }
+                return true;
+            } else if (processedExpression.contains("||")) {
+                String[] parts = processedExpression.split("\\|\\|");
+                for (String part : parts) {
+                    if (evaluateBooleanExpression(part.trim(), context)) {
+                        return true; // 短路：一旦有一个为true，整个OR表达式为true
+                    }
+                }
+                return false;
+            }
+            
+            // 处理否定运算符 !
+            if (processedExpression.startsWith("!")) {
+                String innerExpression = processedExpression.substring(1).trim();
+                return !evaluateBooleanExpression(innerExpression, context);
             }
             
             log.debug("评估布尔表达式: {}", processedExpression);
@@ -163,14 +351,28 @@ public class ExpressionEngine {
                 return evaluateComparison(leftValue, operator, rightValue);
             }
             
-            // 处理字符串比较 (暂时只支持简单的相等比较)
+            // 处理字符串比较
             if (processedExpression.startsWith("'")) {
-                Pattern stringComparePattern = Pattern.compile("'([^']+)'\\s*==\\s*'([^']+)'");
+                Pattern stringComparePattern = Pattern.compile("'([^']+)'\\s*([=!<>]=?)\\s*'([^']+)'");
                 Matcher stringMatcher = stringComparePattern.matcher(processedExpression);
                 if (stringMatcher.matches()) {
                     String leftStr = stringMatcher.group(1);
-                    String rightStr = stringMatcher.group(2);
-                    return leftStr.equals(rightStr);
+                    String operator = stringMatcher.group(2);
+                    String rightStr = stringMatcher.group(3);
+                    
+                    if ("==".equals(operator)) {
+                        return leftStr.equals(rightStr);
+                    } else if ("!=".equals(operator)) {
+                        return !leftStr.equals(rightStr);
+                    } else if (">=".equals(operator)) {
+                        return leftStr.compareTo(rightStr) >= 0;
+                    } else if ("<=".equals(operator)) {
+                        return leftStr.compareTo(rightStr) <= 0;
+                    } else if (">=".equals(operator)) {
+                        return leftStr.compareTo(rightStr) > 0;
+                    } else if ("<".equals(operator)) {
+                        return leftStr.compareTo(rightStr) < 0;
+                    }
                 }
             }
             
@@ -185,12 +387,35 @@ public class ExpressionEngine {
             // 默认返回false
             return false;
         } catch (Exception e) {
-            log.error("布尔表达式计算失败: {}", expression, e);
+            String errorMsg = String.format("布尔表达式计算失败: %s", expression);
+            log.error(errorMsg, e);
             if (strictMode) {
-                throw new RuntimeException("布尔表达式计算失败: " + expression, e);
+                throw new ExpressionEvaluationException(errorMsg, e);
             }
             return false; // 非严格模式下返回false
         }
+    }
+    
+    /**
+     * 递归解析括号内的表达式
+     */
+    private String resolveParentheses(String expression, Map<String, Object> context) {
+        Matcher matcher = PARENTHESIS_PATTERN.matcher(expression);
+        StringBuffer sb = new StringBuffer();
+        
+        while (matcher.find()) {
+            String innerExpr = matcher.group(1);
+            boolean result = evaluateBooleanExpression(innerExpr, context);
+            matcher.appendReplacement(sb, String.valueOf(result));
+        }
+        matcher.appendTail(sb);
+        
+        // 如果还有括号，继续递归处理
+        if (sb.toString().contains("(")) {
+            return resolveParentheses(sb.toString(), context);
+        }
+        
+        return sb.toString();
     }
     
     /**
@@ -200,29 +425,131 @@ public class ExpressionEngine {
         switch (operator) {
             case "==":
             case "=":
-                return Math.abs(left - right) < 1e-10;
+                return Math.abs(left - right) < DOUBLE_EPSILON;
             case "!=":
-                return Math.abs(left - right) >= 1e-10;
+                return Math.abs(left - right) >= DOUBLE_EPSILON;
             case ">":
-                return left > right;
+                return left > right + DOUBLE_EPSILON;
             case ">=":
-                return left >= right;
+                return left + DOUBLE_EPSILON >= right;
             case "<":
-                return left < right;
+                return left + DOUBLE_EPSILON < right;
             case "<=":
-                return left <= right;
+                return left <= right + DOUBLE_EPSILON;
             default:
+                log.warn("不支持的比较运算符: {}", operator);
                 return false;
         }
+    }
+    
+    /**
+     * 评估对象比较（支持数值、字符串、日期等）
+     */
+    private boolean evaluateComparison(Object left, String operator, Object right) {
+        if (left == null || right == null) {
+            return false;
+        }
+        
+        // 数值比较
+        if (left instanceof Number && right instanceof Number) {
+            BigDecimal leftValue = convertToBigDecimal(left);
+            BigDecimal rightValue = convertToBigDecimal(right);
+            
+            int comparisonResult = leftValue.compareTo(rightValue);
+            
+            switch (operator) {
+                case "==": case "=": return comparisonResult == 0;
+                case "!=": return comparisonResult != 0;
+                case ">": return comparisonResult > 0;
+                case ">=": return comparisonResult >= 0;
+                case "<": return comparisonResult < 0;
+                case "<=": return comparisonResult <= 0;
+                default: return false;
+            }
+        }
+        
+        // 字符串比较
+        if (left instanceof String && right instanceof String) {
+            int comparisonResult = ((String) left).compareTo((String) right);
+            
+            switch (operator) {
+                case "==": case "=": return comparisonResult == 0;
+                case "!=": return comparisonResult != 0;
+                case ">": return comparisonResult > 0;
+                case ">=": return comparisonResult >= 0;
+                case "<": return comparisonResult < 0;
+                case "<=": return comparisonResult <= 0;
+                default: return false;
+            }
+        }
+        
+        // 日期比较
+        if (left instanceof Date && right instanceof Date) {
+            int comparisonResult = ((Date) left).compareTo((Date) right);
+            
+            switch (operator) {
+                case "==": case "=": return comparisonResult == 0;
+                case "!=": return comparisonResult != 0;
+                case ">": return comparisonResult > 0;
+                case ">=": return comparisonResult >= 0;
+                case "<": return comparisonResult < 0;
+                case "<=": return comparisonResult <= 0;
+                default: return false;
+            }
+        }
+        
+        // 枚举比较
+        if (left instanceof Enum && right instanceof Enum) {
+            int comparisonResult = ((Enum<?>) left).name().compareTo(((Enum<?>) right).name());
+            
+            switch (operator) {
+                case "==": case "=": return comparisonResult == 0;
+                case "!=": return comparisonResult != 0;
+                case ">": return comparisonResult > 0;
+                case ">=": return comparisonResult >= 0;
+                case "<": return comparisonResult < 0;
+                case "<=": return comparisonResult <= 0;
+                default: return false;
+            }
+        }
+        
+        // 默认使用字符串比较
+        String leftStr = String.valueOf(left);
+        String rightStr = String.valueOf(right);
+        return evaluateComparison(leftStr, operator, rightStr);
+    }
+    
+    /**
+     * 转换对象为BigDecimal
+     */
+    private BigDecimal convertToBigDecimal(Object value) {
+        if (value == null) {
+            return BigDecimal.ZERO;
+        }
+        
+        if (value instanceof BigDecimal) {
+            return (BigDecimal) value;
+        } else if (value instanceof Number) {
+            return BigDecimal.valueOf(((Number) value).doubleValue()).setScale(2, RoundingMode.HALF_UP);
+        } else if (value instanceof String) {
+            try {
+                return new BigDecimal((String) value).setScale(2, RoundingMode.HALF_UP);
+            } catch (NumberFormatException e) {
+                log.warn("无法转换字符串为数值: {}", value);
+                return BigDecimal.ZERO;
+            }
+        }
+        
+        log.warn("无法转换类型为数值: {}", value.getClass().getName());
+        return BigDecimal.ZERO;
     }
     
     /**
      * 评估字段路径，从上下文中获取字段值
      */
     private Object evaluateFieldPath(String fieldPath, Map<String, Object> context) {
-        if (fieldPath == null || fieldPath.isEmpty()) {
-            return null;
-        }
+        Assert.hasText(fieldPath, "字段路径不能为空");
+        Assert.notNull(context, "上下文对象不能为空");
         
         try {
             // 处理简单路径，例如 "order.orderCode"
@@ -244,7 +571,7 @@ public class ExpressionEngine {
             
             return current;
         } catch (Exception e) {
-            log.error("字段路径评估失败: {}", fieldPath, e);
+            log.debug("字段路径评估失败: {}", fieldPath, e);
             return null;
         }
     }
@@ -253,7 +580,7 @@ public class ExpressionEngine {
      * 通过反射获取对象的属性值
      */
     private Object getPropertyValue(Object obj, String propertyName) {
-        if (obj == null || propertyName == null) {
+        if (obj == null || StringUtils.isEmpty(propertyName)) {
             return null;
         }
         
@@ -263,7 +590,10 @@ public class ExpressionEngine {
             Method getterMethod = null;
             
             if (cacheEnabled) {
-                getterMethod = propertyAccessorCache.get(cacheKey);
+                MethodCacheEntry entry = propertyAccessorCache.get(cacheKey);
+                if (entry != null && !entry.isExpired(cacheExpirationTime)) {
+                    getterMethod = entry.getMethod();
+                }
             }
             
             if (getterMethod == null) {
@@ -282,20 +612,38 @@ public class ExpressionEngine {
                         if (obj instanceof Map) {
                             return ((Map<?, ?>) obj).get(propertyName);
                         }
+                        // 如果是数组或集合，尝试索引访问
+                        if (propertyName.matches("\\d+")) {
+                            int index = Integer.parseInt(propertyName);
+                            if (obj instanceof List && index < ((List<?>) obj).size()) {
+                                return ((List<?>) obj).get(index);
+                            }
+                            if (obj.getClass().isArray() && index < java.lang.reflect.Array.getLength(obj)) {
+                                return java.lang.reflect.Array.get(obj, index);
+                            }
+                        }
+                        // 尝试通过Jackson获取JSON属性
+                        if (objectMapper != null) {
+                            try {
+                                return objectMapper.convertValue(obj, Map.class).get(propertyName);
+                            } catch (Exception jsonEx) {
+                                // 忽略JSON转换错误
+                            }
+                        }
                         throw ex;
                     }
                 }
                 
                 // 缓存方法
                 if (cacheEnabled) {
-                    propertyAccessorCache.put(cacheKey, getterMethod);
+                    propertyAccessorCache.put(cacheKey, new MethodCacheEntry(getterMethod));
                 }
             }
             
             // 调用getter方法
             return getterMethod.invoke(obj);
         } catch (Exception e) {
-            log.warn("获取属性值失败: {}.{}", obj.getClass().getName(), propertyName, e);
+            log.debug("获取属性值失败: {}.{}", obj.getClass().getName(), propertyName, e);
             return null;
         }
     }
@@ -512,6 +860,9 @@ public class ExpressionEngine {
      * 设置实体字段值
      */
     private <T extends SmartBaseEntity> void setFieldValue(T entity, String fieldName, Object value) {
+        Assert.notNull(entity, "实体对象不能为空");
+        Assert.hasText(fieldName, "字段名不能为空");
+        
         try {
             if (entity instanceof DynamicSmartEntity) {
                 // 对于动态实体，直接设置字段值
@@ -522,19 +873,117 @@ public class ExpressionEngine {
                 String setterName = "set" + Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1);
                 try {
                     // 由于T是SmartBaseEntity的子类，而SmartBaseEntity继承自Object，所以应该可以调用getClass()
-                    // 但是编译报错，我们可以直接将entity转为Object来解决
                     Object entityObj = entity;
-                    Method setterMethod = entityObj.getClass().getMethod(setterName, Object.class);
-                    setterMethod.invoke(entity, value);
+                    Class<?> entityClass = entityObj.getClass();
+                    
+                    // 尝试查找精确匹配类型的setter方法
+                    Method[] methods = entityClass.getMethods();
+                    Method setterMethod = null;
+                    
+                    for (Method method : methods) {
+                        if (method.getName().equals(setterName) && method.getParameterCount() == 1) {
+                            // 找到匹配名称的setter方法
+                            setterMethod = method;
+                            break;
+                        }
+                    }
+                    
+                    if (setterMethod != null) {
+                        // 尝试类型转换
+                        Class<?> paramType = setterMethod.getParameterTypes()[0];
+                        Object convertedValue = convertValueToType(value, paramType);
+                        setterMethod.invoke(entity, convertedValue);
+                    } else {
+                        log.warn("无法设置字段 {} 的值，setter方法不存在", fieldName);
+                    }
                 } catch (NoSuchMethodException e) {
-                    // 尝试转换类型
                     log.warn("无法设置字段 {} 的值，setter方法不存在", fieldName);
                 }
             }
         } catch (Exception e) {
-            // 同样，这里也将entity转为Object来调用getClass()
             Object entityObj = entity;
             log.error("设置字段值失败: {}.{}", entityObj.getClass().getName(), fieldName, e);
+            if (strictMode) {
+                throw new RuntimeException("设置字段值失败: " + fieldName, e);
+            }
+        }
+    }
+    
+    /**
+     * 转换值到目标类型
+     */
+    private Object convertValueToType(Object value, Class<?> targetType) {
+        if (value == null) {
+            return null;
+        }
+        
+        // 如果类型已经匹配，直接返回
+        if (targetType.isInstance(value)) {
+            return value;
+        }
+        
+        // 数值类型转换
+        if (Number.class.isAssignableFrom(targetType)) {
+            BigDecimal decimalValue = convertToBigDecimal(value);
+            if (targetType == Integer.class || targetType == int.class) {
+                return decimalValue.intValue();
+            } else if (targetType == Long.class || targetType == long.class) {
+                return decimalValue.longValue();
+            } else if (targetType == Double.class || targetType == double.class) {
+                return decimalValue.doubleValue();
+            } else if (targetType == Float.class || targetType == float.class) {
+                return decimalValue.floatValue();
+            } else if (targetType == BigDecimal.class) {
+                return decimalValue;
+            }
+        }
+        
+        // 字符串转换
+        if (targetType == String.class) {
+            return String.valueOf(value);
+        }
+        
+        // 布尔值转换
+        if (targetType == Boolean.class || targetType == boolean.class) {
+            if (value instanceof String) {
+                return Boolean.parseBoolean((String) value);
+            }
+            if (value instanceof Number) {
+                return ((Number) value).intValue() != 0;
+            }
+        }
+        
+        // 日期转换
+        if (targetType == Date.class && value instanceof String) {
+            try {
+                return new Date(Long.parseLong((String) value));
+            } catch (NumberFormatException e) {
+                // 可以添加更多日期格式解析
+            }
+        }
+        
+        // 使用Jackson进行复杂类型转换
+        if (objectMapper != null) {
+            try {
+                return objectMapper.convertValue(value, targetType);
+            } catch (Exception e) {
+                log.debug("类型转换失败: {} -> {}", value.getClass().getName(), targetType.getName());
+            }
+        }
+        
+        return value;
+    }
+    
+    /**
+     * 表达式评估异常
+     */
+    public static class ExpressionEvaluationException extends RuntimeException {
+        public ExpressionEvaluationException(String message) {
+            super(message);
+        }
+        
+        public ExpressionEvaluationException(String message, Throwable cause) {
+            super(message, cause);
         }
     }
 }

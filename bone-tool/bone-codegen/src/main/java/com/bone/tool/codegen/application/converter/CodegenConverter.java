@@ -7,7 +7,7 @@ import com.bone.tool.codegen.application.dto.CodegenDetailResponse;
 import com.bone.tool.codegen.domain.entity.CodegenTable;
 import com.bone.tool.codegen.domain.entity.CodegenColumn;
 import com.bone.tool.codegen.domain.entity.Datasource;
-import com.bone.tool.codegen.domain.entity.TableInfo;
+import com.bone.tool.codegen.domain.entity.DatabaseTableMetadata;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
@@ -77,10 +77,10 @@ public interface CodegenConverter {
     // ========== 特殊转换方法（从原CodegenConvert整合） ==========
     
     /**
-     * 将TableInfo转换为CodegenTable
+     * 将DatabaseTableMetadata转换为CodegenTable
      * 用于从数据库表信息构建代码生成配置
      */
-    default CodegenTable convert(TableInfo bean) {
+    default CodegenTable convert(DatabaseTableMetadata bean) {
         if (bean == null) {
             return null;
         }

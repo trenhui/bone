@@ -110,27 +110,25 @@ public class Condition {
     }
 
     /**
-     * 生成 SQL 片段，自动选择 m. 或 ext. 前缀
+     * 生成 SQL 片段，只返回纯列名，表别名由上层调用者添加
      */
     public String toSql() {
-        String alias = extension ? "ext" : "m";
-        String col = alias + "." + column;
         return switch (operator) {
-            case EQ -> String.format("%s = :%s", col, paramName);
-            case NE -> String.format("%s <> :%s", col, paramName);
-            case GT -> String.format("%s > :%s", col, paramName);
-            case GTE -> String.format("%s >= :%s", col, paramName);
-            case LT -> String.format("%s < :%s", col, paramName);
-            case LTE -> String.format("%s <= :%s", col, paramName);
-            case LIKE -> buildLikeSql(col, "%%", "%%", false);
-            case NOT_LIKE -> buildLikeSql(col, "%%", "%%", true);
-            case LIKE_LEFT -> buildLikeSql(col, "%%", "", false);
-            case LIKE_RIGHT -> buildLikeSql(col, "", "%%", false);
-            case IN -> String.format("%s IN (:%s)", col, paramName);
-            case NOT_IN -> String.format("%s NOT IN (:%s)", col, paramName);
-            case BETWEEN -> String.format("%s BETWEEN :%s_0 AND :%s_1", col, column, column);
-            case IS_NULL -> String.format("%s IS NULL", col);
-            case IS_NOT_NULL -> String.format("%s IS NOT NULL", col);
+            case EQ -> String.format("%s = :%s", column, paramName);
+            case NE -> String.format("%s <> :%s", column, paramName);
+            case GT -> String.format("%s > :%s", column, paramName);
+            case GTE -> String.format("%s >= :%s", column, paramName);
+            case LT -> String.format("%s < :%s", column, paramName);
+            case LTE -> String.format("%s <= :%s", column, paramName);
+            case LIKE -> buildLikeSql(column, "%%", "%%", false);
+            case NOT_LIKE -> buildLikeSql(column, "%%", "%%", true);
+            case LIKE_LEFT -> buildLikeSql(column, "%%", "", false);
+            case LIKE_RIGHT -> buildLikeSql(column, "", "%%", false);
+            case IN -> String.format("%s IN (:%s)", column, paramName);
+            case NOT_IN -> String.format("%s NOT IN (:%s)", column, paramName);
+            case BETWEEN -> String.format("%s BETWEEN :%s_0 AND :%s_1", column, column, column);
+            case IS_NULL -> column + " IS NULL";
+            case IS_NOT_NULL -> column + " IS NOT NULL";
             default -> throw new IllegalStateException("Unsupported operator " + operator);
         };
     }
