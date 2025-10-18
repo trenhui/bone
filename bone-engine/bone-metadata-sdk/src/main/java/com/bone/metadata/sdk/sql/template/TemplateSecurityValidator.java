@@ -5,6 +5,9 @@ import com.bone.metadata.sdk.support.config.SqlConfigProperties;
 
 
 import java.net.URI;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -38,7 +41,8 @@ public class TemplateSecurityValidator {
 
     private void validateSourceUri(URI uri) {
         if ("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme())) {
-            Set<String> allowedHosts = config.getSecurity().getAllowedHosts();
+            List<String> allowedHostsList = config.getSecurity().getAllowedHosts();
+        Set<String> allowedHosts = new HashSet<>(allowedHostsList);
             String host = uri.getHost();
 
             if (!isHostAllowed(host, allowedHosts)) {

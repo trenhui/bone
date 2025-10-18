@@ -39,7 +39,7 @@ public class ExtPointIntegrationTest {
         dynamicOrderService = new DynamicOrderService();
         
         // 注册测试用的扩展点实现
-        registerTestExtProviders();
+        registerTestExtensions();
     }
     
     /**
@@ -205,7 +205,7 @@ public class ExtPointIntegrationTest {
      * 注册测试用的扩展点实现
      * 支持默认实现、租户特定实现和动态实现的注册
      */
-    private void registerTestExtProviders() {
+    private void registerTestExtensions() {
         // 创建并注册默认订单服务实现
         DefaultOrderService defaultOrderService = new DefaultOrderService();
         repository.setDefaultOrderService(defaultOrderService);

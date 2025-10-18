@@ -10,6 +10,7 @@ import org.springframework.validation.annotation.Validated;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -50,6 +51,10 @@ public class SqlConfigProperties {
      * 缓存配置。
      */
     private Cache cache = new Cache();
+    
+    public Cache getCache() {
+        return cache;
+    }
 
     /**
      * 多租户配置。
@@ -202,6 +207,23 @@ public class SqlConfigProperties {
          */
         @Min(value = 100, message = "AST cache size must be at least 100")
         private int astCacheSize = 2000;
+        
+        /**
+         * 缓存过期时间（小时）。
+         */
+        private int expireHours = 24;
+        
+        public int getSpelCacheSize() {
+            return expressionCacheSize;
+        }
+        
+        public int getExpireHours() {
+            return expireHours;
+        }
+        
+        public int getAstCacheSize() {
+            return astCacheSize;
+        }
 
         /**
          * SpEL 缓存大小。
@@ -292,6 +314,30 @@ public class SqlConfigProperties {
         return new TemplateProperties();
     }
     
+    public SecurityProperties getSecurity() {
+        return new SecurityProperties();
+    }
+    
+    public TenantProperties getTenant() {
+        return new TenantProperties();
+    }
+    
+    public static class SecurityProperties {
+        public boolean isEnabled() {
+            return true;
+        }
+        
+        public List<String> getAllowedHosts() {
+            return Collections.emptyList();
+        }
+    }
+    
+    public static class TenantProperties {
+        public boolean isEnabled() {
+            return true;
+        }
+    }
+    
     public static class TemplateProperties {
         public int getMaxTemplateSize() {
             return 1024 * 1024; // 默认1MB
@@ -303,6 +349,14 @@ public class SqlConfigProperties {
         
         public int getExpireHours() {
             return 24;
+        }
+        
+        public boolean isFallbackEnabled() {
+            return true;
+        }
+        
+        public String getLoadPriority() {
+            return "annotation-first";
         }
     }
 }

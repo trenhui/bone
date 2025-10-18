@@ -22,15 +22,15 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 扩展提供者注册器，负责扫描、注册和管理所有的扩展实现
- * 与Spring容器深度集成，自动发现并注册带有@ExtProvider注解的组件
+ * 与Spring容器深度集成，自动发现并注册带有@Extension注解的组件
  * 
  * @see ExtPoint 扩展点标记注解
  * @see Extension 扩展提供者标记注解
  * @since 1.0.0
  */
 @Component
-public class ExtProviderRegister implements ApplicationContextAware {
-    private static final Logger log = LoggerFactory.getLogger(ExtProviderRegister.class);
+public class ExtensionRegister implements ApplicationContextAware {
+    private static final Logger log = LoggerFactory.getLogger(ExtensionRegister.class);
 
     private ApplicationContext applicationContext;
     
@@ -46,13 +46,13 @@ public class ExtProviderRegister implements ApplicationContextAware {
      * @param extPointRepository 扩展点仓库，非空
      */
     @Autowired
-    public ExtProviderRegister(ExtPointRepository extPointRepository) {
+    public ExtensionRegister(ExtPointRepository extPointRepository) {
         Assert.notNull(extPointRepository, "ExtPointRepository must not be null");
         this.extPointRepository = extPointRepository;
     }
     
     /**
-     * 初始化时自动注册所有标记了@ExtProvider注解的Bean
+     * 初始化时自动注册所有标记了@Extension注解的Bean
      */
     @PostConstruct
     public void init() {
@@ -64,7 +64,7 @@ public class ExtProviderRegister implements ApplicationContextAware {
             
             extensionBeans.forEach((beanName, extProvider) -> {
                 try {
-                    registerExtProvider(extProvider);
+                    registerExtension(extProvider);
                     log.info("Successfully registered extension provider: {} ({})", 
                             beanName, extProvider.getClass().getSimpleName());
                 } catch (Exception e) {
@@ -92,7 +92,7 @@ public class ExtProviderRegister implements ApplicationContextAware {
      * @throws IllegalArgumentException 当参数无效时抛出
      * @throws IllegalStateException 当注册失败时抛出
      */
-    public void registerExtProvider(Object extProvider) {
+    public void registerExtension(Object extProvider) {
         Assert.notNull(extProvider, "Extension provider must not be null");
         
         // 获取实际的类（处理代理对象）
@@ -103,7 +103,7 @@ public class ExtProviderRegister implements ApplicationContextAware {
         String providerClassName = extProviderClass.getCanonicalName();
         log.debug("Registering extension provider: {}", providerClassName);
         
-        // 检查@ExtProvider注解
+        // 检查@Extension注解
         Extension extAnnotation = AnnotationUtils.findAnnotation(extProviderClass, Extension.class);
         if (extAnnotation == null) {
             throw new IllegalArgumentException("Extension provider must be annotated with @Extension: " + providerClassName);

@@ -3,7 +3,7 @@ package com.bone.engine.extension;
 import com.bone.engine.extension.expression.ExpressionEvaluator;
 import com.bone.engine.extension.repository.ExtPointRepository;
 import com.bone.engine.extension.repository.MemExtPointRepository;
-import com.bone.engine.extension.register.ExtProviderRegister;
+import com.bone.engine.extension.register.ExtensionRegister;
 import com.bone.engine.extension.route.DefaultExtPointRouter;
 import com.bone.engine.extension.route.ExtPointRouter;
 import org.springframework.context.annotation.Bean;
@@ -37,7 +37,7 @@ public class ExtPointAutoConfiguration {
      * 扩展提供者注册器，负责扫描和注册所有扩展实现
      */
     @Bean(initMethod = "init")
-    public ExtProviderRegister extProviderRegister(ExtPointRepository extPointRepository) {
-        return new ExtProviderRegister(extPointRepository);
+    public ExtensionRegister extProviderRegister(ExtPointRepository extPointRepository) {
+        return new ExtensionRegister(extPointRepository);
     }
 }

@@ -89,7 +89,7 @@ public class ExtPointProxyFactory implements InvocationHandler {
         Class<?> extPointType = method.getDeclaringClass();
 
         // 从缓存获取或定位扩展提供者
-        Object extProvider = locateExtProvider(extPointType, bizContext);
+        Object extProvider = locateExtension(extPointType, bizContext);
 
         if (extProvider == null) {
             String errorMsg = String.format("No extension provider found for %s with context %s",
@@ -130,7 +130,7 @@ public class ExtPointProxyFactory implements InvocationHandler {
      * @return 扩展提供者实例
      */
     @SuppressWarnings("unchecked")
-    private Object locateExtProvider(Class<?> extPointType, BizContext<?> bizContext) {
+    private Object locateExtension(Class<?> extPointType, BizContext<?> bizContext) {
         // 创建缓存键
         CacheKey cacheKey = new CacheKey(extPointType, bizContext);
         
@@ -220,7 +220,7 @@ public class ExtPointProxyFactory implements InvocationHandler {
                 Class<?> extPointType = method.getDeclaringClass();
                 
                 // 定位扩展提供者
-                Object extProvider = locateExtProvider(extPointType, bizContext);
+                Object extProvider = locateExtension(extPointType, bizContext);
                 
                 if (extProvider == null) {
                     String errorMsg = String.format("No extension provider found for %s with context %s",

@@ -1,5 +1,6 @@
 package com.bone.metadata.sdk.metadata;
 
+import lombok.extern.slf4j.Slf4j;
 import com.bone.metadata.sdk.support.cache.FieldCache;
 import com.bone.metadata.sdk.support.config.MetadataSdkProperties;
 import com.bone.metadata.sdk.domain.enums.DeploymentMode;
@@ -7,7 +8,6 @@ import com.bone.metadata.sdk.domain.model.AllocationContext;
 import com.bone.metadata.sdk.domain.model.FieldMetadata;
 import com.bone.metadata.sdk.metadata.api.MetadataService;
 import jakarta.annotation.PostConstruct;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.context.scope.refresh.RefreshScopeRefreshedEvent;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -74,7 +74,7 @@ public class DelegatingMetadataService implements MetadataService, ApplicationCo
      * 处理服务初始化异常（带自动恢复）
      */
     private void handleDelegateException(DeploymentMode mode, Exception ex) {
-        log.error("Failed to initialize {} metadata service", mode, ex);
+        log.error("Failed to initialize {} metadata service", mode);
 
         DeploymentMode fallbackMode = (mode == DeploymentMode.REMOTE)
                 ? DeploymentMode.EMBEDDED
@@ -86,7 +86,7 @@ public class DelegatingMetadataService implements MetadataService, ApplicationCo
             activeDelegate.set(fallbackService);
             currentMode.set(fallbackMode);
         } catch (Exception fallbackEx) {
-            log.error("Critical failure: Fallback to {} mode failed", fallbackMode, fallbackEx);
+            log.error("Critical failure: Fallback to {} mode failed", fallbackMode);
             throw new IllegalStateException("Unable to initialize metadata service", fallbackEx);
         }
     }
@@ -95,9 +95,8 @@ public class DelegatingMetadataService implements MetadataService, ApplicationCo
      * 获取当前生效的模式（带默认值）
      */
     private DeploymentMode getEffectiveMode() {
-        return properties.getDeploymentMode() != null
-                ? properties.getDeploymentMode()
-                : DeploymentMode.EMBEDDED;
+        return properties.getDeploymentMode() != null ? 
+               properties.getDeploymentMode() : DeploymentMode.EMBEDDED;
     }
 
     // ======== 公共访问方法 ========

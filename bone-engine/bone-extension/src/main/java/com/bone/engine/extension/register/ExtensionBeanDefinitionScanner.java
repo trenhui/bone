@@ -11,13 +11,13 @@ import org.springframework.core.type.filter.AnnotationTypeFilter;
 import java.util.Set;
 
 /**
- * ExtProviderBeanDefinitionScanner
+ * ExtensionBeanDefinitionScanner
  *
  * @author renhui.trh 2023-10-30
  */
-public class ExtProviderBeanDefinitionScanner extends ClassPathBeanDefinitionScanner {
+public class ExtensionBeanDefinitionScanner extends ClassPathBeanDefinitionScanner {
 
-    public ExtProviderBeanDefinitionScanner(BeanDefinitionRegistry registry) {
+    public ExtensionBeanDefinitionScanner(BeanDefinitionRegistry registry) {
         //registry是Spring的Bean注册中心
         // false表示不使用ClassPathBeanDefinitionScanner默认的TypeFilter
         // 默认的TypeFilter只会扫描带有@Service,@Controller，@Repository，@Component注解的类

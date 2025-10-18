@@ -1,7 +1,6 @@
 package com.bone.metadata.sdk.sql.processor;
 
 import com.bone.metadata.sdk.domain.exception.SqlProcessingException;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.expression.MapAccessor;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
@@ -9,6 +8,7 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 
 import java.util.*;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -16,8 +16,9 @@ import java.util.regex.Pattern;
  * 动态 SQL 处理类，支持 where、if 和 foreach 等标签的解析和处理。
  * 增强版：支持 ${} 占位符替换
  */
-@Slf4j
 public class DynamicSqlProcessor implements SqlProcessor {
+
+    private static final Logger LOGGER = Logger.getLogger(DynamicSqlProcessor.class.getName());
 
     // 增强版标签正则表达式，支持嵌套标签
     private static final Pattern TAG_PATTERN = Pattern.compile(
@@ -42,12 +43,12 @@ public class DynamicSqlProcessor implements SqlProcessor {
     @Override
     public ProcessedSql process(String templateId,String sqlTemplate, Map<String, Object> params) {
 
-        log.debug("sqlTemplate:"+sqlTemplate);
+        LOGGER.info("sqlTemplate:" + sqlTemplate);
         if (sqlTemplate == null) {
             throw new SqlProcessingException("SQL template cannot be null");
         }
         if (params == null) {
-            log.warn("Input params map is null, using empty map");
+            LOGGER.warning("Input params map is null, using empty map");
             params = new HashMap<>();
         }
 
@@ -83,7 +84,7 @@ public class DynamicSqlProcessor implements SqlProcessor {
                 validatePlaceholderValue(placeholder, value.toString());
                 matcher.appendReplacement(result, value.toString());
             } else {
-                log.warn("Placeholder ${} not found in parameters, keeping as is", placeholder);
+                LOGGER.warning("Placeholder ${} not found in parameters, keeping as is" + placeholder);
                 matcher.appendReplacement(result, matcher.group(0));
             }
         }
@@ -126,7 +127,7 @@ public class DynamicSqlProcessor implements SqlProcessor {
     }
 
     private void processFragment(String fragment, SqlContext context) {
-        log.debug("Processing fragment: {}", fragment);
+        LOGGER.info("Processing fragment: " + fragment);
         if (fragment == null || fragment.trim().isEmpty()) {
             return;
         }
@@ -142,7 +143,7 @@ public class DynamicSqlProcessor implements SqlProcessor {
             String attributes = matcher.group(3);
             String content = matcher.groupCount() >= 4 ? matcher.group(4) : "";
 
-            log.debug("Found tag: <{}{} {}>, content: [{}]", isClosing ? "/" : "", tagName, attributes, content);
+            LOGGER.info("Found tag: <" + (isClosing ? "/" : "") + tagName + " " + attributes + ", content: [" + content + "]");
 
             if (isClosing) {
                 context.closeTag(tagName);  // Close the tag
@@ -198,7 +199,7 @@ public class DynamicSqlProcessor implements SqlProcessor {
                 result = expr.getValue(spelContext, Boolean.class);
             } catch (Exception e) {
                 // Log warning and treat as false if evaluation fails
-                log.warn("SpEL evaluation failed for expression: {}. Treating as false. Error: {}", testExpr, e.getMessage());
+                LOGGER.warning("SpEL evaluation failed for expression: " + testExpr + ". Treating as false. Error: " + e.getMessage());
             }
 
             if (Boolean.TRUE.equals(result)) {
@@ -298,9 +299,9 @@ public class DynamicSqlProcessor implements SqlProcessor {
                     sql.setLength(0);
                 }
                 sql.append(processed);
-                log.debug("Closed tag: {}, model: [{}]", tagName, processed);
+                LOGGER.info("Closed tag: " + tagName + ", model: [" + processed + "]");
             } else {
-                log.warn("No closures to pop for tag: {}", tagName);
+                LOGGER.warning("No closures to pop for tag: " + tagName);
             }
         }
 

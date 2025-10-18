@@ -7,7 +7,6 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
-@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -38,8 +37,39 @@ public class FieldMetadata {
 
     @Builder.Default
     private transient Object sampleValue = null;
-
+    
+    // Getters and Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getDataType() { return dataType; }
+    public void setDataType(String dataType) { this.dataType = dataType; }
+    public Long getTenantId() { return tenantId; }
+    public void setTenantId(Long tenantId) { this.tenantId = tenantId; }
+    public String getAppCode() { return appCode; }
+    public void setAppCode(String appCode) { this.appCode = appCode; }
+    public String getBizIdentityCode() { return bizIdentityCode; }
+    public void setBizIdentityCode(String bizIdentityCode) { this.bizIdentityCode = bizIdentityCode; }
+    public String getEntityType() { return entityType; }
+    public void setEntityType(String entityType) { this.entityType = entityType; }
     public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public String getColumnName() { return columnName; }
+    public void setColumnName(String columnName) { this.columnName = columnName; }
+    public Boolean getDeleted() { return deleted; }
+    public void setDeleted(Boolean deleted) { this.deleted = deleted; }
+    public Long getCreateBy() { return createBy; }
+    public void setCreateBy(Long createBy) { this.createBy = createBy; }
+    // 只保留getId()和setId()方法，其他方法由Lombok的@Data注解自动生成
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public Long getUpdateBy() { return updateBy; }
+    public void setUpdateBy(Long updateBy) { this.updateBy = updateBy; }
+    public LocalDateTime getCreateTime() { return createTime; }
+    public void setCreateTime(LocalDateTime createTime) { this.createTime = createTime; }
+    public LocalDateTime getUpdateTime() { return updateTime; }
+    public void setUpdateTime(LocalDateTime updateTime) { this.updateTime = updateTime; }
+    public boolean isExtension() { return isExtension; }
+     public void setExtension(boolean extension) { isExtension = extension; }
     public String getColumnName() { return columnName; }
 
     public boolean isStringType() {

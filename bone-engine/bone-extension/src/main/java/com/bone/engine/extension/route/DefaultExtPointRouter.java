@@ -154,10 +154,10 @@ public class DefaultExtPointRouter implements ExtPointRouter {
             return null;
         }
 
-        List<C> matchedExtProviders = new ArrayList<>(1); // 预设容量，通常最多匹配一个
+        List<C> matchedExtensions = new ArrayList<>(1); // 预设容量，通常最多匹配一个
         
         for (Object extProvider : extProviderList) {
-            Extension extAnnotation = getExtProviderAnnotation(extProvider.getClass());
+            Extension extAnnotation = getExtensionAnnotation(extProvider.getClass());
 
             if (StringUtils.hasText(extAnnotation.expression())) {
                 try {
@@ -168,7 +168,7 @@ public class DefaultExtPointRouter implements ExtPointRouter {
                         
                         // 验证类型兼容性
                         if (targetInterface.isInstance(extProvider)) {
-                            matchedExtProviders.add(targetInterface.cast(extProvider));
+                            matchedExtensions.add(targetInterface.cast(extProvider));
                         } else {
                             log.warn("Extension provider {} is not compatible with interface {}", 
                                     providerClassName, interfaceName);
@@ -183,11 +183,11 @@ public class DefaultExtPointRouter implements ExtPointRouter {
         }
 
         // 处理匹配结果
-        if (matchedExtProviders.size() == 1) {
-            return matchedExtProviders.get(0);
-        } else if (matchedExtProviders.size() > 1) {
+        if (matchedExtensions.size() == 1) {
+            return matchedExtensions.get(0);
+        } else if (matchedExtensions.size() > 1) {
             String errorMsg = String.format("Multiple expression matches found for interface %s with bizContext %s: %s",
-                    interfaceName, bizContext.getBusinessIdentity(), matchedExtProviders);
+                    interfaceName, bizContext.getBusinessIdentity(), matchedExtensions);
             log.error(errorMsg);
             throw new IllegalStateException(errorMsg);
         }
@@ -202,7 +202,7 @@ public class DefaultExtPointRouter implements ExtPointRouter {
      * @param providerClass 扩展提供者类
      * @return 扩展提供者注解
      */
-    private Extension getExtProviderAnnotation(Class<?> providerClass) {
+    private Extension getExtensionAnnotation(Class<?> providerClass) {
         String className = providerClass.getName();
         return EXT_ANNOTATION_CACHE.computeIfAbsent(className, 
                 key -> AnnotationUtils.findAnnotation(providerClass, Extension.class));

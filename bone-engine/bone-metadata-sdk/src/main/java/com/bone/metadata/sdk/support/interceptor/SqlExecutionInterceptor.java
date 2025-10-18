@@ -2,7 +2,6 @@ package com.bone.metadata.sdk.support.interceptor;
 
 import com.bone.metadata.sdk.sql.executor.NestedMapSqlParameterSource;
 import com.bone.metadata.sdk.support.config.MetadataSdkProperties;
-import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -13,6 +12,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.jdbc.core.namedparam.BeanPropertySqlParameterSource;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.SqlParameterSource;
+import java.util.logging.Logger;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
@@ -26,9 +26,10 @@ import java.util.Map;
  * 记录 SQL、参数、耗时，并对超过阈值的慢查询打 WARN。
  */
 @Aspect
-@Slf4j
 @Order()
 public class SqlExecutionInterceptor {
+    
+    private static final Logger LOGGER = Logger.getLogger(SqlExecutionInterceptor.class.getName());
 
     /**
      * 全局慢查询阈值（毫秒）
@@ -62,9 +63,9 @@ public class SqlExecutionInterceptor {
             return pjp.proceed();
         } finally {
             long elapsedMs = (System.nanoTime() - start) / 1_000_000;
-            log.debug("[JDBC][{}ms] {} | params={}", elapsedMs, sql, params);
-            if (elapsedMs > slowQueryThreshold && !log.isDebugEnabled()) {
-                log.warn("[SLOW-SQL][{}ms > {}ms] {} | params={}", elapsedMs, slowQueryThreshold, sql, params);
+            LOGGER.info("[JDBC][" + elapsedMs + "ms] " + sql + " | params=" + params);
+            if (elapsedMs > slowQueryThreshold) {
+                LOGGER.warning("[SLOW-SQL][" + elapsedMs + "ms > " + slowQueryThreshold + "ms] " + sql + " | params=" + params);
             }
         }
     }
@@ -108,7 +109,7 @@ public class SqlExecutionInterceptor {
                 return extractBeanPropertySourceParams(beanSource);
             }
             // 2.4 其他未知 SqlParameterSource（容错处理）
-            log.trace("未适配的 SqlParameterSource 类型：{}", source.getClass().getName());
+            LOGGER.info("未适配的 SqlParameterSource 类型：" + source.getClass().getName());
             return Collections.emptyMap();
         }
 
@@ -133,7 +134,7 @@ public class SqlExecutionInterceptor {
                 Object value = entry.getValue();
                 typedMap.put(key, value);
             } catch (ClassCastException e) {
-                log.trace("参数键不是 String 类型，跳过: {}", entry.getKey(), e);
+                LOGGER.info("参数键不是 String 类型，跳过: " + entry.getKey());
             }
         }
         return typedMap;
@@ -155,7 +156,7 @@ public class SqlExecutionInterceptor {
             // 深度解析 paramMap 中的嵌套对象（如 request）
             return deepResolveNestedParams(paramMap);
         } catch (Exception e) {
-            log.trace("提取 NestedMapSqlParameterSource 参数失败", e);
+            LOGGER.info("提取 NestedMapSqlParameterSource 参数失败");
             return Collections.emptyMap();
         }
     }
@@ -170,7 +171,7 @@ public class SqlExecutionInterceptor {
             Object bean = beanField.get(beanSource);
             return extractBeanProperties(bean);
         } catch (Exception e) {
-            log.trace("提取 BeanPropertySqlParameterSource 参数失败", e);
+            LOGGER.info("提取 BeanPropertySqlParameterSource 参数失败");
             return Collections.emptyMap();
         }
     }
@@ -224,7 +225,7 @@ public class SqlExecutionInterceptor {
                 Object propValue = beanWrapper.getPropertyValue(propName);
                 properties.put(propName, propValue);
             } catch (Exception e) {
-                log.trace("获取属性 [{}] 值失败", propName, e);
+                LOGGER.info("获取属性 [" + propName + "] 值失败");
                 properties.put(propName, "<无法访问>");
             }
         }

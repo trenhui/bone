@@ -34,25 +34,25 @@ import java.lang.annotation.Target;
  * <pre>
  * {@code
  * // 1. 默认实现（匹配所有场景）
- * @ExtProvider(bizCode = "DEFAULT")
+ * @Extension(bizCode = "DEFAULT")
  * public class DefaultPaymentServiceImpl implements PaymentService {
  *     // 实现逻辑
  * }
  * 
  * // 2. 租户级定制（仅匹配TENANT_A租户）
- * @ExtProvider(tenantCode = "TENANT_A", bizCode = "PAYMENT")
+ * @Extension(tenantCode = "TENANT_A", bizCode = "PAYMENT")
  * public class TenantAPaymentServiceImpl implements PaymentService {
  *     // 实现逻辑
  * }
  * 
  * // 3. 业务场景定制（匹配特定业务和场景）
- * @ExtProvider(tenantCode = "TENANT_B", bizCode = "PAYMENT", scenario = "REFUND")
+ * @Extension(tenantCode = "TENANT_B", bizCode = "PAYMENT", scenario = "REFUND")
  * public class TenantBRefundServiceImpl implements PaymentService {
  *     // 实现逻辑
  * }
  * 
  * // 4. 动态条件匹配（使用表达式）
- * @ExtProvider(
+ * @Extension(
  *     tenantCode = "TENANT_C", 
  *     expression = "#context.get(\"amount\") > 10000 && #bizCode == 'VIP_ORDER'"
  * )

@@ -82,7 +82,7 @@ public final class FragmentCache {
         byClass.put(className, immutableFragments);
         global.putAll(fragments);
         markInitialized(className);
-        log.info("Cached {} SQL fragments for class: {}", fragments.size(), className);
+        log.debug("Cached {} SQL fragments for class: {}", fragments.size(), className);
     }
 
     /**

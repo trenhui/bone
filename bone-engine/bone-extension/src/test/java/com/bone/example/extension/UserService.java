@@ -16,7 +16,7 @@ public class UserService {
         // 初始化扩展点实现映射
         greetingExtensions = new HashMap<>();
         greetingExtensions.put(false, new DefaultGreetingExtension());
-        greetingExtensions.put(true, new VipGreetingImpl());
+        greetingExtensions.put(true, new VipGreetingExtension());
     }
     
     /**
