@@ -11,8 +11,11 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author renhui.trh 2023-10-30
  */
-@Slf4j
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class MemExtPointRepository implements ExtPointRepository {
+    private static final Logger log = LoggerFactory.getLogger(MemExtPointRepository.class);
     // 使用ConcurrentHashMap保证线程安全
     private final Map<Object, Object> extensionRepo = new ConcurrentHashMap<>();
 

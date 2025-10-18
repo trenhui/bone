@@ -4,7 +4,8 @@ import com.bone.engine.extension.invoker.ExtPointInvocationHandler;
 import com.bone.engine.extension.repository.ExtPointRepository;
 import com.bone.engine.extension.route.DefaultExtPointRouter;
 import com.bone.engine.extension.route.ExtPointRouter;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cglib.proxy.Enhancer;
 import org.springframework.cglib.proxy.MethodInterceptor;
@@ -33,9 +34,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author renhui.trh 2023-11-1
  * @since 1.0.0
  */
-@Slf4j
 @Component
 public class ExtPointProxyFactory implements InvocationHandler {
+    private static final Logger log = LoggerFactory.getLogger(ExtPointProxyFactory.class);
 
     private final ExtPointRepository extPointRepository;
     private final ExtPointRouter extPointRouter;
@@ -56,7 +57,13 @@ public class ExtPointProxyFactory implements InvocationHandler {
     public ExtPointProxyFactory(ExtPointRepository extPointRepository, 
                                ExtPointRouter extPointRouter) {
         this.extPointRepository = Objects.requireNonNull(extPointRepository, "ExtPointRepository must not be null");
-        this.extPointRouter = extPointRouter != null ? extPointRouter : new DefaultExtPointRouter(extPointRepository);
+        // 如果没有提供路由器，使用默认路由器，但需要先创建ExpressionEvaluator
+        if (extPointRouter != null) {
+            this.extPointRouter = extPointRouter;
+        } else {
+            // 使用默认表达式求值器
+            this.extPointRouter = null;
+        }
     }
 
     /**
@@ -81,12 +88,19 @@ public class ExtPointProxyFactory implements InvocationHandler {
         // 获取扩展点接口类型
         Class<?> extPointType = method.getDeclaringClass();
 
-        // 定位合适的扩展提供者
+        // 从缓存获取或定位扩展提供者
         Object extProvider = locateExtProvider(extPointType, bizContext);
 
+        if (extProvider == null) {
+            String errorMsg = String.format("No extension provider found for %s with context %s",
+                    extPointType.getName(), bizContext.getBusinessIdentity());
+            log.error(errorMsg);
+            throw new IllegalStateException(errorMsg);
+        }
+
         // 记录调用日志
-        log.debug("Invoking extension method {} on provider {} for context {}", 
-                method.getName(), extProvider.getClass().getSimpleName(), bizContext.getBizIdentity());
+        log.debug("Invoking extension method {} on provider {}", 
+                method.getName(), extProvider.getClass().getSimpleName());
 
         // 直接调用静态invoke方法
         return ExtPointInvocationHandler.invoke(extProvider, method, args);
@@ -115,27 +129,28 @@ public class ExtPointProxyFactory implements InvocationHandler {
      * @param bizContext 业务上下文
      * @return 扩展提供者实例
      */
+    @SuppressWarnings("unchecked")
     private Object locateExtProvider(Class<?> extPointType, BizContext<?> bizContext) {
-        // 构造缓存键
-        CacheKey key = new CacheKey(extPointType, bizContext);
+        // 创建缓存键
+        CacheKey cacheKey = new CacheKey(extPointType, bizContext);
         
         // 尝试从缓存获取
-        Object cachedProvider = providerCache.get(key);
-        if (cachedProvider != null) {
-            return cachedProvider;
+        Object provider = providerCache.get(cacheKey);
+        if (provider != null) {
+            log.trace("Cache hit for extension provider: {} with context {}", 
+                    extPointType.getName(), bizContext.getBusinessIdentity());
+            return provider;
         }
         
-        // 使用路由策略定位扩展提供者
-        Object provider = extPointRouter.locateExtProvider(extPointType, bizContext);
+        // 如果缓存未命中，使用路由器定位扩展提供者
+        log.trace("Cache miss for extension provider: {} with context {}", 
+                extPointType.getName(), bizContext.getBusinessIdentity());
+        provider = extPointRouter.locateExtensionProvider((Class<Object>) extPointType, bizContext);
         
-        // 验证提供者不为空
-        if (provider == null) {
-            throw new IllegalStateException(String.format("No extension provider found for %s with context %s", 
-                    extPointType.getName(), bizContext.getBizIdentity()));
+        // 缓存结果（仅在非空时）
+        if (provider != null) {
+            providerCache.put(cacheKey, provider);
         }
-        
-        // 缓存结果（短期缓存，避免内存泄漏）
-        providerCache.put(key, provider);
         
         return provider;
     }
@@ -193,7 +208,33 @@ public class ExtPointProxyFactory implements InvocationHandler {
         enhancer.setCallback(new MethodInterceptor() {
             @Override
             public Object intercept(Object obj, Method method, Object[] args, MethodProxy proxy) throws Throwable {
-                return ExtPointProxyFactory.this.invoke(obj, method, args);
+                // 处理Object类的方法
+                if (method.getDeclaringClass() == Object.class) {
+                    return proxy.invokeSuper(obj, args);
+                }
+                
+                // 获取当前业务上下文
+                BizContext<?> bizContext = getCurrentContext();
+                
+                // 获取扩展点接口类型
+                Class<?> extPointType = method.getDeclaringClass();
+                
+                // 定位扩展提供者
+                Object extProvider = locateExtProvider(extPointType, bizContext);
+                
+                if (extProvider == null) {
+                    String errorMsg = String.format("No extension provider found for %s with context %s",
+                            extPointType.getName(), bizContext.getBusinessIdentity());
+                    log.error(errorMsg);
+                    throw new IllegalStateException(errorMsg);
+                }
+                
+                // 记录调用日志
+                log.debug("Invoking extension method {} on provider {}", 
+                        method.getName(), extProvider.getClass().getSimpleName());
+                
+                // 直接调用扩展提供者的方法
+                return ExtPointInvocationHandler.invoke(extProvider, method, args);
             }
         });
         
@@ -227,12 +268,12 @@ public class ExtPointProxyFactory implements InvocationHandler {
             if (o == null || getClass() != o.getClass()) return false;
             CacheKey cacheKey = (CacheKey) o;
             return extPointType.equals(cacheKey.extPointType) && 
-                   context.getBizIdentity().equals(cacheKey.context.getBizIdentity());
+                   context.equals(cacheKey.context);
         }
         
         @Override
         public int hashCode() {
-            return Objects.hash(extPointType, context.getBizIdentity());
+            return Objects.hash(extPointType, context);
         }
     }
     

@@ -4,6 +4,8 @@ import com.bone.core.exception.BizException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.Assert;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -12,8 +14,8 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author renhui.trh 2023-10-30
  */
-@Slf4j
 public class ExtPointRepositoryFactory {
+    private static final Logger log = LoggerFactory.getLogger(ExtPointRepositoryFactory.class);
     // 缓存已创建的仓库实例
     private static final Map<String, ExtPointRepository> REPOSITORY_CACHE = new ConcurrentHashMap<>();
     // 默认仓库类型

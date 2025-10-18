@@ -13,6 +13,7 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingConstants;
 import org.mapstruct.Mappings;
 import org.springframework.util.CollectionUtils;
+import com.bone.tool.codegen.infrastructure.util.ReflectionUtil;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -106,7 +107,8 @@ public interface CodegenConverter {
         // 设置表信息 - 使用MapStruct映射方法和自动生成的setter
         if (table != null) {
             CodegenTableResponse tableResponse = toCodegenTableResponse(table);
-            respVO.setTable(tableResponse); // 由于@Data注解，会自动生成setTable方法
+            // 使用反射设置表信息
+            ReflectionUtil.setFieldValue(respVO, "table", tableResponse);
         }
         // 设置列信息 - 暂时注释掉，因为编译显示没有setColumns方法
         // if (!CollectionUtils.isEmpty(columns)) {

@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import com.bone.core.util.ReflectionUtil;
 
 import com.bone.tool.codegen.application.dto.DataSourceConfigSaveRequest;
 import com.bone.tool.codegen.application.dto.TestConnectionRequest;
@@ -53,7 +54,7 @@ public class DataSourceConfigController {
     @Parameter(name = "id", description = "数据源配置ID", required = true)
     public ApiResponse<Boolean> updateDataSourceConfig(@PathVariable("id") Long id, @RequestBody DataSourceConfigSaveRequest updateReqVO) {
         // 将id设置到请求对象中，确保更新操作正确关联
-        updateReqVO.setId(id);
+        ReflectionUtil.setFieldValue(updateReqVO, "id", id);
         try {
             dataSourceConfigService.updateDataSourceConfig(updateReqVO);
             return success(true);
@@ -84,8 +85,12 @@ public class DataSourceConfigController {
         Datasource config = dataSourceConfigService.getDataSourceConfig(id);
         DataSourceConfigResponse response = codegenConverter.toDataSourceConfigResponse(config);
         // 密码脱敏处理
-        if (response.getPassword() != null && !response.getPassword().isEmpty()) {
-            response.setPassword("******");
+        Object passwordObj = ReflectionUtil.getFieldValue(response, "password");
+        if (passwordObj != null && passwordObj instanceof String) {
+            String password = (String) passwordObj;
+            if (!password.isEmpty()) {
+                ReflectionUtil.setFieldValue(response, "password", "******");
+            }
         }
         return success(response);
     }
@@ -99,9 +104,13 @@ public class DataSourceConfigController {
         
         // 转换并处理密码脱敏
         for (Datasource config : configList) {
-            DataSourceConfigResponse response = codegenConverter.toDataSourceConfigResponse(config);
-            if (response.getPassword() != null && !response.getPassword().isEmpty()) {
-                response.setPassword("******");
+            DataSourceConfigResponse response = codegenConverter.toDataSourceConfigResponse(config);// 转换并处理密码脱敏
+            Object passwordObj = ReflectionUtil.getFieldValue(response, "password");
+            if (passwordObj != null && passwordObj instanceof String) {
+                String password = (String) passwordObj;
+                if (!password.isEmpty()) {
+                    ReflectionUtil.setFieldValue(response, "password", "******");
+                }
             }
             responseList.add(response);
         }
@@ -113,11 +122,12 @@ public class DataSourceConfigController {
     @Operation(summary = "测试数据源连接")
     public ApiResponse<Boolean> testConnection(@RequestBody TestConnectionRequest request) {
         Datasource config = new Datasource();
-        config.setName(request.getName());
-        config.setUrl(request.getUrl());
-        config.setUsername(request.getUsername());
-        config.setPassword(request.getPassword());
-        config.setDriverClassName(request.getDriverClassName());
+        // 使用反射获取request字段值并设置到config对象中
+        ReflectionUtil.setFieldValue(config, "name", ReflectionUtil.getFieldValue(request, "name"));
+        ReflectionUtil.setFieldValue(config, "url", ReflectionUtil.getFieldValue(request, "url"));
+        ReflectionUtil.setFieldValue(config, "username", ReflectionUtil.getFieldValue(request, "username"));
+        ReflectionUtil.setFieldValue(config, "password", ReflectionUtil.getFieldValue(request, "password"));
+        ReflectionUtil.setFieldValue(config, "driverClassName", ReflectionUtil.getFieldValue(request, "driverClassName"));
         
         boolean success = dataSourceConfigService.testConnection(config);
         return success(success);

@@ -3,6 +3,7 @@ package com.bone.tool.codegen.domain.service.renderer;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
+import org.apache.velocity.exception.ResourceNotFoundException;
 import org.apache.velocity.runtime.RuntimeConstants;
 import org.apache.velocity.runtime.resource.loader.ClasspathResourceLoader;
 import org.apache.velocity.runtime.resource.loader.FileResourceLoader;
@@ -27,6 +28,17 @@ public class VelocityTemplateRenderer implements TemplateRenderer, InitializingB
 
     private static final Logger log = LoggerFactory.getLogger(VelocityTemplateRenderer.class);
     private final VelocityEngine velocityEngine;
+    
+    // 添加模板路径常量，方便统一管理和使用
+    public static final String ENTITY_TEMPLATE = "entity.java.vm";
+    public static final String VO_TEMPLATE = "vo.java.vm";
+    public static final String QUERY_TEMPLATE = "query.java.vm";
+    public static final String REPOSITORY_TEMPLATE = "repository.java.vm";
+    public static final String SERVICE_TEMPLATE = "service.java.vm";
+    public static final String SERVICE_IMPL_TEMPLATE = "serviceImpl.java.vm";
+    public static final String CONTROLLER_TEMPLATE = "controller.java.vm";
+    public static final String MAPPER_TEMPLATE = "mapper.java.vm";
+    public static final String MAPPER_XML_TEMPLATE = "mapper.xml.vm";
     
     // 模板缓存，提高性能
     private final Map<String, Template> templateCache = new ConcurrentHashMap<>();
@@ -68,6 +80,10 @@ public class VelocityTemplateRenderer implements TemplateRenderer, InitializingB
             velocityEngine.setProperty("output.encoding", "UTF-8");
             velocityEngine.setProperty("resource.manager.cache.enabled", "true");
             velocityEngine.setProperty("resource.manager.cache.size", String.valueOf(cacheSize));
+            
+            // 性能优化配置
+            velocityEngine.setProperty("velocimacro.library.autoreload", "false");
+            velocityEngine.setProperty("runtime.references.strict", "true"); // 启用严格模式
             
             // 配置模板加载器
             configureResourceLoaders();
@@ -112,7 +128,7 @@ public class VelocityTemplateRenderer implements TemplateRenderer, InitializingB
             velocityEngine.setProperty("file.resource.loader.class", FileResourceLoader.class.getName());
             velocityEngine.setProperty("file.resource.loader.path", fileLoaderPath);
             velocityEngine.setProperty("file.resource.loader.cache", "true");
-            velocityEngine.setProperty("file.resource.loader.modificationCheckInterval", "10"); // 10秒检查一次修改
+            velocityEngine.setProperty("file.resource.loader.modificationCheckInterval", "60"); // 60秒检查一次修改，提高性能
         }
     }
 
@@ -136,24 +152,43 @@ public class VelocityTemplateRenderer implements TemplateRenderer, InitializingB
             Template template = getTemplate(templatePath);
             
             // 创建上下文
-            VelocityContext context = new VelocityContext();
-            
-            // 添加参数
-            if (contextParams != null) {
-                contextParams.forEach(context::put);
-            }
+            VelocityContext context = createContext(contextParams);
             
             // 生成代码
             StringWriter writer = new StringWriter();
             template.merge(context, writer);
             writer.flush();
             
-            return writer.toString();
+            String result = writer.toString();
+            log.debug("成功渲染模板: {}", templatePath);
+            return result;
             
+        } catch (ResourceNotFoundException e) {
+            log.error("模板不存在: {}", templatePath, e);
+            throw new RuntimeException("模板文件不存在: " + templatePath, e);
         } catch (Exception e) {
             log.error("模板生成失败，模板路径: {}, 参数: {}", templatePath, contextParams, e);
             throw new RuntimeException("模板生成失败: " + e.getMessage(), e);
         }
+    }
+    
+    /**
+     * 创建Velocity上下文，添加默认的上下文变量
+     */
+    private VelocityContext createContext(Map<String, Object> params) {
+        VelocityContext context = new VelocityContext();
+        
+        // 添加默认的上下文变量
+        context.put("now", System.currentTimeMillis());
+        context.put("emptyString", "");
+        context.put("null", null);
+        
+        // 添加用户提供的参数
+        if (params != null) {
+            params.forEach(context::put);
+        }
+        
+        return context;
     }
     
     /**
@@ -170,9 +205,17 @@ public class VelocityTemplateRenderer implements TemplateRenderer, InitializingB
                 return template;
             } catch (Exception e) {
                 log.error("加载模板失败: {}", path, e);
-                throw new RuntimeException("加载模板失败: " + path, e);
+                throw e; // 重新抛出异常，由上层处理
             }
         });
+    }
+    
+    /**
+     * 获取Velocity引擎实例
+     * 用于测试或特殊场景下的直接访问
+     */
+    public VelocityEngine getVelocityEngine() {
+        return velocityEngine;
     }
     
     /**

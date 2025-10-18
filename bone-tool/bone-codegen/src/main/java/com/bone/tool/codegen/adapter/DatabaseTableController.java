@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.bone.core.util.ReflectionUtil;
 
 import static com.bone.core.model.ApiResponse.success;
 
@@ -74,9 +75,9 @@ public class DatabaseTableController {
             // 在实际生产环境中，应该返回服务层的实际查询结果
             List<DatabaseTableMetadata> resultList = new ArrayList<>();
             DatabaseTableMetadata testTable = new DatabaseTableMetadata();
-            testTable.setTableName("test_table");
-            testTable.setTableComment("测试表");
-            testTable.setEntityName("TestTable");
+            ReflectionUtil.setFieldValue(testTable, "tableName", "test_table");
+            ReflectionUtil.setFieldValue(testTable, "tableComment", "测试表");
+            ReflectionUtil.setFieldValue(testTable, "entityName", "TestTable");
             resultList.add(testTable);
             
             return success(resultList);
@@ -190,11 +191,16 @@ public class DatabaseTableController {
     public ApiResponse<List<Long>> importTablesFromDatabase(
             @Valid @RequestBody CodegenCreateListRequest request) {
         // 导入表结构，使用请求中提供的配置参数
+        Long datasourceId = (Long) ReflectionUtil.getFieldValue(request, "datasourceId");
+        List<String> tableNames = (List<String>) ReflectionUtil.getFieldValue(request, "tableNames");
+        String moduleName = (String) ReflectionUtil.getFieldValue(request, "moduleName");
+        String packageName = (String) ReflectionUtil.getFieldValue(request, "packageName");
+        
         List<Long> tableIds = databaseTableService.importTablesFromDatabase(
-                request.getDatasourceId(),
-                request.getTableNames(),
-                request.getModuleName(),
-                request.getPackageName(),
+                datasourceId,
+                tableNames,
+                moduleName,
+                packageName,
                 1, // 默认场景类型
                 1); // 默认模型类型
         return success(tableIds);
@@ -207,7 +213,7 @@ public class DatabaseTableController {
             @PathVariable("tableId") @NotNull(message = "表ID不能为空") Long tableId,
             @Valid @RequestBody CodegenTableRequest request) {
         // 设置表ID并更新配置
-        request.setId(tableId);
+        ReflectionUtil.setFieldValue(request, "id", tableId);
         databaseTableService.updateCodegenTable(request);
         return success(true);
     }

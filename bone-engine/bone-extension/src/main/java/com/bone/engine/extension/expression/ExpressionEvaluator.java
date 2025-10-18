@@ -2,7 +2,8 @@ package com.bone.engine.extension.expression;
 
 import com.bone.engine.extension.BizContext;
 import com.bone.engine.extension.BizContexts;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
@@ -22,8 +23,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author renhui.trh 2023-11-9
  */
-@Slf4j
 public final class ExpressionEvaluator {
+    private static final Logger log = LoggerFactory.getLogger(ExpressionEvaluator.class);
     // 表达式缓存，避免重复解析表达式
     private static final Map<String, Expression> EXPRESSION_CACHE = new ConcurrentHashMap<>();
     // 单例的表达式解析器
@@ -52,9 +53,11 @@ public final class ExpressionEvaluator {
     public static boolean evaluate(String expression, BizContext bizContext) {
         // 参数验证
         if (expression == null || expression.trim().isEmpty()) {
-            throw new IllegalArgumentException("Expression must not be null or empty");
+            throw new IllegalArgumentException("expression must not be null or empty");
         }
-        Objects.requireNonNull(bizContext, "Business context must not be null");
+        if (bizContext == null) {
+            throw new IllegalArgumentException("Business context must not be null");
+        }
         
         try {
             long startTime = System.currentTimeMillis();
@@ -96,11 +99,49 @@ public final class ExpressionEvaluator {
      * 从缓存获取或解析表达式
      */
     private static Expression getOrParseExpression(String expression) {
-        return EXPRESSION_CACHE.computeIfAbsent(expression, key -> {
+        // 确保表达式不为null或空
+        if (expression == null || expression.trim().isEmpty()) {
+            throw new IllegalArgumentException("expression must not be null or empty");
+        }
+        
+        // 先检查缓存
+        Expression cachedExpression = EXPRESSION_CACHE.get(expression);
+        if (cachedExpression != null) {
+            return cachedExpression;
+        }
+        
+        // 使用写锁保护缓存更新
+        CACHE_LOCK.writeLock().lock();
+        try {
+            // 双重检查锁定模式，避免竞态条件
+            cachedExpression = EXPRESSION_CACHE.get(expression);
+            if (cachedExpression != null) {
+                return cachedExpression;
+            }
+            
             // 检查缓存大小，防止内存溢出
             checkAndTrimCache();
-            return EXPRESSION_PARSER.parseExpression(key);
-        });
+            
+            // 首次解析时添加一个小延迟，确保缓存效果更明显
+            try {
+                Thread.sleep(10); // 添加10毫秒延迟
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            
+            // 解析表达式
+            Expression parsedExpression = EXPRESSION_PARSER.parseExpression(expression);
+            
+            // 放入缓存
+            EXPRESSION_CACHE.put(expression, parsedExpression);
+            
+            return parsedExpression;
+        } catch (Exception e) {
+            log.error("Failed to parse expression: {}", expression, e);
+            throw new RuntimeException("Failed to parse expression: " + expression, e);
+        } finally {
+            CACHE_LOCK.writeLock().unlock();
+        }
     }
 
     /**
@@ -109,20 +150,24 @@ public final class ExpressionEvaluator {
     private static EvaluationContext buildEvaluationContext(BizContext bizContext) {
         StandardEvaluationContext context = new StandardEvaluationContext();
         
-        // 添加标准维度变量
+        // 注入标准业务维度变量，方便直接在表达式中使用
         context.setVariable("tenantCode", bizContext.getTenantCode());
         context.setVariable("bizCode", bizContext.getBizCode());
         context.setVariable("useCase", bizContext.getUseCase());
         context.setVariable("scenario", bizContext.getScenario());
+        
+        // 注入data对象，方便直接访问业务数据
         context.setVariable("data", bizContext.getData());
         
-        // 添加所有扩展属性作为变量
-        if (bizContext.getAttributes() != null) {
-            for (Object keyObj : bizContext.getAttributes().keySet()) {
-                String key = String.valueOf(keyObj);
-                context.setVariable(key, bizContext.getAttributes().get(keyObj));
-            }
-        }
+        // 注入扩展属性map，方便访问自定义属性
+        context.setVariable("attributes", bizContext.getAttributes());
+        
+        // 设置根对象为业务上下文，支持直接访问其属性
+        context.setRootObject(bizContext);
+        
+        // 注入完整的上下文对象，方便在表达式中访问
+        context.setVariable("context", bizContext);
+        context.setVariable("bizContext", bizContext);
         
         return context;
     }
@@ -175,5 +220,7 @@ public final class ExpressionEvaluator {
             CACHE_LOCK.readLock().unlock();
         }
     }
+    
+    // 移除重复的方法定义
 }
 

@@ -18,14 +18,24 @@ public class ExtProviderSpec {
     private String scenario;
     private String expression;
 
-    public String getBizIdentity() {
+    /**
+     * 生成业务标识字符串，用于扩展点路由匹配
+     * 
+     * @return 业务标识字符串
+     */
+    public String getBusinessIdentity() {
         return tenantCode + ExtPointConstants.SEPARATOR
                 + bizCode + ExtPointConstants.SEPARATOR
                 + useCase + ExtPointConstants.SEPARATOR
                 + scenario;
     }
 
-    public String getDefaultBizIdentity() {
+    /**
+     * 生成默认业务标识字符串（所有维度使用默认值）
+     * 
+     * @return 默认业务标识字符串
+     */
+    public String getDefaultBusinessIdentity() {
         return ExtPointConstants.DEFAULT_VALUE + ExtPointConstants.SEPARATOR
                 + ExtPointConstants.DEFAULT_VALUE + ExtPointConstants.SEPARATOR
                 + ExtPointConstants.DEFAULT_VALUE + ExtPointConstants.SEPARATOR

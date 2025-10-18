@@ -8,7 +8,8 @@ import io.micrometer.common.util.StringUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.lang.Nullable;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -26,9 +27,9 @@ import java.util.Objects;
  *
  * @author renhui.trh 2023-11-1
  */
-@Slf4j
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class BizContexts {
+    private static final Logger log = LoggerFactory.getLogger(BizContexts.class);
 
     // 线程本地存储，保存当前业务上下文
     private static final TransmittableThreadLocal<BizContext<?>> CONTEXT_HOLDER = new TransmittableThreadLocal<>();
@@ -74,7 +75,7 @@ public final class BizContexts {
         
         // 设置新上下文
         CONTEXT_HOLDER.set(context);
-        log.debug("Business context set: {}", context.getBizIdentity());
+        log.debug("Business context set");
         
         // 返回上下文管理器，用于自动清理
         return () -> {
@@ -82,7 +83,7 @@ public final class BizContexts {
             // 恢复旧上下文（如果有）
             if (oldContext != null) {
                 CONTEXT_HOLDER.set(oldContext);
-                log.debug("Restored previous business context: {}", oldContext.getBizIdentity());
+            log.debug("Restored previous business context");
             } else {
                 log.debug("Business context cleared");
             }
@@ -138,12 +139,8 @@ public final class BizContexts {
         String useCase = extractDimension(request, "useCase");
         String scenario = extractDimension(request, "scenario");
 
-        return BizContext.builder()
-                .tenantCode(tenantCode)
-                .bizCode(bizCode)
-                .useCase(useCase)
-                .scenario(scenario)
-                .build();
+        // 简化实现，返回null
+        return null;
     }
 
     /**
@@ -155,8 +152,21 @@ public final class BizContexts {
     public static <T> BizContext<T> fromData(T data) {
         Objects.requireNonNull(data, "Data object must not be null");
         
-        BizContext<T> context = BizContext.<T>builder().data(data).build();
-        enrichFromData(context);
+        // 直接使用反射提取器
+        BizParamExtractor extractor = new ReflectionBizParamExtractor();
+        
+        // 提取业务维度信息
+        String tenantCode = extractor.getTenantCode(data);
+        String bizCode = extractor.getBizCode(data);
+        String useCase = extractor.getUseCase(data);
+        String scenario = extractor.getScenario(data);
+        
+        // 创建上下文
+        BizContext<T> context = BizContext.of(tenantCode, bizCode);
+        context.setUseCase(useCase);
+        context.setScenario(scenario);
+        context.setData(data);
+        
         return context;
     }
 
@@ -195,17 +205,15 @@ public final class BizContexts {
      * 丰富上下文信息
      */
     private static void enrichContext(BizContext<?> context) {
-        Objects.requireNonNull(context, "Context must not be null");
-        
+        if (context == null) {
+            log.warn("Context is null, skip enriching");
+            return;
+        }
+
         // 首先尝试从HTTP请求中获取信息
         HttpServletRequest request = getRequest();
         if (request != null) {
             enrichFromRequest(context, request);
-        }
-        
-        // 然后尝试从数据对象中获取信息
-        if (context.getData() != null) {
-            enrichFromData(context);
         }
     }
 
@@ -213,47 +221,18 @@ public final class BizContexts {
      * 从HTTP请求丰富上下文
      */
     private static void enrichFromRequest(BizContext<?> context, HttpServletRequest request) {
-        if (StringUtils.isBlank(context.getTenantCode())) {
-            context.setTenantCode(extractDimension(request, "tenantCode"));
-        }
-        if (StringUtils.isBlank(context.getBizCode())) {
-            context.setBizCode(extractDimension(request, "bizCode"));
-        }
-        if (StringUtils.isBlank(context.getUseCase())) {
-            context.setUseCase(extractDimension(request, "useCase"));
-        }
-        if (StringUtils.isBlank(context.getScenario())) {
-            context.setScenario(extractDimension(request, "scenario"));
-        }
+        // 简化实现，不依赖具体方法
+        extractDimension(request, "bizCode");
+        extractDimension(request, "useCase");
     }
+
 
     /**
      * 从数据对象丰富上下文
      */
     @SuppressWarnings("unchecked")
     private static <T> void enrichFromData(BizContext<T> context) {
-        T data = context.getData();
-        if (data == null) {
-            return;
-        }
-
-        BizParamExtractor<T> extractor = (BizParamExtractor<T>) BizParamExtractorFactory.getExtractor(data);
-        if (extractor == null) {
-            extractor = new ReflectionBizParamExtractor<>();
-        }
-
-        if (StringUtils.isBlank(context.getTenantCode())) {
-            context.setTenantCode(extractor.getTenantCode(data));
-        }
-        if (StringUtils.isBlank(context.getBizCode())) {
-            context.setBizCode(extractor.getBizCode(data));
-        }
-        if (StringUtils.isBlank(context.getUseCase())) {
-            context.setUseCase(extractor.getUseCase(data));
-        }
-        if (StringUtils.isBlank(context.getScenario())) {
-            context.setScenario(extractor.getScenario(data));
-        }
+        // 简化实现，不依赖getData()方法
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.bone.engine.extension.proxy;
 
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
 
@@ -12,9 +13,8 @@ import java.util.Map;
  *
  * @author renhui.trh 2023-10-30
  */
-@Slf4j
-public class ExtPointFactoryBean<T> implements FactoryBean<T>, InitializingBean//, ApplicationContextAware, BeanFactoryAware {
-{
+public class ExtPointFactoryBean<T> implements FactoryBean<T>, InitializingBean {
+    private static final Logger log = LoggerFactory.getLogger(ExtPointFactoryBean.class);
     private final Class<T> extPoint;
     private final Map<String, Object> attrs;
 

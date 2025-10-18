@@ -5,7 +5,11 @@ import com.bone.metadata.sdk.domain.model.TableMetadata;
 import com.bone.metadata.sdk.domain.query.CompiledQuery;
 import com.bone.metadata.sdk.domain.spec.TableMetadataResolver;
 import com.bone.metadata.sdk.query.criteria.Condition;
+import com.bone.metadata.sdk.query.criteria.Criteria;
+import com.bone.metadata.sdk.query.SqlBuilder;
 import com.bone.metadata.sdk.sql.executor.SqlExecutor;
+import com.bone.metadata.sdk.domain.enums.SortDirection;
+import com.bone.metadata.sdk.query.builder.SelectBuilderSql;
 import com.bone.metadata.sdk.support.config.MetadataSdkContext;
 import lombok.Getter;
 import lombok.Setter;
@@ -136,6 +140,30 @@ public class QueryBuilder {
     public static <T> EntitySqlBuilder<T> from(Class<T> entityClass) {
         return new EntitySqlBuilderImpl<>(entityClass);
     }
+    
+    /**
+     * 临时调试方法：获取生成的SQL字符串
+     * 用于调试testWhereNullConditions测试
+     */
+    public static <T> String getGeneratedSqlForDebug(ConditionClause<T> conditionClause) {
+        try {
+            // 获取ConditionClauseImpl实例的父QueryBuilder
+            java.lang.reflect.Field parentField = conditionClause.getClass().getDeclaredField("parent");
+            parentField.setAccessible(true);
+            QueryBuilder<T> queryBuilder = (QueryBuilder<T>) parentField.get(conditionClause);
+            
+            // 获取QueryBuilder中的buildQuery方法
+            java.lang.reflect.Method buildQueryMethod = QueryBuilder.class.getDeclaredMethod("buildQuery");
+            buildQueryMethod.setAccessible(true);
+            
+            // 调用buildQuery方法获取生成的SQL
+            CompiledQuery compiledQuery = (CompiledQuery) buildQueryMethod.invoke(queryBuilder.new ConditionClauseImpl(queryBuilder));
+            return compiledQuery.getSql();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "Error getting SQL: " + e.getMessage();
+        }
+    }
 
     /**
      * 从指定实体类创建查询构建器（别名方法）
@@ -151,6 +179,33 @@ public class QueryBuilder {
      * 查询上下文，用于存储查询构建过程中的所有信息
      * @param <T> 实体类型
      */
+    /**
+     * 表连接类型枚举
+     */
+    private enum JoinType {
+        INNER, LEFT, RIGHT, FULL
+    }
+    
+    /**
+     * 表连接信息
+     */
+    @Getter
+    private static class JoinInfo<J> {
+        private final Class<J> joinEntityClass;
+        private final TableMetadata joinTableMetadata;
+        private final JoinType joinType;
+        private final String joinCondition;
+        private final Map<String, Object> joinParameters;
+        
+        public JoinInfo(Class<J> joinEntityClass, JoinType joinType, String joinCondition, Map<String, Object> joinParameters) {
+            this.joinEntityClass = joinEntityClass;
+            this.joinTableMetadata = TableMetadataResolver.load(joinEntityClass);
+            this.joinType = joinType;
+            this.joinCondition = joinCondition;
+            this.joinParameters = joinParameters;
+        }
+    }
+    
     private static class QueryContext<T> {
         @Getter
         private final Class<T> entityClass;
@@ -174,6 +229,8 @@ public class QueryBuilder {
         private long offset = 0;
         @Getter
         private final Map<String, Object> parameters = new HashMap<>();
+        @Getter
+        private final List<JoinInfo<?>> joinInfos = new ArrayList<>();
         
         public QueryContext(Class<T> entityClass) {
             this.entityClass = entityClass;
@@ -245,10 +302,27 @@ public class QueryBuilder {
             }
             this.parameters.put(name, value);
         }
+        
+        public <J> void addJoinInfo(Class<J> joinEntityClass, JoinType joinType, String joinCondition, Map<String, Object> joinParameters) {
+            if (joinEntityClass == null) {
+                throw new IllegalArgumentException("Join entity class cannot be null");
+            }
+            if (joinType == null) {
+                throw new IllegalArgumentException("Join type cannot be null");
+            }
+            if (joinCondition == null || joinCondition.trim().isEmpty()) {
+                throw new IllegalArgumentException("Join condition cannot be null or empty");
+            }
+            JoinInfo<J> joinInfo = new JoinInfo<>(joinEntityClass, joinType, joinCondition, joinParameters);
+            this.joinInfos.add(joinInfo);
+        }
     }
 
     // 静态SqlExecutor实例，由Spring注入
     private static volatile SqlExecutor sqlExecutor;
+    
+    // 静态SqlBuilder实例，由Spring注入
+    private static volatile SqlBuilder sqlBuilder;
     
     /**
      * 设置SqlExecutor实例（由Spring框架调用注入）
@@ -256,6 +330,14 @@ public class QueryBuilder {
      */
     public static void setSqlExecutor(SqlExecutor executor) {
         sqlExecutor = executor;
+    }
+    
+    /**
+     * 设置SqlBuilder实例（由Spring框架调用注入）
+     * @param builder SqlBuilder实例
+     */
+    public static void setSqlBuilder(SqlBuilder builder) {
+        sqlBuilder = builder;
     }
     
     /**
@@ -267,6 +349,154 @@ public class QueryBuilder {
             throw new IllegalStateException("SqlExecutor not initialized. Please ensure it's properly injected.");
         }
         return sqlExecutor;
+    }
+    
+    /**
+     * 获取SqlBuilder实例（确保非空）
+     * @return SqlBuilder实例
+     */
+    private static SqlBuilder getSqlBuilder() {
+        if (sqlBuilder == null) {
+            throw new IllegalStateException("SqlBuilder not initialized. Please ensure it's properly injected.");
+        }
+        return sqlBuilder;
+    }
+    
+    /**
+     * 转换连接类型
+     * @param joinType QueryBuilder.JoinType枚举
+     * @return SelectBuilderSql.JoinType枚举
+     */
+    private static SelectBuilderSql.JoinType convertJoinType(QueryBuilder.JoinType joinType) {
+        switch (joinType) {
+            case LEFT:
+                return SelectBuilderSql.JoinType.LEFT;
+            case RIGHT:
+                return SelectBuilderSql.JoinType.RIGHT;
+            case FULL:
+                return SelectBuilderSql.JoinType.FULL;
+            default:
+                return SelectBuilderSql.JoinType.INNER;
+        }
+    }
+    
+    /**
+     * 将QueryContext转换为Criteria对象
+     * @param context QueryContext实例
+     * @param <T> 实体类型
+     * @return Criteria实例
+     */
+    private static <T> Criteria<T> convertToCriteria(QueryContext<T> context) {
+        Criteria<T> criteria = Criteria.<T>create();
+        
+        // 传递join信息
+        if (context.getJoinInfos() != null && !context.getJoinInfos().isEmpty()) {
+            for (QueryBuilder.JoinInfo<?> joinInfo : context.getJoinInfos()) {
+                // 将JoinInfo转换为Criteria可以接受的格式
+                // 创建SelectBuilderSql.JoinInfo对象
+                SelectBuilderSql.JoinInfo<?> criteriaJoinInfo = new SelectBuilderSql.JoinInfo<>(
+                    joinInfo.getJoinEntityClass(),
+                    convertJoinType(joinInfo.getJoinType()),
+                    joinInfo.getJoinCondition(),
+                    joinInfo.getJoinParameters()
+                );
+                criteria.addJoinInfo(criteriaJoinInfo);
+            }
+        }
+        
+        // 转换条件
+        for (int i = 0; i < context.getConditions().size(); i++) {
+            Condition condition = context.getConditions().get(i);
+            String column = condition.getColumn();
+            
+            // 使用Criteria提供的公共API方法添加条件
+            switch (condition.getOperator()) {
+                case IS_NULL:
+                    // 确保正确处理IS_NULL条件，直接调用isNull方法
+                    log.debug("Adding IS_NULL condition for column: {}", column);
+                    criteria.isNull(column);
+                    break;
+                case IS_NOT_NULL:
+                    // 确保正确处理IS_NOT_NULL条件，直接调用isNotNull方法
+                    log.debug("Adding IS_NOT_NULL condition for column: {}", column);
+                    criteria.isNotNull(column);
+                    break;
+                case EQ:
+                    if (condition.getValues() != null && condition.getValues().length > 0) {
+                        criteria.eq(column, condition.getValues()[0]);
+                    }
+                    break;
+                case NE:
+                    if (condition.getValues() != null && condition.getValues().length > 0) {
+                        criteria.ne(column, condition.getValues()[0]);
+                    }
+                    break;
+                case GT:
+                    if (condition.getValues() != null && condition.getValues().length > 0) {
+                        criteria.gt(column, condition.getValues()[0]);
+                    }
+                    break;
+                case GTE:
+                    if (condition.getValues() != null && condition.getValues().length > 0) {
+                        criteria.gte(column, condition.getValues()[0]);
+                    }
+                    break;
+                case LT:
+                    if (condition.getValues() != null && condition.getValues().length > 0) {
+                        criteria.lt(column, condition.getValues()[0]);
+                    }
+                    break;
+                case LTE:
+                    if (condition.getValues() != null && condition.getValues().length > 0) {
+                        criteria.lte(column, condition.getValues()[0]);
+                    }
+                    break;
+                case LIKE:
+                    if (condition.getValues() != null && condition.getValues().length > 0) {
+                        criteria.like(column, condition.getValues()[0].toString());
+                    }
+                    break;
+                case IN:
+                    if (condition.getValues() != null && condition.getValues().length > 0) {
+                        criteria.in(column, Arrays.asList(condition.getValues()));
+                    }
+                    break;
+                case NOT_IN:
+                    if (condition.getValues() != null && condition.getValues().length > 0) {
+                        criteria.notIn(column, Arrays.asList(condition.getValues()));
+                    }
+                    break;
+                default:
+                    // 对于其他操作符，可以根据需要进行扩展
+                    log.warn("Unsupported operator: {}", condition.getOperator());
+                    break;
+            }
+        }
+        
+        // 转换排序
+        for (Map.Entry<String, String> entry : context.getOrderByFields().entrySet()) {
+            String fieldName = entry.getKey();
+            String direction = entry.getValue();
+            if ("ASC".equals(direction)) {
+                criteria.addSort(fieldName, SortDirection.ASC);
+            } else if ("DESC".equals(direction)) {
+                criteria.addSort(fieldName, SortDirection.DESC);
+            }
+        }
+        
+        // 设置分页
+        if (context.getLimit() > 0) {
+            // Criteria使用pageNo和pageSize，需要转换offset和limit
+            int pageSize = (int) context.getLimit();
+            int pageNo = (int) (context.getOffset() / pageSize) + 1;
+            criteria.page(pageNo, pageSize);
+        }
+        
+        log.debug("Converted criteria: mainConditions={}, sortItems={}", 
+                 criteria.getMainConditions().size(), 
+                 criteria.getSortItems().size());
+        
+        return criteria;
     }
     
     /**
@@ -355,118 +585,76 @@ public class QueryBuilder {
         }
         
         /**
-         * 构建查询SQL
+         * 构建查询SQL - 复用SqlBuilder来构建SQL
          * @return 编译后的查询
          */
         private CompiledQuery buildQuery() {
             try {
-                StringBuilder sql = new StringBuilder();
-                String tableAlias = "m";
-                sql.append("SELECT * FROM ").append(context.getTableMetadata().getName()).append(" ").append(tableAlias);
+                // 将QueryContext转换为Criteria
+                Criteria<T> criteria = convertToCriteria(context);
                 
-                // 添加WHERE条件
-                if (!context.getConditions().isEmpty()) {
-                    sql.append(" WHERE ");
-                    StringBuilder whereClause = new StringBuilder();
-                    for (int i = 0; i < context.getConditions().size(); i++) {
-                        if (i > 0) {
-                            // 使用存储的操作符（AND/OR）连接条件
-                            String operator = i <= context.getConditionOperators().size() ? 
-                                             context.getConditionOperators().get(i - 1) : "AND";
-                            whereClause.append(" ").append(operator).append(" ");
-                        }
-                        // 添加表别名前缀
-                        String conditionSql = context.getConditions().get(i).toSql();
-                        // 为字段添加表别名前缀
-                        whereClause.append(addTableAliasToCondition(conditionSql, tableAlias));
-                    }
-                    sql.append(whereClause);
-                }
+                // 使用SqlBuilder构建SQL查询
+                CompiledQuery compiledQuery = getSqlBuilder().buildSelect(context.getEntityClass(), criteria);
                 
-                // 添加GROUP BY
-                if (!context.getGroupByFields().isEmpty()) {
-                    sql.append(" GROUP BY ");
-                    String groupByClause = context.getGroupByFields().stream()
-                        .map(field -> tableAlias + "." + toSnakeCase(field))
-                        .collect(Collectors.joining(", "));
-                    sql.append(groupByClause);
-                }
+                // 记录生成的SQL和参数到日志
+                log.debug("Generated SQL (using SqlBuilder): {}", compiledQuery.getSql());
+                log.debug("SQL Parameters: {}", compiledQuery.getParameters());
                 
-                // 添加HAVING条件
-                if (!context.getHavingConditions().isEmpty()) {
-                    sql.append(" HAVING ");
-                    StringBuilder havingClause = new StringBuilder();
-                    for (int i = 0; i < context.getHavingConditions().size(); i++) {
-                        if (i > 0) {
-                            // 使用存储的操作符（AND/OR）连接条件
-                            String operator = i <= context.getHavingOperators().size() ? 
-                                             context.getHavingOperators().get(i - 1) : "AND";
-                            havingClause.append(" ").append(operator).append(" ");
-                        }
-                        havingClause.append(context.getHavingConditions().get(i));
-                    }
-                    sql.append(havingClause);
-                }
-                
-                // 添加ORDER BY
-                if (!context.getOrderByFields().isEmpty()) {
-                    sql.append(" ORDER BY ");
-                    String orderByClause = context.getOrderByFields().entrySet().stream()
-                        .map(entry -> tableAlias + "." + toSnakeCase(entry.getKey()) + " " + entry.getValue())
-                        .collect(Collectors.joining(", "));
-                    sql.append(orderByClause);
-                }
-                
-                // 添加分页
-                if (context.getLimit() > 0) {
-                    sql.append(" LIMIT ").append(context.getLimit());
-                    if (context.getOffset() > 0) {
-                        sql.append(" OFFSET ").append(context.getOffset());
-                    }
-                }
-                
-                String finalSql = sql.toString();
-                log.debug("Generated SQL: {}", finalSql);
-                log.debug("SQL Parameters: {}", context.getParameters());
-                
-                return new CompiledQuery(finalSql, context.getParameters());
+                return compiledQuery;
             } catch (Exception e) {
-                log.error("Failed to build query SQL", e);
-                throw new QueryBuildException("Error building SQL query", e);
+                System.err.println("Error building query: " + e.getMessage());
+                e.printStackTrace();
+                log.error("Failed to build query SQL using SqlBuilder", e);
+                throw new QueryBuildException("Error building SQL query with SqlBuilder", e);
             }
         }
         
         /**
-         * 为条件中的字段添加表别名前缀
-         * @param conditionSql 原始条件SQL
-         * @param tableAlias 表别名
-         * @return 添加表别名后的SQL
-         */
-        private String addTableAliasToCondition(String conditionSql, String tableAlias) {
-            // 添加日志记录，帮助调试
-            log.debug("处理条件SQL: '{}', 表别名: '{}'", conditionSql, tableAlias);
-            
-            // 改进的实现，使用更简单可靠的方式处理所有条件类型，包括IS NULL和IS NOT NULL
-            // 不再使用复杂的正则表达式，而是直接处理IS NULL和IS NOT NULL情况
-            if (conditionSql.endsWith(" IS NULL") || conditionSql.endsWith(" IS NOT NULL")) {
-                // 对于IS NULL和IS NOT NULL条件，只在列名前添加表别名
-                log.debug("检测到NULL条件: {}", conditionSql);
-                int spaceIndex = conditionSql.lastIndexOf(" ");
-                String columnName = conditionSql.substring(0, spaceIndex);
-                String nullCondition = conditionSql.substring(spaceIndex).trim();
-                String result = tableAlias + "." + columnName + " " + nullCondition;
-                log.debug("NULL条件处理结果: {}", result);
-                return result;
-            } else {
-                // 对于其他条件，使用正则表达式添加表别名
-                log.debug("处理普通条件: {}", conditionSql);
-                String result = conditionSql.replaceAll("(?<=^|[\\s(),])" + 
-                                              "([a-zA-Z_][a-zA-Z0-9_]*)", 
-                                              tableAlias + ".$1");
-                log.debug("普通条件处理结果: {}", result);
+     * 为条件中的字段添加表别名前缀
+     * @param conditionSql 原始条件SQL
+     * @param tableAlias 表别名
+     * @return 添加表别名后的SQL
+     */
+    private String addTableAliasToCondition(String conditionSql, String tableAlias) {
+        // 添加日志记录，帮助调试
+        log.debug("处理条件SQL: '{}', 表别名: '{}'", conditionSql, tableAlias);
+        
+        // 使用最简单的字符串处理方法，完全避免正则表达式转义问题
+        String upperCondition = conditionSql.toUpperCase();
+        String result;
+        
+        // 检查IS NULL条件
+        if (upperCondition.contains(" IS NULL") && !upperCondition.startsWith("IS NULL")) {
+            // 对于形如'column IS NULL'的条件
+            String[] parts = conditionSql.split("(?i)\\s+IS\\s+NULL");
+            if (parts.length > 0) {
+                String columnName = parts[0].trim();
+                log.debug("处理 IS NULL 条件 - 列名: {}", columnName);
+                result = tableAlias + "." + columnName + " IS NULL";
+                log.debug("生成的条件: {}", result);
                 return result;
             }
+        } 
+        // 检查IS NOT NULL条件
+        else if (upperCondition.contains(" IS NOT NULL") && !upperCondition.startsWith("IS NOT NULL")) {
+            // 对于形如'column IS NOT NULL'的条件
+            String[] parts = conditionSql.split("(?i)\\s+IS\\s+NOT\\s+NULL");
+            if (parts.length > 0) {
+                String columnName = parts[0].trim();
+                log.debug("处理 IS NOT NULL 条件 - 列名: {}", columnName);
+                result = tableAlias + "." + columnName + " IS NOT NULL";
+                log.debug("生成的条件: {}", result);
+                return result;
+            }
+        } else {
+            // 对于其他条件，暂时保持原样（可以根据需要扩展）
+            log.debug("条件不匹配 IS NULL 或 IS NOT NULL 模式，返回原始条件");
+            result = conditionSql;
         }
+        
+        log.debug("条件处理结果: {}", result);
+        return result;
+    }
         
         /**
          * 构建计数查询SQL
@@ -598,8 +786,115 @@ public class QueryBuilder {
                 throw new QueryExecutionException("Count query execution failed", e);
             }
         }
+        
+        @Override
+        public <J> JoinClause<T, J> join(Class<J> joinEntityClass) {
+            return new JoinClauseImpl<>(this, joinEntityClass, JoinType.INNER);
+        }
+        
+        @Override
+        public <J> JoinClause<T, J> leftJoin(Class<J> joinEntityClass) {
+            return new JoinClauseImpl<>(this, joinEntityClass, JoinType.LEFT);
+        }
+        
+        @Override
+        public <J> JoinClause<T, J> rightJoin(Class<J> joinEntityClass) {
+            return new JoinClauseImpl<>(this, joinEntityClass, JoinType.RIGHT);
+        }
+        
+        @Override
+        public <J> JoinClause<T, J> fullJoin(Class<J> joinEntityClass) {
+            return new JoinClauseImpl<>(this, joinEntityClass, JoinType.FULL);
+        }
     }
 
+    /**
+     * 内部Join子句实现
+     * @param <T> 主实体类型
+     * @param <J> 关联实体类型
+     */
+    private static class JoinClauseImpl<T, J> implements JoinClause<T, J> {
+        private final EntitySqlBuilderImpl<T> parent;
+        private final Class<J> joinEntityClass;
+        private final JoinType joinType;
+        private final Map<String, Object> joinParameters = new HashMap<>();
+        
+        public JoinClauseImpl(EntitySqlBuilderImpl<T> parent, Class<J> joinEntityClass, JoinType joinType) {
+            this.parent = parent;
+            this.joinEntityClass = joinEntityClass;
+            this.joinType = joinType;
+        }
+        
+        @Override
+        public <V> EntitySqlBuilder<T> on(FieldFunction<T, V> mainFieldFunction, FieldFunction<J, V> joinFieldFunction) {
+            String mainFieldName = parent.extractFieldName(mainFieldFunction);
+            String joinFieldName = extractJoinFieldName(joinFieldFunction);
+            
+            // 构建连接条件SQL
+            String joinCondition = "m." + toSnakeCase(mainFieldName) + " = " + "ext." + toSnakeCase(joinFieldName);
+            
+            // 添加连接信息到查询上下文
+            parent.context.addJoinInfo(joinEntityClass, joinType, joinCondition, joinParameters);
+            
+            return parent;
+        }
+        
+        @Override
+        public <V> WhereClause<T> and(FieldFunction<J, V> joinFieldFunction) {
+            String fieldName = extractJoinFieldName(joinFieldFunction);
+            // 为关联表字段创建特殊前缀，标记为扩展表字段
+            return new WhereClauseImpl<>(parent, "ext_" + fieldName);
+        }
+        
+        @Override
+        public <V> WhereClause<T> or(FieldFunction<J, V> joinFieldFunction) {
+            String fieldName = extractJoinFieldName(joinFieldFunction);
+            // 为关联表字段创建特殊前缀，标记为扩展表字段
+            return new WhereClauseImpl<>(parent, "ext_" + fieldName);
+        }
+        
+        /**
+         * 从关联表字段方法引用中提取字段名
+         * @param fieldFunction 关联表字段方法引用
+         * @param <V> 字段值类型
+         * @return 字段名
+         */
+        private <V> String extractJoinFieldName(FieldFunction<J, V> fieldFunction) {
+            try {
+                // 获取方法引用的toString()结果
+                String toString = fieldFunction.toString();
+                log.debug("Extracting join field name from: {}", toString);
+                
+                // 尝试匹配getter方法模式
+                Matcher matcher = METHOD_REFERENCE_PATTERN.matcher(toString);
+                if (matcher.find()) {
+                    String propertyName = matcher.group(1);
+                    return Character.toLowerCase(propertyName.charAt(0)) + propertyName.substring(1);
+                }
+                
+                // 尝试匹配lambda表达式模式
+                matcher = LAMBDA_EXPRESSION_PATTERN.matcher(toString);
+                if (matcher.find()) {
+                    return matcher.group(2);
+                }
+                
+                // 使用反射查找getter方法
+                Method[] methods = joinEntityClass.getDeclaredMethods();
+                for (Method method : methods) {
+                    if (method.getName().startsWith("get") && method.getParameterCount() == 0) {
+                        PropertyDescriptor pd = new PropertyDescriptor(method.getName().substring(3), joinEntityClass);
+                        return pd.getName();
+                    }
+                }
+                
+                throw new IllegalArgumentException("Cannot extract join field name from function: " + toString);
+            } catch (Exception e) {
+                log.error("Failed to extract join field name", e);
+                throw new IllegalArgumentException("Failed to extract join field name", e);
+            }
+        }
+    }
+    
     /**
      * 内部Where子句实现
      * @param <T> 实体类型
@@ -635,9 +930,18 @@ public class QueryBuilder {
          */
         private ConditionClause<T> addCondition(Operator operator, Object value) {
             String paramName = createParamName();
-            String columnName = toSnakeCase(fieldName);
+            boolean isExtension = false;
+            String cleanFieldName = fieldName;
+            
+            // 检查是否为关联表字段（以ext_前缀开头）
+            if (fieldName.startsWith("ext_")) {
+                isExtension = true;
+                cleanFieldName = fieldName.substring(4); // 移除"ext_"前缀
+            }
+            
+            String columnName = toSnakeCase(cleanFieldName);
             Object[] values = value instanceof Collection ? ((Collection<?>)value).toArray() : new Object[]{value};
-            Condition condition = new Condition(fieldName, columnName, paramName, operator, false, values);
+            Condition condition = new Condition(cleanFieldName, columnName, paramName, operator, isExtension, values);
             parent.context.addCondition(condition);
             parent.context.addParameter(paramName, value);
             return new ConditionClauseImpl<>(parent);
@@ -707,7 +1011,8 @@ public class QueryBuilder {
         @Override
         public ConditionClause<T> isNull() {
             String columnName = toSnakeCase(fieldName);
-            Condition condition = new Condition(fieldName, columnName, null, Operator.IS_NULL, new Object[0]);
+            // 修复参数顺序，添加extension参数(false)
+            Condition condition = new Condition(fieldName, columnName, null, Operator.IS_NULL, false, new Object[0]);
             parent.context.addCondition(condition);
             return new ConditionClauseImpl<>(parent);
         }
@@ -715,7 +1020,8 @@ public class QueryBuilder {
         @Override
         public ConditionClause<T> isNotNull() {
             String columnName = toSnakeCase(fieldName);
-            Condition condition = new Condition(fieldName, columnName, null, Operator.IS_NOT_NULL, new Object[0]);
+            // 修复参数顺序，添加extension参数(false)
+            Condition condition = new Condition(fieldName, columnName, null, Operator.IS_NOT_NULL, false, new Object[0]);
             parent.context.addCondition(condition);
             return new ConditionClauseImpl<>(parent);
         }

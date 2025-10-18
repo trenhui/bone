@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class ExpressionEvaluatorTest {
 
-    private BizContext context;
+    private BizContext<String> context;
 
     @BeforeEach
     public void setUp() {
@@ -22,10 +22,7 @@ public class ExpressionEvaluatorTest {
         ExpressionEvaluator.clearCache();
         
         // 创建测试上下文
-        context = BizContext.builder()
-                .tenantCode("tenant1")
-                .bizCode("biz1")
-                .build();
+        context = BizContext.of("tenant1", "biz1");
     }
 
     @Test
@@ -63,10 +60,7 @@ public class ExpressionEvaluatorTest {
     @Test
     public void testDifferentContextEvaluation() {
         // 使用不同上下文评估相同表达式
-        BizContext differentContext = BizContext.builder()
-                .tenantCode("tenant2")
-                .bizCode("biz1")
-                .build();
+        BizContext<String> differentContext = BizContext.of("tenant2", "biz1");
 
         boolean result1 = ExpressionEvaluator.evaluate("#tenantCode == 'tenant1'", context);
         boolean result2 = ExpressionEvaluator.evaluate("#tenantCode == 'tenant1'", differentContext);

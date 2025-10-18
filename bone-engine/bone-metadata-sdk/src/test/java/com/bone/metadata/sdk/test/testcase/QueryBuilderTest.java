@@ -209,12 +209,9 @@ public class QueryBuilderTest {
         List<Map<String, Object>> allUsers = jdbcTemplate.queryForList("SELECT id, username, email FROM users");
         log.info("数据库中所有用户记录: {}", allUsers);
 
-        // 手动执行SQL测试
-        List<Map<String, Object>> manualNullUsers = jdbcTemplate.queryForList("SELECT * FROM users m WHERE m.email IS NULL");
-        log.info("手动执行SQL查询结果: {}", manualNullUsers.size());
-
-        // 测试isNull
-        log.info("执行QueryBuilder的isNull查询");
+        // 准备测试
+        
+        // 直接构建并执行查询
         List<User> nullEmailUsers = QueryBuilder.from(User.class)
                 .where(User::getEmail)
                 .isNull()
@@ -223,7 +220,6 @@ public class QueryBuilderTest {
         assertEquals(1, nullEmailUsers.size(), "应该找到1条email为null的记录");
 
         // 测试isNotNull
-        log.info("执行QueryBuilder的isNotNull查询");
         List<User> notNullEmailUsers = QueryBuilder.from(User.class)
                 .where(User::getEmail)
                 .isNotNull()
