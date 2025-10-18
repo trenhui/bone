@@ -14,7 +14,8 @@ import java.util.*;
 
 /**
  * 动态模型管理器
- * 负责动态模型的加载、注册和管理
+ * 负责基于元数据引擎的动态模型加载、注册和管理
+ * 遵循业界最佳实践，如Workday、Salesforce和Coupa的元数据驱动设计
  */
 @Service
 public class DynamicModelManager implements InitializingBean {
@@ -26,9 +27,6 @@ public class DynamicModelManager implements InitializingBean {
 
     @Autowired
     private MetadataEngine metadataEngine;
-
-    // 已注册的动态模型缓存
-    private final Map<String, EntityMetadata> registeredModels = new HashMap<>();
 
     /**
      * 初始化方法，在应用启动时加载所有动态模型
@@ -75,6 +73,9 @@ public class DynamicModelManager implements InitializingBean {
         metadata.setLabel(definition.getLabel() != null ? definition.getLabel() : modelName);
         metadata.setDescription(definition.getDescription());
         
+        // 设置业务域为procurement，便于分类管理
+        metadata.setDomain("procurement");
+        
         // 添加ID字段作为主键
         FieldMetadata idField = createIdField();
         
@@ -106,6 +107,10 @@ public class DynamicModelManager implements InitializingBean {
         idField.setLabel("ID");
         idField.setType("string");
         idField.setRequired(true);
+        // 标记为主键
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put("primaryKey", true);
+        idField.setAttributes(attributes);
         return idField;
     }
 
@@ -152,17 +157,17 @@ public class DynamicModelManager implements InitializingBean {
      */
     public void registerModel(EntityMetadata entityMetadata) {
         try {
-            // 检查模型是否已存在
-            if (registeredModels.containsKey(entityMetadata.getApiName())) {
+            // 直接使用元数据引擎进行注册/更新
+            // 元数据引擎内部会处理缓存和验证逻辑
+            if (metadataEngine.getEntityMetadata(entityMetadata.getApiName()) != null) {
                 // 更新已存在的模型
                 metadataEngine.updateEntity(entityMetadata);
+                log.info("更新动态模型: {}", entityMetadata.getApiName());
             } else {
                 // 注册新模型
                 metadataEngine.registerEntity(entityMetadata);
+                log.info("注册新动态模型: {}", entityMetadata.getApiName());
             }
-            
-            // 更新本地缓存
-            registeredModels.put(entityMetadata.getApiName(), entityMetadata);
         } catch (Exception e) {
             log.error("注册动态模型失败: {}", entityMetadata.getApiName(), e);
             throw e;
@@ -171,16 +176,32 @@ public class DynamicModelManager implements InitializingBean {
 
     /**
      * 获取所有已注册的动态模型
+     * 从元数据引擎获取，而不是本地缓存
      */
     public Collection<EntityMetadata> getAllRegisteredModels() {
-        return new ArrayList<>(registeredModels.values());
+        try {
+            // 获取所有实体元数据，然后过滤出procurement域的模型
+            List<EntityMetadata> allEntities = metadataEngine.getAllEntityMetadata();
+            return allEntities.stream()
+                    .filter(entity -> "procurement".equals(entity.getDomain()))
+                    .collect(java.util.stream.Collectors.toList());
+        } catch (Exception e) {
+            log.error("获取所有动态模型失败", e);
+            return Collections.emptyList();
+        }
     }
 
     /**
      * 根据名称获取动态模型
+     * 直接从元数据引擎获取
      */
     public EntityMetadata getModelByName(String modelName) {
-        return registeredModels.get(modelName);
+        try {
+            return metadataEngine.getEntityMetadata(modelName);
+        } catch (Exception e) {
+            log.error("获取动态模型失败: {}", modelName, e);
+            return null;
+        }
     }
 
     /**
@@ -202,17 +223,42 @@ public class DynamicModelManager implements InitializingBean {
 
     /**
      * 删除动态模型
+     * 使用元数据引擎的unregisterEntity方法进行删除
      */
     public void deleteModel(String modelName) {
-        if (registeredModels.containsKey(modelName)) {
-            // 从本地缓存移除
-            registeredModels.remove(modelName);
+        try {
+            // 从元数据引擎中删除模型
+            metadataEngine.unregisterEntity(modelName);
+            
             // 从配置中移除
             dynamicModelConfig.getModels().remove(modelName);
             
-            // TODO: 这里可以添加从元数据引擎中删除模型的逻辑
-            // 注意：删除模型需要谨慎，因为可能会影响已有数据
-            log.info("动态模型已从配置中移除: {}", modelName);
+            log.info("动态模型已删除: {}", modelName);
+        } catch (Exception e) {
+            log.error("删除动态模型失败: {}", modelName, e);
+            throw e;
         }
+    }
+    
+    /**
+     * 重新加载指定模型
+     */
+    public void reloadModel(String modelName) {
+        if (dynamicModelConfig.getModels().containsKey(modelName)) {
+            DynamicModelConfig.DynamicModelDefinition definition = dynamicModelConfig.getModels().get(modelName);
+            EntityMetadata metadata = createEntityMetadata(modelName, definition);
+            registerModel(metadata);
+            log.info("重新加载动态模型: {}", modelName);
+        } else {
+            log.warn("模型不存在，无法重新加载: {}", modelName);
+        }
+    }
+    
+    /**
+     * 刷新所有动态模型
+     */
+    public void refreshAllModels() {
+        metadataEngine.refreshMetadata();
+        log.info("所有动态模型已刷新");
     }
 }

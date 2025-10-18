@@ -98,7 +98,8 @@ public class DefaultCodeGenerator implements CodeGenerator {
     @Override
     public void generateCode(ZipOutputStream zipOut, CodegenTable codegenTable, Integer modelType) {
         try {
-            // 避免直接调用不存在的getter方法
+            // 注意：CodegenTable中没有定义getColumns、getSubTables等方法，需要从外部传入这些数据
+            // 这里暂时保留反射调用，但会在其他地方优化反射使用
             List<CodegenColumn> columns = (List<CodegenColumn>) ReflectionUtil.getFieldValue(codegenTable, "columns");
             List<CodegenTable> subTables = (List<CodegenTable>) ReflectionUtil.getFieldValue(codegenTable, "subTables");
             Datasource dataSourceConfig = (Datasource) ReflectionUtil.getFieldValue(codegenTable, "dataSourceConfig");
@@ -277,28 +278,29 @@ public class DefaultCodeGenerator implements CodeGenerator {
         bindingMap.put("table", table);
         bindingMap.put("columns", columns);
         
-        // 查找主键字段
+        // 查找主键字段（使用getter方法）
         CodegenColumn primaryColumn = null;
         for (CodegenColumn column : columns) {
-            if (ReflectionUtil.getBooleanFieldValue(column, "primaryKey")) {
+            if (Boolean.TRUE.equals(column.getPrimaryKey())) {
                 primaryColumn = column;
                 break;
             }
         }
         bindingMap.put("primaryColumn", primaryColumn);
         
-        Integer scene = ReflectionUtil.getIntegerFieldValue(table, "scene");
+        // 使用getter方法获取字段值
+        Integer scene = table.getScene();
         bindingMap.put("sceneEnum", CodegenSceneEnum.valueOf(scene));
         
-        String basePackage = ReflectionUtil.getStringFieldValue(table, "packageName");
+        String basePackage = table.getPackageName();
         if (basePackage != null && !basePackage.trim().isEmpty() && basePackage.contains(".")) {
             basePackage = basePackage.substring(basePackage.lastIndexOf('.') + 1, basePackage.length());
         }
         bindingMap.put("basePackage", basePackage);
         
         // className 相关
-        String className = ReflectionUtil.getStringFieldValue(table, "className");
-        String moduleName = ReflectionUtil.getStringFieldValue(table, "moduleName");
+        String className = table.getClassName();
+        String moduleName = table.getModuleName();
         String simpleClassName = removePrefix(className, upperFirst(moduleName));
         bindingMap.put("simpleClassName", simpleClassName);
         bindingMap.put("simpleClassName_underlineCase", toUnderlineCase(simpleClassName));
@@ -311,6 +313,7 @@ public class DefaultCodeGenerator implements CodeGenerator {
         
         // 数据源信息
         bindingMap.put("dataSourceConfig", dataSourceConfig);
+        // 注意：DataSourceConfig可能没有getter方法，暂时保留反射调用
         bindingMap.put("dataSourceUrl", ReflectionUtil.getStringFieldValue(dataSourceConfig, "url"));
         bindingMap.put("dataSourceUsername", ReflectionUtil.getStringFieldValue(dataSourceConfig, "username"));
         bindingMap.put("dataSourcePassword", ReflectionUtil.getStringFieldValue(dataSourceConfig, "password"));
@@ -348,22 +351,23 @@ public class DefaultCodeGenerator implements CodeGenerator {
     }
     
     private void initTreeTableBinding(Map<String, Object> bindingMap, CodegenTable table, List<CodegenColumn> columns) {
-        Integer templateType = ReflectionUtil.getIntegerFieldValue(table, "templateType");
+        // 使用getter方法获取字段值
+        Integer templateType = table.getTemplateType();
         if (templateType != null && templateType.equals(CodegenTemplateTypeEnum.TREE.getType())) {
-            Long treeParentColumnId = ReflectionUtil.getLongFieldValue(table, "treeParentColumnId");
+            Long treeParentColumnId = table.getTreeParentColumnId();
             CodegenColumn treeParentColumn = findColumnById(columns, treeParentColumnId);
             bindingMap.put("treeParentColumn", treeParentColumn);
             if (treeParentColumn != null) {
                 bindingMap.put("treeParentColumn_javaField_underlineCase", 
-                        toUnderlineCase(ReflectionUtil.getStringFieldValue(treeParentColumn, "javaField")));
+                        toUnderlineCase(treeParentColumn.getJavaField()));
             }
             
-            Long treeNameColumnId = ReflectionUtil.getLongFieldValue(table, "treeNameColumnId");
+            Long treeNameColumnId = table.getTreeNameColumnId();
             CodegenColumn treeNameColumn = findColumnById(columns, treeNameColumnId);
             bindingMap.put("treeNameColumn", treeNameColumn);
             if (treeNameColumn != null) {
                 bindingMap.put("treeNameColumn_javaField_underlineCase", 
-                        toUnderlineCase(ReflectionUtil.getStringFieldValue(treeNameColumn, "javaField")));
+                        toUnderlineCase(treeNameColumn.getJavaField()));
             }
         }
     }
@@ -390,20 +394,21 @@ public class DefaultCodeGenerator implements CodeGenerator {
                 CodegenColumn pkColumn = findPrimaryColumn(subColumns);
                 subPrimaryColumns.add(pkColumn);
                 
-                // 找到关联列
-                Long subJoinColumnId = ReflectionUtil.getLongFieldValue(subTable, "subJoinColumnId");
+                // 找到关联列 - 使用getter方法
+                Long subJoinColumnId = subTable.getSubJoinColumnId();
                 CodegenColumn subColumn = findColumnById(subColumns, subJoinColumnId);
                 subJoinColumns.add(subColumn);
                 
                 if (subColumn != null) {
-                    subJoinColumnStrikeCases.add(toSymbolCase(ReflectionUtil.getStringFieldValue(subColumn, "javaField"), '-'));
+                    // 使用getter方法
+                    subJoinColumnStrikeCases.add(toSymbolCase(subColumn.getJavaField(), '-'));
                 } else {
                     subJoinColumnStrikeCases.add("");
                 }
                 
-                // className 相关
-                String subClassName = ReflectionUtil.getStringFieldValue(subTable, "className");
-                String subModuleName = ReflectionUtil.getStringFieldValue(subTable, "moduleName");
+                // className 相关 - 使用getter方法
+                String subClassName = subTable.getClassName();
+                String subModuleName = subTable.getModuleName();
                 String subSimpleClassName = removePrefix(subClassName, upperFirst(subModuleName));
                 subSimpleClassNames.add(subSimpleClassName);
                 simpleClassNameUnderlineCases.add(toUnderlineCase(subSimpleClassName));

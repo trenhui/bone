@@ -269,10 +269,10 @@ public class MetadataEngine implements InitializingBean {
             // 执行注册操作
             performEntityRegistration(metadata);
             
-            // 事务提交后发布事件，避免事件消费者看到未提交的数据
+            // 发布事件
             eventPublisher.publishEvent(new MetadataChangeEvent(this, metadata, MetadataChangeType.CREATE));
             
-            System.out.println("实体已注册: " + apiName);
+            log.info("实体已注册: {}", apiName);
         } catch (Exception e) {
             log.error("注册实体元数据失败: {}", apiName, e);
             throw new RuntimeException("注册实体元数据失败", e);
@@ -293,7 +293,7 @@ public class MetadataEngine implements InitializingBean {
         }
         
         // 不再使用metadataRegistry
-        System.out.println("实体已成功注册: " + metadata.getApiName());
+        log.debug("实体已成功注册: {}", metadata.getApiName());
     }
     
     /**
@@ -343,7 +343,7 @@ public class MetadataEngine implements InitializingBean {
         }
         
         // 不再使用metadataRegistry
-        System.out.println("实体已成功更新: " + metadata.getApiName());
+        log.debug("实体已成功更新: {}", metadata.getApiName());
     }
     
     /**
@@ -604,8 +604,7 @@ public class MetadataEngine implements InitializingBean {
         if (removed != null) {
             // 清理相关缓存
             expressionEngineCache.remove(entityApiName);
-            System.out.println("实体元数据已成功注销: " + entityApiName);
-            // log.info("实体元数据已成功注销: {}", entityApiName);
+            log.info("实体元数据已成功注销: {}", entityApiName);
             return true;
         }
         return false;
@@ -684,13 +683,15 @@ public class MetadataEngine implements InitializingBean {
     }
     
     /**
-     * 获取实体的AI元数据
+     * 获取AI元数据
      * @param entityApiName 实体API名称
      * @return AI元数据
      */
     public AiMetadata getAiMetadata(String entityApiName) {
-        // 简化实现，返回null
-        // 由于EntityMetadata没有getAiMetadata()方法，这里返回null
+        EntityMetadata metadata = getEntityMetadata(entityApiName);
+        if (metadata != null && metadata instanceof AiEnhancedEntityMetadata) {
+            return ((AiEnhancedEntityMetadata) metadata).getAiMetadata();
+        }
         return null;
     }
     
@@ -896,8 +897,7 @@ public class MetadataEngine implements InitializingBean {
             // 例如使用SpEL、MVEL或自定义表达式引擎
             return null; // 占位返回
         } catch (Exception e) {
-            System.err.println("计算字段值失败: " + field.getApiName() + ", " + e.getMessage());
-            // log.error("计算字段值失败: {}", field.getApiName(), e);
+            log.error("计算字段值失败: {}", field.getApiName(), e);
             return null;
         }
     }
@@ -908,8 +908,7 @@ public class MetadataEngine implements InitializingBean {
      */
     public void registerMetadataChangeListener(MetadataChangeListener listener) {
         // 监听器功能暂时未实现
-        System.out.println("监听器注册功能待实现");
-        // log.info("监听器注册功能待实现");
+        log.warn("监听器注册功能待实现");
     }
     
     /**
@@ -918,8 +917,7 @@ public class MetadataEngine implements InitializingBean {
      */
     public void unregisterMetadataChangeListener(MetadataChangeListener listener) {
         // 监听器功能暂时未实现
-        System.out.println("监听器注销功能待实现");
-        // log.info("监听器注销功能待实现");
+        log.warn("监听器注销功能待实现");
     }
     
     /**

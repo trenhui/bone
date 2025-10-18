@@ -76,57 +76,9 @@ public class CodegenService {
         this.codegenConverter = codegenConverter;
     }
 
-    /**
-     * 通过DatabaseTableService更新表配置
-     * 此方法作为委托，职责已转移到DatabaseTableService
-     */
-    public void updateCodegenTable(CodegenTableRequest request) {
-        databaseTableService.updateCodegenTable(request);
-    }
-
-    /**
-     * 通过DatabaseTableService从数据库导入表结构
-     * 此方法作为委托，职责已转移到DatabaseTableService
-     */
-    public Long importTableFromDatabase(Long dataSourceConfigId, String tableName, String moduleName,
-                                        String packageName, Integer scene, Integer modelType) {
-        return databaseTableService.importTableFromDatabase(dataSourceConfigId, tableName, moduleName, 
-                packageName, scene, modelType);
-    }
-
-    /**
-     * 通过DatabaseTableService批量从数据库导入表结构
-     * 此方法作为委托，职责已转移到DatabaseTableService
-     */
-    public List<Long> importTablesFromDatabase(Long dataSourceConfigId, List<String> tableNames,
-                                               String moduleName, String packageName, Integer scene, Integer modelType) {
-        return databaseTableService.importTablesFromDatabase(dataSourceConfigId, tableNames, moduleName, 
-                packageName, scene, modelType);
-    }
-
-    /**
-     * 通过DatabaseTableService根据数据源配置ID获取表定义列表
-     * 此方法作为委托，职责已转移到DatabaseTableService
-     */
-    public List<CodegenTable> getCodegenTablesByDataSourceId(Long dataSourceConfigId) {
-        return databaseTableService.getCodegenTablesByDataSourceId(dataSourceConfigId);
-    }
-
-    /**
-     * 通过DatabaseTableService同步数据库表结构
-     * 此方法作为委托，职责已转移到DatabaseTableService
-     */
-    public void syncTableFromDatabase(Long id) {
-        databaseTableService.syncTableFromDatabase(id);
-    }
-
-    /**
-     * 通过DatabaseTableService获取表字段列表
-     * 此方法作为委托，职责已转移到DatabaseTableService
-     */
-    public List<CodegenColumn> getColumnsByTableId(Long tableId) {
-        return databaseTableService.getColumnsByTableId(tableId);
-    }
+    // 注意：数据库表相关的操作已移至DatabaseTableService
+    // 如需更新表配置、导入表结构、同步表结构等功能，请直接使用DatabaseTableService
+    // 保留此注释以避免破坏现有调用
 
     /**
      * 批量生成代码
