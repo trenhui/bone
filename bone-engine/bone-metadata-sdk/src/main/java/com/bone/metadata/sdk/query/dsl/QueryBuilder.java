@@ -25,6 +25,16 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
+ * 连接类型枚举
+ */
+public enum JoinType {
+    INNER,
+    LEFT,
+    RIGHT,
+    FULL
+}
+
+/**
  * 查询构建异常，用于SQL构建过程中的错误处理
  */
 @Getter
@@ -150,7 +160,7 @@ public class QueryBuilder {
             // 获取ConditionClauseImpl实例的父QueryBuilder
             java.lang.reflect.Field parentField = conditionClause.getClass().getDeclaredField("parent");
             parentField.setAccessible(true);
-            QueryBuilder<T> queryBuilder = (QueryBuilder<T>) parentField.get(conditionClause);
+            Object queryBuilder = parentField.get(conditionClause);
             
             // 获取QueryBuilder中的buildQuery方法
             java.lang.reflect.Method buildQueryMethod = QueryBuilder.class.getDeclaredMethod("buildQuery");
@@ -364,19 +374,19 @@ public class QueryBuilder {
     
     /**
      * 转换连接类型
-     * @param joinType QueryBuilder.JoinType枚举
-     * @return SelectBuilderSql.JoinType枚举
+     * @param joinType JoinType枚举
+     * @return 连接类型字符串
      */
-    private static SelectBuilderSql.JoinType convertJoinType(QueryBuilder.JoinType joinType) {
+    private static String convertJoinType(JoinType joinType) {
         switch (joinType) {
             case LEFT:
-                return SelectBuilderSql.JoinType.LEFT;
+                return "LEFT";
             case RIGHT:
-                return SelectBuilderSql.JoinType.RIGHT;
+                return "RIGHT";
             case FULL:
-                return SelectBuilderSql.JoinType.FULL;
+                return "FULL";
             default:
-                return SelectBuilderSql.JoinType.INNER;
+                return "INNER";
         }
     }
     
@@ -392,15 +402,11 @@ public class QueryBuilder {
         // 传递join信息
         if (context.getJoinInfos() != null && !context.getJoinInfos().isEmpty()) {
             for (QueryBuilder.JoinInfo<?> joinInfo : context.getJoinInfos()) {
-                // 将JoinInfo转换为Criteria可以接受的格式
-                // 创建SelectBuilderSql.JoinInfo对象
-                SelectBuilderSql.JoinInfo<?> criteriaJoinInfo = new SelectBuilderSql.JoinInfo<>(
-                    joinInfo.getJoinEntityClass(),
-                    convertJoinType(joinInfo.getJoinType()),
-                    joinInfo.getJoinCondition(),
-                    joinInfo.getJoinParameters()
-                );
-                criteria.addJoinInfo(criteriaJoinInfo);
+                // 将JoinInfo直接添加到Criteria中
+                criteria.addJoinInfo(joinInfo.getJoinEntityClass(), 
+                                    joinInfo.getJoinType(), 
+                                    joinInfo.getJoinCondition(), 
+                                    joinInfo.getJoinParameters());
             }
         }
         

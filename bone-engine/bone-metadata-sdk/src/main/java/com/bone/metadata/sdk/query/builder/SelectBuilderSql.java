@@ -27,6 +27,7 @@ public class SelectBuilderSql implements SqlQueryBuilder<SelectContext> {
     public SelectBuilderSql(MetadataService metadataService, DatabaseDialect dialect) {
         this.metadataService = metadataService;
         this.dialect = dialect;
+    }
     
     /**
      * 构建FROM子句
@@ -34,7 +35,7 @@ public class SelectBuilderSql implements SqlQueryBuilder<SelectContext> {
      * @param joinInfos 关联表信息列表
      * @return FROM子句SQL
      */
-    private String buildFromClause(TableMetadata tableMetadata, List<JoinInfo<?>> joinInfos) {
+    private <T> String buildFromClause(TableMetadata tableMetadata, List<JoinInfo<?>> joinInfos) {
         StringBuilder fromClause = new StringBuilder();
         fromClause.append("FROM " + tableMetadata.getName() + " m");
         
