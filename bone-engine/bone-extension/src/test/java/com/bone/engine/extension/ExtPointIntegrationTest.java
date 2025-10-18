@@ -1,20 +1,11 @@
 package com.bone.engine.extension;
 
-import com.bone.engine.extension.BizContext;
-import com.bone.engine.extension.BizContexts;
-import com.bone.engine.extension.expression.ExpressionEvaluator;
 import com.bone.engine.extension.repository.ExtPointRepository;
 import com.bone.engine.extension.route.DefaultExtPointRouter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -332,7 +323,7 @@ public class ExtPointIntegrationTest {
     }
     
     // 订单服务 - 默认实现
-    @ExtProvider
+    @Extension
     public static class DefaultOrderService implements OrderService {
         @Override
         public String processOrder(String orderId) {
@@ -341,7 +332,7 @@ public class ExtPointIntegrationTest {
     }
     
     // 订单服务 - 租户A特定实现
-    @ExtProvider
+    @Extension
     public static class TenantASpecificOrderService implements OrderService {
         @Override
         public String processOrder(String orderId) {
@@ -350,7 +341,7 @@ public class ExtPointIntegrationTest {
     }
     
     // 订单服务 - 租户B特定实现
-    @ExtProvider
+    @Extension
     public static class TenantBSpecificOrderService implements OrderService {
         @Override
         public String processOrder(String orderId) {
@@ -359,7 +350,7 @@ public class ExtPointIntegrationTest {
     }
     
     // 订单服务 - 动态实现
-    @ExtProvider
+    @Extension
     public static class DynamicOrderService implements OrderService {
         @Override
         public String processOrder(String orderId) {
@@ -368,7 +359,7 @@ public class ExtPointIntegrationTest {
     }
     
     // 订单服务 - 更新后的动态实现
-    @ExtProvider
+    @Extension
     public static class UpdatedDynamicOrderService implements OrderService {
         @Override
         public String processOrder(String orderId) {
@@ -383,7 +374,7 @@ public class ExtPointIntegrationTest {
     }
     
     // 用户服务 - 默认实现
-    @ExtProvider
+    @Extension
     public static class DefaultUserService implements UserService {
         @Override
         public String greetUser(String username) {
@@ -398,7 +389,7 @@ public class ExtPointIntegrationTest {
     }
     
     // 通知服务 - 默认实现
-    @ExtProvider
+    @Extension
     public static class DefaultNotificationService implements NotificationService {
         @Override
         public String sendNotification(String target) {

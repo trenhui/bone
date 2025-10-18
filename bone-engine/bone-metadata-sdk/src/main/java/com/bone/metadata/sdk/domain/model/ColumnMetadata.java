@@ -3,7 +3,7 @@ package com.bone.metadata.sdk.domain.model;
 import com.bone.core.domain.id.GenerationStrategy;
 import lombok.Data;
 
-@Data
+// 移除@Data注解，显式添加必要的getter方法
 public class ColumnMetadata {
     private final String name;  // 列名
     private final String fieldName; //对象字段名
@@ -17,5 +17,22 @@ public class ColumnMetadata {
     private final GenerationStrategy generationStrategy;
     private final String customGenerator;
     private final String sequenceName;
+    
+    // 显式添加getter方法
+    public String getName() {
+        return name;
+    }
+    
+    public boolean isPrimaryKey() {
+        return isPrimaryKey;
+    }
+    
+    public boolean isVersion() {
+        return isVersion;
+    }
+    
+    public boolean isSoftDeleted() {
+        return isSoftDeleted;
+    }
 }
 

@@ -79,7 +79,7 @@ import java.lang.annotation.Target;
 @Documented
 @Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface ExtProvider {
+public @interface Extension {
     /**
      * 租户编码
      * <p>

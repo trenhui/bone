@@ -2,6 +2,8 @@ package com.bone.metadata.sdk.query.builder;
 
 import com.bone.metadata.sdk.query.criteria.Condition;
 import com.bone.metadata.sdk.query.criteria.Criteria;
+import com.bone.metadata.sdk.query.criteria.Criteria.JoinInfo;
+import com.bone.metadata.sdk.query.dsl.QueryBuilder.JoinType;
 import com.bone.core.enums.Operator;
 import com.bone.metadata.sdk.metadata.api.MetadataService;
 import com.bone.metadata.sdk.domain.model.AllocationContext;
@@ -35,7 +37,7 @@ public class SelectBuilderSql implements SqlQueryBuilder<SelectContext> {
      * @param joinInfos 关联表信息列表
      * @return FROM子句SQL
      */
-    private <T> String buildFromClause(TableMetadata tableMetadata, List<JoinInfo<?>> joinInfos) {
+    private String buildFromClause(TableMetadata tableMetadata, List<Criteria.JoinInfo<?>> joinInfos) {
         StringBuilder fromClause = new StringBuilder();
         fromClause.append("FROM " + tableMetadata.getName() + " m");
         
@@ -46,19 +48,12 @@ public class SelectBuilderSql implements SqlQueryBuilder<SelectContext> {
                 String joinTypeStr = "INNER JOIN";
                 
                 // 根据连接类型确定SQL关键字
-                switch (joinInfo.getJoinType()) {
-                    case LEFT:
-                        joinTypeStr = "LEFT JOIN";
-                        break;
-                    case RIGHT:
-                        joinTypeStr = "RIGHT JOIN";
-                        break;
-                    case FULL:
-                        joinTypeStr = "FULL JOIN";
-                        break;
-                    default:
-                        // 默认INNER JOIN
-                        break;
+                if (joinInfo.getJoinType() == JoinType.LEFT) {
+                    joinTypeStr = "LEFT JOIN";
+                } else if (joinInfo.getJoinType() == JoinType.RIGHT) {
+                    joinTypeStr = "RIGHT JOIN";
+                } else if (joinInfo.getJoinType() == JoinType.FULL) {
+                    joinTypeStr = "FULL JOIN";
                 }
                 
                 // 添加连接子句
@@ -74,50 +69,6 @@ public class SelectBuilderSql implements SqlQueryBuilder<SelectContext> {
         return fromClause.toString();
     }
     
-    /**
-     * 连接类型枚举
-     */
-    public enum JoinType {
-        INNER,
-        LEFT,
-        RIGHT,
-        FULL
-    }
-    
-    /**
-     * 关联表信息
-     */
-    public static class JoinInfo<T> {
-        private Class<T> joinEntityClass;
-        private JoinType joinType;
-        private String joinCondition;
-        private Map<String, Object> joinParameters;
-        
-        public JoinInfo(Class<T> joinEntityClass, JoinType joinType, String joinCondition, Map<String, Object> joinParameters) {
-            this.joinEntityClass = joinEntityClass;
-            this.joinType = joinType;
-            this.joinCondition = joinCondition;
-            this.joinParameters = joinParameters;
-        }
-        
-        public Class<T> getJoinEntityClass() {
-            return joinEntityClass;
-        }
-        
-        public JoinType getJoinType() {
-            return joinType;
-        }
-        
-        public String getJoinCondition() {
-            return joinCondition;
-        }
-        
-        public Map<String, Object> getJoinParameters() {
-            return joinParameters;
-        }
-    }
-}
-
     @Override
     public CompiledQuery build(SelectContext ctx) {
         TableMetadata tbl = ctx.getTable();

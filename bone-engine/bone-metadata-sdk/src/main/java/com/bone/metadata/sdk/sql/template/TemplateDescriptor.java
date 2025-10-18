@@ -14,6 +14,10 @@ public class TemplateDescriptor {
     private String templateId;           // Unique identifier (e.g., com.example.BarRepo.findById)
     private String sourceUri;            // Source URI (e.g., annotation://, classpath://)
     private SqlTemplateType format;      // Template format (SQL, MYBATIS, DYNAMIC_SQL)
+    
+    public String getSourceUri() {
+        return sourceUri;
+    }
     @Builder.Default
     private Map<String, String> tags = Collections.emptyMap(); // Metadata tags (e.g., env=prod, tenant=acme)
     private String version;              // Template version (e.g., v1.0)

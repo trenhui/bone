@@ -2,16 +2,19 @@ package com.bone.metadata.sdk.sql.template;
 
 import com.bone.metadata.sdk.domain.exception.TemplateSecurityException;
 import com.bone.metadata.sdk.support.config.SqlConfigProperties;
-import lombok.RequiredArgsConstructor;
+
 
 import java.net.URI;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
-@RequiredArgsConstructor
 public class TemplateSecurityValidator {
     private final SqlConfigProperties config;
+    
+    public TemplateSecurityValidator(SqlConfigProperties config) {
+        this.config = config;
+    }
     private static final Pattern SQL_INJECTION_PATTERN = Pattern.compile("(?i)(\\b(drop|delete|truncate|exec|union\\s+all)\\b)");
 
     // 不再使用硬编码的 ALLOWED_HOSTS

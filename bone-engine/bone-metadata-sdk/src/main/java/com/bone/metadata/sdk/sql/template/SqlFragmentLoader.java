@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.util.StringUtils;
+import java.util.logging.Logger;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -21,6 +22,8 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class SqlFragmentLoader {
+    // 确保log变量可用，作为@Slf4j的备份
+    private static final Logger log = Logger.getLogger(SqlFragmentLoader.class.getName());
     private final SqlConfigProperties sqlConfigProperties;
 
     public SqlFragmentLoader(SqlConfigProperties sqlConfigProperties) {

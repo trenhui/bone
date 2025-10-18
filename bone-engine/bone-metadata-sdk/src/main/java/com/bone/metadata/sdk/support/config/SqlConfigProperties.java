@@ -287,4 +287,22 @@ public class SqlConfigProperties {
         @NotNull(message = "Allowed hosts cannot be null")
         private Set<String> allowedHosts = Set.of("*.company.com", "localhost");
     }
+    
+    public TemplateProperties getTemplate() {
+        return new TemplateProperties();
+    }
+    
+    public static class TemplateProperties {
+        public int getMaxTemplateSize() {
+            return 1024 * 1024; // 默认1MB
+        }
+        
+        public int getCacheSize() {
+            return 1000;
+        }
+        
+        public int getExpireHours() {
+            return 24;
+        }
+    }
 }

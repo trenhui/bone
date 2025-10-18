@@ -7,10 +7,18 @@ import lombok.Getter;
 
 import java.util.List;
 
-@Data
 public class TableMetadata {
     private final String name;  // 表名
     private final List<ColumnMetadata> columns;  // 表的列元数据
+    
+    // 显式添加getter方法以确保编译器能找到
+    public String getName() {
+        return name;
+    }
+    
+    public List<ColumnMetadata> getColumns() {
+        return columns;
+    }
     @Getter(AccessLevel.NONE)
     private final ColumnMetadata primaryKey;  // 缓存的主键列
     @Getter(AccessLevel.NONE)

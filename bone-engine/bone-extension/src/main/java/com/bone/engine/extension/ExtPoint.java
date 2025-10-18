@@ -73,7 +73,7 @@ import java.lang.annotation.*;
  *   <li>为每个扩展点提供默认实现，提高系统健壮性</li>
  * </ul>
  * 
- * @see ExtProvider 扩展点提供者注解
+ * @see Extension 扩展点提供者注解
  * @see BizContext 业务上下文对象
  * @see EnableExtPoints 启用扩展点框架注解
  * @since 1.0.0

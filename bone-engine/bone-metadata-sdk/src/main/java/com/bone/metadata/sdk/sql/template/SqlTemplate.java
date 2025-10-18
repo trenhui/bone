@@ -16,11 +16,28 @@ import java.util.regex.Pattern;
  * 该类设计为部分不可变（通过 Builder 构建），支持序列化以用于分布式缓存，
  * 并提供扩展性以支持多种模板来源和格式（如 YAML、SQL、MYBATIS）。
  */
-@Data
+// 移除@Data注解，显式添加必要的getter方法
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class SqlTemplate implements Serializable {
+    
+    // 显式添加getter方法
+    public SqlTemplateType getSqlTemplateType() {
+        return sqlTemplateType;
+    }
+    
+    public String getId() {
+        return id;
+    }
+    
+    public String getSql() {
+        return sql;
+    }
+    
+    public SqlType getSqlType() {
+        return sqlType;
+    }
     @Serial
     private static final long serialVersionUID = 1L;
 

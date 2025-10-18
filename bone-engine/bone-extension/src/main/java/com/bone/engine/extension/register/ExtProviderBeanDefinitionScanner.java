@@ -1,6 +1,6 @@
 package com.bone.engine.extension.register;
 
-import com.bone.engine.extension.ExtProvider;
+import com.bone.engine.extension.Extension;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
@@ -26,7 +26,7 @@ public class ExtProviderBeanDefinitionScanner extends ClassPathBeanDefinitionSca
 
     @Override
     protected Set<BeanDefinitionHolder> doScan(String... basePackages) {
-        addIncludeFilter(new AnnotationTypeFilter(ExtProvider.class));
+        addIncludeFilter(new AnnotationTypeFilter(Extension.class));
         return super.doScan(basePackages);
     }
 

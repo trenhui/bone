@@ -1,9 +1,8 @@
 package com.bone.engine.extension.register;
 
 import com.bone.engine.extension.ExtPoint;
-import com.bone.engine.extension.ExtProvider;
+import com.bone.engine.extension.Extension;
 import com.bone.engine.extension.repository.ExtPointRepository;
-import com.bone.core.util.ReflectionUtil;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * 与Spring容器深度集成，自动发现并注册带有@ExtProvider注解的组件
  * 
  * @see ExtPoint 扩展点标记注解
- * @see ExtProvider 扩展提供者标记注解
+ * @see Extension 扩展提供者标记注解
  * @since 1.0.0
  */
 @Component
@@ -60,7 +59,7 @@ public class ExtProviderRegister implements ApplicationContextAware {
         Assert.notNull(applicationContext, "ApplicationContext must not be null");
         
         try {
-            Map<String, Object> extensionBeans = applicationContext.getBeansWithAnnotation(ExtProvider.class);
+            Map<String, Object> extensionBeans = applicationContext.getBeansWithAnnotation(Extension.class);
             log.info("Found {} extension providers to register", extensionBeans.size());
             
             extensionBeans.forEach((beanName, extProvider) -> {
@@ -105,9 +104,9 @@ public class ExtProviderRegister implements ApplicationContextAware {
         log.debug("Registering extension provider: {}", providerClassName);
         
         // 检查@ExtProvider注解
-        ExtProvider extAnnotation = AnnotationUtils.findAnnotation(extProviderClass, ExtProvider.class);
+        Extension extAnnotation = AnnotationUtils.findAnnotation(extProviderClass, Extension.class);
         if (extAnnotation == null) {
-            throw new IllegalArgumentException("Extension provider must be annotated with @ExtProvider: " + providerClassName);
+            throw new IllegalArgumentException("Extension provider must be annotated with @Extension: " + providerClassName);
         }
         
         // 获取扩展点接口 - 支持多接口实现
