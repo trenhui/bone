@@ -3,9 +3,7 @@ package com.bone.metadata.sdk.query.context;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.domain.model.AllocationContext;
 import com.bone.metadata.sdk.domain.model.TableMetadata;
-import lombok.Getter;
 
-@Getter
 public class SelectContext {
     private final TableMetadata table;
     private final Criteria<?> criteria;
@@ -25,4 +23,9 @@ public class SelectContext {
         this.extContext = null;
         this.includeDeleted = includeDeleted;
     }
+    
+    public TableMetadata getTable() { return table; }
+    public Criteria<?> getCriteria() { return criteria; }
+    public AllocationContext getExtContext() { return extContext; }
+    public boolean isIncludeDeleted() { return includeDeleted; }
 }

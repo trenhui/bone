@@ -11,24 +11,35 @@ import java.util.regex.Pattern;
  * 实体分组／列分配上下文：
  * 既是路由分区的键，也是 ColumnAllocator 的上下文载体。
  */
-@Value
 public class AllocationContext {
     /**
      * 租户 ID
      */
-    Long tenantId;
+    private Long tenantId;
     /**
      * 应用编码
      */
-    String appCode;
+    private String appCode;
     /**
      * 业务身份（如业务线/模块）
      */
-    String bizIdentityCode;
+    private String bizIdentityCode;
     /**
      * 实体类型（如 Order、User 等）
      */
-    String entityType;
+    private String entityType;
+    
+    public AllocationContext(Long tenantId, String appCode, String bizIdentityCode, String entityType) {
+        this.tenantId = tenantId;
+        this.appCode = appCode;
+        this.bizIdentityCode = bizIdentityCode;
+        this.entityType = entityType;
+    }
+    
+    public Long getTenantId() { return tenantId; }
+    public String getAppCode() { return appCode; }
+    public String getBizIdentityCode() { return bizIdentityCode; }
+    public String getEntityType() { return entityType; }
 
 
     /**

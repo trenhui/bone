@@ -12,12 +12,13 @@ import org.springframework.util.FileCopyUtils;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.logging.Logger;
 
 /**
  * 从类路径加载SQL模板，支持结构化路径（如 sql/<package>/<ClassName>/<methodName>.sql）。
  */
-@Slf4j
 public class ClasspathSourceProvider implements TemplateSourceProvider {
+    private static final Logger LOGGER = Logger.getLogger(ClasspathSourceProvider.class.getName());
     private final ResourceLoader resourceLoader;
     private final SqlConfigProperties config;
 
@@ -37,17 +38,17 @@ public class ClasspathSourceProvider implements TemplateSourceProvider {
         try {
             Resource resource = resourceLoader.getResource(path);
             if (!resource.exists()) {
-                log.warn("类路径资源未找到: {}。请确保文件存在于 src/main/resources。", path);
+                LOGGER.warning("类路径资源未找到: " + path + "。请确保文件存在于 src/main/resources。");
                 return null;
                 //throw new TemplateNotFoundException("类路径资源未找到: " + path);
             }
             if (!resource.isReadable()) {
-                log.error("类路径资源不可读: {}", path);
+                LOGGER.severe("类路径资源不可读: " + path);
                 throw new TemplateLoadException("类路径资源不可读: " + path);
             }
             byte[] content = FileCopyUtils.copyToByteArray(resource.getInputStream());
             String contentStr = new String(content, StandardCharsets.UTF_8).trim();
-            log.debug("加载类路径模板: {}, 大小: {} 字节", path, content.length);
+            LOGGER.fine("加载类路径模板: " + path + ", 大小: " + content.length + " 字节");
             return new LoadedSource(
                     contentStr,
                     StandardCharsets.UTF_8.name(),
@@ -55,10 +56,10 @@ public class ClasspathSourceProvider implements TemplateSourceProvider {
                     System.currentTimeMillis()
             );
         } catch (TemplateNotFoundException e) {
-            log.error("加载类路径模板失败: {}, 原因: {}", path, e.getMessage(), e);
+            LOGGER.severe("加载类路径模板失败: " + path + ", 原因: " + e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("加载类路径模板失败: {}, 原因: {}", path, e.getMessage(), e);
+            LOGGER.severe("加载类路径模板失败: " + path + ", 原因: " + e.getMessage());
             throw new TemplateLoadException("加载类路径模板失败: " + path, e);
         }
     }

@@ -23,7 +23,7 @@ import java.lang.annotation.Target;
  * <h3>功能特性：</h3>
  * <ul>
  *   <li>自动扫描并注册带有{@code @ExtPoint}注解的接口和类</li>
- *   <li>自动扫描并注册带有{@code @ExtProvider}注解的实现类</li>
+ *   <li>自动扫描并注册带有{@code @Extension}注解的实现类</li>
  *   <li>支持基于业务上下文的动态路由</li>
  *   <li>支持多租户隔离</li>
  *   <li>支持自定义扩展点仓库实现（内存、Redis、Nacos等）</li>
@@ -61,7 +61,7 @@ import java.lang.annotation.Target;
  * </pre>
  * 
  * @see ExtPoint 扩展点标记注解
- * @see ExtProvider 扩展提供者注解
+ * @see Extension 扩展提供者注解
  * @see ExtPointRegister 扩展点注册器
  * @since 1.0.0
  */
@@ -73,7 +73,7 @@ public @interface EnableExtPoints {
     /**
      * 扫描的基础包路径
      * <p>
-     * 指定要扫描的包，框架会在这些包中查找带有{@code @ExtPoint}和{@code @ExtProvider}注解的类
+     * 指定要扫描的包，框架会在这些包中查找带有{@code @ExtPoint}和{@code @Extension}注解的类
      * 如果未指定，默认扫描注解所在类的包及其子包
      * </p>
      * 

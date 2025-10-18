@@ -2,7 +2,6 @@ package com.bone.engine.extension;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.lang.Nullable;
@@ -60,7 +59,7 @@ import java.util.function.Function;
  * @param <T> 业务数据类型，可存储具体的业务对象
  * @see EnableExtPoints 启用扩展点框架
  * @see ExtPoint 扩展点接口标记
- * @see ExtProvider 扩展点提供者标记
+ * @see Extension 扩展点提供者标记
  * @since 1.0.0
  */
 @Data

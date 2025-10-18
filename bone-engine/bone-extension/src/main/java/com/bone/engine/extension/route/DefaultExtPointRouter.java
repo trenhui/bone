@@ -1,7 +1,7 @@
 package com.bone.engine.extension.route;
 
 import com.bone.engine.extension.BizContext;
-import com.bone.engine.extension.ExtProvider;
+import com.bone.engine.extension.Extension;
 import com.bone.engine.extension.expression.ExpressionEvaluator;
 import com.bone.engine.extension.repository.ExtPointRepository;
 import org.slf4j.Logger;
@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentMap;
  * @author renhui.trh 2023-11-1
  * @since 1.0.0
  * @see ExtPointRouter 扩展点路由器接口
- * @see ExtProvider 扩展提供者注解
+ * @see Extension 扩展提供者注解
  */
 public class DefaultExtPointRouter implements ExtPointRouter {
     private static final Logger log = LoggerFactory.getLogger(DefaultExtPointRouter.class);
@@ -40,7 +40,7 @@ public class DefaultExtPointRouter implements ExtPointRouter {
     private final ExtPointRepository extPointRepository;
     
     // 缓存扩展提供者的注解信息，避免重复反射获取，提升性能
-    private static final ConcurrentMap<String, ExtProvider> EXT_ANNOTATION_CACHE = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<String, Extension> EXT_ANNOTATION_CACHE = new ConcurrentHashMap<>();
 
     /**
      * 构造函数
@@ -157,7 +157,7 @@ public class DefaultExtPointRouter implements ExtPointRouter {
         List<C> matchedExtProviders = new ArrayList<>(1); // 预设容量，通常最多匹配一个
         
         for (Object extProvider : extProviderList) {
-            ExtProvider extAnnotation = getExtProviderAnnotation(extProvider.getClass());
+            Extension extAnnotation = getExtProviderAnnotation(extProvider.getClass());
 
             if (StringUtils.hasText(extAnnotation.expression())) {
                 try {
@@ -202,9 +202,9 @@ public class DefaultExtPointRouter implements ExtPointRouter {
      * @param providerClass 扩展提供者类
      * @return 扩展提供者注解
      */
-    private ExtProvider getExtProviderAnnotation(Class<?> providerClass) {
+    private Extension getExtProviderAnnotation(Class<?> providerClass) {
         String className = providerClass.getName();
         return EXT_ANNOTATION_CACHE.computeIfAbsent(className, 
-                key -> AnnotationUtils.findAnnotation(providerClass, ExtProvider.class));
+                key -> AnnotationUtils.findAnnotation(providerClass, Extension.class));
     }
 }

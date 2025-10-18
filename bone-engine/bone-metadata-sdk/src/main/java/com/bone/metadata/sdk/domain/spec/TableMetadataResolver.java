@@ -23,9 +23,13 @@ import java.util.concurrent.TimeUnit;
 /**
  * 元数据解析器，支持缓存。
  */
-@Slf4j
+import java.util.logging.Logger;
+
 public final class TableMetadataResolver {
 
+    // 使用java.util.logging.Logger代替lombok log
+    private static final Logger LOGGER = Logger.getLogger(TableMetadataResolver.class.getName());
+    
     // 使用Caffeine实现的线程安全缓存
     private static final Cache<String, TableMetadata> METADATA_CACHE = Caffeine.newBuilder()
             .maximumSize(2000)  // 最大缓存容量
@@ -60,7 +64,7 @@ public final class TableMetadataResolver {
         }
         List<ColumnMetadata> columns = parseColumns(entityClass);
 
-        log.debug("Parsed TableMetadata for table: {} with {} columns", tableName, columns.size());
+        LOGGER.fine(String.format("Parsed TableMetadata for table: %s with %d columns", tableName, columns.size()));
         return new TableMetadata(tableName, columns);
     }
 
@@ -83,7 +87,7 @@ public final class TableMetadataResolver {
             currentClass = currentClass.getSuperclass();
         }
 
-        log.debug("Parsed {} columns from class {}", columns.size(), entityClass.getName());
+        LOGGER.fine(String.format("Parsed %d columns from class %s", columns.size(), entityClass.getName()));
         return columns;
     }
 
@@ -160,7 +164,7 @@ public final class TableMetadataResolver {
      */
     public static void clearCache() {
         METADATA_CACHE.invalidateAll();
-        log.info("All metadata cache cleared.");
+        LOGGER.info("All metadata cache cleared.");
     }
 
     /**
@@ -168,6 +172,6 @@ public final class TableMetadataResolver {
      */
     public static void clearCacheForTable(String tableName) {
         METADATA_CACHE.invalidate(tableName);
-        log.info("Cache for table {} cleared.", tableName);
+        LOGGER.info(String.format("Cache for table %s cleared.", tableName));
     }
 }

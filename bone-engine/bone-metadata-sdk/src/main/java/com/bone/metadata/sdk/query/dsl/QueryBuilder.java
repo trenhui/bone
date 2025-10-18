@@ -20,19 +20,12 @@ import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-/**
- * 连接类型枚举
- */
-public enum JoinType {
-    INNER,
-    LEFT,
-    RIGHT,
-    FULL
-}
+
 
 /**
  * 查询构建异常，用于SQL构建过程中的错误处理
@@ -124,6 +117,16 @@ class NonUniqueResultException extends RuntimeException {
 @Slf4j
 public class QueryBuilder {
 
+    /**
+     * 连接类型枚举
+     */
+    public enum JoinType {
+        INNER,
+        LEFT,
+        RIGHT,
+        FULL
+    }
+    
     // 用于生成唯一参数名的原子计数器
     private static final AtomicInteger PARAM_COUNTER = new AtomicInteger(0);
     
@@ -217,30 +220,78 @@ public class QueryBuilder {
     }
     
     private static class QueryContext<T> {
-        @Getter
         private final Class<T> entityClass;
-        @Getter
         private final TableMetadata tableMetadata;
-        @Getter
+        
+        // 显式添加getter方法以确保编译器能找到
+        public Class<T> getEntityClass() {
+            return entityClass;
+        }
+        
+        // 显式添加getter方法以确保编译器能找到
+        public TableMetadata getTableMetadata() {
+            return tableMetadata;
+        }
         private final List<Condition> conditions = new ArrayList<>();
-        @Getter
+        
+        // 显式添加getter方法以确保编译器能找到
+        public List<Condition> getConditions() {
+            return conditions;
+        }
         private final List<String> conditionOperators = new ArrayList<>(); // 存储AND/OR操作符
-        @Getter
+        
+        // 显式添加getter方法以确保编译器能找到
+        public List<String> getConditionOperators() {
+            return conditionOperators;
+        }
         private final List<String> groupByFields = new ArrayList<>();
-        @Getter
+        
+        // 显式添加getter方法以确保编译器能找到
+        public List<String> getGroupByFields() {
+            return groupByFields;
+        }
         private final List<String> havingConditions = new ArrayList<>();
-        @Getter
+        
+        // 显式添加getter方法以确保编译器能找到
+        public List<String> getHavingConditions() {
+            return havingConditions;
+        }
         private final List<String> havingOperators = new ArrayList<>(); // 存储HAVING子句的AND/OR操作符
-        @Getter
+        
+        // 显式添加getter方法以确保编译器能找到
+        public List<String> getHavingOperators() {
+            return havingOperators;
+        }
         private final Map<String, String> orderByFields = new LinkedHashMap<>(); // 字段名 -> 排序方向
-        @Getter
+        
+        // 显式添加getter方法以确保编译器能找到
+        public Map<String, String> getOrderByFields() {
+            return orderByFields;
+        }
         private long limit = -1;
-        @Getter
+        
+        // 显式添加getter方法以确保编译器能找到
+        public long getLimit() {
+            return limit;
+        }
         private long offset = 0;
-        @Getter
+        
+        // 显式添加getter方法以确保编译器能找到
+        public long getOffset() {
+            return offset;
+        }
         private final Map<String, Object> parameters = new HashMap<>();
-        @Getter
+        
+        // 显式添加getter方法以确保编译器能找到
+        public Map<String, Object> getParameters() {
+            return parameters;
+        }
         private final List<JoinInfo<?>> joinInfos = new ArrayList<>();
+        
+        // 显式添加getter方法以确保编译器能找到
+        public List<JoinInfo<?>> getJoinInfos() {
+            return joinInfos;
+        }
         
         public QueryContext(Class<T> entityClass) {
             this.entityClass = entityClass;
@@ -378,15 +429,14 @@ public class QueryBuilder {
      * @return 连接类型字符串
      */
     private static String convertJoinType(JoinType joinType) {
-        switch (joinType) {
-            case LEFT:
-                return "LEFT";
-            case RIGHT:
-                return "RIGHT";
-            case FULL:
-                return "FULL";
-            default:
-                return "INNER";
+        if (joinType == JoinType.LEFT) {
+            return "LEFT JOIN";
+        } else if (joinType == JoinType.RIGHT) {
+            return "RIGHT JOIN";
+        } else if (joinType == JoinType.FULL) {
+            return "FULL JOIN";
+        } else {
+            return "INNER JOIN";
         }
     }
     
@@ -402,9 +452,11 @@ public class QueryBuilder {
         // 传递join信息
         if (context.getJoinInfos() != null && !context.getJoinInfos().isEmpty()) {
             for (QueryBuilder.JoinInfo<?> joinInfo : context.getJoinInfos()) {
-                // 将JoinInfo直接添加到Criteria中
+                // 获取转换后的连接类型字符串
+                String joinTypeStr = convertJoinType(joinInfo.getJoinType());
+                // 将JoinInfo信息添加到Criteria中
                 criteria.addJoinInfo(joinInfo.getJoinEntityClass(), 
-                                    joinInfo.getJoinType(), 
+                                    joinTypeStr, 
                                     joinInfo.getJoinCondition(), 
                                     joinInfo.getJoinParameters());
             }
@@ -544,17 +596,19 @@ public class QueryBuilder {
                 
                 // 如果无法从方法引用中提取，使用反射查找第一个getter方法
                 // 这是一个回退机制，实际应用中应优先使用方法引用
-                Method[] methods = context.getEntityClass().getDeclaredMethods();
+                Class<?> entityClass = context.getEntityClass();
+                Method[] methods = entityClass.getDeclaredMethods();
                 for (Method method : methods) {
                     if (method.getName().startsWith("get") && method.getParameterCount() == 0) {
-                        PropertyDescriptor pd = new PropertyDescriptor(method.getName().substring(3), context.getEntityClass());
+                        PropertyDescriptor pd = new PropertyDescriptor(method.getName().substring(3), entityClass);
                         return pd.getName();
                     }
                 }
                 
                 throw new IllegalArgumentException("Cannot extract field name from function: " + toString);
             } catch (Exception e) {
-                log.error("Failed to extract field name", e);
+                // 使用标准日志获取方式
+                java.util.logging.Logger.getLogger(QueryBuilder.class.getName()).log(java.util.logging.Level.SEVERE, "Failed to extract field name", e);
                 throw new IllegalArgumentException("Failed to extract field name", e);
             }
         }
@@ -600,12 +654,10 @@ public class QueryBuilder {
                 Criteria<T> criteria = convertToCriteria(context);
                 
                 // 使用SqlBuilder构建SQL查询
-                CompiledQuery compiledQuery = getSqlBuilder().buildSelect(context.getEntityClass(), criteria);
+                Class<?> entityClass = context.getEntityClass();
+                CompiledQuery compiledQuery = getSqlBuilder().buildSelect(entityClass, criteria);
                 
-                // 记录生成的SQL和参数到日志
-                log.debug("Generated SQL (using SqlBuilder): {}", compiledQuery.getSql());
-                log.debug("SQL Parameters: {}", compiledQuery.getParameters());
-                
+                // 由于Lombok生成的getter方法可能存在编译问题，直接返回编译后的查询对象
                 return compiledQuery;
             } catch (Exception e) {
                 System.err.println("Error building query: " + e.getMessage());
@@ -623,7 +675,7 @@ public class QueryBuilder {
      */
     private String addTableAliasToCondition(String conditionSql, String tableAlias) {
         // 添加日志记录，帮助调试
-        log.debug("处理条件SQL: '{}', 表别名: '{}'", conditionSql, tableAlias);
+        java.util.logging.Logger.getLogger(QueryBuilder.class.getName()).log(java.util.logging.Level.FINE, "处理条件SQL: {0}, 表别名: {1}", new Object[]{conditionSql, tableAlias});
         
         // 使用最简单的字符串处理方法，完全避免正则表达式转义问题
         String upperCondition = conditionSql.toUpperCase();
@@ -635,9 +687,9 @@ public class QueryBuilder {
             String[] parts = conditionSql.split("(?i)\\s+IS\\s+NULL");
             if (parts.length > 0) {
                 String columnName = parts[0].trim();
-                log.debug("处理 IS NULL 条件 - 列名: {}", columnName);
+                java.util.logging.Logger.getLogger(QueryBuilder.class.getName()).log(java.util.logging.Level.FINE, "处理 IS NULL 条件 - 列名: {0}", columnName);
                 result = tableAlias + "." + columnName + " IS NULL";
-                log.debug("生成的条件: {}", result);
+                java.util.logging.Logger.getLogger(QueryBuilder.class.getName()).log(java.util.logging.Level.FINE, "生成的条件: {0}", result);
                 return result;
             }
         } 
@@ -647,18 +699,18 @@ public class QueryBuilder {
             String[] parts = conditionSql.split("(?i)\\s+IS\\s+NOT\\s+NULL");
             if (parts.length > 0) {
                 String columnName = parts[0].trim();
-                log.debug("处理 IS NOT NULL 条件 - 列名: {}", columnName);
+                java.util.logging.Logger.getLogger(QueryBuilder.class.getName()).log(java.util.logging.Level.FINE, "处理 IS NOT NULL 条件 - 列名: {0}", columnName);
                 result = tableAlias + "." + columnName + " IS NOT NULL";
-                log.debug("生成的条件: {}", result);
+                java.util.logging.Logger.getLogger(QueryBuilder.class.getName()).log(java.util.logging.Level.FINE, "生成的条件: {0}", result);
                 return result;
             }
         } else {
             // 对于其他条件，暂时保持原样（可以根据需要扩展）
-            log.debug("条件不匹配 IS NULL 或 IS NOT NULL 模式，返回原始条件");
+            java.util.logging.Logger.getLogger(QueryBuilder.class.getName()).log(java.util.logging.Level.FINE, "条件不匹配 IS NULL 或 IS NOT NULL 模式，返回原始条件");
             result = conditionSql;
         }
         
-        log.debug("条件处理结果: {}", result);
+        java.util.logging.Logger.getLogger(QueryBuilder.class.getName()).log(java.util.logging.Level.FINE, "条件处理结果: {0}", result);
         return result;
     }
         
@@ -713,12 +765,15 @@ public class QueryBuilder {
                 }
                 
                 String finalSql = sql.toString();
-                log.debug("Generated COUNT SQL: {}", finalSql);
-                log.debug("SQL Parameters: {}", context.getParameters());
+                // 使用Java标准日志记录器替代log.debug
+                Logger.getLogger(getClass().getName()).fine(String.format("Generated COUNT SQL: %s", finalSql));
+                Logger.getLogger(getClass().getName()).fine(String.format("SQL Parameters: %s", context.getParameters()));
                 
+                // 使用双参数构造器创建CompiledQuery对象
                 return new CompiledQuery(finalSql, context.getParameters());
             } catch (Exception e) {
-                log.error("Failed to build count query SQL", e);
+                // 使用Java标准日志记录器替代log.error
+                Logger.getLogger(getClass().getName()).severe(String.format("Failed to build count query SQL: %s", e.getMessage()));
                 throw new QueryBuildException("Error building count SQL query", e);
             }
         }
@@ -727,9 +782,10 @@ public class QueryBuilder {
         public List<T> list() {
             try {
                 CompiledQuery query = buildQuery();
-                log.debug("Executing list query: {}", query.getSql());
+                // 使用Java标准日志记录器替代log.debug
+                Logger.getLogger(getClass().getName()).fine(String.format("Executing list query: %s", query.getSql()));
                 List<T> results = getSqlExecutor().executeQuery(query, context.getEntityClass());
-                log.debug("List query returned {} results", results.size());
+                Logger.getLogger(getClass().getName()).fine(String.format("List query returned %d results", results.size()));
                 return results;
             } catch (QueryBuildException e) {
                 // 直接抛出构建异常
@@ -749,18 +805,20 @@ public class QueryBuilder {
                     // 限制结果为2条以便检测多条结果
                     context.setLimit(2);
                     CompiledQuery query = buildQuery();
-                    log.debug("Executing single query: {}", query.getSql());
+                    // 使用Java标准日志记录器替代log.debug
+                    Logger.getLogger(getClass().getName()).fine(String.format("Executing single query: %s", query.getSql()));
                     List<T> results = getSqlExecutor().executeQuery(query, context.getEntityClass());
                     
                     if (results.isEmpty()) {
-                        log.debug("Single query returned no results");
+                        Logger.getLogger(getClass().getName()).fine("Single query returned no results");
                         return null;
                     } else if (results.size() > 1) {
                         throw new NonUniqueResultException("Expected single result, but found " + results.size(), 
                                                           query.getSql(), query.getParameters());
                     }
                     
-                    log.debug("Single query returned exactly one result");
+                    // 使用Java标准日志记录器替代log.debug
+                    Logger.getLogger(getClass().getName()).fine("Single query returned exactly one result");
                     return results.get(0);
                 } finally {
                     // 恢复原始的limit值
@@ -770,7 +828,8 @@ public class QueryBuilder {
                 // 直接抛出非唯一结果异常
                 throw e;
             } catch (Exception e) {
-                log.error("Failed to execute single query", e);
+                // 使用Java标准日志记录器替代log.error
+                Logger.getLogger(getClass().getName()).severe(String.format("Failed to execute single query: %s", e.getMessage()));
                 throw new QueryExecutionException("Single query execution failed", e);
             }
         }
@@ -779,16 +838,18 @@ public class QueryBuilder {
         public long count() {
             try {
                 CompiledQuery query = buildCountQuery();
-                log.debug("Executing count query: {}", query.getSql());
+                // 使用Java标准日志记录器替代log.debug
+                Logger.getLogger(getClass().getName()).fine(String.format("Executing count query: %s", query.getSql()));
                 Long result = getSqlExecutor().queryForObject(query, Long.class);
                 long count = result != null ? result : 0;
-                log.debug("Count query returned: {}", count);
+                Logger.getLogger(getClass().getName()).fine(String.format("Count query returned: %d", count));
                 return count;
             } catch (QueryBuildException e) {
                 // 直接抛出构建异常
                 throw e;
             } catch (Exception e) {
-                log.error("Failed to execute count query", e);
+                // 使用Java标准日志记录器替代log.error
+                Logger.getLogger(getClass().getName()).severe(String.format("Failed to execute count query: %s", e.getMessage()));
                 throw new QueryExecutionException("Count query execution failed", e);
             }
         }
@@ -869,7 +930,8 @@ public class QueryBuilder {
             try {
                 // 获取方法引用的toString()结果
                 String toString = fieldFunction.toString();
-                log.debug("Extracting join field name from: {}", toString);
+                // 使用Java标准日志记录器替代log.debug
+                Logger.getLogger(getClass().getName()).fine(String.format("Extracting join field name from: %s", toString));
                 
                 // 尝试匹配getter方法模式
                 Matcher matcher = METHOD_REFERENCE_PATTERN.matcher(toString);
@@ -895,7 +957,8 @@ public class QueryBuilder {
                 
                 throw new IllegalArgumentException("Cannot extract join field name from function: " + toString);
             } catch (Exception e) {
-                log.error("Failed to extract join field name", e);
+                // 使用Java标准日志记录器替代log.error
+                Logger.getLogger(getClass().getName()).severe(String.format("Failed to extract join field name: %s", e.getMessage()));
                 throw new IllegalArgumentException("Failed to extract join field name", e);
             }
         }

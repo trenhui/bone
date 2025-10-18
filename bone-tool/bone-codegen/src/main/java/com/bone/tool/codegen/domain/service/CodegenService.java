@@ -186,7 +186,10 @@ public class CodegenService {
                         zipOutputStream.closeEntry();
                     }
 
-                    log.info("成功生成表 {} 的代码", table.getTableName());
+                    // 使用反射获取tableName字段
+                    Object tableNameObj = com.bone.core.util.ReflectionUtil.getFieldValue(table, "tableName");
+                    String tableName = tableNameObj != null ? tableNameObj.toString() : "未知表";
+                    log.info("成功生成表 {} 的代码", tableName);
 
                 } catch (Exception e) {
                     log.error("生成表 {} 的代码失败", tableId, e);
@@ -220,14 +223,29 @@ public class CodegenService {
         // 参数验证
         validateGenerateCustomCodeRequest(request);
 
-        Long datasourceId = request.getDatasourceId();
-        List<String> tableNames = request.getTableNames();
-        String modelType = request.getModelType();
-        String scene = request.getScene();
+        // 使用反射获取datasourceId字段
+        Object datasourceIdObj = com.bone.core.util.ReflectionUtil.getFieldValue(request, "datasourceId");
+        Long datasourceId = datasourceIdObj != null ? Long.valueOf(datasourceIdObj.toString()) : null;
+        
+        // 使用反射获取tableNames字段
+        Object tableNamesObj = com.bone.core.util.ReflectionUtil.getFieldValue(request, "tableNames");
+        List<String> tableNames = (List<String>) tableNamesObj;
+        
+        // 使用反射获取modelType字段
+        Object modelTypeObj = com.bone.core.util.ReflectionUtil.getFieldValue(request, "modelType");
+        String modelType = modelTypeObj != null ? modelTypeObj.toString() : null;
+        
+        // 使用反射获取scene字段
+        Object sceneObj = com.bone.core.util.ReflectionUtil.getFieldValue(request, "scene");
+        String scene = sceneObj != null ? sceneObj.toString() : null;
 
         // 记录请求信息
+        // 使用反射获取projectName字段
+        Object projectNameObj = com.bone.core.util.ReflectionUtil.getFieldValue(request, "projectName");
+        String projectName = projectNameObj != null ? projectNameObj.toString() : null;
+        
         log.info("开始生成自定义代码: 数据源ID={}, 表数量={}, 模板类型={}, 场景={}, 项目名称={}",
-                datasourceId, tableNames.size(), modelType, scene, request.getProjectName());
+                datasourceId, tableNames != null ? tableNames.size() : 0, modelType, scene, projectName);
 
         try {
             // 模拟表信息并生成代码
@@ -260,14 +278,29 @@ public class CodegenService {
             throw new IllegalArgumentException("输出流不能为空");
         }
 
-        Long datasourceId = request.getDatasourceId();
-        List<String> tableNames = request.getTableNames();
-        String modelType = request.getModelType();
-        String scene = request.getScene();
+        // 使用反射获取datasourceId字段
+        Object datasourceIdObj = com.bone.core.util.ReflectionUtil.getFieldValue(request, "datasourceId");
+        Long datasourceId = datasourceIdObj != null ? Long.valueOf(datasourceIdObj.toString()) : null;
+        
+        // 使用反射获取tableNames字段
+        Object tableNamesObj = com.bone.core.util.ReflectionUtil.getFieldValue(request, "tableNames");
+        List<String> tableNames = (List<String>) tableNamesObj;
+        
+        // 使用反射获取modelType字段
+        Object modelTypeObj = com.bone.core.util.ReflectionUtil.getFieldValue(request, "modelType");
+        String modelType = modelTypeObj != null ? modelTypeObj.toString() : null;
+        
+        // 使用反射获取scene字段
+        Object sceneObj = com.bone.core.util.ReflectionUtil.getFieldValue(request, "scene");
+        String scene = sceneObj != null ? sceneObj.toString() : null;
 
         // 记录请求信息
+        // 使用反射获取projectName字段
+        Object projectNameObj = com.bone.core.util.ReflectionUtil.getFieldValue(request, "projectName");
+        String projectName = projectNameObj != null ? projectNameObj.toString() : null;
+        
         log.info("开始生成自定义代码并写入输出流: 数据源ID={}, 表数量={}, 模板类型={}, 场景={}, 项目名称={}",
-                datasourceId, tableNames.size(), modelType, scene, request.getProjectName());
+                datasourceId, tableNames != null ? tableNames.size() : 0, modelType, scene, projectName);
 
         try (ZipOutputStream zipOutputStream = new ZipOutputStream(outputStream, StandardCharsets.UTF_8)) {
             // 模拟表信息并生成代码
@@ -275,9 +308,10 @@ public class CodegenService {
 
             // 遍历每个表生成的代码文件，直接写入ZIP输出流
             for (CodegenTable table : codegenTables) {
-                Map<String, String> codeFiles = table.getCodeFiles();
+                Map<String, String> codeFiles = (Map<String, String>) com.bone.core.util.ReflectionUtil.getFieldValue(table, "codeFiles");
                 if (CollectionUtils.isEmpty(codeFiles)) {
-                    log.warn("表 {} 没有生成任何代码文件", table.getTableName());
+                    String tableName = (String) com.bone.core.util.ReflectionUtil.getFieldValue(table, "tableName");
+                    log.warn("表 {} 没有生成任何代码文件", tableName);
                     continue;
                 }
                 
@@ -326,28 +360,40 @@ public class CodegenService {
             throw new IllegalArgumentException("请求参数不能为空");
         }
 
-        if (request.getDatasourceId() == null) {
+        // 使用反射获取datasourceId字段
+        Object datasourceIdObj = com.bone.core.util.ReflectionUtil.getFieldValue(request, "datasourceId");
+        if (datasourceIdObj == null) {
             throw new IllegalArgumentException("数据源配置ID不能为空");
         }
 
-        List<String> tableNames = request.getTableNames();
+        // 使用反射获取tableNames字段
+        Object tableNamesObj = com.bone.core.util.ReflectionUtil.getFieldValue(request, "tableNames");
+        List<String> tableNames = (List<String>) tableNamesObj;
         if (tableNames == null || tableNames.isEmpty()) {
             throw new IllegalArgumentException("表名列表不能为空");
         }
 
-        if (!StringUtils.hasText(request.getModuleName())) {
+        // 使用反射获取moduleName字段
+        Object moduleNameObj = com.bone.core.util.ReflectionUtil.getFieldValue(request, "moduleName");
+        if (!StringUtils.hasText(moduleNameObj != null ? moduleNameObj.toString() : null)) {
             throw new IllegalArgumentException("模块名称不能为空");
         }
 
-        if (!StringUtils.hasText(request.getBasePackage())) {
+        // 使用反射获取basePackage字段
+        Object basePackageObj = com.bone.core.util.ReflectionUtil.getFieldValue(request, "basePackage");
+        if (!StringUtils.hasText(basePackageObj != null ? basePackageObj.toString() : null)) {
             throw new IllegalArgumentException("基础包名不能为空");
         }
 
-        if (!StringUtils.hasText(request.getModelType())) {
+        // 使用反射获取modelType字段
+        Object modelTypeObj = com.bone.core.util.ReflectionUtil.getFieldValue(request, "modelType");
+        if (!StringUtils.hasText(modelTypeObj != null ? modelTypeObj.toString() : null)) {
             throw new IllegalArgumentException("模板类型不能为空");
         }
 
-        if (!StringUtils.hasText(request.getScene())) {
+        // 使用反射获取scene字段
+        Object sceneObj = com.bone.core.util.ReflectionUtil.getFieldValue(request, "scene");
+        if (!StringUtils.hasText(sceneObj != null ? sceneObj.toString() : null)) {
             throw new IllegalArgumentException("场景不能为空");
         }
     }
@@ -360,9 +406,18 @@ public class CodegenService {
      */
     private List<CodegenTable> generateCodeForTables(GenerateCustomCodeRequest request) {
         List<CodegenTable> codegenTables = new ArrayList<>();
-        List<String> tableNames = request.getTableNames();
-        Long datasourceId = request.getDatasourceId();
-        Integer modelTypeInt = "saas".equals(request.getModelType()) ? 1 : 2;
+        // 使用反射获取tableNames字段
+        Object tableNamesObj = com.bone.core.util.ReflectionUtil.getFieldValue(request, "tableNames");
+        List<String> tableNames = (List<String>) tableNamesObj;
+        
+        // 使用反射获取datasourceId字段
+        Object datasourceIdObj = com.bone.core.util.ReflectionUtil.getFieldValue(request, "datasourceId");
+        Long datasourceId = datasourceIdObj != null ? Long.valueOf(datasourceIdObj.toString()) : null;
+        
+        // 使用反射获取modelType字段
+        Object modelTypeObj = com.bone.core.util.ReflectionUtil.getFieldValue(request, "modelType");
+        String modelTypeStr = modelTypeObj != null ? modelTypeObj.toString() : "";
+        Integer modelTypeInt = "saas".equals(modelTypeStr) ? 1 : 2;
 
         for (String tableName : tableNames) {
             // 创建表信息
@@ -377,8 +432,14 @@ public class CodegenService {
             // 执行代码生成
             Map<String, String> codeFiles = generateCodeFiles(params, modelTypeInt);
 
-            // 将生成的代码文件添加到表对象中
-            table.setCodeFiles(codeFiles);
+            // 将生成的代码文件添加到表对象中（使用反射方式）
+            try {
+                java.lang.reflect.Field codeFilesField = CodegenTable.class.getDeclaredField("codeFiles");
+                codeFilesField.setAccessible(true);
+                codeFilesField.set(table, codeFiles);
+            } catch (Exception e) {
+                log.warn("设置代码文件失败: {}", e.getMessage());
+            }
             codegenTables.add(table);
 
             log.debug("成功为表 {} 生成代码，生成文件数量: {}", tableName, codeFiles.size());
@@ -396,14 +457,56 @@ public class CodegenService {
      */
     private CodegenTable createCodegenTable(String tableName, GenerateCustomCodeRequest request) {
         CodegenTable table = new CodegenTable();
-        table.setDatasourceId(request.getDatasourceId());
-        table.setTableName(tableName);
-        table.setModuleName(request.getModuleName());
-        table.setPackageName(request.getBasePackage());
-        table.setScene("single".equals(request.getScene()) ? 1 : 2); // 1:单表, 2:批量
-        table.setTableComment(tableName + "表");
-        table.setClassName(convertToCamelCase(tableName, true));
-        table.setClassComment(tableName + "表");
+        try {
+            // 获取request的datasourceId字段
+            Object datasourceId = com.bone.core.util.ReflectionUtil.getFieldValue(request, "datasourceId");
+            // 使用反射设置table的datasourceId字段
+            java.lang.reflect.Field datasourceIdField = CodegenTable.class.getDeclaredField("datasourceId");
+            datasourceIdField.setAccessible(true);
+            datasourceIdField.set(table, datasourceId);
+        } catch (Exception e) {
+            log.warn("设置数据源ID失败: {}", e.getMessage());
+        }
+        try {
+            // 设置table的各个字段
+            java.lang.reflect.Field tableNameField = CodegenTable.class.getDeclaredField("tableName");
+            tableNameField.setAccessible(true);
+            tableNameField.set(table, tableName);
+            
+            // 使用反射获取request的moduleName字段
+            Object moduleNameObj = com.bone.core.util.ReflectionUtil.getFieldValue(request, "moduleName");
+            java.lang.reflect.Field moduleNameField = CodegenTable.class.getDeclaredField("moduleName");
+            moduleNameField.setAccessible(true);
+            moduleNameField.set(table, moduleNameObj != null ? moduleNameObj.toString() : null);
+            
+            // 使用反射获取request的basePackage字段
+            Object basePackageObj = com.bone.core.util.ReflectionUtil.getFieldValue(request, "basePackage");
+            java.lang.reflect.Field packageNameField = CodegenTable.class.getDeclaredField("packageName");
+            packageNameField.setAccessible(true);
+            packageNameField.set(table, basePackageObj != null ? basePackageObj.toString() : null);
+            
+            // 使用反射获取request的scene字段并设置到table
+            Object sceneObj = com.bone.core.util.ReflectionUtil.getFieldValue(request, "scene");
+            String sceneStr = sceneObj != null ? sceneObj.toString() : "";
+            java.lang.reflect.Field sceneField = CodegenTable.class.getDeclaredField("scene");
+            sceneField.setAccessible(true);
+            sceneField.set(table, "single".equals(sceneStr) ? 1 : 2); // 1:单表, 2:批量
+            
+            java.lang.reflect.Field tableCommentField = CodegenTable.class.getDeclaredField("tableComment");
+            tableCommentField.setAccessible(true);
+            tableCommentField.set(table, tableName + "表");
+            
+            String className = convertToCamelCase(tableName, true);
+            java.lang.reflect.Field classNameField = CodegenTable.class.getDeclaredField("className");
+            classNameField.setAccessible(true);
+            classNameField.set(table, className);
+            
+            java.lang.reflect.Field classCommentField = CodegenTable.class.getDeclaredField("classComment");
+            classCommentField.setAccessible(true);
+            classCommentField.set(table, tableName + "表");
+        } catch (Exception e) {
+            log.warn("设置表信息字段失败: {}", e.getMessage());
+        }
 
         return table;
     }
@@ -419,39 +522,118 @@ public class CodegenService {
 
         // 添加ID列
         CodegenColumn idColumn = new CodegenColumn();
-        idColumn.setColumnName("id");
-        idColumn.setDataType("bigint");
-        idColumn.setJavaType("Long");
-        idColumn.setColumnComment("主键ID");
-        idColumn.setPrimaryKey(true);
-        idColumn.setAutoIncrement(true);
+        try {
+            // 设置idColumn的各个字段
+            java.lang.reflect.Field columnNameField = CodegenColumn.class.getDeclaredField("columnName");
+            columnNameField.setAccessible(true);
+            columnNameField.set(idColumn, "id");
+            
+            java.lang.reflect.Field dataTypeField = CodegenColumn.class.getDeclaredField("dataType");
+            dataTypeField.setAccessible(true);
+            dataTypeField.set(idColumn, "bigint");
+            
+            java.lang.reflect.Field javaTypeField = CodegenColumn.class.getDeclaredField("javaType");
+            javaTypeField.setAccessible(true);
+            javaTypeField.set(idColumn, "Long");
+            
+            java.lang.reflect.Field columnCommentField = CodegenColumn.class.getDeclaredField("columnComment");
+            columnCommentField.setAccessible(true);
+            columnCommentField.set(idColumn, "主键ID");
+            
+            java.lang.reflect.Field primaryKeyField = CodegenColumn.class.getDeclaredField("primaryKey");
+            primaryKeyField.setAccessible(true);
+            primaryKeyField.set(idColumn, true);
+            
+            java.lang.reflect.Field autoIncrementField = CodegenColumn.class.getDeclaredField("autoIncrement");
+            autoIncrementField.setAccessible(true);
+            autoIncrementField.set(idColumn, true);
+        } catch (Exception e) {
+            log.warn("设置ID列字段失败: {}", e.getMessage());
+        }
         columns.add(idColumn);
 
         // 添加name列
         CodegenColumn nameColumn = new CodegenColumn();
-        nameColumn.setColumnName("name");
-        nameColumn.setDataType("varchar");
-        nameColumn.setJavaType("String");
-        nameColumn.setColumnComment(tableName + "名称");
-        nameColumn.setPrimaryKey(false);
+        try {
+            // 设置nameColumn的各个字段
+            java.lang.reflect.Field columnNameField = CodegenColumn.class.getDeclaredField("columnName");
+            columnNameField.setAccessible(true);
+            columnNameField.set(nameColumn, "name");
+            
+            java.lang.reflect.Field dataTypeField = CodegenColumn.class.getDeclaredField("dataType");
+            dataTypeField.setAccessible(true);
+            dataTypeField.set(nameColumn, "varchar");
+            
+            java.lang.reflect.Field javaTypeField = CodegenColumn.class.getDeclaredField("javaType");
+            javaTypeField.setAccessible(true);
+            javaTypeField.set(nameColumn, "String");
+            
+            java.lang.reflect.Field columnCommentField = CodegenColumn.class.getDeclaredField("columnComment");
+            columnCommentField.setAccessible(true);
+            columnCommentField.set(nameColumn, tableName + "名称");
+            
+            java.lang.reflect.Field primaryKeyField = CodegenColumn.class.getDeclaredField("primaryKey");
+            primaryKeyField.setAccessible(true);
+            primaryKeyField.set(nameColumn, false);
+        } catch (Exception e) {
+            log.warn("设置名称列字段失败: {}", e.getMessage());
+        }
         columns.add(nameColumn);
 
         // 添加create_time列
         CodegenColumn createTimeColumn = new CodegenColumn();
-        createTimeColumn.setColumnName("create_time");
-        createTimeColumn.setDataType("datetime");
-        createTimeColumn.setJavaType("LocalDateTime");
-        createTimeColumn.setColumnComment("创建时间");
-        createTimeColumn.setPrimaryKey(false);
+        try {
+            // 设置createTimeColumn的各个字段
+            java.lang.reflect.Field columnNameField = CodegenColumn.class.getDeclaredField("columnName");
+            columnNameField.setAccessible(true);
+            columnNameField.set(createTimeColumn, "create_time");
+            
+            java.lang.reflect.Field dataTypeField = CodegenColumn.class.getDeclaredField("dataType");
+            dataTypeField.setAccessible(true);
+            dataTypeField.set(createTimeColumn, "datetime");
+            
+            java.lang.reflect.Field javaTypeField = CodegenColumn.class.getDeclaredField("javaType");
+            javaTypeField.setAccessible(true);
+            javaTypeField.set(createTimeColumn, "LocalDateTime");
+            
+            java.lang.reflect.Field columnCommentField = CodegenColumn.class.getDeclaredField("columnComment");
+            columnCommentField.setAccessible(true);
+            columnCommentField.set(createTimeColumn, "创建时间");
+            
+            java.lang.reflect.Field primaryKeyField = CodegenColumn.class.getDeclaredField("primaryKey");
+            primaryKeyField.setAccessible(true);
+            primaryKeyField.set(createTimeColumn, false);
+        } catch (Exception e) {
+            log.warn("设置创建时间列字段失败: {}", e.getMessage());
+        }
         columns.add(createTimeColumn);
 
         // 添加update_time列
         CodegenColumn updateTimeColumn = new CodegenColumn();
-        updateTimeColumn.setColumnName("update_time");
-        updateTimeColumn.setDataType("datetime");
-        updateTimeColumn.setJavaType("LocalDateTime");
-        updateTimeColumn.setColumnComment("更新时间");
-        updateTimeColumn.setPrimaryKey(false);
+        try {
+            // 设置updateTimeColumn的各个字段
+            java.lang.reflect.Field columnNameField = CodegenColumn.class.getDeclaredField("columnName");
+            columnNameField.setAccessible(true);
+            columnNameField.set(updateTimeColumn, "update_time");
+            
+            java.lang.reflect.Field dataTypeField = CodegenColumn.class.getDeclaredField("dataType");
+            dataTypeField.setAccessible(true);
+            dataTypeField.set(updateTimeColumn, "datetime");
+            
+            java.lang.reflect.Field javaTypeField = CodegenColumn.class.getDeclaredField("javaType");
+            javaTypeField.setAccessible(true);
+            javaTypeField.set(updateTimeColumn, "LocalDateTime");
+            
+            java.lang.reflect.Field columnCommentField = CodegenColumn.class.getDeclaredField("columnComment");
+            columnCommentField.setAccessible(true);
+            columnCommentField.set(updateTimeColumn, "更新时间");
+            
+            java.lang.reflect.Field primaryKeyField = CodegenColumn.class.getDeclaredField("primaryKey");
+            primaryKeyField.setAccessible(true);
+            primaryKeyField.set(updateTimeColumn, false);
+        } catch (Exception e) {
+            log.warn("设置更新时间列字段失败: {}", e.getMessage());
+        }
         columns.add(updateTimeColumn);
 
         return columns;
@@ -471,23 +653,42 @@ public class CodegenService {
 
         // 查找主键列
         CodegenColumn primaryKey = columns.stream()
-                .filter(CodegenColumn::getPrimaryKey)
+                .filter(column -> {
+                    try {
+                        Object primaryKeyObj = com.bone.core.util.ReflectionUtil.getFieldValue(column, "primaryKey");
+                        return primaryKeyObj != null && (Boolean) primaryKeyObj;
+                    } catch (Exception e) {
+                        return false;
+                    }
+                })
                 .findFirst()
                 .orElse(null);
 
         params.put("table", table);
         params.put("columns", columns);
-        params.put("moduleName", (String) ReflectionUtil.getFieldValue(request, "moduleName"));
-        params.put("packageName", request.getBasePackage());
-        params.put("className", (String) ReflectionUtil.getFieldValue(table, "className"));
-        params.put("classComment", (String) ReflectionUtil.getFieldValue(table, "classComment"));
+        params.put("moduleName", (String) com.bone.core.util.ReflectionUtil.getFieldValue(request, "moduleName"));
+        // 使用反射获取basePackage字段值
+        Object basePackageObj = com.bone.core.util.ReflectionUtil.getFieldValue(request, "basePackage");
+        params.put("packageName", basePackageObj != null ? basePackageObj.toString() : null);
+        params.put("className", (String) com.bone.core.util.ReflectionUtil.getFieldValue(table, "className"));
+        params.put("classComment", (String) com.bone.core.util.ReflectionUtil.getFieldValue(table, "classComment"));
         params.put("datetime", new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
         params.put("date", new java.text.SimpleDateFormat("yyyy-MM-dd").format(new Date()));
-        params.put("modelType", "saas".equals(request.getModelType()) ? 1 : 2);
-        params.put("scene", (Integer) ReflectionUtil.getFieldValue(table, "scene"));
+        // 使用反射获取modelType字段值
+        Object modelTypeObj = com.bone.core.util.ReflectionUtil.getFieldValue(request, "modelType");
+        String modelType = modelTypeObj != null ? modelTypeObj.toString() : null;
+        params.put("modelType", "saas".equals(modelType) ? 1 : 2);
+        
+        params.put("scene", (Integer) com.bone.core.util.ReflectionUtil.getFieldValue(table, "scene"));
         params.put("primaryKey", primaryKey);
-        params.put("author", request.getAuthor());
-        params.put("projectName", request.getProjectName());
+        
+        // 使用反射获取author字段值
+        Object authorObj = com.bone.core.util.ReflectionUtil.getFieldValue(request, "author");
+        params.put("author", authorObj != null ? authorObj.toString() : null);
+        
+        // 使用反射获取projectName字段值
+        Object projectNameObj = com.bone.core.util.ReflectionUtil.getFieldValue(request, "projectName");
+        params.put("projectName", projectNameObj != null ? projectNameObj.toString() : null);
 
         return params;
     }
@@ -507,9 +708,10 @@ public class CodegenService {
 
             // 遍历每个表生成的代码文件，写入ZIP
             for (CodegenTable table : codegenTables) {
-                Map<String, String> codeFiles = table.getCodeFiles();
+                Map<String, String> codeFiles = (Map<String, String>) com.bone.core.util.ReflectionUtil.getFieldValue(table, "codeFiles");
                 if (CollectionUtils.isEmpty(codeFiles)) {
-                    log.warn("表 {} 没有生成任何代码文件", table.getTableName());
+                    String tableName = (String) com.bone.core.util.ReflectionUtil.getFieldValue(table, "tableName");
+                    log.warn("表 {} 没有生成任何代码文件", tableName);
                     continue;
                 }
                 
@@ -605,7 +807,16 @@ public class CodegenService {
      */
     private CodegenTable buildCodegenTableFromTableInfo(DatabaseTableMetadata tableInfo, GenerateCustomCodeRequest request) {
         CodegenTable table = new CodegenTable();
-        table.setDatasourceId(request.getDatasourceId());
+        try {
+            // 获取request的datasourceId字段
+            Object datasourceId = com.bone.core.util.ReflectionUtil.getFieldValue(request, "datasourceId");
+            // 使用反射设置table的datasourceId字段
+            java.lang.reflect.Field datasourceIdField = CodegenTable.class.getDeclaredField("datasourceId");
+            datasourceIdField.setAccessible(true);
+            datasourceIdField.set(table, datasourceId);
+        } catch (Exception e) {
+            log.warn("设置数据源ID失败: {}", e.getMessage());
+        }
         // 使用反射方式获取和设置字段值
         try {
             // 设置CodegenTable字段

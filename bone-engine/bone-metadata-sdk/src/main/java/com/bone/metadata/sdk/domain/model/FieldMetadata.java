@@ -39,6 +39,9 @@ public class FieldMetadata {
     @Builder.Default
     private transient Object sampleValue = null;
 
+    public String getName() { return name; }
+    public String getColumnName() { return columnName; }
+
     public boolean isStringType() {
         return "STRING".equalsIgnoreCase(dataType);
     }

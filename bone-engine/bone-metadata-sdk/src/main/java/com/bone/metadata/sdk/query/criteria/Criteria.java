@@ -4,8 +4,11 @@ import com.bone.core.enums.Operator;
 import com.bone.metadata.sdk.support.function.SFunction;
 import com.bone.metadata.sdk.domain.enums.SortDirection;
 import com.bone.metadata.sdk.support.util.SqlUtil;
-import com.bone.metadata.sdk.query.builder.SelectBuilderSql;
+import com.bone.metadata.sdk.query.dsl.JoinType;
 import lombok.Data;
+import lombok.experimental.Accessors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -22,7 +25,7 @@ public class Criteria<T> {
     private final Map<String, AtomicInteger> columnCounterMap = new ConcurrentHashMap<>();
 
     private final List<String> sortItems = new ArrayList<>();
-    private final List<SelectBuilderSql.JoinInfo> joinInfos = new ArrayList<>();
+    private final List<JoinInfo<?>> joinInfos = new ArrayList<>();
     private int pageSize = 5000;
     private int pageNo = 1;
 
@@ -389,7 +392,8 @@ public class Criteria<T> {
     /**
      * 添加关联表信息
      */
-    public Criteria<T> addJoinInfo(SelectBuilderSql.JoinInfo joinInfo) {
+    public <J> Criteria<T> addJoinInfo(Class<J> joinEntityClass, JoinType joinType, String joinCondition, Map<String, Object> joinParameters) {
+        JoinInfo<J> joinInfo = new JoinInfo<>(joinEntityClass, joinType, joinCondition, joinParameters);
         this.joinInfos.add(joinInfo);
         return this;
     }
@@ -397,8 +401,49 @@ public class Criteria<T> {
     /**
      * 获取所有关联表信息
      */
-    public List<SelectBuilderSql.JoinInfo> getJoinInfos() {
+    public List<JoinInfo<?>> getJoinInfos() {
         return joinInfos;
+    }
+    
+    public Map<String, Object> getParameters() { return parameters; }
+    public List<Condition> getExtConditions() { return extConditions; }
+    public boolean requiresExtJoin() { return !extConditions.isEmpty(); }
+    
+    public List<Condition> getMainConditions() { return mainConditions; }
+    public List<SortItem> getSortItems() { return sortItems; }
+    public int getPageSize() { return pageSize; }
+    
+    /**
+     * 关联表信息内部类
+     */
+    public static class JoinInfo<T> {
+        private Class<T> joinEntityClass;
+        private JoinType joinType;
+        private String joinCondition;
+        private Map<String, Object> joinParameters;
+        
+        public JoinInfo(Class<T> joinEntityClass, JoinType joinType, String joinCondition, Map<String, Object> joinParameters) {
+            this.joinEntityClass = joinEntityClass;
+            this.joinType = joinType;
+            this.joinCondition = joinCondition;
+            this.joinParameters = joinParameters;
+        }
+        
+        public Class<T> getJoinEntityClass() {
+            return joinEntityClass;
+        }
+        
+        public JoinType getJoinType() {
+            return joinType;
+        }
+        
+        public String getJoinCondition() {
+            return joinCondition;
+        }
+        
+        public Map<String, Object> getJoinParameters() {
+            return joinParameters;
+        }
     }
 
     public <R> Criteria<T> addSort(boolean condition, SFunction<T, R> fn, SortDirection dir) {

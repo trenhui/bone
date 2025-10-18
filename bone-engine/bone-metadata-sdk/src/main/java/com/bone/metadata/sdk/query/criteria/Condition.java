@@ -14,8 +14,25 @@ import java.util.function.Function;
  * 查询条件模型，支持主表(m)和扩展表(ext)前缀。
  */
 @Slf4j
-@Data
+// 移除@Data注解，显式添加必要的getter方法
 public class Condition {
+    
+    // 显式添加getter方法
+    public String getParamName() {
+        return paramName;
+    }
+    
+    public String getColumn() {
+        return column;
+    }
+    
+    public Operator getOperator() {
+        return operator;
+    }
+    
+    public Object[] getValues() {
+        return values;
+    }
     /**
      * 字段（snakecase）
      */

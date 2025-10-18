@@ -67,6 +67,62 @@ public class ColumnAllocation extends Entity<Long> {
     @Column(name = "updated_by", nullable = false)
     private Long updatedBy;
 
+    public Long getTenantId() { return tenantId; }
+    public String getAppCode() { return appCode; }
+    public String getBizIdentityCode() { return bizIdentityCode; }
+    public String getEntityType() { return entityType; }
+    public DataType getDataType() { return dataType; }
+    public String getColumnName() { return columnName; }
+    public Integer getColumnIndex() { return columnIndex; }
+    public AllocationColumnStatus getStatus() { return status; }
+    public Integer getVersion() { return version; }
+    public Date getCreatedAt() { return createdAt; }
+    public Date getUpdatedAt() { return updatedAt; }
+    public Long getCreatedBy() { return createdBy; }
+    public Long getUpdatedBy() { return updatedBy; }
+    
+    public static Builder builder() {
+        return new Builder();
+    }
+    
+    public static class Builder {
+        private ColumnAllocation allocation = new ColumnAllocation();
+        
+        public Builder tenantId(Long tenantId) {
+            allocation.tenantId = tenantId;
+            return this;
+        }
+        
+        public Builder appCode(String appCode) {
+            allocation.appCode = appCode;
+            return this;
+        }
+        
+        public Builder bizIdentityCode(String bizIdentityCode) {
+            allocation.bizIdentityCode = bizIdentityCode;
+            return this;
+        }
+        
+        public Builder entityType(String entityType) {
+            allocation.entityType = entityType;
+            return this;
+        }
+        
+        public Builder dataType(DataType dataType) {
+            allocation.dataType = dataType;
+            return this;
+        }
+        
+        public Builder status(AllocationColumnStatus status) {
+            allocation.status = status;
+            return this;
+        }
+        
+        public ColumnAllocation build() {
+            return allocation;
+        }
+    }
+
     public void markAsAllocated() {
         this.status = AllocationColumnStatus.IN_USE;
         this.updatedAt = LocalDateTime.now();
