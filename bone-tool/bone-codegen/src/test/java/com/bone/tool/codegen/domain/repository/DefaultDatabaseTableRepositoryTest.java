@@ -15,7 +15,7 @@ import java.io.InputStream;
 import java.io.IOException;
 import java.sql.DriverManager;
 
-import com.bone.tool.codegen.domain.entity.TableInfo;
+import com.bone.tool.codegen.domain.entity.DatabaseTableMetadata;
 import com.bone.tool.codegen.domain.entity.CodegenColumn;
 import com.bone.tool.codegen.domain.entity.Datasource;
 
@@ -146,13 +146,13 @@ public class DefaultDatabaseTableRepositoryTest {
             when(mockColumnsResultSet.next()).thenReturn(false);
             
             // 执行
-            List<TableInfo> tables = repository.getTableList(mockDataSourceConfigId, null);
+            List<DatabaseTableMetadata> tables = repository.getTableList(mockDataSourceConfigId, null);
             
             // 验证
             assertNotNull(tables);
             assertEquals(1, tables.size());
-            assertEquals(mockTableName, tables.get(0).getName());
-            assertEquals("Test Table Comment", tables.get(0).getComment());
+            assertEquals(mockTableName, tables.get(0).getTableName());
+            assertEquals("Test Table Comment", tables.get(0).getTableComment());
             assertEquals("TestTable", tables.get(0).getEntityName());
         }
     }
@@ -179,11 +179,16 @@ public class DefaultDatabaseTableRepositoryTest {
             when(mockColumnsResultSet.next()).thenReturn(false);
             
             // 执行
-            TableInfo tableInfo = repository.getTableInfo(mockDataSourceConfigId, mockTableName);
+            DatabaseTableMetadata tableInfo = repository.getTableInfo(mockDataSourceConfigId, mockTableName);
             
             // 验证
             assertNotNull(tableInfo);
-            assertEquals(mockTableName, tableInfo.getName());
+            assertEquals(mockTableName, tableInfo.getTableName());
+            assertEquals("Test Table Comment", tableInfo.getTableComment());
+            assertEquals("TestTable", tableInfo.getEntityName());
+            assertEquals("testTable", tableInfo.getFieldName());
+            assertNotNull(tableInfo.getFieldList());
+            assertEquals(0, tableInfo.getFieldList().size());
         }
     }
 
@@ -202,7 +207,7 @@ public class DefaultDatabaseTableRepositoryTest {
             when(mockTablesResultSet.next()).thenReturn(false);
             
             // 执行
-            TableInfo tableInfo = repository.getTableInfo(mockDataSourceConfigId, mockTableName);
+            DatabaseTableMetadata tableInfo = repository.getTableInfo(mockDataSourceConfigId, mockTableName);
             
             // 验证
             assertNull(tableInfo);

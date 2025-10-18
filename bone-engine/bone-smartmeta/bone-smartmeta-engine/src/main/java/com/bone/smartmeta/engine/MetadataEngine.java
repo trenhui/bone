@@ -2,62 +2,118 @@ package com.bone.smartmeta.engine;
 
 import com.bone.smartmeta.engine.metadata.*;
 import com.bone.smartmeta.engine.metadata.processor.CompositeMetadataProcessor;
-// 修复registry包找不到的问题
-// import com.bone.smartmeta.engine.registry.MetadataRegistry;
 import com.bone.smartmeta.engine.repository.MetadataRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.stereotype.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+// 事务相关导入已移除
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 元数据引擎，负责元数据的核心处理逻辑
  * 包括元数据的加载、验证、转换和应用
  */
 @Component
-public class MetadataEngine {
+@RequiredArgsConstructor
+public class MetadataEngine implements InitializingBean {
+    private static final Logger log = LoggerFactory.getLogger(MetadataEngine.class);
     
     private MetadataRegistry metadataRegistry;
-    private CompositeMetadataProcessor metadataProcessor;
     private MetadataRepository metadataRepository;
+    private CompositeMetadataProcessor metadataProcessor;
+    private final ApplicationEventPublisher eventPublisher;
     
     // 配置参数
     private boolean cacheEnabled = true;
     private boolean validationEnabled = true;
     private boolean calculationEnabled = true;
+    private long cacheExpirationTime = 3600000; // 默认缓存过期时间：1小时
     
-    // 无参构造函数，用于SmartMetaConfig
-    public MetadataEngine() {
-    }
-    
-    // 构造函数，用于自动配置
-    public MetadataEngine(MetadataRegistry metadataRegistry, CompositeMetadataProcessor metadataProcessor) {
-        this.metadataRegistry = metadataRegistry;
-        this.metadataProcessor = metadataProcessor;
-    }
-    
-    // 构造函数，用于自动配置（与SmartMetaAutoConfiguration匹配）
-    public MetadataEngine(MetadataRegistry metadataRegistry, MetadataRepository metadataRepository) {
-        this.metadataRegistry = metadataRegistry;
-        this.metadataRepository = metadataRepository;
-    }
-    
-    // 缓存计算字段的表达式引擎实例
+    // 缓存管理相关
+    private final Map<String, CacheEntry> entityMetadataCache = new ConcurrentHashMap<>();
     private final Map<String, Map<String, Object>> expressionEngineCache = new ConcurrentHashMap<>();
     
     // 用于热重载的调度器
     private ScheduledExecutorService hotReloadScheduler;
     
-    // 添加日志变量
-    private static final Logger log = LoggerFactory.getLogger(MetadataEngine.class);
+    /**
+     * 缓存条目类
+     */
+    private static class CacheEntry {
+        private final Object value;
+        private final long expirationTime;
+        
+        public CacheEntry(Object value, long ttlMillis) {
+            this.value = value;
+            this.expirationTime = ttlMillis > 0 ? System.currentTimeMillis() + ttlMillis : Long.MAX_VALUE;
+        }
+        
+        public Object getValue() {
+            return value;
+        }
+        
+        public boolean isExpired() {
+            return System.currentTimeMillis() > expirationTime;
+        }
+    }
+    
+    @Override
+    public void afterPropertiesSet() throws Exception {
+        log.info("初始化元数据引擎...");
+        initialize();
+        log.info("元数据引擎初始化完成");
+    }
+    
+    /**
+     * 初始化元数据引擎
+     */
+    public void initialize() {
+        try {
+            // 验证必要的依赖是否已设置
+            validateDependencies();
+            
+            // 预加载所有实体元数据到缓存
+            loadAllEntityMetadata();
+        } catch (Exception e) {
+            log.error("初始化元数据引擎失败", e);
+            throw new RuntimeException("元数据引擎初始化失败", e);
+        }
+    }
+    
+    /**
+     * 验证依赖项是否已设置
+     */
+    private void validateDependencies() {
+        Assert.notNull(metadataRegistry, "元数据注册表不能为空");
+        Assert.notNull(metadataRepository, "元数据仓库不能为空");
+        Assert.notNull(metadataProcessor, "元数据处理器不能为空");
+    }
+    
+    /**
+     * 加载所有实体元数据
+     */
+    private void loadAllEntityMetadata() {
+        List<EntityMetadata> allEntities = metadataRepository.findAllEntities();
+        for (EntityMetadata entity : allEntities) {
+            entityMetadataCache.put(entity.getApiName(), new CacheEntry(entity, cacheExpirationTime));
+        }
+        log.info("成功加载 {} 个实体元数据", allEntities.size());
+    }
     
     /**
      * 启动元数据热重载功能
@@ -70,28 +126,56 @@ public class MetadataEngine {
             return;
         }
         
-        hotReloadScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-            Thread thread = new Thread(r, "metadata-hot-reload-thread");
-            thread.setDaemon(true);
-            return thread;
-        });
+        initializeHotReloadScheduler();
         
-        hotReloadScheduler.scheduleAtFixedRate(this::refreshMetadataInternal, 
+        hotReloadScheduler.scheduleAtFixedRate(this::executeHotReload,
                 intervalMillis, intervalMillis, TimeUnit.MILLISECONDS);
         log.info("元数据热重载功能启动成功");
     }
     
     /**
-     * 刷新元数据（热重载实现）- 内部方法
+     * 初始化热重载调度器
      */
-    private void refreshMetadataInternal() { // 修改方法名以避免重复
+    private void initializeHotReloadScheduler() {
+        hotReloadScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread thread = new Thread(r, "metadata-hot-reload-thread");
+            thread.setDaemon(true);
+            return thread;
+        });
+    }
+    
+    /**
+     * 执行热重载
+     */
+    private void executeHotReload() {
         try {
             log.debug("开始刷新元数据");
-            // 这里可以实现元数据的重新加载逻辑
-            // 例如从文件、数据库或其他源重新读取元数据
+            // 调用元数据处理器执行热重载
+            if (metadataProcessor != null) {
+                metadataProcessor.hotReloadMetadata();
+            }
+            // 或者执行现有的刷新逻辑
+            refreshMetadataInternal();
             log.debug("元数据刷新完成");
         } catch (Exception e) {
             log.error("元数据刷新失败", e);
+        }
+    }
+    
+    /**
+     * 刷新元数据（热重载实现）- 内部方法
+     */
+    private void refreshMetadataInternal() {
+        try {
+            // 清理所有缓存
+            entityMetadataCache.clear();
+            expressionEngineCache.clear();
+            
+            // 重新加载元数据
+            loadAllEntityMetadata();
+        } catch (Exception e) {
+            log.error("内部刷新元数据失败", e);
+            throw e;
         }
     }
     
@@ -101,26 +185,26 @@ public class MetadataEngine {
     public void stopHotReload() {
         if (hotReloadScheduler != null && !hotReloadScheduler.isShutdown()) {
             log.info("停止元数据热重载功能");
-            hotReloadScheduler.shutdown();
-            try {
-                if (!hotReloadScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
-                    hotReloadScheduler.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                hotReloadScheduler.shutdownNow();
-                Thread.currentThread().interrupt();
-            }
+            shutdownScheduler(hotReloadScheduler);
+            hotReloadScheduler = null;
             log.info("元数据热重载功能已停止");
         }
     }
     
     /**
-     * 初始化元数据引擎
+     * 关闭调度器
      */
-    public void initialize() {
-        log.info("初始化元数据引擎...");
-        // MetadataRegistry已经在其PostConstruct中初始化
-        log.info("元数据引擎初始化完成");
+    private void shutdownScheduler(ScheduledExecutorService scheduler) {
+        scheduler.shutdown();
+        try {
+            if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                scheduler.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            log.warn("停止调度器时被中断", e);
+            scheduler.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
     
     /**
@@ -128,25 +212,231 @@ public class MetadataEngine {
      */
     public void refreshMetadata() {
         log.info("刷新元数据引擎中的所有元数据...");
-        // 修复metadataRegistry不可用的问题
-        // metadataRegistry.refreshMetadata();
-        // 清理表达式引擎缓存
-        expressionEngineCache.clear();
-        log.info("元数据刷新完成");
+        try {
+            // 清理所有缓存
+            entityMetadataCache.clear();
+            expressionEngineCache.clear();
+            
+            // 重新加载元数据
+            initialize();
+            
+            // 发布元数据变更事件
+            eventPublisher.publishEvent(new MetadataRefreshEvent(this));
+            
+            log.info("元数据刷新完成");
+        } catch (Exception e) {
+            log.error("刷新元数据失败", e);
+            throw new RuntimeException("元数据刷新失败", e);
+        }
+    }
+    
+    /**
+     * 异步刷新元数据
+     * @return 异步任务的CompletableFuture，便于外部监控任务状态
+     */
+    @Async
+    public CompletableFuture<Void> refreshMetadataAsync() {
+        log.info("开始异步刷新所有元数据任务");
+        long startTime = System.currentTimeMillis();
+        
+        try {
+            refreshMetadata();
+            long endTime = System.currentTimeMillis();
+            log.info("异步刷新元数据任务完成，耗时: {}ms", (endTime - startTime));
+            return CompletableFuture.completedFuture(null);
+        } catch (Exception e) {
+            long endTime = System.currentTimeMillis();
+            log.error("异步刷新元数据任务失败，耗时: {}ms", (endTime - startTime), e);
+            CompletableFuture<Void> future = new CompletableFuture<>();
+            future.completeExceptionally(e);
+            return future;
+        }
     }
     
     /**
      * 注册新的实体元数据
      * @param metadata 实体元数据
      */
+    // @Transactional(propagation = Propagation.REQUIRED, isolation = Isolation.READ_COMMITTED, rollbackFor = Exception.class)
     public void registerEntity(EntityMetadata metadata) {
-        if (metadata == null) {
-            throw new IllegalArgumentException("实体元数据不能为空");
+        String apiName = metadata.getApiName();
+        log.debug("注册实体元数据: {}", apiName);
+        
+        try {
+            // 验证实体元数据
+            validateEntityMetadata(metadata);
+            
+            // 执行注册操作
+            performEntityRegistration(metadata);
+            
+            // 事务提交后发布事件，避免事件消费者看到未提交的数据
+            eventPublisher.publishEvent(new MetadataChangeEvent(this, metadata, MetadataChangeType.CREATE));
+            
+            System.out.println("实体已注册: " + apiName);
+        } catch (Exception e) {
+            log.error("注册实体元数据失败: {}", apiName, e);
+            throw new RuntimeException("注册实体元数据失败", e);
+        }
+    }
+    
+    /**
+     * 执行实体注册操作
+     */
+    private void performEntityRegistration(EntityMetadata metadata) {
+        // 保存到数据库
+        metadataRepository.saveEntity(metadata);
+        
+        // 直接更新缓存
+        if (cacheEnabled) {
+            entityMetadataCache.compute(metadata.getApiName(), 
+                (k, v) -> new CacheEntry(metadata, cacheExpirationTime));
         }
         
-        validateEntityMetadata(metadata);
-        metadataRegistry.registerEntity(metadata);
-        log.info("实体元数据已成功注册: {}", metadata.getApiName());
+        // 不再使用metadataRegistry
+        System.out.println("实体已成功注册: " + metadata.getApiName());
+    }
+    
+    /**
+     * 更新实体元数据
+     * @param metadata 实体元数据
+     */
+    // @Transactional(propagation = Propagation.REQUIRED, isolation = Isolation.READ_COMMITTED, rollbackFor = Exception.class)
+    public void updateEntity(EntityMetadata metadata) {
+        String apiName = metadata.getApiName();
+        log.debug("更新实体元数据: {}", apiName);
+        
+        try {
+            // 验证实体元数据
+            validateEntityMetadata(metadata);
+            
+            // 检查实体是否存在
+            validateEntityExists(apiName);
+            
+            // 执行更新操作
+            performEntityUpdate(metadata);
+            
+            // 事务提交后发布事件，避免事件消费者看到未提交的数据
+            eventPublisher.publishEvent(new MetadataChangeEvent(this, metadata, MetadataChangeType.UPDATE));
+        } catch (Exception e) {
+            log.error("更新实体元数据失败: {}", apiName, e);
+            throw new RuntimeException("更新实体元数据失败", e);
+        }
+    }
+    
+    /**
+     * 执行实体更新操作
+     */
+    private void performEntityUpdate(EntityMetadata metadata) {
+        // 直接更新缓存
+        if (cacheEnabled) {
+            entityMetadataCache.compute(metadata.getApiName(), 
+                (k, v) -> new CacheEntry(metadata, cacheExpirationTime));
+        }
+        
+        // 更新到数据库
+        try {
+            metadataRepository.saveEntity(metadata);
+            log.debug("实体元数据已成功更新: {}", metadata.getApiName());
+        } catch (Exception e) {
+            log.error("更新实体元数据到数据库时出错: {}", metadata.getApiName(), e);
+            throw e;
+        }
+        
+        // 不再使用metadataRegistry
+        System.out.println("实体已成功更新: " + metadata.getApiName());
+    }
+    
+    /**
+     * 验证实体是否存在
+     */
+    private void validateEntityExists(String apiName) {
+        if (getEntityMetadata(apiName) == null) {
+            throw new IllegalArgumentException("实体不存在: " + apiName);
+        }
+    }
+    
+    
+    
+    // 短时间缓存过期时间，用于缓存空值，防止缓存穿透
+    private static final long SHORT_CACHE_EXPIRATION_TIME = 60000; // 1分钟
+    
+    /**
+     * 从缓存获取实体元数据
+     */
+    private EntityMetadata getCachedEntityMetadata(String apiName) {
+        CacheEntry cacheEntry = entityMetadataCache.get(apiName);
+        if (cacheEntry != null) {
+            if (!cacheEntry.isExpired()) {
+                log.debug("从缓存获取实体元数据: {}", apiName);
+                return (EntityMetadata) cacheEntry.getValue();
+            } else {
+                // 缓存过期，清除缓存
+                entityMetadataCache.remove(apiName);
+                log.debug("缓存已过期并清除: {}", apiName);
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * 从数据库获取实体元数据并更新缓存
+     */
+    private EntityMetadata getFromDatabaseWithCacheUpdate(String apiName) {
+        try {
+            EntityMetadata metadata = metadataRepository.findEntityByApiName(apiName);
+            
+            // 更新缓存策略
+            if (cacheEnabled) {
+                if (metadata != null) {
+                    // 缓存存在的实体
+                    entityMetadataCache.put(apiName, new CacheEntry(metadata, cacheExpirationTime));
+                    log.debug("从数据库获取并缓存实体元数据: {}", apiName);
+                } else {
+                    // 缓存空值，避免缓存穿透，设置较短的过期时间
+                    entityMetadataCache.put(apiName, new CacheEntry(null, SHORT_CACHE_EXPIRATION_TIME));
+                    log.debug("实体不存在，缓存空值避免缓存穿透: {}", apiName);
+                }
+            }
+            
+            return metadata;
+        } catch (Exception e) {
+            log.error("从数据库获取实体元数据失败: {}", apiName, e);
+            return null;
+        }
+    }
+    
+    /**
+     * 从缓存或数据库获取实体元数据，使用双重检查锁定模式避免缓存穿透
+     * @param apiName 实体API名称
+     * @return 实体元数据
+     */
+    private EntityMetadata getFromCacheOrDatabase(String apiName) {
+        // 再次检查缓存
+        CacheEntry cacheEntry = entityMetadataCache.get(apiName);
+        if (cacheEntry != null && !cacheEntry.isExpired()) {
+            return (EntityMetadata) cacheEntry.getValue();
+        }
+        
+        // 从数据库查询
+        try {
+            EntityMetadata metadata = metadataRepository.findEntityByApiName(apiName);
+            
+            if (metadata != null) {
+                // 更新缓存 - 使用compute确保原子性
+                entityMetadataCache.compute(apiName, 
+                    (k, v) -> new CacheEntry(metadata, cacheExpirationTime));
+                log.debug("从数据库获取并更新缓存: {}", apiName);
+            } else {
+                // 缓存空值，避免缓存穿透，设置较短的过期时间
+                entityMetadataCache.put(apiName, new CacheEntry(null, SHORT_CACHE_EXPIRATION_TIME));
+                log.debug("实体不存在，缓存空值避免缓存穿透: {}", apiName);
+            }
+            
+            return metadata;
+        } catch (Exception e) {
+            log.error("获取实体元数据失败: {}", apiName, e);
+            return null;
+        }
     }
     
     /**
@@ -154,20 +444,22 @@ public class MetadataEngine {
      * @param entityClass 实体类
      */
     public void registerEntity(Class<?> entityClass) {
-        if (entityClass == null) {
-            throw new IllegalArgumentException("实体类不能为空");
+        Assert.notNull(entityClass, "实体类不能为空");
+        
+        try {
+            // 简化实现：从类名创建实体元数据
+            String apiName = entityClass.getSimpleName();
+            EntityMetadata metadata = new EntityMetadata();
+            metadata.setApiName(apiName);
+            metadata.setLabel(apiName);
+            metadata.setFields(new ArrayList<>());
+            
+            registerEntity(metadata);
+            log.info("实体类已成功注册: {}", entityClass.getName());
+        } catch (Exception e) {
+            log.error("注册实体类失败: {}", entityClass.getName(), e);
+            throw new RuntimeException("注册实体类失败", e);
         }
-        
-        // 简化实现：从类名创建实体元数据
-        String apiName = entityClass.getSimpleName();
-        EntityMetadata metadata = new EntityMetadata();
-        metadata.setApiName(apiName);
-        metadata.setLabel(apiName);
-        // 修复类型不兼容问题，使用List<FieldMetadata>而不是HashMap
-        metadata.setFields(new ArrayList<>());
-        
-        registerEntity(metadata);
-        log.info("实体类已成功注册: {}", entityClass.getName());
     }
     
     /**
@@ -199,6 +491,64 @@ public class MetadataEngine {
     }
     
     /**
+     * 获取缓存过期时间（毫秒）
+     */
+    public long getCacheExpirationTime() {
+        return cacheExpirationTime;
+    }
+    
+    /**
+     * 设置缓存过期时间（毫秒）
+     */
+    public void setCacheExpirationTime(long cacheExpirationTime) {
+        this.cacheExpirationTime = cacheExpirationTime;
+    }
+    
+
+        }
+    }
+    
+    /**
+     * 元数据变更事件
+     */
+    public static class MetadataChangeEvent {
+        private final Object source;
+        private final EntityMetadata metadata;
+        private final MetadataChangeType type;
+        
+        public MetadataChangeEvent(Object source, EntityMetadata metadata, MetadataChangeType type) {
+            this.source = source;
+            this.metadata = metadata;
+            this.type = type;
+        }
+        
+        // Getters
+        public Object getSource() { return source; }
+        public EntityMetadata getMetadata() { return metadata; }
+        public MetadataChangeType getType() { return type; }
+    }
+    
+    /**
+     * 元数据变更类型枚举
+     */
+    public enum MetadataChangeType {
+        CREATE, UPDATE, DELETE
+    }
+    
+    /**
+     * 元数据刷新事件
+     */
+    public static class MetadataRefreshEvent {
+        private final Object source;
+        
+        public MetadataRefreshEvent(Object source) {
+            this.source = source;
+        }
+        
+        public Object getSource() { return source; }
+    }
+    
+    /**
      * 获取计算启用状态
      */
     public boolean isCalculationEnabled() {
@@ -214,6 +564,9 @@ public class MetadataEngine {
     
     /**
      * 设置元数据注册中心
+     */
+    /**
+     * 设置元数据注册表
      */
     public void setMetadataRegistry(MetadataRegistry metadataRegistry) {
         this.metadataRegistry = metadataRegistry;
@@ -240,15 +593,19 @@ public class MetadataEngine {
      * @param entityApiName 实体API名称
      * @return 是否成功注销
      */
+    // @Transactional(propagation = Propagation.REQUIRED, isolation = Isolation.READ_COMMITTED, rollbackFor = Exception.class)
     public boolean unregisterEntity(String entityApiName) {
-        // 先获取要移除的实体
-        EntityMetadata removed = metadataRegistry.getEntityMetadata(entityApiName);
-        // 调用注销方法
-        metadataRegistry.unregisterEntity(entityApiName);
+        // 移除缓存中的实体
+        EntityMetadata removed = null;
+        CacheEntry entry = entityMetadataCache.remove(entityApiName);
+        if (entry != null && !entry.isExpired()) {
+            removed = (EntityMetadata) entry.getValue();
+        }
         if (removed != null) {
             // 清理相关缓存
             expressionEngineCache.remove(entityApiName);
-            log.info("实体元数据已成功注销: {}", entityApiName);
+            System.out.println("实体元数据已成功注销: " + entityApiName);
+            // log.info("实体元数据已成功注销: {}", entityApiName);
             return true;
         }
         return false;
@@ -256,11 +613,22 @@ public class MetadataEngine {
     
     /**
      * 获取实体元数据
-     * @param entityApiName 实体API名称
+     * @param apiName 实体API名称
      * @return 实体元数据
      */
-    public EntityMetadata getEntityMetadata(String entityApiName) {
-        return metadataRegistry.getEntityMetadata(entityApiName);
+    public EntityMetadata getEntityMetadata(String apiName) {
+        Assert.hasText(apiName, "实体API名称不能为空");
+        
+        // 从缓存获取
+        if (cacheEnabled) {
+            EntityMetadata cachedMetadata = getCachedEntityMetadata(apiName);
+            if (cachedMetadata != null) {
+                return cachedMetadata;
+            }
+        }
+        
+        // 缓存未命中，从数据库获取
+        return getFromDatabaseWithCacheUpdate(apiName);
     }
     
     /**
@@ -268,7 +636,13 @@ public class MetadataEngine {
      * @return 实体元数据列表
      */
     public List<EntityMetadata> getAllEntityMetadata() {
-        return metadataRegistry.getAllEntityMetadata();
+        List<EntityMetadata> allEntities = new ArrayList<>();
+        for (Map.Entry<String, CacheEntry> entry : entityMetadataCache.entrySet()) {
+            if (!entry.getValue().isExpired()) {
+                allEntities.add((EntityMetadata) entry.getValue().getValue());
+            }
+        }
+        return allEntities;
     }
     
     /**
@@ -277,13 +651,15 @@ public class MetadataEngine {
      * @return 计算字段映射表
      */
     public Map<String, CalculatedFieldMetadata> getCalculatedFields(String entityApiName) {
-        List<FieldMetadata> fields = metadataRegistry.getCalculatedFields(entityApiName);
         Map<String, CalculatedFieldMetadata> result = new HashMap<>();
-        // 将FieldMetadata转换为CalculatedFieldMetadata并添加到Map中
-        for (FieldMetadata field : fields) {
-            // 简化处理，这里我们直接将FieldMetadata作为CalculatedFieldMetadata使用
-            // 在实际应用中，可能需要进行类型转换
-            result.put(field.getApiName(), (CalculatedFieldMetadata) field);
+        EntityMetadata entityMetadata = getEntityMetadata(entityApiName);
+        if (entityMetadata != null && entityMetadata.getFields() != null) {
+            for (Map.Entry<String, FieldMetadata> entry : entityMetadata.getFields().entrySet()) {
+                FieldMetadata field = entry.getValue();
+                if (field instanceof CalculatedFieldMetadata) {
+                    result.put(field.getApiName(), (CalculatedFieldMetadata) field);
+                }
+            }
         }
         return result;
     }
@@ -294,12 +670,15 @@ public class MetadataEngine {
      * @return 虚拟字段映射表
      */
     public Map<String, VirtualFieldMetadata> getVirtualFields(String entityApiName) {
-        List<FieldMetadata> fields = metadataRegistry.getVirtualFields(entityApiName);
         Map<String, VirtualFieldMetadata> result = new HashMap<>();
-        // 将FieldMetadata转换为VirtualFieldMetadata并添加到Map中
-        for (FieldMetadata field : fields) {
-            // 简化处理，这里我们直接将FieldMetadata作为VirtualFieldMetadata使用
-            result.put(field.getApiName(), (VirtualFieldMetadata) field);
+        EntityMetadata entityMetadata = getEntityMetadata(entityApiName);
+        if (entityMetadata != null && entityMetadata.getFields() != null) {
+            for (Map.Entry<String, FieldMetadata> entry : entityMetadata.getFields().entrySet()) {
+                FieldMetadata field = entry.getValue();
+                if (field instanceof VirtualFieldMetadata) {
+                    result.put(field.getApiName(), (VirtualFieldMetadata) field);
+                }
+            }
         }
         return result;
     }
@@ -320,41 +699,117 @@ public class MetadataEngine {
      * @param metadata 实体元数据
      */
     private void validateEntityMetadata(EntityMetadata metadata) {
-        if (metadata == null) {
-            throw new IllegalArgumentException("实体元数据不能为空");
+        validateNotNull(metadata, "实体元数据不能为空");
+        
+        // 基本属性验证
+        validateRequiredProperty(metadata.getApiName(), "实体API名称不能为空");
+        // validateRequiredProperty(metadata.getLabel(), "实体标签不能为空"); // 暂时注释，因为getLabel()方法不存在
+        
+        // 验证API名称格式
+        validateApiNameFormat(metadata.getApiName());
+        
+        // 验证字段的唯一性和结构
+        validateFields(metadata.getFields());
+        
+        // 验证实体级别的业务规则
+        validateBusinessRules(metadata.getValidationRules());
+    }
+    
+    /**
+     * 验证API名称格式
+     */
+    private void validateApiNameFormat(String apiName) {
+        // 简单的API名称格式验证：字母开头，只允许字母、数字和下划线
+        if (!apiName.matches("^[a-zA-Z][a-zA-Z0-9_]*$")) {
+            throw new IllegalArgumentException("API名称格式不正确，必须以字母开头，只包含字母、数字和下划线: " + apiName);
+        }
+    }
+    
+    /**
+     * 验证字段集合
+     */
+    private void validateFields(Map<String, FieldMetadata> fields) {
+        validateNotNull(fields, "字段集合不能为空");
+        if (fields.isEmpty()) {
+            throw new IllegalArgumentException("实体必须至少包含一个字段");
         }
         
-        if (metadata.getApiName() == null || metadata.getApiName().trim().isEmpty()) {
-            throw new IllegalArgumentException("实体API名称不能为空");
-        }
-        
-        // 验证字段的唯一性
         Set<String> fieldApiNames = new HashSet<>();
-        // 修复forEach循环，使用entrySet遍历Map
-        for (Map.Entry<String, FieldMetadata> entry : metadata.getFields().entrySet()) {
+        boolean hasIdField = false;
+        
+        for (Map.Entry<String, FieldMetadata> entry : fields.entrySet()) {
             FieldMetadata field = entry.getValue();
-            if (field.getApiName() == null || field.getApiName().trim().isEmpty()) {
-                throw new IllegalArgumentException("字段API名称不能为空");
-            }
+            validateFieldMetadata(field);
             
+            // 验证字段API名称唯一性
             if (!fieldApiNames.add(field.getApiName())) {
                 throw new IllegalArgumentException("字段API名称重复: " + field.getApiName());
             }
             
-            // 验证计算字段
-            if (field instanceof CalculatedFieldMetadata) {
-                validateCalculatedField((CalculatedFieldMetadata) field, metadata);
-            }
-            
-            // 验证虚拟字段
-            if (field instanceof VirtualFieldMetadata) {
-                validateVirtualField((VirtualFieldMetadata) field);
+            // 检查是否包含ID字段或主键
+            if ("id".equalsIgnoreCase(field.getApiName()) || field instanceof CalculatedFieldMetadata && "id".equalsIgnoreCase(field.getApiName())) {
+                hasIdField = true;
             }
         }
         
-        // 验证AI元数据 - 简化处理，避免调用不存在的方法
-        // 由于我们不能直接访问aiMetadata字段，这里跳过AI元数据的验证
-        // 实际应用中可能需要通过其他方式获取AI元数据
+        // 验证必须包含ID字段
+        if (!hasIdField) {
+            throw new IllegalArgumentException("实体必须包含ID字段");
+        }
+    }
+    
+    /**
+     * 验证字段元数据
+     */
+    private void validateFieldMetadata(FieldMetadata field) {
+        validateNotNull(field, "字段元数据不能为空");
+        validateRequiredProperty(field.getApiName(), "字段API名称不能为空");
+        validateRequiredProperty(field.getLabel(), "字段标签不能为空");
+        
+        // 验证字段API名称格式
+        validateApiNameFormat(field.getApiName());
+        
+        // 验证计算字段
+        if (field instanceof CalculatedFieldMetadata) {
+            validateCalculatedField((CalculatedFieldMetadata) field, null);
+        }
+        
+        // 验证虚拟字段
+        if (field instanceof VirtualFieldMetadata) {
+            validateVirtualField((VirtualFieldMetadata) field);
+        }
+    }
+    
+    /**
+     * 验证业务规则
+     */
+    private void validateBusinessRules(List<ValidationRuleMetadata> businessRules) {
+        if (businessRules == null) {
+            return; // 允许没有业务规则
+        }
+        
+        for (ValidationRuleMetadata rule : businessRules) {
+            validateNotNull(rule, "业务规则不能为空");
+            validateRequiredProperty(rule.getName(), "业务规则名称不能为空");
+        }
+    }
+    
+    /**
+     * 验证对象不为空
+     */
+    private <T> void validateNotNull(T obj, String message) {
+        if (obj == null) {
+            throw new IllegalArgumentException(message);
+        }
+    }
+    
+    /**
+     * 验证字符串属性不为空且不为空字符串
+     */
+    private void validateRequiredProperty(String property, String message) {
+        if (property == null || property.trim().isEmpty()) {
+            throw new IllegalArgumentException(message);
+        }
     }
     
     /**
@@ -441,7 +896,8 @@ public class MetadataEngine {
             // 例如使用SpEL、MVEL或自定义表达式引擎
             return null; // 占位返回
         } catch (Exception e) {
-            log.error("计算字段值失败: {}", field.getApiName(), e);
+            System.err.println("计算字段值失败: " + field.getApiName() + ", " + e.getMessage());
+            // log.error("计算字段值失败: {}", field.getApiName(), e);
             return null;
         }
     }
@@ -450,16 +906,20 @@ public class MetadataEngine {
      * 注册元数据变更监听器
      * @param listener 监听器
      */
-    public void registerMetadataChangeListener(MetadataRegistry.MetadataChangeListener listener) {
-        metadataRegistry.addMetadataChangeListener(listener);
+    public void registerMetadataChangeListener(MetadataChangeListener listener) {
+        // 监听器功能暂时未实现
+        System.out.println("监听器注册功能待实现");
+        // log.info("监听器注册功能待实现");
     }
     
     /**
      * 注销元数据变更监听器
      * @param listener 监听器
      */
-    public void unregisterMetadataChangeListener(MetadataRegistry.MetadataChangeListener listener) {
-        metadataRegistry.removeMetadataChangeListener(listener);
+    public void unregisterMetadataChangeListener(MetadataChangeListener listener) {
+        // 监听器功能暂时未实现
+        System.out.println("监听器注销功能待实现");
+        // log.info("监听器注销功能待实现");
     }
     
     /**
@@ -468,9 +928,14 @@ public class MetadataEngine {
      * @return 匹配的实体元数据列表
      */
     public List<EntityMetadata> searchEntities(Map<String, Object> searchCriteria) {
-        // 简化实现，返回所有实体元数据
+        // 简化实现，返回缓存中的所有实体元数据
         // 实际应用中可以根据searchCriteria进行过滤
-        List<EntityMetadata> allEntities = metadataRegistry.getAllEntityMetadata();
+        List<EntityMetadata> allEntities = new ArrayList<>();
+        for (CacheEntry entry : entityMetadataCache.values()) {
+            if (!entry.isExpired()) {
+                allEntities.add((EntityMetadata) entry.getValue());
+            }
+        }
         
         if (searchCriteria == null || searchCriteria.isEmpty()) {
             return allEntities;

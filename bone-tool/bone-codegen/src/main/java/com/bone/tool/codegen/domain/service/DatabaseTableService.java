@@ -12,7 +12,7 @@ import com.bone.tool.codegen.application.converter.CodegenConverter;
 import com.bone.tool.codegen.domain.entity.Datasource;
 import com.bone.tool.codegen.domain.entity.CodegenTable;
 import com.bone.tool.codegen.domain.entity.CodegenColumn;
-import com.bone.tool.codegen.domain.entity.TableInfo;
+import com.bone.tool.codegen.domain.entity.DatabaseTableMetadata;
 import com.bone.tool.codegen.domain.repository.DataSourceConfigRepository;
 import com.bone.tool.codegen.domain.repository.CodegenTableRepository;
 import com.bone.tool.codegen.domain.repository.CodegenColumnRepository;
@@ -67,10 +67,10 @@ public class DatabaseTableService {
      * @return 表信息列表
      * @throws IllegalArgumentException 当数据源配置ID为空时抛出
      */
-    public List<TableInfo> getTableList(Long dataSourceConfigId, String nameLike, String commentLike) {
+    public List<DatabaseTableMetadata> getTableList(Long dataSourceConfigId, String nameLike, String commentLike) {
         Assert.notNull(dataSourceConfigId, "数据源ID不能为空");
         
-        List<TableInfo> tableInfoList = getTableList0(dataSourceConfigId, null);
+        List<DatabaseTableMetadata> tableInfoList = getTableList0(dataSourceConfigId, null);
         
         // 根据条件过滤
         if (StringUtils.hasText(nameLike)) {
@@ -100,16 +100,16 @@ public class DatabaseTableService {
      * @return 表信息列表
      * @throws IllegalArgumentException 当数据源配置ID为空时抛出
      */
-    public List<TableInfo> getTables(Long dataSourceConfigId, List<String> tableNames) {
+    public List<DatabaseTableMetadata> getTables(Long dataSourceConfigId, List<String> tableNames) {
         Assert.notNull(dataSourceConfigId, "数据源配置ID不能为空");
         if (CollectionUtils.isEmpty(tableNames)) {
             return Collections.emptyList();
         }
         
-        List<TableInfo> tableInfos = new ArrayList<>(tableNames.size());
+        List<DatabaseTableMetadata> tableInfos = new ArrayList<>(tableNames.size());
         for (String tableName : tableNames) {
             if (StringUtils.hasText(tableName)) {
-                TableInfo tableInfo = getTable(dataSourceConfigId, tableName);
+                DatabaseTableMetadata tableInfo = getTable(dataSourceConfigId, tableName);
                 if (tableInfo != null) {
                     tableInfos.add(tableInfo);
                 }
@@ -125,7 +125,7 @@ public class DatabaseTableService {
      * @param schema 数据库模式
      * @return 表信息列表
      */
-    private List<TableInfo> getTableList0(Long dataSourceConfigId, String schema) {
+    private List<DatabaseTableMetadata> getTableList0(Long dataSourceConfigId, String schema) {
         try {
             return databaseTableRepository.getTableList(dataSourceConfigId, schema);
         } catch (Exception e) {
@@ -141,7 +141,7 @@ public class DatabaseTableService {
      * @param tableName 表名
      * @return 表信息
      */
-    private TableInfo getTable(Long dataSourceConfigId, String tableName) {
+    private DatabaseTableMetadata getTable(Long dataSourceConfigId, String tableName) {
         try {
             return databaseTableRepository.getTableInfo(dataSourceConfigId, tableName);
         } catch (Exception e) {
@@ -241,7 +241,7 @@ public class DatabaseTableService {
         
         try {
             // 获取数据库表信息
-            TableInfo tableInfo = getTable(dataSourceConfigId, tableName);
+            DatabaseTableMetadata tableInfo = getTable(dataSourceConfigId, tableName);
             if (tableInfo == null) {
                 throw new RuntimeException("表不存在: " + tableName);
             }
@@ -250,7 +250,7 @@ public class DatabaseTableService {
             CodegenTable codegenTable = new CodegenTable();
             codegenTable.setDatasourceId(dataSourceConfigId);
             codegenTable.setTableName(tableName);
-            codegenTable.setTableComment(tableInfo.getComment());
+            codegenTable.setTableComment(tableInfo.getTableComment());
             codegenTable.setModuleName(moduleName);
             codegenTable.setPackageName(packageName);
             codegenTable.setScene(sceneType);
@@ -303,7 +303,7 @@ public class DatabaseTableService {
             
             try {
                 // 获取数据库表信息
-                TableInfo tableInfo = getTable(dataSourceConfigId, tableName);
+                DatabaseTableMetadata tableInfo = getTable(dataSourceConfigId, tableName);
                 if (tableInfo == null) {
                     log.warn("跳过不存在的表: {}", tableName);
                     continue;
@@ -400,7 +400,7 @@ public class DatabaseTableService {
             }
 
             // 从数据库获取最新表结构
-            TableInfo tableInfo = getTable(
+            DatabaseTableMetadata tableInfo = getTable(
                     codegenTable.getDatasourceId(),
                     codegenTable.getTableName());
 
@@ -426,7 +426,7 @@ public class DatabaseTableService {
      * @param codegenTable 代码生成表配置
      * @param tableInfo 表信息
      */
-    private void syncCodegen0(CodegenTable codegenTable, TableInfo tableInfo) {
+    private void syncCodegen0(CodegenTable codegenTable, DatabaseTableMetadata tableInfo) {
         try {
             // 更新表信息
             boolean hasUpdate = false;
@@ -559,10 +559,10 @@ public class DatabaseTableService {
         column.setAutoIncrement(sourceColumn.getAutoIncrement());
         
         // 设置默认值
-        column.setCreateOperation(true);
-        column.setUpdateOperation(!sourceColumn.getPrimaryKey()); // 主键不能更新
-        column.setListOperation(true);
-        column.setListResultShow(true);
+        column.setEnableCreate(true);
+        column.setEnableUpdate(!sourceColumn.getPrimaryKey()); // 主键不能更新
+        column.setEnableQuery(true);
+        column.setShowInList(true);
         column.setHtmlType("input");
         
         return column;

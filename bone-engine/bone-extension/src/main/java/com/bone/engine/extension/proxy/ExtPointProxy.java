@@ -1,7 +1,7 @@
 package com.bone.engine.extension.proxy;
 
 import com.bone.engine.extension.BizContext;
-import com.bone.engine.extension.BizContextUtils;
+import com.bone.engine.extension.BizContexts;
 import com.bone.engine.extension.invoker.ExtPointInvocationHandler;
 import com.bone.engine.extension.repository.ExtPointRepository;
 import com.bone.engine.extension.repository.ExtPointRepositoryFactory;
@@ -42,7 +42,7 @@ public class ExtPointProxy<T> implements InvocationHandler, Serializable {
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        BizContext bizContext = BizContextUtils.getCurrentContext();
+        BizContext bizContext = BizContexts.getCurrent();
         Object extProvider = extPointRouter.locateExtProvider(extPoint, bizContext);
         return ExtPointInvocationHandler.invoke(extProvider, method, args);
     }

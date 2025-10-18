@@ -1,6 +1,6 @@
 package com.bone.tool.codegen.domain.repository;
 
-import com.bone.tool.codegen.domain.entity.TableInfo;
+import com.bone.tool.codegen.domain.entity.DatabaseTableMetadata;
 import java.util.List;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -36,7 +36,7 @@ public interface DatabaseTableRepository {
      * @return 表信息列表
      * @throws Exception 查询失败时抛出异常
      */
-    List<TableInfo> getTableList(Long dataSourceConfigId, String schema) throws Exception;
+    List<DatabaseTableMetadata> getTableList(Long dataSourceConfigId, String schema) throws Exception;
     
     /**
      * 获取数据库表信息
@@ -45,7 +45,7 @@ public interface DatabaseTableRepository {
      * @return 表信息
      * @throws Exception 查询失败时抛出异常
      */
-    TableInfo getTableInfo(Long dataSourceConfigId, String tableName) throws Exception;
+    DatabaseTableMetadata getTableInfo(Long dataSourceConfigId, String tableName) throws Exception;
     
     /**
      * 关闭数据库连接

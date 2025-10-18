@@ -5,11 +5,11 @@ import java.util.List;
 import lombok.Data;
 
 /**
- * 表信息
+ * 数据库表元数据
  * 用于存储和传递数据库表的元数据信息
  */
 @Data
-public class TableInfo implements Serializable {
+public class DatabaseTableMetadata implements Serializable {
     private static final long serialVersionUID = 1L;
     
     /** 表名 */
@@ -23,6 +23,9 @@ public class TableInfo implements Serializable {
     
     /** 模块名称 */
     private String moduleName;
+    
+    /** 字段名称 */
+    private String fieldName;
     
     /** 字段列表 */
     private List<CodegenColumn> fieldList;
@@ -50,10 +53,5 @@ public class TableInfo implements Serializable {
     
     public List<CodegenColumn> getFields() {
         return fieldList;
-    }
-    
-    // 注意：该方法名可能存在歧义，建议在后续版本中重构
-    public void setFieldName(String moduleName) {
-        this.moduleName = moduleName;
     }
 }

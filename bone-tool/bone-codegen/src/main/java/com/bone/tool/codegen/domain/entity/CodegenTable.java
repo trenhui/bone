@@ -6,6 +6,7 @@ import com.bone.metadata.sdk.domain.annotation.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
+import java.io.Serializable;
 import java.util.Map;
 
 /**
@@ -16,7 +17,8 @@ import java.util.Map;
 @Data
 @Accessors(chain = true)
 @EqualsAndHashCode(callSuper = true)
-public class CodegenTable extends AbstractEntity<Long> {
+public class CodegenTable extends AbstractEntity<Long> implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     /** 主键ID */
     @Id

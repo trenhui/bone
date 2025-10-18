@@ -25,7 +25,6 @@ import java.util.regex.Pattern;
  * 负责初始化元数据引擎，加载默认元数据和配置
  */
 @Component
-@RequiredArgsConstructor
 public class MetadataEngineInitializer implements ApplicationRunner {
     
     private static final Logger log = LoggerFactory.getLogger(MetadataEngineInitializer.class);
@@ -33,6 +32,12 @@ public class MetadataEngineInitializer implements ApplicationRunner {
     private final MetadataEngine metadataEngine;
     private final SmartMetaProperties properties;
     private final ResourceLoader resourceLoader;
+    
+    public MetadataEngineInitializer(MetadataEngine metadataEngine, SmartMetaProperties properties, ResourceLoader resourceLoader) {
+        this.metadataEngine = metadataEngine;
+        this.properties = properties;
+        this.resourceLoader = resourceLoader;
+    }
     
     @Override
     public void run(ApplicationArguments args) throws Exception {

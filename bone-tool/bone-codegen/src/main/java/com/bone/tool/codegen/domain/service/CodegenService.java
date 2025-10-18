@@ -569,7 +569,7 @@ public class CodegenService {
     /**
      * 从表信息构建代码生成表配置对象
      */
-    private CodegenTable buildCodegenTableFromTableInfo(TableInfo tableInfo, GenerateCustomCodeRequest request) {
+    private CodegenTable buildCodegenTableFromTableInfo(DatabaseTableMetadata tableInfo, GenerateCustomCodeRequest request) {
         CodegenTable table = new CodegenTable();
         table.setDatasourceId(request.getDatasourceId());
         // 使用反射方式获取和设置字段值
@@ -628,7 +628,7 @@ public class CodegenService {
     /**
      * 从表信息构建代码生成字段配置列表
      */
-    private List<CodegenColumn> buildCodegenColumnsFromTableInfo(TableInfo tableInfo) {
+    private List<CodegenColumn> buildCodegenColumnsFromTableInfo(DatabaseTableMetadata tableInfo) {
         List<CodegenColumn> columns = new ArrayList<>();
         for (CodegenColumn field : tableInfo.getFields()) {
             CodegenColumn column = new CodegenColumn();
@@ -653,10 +653,10 @@ public class CodegenService {
             column.setPrimaryKey(field.getPrimaryKey());
             column.setAutoIncrement(field.getPrimaryKey()); // 假设主键是自增的
             column.setNullable(false);
-            column.setCreateOperation(!field.getPrimaryKey());
-            column.setUpdateOperation(!field.getPrimaryKey());
-            column.setListOperation(true);
-            column.setListResultShow(true);
+            column.setEnableCreate(!field.getPrimaryKey());
+            column.setEnableUpdate(!field.getPrimaryKey());
+            column.setEnableQuery(true);
+            column.setShowInList(true);
             column.setListQueryCondition("eq");
             column.setHtmlType("input");
 

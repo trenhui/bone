@@ -1,6 +1,6 @@
 package com.bone.smartmeta.engine.initializer;
 
-import com.bone.smartmeta.engine.engine.MetadataEngine;
+import com.bone.smartmeta.engine.MetadataEngine;
 import com.bone.smartmeta.engine.metadata.EntityMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
