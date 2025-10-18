@@ -1,9 +1,11 @@
 package com.bone.tool.codegen.domain.entity;
 
-import java.io.Serializable;
-import lombok.Data;
-import com.bone.core.domain.entity.Entity;
+import com.bone.core.domain.entity.AbstractEntity;
 import com.bone.metadata.sdk.domain.annotation.Table;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.experimental.Accessors;
+import java.io.Serializable;
 
 /**
  * 代码生成列配置
@@ -11,7 +13,9 @@ import com.bone.metadata.sdk.domain.annotation.Table;
  */
 @Table("codegen_column")
 @Data
-public class CodegenColumn extends Entity<Long> implements Serializable {
+@Accessors(chain = true)
+@EqualsAndHashCode(callSuper = true)
+public class CodegenColumn extends AbstractEntity<Long> implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /** 所属表ID */

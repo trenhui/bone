@@ -16,8 +16,21 @@ import java.lang.annotation.Target;
 /**
  * 启用扩展点框架的核心注解
  * <p>
- * 使用此注解在Spring Boot应用中启用扩展点功能，支持自定义仓库实现和路由策略
+ * 在Spring Boot应用程序的主配置类上使用此注解，以启用扩展点功能。
+ * 此注解会触发自动扫描和注册扩展点接口及其实现类的过程，并配置相应的代理机制。
+ * </p>
  * 
+ * <h3>功能特性：</h3>
+ * <ul>
+ *   <li>自动扫描并注册带有{@code @ExtPoint}注解的接口和类</li>
+ *   <li>自动扫描并注册带有{@code @ExtProvider}注解的实现类</li>
+ *   <li>支持基于业务上下文的动态路由</li>
+ *   <li>支持多租户隔离</li>
+ *   <li>支持自定义扩展点仓库实现（内存、Redis、Nacos等）</li>
+ *   <li>支持自定义路由策略</li>
+ * </ul>
+ * 
+ * <h3>基础用法示例：</h3>
  * <pre>
  * {@code
  * @SpringBootApplication
@@ -30,7 +43,27 @@ import java.lang.annotation.Target;
  * }
  * </pre>
  * 
- * @author renhui.trh 2023-10-30
+ * <h3>自定义配置示例：</h3>
+ * <pre>
+ * {@code
+ * @SpringBootApplication
+ * @EnableExtPoints(
+ *     basePackages = "com.example.business.extension",
+ *     extensionRepository = RedisExtPointRepository.class,
+ *     extensionRouter = CustomExtPointRouter.class
+ * )
+ * public class Application {
+ *     public static void main(String[] args) {
+ *         SpringApplication.run(Application.class, args);
+ *     }
+ * }
+ * }
+ * </pre>
+ * 
+ * @see ExtPoint 扩展点标记注解
+ * @see ExtProvider 扩展提供者注解
+ * @see ExtPointRegister 扩展点注册器
+ * @since 1.0.0
  */
 @Documented
 @Target(ElementType.TYPE)
@@ -38,31 +71,39 @@ import java.lang.annotation.Target;
 @Import({ExtPointRegister.class})
 public @interface EnableExtPoints {
     /**
+     * 扫描的基础包路径
+     * <p>
+     * 指定要扫描的包，框架会在这些包中查找带有{@code @ExtPoint}和{@code @ExtProvider}注解的类
+     * 如果未指定，默认扫描注解所在类的包及其子包
+     * </p>
+     * 
+     * @return 基础包路径数组
+     */
+    String[] basePackages() default {};
+    
+    /**
      * 指定扩展点仓库实现类
      * <p>
-     * 默认使用内存仓库实现，可以自定义为Redis、Nacos等分布式实现
+     * 扩展点仓库负责存储和管理所有已注册的扩展提供者实例
+     * 默认使用内存仓库实现，适用于单体应用
+     * 分布式场景下可自定义为Redis、Nacos等分布式实现
+     * </p>
      * 
      * @return 扩展点仓库实现类
      */
-    Class<? extends ExtPointRepository> extPointRepository() default MemExtPointRepository.class;
+    Class<? extends ExtPointRepository> extensionRepository() default MemExtPointRepository.class;
 
     /**
      * 指定扩展点路由策略实现类
      * <p>
-     * 默认使用基于租户和业务标识的路由策略，可以自定义更复杂的路由规则
+     * 扩展点路由策略负责根据业务上下文选择合适的扩展提供者实现
+     * 默认使用多级路由策略，按租户ID、业务标识和条件表达式进行匹配
+     * 可自定义实现复杂的路由算法以满足特殊业务需求
+     * </p>
      * 
      * @return 扩展点路由策略实现类
      */
     Class<? extends ExtPointRouter> extPointRouter() default DefaultExtPointRouter.class;
-    
-    /**
-     * 指定需要扫描的扩展点包路径
-     * <p>
-     * 可以指定多个包路径，默认扫描当前类所在的包及其子包
-     * 
-     * @return 需要扫描的包路径数组
-     */
-    String[] basePackages() default {};
     
     /**
      * 是否启用缓存

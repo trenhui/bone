@@ -64,4 +64,36 @@ public interface EntitySqlBuilder<T> {
      * @return 记录总数
      */
     long count();
+    
+    /**
+     * 添加INNER JOIN关联
+     * @param joinEntityClass 关联实体类
+     * @param <J> 关联实体类型
+     * @return JoinClause实例
+     */
+    <J> JoinClause<T, J> join(Class<J> joinEntityClass);
+    
+    /**
+     * 添加LEFT JOIN关联
+     * @param joinEntityClass 关联实体类
+     * @param <J> 关联实体类型
+     * @return JoinClause实例
+     */
+    <J> JoinClause<T, J> leftJoin(Class<J> joinEntityClass);
+    
+    /**
+     * 添加RIGHT JOIN关联
+     * @param joinEntityClass 关联实体类
+     * @param <J> 关联实体类型
+     * @return JoinClause实例
+     */
+    <J> JoinClause<T, J> rightJoin(Class<J> joinEntityClass);
+    
+    /**
+     * 添加FULL JOIN关联
+     * @param joinEntityClass 关联实体类
+     * @param <J> 关联实体类型
+     * @return JoinClause实例
+     */
+    <J> JoinClause<T, J> fullJoin(Class<J> joinEntityClass);
 }

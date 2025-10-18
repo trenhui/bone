@@ -14,6 +14,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import com.bone.core.util.ReflectionUtil;
 
 /**
  * 数据库表仓库默认实现
@@ -36,11 +37,15 @@ public class DefaultDatabaseTableRepository implements DatabaseTableRepository {
             throw new IllegalArgumentException("数据源配置不存在: " + datasourceId);
         }
         
-        // 获取数据库连接
+        // 获取数据库连接（使用反射获取连接信息）
+        String url = (String) ReflectionUtil.getFieldValue(config, "url");
+        String username = (String) ReflectionUtil.getFieldValue(config, "username");
+        String password = (String) ReflectionUtil.getFieldValue(config, "password");
+        
         Connection connection = DriverManager.getConnection(
-                config.getUrl(), 
-                config.getUsername(), 
-                config.getPassword());
+                url, 
+                username, 
+                password);
         
         // 设置事务隔离级别（可选）
         connection.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
@@ -78,13 +83,15 @@ public class DefaultDatabaseTableRepository implements DatabaseTableRepository {
                     String tableComment = rs.getString("REMARKS");
                     
                     DatabaseTableMetadata tableInfo = new DatabaseTableMetadata();
-                    tableInfo.setTableName(tableName);
-                    tableInfo.setTableComment(tableComment);
-                    tableInfo.setEntityName(convertToEntityName(tableName));
-                    tableInfo.setFieldName(convertToFieldName(tableName));
+                    // 使用反射设置字段值
+                    ReflectionUtil.setFieldValue(tableInfo, "tableName", tableName);
+                    ReflectionUtil.setFieldValue(tableInfo, "tableComment", tableComment);
+                    ReflectionUtil.setFieldValue(tableInfo, "entityName", convertToEntityName(tableName));
+                    ReflectionUtil.setFieldValue(tableInfo, "fieldName", convertToFieldName(tableName));
                     
                     // 获取表字段信息
-                    tableInfo.setFieldList(getTableColumns(connection, schema, tableName));
+                    List<CodegenColumn> fieldList = getTableColumns(connection, schema, tableName);
+                    ReflectionUtil.setFieldValue(tableInfo, "fieldList", fieldList);
                     
                     tableInfos.add(tableInfo);
                 }
@@ -115,13 +122,15 @@ public class DefaultDatabaseTableRepository implements DatabaseTableRepository {
                     String tableComment = rs.getString("REMARKS");
                     
                     DatabaseTableMetadata tableInfo = new DatabaseTableMetadata();
-                    tableInfo.setTableName(tableName);
-                    tableInfo.setTableComment(tableComment);
-                    tableInfo.setEntityName(convertToEntityName(tableName));
-                    tableInfo.setFieldName(convertToFieldName(tableName));
+                    // 使用反射设置字段值
+                    ReflectionUtil.setFieldValue(tableInfo, "tableName", tableName);
+                    ReflectionUtil.setFieldValue(tableInfo, "tableComment", tableComment);
+                    ReflectionUtil.setFieldValue(tableInfo, "entityName", convertToEntityName(tableName));
+                    ReflectionUtil.setFieldValue(tableInfo, "fieldName", convertToFieldName(tableName));
                     
                     // 获取表字段信息
-                    tableInfo.setFieldList(getTableColumns(connection, schema, tableName));
+                    List<CodegenColumn> fieldList = getTableColumns(connection, schema, tableName);
+                    ReflectionUtil.setFieldValue(tableInfo, "fieldList", fieldList);
                     
                     return tableInfo;
                 }
@@ -167,13 +176,15 @@ public class DefaultDatabaseTableRepository implements DatabaseTableRepository {
                     String columnName = columnsRs.getString("COLUMN_NAME");
                     String dataType = columnsRs.getString("TYPE_NAME");
                     String columnComment = columnsRs.getString("REMARKS");
+                    boolean isPrimaryKey = pkColumns.contains(columnName);
                     
-                    column.setColumnName(columnName);
-                    column.setDataType(dataType);
-                    column.setColumnComment(columnComment);
-                    column.setPrimaryKey(pkColumns.contains(columnName));
-                    column.setJavaField(convertToJavaField(columnName));
-                    column.setJavaType(convertToJavaType(dataType, column.getPrimaryKey()));
+                    // 使用反射设置字段值
+                    ReflectionUtil.setFieldValue(column, "columnName", columnName);
+                    ReflectionUtil.setFieldValue(column, "dataType", dataType);
+                    ReflectionUtil.setFieldValue(column, "columnComment", columnComment);
+                    ReflectionUtil.setFieldValue(column, "primaryKey", isPrimaryKey);
+                    ReflectionUtil.setFieldValue(column, "javaField", convertToJavaField(columnName));
+                    ReflectionUtil.setFieldValue(column, "javaType", convertToJavaType(dataType, isPrimaryKey));
                     
                     columns.add(column);
                 }

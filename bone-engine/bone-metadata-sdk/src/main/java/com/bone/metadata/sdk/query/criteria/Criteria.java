@@ -4,6 +4,7 @@ import com.bone.core.enums.Operator;
 import com.bone.metadata.sdk.support.function.SFunction;
 import com.bone.metadata.sdk.domain.enums.SortDirection;
 import com.bone.metadata.sdk.support.util.SqlUtil;
+import com.bone.metadata.sdk.query.builder.SelectBuilderSql;
 import lombok.Data;
 
 import java.util.*;
@@ -21,6 +22,7 @@ public class Criteria<T> {
     private final Map<String, AtomicInteger> columnCounterMap = new ConcurrentHashMap<>();
 
     private final List<String> sortItems = new ArrayList<>();
+    private final List<SelectBuilderSql.JoinInfo> joinInfos = new ArrayList<>();
     private int pageSize = 5000;
     private int pageNo = 1;
 
@@ -382,6 +384,21 @@ public class Criteria<T> {
      */
     public boolean requiresExtJoin() {
         return !extConditions.isEmpty();
+    }
+
+    /**
+     * 添加关联表信息
+     */
+    public Criteria<T> addJoinInfo(SelectBuilderSql.JoinInfo joinInfo) {
+        this.joinInfos.add(joinInfo);
+        return this;
+    }
+
+    /**
+     * 获取所有关联表信息
+     */
+    public List<SelectBuilderSql.JoinInfo> getJoinInfos() {
+        return joinInfos;
     }
 
     public <R> Criteria<T> addSort(boolean condition, SFunction<T, R> fn, SortDirection dir) {

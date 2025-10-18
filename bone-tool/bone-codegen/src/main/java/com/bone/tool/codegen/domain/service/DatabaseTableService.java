@@ -3,6 +3,7 @@ package com.bone.tool.codegen.domain.service;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+import com.bone.tool.codegen.infrastructure.util.ReflectionUtil;
 import com.bone.core.model.PageResult;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.tool.codegen.application.dto.CodegenTablePageRequest;
@@ -26,6 +27,8 @@ import java.sql.*;
 import java.util.*;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
+
+import com.bone.tool.codegen.infrastructure.util.ReflectionUtil;
 
 import static com.bone.tool.codegen.domain.enums.ErrorCodeConstants.DATA_SOURCE_CONFIG_NOT_OK;
 
@@ -180,11 +183,19 @@ public class DatabaseTableService {
         if (request.getTableName() != null) {
             criteria.like("tableName", "%" + request.getTableName() + "%");
         }
-        if (request.getClassName() != null) {
-            criteria.like("className", "%" + request.getClassName() + "%");
+        try {
+            if (request.getClassName() != null) {
+                criteria.like("className", "%" + request.getClassName() + "%");
+            }
+        } catch (Exception e) {
+            String className = (String) ReflectionUtil.getFieldValue(request, "className");
+            if (className != null) {
+                criteria.like("className", "%" + className + "%");
+            }
         }
-        if (request.getTableComment() != null) {
-            criteria.like("tableComment", "%" + request.getTableComment() + "%");
+        String tableComment = (String) ReflectionUtil.getFieldValue(request, "tableComment");
+        if (tableComment != null) {
+            criteria.like("tableComment", "%" + tableComment + "%");
         }
         
         // 使用pageByCriteria方法进行分页查询
@@ -214,8 +225,8 @@ public class DatabaseTableService {
         
         // 构建详情响应
         CodegenDetailResponse response = new CodegenDetailResponse();
-        response.setTable(codegenConverter.toCodegenTableResponse(codegenTable));
-        response.setColumns(codegenConverter.toCodegenColumnResponseList(columns));
+        ReflectionUtil.setFieldValue(response, "table", codegenConverter.toCodegenTableResponse(codegenTable));
+        ReflectionUtil.setFieldValue(response, "columns", codegenConverter.toCodegenColumnResponseList(columns));
         
         return response;
     }
@@ -248,15 +259,16 @@ public class DatabaseTableService {
             
             // 创建代码生成表配置
             CodegenTable codegenTable = new CodegenTable();
-            codegenTable.setDatasourceId(dataSourceConfigId);
-            codegenTable.setTableName(tableName);
-            codegenTable.setTableComment(tableInfo.getTableComment());
-            codegenTable.setModuleName(moduleName);
-            codegenTable.setPackageName(packageName);
-            codegenTable.setScene(sceneType);
-            codegenTable.setTemplateType(modelType);
-            codegenTable.setCreateTime(new java.util.Date());
-            codegenTable.setUpdateTime(new java.util.Date());
+            ReflectionUtil.setFieldValue(codegenTable, "datasourceId", dataSourceConfigId);
+            ReflectionUtil.setFieldValue(codegenTable, "tableName", tableName);
+            String tableComment = (String) ReflectionUtil.getFieldValue(tableInfo, "tableComment");
+            ReflectionUtil.setFieldValue(codegenTable, "tableComment", tableComment);
+            ReflectionUtil.setFieldValue(codegenTable, "moduleName", moduleName);
+            ReflectionUtil.setFieldValue(codegenTable, "packageName", packageName);
+            ReflectionUtil.setFieldValue(codegenTable, "scene", sceneType);
+            ReflectionUtil.setFieldValue(codegenTable, "templateType", modelType);
+            ReflectionUtil.setFieldValue(codegenTable, "createTime", new java.util.Date());
+            ReflectionUtil.setFieldValue(codegenTable, "updateTime", new java.util.Date());
             
             // 保存表配置
             Long savedTableId = codegenTableRepository.save(codegenTable);
@@ -311,15 +323,16 @@ public class DatabaseTableService {
                 
                 // 创建代码生成表配置
                 CodegenTable codegenTable = new CodegenTable();
-                codegenTable.setDatasourceId(dataSourceConfigId);
-                codegenTable.setTableName(tableName);
-                codegenTable.setTableComment(tableInfo.getComment());
-                codegenTable.setModuleName(moduleName);
-                codegenTable.setPackageName(packageName);
-                codegenTable.setScene(sceneType);
-                codegenTable.setTemplateType(modelType);
-                codegenTable.setCreateTime(new java.util.Date());
-                codegenTable.setUpdateTime(new java.util.Date());
+                ReflectionUtil.setFieldValue(codegenTable, "datasourceId", dataSourceConfigId);
+                ReflectionUtil.setFieldValue(codegenTable, "tableName", tableName);
+                String tableComment = (String) ReflectionUtil.getFieldValue(tableInfo, "comment");
+                ReflectionUtil.setFieldValue(codegenTable, "tableComment", tableComment);
+                ReflectionUtil.setFieldValue(codegenTable, "moduleName", moduleName);
+                ReflectionUtil.setFieldValue(codegenTable, "packageName", packageName);
+                ReflectionUtil.setFieldValue(codegenTable, "scene", sceneType);
+                ReflectionUtil.setFieldValue(codegenTable, "templateType", modelType);
+                ReflectionUtil.setFieldValue(codegenTable, "createTime", new java.util.Date());
+                ReflectionUtil.setFieldValue(codegenTable, "updateTime", new java.util.Date());
                 
                 // 保存表配置
                 Long savedTableId = codegenTableRepository.save(codegenTable);
@@ -348,7 +361,7 @@ public class DatabaseTableService {
         }
         
         for (CodegenColumn field : fields) {
-            field.setTableId(tableId);
+            ReflectionUtil.setFieldValue(field, "tableId", tableId);
             codegenColumnRepository.save(field);
         }
     }
@@ -362,23 +375,31 @@ public class DatabaseTableService {
     public void updateCodegenTable(CodegenTableRequest request) {
         // 验证参数
         Assert.notNull(request, "请求参数不能为空");
-        Assert.notNull(request.getId(), "表ID不能为空");
-        Assert.hasText(request.getModuleName(), "模块名不能为空");
-        Assert.hasText(request.getPackageName(), "包名不能为空");
+        Long id = (Long) ReflectionUtil.getFieldValue(request, "id");
+        Assert.notNull(id, "表ID不能为空");
+        // 使用反射获取字段值
+        String moduleName = (String) ReflectionUtil.getFieldValue(request, "moduleName");
+        String packageName = (String) ReflectionUtil.getFieldValue(request, "packageName");
+        Assert.hasText(moduleName, "模块名不能为空");
+        Assert.hasText(packageName, "包名不能为空");
         
         // 获取原有表配置
-        CodegenTable codegenTable = codegenTableRepository.findById(request.getId());
+        CodegenTable codegenTable = codegenTableRepository.findById(id);
         if (codegenTable == null) {
             throw new RuntimeException("表配置不存在");
         }
         
         // 更新表配置
-        codegenTable.setModuleName(request.getModuleName());
-        codegenTable.setPackageName(request.getPackageName());
-        codegenTable.setClassName(request.getClassName());
-        codegenTable.setScene(request.getTemplateType()); // 使用templateType作为scene值
-        codegenTable.setTemplateType(request.getTemplateType());
-        codegenTable.setUpdateTime(new java.util.Date());
+        // 使用反射获取和设置字段值
+        String className = (String) ReflectionUtil.getFieldValue(request, "className");
+        Integer templateType = (Integer) ReflectionUtil.getFieldValue(request, "templateType");
+        
+        ReflectionUtil.setFieldValue(codegenTable, "moduleName", moduleName);
+        ReflectionUtil.setFieldValue(codegenTable, "packageName", packageName);
+        ReflectionUtil.setFieldValue(codegenTable, "className", className);
+        ReflectionUtil.setFieldValue(codegenTable, "scene", templateType); // 使用templateType作为scene值
+        ReflectionUtil.setFieldValue(codegenTable, "templateType", templateType);
+        ReflectionUtil.setFieldValue(codegenTable, "updateTime", new java.util.Date());
         
         codegenTableRepository.update(codegenTable);
     }
@@ -400,19 +421,20 @@ public class DatabaseTableService {
             }
 
             // 从数据库获取最新表结构
-            DatabaseTableMetadata tableInfo = getTable(
-                    codegenTable.getDatasourceId(),
-                    codegenTable.getTableName());
+            Long datasourceId = (Long) ReflectionUtil.getFieldValue(codegenTable, "datasourceId");
+            String tableName = (String) ReflectionUtil.getFieldValue(codegenTable, "tableName");
+            
+            DatabaseTableMetadata tableInfo = getTable(datasourceId, tableName);
 
             if (tableInfo == null) {
-                log.error("数据库表不存在: {}", codegenTable.getTableName());
-                throw new RuntimeException("数据库表不存在: " + codegenTable.getTableName());
+                log.error("数据库表不存在: {}", tableName);
+                throw new RuntimeException("数据库表不存在: " + tableName);
             }
 
             // 同步表配置
             syncCodegen0(codegenTable, tableInfo);
 
-            log.info("成功同步表结构，表ID: {}, 表名: {}", id, codegenTable.getTableName());
+            log.info("成功同步表结构，表ID: {}, 表名: {}", id, tableName);
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (Exception e) {
@@ -430,8 +452,10 @@ public class DatabaseTableService {
         try {
             // 更新表信息
             boolean hasUpdate = false;
-            if (!StringUtils.pathEquals(codegenTable.getTableComment(), tableInfo.getComment())) {
-                codegenTable.setTableComment(tableInfo.getComment());
+            String currentComment = (String) ReflectionUtil.getFieldValue(codegenTable, "tableComment");
+            String newComment = (String) ReflectionUtil.getFieldValue(tableInfo, "comment");
+            if (!StringUtils.pathEquals(currentComment, newComment)) {
+                ReflectionUtil.setFieldValue(codegenTable, "tableComment", newComment);
                 hasUpdate = true;
             }
 
@@ -466,9 +490,10 @@ public class DatabaseTableService {
         // 处理新增和更新的字段
         if (!CollectionUtils.isEmpty(tableFields)) {
             for (CodegenColumn field : tableFields) {
-                if (field != null && StringUtils.hasText(field.getColumnName())) {
-                    String columnName = field.getColumnName();
-                    CodegenColumn column = columnMap.get(columnName);
+                if (field != null) {
+                    String columnName = (String) ReflectionUtil.getFieldValue(field, "columnName");
+                    if (StringUtils.hasText(columnName)) {
+                        CodegenColumn column = columnMap.get(columnName);
 
                     if (column == null) {
                         // 新增字段
@@ -481,6 +506,7 @@ public class DatabaseTableService {
                         updatedCount++;
                         // 从映射中移除，剩余的就是需要删除的
                         columnMap.remove(columnName);
+                    }
                     }
                 }
             }
@@ -501,8 +527,11 @@ public class DatabaseTableService {
     private Map<String, CodegenColumn> buildColumnMap(List<CodegenColumn> columns) {
         Map<String, CodegenColumn> columnMap = new HashMap<>(columns.size());
         for (CodegenColumn column : columns) {
-            if (column != null && StringUtils.hasText(column.getColumnName())) {
-                columnMap.put(column.getColumnName(), column);
+            if (column != null) {
+                String columnName = (String) ReflectionUtil.getFieldValue(column, "columnName");
+                if (StringUtils.hasText(columnName)) {
+                    columnMap.put(columnName, column);
+                }
             }
         }
         return columnMap;
@@ -517,10 +546,13 @@ public class DatabaseTableService {
         int deletedCount = 0;
         for (CodegenColumn column : obsoleteColumns.values()) {
             try {
-                codegenColumnRepository.deleteById(column.getId());
+                Long columnId = (Long) ReflectionUtil.getFieldValue(column, "id");
+                codegenColumnRepository.deleteById(columnId);
                 deletedCount++;
             } catch (Exception e) {
-                log.warn("删除字段失败: {} (ID: {})", column.getColumnName(), column.getId(), e);
+                String columnName = (String) ReflectionUtil.getFieldValue(column, "columnName");
+                Long columnId = (Long) ReflectionUtil.getFieldValue(column, "id");
+                log.warn("删除字段失败: {} (ID: {})", columnName, columnId, e);
                 // 继续删除其他字段，单个字段删除失败不应影响整体操作
             }
         }
@@ -550,20 +582,32 @@ public class DatabaseTableService {
      */
     private CodegenColumn createCodegenColumn(Long tableId, CodegenColumn sourceColumn) {
         CodegenColumn column = new CodegenColumn();
-        column.setTableId(tableId);
-        column.setColumnName(sourceColumn.getColumnName());
-        column.setDataType(sourceColumn.getDataType());
-        column.setJavaType(sourceColumn.getJavaType());
-        column.setColumnComment(sourceColumn.getColumnComment());
-        column.setPrimaryKey(sourceColumn.getPrimaryKey());
-        column.setAutoIncrement(sourceColumn.getAutoIncrement());
+        
+        // 使用反射设置字段值
+        ReflectionUtil.setFieldValue(column, "tableId", tableId);
+        
+        // 从sourceColumn获取字段值
+        String columnName = (String) ReflectionUtil.getFieldValue(sourceColumn, "columnName");
+        String dataType = (String) ReflectionUtil.getFieldValue(sourceColumn, "dataType");
+        String sourceJavaType = (String) ReflectionUtil.getFieldValue(sourceColumn, "javaType");
+        String columnComment = (String) ReflectionUtil.getFieldValue(sourceColumn, "columnComment");
+        Boolean primaryKey = (Boolean) ReflectionUtil.getFieldValue(sourceColumn, "primaryKey");
+        Boolean autoIncrement = (Boolean) ReflectionUtil.getFieldValue(sourceColumn, "autoIncrement");
+        
+        // 设置到新创建的column对象
+        ReflectionUtil.setFieldValue(column, "columnName", columnName);
+        ReflectionUtil.setFieldValue(column, "dataType", dataType);
+        ReflectionUtil.setFieldValue(column, "javaType", sourceJavaType);
+        ReflectionUtil.setFieldValue(column, "columnComment", columnComment);
+        ReflectionUtil.setFieldValue(column, "primaryKey", primaryKey);
+        ReflectionUtil.setFieldValue(column, "autoIncrement", autoIncrement);
         
         // 设置默认值
-        column.setEnableCreate(true);
-        column.setEnableUpdate(!sourceColumn.getPrimaryKey()); // 主键不能更新
-        column.setEnableQuery(true);
-        column.setShowInList(true);
-        column.setHtmlType("input");
+        ReflectionUtil.setFieldValue(column, "enableCreate", true);
+        ReflectionUtil.setFieldValue(column, "enableUpdate", primaryKey != null && !primaryKey); // 主键不能更新
+        ReflectionUtil.setFieldValue(column, "enableQuery", true);
+        ReflectionUtil.setFieldValue(column, "showInList", true);
+        ReflectionUtil.setFieldValue(column, "htmlType", "input");
         
         return column;
     }
@@ -577,32 +621,42 @@ public class DatabaseTableService {
         boolean hasUpdate = false;
         
         // 比较并更新dataType字段
-        if (!StringUtils.pathEquals(column.getDataType(), sourceColumn.getDataType())) {
-            column.setDataType(sourceColumn.getDataType());
+        String columnDataType = (String) ReflectionUtil.getFieldValue(column, "dataType");
+        String sourceDataType = (String) ReflectionUtil.getFieldValue(sourceColumn, "dataType");
+        if (!StringUtils.pathEquals(columnDataType, sourceDataType)) {
+            ReflectionUtil.setFieldValue(column, "dataType", sourceDataType);
             hasUpdate = true;
         }
         
         // 比较并更新columnComment字段
-        if (!StringUtils.pathEquals(column.getColumnComment(), sourceColumn.getColumnComment())) {
-            column.setColumnComment(sourceColumn.getColumnComment());
+        String columnComment = (String) ReflectionUtil.getFieldValue(column, "columnComment");
+        String sourceColumnComment = (String) ReflectionUtil.getFieldValue(sourceColumn, "columnComment");
+        if (!StringUtils.pathEquals(columnComment, sourceColumnComment)) {
+            ReflectionUtil.setFieldValue(column, "columnComment", sourceColumnComment);
             hasUpdate = true;
         }
         
         // 比较并更新primaryKey字段
-        if (sourceColumn.getPrimaryKey() != null && !sourceColumn.getPrimaryKey().equals(column.getPrimaryKey())) {
-            column.setPrimaryKey(sourceColumn.getPrimaryKey());
+        Boolean sourcePrimaryKey = (Boolean) ReflectionUtil.getFieldValue(sourceColumn, "primaryKey");
+        Boolean columnPrimaryKey = (Boolean) ReflectionUtil.getFieldValue(column, "primaryKey");
+        if (sourcePrimaryKey != null && !sourcePrimaryKey.equals(columnPrimaryKey)) {
+            ReflectionUtil.setFieldValue(column, "primaryKey", sourcePrimaryKey);
             hasUpdate = true;
         }
         
         // 更新Java类型
-        if (!StringUtils.pathEquals(column.getJavaType(), sourceColumn.getJavaType())) {
-            column.setJavaType(sourceColumn.getJavaType());
+        String columnJavaType = (String) ReflectionUtil.getFieldValue(column, "javaType");
+        String sourceColumnJavaType = (String) ReflectionUtil.getFieldValue(sourceColumn, "javaType");
+        if (!StringUtils.pathEquals(columnJavaType, sourceColumnJavaType)) {
+            ReflectionUtil.setFieldValue(column, "javaType", sourceColumnJavaType);
             hasUpdate = true;
         }
         
         // 比较并更新autoIncrement字段
-        if (sourceColumn.getAutoIncrement() != null && !sourceColumn.getAutoIncrement().equals(column.getAutoIncrement())) {
-            column.setAutoIncrement(sourceColumn.getAutoIncrement());
+        Boolean sourceAutoIncrement = (Boolean) ReflectionUtil.getFieldValue(sourceColumn, "autoIncrement");
+        Boolean columnAutoIncrement = (Boolean) ReflectionUtil.getFieldValue(column, "autoIncrement");
+        if (sourceAutoIncrement != null && !sourceAutoIncrement.equals(columnAutoIncrement)) {
+            ReflectionUtil.setFieldValue(column, "autoIncrement", sourceAutoIncrement);
             hasUpdate = true;
         }
         

@@ -1,5 +1,7 @@
 package com.bone.metadata.sdk.test.testcase;
 
+import com.bone.metadata.sdk.query.SqlBuilder;
+
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import com.bone.metadata.sdk.sql.executor.SqlExecutor;
 import com.bone.metadata.sdk.sql.processor.SqlProcessorFactory;
@@ -103,13 +105,14 @@ public class QueryBuilderTestConfig {
 
     // 将QueryBuilder的初始化移到单独的Bean中，避免循环依赖
     @Bean
-    public QueryBuilderInitializer queryBuilderInitializer(SqlExecutor sqlExecutor) {
-        return new QueryBuilderInitializer(sqlExecutor);
+    public QueryBuilderInitializer queryBuilderInitializer(SqlExecutor sqlExecutor, SqlBuilder sqlBuilder) {
+        return new QueryBuilderInitializer(sqlExecutor, sqlBuilder);
     }
     
     public static class QueryBuilderInitializer {
-        public QueryBuilderInitializer(SqlExecutor sqlExecutor) {
+        public QueryBuilderInitializer(SqlExecutor sqlExecutor, SqlBuilder sqlBuilder) {
             QueryBuilder.setSqlExecutor(sqlExecutor);
+            QueryBuilder.setSqlBuilder(sqlBuilder);
         }
     }
     

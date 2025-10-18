@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.bone.core.util.ReflectionUtil;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -47,10 +48,18 @@ public class DataSourceConfigService {
     public Long createDataSourceConfig(DataSourceConfigSaveRequest createReqVO) {
         // 转换为领域实体并保存
         Datasource config = new Datasource();
-        config.setName(createReqVO.getName());
-        config.setUrl(createReqVO.getUrl());
-        config.setUsername(createReqVO.getUsername());
-        config.setPassword(createReqVO.getPassword());
+        
+        // 使用反射获取请求对象的字段值
+        String name = (String) ReflectionUtil.getFieldValue(createReqVO, "name");
+        String url = (String) ReflectionUtil.getFieldValue(createReqVO, "url");
+        String username = (String) ReflectionUtil.getFieldValue(createReqVO, "username");
+        String password = (String) ReflectionUtil.getFieldValue(createReqVO, "password");
+        
+        // 使用反射设置领域实体的字段值
+        ReflectionUtil.setFieldValue(config, "name", name);
+        ReflectionUtil.setFieldValue(config, "url", url);
+        ReflectionUtil.setFieldValue(config, "username", username);
+        ReflectionUtil.setFieldValue(config, "password", password);
         
         // 验证配置
         validateDataSourceConfig(config);
@@ -62,7 +71,10 @@ public class DataSourceConfigService {
         
         // 使用Repository的save方法
         Long id = dataSourceConfigRepository.save(config);
-        log.info("创建数据源配置成功: {}", config.getName());
+        
+        // 使用反射获取配置名称用于日志
+        String configName = (String) ReflectionUtil.getFieldValue(config, "name");
+        log.info("创建数据源配置成功: {}", configName);
         return id;
     }
 
@@ -73,16 +85,24 @@ public class DataSourceConfigService {
      */
     public void updateDataSourceConfig(DataSourceConfigSaveRequest updateReqVO) {
         // 获取配置ID并校验存在性
-        Long id = updateReqVO.getId();
+        Long id = (Long) ReflectionUtil.getFieldValue(updateReqVO, "id");
         validateDataSourceConfigExists(id);
         
         // 转换为领域实体并更新
         Datasource config = new Datasource();
-        config.setId(id);
-        config.setName(updateReqVO.getName());
-        config.setUrl(updateReqVO.getUrl());
-        config.setUsername(updateReqVO.getUsername());
-        config.setPassword(updateReqVO.getPassword());
+        
+        // 使用反射获取请求对象的字段值
+        String name = (String) ReflectionUtil.getFieldValue(updateReqVO, "name");
+        String url = (String) ReflectionUtil.getFieldValue(updateReqVO, "url");
+        String username = (String) ReflectionUtil.getFieldValue(updateReqVO, "username");
+        String password = (String) ReflectionUtil.getFieldValue(updateReqVO, "password");
+        
+        // 使用反射设置领域实体的字段值
+        ReflectionUtil.setFieldValue(config, "id", id);
+        ReflectionUtil.setFieldValue(config, "name", name);
+        ReflectionUtil.setFieldValue(config, "url", url);
+        ReflectionUtil.setFieldValue(config, "username", username);
+        ReflectionUtil.setFieldValue(config, "password", password);
         
         // 验证配置
         validateDataSourceConfig(config);
@@ -98,7 +118,8 @@ public class DataSourceConfigService {
         // 清除缓存的连接
         clearCachedConnection(id);
         
-        log.info("更新数据源配置成功: {}", config.getName());
+        String configName = (String) ReflectionUtil.getFieldValue(config, "name");
+        log.info("更新数据源配置成功: {}", configName);
     }
     
 
@@ -219,25 +240,30 @@ public class DataSourceConfigService {
     public boolean testConnection(Datasource config) {
         Connection conn = null;
         try {
+            // 使用反射获取配置信息
+            String driverClassName = (String) ReflectionUtil.getFieldValue(config, "driverClassName");
+            String url = (String) ReflectionUtil.getFieldValue(config, "url");
+            String username = (String) ReflectionUtil.getFieldValue(config, "username");
+            String password = (String) ReflectionUtil.getFieldValue(config, "password");
+            String name = (String) ReflectionUtil.getFieldValue(config, "name");
+            
             // 加载驱动
-            Class.forName(config.getDriverClassName());
+            Class.forName(driverClassName);
             
             // 创建连接
-            conn = DriverManager.getConnection(
-                    config.getUrl(),
-                    config.getUsername(),
-                    config.getPassword()
-            );
+            conn = DriverManager.getConnection(url, username, password);
             
             // 测试连接是否有效
             boolean isValid = conn.isValid(5); // 5秒超时
-            log.info("数据源连接测试成功: {}", config.getName());
+            log.info("数据源连接测试成功: {}", name);
             return isValid;
         } catch (ClassNotFoundException e) {
-            log.error("数据库驱动未找到: {}", config.getDriverClassName(), e);
-            throw new RuntimeException("数据库驱动未找到: " + config.getDriverClassName());
+            String driverClassName = (String) ReflectionUtil.getFieldValue(config, "driverClassName");
+            log.error("数据库驱动未找到: {}", driverClassName, e);
+            throw new RuntimeException("数据库驱动未找到: " + driverClassName);
         } catch (SQLException e) {
-            log.error("数据源连接失败: {}", config.getName(), e);
+            String name = (String) ReflectionUtil.getFieldValue(config, "name");
+            log.error("数据源连接失败: {}", name, e);
             throw new RuntimeException("数据源连接失败: " + e.getMessage());
         } catch (Exception e) {
             log.error("测试数据源连接失败", e);
@@ -268,12 +294,13 @@ public class DataSourceConfigService {
             // 获取数据源配置
             Datasource config = getDataSourceConfig(datasourceId);
             
+            // 使用反射获取连接信息
+            String url = (String) ReflectionUtil.getFieldValue(config, "url");
+            String username = (String) ReflectionUtil.getFieldValue(config, "username");
+            String password = (String) ReflectionUtil.getFieldValue(config, "password");
+            
             // 创建新连接
-            Connection conn = DriverManager.getConnection(
-                    config.getUrl(),
-                    config.getUsername(),
-                    config.getPassword()
-            );
+            Connection conn = DriverManager.getConnection(url, username, password);
             
             // 缓存连接
             connectionCache.put(datasourceId, conn);
@@ -307,32 +334,41 @@ public class DataSourceConfigService {
             throw new RuntimeException("数据源配置不能为空");
         }
         
-        if (config.getName() == null || config.getName().trim().isEmpty()) {
+        // 使用反射获取字段值进行验证
+        String name = (String) ReflectionUtil.getFieldValue(config, "name");
+        String url = (String) ReflectionUtil.getFieldValue(config, "url");
+        String username = (String) ReflectionUtil.getFieldValue(config, "username");
+        String password = (String) ReflectionUtil.getFieldValue(config, "password");
+        
+        if (name == null || name.trim().isEmpty()) {
             throw new RuntimeException("数据源名称不能为空");
         }
         
-        if (config.getUrl() == null || config.getUrl().trim().isEmpty()) {
+        if (url == null || url.trim().isEmpty()) {
             throw new RuntimeException("数据源URL不能为空");
         }
         
-        if (config.getUsername() == null || config.getUsername().trim().isEmpty()) {
+        if (username == null || username.trim().isEmpty()) {
             throw new RuntimeException("用户名不能为空");
         }
         
-        if (config.getPassword() == null || config.getPassword().trim().isEmpty()) {
+        if (password == null || password.trim().isEmpty()) {
             throw new RuntimeException("密码不能为空");
         }
         
         // 根据URL自动设置驱动类名
-        if (config.getDriverClassName() == null || config.getDriverClassName().trim().isEmpty()) {
-            if (config.getUrl().contains("mysql")) {
-                config.setDriverClassName("com.mysql.cj.jdbc.Driver");
-            } else if (config.getUrl().contains("oracle")) {
-                config.setDriverClassName("oracle.jdbc.OracleDriver");
-            } else if (config.getUrl().contains("postgresql")) {
-                config.setDriverClassName("org.postgresql.Driver");
-            } else if (config.getUrl().contains("sqlserver")) {
-                config.setDriverClassName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+        String driverClassName = (String) ReflectionUtil.getFieldValue(config, "driverClassName");
+        // 不需要重新获取url，因为在方法前面已经获取过了
+        
+        if (driverClassName == null || driverClassName.trim().isEmpty()) {
+            if (url.contains("mysql")) {
+                ReflectionUtil.setFieldValue(config, "driverClassName", "com.mysql.cj.jdbc.Driver");
+            } else if (url.contains("oracle")) {
+                ReflectionUtil.setFieldValue(config, "driverClassName", "oracle.jdbc.OracleDriver");
+            } else if (url.contains("postgresql")) {
+                ReflectionUtil.setFieldValue(config, "driverClassName", "org.postgresql.Driver");
+            } else if (url.contains("sqlserver")) {
+                ReflectionUtil.setFieldValue(config, "driverClassName", "com.microsoft.sqlserver.jdbc.SQLServerDriver");
             } else {
                 throw new RuntimeException("无法识别的数据库类型，请手动指定驱动类名");
             }

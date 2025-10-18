@@ -159,10 +159,9 @@ public class ExtPointTest {
     @Test
     void testContextAttributes() {
         // 创建带属性的上下文
-        BizContext<String> context = BizContext.<String>builder()
-                .tenantCode("TENANT_ATTR")
-                .data("test-data")
-                .build();
+        BizContext<String> context = new BizContext<>();
+        context.setTenantCode("TENANT_ATTR");
+        context.setData("test-data");
         context.withAttribute("key1", "value1")
                .withAttribute("key2", 123);
         
@@ -200,11 +199,10 @@ public class ExtPointTest {
     @Test
     void testExpressionEvaluator() {
         // 创建测试上下文
-        BizContext<?> context = BizContext.builder()
-                .tenantCode("TENANT_EXPR")
-                .bizCode("BIZ_EXPR")
-                .useCase("USE_CASE_1")
-                .build();
+        BizContext<?> context = new BizContext<>();
+        context.setTenantCode("TENANT_EXPR");
+        context.setBizCode("BIZ_EXPR");
+        context.setUseCase("USE_CASE_1");
         context.withAttribute("testAttribute", "testValue");
         
         // 测试表达式字符串
@@ -234,11 +232,10 @@ public class ExtPointTest {
     @Test
     void testContextCopy() {
         // 创建原上下文
-        BizContext<String> original = BizContext.<String>builder()
-                .tenantCode("TENANT_COPY")
-                .bizCode("BIZ_COPY")
-                .data("original-data")
-                .build();
+        BizContext<String> original = new BizContext<>();
+        original.setTenantCode("TENANT_COPY");
+        original.setBizCode("BIZ_COPY");
+        original.setData("original-data");
         original.withAttribute("key", "value");
         
         // 复制上下文
@@ -266,18 +263,16 @@ public class ExtPointTest {
     @Test
     void testContextMerge() {
         // 创建基础上下文
-        BizContext<String> base = BizContext.<String>builder()
-                .tenantCode("BASE_TENANT")
-                .bizCode("BASE_BIZ")
-                .data("base-data")
-                .build();
+        BizContext<String> base = new BizContext<>();
+        base.setTenantCode("BASE_TENANT");
+        base.setBizCode("BASE_BIZ");
+        base.setData("base-data");
         base.withAttribute("baseKey", "baseValue");
         
         // 创建要合并的上下文
-        BizContext<String> override = BizContext.<String>builder()
-                .bizCode("OVERRIDE_BIZ")
-                .useCase("USE_CASE")
-                .build();
+        BizContext<String> override = new BizContext<>();
+        override.setBizCode("OVERRIDE_BIZ");
+        override.setUseCase("USE_CASE");
         override.withAttribute("overrideKey", "overrideValue")
                 .withAttribute("baseKey", "newValue"); // 覆盖基础上下文的属性
         

@@ -1,11 +1,20 @@
 package com.bone.tool.codegen.adapter;
 
+import com.bone.tool.codegen.application.converter.CodegenConverter;
 import com.bone.tool.codegen.application.dto.GenerateCustomCodeRequest;
+import com.bone.tool.codegen.domain.repository.CodegenTableRepository;
+import com.bone.tool.codegen.domain.repository.CodegenColumnRepository;
 import com.bone.tool.codegen.domain.service.CodegenService;
+import com.bone.tool.codegen.domain.service.DataSourceConfigService;
+import com.bone.tool.codegen.domain.service.DatabaseTableService;
+import com.bone.tool.codegen.domain.service.generator.DefaultCodeGenerator;
+import com.bone.tool.codegen.domain.service.renderer.VelocityTemplateRenderer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -22,12 +31,37 @@ import static org.junit.jupiter.api.Assertions.*;
  * 代码生成服务测试类
  * 实际测试代码生成功能并输出到文件系统
  */
-@SpringBootTest
-@ActiveProfiles("test")
+@ExtendWith(MockitoExtension.class)
 public class CodegenServiceTest {
 
-    @Autowired
+    @InjectMocks
     private CodegenService codegenService;
+    
+    @Mock
+    private CodegenTableRepository codegenTableRepository;
+    
+    @Mock
+    private CodegenColumnRepository codegenColumnRepository;
+    
+    @Mock
+    private CodegenConverter codegenConverter;
+    
+    @Mock
+    private DefaultCodeGenerator defaultCodeGenerator;
+    
+    @Mock
+    private DatabaseTableService databaseTableService;
+    
+    @Mock
+    private DataSourceConfigService dataSourceConfigService;
+    
+    @Mock
+    private VelocityTemplateRenderer velocityTemplateRenderer;
+    
+    @BeforeEach
+    void setUp() {
+        // 可以在这里设置mock的行为
+    }
 
     /**
      * 测试生成单个表的代码并保存为ZIP文件

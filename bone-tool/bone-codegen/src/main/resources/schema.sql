@@ -10,13 +10,14 @@ CREATE TABLE `codegen_datasource` (
   `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `create_by` varchar(50) DEFAULT NULL COMMENT '创建人',
   `update_by` varchar(50) DEFAULT NULL COMMENT '更新人',
+  `deleted` tinyint(1) DEFAULT 0 COMMENT '是否删除',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='数据源配置表';
 
 -- 代码生成表配置表
 CREATE TABLE `codegen_table` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `data_source_config_id` bigint(20) NOT NULL COMMENT '数据源配置ID',
+  `datasource_id` bigint(20) NOT NULL COMMENT '数据源ID',
   `scene` int(11) DEFAULT NULL COMMENT '生成场景',
   `table_name` varchar(100) NOT NULL COMMENT '表名',
   `table_comment` varchar(255) DEFAULT NULL COMMENT '表描述',
@@ -37,8 +38,9 @@ CREATE TABLE `codegen_table` (
   `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `create_by` varchar(50) DEFAULT NULL COMMENT '创建人',
   `update_by` varchar(50) DEFAULT NULL COMMENT '更新人',
+  `deleted` tinyint(1) DEFAULT 0 COMMENT '是否删除',
   PRIMARY KEY (`id`),
-  KEY `idx_data_source_config_id` (`data_source_config_id`),
+  KEY `idx_datasource_id` (`datasource_id`),
   KEY `idx_table_name` (`table_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='代码生成表配置表';
 
@@ -54,10 +56,10 @@ CREATE TABLE `codegen_column` (
   `primary_key` tinyint(1) DEFAULT 0 COMMENT '是否主键',
   `auto_increment` tinyint(1) DEFAULT 0 COMMENT '是否自增',
   `nullable` tinyint(1) DEFAULT 1 COMMENT '是否可为空',
-  `create_operation` tinyint(1) DEFAULT 1 COMMENT '是否用于创建操作',
-  `update_operation` tinyint(1) DEFAULT 1 COMMENT '是否用于更新操作',
-  `list_operation` tinyint(1) DEFAULT 1 COMMENT '是否用于列表查询',
-  `list_result_show` tinyint(1) DEFAULT 1 COMMENT '是否在列表结果中展示',
+  `enable_create` tinyint(1) DEFAULT 1 COMMENT '是否用于创建操作',
+  `enable_update` tinyint(1) DEFAULT 1 COMMENT '是否用于更新操作',
+  `enable_query` tinyint(1) DEFAULT 1 COMMENT '是否用于列表查询',
+  `show_in_list` tinyint(1) DEFAULT 1 COMMENT '是否在列表结果中展示',
   `list_query_condition` varchar(50) DEFAULT NULL COMMENT '列表查询条件类型',
   `html_type` varchar(50) DEFAULT NULL COMMENT 'HTML表单控件类型',
   `dict_type` varchar(100) DEFAULT NULL COMMENT '字典类型编码',
@@ -67,6 +69,9 @@ CREATE TABLE `codegen_column` (
   `extra_attrs` text COMMENT '扩展属性，JSON格式',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `create_by` varchar(50) DEFAULT NULL COMMENT '创建人',
+  `update_by` varchar(50) DEFAULT NULL COMMENT '更新人',
+  `deleted` tinyint(1) DEFAULT 0 COMMENT '是否删除',
   PRIMARY KEY (`id`),
   KEY `idx_table_id` (`table_id`),
   KEY `idx_column_name` (`column_name`)
