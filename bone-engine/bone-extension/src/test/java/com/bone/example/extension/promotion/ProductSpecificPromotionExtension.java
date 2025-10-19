@@ -13,7 +13,7 @@ import java.util.Map;
  * 特定商品促销策略实现
  * 针对特定类别或特定商品提供促销折扣
  */
-@Extension(bizId = "PRODUCT_SPECIFIC", priority = 95)
+@Extension(bizCode = "PRODUCT_SPECIFIC")
 @Slf4j
 public class ProductSpecificPromotionExtension implements PromotionExtPoint {
     

@@ -1,4 +1,4 @@
-package com.bone.example.extension;
+package com.bone.example.extension.user;
 
 import org.junit.jupiter.api.Test;
 

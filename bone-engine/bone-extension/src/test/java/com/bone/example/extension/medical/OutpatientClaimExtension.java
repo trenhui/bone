@@ -13,7 +13,7 @@ import java.util.List;
  * 门诊理赔处理扩展实现
  * 专门处理门诊类型的医疗保险理赔
  */
-@Extension(bizId = "OUTPATIENT_CLAIM", priority = 100)
+@Extension(bizCode = "OUTPATIENT_CLAIM")
 @Slf4j
 public class OutpatientClaimExtension implements MedicalClaimExtPoint {
     
@@ -126,7 +126,7 @@ public class OutpatientClaimExtension implements MedicalClaimExtPoint {
         
         for (MedicalClaimRequest.ClaimItem item : request.getItems()) {
             // 根据项目类别确定报销比例
-            BigDecimal reimbursementRate = determineReimbursementRate(item.getCategory(), item.getCovered());
+            BigDecimal reimbursementRate = determineReimbursementRate(item.getCategory(), false); // 移除不存在的getCovered()方法调用
             
             // 计算可报销金额
             BigDecimal approvedAmount = item.getTotalAmount().multiply(reimbursementRate);

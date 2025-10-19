@@ -7,7 +7,7 @@ import com.bone.engine.extension.ExtPoint;
  * 促销策略扩展点
  * 定义了促销计算和促销适用性检查的核心方法
  */
-@ExtPoint(name = "促销策略扩展点", description = "支持多种促销策略的差异化计算")
+@ExtPoint
 public interface PromotionExtPoint {
     
     /**

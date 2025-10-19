@@ -13,7 +13,7 @@ import java.util.Map;
  * 会员折扣促销策略实现
  * 根据用户会员等级提供不同的折扣
  */
-@Extension(bizId = "MEMBER_DISCOUNT", priority = 90)
+@Extension(bizCode = "MEMBER_DISCOUNT")
 @Slf4j
 public class MemberDiscountPromotionExtension implements PromotionExtPoint {
     

@@ -1,10 +1,8 @@
 package com.bone.example.extension.risk;
 
 import com.bone.engine.extension.BizContext;
-import com.bone.engine.extension.BizContexts;
-import com.bone.engine.extension.ExtensionExecutor;
 import lombok.extern.slf4j.Slf4j;
-import javax.annotation.Resource;
+import org.springframework.beans.factory.annotation.Autowired;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -16,8 +14,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class RiskControlService {
     
-    @Resource
-    private ExtensionExecutor extensionExecutor;
+    @Autowired
+    private RiskControlExtPoint riskControlExtPoint;
     
     /**
      * 执行风险评估
@@ -26,51 +24,36 @@ public class RiskControlService {
      * @return 风险评估结果
      */
     public RiskAssessmentResult evaluateRisk(TransactionRequest request, String tenantCode) {
-        try {
-            // 创建并设置业务上下文
-            try (BizContexts.ContextManager manager = BizContexts.use()) {
-                manager.setTenantCode(tenantCode);
-                manager.setBizDomain("RISK_CONTROL");
-                
-                // 执行所有风控规则
-                List<RiskAssessmentResult> ruleResults = new ArrayList<>();
-                
-                extensionExecutor.executeMulti(RiskControlExtPoint.class, extPoint -> {
-                    try {
-                        RiskAssessmentResult result = extPoint.assessRisk(BizContexts.getContext(request));
-                        if (result != null) {
-                            ruleResults.add(result);
-                            log.info("Risk rule {} executed with score: {}, level: {}",
-                                    extPoint.getClass().getSimpleName(),
-                                    result.getRiskScore(),
-                                    result.getRiskLevel());
-                        }
-                    } catch (Exception e) {
-                        log.error("Error executing risk rule: {}", extPoint.getClass().getSimpleName(), e);
-                        // 单个规则执行失败不影响整体风控流程
-                    }
-                });
-                
-                // 聚合风控结果
-                RiskAssessmentResult finalResult = aggregateRiskResults(ruleResults);
-                
-                // 记录风控决策日志
-                logRiskDecision(request, finalResult);
-                
-                return finalResult;
-            }
-        } catch (Exception e) {
-            log.error("Risk evaluation failed for tenant {}", tenantCode, e);
+        // 创建业务上下文
+        BizContext<TransactionRequest> context = createContext(request);
+        context.setBizCode(tenantCode);
+        
+        // 执行风控规则
+        List<RiskAssessmentResult> ruleResults = new ArrayList<>();
+        
+        // 调用风控扩展点执行风控评估
+        RiskAssessmentResult result = riskControlExtPoint.assessRisk(context);
+        ruleResults.add(result);
+        log.info("Risk control rule executed: {}, result: {}", 
+                 riskControlExtPoint.getClass().getSimpleName(), 
+                 result.getDecision());
             
-            // 风控服务异常时，默认返回高风险，确保安全
-            return RiskAssessmentResult.builder()
-                .riskLevel(RiskAssessmentResult.RiskLevel.HIGH)
-                .riskScore(100)
-                .decision("REJECT")
-                .riskFactors(new ArrayList<>())
-                .rejectReason("风控服务异常，为确保安全拒绝交易")
-                .build();
-        }
+        // 聚合风控结果
+        RiskAssessmentResult finalResult = aggregateRiskResults(ruleResults);
+        
+        // 记录风控决策日志
+        logRiskDecision(request, finalResult);
+        
+        return finalResult;
+    }
+    
+    /**
+     * 创建业务上下文
+     */
+    private BizContext<TransactionRequest> createContext(TransactionRequest request) {
+        BizContext<TransactionRequest> context = BizContext.create();
+        context.setData(request);
+        return context;
     }
     
     /**
