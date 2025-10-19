@@ -1,7 +1,11 @@
-package com.bone.example.extension;
+package com.bone.example.extension.user;
 
 import com.bone.engine.extension.BizContext;
 import com.bone.engine.extension.BizContexts;
+import com.bone.example.extension.user.greeting.DefaultGreetingExtension;
+import com.bone.example.extension.user.greeting.GreetingExtPoint;
+import com.bone.example.extension.user.greeting.VipGreetingExtension;
+
 import java.util.HashMap;
 import java.util.Map;
 

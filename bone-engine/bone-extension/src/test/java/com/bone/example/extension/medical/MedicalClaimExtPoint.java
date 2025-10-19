@@ -8,7 +8,7 @@ import com.bone.example.extension.result.ValidationResult;
  * 医疗保险理赔扩展点
  * 定义了理赔验证和理赔处理的核心方法
  */
-@ExtPoint(name = "医疗保险理赔扩展点", description = "支持多种医疗保险理赔场景的差异化处理")
+@ExtPoint
 public interface MedicalClaimExtPoint {
     
     /**

@@ -7,7 +7,7 @@ import com.bone.engine.extension.ExtPoint;
  * 风控规则扩展点
  * 定义了风险评估和风险分析的核心方法
  */
-@ExtPoint(name = "风控规则扩展点", description = "支持多种风控规则的差异化评估")
+@ExtPoint
 public interface RiskControlExtPoint {
     
     /**

@@ -33,29 +33,24 @@ public class MedicalClaimService {
      * @return 医疗保险理赔结果
      */
     public MedicalClaimResult processClaim(MedicalClaimRequest request) {
-        try {
-            // 创建业务上下文
-            BizContext<MedicalClaimRequest> context = createContext(request);
-            
-            // 1. 验证理赔请求
-            ValidationResult validationResult = medicalClaimExtPoint.validateClaim(context);
-            if (!validationResult.isSuccess()) {
-                log.warn("Claim validation failed: {}, reason: {}", validationResult.getErrorCode(), validationResult.getErrorMessage());
-                return buildRejectedResult(request, validationResult.getErrorCode(), validationResult.getErrorMessage());
-            }
-            
-            // 2. 处理理赔请求
-            log.info("Processing claim for user: {}, type: {}", request.getUserId(), request.getClaimType());
-            MedicalClaimResult result = medicalClaimExtPoint.processClaim(context);
-            
-            // 3. 记录处理结果
-            log.info("Claim processed successfully: {}, status: {}", result.getClaimId(), result.getStatus());
-            
-            return result;
-        } catch (Exception e) {
-            log.error("Error processing medical claim: ", e);
-            return buildErrorResult(request, e.getMessage());
+        // 创建业务上下文
+        BizContext<MedicalClaimRequest> context = createContext(request);
+        
+        // 1. 验证理赔请求
+        ValidationResult validationResult = medicalClaimExtPoint.validateClaim(context);
+        if (!validationResult.isSuccess()) {
+            log.warn("Claim validation failed: {}, reason: {}", validationResult.getErrorCode(), validationResult.getErrorMessage());
+            return buildRejectedResult(request, validationResult.getErrorCode(), validationResult.getErrorMessage());
         }
+        
+        // 2. 处理理赔请求
+        log.info("Processing claim for user: {}, type: {}", request.getUserId(), request.getClaimType());
+        MedicalClaimResult result = medicalClaimExtPoint.processClaim(context);
+        
+        // 3. 记录处理结果
+        log.info("Claim processed successfully: {}, status: {}", result.getClaimId(), result.getStatus());
+        
+        return result;
     }
     
     /**
@@ -66,29 +61,14 @@ public class MedicalClaimService {
      * @return 验证结果
      */
     public ValidationResult validateClaim(MedicalClaimRequest request) {
-        try {
-            // 创建业务上下文
-            BizContext<MedicalClaimRequest> context = createContext(request);
-            
-            // 执行验证
-            return medicalClaimExtPoint.validateClaim(context);
-        } catch (Exception e) {
-            log.error("Error validating medical claim: ", e);
-            return ValidationResult.fail("VALIDATION_ERROR", "Validation failed: " + e.getMessage());
-        }
+        // 创建业务上下文
+        BizContext<MedicalClaimRequest> context = createContext(request);
+        
+        // 执行验证
+        return medicalClaimExtPoint.validateClaim(context);
     }
     
-    /**
-     * 创建业务上下文
-     */
-    private BizContext<MedicalClaimRequest> createContext(MedicalClaimRequest request) {
-        BizContext<MedicalClaimRequest> context = new BizContext<>();
-        context.setContext(request);
-        context.setBizCode(request.getClaimType() != null ? request.getClaimType() : "DEFAULT");
-        context.setUserId(request.getUserId());
-        context.setRequestId(request.getClaimId() != null ? request.getClaimId() : generateRequestId());
-        return context;
-    }
+  
     
     /**
      * 构建被拒绝的理赔结果
@@ -115,7 +95,7 @@ public class MedicalClaimService {
     private MedicalClaimResult buildErrorResult(MedicalClaimRequest request, String errorMessage) {
         return MedicalClaimResult.builder()
             .claimId(generateClaimId())
-            .status(MedicalClaimResult.ClaimStatus.ERROR)
+            .status(MedicalClaimResult.ClaimStatus.REJECTED)
             .totalClaimAmount(request.getTotalAmount())
             .approvedAmount(BigDecimal.ZERO)
             .rejectedAmount(BigDecimal.ZERO)
@@ -140,6 +120,16 @@ public class MedicalClaimService {
      */
     private String generateRequestId() {
         return "REQ" + System.currentTimeMillis();
+    }
+    
+   /**
+     * 创建业务上下文
+     */
+    private BizContext<MedicalClaimRequest> createContext(MedicalClaimRequest request) {
+        BizContext<MedicalClaimRequest> context = BizContext.create();
+        context.setData(request);
+        context.setBizCode(request.getClaimType() != null ? request.getClaimType().name() : "DEFAULT");
+        return context;
     }
     
     /**

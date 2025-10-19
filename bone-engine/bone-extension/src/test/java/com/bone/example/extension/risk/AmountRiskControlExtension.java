@@ -10,7 +10,7 @@ import java.util.List;
  * 基于交易金额的风险评估规则
  * 关注交易金额大小、用户历史交易模式和金额变化趋势
  */
-@Extension(bizId = "AMOUNT_RISK_RULE", priority = 10)
+@Extension(bizCode = "AMOUNT_RISK")
 @Slf4j
 public class AmountRiskControlExtension implements RiskControlExtPoint {
     

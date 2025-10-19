@@ -1,4 +1,4 @@
-package com.bone.example.extension;
+package com.bone.example.extension.user;
 
 import com.bone.engine.extension.BizContext;
 import com.bone.engine.extension.Extension;
