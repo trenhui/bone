@@ -38,6 +38,66 @@ public class EntityMetadata {
     private Map<String, Object> relationships = new HashMap<>(); // 使用Object代替
     private ValidationRules validationRules = new ValidationRules();
     
+    /** 实体操作列表 */
+    private List<OperationMetadata> operations = new ArrayList<>();
+    
+    /** 实体操作Map（用于快速查找） */
+    private transient Map<String, OperationMetadata> operationMap = new HashMap<>();
+    
+    /**
+     * 添加操作元数据
+     */
+    public void addOperation(OperationMetadata operation) {
+        operations.add(operation);
+        if (operationMap != null) {
+            operationMap.put(operation.getName(), operation);
+        }
+        // 设置操作的实体名称
+        operation.setEntityName(this.name);
+    }
+    
+    /**
+     * 获取操作元数据
+     */
+    public OperationMetadata getOperation(String operationName) {
+        if (operationMap != null) {
+            return operationMap.get(operationName);
+        }
+        // 如果operationMap为null，遍历查找
+        for (OperationMetadata operation : operations) {
+            if (operationName.equals(operation.getName())) {
+                return operation;
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * 移除操作元数据
+     */
+    public boolean removeOperation(String operationName) {
+        boolean removed = operations.removeIf(op -> operationName.equals(op.getName()));
+        if (removed && operationMap != null) {
+            operationMap.remove(operationName);
+        }
+        return removed;
+    }
+    
+    /**
+     * 初始化操作Map
+     */
+    public void initializeOperationMap() {
+        if (operationMap == null) {
+            operationMap = new HashMap<>();
+        }
+        operationMap.clear();
+        for (OperationMetadata operation : operations) {
+            operationMap.put(operation.getName(), operation);
+            // 确保操作的实体名称正确
+            operation.setEntityName(this.name);
+        }
+    }
+    
     // 显式添加setter方法，确保可以被调用
     public void setId(String id) {
         this.id = id;
@@ -84,6 +144,37 @@ public class EntityMetadata {
             }
         }
     }
+    
+    /**
+     * 设置实体名称（用于测试）
+     */
+    public void setEntityName(String entityName) {
+        this.name = entityName;
+        this.apiName = entityName;
+    }
+    
+    /**
+     * 设置业务领域（用于测试）
+     */
+    public void setBusinessDomain(String businessDomain) {
+        this.domain = businessDomain;
+    }
+    
+    /**
+     * 设置字段Map（用于测试）
+     */
+    public void setFields(Map<String, FieldMetadata> fieldsMap) {
+        this.fields = fieldsMap;
+    }
+    
+    /**
+     * 获取实体名称（用于测试）
+     */
+    public String getEntityName() {
+        return this.name;
+    }
+    
+    // 移除重复方法，类中已有这些方法的实现
     
     public void setValidationRules(List<ValidationRuleMetadata> rulesList) {
         // 暂时注释掉getRules()调用，因为ValidationRules类中似乎没有这个方法
@@ -155,5 +246,13 @@ public class EntityMetadata {
      */
     public String getTableName() {
         return tableName;
+    }
+    
+    /**
+     * 设置操作列表（会自动更新operationMap）
+     */
+    public void setOperations(List<OperationMetadata> operations) {
+        this.operations = operations != null ? operations : new ArrayList<>();
+        initializeOperationMap();
     }
 }

@@ -1,6 +1,7 @@
 package com.bone.smartmeta.engine.repository.impl;
 
 import com.bone.smartmeta.engine.metadata.EntityMetadata;
+import com.bone.smartmeta.engine.metadata.OperationMetadata;
 import com.bone.smartmeta.engine.metadata.PackageDefinition;
 import com.bone.smartmeta.engine.metadata.WorkflowMetadata;
 import com.bone.smartmeta.engine.repository.MetadataRepository;
@@ -25,6 +26,8 @@ public class InMemoryMetadataRepository implements MetadataRepository {
     private final Map<String, WorkflowMetadata> workflowMetadataMap = new ConcurrentHashMap<>();
     // 存储包定义
     private final Map<String, PackageDefinition> packageDefinitionMap = new ConcurrentHashMap<>();
+    // 存储操作元数据
+    private final Map<String, OperationMetadata> operationMetadataMap = new ConcurrentHashMap<>();
 
     @Override
     public EntityMetadata saveEntity(EntityMetadata entityMetadata) {
@@ -118,6 +121,99 @@ public class InMemoryMetadataRepository implements MetadataRepository {
     @Override
     public long countEntities() {
         return entityMetadataMap.size();
+    }
+    
+    @Override
+    public int countEntities() {
+        return (int) entityMetadataMap.size();
+    }
+    
+    @Override
+    public OperationMetadata saveOperation(OperationMetadata operationMetadata) {
+        Objects.requireNonNull(operationMetadata, "Operation metadata cannot be null");
+        Objects.requireNonNull(operationMetadata.getName(), "Operation name cannot be null");
+        
+        String key = buildOperationKey(operationMetadata.getEntityName(), operationMetadata.getName());
+        operationMetadataMap.put(key, operationMetadata);
+        logger.info("Saved operation metadata: {}", key);
+        return operationMetadata;
+    }
+    
+    @Override
+    public List<OperationMetadata> findAllOperations() {
+        return new ArrayList<>(operationMetadataMap.values());
+    }
+    
+    @Override
+    public List<OperationMetadata> findOperationsByEntityName(String entityName) {
+        Objects.requireNonNull(entityName, "Entity name cannot be null");
+        return operationMetadataMap.values().stream()
+                .filter(op -> entityName.equals(op.getEntityName()))
+                .collect(Collectors.toList());
+    }
+    
+    @Override
+    public OperationMetadata findOperationByName(String operationName) {
+        Objects.requireNonNull(operationName, "Operation name cannot be null");
+        // 尝试直接查找，如果找不到则遍历搜索
+        OperationMetadata directFind = operationMetadataMap.get(operationName);
+        if (directFind != null) {
+            return directFind;
+        }
+        
+        // 遍历搜索
+        for (OperationMetadata operation : operationMetadataMap.values()) {
+            if (operationName.equals(operation.getName())) {
+                return operation;
+            }
+        }
+        return null;
+    }
+    
+    @Override
+    public boolean deleteOperation(String operationName) {
+        Objects.requireNonNull(operationName, "Operation name cannot be null");
+        
+        // 移除直接匹配的键
+        OperationMetadata removed = operationMetadataMap.remove(operationName);
+        if (removed != null) {
+            logger.info("Deleted operation metadata: {}", operationName);
+            return true;
+        }
+        
+        // 如果直接匹配失败，遍历查找并移除
+        for (Map.Entry<String, OperationMetadata> entry : operationMetadataMap.entrySet()) {
+            if (operationName.equals(entry.getValue().getName())) {
+                operationMetadataMap.remove(entry.getKey());
+                logger.info("Deleted operation metadata: {}", entry.getKey());
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    @Override
+    public boolean existsOperation(String operationName) {
+        Objects.requireNonNull(operationName, "Operation name cannot be null");
+        
+        // 检查直接匹配
+        if (operationMetadataMap.containsKey(operationName)) {
+            return true;
+        }
+        
+        // 检查名称匹配
+        for (OperationMetadata operation : operationMetadataMap.values()) {
+            if (operationName.equals(operation.getName())) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    private String buildOperationKey(String entityName, String operationName) {
+        return entityName + ":" + operationName;
     }
 
     @Override

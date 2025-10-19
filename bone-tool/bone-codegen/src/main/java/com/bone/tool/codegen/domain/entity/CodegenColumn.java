@@ -1,7 +1,6 @@
 package com.bone.tool.codegen.domain.entity;
 
 import com.bone.core.domain.entity.AbstractEntity;
-import com.bone.metadata.sdk.domain.annotation.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
@@ -11,7 +10,6 @@ import java.io.Serializable;
  * 代码生成列配置
  * 用于定义代码生成过程中数据表列的各项属性和生成规则
  */
-@Table("codegen_column")
 @Data
 @Accessors(chain = true)
 @EqualsAndHashCode(callSuper = true)

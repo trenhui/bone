@@ -5,6 +5,7 @@ import com.bone.metadata.sdk.support.cache.FieldCache;
 import com.bone.metadata.sdk.domain.enums.DataType;
 import com.bone.metadata.sdk.domain.model.AllocationContext;
 import com.bone.metadata.sdk.domain.model.FieldMetadata;
+import com.bone.metadata.sdk.domain.model.TableMetadata;
 import com.bone.metadata.sdk.extension.ColumnAllocator;
 import com.bone.metadata.sdk.extension.repository.FieldMetadataRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import com.bone.metadata.sdk.domain.model.ColumnMetadata;
 
 public class EmbeddedMetadataService implements MetadataService {
     private final ColumnAllocator allocator;
@@ -24,6 +26,16 @@ public class EmbeddedMetadataService implements MetadataService {
     public EmbeddedMetadataService(ColumnAllocator allocator, FieldMetadataRepository fieldMetadataRepository) {
         this.allocator = allocator;
         this.fieldMetadataRepository = fieldMetadataRepository;
+    }
+    
+    @Override
+    public <T> TableMetadata getTableMetadata(Class<T> entityClass) {
+        // 将类名转换为表名（简单实现：转为小写）
+        String tableName = entityClass.getSimpleName().toLowerCase();
+        // 创建空的列元数据列表
+        List<ColumnMetadata> columns = Collections.emptyList();
+        // 使用正确的构造函数创建TableMetadata
+        return new TableMetadata(tableName, columns);
     }
 
     public List<FieldMetadata> findExtensionFields(AllocationContext ctx) {

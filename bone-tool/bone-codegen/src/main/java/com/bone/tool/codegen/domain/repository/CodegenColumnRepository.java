@@ -30,4 +30,9 @@ public interface CodegenColumnRepository {
      * 查询所有列配置
      */
     List<CodegenColumn> findAll();
+    
+    /**
+     * 根据条件查询列配置
+     */
+    List<CodegenColumn> findByCriteria(Object criteria);
 }

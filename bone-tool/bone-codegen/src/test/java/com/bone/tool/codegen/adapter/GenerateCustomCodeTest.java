@@ -57,16 +57,8 @@ public class GenerateCustomCodeTest {
     public void setUp() {
         // 初始化测试环境
         MockitoAnnotations.openMocks(this);
-        // 通过构造函数注入所有依赖项
-        codegenService = new CodegenService(
-                codegenTableRepository,
-                codegenColumnRepository,
-                codegenConverter,
-                codeGenerator,
-                databaseTableService,
-                dataSourceConfigService,
-                templateRenderer
-        );
+        // 使用无参构造函数创建CodegenService实例
+        codegenService = new CodegenService();
     }
     
     // 辅助方法：验证基础结果

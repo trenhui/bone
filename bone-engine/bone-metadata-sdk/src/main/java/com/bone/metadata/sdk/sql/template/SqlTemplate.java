@@ -64,19 +64,19 @@ public class SqlTemplate implements Serializable {
     }
     
     public Map<String, Object> getParameters() {
-        return parameters;
+        return Collections.unmodifiableMap(parameters);
     }
     
     public void setParameters(Map<String, Object> parameters) {
-        this.parameters = parameters;
+        this.parameters = parameters != null ? new HashMap<>(parameters) : new HashMap<>();
     }
     
     public Map<String, Object> getMetadata() {
-        return metadata;
+        return Collections.unmodifiableMap(metadata);
     }
     
     public void setMetadata(Map<String, Object> metadata) {
-        this.metadata = metadata;
+        this.metadata = metadata != null ? new HashMap<>(metadata) : new HashMap<>();
     }
     @Serial
     private static final long serialVersionUID = 1L;
@@ -155,16 +155,6 @@ public class SqlTemplate implements Serializable {
     }
 
     /**
-     * 返回参数的不可变视图。
-     *
-     * @return 不可变的参数映射。
-     */
-    public Map<String, Object> getParameters() {
-        return Collections.unmodifiableMap(parameters);
-    }
-
-
-    /**
      * 合并运行时参数到模板预定义参数。
      *
      * @param runtimeParams 运行时参数。
@@ -210,16 +200,6 @@ public class SqlTemplate implements Serializable {
     }
 
     /**
-     * 返回元数据的不可变视图。
-     *
-     * @return 不可变的元数据映射。
-     */
-    public Map<String, Object> getMetadata() {
-        return Collections.unmodifiableMap(metadata);
-    }
-
-
-    /**
      * 添加或更新元数据的键值对。
      *
      * @param key   元数据键。
@@ -252,15 +232,15 @@ public class SqlTemplate implements Serializable {
      * @return 更新后的 SqlTemplate 实例。
      */
     public SqlTemplate withVersion(String newVersion) {
-        SqlTemplate sqlTemplate = SqlTemplate.builder()
-                .id(this.id)
-                .sql(this.sql)
-                .source(this.source)
-                .sqlTemplateType(this.sqlTemplateType)
-                .sqlType(this.sqlType)
-                .parameters(new HashMap<>(this.parameters))
-                .metadata(new HashMap<>(this.metadata))
-                .build();
+        // 直接创建新的SqlTemplate对象而不是使用builder方法
+        SqlTemplate sqlTemplate = new SqlTemplate();
+        sqlTemplate.setId(this.id);
+        sqlTemplate.setSql(this.sql);
+        sqlTemplate.setSource(this.source);
+        sqlTemplate.setSqlTemplateType(this.sqlTemplateType);
+        sqlTemplate.setSqlType(this.sqlType);
+        sqlTemplate.setParameters(new HashMap<>(this.parameters));
+        sqlTemplate.setMetadata(new HashMap<>(this.metadata));
         sqlTemplate.addMetadata("version", newVersion);
         return sqlTemplate;
     }

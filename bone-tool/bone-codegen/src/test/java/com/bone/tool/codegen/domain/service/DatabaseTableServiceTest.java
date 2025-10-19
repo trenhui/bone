@@ -218,6 +218,7 @@ public class DatabaseTableServiceTest {
     void testGetColumnsByTableId_Success() {
         // 准备
         Long tableId = 1L;
+        // 使用thenReturn返回mockColumns列表，兼容findByCriteria方法
         when(codegenColumnRepository.findByCriteria(any())).thenReturn(mockColumns);
 
         // 执行
@@ -232,6 +233,7 @@ public class DatabaseTableServiceTest {
     void testDeleteTable_Success() {
         // 准备
         Long tableId = 1L;
+        // 使用thenReturn返回mockColumns列表，兼容findByCriteria方法
         when(codegenColumnRepository.findByCriteria(any())).thenReturn(mockColumns);
 
         // 执行
@@ -260,7 +262,8 @@ public class DatabaseTableServiceTest {
         request.setPackageName("com.example.updated");
         request.setClassName("UpdatedClass");
         
-        when(codegenTableRepository.findById(1L)).thenReturn(mockCodegenTable);
+        // 包装在Optional中返回
+        when(codegenTableRepository.findById(1L)).thenReturn(java.util.Optional.of(mockCodegenTable));
 
         // 执行
         databaseTableService.updateCodegenTable(request);

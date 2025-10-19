@@ -5,13 +5,20 @@ import com.bone.smartmeta.engine.MetadataEngine;
 import com.bone.smartmeta.engine.TransformationEngine;
 import com.bone.smartmeta.engine.ValidationEngine;
 import com.bone.smartmeta.engine.metadata.MetadataRegistry;
+import com.bone.smartmeta.engine.metadata.OperationRegistry;
 import com.bone.smartmeta.engine.metadata.processor.CompositeMetadataProcessor;
+import com.bone.smartmeta.engine.metadata.processor.MetadataProcessor;
 import com.bone.smartmeta.engine.repository.InMemoryMetadataRepository;
 import com.bone.smartmeta.engine.repository.MetadataRepository;
+import com.bone.smartmeta.engine.service.GenericOperationService;
+import com.bone.smartmeta.engine.service.DynamicDataService;
+import com.bone.smartmeta.engine.service.impl.InMemoryDynamicDataService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
@@ -57,8 +64,8 @@ public class SmartMetaAutoConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean
-    public ValidationEngine validationEngine() {
-        return new ValidationEngine();
+    public ValidationEngine validationEngine(MetadataRepository metadataRepository, ExpressionEngine expressionEngine) {
+        return new ValidationEngine(metadataRepository, expressionEngine);
     }
     
     /**
@@ -84,8 +91,50 @@ public class SmartMetaAutoConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean
-    public CompositeMetadataProcessor compositeMetadataProcessor() {
-        return new CompositeMetadataProcessor();
+    public CompositeMetadataProcessor compositeMetadataProcessor(
+            List<MetadataProcessor> metadataProcessors,
+            ApplicationEventPublisher eventPublisher) {
+        return new CompositeMetadataProcessor(metadataProcessors, eventPublisher);
+    }
+    
+    /**
+     * 配置操作元数据注册中心
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public OperationRegistry operationRegistry(MetadataRepository metadataRepository,
+                                             MetadataRegistry metadataRegistry) {
+        return new OperationRegistry(metadataRepository, metadataRegistry);
+    }
+    
+    /**
+     * 配置动态数据服务
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public DynamicDataService dynamicDataService(MetadataRegistry metadataRegistry) {
+        return new InMemoryDynamicDataService(metadataRegistry);
+    }
+    
+    /**
+     * 配置通用操作服务
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public GenericOperationService genericOperationService(MetadataEngine metadataEngine,
+                                                          DynamicDataService dynamicDataService,
+                                                          ExpressionEngine expressionEngine,
+                                                          ValidationEngine validationEngine,
+                                                          OperationRegistry operationRegistry,
+                                                          ApplicationEventPublisher eventPublisher) {
+        GenericOperationService service = new GenericOperationService(
+            metadataEngine, dynamicDataService, expressionEngine,
+            validationEngine, operationRegistry, eventPublisher);
+        
+        // 设置延迟注入，避免循环依赖
+        metadataEngine.setOperationService(service);
+        
+        return service;
     }
     
     /**

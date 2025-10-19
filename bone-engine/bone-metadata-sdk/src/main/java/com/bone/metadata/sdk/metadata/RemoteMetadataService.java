@@ -7,6 +7,7 @@ import com.bone.metadata.sdk.metadata.client.FieldsByNamesRequest;
 import com.bone.metadata.sdk.metadata.client.MetadataServiceClient;
 import com.bone.metadata.sdk.domain.model.AllocationContext;
 import com.bone.metadata.sdk.domain.model.FieldMetadata;
+import com.bone.metadata.sdk.domain.model.TableMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.cloud.context.config.annotation.RefreshScope;

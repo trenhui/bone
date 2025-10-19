@@ -1,6 +1,7 @@
 package com.bone.metadata.sdk.support.interceptor;
 
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -11,8 +12,8 @@ import java.util.concurrent.TimeUnit;
  * 扩展字段操作监控切面。
  */
 @Aspect
-@Slf4j
 public class ExtensionMonitorInterceptor {
+    private static final Logger log = LoggerFactory.getLogger(ExtensionMonitorInterceptor.class);
 
     @Around("execution(* com.bone.metadata.sdk.extension..*(..))")
     public Object monitorExtensionOperations(ProceedingJoinPoint joinPoint) throws Throwable {

@@ -204,13 +204,8 @@ public class DataSourceConfigService {
      */
     public PageResult<Datasource> getDataSourceConfigPage(DataSourceConfigQueryRequest queryReqVO, PageParam pageParam) {
         // 简化实现，返回空的PageResult
-        // 在实际应用中应该正确实现分页逻辑
-        try {
-            return new PageResult<Datasource>();
-        } catch (Exception e) {
-            // 如果构造函数有问题，尝试其他方式
-            throw new RuntimeException("暂不支持分页查询");
-        }
+        // 使用静态工厂方法创建PageResult实例
+        return PageResult.of(Collections.emptyList(), 0L, 1, 10);
     }
 
     /**
