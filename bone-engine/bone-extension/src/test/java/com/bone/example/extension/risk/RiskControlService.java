@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * 风控服务
@@ -13,6 +12,9 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class RiskControlService {
+    
+    // 常量定义
+    private static final String RISK_CONTROL_LOG_PREFIX = "Risk control";
     
     @Autowired
     private RiskControlExtPoint riskControlExtPoint;
@@ -24,8 +26,12 @@ public class RiskControlService {
      * @return 风险评估结果
      */
     public RiskAssessmentResult evaluateRisk(TransactionRequest request, String tenantCode) {
+        log.info("{}: Starting risk evaluation for transaction: {}, user: {}", 
+                 RISK_CONTROL_LOG_PREFIX, request.getTransactionId(), request.getUserId());
+        
         // 创建业务上下文
-        BizContext<TransactionRequest> context = createContext(request);
+        BizContext<TransactionRequest> context = BizContext.create();
+        context.setData(request);
         context.setBizCode(tenantCode);
         
         // 执行风控规则
@@ -34,7 +40,8 @@ public class RiskControlService {
         // 调用风控扩展点执行风控评估
         RiskAssessmentResult result = riskControlExtPoint.assessRisk(context);
         ruleResults.add(result);
-        log.info("Risk control rule executed: {}, result: {}", 
+        log.info("{} rule executed: {}, result: {}", 
+                 RISK_CONTROL_LOG_PREFIX, 
                  riskControlExtPoint.getClass().getSimpleName(), 
                  result.getDecision());
             
@@ -44,16 +51,10 @@ public class RiskControlService {
         // 记录风控决策日志
         logRiskDecision(request, finalResult);
         
+        log.info("{} evaluation completed for transaction: {}, final decision: {}",
+                 RISK_CONTROL_LOG_PREFIX, request.getTransactionId(), finalResult.getDecision());
+        
         return finalResult;
-    }
-    
-    /**
-     * 创建业务上下文
-     */
-    private BizContext<TransactionRequest> createContext(TransactionRequest request) {
-        BizContext<TransactionRequest> context = BizContext.create();
-        context.setData(request);
-        return context;
     }
     
     /**
@@ -70,25 +71,34 @@ public class RiskControlService {
         }
         
         // 1. 计算总分（各规则分数之和）
-        int totalScore = results.stream()
-            .mapToInt(RiskAssessmentResult::getRiskScore)
-            .sum();
+        int totalScore = 0;
+        for (RiskAssessmentResult result : results) {
+            totalScore += result.getRiskScore();
+        }
         
         // 2. 合并所有风险因子
-        List<RiskAssessmentResult.RiskFactor> allFactors = results.stream()
-            .flatMap(result -> result.getRiskFactors().stream())
-            .collect(Collectors.toList());
+        List<RiskAssessmentResult.RiskFactor> allFactors = new ArrayList<>();
+        for (RiskAssessmentResult result : results) {
+            allFactors.addAll(result.getRiskFactors());
+        }
         
         // 3. 确定最高风险等级
-        RiskAssessmentResult.RiskLevel maxRiskLevel = results.stream()
-            .map(RiskAssessmentResult::getRiskLevel)
-            .max(Enum::compareTo)
-            .orElse(RiskAssessmentResult.RiskLevel.LOW);
+        RiskAssessmentResult.RiskLevel maxRiskLevel = RiskAssessmentResult.RiskLevel.LOW;
+        for (RiskAssessmentResult result : results) {
+            if (result.getRiskLevel().compareTo(maxRiskLevel) > 0) {
+                maxRiskLevel = result.getRiskLevel();
+            }
+        }
         
         // 4. 确定最终决策
         // 只要有一个规则判定为高风险，就拒绝
-        boolean hasHighRisk = results.stream()
-            .anyMatch(result -> result.getRiskLevel() == RiskAssessmentResult.RiskLevel.HIGH);
+        boolean hasHighRisk = false;
+        for (RiskAssessmentResult result : results) {
+            if (result.getRiskLevel() == RiskAssessmentResult.RiskLevel.HIGH) {
+                hasHighRisk = true;
+                break;
+            }
+        }
         
         String finalDecision;
         String rejectReason;
@@ -145,10 +155,15 @@ public class RiskControlService {
         // 添加风险因子信息
         if (!result.getRiskFactors().isEmpty()) {
             logBuilder.append(", riskFactors=[");
-            String factorsStr = result.getRiskFactors().stream()
-                .map(factor -> factor.getFactorName() + "(" + factor.getRiskContribution() + ")")
-                .collect(Collectors.joining(", "));
-            logBuilder.append(factorsStr).append("]");
+            StringBuilder factorsBuilder = new StringBuilder();
+            for (int i = 0; i < result.getRiskFactors().size(); i++) {
+                RiskAssessmentResult.RiskFactor factor = result.getRiskFactors().get(i);
+                factorsBuilder.append(factor.getFactorName()).append("(").append(factor.getRiskContribution()).append(")");
+                if (i < result.getRiskFactors().size() - 1) {
+                    factorsBuilder.append(", ");
+                }
+            }
+            logBuilder.append(factorsBuilder).append("]");
         }
         
         // 根据决策类型输出不同级别的日志

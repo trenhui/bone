@@ -217,6 +217,7 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <version>2.7.15</version>
             <scope>test</scope>
         </dependency>
 
@@ -340,6 +341,7 @@
         <dependency>
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-all</artifactId>
+            <version>5.8.0</version>
         </dependency>
 
         <!-- camel监控 -->

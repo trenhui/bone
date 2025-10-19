@@ -3,7 +3,7 @@ package com.bone.metadata.sdk.query.builder;
 import com.bone.metadata.sdk.query.criteria.Condition;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.query.criteria.Criteria.JoinInfo;
-import com.bone.metadata.sdk.query.dsl.QueryBuilder.JoinType;
+import com.bone.metadata.sdk.query.dsl.JoinType;
 import com.bone.core.enums.Operator;
 import com.bone.metadata.sdk.metadata.api.MetadataService;
 import com.bone.metadata.sdk.domain.model.AllocationContext;
@@ -48,12 +48,18 @@ public class SelectBuilderSql implements SqlQueryBuilder<SelectContext> {
                 String joinTypeStr = "INNER JOIN";
                 
                 // 根据连接类型确定SQL关键字
-                if (joinInfo.getJoinType() == JoinType.LEFT) {
-                    joinTypeStr = "LEFT JOIN";
-                } else if (joinInfo.getJoinType() == JoinType.RIGHT) {
-                    joinTypeStr = "RIGHT JOIN";
-                } else if (joinInfo.getJoinType() == JoinType.FULL) {
-                    joinTypeStr = "FULL JOIN";
+                switch (joinInfo.getJoinType()) {
+                    case LEFT:
+                        joinTypeStr = "LEFT JOIN";
+                        break;
+                    case RIGHT:
+                        joinTypeStr = "RIGHT JOIN";
+                        break;
+                    case FULL:
+                        joinTypeStr = "FULL JOIN";
+                        break;
+                    default:
+                        joinTypeStr = "INNER JOIN";
                 }
                 
                 // 添加连接子句

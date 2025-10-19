@@ -4,8 +4,6 @@ import com.bone.core.domain.AbstractDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.*;
 
-import java.util.Map;
-
 @EqualsAndHashCode(callSuper = true)
 @Data
 @NoArgsConstructor

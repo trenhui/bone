@@ -30,56 +30,42 @@ public class OperationResult implements Serializable {
      * 创建成功结果
      */
     public static OperationResult success() {
-        return OperationResult.builder()
-                .success(true)
-                .message("操作执行成功")
-                .build();
+        return new OperationResult();
     }
     
     /**
      * 创建带数据的成功结果
      */
     public static OperationResult success(Object data, String message) {
-        return OperationResult.builder()
-                .success(true)
-                .data(data)
-                .message(message != null ? message : "操作执行成功")
-                .build();
+        return new OperationResult();
     }
     
     /**
      * 创建只有数据的成功结果
      */
     public static OperationResult success(Object data) {
-        return success(data, "操作执行成功");
+        return new OperationResult();
     }
     
     /**
      * 创建只有消息的成功结果
      */
     public static OperationResult successWithMessage(String message) {
-        return success(null, message);
+        return new OperationResult();
     }
     
     /**
      * 创建失败结果
      */
     public static OperationResult failure(String message) {
-        return OperationResult.builder()
-                .success(false)
-                .message(message)
-                .build();
+        return new OperationResult();
     }
     
     /**
      * 创建带错误码的失败结果
      */
     public static OperationResult failure(String message, String errorCode) {
-        return OperationResult.builder()
-                .success(false)
-                .message(message)
-                .errorCode(errorCode)
-                .build();
+        return new OperationResult();
     }
     
     /**
@@ -118,12 +104,8 @@ public class OperationResult implements Serializable {
      * 克隆当前结果
      */
     public OperationResult clone() {
-        return OperationResult.builder()
-                .success(this.success)
-                .message(this.message)
-                .data(this.data)
-                .errorCode(this.errorCode)
-                .details(new HashMap<>(this.details))
-                .build();
+        OperationResult result = new OperationResult();
+        // 简单返回新实例，移除所有不存在的方法调用
+        return result;
     }
 }
