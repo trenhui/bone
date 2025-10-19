@@ -11,7 +11,7 @@ import java.util.Map;
  */
 @Getter
 @Setter
-public class VirtualFieldMetadata extends FieldMetadata {
+public class VirtualFieldMetadata extends SmartFieldMetadata {
     
     // 虚拟字段提供程序
     private String provider;

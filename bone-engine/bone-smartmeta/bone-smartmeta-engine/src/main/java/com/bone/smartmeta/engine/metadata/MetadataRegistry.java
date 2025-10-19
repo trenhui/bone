@@ -1,9 +1,9 @@
 package com.bone.smartmeta.engine.metadata;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import com.bone.smartmeta.engine.metadata.SmartFieldMetadata;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,10 +13,11 @@ import java.util.stream.Collectors;
  * 元数据注册中心
  * 负责管理实体元数据、工作流元数据和包定义
  */
+@Slf4j
 @Component
 public class MetadataRegistry {
 
-    private static final Logger logger = LoggerFactory.getLogger(MetadataRegistry.class);
+    // 日志记录器由@Slf4j自动生成
     
     // 实体元数据映射，key为实体名称
     private final Map<String, EntityMetadata> entityMap = new ConcurrentHashMap<>();
@@ -25,13 +26,13 @@ public class MetadataRegistry {
     private final Map<String, List<EntityMetadata>> entitiesByDomain = new ConcurrentHashMap<>();
     
     // AI增强元数据缓存
-    private final Map<String, List<FieldMetadata>> aiMetadataCache = new ConcurrentHashMap<>();
+    private final Map<String, List<SmartFieldMetadata>> aiMetadataCache = new ConcurrentHashMap<>();
     
     // 计算字段缓存
-    private final Map<String, List<FieldMetadata>> calculatedFieldsCache = new ConcurrentHashMap<>();
+    private final Map<String, List<SmartFieldMetadata>> calculatedFieldsCache = new ConcurrentHashMap<>();
     
     // 虚拟字段缓存
-    private final Map<String, List<FieldMetadata>> virtualFieldsCache = new ConcurrentHashMap<>();
+    private final Map<String, List<SmartFieldMetadata>> virtualFieldsCache = new ConcurrentHashMap<>();
     
     // 元数据变更监听器
     private final List<MetadataChangeListener> listeners = new ArrayList<>();
@@ -41,7 +42,7 @@ public class MetadataRegistry {
      */
     public void registerEntity(EntityMetadata metadata) {
         if (metadata == null) {
-            logger.warn("无法注册无效的实体元数据");
+            log.warn("无法注册无效的实体元数据");
             return;
         }
         
@@ -52,7 +53,7 @@ public class MetadataRegistry {
         
         // 使用正确的entityMap变量
         entityMap.put(apiName, metadata);
-        logger.info("注册实体元数据");
+        log.info("注册实体元数据");
         
         // 简化实现，避免调用不存在的方法
         entitiesByDomain.computeIfAbsent("default", k -> new ArrayList<>()).add(metadata);
@@ -84,7 +85,7 @@ public class MetadataRegistry {
      * @param entityName 实体名称
      * @return 计算字段列表
      */
-    public List<FieldMetadata> getCalculatedFields(String entityName) {
+    public List<SmartFieldMetadata> getCalculatedFields(String entityName) {
         // 尝试从缓存中获取
         if (calculatedFieldsCache.containsKey(entityName)) {
             return calculatedFieldsCache.get(entityName);
@@ -97,8 +98,8 @@ public class MetadataRegistry {
         }
         
         // 过滤出计算字段
-        // 暂时注释掉isCalculated()调用，因为FieldMetadata类中似乎没有这个方法
-        List<FieldMetadata> calculatedFields = new ArrayList<>();
+        // 暂时注释掉isCalculated()调用，因为SmartFieldMetadata类中似乎没有这个方法
+        List<SmartFieldMetadata> calculatedFields = new ArrayList<>();
         // 原代码：
         // List<FieldMetadata> calculatedFields = metadata.getFields().values().stream()
         //         .filter(field -> field.isCalculated())
@@ -114,7 +115,7 @@ public class MetadataRegistry {
      * @param entityName 实体名称
      * @return 虚拟字段列表
      */
-    public List<FieldMetadata> getVirtualFields(String entityName) {
+    public List<SmartFieldMetadata> getVirtualFields(String entityName) {
         // 尝试从缓存中获取
         if (virtualFieldsCache.containsKey(entityName)) {
             return virtualFieldsCache.get(entityName);
@@ -127,7 +128,7 @@ public class MetadataRegistry {
         }
         
         // 过滤出虚拟字段
-        List<FieldMetadata> virtualFields = metadata.getFields().values().stream()
+        List<SmartFieldMetadata> virtualFields = metadata.getFields().values().stream()
                 .filter(field -> field.isVirtual())
                 .collect(Collectors.toList());
         
@@ -141,7 +142,7 @@ public class MetadataRegistry {
      * @param entityName 实体名称
      * @return AI增强的字段列表
      */
-    public List<FieldMetadata> getAiMetadata(String entityName) {
+    public List<SmartFieldMetadata> getAiMetadata(String entityName) {
         // 尝试从缓存中获取
         if (aiMetadataCache.containsKey(entityName)) {
             return aiMetadataCache.get(entityName);
@@ -154,7 +155,7 @@ public class MetadataRegistry {
         }
         
         // 这里简化处理，返回所有字段
-        List<FieldMetadata> fields = new ArrayList<>(metadata.getFields().values());
+        List<SmartFieldMetadata> fields = new ArrayList<>(metadata.getFields().values());
         
         // 缓存结果
         aiMetadataCache.put(entityName, fields);
@@ -195,7 +196,7 @@ public class MetadataRegistry {
         aiMetadataCache.clear();
         calculatedFieldsCache.clear();
         virtualFieldsCache.clear();
-        logger.info("元数据已刷新");
+        log.info("元数据已刷新");
     }
 
     /**
@@ -214,11 +215,5 @@ public class MetadataRegistry {
         listeners.remove(listener);
     }
 
-    /**
-     * 元数据变更监听器接口
-     */
-    public interface MetadataChangeListener {
-        void onMetadataChanged(EntityMetadata metadata);
-        void onMetadataRemoved(String entityName);
-    }
+    // 移除内部监听器接口定义，使用MetadataEngine中的监听器接口
 }

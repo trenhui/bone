@@ -1,12 +1,8 @@
 package com.bone.engine.extension;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.Mockito;
-import com.bone.engine.extension.expression.ExpressionEvaluator;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -17,6 +13,7 @@ import static org.mockito.Mockito.*;
 
 /**
  * SPI扩展点机制的单元测试，测试不同场景下的扩展点使用
+ * 使用JUnit 5标准实践，确保测试结构清晰、健壮
  *
  * @author renhui.trh 2023-11-1
  */
@@ -25,67 +22,76 @@ public class ExtPointTest {
     @Mock
     private TestExtPoint mockExtPoint;
     
-
     private AutoCloseable mockCloseable;
 
+    /**
+     * 初始化测试环境，设置mocks并清理上下文
+     */
     @BeforeEach
     void setUp() {
         // 初始化Mockito mocks
         mockCloseable = MockitoAnnotations.openMocks(this);
-        // 清理上下文
-        BizContexts.clear();
+        // 清理上下文，确保测试隔离
+        ExtensionContextManager.clearContext();
     }
 
+    /**
+     * 清理测试资源，关闭mocks并确保上下文被清除
+     */
     @AfterEach
     void tearDown() throws Exception {
         // 关闭Mockito mocks
         mockCloseable.close();
-        // 确保清理上下文
-        BizContexts.clear();
+        // 确保清理上下文，防止测试间相互影响
+        ExtensionContextManager.clearContext();
     }
 
     /**
      * 测试基础的上下文设置和获取
+     * 验证通过withTenant方法创建的上下文是否正确设置和自动清理
      */
     @Test
+    @DisplayName("测试基础上下文管理功能")
     void testBasicContextManagement() {
-        // 使用try-with-resources自动管理上下文
-        try (BizContexts.ContextManager manager = BizContexts.withTenant("TENANT_A")) {
-            BizContext<?> context = BizContexts.getCurrent();
-            assertNotNull(context);
-            assertEquals("TENANT_A", context.getTenantCode());
+        // 使用try-with-resources自动管理上下文生命周期
+        try (ExtensionScope scope = ExtensionContextManager.withTenant("TENANT_A")) {
+            BizContext<?> context = ExtensionContextManager.getCurrent();
+            assertNotNull(context, "上下文应成功创建");
+            assertEquals("TENANT_A", context.getTenantCode(), "租户代码应正确设置");
         }
         
-        // 上下文应该已经被清理
-        assertNull(BizContexts.getCurrent());
+        // 验证上下文在作用域结束后自动清理
+        assertNull(ExtensionContextManager.getCurrent(), "上下文应在作用域结束后自动清理");
     }
 
     /**
      * 测试多层级上下文嵌套
+     * 验证嵌套上下文的正确创建、恢复和清理
      */
     @Test
+    @DisplayName("测试多层级上下文嵌套功能")
     void testNestedContexts() {
-        // 外层上下文
-        try (BizContexts.ContextManager outerManager = BizContexts.with("TENANT_A", "BIZ_1")) {
-            BizContext<?> outerContext = BizContexts.getCurrent();
-            assertEquals("TENANT_A", outerContext.getTenantCode());
-            assertEquals("BIZ_1", outerContext.getBizCode());
+        // 外层上下文测试
+        try (ExtensionScope outerScope = ExtensionContextManager.with("TENANT_A", "BIZ_1")) {
+            BizContext<?> outerContext = ExtensionContextManager.getCurrent();
+            assertEquals("TENANT_A", outerContext.getTenantCode(), "外层上下文租户代码应正确设置");
+            assertEquals("BIZ_1", outerContext.getBizCode(), "外层上下文业务代码应正确设置");
             
-            // 内层上下文
-            try (BizContexts.ContextManager innerManager = BizContexts.with("TENANT_B", "BIZ_2")) {
-                BizContext<?> innerContext = BizContexts.getCurrent();
-                assertEquals("TENANT_B", innerContext.getTenantCode());
-                assertEquals("BIZ_2", innerContext.getBizCode());
+            // 内层上下文测试
+            try (ExtensionScope innerScope = ExtensionContextManager.with("TENANT_B", "BIZ_2")) {
+                BizContext<?> innerContext = ExtensionContextManager.getCurrent();
+                assertEquals("TENANT_B", innerContext.getTenantCode(), "内层上下文租户代码应正确设置");
+                assertEquals("BIZ_2", innerContext.getBizCode(), "内层上下文业务代码应正确设置");
             }
             
-            // 应该恢复到外层上下文
-            BizContext<?> restoredContext = BizContexts.getCurrent();
-            assertEquals("TENANT_A", restoredContext.getTenantCode());
-            assertEquals("BIZ_1", restoredContext.getBizCode());
+            // 验证外层上下文恢复
+            BizContext<?> restoredContext = ExtensionContextManager.getCurrent();
+            assertEquals("TENANT_A", restoredContext.getTenantCode(), "内层上下文结束后应恢复到外层上下文");
+            assertEquals("BIZ_1", restoredContext.getBizCode(), "内层上下文结束后外层上下文业务代码应保持不变");
         }
         
-        // 上下文应该已经被完全清理
-        assertNull(BizContexts.getCurrent());
+        // 验证完全清理
+        assertNull(ExtensionContextManager.getCurrent(), "所有上下文结束后应完全清理");
     }
 
     /**
@@ -99,7 +105,10 @@ public class ExtPointTest {
         data.setBizCode("BIZ_X");
         
         // 从数据对象构建上下文
-        BizContext<TestData> context = BizContexts.fromData(data);
+        BizContext<TestData> context = BizContext.create();
+        context.setData(data);
+        context.setTenantCode(data.getTenantCode());
+        context.setBizCode(data.getBizCode());
         
         // 验证上下文信息
         assertEquals("TENANT_X", context.getTenantCode());
@@ -107,8 +116,8 @@ public class ExtPointTest {
         assertSame(data, context.getData());
         
         // 设置并使用上下文
-        try (BizContexts.ContextManager manager = BizContexts.with(context)) {
-            assertEquals("TENANT_X", BizContexts.getCurrent().getTenantCode());
+        try (ExtensionScope scope = ExtensionContextManager.with(context)) {
+            assertEquals("TENANT_X", ExtensionContextManager.getCurrent().getTenantCode());
         }
     }
 
@@ -118,12 +127,12 @@ public class ExtPointTest {
     @Test
     void testContextInMultiThreading() throws Exception {
         // 设置主线程上下文
-        try (BizContexts.ContextManager manager = BizContexts.with("TENANT_MAIN", "BIZ_MAIN")) {
+        try (ExtensionScope scope = ExtensionContextManager.with("TENANT_MAIN", "BIZ_MAIN")) {
             // 创建线程池
             ExecutorService executorService = Executors.newSingleThreadExecutor();
             
             // 复制上下文到新线程
-            BizContexts.ContextCopier copier = BizContexts.copy();
+            ContextCopier copier = ExtensionContextManager.copy();
             
             // 提交任务到线程池
             Future<String> future = executorService.submit(() -> {
@@ -132,12 +141,12 @@ public class ExtPointTest {
                     copier.apply();
                     
                     // 验证线程中的上下文
-                    BizContext<?> threadContext = BizContexts.getCurrent();
+                    BizContext<?> threadContext = ExtensionContextManager.getCurrent();
                     assertNotNull(threadContext);
                     return threadContext.getBizIdentity();
                 } finally {
                     // 清理线程上下文
-                    BizContexts.clear();
+                    ExtensionContextManager.clearContext();
                 }
             });
             
@@ -149,7 +158,7 @@ public class ExtPointTest {
             executorService.shutdown();
             
             // 验证主线程上下文仍然存在
-            assertNotNull(BizContexts.getCurrent());
+            assertNotNull(ExtensionContextManager.getCurrent());
         }
     }
 
@@ -166,7 +175,7 @@ public class ExtPointTest {
                .withAttribute("key2", 123);
         
         // 使用上下文
-        try (BizContexts.ContextManager manager = BizContexts.with(context)) {
+        try (ExtensionScope scope = ExtensionContextManager.with(context)) {
             // 测试属性获取
             String key1Value = context.getAttribute("key1");
             assertEquals("value1", key1Value);
@@ -290,22 +299,21 @@ public class ExtPointTest {
 
     /**
      * 测试Mock扩展点的调用
+     * 验证在上下文中正确调用模拟的扩展点实现
      */
     @Test
+    @DisplayName("测试Mock扩展点调用")
     void testMockExtPointInvocation() {
-        // 设置Mock行为
+        // 配置Mock行为
         when(mockExtPoint.doSomething(anyString())).thenReturn("Mock response");
         
-        // 创建测试上下文
-        try (BizContexts.ContextManager manager = BizContexts.withTenant("TENANT_MOCK")) {
-            // 调用Mock方法
+        // 在上下文中测试扩展点调用
+        try (ExtensionScope scope = ExtensionContextManager.withTenant("TENANT_MOCK")) {
             String result = mockExtPoint.doSomething("test");
             
-            // 验证结果
-            assertEquals("Mock response", result);
-            
-            // 验证调用
-            verify(mockExtPoint).doSomething("test");
+            // 验证结果和交互
+            assertEquals("Mock response", result, "扩展点应返回预期的模拟响应");
+            verify(mockExtPoint).doSomething("test"); // 验证正确的调用参数
         }
     }
 

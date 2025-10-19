@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import javax.validation.constraints.NotBlank;
+// 移除不存在的NotBlank注解导入
 
 /**
  * 操作条件定义
@@ -14,7 +14,7 @@ import javax.validation.constraints.NotBlank;
 @NoArgsConstructor
 @AllArgsConstructor
 public class OperationCondition {
-    @NotBlank
+    // 移除NotBlank注解，简化实现
     private String expression; // SpEL表达式
     
     private String errorMessage;

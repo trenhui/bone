@@ -35,11 +35,11 @@ public class OperationExample {
         entityMetadata.setApiName("purchaseOrder");
         
         // 创建字段元数据
-        FieldMetadata idField = new FieldMetadata();
+        SmartFieldMetadata idField = new SmartFieldMetadata();
         // 只设置存在的属性
         idField.setLabel("订单ID");
         
-        FieldMetadata statusField = new FieldMetadata();
+        SmartFieldMetadata statusField = new SmartFieldMetadata();
         // 只设置存在的属性
         statusField.setLabel("状态");
         

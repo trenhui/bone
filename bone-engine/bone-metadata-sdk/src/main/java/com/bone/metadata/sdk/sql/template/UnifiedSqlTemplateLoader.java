@@ -181,18 +181,25 @@ public class UnifiedSqlTemplateLoader implements SqlTemplateLoader {
                 String defaultBasePath = "sql/";
                 String sqlPath = String.format("%s%s/%s%s", defaultBasePath, moduleName, methodName, SQL_EXTENSION);
                 
-                // 创建TemplateDescriptor对象（不使用builder模式）
-                TemplateDescriptor sqlTemplate = new TemplateDescriptor();
-                // 由于没有setter方法，这里暂时跳过添加sql模板
+                // 使用builder模式创建TemplateDescriptor对象
+                TemplateDescriptor sqlTemplate = TemplateDescriptor.builder()
+                        .templateId(templateId)
+                        .sourceUri("classpath://" + sqlPath)
+                        .format(SqlTemplateType.SQL)
+                        .build();
+                descriptors.add(sqlTemplate);
                 
                 // YAML 路径：sql-templates/<module>/<methodName>.yaml
-                // 使用默认路径，因为TemplateProperties没有提供yamlPath方法
                 String defaultYamlPath = "sql-templates/";
                 String yamlPath = String.format("%s%s/%s%s", defaultYamlPath, moduleName, methodName, YAML_EXTENSION);
                 
-                // 创建TemplateDescriptor对象（不使用builder模式）
-                TemplateDescriptor yamlTemplate = new TemplateDescriptor();
-                // 由于没有setter方法，这里暂时跳过添加yaml模板
+                // 使用builder模式创建TemplateDescriptor对象
+                TemplateDescriptor yamlTemplate = TemplateDescriptor.builder()
+                        .templateId(templateId)
+                        .sourceUri("classpath://" + yamlPath)
+                        .format(SqlTemplateType.MYBATIS)
+                        .build();
+                descriptors.add(yamlTemplate);
             }
             return descriptors;
         }
@@ -214,21 +221,27 @@ public class UnifiedSqlTemplateLoader implements SqlTemplateLoader {
         String defaultBasePath = "sql/";
         String sqlPath = String.format("%s%s/%s/%s%s", defaultBasePath, packagePath, simpleClassName, methodName, SQL_EXTENSION);
         
-        // 创建TemplateDescriptor对象（不使用builder模式）
-        TemplateDescriptor sqlTemplate = new TemplateDescriptor();
-        // 由于没有setter方法，这里暂时跳过添加sql模板
+        // 使用builder模式创建TemplateDescriptor对象
+        TemplateDescriptor sqlTemplate = TemplateDescriptor.builder()
+                .templateId(templateId)
+                .sourceUri("classpath://" + sqlPath)
+                .format(SqlTemplateType.SQL)
+                .build();
+        descriptors.add(sqlTemplate);
         
         // YAML 路径：sql-templates/<RepositoryClass>/<methodName>.yaml
-        // 使用默认路径，因为TemplateProperties没有提供yamlPath方法
         String defaultYamlPath = "sql-templates/";
         String yamlPath = String.format("%s%s/%s%s", defaultYamlPath, simpleClassName, methodName, YAML_EXTENSION);
         
-        // 创建TemplateDescriptor对象（不使用builder模式）
-        TemplateDescriptor yamlTemplate = new TemplateDescriptor();
-        // 由于没有setter方法，这里暂时跳过添加yaml模板
+        // 使用builder模式创建TemplateDescriptor对象
+        TemplateDescriptor yamlTemplate = TemplateDescriptor.builder()
+                .templateId(templateId)
+                .sourceUri("classpath://" + yamlPath)
+                .format(SqlTemplateType.MYBATIS)
+                .build();
+        descriptors.add(yamlTemplate);
         
-        // 暂时返回空列表，避免编译错误
-        return Collections.emptyList();
+        return descriptors;
     }
 
     /**

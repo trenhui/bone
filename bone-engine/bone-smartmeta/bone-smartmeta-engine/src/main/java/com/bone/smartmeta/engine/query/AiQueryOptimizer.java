@@ -1,7 +1,7 @@
 package com.bone.smartmeta.engine.query;
 
 import com.bone.smartmeta.engine.metadata.EntityMetadata;
-import com.bone.smartmeta.engine.metadata.FieldMetadata;
+import com.bone.smartmeta.engine.metadata.SmartFieldMetadata;
 import com.bone.smartmeta.engine.context.UserContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -178,7 +178,7 @@ public class AiQueryOptimizer {
             // 检查是否有已索引的字段可用于优化
             for (String field : conditionFields) {
                 // 暂时注释掉getFieldMetadata()调用，因为EntityMetadata类中似乎没有这个方法
-                // FieldMetadata fieldMetadata = entityMetadata.getFieldMetadata(field);
+                // SmartFieldMetadata fieldMetadata = entityMetadata.getFieldMetadata(field);
                 // if (fieldMetadata != null && fieldMetadata.isIndexed()) {
                 //     // 这里可以添加索引提示
                 //     // 在实际实现中，根据数据库类型添加适当的索引提示语法
@@ -247,7 +247,7 @@ public class AiQueryOptimizer {
             // 找出实体的所有必要字段
             List<String> essentialFields = new ArrayList<>();
             // 暂时注释掉所有方法调用，因为相关类中似乎没有这些方法
-            // for (FieldMetadata field : entityMetadata.getAllFieldMetadata()) {
+            // for (SmartFieldMetadata field : entityMetadata.getAllFieldMetadata()) {
             //     if (!field.isVirtual() && !field.isCalculated()) {
             //         essentialFields.add(field.getFieldName());
             //     }

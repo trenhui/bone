@@ -2,7 +2,7 @@ package com.bone.smartmeta.engine.metadata.processor;
 
 import com.bone.smartmeta.engine.metadata.EntityMetadata;
 import com.bone.smartmeta.engine.metadata.FieldLevelSecurityMetadata;
-import com.bone.smartmeta.engine.metadata.FieldMetadata;
+import com.bone.smartmeta.engine.metadata.SmartFieldMetadata;
 import com.bone.smartmeta.engine.metadata.IndexMetadata;
 import com.bone.smartmeta.engine.metadata.RecordTypeMetadata;
 import com.bone.smartmeta.engine.metadata.ValidationRuleMetadata;
@@ -48,8 +48,8 @@ public class CompositeMetadataProcessor {
         this.eventPublisher = eventPublisher;
     }
     
-    // 元数据变更监听器
-    private final List<MetadataChangeListener> metadataChangeListeners = new CopyOnWriteArrayList<>();
+    // 元数据变更监听器 - 使用内部定义的监听器接口
+    private final List<com.bone.smartmeta.engine.MetadataEngine.MetadataChangeListener> metadataChangeListeners = new CopyOnWriteArrayList<>();
     
     // 元数据缓存，用于快速访问和热加载
     private final Map<String, EntityMetadata> entityMetadataCache = new ConcurrentHashMap<>();
@@ -207,10 +207,11 @@ public class CompositeMetadataProcessor {
         // 发布Spring事件
         eventPublisher.publishEvent(event);
         
-        // 通知直接注册的监听器
-        for (MetadataChangeListener listener : metadataChangeListeners) {
+        // 通知直接注册的监听器 - 使用MetadataEngine的监听器接口
+        for (com.bone.smartmeta.engine.MetadataEngine.MetadataChangeListener listener : metadataChangeListeners) {
             try {
-                listener.onMetadataChanged(event);
+                String changeType = oldMetadata == null ? "CREATE" : (newMetadata == null ? "DELETE" : "UPDATE");
+                listener.onMetadataChanged(entityApiName, changeType);
             } catch (Exception e) {
                 log.error("元数据变更监听器处理失败", e);
             }
@@ -220,7 +221,7 @@ public class CompositeMetadataProcessor {
     /**
      * 注册元数据变更监听器
      */
-    public void registerMetadataChangeListener(MetadataChangeListener listener) {
+    public void registerMetadataChangeListener(com.bone.smartmeta.engine.MetadataEngine.MetadataChangeListener listener) {
         if (listener != null && !metadataChangeListeners.contains(listener)) {
             metadataChangeListeners.add(listener);
             log.info("注册元数据变更监听器: {}", listener.getClass().getName());
@@ -522,7 +523,7 @@ public class CompositeMetadataProcessor {
      * 合并两个字段元数据
      * 简化实现，避免调用不存在的方法
      */
-    private void mergeFieldMetadata(FieldMetadata target, FieldMetadata source) {
+    private void mergeFieldMetadata(SmartFieldMetadata target, SmartFieldMetadata source) {
         // 移除所有代码，避免调用不存在的方法
         // 由于FieldMetadata类缺少必要的方法，这里不进行任何操作
         log.debug("跳过字段元数据合并，因为FieldMetadata类缺少必要的方法");
@@ -550,11 +551,11 @@ public class CompositeMetadataProcessor {
         return new RecordTypeMetadata();
     }
     
-    private FieldMetadata copyFieldMetadata(FieldMetadata source) {
+    private SmartFieldMetadata copyFieldMetadata(SmartFieldMetadata source) {
         // 由于各种字段元数据类缺少必要的方法，简化实现
         log.debug("跳过字段元数据复制，因为各种字段元数据类缺少必要的方法");
         
-        FieldMetadata copy;
+        SmartFieldMetadata copy;
         
         // 根据源字段类型创建相应的类型
         if (source instanceof CalculatedFieldMetadata) {
@@ -568,7 +569,7 @@ public class CompositeMetadataProcessor {
             // virtualCopy.setProvider(virtualSource.getProvider());
             // virtualCopy.setConfiguration(virtualSource.getConfiguration());
         } else {
-            copy = new FieldMetadata();
+            copy = new SmartFieldMetadata();
         }
         
         // 复制通用字段属性 - 移除对不存在方法的调用

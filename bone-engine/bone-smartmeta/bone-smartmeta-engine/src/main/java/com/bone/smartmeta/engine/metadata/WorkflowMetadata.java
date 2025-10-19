@@ -1,16 +1,11 @@
 package com.bone.smartmeta.engine.metadata;
 
-import lombok.Getter;
-import lombok.Setter;
-
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * 工作流元数据模型类
  */
-@Getter
-@Setter
 public class WorkflowMetadata {
     
     // 工作流名称
@@ -36,4 +31,69 @@ public class WorkflowMetadata {
     
     // 是否启用
     private boolean enabled = true;
+    
+    // Getters and Setters
+    public String getName() {
+        return name;
+    }
+    
+    public void setName(String name) {
+        this.name = name;
+    }
+    
+    public String getLabel() {
+        return label;
+    }
+    
+    public void setLabel(String label) {
+        this.label = label;
+    }
+    
+    public String getDescription() {
+        return description;
+    }
+    
+    public void setDescription(String description) {
+        this.description = description;
+    }
+    
+    public String getTargetEntity() {
+        return targetEntity;
+    }
+    
+    public void setTargetEntity(String targetEntity) {
+        this.targetEntity = targetEntity;
+    }
+    
+    public String getInitialState() {
+        return initialState;
+    }
+    
+    public void setInitialState(String initialState) {
+        this.initialState = initialState;
+    }
+    
+    public List<WorkflowState> getStates() {
+        return states;
+    }
+    
+    public void setStates(List<WorkflowState> states) {
+        this.states = states;
+    }
+    
+    public List<WorkflowTransition> getTransitions() {
+        return transitions;
+    }
+    
+    public void setTransitions(List<WorkflowTransition> transitions) {
+        this.transitions = transitions;
+    }
+    
+    public boolean isEnabled() {
+        return enabled;
+    }
+    
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
 }

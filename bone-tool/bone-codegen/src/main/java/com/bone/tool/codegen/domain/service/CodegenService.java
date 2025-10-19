@@ -1,6 +1,12 @@
 package com.bone.tool.codegen.domain.service;
 
-// 只保留必要的Java标准库导入
+// 导入必要的类
+import com.bone.tool.codegen.application.dto.CodegenTablePageRequest;
+import com.bone.tool.codegen.application.dto.CodegenTableRequest;
+import com.bone.tool.codegen.application.dto.GenerateCustomCodeRequest;
+import com.bone.tool.codegen.application.dto.CodegenDetailResponse;
+import com.bone.tool.codegen.application.dto.CodegenTableResponse;
+import com.bone.tool.codegen.domain.service.DatabaseTableServiceInterface;
 import java.io.OutputStream;
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;
@@ -8,11 +14,12 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipOutputStream;
+import com.bone.tool.codegen.infrastructure.util.ReflectionUtil;
 
 /**
- * 代码生成服务类 - 完全独立实现，避免外部依赖
+ * 代码生成服务类 - 实现CodegenServiceInterface接口
  */
-public class CodegenService {
+public class CodegenService implements CodegenServiceInterface {
     // 内置的简单日志实现
     private static class SimpleLogger {
         public static void info(String format, Object... args) {
@@ -37,7 +44,7 @@ public class CodegenService {
     
     // 依赖字段 - 使用Object类型避免具体类依赖
     private Object defaultCodeGenerator;
-    private Object databaseTableService;
+    private DatabaseTableServiceInterface databaseTableService;
     
     /**
      * 默认构造函数
@@ -51,7 +58,7 @@ public class CodegenService {
         this.defaultCodeGenerator = defaultCodeGenerator;
     }
     
-    public void setDatabaseTableService(Object databaseTableService) {
+    public void setDatabaseTableService(DatabaseTableServiceInterface databaseTableService) {
         this.databaseTableService = databaseTableService;
     }
     
@@ -60,24 +67,16 @@ public class CodegenService {
      * @param request 代码生成请求参数对象
      * @param outputStream 输出流
      */
-    public void generateCustomCode(Object request, OutputStream outputStream) {
+    @Override
+    public void generateCustomCode(GenerateCustomCodeRequest request, OutputStream outputStream) {
         SimpleLogger.info("开始生成自定义代码");
         
         try (ZipOutputStream zipOut = new ZipOutputStream(outputStream)) {
             List<String> tableNames = new ArrayList<>();
             
-            // 尝试通过反射获取表名列表
+            // 使用反射获取表名列表
             if (request != null) {
-                try {
-                    java.lang.reflect.Method getTableNamesMethod = request.getClass().getMethod("getTableNames");
-                    Object result = getTableNamesMethod.invoke(request);
-                    if (result instanceof List) {
-                        tableNames = (List<String>) result;
-                    }
-                } catch (Exception e) {
-                    SimpleLogger.warn("无法获取表名列表，使用模拟数据", e);
-                    tableNames.add("test_table");
-                }
+                tableNames = (List<String>) ReflectionUtil.getFieldValue(request, "tableNames");
             }
             
             if (tableNames.isEmpty()) {
@@ -105,7 +104,8 @@ public class CodegenService {
      * @param request 代码生成请求参数对象
      * @return 字节数组
      */
-    public byte[] generateCustomCode(Object request) {
+    @Override
+    public byte[] generateCustomCode(GenerateCustomCodeRequest request) {
         SimpleLogger.info("开始生成自定义代码（单参数版本）");
         try {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -131,15 +131,17 @@ public class CodegenService {
      * @param tableId 表ID
      * @return 详情响应对象
      */
-    public Object getCodegenDetail(Long tableId) {
+    @Override
+    public CodegenDetailResponse getCodegenDetail(Long tableId) {
         SimpleLogger.info("获取代码生成详情，表ID: {}", tableId);
-        return new Object();
+        return new CodegenDetailResponse();
     }
     
     /**
      * 删除表
      * @param tableId 表ID
      */
+    @Override
     public void deleteTable(Long tableId) {
         SimpleLogger.info("删除表，表ID: {}", tableId);
     }
@@ -151,6 +153,7 @@ public class CodegenService {
      * @param modelType 模型类型
      * @param outputStream 输出流
      */
+    @Override
     public void generateBatchCodes(List<Long> tableIds, String templateCode, Integer modelType, OutputStream outputStream) {
         SimpleLogger.info("批量生成代码，表数量: {}", tableIds != null ? tableIds.size() : 0);
         
@@ -166,7 +169,8 @@ public class CodegenService {
      * 更新代码生成表
      * @param request 更新请求对象
      */
-    public void updateCodegenTable(Object request) {
+    @Override
+    public void updateCodegenTable(CodegenTableRequest request) {
         SimpleLogger.info("更新代码生成表");
     }
     
@@ -175,8 +179,39 @@ public class CodegenService {
      * @param request 分页请求对象
      * @return 分页响应对象
      */
-    public Object getCodegenTablePageResponse(Object request) {
+    @Override
+    public CodegenTableResponse getCodegenTablePageResponse(CodegenTablePageRequest request) {
         SimpleLogger.info("获取代码生成表分页响应");
-        return new Object();
+        return new CodegenTableResponse();
+    }
+    
+    /**
+     * 导入表结构从数据库
+     * @param datasourceId 数据源ID
+     * @param tableNames 表名列表
+     * @param moduleName 模块名
+     * @param packageName 包名
+     * @param sceneType 场景类型
+     * @param modelType 模型类型
+     * @return 导入的表ID列表
+     */
+    @Override
+    public List<Long> importTablesFromDatabase(Long datasourceId, List<String> tableNames, String moduleName, 
+                                             String packageName, Integer sceneType, Integer modelType) {
+        SimpleLogger.info("导入表结构从数据库，表数量: {}", tableNames != null ? tableNames.size() : 0);
+        // 直接调用接口方法
+        return databaseTableService.importTablesFromDatabase(datasourceId, tableNames, moduleName, 
+                                                           packageName, sceneType, modelType);
+    }
+    
+    /**
+     * 同步表结构从数据库
+     * @param tableId 表ID
+     */
+    @Override
+    public void syncTableFromDatabase(Long tableId) {
+        SimpleLogger.info("同步表结构从数据库，表ID: {}", tableId);
+        // 直接调用接口方法
+        databaseTableService.syncTableFromDatabase(tableId);
     }
 }

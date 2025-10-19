@@ -1,14 +1,12 @@
 package com.bone.engine.extension.proxy;
 
 import com.bone.engine.extension.BizContext;
-import com.bone.engine.extension.BizContexts;
-import com.bone.engine.extension.expression.ExpressionEvaluator;
+import com.bone.engine.extension.ExtensionContextManager;
 import com.bone.engine.extension.invoker.ExtPointInvocationHandler;
 import com.bone.engine.extension.repository.ExtPointRepository;
 import com.bone.engine.extension.repository.ExtPointRepositoryFactory;
 import com.bone.engine.extension.route.ExtPointRouter;
 import com.bone.core.util.ReflectionUtil;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 
 import java.io.Serial;
@@ -80,7 +78,7 @@ public class ExtPointProxy<T> implements InvocationHandler, Serializable {
             return method.invoke(this, args);
         }
         
-        BizContext<?> bizContext = BizContexts.getCurrent();
+        BizContext<?> bizContext = ExtensionContextManager.getCurrent();
         log.debug("Proxying method call: {} on extension point {} with context: {}", 
                 method.getName(), extensionPoint.getName(), bizContext);
         

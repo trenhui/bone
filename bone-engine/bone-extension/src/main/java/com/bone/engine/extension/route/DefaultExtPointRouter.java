@@ -96,9 +96,20 @@ public class DefaultExtPointRouter implements ExtPointRouter {
         }
 
         // 未找到任何匹配的扩展实现
-        String errorMsg = String.format("No extension provider found for interface: %s with bizContext: %s", 
-                interfaceName, bizContext.getBusinessIdentity());
+        String errorMsg = String.format(
+            "No extension provider found for interface: %s with bizContext: %s. " +
+            "Check if extensions are properly registered and @Extension annotations are correctly configured. " +
+            "Ensure there is a default implementation with bizCode='DEFAULT'.", 
+            interfaceName, bizContext.getBusinessIdentity()
+        );
         log.error(errorMsg);
+        
+        // 记录已尝试的所有匹配路径，便于调试
+        log.debug("Attempted extension lookup paths:");
+        log.debug("1. Exact match: {}", interfaceName + "." + bizContext.getBusinessIdentity());
+        log.debug("2. Default implementation: {}", interfaceName + "." + bizContext.getDefaultBusinessIdentity());
+        log.debug("3. Fallback with DEFAULT bizCode: {}", interfaceName + "." + createDefaultBizCodeKey(bizContext));
+        
         throw new IllegalStateException(errorMsg);
     }
 
@@ -131,7 +142,44 @@ public class DefaultExtPointRouter implements ExtPointRouter {
     private <C> C locateDefaultImplementation(String interfaceName, BizContext<?> bizContext) {
         String defaultKey = interfaceName + "." + bizContext.getDefaultBusinessIdentity();
         log.debug("Trying default implementation with key: {}", defaultKey);
-        return (C) extPointRepository.get(defaultKey);
+        
+        try {
+            // 尝试获取默认实现
+            C defaultImpl = (C) extPointRepository.get(defaultKey);
+            
+            // 如果默认实现不存在，尝试查找bizCode为DEFAULT的实现
+            if (defaultImpl == null) {
+                String fallbackKey = interfaceName + "." + createDefaultBizCodeKey(bizContext);
+                log.debug("Default implementation not found, trying fallback with key: {}", fallbackKey);
+                defaultImpl = (C) extPointRepository.get(fallbackKey);
+                
+                if (defaultImpl != null) {
+                    log.info("Found fallback implementation for {} with key: {}", interfaceName, fallbackKey);
+                }
+            }
+            
+            return defaultImpl;
+        } catch (Exception e) {
+            log.warn("Error locating default implementation for {}", interfaceName, e);
+            return null;
+        }
+    }
+    
+    /**
+     * 创建基于DEFAULT业务编码的键
+     * 用于在没有精确匹配的默认实现时作为后备选项
+     * 
+     * @param bizContext 业务上下文
+     * @return 构建的键值
+     */
+    private String createDefaultBizCodeKey(BizContext<?> bizContext) {
+        // 构建格式为: "*.*.*.*" 但替换bizCode部分为"DEFAULT"
+        String[] parts = bizContext.getBusinessIdentity().split("\\.");
+        if (parts.length >= 2) {
+            parts[1] = "DEFAULT"; // 替换业务编码部分
+            return String.join(".", parts);
+        }
+        return "*.*.*.*"; // 回退到完全默认键
     }
 
     /**
@@ -202,9 +250,26 @@ public class DefaultExtPointRouter implements ExtPointRouter {
      * @param providerClass 扩展提供者类
      * @return 扩展提供者注解
      */
+    /**
+     * 从缓存获取扩展提供者的注解信息
+     * 缓存机制避免重复反射获取注解，提升性能
+     * 
+     * @param providerClass 扩展提供者类
+     * @return 扩展提供者注解
+     * @throws IllegalStateException 如果类上没有@Extension注解
+     */
     private Extension getExtensionAnnotation(Class<?> providerClass) {
         String className = providerClass.getName();
-        return EXT_ANNOTATION_CACHE.computeIfAbsent(className, 
+        Extension annotation = EXT_ANNOTATION_CACHE.computeIfAbsent(className, 
                 key -> AnnotationUtils.findAnnotation(providerClass, Extension.class));
+        
+        if (annotation == null) {
+            String errorMsg = String.format("Class %s is registered as extension provider but missing @Extension annotation", 
+                    providerClass.getName());
+            log.error(errorMsg);
+            throw new IllegalStateException(errorMsg);
+        }
+        
+        return annotation;
     }
 }

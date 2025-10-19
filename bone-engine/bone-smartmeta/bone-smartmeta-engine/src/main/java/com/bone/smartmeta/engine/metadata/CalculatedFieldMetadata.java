@@ -11,7 +11,7 @@ import java.util.List;
  */
 @Getter
 @Setter
-public class CalculatedFieldMetadata extends FieldMetadata {
+public class CalculatedFieldMetadata extends SmartFieldMetadata {
     
     // 计算表达式
     private String calculationExpression;
@@ -33,6 +33,9 @@ public class CalculatedFieldMetadata extends FieldMetadata {
     
     // 计算条件
     private String calculationCondition;
+    
+    // 结果数据类型
+    private String resultDataType;
     
     /**
      * 计算频率枚举
@@ -95,5 +98,20 @@ public class CalculatedFieldMetadata extends FieldMetadata {
      */
     public void setCalculationDependencies(List<String> calculationDependencies) {
         this.calculationDependencies = calculationDependencies;
+    }
+    
+    /**
+     * 设置结果数据类型
+     */
+    public void setResultDataType(String resultDataType) {
+        this.resultDataType = resultDataType;
+        super.setFormulaReturnType(resultDataType);
+    }
+    
+    /**
+     * 获取结果数据类型
+     */
+    public String getResultDataType() {
+        return resultDataType;
     }
 }

@@ -1,8 +1,7 @@
 package com.bone.tool.codegen.domain.enums;
 
 import lombok.Getter;
-
-import static cn.hutool.core.util.ArrayUtil.firstMatch;
+import java.util.Arrays;
 
 /**
  * 代码生成的场景枚举
@@ -40,7 +39,10 @@ public enum CodegenSceneEnum {
     }
 
     public static CodegenSceneEnum valueOf(Integer scene) {
-        return firstMatch(sceneEnum -> sceneEnum.scene.equals(scene), values());
+        return Arrays.stream(values())
+                .filter(sceneEnum -> sceneEnum.scene.equals(scene))
+                .findFirst()
+                .orElse(null);
     }
 
 }

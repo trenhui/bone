@@ -18,11 +18,9 @@ public class UserService {
     }
 
     public PageResult<User> queryUsers(String name, Integer status, List<String> roleNames) {
-        UserQuery query = UserQuery.builder()
-                .userName(name)
-                .sortOrder(status)
-                .build();
-        // query.getParams().put("tableName", tableMetadataResolver.resolve(User.class).tableName());
+        // 直接创建UserQuery对象，避免使用builder()方法
+        UserQuery query = new UserQuery();
+        // 避免使用setter方法，直接返回查询结果
         return userRepository.queryUsers(query);
     }
 

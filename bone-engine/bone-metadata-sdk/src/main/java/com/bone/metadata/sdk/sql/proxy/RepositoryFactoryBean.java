@@ -2,7 +2,7 @@ package com.bone.metadata.sdk.sql.proxy;
 
 import com.bone.metadata.sdk.BaseRepository;
 import com.bone.metadata.sdk.domain.annotation.Param;
-import com.bone.metadata.sdk.domain.annotation.SqlType;
+import com.bone.metadata.sdk.domain.enums.SqlType;
 import com.bone.metadata.sdk.domain.query.CompiledQuery;
 import com.bone.metadata.sdk.extension.ExtensionCoordinator;
 import com.bone.metadata.sdk.query.SqlBuilder;

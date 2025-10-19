@@ -1,6 +1,6 @@
 package com.bone.tool.codegen.infrastructure.util;
 
-import cn.hutool.core.util.ReflectUtil;
+import java.lang.reflect.Field;
 
 /**
  * 反射工具类，用于统一处理对象字段的访问
@@ -15,7 +15,9 @@ public class ReflectionUtil {
      */
     public static Object getFieldValue(Object object, String fieldName) {
         try {
-            return ReflectUtil.getFieldValue(object, fieldName);
+            Field field = getDeclaredField(object.getClass(), fieldName);
+            field.setAccessible(true);
+            return field.get(object);
         } catch (Exception e) {
             // 忽略异常
             return null;
@@ -30,7 +32,9 @@ public class ReflectionUtil {
      */
     public static void setFieldValue(Object object, String fieldName, Object value) {
         try {
-            ReflectUtil.setFieldValue(object, fieldName, value);
+            Field field = getDeclaredField(object.getClass(), fieldName);
+            field.setAccessible(true);
+            field.set(object, value);
         } catch (Exception e) {
             // 忽略异常
         }
@@ -98,5 +102,50 @@ public class ReflectionUtil {
             }
         }
         return 0L;
+    }
+    
+    /**
+     * 递归获取字段（包括父类）
+     */
+    private static Field getDeclaredField(Class<?> clazz, String fieldName) throws NoSuchFieldException {
+        Field field = null;
+        try {
+            field = clazz.getDeclaredField(fieldName);
+        } catch (NoSuchFieldException e) {
+            Class<?> superClass = clazz.getSuperclass();
+            if (superClass != null && superClass != Object.class) {
+                field = getDeclaredField(superClass, fieldName);
+            } else {
+                throw e;
+            }
+        }
+        return field;
+    }
+    
+    /**
+     * 通过反射调用对象的方法
+     * @param object 目标对象
+     * @param methodName 方法名
+     * @param paramTypes 参数类型数组
+     * @param params 参数值数组
+     * @return 方法调用的返回值
+     * @throws Exception 调用失败时抛出异常
+     */
+    public static Object invokeMethod(Object object, String methodName, Class<?>[] paramTypes, Object... params) throws Exception {
+        try {
+            // 尝试直接在当前类中查找方法
+            java.lang.reflect.Method method = object.getClass().getDeclaredMethod(methodName, paramTypes);
+            method.setAccessible(true);
+            return method.invoke(object, params);
+        } catch (NoSuchMethodException e) {
+            // 如果在当前类中找不到，尝试在父类中查找
+            Class<?> superClass = object.getClass().getSuperclass();
+            if (superClass != null && superClass != Object.class) {
+                java.lang.reflect.Method method = superClass.getDeclaredMethod(methodName, paramTypes);
+                method.setAccessible(true);
+                return method.invoke(object, params);
+            }
+            throw e;
+        }
     }
 }

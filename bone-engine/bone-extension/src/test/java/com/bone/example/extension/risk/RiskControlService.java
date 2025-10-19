@@ -1,20 +1,26 @@
 package com.bone.example.extension.risk;
 
 import com.bone.engine.extension.BizContext;
+import com.bone.engine.extension.ExtensionContextManager;
+import com.bone.engine.extension.ExtensionScope;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * 风控服务
  * 负责协调多个风控规则的执行，聚合风险评估结果，生成最终决策
  */
 @Slf4j
+@Service
 public class RiskControlService {
     
     // 常量定义
-    private static final String RISK_CONTROL_LOG_PREFIX = "Risk control";
+    private static final String RISK_CONTROL_LOG_PREFIX = "[RISK]";
     
     @Autowired
     private RiskControlExtPoint riskControlExtPoint;
@@ -26,35 +32,55 @@ public class RiskControlService {
      * @return 风险评估结果
      */
     public RiskAssessmentResult evaluateRisk(TransactionRequest request, String tenantCode) {
+        String transactionId = request.getTransactionId();
+        String userId = request.getUserId();
+        
         log.info("{}: Starting risk evaluation for transaction: {}, user: {}", 
-                 RISK_CONTROL_LOG_PREFIX, request.getTransactionId(), request.getUserId());
+                 RISK_CONTROL_LOG_PREFIX, transactionId, userId);
         
-        // 创建业务上下文
-        BizContext<TransactionRequest> context = BizContext.create();
-        context.setData(request);
-        context.setBizCode(tenantCode);
-        
-        // 执行风控规则
-        List<RiskAssessmentResult> ruleResults = new ArrayList<>();
-        
-        // 调用风控扩展点执行风控评估
-        RiskAssessmentResult result = riskControlExtPoint.assessRisk(context);
-        ruleResults.add(result);
-        log.info("{} rule executed: {}, result: {}", 
-                 RISK_CONTROL_LOG_PREFIX, 
-                 riskControlExtPoint.getClass().getSimpleName(), 
-                 result.getDecision());
+        // 使用ExtensionContextManager创建上下文，支持try-with-resources模式
+        try (ExtensionScope scope = ExtensionContextManager.withTenant(tenantCode)
+                .withAttribute("transactionId", transactionId)
+                .withAttribute("userId", userId)) {
             
-        // 聚合风控结果
-        RiskAssessmentResult finalResult = aggregateRiskResults(ruleResults);
-        
-        // 记录风控决策日志
-        logRiskDecision(request, finalResult);
-        
-        log.info("{} evaluation completed for transaction: {}, final decision: {}",
-                 RISK_CONTROL_LOG_PREFIX, request.getTransactionId(), finalResult.getDecision());
-        
-        return finalResult;
+            // 创建业务上下文
+            BizContext<TransactionRequest> context = ExtensionContextManager.fromData(request);
+            
+            // 使用Stream API收集风控规则结果
+            List<RiskAssessmentResult> ruleResults = List.of(
+                riskControlExtPoint.assessRisk(context)
+            );
+            
+            // 记录规则执行结果
+            ruleResults.forEach(result -> 
+                log.info("{} rule executed: {}, result: {}", 
+                         RISK_CONTROL_LOG_PREFIX, 
+                         riskControlExtPoint.getClass().getSimpleName(), 
+                         result.getDecision())
+            );
+            
+            // 聚合风控结果
+            RiskAssessmentResult finalResult = aggregateRiskResults(ruleResults);
+            
+            // 记录风控决策日志
+            logRiskDecision(request, finalResult);
+            
+            log.info("{} evaluation completed for transaction: {}, final decision: {}",
+                     RISK_CONTROL_LOG_PREFIX, transactionId, finalResult.getDecision());
+            
+            return finalResult;
+        } catch (Exception e) {
+            log.error("{} Error during risk evaluation for transaction: {}, user: {}", 
+                     RISK_CONTROL_LOG_PREFIX, transactionId, userId, e);
+            
+            // 异常情况下返回默认的高风险结果
+            return RiskAssessmentResult.builder()
+                    .riskLevel(RiskAssessmentResult.RiskLevel.HIGH)
+                    .riskScore(100)
+                    .decision("REJECT")
+                    .riskFactors(new ArrayList<>() {{ add(new RiskAssessmentResult.RiskFactor("SYSTEM_ERROR", "Risk assessment failed", 100, "System error during risk assessment")); }} )
+                    .build();
+        }
     }
     
     /**
@@ -70,35 +96,25 @@ public class RiskControlService {
                 .build();
         }
         
-        // 1. 计算总分（各规则分数之和）
-        int totalScore = 0;
-        for (RiskAssessmentResult result : results) {
-            totalScore += result.getRiskScore();
-        }
+        // 1. 使用Stream API计算总分
+        int totalScore = results.stream()
+                .mapToInt(RiskAssessmentResult::getRiskScore)
+                .sum();
         
-        // 2. 合并所有风险因子
-        List<RiskAssessmentResult.RiskFactor> allFactors = new ArrayList<>();
-        for (RiskAssessmentResult result : results) {
-            allFactors.addAll(result.getRiskFactors());
-        }
+        // 2. 使用Stream API合并所有风险因子
+        List<RiskAssessmentResult.RiskFactor> allFactors = results.stream()
+                .flatMap(result -> result.getRiskFactors().stream())
+                .collect(Collectors.toList());
         
-        // 3. 确定最高风险等级
-        RiskAssessmentResult.RiskLevel maxRiskLevel = RiskAssessmentResult.RiskLevel.LOW;
-        for (RiskAssessmentResult result : results) {
-            if (result.getRiskLevel().compareTo(maxRiskLevel) > 0) {
-                maxRiskLevel = result.getRiskLevel();
-            }
-        }
+        // 3. 使用Stream API确定最高风险等级
+        RiskAssessmentResult.RiskLevel maxRiskLevel = results.stream()
+                .map(RiskAssessmentResult::getRiskLevel)
+                .max(Comparator.naturalOrder())
+                .orElse(RiskAssessmentResult.RiskLevel.LOW);
         
-        // 4. 确定最终决策
-        // 只要有一个规则判定为高风险，就拒绝
-        boolean hasHighRisk = false;
-        for (RiskAssessmentResult result : results) {
-            if (result.getRiskLevel() == RiskAssessmentResult.RiskLevel.HIGH) {
-                hasHighRisk = true;
-                break;
-            }
-        }
+        // 4. 使用Stream API检查是否有高风险规则
+        boolean hasHighRisk = results.stream()
+                .anyMatch(result -> result.getRiskLevel() == RiskAssessmentResult.RiskLevel.HIGH);
         
         String finalDecision;
         String rejectReason;
@@ -126,56 +142,61 @@ public class RiskControlService {
      * 根据总分和最高风险等级确定最终决策
      */
     private String determineFinalDecision(int totalScore, RiskAssessmentResult.RiskLevel maxRiskLevel) {
-        // 规则：
-        // - 总分 >= 80：拒绝
-        // - 总分 >= 50 或 最高等级为中风险：人工审核
-        // - 其他：通过
+        // 使用更简洁的条件语句
         if (totalScore >= 80) {
             return "REJECT";
-        } else if (totalScore >= 50 || maxRiskLevel == RiskAssessmentResult.RiskLevel.MEDIUM) {
-            return "REVIEW";
-        } else {
-            return "ACCEPT";
         }
+        return (totalScore >= 50 || maxRiskLevel == RiskAssessmentResult.RiskLevel.MEDIUM) ? "REVIEW" : "ACCEPT";
     }
     
     /**
      * 记录风控决策日志
      */
     private void logRiskDecision(TransactionRequest request, RiskAssessmentResult result) {
-        // 构建日志内容
-        StringBuilder logBuilder = new StringBuilder();
-        logBuilder.append("Risk control decision: ")
-                .append("transactionId=").append(request.getTransactionId())
-                .append(", userId=").append(request.getUserId())
-                .append(", decision=").append(result.getDecision())
-                .append(", riskLevel=").append(result.getRiskLevel())
-                .append(", totalScore=").append(result.getRiskScore());
+        // 使用结构化日志代替字符串拼接
+        log.info("{0} Risk control decision: transactionId={1}, userId={2}, decision={3}, riskLevel={4}, totalScore={5}",
+                RISK_CONTROL_LOG_PREFIX,
+                request.getTransactionId(),
+                request.getUserId(),
+                result.getDecision(),
+                result.getRiskLevel(),
+                result.getRiskScore());
         
         // 添加风险因子信息
         if (!result.getRiskFactors().isEmpty()) {
-            logBuilder.append(", riskFactors=[");
-            StringBuilder factorsBuilder = new StringBuilder();
-            for (int i = 0; i < result.getRiskFactors().size(); i++) {
-                RiskAssessmentResult.RiskFactor factor = result.getRiskFactors().get(i);
-                factorsBuilder.append(factor.getFactorName()).append("(").append(factor.getRiskContribution()).append(")");
-                if (i < result.getRiskFactors().size() - 1) {
-                    factorsBuilder.append(", ");
-                }
-            }
-            logBuilder.append(factorsBuilder).append("]");
+            // 使用lambda表达式简化风险因子的处理
+            String factors = result.getRiskFactors().stream()
+                    .map(RiskAssessmentResult.RiskFactor::getFactorName)
+                    .collect(Collectors.joining(", "));
+            
+            log.info("{0} Risk factors for transaction {1}: [{2}]", 
+                    RISK_CONTROL_LOG_PREFIX, 
+                    request.getTransactionId(), 
+                    factors);
         }
         
         // 根据决策类型输出不同级别的日志
         switch (result.getDecision()) {
             case "REJECT":
-                log.warn(logBuilder.toString());
+                log.warn("{0} Transaction {1} rejected - User: {2}, Score: {3}", 
+                        RISK_CONTROL_LOG_PREFIX, 
+                        request.getTransactionId(), 
+                        request.getUserId(), 
+                        result.getRiskScore());
                 break;
             case "REVIEW":
-                log.info(logBuilder.toString());
+                log.info("{0} Transaction {1} requires review - User: {2}, Score: {3}", 
+                        RISK_CONTROL_LOG_PREFIX, 
+                        request.getTransactionId(), 
+                        request.getUserId(), 
+                        result.getRiskScore());
                 break;
             case "ACCEPT":
-                log.debug(logBuilder.toString());
+                log.debug("{0} Transaction {1} accepted - User: {2}, Score: {3}", 
+                        RISK_CONTROL_LOG_PREFIX, 
+                        request.getTransactionId(), 
+                        request.getUserId(), 
+                        result.getRiskScore());
                 break;
         }
         

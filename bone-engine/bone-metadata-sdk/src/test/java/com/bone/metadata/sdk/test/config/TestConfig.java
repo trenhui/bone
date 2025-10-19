@@ -5,6 +5,7 @@ import com.bone.metadata.sdk.support.config.*;
 import feign.RequestInterceptor;
 import org.mockito.Mockito;
 import org.redisson.api.RAtomicLong;
+import com.bone.metadata.sdk.sql.dialect.H2ColumnAllocationDialect;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,7 @@ import org.springframework.cloud.openfeign.FeignAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Primary;
 import org.springframework.core.env.Environment;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
@@ -42,7 +44,18 @@ import static org.mockito.ArgumentMatchers.*;
         InterceptorAutoConfiguration.class,
         FeignAutoConfiguration.class
 })
-@ComponentScan("com.bone.metadata.sdk")
+// 简化ComponentScan配置，确保排除所有可能的TestConfig冲突
+@ComponentScan(
+    // 精确指定需要扫描的核心包
+    basePackages = {
+        "com.bone.metadata.sdk.extension",
+        "com.bone.metadata.sdk.support.config",
+        "com.bone.metadata.sdk.test.repository",
+        "com.bone.metadata.sdk.test.service"
+    },
+    // 使用正则表达式过滤器排除特定的TestConfig类
+    excludeFilters = @ComponentScan.Filter(type = FilterType.REGEX, pattern = ".*TestConfig$")
+)
 @EnableSqlRepositories(basePackages = "com.bone.metadata.sdk.test.repository.proxy")
 @EnableFeignClients("com.bone.metadata.sdk.metadata.client")
 @EnableConfigurationProperties(MetadataSdkProperties.class)
@@ -55,11 +68,11 @@ public class TestConfig {
 //    public MetaPermissionService metaPermissionService() {
 //        return new DefaultMetaPermissionService();
 //    }
-//    @Bean
-//    @Primary
-//    public H2ColumnAllocationDialect h2ColumnAllocationDialect() {
-//        return new H2ColumnAllocationDialect();
-//    }
+    @Bean
+    @Primary
+    public H2ColumnAllocationDialect h2ColumnAllocationDialect() {
+        return new H2ColumnAllocationDialect();
+    }
 
 
     @Bean

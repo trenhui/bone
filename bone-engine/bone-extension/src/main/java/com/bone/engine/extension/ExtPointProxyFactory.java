@@ -2,7 +2,6 @@ package com.bone.engine.extension;
 
 import com.bone.engine.extension.invoker.ExtPointInvocationHandler;
 import com.bone.engine.extension.repository.ExtPointRepository;
-import com.bone.engine.extension.route.DefaultExtPointRouter;
 import com.bone.engine.extension.route.ExtPointRouter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -112,8 +111,8 @@ public class ExtPointProxyFactory implements InvocationHandler {
      * @return 业务上下文对象
      */
     private BizContext<?> getCurrentContext() {
-        // 使用新的BizContexts类获取上下文
-        BizContext<?> context = BizContexts.getCurrent();
+        // 使用BizContextService获取上下文
+        BizContext<?> context = ExtensionContextManager.getCurrent();
         if (context == null) {
             // 如果上下文为空，创建默认上下文并记录警告
             log.warn("No business context found, using default context");

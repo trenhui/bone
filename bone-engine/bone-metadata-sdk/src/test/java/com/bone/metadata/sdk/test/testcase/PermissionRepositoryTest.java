@@ -7,19 +7,17 @@ import com.bone.core.model.SortingField;
 import com.bone.core.tenant.context.TenantContext;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
-import com.bone.metadata.sdk.test.config.TestConfig;
 import com.bone.metadata.sdk.test.domain.DataPermission;
 import com.bone.metadata.sdk.test.domain.Permission;
 import com.bone.metadata.sdk.test.repository.impl.PermissionRepository;
 import com.bone.metadata.sdk.test.utils.TestDataHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -28,9 +26,8 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest(classes = TestConfig.class)
-@ActiveProfiles("test")
 @ExtendWith(SpringExtension.class)
+@SpringBootTest(classes = com.bone.metadata.sdk.test.config.SimpleTestConfig.class)
 public class PermissionRepositoryTest {
 
     private final NamedParameterJdbcOperations jdbc;
@@ -40,6 +37,14 @@ public class PermissionRepositoryTest {
     public PermissionRepositoryTest(NamedParameterJdbcOperations jdbc, PermissionRepository permissionRepository) {
         this.jdbc = jdbc;
         this.permissionRepository = permissionRepository;
+    }
+
+    @BeforeEach
+    void setUp() throws InterruptedException {
+        TenantContext.setTenantId(100L);
+        // Clear and set up test data before each test
+        jdbc.getJdbcOperations().execute("DELETE FROM sys_permission");
+        TestDataHelper.setUpPermissionTestData(jdbc);
     }
 
     @BeforeEach

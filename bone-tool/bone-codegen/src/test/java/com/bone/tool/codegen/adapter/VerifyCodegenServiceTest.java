@@ -1,6 +1,8 @@
 package com.bone.tool.codegen.adapter;
 
 import com.bone.tool.codegen.domain.service.CodegenService;
+import com.bone.tool.codegen.application.dto.CodegenTableRequest;
+import com.bone.tool.codegen.application.dto.CodegenTablePageRequest;
 
 /**
  * 简单验证测试，确保CodegenService能够正常实例化和运行
@@ -28,11 +30,16 @@ public class VerifyCodegenServiceTest {
             System.out.println("✅ deleteTable调用成功");
             
             // 测试updateCodegenTable方法
-            service.updateCodegenTable(new Object());
+            CodegenTableRequest tableRequest = new CodegenTableRequest();
+            tableRequest.setTableName("test_table");
+            service.updateCodegenTable(tableRequest);
             System.out.println("✅ updateCodegenTable调用成功");
             
             // 测试getCodegenTablePageResponse方法
-            Object pageResponse = service.getCodegenTablePageResponse(new Object());
+            CodegenTablePageRequest pageRequest = new CodegenTablePageRequest();
+            pageRequest.setPageNum(1);
+            pageRequest.setPageSize(10);
+            Object pageResponse = service.getCodegenTablePageResponse(pageRequest);
             System.out.println("✅ getCodegenTablePageResponse调用成功，返回值: " + pageResponse);
             
             System.out.println("\n🎉 所有测试通过！CodegenService功能验证完成。");

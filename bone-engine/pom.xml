@@ -15,7 +15,7 @@
         <module>bone-smartmeta</module>
         <module>bone-integration</module>
         <module>bone-workflow</module>
-        <module>bone-procurement</module>
+<!--        <module>bone-procurement</module>-->
     </modules>
     <artifactId>bone-engine</artifactId>
     <packaging>pom</packaging>
