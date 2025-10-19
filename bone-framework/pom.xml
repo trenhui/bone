@@ -13,6 +13,7 @@
         <module>bone-utils</module>
         <module>bone-datasource</module>
         <module>bone-security</module>
+        <module>bone-web</module>
     </modules>
     <artifactId>bone-framework</artifactId>
     <packaging>pom</packaging>

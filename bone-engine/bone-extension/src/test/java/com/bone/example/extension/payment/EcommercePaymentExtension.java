@@ -16,10 +16,25 @@ import java.util.Map;
 @Slf4j
 public class EcommercePaymentExtension implements PaymentExtPoint {
     
-    // 为了演示，这里模拟服务依赖
-    private final CouponService couponService = new CouponService();
-    private final PointsService pointsService = new PointsService();
-    private final PaymentLogService logService = new PaymentLogService();
+    // 常量定义
+    private static final String CURRENCY_CNY = "CNY";
+    private static final String COUPON_DISCOUNT_KEY = "COUPON_DISCOUNT";
+    private static final String POINTS_DEDUCTION_KEY = "POINTS_DEDUCTION";
+    private static final String DEFAULT_COUPON_DISCOUNT = "10.00";
+    private static final String POINTS_VALUE_RATE = "0.01";
+    
+    // 错误码常量
+    private static final String INVALID_REQUEST_CODE = "INVALID_REQUEST";
+    private static final String INVALID_REQUEST_MSG = "支付请求参数不完整";
+    private static final String INVALID_ORDER_CODE = "INVALID_ORDER";
+    private static final String INVALID_ORDER_MSG = "订单无效或已被处理";
+    private static final String VALIDATION_ERROR_CODE = "VALIDATION_ERROR";
+    private static final String VALIDATION_ERROR_MSG = "支付验证过程中出现异常";
+    
+    // 使用内部类实现服务
+    private CouponService couponService = new CouponService();
+    private PointsService pointsService = new PointsService();
+    private PaymentLogService logService = new PaymentLogService();
     
     @Override
     public ValidationResult prePayValidate(BizContext<PaymentRequest> context) {
@@ -28,16 +43,16 @@ public class EcommercePaymentExtension implements PaymentExtPoint {
             
             // 参数验证
             if (request == null || request.getOrderId() == null) {
-                return ValidationResult.fail("INVALID_REQUEST", "支付请求参数不完整");
+                return ValidationResult.fail(INVALID_REQUEST_CODE, INVALID_REQUEST_MSG);
             }
             
             // 业务验证
             if (!isOrderValid(request.getOrderId(), context.getTenantCode())) {
-                return ValidationResult.fail("INVALID_ORDER", "订单无效或已被处理");
+                return ValidationResult.fail(INVALID_ORDER_CODE, INVALID_ORDER_MSG);
             }
             
             // 优惠券验证
-            if (request.getCouponId() != null) {
+            if (request.getCouponId() != null && !request.getCouponId().isEmpty()) {
                 ValidationResult couponValidation = couponService.validateCoupon(
                     request.getCouponId(), request.getUserId(), request.getAmount());
                 if (!couponValidation.isSuccess()) {
@@ -49,7 +64,7 @@ public class EcommercePaymentExtension implements PaymentExtPoint {
             return ValidationResult.success();
         } catch (Exception e) {
             log.error("Payment validation failed for tenant: {}", context.getTenantCode(), e);
-            return ValidationResult.fail("VALIDATION_ERROR", "支付验证过程中出现异常");
+            return ValidationResult.fail(VALIDATION_ERROR_CODE, VALIDATION_ERROR_MSG);
         }
     }
     
@@ -61,18 +76,18 @@ public class EcommercePaymentExtension implements PaymentExtPoint {
         Map<String, BigDecimal> deductionDetails = new HashMap<>();
         
         // 优惠券计算
-        if (request.getCouponId() != null) {
+        if (request.getCouponId() != null && !request.getCouponId().isEmpty()) {
             BigDecimal couponDiscount = couponService.calculateDiscount(
                 request.getCouponId(), baseAmount);
             finalAmount = finalAmount.subtract(couponDiscount);
-            deductionDetails.put("COUPON_DISCOUNT", couponDiscount);
+            deductionDetails.put(COUPON_DISCOUNT_KEY, couponDiscount);
         }
         
-        // 积分抵扣
+        // 3. 应用积分抵扣
         if (request.getPointsToDeduct() > 0) {
             BigDecimal pointsValue = pointsService.calculatePointsValue(request.getPointsToDeduct());
             finalAmount = finalAmount.subtract(pointsValue);
-            deductionDetails.put("POINTS_DEDUCTION", pointsValue);
+            deductionDetails.put(POINTS_DEDUCTION_KEY, pointsValue);
         }
         
         // 确保最终金额不为负数
@@ -82,7 +97,7 @@ public class EcommercePaymentExtension implements PaymentExtPoint {
             .originalAmount(baseAmount)
             .finalAmount(finalAmount)
             .deductionDetails(deductionDetails)
-            .currency("CNY")
+            .currency(CURRENCY_CNY)
             .build();
     }
     
@@ -113,7 +128,7 @@ public class EcommercePaymentExtension implements PaymentExtPoint {
         log.info("Sending payment notification for transaction: {}", result.getTransactionId());
     }
     
-    // 模拟服务类
+    // 内部服务实现类
     static class CouponService {
         public ValidationResult validateCoupon(String couponId, String userId, BigDecimal amount) {
             // 模拟优惠券验证
@@ -122,14 +137,14 @@ public class EcommercePaymentExtension implements PaymentExtPoint {
         
         public BigDecimal calculateDiscount(String couponId, BigDecimal amount) {
             // 模拟计算折扣
-            return new BigDecimal("10.00");
+            return new BigDecimal(DEFAULT_COUPON_DISCOUNT);
         }
     }
     
     static class PointsService {
         public BigDecimal calculatePointsValue(int points) {
             // 模拟积分价值计算
-            return new BigDecimal(points).multiply(new BigDecimal("0.01"));
+            return new BigDecimal(points).multiply(new BigDecimal(POINTS_VALUE_RATE));
         }
     }
     

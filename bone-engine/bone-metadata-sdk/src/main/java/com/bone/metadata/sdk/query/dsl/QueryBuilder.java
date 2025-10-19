@@ -23,9 +23,11 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.bone.metadata.sdk.query.dsl.JoinType;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 
 
 
@@ -121,15 +123,7 @@ public class QueryBuilder {
     // 手动添加log变量声明，确保编译时可用
     private static final Logger log = LoggerFactory.getLogger(QueryBuilder.class);
 
-    /**
-     * 连接类型枚举
-     */
-    public enum JoinType {
-        INNER,
-        LEFT,
-        RIGHT,
-        FULL
-    }
+
     
     // 用于生成唯一参数名的原子计数器
     private static final AtomicInteger PARAM_COUNTER = new AtomicInteger(0);
@@ -196,12 +190,7 @@ public class QueryBuilder {
      * 查询上下文，用于存储查询构建过程中的所有信息
      * @param <T> 实体类型
      */
-    /**
-     * 表连接类型枚举
-     */
-    private enum JoinType {
-        INNER, LEFT, RIGHT, FULL
-    }
+
     
     /**
      * 表连接信息
@@ -473,11 +462,9 @@ public class QueryBuilder {
         // 传递join信息
         if (context.getJoinInfos() != null && !context.getJoinInfos().isEmpty()) {
             for (QueryBuilder.JoinInfo<?> joinInfo : context.getJoinInfos()) {
-                // 获取转换后的连接类型字符串
-                String joinTypeStr = convertJoinType(joinInfo.getJoinType());
                 // 将JoinInfo信息添加到Criteria中
                 criteria.addJoinInfo(joinInfo.getJoinEntityClass(), 
-                                    joinTypeStr, 
+                                    joinInfo.getJoinType(), 
                                     joinInfo.getJoinCondition(), 
                                     joinInfo.getJoinParameters());
             }
@@ -701,7 +688,7 @@ public class QueryBuilder {
         
         // 使用最简单的字符串处理方法，完全避免正则表达式转义问题
         String upperCondition = conditionSql.toUpperCase();
-        String result;
+        String result = conditionSql; // 默认为原始条件
         
         // 检查IS NULL条件
         if (upperCondition.contains(" IS NULL") && !upperCondition.startsWith("IS NULL")) {

@@ -20,12 +20,15 @@ import java.util.concurrent.ConcurrentHashMap;
  * 扩展字段协调器，负责策略分发、缓存、事件发布和监控。
  */
 @Service
-@RequiredArgsConstructor
 public class ExtensionCoordinator {
     private static final Logger log = LoggerFactory.getLogger(ExtensionCoordinator.class);
     private final ApplicationContext context;
     private final Map<ExtensionMode, ExtensionStorageHandler> handlers = new ConcurrentHashMap<>();
     private final ExtensionMode defaultMode = ExtensionMode.RESERVED_COLUMNS;
+    
+    public ExtensionCoordinator(ApplicationContext context) {
+        this.context = context;
+    }
 
     public void fallbackToJson(ExtensionContext context) {
         getHandler(ExtensionMode.JSON).save(context);

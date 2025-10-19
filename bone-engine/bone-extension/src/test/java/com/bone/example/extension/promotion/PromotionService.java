@@ -3,9 +3,6 @@ package com.bone.example.extension.promotion;
 import com.bone.engine.extension.BizContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -14,6 +11,10 @@ import java.util.UUID;
  */
 @Slf4j
 public class PromotionService {
+    
+    // 常量定义
+    private static final String TRANSACTION_PREFIX = "TXN";
+    private static final int TRANSACTION_ID_LENGTH = 16;
     
     @Autowired
     private PromotionExtPoint promotionExtPoint;
@@ -27,10 +28,26 @@ public class PromotionService {
     public PromotionResult calculatePromotion(PromotionRequest request, String tenantCode) {
         // 创建业务上下文
         BizContext<PromotionRequest> context = createContext(request);
-        context.setTenantCode(tenantCode);
+        context.setBizCode(tenantCode);
+       // 记录请求日志
+        log.info("Calculating promotions for user: {}", request.getUserId());
         
         // 通过扩展点计算促销
-        return promotionExtPoint.calculatePromotion(context);
+        PromotionResult result = promotionExtPoint.calculatePromotion(context);
+        
+        // 结果不需要设置交易ID（该方法不存在）
+        if (result == null) {
+            result = new PromotionResult();
+        }
+        
+        return result;
+    }
+    
+    /**
+     * 生成交易ID
+     */
+    private String generateTransactionId() {
+        return TRANSACTION_PREFIX + UUID.randomUUID().toString().replaceAll("-", "").substring(0, TRANSACTION_ID_LENGTH);
     }
     
     /**
@@ -40,12 +57,5 @@ public class PromotionService {
         BizContext<PromotionRequest> context = BizContext.create();
         context.setData(request);
         return context;
-    }
-    
-    /**
-     * 生成交易ID
-     */
-    private String generateTransactionId() {
-        return "TXN" + UUID.randomUUID().toString().replaceAll("-", "").substring(0, 16);
     }
 }

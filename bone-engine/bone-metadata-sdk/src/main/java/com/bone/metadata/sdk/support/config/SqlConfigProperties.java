@@ -208,17 +208,8 @@ public class SqlConfigProperties {
         @Min(value = 100, message = "AST cache size must be at least 100")
         private int astCacheSize = 2000;
         
-        /**
-         * 缓存过期时间（小时）。
-         */
-        private int expireHours = 24;
-        
         public int getSpelCacheSize() {
             return expressionCacheSize;
-        }
-        
-        public int getExpireHours() {
-            return expireHours;
         }
         
         public int getAstCacheSize() {
@@ -236,6 +227,10 @@ public class SqlConfigProperties {
          */
         @Min(value = 1, message = "Cache expiry time cannot be less than 1 hour")
         private int expireHours = 24;
+        
+        public int getExpireHours() {
+            return expireHours;
+        }
     }
 
     @Data

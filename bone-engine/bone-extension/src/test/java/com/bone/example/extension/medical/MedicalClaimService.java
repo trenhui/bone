@@ -1,6 +1,7 @@
 package com.bone.example.extension.medical;
 
 import com.bone.engine.extension.BizContext;
+import com.bone.engine.extension.BizContexts;
 import com.bone.example.extension.result.ValidationResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,13 @@ import java.util.function.Supplier;
 @Slf4j
 public class MedicalClaimService {
     
+    // 常量定义
+    private static final String CLAIM_PREFIX = "CLM";
+    private static final String REQUEST_PREFIX = "REQ";
+    private static final String DEFAULT_BIZ_CODE = "DEFAULT";
+    private static final String SYSTEM_PROCESSOR = "SYSTEM";
+    private static final String PAYMENT_STATUS_NONE = "NONE";
+    
     @Autowired
     private MedicalClaimExtPoint medicalClaimExtPoint;
     
@@ -33,24 +41,29 @@ public class MedicalClaimService {
      * @return 医疗保险理赔结果
      */
     public MedicalClaimResult processClaim(MedicalClaimRequest request) {
-        // 创建业务上下文
+        // 直接创建业务上下文，不使用try-with-resources模式
         BizContext<MedicalClaimRequest> context = createContext(request);
         
-        // 1. 验证理赔请求
-        ValidationResult validationResult = medicalClaimExtPoint.validateClaim(context);
-        if (!validationResult.isSuccess()) {
-            log.warn("Claim validation failed: {}, reason: {}", validationResult.getErrorCode(), validationResult.getErrorMessage());
-            return buildRejectedResult(request, validationResult.getErrorCode(), validationResult.getErrorMessage());
+        try {
+            // 1. 验证理赔请求
+            ValidationResult validationResult = medicalClaimExtPoint.validateClaim(context);
+            if (!validationResult.isSuccess()) {
+                log.warn("Claim validation failed: {}, reason: {}", validationResult.getErrorCode(), validationResult.getErrorMessage());
+                return buildRejectedResult(request, validationResult.getErrorCode(), validationResult.getErrorMessage());
+            }
+            
+            // 2. 处理理赔请求
+            log.info("Processing claim for user: {}, type: {}", request.getUserId(), request.getClaimType());
+            MedicalClaimResult result = medicalClaimExtPoint.processClaim(context);
+            
+            // 3. 记录处理结果
+            log.info("Claim processed successfully: {}, status: {}", result.getClaimId(), result.getStatus());
+            
+            return result;
+        } catch (Exception e) {
+            log.error("Error processing medical claim for user: {}", request.getUserId(), e);
+            return buildErrorResult(request, "处理过程中发生错误: " + e.getMessage());
         }
-        
-        // 2. 处理理赔请求
-        log.info("Processing claim for user: {}, type: {}", request.getUserId(), request.getClaimType());
-        MedicalClaimResult result = medicalClaimExtPoint.processClaim(context);
-        
-        // 3. 记录处理结果
-        log.info("Claim processed successfully: {}, status: {}", result.getClaimId(), result.getStatus());
-        
-        return result;
     }
     
     /**
@@ -61,14 +74,12 @@ public class MedicalClaimService {
      * @return 验证结果
      */
     public ValidationResult validateClaim(MedicalClaimRequest request) {
-        // 创建业务上下文
+        // 直接创建业务上下文，不使用try-with-resources模式
         BizContext<MedicalClaimRequest> context = createContext(request);
         
         // 执行验证
         return medicalClaimExtPoint.validateClaim(context);
     }
-    
-  
     
     /**
      * 构建被拒绝的理赔结果
@@ -83,8 +94,8 @@ public class MedicalClaimService {
             .itemResults(new ArrayList<>())
             .rejectionReason(errorMessage)
             .processingDate(new Date())
-            .processorId("SYSTEM")
-            .paymentStatus("NONE")
+            .processorId(SYSTEM_PROCESSOR)
+            .paymentStatus(PAYMENT_STATUS_NONE)
             .remarks("理赔验证失败，错误代码：" + errorCode)
             .build();
     }
@@ -102,8 +113,8 @@ public class MedicalClaimService {
             .itemResults(new ArrayList<>())
             .rejectionReason("系统错误：" + errorMessage)
             .processingDate(new Date())
-            .processorId("SYSTEM")
-            .paymentStatus("NONE")
+            .processorId(SYSTEM_PROCESSOR)
+            .paymentStatus(PAYMENT_STATUS_NONE)
             .remarks("处理过程中发生系统错误")
             .build();
     }
@@ -112,23 +123,24 @@ public class MedicalClaimService {
      * 生成理赔ID
      */
     private String generateClaimId() {
-        return "CLM" + System.currentTimeMillis();
+        return CLAIM_PREFIX + System.currentTimeMillis();
     }
     
     /**
      * 生成请求ID
      */
     private String generateRequestId() {
-        return "REQ" + System.currentTimeMillis();
+        return REQUEST_PREFIX + System.currentTimeMillis();
     }
     
-   /**
+    /**
      * 创建业务上下文
      */
     private BizContext<MedicalClaimRequest> createContext(MedicalClaimRequest request) {
+        String bizCode = request.getClaimType() != null ? request.getClaimType().name() : DEFAULT_BIZ_CODE;
         BizContext<MedicalClaimRequest> context = BizContext.create();
         context.setData(request);
-        context.setBizCode(request.getClaimType() != null ? request.getClaimType().name() : "DEFAULT");
+        context.setBizCode(bizCode);
         return context;
     }
     
