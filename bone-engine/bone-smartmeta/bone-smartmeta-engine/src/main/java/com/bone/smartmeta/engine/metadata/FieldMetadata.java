@@ -98,6 +98,32 @@ public class FieldMetadata {
     private Boolean aiAutoFillEnabled;
     
     // AI提示模板
+    
+    // 计算字段相关属性
+    private boolean calculated;
+    private String expression;
+    
+    /**
+     * 设置是否为计算字段
+     */
+    public void setCalculated(boolean calculated) {
+        this.calculated = calculated;
+    }
+    
+    /**
+     * 设置表达式
+     */
+    public void setExpression(String expression) {
+        this.expression = expression;
+    }
+    
+    /**
+     * 设置字段类型（字符串形式）
+     */
+    public void setFieldType(String fieldType) {
+        // 简化实现，将字符串转换为FieldType枚举
+        this.type = FieldType.valueOf(fieldType);
+    }
     private String aiPrompt;
     
     // 数据敏感度级别

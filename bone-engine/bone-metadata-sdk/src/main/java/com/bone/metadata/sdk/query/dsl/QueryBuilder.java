@@ -15,12 +15,14 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Logger;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -116,6 +118,8 @@ class NonUniqueResultException extends RuntimeException {
  */
 @Slf4j
 public class QueryBuilder {
+    // 手动添加log变量声明，确保编译时可用
+    private static final Logger log = LoggerFactory.getLogger(QueryBuilder.class);
 
     /**
      * 连接类型枚举
@@ -170,7 +174,7 @@ public class QueryBuilder {
             buildQueryMethod.setAccessible(true);
             
             // 调用buildQuery方法获取生成的SQL
-            CompiledQuery compiledQuery = (CompiledQuery) buildQueryMethod.invoke(queryBuilder.new ConditionClauseImpl(queryBuilder));
+            CompiledQuery compiledQuery = (CompiledQuery) buildQueryMethod.invoke(queryBuilder);
             return compiledQuery.getSql();
         } catch (Exception e) {
             e.printStackTrace();
@@ -209,6 +213,23 @@ public class QueryBuilder {
         private final JoinType joinType;
         private final String joinCondition;
         private final Map<String, Object> joinParameters;
+        
+        // 显式添加getter方法以确保编译器能找到
+        public String getJoinCondition() {
+            return joinCondition;
+        }
+        
+        public Map<String, Object> getJoinParameters() {
+            return joinParameters;
+        }
+        
+        public JoinType getJoinType() {
+            return joinType;
+        }
+        
+        public Class<J> getJoinEntityClass() {
+            return joinEntityClass;
+        }
         
         public JoinInfo(Class<J> joinEntityClass, JoinType joinType, String joinCondition, Map<String, Object> joinParameters) {
             this.joinEntityClass = joinEntityClass;
@@ -562,6 +583,7 @@ public class QueryBuilder {
      * @param <T> 实体类型
      */
     private static class EntitySqlBuilderImpl<T> implements EntitySqlBuilder<T> {
+        private static final Logger log = LoggerFactory.getLogger(EntitySqlBuilderImpl.class);
         private final QueryContext<T> context;
 
         public EntitySqlBuilderImpl(Class<T> entityClass) {
@@ -765,15 +787,13 @@ public class QueryBuilder {
                 }
                 
                 String finalSql = sql.toString();
-                // 使用Java标准日志记录器替代log.debug
-                Logger.getLogger(getClass().getName()).fine(String.format("Generated COUNT SQL: %s", finalSql));
-                Logger.getLogger(getClass().getName()).fine(String.format("SQL Parameters: %s", context.getParameters()));
+                log.debug("Generated COUNT SQL: {}", finalSql);
+                log.debug("SQL Parameters: {}", context.getParameters());
                 
                 // 使用双参数构造器创建CompiledQuery对象
                 return new CompiledQuery(finalSql, context.getParameters());
             } catch (Exception e) {
-                // 使用Java标准日志记录器替代log.error
-                Logger.getLogger(getClass().getName()).severe(String.format("Failed to build count query SQL: %s", e.getMessage()));
+                log.error("Failed to build count query SQL: {}", e.getMessage(), e);
                 throw new QueryBuildException("Error building count SQL query", e);
             }
         }
@@ -782,10 +802,9 @@ public class QueryBuilder {
         public List<T> list() {
             try {
                 CompiledQuery query = buildQuery();
-                // 使用Java标准日志记录器替代log.debug
-                Logger.getLogger(getClass().getName()).fine(String.format("Executing list query: %s", query.getSql()));
+                log.debug("Executing list query: {}", query.getSql());
                 List<T> results = getSqlExecutor().executeQuery(query, context.getEntityClass());
-                Logger.getLogger(getClass().getName()).fine(String.format("List query returned %d results", results.size()));
+                log.debug("List query returned {} results", results.size());
                 return results;
             } catch (QueryBuildException e) {
                 // 直接抛出构建异常
@@ -805,20 +824,18 @@ public class QueryBuilder {
                     // 限制结果为2条以便检测多条结果
                     context.setLimit(2);
                     CompiledQuery query = buildQuery();
-                    // 使用Java标准日志记录器替代log.debug
-                    Logger.getLogger(getClass().getName()).fine(String.format("Executing single query: %s", query.getSql()));
+                    log.debug("Executing single query: {}", query.getSql());
                     List<T> results = getSqlExecutor().executeQuery(query, context.getEntityClass());
                     
                     if (results.isEmpty()) {
-                        Logger.getLogger(getClass().getName()).fine("Single query returned no results");
+                        log.debug("Single query returned no results");
                         return null;
                     } else if (results.size() > 1) {
                         throw new NonUniqueResultException("Expected single result, but found " + results.size(), 
                                                           query.getSql(), query.getParameters());
                     }
                     
-                    // 使用Java标准日志记录器替代log.debug
-                    Logger.getLogger(getClass().getName()).fine("Single query returned exactly one result");
+                    log.debug("Single query returned exactly one result");
                     return results.get(0);
                 } finally {
                     // 恢复原始的limit值
@@ -828,8 +845,7 @@ public class QueryBuilder {
                 // 直接抛出非唯一结果异常
                 throw e;
             } catch (Exception e) {
-                // 使用Java标准日志记录器替代log.error
-                Logger.getLogger(getClass().getName()).severe(String.format("Failed to execute single query: %s", e.getMessage()));
+                log.error("Failed to execute single query: {}", e.getMessage(), e);
                 throw new QueryExecutionException("Single query execution failed", e);
             }
         }
@@ -838,18 +854,16 @@ public class QueryBuilder {
         public long count() {
             try {
                 CompiledQuery query = buildCountQuery();
-                // 使用Java标准日志记录器替代log.debug
-                Logger.getLogger(getClass().getName()).fine(String.format("Executing count query: %s", query.getSql()));
+                log.debug("Executing count query: {}", query.getSql());
                 Long result = getSqlExecutor().queryForObject(query, Long.class);
                 long count = result != null ? result : 0;
-                Logger.getLogger(getClass().getName()).fine(String.format("Count query returned: %d", count));
+                log.debug("Count query returned: {}", count);
                 return count;
             } catch (QueryBuildException e) {
                 // 直接抛出构建异常
                 throw e;
             } catch (Exception e) {
-                // 使用Java标准日志记录器替代log.error
-                Logger.getLogger(getClass().getName()).severe(String.format("Failed to execute count query: %s", e.getMessage()));
+                log.error("Failed to execute count query: {}", e.getMessage(), e);
                 throw new QueryExecutionException("Count query execution failed", e);
             }
         }
@@ -880,7 +894,8 @@ public class QueryBuilder {
      * @param <T> 主实体类型
      * @param <J> 关联实体类型
      */
-    private static class JoinClauseImpl<T, J> implements JoinClause<T, J> {
+private static class JoinClauseImpl<T, J> implements JoinClause<T, J> {
+        private static final Logger log = LoggerFactory.getLogger(JoinClauseImpl.class);
         private final EntitySqlBuilderImpl<T> parent;
         private final Class<J> joinEntityClass;
         private final JoinType joinType;
@@ -930,8 +945,7 @@ public class QueryBuilder {
             try {
                 // 获取方法引用的toString()结果
                 String toString = fieldFunction.toString();
-                // 使用Java标准日志记录器替代log.debug
-                Logger.getLogger(getClass().getName()).fine(String.format("Extracting join field name from: %s", toString));
+                log.debug("Extracting join field name from: {}", toString);
                 
                 // 尝试匹配getter方法模式
                 Matcher matcher = METHOD_REFERENCE_PATTERN.matcher(toString);
@@ -957,8 +971,7 @@ public class QueryBuilder {
                 
                 throw new IllegalArgumentException("Cannot extract join field name from function: " + toString);
             } catch (Exception e) {
-                // 使用Java标准日志记录器替代log.error
-                Logger.getLogger(getClass().getName()).severe(String.format("Failed to extract join field name: %s", e.getMessage()));
+                log.error("Failed to extract join field name: {}", e.getMessage(), e);
                 throw new IllegalArgumentException("Failed to extract join field name", e);
             }
         }

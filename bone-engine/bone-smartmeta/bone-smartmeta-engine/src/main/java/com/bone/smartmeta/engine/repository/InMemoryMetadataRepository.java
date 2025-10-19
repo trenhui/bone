@@ -1,10 +1,9 @@
 package com.bone.smartmeta.engine.repository;
 
 import com.bone.smartmeta.engine.metadata.EntityMetadata;
+import com.bone.smartmeta.engine.metadata.OperationMetadata;
 import com.bone.smartmeta.engine.metadata.PackageDefinition;
 import com.bone.smartmeta.engine.metadata.WorkflowMetadata;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 
 import java.util.*;
@@ -16,9 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Repository
 public class InMemoryMetadataRepository implements MetadataRepository {
     
-    private static final Logger logger = LoggerFactory.getLogger(InMemoryMetadataRepository.class);
-    
     private final Map<String, EntityMetadata> entityMetadataMap = new ConcurrentHashMap<>();
+    private final Map<String, OperationMetadata> operationMetadataMap = new ConcurrentHashMap<>();
     
     @Override
     public EntityMetadata saveEntity(EntityMetadata entityMetadata) {
@@ -28,7 +26,7 @@ public class InMemoryMetadataRepository implements MetadataRepository {
         
         String apiName = "unknown";
         entityMetadataMap.put(apiName, entityMetadata);
-        logger.debug("保存实体元数据");
+        // 保存实体元数据
         return entityMetadata;
     }
     
@@ -39,7 +37,7 @@ public class InMemoryMetadataRepository implements MetadataRepository {
         }
         
         entityMetadatas.forEach(this::saveEntity);
-        logger.debug("批量保存实体元数据，数量: {}", entityMetadatas.size());
+        // 批量保存实体元数据
         return entityMetadatas.size();
     }
     
@@ -94,7 +92,7 @@ public class InMemoryMetadataRepository implements MetadataRepository {
     
     @Override
     public long countEntities() {
-        return 0;
+        return entityMetadataMap.size();
     }
     
     @Override
@@ -190,6 +188,49 @@ public class InMemoryMetadataRepository implements MetadataRepository {
     @Override
     public void clearCache() {
         entityMetadataMap.clear();
+        operationMetadataMap.clear();
+    }
+    
+    @Override
+    public boolean existsOperation(String operationName) {
+        return operationMetadataMap.containsKey(operationName);
+    }
+    
+    @Override
+    public OperationMetadata saveOperation(OperationMetadata operationMetadata) {
+        if (operationMetadata == null) {
+            throw new IllegalArgumentException("操作元数据不能为空");
+        }
+        
+        String key = operationMetadata.getName();
+        operationMetadataMap.put(key, operationMetadata);
+        // 保存操作元数据
+        return operationMetadata;
+    }
+    
+    @Override
+    public List<OperationMetadata> findAllOperations() {
+        return new ArrayList<>(operationMetadataMap.values());
+    }
+    
+    @Override
+    public List<OperationMetadata> findOperationsByEntityName(String entityName) {
+        return operationMetadataMap.values().stream()
+            .filter(op -> entityName.equals(op.getEntityName()))
+            .collect(java.util.stream.Collectors.toList());
+    }
+    
+    @Override
+    public OperationMetadata findOperationByName(String operationName) {
+        return operationMetadataMap.get(operationName);
+    }
+    
+    @Override
+    public boolean deleteOperation(String operationName) {
+        if (operationName == null) {
+            return false;
+        }
+        return operationMetadataMap.remove(operationName) != null;
     }
     
     @Override

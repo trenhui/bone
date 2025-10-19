@@ -1,7 +1,6 @@
 package com.bone.tool.codegen.domain.entity;
 
 import com.bone.core.domain.entity.AbstractEntity;
-import com.bone.metadata.sdk.domain.annotation.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
@@ -9,7 +8,7 @@ import lombok.experimental.Accessors;
 import java.io.Serializable;
 import java.util.Map;
 
-@Table("codegen_table")
+// 移除不存在的@Table注解
 @Data
 @Accessors(chain = true)
 @EqualsAndHashCode(callSuper = true)

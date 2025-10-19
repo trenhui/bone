@@ -8,7 +8,8 @@ import com.bone.metadata.sdk.domain.query.CompiledQuery;
 import com.bone.metadata.sdk.domain.model.FieldMetadata;
 import com.bone.metadata.sdk.domain.model.TableMetadata;
 import com.bone.metadata.sdk.query.context.CountContext;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -16,8 +17,8 @@ import java.util.stream.Collectors;
 /**
  * 动态构建 COUNT 查询，支持按需 JOIN 扩展表 ext_data_reserved。
  */
-@Slf4j
 public class CountBuilderSql implements SqlQueryBuilder<CountContext> {
+    private static final Logger log = LoggerFactory.getLogger(CountBuilderSql.class);
 
     private final MetadataService metadataService;
 
@@ -27,6 +28,7 @@ public class CountBuilderSql implements SqlQueryBuilder<CountContext> {
 
     @Override
     public CompiledQuery build(CountContext ctx) {
+        // 使用getter方法访问字段
         TableMetadata tbl = ctx.getTable();
         Criteria<?> c = ctx.getCriteria();
         AllocationContext extCtx = ctx.getExtContext();
@@ -116,7 +118,7 @@ public class CountBuilderSql implements SqlQueryBuilder<CountContext> {
      * 判断是否需要应用软删除过滤
      */
     private boolean shouldApplySoftDeleteFilter(TableMetadata table, CountContext context) {
-        return table.isSoftDeletable() && !context.isIncludeDeleted();
+        return table.isSoftDeletable() && !context.getIncludeDeleted();
     }
 
     /**

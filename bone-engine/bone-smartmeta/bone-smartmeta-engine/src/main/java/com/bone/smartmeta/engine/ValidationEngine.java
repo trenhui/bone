@@ -23,6 +23,7 @@ import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
@@ -33,13 +34,23 @@ import java.util.stream.Collectors;
  * 负责验证实体数据是否符合元数据定义的规则
  */
 @Component
-@RequiredArgsConstructor
 public class ValidationEngine implements InitializingBean {
     
     private static final Logger log = LoggerFactory.getLogger(ValidationEngine.class);
     
-    private final MetadataRepository metadataRepository;
-    private final ExpressionEngine expressionEngine;
+    private MetadataRepository metadataRepository;
+    private ExpressionEngine expressionEngine;
+    
+    // 无参数构造函数，用于自动配置
+    public ValidationEngine() {
+        // 简化实现，在Spring环境中属性会被注入
+    }
+    
+    // 带参数构造函数，用于测试和手动创建
+    public ValidationEngine(MetadataRepository metadataRepository, ExpressionEngine expressionEngine) {
+        this.metadataRepository = metadataRepository;
+        this.expressionEngine = expressionEngine;
+    }
     
     // 配置参数
     @Setter
@@ -222,7 +233,7 @@ public class ValidationEngine implements InitializingBean {
             }
             
             return results;
-        }, taskExecutor != null ? taskExecutor : CompletableFuture.delayedExecutor(0, TimeUnit.MILLISECONDS));
+        }, taskExecutor != null ? taskExecutor : Executors.newSingleThreadScheduledExecutor());
     }
     
     /**

@@ -14,18 +14,43 @@ public class TemplateDescriptor {
     private String templateId;           // Unique identifier (e.g., com.example.BarRepo.findById)
     private String sourceUri;            // Source URI (e.g., annotation://, classpath://)
     private SqlTemplateType format;      // Template format (SQL, MYBATIS, DYNAMIC_SQL)
-    
-    public String getSourceUri() {
-        return sourceUri;
-    }
-    
-    public Map<String, String> getTags() {
-        return tags;
-    }
     @Builder.Default
     private Map<String, String> tags = Collections.emptyMap(); // Metadata tags (e.g., env=prod, tenant=acme)
     private String version;              // Template version (e.g., v1.0)
     private String checksum;             // Content checksum for validation
     private Duration ttl;                // Time-to-live for caching
     private String fallbackId;           // Fallback template ID for resilience
+    
+    // 显式添加getter方法
+    public String getTemplateId() {
+        return templateId;
+    }
+    
+    public String getSourceUri() {
+        return sourceUri;
+    }
+    
+    public SqlTemplateType getFormat() {
+        return format;
+    }
+    
+    public Map<String, String> getTags() {
+        return tags;
+    }
+    
+    public String getVersion() {
+        return version;
+    }
+    
+    public String getChecksum() {
+        return checksum;
+    }
+    
+    public Duration getTtl() {
+        return ttl;
+    }
+    
+    public String getFallbackId() {
+        return fallbackId;
+    }
 }

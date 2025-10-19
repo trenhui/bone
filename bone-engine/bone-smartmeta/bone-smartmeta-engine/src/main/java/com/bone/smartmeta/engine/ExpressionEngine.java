@@ -871,32 +871,25 @@ public class ExpressionEngine {
             } else {
                 // 对于普通实体，使用反射设置字段值
                 String setterName = "set" + Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1);
-                try {
-                    // 由于T是SmartBaseEntity的子类，而SmartBaseEntity继承自Object，所以应该可以调用getClass()
-                    Object entityObj = entity;
-                    Class<?> entityClass = entityObj.getClass();
-                    
-                    // 尝试查找精确匹配类型的setter方法
-                    Method[] methods = entityClass.getMethods();
-                    Method setterMethod = null;
-                    
-                    for (Method method : methods) {
-                        if (method.getName().equals(setterName) && method.getParameterCount() == 1) {
-                            // 找到匹配名称的setter方法
-                            setterMethod = method;
-                            break;
-                        }
-                    }
-                    
-                    if (setterMethod != null) {
-                        // 尝试类型转换
+                // 由于T是SmartBaseEntity的子类，而SmartBaseEntity继承自Object，所以应该可以调用getClass()
+                Object entityObj = entity;
+                Class<?> entityClass = entityObj.getClass();
+                
+                // 尝试查找精确匹配类型的setter方法
+                Method setterMethod = null;
+                for (Method method : entityClass.getMethods()) {
+                    if (method.getName().equals(setterName) && method.getParameterCount() == 1) {
+                        // 找到匹配名称的setter方法
+                        setterMethod = method;
+                        // 尝试类型转换并设置值
                         Class<?> paramType = setterMethod.getParameterTypes()[0];
                         Object convertedValue = convertValueToType(value, paramType);
                         setterMethod.invoke(entity, convertedValue);
-                    } else {
-                        log.warn("无法设置字段 {} 的值，setter方法不存在", fieldName);
+                        break;
                     }
-                } catch (NoSuchMethodException e) {
+                }
+                
+                if (setterMethod == null) {
                     log.warn("无法设置字段 {} 的值，setter方法不存在", fieldName);
                 }
             }

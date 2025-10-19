@@ -1,6 +1,7 @@
 package com.bone.smartmeta.engine.repository;
 
 import com.bone.smartmeta.engine.metadata.EntityMetadata;
+import com.bone.smartmeta.engine.metadata.OperationMetadata;
 import com.bone.smartmeta.engine.metadata.PackageDefinition;
 import com.bone.smartmeta.engine.metadata.WorkflowMetadata;
 
@@ -99,7 +100,50 @@ public interface MetadataRepository {
      * 获取实体元数据的数量
      * @return 实体数量
      */
-    long countEntities();
+    int countEntities();
+    
+    // 操作元数据相关方法
+    
+    /**
+     * 保存操作元数据
+     * @param operationMetadata 操作元数据
+     * @return 保存后的操作元数据
+     */
+    OperationMetadata saveOperation(OperationMetadata operationMetadata);
+    
+    /**
+     * 获取所有操作元数据
+     * @return 操作元数据列表
+     */
+    List<OperationMetadata> findAllOperations();
+    
+    /**
+     * 根据实体名称获取操作元数据
+     * @param entityName 实体名称
+     * @return 操作元数据列表
+     */
+    List<OperationMetadata> findOperationsByEntityName(String entityName);
+    
+    /**
+     * 根据操作名称获取操作元数据
+     * @param operationName 操作名称
+     * @return 操作元数据
+     */
+    OperationMetadata findOperationByName(String operationName);
+    
+    /**
+     * 删除操作元数据
+     * @param operationName 操作名称
+     * @return 是否删除成功
+     */
+    boolean deleteOperation(String operationName);
+    
+    /**
+     * 检查操作元数据是否存在
+     * @param operationName 操作名称
+     * @return 是否存在
+     */
+    boolean existsOperation(String operationName);
     
     // 工作流元数据相关方法
     

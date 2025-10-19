@@ -6,6 +6,7 @@ import com.bone.metadata.sdk.support.config.MetadataSdkProperties;
 import com.bone.metadata.sdk.domain.enums.DeploymentMode;
 import com.bone.metadata.sdk.domain.model.AllocationContext;
 import com.bone.metadata.sdk.domain.model.FieldMetadata;
+import com.bone.metadata.sdk.domain.model.TableMetadata;
 import com.bone.metadata.sdk.metadata.api.MetadataService;
 import jakarta.annotation.PostConstruct;
 import org.springframework.cloud.context.scope.refresh.RefreshScopeRefreshedEvent;

@@ -23,7 +23,7 @@ public interface CodegenTableRepository {
     /**
      * 保存表配置
      */
-    CodegenTable save(CodegenTable table);
+    Long save(CodegenTable table);
     
     /**
      * 更新表配置

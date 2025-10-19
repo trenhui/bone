@@ -13,6 +13,7 @@ import com.bone.metadata.sdk.domain.enums.EnumType;
 import com.bone.metadata.sdk.domain.annotation.Enumerated;
 import lombok.*;
 import java.time.LocalDateTime;
+import java.util.Date;
 
 @Table("column_allocation")
 @Data
@@ -76,8 +77,8 @@ public class ColumnAllocation extends Entity<Long> {
     public Integer getColumnIndex() { return columnIndex; }
     public AllocationColumnStatus getStatus() { return status; }
     public Integer getVersion() { return version; }
-    public Date getCreatedAt() { return createdAt; }
-    public Date getUpdatedAt() { return updatedAt; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
     public Long getCreatedBy() { return createdBy; }
     public Long getUpdatedBy() { return updatedBy; }
     

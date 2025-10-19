@@ -3,8 +3,8 @@ package com.bone.metadata.sdk.query.criteria;
 import com.bone.core.enums.Operator;
 import com.bone.metadata.sdk.domain.enums.DatabaseType;
 import com.bone.metadata.sdk.support.config.MetadataSdkContext;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,9 +13,9 @@ import java.util.function.Function;
 /**
  * 查询条件模型，支持主表(m)和扩展表(ext)前缀。
  */
-@Slf4j
 // 移除@Data注解，显式添加必要的getter方法
 public class Condition {
+    private static final Logger log = LoggerFactory.getLogger(Condition.class);
     
     // 显式添加getter方法
     public String getParamName() {

@@ -1,6 +1,6 @@
 package com.bone.engine.extension;
 
-import com.alibaba.ttl.TransmittableThreadLocal;
+import com.bone.core.threadlocal.TransmittableThreadLocal;
 import com.bone.engine.extension.extractor.BizParamExtractor;
 import com.bone.engine.extension.extractor.BizParamExtractorFactory;
 import com.bone.engine.extension.extractor.ReflectionBizParamExtractor;

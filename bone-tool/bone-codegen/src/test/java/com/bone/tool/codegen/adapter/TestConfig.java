@@ -20,15 +20,8 @@ public class TestConfig {
 
     @Bean
     public CodegenService codegenService() {
-        return new CodegenService(
-                codegenTableRepository(),
-                codegenColumnRepository(),
-                codegenConverter(),
-                defaultCodeGenerator(),
-                databaseTableService(),
-                dataSourceConfigService(),
-                velocityTemplateRenderer()
-        );
+        // 使用无参构造函数创建CodegenService实例
+        return new CodegenService();
     }
 
     @Bean

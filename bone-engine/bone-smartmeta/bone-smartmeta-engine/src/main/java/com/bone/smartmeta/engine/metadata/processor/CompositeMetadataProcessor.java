@@ -31,11 +31,22 @@ import java.util.stream.Collectors;
  * 整合多种来源的元数据，支持动态计算字段、虚拟字段、AI功能和热加载
  */
 @Component
-@RequiredArgsConstructor
 public class CompositeMetadataProcessor {
     private static final Logger log = LoggerFactory.getLogger(CompositeMetadataProcessor.class);
-    private final List<MetadataProcessor> metadataProcessors;
-    private final ApplicationEventPublisher eventPublisher;
+    private List<MetadataProcessor> metadataProcessors;
+    private ApplicationEventPublisher eventPublisher;
+    
+    // 无参数构造函数，用于自动配置
+    public CompositeMetadataProcessor() {
+        // 简化实现，在Spring环境中属性会被注入
+        this.metadataProcessors = new ArrayList<>();
+    }
+    
+    // 带参数构造函数，用于测试和手动创建
+    public CompositeMetadataProcessor(List<MetadataProcessor> metadataProcessors, ApplicationEventPublisher eventPublisher) {
+        this.metadataProcessors = metadataProcessors;
+        this.eventPublisher = eventPublisher;
+    }
     
     // 元数据变更监听器
     private final List<MetadataChangeListener> metadataChangeListeners = new CopyOnWriteArrayList<>();
@@ -307,21 +318,30 @@ public class CompositeMetadataProcessor {
             // 根据合并策略确定优先级
             if ("yaml-overrides-annotation".equals(mergeStrategy)) {
                 // YAML > Groovy > 注解
-                List<String> priorityOrder = List.of("annotation", "groovy", "yaml");
+                List<String> priorityOrder = new ArrayList<>();
+                priorityOrder.add("annotation");
+                priorityOrder.add("groovy");
+                priorityOrder.add("yaml");
                 return Integer.compare(
                         priorityOrder.indexOf(source1), 
                         priorityOrder.indexOf(source2)
                 );
             } else if ("groovy-overrides-yaml".equals(mergeStrategy)) {
                 // Groovy > YAML > 注解
-                List<String> priorityOrder = List.of("annotation", "yaml", "groovy");
+                List<String> priorityOrder = new ArrayList<>();
+                priorityOrder.add("annotation");
+                priorityOrder.add("yaml");
+                priorityOrder.add("groovy");
                 return Integer.compare(
                         priorityOrder.indexOf(source1), 
                         priorityOrder.indexOf(source2)
                 );
             } else {
                 // 默认策略：YAML > Groovy > 注解
-                List<String> priorityOrder = List.of("annotation", "groovy", "yaml");
+                List<String> priorityOrder = new ArrayList<>();
+                priorityOrder.add("annotation");
+                priorityOrder.add("groovy");
+                priorityOrder.add("yaml");
                 return Integer.compare(
                         priorityOrder.indexOf(source1), 
                         priorityOrder.indexOf(source2)

@@ -10,6 +10,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
+import java.util.Optional;
 import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.InputStream;
 import java.io.IOException;
@@ -72,7 +73,8 @@ public class DefaultDatabaseTableRepositoryTest {
         config.setPassword(mockDataSourcePassword);
         config.setDriverClassName("com.mysql.cj.jdbc.Driver");
         
-        Mockito.lenient().when(dataSourceConfigRepository.findById(mockDataSourceConfigId)).thenReturn(config);
+        // 包装在Optional中返回
+        Mockito.lenient().when(dataSourceConfigRepository.findById(mockDataSourceConfigId)).thenReturn(java.util.Optional.of(config));
         
         // 模拟连接的基本操作 - 使用lenient避免不必要的模拟警告
         Mockito.lenient().when(mockConnection.getSchema()).thenReturn(mockSchema);
@@ -104,7 +106,7 @@ public class DefaultDatabaseTableRepositoryTest {
     @Test
     void testGetConnection_DataSourceConfigNotFound() {
         // 准备
-        when(dataSourceConfigRepository.findById(mockDataSourceConfigId)).thenReturn(null);
+        when(dataSourceConfigRepository.findById(mockDataSourceConfigId)).thenReturn(Optional.empty());
         
         // 执行 & 验证
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {

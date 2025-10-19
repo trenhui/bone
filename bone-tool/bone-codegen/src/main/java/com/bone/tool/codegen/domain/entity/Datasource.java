@@ -2,7 +2,6 @@ package com.bone.tool.codegen.domain.entity;
 
 import com.bone.core.annotation.Id;
 import com.bone.core.domain.entity.AbstractEntity;
-import com.bone.metadata.sdk.domain.annotation.Table;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import java.io.Serializable;
@@ -11,7 +10,6 @@ import java.io.Serializable;
  * 数据源配置
  * 用于管理代码生成工具连接的数据库配置信息
  */
-@Table("codegen_datasource")
 @Data
 @Accessors(chain = true)
 public class Datasource extends AbstractEntity<Long> implements Serializable {
