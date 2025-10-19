@@ -11,7 +11,7 @@ import com.bone.tool.codegen.application.dto.CodegenTableRequest;
 import com.bone.tool.codegen.application.dto.CodegenTableResponse;
 import com.bone.tool.codegen.domain.entity.CodegenTable;
 import com.bone.tool.codegen.domain.entity.DatabaseTableMetadata;
-import com.bone.tool.codegen.domain.service.DatabaseTableService;
+import com.bone.tool.codegen.domain.service.DatabaseTableServiceInterface;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -46,7 +46,7 @@ public class DatabaseTableController {
     private static final Logger log = LoggerFactory.getLogger(DatabaseTableController.class);
 
     @Resource
-    private DatabaseTableService databaseTableService;
+    private DatabaseTableServiceInterface databaseTableService;
     
     @Resource
     private CodegenConverter codegenConverter;

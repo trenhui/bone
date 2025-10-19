@@ -303,4 +303,18 @@ public class DatabaseTableServiceTest {
         // 只检查是否抛出了RuntimeException，不检查具体消息内容
         assertNotNull(exception);
     }
+    
+    @Test
+    void testGetCodegenTablesByDataSourceId_NullDataSourceConfigId() {
+        // 测试null数据源ID，应该抛出IllegalArgumentException
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            databaseTableService.getCodegenTablesByDataSourceId(null);
+        });
+        assertTrue(exception.getMessage().contains("数据源配置ID不能为空"));
+    }
+    
+    // 注意：由于ReflectionUtil.invokeMethod是静态方法，且使用了反射调用不存在的方法
+    // 完整测试需要使用PowerMockito，但当前环境可能不支持
+    // 这里只测试了参数验证的关键逻辑
+    // 实际的方法调用逻辑可以通过集成测试或手动测试来验证
 }

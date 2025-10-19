@@ -3,7 +3,7 @@ package com.bone.smartmeta.engine.test;
 import com.bone.smartmeta.engine.MetadataEngine;
 import com.bone.smartmeta.engine.config.SmartMetaProperties;
 import com.bone.smartmeta.engine.metadata.EntityMetadata;
-import com.bone.smartmeta.engine.metadata.FieldMetadata;
+import com.bone.smartmeta.engine.metadata.SmartFieldMetadata;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -101,17 +101,17 @@ public class MetadataEngineTest {
         metadata.setBusinessDomain("Test");
         
         // 添加字段
-        FieldMetadata field1 = new FieldMetadata();
+        SmartFieldMetadata field1 = new SmartFieldMetadata();
         field1.setFieldName("id");
         field1.setFieldType("Long");
         field1.setDescription("Primary Key");
         
-        FieldMetadata field2 = new FieldMetadata();
+        SmartFieldMetadata field2 = new SmartFieldMetadata();
         field2.setFieldName("name");
         field2.setFieldType("String");
         field2.setDescription("Entity Name");
         
-        Map<String, FieldMetadata> fields = new HashMap<>();
+        Map<String, SmartFieldMetadata> fields = new HashMap<>();
         fields.put("id", field1);
         fields.put("name", field2);
         metadata.setFields(fields);
@@ -124,16 +124,16 @@ public class MetadataEngineTest {
         metadata.setEntityName("TestEntity");
         
         // 添加基础字段
-        FieldMetadata priceField = new FieldMetadata();
+        SmartFieldMetadata priceField = new SmartFieldMetadata();
         priceField.setFieldName("price");
         priceField.setFieldType("Double");
         
-        FieldMetadata quantityField = new FieldMetadata();
+        SmartFieldMetadata quantityField = new SmartFieldMetadata();
         quantityField.setFieldName("quantity");
         quantityField.setFieldType("Integer");
         
         // 添加计算字段
-        FieldMetadata calculatedField = new FieldMetadata();
+        SmartFieldMetadata calculatedField = new SmartFieldMetadata();
         calculatedField.setFieldName("totalAmount");
         calculatedField.setFieldType("Double");
         calculatedField.setCalculated(true);

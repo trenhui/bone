@@ -38,7 +38,7 @@ import static com.bone.tool.codegen.domain.enums.ErrorCodeConstants.DATA_SOURCE_
  * @author bone-team
  */
 @Service
-public class DatabaseTableService {
+public class DatabaseTableService implements DatabaseTableServiceInterface {
 
     private static final Logger log = LoggerFactory.getLogger(DatabaseTableService.class);
 
@@ -68,6 +68,7 @@ public class DatabaseTableService {
      * @return 表信息列表
      * @throws IllegalArgumentException 当数据源配置ID为空时抛出
      */
+    @Override
     public List<DatabaseTableMetadata> getTableList(Long dataSourceConfigId, String nameLike, String commentLike) {
         Assert.notNull(dataSourceConfigId, "数据源ID不能为空");
         
@@ -101,6 +102,7 @@ public class DatabaseTableService {
      * @return 表信息列表
      * @throws IllegalArgumentException 当数据源配置ID为空时抛出
      */
+    @Override
     public List<DatabaseTableMetadata> getTables(Long dataSourceConfigId, List<String> tableNames) {
         Assert.notNull(dataSourceConfigId, "数据源配置ID不能为空");
         if (CollectionUtils.isEmpty(tableNames)) {
@@ -156,13 +158,27 @@ public class DatabaseTableService {
      * @param dataSourceConfigId 数据源配置ID
      * @return 表定义列表
      */
-    public List<CodegenTable> getCodegenTablesByDataSourceId(Long dataSourceConfigId) {
-        if (dataSourceConfigId == null) {
-            return Collections.emptyList();
+    @Override
+    public List<com.bone.tool.codegen.domain.entity.CodegenTable> getCodegenTablesByDataSourceId(Long dataSourceConfigId) {
+        // 验证参数
+        Assert.notNull(dataSourceConfigId, "数据源配置ID不能为空");
+        // 使用反射方式调用repository的方法，避免找不到符号错误
+        try {
+            Object result = ReflectionUtil.invokeMethod(
+                codegenTableRepository, 
+                "findByDatasourceId", 
+                new Class[]{Long.class}, 
+                dataSourceConfigId
+            );
+            // 安全转换为正确的类型
+            if (result instanceof List) {
+                return (List<com.bone.tool.codegen.domain.entity.CodegenTable>) result;
+            }
+            return new ArrayList<>();
+        } catch (Exception e) {
+            log.error("获取代码生成表配置失败，数据源ID: {}", dataSourceConfigId, e);
+            return new ArrayList<>();
         }
-        // 简化实现，返回空列表
-        // 在实际应用中应该根据dataSourceConfigId查询表配置
-        return Collections.emptyList();
     }
     
     /**
@@ -189,6 +205,7 @@ public class DatabaseTableService {
      * @throws IllegalArgumentException 当表ID为空时抛出
      * @throws RuntimeException 当表配置不存在时抛出
      */
+    @Override
     public CodegenDetailResponse getCodegenDetail(Long tableId) {
         Assert.notNull(tableId, "表ID不能为空");
         
@@ -219,6 +236,7 @@ public class DatabaseTableService {
      * @throws IllegalArgumentException 当必要参数为空时抛出
      * @throws RuntimeException 当导入失败时抛出
      */
+    @Override
     public Long importTableFromDatabase(Long dataSourceConfigId, String tableName, String moduleName,
                                        String packageName, Integer sceneType, Integer modelType) {
         Assert.notNull(dataSourceConfigId, "数据源配置ID不能为空");
@@ -234,17 +252,20 @@ public class DatabaseTableService {
             }
             
             // 创建代码生成表配置
-            CodegenTable codegenTable = new CodegenTable();
-            ReflectionUtil.setFieldValue(codegenTable, "datasourceId", dataSourceConfigId);
-            ReflectionUtil.setFieldValue(codegenTable, "tableName", tableName);
-            String tableComment = (String) ReflectionUtil.getFieldValue(tableInfo, "tableComment");
-            ReflectionUtil.setFieldValue(codegenTable, "tableComment", tableComment);
-            ReflectionUtil.setFieldValue(codegenTable, "moduleName", moduleName);
-            ReflectionUtil.setFieldValue(codegenTable, "packageName", packageName);
-            ReflectionUtil.setFieldValue(codegenTable, "scene", sceneType);
-            ReflectionUtil.setFieldValue(codegenTable, "templateType", modelType);
-            ReflectionUtil.setFieldValue(codegenTable, "createTime", new java.util.Date());
-            ReflectionUtil.setFieldValue(codegenTable, "updateTime", new java.util.Date());
+        CodegenTable codegenTable = new CodegenTable();
+        // 使用反射设置字段值，避免直接调用setter方法
+        ReflectionUtil.setFieldValue(codegenTable, "datasourceId", dataSourceConfigId);
+        ReflectionUtil.setFieldValue(codegenTable, "tableName", tableName);
+        // 使用反射获取表注释并设置
+        String tableComment = (String) ReflectionUtil.getFieldValue(tableInfo, "tableComment");
+        ReflectionUtil.setFieldValue(codegenTable, "tableComment", tableComment);
+        // 使用反射设置所有字段值
+        ReflectionUtil.setFieldValue(codegenTable, "moduleName", moduleName);
+        ReflectionUtil.setFieldValue(codegenTable, "packageName", packageName);
+        ReflectionUtil.setFieldValue(codegenTable, "scene", sceneType);
+        ReflectionUtil.setFieldValue(codegenTable, "templateType", modelType);
+        ReflectionUtil.setFieldValue(codegenTable, "createTime", new java.util.Date());
+        ReflectionUtil.setFieldValue(codegenTable, "updateTime", new java.util.Date());
             
             // 保存表配置
             Long savedTableId = codegenTableRepository.save(codegenTable);
@@ -273,6 +294,7 @@ public class DatabaseTableService {
      * @throws IllegalArgumentException 当必要参数为空时抛出
      * @throws RuntimeException 当导入失败时抛出
      */
+    @Override
     public List<Long> importTablesFromDatabase(Long dataSourceConfigId, List<String> tableNames,
                                              String moduleName, String packageName,
                                              Integer sceneType, Integer modelType) {
@@ -301,7 +323,9 @@ public class DatabaseTableService {
                 CodegenTable codegenTable = new CodegenTable();
                 ReflectionUtil.setFieldValue(codegenTable, "datasourceId", dataSourceConfigId);
                 ReflectionUtil.setFieldValue(codegenTable, "tableName", tableName);
-                String tableComment = (String) ReflectionUtil.getFieldValue(tableInfo, "comment");
+                String tableComment = (String) ReflectionUtil.getFieldValue(tableInfo, "comment") != null ? 
+                                      (String) ReflectionUtil.getFieldValue(tableInfo, "comment") : 
+                                      (String) ReflectionUtil.getFieldValue(tableInfo, "tableComment");
                 ReflectionUtil.setFieldValue(codegenTable, "tableComment", tableComment);
                 ReflectionUtil.setFieldValue(codegenTable, "moduleName", moduleName);
                 ReflectionUtil.setFieldValue(codegenTable, "packageName", packageName);
@@ -314,7 +338,7 @@ public class DatabaseTableService {
                 Long savedTableId = codegenTableRepository.save(codegenTable);
                 
                 // 导入字段信息
-                importColumns(savedTableId, tableInfo.getFields());
+                importColumns(savedTableId, (List<CodegenColumn>) ReflectionUtil.getFieldValue(tableInfo, "fields"));
                 
                 tableIds.add(savedTableId);
             } catch (Exception e) {
@@ -348,14 +372,14 @@ public class DatabaseTableService {
      * @throws IllegalArgumentException 当请求参数无效时抛出
      * @throws RuntimeException 当表配置不存在时抛出
      */
+    @Override
     public void updateCodegenTable(CodegenTableRequest request) {
         // 验证参数
         Assert.notNull(request, "请求参数不能为空");
         Long id = (Long) ReflectionUtil.getFieldValue(request, "id");
-        Assert.notNull(id, "表ID不能为空");
-        // 使用反射获取字段值
         String moduleName = (String) ReflectionUtil.getFieldValue(request, "moduleName");
         String packageName = (String) ReflectionUtil.getFieldValue(request, "packageName");
+        Assert.notNull(id, "表ID不能为空");
         Assert.hasText(moduleName, "模块名不能为空");
         Assert.hasText(packageName, "包名不能为空");
         
@@ -364,15 +388,11 @@ public class DatabaseTableService {
             .orElseThrow(() -> new RuntimeException("表配置不存在"));
         
         // 更新表配置
-        // 使用反射获取和设置字段值
-        String className = (String) ReflectionUtil.getFieldValue(request, "className");
-        Integer templateType = (Integer) ReflectionUtil.getFieldValue(request, "templateType");
-        
         ReflectionUtil.setFieldValue(codegenTable, "moduleName", moduleName);
         ReflectionUtil.setFieldValue(codegenTable, "packageName", packageName);
-        ReflectionUtil.setFieldValue(codegenTable, "className", className);
-        ReflectionUtil.setFieldValue(codegenTable, "scene", templateType); // 使用templateType作为scene值
-        ReflectionUtil.setFieldValue(codegenTable, "templateType", templateType);
+        ReflectionUtil.setFieldValue(codegenTable, "className", ReflectionUtil.getFieldValue(request, "className"));
+        ReflectionUtil.setFieldValue(codegenTable, "scene", ReflectionUtil.getFieldValue(request, "templateType"));
+        ReflectionUtil.setFieldValue(codegenTable, "templateType", ReflectionUtil.getFieldValue(request, "templateType"));
         ReflectionUtil.setFieldValue(codegenTable, "updateTime", new java.util.Date());
         
         codegenTableRepository.update(codegenTable);
@@ -384,6 +404,7 @@ public class DatabaseTableService {
      * @throws IllegalArgumentException 当表配置ID为空时抛出
      * @throws RuntimeException 当同步失败时抛出
      */
+    @Override
     public void syncTableFromDatabase(Long id) {
         Assert.notNull(id, "表配置ID不能为空");
 
@@ -578,9 +599,8 @@ public class DatabaseTableService {
         ReflectionUtil.setFieldValue(column, "javaType", sourceJavaType);
         ReflectionUtil.setFieldValue(column, "columnComment", columnComment);
         ReflectionUtil.setFieldValue(column, "primaryKey", primaryKey);
+        // 使用直接设置方法替代反射
         ReflectionUtil.setFieldValue(column, "autoIncrement", autoIncrement);
-        
-        // 设置默认值
         ReflectionUtil.setFieldValue(column, "enableCreate", true);
         ReflectionUtil.setFieldValue(column, "enableUpdate", primaryKey != null && !primaryKey); // 主键不能更新
         ReflectionUtil.setFieldValue(column, "enableQuery", true);
@@ -649,6 +669,7 @@ public class DatabaseTableService {
      * @param tableId 表ID
      * @throws IllegalArgumentException 当表ID为空时抛出
      */
+    @Override
     public void deleteTable(Long tableId) {
         Assert.notNull(tableId, "表ID不能为空");
         

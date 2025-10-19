@@ -1,6 +1,6 @@
 package com.bone.metadata.sdk.sql.template.parser;
 
-import com.bone.metadata.sdk.domain.annotation.SqlType;
+import com.bone.metadata.sdk.domain.enums.SqlType;
 import com.bone.metadata.sdk.domain.enums.SqlTemplateType;
 import com.bone.metadata.sdk.domain.exception.TemplateParseException;
 import com.bone.metadata.sdk.sql.template.SqlTemplate;

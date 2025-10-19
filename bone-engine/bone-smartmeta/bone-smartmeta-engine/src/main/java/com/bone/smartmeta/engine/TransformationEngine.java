@@ -1,7 +1,7 @@
 package com.bone.smartmeta.engine;
 
 import com.bone.smartmeta.engine.metadata.EntityMetadata;
-import com.bone.smartmeta.engine.metadata.FieldMetadata;
+import com.bone.smartmeta.engine.metadata.SmartFieldMetadata;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
@@ -170,7 +170,7 @@ public class TransformationEngine {
         Map<String, Object> result = new HashMap<>();
         
         // 对每个字段进行格式化
-        for (FieldMetadata field : entityMetadata.getFields().values()) {
+        for (SmartFieldMetadata field : entityMetadata.getFields().values()) {
             String fieldName = field.getApiName();
             
             if (sourceData.containsKey(fieldName)) {
@@ -195,30 +195,30 @@ public class TransformationEngine {
      * @param value 字段值
      * @return 格式化后的值
      */
-    private Object formatField(FieldMetadata field, Object value) {
+    private Object formatField(SmartFieldMetadata field, Object value) {
         if (value == null) {
             return null;
         }
         
         try {
             // 根据字段类型进行格式化
-            // 暂时注释掉getType()调用，因为FieldMetadata类中似乎没有这个方法
-            // String fieldType = field.getType();
-            // 使用默认值或安全处理
+            // 暂时注释掉getType()调用，因为SmartFieldMetadata类中似乎没有这个方法
+        // String fieldType = field.getType();
+        // 使用默认值或安全处理
             String fieldType = "string"; // 假设默认是字符串类型
             
             if ("string".equalsIgnoreCase(fieldType)) {
                 if (!(value instanceof String)) {
                     return value.toString();
                 }
-                // 暂时注释掉isTrim()调用，因为FieldMetadata类中似乎没有这个方法
-                // if (field.isTrim()) {
-                //     return ((String) value).trim();
-                // }
+                // 暂时注释掉isTrim()调用，因为SmartFieldMetadata类中似乎没有这个方法
+            // if (field.isTrim()) {
+            //     return ((String) value).trim();
+            // }
                 // 处理默认值
                 if ("#DEFAULT".equals(value)) {
-                    // 暂时注释掉getDefaultValue()调用，因为FieldMetadata类中似乎没有这个方法
-                    // return field.getDefaultValue();
+                    // 暂时注释掉getDefaultValue()调用，因为SmartFieldMetadata类中似乎没有这个方法
+                // return field.getDefaultValue();
                     return null;
                 }
             } else if ("integer".equalsIgnoreCase(fieldType) || "int".equalsIgnoreCase(fieldType)) {
@@ -308,18 +308,18 @@ public class TransformationEngine {
         Map<String, Object> result = new HashMap<>();
         
         // 确保包含所有必要字段
-        for (FieldMetadata field : entityMetadata.getFields().values()) {
+        for (SmartFieldMetadata field : entityMetadata.getFields().values()) {
             String fieldName = field.getApiName();
             
             if (sourceData.containsKey(fieldName)) {
                 result.put(fieldName, sourceData.get(fieldName));
             } else {
-                // 暂时注释掉isRequired()和getDefaultValue()调用，因为FieldMetadata类中似乎没有这些方法
-                // else if (field.isRequired()) {
-                //     throw new IllegalArgumentException("必填字段缺失: " + fieldName);
-                // } else if (field.getDefaultValue() != null) {
-                //     result.put(fieldName, field.getDefaultValue());
-                // }
+                // 暂时注释掉isRequired()和getDefaultValue()调用，因为SmartFieldMetadata类中似乎没有这些方法
+            // else if (field.isRequired()) {
+            //     throw new IllegalArgumentException("必填字段缺失: " + fieldName);
+            // } else if (field.getDefaultValue() != null) {
+            //     result.put(fieldName, field.getDefaultValue());
+            // }
                 // 默认不做任何处理，保持字段为空
             }
         }

@@ -1,66 +1,62 @@
-# Bone Extension Framework 使用指南
+# Bone Extension Framework
 
-## 🎯 一句话理解 Bone 扩展框架
+## 📖 文档目录
 
-**Bone 扩展框架让你像"插件"一样为业务逻辑动态添加租户专属、场景专属或条件专属的处理逻辑，而无需修改核心代码。**
-
----
-
-## 📋 目录
-
-1. [框架概述](#1-框架概述)
-2. [5分钟快速上手](#2-5分钟快速上手)
-3. [核心概念详解](#3-核心概念详解)
-4. [高级特性](#4-高级特性)
-5. [最佳实践](#5-最佳实践)
-6. [故障排查](#6-故障排查)
-7. [常见问题解答](#7-常见问题解答)
-8. [版本历史](#8-版本历史)
-9. [附录：速查表](#9-附录速查表)
+- [框架介绍](#框架介绍)
+- [快速开始](#快速开始)
+- [核心概念](#核心概念)
+- [高级功能](#高级功能)
+- [最佳实践](#最佳实践)
+- [故障排查](#故障排查)
+- [常见问题](#常见问题)
+- [版本说明](#版本说明)
+- [附录](#附录)
 
 ---
 
-## 1. 框架概述
+## 框架介绍
 
-### 1.1 核心价值
-- **解耦核心业务**：将定制化逻辑从核心流程中分离
-- **动态路由**：根据业务上下文自动选择合适实现
-- **多租户支持**：为不同租户提供专属业务逻辑
-- **灵活扩展**：无需修改代码即可添加新业务规则
+### 什么是 Bone Extension Framework？
+Bone Extension Framework 是一个轻量级、高性能的业务扩展框架，专为解决复杂业务场景下的代码复用、多租户定制和业务规则动态扩展而设计。它允许开发者像使用"插件"一样为应用程序添加定制化业务逻辑，而无需修改核心代码。
 
-### 1.2 典型使用流程
-![img.png](img.png)
+### 核心优势
+- **业务解耦**：将核心流程与定制化逻辑分离，提高代码可维护性
+- **动态路由**：基于上下文智能选择合适的扩展实现
+- **多租户支持**：为不同租户提供独立的业务规则和处理逻辑
+- **灵活扩展**：无需修改核心代码即可添加新的业务规则
+- **声明式配置**：通过简单的注解快速实现扩展点定义和实现
+
+### 工作流程
 ```mermaid
-graph TB
-    A[业务请求] --> B[创建 BizContext<br>设置租户/业务/场景]
+graph TD
+    A[业务请求] --> B[创建业务上下文<br>BizContext]
     B --> C[调用扩展点接口]
-    C --> D[框架自动路由]
-    D --> E{匹配策略}
-    E -->|精确匹配| F[按租户/业务匹配]
-    E -->|表达式匹配| G[按 SpEL 条件匹配]
-    E -->|默认实现| H[兜底实现]
-    F --> I[执行扩展逻辑]
-    G --> I
-    H --> I
-    I --> J[返回结果]
+    C --> D[框架自动路由匹配]
+    D --> E[执行匹配的扩展逻辑]
+    E --> F[返回处理结果]
 ```
 
-### 1.3 主要特性
-- ✅ 基于注解的声明式扩展
-- ✅ 多维度路由（租户、业务、场景、用例）
-- ✅ SpEL 表达式动态条件匹配
-- ✅ 优先级控制机制
-- ✅ 与 Spring 深度集成
-- ✅ 高性能多级缓存
-- ✅ 动态注册扩展实现
+### 主要功能
+- 基于注解的声明式扩展机制
+- 多维度匹配路由（租户、业务、场景、条件）
+- Spring Expression Language (SpEL) 动态条件匹配
+- 灵活的优先级控制策略
+- 与 Spring 框架无缝集成
+- 高性能多级缓存优化
+- 运行时动态扩展注册
 
 ---
 
-## 2. 5分钟快速上手
+## 快速开始
 
-### 2.1 基础配置
+### 环境要求
+- Java 8+ 或 Java 11+
+- Spring Boot 2.x 或 Spring Boot 3.x
+- Maven 3.6+ 或 Gradle 7.0+
 
-**步骤1：添加依赖**
+### 安装配置
+
+#### 1. 添加依赖
 ```xml
 <dependency>
     <groupId>com.bone</groupId>
@@ -69,7 +65,9 @@ graph TB
 </dependency>
 ```
 
-**步骤2：启用框架**
+#### 2. 启用框架
+在 Spring Boot 应用的启动类上添加 `@EnableExtPoints` 注解：
+
 ```java
 @SpringBootApplication
 @EnableExtPoints(basePackages = "com.yourcompany.extension")
@@ -80,28 +78,48 @@ public class Application {
 }
 ```
 
-**步骤3：基础配置**
+#### 3. 配置框架（可选）
+在 `application.yml` 或 `application.properties` 中配置框架参数：
+
 ```yaml
 # application.yml
 bone:
   extension:
-    cache-enabled: true
-    cache-size: 1000
-    logging-enabled: true
-    metrics-enabled: false  # 生产环境建议开启
+    cache-enabled: true              # 启用缓存（推荐）
+    cache-size: 1000                 # 缓存大小
+    logging-enabled: true            # 启用详细日志
+    metrics-enabled: false           # 生产环境建议开启指标收集
+    max-matching-extensions: 10      # 最大匹配扩展数
 ```
 
-### 2.2 最小完整示例
+### 快速示例
 
+以下是一个完整的示例，展示如何定义和使用扩展点：
+
+#### 1. 定义扩展点接口
 ```java
-// 1. 定义扩展点接口
-@ExtPoint(name = "用户问候扩展点", description = "根据用户类型返回不同的问候语")
+/**
+ * 用户问候扩展点
+ * 根据用户类型返回不同的问候语
+ */
+@ExtPoint(name = "用户问候扩展点")
 public interface GreetingExtPoint {
+    /**
+     * 向用户问好
+     * @param context 业务上下文，包含用户名和用户类型信息
+     * @return 问候语
+     */
     String greet(BizContext<String> context);
 }
+```
 
-// 2. 默认问候实现
-@ExtPoint(priority = 100)  // 低优先级，兜底实现
+#### 2. 实现默认扩展
+```java
+/**
+ * 默认问候实现
+ * 低优先级，作为兜底实现
+ */
+@Extension(priority = 100)
 @Service
 public class DefaultGreetingExtension implements GreetingExtPoint {
     @Override
@@ -110,11 +128,17 @@ public class DefaultGreetingExtension implements GreetingExtPoint {
         return "Hello, " + userName + "!";
     }
 }
+```
 
-// 3. VIP用户问候实现
+#### 3. 实现VIP用户扩展
+```java
+/**
+ * VIP用户问候实现
+ * 高优先级，当用户为VIP时执行
+ */
 @Extension(
-    condition = "#context.getAttribute('isVip') == true",  // SpEL表达式
-    priority = 50  // 高优先级
+    condition = "#context.getAttribute('isVip') == true", // SpEL条件表达式
+    priority = 50  // 优先级高于默认实现
 )
 @Service
 public class VipGreetingExtension implements GreetingExtPoint {
@@ -124,31 +148,41 @@ public class VipGreetingExtension implements GreetingExtPoint {
         return "尊贵的VIP用户 " + userName + "，欢迎回来！";
     }
 }
+```
 
-// 4. 业务服务类
+#### 4. 在业务服务中使用
+```java
 @Service
 public class UserService {
     
     @Autowired
     private GreetingExtPoint greetingExtPoint;
     
+    /**
+     * 欢迎用户
+     * @param userName 用户名
+     * @param isVip 是否为VIP用户
+     * @return 问候语
+     */
     public String welcomeUser(String userName, boolean isVip) {
         // 创建业务上下文
         BizContext<String> context = BizContext.<String>builder()
-            .tenantCode("TENANT_A")      // 租户维度
-            .bizCode("USER_SERVICE")     // 业务维度
+            .tenantCode("TENANT_A")      // 租户标识
+            .bizCode("USER_SERVICE")     // 业务标识
             .data(userName)              // 业务数据
             .attribute("isVip", isVip)   // 自定义属性
             .build();
         
-        // 使用上下文管理器（自动清理）
-        try (BizContexts.ContextManager manager = BizContexts.with(context)) {
+        // 使用 try-with-resources 自动管理上下文生命周期
+        try (ExtensionScope scope = ExtensionContextManager.with(context)) {
             return greetingExtPoint.greet(context);
         }
     }
 }
+```
 
-// 5. 测试类
+#### 5. 测试验证
+```java
 @SpringBootTest
 class UserServiceTest {
     
@@ -169,121 +203,169 @@ class UserServiceTest {
 }
 ```
 
-> 💡 **新手提示**：复制上面的代码到你的项目中，修改包名即可运行！
+### 下一步
+- 了解 [核心概念](#核心概念) 掌握框架设计原理
+- 探索 [高级功能](#高级功能) 提升应用能力
+- 参考 [最佳实践](#最佳实践) 编写优质代码
 
 ---
 
-## 3. 核心概念详解
+## 核心概念
 
-### 3.1 扩展点接口设计
+### 扩展点（Extension Point）
 
-**良好设计原则：**
+扩展点是框架的核心概念，它定义了一个业务能力接口，允许在不修改核心代码的情况下进行功能扩展。
+
+#### 定义扩展点
 ```java
-// ✅ 推荐：职责单一，方法明确
-@ExtPoint(name = "订单处理扩展点", description = "订单生命周期扩展能力")
+/**
+ * 订单处理扩展点
+ * 提供订单生命周期的扩展能力
+ */
+@ExtPoint(name = "订单处理扩展点")
 public interface OrderExtPoint {
     
     /**
-     * 订单创建前处理 - 返回修改后的订单数据
+     * 订单创建前处理
+     * @param context 业务上下文，包含订单请求信息
+     * @return 修改后的订单数据
      */
     OrderDTO preCreateOrder(BizContext<OrderRequest> context);
     
     /**
-     * 订单创建后处理 - 无返回值，用于通知等
+     * 订单创建后处理
+     * @param context 业务上下文，包含创建的订单信息
      */
     void postCreateOrder(BizContext<OrderDTO> context);
-    
-    /**
-     * 订单验证 - 返回验证结果
-     */
-    ValidationResult validateOrder(BizContext<OrderRequest> context);
-}
-
-// ❌ 避免：职责过多，方法模糊
-@ExtPoint(name = "订单扩展点")
-public interface BadOrderExtPoint {
-    Object process(Object request);  // 过于通用
-    boolean check();                 // 没有明确含义
 }
 ```
 
-### 3.2 扩展实现配置
+#### 设计原则
+- **单一职责**：每个扩展点专注于特定业务能力
+- **方法明确**：命名清晰，参数和返回值类型具体
+- **接口隔离**：避免创建大而全的接口
+- **文档完善**：提供详细的方法注释和使用说明
 
-**@Extension 注解详解：**
+### 扩展实现（Extension）
+
+扩展实现是对扩展点接口的具体实现，通过 `@Extension` 注解进行配置。
+
+#### 配置属性
+
+| 属性 | 说明 | 示例 |
+|------|------|------|
+| tenantCode | 租户编码，用于多租户场景 | `tenantCode = "TENANT_A"` |
+| bizCode | 业务编码，标识特定业务域 | `bizCode = "ECOMMERCE"` |
+| useCase | 用例编码，标识特定业务流程 | `useCase = "CREATE_ORDER"` |
+| scenario | 场景编码，标识特定应用场景 | `scenario = "MOBILE_APP"` |
+| condition | SpEL条件表达式，动态匹配 | `condition = "#data.amount > 100"` |
+| priority | 优先级，数值越小优先级越高 | `priority = 50` |
+
+#### 示例
 ```java
 @Extension(
-    // 维度匹配
-    tenantCode = "TENANT_A",     // 租户编码
-    bizCode = "ECOMMERCE",       // 业务编码  
-    useCase = "CREATE_ORDER",    // 用例编码
-    scenario = "MOBILE_APP",     // 场景编码
-    
-    // 动态条件
-    condition = "#data.amount > 100 && #context.getAttribute('channel') == 'APP'",
-    
-    // 优先级控制（数值越小优先级越高）
+    tenantCode = "TENANT_A",
+    condition = "#data.amount > 1000",
     priority = 50
 )
 @Service
-public class TenantAOrderExtension implements OrderExtPoint {
-    // 实现方法...
+public class TenantAHighAmountOrderExtension implements OrderExtPoint {
+    // 实现逻辑...
 }
 ```
 
-### 3.3 业务上下文使用
+### 业务上下文（BizContext）
 
-**创建丰富的上下文：**
+业务上下文包含了业务处理过程中的所有相关信息，是连接扩展点和扩展实现的桥梁。
+
+#### 主要组成
+- **核心维度**：租户、业务、用例、场景等标识信息
+- **业务数据**：实际的业务处理对象
+- **扩展属性**：自定义的上下文属性，用于条件匹配和数据传递
+
+#### 创建上下文
 ```java
-public OrderDTO createOrder(OrderRequest request, UserInfo user) {
-    BizContext<OrderRequest> context = BizContext.builder()
-        // 核心维度
-        .tenantCode(user.getTenantCode())
-        .bizCode("ORDER_MANAGEMENT")
-        .useCase("CREATE_ORDER")
-        .scenario(getOrderScenario(request))
-        
-        // 业务数据
-        .data(request)
-        
-        // 业务属性（用于表达式匹配）
-        .attribute("userId", user.getId())
-        .attribute("userLevel", user.getLevel())
-        .attribute("channel", request.getChannel())
-        .attribute("ip", getClientIp())
-        .attribute("isFirstOrder", orderService.isFirstOrder(user.getId()))
-        
-        // 时间信息
-        .attribute("requestTime", LocalDateTime.now())
-        .build();
+BizContext<OrderRequest> context = BizContext.<OrderRequest>builder()
+    // 核心维度信息
+    .tenantCode("TENANT_A")
+    .bizCode("ORDER_SERVICE")
+    .useCase("CREATE_ORDER")
+    .scenario("WEB")
     
-    // 自动上下文管理（推荐）
-    try (BizContexts.ContextManager manager = BizContexts.with(context)) {
-        return orderService.processOrder(context);
+    // 业务数据
+    .data(orderRequest)
+    
+    // 扩展属性
+    .attribute("userId", "user123")
+    .attribute("channel", "WEB")
+    .attribute("timestamp", System.currentTimeMillis())
+    
+    .build();
+```
+
+### 上下文管理（ExtensionContextManager）
+
+上下文管理器负责维护当前线程的业务上下文，并在使用完毕后自动清理。
+
+#### 正确使用方式
+```java
+// 推荐使用 try-with-resources 自动管理上下文生命周期
+public OrderDTO processOrder(OrderRequest request) {
+    BizContext<OrderRequest> context = createContext(request);
+    
+    try (ExtensionScope scope = ExtensionContextManager.with(context)) {
+        // 执行业务逻辑，调用扩展点
+        return orderExtPoint.processOrder(context);
     }
+    // 自动清理上下文，避免内存泄漏
 }
 ```
 
-> ⚠️ **重要提醒**：务必使用 try-with-resources 或 finally 块清理上下文，避免内存泄漏！
+### 路由机制
+
+框架会根据上下文信息自动选择最合适的扩展实现，匹配优先级如下：
+
+1. 精确匹配（租户、业务、用例、场景完全匹配）
+2. 条件匹配（通过SpEL表达式计算匹配）
+3. 优先级匹配（在同等条件下，优先级数值小的优先）
+4. 默认实现（没有其他匹配时的兜底实现）
+
+#### 匹配流程
+```
+业务请求 → 创建上下文 → 查找匹配扩展 → 按优先级排序 → 执行匹配的扩展实现
+```
+
+### 缓存机制
+
+框架内置多级缓存，优化扩展匹配性能：
+
+- **表达式缓存**：缓存SpEL表达式的编译结果
+- **匹配结果缓存**：缓存特定上下文匹配的扩展列表
+- **扩展实例缓存**：缓存已加载的扩展实现实例
+
+通过缓存，框架可以显著减少表达式解析和匹配计算的开销，提升系统性能。
 
 ---
 
-## 4. 高级特性
+## 高级功能
 
-### 4.1 表达式路由（SpEL）
+### 表达式路由（SpEL）
 
-**可用变量：**
-```java
-// 在 condition 表达式中可用的变量：
-@Extension(condition = "
-    #tenantCode == 'TENANT_A' &&           // 租户编码
-    #data.amount > 1000 &&                 // 业务数据属性
-    #context.getAttribute('vipLevel') == 'GOLD' &&  // 上下文属性
-    #bizCode.startsWith('ORDER') &&        // 业务编码
-    T(java.util.Objects).equals(#scenario, 'MOBILE')  // 静态方法调用
-")
-```
+框架使用 Spring Expression Language (SpEL) 提供强大的动态条件匹配能力，可以基于上下文信息进行复杂的条件判断。
 
-**实用表达式示例：**
+#### 可用变量
+
+在 `condition` 表达式中，可以使用以下内置变量：
+
+- `#tenantCode` - 当前租户编码
+- `#bizCode` - 当前业务编码
+- `#useCase` - 当前用例编码
+- `#scenario` - 当前场景编码
+- `#data` - 业务数据对象
+- `#context` - 完整的业务上下文对象
+
+#### 表达式示例
+
 ```java
 // 1. 数值范围判断
 @Extension(condition = "#data.amount >= 100 && #data.amount <= 1000")
@@ -291,7 +373,7 @@ public OrderDTO createOrder(OrderRequest request, UserInfo user) {
 // 2. 字符串匹配
 @Extension(condition = "#data.status in {'PENDING', 'PROCESSING'}")
 
-// 3. 集合操作
+// 3. 集合操作（获取价格大于100的商品数量）
 @Extension(condition = "#data.items.?[price > 100].size() > 0")
 
 // 4. 复杂条件组合
@@ -300,63 +382,69 @@ public OrderDTO createOrder(OrderRequest request, UserInfo user) {
     (#tenantCode == 'TENANT_B' && #data.amount > 1000)
 ")
 
-// 5. 安全访问（避免NPE）
+// 5. 安全访问（避免空指针异常）
 @Extension(condition = "#data.user?.level == 'VIP'")
+
+// 6. 方法调用
+@Extension(condition = "#bizCode.startsWith('ORDER')")
+
+// 7. 静态方法调用
+@Extension(condition = "T(java.util.Objects).equals(#scenario, 'MOBILE')")
 ```
 
-### 4.2 优先级控制实战
+### 优先级控制
+
+优先级机制允许您精细控制多个匹配扩展的执行顺序，数值越小优先级越高。
+
+#### 优先级示例
 
 ```java
-// 优先级：10（最高）→ 50（中）→ 100（最低）
-
-// 1. 管理员订单（最高优先级）
+// 1. 管理员订单处理（最高优先级）
 @Extension(
-    priority = 10, 
+    priority = 10,  // 最高优先级
     condition = "#data.userId.startsWith('ADMIN')"
 )
 @Service
 public class AdminOrderExtension implements OrderExtPoint {
     @Override
     public OrderDTO preCreateOrder(BizContext<OrderRequest> context) {
-        OrderDTO order = new OrderDTO();
-        order.setAdminFlag(true);
-        order.setPriority(1);  // 最高优先级
-        return order;
+        // 管理员订单特殊处理逻辑
+        return new OrderDTO();
     }
 }
 
-// 2. VIP用户订单（中优先级）
+// 2. VIP用户订单处理（中等优先级）
 @Extension(
-    priority = 50,
+    priority = 50,  // 中等优先级
     condition = "#context.getAttribute('vipLevel') != null"
 )
-@Service  
+@Service
 public class VipOrderExtension implements OrderExtPoint {
     @Override
     public OrderDTO preCreateOrder(BizContext<OrderRequest> context) {
-        OrderDTO order = new OrderDTO();
-        order.setVipLevel(context.getAttribute("vipLevel"));
-        order.setPriority(2);
-        return order;
+        // VIP订单处理逻辑
+        return new OrderDTO();
     }
 }
 
-// 3. 默认订单处理（最低优先级）
-@Extension(priority = 100)
+// 3. 普通订单处理（低优先级）
+@Extension(priority = 100)  // 低优先级，作为兜底实现
 @Service
 public class DefaultOrderExtension implements OrderExtPoint {
     @Override
     public OrderDTO preCreateOrder(BizContext<OrderRequest> context) {
-        OrderDTO order = new OrderDTO();
-        order.setPriority(3);  // 普通优先级
-        return order;
+        // 默认订单处理逻辑
+        return new OrderDTO();
     }
 }
 ```
 
-### 4.3 组合多个扩展实现
+### 组合扩展执行
 
-**适用场景**：需要多个扩展点依次处理同一业务
+在某些场景下，您可能需要多个扩展共同处理一个业务请求。框架提供了 `ExtPointComposite` 来支持这种需求。
+
+#### 组合执行示例
+
 ```java
 @Service
 public class OrderProcessingService {
@@ -367,31 +455,31 @@ public class OrderProcessingService {
     public OrderProcessingResult processOrder(OrderRequest request) {
         BizContext<OrderRequest> context = createContext(request);
         
-        try (BizContexts.ContextManager manager = BizContexts.with(context)) {
-            
-            // 1. 获取所有匹配的扩展（按优先级排序）
+        try (ExtensionScope scope = ExtensionContextManager.with(context)) {
+            // 获取所有匹配的扩展实现（已按优先级排序）
             List<OrderExtPoint> extensions = orderExtPointComposite.getExtensions(context);
             
             OrderDTO finalResult = null;
             List<ProcessingStep> steps = new ArrayList<>();
             
-            // 2. 依次执行每个扩展
+            // 依次执行每个扩展
             for (OrderExtPoint extension : extensions) {
                 String extensionName = extension.getClass().getSimpleName();
                 
                 try {
+                    // 执行扩展逻辑
                     OrderDTO currentResult = extension.preCreateOrder(context);
                     steps.add(ProcessingStep.success(extensionName, "执行成功"));
                     
+                    // 更新结果和上下文
                     if (currentResult != null) {
                         finalResult = currentResult;
-                        // 更新上下文供下一个扩展使用
                         context.setData(convertToRequest(currentResult));
                     }
                     
                 } catch (Exception e) {
+                    // 记录错误但继续执行其他扩展
                     steps.add(ProcessingStep.failed(extensionName, e.getMessage()));
-                    // 单个扩展失败不影响其他扩展执行
                 }
             }
             
@@ -405,22 +493,27 @@ public class OrderProcessingService {
 }
 ```
 
-### 4.4 动态注册扩展
+### 动态注册扩展
 
-**运行时动态添加扩展：**
+框架支持在运行时动态注册和注销扩展实现，适用于需要根据业务需求动态调整扩展行为的场景。
+
+#### 动态注册示例
+
 ```java
 @Service
 public class DynamicExtensionManager {
     
     @Autowired
-    private ExtensionRegister providerRegister;
+    private ExtensionRegister extensionRegister;
     
     /**
      * 动态注册租户专属扩展
      */
     public void registerTenantExtension(String tenantCode, String bizCode) {
+        // 创建动态扩展实例
         OrderExtPoint dynamicExtension = new DynamicOrderExtension();
         
+        // 构建扩展元数据
         ExtensionMetadata metadata = ExtensionMetadata.builder()
             .tenantCode(tenantCode)
             .bizCode(bizCode)
@@ -428,26 +521,62 @@ public class DynamicExtensionManager {
             .condition("#data.amount > 0")
             .build();
             
-        providerRegister.registerExtension(OrderExtPoint.class, dynamicExtension, metadata);
+        // 注册扩展
+        extensionRegister.registerExtension(OrderExtPoint.class, dynamicExtension, metadata);
     }
     
     /**
      * 动态注销扩展
      */
     public void unregisterExtension(OrderExtPoint extension) {
-        providerRegister.unregisterExtension(OrderExtPoint.class, extension);
+        extensionRegister.unregisterExtension(OrderExtPoint.class, extension);
     }
 }
 
-// 动态扩展实现
+// 动态扩展实现类
 class DynamicOrderExtension implements OrderExtPoint {
     @Override
     public OrderDTO preCreateOrder(BizContext<OrderRequest> context) {
-        // 动态业务逻辑
+        // 实现动态业务逻辑
         return new OrderDTO();
     }
     
-    // 其他方法实现...
+    // 实现其他必要的方法
+}
+```
+
+### 异步执行扩展
+
+对于非关键路径的扩展逻辑，可以使用异步执行提高系统响应速度。
+
+#### 异步执行示例
+
+```java
+@Configuration
+public class AsyncConfig {
+    @Bean(name = "extensionExecutor")
+    public Executor extensionExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(5);
+        executor.setMaxPoolSize(10);
+        executor.setQueueCapacity(25);
+        executor.setThreadNamePrefix("ExtensionAsync-");
+        executor.initialize();
+        return executor;
+    }
+}
+
+@Extension(tenantCode = "TENANT_A")
+@Service
+public class AsyncNotificationExtension implements OrderExtPoint {
+    
+    @Async("extensionExecutor")
+    @Override
+    public void postCreateOrder(BizContext<OrderDTO> context) {
+        // 异步发送通知、记录日志等非关键操作
+        OrderDTO order = context.getData();
+        // 执行异步操作...
+    }
 }
 ```
 
@@ -830,7 +959,7 @@ public class PaymentService {
             .build();
         
         // 使用上下文管理器（自动清理）
-        try (BizContexts.ContextManager manager = BizContexts.with(context)) {
+        try (ExtensionScope scope = ExtensionContextManager.with(context)) {
             // 1. 支付前验证
             ValidationResult validationResult = paymentExtPoint.prePayValidate(context);
             if (!validationResult.isSuccess()) {
@@ -1106,7 +1235,7 @@ public class PromotionService {
             .build();
         
         // 使用上下文管理器（自动清理）
-        try (BizContexts.ContextManager manager = BizContexts.with(context)) {
+        try (ExtensionScope scope = ExtensionContextManager.with(context)) {
             // 存储所有应用的促销结果
             List<PromotionResult> appliedPromotions = new ArrayList<>();
             BigDecimal totalDiscount = BigDecimal.ZERO;
@@ -1453,7 +1582,7 @@ public class RiskControlService {
             .build();
         
         // 使用上下文管理器（自动清理）
-        try (BizContexts.ContextManager manager = BizContexts.with(context)) {
+        try (ExtensionScope scope = ExtensionContextManager.with(context)) {
             // 执行风控评估
             RiskAssessmentResult assessmentResult = riskControlExtPoint.assessRisk(context);
             
@@ -2081,7 +2210,7 @@ public class MedicalClaimService {
             .build();
         
         // 使用上下文管理器（自动清理）
-        try (BizContexts.ContextManager manager = BizContexts.with(context)) {
+        try (ExtensionScope scope = ExtensionContextManager.with(context)) {
             log.info("Start processing medical claim for policy: {}, type: {}", 
                     request.getPolicyNo(), request.getClaimType());
             
@@ -2442,7 +2571,7 @@ MyData data = context.getAttribute("processedData");
 | 方法 | 用途 | 示例 |
 |------|------|------|
 | `BizContext.builder()` | 创建上下文 | `.tenantCode("T1").data(obj).build()` |
-| `BizContexts.with()` | 设置上下文 | `try (var mgr = BizContexts.with(ctx)) { }` |
+| `ExtensionContextManager.with()` | 设置上下文 | `try (var mgr = ExtensionContextManager.with(ctx)) { }` |
 | `ExtPointComposite.getExtensions()` | 获取所有匹配实现 | `composite.getExtensions(context)` |
 
 ### 9.3 表达式速查

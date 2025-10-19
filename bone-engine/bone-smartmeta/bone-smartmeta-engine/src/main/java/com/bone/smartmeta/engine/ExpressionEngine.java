@@ -1,7 +1,7 @@
 package com.bone.smartmeta.engine;
 
 import com.bone.smartmeta.engine.metadata.EntityMetadata;
-import com.bone.smartmeta.engine.metadata.FieldMetadata;
+import com.bone.smartmeta.engine.metadata.SmartFieldMetadata;
 import com.bone.smartmeta.engine.model.DynamicSmartEntity;
 import com.bone.smartmeta.engine.core.SmartBaseEntity;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -699,7 +699,7 @@ public class ExpressionEngine {
      * 计算虚拟字段
      */
     private <T extends SmartBaseEntity> void calculateVirtualFields(T entity, EntityMetadata entityMetadata, Map<String, Object> context) {
-        for (FieldMetadata field : entityMetadata.getFields().values()) {
+        for (SmartFieldMetadata field : entityMetadata.getFields().values()) {
             if (field.isVirtual() && field.getCalculationExpression() != null) {
                 try {
                     log.debug("计算虚拟字段: {}, 表达式: {}", field.getApiName(), field.getCalculationExpression());
@@ -725,8 +725,8 @@ public class ExpressionEngine {
      * 计算公式字段
      */
     private <T extends SmartBaseEntity> void calculateFormulaFields(T entity, EntityMetadata entityMetadata, Map<String, Object> context) {
-        for (FieldMetadata field : entityMetadata.getFields().values()) {
-            // 暂时注释掉isFormulaField()和getFormula()调用，因为FieldMetadata类中似乎没有这些方法
+        for (SmartFieldMetadata field : entityMetadata.getFields().values()) {
+            // 暂时注释掉isFormulaField()和getFormula()调用，因为SmartFieldMetadata类中似乎没有这些方法
             // if (field.isFormulaField() && field.getFormula() != null) {
             //     try {
             //         log.debug("计算公式字段: {}, 公式: {}", field.getApiName(), field.getFormula());

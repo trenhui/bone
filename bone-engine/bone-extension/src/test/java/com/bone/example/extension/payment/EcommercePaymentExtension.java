@@ -2,8 +2,17 @@ package com.bone.example.extension.payment;
 
 import com.bone.engine.extension.BizContext;
 import com.bone.engine.extension.Extension;
+import com.bone.example.extension.payment.exception.PaymentException;
+import com.bone.example.extension.payment.service.CouponService;
+import com.bone.example.extension.payment.service.DefaultCouponService;
+import com.bone.example.extension.payment.service.DefaultPointsService;
+import com.bone.example.extension.payment.service.DefaultPaymentLogService;
+import com.bone.example.extension.payment.service.PointsService;
+import com.bone.example.extension.payment.service.PaymentLogService;
 import com.bone.example.extension.result.ValidationResult;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,6 +22,7 @@ import java.util.Map;
  * 提供标准电商支付流程，包括优惠券、积分抵扣等功能
  */
 @Extension(tenantCode = "ECOMMERCE_TENANT")
+@Component
 @Slf4j
 public class EcommercePaymentExtension implements PaymentExtPoint {
     
@@ -20,8 +30,6 @@ public class EcommercePaymentExtension implements PaymentExtPoint {
     private static final String CURRENCY_CNY = "CNY";
     private static final String COUPON_DISCOUNT_KEY = "COUPON_DISCOUNT";
     private static final String POINTS_DEDUCTION_KEY = "POINTS_DEDUCTION";
-    private static final String DEFAULT_COUPON_DISCOUNT = "10.00";
-    private static final String POINTS_VALUE_RATE = "0.01";
     
     // 错误码常量
     private static final String INVALID_REQUEST_CODE = "INVALID_REQUEST";
@@ -31,10 +39,36 @@ public class EcommercePaymentExtension implements PaymentExtPoint {
     private static final String VALIDATION_ERROR_CODE = "VALIDATION_ERROR";
     private static final String VALIDATION_ERROR_MSG = "支付验证过程中出现异常";
     
-    // 使用内部类实现服务
-    private CouponService couponService = new CouponService();
-    private PointsService pointsService = new PointsService();
-    private PaymentLogService logService = new PaymentLogService();
+    // 使用依赖注入替代内部类
+    @Autowired
+    private CouponService couponService;
+    
+    @Autowired
+    private PointsService pointsService;
+    
+    @Autowired
+    private PaymentLogService logService;
+    
+    // 构造函数用于测试，允许手动注入依赖
+    public EcommercePaymentExtension() {
+        // 当Spring容器未初始化时使用默认实现
+        this.couponService = new DefaultCouponService();
+        this.pointsService = new DefaultPointsService();
+        this.logService = new DefaultPaymentLogService();
+    }
+    
+    // 允许手动设置依赖，便于测试
+    public void setCouponService(CouponService couponService) {
+        this.couponService = couponService;
+    }
+    
+    public void setPointsService(PointsService pointsService) {
+        this.pointsService = pointsService;
+    }
+    
+    public void setLogService(PaymentLogService logService) {
+        this.logService = logService;
+    }
     
     @Override
     public ValidationResult prePayValidate(BizContext<PaymentRequest> context) {
@@ -43,12 +77,12 @@ public class EcommercePaymentExtension implements PaymentExtPoint {
             
             // 参数验证
             if (request == null || request.getOrderId() == null) {
-                return ValidationResult.fail(INVALID_REQUEST_CODE, INVALID_REQUEST_MSG);
+                throw new PaymentException(INVALID_REQUEST_CODE, INVALID_REQUEST_MSG);
             }
             
             // 业务验证
             if (!isOrderValid(request.getOrderId(), context.getTenantCode())) {
-                return ValidationResult.fail(INVALID_ORDER_CODE, INVALID_ORDER_MSG);
+                throw new PaymentException(INVALID_ORDER_CODE, INVALID_ORDER_MSG);
             }
             
             // 优惠券验证
@@ -56,14 +90,20 @@ public class EcommercePaymentExtension implements PaymentExtPoint {
                 ValidationResult couponValidation = couponService.validateCoupon(
                     request.getCouponId(), request.getUserId(), request.getAmount());
                 if (!couponValidation.isSuccess()) {
+                    // 优惠券验证失败，可以直接返回结果或抛出异常
+                    // 这里选择直接返回，因为优惠券验证可能有多种业务规则
                     return couponValidation;
                 }
             }
             
             log.info("Payment validation passed for order: {}", request.getOrderId());
             return ValidationResult.success();
+        } catch (PaymentException e) {
+            log.warn("Payment validation failed: {}, message: {}", e.getErrorCode(), e.getMessage());
+            return ValidationResult.fail(e.getErrorCode(), e.getMessage());
         } catch (Exception e) {
-            log.error("Payment validation failed for tenant: {}", context.getTenantCode(), e);
+            log.error("Unexpected error during payment validation for tenant: {}", 
+                     context.getTenantCode(), e);
             return ValidationResult.fail(VALIDATION_ERROR_CODE, VALIDATION_ERROR_MSG);
         }
     }
@@ -128,30 +168,5 @@ public class EcommercePaymentExtension implements PaymentExtPoint {
         log.info("Sending payment notification for transaction: {}", result.getTransactionId());
     }
     
-    // 内部服务实现类
-    static class CouponService {
-        public ValidationResult validateCoupon(String couponId, String userId, BigDecimal amount) {
-            // 模拟优惠券验证
-            return ValidationResult.success();
-        }
-        
-        public BigDecimal calculateDiscount(String couponId, BigDecimal amount) {
-            // 模拟计算折扣
-            return new BigDecimal(DEFAULT_COUPON_DISCOUNT);
-        }
-    }
-    
-    static class PointsService {
-        public BigDecimal calculatePointsValue(int points) {
-            // 模拟积分价值计算
-            return new BigDecimal(points).multiply(new BigDecimal(POINTS_VALUE_RATE));
-        }
-    }
-    
-    static class PaymentLogService {
-        public void logPayment(PaymentResult result) {
-            // 模拟记录支付日志
-            log.info("Logging payment: {}", result.getTransactionId());
-        }
-    }
+    // 内部服务实现类已移至独立的服务接口和实现类中
 }

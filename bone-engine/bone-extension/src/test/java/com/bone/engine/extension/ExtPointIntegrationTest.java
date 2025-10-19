@@ -24,7 +24,7 @@ public class ExtPointIntegrationTest {
     @BeforeEach
     void setUp() {
         // 清理上下文
-        BizContexts.clear();
+        ExtensionContextManager.clearContext();
         
         // 创建自定义仓库和路由器
         repository = new TestExtPointRepository();
@@ -47,15 +47,15 @@ public class ExtPointIntegrationTest {
      */
     @Test
     void testBasicContextManagement() {
-        try (BizContexts.ContextManager manager = BizContexts.with("TENANT_A", "ORDER")) {
-            BizContext<?> context = BizContexts.getCurrent();
+        try (ExtensionScope scope = ExtensionContextManager.with("TENANT_A", "ORDER")) {
+            BizContext<?> context = ExtensionContextManager.getCurrent();
             assertNotNull(context, "Context should not be null");
             assertEquals("TENANT_A|ORDER|DEFAULT|DEFAULT", context.getBizIdentity(), "Business identity format should match");
             // 仅验证业务身份格式，暂不直接获取租户和业务类型
         }
         
         // 上下文应该已经被清理
-        BizContext<?> context = BizContexts.getCurrent();
+        BizContext<?> context = ExtensionContextManager.getCurrent();
         assertNull(context, "Context should be null after close");
     }
     
@@ -64,8 +64,8 @@ public class ExtPointIntegrationTest {
      */
     @Test
     void testContextAttributes() {
-        try (BizContexts.ContextManager manager = BizContexts.with("TENANT_B", "ORDER")) {
-            BizContext<?> context = BizContexts.getCurrent();
+        try (ExtensionScope scope = ExtensionContextManager.with("TENANT_B", "ORDER")) {
+            BizContext<?> context = ExtensionContextManager.getCurrent();
             
             // 设置多种类型的属性
             context.withAttribute("userId", "12345");
@@ -105,7 +105,7 @@ public class ExtPointIntegrationTest {
      */
     @Test
     void testDefaultExtPointImplementation() {
-        try (BizContexts.ContextManager manager = BizContexts.with("TENANT_C", "USER")) {
+        try (ExtensionScope scope = ExtensionContextManager.with("TENANT_C", "USER")) {
             // 检查是否注册了默认实现
             DefaultUserService defaultService = repository.getDefaultUserService();
             assertNotNull(defaultService, "Default user service should be registered");
@@ -115,7 +115,7 @@ public class ExtPointIntegrationTest {
             assertEquals("Default User Greeting - test-user", result);
             
             // 验证业务身份格式
-            BizContext<?> context = BizContexts.getCurrent();
+            BizContext<?> context = ExtensionContextManager.getCurrent();
             assertEquals("TENANT_C|USER|DEFAULT|DEFAULT", context.getBizIdentity(), "Business identity format should match");
         }
     }
@@ -179,13 +179,13 @@ public class ExtPointIntegrationTest {
     @Test
     void testContextSwitching() {
         // 第一个业务流程
-        try (BizContexts.ContextManager manager1 = BizContexts.with("TENANT_X", "ORDER")) {
-            BizContext<?> context1 = BizContexts.getCurrent();
+        try (ExtensionScope scope1 = ExtensionContextManager.with("TENANT_X", "ORDER")) {
+            BizContext<?> context1 = ExtensionContextManager.getCurrent();
             assertEquals("TENANT_X|ORDER|DEFAULT|DEFAULT", context1.getBizIdentity());
             
             // 嵌套的第二个业务流程
-            try (BizContexts.ContextManager manager2 = BizContexts.with("TENANT_Y", "PAYMENT")) {
-                BizContext<?> context2 = BizContexts.getCurrent();
+            try (ExtensionScope scope2 = ExtensionContextManager.with("TENANT_Y", "PAYMENT")) {
+                BizContext<?> context2 = ExtensionContextManager.getCurrent();
                 assertEquals("TENANT_Y|PAYMENT|DEFAULT|DEFAULT", context2.getBizIdentity());
                 
                 // 验证第一个上下文被正确保存
@@ -193,12 +193,12 @@ public class ExtPointIntegrationTest {
             }
             
             // 验证回到第一个上下文
-            BizContext<?> contextAfterNested = BizContexts.getCurrent();
+            BizContext<?> contextAfterNested = ExtensionContextManager.getCurrent();
             assertEquals("TENANT_X|ORDER|DEFAULT|DEFAULT", contextAfterNested.getBizIdentity());
         }
         
         // 验证上下文完全清理
-        assertNull(BizContexts.getCurrent(), "Context should be null after all scopes");
+        assertNull(ExtensionContextManager.getCurrent(), "Context should be null after all scopes");
     }
     
     /**

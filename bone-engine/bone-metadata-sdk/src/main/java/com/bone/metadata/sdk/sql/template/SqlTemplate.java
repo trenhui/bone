@@ -1,6 +1,6 @@
 package com.bone.metadata.sdk.sql.template;
 
-import com.bone.metadata.sdk.domain.annotation.SqlType;
+import com.bone.metadata.sdk.domain.enums.SqlType;
 import com.bone.metadata.sdk.domain.enums.SqlTemplateType;
 import lombok.*;
 import org.springframework.util.DigestUtils;

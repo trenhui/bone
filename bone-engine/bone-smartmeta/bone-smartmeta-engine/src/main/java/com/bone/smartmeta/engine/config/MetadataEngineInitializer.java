@@ -2,7 +2,7 @@ package com.bone.smartmeta.engine.config;
 
 import com.bone.smartmeta.engine.MetadataEngine;
 import com.bone.smartmeta.engine.metadata.EntityMetadata;
-import com.bone.smartmeta.engine.metadata.FieldMetadata;
+import com.bone.smartmeta.engine.metadata.SmartFieldMetadata;
 import com.bone.smartmeta.engine.metadata.AiMetadata;
 import com.bone.smartmeta.engine.metadata.ValidationRuleMetadata;
 import lombok.RequiredArgsConstructor;
@@ -126,7 +126,7 @@ public class MetadataEngineInitializer implements ApplicationRunner {
         entity.setTags(Arrays.asList("system", "user"));
         
         // 创建字段
-        List<FieldMetadata> fields = new ArrayList<>();
+        List<SmartFieldMetadata> fields = new ArrayList<>();
         
         // id字段
         fields.add(createField("id", "用户ID", "STRING", true, null, null, "主键ID", null, null));
@@ -147,7 +147,7 @@ public class MetadataEngineInitializer implements ApplicationRunner {
         fields.add(createField("createdAt", "创建时间", "DATETIME", true, null, null, "创建时间", "#date()", null));
         
         // 虚拟字段：全名
-        FieldMetadata fullNameField = createField("fullName", "全名", "STRING", false, null, null, "用户全名", null, null);
+        SmartFieldMetadata fullNameField = createField("fullName", "全名", "STRING", false, null, null, "用户全名", null, null);
         fullNameField.setVirtual(true);
         fullNameField.setCalculationExpression("concat(#root.username, ' ', #root.email)");
         fields.add(fullNameField);
@@ -186,7 +186,7 @@ public class MetadataEngineInitializer implements ApplicationRunner {
         entity.setTags(Arrays.asList("business", "product"));
         
         // 创建字段
-        List<FieldMetadata> fields = new ArrayList<>();
+        List<SmartFieldMetadata> fields = new ArrayList<>();
         fields.add(createField("id", "产品ID", "STRING", true, null, null, "产品主键", null, null));
         fields.add(createField("name", "产品名称", "STRING", true, 1, 200, "产品名称", null, null));
         fields.add(createField("price", "价格", "DOUBLE", true, 0.0, 999999.99, "产品价格", null, null));
@@ -194,7 +194,7 @@ public class MetadataEngineInitializer implements ApplicationRunner {
         fields.add(createField("category", "分类", "STRING", true, null, 50, "产品分类", null, null));
         
         // 虚拟字段：折扣价格
-        FieldMetadata discountPriceField = createField("discountPrice", "折扣价格", "DOUBLE", false, null, null, "产品折扣价格", null, null);
+        SmartFieldMetadata discountPriceField = createField("discountPrice", "折扣价格", "DOUBLE", false, null, null, "产品折扣价格", null, null);
         discountPriceField.setVirtual(true);
         discountPriceField.setCalculationExpression("#root.price * 0.9"); // 9折
         fields.add(discountPriceField);
@@ -219,14 +219,14 @@ public class MetadataEngineInitializer implements ApplicationRunner {
         entity.setTags(Arrays.asList("business", "order"));
         
         // 创建字段
-        List<FieldMetadata> fields = new ArrayList<>();
+        List<SmartFieldMetadata> fields = new ArrayList<>();
         fields.add(createField("id", "订单ID", "STRING", true, null, null, "订单主键", "#uuid()", null));
         fields.add(createField("userId", "用户ID", "STRING", true, null, null, "用户ID", null, null));
         fields.add(createField("amount", "订单金额", "DOUBLE", true, 0.0, 9999999.99, "订单总金额", null, null));
         fields.add(createField("status", "订单状态", "STRING", true, null, 20, "订单状态", "PENDING", null));
         
         // 虚拟字段：订单描述
-        FieldMetadata descriptionField = createField("description", "订单描述", "STRING", false, null, null, "订单描述", null, null);
+        SmartFieldMetadata descriptionField = createField("description", "订单描述", "STRING", false, null, null, "订单描述", null, null);
         descriptionField.setVirtual(true);
         descriptionField.setCalculationExpression("concat('订单号: ', #root.id, ', 金额: ', #root.amount)");
         fields.add(descriptionField);
@@ -239,10 +239,10 @@ public class MetadataEngineInitializer implements ApplicationRunner {
     /**
      * 创建字段元数据
      */
-    private FieldMetadata createField(String apiName, String label, String type, boolean required, 
+    private SmartFieldMetadata createField(String apiName, String label, String type, boolean required, 
                                      Object minValue, Object maxValue, String description, 
                                      String defaultValue, Pattern regexPattern) {
-        FieldMetadata field = new FieldMetadata();
+        SmartFieldMetadata field = new SmartFieldMetadata();
         field.setApiName(apiName);
         field.setPhysicalName(apiName.toLowerCase());
         field.setLabel(label);

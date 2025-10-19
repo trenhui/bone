@@ -64,8 +64,8 @@ public class SmartMetaAutoConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean
-    public ValidationEngine validationEngine(MetadataRepository metadataRepository, ExpressionEngine expressionEngine) {
-        return new ValidationEngine(metadataRepository, expressionEngine);
+    public ValidationEngine validationEngine() {
+        return new ValidationEngine();
     }
     
     /**

@@ -1,6 +1,7 @@
 package com.bone.engine.extension.repository;
 
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 import java.util.Map;
@@ -11,8 +12,6 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author renhui.trh 2023-10-30
  */
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class MemExtPointRepository implements ExtPointRepository {
     private static final Logger log = LoggerFactory.getLogger(MemExtPointRepository.class);

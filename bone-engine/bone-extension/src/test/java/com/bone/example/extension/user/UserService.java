@@ -1,7 +1,8 @@
 package com.bone.example.extension.user;
 
 import com.bone.engine.extension.BizContext;
-import com.bone.engine.extension.BizContexts;
+import com.bone.engine.extension.ExtensionContextManager;
+import com.bone.engine.extension.ExtensionScope;
 import com.bone.example.extension.user.greeting.DefaultGreetingExtension;
 import com.bone.example.extension.user.greeting.GreetingExtPoint;
 import com.bone.example.extension.user.greeting.VipGreetingExtension;
@@ -31,18 +32,15 @@ public class UserService {
      */
     public String welcomeUser(String username, boolean isVip) {
         // 使用上下文管理器创建并设置上下文（自动清理）
-        try (BizContexts.ContextManager manager = BizContexts.with("TENANT_A", "USER_SERVICE")) {
-            // 获取当前上下文并设置属性
-            @SuppressWarnings("unchecked")
-            BizContext<String> context = (BizContext<String>) BizContexts.getCurrent();
-            context.setData(username);
-            context.withAttribute("username", username);
-            context.withAttribute("isVip", isVip);
+        try (ExtensionScope scope = ExtensionContextManager.with("TENANT_A", "USER_SERVICE")
+                .withAttribute("username", username)
+                .withAttribute("isVip", isVip)) {
+            
+            // 创建业务上下文并设置数据
+            BizContext<String> context = ExtensionContextManager.fromData(username);
+            
             // 根据isVip选择对应的扩展实现
-            GreetingExtPoint extension = greetingExtensions.get(isVip);
-            if (extension == null) {
-                extension = greetingExtensions.get(false); // 默认使用普通用户实现
-            }
+            GreetingExtPoint extension = greetingExtensions.getOrDefault(isVip, greetingExtensions.get(false));
             
             // 调用扩展点方法
             return extension.greet(context);

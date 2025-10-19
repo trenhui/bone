@@ -1,6 +1,7 @@
 package com.bone.metadata.sdk.domain.annotation;
 
 import com.bone.metadata.sdk.domain.enums.SqlTemplateType;
+import com.bone.metadata.sdk.domain.enums.SqlType;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

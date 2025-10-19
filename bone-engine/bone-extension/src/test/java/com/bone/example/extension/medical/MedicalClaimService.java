@@ -1,7 +1,7 @@
 package com.bone.example.extension.medical;
 
 import com.bone.engine.extension.BizContext;
-import com.bone.engine.extension.BizContexts;
+import com.bone.example.extension.medical.exception.MedicalClaimException;
 import com.bone.example.extension.result.ValidationResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,9 +27,15 @@ public class MedicalClaimService {
     private static final String DEFAULT_BIZ_CODE = "DEFAULT";
     private static final String SYSTEM_PROCESSOR = "SYSTEM";
     private static final String PAYMENT_STATUS_NONE = "NONE";
+    private static final String MEDICAL_LOG_PREFIX = "[MEDICAL CLAIM]";
     
     @Autowired
     private MedicalClaimExtPoint medicalClaimExtPoint;
+    
+    // 用于测试的setter方法
+    public void setMedicalClaimExtPoint(MedicalClaimExtPoint medicalClaimExtPoint) {
+        this.medicalClaimExtPoint = medicalClaimExtPoint;
+    }
     
     /**
      * 处理医疗保险理赔请求
@@ -41,27 +47,36 @@ public class MedicalClaimService {
      * @return 医疗保险理赔结果
      */
     public MedicalClaimResult processClaim(MedicalClaimRequest request) {
-        // 直接创建业务上下文，不使用try-with-resources模式
-        BizContext<MedicalClaimRequest> context = createContext(request);
+        String userId = request.getUserId();
+        String claimType = request.getClaimType() != null ? request.getClaimType().name() : "UNKNOWN";
         
         try {
+            // 创建业务上下文
+            BizContext<MedicalClaimRequest> context = createContext(request);
+            
             // 1. 验证理赔请求
             ValidationResult validationResult = medicalClaimExtPoint.validateClaim(context);
             if (!validationResult.isSuccess()) {
-                log.warn("Claim validation failed: {}, reason: {}", validationResult.getErrorCode(), validationResult.getErrorMessage());
+                log.warn("{} Claim validation failed for user: {}, error: {}, reason: {}", 
+                        MEDICAL_LOG_PREFIX, userId, validationResult.getErrorCode(), validationResult.getErrorMessage());
                 return buildRejectedResult(request, validationResult.getErrorCode(), validationResult.getErrorMessage());
             }
             
             // 2. 处理理赔请求
-            log.info("Processing claim for user: {}, type: {}", request.getUserId(), request.getClaimType());
+            log.info("{} Processing claim for user: {}, type: {}", MEDICAL_LOG_PREFIX, userId, claimType);
             MedicalClaimResult result = medicalClaimExtPoint.processClaim(context);
             
             // 3. 记录处理结果
-            log.info("Claim processed successfully: {}, status: {}", result.getClaimId(), result.getStatus());
+            log.info("{} Claim processed successfully: {}, status: {}, user: {}", 
+                    MEDICAL_LOG_PREFIX, result.getClaimId(), result.getStatus(), userId);
             
             return result;
+        } catch (MedicalClaimException e) {
+            log.error("{} Medical claim error for user: {}, errorCode: {}, message: {}", 
+                    MEDICAL_LOG_PREFIX, userId, e.getErrorCode(), e.getMessage());
+            return buildErrorResult(request, e.getMessage());
         } catch (Exception e) {
-            log.error("Error processing medical claim for user: {}", request.getUserId(), e);
+            log.error("{} Unexpected error processing medical claim for user: {}", MEDICAL_LOG_PREFIX, userId, e);
             return buildErrorResult(request, "处理过程中发生错误: " + e.getMessage());
         }
     }
@@ -74,11 +89,32 @@ public class MedicalClaimService {
      * @return 验证结果
      */
     public ValidationResult validateClaim(MedicalClaimRequest request) {
-        // 直接创建业务上下文，不使用try-with-resources模式
-        BizContext<MedicalClaimRequest> context = createContext(request);
+        String userId = request.getUserId();
         
-        // 执行验证
-        return medicalClaimExtPoint.validateClaim(context);
+        try {
+            // 创建业务上下文
+            BizContext<MedicalClaimRequest> context = createContext(request);
+            
+            log.info("{} Validating claim for user: {}", MEDICAL_LOG_PREFIX, userId);
+            ValidationResult result = medicalClaimExtPoint.validateClaim(context);
+            
+            if (result.isSuccess()) {
+                log.debug("{} Claim validation passed for user: {}", MEDICAL_LOG_PREFIX, userId);
+            } else {
+                log.info("{} Claim validation failed for user: {}, error: {}", 
+                        MEDICAL_LOG_PREFIX, userId, result.getErrorCode());
+            }
+            
+            return result;
+        } catch (Exception e) {
+            log.error("{} Error during claim validation for user: {}", MEDICAL_LOG_PREFIX, userId, e);
+            // 返回验证失败的结果
+            ValidationResult errorResult = new ValidationResult();
+            errorResult.setSuccess(false);
+            errorResult.setErrorCode("VALIDATION_ERROR");
+            errorResult.setErrorMessage("验证过程中发生错误: " + e.getMessage());
+            return errorResult;
+        }
     }
     
     /**

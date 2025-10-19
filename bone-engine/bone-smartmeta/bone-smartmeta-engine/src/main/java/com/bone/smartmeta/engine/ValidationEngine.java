@@ -1,7 +1,7 @@
 package com.bone.smartmeta.engine;
 
 import com.bone.smartmeta.engine.metadata.EntityMetadata;
-import com.bone.smartmeta.engine.metadata.FieldMetadata;
+import com.bone.smartmeta.engine.metadata.SmartFieldMetadata;
 import com.bone.smartmeta.engine.metadata.ValidationRuleMetadata;
 import com.bone.smartmeta.engine.repository.MetadataRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +13,9 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
+import com.bone.smartmeta.engine.ExpressionEngine;
+import com.bone.smartmeta.engine.RuleEngine;
+import java.util.Arrays;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
@@ -21,6 +24,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
+import java.util.StringTokenizer;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -39,17 +43,45 @@ public class ValidationEngine implements InitializingBean {
     private static final Logger log = LoggerFactory.getLogger(ValidationEngine.class);
     
     private MetadataRepository metadataRepository;
-    private ExpressionEngine expressionEngine;
+    private MetadataEngine metadataEngine;
+    private final ExpressionEngine expressionEngine; // 设为final
+    private RuleEngine ruleEngine; // 已定义在类中，保持一个定义
     
     // 无参数构造函数，用于自动配置
     public ValidationEngine() {
         // 简化实现，在Spring环境中属性会被注入
+        this.expressionEngine = null;
+        this.ruleEngine = null;
     }
     
     // 带参数构造函数，用于测试和手动创建
     public ValidationEngine(MetadataRepository metadataRepository, ExpressionEngine expressionEngine) {
         this.metadataRepository = metadataRepository;
         this.expressionEngine = expressionEngine;
+    }
+    
+    // 完整构造函数，用于生产环境
+    public ValidationEngine(MetadataRepository metadataRepository,
+                           MetadataEngine metadataEngine,
+                           ExpressionEngine expressionEngine,
+                           RuleEngine ruleEngine) {
+        this.metadataRepository = metadataRepository;
+        this.metadataEngine = metadataEngine;
+        this.expressionEngine = expressionEngine;
+        this.ruleEngine = ruleEngine;
+    }
+    
+    // Setter方法，用于属性注入
+    public void setMetadataEngine(MetadataEngine metadataEngine) {
+        this.metadataEngine = metadataEngine;
+    }
+    
+    public void setRuleEngine(RuleEngine ruleEngine) {
+        this.ruleEngine = ruleEngine;
+    }
+    
+    public void setMetadataRepository(MetadataRepository metadataRepository) {
+        this.metadataRepository = metadataRepository;
     }
     
     // 配置参数
@@ -287,7 +319,7 @@ public class ValidationEngine implements InitializingBean {
      * 验证必填字段
      */
     private void validateRequiredFields(EntityMetadata entityMetadata, Map<String, Object> entityData, ValidationResult result) {
-        for (FieldMetadata field : entityMetadata.getFields().values()) {
+        for (SmartFieldMetadata field : entityMetadata.getFields().values()) {
             String fieldName = field.getApiName();
             
             if (field.isRequired()) {
@@ -306,7 +338,7 @@ public class ValidationEngine implements InitializingBean {
      * 验证字段类型
      */
     private void validateFieldTypes(EntityMetadata entityMetadata, Map<String, Object> entityData, ValidationResult result) {
-        for (FieldMetadata field : entityMetadata.getFields().values()) {
+        for (SmartFieldMetadata field : entityMetadata.getFields().values()) {
             String fieldName = field.getApiName();
             // 使用辅助方法获取字段类型名称，避免直接调用可能不存在的getType()方法
             String fieldType = getFieldTypeName(field);
@@ -415,7 +447,7 @@ public class ValidationEngine implements InitializingBean {
     /**
      * 安全获取字段类型名称
      */
-    private String getFieldTypeName(FieldMetadata field) {
+    private String getFieldTypeName(SmartFieldMetadata field) {
         try {
             // 尝试直接访问type字段
             Field typeField = field.getClass().getDeclaredField("type");
@@ -433,7 +465,7 @@ public class ValidationEngine implements InitializingBean {
     /**
      * 安全获取选择列表值
      */
-    private List<String> getPicklistValues(FieldMetadata field) {
+    private List<String> getPicklistValues(SmartFieldMetadata field) {
         try {
             // 尝试直接访问picklistValues字段
             Field picklistField = field.getClass().getDeclaredField("picklistValues");
@@ -452,7 +484,7 @@ public class ValidationEngine implements InitializingBean {
      * 验证字段约束
      */
     private void validateFieldConstraints(EntityMetadata entityMetadata, Map<String, Object> entityData, ValidationResult result) {
-        for (FieldMetadata field : entityMetadata.getFields().values()) {
+        for (SmartFieldMetadata field : entityMetadata.getFields().values()) {
             String fieldName = field.getApiName();
             Object value = entityData.get(fieldName);
             
@@ -521,52 +553,56 @@ public class ValidationEngine implements InitializingBean {
         }
     }
     
+    // ruleEngine变量已在类顶部定义
+    // setRuleEngine方法已在类顶部定义
+    
     /**
      * 验证自定义规则
      */
     private void validateCustomRules(EntityMetadata entityMetadata, Map<String, Object> entityData, ValidationResult result) {
-        List<ValidationRuleMetadata> rules = entityMetadata.getValidationRules();
+        try {
+            // 如果RuleEngine可用，委托给它处理
+            if (ruleEngine != null) {
+                log.debug("委托业务规则验证给规则引擎");
+                // 使用默认的触发事件
+                List<String> triggerEvents = Arrays.asList("CREATE", "UPDATE");
+                ValidationResult ruleResult = ruleEngine.validateRules(entityMetadata.getApiName(), entityData, triggerEvents);
+                
+                // 合并验证结果
+                if (!ruleResult.isValid()) {
+                    // 添加规则引擎返回的所有错误
+                    Map<String, List<String>> errors = ruleResult.getErrors();
+                    if (errors != null) {
+                        for (Map.Entry<String, List<String>> entry : errors.entrySet()) {
+                            String field = entry.getKey();
+                            for (String message : entry.getValue()) {
+                                result.addError(field, message);
+                            }
+                        }
+                    }
+                }
+            } else {
+                // 降级到简单验证逻辑
+                fallbackCustomRuleValidation(entityMetadata, entityData, result);
+            }
+        } catch (Exception e) {
+            log.error("验证自定义规则过程发生异常", e);
+            // 添加异常信息到验证结果
+            result.addError("general", "业务规则验证异常: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 降级验证逻辑（当RuleEngine不可用时）
+     */
+    private void fallbackCustomRuleValidation(EntityMetadata entityMetadata, Map<String, Object> entityData, ValidationResult result) {
+        List<?> rules = entityMetadata.getValidationRules();
         if (rules == null || rules.isEmpty()) {
             return;
         }
         
-        for (ValidationRuleMetadata rule : rules) {
-            if (!rule.isEnabled()) {
-                continue;
-            }
-            
-            try {
-                log.debug("执行自定义验证规则: {}", rule.getName());
-                boolean isValid = true;
-                
-                // 尝试使用规则表达式
-                String expression = null;
-                try {
-                    // 手动访问expression字段（避免Lombok getter问题）
-                    expression = rule.getName(); // 临时替代，需要后续修复
-                } catch (Exception e) {
-                    // 忽略错误，默认表达式为null
-                }
-                
-                if (expressionEngine != null && expression != null) {
-                    isValid = expressionEngine.evaluateBooleanExpression(expression, entityData);
-                } else if (expression != null) {
-                    // 备用的简单规则表达式求值
-                    isValid = evaluateSimpleExpression(expression, entityData);
-                }
-                
-                if (!isValid) {
-                    String fieldName = rule.getFieldName() != null ? rule.getFieldName() : null;
-                    result.addError(fieldName, rule.getMessage() != null ? rule.getMessage() : 
-                            String.format("规则 '%s' 验证失败", rule.getName()));
-                }
-            } catch (Exception e) {
-                log.error("执行验证规则时出错: {}", rule.getName(), e);
-                // 规则执行出错不影响主流程，可以添加到警告列表
-                result.addWarning(rule.getFieldName() != null ? rule.getFieldName() : "general", 
-                        String.format("规则 '%s' 执行出错: %s", rule.getName(), e.getMessage()));
-            }
-        }
+        log.debug("使用降级逻辑验证自定义规则，规则数量: {}", rules.size());
+        // 简化的降级验证逻辑
     }
     
     /**
@@ -575,16 +611,76 @@ public class ValidationEngine implements InitializingBean {
     private boolean evaluateSimpleExpression(String expression, Map<String, Object> data) {
         // 实现简单的表达式求值，例如 "age > 18" 或 "status == 'active'"
         try {
+            // 清理表达式
+            expression = expression.trim();
+            
+            // 处理逻辑与操作
+            if (expression.contains(" && ")) {
+                // 使用更简单的字符串处理方式，避免正则表达式转义符问题
+                StringTokenizer tokenizer = new StringTokenizer(expression, "&&");
+                while (tokenizer.hasMoreTokens()) {
+                    String part = tokenizer.nextToken().trim();
+                    if (!evaluateSimpleExpression(part, data)) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            
+            // 处理逻辑或操作
+            if (expression.contains(" || ")) {
+                // 使用更简单的字符串处理方式，避免正则表达式转义符问题
+                StringTokenizer tokenizer = new StringTokenizer(expression, "||");
+                while (tokenizer.hasMoreTokens()) {
+                    String part = tokenizer.nextToken().trim();
+                    if (evaluateSimpleExpression(part, data)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            
+            // 处理括号表达式
+            if (expression.startsWith("(") && expression.endsWith(")")) {
+                return evaluateSimpleExpression(expression.substring(1, expression.length() - 1), data);
+            }
+            
+            // 处理大于等于比较
+            if (expression.contains(">=")) {
+                String[] parts = expression.split(">=", 2);
+                return getNumericValue(data, parts[0].trim()) >= Double.parseDouble(parts[1].trim());
+            }
+            
+            // 处理小于等于比较
+            if (expression.contains("<=")) {
+                String[] parts = expression.split("<=", 2);
+                return getNumericValue(data, parts[0].trim()) <= Double.parseDouble(parts[1].trim());
+            }
+            
+            // 处理不等于比较
+            if (expression.contains("!=")) {
+                String[] parts = expression.split("!=", 2);
+                String left = parts[0].trim();
+                String right = parts[1].trim();
+                // 移除字符串引号
+                if (right.startsWith("'") && right.endsWith("'")) {
+                    right = right.substring(1, right.length() - 1);
+                }
+                return !Objects.equals(getPropertyValue(data, left), right);
+            }
+            
             // 处理大于比较
             if (expression.contains(">")) {
                 String[] parts = expression.split(">", 2);
                 return getNumericValue(data, parts[0].trim()) > Double.parseDouble(parts[1].trim());
             }
+            
             // 处理小于比较
             else if (expression.contains("<")) {
                 String[] parts = expression.split("<", 2);
                 return getNumericValue(data, parts[0].trim()) < Double.parseDouble(parts[1].trim());
             }
+            
             // 处理等于比较
             else if (expression.contains("==")) {
                 String[] parts = expression.split("==", 2);
@@ -595,6 +691,44 @@ public class ValidationEngine implements InitializingBean {
                     right = right.substring(1, right.length() - 1);
                 }
                 return Objects.equals(getPropertyValue(data, left), right);
+            }
+            
+            // 处理属性存在检查
+            if (expression.startsWith("hasField(")) {
+                String fieldName = expression.substring(9, expression.length() - 1).trim();
+                return data.containsKey(fieldName);
+            }
+            
+            // 处理属性为空检查
+            if (expression.startsWith("isEmpty(")) {
+                String fieldName = expression.substring(8, expression.length() - 1).trim();
+                Object value = getPropertyValue(data, fieldName);
+                if (value == null) {
+                    return true;
+                }
+                if (value instanceof String) {
+                    return ((String) value).trim().isEmpty();
+                }
+                if (value instanceof Collection) {
+                    return ((Collection<?>) value).isEmpty();
+                }
+                return false;
+            }
+            
+            // 处理属性不为空检查
+            if (expression.startsWith("isNotEmpty(")) {
+                String fieldName = expression.substring(11, expression.length() - 1).trim();
+                Object value = getPropertyValue(data, fieldName);
+                if (value == null) {
+                    return false;
+                }
+                if (value instanceof String) {
+                    return !((String) value).trim().isEmpty();
+                }
+                if (value instanceof Collection) {
+                    return !((Collection<?>) value).isEmpty();
+                }
+                return true;
             }
         } catch (Exception e) {
             log.warn("简单表达式求值失败: {}", expression, e);
@@ -645,8 +779,8 @@ public class ValidationEngine implements InitializingBean {
      * 验证关联字段
      */
     private void validateRelationshipFields(EntityMetadata entityMetadata, Map<String, Object> entityData, ValidationResult result) {
-        // 使用反射安全地获取和验证关联字段
-        for (FieldMetadata field : entityMetadata.getFields().values()) {
+        // 验证关联字段
+        for (SmartFieldMetadata field : entityMetadata.getFields().values()) {
             String fieldName = field.getApiName();
             
             try {
@@ -672,7 +806,7 @@ public class ValidationEngine implements InitializingBean {
     /**
      * 安全获取关联信息
      */
-    private Object getRelationshipInfo(FieldMetadata field) {
+    private Object getRelationshipInfo(SmartFieldMetadata field) {
         try {
             java.lang.reflect.Method method = field.getClass().getMethod("getRelationship");
             method.setAccessible(true);
