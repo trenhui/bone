@@ -21,7 +21,7 @@ import java.lang.annotation.*;
  * <pre>
  * {@code
  * // 1. 定义扩展点接口
- * @ExtPoint
+ * @ExtPoint(name = "PaymentService", description = "支付服务扩展点")
  * public interface PaymentService {
  *     PaymentResult pay(PaymentRequest request, BizContext<?> context);
  * }
@@ -35,131 +35,34 @@ import java.lang.annotation.*;
  *         return new PaymentResult();
  *     }
  * }
- * 
- * // 3. 提供租户A的定制实现
- * @Extension(tenantCode = "TENANT_A", bizCode = "ORDER")
- * public class TenantAPaymentServiceImpl implements PaymentService {
- *     @Override
- *     public PaymentResult pay(PaymentRequest request, BizContext<?> context) {
- *         // 租户A特定的支付实现
- *         return new PaymentResult();
- *     }
- * }
- * 
- * // 4. 在业务代码中注入并使用
- * @Service
- * public class OrderService {
- *     @Autowired
- *     private PaymentService paymentService;
- *     
- *     public void processOrder(Order order) {
- *         BizContext<?> context = new BizContext.Builder()
- *             .setTenantCode(order.getTenantCode())
- *             .setBizCode("ORDER")
- *             .build();
- *             
- *         // 框架会根据上下文自动路由到合适的实现
- *         PaymentResult result = paymentService.pay(new PaymentRequest(order), context);
- *     }
- * }
  * }
  * </pre>
- * 
- * <h3>最佳实践：</h3>
- * <ul>
- *   <li>扩展点接口应保持简洁，聚焦单一职责</li>
- *   <li>接口方法应接受{@code BizContext<?>}作为参数，以支持上下文路由</li>
- *   <li>扩展点接口通常定义在核心模块，实现类定义在具体业务模块</li>
- *   <li>为每个扩展点提供默认实现，提高系统健壮性</li>
- * </ul>
- * 
- * @see Extension 扩展点提供者注解
- * @see BizContext 业务上下文对象
- * @see EnableExtPoints 启用扩展点框架注解
- * @since 1.0.0
+ *
+ * @author Bone Engine Team
+ * @version 1.0.0
  */
-@Documented
-@Inherited
+@Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE})
+@Documented
 public @interface ExtPoint {
+    
+    /**
+     * 扩展点名称
+     */
+    String name() default "";
+    
     /**
      * 扩展点描述
-     * <p>
-     * 详细描述扩展点的功能、用途和设计意图
-     * </p>
-     * 
-     * @return 扩展点描述
      */
     String description() default "";
     
     /**
-     * 负责人
-     * <p>
-     * 指定扩展点的负责人或维护团队
-     * </p>
-     * 
-     * @return 负责人信息
+     * 是否允许动态替换实现（默认允许）
      */
-    String owner() default "";
+    boolean allowDynamicReplace() default true;
     
     /**
-     * 文档链接
-     * <p>
-     * 指向扩展点详细文档的URL
-     * </p>
-     * 
-     * @return 文档链接
+     * 是否启用缓存（默认启用）
      */
-    String documentationUrl() default "";
-    
-    /**
-     * 分类
-     * <p>
-     * 扩展点的业务分类，用于组织和管理扩展点
-     * </p>
-     * 
-     * @return 分类名称
-     */
-    String category() default "default";
-    
-    /**
-     * 标签
-     * <p>
-     * 用于快速检索和筛选扩展点的标签列表
-     * </p>
-     * 
-     * @return 标签数组
-     */
-    String[] tags() default {};
-    
-    /**
-     * 是否废弃
-     * <p>
-     * 标记扩展点是否已废弃
-     * </p>
-     * 
-     * @return 是否废弃
-     */
-    boolean deprecated() default false;
-    
-    /**
-     * 废弃版本
-     * <p>
-     * 指明扩展点从哪个版本开始废弃
-     * </p>
-     * 
-     * @return 废弃版本号
-     */
-    String deprecatedSince() default "";
-    
-    /**
-     * 替代方案
-     * <p>
-     * 当扩展点废弃时，推荐使用的替代扩展点
-     * </p>
-     * 
-     * @return 替代扩展点的全限定名
-     */
-    String replacement() default "";
+    boolean enableCache() default true;
 }

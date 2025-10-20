@@ -2,6 +2,7 @@ package com.bone.engine.extension;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -23,6 +24,8 @@ import java.lang.annotation.Target;
  *   <li><strong>环境适配：</strong>通过env指定扩展适用的环境</li>
  *   <li><strong>分组管理：</strong>通过group对扩展进行逻辑分组</li>
  *   <li><strong>动态匹配：</strong>通过condition支持复杂的动态条件判断</li>
+ *   <li><strong>数据隔离：</strong>通过dataSource指定特定的数据源</li>
+ *   <li><strong>版本控制：</strong>通过version支持扩展点的版本管理</li>
  * </ol>
  * 
  * <h3>匹配优先级规则：</h3>
@@ -48,271 +51,140 @@ import java.lang.annotation.Target;
  *     // 实现逻辑
  * }
  * 
- * // 3. 多租户定制（匹配多个租户）
- * @Extension(multiTenantCodes = {"TENANT_B", "TENANT_C"}, bizCode = "PAYMENT", priority = 60)
+ * // 3. 支持多租户的实现
+ * @Extension(multiTenantCodes = {"TENANT_B", "TENANT_C"}, bizCode = "PAYMENT", version = "2.0.0")
  * public class MultiTenantPaymentServiceImpl implements PaymentService {
  *     // 实现逻辑
  * }
  * 
- * // 4. 业务场景定制（匹配特定业务和场景）
- * @Extension(tenantCode = "TENANT_B", bizCode = "PAYMENT", scenario = "REFUND", env = "PROD")
- * public class TenantBRefundServiceImpl implements PaymentService {
+ * // 4. 支持多匹配条件的实现（使用Repeatable）
+ * @Extension(tenantCode = "TENANT_D", bizCode = "PAYMENT", scenario = "ONLINE")
+ * @Extension(tenantCode = "TENANT_D", bizCode = "PAYMENT", scenario = "OFFLINE")
+ * public class TenantDPaymentServiceImpl implements PaymentService {
  *     // 实现逻辑
  * }
- * 
- * // 5. 动态条件匹配（使用SpEL表达式）
- * @Extension(
- *     tenantCode = "TENANT_C", 
- *     condition = "#data.amount > 10000 && #bizCode == 'VIP_ORDER'",
- *     priority = 40
- * )
- * public class VipHighAmountServiceImpl implements PaymentService {
- *     // 实现逻辑
  * }
  * </pre>
- * 
- * <h3>最佳实践：</h3>
- * <ul>
- *   <li>总是为扩展点提供一个默认实现（isDefault=true）</li>
- *   <li>优先使用精确匹配，仅在需要复杂条件时使用表达式匹配</li>
- *   <li>为不同租户提供独立实现时，使用tenantCode或multiTenantCodes进行隔离</li>
- *   <li>表达式匹配时避免过于复杂的逻辑，影响性能</li>
- *   <li>使用适当的优先级（priority）控制执行顺序</li>
- *   <li>确保实现类的名称能够清晰表达其用途和适用场景</li>
- *   <li>生产环境中使用env属性限制扩展适用范围</li>
- * </ul>
- * 
- * @see ExtPoint 扩展点接口标记注解
- * @see BizContext 业务上下文对象
- * @see DefaultExtPointRouter 默认路由实现
- * @since 1.0.0
+ *
+ * @author Bone Engine Team
+ * @version 1.0.0
+ * @see ExtPoint 扩展点接口注解
+ * @see Extensions 扩展点容器注解
  */
 @Documented
-@Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+@Repeatable(Extensions.class)
 public @interface Extension {
-    /**
-     * 扩展ID
-     * <p>
-     * 扩展的唯一标识，建议使用业务领域+功能模块+实现类型的命名方式
-     * 如果不指定，将自动生成基于类名的唯一标识
-     * </p>
-     * 
-     * @return 扩展ID
-     */
-    String id() default ExtPointConstants.EMPTY_STRING;
     
     /**
-     * 租户编码
-     * <p>
-     * 用于多租户场景下的扩展点隔离，只有当请求的租户编码与该值匹配时才会选择此实现
-     * 默认值表示匹配所有租户，适合通用实现
-     * </p>
-     * 
-     * @return 租户编码
+     * 扩展名称
      */
-    String tenantCode() default ExtPointConstants.DEFAULT_VALUE;
+    String name() default "";
     
     /**
-     * 多租户编码列表
-     * <p>
-     * 支持一个扩展实现匹配多个租户的场景，优先级高于tenantCode
-     * 当指定了此属性时，tenantCode属性将被忽略
-     * </p>
-     * 
-     * @return 租户编码列表
-     */
-    String[] multiTenantCodes() default {};
-
-    /**
-     * 业务编码
-     * <p>
-     * 用于区分不同业务域的扩展点实现，如"ORDER"、"PAYMENT"等
-     * 建议为通用实现设置为"DEFAULT"，便于识别和维护
-     * </p>
-     * 
-     * @return 业务编码
-     */
-    String bizCode() default ExtPointConstants.DEFAULT_VALUE;
-    
-    /**
-     * 多业务编码列表
-     * <p>
-     * 支持一个扩展实现匹配多个业务域的场景，优先级高于bizCode
-     * 当指定了此属性时，bizCode属性将被忽略
-     * </p>
-     * 
-     * @return 业务编码列表
-     */
-    String[] multiBizCodes() default {};
-
-    /**
-     * 用例编码
-     * <p>
-     * 用于区分同一业务域下的不同用例场景
-     * 如在"PAYMENT"业务域下，可能有"CREDIT_CARD"、"ALIPAY"等不同用例
-     * </p>
-     * 
-     * @return 用例编码
-     */
-    String useCase() default ExtPointConstants.DEFAULT_VALUE;
-
-    /**
-     * 场景编码
-     * <p>
-     * 用于进一步细化业务场景
-     * 如在支付用例下，可能有"NORMAL"、"PROMOTION"、"REFUND"等不同场景
-     * </p>
-     * 
-     * @return 场景编码
-     */
-    String scenario() default ExtPointConstants.DEFAULT_VALUE;
-    
-    /**
-     * 环境编码
-     * <p>
-     * 指定扩展实现适用的环境，如"DEV"、"TEST"、"PROD"等
-     * 用于在不同环境中启用或禁用特定扩展
-     * </p>
-     * 
-     * @return 环境编码
-     */
-    String env() default ExtPointConstants.DEFAULT_VALUE;
-    
-    /**
-     * 分组名称
-     * <p>
-     * 用于对扩展进行逻辑分组，便于管理和版本控制
-     * </p>
-     * 
-     * @return 分组名称
-     */
-    String group() default ExtPointConstants.DEFAULT_VALUE;
-
-    /**
-     * 动态匹配表达式
-     * <p>
-     * 使用Spring EL表达式语法进行复杂的动态条件匹配
-     * 表达式可以访问上下文变量，实现更灵活的匹配逻辑
-     * </p>
-     * 
-     * <p>可用变量：</p>
-     * <ul>
-     *   <li><code>#tenantCode</code>：当前租户编码</li>
-     *   <li><code>#bizCode</code>：当前业务编码</li>
-     *   <li><code>#useCase</code>：当前用例编码</li>
-     *   <li><code>#scenario</code>：当前场景编码</li>
-     *   <li><code>#data</code>：业务数据对象</li>
-     *   <li><code>#context</code>：当前业务上下文对象，可以通过getAttribute方法获取属性</li>
-     * </ul>
-     * 
-     * <p>表达式示例：</p>
-     * <ul>
-     *   <li><code>#tenantCode.startsWith('PREMIUM_')</code>：匹配高级租户</li>
-     *   <li><code>#data.amount > 1000</code>：匹配大额交易</li>
-     *   <li><code>#context.getAttribute('userId') != null && #context.getAttribute('userLevel') == 'VIP'</code>：匹配VIP用户</li>
-     *   <li><code>#bizCode == 'ORDER' && #scenario == 'VIP'</code>：匹配VIP订单场景</li>
-     * </ul>
-     * 
-     * @return 动态匹配表达式
-     */
-    String condition() default ExtPointConstants.EMPTY_STRING;
-    
-    /**
-     * 动态匹配表达式（兼容旧版本）
-     * <p>
-     * 兼容旧版本的expression属性，与condition功能相同
-     * 如果同时指定了condition和expression，condition优先级更高
-     * </p>
-     * 
-     * @return 动态匹配表达式
-     * @deprecated 建议使用condition属性
-     */
-    @Deprecated
-    String expression() default ExtPointConstants.EMPTY_STRING;
-    
-    /**
-     * 扩展点的版本号，遵循语义化版本规范
-     * 
-     * @return 版本号
-     */
-    String version() default "1.0.0";
-
-    /**
-     * 兼容的版本列表
-     * 
-     * @return 兼容版本数组
-     */
-    String[] compatibleWith() default {};
-    
-    /**
-     * 扩展实现描述
-     * <p>
-     * 详细描述此扩展实现的功能、适用场景和特殊处理逻辑
-     * </p>
-     * 
-     * @return 扩展实现描述
+     * 扩展描述
      */
     String description() default "";
     
     /**
-     * 作者
-     * <p>
-     * 扩展实现的作者或开发团队
-     * </p>
-     * 
-     * @return 作者信息
+     * 租户代码
      */
-    String author() default "";
+    String tenantCode() default "";
     
     /**
-     * 是否默认实现
-     * <p>
-     * 标记此实现是否为默认实现，当没有找到更匹配的实现时会使用默认实现
-     * </p>
-     * 
-     * @return 是否默认实现
+     * 多租户代码
      */
-    boolean isDefault() default false;
+    String[] multiTenantCodes() default {};
     
     /**
-     * 是否推荐实现
-     * <p>
-     * 标记此实现是否为推荐实现，用于可视化平台推荐
-     * </p>
-     * 
-     * @return 是否推荐实现
+     * 业务域代码
      */
-    boolean isRecommended() default false;
+    String bizCode() default "";
     
     /**
-     * 执行优先级
-     * <p>
-     * 当多个实现都匹配时的执行优先级，值越小优先级越高
-     * </p>
-     * 
-     * @return 优先级值
+     * 多业务域代码
+     */
+    String[] multiBizCodes() default {};
+    
+    /**
+     * 用例代码
+     */
+    String useCase() default "";
+    
+    /**
+     * 场景代码
+     */
+    String scenario() default "";
+    
+    /**
+     * 环境标识
+     */
+    String env() default "";
+    
+    /**
+     * 分组标识
+     */
+    String group() default "";
+    
+    /**
+     * 匹配条件表达式（Spring EL）
+     */
+    String condition() default "";
+    
+    /**
+     * 优先级（越小优先级越高）
      */
     int priority() default 100;
     
     /**
-     * 依赖的其他扩展实现
-     * <p>
-     * 指定此扩展实现依赖的其他实现类全限定名
-     * </p>
-     * 
-     * @return 依赖的实现类数组
+     * 是否默认实现
      */
-    String[] dependencies() default {};
+    boolean isDefault() default false;
     
     /**
-     * 配置属性
-     * <p>
-     * 扩展实现的配置属性键值对，格式为"key=value"
-     * </p>
-     * 
-     * @return 配置属性数组
+     * 是否启用
      */
-    String[] properties() default {};
+    boolean enabled() default true;
+    
+    /**
+     * 数据源标识
+     */
+    String dataSource() default "";
+    
+    /**
+     * 版本号
+     */
+    String version() default "1.0.0";
+    
+    /**
+     * 生效开始时间（ISO 8601格式）
+     */
+    String startTime() default "";
+    
+    /**
+     * 生效结束时间（ISO 8601格式）
+     */
+    String endTime() default "";
+    
+    /**
+     * 实现者信息
+     */
+    String author() default "";
+    
+    /**
+     * 配置参数定义（JSON格式）
+     */
+    String configSchema() default "";
+}
+
+/**
+ * Extension注解的容器类，支持在一个类上标注多个Extension注解
+ */
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target(ElementType.TYPE)
+@interface Extensions {
+    Extension[] value();
 }
 
