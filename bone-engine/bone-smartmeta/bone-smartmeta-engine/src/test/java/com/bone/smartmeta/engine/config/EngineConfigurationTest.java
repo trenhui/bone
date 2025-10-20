@@ -1,5 +1,6 @@
 package com.bone.smartmeta.engine.config;
 
+import com.bone.smartmeta.engine.EngineConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockitoAnnotations;
