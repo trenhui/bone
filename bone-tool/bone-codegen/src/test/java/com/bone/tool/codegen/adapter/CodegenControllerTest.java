@@ -104,7 +104,7 @@ public class CodegenControllerTest {
         doNothing().when(codegenService).generateBatchCodes(anyList(), anyString(), anyInt(), any(OutputStream.class));
 
         // 执行HTTP请求并验证结果
-        mockMvc.perform(get("/api/v1/code-generation/generate/download")
+        mockMvc.perform(get("/api/v1/code-generation/generate/batch")
                 .param("tableIds", "1,2,3")
                 .param("groupId", "default")
                 .param("modelType", "1"))
@@ -123,7 +123,7 @@ public class CodegenControllerTest {
 
         // 由于Controller直接throws Exception，我们需要在测试中捕获这个异常
         try {
-            mockMvc.perform(get("/api/v1/code-generation/generate/download")
+            mockMvc.perform(get("/api/v1/code-generation/generate/batch")
                     .param("tableIds", "1,2,3")
                     .param("groupId", "default")
                     .param("modelType", "1"));

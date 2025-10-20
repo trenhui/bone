@@ -2,6 +2,7 @@ package com.bone.example.extension.promotion;
 
 import com.bone.engine.extension.BizContext;
 import com.bone.engine.extension.Extension;
+import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -13,7 +14,8 @@ import java.util.Map;
  * 特定商品促销策略实现
  * 针对特定类别或特定商品提供促销折扣
  */
-@Extension(bizCode = "PRODUCT_SPECIFIC")
+@Extension(expression = "#data.items != null && !#data.items.isEmpty()")
+@Service
 @Slf4j
 public class ProductSpecificPromotionExtension implements PromotionExtPoint {
     
@@ -34,13 +36,26 @@ public class ProductSpecificPromotionExtension implements PromotionExtPoint {
     
     @Override
     public PromotionResult calculatePromotion(BizContext<PromotionRequest> context) {
+        log.info("Processing product specific promotion");
         PromotionRequest request = context.getData();
         
+        // 添加空值检查
+        if (request == null) {
+            log.error("Product promotion request is null");
+            return createEmptyResult();
+        }
+        
+        List<PromotionRequest.OrderItem> items = request.getItems();
+        if (items == null || items.isEmpty()) {
+            log.error("No items in promotion request");
+            return createEmptyResult();
+        }
+
         List<PromotionResult.AppliedPromotion> appliedPromotions = new ArrayList<>();
         BigDecimal totalDiscount = BigDecimal.ZERO;
-        
+
         // 计算每个商品的折扣
-        for (PromotionRequest.OrderItem item : request.getItems()) {
+        for (PromotionRequest.OrderItem item : items) {
             BigDecimal discount = calculateItemDiscount(item);
             if (discount.compareTo(BigDecimal.ZERO) > 0) {
                 totalDiscount = totalDiscount.add(discount);
@@ -69,15 +84,38 @@ public class ProductSpecificPromotionExtension implements PromotionExtPoint {
     
     @Override
     public boolean isApplicable(BizContext<PromotionRequest> context) {
-        PromotionRequest request = context.getData();
-        // 检查是否有适用特定商品或类别的商品
-        for (PromotionRequest.OrderItem item : request.getItems()) {
-            if (productDiscountMap.containsKey(item.getProductId()) || 
-                (item.getCategory() != null && categoryDiscountMap.containsKey(item.getCategory()))) {
-                return true;
+        try {
+            PromotionRequest request = context.getData();
+            if (request == null || request.getItems() == null || request.getItems().isEmpty()) {
+                log.debug("No items in request, product promotion not applicable");
+                return false;
             }
+            
+            // 检查是否有适用特定商品或类别的商品
+            for (PromotionRequest.OrderItem item : request.getItems()) {
+                if (item != null && (productDiscountMap.containsKey(item.getProductId()) || 
+                    (item.getCategory() != null && categoryDiscountMap.containsKey(item.getCategory())))) {
+                    log.debug("Product promotion applicable for item: {}", item.getProductId());
+                    return true;
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            log.error("Error checking product promotion applicability", e);
+            return false;
         }
-        return false;
+    }
+    
+    /**
+     * 创建空的促销结果
+     */
+    private PromotionResult createEmptyResult() {
+        return PromotionResult.builder()
+            .originalTotal(BigDecimal.ZERO)
+            .finalTotal(BigDecimal.ZERO)
+            .appliedPromotions(new ArrayList<>())
+            .discountApplied(false)
+            .build();
     }
     
     /**

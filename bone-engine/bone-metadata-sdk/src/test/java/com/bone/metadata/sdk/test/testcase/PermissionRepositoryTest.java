@@ -47,15 +47,6 @@ public class PermissionRepositoryTest {
         TestDataHelper.setUpPermissionTestData(jdbc);
     }
 
-    @BeforeEach
-    void setUp() throws InterruptedException {
-
-        TenantContext.setTenantId(100L);
-        // Clear and set up test data before each test
-        jdbc.getJdbcOperations().execute("DELETE FROM sys_permission");
-        TestDataHelper.setUpPermissionTestData(jdbc);
-    }
-
     // ### Existing Tests (Retained) ###
 
     @Test

@@ -37,8 +37,7 @@ public class VerifyCodegenServiceTest {
             
             // 测试getCodegenTablePageResponse方法
             CodegenTablePageRequest pageRequest = new CodegenTablePageRequest();
-            pageRequest.setPageNum(1);
-            pageRequest.setPageSize(10);
+            // 移除不存在的方法调用
             Object pageResponse = service.getCodegenTablePageResponse(pageRequest);
             System.out.println("✅ getCodegenTablePageResponse调用成功，返回值: " + pageResponse);
             

@@ -11,14 +11,28 @@ import java.util.List;
  * 满减促销策略实现
  * 支持阶梯式满减规则
  */
-@Extension(bizCode = "FULL_DISCOUNT_PROMOTION")
+@Extension(
+    expression = "#data.orderType == 'NORMAL' && #context.getAttribute('promotionType') == 'FULL_DISCOUNT'"
+)
 @Slf4j
 public class FullDiscountPromotionExtension implements PromotionExtPoint {
     
     @Override
     public PromotionResult calculatePromotion(BizContext<PromotionRequest> context) {
+        log.info("Processing full discount promotion for order");
         PromotionRequest request = context.getData();
+        
+        // 添加空值检查
+        if (request == null) {
+            log.error("Invalid promotion request: null");
+            return createEmptyResult();
+        }
+        
         BigDecimal subtotal = request.getSubtotal();
+        if (subtotal == null) {
+            log.error("Subtotal is null in promotion request");
+            return createEmptyResult();
+        }
         
         // 获取适用的满减规则
         FullDiscountRule rule = getApplicableRule(subtotal);
@@ -82,6 +96,18 @@ public class FullDiscountPromotionExtension implements PromotionExtPoint {
         }
         
         return applicableRule;
+    }
+    
+    /**
+     * 创建空的促销结果
+     */
+    private PromotionResult createEmptyResult() {
+        return PromotionResult.builder()
+            .originalTotal(BigDecimal.ZERO)
+            .finalTotal(BigDecimal.ZERO)
+            .appliedPromotions(new ArrayList<>())
+            .discountApplied(false)
+            .build();
     }
     
     /**

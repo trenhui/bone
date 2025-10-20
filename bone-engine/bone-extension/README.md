@@ -7,9 +7,10 @@
 - [核心概念](#核心概念)
 - [高级功能](#高级功能)
 - [最佳实践](#最佳实践)
-- [故障排查](#故障排查)
-- [常见问题](#常见问题)
-- [版本说明](#版本说明)
+- [业务场景示例](#业务场景示例)
+- [故障排查与监控](#故障排查与监控)
+- [常见问题解答](#常见问题解答)
+- [版本历史](#版本历史)
 - [附录](#附录)
 
 ---
@@ -121,10 +122,15 @@ public interface GreetingExtPoint {
  */
 @Extension(priority = 100)
 @Service
+@Slf4j
 public class DefaultGreetingExtension implements GreetingExtPoint {
     @Override
     public String greet(BizContext<String> context) {
+        log.info("执行默认问候实现，租户: {}", context.getTenantCode());
         String userName = context.getData();
+        if (userName == null) {
+            throw new ExtensionBizException("INVALID_PARAM", "用户名不能为空");
+        }
         return "Hello, " + userName + "!";
     }
 }
@@ -141,16 +147,57 @@ public class DefaultGreetingExtension implements GreetingExtPoint {
     priority = 50  // 优先级高于默认实现
 )
 @Service
+@Slf4j
 public class VipGreetingExtension implements GreetingExtPoint {
     @Override
     public String greet(BizContext<String> context) {
+        log.info("执行VIP用户问候，用户: {}", context.getData());
         String userName = context.getData();
-        return "尊贵的VIP用户 " + userName + "，欢迎回来！";
+        // 可以获取更多上下文属性进行复杂业务处理
+        Integer loginCount = context.getAttribute("loginCount", Integer.class);
+        String greeting = "尊贵的VIP用户 " + userName + "，欢迎回来！";
+        
+        if (loginCount != null && loginCount > 50) {
+            greeting += " 您已登录" + loginCount + "次，感谢您的支持！";
+        }
+        return greeting;
     }
 }
 ```
 
-#### 4. 在业务服务中使用
+#### 4. 实现管理员扩展（高级示例）
+```java
+/**
+ * 管理员用户问候实现
+ * 最高优先级，使用复杂SpEL表达式匹配管理员用户
+ */
+@Extension(
+    condition = "#context.getAttribute('isAdmin') == true || " +
+               "#data != null && #data.startsWith('admin') || " +
+               "#context.getAttribute('memberLevel') == 'PLATINUM'",
+    priority = 10  // 最高优先级
+)
+@Service
+@Slf4j
+public class AdminGreetingExtension implements GreetingExtPoint {
+    @Override
+    public String greet(BizContext<String> context) {
+        log.info("执行管理员问候，租户: {}, 用户: {}", 
+                context.getTenantCode(), context.getData());
+                
+        String userName = context.getData();
+        String greeting = "尊敬的管理员 " + userName + "，欢迎您！";
+        
+        // 复杂业务逻辑示例：根据不同条件返回不同问候语
+        if ("PLATINUM".equals(context.getAttribute("memberLevel"))) {
+            greeting += " 您的铂金会员特权已激活。";
+        }
+        
+        return greeting;
+    }
+}
+
+#### 5. 在业务服务中使用
 ```java
 @Service
 public class UserService {
@@ -182,12 +229,18 @@ public class UserService {
 ```
 
 #### 5. 测试验证
+
+单元测试是确保扩展机制正确工作的关键。以下是业界最佳实践的测试实现，包含复杂条件表达式、多优先级场景和异常处理测试：
+
 ```java
 @SpringBootTest
 class UserServiceTest {
     
     @Autowired
     private UserService userService;
+    
+    @Autowired
+    private ExtPointComposite<GreetingExtPoint> greetingExtPointComposite;
     
     @Test
     void testGreetNormalUser() {
@@ -199,6 +252,87 @@ class UserServiceTest {
     void testGreetVipUser() {
         String result = userService.welcomeUser("李四", true);
         assertEquals("尊贵的VIP用户 李四，欢迎回来！", result);
+    }
+    
+    // 测试复杂SpEL表达式匹配
+    @Test
+    void testComplexConditionExpression() {
+        // 创建包含复杂属性的上下文
+        BizContext<String> context = BizContext.<String>builder()
+            .tenantCode("TENANT_A")
+            .bizCode("USER_SERVICE")
+            .data("王五")
+            .attribute("isVip", true)
+            .attribute("loginCount", 100)
+            .attribute("lastLogin", LocalDate.now().minusDays(1))
+            .build();
+        
+        try (ExtensionScope scope = ExtensionContextManager.with(context)) {
+            // 测试基于复杂条件的扩展匹配
+            List<GreetingExtPoint> extensions = greetingExtPointComposite.getExtensions(context);
+            assertNotNull(extensions);
+            assertFalse(extensions.isEmpty());
+        }
+    }
+    
+    // 测试优先级机制
+    @Test
+    void testPriorityMechanism() {
+        // 创建满足多个扩展条件的上下文
+        BizContext<String> context = BizContext.<String>builder()
+            .tenantCode("TENANT_A")
+            .bizCode("USER_SERVICE")
+            .data("赵六")
+            .attribute("isVip", true)
+            .attribute("isAdmin", true)
+            .attribute("memberLevel", "PLATINUM")
+            .build();
+        
+        try (ExtensionScope scope = ExtensionContextManager.with(context)) {
+            // 获取所有匹配的扩展并验证优先级顺序
+            List<GreetingExtPoint> extensions = greetingExtPointComposite.getExtensions(context);
+            assertEquals(3, extensions.size(), "应该匹配到3个扩展实现");
+            
+            // 验证第一个扩展是最高优先级的（管理员扩展）
+            assertTrue(extensions.get(0) instanceof AdminGreetingExtension, "管理员扩展应该优先级最高");
+            // 验证第二个扩展是VIP扩展
+            assertTrue(extensions.get(1) instanceof VipGreetingExtension, "VIP扩展应该次之");
+            // 验证最后一个扩展是默认实现
+            assertTrue(extensions.get(2) instanceof DefaultGreetingExtension, "默认扩展应该优先级最低");
+            
+            // 验证优先级数值：10(管理员) < 50(VIP) < 100(默认)
+        }
+    }
+    
+    // 测试错误处理
+    @Test
+    void testErrorHandling() {
+        // 创建会触发异常的上下文
+        BizContext<String> context = BizContext.<String>builder()
+            .tenantCode("INVALID_TENANT")
+            .bizCode("USER_SERVICE")
+            .data(null) // 故意传入null触发异常
+            .build();
+        
+        try (ExtensionScope scope = ExtensionContextManager.with(context)) {
+            // 测试异常处理机制
+            assertThrows(ExtensionBizException.class, () -> {
+                greetingExtPointComposite.getExtensions(context)
+                    .get(0).greet(context);
+            });
+        }
+    }
+    
+    // 测试边界条件
+    @Test
+    void testEdgeCases() {
+        // 测试空字符串数据
+        String result1 = userService.welcomeUser("", false);
+        assertEquals("Hello, !", result1);
+        
+        // 测试特殊字符
+        String result2 = userService.welcomeUser("测试用户123!@#", true);
+        assertTrue(result2.contains("测试用户123!@#"));
     }
 }
 ```
@@ -626,8 +760,416 @@ public class CachedExtension implements ProductExtPoint {
         .maximumSize(1000)
         .expireAfterWrite(10, TimeUnit.MINUTES)
         .build();
+  ### 促销服务集成实现
+
+```java
+/**
+ * 促销服务
+ * 负责协调多种促销策略的应用，支持多种促销方式的组合使用
+ */
+@Slf4j
+public class PromotionService {
     
-    @Override
+    @Autowired
+    private PromotionExtPoint promotionExtPoint;
+    
+    // 用于测试的setter方法
+    public void setPromotionExtPoint(PromotionExtPoint promotionExtPoint) {
+        this.promotionExtPoint = promotionExtPoint;
+    }
+
+    /**
+     * 计算订单适用的促销
+     * @param request 促销请求
+     * @param tenantCode 租户代码
+     * @return 最终的促销结果
+     */
+    public PromotionResult calculatePromotion(PromotionRequest request, String tenantCode) {
+        // 使用ExtensionContextManager创建上下文，支持try-with-resources模式
+        try (ExtensionScope scope = ExtensionContextManager.withTenant(tenantCode)
+                .withAttribute("userId", request.getUserId())) {
+            
+            // 创建业务上下文
+            BizContext<PromotionRequest> context = ExtensionContextManager.fromData(request);
+            
+            // 记录请求日志
+            log.info("Calculating promotions for user: {}", request.getUserId());
+            
+            // 通过扩展点计算促销
+            PromotionResult result = promotionExtPoint.calculatePromotion(context);
+            
+            // 如果结果为null，创建默认结果
+            if (result == null) {
+                result = new PromotionResult();
+                result.setOriginalTotal(request.getSubtotal());
+                result.setFinalTotal(request.getSubtotal());
+                result.setDiscountApplied(false);
+                result.setAppliedPromotions(new ArrayList<>());
+            }
+            
+            return result;
+        } catch (Exception e) {
+            log.error("Error calculating promotions for user: {}", request.getUserId(), e);
+            // 返回默认结果，保证服务可用性
+            PromotionResult fallbackResult = new PromotionResult();
+            fallbackResult.setOriginalTotal(request != null ? request.getSubtotal() : BigDecimal.ZERO);
+            fallbackResult.setFinalTotal(request != null ? request.getSubtotal() : BigDecimal.ZERO);
+            fallbackResult.setDiscountApplied(false);
+            fallbackResult.setAppliedPromotions(new ArrayList<>());
+            return fallbackResult;
+        }
+    }
+}
+
+### 促销结果数据结构
+
+```java
+/**
+ * 促销计算结果
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class PromotionResult {
+    private BigDecimal originalTotal;
+    private BigDecimal finalTotal;
+    private List<AppliedPromotion> appliedPromotions;
+    private boolean discountApplied;
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class AppliedPromotion {
+        private String promotionId;
+        private String promotionName;
+        private String promotionType;
+        private BigDecimal discountAmount;
+        private String description;
+    }
+}
+
+### 促销请求数据结构
+
+```java
+/**
+ * 促销计算请求
+ * 支持复杂SpEL条件表达式匹配和多维度促销策略
+ */
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class PromotionRequest {
+    private String userId;
+    private List<OrderItem> items;
+    private BigDecimal subtotal;
+    private String userLevel;
+    private String promotionCode;
+    private String orderType; // 订单类型，用于SpEL条件表达式匹配
+    private UserInfo userInfo; // 用户信息，用于复杂条件匹配
+    
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class OrderItem {
+        private String productId;
+        private String productName;
+        private BigDecimal unitPrice;
+        private int quantity;
+        private String category;
+    }
+    
+    /**
+     * 用户信息类，用于复杂SpEL条件表达式
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class UserInfo {
+        private String memberLevel;
+        private int memberPoints;
+        private int orderCount;
+        private String registrationDate;
+    }
+}
+
+### 促销服务单元测试
+
+```java
+/**
+ * 促销服务测试类
+ * 包含复杂条件表达式测试、优先级测试、错误处理测试等全面的测试场景
+ */
+class PromotionServiceTest {
+
+    private PromotionService promotionService;
+    private PromotionExtPoint promotionExtPoint;
+
+    @BeforeEach
+    void setUp() {
+        // 创建mock对象
+        promotionExtPoint = Mockito.mock(PromotionExtPoint.class);
+        promotionService = new PromotionService();
+        
+        // 注入mock对象
+        promotionService.setPromotionExtPoint(promotionExtPoint);
+    }
+
+    /**
+     * 测试复杂SpEL条件表达式匹配场景
+     */
+    @Test
+    void testComplexSpELExpressionMatching() {
+        // 准备测试数据 - 符合满减促销的条件
+        PromotionRequest request = PromotionRequest.builder()
+            .userId("user123")
+            .orderType("NORMAL") // 满足条件 #data.orderType == 'NORMAL'
+            .subtotal(new BigDecimal("300"))
+            .build();
+        
+        String tenantCode = "DEFAULT";
+        
+        // 配置mock行为 - 模拟满减促销被触发
+        PromotionResult expectedResult = PromotionResult.builder()
+            .originalTotal(new BigDecimal("300"))
+            .finalTotal(new BigDecimal("270"))
+            .discountApplied(true)
+            .appliedPromotions(List.of(
+                PromotionResult.AppliedPromotion.builder()
+                    .promotionId("RULE002")
+                    .promotionName("满200减30")
+                    .promotionType("FULL_DISCOUNT")
+                    .discountAmount(new BigDecimal("30"))
+                    .description("满200减30")
+                    .build()
+            ))
+            .build();
+        
+        // 使用argThat匹配条件，验证上下文是否包含了正确的属性
+        when(promotionExtPoint.calculatePromotion(argThat(context -> {
+            // 验证上下文是否包含userId属性
+            return "user123".equals(context.getAttribute("userId"));
+        }))).thenReturn(expectedResult);
+        
+        // 执行测试
+        try (ExtensionScope scope = ExtensionContextManager.withTenant(tenantCode)
+                .withAttribute("promotionType", "FULL_DISCOUNT")) { // 设置属性满足条件 #context.getAttribute('promotionType') == 'FULL_DISCOUNT'
+            PromotionResult result = promotionService.calculatePromotion(request, tenantCode);
+            
+            // 验证结果
+            assertNotNull(result);
+            assertEquals(new BigDecimal("270"), result.getFinalTotal());
+            assertTrue(result.isDiscountApplied());
+            assertEquals(1, result.getAppliedPromotions().size());
+            assertEquals("FULL_DISCOUNT", result.getAppliedPromotions().get(0).getPromotionType());
+        }
+        
+        // 验证扩展点被正确调用
+        verify(promotionExtPoint).calculatePromotion(any(BizContext.class));
+    }
+
+    /**
+     * 测试会员折扣表达式匹配场景
+     */
+    @Test
+    void testMemberDiscountExpressionMatching() {
+        // 准备测试数据 - VIP会员
+        PromotionRequest.UserInfo userInfo = PromotionRequest.UserInfo.builder()
+            .memberLevel("VIP") // 满足条件 #data.userInfo.memberLevel != null
+            .build();
+        
+        PromotionRequest request = PromotionRequest.builder()
+            .userId("vipUser")
+            .userInfo(userInfo)
+            .subtotal(new BigDecimal("100"))
+            .build();
+        
+        String tenantCode = "DEFAULT";
+        
+        // 配置mock行为 - 模拟会员折扣被触发
+        PromotionResult expectedResult = PromotionResult.builder()
+            .originalTotal(new BigDecimal("100"))
+            .finalTotal(new BigDecimal("95")) // VIP 95折
+            .discountApplied(true)
+            .appliedPromotions(List.of(
+                PromotionResult.AppliedPromotion.builder()
+                    .promotionId("MEMBER_VIP")
+                    .promotionName("VIP会员专属折扣")
+                    .promotionType("MEMBER_DISCOUNT")
+                    .discountAmount(new BigDecimal("5"))
+                    .description("VIP会员专享9.5折优惠")
+                    .build()
+            ))
+            .build();
+        
+        when(promotionExtPoint.calculatePromotion(any(BizContext.class))).thenReturn(expectedResult);
+        
+        // 执行测试
+        PromotionResult result = promotionService.calculatePromotion(request, tenantCode);
+        
+        // 验证结果
+        assertNotNull(result);
+        assertEquals(new BigDecimal("95"), result.getFinalTotal());
+        assertTrue(result.isDiscountApplied());
+        assertEquals(1, result.getAppliedPromotions().size());
+        assertEquals("MEMBER_DISCOUNT", result.getAppliedPromotions().get(0).getPromotionType());
+    }
+
+    /**
+     * 测试促销优先级机制
+     * 验证优先级数值：180(会员折扣) < 190(商品特定) < 200(满减)
+     */
+    @Test
+    void testPromotionPriorityMechanism() {
+        // 准备测试数据 - 同时满足多个促销条件
+        PromotionRequest.UserInfo userInfo = PromotionRequest.UserInfo.builder()
+            .memberLevel("GOLD")
+            .build();
+        
+        // 创建包含特定商品的商品列表
+        List<PromotionRequest.OrderItem> items = List.of(
+            PromotionRequest.OrderItem.builder()
+                .productId("PROD001") // 特定商品折扣
+                .productName("测试商品")
+                .unitPrice(new BigDecimal("200"))
+                .quantity(1)
+                .category("ELECTRONICS")
+                .build()
+        );
+        
+        PromotionRequest request = PromotionRequest.builder()
+            .userId("priorityUser")
+            .userInfo(userInfo)
+            .items(items)
+            .orderType("NORMAL")
+            .subtotal(new BigDecimal("200"))
+            .build();
+        
+        String tenantCode = "DEFAULT";
+        
+        // 配置mock行为 - 返回满减促销结果（优先级最高的）
+        PromotionResult expectedResult = PromotionResult.builder()
+            .originalTotal(new BigDecimal("200"))
+            .finalTotal(new BigDecimal("170")) // 满200减30
+            .discountApplied(true)
+            .appliedPromotions(List.of(
+                PromotionResult.AppliedPromotion.builder()
+                    .promotionId("RULE002")
+                    .promotionName("满200减30")
+                    .promotionType("FULL_DISCOUNT")
+                    .discountAmount(new BigDecimal("30"))
+                    .description("满200减30")
+                    .build()
+            ))
+            .build();
+        
+        // 使用argThat验证是否通过了正确的上下文
+        when(promotionExtPoint.calculatePromotion(argThat(context -> {
+            PromotionRequest req = context.getData();
+            return req != null && 
+                   "NORMAL".equals(req.getOrderType()) &&
+                   req.getItems() != null && !req.getItems().isEmpty() &&
+                   req.getUserInfo() != null && "GOLD".equals(req.getUserInfo().getMemberLevel());
+        }))).thenReturn(expectedResult);
+        
+        // 执行测试
+        try (ExtensionScope scope = ExtensionContextManager.withTenant(tenantCode)
+                .withAttribute("promotionType", "FULL_DISCOUNT")) {
+            PromotionResult result = promotionService.calculatePromotion(request, tenantCode);
+            
+            // 验证结果
+            assertNotNull(result);
+            assertEquals(new BigDecimal("170"), result.getFinalTotal());
+            assertTrue(result.isDiscountApplied());
+            assertEquals(1, result.getAppliedPromotions().size());
+            // 验证优先级最高的满减促销被应用
+            assertEquals("FULL_DISCOUNT", result.getAppliedPromotions().get(0).getPromotionType());
+        }
+    }
+
+    /**
+     * 测试异常处理机制
+     */
+    @Test
+    void testExceptionHandling() {
+        // 准备测试数据
+        PromotionRequest request = PromotionRequest.builder()
+            .userId("errorUser")
+            .subtotal(new BigDecimal("100"))
+            .build();
+        
+        String tenantCode = "DEFAULT";
+        
+        // 配置mock行为 - 抛出异常
+        when(promotionExtPoint.calculatePromotion(any(BizContext.class))).thenThrow(new RuntimeException("模拟促销计算异常"));
+        
+        // 执行测试 - 即使出现异常，服务也应该返回默认结果而不是崩溃
+        PromotionResult result = promotionService.calculatePromotion(request, tenantCode);
+        
+        // 验证结果 - 应该返回默认结果
+        assertNotNull(result);
+        assertEquals(new BigDecimal("100"), result.getFinalTotal());
+        assertFalse(result.isDiscountApplied());
+        assertNotNull(result.getAppliedPromotions());
+        assertTrue(result.getAppliedPromotions().isEmpty());
+    }
+
+    /**
+     * 测试空请求边界条件
+     */
+    @Test
+    void testNullRequestBoundaryCondition() {
+        String tenantCode = "DEFAULT";
+        
+        // 执行测试 - 传入null请求
+        PromotionResult result = promotionService.calculatePromotion(null, tenantCode);
+        
+        // 验证结果 - 应该返回安全的默认结果
+        assertNotNull(result);
+        assertEquals(BigDecimal.ZERO, result.getFinalTotal());
+        assertFalse(result.isDiscountApplied());
+        assertNotNull(result.getAppliedPromotions());
+        assertTrue(result.getAppliedPromotions().isEmpty());
+    }
+
+    /**
+     * 测试商品特定边界条件
+     */
+    @Test
+    void testProductSpecificBoundaryCondition() {
+        // 准备测试数据 - 空商品列表
+        PromotionRequest request = PromotionRequest.builder()
+            .userId("emptyItemsUser")
+            .items(new ArrayList<>()) // 空商品列表，不会触发商品特定促销
+            .subtotal(new BigDecimal("100"))
+            .build();
+        
+        String tenantCode = "DEFAULT";
+        
+        // 配置mock行为 - 返回无促销结果
+        PromotionResult expectedResult = PromotionResult.builder()
+            .originalTotal(new BigDecimal("100"))
+            .finalTotal(new BigDecimal("100"))
+            .discountApplied(false)
+            .appliedPromotions(new ArrayList<>())
+            .build();
+        
+        when(promotionExtPoint.calculatePromotion(any(BizContext.class))).thenReturn(expectedResult);
+        
+        // 执行测试
+        PromotionResult result = promotionService.calculatePromotion(request, tenantCode);
+        
+        // 验证结果
+        assertNotNull(result);
+        assertEquals(new BigDecimal("100"), result.getFinalTotal());
+        assertFalse(result.isDiscountApplied());
+        assertTrue(result.getAppliedPromotions().isEmpty());
+    }
+}
     public ProductDTO enhanceProduct(BizContext<ProductRequest> context) {
         String cacheKey = context.getTenantCode() + ":" + context.getData().getProductId();
         
@@ -661,11 +1203,14 @@ public class AsyncOrderExtension implements OrderExtPoint {
 }
 ```
 
-### 5.3 错误处理最佳实践
+## 错误处理与性能优化
 
-**统一异常处理：**
+### 统一错误处理
+
+在扩展点实现中，良好的错误处理对于系统稳定性至关重要。推荐使用统一的异常处理模式：
+
 ```java
-// 自定义业务异常
+// 1. 自定义业务异常类
 public class ExtensionBizException extends RuntimeException {
     private final String errorCode;
     private final String errorMessage;
@@ -675,11 +1220,20 @@ public class ExtensionBizException extends RuntimeException {
         this.errorCode = errorCode;
         this.errorMessage = errorMessage;
     }
+    
+    public String getErrorCode() {
+        return errorCode;
+    }
+    
+    public String getErrorMessage() {
+        return errorMessage;
+    }
 }
 
-// 健壮的扩展实现
+// 2. 健壮的扩展实现示例
 @Extension(tenantCode = "TENANT_A")
-@Service  
+@Service
+@Slf4j
 public class RobustExtension implements OrderExtPoint {
     
     @Override
@@ -696,29 +1250,34 @@ public class RobustExtension implements OrderExtPoint {
                 throw new ExtensionBizException("INVALID_AMOUNT", "订单金额必须大于0");
             }
             
-            // 3. 业务处理
+            // 3. 执行业务逻辑
             return processOrder(request);
             
         } catch (ExtensionBizException e) {
-            // 业务异常，记录并重新抛出
+            // 业务异常：记录日志并保持原异常传播
             log.warn("业务异常: {}", e.getErrorMessage());
             throw e;
         } catch (Exception e) {
-            // 系统异常，包装为业务异常
+            // 系统异常：包装为业务异常，避免暴露底层错误
             log.error("系统异常", e);
             throw new ExtensionBizException("SYSTEM_ERROR", "系统处理异常");
         }
     }
+    
+    private OrderDTO processOrder(OrderRequest request) {
+        // 实际业务处理逻辑
+        return new OrderDTO();
+    }
 }
 ```
 
-### 5.4 实际业务场景示例
+## 业务场景示例
 
 本节通过真实业务场景展示Bone扩展框架的实际应用，帮助开发者更好地理解如何在生产环境中有效使用扩展点。
 
-#### 5.4.1 多租户SaaS系统中的租户定制化支付处理
+### 多租户SaaS系统中的支付处理
 
-在多租户SaaS系统中，不同租户可能有完全不同的支付流程和业务规则。通过扩展点可以为每个租户提供专属的支付处理逻辑。
+在多租户SaaS系统中，不同行业的租户往往需要定制化的支付流程和业务规则。通过扩展点可以为每个租户提供专属的支付处理逻辑，同时保持系统核心的一致性。
 
 ```java
 /**
@@ -1004,9 +1563,9 @@ public class PaymentService {
         }
     }
 }
-#### 5.4.2 电商系统中的促销策略扩展
+### 电商系统中的促销策略
 
-在电商系统中，不同商品、不同用户群体、不同营销场景可能需要应用不同的促销规则。通过扩展点可以灵活配置和管理各类促销策略。
+电商系统的促销策略复杂多变，需要根据不同商品、用户群体、营销场景应用不同的规则。通过扩展点可以灵活管理各类促销策略的动态切换与组合。
 
 ```java
 /**
@@ -1021,58 +1580,137 @@ public interface PromotionExtPoint {
      * @param context 业务上下文，包含订单和商品信息
      * @return 促销计算结果
      */
-    PromotionResult calculatePromotion(BizContext<OrderContext> context);
+    PromotionResult calculatePromotion(BizContext<PromotionRequest> context);
+    
+    /**
+     * 判断是否适用当前促销策略
+     * @param context 业务上下文
+     * @return 是否适用
+     */
+    boolean isApplicable(BizContext<PromotionRequest> context);
 }
 
 /**
  * 满减促销策略实现
- * 根据订单金额门槛提供固定金额减免
+ * 支持阶梯式满减规则
  */
 @Extension(condition = "#data.orderType == 'NORMAL' && #context.getAttribute('promotionType') == 'FULL_DISCOUNT'", 
-             priority = 200)
+           priority = 200)
 @Service
 @Slf4j
 public class FullDiscountPromotionExtension implements PromotionExtPoint {
     
-    @Autowired
-    private PromotionConfigService configService;
-    
     @Override
-    public PromotionResult calculatePromotion(BizContext<OrderContext> context) {
-        OrderContext orderContext = context.getData();
-        BigDecimal orderAmount = orderContext.getTotalAmount();
+    public PromotionResult calculatePromotion(BizContext<PromotionRequest> context) {
+        log.info("Processing full discount promotion");
+        PromotionRequest request = context.getData();
         
-        // 获取满减配置
-        List<FullDiscountRule> rules = configService.getFullDiscountRules(
-            context.getTenantCode(), 
-            orderContext.getChannel()
-        );
+        // 添加空值检查
+        if (request == null) {
+            log.error("Promotion request is null");
+            return createEmptyResult();
+        }
         
-        // 查找符合条件的最高等级满减规则
-        FullDiscountRule appliedRule = findBestSuitableRule(orderAmount, rules);
+        BigDecimal subtotal = request.getSubtotal();
+        // 添加金额空值检查
+        if (subtotal == null) {
+            log.error("Subtotal is null in promotion request");
+            return createEmptyResult();
+        }
         
-        if (appliedRule != null) {
-            log.info("Applied full discount promotion: {} for order: {}", 
-                    appliedRule.getRuleName(), orderContext.getOrderId());
+        // 获取适用的满减规则
+        FullDiscountRule rule = getApplicableRule(subtotal);
+        
+        if (rule != null) {
+            BigDecimal discount = rule.getDiscountAmount();
+            
+            PromotionResult.AppliedPromotion appliedPromotion = PromotionResult.AppliedPromotion.builder()
+                .promotionId(rule.getId())
+                .promotionName(rule.getName())
+                .promotionType("FULL_DISCOUNT")
+                .discountAmount(discount)
+                .description("满" + rule.getThreshold() + "减" + discount)
+                .build();
+            
+            List<PromotionResult.AppliedPromotion> promotions = new ArrayList<>();
+            promotions.add(appliedPromotion);
             
             return PromotionResult.builder()
-                .promotionType("FULL_DISCOUNT")
-                .discountAmount(appliedRule.getDiscountAmount())
-                .promotionName(appliedRule.getRuleName())
-                .description(String.format("满%s减%s", 
-                        appliedRule.getThresholdAmount(), appliedRule.getDiscountAmount()))
+                .originalTotal(subtotal)
+                .finalTotal(subtotal.subtract(discount))
+                .appliedPromotions(promotions)
+                .discountApplied(true)
                 .build();
         }
         
-        return PromotionResult.empty();
+        // 无适用的满减规则
+        return PromotionResult.builder()
+            .originalTotal(subtotal)
+            .finalTotal(subtotal)
+            .appliedPromotions(new ArrayList<>())
+            .discountApplied(false)
+            .build();
     }
     
-    private FullDiscountRule findBestSuitableRule(BigDecimal orderAmount, List<FullDiscountRule> rules) {
-        // 按门槛金额降序排列，优先选择最高等级的满减
+    @Override
+    public boolean isApplicable(BizContext<PromotionRequest> context) {
+        try {
+            PromotionRequest request = context.getData();
+            return request != null && request.getSubtotal() != null && request.getSubtotal().compareTo(BigDecimal.ZERO) > 0;
+        } catch (Exception e) {
+            log.error("Error checking applicability for full discount promotion", e);
+            return false;
+        }
+    }
+    
+    /**
+     * 满减规则类
+     */
+    private static class FullDiscountRule {
+        private String id;
+        private String name;
+        private BigDecimal threshold;
+        private BigDecimal discountAmount;
+        
+        public FullDiscountRule(String id, String name, BigDecimal threshold, BigDecimal discountAmount) {
+            this.id = id;
+            this.name = name;
+            this.threshold = threshold;
+            this.discountAmount = discountAmount;
+        }
+        
+        public String getId() { return id; }
+        public String getName() { return name; }
+        public BigDecimal getThreshold() { return threshold; }
+        public BigDecimal getDiscountAmount() { return discountAmount; }
+    }
+    
+    /**
+     * 获取适用的满减规则
+     */
+    private FullDiscountRule getApplicableRule(BigDecimal amount) {
+        List<FullDiscountRule> rules = new ArrayList<>();
+        rules.add(new FullDiscountRule("RULE001", "满100减10", new BigDecimal("100"), new BigDecimal("10")));
+        rules.add(new FullDiscountRule("RULE002", "满200减30", new BigDecimal("200"), new BigDecimal("30")));
+        rules.add(new FullDiscountRule("RULE003", "满500减100", new BigDecimal("500"), new BigDecimal("100")));
+        
+        // 按门槛降序排序，选择最高的适用规则
         return rules.stream()
-            .filter(rule -> orderAmount.compareTo(rule.getThresholdAmount()) >= 0)
-            .max(Comparator.comparing(FullDiscountRule::getThresholdAmount))
+            .filter(rule -> amount.compareTo(rule.getThreshold()) >= 0)
+            .max(Comparator.comparing(FullDiscountRule::getThreshold))
             .orElse(null);
+    }
+    
+    /**
+     * 创建空的促销结果
+     */
+    private PromotionResult createEmptyResult() {
+        return PromotionResult.builder()
+            .originalTotal(BigDecimal.ZERO)
+            .finalTotal(BigDecimal.ZERO)
+            .appliedPromotions(new ArrayList<>())
+            .discountApplied(false)
+            .build();
     }
 }
 
@@ -1086,35 +1724,79 @@ public class FullDiscountPromotionExtension implements PromotionExtPoint {
 public class MemberDiscountPromotionExtension implements PromotionExtPoint {
     
     @Override
-    public PromotionResult calculatePromotion(BizContext<OrderContext> context) {
-        OrderContext orderContext = context.getData();
-        UserInfo userInfo = orderContext.getUserInfo();
+    public PromotionResult calculatePromotion(BizContext<PromotionRequest> context) {
+        log.info("Processing member discount promotion");
+        PromotionRequest request = context.getData();
         
-        // 根据会员等级获取折扣比例
-        double discountRate = getDiscountRateByMemberLevel(userInfo.getMemberLevel());
+        // 添加空值检查
+        if (request == null) {
+            log.error("Promotion request is null");
+            return createEmptyResult();
+        }
+        
+        // 获取用户信息和会员等级
+        PromotionRequest.UserInfo userInfo = request.getUserInfo();
+        if (userInfo == null || userInfo.getMemberLevel() == null) {
+            log.error("User info or member level is null");
+            return createEmptyResult();
+        }
+        
+        String memberLevel = userInfo.getMemberLevel();
+        double discountRate = getDiscountRateByMemberLevel(memberLevel);
+        
         if (discountRate < 1.0) { // 有折扣
-            BigDecimal originalAmount = orderContext.getTotalAmount();
-            BigDecimal discountAmount = originalAmount.subtract(
-                originalAmount.multiply(new BigDecimal(discountRate)));
+            BigDecimal subtotal = request.getSubtotal();
+            if (subtotal == null) {
+                log.error("Subtotal is null in promotion request");
+                return createEmptyResult();
+            }
             
-            String memberLevelName = getMemberLevelName(userInfo.getMemberLevel());
-            log.info("Applied member discount: {}% for user: {}", 
-                    (1 - discountRate) * 100, userInfo.getUserId());
+            BigDecimal discountAmount = subtotal.subtract(
+                subtotal.multiply(new BigDecimal(discountRate)));
             
-            return PromotionResult.builder()
+            String memberLevelName = getMemberLevelName(memberLevel);
+            log.info("Applied member discount: {}% for member level: {}", 
+                    (1 - discountRate) * 100, memberLevel);
+            
+            PromotionResult.AppliedPromotion appliedPromotion = PromotionResult.AppliedPromotion.builder()
+                .promotionId("MEMBER_" + memberLevel)
+                .promotionName(memberLevelName + "专属折扣")
                 .promotionType("MEMBER_DISCOUNT")
                 .discountAmount(discountAmount)
-                .promotionName(memberLevelName + "专属折扣")
-                .description(String.format("%s专享%.1f折优惠", 
-                        memberLevelName, discountRate * 10))
+                .description(memberLevelName + "专享" + (discountRate * 10) + "折优惠")
+                .build();
+            
+            List<PromotionResult.AppliedPromotion> promotions = new ArrayList<>();
+            promotions.add(appliedPromotion);
+            
+            return PromotionResult.builder()
+                .originalTotal(subtotal)
+                .finalTotal(subtotal.subtract(discountAmount))
+                .appliedPromotions(promotions)
+                .discountApplied(true)
                 .build();
         }
         
-        return PromotionResult.empty();
+        return createEmptyResult();
     }
     
+    @Override
+    public boolean isApplicable(BizContext<PromotionRequest> context) {
+        try {
+            PromotionRequest request = context.getData();
+            return request != null && request.getUserInfo() != null && 
+                   request.getUserInfo().getMemberLevel() != null && 
+                   request.getSubtotal() != null && request.getSubtotal().compareTo(BigDecimal.ZERO) > 0;
+        } catch (Exception e) {
+            log.error("Error checking applicability for member discount promotion", e);
+            return false;
+        }
+    }
+    
+    /**
+     * 根据会员等级获取折扣率
+     */
     private double getDiscountRateByMemberLevel(String memberLevel) {
-        // 根据会员等级返回折扣率
         switch (memberLevel) {
             case "VIP": return 0.95;   // VIP用户95折
             case "GOLD": return 0.90;  // 黄金会员9折
@@ -1124,8 +1806,10 @@ public class MemberDiscountPromotionExtension implements PromotionExtPoint {
         }
     }
     
+    /**
+     * 获取会员等级名称
+     */
     private String getMemberLevelName(String memberLevel) {
-        // 获取会员等级中文名
         switch (memberLevel) {
             case "VIP": return "VIP会员";
             case "GOLD": return "黄金会员";
@@ -1134,19 +1818,136 @@ public class MemberDiscountPromotionExtension implements PromotionExtPoint {
             default: return "普通会员";
         }
     }
+    
+    /**
+     * 创建空的促销结果
+     */
+    private PromotionResult createEmptyResult() {
+        return PromotionResult.builder()
+            .originalTotal(BigDecimal.ZERO)
+            .finalTotal(BigDecimal.ZERO)
+            .appliedPromotions(new ArrayList<>())
+            .discountApplied(false)
+            .build();
+    }
 }
 
 /**
  * 特定商品促销策略实现
- * 为指定商品提供专属促销价格或优惠
+ * 针对特定类别或特定商品提供促销折扣
  */
-@Extension(priority = 190)
+@Extension(condition = "#data.items != null && #data.items.size() > 0", priority = 190)
 @Service
 @Slf4j
 public class ProductSpecificPromotionExtension implements PromotionExtPoint {
     
-    @Autowired
-    private ProductPromotionService productPromotionService;
+    // 商品类别与折扣比例映射
+    private final Map<String, BigDecimal> categoryDiscountMap = new HashMap<>();
+    // 特定商品与折扣比例映射
+    private final Map<String, BigDecimal> productDiscountMap = new HashMap<>();
+    
+    public ProductSpecificPromotionExtension() {
+        // 初始化商品类别折扣配置
+        categoryDiscountMap.put("ELECTRONICS", new BigDecimal("0.9"));  // 电子产品9折
+        categoryDiscountMap.put("CLOTHING", new BigDecimal("0.85"));    // 服装85折
+        
+        // 初始化特定商品折扣配置
+        productDiscountMap.put("PROD001", new BigDecimal("0.7"));       // 特定商品7折
+        productDiscountMap.put("PROD002", new BigDecimal("0.6"));       // 特定商品6折
+    }
+    
+    @Override
+    public PromotionResult calculatePromotion(BizContext<PromotionRequest> context) {
+        log.info("Processing product specific promotion");
+        PromotionRequest request = context.getData();
+        
+        // 添加空值检查
+        if (request == null) {
+            log.error("Product promotion request is null");
+            return createEmptyResult();
+        }
+        
+        List<PromotionRequest.OrderItem> items = request.getItems();
+        if (items == null || items.isEmpty()) {
+            log.error("No items in promotion request");
+            return createEmptyResult();
+        }
+
+        List<PromotionResult.AppliedPromotion> appliedPromotions = new ArrayList<>();
+        BigDecimal totalDiscount = BigDecimal.ZERO;
+
+        // 计算每个商品的折扣
+        for (PromotionRequest.OrderItem item : items) {
+            BigDecimal discount = calculateItemDiscount(item);
+            if (discount.compareTo(BigDecimal.ZERO) > 0) {
+                totalDiscount = totalDiscount.add(discount);
+                
+                String discountType = productDiscountMap.containsKey(item.getProductId()) ? "特定商品" : "类别";
+                PromotionResult.AppliedPromotion promotion = PromotionResult.AppliedPromotion.builder()
+                    .promotionId(discountType + "_" + (productDiscountMap.containsKey(item.getProductId()) ? 
+                                                           item.getProductId() : item.getCategory()))
+                    .promotionName(discountType + "促销")
+                    .promotionType("PRODUCT_SPECIFIC")
+                    .discountAmount(discount)
+                    .description(item.getProductName() + "享受特定折扣")
+                    .build();
+                
+                appliedPromotions.add(promotion);
+            }
+        }
+        
+        return PromotionResult.builder()
+            .originalTotal(request.getSubtotal())
+            .finalTotal(request.getSubtotal().subtract(totalDiscount))
+            .appliedPromotions(appliedPromotions)
+            .discountApplied(!appliedPromotions.isEmpty())
+            .build();
+    }
+    
+    @Override
+    public boolean isApplicable(BizContext<PromotionRequest> context) {
+        try {
+            PromotionRequest request = context.getData();
+            return request != null && request.getItems() != null && !request.getItems().isEmpty();
+        } catch (Exception e) {
+            log.error("Error checking applicability for product specific promotion", e);
+            return false;
+        }
+    }
+    
+    /**
+     * 计算单个商品的折扣
+     */
+    private BigDecimal calculateItemDiscount(PromotionRequest.OrderItem item) {
+        // 先检查是否有特定商品折扣
+        if (productDiscountMap.containsKey(item.getProductId())) {
+            BigDecimal discountRate = productDiscountMap.get(item.getProductId());
+            return item.getUnitPrice().multiply(new BigDecimal(item.getQuantity()))
+                      .multiply(BigDecimal.ONE.subtract(discountRate));
+        }
+        
+        // 再检查是否有类别折扣
+        if (item.getCategory() != null && categoryDiscountMap.containsKey(item.getCategory())) {
+            BigDecimal discountRate = categoryDiscountMap.get(item.getCategory());
+            return item.getUnitPrice().multiply(new BigDecimal(item.getQuantity()))
+                      .multiply(BigDecimal.ONE.subtract(discountRate));
+        }
+        
+        return BigDecimal.ZERO;
+    }
+    
+    /**
+     * 创建空的促销结果
+     */
+    private PromotionResult createEmptyResult() {
+        return PromotionResult.builder()
+            .originalTotal(BigDecimal.ZERO)
+            .finalTotal(BigDecimal.ZERO)
+            .appliedPromotions(new ArrayList<>())
+            .discountApplied(false)
+            .build();
+    }
+}
     
     @Override
     public PromotionResult calculatePromotion(BizContext<OrderContext> context) {
@@ -2383,21 +3184,20 @@ public class BankMemberExtension implements MembershipExtPoint {
 }
 ```
 
----
+## 故障排查与监控
 
-## 6. 故障排查
-
-### 6.1 常见问题解决方案
+### 常见问题与解决方案
 
 | 问题现象 | 可能原因 | 解决方案 |
 |----------|----------|----------|
-| 扩展点未调用 | 1. 未启用扫描<br>2. 包路径错误<br>3. 缺少注解 | 1. 检查 `@EnableExtPoints`<br>2. 验证 `basePackages`<br>3. 确认 `@Extension` |
-| 表达式匹配失败 | 1. 语法错误<br>2. 变量不存在<br>3. NPE | 1. 使用简单表达式测试<br>2. 检查可用变量<br>3. 添加空值检查 |
-| 性能问题 | 1. 复杂表达式<br>2. 重复查询<br>3. 同步阻塞 | 1. 简化表达式<br>2. 添加缓存<br>3. 使用异步处理 |
+| 扩展点未调用 | 1. 未启用扫描<br>2. 包路径错误<br>3. 缺少注解 | 1. 检查 `@EnableExtPoints` 注解是否添加<br>2. 验证 `basePackages` 配置是否正确<br>3. 确认实现类添加了 `@Extension` 注解 |
+| 表达式匹配失败 | 1. SpEL语法错误<br>2. 变量不存在<br>3. 空指针异常 | 1. 使用简单表达式逐步测试<br>2. 检查表达式中使用的变量是否可用<br>3. 使用安全导航操作符 `?.` 避免NPE |
+| 优先级不生效 | 1. 未设置priority<br>2. 优先级设置相同<br>3. 条件匹配不正确 | 1. 确保所有扩展都设置了priority属性<br>2. 为不同优先级的扩展设置不同的值<br>3. 检查条件表达式是否正确匹配 |
+| 性能问题 | 1. 复杂表达式<br>2. 重复查询<br>3. 同步阻塞 | 1. 简化表达式或使用预计算<br>2. 添加缓存减少重复计算<br>3. 对非关键路径使用异步处理 |
 
-### 6.2 调试工具
+### 调试与监控工具
 
-**1. 启用详细日志**
+#### 1. 启用详细日志
 ```yaml
 # application.yml
 logging:
@@ -2470,125 +3270,151 @@ public class ExtensionPerformanceMonitor {
 }
 ```
 
----
+## 常见问题解答
 
-## 7. 常见问题解答
-
-### 7.1 基础问题
+### 基础概念
 
 **Q: 什么时候应该使用扩展点框架？**
-A: 当你的业务需要：
-- 为不同租户提供定制逻辑
-- 根据动态条件选择不同实现
-- 避免在核心代码中写大量 if-else
-- 需要支持插件化架构
+A: 当你的业务需要以下特性时，扩展点框架是理想选择：
+- 为不同租户提供定制化业务逻辑
+- 根据动态条件动态选择不同的实现
+- 避免在核心代码中编写大量条件判断
+- 支持插件化架构和动态扩展
+- 实现业务逻辑与框架逻辑的解耦
 
 **Q: 扩展点框架和策略模式有什么区别？**
-A: 策略模式是设计模式，需要手动选择策略；扩展点框架是基础设施，自动根据上下文路由，支持更丰富的匹配维度。
+A: 策略模式是一种设计模式，需要手动选择和切换策略；而扩展点框架是一种基础设施，它自动根据上下文信息进行路由，支持多维度的匹配条件，并提供了丰富的功能如优先级控制、动态注册等。
 
-### 7.2 性能问题
+**Q: 扩展点和Spring的自动装配有什么关系？**
+A: 扩展点框架基于Spring生态构建，利用Spring的自动装配机制来管理扩展实现，但增加了基于上下文的动态路由能力，解决了自动装配只能静态注入的局限性。
+
+### 性能优化
 
 **Q: 表达式路由的性能开销大吗？**
-A: 框架内置多级缓存，对相同表达式和上下文会缓存匹配结果。建议：
-- 避免过于复杂的表达式
-- 对高频调用场景使用精确匹配
-- 开启缓存预热
+A: 框架内置了多级缓存机制，对相同表达式和上下文会缓存匹配结果，有效降低了性能开销。为了进一步优化性能，建议：
+- 避免使用过于复杂的SpEL表达式
+- 对高频调用场景优先使用精确匹配（如tenantCode、bizCode）
+- 启用缓存预热机制减少冷启动开销
 
-**Q: 如何监控扩展点性能？**
-A:
-1. 配置 `metrics-enabled: true`
-2. 使用 `ExtensionPerformanceMonitor`
-3. 分析扩展点调用日志
+**Q: 如何优化高并发场景下的扩展点性能？**
+A: 可以采用以下优化策略：
+1. 使用本地缓存减少重复计算
+2. 对非关键路径使用异步执行
+3. 避免在扩展点实现中进行耗时操作
+4. 合理设置优先级，避免不必要的匹配计算
 
-### 7.3 高级用法
+### 高级用法
 
 **Q: 如何实现扩展点的A/B测试？**
-A: 使用表达式路由：
+A: 可以通过表达式路由轻松实现A/B测试：
 ```java
+// A组实现
 @Extension(condition = "#context.getAttribute('abTestGroup') == 'A'")
 public class VersionAExtension implements FeatureExtPoint {
-    // A版本逻辑
+    // A版本逻辑实现
 }
 
-@Extension(condition = "#context.getAttribute('abTestGroup') == 'B'")  
+// B组实现  
+@Extension(condition = "#context.getAttribute('abTestGroup') == 'B'")
 public class VersionBExtension implements FeatureExtPoint {
-    // B版本逻辑
+    // B版本逻辑实现
 }
 ```
 
 **Q: 扩展点之间如何传递数据？**
-A: 通过 `BizContext` 的 attributes：
+A: 可以通过 `BizContext` 的属性机制在扩展点之间传递数据：
 ```java
 // 第一个扩展点
-context.setAttribute("processedData", result);
+context.setAttribute("processedData", intermediateResult);
 
 // 后续扩展点
-MyData data = context.getAttribute("processedData");
+MyData data = context.getAttribute("processedData", MyData.class);
 ```
 
----
+**Q: 如何实现扩展点的动态更新？**
+A: 可以利用框架提供的动态注册机制：
+```java
+@Autowired
+private ExtensionRegister extensionRegister;
 
-## 8. 版本历史
+// 注销旧实现
+extensionRegister.unregisterExtension(OrderExtPoint.class, oldExtension);
 
-### 1.3.0 (最新)
-- 扩展点版本管理
-- 热更新支持
-- 性能优化
-- 文档自动生成
+// 注册新实现
+extensionRegister.registerExtension(OrderExtPoint.class, newExtension, metadata);
+```
+
+## 版本历史
+
+### 1.3.0 (最新版本)
+- 扩展点版本管理功能
+- 支持扩展热更新
+- 核心性能优化
+- 自动文档生成支持
 
 ### 1.2.0
-- 动态注册扩展
-- 监控指标
-- 异步执行
-- 多租户增强
+- 动态注册扩展实现
+- 内置监控指标
+- 异步执行支持
+- 多租户功能增强
 
 ### 1.1.0
-- 组合执行
-- 缓存预热
-- 表达式优化
-- 错误处理增强
+- 扩展组合执行能力
+- 缓存预热机制
+- 表达式引擎优化
+- 错误处理机制增强
 
 ### 1.0.0
 - 基础扩展点机制
-- 注解驱动
+- 注解驱动开发模式
 - SpEL表达式路由
-- Spring集成
+- Spring框架深度集成
 
----
+## 附录：速查表
 
-## 9. 附录：速查表
-
-### 9.1 注解速查
+### 注解速查
 
 | 注解 | 用途 | 示例 |
 |------|------|------|
 | `@ExtPoint` | 定义扩展点接口 | `@ExtPoint(name="订单扩展点")` |
-| `@Extension` | 实现扩展点 | `@Extension(tenantCode="T1", priority=50)` |
-| `@EnableExtPoints` | 启用框架 | `@EnableExtPoints(basePackages="com.xx")` |
+| `@Extension` | 标记扩展点实现 | `@Extension(tenantCode="T1", priority=50)` |
+| `@EnableExtPoints` | 启用扩展点框架 | `@EnableExtPoints(basePackages="com.example")` |
 
-### 9.2 API速查
+### API速查
 
 | 方法 | 用途 | 示例 |
 |------|------|------|
-| `BizContext.builder()` | 创建上下文 | `.tenantCode("T1").data(obj).build()` |
-| `ExtensionContextManager.with()` | 设置上下文 | `try (var mgr = ExtensionContextManager.with(ctx)) { }` |
-| `ExtPointComposite.getExtensions()` | 获取所有匹配实现 | `composite.getExtensions(context)` |
+| `BizContext.builder()` | 创建业务上下文 | `.tenantCode("T1").data(obj).build()` |
+| `ExtensionContextManager.with()` | 设置当前上下文 | `try (var scope = ExtensionContextManager.with(ctx)) { }` |
+| `ExtPointComposite.getExtensions()` | 获取匹配的扩展实现 | `composite.getExtensions(context)` |
 
-### 9.3 表达式速查
+### SpEL表达式速查
 
-| 表达式 | 含义 |
-|--------|------|
-| `#tenantCode == 'T1'` | 租户匹配 |
-| `#data.amount > 100` | 数据属性判断 |
-| `#context.getAttribute('vip')` | 上下文属性访问 |
-| `#data.items.size() > 0` | 集合操作 |
+| 表达式类型 | 示例 | 说明 |
+|------------|------|------|
+| **基础比较** | `#data.amount > 100` | 简单数值比较 |
+| | `#tenantCode == 'TENANT_A'` | 字符串相等判断 |
+| | `#data.status in {'PENDING', 'PROCESSING'}` | 集合包含判断 |
+| **安全访问** | `#data.user?.level == 'VIP'` | 使用安全导航操作符避免空指针异常 |
+| | `#data.user?.name == 'admin'` | 安全属性访问 |
+| **字符串操作** | `#bizCode.startsWith('ORDER')` | 字符串前缀匹配 |
+| | `#data.name.contains('test')` | 字符串包含检查 |
+| **集合操作** | `#data.items.size() > 0` | 集合大小判断 |
+| | `#data.items.?[price > 100].size() > 0` | 过滤集合元素并统计数量 |
+| **方法调用** | `T(java.util.Objects).equals(#scenario, 'MOBILE')` | 调用静态方法进行比较 |
+| | `T(java.lang.Math).random() > 0.5` | 随机值比较 |
+| **上下文属性** | `#context.getAttribute('vipLevel') == 'GOLD'` | 访问上下文中的自定义属性 |
+| **日期操作** | `#data.createTime.after(new java.util.Date())` | 日期比较 |
+| **默认值处理** | `#data.amount ?: 0` | 空值时使用默认值 |
+| **复杂组合** | `(#tenantCode == 'T1' && #data.amount > 1000) || (#tenantCode == 'T2' && #data.amount > 500)` | 多条件组合判断 |
+| | `#data.amount > 100 && #data.amount < 1000` | 范围判断 |
 
 ---
 
 ## 🎉 开始使用！
 
-现在你已经掌握了 Bone Extension Framework 的核心概念和最佳实践。建议从 [2. 5分钟快速上手](#2-5分钟快速上手) 的最小示例开始，逐步应用到你的业务场景中。
+现在你已经掌握了 Bone Extension Framework 的核心概念和最佳实践。建议从 [快速开始](#快速开始) 的最小示例开始，逐步应用到你的业务场景中。
 
-**遇到问题？** 查看 [6. 故障排查](#6-故障排查) 和 [7. 常见问题解答](#7-常见问题解答)，或检查框架日志中的详细错误信息。
+**遇到问题？** 查看 [故障排查与监控](#故障排查与监控) 和 [常见问题解答](#常见问题解答)，或检查框架日志中的详细错误信息。
 
 Happy Coding! 🚀
