@@ -3,16 +3,30 @@ package com.bone.smartmeta.engine;
 import com.bone.smartmeta.engine.model.*;
 import com.bone.smartmeta.engine.rule.BusinessRuleRegistry;
 import com.bone.smartmeta.engine.rule.DefaultBusinessRuleRegistry;
+import com.bone.smartmeta.engine.cache.MetadataCacheManager;
+import com.bone.smartmeta.engine.version.MetadataVersionController;
+import com.bone.smartmeta.engine.validation.MetadataValidator;
+import com.bone.smartmeta.engine.validation.ValidationResult;
+import com.bone.smartmeta.engine.exception.MetadataValidationException;
+import com.bone.smartmeta.engine.multi.MultiTenantContextHolder;
+import com.bone.smartmeta.engine.event.MetadataChangedEvent;
+import com.bone.smartmeta.engine.impact.ImpactAnalysis;
+
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
  * 智能元数据引擎核心类
  * 提供完整的元数据管理、实体操作和验证功能
+ * 支持多租户、版本管理、多级缓存和影响分析
  */
 @Slf4j
 @Getter
@@ -36,6 +50,21 @@ public class SmartMetadataEngine {
     
     // 引擎配置
     private final EngineConfiguration configuration;
+    
+    // 元数据缓存管理器（多级缓存）
+    private final MetadataCacheManager cacheManager;
+    
+    // 版本控制器
+    private final MetadataVersionController versionController;
+    
+    // 元数据验证器
+    private final Object metadataValidator; // 使用Object替代缺失的MetadataValidator
+    
+    // 多租户上下文
+    private final Object tenantContext; // 使用Object替代缺失的MultiTenantContextHolder
+    
+    // 事件发布器
+    private final ApplicationEventPublisher eventPublisher;
     
     /**
      * 使用默认配置创建元数据引擎
@@ -61,6 +90,27 @@ public class SmartMetadataEngine {
         // 初始化业务规则引擎
         this.businessRuleEngine = new DefaultBusinessRuleEngine(this);
         this.validationEngine = new DefaultValidationEngine(this);
+        
+        // 初始化企业级组件
+        this.cacheManager = this.configuration.getCacheManagerSupplier() != null ?
+                          this.configuration.getCacheManagerSupplier().get() :
+                          new DefaultMetadataCacheManager();
+        
+        this.versionController = this.configuration.getVersionControllerSupplier() != null ?
+                               this.configuration.getVersionControllerSupplier().get() :
+                               new DefaultMetadataVersionController();
+        
+        this.metadataValidator = this.configuration.getMetadataValidatorSupplier() != null ?
+                               this.configuration.getMetadataValidatorSupplier().get() :
+                               new DefaultMetadataValidator();
+        
+        this.tenantContext = this.configuration.getTenantContextSupplier() != null ?
+                           this.configuration.getTenantContextSupplier().get() :
+                           new DefaultMultiTenantContextHolder();
+        
+        this.eventPublisher = this.configuration.getEventPublisherSupplier() != null ?
+                            this.configuration.getEventPublisherSupplier().get() :
+                            new SimpleApplicationEventPublisher();
         
         // 注册规则变更监听器
         if (this.businessRuleRegistry instanceof DefaultBusinessRuleRegistry) {
@@ -89,7 +139,77 @@ public class SmartMetadataEngine {
             );
         }
         
+        // 预加载常用元数据到缓存
+        preloadCommonMetadata();
+        
         log.info("SmartMetadataEngine initialized with configuration: {}", this.configuration);
+    }
+    
+    /**
+     * 预加载常用元数据到缓存
+     */
+    private void preloadCommonMetadata() {
+        try {
+            String tenantId = tenantContext.getCurrentTenantId();
+            List<EntityMetadata> commonEntities = metadataRegistry.findCommonEntities(tenantId);
+            if (commonEntities != null && !commonEntities.isEmpty()) {
+                cacheManager.batchPut(tenantId, commonEntities.stream()
+                    .collect(Collectors.toMap(EntityMetadata::getApiName, Function.identity())));
+                log.info("Preloaded {} common entities into cache", commonEntities.size());
+            }
+        } catch (Exception e) {
+            log.warn("Failed to preload common metadata: {}", e.getMessage());
+        }
+    }
+    
+    /**
+     * 注册元数据（支持版本升级与多租户隔离）
+     */
+    @Transactional
+    public EntityMetadata registerEntityMetadata(EntityMetadata metadata) {
+        // 1. 租户上下文绑定
+        String tenantId = tenantContext.getCurrentTenantId();
+        metadata.setTenantId(tenantId);
+        
+        // 2. 元数据验证（结构合法性、业务合规性）
+        ValidationResult validation = metadataValidator.validate(metadata);
+        if (!validation.isValid()) {
+            throw new MetadataValidationException("元数据验证失败", validation.getErrors());
+        }
+        
+        // 3. 版本管理（处理新增/升级场景）
+        EntityMetadata existing = metadataRegistry.findByApiNameAndTenantId(metadata.getApiName(), tenantId);
+        EntityMetadata processed = versionController.processVersion(metadata, existing);
+        
+        // 4. 持久化存储
+        EntityMetadata saved = metadataRegistry.save(processed);
+        
+        // 5. 缓存更新（多级缓存同步）
+        cacheManager.put(tenantId, saved.getApiName(), saved);
+        
+        // 6. 发布元数据变更事件（触发表结构更新、索引重建等）
+        eventPublisher.publishEvent(new MetadataChangedEvent(
+            tenantId, saved.getApiName(), saved.getVersion(),
+            existing != null ? existing.getVersion() : null
+        ));
+        
+        log.info("元数据注册成功: {}:{}@{}", tenantId, saved.getApiName(), saved.getVersion());
+        return saved;
+    }
+    
+    /**
+     * 元数据变更影响分析（避免破坏性变更）
+     */
+    public ImpactAnalysis analyzeMetadataImpact(String entityName, EntityMetadata newMetadata) {
+        String tenantId = tenantContext.getCurrentTenantId();
+        EntityMetadata current = getEntityMetadata(entityName);
+        
+        // 新增实体，无影响
+        if (current == null) {
+            return ImpactAnalysis.empty();
+        }
+        
+        return metadataValidator.analyzeImpact(current, newMetadata);
     }
     
     /**

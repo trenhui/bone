@@ -15,6 +15,13 @@ public interface EntitySqlBuilder<T> {
      * @return WhereClause实例
      */
     <V> WhereClause<T> where(FieldFunction<T, V> fieldFunction);
+    
+    /**
+     * 添加WHERE条件（支持关联表字段引用，如"role.code"）
+     * @param fieldName 字段名
+     * @return WhereClause实例
+     */
+    WhereClause<T> where(String fieldName);
 
     /**
      * 添加GROUP BY分组

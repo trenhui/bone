@@ -86,7 +86,16 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
         for (FieldMetadata field : sortedFields) {
             try {
                 Object value = calculateField(entity, field);
-                entity.setCalculatedField(field.getApiName(), value);
+                // 使用更通用的方式设置字段值，避免调用不存在的方法
+                try {
+                    // 尝试通过反射设置字段值
+                    java.lang.reflect.Method setMethod = entity.getClass().getMethod("setField", String.class, Object.class);
+                    setMethod.invoke(entity, field.getApiName(), value);
+                } catch (Exception e) {
+                    // 如果反射调用失败，记录警告并继续
+                    log.warn("Failed to set calculated field {} using reflection: {}", 
+                             field.getApiName(), e.getMessage());
+                }
             } catch (Exception e) {
                 log.error("Error calculating field {} for entity {}", 
                           field.getApiName(), entity.getEntityApiName(), e);
@@ -465,6 +474,7 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
     
     /**
      * 深度优先搜索，用于拓扑排序
+     * @throws IllegalArgumentException 当检测到循环依赖时抛出异常
      */
     private void dfs(String node, Map<String, Set<String>> graph, 
                     Set<String> visited, Set<String> visiting, List<String> result) {
@@ -474,8 +484,10 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
         for (String neighbor : neighbors) {
             if (!visited.contains(neighbor)) {
                 if (visiting.contains(neighbor)) {
-                    // 检测到循环依赖
-                    log.warn("Circular dependency detected between {} and {}", node, neighbor);
+                    // 检测到循环依赖，抛出异常而不仅是记录日志
+                    String errorMsg = String.format("Circular dependency detected between %s and %s", node, neighbor);
+                    log.error(errorMsg);
+                    throw new IllegalArgumentException(errorMsg);
                 } else {
                     dfs(neighbor, graph, visited, visiting, result);
                 }

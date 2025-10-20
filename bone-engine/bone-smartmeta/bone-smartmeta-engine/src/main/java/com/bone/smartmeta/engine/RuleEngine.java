@@ -56,18 +56,18 @@ public class RuleEngine {
      * 注册内置函数
      */
     private void registerBuiltInFunctions() {
-        // 尝试注册内置函数，使用反射避免类型问题
+        // 尝试注册内置函数，使用更安全的方式
         try {
             // 注册isNull函数
-            registerFunctionByReflection("isNull", "检查值是否为null");
+            registerFunctionByName("isNull", "检查值是否为null");
             // 注册isNotNull函数
-            registerFunctionByReflection("isNotNull", "检查值是否不为null");
+            registerFunctionByName("isNotNull", "检查值是否不为null");
             // 注册isEmpty函数
-            registerFunctionByReflection("isEmpty", "检查字符串是否为空");
+            registerFunctionByName("isEmpty", "检查字符串是否为空");
             // 注册isNotEmpty函数
-            registerFunctionByReflection("isNotEmpty", "检查字符串是否不为空");
+            registerFunctionByName("isNotEmpty", "检查字符串是否不为空");
             // 注册length函数
-            registerFunctionByReflection("length", "获取字符串长度");
+            registerFunctionByName("length", "获取字符串长度");
             
             log.info("已注册内置函数");
         } catch (Exception e) {
@@ -75,13 +75,11 @@ public class RuleEngine {
         }
     }
     
-    private void registerFunctionByReflection(String functionName, String description) {
+    private void registerFunctionByName(String functionName, String description) {
         try {
-            // 尝试使用反射调用registerFunction方法
-            java.lang.reflect.Method registerMethod = functionRegistry.getClass().getMethod(
-                "registerFunction", String.class, Object.class, String.class);
-            // 使用简单的字符串或空对象作为函数参数
-            registerMethod.invoke(functionRegistry, functionName, functionName, description);
+            // 由于无法直接使用lambda表达式，我们回退到使用函数名作为标识
+            // 实际函数实现在ExpressionEngine中处理
+            functionRegistry.registerFunction(functionName, functionName, description);
         } catch (Exception e) {
             log.debug("注册函数 {} 失败", functionName, e);
         }

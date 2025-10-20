@@ -20,8 +20,18 @@ public class TestConfig {
 
     @Bean
     public CodegenService codegenService() {
-        // 使用无参构造函数创建CodegenService实例
-        return new CodegenService();
+        // 使用正确的构造函数创建CodegenService实例
+        return new CodegenService(
+            defaultCodeGenerator(),
+            databaseTableService(),
+            codegenTableRepository(),
+            templateRenderer()
+        );
+    }
+
+    @Bean
+    public VelocityTemplateRenderer templateRenderer() {
+        return Mockito.mock(VelocityTemplateRenderer.class);
     }
 
     @Bean
@@ -54,8 +64,5 @@ public class TestConfig {
         return Mockito.mock(DataSourceConfigService.class);
     }
 
-    @Bean
-    public VelocityTemplateRenderer velocityTemplateRenderer() {
-        return Mockito.mock(VelocityTemplateRenderer.class);
-    }
+
 }

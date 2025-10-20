@@ -11,15 +11,19 @@ public class ReflectionUtil {
      * 获取对象的字段值
      * @param object 对象实例
      * @param fieldName 字段名
-     * @return 字段值
+     * @return 字段值，如果对象或字段名为null则返回null
      */
     public static Object getFieldValue(Object object, String fieldName) {
+        // 添加null检查，避免空指针异常
+        if (object == null || fieldName == null || fieldName.isEmpty()) {
+            return null;
+        }
         try {
             Field field = getDeclaredField(object.getClass(), fieldName);
             field.setAccessible(true);
             return field.get(object);
         } catch (Exception e) {
-            // 忽略异常
+            // 忽略异常，返回null
             return null;
         }
     }
@@ -31,6 +35,10 @@ public class ReflectionUtil {
      * @param value 字段值
      */
     public static void setFieldValue(Object object, String fieldName, Object value) {
+        // 添加null检查，避免空指针异常
+        if (object == null || fieldName == null || fieldName.isEmpty()) {
+            return;
+        }
         try {
             Field field = getDeclaredField(object.getClass(), fieldName);
             field.setAccessible(true);
@@ -132,6 +140,10 @@ public class ReflectionUtil {
      * @throws Exception 调用失败时抛出异常
      */
     public static Object invokeMethod(Object object, String methodName, Class<?>[] paramTypes, Object... params) throws Exception {
+        // 添加null检查，避免空指针异常
+        if (object == null || methodName == null || methodName.isEmpty()) {
+            throw new IllegalArgumentException("对象或方法名不能为空");
+        }
         try {
             // 尝试直接在当前类中查找方法
             java.lang.reflect.Method method = object.getClass().getDeclaredMethod(methodName, paramTypes);

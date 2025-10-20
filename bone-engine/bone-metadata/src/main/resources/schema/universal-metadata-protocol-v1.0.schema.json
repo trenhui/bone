@@ -1,0 +1,1186 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bone-engine.org/ump/v1.0/schema",
+  "title": "Universal Metadata Protocol (UMP)",
+  "description": "通用元数据协议，支持实体、字段、关系、规则、流程和操作的标准化定义",
+  "type": "object",
+  "properties": {
+    "apiName": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_]{1,49}$",
+      "description": "全局唯一标识"
+    },
+    "label": {
+      "type": "string",
+      "description": "显示名称"
+    },
+    "labels": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "多语言标签"
+    },
+    "description": {
+      "type": "string",
+      "description": "业务描述"
+    },
+    "domain": {
+      "type": "string",
+      "description": "业务域"
+    },
+    "entityType": {
+      "type": "string",
+      "enum": ["STANDARD", "SUB_ENTITY", "JOINT_ENTITY"],
+      "description": "实体类型"
+    },
+    "fields": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/FieldMetadata"
+      },
+      "description": "字段定义"
+    },
+    "relationships": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/RelationshipMetadata"
+      },
+      "description": "关系定义"
+    },
+    "businessRules": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/BusinessRuleMetadata"
+      },
+      "description": "业务规则"
+    },
+    "processes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/ProcessMetadata"
+      },
+      "description": "流程定义"
+    },
+    "operations": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/OperationMetadata"
+      },
+      "description": "操作定义"
+    },
+    "indexes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/IndexMetadata"
+      },
+      "description": "索引定义"
+    },
+    "permissions": {
+      "$ref": "#/definitions/EntityPermissionMetadata",
+      "description": "权限配置"
+    },
+    "parentEntity": {
+      "type": "string",
+      "description": "父实体（继承）"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "语义化版本"
+    },
+    "aiEnhancement": {
+      "$ref": "#/definitions/AIEnhancement",
+      "description": "AI增强配置"
+    },
+    "kgConfig": {
+      "$ref": "#/definitions/KnowledgeGraphConfig",
+      "description": "知识图谱配置"
+    },
+    "mcpInterface": {
+      "type": "object",
+      "properties": {
+        "dataIngestion": { "type": "string", "description": "数据摄取端点" },
+        "metadataTagging": { "type": "string", "description": "元数据标记端点" },
+        "interoperability": { "type": "string", "description": "互操作性端点" }
+      },
+      "description": "MCP协议接口"
+    },
+    "audited": {
+      "type": "boolean",
+      "default": false,
+      "description": "是否启用审计"
+    },
+    "cacheable": {
+      "type": "boolean",
+      "default": true,
+      "description": "是否可缓存"
+    },
+    "cacheTTL": {
+      "type": "integer",
+      "default": 3600,
+      "description": "缓存过期时间（秒）"
+    },
+    "primaryKeyField": {
+      "type": "string",
+      "default": "id",
+      "description": "主键字段名称"
+    },
+    "extensions": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "扩展属性"
+    },
+    "createdBy": {
+      "type": "string",
+      "description": "创建人"
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "创建时间"
+    },
+    "updatedBy": {
+      "type": "string",
+      "description": "更新人"
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "更新时间"
+    }
+  },
+  "required": ["apiName", "label", "domain", "entityType", "fields", "version"],
+  "definitions": {
+    "FieldMetadata": {
+      "type": "object",
+      "properties": {
+        "name": { 
+          "type": "string", 
+          "pattern": "^[a-z][a-zA-Z0-9_]{1,49}$",
+          "description": "字段名称"
+        },
+        "label": { 
+          "type": "string",
+          "description": "显示标签"
+        },
+        "labels": { 
+          "type": "object", 
+          "additionalProperties": { "type": "string" },
+          "description": "多语言标签"
+        },
+        "description": { 
+          "type": "string",
+          "description": "字段描述"
+        },
+        "type": { 
+          "type": "string", 
+          "enum": ["TEXT", "PICKLIST", "LOOKUP", "CURRENCY", "DATE", "NUMBER", "INTEGER", "BOOLEAN", "DATETIME", "TIMESTAMP", "JSON", "OBJECT", "ARRAY"],
+          "description": "字段类型"
+        },
+        "required": { 
+          "type": "boolean", 
+          "default": false,
+          "description": "是否必填"
+        },
+        "defaultValue": { 
+          "type": ["string", "number", "boolean", "null"],
+          "description": "默认值"
+        },
+        "defaultExpression": { 
+          "type": "string",
+          "description": "默认值表达式"
+        },
+        "maxLength": { 
+          "type": "integer",
+          "minimum": 1,
+          "description": "最大长度"
+        },
+        "minValue": { 
+          "type": "number",
+          "description": "最小值"
+        },
+        "maxValue": { 
+          "type": "number",
+          "description": "最大值"
+        },
+        "calculated": { 
+          "type": "boolean", 
+          "default": false,
+          "description": "是否计算字段"
+        },
+        "calculationExpression": { 
+          "type": "string",
+          "description": "计算表达式"
+        },
+        "encrypted": { 
+          "type": "boolean", 
+          "default": false,
+          "description": "是否加密存储"
+        },
+        "picklistValues": { 
+          "type": "array", 
+          "items": { 
+            "$ref": "#/definitions/PicklistValue"
+          },
+          "description": "选择列表值"
+        },
+        "permission": { 
+          "$ref": "#/definitions/FieldPermission",
+          "description": "字段权限设置"
+        },
+        "uiMetadata": { 
+          "$ref": "#/definitions/FieldUIMetadata",
+          "description": "UI元数据"
+        },
+        "unstructured": { 
+          "type": "boolean", 
+          "default": false,
+          "description": "是否为非结构化数据"
+        },
+        "indexed": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否建立索引"
+        },
+        "searchable": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否可搜索"
+        },
+        "sortable": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否可排序"
+        },
+        "trackHistory": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否跟踪历史变更"
+        },
+        "aiAutoFillEnabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否启用AI自动填充"
+        },
+        "precision": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "数值精度（总位数）"
+        },
+        "scale": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "小数位数"
+        },
+        "unique": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否唯一"
+        },
+        "readOnly": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否只读"
+        },
+        "validationPattern": {
+          "type": "string",
+          "description": "验证正则表达式"
+        },
+        "placeholder": {
+          "type": "string",
+          "description": "输入占位符"
+        },
+        "helpText": {
+          "type": "string",
+          "description": "帮助文本"
+        },
+        "displayFormat": {
+          "type": "string",
+          "description": "显示格式"
+        }
+      },
+      "required": ["name", "label", "type"]
+    },
+    "PicklistValue": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string",
+          "description": "选项值"
+        },
+        "label": {
+          "type": "string",
+          "description": "显示标签"
+        },
+        "description": {
+          "type": "string",
+          "description": "选项描述"
+        },
+        "disabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否禁用"
+        },
+        "sortOrder": {
+          "type": "integer",
+          "default": 0,
+          "description": "排序顺序"
+        }
+      },
+      "required": ["value", "label"]
+    },
+    "FieldPermission": {
+      "type": "object",
+      "properties": {
+        "readable": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否可读"
+        },
+        "writable": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否可写"
+        },
+        "visible": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否可见"
+        },
+        "permissionGroups": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "权限组列表"
+        },
+        "conditionalExpression": {
+          "type": "string",
+          "description": "权限控制条件表达式"
+        }
+      }
+    },
+    "FieldUIMetadata": {
+      "type": "object",
+      "properties": {
+        "component": {
+          "type": "string",
+          "description": "UI组件类型"
+        },
+        "width": {
+          "type": "integer",
+          "description": "字段宽度"
+        },
+        "height": {
+          "type": "integer",
+          "description": "字段高度"
+        },
+        "orderIndex": {
+          "type": "integer",
+          "default": 0,
+          "description": "显示顺序"
+        },
+        "gridColumns": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12,
+          "description": "网格列数"
+        },
+        "format": {
+          "type": "string",
+          "description": "显示格式"
+        },
+        "align": {
+          "type": "string",
+          "enum": ["left", "center", "right"],
+          "default": "left",
+          "description": "对齐方式"
+        },
+        "style": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "样式配置"
+        },
+        "hidden": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否隐藏"
+        },
+        "readonly": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否只读"
+        },
+        "conditionalVisibilityExpression": {
+          "type": "string",
+          "description": "条件显示表达式"
+        },
+        "lookupDisplayField": {
+          "type": "string",
+          "description": "查找字段的显示字段"
+        },
+        "lookupSearchFields": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "查找字段的搜索字段"
+        }
+      }
+    },
+    "RelationshipMetadata": {
+      "type": "object",
+      "properties": {
+        "name": { 
+          "type": "string",
+          "description": "关系名称"
+        },
+        "label": { 
+          "type": "string",
+          "description": "关系标签"
+        },
+        "type": { 
+          "type": "string", 
+          "enum": ["ONE_TO_ONE", "ONE_TO_MANY", "MANY_TO_ONE", "MANY_TO_MANY"],
+          "description": "关系类型"
+        },
+        "targetEntity": { 
+          "type": "string",
+          "description": "目标实体"
+        },
+        "sourceField": { 
+          "type": "string",
+          "description": "源字段"
+        },
+        "targetField": { 
+          "type": "string",
+          "description": "目标字段"
+        },
+        "cascade": { 
+          "type": "string", 
+          "enum": ["ALL", "PERSIST", "MERGE", "REMOVE", "REFRESH", "DETACH", "NONE"],
+          "default": "NONE",
+          "description": "级联操作类型"
+        },
+        "orphanRemoval": { 
+          "type": "boolean",
+          "default": false,
+          "description": "是否移除孤立记录"
+        },
+        "batchSize": { 
+          "type": "integer",
+          "minimum": 1,
+          "description": "批量加载大小"
+        },
+        "fetchType": {
+          "type": "string",
+          "enum": ["LAZY", "EAGER"],
+          "default": "LAZY",
+          "description": "加载策略"
+        },
+        "required": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否必填关系"
+        },
+        "description": {
+          "type": "string",
+          "description": "关系描述"
+        },
+        "uiMetadata": {
+          "$ref": "#/definitions/RelationshipUIMetadata",
+          "description": "UI元数据"
+        }
+      },
+      "required": ["name", "type", "targetEntity"]
+    },
+    "RelationshipUIMetadata": {
+      "type": "object",
+      "properties": {
+        "gridColumns": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 12,
+          "description": "网格列数"
+        },
+        "allowAdd": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否允许添加"
+        },
+        "allowDelete": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否允许删除"
+        },
+        "allowEdit": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否允许编辑"
+        },
+        "displayMode": {
+          "type": "string",
+          "enum": ["TABLE", "LIST", "CARD"],
+          "default": "TABLE",
+          "description": "显示模式"
+        }
+      }
+    },
+    "BusinessRuleMetadata": {
+      "type": "object",
+      "properties": {
+        "name": { 
+          "type": "string",
+          "description": "规则名称"
+        },
+        "description": { 
+          "type": "string",
+          "description": "规则描述"
+        },
+        "condition": { 
+          "type": "string",
+          "description": "规则条件表达式"
+        },
+        "expression": { 
+          "type": "string",
+          "description": "规则执行表达式"
+        },
+        "errorMessage": { 
+          "type": "string",
+          "description": "错误消息"
+        },
+        "triggerEvents": { 
+          "type": "array", 
+          "items": { 
+            "type": "string",
+            "enum": ["CREATE", "UPDATE", "DELETE", "READ", "SUBMIT", "APPROVE", "REJECT", "ALL"]
+          },
+          "description": "触发事件类型"
+        },
+        "priority": { 
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 50,
+          "description": "规则优先级"
+        },
+        "severity": { 
+          "type": "string", 
+          "enum": ["ERROR", "WARNING", "INFO"],
+          "default": "ERROR",
+          "description": "规则严重性"
+        },
+        "aiRiskLevel": { 
+          "type": "string", 
+          "enum": ["HIGH", "MEDIUM", "LOW"],
+          "default": "LOW",
+          "description": "AI风险级别"
+        },
+        "active": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否激活"
+        },
+        "ruleType": {
+          "type": "string",
+          "enum": ["VALIDATION", "CALCULATION", "AUTOMATION", "APPROVAL", "ACTION"],
+          "default": "VALIDATION",
+          "description": "规则类型"
+        },
+        "fieldNames": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "关联字段列表"
+        }
+      },
+      "required": ["name", "expression", "errorMessage"]
+    },
+    "ProcessMetadata": {
+      "type": "object",
+      "properties": {
+        "name": { 
+          "type": "string",
+          "description": "流程名称"
+        },
+        "description": { 
+          "type": "string",
+          "description": "流程描述"
+        },
+        "type": { 
+          "type": "string", 
+          "enum": ["SEQUENTIAL", "PARALLEL", "STATE_MACHINE"],
+          "description": "流程类型"
+        },
+        "nodes": { 
+          "type": "array", 
+          "items": { 
+            "$ref": "#/definitions/ProcessNode"
+          },
+          "description": "流程节点列表"
+        },
+        "transitions": { 
+          "type": "array", 
+          "items": { 
+            "$ref": "#/definitions/ProcessTransition"
+          },
+          "description": "流程流转定义"
+        },
+        "variables": { 
+          "type": "object", 
+          "additionalProperties": { 
+            "$ref": "#/definitions/ProcessVariable"
+          },
+          "description": "流程变量定义"
+        },
+        "triggerExpression": { 
+          "type": "string",
+          "description": "触发表达式"
+        },
+        "triggerEvents": { 
+          "type": "array", 
+          "items": { 
+            "type": "string",
+            "enum": ["CREATE", "UPDATE", "DELETE", "SCHEDULED", "MANUAL"]
+          },
+          "description": "触发事件类型"
+        },
+        "transactional": { 
+          "type": "boolean",
+          "default": true,
+          "description": "是否事务性"
+        },
+        "timeout": {
+          "type": "integer",
+          "description": "流程超时时间（秒）"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "description": "流程版本"
+        },
+        "startNodeId": {
+          "type": "string",
+          "description": "开始节点ID"
+        },
+        "endNodeIds": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "结束节点ID列表"
+        }
+      },
+      "required": ["name", "type", "nodes"]
+    },
+    "ProcessNode": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "节点ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "节点名称"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["START", "END", "TASK", "APPROVAL", "CONDITION", "SERVICE", "TIMER", "FORK", "JOIN"],
+          "description": "节点类型"
+        },
+        "description": {
+          "type": "string",
+          "description": "节点描述"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "节点属性"
+        },
+        "preCondition": {
+          "type": "string",
+          "description": "前置条件表达式"
+        },
+        "postAction": {
+          "type": "string",
+          "description": "后置动作表达式"
+        },
+        "timeout": {
+          "type": "integer",
+          "description": "节点超时时间（秒）"
+        },
+        "retries": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "失败重试次数"
+        },
+        "retryInterval": {
+          "type": "integer",
+          "description": "重试间隔（秒）"
+        }
+      },
+      "required": ["id", "name", "type"]
+    },
+    "ProcessTransition": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "流转ID"
+        },
+        "fromNodeId": {
+          "type": "string",
+          "description": "来源节点ID"
+        },
+        "toNodeId": {
+          "type": "string",
+          "description": "目标节点ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "流转名称"
+        },
+        "condition": {
+          "type": "string",
+          "description": "流转条件表达式"
+        },
+        "priority": {
+          "type": "integer",
+          "default": 0,
+          "description": "优先级"
+        },
+        "eventType": {
+          "type": "string",
+          "description": "事件类型"
+        }
+      },
+      "required": ["id", "fromNodeId", "toNodeId"]
+    },
+    "ProcessVariable": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "变量名称"
+        },
+        "type": {
+          "type": "string",
+          "description": "变量类型"
+        },
+        "required": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否必填"
+        },
+        "defaultValue": {
+          "type": ["string", "number", "boolean", "null", "object", "array"],
+          "description": "默认值"
+        },
+        "description": {
+          "type": "string",
+          "description": "变量描述"
+        },
+        "scope": {
+          "type": "string",
+          "enum": ["LOCAL", "GLOBAL"],
+          "default": "LOCAL",
+          "description": "变量作用域"
+        }
+      },
+      "required": ["name", "type"]
+    },
+    "OperationMetadata": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "操作名称"
+        },
+        "label": {
+          "type": "string",
+          "description": "操作标签"
+        },
+        "description": {
+          "type": "string",
+          "description": "操作描述"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["CREATE", "READ", "UPDATE", "DELETE", "QUERY", "ACTION", "WORKFLOW", "APPROVAL"],
+          "description": "操作类型"
+        },
+        "requiredPermissions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "所需权限列表"
+        },
+        "transactional": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否事务性"
+        },
+        "parameters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ParameterMetadata"
+          },
+          "description": "参数定义列表"
+        },
+        "returnType": {
+          "$ref": "#/definitions/ReturnTypeMetadata",
+          "description": "返回类型定义"
+        },
+        "preconditions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "expression": { "type": "string" },
+              "errorMessage": { "type": "string" }
+            }
+          },
+          "description": "前置条件列表"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/OperationStep"
+          },
+          "description": "操作步骤列表"
+        },
+        "audited": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否审计"
+        },
+        "async": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否异步执行"
+        }
+      },
+      "required": ["name", "type"]
+    },
+    "ParameterMetadata": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "参数名称"
+        },
+        "type": {
+          "type": "string",
+          "description": "参数类型"
+        },
+        "required": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否必填"
+        },
+        "description": {
+          "type": "string",
+          "description": "参数描述"
+        },
+        "defaultValue": {
+          "type": ["string", "number", "boolean", "null", "object", "array"],
+          "description": "默认值"
+        },
+        "schemaRef": {
+          "type": "string",
+          "description": "JSON Schema引用"
+        }
+      },
+      "required": ["name", "type"]
+    },
+    "ReturnTypeMetadata": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "description": "返回类型"
+        },
+        "isCollection": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否为集合类型"
+        },
+        "description": {
+          "type": "string",
+          "description": "返回描述"
+        },
+        "schemaRef": {
+          "type": "string",
+          "description": "JSON Schema引用"
+        }
+      },
+      "required": ["type"]
+    },
+    "OperationStep": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "步骤名称"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["CALCULATION", "DATA_CREATE", "DATA_UPDATE", "DATA_DELETE", "SERVICE_CALL", "APPROVAL", "CONDITIONAL", "DELAY"],
+          "description": "步骤类型"
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "步骤参数"
+        },
+        "order": {
+          "type": "integer",
+          "description": "执行顺序"
+        },
+        "continueOnError": {
+          "type": "boolean",
+          "default": false,
+          "description": "错误时是否继续"
+        }
+      },
+      "required": ["name", "type", "order"]
+    },
+    "IndexMetadata": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "索引名称"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["BTREE", "HASH", "FULLTEXT", "COMPOSITE", "SPATIAL"],
+          "default": "BTREE",
+          "description": "索引类型"
+        },
+        "fields": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "索引字段列表"
+        },
+        "unique": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否唯一索引"
+        },
+        "description": {
+          "type": "string",
+          "description": "索引描述"
+        },
+        "orderDirections": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["ASC", "DESC"]
+          },
+          "description": "排序方向"
+        }
+      },
+      "required": ["name", "fields"]
+    },
+    "EntityPermissionMetadata": {
+      "type": "object",
+      "properties": {
+        "readPermissions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "读取权限列表"
+        },
+        "createPermissions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "创建权限列表"
+        },
+        "updatePermissions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "更新权限列表"
+        },
+        "deletePermissions": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "删除权限列表"
+        },
+        "operationPermissions": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "description": "操作权限映射"
+        },
+        "defaultAccessLevel": {
+          "type": "string",
+          "enum": ["PUBLIC", "PROTECTED", "PRIVATE"],
+          "default": "PROTECTED",
+          "description": "默认访问级别"
+        }
+      }
+    },
+    "AIEnhancement": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否启用AI增强"
+        },
+        "autoClassification": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否启用自动分类"
+        },
+        "entityRecommendations": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否启用实体推荐"
+        },
+        "ruleOptimization": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否启用规则优化"
+        },
+        "anomalyDetection": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否启用异常检测"
+        },
+        "predictionModels": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AIPredictionModel"
+          },
+          "description": "预测模型配置"
+        }
+      }
+    },
+    "AIPredictionModel": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "模型名称"
+        },
+        "modelType": {
+          "type": "string",
+          "description": "模型类型"
+        },
+        "targetField": {
+          "type": "string",
+          "description": "目标字段"
+        },
+        "featureFields": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "特征字段列表"
+        },
+        "confidenceThreshold": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "置信度阈值"
+        },
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否启用"
+        }
+      },
+      "required": ["name", "targetField"]
+    },
+    "KnowledgeGraphConfig": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否启用知识图谱"
+        },
+        "entityMappings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/KGEntityMapping"
+          },
+          "description": "实体映射配置"
+        },
+        "relationshipMappings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/KGRelationshipMapping"
+          },
+          "description": "关系映射配置"
+        },
+        "properties": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "额外配置属性"
+        }
+      }
+    },
+    "KGEntityMapping": {
+      "type": "object",
+      "properties": {
+        "entityType": {
+          "type": "string",
+          "description": "实体类型"
+        },
+        "kgNodeType": {
+          "type": "string",
+          "description": "知识图谱节点类型"
+        },
+        "idField": {
+          "type": "string",
+          "description": "ID字段映射"
+        },
+        "labelField": {
+          "type": "string",
+          "description": "标签字段映射"
+        },
+        "propertyMappings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "sourceField": { "type": "string" },
+              "targetProperty": { "type": "string" },
+              "dataType": { "type": "string" }
+            }
+          },
+          "description": "属性映射列表"
+        }
+      },
+      "required": ["entityType", "kgNodeType"]
+    },
+    "KGRelationshipMapping": {
+      "type": "object",
+      "properties": {
+        "relationshipType": {
+          "type": "string",
+          "description": "关系类型"
+        },
+        "kgRelationshipType": {
+          "type": "string",
+          "description": "知识图谱关系类型"
+        },
+        "sourceEntityType": {
+          "type": "string",
+          "description": "源实体类型"
+        },
+        "targetEntityType": {
+          "type": "string",
+          "description": "目标实体类型"
+        },
+        "propertyMappings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "sourceField": { "type": "string" },
+              "targetProperty": { "type": "string" },
+              "dataType": { "type": "string" }
+            }
+          },
+          "description": "属性映射列表"
+        }
+      },
+      "required": ["relationshipType", "kgRelationshipType"]
+    }
+  }
+}

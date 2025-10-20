@@ -48,6 +48,9 @@ public enum ModelTypeEnum {
     
     // 添加静态fromName方法，避免与Java枚举默认方法冲突
     public static ModelTypeEnum fromName(String name) {
+        if (name == null) {
+            return null;
+        }
         try {
             return ModelTypeEnum.valueOf(name.toUpperCase());
         } catch (IllegalArgumentException e) {

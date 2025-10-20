@@ -3,6 +3,7 @@ package com.bone.tool.codegen.domain.entity;
 import com.bone.core.annotation.Id;
 import com.bone.core.domain.entity.AbstractEntity;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
 import java.io.Serializable;
 
@@ -12,6 +13,7 @@ import java.io.Serializable;
  */
 @Data
 @Accessors(chain = true)
+@EqualsAndHashCode(callSuper = false)
 public class Datasource extends AbstractEntity<Long> implements Serializable {
     private static final long serialVersionUID = 1L;
 
