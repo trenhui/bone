@@ -2,34 +2,291 @@
 
 
           
-需要搜索更多关于元数据驱动的动态领域对象创建、描述格式和元数据引擎执行流程的代码，以提供详细的最佳实践示例。
-        
-            
-toolName: search_codebase
-            
-status: success
-          
-query: 元数据驱动 动态领域对象 创建 描述格式 Salesforce Workday 最佳实践
-          
-需要查看README.md的更多内容，以获取关于业务人员如何通过界面动态添加领域对象以及元数据引擎执行流程的详细信息。
-        
-            
-toolName: view_files
-            
-status: success
-          
-            
-filePath: /Users/renhui.trh/code/bone/bone-engine/bone-smartmeta/README.md
-          
-需要搜索业务人员如何通过UI界面添加动态模型的具体实现代码，以及动态对象创建和CRUD操作的完整流程。
-        
-            
-toolName: search_codebase
-            
-status: success
-          
-query: 动态模型UI界面 业务人员添加对象 动态CRUD操作 前端实现
-          
+# SmartMetadataEngine 元数据驱动架构设计与实现
+
+## 项目概述
+
+SmartMetadataEngine 是一个高性能、可扩展的元数据驱动引擎，提供动态领域对象管理、业务规则验证和字段计算能力。该引擎基于 Java 开发，支持通过元数据定义动态创建和管理业务实体，实现业务规则的灵活配置和执行，以及复杂字段表达式的计算。
+
+## 核心特性
+
+- **动态实体管理**：通过元数据定义动态创建和管理业务实体，无需修改代码
+- **强大的字段计算引擎**：支持基于表达式的字段值计算，包括依赖字段排序和表达式缓存
+- **灵活的业务规则引擎**：支持复杂业务规则的定义、验证和执行，包括规则优先级和超时控制
+- **可扩展的架构设计**：核心组件采用接口设计，支持自定义实现和扩展
+- **高性能实现**：内置表达式缓存、并行计算等优化机制
+
+## 架构设计
+
+### 系统架构图
+
+```
++-------------------+     +-------------------+     +-------------------+
+|                   |     |                   |     |                   |
+|   业务应用层      | --> | SmartMetadataEngine| --> |   数据存储层      |
+|                   |     |    核心引擎       |     |                   |
++-------------------+     +-------------------+     +-------------------+
+                               |         |
+                        +------+         +------+
+                        |                       |
+               +-------------------+    +-------------------+
+               |                   |    |                   |
+               | FieldCalculationEngine| | BusinessRuleEngine|
+               |                   |    |                   |
+               +-------------------+    +-------------------+
+                        |                       |
+                        +------+         +------+
+                               |         |
+                        +-------------------+
+                        |                   |
+                        |   MetadataRegistry|
+                        |                   |
+                        +-------------------+
+```
+
+## 核心组件
+
+### 1. SmartMetadataEngine
+
+核心引擎类，负责整合所有组件并提供统一的接口：
+
+```java
+public class SmartMetadataEngine {
+    private final MetadataRegistry metadataRegistry;
+    private final FieldCalculationEngine fieldCalculationEngine;
+    private final BusinessRuleEngine businessRuleEngine;
+    private final BusinessRuleRegistry businessRuleRegistry;
+    
+    // 创建实体实例
+    public Map<String, Object> createEntity(String entityName, Map<String, Object> initialData) {
+        // 实现逻辑
+    }
+    
+    // 验证实体数据
+    public ValidationResult validateEntity(String entityName, Map<String, Object> entityData) {
+        // 实现逻辑
+    }
+    
+    // 计算字段值
+    public void calculateFields(String entityName, Map<String, Object> entityData) {
+        // 实现逻辑
+    }
+    
+    // 应用业务规则
+    public List<RuleExecutionResult> applyBusinessRules(String entityName, Map<String, Object> entityData, String eventType) {
+        // 实现逻辑
+    }
+}
+```
+
+### 2. FieldCalculationEngine
+
+字段计算引擎接口，负责计算实体的计算字段值：
+
+```java
+public interface FieldCalculationEngine {
+    // 计算指定字段的值
+    Object calculateField(String entityName, Map<String, Object> entityData, String fieldName);
+    
+    // 计算实体的所有计算字段
+    void calculateAllFields(String entityName, Map<String, Object> entityData);
+    
+    // 检查字段表达式是否有效
+    boolean validateFieldExpression(String expression);
+    
+    // 获取表达式依赖的字段
+    Set<String> getExpressionDependencies(String expression);
+}
+```
+
+### 3. BusinessRuleEngine
+
+业务规则引擎接口，负责业务规则的验证和执行：
+
+```java
+public interface BusinessRuleEngine {
+    // 执行验证规则
+    List<ValidationResult> executeValidationRules(String entityName, Map<String, Object> entityData, String eventType);
+    
+    // 执行操作规则
+    List<RuleExecutionResult> executeActionRules(String entityName, Map<String, Object> entityData, String eventType);
+    
+    // 执行单个规则
+    RuleExecutionResult executeRule(BusinessRule rule, String entityName, Map<String, Object> entityData);
+    
+    // 验证规则表达式
+    boolean validateRuleExpression(String expression);
+    
+    // 获取规则依赖的字段
+    Set<String> getRuleDependencies(String expression);
+    
+    // 根据事件类型获取触发的规则
+    List<BusinessRule> getRulesByEventType(String entityName, String eventType);
+}
+
+## 使用指南
+
+### 1. 初始化引擎
+
+```java
+// 创建配置
+EngineConfiguration config = EngineConfiguration.builder()
+    .withFieldCalculationEnabled(true)
+    .withBusinessRuleValidationEnabled(true)
+    .withBusinessRuleExecutionEnabled(true)
+    .withCalculationTimeoutMs(5000)
+    .build();
+
+// 初始化引擎
+SmartMetadataEngine engine = new SmartMetadataEngine(config);
+```
+
+### 2. 注册实体元数据
+
+```java
+// 定义实体元数据
+EntityMetadata entityMetadata = new EntityMetadata();
+entityMetadata.setEntityName("Product");
+
+// 定义字段
+FieldMetadata nameField = new FieldMetadata();
+nameField.setFieldName("name");
+nameField.setDataType("STRING");
+nameField.setRequired(true);
+
+FieldMetadata priceField = new FieldMetadata();
+priceField.setFieldName("price");
+priceField.setDataType("DECIMAL");
+priceField.setRequired(true);
+
+FieldMetadata discountField = new FieldMetadata();
+discountField.setFieldName("discount");
+discountField.setDataType("DECIMAL");
+discountField.setDefaultValue("0");
+
+// 定义计算字段（最终价格）
+FieldMetadata finalPriceField = new FieldMetadata();
+finalPriceField.setFieldName("finalPrice");
+finalPriceField.setDataType("DECIMAL");
+finalPriceField.setCalculated(true);
+finalPriceField.setCalculationExpression("price * (1 - discount/100)");
+
+// 注册实体
+engine.registerEntityMetadata(entityMetadata);
+```
+
+### 3. 注册业务规则
+
+```java
+// 创建验证规则
+BusinessRule validationRule = new BusinessRule();
+validationRule.setRuleName("PriceValidation");
+validationRule.setEntityName("Product");
+validationRule.setRuleType(RuleType.VALIDATION);
+validationRule.setEventType("CREATE");
+validationRule.setExpression("price > 0");
+validationRule.setErrorMessage("产品价格必须大于0");
+validationRule.setPriority(10);
+
+// 注册规则
+engine.registerBusinessRule(validationRule);
+```
+
+### 4. 创建和处理实体
+
+```java
+// 创建实体数据
+Map<String, Object> productData = new HashMap<>();
+productData.put("name", "智能手机");
+productData.put("price", 5999.00);
+productData.put("discount", 10.0);
+
+// 创建实体
+Map<String, Object> createdProduct = engine.createEntity("Product", productData);
+
+// 计算字段值
+engine.calculateFields("Product", createdProduct);
+System.out.println("最终价格: " + createdProduct.get("finalPrice")); // 应该是 5399.10
+
+// 验证实体
+ValidationResult validationResult = engine.validateEntity("Product", createdProduct);
+if (validationResult.isValid()) {
+    System.out.println("实体验证通过");
+} else {
+    System.out.println("验证失败: " + validationResult.getErrors());
+}
+
+// 应用业务规则
+List<RuleExecutionResult> results = engine.applyBusinessRules("Product", createdProduct, "UPDATE");
+```
+
+## 计算表达式语法
+
+字段计算和业务规则支持强大的表达式语法，包括：
+
+- 基本算术运算：+, -, *, /, %
+- 关系运算符：==, !=, >, <, >=, <=
+- 逻辑运算符：&&, ||, !
+- 字段引用：直接使用字段名引用实体字段
+- 函数调用：支持调用内置函数和自定义函数
+- 条件表达式：三元运算符 (condition ? trueValue : falseValue)
+
+## 业务规则类型
+
+支持两种主要的规则类型：
+
+1. **验证规则 (VALIDATION)**：用于验证数据的合法性，返回验证结果
+2. **操作规则 (ACTION)**：用于在特定事件触发时执行业务操作
+
+## 配置选项
+
+EngineConfiguration 提供了丰富的配置选项：
+
+- `fieldCalculationEnabled`：是否启用字段计算
+- `businessRuleValidationEnabled`：是否启用业务规则验证
+- `businessRuleExecutionEnabled`：是否启用业务规则执行
+- `calculationTimeoutMs`：字段计算超时时间（毫秒）
+- `metadataRegistrySupplier`：自定义元数据注册表提供方式
+- `businessRuleRegistrySupplier`：自定义业务规则注册表提供方式
+
+## 最佳实践
+
+1. **合理设计元数据结构**：规划清晰的实体和字段定义，避免过度复杂化
+2. **优化表达式性能**：避免在表达式中执行复杂逻辑，考虑使用自定义函数
+3. **设置合理的超时时间**：防止长时间运行的表达式影响系统性能
+4. **使用并行处理**：对于批量操作，利用引擎的并行处理能力
+5. **监控和日志**：实现适当的监控和日志记录，便于问题排查
+
+## 示例代码
+
+详细的示例代码可以参考 `SmartMetadataEngineExample` 类，该类展示了引擎的完整使用流程。
+
+## 常见问题
+
+### Q: 如何处理字段间的循环依赖？
+A: 引擎会自动检测循环依赖并抛出异常，建议重新设计字段表达式，避免循环依赖。
+
+### Q: 业务规则执行超时怎么办？
+A: 可以在配置中设置合理的超时时间，超时后引擎会中断规则执行并记录错误。
+
+### Q: 如何实现自定义函数？
+A: 可以通过扩展 FieldCalculationEngine 和 BusinessRuleEngine 的实现类，添加自定义函数支持。
+
+## 依赖说明
+
+- Spring Expression Language (SpEL)：用于表达式解析和计算
+- Lombok：简化Java代码
+- Guava：提供缓存和集合工具类
+
+## 后续发展
+
+- 支持更多的数据类型和复杂关系
+- 增强表达式引擎功能，支持更复杂的计算场景
+- 提供可视化的规则配置界面
+- 增加缓存策略和性能优化
+
+---
+
 # Bone SmartMeta 元数据引擎设计方案与最佳实践
 
 ## 项目概述

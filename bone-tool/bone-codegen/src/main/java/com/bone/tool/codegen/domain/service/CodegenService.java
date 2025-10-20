@@ -71,19 +71,28 @@ public class CodegenService implements CodegenServiceInterface {
     public void generateCustomCode(GenerateCustomCodeRequest request, OutputStream outputStream) {
         SimpleLogger.info("开始生成自定义代码");
         
+        // 参数验证
+        if (outputStream == null) {
+            throw new IllegalArgumentException("输出流不能为空");
+        }
+        
+        if (request == null) {
+            throw new IllegalArgumentException("请求参数不能为空");
+        }
+        
+        // 验证数据源配置ID
+        Long datasourceId = (Long) ReflectionUtil.getFieldValue(request, "datasourceId");
+        if (datasourceId == null) {
+            throw new IllegalArgumentException("数据源配置ID不能为空");
+        }
+        
+        // 验证表名列表
+        List<String> tableNames = (List<String>) ReflectionUtil.getFieldValue(request, "tableNames");
+        if (tableNames == null || tableNames.isEmpty()) {
+            throw new IllegalArgumentException("表名列表不能为空");
+        }
+        
         try (ZipOutputStream zipOut = new ZipOutputStream(outputStream)) {
-            List<String> tableNames = new ArrayList<>();
-            
-            // 使用反射获取表名列表
-            if (request != null) {
-                tableNames = (List<String>) ReflectionUtil.getFieldValue(request, "tableNames");
-            }
-            
-            if (tableNames.isEmpty()) {
-                SimpleLogger.warn("表名列表为空，添加默认表名");
-                tableNames.add("default_table");
-            }
-            
             SimpleLogger.info("将为 {} 个表生成代码", tableNames.size());
             
             // 模拟代码生成过程
@@ -108,11 +117,31 @@ public class CodegenService implements CodegenServiceInterface {
     public byte[] generateCustomCode(GenerateCustomCodeRequest request) {
         SimpleLogger.info("开始生成自定义代码（单参数版本）");
         try {
+            // 验证请求参数
+            if (request == null) {
+                throw new IllegalArgumentException("请求参数不能为空");
+            }
+            
+            // 验证数据源配置ID
+            Long datasourceId = (Long) ReflectionUtil.getFieldValue(request, "datasourceId");
+            if (datasourceId == null) {
+                throw new IllegalArgumentException("数据源配置ID不能为空");
+            }
+            
+            // 验证表名列表
+            List<String> tableNames = (List<String>) ReflectionUtil.getFieldValue(request, "tableNames");
+            if (tableNames == null || tableNames.isEmpty()) {
+                throw new IllegalArgumentException("表名列表不能为空");
+            }
+            
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             generateCustomCode(request, baos);
             SimpleLogger.info("自定义代码生成完成，返回字节数组");
             // 返回一个示例的字节数组，模拟ZIP文件内容
             return "sample_zip_content".getBytes(StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            // 直接抛出参数验证异常，保持原始错误消息
+            throw e;
         } catch (Exception e) {
             SimpleLogger.error("生成自定义代码失败", e);
             throw new RuntimeException("生成代码失败: " + e.getMessage(), e);

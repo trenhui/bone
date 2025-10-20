@@ -168,19 +168,17 @@ public class Permission extends Entity<Long> implements Extensible {
     
     // 实现Extensible接口的方法
     @Override
-    public Map<String, ?> getExtraProperties() {
+    public Map<String, Object> getExtraProperties() {
         return extraProperties;
     }
     
-    @Override
-    public void setExtraProperties(Map<String, ?> extraProperties) {
+    public void setExtraProperties(Map<String, Object> extraProperties) {
         this.extraProperties.clear();
         if (extraProperties != null) {
             this.extraProperties.putAll(extraProperties);
         }
     }
     
-    @Override
     public void mergeExtraProperties(Map<String, ?> extraProperties) {
         if (extraProperties != null) {
             this.extraProperties.putAll(extraProperties);

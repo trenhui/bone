@@ -304,7 +304,8 @@ public class ExtensionPermissionRepositoryTest {
         Long id = permissionRepository.insert(perm);
         Permission retrieved = permissionRepository.findById(id);
 
-        Map<String, Object> extras = retrieved.getExtraProperties();
+        // 使用兼容的类型声明
+        Map<String, ?> extras = retrieved.getExtraProperties();
 
         assertEquals("testString", extras.get("stringVal"));
         assertEquals(2023L, extras.get("intVal"));
