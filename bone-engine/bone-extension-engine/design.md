@@ -99,9 +99,6 @@ bone-extension-sdk/
 │   │   ├── ExtensionRegister.java
 │   │   └── RegistryPostProcessor.java
 │   ├── metrics/                  # 监控指标
-│   │   ├── ExtensionMetrics.java
-│   │   ├── MetricsCollector.java
-│   │   └── TraceContext.java
 │   └── exception/                # 异常体系
 │       ├── ExtensionException.java
 │       ├── ExtensionNotFoundException.java
@@ -537,10 +534,7 @@ public class ExtensionConfigProperties {
      */
     private EventConfig event = new EventConfig();
     
-    /**
-     * 监控配置
-     */
-    private MetricsConfig metrics = new MetricsConfig();
+
     
     /**
      * 存储配置
@@ -588,23 +582,7 @@ public class ExtensionConfigProperties {
         private ExecutorConfig executor = new ExecutorConfig();
     }
     
-    @Data
-    public static class MetricsConfig {
-        /**
-         * 是否启用监控指标
-         */
-        private boolean enabled = true;
-        
-        /**
-         * 指标前缀
-         */
-        private String prefix = "bone.extension";
-        
-        /**
-         * 是否启用详细指标
-         */
-        private boolean detailed = false;
-    }
+
     
     @Data
     public static class RepositoryConfig {

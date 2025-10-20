@@ -2,6 +2,7 @@ package com.bone.metadata.sdk.test.config;
 
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
@@ -12,6 +13,10 @@ import javax.sql.DataSource;
  * QueryBuilder测试配置类
  */
 @TestConfiguration
+@ComponentScan(basePackages = {
+        "com.bone.metadata.sdk.test.repository.proxy",
+        "com.bone.metadata.sdk"
+})
 public class QueryBuilderTestConfig {
 
     /**

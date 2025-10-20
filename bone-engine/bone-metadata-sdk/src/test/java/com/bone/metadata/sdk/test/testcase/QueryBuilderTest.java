@@ -330,7 +330,7 @@ public class QueryBuilderTest {
             List<User> users = QueryBuilder.from(User.class)
                     .join(Role.class)
                     .on(User::getRoleId, Role::getId)
-                    .where(Role::getCode).eq("admin")
+                    .whereJoin(Role::getCode).eq("admin")
                     .list();
             
             assertNotNull(users);
