@@ -1,13 +1,15 @@
 package $packageName.adapter.controller;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import $packageName.domain.service.${className}Service;
 import $packageName.application.dto.${className}DTO;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.github.pagehelper.PageInfo;
+import javax.validation.Valid;
 import java.util.List;
 
 /**
@@ -17,11 +19,16 @@ import java.util.List;
  */
 @RestController
 @RequestMapping("/api/v1/$tool.lowerFirst(className)")
-@Api(tags = "$classComment管理")
+@Tag(name = "$classComment管理")
+@Slf4j
 public class ${className}Controller {
     
+    private final ${className}Service ${tool.lowerFirst(className)}Service;
+    
     @Autowired
-    private ${className}Service ${tool.lowerFirst(className)}Service;
+    public ${className}Controller(${className}Service ${tool.lowerFirst(className)}Service) {
+        this.${tool.lowerFirst(className)}Service = ${tool.lowerFirst(className)}Service;
+    }
     
     /**
      * 保存数据
@@ -29,8 +36,9 @@ public class ${className}Controller {
      * @return 响应结果
      */
     @PostMapping("/save")
-    @ApiOperation("保存数据")
-    public Boolean save(@RequestBody ${className}DTO dto) {
+    @Operation(summary = "保存数据", description = "新增$classComment数据")
+    public Boolean save(@RequestBody @Valid ${className}DTO dto) {
+        log.info("保存$classComment数据: {}", dto);
         return ${tool.lowerFirst(className)}Service.saveData(dto);
     }
     
@@ -40,8 +48,9 @@ public class ${className}Controller {
      * @return 响应结果
      */
     @PutMapping("/update")
-    @ApiOperation("更新数据")
-    public Boolean update(@RequestBody ${className}DTO dto) {
+    @Operation(summary = "更新数据", description = "更新$classComment数据")
+    public Boolean update(@RequestBody @Valid ${className}DTO dto) {
+        log.info("更新$classComment数据: {}", dto);
         return ${tool.lowerFirst(className)}Service.updateData(dto);
     }
     
@@ -51,8 +60,9 @@ public class ${className}Controller {
      * @return 响应结果
      */
     @DeleteMapping("/delete/{id}")
-    @ApiOperation("删除数据")
+    @Operation(summary = "删除数据", description = "根据ID删除$classComment数据")
     public Boolean delete(@PathVariable Long id) {
+        log.info("删除$classComment数据, ID: {}", id);
         return ${tool.lowerFirst(className)}Service.deleteData(id);
     }
     
@@ -62,8 +72,9 @@ public class ${className}Controller {
      * @return 响应结果
      */
     @DeleteMapping("/delete/batch")
-    @ApiOperation("批量删除数据")
+    @Operation(summary = "批量删除数据", description = "批量删除$classComment数据")
     public Boolean deleteBatch(@RequestBody List<Long> ids) {
+        log.info("批量删除$classComment数据, 数量: {}", ids.size());
         return ${tool.lowerFirst(className)}Service.deleteBatch(ids);
     }
     
@@ -73,8 +84,9 @@ public class ${className}Controller {
      * @return 查询结果
      */
     @GetMapping("/get/{id}")
-    @ApiOperation("根据ID查询")
+    @Operation(summary = "根据ID查询", description = "根据主键ID查询$classComment详情")
     public ${className}DTO getById(@PathVariable Long id) {
+        log.info("查询$classComment详情, ID: {}", id);
         return ${tool.lowerFirst(className)}Service.getById(id);
     }
     
@@ -84,8 +96,9 @@ public class ${className}Controller {
      * @return 查询结果列表
      */
     @PostMapping("/list")
-    @ApiOperation("查询列表")
+    @Operation(summary = "查询列表", description = "根据条件查询$classComment列表")
     public List<${className}DTO> getList(@RequestBody Criteria criteria) {
+        log.info("查询$classComment列表, 条件: {}", criteria);
         return ${tool.lowerFirst(className)}Service.getList(criteria);
     }
     
@@ -97,10 +110,11 @@ public class ${className}Controller {
      * @return 分页结果
      */
     @PostMapping("/page")
-    @ApiOperation("分页查询")
+    @Operation(summary = "分页查询", description = "根据条件分页查询$classComment数据")
     public PageInfo<${className}DTO> getPage(@RequestBody Criteria criteria, 
                                           @RequestParam(defaultValue = "1") Integer pageNum, 
                                           @RequestParam(defaultValue = "10") Integer pageSize) {
+        log.info("分页查询$classComment, 页码: {}, 每页大小: {}, 条件: {}", pageNum, pageSize, criteria);
         return ${tool.lowerFirst(className)}Service.getPage(criteria, pageNum, pageSize);
     }
 }

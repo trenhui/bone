@@ -1,40 +1,40 @@
 package com.bone.smartmeta.engine;
 
+import com.bone.smartmeta.engine.analysis.MetadataImpactAnalyzer;
+import com.bone.smartmeta.engine.cache.DefaultMetadataCacheManager;
+import com.bone.smartmeta.engine.cache.MetadataCacheManager;
 import com.bone.smartmeta.engine.config.SmartMetaProperties;
 import com.bone.smartmeta.engine.metadata.*;
 import com.bone.smartmeta.engine.metadata.SmartFieldMetadata;
 import com.bone.smartmeta.engine.metadata.processor.CompositeMetadataProcessor;
-import com.bone.smartmeta.engine.service.GenericOperationService;
 import com.bone.smartmeta.engine.repository.MetadataRepository;
-import lombok.RequiredArgsConstructor;
+import com.bone.smartmeta.engine.service.GenericOperationService;
+import com.bone.smartmeta.engine.tenant.TenantContext;
+import com.bone.smartmeta.engine.validation.EntityValidator;
+import com.bone.smartmeta.engine.version.MetadataVersionController;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
-import java.util.HashMap;
-import java.util.Map;
-import org.springframework.util.Assert;
-
+import org.springframework.transaction.annotation.Transactional;
+import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * 元数据引擎，负责元数据的核心处理逻辑
  * 包括元数据的加载、验证、转换和应用
+ * 支持企业级特性：多租户、版本管理、多级缓存、影响分析
  */
+@Slf4j
 @Component
 public class MetadataEngine implements InitializingBean {
-
-    private static final Logger logger = LoggerFactory.getLogger(MetadataEngine.class);
     
-    private final MetadataRegistry metadataRegistry;
-    private final MetadataRepository metadataRepository;
-    private final CompositeMetadataProcessor metadataProcessor;
-    private final ApplicationEventPublisher eventPublisher;
-    private GenericOperationService operationService; // 延迟注入
+    // 元数据缓存管理器（支持多级缓存和租户隔离）
+    private final MetadataCacheManager metadataCacheManager;
     
     // 存储注册的实体元数据
     private final Map<String, EntityMetadata> entityMetadataMap = new HashMap<>();
@@ -42,12 +42,32 @@ public class MetadataEngine implements InitializingBean {
     // 存储操作元数据（全局缓存）
     private final Map<String, OperationMetadata> operationMetadataCache = new ConcurrentHashMap<>();
     
+    // 元数据仓库
+    private final MetadataRepository metadataRepository;
+    
+    // 元数据处理器组合
+    private final CompositeMetadataProcessor metadataProcessor;
+    
+    // 版本控制器
+    private final MetadataVersionController versionController;
+    
+    // 影响分析器
+    private final MetadataImpactAnalyzer impactAnalyzer;
+    
+    // 其他依赖
+    private final MetadataRegistry metadataRegistry;
+    private final ApplicationEventPublisher eventPublisher;
+    private GenericOperationService operationService; // 延迟注入
+    
     // 用于测试的构造函数
     public MetadataEngine(SmartMetaProperties properties) {
         this.metadataRegistry = null;
         this.metadataRepository = null;
         this.metadataProcessor = null;
         this.eventPublisher = null;
+        this.metadataCacheManager = new DefaultMetadataCacheManager();
+        this.versionController = new MetadataVersionController();
+        this.impactAnalyzer = new MetadataImpactAnalyzer(null);
         // 使用测试构造函数初始化MetadataEngine
     }
     
@@ -60,6 +80,10 @@ public class MetadataEngine implements InitializingBean {
         this.metadataRepository = metadataRepository;
         this.metadataProcessor = metadataProcessor;
         this.eventPublisher = eventPublisher;
+        // 初始化企业级组件
+        this.metadataCacheManager = new DefaultMetadataCacheManager();
+        this.versionController = new MetadataVersionController();
+        this.impactAnalyzer = new MetadataImpactAnalyzer(metadataRepository);
     }
     
     /**
@@ -283,8 +307,9 @@ public class MetadataEngine implements InitializingBean {
                 eventData.put("changeType", changeType);
                 eventData.put("timestamp", System.currentTimeMillis());
                 eventPublisher.publishEvent(eventData);
+                log.debug("Published metadata change event for {}", metadata != null ? metadata.getClass().getSimpleName() : "unknown");
             } catch (Exception e) {
-                // 发布元数据变更事件失败
+                log.error("Failed to publish metadata change event", e);
             }
         }
         
@@ -292,12 +317,13 @@ public class MetadataEngine implements InitializingBean {
         for (MetadataChangeListener listener : metadataChangeListeners) {
             try {
                 // 获取实体类型名称并转换为字符串
-                String entityType = metadata.getClass().getSimpleName();
+                String entityType = metadata != null ? metadata.getClass().getSimpleName() : "unknown";
                 // 将枚举类型转换为字符串
                 String changeTypeStr = changeType.name();
                 listener.onMetadataChanged(entityType, changeTypeStr);
+                log.debug("Notified metadata change to listener: {}", listener.getClass().getSimpleName());
             } catch (Exception e) {
-                // 通知元数据变更监听器失败
+                log.error("Error notifying metadata change to listener", e);
             }
         }
     }
@@ -308,8 +334,9 @@ public class MetadataEngine implements InitializingBean {
      * 添加元数据变更监听器
      */
     public void addMetadataChangeListener(MetadataChangeListener listener) {
-        if (listener != null) {
+        if (listener != null && !metadataChangeListeners.contains(listener)) {
             metadataChangeListeners.add(listener);
+            log.info("Added metadata change listener: {}", listener.getClass().getSimpleName());
         }
     }
     
@@ -317,7 +344,10 @@ public class MetadataEngine implements InitializingBean {
      * 移除元数据变更监听器
      */
     public void removeMetadataChangeListener(MetadataChangeListener listener) {
-        metadataChangeListeners.remove(listener);
+        if (listener != null) {
+            metadataChangeListeners.remove(listener);
+            log.info("Removed metadata change listener: {}", listener.getClass().getSimpleName());
+        }
     }
     
     /**
@@ -651,8 +681,10 @@ public class MetadataEngine implements InitializingBean {
     
     /**
      * 注册实体元数据 - 为MetadataEngineInitializer提供的方法
+     * 支持版本管理、多租户隔离和影响分析
      */
-    public void registerEntity(EntityMetadata metadata) {
+    @Transactional
+    public EntityMetadata registerEntity(EntityMetadata metadata) {
         if (metadata == null) {
             throw new IllegalArgumentException("实体元数据不能为空");
         }
@@ -666,7 +698,51 @@ public class MetadataEngine implements InitializingBean {
             throw new IllegalArgumentException("实体名称或API名称不能为空");
         }
         
-        logger.info("注册实体元数据: {}", entityName);
+        String tenantId = TenantContext.getCurrentTenantId();
+        
+        log.info("注册实体元数据: {}", entityName);
+        
+        // 检查是否存在旧版本
+        EntityMetadata oldMetadata = null;
+        if (metadataRepository.existsEntity(entityName)) {
+            oldMetadata = metadataRepository.findEntityByApiName(entityName);
+            
+            // 进行兼容性分析
+            MetadataVersionController.VersionCompatibilityReport compatibilityReport = 
+                versionController.checkCompatibility(oldMetadata, metadata);
+            
+            // 生成新版本号
+            MetadataVersionController.VersionChangeType changeType = 
+                compatibilityReport.requiresMajorUpgrade() ? 
+                MetadataVersionController.VersionChangeType.MAJOR : 
+                (!compatibilityReport.getMinorChanges().isEmpty() ? 
+                MetadataVersionController.VersionChangeType.MINOR : 
+                MetadataVersionController.VersionChangeType.PATCH);
+            
+            String newVersion = versionController.generateNewVersion(oldMetadata.getVersion(), changeType);
+            metadata.setVersion(newVersion);
+            metadata.setCompatibilityLevel(compatibilityReport.getCompatibilityLevel().name());
+            
+            log.info("Upgrading metadata: {} from v{} to v{} (change type: {})", 
+                     entityName, oldMetadata.getVersion(), newVersion, changeType.name());
+        } else {
+            // 新元数据，设置初始版本
+            metadata.setVersion("1.0.0");
+            metadata.setCompatibilityLevel("IDENTICAL");
+            log.info("Creating new metadata: {} v1.0.0", entityName);
+        }
+        
+        // 执行影响分析
+        if (oldMetadata != null) {
+            var impactResult = impactAnalyzer.analyzeEntityImpact(tenantId, oldMetadata, metadata);
+            if (impactResult.hasBreakingChanges()) {
+                log.warn("Breaking changes detected for {}: {}", entityName, impactResult.getSummary());
+                // 可以在这里添加告警或审批流程
+            }
+        }
+        
+        // 保存到仓库
+        metadata = metadataRepository.saveEntity(metadata);
         
         // 存储实体元数据
         entityMetadataMap.put(entityName, metadata);
@@ -678,9 +754,13 @@ public class MetadataEngine implements InitializingBean {
         
         // 更新缓存
         updateCache(metadata);
+        metadataCacheManager.put(tenantId, entityName, metadata);
         
         // 发布元数据变更事件
-        notifyMetadataChanged(metadata, MetadataChangeType.CREATE);
+        notifyMetadataChanged(metadata, oldMetadata == null ? 
+                             MetadataChangeType.CREATE : MetadataChangeType.UPDATE);
+        
+        return metadata;
     }
     
     /**
@@ -716,26 +796,143 @@ public class MetadataEngine implements InitializingBean {
     }
     
     /**
-     * 获取实体元数据（用于测试）
+     * 获取实体元数据
+     * 支持多租户隔离和多级缓存
      */
     public EntityMetadata getEntityMetadata(String entityName) {
-        // 获取实体元数据
-        // 从存储中获取实体元数据，如果不存在则返回null
-        return entityMetadataMap.get(entityName);
+        String tenantId = TenantContext.getCurrentTenantId();
+        
+        // 先从多级缓存获取
+        EntityMetadata metadata = metadataCacheManager.get(tenantId, entityName);
+        if (metadata != null) {
+            return metadata;
+        }
+        
+        // 租户缓存未命中，尝试从系统租户获取（继承机制）
+        if (!TenantContext.SYSTEM_TENANT_ID.equals(tenantId)) {
+            metadata = metadataCacheManager.get(TenantContext.SYSTEM_TENANT_ID, entityName);
+            if (metadata != null) {
+                log.debug("Inheriting system metadata: {} for tenant: {}", entityName, tenantId);
+                return metadata;
+            }
+        }
+        
+        // 缓存未命中，从存储中获取
+        metadata = entityMetadataMap.get(entityName);
+        if (metadata == null) {
+            // 尝试从仓库获取
+            metadata = metadataRepository.findEntityByApiName(entityName);
+            if (metadata != null) {
+                // 更新缓存
+                metadataCacheManager.put(tenantId, entityName, metadata);
+                entityMetadataMap.put(entityName, metadata);
+            }
+        }
+        
+        return metadata;
     }
     
     /**
-     * 注销实体（用于测试）
+     * 批量获取实体元数据
+     * 优化性能，减少缓存穿透
      */
-    public void unregisterEntity(String entityName) {
-        // 注销实体
-        // 从存储中移除实体元数据
-        EntityMetadata metadata = entityMetadataMap.remove(entityName);
+    public Map<String, EntityMetadata> batchGetEntityMetadata(Collection<String> entityNames) {
+        String tenantId = TenantContext.getCurrentTenantId();
         
-        // 如果实体存在，发布变更事件
-        if (metadata != null) {
-            notifyMetadataChanged(metadata, "DELETE");
+        // 批量从缓存获取
+        Map<String, EntityMetadata> result = new HashMap<>(entityNames.size());
+        List<String> missingNames = new ArrayList<>();
+        
+        for (String entityName : entityNames) {
+            EntityMetadata metadata = metadataCacheManager.get(tenantId, entityName);
+            if (metadata != null) {
+                result.put(entityName, metadata);
+            } else {
+                missingNames.add(entityName);
+            }
         }
+        
+        // 批量查询缺失的元数据
+        if (!missingNames.isEmpty()) {
+            for (String name : missingNames) {
+                // 先从内存Map获取
+                EntityMetadata metadata = entityMetadataMap.get(name);
+                if (metadata == null) {
+                    // 再从仓库获取
+                    metadata = metadataRepository.findEntityByApiName(name);
+                    if (metadata != null) {
+                        entityMetadataMap.put(name, metadata);
+                    }
+                }
+                
+                if (metadata != null) {
+                    result.put(name, metadata);
+                    metadataCacheManager.put(tenantId, name, metadata);
+                }
+            }
+        }
+        
+        return result;
+    }
+    
+    /**
+     * 注销实体
+     * 支持多租户隔离，不实际删除而是标记为禁用
+     */
+    @Transactional
+    public boolean unregisterEntity(String entityName) {
+        String tenantId = TenantContext.getCurrentTenantId();
+        
+        // 先获取元数据进行影响分析
+        EntityMetadata metadata = getEntityMetadata(entityName);
+        if (metadata != null) {
+            // 执行影响分析
+            var impactResult = impactAnalyzer.analyzeEntityImpact(tenantId, metadata, null);
+            if (impactResult.getImpactLevel() == MetadataImpactAnalyzer.ImpactLevel.CRITICAL) {
+                log.error("Cannot delete critical metadata: {} (reason: {})", 
+                          entityName, impactResult.getCriticalImpacts());
+                throw new IllegalStateException("Cannot delete critical metadata");
+            }
+        }
+        
+        // 从仓库删除（建议改为软删除，只标记为禁用）
+        boolean removed = metadataRepository.deleteEntity(entityName);
+        if (removed) {
+            // 从存储中移除实体元数据
+            entityMetadataMap.remove(entityName);
+            
+            // 从缓存删除
+            metadataCacheManager.remove(tenantId, entityName);
+            
+            // 如果实体存在，发布变更事件
+            notifyMetadataChanged(metadata, MetadataChangeType.DELETE);
+        }
+        return removed;
+    }
+    
+    /**
+     * 重新加载实体元数据
+     */
+    public EntityMetadata reloadEntityMetadata(String entityName) {
+        String tenantId = TenantContext.getCurrentTenantId();
+        
+        // 清除缓存
+        metadataCacheManager.remove(tenantId, entityName);
+        entityMetadataMap.remove(entityName);
+        
+        // 重新加载
+        return getEntityMetadata(entityName);
+    }
+    
+    /**
+     * 执行元数据变更影响分析
+     */
+    public MetadataImpactAnalyzer.ImpactAnalysisResult analyzeMetadataImpact(String oldEntityName, 
+                                                                           EntityMetadata newMetadata) {
+        String tenantId = TenantContext.getCurrentTenantId();
+        EntityMetadata oldMetadata = getEntityMetadata(oldEntityName);
+        
+        return impactAnalyzer.analyzeEntityImpact(tenantId, oldMetadata, newMetadata);
     }
     
     /**

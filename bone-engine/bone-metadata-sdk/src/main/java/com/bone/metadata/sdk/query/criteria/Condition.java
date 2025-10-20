@@ -42,6 +42,23 @@ public class Condition {
     public boolean isExtension() {
         return extension;
     }
+    
+    /**
+     * 获取自定义SQL片段
+     * @return 自定义SQL片段
+     */
+    public String getCustomSql() {
+        return customSql;
+    }
+    
+    /**
+     * 检查是否包含自定义SQL
+     * @return 是否包含自定义SQL
+     */
+    public boolean hasCustomSql() {
+        return customSql != null && !customSql.isEmpty();
+    }
+    
     /**
      * 字段（snakecase）
      */
@@ -68,6 +85,11 @@ public class Condition {
      * 是否扩展表字段
      */
     private final boolean extension;
+    
+    /**
+     * 自定义SQL片段
+     */
+    private final String customSql;
 
     // LIKE 模板：数据库类型 -> SQL 生成函数
     private static final Map<DatabaseType, Function<LikeContext, String>> LIKE_TEMPLATES = new HashMap<>();
@@ -118,20 +140,30 @@ public class Condition {
     }
 
     public Condition(String fieldName, String column, String paramName, Operator operator, boolean extension, Object... values) {
+        this(fieldName, column, paramName, operator, extension, null, values);
+    }
+
+    public Condition(String fieldName, String column, String paramName, Operator operator, Object... values) {
+        this(fieldName, column, paramName, operator, false, null, values);
+    }
+    
+    /**
+     * 完整构造函数，支持自定义SQL
+     * @param fieldName 字段名
+     * @param column 列名
+     * @param paramName 参数名
+     * @param operator 操作符
+     * @param extension 是否是扩展表的条件
+     * @param customSql 自定义SQL片段
+     * @param values 参数值数组
+     */
+    public Condition(String fieldName, String column, String paramName, Operator operator, boolean extension, String customSql, Object... values) {
         this.fieldName = fieldName;
         this.column = column;
         this.paramName = paramName;
         this.operator = operator;
         this.extension = extension;
-        this.values = values;
-    }
-
-    public Condition(String fieldName, String column, String paramName, Operator operator, Object... values) {
-        this.fieldName = fieldName;
-        this.column = column;
-        this.paramName = paramName;
-        this.operator = operator;
-        this.extension = false;
+        this.customSql = customSql;
         this.values = values;
     }
 
@@ -139,6 +171,11 @@ public class Condition {
      * 生成 SQL 片段，只返回纯列名，表别名由上层调用者添加
      */
     public String toSql() {
+        // 如果存在自定义SQL，直接返回
+        if (hasCustomSql()) {
+            return customSql;
+        }
+        
         return switch (operator) {
             case EQ -> String.format("%s = :%s", column, paramName);
             case NE -> String.format("%s <> :%s", column, paramName);

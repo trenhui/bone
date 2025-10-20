@@ -6,7 +6,7 @@
 
     <groupId>com.bone</groupId>
     <artifactId>bone-smartmeta-engine</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.0-SNAPSHOT</version>
 
     <dependencies>
         <!-- Spring Boot 核心依赖 -->

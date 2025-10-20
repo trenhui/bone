@@ -114,7 +114,7 @@
             </dependency>
             <dependency>
                 <groupId>com.bone</groupId>
-                <artifactId>bone-extension</artifactId>
+                <artifactId>bone-extension-sdk</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

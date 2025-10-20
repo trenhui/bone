@@ -40,8 +40,8 @@ public interface CodegenTableRepository {
         }
     }
 
-    default PageResult<CodegenTable> selectPage(CodegenTablePageRequest pageReqVO) {
-        // 简化实现，直接调用pageByCriteria
+    @SuppressWarnings("unchecked")
+    default PageResult<CodegenTable> selectPageByDataSourceConfigId(Long dataSourceConfigId) {
         try {
             // 这里使用null作为Criteria，由实现类处理
             return pageByCriteria(null);
@@ -78,5 +78,4 @@ public interface CodegenTableRepository {
     CodegenTable findOneByCriteria(Object criteria);
     PageResult<CodegenTable> pageByCriteria(Object criteria);
     List<CodegenTable> findByCriteria(Object criteria);
-
 }

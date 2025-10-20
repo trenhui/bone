@@ -31,7 +31,7 @@
 
         <dependency>
             <groupId>com.bone</groupId>
-            <artifactId>bone-extension</artifactId>
+            <artifactId>bone-extension-sdk</artifactId>
         </dependency>
 
         <dependency>

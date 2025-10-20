@@ -3,7 +3,7 @@ package com.bone.metadata.sdk.test.config;
 import com.bone.metadata.sdk.extension.ExtensionCoordinator;
 import com.bone.metadata.sdk.query.SqlBuilder;
 import com.bone.metadata.sdk.sql.executor.SqlExecutor;
-import com.bone.metadata.sdk.test.repository.impl.PermissionRepository;
+// 移除对已删除类的引用
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
@@ -111,8 +111,5 @@ public class SimpleTestConfig {
         }
     }
 
-    @Bean
-    public PermissionRepository permissionRepository(SqlBuilder sqlBuilder, SqlExecutor sqlExecutor, ExtensionCoordinator extensionCoordinator) {
-        return new PermissionRepository(sqlBuilder, sqlExecutor, extensionCoordinator);
-    }
+    // 移除对已删除类的Bean定义
 }
