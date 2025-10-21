@@ -78,32 +78,32 @@ public class BizContext<T> implements Serializable {
     /**
      * 租户代码
      */
-    private String tenantCode = "DEFAULT";
+    public String tenantCode = "DEFAULT";
     
     /**
      * 业务域代码
      */
-    private String bizCode;
+    public String bizCode;
     
     /**
      * 用例代码
      */
-    private String useCase;
+    public String useCase;
     
     /**
      * 场景代码
      */
-    private String scenario;
+    public String scenario;
     
     /**
      * 环境标识
      */
-    private String env = "PROD";
+    public String env = "PROD";
     
     /**
      * 分组标识
      */
-    private String group;
+    public String group;
     
     /**
      * 用户组标识

@@ -1,8 +1,8 @@
 package com.bone.engine.extension.util;
 
+import com.bone.engine.extension.context.BizContext;
 import com.bone.engine.extension.ExtPoint;
 import com.bone.engine.extension.Extension;
-import com.bone.engine.extension.context.BizContext;
 import com.bone.engine.extension.context.BizContextHolder;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.StringUtils;
@@ -65,16 +65,16 @@ public class ExtensionUtils {
     /**
      * 生成路由键
      */
-    public static String generateRouteKey(Class<?> extPointInterface, BizContext<?> context) {
+    public static <T> String generateRouteKey(Class<?> extPointInterface, BizContext<T> context) {
         StringBuilder key = new StringBuilder(getExtPointName(extPointInterface));
         
         if (context != null) {
             key.append(":")
-               .append(context.bizCode() != null ? context.bizCode() : "default")
+               .append(context.bizCode != null ? context.bizCode : "default")
                .append(":")
-               .append(context.tenantCode() != null ? context.tenantCode() : "default")
+               .append(context.tenantCode != null ? context.tenantCode : "default")
                .append(":")
-               .append(context.scenario() != null ? context.scenario() : "default");
+               .append(context.scenario != null ? context.scenario : "default");
         }
         
         return key.toString();
@@ -130,14 +130,14 @@ public class ExtensionUtils {
     /**
      * 从方法参数中提取业务上下文
      */
-    public static BizContext<?> extractBizContext(Object[] args) {
+    public static <T> BizContext<T> extractBizContext(Object[] args) {
         if (args == null || args.length == 0) {
             return null;
         }
         
         for (Object arg : args) {
             if (arg instanceof BizContext) {
-                return (BizContext<?>) arg;
+                return (BizContext<T>) arg;
             }
         }
         
@@ -147,13 +147,13 @@ public class ExtensionUtils {
     /**
      * 确保业务上下文存在
      */
-    public static BizContext<?> ensureBizContext(Object[] args) {
-        BizContext<?> context = extractBizContext(args);
+    public static <T> BizContext<T> ensureBizContext(Object[] args) {
+        BizContext<T> context = extractBizContext(args);
         if (context == null) {
-            context = BizContextHolder.getCurrentContext();
+            context = (BizContext<T>) BizContextHolder.getCurrentContext();
         }
         if (context == null) {
-            context = BizContext.builder().build();
+            context = BizContext.<T>builder().build();
         }
         return context;
     }
@@ -177,33 +177,33 @@ public class ExtensionUtils {
     /**
      * 检查两个业务上下文是否匹配路由条件
      */
-    public static boolean matchContext(BizContext<?> context1, BizContext<?> context2) {
+    public static <T, U> boolean matchContext(BizContext<T> context1, BizContext<U> context2) {
         if (context1 == null || context2 == null) {
             return false;
         }
         
         // 业务代码匹配
-        if (context1.bizCode() != null && !context1.bizCode().equals(context2.bizCode())) {
+        if (context1.bizCode != null && !context1.bizCode.equals(context2.bizCode)) {
             return false;
         }
         
         // 租户代码匹配
-        if (context1.tenantCode() != null && !context1.tenantCode().equals(context2.tenantCode())) {
+        if (context1.tenantCode != null && !context1.tenantCode.equals(context2.tenantCode)) {
             return false;
         }
         
         // 场景匹配
-        if (context1.scenario() != null && !context1.scenario().equals(context2.scenario())) {
+        if (context1.scenario != null && !context1.scenario.equals(context2.scenario)) {
             return false;
         }
         
-        // 版本匹配
-        if (context1.version() != null && !context1.version().equals(context2.version())) {
+        // 环境匹配
+        if (context1.env != null && !context1.env.equals(context2.env)) {
             return false;
         }
         
-        // 数据源匹配
-        if (context1.dataSource() != null && !context1.dataSource().equals(context2.dataSource())) {
+        // 分组匹配
+        if (context1.group != null && !context1.group.equals(context2.group)) {
             return false;
         }
         
@@ -217,27 +217,27 @@ public class ExtensionUtils {
         int score = 0;
         
         // 检查业务代码匹配
-        if (Arrays.asList(extension.bizCode()).contains(context.bizCode())) {
+        if (Arrays.asList(extension.bizCode()).contains(context.bizCode)) {
             score += 100;
         }
         
         // 检查租户代码匹配
-        if (Arrays.asList(extension.tenantCode()).contains(context.tenantCode())) {
+        if (Arrays.asList(extension.tenantCode()).contains(context.tenantCode)) {
             score += 80;
         }
         
         // 检查场景匹配
-        if (Arrays.asList(extension.scenario()).contains(context.scenario())) {
+        if (Arrays.asList(extension.scenario()).contains(context.scenario)) {
             score += 60;
         }
         
-        // 检查版本匹配
-        if (context.version() != null && context.version().equals(extension.version())) {
+        // 检查环境匹配
+        if (context.env != null && Arrays.asList(extension.env()).contains(context.env)) {
             score += 40;
         }
         
-        // 检查数据源匹配
-        if (Arrays.asList(extension.dataSource()).contains(context.dataSource())) {
+        // 检查分组匹配
+        if (context.group != null && Arrays.asList(extension.group()).contains(context.group)) {
             score += 20;
         }
         
