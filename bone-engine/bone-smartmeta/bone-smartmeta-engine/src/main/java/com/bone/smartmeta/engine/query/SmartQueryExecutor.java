@@ -8,6 +8,7 @@ import com.bone.smartmeta.engine.model.DynamicSmartEntity;
 import com.bone.smartmeta.engine.core.SmartBaseEntity;
 import com.bone.smartmeta.engine.query.ast.QueryAst;
 import com.bone.smartmeta.engine.security.FieldLevelSecurityFilter;
+import com.bone.smartmeta.engine.security.CustomAuthentication;
 import com.bone.smartmeta.engine.security.PermissionChecker;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -66,9 +67,22 @@ public class SmartQueryExecutor {
             context.setQueryAst(queryAst);
             
             // 2. 验证实体访问权限
+            CustomAuthentication authentication = new CustomAuthentication() {
+                @Override
+                public String getName() {
+                    return context.getUserId();
+                }
+                
+                @Override
+                public boolean hasRole(String role) {
+                    // 实际应用中应从安全上下文中获取角色信息
+                    return false;
+                }
+            };
+            
             if (!permissionChecker.hasEntityAccessPermission(
+                    authentication,
                     queryAst.getObjectName(), 
-                    context.getUserId(), 
                     "read")) {
                 throw new SecurityException("用户 " + context.getUserId() + 
                         " 没有实体 " + queryAst.getObjectName() + " 的读取权限");
@@ -78,8 +92,8 @@ public class SmartQueryExecutor {
             EntityMetadata entityMetadata = metadataRegistry.getEntityMetadata(queryAst.getObjectName());
             context.setEntityMetadata(entityMetadata);
             
-            // 4. 验证字段访问权限
-            validateFieldPermissions(queryAst, entityMetadata, context.getUserId());
+            // 验证字段访问权限
+            validateFieldPermissions(queryAst, entityMetadata, authentication);
             
             // 5. AI优化查询
             String optimizedSmartql = aiQueryOptimizer.optimizeQuery(
@@ -122,7 +136,7 @@ public class SmartQueryExecutor {
             context.setResultCount(results.size());
             
             // 10. 应用字段级安全过滤
-            List<T> securedResults = applyFieldSecurity(results, entityMetadata, context.getUserId());
+            List<T> securedResults = applyFieldSecurity(results, entityMetadata, authentication);
             
             // 11. 缓存查询结果
             if (shouldCacheQuery(queryAst, entityMetadata)) {
@@ -205,9 +219,22 @@ public class SmartQueryExecutor {
             QueryAst queryAst = queryParser.parse(smartql);
             
             // 验证权限
+            CustomAuthentication authentication = new CustomAuthentication() {
+                @Override
+                public String getName() {
+                    return userContext.getCurrentUserId();
+                }
+                
+                @Override
+                public boolean hasRole(String role) {
+                    // 实际应用中应从安全上下文中获取角色信息
+                    return false;
+                }
+            };
+            
             if (!permissionChecker.hasEntityAccessPermission(
+                    authentication,
                     queryAst.getObjectName(), 
-                    userContext.getCurrentUserId(), 
                     "read")) {
                 throw new SecurityException("用户 " + userContext.getCurrentUserId() + 
                         " 没有实体 " + queryAst.getObjectName() + " 的读取权限");
@@ -257,15 +284,15 @@ public class SmartQueryExecutor {
     /**
      * 验证字段访问权限
      */
-    private void validateFieldPermissions(QueryAst queryAst, EntityMetadata entityMetadata, String userId) {
+    private void validateFieldPermissions(QueryAst queryAst, EntityMetadata entityMetadata, CustomAuthentication authentication) {
         List<String> requestedFields = queryAst.getSelectFields();
         
         // 检查是否请求了没有权限的字段
         List<String> unauthorizedFields = requestedFields.stream()
                 .filter(field -> !permissionChecker.hasFieldAccessPermission(
+                        authentication,
                         entityMetadata.getApiName(), 
                         field, 
-                        userId, 
                         "read"))
                 .collect(Collectors.toList());
         
@@ -280,15 +307,15 @@ public class SmartQueryExecutor {
      */
     private <T extends SmartBaseEntity> List<T> applyFieldSecurity(List<T> results, 
                                                                   EntityMetadata entityMetadata, 
-                                                                  String userId) {
+                                                                  CustomAuthentication authentication) {
         if (results == null || results.isEmpty()) {
             return results;
         }
         
         // 获取用户有权限查看的字段
         List<String> readableFields = permissionChecker.getReadableFields(
-                entityMetadata.getApiName(), 
-                userId
+                authentication,
+                entityMetadata.getApiName()
         );
         
         // 如果用户有权限查看所有字段，则直接返回

@@ -456,6 +456,7 @@ flowchart TD
 
 ```java
 @Service
+@Slf4j
 public class EnhancedMetadataEngine implements MetadataEngine {
     private final MetadataRepository metadataRepository;
     private final MetadataVersionManager versionManager;
@@ -463,66 +464,296 @@ public class EnhancedMetadataEngine implements MetadataEngine {
     private final MetadataCacheManager cacheManager;
     private final EventPublisher eventPublisher;
     private final MetadataValidator validator;
+    private final ReentrantReadWriteLock metadataLock = new ReentrantReadWriteLock();
+
+    /**
+     * 构造函数
+     */
+    public EnhancedMetadataEngine(MetadataRepository metadataRepository,
+                                MetadataVersionManager versionManager,
+                                MultiTenantManager tenantManager,
+                                MetadataCacheManager cacheManager,
+                                EventPublisher eventPublisher,
+                                MetadataValidator validator) {
+        this.metadataRepository = Objects.requireNonNull(metadataRepository, "MetadataRepository cannot be null");
+        this.versionManager = Objects.requireNonNull(versionManager, "MetadataVersionManager cannot be null");
+        this.tenantManager = Objects.requireNonNull(tenantManager, "MultiTenantManager cannot be null");
+        this.cacheManager = Objects.requireNonNull(cacheManager, "MetadataCacheManager cannot be null");
+        this.eventPublisher = Objects.requireNonNull(eventPublisher, "EventPublisher cannot be null");
+        this.validator = Objects.requireNonNull(validator, "MetadataValidator cannot be null");
+        log.debug("EnhancedMetadataEngine initialized successfully");
+    }
 
     /**
      * 注册或更新元数据
+     *
+     * @param metadata 实体元数据
+     * @return 处理后的实体元数据
+     * @throws MetadataValidationException 当元数据验证失败时抛出
+     * @throws IllegalArgumentException 当输入参数无效时抛出
      */
     @Transactional
     @Override
     public EntityMetadata register(EntityMetadata metadata) {
-        // 1. 租户上下文处理
-        String tenantId = tenantManager.getCurrentTenantId();
-        metadata.setTenantId(tenantId);
+        Objects.requireNonNull(metadata, "Metadata cannot be null");
+        Objects.requireNonNull(metadata.getApiName(), "ApiName cannot be null");
         
-        // 2. 元数据验证
-        ValidationResult validation = validator.validate(metadata);
-        if (!validation.isValid()) {
-            throw new MetadataValidationException("元数据验证失败", validation.getErrors());
+        log.info("Registering metadata for entity: {}", metadata.getApiName());
+        
+        try {
+            // 1. 租户上下文处理
+            String tenantId = tenantManager.getCurrentTenantId();
+            log.debug("Processing metadata registration for tenant: {}", tenantId);
+            metadata.setTenantId(tenantId);
+            
+            // 2. 元数据验证
+            log.debug("Validating metadata for entity: {}", metadata.getApiName());
+            ValidationResult validation = validator.validate(metadata);
+            if (!validation.isValid()) {
+                log.error("Metadata validation failed for entity: {}, errors: {}", 
+                         metadata.getApiName(), validation.getErrors());
+                throw new MetadataValidationException("元数据验证失败", validation.getErrors());
+            }
+            
+            // 3. 版本管理
+            metadataLock.writeLock().lock();
+            try {
+                EntityMetadata existing = metadataRepository.findByApiNameAndTenantId(metadata.getApiName(), tenantId);
+                log.debug("Existing metadata found: {}", existing != null ? existing.getVersion() : "none");
+                
+                EntityMetadata processed = versionManager.processVersion(metadata, existing);
+                
+                // 4. 存储元数据
+                EntityMetadata saved = metadataRepository.save(processed);
+                log.info("Metadata saved successfully: {} version {}", saved.getApiName(), saved.getVersion());
+                
+                // 5. 缓存更新
+                cacheManager.put(tenantId, saved.getApiName(), saved);
+                log.debug("Metadata cached for: {}", saved.getApiName());
+                
+                // 6. 发布元数据变更事件
+                String oldVersion = existing != null ? existing.getVersion() : null;
+                eventPublisher.publishEvent(new MetadataChangedEvent(
+                    tenantId, saved.getApiName(), saved.getVersion(), oldVersion
+                ));
+                log.debug("Published metadata changed event for: {}", saved.getApiName());
+                
+                return saved;
+            } finally {
+                metadataLock.writeLock().unlock();
+            }
+        } catch (MetadataValidationException e) {
+            // 直接抛出验证异常
+            throw e;
+        } catch (Exception e) {
+            log.error("Failed to register metadata for entity: {}", metadata.getApiName(), e);
+            throw new RuntimeException("Failed to register metadata: " + metadata.getApiName(), e);
         }
-        
-        // 3. 版本管理
-        EntityMetadata existing = metadataRepository.findByApiNameAndTenantId(metadata.getApiName(), tenantId);
-        EntityMetadata processed = versionManager.processVersion(metadata, existing);
-        
-        // 4. 存储元数据
-        EntityMetadata saved = metadataRepository.save(processed);
-        
-        // 5. 缓存更新
-        cacheManager.put(tenantId, saved.getApiName(), saved);
-        
-        // 6. 发布元数据变更事件
-        eventPublisher.publishEvent(new MetadataChangedEvent(
-            tenantId, saved.getApiName(), saved.getVersion(), 
-            existing != null ? existing.getVersion() : null
-        ));
-        
-        return saved;
     }
 
     /**
      * 获取实体元数据
+     *
+     * @param entityName 实体名称
+     * @return 实体元数据，如果不存在则返回null
+     * @throws IllegalArgumentException 当实体名称为空时抛出
      */
     @Override
     public EntityMetadata getEntityMetadata(String entityName) {
+        Objects.requireNonNull(entityName, "Entity name cannot be null");
+        
+        String tenantId = tenantManager.getCurrentTenantId();
+        log.debug("Retrieving metadata for entity: {}, tenant: {}", entityName, tenantId);
+        
+        // 先尝试读锁获取
+        metadataLock.readLock().lock();
+        try {
+            // 先从缓存获取
+            EntityMetadata cached = cacheManager.get(tenantId, entityName);
+            if (cached != null) {
+                log.debug("Returning cached metadata for: {}", entityName);
+                return cached;
+            }
+        } finally {
+            metadataLock.readLock().unlock();
+        }
+        
+        // 缓存未命中，需要获取写锁来加载和缓存
+        metadataLock.writeLock().lock();
+        try {
+            // 双重检查缓存
+            EntityMetadata cached = cacheManager.get(tenantId, entityName);
+            if (cached != null) {
+                log.debug("Returning cached metadata (double check) for: {}", entityName);
+                return cached;
+            }
+            
+            // 从数据库获取
+            log.debug("Loading metadata from repository for: {}", entityName);
+            EntityMetadata metadata = metadataRepository.findByApiNameAndTenantId(entityName, tenantId);
+            if (metadata != null) {
+                // 回填缓存
+                cacheManager.put(tenantId, entityName, metadata);
+                log.debug("Metadata loaded and cached for: {}", entityName);
+            } else {
+                log.debug("Metadata not found for entity: {}", entityName);
+            }
+            
+            return metadata;
+        } catch (Exception e) {
+            log.error("Failed to retrieve metadata for entity: {}", entityName, e);
+            throw new RuntimeException("Failed to retrieve metadata: " + entityName, e);
+        } finally {
+            metadataLock.writeLock().unlock();
+        }
+    }
+    
+    /**
+     * 批量获取实体元数据
+     *
+     * @param entityNames 实体名称列表
+     * @return 实体元数据映射，键为实体名称
+     */
+    @Override
+    public Map<String, EntityMetadata> getEntityMetadataBatch(List<String> entityNames) {
+        Objects.requireNonNull(entityNames, "Entity names list cannot be null");
+        
+        if (entityNames.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        
+        String tenantId = tenantManager.getCurrentTenantId();
+        Map<String, EntityMetadata> result = new HashMap<>(entityNames.size());
+        List<String> missingEntities = new ArrayList<>();
+        
+        log.debug("Retrieving batch metadata for {} entities", entityNames.size());
+        
+        // 先尝试从缓存获取
+        metadataLock.readLock().lock();
+        try {
+            for (String entityName : entityNames) {
+                EntityMetadata cached = cacheManager.get(tenantId, entityName);
+                if (cached != null) {
+                    result.put(entityName, cached);
+                } else {
+                    missingEntities.add(entityName);
+                }
+            }
+        } finally {
+            metadataLock.readLock().unlock();
+        }
+        
+        // 如果有缓存未命中的实体，需要获取写锁来加载
+        if (!missingEntities.isEmpty()) {
+            metadataLock.writeLock().lock();
+            try {
+                // 双重检查
+                List<String> stillMissing = new ArrayList<>();
+                for (String entityName : missingEntities) {
+                    EntityMetadata cached = cacheManager.get(tenantId, entityName);
+                    if (cached != null) {
+                        result.put(entityName, cached);
+                    } else {
+                        stillMissing.add(entityName);
+                    }
+                }
+                
+                // 批量查询数据库
+                if (!stillMissing.isEmpty()) {
+                    log.debug("Loading batch metadata from repository for {} entities", stillMissing.size());
+                    List<EntityMetadata> dbMetadataList = metadataRepository.findByApiNameInAndTenantId(stillMissing, tenantId);
+                    
+                    // 填充结果和缓存
+                    for (EntityMetadata metadata : dbMetadataList) {
+                        result.put(metadata.getApiName(), metadata);
+                        cacheManager.put(tenantId, metadata.getApiName(), metadata);
+                    }
+                    
+                    log.debug("Loaded and cached {} out of {} missing entities", 
+                             dbMetadataList.size(), stillMissing.size());
+                }
+            } catch (Exception e) {
+                log.error("Failed to retrieve batch metadata", e);
+                throw new RuntimeException("Failed to retrieve batch metadata", e);
+            } finally {
+                metadataLock.writeLock().unlock();
+            }
+        }
+        
+        return result;
+    }
+    
+    /**
+     * 删除实体元数据
+     *
+     * @param entityName 实体名称
+     * @return 是否成功删除
+     */
+    @Transactional
+    @Override
+    public boolean deleteEntityMetadata(String entityName) {
+        Objects.requireNonNull(entityName, "Entity name cannot be null");
+        
+        String tenantId = tenantManager.getCurrentTenantId();
+        log.info("Deleting metadata for entity: {}, tenant: {}", entityName, tenantId);
+        
+        metadataLock.writeLock().lock();
+        try {
+            // 先从数据库删除
+            int deletedCount = metadataRepository.deleteByApiNameAndTenantId(entityName, tenantId);
+            
+            if (deletedCount > 0) {
+                // 从缓存移除
+                cacheManager.remove(tenantId, entityName);
+                log.debug("Removed metadata from cache for: {}", entityName);
+                
+                // 发布元数据删除事件
+                eventPublisher.publishEvent(new MetadataDeletedEvent(tenantId, entityName));
+                log.debug("Published metadata deleted event for: {}", entityName);
+                
+                return true;
+            }
+            
+            log.warn("No metadata found for deletion: {}", entityName);
+            return false;
+        } catch (Exception e) {
+            log.error("Failed to delete metadata for entity: {}", entityName, e);
+            throw new RuntimeException("Failed to delete metadata: " + entityName, e);
+        } finally {
+            metadataLock.writeLock().unlock();
+        }
+    }
+    
+    /**
+     * 刷新元数据缓存
+     *
+     * @param entityName 实体名称，如果为null则刷新所有缓存
+     */
+    @Override
+    public void refreshMetadataCache(String entityName) {
         String tenantId = tenantManager.getCurrentTenantId();
         
-        // 先从缓存获取
-        EntityMetadata cached = cacheManager.get(tenantId, entityName);
-        if (cached != null) {
-            return cached;
+        metadataLock.writeLock().lock();
+        try {
+            if (entityName != null) {
+                // 刷新特定实体缓存
+                log.debug("Refreshing metadata cache for entity: {}", entityName);
+                cacheManager.remove(tenantId, entityName);
+                // 重新加载
+                getEntityMetadata(entityName);
+            } else {
+                // 刷新所有缓存
+                log.debug("Refreshing all metadata caches for tenant: {}", tenantId);
+                cacheManager.clearTenantCache(tenantId);
+            }
+        } catch (Exception e) {
+            log.error("Failed to refresh metadata cache for entity: {}", entityName, e);
+            throw new RuntimeException("Failed to refresh metadata cache", e);
+        } finally {
+            metadataLock.writeLock().unlock();
         }
-        
-        // 缓存未命中，从数据库获取
-        EntityMetadata metadata = metadataRepository.findByApiNameAndTenantId(entityName, tenantId);
-        if (metadata != null) {
-            // 回填缓存
-            cacheManager.put(tenantId, entityName, metadata);
-        }
-        
-        return metadata;
     }
-}
-```
+}```
 
 ### 5.2 动态服务引擎
 

@@ -1,5 +1,6 @@
 package com.bone.metadata.sdk.support.config;
 
+import com.bone.metadata.sdk.exception.ExceptionHandler;
 import com.bone.metadata.sdk.extension.ColumnAllocator;
 import com.bone.metadata.sdk.extension.ColumnNamingStrategy;
 import com.bone.metadata.sdk.extension.DefaultColumnNamingStrategy;
@@ -9,6 +10,7 @@ import com.bone.metadata.sdk.extension.handler.ReservedColumnsHandler;
 import com.bone.metadata.sdk.extension.repository.ColumnAllocationRepository;
 import com.bone.metadata.sdk.metadata.api.MetadataService;
 import com.bone.metadata.sdk.query.SqlBuilder;
+import com.bone.metadata.sdk.sql.datasource.ConnectionPoolManager;
 import com.bone.metadata.sdk.sql.dialect.*;
 import com.bone.metadata.sdk.sql.executor.SqlExecutor;
 import com.bone.metadata.sdk.sql.template.*;
@@ -99,6 +101,18 @@ public class SqlRepositoryAutoConfiguration {
                                    SqlTemplateLoader sqlTemplateLoader,
                                    SqlProcessorFactory sqlProcessorFactory) {
         return new SqlExecutor(jdbcOperations, sqlTemplateLoader, sqlProcessorFactory, properties);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public ConnectionPoolManager connectionPoolManager(SqlConfigProperties properties) {
+        return new ConnectionPoolManager(properties);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public ExceptionHandler exceptionHandler() {
+        return ExceptionHandler.getInstance();
     }
 
     @Bean

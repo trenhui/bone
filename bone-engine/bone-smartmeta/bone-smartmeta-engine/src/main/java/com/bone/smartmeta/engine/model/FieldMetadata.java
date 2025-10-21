@@ -1,5 +1,6 @@
 package com.bone.smartmeta.engine.model;
 
+import com.bone.smartmeta.engine.metadata.FieldLevelSecurityMetadata;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -61,6 +62,7 @@ public class FieldMetadata {
     private FieldPermission permission;
     private boolean encrypted;
     private String encryptionAlgorithm;
+    private FieldLevelSecurityMetadata permissionMetadata;
     
     // UI配置
     private String fieldGroup;

@@ -13,6 +13,12 @@ import java.lang.annotation.Target;
  * 用于标记实现了{@link ExtPoint}接口的具体实现类，并定义路由匹配条件
  * <strong>核心功能：</strong>允许为同一个扩展点接口提供多个实现，并根据业务上下文动态选择合适的实现
  * </p>
+ * <h3>增强功能：</h3>
+ * <ul>
+ *   <li><strong>多租户支持：</strong>支持配置多个租户代码，适配复杂的多租户场景</li>
+ *   <li><strong>用户组标识：</strong>基于用户组进行更精细的路由匹配</li>
+ *   <li><strong>标签机制：</strong>支持基于键值对标签的路由匹配，提供更灵活的匹配规则</li>
+ * </ul>
  * 
  * <h3>路由匹配机制：</h3>
  * <p>框架采用多级路由策略，按以下维度进行精确匹配：</p>
@@ -93,6 +99,13 @@ public @interface Extension {
     String tenantCode() default "";
     
     /**
+     * 多租户代码配置<br>
+     * 支持配置多个租户代码，适用于需要为多个租户提供相同扩展实现的场景
+     * 如果配置了此属性，则tenantCode属性将被忽略
+     */
+    String[] multiTenantCodes() default {};
+    
+    /**
      * 多租户代码
      */
     String[] multiTenantCodes() default {};
@@ -113,6 +126,12 @@ public @interface Extension {
     String useCase() default "";
     
     /**
+     * 用户组标识<br>
+     * 用于匹配业务上下文中的用户组信息，支持更精细的用户分组路由
+     */
+    String userGroup() default "";
+    
+    /**
      * 场景代码
      */
     String scenario() default "";
@@ -121,6 +140,13 @@ public @interface Extension {
      * 环境标识
      */
     String env() default "";
+    
+    /**
+     * 标签配置<br>
+     * 用于基于标签进行路由匹配，格式为 "key:value"，支持更灵活的匹配规则
+     * 匹配规则：上下文中必须包含所有指定的标签键，且对应的值相等
+     */
+    String[] tags() default {};
     
     /**
      * 分组标识
@@ -146,6 +172,18 @@ public @interface Extension {
      * 是否启用
      */
     boolean enabled() default true;
+    
+    /**
+     * 扩展实现版本<br>
+     * 用于标识扩展实现的版本号，便于版本管理和升级
+     */
+    String version() default "1.0.0";
+    
+    /**
+     * 扩展实现描述<br>
+     * 提供扩展实现的详细描述信息
+     */
+    String description() default "";
     
     /**
      * 数据源标识

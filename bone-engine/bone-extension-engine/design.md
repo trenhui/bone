@@ -199,27 +199,163 @@ public @interface Extension {
 #### **1.2 业务上下文管理**
 ```java
 // BizContext.java
+import lombok.Getter;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+
 public class BizContext<T> {
+    // 标准业务维度
     private final String tenantCode;
     private final String bizCode;
     private final String useCase;
     private final String scenario;
+    private final String env;
+    private final String group;
     private final T data;
-    private final Map<String, Object> attributes;
-    private final long timestamp;
     
-    private BizContext(Builder<T> builder) {
-        this.tenantCode = builder.tenantCode;
-        this.bizCode = builder.bizCode;
-        this.useCase = builder.useCase;
-        this.scenario = builder.scenario;
-        this.data = builder.data;
-        this.attributes = Collections.unmodifiableMap(new HashMap<>(builder.attributes));
-        this.timestamp = System.currentTimeMillis();
+    // 扩展属性，使用ConcurrentHashMap保证线程安全
+    @Getter(lazy = true)
+    private final Map<String, Object> attributes = new ConcurrentHashMap<>();
+    
+    // 私有构造函数，确保通过Builder或静态工厂方法创建实例
+    private BizContext(String tenantCode, String bizCode, String useCase, String scenario, T data) {
+        this.tenantCode = tenantCode;
+        this.bizCode = bizCode;
+        this.useCase = useCase;
+        this.scenario = scenario;
+        this.env = null;
+        this.group = null;
+        this.data = data;
     }
     
-    public static <T> Builder<T> builder() {
-        return new Builder<>();
+    // 私有构造函数，支持环境和分组
+    private BizContext(String tenantCode, String bizCode, String useCase, String scenario, String env, String group, T data) {
+        this.tenantCode = tenantCode;
+        this.bizCode = bizCode;
+        this.useCase = useCase;
+        this.scenario = scenario;
+        this.env = env;
+        this.group = group;
+        this.data = data;
+    }
+    
+    // 静态工厂方法
+    public static <T> BizContext<T> create() {
+        return BizContext.<T>builder().build();
+    }
+    
+    public static <T> BizContext<T> ofTenant(String tenantCode) {
+        return BizContext.<T>builder().tenantCode(tenantCode).build();
+    }
+    
+    public static <T> BizContext<T> ofBusiness(String bizCode) {
+        return BizContext.<T>builder().bizCode(bizCode).build();
+    }
+    
+    public static <T> BizContext<T> of(String tenantCode, String bizCode) {
+        return BizContext.<T>builder().tenantCode(tenantCode).bizCode(bizCode).build();
+    }
+    
+    // 实例方法 - 创建新实例
+    public BizContext<T> withScenario(String scenario) {
+        return new BizContext<>(tenantCode, bizCode, useCase, scenario, env, group, data);
+    }
+    
+    // 属性操作方法（线程安全）
+    public BizContext<T> withAttribute(String key, Object value) {
+        Objects.requireNonNull(key, "Attribute key must not be null");
+        attributes().put(key, value);
+        return this;
+    }
+    
+    @SuppressWarnings("unchecked")
+    public <V> V getAttribute(String key) {
+        if (key == null) {
+            return null;
+        }
+        return (V) this.attributes().get(key);
+    }
+    
+    public boolean hasAttribute(String key) {
+        return key != null && attributes().containsKey(key);
+    }
+    
+    // 内部方法，获取属性映射
+    private Map<String, Object> attributes() {
+        return this.attributes.get();
+    }
+    
+    // Builder相关方法
+    public static <T> BizContextBuilder<T> builder() {
+        return new BizContextBuilder<T>();
+    }
+    
+    // 内部Builder类
+    public static class BizContextBuilder<T> {
+        private String tenantCode;
+        private String bizCode;
+        private String useCase;
+        private String scenario;
+        private String env;
+        private String group;
+        private T data;
+        private Map<String, Object> attributes;
+        
+        public BizContextBuilder<T> tenantCode(String tenantCode) {
+            this.tenantCode = tenantCode;
+            return this;
+        }
+        
+        public BizContextBuilder<T> bizCode(String bizCode) {
+            this.bizCode = bizCode;
+            return this;
+        }
+        
+        public BizContextBuilder<T> useCase(String useCase) {
+            this.useCase = useCase;
+            return this;
+        }
+        
+        public BizContextBuilder<T> scenario(String scenario) {
+            this.scenario = scenario;
+            return this;
+        }
+        
+        public BizContextBuilder<T> env(String env) {
+            this.env = env;
+            return this;
+        }
+        
+        public BizContextBuilder<T> group(String group) {
+            this.group = group;
+            return this;
+        }
+        
+        public BizContextBuilder<T> data(T data) {
+            this.data = data;
+            return this;
+        }
+        
+        public BizContextBuilder<T> attribute(String key, Object value) {
+            Objects.requireNonNull(key, "Attribute key must not be null");
+            if (this.attributes == null) {
+                this.attributes = new HashMap<>();
+            }
+            this.attributes.put(key, value);
+            return this;
+        }
+        
+        public BizContext<T> build() {
+            BizContext<T> context = new BizContext<>(tenantCode, bizCode, useCase, scenario, env, group, data);
+            // 初始化属性
+            if (this.attributes != null && !this.attributes.isEmpty()) {
+                context.attributes().putAll(this.attributes);
+            }
+            return context;
+        }
     }
     
     // Getter方法
@@ -227,66 +363,10 @@ public class BizContext<T> {
     public String getBizCode() { return bizCode; }
     public String getUseCase() { return useCase; }
     public String getScenario() { return scenario; }
+    public String getEnv() { return env; }
+    public String getGroup() { return group; }
     public T getData() { return data; }
-    public Map<String, Object> getAttributes() { return attributes; }
-    public long getTimestamp() { return timestamp; }
-    
-    @SuppressWarnings("unchecked")
-    public <V> V getAttribute(String key) {
-        return (V) attributes.get(key);
-    }
-    
-    public boolean hasAttribute(String key) {
-        return attributes.containsKey(key);
-    }
-    
-    public static class Builder<T> {
-        private String tenantCode = "DEFAULT";
-        private String bizCode = "DEFAULT";
-        private String useCase = "DEFAULT";
-        private String scenario = "DEFAULT";
-        private T data;
-        private final Map<String, Object> attributes = new HashMap<>();
-        
-        public Builder<T> tenantCode(String tenantCode) {
-            this.tenantCode = tenantCode;
-            return this;
-        }
-        
-        public Builder<T> bizCode(String bizCode) {
-            this.bizCode = bizCode;
-            return this;
-        }
-        
-        public Builder<T> useCase(String useCase) {
-            this.useCase = useCase;
-            return this;
-        }
-        
-        public Builder<T> scenario(String scenario) {
-            this.scenario = scenario;
-            return this;
-        }
-        
-        public Builder<T> data(T data) {
-            this.data = data;
-            return this;
-        }
-        
-        public Builder<T> attribute(String key, Object value) {
-            this.attributes.put(key, value);
-            return this;
-        }
-        
-        public Builder<T> attributes(Map<String, Object> attributes) {
-            this.attributes.putAll(attributes);
-            return this;
-        }
-        
-        public BizContext<T> build() {
-            return new BizContext<>(this);
-        }
-    }
+    public Map<String, Object> getAttributes() { return Collections.unmodifiableMap(attributes()); }
 }
 
 // BizContextHolder.java
@@ -441,7 +521,9 @@ public class DefaultExtPointRouter implements ExtPointRouter {
         return Objects.equals(extension.getTenantCode(), context.getTenantCode()) &&
                Objects.equals(extension.getBizCode(), context.getBizCode()) &&
                Objects.equals(extension.getUseCase(), context.getUseCase()) &&
-               Objects.equals(extension.getScenario(), context.getScenario());
+               Objects.equals(extension.getScenario(), context.getScenario()) &&
+               Objects.equals(extension.getEnv(), context.getEnv()) &&
+               Objects.equals(extension.getGroup(), context.getGroup());
     }
     
     private boolean matchByExpression(Extension extension, BizContext<?> context) {
@@ -459,6 +541,8 @@ public class DefaultExtPointRouter implements ExtPointRouter {
                "DEFAULT".equals(extension.getBizCode()) &&
                "DEFAULT".equals(extension.getUseCase()) &&
                "DEFAULT".equals(extension.getScenario()) &&
+               ("DEFAULT".equals(extension.getEnv()) || extension.getEnv() == null) &&
+               ("DEFAULT".equals(extension.getGroup()) || extension.getGroup() == null) &&
                StringUtils.isEmpty(extension.getCondition());
     }
     
@@ -483,7 +567,8 @@ public class DefaultExtPointRouter implements ExtPointRouter {
             this.context = context;
             this.hashCode = Objects.hash(extPointClass, context.getTenantCode(), 
                                        context.getBizCode(), context.getUseCase(), 
-                                       context.getScenario());
+                                       context.getScenario(), context.getEnv(),
+                                       context.getGroup());
         }
         
         @Override
@@ -495,7 +580,9 @@ public class DefaultExtPointRouter implements ExtPointRouter {
                    Objects.equals(context.getTenantCode(), routeKey.context.getTenantCode()) &&
                    Objects.equals(context.getBizCode(), routeKey.context.getBizCode()) &&
                    Objects.equals(context.getUseCase(), routeKey.context.getUseCase()) &&
-                   Objects.equals(context.getScenario(), routeKey.context.getScenario());
+                   Objects.equals(context.getScenario(), routeKey.context.getScenario()) &&
+                   Objects.equals(context.getEnv(), routeKey.context.getEnv()) &&
+                   Objects.equals(context.getGroup(), routeKey.context.getGroup());
         }
         
         @Override

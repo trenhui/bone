@@ -8,6 +8,7 @@ import java.util.List;
 
 /**
  * 字段级安全元数据模型类
+ * 根据设计文档中的数据安全配置需求设计
  */
 @Getter
 @Setter
@@ -36,6 +37,68 @@ public class FieldLevelSecurityMetadata {
     
     // 可编辑字段列表
     private List<String> editableFields = new ArrayList<>();
+    
+    // 字段敏感度级别
+    private SensitivityLevel sensitivityLevel = SensitivityLevel.NORMAL;
+    
+    // 是否需要审计
+    private boolean auditEnabled = false;
+    
+    // 审计级别
+    private AuditLevel auditLevel = AuditLevel.READ_WRITE;
+    
+    // 数据脱敏规则ID
+    private String maskingRuleId;
+    
+    // 加密算法
+    private String encryptionAlgorithm;
+    
+    // 敏感数据类型
+    private String sensitiveDataType;
+    
+    /**
+     * 字段敏感度级别枚举
+     */
+    public enum SensitivityLevel {
+        /**
+         * 普通级别
+         */
+        NORMAL,
+        /**
+         * 内部级别
+         */
+        INTERNAL,
+        /**
+         * 机密级别
+         */
+        CONFIDENTIAL,
+        /**
+         * 高度机密级别
+         */
+        HIGHLY_CONFIDENTIAL
+    }
+    
+    /**
+     * 审计级别枚举
+     */
+    public enum AuditLevel {
+        /**
+         * 仅审计读操作
+         */
+        READ_ONLY,
+        /**
+         * 仅审计写操作
+         */
+        WRITE_ONLY,
+        /**
+         * 审计读写操作
+         */
+        READ_WRITE,
+        /**
+         * 不审计
+         */
+        NONE
+    }
     
     /**
      * 获取是否可见
@@ -98,6 +161,65 @@ public class FieldLevelSecurityMetadata {
             this.editableFields = profile.getEditableFields();
             this.readableRoles = profile.getReadableRoles();
             this.editableRoles = profile.getEditableRoles();
+            this.sensitivityLevel = profile.getSensitivityLevel();
+            this.auditEnabled = profile.isAuditEnabled();
+            this.auditLevel = profile.getAuditLevel();
+            this.maskingRuleId = profile.getMaskingRuleId();
+            this.encryptionAlgorithm = profile.getEncryptionAlgorithm();
+            this.sensitiveDataType = profile.getSensitiveDataType();
         }
+    }
+    
+    /**
+     * 添加可读角色
+     */
+    public void addReadableRole(String role) {
+        if (role != null && !readableRoles.contains(role)) {
+            readableRoles.add(role);
+        }
+    }
+    
+    /**
+     * 添加可编辑角色
+     */
+    public void addEditableRole(String role) {
+        if (role != null && !editableRoles.contains(role)) {
+            editableRoles.add(role);
+        }
+    }
+    
+    /**
+     * 检查角色是否有读权限
+     */
+    public boolean hasReadPermission(String role) {
+        return readableRoles.contains(role);
+    }
+    
+    /**
+     * 检查角色是否有编辑权限
+     */
+    public boolean hasEditPermission(String role) {
+        return editableRoles.contains(role);
+    }
+    
+    /**
+     * 是否是敏感字段
+     */
+    public boolean isSensitiveField() {
+        return sensitivityLevel != SensitivityLevel.NORMAL;
+    }
+    
+    /**
+     * 是否需要数据脱敏
+     */
+    public boolean requiresMasking() {
+        return maskingRuleId != null && !maskingRuleId.isEmpty();
+    }
+    
+    /**
+     * 是否需要加密
+     */
+    public boolean requiresEncryption() {
+        return encryptionAlgorithm != null && !encryptionAlgorithm.isEmpty();
     }
 }

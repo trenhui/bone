@@ -52,6 +52,14 @@ public class SqlConfigProperties {
      */
     private Cache cache = new Cache();
     
+    /**
+     * 是否启用缓存
+     * @return true如果启用缓存，false否则
+     */
+    public boolean isCacheEnabled() {
+        return enabled && template.isAsyncPreload() && cache.getExpressionCacheSize() > 0;
+    }
+    
     public Cache getCache() {
         return cache;
     }
@@ -70,6 +78,11 @@ public class SqlConfigProperties {
      * 安全配置。
      */
     private Security security = new Security();
+    
+    /**
+     * 连接池配置。
+     */
+    private ConnectionPool connectionPool = new ConnectionPool();
 
     @Data
     public static class Executor {
@@ -303,6 +316,71 @@ public class SqlConfigProperties {
          */
         @NotNull(message = "Allowed hosts cannot be null")
         private Set<String> allowedHosts = Set.of("*.company.com", "localhost");
+    }
+    
+    @Data
+    public static class ConnectionPool {
+        /**
+         * 连接池名称。
+         */
+        private String poolName = "MetadataSdkPool";
+        
+        /**
+         * 最小空闲连接数。
+         */
+        @Min(value = 1, message = "Minimum idle connections must be at least 1")
+        private int minimumIdle = 5;
+        
+        /**
+         * 最大连接池大小。
+         */
+        @Min(value = 5, message = "Maximum pool size must be at least 5")
+        private int maximumPoolSize = 20;
+        
+        /**
+         * 连接超时时间（毫秒）。
+         */
+        @Min(value = 1000, message = "Connection timeout must be at least 1000ms")
+        private long connectionTimeout = 30000;
+        
+        /**
+         * 空闲超时时间（毫秒）。
+         */
+        @Min(value = 60000, message = "Idle timeout must be at least 60000ms")
+        private long idleTimeout = 600000;
+        
+        /**
+         * 连接最大生命周期（毫秒）。
+         */
+        @Min(value = 60000, message = "Max lifetime must be at least 60000ms")
+        private long maxLifetime = 1800000;
+        
+        /**
+         * 是否自动提交。
+         */
+        private boolean autoCommit = true;
+        
+        /**
+         * 验证超时时间（毫秒）。
+         */
+        @Min(value = 1000, message = "Validation timeout must be at least 1000ms")
+        private long validationTimeout = 5000;
+        
+        /**
+         * 连接测试查询。
+         */
+        private String connectionTestQuery = "SELECT 1";
+        
+        /**
+         * 是否启用连接泄漏检测。
+         */
+        private boolean leakDetectionEnabled = true;
+        
+        /**
+         * 泄漏检测阈值（毫秒）。
+         */
+        @Min(value = 60000, message = "Leak detection threshold must be at least 60000ms")
+        private long leakDetectionThreshold = 60000;
     }
     
     public TemplateProperties getTemplate() {

@@ -1,7 +1,7 @@
 package com.bone.engine.extension.example;
 
 import com.bone.engine.extension.ExtPoint;
-import com.bone.engine.extension.annotation.ExtensionDoc;
+import com.bone.engine.extension.annotation.ExtPointDoc;
 import com.bone.engine.extension.context.BizContext;
 import java.math.BigDecimal;
 
@@ -12,27 +12,29 @@ import java.math.BigDecimal;
  * </p>
  */
 @ExtPoint(name = "PaymentService", description = "支付服务扩展点")
-@ExtensionDoc(
-    title = "支付服务扩展点",
+@ExtPointDoc(
+        title = "支付服务扩展点",
+        domain = "支付",
+        category = "交易处理",
     description = "提供不同支付渠道的集成能力",
     usage = "用于处理各种支付场景的支付请求",
     params = {
-        @ExtensionDoc.Param(
+        @ExtPointDoc.Param(
             name = "context",
             type = "BizContext<PaymentRequest>",
             description = "支付业务上下文，包含支付请求信息",
             required = true
         )
     },
-    returnInfo = @ExtensionDoc.Return(
+    returnInfo = @ExtPointDoc.Return(
         type = "PaymentResult",
         description = "支付结果",
         errorCodes = {
-            @ExtensionDoc.ErrorCode(
+            @ExtPointDoc.ErrorCode(
                 code = "PAYMENT_FAILED",
                 description = "支付失败"
             ),
-            @ExtensionDoc.ErrorCode(
+            @ExtPointDoc.ErrorCode(
                 code = "INVALID_PARAM",
                 description = "参数无效"
             )

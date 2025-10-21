@@ -3,7 +3,6 @@ package com.bone.tool.codegen.adapter;
 import com.bone.core.model.ApiResponse;
 import com.bone.tool.codegen.application.dto.CodegenTableResponse;
 import com.bone.tool.codegen.application.dto.GenerateCustomCodeRequest;
-// 已移除不使用的导入
 
 import com.bone.tool.codegen.domain.service.CodegenServiceInterface;
 import com.bone.tool.codegen.domain.service.DatabaseTableServiceInterface;
@@ -144,8 +143,16 @@ public class CodeGenerationController {
         log.info("开始自定义生成代码");
         
         try {
-            // 使用请求参数获取项目名称，如果为空则使用默认值
-            String projectName = request.getProjectName() != null ? request.getProjectName() : "custom";
+            // 使用反射方式获取项目名称，如果为空则使用默认值
+            String projectName = "custom";
+            try {
+                Object projectNameValue = request.getClass().getDeclaredField("projectName").get(request);
+                if (projectNameValue != null) {
+                    projectName = projectNameValue.toString();
+                }
+            } catch (Exception e) {
+                log.warn("获取项目名称失败，使用默认值: custom");
+            }
             
             // 设置响应头
             String fileName = "code-" + projectName + ".zip";

@@ -21,12 +21,24 @@ import java.lang.annotation.*;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface ExtensionDoc {
+public @interface ExtPointDoc {
     
     /**
      * 扩展点标题
      */
     String title() default "";
+    
+    /**
+     * 扩展点所属领域
+     * 用于对扩展点进行领域归类，例如：订单、支付、会员等
+     */
+    String domain() default "";
+    
+    /**
+     * 扩展点分类
+     * 用于对扩展点进行更细粒度的分类，例如：创建、查询、更新等
+     */
+    String category() default "";
     
     /**
      * 扩展点详细描述

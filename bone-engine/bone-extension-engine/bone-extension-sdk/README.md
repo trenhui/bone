@@ -212,11 +212,11 @@ public class UserService {
      * @return 问候语
      */
     public String welcomeUser(String userName, boolean isVip) {
-        // 创建业务上下文
+        // 创建业务上下文（使用Builder模式）
         BizContext<String> context = BizContext.<String>builder()
             .tenantCode("TENANT_A")      // 租户标识
             .bizCode("USER_SERVICE")     // 业务标识
-            .data(userName)              // 业务数据
+            .data(userName)              // 业务数据（通过Builder设置）
             .attribute("isVip", isVip)   // 自定义属性
             .build();
         
@@ -417,6 +417,12 @@ public class TenantAHighAmountOrderExtension implements OrderExtPoint {
 - **业务数据**：实际的业务处理对象
 - **扩展属性**：自定义的上下文属性，用于条件匹配和数据传递
 
+#### 设计特点
+- **不可变设计**：BizContext实例一旦创建，核心属性不可修改
+- **Builder模式**：必须通过Builder创建和配置实例
+- **线程安全**：扩展属性存储使用ConcurrentHashMap，支持多线程访问
+- **禁止直接修改**：不提供setData()等setter方法，确保数据一致性
+
 #### 创建上下文
 ```java
 BizContext<OrderRequest> context = BizContext.<OrderRequest>builder()
@@ -426,7 +432,7 @@ BizContext<OrderRequest> context = BizContext.<OrderRequest>builder()
     .useCase("CREATE_ORDER")
     .scenario("WEB")
     
-    // 业务数据
+    // 业务数据（必须通过Builder的data方法设置）
     .data(orderRequest)
     
     // 扩展属性
@@ -435,6 +441,10 @@ BizContext<OrderRequest> context = BizContext.<OrderRequest>builder()
     .attribute("timestamp", System.currentTimeMillis())
     
     .build();
+
+// 重要提示：BizContext使用不可变设计模式，必须通过Builder创建
+// ✅ 正确用法: context = BizContext.<T>builder().data(value).build();
+// ❌ 错误用法: context.setData(value); // 不存在这样的方法
 ```
 
 ### 上下文管理（ExtensionContextManager）
@@ -3273,6 +3283,12 @@ public class ExtensionPerformanceMonitor {
 ## 常见问题解答
 
 ### 基础概念
+
+**Q: 为什么我不能直接调用BizContext的setData()方法？**
+A: BizContext采用不可变设计模式，所有核心属性必须在创建时通过Builder模式设置，不提供setter方法。这样设计可以确保线程安全和数据一致性。正确做法是使用`BizContext.<T>builder().data(value).build()`创建新实例。
+
+**Q: 如何获取上下文中的业务数据？**
+A: 使用`context.data()`方法获取业务数据，由于BizContext是泛型类，请确保类型参数正确。
 
 **Q: 什么时候应该使用扩展点框架？**
 A: 当你的业务需要以下特性时，扩展点框架是理想选择：

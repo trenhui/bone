@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -47,8 +48,18 @@ public class CountBuilderSql implements SqlQueryBuilder<CountContext> {
                     .toList();
 
             List<FieldMetadata> metas = metadataService.findExtensionFieldsByNames(extCtx, logicals);
-            logicalToMeta = metas.stream()
-                    .collect(Collectors.toMap(FieldMetadata::getName, m -> m));
+            logicalToMeta = new HashMap<String, FieldMetadata>();
+            for (FieldMetadata m : metas) {
+                try {
+                    // 使用反射访问私有字段
+                    java.lang.reflect.Field nameField = FieldMetadata.class.getDeclaredField("name");
+                    nameField.setAccessible(true);
+                    String name = (String) nameField.get(m);
+                    logicalToMeta.put(name, m);
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to access name field", e);
+                }
+            }
 
             // 构建 JOIN 子句
             sql.append(" LEFT JOIN ext_data_reserved ext")
@@ -108,8 +119,15 @@ public class CountBuilderSql implements SqlQueryBuilder<CountContext> {
                     if (meta == null) {
                         throw new IllegalArgumentException("Unknown extension field: " + condition.getColumn());
                     }
-                    return "ext." + meta.getColumnName() + " " +
-                            condition.getOperator().getSymbol() + " :" + condition.getParamName();
+                    try {
+                        // 使用反射访问私有字段
+                        java.lang.reflect.Field columnNameField = FieldMetadata.class.getDeclaredField("columnName");
+                        columnNameField.setAccessible(true);
+                        String columnName = (String) columnNameField.get(meta);
+                        return "ext." + columnName + " " + condition.getOperator().getSymbol() + " :" + condition.getParamName();
+                    } catch (Exception e) {
+                        throw new RuntimeException("Failed to access columnName field", e);
+                    }
                 })
                 .collect(Collectors.toList());
     }

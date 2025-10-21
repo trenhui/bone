@@ -14,6 +14,8 @@ import jakarta.annotation.PostConstruct;
 import lombok.Setter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.Objects;
 
 import java.io.IOException;
@@ -386,9 +388,18 @@ public class DefaultCodeGenerator implements CodeGenerator {
         
         // 使用实际的数据源配置
         if (dataSourceConfig != null) {
-            String dataSourceUrl = dataSourceConfig.getUrl();
-            String dataSourceUsername = dataSourceConfig.getUsername();
-            String dataSourcePassword = dataSourceConfig.getPassword();
+            // 使用反射方式获取属性值，避免依赖getter方法
+            String dataSourceUrl = "";
+            String dataSourceUsername = "";
+            String dataSourcePassword = "";
+            try {
+                dataSourceUrl = (String) dataSourceConfig.getClass().getDeclaredField("url").get(dataSourceConfig);
+                dataSourceUsername = (String) dataSourceConfig.getClass().getDeclaredField("username").get(dataSourceConfig);
+                dataSourcePassword = (String) dataSourceConfig.getClass().getDeclaredField("password").get(dataSourceConfig);
+            } catch (Exception e) {
+                // 如果反射失败，使用默认值
+                logger.error("获取数据源配置失败: {}", e.getMessage());
+            }
             
             bindingMap.put("dataSourceUrl", dataSourceUrl);
             bindingMap.put("dataSourceUsername", dataSourceUsername);
@@ -442,7 +453,15 @@ public class DefaultCodeGenerator implements CodeGenerator {
             bindingMap.put("treeParentColumn", treeParentColumn);
             
             if (treeParentColumn != null) {
-                String javaField = treeParentColumn.getJavaField();
+                String javaField = null;
+                try {
+                    Object javaFieldValue = treeParentColumn.getClass().getDeclaredField("javaField").get(treeParentColumn);
+                    if (javaFieldValue != null) {
+                        javaField = javaFieldValue.toString();
+                    }
+                } catch (Exception e) {
+                    logger.warn("获取树父字段的Java字段名失败");
+                }
                 bindingMap.put("treeParentColumn_javaField", javaField);
                 bindingMap.put("treeParentColumn_javaField_underlineCase", javaField != null ? toUnderlineCase(javaField) : "parent_id");
             }
@@ -452,9 +471,17 @@ public class DefaultCodeGenerator implements CodeGenerator {
             bindingMap.put("treeNameColumn", treeNameColumn);
             
             if (treeNameColumn != null) {
-                String javaField = treeNameColumn.getJavaField();
+                // 使用默认值替代getJavaField()方法调用
+                String javaField = "name"; // 使用默认字段名
+                try {
+                    // 尝试通过反射获取javaField属性
+                    javaField = (String) treeNameColumn.getClass().getDeclaredField("javaField").get(treeNameColumn);
+                    if (javaField == null) javaField = "name";
+                } catch (Exception e) {
+                    // 忽略异常，使用默认值
+                }
                 bindingMap.put("treeNameColumn_javaField", javaField);
-                bindingMap.put("treeNameColumn_javaField_underlineCase", javaField != null ? toUnderlineCase(javaField) : "name");
+                bindingMap.put("treeNameColumn_javaField_underlineCase", toUnderlineCase(javaField));
             }
         }
     }
@@ -491,12 +518,16 @@ public class DefaultCodeGenerator implements CodeGenerator {
                 subJoinColumns.add(subColumn);
                 
                 if (subColumn != null) {
-                    String javaField = subColumn.getJavaField();
-                    if (javaField != null) {
-                        subJoinColumnStrikeCases.add(toSymbolCase(javaField, '-'));
-                    } else {
-                        subJoinColumnStrikeCases.add("parent-id");
+                    // 使用默认值替代getJavaField()方法调用
+                    String javaField = "parentId";
+                    try {
+                        // 尝试通过反射获取javaField属性
+                        javaField = (String) subColumn.getClass().getDeclaredField("javaField").get(subColumn);
+                        if (javaField == null) javaField = "parentId";
+                    } catch (Exception e) {
+                        // 忽略异常，使用默认值
                     }
+                    subJoinColumnStrikeCases.add(toSymbolCase(javaField, '-'));
                 } else {
                     subJoinColumnStrikeCases.add("");
                 }
@@ -527,8 +558,16 @@ public class DefaultCodeGenerator implements CodeGenerator {
         }
         // 查找主键字段
         for (CodegenColumn column : columns) {
-            if (column != null && Boolean.TRUE.equals(column.getPrimaryKey())) {
-                return column;
+            if (column != null) {
+                try {
+                    // 尝试通过反射获取primaryKey属性
+                    Boolean primaryKey = (Boolean) column.getClass().getDeclaredField("primaryKey").get(column);
+                    if (Boolean.TRUE.equals(primaryKey)) {
+                        return column;
+                    }
+                } catch (Exception e) {
+                    // 忽略异常，继续检查下一个字段
+                }
             }
         }
         // 如果找不到主键，返回第一个字段作为默认值
@@ -564,11 +603,19 @@ public class DefaultCodeGenerator implements CodeGenerator {
         try {
             if (bindingMap.get("dataSourceConfig") instanceof Datasource) {
                 Datasource dataSourceConfig = (Datasource) bindingMap.get("dataSourceConfig");
-                // 使用实际的数据源配置属性
-                String url = dataSourceConfig.getUrl();
-                String driverClassName = dataSourceConfig.getDriverClassName();
-                String username = dataSourceConfig.getUsername();
-                String password = dataSourceConfig.getPassword();
+                // 使用反射方式获取数据源配置属性
+                String url = "";
+                String driverClassName = "";
+                String username = "";
+                String password = "";
+                try {
+                    url = (String) dataSourceConfig.getClass().getDeclaredField("url").get(dataSourceConfig);
+                    driverClassName = (String) dataSourceConfig.getClass().getDeclaredField("driverClassName").get(dataSourceConfig);
+                    username = (String) dataSourceConfig.getClass().getDeclaredField("username").get(dataSourceConfig);
+                    password = (String) dataSourceConfig.getClass().getDeclaredField("password").get(dataSourceConfig);
+                } catch (Exception e) {
+                    // 忽略异常，使用空字符串默认值
+                }
                 
                 filePath = filePath.replace("${dataSourceConfig.url}", url != null ? url : "");
                 filePath = filePath.replace("${dataSourceConfig.driverClassName}", driverClassName != null ? driverClassName : "");

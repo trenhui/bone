@@ -158,26 +158,38 @@ public class FieldMetadataRepository {
 
     /** 构建 INSERT/UPDATE 公共参数 */
     private MapSqlParameterSource toParamSource(FieldMetadata m) {
-        return new MapSqlParameterSource()
-                .addValue("id", m.getId())
-                .addValue("tenantId",        m.getTenantId())
-                .addValue("appCode",         m.getAppCode())
-                .addValue("bizIdentityCode", m.getBizIdentityCode())
-                .addValue("entityType",      m.getEntityType())
-                .addValue("name",            m.getName())
-                .addValue("columnName",      m.getColumnName())
-                .addValue("dataType",        m.getDataType())
-                .addValue("isPrimaryKey",    m.isPrimaryKey())
-                .addValue("isNullable",      m.isNullable())
-                .addValue("defaultValue",    m.getDefaultValue())
-                .addValue("constraints",     m.getConstraints())
-                .addValue("isVirtual",       m.isVirtual())
-                .addValue("isExtension",     m.isExtension())
-                .addValue("deleted",         m.getDeleted())
-                .addValue("createBy",        m.getCreateBy())
-                .addValue("updateBy",        m.getUpdateBy())
-                .addValue("createTime",      m.getCreateTime())
-                .addValue("updateTime",      m.getUpdateTime());
+        // 由于FieldMetadata类使用了@Data注解，Lombok会生成getter方法
+        // 对于boolean类型字段，生成的是isXxx()方法
+        MapSqlParameterSource params = new MapSqlParameterSource();
+        
+        // 使用反射获取字段值（实际应用中可能需要更完善的实现）
+        try {
+            // 手动设置所有需要的参数
+            params.addValue("id", m.getClass().getMethod("getId").invoke(m));
+            params.addValue("tenantId", m.getClass().getMethod("getTenantId").invoke(m));
+            params.addValue("appCode", m.getClass().getMethod("getAppCode").invoke(m));
+            params.addValue("bizIdentityCode", m.getClass().getMethod("getBizIdentityCode").invoke(m));
+            params.addValue("entityType", m.getClass().getMethod("getEntityType").invoke(m));
+            params.addValue("name", m.getClass().getMethod("getName").invoke(m));
+            params.addValue("columnName", m.getClass().getMethod("getColumnName").invoke(m));
+            params.addValue("dataType", m.getClass().getMethod("getDataType").invoke(m));
+            params.addValue("isPrimaryKey", m.getClass().getMethod("isPrimaryKey").invoke(m));
+            params.addValue("isNullable", m.getClass().getMethod("isNullable").invoke(m));
+            params.addValue("defaultValue", m.getClass().getMethod("getDefaultValue").invoke(m));
+            params.addValue("constraints", m.getClass().getMethod("getConstraints").invoke(m));
+            params.addValue("isVirtual", m.getClass().getMethod("isVirtual").invoke(m));
+            params.addValue("isExtension", m.getClass().getMethod("isExtension").invoke(m));
+            params.addValue("deleted", m.getClass().getMethod("getDeleted").invoke(m));
+            params.addValue("createBy", m.getClass().getMethod("getCreateBy").invoke(m));
+            params.addValue("updateBy", m.getClass().getMethod("getUpdateBy").invoke(m));
+            params.addValue("createTime", m.getClass().getMethod("getCreateTime").invoke(m));
+            params.addValue("updateTime", m.getClass().getMethod("getUpdateTime").invoke(m));
+        } catch (Exception e) {
+            // 如果反射失败，抛出运行时异常
+            throw new RuntimeException("Failed to get field values from FieldMetadata", e);
+        }
+        
+        return params;
     }
 
     /** 构建 WHERE 公共参数 */
