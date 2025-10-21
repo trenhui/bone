@@ -98,6 +98,220 @@ ExtPoint 扩展引擎是 Bone 平台四大核心引擎之一，旨在通过**插
 - **bone-extension-sdk**（核心组件）：
     - **注册器（ExtPointRegister）**：启动时扫描 `@ExtPoint` 与 `@Extension` 注解，注册扩展点与插件至仓库。
     - **代理工厂（ExtPointProxyFactory）**：为扩展点接口创建动态代理，拦截调用并触发路由。
+    - **路由器（ExtPointRouter）**：根据业务上下文选择合适的扩展点实现，支持多维度评分路由。
+    - **加载器（ExtensionLoader）**：基于SPI机制自动发现和加载扩展点实现。
+    - **事件发布器（ExtensionEventPublisher）**：发布扩展点生命周期事件。
+    - **配置管理器（ExtensionConfigManager）**：管理扩展点配置信息。
+    - **生命周期管理器（ExtensionLifecycle）**：管理扩展点的初始化和销毁过程。
+
+## 四、示例代码与使用指南
+
+### 1. 支付服务扩展点示例
+
+以下是一个完整的支付服务扩展点示例，展示如何在实际业务中使用扩展点框架：
+
+#### 1.1 创建扩展点接口
+
+```java
+@ExtPoint
+@ExtensionDoc(
+    title = "支付服务扩展点",
+    description = "提供多种支付方式的统一接入接口",
+    usage = "用于处理订单支付、会员支付等场景",
+    parameters = {
+        @Parameter(name = "context", description = "业务上下文，包含支付请求信息")
+    },
+    returnValue = @ReturnValue(description = "支付结果，包含支付状态、交易ID等信息")
+)
+public interface PaymentService {
+    PaymentResult processPayment(BizContext<PaymentRequest> context);
+    
+    class PaymentRequest {
+        private String orderId;
+        private BigDecimal amount;
+        private String currency;
+        private String paymentMethod;
+        private String userId;
+        // getters and setters
+    }
+    
+    class PaymentResult {
+        private String paymentId;
+        private String status;
+        private String message;
+        private BigDecimal paidAmount;
+        private long paidTime;
+        // getters and setters
+    }
+}
+```
+
+#### 1.2 支付宝支付实现
+
+```java
+@Extension(
+    name = "alipayService",
+    description = "支付宝支付实现",
+    bizCode = {"ORDER", "MEMBERSHIP"},
+    tenantCode = {"DEFAULT", "TENANT001"},
+    scenario = {"NORMAL_PAY"},
+    paymentMethod = "ALIPAY",
+    priority = 5
+)
+@Component
+public class AlipayServiceImpl implements PaymentService {
+    
+    private static final Logger logger = LoggerFactory.getLogger(AlipayServiceImpl.class);
+
+    @Override
+    public PaymentResult processPayment(BizContext<PaymentRequest> context) {
+        PaymentRequest request = context.getBizData();
+        logger.info("Processing Alipay payment for order: {}, amount: {}", 
+                request.getOrderId(), request.getAmount());
+        
+        // 模拟支付宝支付处理逻辑
+        PaymentResult result = new PaymentResult();
+        result.setPaymentId("ALI" + UUID.randomUUID().toString().substring(0, 10).toUpperCase());
+        result.setStatus("SUCCESS");
+        result.setMessage("支付宝支付成功");
+        result.setPaidAmount(request.getAmount());
+        result.setPaidTime(System.currentTimeMillis());
+        
+        return result;
+    }
+}
+```
+
+#### 1.3 微信支付实现
+
+```java
+@Extension(
+    name = "wechatPayService",
+    description = "微信支付实现",
+    bizCode = {"ORDER", "MEMBERSHIP"},
+    tenantCode = {"DEFAULT", "TENANT002"},
+    scenario = {"NORMAL_PAY", "MINI_APP_PAY"},
+    paymentMethod = "WECHAT",
+    priority = 6
+)
+@Component
+public class WechatPayServiceImpl implements PaymentService {
+
+    private static final Logger logger = LoggerFactory.getLogger(WechatPayServiceImpl.class);
+
+    @Override
+    public PaymentResult processPayment(BizContext<PaymentRequest> context) {
+        PaymentRequest request = context.getBizData();
+        logger.info("Processing WeChat payment for order: {}, amount: {}", 
+                request.getOrderId(), request.getAmount());
+        
+        // 模拟微信支付处理逻辑
+        PaymentResult result = new PaymentResult();
+        result.setPaymentId("WX" + UUID.randomUUID().toString().substring(0, 10).toUpperCase());
+        result.setStatus("SUCCESS");
+        result.setMessage("微信支付成功");
+        result.setPaidAmount(request.getAmount());
+        result.setPaidTime(System.currentTimeMillis());
+        
+        return result;
+    }
+}
+```
+
+#### 1.4 在业务中使用
+
+```java
+@Service
+public class PaymentServiceDemo {
+    
+    @Autowired
+    private PaymentService paymentService;
+    
+    public PaymentResult processPaymentByScenario(
+            String orderId, 
+            BigDecimal amount, 
+            String userId, 
+            String tenantCode, 
+            String scenario) {
+        
+        // 创建支付请求
+        PaymentService.PaymentRequest request = new PaymentService.PaymentRequest();
+        request.setOrderId(orderId);
+        request.setAmount(amount);
+        request.setCurrency("CNY");
+        request.setUserId(userId);
+        
+        // 根据场景设置支付方式
+        if ("MINI_APP_PAY".equals(scenario)) {
+            request.setPaymentMethod("WECHAT");
+        } else {
+            request.setPaymentMethod("ALIPAY");
+        }
+        
+        // 创建业务上下文
+        BizContext<PaymentRequest> context = new BizContext.Builder<PaymentRequest>()
+            .setBizCode("ORDER")
+            .setTenantCode(tenantCode)
+            .setScenario(scenario)
+            .setBizData(request)
+            .build();
+        
+        // 扩展点框架会根据上下文自动选择合适的实现类
+        return paymentService.processPayment(context);
+    }
+}
+```
+
+## 五、高级特性
+
+### 1. 多维度路由策略
+
+扩展点框架通过评分机制选择最合适的实现：
+
+- 业务代码匹配：+100分
+- 租户代码匹配：+80分
+- 场景匹配：+60分
+- 版本匹配：+40分
+- 支付方式匹配：+30分
+- 数据源匹配：+20分
+
+### 2. 生命周期管理
+
+扩展点支持完整的生命周期管理：
+
+```java
+public interface ExtensionLifecycle {
+    void initialize(Object extension);
+    void beforeInvoke(Object extension, Method method, Object[] args);
+    void afterInvoke(Object extension, Method method, Object[] args, Object result);
+    void onException(Object extension, Method method, Object[] args, Exception e);
+    void destroy(Object extension);
+}
+```
+
+### 3. 事件通知机制
+
+框架支持扩展点执行过程中的事件通知：
+
+- `ExtensionInvokeBeforeEvent`：扩展点调用前事件
+- `ExtensionInvokeAfterEvent`：扩展点调用后事件
+- `ExtensionInvokeExceptionEvent`：扩展点异常事件
+- `ExtensionRouteSelectedEvent`：扩展点路由选择事件
+- `ExtensionRegisteredEvent`：扩展点注册事件
+
+### 4. 文档化支持
+
+通过 `@ExtensionDoc` 注解提供扩展点的文档信息，方便开发者理解和使用：
+
+```java
+@ExtensionDoc(
+    title = "扩展点标题",
+    description = "详细描述",
+    usage = "使用场景",
+    parameters = { @Parameter(name = "param1", description = "参数说明") },
+    returnValue = @ReturnValue(description = "返回值说明")
+)
+```
     - **路由引擎（ExtPointRouter）**：基于 `BizContext` 匹配目标插件，支持自定义路由策略。
     - **仓库（ExtPointRepository）**：存储扩展元数据，支持内存（MemExtPointRepository）、Redis、Nacos等实现。
     - **事件发布器（ExtensionEventPublisher）**：发布扩展调用事件（如“调用前”“调用后”），支持异步处理。
