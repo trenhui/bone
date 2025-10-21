@@ -1,6 +1,8 @@
 package com.bone.tool.codegen.application.converter;
 
+import com.bone.tool.codegen.application.dto.CodegenTableRequest;
 import com.bone.tool.codegen.application.dto.CodegenTableResponse;
+import com.bone.tool.codegen.application.dto.CodegenColumnRequest;
 import com.bone.tool.codegen.application.dto.CodegenColumnResponse;
 import com.bone.tool.codegen.application.dto.DataSourceConfigResponse;
 import com.bone.tool.codegen.application.dto.CodegenDetailResponse;
@@ -10,9 +12,13 @@ import com.bone.tool.codegen.domain.entity.Datasource;
 import com.bone.tool.codegen.domain.entity.DatabaseTableMetadata;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Date;
 
 /**
  * 统一的代码生成对象转换映射器
@@ -30,29 +36,22 @@ public abstract class CodegenConverter {
             return null;
         }
         CodegenTableResponse response = new CodegenTableResponse();
-        // 设置基本属性
         response.setId(table.getId());
-        response.setScene(table.getScene());
+        response.setDatasourceId(table.getDatasourceId());
         response.setTableName(table.getTableName());
         response.setTableComment(table.getTableComment());
-        // 跳过不存在的getRemark方法调用
-        response.setModuleName(table.getModuleName());
         response.setPackageName(table.getPackageName());
+        response.setModuleName(table.getModuleName());
         response.setBusinessName(table.getBusinessName());
         response.setClassName(table.getClassName());
-        response.setClassComment(table.getClassComment());
-        response.setAuthor(table.getAuthor());
-        response.setTemplateType(table.getTemplateType());
-        // 跳过不存在的getFrontType方法调用
+        
+        // 设置场景类型
+        if (table.getScene() != null) {
+            response.setScene(table.getScene().toString());
+        }
+        
         response.setParentMenuId(table.getParentMenuId());
-        response.setMasterTableId(table.getMasterTableId());
-        response.setSubJoinColumnId(table.getSubJoinColumnId());
-        response.setSubJoinMany(table.getSubJoinMany());
-        response.setTreeParentColumnId(table.getTreeParentColumnId());
-        response.setTreeNameColumnId(table.getTreeNameColumnId());
-        response.setDatasourceId(table.getDatasourceId());
-        // 跳过不存在的getDataSourceConfigName方法调用
-        // 跳过日期类型转换问题
+        
         return response;
     }
 
@@ -76,8 +75,22 @@ public abstract class CodegenConverter {
         if (column == null) {
             return null;
         }
-        // 简化实现，避免调用不存在的方法
-        return new CodegenColumnResponse();
+        CodegenColumnResponse response = new CodegenColumnResponse();
+        response.setId(column.getId());
+        response.setTableId(column.getTableId());
+        response.setColumnName(column.getColumnName());
+        response.setColumnComment(column.getColumnComment());
+        response.setJavaType(column.getJavaType());
+        
+        // 添加其他可能存在的字段
+        if (column.getJavaField() != null) {
+            response.setJavaField(column.getJavaField());
+        }
+        if (column.getDataType() != null) {
+            response.setDataType(column.getDataType());
+        }
+        
+        return response;
     }
 
     /**
@@ -159,6 +172,78 @@ public abstract class CodegenConverter {
     public List<CodegenColumn> convertList(List<?> list) {
         // 简化实现，避免调用不存在的方法
         return new ArrayList<>();
+    }
+    
+    /**
+     * 将CodegenTableRequest转换为CodegenTable
+     */
+    public CodegenTable toCodegenTable(CodegenTableRequest request) {
+        if (request == null) {
+            return null;
+        }
+        CodegenTable table = new CodegenTable();
+        table.setId(request.getId());
+        table.setDatasourceId(request.getDatasourceId());
+        table.setTableName(request.getTableName());
+        table.setTableComment(request.getTableComment());
+        table.setPackageName(request.getPackageName());
+        table.setModuleName(request.getModuleName());
+        table.setBusinessName(request.getBusinessName());
+        table.setClassName(request.getClassName());
+        
+        // 设置场景类型
+        if (StringUtils.hasText(request.getScene())) {
+            try {
+                table.setScene(Integer.parseInt(request.getScene()));
+            } catch (NumberFormatException e) {
+                // 忽略格式错误
+            }
+        }
+        
+        table.setParentMenuId(request.getParentMenuId());
+        
+        return table;
+    }
+    
+    /**
+     * 将CodegenColumnRequest转换为CodegenColumn
+     */
+    public CodegenColumn toCodegenColumn(CodegenColumnRequest request, Long tableId) {
+        if (request == null) {
+            return null;
+        }
+        CodegenColumn column = new CodegenColumn();
+        column.setId(request.getId());
+        column.setTableId(tableId);
+        column.setColumnName(request.getColumnName());
+        column.setColumnComment(request.getColumnComment());
+        column.setJavaType(request.getJavaType());
+        
+        // 添加其他可能存在的字段
+        if (request.getJavaField() != null) {
+            column.setJavaField(request.getJavaField());
+        }
+        if (request.getDataType() != null) {
+            column.setDataType(request.getDataType());
+        }
+        
+        return column;
+    }
+    
+    /**
+     * 将CodegenColumnRequest列表转换为CodegenColumn列表
+     */
+    public List<CodegenColumn> toCodegenColumnList(List<CodegenColumnRequest> requests, Long tableId) {
+        List<CodegenColumn> columns = new ArrayList<>();
+        if (!CollectionUtils.isEmpty(requests)) {
+            for (CodegenColumnRequest request : requests) {
+                CodegenColumn column = toCodegenColumn(request, tableId);
+                if (column != null) {
+                    columns.add(column);
+                }
+            }
+        }
+        return columns;
     }
     
     /**
@@ -248,5 +333,118 @@ public abstract class CodegenConverter {
             }
         }
         return respVO;
+    }
+    
+    /**
+     * 将CodegenTableRequest转换为CodegenTable实体
+     * @param request 表请求对象
+     * @return 表实体
+     */
+    public CodegenTable toCodegenTable(CodegenTableRequest request) {
+        if (request == null) {
+            return null;
+        }
+        
+        CodegenTable table = new CodegenTable();
+        // 设置基本属性
+        table.setId(request.getId());
+        table.setDatasourceId(request.getDatasourceId());
+        table.setScene(request.getScene());
+        table.setTableName(request.getTableName());
+        table.setTableComment(request.getTableComment());
+        table.setParentMenuId(request.getParentMenuId());
+        table.setComponentName(request.getComponentName());
+        table.setModuleName(request.getModuleName());
+        table.setPackageName(request.getPackageName());
+        table.setBusinessName(request.getBusinessName());
+        table.setFunctionName(request.getFunctionName());
+        table.setClassName(request.getClassName());
+        table.setVarName(request.getVarName());
+        table.setFrontPath(request.getFrontPath());
+        table.setGeneratorType(request.getGeneratorType());
+        table.setTemplateGroupId(request.getTemplateGroupId());
+        table.setRemark(request.getRemark());
+        table.setSort(request.getSort());
+        
+        // 设置关联关系属性
+        table.setMasterTableId(request.getMasterTableId());
+        table.setSubJoinColumnId(request.getSubJoinColumnId());
+        table.setSubJoinMany(request.getSubJoinMany());
+        table.setTreeParentColumnId(request.getTreeParentColumnId());
+        table.setTreeNameColumnId(request.getTreeNameColumnId());
+        
+        return table;
+    }
+    
+    /**
+     * 将CodegenColumnRequest转换为CodegenColumn实体
+     * @param request 列请求对象
+     * @param tableId 表ID
+     * @return 列实体
+     */
+    public CodegenColumn toCodegenColumn(CodegenColumnRequest request, Long tableId) {
+        if (request == null) {
+            return null;
+        }
+        
+        CodegenColumn column = new CodegenColumn();
+        column.setId(request.getId());
+        column.setTableId(tableId);
+        column.setColumnName(request.getColumnName());
+        column.setColumnComment(request.getColumnComment());
+        column.setColumnType(request.getColumnType());
+        column.setJavaType(request.getJavaType());
+        column.setAttrName(request.getAttrName());
+        column.setPrimaryKey(request.isPrimaryKey());
+        column.setAutoIncrement(request.isAutoIncrement());
+        column.setNullable(request.isNullable());
+        column.setInsertable(request.isInsertable());
+        column.setUpdatable(request.isUpdatable());
+        column.setQueryable(request.isQueryable());
+        column.setEnableCreate(request.isEnableCreate());
+        column.setEnableEdit(request.isEnableEdit());
+        column.setEnableDetail(request.isEnableDetail());
+        column.setEnableList(request.isEnableList());
+        column.setEnableQuery(request.isEnableQuery());
+        column.setQueryType(request.getQueryType());
+        column.setDictType(request.getDictType());
+        column.setComponent(request.getComponent());
+        column.setExtParams(request.getExtParams());
+        column.setRelationTableName(request.getRelationTableName());
+        column.setRelationFieldName(request.getRelationFieldName());
+        column.setSort(request.getSort());
+        
+        return column;
+    }
+    
+    /**
+     * 将CodegenColumnRequest列表转换为CodegenColumn实体列表
+     * @param requests 列请求对象列表
+     * @param tableId 表ID
+     * @return 列实体列表
+     */
+    public List<CodegenColumn> toCodegenColumnList(List<CodegenColumnRequest> requests, Long tableId) {
+        List<CodegenColumn> result = new ArrayList<>();
+        if (!CollectionUtils.isEmpty(requests)) {
+            for (CodegenColumnRequest request : requests) {
+                CodegenColumn column = new CodegenColumn();
+                column.setId(request.getId());
+                column.setTableId(tableId);
+                column.setColumnName(request.getColumnName());
+                column.setColumnComment(request.getColumnComment());
+                column.setJavaType(request.getJavaType());
+                
+                // 添加其他可能存在的字段
+                if (request.getJavaField() != null) {
+                    column.setJavaField(request.getJavaField());
+                }
+                if (request.getDataType() != null) {
+                    column.setDataType(request.getDataType());
+                }
+                
+                result.add(column);
+            }
+        }
+        return result;
     }
 }

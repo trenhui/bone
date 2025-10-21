@@ -2,7 +2,6 @@ package com.bone.tool.codegen.adapter;
 
 
 import com.bone.core.model.ApiResponse;
-import com.bone.core.model.PageResult;
 import com.bone.tool.codegen.application.converter.CodegenConverter;
 import com.bone.tool.codegen.application.dto.CodegenCreateListRequest;
 import com.bone.tool.codegen.application.dto.CodegenDetailResponse;
@@ -25,7 +24,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

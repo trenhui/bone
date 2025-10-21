@@ -2,7 +2,6 @@ package com.bone.tool.codegen.domain.repository;
 
 import com.bone.tool.codegen.domain.entity.DatabaseTableMetadata;
 import com.bone.tool.codegen.domain.entity.CodegenColumn;
-import com.bone.tool.codegen.domain.repository.DataSourceConfigRepository;
 import com.bone.tool.codegen.domain.entity.Datasource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

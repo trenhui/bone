@@ -6,6 +6,7 @@ import org.springframework.util.StringUtils;
 import com.bone.core.model.PageResult;
 import com.bone.tool.codegen.application.dto.CodegenTablePageRequest;
 import com.bone.tool.codegen.application.dto.CodegenTableRequest;
+import com.bone.tool.codegen.application.dto.CodegenColumnRequest;
 import com.bone.tool.codegen.application.dto.CodegenDetailResponse;
 import com.bone.tool.codegen.application.converter.CodegenConverter;
 import com.bone.tool.codegen.domain.entity.Datasource;
@@ -20,6 +21,7 @@ import jakarta.annotation.Resource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import java.util.function.Function;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -345,7 +347,8 @@ public class DatabaseTableService implements DatabaseTableServiceInterface {
         
         for (CodegenColumn field : fields) {
             if (field != null) {
-                // 简化实现，不设置表ID
+                // 必须设置表ID
+                field.setTableId(tableId);
                 codegenColumnRepository.save(field);
             }
         }
@@ -367,42 +370,25 @@ public class DatabaseTableService implements DatabaseTableServiceInterface {
         
         try {
             // 查询现有表配置
-            CodegenTable codegenTable = codegenTableRepository.findById(request.getId())
+            CodegenTable existingTable = codegenTableRepository.findById(request.getId())
                 .orElseThrow(() -> new RuntimeException("表配置不存在，ID: " + request.getId()));
             
-            // 更新所有相关字段
-            if (StringUtils.hasText(request.getModuleName())) {
-                codegenTable.setModuleName(request.getModuleName());
-            }
-            if (StringUtils.hasText(request.getPackageName())) {
-                codegenTable.setPackageName(request.getPackageName());
-            }
-            if (StringUtils.hasText(request.getClassName())) {
-                codegenTable.setClassName(request.getClassName());
-            }
-            if (StringUtils.hasText(request.getBusinessName())) {
-                codegenTable.setBusinessName(request.getBusinessName());
-            }
-            if (StringUtils.hasText(request.getClassComment())) {
-                codegenTable.setClassComment(request.getClassComment());
-            }
-            if (StringUtils.hasText(request.getAuthor())) {
-                codegenTable.setAuthor(request.getAuthor());
-            }
-            if (request.getTemplateType() != null) {
-                codegenTable.setTemplateType(request.getTemplateType());
-            }
-            
+            // 使用转换器将请求转换为实体，保留原有ID和时间戳
+            CodegenTable updatedTable = codegenConverter.toCodegenTable(request);
+            // 确保ID一致
+            updatedTable.setId(request.getId());
+            // 保留创建时间
+            updatedTable.setCreateTime(existingTable.getCreateTime());
             // 更新时间戳
-            codegenTable.setUpdateTime(new java.util.Date());
+            updatedTable.setUpdateTime(new java.util.Date());
             
             // 保存更新
-            codegenTableRepository.update(codegenTable);
+            codegenTableRepository.update(updatedTable);
             
             // 如果有列配置，更新列信息
             if (!CollectionUtils.isEmpty(request.getColumns())) {
                 log.debug("开始更新列配置，表ID: {}, 列数量: {}", request.getId(), request.getColumns().size());
-                // 这里可以添加列配置更新逻辑
+                updateColumns(request.getId(), request.getColumns());
             }
             
             log.info("表配置更新成功，ID: {}", request.getId());
@@ -503,8 +489,20 @@ public class DatabaseTableService implements DatabaseTableServiceInterface {
         if (!CollectionUtils.isEmpty(tableFields)) {
             for (CodegenColumn field : tableFields) {
                 if (field != null) {
-                    // 极度简化实现，不执行实际的保存操作
-                    addedCount++;
+                    String columnName = field.getColumnName();
+                    if (columnMap.containsKey(columnName)) {
+                        // 更新现有字段
+                        CodegenColumn existingColumn = columnMap.get(columnName);
+                        updateColumn(existingColumn, field);
+                        codegenColumnRepository.update(existingColumn);
+                        columnMap.remove(columnName); // 从待删除列表中移除
+                        updatedCount++;
+                    } else {
+                        // 新增字段
+                        CodegenColumn newColumn = createCodegenColumn(tableId, field);
+                        codegenColumnRepository.save(newColumn);
+                        addedCount++;
+                    }
                 }
             }
         }
@@ -539,18 +537,56 @@ public class DatabaseTableService implements DatabaseTableServiceInterface {
      * @return 删除的字段数量
      */
     private int deleteObsoleteColumns(Map<String, CodegenColumn> obsoleteColumns) {
-        int deletedCount = 0;
+        int count = 0;
         for (CodegenColumn column : obsoleteColumns.values()) {
-            try {
-                // 简化实现，不使用getId方法
-                deletedCount++;
-            } catch (Exception e) {
-                // 简化实现，不使用getColumnName和getId方法
-                log.warn("删除字段失败", e);
-                // 继续删除其他字段，单个字段删除失败不应影响整体操作
+            if (column != null) {
+                codegenColumnRepository.deleteById(column.getId());
+                count++;
             }
         }
-        return deletedCount;
+        return count;
+    }
+    
+    /**
+     * 更新列配置
+     * @param tableId 表ID
+     * @param columnRequests 列配置请求列表
+     */
+    private void updateColumns(Long tableId, List<CodegenColumnRequest> columnRequests) {
+        if (CollectionUtils.isEmpty(columnRequests)) {
+            return;
+        }
+        
+        // 获取现有字段
+        List<CodegenColumn> existingColumns = getColumnsByTableId(tableId);
+        Map<Long, CodegenColumn> columnIdMap = existingColumns.stream()
+                .collect(Collectors.toMap(CodegenColumn::getId, Function.identity()));
+        
+        // 更新或新增字段
+        for (CodegenColumnRequest request : columnRequests) {
+            if (request != null) {
+                // 使用CodegenConverter进行转换
+                CodegenColumn column = codegenConverter.toCodegenColumn(request, tableId);
+                if (request.getId() != null && columnIdMap.containsKey(request.getId())) {
+                    // 更新现有字段，保留时间戳
+                    CodegenColumn existingColumn = columnIdMap.get(request.getId());
+                    column.setCreateTime(existingColumn.getCreateTime());
+                    column.setUpdateTime(new Date());
+                    codegenColumnRepository.update(column);
+                    columnIdMap.remove(request.getId());
+                } else {
+                    // 新增字段，设置时间戳
+                    column.setCreateTime(new Date());
+                    column.setUpdateTime(new Date());
+                    codegenColumnRepository.save(column);
+                }
+            }
+        }
+        
+        // 删除不在请求列表中的字段
+        for (CodegenColumn column : columnIdMap.values()) {
+            codegenColumnRepository.deleteById(column.getId());
+        }
     }
     
     /**

@@ -1,20 +1,13 @@
 package com.bone.tool.codegen.adapter;
 
 import com.bone.core.model.ApiResponse;
-import com.bone.core.model.PageResult;
-import com.bone.tool.codegen.application.dto.CodegenTablePageRequest;
 import com.bone.tool.codegen.application.dto.CodegenTableResponse;
-import com.bone.tool.codegen.application.dto.CodegenCreateListRequest;
-import com.bone.tool.codegen.application.dto.CodegenTableRequest;
-import com.bone.tool.codegen.application.dto.CodegenDetailResponse;
 import com.bone.tool.codegen.application.dto.GenerateCustomCodeRequest;
 // 已移除不使用的导入
 
-import com.bone.tool.codegen.domain.enums.ModelTypeEnum;
 import com.bone.tool.codegen.domain.service.CodegenServiceInterface;
 import com.bone.tool.codegen.domain.service.DatabaseTableServiceInterface;
 import com.bone.tool.codegen.application.converter.CodegenConverter;
-import com.bone.tool.codegen.domain.entity.CodegenTable;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -33,12 +26,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
+
 import static com.bone.core.model.ApiResponse.success;
 
 /**

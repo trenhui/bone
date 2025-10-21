@@ -18,6 +18,10 @@ public class CodegenTableRequest {
     @Schema(description = "主键ID，更新时必填", example = "1")
     private Long id;
 
+    @Schema(description = "数据源ID", example = "1")
+    @NotNull(message = "数据源ID不能为空")
+    private Long datasourceId;
+
     @Schema(description = "表名", example = "sys_user")
     @NotBlank(message = "表名不能为空")
     @Size(max = 255, message = "表名长度不能超过255个字符")
@@ -28,15 +32,24 @@ public class CodegenTableRequest {
     @Size(max = 500, message = "表描述长度不能超过500个字符")
     private String tableComment;
 
-    @Schema(description = "模块名", example = "system")
-    @NotBlank(message = "模块名不能为空")
-    @Size(max = 50, message = "模块名长度不能超过50个字符")
-    private String moduleName;
+    @Schema(description = "业务场景", example = "admin")
+    private String scene;
+
+    @Schema(description = "父菜单ID", example = "1")
+    private Long parentMenuId;
+
+    @Schema(description = "组件名称", example = "User")
+    private String componentName;
 
     @Schema(description = "包路径", example = "com.bone.system")
     @NotBlank(message = "包路径不能为空")
     @Size(max = 255, message = "包路径长度不能超过255个字符")
     private String packageName;
+
+    @Schema(description = "模块名", example = "system")
+    @NotBlank(message = "模块名不能为空")
+    @Size(max = 50, message = "模块名长度不能超过50个字符")
+    private String moduleName;
 
     @Schema(description = "业务名", example = "user")
     @NotBlank(message = "业务名不能为空")
@@ -48,6 +61,10 @@ public class CodegenTableRequest {
     @Size(max = 100, message = "类名长度不能超过100个字符")
     private String className;
 
+    @Schema(description = "变量名", example = "sysUser")
+    @NotBlank(message = "变量名不能为空")
+    private String varName;
+
     @Schema(description = "类描述", example = "用户信息")
     @NotBlank(message = "类描述不能为空")
     @Size(max = 255, message = "类描述长度不能超过255个字符")
@@ -58,11 +75,27 @@ public class CodegenTableRequest {
     @Size(max = 50, message = "作者长度不能超过50个字符")
     private String author;
 
+    @Schema(description = "前端路径", example = "/sys/user")
+    private String frontPath;
+
+    @Schema(description = "生成类型", example = "1")
+    private Integer generatorType;
+
     @Schema(description = "模板类型", example = "1")
     @NotNull(message = "模板类型不能为空")
     private Integer templateType;
 
+    @Schema(description = "模板组ID", example = "1")
+    private Long templateGroupId;
+
+    @Schema(description = "备注")
+    private String remark;
+
+    @Schema(description = "排序")
+    private Integer sort;
+
     @Schema(description = "列配置列表")
+    @NotNull(message = "列配置列表不能为空")
     private List<CodegenColumnRequest> columns;
 
     /**

@@ -1,7 +1,5 @@
 package com.bone.tool.codegen.domain.repository;
 
-import com.bone.tool.codegen.application.dto.CodegenTablePageRequest;
-import com.bone.tool.codegen.domain.entity.CodegenColumn;
 import com.bone.tool.codegen.domain.entity.CodegenTable;
 import com.bone.core.model.PageResult;
 

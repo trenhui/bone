@@ -4,7 +4,6 @@ import com.bone.tool.codegen.domain.entity.DatabaseTableMetadata;
 import com.bone.tool.codegen.application.dto.CodegenTableRequest;
 import com.bone.tool.codegen.application.dto.CodegenDetailResponse;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 数据库表服务接口

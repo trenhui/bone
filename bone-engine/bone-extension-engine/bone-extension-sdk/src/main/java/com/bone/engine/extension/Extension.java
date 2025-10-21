@@ -153,9 +153,14 @@ public @interface Extension {
     String dataSource() default "";
     
     /**
-     * 版本号
+     * 版本信息
      */
     String version() default "1.0.0";
+    
+    /**
+     * 支付方式（用于支付相关扩展点）
+     */
+    String paymentMethod() default "";
     
     /**
      * 生效开始时间（ISO 8601格式）
