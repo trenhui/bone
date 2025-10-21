@@ -5,6 +5,7 @@ import com.bone.procurement.exception.BusinessException;
 import com.bone.smartmeta.engine.MetadataEngine;
 import com.bone.smartmeta.engine.metadata.EntityMetadata;
 import com.bone.smartmeta.engine.metadata.FieldMetadata;
+import java.util.Date;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -68,7 +69,7 @@ public class DynamicModelManager implements InitializingBean {
     }
 
     /**
-     * 创建实体元数据
+     * 创建实体元数据 - 支持四阶驱动模型的标准字段
      */
     private EntityMetadata createEntityMetadata(String modelName, 
                                               DynamicModelConfig.DynamicModelDefinition definition) {
@@ -90,22 +91,80 @@ public class DynamicModelManager implements InitializingBean {
         Map<String, FieldMetadata> fields = new LinkedHashMap<>();
         fields.put("id", idField);
         
+        // 添加标准版本管理字段 - 支持四阶驱动模型的并发控制
+        fields.put("version", createVersionField());
+        
+        // 添加标准审计字段 - 支持四阶驱动模型的追踪和审计
+        fields.put("createdAt", createAuditField("createdAt", "创建时间", "datetime"));
+        fields.put("createdBy", createAuditField("createdBy", "创建者", "string"));
+        fields.put("updatedAt", createAuditField("updatedAt", "更新时间", "datetime"));
+        fields.put("updatedBy", createAuditField("updatedBy", "更新者", "string"));
+        
+        // 添加多租户字段 - 支持多租户隔离
+        fields.put("tenantId", createTenantField());
+        
         // 转换配置中的字段定义为元数据字段
         if (definition.getFields() != null) {
             for (Map.Entry<String, DynamicModelConfig.DynamicFieldDefinition> fieldEntry : definition.getFields().entrySet()) {
                 String fieldName = fieldEntry.getKey();
                 DynamicModelConfig.DynamicFieldDefinition fieldDef = fieldEntry.getValue();
                 
-                // 避免覆盖ID字段
-                if (!"id".equals(fieldName)) {
+                // 避免覆盖系统保留字段
+                if (!fields.containsKey(fieldName)) {
                     FieldMetadata fieldMetadata = createFieldMetadata(fieldName, fieldDef);
                     fields.put(fieldName, fieldMetadata);
+                } else {
+                    log.warn("字段 {} 是系统保留字段，将使用系统定义", fieldName);
                 }
             }
         }
         
         metadata.setFields(fields);
+        
+        // 设置模型配置 - 支持四阶驱动模型的高级特性
+        metadata.setSupportsVersioning(true);
+        metadata.setSupportsAuditing(true);
+        metadata.setMultiTenant(true);
+        
         return metadata;
+    }
+    
+    /**
+     * 创建版本字段
+     */
+    private FieldMetadata createVersionField() {
+        FieldMetadata versionField = new FieldMetadata();
+        versionField.setApiName("version");
+        versionField.setLabel("版本号");
+        versionField.setType("long");
+        versionField.setDefaultValue(0L);
+        versionField.setRequired(true);
+        versionField.setReadOnly(true);
+        return versionField;
+    }
+    
+    /**
+     * 创建审计字段
+     */
+    private FieldMetadata createAuditField(String apiName, String label, String type) {
+        FieldMetadata field = new FieldMetadata();
+        field.setApiName(apiName);
+        field.setLabel(label);
+        field.setType(type);
+        field.setReadOnly(true);
+        return field;
+    }
+    
+    /**
+     * 创建租户字段
+     */
+    private FieldMetadata createTenantField() {
+        FieldMetadata tenantField = new FieldMetadata();
+        tenantField.setApiName("tenantId");
+        tenantField.setLabel("租户ID");
+        tenantField.setType("string");
+        tenantField.setRequired(true);
+        return tenantField;
     }
 
     /**
@@ -180,22 +239,43 @@ public class DynamicModelManager implements InitializingBean {
     }
 
     /**
-     * 注册动态模型到元数据引擎
+     * 注册动态模型到元数据引擎 - 支持四阶驱动模型的版本管理和影响分析
      */
     public void registerModel(EntityMetadata entityMetadata) {
         Assert.notNull(entityMetadata, "实体元数据不能为空");
         Assert.hasText(entityMetadata.getApiName(), "实体API名称不能为空");
         
         try {
-            // 直接使用元数据引擎进行注册/更新
-            if (metadataEngine.getEntityMetadata(entityMetadata.getApiName()) != null) {
+            // 设置创建时间和创建者信息
+            if (entityMetadata.getCreatedAt() == null) {
+                entityMetadata.setCreatedAt(new Date());
+                entityMetadata.setCreatedBy("system"); // 在实际实现中应使用当前用户
+            }
+            
+            // 设置模型版本
+            if (entityMetadata.getVersion() == null) {
+                entityMetadata.setVersion(1L);
+            }
+            
+            // 获取现有实体元数据进行比较，支持模型演化
+            EntityMetadata existingMetadata = metadataEngine.getEntityMetadata(entityMetadata.getApiName());
+            if (existingMetadata != null) {
+                // 递增版本号
+                entityMetadata.setVersion(existingMetadata.getVersion() + 1);
+                entityMetadata.setUpdatedAt(new Date());
+                entityMetadata.setUpdatedBy("system"); // 在实际实现中应使用当前用户
+                
                 // 更新已存在的模型
-                metadataEngine.updateEntity(entityMetadata);
-                log.info("更新动态模型: {}", entityMetadata.getApiName());
+                metadataEngine.registerEntityMetadata(entityMetadata, true); // 使用true表示更新
+                log.info("更新动态模型: {}, 版本: {}", 
+                        entityMetadata.getApiName(), 
+                        entityMetadata.getVersion());
             } else {
                 // 注册新模型
-                metadataEngine.registerEntity(entityMetadata);
-                log.info("注册新动态模型: {}", entityMetadata.getApiName());
+                metadataEngine.registerEntityMetadata(entityMetadata, false); // 使用false表示新建
+                log.info("注册新动态模型: {}, 版本: {}", 
+                        entityMetadata.getApiName(), 
+                        entityMetadata.getVersion());
             }
         } catch (Exception e) {
             log.error("注册动态模型失败: {}", entityMetadata.getApiName(), e);

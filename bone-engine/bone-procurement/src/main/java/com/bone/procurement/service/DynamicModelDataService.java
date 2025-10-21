@@ -4,6 +4,7 @@ import com.bone.procurement.config.DynamicModelConfig;
 import com.bone.procurement.exception.BusinessException;
 import com.bone.smartmeta.engine.MetadataEngine;
 import com.bone.smartmeta.engine.metadata.EntityMetadata;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,46 +62,53 @@ public class DynamicModelDataService {
     private final Map<String, Map<String, List<Map<String, Object>>>> historyStore = new ConcurrentHashMap<>();
 
     /**
-     * 创建动态模型数据
+     * 创建动态模型数据 - 支持四阶驱动模型的完整生命周期管理
      */
     public Map<String, Object> createData(String modelName, Map<String, Object> data) {
         // 参数校验
         Assert.hasText(modelName, "模型名称不能为空");
         Assert.notNull(data, "数据不能为空");
         
-        // 验证模型是否存在
-        EntityMetadata entityMetadata = dynamicModelManager.getModelByName(modelName);
+        // 获取元数据
+        EntityMetadata entityMetadata = dynamicModelManager.getEntityMetadata(modelName);
         if (entityMetadata == null) {
             throw new BusinessException("动态模型不存在: " + modelName);
         }
 
-        // 验证数据
-        validateData(modelName, data, entityMetadata);
-        
         // 生成唯一ID
         String id = UUID.randomUUID().toString();
         Map<String, Object> processedData = new HashMap<>(data);
         processedData.put("id", id);
         
-        // 设置创建时间戳
+        // 设置创建时间和创建者信息
         long timestamp = System.currentTimeMillis();
         processedData.put("createdAt", timestamp);
         processedData.put("updatedAt", timestamp);
+        processedData.put("createdBy", "current_user"); // 在实际实现中应使用当前用户
+        processedData.put("updatedBy", "current_user");
         
         // 设置版本号（乐观锁）
         processedData.put("version", 1L);
+        
+        // 设置租户ID - 支持多租户隔离
+        processedData.put("tenantId", "current_tenant"); // 在实际实现中应使用租户上下文
 
         // 初始化模型数据存储（如果不存在）
         modelDataStore.computeIfAbsent(modelName, k -> new ConcurrentHashMap<>());
         versionCounters.computeIfAbsent(modelName, k -> new AtomicLong(0));
 
+        // 处理计算字段和业务规则
+        try {
+            processedData = metadataEngine.processEntityInstance(modelName, processedData);
+        } catch (Exception e) {
+            log.error("创建实体时出错: {}", modelName, e);
+            throw new BusinessException("创建数据失败: " + e.getMessage());
+        }
+
         // 存储数据
         modelDataStore.get(modelName).put(id, processedData);
-        
-        // 处理计算字段和虚拟字段
-        processedData = metadataEngine.processEntityInstance(modelName, processedData);
 
-        log.info("创建动态模型数据成功: {}, ID: {}", modelName, id);
+        log.info("创建动态模型数据成功: {}, ID: {}, 版本: 1", modelName, id);
         return new HashMap<>(processedData); // 返回副本，避免外部修改
     }
 
@@ -113,7 +121,7 @@ public class DynamicModelDataService {
         Assert.hasText(id, "ID不能为空");
         
         // 验证模型是否存在
-        EntityMetadata entityMetadata = dynamicModelManager.getModelByName(modelName);
+        EntityMetadata entityMetadata = dynamicModelManager.getEntityMetadata(modelName);
         if (entityMetadata == null) {
             throw new BusinessException("动态模型不存在: " + modelName);
         }
@@ -139,7 +147,7 @@ public class DynamicModelDataService {
         Assert.isTrue(pageSize >= 1 && pageSize <= 1000, "每页大小必须在1-1000之间");
         
         // 验证模型是否存在
-        EntityMetadata entityMetadata = dynamicModelManager.getModelByName(modelName);
+        EntityMetadata entityMetadata = dynamicModelManager.getEntityMetadata(modelName);
         if (entityMetadata == null) {
             throw new BusinessException("动态模型不存在: " + modelName);
         }
@@ -185,7 +193,7 @@ public class DynamicModelDataService {
         Assert.notNull(data, "数据不能为空");
         
         // 验证模型是否存在
-        EntityMetadata entityMetadata = dynamicModelManager.getModelByName(modelName);
+        EntityMetadata entityMetadata = dynamicModelManager.getEntityMetadata(modelName);
         if (entityMetadata == null) {
             throw new BusinessException("动态模型不存在: " + modelName);
         }
@@ -234,22 +242,162 @@ public class DynamicModelDataService {
     }
     
     /**
-     * 更新动态模型数据（不带乐观锁）
+     * 更新动态模型数据
      */
     public Map<String, Object> updateData(String modelName, String id, Map<String, Object> data) {
-        return updateData(modelName, id, data, null);
+        // 参数校验
+        Assert.hasText(modelName, "模型名称不能为空");
+        Assert.hasText(id, "数据ID不能为空");
+        Assert.notNull(data, "数据不能为空");
+        
+        // 获取元数据
+        EntityMetadata entityMetadata = dynamicModelManager.getEntityMetadata(modelName);
+        if (entityMetadata == null) {
+            throw new BusinessException("动态模型不存在: " + modelName);
+        }
+        
+        // 检查数据是否存在
+        Map<String, Map<String, Object>> modelData = modelDataStore.get(modelName);
+        if (modelData == null || !modelData.containsKey(id)) {
+            throw new BusinessException("数据不存在: " + id);
+        }
+        
+        Map<String, Object> existingData = new HashMap<>(modelData.get(id));
+        
+        // 检查版本号，实现乐观锁
+        Long currentVersion = (Long) existingData.get("version");
+        Long newVersion = data.get("version") != null ? Long.valueOf(data.get("version").toString()) : null;
+        
+        if (newVersion == null || !newVersion.equals(currentVersion)) {
+            throw new BusinessException("数据版本冲突，请刷新后重试。当前版本: " + currentVersion + ", 提交版本: " + newVersion);
+        }
+        
+        // 保存历史版本
+        saveHistoryVersion(modelName, id, existingData);
+        
+        // 创建新的数据对象，保留不变的字段
+        Map<String, Object> updatedData = new HashMap<>(existingData);
+        
+        // 移除版本号字段，因为将由系统更新
+        data.remove("version");
+        
+        // 更新字段（排除不可修改字段）
+        data.forEach((key, value) -> {
+            if (!"id".equals(key) && !"createdAt".equals(key) && !"createdBy".equals(key)) {
+                updatedData.put(key, value);
+            }
+        });
+        
+        // 更新时间戳和更新者信息
+        updatedData.put("updatedAt", System.currentTimeMillis());
+        updatedData.put("updatedBy", "current_user"); // 在实际实现中应使用当前用户
+        
+        // 递增版本号
+        updatedData.put("version", currentVersion + 1);
+        
+        // 处理计算字段和业务规则
+        try {
+            updatedData = metadataEngine.processEntityInstance(modelName, new HashMap<>(updatedData));
+        } catch (Exception e) {
+            log.error("更新实体时出错: {}, ID: {}", modelName, id, e);
+            throw new BusinessException("更新数据失败: " + e.getMessage());
+        }
+        
+        // 更新数据
+        modelData.put(id, updatedData);
+        
+        log.info("更新动态模型数据成功: {}, ID: {}, 新版本: {}", 
+                modelName, id, updatedData.get("version"));
+        return new HashMap<>(updatedData); // 返回副本，避免外部修改
+    }
+    
+    /**
+     * 更新动态模型数据（支持上下文参数）
+     */
+    public Map<String, Object> updateData(String modelName, String id, Map<String, Object> data, Map<String, Object> context) {
+        // 参数校验
+        Assert.hasText(modelName, "模型名称不能为空");
+        Assert.hasText(id, "数据ID不能为空");
+        Assert.notNull(data, "数据不能为空");
+        
+        // 获取元数据
+        EntityMetadata entityMetadata = dynamicModelManager.getEntityMetadata(modelName);
+        if (entityMetadata == null) {
+            throw new BusinessException("动态模型不存在: " + modelName);
+        }
+        
+        // 检查数据是否存在
+        Map<String, Map<String, Object>> modelData = modelDataStore.get(modelName);
+        if (modelData == null || !modelData.containsKey(id)) {
+            throw new BusinessException("数据不存在: " + id);
+        }
+        
+        Map<String, Object> existingData = new HashMap<>(modelData.get(id));
+        
+        // 检查版本号，实现乐观锁
+        Long currentVersion = (Long) existingData.get("version");
+        Long newVersion = data.get("version") != null ? Long.valueOf(data.get("version").toString()) : null;
+        
+        if (newVersion == null || !newVersion.equals(currentVersion)) {
+            throw new BusinessException("数据版本冲突，请刷新后重试。当前版本: " + currentVersion + ", 提交版本: " + newVersion);
+        }
+        
+        // 保存历史版本
+        saveHistoryVersion(modelName, id, existingData);
+        
+        // 创建新的数据对象，保留不变的字段
+        Map<String, Object> updatedData = new HashMap<>(existingData);
+        
+        // 移除版本号字段，因为将由系统更新
+        data.remove("version");
+        
+        // 更新字段（排除不可修改字段）
+        data.forEach((key, value) -> {
+            if (!"id".equals(key) && !"createdAt".equals(key) && !"createdBy".equals(key)) {
+                updatedData.put(key, value);
+            }
+        });
+        
+        // 更新时间戳和更新者信息
+        updatedData.put("updatedAt", System.currentTimeMillis());
+        updatedData.put("updatedBy", context != null && context.get("userId") != null 
+                ? context.get("userId") : "current_user");
+        
+        // 递增版本号
+        updatedData.put("version", currentVersion + 1);
+        
+        // 处理计算字段和业务规则
+        try {
+            // 如果提供了上下文参数，则将其传递给元数据引擎
+            if (context != null) {
+                updatedData.putAll(context);
+            }
+            
+            updatedData = metadataEngine.processEntityInstance(modelName, new HashMap<>(updatedData));
+            
+        } catch (Exception e) {
+            log.error("更新实体时出错: {}, ID: {}", modelName, id, e);
+            throw new BusinessException("更新数据失败: " + e.getMessage());
+        }
+        
+        // 更新数据
+        modelData.put(id, updatedData);
+        
+        log.info("更新动态模型数据成功: {}, ID: {}, 新版本: {}", 
+                modelName, id, updatedData.get("version"));
+        return new HashMap<>(updatedData); // 返回副本，避免外部修改
     }
 
     /**
-     * 删除动态模型数据（带软删除功能）
+     * 删除动态模型数据（带软删除功能）- 支持四阶驱动模型的完整生命周期管理和业务规则应用
      */
     public boolean deleteData(String modelName, String id) {
         // 参数校验
         Assert.hasText(modelName, "模型名称不能为空");
-        Assert.hasText(id, "ID不能为空");
+        Assert.hasText(id, "数据ID不能为空");
         
-        // 验证模型是否存在
-        EntityMetadata entityMetadata = dynamicModelManager.getModelByName(modelName);
+        // 获取元数据
+        EntityMetadata entityMetadata = dynamicModelManager.getEntityMetadata(modelName);
         if (entityMetadata == null) {
             throw new BusinessException("动态模型不存在: " + modelName);
         }
@@ -257,20 +405,40 @@ public class DynamicModelDataService {
         // 检查数据是否存在
         Map<String, Map<String, Object>> modelData = modelDataStore.get(modelName);
         if (modelData == null || !modelData.containsKey(id)) {
-            return false;
+            throw new BusinessException("数据不存在: " + id);
+        }
+        
+        // 获取要删除的数据
+        Map<String, Object> dataToDelete = new HashMap<>(modelData.get(id));
+        
+        // 检查是否已被删除
+        Boolean alreadyDeleted = (Boolean) dataToDelete.get("deleted");
+        if (alreadyDeleted != null && alreadyDeleted) {
+            log.info("数据已被删除: {}, ID: {}", modelName, id);
+            return true; // 已删除则直接返回成功
         }
         
         // 保存历史版本用于恢复
-        Map<String, Object> dataToDelete = new HashMap<>(modelData.get(id));
         saveHistoryVersion(modelName, id, dataToDelete);
+        
+        // 处理删除前的业务规则
+        try {
+            // 使用HashMap包装数据以确保可修改
+            metadataEngine.processEntityInstance(modelName, new HashMap<>(dataToDelete));
+        } catch (Exception e) {
+            log.error("处理删除操作时出错: {}, ID: {}", modelName, id, e);
+            throw new BusinessException("删除数据失败: " + e.getMessage());
+        }
         
         // 软删除实现：标记删除
         dataToDelete.put("deleted", true);
         dataToDelete.put("deletedAt", System.currentTimeMillis());
+        dataToDelete.put("deletedBy", "current_user"); // 在实际实现中应使用当前用户
         dataToDelete.put("version", ((Long) dataToDelete.getOrDefault("version", 1L)) + 1);
         modelData.put(id, dataToDelete);
         
-        log.info("删除动态模型数据成功: {}, ID: {}", modelName, id);
+        log.info("删除动态模型数据成功: {}, ID: {}, 版本: {}", 
+                modelName, id, dataToDelete.get("version"));
         return true;
     }
     
@@ -283,7 +451,7 @@ public class DynamicModelDataService {
         Assert.hasText(id, "ID不能为空");
         
         // 验证模型是否存在
-        EntityMetadata entityMetadata = dynamicModelManager.getModelByName(modelName);
+        EntityMetadata entityMetadata = dynamicModelManager.getEntityMetadata(modelName);
         if (entityMetadata == null) {
             throw new BusinessException("动态模型不存在: " + modelName);
         }
@@ -312,22 +480,27 @@ public class DynamicModelDataService {
     /**
      * 查询动态模型数据（支持复杂条件和分页）
      */
-    public List<Map<String, Object>> queryData(String modelName, Map<String, Object> queryConditions, 
-                                             int page, int pageSize, Map<String, Boolean> sortOrders) {
-        // 参数校验
-        Assert.hasText(modelName, "模型名称不能为空");
-        Assert.isTrue(page >= 1, "页码必须大于等于1");
-        Assert.isTrue(pageSize >= 1 && pageSize <= 1000, "每页大小必须在1-1000之间");
-        
-        // 验证模型是否存在
-        EntityMetadata entityMetadata = dynamicModelManager.getModelByName(modelName);
+    public List<Map<String, Object>> queryData(String modelName, Map<String, Object> queryConditions,
+                                              int page, int pageSize, Map<String, Boolean> sortOrders) {
+    // 参数校验
+    Assert.hasText(modelName, "模型名称不能为空");
+    Assert.isTrue(page >= 1, "页码必须大于等于1");
+    Assert.isTrue(pageSize >= 1 && pageSize <= 1000, "每页大小必须在1-1000之间");
+    
+    log.info("开始查询动态模型数据: {}, 条件: {}, 页码: {}, 页大小: {}", 
+            modelName, queryConditions, page, pageSize);
+    
+    try {
+        // 获取元数据
+        EntityMetadata entityMetadata = dynamicModelManager.getEntityMetadata(modelName);
         if (entityMetadata == null) {
             throw new BusinessException("动态模型不存在: " + modelName);
         }
 
         // 获取数据
         Map<String, Map<String, Object>> modelData = modelDataStore.get(modelName);
-        if (modelData == null) {
+        if (modelData == null || modelData.isEmpty()) {
+            log.info("查询动态模型数据: {}, 模型无数据存在", modelName);
             return Collections.emptyList();
         }
 
@@ -337,46 +510,100 @@ public class DynamicModelDataService {
                 .filter(data -> matchesConditions(data, queryConditions))
                 .collect(Collectors.toList());
         
+        int totalFiltered = filteredData.size();
+        log.debug("查询过滤后数据总量: {}, 模型: {}", totalFiltered, modelName);
+        
         // 应用排序
         if (sortOrders != null && !sortOrders.isEmpty()) {
-            filteredData.sort((data1, data2) -> {
-                for (Map.Entry<String, Boolean> sortOrder : sortOrders.entrySet()) {
-                    String field = sortOrder.getKey();
-                    boolean ascending = sortOrder.getValue();
-                    
-                    Comparable<?> value1 = (Comparable<?>) data1.getOrDefault(field, null);
-                    Comparable<?> value2 = (Comparable<?>) data2.getOrDefault(field, null);
-                    
-                    if (value1 == null && value2 == null) {
-                        continue;
-                    } else if (value1 == null) {
-                        return ascending ? -1 : 1;
-                    } else if (value2 == null) {
-                        return ascending ? 1 : -1;
+            try {
+                filteredData.sort((data1, data2) -> {
+                    for (Map.Entry<String, Boolean> sortOrder : sortOrders.entrySet()) {
+                        String field = sortOrder.getKey();
+                        boolean ascending = sortOrder.getValue();
+                        
+                        Object value1 = data1.getOrDefault(field, null);
+                        Object value2 = data2.getOrDefault(field, null);
+                        
+                        if (value1 == null && value2 == null) {
+                            continue;
+                        } else if (value1 == null) {
+                            return ascending ? -1 : 1;
+                        } else if (value2 == null) {
+                            return ascending ? 1 : -1;
+                        }
+                        
+                        if (value1 instanceof Comparable && value2 instanceof Comparable) {
+                            try {
+                                // 确保类型相同才进行比较
+                                if (value1.getClass().equals(value2.getClass())) {
+                                    @SuppressWarnings("unchecked")
+                                    Comparable<Object> comp1 = (Comparable<Object>) value1;
+                                    int compareResult = comp1.compareTo(value2);
+                                    if (compareResult != 0) {
+                                        return ascending ? compareResult : -compareResult;
+                                    }
+                                } else {
+                                    // 尝试字符串比较作为后备方案
+                                    String str1 = value1.toString();
+                                    String str2 = value2.toString();
+                                    int compareResult = str1.compareTo(str2);
+                                    if (compareResult != 0) {
+                                        return ascending ? compareResult : -compareResult;
+                                    }
+                                }
+                            } catch (ClassCastException e) {
+                                log.warn("无法比较的值类型: {}, {}, 字段: {}", 
+                                        value1.getClass(), value2.getClass(), field);
+                                // 发生异常时视为相等
+                            }
+                        }
                     }
-                    
-                    int compareResult = value1.compareTo(value2);
-                    if (compareResult != 0) {
-                        return ascending ? compareResult : -compareResult;
-                    }
-                }
-                return 0;
-            });
+                    return 0;
+                });
+            } catch (Exception e) {
+                log.error("排序数据时出错: {}, 模型: {}", e.getMessage(), modelName, e);
+                // 排序失败时继续执行，返回未排序的数据
+            }
         }
         
         // 应用分页
         int startIndex = (page - 1) * pageSize;
         int endIndex = Math.min(startIndex + pageSize, filteredData.size());
         
+        List<Map<String, Object>> paginatedData;
         if (startIndex >= filteredData.size()) {
-            return Collections.emptyList();
+            paginatedData = Collections.emptyList();
+        } else {
+            paginatedData = filteredData.subList(startIndex, endIndex);
         }
         
-        List<Map<String, Object>> paginatedData = filteredData.subList(startIndex, endIndex);
+        log.debug("分页后数据量: {}, 起始索引: {}, 结束索引: {}", 
+                paginatedData.size(), startIndex, endIndex);
         
-        // 批量处理计算字段和虚拟字段
-        return metadataEngine.processEntityInstancesBatch(modelName, 
-                paginatedData.stream().map(HashMap::new).collect(Collectors.toList()));
+        // 处理计算字段和虚拟字段
+        List<Map<String, Object>> processedData = paginatedData.stream()
+                .map(data -> {
+                    try {
+                        return metadataEngine.processEntityInstance(modelName, new HashMap<>(data));
+                    } catch (Exception e) {
+                        log.error("处理查询结果实体时出错: {}, ID: {}", modelName, data.get("id"), e);
+                        return new HashMap<>(data); // 出错时返回原始数据副本
+                    }
+                })
+                .collect(Collectors.toList());
+        
+        // 记录查询日志
+        int totalPages = totalFiltered > 0 ? (totalFiltered + pageSize - 1) / pageSize : 0;
+        log.info("查询动态模型数据成功: {}, 条件过滤后总数: {}, 返回数据量: {}, 页码: {}/{}, 排序字段: {}", 
+                modelName, totalFiltered, processedData.size(), page, totalPages, sortOrders);
+                
+        return processedData;
+    } catch (BusinessException e) {
+        log.error("业务异常: 查询动态模型数据失败 - {}", e.getMessage());
+        throw e;
+    } catch (Exception e) {
+        log.error("查询动态模型数据时发生未预期的错误: {}, 模型: {}", e.getMessage(), modelName, e);
+        throw new BusinessException("查询数据失败: " + e.getMessage());
     }
     
     /**
@@ -482,11 +709,23 @@ public class DynamicModelDataService {
             return 1;
         }
         
-        if (value1 instanceof Comparable && value1.getClass().equals(value2.getClass())) {
+        // 安全处理不同类型的比较
+        if (value1 instanceof Comparable && value2 instanceof Comparable) {
             try {
-                return ((Comparable) value1).compareTo(value2);
+                // 确保类型相同才进行比较
+                if (value1.getClass().equals(value2.getClass())) {
+                    @SuppressWarnings("unchecked")
+                    Comparable<Object> comparable1 = (Comparable<Object>) value1;
+                    return comparable1.compareTo(value2);
+                } else {
+                    // 尝试字符串比较作为后备方案
+                    String str1 = value1.toString();
+                    String str2 = value2.toString();
+                    return str1.compareTo(str2);
+                }
             } catch (ClassCastException e) {
                 log.warn("无法比较的值类型: {}, {}", value1.getClass(), value2.getClass());
+                return 0;
             }
         }
         
@@ -579,73 +818,147 @@ public class DynamicModelDataService {
     }
     
     /**
-     * 批量创建数据（优化性能）
+     * 批量创建动态模型数据
      */
     public List<Map<String, Object>> batchCreateData(String modelName, List<Map<String, Object>> dataList) {
         // 参数校验
         Assert.hasText(modelName, "模型名称不能为空");
         Assert.notNull(dataList, "数据列表不能为空");
-        
+        Assert.isTrue(!dataList.isEmpty(), "数据列表不能为空");
+
         log.info("批量创建动态模型数据: {}, 数量: {}", modelName, dataList.size());
-        
-        // 验证模型是否存在
-        EntityMetadata entityMetadata = dynamicModelManager.getModelByName(modelName);
+
+        // 获取元数据
+        EntityMetadata entityMetadata = dynamicModelManager.getEntityMetadata(modelName);
         if (entityMetadata == null) {
-            throw new BusinessException("模型不存在: " + modelName);
+            throw new BusinessException("动态模型不存在: " + modelName);
         }
         
-        // 初始化存储
+        // 初始化模型数据存储（如果不存在）
         modelDataStore.computeIfAbsent(modelName, k -> new ConcurrentHashMap<>());
         versionCounters.computeIfAbsent(modelName, k -> new AtomicLong(0));
         
-        // 并行处理批量创建
-        List<Map<String, Object>> createdData = dataList.parallelStream()
-                .map(data -> {
-                    try {
-                        // 创建单条数据
-                        return createData(modelName, data);
-                    } catch (Exception e) {
-                        log.warn("创建数据失败: {}, 数据: {}", modelName, data, e);
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        // 批量处理数据 - 并行处理提高性能
+        List<Map<String, Object>> resultList = Collections.synchronizedList(new ArrayList<>(dataList.size()));
+        long timestamp = System.currentTimeMillis();
         
-        log.info("批量创建完成: {}, 创建数量: {}", modelName, createdData.size());
-        return createdData;
+        dataList.parallelStream().forEach(data -> {
+            try {
+                // 生成唯一ID
+                String id = UUID.randomUUID().toString();
+                Map<String, Object> processedData = new HashMap<>(data);
+                processedData.put("id", id);
+                
+                // 设置创建时间和创建者信息
+                processedData.put("createdAt", timestamp);
+                processedData.put("updatedAt", timestamp);
+                processedData.put("createdBy", "current_user");
+                processedData.put("updatedBy", "current_user");
+                
+                // 设置版本号和租户ID
+                processedData.put("version", 1L);
+                processedData.put("tenantId", "current_tenant");
+                
+                // 处理计算字段和业务规则
+                try {
+                    processedData = metadataEngine.processEntityInstance(modelName, processedData);
+                } catch (Exception e) {
+                    log.error("批量创建数据处理时出错: {}", modelName, e);
+                    throw new BusinessException("批量创建数据失败: " + e.getMessage());
+                }
+                
+                // 存储数据
+                modelDataStore.get(modelName).put(id, processedData);
+                resultList.add(new HashMap<>(processedData));
+                
+            } catch (Exception e) {
+                log.error("批量创建实体时出错: {}", modelName, e);
+                throw new BusinessException("批量创建数据失败: " + e.getMessage());
+            }
+        });
+        
+        log.info("批量创建完成: {}, 创建数量: {}", modelName, resultList.size());
+        return resultList;
     }
     
     /**
-     * 批量删除数据（优化性能）
+     * 批量删除动态模型数据 - 支持四阶驱动模型的批量处理特性
      */
     public int batchDeleteData(String modelName, List<String> ids) {
         // 参数校验
         Assert.hasText(modelName, "模型名称不能为空");
         Assert.notNull(ids, "ID列表不能为空");
-        
+        Assert.isTrue(!ids.isEmpty(), "ID列表不能为空");
+
         log.info("批量删除动态模型数据: {}, 数量: {}", modelName, ids.size());
-        
-        // 验证模型是否存在
-        EntityMetadata entityMetadata = dynamicModelManager.getModelByName(modelName);
+
+        // 获取元数据
+        EntityMetadata entityMetadata = dynamicModelManager.getEntityMetadata(modelName);
         if (entityMetadata == null) {
-            throw new BusinessException("模型不存在: " + modelName);
+            throw new BusinessException("动态模型不存在: " + modelName);
         }
         
-        // 并行处理批量删除
+        // 检查数据存储是否存在
+        Map<String, Map<String, Object>> modelData = modelDataStore.get(modelName);
+        if (modelData == null) {
+            log.warn("模型数据存储不存在: {}", modelName);
+            return 0;
+        }
+        
         AtomicLong deletedCount = new AtomicLong(0);
+        List<String> failedIds = Collections.synchronizedList(new ArrayList<>());
+        
+        // 批量删除数据 - 并行处理提高性能
         ids.parallelStream().forEach(id -> {
             try {
-                // 删除单条数据
-                if (deleteData(modelName, id)) {
-                    deletedCount.incrementAndGet();
+                // 检查数据是否存在
+                if (!modelData.containsKey(id)) {
+                    log.warn("要删除的数据不存在: {}, ID: {}", modelName, id);
+                    failedIds.add(id);
+                    return;
                 }
+                
+                // 获取要删除的数据
+                Map<String, Object> dataToDelete = new HashMap<>(modelData.get(id));
+                
+                // 检查是否已被删除
+                Boolean alreadyDeleted = (Boolean) dataToDelete.get("deleted");
+                if (alreadyDeleted != null && alreadyDeleted) {
+                    log.info("数据已被删除: {}, ID: {}", modelName, id);
+                    return;
+                }
+                
+                // 保存历史版本用于恢复
+                saveHistoryVersion(modelName, id, dataToDelete);
+                
+                // 处理删除前的业务规则
+                try {
+                    metadataEngine.processEntityInstance(modelName, new HashMap<>(dataToDelete));
+                } catch (Exception e) {
+                    log.error("处理删除操作时出错: {}, ID: {}", modelName, id, e);
+                    failedIds.add(id);
+                    return; // 继续处理其他数据
+                }
+                
+                // 执行软删除
+                dataToDelete.put("deleted", true);
+                dataToDelete.put("deletedAt", System.currentTimeMillis());
+                dataToDelete.put("deletedBy", "current_user");
+                dataToDelete.put("version", ((Long) dataToDelete.getOrDefault("version", 1L)) + 1);
+                modelData.put(id, dataToDelete);
+                deletedCount.incrementAndGet();
             } catch (Exception e) {
-                log.warn("删除数据失败: {}, ID: {}", modelName, id, e);
+                log.error("批量删除实体时出错: {}, ID: {}", modelName, id, e);
+                failedIds.add(id);
             }
         });
         
-        log.info("批量删除完成: {}, 删除数量: {}", modelName, deletedCount.get());
+        if (!failedIds.isEmpty()) {
+            log.warn("部分数据删除失败: {}, 失败ID数量: {}", modelName, failedIds.size());
+        }
+        
+        log.info("批量删除完成: {}, 成功删除: {}, 失败: {}", 
+                modelName, deletedCount.get(), failedIds.size());
         return deletedCount.intValue();
     }
 

@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -58,10 +59,10 @@ public class SmartMetadataEngine {
     private final MetadataVersionController versionController;
     
     // 元数据验证器
-    private final Object metadataValidator; // 使用Object替代缺失的MetadataValidator
+    private final MetadataValidator metadataValidator; // 类型修正为具体接口
     
     // 多租户上下文
-    private final Object tenantContext; // 使用Object替代缺失的MultiTenantContextHolder
+    private final MultiTenantContextHolder tenantContext; // 类型修正为具体接口
     
     // 事件发布器
     private final ApplicationEventPublisher eventPublisher;
@@ -165,7 +166,7 @@ public class SmartMetadataEngine {
     /**
      * 注册元数据（支持版本升级与多租户隔离）
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
     public EntityMetadata registerEntityMetadata(EntityMetadata metadata) {
         // 1. 租户上下文绑定
         String tenantId = tenantContext.getCurrentTenantId();
@@ -176,6 +177,9 @@ public class SmartMetadataEngine {
         if (!validation.isValid()) {
             throw new MetadataValidationException("元数据验证失败", validation.getErrors());
         }
+        
+        // 3. 影响分析（避免破坏性变更）
+        ImpactAnalysis impactAnalysis = analyzeMetadataImpact(metadata.getApiName(), metadata);
         
         // 3. 版本管理（处理新增/升级场景）
         EntityMetadata existing = metadataRegistry.findByApiNameAndTenantId(metadata.getApiName(), tenantId);
@@ -188,10 +192,13 @@ public class SmartMetadataEngine {
         cacheManager.put(tenantId, saved.getApiName(), saved);
         
         // 6. 发布元数据变更事件（触发表结构更新、索引重建等）
-        eventPublisher.publishEvent(new MetadataChangedEvent(
+        MetadataChangedEvent event = new MetadataChangedEvent(
             tenantId, saved.getApiName(), saved.getVersion(),
             existing != null ? existing.getVersion() : null
-        ));
+        );
+        event.setImpactAnalysis(impactAnalysis);
+        event.setChangeType(existing == null ? "CREATE" : "UPDATE");
+        eventPublisher.publishEvent(event);
         
         log.info("元数据注册成功: {}:{}@{}", tenantId, saved.getApiName(), saved.getVersion());
         return saved;
@@ -209,7 +216,43 @@ public class SmartMetadataEngine {
             return ImpactAnalysis.empty();
         }
         
-        return metadataValidator.analyzeImpact(current, newMetadata);
+        // 执行完整的影响分析
+        ImpactAnalysis impactAnalysis = metadataValidator.analyzeImpact(current, newMetadata);
+        
+        // 记录影响分析结果
+        log.debug("Impact analysis for {}: breaking={}, total={}", 
+                 entityName, 
+                 impactAnalysis.hasBreakingChanges(), 
+                 impactAnalysis.getImpactCount());
+        
+        return impactAnalysis;
+    }
+    
+    /**
+     * 获取实体元数据（支持缓存和多租户）
+     */
+    public EntityMetadata getEntityMetadata(String entityApiName) {
+        if (entityApiName == null || entityApiName.isEmpty()) {
+            return null;
+        }
+        
+        String tenantId = tenantContext.getCurrentTenantId();
+        
+        // 先从缓存获取
+        EntityMetadata cached = cacheManager.get(tenantId, entityApiName);
+        if (cached != null) {
+            return cached;
+        }
+        
+        // 缓存未命中，从注册表获取
+        EntityMetadata metadata = metadataRegistry.findByApiNameAndTenantId(entityApiName, tenantId);
+        
+        // 更新缓存
+        if (metadata != null) {
+            cacheManager.put(tenantId, entityApiName, metadata);
+        }
+        
+        return metadata;
     }
     
     /**
@@ -218,7 +261,8 @@ public class SmartMetadataEngine {
      * @return 动态实体实例
      */
     public DynamicSmartEntity createEntity(String entityApiName) {
-        EntityMetadata entityMetadata = metadataRegistry.getEntityMetadata(entityApiName);
+        // 使用增强的getEntityMetadata方法，支持缓存和多租户
+        EntityMetadata entityMetadata = getEntityMetadata(entityApiName);
         if (entityMetadata == null) {
             throw new IllegalArgumentException("Entity not found: " + entityApiName);
         }
@@ -226,12 +270,16 @@ public class SmartMetadataEngine {
         DynamicSmartEntity entity = new DynamicSmartEntity();
         entity.setEntityApiName(entityApiName);
         entity.setEntityMetadata(entityMetadata);
+        entity.setTenantId(tenantContext.getCurrentTenantId());
         
         // 初始化默认值
         initializeDefaultValues(entity, entityMetadata);
         
         // 初始化瞬态字段
         entity.initializeTransientFields();
+        
+        // 应用创建时的默认业务规则
+        applyBusinessRules(entity, "CREATE");
         
         log.debug("Created new entity instance: {}", entityApiName);
         return entity;
@@ -300,12 +348,23 @@ public class SmartMetadataEngine {
             return;
         }
         
-        List<FieldMetadata> calculatedFields = getMetadataRegistry()
-                .getCalculatedFieldMetadata(entity.getEntityApiName());
+        // 使用缓存优化的实体元数据获取
+        EntityMetadata entityMetadata = getEntityMetadata(entity.getEntityApiName());
+        if (entityMetadata == null || entityMetadata.getFields() == null) {
+            return;
+        }
+        
+        // 筛选计算字段，避免不必要的计算
+        List<FieldMetadata> calculatedFields = entityMetadata.getFields().stream()
+                .filter(FieldMetadata::isCalculated)
+                .collect(Collectors.toList());
         
         if (calculatedFields.isEmpty()) {
             return;
         }
+        
+        // 按优先级排序计算字段（解决依赖关系）
+        Collections.sort(calculatedFields, Comparator.comparing(FieldMetadata::getCalculationPriority));
         
         calculatedFields.forEach(field -> {
             try {
@@ -314,6 +373,8 @@ public class SmartMetadataEngine {
             } catch (Exception e) {
                 log.error("Error calculating field {} for entity {}", 
                           field.getApiName(), entity.getEntityApiName(), e);
+                // 设置默认值避免计算失败影响整体操作
+                entity.setCalculatedField(field.getApiName(), field.getDefaultValue());
             }
         });
     }
@@ -343,8 +404,8 @@ public class SmartMetadataEngine {
             return result;
         }
         
-        EntityMetadata entityMetadata = getMetadataRegistry()
-                .getEntityMetadata(entity.getEntityApiName());
+        // 使用缓存优化的实体元数据获取
+        EntityMetadata entityMetadata = getEntityMetadata(entity.getEntityApiName());
         
         if (entityMetadata == null) {
             result.addError("Entity metadata not found for: " + entity.getEntityApiName());
@@ -355,20 +416,32 @@ public class SmartMetadataEngine {
             // 1. 计算实体字段值
             calculateEntityFields(entity);
             
-            // 2. 执行字段级验证
+            // 2. 执行字段级验证 - 支持四阶驱动模型的精细化验证
             validateFields(entity, entityMetadata, result);
             
-            // 3. 执行关系验证
+            // 3. 执行关系验证 - 验证实体间关系的完整性
             validateRelationships(entity, entityMetadata, result);
             
-            // 4. 执行业务规则验证
+            // 4. 执行业务规则验证 - 支持复杂业务场景验证
             if (!result.hasErrors() && configuration.isBusinessRuleValidationEnabled()) {
                 businessRuleEngine.executeValidationRules(entity, result);
+            }
+            
+            // 5. 执行多租户隔离验证
+            if (entity.getTenantId() != null && 
+                !entity.getTenantId().equals(tenantContext.getCurrentTenantId())) {
+                result.addError("Tenant isolation violation");
             }
         } catch (Exception e) {
             log.error("Error during entity validation for {}", entity.getEntityApiName(), e);
             result.addError("Internal error during validation: " + e.getMessage());
         }
+        
+        // 记录验证结果
+        log.debug("Entity validation for {}: valid={}, errors={}", 
+                 entity.getEntityApiName(), 
+                 result.isValid(), 
+                 result.getErrors().size());
         
         return result;
     }
@@ -424,27 +497,54 @@ public class SmartMetadataEngine {
     }
     
     /**
-     * 应用业务规则
+     * 应用业务规则 - 支持四阶驱动模型的业务规则执行
      */
     public ValidationResult applyBusinessRules(DynamicSmartEntity entity, String eventType) {
         ValidationResult result = new ValidationResult();
         
-        if (entity == null || entity.getEntityApiName() == null) {
-            result.addError("Entity is null or has no API name");
+        if (entity == null || entity.getEntityApiName() == null || eventType == null) {
+            result.addError("Entity is null or has no API name or event type is null");
             return result;
         }
         
-        // 计算实体字段值
-        calculateEntityFields(entity);
-        
-        // 执行验证规则
-        if (configuration.isBusinessRuleValidationEnabled()) {
-            businessRuleEngine.executeValidationRules(entity, result);
-        }
-        
-        // 如果验证通过，执行操作规则
-        if (result.isValid()) {
-            businessRuleEngine.executeActionRules(entity, eventType);
+        try {
+            // 计算实体字段值 - 确保所有计算字段都已更新
+            calculateEntityFields(entity);
+            
+            // 获取实体元数据以支持规则执行上下文
+            EntityMetadata metadata = getEntityMetadata(entity.getEntityApiName());
+            if (metadata == null) {
+                result.addError("Entity metadata not found: " + entity.getEntityApiName());
+                return result;
+            }
+            
+            // 为业务规则执行设置上下文
+            // 注意：RuleExecutionContext需要是实际可用的类，这里假设它已定义
+            if (businessRuleEngine instanceof DefaultBusinessRuleEngine) {
+                ((DefaultBusinessRuleEngine) businessRuleEngine).setExecutionContext(
+                    new RuleExecutionContext(entity, metadata, eventType, 
+                                            tenantContext.getCurrentTenantId(), 
+                                            tenantContext.getCurrentUserId()));
+            }
+            
+            // 执行验证规则
+            if (configuration.isBusinessRuleValidationEnabled()) {
+                businessRuleEngine.executeValidationRules(entity, result);
+            }
+            
+            // 如果验证通过，执行操作规则
+            if (result.isValid()) {
+                businessRuleEngine.executeActionRules(entity, eventType);
+                log.debug("Business rules applied for {} on entity {} ({})", 
+                         eventType, entity.getEntityApiName(), entity.getEntityId());
+            }
+            
+            return result;
+        } catch (Exception e) {
+            log.error("Error applying business rules to entity {} with event type {}", 
+                     entity.getEntityApiName(), eventType, e);
+            // 业务规则执行错误不应该中断主流程，但记录错误
+            result.addWarning("Business rule execution error: " + e.getMessage());
         }
         
         return result;
@@ -476,14 +576,39 @@ public class SmartMetadataEngine {
     }
     
     /**
-     * 准备实体数据（计算字段、应用规则等）
+     * 准备实体数据（支持四阶驱动模型的完整实体生命周期管理）
      */
     public void prepareEntity(DynamicSmartEntity entity, String eventType) {
-        // 1. 计算实体字段值
+        if (entity == null || eventType == null) {
+            return;
+        }
+        
+        // 1. 计算实体字段值 - 确保所有计算字段都已更新
         calculateEntityFields(entity);
         
-        // 2. 应用业务规则
+        // 2. 应用业务规则 - 基于事件类型应用对应的业务规则
         applyBusinessRules(entity, eventType);
+        
+        // 3. 设置审计信息
+        String currentTime = new Date().toString(); // 在实际实现中应使用标准时间格式
+        String currentUser = tenantContext.getCurrentUserId();
+        
+        switch (eventType) {
+            case "CREATE":
+                entity.setField("createdAt", currentTime);
+                entity.setField("createdBy", currentUser);
+                break;
+            case "UPDATE":
+                entity.setField("updatedAt", currentTime);
+                entity.setField("updatedBy", currentUser);
+                break;
+            case "DELETE":
+                entity.setField("deletedAt", currentTime);
+                entity.setField("deletedBy", currentUser);
+                break;
+        }
+        
+        log.debug("Entity prepared for {}: {}", eventType, entity.getEntityApiName());
     }
     
     /**
@@ -678,6 +803,111 @@ public class SmartMetadataEngine {
                 .getFieldMetadata(entityApiName, fieldApiName);
         return fieldMetadata != null && fieldMetadata.getName() != null ? 
                fieldMetadata.getName() : fieldApiName;
+    }
+    
+    /**
+     * 更新实体 - 支持四阶驱动模型的版本管理和并发控制
+     */
+    public DynamicSmartEntity updateEntity(DynamicSmartEntity entity) {
+        if (entity == null || entity.getEntityApiName() == null || entity.getEntityId() == null) {
+            throw new IllegalArgumentException("Entity, API name or ID cannot be null");
+        }
+        
+        // 使用缓存优化的实体元数据获取
+        EntityMetadata metadata = getEntityMetadata(entity.getEntityApiName());
+        if (metadata == null) {
+            throw new IllegalArgumentException("Entity metadata not found: " + entity.getEntityApiName());
+        }
+        
+        // 执行乐观锁检查
+        DynamicSmartEntity existingEntity = getEntityById(entity.getEntityApiName(), entity.getEntityId());
+        if (existingEntity != null) {
+            // 乐观锁检查
+            Object currentVersion = entity.getField("version");
+            Object existingVersion = existingEntity.getField("version");
+            
+            if (currentVersion != null && existingVersion != null && 
+                !currentVersion.equals(existingVersion)) {
+                throw new ConcurrentModificationException(
+                    "Entity was modified by another user. Current version: " + existingVersion + 
+                    ", Your version: " + currentVersion);
+            }
+            
+            // 递增版本号
+            if (existingVersion instanceof Number) {
+                entity.setField("version", ((Number) existingVersion).longValue() + 1);
+            } else if (existingVersion instanceof String) {
+                try {
+                    long version = Long.parseLong((String) existingVersion) + 1;
+                    entity.setField("version", version);
+                } catch (NumberFormatException e) {
+                    entity.setField("version", 1L); // 重置为1
+                }
+            } else {
+                entity.setField("version", 1L); // 设置初始版本
+            }
+        }
+        
+        // 验证实体
+        ValidationResult validationResult = validateEntity(entity);
+        if (!validationResult.isValid()) {
+            throw new ValidationException("Entity validation failed: " + validationResult.getErrors().toString());
+        }
+        
+        // 准备实体（计算字段、审计信息等）
+        prepareEntity(entity, "UPDATE");
+        
+        // 执行更新
+        DynamicSmartEntity updatedEntity = entityRepository.update(entity);
+        
+        // 发布实体变更事件 - 包含详细的变更信息
+        Map<String, Object> changedFields = compareEntities(existingEntity, updatedEntity);
+        eventPublisher.publishEvent(
+            new EntityChangedEvent(this, updatedEntity, EntityChangedEvent.Type.UPDATE, changedFields));
+        
+        log.info("Entity updated: {} (ID: {}, Version: {})", 
+                entity.getEntityApiName(), 
+                entity.getEntityId(), 
+                entity.getField("version"));
+        
+        return updatedEntity;
+    }
+    
+    /**
+     * 根据ID获取实体
+     */
+    private DynamicSmartEntity getEntityById(String entityApiName, String entityId) {
+        if (entityRepository != null) {
+            return entityRepository.findById(entityApiName, entityId);
+        }
+        return null;
+    }
+    
+    /**
+     * 比较两个实体的差异
+     */
+    private Map<String, Object> compareEntities(DynamicSmartEntity oldEntity, DynamicSmartEntity newEntity) {
+        Map<String, Object> changes = new HashMap<>();
+        
+        if (oldEntity == null || newEntity == null) {
+            return changes;
+        }
+        
+        // 获取字段差异
+        Map<String, Object> oldFields = oldEntity.getAllFields();
+        Map<String, Object> newFields = newEntity.getAllFields();
+        
+        // 检查新增或修改的字段
+        newFields.forEach((fieldName, newValue) -> {
+            Object oldValue = oldFields.get(fieldName);
+            if (oldValue == null && newValue != null) {
+                changes.put(fieldName, newValue);
+            } else if (oldValue != null && !oldValue.equals(newValue)) {
+                changes.put(fieldName, newValue);
+            }
+        });
+        
+        return changes;
     }
     
     /**

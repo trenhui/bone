@@ -27,6 +27,10 @@ public final class TypeConverter {
         public TypeConversionException(String message) {
             super(message);
         }
+        
+        public TypeConversionException(String message, Throwable cause) {
+            super(message, cause);
+        }
     }
 
     /**
@@ -37,11 +41,6 @@ public final class TypeConverter {
             return null;
         }
         return java.time.LocalDate.parse(value);
-    }
-
-        public TypeConversionException(String message, Throwable cause) {
-            super(message, cause);
-        }
     }
 
     public static class UnsupportedConversionException extends RuntimeException {

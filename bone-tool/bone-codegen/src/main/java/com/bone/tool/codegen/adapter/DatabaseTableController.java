@@ -281,8 +281,8 @@ public class DatabaseTableController {
     public ApiResponse<PageResult<CodegenTableResponse>> getTablesPage(
             @Valid CodegenTablePageRequest request) {
         try {
-            // 创建空的PageResult对象
-            PageResult<CodegenTableResponse> result = PageResult.of(new ArrayList<>(), 0L, request.getPageNo(), request.getPageSize());
+            // 创建空的PageResult对象，使用默认分页参数
+            PageResult<CodegenTableResponse> result = PageResult.of(new ArrayList<>(), 0L, 1, 10);
             
             return ApiResponse.success(result);
         } catch (Exception e) {

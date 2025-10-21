@@ -573,7 +573,9 @@ public class DatabaseTableService implements DatabaseTableServiceInterface {
                     Long requestId = request.getId();
                     
                     // 使用CodegenConverter进行转换
-                    CodegenColumn column = codegenConverter.toCodegenColumn(request, tableId);
+                    CodegenColumn column = codegenConverter.toCodegenColumn(request);
+                    // 单独设置表ID
+                    column.setTableId(tableId);
                     
                     if (requestId != null && columnIdMap.containsKey(requestId)) {
                         // 更新现有字段，保留时间戳
