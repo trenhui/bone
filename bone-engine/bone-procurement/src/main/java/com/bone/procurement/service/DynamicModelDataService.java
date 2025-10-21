@@ -610,7 +610,42 @@ public class DynamicModelDataService {
      * 查询动态模型数据（简化版本）
      */
     public List<Map<String, Object>> queryData(String modelName, Map<String, Object> queryConditions) {
-        return queryData(modelName, queryConditions, 1, Integer.MAX_VALUE, null);
+        // 参数校验
+        Assert.hasText(modelName, "模型名称不能为空");
+        
+        log.info("开始简化查询动态模型数据: {}, 条件: {}", modelName, queryConditions);
+        
+        try {
+            return queryData(modelName, queryConditions, 1, Integer.MAX_VALUE, null);
+        } catch (BusinessException e) {
+            log.error("业务异常: 简化查询动态模型数据失败 - {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("简化查询动态模型数据时发生未预期的错误: {}, 模型: {}", e.getMessage(), modelName, e);
+            throw new BusinessException("查询数据失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 查询动态模型数据的简化版本（支持分页）
+     */
+    public List<Map<String, Object>> queryData(String modelName, Map<String, Object> conditions, Integer page, Integer pageSize) {
+        // 参数校验
+        Assert.hasText(modelName, "模型名称不能为空");
+        
+        log.info("开始简化分页查询动态模型数据: {}, 条件: {}, 页码: {}, 页大小: {}", 
+                modelName, conditions, page, pageSize);
+        
+        try {
+            return queryData(modelName, conditions, page != null ? page : 1, 
+                    pageSize != null ? pageSize : Integer.MAX_VALUE, null);
+        } catch (BusinessException e) {
+            log.error("业务异常: 简化分页查询动态模型数据失败 - {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("简化分页查询动态模型数据时发生未预期的错误: {}, 模型: {}", e.getMessage(), modelName, e);
+            throw new BusinessException("查询数据失败: " + e.getMessage());
+        }
     }
 
     /**
@@ -621,30 +656,39 @@ public class DynamicModelDataService {
             return true;
         }
         
+        if (data == null) {
+            return false;
+        }
+        
         for (Map.Entry<String, Object> condition : conditions.entrySet()) {
             String fieldName = condition.getKey();
             Object expectedValue = condition.getValue();
             
-            // 检查是否是带操作符的条件格式 {"fieldName.op": value}
-            int dotIndex = fieldName.indexOf('.');
-            if (dotIndex > 0) {
-                String opName = fieldName.substring(dotIndex + 1).toUpperCase();
-                fieldName = fieldName.substring(0, dotIndex);
-                
-                try {
-                    QueryOperator operator = QueryOperator.valueOf(opName);
-                    if (!matchesConditionWithOperator(data, fieldName, expectedValue, operator)) {
+            try {
+                // 检查是否是带操作符的条件格式 {"fieldName.op": value}
+                int dotIndex = fieldName.indexOf('.');
+                if (dotIndex > 0) {
+                    String opName = fieldName.substring(dotIndex + 1).toUpperCase();
+                    fieldName = fieldName.substring(0, dotIndex);
+                    
+                    try {
+                        QueryOperator operator = QueryOperator.valueOf(opName);
+                        if (!matchesConditionWithOperator(data, fieldName, expectedValue, operator)) {
+                            return false;
+                        }
+                    } catch (IllegalArgumentException e) {
+                        log.warn("未知的查询操作符: {}", opName);
                         return false;
                     }
-                } catch (IllegalArgumentException e) {
-                    log.warn("未知的查询操作符: {}", opName);
-                    return false;
+                } else {
+                    // 默认等于操作符
+                    if (!matchesConditionWithOperator(data, fieldName, expectedValue, QueryOperator.EQ)) {
+                        return false;
+                    }
                 }
-            } else {
-                // 默认等于操作符
-                if (!matchesConditionWithOperator(data, fieldName, expectedValue, QueryOperator.EQ)) {
-                    return false;
-                }
+            } catch (Exception e) {
+                log.error("条件匹配时发生错误: fieldName={}, condition={}", fieldName, expectedValue, e);
+                return false;
             }
         }
         
@@ -656,45 +700,97 @@ public class DynamicModelDataService {
      */
     private boolean matchesConditionWithOperator(Map<String, Object> data, String fieldName, 
                                                Object expectedValue, QueryOperator operator) {
-        // 检查字段是否存在
-        boolean fieldExists = data.containsKey(fieldName);
-        Object actualValue = data.get(fieldName);
-        
-        switch (operator) {
-            case EQ:
-                return fieldExists && Objects.equals(actualValue, expectedValue);
-            case NEQ:
-                return !fieldExists || !Objects.equals(actualValue, expectedValue);
-            case GT:
-                return compareValues(actualValue, expectedValue) > 0;
-            case LT:
-                return compareValues(actualValue, expectedValue) < 0;
-            case GTE:
-                return compareValues(actualValue, expectedValue) >= 0;
-            case LTE:
-                return compareValues(actualValue, expectedValue) <= 0;
-            case LIKE:
-                if (actualValue instanceof String && expectedValue instanceof String) {
-                    return ((String) actualValue).contains((String) expectedValue);
-                }
-                return false;
-            case IN:
-                if (expectedValue instanceof Collection) {
-                    return ((Collection<?>) expectedValue).contains(actualValue);
-                }
-                return false;
-            case NOT_IN:
-                if (expectedValue instanceof Collection) {
-                    return !((Collection<?>) expectedValue).contains(actualValue);
-                }
-                return true;
-            case IS_NULL:
-                return actualValue == null;
-            case IS_NOT_NULL:
-                return actualValue != null;
-            default:
-                return false;
+        if (data == null || fieldName == null || operator == null) {
+            return false;
         }
+        
+        try {
+            // 检查字段是否存在
+            boolean fieldExists = data.containsKey(fieldName);
+            Object actualValue = data.get(fieldName);
+            
+            switch (operator) {
+                case EQ:
+                    return safeEquals(actualValue, expectedValue);
+                case NEQ:
+                    return !safeEquals(actualValue, expectedValue);
+                case GT:
+                    return compareValues(actualValue, expectedValue) > 0;
+                case LT:
+                    return compareValues(actualValue, expectedValue) < 0;
+                case GTE:
+                    return compareValues(actualValue, expectedValue) >= 0;
+                case LTE:
+                    return compareValues(actualValue, expectedValue) <= 0;
+                case LIKE:
+                    if (actualValue instanceof String && expectedValue instanceof String) {
+                        // 简单实现，支持百分号通配符
+                        String pattern = ((String) expectedValue).replace("%", ".*");
+                        return java.util.regex.Pattern.matches(pattern, (String) actualValue);
+                    }
+                    return false;
+                case IN:
+                    if (expectedValue instanceof Collection) {
+                        return ((Collection<?>) expectedValue).contains(actualValue);
+                    }
+                    if (expectedValue != null && expectedValue.getClass().isArray()) {
+                        return java.util.Arrays.asList((Object[]) expectedValue).contains(actualValue);
+                    }
+                    return false;
+                case NOT_IN:
+                    if (expectedValue instanceof Collection) {
+                        return !((Collection<?>) expectedValue).contains(actualValue);
+                    }
+                    if (expectedValue != null && expectedValue.getClass().isArray()) {
+                        return !java.util.Arrays.asList((Object[]) expectedValue).contains(actualValue);
+                    }
+                    return true;
+                case IS_NULL:
+                    return actualValue == null;
+                case IS_NOT_NULL:
+                    return actualValue != null;
+                default:
+                    return false;
+            }
+        } catch (Exception e) {
+            log.error("条件操作符匹配时发生错误: operator={}, fieldName={}, dataValue={}, conditionValue={}", 
+                    operator, fieldName, data.get(fieldName), expectedValue, e);
+            return false;
+        }
+    }
+    
+    /**
+     * 安全比较两个值
+     */
+    private boolean safeEquals(Object obj1, Object obj2) {
+        if (obj1 == obj2) {
+            return true;
+        }
+        if (obj1 == null || obj2 == null) {
+            return false;
+        }
+        
+        // 处理数值类型的比较，允许不同数值类型之间的比较
+        if (isNumber(obj1) && isNumber(obj2)) {
+            double d1 = ((Number) obj1).doubleValue();
+            double d2 = ((Number) obj2).doubleValue();
+            return Double.compare(d1, d2) == 0;
+        }
+        
+        // 尝试直接比较
+        try {
+            return obj1.equals(obj2);
+        } catch (Exception e) {
+            log.warn("对象比较异常: {} and {}", obj1, obj2, e);
+            return false;
+        }
+    }
+    
+    /**
+     * 判断对象是否为数值类型
+     */
+    private boolean isNumber(Object obj) {
+        return obj instanceof Number;
     }
     
     /**
@@ -783,38 +879,93 @@ public class DynamicModelDataService {
     public Map<String, Object> restoreVersion(String modelName, String id, int versionIndex) {
         // 参数校验
         Assert.hasText(modelName, "模型名称不能为空");
-        Assert.hasText(id, "ID不能为空");
+        Assert.hasText(id, "数据ID不能为空");
         
+        log.info("开始恢复动态模型数据版本: {}, ID: {}, 目标版本索引: {}", modelName, id, versionIndex);
+        
+        // 获取元数据
+        EntityMetadata entityMetadata = dynamicModelManager.getEntityMetadata(modelName);
+        if (entityMetadata == null) {
+            throw new BusinessException("动态模型不存在: " + modelName);
+        }
+        
+        // 获取历史数据
         Map<String, List<Map<String, Object>>> modelHistory = historyStore.get(modelName);
         if (modelHistory == null) {
             throw new BusinessException("没有找到历史记录");
         }
         
         List<Map<String, Object>> history = modelHistory.get(id);
-        if (history == null || versionIndex < 0 || versionIndex >= history.size()) {
-            throw new BusinessException("指定的历史版本不存在");
+        if (history == null) {
+            throw new BusinessException("找不到该数据的历史记录: " + id);
         }
         
-        // 获取历史版本数据
+        if (versionIndex < 0 || versionIndex >= history.size()) {
+            throw new BusinessException("指定的历史版本索引无效: " + versionIndex + ", 有效范围: 0-" + (history.size() - 1));
+        }
+        
+        // 获取数据存储
+        Map<String, Map<String, Object>> modelData = modelDataStore.get(modelName);
+        if (modelData == null || !modelData.containsKey(id)) {
+            throw new BusinessException("数据不存在: " + id);
+        }
+        
+        // 获取当前数据
+        Map<String, Object> currentData = new HashMap<>(modelData.get(id));
+        
+        // 获取要恢复的历史版本数据
         Map<String, Object> historicalData = new HashMap<>(history.get(versionIndex));
         
         // 保存当前版本到历史
-        Map<String, Map<String, Object>> modelData = modelDataStore.get(modelName);
-        if (modelData != null && modelData.containsKey(id)) {
-            saveHistoryVersion(modelName, id, new HashMap<>(modelData.get(id)));
+        saveHistoryVersion(modelName, id, currentData);
+        
+        // 恢复版本 - 只恢复核心业务字段，保留系统字段
+        Map<String, Object> restoredData = new HashMap<>();
+        
+        // 保留必要的系统字段
+        restoredData.put("id", id);
+        restoredData.put("createdAt", currentData.get("createdAt"));
+        restoredData.put("createdBy", currentData.get("createdBy"));
+        restoredData.put("tenantId", currentData.getOrDefault("tenantId", "current_tenant"));
+        
+        // 复制历史版本中的业务字段（排除系统字段）
+        for (Map.Entry<String, Object> entry : historicalData.entrySet()) {
+            String key = entry.getKey();
+            if (!"id".equals(key) && !"createdAt".equals(key) && !"createdBy".equals(key) &&
+                !"updatedAt".equals(key) && !"updatedBy".equals(key) && !"version".equals(key) &&
+                !"deleted".equals(key) && !"deletedAt".equals(key) && !"deletedBy".equals(key) &&
+                !"tenantId".equals(key)) {
+                restoredData.put(key, entry.getValue());
+            }
         }
         
-        // 恢复数据并更新版本和时间戳
-        historicalData.remove("deleted");
-        historicalData.remove("deletedAt");
-        historicalData.put("updatedAt", System.currentTimeMillis());
-        historicalData.put("version", ((Long) historicalData.getOrDefault("version", 1L)) + 1);
+        // 更新恢复后的元数据
+        restoredData.put("updatedAt", System.currentTimeMillis());
+        restoredData.put("updatedBy", "current_user"); // 在实际实现中应使用当前用户
+        
+        // 移除删除标记（如果有）
+        restoredData.remove("deleted");
+        restoredData.remove("deletedAt");
+        restoredData.remove("deletedBy");
+        
+        // 生成新版本号
+        Long currentVersion = (Long) currentData.getOrDefault("version", 1L);
+        restoredData.put("version", currentVersion + 1);
+        
+        // 处理恢复后的实体
+        try {
+            restoredData = metadataEngine.processEntityInstance(modelName, new HashMap<>(restoredData));
+        } catch (Exception e) {
+            log.error("处理恢复的实体时出错: {}, ID: {}, 版本索引: {}", modelName, id, versionIndex, e);
+            throw new BusinessException("恢复版本失败: " + e.getMessage());
+        }
         
         // 存储恢复后的数据
-        modelDataStore.computeIfAbsent(modelName, k -> new ConcurrentHashMap<>()).put(id, historicalData);
+        modelData.put(id, restoredData);
         
-        log.info("恢复数据版本成功: {}, ID: {}, 版本索引: {}", modelName, id, versionIndex);
-        return historicalData;
+        log.info("恢复动态模型数据版本成功: {}, ID: {}, 版本索引: {}, 新版本: {}", 
+                modelName, id, versionIndex, restoredData.get("version"));
+        return new HashMap<>(restoredData); // 返回副本避免外部修改
     }
     
     /**
@@ -825,8 +976,9 @@ public class DynamicModelDataService {
         Assert.hasText(modelName, "模型名称不能为空");
         Assert.notNull(dataList, "数据列表不能为空");
         Assert.isTrue(!dataList.isEmpty(), "数据列表不能为空");
+        Assert.isTrue(dataList.size() <= 1000, "批量创建数据量不能超过1000条");
 
-        log.info("批量创建动态模型数据: {}, 数量: {}", modelName, dataList.size());
+        log.info("开始批量创建动态模型数据: {}, 数据量: {}", modelName, dataList.size());
 
         // 获取元数据
         EntityMetadata entityMetadata = dynamicModelManager.getEntityMetadata(modelName);
@@ -835,19 +987,42 @@ public class DynamicModelDataService {
         }
         
         // 初始化模型数据存储（如果不存在）
-        modelDataStore.computeIfAbsent(modelName, k -> new ConcurrentHashMap<>());
+        Map<String, Map<String, Object>> modelData = modelDataStore.computeIfAbsent(modelName, 
+                k -> new ConcurrentHashMap<>());
         versionCounters.computeIfAbsent(modelName, k -> new AtomicLong(0));
         
-        // 批量处理数据 - 并行处理提高性能
-        List<Map<String, Object>> resultList = Collections.synchronizedList(new ArrayList<>(dataList.size()));
+        // 并发安全的计数器和集合
+        AtomicInteger successCount = new AtomicInteger(0);
+        AtomicInteger failCount = new AtomicInteger(0);
+        ConcurrentLinkedQueue<Map<String, Object>> results = new ConcurrentLinkedQueue<>();
+        ConcurrentLinkedQueue<String> failedIds = new ConcurrentLinkedQueue<>();
         long timestamp = System.currentTimeMillis();
         
+        // 批量处理数据 - 并行处理提高性能
         dataList.parallelStream().forEach(data -> {
             try {
-                // 生成唯一ID
-                String id = UUID.randomUUID().toString();
+                // 验证单条数据不能为空
+                if (data == null || data.isEmpty()) {
+                    log.warn("批量创建时发现空数据");
+                    failCount.incrementAndGet();
+                    failedIds.add("空数据");
+                    return;
+                }
+                
+                // 创建数据副本以避免修改原始数据
                 Map<String, Object> processedData = new HashMap<>(data);
+                
+                // 生成ID（如果没有提供）
+                String id = processedData.get("id") != null ? processedData.get("id").toString() : UUID.randomUUID().toString();
                 processedData.put("id", id);
+                
+                // 检查ID是否已存在
+                if (modelData.containsKey(id)) {
+                    log.warn("批量创建时发现重复ID: {}", id);
+                    failCount.incrementAndGet();
+                    failedIds.add(id);
+                    return;
+                }
                 
                 // 设置创建时间和创建者信息
                 processedData.put("createdAt", timestamp);
@@ -859,26 +1034,46 @@ public class DynamicModelDataService {
                 processedData.put("version", 1L);
                 processedData.put("tenantId", "current_tenant");
                 
+                // 确保没有删除标记
+                processedData.remove("deleted");
+                processedData.remove("deletedAt");
+                processedData.remove("deletedBy");
+                
                 // 处理计算字段和业务规则
                 try {
                     processedData = metadataEngine.processEntityInstance(modelName, processedData);
                 } catch (Exception e) {
-                    log.error("批量创建数据处理时出错: {}", modelName, e);
+                    log.error("批量创建数据处理时出错: {}, ID: {}", modelName, id, e);
                     throw new BusinessException("批量创建数据失败: " + e.getMessage());
                 }
                 
                 // 存储数据
-                modelDataStore.get(modelName).put(id, processedData);
-                resultList.add(new HashMap<>(processedData));
+                modelData.put(id, processedData);
+                results.add(new HashMap<>(processedData));
+                successCount.incrementAndGet();
                 
+            } catch (BusinessException e) {
+                String id = data != null && data.get("id") != null ? data.get("id").toString() : "未知ID";
+                log.error("批量创建数据业务异常: {}, ID: {}, 错误: {}", modelName, id, e.getMessage());
+                failCount.incrementAndGet();
+                failedIds.add(id);
             } catch (Exception e) {
-                log.error("批量创建实体时出错: {}", modelName, e);
-                throw new BusinessException("批量创建数据失败: " + e.getMessage());
+                String id = data != null && data.get("id") != null ? data.get("id").toString() : "未知ID";
+                log.error("批量创建实体时出错: {}, ID: {}", modelName, id, e);
+                failCount.incrementAndGet();
+                failedIds.add(id);
             }
         });
         
-        log.info("批量创建完成: {}, 创建数量: {}", modelName, resultList.size());
-        return resultList;
+        // 记录详细日志
+        log.info("批量创建动态模型数据完成: {}, 总数据量: {}, 成功: {}, 失败: {}",
+                modelName, dataList.size(), successCount.get(), failCount.get());
+        
+        if (!failedIds.isEmpty()) {
+            log.warn("部分数据创建失败，失败ID: {}, 数量: {}", failedIds, failedIds.size());
+        }
+        
+        return new ArrayList<>(results);
     }
     
     /**

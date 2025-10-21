@@ -1,12 +1,12 @@
-# React Frontend Micro-Architecture Design
+# React Frontend Micro-Architecture Design / React前端微架构设计
 
-## 1. Overview
+## 1. Overview / 概述
 
 本文档详细描述了Bone企业级开发平台的React前端微应用架构设计方案。该方案基于业界最佳实践，旨在构建一个高度可扩展、高性能、易维护的前端应用框架，支持多团队并行协作开发，实现业务模块的独立部署和运行。通过微前端架构，我们将大型前端应用拆分为多个小型、松耦合的微应用，每个微应用可以由独立团队负责，使用适合其业务场景的技术栈。
 
-## 2. Architecture Design
+## 2. Architecture Design / 架构设计
 
-### 2.1 Micro-Frontend Architecture Overview
+### 2.1 Micro-Frontend Architecture Overview / 微前端架构概述
 
 Bone前端采用现代混合式微前端架构，基于无界框架(wujie)实现，结合了基座模式和去中心化模式的优点，具有以下核心特性：
 
@@ -17,7 +17,7 @@ Bone前端采用现代混合式微前端架构，基于无界框架(wujie)实现
 - **Unified Management**: 提供统一的应用注册、路由管理、生命周期控制和权限管理
 - **Seamless Communication**: 实现主应用与微应用、微应用与微应用间的高效通信机制
 
-### 2.2 Core Architecture Components
+### 2.2 Core Architecture Components / 核心架构组件
 
 ```
 ├── Main Framework (main-app)
@@ -40,9 +40,9 @@ Bone前端采用现代混合式微前端架构，基于无界框架(wujie)实现
     └── Utils & Helpers                   # 工具函数库
 ```
 
-## 3. Main Framework Design
+## 3. Main Framework Design / 主框架设计
 
-### 3.1 Main Framework Architecture
+### 3.1 Main Framework Architecture / 主框架架构概述
 
 主框架(Main Framework)作为整个微前端系统的基座，负责协调和管理所有微应用，提供统一的入口、基础设施和运行环境。主框架采用模块化设计，各模块职责清晰，便于维护和扩展。
 
@@ -69,7 +69,7 @@ function App() {
 }
 ```
 
-### 3.2 Micro-Frontend Orchestrator
+### 3.2 Micro-Frontend Orchestrator / 微前端协调器
 
 微前端协调器(Micro-Frontend Orchestrator)是主框架的核心组件，负责微应用的注册、配置、加载和生命周期管理，提供统一的微应用管理接口。
 
@@ -487,7 +487,7 @@ export class MicroFrontendOrchestrator {
 export const microFrontendOrchestrator = MicroFrontendOrchestrator.getInstance();
 ```
 
-### 3.3 应用初始化流程
+### 3.3 Application Initialization Flow / 应用初始化流程
 
 应用初始化器负责微应用的动态注册和初始化流程管理。
 
@@ -617,34 +617,389 @@ export class AppInitializer {
 export const appInitializer = new AppInitializer();
 ```
 
-## 4. Micro Application Design
+## 4. Micro Application Design / 微应用设计
 
-### 4.1 Micro Application Architecture
+### 4.1 Micro Application Architecture / 微应用架构
 
-微应用(Micro Application)是独立的业务模块，具有自己的路由、状态管理和业务逻辑，遵循独立开发、独立部署、独立运行的原则。
+微应用(Micro Application)是独立的业务模块，具有自己的路由、状态管理和业务逻辑，遵循独立开发、独立部署、独立运行的原则。每个微应用都可以作为独立的Web应用运行，也可以作为整体系统的一部分被主框架加载和管理。
 
-#### 4.1.1 Micro Application Directory Structure
+### 4.1.1 微应用特性
+
+- **独立性**: 拥有独立的代码库、构建流程和部署通道
+- **自包含**: 包含完整的业务逻辑、UI组件和数据处理
+- **标准化**: 遵循统一的微前端接口规范，便于与主框架集成
+- **可复用**: 提供可复用的业务能力，可以被多个场景调用
+
+## 4.2 Complete Frontend Engineering Structure / 完整前端工程结构
+
+### 4.2.1 Monorepo Structure Overview / 单仓库结构概览
+
+Bone平台前端采用现代化的Monorepo架构，使用Lerna和Yarn Workspaces进行管理，实现代码共享和依赖管理的最优化。
+
+```
+bone-frontend/                 # 前端根目录
+├── apps/                      # 应用目录
+│   ├── main-app/              # 主应用 (基座应用)
+│   ├── micro-app-admin/       # 管理门户微应用
+│   ├── micro-app-analytics/   # 数据分析微应用
+│   ├── micro-app-workflow/    # 工作流引擎微应用
+│   └── micro-app-user/        # 用户中心微应用
+├── packages/                  # 共享包目录
+│   ├── ui-components/         # UI组件库
+│   ├── micro-frontend-sdk/    # 微前端SDK
+│   ├── shared-utils/          # 共享工具函数
+│   ├── api-client/            # API客户端
+│   └── eslint-config/         # ESLint配置
+├── scripts/                   # 构建和部署脚本
+├── docs/                      # 文档
+├── .eslintrc.js               # 根目录ESLint配置
+├── .prettierrc                # Prettier配置
+├── lerna.json                 # Lerna配置
+├── package.json               # 根目录package.json
+├── tsconfig.json              # 根目录TypeScript配置
+└── README.md                  # 项目说明文档
+```
+
+### 4.2.2 Main Application Structure / 主应用结构
+
+```
+main-app/
+├── public/                    # 静态资源目录
+│   ├── index.html            # HTML入口文件
+│   ├── favicon.ico           # 网站图标
+│   └── manifest.json         # PWA配置文件
+├── src/
+│   ├── assets/               # 资源文件目录
+│   │   ├── images/           # 图片资源
+│   │   ├── icons/            # 图标资源
+│   │   ├── fonts/            # 字体资源
+│   │   └── styles/           # 全局样式
+│   ├── components/           # 公共组件
+│   │   ├── layout/           # 布局组件
+│   │   ├── common/           # 通用组件
+│   │   └── business/         # 业务组件
+│   ├── config/               # 配置文件
+│   │   ├── appConfig.ts      # 应用配置
+│   │   ├── microApps.ts      # 微应用配置
+│   │   └── securityConfig.ts # 安全配置
+│   ├── core/                 # 核心模块
+│   │   ├── orchestrator/     # 微前端协调器
+│   │   ├── router/           # 路由系统
+│   │   ├── store/            # 状态管理
+│   │   └── theme/            # 主题配置
+│   ├── hooks/                # 自定义Hooks
+│   ├── pages/                # 页面组件
+│   │   ├── Home/             # 首页
+│   │   ├── Login/            # 登录页
+│   │   ├── Layout/           # 主布局
+│   │   └── Error/            # 错误页面
+│   ├── services/             # API服务
+│   │   ├── authService.ts    # 认证服务
+│   │   ├── userService.ts    # 用户服务
+│   │   └── apiClient.ts      # API客户端
+│   ├── types/                # TypeScript类型定义
+│   ├── utils/                # 工具函数
+│   │   ├── formatters.ts     # 格式化工具
+│   │   ├── validators.ts     # 验证工具
+│   │   └── security.ts       # 安全工具
+│   ├── App.tsx               # 应用根组件
+│   ├── main.tsx              # 应用入口文件
+│   ├── routes.tsx            # 路由配置
+│   └── setupTests.ts         # 测试配置
+├── tests/                    # 测试文件
+│   ├── unit/                 # 单元测试
+│   └── integration/          # 集成测试
+├── .env.development          # 开发环境变量
+├── .env.production           # 生产环境变量
+├── .env.staging              # 预发环境变量
+├── babel.config.js           # Babel配置
+├── jest.config.js            # Jest配置
+├── package.json              # 依赖配置
+├── tsconfig.json             # TypeScript配置
+├── tsconfig.paths.json       # TypeScript路径别名
+├── vite.config.ts            # Vite配置 (现代化构建工具)
+└── README.md                 # 项目说明
+```
+
+### 4.2.3 Micro Application Structure / 微应用结构
 
 ```
 micro-app/
-├── public/
+├── public/                    # 静态资源
 ├── src/
-│   ├── assets/           # Static assets - 静态资源
-│   ├── components/       # React components - 组件
-│   ├── pages/            # Page components - 页面
-│   ├── services/         # API services - API服务
-│   ├── store/            # State management - 状态管理
-│   ├── utils/            # Utility functions - 工具函数
-│   ├── hooks/            # Custom hooks - 自定义Hooks
-│   ├── types/            # TypeScript types - 类型定义
-│   ├── App.tsx           # Root application component - 应用组件
-│   ├── bootstrap.tsx     # Micro application bootstrap - 微应用启动入口
-│   └── index.ts          # Module exports - 导出模块
-├── package.json          # Dependencies and scripts - 依赖和脚本配置
-├── tsconfig.json         # TypeScript configuration - TypeScript配置
-├── webpack.config.js     # Webpack configuration - Webpack配置
-└── README.md             # Project documentation - 项目文档
+│   ├── assets/               # 静态资源 - 图片、样式等
+│   ├── components/           # React组件 - 业务组件
+│   ├── config/               # 微应用配置
+│   ├── hooks/                # 自定义Hooks
+│   ├── pages/                # 页面组件
+│   ├── router/               # 微应用路由配置
+│   ├── services/             # API服务
+│   ├── store/                # 状态管理
+│   │   ├── slices/           # Redux Toolkit slices
+│   │   ├── selectors/        # 选择器
+│   │   └── index.ts          # store配置
+│   ├── types/                # TypeScript类型定义
+│   ├── utils/                # 工具函数
+│   ├── App.tsx               # 根应用组件
+│   ├── bootstrap.tsx         # 微应用启动入口 (必须)
+│   └── index.ts              # 模块导出
+├── .eslintrc.js              # ESLint配置
+├── package.json              # 依赖和脚本配置
+├── tsconfig.json             # TypeScript配置
+├── vite.config.ts            # Vite配置
+└── README.md                 # 项目文档
 ```
+
+### 4.2.4 Shared Packages Structure / 共享包结构
+
+#### UI组件库
+```
+ui-components/
+├── src/
+│   ├── components/           # 组件
+│   │   ├── Button/           # Button组件
+│   │   │   ├── Button.tsx
+│   │   │   ├── Button.types.ts
+│   │   │   ├── Button.stories.tsx
+│   │   │   └── Button.test.tsx
+│   │   ├── Form/             # Form组件
+│   │   ├── Table/            # Table组件
+│   │   └── index.ts          # 组件导出
+│   ├── hooks/                # 组件Hooks
+│   ├── theme/                # 主题配置
+│   ├── types/                # 类型定义
+│   └── utils/                # 工具函数
+├── docs/                     # 组件文档
+├── stories/                  # Storybook stories
+├── package.json              # 包配置
+├── tsconfig.json             # TypeScript配置
+└── README.md                 # 文档
+```
+
+#### 微前端SDK
+```
+micro-frontend-sdk/
+├── src/
+│   ├── communication/        # 通信模块
+│   ├── lifecycle/            # 生命周期管理
+│   ├── sandbox/              # 沙箱工具
+│   ├── utils/                # 工具函数
+│   └── index.ts              # 导出
+├── package.json
+└── tsconfig.json
+```
+
+### 4.2.5 Build Tooling Configuration / 构建工具配置
+
+#### Vite配置示例 (vite.config.ts)
+```typescript
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import { resolve } from 'path';
+import { createHtmlPlugin } from 'vite-plugin-html';
+import styleImport from 'vite-plugin-style-import';
+import microApp from '@micro-zoe/micro-app';
+
+// https://vitejs.dev/config/
+export default defineConfig(({ mode }) => {
+  const isProduction = mode === 'production';
+  
+  return {
+    plugins: [
+      react({
+        jsxRuntime: 'automatic'
+      }),
+      createHtmlPlugin({
+        inject: {
+          data: {
+            title: 'Bone Platform'
+          }
+        }
+      }),
+      styleImport({
+        libs: [
+          {
+            libraryName: 'antd',
+            esModule: true,
+            resolveStyle: (name: string) => `antd/es/${name}/style/index`
+          }
+        ]
+      })
+    ],
+    resolve: {
+      alias: {
+        '@': resolve(__dirname, 'src'),
+        '@bone': resolve(__dirname, '../packages')
+      }
+    },
+    server: {
+      port: 3000,
+      proxy: {
+        '/api': {
+          target: 'http://localhost:8080',
+          changeOrigin: true
+        }
+      }
+    },
+    build: {
+      outDir: 'dist',
+      minify: 'terser',
+      sourcemap: !isProduction,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ['react', 'react-dom'],
+            antd: ['antd'],
+            redux: ['redux', '@reduxjs/toolkit', 'react-redux']
+          }
+        }
+      }
+    },
+    css: {
+      preprocessorOptions: {
+        less: {
+          javascriptEnabled: true
+        }
+      }
+    }
+  };
+});
+```
+
+### 4.2.6 CI/CD Pipeline Configuration / CI/CD流水线配置
+
+```yaml
+# .github/workflows/ci-cd.yml example
+name: Frontend CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+        cache: 'yarn'
+    
+    - name: Install dependencies
+      run: yarn install --frozen-lockfile
+    
+    - name: Lint code
+      run: yarn lint
+    
+    - name: Run tests
+      run: yarn test
+    
+    - name: Build applications
+      run: yarn build
+    
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-artifacts
+        path: |
+          apps/**/dist
+          packages/**/dist
+
+  deploy:
+    needs: build
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/download-artifact@v3
+      with:
+        name: build-artifacts
+        path: ./dist
+    
+    - name: Deploy to environment
+      run: |
+        if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          # 部署到生产环境
+          ./scripts/deploy.sh production
+        else
+          # 部署到测试环境
+          ./scripts/deploy.sh staging
+        fi
+```
+
+### 4.2.7 Code Quality Tools Configuration / 代码质量工具配置
+
+#### ESLint配置 (.eslintrc.js)
+```javascript
+module.exports = {
+  root: true,
+  extends: [
+    'airbnb',
+    'airbnb-typescript',
+    'airbnb/hooks',
+    'plugin:@typescript-eslint/recommended',
+    'plugin:react-hooks/recommended',
+    'plugin:prettier/recommended'
+  ],
+  parserOptions: {
+    ecmaVersion: 2022,
+    sourceType: 'module',
+    project: './tsconfig.json'
+  },
+  plugins: ['react', '@typescript-eslint', 'prettier'],
+  rules: {
+    'react/react-in-jsx-scope': 'off',
+    'react/prop-types': 'off',
+    '@typescript-eslint/explicit-function-return-type': 'off',
+    'import/prefer-default-export': 'off',
+    'prettier/prettier': ['error']
+  },
+  settings: {
+    react: {
+      version: 'detect'
+    }
+  }
+};
+```
+
+#### Prettier配置 (.prettierrc)
+```json
+{
+  "semi": true,
+  "trailingComma": "all",
+  "singleQuote": true,
+  "printWidth": 80,
+  "tabWidth": 2
+}
+```
+
+### 4.2.8 Development Workflow / 开发工作流
+
+1. **本地开发环境设置**
+   - 安装依赖: `yarn install`
+   - 启动主应用: `yarn workspace main-app dev`
+   - 启动微应用: `yarn workspace micro-app-name dev`
+   - 启动所有微应用: `yarn dev:all`
+
+2. **代码提交规范**
+   - 使用Husky进行Git钩子管理
+   - Commit message格式遵循Conventional Commits
+   - 提交前自动运行lint和测试
+
+3. **测试策略**
+   - 单元测试: Jest + React Testing Library
+   - 集成测试: Cypress
+   - 代码覆盖率要求: >80%
+
+4. **文档生成**
+   - 组件文档: Storybook
+   - API文档: TypeDoc
+   - 架构文档: Markdown + Docusaurus
 
 #### 4.1.2 Micro Application Bootstrap File
 
@@ -2050,37 +2405,101 @@ export function applySecurityPolicy(policy?: Record<string, any>): Record<string
 }
 ```
 
-## 7. 性能优化
+## 7. Performance Optimization
 
-### 7.1 预加载策略
+### 7.1 Preloading Strategy
 
-智能预加载机制可以显著提升微应用的加载速度和用户体验。
+智能预加载机制可以显著提升微应用的加载速度和用户体验，通过分析用户行为和应用关联关系，在合适的时机预加载可能会被访问的微应用。
 
 ```typescript
 /**
- * 微应用预加载管理器
+ * Micro Application Preloader Manager
+ * 微应用预加载管理器 - 负责智能预加载微应用资源，提升加载性能
  */
 export class MicroAppPreloader {
   private preloadedApps: Set<string>;
   private preloadingApps: Set<string>;
   private microAppManager: MicroAppManager;
+  private preloadMetrics: Map<string, {
+    loadTime: number;
+    success: boolean;
+    timestamp: number;
+    attempts: number;
+  }>;
 
   constructor() {
     this.preloadedApps = new Set();
     this.preloadingApps = new Set();
     this.microAppManager = MicroAppManager.getInstance();
+    this.preloadMetrics = new Map();
+    this.initializeEventListeners();
   }
 
   /**
-   * 预加载单个微应用
+   * Initialize Event Listeners
+   * 初始化事件监听器 - 监听路由变化和用户交互事件以触发预加载
+   */
+  private initializeEventListeners(): void {
+    // 监听路由变化事件
+    globalEventBus.on(AppEvents.ROUTE_CHANGED, (data: { path: string }) => {
+      this.handleRouteChange(data.path);
+    });
+    
+    // 监听用户点击事件以进行预测性预加载
+    if (typeof window !== 'undefined') {
+      document.addEventListener('click', this.handleUserInteraction.bind(this), { passive: true });
+    }
+  }
+
+  /**
+   * Handle Route Change
+   * 处理路由变化 - 根据当前路由预加载相关微应用
+   * @param path 当前路由路径
+   */
+  private handleRouteChange(path: string): void {
+    // 延迟执行，避免影响当前页面渲染
+    setTimeout(() => {
+      this.smartPreload({
+        strategy: 'route',
+        currentPath: path
+      });
+    }, 300);
+  }
+
+  /**
+   * Handle User Interaction
+   * 处理用户交互 - 基于用户点击行为进行预测性预加载
+   * @param event 点击事件
+   */
+  private handleUserInteraction(event: MouseEvent): void {
+    const target = event.target as HTMLElement;
+    const appLink = target.closest('[data-app-link]') as HTMLElement | null;
+    
+    if (appLink) {
+      const appName = appLink.getAttribute('data-app-name');
+      if (appName && !this.isPreloaded(appName) && !this.isPreloading(appName)) {
+        // 用户可能即将访问该应用，提前预加载
+        this.preloadApp(appName, { priority: 'high' });
+      }
+    }
+  }
+
+  /**
+   * Preload Single Micro Application
+   * 预加载单个微应用 - 加载微应用资源到内存
    * @param appName 应用名称
    * @param options 预加载选项
    */
   async preloadApp(appName: string, options?: {
     force?: boolean;
     timeout?: number;
+    priority?: 'low' | 'medium' | 'high';
   }): Promise<boolean> {
-    const { force = false, timeout = 30000 } = options || {};
+    const { 
+      force = false, 
+      timeout = 30000, 
+      priority = 'medium' 
+    } = options || {};
 
     // 如果已经预加载过且不强制重新加载，则直接返回成功
     if (this.preloadedApps.has(appName) && !force) {
@@ -2097,8 +2516,23 @@ export class MicroAppPreloader {
       return this.preloadedApps.has(appName);
     }
 
+    // 检查系统资源状况，仅在资源充足时预加载
+    if (!this.isSystemResourceAvailable(priority)) {
+      console.warn(`系统资源不足，延迟预加载: ${appName}`);
+      // 延迟预加载
+      setTimeout(() => this.preloadApp(appName, options), 1000);
+      return false;
+    }
+
     try {
       this.preloadingApps.add(appName);
+      const metrics = this.preloadMetrics.get(appName) || { 
+        loadTime: 0, 
+        success: false, 
+        timestamp: 0, 
+        attempts: 0 
+      };
+      metrics.attempts += 1;
 
       // 获取应用配置
       const config = this.microAppManager.getAppConfig(appName);
@@ -2110,12 +2544,23 @@ export class MicroAppPreloader {
       // 开始预加载计时
       const startTime = performance.now();
 
+      // 根据优先级设置不同的加载策略
+      const loadOptions = priority === 'high' 
+        ? { timeout: timeout / 2 } // 高优先级应用使用更短的超时时间
+        : {};
+
       // 使用无界框架的预加载API
-      await preloadApp(appName, config.entry);
+      await preloadApp(appName, config.entry, loadOptions);
 
       // 计算加载时间
       const loadTime = performance.now() - startTime;
       console.log(`微应用 ${appName} 预加载完成，耗时: ${loadTime.toFixed(2)}ms`);
+
+      // 更新指标
+      metrics.loadTime = loadTime;
+      metrics.success = true;
+      metrics.timestamp = Date.now();
+      this.preloadMetrics.set(appName, metrics);
 
       // 标记为已预加载
       this.preloadedApps.add(appName);
@@ -2124,18 +2569,28 @@ export class MicroAppPreloader {
       globalEventBus.emit(AppEvents.MICRO_APP_PRELOADED, {
         appName,
         loadTime,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        priority
       });
+
+      // 预加载完成后处理消息队列
+      microAppMessenger.processMessageQueue();
 
       return true;
     } catch (error) {
       console.error(`微应用 ${appName} 预加载失败:`, error);
       
+      // 更新指标
+      metrics.success = false;
+      metrics.timestamp = Date.now();
+      this.preloadMetrics.set(appName, metrics);
+      
       // 触发预加载失败事件
       globalEventBus.emit(AppEvents.MICRO_APP_LOAD_ERROR, {
         appName,
         error: (error as Error).message,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        attempts: metrics.attempts
       });
 
       return false;
@@ -2145,7 +2600,8 @@ export class MicroAppPreloader {
   }
 
   /**
-   * 批量预加载微应用
+   * Batch Preload Micro Applications
+   * 批量预加载微应用 - 控制并发数进行批量预加载
    * @param appNames 应用名称数组
    * @param options 预加载选项
    */
@@ -2153,18 +2609,25 @@ export class MicroAppPreloader {
     force?: boolean;
     timeout?: number;
     concurrency?: number;
+    priority?: 'low' | 'medium' | 'high';
   }): Promise<{
     success: string[];
     failed: string[];
   }> {
-    const { concurrency = 3 } = options || {};
+    const { 
+      concurrency = 3,
+      priority = 'medium'
+    } = options || {};
     const success: string[] = [];
     const failed: string[] = [];
 
+    // 根据网络状况调整并发数
+    const adjustedConcurrency = this.adjustConcurrencyByNetwork(concurrency, priority);
+
     // 创建并发控制的预加载任务
     const chunks: string[][] = [];
-    for (let i = 0; i < appNames.length; i += concurrency) {
-      chunks.push(appNames.slice(i, i + concurrency));
+    for (let i = 0; i < appNames.length; i += adjustedConcurrency) {
+      chunks.push(appNames.slice(i, i + adjustedConcurrency));
     }
 
     // 按批次执行预加载
@@ -2181,20 +2644,33 @@ export class MicroAppPreloader {
           failed.push(chunk[index]);
         }
       });
+
+      // 批次间隔，避免过度占用资源
+      if (chunks.indexOf(chunk) < chunks.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
     }
 
     return { success, failed };
   }
 
   /**
-   * 智能预加载推荐的微应用
-   * 基于用户行为和应用关联关系进行预加载
+   * Smart Preload Recommended Micro Applications
+   * 智能预加载推荐的微应用 - 基于多种策略进行智能预加载
+   * @param options 预加载选项
    */
   async smartPreload(options?: {
     maxApps?: number;
     ignoreActiveApp?: boolean;
+    strategy?: 'user-behavior' | 'route' | 'relationship';
+    currentPath?: string;
   }): Promise<void> {
-    const { maxApps = 3, ignoreActiveApp = true } = options || {};
+    const { 
+      maxApps = 3, 
+      ignoreActiveApp = true,
+      strategy = 'user-behavior',
+      currentPath = ''
+    } = options || {};
 
     // 获取所有应用配置
     const allApps = this.microAppManager.getAllAppConfigs();
@@ -2205,27 +2681,191 @@ export class MicroAppPreloader {
     // 获取当前活动的应用
     let activeAppName: string | null = null;
     if (ignoreActiveApp) {
-      // 这里可以通过全局状态获取当前活动的应用
-      // 例如: activeAppName = getActiveAppName();
+      // 通过全局状态获取当前活动的应用
+      activeAppName = this.getActiveAppName();
     }
 
-    // 根据优先级和预加载配置排序
-    const recommendedApps = allApps
-      .filter(app => 
-        (!ignoreActiveApp || app.name !== activeAppName) && 
-        app.preload !== false
-      )
-      .sort((a, b) => (a.priority || 0) - (b.priority || 0))
-      .slice(0, maxApps)
-      .map(app => app.name);
+    let recommendedApps: string[] = [];
+    
+    // 根据不同策略获取推荐应用
+    switch (strategy) {
+      case 'route':
+        // 基于路由路径的预加载
+        recommendedApps = this.getAppsByRoute(currentPath, activeAppName);
+        break;
+        
+      case 'relationship':
+        // 基于应用关联关系的预加载
+        recommendedApps = this.getAppsByRelationship(activeAppName);
+        break;
+        
+      case 'user-behavior':
+      default:
+        // 基于用户行为和优先级的预加载
+        recommendedApps = this.getAppsByUserBehavior(activeAppName);
+        break;
+    }
 
-    // 执行预加载
-    await this.preloadApps(recommendedApps, {
-      concurrency: 2 // 限制并发数
-    });
+    // 过滤已预加载和正在预加载的应用
+    const appsToPreload = recommendedApps
+      .filter(app => !this.isPreloaded(app) && !this.isPreloading(app))
+      .slice(0, maxApps);
+
+    // 如果有应用需要预加载，则执行预加载
+    if (appsToPreload.length > 0) {
+      await this.preloadApps(appsToPreload, {
+        concurrency: 2,
+        priority: 'low' // 智能预加载使用低优先级
+      });
+    }
   }
 
   /**
+   * Get Apps By Route
+   * 根据路由获取相关应用
+   * @param path 当前路由路径
+   * @param activeAppName 当前活动应用名称
+   */
+  private getAppsByRoute(path: string, activeAppName: string | null): string[] {
+    // 根据路由路径匹配相关应用
+    return this.microAppManager.getAllAppConfigs()
+      .filter(app => 
+        (!activeAppName || app.name !== activeAppName) && 
+        app.preload !== false &&
+        (app.routes || []).some(route => path.startsWith(route))
+      )
+      .sort((a, b) => (a.priority || 0) - (b.priority || 0))
+      .map(app => app.name);
+  }
+
+  /**
+   * Get Apps By Relationship
+   * 根据应用关联关系获取推荐应用
+   * @param activeAppName 当前活动应用名称
+   */
+  private getAppsByRelationship(activeAppName: string | null): string[] {
+    if (!activeAppName) return [];
+    
+    // 获取当前应用配置
+    const activeApp = this.microAppManager.getAppConfig(activeAppName);
+    if (!activeApp || !activeApp.relatedApps) return [];
+    
+    // 返回相关联的应用
+    return activeApp.relatedApps
+      .map(appName => this.microAppManager.getAppConfig(appName))
+      .filter(app => app && app.preload !== false)
+      .sort((a, b) => (a!.priority || 0) - (b!.priority || 0))
+      .map(app => app!.name);
+  }
+
+  /**
+   * Get Apps By User Behavior
+   * 根据用户行为获取推荐应用
+   * @param activeAppName 当前活动应用名称
+   */
+  private getAppsByUserBehavior(activeAppName: string | null): string[] {
+    // 这里可以集成用户行为分析逻辑
+    // 例如基于历史访问频率、时间模式等
+    
+    // 简化实现：基于优先级和预加载配置
+    return this.microAppManager.getAllAppConfigs()
+      .filter(app => 
+        (!activeAppName || app.name !== activeAppName) && 
+        app.preload !== false
+      )
+      .sort((a, b) => {
+        // 优先排序有预加载时间窗口的应用
+        const now = new Date().getHours();
+        const aInWindow = this.isInPreloadWindow(a.preloadWindow, now);
+        const bInWindow = this.isInPreloadWindow(b.preloadWindow, now);
+        
+        if (aInWindow && !bInWindow) return -1;
+        if (!aInWindow && bInWindow) return 1;
+        
+        // 其次基于优先级
+        return (a.priority || 0) - (b.priority || 0);
+      })
+      .map(app => app.name);
+  }
+
+  /**
+   * Check if in Preload Window
+   * 检查是否在预加载时间窗口内
+   * @param window 预加载时间窗口配置
+   * @param currentHour 当前小时
+   */
+  private isInPreloadWindow(window?: [number, number], currentHour?: number): boolean {
+    if (!window || !currentHour) return false;
+    const [start, end] = window;
+    return currentHour >= start && currentHour < end;
+  }
+
+  /**
+   * Get Active App Name
+   * 获取当前活动的应用名称
+   */
+  private getActiveAppName(): string | null {
+    // 从全局状态或路由获取当前活动应用
+    try {
+      // 这里需要根据实际的路由实现调整
+      // 例如: return router.getCurrentApp();
+      return null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
+   * Check System Resource Availability
+   * 检查系统资源可用性
+   * @param priority 预加载优先级
+   */
+  private isSystemResourceAvailable(priority: 'low' | 'medium' | 'high'): boolean {
+    // 检查网络状态
+    if (navigator.onLine === false) {
+      return priority === 'high'; // 离线状态下只允许高优先级预加载
+    }
+    
+    // 检查电池状态
+    if ('getBattery' in navigator) {
+      // 这里可以添加电池状态检查逻辑
+    }
+    
+    // 低优先级预加载在网络状态不佳时可能被延迟
+    if (priority === 'low' && navigator.connection && 
+        (navigator.connection.saveData || 
+         navigator.connection.effectiveType === '2g')) {
+      return false;
+    }
+    
+    return true;
+  }
+
+  /**
+   * Adjust Concurrency By Network
+   * 根据网络状况调整并发数
+   * @param baseConcurrency 基础并发数
+   * @param priority 预加载优先级
+   */
+  private adjustConcurrencyByNetwork(baseConcurrency: number, priority: 'low' | 'medium' | 'high'): number {
+    if (!navigator.connection) return baseConcurrency;
+    
+    const { effectiveType } = navigator.connection;
+    
+    switch (effectiveType) {
+      case '4g':
+        return baseConcurrency; // 4G网络保持原并发数
+      case '3g':
+        return Math.max(1, baseConcurrency - 1); // 3G网络降低并发数
+      case '2g':
+        return 1; // 2G网络只允许串行加载
+      default:
+        return Math.max(1, baseConcurrency - 1);
+    }
+  }
+
+  /**
+   * Check if App is Preloaded
    * 检查应用是否已预加载
    * @param appName 应用名称
    */
@@ -2234,6 +2874,7 @@ export class MicroAppPreloader {
   }
 
   /**
+   * Check if App is Preloading
    * 检查应用是否正在预加载
    * @param appName 应用名称
    */
@@ -2242,14 +2883,45 @@ export class MicroAppPreloader {
   }
 
   /**
+   * Clear Preload Cache
    * 清除预加载缓存
    * @param appName 应用名称，如果不指定则清除所有
    */
   clearCache(appName?: string): void {
     if (appName) {
       this.preloadedApps.delete(appName);
+      this.preloadMetrics.delete(appName);
     } else {
       this.preloadedApps.clear();
+      this.preloadMetrics.clear();
+    }
+  }
+
+  /**
+   * Get Preload Metrics
+   * 获取预加载指标
+   * @param appName 应用名称，如果不指定则返回所有
+   */
+  getPreloadMetrics(appName?: string): Map<string, any> | undefined {
+    if (appName) {
+      const metrics = this.preloadMetrics.get(appName);
+      return metrics ? new Map([[appName, metrics]]) : undefined;
+    }
+    return this.preloadMetrics;
+  }
+
+  /**
+   * Dispose Preloader
+   * 清理预加载器资源
+   */
+  dispose(): void {
+    this.preloadedApps.clear();
+    this.preloadingApps.clear();
+    this.preloadMetrics.clear();
+    
+    // 移除事件监听器
+    if (typeof window !== 'undefined') {
+      document.removeEventListener('click', this.handleUserInteraction.bind(this));
     }
   }
 }
@@ -2258,132 +2930,414 @@ export class MicroAppPreloader {
 export const microAppPreloader = new MicroAppPreloader();
 ```
 
-### 7.2 资源管理
+### 7.2 Resource Management
 
-资源管理机制可以有效控制和优化微应用的资源使用。
+资源管理机制可以有效控制和优化微应用的资源使用，包括响应缓存、网络请求优化、内存管理等方面，提升整体性能和用户体验。
 
 ```typescript
 /**
- * 响应缓存管理器
+ * Response Cache Manager
+ * 响应缓存管理器 - 智能缓存API响应数据，减少重复请求，提升性能
  */
 export class ResponseCacheManager {
   private cache: Map<string, {
     data: any;
     timestamp: number;
     ttl: number;
+    size: number;
+    hitCount: number;
+    tags?: string[];
   }>;
   private maxSize: number;
   private defaultTTL: number;
+  private totalSize: number;
+  private memoryLimit: number;
+  private cleanupInterval: NodeJS.Timeout | null;
 
+  /**
+   * Constructor
+   * @param options 配置选项
+   */
   constructor(options?: {
-    maxSize?: number;
-    defaultTTL?: number;
+    maxSize?: number;        // 最大缓存条目数
+    defaultTTL?: number;     // 默认过期时间（毫秒）
+    memoryLimit?: number;    // 内存限制（字节），默认10MB
+    cleanupInterval?: number; // 清理间隔（毫秒）
   }) {
     this.cache = new Map();
     this.maxSize = options?.maxSize || 100;
     this.defaultTTL = options?.defaultTTL || 300000; // 默认5分钟
+    this.totalSize = 0;
+    this.memoryLimit = options?.memoryLimit || 10 * 1024 * 1024; // 默认10MB
     
     // 启动定期清理任务
-    this.startCleanupTask();
+    this.startCleanupTask(options?.cleanupInterval || 30000);
+    
+    // 监听页面可见性变化，在页面隐藏时优化缓存
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
+    }
   }
 
   /**
+   * Set Cache
    * 缓存响应数据
    * @param key 缓存键
    * @param data 响应数据
-   * @param ttl 过期时间(毫秒)
+   * @param options 缓存选项
    */
-  set(key: string, data: any, ttl?: number): void {
-    // 如果缓存已满，删除最旧的缓存项
-    if (this.cache.size >= this.maxSize) {
-      const oldestKey = this.getOldestKey();
-      if (oldestKey) {
-        this.cache.delete(oldestKey);
-      }
+  set(key: string, data: any, options?: {
+    ttl?: number;     // 过期时间（毫秒）
+    tags?: string[];  // 缓存标签，用于批量清理
+    priority?: 'low' | 'medium' | 'high'; // 优先级
+  }): void {
+    // 计算数据大小（近似值）
+    const size = this.calculateSize(data);
+    
+    // 如果当前项大小超过内存限制的50%，不缓存
+    if (size > this.memoryLimit * 0.5) {
+      console.warn(`缓存项 ${key} 大小超过限制，不进行缓存`);
+      return;
+    }
+    
+    // 检查是否需要清理空间
+    this.ensureCacheSpace(size, options?.priority || 'medium');
+
+    // 如果已经存在该键，减去旧大小
+    const oldItem = this.cache.get(key);
+    if (oldItem) {
+      this.totalSize -= oldItem.size;
     }
 
+    // 存储新数据
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
-      ttl: ttl !== undefined ? ttl : this.defaultTTL
+      ttl: options?.ttl !== undefined ? options.ttl : this.defaultTTL,
+      size,
+      hitCount: 0,
+      tags: options?.tags
     });
+    
+    // 增加总大小
+    this.totalSize += size;
+    
+    // 记录缓存统计
+    this.recordCacheStats('set');
   }
 
   /**
+   * Get Cache
    * 获取缓存数据
    * @param key 缓存键
+   * @param options 获取选项
    */
-  get(key: string): any | null {
+  get(key: string, options?: {
+    staleWhileRevalidate?: boolean; // 允许使用过期数据并在后台刷新
+  }): any | null {
     const item = this.cache.get(key);
     if (!item) {
+      this.recordCacheStats('miss');
       return null;
     }
+
+    const now = Date.now();
+    const isExpired = now - item.timestamp > item.ttl;
 
     // 检查是否过期
-    if (Date.now() - item.timestamp > item.ttl) {
-      this.cache.delete(key);
-      return null;
+    if (isExpired) {
+      if (options?.staleWhileRevalidate) {
+        // 允许使用过期数据，并异步刷新缓存
+        this.refreshInBackground(key).catch(err => {
+          console.warn(`后台刷新缓存失败: ${key}`, err);
+        });
+        
+        // 增加命中计数
+        item.hitCount += 1;
+        this.recordCacheStats('stale');
+        return item.data;
+      } else {
+        // 删除过期缓存
+        this.cache.delete(key);
+        this.totalSize -= item.size;
+        this.recordCacheStats('miss');
+        return null;
+      }
     }
 
+    // 缓存有效，增加命中计数
+    item.hitCount += 1;
+    this.recordCacheStats('hit');
     return item.data;
   }
 
   /**
+   * Clear Cache
    * 清除缓存
    * @param key 缓存键，如果不指定则清除所有
    */
   clear(key?: string): void {
     if (key) {
-      this.cache.delete(key);
+      const item = this.cache.get(key);
+      if (item) {
+        this.totalSize -= item.size;
+        this.cache.delete(key);
+        this.recordCacheStats('clear');
+      }
     } else {
       this.cache.clear();
+      this.totalSize = 0;
+      this.recordCacheStats('clearAll');
     }
   }
 
   /**
+   * Clear Cache by Tags
+   * 根据标签清除缓存
+   * @param tags 标签数组
+   */
+  clearByTags(tags: string[]): void {
+    const tagsSet = new Set(tags);
+    let clearedCount = 0;
+    
+    for (const [key, item] of this.cache.entries()) {
+      if (item.tags && item.tags.some(tag => tagsSet.has(tag))) {
+        this.totalSize -= item.size;
+        this.cache.delete(key);
+        clearedCount++;
+      }
+    }
+    
+    if (clearedCount > 0) {
+      console.log(`根据标签清除了 ${clearedCount} 个缓存项`);
+      this.recordCacheStats('clearByTags');
+    }
+  }
+
+  /**
+   * Get Cache Size
    * 获取缓存大小
+   * @returns 缓存大小（条目数）
    */
   size(): number {
     return this.cache.size;
   }
 
   /**
-   * 获取最旧的缓存键
+   * Get Total Memory Usage
+   * 获取总内存使用量
+   * @returns 内存使用量（字节）
    */
-  private getOldestKey(): string | null {
-    let oldestKey: string | null = null;
-    let oldestTimestamp = Infinity;
-
-    for (const [key, item] of this.cache.entries()) {
-      if (item.timestamp < oldestTimestamp) {
-        oldestKey = key;
-        oldestTimestamp = item.timestamp;
-      }
-    }
-
-    return oldestKey;
+  getMemoryUsage(): number {
+    return this.totalSize;
   }
 
   /**
+   * Calculate Size
+   * 计算数据大小（近似值）
+   * @param data 要计算大小的数据
+   * @returns 估计的字节大小
+   */
+  private calculateSize(data: any): number {
+    try {
+      // 对于不同类型的数据使用不同的计算方法
+      if (typeof data === 'string') {
+        return data.length * 2; // UTF-16编码，每个字符2字节
+      } else if (data === null || data === undefined) {
+        return 0;
+      } else if (typeof data === 'object') {
+        // 对于对象，使用JSON序列化来估算大小
+        const serialized = JSON.stringify(data);
+        return serialized.length * 2;
+      } else {
+        // 基本类型的估算大小
+        return 8; // 假设其他类型占用8字节
+      }
+    } catch (error) {
+      // 如果计算失败，返回默认值
+      return 1024; // 默认1KB
+    }
+  }
+
+  /**
+   * Ensure Cache Space
+   * 确保缓存空间可用
+   * @param requiredSize 需要的空间（字节）
+   * @param priority 优先级
+   */
+  private ensureCacheSpace(requiredSize: number, priority: 'low' | 'medium' | 'high'): void {
+    // 检查条目数量限制
+    while (this.cache.size >= this.maxSize) {
+      this.evictLowestPriorityItem();
+    }
+    
+    // 检查内存限制
+    while (this.totalSize + requiredSize > this.memoryLimit) {
+      this.evictLowestPriorityItem();
+    }
+  }
+
+  /**
+   * Evict Lowest Priority Item
+   * 驱逐最低优先级的缓存项
+   */
+  private evictLowestPriorityItem(): void {
+    if (this.cache.size === 0) return;
+    
+    let evictKey: string | null = null;
+    let lowestScore = Infinity;
+    
+    // 计算每个缓存项的分数，优先驱逐分数低的
+    for (const [key, item] of this.cache.entries()) {
+      // 基于访问频率、年龄和大小计算分数
+      const age = Date.now() - item.timestamp;
+      const ageScore = age / 1000; // 转换为秒
+      const sizeScore = item.size / 1024; // 转换为KB
+      const hitScore = item.hitCount > 0 ? 1 / item.hitCount : 1;
+      
+      // 综合分数，分数越低越优先被驱逐
+      const score = ageScore * 0.4 + sizeScore * 0.4 + hitScore * 0.2;
+      
+      if (score < lowestScore) {
+        lowestScore = score;
+        evictKey = key;
+      }
+    }
+    
+    // 删除选中的缓存项
+    if (evictKey) {
+      const item = this.cache.get(evictKey)!;
+      this.totalSize -= item.size;
+      this.cache.delete(evictKey);
+    }
+  }
+
+  /**
+   * Refresh Cache in Background
+   * 后台刷新缓存
+   * @param key 缓存键
+   */
+  private async refreshInBackground(key: string): Promise<void> {
+    // 这里需要实现具体的刷新逻辑
+    // 通常需要存储原始请求信息才能实现自动刷新
+    console.log(`后台刷新缓存: ${key}`);
+  }
+
+  /**
+   * Cleanup Expired Cache
    * 清理过期缓存
    */
   private cleanup(): void {
     const now = Date.now();
+    let removedCount = 0;
+    let removedSize = 0;
+
     for (const [key, item] of this.cache.entries()) {
       if (now - item.timestamp > item.ttl) {
+        removedSize += item.size;
         this.cache.delete(key);
+        removedCount++;
+      }
+    }
+    
+    this.totalSize -= removedSize;
+    
+    if (removedCount > 0) {
+      console.log(`清理了 ${removedCount} 个过期缓存项，释放了 ${(removedSize / 1024).toFixed(2)}KB`);
+    }
+  }
+
+  /**
+   * Start Cleanup Task
+   * 启动定期清理任务
+   * @param interval 清理间隔（毫秒）
+   */
+  private startCleanupTask(interval: number): void {
+    // 停止之前的清理任务
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+    }
+    
+    // 启动新的清理任务
+    this.cleanupInterval = setInterval(() => {
+      this.cleanup();
+    }, interval);
+    
+    // 确保在页面卸载时清理定时器
+    if (typeof window !== 'undefined') {
+      window.addEventListener('beforeunload', () => {
+        if (this.cleanupInterval) {
+          clearInterval(this.cleanupInterval);
+        }
+      });
+    }
+  }
+
+  /**
+   * Handle Visibility Change
+   * 处理页面可见性变化
+   */
+  private handleVisibilityChange(): void {
+    if (document.hidden) {
+      // 页面隐藏时，主动清理过期缓存和部分低优先级缓存
+      this.cleanup();
+      
+      // 如果缓存项过多，清理一部分
+      const excessCount = this.cache.size - Math.floor(this.maxSize * 0.7);
+      if (excessCount > 0) {
+        console.log(`页面隐藏，清理 ${excessCount} 个低优先级缓存项`);
+        for (let i = 0; i < excessCount; i++) {
+          this.evictLowestPriorityItem();
+        }
       }
     }
   }
 
   /**
-   * 启动定期清理任务
+   * Record Cache Stats
+   * 记录缓存统计信息
+   * @param event 事件类型
    */
-  private startCleanupTask(): void {
-    // 每30秒清理一次过期缓存
-    setInterval(() => {
-      this.cleanup();
-    }, 30000);
+  private recordCacheStats(event: string): void {
+    // 这里可以实现缓存统计记录，例如发送到监控系统
+    // 为简化实现，暂时只记录日志
+    if (process.env.NODE_ENV === 'development') {
+      // console.log(`Cache event: ${event}`);
+    }
+  }
+
+  /**
+   * Get Cache Stats
+   * 获取缓存统计信息
+   */
+  getStats(): {
+    size: number;
+    memoryUsage: number;
+    memoryUsagePercent: number;
+  } {
+    return {
+      size: this.cache.size,
+      memoryUsage: this.totalSize,
+      memoryUsagePercent: (this.totalSize / this.memoryLimit) * 100
+    };
+  }
+
+  /**
+   * Dispose Cache Manager
+   * 清理缓存管理器资源
+   */
+  dispose(): void {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
+    
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this.handleVisibilityChange.bind(this));
+    }
+    
+    this.cache.clear();
+    this.totalSize = 0;
   }
 }
 
@@ -2391,8 +3345,10 @@ export class ResponseCacheManager {
 export const responseCacheManager = new ResponseCacheManager();
 
 /**
+ * Check if Error is Retryable
  * 判断是否为可重试的错误
  * @param error 错误对象
+ * @returns 是否可重试
  */
 export function isRetryableError(error: Error): boolean {
   // 网络错误可以重试
@@ -2410,88 +3366,480 @@ export function isRetryableError(error: Error): boolean {
     return true;
   }
   
-  return false;
+  // 特定的错误消息也可以重试
+  const retryableMessages = [
+    'Connection reset',
+    'Connection refused',
+    'Failed to fetch',
+    'Network request failed'
+  ];
+  
+  return retryableMessages.some(message => 
+    error.message.toLowerCase().includes(message.toLowerCase())
+  );
 }
 
 /**
- * 创建安全的fetch拦截器
+ * Create Enhanced Fetch Interceptor
+ * 创建增强的fetch拦截器 - 包含缓存、重试、超时控制等功能
  * @param options 拦截器选项
+ * @returns 增强的fetch函数
  */
-export function createSecureFetchInterceptor(options?: {
-  enableCache?: boolean;
-  retryCount?: number;
-  retryDelay?: number;
+export function createEnhancedFetchInterceptor(options?: {
+  enableCache?: boolean;       // 是否启用缓存
+  retryCount?: number;         // 重试次数
+  retryDelay?: number;         // 重试延迟（毫秒）
+  timeout?: number;            // 请求超时（毫秒）
+  requestTransformer?: (url: string, config: RequestInit) => [string, RequestInit]; // 请求转换器
+  responseTransformer?: (data: any) => any; // 响应转换器
+  onRequestStart?: (url: string, config: RequestInit) => void; // 请求开始回调
+  onRequestEnd?: (url: string, config: RequestInit, data: any, error?: Error) => void; // 请求结束回调
 }) {
   const { 
     enableCache = true, 
     retryCount = 3, 
-    retryDelay = 1000 
+    retryDelay = 1000,
+    timeout = 30000,
+    requestTransformer,
+    responseTransformer,
+    onRequestStart,
+    onRequestEnd
   } = options || {};
 
-  return async (fetch: Function, url: string, config: RequestInit = {}) => {
-    // 构建缓存键
-    const cacheKey = `${url}_${JSON.stringify(config)}`;
-    
-    // 如果启用缓存且是GET请求，尝试从缓存获取
-    if (enableCache && config.method?.toUpperCase() === 'GET') {
-      const cachedData = responseCacheManager.get(cacheKey);
-      if (cachedData) {
-        console.log(`从缓存获取: ${url}`);
-        return cachedData;
-      }
-    }
-
-    // 重试逻辑
-    let lastError: Error | null = null;
-    
-    for (let attempt = 0; attempt <= retryCount; attempt++) {
-      try {
-        // 执行fetch请求
-        const response = await fetch(url, config);
-        
-        // 检查响应状态
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        // 解析响应数据
-        const data = await response.json();
-        
-        // 如果启用缓存且是GET请求，缓存响应
-        if (enableCache && config.method?.toUpperCase() === 'GET') {
-          responseCacheManager.set(cacheKey, data);
-        }
-        
-        return data;
-      } catch (error) {
-        lastError = error as Error;
-        
-        // 判断是否可以重试
-        if (!isRetryableError(lastError) || attempt === retryCount) {
-          throw lastError;
-        }
-        
-        // 等待后重试，使用指数退避策略
-        const delay = retryDelay * Math.pow(2, attempt);
-        console.log(`请求失败，${delay}ms后重试 (${attempt + 1}/${retryCount}): ${url}`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
-    }
-    
-    // 如果所有重试都失败，抛出最后一个错误
-    throw lastError;
+  /**
+   * Timeout Wrapper
+   * 超时包装器
+   */
+  const withTimeout = <T>(promise: Promise<T>, ms: number): Promise<T> => {
+    return new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject(new Error(`Request timeout after ${ms}ms`));
+      }, ms);
+      
+      promise
+        .then(resolve)
+        .catch(reject)
+        .finally(() => clearTimeout(timeoutId));
+    });
   };
+
+  /**
+   * Request Cache Metadata
+   * 请求缓存元数据 - 存储原始请求信息用于刷新缓存
+   */
+  const requestCacheMetadata = new Map<string, { url: string; config: RequestInit }>();
+
+  return async (fetch: Function, url: string, config: RequestInit = {}): Promise<any> => {
+    // 转换请求（如果配置了转换器）
+    let transformedUrl = url;
+    let transformedConfig = { ...config };
+    
+    if (requestTransformer) {
+      [transformedUrl, transformedConfig] = requestTransformer(url, config);
+    }
+    
+    // 构建缓存键
+    const cacheKey = `${transformedUrl}_${JSON.stringify(transformedConfig)}`;
+    
+    // 触发请求开始回调
+    if (onRequestStart) {
+      try {
+        onRequestStart(transformedUrl, transformedConfig);
+      } catch (err) {
+        console.error('Request start callback error:', err);
+      }
+    }
+    
+    const startTime = performance.now();
+    let error: Error | undefined;
+    
+    try {
+      // 如果启用缓存且是GET请求，尝试从缓存获取
+      if (enableCache && transformedConfig.method?.toUpperCase() === 'GET') {
+        const cachedData = responseCacheManager.get(cacheKey, {
+          staleWhileRevalidate: true
+        });
+        
+        if (cachedData) {
+          console.log(`从缓存获取: ${transformedUrl}`);
+          
+          // 触发请求结束回调
+          if (onRequestEnd) {
+            try {
+              onRequestEnd(transformedUrl, transformedConfig, cachedData);
+            } catch (err) {
+              console.error('Request end callback error:', err);
+            }
+          }
+          
+          // 转换响应（如果配置了转换器）
+          return responseTransformer ? responseTransformer(cachedData) : cachedData;
+        }
+      }
+
+      // 重试逻辑
+      let lastError: Error | null = null;
+      
+      for (let attempt = 0; attempt <= retryCount; attempt++) {
+        try {
+          // 执行fetch请求（带超时控制）
+          const response = await withTimeout(
+            fetch(transformedUrl, transformedConfig),
+            timeout
+          );
+          
+          // 检查响应状态
+          if (!response.ok) {
+            const errorMessage = `HTTP error! status: ${response.status}`;
+            const error = new Error(errorMessage);
+            (error as any).status = response.status;
+            throw error;
+          }
+          
+          // 解析响应数据
+          let data;
+          const contentType = response.headers.get('content-type');
+          
+          if (contentType && contentType.includes('application/json')) {
+            data = await response.json();
+          } else {
+            data = await response.text();
+          }
+          
+          // 如果启用缓存且是GET请求，缓存响应
+          if (enableCache && transformedConfig.method?.toUpperCase() === 'GET') {
+            // 获取缓存控制头
+            const cacheControl = response.headers.get('cache-control') || '';
+            let ttl = 300000; // 默认5分钟
+            
+            // 解析Cache-Control头
+            if (cacheControl.includes('max-age=')) {
+              const maxAgeMatch = cacheControl.match(/max-age=(\d+)/);
+              if (maxAgeMatch && maxAgeMatch[1]) {
+                ttl = parseInt(maxAgeMatch[1], 10) * 1000; // 转换为毫秒
+              }
+            }
+            
+            // 存储请求元数据用于缓存刷新
+            requestCacheMetadata.set(cacheKey, { url: transformedUrl, config: transformedConfig });
+            
+            // 缓存响应数据
+            responseCacheManager.set(cacheKey, data, {
+              ttl,
+              tags: [transformedUrl.split('/')[2]], // 使用域名作为标签
+              priority: 'medium'
+            });
+          }
+          
+          // 转换响应（如果配置了转换器）
+          const finalData = responseTransformer ? responseTransformer(data) : data;
+          
+          // 触发请求结束回调
+          if (onRequestEnd) {
+            try {
+              onRequestEnd(transformedUrl, transformedConfig, finalData);
+            } catch (err) {
+              console.error('Request end callback error:', err);
+            }
+          }
+          
+          return finalData;
+        } catch (err) {
+          lastError = err as Error;
+          error = lastError;
+          
+          // 判断是否可以重试
+          if (!isRetryableError(lastError) || attempt === retryCount) {
+            throw lastError;
+          }
+          
+          // 等待后重试，使用指数退避策略
+          const delay = Math.min(
+            retryDelay * Math.pow(2, attempt) + Math.random() * 100, // 添加随机抖动
+            10000 // 最大延迟10秒
+          );
+          
+          console.log(`请求失败，${delay.toFixed(0)}ms后重试 (${attempt + 1}/${retryCount}): ${transformedUrl}`);
+          
+          // 记录性能指标
+          const attemptTime = performance.now() - startTime;
+          globalEventBus.emit(AppEvents.REQUEST_RETRY, {
+            url: transformedUrl,
+            attempt: attempt + 1,
+            maxRetries: retryCount,
+            error: lastError.message,
+            timeElapsed: attemptTime
+          });
+          
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+      
+      // 如果所有重试都失败，抛出最后一个错误
+      throw lastError!;
+    } catch (err) {
+      error = err as Error;
+      
+      // 触发请求结束回调（带错误）
+      if (onRequestEnd) {
+        try {
+          onRequestEnd(transformedUrl, transformedConfig, null, error);
+        } catch (callbackErr) {
+          console.error('Request end callback error:', callbackErr);
+        }
+      }
+      
+      // 记录请求失败事件
+      globalEventBus.emit(AppEvents.REQUEST_ERROR, {
+        url: transformedUrl,
+        error: error.message,
+        timeElapsed: performance.now() - startTime
+      });
+      
+      throw error;
+    }
+  };
+}
+
+/**
+ * Memory Usage Monitor
+ * 内存使用监控器 - 监控并优化微应用的内存使用
+ */
+export class MemoryUsageMonitor {
+  private appMemoryUsage: Map<string, {
+    initial: number;
+    current: number;
+    peak: number;
+    timestamps: Array<{ timestamp: number; usage: number }>;
+  }>;
+  private monitoringInterval: NodeJS.Timeout | null;
+  private memoryWarningThreshold: number; // 内存警告阈值（MB）
+  private memoryLimit: number; // 内存限制（MB）
+
+  constructor(options?: {
+    memoryWarningThreshold?: number; // 内存警告阈值（MB）
+    memoryLimit?: number; // 内存限制（MB）
+    monitoringInterval?: number; // 监控间隔（毫秒）
+  }) {
+    this.appMemoryUsage = new Map();
+    this.memoryWarningThreshold = options?.memoryWarningThreshold || 500; // 默认500MB
+    this.memoryLimit = options?.memoryLimit || 1000; // 默认1GB
+    
+    // 启动内存监控（仅在支持的环境中）
+    if (typeof performance !== 'undefined' && 'memory' in performance) {
+      this.startMonitoring(options?.monitoringInterval || 60000); // 默认每分钟监控一次
+    }
+  }
+
+  /**
+   * Start Monitoring
+   * 开始内存监控
+   * @param interval 监控间隔（毫秒）
+   */
+  private startMonitoring(interval: number): void {
+    this.monitoringInterval = setInterval(() => {
+      this.checkMemoryUsage();
+    }, interval);
+    
+    // 确保在页面卸载时清理定时器
+    if (typeof window !== 'undefined') {
+      window.addEventListener('beforeunload', () => {
+        if (this.monitoringInterval) {
+          clearInterval(this.monitoringInterval);
+        }
+      });
+    }
+  }
+
+  /**
+   * Check Memory Usage
+   * 检查内存使用情况
+   */
+  private checkMemoryUsage(): void {
+    if (!('memory' in performance)) return;
+    
+    const memoryInfo = (performance as any).memory;
+    const usedMemoryMB = memoryInfo.usedJSHeapSize / (1024 * 1024);
+    
+    console.log(`当前内存使用: ${usedMemoryMB.toFixed(2)}MB / ${(memoryInfo.jsHeapSizeLimit / (1024 * 1024)).toFixed(2)}MB`);
+    
+    // 检查是否超过警告阈值
+    if (usedMemoryMB > this.memoryWarningThreshold) {
+      globalEventBus.emit(AppEvents.MEMORY_WARNING, {
+        usage: usedMemoryMB,
+        threshold: this.memoryWarningThreshold
+      });
+    }
+    
+    // 检查是否超过限制
+    if (usedMemoryMB > this.memoryLimit) {
+      globalEventBus.emit(AppEvents.MEMORY_LIMIT_EXCEEDED, {
+        usage: usedMemoryMB,
+        limit: this.memoryLimit
+      });
+      
+      // 触发内存优化
+      this.triggerMemoryOptimization();
+    }
+  }
+
+  /**
+   * Trigger Memory Optimization
+   * 触发内存优化
+   */
+  private triggerMemoryOptimization(): void {
+    console.warn('内存使用超过限制，触发优化');
+    
+    // 清理缓存
+    responseCacheManager.clear();
+    
+    // 触发全局内存优化事件
+    globalEventBus.emit(AppEvents.TRIGGER_MEMORY_OPTIMIZATION);
+  }
+
+  /**
+   * Track App Memory Usage
+   * 跟踪应用内存使用
+   * @param appName 应用名称
+   */
+  trackAppMemoryUsage(appName: string): void {
+    if (!('memory' in performance)) return;
+    
+    const memoryInfo = (performance as any).memory;
+    const usedMemoryMB = memoryInfo.usedJSHeapSize / (1024 * 1024);
+    
+    if (!this.appMemoryUsage.has(appName)) {
+      this.appMemoryUsage.set(appName, {
+        initial: usedMemoryMB,
+        current: usedMemoryMB,
+        peak: usedMemoryMB,
+        timestamps: [{ timestamp: Date.now(), usage: usedMemoryMB }]
+      });
+    } else {
+      const stats = this.appMemoryUsage.get(appName)!;
+      stats.current = usedMemoryMB;
+      stats.peak = Math.max(stats.peak, usedMemoryMB);
+      stats.timestamps.push({ timestamp: Date.now(), usage: usedMemoryMB });
+      
+      // 只保留最近100个时间点的数据
+      if (stats.timestamps.length > 100) {
+        stats.timestamps.shift();
+      }
+    }
+  }
+
+  /**
+   * Get App Memory Usage
+   * 获取应用内存使用情况
+   * @param appName 应用名称
+   */
+  getAppMemoryUsage(appName: string): {
+    initial: number;
+    current: number;
+    peak: number;
+    growth: number;
+  } | undefined {
+    const stats = this.appMemoryUsage.get(appName);
+    if (!stats) return undefined;
+    
+    return {
+      initial: stats.initial,
+      current: stats.current,
+      peak: stats.peak,
+      growth: stats.current - stats.initial
+    };
+  }
+
+  /**
+   * Dispose Monitor
+   * 清理监控器资源
+   */
+  dispose(): void {
+    if (this.monitoringInterval) {
+      clearInterval(this.monitoringInterval);
+      this.monitoringInterval = null;
+    }
+    
+    this.appMemoryUsage.clear();
+  }
+}
+
+// 导出内存监控器实例
+export const memoryMonitor = new MemoryUsageMonitor();
+```
+
+## 5. Micro-Frontend Communication / 微前端通信机制
+
+### 5.1 Communication Architecture / 通信架构概述
+
+Bone平台采用基于事件总线的通信架构，实现微应用之间的松耦合通信，同时确保类型安全和可维护性。
+
+### 5.2 Event Bus Implementation / 事件总线实现
+
+事件总线支持发布-订阅模式，提供类型安全的事件定义和处理机制。
+
+```typescript
+// 事件总线接口定义
+interface EventBus {
+  // 订阅事件
+  on<T extends EventType>(event: T, handler: EventHandler<T>): Subscription;
+  // 发布事件
+  emit<T extends EventType>(event: T, payload: EventPayload<T>): void;
+  // 取消订阅
+  off<T extends EventType>(event: T, handler?: EventHandler<T>): void;
+  // 清除所有订阅
+  clear(): void;
 }
 ```
 
-## 8. 总结
+### 5.3 Cross-Application State Sharing / 跨应用状态共享
 
-本文档详细介绍了Bone企业级开发平台的React前端微应用架构设计方案，重点关注了主框架和微应用的核心设计。该架构具有以下优势：
+提供轻量级的跨应用状态共享机制，适用于需要在多个微应用间共享的全局状态。
 
-- **模块化**：通过微前端架构实现业务模块的独立开发和部署
-- **高性能**：采用预加载、缓存等机制提升用户体验
-- **安全性**：通过沙箱技术确保微应用间的安全隔离
-- **可扩展性**：支持新微应用的动态注册和加载
-- **良好的协作**：多团队可以并行开发，互不干扰
+## 6. Performance Optimization / 性能优化策略
 
-通过这种架构设计，Bone平台能够有效支持大规模企业级应用的开发和维护，提高开发效率和系统可靠性。
+### 6.1 Loading Optimization / 加载优化
+
+实现智能预加载、按需加载和资源缓存，减少应用加载时间，提升用户体验。
+
+### 6.2 Rendering Optimization / 渲染优化
+
+采用组件懒加载、虚拟列表、memo优化等策略，提高应用渲染性能。
+
+### 6.3 Resource Management / 资源管理
+
+通过内存监控、资源清理和性能监控，确保应用在高负载下保持稳定。
+
+## 7. Security and Isolation / 安全与隔离
+
+### 7.1 Sandbox Implementation / 沙箱实现
+
+使用JavaScript沙箱技术，实现微应用间的运行环境隔离，防止全局变量污染。
+
+### 7.2 Authentication and Authorization / 认证与授权
+
+统一的身份认证和权限管理机制，确保系统安全性。
+
+### 7.3 Cross-Origin Security / 跨域安全
+
+实现安全的跨域资源共享策略，保障数据传输安全。
+
+## 8. Summary / 总结
+
+This document provides a comprehensive overview of the React micro-frontend architecture design for the Bone enterprise-level development platform, with a focus on the core design of the main framework and micro-applications. The architecture offers the following key advantages:
+
+- **Modularity / 模块化**: Achieves independent development and deployment of business modules through the micro-frontend architecture, enabling teams to work autonomously while maintaining system cohesion.
+
+- **High Performance / 高性能**: Implements advanced optimization strategies including preloading mechanisms, intelligent caching, and resource management to significantly enhance user experience and application responsiveness.
+
+- **Security / 安全性**: Ensures secure isolation between micro-applications through sandbox technology, preventing cross-application interference and protecting sensitive data with comprehensive security policies.
+
+- **Scalability / 可扩展性**: Supports dynamic registration and loading of new micro-applications, allowing the platform to evolve without disrupting existing functionality and accommodating business growth seamlessly.
+
+- **Effective Collaboration / 良好的协作**: Facilitates parallel development across multiple teams with well-defined boundaries and standardized communication protocols, reducing integration conflicts and accelerating delivery cycles.
+
+- **Robust Communication / 强大的通信**: Provides a sophisticated event bus and messaging system that enables efficient and type-safe communication between micro-applications while maintaining loose coupling.
+
+- **Optimized Resource Management / 优化的资源管理**: Implements intelligent resource allocation and cleanup mechanisms to ensure efficient memory usage, prevent memory leaks, and maintain application stability under heavy loads.
+
+Through this architectural design, the Bone platform can effectively support the development and maintenance of large-scale enterprise applications, significantly improving development efficiency, system reliability, and overall user satisfaction. The modular approach also provides long-term benefits in terms of maintainability, allowing the platform to adapt to changing business requirements and technological advancements with minimal effort.
