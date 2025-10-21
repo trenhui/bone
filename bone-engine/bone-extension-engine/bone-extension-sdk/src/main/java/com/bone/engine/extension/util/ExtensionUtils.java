@@ -70,11 +70,11 @@ public class ExtensionUtils {
         
         if (context != null) {
             key.append(":")
-               .append(context.getBizCode() != null ? context.getBizCode() : "default")
+               .append(context.bizCode() != null ? context.bizCode() : "default")
                .append(":")
-               .append(context.getTenantCode() != null ? context.getTenantCode() : "default")
+               .append(context.tenantCode() != null ? context.tenantCode() : "default")
                .append(":")
-               .append(context.getScenario() != null ? context.getScenario() : "default");
+               .append(context.scenario() != null ? context.scenario() : "default");
         }
         
         return key.toString();
@@ -153,7 +153,7 @@ public class ExtensionUtils {
             context = BizContextHolder.getCurrentContext();
         }
         if (context == null) {
-            context = new BizContext.Builder().build();
+            context = BizContext.builder().build();
         }
         return context;
     }
@@ -183,27 +183,27 @@ public class ExtensionUtils {
         }
         
         // 业务代码匹配
-        if (context1.getBizCode() != null && !context1.getBizCode().equals(context2.getBizCode())) {
+        if (context1.bizCode() != null && !context1.bizCode().equals(context2.bizCode())) {
             return false;
         }
         
         // 租户代码匹配
-        if (context1.getTenantCode() != null && !context1.getTenantCode().equals(context2.getTenantCode())) {
+        if (context1.tenantCode() != null && !context1.tenantCode().equals(context2.tenantCode())) {
             return false;
         }
         
         // 场景匹配
-        if (context1.getScenario() != null && !context1.getScenario().equals(context2.getScenario())) {
+        if (context1.scenario() != null && !context1.scenario().equals(context2.scenario())) {
             return false;
         }
         
         // 版本匹配
-        if (context1.getVersion() != null && !context1.getVersion().equals(context2.getVersion())) {
+        if (context1.version() != null && !context1.version().equals(context2.version())) {
             return false;
         }
         
         // 数据源匹配
-        if (context1.getDataSource() != null && !context1.getDataSource().equals(context2.getDataSource())) {
+        if (context1.dataSource() != null && !context1.dataSource().equals(context2.dataSource())) {
             return false;
         }
         
@@ -217,27 +217,27 @@ public class ExtensionUtils {
         int score = 0;
         
         // 检查业务代码匹配
-        if (Arrays.asList(extension.bizCode()).contains(context.getBizCode())) {
+        if (Arrays.asList(extension.bizCode()).contains(context.bizCode())) {
             score += 100;
         }
         
         // 检查租户代码匹配
-        if (Arrays.asList(extension.tenantCode()).contains(context.getTenantCode())) {
+        if (Arrays.asList(extension.tenantCode()).contains(context.tenantCode())) {
             score += 80;
         }
         
         // 检查场景匹配
-        if (Arrays.asList(extension.scenario()).contains(context.getScenario())) {
+        if (Arrays.asList(extension.scenario()).contains(context.scenario())) {
             score += 60;
         }
         
         // 检查版本匹配
-        if (context.getVersion() != null && context.getVersion().equals(extension.version())) {
+        if (context.version() != null && context.version().equals(extension.version())) {
             score += 40;
         }
         
         // 检查数据源匹配
-        if (Arrays.asList(extension.dataSource()).contains(context.getDataSource())) {
+        if (Arrays.asList(extension.dataSource()).contains(context.dataSource())) {
             score += 20;
         }
         

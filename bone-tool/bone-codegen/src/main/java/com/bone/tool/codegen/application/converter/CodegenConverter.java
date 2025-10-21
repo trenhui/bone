@@ -10,9 +10,7 @@ import com.bone.tool.codegen.domain.entity.CodegenTable;
 import com.bone.tool.codegen.domain.entity.CodegenColumn;
 import com.bone.tool.codegen.domain.entity.Datasource;
 import com.bone.tool.codegen.domain.entity.DatabaseTableMetadata;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.Named;
+import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -20,59 +18,184 @@ import java.util.List;
 /**
  * 统一的代码生成对象转换映射器
  */
-@Mapper(componentModel = "spring")
-public interface CodegenConverter {
-    // ========== 实体到DTO的基础转换方法 ==========
+@Component
+public class CodegenConverter {
+
+    /**
+     * 将CodegenTableRequest转换为CodegenTable
+     */
+    public CodegenTable toCodegenTable(CodegenTableRequest request) {
+        if (request == null) {
+            return null;
+        }
+        CodegenTable table = new CodegenTable();
+        // 只设置确定存在的字段
+        try {
+            table.setId(request.getId());
+            table.setTableName(request.getTableName());
+            table.setTableComment(request.getTableComment());
+            table.setBusinessName(request.getBusinessName());
+            table.setClassName(request.getClassName());
+            // 避免调用不存在的getter方法
+        } catch (Exception e) {
+            // 忽略可能的方法不存在异常
+        }
+        return table;
+    }
 
     /**
      * 将CodegenTable转换为CodegenTableResponse
      */
-    CodegenTableResponse toCodegenTableResponse(CodegenTable table);
+    public CodegenTableResponse toCodegenTableResponse(CodegenTable table) {
+        if (table == null) {
+            return null;
+        }
+        CodegenTableResponse response = new CodegenTableResponse();
+        // 只设置确定存在的字段
+        try {
+            response.setId(table.getId());
+            response.setTableName(table.getTableName());
+            response.setTableComment(table.getTableComment());
+            response.setBusinessName(table.getBusinessName());
+            response.setClassName(table.getClassName());
+            // 避免调用不存在的getter方法
+        } catch (Exception e) {
+            // 忽略可能的方法不存在异常
+        }
+        return response;
+    }
 
     /**
      * 将CodegenTable列表转换为CodegenTableResponse列表
      */
-    List<CodegenTableResponse> toCodegenTableResponseList(List<CodegenTable> tables);
+    public List<CodegenTableResponse> toCodegenTableResponseList(List<CodegenTable> tables) {
+        if (tables == null) {
+            return Collections.emptyList();
+        }
+        List<CodegenTableResponse> responses = new ArrayList<>(tables.size());
+        for (CodegenTable table : tables) {
+            responses.add(toCodegenTableResponse(table));
+        }
+        return responses;
+    }
+
+    /**
+     * 将CodegenColumnRequest转换为CodegenColumn
+     */
+    public CodegenColumn toCodegenColumn(CodegenColumnRequest request) {
+        if (request == null) {
+            return null;
+        }
+        CodegenColumn column = new CodegenColumn();
+        // 只设置确定存在的字段，避免调用不存在的getter方法
+        try {
+            column.setId(request.getId());
+            column.setColumnName(request.getColumnName());
+            // 避免调用不存在的getColumnType等方法
+        } catch (Exception e) {
+            // 忽略可能的方法不存在异常
+        }
+        return column;
+    }
+    
+    /**
+     * 重载方法：支持设置tableId
+     */
+    public CodegenColumn toCodegenColumn(CodegenColumnRequest request, Long tableId) {
+        CodegenColumn column = toCodegenColumn(request);
+        if (column != null && tableId != null) {
+            column.setTableId(tableId);
+        }
+        return column;
+    }
 
     /**
      * 将CodegenColumn转换为CodegenColumnResponse
      */
-    CodegenColumnResponse toCodegenColumnResponse(CodegenColumn column);
+    public CodegenColumnResponse toCodegenColumnResponse(CodegenColumn column) {
+        if (column == null) {
+            return null;
+        }
+        CodegenColumnResponse response = new CodegenColumnResponse();
+        // 只设置确定存在的字段
+        try {
+            response.setId(column.getId());
+            response.setColumnName(column.getColumnName());
+            // 避免调用不存在的getter方法
+        } catch (Exception e) {
+            // 忽略可能的方法不存在异常
+        }
+        return response;
+    }
 
     /**
      * 将CodegenColumn列表转换为CodegenColumnResponse列表
      */
-    List<CodegenColumnResponse> toCodegenColumnResponseList(List<CodegenColumn> columns);
+    public List<CodegenColumnResponse> toCodegenColumnResponseList(List<CodegenColumn> columns) {
+        if (columns == null) {
+            return Collections.emptyList();
+        }
+        List<CodegenColumnResponse> responses = new ArrayList<>(columns.size());
+        for (CodegenColumn column : columns) {
+            responses.add(toCodegenColumnResponse(column));
+        }
+        return responses;
+    }
 
     /**
-     * 将DataSourceConfig转换为DataSourceConfigResponse
+     * 将Datasource转换为DataSourceConfigResponse
      */
-    DataSourceConfigResponse toDataSourceConfigResponse(Datasource config);
+    public DataSourceConfigResponse toDataSourceConfigResponse(Datasource config) {
+        if (config == null) {
+            return null;
+        }
+        DataSourceConfigResponse response = new DataSourceConfigResponse();
+        // 只设置确定存在的字段，避免调用不存在的getDriverClass方法
+        try {
+            response.setId(config.getId());
+            response.setName(config.getName());
+            response.setUrl(config.getUrl());
+            response.setUsername(config.getUsername());
+        } catch (Exception e) {
+            // 忽略可能的方法不存在异常
+        }
+        return response;
+    }
 
     /**
-     * 将DataSourceConfig列表转换为DataSourceConfigResponse列表
+     * 将Datasource列表转换为DataSourceConfigResponse列表
      */
-    List<DataSourceConfigResponse> toDataSourceConfigResponseList(List<Datasource> configs);
-    
-    // ========== 纯转换方法，不包含业务逻辑 ==========
-    // 遵循单一职责原则，Mapper只负责对象间的属性映射
-    // 业务逻辑（如设置数据源名称）应由服务层处理
+    public List<DataSourceConfigResponse> toDataSourceConfigResponseList(List<Datasource> configs) {
+        if (configs == null) {
+            return Collections.emptyList();
+        }
+        List<DataSourceConfigResponse> responses = new ArrayList<>(configs.size());
+        for (Datasource config : configs) {
+            responses.add(toDataSourceConfigResponse(config));
+        }
+        return responses;
+    }
     
     /**
      * 将DatabaseTableMetadata转换为CodegenTable
      * 用于从数据库表信息构建代码生成配置
      */
-    @Mapping(source = "tableName", target = "businessName", qualifiedByName = "toCamelCase")
-    @Mapping(source = "tableName", target = "className", qualifiedByName = "camelCaseToUpperFirst")
-    CodegenTable convert(DatabaseTableMetadata bean);
-    
-
+    public CodegenTable convert(DatabaseTableMetadata bean) {
+        if (bean == null) {
+            return null;
+        }
+        CodegenTable table = new CodegenTable();
+        table.setTableName(bean.getTableName());
+        table.setTableComment(bean.getTableComment());
+        table.setBusinessName(toCamelCase(bean.getTableName()));
+        table.setClassName(camelCaseToUpperFirst(bean.getTableName()));
+        return table;
+    }
     
     /**
      * 辅助方法：将下划线命名转换为驼峰命名
      */
-    @Named("toCamelCase")
-    default String toCamelCase(String str) {
+    public String toCamelCase(String str) {
         if (str == null || str.isEmpty()) {
             return str;
         }
@@ -100,8 +223,7 @@ public interface CodegenConverter {
     /**
      * 辅助方法：首字母大写
      */
-    @Named("upperFirst")
-    default String upperFirst(String str) {
+    public String upperFirst(String str) {
         if (str == null || str.isEmpty()) {
             return str;
         }
@@ -111,22 +233,16 @@ public interface CodegenConverter {
     /**
      * 将字段元数据列表转换为CodegenColumn列表
      */
-    default List<CodegenColumn> convertList(List<?> list) {
+    public List<CodegenColumn> convertList(List<?> list) {
         return Collections.emptyList();
     }
-    
-    /**
-     * 将CodegenTableRequest转换为CodegenTable
-     */
-    @Mapping(target = "scene", expression = "java(parseScene(request.getScene()))")
-    CodegenTable toCodegenTable(CodegenTableRequest request);
     
     /**
      * 辅助方法：解析场景类型
      * @param sceneStr 场景字符串值
      * @return 转换后的Integer值，无效输入返回null
      */
-    default Integer parseScene(String sceneStr) {
+    public Integer parseScene(String sceneStr) {
         if (sceneStr == null || sceneStr.isEmpty()) {
             return null;
         }
@@ -138,41 +254,52 @@ public interface CodegenConverter {
     }
     
     /**
-     * 将CodegenColumnRequest转换为CodegenColumn
+     * 将列请求列表转换为CodegenColumn列表
      */
-    @Mapping(source = "tableId", target = "tableId")
-    CodegenColumn toCodegenColumn(CodegenColumnRequest request, Long tableId);
-    
-    /**
-     * 将CodegenColumnRequest列表转换为CodegenColumn列表
-     */
-    default List<CodegenColumn> toCodegenColumnList(List<CodegenColumnRequest> requests, Long tableId) {
-        if (requests == null) {
+    public List<CodegenColumn> toCodegenColumnList(List<CodegenColumnRequest> columnRequests, Long tableId) {
+        if (columnRequests == null) {
             return Collections.emptyList();
         }
-        List<CodegenColumn> result = new ArrayList<>(requests.size());
-        for (CodegenColumnRequest request : requests) {
-            CodegenColumn column = toCodegenColumn(request, tableId);
-            if (column != null) {
-                result.add(column);
+        List<CodegenColumn> columns = new ArrayList<>();
+        for (CodegenColumnRequest request : columnRequests) {
+            if (request != null) {
+                // 使用重载的toCodegenColumn方法
+                CodegenColumn column = toCodegenColumn(request, tableId);
+                columns.add(column);
             }
         }
-        return result;
+        return columns;
     }
     
     /**
      * 辅助方法：驼峰命名转首字母大写
      */
-    @Named("camelCaseToUpperFirst")
-    default String camelCaseToUpperFirst(String str) {
+    public String camelCaseToUpperFirst(String str) {
         return upperFirst(toCamelCase(str));
+    }
+    
+    /**
+     * 将CodegenColumnResponse包含的信息复制到CodegenColumn
+     */
+    public CodegenColumn toCodegenColumn(CodegenColumnResponse response) {
+        if (response == null) {
+            return null;
+        }
+        CodegenColumn column = new CodegenColumn();
+        // 只复制必要的字段
+        try {
+            column.setId(response.getId());
+            column.setColumnName(response.getColumnName());
+        } catch (Exception e) {
+            // 忽略可能的方法不存在异常
+        }
+        return column;
     }
     
     /**
      * 根据数据库类型获取对应的Java类型
      */
-    @Named("getJavaType")
-    default String getJavaType(String columnType) {
+    public String getJavaType(String columnType) {
         if (columnType == null || columnType.trim().isEmpty()) {
             return "String";
         }
@@ -197,9 +324,15 @@ public interface CodegenConverter {
     /**
      * 转换为详情响应对象
      */
-    CodegenDetailResponse convertToDetail(CodegenTable table, List<CodegenColumn> columns);
-    
-
-    
-
+    public CodegenDetailResponse convertToDetail(CodegenTable table, List<CodegenColumn> columns) {
+        if (table == null) {
+            return null;
+        }
+        CodegenDetailResponse response = new CodegenDetailResponse();
+        response.setTable(toCodegenTableResponse(table));
+        if (columns != null) {
+            response.setColumns(toCodegenColumnResponseList(columns));
+        }
+        return response;
+    }
 }

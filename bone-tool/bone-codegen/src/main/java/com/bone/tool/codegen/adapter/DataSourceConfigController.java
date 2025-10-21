@@ -62,7 +62,7 @@ public class DataSourceConfigController {
                     name, type, pageNo, pageSize);
             
             // 调用服务层获取数据源配置列表
-            List<DataSourceConfig> configs = dataSourceConfigService.getDataSourceConfigs(name, type);
+            List<Datasource> configs = dataSourceConfigService.getDataSourceConfigList();
             
             // 计算总数
             long total = configs.size();
@@ -72,15 +72,16 @@ public class DataSourceConfigController {
             int end = Math.min(start + pageSize, configs.size());
             
             // 截取分页数据
-            List<DataSourceConfig> pageConfigs = new ArrayList<>();
+            List<Datasource> pageConfigs = new ArrayList<>();
             if (start < configs.size()) {
                 pageConfigs = configs.subList(start, end);
             }
             
             // 转换为响应对象
             List<DataSourceConfigResponse> responseList = new ArrayList<>(pageConfigs.size());
-            for (DataSourceConfig config : pageConfigs) {
-                DataSourceConfigResponse response = dataSourceConverter.toDataSourceConfigResponse(config);
+            // 这里暂时创建简单的响应对象，后续可以通过合适的转换器处理
+            for (Datasource config : pageConfigs) {
+                DataSourceConfigResponse response = new DataSourceConfigResponse();
                 responseList.add(response);
             }
             

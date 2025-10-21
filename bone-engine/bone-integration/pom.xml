@@ -32,6 +32,7 @@
         <dependency>
             <groupId>com.bone</groupId>
             <artifactId>bone-extension-sdk</artifactId>
+            <version>${project.parent.version}</version>
         </dependency>
 
         <dependency>
