@@ -1832,66 +1832,372 @@ public class DynamicServiceEngine {
 
 ```java
 @Component
+@Slf4j
 public class ByteBuddyProxyFactory implements ServiceProxyFactory {
     private final OperationInvocationHandler invocationHandler;
+    
+    // 代理类缓存，提高性能
+    private final ConcurrentHashMap<ProxyCacheKey, Class<?>> proxyClassCache = new ConcurrentHashMap<>();
+
+    /**
+     * 构造函数
+     * 
+     * @param invocationHandler 方法调用处理器
+     */
+    public ByteBuddyProxyFactory(OperationInvocationHandler invocationHandler) {
+        this.invocationHandler = Objects.requireNonNull(
+            invocationHandler, "OperationInvocationHandler cannot be null");
+        log.info("ByteBuddyProxyFactory initialized");
+    }
 
     @Override
     public <T> T createProxy(EntityMetadata metadata, Class<T> serviceInterface) {
+        // 参数验证
+        validateCreateProxyParams(metadata, serviceInterface);
+        
+        String entityName = metadata.getApiName();
+        String interfaceName = serviceInterface.getName();
+        log.info("Creating proxy for entity: {} with interface: {}", entityName, interfaceName);
+        
         try {
+            // 使用缓存的代理类（如果存在）
+            ProxyCacheKey cacheKey = new ProxyCacheKey(metadata.getId(), serviceInterface);
+            Class<?> proxyClass = proxyClassCache.computeIfAbsent(cacheKey, k -> 
+                createProxyClass(serviceInterface, metadata)
+            );
+            
+            // 创建实例
+            T proxy = serviceInterface.cast(proxyClass.getDeclaredConstructor().newInstance());
+            log.debug("Proxy created successfully for: {}", entityName);
+            return proxy;
+        } catch (Exception e) {
+            String errorMsg = String.format("创建服务代理失败: %s (接口: %s)", 
+                entityName, interfaceName);
+            log.error(errorMsg, e);
+            throw new ProxyCreationException(errorMsg, e);
+        }
+    }
+    
+    /**
+     * 创建代理类
+     */
+    private Class<?> createProxyClass(Class<?> serviceInterface, EntityMetadata metadata) {
+        try {
+            log.debug("Generating proxy class for interface: {}", serviceInterface.getName());
+            
             // 使用Byte Buddy动态生成代理类（字节码增强）
             return new ByteBuddy()
                 .subclass(Object.class)
                 .implement(serviceInterface)
+                .name(generateProxyClassName(serviceInterface, metadata))
                 .method(ElementMatchers.any())
                 .intercept(InvocationHandlerAdapter.of(
                     (proxy, method, args) -> invocationHandler.invoke(metadata, method, args)
                 ))
+                // 添加常用接口实现
+                .implement(Proxy.class)
+                .implement(Serializable.class)
                 .make()
                 .load(serviceInterface.getClassLoader(), ClassLoadingStrategy.Default.WRAPPER)
-                .getLoaded()
-                .getDeclaredConstructor()
-                .newInstance();
+                .getLoaded();
         } catch (Exception e) {
-            throw new ProxyCreationException("创建服务代理失败: " + metadata.getApiName(), e);
+            log.error("Failed to generate proxy class for: {}", 
+                serviceInterface.getName(), e);
+            throw e;
+        }
+    }
+    
+    /**
+     * 生成代理类名
+     */
+    private String generateProxyClassName(Class<?> serviceInterface, EntityMetadata metadata) {
+        String interfaceName = serviceInterface.getSimpleName();
+        String entityName = metadata.getApiName();
+        String sanitizedEntityName = entityName.replaceAll("\\W+", "_");
+        
+        return String.format("%s.%s$%s$Proxy", 
+            serviceInterface.getPackage().getName(),
+            interfaceName,
+            sanitizedEntityName
+        );
+    }
+    
+    /**
+     * 验证创建代理的参数
+     */
+    private void validateCreateProxyParams(EntityMetadata metadata, Class<?> serviceInterface) {
+        Assert.notNull(metadata, "EntityMetadata cannot be null");
+        Assert.notNull(serviceInterface, "Service interface cannot be null");
+        Assert.isTrue(serviceInterface.isInterface(), "Service type must be an interface");
+        Assert.hasText(metadata.getApiName(), "Entity API name cannot be empty");
+        
+        // 检查接口是否有方法
+        if (serviceInterface.getMethods().length == 0) {
+            throw new IllegalArgumentException(
+                "Service interface must have at least one method: " + serviceInterface.getName());
+        }
+    }
+    
+    /**
+     * 清除代理类缓存
+     */
+    public void clearCache() {
+        proxyClassCache.clear();
+        log.info("Proxy class cache cleared");
+    }
+    
+    /**
+     * 获取缓存大小
+     */
+    public int getCacheSize() {
+        return proxyClassCache.size();
+    }
+    
+    /**
+     * 缓存键类
+     */
+    private static class ProxyCacheKey {
+        private final String metadataId;
+        private final Class<?> serviceInterface;
+        
+        public ProxyCacheKey(String metadataId, Class<?> serviceInterface) {
+            this.metadataId = metadataId;
+            this.serviceInterface = serviceInterface;
+        }
+        
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            ProxyCacheKey that = (ProxyCacheKey) o;
+            return Objects.equals(metadataId, that.metadataId) &&
+                   Objects.equals(serviceInterface, that.serviceInterface);
+        }
+        
+        @Override
+        public int hashCode() {
+            return Objects.hash(metadataId, serviceInterface);
         }
     }
 }
 
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.Assert;
+import org.springframework.util.ReflectionUtils;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * 方法调用处理器（核心逻辑）
+ * 负责将服务接口方法调用转换为元数据定义的操作执行
  */
 @Component
+@Slf4j
 public class OperationInvocationHandler {
     private final OperationExecutor operationExecutor;
     private final ParameterResolver parameterResolver;
+    private final ResultConverter resultConverter;
+    private final MethodMappingRegistry methodMappingRegistry;
+    
+    // 方法映射缓存
+    private final Map<Method, String> methodOperationCache = new ConcurrentHashMap<>();
 
-    public Object invoke(EntityMetadata metadata, Method method, Object[] args) throws Throwable {
-        // 1. 解析方法映射（如create() -> 元数据中定义的"create"操作）
-        String operationName = mapMethodToOperation(method.getName());
-        OperationMetadata operation = metadata.getOperations().get(operationName);
-        if (operation == null) {
-            throw new UnsupportedOperationException("不支持的方法: " + method.getName());
-        }
-        
-        // 2. 解析参数（从方法参数中提取实体ID和操作参数）
-        ParameterResolution result = parameterResolver.resolve(method, args, operation);
-        String entityId = result.getEntityId();
-        Map<String, Object> params = result.getParameters();
-        
-        // 3. 执行操作
-        OperationResult operationResult = operationExecutor.execute(
-            metadata, operation, entityId, params);
-        
-        // 4. 处理返回结果（转换为方法返回类型）
-        return convertResult(operationResult, method.getReturnType());
+    /**
+     * 构造函数
+     * 
+     * @param operationExecutor 操作执行器
+     * @param parameterResolver 参数解析器
+     * @param resultConverter 结果转换器
+     * @param methodMappingRegistry 方法映射注册表
+     */
+    public OperationInvocationHandler(OperationExecutor operationExecutor,
+                                    ParameterResolver parameterResolver,
+                                    ResultConverter resultConverter,
+                                    MethodMappingRegistry methodMappingRegistry) {
+        this.operationExecutor = Objects.requireNonNull(operationExecutor, "OperationExecutor cannot be null");
+        this.parameterResolver = Objects.requireNonNull(parameterResolver, "ParameterResolver cannot be null");
+        this.resultConverter = Objects.requireNonNull(resultConverter, "ResultConverter cannot be null");
+        this.methodMappingRegistry = Objects.requireNonNull(methodMappingRegistry, "MethodMappingRegistry cannot be null");
+        log.debug("OperationInvocationHandler initialized");
     }
 
     /**
-     * 方法名映射到操作名（支持自定义注解）
+     * 处理方法调用
+     * 
+     * @param metadata 实体元数据
+     * @param method 被调用的方法
+     * @param args 方法参数
+     * @return 方法调用结果
+     * @throws Throwable 执行过程中的异常
+     */
+    public Object invoke(EntityMetadata metadata, Method method, Object[] args) throws Throwable {
+        // 参数验证
+        Assert.notNull(metadata, "EntityMetadata cannot be null");
+        Assert.notNull(method, "Method cannot be null");
+        
+        String entityName = metadata.getApiName();
+        String methodName = method.getName();
+        log.info("Invoking method: {} on entity: {}", methodName, entityName);
+        log.debug("Method signature: {}, args: {}", method, Arrays.toString(args));
+        
+        try {
+            // 1. 解析方法映射（从缓存或注册中心获取）
+            String operationName = getOperationName(method, methodName);
+            log.debug("Mapped method {} to operation: {}", methodName, operationName);
+            
+            // 2. 获取操作元数据
+            OperationMetadata operation = metadata.getOperations().get(operationName);
+            if (operation == null) {
+                throw new UnsupportedOperationException(
+                    String.format("Operation '%s' not found in metadata for entity '%s'", 
+                                 operationName, entityName));
+            }
+            
+            // 3. 验证操作权限和前置条件
+            validateOperation(metadata, operation, args);
+            
+            // 4. 解析参数
+            ParameterResolution result = parameterResolver.resolve(method, args, operation);
+            String entityId = result.getEntityId();
+            Map<String, Object> params = result.getParameters();
+            
+            log.debug("Resolved parameters - entityId: {}, params: {}", entityId, params);
+            
+            // 5. 执行操作
+            OperationResult operationResult = operationExecutor.execute(
+                metadata, operation, entityId, params);
+            
+            log.debug("Operation {} executed with result: {}", operationName, operationResult.isSuccess());
+            
+            // 6. 处理返回结果
+            Object convertedResult = convertResult(operationResult, method.getReturnType());
+            log.debug("Converted result to type: {}", method.getReturnType().getName());
+            
+            return convertedResult;
+        } catch (UnsupportedOperationException e) {
+            log.warn("Unsupported operation: {} on entity: {}", methodName, entityName, e);
+            throw e;
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid arguments for method: {} on entity: {}", methodName, entityName, e);
+            throw e;
+        } catch (Exception e) {
+            log.error("Error invoking method: {} on entity: {}", methodName, entityName, e);
+            // 根据异常类型转换为适当的业务异常
+            throw convertToBusinessException(e);
+        }
+    }
+
+    /**
+     * 获取操作名称（带缓存）
+     */
+    private String getOperationName(Method method, String methodName) {
+        return methodOperationCache.computeIfAbsent(method, m -> {
+            // 1. 首先检查方法映射注册表
+            String mappedOperation = methodMappingRegistry.getOperationName(m);
+            if (mappedOperation != null) {
+                return mappedOperation;
+            }
+            
+            // 2. 检查方法注解
+            OperationMapping mapping = method.getAnnotation(OperationMapping.class);
+            if (mapping != null) {
+                return mapping.value();
+            }
+            
+            // 3. 执行默认映射
+            return mapMethodToOperation(methodName);
+        });
+    }
+
+    /**
+     * 方法名映射到操作名
      */
     private String mapMethodToOperation(String methodName) {
-        // 简单映射：create -> "create"，submitForApproval -> "submitForApproval"
+        // 更智能的方法名映射策略
+        // 1. 简单直接映射
+        if (methodName.equals("create") || 
+            methodName.equals("update") || 
+            methodName.equals("delete") || 
+            methodName.equals("findById")) {
+            return methodName;
+        }
+        
+        // 2. 处理特殊前缀
+        if (methodName.startsWith("findBy")) {
+            return methodName;
+        }
+        
+        // 3. 处理业务操作（如submitForApproval -> submitForApproval）
         return methodName;
+    }
+    
+    /**
+     * 验证操作
+     */
+    private void validateOperation(EntityMetadata metadata, OperationMetadata operation, Object[] args) {
+        // 验证操作的前置条件
+        if (operation.hasPreconditions() && !operation.checkPreconditions(args)) {
+            throw new IllegalStateException(
+                String.format("Preconditions not met for operation: %s", operation.getName()));
+        }
+        
+        // 验证参数数量
+        int requiredParams = operation.getRequiredParameters().size();
+        int actualParams = args != null ? args.length : 0;
+        if (requiredParams > actualParams) {
+            throw new IllegalArgumentException(
+                String.format("Insufficient parameters for operation: %s. Required: %d, Provided: %d",
+                             operation.getName(), requiredParams, actualParams));
+        }
+    }
+
+    /**
+     * 转换操作结果为方法返回类型
+     */
+    private Object convertResult(OperationResult operationResult, Class<?> returnType) {
+        try {
+            // 使用专门的结果转换器进行类型转换
+            return resultConverter.convert(operationResult, returnType);
+        } catch (Exception e) {
+            log.error("Failed to convert operation result to type: {}", returnType.getName(), e);
+            // 处理特殊情况：void返回类型
+            if (returnType.equals(Void.TYPE)) {
+                return null;
+            }
+            // 尝试默认转换
+            if (operationResult.hasData()) {
+                return operationResult.getData();
+            }
+            // 对于布尔返回类型，返回操作是否成功
+            if (Boolean.class.equals(returnType) || boolean.class.equals(returnType)) {
+                return operationResult.isSuccess();
+            }
+            throw new ResultConversionException("Failed to convert result to required return type", e);
+        }
+    }
+    
+    /**
+     * 将异常转换为业务异常
+     */
+    private Throwable convertToBusinessException(Exception e) {
+        // 根据异常类型转换为适当的业务异常
+        if (e instanceof BusinessException) {
+            return e;
+        }
+        if (e instanceof DataAccessException) {
+            return new PersistenceException("数据访问错误: " + e.getMessage(), e);
+        }
+        return new ServiceException("服务调用错误: " + e.getMessage(), e);
+    }
+    
+    /**
+     * 清理方法缓存
+     */
+    public void clearCache() {
+        methodOperationCache.clear();
+        log.debug("Method operation cache cleared");
     }
 }
 ```
@@ -1903,24 +2209,60 @@ public class OperationInvocationHandler {
 
 ```java
 @Service
+@Slf4j
 public class ProcessEngine {
     private final Map<ProcessNode.StepType, NodeHandler> nodeHandlers;
     private final TransactionManager transactionManager;
     private final ProcessInstanceRepository instanceRepository;
     private final AsyncTaskExecutor asyncExecutor;
+    private final ConcurrentHashMap<String, ProcessNode.StepType> nodeTypeCache = new ConcurrentHashMap<>();
 
-    // 构造函数注入所有节点处理器
-    public ProcessEngine(List<NodeHandler> handlers) {
+    /**
+     * 构造函数注入所有依赖
+     * 
+     * @param handlers 节点处理器列表
+     * @param transactionManager 事务管理器
+     * @param instanceRepository 流程实例仓库
+     * @param asyncExecutor 异步任务执行器
+     */
+    public ProcessEngine(List<NodeHandler> handlers,
+                         TransactionManager transactionManager,
+                         ProcessInstanceRepository instanceRepository,
+                         AsyncTaskExecutor asyncExecutor) {
+        // 验证依赖
+        Assert.notNull(handlers, "Node handlers list must not be null");
+        Assert.notNull(transactionManager, "Transaction manager must not be null");
+        Assert.notNull(instanceRepository, "Process instance repository must not be null");
+        Assert.notNull(asyncExecutor, "Async executor must not be null");
+        
+        // 初始化节点处理器映射
         this.nodeHandlers = handlers.stream()
-            .collect(Collectors.toMap(NodeHandler::getType, Function.identity()));
+            .collect(Collectors.toUnmodifiableMap(NodeHandler::getType, Function.identity()));
+        this.transactionManager = transactionManager;
+        this.instanceRepository = instanceRepository;
+        this.asyncExecutor = asyncExecutor;
+        
+        log.info("ProcessEngine initialized with {} node handlers", handlers.size());
     }
 
     /**
      * 执行流程（支持事务与异步）
+     * 
+     * @param process 流程元数据
+     * @param contextData 上下文数据
+     * @param businessKey 业务主键
+     * @return 流程执行结果
+     * @throws ProcessExecutionException 流程执行异常
      */
     public ProcessExecutionResult execute(ProcessMetadata process, 
                                          Map<String, Object> contextData,
                                          String businessKey) {
+        // 参数验证
+        validateExecutionParams(process, contextData, businessKey);
+        
+        log.info("Starting execution of process: {} with business key: {}", 
+                process.getName(), businessKey);
+        
         // 创建流程实例
         ProcessInstance instance = createProcessInstance(process, businessKey, contextData);
         
@@ -1931,6 +2273,7 @@ public class ProcessEngine {
             if (process.isTransactional()) {
                 transaction = transactionManager.getTransaction(
                     new DefaultTransactionDefinition(TransactionDefinition.PROPAGATION_REQUIRED));
+                log.debug("Transaction started for process: {}", process.getName());
             }
             
             // 执行流程节点
@@ -1940,26 +2283,47 @@ public class ProcessEngine {
             instance.setStatus(ProcessStatus.COMPLETED);
             instance.setEndTime(LocalDateTime.now());
             instanceRepository.save(instance);
+            log.info("Process {} completed successfully with instance ID: {}", 
+                    process.getName(), instance.getId());
             
             // 提交事务
             if (transaction != null) {
                 transactionManager.commit(transaction);
+                log.debug("Transaction committed for process: {}", process.getName());
             }
             
             return result;
+        } catch (NodeExecutionException e) {
+            // 关键节点执行失败，记录详细日志
+            handleProcessFailure(instance, transaction, process.getName(), e);
+            throw new ProcessExecutionException("流程关键节点执行失败: " + process.getName(), e);
         } catch (Exception e) {
-            // 回滚事务
-            if (transaction != null) {
-                transactionManager.rollback(transaction);
-            }
-            
-            // 标记流程失败
-            instance.setStatus(ProcessStatus.FAILED);
-            instance.setErrorMessage(e.getMessage());
-            instanceRepository.save(instance);
-            
+            // 其他异常处理
+            handleProcessFailure(instance, transaction, process.getName(), e);
             throw new ProcessExecutionException("流程执行失败: " + process.getName(), e);
         }
+    }
+    
+    /**
+     * 异步执行流程
+     * 
+     * @param process 流程元数据
+     * @param contextData 上下文数据
+     * @param businessKey 业务主键
+     * @return 包含流程实例ID的CompletableFuture
+     */
+    public CompletableFuture<String> executeAsync(ProcessMetadata process,
+                                                Map<String, Object> contextData,
+                                                String businessKey) {
+        return CompletableFuture.supplyAsync(() -> {
+            try {
+                ProcessExecutionResult result = execute(process, contextData, businessKey);
+                return result.getProcessInstance().getId();
+            } catch (Exception e) {
+                log.error("Async process execution failed: {}", process.getName(), e);
+                throw new CompletionException(e);
+            }
+        }, asyncExecutor);
     }
 
     /**
@@ -1973,17 +2337,24 @@ public class ProcessEngine {
             .sorted(Comparator.comparing(ProcessNode::getOrder))
             .collect(Collectors.toList());
         
+        log.debug("Executing {} nodes for process: {}", sortedNodes.size(), process.getName());
+        
         // 流程上下文（传递变量）
-        Map<String, Object> processContext = new HashMap<>(contextData);
+        Map<String, Object> processContext = new HashMap<>(contextData != null ? contextData : Collections.emptyMap());
         processContext.put("processInstanceId", instance.getId());
         processContext.put("businessKey", instance.getBusinessKey());
-        processContext.put("operator", SecurityUtils.getCurrentUserId());
+        processContext.put("operator", Optional.ofNullable(SecurityUtils.getCurrentUserId())
+                .orElse("SYSTEM"));
         
         // 执行节点
-        List<NodeExecutionResult> nodeResults = new ArrayList<>();
+        List<NodeExecutionResult> nodeResults = new ArrayList<>(sortedNodes.size());
         for (ProcessNode node : sortedNodes) {
+            log.debug("Processing node: {} (type: {}, order: {})", 
+                    node.getName(), node.getType(), node.getOrder());
+            
             // 检查节点执行条件
             if (!checkNodeCondition(node, processContext)) {
+                log.debug("Node skipped due to condition: {}", node.getName());
                 nodeResults.add(NodeExecutionResult.skipped(node));
                 continue;
             }
@@ -1994,6 +2365,8 @@ public class ProcessEngine {
             
             // 如果是关键节点且执行失败，终止流程
             if (!nodeResult.isSuccess() && node.isRequired()) {
+                log.error("Critical node execution failed: {}, reason: {}", 
+                        node.getName(), nodeResult.getErrorMessage());
                 throw new NodeExecutionException(
                     "关键节点执行失败: " + node.getName() + ", 原因: " + nodeResult.getErrorMessage());
             }
@@ -2001,6 +2374,7 @@ public class ProcessEngine {
             // 将节点输出添加到上下文
             if (nodeResult.getOutput() != null) {
                 processContext.putAll(nodeResult.getOutput());
+                log.debug("Node output added to context: {}", node.getName());
             }
         }
         
@@ -2013,21 +2387,30 @@ public class ProcessEngine {
     private NodeExecutionResult executeNode(ProcessNode node, 
                                           Map<String, Object> context,
                                           ProcessInstance instance) {
+        // 使用缓存获取节点类型
+        ProcessNode.StepType nodeType = nodeTypeCache.computeIfAbsent(
+            node.getType().name(), k -> node.getType());
+            
         // 获取节点处理器
-        NodeHandler handler = nodeHandlers.get(node.getType());
+        NodeHandler handler = nodeHandlers.get(nodeType);
         if (handler == null) {
-            return NodeExecutionResult.failure(node, "不支持的节点类型: " + node.getType());
+            String errorMsg = "不支持的节点类型: " + node.getType();
+            log.warn(errorMsg);
+            return NodeExecutionResult.failure(node, errorMsg);
         }
         
         // 异步执行
         if (node.isAsync()) {
+            log.debug("Submitting node for async execution: {}", node.getName());
             return executeAsyncNode(node, context, instance, handler);
         }
         
         // 同步执行
         try {
+            log.debug("Executing node synchronously: {}", node.getName());
             return handler.execute(node, context, instance);
         } catch (Exception e) {
+            log.error("Node execution exception: {}", node.getName(), e);
             return NodeExecutionResult.failure(node, "节点执行异常: " + e.getMessage());
         }
     }
@@ -2039,27 +2422,142 @@ public class ProcessEngine {
                                                Map<String, Object> context,
                                                ProcessInstance instance,
                                                NodeHandler handler) {
+        // 创建上下文副本，避免并发修改
+        Map<String, Object> contextCopy = new HashMap<>(context);
+        
         // 提交异步任务
         asyncExecutor.submit(() -> {
             try {
                 // 记录异步节点开始执行
                 recordNodeStatus(instance.getId(), node.getId(), NodeStatus.RUNNING);
+                log.debug("Async node execution started: {}", node.getName());
                 
                 // 执行节点
-                NodeExecutionResult result = handler.execute(node, context, instance);
+                NodeExecutionResult result = handler.execute(node, contextCopy, instance);
                 
                 // 记录执行结果
-                recordNodeStatus(instance.getId(), node.getId(), 
-                    result.isSuccess() ? NodeStatus.COMPLETED : NodeStatus.FAILED,
-                    result.getErrorMessage());
+                NodeStatus status = result.isSuccess() ? NodeStatus.COMPLETED : NodeStatus.FAILED;
+                recordNodeStatus(instance.getId(), node.getId(), status, result.getErrorMessage());
+                log.debug("Async node execution completed: {}, status: {}", 
+                        node.getName(), status);
+                
             } catch (Exception e) {
                 recordNodeStatus(instance.getId(), node.getId(), NodeStatus.FAILED, e.getMessage());
-                log.error("异步节点执行失败: " + node.getName(), e);
+                log.error("异步节点执行失败: {}", node.getName(), e);
             }
         });
         
         // 立即返回，不等待执行结果
         return NodeExecutionResult.async(node, "节点已提交异步执行");
+    }
+    
+    /**
+     * 验证执行参数
+     */
+    private void validateExecutionParams(ProcessMetadata process, 
+                                        Map<String, Object> contextData,
+                                        String businessKey) {
+        Assert.notNull(process, "Process metadata must not be null");
+        Assert.hasText(businessKey, "Business key must not be empty");
+        
+        if (process.getNodes().isEmpty()) {
+            throw new IllegalArgumentException("Process must have at least one node");
+        }
+    }
+    
+    /**
+     * 处理流程失败
+     */
+    private void handleProcessFailure(ProcessInstance instance, 
+                                     TransactionStatus transaction, 
+                                     String processName, 
+                                     Exception e) {
+        // 回滚事务
+        if (transaction != null) {
+            try {
+                transactionManager.rollback(transaction);
+                log.debug("Transaction rolled back for process: {}", processName);
+            } catch (Exception ex) {
+                log.error("Failed to rollback transaction", ex);
+            }
+        }
+        
+        // 标记流程失败
+        try {
+            instance.setStatus(ProcessStatus.FAILED);
+            instance.setErrorMessage(ExceptionUtils.getMessage(e));
+            instance.setEndTime(LocalDateTime.now());
+            instanceRepository.save(instance);
+            log.info("Process instance marked as failed: {}", instance.getId());
+        } catch (Exception ex) {
+            log.error("Failed to update process instance status", ex);
+        }
+    }
+    
+    /**
+     * 清除节点类型缓存
+     */
+    public void clearCache() {
+        nodeTypeCache.clear();
+        log.debug("Node type cache cleared");
+    }
+    
+    /**
+     * 检查节点条件
+     */
+    private boolean checkNodeCondition(ProcessNode node, Map<String, Object> context) {
+        // 实际实现中，这里应该调用条件表达式引擎
+        return node.getCondition() == null || evaluateCondition(node.getCondition(), context);
+    }
+    
+    /**
+     * 评估条件表达式
+     */
+    private boolean evaluateCondition(String condition, Map<String, Object> context) {
+        // 简化实现，实际应使用表达式引擎
+        try {
+            // 这里可以集成SpEL或其他表达式引擎
+            return true;
+        } catch (Exception e) {
+            log.error("Failed to evaluate condition: {}", condition, e);
+            return false;
+        }
+    }
+    
+    /**
+     * 创建流程实例
+     */
+    private ProcessInstance createProcessInstance(ProcessMetadata process, 
+                                                String businessKey,
+                                                Map<String, Object> contextData) {
+        // 实际实现中创建流程实例的逻辑
+        ProcessInstance instance = new ProcessInstance();
+        instance.setProcessId(process.getId());
+        instance.setProcessName(process.getName());
+        instance.setBusinessKey(businessKey);
+        instance.setStatus(ProcessStatus.RUNNING);
+        instance.setStartTime(LocalDateTime.now());
+        instance.setVariables(contextData != null ? contextData : Collections.emptyMap());
+        
+        return instanceRepository.save(instance);
+    }
+    
+    /**
+     * 记录节点状态
+     */
+    private void recordNodeStatus(String instanceId, String nodeId, NodeStatus status) {
+        recordNodeStatus(instanceId, nodeId, status, null);
+    }
+    
+    /**
+     * 记录节点状态（带错误信息）
+     */
+    private void recordNodeStatus(String instanceId, String nodeId, 
+                                 NodeStatus status, String errorMessage) {
+        // 实际实现中记录节点执行状态的逻辑
+        // 可以保存到数据库或日志系统
+        log.debug("Node status recorded - instanceId: {}, nodeId: {}, status: {}, error: {}",
+                instanceId, nodeId, status, errorMessage);
     }
 }
 ```

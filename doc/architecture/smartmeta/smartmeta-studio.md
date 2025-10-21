@@ -646,6 +646,250 @@ export const useMicroAppStore = create<MicroAppState>()(
 
 ### **5.1 微应用容器组件**
 ```tsx
+// 📁 src/utils/microAppSecurity.ts
+import { isDev } from '@config/env';
+
+/**
+ * 沙箱类型枚举
+ * 与react-frontend-module-design.md中定义保持一致
+ */
+export enum SandboxType {
+  SNAPSHOT = 'snapshot',
+  PROXY = 'proxy',
+  LEGACY = 'legacy'
+}
+
+/**
+ * 样式隔离级别枚举
+ * 与react-frontend-module-design.md中定义保持一致
+ */
+export enum StyleIsolationLevel {
+  NONE = 'none',
+  STRICT = 'strict',
+  EXPERIMENTAL = 'experimental',
+  SCOPED = 'scoped'
+}
+
+/**
+ * 沙箱配置接口
+ * 与react-frontend-module-design.md中定义保持一致
+ */
+export interface SandboxConfig {
+  // JS沙箱开关
+  jsSandbox: boolean;
+  // 样式隔离级别
+  styleIsolation: StyleIsolationLevel;
+  // 沙箱类型
+  sandboxType: SandboxType;
+  // 是否启用快照沙箱
+  snapshotSandbox?: boolean;
+  // 是否启用代理沙箱
+  proxySandbox?: boolean;
+  // 是否允许微应用操作父文档
+  allowDocumentManipulation?: boolean;
+  // 是否允许微应用访问全局对象
+  allowGlobalAccess?: boolean;
+  // 允许访问的全局对象白名单
+  globalObjectWhitelist?: string[];
+  // 是否禁用外部链接
+  disableExternalLinks?: boolean;
+  // 是否拦截window.open
+  interceptWindowOpen?: boolean;
+  // 是否拦截fetch请求
+  interceptFetch?: boolean;
+  // 是否拦截XMLHttpRequest
+  interceptXhr?: boolean;
+}
+
+/**
+ * 安全策略接口
+ * 与react-frontend-module-design.md中定义保持一致
+ */
+export interface SecurityPolicy {
+  // 内容安全策略
+  contentSecurityPolicy?: string;
+  // 是否启用CSP
+  enableCSP?: boolean;
+  // 是否禁用eval
+  disableEval?: boolean;
+  // 是否禁用Function构造函数
+  disableFunctionConstructor?: boolean;
+  // 允许的域名白名单（支持通配符，如 *.example.com）
+  allowedDomains?: string[];
+  // 是否限制本地存储访问
+  restrictLocalStorage?: boolean;
+  // 本地存储前缀
+  localStoragePrefix?: string;
+  // 是否限制Cookie访问
+  restrictCookies?: boolean;
+  // Cookie前缀
+  cookiePrefix?: string;
+  // 是否禁用iframe
+  disableIframes?: boolean;
+}
+
+/**
+ * 默认沙箱配置
+ */
+export const defaultSandboxConfig: SandboxConfig = {
+  jsSandbox: true,
+  styleIsolation: StyleIsolationLevel.STRICT,
+  sandboxType: SandboxType.PROXY,
+  snapshotSandbox: false,
+  proxySandbox: true,
+  allowDocumentManipulation: false,
+  allowGlobalAccess: false,
+  globalObjectWhitelist: ['console', 'Math', 'JSON', 'Date'],
+  disableExternalLinks: true,
+  interceptWindowOpen: true,
+  interceptFetch: true,
+  interceptXhr: true
+};
+
+/**
+ * 默认安全策略
+ */
+export const defaultSecurityPolicy: SecurityPolicy = {
+  contentSecurityPolicy: "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self';",
+  enableCSP: true,
+  disableEval: true,
+  disableFunctionConstructor: true,
+  allowedDomains: [],
+  restrictLocalStorage: true,
+  localStoragePrefix: 'micro_app_',
+  restrictCookies: true,
+  cookiePrefix: 'micro_app_',
+  disableIframes: true
+};
+
+/**
+ * 根据环境获取适合的沙箱配置
+ * @param appName 微应用名称
+ * @param env 环境
+ * @returns 沙箱配置
+ */
+export function getOptimalSandboxConfig(appName: string, env: string = 'production'): SandboxConfig {
+  const config = { ...defaultSandboxConfig };
+  
+  // 开发环境下放宽一些限制，便于调试
+  if (env === 'development' || isDev) {
+    config.allowGlobalAccess = true;
+    config.styleIsolation = StyleIsolationLevel.EXPERIMENTAL;
+    config.interceptFetch = false;
+    config.interceptXhr = false;
+  }
+  
+  // 应用特定配置
+  switch (appName) {
+    case 'vue-dashboard':
+      // Vue应用可能需要特殊处理
+      config.styleIsolation = StyleIsolationLevel.EXPERIMENTAL;
+      break;
+    case 'angular-settings':
+      // Angular应用可能需要更多全局访问权限
+      config.globalObjectWhitelist = [...config.globalObjectWhitelist, 'Zone', '__zone_symbol__'];
+      break;
+    default:
+      break;
+  }
+  
+  return config;
+}
+
+/**
+ * 构建无界框架的沙箱配置
+ * @param appName 微应用名称
+ * @param customConfig 自定义配置
+ * @returns 无界框架兼容的沙箱配置
+ */
+export function buildWujieSandboxConfig(appName: string, customConfig?: Partial<SandboxConfig>) {
+  const config = { ...getOptimalSandboxConfig(appName), ...customConfig };
+  
+  return {
+    // 无界框架的jsSandbox配置
+    jsSandbox: config.jsSandbox,
+    // 无界框架的严格样式隔离
+    strictStyleIsolation: config.styleIsolation === StyleIsolationLevel.STRICT,
+    // 无界框架的实验性样式隔离
+    experimentalStyleIsolation: config.styleIsolation === StyleIsolationLevel.EXPERIMENTAL,
+    // 无界框架的快照沙箱
+    snapshotSandbox: config.sandboxType === SandboxType.SNAPSHOT || config.snapshotSandbox,
+    // 无界框架的代理沙箱
+    proxySandbox: config.sandboxType === SandboxType.PROXY || config.proxySandbox,
+  };
+}
+
+/**
+ * 应用安全策略
+ * @param appName 微应用名称
+ * @param policy 安全策略
+ */
+export function applySecurityPolicy(appName: string, policy: SecurityPolicy = defaultSecurityPolicy): void {
+  if (typeof document !== 'undefined') {
+    // 应用CSP
+    if (policy.enableCSP && policy.contentSecurityPolicy) {
+      const meta = document.createElement('meta');
+      meta.httpEquiv = 'Content-Security-Policy';
+      meta.content = policy.contentSecurityPolicy;
+      document.head.appendChild(meta);
+    }
+    
+    // 其他安全策略可以在这里实现
+    if (policy.disableEval && typeof window !== 'undefined') {
+      // 可以通过覆盖eval函数实现
+      // 注意：这需要在微应用加载前执行
+      const originalEval = window.eval;
+      Object.defineProperty(window, 'eval', {
+        value: function() {
+          throw new Error('eval is disabled in micro-app environment');
+        },
+        writable: false,
+        configurable: false
+      });
+    }
+  }
+}
+
+/**
+ * 创建安全的fetch拦截器
+ * @param appName 微应用名称
+ * @param policy 安全策略
+ * @returns fetch拦截器函数
+ */
+export function createSecureFetchInterceptor(appName: string, policy: SecurityPolicy = defaultSecurityPolicy) {
+  return async (url: string, options: RequestInit = {}) => {
+    // 检查是否是允许的域名
+    const urlObj = new URL(url, window.location.origin);
+    const domain = urlObj.hostname;
+    
+    // 检查域名白名单
+    if (policy.allowedDomains && policy.allowedDomains.length > 0) {
+      if (!policy.allowedDomains.includes(domain)) {
+        console.warn(`微应用 ${appName} 尝试访问未授权域名: ${domain}`);
+        throw new Error(`Domain ${domain} is not allowed`);
+      }
+    }
+    
+    // 注入应用标识头
+    const headers = new Headers(options.headers);
+    headers.set('X-Micro-App-Name', appName);
+    headers.set('X-Request-From', 'micro-app');
+    
+    // 发送请求
+    try {
+      const response = await fetch(url, {
+        ...options,
+        headers
+      });
+      
+      return response;
+    } catch (error) {
+      console.error(`微应用 ${appName} fetch 请求失败:`, error);
+      throw error;
+    }
+  };
+}
+
 // 📁 src/components/micro/MicroAppContainer.tsx
 import React, { useEffect, useState } from 'react';
 import { Card, Alert, Button, Spin } from 'antd';
@@ -653,6 +897,7 @@ import { WujieReact } from 'wujie-react';
 import { useMicroAppStore } from '@stores/microAppStore';
 import { useAuthStore } from '@stores/authStore';
 import { getMicroAppConfig } from '@config/microApps';
+import { buildWujieSandboxConfig, applySecurityPolicy, createSecureFetchInterceptor } from '@utils/microAppSecurity';
 
 interface MicroAppContainerProps {
   appName: string;
@@ -663,67 +908,94 @@ export const MicroAppContainer: React.FC<MicroAppContainerProps> = ({
   appName,
   className,
 }) => {
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [performance, setPerformance] = useState({
+    startTime: Date.now(),
+    loadTime: 0,
+    mountTime: 0
+  });
+  
   const { user, token } = useAuthStore();
   const { updateAppStatus, setActiveApp } = useMicroAppStore();
-  
   const appConfig = getMicroAppConfig(appName);
+  
+  // 构建沙箱配置
+  const sandboxConfig = buildWujieSandboxConfig(appName, appConfig?.sandbox);
+  
+  // 创建安全fetch拦截器
+  const secureFetchInterceptor = createSecureFetchInterceptor(appName);
 
   useEffect(() => {
-    if (!appConfig) {
-      setError(`微应用配置不存在: ${appName}`);
-      return;
+    // 应用安全策略
+    if (appConfig) {
+      applySecurityPolicy(appName);
     }
-
-    setActiveApp(appName);
+    
+    setActiveApp(appConfig ? appName : null);
+    setPerformance(prev => ({ ...prev, startTime: Date.now() }));
     
     return () => {
       setActiveApp(null);
+      // 记录性能指标
+      console.log(`微应用 ${appName} 性能指标:`, performance);
     };
   }, [appName, appConfig, setActiveApp]);
 
-  if (!appConfig) {
-    return (
-      <Alert
-        message="微应用配置错误"
-        description={`未找到微应用 ${appName} 的配置`}
-        type="error"
-        showIcon
-      />
-    );
-  }
-
-  if (error) {
-    return (
-      <Alert
-        message="微应用加载失败"
-        description={error}
-        type="error"
-        action={
-          <Button size="small" onClick={() => window.location.reload()}>
-            重试
-          </Button>
-        }
-      />
-    );
-  }
-
-  const handleAppLoad = () => {
-    setLoading(false);
-    setError(null);
+  const handleLoad = () => {
+    const currentTime = Date.now();
+    const loadTime = currentTime - performance.startTime;
+    
+    setPerformance(prev => ({
+      ...prev,
+      loadTime
+    }));
+    
+    setStatus('ready');
     updateAppStatus(appName, 'ready');
+    console.log(`微应用 ${appName} 加载完成，耗时: ${loadTime}ms`);
   };
 
-  const handleAppError = (err: Error) => {
-    setLoading(false);
-    setError(err.message);
-    updateAppStatus(appName, 'error');
+  const handleMount = () => {
+    const mountTime = Date.now() - performance.startTime;
+    
+    setPerformance(prev => ({
+      ...prev,
+      mountTime
+    }));
+    
+    console.log(`微应用 ${appName} 挂载完成，总耗时: ${mountTime}ms`);
   };
+
+  const handleError = (err: Error) => {
+    setError(err.message);
+    setStatus('error');
+    updateAppStatus(appName, 'error');
+    console.error(`微应用 ${appName} 加载错误:`, err);
+  };
+  
+  // 合并错误处理
+  if (error || !appConfig) {
+    return (
+      <div className={`micro-app-error ${className}`}>
+        <Alert
+          message={error ? '微应用加载失败' : '微应用配置错误'}
+          description={error || `未找到微应用 ${appName} 的配置`}
+          type="error"
+          showIcon
+          action={
+            <Button size="small" onClick={() => window.location.reload()}>
+              重试
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
 
   return (
     <div className={`micro-app-container ${className}`}>
-      {loading && (
+      {status === 'loading' && (
         <div className="micro-app-loading">
           <Spin size="large" tip={`加载 ${appConfig.title}...`} />
         </div>
@@ -736,6 +1008,16 @@ export const MicroAppContainer: React.FC<MicroAppContainerProps> = ({
         url={appConfig.url}
         sync={true}
         alive={true}
+        // 使用构建的沙箱配置
+        {...sandboxConfig}
+        // 自定义fetch
+        fetch={secureFetchInterceptor}
+        // 生命周期钩子
+        beforeLoad={() => console.log(`开始加载微应用: ${appName}`)}
+        onLoad={handleLoad}
+        onMount={handleMount}
+        onError={handleError}
+        onUnmount={() => console.log(`微应用 ${appName} 卸载`)}        
         props={{
           // 🎯 传递全局状态
           globalState: {
@@ -754,8 +1036,6 @@ export const MicroAppContainer: React.FC<MicroAppContainerProps> = ({
             },
           },
         }}
-        onLoad={handleAppLoad}
-        onError={handleAppError}
       />
     </div>
   );

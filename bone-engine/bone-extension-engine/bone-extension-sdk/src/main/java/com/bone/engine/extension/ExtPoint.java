@@ -21,18 +21,25 @@ import java.lang.annotation.*;
  * <pre>
  * {@code
  * // 1. 定义扩展点接口
- * @ExtPoint(name = "PaymentService", description = "支付服务扩展点")
- * public interface PaymentService {
- *     PaymentResult pay(PaymentRequest request, BizContext<?> context);
+ * @ExtPoint(
+ *     name = "订单折扣计算",
+ *     description = "不同场景下的订单折扣逻辑",
+ *     type = "BUSINESS",
+ *     version = "1.0.0",
+ *     category = "交易",
+ *     priority = 100
+ * )
+ * public interface OrderDiscountExtPoint {
+ *     DiscountResult calculate(BizContext<Order> context);
  * }
  * 
  * // 2. 提供默认实现
- * @Extension(bizCode = "DEFAULT")
- * public class DefaultPaymentServiceImpl implements PaymentService {
+ * @Extension(bizCode = "DEFAULT", isDefault = true)
+ * public class DefaultOrderDiscount implements OrderDiscountExtPoint {
  *     @Override
- *     public PaymentResult pay(PaymentRequest request, BizContext<?> context) {
- *         // 默认支付实现
- *         return new PaymentResult();
+ *     public DiscountResult calculate(BizContext<Order> context) {
+ *         // 默认折扣实现
+ *         return new DiscountResult();
  *     }
  * }
  * }
@@ -55,6 +62,41 @@ public @interface ExtPoint {
      * 扩展点描述
      */
     String description() default "";
+    
+    /**
+     * 扩展点类型，默认为业务扩展
+     */
+    String type() default "BUSINESS";
+    
+    /**
+     * 扩展点版本号
+     */
+    String version() default "1.0.0";
+    
+    /**
+     * 是否启用
+     */
+    boolean enabled() default true;
+    
+    /**
+     * 扩展点分类
+     */
+    String category() default "";
+    
+    /**
+     * 默认优先级
+     */
+    int priority() default 100;
+    
+    /**
+     * 废弃版本
+     */
+    String deprecatedSince() default "";
+    
+    /**
+     * 计划移除版本
+     */
+    String deprecatedIn() default "";
     
     /**
      * 是否允许动态替换实现（默认允许）

@@ -6,6 +6,8 @@
 
 Bone SmartMeta 是一个融合了Salesforce、Workday和Coupa最佳实践的企业级元数据操作系统，提供智能元数据管理、动态数据模型、AI增强功能等核心能力。通过动态定义和管理元数据，实现业务模型的敏捷迭代与数据一致性保障，赋能企业快速响应业务变化。
 
+详细的采购业务场景实现请参考《采购核心业务模型与元数据引擎集成设计方案》文档。
+
 ## 项目价值
 
 - **业务敏捷性**: 支持业务模型的动态调整，无需修改代码即可适配业务变化，实现低代码/无代码业务建模
@@ -277,33 +279,66 @@ bone.smartmeta.log.file=smartmeta.log
 
 ## 架构设计
 
+Bone SmartMeta 采用分层架构设计，确保系统的高内聚、低耦合和可扩展性，与《采购核心业务模型与元数据引擎集成设计方案》文档中的描述保持一致：
+
+1. **交互层**：提供Web可视化建模界面、RESTful API接口和集成接口
+2. **核心引擎层**：包含元数据管理引擎、动态服务引擎、规则引擎、流程引擎、验证引擎和表达式引擎
+3. **数据处理层**：负责元数据存储、缓存管理、数据访问和转换
+4. **基础设施层**：提供数据库、缓存、消息队列等基础服务
+
 ### 系统架构图
 
-```
-+-------------------+     +-------------------+     +-------------------+
-|                   |     |                   |     |                   |
-|   业务应用层      | --> |  Bone SmartMeta   | --> |   数据存储层      |
-|                   |     |    核心引擎       |     |                   |
-+-------------------+     +-------------------+     +-------------------+
-                               |         |
-                        +------+         +------+
-                        |                       |
-               +-------------------+    +-------------------+
-               |                   |    |                   |
-               |   验证引擎        |    |   转换引擎        |
-               |                   |    |                   |
-               +-------------------+    +-------------------+
-                        |                       |
-                        +------+         +------+
-                               |         |
-                        +-------------------+
-                        |                   |
-                        |   表达式引擎      |
-                        |                   |
-                        +-------------------+
+```mermaid
+graph TB
+    title Bone SmartMeta 架构图
+    
+    subgraph "交互层（用户体验）"
+        WebUI[Web可视化建模界面]
+        RESTAPI[RESTful API]
+        Integration[第三方集成接口]
+    end
+
+    subgraph "核心引擎层（业务逻辑）"
+        MetaEngine[元数据管理引擎]
+        DynamicService[动态服务引擎]
+        RuleEngine[规则引擎]
+        ProcessEngine[流程引擎]
+        ValidationEngine[验证引擎]
+        ExpressionEngine[表达式引擎]
+    end
+
+    subgraph "数据处理层（数据持久化）"
+        MetaStorage[元数据存储]
+        CacheManager[缓存管理]
+        DataAccess[数据访问层]
+    end
+
+    subgraph "基础设施层（基础服务）"
+        Database[关系数据库]
+        Cache[分布式缓存]
+        MessageQueue[消息队列]
+    end
+
+    WebUI --> MetaEngine
+    RESTAPI --> MetaEngine
+    Integration --> MetaEngine
+    
+    MetaEngine --> DynamicService
+    DynamicService --> RuleEngine
+    RuleEngine --> ProcessEngine
+    ProcessEngine --> ValidationEngine
+    ValidationEngine --> ExpressionEngine
+    
+    MetaEngine --> MetaStorage
+    MetaStorage --> Database
+    CacheManager --> Cache
+    DataAccess --> Database
+    DataAccess --> MessageQueue
 ```
 
 ### 元数据引擎执行机制
+
+元数据引擎执行机制是Bone SmartMeta的核心工作流程，与《采购核心业务模型与元数据引擎集成设计方案》文档中的描述保持一致。
 
 #### 1. 元数据注册与加载流程
 
@@ -325,6 +360,24 @@ MetadataEngine处理 → 表达式计算 → 数据存储 → 返回结果
 ```
 数据输入 → ValidationEngine → 基础验证 → 表达式规则验证 → 自定义规则验证 → 
 验证结果 → 错误处理或通过
+```
+
+#### 4. 流程执行机制
+
+流程引擎负责业务流程的定义和执行，支持节点流转、条件分支和并行处理：
+
+```
+流程启动 → 流程实例创建 → 节点执行 → 条件评估 → 下一个节点 → 流程完成
+    ↓                                 ↓
+  事件发布                           错误处理
+```
+
+#### 5. 计算字段处理机制
+
+计算字段通过表达式引擎动态计算：
+
+```
+数据加载 → 计算字段识别 → 表达式解析 → 上下文创建 → 表达式求值 → 结果赋值
 ```
 
 ## 与主流SaaS平台对比
@@ -540,6 +593,21 @@ Page<Map<String, Object>> page = dynamicModelDataService.query(entityName, query
 
 // 批量操作
 List<Map<String, Object>> results = dynamicModelDataService.batchCreate(entityName, batchData);
+```
+
+### GenericOperationService API
+
+```java
+// 执行自定义操作
+Map<String, Object> params = new HashMap<>();
+params.put("orderId", "PO-2023-001");
+params.put("action", "APPROVE");
+Map<String, Object> result = genericOperationService.execute("PurchaseOrder", "approve", params);
+
+// 执行复杂业务流程
+Map<String, Object> processParams = new HashMap<>();
+processParams.put("orderData", purchaseOrderData);
+Map<String, Object> processResult = genericOperationService.execute("PurchaseOrder", "createWithApproval", processParams);
 ```
 
 ## 高级特性

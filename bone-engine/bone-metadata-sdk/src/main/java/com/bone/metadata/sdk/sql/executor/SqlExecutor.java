@@ -19,8 +19,6 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.stats.CacheStats;
 import lombok.extern.slf4j.Slf4j;
-import java.util.logging.Logger;
-import java.util.logging.Level;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
@@ -91,16 +89,33 @@ public class SqlExecutor {
     /**
      * 执行查询并返回对象列表（带自定义RowMapper）
      */
-    @Cacheable(cacheNames = "sqlQueries", key = "#templateId + #parameters.toString() + #entityClass.getName()")
-    public <T, R> List<R> execute(String templateId, Map<String, Object> parameters,
+    @Cacheable(cacheNames = "sqlQueries", 
+              key = "#templateId + '-' + T(java.util.Objects).hashCode(#parameters) + '-' + #entityClass.getName()",
+              unless = "@properties.isCacheEnabled() == false")
+    public <T, R> List<R> execute(String templateId, Map<String, Object> parameters, 
                                   Class<T> entityClass, RowMapper<R> rowMapper) {
-        return executeInternal(templateId, parameters, entityClass, processedSql -> {
-            String sql = processedSql.getSql();
-            if (!isSelectQuery(sql)) {
-                throw new QueryExecutionException("Only SELECT operations are supported with custom RowMapper");
-            }
-            return jdbc.query(sql, processParameters(processedSql.getEffectiveParams()), rowMapper);
-        });
+        try {
+            log.debug("Executing query with template: {}, entity class: {}, params: {}", 
+                    templateId, entityClass.getSimpleName(), maskSensitiveParameters(parameters));
+            
+            List<R> results = executeInternal(templateId, parameters, entityClass, processedSql -> {
+                String sql = processedSql.getSql();
+                if (!isSelectQuery(sql)) {
+                    throw new QueryExecutionException("Only SELECT operations are supported with custom RowMapper");
+                }
+                
+                log.trace("Executing SQL: {}", sql);
+                Map<String, Object> processedParams = processParameters(processedSql.getEffectiveParams());
+                return jdbc.query(sql, processedParams, rowMapper);
+            });
+            
+            log.debug("Query executed successfully, returned {} results", results.size());
+            return results;
+        } catch (Exception e) {
+            String errorMsg = String.format("Failed to execute query with template: %s", templateId);
+            log.error(errorMsg, e);
+            throw new QueryExecutionException(errorMsg, e);
+        }
     }
 
     /**
@@ -257,22 +272,34 @@ public class SqlExecutor {
      * 执行预编译查询
      */
     public <T> List<T> executeQuery(CompiledQuery query, Class<T> resultType) {
-        // 只验证SQL中实际使用的参数，而不是所有参数
-        Set<String> usedParams = extractUsedParameters(query.getSql());
-        Map<String, Object> filteredParams = new HashMap<>();
+        try {
+            // 只验证SQL中实际使用的参数，而不是所有参数
+            Set<String> usedParams = extractUsedParameters(query.getSql());
+            Map<String, Object> filteredParams = new HashMap<>();
 
-        for (String usedParam : usedParams) {
-            if (query.getParameters().containsKey(usedParam)) {
-                filteredParams.put(usedParam, query.getParameters().get(usedParam));
+            for (String usedParam : usedParams) {
+                if (query.getParameters().containsKey(usedParam)) {
+                    filteredParams.put(usedParam, query.getParameters().get(usedParam));
+                }
             }
-        }
 
-        // 使用过滤后的参数进行验证
-        SqlSecurityGuard.scanForInjectionKeywords(query.getSql());
-        // 仅对非简单类型进行字段校验
-        SqlSecurityGuard.validateQueryParameters(filteredParams, resultType);
-        SqlParameterSource parameterSource = new NestedMapSqlParameterSource(query.getParameters());
-        return jdbc.query(query.getSql(), parameterSource, new SmartRowMapper<>(resultType));
+            // 使用过滤后的参数进行验证
+            SqlSecurityGuard.scanForInjectionKeywords(query.getSql());
+            // 仅对非简单类型进行字段校验
+            SqlSecurityGuard.validateQueryParameters(filteredParams, resultType);
+            
+            log.debug("Executing query: {}, params: {}", 
+                    query.getSql(), maskSensitiveParameters(query.getParameters()));
+            
+            SqlParameterSource parameterSource = new NestedMapSqlParameterSource(query.getParameters());
+            List<T> results = jdbc.query(query.getSql(), parameterSource, new SmartRowMapper<>(resultType));
+            log.debug("Query executed successfully, returned {} results", results.size());
+            return results;
+        } catch (Exception e) {
+            String errorMsg = String.format("Failed to execute query: %s", query.getSql());
+            log.error(errorMsg, e);
+            throw new QueryExecutionException(errorMsg, e);
+        }
     }
 
     // 简单类型判断（与MethodHandler保持一致）
@@ -304,16 +331,44 @@ public class SqlExecutor {
             if (!isSimpleType(resultType)) {
                 SqlSecurityGuard.validateQueryParameters(query, resultType);
             }
+            
+            log.debug("Executing single result query: {}, params: {}", 
+                    query.getSql(), maskSensitiveParameters(query.getParameters()));
+            
             return jdbc.queryForObject(
                     query.getSql(),
                     query.getParameters(),
                     new SmartRowMapper<>(resultType)
             );
         } catch (EmptyResultDataAccessException e) {
-            // 使用Java标准日志记录器替代log.warn
-            Logger.getLogger(getClass().getName()).warning(String.format("No model found for query: %s", query.getSql()));
+            // 空结果是有效情况，记录为debug级别
+            log.debug("No results found for query: {}", query.getSql());
             return null;
+        } catch (Exception e) {
+            // 包装其他异常为SDK统一异常
+            String errorMsg = String.format("Failed to execute query: %s", query.getSql());
+            log.error(errorMsg, e);
+            throw new QueryExecutionException(errorMsg, e);
         }
+    }
+    
+    /**
+     * 掩码敏感参数，用于日志记录
+     */
+    private Map<String, Object> maskSensitiveParameters(Map<String, Object> parameters) {
+        if (parameters == null || parameters.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        
+        Map<String, Object> maskedParams = new HashMap<>(parameters);
+        for (Map.Entry<String, Object> entry : maskedParams.entrySet()) {
+            String key = entry.getKey().toLowerCase();
+            if (key.contains("password") || key.contains("secret") || key.contains("token") || 
+                key.contains("passwd") || key.contains("pwd")) {
+                entry.setValue("***masked***");
+            }
+        }
+        return maskedParams;
     }
 
     /**

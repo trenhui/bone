@@ -60,7 +60,7 @@ public class TableMetadata {
     public ColumnMetadata getSoftDeleteColumn() {
         if (softDeleted == null) {
             throw new IllegalStateException(
-                    String.format("表 %s 未定义主键列", name)
+                    String.format("表 %s 未定义软删除列", name)
             );
         }
         return softDeleted;

@@ -10,6 +10,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -25,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li><strong>泛型数据支持：</strong>支持携带特定类型的业务数据对象</li>
  *   <li><strong>动态属性管理：</strong>提供线程安全的属性存储和访问机制</li>
  *   <li><strong>可扩展性：</strong>支持添加自定义属性和元数据</li>
+ *   <li><strong>标签系统：</strong>支持路由和监控的标签机制</li>
  *   <li><strong>构建者模式：</strong>通过Builder模式提供流畅的API</li>
  * </ul>
  * 
@@ -38,18 +40,26 @@ import java.util.concurrent.ConcurrentHashMap;
  *     .useCase("CREATE")
  *     .scenario("NORMAL")
  *     .env("PROD")
+ *     .userGroup("GOLD")
  *     .data(order)
  *     .putAttribute("userId", "123456")
- *     .putAttribute("requestId", "REQ-2023-0001")
+ *     .addTag("channel", "APP")
+ *     .addTag("activity", "NEW_YEAR")
  *     .build();
  * 
  * // 在扩展点实现中使用上下文
  * public PaymentResult pay(PaymentRequest request, BizContext<?> context) {
  *     String tenantCode = context.getTenantCode();
+ *     String userGroup = context.getUserGroup();
  *     String userId = context.getAttribute("userId");
  *     // 业务逻辑处理
  *     return new PaymentResult();
  * }
+ * 
+ * // 简化创建方式
+ * BizContext<Order> simpleContext = BizContext.of("ORDER", "CREATE")
+ *     .data(order)
+ *     .build();
  * }
  * </pre>
  *
@@ -68,7 +78,7 @@ public class BizContext<T> implements Serializable {
     /**
      * 租户代码
      */
-    private String tenantCode;
+    private String tenantCode = "DEFAULT";
     
     /**
      * 业务域代码
@@ -88,12 +98,27 @@ public class BizContext<T> implements Serializable {
     /**
      * 环境标识
      */
-    private String env;
+    private String env = "PROD";
     
     /**
      * 分组标识
      */
     private String group;
+    
+    /**
+     * 用户组标识
+     */
+    private String userGroup = "DEFAULT";
+    
+    /**
+     * 请求ID
+     */
+    private String requestId;
+    
+    /**
+     * 请求头信息
+     */
+    private final Map<String, String> headers = new HashMap<>();
     
     /**
      * 业务数据对象
@@ -116,17 +141,25 @@ public class BizContext<T> implements Serializable {
     private final Map<String, String> metadata = new HashMap<>();
     
     /**
+     * 标签信息，用于路由和监控
+     */
+    private final Map<String, Object> tags = new HashMap<>();
+    
+    /**
      * 构建者构造函数
      */
     @Builder
     public BizContext(String tenantCode, String bizCode, String useCase, String scenario, 
-                     String env, String group, T data, Map<String, Object> attributes) {
-        this.tenantCode = tenantCode;
+                     String env, String group, String userGroup, String requestId, 
+                     T data, Map<String, Object> attributes, Map<String, String> headers) {
+        this.tenantCode = tenantCode != null ? tenantCode : "DEFAULT";
         this.bizCode = bizCode;
         this.useCase = useCase;
         this.scenario = scenario;
-        this.env = env;
+        this.env = env != null ? env : "PROD";
         this.group = group;
+        this.userGroup = userGroup != null ? userGroup : "DEFAULT";
+        this.requestId = requestId != null ? requestId : generateRequestId();
         this.data = data;
         this.createTime = LocalDateTime.now();
         
@@ -134,6 +167,39 @@ public class BizContext<T> implements Serializable {
         if (!CollectionUtils.isEmpty(attributes)) {
             this.attributes.putAll(attributes);
         }
+        
+        // 初始化请求头
+        if (!CollectionUtils.isEmpty(headers)) {
+            this.headers.putAll(headers);
+        }
+    }
+    
+    /**
+     * 生成请求ID
+     */
+    private String generateRequestId() {
+        return "EXT-" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
+    }
+    
+    /**
+     * 静态工厂方法
+     */
+    public static <T> Builder<T> builder() {
+        return new Builder<>();
+    }
+    
+    /**
+     * 简化创建方式
+     */
+    public static <T> Builder<T> of(String bizCode, String scenario) {
+        return builder().bizCode(bizCode).scenario(scenario);
+    }
+    
+    /**
+     * 带租户的简化创建方式
+     */
+    public static <T> Builder<T> ofTenant(String tenantCode, String bizCode, String scenario) {
+        return builder().tenantCode(tenantCode).bizCode(bizCode).scenario(scenario);
     }
     
     /**
@@ -253,6 +319,81 @@ public class BizContext<T> implements Serializable {
     }
     
     /**
+     * 添加标签（用于路由和监控）
+     * 
+     * @param key 标签键
+     * @param value 标签值
+     * @return 当前上下文实例（用于链式调用）
+     */
+    public BizContext<T> addTag(String key, Object value) {
+        if (key != null) {
+            if (value != null) {
+                this.tags.put(key, value);
+            } else {
+                this.tags.remove(key);
+            }
+        }
+        return this;
+    }
+    
+    /**
+     * 获取标签值
+     * 
+     * @param key 标签键
+     * @return 标签值
+     */
+    @SuppressWarnings("unchecked")
+    public <V> V getTag(String key) {
+        return key != null ? (V) this.tags.get(key) : null;
+    }
+    
+    /**
+     * 获取所有标签
+     * 
+     * @return 标签映射表（只读）
+     */
+    public Map<String, Object> getAllTags() {
+        return java.util.Collections.unmodifiableMap(this.tags);
+    }
+    
+    /**
+     * 添加请求头
+     * 
+     * @param key 头信息键
+     * @param value 头信息值
+     * @return 当前上下文实例（用于链式调用）
+     */
+    public BizContext<T> addHeader(String key, String value) {
+        if (key != null) {
+            if (value != null) {
+                this.headers.put(key, value);
+            } else {
+                this.headers.remove(key);
+            }
+        }
+        return this;
+    }
+    
+    /**
+     * 获取请求头
+     * 
+     * @param key 头信息键
+     * @return 头信息值
+     */
+    public String getHeader(String key) {
+        return key != null ? this.headers.get(key) : null;
+    }
+    
+    /**
+     * 获取所有请求头
+     * 
+     * @return 请求头映射表（只读）
+     */
+    public Map<String, String> getAllHeaders() {
+        return java.util.Collections.unmodifiableMap(this.headers);
+    }
+    
+    /**
      * 创建空的上下文实例
      * 
      * @return 空上下文实例
@@ -275,12 +416,16 @@ public class BizContext<T> implements Serializable {
             .scenario(this.scenario)
             .env(this.env)
             .group(this.group)
+            .userGroup(this.userGroup)
+            .requestId(this.requestId)
             .data(this.data) // 注意：data对象本身不会被深拷贝
             .build();
         
         // 复制属性和元数据
         cloned.attributes.putAll(this.attributes);
         cloned.metadata.putAll(this.metadata);
+        cloned.tags.putAll(this.tags);
+        cloned.headers.putAll(this.headers);
         
         return cloned;
     }

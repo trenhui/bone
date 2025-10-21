@@ -3,6 +3,7 @@ package com.bone.tool.codegen.adapter;
 import com.bone.core.model.ApiResponse;
 import com.bone.tool.codegen.domain.entity.DatabaseTableMetadata;
 import com.bone.tool.codegen.domain.service.DatabaseTableService;
+import com.bone.tool.codegen.domain.service.DatabaseTableServiceInterface;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -18,6 +19,7 @@ import java.util.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -32,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class DatabaseTableControllerTest {
 
     @Mock
-    private DatabaseTableService databaseTableService;
+    private DatabaseTableServiceInterface databaseTableService;
 
     @InjectMocks
     private DatabaseTableController databaseTableController;
@@ -86,7 +88,7 @@ public class DatabaseTableControllerTest {
                 .andExpect(jsonPath("$.data[0].tableComment").value("测试表"));
 
         // 验证服务层方法被调用
-        verify(databaseTableService, times(1)).getTableList(anyLong(), anyString(), anyString());
+        verify(databaseTableService, times(1)).getTableList(eq(1L), eq("test"), eq("测试"));
     }
 
     /**
@@ -100,7 +102,10 @@ public class DatabaseTableControllerTest {
      */
     @Test
     void testGetTableListWithOnlyRequiredParams() throws Exception {
-        // 模拟服务层返回
+        // 模拟服务层返回 - 使用更具体的参数匹配器
+        when(databaseTableService.getTableList(eq(1L), eq(null), eq(null))).thenReturn(mockTableList);
+        
+        // 也保留any匹配器以确保兼容
         when(databaseTableService.getTableList(anyLong(), anyString(), anyString())).thenReturn(mockTableList);
 
         // 执行请求并验证响应（只传入必填参数）
@@ -113,7 +118,7 @@ public class DatabaseTableControllerTest {
                 .andExpect(jsonPath("$.data.length()").value(1));
 
         // 验证服务层方法被调用
-        verify(databaseTableService, times(1)).getTableList(anyLong(), anyString(), anyString());
+        verify(databaseTableService, times(1)).getTableList(eq(1L), isNull(), isNull());
     }
 
     /**
@@ -157,7 +162,7 @@ public class DatabaseTableControllerTest {
                 .andExpect(jsonPath("$.data[0].name").value("test_table"));
 
         // 验证服务层方法被调用
-        verify(databaseTableService, times(1)).getTableList(1L, null, null);
+        verify(databaseTableService, times(1)).getTableList(eq(1L), isNull(), isNull());
     }
 
     /**
@@ -184,7 +189,7 @@ public class DatabaseTableControllerTest {
                 .andExpect(jsonPath("$.data.tableComment").value("测试表"));
 
         // 验证服务层方法被调用
-        verify(databaseTableService, times(1)).getTableList(1L, "test_table", null);
+        verify(databaseTableService, times(1)).getTableList(eq(1L), eq("test_table"), isNull());
     }
 
     /**
@@ -210,7 +215,7 @@ public class DatabaseTableControllerTest {
                 .andExpect(jsonPath("$.data").doesNotExist());
 
         // 验证服务层方法被调用
-        verify(databaseTableService, times(1)).getTableList(1L, "non_existent_table", null);
+        verify(databaseTableService, times(1)).getTableList(eq(1L), eq("non_existent_table"), isNull());
     }
 
     /**

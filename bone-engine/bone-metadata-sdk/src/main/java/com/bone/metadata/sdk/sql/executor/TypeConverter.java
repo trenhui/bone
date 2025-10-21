@@ -27,6 +27,17 @@ public final class TypeConverter {
         public TypeConversionException(String message) {
             super(message);
         }
+    }
+
+    /**
+     * 解析本地日期字符串
+     */
+    public static java.time.LocalDate parseLocalDate(String value) {
+        if (value == null || value.isEmpty()) {
+            return null;
+        }
+        return java.time.LocalDate.parse(value);
+    }
 
         public TypeConversionException(String message, Throwable cause) {
             super(message, cause);
@@ -278,6 +289,55 @@ public final class TypeConverter {
     }
     // endregion
 
+    /**
+     * 从字符串转换到指定类型
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T convertFromString(String value, Class<T> targetType) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        
+        // 对于原始类型的特殊处理
+        if (targetType.isPrimitive()) {
+            if (targetType == boolean.class) return (T) Boolean.valueOf(Boolean.parseBoolean(value));
+            if (targetType == byte.class) return (T) Byte.valueOf(value);
+            if (targetType == short.class) return (T) Short.valueOf(value);
+            if (targetType == int.class) return (T) Integer.valueOf(value);
+            if (targetType == long.class) return (T) Long.valueOf(value);
+            if (targetType == float.class) return (T) Float.valueOf(value);
+            if (targetType == double.class) return (T) Double.valueOf(value);
+            if (targetType == char.class) {
+                if (value.length() == 1) return (T) Character.valueOf(value.charAt(0));
+                throw new TypeConversionException("Invalid char value: " + value);
+            }
+        }
+        
+        // 对于包装类型和其他常见类型
+        if (targetType == Boolean.class) return (T) Boolean.valueOf(value.trim().toLowerCase().matches("true|yes|on|1"));
+        if (targetType == Byte.class) return (T) Byte.valueOf(value);
+        if (targetType == Short.class) return (T) Short.valueOf(value);
+        if (targetType == Integer.class) return (T) Integer.valueOf(value);
+        if (targetType == Long.class) return (T) Long.valueOf(value);
+        if (targetType == Float.class) return (T) Float.valueOf(value);
+        if (targetType == Double.class) return (T) Double.valueOf(value);
+        if (targetType == String.class) return (T) value;
+        
+        // 对于日期类型
+        if (targetType == LocalDateTime.class) return (T) parseLocalDateTime(value);
+        if (targetType == LocalDate.class) return (T) parseLocalDate(value);
+        if (targetType == Date.class) {
+            DateConverter converter = new DateConverter();
+            return (T) converter.convert(value, Date.class);
+        }
+        if (targetType == Timestamp.class) {
+            TimestampConverter converter = new TimestampConverter();
+            return (T) converter.convert(value, Timestamp.class);
+        }
+        
+        throw new UnsupportedConversionException(String.class, targetType);
+    }
+    
     // region 通用的数值转换方法
     private static <T extends Number> T parseNumber(Object value, Class<T> targetType) {
         if (value instanceof Number) {

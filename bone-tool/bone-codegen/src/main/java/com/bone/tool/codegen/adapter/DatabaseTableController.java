@@ -1,7 +1,7 @@
 package com.bone.tool.codegen.adapter;
 
-
 import com.bone.core.model.ApiResponse;
+import com.bone.core.model.PageResult;
 import com.bone.tool.codegen.application.converter.CodegenConverter;
 import com.bone.tool.codegen.application.dto.CodegenCreateListRequest;
 import com.bone.tool.codegen.application.dto.CodegenDetailResponse;
@@ -22,18 +22,19 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import static com.bone.core.model.ApiResponse.success;
 
+import jakarta.validation.constraints.Min;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static com.bone.core.model.ApiResponse.success;
-
 /**
  * 数据库表 控制器
  * <p>
- * 提供数据库表信息查询和代码生成表配置管理的RESTful API接口
+ * 提供数据库表相关的RESTful API接口，作为领域服务的适配器
+ * 支持数据库表信息查询和代码生成表配置管理
  * 
  * @author bone-team
  */
@@ -44,16 +45,128 @@ import static com.bone.core.model.ApiResponse.success;
 public class DatabaseTableController {
 
     private static final Logger log = LoggerFactory.getLogger(DatabaseTableController.class);
-
+    
     @Resource
     private DatabaseTableServiceInterface databaseTableService;
     
     @Resource
     private CodegenConverter codegenConverter;
 
+    // 添加代码生成表配置分页查询接口
+    @GetMapping("/codegen/page")
+    @Operation(summary = "分页获取代码生成表配置列表", description = "支持分页获取代码生成表配置，可根据数据源ID、表名、表注释进行筛选")
+    public ApiResponse<PageResult<CodegenTableResponse>> getCodegenTablesPage(
+            @RequestParam(value = "dataSourceConfigId", required = false) Long dataSourceConfigId,
+            @RequestParam(value = "tableName", required = false) String tableName,
+            @RequestParam(value = "tableComment", required = false) String tableComment,
+            @RequestParam(value = "pageNo", defaultValue = "1") @Min(1) Integer pageNo,
+            @RequestParam(value = "pageSize", defaultValue = "10") @Min(1) Integer pageSize) {
+        try {
+            log.debug("分页查询代码生成表配置，数据源ID: {}, 表名: {}, 表注释: {}, 页码: {}, 每页大小: {}", 
+                    dataSourceConfigId, tableName, tableComment, pageNo, pageSize);
+            
+            // 调用服务层获取表配置列表
+            // 注意：这里暂时使用空列表作为返回值，后续需要根据实际服务层实现进行调整
+            List<CodegenTable> allTables = new ArrayList<>();
+            
+            // 如果提供了数据源ID，则获取该数据源下的表配置
+            if (dataSourceConfigId != null) {
+                allTables = databaseTableService.getCodegenTablesByDataSourceId(dataSourceConfigId);
+            }
+            // TODO: 如果需要获取所有表配置，可能需要添加新的服务层方法
+            
+            // 过滤条件处理
+            List<CodegenTable> filteredTables = new ArrayList<>();
+            for (CodegenTable table : allTables) {
+                boolean match = true;
+                
+                // 表名过滤
+                if (tableName != null && !tableName.trim().isEmpty()) {
+                    if (table.getTableName() == null || 
+                        !table.getTableName().toLowerCase().contains(tableName.toLowerCase())) {
+                        match = false;
+                    }
+                }
+                
+                // 表注释过滤
+                if (match && tableComment != null && !tableComment.trim().isEmpty()) {
+                    if (table.getTableComment() == null || 
+                        !table.getTableComment().toLowerCase().contains(tableComment.toLowerCase())) {
+                        match = false;
+                    }
+                }
+                
+                if (match) {
+                    filteredTables.add(table);
+                }
+            }
+            
+            // 计算总数
+            long total = filteredTables.size();
+            
+            // 计算分页参数
+            int start = (pageNo - 1) * pageSize;
+            int end = Math.min(start + pageSize, filteredTables.size());
+            
+            // 截取分页数据
+            List<CodegenTable> pageTables = new ArrayList<>();
+            if (start < filteredTables.size()) {
+                pageTables = filteredTables.subList(start, end);
+            }
+            
+            // 转换为响应对象
+            List<CodegenTableResponse> responseList = new ArrayList<>(pageTables.size());
+            for (CodegenTable table : pageTables) {
+                CodegenTableResponse response = codegenConverter.toCodegenTableResponse(table);
+                responseList.add(response);
+            }
+            
+            // 构建分页结果
+            PageResult<CodegenTableResponse> result = PageResult.of(responseList, total, pageNo, pageSize);
+            
+            return success(result);
+        } catch (Exception e) {
+            log.error("分页获取代码生成表配置列表失败: {}", e.getMessage(), e);
+            return ApiResponse.error(500, "分页获取代码生成表配置列表失败: " + e.getMessage());
+        }
+    }
+
     // 数据库表信息查询相关接口
     @GetMapping("/original")
     @Operation(summary = "获取数据库表列表")
+    @Parameter(name = "dataSourceConfigId", description = "数据源配置ID", required = true)
+    @Parameter(name = "nameLike", description = "表名称模糊匹配")
+    @Parameter(name = "commentLike", description = "表描述模糊匹配")
+    public ApiResponse<List<DatabaseTableMetadata>> getTableListOriginal(
+            @RequestParam("dataSourceConfigId") Long dataSourceConfigId,
+            @RequestParam(value = "nameLike", required = false) String nameLike,
+            @RequestParam(value = "commentLike", required = false) String commentLike) {
+        try {
+            log.debug("获取数据库表列表，参数: dataSourceConfigId={}, nameLike={}, commentLike={}", 
+                      dataSourceConfigId, nameLike, commentLike);
+            
+            // 调用服务层方法并返回实际结果
+            List<DatabaseTableMetadata> resultList = databaseTableService.getTableList(
+                    dataSourceConfigId, 
+                    nameLike, 
+                    commentLike);
+            
+            log.debug("服务层返回的表数量: {}", resultList != null ? resultList.size() : 0);
+            
+            return success(resultList);
+        } catch (IllegalArgumentException e) {
+            // 参数验证失败
+            log.warn("获取数据库表列表参数错误: {}", e.getMessage());
+            return ApiResponse.error(400, e.getMessage());
+        } catch (Exception e) {
+            // 其他异常
+            log.error("获取数据库表列表失败: {}", e.getMessage(), e);
+            return ApiResponse.error(500, "获取数据库表列表失败: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/list")
+    @Operation(summary = "获取数据库表信息列表")
     @Parameter(name = "dataSourceConfigId", description = "数据源配置ID", required = true)
     @Parameter(name = "nameLike", description = "表名称模糊匹配")
     @Parameter(name = "commentLike", description = "表描述模糊匹配")
@@ -165,13 +278,12 @@ public class DatabaseTableController {
 
     @GetMapping("/page")
     @Operation(summary = "获取表定义分页", description = "支持多条件筛选和分页查询代码生成表配置")
-    public ApiResponse<Map<String, Object>> getTablesPage(
+    public ApiResponse<PageResult<CodegenTableResponse>> getTablesPage(
             @Valid CodegenTablePageRequest request) {
         try {
-            // 简化实现，返回简单的Map结构代替PageResult
-            Map<String, Object> result = new HashMap<>();
-            result.put("list", new ArrayList<>());
-            result.put("total", 0L);
+            // 创建空的PageResult对象
+            PageResult<CodegenTableResponse> result = PageResult.of(new ArrayList<>(), 0L, request.getPageNo(), request.getPageSize());
+            
             return ApiResponse.success(result);
         } catch (Exception e) {
             log.error("获取表定义分页失败: {}", e.getMessage(), e);

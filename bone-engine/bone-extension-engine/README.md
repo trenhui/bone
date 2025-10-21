@@ -52,15 +52,33 @@ ExtPoint 扩展引擎是 Bone 平台四大核心引擎之一，旨在通过**插
 
 ### 3. 智能路由与上下文传递：精准匹配的“导航系统”
 `bone-extension-sdk` 提供基于业务上下文的多级路由机制，确保扩展逻辑按需执行：
-- **业务上下文（`BizContext<T>`）**：封装租户（tenantCode）、业务域（bizCode）、场景（scenario）等标准维度，支持自定义属性，作为路由决策的核心依据：
+- **业务上下文（`BizContext<T>`）**：封装租户（tenantCode）、业务域（bizCode）、场景（scenario）、环境（env）、分组（group）等标准维度，支持自定义属性，作为路由决策的核心依据。提供多种创建方式和属性操作方法，支持上下文合并与扩展：
   ```java
-  // 构建业务上下文
+  // 1. 使用构建器创建完整上下文
   BizContext<Order> context = BizContext.<Order>builder()
       .tenantCode("VIP_TENANT")
       .bizCode("ORDER")
+      .useCase("PAYMENT")
+      .scenario("PROMOTION")
+      .env("PROD")
+      .group("GOLD")
       .data(order) // 业务数据
-      .attr("channel", "APP") // 自定义属性
+      .attribute("channel", "APP") // 自定义属性
       .build();
+      
+  // 2. 使用静态工厂方法快速创建
+  BizContext<String> simpleContext = BizContext.of("TENANT_B", "PAYMENT");
+  
+  // 3. 创建仅包含租户或业务的上下文
+  BizContext<Void> tenantContext = BizContext.ofTenant("TENANT_C");
+  BizContext<Void> businessContext = BizContext.ofBusiness("REFUND");
+  
+  // 4. 使用链式调用添加属性
+  simpleContext.withAttribute("paymentMethod", "CREDIT_CARD")
+               .withAttribute("currency", "CNY");
+               
+  // 5. 创建新的上下文实例（保留原有属性）
+  BizContext<Order> newContext = context.withScenario("REGULAR");
   ```
 - **三级路由策略**（`DefaultExtPointRouter`）：
     1. **精确匹配**：优先匹配租户、业务域、场景完全一致的插件。
@@ -114,14 +132,16 @@ ExtPoint 扩展引擎是 Bone 平台四大核心引擎之一，旨在通过**插
 
 ```java
 @ExtPoint
-@ExtensionDoc(
+@ExtPointDoc(
     title = "支付服务扩展点",
+    domain = "支付",
+    category = "交易处理",
     description = "提供多种支付方式的统一接入接口",
     usage = "用于处理订单支付、会员支付等场景",
-    parameters = {
-        @Parameter(name = "context", description = "业务上下文，包含支付请求信息")
+    params = {
+        @ExtPointDoc.Param(name = "context", type = "BizContext<PaymentRequest>", description = "业务上下文，包含支付请求信息", required = true)
     },
-    returnValue = @ReturnValue(description = "支付结果，包含支付状态、交易ID等信息")
+    returnInfo = @ExtPointDoc.Return(type = "PaymentResult", description = "支付结果，包含支付状态、交易ID等信息", errorCodes = {})
 )
 public interface PaymentService {
     PaymentResult processPayment(BizContext<PaymentRequest> context);
@@ -165,9 +185,18 @@ public class AlipayServiceImpl implements PaymentService {
 
     @Override
     public PaymentResult processPayment(BizContext<PaymentRequest> context) {
-        PaymentRequest request = context.getBizData();
-        logger.info("Processing Alipay payment for order: {}, amount: {}", 
-                request.getOrderId(), request.getAmount());
+        PaymentRequest request = context.getData();
+        String tenantCode = context.getTenantCode();
+        String env = context.getEnv();
+        String group = context.getGroup();
+        String channel = context.getAttribute("channel", String.class);
+        
+        logger.info("Processing Alipay payment for order: {}, amount: {}, tenant: {}, env: {}, group: {}, channel: {}", 
+                request.getOrderId(), request.getAmount(), tenantCode, env, group, channel);
+        
+        // 根据环境和分组维度调整支付逻辑
+        boolean isProduction = "PROD".equals(env);
+        boolean isVIP = "GOLD".equals(group) || "PLATINUM".equals(group);
         
         // 模拟支付宝支付处理逻辑
         PaymentResult result = new PaymentResult();
@@ -201,7 +230,7 @@ public class WechatPayServiceImpl implements PaymentService {
 
     @Override
     public PaymentResult processPayment(BizContext<PaymentRequest> context) {
-        PaymentRequest request = context.getBizData();
+        PaymentRequest request = context.getData();
         logger.info("Processing WeChat payment for order: {}, amount: {}", 
                 request.getOrderId(), request.getAmount());
         
@@ -253,7 +282,7 @@ public class PaymentServiceDemo {
             .setBizCode("ORDER")
             .setTenantCode(tenantCode)
             .setScenario(scenario)
-            .setBizData(request)
+            .data(request)
             .build();
         
         // 扩展点框架会根据上下文自动选择合适的实现类
@@ -301,15 +330,17 @@ public interface ExtensionLifecycle {
 
 ### 4. 文档化支持
 
-通过 `@ExtensionDoc` 注解提供扩展点的文档信息，方便开发者理解和使用：
+通过 `@ExtPointDoc` 注解提供扩展点的文档信息，方便开发者理解和使用：
 
 ```java
-@ExtensionDoc(
+@ExtPointDoc(
     title = "扩展点标题",
+    domain = "业务领域",
+    category = "功能分类",
     description = "详细描述",
     usage = "使用场景",
-    parameters = { @Parameter(name = "param1", description = "参数说明") },
-    returnValue = @ReturnValue(description = "返回值说明")
+    params = { @ExtPointDoc.Param(name = "param1", type = "String", description = "参数说明", required = true) },
+    returnInfo = @ExtPointDoc.Return(type = "Result", description = "返回值说明", errorCodes = {})
 )
 ```
     - **路由引擎（ExtPointRouter）**：基于 `BizContext` 匹配目标插件，支持自定义路由策略。

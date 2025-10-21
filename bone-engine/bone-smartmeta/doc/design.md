@@ -945,14 +945,48 @@ public class ProcessEngine {
 规则引擎负责解析和执行元数据中定义的业务规则、计算字段和条件表达式，支持SpEL表达式和自定义函数。
 
 ```java
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+
+/**
+ * 规则引擎核心组件，负责解析和执行元数据中定义的业务规则、计算字段和条件表达式
+ * 支持SpEL表达式和自定义函数，提供高性能的表达式缓存机制
+ */
 @Component
+@Slf4j
 public class RuleEngine {
     private final ExpressionParser expressionParser;
     private final EvaluationContextFactory contextFactory;
     private final ExpressionCache expressionCache;
     private final CustomFunctionRegistry functionRegistry;
-
-    public RuleEngine() {
+    private final MetadataManager metadataManager;
+    
+    /**
+     * 构造函数，使用依赖注入初始化所有组件
+     * 
+     * @param contextFactory 评估上下文工厂
+     * @param expressionCache 表达式缓存
+     * @param metadataManager 元数据管理器
+     */
+    public RuleEngine(EvaluationContextFactory contextFactory, 
+                     ExpressionCache expressionCache, 
+                     MetadataManager metadataManager) {
+        // 参数验证
+        Assert.notNull(contextFactory, "EvaluationContextFactory must not be null");
+        Assert.notNull(expressionCache, "ExpressionCache must not be null");
+        Assert.notNull(metadataManager, "MetadataManager must not be null");
+        
+        this.contextFactory = contextFactory;
+        this.expressionCache = expressionCache;
+        this.metadataManager = metadataManager;
+        
         // 初始化SpEL表达式解析器
         this.expressionParser = new SpelExpressionParser(
             new SpelParserConfiguration(
@@ -964,16 +998,49 @@ public class RuleEngine {
         // 注册自定义函数（如金额计算、日期处理等）
         this.functionRegistry = new CustomFunctionRegistry();
         registerDefaultFunctions();
+        
+        log.info("RuleEngine initialized with expression caching enabled");
+    }
+
+    /**
+     * 注册默认自定义函数
+     */
+    private void registerDefaultFunctions() {
+        try {
+            // 注册金额计算函数
+            functionRegistry.register("calculateAmount", RuleEngine.class.getMethod("calculateAmount", BigDecimal.class, BigDecimal.class));
+            // 注册日期处理函数
+            functionRegistry.register("formatDate", RuleEngine.class.getMethod("formatDate", Date.class, String.class));
+            // 注册其他通用函数...
+            log.debug("Default custom functions registered successfully");
+        } catch (Exception e) {
+            log.error("Failed to register default custom functions", e);
+            throw new IllegalStateException("Unable to initialize rule engine functions", e);
+        }
     }
 
     /**
      * 计算实体的计算字段（支持增量计算）
+     * 
+     * @param entityName 实体名称
+     * @param entityData 实体数据
+     * @param incremental 是否增量计算
+     * @return 计算后的实体数据
+     * @throws IllegalArgumentException 当输入参数无效时
+     * @throws CalculationException 当计算失败时
      */
     public Map<String, Object> calculateFields(String entityName, Map<String, Object> entityData,
                                               boolean incremental) {
+        // 参数验证
+        Assert.hasText(entityName, "Entity name must not be empty");
+        Assert.notNull(entityData, "Entity data must not be null");
+        
+        log.debug("Calculating fields for entity: {}, incremental: {}", entityName, incremental);
+        
         EntityMetadata metadata = metadataManager.getMetadata(entityName);
         if (metadata == null) {
-            return entityData;
+            log.warn("No metadata found for entity: {}", entityName);
+            return new HashMap<>(entityData);
         }
         
         // 获取所有计算字段
@@ -982,7 +1049,8 @@ public class RuleEngine {
             .collect(Collectors.toList());
         
         if (calculatedFields.isEmpty()) {
-            return entityData;
+            log.debug("No calculated fields found for entity: {}", entityName);
+            return new HashMap<>(entityData);
         }
         
         // 构建评估上下文
@@ -995,6 +1063,9 @@ public class RuleEngine {
             calculatedFields = calculatedFields.stream()
                 .filter(f -> affectedFields.contains(f.getName()))
                 .collect(Collectors.toList());
+            
+            log.debug("Incremental calculation for changed fields: {}, affecting: {}", 
+                     changedFields, affectedFields);
         }
         
         // 计算字段值
@@ -1007,23 +1078,40 @@ public class RuleEngine {
                 // 执行表达式计算
                 Object value = expression.getValue(context);
                 result.put(field.getName(), value);
+                
+                log.debug("Calculated field {}.{} = {}", entityName, field.getName(), value);
             } catch (Exception e) {
-                log.error("计算字段失败: {}.{}", entityName, field.getName(), e);
+                log.error("Failed to calculate field: {}.{}", entityName, field.getName(), e);
                 throw new CalculationException(
                     "计算字段失败: " + field.getLabel() + " (" + field.getName() + ")", e);
             }
         }
         
+        log.debug("Field calculation completed for entity: {}", entityName);
         return result;
     }
 
     /**
      * 验证业务规则
+     * 
+     * @param entityName 实体名称
+     * @param entityData 实体数据
+     * @param triggerEvents 触发事件列表
+     * @return 验证结果
+     * @throws IllegalArgumentException 当输入参数无效时
      */
     public ValidationResult validateRules(String entityName, Map<String, Object> entityData,
                                          List<String> triggerEvents) {
+        // 参数验证
+        Assert.hasText(entityName, "Entity name must not be empty");
+        Assert.notNull(entityData, "Entity data must not be null");
+        Assert.notEmpty(triggerEvents, "Trigger events must not be empty");
+        
+        log.debug("Validating rules for entity: {}, events: {}", entityName, triggerEvents);
+        
         EntityMetadata metadata = metadataManager.getMetadata(entityName);
         if (metadata == null) {
+            log.warn("No metadata found for entity: {}", entityName);
             return ValidationResult.valid();
         }
         
@@ -1034,6 +1122,7 @@ public class RuleEngine {
             .collect(Collectors.toList());
         
         if (rules.isEmpty()) {
+            log.debug("No matching rules found for entity: {} and events: {}", entityName, triggerEvents);
             return ValidationResult.valid();
         }
         
@@ -1045,6 +1134,7 @@ public class RuleEngine {
         for (BusinessRuleMetadata rule : rules) {
             // 检查规则条件（如条件不满足，跳过验证）
             if (rule.getCondition() != null && !evaluateCondition(rule.getCondition(), context)) {
+                log.debug("Rule condition not met, skipping rule: {}", rule.getName());
                 continue;
             }
             
@@ -1055,36 +1145,73 @@ public class RuleEngine {
                 
                 // 规则验证失败
                 if (Boolean.FALSE.equals(result)) {
-                    errors.add(ValidationError.builder()
+                    ValidationError error = ValidationError.builder()
                         .fieldName(null)  // 规则可能关联多个字段
                         .message(rule.getErrorMessage())
                         .severity(rule.getSeverity())
                         .ruleName(rule.getName())
-                        .build());
+                        .build();
+                    errors.add(error);
+                    
+                    log.warn("Rule validation failed: {}, severity: {}", rule.getName(), rule.getSeverity());
                     
                     // 严重错误，停止后续验证
                     if (rule.getSeverity() == Severity.ERROR) {
+                        log.debug("Stopping validation due to ERROR severity rule failure: {}", rule.getName());
                         break;
                     }
+                } else {
+                    log.debug("Rule validation passed: {}", rule.getName());
                 }
             } catch (Exception e) {
-                log.error("执行规则失败: {}", rule.getName(), e);
-                errors.add(ValidationError.builder()
+                log.error("Failed to execute rule: {}", rule.getName(), e);
+                ValidationError error = ValidationError.builder()
                     .fieldName(null)
                     .message("规则执行异常: " + rule.getName())
                     .severity(Severity.ERROR)
                     .ruleName(rule.getName())
-                    .build());
+                    .build();
+                errors.add(error);
+                
+                // 规则执行异常视为严重错误，停止后续验证
+                break;
             }
         }
         
-        return errors.isEmpty() ? ValidationResult.valid() : ValidationResult.invalid(errors);
+        ValidationResult result = errors.isEmpty() ? 
+            ValidationResult.valid() : ValidationResult.invalid(errors);
+        log.debug("Rule validation completed for entity: {}, result: {}", entityName, result.isValid());
+        return result;
+    }
+
+    /**
+     * 评估条件表达式
+     * 
+     * @param condition 条件表达式字符串
+     * @param context 评估上下文
+     * @return 条件评估结果
+     */
+    private boolean evaluateCondition(String condition, EvaluationContext context) {
+        try {
+            Expression expression = getCompiledExpression(condition);
+            Boolean result = expression.getValue(context, Boolean.class);
+            return Boolean.TRUE.equals(result);
+        } catch (Exception e) {
+            log.error("Failed to evaluate condition: {}", condition, e);
+            // 条件评估失败，默认返回false，不执行规则
+            return false;
+        }
     }
 
     /**
      * 获取预编译的表达式（缓存提升性能）
+     * 
+     * @param expressionString 表达式字符串
+     * @return 编译后的表达式对象
      */
     private Expression getCompiledExpression(String expressionString) {
+        Assert.hasText(expressionString, "Expression string must not be empty");
+        
         return expressionCache.get(expressionString, () -> {
             // 解析表达式
             Expression expression = expressionParser.parseExpression(expressionString);
@@ -1092,8 +1219,73 @@ public class RuleEngine {
             // 注册自定义函数（如@budgetService.check(...)）
             functionRegistry.registerFunctions(expression);
             
+            log.debug("Compiled and cached expression: {}", expressionString);
             return expression;
         });
+    }
+    
+    /**
+     * 检测变更的字段
+     * 
+     * @param entityData 实体数据
+     * @return 变更字段集合
+     */
+    private Set<String> detectChangedFields(Map<String, Object> entityData) {
+        // 实现变更字段检测逻辑
+        // 这里简化实现，实际应与原始数据比较
+        return entityData.keySet();
+    }
+    
+    /**
+     * 查找受影响的计算字段
+     * 
+     * @param changedFields 变更字段
+     * @param calculatedFields 计算字段
+     * @param metadata 实体元数据
+     * @return 受影响的字段集合
+     */
+    private Set<String> findAffectedCalculatedFields(Set<String> changedFields, 
+                                                   List<FieldMetadata> calculatedFields,
+                                                   EntityMetadata metadata) {
+        // 实现字段依赖分析逻辑
+        // 这里简化实现，实际应分析字段间的依赖关系
+        Set<String> affectedFields = new HashSet<>();
+        for (FieldMetadata field : calculatedFields) {
+            String expression = field.getCalculationExpression();
+            if (changedFields.stream().anyMatch(fieldName -> expression.contains(fieldName))) {
+                affectedFields.add(field.getName());
+            }
+        }
+        return affectedFields;
+    }
+    
+    /**
+     * 自定义金额计算函数示例
+     * 
+     * @param baseAmount 基础金额
+     * @param taxRate 税率
+     * @return 计算结果
+     */
+    public static BigDecimal calculateAmount(BigDecimal baseAmount, BigDecimal taxRate) {
+        if (baseAmount == null || taxRate == null) {
+            return BigDecimal.ZERO;
+        }
+        return baseAmount.add(baseAmount.multiply(taxRate));
+    }
+    
+    /**
+     * 自定义日期格式化函数示例
+     * 
+     * @param date 日期对象
+     * @param pattern 日期格式
+     * @return 格式化后的日期字符串
+     */
+    public static String formatDate(Date date, String pattern) {
+        if (date == null || pattern == null) {
+            return null;
+        }
+        SimpleDateFormat sdf = new SimpleDateFormat(pattern);
+        return sdf.format(date);
     }
 }
 ```
@@ -1312,69 +1504,439 @@ public class FieldSecurityManager {
 
 ```java
 @Component
+@Slf4j
 public class AIAssistedMetadataDesigner {
     private final OpenAIClient aiClient;
     private final MetadataRepository metadataRepository;
     private final MetadataTemplateManager templateManager;
+    private final Cache<String, MetadataSuggestion> suggestionCache;
+    private final Cache<String, EntityMetadata> optimizationCache;
+    private static final long AI_REQUEST_TIMEOUT_MS = 30000; // 30秒超时
+    private static final int MAX_RETRY_ATTEMPTS = 2;
+    
+    // 构造函数注入
+    public AIAssistedMetadataDesigner(
+            OpenAIClient aiClient,
+            MetadataRepository metadataRepository,
+            MetadataTemplateManager templateManager,
+            CacheManager cacheManager) {
+        this.aiClient = Objects.requireNonNull(aiClient, "aiClient cannot be null");
+        this.metadataRepository = Objects.requireNonNull(metadataRepository, "metadataRepository cannot be null");
+        this.templateManager = Objects.requireNonNull(templateManager, "templateManager cannot be null");
+        
+        // 初始化缓存，有效期1小时
+        this.suggestionCache = cacheManager.getCache("metadataSuggestions");
+        this.optimizationCache = cacheManager.getCache("metadataOptimizations");
+        
+        log.info("AIAssistedMetadataDesigner initialized successfully");
+    }
 
     /**
      * 基于业务描述生成元数据建议
+     * @param businessDescription 业务描述文本
+     * @param domain 业务领域
+     * @param options 生成选项，可配置模型参数、输出格式等
+     * @return 包含元数据建议的结果对象
+     */
+    public MetadataSuggestion generateMetadata(
+            String businessDescription, 
+            String domain, 
+            MetadataGenerationOptions options) {
+        
+        // 参数验证
+        validateParams(businessDescription, domain);
+        
+        // 使用默认选项或用户提供的选项
+        MetadataGenerationOptions generationOptions = options != null ? 
+                options : MetadataGenerationOptions.builder().build();
+        
+        // 尝试从缓存获取
+        String cacheKey = buildCacheKey(businessDescription, domain, generationOptions);
+        MetadataSuggestion cachedSuggestion = suggestionCache.getIfPresent(cacheKey);
+        if (cachedSuggestion != null) {
+            log.debug("Retrieved metadata suggestion from cache for key: {}", cacheKey);
+            return cachedSuggestion;
+        }
+        
+        try {
+            log.info("Generating metadata suggestion for domain: {}, description length: {}", 
+                    domain, businessDescription.length());
+            
+            // 1. 构建增强的提示词（结合领域知识）
+            String prompt = buildEnhancedPrompt(businessDescription, domain, generationOptions);
+            
+            // 2. 使用重试机制调用AI模型
+            String aiResponse = retryWithBackoff(() -> 
+                    aiClient.generateContent(
+                            generationOptions.getModel(),
+                            prompt,
+                            generationOptions.getMaxTokens(),
+                            generationOptions.getCreativity(),
+                            AI_REQUEST_TIMEOUT_MS
+                    ));
+            
+            // 3. 解析AI响应为元数据结构
+            EntityMetadata suggested = parseMetadataResponse(aiResponse, domain);
+            
+            // 4. 基于历史元数据优化建议（保持风格一致性）
+            optimizeWithDomainPatterns(suggested, domain);
+            
+            // 5. 执行验证确保生成的元数据符合规范
+            validateGeneratedMetadata(suggested);
+            
+            // 构建结果对象
+            MetadataSuggestion result = MetadataSuggestion.builder()
+                .metadata(suggested)
+                .confidence(calculateConfidence(suggested))
+                .explanation("基于业务描述自动生成")
+                .generationTime(LocalDateTime.now())
+                .modelUsed(generationOptions.getModel().name())
+                .build();
+            
+            // 缓存结果
+            suggestionCache.put(cacheKey, result);
+            log.info("Successfully generated metadata with {} fields for domain: {}", 
+                    suggested.getFields().size(), domain);
+            
+            return result;
+            
+        } catch (Exception e) {
+            log.error("Failed to generate metadata suggestion: {}", e.getMessage(), e);
+            throw new MetadataGenerationException("生成元数据建议失败: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 简化版本的生成方法
      */
     public MetadataSuggestion generateMetadata(String businessDescription, String domain) {
-        // 1. 构建提示词（结合领域知识）
-        String prompt = buildPrompt(businessDescription, domain);
-        
-        // 2. 调用AI模型（如GPT-4）
-        String aiResponse = aiClient.generateContent(
-            Model.GPT_4,
-            prompt,
-            1500,  // 最大 tokens
-            0.7    // 创造性参数
-        );
-        
-        // 3. 解析AI响应为元数据结构
-        EntityMetadata suggested = parseMetadata(aiResponse);
-        
-        // 4. 基于历史元数据优化建议（保持风格一致性）
-        optimizeWithDomainPatterns(suggested, domain);
-        
-        return MetadataSuggestion.builder()
-            .metadata(suggested)
-            .confidence(calculateConfidence(suggested))
-            .explanation("基于业务描述自动生成")
-            .build();
+        return generateMetadata(businessDescription, domain, null);
     }
 
     /**
      * 优化现有元数据（性能/合规性）
+     * @param metadata 待优化的元数据
+     * @param optimizationFocus 优化重点，如PERFORMANCE, COMPLIANCE, MAINTAINABILITY
+     * @return 优化后的元数据
+     */
+    public EntityMetadata optimizeMetadata(
+            EntityMetadata metadata, 
+            OptimizationFocus optimizationFocus) {
+        
+        // 参数验证
+        Objects.requireNonNull(metadata, "metadata cannot be null");
+        if (optimizationFocus == null) {
+            optimizationFocus = OptimizationFocus.ALL;
+        }
+        
+        // 尝试从缓存获取
+        String cacheKey = buildOptimizationCacheKey(metadata, optimizationFocus);
+        EntityMetadata cachedOptimization = optimizationCache.getIfPresent(cacheKey);
+        if (cachedOptimization != null) {
+            log.debug("Retrieved metadata optimization from cache for entity: {}", metadata.getName());
+            return cachedOptimization;
+        }
+        
+        try {
+            log.info("Optimizing metadata for entity: {}, focus: {}", 
+                    metadata.getName(), optimizationFocus);
+            
+            // 1. 分析元数据问题（如索引缺失、字段类型不合理）
+            List<MetadataIssue> issues = analyzeMetadataIssues(metadata, optimizationFocus);
+            
+            if (issues.isEmpty()) {
+                log.info("No optimization issues found for entity: {}", metadata.getName());
+                return metadata; // 无需优化
+            }
+            
+            // 记录发现的问题
+            log.debug("Found {} issues for entity {}: {}", 
+                    issues.size(), metadata.getName(), 
+                    issues.stream().map(MetadataIssue::getDescription).collect(Collectors.joining(", ")));
+            
+            // 2. 生成优化建议
+            String optimizationPrompt = buildOptimizationPrompt(metadata, issues, optimizationFocus);
+            String optimizedJson = retryWithBackoff(() -> 
+                    aiClient.generateContent(
+                            Model.GPT_4,
+                            optimizationPrompt,
+                            1500,  // 增加tokens以容纳更详细的优化
+                            0.3,   // 降低创造性，更注重实用性
+                            AI_REQUEST_TIMEOUT_MS
+                    ));
+            
+            // 3. 应用优化建议
+            EntityMetadata optimized = applyOptimizations(metadata, optimizedJson, issues);
+            
+            // 4. 验证优化结果
+            validateOptimizedMetadata(metadata, optimized);
+            
+            // 缓存优化结果
+            optimizationCache.put(cacheKey, optimized);
+            log.info("Successfully optimized metadata for entity: {}", metadata.getName());
+            
+            return optimized;
+            
+        } catch (Exception e) {
+            log.error("Failed to optimize metadata: {}", e.getMessage(), e);
+            throw new MetadataOptimizationException("优化元数据失败: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 简化版本的优化方法
      */
     public EntityMetadata optimizeMetadata(EntityMetadata metadata) {
-        // 1. 分析元数据问题（如索引缺失、字段类型不合理）
-        List<String> issues = analyzeMetadataIssues(metadata);
-        
-        // 2. 生成优化建议
-        String optimizationPrompt = buildOptimizationPrompt(metadata, issues);
-        String optimizedJson = aiClient.generateContent(Model.GPT_4, optimizationPrompt, 1000, 0.5);
-        
-        // 3. 应用优化建议
-        return applyOptimizations(metadata, optimizedJson);
+        return optimizeMetadata(metadata, OptimizationFocus.ALL);
     }
-
-    private String buildPrompt(String businessDescription, String domain) {
-        // 加载领域模板（如采购领域的元数据设计模式）
-        String domainTemplate = templateManager.getTemplate(domain);
+    
+    /**
+     * 构建增强的提示词
+     */
+    private String buildEnhancedPrompt(
+            String businessDescription, 
+            String domain, 
+            MetadataGenerationOptions options) {
         
+        // 加载领域模板和最佳实践
+        String domainTemplate = templateManager.getTemplate(domain);
+        String bestPractices = loadDomainBestPractices(domain);
+        
+        // 构建结构化提示词
         return String.format("""
-            请基于以下业务描述设计企业级元数据模型：
+            你是一位资深的企业级元数据设计师，专精于%s领域。
+            
+            请基于以下业务描述设计一个完整、规范、高性能的企业级元数据模型：
+            
             业务描述：%s
             
-            领域：%s
-            遵循以下设计规范：%s
+            设计规范和约束：
+            %s
             
-            输出格式为YAML，包含实体名称、字段定义（含类型、约束）、
-            关系、关键业务规则和核心操作。字段需符合行业最佳实践，
-            包含必要的审计字段和业务关键字段。
-            """, businessDescription, domain, domainTemplate);
+            领域最佳实践：
+            %s
+            
+            额外要求：
+            1. 包含完整的字段定义，每个字段必须有名称、类型、约束、描述和业务含义
+            2. 定义适当的索引以优化查询性能
+            3. 包含必要的审计字段（创建时间、创建人、更新时间、更新人等）
+            4. 定义合理的业务规则和验证条件
+            5. 考虑多租户场景的设计
+            6. 提供字段间的关系定义
+            
+            输出格式：%s
+            输出内容必须严格符合指定格式，不要包含任何格式说明或额外解释。
+            """, 
+            domain, 
+            businessDescription, 
+            domainTemplate, 
+            bestPractices,
+            options.getOutputFormat());
+    }
+    
+    /**
+     * 解析AI响应为元数据结构
+     */
+    private EntityMetadata parseMetadataResponse(String aiResponse, String domain) {
+        try {
+            // 根据输出格式选择解析器
+            MetadataParser parser = MetadataParserFactory.getParser(OutputFormat.YAML);
+            EntityMetadata metadata = parser.parse(aiResponse);
+            
+            // 确保元数据包含必要的字段和配置
+            ensureRequiredFields(metadata);
+            
+            return metadata;
+            
+        } catch (Exception e) {
+            log.error("Failed to parse metadata response: {}", e.getMessage());
+            throw new MetadataParsingException("解析元数据响应失败", e);
+        }
+    }
+    
+    /**
+     * 应用领域模式优化建议
+     */
+    private void optimizeWithDomainPatterns(EntityMetadata metadata, String domain) {
+        // 加载领域特定的设计模式
+        List<DomainPattern> patterns = metadataRepository.findActiveDomainPatterns(domain);
+        
+        patterns.forEach(pattern -> {
+            try {
+                pattern.apply(metadata);
+                log.debug("Applied domain pattern: {} to entity: {}", 
+                        pattern.getName(), metadata.getName());
+            } catch (Exception e) {
+                log.warn("Failed to apply pattern: {} to entity: {}", 
+                        pattern.getName(), metadata.getName(), e);
+            }
+        });
+    }
+    
+    /**
+     * 分析元数据问题
+     */
+    private List<MetadataIssue> analyzeMetadataIssues(
+            EntityMetadata metadata, 
+            OptimizationFocus focus) {
+        List<MetadataIssue> issues = new ArrayList<>();
+        
+        // 性能相关问题分析
+        if (focus == OptimizationFocus.PERFORMANCE || focus == OptimizationFocus.ALL) {
+            issues.addAll(analyzePerformanceIssues(metadata));
+        }
+        
+        // 合规性相关问题分析
+        if (focus == OptimizationFocus.COMPLIANCE || focus == OptimizationFocus.ALL) {
+            issues.addAll(analyzeComplianceIssues(metadata));
+        }
+        
+        // 可维护性相关问题分析
+        if (focus == OptimizationFocus.MAINTAINABILITY || focus == OptimizationFocus.ALL) {
+            issues.addAll(analyzeMaintainabilityIssues(metadata));
+        }
+        
+        return issues;
+    }
+    
+    /**
+     * 带重试机制的操作执行
+     */
+    private <T> T retryWithBackoff(Supplier<T> operation) {
+        int attempts = 0;
+        long backoffMs = 1000; // 初始退避时间
+        
+        while (true) {
+            try {
+                return operation.get();
+            } catch (Exception e) {
+                attempts++;
+                if (attempts > MAX_RETRY_ATTEMPTS) {
+                    throw e;
+                }
+                
+                log.warn("Operation failed, retrying ({}/{}): {}", 
+                        attempts, MAX_RETRY_ATTEMPTS, e.getMessage());
+                
+                try {
+                    Thread.sleep(backoffMs);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("Retry interrupted", ie);
+                }
+                
+                backoffMs *= 2; // 指数退避
+            }
+        }
+    }
+    
+    // 其他辅助方法...
+    private void validateParams(String businessDescription, String domain) {
+        if (StringUtils.isBlank(businessDescription)) {
+            throw new IllegalArgumentException("businessDescription cannot be blank");
+        }
+        if (StringUtils.isBlank(domain)) {
+            throw new IllegalArgumentException("domain cannot be blank");
+        }
+    }
+    
+    private String buildCacheKey(String description, String domain, MetadataGenerationOptions options) {
+        // 使用内容的哈希值作为缓存键的一部分
+        String contentHash = DigestUtils.sha256Hex(description + domain + options.toString());
+        return "metadata_suggestion:" + domain + ":" + contentHash;
+    }
+    
+    private void validateGeneratedMetadata(EntityMetadata metadata) {
+        // 验证元数据的完整性和有效性
+        MetadataValidator validator = new MetadataValidator();
+        ValidationResult result = validator.validate(metadata);
+        
+        if (!result.isValid()) {
+            throw new InvalidMetadataException("生成的元数据无效: " + result.getErrorMessages());
+        }
+    }
+    
+    private double calculateConfidence(EntityMetadata metadata) {
+        // 基于多种因素计算置信度
+        // 1. 字段完整性
+        // 2. 索引合理性
+        // 3. 业务规则覆盖度
+        // 4. 与领域模式的匹配度
+        
+        // 简化实现
+        return 0.85; // 默认置信度
+    }
+    
+    /**
+     * 优化焦点枚举
+     */
+    public enum OptimizationFocus {
+        PERFORMANCE,     // 性能优化
+        COMPLIANCE,      // 合规性优化
+        MAINTAINABILITY, // 可维护性优化
+        ALL              // 全面优化
+    }
+    
+    /**
+     * 元数据生成选项构建类
+     */
+    public static class MetadataGenerationOptions {
+        private Model model = Model.GPT_4;
+        private int maxTokens = 1500;
+        private double creativity = 0.7;
+        private OutputFormat outputFormat = OutputFormat.YAML;
+        private boolean includeExamples = true;
+        
+        // 构建者模式
+        public static Builder builder() {
+            return new Builder();
+        }
+        
+        public static class Builder {
+            private final MetadataGenerationOptions options = new MetadataGenerationOptions();
+            
+            public Builder model(Model model) {
+                options.model = model;
+                return this;
+            }
+            
+            public Builder maxTokens(int maxTokens) {
+                options.maxTokens = Math.max(500, Math.min(4000, maxTokens));
+                return this;
+            }
+            
+            public Builder creativity(double creativity) {
+                options.creativity = Math.max(0.1, Math.min(1.0, creativity));
+                return this;
+            }
+            
+            public Builder outputFormat(OutputFormat format) {
+                options.outputFormat = format;
+                return this;
+            }
+            
+            public Builder includeExamples(boolean includeExamples) {
+                options.includeExamples = includeExamples;
+                return this;
+            }
+            
+            public MetadataGenerationOptions build() {
+                return options;
+            }
+        }
+        
+        // Getter方法
+        public Model getModel() { return model; }
+        public int getMaxTokens() { return maxTokens; }
+        public double getCreativity() { return creativity; }
+        public OutputFormat getOutputFormat() { return outputFormat; }
+        public boolean isIncludeExamples() { return includeExamples; }
+        
+        @Override
+        public String toString() {
+            return String.format("%s_%d_%.1f_%s_%s", 
+                    model, maxTokens, creativity, outputFormat, includeExamples);
+        }
     }
 }
 ```

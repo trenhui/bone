@@ -251,30 +251,76 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
     @Override
     @Transactional
     public void batchSave(List<T> entities) {
+        // 参数验证
         if (entities == null || entities.isEmpty()) return;
         Assert.noNullElements(entities, "Entities list must not contain null elements");
 
-        List<ID> ids = entities.stream()
-                .map(Entity::getId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-
-        Set<ID> existingIds = ids.isEmpty() ? Collections.emptySet()
-                : findByIds(ids).stream().map(Entity::getId).collect(Collectors.toSet());
-
+        // 初始化实体ID并分组
         List<T> toInsert = new ArrayList<>();
         List<T> toUpdate = new ArrayList<>();
+        List<ID> idsToCheck = new ArrayList<>();
 
-        entities.forEach(e -> {
-            if (e.getId() == null || !existingIds.contains(e.getId())) {
-                toInsert.add(e);
+        // 预处理阶段：初始化ID并收集需要检查的ID
+        entities.forEach(entity -> {
+            // 确保ID初始化（非自增策略且ID为空时生成）
+            ensureIdInitialized(entity);
+            ID entityId = entity.getId();
+            
+            if (entityId == null) {
+                // ID仍为null的实体直接插入（通常是自增ID）
+                toInsert.add(entity);
             } else {
-                toUpdate.add(e);
+                // 收集有ID的实体以便后续检查存在性
+                idsToCheck.add(entityId);
             }
         });
 
-        if (!toInsert.isEmpty()) batchInsert(toInsert);
-        if (!toUpdate.isEmpty()) batchUpdate(toUpdate);
+        // 检查ID存在性
+        final Set<ID> existingIds = idsToCheck.isEmpty() 
+            ? Collections.emptySet() 
+            : findByIds(idsToCheck).stream()
+                  .map(Entity::getId)
+                  .collect(Collectors.toSet());
+
+        // 最终分类：基于ID存在性决定插入或更新
+        entities.forEach(entity -> {
+            ID entityId = entity.getId();
+            if (entityId == null || !existingIds.contains(entityId)) {
+                toInsert.add(entity);
+            } else {
+                toUpdate.add(entity);
+            }
+        });
+
+        // 执行批量操作
+        if (!toInsert.isEmpty()) {
+            // 对于少量实体，直接逐个插入可能更简单
+            if (toInsert.size() <= smallBatchThreshold) {
+                toInsert.forEach(this::insertAndSaveExtensions);
+            } else {
+                batchInsert(toInsert);
+                // 保存所有插入实体的扩展字段
+                toInsert.forEach(this::saveExtensionFields);
+            }
+        }
+        
+        if (!toUpdate.isEmpty()) {
+            batchUpdate(toUpdate);
+        }
+    }
+    
+    /**
+     * 小批量阈值，低于此值的实体集合使用非批量方式处理
+     */
+    private static final int smallBatchThreshold = 5;
+    
+    /**
+     * 插入单个实体并保存扩展字段
+     * @param entity 实体对象
+     */
+    private void insertAndSaveExtensions(T entity) {
+        insert(entity);
+        saveExtensionFields(entity);
     }
 
     private void batchUpdate(List<T> entities) {

@@ -108,14 +108,9 @@ public class DefaultDatabaseTableRepository implements DatabaseTableRepository {
                     DatabaseTableMetadata tableInfo = new DatabaseTableMetadata();
                     tableInfo.setTableName(tableName);
                     tableInfo.setTableComment(tableComment);
-                    
-                    // 设置实体类名
-                    String entityName = convertToEntityName(tableName);
-                    tableInfo.setEntityName(entityName);
-                    
-                    // 设置字段名
-                    String fieldName = convertToFieldName(tableName);
-                    tableInfo.setFieldName(fieldName);
+                    tableInfo.setEntityName(convertToEntityName(tableName));
+                    tableInfo.setFieldName(convertToFieldName(tableName));
+                    tableInfo.setFieldList(new ArrayList<>());
                     
                     tableInfos.add(tableInfo);
                 }
@@ -149,18 +144,9 @@ public class DefaultDatabaseTableRepository implements DatabaseTableRepository {
                     DatabaseTableMetadata tableInfo = new DatabaseTableMetadata();
                     tableInfo.setTableName(tableName);
                     tableInfo.setTableComment(tableComment);
-                    
-                    // 获取并设置字段列表
-                    List<CodegenColumn> columns = getTableColumns(connection, schema, tableName);
-                    tableInfo.setFieldList(columns);
-                    
-                    // 设置实体类名
-                    String entityName = convertToEntityName(tableName);
-                    tableInfo.setEntityName(entityName);
-                    
-                    // 设置字段名
-                    String fieldName = convertToFieldName(tableName);
-                    tableInfo.setFieldName(fieldName);
+                    tableInfo.setEntityName(convertToEntityName(tableName));
+                    tableInfo.setFieldName(convertToFieldName(tableName));
+                    tableInfo.setFieldList(new ArrayList<>());
                     
                     return tableInfo;
                 }

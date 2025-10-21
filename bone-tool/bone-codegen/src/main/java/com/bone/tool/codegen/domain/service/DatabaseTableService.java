@@ -1,6 +1,7 @@
 package com.bone.tool.codegen.domain.service;
 
 import org.springframework.util.Assert;
+import java.util.Date;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import com.bone.core.model.PageResult;
@@ -347,7 +348,7 @@ public class DatabaseTableService implements DatabaseTableServiceInterface {
         
         for (CodegenColumn field : fields) {
             if (field != null) {
-                // 必须设置表ID
+                // 设置表ID
                 field.setTableId(tableId);
                 codegenColumnRepository.save(field);
             }
@@ -364,39 +365,38 @@ public class DatabaseTableService implements DatabaseTableServiceInterface {
     public void updateCodegenTable(CodegenTableRequest request) {
         // 参数验证
         Assert.notNull(request, "请求参数不能为空");
-        Assert.notNull(request.getId(), "表ID不能为空");
+        final Long id = request.getId();
+        Assert.notNull(id, "表ID不能为空");
         
-        log.debug("开始更新表配置，ID: {}", request.getId());
+        log.debug("开始更新表配置，ID: {}", id);
         
         try {
             // 查询现有表配置
-            CodegenTable existingTable = codegenTableRepository.findById(request.getId())
-                .orElseThrow(() -> new RuntimeException("表配置不存在，ID: " + request.getId()));
+            CodegenTable existingTable = codegenTableRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("表配置不存在，ID: " + id));
             
-            // 使用转换器将请求转换为实体，保留原有ID和时间戳
-            CodegenTable updatedTable = codegenConverter.toCodegenTable(request);
-            // 确保ID一致
-            updatedTable.setId(request.getId());
-            // 保留创建时间
-            updatedTable.setCreateTime(existingTable.getCreateTime());
+            // 直接在现有表对象上更新属性
+            org.springframework.beans.BeanUtils.copyProperties(request, existingTable, "id", "createTime", "updateTime", "deleted", "createBy", "updateBy");
+            
             // 更新时间戳
-            updatedTable.setUpdateTime(new java.util.Date());
+            existingTable.setUpdateTime(new Date());
             
             // 保存更新
-            codegenTableRepository.update(updatedTable);
+            codegenTableRepository.update(existingTable);
             
             // 如果有列配置，更新列信息
-            if (!CollectionUtils.isEmpty(request.getColumns())) {
-                log.debug("开始更新列配置，表ID: {}, 列数量: {}", request.getId(), request.getColumns().size());
-                updateColumns(request.getId(), request.getColumns());
+            List<CodegenColumnRequest> columns = request.getColumns();
+            if (columns != null && !columns.isEmpty()) {
+                log.debug("开始更新列配置，表ID: {}, 列数量: {}", id, columns.size());
+                updateColumns(id, columns);
             }
             
-            log.info("表配置更新成功，ID: {}", request.getId());
+            log.info("表配置更新成功，ID: {}", id);
         } catch (RuntimeException e) {
-            log.error("表配置更新失败，ID: {}", request.getId(), e);
+            log.error("表配置更新失败，ID: {}", id, e);
             throw e;
         } catch (Exception e) {
-            log.error("表配置更新发生未预期错误，ID: {}", request.getId(), e);
+            log.error("表配置更新失败，ID: {}", id, e);
             throw new RuntimeException("表配置更新失败: " + e.getMessage(), e);
         }
     }
@@ -523,8 +523,11 @@ public class DatabaseTableService implements DatabaseTableServiceInterface {
         Map<String, CodegenColumn> columnMap = new HashMap<>();
         if (columns != null) {
             for (CodegenColumn column : columns) {
-                if (column != null && column.getColumnName() != null) {
-                    columnMap.put(column.getColumnName(), column);
+                if (column != null) {
+                    String columnName = column.getColumnName();
+                    if (columnName != null) {
+                        columnMap.put(columnName, column);
+                    }
                 }
             }
         }
@@ -565,27 +568,42 @@ public class DatabaseTableService implements DatabaseTableServiceInterface {
         // 更新或新增字段
         for (CodegenColumnRequest request : columnRequests) {
             if (request != null) {
-                // 使用CodegenConverter进行转换
-                CodegenColumn column = codegenConverter.toCodegenColumn(request, tableId);
-                if (request.getId() != null && columnIdMap.containsKey(request.getId())) {
-                    // 更新现有字段，保留时间戳
-                    CodegenColumn existingColumn = columnIdMap.get(request.getId());
-                    column.setCreateTime(existingColumn.getCreateTime());
-                    column.setUpdateTime(new Date());
-                    codegenColumnRepository.update(column);
-                    columnIdMap.remove(request.getId());
-                } else {
-                    // 新增字段，设置时间戳
-                    column.setCreateTime(new Date());
-                    column.setUpdateTime(new Date());
-                    codegenColumnRepository.save(column);
+                try {
+                    // 获取请求中的ID
+                    Long requestId = request.getId();
+                    
+                    // 使用CodegenConverter进行转换
+                    CodegenColumn column = codegenConverter.toCodegenColumn(request, tableId);
+                    
+                    if (requestId != null && columnIdMap.containsKey(requestId)) {
+                        // 更新现有字段，保留时间戳
+                        CodegenColumn existingColumn = columnIdMap.get(requestId);
+                        column.setCreateTime(existingColumn.getCreateTime());
+                        column.setUpdateTime(new Date());
+                        
+                        codegenColumnRepository.update(column);
+                        columnIdMap.remove(requestId);
+                    } else {
+                        // 新增字段
+                        Date now = new Date();
+                        column.setCreateTime(now);
+                        column.setUpdateTime(now);
+                        codegenColumnRepository.save(column);
+                    }
+                } catch (Exception e) {
+                    log.error("处理列配置失败，列名: {}", request.getColumnName(), e);
                 }
             }
         }
         
         // 删除不在请求列表中的字段
         for (CodegenColumn column : columnIdMap.values()) {
-            codegenColumnRepository.deleteById(column.getId());
+            try {
+                codegenColumnRepository.deleteById(column.getId());
+                log.debug("删除字段成功，ID: {}", column.getId());
+            } catch (Exception e) {
+                log.error("删除字段失败，ID: {}", column.getId(), e);
+            }
         }
     }
     
@@ -617,23 +635,38 @@ public class DatabaseTableService implements DatabaseTableServiceInterface {
     private CodegenColumn createCodegenColumn(Long tableId, CodegenColumn sourceColumn) {
         CodegenColumn column = new CodegenColumn();
         
-        // 复制源字段的属性
+        // 设置表ID
         column.setTableId(tableId);
-        column.setColumnName(sourceColumn.getColumnName());
-        column.setColumnComment(sourceColumn.getColumnComment());
-        // 跳过不存在的方法调用
-        column.setPrimaryKey(sourceColumn.getPrimaryKey());
-        column.setNullable(sourceColumn.getNullable());
-        column.setAutoIncrement(sourceColumn.getAutoIncrement());
-        column.setJavaField(sourceColumn.getJavaField());
-        column.setJavaType(sourceColumn.getJavaType());
-        column.setHtmlType(sourceColumn.getHtmlType());
         
-        // 设置默认值和创建时间
-        column.setCreateTime(new java.util.Date());
-        column.setUpdateTime(new java.util.Date());
+        // 设置创建时间和更新时间
+        Date now = new Date();
+        column.setCreateTime(now);
+        column.setUpdateTime(now);
+        
+        // 复制源字段的其他属性
+        if (sourceColumn != null) {
+            // 使用BeanUtils进行属性复制
+            org.springframework.beans.BeanUtils.copyProperties(sourceColumn, column, 
+                "id", "tableId", "createTime", "updateTime", "deleted", "createBy", "updateBy");
+        }
         
         return column;
+    }
+    
+    private void updateCodegenColumn(CodegenColumn column, CodegenColumn sourceColumn) {
+        try {
+            // 使用BeanUtils复制基本字段属性
+            if (sourceColumn != null) {
+                org.springframework.beans.BeanUtils.copyProperties(sourceColumn, column, 
+                    "id", "tableId", "createTime", "updateTime", "deleted", "createBy", "updateBy");
+            }
+            
+            // 确保时间戳正确更新
+            column.setUpdateTime(new Date());
+            
+        } catch (Exception e) {
+            log.error("更新字段配置失败，字段ID: {}", column.getId(), e);
+        }
     }
     
     /**
@@ -646,26 +679,43 @@ public class DatabaseTableService implements DatabaseTableServiceInterface {
             return;
         }
         
-        // 仅更新基础信息，保留用户自定义的配置
-        column.setColumnComment(sourceColumn.getColumnComment());
-        // 跳过不存在的方法调用
-        column.setPrimaryKey(sourceColumn.getPrimaryKey());
-        column.setNullable(sourceColumn.getNullable());
-        column.setAutoIncrement(sourceColumn.getAutoIncrement());
-        
-        // 如果Java字段或类型为空，则从源字段复制
-        if (column.getJavaField() == null) {
-            column.setJavaField(sourceColumn.getJavaField());
+        try {
+            // 仅更新基础信息，保留用户自定义的配置
+            String[] fieldNames = {"columnComment", "primaryKey", "nullable", "autoIncrement"};
+            
+            for (String fieldName : fieldNames) {
+                try {
+                    Object value = sourceColumn.getClass().getDeclaredField(fieldName).get(sourceColumn);
+                    column.getClass().getDeclaredField(fieldName).set(column, value);
+                } catch (Exception e) {
+                    log.warn("更新字段属性失败，字段名: {}", fieldName);
+                }
+            }
+            
+            // 如果Java字段或类型为空，则从源字段复制
+            String[] javaFieldNames = {"javaField", "javaType", "htmlType"};
+            
+            for (String fieldName : javaFieldNames) {
+                try {
+                    Object currentValue = column.getClass().getDeclaredField(fieldName).get(column);
+                    if (currentValue == null) {
+                        Object sourceValue = sourceColumn.getClass().getDeclaredField(fieldName).get(sourceColumn);
+                        column.getClass().getDeclaredField(fieldName).set(column, sourceValue);
+                    }
+                } catch (Exception e) {
+                    log.warn("更新Java相关字段属性失败，字段名: {}", fieldName);
+                }
+            }
+            
+            // 更新时间戳
+            try {
+                column.getClass().getDeclaredField("updateTime").set(column, new java.util.Date());
+            } catch (Exception e) {
+                log.warn("更新时间戳失败: {}", e.getMessage());
+            }
+        } catch (Exception e) {
+            log.error("更新字段配置失败", e);
         }
-        if (column.getJavaType() == null) {
-            column.setJavaType(sourceColumn.getJavaType());
-        }
-        if (column.getHtmlType() == null) {
-            column.setHtmlType(sourceColumn.getHtmlType());
-        }
-        
-        // 更新时间戳
-        column.setUpdateTime(new java.util.Date());
     }
     
     /**
