@@ -7,6 +7,8 @@ import com.bone.procurement.service.PurchaseOrderService;
 import com.bone.smartmeta.engine.metadata.EntityMetadata;
 import com.bone.smartmeta.engine.MetadataEngine;
 import com.bone.smartmeta.engine.tenant.TenantContext;
+import com.bone.smartmeta.exception.EntityValidationException;
+import com.bone.smartmeta.model.MetadataContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,62 +43,85 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         
         log.info("Starting to create purchase order");
         
-        // 1. 验证订单
-        List<RuleValidationResult> validationResults = validateOrder(order, context);
-        
-        // 检查是否有严重错误
-        List<RuleValidationResult> errors = validationResults.stream()
-                .filter(result -> !result.isPassed() && "ERROR".equals(result.getSeverity()))
-                .collect(Collectors.toList());
-        
-        if (!errors.isEmpty()) {
-            String errorMessages = errors.stream()
-                    .map(RuleValidationResult::getErrorMessage)
-                    .collect(Collectors.joining(", "));
-            log.error("Order validation failed with {} errors: {}", errors.size(), errorMessages);
-            throw new IllegalArgumentException("Order validation failed: " + errorMessages);
+        try {
+            // 使用元数据引擎验证订单数据
+            metadataEngine.validateEntity(order, false);
+            
+            // 准备元数据上下文
+            MetadataContext metadataContext = new MetadataContext();
+            metadataContext.setUserId(context != null ? context.getUserId() : null);
+            metadataContext.setTenantId(TenantContext.getCurrentTenant() != null ? 
+                TenantContext.getCurrentTenant() : "DEFAULT_TENANT");
+            
+            // 使用元数据引擎填充默认值
+            metadataEngine.populateDefaultValues(order, metadataContext);
+            
+            // 1. 验证订单业务规则
+            List<RuleValidationResult> validationResults = validateOrder(order, context);
+            
+            // 检查是否有严重错误
+            List<RuleValidationResult> errors = validationResults.stream()
+                    .filter(result -> !result.isPassed() && "ERROR".equals(result.getSeverity()))
+                    .collect(Collectors.toList());
+            
+            if (!errors.isEmpty()) {
+                String errorMessages = errors.stream()
+                        .map(RuleValidationResult::getErrorMessage)
+                        .collect(Collectors.joining(", "));
+                log.error("Order validation failed with {} errors: {}", errors.size(), errorMessages);
+                throw new IllegalArgumentException("Order validation failed: " + errorMessages);
+            }
+            
+            // 记录警告信息
+            List<RuleValidationResult> warnings = validationResults.stream()
+                    .filter(result -> "WARNING".equals(result.getSeverity()))
+                    .collect(Collectors.toList());
+            
+            if (!warnings.isEmpty()) {
+                String warningMessages = warnings.stream()
+                        .map(RuleValidationResult::getErrorMessage)
+                        .collect(Collectors.joining(", "));
+                log.warn("Order has {} warnings: {}", warnings.size(), warningMessages);
+            }
+            
+            // 2. 生成订单ID和填充默认值
+            if (order.getOrderId() == null) {
+                order.setOrderId(generateOrderId());
+            }
+            
+            if (order.getOrderCode() == null) {
+                order.setOrderCode(generateOrderCode());
+            }
+            
+            if (order.getStatus() == null) {
+                order.setStatus("DRAFT");
+            }
+            
+            if (order.getApprovalStatus() == null) {
+                order.setApprovalStatus("PENDING");
+            }
+            
+            // 3. 设置创建和更新时间
+            LocalDateTime now = LocalDateTime.now();
+            order.setCreateTime(now);
+            order.setUpdateTime(now);
+            
+            // 4. 保存订单
+            orderRepository.put(order.getOrderId(), order);
+            
+            // 触发元数据引擎的创建事件
+            metadataEngine.onEntityCreated(order, metadataContext);
+            
+            log.info("Purchase order created successfully: {}, order code: {}", 
+                     order.getOrderId(), order.getOrderCode());
+            return order;
+        } catch (EntityValidationException e) {
+            log.error("Entity validation failed: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error creating order: {}", e.getMessage());
+            throw e;
         }
-        
-        // 记录警告信息
-        List<RuleValidationResult> warnings = validationResults.stream()
-                .filter(result -> "WARNING".equals(result.getSeverity()))
-                .collect(Collectors.toList());
-        
-        if (!warnings.isEmpty()) {
-            String warningMessages = warnings.stream()
-                    .map(RuleValidationResult::getErrorMessage)
-                    .collect(Collectors.joining(", "));
-            log.warn("Order has {} warnings: {}", warnings.size(), warningMessages);
-        }
-        
-        // 2. 生成订单ID和填充默认值
-        if (order.getOrderId() == null) {
-            order.setOrderId(generateOrderId());
-        }
-        
-        if (order.getOrderCode() == null) {
-            order.setOrderCode(generateOrderCode());
-        }
-        
-        if (order.getStatus() == null) {
-            order.setStatus("DRAFT");
-        }
-        
-        if (order.getApprovalStatus() == null) {
-            order.setApprovalStatus("PENDING");
-        }
-        
-        // 3. 设置创建和更新时间
-        LocalDateTime now = LocalDateTime.now();
-        order.setCreateTime(now);
-        order.setUpdateTime(now);
-        
-        // 4. 保存订单
-        orderRepository.put(order.getOrderId(), order);
-        
-        log.info("Purchase order created successfully: {}, order code: {}", 
-                 order.getOrderId(), order.getOrderCode());
-        return order;
     }
     
     @Override
@@ -110,66 +135,89 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         
         log.info("Starting to update purchase order: {}", orderId);
         
-        // 1. 检查订单是否存在
-        PurchaseOrder existingOrder = getOrderById(orderId);
-        if (existingOrder == null) {
-            log.error("Purchase order not found: {}", orderId);
-            throw new IllegalArgumentException("Purchase order not found: " + orderId);
+        try {
+            // 1. 检查订单是否存在
+            PurchaseOrder existingOrder = getOrderById(orderId);
+            if (existingOrder == null) {
+                log.error("Purchase order not found: {}", orderId);
+                throw new IllegalArgumentException("Purchase order not found: " + orderId);
+            }
+            
+            // 2. 检查订单状态是否允许更新
+            String currentStatus = existingOrder.getStatus();
+            if ("APPROVED".equals(currentStatus) || 
+                "CLOSED".equals(currentStatus) || 
+                "CANCELLED".equals(currentStatus)) {
+                log.error("Cannot update order {} in status: {}", orderId, currentStatus);
+                throw new IllegalStateException("Cannot update order in status: " + currentStatus);
+            }
+            
+            // 准备元数据上下文
+            MetadataContext metadataContext = new MetadataContext();
+            metadataContext.setUserId(context != null ? context.getUserId() : null);
+            metadataContext.setTenantId(TenantContext.getCurrentTenant() != null ? 
+                TenantContext.getCurrentTenant() : "DEFAULT_TENANT");
+            
+            // 使用元数据引擎验证订单数据
+            metadataEngine.validateEntity(order, true);
+            
+            // 3. 验证更新后的订单
+            List<RuleValidationResult> validationResults = validateOrder(order, context);
+            
+            // 检查是否有严重错误
+            List<RuleValidationResult> errors = validationResults.stream()
+                    .filter(result -> !result.isPassed() && "ERROR".equals(result.getSeverity()))
+                    .collect(Collectors.toList());
+            
+            if (!errors.isEmpty()) {
+                String errorMessages = errors.stream()
+                        .map(RuleValidationResult::getErrorMessage)
+                        .collect(Collectors.joining(", "));
+                log.error("Order validation failed with {} errors: {}", errors.size(), errorMessages);
+                throw new IllegalArgumentException("Order validation failed: " + errorMessages);
+            }
+            
+            // 记录警告信息
+            List<RuleValidationResult> warnings = validationResults.stream()
+                    .filter(result -> "WARNING".equals(result.getSeverity()))
+                    .collect(Collectors.toList());
+            
+            if (!warnings.isEmpty()) {
+                String warningMessages = warnings.stream()
+                        .map(RuleValidationResult::getErrorMessage)
+                        .collect(Collectors.joining(", "));
+                log.warn("Order has {} warnings: {}", warnings.size(), warningMessages);
+            }
+            
+            // 4. 更新订单信息
+            order.setOrderId(orderId);
+            order.setOrderCode(existingOrder.getOrderCode()); // 订单编号不可修改
+            order.setCreateTime(existingOrder.getCreateTime()); // 创建时间不可修改
+            order.setUpdateTime(LocalDateTime.now());
+            
+            // 保留原有审批状态，除非明确修改
+            if (order.getApprovalStatus() == null) {
+                order.setApprovalStatus(existingOrder.getApprovalStatus());
+            }
+            
+            // 获取变更信息
+            Map<String, Object> changes = metadataEngine.compareEntities(existingOrder, order);
+            
+            // 5. 保存更新后的订单
+            orderRepository.put(orderId, order);
+            
+            // 触发元数据引擎的更新事件
+            metadataEngine.onEntityUpdated(existingOrder, order, changes, metadataContext);
+            
+            log.info("Purchase order updated successfully: {}", orderId);
+            return order;
+        } catch (EntityValidationException e) {
+            log.error("Entity validation failed during update: {}", e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("Error updating order: {}", e.getMessage());
+            throw e;
         }
-        
-        // 2. 检查订单状态是否允许更新
-        String currentStatus = existingOrder.getStatus();
-        if ("APPROVED".equals(currentStatus) || 
-            "CLOSED".equals(currentStatus) || 
-            "CANCELLED".equals(currentStatus)) {
-            log.error("Cannot update order {} in status: {}", orderId, currentStatus);
-            throw new IllegalStateException("Cannot update order in status: " + currentStatus);
-        }
-        
-        // 3. 验证更新后的订单
-        List<RuleValidationResult> validationResults = validateOrder(order, context);
-        
-        // 检查是否有严重错误
-        List<RuleValidationResult> errors = validationResults.stream()
-                .filter(result -> !result.isPassed() && "ERROR".equals(result.getSeverity()))
-                .collect(Collectors.toList());
-        
-        if (!errors.isEmpty()) {
-            String errorMessages = errors.stream()
-                    .map(RuleValidationResult::getErrorMessage)
-                    .collect(Collectors.joining(", "));
-            log.error("Order validation failed with {} errors: {}", errors.size(), errorMessages);
-            throw new IllegalArgumentException("Order validation failed: " + errorMessages);
-        }
-        
-        // 记录警告信息
-        List<RuleValidationResult> warnings = validationResults.stream()
-                .filter(result -> "WARNING".equals(result.getSeverity()))
-                .collect(Collectors.toList());
-        
-        if (!warnings.isEmpty()) {
-            String warningMessages = warnings.stream()
-                    .map(RuleValidationResult::getErrorMessage)
-                    .collect(Collectors.joining(", "));
-            log.warn("Order has {} warnings: {}", warnings.size(), warningMessages);
-        }
-        
-        // 4. 更新订单信息
-        order.setOrderId(orderId);
-        order.setOrderCode(existingOrder.getOrderCode()); // 订单编号不可修改
-        order.setCreateTime(existingOrder.getCreateTime()); // 创建时间不可修改
-        order.setUpdateTime(LocalDateTime.now());
-        
-        // 保留原有审批状态，除非明确修改
-        if (order.getApprovalStatus() == null) {
-            order.setApprovalStatus(existingOrder.getApprovalStatus());
-        }
-        
-        // 5. 保存更新后的订单
-        orderRepository.put(orderId, order);
-        
-        log.info("Purchase order updated successfully: {}", orderId);
-        return order;
     }
     
     @Override
@@ -202,24 +250,46 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         
         log.debug("Finding orders with conditions: {}, page: {}, pageSize: {}", conditions, page, pageSize);
         
-        // 根据条件过滤
-        List<PurchaseOrder> filteredOrders = orderRepository.values().stream()
-                .filter(order -> matchConditions(order, conditions))
-                .collect(Collectors.toList());
-        
-        // 分页处理
-        int startIndex = (page - 1) * pageSize;
-        int endIndex = Math.min(startIndex + pageSize, filteredOrders.size());
-        
-        if (startIndex >= filteredOrders.size()) {
-            log.debug("No orders found for page {}", page);
-            return Collections.emptyList();
+        try {
+            // 使用元数据引擎处理条件查询
+            MetadataContext context = new MetadataContext();
+            context.setTenantId(conditions != null && conditions.containsKey("tenantId") ? 
+                conditions.get("tenantId").toString() : "DEFAULT_TENANT");
+            
+            // 根据条件过滤
+            List<PurchaseOrder> filteredOrders = orderRepository.values().stream()
+                    .filter(order -> {
+                        // 多租户隔离检查
+                        if (!context.getTenantId().equals("DEFAULT_TENANT") && 
+                            (order.getTenantId() == null || !order.getTenantId().equals(context.getTenantId()))) {
+                            return false;
+                        }
+                        return matchConditions(order, conditions);
+                    })
+                    .collect(Collectors.toList());
+            
+            // 分页处理
+            int startIndex = (page - 1) * pageSize;
+            int endIndex = Math.min(startIndex + pageSize, filteredOrders.size());
+            
+            if (startIndex >= filteredOrders.size()) {
+                log.debug("No orders found for page {}", page);
+                return Collections.emptyList();
+            }
+            
+            List<PurchaseOrder> pagedOrders = filteredOrders.subList(startIndex, endIndex);
+            
+            // 触发元数据引擎的查询事件
+            metadataEngine.onEntityQuery("PurchaseOrder", conditions, pagedOrders.size(), context);
+            
+            log.debug("Found {} orders for the specified conditions, returning page {} with {} items", 
+                     filteredOrders.size(), page, endIndex - startIndex);
+            
+            return pagedOrders;
+        } catch (Exception e) {
+            log.error("Error finding orders with conditions: {}", e.getMessage());
+            throw new RuntimeException("Failed to find orders with conditions", e);
         }
-        
-        log.debug("Found {} orders for the specified conditions, returning page {} with {} items", 
-                 filteredOrders.size(), page, endIndex - startIndex);
-        
-        return filteredOrders.subList(startIndex, endIndex);
     }
     
     @Override
