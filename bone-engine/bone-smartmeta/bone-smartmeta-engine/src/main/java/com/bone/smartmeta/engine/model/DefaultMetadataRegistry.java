@@ -1,9 +1,11 @@
 package com.bone.smartmeta.engine.model;
 
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
@@ -12,8 +14,9 @@ import java.util.stream.Collectors;
  * 元数据注册表默认实现类
  * 提供实体元数据的完整管理功能
  */
-@Slf4j
 public class DefaultMetadataRegistry implements MetadataRegistry {
+    
+    private static final Logger log = LoggerFactory.getLogger(DefaultMetadataRegistry.class);
     
     // 存储实体元数据的主映射（API名称 -> 实体元数据）
     private final Map<String, EntityMetadata> entityMetadataMap = new ConcurrentHashMap<>();
@@ -268,10 +271,11 @@ public class DefaultMetadataRegistry implements MetadataRegistry {
             return null;
         }
         
-        return entityMetadata.getFields().stream()
-                .filter(field -> fieldApiName.equals(field.getApiName()))
+        return entityMetadata.getFields().entrySet().stream()
+                .filter(entry -> fieldApiName.equals(entry.getValue().getApiName()))
                 .findFirst()
-                .orElse(null);
+                  .map(Map.Entry::getValue)
+                  .orElse(null);
     }
     
     @Override
@@ -280,7 +284,7 @@ public class DefaultMetadataRegistry implements MetadataRegistry {
         if (entityMetadata == null || entityMetadata.getFields() == null) {
             return Collections.emptyList();
         }
-        return new ArrayList<>(entityMetadata.getFields());
+        return new ArrayList<>(entityMetadata.getFields().values());
     }
     
     @Override
@@ -290,8 +294,9 @@ public class DefaultMetadataRegistry implements MetadataRegistry {
             return Collections.emptyList();
         }
         
-        return entityMetadata.getFields().stream()
-                .filter(FieldMetadata::isCalculated)
+        return entityMetadata.getFields().entrySet().stream()
+                .filter(entry -> entry.getValue().isCalculated())
+                .map(Map.Entry::getValue)
                 .collect(Collectors.toList());
     }
     
@@ -302,8 +307,9 @@ public class DefaultMetadataRegistry implements MetadataRegistry {
             return Collections.emptyList();
         }
         
-        return entityMetadata.getFields().stream()
-                .filter(FieldMetadata::isVirtual)
+        return entityMetadata.getFields().entrySet().stream()
+                .filter(entry -> entry.getValue().isVirtual())
+                .map(Map.Entry::getValue)
                 .collect(Collectors.toList());
     }
     
@@ -379,8 +385,10 @@ public class DefaultMetadataRegistry implements MetadataRegistry {
         
         // 构建标签索引
         if (entityMetadata.getTags() != null) {
-            for (String tag : entityMetadata.getTags()) {
-                if (tag != null) {
+            // 假设Tags是Collection类型，正确遍历
+            for (Map.Entry<String, String> tagEntry : entityMetadata.getTags().entrySet()) {
+                if (tagEntry != null && tagEntry.getKey() != null) {
+                    String tag = tagEntry.getKey();
                     tagIndex.computeIfAbsent(tag, 
                                            k -> new CopyOnWriteArrayList<>()).add(entityMetadata);
                 }
@@ -408,8 +416,10 @@ public class DefaultMetadataRegistry implements MetadataRegistry {
         
         // 从标签索引移除
         if (entityMetadata.getTags() != null) {
-            for (String tag : entityMetadata.getTags()) {
-                if (tag != null) {
+            // 假设Tags是Collection类型，正确遍历
+            for (Map.Entry<String, String> tagEntry : entityMetadata.getTags().entrySet()) {
+                if (tagEntry != null && tagEntry.getKey() != null) {
+                    String tag = tagEntry.getKey();
                     List<EntityMetadata> tagEntities = tagIndex.get(tag);
                     if (tagEntities != null) {
                         tagEntities.remove(entityMetadata);

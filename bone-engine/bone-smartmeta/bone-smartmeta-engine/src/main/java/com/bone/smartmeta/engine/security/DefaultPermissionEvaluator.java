@@ -2,7 +2,7 @@ package com.bone.smartmeta.engine.security;
 
 import com.bone.smartmeta.engine.model.EntityMetadata;
 import com.bone.smartmeta.engine.model.FieldMetadata;
-import com.bone.smartmeta.engine.security.FieldLevelSecurityManager.DataMaskingRule;
+import com.bone.smartmeta.engine.security.DataMaskingRule;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
  * 默认权限评估器实现
  * 提供实体、字段和记录级别的权限评估功能
  */
-@Component
+
 public class DefaultPermissionEvaluator implements PermissionEvaluator {
 
     // 模拟实体元数据缓存
@@ -22,7 +22,6 @@ public class DefaultPermissionEvaluator implements PermissionEvaluator {
     // 模拟脱敏规则缓存
     private final Map<String, List<DataMaskingRule>> maskingRulesCache = new HashMap<>();
 
-    @Autowired
     public DefaultPermissionEvaluator() {
         // 初始化一些默认的脱敏规则
         initDefaultMaskingRules();
@@ -62,7 +61,6 @@ public class DefaultPermissionEvaluator implements PermissionEvaluator {
         
         // 检查用户是否有对应的权限
         return authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
                 .anyMatch(auth -> auth.equals(permission) || 
                                   auth.equals("ROLE_" + permission) ||
                                   auth.equals("ALL_" + operation));
@@ -113,7 +111,6 @@ public class DefaultPermissionEvaluator implements PermissionEvaluator {
 
         // 获取用户角色
         List<String> userRoles = authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
                 .map(role -> role.startsWith("ROLE_") ? role.substring(5) : role)
                 .collect(Collectors.toList());
 
@@ -162,7 +159,6 @@ public class DefaultPermissionEvaluator implements PermissionEvaluator {
 
         // 获取用户角色
         List<String> userRoles = authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
                 .map(role -> role.startsWith("ROLE_") ? role.substring(5) : role)
                 .collect(Collectors.toList());
 

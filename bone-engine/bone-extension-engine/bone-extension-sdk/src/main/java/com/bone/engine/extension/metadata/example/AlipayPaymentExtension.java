@@ -19,30 +19,7 @@ import java.util.UUID;
  */
 @Component
 @Extension(
-    // 路由配置
-    tenantCode = "alipay-tenant",
-    bizCode = "ecommerce",
-    useCase = "payment",
-    scenario = "online",
-    
-    // 新添加的元数据属性
-    description = "支付宝在线支付实现，支持标准支付流程",
-    author = "payment-team@example.com",
-    isDefault = false,
-    isRecommended = true,
-    priority = 10,
-    
-    // 依赖的其他扩展实现
-    dependencies = {"com.example.extension.log.LoggingExtension"},
-    
-    // 配置属性
-    properties = {
-        "alipay.gateway.url=https://openapi.alipay.com/gateway.do",
-        "alipay.app.id=2021000000000000",
-        "alipay.notify.url=https://example.com/payment/notify/alipay",
-        "alipay.timeout.express=30m",
-        "alipay.use.sandbox=false"
-    }
+    name = "alipayPayment"
 )
 public class AlipayPaymentExtension implements PaymentExtPoint {
     

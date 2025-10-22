@@ -31,7 +31,7 @@ public class TemplateSecurityValidator {
     }
 
     public void validateContent(String content, TemplateDescriptor descriptor) {
-        if (content.length() > config.getTemplate().getMaxTemplateSize()) {
+        if (content.length() > config.getTemplateProperties().getMaxTemplateSize()) {
             throw new TemplateSecurityException("Template size exceeds limit");
         }
         if (SQL_INJECTION_PATTERN.matcher(content).find()) {

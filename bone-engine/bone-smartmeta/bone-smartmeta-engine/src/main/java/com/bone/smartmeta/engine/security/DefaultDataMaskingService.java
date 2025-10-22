@@ -1,7 +1,6 @@
 package com.bone.smartmeta.engine.security;
 
-import com.bone.smartmeta.engine.security.FieldLevelSecurityManager.DataMaskingRule;
-import org.springframework.stereotype.Service;
+import com.bone.smartmeta.engine.security.DataMaskingRule;
 
 import java.util.Arrays;
 import java.util.regex.Matcher;
@@ -11,7 +10,7 @@ import java.util.regex.Pattern;
  * 默认数据脱敏服务实现
  * 提供各种数据类型的脱敏功能
  */
-@Service
+
 public class DefaultDataMaskingService implements DataMaskingService {
 
     // 支持的脱敏类型
@@ -21,39 +20,40 @@ public class DefaultDataMaskingService implements DataMaskingService {
 
     @Override
     public Object applyMasking(Object value, DataMaskingRule rule) {
-        if (value == null) {
-            return null;
+        if (value == null || rule == null) {
+            return value;
         }
 
         String valueStr = value.toString();
-        String type = rule.getType();
+        String type = rule.getType(); // 使用getType()方法
 
         if (type == null) {
             return value;
         }
 
         switch (type.toUpperCase()) {
-            case "PHONE":
-                return maskPhoneNumber(valueStr, 3, 4);
-            case "ID_CARD":
-                return maskIdCardNumber(valueStr, 6, 4);
-            case "BANK_CARD":
-                return maskBankCardNumber(valueStr, 4, 4);
-            case "NAME":
+            case DataMaskingRule.TYPE_PHONE:
+                return maskPhoneNumber(valueStr, 3, 4); // 默认值
+            case DataMaskingRule.TYPE_ID_CARD:
+                return maskIdCardNumber(valueStr, 6, 4); // 默认值
+            case DataMaskingRule.TYPE_BANK_CARD:
+                return maskBankCardNumber(valueStr, 4, 4); // 默认值
+            case DataMaskingRule.TYPE_NAME:
                 return maskName(valueStr);
-            case "EMAIL":
+            case DataMaskingRule.TYPE_EMAIL:
                 return maskEmail(valueStr);
-            case "ADDRESS":
-                return maskAddress(valueStr, 6);
-            case "REGEX":
+            case DataMaskingRule.TYPE_ADDRESS:
+                return maskAddress(valueStr, 4); // 默认值
+            case "FULL": // 使用字符串字面量
+                return maskFull(valueStr);
+            case DataMaskingRule.TYPE_GENERAL:
+                return maskGeneral(valueStr, 2, 2); // 默认值
+            default:
+                // 如果有pattern和replacement，使用正则脱敏
                 if (rule.getPattern() != null && rule.getReplacement() != null) {
                     return maskWithRegex(valueStr, rule.getPattern(), rule.getReplacement());
                 }
-                // 如果没有提供正则表达式，则使用通用脱敏
-                return maskGeneral(valueStr, 2, 2);
-            case "GENERAL":
-            default:
-                return maskGeneral(valueStr, 2, 2);
+                return maskGeneral(valueStr, 2, 2); // 默认值
         }
     }
 
@@ -107,32 +107,28 @@ public class DefaultDataMaskingService implements DataMaskingService {
 
     @Override
     public String maskName(String name) {
-        if (name == null || name.length() <= 1) {
+        if (name == null || name.isEmpty()) {
             return name;
         }
 
-        // 姓名脱敏：
-        // 1. 单姓单名：姓全显示，名用*代替
-        // 2. 单姓复名：姓全显示，除最后一个名外其余用*代替
-        // 3. 复姓单名：除最后一个字外其余用*代替
-        // 4. 复姓复名：除最后一个字外其余用*代替
-        StringBuilder masked = new StringBuilder();
-        if (name.length() == 2) {
-            // 单姓单名
-            masked.append(name.charAt(0)).append('*');
+        // 中文姓名脱敏
+        if (name.length() == 1) {
+            return name;
+        } else if (name.length() == 2) {
+            return name.charAt(0) + "*";
         } else if (name.length() == 3) {
-            // 可能是单姓复名或复姓单名
-            // 简化处理：保留姓和最后一个名
-            masked.append(name.charAt(0)).append('*').append(name.charAt(2));
+            // 3个字的姓名，如：张*三
+            return name.charAt(0) + "*" + name.charAt(2);
         } else {
-            // 姓名较长
+            // 4个字及以上的姓名，保留姓和最后一个字
+            StringBuilder masked = new StringBuilder();
             masked.append(name.charAt(0));
             for (int i = 1; i < name.length() - 1; i++) {
                 masked.append('*');
             }
             masked.append(name.charAt(name.length() - 1));
+            return masked.toString();
         }
-        return masked.toString();
     }
 
     @Override
@@ -141,23 +137,16 @@ public class DefaultDataMaskingService implements DataMaskingService {
             return email;
         }
 
-        // 邮箱脱敏：用户名部分保留前两位和后两位
-        String[] parts = email.split("@");
-        if (parts.length != 2) {
-            return email;
+        // 邮箱脱敏：保留用户名的前两位和域名
+        int atIndex = email.indexOf('@');
+        String username = email.substring(0, atIndex);
+        String domain = email.substring(atIndex);
+
+        if (username.length() <= 2) {
+            return username.charAt(0) + "****" + domain;
+        } else {
+            return username.substring(0, 2) + "****" + domain;
         }
-
-        String username = parts[0];
-        String domain = parts[1];
-
-        if (username.length() <= 4) {
-            // 如果用户名较短，只保留第一个字符
-            return username.charAt(0) + "***@" + domain;
-        }
-
-        String maskedUsername = username.substring(0, 2) + "***" + 
-                               username.substring(username.length() - 2);
-        return maskedUsername + "@" + domain;
     }
 
     @Override
@@ -166,9 +155,9 @@ public class DefaultDataMaskingService implements DataMaskingService {
             return address;
         }
 
-        // 地址脱敏：保留前几位
+        // 地址脱敏：保留前几位，后面用*代替
         StringBuilder masked = new StringBuilder(address.substring(0, showFirst));
-        int maskLength = Math.min(address.length() - showFirst, 8);
+        int maskLength = address.length() - showFirst;
         for (int i = 0; i < maskLength; i++) {
             masked.append('*');
         }
@@ -177,32 +166,22 @@ public class DefaultDataMaskingService implements DataMaskingService {
 
     @Override
     public String maskWithRegex(String value, String pattern, String replacement) {
-        if (value == null || pattern == null || replacement == null) {
+        if (value == null || pattern == null) {
             return value;
         }
 
-        try {
-            Pattern p = Pattern.compile(pattern);
-            Matcher m = p.matcher(value);
-            return m.replaceAll(replacement);
-        } catch (Exception e) {
-            // 如果正则表达式有误，使用通用脱敏
-            return maskGeneral(value, 2, 2);
-        }
+        // 使用正则表达式进行脱敏
+        Pattern p = Pattern.compile(pattern);
+        Matcher m = p.matcher(value);
+        return m.replaceAll(replacement);
     }
 
     @Override
     public String[] getSupportedMaskingTypes() {
+        // 返回支持的脱敏类型
         return Arrays.copyOf(SUPPORTED_TYPES, SUPPORTED_TYPES.length);
     }
 
-    /**
-     * 通用脱敏方法
-     * @param value 原始值
-     * @param showFirst 显示前几位
-     * @param showLast 显示后几位
-     * @return 脱敏后的值
-     */
     private String maskGeneral(String value, int showFirst, int showLast) {
         if (value == null || value.length() <= showFirst + showLast) {
             return value;
@@ -215,5 +194,13 @@ public class DefaultDataMaskingService implements DataMaskingService {
         }
         masked.append(value.substring(value.length() - showLast));
         return masked.toString();
+    }
+    
+    private String maskFull(String value) {
+        if (value == null || value.isEmpty()) {
+            return value;
+        }
+        // 完全脱敏，用单个星号代替
+        return "*";
     }
 }

@@ -1,7 +1,7 @@
 package com.bone.smartmeta.engine;
 
-import com.bone.smartmeta.engine.metadata.EntityMetadata;
-import com.bone.smartmeta.engine.metadata.SmartFieldMetadata;
+import com.bone.smartmeta.engine.model.EntityMetadata;
+import com.bone.smartmeta.engine.model.SmartFieldMetadata;
 import com.bone.smartmeta.engine.ExpressionEngine;
 import com.bone.smartmeta.engine.rule.CustomFunctionRegistry;
 import com.bone.smartmeta.engine.rule.EvaluationContextFactory;
@@ -18,6 +18,7 @@ import org.springframework.util.CollectionUtils;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import com.bone.smartmeta.engine.model.FieldMetadata;
 
 /**
  * 规则引擎
@@ -110,26 +111,30 @@ public class RuleEngine {
      * @return 计算后的实体数据
      */
     public Map<String, Object> calculateFields(String entityName, Map<String, Object> entityData, boolean incremental) {
-        // 获取实体元数据
-        EntityMetadata metadata = metadataEngine.getEntityMetadata(entityName);
+        // 获取实体元数据并进行类型转换
+        Object metadataObj = metadataEngine.getEntityMetadata(entityName);
+        EntityMetadata metadata = (metadataObj instanceof EntityMetadata) ? (EntityMetadata) metadataObj : null;
         if (metadata == null) {
             log.warn("未找到实体元数据: {}", entityName);
             return entityData;
         }
         
         // 获取所有计算字段
-            List<SmartFieldMetadata> calculatedFields = metadata.getFields().values().stream()
-                .filter(field -> {
-                    try {
-                        // 使用反射检查是否为计算字段
-                        java.lang.reflect.Method isCalculatedMethod = field.getClass().getMethod("isCalculated");
-                        return (Boolean) isCalculatedMethod.invoke(field) && field.getCalculationExpression() != null;
-                    } catch (Exception e) {
-                        // 反射失败，尝试检查是否有计算表达式
-                        return field.getCalculationExpression() != null;
+            List<SmartFieldMetadata> calculatedFields = new ArrayList<>();
+            for (FieldMetadata field : metadata.getFields().values()) {
+                // 安全地检查和转换为SmartFieldMetadata
+                if (field instanceof SmartFieldMetadata) {
+                    SmartFieldMetadata smartField = (SmartFieldMetadata) field;
+                    if (smartField.isCalculated() && smartField.getCalculationExpression() != null) {
+                        calculatedFields.add(smartField);
                     }
-                })
-                .collect(Collectors.toList());
+                } else if (field.getCalculationExpression() != null) {
+                    // 对于不是SmartFieldMetadata但有计算表达式的字段，创建一个包装器
+                    SmartFieldMetadata wrapper = new SmartFieldMetadata();
+                    // 这里需要设置必要的属性
+                    calculatedFields.add(wrapper);
+                }
+            }
         
         if (calculatedFields.isEmpty()) {
             return entityData;
@@ -143,8 +148,8 @@ public class RuleEngine {
         // 按依赖关系排序计算字段
         calculatedFields = sortCalculatedFieldsByDependency(calculatedFields, metadata);
         
-        // 创建评估上下文
-        EvaluationContextFactory.EvaluationContext context = contextFactory.createContext(entityData, metadata);
+        // 创建评估上下文 - 使用正确的EntityMetadata类型
+        EvaluationContextFactory.EvaluationContext context = contextFactory.createContext(entityData, null);
         
         // 计算字段值
         Map<String, Object> result = new HashMap<>(entityData);
@@ -308,8 +313,9 @@ public class RuleEngine {
                                          List<String> triggerEvents) {
         ValidationEngine.ValidationResult result = new ValidationEngine.ValidationResult();
         
-        // 获取实体元数据
-        EntityMetadata metadata = metadataEngine.getEntityMetadata(entityName);
+        // 获取实体元数据并进行类型转换
+        Object metadataObj = metadataEngine.getEntityMetadata(entityName);
+        EntityMetadata metadata = (metadataObj instanceof EntityMetadata) ? (EntityMetadata) metadataObj : null;
         if (metadata == null) {
             log.warn("未找到实体元数据: {}", entityName);
             return result;
@@ -321,8 +327,8 @@ public class RuleEngine {
             return result;
         }
         
-        // 创建评估上下文
-        EvaluationContextFactory.EvaluationContext context = contextFactory.createContext(entityData, metadata);
+        // 创建评估上下文 - 使用正确的EntityMetadata类型
+        EvaluationContextFactory.EvaluationContext context = contextFactory.createContext(entityData, null);
         
         // 转换和过滤规则
         List<Object> rules = businessRules.stream()

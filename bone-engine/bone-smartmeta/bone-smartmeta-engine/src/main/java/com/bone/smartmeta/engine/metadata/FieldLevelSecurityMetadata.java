@@ -1,5 +1,6 @@
 package com.bone.smartmeta.engine.metadata;
 
+import com.bone.smartmeta.engine.model.PermissionMetadata;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -12,7 +13,7 @@ import java.util.List;
  */
 @Getter
 @Setter
-public class FieldLevelSecurityMetadata {
+public class FieldLevelSecurityMetadata implements PermissionMetadata {
     
     // 字段API名称
     private String fieldApiName;
@@ -198,6 +199,48 @@ public class FieldLevelSecurityMetadata {
     /**
      * 检查角色是否有编辑权限
      */
+    
+    /**
+     * 获取是否启用审计
+     */
+    public boolean isAuditEnabled() {
+        return this.auditEnabled;
+    }
+    
+    /**
+     * 获取审计级别
+     */
+    public AuditLevel getAuditLevel() {
+        return this.auditLevel;
+    }
+    
+    /**
+     * 获取数据脱敏规则ID
+     */
+    public String getMaskingRuleId() {
+        return this.maskingRuleId;
+    }
+    
+    /**
+     * 获取加密算法
+     */
+    public String getEncryptionAlgorithm() {
+        return this.encryptionAlgorithm;
+    }
+    
+    /**
+     * 获取敏感数据类型
+     */
+    public String getSensitiveDataType() {
+        return this.sensitiveDataType;
+    }
+    
+    /**
+     * 获取字段敏感度级别
+     */
+    public SensitivityLevel getSensitivityLevel() {
+        return this.sensitivityLevel;
+    }
     public boolean hasEditPermission(String role) {
         return editableRoles.contains(role);
     }

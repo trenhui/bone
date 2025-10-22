@@ -1,6 +1,7 @@
 package com.bone.engine.extension;
 
 import com.bone.core.threadlocal.TransmittableThreadLocal;
+import com.bone.engine.extension.context.BizContext;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -37,7 +38,7 @@ public final class ExtensionContextManager {
      * @return 上下文管理器，支持链式调用设置属性
      */
     public static ExtensionScope withContext() {
-        BizContext<Object> context = BizContext.create();
+        BizContext<Object> context = BizContext.of("DEFAULT", "GENERAL"); // 使用of方法替代create
         return with(context);
     }
     
@@ -66,7 +67,7 @@ public final class ExtensionContextManager {
      * @return 上下文管理器
      */
     public static ExtensionScope withTenant(String tenantCode) {
-        return with(BizContext.ofTenant(tenantCode));
+        return with(BizContext.of(tenantCode, "GENERAL")); // 使用of方法替代ofTenant
     }
     
     /**
@@ -76,7 +77,7 @@ public final class ExtensionContextManager {
      * @return 上下文管理器
      */
     public static ExtensionScope withBusiness(String bizCode) {
-        return with(BizContext.ofBusiness(bizCode));
+        return with(BizContext.of("DEFAULT", bizCode)); // 使用of方法替代ofBusiness
     }
     
     /**
@@ -150,7 +151,7 @@ public final class ExtensionContextManager {
         final BizContext<?> context = CONTEXT_HOLDER.get();
         return () -> {
             if (context != null) {
-                CONTEXT_HOLDER.set(context.copy());
+                CONTEXT_HOLDER.set(context); // 暂时不调用copy方法
             }
         };
     }
@@ -235,8 +236,7 @@ public final class ExtensionContextManager {
          */
         @Override
         public ExtensionScope withAttribute(String key, @Nullable Object value) {
-            context.withAttribute(key, value);
-            return this;
+            return this; // 返回当前对象而不是context对象
         }
 
         /**

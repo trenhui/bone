@@ -9,6 +9,9 @@
     <version>1.0.0-SNAPSHOT</version>
 
     <dependencies>
+        <!-- 引入统一的元数据模型库 -->
+
+        
         <!-- Spring Boot 核心依赖 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

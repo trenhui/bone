@@ -48,8 +48,7 @@ public class DataInitializer implements ApplicationRunner {
         extPoint1.setVersion("1.0.0");
         extPoint1.setEnabled(true);
         extPoint1.setDeprecated(false);
-        extPoint1.setCreatedAt(new Date());
-        extPoint1.setUpdatedAt(new Date());
+        // 时间戳由系统自动设置
 
         ExtPointEntity extPoint2 = new ExtPointEntity();
         extPoint2.setName("数据校验器");
@@ -61,8 +60,7 @@ public class DataInitializer implements ApplicationRunner {
         extPoint2.setVersion("1.0.0");
         extPoint2.setEnabled(true);
         extPoint2.setDeprecated(false);
-        extPoint2.setCreatedAt(new Date());
-        extPoint2.setUpdatedAt(new Date());
+        // 时间戳由系统自动设置
 
         ExtPointEntity extPoint3 = new ExtPointEntity();
         extPoint3.setName("日志格式化器");
@@ -74,8 +72,7 @@ public class DataInitializer implements ApplicationRunner {
         extPoint3.setVersion("1.0.0");
         extPoint3.setEnabled(true);
         extPoint3.setDeprecated(false);
-        extPoint3.setCreatedAt(new Date());
-        extPoint3.setUpdatedAt(new Date());
+        // 时间戳由系统自动设置
 
         ExtPointEntity extPoint4 = new ExtPointEntity();
         extPoint4.setName("缓存策略");
@@ -87,8 +84,7 @@ public class DataInitializer implements ApplicationRunner {
         extPoint4.setVersion("1.0.0");
         extPoint4.setEnabled(true);
         extPoint4.setDeprecated(false);
-        extPoint4.setCreatedAt(new Date());
-        extPoint4.setUpdatedAt(new Date());
+        // 时间戳由系统自动设置
 
         ExtPointEntity extPoint5 = new ExtPointEntity();
         extPoint5.setName("通知发送器");
@@ -100,8 +96,7 @@ public class DataInitializer implements ApplicationRunner {
         extPoint5.setVersion("1.0.0");
         extPoint5.setEnabled(true);
         extPoint5.setDeprecated(false);
-        extPoint5.setCreatedAt(new Date());
-        extPoint5.setUpdatedAt(new Date());
+        // 时间戳由系统自动设置
 
         extPointRepository.saveAll(Arrays.asList(extPoint1, extPoint2, extPoint3, extPoint4, extPoint5));
         System.out.println("初始化了5个扩展点");
@@ -112,43 +107,34 @@ public class DataInitializer implements ApplicationRunner {
         ExtPointEntity extPoint = extPointRepository.findAll().get(0);
         
         ExtensionEntity extension1 = new ExtensionEntity();
-        extension1.setExtPointId(extPoint.getId());
+        extension1.setExtPoint(extPoint);
         extension1.setName("默认认证处理器");
         extension1.setDescription("基于用户名密码的默认认证实现");
-        extension1.setImplementationClassName("com.bone.engine.extension.user.impl.DefaultAuthProcessor");
+        extension1.setClassName("com.bone.engine.extension.user.impl.DefaultAuthProcessor");
         extension1.setTenantCode("default");
         extension1.setPriority(100);
-        extension1.setConfiguration("{\"maxRetryAttempts\": 5}");
+        extension1.setConfig("{\"maxRetryAttempts\": 5}");
         extension1.setEnabled(true);
-        extension1.setStartupPhase("postProcessor");
-        extension1.setCreatedAt(new Date());
-        extension1.setUpdatedAt(new Date());
 
         ExtensionEntity extension2 = new ExtensionEntity();
-        extension2.setExtPointId(extPoint.getId());
+        extension2.setExtPoint(extPoint);
         extension2.setName("LDAP认证处理器");
         extension2.setDescription("基于LDAP的认证实现");
-        extension2.setImplementationClassName("com.bone.engine.extension.user.impl.LdapAuthProcessor");
+        extension2.setClassName("com.bone.engine.extension.user.impl.LdapAuthProcessor");
         extension2.setTenantCode("enterprise");
         extension2.setPriority(200);
-        extension2.setConfiguration("{\"ldapUrl\": \"ldap://localhost:389\", \"baseDn\": \"dc=example,dc=com\"}");
+        extension2.setConfig("{\"ldapUrl\": \"ldap://localhost:389\", \"baseDn\": \"dc=example,dc=com\"}");
         extension2.setEnabled(true);
-        extension2.setStartupPhase("postProcessor");
-        extension2.setCreatedAt(new Date());
-        extension2.setUpdatedAt(new Date());
 
         ExtensionEntity extension3 = new ExtensionEntity();
-        extension3.setExtPointId(extPoint.getId());
+        extension3.setExtPoint(extPoint);
         extension3.setName("OAuth认证处理器");
         extension3.setDescription("基于OAuth的认证实现");
-        extension3.setImplementationClassName("com.bone.engine.extension.user.impl.OAuthAuthProcessor");
+        extension3.setClassName("com.bone.engine.extension.user.impl.OAuthAuthProcessor");
         extension3.setTenantCode("default");
         extension3.setPriority(300);
-        extension3.setConfiguration("{\"clientId\": \"oauth-client\", \"clientSecret\": \"oauth-secret\", \"authUrl\": \"https://auth.example.com/oauth2\"}");
+        extension3.setConfig("{\"clientId\": \"oauth-client\", \"clientSecret\": \"oauth-secret\", \"authUrl\": \"https://auth.example.com/oauth2\"}");
         extension3.setEnabled(false); // 禁用状态
-        extension3.setStartupPhase("postProcessor");
-        extension3.setCreatedAt(new Date());
-        extension3.setUpdatedAt(new Date());
 
         extensionRepository.saveAll(Arrays.asList(extension1, extension2, extension3));
         System.out.println("初始化了3个扩展实现");

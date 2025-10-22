@@ -28,7 +28,6 @@ import java.util.stream.Collectors;
 /**
  * 智能查询执行器，支持对动态实体和静态实体的统一查询
  */
-@Component
 @RequiredArgsConstructor
 public class SmartQueryExecutor {
 
@@ -74,6 +73,12 @@ public class SmartQueryExecutor {
                 }
                 
                 @Override
+                public List<String> getAuthorities() {
+                    // 实际应用中应从安全上下文中获取权限信息
+                    return new ArrayList<>();
+                }
+                
+                @Override
                 public boolean hasRole(String role) {
                     // 实际应用中应从安全上下文中获取角色信息
                     return false;
@@ -81,8 +86,8 @@ public class SmartQueryExecutor {
             };
             
             if (!permissionChecker.hasEntityAccessPermission(
-                    authentication,
-                    queryAst.getObjectName(), 
+                    queryAst.getObjectName(),
+                    authentication, 
                     "read")) {
                 throw new SecurityException("用户 " + context.getUserId() + 
                         " 没有实体 " + queryAst.getObjectName() + " 的读取权限");
@@ -226,6 +231,12 @@ public class SmartQueryExecutor {
                 }
                 
                 @Override
+                public List<String> getAuthorities() {
+                    // 实际应用中应从安全上下文中获取权限信息
+                    return new ArrayList<>();
+                }
+                
+                @Override
                 public boolean hasRole(String role) {
                     // 实际应用中应从安全上下文中获取角色信息
                     return false;
@@ -233,8 +244,8 @@ public class SmartQueryExecutor {
             };
             
             if (!permissionChecker.hasEntityAccessPermission(
-                    authentication,
-                    queryAst.getObjectName(), 
+                    queryAst.getObjectName(),
+                    authentication, 
                     "read")) {
                 throw new SecurityException("用户 " + userContext.getCurrentUserId() + 
                         " 没有实体 " + queryAst.getObjectName() + " 的读取权限");
@@ -290,14 +301,14 @@ public class SmartQueryExecutor {
         // 检查是否请求了没有权限的字段
         List<String> unauthorizedFields = requestedFields.stream()
                 .filter(field -> !permissionChecker.hasFieldAccessPermission(
-                        authentication,
-                        entityMetadata.getApiName(), 
-                        field, 
+                        entityMetadata.getApiName(),
+                        field,
+                        authentication, 
                         "read"))
                 .collect(Collectors.toList());
         
         if (!unauthorizedFields.isEmpty()) {
-            throw new SecurityException("用户 " + userId + " 没有以下字段的读取权限: " + 
+            throw new SecurityException("用户 " + authentication.getName() + " 没有以下字段的读取权限: " + 
                     String.join(", ", unauthorizedFields));
         }
     }
@@ -314,8 +325,8 @@ public class SmartQueryExecutor {
         
         // 获取用户有权限查看的字段
         List<String> readableFields = permissionChecker.getReadableFields(
-                authentication,
-                entityMetadata.getApiName()
+                entityMetadata.getApiName(),
+                authentication
         );
         
         // 如果用户有权限查看所有字段，则直接返回

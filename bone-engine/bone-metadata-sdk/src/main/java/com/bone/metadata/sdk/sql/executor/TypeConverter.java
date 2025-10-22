@@ -33,16 +33,6 @@ public final class TypeConverter {
         }
     }
 
-    /**
-     * 解析本地日期字符串
-     */
-    public static java.time.LocalDate parseLocalDate(String value) {
-        if (value == null || value.isEmpty()) {
-            return null;
-        }
-        return java.time.LocalDate.parse(value);
-    }
-
     public static class UnsupportedConversionException extends RuntimeException {
         public UnsupportedConversionException(Class<?> sourceType, Class<?> targetType) {
             super(String.format("Unsupported conversion from %s to %s", sourceType.getName(), targetType.getName()));
@@ -253,16 +243,6 @@ public final class TypeConverter {
             if (value instanceof java.sql.Date) return ((java.sql.Date) value).toLocalDate();
             throw new TypeConversionException("Unsupported LocalDate conversion: " + value);
         }
-
-        private LocalDate parseLocalDate(String value) {
-            return parseDateTime(value, formatter -> {
-                try {
-                    return LocalDate.parse(value, formatter);
-                } catch (DateTimeParseException ignored) {
-                    return null;
-                }
-            });
-        }
     }
 
     static class TimestampConverter implements Converter<Timestamp> {
@@ -370,6 +350,16 @@ public final class TypeConverter {
         return parseDateTime(value, formatter -> {
             try {
                 return LocalDateTime.parse(value, formatter);
+            } catch (DateTimeParseException ignored) {
+                return null;
+            }
+        });
+    }
+    
+    public static LocalDate parseLocalDate(String value) {
+        return parseDateTime(value, formatter -> {
+            try {
+                return LocalDate.parse(value, formatter);
             } catch (DateTimeParseException ignored) {
                 return null;
             }

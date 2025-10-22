@@ -43,7 +43,7 @@ public class MetadataChangedEvent extends ApplicationEvent {
     /**
      * 获取事件发生时间戳
      */
-    public long getTimestamp() {
+    public long getEventTimestamp() {
         return timestamp;
     }
     
@@ -52,7 +52,7 @@ public class MetadataChangedEvent extends ApplicationEvent {
         return "MetadataChangedEvent{" +
                 "entity=" + (entityMetadata != null ? entityMetadata.getApiName() : "null") +
                 ", type=" + changeType +
-                ", timestamp=" + timestamp +
+                ", timestamp=" + getTimestamp() +
                 '}';
     }
 }

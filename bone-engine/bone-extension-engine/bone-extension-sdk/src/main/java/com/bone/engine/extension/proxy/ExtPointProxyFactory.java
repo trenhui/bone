@@ -2,9 +2,9 @@ package com.bone.engine.extension.proxy;
 
 import com.bone.engine.extension.ExtPoint;
 import com.bone.engine.extension.context.BizContext;
-import com.bone.engine.extension.context.BizContextHolder;
 import com.bone.engine.extension.config.ExtensionConfigManager;
 import com.bone.engine.extension.config.ExtensionEventPublisher;
+import com.bone.engine.extension.lifecycle.ExtensionLifecycle;
 import com.bone.engine.extension.router.ExtPointRouter;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.FactoryBean;
@@ -18,8 +18,10 @@ import org.springframework.util.ClassUtils;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 扩展点代理工厂
@@ -49,9 +51,15 @@ public class ExtPointProxyFactory implements ApplicationContextAware, Initializi
     
     @Autowired
     private ExtensionConfigManager configManager;
+    
+    @Autowired(required = false)
+    private ExtensionLifecycle defaultLifecycle;
 
     // 代理实例缓存
     private final Map<Class<?>, Object> proxyCache = new ConcurrentHashMap<>();
+    
+    // 扩展点生命周期实例缓存
+    private final Map<Object, ExtensionLifecycle> lifecycleCache = new ConcurrentHashMap<>();
     
     private boolean enableCache = true;
 
@@ -114,11 +122,12 @@ public class ExtPointProxyFactory implements ApplicationContextAware, Initializi
         
         private final Class<?> extPointInterface;
         private final String extPointName;
+        private final ExtPoint extPointAnnotation;
 
         public ExtPointInvocationHandler(Class<?> extPointInterface) {
             this.extPointInterface = extPointInterface;
-            ExtPoint annotation = AnnotationUtils.getAnnotation(extPointInterface, ExtPoint.class);
-            this.extPointName = annotation.name();
+            this.extPointAnnotation = AnnotationUtils.getAnnotation(extPointInterface, ExtPoint.class);
+            this.extPointName = extPointAnnotation.name();
         }
 
         @Override
@@ -131,14 +140,10 @@ public class ExtPointProxyFactory implements ApplicationContextAware, Initializi
             // 获取当前业务上下文
             BizContext<?> context = getBizContextFromArgs(args);
             
-            // 如果参数中没有上下文，尝试从ThreadLocal获取
-            if (context == null) {
-                context = BizContextHolder.getCurrentContext();
-            }
-            
             // 如果仍然没有上下文，创建默认上下文
             if (context == null) {
-                context = new BizContext.Builder().build();
+                // 直接创建默认上下文实例
+                context = new BizContext<>(null, null, null, null, null, null, null, null, null, null, null);
             }
             
             // 检查扩展点是否启用
@@ -146,16 +151,44 @@ public class ExtPointProxyFactory implements ApplicationContextAware, Initializi
                 throw new IllegalStateException("Extension point is disabled: " + extPointName);
             }
             
+            // 准备路由属性
+            Map<String, Object> routeAttributes = new HashMap<>();
+            
+            // 执行路由前生命周期方法
+            ExtensionLifecycle lifecycle = getLifecycleForExtension(null); // 使用默认生命周期进行路由前处理
+            lifecycle.beforeRouting(context, extPointInterface, routeAttributes);
+            
             // 选择合适的扩展点实现
-            Object targetImpl = extPointRouter.route(extPointInterface, context);
-            if (targetImpl == null) {
-                throw new IllegalStateException("No suitable extension implementation found for: " + extPointName);
+            Object targetImpl = null;
+            try {
+                targetImpl = extPointRouter.route(extPointInterface, context);
+                if (targetImpl == null) {
+                    throw new IllegalStateException("No suitable extension implementation found for: " + extPointName);
+                }
+            } catch (Exception e) {
+                // 发布路由失败事件
+                if (eventPublisher != null) {
+                    eventPublisher.publishRouteFailedEvent(extPointInterface, context, e.getMessage());
+                }
+                
+                // 尝试降级处理
+                lifecycle = getLifecycleForExtension(null);
+                return lifecycle.onFallback(context, method.getName(), args, (Throwable)e);
             }
             
             // 发布路由事件
             if (eventPublisher != null) {
                 eventPublisher.publishRouteEvent(extPointInterface, targetImpl, context);
             }
+            
+            // 获取目标实现的生命周期处理器
+            lifecycle = getLifecycleForExtension(targetImpl);
+            
+            // 记录开始时间
+            final long startTime = System.currentTimeMillis();
+            
+            // 执行前置处理
+            lifecycle.beforeInvoke(context, method.getName(), args);
             
             // 发布执行前事件
             if (eventPublisher != null) {
@@ -164,40 +197,121 @@ public class ExtPointProxyFactory implements ApplicationContextAware, Initializi
             
             Object result;
             try {
-                // 调用实际实现
-                result = method.invoke(targetImpl, args);
+                // 执行环绕处理（支持异步）
+                final Method finalMethod = method;
+                final Object finalTargetImpl = targetImpl;
+                CompletableFuture<Object> future = lifecycle.aroundInvoke(context, finalMethod.getName(), args, () -> {
+                    try {
+                        return finalMethod.invoke(finalTargetImpl, args);
+                    } catch (Throwable e) {
+                        throw e instanceof Exception ? (Exception) e : new RuntimeException(e);
+                    }
+                });
+                
+                // 同步等待结果（如果需要异步执行，可以直接返回future）
+                result = future.get();
+                
+                // 计算执行时间
+                long executionTimeMs = System.currentTimeMillis() - startTime;
+                
+                // 执行后置处理
+                lifecycle.afterInvoke(context, method.getName(), result, executionTimeMs);
                 
                 // 发布执行后事件
                 if (eventPublisher != null) {
                     eventPublisher.publishAfterEvent(extPointInterface, targetImpl, context, result);
                 }
             } catch (Exception e) {
+                // 计算执行时间
+                long executionTimeMs = System.currentTimeMillis() - startTime;
+                
+                // 提取实际异常
+                Throwable cause = e.getCause() != null ? e.getCause() : e;
+                Exception ex = cause instanceof Exception ? (Exception) cause : new RuntimeException(cause);
+                
+                // 执行异常处理
+                lifecycle.onException(context, method.getName(), ex, executionTimeMs);
+                
                 // 发布异常事件
                 if (eventPublisher != null) {
-                    eventPublisher.publishExceptionEvent(extPointInterface, targetImpl, context, e);
+                    eventPublisher.publishExceptionEvent(extPointInterface, targetImpl, context, ex);
                 }
-                throw e.getCause() != null ? e.getCause() : e;
+                
+                // 尝试降级处理
+                try {
+                    return lifecycle.onFallback(context, method.getName(), args, cause);
+                } catch (Exception fallbackEx) {
+                    throw cause; // 如果降级也失败，抛出原始异常
+                }
             }
             
             return result;
         }
         
         /**
+         * 获取扩展点实现对应的生命周期处理器
+         */
+        private ExtensionLifecycle getLifecycleForExtension(Object extension) {
+            if (extension == null) {
+                return defaultLifecycle != null ? defaultLifecycle : new ExtensionLifecycle() {
+                    @Override public void initialize() {} 
+                    @Override public void beforeInvoke(BizContext<?> context, String methodName, Object[] args) {} 
+                    @Override public void afterInvoke(BizContext<?> context, String methodName, Object result, long executionTimeMs) {} 
+                    @Override public void onException(BizContext<?> context, String methodName, Exception exception, long executionTimeMs) {} 
+                    @Override public void destroy() {} 
+                };
+            }
+            
+            return lifecycleCache.computeIfAbsent(extension, obj -> {
+                if (obj instanceof ExtensionLifecycle) {
+                    return (ExtensionLifecycle) obj;
+                }
+                return defaultLifecycle != null ? defaultLifecycle : new ExtensionLifecycle() {
+                    @Override public void initialize() {} 
+                    @Override public void beforeInvoke(BizContext<?> context, String methodName, Object[] args) {} 
+                    @Override public void afterInvoke(BizContext<?> context, String methodName, Object result, long executionTimeMs) {} 
+                    @Override public void onException(BizContext<?> context, String methodName, Exception exception, long executionTimeMs) {} 
+                    @Override public void destroy() {} 
+                };
+            });
+        }
+        
+        /**
          * 从方法参数中提取业务上下文
          */
         private BizContext<?> getBizContextFromArgs(Object[] args) {
-            if (args == null || args.length == 0) {
-                return null;
-            }
-            
-            for (Object arg : args) {
-                if (arg instanceof BizContext) {
-                    return (BizContext<?>) arg;
-                }
-            }
-            
-            return null;
+             if (args == null || args.length == 0) {
+                 return null;
+             }
+              
+             for (Object arg : args) {
+                 if (arg instanceof BizContext) {
+                     return (BizContext<?>) arg;
+                 }
+             }
+              
+             return null;
+          }
+
+        private ExtensionLifecycle getLifecycleForExtension(Object extension) {
+            return lifecycleCache.get(extension);
         }
+    }
+    
+/**
+     * 清除生命周期缓存
+     */
+    public void clearLifecycleCache() {
+        lifecycleCache.clear();
+    }
+    
+    /**
+     * 设置默认生命周期处理器
+     */
+    public void setDefaultLifecycle(ExtensionLifecycle defaultLifecycle) {
+        this.defaultLifecycle = defaultLifecycle;
+        // 清除缓存以便重新应用新的默认生命周期
+        clearLifecycleCache();
     }
 
     /**
@@ -238,5 +352,6 @@ public class ExtPointProxyFactory implements ApplicationContextAware, Initializi
      */
     public void clearCache() {
         proxyCache.clear();
+        clearLifecycleCache();
     }
 }

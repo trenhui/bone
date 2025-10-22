@@ -34,7 +34,6 @@ public class BusinessRuleMetadata {
     private int priority = 0;
     
     // 触发事件
-    @Builder.Default
     private List<String> triggerEvents = new ArrayList<>();
     
     // 规则配置
@@ -44,7 +43,6 @@ public class BusinessRuleMetadata {
     private String executionPhase;
     
     // 依赖信息
-    @Builder.Default
     private Set<String> dependentFields = new HashSet<>();
     
     // 扩展属性
@@ -169,6 +167,143 @@ public class BusinessRuleMetadata {
     public String getEvaluationOrderKey() {
         // 构建评估顺序键：优先级 + 严重性 + ID
         return String.format("%05d:%s:%s", priority, severity, id);
+    }
+    
+    /**
+     * 设置触发事件列表
+     */
+    public void setTriggerEvents(List<String> triggerEvents) {
+        this.triggerEvents = triggerEvents;
+    }
+    
+    /**
+     * 设置依赖字段集合
+     */
+    public void setDependentFields(Set<String> dependentFields) {
+        this.dependentFields = dependentFields;
+    }
+    
+    /**
+     * 静态builder方法实现
+     */
+    public static Builder builder() {
+        return new BusinessRuleMetadata().new Builder();
+    }
+    
+    /**
+     * Builder内部类
+     */
+    public class Builder {
+        private BusinessRuleMetadata rule = new BusinessRuleMetadata();
+        
+        public Builder name(String name) {
+            rule.name = name;
+            return this;
+        }
+        
+        public Builder apiName(String apiName) {
+            rule.apiName = apiName;
+            return this;
+        }
+        
+        public Builder description(String description) {
+            rule.description = description;
+            return this;
+        }
+        
+        public Builder domain(String domain) {
+            rule.domain = domain;
+            return this;
+        }
+        
+        public Builder condition(String condition) {
+            rule.condition = condition;
+            return this;
+        }
+        
+        public Builder expression(String expression) {
+            rule.expression = expression;
+            return this;
+        }
+        
+        public Builder errorMessage(String errorMessage) {
+            rule.errorMessage = errorMessage;
+            return this;
+        }
+        
+        public Builder severity(Severity severity) {
+            rule.severity = severity;
+            return this;
+        }
+        
+        public Builder priority(int priority) {
+            rule.priority = priority;
+            return this;
+        }
+        
+        public Builder triggerEvents(List<String> triggerEvents) {
+            rule.triggerEvents = triggerEvents;
+            return this;
+        }
+        
+        public Builder active(boolean active) {
+            rule.active = active;
+            return this;
+        }
+        
+        public Builder system(boolean system) {
+            rule.system = system;
+            return this;
+        }
+        
+        public Builder stopOnFailure(boolean stopOnFailure) {
+            rule.stopOnFailure = stopOnFailure;
+            return this;
+        }
+        
+        public Builder executionPhase(String executionPhase) {
+            rule.executionPhase = executionPhase;
+            return this;
+        }
+        
+        public Builder dependentFields(Set<String> dependentFields) {
+            rule.dependentFields = dependentFields;
+            return this;
+        }
+        
+        public Builder ruleType(String ruleType) {
+            rule.ruleType = ruleType;
+            return this;
+        }
+        
+        public Builder implementationClass(String implementationClass) {
+            rule.implementationClass = implementationClass;
+            return this;
+        }
+        
+        public Builder scriptLanguage(String scriptLanguage) {
+            rule.scriptLanguage = scriptLanguage;
+            return this;
+        }
+        
+        public Builder scriptContent(String scriptContent) {
+            rule.scriptContent = scriptContent;
+            return this;
+        }
+        
+        public Builder version(String version) {
+            rule.version = version;
+            return this;
+        }
+        
+        public Builder previousVersionId(String previousVersionId) {
+            rule.previousVersionId = previousVersionId;
+            return this;
+        }
+        
+        public BusinessRuleMetadata build() {
+            return rule;
+        }
     }
     
     /**

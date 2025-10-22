@@ -12,11 +12,12 @@ import com.bone.engine.extension.context.BizContext;
  *   <li>扩展点执行后事件</li>
  *   <li>扩展点异常事件</li>
  *   <li>扩展点路由选择事件</li>
+ *   <li>扩展点路由失败事件</li>
  * </ul>
  * </p>
  *
  * @author Bone Engine Team
- * @version 1.0.0
+ * @version 2.0.0
  */
 public interface ExtensionEventPublisher {
 
@@ -65,4 +66,13 @@ public interface ExtensionEventPublisher {
      * @param extensionImpl 扩展点实现类
      */
     void publishRegisterEvent(Class<?> extPointInterface, Object extensionImpl);
+
+    /**
+     * 发布扩展点路由失败事件
+     *
+     * @param extPointInterface 扩展点接口
+     * @param context 业务上下文
+     * @param reason 失败原因
+     */
+    void publishRouteFailedEvent(Class<?> extPointInterface, BizContext<?> context, String reason);
 }

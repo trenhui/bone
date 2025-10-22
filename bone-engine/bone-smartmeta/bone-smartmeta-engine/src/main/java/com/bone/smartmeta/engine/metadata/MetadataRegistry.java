@@ -3,7 +3,8 @@ package com.bone.smartmeta.engine.metadata;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import com.bone.smartmeta.engine.metadata.SmartFieldMetadata;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,11 +14,10 @@ import java.util.stream.Collectors;
  * 元数据注册中心
  * 负责管理实体元数据、工作流元数据和包定义
  */
-@Slf4j
 @Component
 public class MetadataRegistry {
 
-    // 日志记录器由@Slf4j自动生成
+    private static final Logger log = LoggerFactory.getLogger(MetadataRegistry.class);
     
     // 实体元数据映射，key为实体名称
     private final Map<String, EntityMetadata> entityMap = new ConcurrentHashMap<>();

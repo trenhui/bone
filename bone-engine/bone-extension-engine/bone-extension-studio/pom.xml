@@ -59,12 +59,18 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
         
-        <!-- 扩展引擎SDK (暂时注释，先确保服务能运行) -->
-        <!--<dependency>
+        <!-- 扩展引擎SDK -->
+        <dependency>
             <groupId>com.bone</groupId>
             <artifactId>bone-extension-sdk</artifactId>
             <version>1.0.0</version>
-        </dependency>-->
+        </dependency>
+        
+        <!-- JPA API -->
+        <dependency>
+            <groupId>jakarta.persistence</groupId>
+            <artifactId>jakarta.persistence-api</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

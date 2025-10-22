@@ -23,7 +23,8 @@ public class DefaultAuditService implements AuditService {
     private final ExecutorService auditExecutor = Executors.newFixedThreadPool(2);
 
     @Override
-    public void logAccessDenied(String username, String resourceType, String resourceId, String operation) {
+    public void logAccessDenied(CustomAuthentication authentication, String resourceType, String resourceId, String operation) {
+        String username = authentication != null ? authentication.getName() : "anonymous";
         String message = String.format("[访问拒绝] 时间: %s, 用户: %s, 资源类型: %s, 资源ID: %s, 操作: %s",
                 getCurrentTime(), username, resourceType, resourceId, operation);
         logger.warn(message);
@@ -33,7 +34,8 @@ public class DefaultAuditService implements AuditService {
     }
 
     @Override
-    public void logFieldAccess(String username, String entityName, String fieldName, String operation, boolean isMasked) {
+    public void logFieldAccess(CustomAuthentication authentication, String entityName, String fieldName, String operation, boolean isMasked) {
+        String username = authentication != null ? authentication.getName() : "anonymous";
         String message = String.format("[字段访问] 时间: %s, 用户: %s, 实体: %s, 字段: %s, 操作: %s, 脱敏: %s",
                 getCurrentTime(), username, entityName, fieldName, operation, isMasked ? "是" : "否");
         logger.info(message);
@@ -43,7 +45,8 @@ public class DefaultAuditService implements AuditService {
     }
 
     @Override
-    public void logRecordAccess(String username, String entityName, String recordId, String operation) {
+    public void logRecordAccess(CustomAuthentication authentication, String entityName, String recordId, String operation) {
+        String username = authentication != null ? authentication.getName() : "anonymous";
         String message = String.format("[记录访问] 时间: %s, 用户: %s, 实体: %s, 记录ID: %s, 操作: %s",
                 getCurrentTime(), username, entityName, recordId, operation);
         logger.info(message);
@@ -53,7 +56,8 @@ public class DefaultAuditService implements AuditService {
     }
 
     @Override
-    public void logSensitiveOperation(String username, String operation, String details) {
+    public void logSensitiveOperation(CustomAuthentication authentication, String operation, String details) {
+        String username = authentication != null ? authentication.getName() : "anonymous";
         String message = String.format("[敏感操作] 时间: %s, 用户: %s, 操作: %s, 详情: %s",
                 getCurrentTime(), username, operation, details);
         logger.warn(message);
@@ -63,7 +67,8 @@ public class DefaultAuditService implements AuditService {
     }
 
     @Override
-    public void logBatchOperation(String username, String entityName, String operation, int recordCount, int successCount) {
+    public void logBatchOperation(CustomAuthentication authentication, String entityName, String operation, int recordCount, int successCount) {
+        String username = authentication != null ? authentication.getName() : "anonymous";
         String message = String.format("[批量操作] 时间: %s, 用户: %s, 实体: %s, 操作: %s, 总数: %d, 成功: %d, 失败: %d",
                 getCurrentTime(), username, entityName, operation, recordCount, successCount, recordCount - successCount);
         logger.info(message);
@@ -88,7 +93,8 @@ public class DefaultAuditService implements AuditService {
     }
 
     @Override
-    public void logAuthorization(String username, String resource, String operation, boolean success) {
+    public void logAuthorization(CustomAuthentication authentication, String resource, String operation, boolean success) {
+        String username = authentication != null ? authentication.getName() : "anonymous";
         String message = String.format("[授权] 时间: %s, 用户: %s, 资源: %s, 操作: %s, 结果: %s",
                 getCurrentTime(), username, resource, operation, success ? "成功" : "失败");
         if (success) {

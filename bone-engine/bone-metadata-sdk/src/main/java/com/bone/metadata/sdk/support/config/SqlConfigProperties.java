@@ -53,36 +53,34 @@ public class SqlConfigProperties {
     private Cache cache = new Cache();
     
     /**
-     * 是否启用缓存
-     * @return true如果启用缓存，false否则
-     */
-    public boolean isCacheEnabled() {
-        return enabled && template.isAsyncPreload() && cache.getExpressionCacheSize() > 0;
-    }
-    
-    public Cache getCache() {
-        return cache;
-    }
-
-    /**
-     * 多租户配置。
-     */
-    private Tenant tenant = new Tenant();
-
-    /**
-     * SQL 监控配置。
+     * 监控配置。
      */
     private Monitor monitor = new Monitor();
-
-    /**
-     * 安全配置。
-     */
-    private Security security = new Security();
     
     /**
      * 连接池配置。
      */
     private ConnectionPool connectionPool = new ConnectionPool();
+    
+    /**
+     * 是否启用缓存
+     * @return true如果启用缓存，false否则
+     */
+    public boolean isCacheEnabled() {
+        return enabled && template.asyncPreload && cache.expressionCacheSize > 0;
+    }
+    
+    public Cache getCache() {
+        return cache;
+    }
+    
+    public Monitor getMonitor() {
+        return monitor;
+    }
+    
+    public ConnectionPool getConnectionPool() {
+        return connectionPool;
+    }
 
     @Data
     public static class Executor {
@@ -383,7 +381,11 @@ public class SqlConfigProperties {
         private long leakDetectionThreshold = 60000;
     }
     
-    public TemplateProperties getTemplate() {
+    public Template getTemplate() {
+        return template;
+    }
+    
+    public TemplateProperties getTemplateProperties() {
         return new TemplateProperties();
     }
     

@@ -14,7 +14,6 @@ public class UserContext {
      */
     public String getCurrentUserId() {
         // 简单实现：返回默认用户ID，实际项目中需要从安全上下文获取
-        // 例如：return SecurityContextHolder.getContext().getAuthentication().getName();
         return "system";
     }
     

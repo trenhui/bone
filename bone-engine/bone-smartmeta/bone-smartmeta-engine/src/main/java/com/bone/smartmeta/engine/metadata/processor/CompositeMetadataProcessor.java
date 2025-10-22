@@ -64,6 +64,41 @@ public class CompositeMetadataProcessor implements MetadataProcessor {
     @Value("${bone.smartmeta.metadata.merge-strategy:yaml-overrides-annotation}")
     private String mergeStrategy;
     
+    @Override
+    public String getSourceType() {
+        return "composite"; // 返回复合处理器的源类型
+    }
+    
+    @Override
+    public EntityMetadata processEntityMetadata(String entityName) {
+        EntityMetadata result = null;
+        for (MetadataProcessor processor : metadataProcessors) {
+            EntityMetadata processorResult = processor.processEntityMetadata(entityName);
+            if (processorResult != null) {
+                result = processorResult;
+                break; // 或者可以合并结果，这里简单返回第一个非空结果
+            }
+        }
+        return result;
+    }
+    
+    @Override
+    public void refreshMetadata() {
+        // 实现刷新元数据的方法
+        for (MetadataProcessor processor : metadataProcessors) {
+            processor.refreshMetadata();
+        }
+    }
+    
+    @Override
+    public Object processMetadata(String entityName) {
+        Object result = null;
+        for (MetadataProcessor processor : metadataProcessors) {
+            result = processor.processMetadata(entityName);
+        }
+        return result;
+    }
+    
     @Value("${bone.smartmeta.metadata.hot-reload-enabled:true}")
     private boolean hotReloadEnabled;
     

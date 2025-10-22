@@ -49,7 +49,7 @@ public class SqlFragmentLoader {
                 : loadFileFragmentsWithFallback(interfaceName, fragmentMap);
 
         // 如果启用回退机制且未加载到片段，尝试次要来源
-        if (!fragmentsLoaded && sqlConfigProperties.getTemplate().isFallbackEnabled()) {
+        if (!fragmentsLoaded && sqlConfigProperties.getTemplateProperties().isFallbackEnabled()) {
             fragmentsLoaded = annotationFirst
                     ? loadFileFragmentsWithExclusion(interfaceName, fragmentMap)
                     : loadAnnotationFragmentsWithExclusion(repoInterface, fragmentMap);
@@ -70,7 +70,7 @@ public class SqlFragmentLoader {
      */
     private String getLoadPriority() {
         try {
-            return sqlConfigProperties.getTemplate().getLoadPriority();
+            return sqlConfigProperties.getTemplateProperties().getLoadPriority();
         } catch (Exception e) {
             LOGGER.fine("无法获取 SqlConfigProperties，使用默认优先级: annotation-first");
             return "annotation-first";

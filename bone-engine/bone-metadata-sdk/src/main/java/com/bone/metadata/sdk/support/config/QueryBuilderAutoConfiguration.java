@@ -1,6 +1,6 @@
 package com.bone.metadata.sdk.support.config;
 
-import com.bone.metadata.sdk.exception.ExceptionHandler;
+import com.bone.metadata.sdk.domain.exception.ExceptionHandler;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import com.bone.metadata.sdk.sql.executor.SqlExecutor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;

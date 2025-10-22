@@ -92,25 +92,35 @@ public class EmbeddedMetadataService implements MetadataService {
             return Collections.emptyList();
         }
 
-        // 1. 按数据类型分组
-        Map<DataType, List<FieldMetadata>> groupedFields = fields.stream()
-                .collect(Collectors.groupingBy(f -> DataType.valueOf(f.getDataType())));
+        // 1. 按数据类型分组 - 直接使用dataType字符串作为分组键
+        Map<String, List<FieldMetadata>> groupedFields = fields.stream()
+                .collect(Collectors.groupingBy(f -> f.getDataType() != null ? f.getDataType() : "UNKNOWN"));
 
 
         List<FieldMetadata> results = new ArrayList<>();
+        // 使用第一个字段的信息创建上下文，添加空值检查
         FieldMetadata fieldMetadata = fields.get(0);
-        AllocationContext ctx = AllocationContext.of(fieldMetadata.getTenantId(), fieldMetadata.getAppCode(), fieldMetadata.getBizIdentityCode(), fieldMetadata.getEntityType());
+        Long tenantId = fieldMetadata.getTenantId();
+        String appCode = fieldMetadata.getAppCode();
+        String bizIdentityCode = fieldMetadata.getBizIdentityCode();
+        String entityType = fieldMetadata.getEntityType();
+        AllocationContext ctx = AllocationContext.of(tenantId, appCode, bizIdentityCode, entityType);
         // 2. 按数据类型批量分配
-        groupedFields.forEach((dataType, fieldGroup) -> {
-
-            // 分配物理列名
-            List<String> columns = allocator.allocate(ctx, dataType, fieldGroup.size());
+        groupedFields.forEach((dataTypeStr, fieldGroup) -> {
+            // 将字符串类型的dataTypeStr转换为DataType枚举类型
+            DataType dataType = DataType.fromCode(dataTypeStr);
+            if (dataType == null) {
+                // 如果无法转换，默认为STRING类型
+                dataType = DataType.STRING;
+            }
+            // 分配物理列名 - 使用DataType枚举类型
+            List<String> allocatedColumnNames = allocator.allocate(ctx, dataType, fieldGroup.size());
 
             // 更新字段元数据
             IntStream.range(0, fieldGroup.size()).forEach(i -> {
                 FieldMetadata field = fieldGroup.get(i);
                 validateField(field);
-                field.setColumnName(columns.get(i));
+                field.setColumnName(allocatedColumnNames.get(i));
                 field.setExtension(true);
             });
 

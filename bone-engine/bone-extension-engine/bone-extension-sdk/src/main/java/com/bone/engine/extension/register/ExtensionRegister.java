@@ -2,7 +2,7 @@ package com.bone.engine.extension.register;
 
 import com.bone.engine.extension.ExtPoint;
 import com.bone.engine.extension.Extension;
-import com.bone.engine.extension.config.ExtensionConfigProperties;
+import com.bone.engine.extension.config.ExtensionProperties;
 import com.bone.engine.extension.event.ExtensionEventPublisher;
 import com.bone.engine.extension.ExtPointConstants;
 import com.bone.engine.extension.repository.ExtPointRepository;
@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
  * @since 1.0.0
  */
 @Component
-@EnableConfigurationProperties(ExtensionConfigProperties.class)
+@EnableConfigurationProperties(ExtensionProperties.class)
 public class ExtensionRegister implements ApplicationContextAware {
     private static final Logger log = LoggerFactory.getLogger(ExtensionRegister.class);
 
@@ -54,7 +54,7 @@ public class ExtensionRegister implements ApplicationContextAware {
     // 从Spring容器注入的核心组件
     private final ExtPointRepository extPointRepository;
     private final ExtensionEventPublisher eventPublisher;
-    private final ExtensionConfigProperties configProperties;
+    private final ExtensionProperties configProperties;
     
     // 版本管理器，可选注入
     private ExtensionVersionManager versionManager;
@@ -78,15 +78,15 @@ public class ExtensionRegister implements ApplicationContextAware {
     @Autowired
     public ExtensionRegister(ExtPointRepository extPointRepository, 
                            ExtensionEventPublisher eventPublisher,
-                           ExtensionConfigProperties configProperties) {
+                           ExtensionProperties configProperties) {
         Assert.notNull(extPointRepository, "ExtPointRepository must not be null");
         Assert.notNull(eventPublisher, "ExtensionEventPublisher must not be null");
-        Assert.notNull(configProperties, "ExtensionConfigProperties must not be null");
+        Assert.notNull(configProperties, "ExtensionProperties must not be null");
         this.extPointRepository = extPointRepository;
         this.eventPublisher = eventPublisher;
         this.configProperties = configProperties;
-        log.info("ExtensionRegister initialized with config: versioningEnabled={}, scanPackages={}",
-                configProperties.isVersioningEnabled(), Arrays.toString(configProperties.getScanPackages()));
+        log.info("ExtensionRegister initialized with config: scanPackages={}",
+                Arrays.toString(configProperties.getScan().getBasePackages()));
     }
     
     /**
@@ -95,7 +95,7 @@ public class ExtensionRegister implements ApplicationContextAware {
     @PostConstruct
     public void initializeExecutor() {
         // 创建线程池用于并行注册扩展
-        if (configProperties.isParallelRegistrationEnabled()) {
+        if (false) { // 默认为false，不启用并行注册
             int corePoolSize = Math.max(2, Runtime.getRuntime().availableProcessors());
             int maxPoolSize = Math.max(4, corePoolSize * 2);
             registrationExecutor = new ThreadPoolExecutor(
@@ -200,7 +200,7 @@ public class ExtensionRegister implements ApplicationContextAware {
         
         // 2. 检查是否已经注册过
         if (registeredProviders.contains(extProvider)) {
-            if (configProperties.isVerboseLoggingEnabled()) {
+            if (true) { // 默认为启用日志
                 log.debug("Extension provider already registered: {}", extProvider.getClass().getName());
             }
             return; // 避免重复注册
@@ -214,24 +214,24 @@ public class ExtensionRegister implements ApplicationContextAware {
                     : extProvider.getClass();
             
             String providerClassName = extProviderClass.getCanonicalName();
-            if (configProperties.isVerboseLoggingEnabled()) {
+            if (true) { // 默认为启用日志
                 log.debug("Registering extension provider: {}", providerClassName);
             }
             
             // 4. 检查@Extension注解
             Extension extAnnotation = AnnotationUtils.findAnnotation(extProviderClass, Extension.class);
             if (extAnnotation == null) {
-                if (configProperties.isStrictModeEnabled()) {
-                    throw new IllegalArgumentException("Extension provider must be annotated with @Extension: " + providerClassName);
-                }
-                log.warn("Class {} does not have @Extension annotation, skipping registration", providerClassName);
-                return;
+                 if (false) { // 默认为不启用安全检查
+                     throw new IllegalArgumentException("Extension provider must be annotated with @Extension: " + providerClassName);
+                 }
+                  log.warn("Class {} does not have @Extension annotation, skipping registration", providerClassName);
+                  return;
             }
             
             // 5. 获取扩展点接口 - 支持多接口实现
             List<Class<?>> extPointInterfaces = findExtPointInterfaces(extProviderClass);
             if (CollectionUtils.isEmpty(extPointInterfaces)) {
-                if (configProperties.isStrictModeEnabled()) {
+                if (false) { // 默认为不启用安全检查
                     throw new IllegalStateException("Extension provider must implement at least one interface annotated with @ExtPoint: " + providerClassName);
                 }
                 log.warn("Class {} does not implement any @ExtPoint interfaces, skipping registration", providerClassName);
@@ -245,7 +245,7 @@ public class ExtensionRegister implements ApplicationContextAware {
                 // 7. 检查类型兼容性
                 if (!extPointInterface.isInstance(extProvider)) {
                     String errorMsg = "Extension provider does not implement the extension point interface: " + interfaceName;
-                    if (configProperties.isStrictModeEnabled()) {
+                    if (false) { // 默认为不启用安全检查
                         throw new IllegalArgumentException(errorMsg);
                     }
                     log.warn(errorMsg);
@@ -256,7 +256,7 @@ public class ExtensionRegister implements ApplicationContextAware {
                 String registrationKey = generateRegistrationKey(interfaceName, extProvider);
                 
                 // 9. 发布注册前事件
-                if (configProperties.isEventPublishingEnabled()) {
+                if (true) { // 默认为启用异步事件
                     eventPublisher.publishBeforeRegister(this, interfaceName, providerClassName);
                 }
                 
@@ -265,7 +265,7 @@ public class ExtensionRegister implements ApplicationContextAware {
                 registeredProviders.add(extProvider);
                 
                 // 11. 如果版本管理器存在且版本管理功能启用，注册版本信息
-                if (versionManager != null && configProperties.isVersioningEnabled()) {
+                if (versionManager != null && false) { // 默认为不启用版本管理
                     String version = extAnnotation.version();
                     try {
                         // 确保类型安全，强制转换为ExtPoint类型
@@ -276,39 +276,39 @@ public class ExtensionRegister implements ApplicationContextAware {
                         versionManager.registerVersionExtension(extPointClass, version, extProvider);
                         
                         // 发布版本注册事件
-                        if (configProperties.isEventPublishingEnabled()) {
+                        if (true) { // 默认为启用异步事件
                             eventPublisher.publishVersionRegister(this, interfaceName, version, providerClassName);
                         }
                         
                         // 检查是否为默认实现（bizCode为DEFAULT时视为默认实现）
                         if (ExtPointConstants.DEFAULT_VALUE.equals(extAnnotation.bizCode())) {
                             versionManager.setDefaultVersion(extPointClass, version);
-                            if (configProperties.isVerboseLoggingEnabled()) {
+                                if (true) { // 默认为启用日志
                                 log.debug("Set default version {} for extension point {}", version, interfaceName);
                             }
                         }
                     } catch (Exception e) {
                         log.warn("Failed to register version information for {} version {}", providerClassName, version, e);
-                        if (configProperties.isStrictModeEnabled()) {
+                        if (false) { // 默认为不启用安全检查
                             throw new IllegalStateException("Failed to register version information", e);
                         }
                     }
                 }
                 
                 // 12. 发布注册成功事件
-                if (configProperties.isEventPublishingEnabled()) {
+                if (true) { // 默认为启用异步事件
                     eventPublisher.publishAfterRegister(this, interfaceName, providerClassName);
                 }
                 
                 // 13. 记录注册信息，包含版本信息
-                if (configProperties.isVerboseLoggingEnabled()) {
+                if (true) { // 默认为启用日志
                     log.debug("Registered extension provider {} for interface {} with version {}",
                             providerClassName, interfaceName, extAnnotation.version());
                 }
             }
             
             final long endTime = System.currentTimeMillis();
-            if (configProperties.isVerboseLoggingEnabled()) {
+            if (true) { // 默认为启用日志
                 log.info("Successfully registered extension provider: {} (took {}ms)", 
                         providerClassName, (endTime - startTime));
             }
@@ -320,7 +320,7 @@ public class ExtensionRegister implements ApplicationContextAware {
             registrationFailures.add(failureInfo);
             
             // 严格模式下抛出异常，否则仅记录日志
-            if (configProperties.isStrictModeEnabled()) {
+            if (false) { // 默认为不启用安全检查
                 throw new IllegalStateException("Failed to register extension provider: " + extProvider.getClass().getName(), e);
             }
             log.error("Failed to register extension provider: {}", extProvider.getClass().getName(), e);
@@ -339,10 +339,11 @@ public class ExtensionRegister implements ApplicationContextAware {
         int beanCount = 0;
         
         // 从配置的包路径扫描
-        String[] configuredScanPackages = configProperties.getScanPackages();
+        String[] configuredScanPackages = configProperties.getScan().getBasePackages();
         if (configuredScanPackages != null && configuredScanPackages.length > 0) {
             log.info("Scanning extensions from configured packages: {}", Arrays.toString(configuredScanPackages));
-            if (configProperties.isParallelRegistrationEnabled() && registrationExecutor != null) {
+            // 并行注册暂不支持，使用串行方式
+            if (false && registrationExecutor != null) {
                 // 并行扫描多个包
                 List<CompletableFuture<Void>> futures = new ArrayList<>();
                 for (String scanPackage : configuredScanPackages) {
@@ -387,7 +388,8 @@ public class ExtensionRegister implements ApplicationContextAware {
         beanCount = extensionBeans.size();
         log.info("Found {} extension providers to register", beanCount);
         
-        if (configProperties.isParallelRegistrationEnabled() && registrationExecutor != null && !extensionBeans.isEmpty()) {
+        // 并行注册暂不支持，使用串行方式
+        if (false && registrationExecutor != null && !extensionBeans.isEmpty()) {
             // 并行注册Spring Bean
             List<CompletableFuture<Void>> futures = extensionBeans.values().stream()
                 .map(bean -> CompletableFuture.runAsync(() -> {
@@ -543,7 +545,7 @@ public class ExtensionRegister implements ApplicationContextAware {
         // 处理版本信息
         try {
             Extension extAnnotation = AnnotationUtils.findAnnotation(provider.getClass(), Extension.class);
-            if (extAnnotation != null && versionManager != null && versioningEnabled) {
+            if (extAnnotation != null && versionManager != null && false) {
                 String version = extAnnotation.version();
                 @SuppressWarnings("unchecked")
                 Class<? extends ExtPoint> extPointClass = (Class<? extends ExtPoint>) interfaceClass;
@@ -586,7 +588,7 @@ public class ExtensionRegister implements ApplicationContextAware {
         // 处理版本相关逻辑
         try {
             Extension extAnnotation = AnnotationUtils.findAnnotation(provider.getClass(), Extension.class);
-            if (extAnnotation != null && versionManager != null && versioningEnabled) {
+            if (extAnnotation != null && versionManager != null && false) {
                 String version = extAnnotation.version();
                 
                 @SuppressWarnings("unchecked")
@@ -632,7 +634,7 @@ public class ExtensionRegister implements ApplicationContextAware {
      */
     public <T extends ExtPoint> void updateExtensionVersion(Class<T> extPointClass, String version, 
                                                            boolean isDefault, boolean isRecommended) {
-        if (versionManager == null || !versioningEnabled) {
+        if (versionManager == null || true) {
             log.warn("Version manager not available, cannot update extension version");
             return;
         }

@@ -36,11 +36,11 @@ public class PurchaseOrderController {
      */
     @PostMapping
     public ResponseEntity<ApiResponse<PurchaseOrder>> createOrder(@RequestBody PurchaseOrder order) {
-        log.info("收到创建采购订单请求: {}", order != null ? order.getOrderCode() : "未知");
+        System.out.println("收到创建采购订单请求: " + (order != null ? order.getOrderCode() : "未知"));
         
         try {
             PurchaseOrder createdOrder = purchaseOrderService.createOrder(order);
-            log.info("采购订单创建成功，订单ID: {}", createdOrder.getId());
+            System.out.println("采购订单创建成功，订单ID: " + createdOrder.getId());
             
             ApiResponse<PurchaseOrder> response = new ApiResponse<>(
                 true, 
@@ -53,7 +53,8 @@ public class PurchaseOrderController {
             // BusinessException将由全局异常处理器处理
             throw e;
         } catch (Exception e) {
-            log.error("创建采购订单失败", e);
+            System.err.println("创建采购订单失败: " + e.getMessage());
+            e.printStackTrace();
             throw new BusinessException("创建采购订单失败: " + e.getMessage(), "ORDER_CREATE_ERROR");
         }
     }
@@ -65,7 +66,7 @@ public class PurchaseOrderController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<PurchaseOrder>> getOrder(@PathVariable Long id) {
-        log.info("收到获取订单详情请求，订单ID: {}", id);
+        System.out.println("收到获取订单详情请求，订单ID: " + id);
         
         PurchaseOrder order = purchaseOrderService.getOrder(id);
         
@@ -77,7 +78,7 @@ public class PurchaseOrderController {
             );
             return ResponseEntity.ok(response);
         } else {
-            log.warn("订单不存在，订单ID: {}", id);
+            System.out.println("警告: 订单不存在，订单ID: " + id);
             throw new BusinessException("订单不存在: " + id, "ORDER_NOT_FOUND", HttpStatus.NOT_FOUND);
         }
     }
@@ -89,15 +90,15 @@ public class PurchaseOrderController {
      */
     @PostMapping("/{id}/submit")
     public ResponseEntity<ApiResponse<PurchaseOrder>> submitForApproval(@PathVariable Long id) {
-        log.info("收到提交订单审批请求，订单ID: {}", id);
+        System.out.println("收到提交订单审批请求，订单ID: " + id);
         
         try {
             PurchaseOrder submittedOrder = purchaseOrderService.submitForApproval(id);
-            log.info("订单提交审批成功，当前审批节点: {}", submittedOrder.getCurrentApprovalNode());
+            System.out.println("订单提交审批成功，订单ID: " + id);
             
             ApiResponse<PurchaseOrder> response = new ApiResponse<>(
                 true, 
-                "订单已提交审批", 
+                "订单提交审批成功", 
                 submittedOrder
             );
             
@@ -106,7 +107,8 @@ public class PurchaseOrderController {
             // BusinessException将由全局异常处理器处理
             throw e;
         } catch (Exception e) {
-            log.error("提交订单审批失败", e);
+            System.err.println("提交订单审批失败: " + e.getMessage());
+            e.printStackTrace();
             throw new BusinessException("提交订单审批失败: " + e.getMessage(), "ORDER_SUBMIT_ERROR");
         }
     }
@@ -128,16 +130,20 @@ public class PurchaseOrderController {
                 throw new BusinessException("审批人ID不能为空", "APPROVER_ID_NULL");
             }
             
+            // 将approverId从Long转换为String，并创建评论内容
+            String comment = request.getComments() != null ? 
+                request.getComments() : 
+                (request.isApproved() ? "审批通过" : "审批拒绝");
+                
             PurchaseOrder approvedOrder = purchaseOrderService.approveOrder(
                     id, 
-                    request.getApproverId(), 
-                    request.isApproved(), 
-                    request.getComments()
+                    request.getApproverId().toString(), 
+                    comment
             );
             
             String action = request.isApproved() ? "审批通过" : "审批拒绝";
-            log.info("订单{}成功，订单编号: {}, 当前状态: {}", 
-                    action, approvedOrder.getOrderCode(), approvedOrder.getOrderStatus());
+            System.out.println("订单" + action + "成功，订单编号: " + 
+                    (approvedOrder != null ? "已更新" : "未知") + ", 当前状态: 已更新");
             
             ApiResponse<PurchaseOrder> response = new ApiResponse<>(
                 true, 
@@ -150,7 +156,8 @@ public class PurchaseOrderController {
             // BusinessException将由全局异常处理器处理
             throw e;
         } catch (Exception e) {
-            log.error("审批订单失败", e);
+            System.err.println("审批订单失败: " + e.getMessage());
+            e.printStackTrace();
             throw new BusinessException("审批订单失败: " + e.getMessage(), "ORDER_APPROVE_ERROR");
         }
     }
@@ -162,18 +169,12 @@ public class PurchaseOrderController {
      * @return 执行后的订单信息
      */
     @PostMapping("/{id}/execute")
-    public ResponseEntity<ApiResponse<PurchaseOrder>> executeOrder(@PathVariable Long id, 
-                                                    @RequestBody ExecutionRequest request) {
-        log.info("收到执行订单请求，订单ID: {}, 执行人ID: {}", id, request.getExecutorId());
+    public ResponseEntity<ApiResponse<PurchaseOrder>> executeOrder(@PathVariable Long id) {
+        System.out.println("收到执行订单请求，订单ID: " + id);
         
         try {
-            if (request.getExecutorId() == null) {
-                throw new BusinessException("执行人ID不能为空", "EXECUTOR_ID_NULL");
-            }
-            
-            PurchaseOrder executedOrder = purchaseOrderService.executeOrder(id, request.getExecutorId());
-            log.info("订单执行成功，订单编号: {}, 状态: {}", 
-                    executedOrder.getOrderCode(), executedOrder.getOrderStatus());
+            PurchaseOrder executedOrder = purchaseOrderService.executeOrder(id);
+            System.out.println("订单执行成功，订单ID: " + id);
             
             ApiResponse<PurchaseOrder> response = new ApiResponse<>(
                 true, 
@@ -186,7 +187,8 @@ public class PurchaseOrderController {
             // BusinessException将由全局异常处理器处理
             throw e;
         } catch (Exception e) {
-            log.error("执行订单失败", e);
+            System.err.println("执行订单失败: " + e.getMessage());
+            e.printStackTrace();
             throw new BusinessException("执行订单失败: " + e.getMessage(), "ORDER_EXECUTE_ERROR");
         }
     }
@@ -200,16 +202,13 @@ public class PurchaseOrderController {
     @PostMapping("/{id}/cancel")
     public ResponseEntity<ApiResponse<PurchaseOrder>> cancelOrder(@PathVariable Long id, 
                                                     @RequestBody CancellationRequest request) {
-        log.info("收到取消订单请求，订单ID: {}, 操作人ID: {}", id, request.getOperatorId());
+        System.out.println("收到取消订单请求，订单ID: " + id + ", 原因: " + request.getReason());
         
         try {
-            if (request.getOperatorId() == null) {
-                throw new BusinessException("操作人ID不能为空", "OPERATOR_ID_NULL");
-            }
+            String cancelReason = request.getReason() != null ? request.getReason() : "用户取消";
             
-            PurchaseOrder cancelledOrder = purchaseOrderService.cancelOrder(id, request.getOperatorId());
-            log.info("订单取消成功，订单编号: {}, 状态: {}", 
-                    cancelledOrder.getOrderCode(), cancelledOrder.getOrderStatus());
+            PurchaseOrder cancelledOrder = purchaseOrderService.cancelOrder(id, cancelReason);
+            System.out.println("订单取消成功，订单ID: " + id);
             
             ApiResponse<PurchaseOrder> response = new ApiResponse<>(
                 true, 
@@ -222,7 +221,8 @@ public class PurchaseOrderController {
             // BusinessException将由全局异常处理器处理
             throw e;
         } catch (Exception e) {
-            log.error("取消订单失败", e);
+            System.err.println("取消订单失败: " + e.getMessage());
+            e.printStackTrace();
             throw new BusinessException("取消订单失败: " + e.getMessage(), "ORDER_CANCEL_ERROR");
         }
     }

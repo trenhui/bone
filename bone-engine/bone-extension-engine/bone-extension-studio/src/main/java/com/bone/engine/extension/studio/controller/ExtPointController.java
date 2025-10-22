@@ -3,11 +3,13 @@ package com.bone.engine.extension.studio.controller;
 import com.bone.engine.extension.studio.model.ExtPointEntity;
 import com.bone.engine.extension.studio.model.ExtensionEntity;
 import com.bone.engine.extension.studio.service.ExtPointService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,6 +22,7 @@ import java.util.Optional;
  */
 @RestController
 @RequestMapping("/api/ext-points")
+@Slf4j
 public class ExtPointController {
 
     @Autowired
@@ -80,9 +83,19 @@ public class ExtPointController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<ExtPointEntity> getExtPointById(@PathVariable Long id) {
-        Optional<ExtPointEntity> extPoint = extPointService.findExtPointById(id);
-        return extPoint.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        log.debug("获取扩展点详情，ID: {}", id);
+        try {
+            Optional<ExtPointEntity> extPoint = extPointService.findExtPointById(id);
+            if (extPoint.isPresent()) {
+                return ResponseEntity.ok(extPoint.get());
+            } else {
+                log.warn("扩展点不存在，ID: {}", id);
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            log.error("获取扩展点详情失败，ID: {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     /**
@@ -90,9 +103,19 @@ public class ExtPointController {
      */
     @GetMapping("/by-interface/{interfaceName}")
     public ResponseEntity<ExtPointEntity> getExtPointByInterfaceName(@PathVariable String interfaceName) {
-        Optional<ExtPointEntity> extPoint = extPointService.findExtPointByInterfaceName(interfaceName);
-        return extPoint.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
+        log.debug("获取扩展点详情，接口名: {}", interfaceName);
+        try {
+            Optional<ExtPointEntity> extPoint = extPointService.findExtPointByInterfaceName(interfaceName);
+            if (extPoint.isPresent()) {
+                return ResponseEntity.ok(extPoint.get());
+            } else {
+                log.warn("扩展点不存在，接口名: {}", interfaceName);
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            log.error("获取扩展点详情失败，接口名: {}", interfaceName, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     /**
@@ -136,8 +159,18 @@ public class ExtPointController {
      */
     @GetMapping("/{id}/extensions")
     public ResponseEntity<List<ExtensionEntity>> getExtensionsByExtPoint(@PathVariable Long id) {
-        List<ExtensionEntity> extensions = extPointService.findExtensionsByExtPointId(id);
-        return ResponseEntity.ok(extensions);
+        log.debug("获取扩展点的扩展实现，ID: {}", id);
+        try {
+            List<ExtensionEntity> extensions = extPointService.findExtensionsByExtPointId(id);
+            log.debug("获取扩展点的扩展实现成功，ID: {}, 共 {} 个实现", id, extensions.size());
+            return ResponseEntity.ok(extensions);
+        } catch (IllegalArgumentException e) {
+            log.error("获取扩展点的扩展实现失败: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        } catch (Exception e) {
+            log.error("获取扩展点的扩展实现时发生异常，ID: {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     /**
@@ -154,8 +187,15 @@ public class ExtPointController {
      */
     @GetMapping("/domains")
     public ResponseEntity<List<String>> getAllDomains() {
-        List<String> domains = extPointService.findAllDomains();
-        return ResponseEntity.ok(domains);
+        log.debug("获取所有扩展点领域");
+        try {
+            List<String> domains = extPointService.findAllDomains();
+            log.debug("获取扩展点领域成功，共 {} 个领域", domains.size());
+            return ResponseEntity.ok(domains);
+        } catch (Exception e) {
+            log.error("获取扩展点领域失败", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     /**
@@ -163,7 +203,14 @@ public class ExtPointController {
      */
     @GetMapping("/categories")
     public ResponseEntity<List<String>> getAllCategories() {
-        List<String> categories = extPointService.findAllCategories();
-        return ResponseEntity.ok(categories);
+        log.debug("获取所有扩展点分类");
+        try {
+            List<String> categories = extPointService.findAllCategories();
+            log.debug("获取扩展点分类成功，共 {} 个分类", categories.size());
+            return ResponseEntity.ok(categories);
+        } catch (Exception e) {
+            log.error("获取扩展点分类失败", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 }

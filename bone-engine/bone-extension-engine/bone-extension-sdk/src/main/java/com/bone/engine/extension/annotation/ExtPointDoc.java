@@ -8,15 +8,18 @@ import java.lang.annotation.*;
  * 用于为扩展点提供详细的文档信息，支持自动生成API文档和开发工具提示
  * <strong>主要用途：</strong>
  * <ul>
- *   <li>提供扩展点的详细描述</li>
- *   <li>定义扩展点的使用场景</li>
- *   <li>指定扩展点的参数说明</li>
- *   <li>配置扩展点的返回值说明</li>
+ *   <li>提供扩展点的详细描述和使用说明</li>
+ *   <li>定义扩展点的使用场景和最佳实践</li>
+ *   <li>指定扩展点的参数说明和验证规则</li>
+ *   <li>配置扩展点的返回值说明和错误码定义</li>
+ *   <li>支持示例代码和常见问题解答</li>
+ *   <li>提供性能建议和注意事项</li>
+ *   <li>支持版本变更历史记录</li>
  * </ul>
  * </p>
  *
  * @author Bone Engine Team
- * @version 1.0.0
+ * @version 2.0.0
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
@@ -51,7 +54,12 @@ public @interface ExtPointDoc {
     String usage() default "";
     
     /**
-     * 参数说明
+     * 最佳实践说明
+     */
+    String bestPractices() default "";
+    
+    /**
+     * 参数说明列表
      */
     Param[] params() default {};
     
@@ -61,9 +69,14 @@ public @interface ExtPointDoc {
     Return returnInfo() default @Return();
     
     /**
-     * 示例代码
+     * 使用示例
      */
     String example() default "";
+    
+    /**
+     * 高级示例（复杂场景）
+     */
+    String advancedExample() default "";
     
     /**
      * 注意事项
@@ -71,7 +84,22 @@ public @interface ExtPointDoc {
     String notes() default "";
     
     /**
-     * 创建者
+     * 性能建议
+     */
+    String performanceTips() default "";
+    
+    /**
+     * 常见问题解答
+     */
+    FAQ[] faqs() default {};
+    
+    /**
+     * 版本变更历史
+     */
+    Change[] changes() default {};
+    
+    /**
+     * 创建者信息
      */
     String creator() default "";
     
@@ -81,7 +109,17 @@ public @interface ExtPointDoc {
     String createDate() default "";
     
     /**
-     * 参数说明内部注解
+     * 最后更新者
+     */
+    String lastUpdater() default "";
+    
+    /**
+     * 最后更新日期
+     */
+    String lastUpdateDate() default "";
+    
+    /**
+     * 参数说明注解
      */
     @interface Param {
         
@@ -101,7 +139,7 @@ public @interface ExtPointDoc {
         String description();
         
         /**
-         * 是否必需
+         * 是否必填
          */
         boolean required() default false;
         
@@ -109,15 +147,25 @@ public @interface ExtPointDoc {
          * 默认值
          */
         String defaultValue() default "";
+        
+        /**
+         * 验证规则
+         */
+        String validationRules() default "";
+        
+        /**
+         * 参数示例
+         */
+        String example() default "";
     }
     
     /**
-     * 返回值说明内部注解
+     * 返回值说明注解
      */
     @interface Return {
         
         /**
-         * 返回值类型
+         * 返回类型
          */
         String type() default "";
         
@@ -127,13 +175,18 @@ public @interface ExtPointDoc {
         String description() default "";
         
         /**
-         * 可能的错误码
+         * 错误码列表
          */
         ErrorCode[] errorCodes() default {};
+        
+        /**
+         * 成功示例
+         */
+        String successExample() default "";
     }
     
     /**
-     * 错误码说明内部注解
+     * 错误码说明注解
      */
     @interface ErrorCode {
         
@@ -146,5 +199,52 @@ public @interface ExtPointDoc {
          * 错误描述
          */
         String description();
+        
+        /**
+         * 解决方案建议
+         */
+        String solution() default "";
+    }
+    
+    /**
+     * 常见问题解答注解
+     */
+    @interface FAQ {
+        
+        /**
+         * 问题
+         */
+        String question();
+        
+        /**
+         * 答案
+         */
+        String answer();
+    }
+    
+    /**
+     * 版本变更历史注解
+     */
+    @interface Change {
+        
+        /**
+         * 版本号
+         */
+        String version();
+        
+        /**
+         * 变更内容
+         */
+        String content();
+        
+        /**
+         * 变更日期
+         */
+        String date();
+        
+        /**
+         * 变更者
+         */
+        String author() default "";
     }
 }

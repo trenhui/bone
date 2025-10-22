@@ -174,32 +174,114 @@ public class ExtensionProperties {
      * 路由配置
      */
     public static class RouterConfig {
-        private boolean enableRuleCache = true;
-        private boolean enableDynamicRouter = false;
-        private int priorityWeight = 10;
-
-        public boolean isEnableRuleCache() {
-            return enableRuleCache;
+        
+        /**
+         * 权重路由配置
+         */
+        private WeightedConfig weighted = new WeightedConfig();
+        
+        /**
+         * 灰度发布配置
+         */
+        private GrayReleaseConfig grayRelease = new GrayReleaseConfig();
+        
+        /**
+         * 指标收集配置
+         */
+        private MetricsConfig metrics = new MetricsConfig();
+        
+        public WeightedConfig getWeighted() {
+            return weighted;
         }
-
-        public void setEnableRuleCache(boolean enableRuleCache) {
-            this.enableRuleCache = enableRuleCache;
+        
+        public void setWeighted(WeightedConfig weighted) {
+            this.weighted = weighted;
         }
-
-        public boolean isEnableDynamicRouter() {
-            return enableDynamicRouter;
+        
+        public GrayReleaseConfig getGrayRelease() {
+            return grayRelease;
         }
-
-        public void setEnableDynamicRouter(boolean enableDynamicRouter) {
-            this.enableDynamicRouter = enableDynamicRouter;
+        
+        public void setGrayRelease(GrayReleaseConfig grayRelease) {
+            this.grayRelease = grayRelease;
         }
-
-        public int getPriorityWeight() {
-            return priorityWeight;
+        
+        public MetricsConfig getMetrics() {
+            return metrics;
         }
-
-        public void setPriorityWeight(int priorityWeight) {
-            this.priorityWeight = priorityWeight;
+        
+        public void setMetrics(MetricsConfig metrics) {
+            this.metrics = metrics;
+        }
+    }
+    
+    /**
+     * 权重路由配置类
+     */
+    public static class WeightedConfig {
+        
+        /**
+         * 是否启用权重路由
+         */
+        private boolean enabled = false;
+        
+        public boolean isEnabled() {
+            return enabled;
+        }
+        
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+    }
+    
+    /**
+     * 灰度发布配置类
+     */
+    public static class GrayReleaseConfig {
+        
+        /**
+         * 是否启用灰度发布
+         */
+        private boolean enabled = false;
+        
+        public boolean isEnabled() {
+            return enabled;
+        }
+        
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+    }
+    
+    /**
+     * 指标收集配置类
+     */
+    public static class MetricsConfig {
+        
+        /**
+         * 是否启用指标收集
+         */
+        private boolean enabled = true;
+        
+        /**
+         * 性能警告阈值（毫秒）
+         */
+        private long warningThreshold = 50;
+        
+        public boolean isEnabled() {
+            return enabled;
+        }
+        
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+        
+        public long getWarningThreshold() {
+            return warningThreshold;
+        }
+        
+        public void setWarningThreshold(long warningThreshold) {
+            this.warningThreshold = warningThreshold;
         }
     }
 }

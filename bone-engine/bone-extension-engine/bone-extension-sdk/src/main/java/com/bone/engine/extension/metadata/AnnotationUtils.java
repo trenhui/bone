@@ -2,6 +2,8 @@ package com.bone.engine.extension.metadata;
 
 import com.bone.engine.extension.ExtPoint;
 import com.bone.engine.extension.Extension;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.ReflectionUtils;
 
 import java.lang.annotation.Annotation;
@@ -9,7 +11,6 @@ import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Logger;
 
 /**
  * 注解工具类
@@ -21,7 +22,7 @@ import java.util.logging.Logger;
  */
 public class AnnotationUtils {
     
-    private static final Logger log = Logger.getLogger(AnnotationUtils.class.getName());
+    private static final Logger log = LoggerFactory.getLogger(AnnotationUtils.class);
     
     /**
      * 从类中提取Extension注解的元数据
@@ -51,7 +52,7 @@ public class AnnotationUtils {
             metadata.put("isDefault", extension.isDefault());
             
         } catch (Exception e) {
-            log.warning("Error extracting extension metadata from " + clazz.getName() + ": " + e.getMessage());
+            log.warn("Error extracting extension metadata from " + clazz.getName() + ": " + e.getMessage());
         }
         
         return metadata;
@@ -78,10 +79,10 @@ public class AnnotationUtils {
         try {
             // 只保留基本信息
             metadata.put("description", extPoint.description());
-            metadata.put("deprecated", extPoint.deprecated());
+            // 移除对deprecated()方法的调用，因为ExtPoint接口中没有这个方法
             
         } catch (Exception e) {
-            log.warning("Error extracting extPoint metadata from " + interfaceClazz.getName() + ": " + e.getMessage());
+            log.warn("Error extracting extPoint metadata from " + interfaceClazz.getName() + ": " + e.getMessage());
         }
         
         return metadata;
@@ -100,7 +101,7 @@ public class AnnotationUtils {
             method.setAccessible(true);
             return method.invoke(annotation);
         } catch (Exception e) {
-            log.warning("Failed to get attribute " + attributeName + " from annotation " + annotation.annotationType().getName() + ": " + e.getMessage());
+            log.warn("Failed to get attribute " + attributeName + " from annotation " + annotation.annotationType().getName() + ": " + e.getMessage());
             return null;
         }
     }

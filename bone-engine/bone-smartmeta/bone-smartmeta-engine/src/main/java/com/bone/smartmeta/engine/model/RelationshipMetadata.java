@@ -1,245 +1,158 @@
 package com.bone.smartmeta.engine.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 实体关系元数据模型类
- * 用于定义实体之间的关联关系
+ * 关系元数据模型
+ * 注意：此类与org.bone.engine.metadata.model.RelationshipMetadata存在功能重叠
+ * 当前版本保持独立实现，后续可考虑统一元数据模型
  */
 @Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class RelationshipMetadata {
-    // 基础信息
-    private String id;
-    private String name;
-    private String apiName;
-    private String label;
-    @Builder.Default
-    private Map<String, String> labels = new HashMap<>(); // 多语言标签
-    private String description;
-    private String domain;
     
-    // 关系定义
+    /** 关系ID */
+    private String id;
+    
+    /** 关系名称 */
+    private String name;
+    
+    /** 关系API名称 */
+    private String apiName;
+    
+    /** 关系描述 */
+    private String description;
+    
+    /** 关系类型 */
     private RelationshipType type;
+    
+    /** 源实体 */
     private String sourceEntity;
-    private String sourceField;
+    
+    /** 目标实体 */
     private String targetEntity;
+    
+    /** 源字段 */
+    private String sourceField;
+    
+    /** 目标字段 */
     private String targetField;
+    
+    /** 关系名称 */
+    private String relationshipName;
+    
+    /** 反向关系名称 */
     private String inverseRelationshipName;
     
-    // 级联操作配置
-    private CascadeType cascade;
-    private boolean orphanRemoval;
-    private int batchSize = 10;
+    /** 是否级联删除 */
+    private boolean cascadeDelete;
     
-    // 加载策略
-    private FetchType fetchType = FetchType.LAZY;
-    private boolean optional = true;
+    /** 是否级联更新 */
+    private boolean cascadeUpdate;
     
-    // 映射配置
-    private String joinTable;
-    private String joinColumns;
-    private String inverseJoinColumns;
+    /** 是否级联保存 */
+    private boolean cascadeSave;
     
-    // 查询配置
-    private String orderBy;
-    private int maxResults;
-    private boolean readOnly;
+    /** 是否必须存在 */
+    private boolean required;
     
-    // 安全配置
-    private String sensitivityLevel;
-    private RelationshipPermission permission;
+    /** 级联类型 */
+    private CascadeType cascadeType;
     
-    // 业务状态
-    private boolean active = true;
-    private boolean system = false;
+    /** 加载策略 */
+    private FetchType fetchType;
     
-    // 生命周期信息
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-    private String createdBy;
-    private String updatedBy;
+    /** UI配置 */
+    private UIConfig uiConfig;
     
-    // 元数据版本信息
-    private String version;
-    private String previousVersionId;
+    /** 扩展属性 */
+    private Map<String, Object> extendedProperties;
     
-    /**
-     * 关系类型枚举
-     */
+    /** 关系类型枚举 */
     public enum RelationshipType {
-        ONE_TO_ONE,
-        ONE_TO_MANY,
-        MANY_TO_ONE,
-        MANY_TO_MANY
+        ONE_TO_ONE,     // 一对一
+        ONE_TO_MANY,    // 一对多
+        MANY_TO_ONE,    // 多对一
+        MANY_TO_MANY    // 多对多
     }
     
-    /**
-     * 级联操作类型枚举
-     */
+    /** 级联类型枚举 */
     public enum CascadeType {
-        ALL,
-        PERSIST,
-        MERGE,
-        REMOVE,
-        REFRESH,
-        DETACH,
-        NONE
+        NONE,           // 不级联
+        ALL,            // 全部级联
+        PERSIST,        // 级联保存
+        MERGE,          // 级联合并
+        REMOVE,         // 级联删除
+        REFRESH,        // 级联刷新
+        DETACH          // 级联分离
     }
     
-    /**
-     * 加载策略枚举
-     */
+    /** 加载策略枚举 */
     public enum FetchType {
-        EAGER,
-        LAZY
+        LAZY,           // 延迟加载
+        EAGER           // 立即加载
+    }
+    
+    /** UI配置 */
+    @Data
+    public static class UIConfig {
+        private String componentType;
+        private Map<String, Object> props;
+        private Integer order;
+        private boolean hidden;
     }
     
     /**
-     * 关系权限枚举
+     * 判断是否为一对多关系
      */
-    public enum RelationshipPermission {
-        READ_ONLY,
-        READ_WRITE,
-        HIDDEN,
-        SYSTEM
+    public boolean isOneToMany() {
+        return type == RelationshipType.ONE_TO_MANY;
     }
     
     /**
-     * 获取关系的目标实体名称
+     * 判断是否为多对一关系
      */
-    public String getTargetEntityName() {
-        return targetEntity;
+    public boolean isManyToOne() {
+        return type == RelationshipType.MANY_TO_ONE;
     }
     
     /**
-     * 获取关系的源实体名称
+     * 判断是否为一对一关系
      */
-    public String getSourceEntityName() {
-        return sourceEntity;
+    public boolean isOneToOne() {
+        return type == RelationshipType.ONE_TO_ONE;
     }
     
     /**
-     * 检查是否是双向关系
+     * 判断是否为多对多关系
      */
-    public boolean isBidirectional() {
-        return inverseRelationshipName != null && !inverseRelationshipName.isEmpty();
+    public boolean isManyToMany() {
+        return type == RelationshipType.MANY_TO_MANY;
     }
     
     /**
-     * 检查是否是集合关系（一对多、多对多）
+     * 获取关系的另一端实体
      */
-    public boolean isCollectionRelationship() {
-        return type == RelationshipType.ONE_TO_MANY || type == RelationshipType.MANY_TO_MANY;
-    }
-    
-    /**
-     * 检查是否是单值关系（一对一、多对一）
-     */
-    public boolean isSingleValueRelationship() {
-        return type == RelationshipType.ONE_TO_ONE || type == RelationshipType.MANY_TO_ONE;
-    }
-    
-    /**
-     * 检查是否需要级联删除
-     */
-    public boolean shouldCascadeDelete() {
-        return cascade == CascadeType.ALL || cascade == CascadeType.REMOVE;
-    }
-    
-    /**
-     * 检查是否需要级联保存
-     */
-    public boolean shouldCascadeSave() {
-        return cascade == CascadeType.ALL || cascade == CascadeType.PERSIST;
-    }
-    
-    /**
-     * 添加多语言标签
-     */
-    public void addLabel(String locale, String value) {
-        if (labels == null) {
-            labels = new HashMap<>();
+    public String getOppositeEntity(String currentEntity) {
+        if (sourceEntity.equals(currentEntity)) {
+            return targetEntity;
+        } else if (targetEntity.equals(currentEntity)) {
+            return sourceEntity;
         }
-        labels.put(locale, value);
+        return null;
     }
     
     /**
-     * 获取指定语言的标签
+     * 获取关系名称
      */
-    public String getLabel(String locale) {
-        if (labels != null && labels.containsKey(locale)) {
-            return labels.get(locale);
-        }
-        return label; // 返回默认标签
+    public String getName() {
+        return name;
     }
     
     /**
-     * 获取关系的反向类型
+     * 获取关系API名称
      */
-    public RelationshipType getInverseType() {
-        switch (type) {
-            case ONE_TO_ONE:
-                return RelationshipType.ONE_TO_ONE;
-            case ONE_TO_MANY:
-                return RelationshipType.MANY_TO_ONE;
-            case MANY_TO_ONE:
-                return RelationshipType.ONE_TO_MANY;
-            case MANY_TO_MANY:
-                return RelationshipType.MANY_TO_MANY;
-            default:
-                return type;
-        }
-    }
-    
-    /**
-     * 克隆关系元数据（用于版本管理）
-     */
-    public RelationshipMetadata cloneForVersion() {
-        RelationshipMetadata clone = RelationshipMetadata.builder()
-                .name(this.name)
-                .apiName(this.apiName)
-                .label(this.label)
-                .description(this.description)
-                .domain(this.domain)
-                .type(this.type)
-                .sourceEntity(this.sourceEntity)
-                .sourceField(this.sourceField)
-                .targetEntity(this.targetEntity)
-                .targetField(this.targetField)
-                .inverseRelationshipName(this.inverseRelationshipName)
-                .cascade(this.cascade)
-                .orphanRemoval(this.orphanRemoval)
-                .batchSize(this.batchSize)
-                .fetchType(this.fetchType)
-                .optional(this.optional)
-                .joinTable(this.joinTable)
-                .joinColumns(this.joinColumns)
-                .inverseJoinColumns(this.inverseJoinColumns)
-                .orderBy(this.orderBy)
-                .maxResults(this.maxResults)
-                .readOnly(this.readOnly)
-                .sensitivityLevel(this.sensitivityLevel)
-                .permission(this.permission)
-                .active(this.active)
-                .system(this.system)
-                .version(null) // 新版本
-                .previousVersionId(this.id)
-                .build();
-        
-        // 复制映射
-        if (this.labels != null) {
-            clone.setLabels(new HashMap<>(this.labels));
-        }
-        
-        return clone;
+    public String getApiName() {
+        return apiName;
     }
 }

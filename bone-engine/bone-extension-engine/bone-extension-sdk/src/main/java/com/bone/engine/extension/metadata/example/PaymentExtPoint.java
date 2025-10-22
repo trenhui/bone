@@ -11,14 +11,9 @@ import com.bone.engine.extension.ExtPoint;
  * @since 1.0.0
  */
 @ExtPoint(
+    name = "支付扩展点",
     description = "支付处理扩展点，支持多种支付方式的实现",
-    owner = "payment-team",
-    documentationUrl = "https://wiki.example.com/payment-extpoint",
-    category = "payment",
-    tags = {"payment", "transaction", "finance"},
-    deprecated = false,
-    deprecatedSince = "",
-    replacement = ""
+    category = "payment"
 )
 public interface PaymentExtPoint {
     

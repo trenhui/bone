@@ -88,7 +88,8 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
         Assert.notNull(id, "ID must not be null");
         TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
         Criteria<T> criteria = Criteria.<T>create().eq(tableMetadata.getPrimaryKey().getName(), id);
-        CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria);
+        AllocationContext context = Extensible.class.isAssignableFrom(entityClass) ? getAllocationContext() : null;
+        CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria, context);
         T entity = sqlExecutor.executeSingleQuery(query, entityClass);
         if (entity != null) loadExtensionFields(entity);
         return entity;
@@ -101,7 +102,8 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
         Assert.noNullElements(idList, "ID list must not contain null elements");
         TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
         Criteria<T> criteria = Criteria.<T>create().in(tableMetadata.getPrimaryKey().getName(), idList);
-        CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria);
+        AllocationContext context = Extensible.class.isAssignableFrom(entityClass) ? getAllocationContext() : null;
+        CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria, context);
         List<T> list = sqlExecutor.executeQuery(query, entityClass);
         list.forEach(this::loadExtensionFields);
         return list;
@@ -114,9 +116,13 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
         Assert.noNullElements(idList, "ID list must not contain null elements");
         TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
         Criteria<T> criteria = Criteria.<T>create().in(tableMetadata.getPrimaryKey().getName(), idList);
+        // 直接使用包含deleted=true的版本
         CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria, true);
         List<T> list = sqlExecutor.executeQuery(query, entityClass);
-        list.forEach(this::loadExtensionFields);
+        // 只有在实体实现Extensible接口时才加载扩展字段
+        if (Extensible.class.isAssignableFrom(entityClass)) {
+            list.forEach(this::loadExtensionFields);
+        }
         return list;
     }
 
@@ -126,9 +132,12 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
         Assert.notNull(id, "ID must not be null");
         TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
         Criteria<T> criteria = Criteria.<T>create().eq(tableMetadata.getPrimaryKey().getName(), id);
+        // 直接使用包含deleted=true的版本，同时只有在实体实现Extensible接口时才会处理扩展字段
         CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria, true);
         T entity = sqlExecutor.executeSingleQuery(query, entityClass);
-        if (entity != null) loadExtensionFields(entity);
+        if (entity != null && Extensible.class.isAssignableFrom(entityClass)) {
+            loadExtensionFields(entity);
+        }
         return entity;
     }
 
@@ -337,7 +346,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
     public boolean deleteById(ID id) {
         Assert.notNull(id, "ID must not be null");
         TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
-        AllocationContext context = getAllocationContext();
+        AllocationContext context = Extensible.class.isAssignableFrom(entityClass) ? getAllocationContext() : null;
         CompiledQuery query = sqlBuilder.buildDelete(
                 entityClass,
                 Criteria.<T>create().eq(tableMetadata.getPrimaryKey().getName(), id),
@@ -353,7 +362,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
         if (ids == null || ids.isEmpty()) return;
         Assert.noNullElements(ids, "ID list must not contain null elements");
         TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
-        AllocationContext context = getAllocationContext();
+        AllocationContext context = Extensible.class.isAssignableFrom(entityClass) ? getAllocationContext() : null;
         CompiledQuery query = sqlBuilder.buildDelete(
                 entityClass,
                 Criteria.<T>create().in(tableMetadata.getPrimaryKey().getName(), ids),
@@ -378,7 +387,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
     public List<T> findByCriteria(Criteria<T> criteria) {
         Assert.notNull(criteria, "Criteria must not be null");
         validateCriteriaFields(criteria);
-        AllocationContext context = getAllocationContext();
+        AllocationContext context = Extensible.class.isAssignableFrom(entityClass) ? getAllocationContext() : null;
         CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria, context);
         List<T> list = sqlExecutor.executeQuery(query, entityClass);
         list.forEach(this::loadExtensionFields);
