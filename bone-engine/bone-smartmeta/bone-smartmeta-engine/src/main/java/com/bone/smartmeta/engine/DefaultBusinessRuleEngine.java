@@ -25,8 +25,8 @@ public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
     // 显式声明Logger以避免注解问题
     private static final Logger log = LoggerFactory.getLogger(DefaultBusinessRuleEngine.class);
     
-    // 智能元数据引擎
-    private final SmartMetadataEngine metadataEngine;
+    // 元数据引擎
+    private final MetadataEngine metadataEngine;
     
     // 规则执行超时时间（毫秒）
     private final long ruleExecutionTimeoutMs;
@@ -44,9 +44,30 @@ public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
      * 构造函数
      * @param metadataEngine 元数据引擎
      */
-    public DefaultBusinessRuleEngine(SmartMetadataEngine metadataEngine) {
+    public DefaultBusinessRuleEngine(MetadataEngine metadataEngine) {
         this.metadataEngine = metadataEngine;
-        // 默认超时时间，避免依赖不存在的方法
+        // 默认超时时间
+        this.ruleExecutionTimeoutMs = 5000; // 默认5秒
+        this.executorService = Executors.newFixedThreadPool(
+                Runtime.getRuntime().availableProcessors() * 2,
+                new ThreadFactory() {
+                    private final AtomicInteger counter = new AtomicInteger(0);
+                    @Override
+                    public Thread newThread(Runnable r) {
+                        Thread thread = new Thread(r, "business-rule-executor-" + counter.incrementAndGet());
+                        thread.setDaemon(true);
+                        return thread;
+                
+                }
+        );
+    }
+    
+    /**
+     * 默认构造函数
+     */
+    public DefaultBusinessRuleEngine() {
+        this.metadataEngine = null;
+        // 默认超时时间
         this.ruleExecutionTimeoutMs = 5000; // 默认5秒
         this.executorService = Executors.newFixedThreadPool(
                 Runtime.getRuntime().availableProcessors() * 2,

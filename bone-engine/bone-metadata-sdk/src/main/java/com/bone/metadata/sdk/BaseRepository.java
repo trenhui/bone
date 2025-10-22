@@ -15,6 +15,7 @@ import com.bone.core.tenant.context.TenantContext;
 import com.bone.core.tenant.context.BizIdentityContext;
 import com.bone.metadata.sdk.domain.enums.SortDirection;
 import com.bone.metadata.sdk.domain.exception.*;
+import com.bone.metadata.sdk.domain.exception.QueryExecutionException;
 import com.bone.metadata.sdk.domain.model.AllocationContext;
 import com.bone.metadata.sdk.domain.model.ColumnMetadata;
 import com.bone.metadata.sdk.domain.model.TableMetadata;
@@ -86,13 +87,18 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
     @Transactional(readOnly = true)
     public T findById(ID id) {
         Assert.notNull(id, "ID must not be null");
-        TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
-        Criteria<T> criteria = Criteria.<T>create().eq(tableMetadata.getPrimaryKey().getName(), id);
-        AllocationContext context = Extensible.class.isAssignableFrom(entityClass) ? getAllocationContext() : null;
-        CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria, context);
-        T entity = sqlExecutor.executeSingleQuery(query, entityClass);
-        if (entity != null) loadExtensionFields(entity);
-        return entity;
+        try {
+            TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
+            Criteria<T> criteria = Criteria.<T>create().eq(tableMetadata.getPrimaryKey().getName(), id);
+            AllocationContext context = Extensible.class.isAssignableFrom(entityClass) ? getAllocationContext() : null;
+            CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria, context);
+            T entity = sqlExecutor.executeSingleQuery(query, entityClass);
+            if (entity != null) loadExtensionFields(entity);
+            return entity;
+        } catch (Exception e) {
+            throw new QueryExecutionException(String.format("Failed to query %s with id %s", 
+                    entityClass.getSimpleName(), id), e);
+        }
     }
 
     @Override
@@ -100,13 +106,18 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
     public List<T> findByIds(List<ID> idList) {
         if (idList == null || idList.isEmpty()) return Collections.emptyList();
         Assert.noNullElements(idList, "ID list must not contain null elements");
-        TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
-        Criteria<T> criteria = Criteria.<T>create().in(tableMetadata.getPrimaryKey().getName(), idList);
-        AllocationContext context = Extensible.class.isAssignableFrom(entityClass) ? getAllocationContext() : null;
-        CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria, context);
-        List<T> list = sqlExecutor.executeQuery(query, entityClass);
-        list.forEach(this::loadExtensionFields);
-        return list;
+        try {
+            TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
+            Criteria<T> criteria = Criteria.<T>create().in(tableMetadata.getPrimaryKey().getName(), idList);
+            AllocationContext context = Extensible.class.isAssignableFrom(entityClass) ? getAllocationContext() : null;
+            CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria, context);
+            List<T> list = sqlExecutor.executeQuery(query, entityClass);
+            list.forEach(this::loadExtensionFields);
+            return list;
+        } catch (Exception e) {
+            throw new QueryExecutionException(
+                String.format("Failed to find entities %s by IDs", entityClass.getSimpleName()), e);
+        }
     }
 
     @Override
@@ -145,27 +156,31 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
     @Transactional
     public ID insert(@Valid T entity) {
         Assert.notNull(entity, "Entity must not be null");
+        try {
+            TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
+            ColumnMetadata primaryKey = tableMetadata.getPrimaryKey();
+            GenerationStrategy strategy = primaryKey.getGenerationStrategy();
 
-        TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
-        ColumnMetadata primaryKey = tableMetadata.getPrimaryKey();
-        GenerationStrategy strategy = primaryKey.getGenerationStrategy();
-
-        if (strategy != GenerationStrategy.IDENTITY) {
-            // 非自增：先生成ID，再批量插入（单条）
-            Object generatedId = sqlExecutor.generateId(strategy, entity);
-            setEntityId(entity, generatedId);
-            BatchCompiledQuery batch = sqlBuilder.buildBatchInsert(entityClass, Collections.singletonList(entity));
-            sqlExecutor.executeBatchUpdate(batch);
-        } else {
-            // 自增：将 BatchCompiledQuery 收敛为单条 CompiledQuery 再取回主键
-            BatchCompiledQuery batch = sqlBuilder.buildBatchInsert(entityClass, Collections.singletonList(entity));
-            Map<String, Object> firstParams = batch.getBatchParameters().get(0);
-            CompiledQuery singleInsert = new CompiledQuery(batch.getSql(), firstParams);
-            Object newId = sqlExecutor.executeInsert(singleInsert, entityClass);
-            setEntityId(entity, newId);
+            if (strategy != GenerationStrategy.IDENTITY) {
+                // 非自增：先生成ID，再批量插入（单条）
+                Object generatedId = sqlExecutor.generateId(strategy, entity);
+                setEntityId(entity, generatedId);
+                BatchCompiledQuery batch = sqlBuilder.buildBatchInsert(entityClass, Collections.singletonList(entity));
+                sqlExecutor.executeBatchUpdate(batch);
+            } else {
+                // 自增：将 BatchCompiledQuery 收敛为单条 CompiledQuery 再取回主键
+                BatchCompiledQuery batch = sqlBuilder.buildBatchInsert(entityClass, Collections.singletonList(entity));
+                Map<String, Object> firstParams = batch.getBatchParameters().get(0);
+                CompiledQuery singleInsert = new CompiledQuery(batch.getSql(), firstParams);
+                Object newId = sqlExecutor.executeInsert(singleInsert, entityClass);
+                setEntityId(entity, newId);
+            }
+            saveExtensionFields(entity);
+            return entity.getId();
+        } catch (Exception e) {
+            throw new QueryExecutionException(
+                String.format("Failed to insert entity %s", entityClass.getSimpleName()), e);
         }
-        saveExtensionFields(entity);
-        return entity.getId();
     }
 
     @Override
@@ -197,14 +212,19 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
     public boolean update(@Valid T entity) {
         Assert.notNull(entity, "Entity must not be null");
         Assert.notNull(entity.getId(), "Entity ID must not be null for update");
-        CompiledQuery query = sqlBuilder.buildDynamicUpdate(entityClass, entity);
-        int affectedRows = sqlExecutor.executeUpdate(query);
-        saveExtensionFields(entity);
-        if (affectedRows == 0) {
-            log.warn("No rows updated for entity id={}", entity.getId());
-            return false;
+        try {
+            CompiledQuery query = sqlBuilder.buildDynamicUpdate(entityClass, entity);
+            int affectedRows = sqlExecutor.executeUpdate(query);
+            saveExtensionFields(entity);
+            if (affectedRows == 0) {
+                log.warn("No rows updated for entity id={}", entity.getId());
+                return false;
+            }
+            return true;
+        } catch (Exception e) {
+            throw new QueryExecutionException(
+                String.format("Failed to update entity %s", entityClass.getSimpleName()), e);
         }
-        return true;
     }
 
     @Override
@@ -345,15 +365,20 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
     @Transactional
     public boolean deleteById(ID id) {
         Assert.notNull(id, "ID must not be null");
-        TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
-        AllocationContext context = Extensible.class.isAssignableFrom(entityClass) ? getAllocationContext() : null;
-        CompiledQuery query = sqlBuilder.buildDelete(
-                entityClass,
-                Criteria.<T>create().eq(tableMetadata.getPrimaryKey().getName(), id),
-                context
-        );
-        int affectedRows = sqlExecutor.executeUpdate(query);
-        return affectedRows > 0;
+        try {
+            TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
+            AllocationContext context = Extensible.class.isAssignableFrom(entityClass) ? getAllocationContext() : null;
+            CompiledQuery query = sqlBuilder.buildDelete(
+                    entityClass,
+                    Criteria.<T>create().eq(tableMetadata.getPrimaryKey().getName(), id),
+                    context
+            );
+            int affectedRows = sqlExecutor.executeUpdate(query);
+            return affectedRows > 0;
+        } catch (Exception e) {
+            throw new QueryExecutionException(
+                String.format("Failed to delete entity %s by ID: %s", entityClass.getSimpleName(), id), e);
+        }
     }
 
     @Override
@@ -361,14 +386,33 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
     public void deleteByIds(List<ID> ids) {
         if (ids == null || ids.isEmpty()) return;
         Assert.noNullElements(ids, "ID list must not contain null elements");
-        TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
-        AllocationContext context = Extensible.class.isAssignableFrom(entityClass) ? getAllocationContext() : null;
-        CompiledQuery query = sqlBuilder.buildDelete(
-                entityClass,
-                Criteria.<T>create().in(tableMetadata.getPrimaryKey().getName(), ids),
-                context
-        );
-        sqlExecutor.executeUpdate(query);
+        try {
+            TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
+            AllocationContext context = Extensible.class.isAssignableFrom(entityClass) ? getAllocationContext() : null;
+            CompiledQuery query = sqlBuilder.buildDelete(
+                    entityClass,
+                    Criteria.<T>create().in(tableMetadata.getPrimaryKey().getName(), ids),
+                    context
+            );
+            sqlExecutor.executeUpdate(query);
+        } catch (Exception e) {
+            throw new QueryExecutionException(
+                String.format("Failed to delete entities %s by IDs", entityClass.getSimpleName()), e);
+        }
+    }
+
+    @Transactional
+    public void deleteByCriteria(Criteria criteria) {
+        Assert.notNull(criteria, "Criteria must not be null");
+        try {
+            TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
+            AllocationContext context = Extensible.class.isAssignableFrom(entityClass) ? getAllocationContext() : null;
+            CompiledQuery query = sqlBuilder.buildDelete(entityClass, criteria, context);
+            sqlExecutor.executeUpdate(query);
+        } catch (Exception e) {
+            throw new QueryExecutionException(
+                String.format("Failed to delete entities %s by criteria", entityClass.getSimpleName()), e);
+        }
     }
 
     // ========== 条件查询 / 统计 ==========
@@ -386,12 +430,17 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
     @Transactional(readOnly = true)
     public List<T> findByCriteria(Criteria<T> criteria) {
         Assert.notNull(criteria, "Criteria must not be null");
-        validateCriteriaFields(criteria);
-        AllocationContext context = Extensible.class.isAssignableFrom(entityClass) ? getAllocationContext() : null;
-        CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria, context);
-        List<T> list = sqlExecutor.executeQuery(query, entityClass);
-        list.forEach(this::loadExtensionFields);
-        return list;
+        try {
+            validateCriteriaFields(criteria);
+            AllocationContext context = Extensible.class.isAssignableFrom(entityClass) ? getAllocationContext() : null;
+            CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria, context);
+            List<T> list = sqlExecutor.executeQuery(query, entityClass);
+            list.forEach(this::loadExtensionFields);
+            return list;
+        } catch (Exception e) {
+            throw new QueryExecutionException(
+                String.format("Failed to find entities %s by criteria", entityClass.getSimpleName()), e);
+        }
     }
 
     @Override
@@ -440,9 +489,14 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
     @Transactional(readOnly = true)
     public Long countByCriteria(Criteria<T> criteria) {
         Assert.notNull(criteria, "Criteria must not be null");
-        AllocationContext context = getAllocationContext();
-        CompiledQuery query = sqlBuilder.buildCount(entityClass, criteria, context);
-        return sqlExecutor.queryForObject(query, Long.class);
+        try {
+            AllocationContext context = getAllocationContext();
+            CompiledQuery query = sqlBuilder.buildCount(entityClass, criteria, context);
+            return sqlExecutor.queryForObject(query, Long.class);
+        } catch (Exception e) {
+            throw new QueryExecutionException(
+                String.format("Failed to count entities %s by criteria", entityClass.getSimpleName()), e);
+        }
     }
 
     // ========== 命名查询 ==========

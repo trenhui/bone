@@ -3,9 +3,6 @@ package com.bone.engine.extension.router;
 import com.bone.engine.extension.ExtPoint;
 import com.bone.engine.extension.Extension;
 import com.bone.engine.extension.context.BizContext;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.RemovalListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.bone.engine.extension.lifecycle.ExtensionLifecycle;
@@ -15,20 +12,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.core.DefaultParameterNameDiscoverer;
-import org.springframework.core.ParameterNameDiscoverer;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
+import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Method;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -38,6 +33,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import com.bone.engine.extension.config.ConfigChangeListener;
 
 /**
  * 默认扩展点路由器实现
@@ -63,18 +59,21 @@ import java.util.stream.Collectors;
  * @see ExtPointRouter 扩展点路由器接口
  * @see BizContext 业务上下文
  */
-public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingSingleton, InitializingBean {
+@Component
+public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingSingleton, InitializingBean, ConfigChangeListener {
     private static final Logger log = LoggerFactory.getLogger(DefaultExtPointRouter.class);
     
     // Spring上下文
-    @Autowired
-    private ApplicationContext applicationContext;
+    private final ApplicationContext applicationContext;
+    
+    // 组件依赖
+    private final CacheManager cacheManager;
+    private final RouteScoreCalculator scoreCalculator;
+    private final WeightAndGraySelector weightAndGraySelector;
+    private final RouteStatsCollector statsCollector;
     
     // 表达式解析器
     private final ExpressionParser expressionParser = new SpelExpressionParser();
-    
-    // 参数名发现器
-    private final ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
     
     // 扩展点实现映射（扩展点接口 -> 实现列表）
     private final Map<Class<?>, List<Object>> extPointImplementations = new ConcurrentHashMap<>();
@@ -82,14 +81,34 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     // 默认实现映射
     private final Map<Class<?>, Object> defaultImplementations = new ConcurrentHashMap<>();
     
-    // 路由缓存 - 使用Caffeine替代简单Map
-    private Cache<String, Object> routeCache;
+    /**
+     * 构造函数，支持自动注入ApplicationContext
+     */
+    @Autowired
+    public DefaultExtPointRouter(ApplicationContext applicationContext) {
+        this.applicationContext = applicationContext;
+        
+        // 初始化各个组件
+        this.cacheManager = new CacheManager();
+        this.scoreCalculator = new RouteScoreCalculator();
+        this.weightAndGraySelector = new WeightAndGraySelector();
+        this.statsCollector = new RouteStatsCollector();
+    }
     
-    // 路由统计信息
-    private final Map<String, Map<String, AtomicLong>> routeStats = new ConcurrentHashMap<>();
-    
-    // 路由规则缓存
-    private final Map<Class<?>, List<Object>> routeRuleCache = new ConcurrentHashMap<>();
+    /**
+     * 构造函数，支持自定义组件配置
+     */
+    public DefaultExtPointRouter(ApplicationContext applicationContext,
+                              CacheManager cacheManager,
+                              RouteScoreCalculator scoreCalculator,
+                              WeightAndGraySelector weightAndGraySelector,
+                              RouteStatsCollector statsCollector) {
+        this.applicationContext = applicationContext;
+        this.cacheManager = cacheManager;
+        this.scoreCalculator = scoreCalculator;
+        this.weightAndGraySelector = weightAndGraySelector;
+        this.statsCollector = statsCollector;
+    }
     
     // 缓存过期时间配置
     @Value("${bone.extension.router.cache.expire-time:300}")
@@ -119,19 +138,16 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     @Value("${bone.extension.router.gray-release.enabled:false}")
     private boolean grayReleaseEnabled;
     
+    // 是否启用指标收集
+    private boolean metricsEnabled = true;
+    
+    // 性能警告阈值（毫秒）
+    private long warningThreshold = 100;
+    
     @Override
     public void afterPropertiesSet() {
-        // 初始化Caffeine缓存
-        this.routeCache = Caffeine.newBuilder()
-                .expireAfterWrite(Duration.ofSeconds(cacheExpireTime))
-                .maximumSize(cacheMaxSize)
-                .recordStats()
-                .removalListener((RemovalListener<String, Object>) (key, value, cause) -> {
-                    if (log.isDebugEnabled()) {
-                        log.debug("Cache entry removed: {}, cause: {}", key, cause);
-                    }
-                })
-                .build();
+        // 委托给CacheManager初始化缓存
+        cacheManager.initializeCache();
         
         log.info("Initialized extPoint router cache with expireTime={}s, maxSize={}", 
                 cacheExpireTime, cacheMaxSize);
@@ -143,9 +159,9 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     private String getCacheKey(Class<?> extPointClass, BizContext<?> context) {
         StringBuilder key = new StringBuilder(extPointClass.getName());
         key.append("_")
-           .append(context.getTenantCode() != null ? context.getTenantCode() : "DEFAULT")
+           .append(context.getStringValue("tenantId") != null ? context.getStringValue("tenantId") : "DEFAULT")
            .append("_")
-           .append(context.getBizCode() != null ? context.getBizCode() : "")
+           .append(context.getStringValue("bizDomain") != null ? context.getStringValue("bizDomain") : "")
            .append("_")
            .append(context.getUseCase() != null ? context.getUseCase() : "")
            .append("_")
@@ -196,6 +212,72 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
         this.grayReleaseEnabled = grayReleaseEnabled;
     }
     
+    @Override
+    public void onConfigChanged(Set<String> changedKeys) {
+        if (changedKeys == null || changedKeys.isEmpty()) {
+            return;
+        }
+        
+        boolean needClearCache = false;
+        
+        // 检查是否有与路由相关的配置变更
+        for (String key : changedKeys) {
+            if (key.contains("router") || key.contains("cache") || key.contains("weighted") || key.contains("gray")) {
+                needClearCache = true;
+                break;
+            }
+        }
+        
+        if (needClearCache) {
+            log.info("Clearing route cache due to configuration changes: {}", changedKeys);
+            clearCache();
+            
+            // 重新初始化路由相关配置
+            reinitializeConfig();
+        }
+    }
+    
+    @Override
+    public String[] getConfigKeyPrefixes() {
+        return new String[] {
+            "bone.extension.router",
+            "bone.extension.cache",
+            "bone.extension.weighted",
+            "bone.extension.gray"
+        };
+    }
+    
+    /**
+     * 清理所有缓存
+     */
+    public void clearCache() {
+        // 委托给CacheManager清理缓存
+        cacheManager.clearAllCache();
+        log.info("Route cache cleared");
+        log.info("Route rule cache cleared");
+    }
+    
+    /**
+     * 重新初始化配置
+     */
+    private void reinitializeConfig() {
+        try {
+            // 重新读取配置值
+            cacheExpireTime = applicationContext.getEnvironment().getProperty("bone.extension.router.cache.expire-time", Long.class, 300L);
+            cacheMaxSize = applicationContext.getEnvironment().getProperty("bone.extension.router.cache.max-size", Long.class, 10000L);
+            weightedRoutingEnabled = applicationContext.getEnvironment().getProperty("bone.extension.router.weighted-routing.enabled", Boolean.class, false);
+            grayReleaseEnabled = applicationContext.getEnvironment().getProperty("bone.extension.router.gray-release.enabled", Boolean.class, false);
+            warmupEnabled = applicationContext.getEnvironment().getProperty("bone.extension.router.warmup.enabled", Boolean.class, false);
+            
+            // 重新初始化缓存
+            afterPropertiesSet();
+            
+            log.info("Router configuration reinitialized");
+        } catch (Exception e) {
+            log.error("Failed to reinitialize router configuration", e);
+        }
+    }
+    
     /**
      * 设置是否启用指标收集
      */
@@ -230,42 +312,14 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
      * 记录路由统计
      */
     private void recordRouteStats(Class<?> extPointClass, Object implementation) {
-        try {
-            if (implementation == null) {
-                return;
-            }
-            
-            String extPointName = extPointClass.getSimpleName();
-            String implName = implementation.getClass().getSimpleName();
-            
-            routeStats.computeIfAbsent(extPointName, k -> new ConcurrentHashMap<>())
-                      .computeIfAbsent(implName, k -> new AtomicLong())
-                      .incrementAndGet();
-            
-            // 记录总体调用次数
-            routeStats.computeIfAbsent("TOTAL", k -> new ConcurrentHashMap<>())
-                      .computeIfAbsent(extPointName, k -> new AtomicLong())
-                      .incrementAndGet();
-        } catch (Exception e) {
-            // 统计记录失败不影响主流程
-            log.debug("Failed to record route stats", e);
-        }
+        statsCollector.recordRouteStats(extPointClass, implementation);
     }
     
     /**
      * 记录路由失败统计
      */
     private void recordRouteFailure(Class<?> extPointClass, Throwable ex) {
-        try {
-            String extPointName = extPointClass.getSimpleName();
-            String errorType = ex.getClass().getSimpleName();
-            
-            routeStats.computeIfAbsent("FAILURE", k -> new ConcurrentHashMap<>())
-                      .computeIfAbsent(extPointName + ":" + errorType, k -> new AtomicLong())
-                      .incrementAndGet();
-        } catch (Exception e) {
-            log.debug("Failed to record route failure stats", e);
-        }
+        statsCollector.recordRouteFailure(extPointClass, ex);
     }
     
     /**
@@ -305,34 +359,49 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
      * 评估条件表达式
      */
     private boolean evaluateCondition(String condition, BizContext<?> context) {
-        if (!StringUtils.hasText(condition)) {
+        if (!StringUtils.hasText(condition) || context == null) {
             return true;
         }
         
         try {
+            // 检查表达式缓存
+            // 直接使用表达式解析器解析，确保表达式能正确处理
+            Expression expression = expressionParser.parseExpression(condition);
+            
+            // 创建评估上下文，增加安全配置
             EvaluationContext evalContext = new StandardEvaluationContext();
+            
+            // 添加常用变量
             evalContext.setVariable("tenantCode", context.getTenantCode() != null ? context.getTenantCode() : "DEFAULT");
             evalContext.setVariable("bizCode", context.getBizCode() != null ? context.getBizCode() : "");
             evalContext.setVariable("useCase", context.getUseCase() != null ? context.getUseCase() : "");
             evalContext.setVariable("scenario", context.getScenario() != null ? context.getScenario() : "");
-            evalContext.setVariable("data", null);
             evalContext.setVariable("context", context);
             evalContext.setVariable("env", "PROD");
             evalContext.setVariable("userGroup", "DEFAULT");
             evalContext.setVariable("currentTime", LocalDateTime.now());
             
-            // 添加上下文属性到评估环境
-            context.getAllAttributes().forEach(evalContext::setVariable);
+            // 安全地添加上下文属性
+            context.getAllAttributes().forEach((key, value) -> {
+                if (value instanceof String || value instanceof Number || value instanceof Boolean) {
+                    evalContext.setVariable(key, value);
+                }
+            });
             
             // 添加属性集合
             evalContext.setVariable("attributes", context.getAllAttributes());
             
-            // 添加辅助方法
+            // 添加安全的辅助方法
             evalContext.setVariable("hasAttribute", (Function<String, Boolean>) context::containsAttribute);
-            evalContext.setVariable("getAttribute", (Function<String, Object>) context::getAttribute);
+            evalContext.setVariable("getAttribute", (Function<String, Object>) key -> {
+                Object value = context.getAttribute(key);
+                // 只返回基本类型
+                return (value instanceof String || value instanceof Number || value instanceof Boolean) ? value : null;
+            });
             
-            Expression expression = expressionParser.parseExpression(condition);
-            return Boolean.TRUE.equals(expression.getValue(evalContext, Boolean.class));
+            // 评估表达式
+            Object result = expression.getValue(evalContext);
+            return result instanceof Boolean && (Boolean) result;
         } catch (Exception e) {
             log.warn("Failed to evaluate condition: {}, will return false", condition, e);
             return false;
@@ -340,159 +409,10 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     }
     
     /**
-     * 计算匹配得分
-     */
-    private int calculateMatchScore(Extension extension, BizContext<?> context) {
-        int score = 0;
-        String tenantCode = context.getTenantCode() != null ? context.getTenantCode() : "DEFAULT";
-        String bizCode = context.getBizCode() != null ? context.getBizCode() : "";
-        String useCase = context.getUseCase() != null ? context.getUseCase() : "";
-        String scenario = context.getScenario() != null ? context.getScenario() : "";
-        String userGroup = "DEFAULT";
-        String env = "PROD";
-        
-        // 租户匹配 - 权重最高
-        if (StringUtils.hasText(extension.tenantCode())) {
-            if (Objects.equals(extension.tenantCode(), tenantCode)) {
-                score += 1000;
-            }
-        }
-        
-        // 多租户匹配
-        if (!ObjectUtils.isEmpty(extension.multiTenantCodes())) {
-            if (Arrays.asList(extension.multiTenantCodes()).contains(tenantCode)) {
-                score += 1000;
-            }
-        }
-        
-        // 业务域匹配 - 高权重
-        if (StringUtils.hasText(extension.bizCode())) {
-            if (Objects.equals(extension.bizCode(), bizCode)) {
-                score += 100;
-            }
-        }
-        
-        // 多业务域匹配
-        if (!ObjectUtils.isEmpty(extension.multiBizCodes())) {
-            if (Arrays.asList(extension.multiBizCodes()).contains(bizCode)) {
-                score += 100;
-            }
-        }
-        
-        // 用例匹配 - 中高权重
-        if (StringUtils.hasText(extension.useCase())) {
-            if (Objects.equals(extension.useCase(), useCase)) {
-                score += 50;
-            }
-        }
-        
-        // 场景匹配 - 中权重
-        if (StringUtils.hasText(extension.scenario())) {
-            if (Objects.equals(extension.scenario(), scenario)) {
-                score += 20;
-            }
-        }
-        
-        // 环境匹配 - 中权重
-        if (StringUtils.hasText(extension.env())) {
-            if (Objects.equals(extension.env(), env)) {
-                score += 20;
-            }
-        }
-        
-        // 用户组匹配 - 中权重
-        if (StringUtils.hasText(extension.userGroup())) {
-            if (Objects.equals(extension.userGroup(), userGroup)) {
-                score += 20;
-            }
-        }
-        
-        // 增强的标签匹配 - 支持复杂标签表达式
-        if (!ObjectUtils.isEmpty(extension.tags())) {
-            int tagMatchCount = 0;
-            for (String tag : extension.tags()) {
-                if (tag.contains(":")) {
-                    String[] parts = tag.split(":", 2);
-                    String tagKey = parts[0];
-                    String tagValue = parts[1];
-                    
-                    // 支持通配符匹配
-                    if (tagValue.contains("*")) {
-                        Object contextTagValue = context.getTag(tagKey);
-                        if (contextTagValue != null) {
-                            String pattern = tagValue.replace("*", ".*");
-                            if (contextTagValue.toString().matches(pattern)) {
-                                score += 10;
-                                tagMatchCount++;
-                            }
-                        }
-                    } else {
-                        // 精确匹配
-                        Object contextTagValue = context.getTag(tagKey);
-                        if (contextTagValue != null && Objects.equals(contextTagValue.toString(), tagValue)) {
-                            score += 10;
-                            tagMatchCount++;
-                        }
-                    }
-                }
-            }
-            
-            // 标签匹配率奖励
-            if (tagMatchCount > 0) {
-                double matchRate = (double) tagMatchCount / extension.tags().length;
-                if (matchRate > 0.7) {
-                    score += 20; // 高匹配率奖励
-                } else if (matchRate > 0.5) {
-                    score += 10; // 中等匹配率奖励
-                }
-            }
-        }
-        
-        // 检查支付方式匹配（如果是支付相关扩展点）
-        if (StringUtils.hasText(extension.paymentMethod())) {
-            try {
-                // 跳过paymentMethod检查，避免直接调用getData()
-                if (false) {
-                    score += 30;
-                }
-            } catch (Exception e) {
-                // 忽略反射异常，说明不是支付相关的业务数据
-            }
-        }
-        
-        // 添加优先级调整
-        score += (100 - extension.priority()) * 5; // 优先级数值越小，实际优先级越高
-        
-        return score;
-    }
-    
-    /**
      * 获取嵌套属性值
      */
     private Object getNestedProperty(Object obj, String propertyPath) {
-        if (obj == null || !StringUtils.hasText(propertyPath)) {
-            return null;
-        }
-        
-        try {
-            // 支持嵌套属性访问，如 "order.payment.method"
-            String[] parts = propertyPath.split("\\.");
-            Object current = obj;
-            
-            for (String part : parts) {
-                String getterMethodName = "get" + Character.toUpperCase(part.charAt(0)) + part.substring(1);
-                Method method = current.getClass().getMethod(getterMethodName);
-                current = method.invoke(current);
-                
-                if (current == null) {
-                    return null;
-                }
-            }
-            
-            return current;
-        } catch (Exception e) {
-            return null;
-        }
+        return scoreCalculator.getNestedProperty(obj, propertyPath);
     }
     
     @Override
@@ -516,11 +436,11 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
             if (useCache) {
                 String cacheKey = getCacheKey(extPointClass, context);
                 @SuppressWarnings("unchecked")
-                T cachedResult = (T) routeCache.get(cacheKey, k -> doRouteWithStats(extPointClass, context));
+                T cachedResult = (T) cacheManager.getFromCache(cacheKey, k -> doRouteWithStats(extPointClass, context));
                 if (cachedResult != null) {
                     if (log.isDebugEnabled()) {
                         log.debug("Cache {} for extPoint: {}, result: {}", 
-                                routeCache.getIfPresent(cacheKey) == null ? "miss and loaded" : "hit",
+                                cacheManager.isCacheHit(cacheKey) ? "hit" : "miss and loaded",
                                 extPointClass.getSimpleName(),
                                 cachedResult.getClass().getSimpleName());
                     }
@@ -586,9 +506,9 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
             long endTime = System.currentTimeMillis();
             long costTime = endTime - startTime;
             
-            // 记录统计信息
+            // 记录路由性能指标
             if (metricsEnabled) {
-                recordMetrics(extPointClass, success, costTime);
+                statsCollector.recordMetrics(extPointClass, success, costTime, warningThreshold);
             }
             
             // 记录详细日志
@@ -609,24 +529,7 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
         }
     }
     
-    /**
-     * 记录路由性能指标
-     */
-    private <T> void recordMetrics(Class<T> extPointClass, boolean success, long costTime) {
-        try {
-            // 这里可以集成Prometheus、Micrometer等监控框架
-            // 记录路由次数、成功率、耗时等指标
-            String extPointName = extPointClass.getSimpleName();
-            
-            if (log.isDebugEnabled()) {
-                log.debug("Metrics for extPoint: {} - Success: {}, Cost: {}ms", 
-                        extPointName, success, costTime);
-            }
-        } catch (Exception e) {
-            // 确保监控代码不会影响核心功能
-            log.error("Failed to record metrics for extPoint: {}", extPointClass.getName(), e);
-        }
-    }
+    // 移除单独的recordMetrics方法，使用statsCollector代替
     
     /**
      * 预热路由缓存
@@ -641,8 +544,8 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
         
         for (BizContext<?> context : contexts) {
             try {
-                String cacheKey = getCacheKey(extPointClass, context);
-                routeCache.put(cacheKey, doRoute(extPointClass, context));
+                // 委托给CacheManager进行缓存预热
+                cacheManager.warmupCache(extPointClass, context);
             } catch (Exception e) {
                 log.warn("Failed to warmup cache for extPoint: {} with context: {}", 
                         extPointClass.getSimpleName(), context, e);
@@ -697,9 +600,9 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
             Extension ext1 = impl1.getClass().getAnnotation(Extension.class);
             Extension ext2 = impl2.getClass().getAnnotation(Extension.class);
             
-            // 计算匹配得分
-            int score1 = calculateMatchScore(ext1, context);
-            int score2 = calculateMatchScore(ext2, context);
+            // 使用RouteScoreCalculator计算匹配得分
+            int score1 = scoreCalculator.calculateMatchScore(ext1, context);
+            int score2 = scoreCalculator.calculateMatchScore(ext2, context);
             
             if (score1 != score2) {
                 return Integer.compare(score2, score1); // 得分高的优先
@@ -725,14 +628,15 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
                 sb.append(String.format("  Rank %d: %s (score=%d, priority=%d)\n", 
                         i + 1, 
                         impl.getClass().getSimpleName(),
-                        calculateMatchScore(ext, context),
+                        scoreCalculator.calculateMatchScore(ext, context),
                         ext.priority()));
             }
             log.trace(sb.toString());
         }
         
         // 应用权重路由和灰度发布策略
-        Object selectedImplementation = applyWeightAndGrayRelease(validImpls, extPointClass, context);
+        Object selectedImplementation = weightAndGraySelector.applyWeightAndGrayRelease(
+                validImpls, extPointClass, context, weightedRoutingEnabled, grayReleaseEnabled);
         
         if (log.isDebugEnabled()) {
             log.debug("Selected implementation: {} for extPoint: {}", 
@@ -743,145 +647,13 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
         return (T) selectedImplementation;
     }
     
-    /**
-     * 应用权重路由和灰度发布策略
-     * @param implementations 有效实现列表
-     * @param extPointClass 扩展点接口类
-     * @param context 业务上下文
-     * @return 选择的实现
-     */
-    @SuppressWarnings("unchecked")
-    private Object applyWeightAndGrayRelease(List<Object> implementations, Class<?> extPointClass, BizContext<?> context) {
-        // 如果只有一个实现或功能未启用，直接返回第一个
-        if (implementations.size() == 1 || (!weightedRoutingEnabled && !grayReleaseEnabled)) {
-            return implementations.get(0);
-        }
-        
-        // 应用灰度发布
-        if (grayReleaseEnabled) {
-            Object selectedByGray = selectByGrayRelease(implementations, extPointClass, context);
-            if (selectedByGray != null) {
-                return selectedByGray;
-            }
-        }
-        
-        // 应用权重路由
-        if (weightedRoutingEnabled) {
-            Object selectedByWeight = selectByWeight(implementations, extPointClass, context);
-            if (selectedByWeight != null) {
-                return selectedByWeight;
-            }
-        }
-        
-        // 默认返回第一个实现
-        return implementations.get(0);
-    }
-    
-    /**
-     * 根据权重选择实现
-     */
-    private Object selectByWeight(List<Object> implementations, Class<?> extPointClass, BizContext<?> context) {
-        try {
-            // 计算总权重
-            int totalWeight = 0;
-            Map<Object, Integer> weightMap = new LinkedHashMap<>();
-            
-            for (Object impl : implementations) {
-                int weight = getWeight(impl, extPointClass);
-                if (weight <= 0) {
-                    weight = 1; // 默认权重
-                }
-                weightMap.put(impl, weight);
-                totalWeight += weight;
-            }
-            
-            if (totalWeight <= 0) {
-                return null; // 无法进行权重选择
-            }
-            
-            // 随机选择
-            int randomWeight = new Random().nextInt(totalWeight) + 1;
-            int currentWeight = 0;
-            
-            for (Map.Entry<Object, Integer> entry : weightMap.entrySet()) {
-                currentWeight += entry.getValue();
-                if (randomWeight <= currentWeight) {
-                    return entry.getKey();
-                }
-            }
-            
-            return null;
-        } catch (Exception e) {
-            log.warn("Failed to select implementation by weight for extPoint: {}", extPointClass.getName(), e);
-            return null;
-        }
-    }
-    
-    /**
-     * 根据灰度发布规则选择实现
-     */
-    private Object selectByGrayRelease(List<Object> implementations, Class<?> extPointClass, BizContext<?> context) {
-        try {
-            // 查找流量比例小于100的实现（灰度实现）
-            List<Object> grayImplementations = new ArrayList<>();
-            Map<Object, Integer> trafficRateMap = new HashMap<>();
-            
-            for (Object impl : implementations) {
-                Extension extension = impl.getClass().getAnnotation(Extension.class);
-                if (extension != null && extension.trafficRate() > 0 && extension.trafficRate() < 100) {
-                    grayImplementations.add(impl);
-                    trafficRateMap.put(impl, extension.trafficRate());
-                }
-            }
-            
-            if (CollectionUtils.isEmpty(grayImplementations)) {
-                return null; // 没有灰度实现
-            }
-            
-            // 根据流量比例决定是否选择灰度实现
-            int randomValue = new Random().nextInt(100);
-            Object selectedImpl = null;
-            int currentRate = 0;
-            
-            for (Object impl : grayImplementations) {
-                int trafficRate = trafficRateMap.getOrDefault(impl, 10);
-                currentRate += trafficRate;
-                if (randomValue < currentRate) {
-                    selectedImpl = impl;
-                    break;
-                }
-            }
-            
-            return selectedImpl;
-        } catch (Exception e) {
-            log.warn("Failed to select implementation by gray release for extPoint: {}", extPointClass.getName(), e);
-            return null;
-        }
-    }
-    
-    /**
-     * 获取实现的权重
-     */
-    protected int getWeight(Object implementation, Class<?> extPointClass) {
-        // 从Extension注解中获取权重
-        Extension extension = implementation.getClass().getAnnotation(Extension.class);
-        return extension != null ? extension.weight() : 1;
-    }
-    
-    /**
-     * 检查是否匹配灰度发布条件
-     */
-    protected boolean matchGrayReleaseCondition(BizContext<?> context) {
-        // 可以基于用户ID、时间等条件进行灰度判断
-        // 默认实现使用简单的10%流量灰度
-        return new Random().nextInt(100) < 10;
-    }
+    // 移除权重路由和灰度发布相关的方法，使用WeightAndGraySelector组件代替
     
     /**
      * 获取或创建路由规则缓存
      */
     private List<Object> getOrCreateRouteRuleCache(Class<?> extPointClass) {
-        return routeRuleCache.computeIfAbsent(extPointClass, 
+        return cacheManager.getOrCreateRouteRuleCache(extPointClass, 
                 k -> extPointImplementations.getOrDefault(k, Collections.emptyList()));
     }
     
@@ -889,14 +661,7 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
      * 刷新路由规则缓存
      */
     public void refreshRouteRuleCache(Class<?> extPointClass) {
-        routeRuleCache.remove(extPointClass);
-        // 预热规则缓存
-        if (extPointClass != null) {
-            getOrCreateRouteRuleCache(extPointClass);
-        } else {
-            // 刷新所有
-            routeRuleCache.clear();
-        }
+        cacheManager.refreshRouteRuleCache(extPointClass);
         log.info("Refreshed route rule cache for extPoint: {}", 
                 extPointClass != null ? extPointClass.getSimpleName() : "ALL");
     }
@@ -914,9 +679,8 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     public void clearCache(Class<?> extPointClass) {
         Assert.notNull(extPointClass, "ExtPoint class must not be null");
         
-        // 清理该扩展点的所有缓存条目
-        String prefix = extPointClass.getName();
-        routeCache.asMap().keySet().removeIf(key -> key.startsWith(prefix));
+        // 使用CacheManager清理缓存
+        cacheManager.clearCache(extPointClass);
         
         // 同时清理路由规则缓存
         refreshRouteRuleCache(extPointClass);
@@ -926,8 +690,9 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     
     @Override
     public void clearAllCache() {
-        routeCache.invalidateAll();
-        routeRuleCache.clear();
+        cacheManager.clearAllCache();
+        // 刷新路由规则缓存
+        refreshRouteRuleCache(null);
         log.debug("Cleared all route cache");
     }
     
@@ -1032,15 +797,15 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     
     @Override
     public Map<String, Map<String, Long>> getRouteStats() {
-        return routeStats.entrySet().stream()
-            .collect(Collectors.toMap(
-                Map.Entry::getKey,
-                e -> e.getValue().entrySet().stream()
-                    .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        v -> v.getValue().get()
-                    ))
-            ));
+        return statsCollector.getRouteStats();
+    }
+    
+    /**
+     * 重置路由统计信息
+     */
+    public void resetRouteStats() {
+        statsCollector.resetRouteStats();
+        log.info("Reset route statistics");
     }
     
     /**
@@ -1052,14 +817,6 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
             stats.put(extPointClass.getSimpleName(), implementations.size());
         });
         return stats;
-    }
-    
-    /**
-     * 重置路由统计信息
-     */
-    public void resetRouteStats() {
-        routeStats.clear();
-        log.info("Reset route statistics");
     }
     
     /**

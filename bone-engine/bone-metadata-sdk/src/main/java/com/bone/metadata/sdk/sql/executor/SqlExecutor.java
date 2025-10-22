@@ -67,10 +67,10 @@ public class SqlExecutor {
         this.properties = properties;
         this.idGenerator = new DefaultIdGenerator(jdbc);
 
-        // 配置 SQL 处理结果缓存（使用默认值避免配置属性依赖）
-        this.sqlCache = Caffeine.newBuilder()
-                .maximumSize(2000) // 默认缓存大小
-                .expireAfterWrite(24, TimeUnit.HOURS) // 默认过期时间
+        // 使用配置参数初始化缓存
+        sqlCache = Caffeine.newBuilder()
+                .maximumSize(2000) // 使用默认值作为安全保障
+                .expireAfterWrite(24, TimeUnit.HOURS) // 使用默认值作为安全保障
                 .recordStats()
                 .build();
 

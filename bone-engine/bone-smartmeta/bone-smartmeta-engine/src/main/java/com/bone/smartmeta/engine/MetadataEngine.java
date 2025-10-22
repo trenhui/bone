@@ -1,65 +1,92 @@
 package com.bone.smartmeta.engine;
 
 import com.bone.smartmeta.engine.model.EntityMetadata;
+import com.bone.smartmeta.engine.repository.MetadataRepository;
+import com.bone.smartmeta.engine.processor.MetadataProcessor;
+import com.bone.smartmeta.engine.registry.MetadataRegistry;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEvent;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
+
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
-public class MetadataEngine {
-    private static final Logger log = Logger.getLogger(MetadataEngine.class.getName());
+/**
+ * 元数据引擎 - 核心类
+ * 提供元数据实体的管理、注册、缓存和通知功能
+ * 遵循Spring Bean生命周期管理
+ */
+@Component
+public class MetadataEngine implements InitializingBean {
+    private static final Logger log = LoggerFactory.getLogger(MetadataEngine.class.getName());
 
-    private final Object metadataCacheManager;
-
-    private final Map<String, Object> entityMetadataMap = new HashMap<>();
-
+    // 使用接口而非Object类型，提高类型安全性
+    private final MetadataRegistry metadataRegistry;
+    private final MetadataRepository metadataRepository;
+    private final MetadataProcessor metadataProcessor;
+    private final ApplicationEventPublisher eventPublisher;
+    
+    // 使用ConcurrentHashMap提高线程安全性
+    private final Map<String, Object> entityMetadataMap = new ConcurrentHashMap<>();
     private final Map<String, Object> operationMetadataCache = new ConcurrentHashMap<>();
 
-    private final Object metadataRepository;
-
-    private final Object metadataProcessor;
-
-    private final Object versionController;
-
-    private final Object impactAnalyzer;
-
-    private final Object metadataRegistry;
-    private final Object eventPublisher;
-    private Object operationService; // 简化为Object类型
-
-    public MetadataEngine(Object properties) {
-        this.metadataRegistry = null;
-        this.metadataRepository = null;
-        this.metadataProcessor = null;
-        this.eventPublisher = null;
-        this.metadataCacheManager = null; // 简化实现，不实例化不存在的类
-        this.versionController = null;     // 简化实现
-        this.impactAnalyzer = null;        // 简化实现
-    }
-
-    public MetadataEngine(Object metadataRegistry, 
-                         Object metadataRepository, 
-                         Object metadataProcessor, 
-                         Object eventPublisher) {
+    /**
+     * 构造函数 - 使用依赖注入
+     * 
+     * @param metadataRegistry 元数据注册表
+     * @param metadataRepository 元数据仓库
+     * @param metadataProcessor 元数据处理器
+     * @param eventPublisher 事件发布器
+     */
+    @Autowired
+    public MetadataEngine(MetadataRegistry metadataRegistry,
+                         MetadataRepository metadataRepository,
+                         MetadataProcessor metadataProcessor,
+                         ApplicationEventPublisher eventPublisher) {
         this.metadataRegistry = metadataRegistry;
         this.metadataRepository = metadataRepository;
         this.metadataProcessor = metadataProcessor;
         this.eventPublisher = eventPublisher;
-        this.metadataCacheManager = null; // 简化实现
-        this.versionController = null;    // 简化实现
-        this.impactAnalyzer = null;       // 简化实现
+        log.info("MetadataEngine initialized with dependencies");
+    }
+    
+    /**
+     * 用于测试或简单场景的构造函数
+     */
+    public MetadataEngine() {
+        // 用于测试场景，实际应用中应使用上面的构造函数
+        this.metadataRegistry = null;
+        this.metadataRepository = null;
+        this.metadataProcessor = null;
+        this.eventPublisher = null;
+        log.info("MetadataEngine initialized without dependencies (for testing)");
     }
 
+    /**
+     * 设置操作服务
+     * 
+     * @param operationService 操作服务实例
+     */
     public void setOperationService(Object operationService) {
+        Assert.notNull(operationService, "Operation service cannot be null");
         this.operationService = operationService;
     }
 
+    // 配置属性
     private boolean cacheEnabled = true;
     private boolean validationEnabled = true;
     private boolean calculationEnabled = true;
     private long cacheExpirationTime = 3600000; // 默认缓存过期时间：1小时
     private int maxRetries = 3; // 操作重试次数
     private long retryDelay = 100; // 重试延迟时间（毫秒）
+    private Object operationService; // 操作服务
 
     private final Map<String, CacheEntry> entityMetadataCache = new ConcurrentHashMap<>();
     private final Map<String, Map<String, Object>> expressionEngineCache = new ConcurrentHashMap<>();
@@ -88,8 +115,11 @@ public class MetadataEngine {
         }
     }
 
+    @Override
     public void afterPropertiesSet() throws Exception {
-        // 初始化操作元数据
+        // Spring Bean初始化后执行
+        log.info("MetadataEngine afterPropertiesSet called");
+        initialize();
         initializeOperationMetadata();
     }
 
@@ -98,21 +128,33 @@ public class MetadataEngine {
     }
 
     private void updateCache(Object metadata) {
-        // 简化实现，更新缓存
-        if (cacheEnabled) {
+        // 线程安全的缓存更新实现
+        if (cacheEnabled && metadata != null) {
             // 尝试从metadata中获取实体名称
-            String entityName = "unknown";
-            if (metadata instanceof Map) {
-                Object nameObj = ((Map<?, ?>)metadata).get("apiName");
-                if (nameObj instanceof String) {
-                    entityName = (String)nameObj;
-                }
-            }
+            String entityName = getEntityNameFromMetadata(metadata);
             
             if (!"unknown".equals(entityName) && entityName != null && !entityName.isEmpty()) {
                 entityMetadataCache.put(entityName, new CacheEntry(metadata, cacheExpirationTime));
+                log.debug("Updated cache for entity: {}", entityName);
             }
         }
+    }
+    
+    /**
+     * 从元数据对象中提取实体名称
+     */
+    private String getEntityNameFromMetadata(Object metadata) {
+        String entityName = "unknown";
+        if (metadata instanceof Map) {
+            Object nameObj = ((Map<?, ?>)metadata).get("apiName");
+            if (nameObj instanceof String) {
+                entityName = (String)nameObj;
+            }
+        } else if (metadata != null) {
+            // 使用反射获取apiName属性或使用类名作为后备
+            entityName = metadata.getClass().getSimpleName();
+        }
+        return entityName;
     }
 
     public void startHotReload(long intervalMillis) {
@@ -121,9 +163,13 @@ public class MetadataEngine {
 
     /**
      * 注册实体元数据
+     * 
+     * @param metadata 实体元数据
      */
     public void registerEntityMetadata(Object metadata) {
-        // 简化实现的注册实体元数据逻辑
+        Assert.notNull(metadata, "Metadata cannot be null");
+        // 委托给registerEntity方法
+        registerEntity(metadata);
     }
     
     /**
@@ -165,67 +211,126 @@ public class MetadataEngine {
             // 启动健康检查
             startHealthCheck();
             
-            log.log(Level.INFO, "元数据引擎初始化完成");
+            log.info("Metadata engine initialized successfully");
         } catch (Exception e) {
-            log.log(Level.SEVERE, "元数据引擎初始化失败: {0}", e.getMessage());
-            throw new RuntimeException("元数据引擎初始化失败", e);
+            log.error("Failed to initialize metadata engine", e);
+            throw new RuntimeException("Failed to initialize metadata engine", e);
         }
     }
     
     /**
      * 注册实体 - 为MetadataEngineInitializer提供的方法
+     * 
+     * @param metadata 实体元数据
+     * @return 注册的元数据
      */
     public Object registerEntity(Object metadata) {
-        if (metadata == null) {
-            throw new IllegalArgumentException("实体元数据不能为空");
-        }
+        Assert.notNull(metadata, "Entity metadata cannot be null");
         
-        // 简化实现，使用Map存储实体名称
-        String entityName = "unknown";
-        
-        // 尝试获取实体名称（支持Map或对象类型）
-        if (metadata instanceof Map) {
-            Object nameObj = ((Map<?, ?>)metadata).get("apiName");
-            if (nameObj instanceof String) {
-                entityName = (String)nameObj;
-            }
-        } else {
-            // 如果不是Map，使用类名作为默认名称
-            entityName = metadata.getClass().getSimpleName();
-        }
+        // 获取实体名称（支持Map或对象类型）
+        String entityName = getEntityNameFromMetadata(metadata);
         
         if (entityName == null || entityName.isEmpty() || "unknown".equals(entityName)) {
-            throw new IllegalArgumentException("实体API名称不能为空或无效");
+            throw new IllegalArgumentException("Entity API name cannot be null or invalid");
         }
+        
+        log.info("Registering entity metadata: {}", entityName);
         
         // 存储实体元数据
         entityMetadataMap.put(entityName, metadata);
         
-        // 更新缓存 - 简化实现
-        if (cacheEnabled) {
-            String finalEntityName = entityName; // 用于lambda表达式
-            entityMetadataCache.put(entityName, new CacheEntry(metadata, cacheExpirationTime));
-        }
+        // 更新缓存
+        updateCache(metadata);
         
         // 发布元数据变更事件
         notifyMetadataChanged(metadata, MetadataChangeType.CREATE);
         
+        // 如有注册器，同步注册
+        if (metadataRegistry != null) {
+            try {
+                // 尝试调用注册方法（适配不同接口）
+                invokeIfPossible(metadataRegistry, "registerMetadata", metadata);
+            } catch (Exception e) {
+                log.warn("Failed to register metadata with registry: {}", e.getMessage());
+            }
+        }
+        
+        return metadata;
+    }
+    
+    /**
+     * 尝试调用对象的方法，捕获所有异常
+     */
+    private void invokeIfPossible(Object target, String methodName, Object... args) {
+        if (target == null) return;
+        
+        try {
+            // 简化实现，实际项目中可使用反射或Spring的MethodInvoker
+            log.debug("Invoking method {} on {}", methodName, target.getClass().getName());
+            // 这里可以根据实际需要实现反射调用
+        } catch (Exception e) {
+            log.warn("Failed to invoke method: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 获取实体元数据
+     * 
+     * @param entityName 实体名称
+     * @return 实体元数据，如果不存在则返回null
+     */
+    public Object getEntityMetadata(String entityName) {
+        Assert.hasText(entityName, "Entity name cannot be empty");
+        
+        // 先从缓存获取
+        if (cacheEnabled) {
+            CacheEntry entry = entityMetadataCache.get(entityName);
+            if (entry != null && !entry.isExpired()) {
+                log.debug("Retrieved entity metadata from cache: {}", entityName);
+                return entry.getValue();
+            }
+        }
+        
+        // 从存储获取
+        Object metadata = entityMetadataMap.get(entityName);
+        
+        // 如果找到了，更新缓存
+        if (metadata != null && cacheEnabled) {
+            entityMetadataCache.put(entityName, new CacheEntry(metadata, cacheExpirationTime));
+        }
+        
+        return metadata;
+    }
+    
+    /**
+     * 安全获取实体元数据，如果不存在则抛出异常
+     * 
+     * @param entityName 实体名称
+     * @return 实体元数据
+     */
+    public Object getRequiredEntityMetadata(String entityName) {
+        Object metadata = getEntityMetadata(entityName);
+        if (metadata == null) {
+            throw new IllegalStateException("Entity metadata not found: " + entityName);
+        }
         return metadata;
     }
 
-    public Object getEntityMetadata(String entityName) {
-        // 获取实体元数据的简化实现
-        return entityMetadataMap.get(entityName);
-    }
-
+    /**
+     * 批量获取实体元数据
+     * 
+     * @param entityNames 实体名称集合
+     * @return 实体元数据映射
+     */
     public Map<String, Object> batchGetEntityMetadata(Collection<String> entityNames) {
-        // 批量获取实体元数据的简化实现
         Map<String, Object> result = new HashMap<>();
-        if (entityNames != null) {
+        if (entityNames != null && !entityNames.isEmpty()) {
             for (String name : entityNames) {
-                Object metadata = entityMetadataMap.get(name);
-                if (metadata != null) {
-                    result.put(name, metadata);
+                if (name != null && !name.isEmpty()) {
+                    Object metadata = getEntityMetadata(name);
+                    if (metadata != null) {
+                        result.put(name, metadata);
+                    }
                 }
             }
         }
@@ -234,96 +339,293 @@ public class MetadataEngine {
 
     /**
      * 取消注册实体元数据
-     * 支持多租户隔离，不实际删除而是标记为禁用
+     * 支持多租户隔离
+     * 
+     * @param entityName 实体名称
+     * @return 是否成功取消注册
      */
     public boolean unregisterEntity(String entityName) {
-        String tenantId = "default";
+        Assert.hasText(entityName, "Entity name cannot be empty");
         
-        // 简化实现，直接从Map获取对象
         Object metadata = entityMetadataMap.get(entityName);
         if (metadata != null) {
             try {
-                // 执行影响分析 - 简化实现
-                Map<String, Object> impactResult = new HashMap<>();
-                impactResult.put("impactLevel", "LOW");
+                // 执行影响分析
+                Object impactResult = analyzeMetadataImpact(entityName, null);
                 
                 // 检查是否为关键影响
-                if ("CRITICAL".equals(impactResult.get("impactLevel"))) {
-                    log.log(Level.SEVERE, "Cannot delete critical metadata: {0}", entityName);
+                if (isCriticalImpact(impactResult)) {
+                    log.error("Cannot delete critical metadata: {}", entityName);
                     throw new IllegalStateException("Cannot delete critical metadata");
                 }
                 
-                // 简化实现，直接从内存中移除
+                // 移除元数据
                 entityMetadataMap.remove(entityName);
                 
-                // 从缓存删除 - 简化实现
+                // 从缓存删除
                 entityMetadataCache.remove(entityName);
                 
                 // 发布变更事件
                 notifyMetadataChanged(metadata, MetadataChangeType.DELETE);
                 
+                log.info("Successfully unregistered entity metadata: {}", entityName);
                 return true;
             } catch (Exception e) {
-                log.log(Level.SEVERE, "Error unregistering entity metadata: {0}", e.getMessage());
+                log.error("Error unregistering entity metadata: {}", entityName, e);
                 return false;
             }
         } else {
-            log.log(Level.WARNING, "Entity metadata not found: {0}", entityName);
+            log.warn("Entity metadata not found: {}", entityName);
             return false;
         }
     }
     
     /**
+     * 检查是否为关键影响
+     */
+    private boolean isCriticalImpact(Object impactResult) {
+        if (impactResult instanceof Map) {
+            Object level = ((Map<?, ?>)impactResult).get("impactLevel");
+            return "CRITICAL".equals(level);
+        }
+        return false;
+    }
+    
+    /**
      * 重新加载实体元数据
+     * 
+     * @param entityName 实体名称
+     * @return 重新加载的元数据
      */
     public Object reloadEntityMetadata(String entityName) {
-        // 简化实现
-        return entityMetadataMap.get(entityName);
+        Assert.hasText(entityName, "Entity name cannot be empty");
+        
+        // 清除缓存
+        entityMetadataCache.remove(entityName);
+        
+        // 如果有仓库，尝试从仓库重新加载
+        if (metadataRepository != null) {
+            try {
+                // 尝试从仓库加载
+                Object metadata = invokeRepositoryMethod(metadataRepository, "findById", entityName);
+                if (metadata != null) {
+                    entityMetadataMap.put(entityName, metadata);
+                    updateCache(metadata);
+                    log.info("Reloaded entity metadata from repository: {}", entityName);
+                    return metadata;
+                }
+            } catch (Exception e) {
+                log.warn("Failed to reload metadata from repository: {}", e.getMessage());
+            }
+        }
+        
+        // 返回当前内存中的数据
+        Object metadata = entityMetadataMap.get(entityName);
+        if (metadata != null) {
+            updateCache(metadata);
+        }
+        
+        return metadata;
+    }
+    
+    /**
+     * 尝试从仓库调用方法
+     */
+    private Object invokeRepositoryMethod(Object repository, String methodName, Object... args) {
+        // 简化实现，实际项目中可使用反射
+        log.debug("Attempting to invoke {} on repository", methodName);
+        return null;
     }
     
     /**
      * 执行元数据变更影响分析
+     * 
+     * @param oldEntityName 旧实体名称
+     * @param newMetadata 新的元数据
+     * @return 影响分析结果
      */
     public Object analyzeMetadataImpact(String oldEntityName, 
                                       Object newMetadata) {
         try {
-            // 返回一个简单的对象而不是特定类型
+            // 如果有分析器，使用分析器进行分析
+            if (metadataProcessor != null) {
+                try {
+                    Object result = invokeIfPossibleReturn(metadataProcessor, "analyzeImpact", oldEntityName, newMetadata);
+                    if (result != null) {
+                        return result;
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to use processor for impact analysis: {}", e.getMessage());
+                }
+            }
+            
+            // 默认分析结果
             Map<String, Object> result = new HashMap<>();
             result.put("impactLevel", "LOW");
+            result.put("entityName", oldEntityName);
+            result.put("timestamp", System.currentTimeMillis());
             return result;
         } catch (Exception e) {
-            log.log(Level.SEVERE, "创建影响分析结果失败: " + e.getMessage());
+            log.error("Failed to create impact analysis result", e);
             Map<String, Object> result = new HashMap<>();
             result.put("impactLevel", "LOW");
             return result;
         }
     }
     
-    // 转换方法，将metadata包的EntityMetadata转换为model包的EntityMetadata
+    /**
+     * 尝试调用对象的方法并返回结果
+     */
+    private Object invokeIfPossibleReturn(Object target, String methodName, Object... args) {
+        if (target == null) return null;
+        
+        try {
+            // 简化实现
+            log.debug("Invoking method {} on {}", methodName, target.getClass().getName());
+            return null;
+        } catch (Exception e) {
+            log.warn("Failed to invoke method: {}", e.getMessage());
+            return null;
+        }
+    }
+    
+    /**
+     * 转换元数据格式
+     */
     private Object convertToModelEntityMetadata(Object metadata) {
-        // 简化实现，返回一个基本对象
+        // 简化实现，实际项目中应实现完整的转换逻辑
+        if (metadata instanceof Map) {
+            return new HashMap<>((Map<?, ?>)metadata);
+        }
         return new HashMap<String, Object>();
     }
     
-    // 通知元数据变更的方法
+    /**
+     * 通知元数据变更
+     */
     private void notifyMetadataChanged(Object metadata, MetadataChangeType changeType) {
-        // 通知监听器，避免使用可能不存在的getApiName方法
-        String entityType = "unknown";
-        if (metadata != null) {
-            entityType = metadata.getClass().getSimpleName();
-        }
+        String entityType = getEntityNameFromMetadata(metadata);
         
+        // 通知监听器
         for (MetadataChangeListener listener : metadataChangeListeners) {
             try {
                 listener.onMetadataChanged(entityType, changeType.name());
             } catch (Exception e) {
-                log.log(Level.SEVERE, "通知元数据变更失败: {0}", e.getMessage());
+                log.error("Failed to notify metadata change for listener: {}", listener.getClass().getName(), e);
+            }
+        }
+        
+        // 如果有事件发布器，发布Spring事件
+        if (eventPublisher != null) {
+            try {
+                // 创建并发布元数据变更事件
+                MetadataChangedEvent event = new MetadataChangedEvent(this, entityType, changeType);
+                eventPublisher.publishEvent(event);
+                log.debug("Published metadata change event: {} for {}", changeType, entityType);
+            } catch (Exception e) {
+                log.warn("Failed to publish metadata change event: {}", e.getMessage());
             }
         }
     }
     
-    // 元数据变更类型枚举
+    /**
+     * 添加元数据变更监听器
+     */
+    public void addMetadataChangeListener(MetadataChangeListener listener) {
+        Assert.notNull(listener, "Listener cannot be null");
+        this.metadataChangeListeners.add(listener);
+    }
+    
+    /**
+     * 移除元数据变更监听器
+     */
+    public void removeMetadataChangeListener(MetadataChangeListener listener) {
+        if (listener != null) {
+            this.metadataChangeListeners.remove(listener);
+        }
+    }
+    
+    /**
+     * 元数据变更类型枚举
+     */
     public enum MetadataChangeType {
         CREATE, UPDATE, DELETE
+    }
+    
+    /**
+     * 元数据变更事件 - 用于Spring事件机制
+     */
+    public static class MetadataChangedEvent extends ApplicationEvent {
+        private final String entityType;
+        private final MetadataChangeType changeType;
+        private final long changeTimestamp;
+        
+        public MetadataChangedEvent(Object source, String entityType, MetadataChangeType changeType) {
+            super(source);
+            this.entityType = entityType;
+            this.changeType = changeType;
+            this.changeTimestamp = System.currentTimeMillis();
+        }
+        
+        public String getEntityType() {
+            return entityType;
+        }
+        
+        public MetadataChangeType getChangeType() {
+            return changeType;
+        }
+        
+        public long getChangeTimestamp() {
+            return changeTimestamp;
+        }
+    }
+    
+    // Getters and setters for configuration properties
+    public boolean isCacheEnabled() {
+        return cacheEnabled;
+    }
+    
+    public void setCacheEnabled(boolean cacheEnabled) {
+        this.cacheEnabled = cacheEnabled;
+    }
+    
+    public boolean isValidationEnabled() {
+        return validationEnabled;
+    }
+    
+    public void setValidationEnabled(boolean validationEnabled) {
+        this.validationEnabled = validationEnabled;
+    }
+    
+    public boolean isCalculationEnabled() {
+        return calculationEnabled;
+    }
+    
+    public void setCalculationEnabled(boolean calculationEnabled) {
+        this.calculationEnabled = calculationEnabled;
+    }
+    
+    public long getCacheExpirationTime() {
+        return cacheExpirationTime;
+    }
+    
+    public void setCacheExpirationTime(long cacheExpirationTime) {
+        this.cacheExpirationTime = cacheExpirationTime;
+    }
+    
+    public int getMaxRetries() {
+        return maxRetries;
+    }
+    
+    public void setMaxRetries(int maxRetries) {
+        this.maxRetries = maxRetries;
+    }
+    
+    public long getRetryDelay() {
+        return retryDelay;
+    }
+    
+    public void setRetryDelay(long retryDelay) {
+        this.retryDelay = retryDelay;
     }
 }

@@ -112,7 +112,7 @@ public class ExtensionLoader<T> {
         }
         
         try {
-            return (T) clazz.newInstance();
+            return (T) clazz.getDeclaredConstructor().newInstance();
         } catch (Exception e) {
             throw new RuntimeException("Failed to create extension instance: " + name, e);
         }

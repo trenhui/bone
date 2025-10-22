@@ -9,14 +9,18 @@ import com.bone.engine.extension.router.DefaultExtPointRouter;
 import com.bone.engine.extension.router.ExtPointRouter;
 import com.bone.engine.extension.event.DefaultExtensionEventPublisher;
 import com.bone.engine.extension.event.ExtensionEventPublisher;
+import com.bone.engine.extension.config.NacosConfigManager;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportAware;
+import org.springframework.context.ApplicationContext;
 import org.springframework.core.annotation.AnnotationAttributes;
+import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.type.AnnotationMetadata;
 
 /**
@@ -60,10 +64,10 @@ public class ExtensionAutoConfiguration implements ImportAware {
      */
     @Bean
     @ConditionalOnMissingBean(ExtPointRouter.class)
-    public ExtPointRouter extPointRouter() {
-        DefaultExtPointRouter router = new DefaultExtPointRouter();
-        router.setEnableCache(enableCache);
-        return router;
+    public ExtPointRouter extPointRouter(ApplicationContext applicationContext) {
+        // 由于DefaultExtPointRouter已经添加了@Component注解，
+        // 这里可以直接返回applicationContext.getBean，但保留创建逻辑作为备用
+        return new DefaultExtPointRouter(applicationContext);
     }
 
     /**
@@ -91,15 +95,27 @@ public class ExtensionAutoConfiguration implements ImportAware {
 
     /**
      * 配置扩展点配置管理器
+     * 使用NacosConfigManager替代默认的ExtensionConfigManager，支持配置动态更新
      */
     @Bean
     @ConditionalOnMissingBean(ExtensionConfigManager.class)
     public ExtensionConfigManager extensionConfigManager() {
-        ExtensionConfigManager manager = new ExtensionConfigManager();
-        manager.init();
-        return manager;
+        // 返回NacosConfigManager，它继承自ExtensionConfigManager
+        return new NacosConfigManager();
     }
     
+    /**
+     * 配置变更监听器
+     * 监听Spring环境中的配置变更，同步到扩展点配置管理器
+     */
+    @Bean
+      @ConditionalOnProperty(name = "bone.extension.config.watch-enabled", havingValue = "true", matchIfMissing = true)
+      @ConditionalOnMissingBean
+      public ConfigurationChangeListener configurationChangeListener(ExtensionConfigManager configManager, 
+                                                                ConfigurableEnvironment environment, 
+                                                                ApplicationContext applicationContext) {
+          return new ConfigurationChangeListener(configManager, environment, applicationContext);
+      }   
     /**
      * 配置扩展点生命周期管理器
      */

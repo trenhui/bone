@@ -3807,39 +3807,3273 @@ interface EventBus {
 
 ### 4.3.3 Cross-Application State Sharing / 跨应用状态共享
 
-提供轻量级的跨应用状态共享机制，适用于需要在多个微应用间共享的全局状态。
+跨应用状态共享机制为微前端架构提供了一种在多个微应用间安全、高效地共享全局状态的解决方案，避免了重复数据获取和状态不一致的问题。
+
+#### 设计原则
+
+- **单向数据流**：遵循与Redux相似的单向数据流模式，确保状态变更可追踪
+- **类型安全**：使用TypeScript泛型确保状态访问的类型安全
+- **响应式更新**：当共享状态变更时，所有订阅的微应用自动获得更新
+- **隔离性**：支持按模块隔离状态，避免命名冲突
+- **性能优化**：实现状态的精细订阅和更新，避免不必要的重渲染
+
+#### 实现方案
+
+```typescript
+/**
+ * 共享状态项接口
+ */
+export interface SharedStateItem<T = any> {
+  value: T;
+  subscribers: Set<(value: T) => void>;
+  lastUpdated: number;
+}
+
+/**
+ * 跨应用状态管理器
+ */
+export class CrossAppStateManager {
+  private static instance: CrossAppStateManager;
+  private stateMap: Map<string, SharedStateItem> = new Map();
+  private eventBus: MicroAppEventBus;
+  private readonly prefix = '@shared_state/';
+  private readonly maxHistorySize = 100;
+  private stateHistory: Array<{key: string; value: any; timestamp: number}> = [];
+  
+  /**
+   * 获取单例实例
+   */
+  public static getInstance(eventBus: MicroAppEventBus = globalEventBus): CrossAppStateManager {
+    if (!CrossAppStateManager.instance) {
+      CrossAppStateManager.instance = new CrossAppStateManager(eventBus);
+    }
+    return CrossAppStateManager.instance;
+  }
+  
+  /**
+   * 私有构造函数
+   */
+  private constructor(eventBus: MicroAppEventBus) {
+    this.eventBus = eventBus;
+    this.setupEventListeners();
+  }
+  
+  /**
+   * 设置事件监听器，处理跨应用状态同步
+   */
+  private setupEventListeners(): void {
+    // 监听来自其他应用的状态更新事件
+    this.eventBus.on(AppEvents.SHARED_STATE_UPDATE, (data: {key: string; value: any; sender: string}) => {
+      // 防止循环更新：如果状态更新源自当前应用，则不处理
+      if (data.sender !== this.getCurrentAppName()) {
+        this.updateStateInternal(data.key, data.value, false);
+      }
+    });
+    
+    // 监听状态订阅请求
+    this.eventBus.on(AppEvents.SHARED_STATE_SUBSCRIBE, (data: {key: string; sender: string}) => {
+      // 当有新应用订阅状态时，立即发送当前状态给该应用
+      const stateItem = this.stateMap.get(data.key);
+      if (stateItem) {
+        this.eventBus.emit(AppEvents.SHARED_STATE_SYNC, {
+          key: data.key,
+          value: stateItem.value,
+          target: data.sender
+        });
+      }
+    });
+    
+    // 监听状态同步消息
+    this.eventBus.on(AppEvents.SHARED_STATE_SYNC, (data: {key: string; value: any; target?: string}) => {
+      // 如果有指定目标且不是当前应用，则忽略
+      if (data.target && data.target !== this.getCurrentAppName()) {
+        return;
+      }
+      this.updateStateInternal(data.key, data.value, false);
+    });
+  }
+  
+  /**
+   * 获取当前应用名称
+   */
+  private getCurrentAppName(): string {
+    if (typeof window !== 'undefined' && window.__WUJIE_APPNAME__) {
+      return window.__WUJIE_APPNAME__;
+    }
+    return 'main';
+  }
+  
+  /**
+   * 内部状态更新方法
+   */
+  private updateStateInternal<T>(key: string, value: T, broadcast: boolean = true): void {
+    const now = Date.now();
+    
+    // 获取或创建状态项
+    let stateItem = this.stateMap.get(key);
+    if (!stateItem) {
+      stateItem = {
+        value,
+        subscribers: new Set(),
+        lastUpdated: now
+      };
+      this.stateMap.set(key, stateItem);
+    } else {
+      // 检查值是否实际发生变化
+      if (JSON.stringify(stateItem.value) === JSON.stringify(value)) {
+        return;
+      }
+      
+      stateItem.value = value;
+      stateItem.lastUpdated = now;
+    }
+    
+    // 更新历史记录
+    this.stateHistory.push({key, value, timestamp: now});
+    if (this.stateHistory.length > this.maxHistorySize) {
+      this.stateHistory.shift();
+    }
+    
+    // 通知本地订阅者
+    stateItem.subscribers.forEach(subscriber => {
+      try {
+        subscriber(value);
+      } catch (error) {
+        console.error(`执行状态订阅回调时出错 [${key}]:`, error);
+      }
+    });
+    
+    // 广播状态更新到其他应用
+    if (broadcast) {
+      this.eventBus.emit(AppEvents.SHARED_STATE_UPDATE, {
+        key,
+        value,
+        sender: this.getCurrentAppName()
+      });
+    }
+  }
+  
+  /**
+   * 设置共享状态
+   */
+  public setState<T>(key: string, value: T): void {
+    this.updateStateInternal(key, value);
+  }
+  
+  /**
+   * 获取共享状态
+   */
+  public getState<T>(key: string): T | undefined {
+    const stateItem = this.stateMap.get(key);
+    return stateItem ? stateItem.value as T : undefined;
+  }
+  
+  /**
+   * 订阅共享状态变化
+   */
+  public subscribe<T>(key: string, callback: (value: T) => void): () => void {
+    // 确保状态项存在
+    let stateItem = this.stateMap.get(key);
+    if (!stateItem) {
+      stateItem = {
+        value: undefined,
+        subscribers: new Set(),
+        lastUpdated: Date.now()
+      };
+      this.stateMap.set(key, stateItem);
+    }
+    
+    // 添加订阅者
+    stateItem.subscribers.add(callback as (value: any) => void);
+    
+    // 发送订阅请求，获取最新状态
+    this.eventBus.emit(AppEvents.SHARED_STATE_SUBSCRIBE, {
+      key,
+      sender: this.getCurrentAppName()
+    });
+    
+    // 返回取消订阅函数
+    return () => {
+      stateItem?.subscribers.delete(callback as (value: any) => void);
+      // 如果没有订阅者了，清理状态项
+      if (stateItem && stateItem.subscribers.size === 0) {
+        this.stateMap.delete(key);
+      }
+    };
+  }
+  
+  /**
+   * 删除共享状态
+   */
+  public removeState(key: string): void {
+    const stateItem = this.stateMap.get(key);
+    if (stateItem) {
+      // 通知所有订阅者状态已被移除
+      stateItem.subscribers.forEach(subscriber => {
+        try {
+          subscriber(undefined);
+        } catch (error) {
+          console.error(`执行状态移除回调时出错 [${key}]:`, error);
+        }
+      });
+      
+      this.stateMap.delete(key);
+      
+      // 广播状态移除事件
+      this.eventBus.emit(AppEvents.SHARED_STATE_REMOVE, {
+        key,
+        sender: this.getCurrentAppName()
+      });
+    }
+  }
+  
+  /**
+   * 清除所有共享状态
+   */
+  public clearAllState(): void {
+    // 清除所有本地状态
+    this.stateMap.clear();
+    this.stateHistory = [];
+    
+    // 广播清除事件
+    this.eventBus.emit(AppEvents.SHARED_STATE_CLEAR_ALL, {
+      sender: this.getCurrentAppName()
+    });
+  }
+  
+  /**
+   * 获取所有已注册的状态键
+   */
+  public getAllStateKeys(): string[] {
+    return Array.from(this.stateMap.keys());
+  }
+}
+
+// 导出全局状态管理器实例
+export const crossAppState = CrossAppStateManager.getInstance();
+
+/**
+ * 为React组件提供的自定义Hook，方便订阅共享状态
+ */
+export function useSharedState<T>(key: string, defaultValue?: T): [T, (value: T) => void] {
+  const [value, setValue] = React.useState<T>(() => {
+    const currentValue = crossAppState.getState<T>(key);
+    return currentValue !== undefined ? currentValue : defaultValue as T;
+  });
+  
+  React.useEffect(() => {
+    // 订阅状态变化
+    const unsubscribe = crossAppState.subscribe<T>(key, (newValue) => {
+      setValue(newValue !== undefined ? newValue : defaultValue as T);
+    });
+    
+    // 组件卸载时取消订阅
+    return () => unsubscribe();
+  }, [key, defaultValue]);
+  
+  // 创建更新状态的函数
+  const updateState = React.useCallback((newValue: T) => {
+    crossAppState.setState(key, newValue);
+  }, [key]);
+  
+  return [value, updateState];
+}
+```
+
+#### 使用示例
+
+```typescript
+// 在主应用中设置全局用户信息
+import { crossAppState } from 'micro-frontend-sdk';
+
+// 登录成功后设置用户信息
+function handleLoginSuccess(userInfo) {
+  crossAppState.setState('globalUser', userInfo);
+}
+
+// 在微应用中订阅用户信息
+import { useSharedState } from 'micro-frontend-sdk';
+
+function UserProfile() {
+  // 使用自定义Hook订阅共享状态
+  const [user, setUser] = useSharedState('globalUser', { name: 'Guest' });
+  
+  return (
+    <div>
+      <h2>用户信息</h2>
+      <p>用户名: {user.name}</p>
+      <p>角色: {user.role}</p>
+      {/* 可以直接更新共享状态 */}
+      <button onClick={() => setUser({...user, lastActive: new Date().toISOString()})}>
+        更新活动时间
+      </button>
+    </div>
+  );
+}
+```
+
+#### 高级特性
+
+1. **模块命名空间**：通过命名约定实现状态模块化，如`user.profile`、`settings.theme`
+2. **状态持久化**：支持将关键共享状态保存到localStorage或sessionStorage
+3. **状态验证**：可集成schema验证，确保设置的状态符合预期格式
+4. **性能优化**：通过选择性订阅和批量更新机制减少不必要的重渲染
+5. **调试工具**：提供状态变更日志和时间旅行调试能力
+
+通过这种跨应用状态共享机制，微前端架构中的各应用可以高效协同工作，同时保持良好的隔离性和可维护性。
 
 ---
 
 ## ⚡ **性能优化策略** / Performance Optimization
 
+性能优化是微前端架构中的关键考量因素，由于微应用的动态加载特性，需要采用一系列优化策略确保应用的快速响应和流畅体验。本节详细介绍Bone平台实现的性能优化方案。
+
 ### 5.1 Loading Optimization / 加载优化
 
-实现智能预加载、按需加载和资源缓存，减少应用加载时间，提升用户体验。
+加载优化聚焦于减少应用初始加载时间和微应用切换时间，采用智能预加载、按需加载和多层缓存策略。
+
+#### 5.1.1 智能预加载机制
+
+基于用户行为预测和访问模式分析，在适当时机预加载可能需要的微应用资源。
+
+```typescript
+/**
+ * 智能预加载管理器
+ */
+export class PreloadManager {
+  private static instance: PreloadManager;
+  private appRegistry: Map<string, MicroAppConfig>;
+  private preloadQueue: Array<{ appName: string; priority: number }> = [];
+  private preloadedApps: Set<string> = new Set();
+  private isPreloading: boolean = false;
+  private readonly maxConcurrentPreloads = 3;
+  private readonly preloadThreshold = 0.7; // 网络空闲度阈值
+  
+  /**
+   * 获取单例实例
+   */
+  public static getInstance(appRegistry: Map<string, MicroAppConfig>): PreloadManager {
+    if (!PreloadManager.instance) {
+      PreloadManager.instance = new PreloadManager(appRegistry);
+    }
+    return PreloadManager.instance;
+  }
+  
+  private constructor(appRegistry: Map<string, MicroAppConfig>) {
+    this.appRegistry = appRegistry;
+    this.setupNetworkMonitor();
+  }
+  
+  /**
+   * 设置网络监视器，根据网络状态调整预加载策略
+   */
+  private setupNetworkMonitor(): void {
+    if ('connection' in navigator) {
+      const connection = navigator.connection as any;
+      const updatePreloadStrategy = () => {
+        const effectiveType = connection.effectiveType; // 2g, 3g, 4g
+        const saveData = connection.saveData; // 用户是否开启了省流量模式
+        
+        // 根据网络状况动态调整预加载策略
+        if (effectiveType === '2g' || saveData) {
+          this.maxConcurrentPreloads = 1;
+          this.preloadThreshold = 0.9;
+        } else if (effectiveType === '3g') {
+          this.maxConcurrentPreloads = 2;
+          this.preloadThreshold = 0.8;
+        } else {
+          this.maxConcurrentPreloads = 3;
+          this.preloadThreshold = 0.7;
+        }
+      };
+      
+      connection.addEventListener('change', updatePreloadStrategy);
+      updatePreloadStrategy();
+    }
+  }
+  
+  /**
+   * 添加应用到预加载队列
+   */
+  public queueForPreload(appName: string, priority: number = 1): void {
+    if (!this.appRegistry.has(appName) || this.preloadedApps.has(appName)) {
+      return;
+    }
+    
+    // 检查是否已经在队列中
+    const existingIndex = this.preloadQueue.findIndex(item => item.appName === appName);
+    if (existingIndex >= 0) {
+      // 更新优先级
+      if (this.preloadQueue[existingIndex].priority < priority) {
+        this.preloadQueue[existingIndex].priority = priority;
+        // 重新排序队列
+        this.preloadQueue.sort((a, b) => b.priority - a.priority);
+      }
+      return;
+    }
+    
+    this.preloadQueue.push({ appName, priority });
+    // 按优先级排序
+    this.preloadQueue.sort((a, b) => b.priority - a.priority);
+    
+    // 尝试开始预加载
+    this.tryPreload();
+  }
+  
+  /**
+   * 尝试开始预加载
+   */
+  private async tryPreload(): Promise<void> {
+    if (this.isPreloading || this.preloadQueue.length === 0) {
+      return;
+    }
+    
+    this.isPreloading = true;
+    
+    try {
+      // 检查网络空闲状态
+      if ('requestIdleCallback' in window) {
+        await new Promise<void>(resolve => {
+          (window as any).requestIdleCallback((deadline: any) => {
+            // 只有当剩余时间足够且网络空闲度达到阈值时才进行预加载
+            if (deadline.timeRemaining() > 50 && this.checkNetworkIdle()) {
+              resolve();
+            } else {
+              // 推迟到下次空闲时间
+              setTimeout(() => this.tryPreload(), 500);
+              resolve();
+            }
+          }, { timeout: 2000 });
+        });
+      }
+      
+      // 执行预加载
+      await this.executePreloads();
+    } catch (error) {
+      console.error('预加载过程中发生错误:', error);
+    } finally {
+      this.isPreloading = false;
+      
+      // 尝试预加载下一批
+      if (this.preloadQueue.length > 0) {
+        setTimeout(() => this.tryPreload(), 100);
+      }
+    }
+  }
+  
+  /**
+   * 执行预加载
+   */
+  private async executePreloads(): Promise<void> {
+    const concurrentPreloads = Math.min(this.maxConcurrentPreloads, this.preloadQueue.length);
+    const appsToPreload = this.preloadQueue.splice(0, concurrentPreloads);
+    
+    const preloadPromises = appsToPreload.map(async ({ appName }) => {
+      try {
+        const appConfig = this.appRegistry.get(appName);
+        if (!appConfig) return;
+        
+        // 预加载微应用资源
+        await this.preloadAppResources(appConfig);
+        
+        // 标记为已预加载
+        this.preloadedApps.add(appName);
+        console.log(`微应用 ${appName} 预加载完成`);
+      } catch (error) {
+        console.warn(`微应用 ${appName} 预加载失败:`, error);
+        // 预加载失败，重新加入队列但降低优先级
+        this.queueForPreload(appName, 0.5);
+      }
+    });
+    
+    await Promise.allSettled(preloadPromises);
+  }
+  
+  /**
+   * 预加载应用资源
+   */
+  private async preloadAppResources(appConfig: MicroAppConfig): Promise<void> {
+    const { entry, cssList = [], jsList = [] } = appConfig;
+    
+    // 预加载CSS资源
+    const cssPromises = cssList.map(href => {
+      return new Promise<void>((resolve, reject) => {
+        const link = document.createElement('link');
+        link.rel = 'preload';
+        link.as = 'style';
+        link.href = href;
+        link.onload = () => resolve();
+        link.onerror = () => reject(new Error(`Failed to preload CSS: ${href}`));
+        document.head.appendChild(link);
+      });
+    });
+    
+    // 预加载JavaScript资源
+    const jsPromises = jsList.map(src => {
+      return new Promise<void>((resolve, reject) => {
+        const script = document.createElement('script');
+        script.rel = 'preload';
+        script.as = 'script';
+        script.src = src;
+        script.onload = () => resolve();
+        script.onerror = () => reject(new Error(`Failed to preload JS: ${src}`));
+        document.head.appendChild(script);
+      });
+    });
+    
+    // 预加载HTML入口
+    if (entry) {
+      try {
+        const response = await fetch(entry, {
+          method: 'GET',
+          mode: 'cors',
+          credentials: 'include',
+          cache: 'force-cache'
+        });
+        if (!response.ok) throw new Error(`Failed to preload entry: ${entry}`);
+        // 仅预加载，不解析
+        await response.text();
+      } catch (error) {
+        console.warn(`预加载入口文件失败: ${entry}`, error);
+      }
+    }
+    
+    await Promise.allSettled([...cssPromises, ...jsPromises]);
+  }
+  
+  /**
+   * 检查网络空闲状态
+   */
+  private checkNetworkIdle(): boolean {
+    // 简单实现：检查最近是否有活跃的网络请求
+    // 实际项目中可以集成Performance API或自定义网络监控
+    return true; // 简化实现，实际应返回真实网络空闲度
+  }
+  
+  /**
+   * 清除预加载状态
+   */
+  public clearPreloadState(appName?: string): void {
+    if (appName) {
+      this.preloadedApps.delete(appName);
+      // 从队列中移除
+      const index = this.preloadQueue.findIndex(item => item.appName === appName);
+      if (index >= 0) {
+        this.preloadQueue.splice(index, 1);
+      }
+    } else {
+      this.preloadedApps.clear();
+      this.preloadQueue = [];
+    }
+  }
+}
+```
+
+#### 5.1.2 资源缓存策略
+
+实现多层缓存机制，包括HTTP缓存、内存缓存和IndexedDB缓存，减少重复资源加载。
+
+```typescript
+/**
+ * 资源缓存管理器
+ */
+export class ResourceCacheManager {
+  private static instance: ResourceCacheManager;
+  private memoryCache: Map<string, { data: any; timestamp: number; ttl: number }> = new Map();
+  private dbName = 'bone-resource-cache';
+  private dbVersion = 1;
+  private db: IDBDatabase | null = null;
+  private dbReadyPromise: Promise<void> | null = null;
+  
+  /**
+   * 获取单例实例
+   */
+  public static getInstance(): ResourceCacheManager {
+    if (!ResourceCacheManager.instance) {
+      ResourceCacheManager.instance = new ResourceCacheManager();
+    }
+    return ResourceCacheManager.instance;
+  }
+  
+  private constructor() {
+    this.initDatabase();
+  }
+  
+  /**
+   * 初始化IndexedDB数据库
+   */
+  private initDatabase(): void {
+    this.dbReadyPromise = new Promise((resolve, reject) => {
+      if (!('indexedDB' in window)) {
+        console.warn('当前浏览器不支持IndexedDB，无法使用持久化缓存');
+        resolve();
+        return;
+      }
+      
+      const request = indexedDB.open(this.dbName, this.dbVersion);
+      
+      request.onupgradeneeded = (event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+        // 创建资源缓存存储
+        if (!db.objectStoreNames.contains('resources')) {
+          const store = db.createObjectStore('resources', { keyPath: 'url' });
+          store.createIndex('timestamp', 'timestamp', { unique: false });
+        }
+        // 创建元数据存储
+        if (!db.objectStoreNames.contains('metadata')) {
+          db.createObjectStore('metadata', { keyPath: 'id' });
+        }
+      };
+      
+      request.onsuccess = (event) => {
+        this.db = (event.target as IDBOpenDBRequest).result;
+        // 设置缓存限制
+        this.setCacheLimit(50 * 1024 * 1024); // 50MB
+        resolve();
+      };
+      
+      request.onerror = (event) => {
+        console.error('打开IndexedDB失败:', (event.target as IDBOpenDBRequest).error);
+        resolve(); // 失败时仍继续，使用内存缓存
+      };
+    });
+  }
+  
+  /**
+   * 缓存资源
+   */
+  public async cacheResource(url: string, data: any, options: { memory?: boolean; disk?: boolean; ttl?: number } = {}): Promise<void> {
+    const { memory = true, disk = true, ttl = 3600000 } = options; // 默认TTL为1小时
+    const timestamp = Date.now();
+    
+    // 内存缓存
+    if (memory) {
+      this.memoryCache.set(url, { data, timestamp, ttl });
+      // 限制内存缓存大小
+      this.limitMemoryCacheSize(100); // 最多缓存100个资源
+    }
+    
+    // 磁盘缓存
+    if (disk && this.db) {
+      await this.dbReadyPromise;
+      try {
+        const transaction = this.db.transaction(['resources'], 'readwrite');
+        const store = transaction.objectStore('resources');
+        await store.put({ url, data, timestamp, ttl });
+        await transactionComplete(transaction);
+      } catch (error) {
+        console.warn('缓存资源到IndexedDB失败:', error);
+      }
+    }
+  }
+  
+  /**
+   * 获取缓存的资源
+   */
+  public async getCachedResource(url: string): Promise<any | null> {
+    const now = Date.now();
+    
+    // 先检查内存缓存
+    const memoryItem = this.memoryCache.get(url);
+    if (memoryItem) {
+      // 检查是否过期
+      if (now - memoryItem.timestamp < memoryItem.ttl) {
+        return memoryItem.data;
+      } else {
+        // 过期则移除
+        this.memoryCache.delete(url);
+      }
+    }
+    
+    // 再检查磁盘缓存
+    if (this.db) {
+      await this.dbReadyPromise;
+      try {
+        const transaction = this.db.transaction(['resources'], 'readonly');
+        const store = transaction.objectStore('resources');
+        const item = await storeGet(store, url);
+        
+        if (item) {
+          // 检查是否过期
+          if (now - item.timestamp < item.ttl) {
+            // 加载到内存缓存
+            this.memoryCache.set(url, { data: item.data, timestamp: item.timestamp, ttl: item.ttl });
+            return item.data;
+          } else {
+            // 过期则删除
+            const deleteTransaction = this.db.transaction(['resources'], 'readwrite');
+            deleteTransaction.objectStore('resources').delete(url);
+            await transactionComplete(deleteTransaction);
+          }
+        }
+      } catch (error) {
+        console.warn('从IndexedDB获取缓存失败:', error);
+      }
+    }
+    
+    return null;
+  }
+  
+  /**
+   * 清除指定资源缓存
+   */
+  public async clearResourceCache(url: string): Promise<void> {
+    // 清除内存缓存
+    this.memoryCache.delete(url);
+    
+    // 清除磁盘缓存
+    if (this.db) {
+      await this.dbReadyPromise;
+      try {
+        const transaction = this.db.transaction(['resources'], 'readwrite');
+        transaction.objectStore('resources').delete(url);
+        await transactionComplete(transaction);
+      } catch (error) {
+        console.warn('从IndexedDB删除缓存失败:', error);
+      }
+    }
+  }
+  
+  /**
+   * 清除所有缓存
+   */
+  public async clearAllCache(): Promise<void> {
+    // 清除内存缓存
+    this.memoryCache.clear();
+    
+    // 清除磁盘缓存
+    if (this.db) {
+      await this.dbReadyPromise;
+      try {
+        const transaction = this.db.transaction(['resources'], 'readwrite');
+        transaction.objectStore('resources').clear();
+        await transactionComplete(transaction);
+      } catch (error) {
+        console.warn('清除IndexedDB缓存失败:', error);
+      }
+    }
+  }
+  
+  /**
+   * 设置缓存限制
+   */
+  private async setCacheLimit(maxSizeInBytes: number): Promise<void> {
+    if (!this.db) return;
+    
+    await this.dbReadyPromise;
+    try {
+      const transaction = this.db.transaction(['metadata'], 'readwrite');
+      const store = transaction.objectStore('metadata');
+      await store.put({ id: 'cacheLimit', maxSize: maxSizeInBytes });
+      await transactionComplete(transaction);
+      
+      // 检查并清理超出限制的缓存
+      this.evictOldCache();
+    } catch (error) {
+      console.warn('设置缓存限制失败:', error);
+    }
+  }
+  
+  /**
+   * 清理旧缓存
+   */
+  private async evictOldCache(): Promise<void> {
+    // 实现LRU缓存淘汰策略
+    // ...
+  }
+  
+  /**
+   * 限制内存缓存大小
+   */
+  private limitMemoryCacheSize(maxItems: number): void {
+    if (this.memoryCache.size <= maxItems) return;
+    
+    // 按时间戳排序并移除最旧的项目
+    const sortedEntries = Array.from(this.memoryCache.entries())
+      .sort(([,a], [,b]) => a.timestamp - b.timestamp);
+    
+    const itemsToRemove = sortedEntries.length - maxItems;
+    for (let i = 0; i < itemsToRemove; i++) {
+      this.memoryCache.delete(sortedEntries[i][0]);
+    }
+  }
+}
+
+// IndexedDB辅助函数
+function transactionComplete(transaction: IDBTransaction): Promise<void> {
+  return new Promise((resolve, reject) => {
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+  });
+}
+
+function storeGet(store: IDBObjectStore, key: string): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const request = store.get(key);
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+```
 
 ### 5.2 Rendering Optimization / 渲染优化
 
-采用组件懒加载、虚拟列表、memo优化等策略，提高应用渲染性能。
+渲染优化专注于提高组件渲染性能，减少不必要的渲染和提升用户交互响应速度。
+
+#### 5.2.1 组件懒加载和代码分割
+
+使用React.lazy和Suspense实现组件的按需加载，减小初始包体积。
+
+```typescript
+/**
+ * 高级懒加载组件，支持预加载和错误处理
+ */
+import React, { lazy, Suspense, ComponentType, useState, useEffect, useRef } from 'react';
+
+interface LazyLoadComponentProps {
+  fallback?: React.ReactNode;
+  preloadOn?: 'visible' | 'hover' | 'immediate';
+  placeholder?: React.ReactNode;
+}
+
+/**
+ * 创建懒加载组件
+ */
+export function createLazyComponent<T extends ComponentType<any>>(
+  importFn: () => Promise<{ default: T }>,
+  options?: {
+    displayName?: string;
+    errorComponent?: ComponentType<{ error: Error; resetError: () => void }>;
+  }
+) {
+  const LazyComponent = lazy(importFn);
+  const { displayName = 'LazyComponent', errorComponent: ErrorComponent } = options || {};
+  
+  const EnhancedLazyComponent: React.FC<LazyLoadComponentProps & React.ComponentProps<T>> = (props) => {
+    const { fallback = null, preloadOn = 'immediate', placeholder, ...componentProps } = props;
+    const [error, setError] = useState<Error | null>(null);
+    const importRef = useRef(importFn);
+    const hasLoadedRef = useRef(false);
+    const preloadRef = useRef<HTMLDivElement>(null);
+    
+    // 重置错误状态
+    const resetError = () => {
+      setError(null);
+      // 重试加载
+      importRef.current = importFn;
+    };
+    
+    // 预加载逻辑
+    useEffect(() => {
+      let observer: IntersectionObserver | null = null;
+      let hoverHandler: (() => void) | null = null;
+      
+      const preload = () => {
+        if (!hasLoadedRef.current) {
+          importRef.current();
+          hasLoadedRef.current = true;
+        }
+      };
+      
+      switch (preloadOn) {
+        case 'visible':
+          // 当元素可见时预加载
+          if (preloadRef.current && 'IntersectionObserver' in window) {
+            observer = new IntersectionObserver(
+              (entries) => {
+                if (entries[0].isIntersecting) {
+                  preload();
+                  observer?.disconnect();
+                }
+              },
+              { rootMargin: '200px' } // 提前200px预加载
+            );
+            observer.observe(preloadRef.current);
+          }
+          break;
+          
+        case 'hover':
+          // 当鼠标悬停时预加载
+          if (preloadRef.current) {
+            hoverHandler = () => preload();
+            preloadRef.current.addEventListener('mouseenter', hoverHandler);
+          }
+          break;
+          
+        case 'immediate':
+        default:
+          // 立即预加载
+          preload();
+          break;
+      }
+      
+      return () => {
+        if (observer) observer.disconnect();
+        if (hoverHandler && preloadRef.current) {
+          preloadRef.current.removeEventListener('mouseenter', hoverHandler);
+        }
+      };
+    }, [preloadOn]);
+    
+    // 错误边界处理
+    if (error) {
+      if (ErrorComponent) {
+        return <ErrorComponent error={error} resetError={resetError} />;
+      }
+      return (
+        <div className="lazy-load-error">
+          <p>组件加载失败</p>
+          <button onClick={resetError}>重试</button>
+        </div>
+      );
+    }
+    
+    return (
+      <div ref={preloadRef}>
+        {placeholder && !hasLoadedRef.current && placeholder}
+        <Suspense fallback={fallback || <div className="lazy-load-loading">加载中...</div>}>
+          <LazyComponent {...componentProps} />
+        </Suspense>
+      </div>
+    );
+  };
+  
+  EnhancedLazyComponent.displayName = `EnhancedLazy${displayName}`;
+  return EnhancedLazyComponent;
+}
+
+// 使用示例
+const HeavyChartComponent = createLazyComponent(
+  () => import('./HeavyChartComponent'),
+  {
+    displayName: 'HeavyChartComponent',
+    errorComponent: ({ error, resetError }) => (
+      <div className="chart-error">
+        <h3>图表加载失败</h3>
+        <p>{error.message}</p>
+        <button onClick={resetError}>重新加载</button>
+      </div>
+    )
+  }
+);
+```
+
+#### 5.2.2 性能优化Hooks
+
+提供一系列自定义Hooks用于优化组件性能和资源使用。
+
+```typescript
+import { useMemo, useCallback, useRef, useEffect, useReducer } from 'react';
+
+/**
+ * 防抖Hook - 延迟执行函数，直到用户停止操作指定时间
+ */
+export function useDebounce<T extends (...args: any[]) => any>(
+  callback: T,
+  delay: number
+): (...args: Parameters<T>) => void {
+  const timeoutRef = useRef<NodeJS.Timeout>();
+  const callbackRef = useRef(callback);
+  
+  // 更新回调引用
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
+  
+  const debouncedCallback = useCallback(
+    (...args: Parameters<T>) => {
+      // 清除之前的定时器
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      
+      // 设置新的定时器
+      timeoutRef.current = setTimeout(() => {
+        callbackRef.current(...args);
+      }, delay);
+    },
+    [delay]
+  );
+  
+  // 清理定时器
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+  
+  return debouncedCallback;
+}
+
+/**
+ * 节流Hook - 限制函数在指定时间内最多执行一次
+ */
+export function useThrottle<T extends (...args: any[]) => any>(
+  callback: T,
+  limit: number
+): (...args: Parameters<T>) => void {
+  const inThrottle = useRef(false);
+  const callbackRef = useRef(callback);
+  
+  // 更新回调引用
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
+  
+  const throttledCallback = useCallback(
+    (...args: Parameters<T>) => {
+      if (!inThrottle.current) {
+        callbackRef.current(...args);
+        inThrottle.current = true;
+        
+        setTimeout(() => {
+          inThrottle.current = false;
+        }, limit);
+      }
+    },
+    [limit]
+  );
+  
+  return throttledCallback;
+}
+
+/**
+ * 优化的useState Hook - 避免不必要的更新
+ */
+export function useOptimizedState<T>(
+  initialValue: T | (() => T),
+  areEqual?: (prev: T, next: T) => boolean
+): [T, (newValue: T | ((prevValue: T) => T)) => void] {
+  const [state, setState] = useReducer(
+    (prevState: T, newValue: T | ((prevValue: T) => T)): T => {
+      const value = newValue instanceof Function ? newValue(prevState) : newValue;
+      
+      // 使用自定义比较函数或默认的深度比较
+      if (areEqual) {
+        return areEqual(prevState, value) ? prevState : value;
+      }
+      
+      // 默认的深度比较（简化版）
+      if (prevState === value) return prevState;
+      
+      // 对象/数组的简单深度比较
+      if (typeof prevState === 'object' && prevState !== null &&
+          typeof value === 'object' && value !== null) {
+        // 对于常见的不可变数据操作，使用JSON字符串比较作为简单实现
+        // 注意：这不是最高效的方法，生产环境可使用更专业的深度比较库
+        return JSON.stringify(prevState) === JSON.stringify(value) ? prevState : value;
+      }
+      
+      return value;
+    },
+    initialValue
+  );
+  
+  return [state, setState];
+}
+
+/**
+ * 虚拟滚动Hook - 优化大量数据列表的渲染性能
+ */
+export function useVirtualScroll<T>(
+  items: T[],
+  itemHeight: number,
+  containerHeight: number,
+  options: {
+    overscan?: number; // 预渲染的额外项目数
+    keyExtractor?: (item: T) => string | number;
+  } = {}
+) {
+  const { overscan = 5, keyExtractor = (item, index) => index } = options;
+  const containerRef = useRef<HTMLElement>(null);
+  const [scrollTop, setScrollTop] = useState(0);
+  
+  const visibleCount = Math.ceil(containerHeight / itemHeight);
+  const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - overscan);
+  const endIndex = Math.min(items.length, startIndex + visibleCount + overscan * 2);
+  
+  const visibleItems = items.slice(startIndex, endIndex);
+  const offsetY = startIndex * itemHeight;
+  const totalHeight = items.length * itemHeight;
+  
+  const handleScroll = useCallback(() => {
+    if (containerRef.current) {
+      setScrollTop(containerRef.current.scrollTop);
+    }
+  }, []);
+  
+  useEffect(() => {
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll, { passive: true });
+      return () => container.removeEventListener('scroll', handleScroll);
+    }
+  }, [handleScroll]);
+  
+  const getItemKey = useCallback(
+    (item: T, index: number) => {
+      return keyExtractor(item, startIndex + index);
+    },
+    [keyExtractor, startIndex]
+  );
+  
+  return {
+    containerRef,
+    visibleItems,
+    startIndex,
+    endIndex,
+    offsetY,
+    totalHeight,
+    getItemKey
+  };
+}
+```
 
 ### 5.3 Resource Management / 资源管理
 
-通过内存监控、资源清理和性能监控，确保应用在高负载下保持稳定。
+资源管理聚焦于有效利用和释放系统资源，防止内存泄漏，确保应用在长期运行中保持稳定。
+
+#### 5.3.1 内存监控与优化
+
+实现内存使用监控和自动优化机制，在检测到内存压力时执行清理操作。
+
+```typescript
+/**
+ * 内存管理器
+ */
+export class MemoryManager {
+  private static instance: MemoryManager;
+  private memoryUsageHistory: Array<{ timestamp: number; usage: number }> = [];
+  private readonly maxHistorySize = 100;
+  private readonly memoryThreshold = 0.8; // 80%内存使用率阈值
+  private readonly monitoringInterval = 5000; // 监控间隔（毫秒）
+  private monitoringTimer: NodeJS.Timeout | null = null;
+  private cleanupHandlers: Array<{ priority: number; handler: () => Promise<void> }> = [];
+  private isPerformingCleanup = false;
+  
+  /**
+   * 获取单例实例
+   */
+  public static getInstance(): MemoryManager {
+    if (!MemoryManager.instance) {
+      MemoryManager.instance = new MemoryManager();
+    }
+    return MemoryManager.instance;
+  }
+  
+  private constructor() {
+    this.startMonitoring();
+  }
+  
+  /**
+   * 开始内存监控
+   */
+  public startMonitoring(): void {
+    if (this.monitoringTimer) return;
+    
+    this.monitoringTimer = setInterval(() => {
+      this.checkMemoryUsage();
+    }, this.monitoringInterval);
+  }
+  
+  /**
+   * 停止内存监控
+   */
+  public stopMonitoring(): void {
+    if (this.monitoringTimer) {
+      clearInterval(this.monitoringTimer);
+      this.monitoringTimer = null;
+    }
+  }
+  
+  /**
+   * 检查内存使用情况
+   */
+  private async checkMemoryUsage(): Promise<void> {
+    if (!('performance' in window) || !('memory' in performance)) {
+      // 浏览器不支持内存API，使用备选方案
+      console.warn('当前浏览器不支持Performance Memory API');
+      return;
+    }
+    
+    const memoryInfo = (performance as any).memory;
+    const usedMemory = memoryInfo.usedJSHeapSize;
+    const totalMemory = memoryInfo.jsHeapSizeLimit;
+    const usageRatio = usedMemory / totalMemory;
+    
+    // 记录内存使用历史
+    this.memoryUsageHistory.push({ timestamp: Date.now(), usage: usageRatio });
+    if (this.memoryUsageHistory.length > this.maxHistorySize) {
+      this.memoryUsageHistory.shift();
+    }
+    
+    console.log(`内存使用率: ${(usageRatio * 100).toFixed(2)}%`);
+    
+    // 当内存使用率超过阈值时执行清理
+    if (usageRatio > this.memoryThreshold && !this.isPerformingCleanup) {
+      await this.performMemoryCleanup();
+    }
+  }
+  
+  /**
+   * 注册内存清理处理器
+   */
+  public registerCleanupHandler(
+    priority: number, // 优先级，数字越小优先级越高
+    handler: () => Promise<void>
+  ): () => void {
+    const cleanupHandler = { priority, handler };
+    this.cleanupHandlers.push(cleanupHandler);
+    
+    // 按优先级排序
+    this.cleanupHandlers.sort((a, b) => a.priority - b.priority);
+    
+    // 返回取消注册函数
+    return () => {
+      const index = this.cleanupHandlers.indexOf(cleanupHandler);
+      if (index >= 0) {
+        this.cleanupHandlers.splice(index, 1);
+      }
+    };
+  }
+  
+  /**
+   * 执行内存清理
+   */
+  private async performMemoryCleanup(): Promise<void> {
+    if (this.isPerformingCleanup) return;
+    
+    this.isPerformingCleanup = true;
+    console.log('开始执行内存清理...');
+    
+    try {
+      // 执行所有清理处理器
+      for (const { handler, priority } of this.cleanupHandlers) {
+        try {
+          console.log(`执行优先级 ${priority} 的清理处理器`);
+          await handler();
+        } catch (error) {
+          console.error(`执行清理处理器时出错 (优先级 ${priority}):`, error);
+        }
+        
+        // 检查是否需要继续清理
+        if (await this.checkIfCleanupNeeded()) {
+          continue;
+        } else {
+          console.log('内存使用率已恢复到安全水平，停止清理');
+          break;
+        }
+      }
+      
+      // 强制垃圾回收（如果可用）
+      this.forceGarbageCollection();
+      
+      console.log('内存清理完成');
+    } catch (error) {
+      console.error('内存清理过程中发生错误:', error);
+    } finally {
+      this.isPerformingCleanup = false;
+    }
+  }
+  
+  /**
+   * 检查是否仍需要清理
+   */
+  private async checkIfCleanupNeeded(): Promise<boolean> {
+    if (!('performance' in window) || !('memory' in performance)) {
+      return false;
+    }
+    
+    const memoryInfo = (performance as any).memory;
+    const usedMemory = memoryInfo.usedJSHeapSize;
+    const totalMemory = memoryInfo.jsHeapSizeLimit;
+    const usageRatio = usedMemory / totalMemory;
+    
+    return usageRatio > this.memoryThreshold * 0.9; // 使用略低的阈值避免频繁清理
+  }
+  
+  /**
+   * 尝试强制垃圾回收
+   */
+  private forceGarbageCollection(): void {
+    // 在某些浏览器中，可以通过特定方法触发垃圾回收
+    // 注意：这通常只在开发环境或特定浏览器中可用
+    if (window.gc && typeof window.gc === 'function') {
+      try {
+        window.gc();
+      } catch (error) {
+        console.warn('触发垃圾回收失败:', error);
+      }
+    }
+  }
+  
+  /**
+   * 获取内存使用报告
+   */
+  public getMemoryReport(): {
+    currentUsage: number;
+    peakUsage: number;
+    averageUsage: number;
+    history: Array<{ timestamp: number; usage: number }>;
+  } {
+    if (this.memoryUsageHistory.length === 0) {
+      return { currentUsage: 0, peakUsage: 0, averageUsage: 0, history: [] };
+    }
+    
+    const peakUsage = Math.max(...this.memoryUsageHistory.map(item => item.usage));
+    const averageUsage = this.memoryUsageHistory.reduce((sum, item) => sum + item.usage, 0) / this.memoryUsageHistory.length;
+    const currentUsage = this.memoryUsageHistory[this.memoryUsageHistory.length - 1].usage;
+    
+    return {
+      currentUsage,
+      peakUsage,
+      averageUsage,
+      history: [...this.memoryUsageHistory]
+    };
+  }
+}
+
+// 使用示例
+const memoryManager = MemoryManager.getInstance();
+
+// 注册清理处理器
+const unregisterImageCacheCleanup = memoryManager.registerCleanupHandler(1, async () => {
+  // 清理图片缓存
+  console.log('清理图片缓存...');
+  // 实现图片缓存清理逻辑
+});
+
+const unregisterEventBusCleanup = memoryManager.registerCleanupHandler(2, async () => {
+  // 清理未使用的事件监听器
+  console.log('清理事件监听器...');
+  // 实现事件监听器清理逻辑
+});
+```
+
+#### 5.3.2 微应用生命周期管理优化
+
+优化微应用的挂载、卸载和资源清理过程，防止内存泄漏和资源占用。
+
+```typescript
+/**
+ * 增强的微应用生命周期管理器
+ */
+export class EnhancedAppLifecycleManager {
+  private static instance: EnhancedAppLifecycleManager;
+  private appInstances: Map<string, {
+    instance: any;
+    mountedTime: number;
+    resources: Set<any>;
+    cleanupFunctions: Array<() => void>;
+    lastAccessed: number;
+    usageCount: number;
+  }> = new Map();
+  private readonly maxIdleTime = 30 * 60 * 1000; // 30分钟空闲时间后卸载
+  private readonly memoryScanningInterval = 60 * 1000; // 每分钟检查一次
+  private scanningTimer: NodeJS.Timeout | null = null;
+  
+  /**
+   * 获取单例实例
+   */
+  public static getInstance(): EnhancedAppLifecycleManager {
+    if (!EnhancedAppLifecycleManager.instance) {
+      EnhancedAppLifecycleManager.instance = new EnhancedAppLifecycleManager();
+    }
+    return EnhancedAppLifecycleManager.instance;
+  }
+  
+  private constructor() {
+    this.startMemoryScanning();
+    this.setupVisibilityChangeHandler();
+  }
+  
+  /**
+   * 开始内存扫描
+   */
+  private startMemoryScanning(): void {
+    if (this.scanningTimer) return;
+    
+    this.scanningTimer = setInterval(() => {
+      this.scanIdleApps();
+    }, this.memoryScanningInterval);
+  }
+  
+  /**
+   * 设置页面可见性变化处理器
+   */
+  private setupVisibilityChangeHandler(): void {
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        // 页面隐藏时，清理不常用的微应用
+        this.cleanupUnusedAppsOnHidden();
+      }
+    });
+  }
+  
+  /**
+   * 注册微应用实例
+   */
+  public registerAppInstance(appName: string, instance: any): void {
+    this.appInstances.set(appName, {
+      instance,
+      mountedTime: Date.now(),
+      resources: new Set(),
+      cleanupFunctions: [],
+      lastAccessed: Date.now(),
+      usageCount: 0
+    });
+  }
+  
+  /**
+   * 记录微应用访问
+   */
+  public recordAppAccess(appName: string): void {
+    const appInfo = this.appInstances.get(appName);
+    if (appInfo) {
+      appInfo.lastAccessed = Date.now();
+      appInfo.usageCount++;
+    }
+  }
+  
+  /**
+   * 注册微应用资源
+   */
+  public registerAppResource(appName: string, resource: any, cleanup?: () => void): void {
+    const appInfo = this.appInstances.get(appName);
+    if (appInfo) {
+      appInfo.resources.add(resource);
+      if (cleanup) {
+        appInfo.cleanupFunctions.push(cleanup);
+      }
+    }
+  }
+  
+  /**
+   * 扫描并清理空闲应用
+   */
+  private scanIdleApps(): void {
+    const now = Date.now();
+    
+    this.appInstances.forEach((appInfo, appName) => {
+      const idleTime = now - appInfo.lastAccessed;
+      
+      // 如果应用空闲时间超过阈值且使用频率不高，则卸载
+      if (idleTime > this.maxIdleTime && appInfo.usageCount < 5) {
+        console.log(`卸载长时间未使用的微应用: ${appName} (空闲时间: ${idleTime / 1000}秒)`);
+        this.unloadApp(appName);
+      }
+    });
+  }
+  
+  /**
+   * 页面隐藏时清理不常用的应用
+   */
+  private cleanupUnusedAppsOnHidden(): void {
+    // 保留最近使用的2个应用，卸载其他应用
+    const sortedApps = Array.from(this.appInstances.entries())
+      .sort(([,a], [,b]) => b.lastAccessed - a.lastAccessed);
+    
+    const appsToUnload = sortedApps.slice(2);
+    appsToUnload.forEach(([appName]) => {
+      console.log(`页面隐藏时卸载不常用微应用: ${appName}`);
+      this.unloadApp(appName);
+    });
+  }
+  
+  /**
+   * 卸载微应用
+   */
+  public unloadApp(appName: string): void {
+    const appInfo = this.appInstances.get(appName);
+    if (!appInfo) return;
+    
+    try {
+      // 执行所有清理函数
+      appInfo.cleanupFunctions.forEach(cleanup => {
+        try {
+          cleanup();
+        } catch (error) {
+          console.error(`执行微应用 ${appName} 的清理函数时出错:`, error);
+        }
+      });
+      
+      // 释放资源引用
+      appInfo.resources.clear();
+      appInfo.cleanupFunctions = [];
+      
+      // 从实例映射中移除
+      this.appInstances.delete(appName);
+      
+      console.log(`微应用 ${appName} 已成功卸载并清理资源`);
+    } catch (error) {
+      console.error(`卸载微应用 ${appName} 时出错:`, error);
+    }
+  }
+  
+  /**
+   * 获取应用使用统计信息
+   */
+  public getAppStats(): Array<{
+    appName: string;
+    mountedTime: number;
+    idleTime: number;
+    usageCount: number;
+    resourceCount: number;
+  }> {
+    const now = Date.now();
+    
+    return Array.from(this.appInstances.entries()).map(([appName, appInfo]) => ({
+      appName,
+      mountedTime: appInfo.mountedTime,
+      idleTime: now - appInfo.lastAccessed,
+      usageCount: appInfo.usageCount,
+      resourceCount: appInfo.resources.size
+    }));
+  }
+}
+
+// 使用示例
+const lifecycleManager = EnhancedAppLifecycleManager.getInstance();
+
+// 在微应用挂载时注册
+function mountMicroApp(appName, instance) {
+  lifecycleManager.registerAppInstance(appName, instance);
+  
+  // 注册需要清理的资源
+  const subscription = someObservable.subscribe(() => {});
+  lifecycleManager.registerAppResource(appName, subscription, () => {
+    subscription.unsubscribe();
+  });
+  
+  // 注册事件监听器的清理
+  const handleResize = () => {};
+  window.addEventListener('resize', handleResize);
+  lifecycleManager.registerAppResource(appName, handleResize, () => {
+    window.removeEventListener('resize', handleResize);
+  });
+}
+
+// 在微应用访问时记录
+function accessMicroApp(appName) {
+  lifecycleManager.recordAppAccess(appName);
+}
+
 
 ---
 
 ## 🔒 **安全与隔离** / Security and Isolation
 
+在微前端架构中，安全与隔离是确保系统稳定和数据安全的关键要素。Bone平台采用多层次的安全策略，实现了微应用间的有效隔离、统一的身份认证授权、严格的跨域控制和全面的数据保护机制。
+
 ### 6.1 Sandbox Implementation / 沙箱实现
 
-使用JavaScript沙箱技术，实现微应用间的运行环境隔离，防止全局变量污染。
+沙箱实现是微前端架构安全的基础，Bone平台基于无界框架(wujie)实现了增强版的JavaScript沙箱，提供运行时隔离、样式隔离和网络隔离。
+
+#### 6.1.1 增强的沙箱配置
+
+```typescript
+/**
+ * 沙箱配置管理器
+ */
+export class SandboxConfigManager {
+  private static instance: SandboxConfigManager;
+  private defaultConfig: WujieConfig;
+  private appSpecificConfigs: Map<string, WujieConfig> = new Map();
+  
+  /**
+   * 获取单例实例
+   */
+  public static getInstance(): SandboxConfigManager {
+    if (!SandboxConfigManager.instance) {
+      SandboxConfigManager.instance = new SandboxConfigManager();
+    }
+    return SandboxConfigManager.instance;
+  }
+  
+  private constructor() {
+    // 初始化默认沙箱配置
+    this.defaultConfig = this.createDefaultConfig();
+  }
+  
+  /**
+   * 创建默认沙箱配置
+   */
+  private createDefaultConfig(): WujieConfig {
+    return {
+      // 启用JavaScript沙箱
+      jsSandbox: true,
+      // 启用样式隔离
+      cssSandbox: true,
+      // 严格的全局变量隔离模式
+      sandbox: 'strict',
+      // 禁止微应用修改顶层document
+      preventGlobalPollution: true,
+      // 禁止微应用访问敏感全局对象
+      prohibitedGlobals: [
+        'localStorage',
+        'sessionStorage',
+        'IndexedDB',
+        'document.cookie',
+        'history.pushState',
+        'history.replaceState'
+      ],
+      // 允许的全局事件
+      allowedEvents: [
+        'click',
+        'dblclick',
+        'mouseover',
+        'mouseout',
+        'keydown',
+        'keyup',
+        'input',
+        'change',
+        'focus',
+        'blur'
+      ],
+      // 网络请求拦截配置
+      fetchFilter: this.createFetchFilter(),
+      // 脚本执行白名单
+      scriptWhitelist: [],
+      // 样式隔离策略
+      cssIsolationStrategy: 'shadowdom',
+      // 最大执行时间（防止无限循环）
+      maxExecutionTime: 5000,
+      // 资源加载超时时间
+      resourceTimeout: 30000,
+      // 允许的iframe特性
+      allowedIframeFeatures: ['allow-scripts', 'allow-same-origin']
+    };
+  }
+  
+  /**
+   * 创建fetch请求过滤器
+   */
+  private createFetchFilter(): (url: string, options: RequestInit) => boolean {
+    return (url: string, options: RequestInit): boolean => {
+      // 禁止访问敏感路径
+      const sensitivePaths = ['/api/admin', '/api/auth', '/api/internal'];
+      if (sensitivePaths.some(path => url.includes(path))) {
+        console.warn(`微应用尝试访问被禁止的API路径: ${url}`);
+        return false;
+      }
+      
+      // 禁止不安全的请求方法
+      const unsafeMethods = ['TRACE', 'TRACK', 'CONNECT'];
+      if (options.method && unsafeMethods.includes(options.method)) {
+        console.warn(`微应用尝试使用被禁止的HTTP方法: ${options.method}`);
+        return false;
+      }
+      
+      // 检查请求头安全
+      const headers = options.headers as Record<string, string>;
+      if (headers) {
+        // 禁止修改安全相关的请求头
+        const securityHeaders = ['Authorization', 'Cookie', 'X-Requested-With'];
+        for (const header of securityHeaders) {
+          if (headers[header]) {
+            console.warn(`微应用尝试修改受保护的请求头: ${header}`);
+            delete headers[header];
+          }
+        }
+      }
+      
+      return true;
+    };
+  }
+  
+  /**
+   * 获取应用的沙箱配置
+   */
+  public getAppConfig(appName: string): WujieConfig {
+    const appConfig = this.appSpecificConfigs.get(appName);
+    if (appConfig) {
+      // 合并默认配置和应用特定配置
+      return { ...this.defaultConfig, ...appConfig };
+    }
+    return { ...this.defaultConfig };
+  }
+  
+  /**
+   * 为特定应用设置沙箱配置
+   */
+  public setAppConfig(appName: string, config: Partial<WujieConfig>): void {
+    this.appSpecificConfigs.set(appName, {
+      ...this.getAppConfig(appName),
+      ...config
+    });
+  }
+  
+  /**
+   * 更新全局默认配置
+   */
+  public updateDefaultConfig(config: Partial<WujieConfig>): void {
+    this.defaultConfig = { ...this.defaultConfig, ...config };
+  }
+  
+  /**
+   * 添加脚本白名单
+   */
+  public addScriptToWhitelist(scriptUrl: string, appName?: string): void {
+    if (appName) {
+      const config = this.getAppConfig(appName);
+      if (!config.scriptWhitelist.includes(scriptUrl)) {
+        config.scriptWhitelist.push(scriptUrl);
+        this.setAppConfig(appName, config);
+      }
+    } else {
+      if (!this.defaultConfig.scriptWhitelist.includes(scriptUrl)) {
+        this.defaultConfig.scriptWhitelist.push(scriptUrl);
+      }
+    }
+  }
+  
+  /**
+   * 添加允许的全局变量
+   */
+  public allowGlobal(globalName: string, appName?: string): void {
+    if (appName) {
+      const config = this.getAppConfig(appName);
+      config.prohibitedGlobals = config.prohibitedGlobals.filter(
+        name => name !== globalName
+      );
+      this.setAppConfig(appName, config);
+    } else {
+      this.defaultConfig.prohibitedGlobals = this.defaultConfig.prohibitedGlobals.filter(
+        name => name !== globalName
+      );
+    }
+  }
+}
+```
+
+#### 6.1.2 运行时安全监控器
+
+```typescript
+/**
+ * 沙箱运行时安全监控器
+ */
+export class SandboxSecurityMonitor {
+  private static instance: SandboxSecurityMonitor;
+  private violationReports: Array<{
+    timestamp: number;
+    appName: string;
+    violationType: string;
+    details: any;
+  }> = [];
+  private readonly maxReportHistory = 1000;
+  private alertThreshold = 5; // 同一应用在1分钟内的违规阈值
+  private violationCounts = new Map<string, number>();
+  private alertHandlers: Array<(report: any) => void> = [];
+  
+  /**
+   * 获取单例实例
+   */
+  public static getInstance(): SandboxSecurityMonitor {
+    if (!SandboxSecurityMonitor.instance) {
+      SandboxSecurityMonitor.instance = new SandboxSecurityMonitor();
+    }
+    return SandboxSecurityMonitor.instance;
+  }
+  
+  private constructor() {
+    this.setupViolationCounterReset();
+  }
+  
+  /**
+   * 设置违规计数器重置
+   */
+  private setupViolationCounterReset(): void {
+    // 每分钟重置一次违规计数
+    setInterval(() => {
+      this.violationCounts.clear();
+    }, 60000);
+  }
+  
+  /**
+   * 记录安全违规
+   */
+  public recordViolation(appName: string, violationType: string, details: any): void {
+    const report = {
+      timestamp: Date.now(),
+      appName,
+      violationType,
+      details
+    };
+    
+    // 记录违规报告
+    this.violationReports.push(report);
+    
+    // 限制历史记录大小
+    if (this.violationReports.length > this.maxReportHistory) {
+      this.violationReports.shift();
+    }
+    
+    // 记录违规计数
+    const key = `${appName}-${violationType}`;
+    const count = (this.violationCounts.get(key) || 0) + 1;
+    this.violationCounts.set(key, count);
+    
+    console.warn(`微应用安全违规:`, report);
+    
+    // 检查是否达到告警阈值
+    if (count >= this.alertThreshold) {
+      this.triggerAlert(report);
+    }
+  }
+  
+  /**
+   * 触发安全告警
+   */
+  private triggerAlert(report: any): void {
+    console.error(`安全告警: 微应用 ${report.appName} 触发了安全阈值`, report);
+    
+    // 调用所有注册的告警处理器
+    this.alertHandlers.forEach(handler => {
+      try {
+        handler(report);
+      } catch (error) {
+        console.error('执行告警处理器失败:', error);
+      }
+    });
+  }
+  
+  /**
+   * 注册告警处理器
+   */
+  public registerAlertHandler(handler: (report: any) => void): () => void {
+    this.alertHandlers.push(handler);
+    
+    // 返回取消注册函数
+    return () => {
+      const index = this.alertHandlers.indexOf(handler);
+      if (index >= 0) {
+        this.alertHandlers.splice(index, 1);
+      }
+    };
+  }
+  
+  /**
+   * 设置告警阈值
+   */
+  public setAlertThreshold(threshold: number): void {
+    this.alertThreshold = threshold;
+  }
+  
+  /**
+   * 获取违规统计
+   */
+  public getViolationStats(appName?: string): any {
+    if (appName) {
+      return this.violationReports
+        .filter(report => report.appName === appName)
+        .reduce((stats, report) => {
+          stats[report.violationType] = (stats[report.violationType] || 0) + 1;
+          return stats;
+        }, {} as Record<string, number>);
+    }
+    
+    // 所有应用的统计
+    return this.violationReports.reduce((stats, report) => {
+      if (!stats[report.appName]) {
+        stats[report.appName] = {};
+      }
+      stats[report.appName][report.violationType] = 
+        (stats[report.appName][report.violationType] || 0) + 1;
+      return stats;
+    }, {} as Record<string, Record<string, number>>);
+  }
+  
+  /**
+   * 获取最近的违规报告
+   */
+  public getRecentViolations(limit: number = 20, appName?: string): Array<any> {
+    let reports = [...this.violationReports];
+    
+    if (appName) {
+      reports = reports.filter(report => report.appName === appName);
+    }
+    
+    // 按时间倒序排序并返回最新的
+    return reports
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, limit);
+  }
+}
+```
+
+#### 6.1.3 沙箱初始化与集成
+
+```typescript
+/**
+ * 沙箱管理器
+ */
+export class SandboxManager {
+  private static instance: SandboxManager;
+  private sandboxes: Map<string, WujieInstance> = new Map();
+  private configManager = SandboxConfigManager.getInstance();
+  private securityMonitor = SandboxSecurityMonitor.getInstance();
+  
+  /**
+   * 获取单例实例
+   */
+  public static getInstance(): SandboxManager {
+    if (!SandboxManager.instance) {
+      SandboxManager.instance = new SandboxManager();
+    }
+    return SandboxManager.instance;
+  }
+  
+  private constructor() {
+    this.setupGlobalSecurity();
+  }
+  
+  /**
+   * 设置全局安全策略
+   */
+  private setupGlobalSecurity(): void {
+    // 拦截动态脚本创建
+    this.interceptDynamicScriptCreation();
+    
+    // 拦截动态样式创建
+    this.interceptDynamicStyleCreation();
+  }
+  
+  /**
+   * 拦截动态脚本创建
+   */
+  private interceptDynamicScriptCreation(): void {
+    const originalCreateElement = document.createElement;
+    
+    document.createElement = function(this: Document, tagName: string, options?: ElementCreationOptions): Element {
+      const element = originalCreateElement.call(this, tagName, options);
+      
+      if (tagName.toLowerCase() === 'script') {
+        const script = element as HTMLScriptElement;
+        const originalSrc = Object.getOwnPropertyDescriptor(script, 'src');
+        
+        // 拦截src属性设置
+        Object.defineProperty(script, 'src', {
+          get: function() {
+            return originalSrc?.get?.call(this);
+          },
+          set: function(value: string) {
+            // 检查脚本是否在白名单中
+            const sandboxManager = SandboxManager.getInstance();
+            const currentApp = sandboxManager.getCurrentApp();
+            
+            if (currentApp) {
+              const config = sandboxManager.configManager.getAppConfig(currentApp);
+              if (!config.scriptWhitelist.some(whitelisted => value.includes(whitelisted))) {
+                sandboxManager.securityMonitor.recordViolation(
+                  currentApp,
+                  'unauthorized_script',
+                  { url: value }
+                );
+                console.warn(`微应用 ${currentApp} 尝试加载未授权的脚本: ${value}`);
+                return;
+              }
+            }
+            
+            if (originalSrc?.set) {
+              originalSrc.set.call(this, value);
+            } else {
+              (this as any).setAttribute('src', value);
+            }
+          }
+        });
+      }
+      
+      return element;
+    } as typeof document.createElement;
+  }
+  
+  /**
+   * 拦截动态样式创建
+   */
+  private interceptDynamicStyleCreation(): void {
+    // 类似脚本拦截的实现
+    // ...
+  }
+  
+  /**
+   * 创建微应用沙箱实例
+   */
+  public async createSandbox(appName: string, config: MicroAppConfig): Promise<WujieInstance> {
+    // 获取应用特定的沙箱配置
+    const sandboxConfig = this.configManager.getAppConfig(appName);
+    
+    // 创建无界实例
+    const wujieInstance = window.wujie.createApp({
+      name: appName,
+      url: config.entry,
+      ...sandboxConfig,
+      props: {
+        ...config.props,
+        onSecurityViolation: (violation: any) => {
+          this.securityMonitor.recordViolation(appName, violation.type, violation.details);
+        }
+      },
+      // 生命周期钩子增强
+      beforeLoad: () => {
+        console.log(`[沙箱] 开始加载微应用: ${appName}`);
+        return config.beforeLoad?.() ?? true;
+      },
+      beforeMount: () => {
+        console.log(`[沙箱] 开始挂载微应用: ${appName}`);
+        return config.beforeMount?.() ?? true;
+      },
+      afterMount: () => {
+        console.log(`[沙箱] 微应用挂载完成: ${appName}`);
+        config.afterMount?.();
+      },
+      beforeUnmount: () => {
+        console.log(`[沙箱] 开始卸载微应用: ${appName}`);
+        return config.beforeUnmount?.() ?? true;
+      },
+      afterUnmount: () => {
+        console.log(`[沙箱] 微应用卸载完成: ${appName}`);
+        config.afterUnmount?.();
+        // 确保完全清理资源
+        this.cleanupSandbox(appName);
+      },
+      // 错误处理增强
+      onError: (error: any) => {
+        console.error(`[沙箱] 微应用 ${appName} 发生错误:`, error);
+        this.securityMonitor.recordViolation(appName, 'runtime_error', { error: error.message });
+        config.onError?.(error);
+      }
+    });
+    
+    // 存储沙箱实例
+    this.sandboxes.set(appName, wujieInstance);
+    
+    return wujieInstance;
+  }
+  
+  /**
+   * 挂载微应用
+   */
+  public async mountApp(appName: string, container: HTMLElement): Promise<void> {
+    let wujieInstance = this.sandboxes.get(appName);
+    
+    if (!wujieInstance) {
+      throw new Error(`未找到微应用 ${appName} 的沙箱实例`);
+    }
+    
+    try {
+      // 挂载微应用
+      await wujieInstance.mount(container);
+      
+      // 设置当前活动的应用
+      this.setCurrentApp(appName);
+    } catch (error) {
+      console.error(`挂载微应用 ${appName} 失败:`, error);
+      throw error;
+    }
+  }
+  
+  /**
+   * 卸载微应用
+   */
+  public async unmountApp(appName: string): Promise<void> {
+    const wujieInstance = this.sandboxes.get(appName);
+    
+    if (wujieInstance) {
+      try {
+        await wujieInstance.unmount();
+      } catch (error) {
+        console.error(`卸载微应用 ${appName} 失败:`, error);
+      }
+    }
+  }
+  
+  /**
+   * 清理沙箱资源
+   */
+  private cleanupSandbox(appName: string): void {
+    // 执行额外的清理操作
+    // 清除事件监听器、定时器等
+    this.clearAppIntervals(appName);
+    this.clearAppEventListeners(appName);
+  }
+  
+  /**
+   * 清除应用的定时器
+   */
+  private clearAppIntervals(appName: string): void {
+    // 实现定时器清理逻辑
+    // ...
+  }
+  
+  /**
+   * 清除应用的事件监听器
+   */
+  private clearAppEventListeners(appName: string): void {
+    // 实现事件监听器清理逻辑
+    // ...
+  }
+  
+  /**
+   * 设置当前活动的应用
+   */
+  private setCurrentApp(appName: string): void {
+    // 存储当前活动应用信息
+    (window as any).__CURRENT_MICRO_APP__ = appName;
+  }
+  
+  /**
+   * 获取当前活动的应用
+   */
+  private getCurrentApp(): string | null {
+    return (window as any).__CURRENT_MICRO_APP__ || null;
+  }
+}
+```
 
 ### 6.2 Authentication and Authorization / 认证与授权
 
-统一的身份认证和权限管理机制，确保系统安全性。
+Bone平台实现了统一的身份认证和细粒度的权限管理机制，确保用户只能访问其被授权的功能和数据。
+
+#### 6.2.1 统一认证服务
+
+```typescript
+/**
+ * 统一认证服务
+ */
+export class AuthService {
+  private static instance: AuthService;
+  private tokenKey = 'bone_auth_token';
+  private userInfoKey = 'bone_user_info';
+  private refreshTokenKey = 'bone_refresh_token';
+  private tokenExpiryKey = 'bone_token_expiry';
+  private authEvents = new EventEmitter();
+  private refreshTimer: NodeJS.Timeout | null = null;
+  private readonly tokenRefreshThreshold = 5 * 60 * 1000; // 提前5分钟刷新
+  
+  /**
+   * 获取单例实例
+   */
+  public static getInstance(): AuthService {
+    if (!AuthService.instance) {
+      AuthService.instance = new AuthService();
+    }
+    return AuthService.instance;
+  }
+  
+  private constructor() {
+    this.setupTokenRefresh();
+  }
+  
+  /**
+   * 设置令牌自动刷新
+   */
+  private setupTokenRefresh(): void {
+    const expiryTime = this.getTokenExpiry();
+    if (expiryTime) {
+      const timeUntilRefresh = expiryTime - Date.now() - this.tokenRefreshThreshold;
+      
+      if (timeUntilRefresh > 0) {
+        this.refreshTimer = setTimeout(() => {
+          this.refreshToken();
+        }, timeUntilRefresh);
+      } else {
+        // 令牌即将过期，立即刷新
+        this.refreshToken();
+      }
+    }
+  }
+  
+  /**
+   * 用户登录
+   */
+  public async login(username: string, password: string): Promise<{ success: boolean; message?: string }> {
+    try {
+      // 执行登录请求
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ username, password }),
+        credentials: 'include' // 包含Cookie
+      });
+      
+      if (!response.ok) {
+        throw new Error(`登录失败: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.token) {
+        // 存储认证信息
+        this.setAuthData(data);
+        
+        // 触发登录成功事件
+        this.authEvents.emit('loginSuccess', data.userInfo);
+        
+        return { success: true };
+      } else {
+        return { success: false, message: data.message || '登录失败' };
+      }
+    } catch (error) {
+      console.error('登录过程中发生错误:', error);
+      return { success: false, message: error.message || '登录过程中发生错误' };
+    }
+  }
+  
+  /**
+   * 用户登出
+   */
+  public async logout(): Promise<void> {
+    try {
+      // 通知服务器登出
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.getToken()}`,
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'include'
+      });
+    } catch (error) {
+      console.warn('登出请求失败，但仍清除本地状态:', error);
+    } finally {
+      // 清除本地存储的认证信息
+      this.clearAuthData();
+      
+      // 触发登出事件
+      this.authEvents.emit('logout');
+    }
+  }
+  
+  /**
+   * 刷新访问令牌
+   */
+  private async refreshToken(): Promise<void> {
+    const refreshToken = this.getRefreshToken();
+    
+    if (!refreshToken) {
+      console.warn('没有刷新令牌，无法刷新访问令牌');
+      this.handleTokenExpired();
+      return;
+    }
+    
+    try {
+      const response = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({ refreshToken }),
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.token) {
+          // 更新认证信息
+          this.setAuthData(data);
+          
+          // 触发令牌刷新事件
+          this.authEvents.emit('tokenRefreshed');
+          
+          return;
+        }
+      }
+      
+      // 刷新失败，处理令牌过期
+      this.handleTokenExpired();
+    } catch (error) {
+      console.error('刷新令牌失败:', error);
+      this.handleTokenExpired();
+    }
+  }
+  
+  /**
+   * 处理令牌过期
+   */
+  private handleTokenExpired(): void {
+    // 清除认证信息
+    this.clearAuthData();
+    
+    // 触发令牌过期事件
+    this.authEvents.emit('tokenExpired');
+  }
+  
+  /**
+   * 存储认证数据
+   */
+  private setAuthData(data: { token: string; refreshToken: string; userInfo: any; expiresIn: number }): void {
+    const expiryTime = Date.now() + data.expiresIn * 1000;
+    
+    // 使用localStorage存储，实际项目中可以考虑使用更安全的方式
+    localStorage.setItem(this.tokenKey, data.token);
+    localStorage.setItem(this.refreshTokenKey, data.refreshToken);
+    localStorage.setItem(this.userInfoKey, JSON.stringify(data.userInfo));
+    localStorage.setItem(this.tokenExpiryKey, expiryTime.toString());
+    
+    // 设置自动刷新
+    this.setupTokenRefresh();
+  }
+  
+  /**
+   * 清除认证数据
+   */
+  private clearAuthData(): void {
+    localStorage.removeItem(this.tokenKey);
+    localStorage.removeItem(this.refreshTokenKey);
+    localStorage.removeItem(this.userInfoKey);
+    localStorage.removeItem(this.tokenExpiryKey);
+    
+    // 清除刷新定时器
+    if (this.refreshTimer) {
+      clearTimeout(this.refreshTimer);
+      this.refreshTimer = null;
+    }
+  }
+  
+  /**
+   * 获取访问令牌
+   */
+  public getToken(): string | null {
+    return localStorage.getItem(this.tokenKey);
+  }
+  
+  /**
+   * 获取刷新令牌
+   */
+  private getRefreshToken(): string | null {
+    return localStorage.getItem(this.refreshTokenKey);
+  }
+  
+  /**
+   * 获取令牌过期时间
+   */
+  private getTokenExpiry(): number | null {
+    const expiryStr = localStorage.getItem(this.tokenExpiryKey);
+    return expiryStr ? parseInt(expiryStr, 10) : null;
+  }
+  
+  /**
+   * 获取用户信息
+   */
+  public getUserInfo(): any | null {
+    const userInfoStr = localStorage.getItem(this.userInfoKey);
+    return userInfoStr ? JSON.parse(userInfoStr) : null;
+  }
+  
+  /**
+   * 检查用户是否已认证
+   */
+  public isAuthenticated(): boolean {
+    const token = this.getToken();
+    const expiry = this.getTokenExpiry();
+    
+    // 检查令牌是否存在且未过期
+    return !!token && !!expiry && expiry > Date.now();
+  }
+  
+  /**
+   * 检查用户是否有权限
+   */
+  public hasPermission(permission: string): boolean {
+    const userInfo = this.getUserInfo();
+    
+    if (!userInfo || !userInfo.permissions) {
+      return false;
+    }
+    
+    // 支持权限通配符，如 'user:*' 匹配所有用户相关权限
+    if (permission.includes('*')) {
+      const pattern = new RegExp(permission.replace(/\*/g, '.*'));
+      return userInfo.permissions.some((p: string) => pattern.test(p));
+    }
+    
+    return userInfo.permissions.includes(permission);
+  }
+  
+  /**
+   * 检查用户是否有角色
+   */
+  public hasRole(role: string): boolean {
+    const userInfo = this.getUserInfo();
+    return userInfo && userInfo.roles && userInfo.roles.includes(role);
+  }
+  
+  /**
+   * 添加认证事件监听器
+   */
+  public on(event: string, handler: (...args: any[]) => void): () => void {
+    this.authEvents.on(event, handler);
+    
+    // 返回取消监听函数
+    return () => {
+      this.authEvents.off(event, handler);
+    };
+  }
+  
+  /**
+   * 一次性认证事件监听
+   */
+  public once(event: string, handler: (...args: any[]) => void): void {
+    this.authEvents.once(event, handler);
+  }
+  
+  /**
+   * 获取认证头
+   */
+  public getAuthHeaders(): Record<string, string> {
+    const token = this.getToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+}
+```
+
+#### 6.2.2 权限守卫组件
+
+```typescript
+import React, { useEffect, useState } from 'react';
+import { useNavigate, Navigate } from 'react-router-dom';
+import { AuthService } from './AuthService';
+
+interface PermissionGuardProps {
+  requiredPermission?: string;
+  requiredRole?: string;
+  fallback?: React.ReactNode;
+  redirectTo?: string;
+  children: React.ReactNode;
+}
+
+/**
+ * 权限守卫组件
+ */
+export const PermissionGuard: React.FC<PermissionGuardProps> = ({
+  requiredPermission,
+  requiredRole,
+  fallback = <div>您没有权限访问此页面</div>,
+  redirectTo,
+  children
+}) => {
+  const authService = AuthService.getInstance();
+  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasAccess, setHasAccess] = useState(false);
+  
+  useEffect(() => {
+    const checkAccess = async () => {
+      try {
+        // 检查是否已认证
+        if (!authService.isAuthenticated()) {
+          setHasAccess(false);
+          return;
+        }
+        
+        // 检查权限
+        if (requiredPermission && !authService.hasPermission(requiredPermission)) {
+          setHasAccess(false);
+          return;
+        }
+        
+        // 检查角色
+        if (requiredRole && !authService.hasRole(requiredRole)) {
+          setHasAccess(false);
+          return;
+        }
+        
+        // 拥有访问权限
+        setHasAccess(true);
+      } catch (error) {
+        console.error('权限检查失败:', error);
+        setHasAccess(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkAccess();
+    
+    // 监听权限变化
+    const unregisterListener = authService.on('permissionChanged', checkAccess);
+    
+    return () => {
+      unregisterListener();
+    };
+  }, [requiredPermission, requiredRole, authService]);
+  
+  if (isLoading) {
+    return <div>权限检查中...</div>;
+  }
+  
+  if (!hasAccess) {
+    if (redirectTo) {
+      return <Navigate to={redirectTo} replace />;
+    }
+    return fallback;
+  }
+  
+  return <>{children}</>;
+};
+
+/**
+ * 权限检查Hook
+ */
+export const usePermission = (permission?: string, role?: string) => {
+  const authService = AuthService.getInstance();
+  const [hasPermission, setHasPermission] = useState(false);
+  
+  useEffect(() => {
+    const checkPermission = () => {
+      if (!authService.isAuthenticated()) {
+        setHasPermission(false);
+        return;
+      }
+      
+      if (permission && !authService.hasPermission(permission)) {
+        setHasPermission(false);
+        return;
+      }
+      
+      if (role && !authService.hasRole(role)) {
+        setHasPermission(false);
+        return;
+      }
+      
+      setHasPermission(true);
+    };
+    
+    checkPermission();
+    
+    // 监听认证状态变化
+    const unregisterAuthListener = authService.on('loginSuccess', checkPermission);
+    const unregisterLogoutListener = authService.on('logout', checkPermission);
+    const unregisterTokenListener = authService.on('tokenRefreshed', checkPermission);
+    
+    return () => {
+      unregisterAuthListener();
+      unregisterLogoutListener();
+      unregisterTokenListener();
+    };
+  }, [permission, role, authService]);
+  
+  return hasPermission;
+};
+```
 
 ### 6.3 Cross-Origin Security / 跨域安全
 
-实现安全的跨域资源共享策略，保障数据传输安全。
+Bone平台实现了全面的跨域安全策略，包括CORS配置、CSRF防护和安全的跨域通信机制。
+
+#### 6.3.1 跨域资源共享(CORS)配置
+
+```typescript
+/**
+ * CORS配置管理器
+ */
+export class CorsConfigManager {
+  private static instance: CorsConfigManager;
+  private allowedOrigins: Set<string> = new Set();
+  private allowedMethods: string[] = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'];
+  private allowedHeaders: string[] = [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'Cache-Control',
+    'Pragma'
+  ];
+  private exposeHeaders: string[] = [
+    'Content-Length',
+    'Access-Control-Allow-Origin',
+    'Access-Control-Allow-Headers',
+    'Content-Type'
+  ];
+  private allowCredentials = true;
+  private maxAge = 86400; // 24小时
+  
+  /**
+   * 获取单例实例
+   */
+  public static getInstance(): CorsConfigManager {
+    if (!CorsConfigManager.instance) {
+      CorsConfigManager.instance = new CorsConfigManager();
+    }
+    return CorsConfigManager.instance;
+  }
+  
+  private constructor() {
+    // 初始化默认允许的源
+    this.addAllowedOrigin('https://app.bone.com');
+    this.addAllowedOrigin('https://test.bone.com');
+  }
+  
+  /**
+   * 添加允许的源
+   */
+  public addAllowedOrigin(origin: string): void {
+    this.allowedOrigins.add(origin);
+  }
+  
+  /**
+   * 移除允许的源
+   */
+  public removeAllowedOrigin(origin: string): void {
+    this.allowedOrigins.delete(origin);
+  }
+  
+  /**
+   * 检查源是否被允许
+   */
+  public isOriginAllowed(origin: string): boolean {
+    return this.allowedOrigins.has(origin);
+  }
+  
+  /**
+   * 获取CORS响应头
+   */
+  public getCorsHeaders(requestOrigin?: string): Record<string, string> {
+    const headers: Record<string, string> = {
+      'Access-Control-Allow-Methods': this.allowedMethods.join(','),
+      'Access-Control-Allow-Headers': this.allowedHeaders.join(','),
+      'Access-Control-Expose-Headers': this.exposeHeaders.join(','),
+      'Access-Control-Allow-Credentials': this.allowCredentials.toString(),
+      'Access-Control-Max-Age': this.maxAge.toString()
+    };
+    
+    // 只有当请求源在允许列表中时才设置允许的源
+    if (requestOrigin && this.isOriginAllowed(requestOrigin)) {
+      headers['Access-Control-Allow-Origin'] = requestOrigin;
+    }
+    
+    return headers;
+  }
+  
+  /**
+   * 设置允许的HTTP方法
+   */
+  public setAllowedMethods(methods: string[]): void {
+    this.allowedMethods = methods;
+  }
+  
+  /**
+   * 添加允许的HTTP方法
+   */
+  public addAllowedMethod(method: string): void {
+    if (!this.allowedMethods.includes(method)) {
+      this.allowedMethods.push(method);
+    }
+  }
+  
+  /**
+   * 设置允许的请求头
+   */
+  public setAllowedHeaders(headers: string[]): void {
+    this.allowedHeaders = headers;
+  }
+  
+  /**
+   * 添加允许的请求头
+   */
+  public addAllowedHeader(header: string): void {
+    if (!this.allowedHeaders.includes(header)) {
+      this.allowedHeaders.push(header);
+    }
+  }
+  
+  /**
+   * 设置是否允许凭证
+   */
+  public setAllowCredentials(allow: boolean): void {
+    this.allowCredentials = allow;
+  }
+  
+  /**
+   * 设置预检请求结果缓存时间
+   */
+  public setMaxAge(seconds: number): void {
+    this.maxAge = seconds;
+  }
+}
+```
+
+#### 6.3.2 CSRF防护机制
+
+```typescript
+/**
+ * CSRF保护服务
+ */
+export class CsrfProtectionService {
+  private static instance: CsrfProtectionService;
+  private csrfTokenKey = 'bone_csrf_token';
+  private tokenValidity = 3600000; // 1小时
+  
+  /**
+   * 获取单例实例
+   */
+  public static getInstance(): CsrfProtectionService {
+    if (!CsrfProtectionService.instance) {
+      CsrfProtectionService.instance = new CsrfProtectionService();
+    }
+    return CsrfProtectionService.instance;
+  }
+  
+  private constructor() {
+    // 初始化CSRF令牌
+    this.initCsrfToken();
+  }
+  
+  /**
+   * 初始化CSRF令牌
+   */
+  private async initCsrfToken(): Promise<void> {
+    const existingToken = this.getCsrfToken();
+    
+    if (!existingToken || this.isTokenExpired(existingToken)) {
+      await this.fetchNewCsrfToken();
+    }
+  }
+  
+  /**
+   * 从服务器获取新的CSRF令牌
+   */
+  private async fetchNewCsrfToken(): Promise<void> {
+    try {
+      const response = await fetch('/api/csrf-token', {
+        method: 'GET',
+        credentials: 'include',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.token) {
+          this.storeCsrfToken(data.token);
+        }
+      }
+    } catch (error) {
+      console.error('获取CSRF令牌失败:', error);
+    }
+  }
+  
+  /**
+   * 存储CSRF令牌
+   */
+  private storeCsrfToken(token: string): void {
+    const tokenData = {
+      value: token,
+      timestamp: Date.now()
+    };
+    
+    // 存储在sessionStorage中，因为CSRF令牌应该与会话绑定
+    sessionStorage.setItem(this.csrfTokenKey, JSON.stringify(tokenData));
+  }
+  
+  /**
+   * 获取CSRF令牌
+   */
+  public getCsrfToken(): string | null {
+    try {
+      const tokenDataStr = sessionStorage.getItem(this.csrfTokenKey);
+      if (!tokenDataStr) return null;
+      
+      const tokenData = JSON.parse(tokenDataStr);
+      return tokenData.value;
+    } catch (error) {
+      console.error('获取CSRF令牌失败:', error);
+      return null;
+    }
+  }
+  
+  /**
+   * 检查令牌是否过期
+   */
+  private isTokenExpired(tokenData: any): boolean {
+    if (!tokenData || !tokenData.timestamp) return true;
+    
+    return Date.now() - tokenData.timestamp > this.tokenValidity;
+  }
+  
+  /**
+   * 获取带有CSRF令牌的请求头
+   */
+  public getCsrfHeaders(): Record<string, string> {
+    const token = this.getCsrfToken();
+    if (!token) {
+      // 如果没有令牌，尝试获取新令牌
+      this.fetchNewCsrfToken();
+    }
+    
+    return token ? {
+      'X-CSRF-Token': token,
+      'X-Requested-With': 'XMLHttpRequest'
+    } : {
+      'X-Requested-With': 'XMLHttpRequest'
+    };
+  }
+  
+  /**
+   * 验证CSRF令牌（服务器端逻辑，这里仅作演示）
+   */
+  public async validateCsrfToken(token: string): Promise<boolean> {
+    try {
+      const response = await fetch('/api/validate-csrf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getCsrfHeaders()
+        },
+        body: JSON.stringify({ token }),
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.valid === true;
+      }
+    } catch (error) {
+      console.error('验证CSRF令牌失败:', error);
+    }
+    
+    return false;
+  }
+  
+  /**
+   * 为fetch请求添加CSRF保护
+   */
+  public enhanceFetch(fetchFn?: typeof fetch): typeof fetch {
+    const baseFetch = fetchFn || window.fetch;
+    
+    return (input: RequestInfo, init?: RequestInit): Promise<Response> => {
+      // 只对非GET请求添加CSRF保护
+      const method = (init?.method || 'GET').toUpperCase();
+      if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {
+        init = {
+          ...init,
+          headers: {
+            ...init?.headers,
+            ...this.getCsrfHeaders()
+          },
+          credentials: init?.credentials || 'include'
+        };
+      }
+      
+      return baseFetch(input, init);
+    };
+  }
+}
+
+// 使用示例：增强全局fetch
+window.fetch = CsrfProtectionService.getInstance().enhanceFetch();
+```
+
+### 6.4 数据安全与隐私保护
+
+除了以上安全措施，Bone平台还实现了全面的数据安全与隐私保护机制，确保敏感数据在传输和存储过程中的安全性。
+
+#### 6.4.1 数据加密工具
+
+```typescript
+/**
+ * 数据加密服务
+ */
+export class EncryptionService {
+  private static instance: EncryptionService;
+  private cryptoKey: CryptoKey | null = null;
+  private keyDerivationSalt: Uint8Array;
+  private keyDerivationIterations = 100000;
+  
+  /**
+   * 获取单例实例
+   */
+  public static getInstance(): EncryptionService {
+    if (!EncryptionService.instance) {
+      EncryptionService.instance = new EncryptionService();
+    }
+    return EncryptionService.instance;
+  }
+  
+  private constructor() {
+    // 初始化盐值（实际项目中应从服务器获取或使用环境变量）
+    this.keyDerivationSalt = this.hexStringToUint8Array('a1b2c3d4e5f6');
+    this.initializeCryptoKey();
+  }
+  
+  /**
+   * 初始化加密密钥
+   */
+  private async initializeCryptoKey(): Promise<void> {
+    try {
+      // 从密码派生密钥（实际项目中应使用更安全的方式）
+      const password = await this.getEncryptionPassword();
+      this.cryptoKey = await this.deriveKeyFromPassword(password);
+    } catch (error) {
+      console.error('初始化加密密钥失败:', error);
+    }
+  }
+  
+  /**
+   * 获取加密密码（演示实现，实际应更安全）
+   */
+  private async getEncryptionPassword(): Promise<string> {
+    // 实际项目中应从安全存储获取或与服务器协商
+    return 'secure_master_password';
+  }
+  
+  /**
+   * 从密码派生加密密钥
+   */
+  private async deriveKeyFromPassword(password: string): Promise<CryptoKey> {
+    const encoder = new TextEncoder();
+    const passwordData = encoder.encode(password);
+    
+    // 使用PBKDF2派生密钥
+    const importedKey = await crypto.subtle.importKey(
+      'raw',
+      passwordData,
+      { name: 'PBKDF2' },
+      false,
+      ['deriveKey']
+    );
+    
+    return await crypto.subtle.deriveKey(
+      {
+        name: 'PBKDF2',
+        salt: this.keyDerivationSalt,
+        iterations: this.keyDerivationIterations,
+        hash: 'SHA-256'
+      },
+      importedKey,
+      {
+        name: 'AES-GCM',
+        length: 256
+      },
+      true,
+      ['encrypt', 'decrypt']
+    );
+  }
+  
+  /**
+   * 加密数据
+   */
+  public async encrypt(data: any): Promise<string> {
+    if (!this.cryptoKey) {
+      throw new Error('加密密钥未初始化');
+    }
+    
+    const encoder = new TextEncoder();
+    const dataStr = typeof data === 'string' ? data : JSON.stringify(data);
+    const dataBuffer = encoder.encode(dataStr);
+    
+    // 生成随机初始化向量
+    const iv = crypto.getRandomValues(new Uint8Array(12));
+    
+    // 加密数据
+    const encryptedData = await crypto.subtle.encrypt(
+      {
+        name: 'AES-GCM',
+        iv
+      },
+      this.cryptoKey,
+      dataBuffer
+    );
+    
+    // 合并IV和加密数据并转换为base64
+    const combined = new Uint8Array(iv.length + encryptedData.byteLength);
+    combined.set(iv);
+    combined.set(new Uint8Array(encryptedData), iv.length);
+    
+    return this.arrayBufferToBase64(combined.buffer);
+  }
+  
+  /**
+   * 解密数据
+   */
+  public async decrypt(encryptedData: string): Promise<any> {
+    if (!this.cryptoKey) {
+      throw new Error('加密密钥未初始化');
+    }
+    
+    // 解码base64并分离IV和加密数据
+    const combinedBuffer = this.base64ToArrayBuffer(encryptedData);
+    const iv = new Uint8Array(combinedBuffer.slice(0, 12));
+    const dataToDecrypt = combinedBuffer.slice(12);
+    
+    // 解密数据
+    const decryptedData = await crypto.subtle.decrypt(
+      {
+        name: 'AES-GCM',
+        iv
+      },
+      this.cryptoKey,
+      dataToDecrypt
+    );
+    
+    // 解码为文本
+    const decoder = new TextDecoder();
+    const decryptedText = decoder.decode(decryptedData);
+    
+    // 尝试解析为JSON
+    try {
+      return JSON.parse(decryptedText);
+    } catch {
+      return decryptedText;
+    }
+  }
+  
+  /**
+   * 哈希数据
+   */
+  public async hash(data: string): Promise<string> {
+    const encoder = new TextEncoder();
+    const dataBuffer = encoder.encode(data);
+    
+    const hashBuffer = await crypto.subtle.digest('SHA-256', dataBuffer);
+    
+    return this.arrayBufferToHexString(hashBuffer);
+  }
+  
+  /**
+   * 验证数据完整性
+   */
+  public async verifyIntegrity(data: string, expectedHash: string): Promise<boolean> {
+    const actualHash = await this.hash(data);
+    return actualHash === expectedHash;
+  }
+  
+  /**
+   * 工具方法：ArrayBuffer转Base64
+   */
+  private arrayBufferToBase64(buffer: ArrayBuffer): string {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    
+    return btoa(binary);
+  }
+  
+  /**
+   * 工具方法：Base64转ArrayBuffer
+   */
+  private base64ToArrayBuffer(base64: string): ArrayBuffer {
+    const binaryString = atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    
+    return bytes.buffer;
+  }
+  
+  /**
+   * 工具方法：ArrayBuffer转十六进制字符串
+   */
+  private arrayBufferToHexString(buffer: ArrayBuffer): string {
+    const bytes = new Uint8Array(buffer);
+    return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+  }
+  
+  /**
+   * 工具方法：十六进制字符串转Uint8Array
+   */
+  private hexStringToUint8Array(hexString: string): Uint8Array {
+    const bytes = new Uint8Array(hexString.length / 2);
+    
+    for (let i = 0; i < hexString.length; i += 2) {
+      bytes[i / 2] = parseInt(hexString.substr(i, 2), 16);
+    }
+    
+    return bytes;
+  }
+}
+```
+
+#### 6.4.2 安全存储服务
+
+```typescript
+/**
+ * 安全存储服务
+ */
+export class SecureStorageService {
+  private static instance: SecureStorageService;
+  private encryptionService = EncryptionService.getInstance();
+  private securePrefix = 'secure_';
+  private isSecureStorageAvailable = false;
+  
+  /**
+   * 获取单例实例
+   */
+  public static getInstance(): SecureStorageService {
+    if (!SecureStorageService.getInstance) {
+      SecureStorageService.getInstance = new SecureStorageService();
+    }
+    return SecureStorageService.getInstance;
+  }
+  
+  private constructor() {
+    this.checkSecureStorageAvailability();
+  }
+  
+  /**
+   * 检查安全存储是否可用
+   */
+  private checkSecureStorageAvailability(): void {
+    // 检查浏览器是否支持必要的API
+    this.isSecureStorageAvailable = (
+      'localStorage' in window &&
+      'crypto' in window &&
+      'subtle' in crypto &&
+      'TextEncoder' in window &&
+      'TextDecoder' in window
+    );
+  }
+  
+  /**
+   * 安全存储数据
+   */
+  public async setItem(key: string, value: any): Promise<void> {
+    if (!this.isSecureStorageAvailable) {
+      console.warn('安全存储不可用，使用普通存储');
+      this.fallbackSetItem(key, value);
+      return;
+    }
+    
+    try {
+      // 加密数据
+      const encryptedValue = await this.encryptionService.encrypt(value);
+      
+      // 添加安全前缀并存储
+      const secureKey = this.getSecureKey(key);
+      localStorage.setItem(secureKey, encryptedValue);
+    } catch (error) {
+      console.error('安全存储数据失败:', error);
+      // 失败时使用回退方案
+      this.fallbackSetItem(key, value);
+    }
+  }
+  
+  /**
+   * 获取安全存储的数据
+   */
+  public async getItem<T>(key: string): Promise<T | null> {
+    if (!this.isSecureStorageAvailable) {
+      console.warn('安全存储不可用，使用普通存储');
+      return this.fallbackGetItem<T>(key);
+    }
+    
+    try {
+      // 获取加密数据
+      const secureKey = this.getSecureKey(key);
+      const encryptedValue = localStorage.getItem(secureKey);
+      
+      if (!encryptedValue) {
+        return null;
+      }
+      
+      // 解密数据
+      return await this.encryptionService.decrypt(encryptedValue) as T;
+    } catch (error) {
+      console.error('获取安全存储数据失败:', error);
+      // 失败时尝试使用回退方案
+      return this.fallbackGetItem<T>(key);
+    }
+  }
+  
+  /**
+   * 删除安全存储的数据
+   */
+  public removeItem(key: string): void {
+    const secureKey = this.getSecureKey(key);
+    localStorage.removeItem(secureKey);
+    
+    // 同时删除可能存在的回退数据
+    this.fallbackRemoveItem(key);
+  }
+  
+  /**
+   * 清除所有安全存储的数据
+   */
+  public clear(): void {
+    // 只清除带有安全前缀的数据
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(this.securePrefix)) {
+        localStorage.removeItem(key);
+      }
+    }
+    
+    // 同时清除回退存储
+    this.fallbackClear();
+  }
+  
+  /**
+   * 获取安全键名
+   */
+  private getSecureKey(key: string): string {
+    return `${this.securePrefix}${key}`;
+  }
+  
+  /**
+   * 回退存储方法 - 使用sessionStorage
+   */
+  private fallbackSetItem(key: string, value: any): void {
+    try {
+      const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
+      sessionStorage.setItem(`fallback_${key}`, valueStr);
+    } catch (error) {
+      console.error('回退存储失败:', error);
+    }
+  }
+  
+  /**
+   * 回退获取方法
+   */
+  private fallbackGetItem<T>(key: string): T | null> {
+    try {
+      const valueStr = sessionStorage.getItem(`fallback_${key}`);
+      if (!valueStr) return null;
+      
+      try {
+        return JSON.parse(valueStr) as T;
+      } catch {
+        return valueStr as unknown as T;
+      }
+    } catch (error) {
+      console.error('回退获取失败:', error);
+      return null;
+    }
+  }
+  
+  /**
+   * 回退删除方法
+   */
+  private fallbackRemoveItem(key: string): void {
+    sessionStorage.removeItem(`fallback_${key}`);
+  }
+  
+  /**
+   * 回退清除方法
+   */
+  private fallbackClear(): void {
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key && key.startsWith('fallback_')) {
+        sessionStorage.removeItem(key);
+      }
+    }
+  }
+}
 
 ---
 

@@ -16,6 +16,12 @@ public class MetadataSdkProperties {
 
     private long slowQueryThreshold = 3000; // 3s in milliseconds
     
+    private boolean cacheEnabled = true;
+    
+    private int sqlCacheSize = 2000;
+    
+    private int sqlCacheExpireHours = 24;
+    
     // 手动添加getter方法
     public String getAppcode() {
         return appcode;
@@ -39,6 +45,30 @@ public class MetadataSdkProperties {
     
     public void setSlowQueryThreshold(long slowQueryThreshold) {
         this.slowQueryThreshold = slowQueryThreshold;
+    }
+    
+    public boolean isCacheEnabled() {
+        return cacheEnabled;
+    }
+    
+    public void setCacheEnabled(boolean cacheEnabled) {
+        this.cacheEnabled = cacheEnabled;
+    }
+    
+    public int getSqlCacheSize() {
+        return sqlCacheSize;
+    }
+    
+    public void setSqlCacheSize(int sqlCacheSize) {
+        this.sqlCacheSize = sqlCacheSize;
+    }
+    
+    public int getSqlCacheExpireHours() {
+        return sqlCacheExpireHours;
+    }
+    
+    public void setSqlCacheExpireHours(int sqlCacheExpireHours) {
+        this.sqlCacheExpireHours = sqlCacheExpireHours;
     }
 
     private Service service = new Service();
