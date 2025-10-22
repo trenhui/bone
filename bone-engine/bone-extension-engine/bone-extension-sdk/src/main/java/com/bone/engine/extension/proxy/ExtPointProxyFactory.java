@@ -293,9 +293,7 @@ public class ExtPointProxyFactory implements ApplicationContextAware, Initializi
              return null;
           }
 
-        private ExtensionLifecycle getLifecycleForExtension(Object extension) {
-            return lifecycleCache.get(extension);
-        }
+        // 移除重复的方法定义，使用上面的完整实现版本
     }
     
 /**

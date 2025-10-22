@@ -94,6 +94,7 @@ public class BizContext<T> implements Serializable {
     /**
      * 业务域代码
      */
+    private String bizCode;
     
     /**
      * 获取业务域代码
@@ -102,11 +103,11 @@ public class BizContext<T> implements Serializable {
     public String getBizCode() {
         return bizCode;
     }
-    private String bizCode;
     
     /**
      * 用例代码
      */
+    private String useCase;
     
     /**
      * 获取用例代码
@@ -115,11 +116,11 @@ public class BizContext<T> implements Serializable {
     public String getUseCase() {
         return useCase;
     }
-    private String useCase;
     
     /**
      * 场景代码
      */
+    private String scenario;
     
     /**
      * 获取场景代码
@@ -128,7 +129,6 @@ public class BizContext<T> implements Serializable {
     public String getScenario() {
         return scenario;
     }
-    private String scenario;
     
     /**
      * 环境标识

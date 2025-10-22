@@ -9,6 +9,7 @@ import java.time.temporal.TemporalAccessor;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.ServiceLoader;
 
 /**
  * 类型转换工具类，基于策略模式实现，支持线程安全、可扩展的类型转换。
@@ -47,8 +48,38 @@ public final class TypeConverter {
     }
     // endregion
 
+    /**
+     * 类型转换器扩展接口，用于SPI机制
+     */
+    public interface TypeConverterExtension {
+        /**
+         * 注册自定义转换器
+         */
+        void registerConverters();
+    }
+    
     // region 静态初始化 - 内置转换器
     static {
+        // 注册内置转换器
+        registerBuiltinConverters();
+        
+        // 加载SPI实现
+        try {
+            ServiceLoader<TypeConverterExtension> extensions = ServiceLoader.load(TypeConverterExtension.class);
+            
+            for (TypeConverterExtension extension : extensions) {
+                extension.registerConverters();
+            }
+        } catch (Throwable e) {
+            // 如果加载SPI时出错，记录日志但不中断初始化
+            System.err.println("Failed to load TypeConverter extensions: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 注册所有内置转换器
+     */
+    private static void registerBuiltinConverters() {
         registerConverter(Boolean.class, new BooleanConverter());
         registerConverter(boolean.class, new BooleanConverter());
         registerConverter(Integer.class, new IntegerConverter());

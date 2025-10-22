@@ -23,7 +23,7 @@ SmartMetadataEngine 是一个高性能、可扩展的元数据驱动引擎，提
 ```
 +-------------------+     +-------------------+     +-------------------+
 |                   |     |                   |     |                   |
-|   业务应用层      | --> | SmartMetadataEngine| --> |   数据存储层      |
+|   业务应用层      | --> |   MetadataEngine  | --> |   数据存储层      |
 |                   |     |    核心引擎       |     |                   |
 +-------------------+     +-------------------+     +-------------------+
                                |         |
@@ -46,34 +46,35 @@ SmartMetadataEngine 是一个高性能、可扩展的元数据驱动引擎，提
 
 ## 核心组件
 
-### 1. SmartMetadataEngine
+### 1. MetadataEngine
 
 核心引擎类，负责整合所有组件并提供统一的接口：
 
 ```java
-public class SmartMetadataEngine {
+@Component
+public class MetadataEngine implements InitializingBean {
     private final MetadataRegistry metadataRegistry;
-    private final FieldCalculationEngine fieldCalculationEngine;
-    private final BusinessRuleEngine businessRuleEngine;
-    private final BusinessRuleRegistry businessRuleRegistry;
+    private final MetadataRepository metadataRepository;
+    private final MetadataProcessor metadataProcessor;
+    private final ApplicationEventPublisher eventPublisher;
     
-    // 创建实体实例
-    public Map<String, Object> createEntity(String entityName, Map<String, Object> initialData) {
+    // 注册实体元数据
+    public void registerEntity(Object metadata) {
         // 实现逻辑
     }
     
-    // 验证实体数据
-    public ValidationResult validateEntity(String entityName, Map<String, Object> entityData) {
+    // 获取实体元数据
+    public Object getEntityMetadata(String entityName) {
         // 实现逻辑
     }
     
-    // 计算字段值
-    public void calculateFields(String entityName, Map<String, Object> entityData) {
+    // 重新加载实体元数据
+    public Object reloadEntityMetadata(String entityName) {
         // 实现逻辑
     }
     
-    // 应用业务规则
-    public List<RuleExecutionResult> applyBusinessRules(String entityName, Map<String, Object> entityData, String eventType) {
+    // 分析元数据变更影响
+    public Object analyzeMetadataImpact(String oldEntityName, Object newMetadata) {
         // 实现逻辑
     }
 }
@@ -138,7 +139,7 @@ EngineConfiguration config = EngineConfiguration.builder()
     .build();
 
 // 初始化引擎
-SmartMetadataEngine engine = new SmartMetadataEngine(config);
+MetadataEngine engine = new MetadataEngine(metadataRegistry, metadataRepository, metadataProcessor, eventPublisher);
 ```
 
 ### 2. 注册实体元数据
