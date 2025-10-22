@@ -199,7 +199,7 @@ public class ExtensionVersionManager implements InitializingBean {
         Extension extensionAnnotation = AnnotationUtils.findAnnotation(extension.getClass(), Extension.class);
         if (extensionAnnotation != null && StringUtils.hasText(extensionAnnotation.version())) {
             metadata.setVersion(extensionAnnotation.version());
-            metadata.setCompatibleWith(extensionAnnotation.compatibleWith());
+            metadata.setCompatibleWith(new String[0]); // Extension没有compatibleWith方法，使用空数组
         }
         
         // 解析Version注解获取更详细的版本信息

@@ -15,6 +15,8 @@ import java.lang.annotation.*;
  *   <li><strong>关注点分离：</strong>核心逻辑与定制逻辑分离，便于维护</li>
  *   <li><strong>动态路由：</strong>根据运行时上下文自动选择合适的扩展实现</li>
  *   <li><strong>开闭原则：</strong>对扩展开放，对修改关闭</li>
+ *   <li><strong>可观测性：</strong>提供丰富的监控和统计能力</li>
+ *   <li><strong>安全可控：</strong>支持权限控制和访问限制</li>
  * </ul>
  *
  * <h3>使用示例：</h3>
@@ -27,7 +29,12 @@ import java.lang.annotation.*;
  *     type = "BUSINESS",
  *     version = "1.0.0",
  *     category = "交易",
- *     priority = 100
+ *     domain = "订单",
+ *     group = "pricing",
+ *     priority = 100,
+ *     allowParallelExecution = true,
+ *     timeout = 5000,
+ *     circuitBreakerEnabled = true
  * )
  * public interface OrderDiscountExtPoint {
  *     DiscountResult calculate(BizContext<Order> context);
@@ -46,7 +53,7 @@ import java.lang.annotation.*;
  * </pre>
  *
  * @author Bone Engine Team
- * @version 1.0.0
+ * @version 2.0.0
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
@@ -84,6 +91,16 @@ public @interface ExtPoint {
     String category() default "";
     
     /**
+     * 扩展点所属领域
+     */
+    String domain() default "";
+    
+    /**
+     * 扩展点分组
+     */
+    String group() default "";
+    
+    /**
      * 默认优先级
      */
     int priority() default 100;
@@ -107,4 +124,46 @@ public @interface ExtPoint {
      * 是否启用缓存（默认启用）
      */
     boolean enableCache() default true;
+    
+    /**
+     * 缓存过期时间（毫秒），默认300000ms（5分钟）
+     */
+    long cacheExpireTime() default 300000L;
+    
+    /**
+     * 是否允许并行执行多个实现
+     */
+    boolean allowParallelExecution() default false;
+    
+    /**
+     * 执行超时时间（毫秒），默认0表示不限制
+     */
+    long timeout() default 0L;
+    
+    /**
+     * 是否启用熔断器
+     */
+    boolean circuitBreakerEnabled() default false;
+    
+    /**
+     * 熔断器失败阈值，默认5
+     */
+    int circuitBreakerFailureThreshold() default 5;
+    
+    /**
+     * 熔断器半开状态超时时间（毫秒），默认30000ms（30秒）
+     */
+    long circuitBreakerHalfOpenTimeout() default 30000L;
+    
+    /**
+     * 是否进行参数验证
+     */
+    boolean validateParams() default false;
+    
+    /**
+     * 是否需要事务支持
+     */
+    boolean transactional() default false;
+    
+
 }

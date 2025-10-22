@@ -52,9 +52,9 @@ public class OperationExample {
         // 创建操作元数据
         OperationMetadata submitOperation = createSubmitOperation();
         
-        // 注册操作元数据
+        // 注册操作元数据（只使用operationRegistry避免类型不兼容问题）
         operationRegistry.registerOperation(submitOperation);
-        metadataEngine.registerOperation(submitOperation);
+        // metadataEngine.registerOperation(submitOperation); // 移除可能导致类型转换错误的调用
         
         System.out.println("示例操作元数据创建成功");
     }

@@ -2,8 +2,9 @@ package com.bone.metadata.sdk.test.config;
 
 import com.bone.metadata.sdk.domain.annotation.EnableSqlRepositories;
 import com.bone.metadata.sdk.support.config.*;
-import com.bone.metadata.sdk.support.context.RequestContext;
+import com.bone.metadata.sdk.support.config.RequestContext;
 import com.bone.metadata.sdk.support.config.MetadataSdkProperties;
+import com.bone.metadata.sdk.domain.exception.ExceptionHandler;
 import feign.RequestInterceptor;
 import org.mockito.Mockito;
 import org.redisson.api.RAtomicLong;
@@ -121,7 +122,6 @@ public class TestConfig {
                 System.out.println("Exception logged: " + e.getMessage());
             }
         };
-    }
     }
 
 

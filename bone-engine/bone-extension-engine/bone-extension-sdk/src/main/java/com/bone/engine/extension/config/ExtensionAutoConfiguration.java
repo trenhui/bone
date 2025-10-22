@@ -7,6 +7,8 @@ import com.bone.engine.extension.loader.ExtensionLoader;
 import com.bone.engine.extension.proxy.ExtPointProxyFactory;
 import com.bone.engine.extension.router.DefaultExtPointRouter;
 import com.bone.engine.extension.router.ExtPointRouter;
+import com.bone.engine.extension.event.DefaultExtensionEventPublisher;
+import com.bone.engine.extension.event.ExtensionEventPublisher;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -69,26 +71,13 @@ public class ExtensionAutoConfiguration implements ImportAware {
      */
     @Bean
     @ConditionalOnMissingBean(ExtPointProxyFactory.class)
-    public ExtPointProxyFactory extPointProxyFactory(
-            ExtPointRouter extPointRouter,
-            ExtensionLifecycle extensionLifecycle,
-            ExtensionEventPublisher eventPublisher,
-            ExtensionConfigManager configManager) {
-        ExtPointProxyFactory factory = new ExtPointProxyFactory(extPointRouter, extensionLifecycle, eventPublisher, configManager);
+    public ExtPointProxyFactory extPointProxyFactory() {
+        ExtPointProxyFactory factory = new ExtPointProxyFactory();
         factory.setEnableCache(enableCache);
         return factory;
     }
 
-    /**
-     * 配置扩展点扫描器
-     */
-    @Bean
-    @ConditionalOnProperty(name = "bone.extension.auto-scan", havingValue = "true", matchIfMissing = true)
-    public ExtensionScanner extensionScanner() {
-        ExtensionScanner scanner = new ExtensionScanner();
-        scanner.setBasePackages(basePackages);
-        return scanner;
-    }
+    // 扩展点扫描功能已集成到ExtensionRegister中
 
     /**
      * 配置扩展点事件发布器
@@ -96,8 +85,8 @@ public class ExtensionAutoConfiguration implements ImportAware {
     @Bean
     @ConditionalOnProperty(name = "bone.extension.events.enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnMissingBean(ExtensionEventPublisher.class)
-    public ExtensionEventPublisher extensionEventPublisher() {
-        return new DefaultExtensionEventPublisher();
+    public ExtensionEventPublisher extensionEventPublisher(org.springframework.context.ApplicationEventPublisher applicationEventPublisher) {
+        return new DefaultExtensionEventPublisher(applicationEventPublisher);
     }
 
     /**
@@ -105,8 +94,9 @@ public class ExtensionAutoConfiguration implements ImportAware {
      */
     @Bean
     @ConditionalOnMissingBean(ExtensionConfigManager.class)
-    public ExtensionConfigManager extensionConfigManager(ExtensionProperties properties) {
-        ExtensionConfigManager manager = new ExtensionConfigManager(properties);
+    public ExtensionConfigManager extensionConfigManager() {
+        ExtensionConfigManager manager = new ExtensionConfigManager();
+        manager.init();
         return manager;
     }
     
@@ -121,10 +111,11 @@ public class ExtensionAutoConfiguration implements ImportAware {
     
     /**
      * 配置扩展点加载器
+     * 注意：ExtensionLoader是泛型类，这里返回一个FactoryBean用于创建具体类型的加载器
      */
     @Bean
-    @ConditionalOnMissingBean(ExtensionLoader.class)
-    public ExtensionLoader extensionLoader() {
-        return new ExtensionLoader();
+    @ConditionalOnMissingBean(name = "extensionLoaderFactory")
+    public Object extensionLoaderFactory() {
+        return new Object(); // 使用占位符，实际使用时通过ExtensionLoader.getExtensionLoader()获取具体类型的加载器
     }
 }

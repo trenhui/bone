@@ -49,7 +49,7 @@ public class AiQueryOptimizer {
         // 检查是否需要AI优化
         // 暂时注释掉isAiQueryOptimizationEnabled()调用，因为EntityMetadata类中似乎没有这个方法
         // if (!entityMetadata.isAiQueryOptimizationEnabled()) {
-        //     log.debug("实体 {} 的AI查询优化未启用", entityMetadata.getEntityName());
+        //     logger.debug("实体 {} 的AI查询优化未启用", entityMetadata.getEntityName());
         //     return smartql;
         // }
         
@@ -58,13 +58,13 @@ public class AiQueryOptimizer {
         // String cacheKey = generateCacheKey(smartql, entityMetadata.getEntityName(), userId);
         String cacheKey = generateCacheKey(smartql, "unknown_entity", userId); // 使用占位符
         if (optimizationCache.containsKey(cacheKey)) {
-            // log.debug("从优化缓存获取查询结果，实体: {}", entityMetadata.getEntityName());
-            log.debug("从优化缓存获取查询结果，实体: {}", "unknown_entity");
+            // 使用System.out.println代替logger.debug
+            System.out.println("从优化缓存获取查询结果，实体: unknown_entity");
             return optimizationCache.get(cacheKey);
         }
         
-        // log.debug("开始优化查询，实体: {}", entityMetadata.getEntityName());
-        log.debug("开始优化查询，实体: {}", "unknown_entity");
+        // System.out.println("开始优化查询，实体: " + entityMetadata.getEntityName());
+        System.out.println("开始优化查询，实体: unknown_entity");
         long startTime = System.currentTimeMillis();
         
         // 规范化查询
@@ -90,14 +90,13 @@ public class AiQueryOptimizer {
         
         // 记录优化性能
         long duration = System.currentTimeMillis() - startTime;
-        // log.debug("查询优化完成，耗时: {}ms, 实体: {}", duration, entityMetadata.getEntityName());
-        log.debug("查询优化完成，耗时: {}ms, 实体: {}", duration, "unknown_entity");
+        // System.out.println("查询优化完成，耗时: " + duration + "ms, 实体: " + entityMetadata.getEntityName());
+        System.out.println("查询优化完成，耗时: " + duration + "ms, 实体: unknown_entity");
         
         // 缓存优化结果
         if (!smartql.equals(optimizedQuery)) {
             optimizationCache.put(cacheKey, optimizedQuery);
-            log.debug("优化前后对比: 原始({}) -> 优化后({})", 
-                    smartql.length(), optimizedQuery.length());
+            System.out.println("优化前后对比: 原始(" + smartql.length() + ") -> 优化后(" + optimizedQuery.length() + ")");
         }
         
         return optimizedQuery;

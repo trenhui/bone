@@ -1,425 +1,201 @@
 package com.bone.smartmeta.engine.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import com.bone.smartmeta.engine.model.RelationshipMetadata;
+import com.bone.smartmeta.engine.model.BusinessRuleMetadata;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-import java.time.LocalDateTime;
-import java.util.*;
 
 /**
- * 统一的实体元数据模型类
- * 支持字段、关系、业务规则、操作、流程等完整的元数据定义
+ * 实体元数据模型
+ * 注意：此类与org.bone.engine.metadata.model.EntityMetadata存在功能重叠
+ * 当前版本保持独立实现，后续可考虑统一元数据模型
  */
 @Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class EntityMetadata {
-    // 基础信息
+    
+    /** 实体ID */
     private String id;
+    
+    /** 实体名称 */
     private String name;
+    
+    /** 实体API名称 */
     private String apiName;
-    private String label;
-    @Builder.Default
-    private Map<String, String> labels = new HashMap<>(); // 多语言标签
+    
+    /** 实体描述 */
     private String description;
-    private String domain;
+    
+    /** 表名 */
     private String tableName;
     
-    // 字段信息
-    @Builder.Default
+    /** 字段元数据映射 */
     private Map<String, FieldMetadata> fields = new HashMap<>();
     
-    // 关系信息
-    @Builder.Default
-    private Map<String, RelationshipMetadata> relationships = new HashMap<>();
+    /**
+     * 获取字段元数据映射
+     */
+    public Map<String, FieldMetadata> getFields() {
+        return this.fields;
+    }
     
-    // 业务规则
-    @Builder.Default
-    private List<BusinessRuleMetadata> businessRules = new ArrayList<>();
+    /** 关系元数据列表 */
+    private List<RelationshipMetadata> relationships;
     
-    // 操作信息
-    @Builder.Default
-    private Map<String, OperationMetadata> operations = new HashMap<>();
+    /** 实体类型 */
+    private EntityType type;
     
-    // 流程信息
-    @Builder.Default
-    private List<ProcessMetadata> processes = new ArrayList<>();
+    /** 是否可扩展 */
+    private boolean extensible;
     
-    // 索引信息
-    @Builder.Default
-    private List<IndexMetadata> indexes = new ArrayList<>();
+    /** 是否可审计 */
+    private boolean auditable;
     
-    // 权限信息
-    private EntityPermissionMetadata permissions;
+    /** 创建时间 */
+    private Date createdAt;
     
-    // 版本信息
-    private String version;
-    private String parentEntity;
+    /** 更新时间 */
+    private Date updatedAt;
     
-    // 配置信息
-    private boolean active = true;
-    private boolean system = false;
-    private boolean cacheable = true;
-    private int queryCacheTtl = 300; // 默认5分钟
-    @Builder.Default
-    private List<String> tags = new ArrayList<>();
-    
-    // AI信息
-    private AiMetadata aiMetadata;
-    
-    // 生命周期信息
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+    /** 创建人ID */
     private String createdBy;
+    
+    /** 更新人ID */
     private String updatedBy;
     
-    // 租户信息
-    private String tenantId;
+    /** 版本号 */
+    private Integer version;
     
-    // 高级配置
-    private boolean trackHistory;
-    private boolean softDelete;
-    private String softDeleteField;
-    private boolean optimisticLocking;
-    private String versionField;
+    /** 扩展属性 */
+    private Map<String, Object> extendedProperties;
     
-    /**
-     * 添加字段元数据
-     */
-    public void addField(FieldMetadata field) {
-        if (fields == null) {
-            fields = new HashMap<>();
-        }
-        fields.put(field.getApiName(), field);
-    }
-    
-    /**
-     * 获取字段元数据
-     */
-    public FieldMetadata getField(String fieldName) {
-        return fields != null ? fields.get(fieldName) : null;
-    }
-    
-    /**
-     * 移除字段元数据
-     */
-    public FieldMetadata removeField(String fieldName) {
-        return fields != null ? fields.remove(fieldName) : null;
-    }
-    
-    /**
-     * 检查字段是否存在
-     */
-    public boolean hasField(String fieldName) {
-        return fields != null && fields.containsKey(fieldName);
-    }
-    
-    /**
-     * 获取所有字段名
-     */
-    public Set<String> getFieldNames() {
-        return fields != null ? fields.keySet() : Collections.emptySet();
-    }
-    
-    /**
-     * 获取所有字段列表
-     */
-    public Collection<FieldMetadata> getAllFields() {
-        return fields != null ? fields.values() : Collections.emptyList();
-    }
-    
-    /**
-     * 获取所有计算字段
-     */
-    public List<FieldMetadata> getCalculatedFields() {
-        List<FieldMetadata> result = new ArrayList<>();
-        if (fields != null) {
-            for (FieldMetadata field : fields.values()) {
-                if (field.isCalculated()) {
-                    result.add(field);
-                }
-            }
-        }
-        return result;
-    }
-    
-    /**
-     * 获取所有虚拟字段
-     */
-    public List<FieldMetadata> getVirtualFields() {
-        List<FieldMetadata> result = new ArrayList<>();
-        if (fields != null) {
-            for (FieldMetadata field : fields.values()) {
-                if (field.isVirtual()) {
-                    result.add(field);
-                }
-            }
-        }
-        return result;
-    }
-    
-    /**
-     * 获取所有关系字段
-     */
-    public List<FieldMetadata> getRelationshipFields() {
-        List<FieldMetadata> result = new ArrayList<>();
-        if (fields != null) {
-            for (FieldMetadata field : fields.values()) {
-                if (field.isRelationshipField()) {
-                    result.add(field);
-                }
-            }
-        }
-        return result;
-    }
-    
-    /**
-     * 添加关系元数据
-     */
-    public void addRelationship(RelationshipMetadata relationship) {
-        if (relationships == null) {
-            relationships = new HashMap<>();
-        }
-        relationships.put(relationship.getApiName(), relationship);
-    }
-    
-    /**
-     * 获取关系元数据
-     */
-    public RelationshipMetadata getRelationship(String relationshipName) {
-        return relationships != null ? relationships.get(relationshipName) : null;
-    }
-    
-    /**
-     * 移除关系元数据
-     */
-    public RelationshipMetadata removeRelationship(String relationshipName) {
-        return relationships != null ? relationships.remove(relationshipName) : null;
-    }
-    
-    /**
-     * 检查关系是否存在
-     */
-    public boolean hasRelationship(String relationshipName) {
-        return relationships != null && relationships.containsKey(relationshipName);
-    }
-    
-    /**
-     * 获取所有关系名
-     */
-    public Set<String> getRelationshipNames() {
-        return relationships != null ? relationships.keySet() : Collections.emptySet();
-    }
-    
-    /**
-     * 获取所有关系列表
-     */
-    public Collection<RelationshipMetadata> getAllRelationships() {
-        return relationships != null ? relationships.values() : Collections.emptyList();
-    }
-    
-    /**
-     * 添加业务规则
-     */
-    public void addBusinessRule(BusinessRuleMetadata rule) {
-        if (businessRules == null) {
-            businessRules = new ArrayList<>();
-        }
-        businessRules.add(rule);
-    }
-    
-    /**
-     * 添加操作元数据
-     */
-    public void addOperation(OperationMetadata operation) {
-        if (operations == null) {
-            operations = new HashMap<>();
-        }
-        operations.put(operation.getApiName(), operation);
-    }
-    
-    /**
-     * 获取操作元数据
-     */
-    public OperationMetadata getOperation(String operationName) {
-        return operations != null ? operations.get(operationName) : null;
-    }
-    
-    /**
-     * 移除操作元数据
-     */
-    public OperationMetadata removeOperation(String operationName) {
-        return operations != null ? operations.remove(operationName) : null;
-    }
-    
-    /**
-     * 添加索引元数据
-     */
-    public void addIndex(IndexMetadata index) {
-        if (indexes == null) {
-            indexes = new ArrayList<>();
-        }
-        indexes.add(index);
-    }
-    
-    /**
-     * 添加标签
-     */
-    public void addTag(String tag) {
-        if (tags == null) {
-            tags = new ArrayList<>();
-        }
-        if (!tags.contains(tag)) {
-            tags.add(tag);
-        }
-    }
-    
-    /**
-     * 检查是否包含标签
-     */
-    public boolean hasTag(String tag) {
-        return tags != null && tags.contains(tag);
-    }
-    
-    /**
-     * 添加多语言标签
-     */
-    public void addLabel(String locale, String value) {
-        if (labels == null) {
-            labels = new HashMap<>();
-        }
-        labels.put(locale, value);
-    }
-    
-    /**
-     * 获取指定语言的标签
-     */
-    public String getLabel(String locale) {
-        if (labels != null && labels.containsKey(locale)) {
-            return labels.get(locale);
-        }
-        return label; // 返回默认标签
+    /** 实体类型枚举 */
+    public enum EntityType {
+        STANDARD, // 标准实体
+        SMART,    // 智能实体
+        VIEW      // 视图实体
     }
     
     /**
      * 获取主键字段
      */
     public FieldMetadata getPrimaryKeyField() {
-        if (fields != null) {
-            for (FieldMetadata field : fields.values()) {
-                if (field.isPrimaryKey()) {
-                    return field;
-                }
-            }
+        if (fields == null || fields.isEmpty()) {
+            return null;
         }
-        // 如果没有显式主键，查找ID字段
-        return getField("id");
+        return fields.values().stream()
+                .filter(FieldMetadata::isPrimaryKey)
+                .findFirst()
+                .orElse(null);
     }
     
     /**
-     * 获取主键字段名
+     * 根据API名称获取字段
      */
-    public String getPrimaryKeyFieldName() {
-        FieldMetadata pkField = getPrimaryKeyField();
-        return pkField != null ? pkField.getApiName() : "id";
+    public FieldMetadata getFieldByApiName(String apiName) {
+        if (fields == null || apiName == null) {
+            return null;
+        }
+        // 遍历Map查找匹配的API名称
+        for (FieldMetadata field : fields.values()) {
+            if (apiName.equals(field.getApiName())) {
+                return field;
+            }
+        }
+        return null;
     }
     
     /**
-     * 检查字段是否为系统字段
+     * 获取显示名称字段
      */
-    public boolean isSystemField(String fieldName) {
-        FieldMetadata field = getField(fieldName);
-        return field != null && field.isSystemField();
+    public FieldMetadata getDisplayNameField() {
+        if (fields == null || fields.isEmpty()) {
+            return null;
+        }
+        // 遍历Map查找显示名称字段
+        for (FieldMetadata field : fields.values()) {
+            if (field.isDisplayName()) {
+                return field;
+            }
+        }
+        return null;
     }
     
     /**
-     * 克隆实体元数据（用于版本管理）
+     * 获取API名称
      */
-    public EntityMetadata cloneForVersion() {
-        EntityMetadata clone = EntityMetadata.builder()
-                .name(this.name)
-                .apiName(this.apiName)
-                .label(this.label)
-                .description(this.description)
-                .domain(this.domain)
-                .tableName(this.tableName)
-                .version(null) // 新版本
-                .parentEntity(this.apiName)
-                .previousVersionId(this.id)
-                .active(this.active)
-                .system(this.system)
-                .cacheable(this.cacheable)
-                .queryCacheTtl(this.queryCacheTtl)
-                .trackHistory(this.trackHistory)
-                .softDelete(this.softDelete)
-                .softDeleteField(this.softDeleteField)
-                .optimisticLocking(this.optimisticLocking)
-                .versionField(this.versionField)
-                .tenantId(this.tenantId)
-                .build();
-        
-        // 复制集合和映射
-        if (this.labels != null) {
-            clone.setLabels(new HashMap<>(this.labels));
+    public String getApiName() {
+        return this.apiName;
+    }
+    
+    /**
+     * 获取验证规则列表（兼容方法）
+     */
+    public List<?> getValidationRules() {
+        return new ArrayList<>();
+    }
+    
+    /**
+     * 获取标签列表（兼容方法）
+     */
+    public Map<String, String> getTags() {
+        return new HashMap<>();
+    }
+    
+    /**
+     * 获取领域（兼容方法）
+     */
+    public String getDomain() {
+        return null;
+    }
+    
+    /**
+     * 获取实体类型（兼容方法）
+     */
+    public String getEntityType() {
+        return null;
+    }
+    
+    /**
+     * 获取关系列表（兼容方法）
+     */
+    public List<RelationshipMetadata> getRelationships() {
+        return new ArrayList<>();
+    }
+    
+    /**
+     * 获取业务规则列表（兼容方法）
+     */
+    public List<BusinessRuleMetadata> getBusinessRules() {
+        return new ArrayList<>();
+    }
+    
+    /**
+     * 获取名称（兼容方法）
+     */
+    public String getName() {
+        return null;
+    }
+    
+    /**
+     * 获取描述（兼容方法）
+     */
+    public String getDescription() {
+        return null;
+    }
+    
+    /**
+     * 根据名称获取字段
+     */
+    public FieldMetadata getField(String fieldName) {
+        if (fields == null || fieldName == null) {
+            return null;
         }
-        if (this.tags != null) {
-            clone.setTags(new ArrayList<>(this.tags));
-        }
-        
-        // 复制字段，创建新版本的字段
-        if (this.fields != null) {
-            Map<String, FieldMetadata> clonedFields = new HashMap<>();
-            for (FieldMetadata field : this.fields.values()) {
-                FieldMetadata clonedField = field.cloneForVersion();
-                clonedFields.put(field.getApiName(), clonedField);
-            }
-            clone.setFields(clonedFields);
-        }
-        
-        // 复制关系，创建新版本的关系
-        if (this.relationships != null) {
-            Map<String, RelationshipMetadata> clonedRelationships = new HashMap<>();
-            for (RelationshipMetadata relationship : this.relationships.values()) {
-                RelationshipMetadata clonedRelationship = relationship.cloneForVersion();
-                clonedRelationships.put(relationship.getApiName(), clonedRelationship);
-            }
-            clone.setRelationships(clonedRelationships);
-        }
-        
-        // 复制业务规则
-        if (this.businessRules != null) {
-            clone.setBusinessRules(new ArrayList<>(this.businessRules));
-        }
-        
-        // 复制操作
-        if (this.operations != null) {
-            clone.setOperations(new HashMap<>(this.operations));
-        }
-        
-        // 复制流程
-        if (this.processes != null) {
-            clone.setProcesses(new ArrayList<>(this.processes));
-        }
-        
-        // 复制索引
-        if (this.indexes != null) {
-            clone.setIndexes(new ArrayList<>(this.indexes));
-        }
-        
-        // 复制权限信息
-        if (this.permissions != null) {
-            // 这里应该复制permissions对象
-            clone.setPermissions(this.permissions);
-        }
-        
-        // 复制AI元数据
-        if (this.aiMetadata != null) {
-            // 这里应该复制aiMetadata对象
-            clone.setAiMetadata(this.aiMetadata);
-        }
-        
-        return clone;
+        return fields.get(fieldName);
     }
 }

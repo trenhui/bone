@@ -1,6 +1,6 @@
 package com.bone.engine.extension.event;
 
-import com.bone.engine.extension.BizContext;
+import com.bone.engine.extension.context.BizContext;
 import com.bone.engine.extension.config.ExtensionAsyncConfig;
 import com.bone.engine.extension.event.ExtensionEvent.EventType;
 import org.slf4j.Logger;

@@ -1,7 +1,8 @@
 package com.bone.metadata.sdk.sql.executor;
 
 import com.bone.metadata.sdk.support.cache.FieldCache;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.lang.reflect.Constructor;
@@ -16,8 +17,8 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * 智能行映射器 - 提供自动字段映射和类型转换功能
  */
-@Slf4j
 public class SmartRowMapper<T> implements RowMapper<T> {
+    private static final Logger log = LoggerFactory.getLogger(SmartRowMapper.class);
 
     private final Class<T> mappedClass;
     private final ConcurrentMap<Class<?>, Constructor<?>> constructorCache = new ConcurrentHashMap<>();

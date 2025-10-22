@@ -1,7 +1,6 @@
 package com.bone.engine.extension.example;
 
 import com.bone.engine.extension.context.BizContext;
-import com.bone.engine.extension.context.BizContextHolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -32,23 +31,14 @@ public class PaymentServiceDemo {
         request.setUserId(userId);
         
         // 创建业务上下文
-        BizContext<PaymentService.PaymentRequest> context = BizContext.<PaymentService.PaymentRequest>builder()
-            .bizCode("ORDER")
-            .tenantCode("TENANT001")
-            .scenario("NORMAL_PAY")
-            .data(request)
-            .build();
+        BizContext<PaymentService.PaymentRequest> context = BizContext.createEmpty();
+        context.setBizCode("ORDER");
+        context.setTenantCode("TENANT001");
+        context.setScenario("NORMAL_PAY");
+        context.setData(request);
         
-        // 设置上下文到ThreadLocal（可选，如果在其他地方需要访问）
-        BizContextHolder.set(context);
-        
-        try {
-            // 调用扩展点 - 会自动路由到AlipayServiceImpl
-            return paymentService.processPayment(context);
-        } finally {
-            // 清理ThreadLocal（推荐在finally块中执行）
-            BizContextHolder.clear();
-        }
+        // 调用扩展点 - 会自动路由到AlipayServiceImpl
+        return paymentService.processPayment(context);
     }
 
     /**
@@ -63,13 +53,12 @@ public class PaymentServiceDemo {
         request.setPaymentMethod("WECHAT");
         request.setUserId(userId);
         
-        // 创建业务上下文
-        BizContext<PaymentService.PaymentRequest> context = BizContext.<PaymentService.PaymentRequest>builder()
-            .bizCode("MEMBERSHIP")
-            .tenantCode("TENANT002")
-            .scenario("MINI_APP_PAY")
-            .data(request)
-            .build();
+        // 创建微信支付业务上下文
+        BizContext<PaymentService.PaymentRequest> context = BizContext.createEmpty();
+        context.setBizCode("MEMBERSHIP");
+        context.setTenantCode("TENANT002");
+        context.setScenario("MINI_APP_PAY");
+        context.setData(request);
         
         // 调用扩展点 - 会自动路由到WechatPayServiceImpl
         return paymentService.processPayment(context);
@@ -100,12 +89,11 @@ public class PaymentServiceDemo {
         }
         
         // 创建业务上下文
-        BizContext<PaymentService.PaymentRequest> context = BizContext.<PaymentService.PaymentRequest>builder()
-            .bizCode("ORDER")
-            .tenantCode(tenantCode)
-            .scenario(scenario)
-            .data(request)
-            .build();
+        BizContext<PaymentService.PaymentRequest> context = BizContext.createEmpty();
+        context.setBizCode("ORDER");
+        context.setTenantCode(tenantCode);
+        context.setScenario(scenario);
+        context.setData(request);
         
         // 扩展点框架会根据上下文自动选择合适的实现类
         return paymentService.processPayment(context);
@@ -115,26 +103,18 @@ public class PaymentServiceDemo {
      * 演示嵌套调用场景
      */
     public void nestedPaymentDemo() {
-        // 外部调用设置上下文
-        BizContext<Void> outerContext = BizContext.<Void>builder()
-            .bizCode("BATCH")
-            .tenantCode("TENANT001")
-            .build();
+        // 外部调用创建上下文
+        BizContext<Void> outerContext = BizContext.createEmpty();
+        outerContext.setBizCode("BATCH");
+        outerContext.setTenantCode("TENANT001");
         
-        BizContextHolder.set(outerContext);
-        
-        try {
-            // 处理批量支付
-            processBatchPayments();
-        } finally {
-            BizContextHolder.clear();
-        }
+        // 处理批量支付 - 直接传递上下文
+        processBatchPayments(outerContext);
     }
     
-    private void processBatchPayments() {
-        // 在内部方法中可以访问外部设置的上下文
-        BizContext<?> currentContext = BizContextHolder.getCurrentContext();
-        System.out.println("Current tenant in batch: "); // 移除getTenantCode()方法调用
+    private void processBatchPayments(BizContext<?> context) {
+        // 使用传递的上下文
+        System.out.println("Current tenant in batch: " + context.getTenantCode());
         
         // 这里可以批量处理多个支付请求
         // ...

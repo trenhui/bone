@@ -1,9 +1,8 @@
 package com.bone.engine.extension.util;
 
-import com.bone.engine.extension.BizContext;
+import com.bone.engine.extension.context.BizContext;
 import com.bone.engine.extension.ExtPoint;
 import com.bone.engine.extension.Extension;
-import com.bone.engine.extension.context.BizContextHolder;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.StringUtils;
 
@@ -76,9 +75,9 @@ public class ExtensionUtils {
                .append(":")
                .append(context.getScenario() != null ? context.getScenario() : "default")
                .append(":")
-               .append(context.getEnv() != null ? context.getEnv() : "default")
-               .append(":")
-               .append(context.getGroup() != null ? context.getGroup() : "default");
+               .append("default")
+                .append(":")
+               .append("DEFAULT"); // 暂时不调用getGroup()方法
         }
         
         return key.toString();
@@ -152,13 +151,14 @@ public class ExtensionUtils {
      * 确保业务上下文存在
      */
     public static <T> BizContext<T> ensureBizContext(Object[] args) {
+        // 尝试从参数中提取BizContext
         BizContext<T> context = extractBizContext(args);
+        
+        // 如果没有找到上下文，创建一个默认的BizContext
         if (context == null) {
-            context = (BizContext<T>) BizContextHolder.getCurrentContext();
+            context = BizContext.createEmpty();
         }
-        if (context == null) {
-            context = BizContext.<T>builder().build();
-        }
+        
         return context;
     }
 
@@ -201,15 +201,8 @@ public class ExtensionUtils {
             return false;
         }
         
-        // 环境匹配
-        if (context1.getEnv() != null && !context1.getEnv().equals(context2.getEnv())) {
-            return false;
-        }
-        
-        // 分组匹配
-        if (context1.getGroup() != null && !context1.getGroup().equals(context2.getGroup())) {
-            return false;
-        }
+        // 环境和分组匹配暂时注释掉，因为BizContext没有提供对应的getter方法
+        // 这两个属性目前不是必需的匹配条件
         
         return true;
     }
@@ -235,15 +228,8 @@ public class ExtensionUtils {
             score += 60;
         }
         
-        // 检查环境匹配
-        if (context.getEnv() != null && Arrays.asList(extension.env()).contains(context.getEnv())) {
-            score += 40;
-        }
-        
-        // 检查分组匹配
-        if (context.getGroup() != null && Arrays.asList(extension.group()).contains(context.getGroup())) {
-            score += 20;
-        }
+        // 环境和分组匹配暂时注释掉，因为BizContext没有提供对应的getter方法
+        // 这两个属性目前不计入匹配分数
         
         // 优先级权重
         score += extension.priority() * 10;

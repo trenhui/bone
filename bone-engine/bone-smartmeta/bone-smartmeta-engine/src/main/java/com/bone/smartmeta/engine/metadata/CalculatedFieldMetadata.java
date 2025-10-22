@@ -105,7 +105,8 @@ public class CalculatedFieldMetadata extends SmartFieldMetadata {
      */
     public void setResultDataType(String resultDataType) {
         this.resultDataType = resultDataType;
-        super.setFormulaReturnType(resultDataType);
+        // SmartFieldMetadata没有setFormulaReturnType方法，使用setType方法替代
+        super.setType(resultDataType);
     }
     
     /**

@@ -1,11 +1,10 @@
 package com.bone.metadata.sdk.test.testcase;
 
-import javax.annotation.PostConstruct;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -21,19 +20,21 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import com.bone.metadata.sdk.config.SqlConfigProperties;
-import com.bone.metadata.sdk.executor.SqlExecutor;
-import com.bone.metadata.sdk.processor.SqlProcessorFactory;
-import com.bone.metadata.sdk.query.builder.SqlBuilder;
-import com.bone.metadata.sdk.query.builder.model.BatchCompiledQuery;
-import com.bone.metadata.sdk.query.builder.model.CompiledQuery;
+import com.bone.metadata.sdk.sql.dialect.DatabaseDialect;
+import com.bone.metadata.sdk.metadata.api.MetadataService;
+import com.bone.metadata.sdk.domain.exception.ExceptionHandler;
+import com.bone.metadata.sdk.query.SqlBuilder;
+import com.bone.metadata.sdk.support.config.SqlConfigProperties;
+import com.bone.metadata.sdk.sql.processor.SqlProcessorFactory;
+import com.bone.metadata.sdk.sql.executor.SqlExecutor;
+import com.bone.metadata.sdk.extension.ExtensionCoordinator;
+import com.bone.metadata.sdk.sql.template.SqlTemplateLoader;
+import com.bone.metadata.sdk.domain.query.CompiledQuery;
+import com.bone.metadata.sdk.domain.query.BatchCompiledQuery;
 import com.bone.metadata.sdk.query.criteria.Criteria;
-import com.bone.metadata.sdk.support.database.DatabaseDialect;
-import com.bone.metadata.sdk.support.database.H2DatabaseDialect;
-import com.bone.metadata.sdk.support.dynamic.ExtensionCoordinator;
-import com.bone.metadata.sdk.support.exception.ExceptionHandler;
-import com.bone.metadata.sdk.support.metadata.MetadataService;
-import com.bone.metadata.sdk.support.template.SqlTemplateLoader;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 /**
  * 简单的测试配置类，仅提供必要的数据库连接
@@ -47,7 +48,7 @@ public class QueryBuilderTestConfig {
     /**
      * 在应用启动时设置QueryBuilder的静态异常处理器
      */
-    @PostConstruct
+    // 初始化方法，在Bean创建后自动调用
     public void init() {
         // 设置QueryBuilder的静态异常处理器
         com.bone.metadata.sdk.query.dsl.QueryBuilder.setExceptionHandler(exceptionHandler);
@@ -246,7 +247,13 @@ public class QueryBuilderTestConfig {
      */
     @Bean
     public DatabaseDialect databaseDialect() {
-        return new H2DatabaseDialect();
+        return new DatabaseDialect() {
+            @Override
+            public String getDialectName() {
+                return "H2";
+            }
+            // 实现其他必要的方法
+        };
     }
     
     /**

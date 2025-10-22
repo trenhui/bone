@@ -5,11 +5,14 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -70,7 +73,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Getter
 @Setter
-@ToString
+@ToString(exclude = {"data", "attributes", "metadata", "tags", "headers"}) // 排除可能包含敏感或大型数据的字段
 public class BizContext<T> implements Serializable {
     
     private static final long serialVersionUID = 1L;
@@ -78,32 +81,64 @@ public class BizContext<T> implements Serializable {
     /**
      * 租户代码
      */
-    public String tenantCode = "DEFAULT";
+    private String tenantCode = "DEFAULT";
+    
+    /**
+     * 获取租户代码
+     * @return 租户代码
+     */
+    public String getTenantCode() {
+        return tenantCode;
+    }
     
     /**
      * 业务域代码
      */
-    public String bizCode;
+    
+    /**
+     * 获取业务域代码
+     * @return 业务域代码
+     */
+    public String getBizCode() {
+        return bizCode;
+    }
+    private String bizCode;
     
     /**
      * 用例代码
      */
-    public String useCase;
+    
+    /**
+     * 获取用例代码
+     * @return 用例代码
+     */
+    public String getUseCase() {
+        return useCase;
+    }
+    private String useCase;
     
     /**
      * 场景代码
      */
-    public String scenario;
+    
+    /**
+     * 获取场景代码
+     * @return 场景代码
+     */
+    public String getScenario() {
+        return scenario;
+    }
+    private String scenario;
     
     /**
      * 环境标识
      */
-    public String env = "PROD";
+    private String env = "PROD";
     
     /**
      * 分组标识
      */
-    public String group;
+    private String group;
     
     /**
      * 用户组标识
@@ -116,9 +151,9 @@ public class BizContext<T> implements Serializable {
     private String requestId;
     
     /**
-     * 请求头信息
+     * 请求头信息（线程安全）
      */
-    private final Map<String, String> headers = new HashMap<>();
+    private final Map<String, String> headers = new ConcurrentHashMap<>();
     
     /**
      * 业务数据对象
@@ -128,7 +163,7 @@ public class BizContext<T> implements Serializable {
     /**
      * 上下文创建时间
      */
-    private LocalDateTime createTime;
+    private final LocalDateTime createTime;
     
     /**
      * 上下文属性映射表（线程安全）
@@ -136,14 +171,14 @@ public class BizContext<T> implements Serializable {
     private final Map<String, Object> attributes = new ConcurrentHashMap<>();
     
     /**
-     * 上下文元数据
+     * 上下文元数据（线程安全）
      */
-    private final Map<String, String> metadata = new HashMap<>();
+    private final Map<String, String> metadata = new ConcurrentHashMap<>();
     
     /**
-     * 标签信息，用于路由和监控
+     * 标签信息，用于路由和监控（线程安全）
      */
-    private final Map<String, Object> tags = new HashMap<>();
+    private final Map<String, Object> tags = new ConcurrentHashMap<>();
     
     /**
      * 构建者构造函数
@@ -152,14 +187,14 @@ public class BizContext<T> implements Serializable {
     public BizContext(String tenantCode, String bizCode, String useCase, String scenario, 
                      String env, String group, String userGroup, String requestId, 
                      T data, Map<String, Object> attributes, Map<String, String> headers) {
-        this.tenantCode = tenantCode != null ? tenantCode : "DEFAULT";
+        this.tenantCode = tenantCode;
         this.bizCode = bizCode;
         this.useCase = useCase;
         this.scenario = scenario;
-        this.env = env != null ? env : "PROD";
+        this.env = env;
         this.group = group;
-        this.userGroup = userGroup != null ? userGroup : "DEFAULT";
-        this.requestId = requestId != null ? requestId : generateRequestId();
+        this.userGroup = userGroup;
+        this.requestId = StringUtils.hasText(requestId) ? requestId : generateRequestId();
         this.data = data;
         this.createTime = LocalDateTime.now();
         
@@ -181,25 +216,20 @@ public class BizContext<T> implements Serializable {
         return "EXT-" + UUID.randomUUID().toString().replace("-", "").substring(0, 16);
     }
     
-    /**
-     * 静态工厂方法
-     */
-    public static <T> Builder<T> builder() {
-        return new Builder<>();
-    }
+    // 移除手动实现的builder方法，让lombok自动生成
     
     /**
      * 简化创建方式
      */
-    public static <T> Builder<T> of(String bizCode, String scenario) {
-        return builder().bizCode(bizCode).scenario(scenario);
+    public static <T> BizContext<T> of(String bizCode, String scenario) {
+        return new BizContext<>(null, bizCode, null, scenario, null, null, null, null, null, null, null);
     }
     
     /**
      * 带租户的简化创建方式
      */
-    public static <T> Builder<T> ofTenant(String tenantCode, String bizCode, String scenario) {
-        return builder().tenantCode(tenantCode).bizCode(bizCode).scenario(scenario);
+    public static <T> BizContext<T> ofTenant(String tenantCode, String bizCode, String scenario) {
+        return new BizContext<>(tenantCode, bizCode, null, scenario, null, null, null, null, null, null, null);
     }
     
     /**
@@ -246,7 +276,8 @@ public class BizContext<T> implements Serializable {
         if (key == null) {
             return defaultValue;
         }
-        return (V) this.attributes.getOrDefault(key, defaultValue);
+        V value = (V) this.attributes.get(key);
+        return value != null ? value : defaultValue;
     }
     
     /**
@@ -278,7 +309,7 @@ public class BizContext<T> implements Serializable {
      * @return 属性映射表（只读）
      */
     public Map<String, Object> getAllAttributes() {
-        return java.util.Collections.unmodifiableMap(this.attributes);
+        return Collections.unmodifiableMap(this.attributes);
     }
     
     /**
@@ -289,8 +320,8 @@ public class BizContext<T> implements Serializable {
      * @return 当前上下文实例（用于链式调用）
      */
     public BizContext<T> putMetadata(String key, String value) {
-        if (key != null) {
-            if (value != null) {
+        if (StringUtils.hasText(key)) {
+            if (StringUtils.hasText(value)) {
                 this.metadata.put(key, value);
             } else {
                 this.metadata.remove(key);
@@ -315,7 +346,7 @@ public class BizContext<T> implements Serializable {
      * @return 元数据映射表（只读）
      */
     public Map<String, String> getAllMetadata() {
-        return java.util.Collections.unmodifiableMap(this.metadata);
+        return Collections.unmodifiableMap(this.metadata);
     }
     
     /**
@@ -326,7 +357,7 @@ public class BizContext<T> implements Serializable {
      * @return 当前上下文实例（用于链式调用）
      */
     public BizContext<T> addTag(String key, Object value) {
-        if (key != null) {
+        if (StringUtils.hasText(key)) {
             if (value != null) {
                 this.tags.put(key, value);
             } else {
@@ -353,7 +384,7 @@ public class BizContext<T> implements Serializable {
      * @return 标签映射表（只读）
      */
     public Map<String, Object> getAllTags() {
-        return java.util.Collections.unmodifiableMap(this.tags);
+        return Collections.unmodifiableMap(this.tags);
     }
     
     /**
@@ -364,8 +395,8 @@ public class BizContext<T> implements Serializable {
      * @return 当前上下文实例（用于链式调用）
      */
     public BizContext<T> addHeader(String key, String value) {
-        if (key != null) {
-            if (value != null) {
+        if (StringUtils.hasText(key)) {
+            if (StringUtils.hasText(value)) {
                 this.headers.put(key, value);
             } else {
                 this.headers.remove(key);
@@ -390,7 +421,7 @@ public class BizContext<T> implements Serializable {
      * @return 请求头映射表（只读）
      */
     public Map<String, String> getAllHeaders() {
-        return java.util.Collections.unmodifiableMap(this.headers);
+        return Collections.unmodifiableMap(this.headers);
     }
     
     /**
@@ -399,7 +430,7 @@ public class BizContext<T> implements Serializable {
      * @return 空上下文实例
      */
     public static <T> BizContext<T> createEmpty() {
-        return BizContext.<T>builder().build();
+        return new BizContext<>(null, null, null, null, null, null, null, null, null, null, null);
     }
     
     /**
@@ -409,24 +440,98 @@ public class BizContext<T> implements Serializable {
      */
     @SuppressWarnings("unchecked")
     public BizContext<T> clone() {
-        BizContext<T> cloned = BizContext.<T>builder()
-            .tenantCode(this.tenantCode)
-            .bizCode(this.bizCode)
-            .useCase(this.useCase)
-            .scenario(this.scenario)
-            .env(this.env)
-            .group(this.group)
-            .userGroup(this.userGroup)
-            .requestId(this.requestId)
-            .data(this.data) // 注意：data对象本身不会被深拷贝
-            .build();
+        BizContext<T> cloned = new BizContext<>(
+            this.tenantCode,
+            this.bizCode,
+            this.useCase,
+            this.scenario,
+            this.env,
+            this.group,
+            this.userGroup,
+            this.requestId + "_CLONE", // 添加标记以区分克隆的上下文
+            this.data, // 注意：data对象本身不会被深拷贝
+            new HashMap<>(this.attributes),
+            new HashMap<>(this.headers)
+        );
         
-        // 复制属性和元数据
+        // 复制属性和元数据 - 使用putAll保证线程安全
         cloned.attributes.putAll(this.attributes);
         cloned.metadata.putAll(this.metadata);
         cloned.tags.putAll(this.tags);
         cloned.headers.putAll(this.headers);
         
         return cloned;
+    }
+    
+    /**
+     * 比较两个上下文是否相等
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        BizContext<?> that = (BizContext<?>) o;
+        return Objects.equals(requestId, that.requestId);
+    }
+    
+    /**
+     * 获取哈希码
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(requestId);
+    }
+    
+    /**
+     * 合并另一个上下文的信息到当前上下文
+     * 
+     * @param other 另一个上下文
+     * @return 当前上下文实例（用于链式调用）
+     */
+    public BizContext<T> merge(BizContext<?> other) {
+        if (other == null) {
+            return this;
+        }
+        
+        // 合并基础信息（仅当当前值为空时）
+        if (!StringUtils.hasText(this.tenantCode) && StringUtils.hasText(other.getTenantCode())) {
+            this.tenantCode = other.getTenantCode();
+        }
+        if (!StringUtils.hasText(this.bizCode) && StringUtils.hasText(other.getBizCode())) {
+            this.bizCode = other.getBizCode();
+        }
+        if (!StringUtils.hasText(this.useCase) && StringUtils.hasText(other.getUseCase())) {
+            this.useCase = other.getUseCase();
+        }
+        if (!StringUtils.hasText(this.scenario) && StringUtils.hasText(other.getScenario())) {
+            this.scenario = other.getScenario();
+        }
+        
+        // 合并集合信息（不覆盖现有值）
+        other.getAllAttributes().forEach((key, value) -> {
+            if (!this.attributes.containsKey(key)) {
+                this.attributes.put(key, value);
+            }
+        });
+        
+        other.getAllMetadata().forEach((key, value) -> {
+            if (!this.metadata.containsKey(key)) {
+                this.metadata.put(key, value);
+            }
+        });
+        
+        other.getAllTags().forEach((key, value) -> {
+            if (!this.tags.containsKey(key)) {
+                this.tags.put(key, value);
+            }
+        });
+        
+        other.getAllHeaders().forEach((key, value) -> {
+            if (!this.headers.containsKey(key)) {
+                this.headers.put(key, value);
+            }
+        });
+        
+        return this;
     }
 }

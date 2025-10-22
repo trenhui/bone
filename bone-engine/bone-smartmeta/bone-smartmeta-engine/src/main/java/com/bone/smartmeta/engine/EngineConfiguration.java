@@ -29,6 +29,59 @@ public class EngineConfiguration {
     // 业务规则引擎是否启用
     private boolean businessRuleEngineEnabled = true;
     
+    // setter方法
+    public void setEnableCaching(boolean enableCaching) {
+        this.enableCaching = enableCaching;
+    }
+    
+    public void setAutoRefreshCache(boolean autoRefreshCache) {
+        this.autoRefreshCache = autoRefreshCache;
+    }
+    
+    public void setCalculationEngineEnabled(boolean calculationEngineEnabled) {
+        this.calculationEngineEnabled = calculationEngineEnabled;
+    }
+    
+    public void setBusinessRuleEngineEnabled(boolean businessRuleEngineEnabled) {
+        this.businessRuleEngineEnabled = businessRuleEngineEnabled;
+    }
+    
+    public void setValidationEngineEnabled(boolean validationEngineEnabled) {
+        this.validationEngineEnabled = validationEngineEnabled;
+    }
+    
+    public void setIgnoreNullValidation(boolean ignoreNullValidation) {
+        this.ignoreNullValidation = ignoreNullValidation;
+    }
+    
+    public void setMaxCalculationRecursionDepth(int maxCalculationRecursionDepth) {
+        this.maxCalculationRecursionDepth = maxCalculationRecursionDepth;
+    }
+    
+    public void setRuleExecutionTimeoutMs(long ruleExecutionTimeoutMs) {
+        this.ruleExecutionTimeoutMs = ruleExecutionTimeoutMs;
+    }
+    
+    public void setMetadataRegistrySupplier(Supplier<MetadataRegistry> metadataRegistrySupplier) {
+        this.metadataRegistrySupplier = metadataRegistrySupplier;
+    }
+    
+    public void setBusinessRuleValidationEnabled(boolean businessRuleValidationEnabled) {
+        this.businessRuleValidationEnabled = businessRuleValidationEnabled;
+    }
+    
+    public void setBusinessRuleExecutionEnabled(boolean businessRuleExecutionEnabled) {
+        this.businessRuleExecutionEnabled = businessRuleExecutionEnabled;
+    }
+    
+    public void setCalculationTimeoutMs(long calculationTimeoutMs) {
+        this.calculationTimeoutMs = calculationTimeoutMs;
+    }
+    
+    public void setBusinessRuleRegistrySupplier(Supplier<BusinessRuleRegistry> businessRuleRegistrySupplier) {
+        this.businessRuleRegistrySupplier = businessRuleRegistrySupplier;
+    }
+    
     // 验证引擎是否启用
     private boolean validationEngineEnabled = true;
     

@@ -38,7 +38,7 @@ public class DefaultMetadataCacheManager implements MetadataCacheManager {
         this.expiryTimes = new ConcurrentHashMap<>();
         
         // 初始化统计信息
-        this.stats = new DefaultCacheStats();
+        this.stats = new CacheStats();
     }
     
     @Override
@@ -113,7 +113,7 @@ public class DefaultMetadataCacheManager implements MetadataCacheManager {
             expiryTimes.put(cacheKey, expiryTime);
         }
         
-        stats.incrementPuts(metadataMap.size());
+        incrementPutsBatch(metadataMap.size());
     }
     
     @Override
@@ -123,7 +123,7 @@ public class DefaultMetadataCacheManager implements MetadataCacheManager {
         // 从本地缓存移除
         localCache.remove(cacheKey);
         expiryTimes.remove(cacheKey);
-        stats.incrementRemovals();
+        stats.incrementRemoves();
     }
     
     @Override
@@ -135,7 +135,7 @@ public class DefaultMetadataCacheManager implements MetadataCacheManager {
         localCache.keySet().removeIf(key -> key.startsWith(tenantPrefix));
         expiryTimes.keySet().removeIf(key -> key.startsWith(tenantPrefix));
         
-        stats.incrementFlushes();
+        incrementFlushes();
     }
     
     @Override
@@ -157,99 +157,16 @@ public class DefaultMetadataCacheManager implements MetadataCacheManager {
     
     // 不需要Redis相关的方法
     
-    /**
-     * 缓存统计信息接口
-     */
-    public interface CacheStats {
-        long getHits();
-        long getMisses();
-        long getRemoteHits();
-        long getPuts();
-        long getRemovals();
-        long getFlushes();
-        void incrementHits();
-        void incrementMisses();
-        void incrementRemoteHits();
-        void incrementPuts();
-        void incrementPuts(int count);
-        void incrementRemovals();
-        void incrementFlushes();
+    // 适配批量增加方法
+    private void incrementPutsBatch(int count) {
+        for (int i = 0; i < count; i++) {
+            stats.incrementPuts();
+        }
     }
     
-    /**
-     * 默认的缓存统计实现
-     */
-    private static class DefaultCacheStats implements CacheStats {
-        private final AtomicLong hits = new AtomicLong(0);
-        private final AtomicLong misses = new AtomicLong(0);
-        private final AtomicLong remoteHits = new AtomicLong(0);
-        private final AtomicLong puts = new AtomicLong(0);
-        private final AtomicLong removals = new AtomicLong(0);
-        private final AtomicLong flushes = new AtomicLong(0);
-        
-        @Override
-        public long getHits() {
-            return hits.get();
-        }
-        
-        @Override
-        public long getMisses() {
-            return misses.get();
-        }
-        
-        @Override
-        public long getRemoteHits() {
-            return remoteHits.get();
-        }
-        
-        @Override
-        public long getPuts() {
-            return puts.get();
-        }
-        
-        @Override
-        public long getRemovals() {
-            return removals.get();
-        }
-        
-        @Override
-        public long getFlushes() {
-            return flushes.get();
-        }
-        
-        @Override
-        public void incrementHits() {
-            hits.incrementAndGet();
-        }
-        
-        @Override
-        public void incrementMisses() {
-            misses.incrementAndGet();
-        }
-        
-        @Override
-        public void incrementRemoteHits() {
-            remoteHits.incrementAndGet();
-        }
-        
-        @Override
-        public void incrementPuts() {
-            puts.incrementAndGet();
-        }
-        
-        @Override
-        public void incrementPuts(int count) {
-            puts.addAndGet(count);
-        }
-        
-        @Override
-        public void incrementRemovals() {
-            removals.incrementAndGet();
-        }
-        
-        @Override
-        public void incrementFlushes() {
-            flushes.incrementAndGet();
-        }
+    // 适配刷新操作
+    private void incrementFlushes() {
+        // 刷新操作可以视为一种特殊的移除
+        stats.incrementRemoves();
     }
 }

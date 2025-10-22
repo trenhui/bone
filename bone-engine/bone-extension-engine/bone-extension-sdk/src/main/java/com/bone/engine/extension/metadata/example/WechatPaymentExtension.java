@@ -29,21 +29,10 @@ import java.util.UUID;
     description = "微信在线支付实现，支持微信支付和小程序支付",
     author = "payment-team@example.com",
     isDefault = true,
-    isRecommended = false,
     priority = 20, // 优先级低于支付宝实现
     
-    // 依赖的其他扩展实现
-    dependencies = {"com.example.extension.log.LoggingExtension", "com.example.extension.security.SignatureExtension"},
-    
-    // 配置属性
-    properties = {
-        "wechat.api.url=https://api.mch.weixin.qq.com",
-        "wechat.app.id=wx1234567890123456",
-        "wechat.mch.id=1234567890",
-        "wechat.notify.url=https://example.com/payment/notify/wechat",
-        "wechat.timeout=1800",
-        "wechat.cert.path=/config/certs/wechat/"
-    }
+    // 名称属性
+    name = "wechatPayment"
 )
 public class WechatPaymentExtension implements PaymentExtPoint {
     

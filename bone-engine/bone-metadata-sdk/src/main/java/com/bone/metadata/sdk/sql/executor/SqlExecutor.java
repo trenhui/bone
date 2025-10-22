@@ -18,7 +18,8 @@ import com.bone.metadata.sdk.support.util.SqlUtil;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.stats.CacheStats;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
@@ -44,10 +45,10 @@ import java.util.regex.Pattern;
  * 基于模板的高性能 SQL 执行器
  * 支持动态 SQL 处理、多数据库方言、分页查询、批量操作、缓存和监控
  */
-@Slf4j
 @Transactional
 public class SqlExecutor {
 
+    private static final Logger log = LoggerFactory.getLogger(SqlExecutor.class);
     private final NamedParameterJdbcOperations jdbc;
     private final SqlTemplateLoader sqlTemplateLoader;
     private final SqlProcessorFactory sqlProcessorFactory;
@@ -105,7 +106,7 @@ public class SqlExecutor {
                 }
                 
                 log.trace("Executing SQL: {}", sql);
-                Map<String, Object> processedParams = processParameters(processedSql.getEffectiveParams());
+                SqlParameterSource processedParams = processParameters(processedSql.getEffectiveParams());
                 return jdbc.query(sql, processedParams, rowMapper);
             });
             
@@ -398,8 +399,8 @@ public class SqlExecutor {
             SqlSecurityGuard.scanForInjectionKeywords(query.getSql());
             return jdbc.queryForObject(query.getSql(), query.getParameters(), requiredType);
         } catch (EmptyResultDataAccessException e) {
-            // 使用Java标准日志记录器替代log.warn
-            Logger.getLogger(getClass().getName()).warning(String.format("No model found for query: %s", query.getSql()));
+            // 使用SLF4J日志记录器
+            log.warn("No model found for query: {}", query.getSql());
             return null;
         }
     }
@@ -434,8 +435,7 @@ public class SqlExecutor {
             }
             return jdbc.queryForList(sql, paramMap);
         } catch (Exception e) {
-            // 使用java.util.logging.Logger代替lombok log
-            Logger.getLogger(getClass().getName()).log(Level.SEVERE, String.format("Failed to execute raw SQL: %s", sql), e);
+            log.error("Failed to execute raw SQL: {}", sql, e);
             throw new QueryExecutionException("Failed to execute raw SQL: " + sql, e);
         }
     }
@@ -448,8 +448,7 @@ public class SqlExecutor {
             SqlSecurityGuard.scanForInjectionKeywords(sql);
             return jdbc.queryForList(sql, paramMap);
         } catch (Exception e) {
-            // 使用java.util.logging.Logger代替lombok log
-            Logger.getLogger(getClass().getName()).log(Level.SEVERE, String.format("Failed to execute raw SQL: %s", sql), e);
+            log.error("Failed to execute raw SQL: {}", sql, e);
             throw new QueryExecutionException("Failed to execute raw SQL: " + sql, e);
         }
     }
@@ -467,8 +466,7 @@ public class SqlExecutor {
                     .toList();
 
             ProcessedSql processedSql = processSqlByTemplate(templateId, template, batchParams.get(0));
-            // 使用java.util.logging.Logger代替lombok log
-            Logger.getLogger(getClass().getName()).log(Level.FINE, String.format("Executing batch update: %s", processedSql.getSql()));
+            log.debug("Executing batch update: {}", processedSql.getSql());
 
             // 使用默认批处理大小，避免配置属性依赖
             int batchSize = 100;
@@ -477,8 +475,7 @@ public class SqlExecutor {
                     jdbc.batchUpdate(processedSql.getSql(), createBatchArray(batch))
             );
         } catch (Exception e) {
-            // 使用java.util.logging.Logger代替lombok log
-            Logger.getLogger(getClass().getName()).log(Level.SEVERE, String.format("Batch update failed, template: %s, error: %s", templateId, e.getMessage()), e);
+            log.error("Batch update failed, template: {}, error: {}", templateId, e.getMessage(), e);
             throw new QueryExecutionException("Batch update failed: " + templateId, e);
         }
     }
@@ -496,8 +493,7 @@ public class SqlExecutor {
      */
     public void clearCache() {
         sqlCache.invalidateAll();
-        // 使用java.util.logging.Logger代替lombok log
-        Logger.getLogger(getClass().getName()).info("SQL cache cleared");
+        log.info("SQL cache cleared");
     }
 
     /**
@@ -585,8 +581,7 @@ public class SqlExecutor {
             ProcessedSql processedCountSql = processSqlByTemplate(countSqlId, countTemplate, params);
             return jdbc.queryForObject(processedCountSql.getSql(), processedCountSql.getEffectiveParams(), Long.class);
         } catch (Exception e) {
-            // 使用java.util.logging.Logger代替lombok log
-            Logger.getLogger(getClass().getName()).log(Level.FINE, String.format("Count template not found, using fallback count query for template: %s", templateId));
+            log.debug("Count template not found, using fallback count query for template: {}", templateId);
             ProcessedSql processedSql = processSqlByTemplate(templateId, template, params);
             String countQuery = "SELECT COUNT(*) FROM (" + processedSql.getSql() + ") count_table";
             return jdbc.queryForObject(countQuery, processedSql.getEffectiveParams(), Long.class);

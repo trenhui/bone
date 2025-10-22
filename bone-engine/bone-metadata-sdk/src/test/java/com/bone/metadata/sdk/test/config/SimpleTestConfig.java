@@ -3,13 +3,12 @@ package com.bone.metadata.sdk.test.config;
 import com.bone.metadata.sdk.domain.model.TableMetadata;
 import com.bone.metadata.sdk.domain.query.CompiledQuery;
 import com.bone.metadata.sdk.domain.query.BatchCompiledQuery;
-import com.bone.metadata.sdk.domain.query.Criteria;
-import com.bone.metadata.sdk.domain.query.QueryParams;
-import com.bone.metadata.sdk.domain.query.WhereClause;
-import com.bone.metadata.sdk.domain.query.OrderClause;
-import com.bone.metadata.sdk.domain.query.PageResult;
+import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.extension.ExtensionCoordinator;
-import com.bone.metadata.sdk.exception.ExceptionHandler;
+import com.bone.metadata.sdk.domain.exception.ExceptionHandler;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import com.bone.metadata.sdk.metadata.api.MetadataService;
 import com.bone.metadata.sdk.query.SqlBuilder;
 import com.bone.metadata.sdk.sql.dialect.DatabaseDialect;
@@ -45,7 +44,7 @@ import java.util.stream.Collectors;
         },
         excludeFilters = @ComponentScan.Filter(
                 type = FilterType.REGEX,
-                pattern = "com\.bone\.metadata\.sdk\.support\.config\..*AutoConfiguration"
+                pattern = "com\\.bone\\.metadata\\.sdk\\.support\\.config\\..*AutoConfiguration"
         )
 )
 public class SimpleTestConfig {
@@ -136,11 +135,15 @@ public class SimpleTestConfig {
         return new MetadataService() {
             @Override
             public TableMetadata getTableMetadata(Class<?> entityClass) {
-                // 返回一个基本的TableMetadata对象
-                return new TableMetadata(entityClass);
+                // 返回一个基本的TableMetadata对象，使用正确的构造函数参数
+                return new TableMetadata(entityClass.getSimpleName().toLowerCase(), Collections.emptyList());
             }
             
             // 实现其他必要的方法
+            @Override
+            public Optional<TableMetadata> getTableMetadataIfExists(Class<?> entityClass) {
+                return Optional.of(getTableMetadata(entityClass));
+            }
         };
     }
     
@@ -198,10 +201,8 @@ public class SimpleTestConfig {
 
     @Bean
     public ExtensionCoordinator extensionCoordinator() {
-        // 返回一个简单的ExtensionCoordinator实现或模拟对象
-        return new ExtensionCoordinator() {
-            // 实现必要的方法
-        };
+        // 返回一个简单的ExtensionCoordinator实现，使用ApplicationContext参数
+        return new ExtensionCoordinator(null);
     }
     
     // 提供DefaultSqlProcessor的简单实现

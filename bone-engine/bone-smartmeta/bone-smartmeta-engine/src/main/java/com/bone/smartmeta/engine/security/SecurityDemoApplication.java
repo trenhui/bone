@@ -1,33 +1,19 @@
 package com.bone.smartmeta.engine.security;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
-import org.springframework.context.ConfigurableApplicationContext;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-
 import java.util.*;
 
 /**
  * 安全组件演示应用
  * 用于验证所有安全组件的集成和功能
  */
-@SpringBootApplication
-@ComponentScan("com.bone.smartmeta.engine")
-@EntityScan("com.bone.smartmeta.engine.model")
-@EnableJpaRepositories("com.bone.smartmeta.engine.repository")
 public class SecurityDemoApplication {
 
     public static void main(String[] args) {
-        // 启动Spring应用上下文
-        ConfigurableApplicationContext context = SpringApplication.run(SecurityDemoApplication.class, args);
-        
-        // 获取安全组件
-        FieldLevelSecurityManager securityManager = context.getBean(FieldLevelSecurityManager.class);
-        PermissionEvaluator permissionEvaluator = context.getBean(PermissionEvaluator.class);
-        DataMaskingService maskingService = context.getBean(DataMaskingService.class);
-        AuditService auditService = context.getBean(AuditService.class);
+        // 手动创建安全组件实例
+        PermissionEvaluator permissionEvaluator = new DefaultPermissionEvaluator();
+        DataMaskingService maskingService = new DefaultDataMaskingService();
+        AuditService auditService = new DefaultAuditService();
+        FieldLevelSecurityManager securityManager = new FieldLevelSecurityManager(permissionEvaluator, maskingService, auditService);
         
         System.out.println("安全组件演示应用启动成功!");
         System.out.println("================================");
@@ -41,8 +27,7 @@ public class SecurityDemoApplication {
         System.out.println("================================");
         System.out.println("安全组件演示完成!");
         
-        // 关闭应用
-        context.close();
+        // 演示完成
     }
     
     /**

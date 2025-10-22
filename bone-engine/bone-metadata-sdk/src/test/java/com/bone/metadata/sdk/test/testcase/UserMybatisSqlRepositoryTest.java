@@ -13,7 +13,21 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.sql.SQLException;
+import java.sql.ResultSet;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.*;
+import java.util.stream.Collectors;
+import org.springframework.jdbc.core.RowMapper;
+import com.bone.metadata.sdk.query.criteria.Criteria;
+import com.bone.core.enums.Operator;
+import com.bone.core.model.PageParam;
+import com.bone.core.model.Query;
+import com.bone.core.model.QueryParam;
+import com.bone.core.model.SortingField;
+import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
+import com.bone.metadata.sdk.domain.enums.SortDirection;
 
 import static org.junit.jupiter.api.Assertions.*;
 public class UserMybatisSqlRepositoryTest {
@@ -24,7 +38,6 @@ public class UserMybatisSqlRepositoryTest {
     @BeforeEach
     void setUp() {
         // 确保在测试前不引用任何可能不存在的类或方法
-        try {
         // 创建模拟实现
         userMybatisSqlRepository = new UserMybatisSqlRepository() {
 

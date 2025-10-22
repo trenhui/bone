@@ -64,22 +64,36 @@ public class ValidationResult {
     }
     
     /**
+     * 设置错误代码
+     */
+    public void setErrorCode(String errorCode) {
+        this.errorCode = errorCode;
+    }
+    
+    /**
+     * 设置错误消息
+     */
+    public void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
+    }
+    
+    /**
      * 创建成功的验证结果
      */
     public static ValidationResult success() {
-        return ValidationResult.builder()
-                .valid(true)
-                .build();
+        ValidationResult result = new ValidationResult();
+        result.setValid(true);
+        return result;
     }
     
     /**
      * 创建失败的验证结果
      */
     public static ValidationResult fail(String errorCode, String errorMessage) {
-        return ValidationResult.builder()
-                .valid(false)
-                .errorCode(errorCode)
-                .errorMessage(errorMessage)
-                .build();
+        ValidationResult result = new ValidationResult();
+        result.setValid(false);
+        result.setErrorCode(errorCode);
+        result.setErrorMessage(errorMessage);
+        return result;
     }
 }

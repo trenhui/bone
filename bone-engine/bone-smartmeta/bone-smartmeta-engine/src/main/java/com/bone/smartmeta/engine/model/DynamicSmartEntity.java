@@ -42,6 +42,30 @@ public class DynamicSmartEntity extends SmartBaseEntity implements Serializable 
     private boolean newEntity = false;
     private boolean deleted = false;
     private boolean modified = false;
+    
+    // setter方法
+    public void setDynamicFields(Map<String, Object> dynamicFields) {
+        this.dynamicFields = dynamicFields;
+    }
+    
+    public void setRecordType(String recordType) {
+        this.recordType = recordType;
+    }
+    
+    public void setNewEntity(boolean newEntity) {
+        this.newEntity = newEntity;
+    }
+    
+    public void setDeleted(boolean deleted) {
+        this.deleted = deleted;
+    }
+    
+    /**
+     * 设置修改状态
+     */
+    public void setModified(boolean modified) {
+        this.modified = modified;
+    }
 
     /**
      * 构造函数

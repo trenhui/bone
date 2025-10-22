@@ -1,6 +1,6 @@
 package com.bone.smartmeta.engine.security;
 
-import com.bone.smartmeta.engine.security.FieldLevelSecurityManager.DataMaskingRule;
+import com.bone.smartmeta.engine.security.DataMaskingRule;
 
 /**
  * 数据脱敏服务接口

@@ -112,7 +112,7 @@ public final class FieldCache {
             }
 
             Map<String, FieldMetadata> merged = existing.stream()
-                    .collect(Collectors.toMap(FieldMetadata::getName, Function.identity()));
+                    .collect(Collectors.toMap(f -> f.getName(), Function.identity()));
 
             for (FieldMetadata meta : newList) {
                 merged.put(meta.getName(), meta);
@@ -145,7 +145,7 @@ public final class FieldCache {
         if (field != null) return true;
 
         List<FieldMetadata> fieldMetadatas = getByCacheKey(MetadataSdkContext.getAppCode() + "." + clazz.getSimpleName());
-        return fieldMetadatas != null && fieldMetadatas.stream().anyMatch(f -> f.getColumnName().equalsIgnoreCase(columnName)|| f.getName().equalsIgnoreCase(columnName));
+        return fieldMetadatas != null && fieldMetadatas.stream().anyMatch(f -> f.getColumnName() != null && f.getColumnName().equalsIgnoreCase(columnName) || f.getName() != null && f.getName().equalsIgnoreCase(columnName));
     }
 
 

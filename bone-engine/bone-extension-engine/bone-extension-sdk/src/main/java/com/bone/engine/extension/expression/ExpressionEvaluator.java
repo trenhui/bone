@@ -1,6 +1,6 @@
 package com.bone.engine.extension.expression;
 
-import com.bone.engine.extension.BizContext;
+import com.bone.engine.extension.context.BizContext;
 import com.bone.engine.extension.ExtensionContextManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -149,11 +149,12 @@ public final class ExpressionEvaluator {
         context.setVariable("useCase", bizContext.getUseCase());
         context.setVariable("scenario", bizContext.getScenario());
         
-        // 注入data对象，方便直接访问业务数据
-        context.setVariable("data", bizContext.getData());
-        
-        // 注入扩展属性map，方便访问自定义属性
-        context.setVariable("attributes", bizContext.getAttributes());
+        // 暂时不调用getData()和getAttributes()方法
+        // // 注入data对象，方便直接访问业务数据
+        // context.setVariable("data", bizContext.getData());
+        // 
+        // // 注入扩展属性map，方便访问自定义属性
+        // context.setVariable("attributes", bizContext.getAttributes());
         
         // 设置根对象为业务上下文，支持直接访问其属性
         context.setRootObject(bizContext);

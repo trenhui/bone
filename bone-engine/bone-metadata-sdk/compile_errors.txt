@@ -1,0 +1,448 @@
+[INFO] Scanning for projects...
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for com.bone:bone-metadata-sdk:jar:1.0.0
+[WARNING] 'version' contains an expression but should be a constant. @ com.bone:bone-metadata-sdk:${project.parent.version}, /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/pom.xml, line 14, column 14
+[WARNING] 'dependencies.dependency.(groupId:artifactId:type:classifier)' must be unique: com.zaxxer:HikariCP:jar -> version 5.0.1 vs (?) @ com.bone:bone-metadata-sdk:${project.parent.version}, /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/pom.xml, line 134, column 21
+[WARNING] 
+[WARNING] It is highly recommended to fix these problems because they threaten the stability of your build.
+[WARNING] 
+[WARNING] For this reason, future Maven versions might no longer support building such malformed projects.
+[WARNING] 
+[INFO] 
+[INFO] ---------------------< com.bone:bone-metadata-sdk >---------------------
+[INFO] Building Bone Metadata SDK 1.0.0
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- maven-resources-plugin:3.3.1:resources (default-resources) @ bone-metadata-sdk ---
+[INFO] Copying 1 resource from src/main/resources to target/classes
+[INFO] Copying 0 resource from src/main/resources to target/classes
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.11.0:compile (default-compile) @ bone-metadata-sdk ---
+[INFO] Nothing to compile - all classes are up to date
+[INFO] 
+[INFO] --- maven-resources-plugin:3.3.1:testResources (default-testResources) @ bone-metadata-sdk ---
+[INFO] Copying 41 resources from src/test/resources to target/test-classes
+[INFO] 
+[INFO] --- maven-compiler-plugin:3.11.0:testCompile (default-testCompile) @ bone-metadata-sdk ---
+[INFO] Changes detected - recompiling the module! :source
+[INFO] Compiling 33 source files with javac [debug deprecation target 17] to target/test-classes
+[INFO] 某些消息已经过简化; 请使用 -Xdiags:verbose 重新编译以获得完整输出
+[INFO] -------------------------------------------------------------
+[WARNING] COMPILATION WARNING : 
+[INFO] -------------------------------------------------------------
+[WARNING] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserMybatisSqlRepositoryTest.java:[404,48] 未经检查的转换
+  需要: R
+  找到:    com.bone.metadata.sdk.test.domain.User
+[WARNING] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserMybatisSqlRepositoryTest.java:[405,48] 未经检查的转换
+  需要: R
+  找到:    com.bone.metadata.sdk.test.domain.User
+[WARNING] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserMybatisSqlRepositoryTest.java:[426,28] 未经检查的转换
+  需要: R
+  找到:    java.util.List<com.bone.metadata.sdk.test.domain.User>
+[INFO] 3 warnings 
+[INFO] -------------------------------------------------------------
+[INFO] -------------------------------------------------------------
+[ERROR] COMPILATION ERROR : 
+[INFO] -------------------------------------------------------------
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/TestConfig.java:[109,16] ExceptionHandler() 在 com.bone.metadata.sdk.domain.exception.ExceptionHandler 中是 private 访问控制
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/TestConfig.java:[110,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/TestConfig.java:[115,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/TestConfig.java:[120,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[109,40] <匿名com.bone.metadata.sdk.test.config.QueryBuilderTestConfig$1>不是抽象的, 并且未覆盖com.bone.metadata.sdk.sql.template.SqlTemplateLoader中的抽象方法refreshTemplate(java.lang.String)
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[123,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[148,16] ExceptionHandler() 在 com.bone.metadata.sdk.domain.exception.ExceptionHandler 中是 private 访问控制
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[149,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[154,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[159,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[171,16] 无法将类 com.bone.metadata.sdk.extension.ExtensionCoordinator中的构造器 ExtensionCoordinator应用到给定类型;
+  需要: org.springframework.context.ApplicationContext
+  找到:    没有参数
+  原因: 实际参数列表和形式参数列表长度不同
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[181,38] <匿名com.bone.metadata.sdk.test.config.QueryBuilderTestConfig$6>不是抽象的, 并且未覆盖com.bone.metadata.sdk.metadata.api.MetadataService中的抽象方法<T>getTableMetadata(java.lang.Class<T>)
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[183,34] 名称冲突: <匿名com.bone.metadata.sdk.test.config.QueryBuilderTestConfig$6> 中的 getTableMetadata(java.lang.Class<?>) 和 com.bone.metadata.sdk.metadata.api.MetadataService 中的 getTableMetadata(java.lang.Class<T>) 具有相同疑符, 但两者均不覆盖对方
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[182,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[184,24] 无法将类 com.bone.metadata.sdk.domain.model.TableMetadata中的构造器 TableMetadata应用到给定类型;
+  需要: java.lang.String,java.util.List<com.bone.metadata.sdk.domain.model.ColumnMetadata>
+  找到:    java.lang.Class<capture#1, 共 ?>
+  原因: 实际参数列表和形式参数列表长度不同
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[196,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[223,80] 不兼容的类型: java.util.List<java.util.Map<java.lang.Object,java.lang.Object>>无法转换为java.util.List<java.util.Map<java.lang.String,java.lang.Object>>
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[226,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[231,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[236,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[64,40] <匿名com.bone.metadata.sdk.test.config.SimpleTestConfig$1>不是抽象的, 并且未覆盖com.bone.metadata.sdk.sql.template.SqlTemplateLoader中的抽象方法refreshTemplate(java.lang.String)
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[74,16] ExceptionHandler() 在 com.bone.metadata.sdk.domain.exception.ExceptionHandler 中是 private 访问控制
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[75,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[81,24] ExceptionHandler() 在 com.bone.metadata.sdk.domain.exception.ExceptionHandler 中是 private 访问控制
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[82,21] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[94,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[99,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[109,16] 无法将类 com.bone.metadata.sdk.sql.processor.SqlProcessorFactory中的构造器 SqlProcessorFactory应用到给定类型;
+  需要: com.bone.metadata.sdk.support.config.SqlConfigProperties
+  找到:    没有参数
+  原因: 实际参数列表和形式参数列表长度不同
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[110,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[132,38] <匿名com.bone.metadata.sdk.test.config.SimpleTestConfig$5>不是抽象的, 并且未覆盖com.bone.metadata.sdk.metadata.api.MetadataService中的抽象方法<T>getTableMetadata(java.lang.Class<T>)
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[134,34] 名称冲突: <匿名com.bone.metadata.sdk.test.config.SimpleTestConfig$5> 中的 getTableMetadata(java.lang.Class<?>) 和 com.bone.metadata.sdk.metadata.api.MetadataService 中的 getTableMetadata(java.lang.Class<T>) 具有相同疑符, 但两者均不覆盖对方
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[133,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[136,24] 无法将类 com.bone.metadata.sdk.domain.model.TableMetadata中的构造器 TableMetadata应用到给定类型;
+  需要: java.lang.String,java.util.List<com.bone.metadata.sdk.domain.model.ColumnMetadata>
+  找到:    java.lang.Class<capture#2, 共 ?>
+  原因: 实际参数列表和形式参数列表长度不同
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[147,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[175,80] 不兼容的类型: java.util.List<java.util.Map<java.lang.Object,java.lang.Object>>无法转换为java.util.List<java.util.Map<java.lang.String,java.lang.Object>>
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[178,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[183,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[188,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[198,16] 无法将类 com.bone.metadata.sdk.extension.ExtensionCoordinator中的构造器 ExtensionCoordinator应用到给定类型;
+  需要: org.springframework.context.ApplicationContext
+  找到:    没有参数
+  原因: 实际参数列表和形式参数列表长度不同
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[204,20] com.bone.metadata.sdk.test.config.SimpleTestConfig.DefaultSqlProcessor不是抽象的, 并且未覆盖com.bone.metadata.sdk.sql.processor.SqlProcessor中的抽象方法process(java.lang.String,java.lang.String,java.util.Map<java.lang.String,java.lang.Object>)
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[205,9] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[123,19] 找不到符号
+  符号:   方法 setShowSql(boolean)
+  位置: 类型为com.bone.metadata.sdk.support.config.SqlConfigProperties的变量 properties
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[132,40] <匿名com.bone.metadata.sdk.test.testcase.QueryBuilderTestConfig$1>不是抽象的, 并且未覆盖com.bone.metadata.sdk.sql.template.SqlTemplateLoader中的抽象方法refreshTemplate(java.lang.String)
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[134,27] <匿名com.bone.metadata.sdk.test.testcase.QueryBuilderTestConfig$1>中的loadTemplate(java.lang.String)无法实现com.bone.metadata.sdk.sql.template.SqlTemplateLoader中的loadTemplate(java.lang.String)
+  返回类型java.lang.String与com.bone.metadata.sdk.sql.template.SqlTemplate不兼容
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[133,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[138,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[150,40] 不兼容的类型: com.bone.metadata.sdk.sql.template.SqlTemplateLoader无法转换为com.bone.metadata.sdk.support.config.SqlConfigProperties
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[160,16] 无法将类 com.bone.metadata.sdk.sql.executor.SqlExecutor中的构造器 SqlExecutor应用到给定类型;
+  需要: org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations,com.bone.metadata.sdk.sql.template.SqlTemplateLoader,com.bone.metadata.sdk.sql.processor.SqlProcessorFactory,com.bone.metadata.sdk.support.config.SqlConfigProperties
+  找到:    org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations,com.bone.metadata.sdk.support.config.SqlConfigProperties,com.bone.metadata.sdk.sql.processor.SqlProcessorFactory
+  原因: 实际参数列表和形式参数列表长度不同
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[161,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[166,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[171,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[176,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[181,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[193,16] ExceptionHandler() 在 com.bone.metadata.sdk.domain.exception.ExceptionHandler 中是 private 访问控制
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[194,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[211,16] 无法将类 com.bone.metadata.sdk.extension.ExtensionCoordinator中的构造器 ExtensionCoordinator应用到给定类型;
+  需要: org.springframework.context.ApplicationContext
+  找到:    没有参数
+  原因: 实际参数列表和形式参数列表长度不同
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[212,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[217,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[229,38] <匿名com.bone.metadata.sdk.test.testcase.QueryBuilderTestConfig$5>不是抽象的, 并且未覆盖com.bone.metadata.sdk.metadata.api.MetadataService中的抽象方法<T>getTableMetadata(java.lang.Class<T>)
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[230,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[235,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[248,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[263,16] 无法将类 com.bone.metadata.sdk.query.SqlBuilder中的构造器 SqlBuilder应用到给定类型;
+  需要: com.bone.metadata.sdk.metadata.api.MetadataService,com.bone.metadata.sdk.sql.dialect.DatabaseDialect
+  找到:    com.bone.metadata.sdk.sql.dialect.DatabaseDialect,com.bone.metadata.sdk.metadata.api.MetadataService,com.bone.metadata.sdk.domain.exception.ExceptionHandler
+  原因: 实际参数列表和形式参数列表长度不同
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[277,80] 不兼容的类型: java.util.List<java.util.Map<java.lang.Object,java.lang.Object>>无法转换为java.util.List<java.util.Map<java.lang.String,java.lang.Object>>
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[280,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[285,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[290,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[29,9] 找不到符号
+  符号:   方法 setUpTestData()
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[34,9] 找不到符号
+  符号:   类 User
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[34,21] 找不到符号
+  符号:   变量 userRepository
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[43,9] 找不到符号
+  符号:   方法 setUpTestData()
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[47,9] 找不到符号
+  符号:   类 User
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[47,21] 找不到符号
+  符号:   变量 userRepository
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[57,9] 找不到符号
+  符号:   方法 setUpTestData()
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[61,14] 找不到符号
+  符号:   类 User
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[61,28] 找不到符号
+  符号:   变量 userRepository
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[71,9] 找不到符号
+  符号:   方法 setUpTestData()
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[76,14] 找不到符号
+  符号:   类 User
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[76,28] 找不到符号
+  符号:   变量 userRepository
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[86,9] 找不到符号
+  符号:   方法 setUpTestData()
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[90,9] 找不到符号
+  符号:   类 User
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[90,21] 找不到符号
+  符号:   变量 userRepository
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[99,9] 找不到符号
+  符号:   方法 setUpTestData()
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[103,9] 找不到符号
+  符号:   类 User
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[103,21] 找不到符号
+  符号:   变量 userRepository
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[112,9] 找不到符号
+  符号:   方法 setUpTestData()
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[116,9] 找不到符号
+  符号:   类 User
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[116,21] 找不到符号
+  符号:   变量 userRepository
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[126,9] 找不到符号
+  符号:   方法 setUpTestData()
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[127,9] 找不到符号
+  符号:   类 Criteria
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[127,18] 找不到符号
+  符号:   类 User
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[127,45] 找不到符号
+  符号:   类 User
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[127,35] 找不到符号
+  符号:   变量 Criteria
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[130,14] 找不到符号
+  符号:   类 User
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[130,28] 找不到符号
+  符号:   变量 userRepository
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[142,9] 找不到符号
+  符号:   方法 setUpTestData()
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[148,9] 找不到符号
+  符号:   类 Criteria
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[148,18] 找不到符号
+  符号:   类 User
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[148,45] 找不到符号
+  符号:   类 User
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[148,35] 找不到符号
+  符号:   变量 Criteria
+  位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[INFO] 100 errors 
+[INFO] -------------------------------------------------------------
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  3.338 s
+[INFO] Finished at: 2025-10-22T18:20:52+08:00
+[INFO] ------------------------------------------------------------------------
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.11.0:testCompile (default-testCompile) on project bone-metadata-sdk: Compilation failure: Compilation failure: 
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/TestConfig.java:[109,16] ExceptionHandler() 在 com.bone.metadata.sdk.domain.exception.ExceptionHandler 中是 private 访问控制
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/TestConfig.java:[110,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/TestConfig.java:[115,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/TestConfig.java:[120,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[109,40] <匿名com.bone.metadata.sdk.test.config.QueryBuilderTestConfig$1>不是抽象的, 并且未覆盖com.bone.metadata.sdk.sql.template.SqlTemplateLoader中的抽象方法refreshTemplate(java.lang.String)
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[123,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[148,16] ExceptionHandler() 在 com.bone.metadata.sdk.domain.exception.ExceptionHandler 中是 private 访问控制
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[149,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[154,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[159,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[171,16] 无法将类 com.bone.metadata.sdk.extension.ExtensionCoordinator中的构造器 ExtensionCoordinator应用到给定类型;
+[ERROR]   需要: org.springframework.context.ApplicationContext
+[ERROR]   找到:    没有参数
+[ERROR]   原因: 实际参数列表和形式参数列表长度不同
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[181,38] <匿名com.bone.metadata.sdk.test.config.QueryBuilderTestConfig$6>不是抽象的, 并且未覆盖com.bone.metadata.sdk.metadata.api.MetadataService中的抽象方法<T>getTableMetadata(java.lang.Class<T>)
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[183,34] 名称冲突: <匿名com.bone.metadata.sdk.test.config.QueryBuilderTestConfig$6> 中的 getTableMetadata(java.lang.Class<?>) 和 com.bone.metadata.sdk.metadata.api.MetadataService 中的 getTableMetadata(java.lang.Class<T>) 具有相同疑符, 但两者均不覆盖对方
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[182,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[184,24] 无法将类 com.bone.metadata.sdk.domain.model.TableMetadata中的构造器 TableMetadata应用到给定类型;
+[ERROR]   需要: java.lang.String,java.util.List<com.bone.metadata.sdk.domain.model.ColumnMetadata>
+[ERROR]   找到:    java.lang.Class<capture#1, 共 ?>
+[ERROR]   原因: 实际参数列表和形式参数列表长度不同
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[196,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[223,80] 不兼容的类型: java.util.List<java.util.Map<java.lang.Object,java.lang.Object>>无法转换为java.util.List<java.util.Map<java.lang.String,java.lang.Object>>
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[226,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[231,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/QueryBuilderTestConfig.java:[236,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[64,40] <匿名com.bone.metadata.sdk.test.config.SimpleTestConfig$1>不是抽象的, 并且未覆盖com.bone.metadata.sdk.sql.template.SqlTemplateLoader中的抽象方法refreshTemplate(java.lang.String)
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[74,16] ExceptionHandler() 在 com.bone.metadata.sdk.domain.exception.ExceptionHandler 中是 private 访问控制
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[75,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[81,24] ExceptionHandler() 在 com.bone.metadata.sdk.domain.exception.ExceptionHandler 中是 private 访问控制
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[82,21] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[94,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[99,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[109,16] 无法将类 com.bone.metadata.sdk.sql.processor.SqlProcessorFactory中的构造器 SqlProcessorFactory应用到给定类型;
+[ERROR]   需要: com.bone.metadata.sdk.support.config.SqlConfigProperties
+[ERROR]   找到:    没有参数
+[ERROR]   原因: 实际参数列表和形式参数列表长度不同
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[110,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[132,38] <匿名com.bone.metadata.sdk.test.config.SimpleTestConfig$5>不是抽象的, 并且未覆盖com.bone.metadata.sdk.metadata.api.MetadataService中的抽象方法<T>getTableMetadata(java.lang.Class<T>)
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[134,34] 名称冲突: <匿名com.bone.metadata.sdk.test.config.SimpleTestConfig$5> 中的 getTableMetadata(java.lang.Class<?>) 和 com.bone.metadata.sdk.metadata.api.MetadataService 中的 getTableMetadata(java.lang.Class<T>) 具有相同疑符, 但两者均不覆盖对方
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[133,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[136,24] 无法将类 com.bone.metadata.sdk.domain.model.TableMetadata中的构造器 TableMetadata应用到给定类型;
+[ERROR]   需要: java.lang.String,java.util.List<com.bone.metadata.sdk.domain.model.ColumnMetadata>
+[ERROR]   找到:    java.lang.Class<capture#2, 共 ?>
+[ERROR]   原因: 实际参数列表和形式参数列表长度不同
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[147,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[175,80] 不兼容的类型: java.util.List<java.util.Map<java.lang.Object,java.lang.Object>>无法转换为java.util.List<java.util.Map<java.lang.String,java.lang.Object>>
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[178,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[183,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[188,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[198,16] 无法将类 com.bone.metadata.sdk.extension.ExtensionCoordinator中的构造器 ExtensionCoordinator应用到给定类型;
+[ERROR]   需要: org.springframework.context.ApplicationContext
+[ERROR]   找到:    没有参数
+[ERROR]   原因: 实际参数列表和形式参数列表长度不同
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[204,20] com.bone.metadata.sdk.test.config.SimpleTestConfig.DefaultSqlProcessor不是抽象的, 并且未覆盖com.bone.metadata.sdk.sql.processor.SqlProcessor中的抽象方法process(java.lang.String,java.lang.String,java.util.Map<java.lang.String,java.lang.Object>)
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/config/SimpleTestConfig.java:[205,9] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[123,19] 找不到符号
+[ERROR]   符号:   方法 setShowSql(boolean)
+[ERROR]   位置: 类型为com.bone.metadata.sdk.support.config.SqlConfigProperties的变量 properties
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[132,40] <匿名com.bone.metadata.sdk.test.testcase.QueryBuilderTestConfig$1>不是抽象的, 并且未覆盖com.bone.metadata.sdk.sql.template.SqlTemplateLoader中的抽象方法refreshTemplate(java.lang.String)
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[134,27] <匿名com.bone.metadata.sdk.test.testcase.QueryBuilderTestConfig$1>中的loadTemplate(java.lang.String)无法实现com.bone.metadata.sdk.sql.template.SqlTemplateLoader中的loadTemplate(java.lang.String)
+[ERROR]   返回类型java.lang.String与com.bone.metadata.sdk.sql.template.SqlTemplate不兼容
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[133,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[138,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[150,40] 不兼容的类型: com.bone.metadata.sdk.sql.template.SqlTemplateLoader无法转换为com.bone.metadata.sdk.support.config.SqlConfigProperties
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[160,16] 无法将类 com.bone.metadata.sdk.sql.executor.SqlExecutor中的构造器 SqlExecutor应用到给定类型;
+[ERROR]   需要: org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations,com.bone.metadata.sdk.sql.template.SqlTemplateLoader,com.bone.metadata.sdk.sql.processor.SqlProcessorFactory,com.bone.metadata.sdk.support.config.SqlConfigProperties
+[ERROR]   找到:    org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations,com.bone.metadata.sdk.support.config.SqlConfigProperties,com.bone.metadata.sdk.sql.processor.SqlProcessorFactory
+[ERROR]   原因: 实际参数列表和形式参数列表长度不同
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[161,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[166,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[171,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[176,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[181,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[193,16] ExceptionHandler() 在 com.bone.metadata.sdk.domain.exception.ExceptionHandler 中是 private 访问控制
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[194,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[211,16] 无法将类 com.bone.metadata.sdk.extension.ExtensionCoordinator中的构造器 ExtensionCoordinator应用到给定类型;
+[ERROR]   需要: org.springframework.context.ApplicationContext
+[ERROR]   找到:    没有参数
+[ERROR]   原因: 实际参数列表和形式参数列表长度不同
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[212,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[217,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[229,38] <匿名com.bone.metadata.sdk.test.testcase.QueryBuilderTestConfig$5>不是抽象的, 并且未覆盖com.bone.metadata.sdk.metadata.api.MetadataService中的抽象方法<T>getTableMetadata(java.lang.Class<T>)
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[230,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[235,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[248,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[263,16] 无法将类 com.bone.metadata.sdk.query.SqlBuilder中的构造器 SqlBuilder应用到给定类型;
+[ERROR]   需要: com.bone.metadata.sdk.metadata.api.MetadataService,com.bone.metadata.sdk.sql.dialect.DatabaseDialect
+[ERROR]   找到:    com.bone.metadata.sdk.sql.dialect.DatabaseDialect,com.bone.metadata.sdk.metadata.api.MetadataService,com.bone.metadata.sdk.domain.exception.ExceptionHandler
+[ERROR]   原因: 实际参数列表和形式参数列表长度不同
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[277,80] 不兼容的类型: java.util.List<java.util.Map<java.lang.Object,java.lang.Object>>无法转换为java.util.List<java.util.Map<java.lang.String,java.lang.Object>>
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[280,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[285,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/QueryBuilderTestConfig.java:[290,13] 方法不会覆盖或实现超类型的方法
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[29,9] 找不到符号
+[ERROR]   符号:   方法 setUpTestData()
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[34,9] 找不到符号
+[ERROR]   符号:   类 User
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[34,21] 找不到符号
+[ERROR]   符号:   变量 userRepository
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[43,9] 找不到符号
+[ERROR]   符号:   方法 setUpTestData()
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[47,9] 找不到符号
+[ERROR]   符号:   类 User
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[47,21] 找不到符号
+[ERROR]   符号:   变量 userRepository
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[57,9] 找不到符号
+[ERROR]   符号:   方法 setUpTestData()
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[61,14] 找不到符号
+[ERROR]   符号:   类 User
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[61,28] 找不到符号
+[ERROR]   符号:   变量 userRepository
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[71,9] 找不到符号
+[ERROR]   符号:   方法 setUpTestData()
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[76,14] 找不到符号
+[ERROR]   符号:   类 User
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[76,28] 找不到符号
+[ERROR]   符号:   变量 userRepository
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[86,9] 找不到符号
+[ERROR]   符号:   方法 setUpTestData()
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[90,9] 找不到符号
+[ERROR]   符号:   类 User
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[90,21] 找不到符号
+[ERROR]   符号:   变量 userRepository
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[99,9] 找不到符号
+[ERROR]   符号:   方法 setUpTestData()
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[103,9] 找不到符号
+[ERROR]   符号:   类 User
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[103,21] 找不到符号
+[ERROR]   符号:   变量 userRepository
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[112,9] 找不到符号
+[ERROR]   符号:   方法 setUpTestData()
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[116,9] 找不到符号
+[ERROR]   符号:   类 User
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[116,21] 找不到符号
+[ERROR]   符号:   变量 userRepository
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[126,9] 找不到符号
+[ERROR]   符号:   方法 setUpTestData()
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[127,9] 找不到符号
+[ERROR]   符号:   类 Criteria
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[127,18] 找不到符号
+[ERROR]   符号:   类 User
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[127,45] 找不到符号
+[ERROR]   符号:   类 User
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[127,35] 找不到符号
+[ERROR]   符号:   变量 Criteria
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[130,14] 找不到符号
+[ERROR]   符号:   类 User
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[130,28] 找不到符号
+[ERROR]   符号:   变量 userRepository
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[142,9] 找不到符号
+[ERROR]   符号:   方法 setUpTestData()
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[148,9] 找不到符号
+[ERROR]   符号:   类 Criteria
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[148,18] 找不到符号
+[ERROR]   符号:   类 User
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[148,45] 找不到符号
+[ERROR]   符号:   类 User
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] /Users/renhui.trh/code/bone/bone-engine/bone-metadata-sdk/src/test/java/com/bone/metadata/sdk/test/testcase/UserRepositoryCriteriaTest.java:[148,35] 找不到符号
+[ERROR]   符号:   变量 Criteria
+[ERROR]   位置: 类 com.bone.metadata.sdk.test.testcase.UserRepositoryCriteriaTest
+[ERROR] -> [Help 1]
+[ERROR] 
+[ERROR] To see the full stack trace of the errors, re-run Maven with the -e switch.
+[ERROR] Re-run Maven using the -X switch to enable full debug logging.
+[ERROR] 
+[ERROR] For more information about the errors and possible solutions, please read the following articles:
+[ERROR] [Help 1] http://cwiki.apache.org/confluence/display/MAVEN/MojoFailureException

@@ -2,7 +2,7 @@ package com.bone.engine.extension;
 
 import com.bone.engine.extension.register.ExtensionRegister;
 import com.bone.engine.extension.repository.ExtPointRepository;
-import com.bone.engine.extension.route.DefaultExtPointRouter;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -48,8 +48,7 @@ public class ExtPointValidator implements ApplicationListener<ContextRefreshedEv
     @Autowired
     private ExtPointRepository extPointRepository;
     
-    @Autowired
-    private DefaultExtPointRouter extPointRouter;
+
     
     // 存储扩展点健康检查报告
     private final Map<String, ExtensionPointHealth> healthReport = new ConcurrentHashMap<>();

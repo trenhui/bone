@@ -48,4 +48,19 @@ public interface ExtensionRepository extends JpaRepository<ExtensionEntity, Long
      * 统计扩展点的实现数量
      */
     long countByExtPointId(Long extPointId);
+    
+    /**
+     * 根据扩展点ID和实现类名查询扩展实现
+     */
+    Optional<ExtensionEntity> findByExtPointIdAndClassName(Long extPointId, String className);
+    
+    /**
+     * 根据扩展点ID、实现类名和排除指定ID查询扩展实现
+     */
+    Optional<ExtensionEntity> findByExtPointIdAndClassNameAndIdNot(Long extPointId, String className, Long id);
+    
+    /**
+     * 根据租户代码查询扩展实现列表
+     */
+    List<ExtensionEntity> findByTenantCode(String tenantCode);
 }

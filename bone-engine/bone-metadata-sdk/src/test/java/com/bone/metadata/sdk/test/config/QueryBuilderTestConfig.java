@@ -1,12 +1,17 @@
 package com.bone.metadata.sdk.test.config;
 
-import javax.annotation.PostConstruct;
+
 import com.bone.metadata.sdk.domain.model.TableMetadata;
 import com.bone.metadata.sdk.domain.query.CompiledQuery;
 import com.bone.metadata.sdk.domain.query.BatchCompiledQuery;
-import com.bone.metadata.sdk.domain.query.Criteria;
+import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.extension.ExtensionCoordinator;
-import com.bone.metadata.sdk.exception.ExceptionHandler;
+import com.bone.metadata.sdk.domain.exception.ExceptionHandler;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
+import org.springframework.context.annotation.Configuration;
 import com.bone.metadata.sdk.metadata.api.MetadataService;
 import com.bone.metadata.sdk.query.SqlBuilder;
 import com.bone.metadata.sdk.sql.dialect.DatabaseDialect;
@@ -53,7 +58,7 @@ public class QueryBuilderTestConfig {
     /**
      * 在应用启动时设置QueryBuilder的静态异常处理器
      */
-    @PostConstruct
+    // 初始化方法，在Bean创建后自动调用
     public void init() {
         try {
             // 设置QueryBuilder的静态异常处理器
