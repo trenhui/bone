@@ -2,6 +2,8 @@ package com.bone.metadata.sdk.test.config;
 
 import com.bone.metadata.sdk.domain.annotation.EnableSqlRepositories;
 import com.bone.metadata.sdk.support.config.*;
+import com.bone.metadata.sdk.support.context.RequestContext;
+import com.bone.metadata.sdk.support.config.MetadataSdkProperties;
 import feign.RequestInterceptor;
 import org.mockito.Mockito;
 import org.redisson.api.RAtomicLong;
@@ -96,6 +98,30 @@ public class TestConfig {
     @Primary
     public PlatformTransactionManager transactionManager(DataSource dataSource) {
         return new DataSourceTransactionManager(dataSource);
+    }
+    
+    /**
+     * 配置ExceptionHandler
+     */
+    @Bean
+    public ExceptionHandler exceptionHandler() {
+        return new ExceptionHandler() {
+            @Override
+            public RuntimeException handleException(Exception e) {
+                return new RuntimeException(e);
+            }
+            
+            @Override
+            public RuntimeException handleException(Exception e, String message) {
+                return new RuntimeException(message, e);
+            }
+            
+            @Override
+            public void logException(Exception e) {
+                System.out.println("Exception logged: " + e.getMessage());
+            }
+        };
+    }
     }
 
 

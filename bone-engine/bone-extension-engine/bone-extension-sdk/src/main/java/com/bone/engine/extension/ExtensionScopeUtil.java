@@ -95,7 +95,6 @@ public final class ExtensionScopeUtil {
      */
     public static <T> ExtensionScope withData(@NonNull T data) {
         BizContext<T> context = BizContext.create();
-        context.setData(data);
         log.debug("Creating context scope with data: {}", data.getClass().getSimpleName());
         return ExtensionContextManager.with(context)
                 .withAttribute(ATTR_REQUEST_ID, generateRequestId())
@@ -115,7 +114,6 @@ public final class ExtensionScopeUtil {
         Assert.hasText(tenantCode, "Tenant code must not be empty");
         Assert.hasText(bizCode, "Business code must not be empty");
         BizContext<T> context = BizContext.of(tenantCode, bizCode);
-        context.setData(data);
         log.debug("Creating context scope for tenant: {}, business: {} with data: {}",
                 tenantCode, bizCode, data.getClass().getSimpleName());
         return ExtensionContextManager.with(context)

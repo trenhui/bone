@@ -386,99 +386,136 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         
         log.info("Processing approval for purchase order: {}, action: {}", orderId, action);
         
-        // 1. 获取订单
-        PurchaseOrder order = getOrderById(orderId);
-        if (order == null) {
-            log.error("Purchase order not found: {}", orderId);
-            throw new IllegalArgumentException("Purchase order not found: " + orderId);
-        }
-        
-        // 2. 验证订单状态
-        String currentStatus = order.getStatus();
-        if (!ProcurementConstants.ORDER_STATUS_PENDING_APPROVAL.equals(currentStatus)) {
-            log.error("Order {} is not in PENDING_APPROVAL status: {}", orderId, currentStatus);
-            throw new IllegalStateException("Order must be in PENDING_APPROVAL status");
-        }
-        
-        // 验证当前用户是否有权限审批
-        String currentUserId = context.getUserId();
-        String assignedApproverId = order.getApproverId();
-        
-        if (assignedApproverId != null && !assignedApproverId.equals(currentUserId)) {
-            log.error("User {} not authorized to approve order {}, assigned approver: {}", 
-                     currentUserId, orderId, assignedApproverId);
-            throw new SecurityException("User not authorized to approve this order");
-        }
-        
-        String currentUserName = context.getUserName();
-        
-        // 3. 处理审批动作
-        if ("approve".equalsIgnoreCase(action)) {
-            // 审批通过
-            order.setApprovalStatus(ProcurementConstants.APPROVAL_STATUS_APPROVED);
-            order.setApprovalDate(LocalDateTime.now());
-            order.setUpdateTime(LocalDateTime.now());
-            
-            // 记录当前审批人信息
-            order.setApproverId(currentUserId);
-            order.setApproverName(currentUserName);
-            
-            // 检查是否有下一审批人
-            String nextApprover = ruleEngine.getNextApprover(order, currentUserId, context);
-            
-            if (nextApprover != null) {
-                // 还有下一审批人
-                order.setStatus("PENDING_APPROVAL");
-                order.setApproverId(nextApprover);
-                
-                // 记录审批历史
-                recordApprovalHistory(order, currentUserId, currentUserName, "APPROVED", comment);
-                
-                ApprovalResult result = ApprovalResult.pending(
-                        ruleEngine.getApprovalFlowDefinition(order, context),
-                        nextApprover,
-                        ruleEngine.getApprovalLevel(order, context) + 1
-                );
-                
-                orderRepository.put(orderId, order);
-                
-                log.info("Order {} partially approved by {}, moving to next approver: {}", 
-                         orderId, currentUserId, nextApprover);
-                return result;
-            } else {
-                // 所有审批完成
-                order.setStatus(ProcurementConstants.ORDER_STATUS_APPROVED);
-                
-                // 记录审批历史
-                recordApprovalHistory(order, currentUserId, currentUserName, "APPROVED", comment);
-                
-                ApprovalResult result = ApprovalResult.approved(currentUserId, currentUserName);
-                result.setComment(comment);
-                
-                orderRepository.put(orderId, order);
-                
-                log.info("Order {} fully approved by {}", orderId, currentUserId);
-                return result;
+        try {
+            // 1. 获取订单
+            PurchaseOrder order = getOrderById(orderId);
+            if (order == null) {
+                log.error("Purchase order not found: {}", orderId);
+                throw new IllegalArgumentException("Purchase order not found: " + orderId);
             }
-        } else if ("reject".equalsIgnoreCase(action)) {
-            // 审批拒绝
-            order.setStatus(ProcurementConstants.ORDER_STATUS_REJECTED);
-            order.setApprovalStatus(ProcurementConstants.APPROVAL_STATUS_REJECTED);
-            order.setApprovalDate(LocalDateTime.now());
-            order.setApproverId(currentUserId);
-            order.setApproverName(currentUserName);
-            order.setUpdateTime(LocalDateTime.now());
             
-            // 记录审批历史
-            recordApprovalHistory(order, currentUserId, currentUserName, "REJECTED", comment);
+            // 准备元数据上下文
+            MetadataContext metadataContext = new MetadataContext();
+            metadataContext.setUserId(context.getUserId());
+            metadataContext.setTenantId(TenantContext.getCurrentTenant() != null ? 
+                TenantContext.getCurrentTenant() : "DEFAULT_TENANT");
             
-            orderRepository.put(orderId, order);
+            // 保存原始订单状态用于变更跟踪
+            PurchaseOrder originalOrder = new PurchaseOrder();
+            // 复制必要的字段，实际实现中可能需要深拷贝
+            originalOrder.setOrderId(order.getOrderId());
+            originalOrder.setStatus(order.getStatus());
+            originalOrder.setApprovalStatus(order.getApprovalStatus());
+            originalOrder.setApproverId(order.getApproverId());
             
-            log.info("Order {} rejected by {}, reason: {}", orderId, currentUserId, comment);
-            return ApprovalResult.rejected(currentUserId, currentUserName, comment);
-        } else {
-            log.error("Invalid approval action: {}", action);
-            throw new IllegalArgumentException("Invalid approval action: " + action + ". Must be 'approve' or 'reject'");
+            // 2. 验证订单状态
+            String currentStatus = order.getStatus();
+            if (!ProcurementConstants.ORDER_STATUS_PENDING_APPROVAL.equals(currentStatus)) {
+                log.error("Order {} is not in PENDING_APPROVAL status: {}", orderId, currentStatus);
+                throw new IllegalStateException("Order must be in PENDING_APPROVAL status");
+            }
+            
+            // 验证当前用户是否有权限审批
+            String currentUserId = context.getUserId();
+            String assignedApproverId = order.getApproverId();
+            
+            if (assignedApproverId != null && !assignedApproverId.equals(currentUserId)) {
+                log.error("User {} not authorized to approve order {}, assigned approver: {}", 
+                         currentUserId, orderId, assignedApproverId);
+                throw new SecurityException("User not authorized to approve this order");
+            }
+            
+            String currentUserName = context.getUserName();
+            
+            // 3. 处理审批动作
+            if ("approve".equalsIgnoreCase(action)) {
+                // 审批通过
+                order.setApprovalStatus(ProcurementConstants.APPROVAL_STATUS_APPROVED);
+                order.setApprovalDate(LocalDateTime.now());
+                order.setUpdateTime(LocalDateTime.now());
+                
+                // 记录当前审批人信息
+                order.setApproverId(currentUserId);
+                order.setApproverName(currentUserName);
+                
+                // 检查是否有下一审批人
+                String nextApprover = ruleEngine.getNextApprover(order, currentUserId, context);
+                
+                if (nextApprover != null) {
+                    // 还有下一审批人
+                    order.setStatus("PENDING_APPROVAL");
+                    order.setApproverId(nextApprover);
+                    
+                    // 记录审批历史
+                    recordApprovalHistory(order, currentUserId, currentUserName, "APPROVED", comment);
+                    
+                    // 获取状态变更信息
+                    Map<String, Object> changes = metadataEngine.compareEntities(originalOrder, order);
+                    
+                    ApprovalResult result = ApprovalResult.pending(
+                            ruleEngine.getApprovalFlowDefinition(order, context),
+                            nextApprover,
+                            ruleEngine.getApprovalLevel(order, context) + 1
+                    );
+                    
+                    orderRepository.put(orderId, order);
+                    
+                    // 触发元数据引擎的更新事件
+                    metadataEngine.onEntityUpdated(originalOrder, order, changes, metadataContext);
+                    
+                    log.info("Order {} partially approved by {}, moving to next approver: {}", 
+                             orderId, currentUserId, nextApprover);
+                    return result;
+                } else {
+                    // 所有审批完成
+                    order.setStatus(ProcurementConstants.ORDER_STATUS_APPROVED);
+                    
+                    // 记录审批历史
+                    recordApprovalHistory(order, currentUserId, currentUserName, "APPROVED", comment);
+                    
+                    // 获取状态变更信息
+                    Map<String, Object> changes = metadataEngine.compareEntities(originalOrder, order);
+                    
+                    ApprovalResult result = ApprovalResult.approved(currentUserId, currentUserName);
+                    result.setComment(comment);
+                    
+                    orderRepository.put(orderId, order);
+                    
+                    // 触发元数据引擎的更新事件
+                    metadataEngine.onEntityUpdated(originalOrder, order, changes, metadataContext);
+                    
+                    log.info("Order {} fully approved by {}", orderId, currentUserId);
+                    return result;
+                }
+            } else if ("reject".equalsIgnoreCase(action)) {
+                // 审批拒绝
+                order.setStatus(ProcurementConstants.ORDER_STATUS_REJECTED);
+                order.setApprovalStatus(ProcurementConstants.APPROVAL_STATUS_REJECTED);
+                order.setApprovalDate(LocalDateTime.now());
+                order.setApproverId(currentUserId);
+                order.setApproverName(currentUserName);
+                order.setUpdateTime(LocalDateTime.now());
+                
+                // 记录审批历史
+                recordApprovalHistory(order, currentUserId, currentUserName, "REJECTED", comment);
+                
+                // 获取状态变更信息
+                Map<String, Object> changes = metadataEngine.compareEntities(originalOrder, order);
+                
+                orderRepository.put(orderId, order);
+                
+                // 触发元数据引擎的更新事件
+                metadataEngine.onEntityUpdated(originalOrder, order, changes, metadataContext);
+                
+                log.info("Order {} rejected by {}, reason: {}", orderId, currentUserId, comment);
+                return ApprovalResult.rejected(currentUserId, currentUserName, comment);
+            } else {
+                log.error("Invalid approval action: {}", action);
+                throw new IllegalArgumentException("Invalid approval action: " + action + ". Must be 'approve' or 'reject'");
+            }
+        } catch (Exception e) {
+            log.error("Error processing approval: {}", e.getMessage());
+            throw e;
         }
     }
     
@@ -493,47 +530,74 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         
         log.info("Starting to cancel purchase order: {}, reason: {}", orderId, reason);
         
-        // 1. 获取订单
-        PurchaseOrder order = getOrderById(orderId);
-        if (order == null) {
-            log.error("Purchase order not found: {}", orderId);
-            throw new IllegalArgumentException("Purchase order not found: " + orderId);
-        }
-        
-        // 2. 检查是否可以取消
-        String currentStatus = order.getStatus();
-        if (ProcurementConstants.ORDER_STATUS_CLOSED.equals(currentStatus) || ProcurementConstants.ORDER_STATUS_CANCELLED.equals(currentStatus)) {
-            log.error("Order {} is already {}", orderId, currentStatus);
-            throw new IllegalStateException("Order is already " + currentStatus);
-        }
+        try {
+            // 1. 获取订单
+            PurchaseOrder order = getOrderById(orderId);
+            if (order == null) {
+                log.error("Purchase order not found: {}", orderId);
+                throw new IllegalArgumentException("Purchase order not found: " + orderId);
+            }
+            
+            // 准备元数据上下文
+            MetadataContext metadataContext = new MetadataContext();
+            metadataContext.setUserId(context != null ? context.getUserId() : null);
+            metadataContext.setTenantId(order.getTenantId() != null ? 
+                order.getTenantId() : "DEFAULT_TENANT");
+            
+            // 保存原始状态用于变更跟踪
+            PurchaseOrder originalOrder = new PurchaseOrder();
+            originalOrder.setOrderId(order.getOrderId());
+            originalOrder.setStatus(order.getStatus());
+            originalOrder.setApprovalStatus(order.getApprovalStatus());
+            
+            // 2. 检查是否可以取消
+            String currentStatus = order.getStatus();
+            if (ProcurementConstants.ORDER_STATUS_CLOSED.equals(currentStatus) || ProcurementConstants.ORDER_STATUS_CANCELLED.equals(currentStatus)) {
+                log.error("Order {} is already {}", orderId, currentStatus);
+                throw new IllegalStateException("Order is already " + currentStatus);
+            }
 
-        if (ProcurementConstants.ORDER_STATUS_APPROVED.equals(currentStatus)) {
-            log.error("Cannot cancel approved order: {}", orderId);
-            throw new IllegalStateException("Cannot cancel approved order");
+            if (ProcurementConstants.ORDER_STATUS_APPROVED.equals(currentStatus)) {
+                log.error("Cannot cancel approved order: {}", orderId);
+                throw new IllegalStateException("Cannot cancel approved order");
+            }
+            
+            // 3. 更新订单状态
+            order.setStatus(ProcurementConstants.ORDER_STATUS_CANCELLED);
+            order.setApprovalStatus(ProcurementConstants.APPROVAL_STATUS_CANCELLED);
+            order.setUpdateTime(LocalDateTime.now());
+            order.setCancellationDate(LocalDateTime.now()); // 添加取消日期
+            
+            // 记录取消原因
+            if (reason != null) {
+                order.setCancellationReason(reason);
+            }
+            
+            // 记录取消人信息
+            if (context != null) {
+                order.setCancelledById(context.getUserId());
+                order.setCancelledByName(context.getUserName());
+            }
+            
+            // 获取状态变更信息
+            Map<String, Object> changes = metadataEngine.compareEntities(originalOrder, order);
+            
+            // 保存更新后的订单
+            orderRepository.put(orderId, order);
+            
+            // 触发元数据引擎的更新事件
+            metadataEngine.onEntityUpdated(originalOrder, order, changes, metadataContext);
+            
+            log.info("Purchase order cancelled: {}, by user: {}", 
+                     orderId, context != null ? context.getUserId() : "unknown");
+            return order;
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            // 直接重新抛出参数验证和状态检查的异常
+            throw e;
+        } catch (Exception e) {
+            log.error("Error cancelling order: {}", e.getMessage());
+            throw new RuntimeException("Failed to cancel order", e);
         }
-        
-        // 3. 更新订单状态
-        order.setStatus(ProcurementConstants.ORDER_STATUS_CANCELLED);
-        order.setApprovalStatus(ProcurementConstants.APPROVAL_STATUS_CANCELLED);
-        order.setUpdateTime(LocalDateTime.now());
-        order.setCancellationDate(LocalDateTime.now()); // 添加取消日期
-        
-        // 记录取消原因
-        if (reason != null) {
-            order.setCancellationReason(reason);
-        }
-        
-        // 记录取消人信息
-        if (context != null) {
-            order.setCancelledById(context.getUserId());
-            order.setCancelledByName(context.getUserName());
-        }
-        
-        orderRepository.put(orderId, order);
-        
-        log.info("Purchase order cancelled: {}, by user: {}", 
-                 orderId, context != null ? context.getUserId() : "unknown");
-        return order;
     }
     
     @Override
@@ -547,42 +611,69 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         
         log.info("Starting to close purchase order: {}", orderId);
         
-        // 1. 获取订单
-        PurchaseOrder order = getOrderById(orderId);
-        if (order == null) {
-            log.error("Purchase order not found: {}", orderId);
-            throw new IllegalArgumentException("Purchase order not found: " + orderId);
-        }
-        
-        // 2. 检查是否可以关闭
-        String currentStatus = order.getStatus();
-        if (ProcurementConstants.ORDER_STATUS_CLOSED.equals(currentStatus) || ProcurementConstants.ORDER_STATUS_CANCELLED.equals(currentStatus)) {
-            log.error("Order {} is already {}", orderId, currentStatus);
-            throw new IllegalStateException("Order is already " + currentStatus);
-        }
+        try {
+            // 1. 获取订单
+            PurchaseOrder order = getOrderById(orderId);
+            if (order == null) {
+                log.error("Purchase order not found: {}", orderId);
+                throw new IllegalArgumentException("Purchase order not found: " + orderId);
+            }
+            
+            // 准备元数据上下文
+            MetadataContext metadataContext = new MetadataContext();
+            metadataContext.setUserId(context != null ? context.getUserId() : null);
+            metadataContext.setTenantId(order.getTenantId() != null ? 
+                order.getTenantId() : "DEFAULT_TENANT");
+            
+            // 保存原始状态用于变更跟踪
+            PurchaseOrder originalOrder = new PurchaseOrder();
+            originalOrder.setOrderId(order.getOrderId());
+            originalOrder.setStatus(order.getStatus());
+            originalOrder.setApprovalStatus(order.getApprovalStatus());
+            
+            // 2. 检查是否可以关闭
+            String currentStatus = order.getStatus();
+            if (ProcurementConstants.ORDER_STATUS_CLOSED.equals(currentStatus) || ProcurementConstants.ORDER_STATUS_CANCELLED.equals(currentStatus)) {
+                log.error("Order {} is already {}", orderId, currentStatus);
+                throw new IllegalStateException("Order is already " + currentStatus);
+            }
 
-        if (!ProcurementConstants.ORDER_STATUS_APPROVED.equals(currentStatus)) {
-            log.error("Order {} cannot be closed, status must be APPROVED, current status: {}", 
-                     orderId, currentStatus);
-            throw new IllegalStateException("Only approved orders can be closed");
+            if (!ProcurementConstants.ORDER_STATUS_APPROVED.equals(currentStatus)) {
+                log.error("Order {} cannot be closed, status must be APPROVED, current status: {}", 
+                         orderId, currentStatus);
+                throw new IllegalStateException("Only approved orders can be closed");
+            }
+            
+            // 3. 更新订单状态
+            order.setStatus(ProcurementConstants.ORDER_STATUS_CLOSED);
+            order.setUpdateTime(LocalDateTime.now());
+            order.setCloseDate(LocalDateTime.now()); // 添加关闭日期
+            
+            // 记录关闭人信息
+            if (context != null) {
+                order.setClosedById(context.getUserId());
+                order.setClosedByName(context.getUserName());
+            }
+            
+            // 获取状态变更信息
+            Map<String, Object> changes = metadataEngine.compareEntities(originalOrder, order);
+            
+            // 保存更新后的订单
+            orderRepository.put(orderId, order);
+            
+            // 触发元数据引擎的更新事件
+            metadataEngine.onEntityUpdated(originalOrder, order, changes, metadataContext);
+            
+            log.info("Purchase order closed: {}, by user: {}", 
+                     orderId, context != null ? context.getUserId() : "unknown");
+            return order;
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            // 直接重新抛出参数验证和状态检查的异常
+            throw e;
+        } catch (Exception e) {
+            log.error("Error closing order: {}", e.getMessage());
+            throw new RuntimeException("Failed to close order", e);
         }
-        
-        // 3. 更新订单状态
-        order.setStatus(ProcurementConstants.ORDER_STATUS_CLOSED);
-        order.setUpdateTime(LocalDateTime.now());
-        order.setCloseDate(LocalDateTime.now()); // 添加关闭日期
-        
-        // 记录关闭人信息
-        if (context != null) {
-            order.setClosedById(context.getUserId());
-            order.setClosedByName(context.getUserName());
-        }
-        
-        orderRepository.put(orderId, order);
-        
-        log.info("Purchase order closed: {}, by user: {}", 
-                 orderId, context != null ? context.getUserId() : "unknown");
-        return order;
     }
     
     @Override

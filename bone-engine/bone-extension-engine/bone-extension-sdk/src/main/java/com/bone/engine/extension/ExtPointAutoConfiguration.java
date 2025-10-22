@@ -7,8 +7,8 @@ import com.bone.engine.extension.expression.ExpressionEvaluator;
 import com.bone.engine.extension.repository.ExtPointRepository;
 import com.bone.engine.extension.repository.MemExtPointRepository;
 import com.bone.engine.extension.register.ExtensionRegister;
-import com.bone.engine.extension.route.DefaultExtPointRouter;
-import com.bone.engine.extension.route.ExtPointRouter;
+import com.bone.engine.extension.router.DefaultExtPointRouter;
+import com.bone.engine.extension.router.ExtPointRouter;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
@@ -45,10 +45,8 @@ public class ExtPointAutoConfiguration {
      * 默认扩展点路由器 - 根据业务上下文路由到合适的扩展实现
      */
     @Bean
-    public ExtPointRouter extPointRouter(ExtPointRepository extPointRepository) {
-        // 在Bean创建时验证配置
-        extensionConfigValidator.validateConfig(extensionConfigProperties);
-        return new DefaultExtPointRouter(extPointRepository, extensionConfigProperties);
+    public ExtPointRouter extPointRouter() {
+        return new DefaultExtPointRouter();
     }
     
     /**
@@ -56,11 +54,12 @@ public class ExtPointAutoConfiguration {
      */
     @Bean(initMethod = "init")
     public ExtensionRegister extProviderRegister(ExtPointRepository extPointRepository,
-                                              ApplicationEventPublisher applicationEventPublisher) {
+                                              ApplicationEventPublisher applicationEventPublisher,
+                                              ExtensionConfigProperties configProperties) {
         // 创建默认的事件发布器实例，并注入Spring的ApplicationEventPublisher
         DefaultExtensionEventPublisher eventPublisher = new DefaultExtensionEventPublisher(applicationEventPublisher);
         
         // 创建扩展注册器并注入所需组件
-        return new ExtensionRegister(extPointRepository, eventPublisher);
+        return new ExtensionRegister(extPointRepository, eventPublisher, configProperties);
     }
 }
