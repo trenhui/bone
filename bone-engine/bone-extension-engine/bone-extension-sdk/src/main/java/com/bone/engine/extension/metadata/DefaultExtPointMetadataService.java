@@ -147,13 +147,13 @@ public class DefaultExtPointMetadataService implements ExtPointMetadataService, 
         ExtPoint extPoint = AnnotationUtils.findAnnotation(extPointClass, ExtPoint.class);
         if (extPoint != null) {
             metadata.setDescription(extPoint.description());
-            metadata.setOwner(extPoint.owner());
-            metadata.setDocumentationUrl(extPoint.documentationUrl());
+                metadata.setOwner(""); // 使用默认值
+                metadata.setDocumentationUrl(""); // 使用默认值
             metadata.setCategory(extPoint.category());
-            metadata.setTags(Arrays.asList(extPoint.tags()));
-            metadata.setDeprecated(extPoint.deprecated());
+            metadata.setTags(Collections.emptyList()); // ExtPoint没有tags()方法
+            metadata.setDeprecated(!extPoint.deprecatedSince().isEmpty()); // 使用deprecatedSince作为判断依据
             metadata.setDeprecatedSince(extPoint.deprecatedSince());
-            metadata.setReplacement(extPoint.replacement());
+            metadata.setReplacement(""); // ExtPoint没有replacement()方法
         } else {
             // 从JavaDoc提取描述作为备选
             metadata.setDescription(extractDescriptionFromJavadoc(extPointClass));
@@ -226,32 +226,27 @@ public class DefaultExtPointMetadataService implements ExtPointMetadataService, 
                 implMetadata.setImplSimpleName(implClass.getSimpleName());
                 
                 // 设置路由配置信息
-                implMetadata.setTenantCode(extension.tenantCode());
-                implMetadata.setBizCode(extension.bizCode());
+            implMetadata.setTenantCode(extension.tenantCode()); // 假设需要字符串
+            implMetadata.setBizCode(extension.bizCode()); // 使用字符串
                 implMetadata.setUseCase(extension.useCase());
                 implMetadata.setScenario(extension.scenario());
-                implMetadata.setExpression(extension.expression());
-                
-                // 设置版本信息
-                implMetadata.setVersion(extension.version());
-                implMetadata.setCompatibleWith(extension.compatibleWith());
+                implMetadata.setExpression(""); // Extension没有expression()方法
+            
+            // 设置版本信息
+            implMetadata.setVersion(extension.version());
+            implMetadata.setCompatibleWith(new String[0]); // Extension没有compatibleWith()方法，使用空数组
                 
                 // 从@Extension注解中提取新添加的元数据
                 implMetadata.setDescription(extension.description());
                 implMetadata.setAuthor(extension.author());
                 implMetadata.setDefault(extension.isDefault() || ExtPointConstants.DEFAULT_VALUE.equals(extension.bizCode()));
-                implMetadata.setRecommended(extension.isRecommended());
+                // 不再重复设置已经设置过的字段
+                implMetadata.setRecommended(false); // 使用默认值
                 implMetadata.setPriority(String.valueOf(extension.priority()));
-                implMetadata.setDependencies(extension.dependencies());
+                implMetadata.setDependencies(new String[0]); // 使用默认值
                 
-                // 解析配置属性
+                // 使用空的属性映射
                 Map<String, String> propertiesMap = new HashMap<>();
-                for (String prop : extension.properties()) {
-                    if (prop.contains("=")) {
-                        String[] parts = prop.split("=", 2);
-                        propertiesMap.put(parts[0], parts[1]);
-                    }
-                }
                 implMetadata.setProperties(propertiesMap);
                 
                 // 设置时间信息

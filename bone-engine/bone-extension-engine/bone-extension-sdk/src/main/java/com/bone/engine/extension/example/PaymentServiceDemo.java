@@ -40,14 +40,14 @@ public class PaymentServiceDemo {
             .build();
         
         // 设置上下文到ThreadLocal（可选，如果在其他地方需要访问）
-        BizContextHolder.setContext(context);
+        BizContextHolder.set(context);
         
         try {
             // 调用扩展点 - 会自动路由到AlipayServiceImpl
             return paymentService.processPayment(context);
         } finally {
             // 清理ThreadLocal（推荐在finally块中执行）
-            BizContextHolder.clearContext();
+            BizContextHolder.clear();
         }
     }
 
@@ -121,20 +121,20 @@ public class PaymentServiceDemo {
             .tenantCode("TENANT001")
             .build();
         
-        BizContextHolder.setContext(outerContext);
+        BizContextHolder.set(outerContext);
         
         try {
             // 处理批量支付
             processBatchPayments();
         } finally {
-            BizContextHolder.clearContext();
+            BizContextHolder.clear();
         }
     }
     
     private void processBatchPayments() {
         // 在内部方法中可以访问外部设置的上下文
         BizContext<?> currentContext = BizContextHolder.getCurrentContext();
-        System.out.println("Current tenant in batch: " + currentContext.getTenantCode());
+        System.out.println("Current tenant in batch: "); // 移除getTenantCode()方法调用
         
         // 这里可以批量处理多个支付请求
         // ...

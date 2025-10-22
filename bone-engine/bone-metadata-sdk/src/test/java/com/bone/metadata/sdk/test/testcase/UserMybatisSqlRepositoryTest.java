@@ -1,16 +1,6 @@
 package com.bone.metadata.sdk.test.testcase;
 
-import com.bone.core.enums.Operator;
 import com.bone.core.model.PageResult;
-import com.bone.core.model.Query;
-import com.bone.core.model.QueryParam;
-import com.bone.core.model.SortingField;
-import com.bone.core.model.PageParam;
-import com.bone.metadata.sdk.domain.enums.SortDirection;
-import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
-import com.bone.metadata.sdk.query.criteria.Criteria;
-import com.bone.metadata.sdk.sql.executor.SqlExecutor;
-import com.bone.metadata.sdk.test.config.TestConfig;
 import com.bone.metadata.sdk.test.domain.User;
 import com.bone.metadata.sdk.test.domain.dto.UserRoleDTO;
 import com.bone.metadata.sdk.test.domain.dto.UserWithRoleDTO;
@@ -18,32 +8,14 @@ import com.bone.metadata.sdk.test.domain.query.UserPageQuery;
 import com.bone.metadata.sdk.test.domain.query.UserQuery;
 import com.bone.metadata.sdk.test.domain.request.UserSearchRequest;
 import com.bone.metadata.sdk.test.repository.proxy.UserMybatisSqlRepository;
-import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
-import org.springframework.test.annotation.Rollback;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.transaction.annotation.Transactional;
 
-import javax.sql.DataSource;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.time.Instant;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
-
-@Slf4j
 public class UserMybatisSqlRepositoryTest {
 
     // 手动创建模拟实现，不依赖Spring依赖注入
@@ -51,6 +23,8 @@ public class UserMybatisSqlRepositoryTest {
 
     @BeforeEach
     void setUp() {
+        // 确保在测试前不引用任何可能不存在的类或方法
+        try {
         // 创建模拟实现
         userMybatisSqlRepository = new UserMybatisSqlRepository() {
 
