@@ -656,160 +656,7 @@ export const appInitializer = new AppInitializer();
 
 ### 4.2.1 Monorepo Structure Overview / 单仓库结构概览
 
-Bone平台前端采用现代化的Monorepo架构，使用Lerna和Yarn Workspaces进行管理，实现代码共享和依赖管理的最优化。
-
-```
-bone-frontend/                 # 前端根目录
-├── apps/                      # 应用目录
-│   ├── main-app/              # 主应用 (基座应用)
-│   ├── micro-app-admin/       # 管理门户微应用
-│   ├── micro-app-analytics/   # 数据分析微应用
-│   ├── micro-app-workflow/    # 工作流引擎微应用
-│   └── micro-app-user/        # 用户中心微应用
-├── packages/                  # 共享包目录
-│   ├── ui-components/         # UI组件库
-│   ├── micro-frontend-sdk/    # 微前端SDK
-│   ├── shared-utils/          # 共享工具函数
-│   ├── api-client/            # API客户端
-│   └── eslint-config/         # ESLint配置
-├── scripts/                   # 构建和部署脚本
-├── docs/                      # 文档
-├── .eslintrc.js               # 根目录ESLint配置
-├── .prettierrc                # Prettier配置
-├── lerna.json                 # Lerna配置
-├── package.json               # 根目录package.json
-├── tsconfig.json              # 根目录TypeScript配置
-└── README.md                  # 项目说明文档
-```
-
-### 4.2.2 Main Application Structure / 主应用结构
-
-```
-main-app/
-├── public/                    # 静态资源目录
-│   ├── index.html            # HTML入口文件
-│   ├── favicon.ico           # 网站图标
-│   └── manifest.json         # PWA配置文件
-├── src/
-│   ├── assets/               # 资源文件目录
-│   │   ├── images/           # 图片资源
-│   │   ├── icons/            # 图标资源
-│   │   ├── fonts/            # 字体资源
-│   │   └── styles/           # 全局样式
-│   ├── components/           # 公共组件
-│   │   ├── layout/           # 布局组件
-│   │   ├── common/           # 通用组件
-│   │   └── business/         # 业务组件
-│   ├── config/               # 配置文件
-│   │   ├── appConfig.ts      # 应用配置
-│   │   ├── microApps.ts      # 微应用配置
-│   │   └── securityConfig.ts # 安全配置
-│   ├── core/                 # 核心模块
-│   │   ├── orchestrator/     # 微前端协调器
-│   │   ├── router/           # 路由系统
-│   │   ├── store/            # 状态管理
-│   │   └── theme/            # 主题配置
-│   ├── hooks/                # 自定义Hooks
-│   ├── pages/                # 页面组件
-│   │   ├── Home/             # 首页
-│   │   ├── Login/            # 登录页
-│   │   ├── Layout/           # 主布局
-│   │   └── Error/            # 错误页面
-│   ├── services/             # API服务
-│   │   ├── authService.ts    # 认证服务
-│   │   ├── userService.ts    # 用户服务
-│   │   └── apiClient.ts      # API客户端
-│   ├── types/                # TypeScript类型定义
-│   ├── utils/                # 工具函数
-│   │   ├── formatters.ts     # 格式化工具
-│   │   ├── validators.ts     # 验证工具
-│   │   └── security.ts       # 安全工具
-│   ├── App.tsx               # 应用根组件
-│   ├── main.tsx              # 应用入口文件
-│   ├── routes.tsx            # 路由配置
-│   └── setupTests.ts         # 测试配置
-├── tests/                    # 测试文件
-│   ├── unit/                 # 单元测试
-│   └── integration/          # 集成测试
-├── .env.development          # 开发环境变量
-├── .env.production           # 生产环境变量
-├── .env.staging              # 预发环境变量
-├── babel.config.js           # Babel配置
-├── jest.config.js            # Jest配置
-├── package.json              # 依赖配置
-├── tsconfig.json             # TypeScript配置
-├── tsconfig.paths.json       # TypeScript路径别名
-├── vite.config.ts            # Vite配置 (现代化构建工具)
-└── README.md                 # 项目说明
-```
-
-### 4.2.3 Micro Application Structure / 微应用结构
-
-```
-micro-app/
-├── public/                    # 静态资源
-├── src/
-│   ├── assets/               # 静态资源 - 图片、样式等
-│   ├── components/           # React组件 - 业务组件
-│   ├── config/               # 微应用配置
-│   ├── hooks/                # 自定义Hooks
-│   ├── pages/                # 页面组件
-│   ├── router/               # 微应用路由配置
-│   ├── services/             # API服务
-│   ├── store/                # 状态管理
-│   │   ├── slices/           # Redux Toolkit slices
-│   │   ├── selectors/        # 选择器
-│   │   └── index.ts          # store配置
-│   ├── types/                # TypeScript类型定义
-│   ├── utils/                # 工具函数
-│   ├── App.tsx               # 根应用组件
-│   ├── bootstrap.tsx         # 微应用启动入口 (必须)
-│   └── index.ts              # 模块导出
-├── .eslintrc.js              # ESLint配置
-├── package.json              # 依赖和脚本配置
-├── tsconfig.json             # TypeScript配置
-├── vite.config.ts            # Vite配置
-└── README.md                 # 项目文档
-```
-
-### 4.2.4 Shared Packages Structure / 共享包结构
-
-#### UI组件库
-```
-ui-components/
-├── src/
-│   ├── components/           # 组件
-│   │   ├── Button/           # Button组件
-│   │   │   ├── Button.tsx
-│   │   │   ├── Button.types.ts
-│   │   │   ├── Button.stories.tsx
-│   │   │   └── Button.test.tsx
-│   │   ├── Form/             # Form组件
-│   │   ├── Table/            # Table组件
-│   │   └── index.ts          # 组件导出
-│   ├── hooks/                # 组件Hooks
-│   ├── theme/                # 主题配置
-│   ├── types/                # 类型定义
-│   └── utils/                # 工具函数
-├── docs/                     # 组件文档
-├── stories/                  # Storybook stories
-├── package.json              # 包配置
-├── tsconfig.json             # TypeScript配置
-└── README.md                 # 文档
-```
-
-#### 微前端SDK
-```
-micro-frontend-sdk/
-├── src/
-│   ├── communication/        # 通信模块
-│   ├── lifecycle/            # 生命周期管理
-│   ├── sandbox/              # 沙箱工具
-│   ├── utils/                # 工具函数
-│   └── index.ts              # 导出
-├── package.json
-└── tsconfig.json
-```
+Bone平台前端采用现代化的Monorepo架构，使用Lerna和Yarn Workspaces进行管理，实现代码共享和依赖管理的最优化。详细的目录结构请参考《Bone前端架构目录结构》文档，本方案重点说明架构实现细节。
 
 ### 4.2.5 Build Tooling Configuration / 构建工具配置
 
@@ -1593,66 +1440,79 @@ export const EnhancedMicroAppContainer: React.FC<{
 
 ### 4.3.1 Event Bus System / 事件总线系统
 
-事件总线（Event Bus）是微前端架构中的核心通信机制，用于主应用和微应用之间的消息传递和状态同步。
+事件总线（Event Bus）是微前端架构中的核心通信机制，用于主应用和微应用之间的消息传递和状态同步。Bone平台实现了类型安全的事件总线，确保跨应用通信的类型安全和可靠性。
 
 ```typescript
 /**
- * Micro-Application Event Enumeration
- * 微应用事件枚举 - 定义所有跨应用通信的标准事件类型
+ * 应用事件类型定义接口
+ * 为所有事件提供类型安全的定义
  */
-export enum AppEvents {
+export interface AppEvents {
   // 路由相关事件 - Route related events
-  MICRO_APP_ROUTE_CHANGED = 'micro_app_route_changed', // 路由变化事件
-  MICRO_APP_ROUTE_ERROR = 'micro_app_route_error', // 路由错误事件
+  micro_app_route_changed: { path: string; params?: Record<string, string> };
+  micro_app_route_error: { path: string; error: Error };
   
   // 生命周期相关事件 - Lifecycle related events
-  MICRO_APP_LOAD_START = 'micro_app_load_start', // 加载开始事件
-  MICRO_APP_LOAD_COMPLETE = 'micro_app_load_complete', // 加载完成事件
-  MICRO_APP_LOAD_ERROR = 'micro_app_load_error', // 加载错误事件
-  MICRO_APP_MOUNT = 'micro_app_mount', // 挂载完成事件
-  MICRO_APP_UNMOUNT = 'micro_app_unmount', // 卸载完成事件
-  MICRO_APP_ACTIVATED = 'micro_app_activated', // 应用激活事件（获得焦点）
-  MICRO_APP_DEACTIVATED = 'micro_app_deactivated', // 应用失活事件（失去焦点）
+  micro_app_load_start: { name: string; timestamp: number };
+  micro_app_load_complete: { name: string; loadTime: number; timestamp: number };
+  micro_app_load_error: { name: string; error: string; timestamp: number };
+  micro_app_mount: { name: string; timestamp: number };
+  micro_app_unmount: { name: string; timestamp: number };
+  micro_app_activated: { name: string };
+  micro_app_deactivated: { name: string };
   
   // 通信相关事件 - Communication related events
-  MICRO_APP_MESSAGE = 'micro_app_message', // 点对点消息事件
-  MICRO_APP_GLOBAL_MESSAGE = 'micro_app_global_message', // 全局广播消息事件
+  micro_app_message: MicroAppMessage;
+  micro_app_global_message: MicroAppMessage;
   
   // 应用管理事件 - Application management events
-  MICRO_APP_REGISTERED = 'micro_app_registered', // 应用注册事件
-  MICRO_APP_UNREGISTERED = 'micro_app_unregistered', // 应用注销事件
-  ACTIVE_APP_CHANGED = 'active_app_changed', // 活动应用变更事件
+  micro_app_registered: MicroApplicationConfig;
+  micro_app_unregistered: { name: string };
+  active_app_changed: { previous: string; current: string };
   
   // 资源管理事件 - Resource management events
-  MICRO_APP_RESOURCES_LOAD = 'micro_app_resources_load', // 资源加载事件
-  MICRO_APP_RESOURCES_ERROR = 'micro_app_resources_error', // 资源加载错误事件
+  micro_app_resources_load: { name: string; resources: string[] };
+  micro_app_resources_error: { name: string; error: string; resource: string };
   
   // 性能监控事件 - Performance monitoring events
-  MICRO_APP_PERFORMANCE_METRIC = 'micro_app_performance_metric', // 性能指标事件
+  micro_app_performance_metric: { name: string; metric: string; value: number; timestamp: number };
+  
+  // 内存相关事件
+  memory_warning: { usage: number; threshold: number };
+  memory_limit_exceeded: { usage: number; limit: number };
+  trigger_memory_optimization: void;
+  
+  // 请求相关事件
+  request_retry: { url: string; attempt: number; maxRetries: number; error: string; timeElapsed: number };
+  request_error: { url: string; error: string; timeElapsed: number };
+  
+  // 共享状态相关事件
+  shared_state_update: { key: string; value: any; sender: string };
+  shared_state_subscribe: { key: string; sender: string };
+  shared_state_sync: { key: string; value: any; target?: string };
 }
 
 /**
- * Micro-Application Event Bus Class
- * 微应用事件总线类 - 负责主应用和微应用之间的通信与消息传递
+ * 类型安全的事件总线类
+ * 提供类型安全的事件发布订阅机制
  */
-export class MicroAppEventBus {
-  private eventMap: Map<string, Set<(data: any) => void>>; // 存储事件监听器的映射
-  private onceEventMap: Map<string, Set<(data: any) => void>>; // 存储一次性事件监听器
-  private isMicroApp: boolean; // 是否在微应用环境中
-  private wujieBus: any; // 无界框架的通信总线
-  private isInitialized: boolean = false; // 初始化状态标志
-  private eventHistory: Array<{ event: string; args: any[]; timestamp: number }>; // 事件历史记录
+export class TypedEventBus<T extends Record<string, any>> {
+  private listeners: Map<keyof T, Set<(data: T[keyof T]) => void>>;
+  private onceListeners: Map<keyof T, Set<(data: T[keyof T]) => void>>;
+  private isMicroApp: boolean;
+  private wujieBus: any;
+  private isInitialized: boolean = false;
+  private eventHistory: Array<{ event: keyof T; data: T[keyof T]; timestamp: number }>;
 
   constructor() {
-    this.eventMap = new Map();
-    this.onceEventMap = new Map();
+    this.listeners = new Map();
+    this.onceListeners = new Map();
     this.eventHistory = [];
     this.initialize();
   }
 
   /**
-   * Initialize Event Bus
-   * 初始化事件总线 - 设置环境检测和通信桥接
+   * 初始化事件总线
    */
   private initialize(): void {
     if (typeof window === 'undefined') {
@@ -1671,8 +1531,7 @@ export class MicroAppEventBus {
   }
 
   /**
-   * Initialize Wujie Framework Communication Bridge
-   * 初始化无界框架的通信桥接 - 建立跨应用消息传递通道
+   * 初始化无界框架的通信桥接
    */
   private initializeWujieBridge(): void {
     if (!this.wujieBus) return;
@@ -1691,7 +1550,7 @@ export class MicroAppEventBus {
       // 监听特定应用的消息
       this.wujieBus.$on(`micro_app_message_${window.__WUJIE_APPNAME__}`, (data: any) => {
         try {
-          this.emit(AppEvents.MICRO_APP_MESSAGE, data);
+          this.emit('micro_app_message' as keyof T, data);
         } catch (error) {
           console.error('处理特定应用消息时出错:', error);
         }
@@ -1701,7 +1560,7 @@ export class MicroAppEventBus {
       this.wujieBus.$on('micro_app_message_from_child', (data: any) => {
         try {
           const { event, args } = data;
-          this.emit(event, ...args);
+          this.emit(event as keyof T, ...args);
         } catch (error) {
           console.error('处理微应用消息时出错:', error);
         }
@@ -1710,39 +1569,31 @@ export class MicroAppEventBus {
   }
 
   /**
-   * Register Event Listener
-   * 注册事件监听器 - 监听指定事件并在事件触发时执行回调函数
-   * @param event 事件名称
-   * @param listener 事件监听器回调函数
-   * @returns 事件总线实例，支持链式调用
+   * 注册事件监听器
    */
-  on(event: string, listener: (data: any) => void): this {
+  on<K extends keyof T>(event: K, listener: (data: T[K]) => void): this {
     if (typeof listener !== 'function') {
       console.warn('事件监听器必须是函数类型');
       return this;
     }
     
-    if (!this.eventMap.has(event)) {
-      this.eventMap.set(event, new Set());
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, new Set());
     }
-    this.eventMap.get(event)?.add(listener);
+    this.listeners.get(event)?.add(listener);
     return this;
   }
 
   /**
-   * Register One-time Event Listener
-   * 注册一次性事件监听器 - 事件触发后自动移除监听器
-   * @param event 事件名称
-   * @param listener 事件监听器回调函数
-   * @returns 事件总线实例，支持链式调用
+   * 注册一次性事件监听器
    */
-  once(event: string, listener: (data: any) => void): this {
+  once<K extends keyof T>(event: K, listener: (data: T[K]) => void): this {
     if (typeof listener !== 'function') {
       console.warn('事件监听器必须是函数类型');
       return this;
     }
     
-    const onceWrapper = (data: any) => {
+    const onceWrapper = (data: T[K]) => {
       this.off(event, onceWrapper);
       listener(data);
     };
@@ -1752,16 +1603,12 @@ export class MicroAppEventBus {
   }
 
   /**
-   * Remove Event Listener
-   * 移除事件监听器 - 取消指定事件的监听
-   * @param event 事件名称
-   * @param listener 可选，指定要移除的监听器。不提供时移除所有该事件的监听器
-   * @returns 事件总线实例，支持链式调用
+   * 移除事件监听器
    */
-  off(event: string, listener?: (data: any) => void): this {
+  off<K extends keyof T>(event: K, listener?: (data: T[K]) => void): this {
     // 移除特定监听器
     if (listener) {
-      const eventListeners = this.eventMap.get(event);
+      const eventListeners = this.listeners.get(event);
       if (eventListeners) {
         for (const registeredListener of eventListeners) {
           if (registeredListener === listener || registeredListener._originalListener === listener) {
@@ -1772,27 +1619,24 @@ export class MicroAppEventBus {
         
         // 如果没有监听器了，移除该事件
         if (eventListeners.size === 0) {
-          this.eventMap.delete(event);
+          this.listeners.delete(event);
         }
       }
     } else {
       // 移除该事件的所有监听器
-      this.eventMap.delete(event);
+      this.listeners.delete(event);
     }
     
     return this;
   }
 
   /**
-   * Emit Event
-   * 触发事件 - 执行所有注册的监听器并通过无界框架发送跨应用事件
-   * @param event 事件名称
-   * @param args 传递给监听器的参数
-   * @returns 是否成功触发事件
+   * 触发事件
    */
-  emit(event: string, ...args: any[]): boolean {
+  emit<K extends keyof T>(event: K, ...args: T[K] extends void ? [] : [T[K]]): boolean {
     // 记录事件到历史
-    this.eventHistory.push({ event, args, timestamp: Date.now() });
+    const data = args.length === 0 ? undefined : args[0];
+    this.eventHistory.push({ event, data, timestamp: Date.now() });
     // 限制历史记录长度
     if (this.eventHistory.length > 1000) {
       this.eventHistory.shift();
@@ -1800,29 +1644,29 @@ export class MicroAppEventBus {
     
     try {
       // 本地触发事件
-      const listeners = this.eventMap.get(event);
+      const listeners = this.listeners.get(event);
       if (listeners) {
         const listenersCopy = new Set(listeners); // 创建副本避免在触发过程中修改导致的问题
         listenersCopy.forEach(listener => {
           try {
-            listener(...args);
+            listener(data as T[K]);
           } catch (error) {
-            console.error(`执行事件 ${event} 监听器时出错:`, error);
+            console.error(`执行事件 ${String(event)} 监听器时出错:`, error);
           }
         });
       }
       
       // 处理一次性事件
-      const onceListeners = this.onceEventMap.get(event);
+      const onceListeners = this.onceListeners.get(event);
       if (onceListeners) {
         onceListeners.forEach(listener => {
           try {
-            listener(...args);
+            listener(data as T[K]);
           } catch (error) {
-            console.error(`执行一次性事件 ${event} 监听器时出错:`, error);
+            console.error(`执行一次性事件 ${String(event)} 监听器时出错:`, error);
           }
         });
-        this.onceEventMap.delete(event);
+        this.onceListeners.delete(event);
       }
       
       // 通过无界框架进行跨应用通信
@@ -1843,40 +1687,49 @@ export class MicroAppEventBus {
       
       return true;
     } catch (error) {
-      console.error(`触发事件 ${event} 时出错:`, error);
+      console.error(`触发事件 ${String(event)} 时出错:`, error);
       return false;
     }
   }
 
   /**
-   * Get Event Listeners Count
-   * 获取事件监听器数量 - 返回指定事件的监听器数量
-   * @param event 事件名称
-   * @returns 监听器数量
+   * 获取事件监听器数量
    */
-  getListenerCount(event: string): number {
-    const listeners = this.eventMap.get(event);
-    return listeners ? listeners.size : 0;
+  getListenerCount(event?: keyof T): number {
+    if (event) {
+      const listeners = this.listeners.get(event);
+      return listeners ? listeners.size : 0;
+    }
+    
+    // 返回所有事件的监听器总数
+    return Array.from(this.listeners.values()).reduce(
+      (total, listeners) => total + listeners.size,
+      0
+    );
   }
 
   /**
-   * Get All Event Names
-   * 获取所有事件名称 - 返回所有已注册的事件名称数组
-   * @returns 事件名称数组
+   * 获取所有事件名称
    */
-  getEventNames(): string[] {
-    return Array.from(this.eventMap.keys());
+  getEventNames(): (keyof T)[] {
+    return Array.from(this.listeners.keys());
   }
 
   /**
-   * Dispose Resources
-   * 清理资源 - 移除所有监听器并释放引用
+   * 清空所有事件
+   */
+  clear(): void {
+    this.listeners.clear();
+    this.onceListeners.clear();
+    this.eventHistory = [];
+  }
+
+  /**
+   * 清理资源
    */
   dispose(): void {
-    // 移除所有事件监听器
-    this.eventMap.clear();
-    this.onceEventMap.clear();
-    this.eventHistory = [];
+    // 清空所有事件
+    this.clear();
     
     // 移除窗口卸载事件监听
     if (typeof window !== 'undefined') {
@@ -1889,55 +1742,65 @@ export class MicroAppEventBus {
   }
 }
 
-// 导出全局事件总线实例
-export const globalEventBus = new MicroAppEventBus();
+// 导出全局类型安全事件总线实例
+export const globalEventBus = new TypedEventBus<AppEvents>();
 ```
 
-### 4.3.2 Message Communication Tool / 消息通信工具
+### 4.3.2 消息通信工具 / Message Communication Tool
 
-消息通信工具（Message Communication Tool）提供了更高级别的通信抽象，简化了微应用间的消息传递，支持点对点通信和全局广播。
+消息通信工具（Message Communication Tool）提供了更高级别的通信抽象，简化了微应用间的消息传递，支持点对点通信、全局广播和请求-响应模式。
 
 ```typescript
 /**
- * Micro-Application Message Interface
- * 微应用消息接口 - 定义跨应用消息的标准格式
+ * 微应用消息接口
+ * 定义跨应用消息的标准格式
  */
 export interface MicroAppMessage {
-  type: string; // 消息类型
-  payload?: any; // 消息内容
-  from: string; // 发送者名称
-  to?: string; // 接收者名称（可选）
-  timestamp: number; // 消息时间戳
-  messageId?: string; // 消息唯一标识符
+  /** 消息类型 */
+  type: string;
+  /** 消息内容 */
+  payload?: any;
+  /** 发送者名称 */
+  from: string;
+  /** 接收者名称（可选） */
+  to?: string;
+  /** 消息时间戳 */
+  timestamp: number;
+  /** 消息唯一标识符 */
+  messageId?: string;
+  /** 是否需要响应 */
+  responseExpected?: boolean;
+  /** 错误信息 */
+  error?: string;
 }
 
 /**
- * Micro-Application Message Communication Tool
- * 微应用消息通信工具类 - 提供高级消息通信API，简化跨应用通信
+ * 微应用消息通信工具类
+ * 提供高级消息通信API，简化跨应用通信
  */
 export class MicroAppMessenger {
-  private eventBus: MicroAppEventBus;
+  private eventBus: TypedEventBus<AppEvents>;
   private messageQueue: MicroAppMessage[] = []; // 消息队列，用于处理离线消息
   private isReady: boolean = false; // 通信就绪状态
   private appName: string; // 当前应用名称
+  private retryInterval: NodeJS.Timeout | null = null;
   
   /**
    * 构造函数
    * @param eventBus 事件总线实例，默认为全局事件总线
    */
-  constructor(eventBus: MicroAppEventBus = globalEventBus) {
+  constructor(eventBus: TypedEventBus<AppEvents> = globalEventBus) {
     this.eventBus = eventBus;
     this.appName = this.getSenderName();
     this.initialize();
   }
   
   /**
-   * Initialize Messenger
-   * 初始化消息通信工具 - 设置应用环境和状态
+   * 初始化消息通信工具
    */
   private initialize(): void {
     // 监听应用初始化完成事件
-    this.eventBus.on(AppEvents.MICRO_APP_MOUNT, () => {
+    this.eventBus.on('micro_app_mount', () => {
       this.isReady = true;
       // 处理队列中的消息
       this.processMessageQueue();
@@ -1945,11 +1808,52 @@ export class MicroAppMessenger {
     
     // 初始检查状态
     this.isReady = this.isMicroApp() && !!window.__WUJIE_APPNAME__;
+    
+    // 设置消息处理器
+    this.setupMessageHandlers();
+    
+    // 设置重试机制
+    this.setupRetryMechanism();
   }
   
   /**
-   * Send Message to Specific Micro-Application
-   * 发送消息到指定微应用 - 支持点对点通信
+   * 设置消息处理器
+   */
+  private setupMessageHandlers(): void {
+    const eventHandler = (message: MicroAppMessage) => {
+      // 如果是发送给特定应用的消息，检查是否匹配当前应用
+      if (message.to && message.to !== this.appName) {
+        return;
+      }
+      
+      // 消息已经在事件总线级别处理，这里可以添加额外的日志或统计
+      console.log(`[${this.appName}] 收到消息:`, message);
+    };
+    
+    // 监听点对点消息
+    this.eventBus.on('micro_app_message', eventHandler);
+    
+    // 监听全局广播消息
+    this.eventBus.on('micro_app_global_message', eventHandler);
+  }
+  
+  /**
+   * 设置重试机制
+   * 定期尝试发送队列中的消息
+   */
+  private setupRetryMechanism(): void {
+    // 每5秒尝试处理一次队列中的消息
+    this.retryInterval = setInterval(() => {
+      if (this.isReady && this.messageQueue.length > 0) {
+        console.log(`[${this.appName}] 尝试处理 ${this.messageQueue.length} 条待发送消息`);
+        this.processMessageQueue();
+      }
+    }, 5000);
+  }
+  
+  /**
+   * 发送消息到指定微应用
+   * 支持点对点通信
    * @param appName 目标微应用名称
    * @param type 消息类型
    * @param payload 消息内容
@@ -1973,10 +1877,10 @@ export class MicroAppMessenger {
     try {
       if (this.isMicroApp() && appName === 'main') {
         // 微应用发送消息给主应用
-        this.eventBus.emit(AppEvents.MICRO_APP_MESSAGE, message);
+        this.eventBus.emit('micro_app_message', message);
       } else if (appName === 'main') {
         // 主应用内部通信
-        this.eventBus.emit(AppEvents.MICRO_APP_MESSAGE, message);
+        this.eventBus.emit('micro_app_message', message);
       } else {
         // 主应用发送消息给微应用
         if (window.$wujie) {
@@ -1988,6 +1892,9 @@ export class MicroAppMessenger {
             console.warn(`目标微应用 ${appName} 尚未加载，消息已加入队列`);
             this.messageQueue.push(message);
           }
+        } else {
+          // 降级方案：使用事件总线
+          this.eventBus.emit('micro_app_message', message);
         }
       }
     } catch (error) {
@@ -1998,8 +1905,8 @@ export class MicroAppMessenger {
   }
   
   /**
-   * Send Broadcast Message to All Applications
-   * 发送全局广播消息给所有应用 - 支持一对多通信
+   * 发送全局广播消息给所有应用
+   * 支持一对多通信
    * @param type 消息类型
    * @param payload 消息内容
    */
@@ -2013,15 +1920,15 @@ export class MicroAppMessenger {
     };
     
     try {
-      this.eventBus.emit(AppEvents.MICRO_APP_GLOBAL_MESSAGE, message);
+      this.eventBus.emit('micro_app_global_message', message);
     } catch (error) {
       console.error('发送全局广播消息失败:', error);
     }
   }
   
   /**
-   * Subscribe to Messages of Specific Type
-   * 订阅指定类型的消息 - 监听并处理符合条件的消息
+   * 订阅指定类型的消息
+   * 监听并处理符合条件的消息
    * @param type 消息类型
    * @param handler 消息处理器
    * @returns 取消订阅函数
@@ -2039,12 +1946,129 @@ export class MicroAppMessenger {
     };
     
     // 监听点对点消息和全局消息
-    this.eventBus.on(AppEvents.MICRO_APP_MESSAGE, eventHandler);
-    this.eventBus.on(AppEvents.MICRO_APP_GLOBAL_MESSAGE, eventHandler);
+    this.eventBus.on('micro_app_message', eventHandler);
+    this.eventBus.on('micro_app_global_message', eventHandler);
     
     // 返回取消订阅函数
     return () => {
-      this.eventBus.off(AppEvents.MICRO_APP_MESSAGE, eventHandler);
+      this.eventBus.off('micro_app_message', eventHandler);
+      this.eventBus.off('micro_app_global_message', eventHandler);
+    };
+  }
+  
+  /**
+   * 发送消息并等待响应
+   * 实现请求-响应模式
+   * @param appName 目标微应用名称
+   * @param type 消息类型
+   * @param payload 消息内容
+   * @param timeout 超时时间（毫秒），默认5000
+   * @returns Promise，解析为响应消息
+   */
+  async sendWithResponse(appName: string, type: string, payload?: any, timeout: number = 5000): Promise<MicroAppMessage> {
+    return new Promise((resolve, reject) => {
+      const messageId = this.generateMessageId();
+      const responseType = `${type}_response`;
+      
+      // 设置超时
+      const timeoutId = setTimeout(() => {
+        unsubscribe();
+        reject(new Error(`等待 ${appName} 响应超时`));
+      }, timeout);
+      
+      // 订阅响应消息
+      const unsubscribe = this.on(responseType, (response: MicroAppMessage) => {
+        if (response.messageId === messageId) {
+          clearTimeout(timeoutId);
+          unsubscribe();
+          resolve(response);
+        }
+      });
+      
+      // 发送请求消息
+      this.send(appName, type, {
+        ...payload,
+        messageId,
+        responseExpected: true
+      });
+    });
+  }
+  
+  /**
+   * 生成唯一消息ID
+   * 用于消息追踪和去重
+   * @returns 唯一消息ID
+   */
+  private generateMessageId(): string {
+    return `${this.appName}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+  
+  /**
+   * 处理消息队列
+   * 发送队列中积压的消息
+   */
+  private processMessageQueue(): void {
+    const queueSnapshot = [...this.messageQueue]; // 创建副本以避免处理过程中修改队列
+    this.messageQueue = []; // 清空原队列，只保留新消息
+    
+    queueSnapshot.forEach(message => {
+      if (message.to) {
+        this.send(message.to, message.type, message.payload);
+      }
+    });
+  }
+  
+  /**
+   * 获取发送者名称
+   * 返回当前应用的唯一标识
+   * @returns 应用名称
+   */
+  private getSenderName(): string {
+    if (this.isMicroApp() && window.__WUJIE_APPNAME__) {
+      return window.__WUJIE_APPNAME__;
+    }
+    return 'main';
+  }
+  
+  /**
+   * 检查当前环境是否为微应用
+   * @returns 是否在微应用环境中
+   */
+  private isMicroApp(): boolean {
+    return typeof window !== 'undefined' && !!window.__POWERED_BY_WUJIE__;
+  }
+  
+  /**
+   * 清空消息队列
+   */
+  clearQueue(): void {
+    this.messageQueue = [];
+  }
+  
+  /**
+   * 获取消息队列长度
+   * @returns 队列中等待发送的消息数量
+   */
+  getQueueLength(): number {
+    return this.messageQueue.length;
+  }
+  
+  /**
+   * 清理资源
+   * 停止重试机制和清理事件监听
+   */
+  dispose(): void {
+    if (this.retryInterval) {
+      clearInterval(this.retryInterval);
+      this.retryInterval = null;
+    }
+    this.messageQueue = [];
+    this.isReady = false;
+  }
+}
+
+// 导出全局消息通信工具实例
+export const microAppMessenger = new MicroAppMessenger();
       this.eventBus.off(AppEvents.MICRO_APP_GLOBAL_MESSAGE, eventHandler);
     };
   }
