@@ -25,4 +25,44 @@ public class TransactionRequestImpl implements TransactionRequest {
     private String paymentMethod;
     private String merchantId;
     private String productCategory;
+    
+    @Override
+    public String getIpAddress() {
+        return this.ipAddress;
+    }
+    
+    @Override
+    public String getDeviceInfo() {
+        return this.deviceInfo;
+    }
+    
+    @Override
+    public String getLocation() {
+        return this.location;
+    }
+    
+    @Override
+    public String getTimestamp() {
+        return String.valueOf(this.timestamp);
+    }
+    
+    @Override
+    public String getTransactionType() {
+        return this.transactionType;
+    }
+    
+    @Override
+    public double getAmount() {
+        return this.amount;
+    }
+    
+    @Override
+    public String getUserId() {
+        return this.userId;
+    }
+    
+    @Override
+    public String getTransactionId() {
+        return this.transactionId;
+    }
 }

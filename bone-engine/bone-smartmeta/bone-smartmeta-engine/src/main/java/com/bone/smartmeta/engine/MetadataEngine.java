@@ -78,6 +78,15 @@ public class MetadataEngine implements InitializingBean {
         Assert.notNull(operationService, "Operation service cannot be null");
         this.operationService = operationService;
     }
+    
+    /**
+     * 获取操作服务
+     * 
+     * @return 操作服务实例
+     */
+    public Object getOperationService() {
+        return operationService;
+    }
 
     // 配置属性
     private boolean cacheEnabled = true;
@@ -88,7 +97,7 @@ public class MetadataEngine implements InitializingBean {
     private long retryDelay = 100; // 重试延迟时间（毫秒）
     private Object operationService; // 操作服务
 
-    private final Map<String, CacheEntry> entityMetadataCache = new ConcurrentHashMap<>();
+    private final Map<String, CacheEntry<?>> entityMetadataCache = new ConcurrentHashMap<>();
     private final Map<String, Map<String, Object>> expressionEngineCache = new ConcurrentHashMap<>();
 
     public interface MetadataChangeListener {
@@ -97,46 +106,101 @@ public class MetadataEngine implements InitializingBean {
 
     private final List<MetadataChangeListener> metadataChangeListeners = new ArrayList<>();
 
-    private static class CacheEntry {
-        private final Object value;
+    private static class CacheEntry<T> {
+        private final T value;
         private final long expirationTime;
+        private long lastAccessTime;
 
-        public CacheEntry(Object value, long ttlMillis) {
+        public CacheEntry(T value, long ttlMillis) {
             this.value = value;
             this.expirationTime = ttlMillis > 0 ? System.currentTimeMillis() + ttlMillis : Long.MAX_VALUE;
+            this.lastAccessTime = System.currentTimeMillis();
         }
 
-        public Object getValue() {
+        public T getValue() {
+            this.lastAccessTime = System.currentTimeMillis();
             return value;
         }
 
         public boolean isExpired() {
             return System.currentTimeMillis() > expirationTime;
         }
+        
+        public long getLastAccessTime() {
+            return lastAccessTime;
+        }
     }
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        // Spring Bean初始化后执行
-        log.info("MetadataEngine afterPropertiesSet called");
+        log.info("Initializing MetadataEngine");
+        validateDependencies();
         initialize();
         initializeOperationMetadata();
+        startHealthCheck();
+        log.info("MetadataEngine initialization completed");
     }
 
     private void initializeOperationMetadata() {
-        // 初始化操作元数据的逻辑
+        try {
+            log.info("Initializing operation metadata");
+            // 从仓库加载操作元数据
+            if (metadataRepository != null) {
+                List<?> operationMetadataList = (List<?>) invokeRepositoryMethod(metadataRepository, "findAllOperations");
+                if (operationMetadataList != null) {
+                    for (Object metadata : operationMetadataList) {
+                        updateCache(metadata);
+                    }
+                    log.info("Loaded {} operation metadata entries", operationMetadataList.size());
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to initialize operation metadata: {}", e.getMessage(), e);
+        }
     }
 
     private void updateCache(Object metadata) {
-        // 线程安全的缓存更新实现
-        if (cacheEnabled && metadata != null) {
-            // 尝试从metadata中获取实体名称
+        if (!cacheEnabled) return;
+        
+        try {
             String entityName = getEntityNameFromMetadata(metadata);
+            entityMetadataCache.put(entityName, new CacheEntry<>(metadata, cacheExpirationTime));
+            // 同时更新entityMetadataMap以保持一致性
+            entityMetadataMap.put(entityName, metadata);
+            log.debug("Updated cache for entity: {}", entityName);
             
-            if (!"unknown".equals(entityName) && entityName != null && !entityName.isEmpty()) {
-                entityMetadataCache.put(entityName, new CacheEntry(metadata, cacheExpirationTime));
-                log.debug("Updated cache for entity: {}", entityName);
+            // 执行缓存清理，防止内存泄漏
+            cleanupExpiredCacheEntries();
+        } catch (Exception e) {
+            log.error("Failed to update cache: {}", e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 清理过期的缓存条目
+     */
+    private void cleanupExpiredCacheEntries() {
+        try {
+            // 定期清理过期缓存（每100次更新触发一次清理）
+            if (entityMetadataCache.size() % 100 == 0) {
+                List<String> expiredKeys = new ArrayList<>();
+                for (Map.Entry<String, CacheEntry<?>> entry : entityMetadataCache.entrySet()) {
+                    if (entry.getValue().isExpired()) {
+                        expiredKeys.add(entry.getKey());
+                    }
+                }
+                
+                for (String key : expiredKeys) {
+                    entityMetadataCache.remove(key);
+                    entityMetadataMap.remove(key);
+                }
+                
+                if (!expiredKeys.isEmpty()) {
+                    log.debug("Cleaned up {} expired cache entries", expiredKeys.size());
+                }
             }
+        } catch (Exception e) {
+            log.error("Failed to cleanup cache: {}", e.getMessage(), e);
         }
     }
     
@@ -144,17 +208,39 @@ public class MetadataEngine implements InitializingBean {
      * 从元数据对象中提取实体名称
      */
     private String getEntityNameFromMetadata(Object metadata) {
-        String entityName = "unknown";
-        if (metadata instanceof Map) {
-            Object nameObj = ((Map<?, ?>)metadata).get("apiName");
-            if (nameObj instanceof String) {
-                entityName = (String)nameObj;
+        try {
+            if (metadata == null) {
+                throw new IllegalArgumentException("Metadata cannot be null");
             }
-        } else if (metadata != null) {
-            // 使用反射获取apiName属性或使用类名作为后备
-            entityName = metadata.getClass().getSimpleName();
+            
+            if (metadata instanceof EntityMetadata) {
+                return ((EntityMetadata) metadata).getName();
+            } else if (metadata instanceof com.bone.smartmeta.engine.metadata.EntityMetadata) {
+                return ((com.bone.smartmeta.engine.metadata.EntityMetadata) metadata).getName();
+            } else if (metadata instanceof Map) {
+                Object nameObj = ((Map<?, ?>) metadata).get("name");
+                if (nameObj != null) {
+                    return nameObj.toString();
+                }
+                // 兼容旧的apiName字段
+                nameObj = ((Map<?, ?>)metadata).get("apiName");
+                if (nameObj instanceof String) {
+                    return (String)nameObj;
+                }
+            }
+            
+            // 尝试通过反射获取name属性
+            Object result = invokeIfPossibleReturn(metadata, "getName");
+            if (result != null) {
+                return result.toString();
+            }
+            
+            // 使用类名作为后备
+            return metadata.getClass().getSimpleName();
+        } catch (Exception e) {
+            log.error("Failed to extract entity name from metadata: {}", e.getMessage(), e);
+            throw new IllegalArgumentException("Cannot determine entity name from metadata", e);
         }
-        return entityName;
     }
 
     public void startHotReload(long intervalMillis) {
@@ -177,7 +263,7 @@ public class MetadataEngine implements InitializingBean {
      */
     private void validateDependencies() {
         // 简化实现，不进行严格的非空检查
-        log.log(Level.FINE, "验证元数据引擎依赖");
+        log.debug("验证元数据引擎依赖");
     }
     
     /**
@@ -185,7 +271,7 @@ public class MetadataEngine implements InitializingBean {
      */
     private void loadAllEntityMetadata() {
         // 简化实现
-        log.log(Level.INFO, "加载实体元数据");
+        log.info("加载实体元数据");
     }
     
     /**
@@ -193,7 +279,7 @@ public class MetadataEngine implements InitializingBean {
      */
     private void startHealthCheck() {
         // 简化实现
-        log.log(Level.INFO, "启动健康检查");
+        log.info("启动健康检查");
     }
     
     /**

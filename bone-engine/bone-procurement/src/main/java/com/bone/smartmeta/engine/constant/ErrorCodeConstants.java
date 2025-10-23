@@ -1,0 +1,30 @@
+package com.bone.smartmeta.engine.constant;
+
+/**
+ * 错误代码常量类
+ * 集中管理所有业务规则和工作流相关的错误代码
+ */
+public final class ErrorCodeConstants {
+    
+    // 私有构造函数，防止实例化
+    private ErrorCodeConstants() {
+        throw new AssertionError("不能实例化ErrorConstants类");
+    }
+    
+    // 业务规则错误代码
+    public static final String HIGH_VALUE_ORDER_REQUIRES_APPROVAL = "HIGH_VALUE_ORDER_REQUIRES_APPROVAL";
+    public static final String RULE_EVALUATION_FAILED = "RULE_EVALUATION_FAILED";
+    public static final String RULE_EXECUTION_FAILED = "RULE_EXECUTION_FAILED";
+    public static final String UNSUPPORTED_RULE_TYPE = "UNSUPPORTED_RULE_TYPE";
+    public static final String INVALID_ENTITY_TYPE = "INVALID_ENTITY_TYPE";
+    
+    // 工作流错误代码
+    public static final String WORKFLOW_START_FAILED = "WORKFLOW_START_FAILED";
+    public static final String TRANSITION_EXECUTION_FAILED = "TRANSITION_EXECUTION_FAILED";
+    public static final String TASK_COMPLETION_FAILED = "TASK_COMPLETION_FAILED";
+    public static final String INVALID_WORKFLOW_PARAMETER = "INVALID_WORKFLOW_PARAMETER";
+    
+    // 通用错误代码
+    public static final String SYSTEM_ERROR = "SYSTEM_ERROR";
+    public static final String VALIDATION_ERROR = "VALIDATION_ERROR";
+}

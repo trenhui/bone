@@ -1,6 +1,6 @@
 package com.bone.example.extension.user.greeting;
 
-import com.bone.engine.extension.BizContext;
+import com.bone.engine.extension.context.BizContext;
 import com.bone.engine.extension.ExtPoint;
 
 /**

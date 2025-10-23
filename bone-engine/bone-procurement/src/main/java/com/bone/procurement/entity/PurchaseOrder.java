@@ -105,7 +105,14 @@ public class PurchaseOrder extends Entity<Long> {
     @SmartField(name = "orderSummary", label = "订单摘要", type = FieldType.TEXT)
     private String orderSummary;
     
-
+    // 手动添加setOrderItems方法，解决编译错误
+    public void setOrderItems(List<PurchaseOrderItem> orderItems) {
+        this.orderItems = orderItems;
+    }
     
+    // 同时添加getOrderItems方法以确保完整性
+    public List<PurchaseOrderItem> getOrderItems() {
+        return orderItems;
+    }
 
 }

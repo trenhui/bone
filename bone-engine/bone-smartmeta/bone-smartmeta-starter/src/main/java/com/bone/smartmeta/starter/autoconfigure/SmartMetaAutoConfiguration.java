@@ -32,8 +32,9 @@ public class SmartMetaAutoConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean
-    public MetadataEngine metadataEngine(Object metadataRegistry) { // 修改参数类型为Object
-        return new MetadataEngine(metadataRegistry);
+    public MetadataEngine metadataEngine() {
+        // 使用无参构造函数
+        return new MetadataEngine();
     }
 
     /**

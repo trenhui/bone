@@ -265,7 +265,6 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
     /**
      * 重置所有统计信息
      */
-    @Override
     public void resetAllStats() {
         routeStatsMap.clear();
         failureCounterMap.clear();
@@ -292,7 +291,7 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
         // 记录路由失败
         String extPointName = extPointClass.getSimpleName();
         String errorType = ex != null ? ex.getClass().getSimpleName() : "UnknownError";
-        String failureKey = buildFailureKey(extPointName, errorType);
+        String failureKey = extPointName + ":" + errorType + ":failure"; // 直接构建失败键
         
         // 增加失败计数
         synchronized (failureCounterMap) {
@@ -327,20 +326,21 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
     }
     
     @Override
-    public Map<String, Map<String, Object>> getRouteStats() {
-        Map<String, Map<String, Object>> result = new HashMap<>();
+    public Map<String, Map<String, Long>> getRouteStats() {
+        Map<String, Map<String, Long>> result = new HashMap<>();
         
         synchronized (routeStatsMap) {
             for (Map.Entry<String, RouteStats> entry : routeStatsMap.entrySet()) {
                 String key = entry.getKey();
                 RouteStats stats = entry.getValue();
                 
-                Map<String, Object> statMap = new HashMap<>();
-                statMap.put("totalRequests", stats.getTotalRequests());
-                statMap.put("successRequests", stats.getSuccessRequests());
-                statMap.put("failedRequests", stats.getFailedRequests());
-                statMap.put("avgExecutionTimeMs", stats.getAverageExecutionTimeMs());
-                statMap.put("successRate", stats.getSuccessRate());
+                Map<String, Long> statMap = new HashMap<>();
+                statMap.put("totalRequests", (long)stats.getTotalRequests());
+                statMap.put("successRequests", (long)stats.getSuccessRequests());
+                statMap.put("failedRequests", (long)stats.getFailedRequests());
+                statMap.put("totalExecutionTimeMs", stats.getTotalExecutionTimeMs());
+                statMap.put("maxExecutionTimeMs", stats.getMaxExecutionTimeMs());
+                statMap.put("minExecutionTimeMs", stats.getMinExecutionTimeMs());
                 
                 result.put(key, statMap);
             }
@@ -350,22 +350,40 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
     }
     
     @Override
-    public Map<String, Object> getImplementationStats(String implementationName) {
+    public Map<String, Long> getImplementationStats(String implementationName) {
         ensureInitialized();
-        Map<String, Object> result = new HashMap<>();
+        Map<String, Long> result = new HashMap<>();
         
         for (Map.Entry<String, RouteStats> entry : implementationStatsMap.entrySet()) {
             if (entry.getKey().endsWith(implementationName)) {
                 RouteStats stats = entry.getValue();
-                result.put("totalRequests", stats.getTotalRequests());
-                result.put("successRequests", stats.getSuccessRequests());
-                result.put("failedRequests", stats.getFailedRequests());
-                result.put("avgExecutionTimeMs", stats.getAverageExecutionTimeMs());
+                result.put("totalRequests", (long)stats.getTotalRequests());
+                result.put("successRequests", (long)stats.getSuccessRequests());
+                result.put("failedRequests", (long)stats.getFailedRequests());
+                result.put("totalExecutionTimeMs", stats.getTotalExecutionTimeMs());
+                result.put("maxExecutionTimeMs", stats.getMaxExecutionTimeMs());
+                result.put("minExecutionTimeMs", stats.getMinExecutionTimeMs());
                 break;
             }
         }
         
-        return result.isEmpty() ? new HashMap<>() : result;
+        // 同时也检查routeStatsMap
+        if (result.isEmpty()) {
+            for (Map.Entry<String, RouteStats> entry : routeStatsMap.entrySet()) {
+                if (entry.getKey().contains(implementationName)) {
+                    RouteStats stats = entry.getValue();
+                    result.put("totalRequests", (long)stats.getTotalRequests());
+                    result.put("successRequests", (long)stats.getSuccessRequests());
+                    result.put("failedRequests", (long)stats.getFailedRequests());
+                    result.put("totalExecutionTimeMs", stats.getTotalExecutionTimeMs());
+                    result.put("maxExecutionTimeMs", stats.getMaxExecutionTimeMs());
+                    result.put("minExecutionTimeMs", stats.getMinExecutionTimeMs());
+                    break;
+                }
+            }
+        }
+        
+        return result;
     }
     
     @Override
@@ -405,11 +423,14 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
         
         if (extPointType != null) {
             String extPointName = extPointType.getSimpleName();
-            Map<String, Map<String, Object>> allStats = getRouteStats();
+            Map<String, Map<String, Long>> allStats = getRouteStats();
             
-            for (Map.Entry<String, Map<String, Object>> entry : allStats.entrySet()) {
+            for (Map.Entry<String, Map<String, Long>> entry : allStats.entrySet()) {
                 if (entry.getKey().startsWith(extPointName + ":")) {
-                    return entry.getValue();
+                    // 转换为Map<String, Object>
+                    Map<String, Object> result = new HashMap<>();
+                    result.putAll(entry.getValue());
+                    return result;
                 }
             }
         }
@@ -421,7 +442,11 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
      */
     public Map<String, Object> getImplementationStats(Object implementation) {
         String implName = implementation != null ? implementation.getClass().getSimpleName() : "Unknown";
-        return getImplementationStats(implName);
+        Map<String, Long> stats = getImplementationStats(implName);
+        // 转换为Map<String, Object>
+        Map<String, Object> result = new HashMap<>();
+        result.putAll(stats);
+        return result;
     }
     
     /**
@@ -444,7 +469,15 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
      * 获取所有路由统计（兼容旧接口）
      */
     public Map<String, Map<String, Object>> getAllRouteStats() {
-        return getRouteStats();
+        Map<String, Map<String, Long>> stats = getRouteStats();
+        // 转换为Map<String, Map<String, Object>>
+        Map<String, Map<String, Object>> result = new HashMap<>();
+        for (Map.Entry<String, Map<String, Long>> entry : stats.entrySet()) {
+            Map<String, Object> valueMap = new HashMap<>();
+            valueMap.putAll(entry.getValue());
+            result.put(entry.getKey(), valueMap);
+        }
+        return result;
     }
     
     @Override
@@ -468,6 +501,13 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
      */
     private String buildStatsKey(Class<?> extPointType, Method method) {
         return extPointType.getName() + ":" + method.getName();
+    }
+    
+    /**
+     * 构建统计键（字符串版本，用于metrics）
+     */
+    private String buildStatsKey(String name1, String name2) {
+        return name1 + ":" + name2;
     }
 
     /**

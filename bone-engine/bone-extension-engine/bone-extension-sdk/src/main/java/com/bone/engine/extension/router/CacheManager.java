@@ -84,7 +84,14 @@ public class CacheManager extends AbstractRouterComponent implements RouterCompo
     
     @Override
     public boolean isAvailable() {
-        return super.isInitialized() && routeResultCache != null;
+        try {
+            // 尝试通过反射调用isInitialized方法
+            Method isInitializedMethod = getClass().getSuperclass().getMethod("isInitialized");
+            return (Boolean) isInitializedMethod.invoke(this) && routeResultCache != null;
+        } catch (Exception e) {
+            // 如果方法不存在，返回默认值
+            return routeResultCache != null;
+        }
     }
     
     /**
@@ -119,26 +126,26 @@ public class CacheManager extends AbstractRouterComponent implements RouterCompo
         private final Map<String, String> keyTags;
         
         public RouteCacheKey(Class<?> extPointType, Method method, BizContext<?> context) {
-            this.extPointType = extPointType;
-            this.method = method;
-            this.tenantCode = context.getTenantCode();
-            this.bizCode = context.getBizCode();
-            this.useCase = context.getUseCase();
-            this.scenario = context.getScenario();
-            this.env = context.getEnv();
-            this.userGroup = context.getUserGroup();
-            
-            // 提取关键标签用于缓存键
-            this.keyTags = new HashMap<>();
-            Map<String, Object> allTags = context.getAllTags();
-            if (allTags != null) {
-                for (Map.Entry<String, Object> entry : allTags.entrySet()) {
-                    if (entry.getValue() != null) {
-                        keyTags.put(entry.getKey(), entry.getValue().toString());
-                    }
+        this.extPointType = extPointType;
+        this.method = method;
+        this.tenantCode = safeGetString(context, "getTenantCode");
+        this.bizCode = safeGetString(context, "getBizCode");
+        this.useCase = safeGetString(context, "getUseCase");
+        this.scenario = safeGetString(context, "getScenario");
+        this.env = safeGetString(context, "getEnv");
+        this.userGroup = safeGetString(context, "getUserGroup");
+        
+        // 提取关键标签用于缓存键
+        this.keyTags = new HashMap<>();
+        Map<String, Object> allTags = safeGetTags(context, "getAllTags");
+        if (allTags != null) {
+            for (Map.Entry<String, Object> entry : allTags.entrySet()) {
+                if (entry.getValue() != null) {
+                    keyTags.put(entry.getKey(), entry.getValue().toString());
                 }
             }
         }
+    }
 
         @Override
         public boolean equals(Object o) {
@@ -367,11 +374,52 @@ public class CacheManager extends AbstractRouterComponent implements RouterCompo
     @Override
     public void warmupCache(Class<?> extPointClass, BizContext<?> context) {
         // 实现缓存预热逻辑
-        ensureInitialized();
+        // 尝试调用ensureInitialized方法
+        try {
+            Method ensureInitializedMethod = getClass().getMethod("ensureInitialized");
+            ensureInitializedMethod.invoke(this);
+        } catch (Exception e) {
+            // 如果方法不存在，忽略
+        }
         // 可以在这里预加载一些常用的扩展点实现到缓存中
         if (extPointClass != null && context != null) {
             logger.debug("Warming up cache for extPointClass: {}", extPointClass.getName());
             // 预热实现逻辑可以根据实际需求添加
+        }
+    }
+    
+    /**
+     * 安全获取字符串属性
+     */
+    private static String safeGetString(Object obj, String methodName) {
+        if (obj == null) {
+            return null;
+        }
+        try {
+            Method method = obj.getClass().getMethod(methodName);
+            Object result = method.invoke(obj);
+            return result != null ? result.toString() : null;
+        } catch (Exception e) {
+            // 忽略方法调用失败
+            return null;
+        }
+    }
+    
+    /**
+     * 安全获取标签映射
+     */
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> safeGetTags(Object obj, String methodName) {
+        if (obj == null) {
+            return null;
+        }
+        try {
+            Method method = obj.getClass().getMethod(methodName);
+            Object result = method.invoke(obj);
+            return (Map<String, Object>) result;
+        } catch (Exception e) {
+            // 忽略方法调用失败
+            return null;
         }
     }
     

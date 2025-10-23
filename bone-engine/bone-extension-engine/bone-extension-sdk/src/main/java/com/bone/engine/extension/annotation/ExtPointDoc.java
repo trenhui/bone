@@ -22,7 +22,7 @@ import java.lang.annotation.*;
  * @version 2.0.0
  */
 @Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
+@Retention(RetentionPolicy.SOURCE)
 @Documented
 public @interface ExtPointDoc {
     

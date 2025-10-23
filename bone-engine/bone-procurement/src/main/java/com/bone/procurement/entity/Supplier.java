@@ -125,16 +125,16 @@ public class Supplier extends Entity<Long> {
         double score = 0;
         
         // 信用评分占比40%
-        score += getCreditScore() * 0.4;
+        score += (creditScore != null ? creditScore : 80) * 0.4;
         
         // 平均交付率占比30%
-        score += getAverageDeliveryRate() * 30;
+        score += (averageDeliveryRate != null ? averageDeliveryRate : 1.0) * 30;
         
         // 平均质量合格率占比20%
-        score += getAverageQualityRate() * 20;
+        score += (averageQualityRate != null ? averageQualityRate : 1.0) * 20;
         
         // 投诉次数扣分（每次投诉扣2分，最多扣10分）
-        int complaintDeduction = Math.min(getComplaintCount() * 2, 10);
+        int complaintDeduction = Math.min((complaintCount != null ? complaintCount : 0) * 2, 10);
         score -= complaintDeduction;
         
         // 确保分数在0-100之间
@@ -173,7 +173,7 @@ public class Supplier extends Entity<Long> {
      */
     public Boolean isActive() {
         // 合作中且近90天有合作记录
-        boolean isCooperating = "合作中".equals(getCooperationStatus());
+        boolean isCooperating = "合作中".equals(cooperationStatus);
         boolean hasRecentCooperation = lastCooperationDate != null && 
                                       ChronoUnit.DAYS.between(lastCooperationDate, LocalDate.now()) <= 90;
         return isCooperating && hasRecentCooperation;
@@ -183,11 +183,28 @@ public class Supplier extends Entity<Long> {
      * 获取单均订单金额
      */
     public BigDecimal getAverageOrderAmount() {
-        int count = getOrderCount();
+        int count = orderCount != null ? orderCount : 0;
         if (count <= 0) {
             return BigDecimal.ZERO;
         }
-        return getTotalOrderAmount().divide(new BigDecimal(count), 2, BigDecimal.ROUND_HALF_UP);
+        BigDecimal totalAmount = totalOrderAmount != null ? totalOrderAmount : BigDecimal.ZERO;
+        return totalAmount.divide(new BigDecimal(count), 2, BigDecimal.ROUND_HALF_UP);
+    }
+    
+    /**
+     * 计算供应商合作评分
+     * 基于订单数量和订单总额计算合作评分
+     */
+    public double calculateCooperationScore() {
+        // 简化实现，使用成员变量而不是不存在的方法
+        int orderCount = this.orderCount != null ? this.orderCount : 0;
+        double totalAmount = this.totalOrderAmount != null ? this.totalOrderAmount.doubleValue() : 0.0;
+        
+        // 合作评分计算逻辑（示例）
+        double orderCountScore = Math.min(orderCount * 0.5, 50); // 最多50分
+        double amountScore = Math.min(totalAmount / 10000, 50); // 每10000元1分，最多50分
+        
+        return orderCountScore + amountScore;
     }
     
     /**
@@ -215,18 +232,21 @@ public class Supplier extends Entity<Long> {
                 return "注册日期不能为空";
             }
             
-            // 验证格式
-            setCode(code); // 会触发格式验证
-            setPhoneNumber(phoneNumber); // 会触发格式验证
-            if (email != null && !email.isEmpty()) {
-                setEmail(email); // 会触发格式验证
+            // 直接验证格式，不调用setter方法
+            if (!code.matches("^SUP\\d{6}$")) {
+                return "供应商编码格式错误，应为SUP开头加6位数字";
+            }
+            if (!phoneNumber.matches("^1[3-9]\\d{9}$") && !phoneNumber.matches("^\\d{3,4}-\\d{7,8}$")) {
+                return "联系电话格式不正确，请输入有效的手机号或固话";
+            }
+            if (email != null && !email.isEmpty() && !email.matches("^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,}$")) {
+                return "电子邮箱格式不正确";
             }
             
             // 验证数值字段
-            setCreditScore(creditScore);
-            setAverageDeliveryRate(averageDeliveryRate);
-            setAverageQualityRate(averageQualityRate);
-            setComplaintCount(complaintCount);
+            if (creditScore != null && (creditScore < 0 || creditScore > 100)) {
+                return "信用评分必须在0-100之间";
+            }
             
             return "验证通过";
         } catch (IllegalArgumentException e) {

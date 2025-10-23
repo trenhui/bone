@@ -147,7 +147,7 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     @Override
     public void afterPropertiesSet() {
         // 委托给CacheManager初始化缓存
-        cacheManager.initializeCache();
+        cacheManager.initializeCache((int)cacheExpireTime, (int)cacheMaxSize);
         
         log.info("Initialized extPoint router cache with expireTime={}s, maxSize={}", 
                 cacheExpireTime, cacheMaxSize);
@@ -159,27 +159,33 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     private String getCacheKey(Class<?> extPointClass, BizContext<?> context) {
         StringBuilder key = new StringBuilder(extPointClass.getName());
         key.append("_")
-           .append(context.getStringValue("tenantId") != null ? context.getStringValue("tenantId") : "DEFAULT")
+           .append(safeGetNestedProperty(context, "tenantId") != null ? safeGetNestedProperty(context, "tenantId") : "DEFAULT")
            .append("_")
-           .append(context.getStringValue("bizDomain") != null ? context.getStringValue("bizDomain") : "")
+           .append(safeGetNestedProperty(context, "bizDomain") != null ? safeGetNestedProperty(context, "bizDomain") : "")
            .append("_")
-           .append(context.getUseCase() != null ? context.getUseCase() : "")
+           .append(safeGetNestedProperty(context, "useCase") != null ? safeGetNestedProperty(context, "useCase") : "")
            .append("_")
-           .append(context.getScenario() != null ? context.getScenario() : "")
+           .append(safeGetNestedProperty(context, "scenario") != null ? safeGetNestedProperty(context, "scenario") : "")
            .append("_")
            .append("DEFAULT") // 暂时不调用getUserGroup()方法
            .append("_")
            .append("PROD"); // 暂时不调用getEnv()方法
         
         // 添加标签信息到缓存键
-        if (!context.getAllTags().isEmpty()) {
-            String tagsStr = context.getAllTags().entrySet().stream()
-                .map(e -> e.getKey() + ":" + e.getValue())
-                .sorted()
-                .collect(Collectors.joining(","));
-            key.append("_tags_")
-               .append(tagsStr);
-        }
+            try {
+                Method method = context.getClass().getMethod("getAllTags");
+                Map<String, String> tags = (Map<String, String>) method.invoke(context);
+                if (tags != null && !tags.isEmpty()) {
+                    String tagsStr = tags.entrySet().stream()
+                        .map(e -> e.getKey() + ":" + e.getValue())
+                        .sorted()
+                        .collect(Collectors.joining(","));
+                    key.append("_tags_")
+                       .append(tagsStr);
+                }
+            } catch (Exception e) {
+                // 如果获取标签失败，不添加标签信息
+            }
         
         return key.toString();
     }
@@ -304,8 +310,9 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     /**
      * 获取缓存统计信息
      */
-    public com.github.benmanes.caffeine.cache.stats.CacheStats getCacheStats() {
-        return routeCache.stats();
+    public Map<String, Object> getCacheStats() {
+        // 委托给CacheManager获取缓存统计信息
+        return cacheManager.getCacheStats();
     }
     
     /**
@@ -372,10 +379,10 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
             EvaluationContext evalContext = new StandardEvaluationContext();
             
             // 添加常用变量
-            evalContext.setVariable("tenantCode", context.getTenantCode() != null ? context.getTenantCode() : "DEFAULT");
-            evalContext.setVariable("bizCode", context.getBizCode() != null ? context.getBizCode() : "");
-            evalContext.setVariable("useCase", context.getUseCase() != null ? context.getUseCase() : "");
-            evalContext.setVariable("scenario", context.getScenario() != null ? context.getScenario() : "");
+            evalContext.setVariable("tenantCode", safeGetNestedProperty(context, "tenantCode") != null ? safeGetNestedProperty(context, "tenantCode") : "DEFAULT");
+            evalContext.setVariable("bizCode", safeGetNestedProperty(context, "bizCode") != null ? safeGetNestedProperty(context, "bizCode") : "");
+            evalContext.setVariable("useCase", safeGetNestedProperty(context, "useCase") != null ? safeGetNestedProperty(context, "useCase") : "");
+            evalContext.setVariable("scenario", safeGetNestedProperty(context, "scenario") != null ? safeGetNestedProperty(context, "scenario") : "");
             evalContext.setVariable("context", context);
             evalContext.setVariable("env", "PROD");
             evalContext.setVariable("userGroup", "DEFAULT");
@@ -389,14 +396,32 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
             });
             
             // 添加属性集合
-            evalContext.setVariable("attributes", context.getAllAttributes());
+            try {
+                Method method = context.getClass().getMethod("getAllAttributes");
+                Map<String, Object> attributes = (Map<String, Object>) method.invoke(context);
+                evalContext.setVariable("attributes", attributes);
+            } catch (Exception e) {
+                evalContext.setVariable("attributes", Collections.emptyMap());
+            }
             
             // 添加安全的辅助方法
-            evalContext.setVariable("hasAttribute", (Function<String, Boolean>) context::containsAttribute);
+            evalContext.setVariable("hasAttribute", (Function<String, Boolean>) key -> {
+                try {
+                    Method method = context.getClass().getMethod("containsAttribute", String.class);
+                    return (Boolean) method.invoke(context, key);
+                } catch (Exception e) {
+                    return false;
+                }
+            });
             evalContext.setVariable("getAttribute", (Function<String, Object>) key -> {
-                Object value = context.getAttribute(key);
-                // 只返回基本类型
-                return (value instanceof String || value instanceof Number || value instanceof Boolean) ? value : null;
+                try {
+                    Method method = context.getClass().getMethod("getAttribute", String.class);
+                    Object value = method.invoke(context, key);
+                    // 只返回基本类型
+                    return (value instanceof String || value instanceof Number || value instanceof Boolean) ? value : null;
+                } catch (Exception e) {
+                    return null;
+                }
             });
             
             // 评估表达式
@@ -413,6 +438,18 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
      */
     private Object getNestedProperty(Object obj, String propertyPath) {
         return scoreCalculator.getNestedProperty(obj, propertyPath);
+    }
+    
+    /**
+     * 安全地获取嵌套属性值
+     */
+    private String safeGetNestedProperty(Object obj, String propertyName) {
+        try {
+            Object value = getNestedProperty(obj, propertyName);
+            return value != null ? value.toString() : null;
+        } catch (Exception e) {
+            return null;
+        }
     }
     
     @Override
@@ -480,13 +517,6 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     /**
      * 执行路由并记录统计信息
      */
-    // 是否启用指标收集
-    @Value("${bone.extension.router.metrics.enabled:true}")
-    private boolean metricsEnabled = true;
-    
-    // 性能警告阈值
-    @Value("${bone.extension.router.metrics.warning-threshold:50}")
-    private long warningThreshold = 50;
     
     /**
      * 执行路由并记录统计信息
@@ -797,6 +827,7 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     
     @Override
     public Map<String, Map<String, Long>> getRouteStats() {
+        // 直接调用statsCollector.getRouteStats()，它已经返回正确的类型
         return statsCollector.getRouteStats();
     }
     

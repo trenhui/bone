@@ -155,7 +155,7 @@ public class UserRepositoryCriteriaTest {
             }
             
             @Override
-            public PageResult<User> pageByCriteria(Criteria<User> criteria, Integer pageNum, Integer pageSize) {
+            public PageResult<User> pageByCriteria(Criteria<User> criteria) {
                 return null;
             }
             
@@ -165,39 +165,97 @@ public class UserRepositoryCriteriaTest {
             }
             
             @Override
-            public int deleteByCriteria(Criteria<User> criteria) {
-                return 0;
+            public boolean deleteByCriteria(Criteria<User> criteria) {
+                return false;
             }
             
+            @Override
+            public void deleteByIds(List<Long> ids) {
+                // 实现空方法
+            }
+            
+            @Override
+            public boolean updateByCriteria(User model, Criteria<User> criteria) {
+                return false;
+            }
+            
+            @Override
+            public User findByIdIncludingDeleted(Long id) {
+                return null;
+            }
+            
+            @Override
+            public List<User> findByIdsIncludingDeleted(List<Long> ids) {
+                return Collections.emptyList();
+            }
+            
+            @Override
+            public Long save(User entity) {
+                return null;
+            }
+            
+            @Override
+            public void batchSave(List<User> entities) {
+                // 实现空方法
+            }
+            
+            @Override
+            public List<Map<String, Object>> executeNamedStatement(String statementName, Map<String, Object> params) {
+                return Collections.emptyList();
+            }
+            
+            @Override
+            public PageResult<Map<String, Object>> executePagedNamedStatement(String statementName, Object params) {
+                return null;
+            }
+            
+            @Override
+            public <R> PageResult<R> executePagedNamedStatement(String statementName, Map<String, Object> params, org.springframework.jdbc.core.RowMapper<R> rowMapper, int pageNum, int pageSize) {
+                return null;
+            }
+            
+            @Override
             public PageResult<Map<String, Object>> aggregateWithPagination(List<String> groupBy, Criteria<User> criteria, List<String> sumColumns, List<String> avgColumns, int pageNum, int pageSize) {
                 return null;
             }
             
+            @Override
             public Map<String, Object> aggregate(List<String> groupBy, Criteria<User> criteria) {
                 return Collections.emptyMap();
             }
             
+            @Override
             public List<Map<String, Object>> aggregate(List<String> groupBy, Criteria<User> criteria, List<String> sumColumns, List<String> avgColumns) {
                 return Collections.emptyList();
             }
             
+            @Override
             public List<Map<String, Object>> aggregate(List<String> groupBy, Criteria<User> criteria, List<String> sumColumns) {
                 return Collections.emptyList();
             }
             
+            @Override
             public List<User> query(Query query) {
                 return Collections.emptyList();
             }
             
+            @Override
             public PageResult<User> queryPage(PageParam pageParam) {
                 return null;
             }
             
+            @Override
             public PageResult<User> queryByCondition(List<QueryParam> queryParams, List<SortingField> sortingFields, Integer pageNum, Integer pageSize, String queryKey) {
                 return null;
             }
             
+            @Override
             public List<Map<String, Object>> executeNamedStatementForMap(String statementName, Map<String, Object> params) {
+                return Collections.emptyList();
+            }
+            
+            @Override
+            public <R> List<R> executeNamedStatement(String statementName, Map<String, Object> params, org.springframework.jdbc.core.RowMapper<R> rowMapper) {
                 return Collections.emptyList();
             }
         };

@@ -1,5 +1,7 @@
 package com.bone.engine.extension;
 
+import com.bone.engine.extension.annotation.ExtPointDoc;
+import com.bone.engine.extension.annotation.ExtensionDoc;
 import com.bone.engine.extension.context.BizContext;
 import org.junit.jupiter.api.*;
 import org.mockito.Mock;
@@ -332,11 +334,177 @@ public class ExtPointTest {
             verify(mockExtPoint).doSomething("test"); // 验证正确的调用参数
         }
     }
+    
+    /**
+     * 测试默认扩展实现
+     * 验证不带特定上下文时默认扩展点的调用
+     */
+    @Test
+    @DisplayName("测试默认扩展实现")
+    void testDefaultExtension() {
+        // 创建默认扩展实现实例
+        TestExtPoint defaultImpl = new DefaultTestExtension();
+        
+        // 调用并验证结果
+        String result = defaultImpl.doSomething("test");
+        assertEquals("Default: test", result, "默认扩展应返回预期的结果格式");
+    }
+    
+    /**
+     * 测试租户特定扩展实现
+     * 验证租户上下文对扩展点选择的影响
+     */
+    @Test
+    @DisplayName("测试租户特定扩展实现")
+    void testTenantSpecificExtension() {
+        // 创建租户A的扩展实现实例
+        TestExtPoint tenantAImpl = new TenantASpecificExtension();
+        
+        // 调用并验证结果
+        String result = tenantAImpl.doSomething("test");
+        assertEquals("TenantA: test", result, "租户A扩展应返回预期的结果格式");
+        
+        // 在租户A上下文中验证
+        BizContext<Object> tenantAContext = BizContext.<Object>createEmpty();
+        tenantAContext.setTenantCode("TENANT_A");
+        try (ExtensionScope scope = ExtensionContextManager.with(tenantAContext)) {
+            // 这里应该通过框架获取正确的扩展实现，但在单元测试中我们直接测试实现类
+            // 在集成测试中会验证框架的路由选择
+        }
+    }
+    
+    /**
+     * 测试高优先级扩展实现
+     * 验证条件路由和优先级机制
+     */
+    @Test
+    @DisplayName("测试高优先级扩展实现")
+    void testHighPriorityExtension() {
+        // 创建高优先级扩展实现实例
+        TestExtPoint highPriorityImpl = new HighPriorityExtension();
+        
+        // 调用并验证结果
+        String result = highPriorityImpl.doSomething("test");
+        assertEquals("HighPriority: test", result, "高优先级扩展应返回预期的结果格式");
+        
+        // 创建带条件的上下文
+        BizContext<Object> conditionContext = BizContext.<Object>createEmpty();
+        conditionContext.putAttribute("useHighPriority", true);
+        try (ExtensionScope scope = ExtensionContextManager.with(conditionContext)) {
+            // 在集成测试中会验证框架如何根据条件选择扩展实现
+        }
+    }
+    
+    /**
+     * 测试不同扩展实现的组合行为
+     * 验证多种扩展点实现的基本功能
+     */
+    @Test
+    @DisplayName("测试扩展实现组合行为")
+    void testExtensionCombinations() {
+        // 创建不同的扩展实现
+        TestExtPoint defaultImpl = new DefaultTestExtension();
+        TestExtPoint tenantAImpl = new TenantASpecificExtension();
+        TestExtPoint highPriorityImpl = new HighPriorityExtension();
+        
+        // 统一输入参数
+        String input = "combination-test";
+        
+        // 验证不同实现返回不同结果
+        assertNotEquals(defaultImpl.doSomething(input), tenantAImpl.doSomething(input));
+        assertNotEquals(tenantAImpl.doSomething(input), highPriorityImpl.doSomething(input));
+        assertNotEquals(highPriorityImpl.doSomething(input), defaultImpl.doSomething(input));
+        
+        // 验证每种实现都正确处理输入
+        assertTrue(defaultImpl.doSomething(input).contains(input));
+        assertTrue(tenantAImpl.doSomething(input).contains(input));
+        assertTrue(highPriorityImpl.doSomething(input).contains(input));
+    }
 
     // 测试用的扩展点接口
-    @ExtPoint
+    @ExtPoint(
+        name = "测试扩展点",
+        description = "用于单元测试的扩展点接口",
+        version = "1.0.0",
+        category = "测试",
+        enabled = true
+    )
+    @ExtPointDoc(
+        title = "测试扩展点接口",
+        domain = "扩展引擎",
+        category = "核心功能测试",
+        description = "该接口用于测试扩展点框架的基本功能，包括上下文管理、路由选择等核心特性。",
+        usage = "在测试场景中使用，验证扩展点框架的各项功能是否正常工作。",
+        bestPractices = "1. 使用明确的租户代码和业务代码进行路由\n2. 合理设置上下文属性\n3. 遵循try-with-resources模式管理上下文生命周期"
+    )
     public interface TestExtPoint {
+        /**
+         * 执行测试操作
+         * @param param 输入参数
+         * @return 处理结果
+         */
         String doSomething(String param);
+    }
+    
+    // 默认扩展实现
+    @Extension(
+        bizCode = "default",
+        scenario = "default",
+        priority = 100,
+        enabled = true
+    )
+    @ExtensionDoc(
+        description = "这是默认的测试扩展实现，用于验证基本的扩展点功能。",
+        scenarios = "通用测试场景",
+        implementationDetails = "基础测试实现",
+        notes = "仅用于测试目的",
+        author = "测试团队"
+    )
+    public static class DefaultTestExtension implements TestExtPoint {
+        @Override
+        public String doSomething(String param) {
+            return "Default: " + param;
+        }
+    }
+    
+    // 租户特定扩展实现
+    @Extension(
+        tenantCode = "TENANT_A",
+        priority = 200,
+        enabled = true
+    )
+    @ExtensionDoc(
+        description = "为租户A提供的特定扩展实现，展示多租户支持。",
+        scenarios = "租户A的业务场景",
+        implementationDetails = "针对租户A的测试实现",
+        notes = "仅在租户A的上下文中生效",
+        author = "测试团队"
+    )
+    public static class TenantASpecificExtension implements TestExtPoint {
+        @Override
+        public String doSomething(String param) {
+            return "TenantA: " + param;
+        }
+    }
+    
+    // 高优先级扩展实现
+    @Extension(
+        condition = "#context.getAttribute('useHighPriority') == true",
+        priority = 50,
+        enabled = true
+    )
+    @ExtensionDoc(
+        description = "基于条件路由的高优先级扩展实现",
+        scenarios = "需要高优先级处理的场景",
+        implementationDetails = "通过条件表达式实现优先级路由",
+        notes = "展示条件路由和优先级机制",
+        author = "测试团队"
+    )
+    public static class HighPriorityExtension implements TestExtPoint {
+        @Override
+        public String doSomething(String param) {
+            return "HighPriority: " + param;
+        }
     }
 
     // 测试数据类
