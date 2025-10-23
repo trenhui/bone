@@ -1,6 +1,6 @@
 package com.bone.example.extension.user;
 
-import com.bone.engine.extension.BizContext;
+import com.bone.engine.extension.context.BizContext;
 import com.bone.engine.extension.ExtensionContextManager;
 import com.bone.engine.extension.ExtensionScope;
 import com.bone.example.extension.user.greeting.DefaultGreetingExtension;

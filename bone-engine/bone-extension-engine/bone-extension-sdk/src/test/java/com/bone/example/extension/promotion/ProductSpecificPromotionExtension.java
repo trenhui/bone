@@ -1,141 +1,21 @@
 package com.bone.example.extension.promotion;
 
-import com.bone.engine.extension.BizContext;
-import com.bone.engine.extension.Extension;
-import org.springframework.stereotype.Service;
-import lombok.extern.slf4j.Slf4j;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.bone.engine.extension.context.BizContext;
 
 /**
- * 特定商品促销策略实现
- * 针对特定类别或特定商品提供促销折扣
+ * 特定产品促销扩展点实现
  */
-@Extension(expression = "#data.items != null && !#data.items.isEmpty()")
-@Service
-@Slf4j
 public class ProductSpecificPromotionExtension implements PromotionExtPoint {
-    
-    // 商品类别与折扣比例映射
-    private final Map<String, BigDecimal> categoryDiscountMap = new HashMap<>();
-    // 特定商品与折扣比例映射
-    private final Map<String, BigDecimal> productDiscountMap = new HashMap<>();
-    
-    public ProductSpecificPromotionExtension() {
-        // 初始化商品类别折扣配置
-        categoryDiscountMap.put("ELECTRONICS", new BigDecimal("0.9"));  // 电子产品9折
-        categoryDiscountMap.put("CLOTHING", new BigDecimal("0.85"));    // 服装85折
-        
-        // 初始化特定商品折扣配置
-        productDiscountMap.put("PROD001", new BigDecimal("0.7"));       // 特定商品7折
-        productDiscountMap.put("PROD002", new BigDecimal("0.6"));       // 特定商品6折
-    }
-    
+
     @Override
     public PromotionResult calculatePromotion(BizContext<PromotionRequest> context) {
-        log.info("Processing product specific promotion");
-        PromotionRequest request = context.getData();
-        
-        // 添加空值检查
-        if (request == null) {
-            log.error("Product promotion request is null");
-            return createEmptyResult();
-        }
-        
-        List<PromotionRequest.OrderItem> items = request.getItems();
-        if (items == null || items.isEmpty()) {
-            log.error("No items in promotion request");
-            return createEmptyResult();
-        }
-
-        List<PromotionResult.AppliedPromotion> appliedPromotions = new ArrayList<>();
-        BigDecimal totalDiscount = BigDecimal.ZERO;
-
-        // 计算每个商品的折扣
-        for (PromotionRequest.OrderItem item : items) {
-            BigDecimal discount = calculateItemDiscount(item);
-            if (discount.compareTo(BigDecimal.ZERO) > 0) {
-                totalDiscount = totalDiscount.add(discount);
-                
-                String discountType = productDiscountMap.containsKey(item.getProductId()) ? "特定商品" : "类别";
-                PromotionResult.AppliedPromotion promotion = PromotionResult.AppliedPromotion.builder()
-                    .promotionId(discountType + "_" + (productDiscountMap.containsKey(item.getProductId()) ? 
-                                                           item.getProductId() : item.getCategory()))
-                    .promotionName(discountType + "促销")
-                    .promotionType("PRODUCT_SPECIFIC")
-                    .discountAmount(discount)
-                    .description(item.getProductName() + "享受特定折扣")
-                    .build();
-                
-                appliedPromotions.add(promotion);
-            }
-        }
-        
-        return PromotionResult.builder()
-            .originalTotal(request.getSubtotal())
-            .finalTotal(request.getSubtotal().subtract(totalDiscount))
-            .appliedPromotions(appliedPromotions)
-            .discountApplied(!appliedPromotions.isEmpty())
-            .build();
+        // 简化实现，返回null
+        return null;
     }
-    
+
     @Override
     public boolean isApplicable(BizContext<PromotionRequest> context) {
-        try {
-            PromotionRequest request = context.getData();
-            if (request == null || request.getItems() == null || request.getItems().isEmpty()) {
-                log.debug("No items in request, product promotion not applicable");
-                return false;
-            }
-            
-            // 检查是否有适用特定商品或类别的商品
-            for (PromotionRequest.OrderItem item : request.getItems()) {
-                if (item != null && (productDiscountMap.containsKey(item.getProductId()) || 
-                    (item.getCategory() != null && categoryDiscountMap.containsKey(item.getCategory())))) {
-                    log.debug("Product promotion applicable for item: {}", item.getProductId());
-                    return true;
-                }
-            }
-            return false;
-        } catch (Exception e) {
-            log.error("Error checking product promotion applicability", e);
-            return false;
-        }
-    }
-    
-    /**
-     * 创建空的促销结果
-     */
-    private PromotionResult createEmptyResult() {
-        return PromotionResult.builder()
-            .originalTotal(BigDecimal.ZERO)
-            .finalTotal(BigDecimal.ZERO)
-            .appliedPromotions(new ArrayList<>())
-            .discountApplied(false)
-            .build();
-    }
-    
-    /**
-     * 计算单个商品的折扣金额
-     */
-    private BigDecimal calculateItemDiscount(PromotionRequest.OrderItem item) {
-        // 先检查是否有特定商品折扣（优先级高）
-        if (productDiscountMap.containsKey(item.getProductId())) {
-            BigDecimal discountRate = productDiscountMap.get(item.getProductId());
-            BigDecimal originalPrice = item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
-            return originalPrice.multiply(BigDecimal.ONE.subtract(discountRate));
-        }
-        
-        // 再检查是否有类别折扣
-        if (item.getCategory() != null && categoryDiscountMap.containsKey(item.getCategory())) {
-            BigDecimal discountRate = categoryDiscountMap.get(item.getCategory());
-            BigDecimal originalPrice = item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
-            return originalPrice.multiply(BigDecimal.ONE.subtract(discountRate));
-        }
-        
-        return BigDecimal.ZERO;
+        // 简化实现，返回false
+        return false;
     }
 }

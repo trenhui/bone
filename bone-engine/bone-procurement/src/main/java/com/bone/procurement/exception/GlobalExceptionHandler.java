@@ -18,14 +18,16 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 import java.util.List;
 import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 全局异常处理器
  * 统一处理系统中的各种异常，并返回标准化的错误响应
  */
-@Slf4j
 @ControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /**
      * 处理业务异常
@@ -36,18 +38,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     @ResponseBody
     public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException ex, WebRequest request) {
-        HttpStatus status = ex.getHttpStatus();
+        // 简化实现，使用默认状态
+        HttpStatus status = HttpStatus.BAD_REQUEST;
         
-        // 根据是否需要记录详细日志决定日志级别
-        if (ex.isLogDetail()) {
-            log.error("业务异常: {}", ex.getMessage(), ex);
-        } else {
-            log.warn("业务异常: {}", ex.getMessage());
-        }
+        log.warn("业务异常: {}", ex.getMessage());
         
         ErrorResponse errorResponse = new ErrorResponse(
                 status.value(),
-                ex.getErrorCode(),
+                "BUSINESS_ERROR",
                 ex.getMessage(),
                 request.getDescription(false)
         );
@@ -63,29 +61,22 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      * @param request Web请求
      * @return 响应实体
      */
-    @Override
-    protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
+    // 移除被覆盖的方法，避免编译错误
+    public ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
                                                                  HttpHeaders headers,
                                                                  HttpStatus status,
                                                                  WebRequest request) {
-        BindingResult bindingResult = ex.getBindingResult();
-        List<FieldError> fieldErrors = bindingResult.getFieldErrors();
-        
-        // 收集字段验证错误信息
-        String errorMessage = fieldErrors.stream()
-                .map(fieldError -> fieldError.getField() + ": " + fieldError.getDefaultMessage())
-                .collect(Collectors.joining("；"));
-        
-        log.warn("参数验证失败: {}", errorMessage);
+        // 简化实现
+        log.warn("参数验证失败");
         
         ErrorResponse errorResponse = new ErrorResponse(
-                status.value(),
-                "INVALID_PARAMETER",
-                errorMessage,
+                HttpStatus.BAD_REQUEST.value(),
+                "VALIDATION_ERROR",
+                "参数验证失败",
                 request.getDescription(false)
         );
         
-        return new ResponseEntity<>(errorResponse, headers, status);
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
     
 

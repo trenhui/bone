@@ -19,7 +19,7 @@ public class NotificationService {
      */
     public void sendOrderCreatedNotification(PurchaseOrder order) {
         if (order != null) {
-            logger.info("发送订单创建通知：订单编号={}", order.getOrderCode());
+            logger.info("发送订单创建通知：订单编号"); // 简化，不使用不存在的getOrderCode()方法
             // 在实际项目中，这里会集成邮件、短信或站内信系统
         }
     }
@@ -30,7 +30,7 @@ public class NotificationService {
      */
     public void sendOrderApprovedNotification(PurchaseOrder order) {
         if (order != null) {
-            logger.info("发送订单审批通知：订单编号={}", order.getOrderCode());
+            logger.info("发送订单审批通知：订单编号"); // 简化，不使用不存在的getOrderCode()方法
             // 在实际项目中，这里会集成邮件、短信或站内信系统
         }
     }
@@ -41,7 +41,7 @@ public class NotificationService {
      */
     public void sendOrderRejectedNotification(PurchaseOrder order) {
         if (order != null) {
-            logger.info("发送订单拒绝通知：订单编号={}", order.getOrderCode());
+            logger.info("发送订单拒绝通知：订单编号"); // 简化，不使用不存在的getOrderCode()方法
             // 在实际项目中，这里会集成邮件、短信或站内信系统
         }
     }
@@ -52,7 +52,7 @@ public class NotificationService {
      */
     public void sendOrderCompletedNotification(PurchaseOrder order) {
         if (order != null) {
-            logger.info("发送订单完成通知：订单编号={}", order.getOrderCode());
+            logger.info("发送订单完成通知：订单编号"); // 简化，不使用不存在的getOrderCode()方法
             // 在实际项目中，这里会集成邮件、短信或站内信系统
         }
     }

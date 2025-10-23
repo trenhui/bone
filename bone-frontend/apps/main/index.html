@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Bone Micro Frontend Platform - Enterprise Frontend Framework" />
+  <meta name="keywords" content="Bone, Micro Frontend, React, TypeScript, Enterprise Framework" />
+  <meta name="author" content="Bone Team" />
+  
+  <!-- 预加载关键字体 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  
+  <!-- 安全相关元标签 -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https:; connect-src 'self' http://localhost:3001 http://localhost:3002" />
+  
+  <!-- 性能优化标签 -->
+  <link rel="preload" href="/assets/index.css" as="style" />
+  <link rel="preload" href="/assets/index.js" as="script" />
+  
+  <title>Bone Platform</title>
+</head>
+<body>
+  <!-- 加载动画 -->
+  <div id="loading" class="loading-screen">
+    <div class="loading-spinner"></div>
+    <p class="loading-text">Loading Bone Platform...</p>
+  </div>
+  
+  <!-- 主应用容器 -->
+  <div id="root"></div>
+  
+  <!-- 微前端全局配置 -->
+  <script>
+    // 全局配置对象
+    window.__BONE_CONFIG__ = {
+      version: '1.0.0',
+      environment: 'development',
+      debug: true,
+      sandbox: {
+        enabled: true,
+        strictMode: false
+      },
+      performance: {
+        enabled: true,
+        sampleRate: 0.1
+      },
+      apps: {
+        timeout: 60000,
+        prefetch: true
+      }
+    };
+    
+    // 移除加载动画
+    function removeLoading() {
+      const loadingElement = document.getElementById('loading');
+      if (loadingElement) {
+        loadingElement.style.opacity = '0';
+        loadingElement.style.transition = 'opacity 0.5s ease-out';
+        setTimeout(() => {
+          loadingElement.remove();
+        }, 500);
+      }
+    }
+    
+    // 监听应用加载完成
+    window.addEventListener('load', () => {
+      setTimeout(removeLoading, 100);
+    });
+  </script>
+  
+  <!-- 主应用脚本 -->
+  <script type="module" src="/src/main.tsx"></script>
+  
+  <!-- 错误处理 -->
+  <script>
+    // 全局错误处理
+    window.addEventListener('error', (error) => {
+      console.error('Global error:', error.error);
+      // 实际项目中可以上报到错误监控系统
+    });
+    
+    // Promise 错误处理
+    window.addEventListener('unhandledrejection', (event) => {
+      console.error('Unhandled promise rejection:', event.reason);
+      // 实际项目中可以上报到错误监控系统
+    });
+  </script>
+  
+  <style>
+    /* 加载动画样式 */
+    .loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #f5f5f5;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+      transition: opacity 0.5s ease-out;
+    }
+    
+    .loading-spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid #e0e0e0;
+      border-top: 4px solid #1a73e8;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 1rem;
+    }
+    
+    .loading-text {
+      color: #555;
+      font-size: 1.1rem;
+      font-weight: 500;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</body>
+</html>

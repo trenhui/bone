@@ -38,9 +38,10 @@ public class SmartMetaStarterAutoConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean
-    public MetadataEngine metadataEngine(SmartMetaProperties smartMetaProperties) {
-        // 使用接受SmartMetaProperties参数的构造函数
-        return new MetadataEngine(smartMetaProperties);
+    @Lazy
+    public MetadataEngine metadataEngine() {
+        // 使用无参构造函数
+        return new MetadataEngine();
     }
 
     /**

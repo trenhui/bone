@@ -1,14 +1,9 @@
 package com.bone.example.extension.model;
 
-import lombok.Builder;
-import lombok.Data;
-
 /**
  * 用户结果模型类
  * 封装用户服务相关的处理结果
  */
-@Data
-@Builder
 public class UserResult {
     
     /**
@@ -46,22 +41,22 @@ public class UserResult {
      * 创建成功结果
      */
     public static UserResult success(UserInfo userInfo) {
-        return UserResult.builder()
-            .success(true)
-            .userInfo(userInfo)
-            .timestamp(System.currentTimeMillis())
-            .build();
+        UserResult result = new UserResult();
+        result.success = true;
+        result.userInfo = userInfo;
+        result.timestamp = System.currentTimeMillis();
+        return result;
     }
     
     /**
      * 创建失败结果
      */
     public static UserResult fail(String errorCode, String errorMessage) {
-        return UserResult.builder()
-            .success(false)
-            .errorCode(errorCode)
-            .errorMessage(errorMessage)
-            .timestamp(System.currentTimeMillis())
-            .build();
+        UserResult result = new UserResult();
+        result.success = false;
+        result.errorCode = errorCode;
+        result.errorMessage = errorMessage;
+        result.timestamp = System.currentTimeMillis();
+        return result;
     }
 }

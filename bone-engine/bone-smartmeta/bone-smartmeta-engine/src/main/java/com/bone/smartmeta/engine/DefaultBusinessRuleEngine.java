@@ -52,12 +52,13 @@ public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
                 Runtime.getRuntime().availableProcessors() * 2,
                 new ThreadFactory() {
                     private final AtomicInteger counter = new AtomicInteger(0);
+                    
                     @Override
                     public Thread newThread(Runnable r) {
                         Thread thread = new Thread(r, "business-rule-executor-" + counter.incrementAndGet());
                         thread.setDaemon(true);
                         return thread;
-                
+                    }
                 }
         );
     }

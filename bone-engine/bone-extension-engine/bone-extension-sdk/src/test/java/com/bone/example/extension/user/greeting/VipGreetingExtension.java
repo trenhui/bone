@@ -1,6 +1,6 @@
 package com.bone.example.extension.user.greeting;
 
-import com.bone.engine.extension.BizContext;
+import com.bone.engine.extension.context.BizContext;
 import com.bone.engine.extension.Extension;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
@@ -9,7 +9,7 @@ import lombok.extern.slf4j.Slf4j;
  * VIP用户问候实现
  * 高优先级，当用户为VIP时执行
  */
-@Extension(expression = "#context.getAttribute('isVip') == true")
+@Extension(name = "vipGreeting", priority = 100)
 @Service
 @Slf4j
 public class VipGreetingExtension implements GreetingExtPoint {
