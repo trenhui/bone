@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ApplicationRegistry, MicroAppConfig } from '@bone/core/micro-fe-runtime';
+import { getApplicationRegistry, MicroAppConfig } from '@bone/core/micro-fe-runtime';
 import { Button } from '@bone/ui/components';
 import './App.css';
 
@@ -10,7 +10,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     // 初始化应用注册表
-    const registry = ApplicationRegistry.getInstance();
+    const registry = getApplicationRegistry();
     
     // 注册子应用
     const subApps: MicroAppConfig[] = [
@@ -81,7 +81,7 @@ const App: React.FC = () => {
   const activateApp = async (appName: string) => {
     setLoading(true);
     try {
-      const registry = ApplicationRegistry.getInstance();
+      const registry = getApplicationRegistry();
       await registry.activateApp(appName);
       setActiveApp(appName);
       
@@ -101,7 +101,7 @@ const App: React.FC = () => {
   const deactivateApp = async () => {
     if (activeApp) {
       try {
-        const registry = ApplicationRegistry.getInstance();
+        const registry = getApplicationRegistry();
         await registry.deactivateApp(activeApp);
         setActiveApp(null);
         window.history.pushState(null, '', '/');

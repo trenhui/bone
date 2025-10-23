@@ -3,12 +3,29 @@ package com.bone.example.extension.user;
 import com.bone.engine.extension.context.BizContext;
 import com.bone.engine.extension.ExtPoint;
 import com.bone.example.extension.model.UserResult;
+import com.bone.engine.extension.annotation.ExtPointDoc;
 
 /**
  * 用户服务扩展点接口
  * 定义用户服务相关的核心操作方法
  */
-@ExtPoint
+@ExtPoint(
+    name = "用户服务扩展点",
+    description = "处理用户相关操作的扩展点接口",
+    domain = "用户系统",
+    category = "用户管理",
+    version = "1.0.0",
+    enabled = true,
+    priority = 100,
+    enableCache = false,
+    timeout = 2000
+)
+@ExtPointDoc(
+    description = "该扩展点用于处理用户相关的各种操作，支持不同类型用户的差异化处理。",
+    usage = "1. 在用户注册、登录、信息更新等场景使用\n2. 根据用户类型选择合适的实现\n3. 处理用户权限和认证",
+    bestPractices = "1. 确保用户数据的安全性\n2. 考虑权限控制\n3. 实现适当的日志记录",
+    notes = "用户管理系统的核心扩展点，支持个人用户和企业用户"
+)
 public interface UserServiceExtPoint {
     
     /**

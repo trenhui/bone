@@ -1,0 +1,21 @@
+{
+  "name": "@bone/core/event-bus",
+  "version": "1.0.0",
+  "description": "Bone Frontend Event Bus - Type-safe communication for micro-frontends",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && vite build",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.2.2",
+    "vite": "^4.4.9",
+    "vite-plugin-dts": "^3.5.3"
+  }
+}

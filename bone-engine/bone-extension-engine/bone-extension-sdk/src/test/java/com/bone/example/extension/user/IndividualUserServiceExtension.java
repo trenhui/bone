@@ -2,9 +2,11 @@ package com.bone.example.extension.user;
 
 import com.bone.engine.extension.context.BizContext;
 import com.bone.engine.extension.Extension;
+import com.bone.engine.extension.annotation.ExtensionDoc;
 import com.bone.example.extension.model.UserInfo;
 import com.bone.example.extension.model.UserRequest;
 import com.bone.example.extension.model.UserResult;
+import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,7 +15,25 @@ import java.util.Map;
  * 个人用户服务扩展实现
  * 处理个人用户的特定操作逻辑
  */
-@Extension(bizCode = "INDIVIDUAL_USER")
+@Extension(
+    name = "个人用户服务实现",
+    description = "为个人用户提供专属的服务处理逻辑",
+    tenantCode = "*",
+    bizCode = "INDIVIDUAL_USER",
+    priority = 100,
+    enabled = true,
+    version = "1.0.0"
+)
+@ExtensionDoc(
+    description = "个人用户专属的服务实现，处理个人用户相关的业务逻辑。",
+    scenarios = "个人用户的注册、登录、信息管理等场景",
+    implementationDetails = "实现个人用户的身份验证、信息管理等功能",
+    performance = "测试实现，单次执行耗时<3ms",
+    notes = "针对个人用户的专用服务实现",
+    author = "测试团队",
+    createDate = "2024-01-01"
+)
+@Component
 public class IndividualUserServiceExtension implements UserServiceExtPoint {
     
     // 模拟个人用户数据存储

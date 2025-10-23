@@ -58,13 +58,13 @@ public class RouteScoreCalculator extends AbstractRouterComponent implements Rou
         
         // 1. 租户匹配
         String tenantCode = (String) getNestedProperty(context, "tenantCode");
-        // 暂时跳过租户匹配，因为Extension注解可能没有tenant()方法
-        /*if (StringUtils.hasText(tenantCode)) {
-            score += DIMENSION_WEIGHTS.get("tenant");
-        }*/
-
-        // 2. 业务域匹配
-        String bizCode = (String) getNestedProperty(context, "bizCode");
+          // 暂时跳过租户匹配，因为Extension注解可能没有tenant()方法
+          /*if (StringUtils.hasText(tenantCode)) {
+              score += DIMENSION_WEIGHTS.get("tenant");
+          }*/
+  
+          // 2. 业务域匹配
+          String bizCode = (String) getNestedProperty(context, "bizCode");
         if (StringUtils.hasText(bizCode)) {
             try {
                 // 尝试获取bizCode属性

@@ -231,14 +231,6 @@ public class WeightAndGraySelector extends AbstractRouterComponent implements Ro
         */
     }
 
-    /**
-     * 检查是否应该应用灰度发布流量
-     * 
-     * @param candidate 候选扩展点实现
-     * @param extensionMap 扩展点实现与注解的映射
-     * @param context 业务上下文
-     * @return 是否应用灰度流量
-     */
     public String getComponentName() {
         return "WeightAndGraySelector";
     }

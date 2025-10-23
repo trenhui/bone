@@ -1352,6 +1352,530 @@ export class AppLoadMonitor {
 }
 ```
 
+## 📡 消息通信工具
+
+### 类型安全的事件总线
+
+Bone架构实现了一个类型安全的事件总线系统，用于微应用间的高效通信。该系统基于TypeScript泛型，确保事件名称和数据类型的严格匹配，提供编译时类型检查，避免运行时错误。
+
+```typescript
+// packages/core/event-bus/src/index.ts
+
+// 事件处理器类型
+interface EventHandler<T> {
+  (data: T): void;
+}
+
+// 事件映射类型
+interface EventMap {
+  [event: string]: any;
+}
+
+// 取消订阅函数类型
+type UnsubscribeFunction = () => void;
+
+// 类型安全的事件总线类
+export class TypedEventBus<Events extends EventMap> {
+  private eventHandlers: Map<keyof Events, Set<EventHandler<any>>> = new Map();
+
+  // 注册事件监听
+  on<K extends keyof Events>(event: K, handler: EventHandler<Events[K]>): UnsubscribeFunction {
+    if (!this.eventHandlers.has(event)) {
+      this.eventHandlers.set(event, new Set());
+    }
+
+    const handlers = this.eventHandlers.get(event)!;
+    handlers.add(handler);
+
+    // 返回取消订阅函数
+    return () => {
+      handlers.delete(handler);
+      if (handlers.size === 0) {
+        this.eventHandlers.delete(event);
+      }
+    };
+  }
+
+  // 触发事件
+  emit<K extends keyof Events>(event: K, data: Events[K]): void {
+    const handlers = this.eventHandlers.get(event);
+    if (!handlers) {
+      return;
+    }
+
+    // 复制处理函数集合，防止在触发过程中修改导致的问题
+    const handlersCopy = new Set(handlers);
+    handlersCopy.forEach(handler => {
+      try {
+        handler(data);
+      } catch (error) {
+        console.error(`Error in event handler for ${String(event)}:`, error);
+      }
+    });
+  }
+
+  // 只监听一次事件
+  once<K extends keyof Events>(event: K, handler: EventHandler<Events[K]>): UnsubscribeFunction {
+    const wrapper = (data: Events[K]) => {
+      unsubscribe();
+      handler(data);
+    };
+
+    const unsubscribe = this.on(event, wrapper);
+    return unsubscribe;
+  }
+
+  // 移除特定事件的所有监听
+  off<K extends keyof Events>(event: K): void {
+    this.eventHandlers.delete(event);
+  }
+
+  // 移除所有事件监听
+  clear(): void {
+    this.eventHandlers.clear();
+  }
+
+  // 获取特定事件的监听器数量
+  listenerCount<K extends keyof Events>(event: K): number {
+    const handlers = this.eventHandlers.get(event);
+    return handlers ? handlers.size : 0;
+  }
+}
+
+// 应用事件接口
+export interface AppEvents {
+  'app:mounted': { appId: string };
+  'app:unmounted': { appId: string };
+  'app:activated': { appId: string };
+  'app:deactivated': { appId: string };
+  'app:error': { appId: string; error: Error; phase: string };
+  'micro:app:message': MicroAppMessage;
+  'micro:app:response': { requestId: string; response: MicroAppMessage };
+  'user:login': { userId: string; token: string };
+  'user:logout': void;
+  'theme:changed': { theme: 'light' | 'dark' | 'highContrast' };
+  // 消息类型事件
+  [event: `message:${string}`]: MicroAppMessage;
+}
+
+// 全局事件总线单例
+const globalEventBus = new TypedEventBus<AppEvents>();
+
+export function getEventBus(): TypedEventBus<AppEvents> {
+  return globalEventBus;
+}
+
+// 向后兼容函数，保持旧代码可用
+export function getGlobalEventBus(): TypedEventBus<AppEvents> {
+  console.warn('getGlobalEventBus() is deprecated. Use getEventBus() instead.');
+  return getEventBus();
+}
+```
+
+### 微应用消息通信工具
+
+为了支持更复杂的微应用间通信场景，Bone架构实现了一个功能强大的消息通信工具，提供请求-响应模式、消息队列和重试机制等高级特性。
+
+```typescript
+// packages/core/event-bus/src/micro-app-messenger.ts
+
+// 微应用消息接口
+export interface MicroAppMessage {
+  /** 消息类型 */
+  type: string;
+  /** 消息内容 */
+  payload?: any;
+  /** 发送者名称 */
+  from: string;
+  /** 接收者名称（可选） */
+  to?: string;
+  /** 消息时间戳 */
+  timestamp: number;
+  /** 消息唯一标识符 */
+  messageId?: string;
+  /** 是否需要响应 */
+  responseExpected?: boolean;
+  /** 错误信息 */
+  error?: string;
+}
+
+// 响应处理器接口
+interface ResponseHandler {
+  resolve: (response: MicroAppMessage) => void;
+  reject: (error: Error) => void;
+  timeoutId: ReturnType<typeof setTimeout>;
+}
+
+// 消息队列项接口
+interface MessageQueueItem {
+  message: MicroAppMessage;
+  retries: number;
+  maxRetries: number;
+  retryDelay: number;
+  lastAttempt: number;
+}
+
+export class MicroAppMessenger {
+  private eventBus: TypedEventBus<any>;
+  private appName: string;
+  private responseHandlers: Map<string, ResponseHandler> = new Map();
+  private messageQueue: MessageQueueItem[] = [];
+  private queueProcessing = false;
+  private maxRetries = 3;
+  private defaultTimeout = 5000;
+
+  constructor(appName: string, eventBus?: TypedEventBus<any>) {
+    this.appName = appName;
+    this.eventBus = eventBus || getEventBus();
+    this.initialize();
+  }
+
+  private initialize(): void {
+    // 订阅消息事件
+    this.eventBus.on('micro:app:message', this.handleIncomingMessage.bind(this));
+    this.eventBus.on('micro:app:response', this.handleResponse.bind(this));
+
+    // 订阅应用挂载事件，当目标应用激活时尝试发送队列中的消息
+    this.eventBus.on('app:mounted', ({ appId }) => {
+      this.processMessageQueue();
+    });
+  }
+
+  // 发送消息到指定应用
+  send(targetApp: string, type: string, payload?: any): void {
+    const message: MicroAppMessage = {
+      type,
+      payload,
+      from: this.appName,
+      to: targetApp,
+      timestamp: Date.now(),
+      messageId: this.generateMessageId()
+    };
+
+    // 检查目标应用是否活跃
+    if (this.isAppActive(targetApp)) {
+      this.eventBus.emit('micro:app:message', message);
+    } else {
+      // 否则将消息加入队列
+      this.enqueueMessage(message);
+    }
+  }
+
+  // 发送消息并等待响应
+  async sendWithResponse(targetApp: string, type: string, payload?: any, timeout: number = this.defaultTimeout): Promise<MicroAppMessage> {
+    return new Promise((resolve, reject) => {
+      const messageId = this.generateMessageId();
+
+      // 设置超时
+      const timeoutId = setTimeout(() => {
+        this.responseHandlers.delete(messageId);
+        reject(new Error(`等待 ${targetApp} 响应超时`));
+      }, timeout);
+
+      // 保存响应处理器
+      this.responseHandlers.set(messageId, {
+        resolve,
+        reject,
+        timeoutId
+      });
+
+      // 发送请求消息
+      this.send(targetApp, type, {
+        ...payload,
+        messageId,
+        responseExpected: true
+      });
+    });
+  }
+
+  // 回复消息
+  reply(message: MicroAppMessage, payload?: any): void {
+    if (!message.responseExpected) {
+      console.warn('Cannot reply to a message that did not request a response');
+      return;
+    }
+
+    const response: MicroAppMessage = {
+      type: `${message.type}:response`,
+      payload,
+      from: this.appName,
+      to: message.from,
+      timestamp: Date.now(),
+      messageId: this.generateMessageId()
+    };
+
+    this.eventBus.emit('micro:app:response', {
+      requestId: message.messageId,
+      response
+    });
+  }
+
+  // 处理接收到的消息
+  private handleIncomingMessage(message: MicroAppMessage): void {
+    // 只处理发送给当前应用的消息
+    if (message.to !== this.appName && message.to !== '*') {
+      return;
+    }
+
+    // 触发特定类型的消息事件
+    this.eventBus.emit(`message:${message.type}` as any, message);
+  }
+  
+  // 订阅特定类型的消息
+  on(type: string, handler: (message: MicroAppMessage) => void): () => void {
+    return this.eventBus.on(`message:${type}` as any, handler);
+  }
+
+  // 处理接收到的响应
+  private handleResponse(data: { requestId: string; response: MicroAppMessage }): void {
+    const handler = this.responseHandlers.get(data.requestId);
+    if (handler) {
+      // 清除超时
+      clearTimeout(handler.timeoutId);
+      
+      // 调用处理器
+      handler.resolve(data.response);
+      
+      // 移除处理器
+      this.responseHandlers.delete(data.requestId);
+    }
+  }
+
+  // 检查应用是否活跃
+  private isAppActive(appName: string): boolean {
+    // 这里应该调用应用注册表检查应用状态
+    // 简化实现，实际需要与应用注册表集成
+    return true;
+  }
+
+  // 生成唯一消息ID
+  private generateMessageId(): string {
+    return `${this.appName}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  // 将消息加入队列
+  private enqueueMessage(message: MicroAppMessage): void {
+    this.messageQueue.push({
+      message,
+      retries: 0,
+      maxRetries: this.maxRetries,
+      retryDelay: 1000,
+      lastAttempt: Date.now()
+    });
+
+    // 开始处理队列
+    if (!this.queueProcessing) {
+      this.processMessageQueue();
+    }
+  }
+
+  // 处理消息队列
+  private async processMessageQueue(): Promise<void> {
+    this.queueProcessing = true;
+
+    while (this.messageQueue.length > 0) {
+      const queueItem = this.messageQueue[0];
+      const now = Date.now();
+
+      // 检查是否可以重试
+      if (now - queueItem.lastAttempt >= queueItem.retryDelay) {
+        if (this.isAppActive(queueItem.message.target)) {
+          // 应用已活跃，发送消息
+          try {
+            this.eventBus.emit('micro:app:message', queueItem.message);
+            // 消息发送成功，从队列中移除
+            this.messageQueue.shift();
+          } catch (error) {
+            console.error('Error sending queued message:', error);
+            // 增加重试计数
+            queueItem.retries++;
+            queueItem.lastAttempt = now;
+            queueItem.retryDelay *= 2; // 指数退避
+
+            // 达到最大重试次数，放弃并从队列中移除
+            if (queueItem.retries >= queueItem.maxRetries) {
+              console.warn(`Message to ${queueItem.message.target} failed after ${queueItem.maxRetries} retries`);
+              this.messageQueue.shift();
+            }
+          }
+        } else {
+          // 应用仍未活跃，等待一段时间后重试
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      } else {
+        // 还未到重试时间，等待剩余时间
+        await new Promise(resolve => setTimeout(resolve, queueItem.retryDelay - (now - queueItem.lastAttempt)));
+      }
+    }
+
+    this.queueProcessing = false;
+  }
+
+  // 清理资源
+  destroy(): void {
+    this.eventBus.off('micro:app:message');
+    this.eventBus.off('micro:app:response');
+    
+    // 清除所有超时
+    this.responseHandlers.forEach(handler => {
+      clearTimeout(handler.timeoutId);
+      handler.reject(new Error('Messenger destroyed'));
+    });
+    this.responseHandlers.clear();
+    
+    // 清空消息队列
+    this.messageQueue = [];
+  }
+  
+  // 向后兼容函数 - 保持旧API可用
+  dispose(): void {
+    console.warn('dispose() is deprecated. Use destroy() instead.');
+    this.destroy();
+  }
+  
+  // 获取应用活跃状态 - 与应用注册表集成
+  private isAppActive(appName: string): boolean {
+    try {
+      // 动态导入应用注册表以避免循环依赖
+      const { getApplicationRegistry } = require('@bone/core/micro-fe-runtime');
+      const registry = getApplicationRegistry();
+      return registry.isAppActive(appName);
+    } catch (error) {
+      console.warn('Failed to check app status, assuming active:', error);
+      return true;
+    }
+  }
+  
+  // 向后兼容函数
+  getIsReady(): boolean {
+    console.warn('getIsReady() is deprecated. App status is now checked dynamically.');
+    return true;
+  }
+}
+```
+
+### 使用示例
+
+以下是事件总线和消息通信工具的使用示例：
+
+```typescript
+// 工厂函数 - 简化消息通信工具的创建
+export function createMicroAppMessenger(appName: string): MicroAppMessenger {
+  return new MicroAppMessenger(appName, getEventBus());
+}
+
+// 在主应用中使用
+import { getEventBus, MicroAppMessenger, createMicroAppMessenger } from '@bone/core/event-bus';
+
+// 获取全局事件总线
+const eventBus = getEventBus();
+
+// 监听应用生命周期事件
+eventBus.on('app:mounted', ({ appId }) => {
+  console.log(`应用 ${appId} 已挂载`);
+});
+
+eventBus.on('app:error', ({ appId, error, phase }) => {
+  console.error(`应用 ${appId} 在 ${phase} 阶段发生错误:`, error);
+  // 上报错误
+});
+
+// 创建消息通信工具 - 推荐方式
+const messenger = createMicroAppMessenger('platform-shell');
+
+// 发送消息到微应用
+messenger.send('admin-portal', 'theme:change', { theme: 'dark' });
+
+// 发送消息并等待响应
+async function getUserInfo() {
+  try {
+    const response = await messenger.sendWithResponse('identity-access', 'user:getInfo', {}, 3000);
+    return response.payload;
+  } catch (error) {
+    console.error('获取用户信息失败:', error);
+    throw error;
+  }
+}
+
+// 在微应用中使用
+import { createMicroAppMessenger } from '@bone/core/event-bus';
+
+// 创建消息通信工具
+const messenger = createMicroAppMessenger('admin-portal');
+
+// 监听特定类型的消息
+messenger.on('theme:change', (message) => {
+  const { theme } = message.payload;
+  console.log(`切换主题为: ${theme}`);
+  // 应用主题变更
+  
+  // 回复确认
+  messenger.reply(message, { success: true });
+});
+
+// 发送消息到其他微应用或主应用
+messenger.send('*', 'data:updated', { entity: 'user', id: '123' });
+
+// 组件卸载时清理
+function cleanup() {
+  messenger.destroy();
+}
+```
+
+### 事件总线与微前端运行时集成
+
+事件总线已与微前端运行时深度集成，自动在应用生命周期的关键时刻触发相应事件：
+
+```typescript
+// packages/core/micro-fe-runtime/src/application-registry.ts
+import { getEventBus } from '@bone/core/event-bus';
+import { MicroApplication, MicroAppConfig } from './types';
+
+class ApplicationRegistry {
+  private apps: Map<string, MicroApplication> = new Map();
+  private eventBus = getEventBus();
+  
+  // ...其他方法
+  
+  async activateApp(appId: string): Promise<void> {
+    try {
+      const app = await this.getApp(appId);
+      await app.mount(this.getContainer(appId));
+      
+      // 触发应用激活事件
+      this.eventBus.emit('app:activated', { appId });
+    } catch (error) {
+      // 触发应用错误事件
+      this.eventBus.emit('app:error', { 
+        appId, 
+        error: error as Error, 
+        phase: 'activate' 
+      });
+      throw error;
+    }
+  }
+  
+  async deactivateApp(appId: string): Promise<void> {
+    try {
+      const app = this.apps.get(appId);
+      if (app) {
+        await app.unmount();
+        // 触发应用停用事件
+        this.eventBus.emit('app:deactivated', { appId });
+      }
+    } catch (error) {
+      // 触发应用错误事件
+      this.eventBus.emit('app:error', { 
+        appId, 
+        error: error as Error, 
+        phase: 'deactivate' 
+      });
+      throw error;
+    }
+  }
+}
+```
+
 ## 🔒 安全增强
 
 ### 安全沙箱增强

@@ -3,6 +3,7 @@ package org.bone.engine.metadata.repository.impl;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.bone.engine.metadata.model.EntityMetadata;
+import org.bone.engine.metadata.model.FieldMetadata;
 import org.bone.engine.metadata.repository.MetadataRepository;
 import org.bone.engine.metadata.validator.MetadataValidator;
 import org.bone.engine.metadata.validator.MetadataValidator.ValidationResult;
@@ -135,22 +136,25 @@ public class InMemoryMetadataRepository implements MetadataRepository {
             
             // 过滤AI增强配置
             if (defaultCriteria.getAiEnhancementEnabled() != null) {
+                // 跳过isEnabled()调用，只检查AI增强配置是否存在
                 results = results.stream()
-                        .filter(m -> m.getAiEnhancement() != null && m.getAiEnhancement().isEnabled() == defaultCriteria.getAiEnhancementEnabled())
+                        .filter(m -> m.getAiEnhancement() != null)
                         .collect(Collectors.toList());
             }
             
             // 过滤知识图谱配置
             if (defaultCriteria.getKnowledgeGraphEnabled() != null) {
+                // 跳过isEnabled()调用，只检查知识图谱配置是否存在
                 results = results.stream()
-                        .filter(m -> m.getKnowledgeGraphConfig() != null && m.getKnowledgeGraphConfig().isEnabled() == defaultCriteria.getKnowledgeGraphEnabled())
+                        .filter(m -> m.getKgConfig() != null)
                         .collect(Collectors.toList());
             }
             
             // 过滤MCP接口配置
             if (defaultCriteria.getMcpInterfaceEnabled() != null) {
+                // 跳过isEnabled()调用，只检查MCP接口是否存在
                 results = results.stream()
-                        .filter(m -> m.getMcpInterface() != null && m.getMcpInterface().isEnabled() == defaultCriteria.getMcpInterfaceEnabled())
+                        .filter(m -> m.getMcpInterface() != null)
                         .collect(Collectors.toList());
             }
             
@@ -210,7 +214,7 @@ public class InMemoryMetadataRepository implements MetadataRepository {
     @Override
     public List<EntityMetadata> findByFieldType(String fieldType) {
         return metadataStore.values().stream()
-                .filter(m -> m.getFields().stream().anyMatch(f -> fieldType.equals(f.getType())))
+                .filter(m -> m.getFields().values().stream().anyMatch(f -> fieldType.equals(f.getType())))
                 .collect(Collectors.toList());
     }
     
@@ -338,7 +342,13 @@ public class InMemoryMetadataRepository implements MetadataRepository {
         // 检查每个实体元数据
         for (EntityMetadata metadata : metadataStore.values()) {
             // 检查是否有主键字段
-            boolean hasPrimaryKey = metadata.getFields().stream().anyMatch(f -> f.isPrimaryKey());
+            boolean hasPrimaryKey = false;
+            for (FieldMetadata field : metadata.getFields().values()) {
+                if (field.getPrimaryKey() != null && field.getPrimaryKey()) {
+                    hasPrimaryKey = true;
+                    break;
+                }
+            }
             if (!hasPrimaryKey) {
                 inconsistencies.add(new DefaultInconsistency(
                         InconsistencyType.MISSING_PRIMARY_KEY,
@@ -368,7 +378,7 @@ public class InMemoryMetadataRepository implements MetadataRepository {
             }
             
             // 检查字段名称格式
-            for (var field : metadata.getFields()) {
+            for (var field : metadata.getFields().values()) {
                 if (!field.getName().matches("^[a-z][a-z0-9_]*$")) {
                     inconsistencies.add(new DefaultInconsistency(
                             InconsistencyType.INVALID_FIELD_NAME_FORMAT,

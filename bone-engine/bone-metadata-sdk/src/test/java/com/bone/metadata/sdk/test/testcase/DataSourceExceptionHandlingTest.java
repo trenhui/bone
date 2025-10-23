@@ -19,6 +19,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
+import java.util.function.Consumer;
 
 /**
  * 数据源异常处理测试
@@ -104,7 +105,11 @@ public class DataSourceExceptionHandlingTest {
                 // 验证数据源设置正确
                 assertEquals(testDataSource, DataSourceContextHolder.getCurrentLookupKey());
                 // 调用会抛出检查型异常的方法
-                throwCheckedException();
+                try {
+                    throwCheckedException();
+                } catch (CustomCheckedException e) {
+                    throw new RuntimeException(e);
+                }
                 return null; // 这行不会执行
             });
             fail("Should have thrown RuntimeException wrapping the checked exception");
@@ -192,12 +197,12 @@ public class DataSourceExceptionHandlingTest {
         
         try {
             // 执行会抛出异常的Consumer操作
-            dataSourceManager.withDataSource(testDataSource, id -> {
+            dataSourceManager.withDataSource(testDataSource, userId, (Consumer<Long>) id -> {
                 // 验证数据源设置正确
                 assertEquals(testDataSource, DataSourceContextHolder.getCurrentLookupKey());
                 // 抛出异常
                 throw new RuntimeException("Consumer operation exception");
-            }, userId);
+            });
             fail("Consumer operation should have thrown exception");
         } catch (RuntimeException e) {
             // 验证异常被正确传播

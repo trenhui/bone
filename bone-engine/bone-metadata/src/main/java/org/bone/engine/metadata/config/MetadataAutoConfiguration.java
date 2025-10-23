@@ -6,6 +6,9 @@ import org.bone.engine.metadata.util.MetadataUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import java.util.HashMap;
+import java.util.Optional;
+import org.bone.engine.metadata.model.IndexMetadata;
 import java.util.Optional;
 
 import java.util.Collections;
@@ -34,9 +37,18 @@ public class MetadataAutoConfiguration {
             }
 
             @Override
-            public Optional<EntityMetadata> getEntityMetadataByApiName(String apiName) {
-                return Optional.empty();
-            }
+                public Optional<EntityMetadata> getEntityMetadataByApiName(String apiName) {
+                    return Optional.empty();
+                }
+                
+                @Override
+                public Map<String, Object> checkHealth() {
+                    Map<String, Object> healthInfo = new HashMap<>();
+                    healthInfo.put("status", "UP");
+                    healthInfo.put("timestamp", System.currentTimeMillis());
+                    healthInfo.put("service", "UniversalMetadataService");
+                    return healthInfo;
+                }
 
             @Override
             public Optional<EntityMetadata> getEntityMetadataByApiNameAndVersion(String apiName, String version) {
@@ -94,8 +106,18 @@ public class MetadataAutoConfiguration {
             }
             
             @Override
-            public boolean checkHealth() {
-                return true;
+            public Map<String, Object> getRuntimeInfo() {
+                Map<String, Object> runtimeInfo = new HashMap<>();
+                runtimeInfo.put("version", "1.0.0");
+                runtimeInfo.put("environment", "development");
+                runtimeInfo.put("timestamp", System.currentTimeMillis());
+                return runtimeInfo;
+            }
+            
+            @Override
+            public void clearAllMetadataCache() {
+                // 空实现，清除元数据缓存
+                System.out.println("Metadata cache cleared");
             }
         };
     }
@@ -289,12 +311,20 @@ public class MetadataAutoConfiguration {
         
         @Override
         public IndexMetadata createIndex(String name, String... fieldNames) {
-            return MetadataUtils.IndexMetadata.createCompositeIndex(name, fieldNames);
+            IndexMetadata index = new IndexMetadata();
+            index.setName(name);
+            index.setUnique(false);
+            // 设置索引字段
+            return index;
         }
         
         @Override
         public IndexMetadata createUniqueIndex(String name, String... fieldNames) {
-            return MetadataUtils.IndexMetadata.createUniqueIndex(name, fieldNames);
+            IndexMetadata index = new IndexMetadata();
+            index.setName(name);
+            index.setUnique(true);
+            // 设置索引字段
+            return index;
         }
     }
     

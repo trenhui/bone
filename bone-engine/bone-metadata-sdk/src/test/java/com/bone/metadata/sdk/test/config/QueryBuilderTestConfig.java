@@ -1,6 +1,6 @@
 package com.bone.metadata.sdk.test.config;
 
-
+import org.mockito.Mockito;
 import com.bone.metadata.sdk.domain.model.TableMetadata;
 import com.bone.metadata.sdk.domain.query.CompiledQuery;
 import com.bone.metadata.sdk.domain.query.BatchCompiledQuery;
@@ -8,10 +8,10 @@ import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.extension.ExtensionCoordinator;
 import com.bone.metadata.sdk.domain.exception.ExceptionHandler;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
-import org.springframework.context.annotation.Configuration;
 import com.bone.metadata.sdk.metadata.api.MetadataService;
 import com.bone.metadata.sdk.query.SqlBuilder;
 import com.bone.metadata.sdk.sql.dialect.DatabaseDialect;
@@ -20,11 +20,6 @@ import com.bone.metadata.sdk.sql.processor.SqlProcessorFactory;
 import com.bone.metadata.sdk.sql.template.SqlTemplateLoader;
 import com.bone.metadata.sdk.sql.template.SqlTemplate;
 import com.bone.metadata.sdk.support.config.SqlConfigProperties;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.FilterType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -103,7 +98,7 @@ public class QueryBuilderTestConfig {
      */
     @Bean
     public SqlConfigProperties sqlConfigProperties() {
-        return new SqlConfigProperties();
+        return Mockito.mock(SqlConfigProperties.class);
     }
     
     /**
@@ -111,12 +106,7 @@ public class QueryBuilderTestConfig {
      */
     @Bean
     public SqlTemplateLoader sqlTemplateLoader() {
-        return new SqlTemplateLoader() {
-            @Override
-            public SqlTemplate loadTemplate(String statementId) {
-                return null;
-            }
-        };
+        return Mockito.mock(SqlTemplateLoader.class);
     }
     
     /**
@@ -124,12 +114,7 @@ public class QueryBuilderTestConfig {
      */
     @Bean
     public SqlProcessorFactory sqlProcessorFactory() {
-        return new SqlProcessorFactory(sqlConfigProperties()) {
-            @Override
-            public Object createSqlProcessor(String type) {
-                return null;
-            }
-        };
+        return Mockito.mock(SqlProcessorFactory.class);
     }
     
     /**
@@ -140,9 +125,7 @@ public class QueryBuilderTestConfig {
                                  SqlTemplateLoader sqlTemplateLoader,
                                  SqlProcessorFactory sqlProcessorFactory,
                                  SqlConfigProperties sqlConfigProperties) {
-        return new SqlExecutor(jdbcOperations, sqlTemplateLoader, sqlProcessorFactory, sqlConfigProperties) {
-            // 重写方法以避免实际的SQL执行
-        };
+        return Mockito.mock(SqlExecutor.class);
     }
     
     /**
@@ -150,22 +133,7 @@ public class QueryBuilderTestConfig {
      */
     @Bean
     public ExceptionHandler exceptionHandler() {
-        return new ExceptionHandler() {
-            @Override
-            public RuntimeException handleException(Exception e) {
-                return new RuntimeException(e);
-            }
-            
-            @Override
-            public RuntimeException handleException(Exception e, String message) {
-                return new RuntimeException(message, e);
-            }
-            
-            @Override
-            public void logException(Exception e) {
-                System.out.println("Exception logged: " + e.getMessage());
-            }
-        };
+        return Mockito.mock(ExceptionHandler.class);
     }
     
     /**
@@ -173,9 +141,7 @@ public class QueryBuilderTestConfig {
      */
     @Bean
     public ExtensionCoordinator extensionCoordinator() {
-        return new ExtensionCoordinator() {
-            // 实现必要的方法
-        };
+        return Mockito.mock(ExtensionCoordinator.class);
     }
     
     /**
@@ -183,13 +149,7 @@ public class QueryBuilderTestConfig {
      */
     @Bean
     public MetadataService metadataService() {
-        return new MetadataService() {
-            @Override
-            public TableMetadata getTableMetadata(Class<?> entityClass) {
-                return new TableMetadata(entityClass);
-            }
-            // 实现其他必要的方法
-        };
+        return Mockito.mock(MetadataService.class);
     }
     
     /**
@@ -197,13 +157,7 @@ public class QueryBuilderTestConfig {
      */
     @Bean
     public DatabaseDialect databaseDialect() {
-        return new DatabaseDialect() {
-            @Override
-            public String getDialectName() {
-                return "H2";
-            }
-            // 实现其他必要的方法
-        };
+        return Mockito.mock(DatabaseDialect.class);
     }
     
     /**
@@ -211,37 +165,6 @@ public class QueryBuilderTestConfig {
      */
     @Bean
     public SqlBuilder sqlBuilder(MetadataService metadataService, DatabaseDialect databaseDialect) {
-        return new SqlBuilder(metadataService, databaseDialect) {
-            @Override
-            public void init() {
-                // 避免依赖实际的构建器实现
-            }
-            
-            @Override
-            public CompiledQuery buildSelect(Class<?> cls, Criteria<?> c) {
-                return new CompiledQuery("SELECT * FROM " + cls.getSimpleName().toLowerCase(), Collections.emptyMap());
-            }
-            
-            @Override
-            public BatchCompiledQuery buildBatchInsert(Class<?> cls, List<?> list) {
-                return new BatchCompiledQuery("INSERT INTO " + cls.getSimpleName().toLowerCase() + " VALUES (:id, :name)", 
-                        list.stream().map(obj -> Collections.emptyMap()).toList());
-            }
-            
-            @Override
-            public CompiledQuery buildCount(Class<?> cls, Criteria<?> c) {
-                return new CompiledQuery("SELECT COUNT(*) FROM " + cls.getSimpleName().toLowerCase(), Collections.emptyMap());
-            }
-            
-            @Override
-            public CompiledQuery buildDelete(Class<?> cls, Criteria<?> c) {
-                return new CompiledQuery("DELETE FROM " + cls.getSimpleName().toLowerCase(), Collections.emptyMap());
-            }
-            
-            @Override
-            public CompiledQuery buildUpdate(Class<?> cls, Map<String, Object> updateValues, Criteria<?> c) {
-                return new CompiledQuery("UPDATE " + cls.getSimpleName().toLowerCase() + " SET id = :id", Collections.emptyMap());
-            }
-        };
+        return Mockito.mock(SqlBuilder.class);
     }
 }
