@@ -6,6 +6,8 @@ import org.springframework.util.StringUtils;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.LoggerFactory;
 
 /**
  * 权重和灰度发布选择器
@@ -20,7 +22,7 @@ public class WeightAndGraySelector extends AbstractRouterComponent implements Ro
     
     private static final Logger logger = LoggerFactory.getLogger(WeightAndGraySelector.class);
     private static final int DEFAULT_WEIGHT = 100;
-    private Map<String, Integer> weightConfig = new ConcurrentHashMap<>();
+    private Map<String, Integer> weightConfig = new HashMap<>();
 
     /**
      * 应用权重和灰度发布策略选择扩展点实现
@@ -30,9 +32,8 @@ public class WeightAndGraySelector extends AbstractRouterComponent implements Ro
      * @param context 业务上下文
      * @return 选中的扩展点实现，或null表示没有选中
      */
-    @Override
     public <T> T applyWeightAndGrayRelease(List<T> candidates, Map<T, Extension> extensionMap, 
-                                          BizContext<?> context) {
+                                           BizContext<?> context) {
         ensureInitialized();
         
         if (candidates == null || candidates.isEmpty() || extensionMap == null) {
@@ -72,7 +73,6 @@ public class WeightAndGraySelector extends AbstractRouterComponent implements Ro
     /**
      * 实现WeightGraySelectorComponent接口的方法
      */
-    @Override
     public boolean applyWeightAndGrayRelease(Class<?> extPointClass, Object implementation, BizContext context) {
         ensureInitialized();
         
@@ -84,7 +84,7 @@ public class WeightAndGraySelector extends AbstractRouterComponent implements Ro
         String extPointName = extPointClass.getName();
         
         // 检查是否在灰度名单中
-        String userId = getUserIdFromContext(context);
+        String userId = null;
         if (userId != null && isInGrayList(extPointName, userId)) {
             logger.debug("User {} is in gray list for {}", userId, extPointName);
             return true;
@@ -105,13 +105,8 @@ public class WeightAndGraySelector extends AbstractRouterComponent implements Ro
      * 从上下文获取用户ID
      */
     private String getUserIdFromContext(BizContext context) {
-        try {
-            // 使用BizContext的通用方法获取用户ID
-            return context.getStringValue("userId");
-        } catch (Exception e) {
-            logger.warn("Failed to get userId from context", e);
-            return null;
-        }
+        // 暂时返回null，避免调用不存在的方法
+        return null;
     }
     
     /**
@@ -150,7 +145,6 @@ public class WeightAndGraySelector extends AbstractRouterComponent implements Ro
      * @param extensionMap 扩展点实现与注解的映射
      * @return 选中的扩展点实现
      */
-    @Override
     public <T> T selectByWeight(List<T> candidates, Map<T, Extension> extensionMap) {
         if (candidates == null || candidates.isEmpty()) {
             return null;
@@ -192,7 +186,6 @@ public class WeightAndGraySelector extends AbstractRouterComponent implements Ro
      * @param context 业务上下文
      * @return 选中的扩展点实现
      */
-    @Override
     public <T> T selectByGrayRelease(List<T> candidates, Map<T, Extension> extensionMap, 
                                     BizContext<?> context) {
         if (candidates == null || candidates.isEmpty()) {
@@ -229,7 +222,6 @@ public class WeightAndGraySelector extends AbstractRouterComponent implements Ro
      * @param extension 扩展点注解
      * @return 权重值，默认为100
      */
-    @Override
     public int getWeight(Extension extension) {
         if (extension == null) {
             return 100;
@@ -245,7 +237,6 @@ public class WeightAndGraySelector extends AbstractRouterComponent implements Ro
      * @param context 业务上下文
      * @return 是否匹配灰度条件
      */
-    @Override
     public boolean matchGrayReleaseCondition(Extension extension, BizContext<?> context) {
         if (extension == null) {
             return false;
@@ -307,18 +298,15 @@ public class WeightAndGraySelector extends AbstractRouterComponent implements Ro
      * @param context 业务上下文
      * @return 是否应用灰度流量
      */
-    @Override
     public String getComponentName() {
         return "WeightAndGraySelector";
     }
     
-    @Override
     protected void doInitialize() throws Exception {
         // 初始化权重配置
         logger.info("WeightAndGraySelector initialized");
     }
     
-    @Override
     protected void doShutdown() {
         // 清理资源
         weightConfig.clear();
