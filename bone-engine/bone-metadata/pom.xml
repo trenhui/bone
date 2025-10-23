@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>bone-metadata</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
     <url>http://www.bone.com</url>
 
@@ -23,17 +23,30 @@
         <springdoc.version>2.1.0</springdoc.version>
         <caffeine.version>3.1.8</caffeine.version>
     </properties>
+    
+    <!-- 设置本地仓库优先级 -->
+    <repositories>
+        <repository>
+            <id>local-repo</id>
+            <url>file://${user.home}/.m2/repository</url>
+            <releases>
+                <enabled>true</enabled>
+                <updatePolicy>never</updatePolicy>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
+            </snapshots>
+        </repository>
+    </repositories>
 
     <dependencies>
         <!-- 项目内部模块依赖 -->
-        <dependency>
-            <groupId>com.bone</groupId>
-            <artifactId>bone-core</artifactId>
-        </dependency>
 
         <dependency>
             <groupId>com.bone</groupId>
             <artifactId>bone-metadata-sdk</artifactId>
+            <version>1.0.0</version>
         </dependency>
 
         <!-- Spring Boot Starters -->
@@ -99,6 +112,12 @@
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
             <version>${caffeine.version}</version>
+        </dependency>
+        
+        <!-- MongoDB Support -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-mongodb</artifactId>
         </dependency>
 
         <!-- Database -->

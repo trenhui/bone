@@ -1,10 +1,25 @@
-import { MicroApplication, MicroAppConfig } from './micro-application';
-import { AppStatus } from './types';
+import { MicroAppConfig, AppStatus } from './types';
+import { MicroApplication } from './micro-application';
+import { RouterManager } from './router-manager';
+import { getEventBus } from '@bone/core/event-bus';
 
 export class ApplicationRegistry {
   private apps: Map<string, MicroApplication> = new Map();
   private activeApps: Set<string> = new Set();
-  private currentPath: string = '';
+  private eventBus = getEventBus();
+  private static instance: ApplicationRegistry;
+  private routerManager: RouterManager;
+
+  /**
+   * 私有构造函数，实现单例模式
+   */
+  private constructor() {
+    // 初始化路由管理器
+    this.routerManager = new RouterManager(this);
+    
+    // 初始化事件监听
+    this.initEventListeners();
+  }
 
   // 注册应用
   register(config: MicroAppConfig): void {
@@ -26,6 +41,151 @@ export class ApplicationRegistry {
   // 获取应用实例
   getApp(appName: string): MicroApplication | undefined {
     return this.apps.get(appName);
+  }
+  
+  /**
+   * 初始化事件监听
+   */
+  private initEventListeners(): void {
+    // 监听应用注册事件
+    this.eventBus.on('app:register', (data: { config: MicroAppConfig }) => {
+      this.registerApp(data.config);
+    });
+    
+    // 监听路由预加载事件
+    this.eventBus.on('route:preload', (data: { path: string }) => {
+      this.routerManager.preloadAppsByPath(data.path);
+    });
+  }
+
+  /**
+   * 启动路由管理器
+   */
+  startRouting(): void {
+    this.routerManager.start();
+  }
+
+  /**
+   * 停止路由管理器
+   */
+  stopRouting(): void {
+    this.routerManager.stop();
+  }
+
+  /**
+   * 激活应用
+   * @param appId 应用ID
+   */
+  async activateApp(appId: string): Promise<void> {
+    const app = this.apps.get(appId);
+    if (!app) {
+      throw new Error(`App ${appId} not found`);
+    }
+
+    try {
+      // 确保应用已加载
+      await app.load();
+      
+      // 挂载应用
+      const container = this.getAppContainer(appId);
+      await app.mount(container);
+    } catch (error) {
+      console.error(`Failed to activate app ${appId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * 停用应用
+   * @param appId 应用ID
+   */
+  async deactivateApp(appId: string): Promise<void> {
+    const app = this.apps.get(appId);
+    if (!app) {
+      throw new Error(`App ${appId} not found`);
+    }
+
+    try {
+      // 卸载应用
+      await app.unmount();
+    } catch (error) {
+      console.error(`Failed to deactivate app ${appId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * 预加载应用
+   * @param appId 应用ID
+   */
+  async preloadApp(appId: string): Promise<void> {
+    const app = this.apps.get(appId);
+    if (!app) {
+      throw new Error(`App ${appId} not found`);
+    }
+
+    try {
+      // 只加载不挂载
+      await app.load();
+    } catch (error) {
+      console.error(`Failed to preload app ${appId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * 获取应用容器
+   * @param appId 应用ID
+   */
+  private getAppContainer(appId: string): HTMLElement {
+    const app = this.apps.get(appId);
+    if (!app) {
+      throw new Error(`App ${appId} not found`);
+    }
+
+    const containerSelector = app.getConfig().container;
+    let container: HTMLElement;
+
+    if (containerSelector) {
+      const element = typeof containerSelector === 'string' 
+        ? document.querySelector(containerSelector) 
+        : containerSelector;
+      
+      if (element && element instanceof HTMLElement) {
+        container = element;
+      } else {
+        throw new Error(`Container not found for app ${appId}`);
+      }
+    } else {
+      // 如果没有指定容器，创建默认容器
+      container = document.createElement('div');
+      container.id = `bone-app-${appId}`;
+      container.className = 'bone-app-container';
+      document.body.appendChild(container);
+    }
+
+    return container;
+  }
+
+  /**
+   * 获取当前激活的应用列表
+   */
+  getActiveApps(): string[] {
+    return this.routerManager.getActiveApps();
+  }
+
+  /**
+   * 手动刷新路由匹配
+   */
+  refreshRouting(): void {
+    this.routerManager.refresh();
+  }
+
+  /**
+   * 获取路由管理器实例
+   */
+  getRouterManager(): RouterManager {
+    return this.routerManager;
   }
 
   // 获取所有已注册的应用
@@ -81,8 +241,19 @@ export class ApplicationRegistry {
       await app.mount(props);
       this.activeApps.add(appName);
       console.log(`App ${appName} activated successfully`);
+      
+      // 发布应用挂载事件
+      this.eventBus.emit('app:mounted', { 
+        appId: appName 
+      });
     } catch (error) {
       console.error(`Failed to activate app ${appName}:`, error);
+      // 发布应用错误事件
+      this.eventBus.emit('app:error', { 
+        appId: appName, 
+        error: error instanceof Error ? error : new Error(String(error)),
+        phase: 'activate'
+      });
       throw error;
     }
   }
@@ -98,8 +269,19 @@ export class ApplicationRegistry {
       await app.unmount();
       this.activeApps.delete(appName);
       console.log(`App ${appName} deactivated successfully`);
+      
+      // 发布应用卸载事件
+      this.eventBus.emit('app:unmounted', { 
+        appId: appName 
+      });
     } catch (error) {
       console.error(`Failed to deactivate app ${appName}:`, error);
+      // 发布应用错误事件
+      this.eventBus.emit('app:error', { 
+        appId: appName, 
+        error: error instanceof Error ? error : new Error(String(error)),
+        phase: 'deactivate'
+      });
       throw error;
     }
   }
@@ -149,10 +331,7 @@ export class ApplicationRegistry {
     console.log(`App ${appName} unregistered successfully`);
   }
 
-  // 获取活跃的应用
-  getActiveApps(): string[] {
-    return Array.from(this.activeApps);
-  }
+  // 其他方法保持不变
 
   // 获取应用状态
   getAppStatus(appName: string): AppStatus | undefined {
@@ -181,14 +360,35 @@ export class ApplicationRegistry {
     this.activeApps.clear();
     this.currentPath = '';
   }
+
+  // 获取应用容器元素
+  private getContainer(appId: string): HTMLElement {
+    const app = this.apps.get(appId);
+    if (app?.config.container) {
+      const container = document.querySelector(app.config.container);
+      if (container instanceof HTMLElement) {
+        return container;
+      }
+    }
+    
+    // 默认容器
+    const defaultContainer = document.createElement('div');
+    defaultContainer.id = `app-container-${appId}`;
+    document.body.appendChild(defaultContainer);
+    return defaultContainer;
+  }
 }
 
 // 创建单例实例
 let registryInstance: ApplicationRegistry | null = null;
 
+// 获取应用注册表实例
 export function getApplicationRegistry(): ApplicationRegistry {
   if (!registryInstance) {
     registryInstance = new ApplicationRegistry();
   }
   return registryInstance;
 }
+
+// 导出 ApplicationRegistry 类，便于直接实例化和扩展
+export { ApplicationRegistry };

@@ -1,14 +1,33 @@
 package com.bone.example.extension.payment;
 
-import com.bone.engine.extension.context.BizContext;
 import com.bone.engine.extension.Extension;
+import com.bone.engine.extension.annotation.ExtensionDoc;
+import com.bone.engine.extension.context.BizContext;
 import com.bone.example.extension.result.ValidationResult;
 import java.math.BigDecimal;
+import org.springframework.stereotype.Component;
 
 /**
- * 金融服务租户支付实现
+ * 金融租户支付扩展实现
  */
-@Extension(tenantCode = "FINANCIAL_TENANT")
+@Extension(
+    name = "金融租户支付实现",
+    description = "为金融租户提供专属的支付处理逻辑",
+    tenantCode = "FINANCIAL_TENANT",
+    priority = 100,
+    enabled = true,
+    version = "1.0.0"
+)
+@ExtensionDoc(
+    description = "金融租户专属的支付处理实现，包含特定的验证规则和处理逻辑。",
+    scenarios = "金融租户的支付场景",
+    implementationDetails = "实现金融行业特定的支付验证和处理逻辑",
+    performance = "测试实现，单次执行耗时<5ms",
+    notes = "仅对金融租户生效的支付实现",
+    author = "测试团队",
+    createDate = "2024-01-01"
+)
+@Component
 public class FinancialPaymentExtension implements PaymentExtPoint {
     
     @Override

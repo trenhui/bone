@@ -579,6 +579,15 @@ public class MetadataValidator {
                 .collect(Collectors.joining(", "));
         }
         
+        // 添加单个错误消息方法（返回第一个错误或空字符串）
+        public String getErrorMessage() {
+            if (errors.isEmpty()) {
+                return "";
+            }
+            ValidationError firstError = errors.get(0);
+            return firstError.getField() + ": " + firstError.getMessage();
+        }
+        
         @Override
         public String toString() {
             return "ValidationResult{valid=" + valid + ", errors=" + errors.size() + "}";

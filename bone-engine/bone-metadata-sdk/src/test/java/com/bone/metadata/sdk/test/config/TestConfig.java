@@ -106,22 +106,7 @@ public class TestConfig {
      */
     @Bean
     public ExceptionHandler exceptionHandler() {
-        return new ExceptionHandler() {
-            @Override
-            public RuntimeException handleException(Exception e) {
-                return new RuntimeException(e);
-            }
-            
-            @Override
-            public RuntimeException handleException(Exception e, String message) {
-                return new RuntimeException(message, e);
-            }
-            
-            @Override
-            public void logException(Exception e) {
-                System.out.println("Exception logged: " + e.getMessage());
-            }
-        };
+        return Mockito.mock(ExceptionHandler.class);
     }
 
 

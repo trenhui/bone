@@ -10,7 +10,11 @@
 
     <dependencies>
         <!-- 引入统一的元数据模型库 -->
-
+        <dependency>
+            <groupId>com.bone</groupId>
+            <artifactId>bone-metadata-sdk</artifactId>
+            <version>1.0.0</version>
+        </dependency>
         
         <!-- Spring Boot 核心依赖 -->
         <dependency>
@@ -71,6 +75,14 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-junit-jupiter</artifactId>
             <version>4.5.1</version>
+            <scope>test</scope>
+        </dependency>
+        
+        <!-- Spring Boot Test -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <version>2.7.17</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

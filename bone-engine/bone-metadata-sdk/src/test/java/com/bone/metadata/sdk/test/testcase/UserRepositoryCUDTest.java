@@ -49,17 +49,13 @@ public class UserRepositoryCUDTest  {
                 return null;
             }
             
-            @Override
             public List<User> findByIds(List<Long> ids) {
                 return Collections.emptyList();
             }
             
-            @Override
             public List<User> findAll() {
                 return Collections.emptyList();
             }
-            
-            @Override
             public List<User> findByCriteria(Criteria<User> criteria) {
                 return Collections.emptyList();
             }
@@ -67,7 +63,7 @@ public class UserRepositoryCUDTest  {
             // 其他必需方法的空实现
             public User findOneByCriteria(Criteria<User> criteria) { return null; }
             public Long countByCriteria(Criteria<User> criteria) { return 0L; }
-            public int deleteByCriteria(Criteria<User> criteria) { return 0; }
+            public boolean deleteByCriteria(Criteria<User> criteria) { return false; }
             public List<User> findByName(String name) { return Collections.emptyList(); }
             public List<User> findByRoleId(Long roleId) { return Collections.emptyList(); }
             public List findUsersWithRole(String name, Long roleId) { return Collections.emptyList(); }
@@ -84,7 +80,8 @@ public class UserRepositoryCUDTest  {
             public java.util.List<java.util.Map<java.lang.String, java.lang.Object>> aggregate(java.util.List<java.lang.String> groupBy, com.bone.metadata.sdk.query.criteria.Criteria<com.bone.metadata.sdk.test.domain.User> criteria, java.util.List<java.lang.String> sumColumns) { return java.util.Collections.emptyList(); }
             public com.bone.core.model.PageResult<com.bone.metadata.sdk.test.domain.User> queryPage(com.bone.core.model.PageParam pageParam) { return null; }
             public java.util.List<com.bone.metadata.sdk.test.domain.User> query(com.bone.core.model.Query query) { return java.util.Collections.emptyList(); }
-            public com.bone.core.model.PageResult<com.bone.metadata.sdk.test.domain.User> queryByCondition(java.util.List<com.bone.core.model.QueryParam> queryParams, java.util.List<com.bone.core.model.SortingField> sortingFields, Integer pageNum, Integer pageSize, String tableName) { return null; }
+            @Override
+            public com.bone.core.model.PageResult<com.bone.metadata.sdk.test.domain.User> queryByCondition(java.util.List<com.bone.core.model.QueryParam> queryParams, java.util.List<com.bone.core.model.SortingField> sortingFields, Integer pageNum, Integer pageSize, String bizIdentityCode) { return null; }
             public java.util.List<java.util.Map<java.lang.String, java.lang.Object>> executeNamedStatementForMap(String statementName, java.util.Map<java.lang.String, java.lang.Object> params) { return java.util.Collections.emptyList(); }
             public <R> R executeNamedStatement(String statementId, Map<String, Object> parameters) { return null; }
             public <R> List<R> executeNamedStatement(String statementId, Map<String, Object> parameters, RowMapper<R> rowMapper) { return Collections.emptyList(); }

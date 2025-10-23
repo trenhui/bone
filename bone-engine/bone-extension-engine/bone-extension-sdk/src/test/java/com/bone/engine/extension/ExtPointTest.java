@@ -425,17 +425,33 @@ public class ExtPointTest {
     @ExtPoint(
         name = "测试扩展点",
         description = "用于单元测试的扩展点接口",
-        version = "1.0.0",
+        domain = "扩展引擎",
         category = "测试",
-        enabled = true
+        version = "1.0.0",
+        enabled = true,
+        priority = 100,
+        enableCache = true,
+        timeout = 1000
     )
     @ExtPointDoc(
-        title = "测试扩展点接口",
-        domain = "扩展引擎",
-        category = "核心功能测试",
         description = "该接口用于测试扩展点框架的基本功能，包括上下文管理、路由选择等核心特性。",
-        usage = "在测试场景中使用，验证扩展点框架的各项功能是否正常工作。",
-        bestPractices = "1. 使用明确的租户代码和业务代码进行路由\n2. 合理设置上下文属性\n3. 遵循try-with-resources模式管理上下文生命周期"
+        usage = "1. 在测试场景中使用\n2. 验证扩展点框架的各项功能是否正常工作\n3. 测试多租户和条件路由机制",
+        bestPractices = "1. 使用明确的租户代码和业务代码进行路由\n2. 合理设置上下文属性\n3. 遵循try-with-resources模式管理上下文生命周期",
+        params = {
+            @ExtPointDoc.Param(
+                name = "param",
+                type = "String",
+                description = "输入参数",
+                required = true,
+                example = "test-parameter"
+            )
+        },
+        returnInfo = @ExtPointDoc.Return(
+            type = "String",
+            description = "处理结果",
+            successExample = "Default: test-parameter"
+        ),
+        notes = "测试用扩展点接口，用于验证扩展引擎核心功能"
     )
     public interface TestExtPoint {
         /**
@@ -448,17 +464,23 @@ public class ExtPointTest {
     
     // 默认扩展实现
     @Extension(
+        name = "默认测试扩展实现",
+        description = "默认的测试扩展实现，用于验证基本的扩展点功能",
+        tenantCode = "*",
         bizCode = "default",
         scenario = "default",
         priority = 100,
-        enabled = true
+        enabled = true,
+        version = "1.0.0"
     )
     @ExtensionDoc(
         description = "这是默认的测试扩展实现，用于验证基本的扩展点功能。",
         scenarios = "通用测试场景",
-        implementationDetails = "基础测试实现",
+        implementationDetails = "基础测试实现，直接返回带有前缀的输入参数",
+        performance = "测试实现，单次执行耗时<1ms",
         notes = "仅用于测试目的",
-        author = "测试团队"
+        author = "测试团队",
+        createDate = "2024-01-01"
     )
     public static class DefaultTestExtension implements TestExtPoint {
         @Override
@@ -469,16 +491,21 @@ public class ExtPointTest {
     
     // 租户特定扩展实现
     @Extension(
+        name = "租户A特定扩展实现",
+        description = "为租户A提供的特定扩展实现，展示多租户支持",
         tenantCode = "TENANT_A",
         priority = 200,
-        enabled = true
+        enabled = true,
+        version = "1.0.0"
     )
     @ExtensionDoc(
         description = "为租户A提供的特定扩展实现，展示多租户支持。",
         scenarios = "租户A的业务场景",
-        implementationDetails = "针对租户A的测试实现",
+        implementationDetails = "针对租户A的测试实现，使用租户特定前缀",
+        performance = "测试实现，单次执行耗时<1ms",
         notes = "仅在租户A的上下文中生效",
-        author = "测试团队"
+        author = "测试团队",
+        createDate = "2024-01-01"
     )
     public static class TenantASpecificExtension implements TestExtPoint {
         @Override
@@ -489,16 +516,22 @@ public class ExtPointTest {
     
     // 高优先级扩展实现
     @Extension(
+        name = "条件路由高优先级实现",
+        description = "基于条件路由的高优先级扩展实现",
+        tenantCode = "*",
         condition = "#context.getAttribute('useHighPriority') == true",
         priority = 50,
-        enabled = true
+        enabled = true,
+        version = "1.0.0"
     )
     @ExtensionDoc(
         description = "基于条件路由的高优先级扩展实现",
         scenarios = "需要高优先级处理的场景",
-        implementationDetails = "通过条件表达式实现优先级路由",
+        implementationDetails = "通过条件表达式实现优先级路由，当上下文属性useHighPriority为true时生效",
+        performance = "测试实现，单次执行耗时<1ms",
         notes = "展示条件路由和优先级机制",
-        author = "测试团队"
+        author = "测试团队",
+        createDate = "2024-01-01"
     )
     public static class HighPriorityExtension implements TestExtPoint {
         @Override

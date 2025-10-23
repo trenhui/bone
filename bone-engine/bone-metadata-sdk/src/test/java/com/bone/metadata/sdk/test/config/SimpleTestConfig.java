@@ -1,5 +1,6 @@
 package com.bone.metadata.sdk.test.config;
 
+import org.mockito.Mockito;
 import com.bone.metadata.sdk.domain.model.TableMetadata;
 import com.bone.metadata.sdk.domain.query.CompiledQuery;
 import com.bone.metadata.sdk.domain.query.BatchCompiledQuery;
@@ -64,150 +65,62 @@ public class SimpleTestConfig {
 
     @Bean
     public SqlTemplateLoader sqlTemplateLoader() {
-        return new SqlTemplateLoader() {
-            @Override
-            public SqlTemplate loadTemplate(String statementId) {
-                return null;
-            }
-        };
+        return Mockito.mock(SqlTemplateLoader.class);
     }
     
     @Bean
     public ExceptionHandler exceptionHandler() {
-        return new ExceptionHandler() {
-            @Override
-            public RuntimeException handleException(Exception e) {
-                return new RuntimeException(e);
-            }
-            
-            public static ExceptionHandler getInstance() {
-                return new ExceptionHandler() {
-                    @Override
-                    public RuntimeException handleException(Exception e) {
-                        return new RuntimeException(e);
-                    }
-                };
-            }
-        };
+        return Mockito.mock(ExceptionHandler.class);
     }
     
     @Bean
     public DistributedLockUtil distributedLockUtil() {
-        return new DistributedLockUtil() {
-            @Override
-            public void lock(String key) {
-                // 空实现
-            }
-            
-            @Override
-            public void unlock(String key) {
-                // 空实现
-            }
-        };
+        return Mockito.mock(DistributedLockUtil.class);
     }
 
     @Bean
     public SqlProcessorFactory sqlProcessorFactory() {
-        // 返回一个简单的SqlProcessorFactory实现或模拟对象
-        return new SqlProcessorFactory() {
-            @Override
-            public SqlProcessor createProcessor(String templateId) {
-                return new DefaultSqlProcessor();
-            }
-        };
+        SqlProcessorFactory mock = Mockito.mock(SqlProcessorFactory.class);
+        return mock;
     }
 
     @Bean
     public SqlConfigProperties sqlConfigProperties() {
-        // 返回一个基本的SqlConfigProperties实例
-        return new SqlConfigProperties();
+        return Mockito.mock(SqlConfigProperties.class);
     }
 
     @Bean
-    public SqlExecutor sqlExecutor(NamedParameterJdbcOperations jdbcOperations, SqlTemplateLoader sqlTemplateLoader, SqlProcessorFactory sqlProcessorFactory, SqlConfigProperties sqlConfigProperties) {
-        // 直接使用构造方法创建实例，而不是反射
-        return new SqlExecutor(jdbcOperations, sqlTemplateLoader, sqlProcessorFactory, sqlConfigProperties);
+    public SqlExecutor sqlExecutor(NamedParameterJdbcOperations jdbcOperations, SqlConfigProperties sqlConfigProperties, SqlProcessorFactory sqlProcessorFactory) {
+        return Mockito.mock(SqlExecutor.class);
     }
 
     @Bean
     public MetadataService metadataService() {
-        // 返回一个简单的MetadataService模拟实现
-        return new MetadataService() {
-            @Override
-            public TableMetadata getTableMetadata(Class<?> entityClass) {
-                // 返回一个基本的TableMetadata对象，使用正确的构造函数参数
-                return new TableMetadata(entityClass.getSimpleName().toLowerCase(), Collections.emptyList());
-            }
-            
-            // 实现其他必要的方法
-            @Override
-            public Optional<TableMetadata> getTableMetadataIfExists(Class<?> entityClass) {
-                return Optional.of(getTableMetadata(entityClass));
-            }
-        };
+        return Mockito.mock(MetadataService.class);
     }
     
     @Bean
     public DatabaseDialect databaseDialect() {
-        // 返回一个简单的DatabaseDialect模拟实现
-        return new DatabaseDialect() {
-            @Override
-            public String getDialectName() {
-                return "H2";
-            }
-            
-            // 实现其他必要的方法
-        };
+        return Mockito.mock(DatabaseDialect.class);
     }
     
     @Bean
     public SqlBuilder sqlBuilder(MetadataService metadataService, DatabaseDialect databaseDialect) {
-        // 返回一个测试用的SqlBuilder实现
-        return new SqlBuilder(metadataService, databaseDialect) {
-            // 重写@PostConstruct方法中初始化的构建器，使用简单实现
-            @Override
-            public void init() {
-                // 避免依赖实际的构建器实现
-            }
-            
-            // 重写主要方法提供简单实现
-            @Override
-            public CompiledQuery buildSelect(Class<?> cls, Criteria<?> c) {
-                return new CompiledQuery("SELECT * FROM " + cls.getSimpleName().toLowerCase(), Collections.emptyMap());
-            }
-            
-            @Override
-            public BatchCompiledQuery buildBatchInsert(Class<?> cls, List<?> list) {
-                return new BatchCompiledQuery("INSERT INTO " + cls.getSimpleName().toLowerCase() + " VALUES (:id, :name)", 
-                        list.stream().map(obj -> Collections.emptyMap()).toList());
-            }
-            
-            @Override
-            public CompiledQuery buildCount(Class<?> cls, Criteria<?> c) {
-                return new CompiledQuery("SELECT COUNT(*) FROM " + cls.getSimpleName().toLowerCase(), Collections.emptyMap());
-            }
-            
-            @Override
-            public CompiledQuery buildDelete(Class<?> cls, Criteria<?> c) {
-                return new CompiledQuery("DELETE FROM " + cls.getSimpleName().toLowerCase(), Collections.emptyMap());
-            }
-            
-            @Override
-            public CompiledQuery buildUpdate(Class<?> cls, Map<String, Object> updateValues, Criteria<?> c) {
-                return new CompiledQuery("UPDATE " + cls.getSimpleName().toLowerCase() + " SET id = :id", Collections.emptyMap());
-            }
-        };
+        return Mockito.mock(SqlBuilder.class);
     }
 
     @Bean
     public ExtensionCoordinator extensionCoordinator() {
-        // 返回一个简单的ExtensionCoordinator实现，使用ApplicationContext参数
-        return new ExtensionCoordinator(null);
+        return Mockito.mock(ExtensionCoordinator.class);
     }
     
     // 提供DefaultSqlProcessor的简单实现
     private static class DefaultSqlProcessor implements SqlProcessor {
         @Override
+        public ProcessedSql process(String template, String dialect, Map<String, Object> parameters) {
+            return new ProcessedSql(template, parameters);
+        }
+        
         public ProcessedSql process(String template, Map<String, Object> parameters) {
             return new ProcessedSql(template, parameters);
         }

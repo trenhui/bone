@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import org.springframework.jdbc.core.RowMapper;
 import com.bone.core.model.PageParam;
 import com.bone.core.model.Query;
 import com.bone.core.model.QueryParam;
@@ -139,7 +140,6 @@ public class UserRepositoryCriteriaTest {
                 return false;
             }
             
-            @Override
             public List<User> findAll() {
                 return Collections.emptyList();
             }
@@ -164,7 +164,6 @@ public class UserRepositoryCriteriaTest {
                 return 0L;
             }
             
-            @Override
             public boolean deleteByCriteria(Criteria<User> criteria) {
                 return false;
             }
@@ -175,8 +174,8 @@ public class UserRepositoryCriteriaTest {
             }
             
             @Override
-            public boolean updateByCriteria(User model, Criteria<User> criteria) {
-                return false;
+            public int updateByCriteria(User model, Criteria<User> criteria) {
+                return 0;
             }
             
             @Override
@@ -200,7 +199,14 @@ public class UserRepositoryCriteriaTest {
             }
             
             @Override
-            public List<Map<String, Object>> executeNamedStatement(String statementName, Map<String, Object> params) {
+            public <R> R executeNamedStatement(String statementName, Map<String, Object> params) {
+                return null;
+            }
+            
+
+            
+            @Override
+            public <R> List<R> executeNamedStatement(String statementName, Map<String, Object> params, RowMapper<R> rowMapper) {
                 return Collections.emptyList();
             }
             
@@ -245,17 +251,12 @@ public class UserRepositoryCriteriaTest {
             }
             
             @Override
-            public PageResult<User> queryByCondition(List<QueryParam> queryParams, List<SortingField> sortingFields, Integer pageNum, Integer pageSize, String queryKey) {
+            public PageResult<User> queryByCondition(List<QueryParam> queryParams, List<SortingField> sortingFields, Integer pageNum, Integer pageSize, String bizIdentityCode) {
                 return null;
             }
             
             @Override
             public List<Map<String, Object>> executeNamedStatementForMap(String statementName, Map<String, Object> params) {
-                return Collections.emptyList();
-            }
-            
-            @Override
-            public <R> List<R> executeNamedStatement(String statementName, Map<String, Object> params, org.springframework.jdbc.core.RowMapper<R> rowMapper) {
                 return Collections.emptyList();
             }
         };

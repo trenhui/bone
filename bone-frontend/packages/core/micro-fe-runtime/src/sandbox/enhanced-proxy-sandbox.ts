@@ -1,10 +1,51 @@
-import { Sandbox, SandboxSecurityPolicy, SandboxOptions, SandboxStatus, ResourceLimits } from '../types';
-import { DefaultSecurityPolicy } from './default-security-policy';
+import { Sandbox, SandboxConfig, SandboxStatus, ResourceLimits } from '../types';
 
-export interface SandboxOptions {
-  appId: string;
-  securityPolicy?: SandboxSecurityPolicy;
-  resourceLimits?: ResourceLimits;
+// 内部安全策略接口
+interface SandboxSecurityPolicy {
+  checkAccess(target: string, prop: string | symbol): 'allow' | 'block' | 'wrap';
+  checkWrite(target: string, prop: string | symbol): boolean;
+  checkDelete(target: string, prop: string | symbol): boolean;
+}
+
+// 默认安全策略实现
+class DefaultSecurityPolicy implements SandboxSecurityPolicy {
+  checkAccess(target: string, prop: string | symbol): 'allow' | 'block' | 'wrap' {
+    const propStr = String(prop);
+    
+    // 阻止访问危险属性
+    if (propStr === 'eval' || propStr === 'Function' || propStr === '__proto__') {
+      return 'block';
+    }
+    
+    // 需要包装的属性
+    if (propStr === 'addEventListener' || propStr === 'removeEventListener') {
+      return 'wrap';
+    }
+    
+    return 'allow';
+  }
+  
+  checkWrite(target: string, prop: string | symbol): boolean {
+    const propStr = String(prop);
+    
+    // 不允许修改只读属性
+    if (propStr === 'document' || propStr === 'window' || propStr === 'location') {
+      return false;
+    }
+    
+    return true;
+  }
+  
+  checkDelete(target: string, prop: string | symbol): boolean {
+    const propStr = String(prop);
+    
+    // 不允许删除内置属性
+    if (target === 'window' && propStr in window) {
+      return false;
+    }
+    
+    return true;
+  }
 }
 
 export class EnhancedProxySandbox implements Sandbox {
@@ -17,17 +58,52 @@ export class EnhancedProxySandbox implements Sandbox {
   private running: boolean = false;
   private sideEffectsCount: number = 0;
   private executionStartTime: number = 0;
+  private isMounted: boolean = false;
+  private eventListeners: Map<string, Array<{type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions}>> = new Map();
 
-  constructor(options: SandboxOptions) {
-    this.appId = options.appId;
-    this.securityPolicy = options.securityPolicy || new DefaultSecurityPolicy();
-    this.resourceLimits = options.resourceLimits;
+  constructor(config: SandboxConfig) {
+    this.appId = config.appId;
+    this.securityPolicy = new DefaultSecurityPolicy(); // 使用默认安全策略
+    this.resourceLimits = config.resourceLimits;
     this.originalWindowProperties = new Set(Object.keys(window));
     this.proxyWindow = this.createProxyWindow();
+    this.preloadCommonGlobals();
   }
 
   getProxyWindow(): Window {
     return this.proxyWindow;
+  }
+
+  /**
+   * 挂载沙箱
+   */
+  mount(): void {
+    this.isMounted = true;
+  }
+
+  /**
+   * 卸载沙箱
+   */
+  unmount(): void {
+    this.isMounted = false;
+    this.cleanupEventListeners();
+    this.clearSideEffects();
+  }
+
+  /**
+   * 清理事件监听器
+   */
+  private cleanupEventListeners(): void {
+    this.eventListeners.forEach((listeners, type) => {
+      listeners.forEach(({ listener, options }) => {
+        try {
+          window.removeEventListener(type, listener, options);
+        } catch (error) {
+          console.warn(`Error removing event listener for ${type}:`, error);
+        }
+      });
+    });
+    this.eventListeners.clear();
   }
 
   async execute(code: string): Promise<any> {
@@ -69,8 +145,11 @@ export class EnhancedProxySandbox implements Sandbox {
   getStatus(): SandboxStatus {
     return {
       appId: this.appId,
+      loaded: true,
+      mounted: this.isMounted,
       running: this.running,
       activePropertiesCount: Object.keys(this.sandboxGlobal).length,
+      resourceCount: 0,
       sideEffectsCount: this.sideEffectsCount
     };
   }
@@ -116,14 +195,15 @@ export class EnhancedProxySandbox implements Sandbox {
       get(target: Window, prop: string | symbol, receiver: any): any {
         // 安全检查
         const checkResult = sandbox.securityPolicy.checkAccess('window', prop);
+        const propStr = String(prop);
         
         if (checkResult === 'block') {
-          throw new Error(`Access denied to ${String(prop)}`);
+          throw new Error(`Access denied to ${propStr}`);
         }
 
         // 优先从沙箱全局获取
-        if (prop in sandbox.sandboxGlobal) {
-          return sandbox.sandboxGlobal[prop];
+        if (propStr in sandbox.sandboxGlobal) {
+          return sandbox.sandboxGlobal[propStr];
         }
 
         // 从原始window获取
@@ -131,7 +211,7 @@ export class EnhancedProxySandbox implements Sandbox {
 
         // 包装危险对象
         if (checkResult === 'wrap') {
-          return sandbox.wrapDangerousObject(value, String(prop));
+          return sandbox.wrapDangerousObject(value, propStr);
         }
 
         // 对于函数，绑定到原始上下文
@@ -148,21 +228,22 @@ export class EnhancedProxySandbox implements Sandbox {
           throw new Error(`Write denied to ${String(prop)}`);
         }
 
+        const propStr = String(prop);
         // 检查是否是原始属性
-        if (sandbox.originalWindowProperties.has(String(prop))) {
+        if (sandbox.originalWindowProperties.has(propStr)) {
           // 对于原始属性，只在沙箱内设置
-          sandbox.sandboxGlobal[prop] = value;
+          sandbox.sandboxGlobal[propStr] = value;
           sandbox.sideEffectsCount++;
           return true;
         }
 
         // 对于新属性，设置到沙箱全局
-        sandbox.sandboxGlobal[prop] = value;
+        sandbox.sandboxGlobal[propStr] = value;
         return true;
       },
 
       has(target: Window, prop: string | symbol): boolean {
-        return prop in sandbox.sandboxGlobal || prop in target;
+        return String(prop) in sandbox.sandboxGlobal || prop in target;
       },
 
       deleteProperty(target: Window, prop: string | symbol): boolean {
@@ -171,9 +252,10 @@ export class EnhancedProxySandbox implements Sandbox {
           throw new Error(`Delete denied to ${String(prop)}`);
         }
 
+        const propStr = String(prop);
         // 只能删除沙箱内的属性
-        if (prop in sandbox.sandboxGlobal) {
-          delete sandbox.sandboxGlobal[prop];
+        if (propStr in sandbox.sandboxGlobal) {
+          delete sandbox.sandboxGlobal[propStr];
           return true;
         }
 
@@ -191,19 +273,20 @@ export class EnhancedProxySandbox implements Sandbox {
       get(target: Document, prop: string | symbol, receiver: any): any {
         // 安全检查
         const checkResult = sandbox.securityPolicy.checkAccess('document', prop);
+        const propStr = String(prop);
         
         if (checkResult === 'block') {
-          throw new Error(`Access denied to document.${String(prop)}`);
+          throw new Error(`Access denied to document.${propStr}`);
         }
 
-        if (prop in sandboxDocument) {
-          return sandboxDocument[prop];
+        if (propStr in sandboxDocument) {
+          return sandboxDocument[propStr];
         }
 
         const value = Reflect.get(target, prop, receiver);
 
         if (checkResult === 'wrap') {
-          return sandbox.wrapDangerousObject(value, `document.${String(prop)}`);
+          return sandbox.wrapDangerousObject(value, `document.${propStr}`);
         }
 
         if (typeof value === 'function') {
@@ -218,7 +301,8 @@ export class EnhancedProxySandbox implements Sandbox {
           throw new Error(`Write denied to document.${String(prop)}`);
         }
 
-        sandboxDocument[prop] = value;
+        const propStr = String(prop);
+        sandboxDocument[propStr] = value;
         sandbox.sideEffectsCount++;
         return true;
       }
@@ -282,8 +366,52 @@ export class EnhancedProxySandbox implements Sandbox {
         return obj(...args);
       };
     }
+    
+    // 特殊处理事件监听器相关方法
+    if (functionName === 'addEventListener' && this.isMounted) {
+      return this.wrapAddEventListener(obj as Function);
+    } else if (functionName === 'removeEventListener' && this.isMounted) {
+      return this.wrapRemoveEventListener(obj as Function);
+    }
 
     return obj;
+  }
+  
+  /**
+   * 包装addEventListener方法，跟踪事件监听器
+   */
+  private wrapAddEventListener(originalMethod: Function): Function {
+    const self = this;
+    return function(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void {
+      // 调用原始方法
+      originalMethod.apply(window, arguments);
+      
+      // 记录事件监听器
+      if (!self.eventListeners.has(type)) {
+        self.eventListeners.set(type, []);
+      }
+      self.eventListeners.get(type)!.push({ type, listener, options });
+    };
+  }
+  
+  /**
+   * 包装removeEventListener方法
+   */
+  private wrapRemoveEventListener(originalMethod: Function): Function {
+    const self = this;
+    return function(type: string, listener: EventListenerOrEventListenerObject, options?: boolean | AddEventListenerOptions): void {
+      // 调用原始方法
+      originalMethod.apply(window, arguments);
+      
+      // 从记录中移除
+      const listeners = self.eventListeners.get(type);
+      if (listeners) {
+        const index = listeners.findIndex(l => l.listener === listener);
+        if (index > -1) {
+          listeners.splice(index, 1);
+        }
+      }
+    };
   }
 
   private safeEval(code: string, context: Record<string, any>): any {
@@ -337,8 +465,12 @@ export class EnhancedProxySandbox implements Sandbox {
 
   private clearSideEffects(): void {
     // 清理沙箱产生的副作用
-    console.log(`Clearing side effects for sandbox ${this.appId}`);
+    console.log(`Clearing side effects for sandbox ${this.appId || 'unknown'}`);
     this.sideEffectsCount = 0;
+    // 清空沙箱全局对象
+    Object.keys(this.sandboxGlobal).forEach(key => {
+      delete this.sandboxGlobal[key];
+    });
   }
 
   private preloadCommonGlobals(): void {
@@ -350,5 +482,18 @@ export class EnhancedProxySandbox implements Sandbox {
         this.sandboxGlobal[globalName] = Object.create(window[globalName]);
       }
     });
+  }
+  
+  /**
+   * 评估资源
+   * @param code 代码字符串
+   */
+  async eval(code: string): Promise<any> {
+    try {
+      return await this.execute(code);
+    } catch (error) {
+      console.error('Error evaluating code in sandbox:', error);
+      throw error;
+    }
   }
 }
