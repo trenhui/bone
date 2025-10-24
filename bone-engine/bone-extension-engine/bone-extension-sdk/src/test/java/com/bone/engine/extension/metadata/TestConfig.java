@@ -9,6 +9,9 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 @EnableAutoConfiguration
-@ComponentScan("com.bone.engine.extension.metadata")
+@ComponentScan({
+    "com.bone.engine.extension",
+    "com.bone.example.extension.user.greeting"
+})
 public class TestConfig {
 }

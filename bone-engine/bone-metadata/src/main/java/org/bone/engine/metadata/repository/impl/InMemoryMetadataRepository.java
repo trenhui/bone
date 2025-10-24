@@ -109,14 +109,14 @@ public class InMemoryMetadataRepository implements MetadataRepository {
             // 过滤包含特定字段
             if (defaultCriteria.getContainsField() != null) {
                 results = results.stream()
-                        .filter(m -> m.getFields().stream().anyMatch(f -> defaultCriteria.getContainsField().equals(f.getName())))
+                        .filter(m -> m.getFields().values().stream().anyMatch(f -> defaultCriteria.getContainsField().equals(f.getName())))
                         .collect(Collectors.toList());
             }
             
             // 过滤包含特定字段类型
             if (defaultCriteria.getContainsFieldType() != null) {
                 results = results.stream()
-                        .filter(m -> m.getFields().stream().anyMatch(f -> defaultCriteria.getContainsFieldType().equals(f.getType())))
+                        .filter(m -> m.getFields().values().stream().anyMatch(f -> defaultCriteria.getContainsFieldType().equals(f.getType())))
                         .collect(Collectors.toList());
             }
             
@@ -342,12 +342,12 @@ public class InMemoryMetadataRepository implements MetadataRepository {
         // 检查每个实体元数据
         for (EntityMetadata metadata : metadataStore.values()) {
             // 检查是否有主键字段
-            boolean hasPrimaryKey = false;
-            for (FieldMetadata field : metadata.getFields().values()) {
-                if (field.getPrimaryKey() != null && field.getPrimaryKey()) {
-                    hasPrimaryKey = true;
-                    break;
-                }
+            boolean hasPrimaryKey = metadata.getPrimaryKeyFieldMetadata() != null;
+            
+            // 如果getPrimaryKeyFieldMetadata()返回null，也可以手动检查字段名是否等于primaryKeyField
+            if (!hasPrimaryKey && metadata.getPrimaryKeyField() != null) {
+                hasPrimaryKey = metadata.getFields() != null && 
+                               metadata.getFields().containsKey(metadata.getPrimaryKeyField());
             }
             if (!hasPrimaryKey) {
                 inconsistencies.add(new DefaultInconsistency(

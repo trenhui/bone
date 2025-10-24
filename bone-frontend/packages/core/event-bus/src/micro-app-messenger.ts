@@ -80,16 +80,25 @@ export class MicroAppMessenger {
    * @param data 响应数据
    */
   private handleResponse(data: { requestId: string; response: MicroAppMessage }): void {
+    if (!data || !data.requestId) {
+      console.warn('Invalid response data: missing requestId');
+      return;
+    }
+    
     const handler = this.responseHandlers.get(data.requestId);
     if (handler) {
-      // 清除超时
-      clearTimeout(handler.timeoutId);
-      
-      // 调用处理器
-      handler.resolve(data.response);
-      
-      // 移除处理器
-      this.responseHandlers.delete(data.requestId);
+      try {
+        // 清除超时
+        clearTimeout(handler.timeoutId);
+        
+        // 调用处理器
+        handler.resolve(data.response);
+      } catch (error) {
+        console.error('Error handling response:', error);
+      } finally {
+        // 移除处理器
+        this.responseHandlers.delete(data.requestId);
+      }
     }
   }
 
@@ -140,6 +149,11 @@ export class MicroAppMessenger {
    * @param message 要发送的消息
    */
   private enqueueMessage(message: MicroAppMessage): void {
+    if (!message || !message.to) {
+      console.warn('Invalid message: missing required fields');
+      return;
+    }
+    
     this.messageQueue.push({
       message,
       retries: 0,
@@ -150,7 +164,8 @@ export class MicroAppMessenger {
 
     // 开始处理队列
     if (!this.queueProcessing) {
-      this.processMessageQueue();
+      // 使用void避免未处理的Promise警告
+      void this.processMessageQueue();
     }
   }
 
@@ -172,6 +187,14 @@ export class MicroAppMessenger {
    * @returns 响应消息
    */
   async sendWithResponse(targetApp: string, type: string, payload?: any, timeout: number = this.defaultTimeout): Promise<MicroAppMessage> {
+    if (!targetApp || !type) {
+      throw new Error('targetApp and type are required');
+    }
+    
+    if (timeout <= 0) {
+      timeout = this.defaultTimeout;
+    }
+    
     return new Promise((resolve, reject) => {
       const messageId = this.generateMessageId();
 
@@ -188,12 +211,19 @@ export class MicroAppMessenger {
         timeoutId
       });
 
-      // 发送请求消息
-      this.send(targetApp, type, {
-        ...payload,
-        messageId,
-        responseExpected: true
-      });
+      try {
+        // 发送请求消息
+        this.send(targetApp, type, {
+          ...payload,
+          messageId,
+          responseExpected: true
+        });
+      } catch (error) {
+        // 发送失败时清理资源
+        clearTimeout(timeoutId);
+        this.responseHandlers.delete(messageId);
+        reject(error instanceof Error ? error : new Error('Failed to send message'));
+      }
     });
   }
 
@@ -237,44 +267,50 @@ export class MicroAppMessenger {
    * 处理消息队列
    */
   private async processMessageQueue(): Promise<void> {
+    if (this.queueProcessing) return;
+    
     this.queueProcessing = true;
 
-    while (this.messageQueue.length > 0) {
-      const queueItem = this.messageQueue[0];
-      const now = Date.now();
+    try {
+      while (this.messageQueue.length > 0) {
+        const queueItem = this.messageQueue[0];
+        const now = Date.now();
 
-      // 检查是否可以重试
-      if (now - queueItem.lastAttempt >= queueItem.retryDelay) {
-        if (this.isAppActive(queueItem.message.to)) {
-          // 应用已活跃，发送消息
-          try {
-            this.eventBus.emit('micro:app:message', queueItem.message);
-            // 消息发送成功，从队列中移除
-            this.messageQueue.shift();
-          } catch (error) {
-            console.error('Error sending queued message:', error);
-            // 增加重试计数
-            queueItem.retries++;
-            queueItem.lastAttempt = now;
-            queueItem.retryDelay *= 2; // 指数退避
-
-            // 达到最大重试次数，放弃并从队列中移除
-            if (queueItem.retries >= queueItem.maxRetries) {
-              console.warn(`Message to ${queueItem.message.to} failed after ${queueItem.maxRetries} retries`);
+        // 检查是否可以重试
+        if (now - queueItem.lastAttempt >= queueItem.retryDelay) {
+          if (this.isAppActive(queueItem.message.to)) {
+            // 应用已活跃，发送消息
+            try {
+              this.eventBus.emit('micro:app:message', queueItem.message);
+              // 消息发送成功，从队列中移除
               this.messageQueue.shift();
+            } catch (error) {
+              console.error('Error sending queued message:', error);
+              // 增加重试计数
+              queueItem.retries++;
+              queueItem.lastAttempt = now;
+              queueItem.retryDelay *= 2; // 指数退避
+
+              // 达到最大重试次数，放弃并从队列中移除
+              if (queueItem.retries >= queueItem.maxRetries) {
+                console.warn(`Message to ${queueItem.message.to} failed after ${queueItem.maxRetries} retries`);
+                this.messageQueue.shift();
+              }
             }
+          } else {
+            // 应用仍未活跃，等待一段时间后重试
+            await new Promise(resolve => setTimeout(resolve, 500));
           }
         } else {
-          // 应用仍未活跃，等待一段时间后重试
-          await new Promise(resolve => setTimeout(resolve, 500));
+          // 还未到重试时间，等待剩余时间
+          await new Promise(resolve => setTimeout(resolve, queueItem.retryDelay - (now - queueItem.lastAttempt)));
         }
-      } else {
-        // 还未到重试时间，等待剩余时间
-        await new Promise(resolve => setTimeout(resolve, queueItem.retryDelay - (now - queueItem.lastAttempt)));
       }
+    } catch (error) {
+      console.error('Unexpected error in message queue processing:', error);
+    } finally {
+      this.queueProcessing = false;
     }
-
-    this.queueProcessing = false;
   }
 
   /**
@@ -296,15 +332,26 @@ export class MicroAppMessenger {
    * 销毁消息通信工具，清理资源
    */
   destroy(): void {
-    // 清除所有等待的响应
-    this.responseHandlers.forEach(handler => {
-      clearTimeout(handler.timeoutId);
-      handler.reject(new Error('Messenger destroyed'));
-    });
-    this.responseHandlers.clear();
+    try {
+      // 清除所有等待的响应
+      this.responseHandlers.forEach(handler => {
+        try {
+          clearTimeout(handler.timeoutId);
+          handler.reject(new Error('Messenger destroyed'));
+        } catch (error) {
+          console.error('Error cleaning up response handler:', error);
+        }
+      });
+      this.responseHandlers.clear();
 
-    // 清空消息队列
-    this.clearQueue();
+      // 清空消息队列
+      this.clearQueue();
+      
+      // 重置处理标志
+      this.queueProcessing = false;
+    } catch (error) {
+      console.error('Error during messenger destruction:', error);
+    }
   }
 }
 

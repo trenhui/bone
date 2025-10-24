@@ -2,10 +2,7 @@ package com.bone.metadata.sdk.test.config;
 
 import com.bone.metadata.sdk.domain.annotation.EnableSqlRepositories;
 import com.bone.metadata.sdk.support.config.*;
-import com.bone.metadata.sdk.support.config.RequestContext;
-import com.bone.metadata.sdk.support.config.MetadataSdkProperties;
 import com.bone.metadata.sdk.domain.exception.ExceptionHandler;
-import feign.RequestInterceptor;
 import org.mockito.Mockito;
 import org.redisson.api.RAtomicLong;
 import com.bone.metadata.sdk.sql.dialect.H2ColumnAllocationDialect;
@@ -18,16 +15,11 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.cloud.openfeign.FeignAutoConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.FilterType;
-import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.*;
 import org.springframework.core.env.Environment;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
@@ -39,6 +31,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.mockito.ArgumentMatchers.*;
 
+/**
+ * 测试配置类
+ * <p>提供测试环境所需的核心组件配置，包括数据库、事务、缓存等基础设施</p>
+ * <p>遵循Spring Boot测试配置最佳实践，确保测试环境的一致性和隔离性</p>
+ */
 @Configuration
 @EnableAutoConfiguration
 @ImportAutoConfiguration({
@@ -47,16 +44,15 @@ import static org.mockito.ArgumentMatchers.*;
         InterceptorAutoConfiguration.class,
         FeignAutoConfiguration.class
 })
-// 简化ComponentScan配置，确保排除所有可能的TestConfig冲突
 @ComponentScan(
-    // 精确指定需要扫描的核心包
+    // 精确指定需要扫描的核心包，避免不必要的组件扫描
     basePackages = {
         "com.bone.metadata.sdk.extension",
         "com.bone.metadata.sdk.support.config",
         "com.bone.metadata.sdk.test.repository",
         "com.bone.metadata.sdk.test.service"
     },
-    // 使用正则表达式过滤器排除特定的TestConfig类
+    // 排除所有TestConfig类，避免配置冲突
     excludeFilters = @ComponentScan.Filter(type = FilterType.REGEX, pattern = ".*TestConfig$")
 )
 @EnableSqlRepositories(basePackages = "com.bone.metadata.sdk.test.repository.proxy")
@@ -67,21 +63,23 @@ public class TestConfig {
     @Autowired
     private Environment environment;
 
-    //    @Bean
-//    public MetaPermissionService metaPermissionService() {
-//        return new DefaultMetaPermissionService();
-//    }
+    /**
+     * 配置H2数据库方言，支持列分配和类型转换
+     * @return H2方言实例
+     */
     @Bean
     @Primary
     public H2ColumnAllocationDialect h2ColumnAllocationDialect() {
         return new H2ColumnAllocationDialect();
     }
 
-
+    /**
+     * 配置数据源，使用环境变量中的配置参数
+     * @return 配置完成的数据源
+     */
     @Bean
     @Primary
     public DataSource dataSource() {
-        // 让 Spring Boot 自动配置 HikariCP
         return DataSourceBuilder.create()
                 .url(environment.getProperty("spring.datasource.url"))
                 .username(environment.getProperty("spring.datasource.username"))
@@ -89,12 +87,22 @@ public class TestConfig {
                 .build();
     }
 
+    /**
+     * 配置命名参数JDBC操作模板，提供更方便的SQL执行方式
+     * @param dataSource 数据源
+     * @return 命名参数JDBC操作实例
+     */
     @Bean
     @Primary
     public NamedParameterJdbcOperations jdbc(DataSource dataSource) {
         return new NamedParameterJdbcTemplate(dataSource);
     }
 
+    /**
+     * 配置事务管理器，管理数据库事务
+     * @param dataSource 数据源
+     * @return 事务管理器实例
+     */
     @Bean
     @Primary
     public PlatformTransactionManager transactionManager(DataSource dataSource) {
@@ -102,14 +110,25 @@ public class TestConfig {
     }
     
     /**
-     * 配置ExceptionHandler
+     * 配置异常处理器，统一处理应用异常
+     * @return 异常处理器模拟实例
      */
     @Bean
     public ExceptionHandler exceptionHandler() {
-        return Mockito.mock(ExceptionHandler.class);
+        ExceptionHandler mockHandler = Mockito.mock(ExceptionHandler.class);
+        // 配置异常处理行为
+        Mockito.when(mockHandler.handleException(any(Exception.class)))
+                .thenAnswer(invocation -> {
+                    Exception ex = invocation.getArgument(0);
+                    return new RuntimeException("Mock exception handler: " + ex.getMessage(), ex);
+                });
+        return mockHandler;
     }
 
-
+    /**
+     * 配置Redis连接工厂，提供Redis连接支持
+     * @return Redis连接工厂实例
+     */
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
         RedisStandaloneConfiguration config = new RedisStandaloneConfiguration();
@@ -118,35 +137,58 @@ public class TestConfig {
         return new LettuceConnectionFactory(config);
     }
 
-    // Mock Redis 相关配置保持不变
+    /**
+     * 配置Redisson客户端模拟，避免测试依赖真实Redis
+     * @return 模拟的Redisson客户端实例
+     */
     @Bean
-    public RedissonClient redissonClient() throws InterruptedException {
-        // 1. Mock RedissonClient
+    public RedissonClient redissonClient() {
+        // 创建RedissonClient模拟实例
         RedissonClient redissonMock = Mockito.mock(RedissonClient.class);
+        
+        // 模拟分布式锁功能
         RLock lockMock = Mockito.mock(RLock.class);
         Mockito.when(lockMock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(true);
         Mockito.when(redissonMock.getLock(anyString())).thenReturn(lockMock);
 
-        // 2. Mock RAtomicLong
+        // 模拟原子长整型功能
+        RAtomicLong atomicLongMock = createMockedRAtomicLong();
+        Mockito.when(redissonMock.getAtomicLong(anyString())).thenReturn(atomicLongMock);
+
+        return redissonMock;
+    }
+    
+    /**
+     * 创建模拟的RAtomicLong实例
+     * @return 模拟的RAtomicLong
+     */
+    private RAtomicLong createMockedRAtomicLong() {
         RAtomicLong atomicLongMock = Mockito.mock(RAtomicLong.class);
         AtomicBoolean initialized = new AtomicBoolean(false);
+        
+        // 配置存在性检查
         Mockito.when(atomicLongMock.isExists()).thenAnswer(inv -> initialized.get());
+        
+        // 配置获取值的行为
         Mockito.when(atomicLongMock.get()).thenAnswer(inv -> initialized.get() ? 100L : 0L);
+        
+        // 配置CAS操作
         Mockito.when(atomicLongMock.compareAndSet(eq(0L), anyLong())).thenAnswer(inv -> {
             initialized.set(true);
-            Mockito.when(atomicLongMock.get()).thenReturn(inv.getArgument(1));
+            long newValue = inv.getArgument(1);
+            Mockito.when(atomicLongMock.get()).thenReturn(newValue);
             return true;
         });
+        
+        // 配置自增操作
         Mockito.when(atomicLongMock.getAndAdd(anyInt())).thenAnswer(inv -> {
             int delta = inv.getArgument(0);
             long current = atomicLongMock.get();
             Mockito.when(atomicLongMock.get()).thenReturn(current + delta);
             return current;
         });
-
-        Mockito.when(redissonMock.getAtomicLong(anyString())).thenReturn(atomicLongMock);
-
-        return redissonMock;
+        
+        return atomicLongMock;
     }
 
     @Bean

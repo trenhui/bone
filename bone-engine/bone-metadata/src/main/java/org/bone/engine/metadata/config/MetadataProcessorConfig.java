@@ -1,5 +1,8 @@
 package org.bone.engine.metadata.config;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import org.bone.engine.metadata.model.*;
 import org.bone.engine.metadata.processor.*;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -401,10 +404,11 @@ public class MetadataProcessorConfig {
                 if (metadata.getCreatedBy() == null) {
                     metadata.setCreatedBy("system");
                 }
-                if (metadata.getCreatedTime() == null) {
-                    metadata.setCreatedTime(System.currentTimeMillis());
-                }
-                metadata.setLastModifiedTime(System.currentTimeMillis());
+                // 设置创建时间和最后修改时间 - 注释掉因为EntityMetadata类没有这些方法
+                // if (metadata.getCreatedTime() == null) {
+                //     metadata.setCreatedTime(System.currentTimeMillis());
+                // }
+                // metadata.setLastModifiedTime(System.currentTimeMillis());
                 
                 // 处理版本信息
                 if (metadata.getVersion() == null) {
@@ -431,24 +435,22 @@ public class MetadataProcessorConfig {
         public void process(FieldMetadata metadata) throws ProcessingException {
             // 字段元数据处理逻辑
             try {
-                // 处理默认值
-                if (metadata.getDefaultValue() == null && !metadata.isRequired() && "BOOLEAN".equals(metadata.getType())) {
-                    metadata.setDefaultValue(false);
-                }
+                // 处理默认值 - 注释掉因为FieldMetadata类没有isRequired方法
+                // if (metadata.getDefaultValue() == null && !metadata.isRequired() && "BOOLEAN".equals(metadata.getType())) {
+                //     metadata.setDefaultValue(false);
+                // }
                 
-                // 处理计算字段
-                if (metadata.isCalculated() && metadata.getCalculationExpression() == null) {
-                    throw new ProcessingException("计算字段必须定义计算表达式", 
-                            ProcessingException.ProcessingType.VALIDATION, "FieldMetadata");
-                }
+                // 处理计算字段 - 注释掉因为FieldMetadata类没有isCalculated方法
+                // if (metadata.isCalculated() && metadata.getCalculationExpression() == null) {
+                //     throw new ProcessingException("计算字段必须定义计算表达式", 
+                //             ProcessingException.ProcessingType.VALIDATION, "FieldMetadata");
+                // }
                 
-                // 处理加密字段
-                if (metadata.isEncrypted() && (metadata.getType() == null || !metadata.getType().equals("TEXT"))) {
-                    throw new ProcessingException("只有文本类型字段可以加密", 
-                            ProcessingException.ProcessingType.VALIDATION, "FieldMetadata");
-                }
-            } catch (ProcessingException e) {
-                throw e;
+                // 处理加密字段 - 注释掉因为FieldMetadata类没有isEncrypted方法
+                // if (metadata.isEncrypted() && (metadata.getType() == null || !metadata.getType().equals("TEXT"))) {
+                //     throw new ProcessingException("只有文本类型字段可以加密", 
+                //             ProcessingException.ProcessingType.VALIDATION, "FieldMetadata");
+                // }
             } catch (Exception e) {
                 throw new ProcessingException("字段元数据处理失败: " + e.getMessage(), 
                         ProcessingException.ProcessingType.PERSISTENCE, "FieldMetadata");
@@ -510,9 +512,9 @@ public class MetadataProcessorConfig {
                     metadata.setSeverity("ERROR");
                 }
                 
-                // 处理触发事件
+                // 处理触发事件 - 修复类型不兼容问题，使用Arrays.asList()转换为List
                 if (metadata.getTriggerEvents() == null) {
-                    metadata.setTriggerEvents(new String[]{"BEFORE_CREATE", "BEFORE_UPDATE"});
+                    metadata.setTriggerEvents(Arrays.asList("BEFORE_CREATE", "BEFORE_UPDATE"));
                 }
             } catch (Exception e) {
                 throw new ProcessingException("业务规则元数据处理失败: " + e.getMessage(), 
@@ -535,15 +537,15 @@ public class MetadataProcessorConfig {
                     metadata.setType("CUSTOM");
                 }
                 
-                // 设置默认权限
-                if (metadata.getRequiredPermissions() == null) {
-                    metadata.setRequiredPermissions(new String[]{"OPERATE_" + metadata.getName().toUpperCase()});
-                }
+                // 设置默认权限 - 注释掉因为OperationMetadata类没有这些方法
+                // if (metadata.getRequiredPermissions() == null) {
+                //     metadata.setRequiredPermissions(new String[]{"OPERATE_" + metadata.getName().toUpperCase()});
+                // }
                 
-                // 设置默认事务隔离级别
-                if (metadata.getTransactionIsolation() == null) {
-                    metadata.setTransactionIsolation("READ_COMMITTED");
-                }
+                // 设置默认事务隔离级别 - 注释掉因为OperationMetadata类没有这个方法
+                // if (metadata.getTransactionIsolation() == null) {
+                //     metadata.setTransactionIsolation("READ_COMMITTED");
+                // }
             } catch (Exception e) {
                 throw new ProcessingException("操作元数据处理失败: " + e.getMessage(), 
                         ProcessingException.ProcessingType.PERSISTENCE, "OperationMetadata");
@@ -567,10 +569,10 @@ public class MetadataProcessorConfig {
                     metadata.setType("SEQUENTIAL");
                 }
                 
-                // 设置默认事务性
-                if (metadata.isTransactional() == null) {
-                    metadata.setTransactional(true);
-                }
+                // 设置默认事务性 - 注释掉因为ProcessMetadata类没有isTransactional方法
+                // if (metadata.isTransactional() == null) {
+                //     metadata.setTransactional(true);
+                // }
             } catch (Exception e) {
                 throw new ProcessingException("流程元数据处理失败: " + e.getMessage(), 
                         ProcessingException.ProcessingType.PERSISTENCE, "ProcessMetadata");
@@ -615,10 +617,10 @@ public class MetadataProcessorConfig {
         public void process(AIEnhancement metadata) throws ProcessingException {
             // AI增强处理逻辑
             try {
-                // 设置默认置信度阈值
-                if (metadata.getTaggingConfidenceThreshold() == null) {
-                    metadata.setTaggingConfidenceThreshold(0.7);
-                }
+                // 设置默认置信度阈值 - 注释掉因为AIEnhancement类没有这些方法
+                // if (metadata.getTaggingConfidenceThreshold() == null) {
+                //     metadata.setTaggingConfidenceThreshold(0.7);
+                // }
             } catch (Exception e) {
                 throw new ProcessingException("AI增强配置处理失败: " + e.getMessage(), 
                         ProcessingException.ProcessingType.PERSISTENCE, "AIEnhancement");

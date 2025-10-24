@@ -44,7 +44,7 @@ export class SnapshotSandbox implements Sandbox {
     this.modifiedProperties.forEach((descriptor, key) => {
       if (Object.prototype.hasOwnProperty.call(this.globalContext, key)) {
         try {
-          Object.defineProperty(this.globalContext, key, descriptor);
+          Object.defineProperty(this.globalContext, key, descriptor as PropertyDescriptor);
         } catch (error) {
           console.warn(`Failed to restore property ${key}:`, error);
         }
@@ -87,7 +87,7 @@ export class SnapshotSandbox implements Sandbox {
    */
   private shouldIgnoreProperty(key: string): boolean {
     // 忽略安全列表中的属性
-    if (this.config.safeList?.includes(key)) {
+    if (this.config.allowedGlobals?.includes(key)) {
       return true;
     }
     
@@ -110,7 +110,8 @@ export class SnapshotSandbox implements Sandbox {
    */
   private getPropertyDescriptor(key: string): PropertyDescriptor | null {
     try {
-      return Object.getOwnPropertyDescriptor(this.globalContext, key);
+      const descriptor = Object.getOwnPropertyDescriptor(this.globalContext, key);
+      return descriptor !== undefined ? descriptor : null;
     } catch (error) {
       return null;
     }
@@ -270,7 +271,7 @@ export class SnapshotSandbox implements Sandbox {
       activePropertiesCount: this.modifiedProperties.size,
       resourceCount: 0,
       sideEffectsCount: this.modifiedProperties.size + this.addedProperties.size
-    };
+    } as SandboxStatus;
   }
 
   /**
