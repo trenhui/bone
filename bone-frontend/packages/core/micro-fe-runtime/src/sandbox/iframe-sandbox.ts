@@ -83,14 +83,15 @@ export class IframeSandbox implements Sandbox {
     return new Promise((resolve, reject) => {
       this.iframe = this.createIframe();
       
+      const self = this;
       this.iframe.onload = function(this: GlobalEventHandlers, ev: Event): any {
-        if (this.iframe?.contentWindow && this.iframe?.contentDocument) {
-          this.iframeWindow = this.iframe.contentWindow;
-          this.iframeDocument = this.iframe.contentDocument;
-          this.isLoaded = true;
+        if (self.iframe?.contentWindow && self.iframe?.contentDocument) {
+          self.iframeWindow = self.iframe.contentWindow;
+          self.iframeDocument = self.iframe.contentDocument;
+          self.isLoaded = true;
           
           // 设置全局引用，方便调试
-          (this.iframeWindow as any).__bone_sandbox_instance__ = this;
+          (self.iframeWindow as any).__bone_sandbox_instance__ = self;
           
           resolve();
         } else {

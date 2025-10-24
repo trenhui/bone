@@ -1,7 +1,8 @@
 package com.bone.metadata.sdk.test.config;
 
 import com.bone.metadata.sdk.support.dataSource.DynamicDataSource;
-import com.bone.metadata.sdk.support.dataSource.DataSourceContextHolder;
+import com.bone.metadata.sdk.support.dataSource.DataSourceManager;
+import com.bone.metadata.sdk.test.config.DataSourceAnnotationInterceptor;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
@@ -12,47 +13,41 @@ import org.springframework.aop.aspectj.AspectJExpressionPointcut;
 import org.springframework.aop.support.DefaultPointcutAdvisor;
 
 import javax.sql.DataSource;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
- * 多数据源测试配置
- * 提供测试用的多数据源环境
+ * 多数据源测试配置类
+ * <p>提供测试用的多数据源环境，包括主数据源、从数据源和租户数据源</p>
+ * <p>遵循Spring Boot测试配置最佳实践，提供清晰、可维护的测试基础设施</p>
  */
 @TestConfiguration
 public class MultiDataSourceTestConfig {
-    
+
     /**
      * 创建主数据源（使用H2嵌入式数据库）
-     * @return 主数据源
+     * @return 主数据源实例
      */
     @Bean(name = "masterDataSource")
     public DataSource masterDataSource() {
-        return new EmbeddedDatabaseBuilder()
-                .setName("masterDB")
-                .setType(EmbeddedDatabaseType.H2)
-                .addScript("classpath:schema.sql")
-                .addScript("classpath:data.sql")
-                .build();
+        return createEmbeddedDatabase("masterDB");
     }
     
     /**
      * 创建从数据源（使用H2嵌入式数据库）
-     * @return 从数据源
+     * @return 从数据源实例
      */
     @Bean(name = "slaveDataSource")
     public DataSource slaveDataSource() {
-        return new EmbeddedDatabaseBuilder()
-                .setName("slaveDB")
-                .setType(EmbeddedDatabaseType.H2)
-                .addScript("classpath:schema.sql")
-                .addScript("classpath:data.sql")
-                .build();
+        return createEmbeddedDatabase("slaveDB");
     }
     
     /**
      * 创建租户A数据源（用于多租户测试）
-     * @return 租户A数据源
+     * @return 租户A数据源实例
      */
     @Bean(name = "tenantADataSource")
     public DataSource tenantADataSource() {
@@ -64,11 +59,25 @@ public class MultiDataSourceTestConfig {
     }
     
     /**
-     * 创建动态数据源
+     * 创建嵌入式数据库的辅助方法，避免重复代码
+     * @param databaseName 数据库名称
+     * @return 配置好的嵌入式数据库
+     */
+    private DataSource createEmbeddedDatabase(String databaseName) {
+        return new EmbeddedDatabaseBuilder()
+                .setName(databaseName)
+                .setType(EmbeddedDatabaseType.H2)
+                .addScript("classpath:schema.sql")
+                .addScript("classpath:data.sql")
+                .build();
+    }
+    
+    /**
+     * 创建动态数据源，支持数据源路由和切换
      * @param masterDataSource 主数据源
      * @param slaveDataSource 从数据源
      * @param tenantADataSource 租户A数据源
-     * @return 动态数据源
+     * @return 配置完成的动态数据源
      */
     @Bean
     public DynamicDataSource dynamicDataSource(
@@ -76,20 +85,17 @@ public class MultiDataSourceTestConfig {
             DataSource slaveDataSource,
             DataSource tenantADataSource) {
         
+        // 使用流式API创建数据源映射，提高代码可读性和可维护性
+        Map<Object, Object> targetDataSources = Stream.of(
+                Map.entry("master", masterDataSource),
+                Map.entry("slave", slaveDataSource),
+                Map.entry("tenantA", tenantADataSource)
+        ).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, 
+                (oldValue, newValue) -> newValue, LinkedHashMap::new));
+        
         DynamicDataSource dynamicDataSource = new DynamicDataSource();
-        
-        // 配置目标数据源
-        Map<Object, Object> targetDataSources = new HashMap<>();
-        targetDataSources.put("master", masterDataSource);
-        targetDataSources.put("slave", slaveDataSource);
-        targetDataSources.put("tenantA", tenantADataSource);
-        
         dynamicDataSource.setTargetDataSources(targetDataSources);
-        
-        // 设置默认数据源为主数据源
         dynamicDataSource.setDefaultTargetDataSource(masterDataSource);
-        
-        // 初始化
         dynamicDataSource.afterPropertiesSet();
         
         return dynamicDataSource;
@@ -116,15 +122,8 @@ public class MultiDataSourceTestConfig {
     }
     
     /**
-     * 初始化测试数据
-     */
-    public void initTestData() {
-        // 这个方法会在测试类中调用，用于初始化特定的测试数据
-        // 确保不同数据源有不同的测试标识
-    }
-    
-    /**
-     * 配置DataSourceManager
+     * 配置数据源管理器，提供程序化数据源切换能力
+     * @return 数据源管理器实例
      */
     @Bean
     public DataSourceManager dataSourceManager() {
@@ -132,7 +131,8 @@ public class MultiDataSourceTestConfig {
     }
     
     /**
-     * 配置数据源注解拦截器
+     * 配置数据源注解拦截器，处理@DS注解
+     * @return 数据源注解拦截器实例
      */
     @Bean
     public DataSourceAnnotationInterceptor dataSourceAnnotationInterceptor() {
@@ -140,7 +140,9 @@ public class MultiDataSourceTestConfig {
     }
     
     /**
-     * 配置AOP切面，处理@DS注解
+     * 配置AOP切面，拦截带有@DS注解的方法调用
+     * @param interceptor 数据源注解拦截器
+     * @return AOP切面顾问
      */
     @Bean
     public Advisor dataSourceAdvisor(DataSourceAnnotationInterceptor interceptor) {

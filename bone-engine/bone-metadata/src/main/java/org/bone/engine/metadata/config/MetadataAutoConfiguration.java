@@ -12,6 +12,7 @@ import org.bone.engine.metadata.model.IndexMetadata;
 import java.util.Optional;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -118,6 +119,87 @@ public class MetadataAutoConfiguration {
             public void clearAllMetadataCache() {
                 // 空实现，清除元数据缓存
                 System.out.println("Metadata cache cleared");
+            }
+            
+            @Override
+            public void refreshMetadataCache(String apiName) {
+                // 空实现，刷新指定实体的元数据缓存
+                System.out.println("Metadata cache refreshed for: " + apiName);
+            }
+            
+            @Override
+            public Map<String, Object> analyzeMetadataChangeImpact(EntityMetadata metadata) {
+                // 空实现，分析元数据变更影响
+                Map<String, Object> impact = new HashMap<>();
+                impact.put("apiName", metadata.getApiName());
+                impact.put("impactLevel", "LOW");
+                impact.put("affectedComponents", Collections.emptyList());
+                return impact;
+            }
+            
+            @Override
+            public List<Map<String, Object>> getRelatedEntities(String apiName) {
+                // 空实现，获取相关实体
+                return Collections.emptyList();
+            }
+            
+            @Override
+            public void unregisterMetadataChangeListener(UniversalMetadataService.MetadataChangeListener listener) {
+                // 空实现，注销元数据变更监听器
+                System.out.println("Metadata change listener unregistered");
+            }
+            
+            @Override
+            public void registerMetadataChangeListener(UniversalMetadataService.MetadataChangeListener listener) {
+                // 空实现，注册元数据变更监听器
+                System.out.println("Metadata change listener registered");
+            }
+            
+            @Override
+            public String exportEntityMetadataToYaml(String apiName) {
+                // 空实现，导出实体元数据为YAML格式
+                return "# YAML export for " + apiName;
+            }
+            
+            @Override
+            public EntityMetadata importEntityMetadataFromYaml(String yamlContent) {
+                // 空实现，从YAML格式导入实体元数据
+                System.out.println("Importing metadata from YAML content");
+                return new EntityMetadata();
+            }
+            
+            @Override
+            public String exportEntityMetadataToJson(String apiName) {
+                // 空实现，导出实体元数据为JSON格式
+                return "{\"apiName\": \"" + apiName + "\"}";
+            }
+            
+            @Override
+            public EntityMetadata importEntityMetadataFromJson(String jsonContent) {
+                // 空实现，从JSON格式导入实体元数据
+                System.out.println("Importing metadata from JSON content");
+                return new EntityMetadata();
+            }
+            
+            @Override
+            public Map<String, Object> compareEntityMetadataVersions(String apiName, String sourceVersion, String targetVersion) {
+                // 空实现，比较实体元数据版本差异
+                System.out.println("Comparing metadata versions for " + apiName);
+                return new HashMap<>();
+            }
+            
+            @Override
+            public EntityMetadata rollbackEntityMetadataToVersion(String apiName, String version) {
+                // 空实现，回滚实体元数据到指定版本
+                System.out.println("Rolling back metadata for " + apiName + " to version " + version);
+                return new EntityMetadata();
+            }
+            
+            @Override
+            public EntityMetadata createEntityMetadataVersion(String apiName, String version, EntityMetadata metadata) {
+                // 空实现，创建实体元数据版本
+                System.out.println("Creating metadata version " + version + " for " + apiName);
+                return new EntityMetadata();
             }
         };
     }

@@ -38,34 +38,50 @@ export class SandboxFactory {
    * 创建沙箱实例（非异步方法）
    * @param config 沙箱配置
    */
+  // 静态导入沙箱类以支持TypeScript编译
+  private static EnhancedProxySandboxClass: any = null;
+  private static IframeSandboxClass: any = null;
+  private static SnapshotSandboxClass: any = null;
+  
+  // 初始化沙箱类的静态方法
+  private static initSandboxClasses(): void {
+    try {
+      const { EnhancedProxySandbox } = require('./enhanced-proxy-sandbox');
+      const { IframeSandbox } = require('./iframe-sandbox');
+      const { SnapshotSandbox } = require('./snapshot-sandbox');
+      
+      this.EnhancedProxySandboxClass = EnhancedProxySandbox;
+      this.IframeSandboxClass = IframeSandbox;
+      this.SnapshotSandboxClass = SnapshotSandbox;
+    } catch (error) {
+      console.error('Failed to initialize sandbox classes:', error);
+    }
+  }
+  
   static createSandbox(config: SandboxConfig): Sandbox {
+    // 懒加载沙箱类
+    if (!this.EnhancedProxySandboxClass) {
+      this.initSandboxClasses();
+    }
+    
     const sandboxType = (config as any).type || SANDBOX_TYPES.PROXY;
     
     switch (sandboxType) {
       case 'proxy':
-        try {
-          const { EnhancedProxySandbox } = require('./enhanced-proxy-sandbox');
-          return new EnhancedProxySandbox(config);
-        } catch (error) {
-          console.error('Failed to create EnhancedProxySandbox:', error);
-          throw error;
+        if (this.EnhancedProxySandboxClass) {
+          return new this.EnhancedProxySandboxClass(config);
         }
+        throw new Error('EnhancedProxySandbox class not loaded');
       case 'iframe':
-        try {
-          const { IframeSandbox } = require('./iframe-sandbox');
-          return new IframeSandbox(config);
-        } catch (error) {
-          console.error('Failed to create IframeSandbox:', error);
-          throw error;
+        if (this.IframeSandboxClass) {
+          return new this.IframeSandboxClass(config);
         }
+        throw new Error('IframeSandbox class not loaded');
       case 'snapshot':
-        try {
-          const { SnapshotSandbox } = require('./snapshot-sandbox');
-          return new SnapshotSandbox(config);
-        } catch (error) {
-          console.error('Failed to create SnapshotSandbox:', error);
-          throw error;
+        if (this.SnapshotSandboxClass) {
+          return new this.SnapshotSandboxClass(config);
         }
+        throw new Error('SnapshotSandbox class not loaded');
       default:
         throw new Error(`Unsupported sandbox type: ${sandboxType}`);
     }

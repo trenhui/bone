@@ -4,9 +4,7 @@ import com.bone.metadata.sdk.support.dataSource.DataSourceContextHolder;
 import com.bone.metadata.sdk.support.dataSource.DataSourceManager;
 import com.bone.metadata.sdk.support.dataSource.annotation.DS;
 import com.bone.metadata.sdk.test.config.MultiDataSourceTestConfig;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -19,11 +17,21 @@ import org.springframework.transaction.annotation.Transactional;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * 多数据源集成测试
- * 模拟真实业务场景中的多数据源使用情况
+ * 多数据源集成测试类
+ * <p>全面验证在真实业务场景中多数据源的集成使用情况</p>
+ * <p>测试场景包括：</p>
+ * <ul>
+ *   <li>读写分离 - 写操作走主库，读操作走从库</li>
+ *   <li>事务中的数据源一致性</li>
+ *   <li>多租户数据源隔离</li>
+ *   <li>批量操作的数据源管理</li>
+ *   <li>跨数据源事务一致性挑战</li>
+ *   <li>@DS注解在业务方法中的使用</li>
+ * </ul>
  */
 @ExtendWith(SpringExtension.class)
 @ContextConfiguration(classes = {MultiDataSourceTestConfig.class})
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class MultiDataSourceIntegrationTest {
     
     @Autowired
@@ -37,35 +45,45 @@ public class MultiDataSourceIntegrationTest {
     @Qualifier("slaveJdbcTemplate")
     private JdbcTemplate slaveJdbcTemplate;
     
+    /**
+     * 测试前置准备
+     * <p>确保测试隔离性：清理数据源上下文，准备测试数据结构，清理测试数据</p>
+     */
     @BeforeEach
     public void setUp() {
-        // 清理数据源上下文
+        // 清理数据源上下文，确保测试环境干净
         DataSourceContextHolder.clearAll();
         
         // 准备测试数据结构
         createTestTables();
         
-        // 清理测试数据
-        cleanupTestData();
-    }
-    
-    @AfterEach
-    public void tearDown() {
-        // 清理数据源上下文
-        DataSourceContextHolder.clearAll();
-        
-        // 可选：清理测试数据
+        // 清理测试数据，避免影响测试结果
         cleanupTestData();
     }
     
     /**
-     * 创建测试表
+     * 测试后置清理
+     * <p>确保测试隔离性：清理数据源上下文，清理测试数据</p>
+     */
+    @AfterEach
+    public void tearDown() {
+        // 清理数据源上下文，防止资源泄漏
+        DataSourceContextHolder.clearAll();
+        
+        // 清理测试数据，确保不影响后续测试
+        cleanupTestData();
+    }
+    
+    /**
+     * 创建测试表结构
+     * <p>在主从数据源中创建相同的表结构，用于模拟真实业务场景</p>
      */
     private void createTestTables() {
-        // 在所有数据源中创建必要的测试表
+        // 定义测试表创建语句
         String createUserTable = "CREATE TABLE IF NOT EXISTS test_user (id BIGINT PRIMARY KEY, name VARCHAR(100), email VARCHAR(100))";
         String createOrderTable = "CREATE TABLE IF NOT EXISTS test_order (id BIGINT PRIMARY KEY, user_id BIGINT, amount DECIMAL(10,2), status VARCHAR(20))";
         
+        // 在主从数据源中执行相同的建表操作
         masterJdbcTemplate.execute(createUserTable);
         masterJdbcTemplate.execute(createOrderTable);
         slaveJdbcTemplate.execute(createUserTable);
@@ -74,8 +92,10 @@ public class MultiDataSourceIntegrationTest {
     
     /**
      * 清理测试数据
+     * <p>删除所有测试数据，确保测试隔离性</p>
      */
     private void cleanupTestData() {
+        // 先删除订单数据，避免外键约束问题
         masterJdbcTemplate.update("DELETE FROM test_order");
         masterJdbcTemplate.update("DELETE FROM test_user");
         slaveJdbcTemplate.update("DELETE FROM test_order");
@@ -83,13 +103,21 @@ public class MultiDataSourceIntegrationTest {
     }
     
     /**
-     * 测试场景一：读写分离 - 写操作走主库，读操作走从库
+     * 测试读写分离场景
+     * <p>验证：</p>
+     * <ul>
+     *   <li>写操作正确路由到主数据源</li>
+     *   <li>读操作正确路由到对应数据源</li>
+     *   <li>不同数据源中的数据保持隔离</li>
+     * </ul>
      */
     @Test
-    public void testReadWriteSplitting() {
-        Long userId = 1000L;
-        String userName = "rw_test_user";
-        String userEmail = "test@example.com";
+    @Order(1)
+    public void shouldRouteReadAndWriteOperationsToCorrectDataSources() {
+        // 准备测试数据
+        final Long userId = 1000L;
+        final String userName = "rw_test_user";
+        final String userEmail = "test@example.com";
         
         // 写操作：使用主库插入用户
         dataSourceManager.withMaster(() -> {
@@ -100,8 +128,7 @@ public class MultiDataSourceIntegrationTest {
             return null;
         });
         
-        // 模拟主从复制延迟（在实际应用中，这里可能需要等待或处理延迟问题）
-        // 在测试环境中，我们手动将数据同步到从库
+        // 模拟主从复制延迟（在测试环境中手动设置从库数据）
         dataSourceManager.withSlave(() -> {
             slaveJdbcTemplate.update(
                 "INSERT INTO test_user (id, name, email) VALUES (?, ?, ?)",
@@ -125,20 +152,24 @@ public class MultiDataSourceIntegrationTest {
         });
         
         // 验证从不同数据源读取到的值不同
-        assertEquals(userName, masterUserName);
-        assertEquals(userName + "_slave", slaveUserName);
+        assertEquals(userName, masterUserName, 
+                "应从主数据源读取到写入的值");
+        assertEquals(userName + "_slave", slaveUserName, 
+                "应从从数据源读取到对应的值");
     }
     
     /**
-     * 测试场景二：事务中的数据源一致性
-     * 验证在同一个事务中，多次数据源切换后操作的一致性
+     * 测试事务中的数据源一致性
+     * <p>验证在同一个事务上下文中，多次数据源切换后操作的一致性</p>
      */
     @Test
-    public void testTransactionDataSourceConsistency() {
+    @Order(2)
+    public void shouldMaintainConsistency_whenMultipleOperationsInTransaction() {
         // 注意：在实际应用中，这个测试应该使用@Transactional注解
         // 这里我们使用函数式API模拟事务行为
         
-        Long userId = 1001L;
+        final Long userId = 1001L;
+        final Long orderId = 2001L;
         
         // 模拟事务开始
         try {
@@ -155,7 +186,7 @@ public class MultiDataSourceIntegrationTest {
             dataSourceManager.withMaster(() -> {
                 masterJdbcTemplate.update(
                     "INSERT INTO test_order (id, user_id, amount, status) VALUES (?, ?, ?, ?)",
-                    2001L, userId, 100.00, "PENDING"
+                    orderId, userId, 100.00, "PENDING"
                 );
                 return null;
             });
@@ -167,20 +198,21 @@ public class MultiDataSourceIntegrationTest {
                     "SELECT COUNT(*) FROM test_order WHERE user_id = ?", Long.class, userId
                 );
             });
-            assertEquals(1L, orderCount);
+            assertEquals(1L, orderCount, "事务中的操作应保证数据一致性");
             
         } catch (Exception e) {
             // 模拟回滚事务
-            fail("Transaction test failed: " + e.getMessage());
+            fail("事务测试失败: " + e.getMessage());
         }
     }
     
     /**
-     * 测试场景三：多租户数据源隔离
-     * 模拟不同租户使用不同数据源的场景
+     * 测试多租户数据源隔离
+     * <p>验证不同租户使用不同数据源时的数据隔离性</p>
      */
     @Test
-    public void testMultiTenantDataSourceIsolation() {
+    @Order(3)
+    public void shouldMaintainIsolation_whenMultipleTenantsUseDifferentDataSources() {
         // 模拟租户A的数据操作
         simulateTenantOperation("tenantA", 3001L, "tenantA_user");
         
@@ -202,11 +234,14 @@ public class MultiDataSourceIntegrationTest {
             }
         });
         
-        assertTrue(tenantADataExists);
+        assertTrue(tenantADataExists, "租户A的数据应在对应的数据源中存在");
     }
     
     /**
      * 模拟租户操作
+     * @param tenantDataSource 租户对应的数据源
+     * @param userId 用户ID
+     * @param userName 用户名
      */
     private void simulateTenantOperation(String tenantDataSource, Long userId, String userName) {
         dataSourceManager.withDataSource(tenantDataSource, () -> {
@@ -219,14 +254,17 @@ public class MultiDataSourceIntegrationTest {
     }
     
     /**
-     * 测试场景四：批量操作的数据源管理
-     * 验证批量操作中数据源切换的正确性
+     * 测试批量操作的数据源管理
+     * <p>验证在批量数据操作中数据源切换的正确性</p>
      */
     @Test
-    public void testBatchOperationDataSourceManagement() {
+    @Order(4)
+    public void shouldHandleDataSourceCorrectly_duringBatchOperations() {
+        final int batchSize = 5;
+        
         // 批量插入数据到主库
         dataSourceManager.withMaster(() -> {
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < batchSize; i++) {
                 Long userId = 4000L + i;
                 masterJdbcTemplate.update(
                     "INSERT INTO test_user (id, name, email) VALUES (?, ?, ?)",
@@ -241,27 +279,29 @@ public class MultiDataSourceIntegrationTest {
             return masterJdbcTemplate.queryForObject("SELECT COUNT(*) FROM test_user", Long.class);
         });
         
-        assertEquals(5L, masterCount);
+        assertEquals(batchSize, masterCount, 
+                "主库中应有正确数量的批量插入数据");
         
         // 验证从库中还没有这些数据（因为我们没有同步）
         Long slaveCount = dataSourceManager.withSlave(() -> {
             return slaveJdbcTemplate.queryForObject("SELECT COUNT(*) FROM test_user", Long.class);
         });
         
-        assertEquals(0L, slaveCount);
+        assertEquals(0L, slaveCount, 
+                "从库中不应有未同步的数据");
     }
     
     /**
-     * 测试场景五：跨数据源事务一致性（实际应用中的挑战）
-     * 注意：跨数据源事务通常需要分布式事务协调器（如Seata）
+     * 测试跨数据源事务一致性挑战
+     * <p>验证跨数据源操作可能面临的事务一致性问题</p>
+     * <p>注意：跨数据源事务通常需要分布式事务协调器（如Seata）</p>
      */
     @Test
-    public void testCrossDataSourceTransactionChallenges() {
-        // 这个测试展示了跨数据源事务的挑战
-        // 在实际应用中，这种场景应该使用分布式事务解决方案
-        
-        Long userId = 5000L;
-        Long orderId = 6000L;
+    @Order(5)
+    public void shouldDemonstrateCrossDataSourceTransactionChallenges() {
+        // 准备测试数据
+        final Long userId = 5000L;
+        final Long orderId = 6000L;
         
         try {
             // 步骤1：在主库创建用户
@@ -291,20 +331,21 @@ public class MultiDataSourceIntegrationTest {
                 "SELECT COUNT(*) FROM test_order WHERE id = ?", Long.class, orderId
             );
             
-            assertEquals(1L, masterUserCount);
-            assertEquals(1L, slaveOrderCount);
+            assertEquals(1L, masterUserCount, "主库中应有用户数据");
+            assertEquals(1L, slaveOrderCount, "从库中应有订单数据");
             
             // 在实际应用中，如果步骤2失败，步骤1的数据已经提交，导致数据不一致
             // 这正是分布式事务需要解决的问题
             
         } catch (Exception e) {
             // 异常处理
-            fail("Cross data source transaction test failed: " + e.getMessage());
+            fail("跨数据源事务测试失败: " + e.getMessage());
         }
     }
     
     /**
      * 内部测试服务类，用于演示@DS注解在复杂业务方法中的使用
+     * <p>展示如何在实际业务服务中通过注解指定数据源</p>
      */
     @org.springframework.stereotype.Service
     static class TestBusinessService {
@@ -322,7 +363,9 @@ public class MultiDataSourceIntegrationTest {
         
         /**
          * 业务方法：创建用户并初始化默认订单
-         * 使用@DS注解指定使用主数据源
+         * <p>使用@DS("master")注解指定使用主数据源进行写操作</p>
+         * @param userId 用户ID
+         * @param userName 用户名
          */
         @DS("master")
         public void createUserWithDefaultOrder(Long userId, String userName) {
@@ -341,7 +384,9 @@ public class MultiDataSourceIntegrationTest {
         
         /**
          * 业务方法：查询用户信息
-         * 使用@DS注解指定使用从数据源
+         * <p>使用@DS("slave")注解指定使用从数据源进行读操作</p>
+         * @param userId 用户ID
+         * @return 用户名
          */
         @DS("slave")
         public String getUserName(Long userId) {

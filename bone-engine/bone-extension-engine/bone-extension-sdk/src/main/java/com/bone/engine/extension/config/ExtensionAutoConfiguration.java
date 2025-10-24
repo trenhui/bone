@@ -3,7 +3,6 @@ package com.bone.engine.extension.config;
 import com.bone.engine.extension.annotation.EnableExtPoints;
 import com.bone.engine.extension.lifecycle.DefaultExtensionLifecycle;
 import com.bone.engine.extension.lifecycle.ExtensionLifecycle;
-import com.bone.engine.extension.loader.ExtensionLoader;
 import com.bone.engine.extension.proxy.ExtPointProxyFactory;
 import com.bone.engine.extension.router.DefaultExtPointRouter;
 import com.bone.engine.extension.router.ExtPointRouter;
@@ -125,13 +124,5 @@ public class ExtensionAutoConfiguration implements ImportAware {
         return new DefaultExtensionLifecycle();
     }
     
-    /**
-     * 配置扩展点加载器
-     * 注意：ExtensionLoader是泛型类，这里返回一个FactoryBean用于创建具体类型的加载器
-     */
-    @Bean
-    @ConditionalOnMissingBean(name = "extensionLoaderFactory")
-    public Object extensionLoaderFactory() {
-        return new Object(); // 使用占位符，实际使用时通过ExtensionLoader.getExtensionLoader()获取具体类型的加载器
-    }
+    // ExtensionLoader已被移除，扩展点现在通过动态代理直接注入使用
 }
