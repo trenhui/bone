@@ -1,17 +1,73 @@
-import { TypedEventBus, AppEvents, MicroAppMessage, getEventBus } from './index';
+// 简单的本地事件总线实现
+export class SimpleEventBus {
+  private events: Record<string, Function[]> = {};
+
+  on(event: string, handler: Function) {
+    if (!this.events[event]) {
+      this.events[event] = [];
+    }
+    this.events[event].push(handler);
+  }
+
+  emit(event: string, data: any) {
+    if (this.events[event]) {
+      this.events[event].forEach(handler => handler(data));
+    }
+  }
+
+  off(event: string, handler?: Function) {
+    if (!this.events[event]) return;
+    
+    if (handler) {
+      this.events[event] = this.events[event].filter(h => h !== handler);
+    } else {
+      delete this.events[event];
+    }
+  }
+}
+
+// 创建全局事件总线实例
+const globalEventBus = new SimpleEventBus();
+export function getEventBus(): SimpleEventBus {
+  return globalEventBus;
+}
+export { globalEventBus };
+
+// 消息类型定义
+export interface MicroAppMessage {
+  id: string;
+  source: string;
+  from?: string; // 兼容from属性
+  target: string;
+  to?: string; // 兼容to属性
+  type: string;
+  payload?: any;
+  timestamp: number;
+  requestId?: string;
+  messageId?: string; // 兼容messageId属性
+  responseExpected?: boolean;
+}
+
+declare const window: Window & {
+  __MICRO_APP_ENVIRONMENT__?: boolean;
+  __MICRO_APP_NAME__?: string;
+  __MICRO_APP_PUBLIC_PATH__?: string;
+  __MICRO_APP_BASE_ROUTE__?: string;
+};
 
 /**
  * 微应用消息通信工具类
  * 提供高级消息通信API，简化跨应用通信
  */
 export class MicroAppMessenger {
-  private eventBus: TypedEventBus<AppEvents>;
+  private eventBus: SimpleEventBus;
   private appName: string;
   private responseHandlers: Map<string, {
     resolve: (response: MicroAppMessage) => void;
     reject: (error: Error) => void;
     timeoutId: ReturnType<typeof setTimeout>;
   }> = new Map();
+  private defaultTimeout = 5000;
   private messageQueue: Array<{
     message: MicroAppMessage;
     retries: number;
@@ -20,15 +76,16 @@ export class MicroAppMessenger {
     lastAttempt: number;
   }> = [];
   private queueProcessing = false;
-  private maxRetries = 3;
-  private defaultTimeout = 5000;
 
   /**
    * 构造函数
    * @param appName 当前应用名称
    * @param eventBus 事件总线实例，默认为全局事件总线
    */
-  constructor(appName: string, eventBus?: TypedEventBus<AppEvents>) {
+  constructor(appName: string, eventBus?: SimpleEventBus) {
+    if (!appName || typeof appName !== 'string') {
+      throw new Error('appName must be a non-empty string');
+    }
     this.appName = appName;
     this.eventBus = eventBus || getEventBus();
     this.initialize();
@@ -44,12 +101,13 @@ export class MicroAppMessenger {
     });
 
     // 订阅响应事件
-    this.eventBus.on('micro:app:response', (data) => {
+    this.eventBus.on('micro:app:response', (data: { requestId: string; response: MicroAppMessage }) => {
       this.handleResponse(data);
     });
 
     // 订阅应用挂载事件
-    this.eventBus.on('app:mounted', ({ appId }) => {
+    this.eventBus.on('app:mounted', () => {
+      // 应用挂载后，尝试处理消息队列
       this.processMessageQueue();
     });
   }
@@ -66,17 +124,22 @@ export class MicroAppMessenger {
    * @param message 接收到的消息
    */
   private handleIncomingMessage(message: MicroAppMessage): void {
+    if (!message) return;
+    
     // 检查消息是否目标是当前应用
-    if (message.to !== this.appName && message.to !== '*') {
-      return;
+    const target = message.target || message.to;
+    if (target === this.appName || target === '*') {
+      // 触发特定类型的消息事件
+      if (message.responseExpected) {
+        this.eventBus.emit('micro:app:message', message);
+      } else {
+        this.eventBus.emit(`message:${message.type || 'unknown'}`, message);
+      }
     }
-
-    // 触发特定类型的消息事件
-    this.eventBus.emit(`message:${message.type}` as any, message);
   }
 
   /**
-   * 处理接收到的响应
+   * 处理响应消息
    * @param data 响应数据
    */
   private handleResponse(data: { requestId: string; response: MicroAppMessage }): void {
@@ -86,6 +149,7 @@ export class MicroAppMessenger {
     }
     
     const handler = this.responseHandlers.get(data.requestId);
+    
     if (handler) {
       try {
         // 清除超时
@@ -102,126 +166,85 @@ export class MicroAppMessenger {
     }
   }
 
-  /**
-   * 检查应用是否活跃
-   * @param appName 应用名称
-   * @returns 是否活跃
-   */
-  private isAppActive(appName: string): boolean {
-    try {
-      // 动态导入应用注册表以避免循环依赖
-      const { getApplicationRegistry } = require('@bone/core/micro-fe-runtime');
-      const registry = getApplicationRegistry();
-      return registry.isAppActive(appName);
-    } catch (error) {
-      console.warn('Failed to check app status, assuming active:', error);
-      return true;
-    }
-  }
+
 
   /**
-   * 发送消息到指定应用
+   * 发送消息给目标应用
    * @param targetApp 目标应用名称
    * @param type 消息类型
    * @param payload 消息内容
    */
-  send(targetApp: string, type: string, payload?: any): void {
+  send(targetApp: string, type: string, payload?: Record<string, unknown> | Array<unknown> | string | number | boolean | null): void {
+    if (!targetApp || typeof targetApp !== 'string' || !type || typeof type !== 'string' || !this.appName) {
+      console.error('Invalid parameters for send: targetApp, type and appName are required');
+      return;
+    }
+    
     const message: MicroAppMessage = {
-      messageId: this.generateMessageId(),
-      from: this.appName,
+      id: this.generateMessageId(),
+      source: this.appName,
+      target: targetApp,
       to: targetApp,
       type,
       payload,
       timestamp: Date.now()
     };
 
-    // 检查目标应用是否活跃
-    if (this.isAppActive(targetApp)) {
-      this.eventBus.emit('micro:app:message', message);
-    } else {
-      // 否则将消息加入队列
-      this.enqueueMessage(message);
-    }
+    // 使用类型断言发送消息
+    this.eventBus.emit('micro:app:message', message);
   }
 
-  /**
-   * 将消息加入队列
-   * @param message 要发送的消息
-   */
-  private enqueueMessage(message: MicroAppMessage): void {
-    if (!message || !message.to) {
-      console.warn('Invalid message: missing required fields');
-      return;
-    }
-    
-    this.messageQueue.push({
-      message,
-      retries: 0,
-      maxRetries: this.maxRetries,
-      retryDelay: 1000,
-      lastAttempt: Date.now()
-    });
 
-    // 开始处理队列
-    if (!this.queueProcessing) {
-      // 使用void避免未处理的Promise警告
-      void this.processMessageQueue();
-    }
-  }
 
-  /**
-   * 发送消息并等待响应
-   * 实现请求-响应模式
-   * @param appName 目标微应用名称
-   * @param type 消息类型
-   * @param payload 消息内容
-   * @param timeout 超时时间（毫秒），默认5000
-   * @returns Promise，解析为响应消息
-   */
   /**
    * 发送消息并等待响应
    * @param targetApp 目标应用名称
    * @param type 消息类型
    * @param payload 消息内容
    * @param timeout 超时时间（毫秒）
-   * @returns 响应消息
+   * @returns Promise<any> 响应结果
    */
-  async sendWithResponse(targetApp: string, type: string, payload?: any, timeout: number = this.defaultTimeout): Promise<MicroAppMessage> {
-    if (!targetApp || !type) {
-      throw new Error('targetApp and type are required');
+  async sendWithResponse(targetApp: string, type: string, payload?: Record<string, unknown> | Array<unknown> | string | number | boolean | null, timeout: number = this.defaultTimeout): Promise<MicroAppMessage> {
+    if (!targetApp || typeof targetApp !== 'string' || !type || typeof type !== 'string') {
+      throw new Error('Invalid parameters: targetApp and type are required');
     }
-    
-    if (timeout <= 0) {
+
+    if (typeof timeout !== 'number' || timeout <= 0) {
       timeout = this.defaultTimeout;
     }
-    
-    return new Promise((resolve, reject) => {
-      const messageId = this.generateMessageId();
 
+    const messageId = this.generateMessageId();
+    const message: MicroAppMessage = {
+      id: this.generateMessageId(),
+      source: this.appName,
+      target: targetApp,
+      to: targetApp,
+      type,
+      payload,
+      timestamp: Date.now(),
+      responseExpected: true
+    };
+
+    return new Promise((resolve, reject) => {
       // 设置超时
       const timeoutId = setTimeout(() => {
         this.responseHandlers.delete(messageId);
-        reject(new Error(`等待 ${targetApp} 响应超时`));
+        reject(new Error(`Message response timed out after ${timeout}ms`));
       }, timeout);
 
-      // 保存响应处理器
+      // 保存响应处理程序
       this.responseHandlers.set(messageId, {
         resolve,
         reject,
         timeoutId
       });
 
+      // 发送消息
       try {
-        // 发送请求消息
-        this.send(targetApp, type, {
-          ...payload,
-          messageId,
-          responseExpected: true
-        });
+        this.eventBus.emit('micro:app:message', message);
       } catch (error) {
-        // 发送失败时清理资源
-        clearTimeout(timeoutId);
         this.responseHandlers.delete(messageId);
+        clearTimeout(timeoutId);
         reject(error instanceof Error ? error : new Error('Failed to send message'));
       }
     });
@@ -232,21 +255,23 @@ export class MicroAppMessenger {
    * @param message 原始消息
    * @param payload 回复内容
    */
-  reply(message: MicroAppMessage, payload?: any): void {
-    if (!message.responseExpected) {
-      console.warn('Cannot reply to a message that did not request a response');
+  reply(message: MicroAppMessage, payload?: Record<string, unknown> | Array<unknown> | string | number | boolean | null): void {
+    if (!message || !message.from || !message.messageId) {
+      console.error('Invalid message: missing required fields');
       return;
     }
 
     const response: MicroAppMessage = {
-      messageId: this.generateMessageId(),
-      from: this.appName,
+      id: this.generateMessageId(),
+      source: this.appName,
+      target: message.from,
       to: message.from,
-      type: `${message.type}:response`,
+      type: `response:${message.type || 'unknown'}`,
       payload,
       timestamp: Date.now()
     };
 
+    // 发送响应消息到正确的事件通道
     this.eventBus.emit('micro:app:response', {
       requestId: message.messageId,
       response
@@ -254,64 +279,97 @@ export class MicroAppMessenger {
   }
 
   /**
-   * 订阅消息
+   * 监听特定类型的消息
    * @param type 消息类型
    * @param handler 消息处理函数
    * @returns 取消订阅函数
    */
   on(type: string, handler: (message: MicroAppMessage) => void): () => void {
-    return this.eventBus.on(`message:${type}` as any, handler);
+    if (!type || typeof handler !== 'function') {
+      console.error('Invalid parameters: type is required and handler must be a function');
+      return () => {};
+    }
+
+    const eventType = `message:${type}`;
+    const wrappedHandler = (message: MicroAppMessage) => {
+      // 确保消息目标是当前应用
+      // 兼容target和to属性
+      const target = message.target || message.to;
+      if (target === this.appName || target === '*') {
+        try {
+          handler(message);
+        } catch (error) {
+          console.error(`Error handling message of type ${type}:`, error);
+        }
+      }
+    };
+
+    this.eventBus.on(eventType, wrappedHandler);
+    return () => this.eventBus.off(eventType, wrappedHandler);
   }
 
   /**
    * 处理消息队列
    */
   private async processMessageQueue(): Promise<void> {
-    if (this.queueProcessing) return;
-    
+    // 如果队列正在处理中或者队列为空，则退出
+    if (this.queueProcessing || !this.messageQueue || this.messageQueue.length === 0) {
+      return;
+    }
+
     this.queueProcessing = true;
 
     try {
       while (this.messageQueue.length > 0) {
         const queueItem = this.messageQueue[0];
+        
+        if (!queueItem || !queueItem.message) {
+          this.messageQueue.shift();
+          continue;
+        }
+        
         const now = Date.now();
-
         // 检查是否可以重试
         if (now - queueItem.lastAttempt >= queueItem.retryDelay) {
-          if (this.isAppActive(queueItem.message.to)) {
-            // 应用已活跃，发送消息
-            try {
-              this.eventBus.emit('micro:app:message', queueItem.message);
-              // 消息发送成功，从队列中移除
+          try {
+            // 确保消息的to字段不为undefined
+            const targetApp = queueItem.message.target || queueItem.message.to;
+            if (!targetApp) {
+              console.error('Invalid message in queue: missing target');
               this.messageQueue.shift();
-            } catch (error) {
-              console.error('Error sending queued message:', error);
-              // 增加重试计数
-              queueItem.retries++;
-              queueItem.lastAttempt = now;
-              queueItem.retryDelay *= 2; // 指数退避
-
-              // 达到最大重试次数，放弃并从队列中移除
-              if (queueItem.retries >= queueItem.maxRetries) {
-                console.warn(`Message to ${queueItem.message.to} failed after ${queueItem.maxRetries} retries`);
-                this.messageQueue.shift();
-              }
+              continue;
             }
-          } else {
-            // 应用仍未活跃，等待一段时间后重试
-            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // 发送消息
+            this.eventBus.emit('micro:app:message', queueItem.message);
+            // 消息发送成功，从队列中移除
+            this.messageQueue.shift();
+          } catch (error) {
+            console.error('Error sending message from queue:', error);
+            queueItem.retries++;
+            queueItem.lastAttempt = now;
+            queueItem.retryDelay = (queueItem.retryDelay || 1000) * 2;
+            
+            // 如果重试次数超过最大限制，则移除消息
+            if (queueItem.retries >= queueItem.maxRetries) {
+              const targetApp = queueItem.message.target || queueItem.message.to || 'unknown';
+              console.warn(`Message to ${targetApp} failed after ${queueItem.maxRetries} attempts, removing from queue`);
+              this.messageQueue.shift();
+            }
           }
         } else {
           // 还未到重试时间，等待剩余时间
           await new Promise(resolve => setTimeout(resolve, queueItem.retryDelay - (now - queueItem.lastAttempt)));
         }
       }
-    } catch (error) {
-      console.error('Unexpected error in message queue processing:', error);
+    } catch (queueError) {
+      console.error('Error processing message queue:', queueError);
     } finally {
       this.queueProcessing = false;
     }
   }
+
+
 
   /**
    * 获取消息队列长度
@@ -324,8 +382,9 @@ export class MicroAppMessenger {
   /**
    * 清空消息队列
    */
-  clearQueue(): void {
-    this.messageQueue = [];
+  private clearQueue(): void {
+    // 使用splice(0)代替赋值新数组，更安全的清空方式
+    this.messageQueue.splice(0);
   }
 
   /**
@@ -342,6 +401,7 @@ export class MicroAppMessenger {
           console.error('Error cleaning up response handler:', error);
         }
       });
+
       this.responseHandlers.clear();
 
       // 清空消息队列
@@ -355,21 +415,91 @@ export class MicroAppMessenger {
   }
 }
 
-// 创建默认的消息通信工具实例
+// 全局就绪状态
+let isReady = false;
+
+/**
+ * 创建微应用消息通信工具实例
+ * @param appName 应用名称
+ * @returns 消息通信工具实例
+ */
 export function createMicroAppMessenger(appName: string): MicroAppMessenger {
+  if (!isReady) {
+    console.warn('MicroAppMessenger may not be fully ready yet');
+  }
   return new MicroAppMessenger(appName);
 }
 
-// 向后兼容的导出
+/**
+ * 销毁所有消息通信资源
+ */
 export function dispose(): void {
-  // 此方法用于向后兼容，实际上不需要做任何事情
-  console.warn('dispose() is deprecated, please use instance.destroy() instead');
+  // 清理全局事件监听器
+  if (window && window.removeEventListener) {
+    window.removeEventListener('message', handleGlobalMessage);
+  }
 }
 
-// 向后兼容的导出
+/**
+ * 获取消息通道是否准备就绪
+ * @returns 是否准备就绪
+ */
 export function getIsReady(): boolean {
-  console.warn('getIsReady() is deprecated, communication is always ready');
-  return true;
+  return isReady;
+}
+
+// 全局消息处理函数
+interface MicroAppMessageEventData {
+  type: string;
+  data: MicroAppMessage;
+}
+
+interface GlobalMessenger {
+  handleIncomingMessage: (message: MicroAppMessage) => void;
+}
+
+function handleGlobalMessage(event: MessageEvent): void {
+  if (!event || !event.data) return;
+  
+  const messageData = event.data as MicroAppMessageEventData | null;
+  
+  if (messageData && typeof messageData === 'object' && messageData.type === 'micro-app-message' && messageData.data) {
+    const originalMessage = messageData.data as MicroAppMessage;
+    // 确保消息格式正确并进行属性兼容处理
+    if (originalMessage) {
+      // 创建兼容的消息对象，确保所有必要属性都存在
+      const compatibleMessage: MicroAppMessage = {
+        id: originalMessage.id || originalMessage.messageId || '',
+        source: originalMessage.source || originalMessage.from || '',
+        target: originalMessage.target || originalMessage.to || '',
+        to: originalMessage.to || originalMessage.target || '',
+        from: originalMessage.from || originalMessage.source || '',
+        type: originalMessage.type || 'unknown',
+        payload: originalMessage.payload,
+        timestamp: originalMessage.timestamp || Date.now(),
+        requestId: originalMessage.requestId,
+        messageId: originalMessage.messageId || originalMessage.id,
+        responseExpected: originalMessage.responseExpected
+      };
+      
+      const globalMessenger = (window as Window & { __MICRO_APP_MESSENGER__?: unknown }).__MICRO_APP_MESSENGER__;
+      if (globalMessenger && typeof globalMessenger === 'object' && 'handleIncomingMessage' in globalMessenger) {
+        try {
+          const messenger = globalMessenger as unknown as GlobalMessenger;
+          if (typeof messenger.handleIncomingMessage === 'function') {
+            messenger.handleIncomingMessage(compatibleMessage);
+          }
+        } catch (error) {
+          console.error('Error handling global message:', error);
+        }
+      }
+    }
+  }
+}
+
+// 设置就绪状态
+export function setIsReady(ready: boolean): void {
+  isReady = ready;
 }
 
 export default MicroAppMessenger;

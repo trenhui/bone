@@ -192,22 +192,62 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
      * @param method 调用方法
      * @param implementationType 实现类型
      */
-    public void recordRouteFailure(Class<?> extPointType, Method method, Class<?> implementationType) {
+    /**
+     * 记录路由失败（主要实现方法）
+     * 
+     * @param extPointType 扩展点类型
+     * @param method 调用的方法
+     * @param implementationType 实现类类型
+     * @param ex 异常对象（可选）
+     */
+    private void recordRouteFailureInternal(Class<?> extPointType, Method method, 
+                                          Class<?> implementationType, Throwable ex) {
         if (extPointType == null || method == null) {
             return;
         }
-
+        
+        // 构建统计键
+        String statsKey = buildStatsKey(extPointType, method);
+        String implStatsKey = buildImplStatsKey(extPointType, method, implementationType);
         String failureKey = buildFailureKey(extPointType, method, implementationType);
+        
+        // 更新路由统计
+        routeStatsMap.computeIfAbsent(statsKey, k -> new RouteStats())
+                .incrementFailedRequests();
+                
+        // 更新实现类统计
+        implementationStatsMap.computeIfAbsent(implStatsKey, k -> new RouteStats())
+                .incrementFailedRequests();
+        
+        // 更新失败计数
         AtomicInteger counter = failureCounterMap.computeIfAbsent(failureKey, k -> new AtomicInteger(0));
         int failureCount = counter.incrementAndGet();
 
         // 失败次数达到阈值时记录告警
         if (failureCount == 5 || failureCount == 10 || failureCount % 50 == 0) {
-            logger.error("High failure rate detected for {}#{} via {}: {} consecutive failures",
-                    extPointType.getSimpleName(), method.getName(),
-                    implementationType != null ? implementationType.getSimpleName() : "unknown",
-                    failureCount);
+            if (ex != null) {
+                logger.error("High failure rate detected for {}#{} via {}: {} consecutive failures",
+                        extPointType.getSimpleName(), method.getName(),
+                        implementationType != null ? implementationType.getSimpleName() : "unknown",
+                        failureCount, ex);
+            } else {
+                logger.error("High failure rate detected for {}#{} via {}: {} consecutive failures",
+                        extPointType.getSimpleName(), method.getName(),
+                        implementationType != null ? implementationType.getSimpleName() : "unknown",
+                        failureCount);
+            }
         }
+    }
+    
+    /**
+     * 记录路由失败
+     * 
+     * @param extPointType 扩展点类型
+     * @param method 调用方法
+     * @param implementationType 实现类型
+     */
+    public void recordRouteFailure(Class<?> extPointType, Method method, Class<?> implementationType) {
+        recordRouteFailureInternal(extPointType, method, implementationType, null);
     }
 
     /**
@@ -288,19 +328,28 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
     
     @Override
     public void recordRouteFailure(Class<?> extPointClass, Throwable ex) {
-        // 记录路由失败
-        String extPointName = extPointClass.getSimpleName();
-        String errorType = ex != null ? ex.getClass().getSimpleName() : "UnknownError";
-        String failureKey = extPointName + ":" + errorType + ":failure"; // 直接构建失败键
-        
-        // 增加失败计数
-        synchronized (failureCounterMap) {
-            AtomicInteger counter = failureCounterMap.computeIfAbsent(failureKey, k -> new AtomicInteger(0));
-            counter.incrementAndGet();
+        try {
+            // 查找第一个方法作为代表性方法（通常是扩展点的主要方法）
+            Method[] methods = extPointClass.getMethods();
+            Method representativeMethod = methods.length > 0 ? methods[0] : null;
+            
+            // 调用内部实现方法
+            recordRouteFailureInternal(extPointClass, representativeMethod, null, ex);
+        } catch (Exception e) {
+            // 如果获取方法失败，使用简单统计
+            String extPointName = extPointClass.getSimpleName();
+            String errorType = ex != null ? ex.getClass().getSimpleName() : "UnknownError";
+            String failureKey = extPointName + ":" + errorType + ":failure"; // 直接构建失败键
+            
+            // 增加失败计数
+            synchronized (failureCounterMap) {
+                AtomicInteger counter = failureCounterMap.computeIfAbsent(failureKey, k -> new AtomicInteger(0));
+                counter.incrementAndGet();
+            }
+            
+            // 记录详细异常信息
+            logger.error("Route failed for {}", extPointName, ex);
         }
-        
-        // 记录详细异常信息
-        logger.error("Route failed for {}", extPointName, ex);
     }
     
     @Override
@@ -409,7 +458,25 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
      */
     public void recordRouteFailure(Class<?> extPointType, Exception exception, BizContext context) {
         ensureInitialized();
-        recordRouteFailure(extPointType, exception);
+        try {
+            // 查找第一个方法作为代表性方法
+            Method[] methods = extPointType.getMethods();
+            Method representativeMethod = methods.length > 0 ? methods[0] : null;
+            
+            // 调用内部实现方法
+            recordRouteFailureInternal(extPointType, representativeMethod, null, exception);
+            
+            // 如果有上下文信息，额外记录
+            if (context != null) {
+                logger.debug("Route failure context for {}: {}", 
+                        extPointType.getSimpleName(), 
+                        context.getBizCode());
+            }
+        } catch (Exception e) {
+             // 直接记录日志，避免递归调用
+             logger.error("Error recording route failure with context", e);
+         }
+        
         if (extPointType != null) {
             recordMetrics(extPointType, false, 0, SLOW_ROUTE_THRESHOLD_MS);
         }

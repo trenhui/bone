@@ -1,6 +1,7 @@
 package com.bone.metadata.sdk.support.dataSource;
 
-import org.junit.jupiter.api.*;
+import com.bone.metadata.sdk.test.common.BaseDataSourceTest;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,35 +21,15 @@ import static org.junit.jupiter.api.Assertions.*;
  *   <li>线程安全性</li>
  * </ul>
  */
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class DataSourceContextHolderTest {
+public class DataSourceContextHolderTest extends BaseDataSourceTest {
     
-    /**
-     * 测试前置准备
-     * <p>确保测试隔离性：清理数据源上下文</p>
-     */
-    @BeforeEach
-    public void setUp() {
-        // 清理数据源上下文，确保测试环境干净
-        DataSourceContextHolder.clearAll();
-    }
-    
-    /**
-     * 测试后置清理
-     * <p>确保测试隔离性：清理数据源上下文</p>
-     */
-    @AfterEach
-    public void tearDown() {
-        // 清理数据源上下文，防止资源泄漏
-        DataSourceContextHolder.clearAll();
-    }
+
     
     /**
      * 测试设置和获取数据源
      * <p>验证数据源标识能被正确设置和读取</p>
      */
     @Test
-    @Order(1)
     public void shouldReturnCorrectDataSource_whenDataSourceIsSet() {
         // 准备测试数据
         final String expectedDataSource = "master";
@@ -70,7 +51,6 @@ public class DataSourceContextHolderTest {
      * </ul>
      */
     @Test
-    @Order(2)
     public void shouldReturnClearedDataSource_whenDataSourceIsCleared() {
         // 准备测试数据
         final String testDataSource = "master";
@@ -95,7 +75,6 @@ public class DataSourceContextHolderTest {
      * <p>验证清理所有操作后上下文栈被完全清空</p>
      */
     @Test
-    @Order(3)
     public void shouldClearAllContexts_whenClearAllIsCalled() {
         // 准备测试数据
         final String firstDataSource = "master";
@@ -120,7 +99,6 @@ public class DataSourceContextHolderTest {
      * <p>验证hasDataSource方法在不同状态下的行为</p>
      */
     @Test
-    @Order(4)
     public void shouldCorrectlyCheckDataSourceExistence() {
         // 初始状态应该没有数据源
         assertFalse(DataSourceContextHolder.hasDataSource(), 
@@ -142,7 +120,6 @@ public class DataSourceContextHolderTest {
      * <p>验证上下文栈的深度正确反映了嵌套层级</p>
      */
     @Test
-    @Order(5)
     public void shouldReturnCorrectStackDepth() {
         // 初始状态栈深度为0
         assertEquals(0, DataSourceContextHolder.getContextStackDepth(), 
@@ -169,7 +146,6 @@ public class DataSourceContextHolderTest {
      * <p>验证嵌套设置和清理时数据源上下文的正确恢复</p>
      */
     @Test
-    @Order(6)
     public void shouldRestorePreviousDataSource_whenNestedContextIsCleared() {
         // 准备测试数据
         final String firstDataSource = "master";
@@ -206,7 +182,6 @@ public class DataSourceContextHolderTest {
      * <p>验证在指定数据源上下文中执行操作，并在完成后自动清理</p>
      */
     @Test
-    @Order(7)
     public void shouldExecuteInSpecifiedDataSource_andCleanup_whenNoReturnValue() {
         // 准备测试数据
         final String testDataSource = "test_ds";
@@ -232,7 +207,6 @@ public class DataSourceContextHolderTest {
      * <p>验证在指定数据源上下文中执行操作，返回结果，并在完成后自动清理</p>
      */
     @Test
-    @Order(8)
     public void shouldReturnCorrectResult_andCleanup_whenExecuteWithResult() {
         // 准备测试数据
         final String testDataSource = "test_ds";
@@ -256,7 +230,6 @@ public class DataSourceContextHolderTest {
      * <p>验证即使执行过程中发生异常，数据源上下文也会被正确清理</p>
      */
     @Test
-    @Order(9)
     public void shouldCleanupContext_whenExceptionOccursDuringExecution() {
         // 准备测试数据
         final String testDataSource = "test_ds";
@@ -286,7 +259,6 @@ public class DataSourceContextHolderTest {
      * <p>验证在多线程环境下，各线程的数据源上下文互不影响</p>
      */
     @Test
-    @Order(10)
     public void shouldMaintainIsolation_whenMultipleThreadsAccessContext() throws InterruptedException {
         // 准备测试数据
         final int threadCount = 10;

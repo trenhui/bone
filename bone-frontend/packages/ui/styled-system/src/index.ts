@@ -201,11 +201,7 @@ export function useTheme<T extends Theme = Theme>(): T {
 // 创建主题提供者
 export function createThemeProvider(theme: Theme) {
   const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
-    return (
-      <ThemingContext.Provider value={theme}>
-        {children}
-      </ThemingContext.Provider>
-    );
+    return React.createElement(ThemingContext.Provider, { value: theme }, children);
   };
 
   return ThemeProvider;

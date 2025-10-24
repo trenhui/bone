@@ -41,6 +41,8 @@ export interface AppMetadata {
     framework: 'react' | 'vue' | 'angular' | 'svelte';
     version: string;
   };
+  /** 沙箱配置 */
+  sandbox?: SandboxConfig;
 }
 
 /**
@@ -179,8 +181,10 @@ export interface PerformanceMetrics {
 export interface ErrorContext {
   /** 错误发生的阶段 */
   phase: string;
+  /** 应用ID */
+  appId: string;
   /** 应用信息 */
-  appInfo: MicroAppConfig;
+  appInfo?: MicroAppConfig;
   /** 其他上下文信息 */
   [key: string]: any;
 }

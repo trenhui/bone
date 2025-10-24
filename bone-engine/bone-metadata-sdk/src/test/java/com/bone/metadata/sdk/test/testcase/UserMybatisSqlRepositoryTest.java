@@ -83,8 +83,8 @@ public class UserMybatisSqlRepositoryTest {
                 return results;
             }
 
-            @Override
-            public PageResult<UserRoleDTO> queryUerPermPage(UserPageQuery userPageQuery) {
+            // 实现正确的方法名
+            public PageResult<UserRoleDTO> queryUerPermPage(UserPageQuery query) {
                 return PageResult.of(Collections.emptyList(), 0L, 1, 10);
             }
 

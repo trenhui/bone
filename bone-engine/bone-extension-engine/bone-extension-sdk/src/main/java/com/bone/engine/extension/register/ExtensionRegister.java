@@ -7,6 +7,7 @@ import com.bone.engine.extension.event.ExtensionEventPublisher;
 import com.bone.engine.extension.ExtPointConstants;
 import com.bone.engine.extension.repository.ExtPointRepository;
 import com.bone.engine.extension.version.ExtensionVersionManager;
+import com.bone.engine.extension.utils.ExtPointUtils;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -458,15 +459,13 @@ public class ExtensionRegister implements ApplicationContextAware {
                 if (reader.getAnnotationMetadata().isAnnotated(Extension.class.getName())) {
                     try {
                         Class<?> clazz = ClassUtils.forName(className, getClass().getClassLoader());
-                        // 获取所有实现的接口
-                        for (Class<?> interfaceClass : clazz.getInterfaces()) {
-                            if (interfaceClass.isAnnotationPresent(ExtPoint.class)) {
+                        // 获取所有实现的扩展点接口
+                            List<Class<?>> extPointInterfaces = ExtPointUtils.findExtPointInterfaces(clazz);
+                            if (!extPointInterfaces.isEmpty()) {
                                 // 获取Bean实例并注册
                                 Object provider = applicationContext.getBean(clazz);
                                 registerExtension(provider);
-                                break;
                             }
-                        }
                     } catch (Exception e) {
                         log.warn("Failed to register extension class: {}", className, e);
                     }
@@ -482,22 +481,7 @@ public class ExtensionRegister implements ApplicationContextAware {
      * @return 带有@ExtPoint注解的接口列表
      */
     private List<Class<?>> findExtPointInterfaces(Class<?> implementationClass) {
-        List<Class<?>> result = new ArrayList<>();
-        
-        // 获取所有直接实现的接口
-        for (Class<?> iface : implementationClass.getInterfaces()) {
-            if (iface.isAnnotationPresent(ExtPoint.class)) {
-                result.add(iface);
-            }
-        }
-        
-        // 递归查找父类实现的接口
-        Class<?> superClass = implementationClass.getSuperclass();
-        if (superClass != null && superClass != Object.class) {
-            result.addAll(findExtPointInterfaces(superClass));
-        }
-        
-        return result;
+        return ExtPointUtils.findExtPointInterfaces(implementationClass);
     }
     
     /**
@@ -545,7 +529,7 @@ public class ExtensionRegister implements ApplicationContextAware {
         // 处理版本信息
         try {
             Extension extAnnotation = AnnotationUtils.findAnnotation(provider.getClass(), Extension.class);
-            if (extAnnotation != null && versionManager != null && false) {
+            if (extAnnotation != null && versionManager != null) {
                 String version = extAnnotation.version();
                 @SuppressWarnings("unchecked")
                 Class<? extends ExtPoint> extPointClass = (Class<? extends ExtPoint>) interfaceClass;
@@ -582,13 +566,13 @@ public class ExtensionRegister implements ApplicationContextAware {
         eventPublisher.publishBeforeRegister(this, interfaceClass.getCanonicalName(), provider.getClass().getCanonicalName());
         
         // 注册到仓库
-            extPointRepository.put(registrationKey, provider);
-            registeredProviders.add(provider);
+        extPointRepository.put(registrationKey, provider);
+        registeredProviders.add(provider);
         
         // 处理版本相关逻辑
         try {
             Extension extAnnotation = AnnotationUtils.findAnnotation(provider.getClass(), Extension.class);
-            if (extAnnotation != null && versionManager != null && false) {
+            if (extAnnotation != null && versionManager != null) {
                 String version = extAnnotation.version();
                 
                 @SuppressWarnings("unchecked")
@@ -634,7 +618,7 @@ public class ExtensionRegister implements ApplicationContextAware {
      */
     public <T extends ExtPoint> void updateExtensionVersion(Class<T> extPointClass, String version, 
                                                            boolean isDefault, boolean isRecommended) {
-        if (versionManager == null || true) {
+        if (versionManager == null) {
             log.warn("Version manager not available, cannot update extension version");
             return;
         }

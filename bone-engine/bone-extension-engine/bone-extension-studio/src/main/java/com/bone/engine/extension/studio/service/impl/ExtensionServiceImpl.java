@@ -1,6 +1,7 @@
 package com.bone.engine.extension.studio.service.impl;
 
 import com.bone.engine.extension.Extension;
+
 import com.bone.engine.extension.studio.model.ExtPointEntity;
 import com.bone.engine.extension.studio.model.ExtensionEntity;
 import com.bone.engine.extension.studio.repository.ExtPointRepository;
@@ -32,6 +33,7 @@ import org.springframework.util.StringUtils;
 import jakarta.persistence.criteria.Predicate;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,6 +42,8 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.Set;
 import java.util.HashSet;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -295,6 +299,13 @@ public class ExtensionServiceImpl implements ExtensionService {
     @Override
     @Transactional
     @CacheEvict(value = {"allExtensions", "extensionsByExtPoint"}, allEntries = true)
+    public int registerExtensions() {
+        // 实现接口要求的方法，调用现有的扫描注册方法
+        return scanAndRegisterExtensions();
+    }
+    
+    @Transactional
+    @CacheEvict(value = {"allExtensions", "extensionsByExtPoint"}, allEntries = true)
     public int scanAndRegisterExtensions() {
         log.info("开始扫描并注册扩展实现，基础包: {}", scanBasePackages);
         int registeredCount = 0;
@@ -390,16 +401,15 @@ public class ExtensionServiceImpl implements ExtensionService {
                         extensionEntity.setClassName(clazz.getName());
                         extensionEntity.setTenantCode(StringUtils.hasText(annotation.tenantCode()) ? annotation.tenantCode() : "DEFAULT");
                         extensionEntity.setBizCode(StringUtils.hasText(annotation.bizCode()) ? annotation.bizCode() : "*");
-                        extensionEntity.setUseCase(StringUtils.hasText(annotation.useCase()) ? annotation.useCase() : "*");
                         extensionEntity.setScenario(StringUtils.hasText(annotation.scenario()) ? annotation.scenario() : "*");
-                        extensionEntity.setUserGroup(StringUtils.hasText(annotation.userGroup()) ? annotation.userGroup() : "*");
                         extensionEntity.setPriority(annotation.priority());
                         extensionEntity.setEnabled(true);
-                        
+                         
                         extensionRepository.save(extensionEntity);
                         log.info("成功注册扩展实现: {} 到扩展点: {}", clazz.getName(), extPoint.getName());
                         return 1;
                     } else {
+                        // 扩展实现已存在，移除重复的日志语句
                         log.debug("扩展实现已存在: {}", clazz.getName());
                         return 0;
                     }
@@ -450,35 +460,40 @@ public class ExtensionServiceImpl implements ExtensionService {
 
     @Override
     public boolean validateExtension(ExtensionEntity extension) {
-        // 先检查缓存
-        String className = extension.getClassName();
-        if (extensionValidationCache.containsKey(className)) {
-            return extensionValidationCache.get(className);
-        }
-        
         try {
-            log.debug("验证扩展实现: {}", className);
+            // 检查缓存中是否已有验证结果
+            String cacheKey = extension.getClassName();
+            if (extensionValidationCache.containsKey(cacheKey)) {
+                return extensionValidationCache.get(cacheKey);
+            }
             
-            // 1. 检查实现类是否存在
-            Class<?> implClass = null;
-            try {
-                implClass = ClassUtils.forName(className, ClassUtils.getDefaultClassLoader());
-                if (implClass == null) {
-                    log.error("扩展实现类不存在: {}", className);
-                    extensionValidationCache.put(className, false);
-                    return false;
-                }
-            } catch (Exception e) {
-                log.error("加载扩展实现类失败: {}", className, e);
-                extensionValidationCache.put(className, false);
+            // 加载类并验证
+            Class<?> clazz = ClassUtils.forName(extension.getClassName(), ClassUtils.getDefaultClassLoader());
+            
+            // 检查类是否带有@Extension注解
+            Extension annotation = clazz.getAnnotation(Extension.class);
+            if (annotation == null) {
+                log.warn("类 {} 未添加 @Extension 注解", extension.getClassName());
+                extensionValidationCache.put(cacheKey, false);
+                return false;
+            }
+            
+            // 验证注解中的路由参数与实体数据是否一致
+            validateExtensionAnnotation(extension, annotation);
+            
+            // 检查实现的接口是否存在
+            Class<?>[] interfaces = clazz.getInterfaces();
+            if (interfaces.length == 0) {
+                log.warn("类 {} 没有实现任何接口", extension.getClassName());
+                extensionValidationCache.put(cacheKey, false);
                 return false;
             }
             
             // 2. 检查实现类是否实现了对应的扩展点接口
             ExtPointEntity extPoint = extension.getExtPoint();
             if (extPoint == null) {
-                log.error("扩展实现未关联扩展点: {}", className);
-                extensionValidationCache.put(className, false);
+                log.error("扩展实现未关联扩展点: {}", extension.getClassName());
+                extensionValidationCache.put(cacheKey, false);
                 return false;
             }
             
@@ -487,39 +502,99 @@ public class ExtensionServiceImpl implements ExtensionService {
                 extPointInterface = ClassUtils.forName(extPoint.getInterfaceName(), ClassUtils.getDefaultClassLoader());
             } catch (Exception e) {
                 log.error("加载扩展点接口失败: {}", extPoint.getInterfaceName(), e);
-                extensionValidationCache.put(className, false);
+                extensionValidationCache.put(cacheKey, false);
                 return false;
             }
             
-            if (!extPointInterface.isAssignableFrom(implClass)) {
-                log.error("扩展实现 {} 未实现扩展点接口 {}", className, extPoint.getInterfaceName());
-                extensionValidationCache.put(className, false);
+            if (!extPointInterface.isAssignableFrom(clazz)) {
+                log.error("扩展实现 {} 未实现扩展点接口 {}", extension.getClassName(), extPoint.getInterfaceName());
+                extensionValidationCache.put(cacheKey, false);
                 return false;
             }
             
-            // 3. 检查是否有公共无参构造函数
+            // 检查类是否有公共的无参构造函数
+            boolean hasPublicNoArgsConstructor = false;
+            for (java.lang.reflect.Constructor<?> constructor : clazz.getConstructors()) {
+                if (constructor.getParameterCount() == 0 && 
+                    (constructor.getModifiers() & java.lang.reflect.Modifier.PUBLIC) != 0) {
+                    hasPublicNoArgsConstructor = true;
+                    break;
+                }
+            }
+            
+            if (!hasPublicNoArgsConstructor) {
+                log.warn("类 {} 没有公共的无参构造函数", extension.getClassName());
+                extensionValidationCache.put(cacheKey, false);
+                return false;
+            }
+            
+            // 尝试实例化类，验证是否可以正常创建
             try {
-                implClass.getDeclaredConstructor().setAccessible(true);
+                Object instance = clazz.getDeclaredConstructor().newInstance();
+                log.debug("成功实例化扩展实现类: {}", extension.getClassName());
+                
+                // 如果实现了ExtensionLifecycle接口，调用其初始化方法进行验证
+                for (Class<?> intf : interfaces) {
+                    if ("com.bone.engine.extension.ExtensionLifecycle".equals(intf.getName())) {
+                        try {
+                            Method initMethod = intf.getMethod("init");
+                            initMethod.invoke(instance);
+                            log.debug("成功调用扩展实现的初始化方法: {}", extension.getClassName());
+                        } catch (Exception e) {
+                            log.warn("调用扩展实现初始化方法失败: {}", extension.getClassName(), e);
+                            // 初始化失败不影响验证通过，但需要记录警告
+                        }
+                        break;
+                    }
+                }
             } catch (Exception e) {
-                log.error("扩展实现 {} 缺少公共无参构造函数", className, e);
-                extensionValidationCache.put(className, false);
+                log.error("实例化扩展实现类失败: {}", extension.getClassName(), e);
+                extensionValidationCache.put(cacheKey, false);
                 return false;
             }
             
-            // 4. 检查配置是否合法（如果有配置）
+            // 检查配置是否合法（如果有配置）
             if (extension.getConfig() != null) {
                 // 这里可以添加配置验证逻辑
                 // 例如：验证JSON格式、检查必填字段等
-                log.debug("扩展实现 {} 配置验证通过", className);
+                log.debug("扩展实现 {} 配置验证通过", extension.getClassName());
             }
             
-            log.debug("扩展实现 {} 验证通过", className);
-            extensionValidationCache.put(className, true);
+            log.debug("扩展实现 {} 验证通过", extension.getClassName());
+            extensionValidationCache.put(cacheKey, true);
             return true;
-        } catch (Exception e) {
-            log.error("验证扩展实现时发生异常: {}", className, e);
-            extensionValidationCache.put(className, false);
+        } catch (ClassNotFoundException e) {
+            log.error("找不到类: {}", extension.getClassName(), e);
             return false;
+        } catch (Exception e) {
+            log.error("验证扩展实现时发生异常: {}", extension.getClassName(), e);
+            return false;
+        }
+    }
+    
+    /**
+     * 验证扩展注解中的路由参数与实体数据是否一致
+     */
+    private void validateExtensionAnnotation(ExtensionEntity extension, Extension annotation) {
+        // 验证租户代码
+        String annotationTenantCode = annotation.tenantCode();
+        if (!"*".equals(annotationTenantCode) && !annotationTenantCode.equals(extension.getTenantCode())) {
+            log.warn("扩展实现 {} 的租户代码不匹配，注解: {}, 数据库: {}", 
+                    extension.getClassName(), annotationTenantCode, extension.getTenantCode());
+        }
+        
+        // 验证业务域代码
+        String annotationBizCode = annotation.bizCode();
+        if (!"*".equals(annotationBizCode) && !annotationBizCode.equals(extension.getBizCode())) {
+            log.warn("扩展实现 {} 的业务域代码不匹配，注解: {}, 数据库: {}", 
+                    extension.getClassName(), annotationBizCode, extension.getBizCode());
+        }
+        
+        // 验证场景代码
+        String annotationScenario = annotation.scenario();
+        if (!"*".equals(annotationScenario) && !annotationScenario.equals(extension.getScenario())) {
+            log.warn("扩展实现 {} 的场景代码不匹配，注解: {}, 数据库: {}", 
+                    extension.getClassName(), annotationScenario, extension.getScenario());
         }
     }
 
@@ -554,5 +629,104 @@ public class ExtensionServiceImpl implements ExtensionService {
             log.error("重置扩展实现统计信息失败: {}", id, e);
             throw new RuntimeException("重置扩展实现统计信息失败: " + e.getMessage(), e);
         }
+    }
+    
+    @Override
+    public long getTotalExtensionCount() {
+        log.debug("获取扩展实现总数");
+        return extensionRepository.count();
+    }
+    
+    @Override
+    public Map<String, Long> getExtensionStatsByStatus() {
+        log.debug("根据状态统计扩展实现数量");
+        Map<String, Long> stats = new HashMap<>();
+        
+        // 统计总扩展实现
+        long totalCount = extensionRepository.count();
+        long disabledCount = extensionRepository.findAll().stream()
+                .filter(extension -> !extension.isEnabled())
+                .count();
+        
+        stats.put("enabled", totalCount - disabledCount);
+        stats.put("disabled", disabledCount);
+        stats.put("total", totalCount);
+        
+        // 统计验证通过和失败的扩展实现
+        long validCount = extensionRepository.findAll().stream()
+                .filter(extension -> validateExtension(extension))
+                .count();
+        stats.put("valid", validCount);
+        stats.put("invalid", totalCount - validCount);
+        
+        return stats;
+    }
+    
+    @Override
+    public Map<String, Long> getExtensionStatsByExtPoint() {
+        log.debug("根据扩展点统计扩展实现数量");
+        Map<String, Long> stats = new HashMap<>();
+        
+        // 获取所有扩展实现
+        List<ExtensionEntity> extensions = extensionRepository.findAll();
+        
+        // 按扩展点名称分组统计
+        Map<String, Long> countByExtPoint = extensions.stream()
+                .collect(Collectors.groupingBy(
+                        e -> e.getExtPoint() != null ? e.getExtPoint().getName() : "未知",
+                        Collectors.counting()
+                ));
+        
+        // 转换为有序的统计结果
+        List<Map.Entry<String, Long>> sortedEntries = countByExtPoint.entrySet().stream()
+                .sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                .collect(Collectors.toList());
+        
+        for (Map.Entry<String, Long> entry : sortedEntries) {
+            stats.put(entry.getKey(), entry.getValue());
+        }
+        
+        return stats;
+    }
+    
+    // 移除@Override注解，因为此方法不在ExtensionService接口中定义
+    public Map<String, Object> getExtensionDoc(String extensionId) {
+        log.info("获取扩展实现文档详情，扩展实现ID: {}", extensionId);
+        ExtensionEntity extension;
+        try {
+            // 尝试将ID解析为Long
+            extension = extensionRepository.findById(Long.parseLong(extensionId))
+                    .orElseThrow(() -> new IllegalArgumentException("扩展实现不存在"));
+        } catch (NumberFormatException e) {
+            // 移除对不存在方法的调用
+            throw new IllegalArgumentException("扩展实现不存在: " + extensionId);
+        }
+        
+        // 返回扩展实现的基本信息
+        Map<String, Object> docInfo = new HashMap<>();
+        docInfo.put("name", extension.getName());
+        docInfo.put("className", extension.getClassName());
+        docInfo.put("tenantCode", extension.getTenantCode());
+        docInfo.put("bizCode", extension.getBizCode() != null ? extension.getBizCode() : "");
+        docInfo.put("scenario", extension.getScenario() != null ? extension.getScenario() : "");
+        docInfo.put("priority", extension.getPriority());
+        // 检查version属性是否存在，避免空指针异常
+        try {
+            Method versionMethod = extension.getClass().getMethod("getVersion");
+            docInfo.put("version", versionMethod.invoke(extension));
+        } catch (Exception e) {
+            docInfo.put("version", null);
+        }
+        docInfo.put("status", extension.isEnabled() ? "enabled" : "disabled");
+        docInfo.put("description", extension.getDescription() != null ? extension.getDescription() : "");
+        // 检查createTime属性是否存在，避免空指针异常
+        try {
+            Method createTimeMethod = extension.getClass().getMethod("getCreateTime");
+            docInfo.put("createTime", createTimeMethod.invoke(extension));
+        } catch (Exception e) {
+            docInfo.put("createTime", null);
+        }
+        
+        return docInfo;
     }
 }

@@ -103,21 +103,16 @@ public final class DataSourceContextHolder {
         Objects.requireNonNull(dataSource, "Data source cannot be null");
         Objects.requireNonNull(action, "Action cannot be null");
         
-        boolean success = false;
         try {
             setDataSource(dataSource);
             action.run();
-            success = true;
         } catch (Exception e) {
             log.error("Error executing in datasource: {}", dataSource, e);
             throw e;
         } finally {
-            if (success) {
-                clearDataSource();
-            } else {
-                // 发生异常时，为了安全起见，清理所有上下文
-                clearAll();
-            }
+            // 无论成功失败，都只清理当前设置的数据源上下文
+            // 这确保了嵌套数据源调用的正确性
+            clearDataSource();
         }
     }
     
@@ -132,22 +127,16 @@ public final class DataSourceContextHolder {
         Objects.requireNonNull(dataSource, "Data source cannot be null");
         Objects.requireNonNull(action, "Action cannot be null");
         
-        boolean success = false;
         try {
             setDataSource(dataSource);
-            T result = action.get();
-            success = true;
-            return result;
+            return action.get();
         } catch (Exception e) {
             log.error("Error executing in datasource: {}", dataSource, e);
             throw e;
         } finally {
-            if (success) {
-                clearDataSource();
-            } else {
-                // 发生异常时，为了安全起见，清理所有上下文
-                clearAll();
-            }
+            // 无论成功失败，都只清理当前设置的数据源上下文
+            // 这确保了嵌套数据源调用的正确性和异常处理的一致性
+            clearDataSource();
         }
     }
 }

@@ -26,21 +26,9 @@ export default defineConfig({
     // 微前端预设配置
     microFePreset({
       appName: 'main',
-      isMain: true,
-      sandbox: {
-        enabled: true,
-        // 沙箱配置
-        scopes: {
-          // 允许子应用访问的全局变量
-          allowedGlobals: ['__BONE_CONFIG__', 'console', 'window', 'document']
-        }
-      },
-      // 性能监控配置
-      performance: {
-        enabled: true,
-        // 收集关键性能指标
-        collectMetrics: ['FCP', 'LCP', 'CLS', 'TTFB']
-      }
+      isSubApp: false,
+      enableSandbox: true,
+      enablePerformance: true
     })
   ],
   

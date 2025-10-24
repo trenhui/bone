@@ -9,7 +9,7 @@ import com.bone.metadata.sdk.domain.model.TableMetadata;
 
 import java.util.*;
 
-public class DynamicUpdateBuilderSql implements SqlQueryBuilder<DynamicUpdateContext> {
+public class DynamicUpdateSqlBuilder implements SqlQueryBuilder<DynamicUpdateContext> {
     @Override
     public CompiledQuery build(DynamicUpdateContext ctx) {
         TableMetadata table = ctx.getTable();

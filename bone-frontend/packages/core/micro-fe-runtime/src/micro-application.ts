@@ -1,5 +1,5 @@
 import { MicroAppConfig, AppStatus, AppLifecycleHooks, RouteRule, ErrorContext } from './types';
-import { getEventBus } from '@bone/core/event-bus';
+import { getEventBus } from './shared/event-bus';
 import { Sandbox } from './types';
 import { SandboxFactory } from './sandbox';
 import { ErrorHandler } from './error-handler';
@@ -55,7 +55,7 @@ export class MicroApplication {
     
     // 初始化各个管理器
     this.lifecycle = new AppLifecycle(this);
-    this.errorHandler = new ErrorHandler(config.id);
+    this.errorHandler = new ErrorHandler({ appId: config.id }); // 使用正确的配置对象格式
     this.performanceMonitor = new PerformanceMonitor(config.id);
     this.securityEnforcer = new SecurityPolicyEnforcer(config.metadata?.permissions || []);
     this.resourceCache = new ResourceCache(config.id);
@@ -86,6 +86,7 @@ export class MicroApplication {
     } catch (error) {
       this.errorHandler.handle(error as Error, { 
         phase: 'init', 
+        appId: this._config.id, 
         additionalInfo: { action: 'initializeContainer', containerType: typeof container } 
       });
       this.containerElement = null;
@@ -135,6 +136,7 @@ export class MicroApplication {
             const resourceError = new Error(`Failed to load resource: ${entry}, ${error instanceof Error ? error.message : String(error)}`);
             this.errorHandler.handle(resourceError, {
               phase: 'resourceLoad',
+              appId: this._config.id,
               additionalInfo: { 
                 resourceUrl: entry,
                 isSingleResourceFailure: true
@@ -158,6 +160,7 @@ export class MicroApplication {
     } catch (error) {
       this.errorHandler.handle(error as Error, {
         phase: 'resourceLoad',
+        appId: this._config.id,
         appInfo: this._config
       });
       throw error;
@@ -217,10 +220,11 @@ export class MicroApplication {
     
     // 安全策略检查
     if (!this.securityEnforcer.checkPermission('load')) {
-      const permissionError = new SecurityError(`App ${this._config.id} doesn't have permission to load`);
+      const permissionError = new Error(`App ${this._config.id} doesn't have permission to load`);
       this.status = 'LOAD_ERROR';
       this.errorHandler.handle(permissionError, {
         phase: 'load',
+        appId: this._config.id,
         additionalInfo: { action: 'permissionCheck' }
       });
       throw permissionError;
@@ -286,6 +290,7 @@ export class MicroApplication {
       // 记录错误并上报
       const errorContext = {
         phase: 'load',
+        appId: this._config.id,
         appInfo: this._config,
         additionalInfo: {
           attemptedState: this.status,
@@ -393,6 +398,7 @@ export class MicroApplication {
           // 记录沙箱挂载错误，但继续尝试
           this.errorHandler.handle(sandboxMountError as Error, {
             phase: 'mount',
+            appId: this._config.id,
             additionalInfo: { action: 'sandboxMount' }
           });
         }
@@ -418,6 +424,7 @@ export class MicroApplication {
       // 记录错误并上报
       const errorContext = {
         phase: 'mount',
+        appId: this._config.id,
         appInfo: this._config,
         additionalInfo: {
           containerType: containerOrProps ? typeof containerOrProps : 'undefined',
@@ -546,6 +553,7 @@ export class MicroApplication {
       // 记录错误并上报
       const errorContext = {
         phase: 'unmount',
+        appId: this._config.id,
         appInfo: this._config
       };
       
@@ -588,7 +596,7 @@ export class MicroApplication {
           version: this._config.version,
           runtime: { version: BONE_RUNTIME_VERSION },
           updateTime: Date.now(),
-          updateCount: (this.performanceMonitor.getMetrics().updateCount || 0) + 1
+          updateCount: Number(this.performanceMonitor.getMetrics().updateCount || 0) + 1
         }
       };
       
@@ -611,6 +619,7 @@ export class MicroApplication {
       // 记录错误并上报
       const errorContext = {
         phase: 'update',
+        appId: this._config.id,
         appInfo: this._config,
         additionalInfo: { hasProps: !!props }
       };
@@ -654,7 +663,7 @@ export class MicroApplication {
       await this.load();
       
       // 如果之前是挂载状态，重新挂载
-      if (this.containerElement && this.status === 'NOT_MOUNTED') {
+      if (this.containerElement && this.status !== 'NOT_LOADED') {
         await this.mount(this.containerElement);
       }
       
@@ -663,6 +672,7 @@ export class MicroApplication {
     } catch (error) {
       this.errorHandler.handle(error as Error, {
         phase: 'reload',
+        appId: this._config.id,
         appInfo: this._config
       });
       throw error;
@@ -699,18 +709,6 @@ export class MicroApplication {
       // 不清理缓存，允许后续复用
     } catch (error) {
       console.error('Error during resource cleanup:', error);
-    }
-  }
-    } catch (error) {
-      this.status = 'UPDATE_ERROR';
-      
-      // 记录错误并上报
-      this.errorHandler.handle(error as Error, {
-        phase: 'update',
-        appInfo: this.config
-      });
-      
-      throw error;
     }
   }
 
@@ -757,6 +755,7 @@ export class MicroApplication {
           // 记录卸载错误，但继续销毁流程
           this.errorHandler.handle(unmountError as Error, {
             phase: 'destroy',
+            appId: this._config.id,
             additionalInfo: { action: 'unmount' }
           });
         }
@@ -777,6 +776,7 @@ export class MicroApplication {
       // 记录错误并上报
       const errorContext = {
         phase: 'destroy',
+        appId: this._config.id,
         appInfo: this._config,
         additionalInfo: { attemptedState: this.status }
       };
@@ -826,5 +826,4 @@ export class MicroApplication {
   getSandboxStatus() {
     return this.sandbox?.getStatus?.();
   }
-}
 }

@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -70,7 +71,22 @@ public interface ExtensionService {
     /**
      * 扫描项目中的扩展实现并注册
      */
-    int scanAndRegisterExtensions();
+    int registerExtensions();
+    
+    /**
+     * 获取扩展实现总数
+     */
+    long getTotalExtensionCount();
+    
+    /**
+     * 根据状态统计扩展实现数量
+     */
+    Map<String, Long> getExtensionStatsByStatus();
+    
+    /**
+     * 根据扩展点统计扩展实现数量
+     */
+    Map<String, Long> getExtensionStatsByExtPoint();
 
     /**
      * 验证扩展实现的有效性

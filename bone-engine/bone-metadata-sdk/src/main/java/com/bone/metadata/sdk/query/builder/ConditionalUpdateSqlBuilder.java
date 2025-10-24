@@ -13,7 +13,7 @@ import java.util.*;
 /**
  * 动态构建带条件的 UPDATE（支持实体字段和扩展字段）。
  */
-public class ConditionalUpdateBuilderSql implements SqlQueryBuilder<ConditionalUpdateContext> {
+public class ConditionalUpdateSqlBuilder implements SqlQueryBuilder<ConditionalUpdateContext> {
 
     @Override
     public CompiledQuery build(ConditionalUpdateContext ctx) {

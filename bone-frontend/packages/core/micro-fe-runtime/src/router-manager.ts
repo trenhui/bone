@@ -1,34 +1,6 @@
 import { RouteRule, MicroAppConfig } from './types';
 import { ApplicationRegistry } from './application-registry';
-
-// 本地事件总线实现（替代外部依赖）
-class LocalEventBus {
-  private events: Record<string, Function[]> = {};
-  
-  on(event: string, handler: Function) {
-    if (!this.events[event]) {
-      this.events[event] = [];
-    }
-    this.events[event].push(handler);
-  }
-  
-  emit(event: string, data: any) {
-    if (this.events[event]) {
-      this.events[event].forEach(handler => handler(data));
-    }
-  }
-  
-  off(event: string, handler?: Function) {
-    if (handler) {
-      this.events[event] = this.events[event]?.filter(h => h !== handler) || [];
-    } else {
-      delete this.events[event];
-    }
-  }
-}
-
-const localEventBus = new LocalEventBus();
-const getEventBus = () => localEventBus;
+import { getEventBus } from './shared/event-bus';
 
 /**
  * 路由管理器

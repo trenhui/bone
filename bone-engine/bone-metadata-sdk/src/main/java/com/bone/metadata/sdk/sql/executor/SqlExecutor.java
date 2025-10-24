@@ -15,6 +15,7 @@ import com.bone.metadata.sdk.sql.template.SqlTemplateLoader;
 import com.bone.metadata.sdk.support.config.SqlConfigProperties;
 import com.bone.metadata.sdk.support.util.ParamConvertUtil;
 import com.bone.metadata.sdk.support.util.SqlUtil;
+import com.bone.metadata.sdk.support.util.RepositoryClassUtils;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.stats.CacheStats;
@@ -304,14 +305,9 @@ public class SqlExecutor {
     }
 
     // 简单类型判断（与MethodHandler保持一致）
+    // 使用公共工具类替代重复方法
     private boolean isSimpleType(Class<?> type) {
-        return type.isPrimitive() ||
-                Number.class.isAssignableFrom(type) ||
-                CharSequence.class.isAssignableFrom(type) ||
-                Boolean.class.equals(type) ||
-                java.util.Date.class.isAssignableFrom(type) ||
-                java.time.temporal.Temporal.class.isAssignableFrom(type) ||
-                type == Object.class;
+        return RepositoryClassUtils.isSimpleType(type);
     }
 
     /**

@@ -4,6 +4,9 @@ import com.bone.engine.extension.ExtPoint;
 import com.bone.engine.extension.Extension;
 import com.bone.engine.extension.ExtPointConstants;
 import com.bone.engine.extension.repository.ExtPointRepository;
+import com.bone.engine.extension.utils.ExtPointUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
@@ -130,7 +133,7 @@ public class DefaultExtPointMetadataService implements ExtPointMetadataService, 
             Class<?>[] interfaces = beanClass.getInterfaces();
             
             for (Class<?> interfaceClass : interfaces) {
-                if (interfaceClass.isAnnotationPresent(ExtPoint.class)) {
+                if (ExtPointUtils.isExtPointInterface(interfaceClass)) {
                     collectExtPointMetadata(interfaceClass);
                     break;
                 }
@@ -220,7 +223,7 @@ public class DefaultExtPointMetadataService implements ExtPointMetadataService, 
             }
             
             Extension extension = AnnotationUtils.findAnnotation(implClass, Extension.class);
-            if (extension != null) {
+            if (extension != null && ExtPointUtils.isExtensionImplementation(implClass)) {
                 ExtensionImplMetadata implMetadata = new ExtensionImplMetadata();
                 implMetadata.setImplClassName(implClass.getName());
                 implMetadata.setImplSimpleName(implClass.getSimpleName());

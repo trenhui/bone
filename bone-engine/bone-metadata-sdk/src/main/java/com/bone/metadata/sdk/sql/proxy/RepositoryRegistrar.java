@@ -23,6 +23,7 @@ import java.util.*;
 
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.domain.annotation.EnableSqlRepositories;
+import com.bone.metadata.sdk.support.util.RepositoryClassUtils;
 
 public class RepositoryRegistrar implements ImportBeanDefinitionRegistrar, ResourceLoaderAware {
     private static final Logger logger = LoggerFactory.getLogger(RepositoryRegistrar.class);
@@ -161,24 +162,8 @@ public class RepositoryRegistrar implements ImportBeanDefinitionRegistrar, Resou
     /**
      * 解析泛型类型
      */
+    // 使用公共工具类替代重复方法
     private Class<?>[] resolveGenericTypes(Class<?> repositoryInterface) {
-        for (Type genericInterface : repositoryInterface.getGenericInterfaces()) {
-            if (genericInterface instanceof ParameterizedType) {
-                ParameterizedType parameterizedType = (ParameterizedType) genericInterface;
-                if (parameterizedType.getRawType().equals(Repository.class)) {
-                    Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
-                    if (actualTypeArguments.length == 2) {
-                        try {
-                            Class<?> entityClass = Class.forName(actualTypeArguments[0].getTypeName());
-                            Class<?> idClass = Class.forName(actualTypeArguments[1].getTypeName());
-                            return new Class<?>[]{entityClass, idClass};
-                        } catch (ClassNotFoundException e) {
-                            logger.error("Failed to resolve generic types", e);
-                        }
-                    }
-                }
-            }
-        }
-        return null;
+        return RepositoryClassUtils.resolveGenericTypes(repositoryInterface);
     }
 }

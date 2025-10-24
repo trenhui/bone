@@ -9,13 +9,12 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
 import javax.sql.DataSource;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.function.Consumer;
 
 /**
- * 数据源管理器 - 提供函数式数据源切换能力
- * 使用模板方法模式简化数据源切换逻辑
+ * 数据源管理器 - 提供高级数据源管理功能
+ * 专注于数据源配置和事务操作，避免与DataSourceContextHolder的功能重复
  */
 @Component
 public class DataSourceManager implements InitializingBean {
@@ -29,77 +28,45 @@ public class DataSourceManager implements InitializingBean {
     private DynamicDataSource dynamicDataSource;
     
     /**
-     * 在指定数据源下执行操作
+     * 使用指定数据源执行操作（有返回值）
      * @param dataSourceName 数据源名称
-     * @param action 要执行的操作
+     * @param action 需要执行的操作
      * @param <T> 返回值类型
      * @return 操作结果
      */
     public <T> T withDataSource(String dataSourceName, Supplier<T> action) {
-        Assert.notNull(dataSourceName, "Data source name cannot be null");
-        Assert.notNull(action, "Action cannot be null");
-        
-        if (log.isDebugEnabled()) {
-            log.debug("Switching to data source: {}", dataSourceName);
-        }
         return DataSourceContextHolder.executeInDataSourceWithResult(dataSourceName, action);
     }
     
     /**
-     * 在指定数据源下执行无返回值的操作
+     * 使用指定数据源执行操作（无返回值）
      * @param dataSourceName 数据源名称
-     * @param action 要执行的操作
-     */
-    public void withDataSource(String dataSourceName, Consumer<Void> action) {
-        Assert.notNull(dataSourceName, "Data source name cannot be null");
-        Assert.notNull(action, "Action cannot be null");
-        
-        withDataSource(dataSourceName, () -> {
-            action.accept(null);
-            return null;
-        });
-    }
-    
-    /**
-     * 使用指定数据源执行操作（使用Runnable形式）
-     * @param dataSourceName 数据源标识
      * @param action 需要执行的操作
      */
     public void withDataSource(String dataSourceName, Runnable action) {
-        Assert.notNull(dataSourceName, "Data source name cannot be null");
-        Assert.notNull(action, "Action cannot be null");
-        
         DataSourceContextHolder.executeInDataSource(dataSourceName, action);
     }
     
+
+    
     /**
-     * 使用指定数据源执行操作（使用Function形式，支持传入参数）
-     * @param <T> 输入参数类型
-     * @param <R> 返回值类型
-     * @param dataSourceName 数据源标识
-     * @param input 输入参数
-     * @param function 函数式操作
-     * @return 操作的返回值
+     * 在指定数据源上执行Consumer操作（无参数）
+     * @param dataSourceName 数据源名称
+     * @param action 需要执行的操作
      */
-    public <T, R> R withDataSource(String dataSourceName, T input, Function<T, R> function) {
-        Assert.notNull(dataSourceName, "Data source name cannot be null");
-        Assert.notNull(function, "Function cannot be null");
-        
-        return withDataSource(dataSourceName, () -> function.apply(input));
+    public void withDataSource(String dataSourceName, Consumer<Void> action) {
+        DataSourceContextHolder.executeInDataSource(dataSourceName, () -> action.accept(null));
     }
     
     /**
-     * 使用指定数据源执行操作（使用Consumer形式，支持传入参数）
-     * @param <T> 输入参数类型
-     * @param dataSourceName 数据源标识
-     * @param input 输入参数
-     * @param consumer 消费者操作
+     * 在指定数据源上执行带有参数的Consumer操作
+     * @param dataSourceName 数据源名称
+     * @param value 传递给Consumer的参数值
+     * @param action 需要执行的操作
+     * @param <V> 参数类型
      */
-    public <T> void withDataSource(String dataSourceName, T input, Consumer<T> consumer) {
-        Assert.notNull(dataSourceName, "Data source name cannot be null");
-        Assert.notNull(consumer, "Consumer cannot be null");
-        
-        withDataSource(dataSourceName, () -> consumer.accept(input));
+    public <V> void withDataSource(String dataSourceName, V value, Consumer<V> action) {
+        DataSourceContextHolder.executeInDataSource(dataSourceName, () -> action.accept(value));
     }
     
     /**
@@ -109,15 +76,7 @@ public class DataSourceManager implements InitializingBean {
      * @return 操作结果
      */
     public <T> T withMaster(Supplier<T> action) {
-        return withDataSource("master", action);
-    }
-    
-    /**
-     * 执行写操作（使用主库）- 无返回值
-     * @param action 要执行的操作
-     */
-    public void withMaster(Consumer<Void> action) {
-        withDataSource("master", action);
+        return DataSourceContextHolder.executeInDataSourceWithResult("master", action);
     }
     
     /**
@@ -125,7 +84,25 @@ public class DataSourceManager implements InitializingBean {
      * @param action 需要执行的操作
      */
     public void withMaster(Runnable action) {
-        withDataSource("master", action);
+        DataSourceContextHolder.executeInDataSource("master", action);
+    }
+    
+    /**
+     * 使用主数据源执行Consumer操作（无输入参数）
+     * @param action 需要执行的操作
+     */
+    public void withMaster(Consumer<Void> action) {
+        DataSourceContextHolder.executeInDataSource("master", () -> action.accept(null));
+    }
+    
+    /**
+     * 使用主数据源执行带有参数的Consumer操作
+     * @param value 传递给Consumer的参数值
+     * @param action 需要执行的操作
+     * @param <V> 参数类型
+     */
+    public <V> void withMaster(V value, Consumer<V> action) {
+        DataSourceContextHolder.executeInDataSource("master", () -> action.accept(value));
     }
     
     /**
@@ -135,15 +112,7 @@ public class DataSourceManager implements InitializingBean {
      * @return 操作结果
      */
     public <T> T withSlave(Supplier<T> action) {
-        return withDataSource("slave", action);
-    }
-    
-    /**
-     * 执行读操作（使用从库）- 无返回值
-     * @param action 要执行的操作
-     */
-    public void withSlave(Consumer<Void> action) {
-        withDataSource("slave", action);
+        return DataSourceContextHolder.executeInDataSourceWithResult("slave", action);
     }
     
     /**
@@ -151,7 +120,25 @@ public class DataSourceManager implements InitializingBean {
      * @param action 需要执行的操作
      */
     public void withSlave(Runnable action) {
-        withDataSource("slave", action);
+        DataSourceContextHolder.executeInDataSource("slave", action);
+    }
+    
+    /**
+     * 使用从数据源执行Consumer操作（无输入参数）
+     * @param action 需要执行的操作
+     */
+    public void withSlave(Consumer<Void> action) {
+        DataSourceContextHolder.executeInDataSource("slave", () -> action.accept(null));
+    }
+    
+    /**
+     * 使用从数据源执行带有参数的Consumer操作
+     * @param value 传递给Consumer的参数值
+     * @param action 需要执行的操作
+     * @param <V> 参数类型
+     */
+    public <V> void withSlave(V value, Consumer<V> action) {
+        DataSourceContextHolder.executeInDataSource("slave", () -> action.accept(value));
     }
     
     /**
@@ -183,7 +170,13 @@ public class DataSourceManager implements InitializingBean {
         if (dynamicDataSource == null) {
             return false;
         }
-        return dynamicDataSource.containsDataSource(dataSource);
+        // 使用正确的方法检查数据源是否存在
+        try {
+            return dynamicDataSource.containsDataSource(dataSource);
+        } catch (Exception e) {
+            log.warn("Error checking datasource availability: {}", e.getMessage());
+            return false;
+        }
     }
     
     /**
@@ -194,7 +187,12 @@ public class DataSourceManager implements InitializingBean {
         if (dynamicDataSource == null) {
             return 0;
         }
-        return dynamicDataSource.getDataSourceCount();
+        try {
+            return dynamicDataSource.getDataSourceCount();
+        } catch (Exception e) {
+            log.warn("Error getting datasource count: {}", e.getMessage());
+            return 0;
+        }
     }
     
     /**
@@ -210,8 +208,13 @@ public class DataSourceManager implements InitializingBean {
             throw new IllegalStateException("DynamicDataSource is not initialized");
         }
         
-        dynamicDataSource.addDataSource(key, dataSource);
-        log.info("Added datasource dynamically: {}", key);
+        try {
+            dynamicDataSource.addDataSource(key, dataSource);
+            log.info("Added datasource dynamically: {}", key);
+        } catch (Exception e) {
+            log.error("Failed to add datasource: {}", e.getMessage());
+            throw e;
+        }
     }
     
     /**
@@ -225,8 +228,13 @@ public class DataSourceManager implements InitializingBean {
             throw new IllegalStateException("DynamicDataSource is not initialized");
         }
         
-        dynamicDataSource.removeDataSource(key);
-        log.info("Removed datasource dynamically: {}", key);
+        try {
+            dynamicDataSource.removeDataSource(key);
+            log.info("Removed datasource dynamically: {}", key);
+        } catch (Exception e) {
+            log.error("Failed to remove datasource: {}", e.getMessage());
+            throw e;
+        }
     }
     
     @Override

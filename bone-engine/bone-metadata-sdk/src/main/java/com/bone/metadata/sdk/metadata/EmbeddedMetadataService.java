@@ -42,37 +42,14 @@ public class EmbeddedMetadataService implements MetadataService {
         return fieldMetadataRepository.findByContext(ctx);
     }
 
+    @Override
     public List<FieldMetadata> findExtensionFieldsByNames(AllocationContext ctx, List<String> logicalNames) {
         if (logicalNames == null || logicalNames.isEmpty()) {
             return List.of();
         }
-
+        // 直接调用Repository获取数据，缓存逻辑由DelegatingMetadataService统一处理
         List<String> sortedNames = logicalNames.stream().sorted().toList();
-        String key = String.join("|",
-                ctx.getTenantId().toString(),
-                ctx.getAppCode(),
-                ctx.getBizIdentityCode(),
-                ctx.getEntityType(),
-                String.join(",", sortedNames)
-        );
-
-        String cacheKey = ctx.getAppCode() + "." + ctx.getEntityType();
-
-        // 先查精细缓存
-        List<FieldMetadata> cached = FieldCache.getByCacheKey(key);
-        if (cached != null && !cached.isEmpty()) {
-            return cached;
-        }
-
-        // 缓存未命中，查数据库
-        List<FieldMetadata> newMetadata = fieldMetadataRepository.findByContextAndNames(ctx, sortedNames);
-
-        // 更新粗粒度缓存（合并）
-        FieldCache.mergeFieldMetadataCache(cacheKey, newMetadata);
-
-        // 写入精细粒度缓存并返回
-        FieldCache.putToCache(key, newMetadata);
-        return newMetadata;
+        return fieldMetadataRepository.findByContextAndNames(ctx, sortedNames);
     }
 
 

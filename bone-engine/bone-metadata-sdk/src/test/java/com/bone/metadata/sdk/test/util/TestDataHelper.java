@@ -1,4 +1,4 @@
-package com.bone.metadata.sdk.test.utils;
+package com.bone.metadata.sdk.test.util;
 
 import com.bone.core.util.DistributedIdGenerator;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;

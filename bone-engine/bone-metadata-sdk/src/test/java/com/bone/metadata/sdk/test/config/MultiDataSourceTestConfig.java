@@ -5,8 +5,13 @@ import com.bone.metadata.sdk.support.dataSource.DataSourceManager;
 import com.bone.metadata.sdk.test.config.DataSourceAnnotationInterceptor;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Primary;
+import org.springframework.jdbc.datasource.embedded.EmbeddedDatabase;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseBuilder;
 import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import java.util.HashMap;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.aop.Advisor;
 import org.springframework.aop.aspectj.AspectJExpressionPointcut;
@@ -18,6 +23,7 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.springframework.beans.factory.annotation.Qualifier;
 
 /**
  * 多数据源测试配置类
@@ -25,6 +31,7 @@ import java.util.stream.Stream;
  * <p>遵循Spring Boot测试配置最佳实践，提供清晰、可维护的测试基础设施</p>
  */
 @TestConfiguration
+@ComponentScan("com.bone.metadata.sdk.test.service")
 public class MultiDataSourceTestConfig {
 
     /**
@@ -55,6 +62,7 @@ public class MultiDataSourceTestConfig {
                 .setName("tenantADB")
                 .setType(EmbeddedDatabaseType.H2)
                 .addScript("classpath:schema.sql")
+                .addScript("classpath:data.sql")
                 .build();
     }
     
@@ -64,22 +72,37 @@ public class MultiDataSourceTestConfig {
      * @return 配置好的嵌入式数据库
      */
     private DataSource createEmbeddedDatabase(String databaseName) {
-        return new EmbeddedDatabaseBuilder()
+        EmbeddedDatabaseBuilder builder = new EmbeddedDatabaseBuilder()
                 .setName(databaseName)
                 .setType(EmbeddedDatabaseType.H2)
-                .addScript("classpath:schema.sql")
-                .addScript("classpath:data.sql")
-                .build();
+                .addScript("classpath:schema.sql");
+        
+        // 确保添加数据脚本
+        builder.addScript("classpath:data.sql");
+        
+        // 构建并初始化数据源
+        DataSource dataSource = builder.build();
+        
+        // 显式创建必要的表，防止schema.sql执行失败时的问题
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+        try {
+            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS user (id INT PRIMARY KEY, name VARCHAR(100), age INT)");
+        } catch (Exception e) {
+            // 表可能已存在，忽略错误
+        }
+        
+        return dataSource;
     }
     
     /**
-     * 创建动态数据源，支持数据源路由和切换
+     * 配置动态数据源，支持数据源路由和切换
      * @param masterDataSource 主数据源
      * @param slaveDataSource 从数据源
      * @param tenantADataSource 租户A数据源
      * @return 配置完成的动态数据源
      */
     @Bean
+    @Primary
     public DynamicDataSource dynamicDataSource(
             DataSource masterDataSource,
             DataSource slaveDataSource,
@@ -102,12 +125,23 @@ public class MultiDataSourceTestConfig {
     }
     
     /**
+     * 配置默认JdbcTemplate（使用动态数据源）
+     * @param dynamicDataSource 动态数据源
+     * @return 默认JdbcTemplate实例
+     */
+    @Bean
+    @Primary
+    public JdbcTemplate jdbcTemplate(DynamicDataSource dynamicDataSource) {
+        return new JdbcTemplate(dynamicDataSource);
+    }
+    
+    /**
      * 配置主数据源JdbcTemplate（用于测试验证）
      * @param masterDataSource 主数据源
      * @return JdbcTemplate实例
      */
-    @Bean(name = "masterJdbcTemplate")
-    public JdbcTemplate masterJdbcTemplate(DataSource masterDataSource) {
+    @Bean("masterJdbcTemplate")
+    public JdbcTemplate masterJdbcTemplate(@Qualifier("masterDataSource") DataSource masterDataSource) {
         return new JdbcTemplate(masterDataSource);
     }
     
@@ -116,8 +150,8 @@ public class MultiDataSourceTestConfig {
      * @param slaveDataSource 从数据源
      * @return JdbcTemplate实例
      */
-    @Bean(name = "slaveJdbcTemplate")
-    public JdbcTemplate slaveJdbcTemplate(DataSource slaveDataSource) {
+    @Bean("slaveJdbcTemplate")
+    public JdbcTemplate slaveJdbcTemplate(@Qualifier("slaveDataSource") DataSource slaveDataSource) {
         return new JdbcTemplate(slaveDataSource);
     }
     
@@ -127,6 +161,7 @@ public class MultiDataSourceTestConfig {
      */
     @Bean
     public DataSourceManager dataSourceManager() {
+        // 创建数据源管理器，这里简化实现
         return new DataSourceManager();
     }
     

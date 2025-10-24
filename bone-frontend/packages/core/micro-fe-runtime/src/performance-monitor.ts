@@ -1,4 +1,14 @@
-// 定义性能指标类型
+import { getEventBus } from './shared/event-bus';
+
+// 定义指标记录接口
+export interface MetricRecord {
+  name: string;
+  duration: number;
+  timestamp: number;
+  details?: Record<string, any>;
+}
+
+// 定义指标统计接口
 interface MetricStats {
   count: number;
   avg: number;
@@ -12,56 +22,21 @@ interface MetricStats {
   lastRecord?: number;
 }
 
+// 定义性能指标接口
 export interface PerformanceMetrics {
   [key: string]: MetricStats;
 }
 
-// 本地事件总线实现（替代外部依赖）
-class LocalEventBus {
-  private events: Record<string, Function[]> = {};
-  
-  on(event: string, handler: Function) {
-    if (!this.events[event]) {
-      this.events[event] = [];
-    }
-    this.events[event].push(handler);
-  }
-  
-  emit(event: string, data: any) {
-    if (this.events[event]) {
-      this.events[event].forEach(handler => handler(data));
-    }
-  }
-  
-  off(event: string, handler?: Function) {
-    if (handler) {
-      this.events[event] = this.events[event]?.filter(h => h !== handler) || [];
-    } else {
-      delete this.events[event];
-    }
-  }
-}
-
-const localEventBus = new LocalEventBus();
-const getEventBus = () => localEventBus;
-
-interface MetricRecord {
-  name: string;
-  duration: number;
-  timestamp: number;
-  details?: Record<string, any>;
-}
-
 /**
- * 性能监控器
- * 负责收集和报告微应用的性能指标
+ * 微应用性能监控器
+ * 针对微应用的特定性能监控
  */
 export class PerformanceMonitor {
   private appId: string;
-  private metrics: Map<string, MetricRecord[]> = new Map();
-  private startTime: number = Date.now();
   private eventBus = getEventBus();
+  private metrics: Map<string, MetricRecord[]> = new Map();
   private operationTimers: Map<string, number> = new Map();
+  private startTime: number = Date.now();
 
   /**
    * 构造函数
@@ -99,7 +74,7 @@ export class PerformanceMonitor {
   }
 
   /**
-   * 开始计时操作
+   * 开始计时
    * @param operation 操作名称
    */
   startTimer(operation: string): void {
@@ -107,10 +82,10 @@ export class PerformanceMonitor {
   }
 
   /**
-   * 结束计时操作并记录
+   * 结束计时
    * @param operation 操作名称
-   * @param details 额外信息
-   * @returns 操作持续时间
+   * @param details 附加信息
+   * @returns 持续时间
    */
   endTime(operation: string, details?: Record<string, any>): number {
     const startTime = this.operationTimers.get(operation);
@@ -186,7 +161,7 @@ export class PerformanceMonitor {
       };
     });
 
-    // 添加应用运行时间
+    // 添加应用运行时间指标
     metrics.appRuntime = {
       count: 1,
       avg: now - this.startTime,
@@ -210,7 +185,7 @@ export class PerformanceMonitor {
    */
   private calculatePercentile(values: number[], percentile: number): number {
     if (values.length === 0) return 0;
-    
+
     const sorted = [...values].sort((a, b) => a - b);
     const index = Math.ceil((percentile / 100) * sorted.length) - 1;
     return sorted[Math.max(0, Math.min(index, sorted.length - 1))];
@@ -223,11 +198,7 @@ export class PerformanceMonitor {
     return {
       appId: this.appId,
       timestamp: Date.now(),
-      metrics: this.getMetrics(),
-      rawMetrics: Array.from(this.metrics.entries()).reduce((acc, [name, records]) => {
-        acc[name] = records;
-        return acc;
-      }, {} as Record<string, MetricRecord[]>)
+      metrics: this.getMetrics()
     };
   }
 

@@ -2,29 +2,46 @@ package com.bone.example.extension.user;
 
 import com.bone.engine.extension.context.BizContext;
 import com.bone.engine.extension.ExtPoint;
-import com.bone.example.extension.model.UserResult;
 import com.bone.engine.extension.annotation.ExtPointDoc;
+import com.bone.example.extension.model.UserResult;
 
 /**
  * 用户服务扩展点接口
  * 定义用户服务相关的核心操作方法
  */
+// 运行时配置 - 提供扩展点基本信息和默认配置
 @ExtPoint(
     name = "用户服务扩展点",
-    description = "处理用户相关操作的扩展点接口",
-    domain = "用户系统",
-    category = "用户管理",
+    description = "处理各类用户服务相关的操作",
+    domain = "用户管理",
+    category = "核心服务",
     version = "1.0.0",
     enabled = true,
-    priority = 100,
-    enableCache = false,
-    timeout = 2000
+    priority = 100
 )
+// 接口文档 - 详细描述扩展点功能、参数和使用场景（编译时注解，不影响运行时）
 @ExtPointDoc(
-    description = "该扩展点用于处理用户相关的各种操作，支持不同类型用户的差异化处理。",
-    usage = "1. 在用户注册、登录、信息更新等场景使用\n2. 根据用户类型选择合适的实现\n3. 处理用户权限和认证",
-    bestPractices = "1. 确保用户数据的安全性\n2. 考虑权限控制\n3. 实现适当的日志记录",
-    notes = "用户管理系统的核心扩展点，支持个人用户和企业用户"
+    title = "用户服务扩展点接口",
+    domain = "用户管理",
+    category = "核心服务",
+    description = "定义了用户服务的标准接口，支持不同类型用户的服务处理。",
+    usage = "1. 实现接口并添加@Extension注解\n2. 根据用户类型配置路由条件\n3. 注入到用户服务层使用",
+    bestPractices = "1. 根据用户类型提供专门实现\n2. 确保用户数据操作的安全性\n3. 实现合适的优先级机制",
+    params = {
+        @ExtPointDoc.Param(
+            name = "context",
+            type = "BizContext<?>",
+            description = "包含用户请求信息的业务上下文",
+            required = true
+        )
+    },
+    returnInfo = @ExtPointDoc.Return(
+        type = "UserResult",
+        description = "用户服务处理结果"
+    ),
+    notes = "扩展实现需要根据不同的用户类型（个人用户、企业用户等）提供专门的处理逻辑",
+    creator = "测试团队",
+    createDate = "2024-01-01"
 )
 public interface UserServiceExtPoint {
     

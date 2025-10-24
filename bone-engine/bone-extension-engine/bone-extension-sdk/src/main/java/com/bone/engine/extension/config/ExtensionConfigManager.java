@@ -1,9 +1,10 @@
 package com.bone.engine.extension.config;
 
-import org.springframework.core.io.support.PropertiesLoaderUtils;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -20,14 +21,16 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li>支持动态配置更新</li>
  *   <li>配置缓存管理</li>
  * </ul>
+ * <strong>注意：此为适配层，内部使用ExtensionProperties进行实际配置管理</strong>
  * </p>
  *
  * @author Bone Engine Team
  * @version 1.0.0
  */
+@Slf4j
+@Component
 public class ExtensionConfigManager {
 
-    private static final String DEFAULT_CONFIG_LOCATION = "classpath:extension.properties";
     private static final String PROPERTY_PREFIX = "bone.extension.";
     
     // 配置缓存
@@ -35,44 +38,21 @@ public class ExtensionConfigManager {
     
     // 扩展点特定配置
     private final Map<String, Map<String, String>> extPointConfigs = new ConcurrentHashMap<>();
+    
+    @Autowired
+    private ExtensionProperties extensionProperties;
 
     /**
      * 初始化配置管理器
      */
     public void init() {
-        try {
-            // 加载默认配置文件
-            Properties properties = PropertiesLoaderUtils.loadAllProperties(DEFAULT_CONFIG_LOCATION);
-            loadProperties(properties);
-        } catch (IOException e) {
-            // 默认配置文件不存在时，使用默认配置
-        }
-    }
-
-    /**
-     * 加载配置属性
-     */
-    public void loadProperties(Properties properties) {
-        for (String key : properties.stringPropertyNames()) {
-            if (key.startsWith(PROPERTY_PREFIX)) {
-                String value = properties.getProperty(key);
-                configCache.put(key, value);
-                
-                // 解析扩展点特定配置
-                parseExtPointConfig(key, value);
-            }
-        }
-    }
-
-    private void parseExtPointConfig(String key, String value) {
-        // 格式: bone.extension.[extPointName].[configKey]=value
-        String[] parts = key.substring(PROPERTY_PREFIX.length()).split("\\.", 2);
-        if (parts.length == 2) {
-            String extPointName = parts[0];
-            String configKey = parts[1];
+        // 作为适配层，初始化缓存以保持向后兼容性
+        if (extensionProperties != null) {
+            // 初始化全局配置缓存
+            configCache.put(PROPERTY_PREFIX + "cache.enabled", String.valueOf(extensionProperties.getCache().isEnabled()));
+            configCache.put(PROPERTY_PREFIX + "cache.expire-time", String.valueOf(extensionProperties.getCache().getExpireTime()));
             
-            extPointConfigs.computeIfAbsent(extPointName, k -> new HashMap<>())
-                    .put(configKey, value);
+            log.info("Initialized ExtensionConfigManager with ExtensionProperties");
         }
     }
 
@@ -80,6 +60,14 @@ public class ExtensionConfigManager {
      * 获取全局配置值
      */
     public String getGlobalConfig(String configKey) {
+        // 优先从ExtensionProperties获取配置
+        if (extensionProperties != null && configKey.equals("cache.enabled")) {
+            return String.valueOf(extensionProperties.getCache().isEnabled());
+        } else if (extensionProperties != null && configKey.equals("cache.expire-time")) {
+            return String.valueOf(extensionProperties.getCache().getExpireTime());
+        }
+        
+        // 向后兼容
         return configCache.get(PROPERTY_PREFIX + configKey);
     }
 
@@ -129,6 +117,11 @@ public class ExtensionConfigManager {
      * 检查扩展点是否启用缓存
      */
     public boolean isExtPointCacheEnabled(String extPointName) {
+        // 优先从ExtensionProperties获取配置
+        if (extensionProperties != null) {
+            return extensionProperties.getCache().isEnabled();
+        }
+        // 向后兼容
         return getExtPointConfigBoolean(extPointName, "cache.enabled", 
                 getGlobalConfigBoolean("cache.enabled", true));
     }
@@ -137,6 +130,11 @@ public class ExtensionConfigManager {
      * 获取扩展点的缓存过期时间（毫秒）
      */
     public long getExtPointCacheExpireTime(String extPointName) {
+        // 优先从ExtensionProperties获取配置
+        if (extensionProperties != null) {
+            return extensionProperties.getCache().getExpireTime();
+        }
+        // 向后兼容
         String value = getExtPointConfig(extPointName, "cache.expire-time");
         if (StringUtils.hasText(value)) {
             try {
@@ -154,6 +152,7 @@ public class ExtensionConfigManager {
     public void clearCache() {
         configCache.clear();
         extPointConfigs.clear();
+        init(); // 重新初始化缓存
     }
 
     /**
@@ -161,5 +160,13 @@ public class ExtensionConfigManager {
      */
     public Map<String, String> getAllConfigs() {
         return new HashMap<>(configCache);
+    }
+    
+    /**
+     * 设置ExtensionProperties（用于测试或手动配置）
+     */
+    public void setExtensionProperties(ExtensionProperties extensionProperties) {
+        this.extensionProperties = extensionProperties;
+        init();
     }
 }

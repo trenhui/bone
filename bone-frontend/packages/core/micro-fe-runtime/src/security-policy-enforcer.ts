@@ -1,9 +1,32 @@
 /**
- * 安全策略执行器
- * 负责检查和执行应用的权限控制
+ * 安全策略执行器（兼容性适配器）
+ * @deprecated 使用从 './security/policy-enforcer' 导入的 SecurityPolicyEnforcer 替代
+ */
+import { SecurityPolicyEnforcer as CoreSecurityPolicyEnforcer } from './security/policy-enforcer';
+import { MicroApplication } from './micro-application';
+
+/**
+ * 简单权限策略实现，用于适配器
+ */
+class SimplePermissionPolicy implements AppSecurityPolicy {
+  private permissions: Set<string>;
+  
+  constructor(permissions: string[]) {
+    this.permissions = new Set(permissions);
+  }
+  
+  async check(app: MicroApplication, action: string, resource: any) {
+    return {
+      allowed: this.permissions.has(action),
+      reason: this.permissions.has(action) ? undefined : `Permission denied: ${action}`
+    };
+  }
+}
+
+/**
+ * @deprecated 此实现已废弃，请使用 './security/policy-enforcer' 中的实现
  */
 export class SecurityPolicyEnforcer {
-  private permissions: Set<string>;
   private static readonly DEFAULT_ALLOWED_ACTIONS = [
     'load',
     'mount',
@@ -11,23 +34,22 @@ export class SecurityPolicyEnforcer {
     'update',
     'destroy'
   ];
+  
+  private coreEnforcer: CoreSecurityPolicyEnforcer;
+  private permissions: Set<string>;
+  private permissionPolicy: SimplePermissionPolicy;
 
-  /**
-   * 构造函数
-   * @param permissions 应用拥有的权限列表
-   */
   constructor(permissions: string[] = []) {
+    console.warn('SecurityPolicyEnforcer from ./security-policy-enforcer is deprecated. Use SecurityPolicyEnforcer from ./security/policy-enforcer instead.');
     this.permissions = new Set([
       ...permissions,
       ...SecurityPolicyEnforcer.DEFAULT_ALLOWED_ACTIONS
     ]);
+    this.permissionPolicy = new SimplePermissionPolicy([...this.permissions]);
+    this.coreEnforcer = CoreSecurityPolicyEnforcer.getInstance();
+    this.coreEnforcer.addPolicy(this.permissionPolicy);
   }
 
-  /**
-   * 检查应用是否有权限执行特定操作
-   * @param action 要执行的操作
-   * @returns 是否有权限
-   */
   checkPermission(action: string): boolean {
     const result = this.permissions.has(action);
     
@@ -38,72 +60,45 @@ export class SecurityPolicyEnforcer {
     return result;
   }
 
-  /**
-   * 添加权限
-   * @param permission 要添加的权限
-   */
   addPermission(permission: string): void {
     this.permissions.add(permission);
+    // 重新创建策略以更新权限
+    this.coreEnforcer.removePolicy(this.permissionPolicy);
+    this.permissionPolicy = new SimplePermissionPolicy([...this.permissions]);
+    this.coreEnforcer.addPolicy(this.permissionPolicy);
   }
 
-  /**
-   * 添加多个权限
-   * @param permissions 要添加的权限列表
-   */
   addPermissions(permissions: string[]): void {
-    permissions.forEach(permission => this.permissions.add(permission));
+    permissions.forEach(permission => this.addPermission(permission));
   }
 
-  /**
-   * 移除权限
-   * @param permission 要移除的权限
-   */
   removePermission(permission: string): void {
-    // 不允许移除默认权限
     if (!SecurityPolicyEnforcer.DEFAULT_ALLOWED_ACTIONS.includes(permission)) {
       this.permissions.delete(permission);
+      // 重新创建策略以更新权限
+      this.coreEnforcer.removePolicy(this.permissionPolicy);
+      this.permissionPolicy = new SimplePermissionPolicy([...this.permissions]);
+      this.coreEnforcer.addPolicy(this.permissionPolicy);
     }
   }
 
-  /**
-   * 获取所有已授权的权限
-   */
   getPermissions(): string[] {
     return Array.from(this.permissions);
   }
 
-  /**
-   * 检查是否拥有所有指定的权限
-   * @param requiredPermissions 需要的权限列表
-   * @returns 是否拥有所有权限
-   */
   hasAllPermissions(requiredPermissions: string[]): boolean {
     return requiredPermissions.every(permission => this.checkPermission(permission));
   }
 
-  /**
-   * 检查是否拥有至少一个指定的权限
-   * @param requiredPermissions 需要的权限列表
-   * @returns 是否拥有至少一个权限
-   */
   hasAnyPermission(requiredPermissions: string[]): boolean {
     return requiredPermissions.some(permission => this.checkPermission(permission));
   }
 
-  /**
-   * 验证资源访问权限
-   * @param resource 要访问的资源
-   * @param operation 对资源的操作
-   * @returns 是否允许访问
-   */
   checkResourceAccess(resource: string, operation: 'read' | 'write' | 'execute'): boolean {
     const permission = `${operation}:${resource}`;
     return this.checkPermission(permission);
   }
 
-  /**
-   * 导出安全策略信息
-   */
   exportPolicy(): {
     permissions: string[];
     allowedActions: string[];
@@ -113,4 +108,9 @@ export class SecurityPolicyEnforcer {
       allowedActions: SecurityPolicyEnforcer.DEFAULT_ALLOWED_ACTIONS
     };
   }
+}
+
+// 为了TypeScript编译通过，需要定义AppSecurityPolicy接口
+interface AppSecurityPolicy {
+  check(app: MicroApplication, action: string, resource: any): Promise<{ allowed: boolean; reason?: string }>;
 }

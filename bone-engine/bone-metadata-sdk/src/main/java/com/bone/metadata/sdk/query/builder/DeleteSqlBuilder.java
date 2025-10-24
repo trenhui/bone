@@ -10,7 +10,7 @@ import com.bone.metadata.sdk.query.criteria.Criteria;
 
 import java.util.*;
 
-public class DeleteBuilderSql implements SqlQueryBuilder<DeleteContext> {
+public class DeleteSqlBuilder implements SqlQueryBuilder<DeleteContext> {
 
     @Override
     public CompiledQuery build(DeleteContext ctx) {
