@@ -1,35 +1,7 @@
 import { MicroApplication } from './micro-application';
 import { AppLifecycleHooks, MicroAppConfig, ErrorContext } from './types';
 import { ErrorHandler } from './error-handler';
-
-// 本地事件总线实现（替代外部依赖）
-class LocalEventBus {
-  private events: Record<string, Function[]> = {};
-  
-  on(event: string, handler: Function) {
-    if (!this.events[event]) {
-      this.events[event] = [];
-    }
-    this.events[event].push(handler);
-  }
-  
-  emit(event: string, data: any) {
-    if (this.events[event]) {
-      this.events[event].forEach(handler => handler(data));
-    }
-  }
-  
-  off(event: string, handler?: Function) {
-    if (handler) {
-      this.events[event] = this.events[event]?.filter(h => h !== handler) || [];
-    } else {
-      delete this.events[event];
-    }
-  }
-}
-
-const localEventBus = new LocalEventBus();
-const getEventBus = () => localEventBus;
+import { getEventBus } from './shared/event-bus';
 
 /**
  * 应用生命周期管理器
@@ -55,7 +27,7 @@ export class AppLifecycle {
   constructor(private app: MicroApplication) {
     // 初始化错误处理器
     const appId = this.getAppId();
-    this.errorHandler = new ErrorHandler(appId);
+    this.errorHandler = new ErrorHandler({ appId });
     
     // 初始化时注册默认的全局hooks
     this.registerGlobalHooks();
@@ -67,7 +39,7 @@ export class AppLifecycle {
     try {
       this.appConfig = this.app.config;
     } catch (error) {
-      this.errorHandler.handle(error as Error, { phase: 'init', additionalInfo: { action: 'getAppConfig' } });
+      this.errorHandler.handle(error as Error, { phase: 'init', appId: appId, additionalInfo: { action: 'getAppConfig' } });
     }
   }
 
@@ -89,7 +61,7 @@ export class AppLifecycle {
         this.registerHooks(hooks);
       });
     } catch (error) {
-      this.errorHandler.handle(error as Error, { phase: 'init', additionalInfo: { action: 'setupEventListeners' } });
+      this.errorHandler.handle(error as Error, { phase: 'init', appId: this.getAppId(), additionalInfo: { action: 'setupEventListeners' } });
     }
   }
   
@@ -116,7 +88,7 @@ export class AppLifecycle {
       console.log(`Registered lifecycle hooks for app ${appId}:`, 
         Object.keys(hooks).filter(h => typeof this.hooks[h as keyof AppLifecycleHooks] === 'function').join(', '));
     } catch (error) {
-      this.errorHandler.handle(error as Error, { phase: 'init', additionalInfo: { action: 'registerHooks' } });
+      this.errorHandler.handle(error as Error, { phase: 'init', appId: this.getAppId(), additionalInfo: { action: 'registerHooks' } });
     }
   }
 
@@ -503,7 +475,7 @@ export class AppLifecycle {
     return {
       appId: this.getAppId(),
       phase,
-      appInfo: this.appConfig || {},
+      appInfo: this.appConfig,
       additionalInfo: {
         ...additionalInfo,
         currentPropsKeys: Object.keys(this.currentProps || {}),
@@ -536,7 +508,7 @@ export class AppLifecycle {
     // 调用应用的错误处理钩子
     if (this.hooks.error) {
       try {
-        this.safeExecuteHook('error', () => this.hooks.error!(error, errorContext), 5000); // 错误钩子超时5秒
+        this.safeExecuteHook('error', () => this.hooks.error!(error), 5000); // 错误钩子超时5秒
       } catch (hookError) {
         this.errorHandler.handle(hookError as Error, {
           ...errorContext,

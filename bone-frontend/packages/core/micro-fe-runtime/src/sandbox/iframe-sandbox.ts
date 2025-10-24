@@ -298,8 +298,8 @@ export class IframeSandbox implements Sandbox {
     return new Promise((resolve, reject) => {
       const script = this.iframeDocument!.createElement('script');
       script.src = scriptUrl;
-      script.onload = resolve;
-      script.onerror = reject;
+      script.onload = () => resolve();
+      script.onerror = (event) => reject(new Error(`Script loading failed: ${scriptUrl}`));
       this.iframeDocument!.body.appendChild(script);
     });
   }

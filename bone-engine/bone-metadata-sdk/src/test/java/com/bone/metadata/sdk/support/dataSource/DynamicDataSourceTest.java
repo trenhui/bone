@@ -1,6 +1,6 @@
 package com.bone.metadata.sdk.support.dataSource;
 
-import org.junit.jupiter.api.AfterEach;
+import com.bone.metadata.sdk.test.common.BaseDataSourceTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.jdbc.DataSourceBuilder;
@@ -15,7 +15,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * DynamicDataSource单元测试
  */
-public class DynamicDataSourceTest {
+public class DynamicDataSourceTest extends BaseDataSourceTest {
     
     private DynamicDataSource dynamicDataSource;
     private DataSource masterDataSource;
@@ -63,20 +63,24 @@ public class DynamicDataSourceTest {
         dynamicDataSource.setStrict(false);
         dynamicDataSource.afterPropertiesSet();
         
-        // 清理数据源上下文
-        DataSourceContextHolder.clearAll();
+
     }
     
-    @AfterEach
-    public void tearDown() {
-        // 清理数据源上下文
-        DataSourceContextHolder.clearAll();
-    }
+
     
     private void initDataSource(DataSource dataSource, String tableName) {
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
         jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS " + tableName + " (id INT PRIMARY KEY, name VARCHAR(100))");
-        jdbcTemplate.execute("INSERT INTO " + tableName + " VALUES (1, '" + tableName + "_data')");
+        
+        // 先检查数据是否存在，如果不存在才插入
+        Integer count = jdbcTemplate.queryForObject(
+            "SELECT COUNT(*) FROM " + tableName + " WHERE id = 1", 
+            Integer.class
+        );
+        
+        if (count == 0) {
+            jdbcTemplate.execute("INSERT INTO " + tableName + " VALUES (1, '" + tableName + "_data')");
+        }
     }
     
     @Test

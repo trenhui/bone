@@ -1,11 +1,8 @@
 package com.bone.example.extension.user.greeting;
 
 import com.bone.engine.extension.context.BizContext;
-import com.bone.engine.extension.proxy.ExtPointProxyFactory;
 import org.junit.jupiter.api.Test;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.junit.jupiter.api.DisplayName;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,22 +11,27 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * GreetingExtPoint 简单测试类
- * 使用Spring容器创建最小化配置的测试环境
+ * 使用纯Java方式测试扩展点功能
  */
+@DisplayName("问候扩展点简单功能测试")
 public class GreetingExtPointSimpleTest {
 
+    /**
+     * 测试正常情况下的问候功能
+     */
     @Test
-    void testGreetWithSpringContext() {
-        // 创建最小化的Spring应用上下文
-        AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext();
-        context.register(TestConfig.class);
-        context.refresh();
-        
-        // 从容器中获取扩展点实例
-        GreetingExtPoint greetingExtPoint = context.getBean(GreetingExtPoint.class);
-        
-        // 确保扩展点实例不为空
-        assertNotNull(greetingExtPoint, "扩展点实例不应为null");
+    @DisplayName("测试基本问候功能包含用户名")
+    void testGreet() {
+        // Given - 准备测试环境
+        GreetingExtPoint greetingExtPoint = context -> {
+            if (context == null) {
+                throw new IllegalArgumentException("Context cannot be null");
+            }
+            
+            String userName = context.getAttribute("userName") != null ? 
+                context.getAttribute("userName").toString() : "Guest";
+            return "Hello, " + userName + "!";
+        };
         
         // 创建业务上下文（使用Builder模式）
         Map<String, Object> attributes = new HashMap<>();
@@ -41,40 +43,70 @@ public class GreetingExtPointSimpleTest {
                 .attributes(attributes)
                 .build();
         
-        // 调用扩展点
+        // When - 调用被测试方法
         String result = greetingExtPoint.greet(bizContext);
         
-        // 验证结果
-        assertNotNull(result);
+        // Then - 验证结果
+        assertNotNull(greetingExtPoint, "扩展点实例不应为null");
+        assertNotNull(result, "问候结果不应为null");
+        assertTrue(result.contains("John"), "问候语应该包含用户名John");
         System.out.println("Greeting result: " + result);
+    }
+    
+    /**
+     * 测试使用默认用户名的情况
+     */
+    @Test
+    @DisplayName("测试未指定用户名时使用默认值")
+    void testGreetWithDefaultUsername() {
+        // Given
+        GreetingExtPoint greetingExtPoint = context -> {
+            if (context == null) {
+                throw new IllegalArgumentException("Context cannot be null");
+            }
+            
+            String userName = context.getAttribute("userName") != null ? 
+                context.getAttribute("userName").toString() : "Guest";
+            return "Hello, " + userName + "!";
+        };
         
-        // 关闭上下文
-        context.close();
+        // 创建没有用户名属性的上下文
+        BizContext<String> bizContext = BizContext.<String>builder()
+                .tenantCode("default")
+                .bizCode("greeting")
+                .attributes(new HashMap<>())
+                .build();
+        
+        // When
+        String result = greetingExtPoint.greet(bizContext);
+        
+        // Then
+        assertNotNull(result, "问候结果不应为null");
+        assertTrue(result.contains("Guest"), "未指定用户名时应使用默认值Guest");
+    }
+    
+    /**
+     * 测试空上下文的异常处理
+     */
+    @Test
+    @DisplayName("测试空上下文的异常处理")
+    void testGreetWithNullContext() {
+        // Given
+        GreetingExtPoint greetingExtPoint = context -> {
+            if (context == null) {
+                throw new IllegalArgumentException("Context cannot be null");
+            }
+            
+            String userName = context.getAttribute("userName") != null ? 
+                context.getAttribute("userName").toString() : "Guest";
+            return "Hello, " + userName + "!";
+        };
+        
+        // When & Then
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> greetingExtPoint.greet(null),
+                "当上下文为null时应抛出IllegalArgumentException");
+        assertTrue(exception.getMessage().contains("Context cannot be null"));
     }
 
-    /**
-     * 测试配置类
-     */
-    @Configuration
-    static class TestConfig {
-        
-        @Bean
-        public ExtPointProxyFactory extPointProxyFactory() {
-            return new ExtPointProxyFactory();
-        }
-        
-        @Bean
-        public GreetingExtPoint greetingExtPoint(ExtPointProxyFactory proxyFactory) {
-            // 直接返回一个简单的实现，不使用代理
-            return context -> {
-                if (context == null) {
-                    throw new IllegalArgumentException("Context cannot be null");
-                }
-                
-                String userName = context.getAttribute("userName") != null ? 
-                    context.getAttribute("userName").toString() : "Guest";
-                return "Hello, " + userName + "!";
-            };
-        }
-    }
 }

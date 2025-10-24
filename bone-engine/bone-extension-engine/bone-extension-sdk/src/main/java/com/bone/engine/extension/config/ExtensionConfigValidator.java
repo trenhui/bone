@@ -1,15 +1,12 @@
 package com.bone.engine.extension.config;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * 扩展点配置验证器，用于验证扩展点框架配置的有效性
@@ -18,10 +15,12 @@ import java.util.stream.Collectors;
  * 
  * @author bone team
  */
+@Slf4j
 @Component
 public class ExtensionConfigValidator {
 
-    private static final Logger log = LoggerFactory.getLogger(ExtensionConfigValidator.class);
+    @Autowired
+    private ExtensionProperties properties;
 
     // 配置参数的有效范围
     private static final int MIN_CACHE_SIZE = 10;
@@ -73,22 +72,17 @@ public class ExtensionConfigValidator {
     }
 
     private void validateCacheConfig(ExtensionProperties properties, List<String> errors) {
-        // 验证缓存大小配置（使用默认值）
-        int annotationCacheSize = 1000; // 默认值
-        if (annotationCacheSize < MIN_CACHE_SIZE || annotationCacheSize > MAX_CACHE_SIZE) {
-            errors.add(String.format("Annotation cache size must be between %d and %d", MIN_CACHE_SIZE, MAX_CACHE_SIZE));
-        }
-        
-        int routeCacheSize = 1000; // 默认值
-        if (routeCacheSize < MIN_CACHE_SIZE || routeCacheSize > MAX_CACHE_SIZE) {
-            errors.add(String.format("Route cache size must be between %d and %d", MIN_CACHE_SIZE, MAX_CACHE_SIZE));
+        // 验证缓存大小配置
+        int cacheSize = properties.getCache().getMaxSize();
+        if (cacheSize < MIN_CACHE_SIZE || cacheSize > MAX_CACHE_SIZE) {
+            errors.add(String.format("Cache size must be between %d and %d", MIN_CACHE_SIZE, MAX_CACHE_SIZE));
         }
     }
     
     private void validateExpireTime(ExtensionProperties properties, List<String> errors) {
-        // 使用默认过期时间
-        long expireTime = 3600; // 默认1小时
-        if (expireTime < MIN_EXPIRE_TIME || expireTime > MAX_EXPIRE_TIME) {
+        // 使用配置中的过期时间（转换为秒）
+        long expireTimeSeconds = properties.getCache().getExpireTime() / 1000;
+        if (expireTimeSeconds < MIN_EXPIRE_TIME || expireTimeSeconds > MAX_EXPIRE_TIME) {
             errors.add(String.format("Cache expire time must be between %d and %d seconds", MIN_EXPIRE_TIME, MAX_EXPIRE_TIME));
         }
     }
@@ -99,11 +93,44 @@ public class ExtensionConfigValidator {
     }
 
     /**
-     * 检查配置是否允许缓存
+     * 验证缓存配置
      * 
-     * @param properties 扩展点配置属性
-     * @return 是否启用缓存
+     * @param maxSize 缓存最大大小
+     * @return 有效的缓存大小
      */
+    public int validateCacheConfig(int maxSize) {
+        // 统一使用ExtensionProperties中的配置值
+        if (properties != null) {
+            maxSize = properties.getCache().getMaxSize();
+        }
+        
+        if (maxSize <= 0) {
+            // 如果配置无效，使用默认值
+            maxSize = 1000; // 默认缓存大小
+            log.warn("Invalid cache max size: {}. Using default: 1000.", maxSize);
+        }
+        return maxSize;
+    }
+
+    /**
+     * 验证过期时间配置
+     * 
+     * @param expireTime 过期时间(毫秒)
+     * @return 有效的过期时间
+     */
+    public long validateExpireTime(long expireTime) {
+        // 优先使用ExtensionProperties中的配置值
+        if (properties != null) {
+            expireTime = properties.getCache().getExpireTime();
+        }
+        
+        if (expireTime <= 0) {
+            expireTime = 300000; // 默认5分钟
+            log.warn("Invalid cache expire time: {}. Using default: 5 minutes.", expireTime);
+        }
+        return expireTime;
+    }
+
     /**
      * 检查配置是否允许缓存
      * 
@@ -111,8 +138,21 @@ public class ExtensionConfigValidator {
      * @return 是否启用缓存
      */
     public boolean isCacheEnabled(ExtensionProperties properties) {
-        Assert.notNull(properties, "ExtensionConfigProperties must not be null");
-        return true; // 默认为启用缓存
+        Assert.notNull(properties, "ExtensionProperties must not be null");
+        return properties.getCache().isEnabled();
+    }
+    
+    /**
+     * 检查缓存是否启用（无参数版本）
+     * 
+     * @return 是否启用缓存
+     */
+    public boolean isCacheEnabled() {
+        // 直接使用ExtensionProperties中的配置值
+        if (properties != null) {
+            return properties.getCache().isEnabled();
+        }
+        return true; // 默认启用
     }
 
     /**
@@ -122,9 +162,27 @@ public class ExtensionConfigValidator {
      * @return 安全的缓存大小（确保在有效范围内）
      */
     public int getSafeAnnotationCacheSize(ExtensionProperties properties) {
-        Assert.notNull(properties, "ExtensionConfigProperties must not be null");
-        int cacheSize = 1000; // 默认值
+        Assert.notNull(properties, "ExtensionProperties must not be null");
+        int cacheSize = properties.getCache().getMaxSize();
         return Math.min(Math.max(cacheSize, MIN_CACHE_SIZE), MAX_CACHE_SIZE);
+    }
+    
+    /**
+     * 获取安全的注解缓存大小（无参数版本）
+     * 
+     * @param maxSize 配置的缓存大小
+     * @return 安全的缓存大小
+     */
+    public int getSafeAnnotationCacheSize(int maxSize) {
+        // 优先使用ExtensionProperties中的配置值
+        if (properties != null) {
+            maxSize = properties.getCache().getMaxSize();
+        }
+        
+        if (maxSize <= 0) {
+            return 500; // 默认注解缓存大小
+        }
+        return Math.min(maxSize, 10000); // 最大不超过10000
     }
     
     /**
@@ -134,8 +192,33 @@ public class ExtensionConfigValidator {
      * @return 安全的缓存大小（确保在有效范围内）
      */
     public int getSafeRouteCacheSize(ExtensionProperties properties) {
-        Assert.notNull(properties, "ExtensionConfigProperties must not be null");
-        int cacheSize = 1000; // 默认值
+        Assert.notNull(properties, "ExtensionProperties must not be null");
+        int cacheSize = properties.getCache().getMaxSize();
         return Math.min(Math.max(cacheSize, MIN_CACHE_SIZE), MAX_CACHE_SIZE);
+    }
+    
+    /**
+     * 获取安全的路由缓存大小（无参数版本）
+     * 
+     * @param maxSize 配置的缓存大小
+     * @return 安全的缓存大小
+     */
+    public int getSafeRouteCacheSize(int maxSize) {
+        // 优先使用ExtensionProperties中的配置值
+        if (properties != null) {
+            maxSize = properties.getCache().getMaxSize();
+        }
+        
+        if (maxSize <= 0) {
+            return 1000; // 默认路由缓存大小
+        }
+        return Math.min(maxSize, 50000); // 最大不超过50000
+    }
+    
+    /**
+     * 设置ExtensionProperties（用于测试或手动配置）
+     */
+    public void setProperties(ExtensionProperties properties) {
+        this.properties = properties;
     }
 }

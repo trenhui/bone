@@ -2,6 +2,7 @@ package com.bone.engine.extension;
 
 import com.bone.engine.extension.register.ExtensionRegister;
 import com.bone.engine.extension.repository.ExtPointRepository;
+import com.bone.engine.extension.utils.ExtPointUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,7 +17,6 @@ import org.springframework.core.type.classreading.MetadataReaderFactory;
 import org.springframework.core.type.classreading.SimpleMetadataReaderFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -114,31 +114,7 @@ public class ExtPointValidator implements ApplicationListener<ContextRefreshedEv
         Set<Class<?>> extPointInterfaces = new HashSet<>();
         
         try {
-            // 获取所有Bean类型
-            String[] beanNames = applicationContext.getBeanDefinitionNames();
-            
-            for (String beanName : beanNames) {
-                Class<?> beanType = applicationContext.getType(beanName);
-                if (beanType != null) {
-                    // 检查接口是否标记了@ExtPoint
-                    for (Class<?> iface : beanType.getInterfaces()) {
-                        if (iface.isAnnotationPresent(ExtPoint.class)) {
-                            extPointInterfaces.add(iface);
-                        }
-                    }
-                    
-                    // 检查父类实现的接口
-                    Class<?> superClass = beanType.getSuperclass();
-                    while (superClass != null && superClass != Object.class) {
-                        for (Class<?> iface : superClass.getInterfaces()) {
-                            if (iface.isAnnotationPresent(ExtPoint.class)) {
-                                extPointInterfaces.add(iface);
-                            }
-                        }
-                        superClass = superClass.getSuperclass();
-                    }
-                }
-            }
+            extPointInterfaces = ExtPointUtils.findAllExtPointInterfaces(applicationContext);
         } catch (Exception e) {
             log.error("Failed to find extpoint interfaces", e);
         }
@@ -194,10 +170,7 @@ public class ExtPointValidator implements ApplicationListener<ContextRefreshedEv
      * 检查是否有默认实现
      */
     private boolean checkDefaultImplementation(Class<?> extPointInterface) {
-        String interfaceName = extPointInterface.getCanonicalName();
-        
-        // 检查是否有bizCode为DEFAULT的实现
-        String defaultKey = interfaceName + ".*\\.DEFAULT\\..*\\..*";
+        String interfaceName = ExtPointUtils.getExtPointIdentifier(extPointInterface);
         
         // 简化实现：检查是否有任何实现类
         Map<String, ?> beans = applicationContext.getBeansOfType(extPointInterface);
@@ -254,11 +227,12 @@ public class ExtPointValidator implements ApplicationListener<ContextRefreshedEv
                 
                 for (Class<?> iface : interfaces) {
                     if (iface.isAnnotationPresent(ExtPoint.class)) {
-                        String routeKey = iface.getCanonicalName() + ":" + 
-                                        extension.tenantCode() + ":" + 
-                                        extension.bizCode() + ":" + 
-                                        extension.useCase() + ":" + 
-                                        extension.scenario();
+                        String routeKey = ExtPointUtils.generateRouteKey(
+                                        iface,
+                                        extension.tenantCode(),
+                                        extension.bizCode(),
+                                        extension.useCase(),
+                                        extension.scenario());
                         
                         routeMap.computeIfAbsent(routeKey, k -> new ArrayList<>()).add(bean);
                     }

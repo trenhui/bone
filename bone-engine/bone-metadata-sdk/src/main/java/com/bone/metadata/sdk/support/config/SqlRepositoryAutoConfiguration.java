@@ -23,7 +23,6 @@ import com.bone.metadata.sdk.sql.template.parser.TemplateContentParser;
 import com.bone.metadata.sdk.sql.template.parser.YamlTemplateParser;
 import com.bone.metadata.sdk.sql.template.provider.AnnotationSourceProvider;
 import com.bone.metadata.sdk.sql.template.provider.ClasspathSourceProvider;
-import com.bone.metadata.sdk.sql.template.provider.ClasspathYamlSourceProvider;
 import com.bone.metadata.sdk.sql.template.provider.TemplateSourceProvider;
 import com.bone.metadata.sdk.support.util.DistributedLockUtil;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -152,8 +151,7 @@ public class SqlRepositoryAutoConfiguration {
     public List<TemplateSourceProvider> templateSourceProviders(ResourceLoader resourceLoader, SqlConfigProperties config) {
         return Arrays.asList(
                 new ClasspathSourceProvider(resourceLoader, config),
-                new AnnotationSourceProvider(),
-                new ClasspathYamlSourceProvider(resourceLoader, config)
+                new AnnotationSourceProvider()
         );
     }
 

@@ -2,7 +2,9 @@ package com.bone.engine.extension.router;
 
 import com.bone.engine.extension.ExtPoint;
 import com.bone.engine.extension.Extension;
+import com.bone.engine.extension.config.ExtensionProperties;
 import com.bone.engine.extension.context.BizContext;
+import com.bone.engine.extension.utils.ExtPointUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.bone.engine.extension.lifecycle.ExtensionLifecycle;
@@ -110,17 +112,9 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
         this.statsCollector = statsCollector;
     }
     
-    // 缓存过期时间配置
-    @Value("${bone.extension.router.cache.expire-time:300}")
-    private long cacheExpireTime;
-    
-    // 缓存最大容量配置
-    @Value("${bone.extension.router.cache.max-size:10000}")
-    private long cacheMaxSize;
-    
-    // 是否启用路由预热
-    @Value("${bone.extension.router.warmup.enabled:false}")
-    private boolean warmupEnabled;
+    // 扩展点配置属性
+    @Autowired(required = false)
+    private ExtensionProperties extensionProperties;
     
     // 路由失败的降级策略
     private final AtomicReference<Function<Throwable, Boolean>> fallbackStrategy = 
@@ -130,27 +124,64 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     @Autowired(required = false)
     private ExtensionLifecycle extensionLifecycle;
     
+    // 获取缓存过期时间配置
+    private long getCacheExpireTime() {
+        if (extensionProperties != null && extensionProperties.getCache() != null) {
+            return extensionProperties.getCache().getExpireTime();
+        }
+        return 300000L;
+    }
+    
+    // 获取缓存最大容量配置
+    private long getCacheMaxSize() {
+        if (extensionProperties != null && extensionProperties.getCache() != null) {
+            return extensionProperties.getCache().getMaxSize();
+        }
+        return 1000L;
+    }
+    
     // 是否启用权重路由
-    @Value("${bone.extension.router.weighted-routing.enabled:false}")
-    private boolean weightedRoutingEnabled;
+    private boolean isWeightedRoutingEnabled() {
+        if (extensionProperties != null && extensionProperties.getRouter() != null && extensionProperties.getRouter().getWeighted() != null) {
+            return extensionProperties.getRouter().getWeighted().isEnabled();
+        }
+        return false;
+    }
     
     // 是否启用灰度发布
-    @Value("${bone.extension.router.gray-release.enabled:false}")
-    private boolean grayReleaseEnabled;
+    private boolean isGrayReleaseEnabled() {
+        if (extensionProperties != null && extensionProperties.getRouter() != null && extensionProperties.getRouter().getGrayRelease() != null) {
+            return extensionProperties.getRouter().getGrayRelease().isEnabled();
+        }
+        return false;
+    }
     
     // 是否启用指标收集
-    private boolean metricsEnabled = true;
+    private boolean isMetricsEnabled() {
+        if (extensionProperties != null && extensionProperties.getRouter() != null && extensionProperties.getRouter().getMetrics() != null) {
+            return extensionProperties.getRouter().getMetrics().isEnabled();
+        }
+        return false;
+    }
     
-    // 性能警告阈值（毫秒）
-    private long warningThreshold = 100;
+    // 获取性能警告阈值（毫秒）
+    private long getWarningThreshold() {
+        if (extensionProperties != null && extensionProperties.getRouter() != null && extensionProperties.getRouter().getMetrics() != null) {
+            return extensionProperties.getRouter().getMetrics().getWarningThreshold();
+        }
+        return 1000L;
+    }
     
     @Override
     public void afterPropertiesSet() {
-        // 委托给CacheManager初始化缓存
-        cacheManager.initializeCache((int)cacheExpireTime, (int)cacheMaxSize);
-        
-        log.info("Initialized extPoint router cache with expireTime={}s, maxSize={}", 
-                cacheExpireTime, cacheMaxSize);
+        // 确保CacheManager不为null
+        if (cacheManager != null) {
+            // 委托给CacheManager初始化缓存
+            cacheManager.initializeCache((int)getCacheExpireTime(), (int)getCacheMaxSize());
+            
+            log.info("Initialized extPoint router cache with expireTime={}s, maxSize={}", 
+                    getCacheExpireTime(), getCacheMaxSize());
+        }
     }
     
     /**
@@ -208,14 +239,40 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
      * 设置是否启用权重路由
      */
     public void setWeightedRoutingEnabled(boolean weightedRoutingEnabled) {
-        this.weightedRoutingEnabled = weightedRoutingEnabled;
+        // 使用ExtensionProperties更新配置
+        if (extensionProperties != null && extensionProperties.getRouter() != null && 
+            extensionProperties.getRouter().getWeighted() != null) {
+            try {
+                // 反射设置值，避免修改接口
+                java.lang.reflect.Field field = extensionProperties.getRouter().getWeighted().getClass().getDeclaredField("enabled");
+                field.setAccessible(true);
+                field.setBoolean(extensionProperties.getRouter().getWeighted(), weightedRoutingEnabled);
+                log.info("Weighted routing enabled set to: {}", weightedRoutingEnabled);
+                clearCache();
+            } catch (Exception e) {
+                log.warn("Failed to update weighted routing configuration", e);
+            }
+        }
     }
     
     /**
      * 设置是否启用灰度发布
      */
     public void setGrayReleaseEnabled(boolean grayReleaseEnabled) {
-        this.grayReleaseEnabled = grayReleaseEnabled;
+        // 使用ExtensionProperties更新配置
+        if (extensionProperties != null && extensionProperties.getRouter() != null && 
+            extensionProperties.getRouter().getGrayRelease() != null) {
+            try {
+                // 反射设置值，避免修改接口
+                java.lang.reflect.Field field = extensionProperties.getRouter().getGrayRelease().getClass().getDeclaredField("enabled");
+                field.setAccessible(true);
+                field.setBoolean(extensionProperties.getRouter().getGrayRelease(), grayReleaseEnabled);
+                log.info("Gray release enabled set to: {}", grayReleaseEnabled);
+                clearCache();
+            } catch (Exception e) {
+                log.warn("Failed to update gray release configuration", e);
+            }
+        }
     }
     
     @Override
@@ -239,7 +296,11 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
             clearCache();
             
             // 重新初始化路由相关配置
-            reinitializeConfig();
+            try {
+                reinitializeConfig();
+            } catch (Exception e) {
+                log.error("Failed to reinitialize configuration after config change", e);
+            }
         }
     }
     
@@ -268,12 +329,7 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
      */
     private void reinitializeConfig() {
         try {
-            // 重新读取配置值
-            cacheExpireTime = applicationContext.getEnvironment().getProperty("bone.extension.router.cache.expire-time", Long.class, 300L);
-            cacheMaxSize = applicationContext.getEnvironment().getProperty("bone.extension.router.cache.max-size", Long.class, 10000L);
-            weightedRoutingEnabled = applicationContext.getEnvironment().getProperty("bone.extension.router.weighted-routing.enabled", Boolean.class, false);
-            grayReleaseEnabled = applicationContext.getEnvironment().getProperty("bone.extension.router.gray-release.enabled", Boolean.class, false);
-            warmupEnabled = applicationContext.getEnvironment().getProperty("bone.extension.router.warmup.enabled", Boolean.class, false);
+            // 配置已通过ExtensionProperties统一管理，无需在这里重新读取
             
             // 重新初始化缓存
             afterPropertiesSet();
@@ -281,6 +337,7 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
             log.info("Router configuration reinitialized");
         } catch (Exception e) {
             log.error("Failed to reinitialize router configuration", e);
+            throw new RuntimeException("Failed to reinitialize router configuration", e);
         }
     }
     
@@ -288,22 +345,52 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
      * 设置是否启用指标收集
      */
     public void setMetricsEnabled(boolean metricsEnabled) {
-        this.metricsEnabled = metricsEnabled;
+        // 使用ExtensionProperties更新配置
+        if (extensionProperties != null && extensionProperties.getRouter() != null && 
+            extensionProperties.getRouter().getMetrics() != null) {
+            try {
+                // 反射设置值，避免修改接口
+                java.lang.reflect.Field field = extensionProperties.getRouter().getMetrics().getClass().getDeclaredField("enabled");
+                field.setAccessible(true);
+                field.setBoolean(extensionProperties.getRouter().getMetrics(), metricsEnabled);
+                log.info("Metrics enabled set to: {}", metricsEnabled);
+                clearCache();
+            } catch (Exception e) {
+                log.warn("Failed to update metrics configuration", e);
+            }
+        }
     }
     
     /**
      * 设置性能警告阈值
      */
     public void setWarningThreshold(long warningThreshold) {
-        this.warningThreshold = warningThreshold;
+        // 使用ExtensionProperties更新配置
+        if (extensionProperties != null && extensionProperties.getRouter() != null && 
+            extensionProperties.getRouter().getMetrics() != null) {
+            try {
+                // 反射设置值，避免修改接口
+                java.lang.reflect.Field field = extensionProperties.getRouter().getMetrics().getClass().getDeclaredField("warningThreshold");
+                field.setAccessible(true);
+                field.setLong(extensionProperties.getRouter().getMetrics(), warningThreshold);
+                log.info("Warning threshold set to: {}ms", warningThreshold);
+            } catch (Exception e) {
+                log.warn("Failed to update warning threshold configuration", e);
+            }
+        }
     }
+    
+    // 用于向后兼容的临时字段
+    private boolean enableCache = true;
     
     /**
      * 设置是否启用缓存
      */
     public void setEnableCache(boolean enableCache) {
-        // 这里可以根据需要调整缓存行为
-        // 目前缓存配置在初始化时已经完成
+        this.enableCache = enableCache;
+        // 更新缓存启用状态
+        // 注意：这个方法主要用于向后兼容ExtensionAutoConfiguration
+        // 主要配置应通过ExtensionProperties统一管理
         log.debug("Cache enable state set to: {}", enableCache);
     }
     
@@ -537,8 +624,8 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
             long costTime = endTime - startTime;
             
             // 记录路由性能指标
-            if (metricsEnabled) {
-                statsCollector.recordMetrics(extPointClass, success, costTime, warningThreshold);
+            if (isMetricsEnabled()) {
+                statsCollector.recordMetrics(extPointClass, success, costTime, getWarningThreshold());
             }
             
             // 记录详细日志
@@ -551,7 +638,7 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
             }
             
             // 记录性能警告
-            if (costTime > warningThreshold) {
+            if (costTime > getWarningThreshold()) {
                 log.warn("Slow route detected for extPoint: {}, cost: {}ms", 
                         extPointClass.getSimpleName(), 
                         costTime);
@@ -565,6 +652,7 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
      * 预热路由缓存
      */
     public <T> void warmupCache(Class<T> extPointClass, List<BizContext<?>> contexts) {
+        boolean warmupEnabled = applicationContext.getEnvironment().getProperty("bone.extension.router.warmup.enabled", Boolean.class, false);
         if (!warmupEnabled || CollectionUtils.isEmpty(contexts)) {
             return;
         }
@@ -666,7 +754,7 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
         
         // 应用权重路由和灰度发布策略
         Object selectedImplementation = weightAndGraySelector.applyWeightAndGrayRelease(
-                validImpls, extPointClass, context, weightedRoutingEnabled, grayReleaseEnabled);
+                validImpls, extPointClass, context, isWeightedRoutingEnabled(), isGrayReleaseEnabled());
         
         if (log.isDebugEnabled()) {
             log.debug("Selected implementation: {} for extPoint: {}", 
@@ -871,31 +959,14 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
                 Object implementation = entry.getValue();
                 
                 try {
-                    // 查找该实现类实现的所有@ExtPoint接口
-                    Class<?>[] interfaces = implementation.getClass().getInterfaces();
+                    // 使用ExtPointUtils查找所有扩展点接口（包括父类中的）
                     boolean registered = false;
-                    
-                    for (Class<?> iface : interfaces) {
-                        if (iface.isAnnotationPresent(ExtPoint.class)) {
-                            // 使用原始类型和类型转换解决泛型类型不匹配问题
-                            registerImplementation((Class)iface, implementation);
-                            registered = true;
-                            totalRegistered++;
-                        }
-                    }
-                    
-                    // 检查是否有父类实现的接口
-                    Class<?> superClass = implementation.getClass().getSuperclass();
-                    while (superClass != null && superClass != Object.class) {
-                        Class<?>[] superInterfaces = superClass.getInterfaces();
-                        for (Class<?> iface : superInterfaces) {
-                            if (iface.isAnnotationPresent(ExtPoint.class)) {
-                                registerImplementation((Class)iface, implementation);
-                                registered = true;
-                                totalRegistered++;
-                            }
-                        }
-                        superClass = superClass.getSuperclass();
+                    List<Class<?>> extPointInterfaces = ExtPointUtils.findExtPointInterfaces(implementation.getClass());
+                    for (Class<?> iface : extPointInterfaces) {
+                        // 使用原始类型和类型转换解决泛型类型不匹配问题
+                        registerImplementation((Class)iface, implementation);
+                        registered = true;
+                        totalRegistered++;
                     }
                     
                     if (!registered) {

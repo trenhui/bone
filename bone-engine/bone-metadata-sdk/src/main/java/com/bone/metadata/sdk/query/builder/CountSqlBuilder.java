@@ -18,12 +18,12 @@ import java.util.stream.Collectors;
 /**
  * 动态构建 COUNT 查询，支持按需 JOIN 扩展表 ext_data_reserved。
  */
-public class CountBuilderSql implements SqlQueryBuilder<CountContext> {
-    private static final Logger log = LoggerFactory.getLogger(CountBuilderSql.class);
+public class CountSqlBuilder implements SqlQueryBuilder<CountContext> {
+    private static final Logger log = LoggerFactory.getLogger(CountSqlBuilder.class);
 
     private final MetadataService metadataService;
 
-    public CountBuilderSql(MetadataService metadataService) {
+    public CountSqlBuilder(MetadataService metadataService) {
         this.metadataService = metadataService;
     }
 
@@ -136,7 +136,7 @@ public class CountBuilderSql implements SqlQueryBuilder<CountContext> {
      * 判断是否需要应用软删除过滤
      */
     private boolean shouldApplySoftDeleteFilter(TableMetadata table, CountContext context) {
-        return table.isSoftDeletable() && !context.getIncludeDeleted();
+        return table.isSoftDeletable() && !context.isIncludeDeleted();
     }
 
     /**

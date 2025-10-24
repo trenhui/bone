@@ -1,5 +1,6 @@
 package com.bone.metadata.sdk.support.dataSource;
 
+import com.bone.metadata.sdk.test.common.BaseDataSourceTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -7,12 +8,13 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 /**
  * UserService单元测试，验证数据源切换功能
  */
-public class UserServiceTest {
+public class UserServiceTest extends BaseDataSourceTest {
     
     @Mock
     private JdbcTemplate jdbcTemplate;
@@ -23,8 +25,6 @@ public class UserServiceTest {
     @BeforeEach
     public void setUp() {
         MockitoAnnotations.openMocks(this);
-        // 清理数据源上下文
-        DataSourceContextHolder.clearAll();
     }
     
     @Test
@@ -88,8 +88,7 @@ public class UserServiceTest {
             assertEquals("slave", DataSourceContextHolder.getCurrentLookupKey());
             
         } finally {
-            // 清理数据源上下文
-            DataSourceContextHolder.clearAll();
+
             // 恢复原始数据源（如果有）
             if (originalDs != null) {
                 DataSourceContextHolder.setDataSource(originalDs);
@@ -126,8 +125,7 @@ public class UserServiceTest {
             assertEquals("master", DataSourceContextHolder.getCurrentLookupKey());
             
         } finally {
-            // 清理数据源上下文
-            DataSourceContextHolder.clearAll();
+
             // 恢复原始数据源（如果有）
             if (originalDs != null) {
                 DataSourceContextHolder.setDataSource(originalDs);
@@ -177,8 +175,7 @@ public class UserServiceTest {
             assertEquals("master", DataSourceContextHolder.getCurrentLookupKey());
             
         } finally {
-            // 清理数据源上下文
-            DataSourceContextHolder.clearAll();
+
             // 恢复原始数据源（如果有）
             if (originalDs != null) {
                 DataSourceContextHolder.setDataSource(originalDs);
@@ -186,13 +183,5 @@ public class UserServiceTest {
         }
     }
     
-    private void assertEquals(Object expected, Object actual) {
-        if (expected == null && actual == null) {
-            return;
-        }
-        if (expected != null && expected.equals(actual)) {
-            return;
-        }
-        throw new AssertionError(String.format("Expected <%s> but was <%s>", expected, actual));
-    }
+
 }

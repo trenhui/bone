@@ -163,11 +163,12 @@ export class ResourceCache {
   private cleanupExpired(): void {
     const now = Date.now();
     
-    for (const [key, item] of this.cache.entries()) {
+    // 使用forEach代替entries()迭代，避免TypeScript编译错误
+    this.cache.forEach((item, key) => {
       if (now - item.timestamp > this.config.ttl!) {
         this.delete(key);
       }
-    }
+    });
   }
 
   /**

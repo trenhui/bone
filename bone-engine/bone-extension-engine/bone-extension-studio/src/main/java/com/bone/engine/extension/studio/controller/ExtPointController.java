@@ -14,7 +14,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -155,6 +157,42 @@ public class ExtPointController {
     }
 
     /**
+     * 获取扩展点的详细文档信息
+     */
+    @GetMapping("/{id}/doc")
+    public ResponseEntity<Map<String, Object>> getExtPointDoc(@PathVariable Long id) {
+        log.info("获取扩展点文档详情，扩展点ID: {}", id);
+        try {
+            Optional<ExtPointEntity> extPointOpt = extPointService.findExtPointById(id);
+            if (!extPointOpt.isPresent()) {
+                log.warn("扩展点不存在，ID: {}", id);
+                return ResponseEntity.notFound().build();
+            }
+            
+            ExtPointEntity extPoint = extPointOpt.get();
+            Map<String, Object> docInfo = new HashMap<>();
+            docInfo.put("id", extPoint.getId());
+            docInfo.put("name", extPoint.getName());
+            docInfo.put("domain", extPoint.getDomain());
+            docInfo.put("category", extPoint.getCategory());
+            docInfo.put("interfaceName", extPoint.getInterfaceName());
+            docInfo.put("version", extPoint.getVersion());
+            docInfo.put("description", extPoint.getDescription());
+            
+            // 添加基本的文档结构
+            docInfo.put("parametersInfo", "");
+            docInfo.put("returnsInfo", "");
+            docInfo.put("scenarios", "");
+            
+            log.debug("获取扩展点文档详情成功，ID: {}", id);
+            return ResponseEntity.ok(docInfo);
+        } catch (Exception e) {
+            log.error("获取扩展点文档详情失败: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    /**
      * 获取扩展点的所有扩展实现
      */
     @GetMapping("/{id}/extensions")
@@ -210,6 +248,25 @@ public class ExtPointController {
             return ResponseEntity.ok(categories);
         } catch (Exception e) {
             log.error("获取扩展点分类失败", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    /**
+     * 获取扩展点统计信息
+     */
+    @GetMapping("/stats")
+    public ResponseEntity<Map<String, Object>> getExtPointStats() {
+        log.debug("获取扩展点统计信息");
+        try {
+            Map<String, Object> stats = new HashMap<>();
+            stats.put("totalCount", extPointService.getTotalExtPointCount());
+            stats.put("domainStats", extPointService.getExtPointStatsByDomain());
+            stats.put("categoryStats", extPointService.getExtPointStatsByCategory());
+            log.debug("获取扩展点统计信息成功");
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            log.error("获取扩展点统计信息失败", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

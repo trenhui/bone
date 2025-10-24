@@ -3,6 +3,7 @@ package com.bone.engine.extension;
 import com.bone.engine.extension.annotation.ExtPointDoc;
 import com.bone.engine.extension.annotation.ExtensionDoc;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
@@ -23,6 +24,7 @@ public class ExtPointIntegrationTest {
     
     @BeforeEach
     void setUp() {
+        // Given - 准备测试环境
         // 创建自定义仓库
         repository = new TestExtPointRepository();
         
@@ -42,8 +44,11 @@ public class ExtPointIntegrationTest {
      * 测试基本功能
      */
     @Test
+    @DisplayName("测试基本功能是否正常工作")
     void testBasicFunctionality() {
-        // 简单测试通过
+        // Given - 无特殊前置条件
+        
+        // When & Then - 简单测试通过
         assertTrue(true, "Basic functionality test passed");
     }
     
@@ -51,8 +56,11 @@ public class ExtPointIntegrationTest {
      * 测试上下文属性管理
      */
     @Test
+    @DisplayName("测试上下文属性管理功能")
     void testContextAttributes() {
-        // 简化测试，避免依赖ExtensionContextManager
+        // Given - 无特殊前置条件
+        
+        // When & Then - 简化测试，避免依赖ExtensionContextManager
         assertTrue(true, "Context attributes test passed");
     }
     
@@ -60,13 +68,20 @@ public class ExtPointIntegrationTest {
      * 测试默认扩展点实现
      */
     @Test
+    @DisplayName("测试默认扩展点实现功能")
     void testDefaultExtPointImplementation() {
-        // 检查是否注册了默认实现
+        // Given - 默认服务应该已经在setUp中注册
+        
+        // When - 获取默认实现
         DefaultUserService defaultService = repository.getDefaultUserService();
+        
+        // Then - 验证默认实现已注册
         assertNotNull(defaultService, "Default user service should be registered");
         
-        // 测试默认实现的直接调用
+        // When - 调用默认实现方法
         String result = defaultService.greetUser("test-user");
+        
+        // Then - 验证调用结果
         assertEquals("Default User Greeting - test-user", result);
     }
     
@@ -74,17 +89,18 @@ public class ExtPointIntegrationTest {
      * 测试多租户隔离功能
      */
     @Test
+    @DisplayName("测试多租户隔离功能")
     void testMultiTenantIsolation() {
-        // 注册租户特定实现
+        // Given - 准备租户特定实现
         repository.registerTenantSpecificProvider("TENANT_A", OrderService.class, tenantAOrderService);
         repository.registerTenantSpecificProvider("TENANT_B", OrderService.class, tenantBOrderService);
         
-        // 直接验证仓库中注册的实现
+        // When - 获取不同租户的实现
         OrderService tenantAProvider = repository.getTenantSpecificProvider("TENANT_A", OrderService.class);
         OrderService tenantBProvider = repository.getTenantSpecificProvider("TENANT_B", OrderService.class);
         OrderService unknownProvider = repository.getTenantSpecificProvider("UNKNOWN", OrderService.class);
         
-        // 验证获取的实现
+        // Then - 验证获取的实现
         assertNotNull(tenantAProvider, "Should get tenant A specific provider");
         assertTrue(tenantAProvider instanceof TenantASpecificOrderService, "Should be Tenant A specific implementation");
         assertEquals("Tenant A Order Processing - test", tenantAProvider.processOrder("test"));
@@ -100,21 +116,22 @@ public class ExtPointIntegrationTest {
      * 测试动态扩展点注册
      */
     @Test
+    @DisplayName("测试动态扩展点注册与替换功能")
     void testDynamicExtPointRegistration() {
-        // 动态注册新实现
+        // When - 动态注册新实现
         repository.registerDynamicProvider("DYNAMIC_TENANT", OrderService.class, dynamicOrderService);
         
-        // 验证动态注册的实现
+        // Then - 验证动态注册的实现
         OrderService dynamicProvider = repository.getDynamicProvider("DYNAMIC_TENANT", OrderService.class);
         assertNotNull(dynamicProvider, "Should get dynamically registered provider");
         assertTrue(dynamicProvider instanceof DynamicOrderService, "Should be dynamic implementation");
         assertEquals("Dynamic Order Processing - test", dynamicProvider.processOrder("test"));
         
-        // 替换现有实现
+        // When - 替换现有实现
         UpdatedDynamicOrderService updatedService = new UpdatedDynamicOrderService();
         repository.registerDynamicProvider("DYNAMIC_TENANT", OrderService.class, updatedService);
         
-        // 验证替换后的实现
+        // Then - 验证替换后的实现
         OrderService updatedProvider = repository.getDynamicProvider("DYNAMIC_TENANT", OrderService.class);
         assertNotNull(updatedProvider, "Should get updated dynamically registered provider");
         assertTrue(updatedProvider instanceof UpdatedDynamicOrderService, "Should be updated dynamic implementation");
@@ -125,8 +142,11 @@ public class ExtPointIntegrationTest {
      * 测试上下文切换
      */
     @Test
+    @DisplayName("测试上下文切换功能")
     void testContextSwitching() {
-        // 简化测试，避免依赖ExtensionContextManager
+        // Given - 无特殊前置条件
+        
+        // When & Then - 简化测试，避免依赖ExtensionContextManager
         assertTrue(true, "Context switching test passed");
     }
     
@@ -304,6 +324,7 @@ public class ExtPointIntegrationTest {
     }
     
     // 订单服务扩展点接口
+    // 运行时配置 - 专注于扩展点注册和行为控制
     @ExtPoint(
         name = "订单服务扩展点",
         description = "处理订单业务的核心扩展点接口",
@@ -315,7 +336,11 @@ public class ExtPointIntegrationTest {
         enableCache = false,
         timeout = 2000
     )
+    // 接口文档 - 提供使用指导（编译时注解，不影响运行时）
     @ExtPointDoc(
+        title = "订单服务扩展点接口",
+        domain = "订单系统",
+        category = "业务处理",
         description = "该扩展点定义了订单处理的标准接口，支持多租户和动态实现场景。",
         usage = "1. 在订单处理流程中调用\n2. 根据不同租户或业务场景自动选择合适的实现\n3. 支持动态注册和切换实现",
         bestPractices = "1. 确保实现类的幂等性\n2. 根据租户隔离实现\n3. 考虑线程安全问题\n4. 动态实现应谨慎使用",
@@ -333,8 +358,10 @@ public class ExtPointIntegrationTest {
             description = "处理结果",
             successExample = "Default Order Processing - ORD1234567890"
         ),
-        notes = "支持多租户场景的订单处理扩展点"
-)
+        notes = "支持多租户场景的订单处理扩展点",
+        creator = "测试团队",
+        createDate = "2024-01-01"
+    )
     public interface OrderService {
         /**
          * 处理订单
@@ -345,6 +372,7 @@ public class ExtPointIntegrationTest {
     }
     
     // 订单服务 - 默认实现
+    // 运行时路由配置 - 负责匹配和选择
     @Extension(
         name = "默认订单服务实现",
         description = "订单服务的默认实现，当没有特定租户实现时使用",
@@ -355,6 +383,7 @@ public class ExtPointIntegrationTest {
         enabled = true,
         version = "1.0.0"
     )
+    // 实现类文档 - 描述适配场景和实现细节（编译时注解，不影响运行时）
     @ExtensionDoc(
         description = "这是订单服务的默认实现，当没有特定租户实现时会被使用。",
         scenarios = "通用场景，无特定租户要求",
@@ -363,7 +392,7 @@ public class ExtPointIntegrationTest {
         notes = "测试使用的基础实现",
         author = "测试团队",
         createDate = "2024-01-01"
-)
+    )
     public static class DefaultOrderService implements OrderService {
         @Override
         public String processOrder(String orderId) {
@@ -372,6 +401,7 @@ public class ExtPointIntegrationTest {
     }
     
     // 订单服务 - 租户A特定实现
+    // 运行时路由配置 - 负责匹配和选择
     @Extension(
         name = "租户A订单服务实现",
         description = "专为租户A定制的订单处理实现，提供租户特有的业务逻辑",
@@ -382,11 +412,13 @@ public class ExtPointIntegrationTest {
         enabled = true,
         version = "1.0.0"
     )
+    // 实现类文档 - 描述适配场景和实现细节（编译时注解，不影响运行时）
     @ExtensionDoc(
         description = "这是专为租户A定制的订单处理实现，提供租户特有的业务逻辑。",
         scenarios = "租户A专用场景",
         implementationDetails = "针对租户A的特定实现，包含租户特定的处理逻辑",
         performance = "测试实现，单次执行耗时<1ms",
+        differences = "相比默认实现，仅在租户A的上下文中生效，且优先级更高",
         notes = "用于测试多租户隔离功能",
         author = "测试团队",
         createDate = "2024-01-01"
@@ -399,25 +431,28 @@ public class ExtPointIntegrationTest {
     }
     
     // 订单服务 - 租户B特定实现
-    @Extension(
-        name = "租户B订单服务实现",
-        description = "专为租户B定制的订单处理实现，提供租户特有的业务逻辑",
-        tenantCode = "TENANT_B",
-        bizCode = "standard",
-        scenario = "tenant-b",
-        priority = 100,
-        enabled = true,
-        version = "1.0.0"
-    )
-    @ExtensionDoc(
-        description = "这是专为租户B定制的订单处理实现，提供租户特有的业务逻辑。",
-        scenarios = "租户B专用场景",
-        implementationDetails = "针对租户B的特定实现，包含租户特定的处理逻辑",
-        performance = "测试实现，单次执行耗时<1ms",
-        notes = "用于测试多租户隔离功能",
-        author = "测试团队",
-        createDate = "2024-01-01"
-    )
+      // 运行时路由配置 - 负责匹配和选择
+      @Extension(
+          name = "租户B订单服务实现",
+          description = "专为租户B定制的订单处理实现，提供租户特有的业务逻辑",
+          tenantCode = "TENANT_B",
+          bizCode = "standard",
+          scenario = "tenant-b",
+          priority = 100,
+          enabled = true,
+          version = "1.0.0"
+      )
+      // 实现类文档 - 描述适配场景和实现细节（编译时注解，不影响运行时）
+      @ExtensionDoc(
+          description = "这是专为租户B定制的订单处理实现，提供租户特有的业务逻辑。",
+          scenarios = "租户B专用场景",
+          implementationDetails = "针对租户B的特定实现，包含租户特定的处理逻辑",
+          performance = "测试实现，单次执行耗时<1ms",
+          differences = "相比默认实现，仅在租户B的上下文中生效，且优先级更高",
+          notes = "用于测试多租户隔离功能",
+          author = "测试团队",
+          createDate = "2024-01-01"
+      )
     public static class TenantBSpecificOrderService implements OrderService {
         @Override
         public String processOrder(String orderId) {
@@ -449,6 +484,7 @@ public class ExtPointIntegrationTest {
     }
     
     // 订单服务 - 更新后的动态实现
+    // 运行时路由配置 - 负责匹配和选择
     @Extension(
         tenantCode = "dynamic",
         bizCode = "standard",
@@ -457,12 +493,15 @@ public class ExtPointIntegrationTest {
         priority = 80,
         enabled = true
     )
+    // 实现类文档 - 描述适配场景和实现细节（编译时注解，不影响运行时）
     @ExtensionDoc(
         description = "这是用于测试动态替换功能的更新版实现。",
         scenarios = "需要在运行时更新业务逻辑的场景",
         implementationDetails = "支持动态替换",
+        differences = "相比初始实现，用于测试动态更新能力",
         notes = "用于测试动态替换功能",
-        author = "测试团队"
+        author = "测试团队",
+        createDate = "2024-01-01"
     )
     public static class UpdatedDynamicOrderService implements OrderService {
         @Override
@@ -472,18 +511,23 @@ public class ExtPointIntegrationTest {
     }
     
     // 用户服务扩展点接口
+    // 运行时配置 - 提供扩展点基本信息和默认配置
     @ExtPoint(
         name = "用户服务扩展点",
         description = "处理用户相关操作的扩展点接口",
-        domain = "用户系统",
-        category = "用户交互",
+        domain = "用户管理",
+        category = "核心服务",
         version = "1.0.0",
         enabled = true,
         priority = 100,
         enableCache = false,
         timeout = 1000
     )
+    // 接口文档 - 详细描述扩展点功能、参数和使用场景（编译时注解，不影响运行时）
     @ExtPointDoc(
+        title = "用户服务扩展点",
+        domain = "用户管理",
+        category = "核心服务",
         description = "该扩展点定义了用户服务的标准接口，用于测试用户交互场景。",
         usage = "1. 在需要与用户交互的场景中使用\n2. 用于生成欢迎信息、用户问候等\n3. 支持多租户场景的用户交互",
         bestPractices = "1. 保持接口简洁\n2. 考虑国际化支持\n3. 确保线程安全",
@@ -513,6 +557,7 @@ public class ExtPointIntegrationTest {
     }
     
     // 用户服务 - 默认实现
+    // 运行时路由配置 - 负责匹配和选择
     @Extension(
         name = "默认用户服务实现",
         description = "用户服务的默认实现，提供基本的用户问候功能",
@@ -523,11 +568,13 @@ public class ExtPointIntegrationTest {
         enabled = true,
         version = "1.0.0"
     )
+    // 实现类文档 - 描述适配场景和实现细节（编译时注解，不影响运行时）
     @ExtensionDoc(
         description = "这是用户服务的默认实现，提供基本的用户问候功能。",
         scenarios = "通用用户交互场景",
         implementationDetails = "基础测试实现，返回标准问候信息",
         performance = "测试实现，单次执行耗时<1ms",
+        differences = "默认实现，适用于所有租户和场景",
         notes = "测试使用的基础实现",
         author = "测试团队",
         createDate = "2024-01-01"
@@ -540,6 +587,7 @@ public class ExtPointIntegrationTest {
     }
     
     // 通知服务扩展点接口
+    // 运行时配置 - 提供扩展点基本信息和默认配置
     @ExtPoint(
         name = "通知服务扩展点",
         description = "处理通知发送的扩展点接口",
@@ -551,7 +599,11 @@ public class ExtPointIntegrationTest {
         enableCache = false,
         timeout = 3000
     )
+    // 接口文档 - 详细描述扩展点功能、参数和使用场景（编译时注解，不影响运行时）
     @ExtPointDoc(
+        title = "通知服务扩展点接口",
+        domain = "消息系统",
+        category = "通知",
         description = "该扩展点定义了通知发送的标准接口，用于测试通知功能。",
         usage = "1. 在需要发送各种通知的场景中使用\n2. 用于发送订单确认、状态更新等通知\n3. 支持多种通知渠道扩展",
         bestPractices = "1. 确保通知的可靠性\n2. 考虑消息重试机制\n3. 支持多种通知渠道",
@@ -569,7 +621,9 @@ public class ExtPointIntegrationTest {
             description = "发送结果",
             successExample = "Notification sent to user@example.com"
         ),
-        notes = "用于测试通知功能的扩展点"
+        notes = "用于测试通知功能的扩展点",
+        creator = "测试团队",
+        createDate = "2024-01-01"
 )
     public interface NotificationService {
         /**
@@ -581,6 +635,7 @@ public class ExtPointIntegrationTest {
     }
     
     // 通知服务 - 默认实现
+    // 运行时路由配置 - 负责匹配和选择
     @Extension(
         name = "默认通知服务实现",
         description = "通知服务的默认实现，提供基本的通知发送功能",
@@ -591,12 +646,15 @@ public class ExtPointIntegrationTest {
         enabled = true,
         version = "1.0.0"
     )
+    // 实现类文档 - 描述适配场景和实现细节（编译时注解，不影响运行时）
     @ExtensionDoc(
         description = "这是通知服务的默认实现，提供基本的通知发送功能。",
         scenarios = "通用通知场景",
         implementationDetails = "基础测试实现",
+        differences = "默认实现，适用于所有租户和场景",
         notes = "测试使用的基础实现",
-        author = "测试团队"
+        author = "测试团队",
+        createDate = "2024-01-01"
     )
     public static class DefaultNotificationService implements NotificationService {
         @Override

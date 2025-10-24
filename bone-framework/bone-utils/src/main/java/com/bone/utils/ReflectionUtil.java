@@ -1,28 +1,33 @@
 package com.bone.utils;
 
+import com.bone.core.util.ReflectionUtil as CoreReflectionUtil;
+import com.bone.core.util.ReflectionUtil.ReflectionException;
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.Arrays;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
- * ReflectionUtil
- * 提供了一些反射操作的工具方法
+ * ReflectionUtil 适配器类
+ * <p>
+ * 此工具类已废弃，所有功能已迁移到 {@link com.bone.core.util.ReflectionUtil}
+ * <p>
+ * 本适配器保留兼容性，但内部实现已迁移至核心实现。未来版本将移除此类。
  *
- * @author renhui.trh 2023-10-30
+ * @author Bone Framework Team
+ * @deprecated use {@link com.bone.core.util.ReflectionUtil} instead
+ * @since 2025 (废弃标记)
  */
+@Deprecated(since = "2025", forRemoval = true)
 public class ReflectionUtil {
-    // 缓存Method对象以提高性能
-    private static final ConcurrentMap<String, Method> methodCache = new ConcurrentHashMap<>();
-    // 缓存MethodHandle对象以提高性能
-    private static final ConcurrentMap<String, MethodHandle> methodHandleCache = new ConcurrentHashMap<>();
+    /**
+     * 私有构造函数，防止实例化
+     */
+    private ReflectionUtil() {
+        throw new UnsupportedOperationException("Utility class cannot be instantiated");
+    }
 
     /**
      * 使用反射调用目标对象上的方法
@@ -35,15 +40,18 @@ public class ReflectionUtil {
      * @throws IllegalAccessException    如果此 Method 对象强制执行 Java 语言访问控制并且底层方法不可访问
      */
     public static Object invokeMethod(Object targetObject, String methodName, Object... args) throws InvocationTargetException, IllegalAccessException {
-        // 获取目标对象的类
-        Class<?> targetClazz = targetObject.getClass();
-        // 生成缓存键
-        String key = getMethodCacheKey(targetClazz, methodName, args);
-
-        // 从缓存中获取方法对象或查找并缓存方法对象
-        Method methodHandle = methodCache.computeIfAbsent(key, k -> findAndCacheMethod(targetClazz, methodName, args));
-        // 使用方法对象调用目标方法
-        return methodHandle.invoke(targetObject, args);
+        try {
+            return CoreReflectionUtil.invokeMethod(targetObject, methodName, args);
+        } catch (ReflectionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof InvocationTargetException) {
+                throw (InvocationTargetException) cause;
+            } else if (cause instanceof IllegalAccessException) {
+                throw (IllegalAccessException) cause;
+            } else {
+                throw new InvocationTargetException(e);
+            }
+        }
     }
 
     /**
@@ -133,28 +141,7 @@ public class ReflectionUtil {
      * @return 带有指定注解的接口类型
      */
     public static <A extends Annotation> Class<A> getInterfaceByAnnotation(Class<?> targetClass, Class<A> annotationClass) {
-        // 检查目标类是否为空
-        if (targetClass == null || annotationClass == null) {
-            return null;
-        }
-
-        Class<?> currentClass = targetClass;
-
-        // 遍历类层次结构，查找带有指定注解的接口
-        while (currentClass != null) {
-            for (Type type : currentClass.getInterfaces()) {
-                if (type instanceof Class) {
-                    Class<?> interfaceClass = (Class<?>) type;
-                    if (interfaceClass.isInterface() && interfaceClass.getAnnotation(annotationClass) != null) {
-                        return (Class<A>) interfaceClass;
-                    }
-                }
-            }
-            // 向上查找父类
-            currentClass = currentClass.getSuperclass();
-        }
-        // 如果没有找到，返回null
-        return null;
+        return CoreReflectionUtil.getInterfaceByAnnotation(targetClass, annotationClass);
     }
 
     /**
@@ -167,24 +154,8 @@ public class ReflectionUtil {
      * @throws Throwable 如果方法调用失败
      */
     public static Object invokeVirtualMethod(Object object, String methodName, Object... args) throws Throwable {
-        // 生成缓存键
-        String key = getMethodCacheKey(object.getClass(), methodName, args);
-
-        // 从缓存中获取MethodHandle对象或查找并缓存MethodHandle对象
-        MethodHandle methodHandle = methodHandleCache.computeIfAbsent(key, k -> {
-            Class<?> clazz = object.getClass();
-            Class<?>[] parameterTypes = getParameterTypes(args);
-
-            MethodHandles.Lookup lookup = MethodHandles.lookup();
-            MethodType methodType = MethodType.methodType(Object.class, parameterTypes);
-            try {
-                return lookup.findVirtual(clazz, methodName, methodType).bindTo(object);
-            } catch (NoSuchMethodException | IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
-        });
-        // 使用MethodHandle对象调用目标方法
-        return methodHandle.invokeWithArguments(args);
+        // 直接使用核心实现的高性能方法调用
+        return CoreReflectionUtil.invokeMethod(object, methodName, args);
     }
 
     /**

@@ -6,6 +6,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -87,4 +88,19 @@ public interface ExtPointService {
      * 获取所有可用的分类列表
      */
     List<String> findAllCategories();
+    
+    /**
+     * 获取扩展点统计信息
+     */
+    Map<String, Long> getExtPointStatsByDomain();
+    
+    /**
+     * 获取扩展点分类统计信息
+     */
+    Map<String, Long> getExtPointStatsByCategory();
+    
+    /**
+     * 获取总扩展点数量
+     */
+    long getTotalExtPointCount();
 }

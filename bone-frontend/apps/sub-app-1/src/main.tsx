@@ -1,11 +1,36 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
+import * as React from 'react';
+import * as ReactDOM from 'react-dom/client';
 import { createMicroApp } from '@bone/core/micro-fe-runtime';
 import App from './App';
 import './index.css';
 
+// 扩展Window接口
+declare global {
+  interface Window {
+    __MICRO_APP_ENVIRONMENT__?: boolean;
+  }
+}
+
+// 定义微应用配置类型
+interface MicroAppConfig {
+  name: string;
+  version: string;
+  mountPoint: string;
+  routes: Array<{ path: string; name: string }>;
+  exposes: {
+    showNotification: (message: string, type: 'info' | 'success' | 'error') => boolean;
+    getData: () => Promise<{ app: string; data: string }>;
+  };
+}
+
+// 定义生命周期属性类型
+interface LifecycleProps {
+  mountPoint?: string;
+  [key: string]: any;
+}
+
 // 微前端应用配置
-const microAppConfig = {
+const microAppConfig: MicroAppConfig = {
   name: 'sub-app-1',
   version: '1.0.0',
   mountPoint: '#sub-app-1-container',
@@ -16,11 +41,11 @@ const microAppConfig = {
   ],
   // 暴露给主应用的方法
   exposes: {
-    showNotification: (message: string, type: 'info' | 'success' | 'error') => {
+    showNotification: (message: string, type: 'info' | 'success' | 'error'): boolean => {
       console.log(`[Sub-App-1] Notification: ${message} (${type})`);
       return true;
     },
-    getData: async () => {
+    getData: async (): Promise<{ app: string; data: string }> => {
       return { app: 'sub-app-1', data: 'Hello from Sub-App-1' };
     }
   }
@@ -30,12 +55,12 @@ const microAppConfig = {
 const microApp = createMicroApp(microAppConfig);
 
 // 定义微前端生命周期钩子
-export const bootstrap = () => {
+export const bootstrap = (): Promise<void> => {
   console.log('[Sub-App-1] Bootstrap');
   return Promise.resolve();
 };
 
-export const mount = (props: any) => {
+export const mount = (props: LifecycleProps): Promise<void> => {
   console.log('[Sub-App-1] Mount', props);
   
   // 创建挂载点
@@ -49,28 +74,29 @@ export const mount = (props: any) => {
   container.innerHTML = '';
   
   // 渲染应用
-  const root = ReactDOM.createRoot(container);
+  const root = ReactDOM.createRoot(container as HTMLElement);
   root.render(
-    <React.StrictMode>
-      <App {...props} />
-    </React.StrictMode>
+    React.createElement(React.StrictMode, null,
+      React.createElement(App as React.ComponentType<LifecycleProps>, props)
+    )
   );
   
   return Promise.resolve();
 };
 
-export const unmount = (props: any) => {
+export const unmount = (props: LifecycleProps): Promise<void> => {
   console.log('[Sub-App-1] Unmount', props);
   
   const container = document.querySelector(props.mountPoint || microAppConfig.mountPoint);
   if (container) {
-    ReactDOM.unmountComponentAtNode(container);
+    // 对于新版React DOM API，我们移除挂载点的内容
+    container.innerHTML = '';
   }
   
   return Promise.resolve();
 };
 
-export const update = (props: any) => {
+export const update = (props: LifecycleProps): Promise<void> => {
   console.log('[Sub-App-1] Update', props);
   // 处理应用更新逻辑
   return Promise.resolve();

@@ -35,7 +35,7 @@ public class CountContext {
         return extContext;
     }
     
-    public boolean getIncludeDeleted() {
+    public boolean isIncludeDeleted() {
         return includeDeleted;
     }
 }

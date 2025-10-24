@@ -2,7 +2,8 @@ package com.bone.engine.extension.studio.controller;
 
 import com.bone.engine.extension.studio.model.ExtensionEntity;
 import com.bone.engine.extension.studio.service.ExtensionService;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -12,7 +13,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -20,8 +23,9 @@ import java.util.Optional;
  */
 @RestController
 @RequestMapping("/api/extensions")
-@Slf4j
 public class ExtensionController {
+    
+    private static final Logger log = LoggerFactory.getLogger(ExtensionController.class);
 
     @Autowired
     private ExtensionService extensionService;
@@ -100,6 +104,33 @@ public class ExtensionController {
                     });
         } catch (Exception e) {
             log.error("获取扩展实现详情失败，ID: {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    /**
+     * 获取扩展实现的详细文档信息
+     */
+    @GetMapping("/{id}/doc")
+    public ResponseEntity<Map<String, Object>> getExtensionDoc(@PathVariable Long id) {
+        log.debug("获取扩展实现文档详情，ID: {}", id);
+        try {
+            Optional<ExtensionEntity> extensionOpt = extensionService.findExtensionById(id);
+            if (!extensionOpt.isPresent()) {
+                log.warn("扩展实现不存在，ID: {}", id);
+                return ResponseEntity.notFound().build();
+            }
+            
+            ExtensionEntity extension = extensionOpt.get();
+            Map<String, Object> docInfo = new HashMap<>();
+            docInfo.put("name", extension.getName());
+            docInfo.put("className", extension.getClassName());
+            docInfo.put("tenantCode", extension.getTenantCode());
+            docInfo.put("bizCode", extension.getBizCode());
+            
+            return ResponseEntity.ok(docInfo);
+        } catch (Exception e) {
+            log.error("获取扩展实现文档详情失败，ID: {}", id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -208,7 +239,7 @@ public class ExtensionController {
     public ResponseEntity<String> scanAndRegisterExtensions() {
         log.debug("开始扫描并注册扩展实现");
         try {
-            int registeredCount = extensionService.scanAndRegisterExtensions();
+            int registeredCount = extensionService.registerExtensions();
             log.info("扫描并注册扩展实现完成，共注册 {} 个", registeredCount);
             return ResponseEntity.ok("成功注册 " + registeredCount + " 个扩展实现");
         } catch (Exception e) {
@@ -273,6 +304,24 @@ public class ExtensionController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         } catch (Exception e) {
             log.error("重置扩展实现统计信息时发生异常，ID: {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+    
+    /**
+     * 获取扩展实现统计信息
+     */
+    @GetMapping("/stats")
+    public ResponseEntity<Map<String, Object>> getExtensionStats() {
+        log.debug("获取扩展实现统计信息");
+        try {
+            Map<String, Object> stats = new HashMap<>();
+            stats.put("totalCount", extensionService.getTotalExtensionCount());
+            stats.put("statsByStatus", extensionService.getExtensionStatsByStatus());
+            stats.put("statsByExtPoint", extensionService.getExtensionStatsByExtPoint());
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            log.error("获取扩展实现统计信息失败", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

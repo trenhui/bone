@@ -1,19 +1,19 @@
 import { MicroAppConfig, AppStatus } from './types';
 import { MicroApplication } from './micro-application';
 import { RouterManager } from './router-manager';
-import { getEventBus } from '@bone/core/event-bus';
+import { getEventBus } from './shared/event-bus';
 
 export class ApplicationRegistry {
   private apps: Map<string, MicroApplication> = new Map();
   private activeApps: Set<string> = new Set();
   private eventBus = getEventBus();
-  private static instance: ApplicationRegistry;
   private routerManager: RouterManager;
+  private currentPath: string = '';
 
   /**
-   * 私有构造函数，实现单例模式
+   * 构造函数，实现单例模式
    */
-  private constructor() {
+  constructor() {
     // 初始化路由管理器
     this.routerManager = new RouterManager(this);
     
@@ -43,13 +43,15 @@ export class ApplicationRegistry {
     return this.apps.get(appName);
   }
   
+  // 应用注册和管理相关方法
+  
   /**
    * 初始化事件监听
    */
   private initEventListeners(): void {
     // 监听应用注册事件
     this.eventBus.on('app:register', (data: { config: MicroAppConfig }) => {
-      this.registerApp(data.config);
+      this.register(data.config);
     });
     
     // 监听路由预加载事件
@@ -73,31 +75,8 @@ export class ApplicationRegistry {
   }
 
   /**
-   * 激活应用
-   * @param appId 应用ID
-   */
-  async activateApp(appId: string): Promise<void> {
-    const app = this.apps.get(appId);
-    if (!app) {
-      throw new Error(`App ${appId} not found`);
-    }
-
-    try {
-      // 确保应用已加载
-      await app.load();
-      
-      // 挂载应用
-      const container = this.getAppContainer(appId);
-      await app.mount(container);
-    } catch (error) {
-      console.error(`Failed to activate app ${appId}:`, error);
-      throw error;
-    }
-  }
-
-  /**
    * 停用应用
-   * @param appId 应用ID
+   * @param appId 应用ID（向后兼容）
    */
   async deactivateApp(appId: string): Promise<void> {
     const app = this.apps.get(appId);
@@ -106,10 +85,22 @@ export class ApplicationRegistry {
     }
 
     try {
-      // 卸载应用
       await app.unmount();
+      this.activeApps.delete(appId);
+      console.log(`App ${appId} deactivated successfully`);
+      
+      // 发布应用卸载事件
+      this.eventBus.emit('app:unmounted', { 
+        appId: appId 
+      });
     } catch (error) {
       console.error(`Failed to deactivate app ${appId}:`, error);
+      // 发布应用错误事件
+      this.eventBus.emit('app:error', { 
+        appId: appId, 
+        error: error instanceof Error ? error : new Error(String(error)),
+        phase: 'deactivate'
+      });
       throw error;
     }
   }
@@ -133,39 +124,7 @@ export class ApplicationRegistry {
     }
   }
 
-  /**
-   * 获取应用容器
-   * @param appId 应用ID
-   */
-  private getAppContainer(appId: string): HTMLElement {
-    const app = this.apps.get(appId);
-    if (!app) {
-      throw new Error(`App ${appId} not found`);
-    }
-
-    const containerSelector = app.getConfig().container;
-    let container: HTMLElement;
-
-    if (containerSelector) {
-      const element = typeof containerSelector === 'string' 
-        ? document.querySelector(containerSelector) 
-        : containerSelector;
-      
-      if (element && element instanceof HTMLElement) {
-        container = element;
-      } else {
-        throw new Error(`Container not found for app ${appId}`);
-      }
-    } else {
-      // 如果没有指定容器，创建默认容器
-      container = document.createElement('div');
-      container.id = `bone-app-${appId}`;
-      container.className = 'bone-app-container';
-      document.body.appendChild(container);
-    }
-
-    return container;
-  }
+  // 删除重复的getAppContainer方法，直接使用getContainer
 
   /**
    * 获取当前激活的应用列表
@@ -224,7 +183,7 @@ export class ApplicationRegistry {
     }
   }
 
-  // 手动激活应用
+  // 手动激活应用（支持可选的props参数）
   async activateApp(appName: string, props?: Record<string, any>): Promise<void> {
     const app = this.apps.get(appName);
     if (!app) {
@@ -258,33 +217,7 @@ export class ApplicationRegistry {
     }
   }
 
-  // 停用应用
-  async deactivateApp(appName: string): Promise<void> {
-    const app = this.apps.get(appName);
-    if (!app) {
-      throw new Error(`App ${appName} not found`);
-    }
-
-    try {
-      await app.unmount();
-      this.activeApps.delete(appName);
-      console.log(`App ${appName} deactivated successfully`);
-      
-      // 发布应用卸载事件
-      this.eventBus.emit('app:unmounted', { 
-        appId: appName 
-      });
-    } catch (error) {
-      console.error(`Failed to deactivate app ${appName}:`, error);
-      // 发布应用错误事件
-      this.eventBus.emit('app:error', { 
-        appId: appName, 
-        error: error instanceof Error ? error : new Error(String(error)),
-        phase: 'deactivate'
-      });
-      throw error;
-    }
-  }
+  // 删除重复的deactivateApp方法，保留上面的版本
 
   // 停用所有活跃的应用
   async deactivateActiveApps(): Promise<void> {
@@ -379,16 +312,20 @@ export class ApplicationRegistry {
   }
 }
 
-// 创建单例实例
+// 单例实现
+const defaultContainer = Symbol('__defaultContainer__');
 let registryInstance: ApplicationRegistry | null = null;
 
-// 获取应用注册表实例
-export function getApplicationRegistry(): ApplicationRegistry {
+/**
+ * 获取应用注册表单例
+ */
+export function getApplicationRegistry(container: symbol = defaultContainer): ApplicationRegistry {
   if (!registryInstance) {
+    // 直接创建实例，不再使用私有构造函数
     registryInstance = new ApplicationRegistry();
   }
   return registryInstance;
 }
 
-// 导出 ApplicationRegistry 类，便于直接实例化和扩展
-export { ApplicationRegistry };
+// 默认导出注册表实例
+export const applicationRegistry = getApplicationRegistry();

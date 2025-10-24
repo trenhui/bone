@@ -26,6 +26,7 @@ import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
+import com.bone.metadata.sdk.support.util.RepositoryClassUtils;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -393,14 +394,9 @@ public class RepositoryFactoryBean<T, E, ID> implements FactoryBean<T>, Initiali
                 : "arg" + index;
     }
 
+    // 使用公共工具类替代重复方法
     private static boolean isSimpleType(Class<?> type) {
-        return type.isPrimitive()
-                || Number.class.isAssignableFrom(type)
-                || CharSequence.class.isAssignableFrom(type)
-                || Boolean.class.equals(type)
-                || Date.class.isAssignableFrom(type)
-                || Temporal.class.isAssignableFrom(type)
-                || type == Object.class;
+        return RepositoryClassUtils.isSimpleType(type);
     }
 
     private MethodHandle toHandle(Method method, Object target) throws NoSuchMethodException, IllegalAccessException {

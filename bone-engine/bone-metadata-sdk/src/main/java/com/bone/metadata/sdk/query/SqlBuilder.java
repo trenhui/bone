@@ -35,16 +35,16 @@ public class SqlBuilder {
 
     @PostConstruct
     public void init() {
-        builders.put(QueryType.SELECT, new SelectBuilderSql(metadataService, dialect));
-        builders.put(QueryType.COUNT, new CountBuilderSql(metadataService));
+        builders.put(QueryType.SELECT, new SelectSqlBuilder(metadataService, dialect));
+        builders.put(QueryType.COUNT, new CountSqlBuilder(metadataService));
         builders.put(QueryType.BATCH_INSERT, new BatchInsertBuilder());
         builders.put(QueryType.BATCH_UPDATE, new BatchUpdateBuilder());
-        builders.put(QueryType.DYNAMIC_UPDATE, new DynamicUpdateBuilderSql());
-        builders.put(QueryType.CONDITIONAL_UPDATE, new ConditionalUpdateBuilderSql());
-        builders.put(QueryType.DELETE, new DeleteBuilderSql());
-        builders.put(QueryType.AGGREGATION, new AggregationBuilderSql());
-        builders.put(QueryType.UPSERT, new UpsertBuilderSql());
-        builders.put(QueryType.COUNT_AGGREGATION, new CountAggregationBuilderSql()); // 新增计数聚合构建器
+        builders.put(QueryType.DYNAMIC_UPDATE, new DynamicUpdateSqlBuilder());
+        builders.put(QueryType.CONDITIONAL_UPDATE, new ConditionalUpdateSqlBuilder());
+        builders.put(QueryType.DELETE, new DeleteSqlBuilder());
+        builders.put(QueryType.AGGREGATION, new AggregationSqlBuilder());
+        builders.put(QueryType.UPSERT, new UpsertSqlBuilder());
+        builders.put(QueryType.COUNT_AGGREGATION, new CountAggregationSqlBuilder()); // 新增计数聚合构建器
     }
 
     @SuppressWarnings("unchecked")

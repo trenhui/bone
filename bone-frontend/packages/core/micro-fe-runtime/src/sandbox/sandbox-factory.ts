@@ -94,24 +94,29 @@ export class SandboxFactory {
    */
   private static getSandboxConfig(config: MicroAppConfig): SandboxConfig {
     const defaultConfig: SandboxConfig = {
-      type: 'proxy',
+      type: SANDBOX_TYPES.PROXY,
       appId: config.id,
       enabled: true,
-      strictMode: false,
-      inheritGlobal: true,
+      strictMode: false
+    };
+
+    // 基础配置对象
+    let sandboxConfig: any = {
+      ...defaultConfig,
+      // 这些属性虽然不在SandboxConfig类型中定义，但在运行时需要
       whiteList: ['document', 'window', 'location'],
       blackList: ['eval', 'Function', 'window.top', 'window.parent']
     };
 
     // 如果配置了sandbox选项，合并配置
     if (config.metadata?.sandbox) {
-      return {
-        ...defaultConfig,
+      sandboxConfig = {
+        ...sandboxConfig,
         ...config.metadata.sandbox
       };
     }
 
-    return defaultConfig;
+    return sandboxConfig as SandboxConfig;
   }
 
   /**

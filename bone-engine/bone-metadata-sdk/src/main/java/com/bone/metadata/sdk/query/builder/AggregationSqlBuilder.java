@@ -8,7 +8,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.StringJoiner;
 
-public class AggregationBuilderSql implements SqlQueryBuilder<AggregationContext> {
+public class AggregationSqlBuilder implements SqlQueryBuilder<AggregationContext> {
     @Override
     public CompiledQuery build(AggregationContext ctx) {
         ctx.validate();

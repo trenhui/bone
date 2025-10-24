@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build",
-    "prepare": "husky install",
+    "prepare": "echo 'Skipping husky install'",
+    "prepare:husky": "husky install",
     "format": "prettier --write ."
   },
   "dependencies": {

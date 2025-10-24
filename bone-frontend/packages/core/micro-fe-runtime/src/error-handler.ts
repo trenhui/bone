@@ -1,3 +1,5 @@
+import { getEventBus } from './shared/event-bus';
+
 // 定义错误类型和上下文接口
 export interface ErrorContext {
   appId: string;
@@ -6,6 +8,9 @@ export interface ErrorContext {
   appInfo?: Record<string, any>;
   additionalInfo?: Record<string, any>;
 }
+
+// 错误处理器选项接口
+// ErrorHandlerOptions接口已在上面定义，这里不再重复
 
 // 增强的错误分类接口
 export interface ErrorClassification {
@@ -56,35 +61,6 @@ export interface ErrorHandlerOptions {
   maxHistorySize?: number;
 }
 
-// 本地事件总线实现（替代外部依赖）
-class LocalEventBus {
-  private events: Record<string, Function[]> = {};
-  
-  on(event: string, handler: Function) {
-    if (!this.events[event]) {
-      this.events[event] = [];
-    }
-    this.events[event].push(handler);
-  }
-  
-  emit(event: string, data: any) {
-    if (this.events[event]) {
-      this.events[event].forEach(handler => handler(data));
-    }
-  }
-  
-  off(event: string, handler?: Function) {
-    if (handler) {
-      this.events[event] = this.events[event]?.filter(h => h !== handler) || [];
-    } else {
-      delete this.events[event];
-    }
-  }
-}
-
-const localEventBus = new LocalEventBus();
-const getEventBus = () => localEventBus;
-
 /**
  * 错误处理器
  * 提供统一的错误捕获、处理和上报功能
@@ -103,16 +79,16 @@ export class ErrorHandler {
     classification: ErrorClassification;
     timestamp: number;
   }> = [];
-  private errorThrottling: Map<string, { count: number; lastTime: number }> = new Map(); // 增强的错误节流
+  private errorThrottling: Map<string, { count: number; lastTime: number }> = new Map(); // 错误节流映射
   private suppressedErrors: Set<string> = new Set(); // 被抑制的错误键集合
   private pendingReports: Array<{error: Error, context: ErrorContext, classification: ErrorClassification}> = [];
-  private errorStats: Map<string, number> = new Map();
+
   private errorTimestamps: number[] = []; // 用于计算错误率的时间戳数组
   private isDestroyed: boolean = false; // 销毁状态标记
   private reportProcessing: boolean = false;
   private lastReportTime: number = 0;
   private errorRateWarningIssued: number = 0;
-  private errorRateMonitorTimer: number | undefined;
+  private errorRateMonitorTimer: NodeJS.Timeout | undefined;
   private maxErrorsPerMinute = 60; // 每分钟最大错误数限制
   private errorStatistics: ErrorStatistics = {
     total: 0,
@@ -129,17 +105,19 @@ export class ErrorHandler {
    * 构造函数
    * @param appId 应用ID
    */
-  constructor(appId: string) {
-    if (!appId) {
-      throw new Error('App ID is required');
-    }
-    this.appId = appId;
+  constructor(options: ErrorHandlerOptions) {
+    // 初始化错误处理器
+    this.appId = options.appId;
+    this.reportUrl = options.reportUrl;
+    if (options.reportInterval) this.reportInterval = options.reportInterval;
+    if (options.throttlingInterval) this.throttlingInterval = options.throttlingInterval;
+    if (options.batchReportSize) this.batchReportSize = options.batchReportSize;
+    if (options.maxHistorySize) this.maxHistorySize = options.maxHistorySize;
+    
     this.initializeErrorTypes();
     this.setupGlobalListeners();
     this.startErrorRateMonitor();
-    this.errorRateWarningIssued = 0;
-    this.batchReportSize = 10;
-    this.maxHistorySize = 100;
+    console.log(`Error handler initialized for app: ${options.appId}`);
   }
   
   /**
@@ -177,6 +155,7 @@ export class ErrorHandler {
         
         const reason = event.reason || new Error('Unhandled promise rejection');
         this.handle(reason as Error, {
+          appId: this.appId,
           phase: 'promise',
           additionalInfo: { 
             promiseRejection: true,
@@ -197,6 +176,7 @@ export class ErrorHandler {
                               event.target instanceof HTMLImageElement;
         
         const context: ErrorContext = {
+          appId: this.appId,
           phase: isResourceError ? 'resource_load' : 'global',
           additionalInfo: { 
             target: event.target instanceof Element ? event.target.tagName : String(event.target),
@@ -220,8 +200,10 @@ export class ErrorHandler {
         }
       };
       
-      if (!window.__boneErrorHandlerRegistered) {
-        window.__boneErrorHandlerRegistered = true;
+      // 安全访问窗口对象的自定义属性
+      const w = window as any;
+      if (!w.__boneErrorHandlerRegistered) {
+        w.__boneErrorHandlerRegistered = true;
         window.addEventListener('error', errorHandler);
         this.globalListeners.push(['error', errorHandler]);
       }
@@ -234,21 +216,7 @@ export class ErrorHandler {
   /**
    * 启动错误率监控定时器
    */
-  private startErrorRateMonitor(): void {
-    // 每分钟更新一次错误率统计
-    this.errorRateMonitorTimer = setInterval(() => {
-      if (this.isDestroyed) {
-        clearInterval(this.errorRateMonitorTimer);
-        return;
-      }
-      
-      // 更新错误率统计
-      this.getStatistics();
-      
-      // 清理过期的错误信息
-      this.cleanupOldErrors();
-    }, 60000); // 每分钟执行一次
-  }
+  // 删除重复的错误率监控方法
   
   /**
    * 清理过期的错误信息
@@ -313,6 +281,7 @@ export class ErrorHandler {
           // 检查HTTP错误状态
           if (!response.ok) {
             this.handle(new Error(`Fetch failed: ${response.status} ${response.statusText}`), {
+              appId: this.appId,
               phase: 'network',
               additionalInfo: {
                 url: args[0] instanceof Request ? args[0].url : String(args[0]),
@@ -324,6 +293,7 @@ export class ErrorHandler {
           return response;
         } catch (error) {
           this.handle(error instanceof Error ? error : new Error(String(error)), {
+            appId: this.appId,
             phase: 'network',
             additionalInfo: {
               url: args[0] instanceof Request ? args[0].url : String(args[0]),
@@ -354,6 +324,7 @@ export class ErrorHandler {
         this.addEventListener('error', function() {
           if (this._url) {
             errorHandler.handle(new Error(`XHR failed: ${this.status} ${this.statusText}`), {
+              appId: this.appId,
               phase: 'network',
               additionalInfo: {
                 url: this._url,
@@ -387,21 +358,7 @@ export class ErrorHandler {
   /**
    * 更新错误率统计
    */
-  private updateErrorRate(): void {
-    const now = Date.now();
-    const oneMinuteAgo = now - 60000;
-    
-    // 清理一分钟前的错误时间戳
-    this.errorTimestamps = this.errorTimestamps.filter(timestamp => timestamp > oneMinuteAgo);
-    
-    // 更新错误率
-    this.errorStatistics.recentErrorRate = this.errorTimestamps.length;
-    
-    // 检查是否超出错误率限制
-    if (this.errorTimestamps.length > this.maxErrorsPerMinute) {
-      console.warn(`[Bone Error] High error rate detected: ${this.errorTimestamps.length} errors per minute for app ${this.appId}`);
-    }
-  }
+  // 删除重复的updateErrorRate方法
 
   /**
    * 处理错误
@@ -458,7 +415,8 @@ export class ErrorHandler {
     } catch (handlerError) {
       // 防止错误处理器本身出错导致的死循环
       console.error('[Bone Error] Error handler internal error:', handlerError);
-      this.suppressError(errorKey);
+      // 抑制错误（这里使用错误键而不是Error对象）
+      this.suppressedErrors.add(errorKey);
     }
   }
   
@@ -500,19 +458,7 @@ export class ErrorHandler {
     this.errorStatistics.recentErrorRate = this.errorTimestamps.length;
   }
   
-  /**
-   * 抑制错误（防止重复处理）
-   */
-  private suppressError(errorKey: string): void {
-    this.suppressedErrors.add(errorKey);
-    
-    // 限制抑制集合大小
-    if (this.suppressedErrors.size > 1000) {
-      // 移除最旧的抑制项
-      const oldestKey = this.suppressedErrors.values().next().value;
-      this.suppressedErrors.delete(oldestKey);
-    }
-  }
+  // 保留公共的suppressError方法，删除私有版本
   
   /**
    * 更新错误统计
@@ -619,7 +565,7 @@ export class ErrorHandler {
       severity = 'high';
       isExpected = false;
       isFatal = true;
-    } else if (error instanceof SecurityError || this.isPermissionError(error)) {
+    } else if (error.name === 'SecurityError' || this.isPermissionError(error)) {
       type = 'permission';
       severity = 'high';
       isExpected = false;
@@ -740,11 +686,12 @@ export class ErrorHandler {
     const now = Date.now();
     const expiredThreshold = now - (this.throttlingInterval * 10);
     
-    for (const [key, info] of this.errorThrottling.entries()) {
+    // 使用forEach方法避免迭代器问题
+    this.errorThrottling.forEach((info, key) => {
       if (info.lastTime < expiredThreshold) {
         this.errorThrottling.delete(key);
       }
-    }
+    });
   }
   
   /**
@@ -957,7 +904,7 @@ export class ErrorHandler {
       
       // 使用reportUrl上报
       if (this.reportUrl) {
-        await this.fetchReport(this.reportUrl, errorInfo);
+        await this.fetchBatchReport(this.reportUrl, [errorInfo]);
       }
       
       // 检查是否有全局错误上报函数
@@ -1158,17 +1105,7 @@ export class ErrorHandler {
    * 获取错误历史
    * @param limit 限制返回的错误数量
    */
-  getErrorHistory(limit?: number): Array<{
-    error: Error;
-    context: ErrorContext;
-    classification: ErrorClassification;
-    timestamp: number;
-  }> {
-    if (limit) {
-      return this.errorHistory.slice(-limit);
-    }
-    return [...this.errorHistory];
-  }
+  // 此方法已移至上面的getErrorHistory，保留注释以说明重复
 
   /**
    * 清空错误历史
@@ -1180,13 +1117,7 @@ export class ErrorHandler {
   /**
    * 获取错误统计
    */
-  getErrorStats(): Record<string, number> {
-    const stats: Record<string, number> = {};
-    this.errorStats.forEach((count, type) => {
-      stats[type] = count;
-    });
-    return stats;
-  }
+
   
   /**
    * 获取错误统计信息
@@ -1233,9 +1164,7 @@ export class ErrorHandler {
   /**
    * 清空错误统计
    */
-  clearErrorStats(): void {
-    this.errorStats.clear();
-  }
+
   
   /**
    * 销毁错误处理器
@@ -1259,8 +1188,10 @@ export class ErrorHandler {
       }
       this.globalListeners = [];
       
-      if (window.__boneErrorHandlerRegistered) {
-        delete window.__boneErrorHandlerRegistered;
+      // 确保安全访问窗口对象的自定义属性
+      const w = window as any;
+      if (w.__boneErrorHandlerRegistered) {
+        delete w.__boneErrorHandlerRegistered;
       }
     }
     
@@ -1277,12 +1208,13 @@ export class ErrorHandler {
    * 监听应用生命周期错误
    * @param lifecycle 生命周期实例
    */
-  listenAppLifecycleErrors(lifecycle: any) {
+  listenAppLifecycleErrors(lifecycle: { on: (event: string, handler: (error: Error, data?: any) => void) => void }) {
     if (lifecycle && typeof lifecycle.on === 'function') {
       lifecycle.on('error', (error: Error, phase: string) => {
         this.handle(error, {
+          appId: this.appId,
           phase,
-          appInfo: lifecycle.appConfig
+          appInfo: (lifecycle as any).appConfig
         });
       });
     }
@@ -1291,9 +1223,9 @@ export class ErrorHandler {
   /**
    * 静态工厂方法创建错误处理器
    * @param appId 应用ID
-   */
-  static create(appId: string): ErrorHandler {
-    return new ErrorHandler(appId);
+   */// 静态工厂方法创建错误处理器
+  static create(options: ErrorHandlerOptions): ErrorHandler {
+    return new ErrorHandler(options);
   }
 
   /**
@@ -1335,7 +1267,7 @@ export class ErrorHandler {
   captureFunction<T extends (...args: any[]) => any>(
     fn: T,
     context: Partial<ErrorContext>
-  ): (...args: Parameters<T>) => ReturnType<T> {
+  ): (...args: Parameters<T>) => ReturnType<T> | void {
     return (...args: Parameters<T>): ReturnType<T> => {
       try {
         return fn(...args);
@@ -1385,6 +1317,6 @@ export class ErrorHandler {
     const message = error.message.toLowerCase() || '';
     const permissionKeywords = ['permission', '权限', 'security', 'access denied', 'unauthorized'];
     return permissionKeywords.some(keyword => message.includes(keyword)) || 
-           error instanceof SecurityError;
+           error.name === 'SecurityError';
   }
 }

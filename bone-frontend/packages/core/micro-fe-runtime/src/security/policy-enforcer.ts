@@ -36,7 +36,7 @@ export class SecurityPolicyEnforcer {
       try {
         const result = await policy.check(app, action, resource);
         if (!result.allowed) {
-          console.warn(`Security policy violation for app ${app.name}: ${result.reason || 'Access denied'}`);
+          console.warn(`Security policy violation for app ${app.config.id}: ${result.reason || 'Access denied'}`);
           return false;
         }
       } catch (error) {
@@ -85,7 +85,7 @@ export class CSPPolicy implements AppSecurityPolicy {
 
   async check(app: MicroApplication, action: string, resource: any) {
     // 获取应用的权限
-    const appPermissions = app.metadata?.permissions || [];
+    const appPermissions = app.config.metadata?.permissions || [];
 
     // 处理特定操作的检查
     switch (action) {

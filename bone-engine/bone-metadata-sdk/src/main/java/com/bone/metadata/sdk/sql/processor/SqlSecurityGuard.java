@@ -6,6 +6,7 @@ import com.bone.metadata.sdk.support.cache.FieldCache;
 import com.bone.metadata.sdk.domain.exception.QueryExecutionException;
 import com.bone.metadata.sdk.domain.exception.UndefinedFieldException;
 import com.bone.metadata.sdk.domain.query.CompiledQuery;
+import com.bone.metadata.sdk.support.util.RepositoryClassUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -221,13 +222,8 @@ public final class SqlSecurityGuard {
 //        }
 //    }
 
+    // 使用公共工具类替代重复方法
     private static boolean isSimpleType(Class<?> type) {
-        return type.isPrimitive() ||
-                Number.class.isAssignableFrom(type) ||
-                CharSequence.class.isAssignableFrom(type) ||
-                Boolean.class.equals(type) ||
-                java.util.Date.class.isAssignableFrom(type) ||
-                java.time.temporal.Temporal.class.isAssignableFrom(type) ||
-                type == Object.class;
+        return RepositoryClassUtils.isSimpleType(type);
     }
 }
