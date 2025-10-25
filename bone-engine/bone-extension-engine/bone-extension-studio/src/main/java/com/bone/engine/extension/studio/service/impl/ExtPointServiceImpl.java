@@ -34,6 +34,7 @@ import jakarta.persistence.criteria.Predicate;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.HashMap;
 import java.util.Optional;
@@ -65,28 +66,24 @@ public class ExtPointServiceImpl implements ExtPointService {
     // 用于缓存已扫描的扩展点接口信息
     private final ConcurrentHashMap<String, Class<?>> extPointInterfaceCache = new ConcurrentHashMap<>();
 
-    @Override
     @Cacheable(value = "allExtPoints", unless = "#result == null")
     public Page<ExtPointEntity> findAllExtPoints(Pageable pageable) {
         log.debug("查询所有扩展点，页码: {}, 每页数量: {}", pageable.getPageNumber(), pageable.getPageSize());
         return extPointRepository.findAll(pageable);
     }
 
-    @Override
     @Cacheable(key = "#id", unless = "#result == null")
     public Optional<ExtPointEntity> findExtPointById(Long id) {
         log.debug("根据ID查询扩展点: {}", id);
         return extPointRepository.findById(id);
     }
 
-    @Override
     @Cacheable(key = "'byInterface:' + #interfaceName", unless = "#result == null")
     public Optional<ExtPointEntity> findExtPointByInterfaceName(String interfaceName) {
         log.debug("根据接口名称查询扩展点: {}", interfaceName);
         return extPointRepository.findByInterfaceName(interfaceName);
     }
 
-    @Override
     @Transactional
     @CacheEvict(value = {"allExtPoints", "allDomains", "allCategories"}, allEntries = true)
     public ExtPointEntity saveExtPoint(ExtPointEntity extPoint) {
@@ -143,7 +140,6 @@ public class ExtPointServiceImpl implements ExtPointService {
         }
     }
 
-    @Override
     @Transactional
     @CacheEvict(value = {"allExtPoints", "allDomains", "allCategories"}, allEntries = true)
     @CachePut(key = "#id")
@@ -180,7 +176,6 @@ public class ExtPointServiceImpl implements ExtPointService {
         }
     }
 
-    @Override
     @Transactional
     @CacheEvict(value = {"allExtPoints", "allDomains", "allCategories"}, allEntries = true)
     public void deleteExtPoint(Long id) {
@@ -208,7 +203,6 @@ public class ExtPointServiceImpl implements ExtPointService {
         }
     }
 
-    @Override
     @Transactional
     @CacheEvict(value = {"allExtPoints"}, allEntries = true)
     @CachePut(key = "#id")
@@ -234,28 +228,24 @@ public class ExtPointServiceImpl implements ExtPointService {
         }
     }
 
-    @Override
     @Cacheable(key = "'byDomain:' + #domain", unless = "#result == null")
     public List<ExtPointEntity> findExtPointsByDomain(String domain) {
         log.debug("根据领域查询扩展点: {}", domain);
         return extPointRepository.findByDomain(domain);
     }
 
-    @Override
     @Cacheable(key = "'byCategory:' + #category", unless = "#result == null")
     public List<ExtPointEntity> findExtPointsByCategory(String category) {
         log.debug("根据分类查询扩展点: {}", category);
         return extPointRepository.findByCategory(category);
     }
 
-    @Override
     @Cacheable(key = "'byDomainAndCategory:' + #domain + '-' + #category", unless = "#result == null")
     public List<ExtPointEntity> findExtPointsByDomainAndCategory(String domain, String category) {
         log.debug("根据领域和分类查询扩展点: {}, {}", domain, category);
         return extPointRepository.findByDomainAndCategory(domain, category);
     }
 
-    @Override
     public Page<ExtPointEntity> searchExtPoints(String keyword, Pageable pageable) {
         log.debug("搜索扩展点，关键词: {}, 页码: {}, 每页数量: {}", 
                 keyword, pageable.getPageNumber(), pageable.getPageSize());
@@ -280,14 +270,12 @@ public class ExtPointServiceImpl implements ExtPointService {
         return extPointRepository.findAll(pageable);
     }
 
-    @Override
     @Cacheable(key = "'extensions:' + #extPointId", unless = "#result == null")
     public List<ExtensionEntity> findExtensionsByExtPointId(Long extPointId) {
         log.debug("获取扩展点的所有扩展实现: {}", extPointId);
         return extensionRepository.findByExtPointId(extPointId);
     }
 
-    @Override
     @Transactional
     @CacheEvict(value = {"allExtPoints", "allDomains", "allCategories"}, allEntries = true)
     public int scanAndRegisterExtPoints() {
@@ -418,12 +406,15 @@ public class ExtPointServiceImpl implements ExtPointService {
             Optional<ExtPointEntity> existing = extPointRepository.findByInterfaceName(interfaceName);
             if (!existing.isPresent()) {
                 // 创建新的扩展点
-                ExtPointEntity extPoint = new ExtPointEntity();
-                extPoint.setName(StringUtils.hasText(annotation.name()) ? annotation.name() : interfaceClass.getSimpleName());
-                extPoint.setDescription(StringUtils.hasText(annotation.description()) ? annotation.description() : "");
-                extPoint.setInterfaceName(interfaceName);
-                extPoint.setDomain(StringUtils.hasText(annotation.domain()) ? annotation.domain() : "default");
-                extPoint.setCategory(StringUtils.hasText(annotation.category()) ? annotation.category() : "general");
+            ExtPointEntity extPoint = new ExtPointEntity();
+            extPoint.setName(StringUtils.hasText(annotation.name()) ? annotation.name() : interfaceClass.getSimpleName());
+            extPoint.setDescription(StringUtils.hasText(annotation.description()) ? annotation.description() : "");
+            extPoint.setInterfaceName(interfaceName);
+            
+            // 从ExtPointDoc注解获取domain和category信息
+            com.bone.engine.extension.annotation.ExtPointDoc extPointDoc = interfaceClass.getAnnotation(com.bone.engine.extension.annotation.ExtPointDoc.class);
+            extPoint.setDomain(extPointDoc != null && StringUtils.hasText(extPointDoc.domain()) ? extPointDoc.domain() : "default");
+            extPoint.setCategory(extPointDoc != null && StringUtils.hasText(extPointDoc.category()) ? extPointDoc.category() : "general");
                 extPoint.setType("interface");
                 extPoint.setVersion("1.0.0");
                 extPoint.setEnabled(true);
@@ -493,7 +484,6 @@ public class ExtPointServiceImpl implements ExtPointService {
 
 
 
-    @Override
     @Cacheable(value = "allDomains", unless = "#result == null")
     public List<String> findAllDomains() {
         log.debug("获取所有可用的领域列表");
@@ -505,7 +495,6 @@ public class ExtPointServiceImpl implements ExtPointService {
                 .collect(Collectors.toList());
     }
 
-    @Override
     @Cacheable(value = "allCategories", unless = "#result == null")
     public List<String> findAllCategories() {
         log.debug("获取所有可用的分类列表");
@@ -522,18 +511,15 @@ public class ExtPointServiceImpl implements ExtPointService {
         return extensionRepository.findByExtPointId(extPointId);
     }
     
-    @Override
     public long getTotalExtPointCount() {
         return extPointRepository.count();
     }
     
-    @Override
     public Map<String, Long> getExtPointStatsByDomain() {
         // 简单实现，返回空映射以避免调用不存在的方法
         return new HashMap<>();
     }
     
-    @Override
     public Map<String, Long> getExtPointStatsByCategory() {
         // 简单实现，返回空映射以避免调用不存在的方法
         return new HashMap<>();

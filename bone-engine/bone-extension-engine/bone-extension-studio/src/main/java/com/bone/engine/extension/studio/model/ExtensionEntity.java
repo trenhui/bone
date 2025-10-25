@@ -1,8 +1,5 @@
 package com.bone.engine.extension.studio.model;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -12,9 +9,11 @@ import java.util.Map;
  * 扩展实现实体类
  * 用于存储扩展实现的元数据信息
  */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
+
+/**
+ * 扩展实现实体类
+ * 用于存储扩展实现的元数据信息
+ */
 @Entity
 @Table(name = "bone_extension_implementation")
 public class ExtensionEntity {
@@ -77,6 +76,92 @@ public class ExtensionEntity {
      */
     @Column(name = "user_group", length = 100)
     private String userGroup = "*";
+    
+    // 构造函数
+    public ExtensionEntity() {
+        // 默认构造函数
+    }
+    
+    // Getter和Setter方法
+    public Long getId() {
+        return id;
+    }
+    
+    public void setId(Long id) {
+        this.id = id;
+    }
+    
+    public ExtPointEntity getExtPoint() {
+        return extPoint;
+    }
+    
+    public void setExtPoint(ExtPointEntity extPoint) {
+        this.extPoint = extPoint;
+    }
+    
+    public String getName() {
+        return name;
+    }
+    
+    public void setName(String name) {
+        this.name = name;
+    }
+    
+    public String getDescription() {
+        return description;
+    }
+    
+    public void setDescription(String description) {
+        this.description = description;
+    }
+    
+    public String getClassName() {
+        return className;
+    }
+    
+    public void setClassName(String className) {
+        this.className = className;
+    }
+    
+    public String getTenantCode() {
+        return tenantCode;
+    }
+    
+    public void setTenantCode(String tenantCode) {
+        this.tenantCode = tenantCode;
+    }
+    
+    public String getBizCode() {
+        return bizCode;
+    }
+    
+    public void setBizCode(String bizCode) {
+        this.bizCode = bizCode;
+    }
+    
+    public String getUseCase() {
+        return useCase;
+    }
+    
+    public void setUseCase(String useCase) {
+        this.useCase = useCase;
+    }
+    
+    public String getScenario() {
+        return scenario;
+    }
+    
+    public void setScenario(String scenario) {
+        this.scenario = scenario;
+    }
+    
+    public String getUserGroup() {
+        return userGroup;
+    }
+    
+    public void setUserGroup(String userGroup) {
+        this.userGroup = userGroup;
+    }
 
     /**
      * 环境标识
@@ -113,6 +198,54 @@ public class ExtensionEntity {
      */
     @Column(name = "enabled", nullable = false)
     private boolean enabled = true;
+    
+    public String getEnv() {
+        return env;
+    }
+    
+    public void setEnv(String env) {
+        this.env = env;
+    }
+    
+    public int getPriority() {
+        return priority;
+    }
+    
+    public void setPriority(int priority) {
+        this.priority = priority;
+    }
+    
+    public String getCondition() {
+        return condition;
+    }
+    
+    public void setCondition(String condition) {
+        this.condition = condition;
+    }
+    
+    public String getTags() {
+        return tags;
+    }
+    
+    public void setTags(String tags) {
+        this.tags = tags;
+    }
+    
+    public String getVersion() {
+        return version;
+    }
+    
+    public void setVersion(String version) {
+        this.version = version;
+    }
+    
+    public boolean isEnabled() {
+        return enabled;
+    }
+    
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
 
     /**
      * 创建时间
@@ -137,6 +270,38 @@ public class ExtensionEntity {
      */
     @Column(name = "statistics", length = 2000)
     private String statistics;
+    
+    public LocalDateTime getCreateTime() {
+        return createTime;
+    }
+    
+    public void setCreateTime(LocalDateTime createTime) {
+        this.createTime = createTime;
+    }
+    
+    public LocalDateTime getUpdateTime() {
+        return updateTime;
+    }
+    
+    public void setUpdateTime(LocalDateTime updateTime) {
+        this.updateTime = updateTime;
+    }
+    
+    public String getConfig() {
+        return config;
+    }
+    
+    public void setConfig(String config) {
+        this.config = config;
+    }
+    
+    public String getStatistics() {
+        return statistics;
+    }
+    
+    public void setStatistics(String statistics) {
+        this.statistics = statistics;
+    }
 
     /**
      * JPA回调，创建前设置时间戳
