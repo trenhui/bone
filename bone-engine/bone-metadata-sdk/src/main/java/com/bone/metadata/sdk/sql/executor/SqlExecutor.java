@@ -114,9 +114,7 @@ public class SqlExecutor {
             log.debug("Query executed successfully, returned {} results", results.size());
             return results;
         } catch (Exception e) {
-            String errorMsg = String.format("Failed to execute query with template: %s", templateId);
-            log.error(errorMsg, e);
-            throw new QueryExecutionException(errorMsg, e);
+            throw handleExecutionException(e, "Failed to execute query with template: %s", templateId);
         }
     }
 
@@ -298,9 +296,7 @@ public class SqlExecutor {
             log.debug("Query executed successfully, returned {} results", results.size());
             return results;
         } catch (Exception e) {
-            String errorMsg = String.format("Failed to execute query: %s", query.getSql());
-            log.error(errorMsg, e);
-            throw new QueryExecutionException(errorMsg, e);
+            throw handleExecutionException(e, "Failed to execute query: %s", query.getSql());
         }
     }
 
@@ -343,9 +339,7 @@ public class SqlExecutor {
             return null;
         } catch (Exception e) {
             // 包装其他异常为SDK统一异常
-            String errorMsg = String.format("Failed to execute query: %s", query.getSql());
-            log.error(errorMsg, e);
-            throw new QueryExecutionException(errorMsg, e);
+            throw handleExecutionException(e, "Failed to execute query: %s", query.getSql());
         }
     }
     
@@ -471,8 +465,7 @@ public class SqlExecutor {
                     jdbc.batchUpdate(processedSql.getSql(), createBatchArray(batch))
             );
         } catch (Exception e) {
-            log.error("Batch update failed, template: {}, error: {}", templateId, e.getMessage(), e);
-            throw new QueryExecutionException("Batch update failed: " + templateId, e);
+            throw handleExecutionException(e, "Batch update failed: %s", templateId);
         }
     }
 
@@ -519,7 +512,7 @@ public class SqlExecutor {
             return executorFunction.apply(processedSql);
 
         } catch (Exception e) {
-            throw new QueryExecutionException("Failed to execute query for template: " + templateId, e);
+            throw handleExecutionException(e, "Failed to execute query for template: %s", templateId);
         }
     }
 
@@ -607,7 +600,7 @@ public class SqlExecutor {
         try {
             return sqlTemplateLoader.loadTemplate(templateId);
         } catch (Exception e) {
-            throw new QueryExecutionException("Failed to load template: " + templateId, e);
+            throw handleExecutionException(e, "Failed to load template: %s", templateId);
         }
     }
 
@@ -634,6 +627,19 @@ public class SqlExecutor {
             System.arraycopy(batchResults, 0, results, i, batchResults.length);
         }
         return results;
+    }
+    
+    /**
+     * 统一的异常处理方法，减少代码重复
+     * @param e 原始异常
+     * @param message 异常消息格式
+     * @param args 消息参数
+     * @return 包装后的异常
+     */
+    private QueryExecutionException handleExecutionException(Exception e, String message, Object... args) {
+        String errorMsg = String.format(message, args);
+        log.error(errorMsg, e);
+        return new QueryExecutionException(errorMsg, e);
     }
 
     /**

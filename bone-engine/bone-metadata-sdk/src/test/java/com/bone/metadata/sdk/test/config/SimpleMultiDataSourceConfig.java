@@ -2,6 +2,7 @@ package com.bone.metadata.sdk.test.config;
 
 import com.bone.metadata.sdk.support.dataSource.DynamicDataSource;
 import com.bone.metadata.sdk.support.dataSource.DataSourceManager;
+import com.bone.metadata.sdk.support.dataSource.DefaultDataSourceManager;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -12,6 +13,8 @@ import org.springframework.jdbc.datasource.embedded.EmbeddedDatabaseType;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import javax.sql.DataSource;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 
 /**
  * 简单的多数据源配置类
@@ -70,14 +73,31 @@ public class SimpleMultiDataSourceConfig {
     
     /**
      * 初始化数据源，创建表结构和测试数据
+     * @param masterJdbcTemplate 主数据源的JdbcTemplate
+     * @param slaveJdbcTemplate 从数据源的JdbcTemplate
      */
-    private void initializeDataSource(JdbcTemplate jdbcTemplate, String userName) {
+    @Bean
+    public void initializeDataSource(JdbcTemplate masterJdbcTemplate, JdbcTemplate slaveJdbcTemplate) {
+        // 初始化主数据源
         try {
-            jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS users (id INT PRIMARY KEY, name VARCHAR(100))");
+            masterJdbcTemplate.execute("CREATE TABLE IF NOT EXISTS users (id INT PRIMARY KEY, name VARCHAR(100))");
+            // 尝试先删除已有数据避免冲突
+            masterJdbcTemplate.update("DELETE FROM users WHERE id = 100");
             // 插入测试数据
-            jdbcTemplate.update("INSERT INTO users (id, name) VALUES (100, ?)", userName);
+            masterJdbcTemplate.update("INSERT INTO users (id, name) VALUES (100, 'master_user')");
         } catch (Exception e) {
-            // 忽略表已存在或数据已存在的错误
+            System.err.println("初始化主数据源失败: " + e.getMessage());
+        }
+        
+        // 初始化从数据源
+        try {
+            slaveJdbcTemplate.execute("CREATE TABLE IF NOT EXISTS users (id INT PRIMARY KEY, name VARCHAR(100))");
+            // 尝试先删除已有数据避免冲突
+            slaveJdbcTemplate.update("DELETE FROM users WHERE id = 100");
+            // 插入测试数据
+            slaveJdbcTemplate.update("INSERT INTO users (id, name) VALUES (100, 'slave_user')");
+        } catch (Exception e) {
+            System.err.println("初始化从数据源失败: " + e.getMessage());
         }
     }
 
@@ -86,9 +106,7 @@ public class SimpleMultiDataSourceConfig {
      */
     @Bean
     public JdbcTemplate jdbcTemplate(DataSource dynamicDataSource) {
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(dynamicDataSource);
-        initializeDataSource(jdbcTemplate, "test_user");
-        return jdbcTemplate;
+        return new JdbcTemplate(dynamicDataSource);
     }
     
     /**
@@ -118,6 +136,16 @@ public class SimpleMultiDataSourceConfig {
      */
     @Bean
     public DataSourceManager dataSourceManager() {
-        return new DataSourceManager();
+        return new DefaultDataSourceManager();
+    }
+    
+    /**
+     * 配置事务管理器
+     * @param dynamicDataSource 动态数据源
+     * @return 事务管理器实例
+     */
+    @Bean
+    public PlatformTransactionManager transactionManager(DataSource dynamicDataSource) {
+        return new DataSourceTransactionManager(dynamicDataSource);
     }
 }

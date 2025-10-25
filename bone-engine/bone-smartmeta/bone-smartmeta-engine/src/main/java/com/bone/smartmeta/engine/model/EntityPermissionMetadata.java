@@ -3,6 +3,7 @@ package com.bone.smartmeta.engine.model;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -10,66 +11,73 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 实体权限元数据模型类
- * 用于定义实体的访问权限控制策略
+ * Entity permission metadata model class
+ * Used to define entity access permission control policies
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper=false)
 public class EntityPermissionMetadata {
-    // 基础权限配置
+    // Basic permission configuration
+    @Builder.Default
     private boolean publicRead = false;
+    @Builder.Default
     private boolean publicWrite = false;
+    @Builder.Default
     private boolean requireAuthentication = true;
     
-    // 角色权限映射
+    // Role permission mapping
     @Builder.Default
     private Map<String, PermissionLevel> rolePermissions = new HashMap<>();
     
-    // 字段级权限配置
+    // Field-level permission configuration
     @Builder.Default
     private Map<String, FieldPermissionMetadata> fieldPermissions = new HashMap<>();
     
-    // 条件权限规则
+    // Conditional permission rules
     @Builder.Default
     private List<ConditionalPermissionRule> conditionalRules = new ArrayList<>();
     
-    // 共享规则
+    // Sharing rules
     @Builder.Default
     private List<SharingRule> sharingRules = new ArrayList<>();
     
-    // 审计配置
+    // Audit configuration
+    @Builder.Default
     private boolean auditAllOperations = true;
+    @Builder.Default
     private boolean auditFieldChanges = true;
     
-    // 数据隔离级别
+    // Data isolation level
+    @Builder.Default
     private DataIsolationLevel dataIsolationLevel = DataIsolationLevel.TENANT;
     
     /**
-     * 权限级别枚举
+     * Permission level enumeration
      */
     public enum PermissionLevel {
-        NONE,      // 无权限
-        READ,      // 只读权限
-        CREATE,    // 创建权限
-        UPDATE,    // 更新权限
-        DELETE,    // 删除权限
-        MANAGE     // 管理权限（全部）
+        NONE,      // No permission
+        READ,      // Read-only permission
+        CREATE,    // Create permission
+        UPDATE,    // Update permission
+        DELETE,    // Delete permission
+        MANAGE     // Management permission (all)
     }
     
     /**
-     * 数据隔离级别枚举
+     * Data isolation level enumeration
      */
     public enum DataIsolationLevel {
-        GLOBAL,    // 全局共享
-        TENANT,    // 租户隔离
-        USER,      // 用户隔离
-        CUSTOM     // 自定义隔离
+        GLOBAL,    // Globally shared
+        TENANT,    // Tenant isolated
+        USER,      // User isolated
+        CUSTOM     // Custom isolation
     }
     
     /**
-     * 字段权限元数据内部类
+     * Field permission metadata inner class
      */
     @Data
     @Builder
@@ -77,14 +85,17 @@ public class EntityPermissionMetadata {
     @AllArgsConstructor
     public static class FieldPermissionMetadata {
         private String fieldName;
+        @Builder.Default
         private boolean readable = true;
+        @Builder.Default
         private boolean writable = true;
+        @Builder.Default
         private boolean required = false;
         private String accessFilterExpression;
     }
     
     /**
-     * 条件权限规则内部类
+     * Conditional permission rule inner class
      */
     @Data
     @Builder
@@ -98,7 +109,7 @@ public class EntityPermissionMetadata {
     }
     
     /**
-     * 共享规则内部类
+     * Sharing rule inner class
      */
     @Data
     @Builder
@@ -113,7 +124,7 @@ public class EntityPermissionMetadata {
     }
     
     /**
-     * 添加角色权限
+     * Adds role permission
      */
     public void addRolePermission(String roleName, PermissionLevel permissionLevel) {
         if (rolePermissions == null) {
@@ -123,7 +134,7 @@ public class EntityPermissionMetadata {
     }
     
     /**
-     * 获取角色权限
+     * Gets role permission
      */
     public PermissionLevel getRolePermission(String roleName) {
         if (rolePermissions == null) {
@@ -133,7 +144,7 @@ public class EntityPermissionMetadata {
     }
     
     /**
-     * 添加字段权限
+     * Adds field permission
      */
     public void addFieldPermission(String fieldName, FieldPermissionMetadata permission) {
         if (fieldPermissions == null) {
@@ -143,7 +154,7 @@ public class EntityPermissionMetadata {
     }
     
     /**
-     * 获取字段权限
+     * Gets field permission
      */
     public FieldPermissionMetadata getFieldPermission(String fieldName) {
         if (fieldPermissions == null) {

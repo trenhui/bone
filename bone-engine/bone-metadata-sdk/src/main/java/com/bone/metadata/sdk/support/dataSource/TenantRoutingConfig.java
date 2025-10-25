@@ -30,10 +30,10 @@ public class TenantRoutingConfig {
                 String datasourceName = TENANT_DATASOURCE_PREFIX + tenantId.trim();
                 try {
                     DataSourceContextHolder.setDataSource(datasourceName);
-                    log.debug("Switched to tenant datasource: {}", datasourceName);
+                    log.debug("已切换到租户数据源: {}", datasourceName);
                     return true;
                 } catch (Exception e) {
-                    log.error("Failed to switch to tenant datasource: {}", datasourceName, e);
+                    log.error("切换到租户数据源失败: {}", datasourceName, e);
                     // 数据源不存在时不影响业务继续执行，使用默认数据源
                     return false;
                 }
@@ -46,9 +46,9 @@ public class TenantRoutingConfig {
          */
         public void resetTenantDataSource() {
             // 确保清理线程上下文中的数据源信息
-            if (DataSourceContextHolder.hasDataSource()) {
+            if (DataSourceContextHolder.hasActiveDataSource()) {
                 String cleared = DataSourceContextHolder.clearDataSource();
-                log.debug("Reset from tenant datasource: {}", cleared);
+                log.debug("已重置租户数据源: {}", cleared);
             }
         }
         

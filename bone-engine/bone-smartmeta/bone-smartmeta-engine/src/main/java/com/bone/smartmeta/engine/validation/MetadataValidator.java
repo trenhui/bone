@@ -1,6 +1,6 @@
 package com.bone.smartmeta.engine.validation;
 
-import com.bone.smartmeta.engine.model.EntityMetadata;
+import com.bone.smartmeta.engine.metadata.EntityMetadata;
 
 /**
  * 元数据验证器接口

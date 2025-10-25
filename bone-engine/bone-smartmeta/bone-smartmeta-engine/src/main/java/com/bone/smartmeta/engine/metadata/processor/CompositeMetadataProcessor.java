@@ -317,7 +317,9 @@ public class CompositeMetadataProcessor implements MetadataProcessor {
             // 确保返回值是预期的List类型
             List<EntityMetadata> metadataList = new ArrayList<>();
             if (result instanceof List) {
-                metadataList = (List<EntityMetadata>) result;
+                @SuppressWarnings("unchecked")
+                List<EntityMetadata> typedList = (List<EntityMetadata>) result;
+                metadataList = typedList;
             }
             
             // 按实体API名称分组

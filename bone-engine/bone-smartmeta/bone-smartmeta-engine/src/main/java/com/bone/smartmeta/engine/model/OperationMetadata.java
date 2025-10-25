@@ -3,6 +3,7 @@ package com.bone.smartmeta.engine.model;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -11,25 +12,26 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 操作元数据模型类
- * 用于定义实体的各种操作和方法
+ * Operation metadata model class
+ * Used to define various operations and methods for entities
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper=false)
 public class OperationMetadata {
-    // 基础信息
+    // Basic information
     private String id;
     private String name;
     private String apiName;
     private String label;
     @Builder.Default
-    private Map<String, String> labels = new HashMap<>(); // 多语言标签
+    private Map<String, String> labels = new HashMap<>(); // Multi-language labels
     private String description;
     private String domain;
     
-    // 操作定义
+    // Operation definition
     private String entityName;
     private String methodName;
     private String implementationClass;
@@ -37,50 +39,58 @@ public class OperationMetadata {
     private String scriptLanguage;
     private String scriptContent;
     
-    // 参数信息
+    // Parameter information
     @Builder.Default
     private List<OperationParameterMetadata> parameters = new ArrayList<>();
     
-    // 权限信息
+    // Permission information
+    @Builder.Default
     private boolean requiresAuth = true;
     private String requiredPermission;
     private String sensitivityLevel;
     
-    // 缓存配置
+    // Cache configuration
+    @Builder.Default
     private boolean cacheable = false;
-    private int cacheTtl = 300; // 默认5分钟
+    @Builder.Default
+    private int cacheTtl = 300; // Default 5 minutes
     
-    // 限流配置
+    // Rate limiting configuration
+    @Builder.Default
     private boolean rateLimited = false;
     private int maxRequestsPerMinute;
     
-    // 监控配置
+    // Monitoring configuration
+    @Builder.Default
     private boolean trackPerformance = false;
+    @Builder.Default
     private boolean trackAudit = true;
     
-    // 业务状态
+    // Business status
+    @Builder.Default
     private boolean active = true;
+    @Builder.Default
     private boolean system = false;
     
-    // 生命周期信息
+    // Lifecycle information
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String createdBy;
     private String updatedBy;
     
-    // 元数据版本信息
+    // Metadata version information
     private String version;
     private String previousVersionId;
     
     /**
-     * 获取API名称
+     * Gets the API name
      */
     public String getApiName() {
         return this.apiName;
     }
     
     /**
-     * 添加操作参数
+     * Adds an operation parameter
      */
     public void addParameter(OperationParameterMetadata parameter) {
         if (parameters == null) {
@@ -90,7 +100,7 @@ public class OperationMetadata {
     }
     
     /**
-     * 获取参数元数据
+     * Gets parameter metadata
      */
     public OperationParameterMetadata getParameter(String parameterName) {
         if (parameters == null) {
@@ -103,7 +113,7 @@ public class OperationMetadata {
     }
     
     /**
-     * 参数元数据内部类
+     * Operation parameter metadata inner class
      */
     @Data
     @Builder
@@ -114,14 +124,16 @@ public class OperationMetadata {
         private String name;
         private String label;
         private String type;
+        @Builder.Default
         private boolean required = false;
         private String defaultValue;
         private String description;
+        @Builder.Default
         private boolean encrypted = false;
         private String validationPattern;
         
         /**
-         * 获取参数名称
+         * Gets the parameter name
          */
         public String getName() {
             return this.name;

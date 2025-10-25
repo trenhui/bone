@@ -88,13 +88,9 @@ public class ExtPointMetadataTest {
     @ExtPoint(
         name = "元数据测试扩展点",
         description = "用于测试扩展点元数据收集和管理功能的扩展点接口",
-        domain = "测试领域",
-        category = "test",
         version = "1.0.0",
         enabled = true,
-        priority = 100,
-        enableCache = true,
-        timeout = 500
+        priority = 100
     )
     @ExtPointDoc(
         description = "该接口用于验证扩展点元数据的收集、存储和导出功能。",
@@ -112,7 +108,7 @@ public class ExtPointMetadataTest {
         returnInfo = @ExtPointDoc.Return(
             type = "String",
             description = "返回处理后的结果字符串",
-            successExample = "Impl1: test-input-value"
+            example = "Impl1: test-input-value"
         ),
         notes = "测试扩展点接口，用于验证元数据系统功能"
     )

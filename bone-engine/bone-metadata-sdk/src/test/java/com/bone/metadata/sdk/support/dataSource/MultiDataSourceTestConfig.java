@@ -74,8 +74,8 @@ public class MultiDataSourceTestConfig {
         targetDataSources.put("tenant_a", tenantADataSource);
         
         dynamicDataSource.setTargetDataSources(targetDataSources);
-        dynamicDataSource.setPrimary("master");
-        dynamicDataSource.setStrict(false);
+        dynamicDataSource.setPrimaryDataSourceKey("master");
+        dynamicDataSource.setStrictMode(false);
         
         // 初始化
         dynamicDataSource.afterPropertiesSet();

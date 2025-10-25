@@ -85,10 +85,10 @@ public class DynamicDataSourceAutoConfiguration {
         }
         
         // 设置严格模式
-        dynamicDataSource.setStrict(properties.isStrict());
+        dynamicDataSource.setStrictMode(properties.isStrict());
         
         // 设置主数据源名称
-        dynamicDataSource.setPrimary(properties.getPrimary());
+        dynamicDataSource.setPrimaryDataSourceKey(properties.getPrimary());
         
         // 初始化数据源
         dynamicDataSource.afterPropertiesSet();
@@ -117,6 +117,6 @@ public class DynamicDataSourceAutoConfiguration {
     @ConditionalOnMissingBean(DataSourceManager.class)
     public DataSourceManager dataSourceManager() {
         log.info("Initializing DataSourceManager");
-        return new DataSourceManager();
+        return new DefaultDataSourceManager();
     }
 }

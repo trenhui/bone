@@ -14,14 +14,12 @@ import com.bone.engine.extension.annotation.ExtPointDoc;
 @ExtPoint(
     name = "支付扩展点",
     description = "支付处理扩展点，支持多种支付方式的实现",
-    category = "payment",
     version = "1.0.0",
     enabled = true
 )
 @ExtPointDoc(
     title = "支付服务扩展点",
     domain = "支付",
-    category = "交易处理",
     description = "提供多种支付方式的统一接入接口",
     usage = "用于处理订单支付、会员支付等场景",
     bestPractices = "建议实现时注意事务一致性和错误处理"

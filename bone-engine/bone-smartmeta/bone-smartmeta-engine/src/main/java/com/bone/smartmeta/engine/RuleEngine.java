@@ -1,12 +1,12 @@
 package com.bone.smartmeta.engine;
 
-import com.bone.smartmeta.engine.model.EntityMetadata;
-import com.bone.smartmeta.engine.model.SmartFieldMetadata;
-import com.bone.smartmeta.engine.ExpressionEngine;
+// 统一使用metadata包中的类
+import com.bone.smartmeta.engine.metadata.EntityMetadata;
+import com.bone.smartmeta.engine.metadata.SmartFieldMetadata;
 import com.bone.smartmeta.engine.rule.CustomFunctionRegistry;
 import com.bone.smartmeta.engine.rule.EvaluationContextFactory;
 import com.bone.smartmeta.engine.rule.ExpressionCache;
-// 使用ValidationEngine.ValidationResult内部类
+import com.bone.smartmeta.engine.validation.ValidationResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,26 +14,35 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.ReflectionUtils;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
-import com.bone.smartmeta.engine.model.FieldMetadata;
 
 /**
- * 规则引擎
- * 负责解析和执行元数据中定义的业务规则、计算字段和条件表达式
+ * Rule Engine
+ * Responsible for parsing and executing business rules, calculated fields, and conditional expressions defined in metadata
  */
 @Component
 public class RuleEngine {
     
-    private static final Logger log = LoggerFactory.getLogger(RuleEngine.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RuleEngine.class);
     
     private final ExpressionEngine expressionEngine;
     private final MetadataEngine metadataEngine;
     private final ExpressionCache expressionCache;
     private final EvaluationContextFactory contextFactory;
     private final CustomFunctionRegistry functionRegistry;
+    
+    // Performance metrics
+        private final AtomicLong ruleEvaluations = new AtomicLong(0);
+        private final AtomicLong ruleFailures = new AtomicLong(0);
+        private final AtomicLong fieldCalculations = new AtomicLong(0);
+        private final AtomicLong fieldCalculationFailures = new AtomicLong(0);
     
     @Autowired
     public RuleEngine(ExpressionEngine expressionEngine, 
@@ -50,44 +59,37 @@ public class RuleEngine {
         // 注册内置函数
         registerBuiltInFunctions();
         
-        log.info("规则引擎初始化完成");
+        LOGGER.info("Rule engine initialized successfully");
     }
     
     /**
-     * 注册内置函数
+     * Register built-in functions
      */
     private void registerBuiltInFunctions() {
-        // 尝试注册内置函数，使用更安全的方式
         try {
-            // 注册isNull函数
+            // 注册常用函数
             registerFunctionByName("isNull", "检查值是否为null");
-            // 注册isNotNull函数
             registerFunctionByName("isNotNull", "检查值是否不为null");
-            // 注册isEmpty函数
             registerFunctionByName("isEmpty", "检查字符串是否为空");
-            // 注册isNotEmpty函数
             registerFunctionByName("isNotEmpty", "检查字符串是否不为空");
-            // 注册length函数
             registerFunctionByName("length", "获取字符串长度");
             
-            log.info("已注册内置函数");
+            LOGGER.info("Built-in functions registered successfully");
         } catch (Exception e) {
-            log.warn("注册内置函数失败", e);
+            LOGGER.warn("Failed to register built-in functions", e);
         }
     }
     
     private void registerFunctionByName(String functionName, String description) {
         try {
-            // 由于无法直接使用lambda表达式，我们回退到使用函数名作为标识
-            // 实际函数实现在ExpressionEngine中处理
             functionRegistry.registerFunction(functionName, functionName, description);
         } catch (Exception e) {
-            log.debug("注册函数 {} 失败", functionName, e);
+            LOGGER.debug("Failed to register function {}", functionName, e);
         }
     }
     
     /**
-     * 获取预编译的表达式
+     * Get compiled expression
      */
     private Object getCompiledExpression(String expression) {
         return expressionCache.get(expression, expr -> {
@@ -96,8 +98,8 @@ public class RuleEngine {
                 // 目前直接返回表达式字符串，由ExpressionEngine处理
                 return expr;
             } catch (Exception e) {
-                log.error("编译表达式失败: {}", expr, e);
-                throw new RuntimeException("编译表达式失败", e);
+                LOGGER.error("Expression compilation failed: {}", expr, e);
+                throw new RuntimeException("Expression compilation failed", e);
             }
         });
     }
@@ -111,30 +113,17 @@ public class RuleEngine {
      * @return 计算后的实体数据
      */
     public Map<String, Object> calculateFields(String entityName, Map<String, Object> entityData, boolean incremental) {
-        // 获取实体元数据并进行类型转换
+        // 获取实体元数据
         Object metadataObj = metadataEngine.getEntityMetadata(entityName);
         EntityMetadata metadata = (metadataObj instanceof EntityMetadata) ? (EntityMetadata) metadataObj : null;
+        
         if (metadata == null) {
-            log.warn("未找到实体元数据: {}", entityName);
+            LOGGER.warn("Entity metadata not found: {}", entityName);
             return entityData;
         }
         
         // 获取所有计算字段
-            List<SmartFieldMetadata> calculatedFields = new ArrayList<>();
-            for (FieldMetadata field : metadata.getFields().values()) {
-                // 安全地检查和转换为SmartFieldMetadata
-                if (field instanceof SmartFieldMetadata) {
-                    SmartFieldMetadata smartField = (SmartFieldMetadata) field;
-                    if (smartField.isCalculated() && smartField.getCalculationExpression() != null) {
-                        calculatedFields.add(smartField);
-                    }
-                } else if (field.getCalculationExpression() != null) {
-                    // 对于不是SmartFieldMetadata但有计算表达式的字段，创建一个包装器
-                    SmartFieldMetadata wrapper = new SmartFieldMetadata();
-                    // 这里需要设置必要的属性
-                    calculatedFields.add(wrapper);
-                }
-            }
+        List<SmartFieldMetadata> calculatedFields = extractCalculatedFields(metadata);
         
         if (calculatedFields.isEmpty()) {
             return entityData;
@@ -148,139 +137,225 @@ public class RuleEngine {
         // 按依赖关系排序计算字段
         calculatedFields = sortCalculatedFieldsByDependency(calculatedFields, metadata);
         
-        // 创建评估上下文 - 使用正确的EntityMetadata类型
+        // 创建评估上下文
         EvaluationContextFactory.EvaluationContext context = contextFactory.createContext(entityData, null);
         
         // 计算字段值
         Map<String, Object> result = new HashMap<>(entityData);
         for (SmartFieldMetadata field : calculatedFields) {
-            try {
-                String expression = field.getCalculationExpression();
-                if (expression != null && !expression.trim().isEmpty()) {
-                    // 获取预编译的表达式
-                    Object compiledExpression = getCompiledExpression(expression);
-                    
-                    // 计算字段值
-                    Object value = evaluateFieldExpression(compiledExpression, result, context);
-                    
-                    // 使用反射获取name字段
-                    try {
-                        java.lang.reflect.Field nameField = field.getClass().getDeclaredField("name");
-                        nameField.setAccessible(true);
-                        String fieldName = (String) nameField.get(field);
-                        result.put(fieldName, value);
-                        
-                        // 尝试更新评估上下文
-                        try {
-                            java.lang.reflect.Method updateMethod = context.getClass().getMethod("updateEntityData", String.class, Object.class);
-                            updateMethod.invoke(context, fieldName, value);
-                        } catch (Exception e) {
-                            // 如果没有这个方法，忽略
-                        }
-                        
-                        log.debug("计算字段成功: {}.{} = {}", entityName, fieldName, value);
-                    } catch (Exception ex) {
-                        // 反射失败，使用默认处理
-                        log.debug("计算字段成功: {}, 值 = {}", entityName, value);
-                    }
-                }
-            } catch (Exception e) {
-                log.error("计算字段失败: {}", entityName, e);
-                // 计算失败时保留原值或使用默认值
-                try {
-                    java.lang.reflect.Field nameField = field.getClass().getDeclaredField("name");
-                    nameField.setAccessible(true);
-                    String fieldName = (String) nameField.get(field);
-                    
-                    if (!result.containsKey(fieldName)) {
-                        try {
-                            java.lang.reflect.Field defaultValueField = field.getClass().getDeclaredField("defaultValue");
-                            defaultValueField.setAccessible(true);
-                            Object defaultValue = defaultValueField.get(field);
-                            if (defaultValue != null) {
-                                result.put(fieldName, defaultValue);
-                            }
-                        } catch (Exception ex) {
-                            // 反射失败，不设置默认值
-                        }
-                    }
-                } catch (Exception ex) {
-                    // 反射失败，跳过默认值处理
-                }
-            }
+            calculateField(field, entityName, result, context);
         }
         
         return result;
     }
     
     /**
-     * 计算单个字段的值
+     * 提取计算字段
      */
-    private Object calculateFieldValue(SmartFieldMetadata field, Map<String, Object> context, EntityMetadata entityMetadata) {
-        String expression = field.getCalculationExpression();
-        if (expression == null || expression.trim().isEmpty()) {
-            // 使用反射获取默认值
-            try {
-                java.lang.reflect.Field defaultValueField = field.getClass().getDeclaredField("defaultValue");
-                defaultValueField.setAccessible(true);
-                return defaultValueField.get(field);
-            } catch (Exception e) {
-                return null;
-            }
-        }
+    private List<SmartFieldMetadata> extractCalculatedFields(EntityMetadata metadata) {
+        List<SmartFieldMetadata> calculatedFields = new ArrayList<>();
         
         try {
-            // 使用表达式引擎计算值
-            return expressionEngine.evaluateExpression(expression, context);
-        } catch (Exception e) {
-            String fieldName = "未知字段";
-            try {
-                java.lang.reflect.Field nameField = field.getClass().getDeclaredField("name");
-                nameField.setAccessible(true);
-                fieldName = (String) nameField.get(field);
-            } catch (Exception ex) {
-                // 反射失败，使用默认名称
+            // 使用反射安全地获取字段
+            Method getFieldsMethod = metadata.getClass().getMethod("getFields");
+            Object fieldsObj = getFieldsMethod.invoke(metadata);
+            
+            if (fieldsObj instanceof Map) {
+                Map<?, ?> fieldsMap = (Map<?, ?>) fieldsObj;
+                for (Object fieldObj : fieldsMap.values()) {
+                    if (fieldObj instanceof SmartFieldMetadata) {
+                        SmartFieldMetadata smartField = (SmartFieldMetadata) fieldObj;
+                        
+                        // 安全地检查是否为计算字段
+                        boolean isCalculated = isFieldCalculated(smartField);
+                        String expression = getFieldCalculationExpression(smartField);
+                        
+                        if (isCalculated && expression != null && !expression.trim().isEmpty()) {
+                            calculatedFields.add(smartField);
+                        }
+                    }
+                }
             }
-            log.error("计算表达式失败: {}", expression, e);
-            throw new CalculationException("计算字段失败: " + fieldName, e);
+        } catch (Exception e) {
+            LOGGER.warn("Error getting calculated fields: {}", e.getMessage());
+        }
+        
+        return calculatedFields;
+    }
+    
+    /**
+     * 检查字段是否为计算字段
+     */
+    private boolean isFieldCalculated(SmartFieldMetadata field) {
+        try {
+            Method isCalculatedMethod = field.getClass().getMethod("isCalculated");
+            return (Boolean) isCalculatedMethod.invoke(field);
+        } catch (Exception e) {
+            // 如果方法不存在，返回false
+            return false;
         }
     }
     
     /**
-     * 评估字段表达式
+     * 获取字段计算表达式
+     */
+    private String getFieldCalculationExpression(SmartFieldMetadata field) {
+        try {
+            Method getExpressionMethod = field.getClass().getMethod("getCalculationExpression");
+            return (String) getExpressionMethod.invoke(field);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    /**
+     * 计算单个字段
+     */
+    private void calculateField(SmartFieldMetadata field, String entityName, 
+                              Map<String, Object> result, 
+                              EvaluationContextFactory.EvaluationContext context) {
+        fieldCalculations.incrementAndGet();
+        
+        try {
+            String expression = field.getCalculationExpression();
+            if (expression == null || expression.trim().isEmpty()) {
+                handleEmptyExpression(field, result);
+                return;
+            }
+            
+            // 获取预编译的表达式
+            Object compiledExpression = getCompiledExpression(expression);
+            
+            // 计算字段值
+            Object value = evaluateFieldExpression(compiledExpression, result, context);
+            
+            // 获取字段名
+            String fieldName = getFieldName(field);
+            
+            // 更新结果和上下文
+            updateFieldValue(fieldName, value, result, context);
+            
+            LOGGER.debug("Field calculation successful: {}.{} = {}", entityName, fieldName, value);
+        } catch (Exception e) {
+            fieldCalculationFailures.incrementAndGet();
+            handleFieldCalculationError(field, entityName, e, result);
+        }
+    }
+    
+    /**
+     * 处理空表达式的情况
+     */
+    private void handleEmptyExpression(SmartFieldMetadata field, Map<String, Object> result) {
+        try {
+            String fieldName = getFieldName(field);
+            Object defaultValue = getFieldDefaultValue(field);
+            
+            if (defaultValue != null && !result.containsKey(fieldName)) {
+                result.put(fieldName, defaultValue);
+            }
+        } catch (Exception e) {
+            LOGGER.debug("Failed to get field default value", e);
+        }
+    }
+    
+    /**
+     * 获取字段名称
+     */
+    private String getFieldName(SmartFieldMetadata field) {
+        try {
+            Field nameField = field.getClass().getDeclaredField("name");
+            nameField.setAccessible(true);
+            return (String) nameField.get(field);
+        } catch (Exception e) {
+            LOGGER.debug("Failed to get field name", e);
+            return "unknown_field"; // 返回默认名称
+        }
+    }
+    
+    /**
+     * 获取字段默认值
+     */
+    private Object getFieldDefaultValue(SmartFieldMetadata field) {
+        try {
+            Field defaultValueField = field.getClass().getDeclaredField("defaultValue");
+            defaultValueField.setAccessible(true);
+            return defaultValueField.get(field);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    /**
+     * 更新字段值
+     */
+    private void updateFieldValue(String fieldName, Object value, 
+                                Map<String, Object> result, 
+                                EvaluationContextFactory.EvaluationContext context) {
+        // 更新结果集
+        result.put(fieldName, value);
+        
+        // 尝试更新评估上下文
+        try {
+            Method updateMethod = context.getClass().getMethod("updateEntityData", String.class, Object.class);
+            updateMethod.invoke(context, fieldName, value);
+        } catch (Exception e) {
+            // 如果没有这个方法，忽略
+        }
+    }
+    
+    /**
+     * Handle field calculation error
+     */
+    private void handleFieldCalculationError(SmartFieldMetadata field, String entityName, 
+                                           Exception e, Map<String, Object> result) {
+        LOGGER.error("Field calculation failed: {}", entityName, e);
+        
+        try {
+            String fieldName = getFieldName(field);
+            
+            // 如果结果中没有这个字段，尝试设置默认值
+            if (!result.containsKey(fieldName)) {
+                Object defaultValue = getFieldDefaultValue(field);
+                if (defaultValue != null) {
+                    result.put(fieldName, defaultValue);
+                }
+            }
+        } catch (Exception ex) {
+            // 反射失败，跳过默认值处理
+        }
+    }
+    
+    /**
+     * Evaluate field expression
      */
     private Object evaluateFieldExpression(Object compiledExpression, Map<String, Object> entityData, 
                                          EvaluationContextFactory.EvaluationContext context) {
         String expression = compiledExpression.toString();
         try {
-            // 使用ExpressionEngine评估表达式
             return expressionEngine.evaluateExpression(expression, entityData);
         } catch (Exception e) {
-            log.error("评估表达式失败: {}", expression, e);
-            throw new RuntimeException("评估表达式失败", e);
+            LOGGER.error("Expression evaluation failed: {}", expression, e);
+            throw new RuntimeException("Expression evaluation failed", e);
         }
     }
     
     /**
-     * 按依赖关系排序计算字段
+     * Sort calculated fields by dependency
      */
     private List<SmartFieldMetadata> sortCalculatedFieldsByDependency(List<SmartFieldMetadata> fields, EntityMetadata metadata) {
+        if (fields.isEmpty()) {
+            return fields;
+        }
+        
         // 简单实现，后续可优化为拓扑排序
         List<SmartFieldMetadata> sortedFields = new ArrayList<>(fields);
         
         // 尝试根据字段名称排序，确保一致的计算顺序
         sortedFields.sort((f1, f2) -> {
             try {
-                // 使用反射获取name字段
-                java.lang.reflect.Field nameField1 = f1.getClass().getDeclaredField("name");
-                nameField1.setAccessible(true);
-                String name1 = (String) nameField1.get(f1);
-                
-                java.lang.reflect.Field nameField2 = f2.getClass().getDeclaredField("name");
-                nameField2.setAccessible(true);
-                String name2 = (String) nameField2.get(f2);
-                
-                return name1 != null ? name1.compareTo(name2 != null ? name2 : "") : "".compareTo(name2 != null ? name2 : "");
+                String name1 = getFieldName(f1);
+                String name2 = getFieldName(f2);
+                return Objects.compare(name1, name2, Comparator.nullsLast(String::compareTo));
             } catch (Exception e) {
                 // 反射失败，使用默认比较器
                 return 0;
@@ -291,43 +366,83 @@ public class RuleEngine {
     }
     
     /**
-     * 优化计算字段，只计算必要的字段
+     * Optimize calculated fields to compute only necessary fields
      */
     private List<SmartFieldMetadata> optimizeCalculatedFields(List<SmartFieldMetadata> fields, 
-                                                       Map<String, Object> entityData,
-                                                       EntityMetadata metadata) {
+                                                         Map<String, Object> entityData,
+                                                         EntityMetadata metadata) {
         // 检查是否有字段值发生变化
         // 这里简化实现，实际可通过变更跟踪进行更精确的优化
         return fields;
     }
     
     /**
-     * 验证业务规则
+     * Validate business rules
+     * 
+     * @param entityName the entity name
+     * @param entityData the entity data
+     * @param triggerEvents the trigger events
+     * @return validation result
+     */
+    public Map<String, Object> validateRules(String entityName, Map<String, Object> entityData, 
+                                         List<String> triggerEvents) {
+        ValidationResult validationResult = validateRulesWithResult(entityName, entityData, triggerEvents);
+        
+        // 转换为Map结果
+        Map<String, Object> result = new HashMap<>();
+        result.put("valid", validationResult.isValid());
+        result.put("errors", validationResult.getErrors().stream()
+                .map(error -> error.getFieldPath() + ": " + error.getMessage())
+                .collect(Collectors.toList()));
+        
+        return result;
+    }
+    
+    /**
+     * 验证业务规则并返回ValidationResult对象
      * 
      * @param entityName 实体名称
      * @param entityData 实体数据
      * @param triggerEvents 触发事件
      * @return 验证结果
      */
-    public ValidationEngine.ValidationResult validateRules(String entityName, Map<String, Object> entityData, 
-                                         List<String> triggerEvents) {
-        ValidationEngine.ValidationResult result = new ValidationEngine.ValidationResult();
+    public ValidationResult validateRulesWithResult(String entityName, Map<String, Object> entityData, 
+                                                 List<String> triggerEvents) {
+        ValidationResult result = ValidationResult.builder().build();
         
-        // 获取实体元数据并进行类型转换
+        // 获取实体元数据
         Object metadataObj = metadataEngine.getEntityMetadata(entityName);
         EntityMetadata metadata = (metadataObj instanceof EntityMetadata) ? (EntityMetadata) metadataObj : null;
+        
         if (metadata == null) {
-            log.warn("未找到实体元数据: {}", entityName);
+            LOGGER.warn("Entity metadata not found: {}", entityName);
+            result.addError(createGeneralError("Entity metadata not found: " + entityName));
             return result;
         }
         
+        // 验证实体规则
+        validateEntityRules(metadata, entityData, triggerEvents, result);
+        
+        return result;
+    }
+    
+    /**
+     * 验证实体规则
+     * 
+     * @param metadata 实体元数据
+     * @param entityData 实体数据
+     * @param triggerEvents 触发事件列表
+     * @param result 验证结果对象
+     */
+    private void validateEntityRules(EntityMetadata metadata, Map<String, Object> entityData, 
+                                   List<String> triggerEvents, ValidationResult result) {
         // 获取所有业务规则
         List<?> businessRules = metadata.getValidationRules();
         if (CollectionUtils.isEmpty(businessRules)) {
-            return result;
+            return;
         }
         
-        // 创建评估上下文 - 使用正确的EntityMetadata类型
+        // 创建评估上下文
         EvaluationContextFactory.EvaluationContext context = contextFactory.createContext(entityData, null);
         
         // 转换和过滤规则
@@ -337,6 +452,8 @@ public class RuleEngine {
         
         // 执行规则验证
         for (Object rule : rules) {
+            ruleEvaluations.incrementAndGet();
+            
             try {
                 // 检查规则是否应该被触发
                 if (!shouldTriggerRule(rule, triggerEvents)) {
@@ -346,17 +463,322 @@ public class RuleEngine {
                 // 验证规则
                 validateSingleRule(rule, entityData, context, result);
                 
-                // 如果有严重错误且启用了快速失败模式，停止验证
-                if (!result.isValid() && !result.getErrors().isEmpty()) {
+                // 如果有错误且启用了快速失败模式，停止验证
+                if (!result.isValid() && isFailFastEnabled()) {
                     break;
                 }
             } catch (Exception e) {
-                log.error("执行规则验证失败", e);
-                result.addError("general", "规则验证过程中发生异常: " + e.getMessage());
+                ruleFailures.incrementAndGet();
+                LOGGER.error("Rule validation execution failed", e);
+                result.addError(createGeneralError("Rule validation exception: " + e.getMessage()));
+                
+                if (isFailFastEnabled()) {
+                    break;
+                }
             }
         }
+    }
+    
+    /**
+     * 检查是否启用快速失败模式
+     */
+    private boolean isFailFastEnabled() {
+        // 可以从配置或系统属性中获取
+        return true; // 默认启用快速失败
+    }
+    
+    /**
+     * 验证单个规则
+     */
+    private void validateSingleRule(Object rule, Map<String, Object> entityData, 
+                                  EvaluationContextFactory.EvaluationContext context, 
+                                  ValidationResult result) {
+        try {
+            // 根据规则类型进行验证
+            if (rule instanceof com.bone.smartmeta.engine.metadata.BusinessRuleMetadata) {
+                validateBusinessRule((com.bone.smartmeta.engine.metadata.BusinessRuleMetadata) rule, entityData, context, result);
+            } else if (rule instanceof com.bone.smartmeta.engine.metadata.ValidationRuleMetadata) {
+                validateValidationRule((com.bone.smartmeta.engine.metadata.ValidationRuleMetadata) rule, entityData, context, result);
+            } else {
+                // 使用反射处理通用规则对象
+                validateRuleWithReflection(rule, entityData, context, result);
+            }
+        } catch (Exception e) {
+            ruleFailures.incrementAndGet();
+            LOGGER.error("Rule validation failed: {}", rule, e);
+            result.addError(createGeneralError("Rule validation exception: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * 创建通用错误信息
+     */
+    private ValidationResult.ValidationError createGeneralError(String message) {
+        return ValidationResult.ValidationError.builder()
+            .fieldPath("general")
+            .message(message)
+            .build();
+    }
+    
+    /**
+     * 验证业务规则
+     */
+    private void validateBusinessRule(com.bone.smartmeta.engine.metadata.BusinessRuleMetadata rule, 
+                                    Map<String, Object> entityData, 
+                                    EvaluationContextFactory.EvaluationContext context, 
+                                    ValidationResult result) {
+        // 检查规则是否启用
+        if (!isRuleEnabled(rule)) {
+            return;
+        }
         
-        return result;
+        try {
+            // 检查条件
+            String condition = getCondition(rule);
+            if (condition != null && !condition.trim().isEmpty()) {
+                Object compiledCondition = getCompiledExpression(condition);
+                boolean conditionMet = evaluateCondition(compiledCondition, entityData, context);
+                if (!conditionMet) {
+                    return; // 条件不满足，跳过验证
+                }
+            }
+            
+            // 获取并评估表达式
+            validateRuleExpression(rule, entityData, context, result);
+        } catch (Exception e) {
+            LOGGER.error("Business rule validation failed", e);
+            result.addError(createGeneralError("Business rule validation exception: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * 验证ValidationRuleMetadata规则
+     */
+    private void validateValidationRule(com.bone.smartmeta.engine.metadata.ValidationRuleMetadata rule, 
+                                      Map<String, Object> entityData, 
+                                      EvaluationContextFactory.EvaluationContext context, 
+                                      ValidationResult result) {
+        // 检查规则是否激活
+        if (!rule.isEnabled()) {
+            return;
+        }
+        
+        try {
+            // 获取表达式
+            String expression = getRuleExpression(rule);
+            if (expression == null || expression.trim().isEmpty()) {
+                return;
+            }
+            
+            // 评估表达式
+            Object compiledExpression = getCompiledExpression(expression);
+            boolean isValid = evaluateRuleExpression(compiledExpression, entityData, context);
+            
+            if (!isValid) {
+                // 构建错误信息
+                String fieldName = rule.getFieldName();
+                if (fieldName == null || fieldName.trim().isEmpty()) {
+                    fieldName = "general";
+                }
+                
+                String errorMessage = getRuleErrorMessage(rule);
+                result.addError(ValidationResult.ValidationError.builder()
+                    .fieldPath(fieldName)
+                    .message(errorMessage)
+                    .build());
+            }
+        } catch (Exception e) {
+            LOGGER.error("Rule validation failed", e);
+            result.addError(createGeneralError("Rule validation exception: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * 使用反射验证通用规则对象
+     */
+    private void validateRuleWithReflection(Object rule, Map<String, Object> entityData, 
+                                         EvaluationContextFactory.EvaluationContext context, 
+                                         ValidationResult result) {
+        try {
+            // 检查规则是否启用/激活
+            if (!isRuleActive(rule)) {
+                return;
+            }
+            
+            // 检查条件
+            String condition = getStringProperty(rule, "getCondition");
+            if (condition != null && !condition.trim().isEmpty()) {
+                Object compiledCondition = getCompiledExpression(condition);
+                boolean conditionMet = evaluateCondition(compiledCondition, entityData, context);
+                if (!conditionMet) {
+                    return;
+                }
+            }
+            
+            // 获取并评估表达式
+            String expression = getStringProperty(rule, "getExpression", "getFormula");
+            if (expression == null || expression.trim().isEmpty()) {
+                return;
+            }
+            
+            Object compiledExpression = getCompiledExpression(expression);
+            boolean isValid = evaluateRuleExpression(compiledExpression, entityData, context);
+            
+            if (!isValid) {
+                // 构建错误信息
+                String fieldName = getStringProperty(rule, "getFieldName", "getField");
+                if (fieldName == null || fieldName.trim().isEmpty()) {
+                    fieldName = "general";
+                }
+                
+                String errorMessage = getStringProperty(rule, "getErrorMessage", "getMessage");
+                if (errorMessage == null || errorMessage.trim().isEmpty()) {
+                    errorMessage = "规则验证失败";
+                }
+                
+                result.addError(ValidationResult.ValidationError.builder()
+                    .fieldPath(fieldName)
+                    .message(errorMessage)
+                    .build());
+            }
+        } catch (Exception e) {
+            LOGGER.warn("Reflection-based rule validation failed", e);
+            result.addError(createGeneralError("Reflection-based rule validation exception: " + e.getMessage()));
+        }
+    }
+    
+    /**
+     * 验证规则表达式
+     */
+    private void validateRuleExpression(com.bone.smartmeta.engine.metadata.BusinessRuleMetadata rule, 
+                                     Map<String, Object> entityData, 
+                                     EvaluationContextFactory.EvaluationContext context, 
+                                     ValidationResult result) {
+        // 获取表达式
+        String expression = rule.getExpression();
+        if (expression == null || expression.trim().isEmpty()) {
+            return;
+        }
+        
+        // 评估表达式
+        Object compiledExpression = getCompiledExpression(expression);
+        boolean isValid = evaluateRuleExpression(compiledExpression, entityData, context);
+        
+        if (!isValid) {
+            String fieldName = rule.getFieldName();
+            if (fieldName == null || fieldName.trim().isEmpty()) {
+                fieldName = "general";
+            }
+            
+            String errorMessage = rule.getErrorMessage();
+            if (errorMessage == null || errorMessage.trim().isEmpty()) {
+                // 使用反射获取name字段
+                String name = "未知规则";
+                try {
+                    Field nameField = rule.getClass().getDeclaredField("name");
+                    nameField.setAccessible(true);
+                    name = (String) nameField.get(rule);
+                } catch (Exception e) {
+                    // 反射失败，使用默认值
+                }
+                errorMessage = String.format("业务规则验证失败: %s", name);
+            }
+            
+            result.addError(ValidationResult.ValidationError.builder()
+                .fieldPath(fieldName)
+                .message(errorMessage)
+                .build());
+        }
+    }
+    
+    /**
+     * 检查规则是否启用
+     */
+    private boolean isRuleEnabled(com.bone.smartmeta.engine.metadata.BusinessRuleMetadata rule) {
+        try {
+            // 尝试获取isEnabled字段
+            try {
+                Field isEnabledField = rule.getClass().getDeclaredField("isEnabled");
+                isEnabledField.setAccessible(true);
+                return isEnabledField.getBoolean(rule);
+            } catch (Exception e) {
+                // 反射失败，尝试获取enabled字段
+                try {
+                    Field enabledField = rule.getClass().getDeclaredField("enabled");
+                    enabledField.setAccessible(true);
+                    return enabledField.getBoolean(rule);
+                } catch (Exception ex) {
+                    // 如果都失败，默认认为规则未启用
+                    return false;
+                }
+            }
+        } catch (Exception e) {
+            return false;
+        }
+    }
+    
+    /**
+     * 获取规则条件
+     */
+    private String getCondition(com.bone.smartmeta.engine.metadata.BusinessRuleMetadata rule) {
+        try {
+            Field conditionField = rule.getClass().getDeclaredField("condition");
+            conditionField.setAccessible(true);
+            return (String) conditionField.get(rule);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    /**
+     * 获取规则表达式
+     */
+    private String getRuleExpression(com.bone.smartmeta.engine.metadata.ValidationRuleMetadata rule) {
+        try {
+            Field expressionField = rule.getClass().getDeclaredField("expression");
+            expressionField.setAccessible(true);
+            return (String) expressionField.get(rule);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    /**
+     * 获取规则错误消息
+     */
+    private String getRuleErrorMessage(com.bone.smartmeta.engine.metadata.ValidationRuleMetadata rule) {
+        try {
+            Field errorMessageField = rule.getClass().getDeclaredField("errorMessage");
+            errorMessageField.setAccessible(true);
+            String errorMessage = (String) errorMessageField.get(rule);
+            
+            if (errorMessage == null || errorMessage.trim().isEmpty()) {
+                errorMessage = rule.getMessage(); // 兼容旧方法
+            }
+            if (errorMessage == null || errorMessage.trim().isEmpty()) {
+                errorMessage = String.format("验证规则失败: %s", rule.getName());
+            }
+            
+            return errorMessage;
+        } catch (Exception e) {
+            return "验证规则失败";
+        }
+    }
+    
+    /**
+     * 检查规则是否激活
+     */
+    private boolean isRuleActive(Object rule) {
+        try {
+            Method isActiveMethod = findMethod(rule.getClass(), "isActive", "isEnabled");
+            if (isActiveMethod != null) {
+                Boolean isActive = (Boolean) isActiveMethod.invoke(rule);
+                return isActive != null && isActive;
+            }
+        } catch (Exception e) {
+            // 忽略错误，默认启用
+        }
+        return true; // 默认规则是激活的
     }
     
     /**
@@ -370,47 +792,17 @@ public class RuleEngine {
         try {
             // 检查BusinessRuleMetadata类型
             if (rule instanceof com.bone.smartmeta.engine.metadata.BusinessRuleMetadata) {
-                com.bone.smartmeta.engine.metadata.BusinessRuleMetadata businessRule = 
-                    (com.bone.smartmeta.engine.metadata.BusinessRuleMetadata) rule;
-                try {
-                    // 使用反射获取executionTiming字段
-                    java.lang.reflect.Field executionTimingField = businessRule.getClass().getDeclaredField("executionTiming");
-                    executionTimingField.setAccessible(true);
-                    String executionTiming = (String) executionTimingField.get(businessRule);
-                    if (executionTiming != null) {
-                        // 转换执行时机到触发事件
-                        String event = timingToEvent(executionTiming);
-                        if (event != null && triggerEvents.contains(event)) {
-                            return true;
-                        }
-                    }
-                } catch (Exception e) {
-                    // 反射失败，默认触发
-                }
-                return true; // 默认触发
+                return shouldTriggerBusinessRule((com.bone.smartmeta.engine.metadata.BusinessRuleMetadata) rule, triggerEvents);
             }
             
             // 检查ValidationRuleMetadata类型
             if (rule instanceof com.bone.smartmeta.engine.metadata.ValidationRuleMetadata) {
-                com.bone.smartmeta.engine.metadata.ValidationRuleMetadata validationRule = 
-                    (com.bone.smartmeta.engine.metadata.ValidationRuleMetadata) rule;
-                // 使用反射获取triggerEvent字段
-                try {
-                    java.lang.reflect.Field triggerEventField = validationRule.getClass().getDeclaredField("triggerEvent");
-                    triggerEventField.setAccessible(true);
-                    String triggerEvent = (String) triggerEventField.get(validationRule);
-                    if ("ALL".equals(triggerEvent) || triggerEvents.contains(triggerEvent)) {
-                        return true;
-                    }
-                } catch (Exception e) {
-                    // 如果反射失败，默认返回true
-                    return true;
-                }
+                return shouldTriggerValidationRule((com.bone.smartmeta.engine.metadata.ValidationRuleMetadata) rule, triggerEvents);
             }
             
             // 尝试通过反射获取触发事件
             try {
-                java.lang.reflect.Method method = rule.getClass().getMethod("getTriggerEvent");
+                Method method = rule.getClass().getMethod("getTriggerEvent");
                 Object event = method.invoke(rule);
                 if (event != null && triggerEvents.contains(event.toString())) {
                     return true;
@@ -418,12 +810,52 @@ public class RuleEngine {
             } catch (Exception e) {
                 // 忽略反射错误
             }
-        }
-        catch (Exception e) {
-            log.warn("检查规则触发条件失败", e);
+        } catch (Exception e) {
+            LOGGER.warn("Rule trigger condition check failed", e);
         }
         
         return true; // 默认触发所有规则
+    }
+    
+    /**
+     * 检查业务规则是否应该被触发
+     */
+    private boolean shouldTriggerBusinessRule(com.bone.smartmeta.engine.metadata.BusinessRuleMetadata rule, List<String> triggerEvents) {
+        try {
+            // 使用反射获取executionTiming字段
+            Field executionTimingField = rule.getClass().getDeclaredField("executionTiming");
+            executionTimingField.setAccessible(true);
+            String executionTiming = (String) executionTimingField.get(rule);
+            
+            if (executionTiming != null) {
+                // 转换执行时机到触发事件
+                String event = timingToEvent(executionTiming);
+                if (event != null && triggerEvents.contains(event)) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            // 反射失败，默认触发
+        }
+        
+        return true; // 默认触发
+    }
+    
+    /**
+     * 检查验证规则是否应该被触发
+     */
+    private boolean shouldTriggerValidationRule(com.bone.smartmeta.engine.metadata.ValidationRuleMetadata rule, List<String> triggerEvents) {
+        try {
+            // 使用反射获取triggerEvent字段
+            Field triggerEventField = rule.getClass().getDeclaredField("triggerEvent");
+            triggerEventField.setAccessible(true);
+            String triggerEvent = (String) triggerEventField.get(rule);
+            
+            return "ALL".equals(triggerEvent) || triggerEvents.contains(triggerEvent);
+        } catch (Exception e) {
+            // 如果反射失败，默认返回true
+            return true;
+        }
     }
     
     /**
@@ -446,228 +878,6 @@ public class RuleEngine {
     }
     
     /**
-     * 验证单个规则
-     */
-    private void validateSingleRule(Object rule, Map<String, Object> entityData, 
-                                   EvaluationContextFactory.EvaluationContext context, 
-                                   ValidationEngine.ValidationResult result) {
-        try {
-            // 检查BusinessRuleMetadata类型
-            if (rule instanceof com.bone.smartmeta.engine.metadata.BusinessRuleMetadata) {
-                validateBusinessRule((com.bone.smartmeta.engine.metadata.BusinessRuleMetadata) rule, entityData, context, result);
-                return;
-            }
-            
-            // 检查ValidationRuleMetadata类型
-            if (rule instanceof com.bone.smartmeta.engine.metadata.ValidationRuleMetadata) {
-                validateValidationRule((com.bone.smartmeta.engine.metadata.ValidationRuleMetadata) rule, entityData, context, result);
-                return;
-            }
-            
-            // 使用反射处理通用规则对象
-            validateRuleWithReflection(rule, entityData, context, result);
-        } catch (Exception e) {
-            log.error("验证规则失败: {}", rule, e);
-            result.addError("general", "验证规则时发生异常: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * 验证业务规则
-     */
-    private void validateBusinessRule(com.bone.smartmeta.engine.metadata.BusinessRuleMetadata rule,
-                                     Map<String, Object> entityData, 
-                                     EvaluationContextFactory.EvaluationContext context, 
-                                     ValidationEngine.ValidationResult result) {
-        try {
-            // 使用反射获取isEnabled字段
-            boolean isEnabled = false;
-            try {
-                java.lang.reflect.Field isEnabledField = rule.getClass().getDeclaredField("isEnabled");
-                isEnabledField.setAccessible(true);
-                isEnabled = isEnabledField.getBoolean(rule);
-            } catch (Exception e) {
-                // 反射失败，尝试获取enabled字段
-                try {
-                    java.lang.reflect.Field enabledField = rule.getClass().getDeclaredField("enabled");
-                    enabledField.setAccessible(true);
-                    isEnabled = enabledField.getBoolean(rule);
-                } catch (Exception ex) {
-                    // 如果都失败，默认认为规则未启用
-                    return;
-                }
-            }
-            
-            if (!isEnabled) {
-                return;
-            }
-            
-            // 使用反射获取condition字段
-            String condition = null;
-            try {
-                java.lang.reflect.Field conditionField = rule.getClass().getDeclaredField("condition");
-                conditionField.setAccessible(true);
-                condition = (String) conditionField.get(rule);
-            } catch (Exception e) {
-                // 反射失败，不使用条件
-            }
-            
-            if (condition != null && !condition.trim().isEmpty()) {
-                Object compiledCondition = getCompiledExpression(condition);
-                boolean conditionMet = evaluateCondition(compiledCondition, entityData, context);
-                if (!conditionMet) {
-                    return; // 条件不满足，跳过验证
-                }
-            }
-            
-            // 获取表达式
-            String expression = rule.getExpression(); // getExpression是有的，因为它是一个别名方法
-            if (expression == null || expression.trim().isEmpty()) {
-                return;
-            }
-            
-            // 评估表达式
-            Object compiledExpression = getCompiledExpression(expression);
-            boolean isValid = evaluateRuleExpression(compiledExpression, entityData, context);
-            if (!isValid) {
-                String fieldName = rule.getFieldName();
-                if (fieldName == null || fieldName.trim().isEmpty()) {
-                    fieldName = "general";
-                }
-                
-                String errorMessage = rule.getErrorMessage();
-                if (errorMessage == null || errorMessage.trim().isEmpty()) {
-                    // 使用反射获取name字段
-                    String name = "未知规则";
-                    try {
-                        java.lang.reflect.Field nameField = rule.getClass().getDeclaredField("name");
-                        nameField.setAccessible(true);
-                        name = (String) nameField.get(rule);
-                    } catch (Exception e) {
-                        // 反射失败，使用默认值
-                    }
-                    errorMessage = String.format("业务规则验证失败: %s", name);
-                }
-                
-                result.addError(fieldName, errorMessage);
-            }
-        } catch (Exception e) {
-            log.error("验证业务规则失败", e);
-        }
-    }
-    
-    /**
-     * 验证ValidationRuleMetadata规则
-     */
-    private void validateValidationRule(com.bone.smartmeta.engine.metadata.ValidationRuleMetadata rule, 
-                                       Map<String, Object> entityData, 
-                                       EvaluationContextFactory.EvaluationContext context, 
-                                       ValidationEngine.ValidationResult result) {
-        // 检查规则是否激活
-        if (!rule.isEnabled()) {
-            return;
-        }
-        
-        try {
-            // 使用反射获取expression字段值
-            java.lang.reflect.Field expressionField = rule.getClass().getDeclaredField("expression");
-            expressionField.setAccessible(true);
-            String expression = (String) expressionField.get(rule);
-            
-            if (expression == null || expression.trim().isEmpty()) {
-                return;
-            }
-            
-            // 获取预编译的表达式
-            Object compiledExpression = getCompiledExpression(expression);
-            
-            // 评估表达式
-            boolean isValid = evaluateRuleExpression(compiledExpression, entityData, context);
-            if (!isValid) {
-                String fieldName = rule.getFieldName();
-                if (fieldName == null || fieldName.trim().isEmpty()) {
-                    fieldName = "general";
-                }
-                
-                // 使用反射获取errorMessage字段值
-                java.lang.reflect.Field errorMessageField = rule.getClass().getDeclaredField("errorMessage");
-                errorMessageField.setAccessible(true);
-                String errorMessage = (String) errorMessageField.get(rule);
-                
-                if (errorMessage == null || errorMessage.trim().isEmpty()) {
-                    errorMessage = rule.getMessage(); // 兼容旧方法
-                }
-                if (errorMessage == null || errorMessage.trim().isEmpty()) {
-                    errorMessage = String.format("验证规则失败: %s", rule.getName());
-                }
-                
-                result.addError(fieldName, errorMessage);
-            }
-        } catch (Exception e) {
-            log.error("验证规则失败", e);
-        }
-    }
-    
-    /**
-     * 使用反射验证通用规则对象
-     */
-    private void validateRuleWithReflection(Object rule, Map<String, Object> entityData, 
-                                          EvaluationContextFactory.EvaluationContext context, 
-                                          ValidationEngine.ValidationResult result) {
-        try {
-            // 检查规则是否启用/激活
-            try {
-                java.lang.reflect.Method isActiveMethod = findMethod(rule.getClass(), "isActive", "isEnabled");
-                if (isActiveMethod != null) {
-                    Boolean isActive = (Boolean) isActiveMethod.invoke(rule);
-                    if (isActive != null && !isActive) {
-                        return;
-                    }
-                }
-            } catch (Exception e) {
-                // 忽略错误，继续验证
-            }
-            
-            // 检查条件
-            String condition = getStringProperty(rule, "getCondition");
-            if (condition != null && !condition.trim().isEmpty()) {
-                Object compiledCondition = getCompiledExpression(condition);
-                boolean conditionMet = evaluateCondition(compiledCondition, entityData, context);
-                if (!conditionMet) {
-                    return;
-                }
-            }
-            
-            // 获取表达式
-            String expression = getStringProperty(rule, "getExpression", "getFormula");
-            if (expression == null || expression.trim().isEmpty()) {
-                return;
-            }
-            
-            // 评估表达式
-            Object compiledExpression = getCompiledExpression(expression);
-            boolean isValid = evaluateRuleExpression(compiledExpression, entityData, context);
-            if (!isValid) {
-                // 获取字段名
-                String fieldName = getStringProperty(rule, "getFieldName", "getField");
-                if (fieldName == null || fieldName.trim().isEmpty()) {
-                    fieldName = "general";
-                }
-                
-                // 获取错误消息
-                String errorMessage = getStringProperty(rule, "getErrorMessage", "getMessage");
-                if (errorMessage == null || errorMessage.trim().isEmpty()) {
-                    errorMessage = String.format("规则验证失败");
-                }
-                
-                result.addError(fieldName, errorMessage);
-            }
-        } catch (Exception e) {
-            log.warn("使用反射验证规则失败", e);
-        }
-    }
-    
-    /**
      * 评估条件表达式
      */
     private boolean evaluateCondition(Object compiledCondition, Map<String, Object> entityData, 
@@ -677,7 +887,7 @@ public class RuleEngine {
             Object result = expressionEngine.evaluateExpression(condition, entityData);
             return Boolean.TRUE.equals(result);
         } catch (Exception e) {
-            log.warn("评估条件失败: {}", condition, e);
+            LOGGER.warn("Condition evaluation failed: {}", condition, e);
             return true; // 条件评估失败时默认通过
         }
     }
@@ -692,26 +902,18 @@ public class RuleEngine {
             Object result = expressionEngine.evaluateExpression(expression, entityData);
             return Boolean.TRUE.equals(result);
         } catch (Exception e) {
-            log.warn("评估规则表达式失败: {}", expression, e);
+            LOGGER.warn("Rule expression evaluation failed: {}", expression, e);
             return false; // 表达式评估失败时默认失败
         }
     }
     
     /**
-     * 获取规则字段名
-     */
-    private String getRuleFieldName(com.bone.smartmeta.engine.metadata.ValidationRuleMetadata rule) {
-        // 直接使用兼容方法
-        return rule.getFieldName();
-    }
-    
-    /**
      * 查找合适的方法
      */
-    private java.lang.reflect.Method findMethod(Class<?> clazz, String... methodNames) {
+    private Method findMethod(Class<?> clazz, String... methodNames) {
         for (String methodName : methodNames) {
             try {
-                java.lang.reflect.Method method = clazz.getMethod(methodName);
+                Method method = clazz.getMethod(methodName);
                 method.setAccessible(true);
                 return method;
             } catch (NoSuchMethodException e) {
@@ -726,15 +928,39 @@ public class RuleEngine {
      */
     private String getStringProperty(Object obj, String... methodNames) {
         try {
-            java.lang.reflect.Method method = findMethod(obj.getClass(), methodNames);
+            Method method = findMethod(obj.getClass(), methodNames);
             if (method != null) {
                 Object result = method.invoke(obj);
                 return result != null ? result.toString() : null;
             }
         } catch (Exception e) {
-            log.debug("获取字符串属性失败", e);
+            LOGGER.debug("Failed to get string property", e);
         }
         return null;
+    }
+    
+    /**
+     * 获取规则引擎的性能统计信息
+     */
+    public Map<String, Object> getPerformanceStats() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("ruleEvaluations", ruleEvaluations.get());
+        stats.put("ruleFailures", ruleFailures.get());
+        stats.put("fieldCalculations", fieldCalculations.get());
+        stats.put("fieldCalculationFailures", fieldCalculationFailures.get());
+        
+        // 计算失败率
+        if (ruleEvaluations.get() > 0) {
+            double ruleFailureRate = (double) ruleFailures.get() / ruleEvaluations.get();
+            stats.put("ruleFailureRate", ruleFailureRate);
+        }
+        
+        if (fieldCalculations.get() > 0) {
+            double fieldFailureRate = (double) fieldCalculationFailures.get() / fieldCalculations.get();
+            stats.put("fieldFailureRate", fieldFailureRate);
+        }
+        
+        return stats;
     }
     
     /**

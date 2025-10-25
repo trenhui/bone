@@ -1,6 +1,7 @@
 package com.bone.engine.extension.config;
 
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -15,9 +16,9 @@ import java.util.List;
  * 
  * @author bone team
  */
-@Slf4j
 @Component
 public class ExtensionConfigValidator {
+    private static final Logger log = LoggerFactory.getLogger(ExtensionConfigValidator.class);
 
     @Autowired
     private ExtensionProperties properties;

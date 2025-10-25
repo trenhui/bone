@@ -46,6 +46,7 @@ public class ExpressionCache {
         }
         
         // 检查缓存中是否存在
+        @SuppressWarnings("unchecked")
         CachedExpression<T> cached = (CachedExpression<T>) cache.get(expressionString);
         if (cached != null) {
             hits.incrementAndGet();

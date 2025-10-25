@@ -15,8 +15,6 @@ import java.lang.annotation.*;
  *   <li><strong>关注点分离：</strong>核心逻辑与定制逻辑分离，便于维护</li>
  *   <li><strong>动态路由：</strong>根据运行时上下文自动选择合适的扩展实现</li>
  *   <li><strong>开闭原则：</strong>对扩展开放，对修改关闭</li>
- *   <li><strong>可观测性：</strong>提供丰富的监控和统计能力</li>
- *   <li><strong>安全可控：</strong>支持权限控制和访问限制</li>
  * </ul>
  *
  * <h3>使用示例：</h3>
@@ -26,12 +24,9 @@ import java.lang.annotation.*;
  * @ExtPoint(
  *     name = "订单折扣计算",
  *     description = "不同场景下的订单折扣逻辑",
- *     type = "BUSINESS",
  *     version = "1.0.0",
- *     category = "交易",
- *     domain = "订单",
- *     group = "pricing",
  *     priority = 100,
+ *     enableCache = true,
  *     allowParallelExecution = true,
  *     timeout = 5000,
  *     circuitBreakerEnabled = true
@@ -39,21 +34,10 @@ import java.lang.annotation.*;
  * public interface OrderDiscountExtPoint {
  *     DiscountResult calculate(BizContext<Order> context);
  * }
- * 
- * // 2. 提供默认实现
- * @Extension(bizCode = "DEFAULT", isDefault = true)
- * public class DefaultOrderDiscount implements OrderDiscountExtPoint {
- *     @Override
- *     public DiscountResult calculate(BizContext<Order> context) {
- *         // 默认折扣实现
- *         return new DiscountResult();
- *     }
- * }
- * }
  * </pre>
  *
  * @author Bone Engine Team
- * @version 2.0.0
+ * @version 2.1.0
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
@@ -66,14 +50,9 @@ public @interface ExtPoint {
     String name() default "";
     
     /**
-     * 扩展点描述
+     * 扩展点简要描述
      */
     String description() default "";
-    
-    /**
-     * 扩展点类型，默认为业务扩展
-     */
-    String type() default "BUSINESS";
     
     /**
      * 扩展点版本号
@@ -84,21 +63,6 @@ public @interface ExtPoint {
      * 是否启用
      */
     boolean enabled() default true;
-    
-    /**
-     * 扩展点分类
-     */
-    String category() default "";
-    
-    /**
-     * 扩展点所属领域
-     */
-    String domain() default "";
-    
-    /**
-     * 扩展点分组
-     */
-    String group() default "";
     
     /**
      * 默认优先级
@@ -164,6 +128,4 @@ public @interface ExtPoint {
      * 是否需要事务支持
      */
     boolean transactional() default false;
-    
-
 }

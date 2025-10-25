@@ -113,7 +113,7 @@ import java.lang.annotation.Target;
  * </pre>
  *
  * @author Bone Engine Team
- * @version 2.0.0
+ * @version 2.1.0
  * @see ExtPoint 扩展点接口注解
  * @see Extensions 扩展点容器注解
  */
@@ -279,16 +279,6 @@ public @interface Extension {
      * 生效结束时间（ISO 8601格式）
      */
     String endTime() default "";
-    
-    /**
-     * 实现者信息
-     */
-    String author() default "";
-    
-    /**
-     * 配置参数定义（JSON格式）
-     */
-    String configSchema() default "";
     
     /**
      * 是否使用独立线程池执行

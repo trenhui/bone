@@ -5,7 +5,7 @@ import java.lang.annotation.*;
 /**
  * 扩展点文档注解
  * <p>
- * 用于为扩展点提供详细的文档信息，支持自动生成API文档和开发工具提示
+ * 用于为扩展点接口提供详细的文档信息，支持自动生成API文档和开发工具提示
  * <strong>主要用途：</strong>
  * <ul>
  *   <li>提供扩展点的详细描述和使用说明</li>
@@ -19,7 +19,7 @@ import java.lang.annotation.*;
  * </p>
  *
  * @author Bone Engine Team
- * @version 2.0.0
+ * @version 2.1.0
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.SOURCE)
@@ -99,6 +99,126 @@ public @interface ExtPointDoc {
     Change[] changes() default {};
     
     /**
+     * 参数说明内部注解
+     */
+    @interface Param {
+        /**
+         * 参数名称
+         */
+        String name();
+        
+        /**
+         * 参数类型
+         */
+        String type() default "";
+        
+        /**
+         * 参数描述
+         */
+        String description() default "";
+        
+        /**
+         * 是否必填
+         */
+        boolean required() default false;
+        
+        /**
+         * 默认值
+         */
+        String defaultValue() default "";
+        
+        /**
+         * 示例值
+         */
+        String example() default "";
+    }
+    
+    /**
+     * 返回值说明内部注解
+     */
+    @interface Return {
+        /**
+         * 返回值类型
+         */
+        String type() default "";
+        
+        /**
+         * 返回值描述
+         */
+        String description() default "";
+        
+        /**
+         * 示例返回值
+         */
+        String example() default "";
+        
+        /**
+         * 可能的错误码
+         */
+        ErrorCode[] errorCodes() default {};
+    }
+    
+    /**
+     * 错误码说明内部注解
+     */
+    @interface ErrorCode {
+        /**
+         * 错误码
+         */
+        String code();
+        
+        /**
+         * 错误描述
+         */
+        String description();
+        
+        /**
+         * 解决方案
+         */
+        String solution() default "";
+    }
+    
+    /**
+     * FAQ内部注解
+     */
+    @interface FAQ {
+        /**
+         * 问题
+         */
+        String question();
+        
+        /**
+         * 答案
+         */
+        String answer();
+    }
+    
+    /**
+     * 变更记录内部注解
+     */
+    @interface Change {
+        /**
+         * 版本号
+         */
+        String version();
+        
+        /**
+         * 变更内容
+         */
+        String content();
+        
+        /**
+         * 变更日期
+         */
+        String date() default "";
+        
+        /**
+         * 变更作者
+         */
+        String author() default "";
+    }
+    
+    /**
      * 创建者信息
      */
     String creator() default "";
@@ -119,132 +239,12 @@ public @interface ExtPointDoc {
     String lastUpdateDate() default "";
     
     /**
-     * 参数说明注解
+     * 扩展点名称
      */
-    @interface Param {
-        
-        /**
-         * 参数名称
-         */
-        String name();
-        
-        /**
-         * 参数类型
-         */
-        String type();
-        
-        /**
-         * 参数描述
-         */
-        String description();
-        
-        /**
-         * 是否必填
-         */
-        boolean required() default false;
-        
-        /**
-         * 默认值
-         */
-        String defaultValue() default "";
-        
-        /**
-         * 验证规则
-         */
-        String validationRules() default "";
-        
-        /**
-         * 参数示例
-         */
-        String example() default "";
-    }
+    String name() default "";
     
     /**
-     * 返回值说明注解
+     * 扩展点版本号
      */
-    @interface Return {
-        
-        /**
-         * 返回类型
-         */
-        String type() default "";
-        
-        /**
-         * 返回值描述
-         */
-        String description() default "";
-        
-        /**
-         * 错误码列表
-         */
-        ErrorCode[] errorCodes() default {};
-        
-        /**
-         * 成功示例
-         */
-        String successExample() default "";
-    }
-    
-    /**
-     * 错误码说明注解
-     */
-    @interface ErrorCode {
-        
-        /**
-         * 错误码
-         */
-        String code();
-        
-        /**
-         * 错误描述
-         */
-        String description();
-        
-        /**
-         * 解决方案建议
-         */
-        String solution() default "";
-    }
-    
-    /**
-     * 常见问题解答注解
-     */
-    @interface FAQ {
-        
-        /**
-         * 问题
-         */
-        String question();
-        
-        /**
-         * 答案
-         */
-        String answer();
-    }
-    
-    /**
-     * 版本变更历史注解
-     */
-    @interface Change {
-        
-        /**
-         * 版本号
-         */
-        String version();
-        
-        /**
-         * 变更内容
-         */
-        String content();
-        
-        /**
-         * 变更日期
-         */
-        String date();
-        
-        /**
-         * 变更者
-         */
-        String author() default "";
-    }
+    String version() default "1.0.0";
 }

@@ -10,6 +10,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
+import org.springframework.expression.EvaluationContext;
+import org.springframework.expression.Expression;
+import org.springframework.expression.ExpressionParser;
+import java.text.SimpleDateFormat;
+import org.springframework.expression.common.TemplateParserContext;
+import org.springframework.expression.spel.standard.SpelExpressionParser;
+import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -19,9 +26,10 @@ import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.NumberFormat;
-import java.text.ParseException;
+import org.springframework.expression.ParseException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,7 +40,7 @@ import java.util.regex.Pattern;
 @Component
 public class ExpressionEngine {
 
-    private static final Logger log = LoggerFactory.getLogger(ExpressionEngine.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExpressionEngine.class);
     
     // 配置参数
     private boolean cacheEnabled = true;
@@ -42,6 +50,18 @@ public class ExpressionEngine {
     // 表达式缓存
     private final Map<String, MethodCacheEntry> propertyAccessorCache = new ConcurrentHashMap<>();
     private final Map<String, String> expressionResultCache = new ConcurrentHashMap<>();
+    // SpEL表达式缓存
+    private final Map<String, Expression> compiledExpressionCache = new ConcurrentHashMap<>();
+    // 表达式解析器
+    private final ExpressionParser expressionParser;
+    // 模板解析器上下文
+    private final TemplateParserContext templateParserContext;
+    // 性能统计
+    private final AtomicLong cacheHits = new AtomicLong(0);
+    private final AtomicLong cacheMisses = new AtomicLong(0);
+    private final AtomicLong expressionEvaluations = new AtomicLong(0);
+    private final AtomicLong fieldCalculations = new AtomicLong(0);
+    private final AtomicLong fieldCalculationFailures = new AtomicLong(0);
     
     // Spring Cache支持
     private CacheManager cacheManager;
@@ -61,14 +81,27 @@ public class ExpressionEngine {
     private static class MethodCacheEntry {
         private final Method method;
         private final long creationTime;
+        private final long expirationTime;
         
         MethodCacheEntry(Method method) {
             this.method = method;
             this.creationTime = System.currentTimeMillis();
+            this.expirationTime = 0; // 默认不过期
         }
         
-        boolean isExpired(long expirationTime) {
-            return System.currentTimeMillis() - creationTime > expirationTime;
+        MethodCacheEntry(Method method, long expirationTime) {
+            this.method = method;
+            this.creationTime = System.currentTimeMillis();
+            this.expirationTime = expirationTime;
+        }
+        
+        boolean isExpired() {
+            return expirationTime > 0 && System.currentTimeMillis() - creationTime > expirationTime;
+        }
+        
+        boolean isExpired(long globalExpirationTime) {
+            long effectiveExpiration = expirationTime > 0 ? expirationTime : globalExpirationTime;
+            return System.currentTimeMillis() - creationTime > effectiveExpiration;
         }
         
         Method getMethod() {
@@ -80,6 +113,11 @@ public class ExpressionEngine {
      * 无参构造函数
      */
     public ExpressionEngine() {
+        // 初始化SpEL表达式解析器
+        this.expressionParser = new SpelExpressionParser();
+        // 初始化模板解析器上下文，使用${}作为表达式分隔符
+        this.templateParserContext = new TemplateParserContext("${", "}");
+        LOGGER.debug("ExpressionEngine initialized with SpEL and expression caching enabled");
     }
     
     /**
@@ -141,23 +179,7 @@ public class ExpressionEngine {
         this.cacheExpirationTime = cacheExpirationTime;
     }
     
-    /**
-     * 清除所有缓存
-     */
-    public void clearCache() {
-        propertyAccessorCache.clear();
-        expressionResultCache.clear();
-        
-        // 清除Spring缓存
-        if (cacheManager != null) {
-            Cache cache = cacheManager.getCache(EXPRESSION_CACHE_NAME);
-            if (cache != null) {
-                cache.clear();
-            }
-        }
-        
-        log.info("表达式引擎缓存已清除");
-    }
+    
     
     /**
      * 清理过期缓存条目
@@ -165,19 +187,19 @@ public class ExpressionEngine {
     public void cleanupExpiredCache() {
         // 清理方法缓存
         long beforeMethodSize = propertyAccessorCache.size();
-        propertyAccessorCache.entrySet().removeIf(entry -> entry.getValue().isExpired(cacheExpirationTime));
+        propertyAccessorCache.entrySet().removeIf(entry -> entry.getValue().isExpired());
         long afterMethodSize = propertyAccessorCache.size();
         
         // 清理表达式结果缓存 (简单实现，可以根据需要添加过期逻辑)
         long beforeResultSize = expressionResultCache.size();
         // 这里可以添加表达式结果缓存的过期逻辑
         
-        log.debug("清理了 {} 个过期方法缓存条目", (beforeMethodSize - afterMethodSize));
+        LOGGER.debug("Cleaned up {} expired method cache entries", (beforeMethodSize - afterMethodSize));
     }
     
     /**
      * 评估表达式并返回结果
-     * 支持${}语法的表达式，例如：${order.orderCode} - ${supplierName}
+     * 使用SpEL引擎进行表达式预编译和缓存，支持${}语法
      */
     public String evaluateExpression(String expression, Map<String, Object> context) {
         Assert.notNull(expression, "表达式不能为空");
@@ -186,11 +208,12 @@ public class ExpressionEngine {
         // 生成缓存键
         String cacheKey = expression + ":" + context.hashCode();
         
-        // 尝试从缓存获取结果
+        // 尝试从结果缓存获取
         if (cacheEnabled) {
             // 先检查本地缓存
             String cachedResult = expressionResultCache.get(cacheKey);
             if (cachedResult != null) {
+                cacheHits.incrementAndGet();
                 return cachedResult;
             }
             
@@ -199,63 +222,209 @@ public class ExpressionEngine {
             if (cache != null) {
                 String springCachedResult = cache.get(cacheKey, String.class);
                 if (springCachedResult != null) {
+                    cacheHits.incrementAndGet();
                     return springCachedResult;
                 }
             }
         }
         
         try {
-            StringBuilder result = new StringBuilder();
-            int startIndex = 0;
-            int dollarIndex;
+            expressionEvaluations.incrementAndGet();
             
-            while ((dollarIndex = expression.indexOf("$", startIndex)) != -1) {
-                // 添加${之前的文本
-                result.append(expression, startIndex, dollarIndex);
+            // 使用SpEL引擎解析和评估表达式
+            if (expression.contains("${")) {
+                // 对于模板表达式，使用模板解析器
+                String result = evaluateTemplateExpression(expression, context);
                 
-                // 检查是否是${表达式
-                if (dollarIndex + 1 < expression.length() && expression.charAt(dollarIndex + 1) == '{') {
-                    int endIndex = expression.indexOf('}', dollarIndex + 2);
-                    if (endIndex != -1) {
-                        String fieldPath = expression.substring(dollarIndex + 2, endIndex);
-                        Object value = evaluateFieldPath(fieldPath, context);
-                        result.append(value != null ? value : "");
-                        startIndex = endIndex + 1;
-                    } else {
-                        // 没有找到匹配的}
-                        result.append(expression, dollarIndex, expression.length());
-                        break;
-                    }
-                } else {
-                    // 只是一个$符号
-                    result.append("$");
-                    startIndex = dollarIndex + 1;
+                // 缓存结果
+                if (cacheEnabled) {
+                    cacheResult(cacheKey, result);
                 }
-            }
-            
-            // 添加剩余文本
-            result.append(expression.substring(startIndex));
-            
-            String finalResult = result.toString();
-            
-            // 缓存结果
-            if (cacheEnabled) {
-                expressionResultCache.put(cacheKey, finalResult);
                 
-                Cache cache = getCache();
-                if (cache != null) {
-                    cache.put(cacheKey, finalResult);
+                return result;
+            } else {
+                // 对于简单表达式，使用普通解析器
+                EvaluationContext evalContext = createEvaluationContext(context);
+                Expression expr = getOrCompileExpression(expression);
+                Object result = expr.getValue(evalContext);
+                String stringResult = result != null ? result.toString() : "";
+                
+                // 缓存结果
+                if (cacheEnabled) {
+                    cacheResult(cacheKey, stringResult);
                 }
+                
+                return stringResult;
             }
-            
-            return finalResult;
         } catch (Exception e) {
             String errorMsg = String.format("表达式计算失败: %s", expression);
-            log.error(errorMsg, e);
+            LOGGER.error(errorMsg, e);
             if (strictMode) {
                 throw new ExpressionEvaluationException(errorMsg, e);
             }
-            return expression; // 非严格模式下返回原始表达式
+            // 非严格模式下返回原始表达式，但先尝试使用原始实现作为回退
+            try {
+                return evaluateExpressionFallback(expression, context);
+            } catch (Exception fallbackEx) {
+                return expression;
+            }
+        }
+    }
+    
+    /**
+     * 评估模板表达式
+     */
+    private String evaluateTemplateExpression(String templateExpression, Map<String, Object> context) {
+        try {
+            // 预编译或从缓存获取表达式
+            Expression templateExpr = getOrCompileTemplateExpression(templateExpression);
+            
+            // 创建评估上下文
+            EvaluationContext evalContext = createEvaluationContext(context);
+            
+            // 评估表达式
+            Object result = templateExpr.getValue(evalContext, String.class);
+            return result != null ? result.toString() : "";
+        } catch (ParseException e) {
+            // 当SpEL解析失败时，回退到原始实现
+            LOGGER.warn("SpEL template parsing failed, falling back to original implementation: {}", e.getMessage());
+            return evaluateExpressionFallback(templateExpression, context);
+        }
+    }
+    
+    /**
+     * 创建评估上下文
+     */
+    private EvaluationContext createEvaluationContext(Map<String, Object> context) {
+        StandardEvaluationContext evalContext = new StandardEvaluationContext(context);
+        // 注册常用的函数和变量
+        evalContext.setVariable("util", new ExpressionUtils());
+        return evalContext;
+    }
+    
+    /**
+     * 预编译表达式或从缓存获取
+     */
+    private Expression getOrCompileExpression(String expression) {
+        return compiledExpressionCache.computeIfAbsent(expression, expr -> {
+            try {
+                cacheMisses.incrementAndGet();
+                return expressionParser.parseExpression(expr);
+            } catch (ParseException e) {
+                throw new ExpressionCompilationException("Failed to compile expression: " + expr, e);
+            }
+        });
+    }
+    
+    /**
+     * 预编译模板表达式或从缓存获取
+     */
+    private Expression getOrCompileTemplateExpression(String templateExpression) {
+        String cacheKey = "template:" + templateExpression;
+        return compiledExpressionCache.computeIfAbsent(cacheKey, expr -> {
+            try {
+                cacheMisses.incrementAndGet();
+                return expressionParser.parseExpression(expr, templateParserContext);
+            } catch (ParseException e) {
+                throw new ExpressionCompilationException("Failed to compile template expression: " + expr, e);
+            }
+        });
+    }
+    
+    /**
+     * 缓存评估结果
+     */
+    private void cacheResult(String key, String result) {
+        // 本地缓存
+        expressionResultCache.put(key, result);
+        
+        // Spring缓存
+        Cache cache = getCache();
+        if (cache != null) {
+            cache.put(key, result);
+        }
+    }
+    
+    /**
+     * 原始表达式评估实现（作为回退方案）
+     */
+    private String evaluateExpressionFallback(String expression, Map<String, Object> context) {
+        StringBuilder result = new StringBuilder();
+        int startIndex = 0;
+        int dollarIndex;
+        
+        while ((dollarIndex = expression.indexOf("$", startIndex)) != -1) {
+            // 添加${之前的文本
+            result.append(expression, startIndex, dollarIndex);
+            
+            // 检查是否是${表达式
+            if (dollarIndex + 1 < expression.length() && expression.charAt(dollarIndex + 1) == '{') {
+                int endIndex = expression.indexOf('}', dollarIndex + 2);
+                if (endIndex != -1) {
+                    String fieldPath = expression.substring(dollarIndex + 2, endIndex);
+                    Object value = evaluateFieldPath(fieldPath, context);
+                    result.append(value != null ? value : "");
+                    startIndex = endIndex + 1;
+                } else {
+                    // 没有找到匹配的}
+                    result.append(expression, dollarIndex, expression.length());
+                    break;
+                }
+            } else {
+                // 只是一个$符号
+                result.append("$");
+                startIndex = dollarIndex + 1;
+            }
+        }
+        
+        // 添加剩余文本
+        result.append(expression.substring(startIndex));
+        
+        return result.toString();
+    }
+    
+    /**
+     * 表达式工具类，提供常用的函数
+     */
+    public static class ExpressionUtils {
+        public boolean isEmpty(Object obj) {
+            return obj == null || (obj instanceof String && ((String)obj).isEmpty()) || 
+                   (obj instanceof Collection && ((Collection<?>)obj).isEmpty()) ||
+                   (obj instanceof Map && ((Map<?,?>)obj).isEmpty());
+        }
+        
+        public boolean isNotEmpty(Object obj) {
+            return !isEmpty(obj);
+        }
+        
+        public String toString(Object obj) {
+            return obj != null ? obj.toString() : "";
+        }
+        
+        public Number parseNumber(String str) {
+            try {
+                return Double.parseDouble(str);
+            } catch (NumberFormatException e) {
+                return 0;
+            }
+        }
+        
+        // ThreadLocal cache for SimpleDateFormat instances by pattern
+        private static final ThreadLocal<Map<String, SimpleDateFormat>> DATE_FORMAT_CACHE = 
+                ThreadLocal.withInitial(HashMap::new);
+                
+        public String formatDate(Date date, String pattern) {
+            if (date == null || pattern == null) {
+                return "";
+            }
+            try {
+                // Get or create SimpleDateFormat instance from ThreadLocal cache
+                SimpleDateFormat sdf = DATE_FORMAT_CACHE.get().computeIfAbsent(pattern, 
+                        SimpleDateFormat::new);
+                return sdf.format(date);
+            } catch (Exception e) {
+                return date.toString();
+            }
         }
     }
     
@@ -269,11 +438,79 @@ public class ExpressionEngine {
         Assert.notNull(expressions, "表达式映射不能为空");
         Assert.notNull(context, "上下文对象不能为空");
         
-        Map<String, String> results = new HashMap<>(expressions.size());
-        for (Map.Entry<String, String> entry : expressions.entrySet()) {
-            results.put(entry.getKey(), evaluateExpression(entry.getValue(), context));
+        if (expressions.isEmpty()) {
+            return Collections.emptyMap();
         }
-        return results;
+        
+        // 对于大量表达式，使用并行流提高性能
+        if (expressions.size() > 10) {
+            return expressions.entrySet().parallelStream()
+                    .collect(java.util.stream.Collectors.toMap(
+                            Map.Entry::getKey,
+                            entry -> evaluateExpression(entry.getValue(), context),
+                            (v1, v2) -> v1, // 处理键冲突
+                            LinkedHashMap::new // 保持插入顺序
+                    ));
+        } else {
+            // 少量表达式使用普通迭代
+            Map<String, String> results = new LinkedHashMap<>(expressions.size());
+            for (Map.Entry<String, String> entry : expressions.entrySet()) {
+                results.put(entry.getKey(), evaluateExpression(entry.getValue(), context));
+            }
+            return results;
+        }
+    }
+    
+    /**
+     * 获取表达式引擎的性能统计信息
+     */
+    public Map<String, Object> getPerformanceStats() {
+        Map<String, Object> stats = new HashMap<>();
+        stats.put("cacheHits", cacheHits.get());
+        stats.put("cacheMisses", cacheMisses.get());
+        stats.put("expressionEvaluations", expressionEvaluations.get());
+        stats.put("fieldCalculations", fieldCalculations.get());
+        stats.put("fieldCalculationFailures", fieldCalculationFailures.get());
+        stats.put("cacheSize", compiledExpressionCache.size());
+        stats.put("propertyAccessorCacheSize", propertyAccessorCache.size());
+        stats.put("expressionResultCacheSize", expressionResultCache.size());
+        
+        double totalOperations = expressionEvaluations.get() + fieldCalculations.get();
+        double hitRate = totalOperations > 0 
+            ? (double) cacheHits.get() / totalOperations 
+            : 0;
+        stats.put("cacheHitRate", hitRate);
+        
+        double failureRate = fieldCalculations.get() > 0
+            ? (double) fieldCalculationFailures.get() / fieldCalculations.get()
+            : 0;
+        stats.put("fieldCalculationFailureRate", failureRate);
+        
+        return stats;
+    }
+    
+    /**
+     * 清除表达式缓存
+     */
+    public void clearCache() {
+        propertyAccessorCache.clear();
+        expressionResultCache.clear();
+        compiledExpressionCache.clear();
+        
+        Cache cache = getCache();
+        if (cache != null) {
+            try {
+                cache.clear();
+            } catch (Exception e) {
+                LOGGER.warn("Failed to clear Spring Cache", e);
+            }
+        }
+        
+        // 重置统计计数器
+        cacheHits.set(0);
+        cacheMisses.set(0);
+        
+        LOGGER.info("Expression engine cache cleared");
     }
     
     /**
@@ -285,115 +522,116 @@ public class ExpressionEngine {
     
     /**
      * 评估布尔表达式并返回结果
-     * 支持基本的比较运算符: ==, !=, >, >=, <, <=
-     * 支持基本的逻辑运算符: &&, ||, !
-     * 支持括号嵌套
+     * 使用SpEL引擎进行更强大的布尔表达式评估
      */
     public boolean evaluateBooleanExpression(String expression, Map<String, Object> context) {
         Assert.notNull(expression, "表达式不能为空");
         Assert.notNull(context, "上下文对象不能为空");
         
         try {
-            // 处理${}占位符，替换为实际值
-            String processedExpression = evaluateExpression(expression, context);
+            expressionEvaluations.incrementAndGet();
             
-            // 去除多余空格
-            processedExpression = processedExpression.trim();
+            // 处理${}占位符
+            String booleanExpression = expression.contains("$") ? 
+                evaluateExpression(expression, context) : expression;
             
             // 处理简单的布尔字面量
-            if ("true".equalsIgnoreCase(processedExpression)) {
+            if ("true".equalsIgnoreCase(booleanExpression.trim())) {
                 return true;
             }
-            if ("false".equalsIgnoreCase(processedExpression)) {
+            if ("false".equalsIgnoreCase(booleanExpression.trim())) {
                 return false;
             }
             
-            // 处理括号嵌套 (递归处理)
-            processedExpression = resolveParentheses(processedExpression, context);
-            
-            // 处理逻辑运算符 && 和 || (短路逻辑)
-            if (processedExpression.contains("&&")) {
-                String[] parts = processedExpression.split("&&");
-                for (String part : parts) {
-                    if (!evaluateBooleanExpression(part.trim(), context)) {
-                        return false; // 短路：一旦有一个为false，整个AND表达式为false
-                    }
-                }
-                return true;
-            } else if (processedExpression.contains("||")) {
-                String[] parts = processedExpression.split("\\|\\|");
-                for (String part : parts) {
-                    if (evaluateBooleanExpression(part.trim(), context)) {
-                        return true; // 短路：一旦有一个为true，整个OR表达式为true
-                    }
-                }
-                return false;
+            try {
+                // 使用SpEL引擎评估布尔表达式
+                Expression expr = getOrCompileExpression(booleanExpression);
+                EvaluationContext evalContext = createEvaluationContext(context);
+                return Boolean.TRUE.equals(expr.getValue(evalContext, Boolean.class));
+            } catch (Exception e) {
+                // SpEL评估失败时，回退到原始实现
+                LOGGER.warn("SpEL boolean expression evaluation failed, falling back to original implementation: {}", e.getMessage());
+                return evaluateBooleanExpressionFallback(booleanExpression, context);
             }
-            
-            // 处理否定运算符 !
-            if (processedExpression.startsWith("!")) {
-                String innerExpression = processedExpression.substring(1).trim();
-                return !evaluateBooleanExpression(innerExpression, context);
-            }
-            
-            log.debug("评估布尔表达式: {}", processedExpression);
-            
-            // 处理数值比较表达式
-            // 支持格式: 数值 操作符 数值
-            Pattern comparePattern = Pattern.compile("([0-9.]+)\\s*([=!<>]=?)\\s*([0-9.]+)");
-            Matcher matcher = comparePattern.matcher(processedExpression);
-            
-            if (matcher.matches()) {
-                double leftValue = Double.parseDouble(matcher.group(1));
-                String operator = matcher.group(2);
-                double rightValue = Double.parseDouble(matcher.group(3));
-                
-                return evaluateComparison(leftValue, operator, rightValue);
-            }
-            
-            // 处理字符串比较
-            if (processedExpression.startsWith("'")) {
-                Pattern stringComparePattern = Pattern.compile("'([^']+)'\\s*([=!<>]=?)\\s*'([^']+)'");
-                Matcher stringMatcher = stringComparePattern.matcher(processedExpression);
-                if (stringMatcher.matches()) {
-                    String leftStr = stringMatcher.group(1);
-                    String operator = stringMatcher.group(2);
-                    String rightStr = stringMatcher.group(3);
-                    
-                    if ("==".equals(operator)) {
-                        return leftStr.equals(rightStr);
-                    } else if ("!=".equals(operator)) {
-                        return !leftStr.equals(rightStr);
-                    } else if (">=".equals(operator)) {
-                        return leftStr.compareTo(rightStr) >= 0;
-                    } else if ("<=".equals(operator)) {
-                        return leftStr.compareTo(rightStr) <= 0;
-                    } else if (">=".equals(operator)) {
-                        return leftStr.compareTo(rightStr) > 0;
-                    } else if ("<".equals(operator)) {
-                        return leftStr.compareTo(rightStr) < 0;
-                    }
-                }
-            }
-            
-            // 处理基本的 >, < 关系
-            if (processedExpression.contains(">0") && !processedExpression.contains("<0")) {
-                return true;
-            }
-            if (processedExpression.contains("<1") && !processedExpression.contains(">0")) {
-                return processedExpression.contains("=0");
-            }
-            
-            // 默认返回false
-            return false;
         } catch (Exception e) {
             String errorMsg = String.format("布尔表达式计算失败: %s", expression);
-            log.error(errorMsg, e);
+            LOGGER.error(errorMsg, e);
             if (strictMode) {
                 throw new ExpressionEvaluationException(errorMsg, e);
             }
             return false; // 非严格模式下返回false
         }
+    }
+    
+    /**
+     * 原始布尔表达式评估实现（作为回退方案）
+     */
+    private boolean evaluateBooleanExpressionFallback(String expression, Map<String, Object> context) {
+        // 去除多余空格
+        String processedExpression = expression.trim();
+        
+        // 处理括号嵌套 (递归处理)
+        processedExpression = resolveParentheses(processedExpression, context);
+        
+        // 处理逻辑运算符 && 和 || (短路逻辑)
+        if (processedExpression.contains("&&")) {
+            String[] parts = processedExpression.split("&&");
+            for (String part : parts) {
+                if (!evaluateBooleanExpressionFallback(part.trim(), context)) {
+                    return false; // 短路：一旦有一个为false，整个AND表达式为false
+                }
+            }
+            return true;
+        } else if (processedExpression.contains("||")) {
+            String[] parts = processedExpression.split("\\|\\|");
+            for (String part : parts) {
+                if (evaluateBooleanExpressionFallback(part.trim(), context)) {
+                    return true; // 短路：一旦有一个为true，整个OR表达式为true
+                }
+            }
+            return false;
+        }
+        
+        // 处理否定运算符 !
+        if (processedExpression.startsWith("!")) {
+            String innerExpression = processedExpression.substring(1).trim();
+            return !evaluateBooleanExpressionFallback(innerExpression, context);
+        }
+        
+        // 处理数值比较表达式
+        Pattern comparePattern = Pattern.compile("([0-9.]+)\\s*([=!<>]=?)\\s*([0-9.]+)");
+        Matcher matcher = comparePattern.matcher(processedExpression);
+        
+        if (matcher.matches()) {
+            double leftValue = Double.parseDouble(matcher.group(1));
+            String operator = matcher.group(2);
+            double rightValue = Double.parseDouble(matcher.group(3));
+            
+            return evaluateComparison(leftValue, operator, rightValue);
+        }
+        
+        // 处理字符串比较
+        if (processedExpression.startsWith("'")) {
+            Pattern stringComparePattern = Pattern.compile("'([^']+)'\\s*([=!<>]=?)\\s*'([^']+)'", Pattern.DOTALL);
+            Matcher stringMatcher = stringComparePattern.matcher(processedExpression);
+            if (stringMatcher.matches()) {
+                String leftStr = stringMatcher.group(1);
+                String operator = stringMatcher.group(2);
+                String rightStr = stringMatcher.group(3);
+                
+                switch (operator) {
+                    case "==": return leftStr.equals(rightStr);
+                    case "!=": return !leftStr.equals(rightStr);
+                    case ">=": return leftStr.compareTo(rightStr) >= 0;
+                    case "<=": return leftStr.compareTo(rightStr) <= 0;
+                    case ">": return leftStr.compareTo(rightStr) > 0;
+                    case "<": return leftStr.compareTo(rightStr) < 0;
+                }
+            }
+        }
+        
+        // 默认返回false
+        return false;
     }
     
     /**
@@ -411,11 +649,12 @@ public class ExpressionEngine {
         matcher.appendTail(sb);
         
         // 如果还有括号，继续递归处理
-        if (sb.toString().contains("(")) {
-            return resolveParentheses(sb.toString(), context);
+        String result = sb.toString();
+        if (result.contains("(")) {
+            return resolveParentheses(result, context);
         }
         
-        return sb.toString();
+        return result;
     }
     
     /**
@@ -437,7 +676,7 @@ public class ExpressionEngine {
             case "<=":
                 return left <= right + DOUBLE_EPSILON;
             default:
-                log.warn("不支持的比较运算符: {}", operator);
+                LOGGER.warn("Unsupported comparison operator: {}", operator);
                 return false;
         }
     }
@@ -535,12 +774,12 @@ public class ExpressionEngine {
             try {
                 return new BigDecimal((String) value).setScale(2, RoundingMode.HALF_UP);
             } catch (NumberFormatException e) {
-                log.warn("无法转换字符串为数值: {}", value);
+                LOGGER.warn("Failed to convert string to numeric value: {}", value);
                 return BigDecimal.ZERO;
             }
         }
         
-        log.warn("无法转换类型为数值: {}", value.getClass().getName());
+        LOGGER.warn("Failed to convert type to numeric value: {}", value.getClass().getName());
         return BigDecimal.ZERO;
     }
     
@@ -571,7 +810,7 @@ public class ExpressionEngine {
             
             return current;
         } catch (Exception e) {
-            log.debug("字段路径评估失败: {}", fieldPath, e);
+            LOGGER.debug("Field path evaluation failed: {}", fieldPath, e);
             return null;
         }
     }
@@ -580,7 +819,7 @@ public class ExpressionEngine {
      * 通过反射获取对象的属性值
      */
     private Object getPropertyValue(Object obj, String propertyName) {
-        if (obj == null || StringUtils.isEmpty(propertyName)) {
+        if (obj == null || propertyName == null || propertyName.trim().isEmpty()) {
             return null;
         }
         
@@ -591,60 +830,45 @@ public class ExpressionEngine {
             
             if (cacheEnabled) {
                 MethodCacheEntry entry = propertyAccessorCache.get(cacheKey);
-                if (entry != null && !entry.isExpired(cacheExpirationTime)) {
+                if (entry != null && !entry.isExpired()) {
                     getterMethod = entry.getMethod();
                 }
             }
             
             if (getterMethod == null) {
-                // 构造getter方法名
-                String getterName = "get" + Character.toUpperCase(propertyName.charAt(0)) + propertyName.substring(1);
-                
-                try {
-                    getterMethod = obj.getClass().getMethod(getterName);
-                } catch (NoSuchMethodException e) {
-                    // 尝试is方法（用于布尔类型）
-                    String isName = "is" + Character.toUpperCase(propertyName.charAt(0)) + propertyName.substring(1);
-                    try {
-                        getterMethod = obj.getClass().getMethod(isName);
-                    } catch (NoSuchMethodException ex) {
-                        // 如果是Map，直接获取值
-                        if (obj instanceof Map) {
-                            return ((Map<?, ?>) obj).get(propertyName);
-                        }
-                        // 如果是数组或集合，尝试索引访问
-                        if (propertyName.matches("\\d+")) {
-                            int index = Integer.parseInt(propertyName);
-                            if (obj instanceof List && index < ((List<?>) obj).size()) {
-                                return ((List<?>) obj).get(index);
-                            }
-                            if (obj.getClass().isArray() && index < java.lang.reflect.Array.getLength(obj)) {
-                                return java.lang.reflect.Array.get(obj, index);
-                            }
-                        }
-                        // 尝试通过Jackson获取JSON属性
-                        if (objectMapper != null) {
-                            try {
-                                return objectMapper.convertValue(obj, Map.class).get(propertyName);
-                            } catch (Exception jsonEx) {
-                                // 忽略JSON转换错误
-                            }
-                        }
-                        throw ex;
-                    }
-                }
+                getterMethod = findGetterMethod(obj, propertyName);
                 
                 // 缓存方法
-                if (cacheEnabled) {
-                    propertyAccessorCache.put(cacheKey, new MethodCacheEntry(getterMethod));
+                if (cacheEnabled && getterMethod != null) {
+                    propertyAccessorCache.put(cacheKey, new MethodCacheEntry(getterMethod, cacheExpirationTime));
                 }
             }
             
             // 调用getter方法
-            return getterMethod.invoke(obj);
+            return getterMethod != null ? getterMethod.invoke(obj) : null;
         } catch (Exception e) {
-            log.debug("获取属性值失败: {}.{}", obj.getClass().getName(), propertyName, e);
+            LOGGER.debug("Failed to get property value: {}.{}", obj.getClass().getName(), propertyName, e);
             return null;
+        }
+    }
+    
+    /**
+     * 查找getter方法
+     */
+    private Method findGetterMethod(Object obj, String propertyName) throws Exception {
+        // 构造getter方法名
+        String getterName = "get" + Character.toUpperCase(propertyName.charAt(0)) + propertyName.substring(1);
+        
+        try {
+            return obj.getClass().getMethod(getterName);
+        } catch (NoSuchMethodException e) {
+            // 尝试is方法（用于布尔类型）
+            String isName = "is" + Character.toUpperCase(propertyName.charAt(0)) + propertyName.substring(1);
+            try {
+                return obj.getClass().getMethod(isName);
+            } catch (NoSuchMethodException ex) {
+                throw ex;
+            }
         }
     }
     
@@ -652,8 +876,12 @@ public class ExpressionEngine {
      * 计算实体中的虚拟字段和公式字段
      */
     public <T extends SmartBaseEntity> T calculateFields(T entity, EntityMetadata entityMetadata) {
+        Assert.notNull(entity, "实体对象不能为空");
+        Assert.notNull(entityMetadata, "实体元数据不能为空");
+        
         try {
-            log.debug("计算实体 {} 的字段", entityMetadata.getApiName());
+            LOGGER.debug("Calculating fields for entity {}", entityMetadata.getApiName());
+            fieldCalculations.incrementAndGet();
             
             // 创建实体上下文Map用于表达式计算
             Map<String, Object> context = createEntityContext(entity);
@@ -666,8 +894,13 @@ public class ExpressionEngine {
             
             return entity;
         } catch (Exception e) {
-            log.error("计算实体字段失败: {}", e.getMessage(), e);
-            throw new RuntimeException("计算实体字段失败: " + e.getMessage(), e);
+            fieldCalculationFailures.incrementAndGet();
+            String errorMsg = String.format("计算实体字段失败: %s", entityMetadata.getApiName());
+            LOGGER.error(errorMsg, e);
+            if (strictMode) {
+                throw new RuntimeException(errorMsg, e);
+            }
+            return entity;
         }
     }
     
@@ -701,23 +934,28 @@ public class ExpressionEngine {
     private <T extends SmartBaseEntity> void calculateVirtualFields(T entity, EntityMetadata entityMetadata, Map<String, Object> context) {
         for (SmartFieldMetadata field : entityMetadata.getFields().values()) {
             if (field.isVirtual() && field.getCalculationExpression() != null) {
-                try {
-                    log.debug("计算虚拟字段: {}, 表达式: {}", field.getApiName(), field.getCalculationExpression());
-                    
-                    // 使用表达式引擎计算字段值
-                    String result = evaluateExpression(field.getCalculationExpression(), context);
-                    
-                    // 设置计算结果到实体
-                    setFieldValue(entity, field.getApiName(), result);
-                    
-                    log.debug("虚拟字段 {} 计算结果: {}", field.getApiName(), result);
-                } catch (Exception e) {
-                    log.error("计算虚拟字段 {} 失败: {}", field.getApiName(), e.getMessage(), e);
-                    if (strictMode) {
-                        throw new RuntimeException("计算虚拟字段失败: " + field.getApiName(), e);
-                    }
-                }
+                calculateFieldWithErrorHandling(entity, field, context);
             }
+        }
+    }
+    
+    /**
+     * 计算字段并进行错误处理
+     */
+    private <T extends SmartBaseEntity> void calculateFieldWithErrorHandling(T entity, SmartFieldMetadata field, Map<String, Object> context) {
+        try {
+            LOGGER.debug("Calculating virtual field: {}, expression: {}", field.getApiName(), field.getCalculationExpression());
+            
+            // 使用表达式引擎计算字段值
+            String result = evaluateExpression(field.getCalculationExpression(), context);
+            
+            // 设置计算结果到实体
+            setFieldValue(entity, field.getApiName(), result);
+            
+            LOGGER.debug("Virtual field {} calculation result: {}", field.getApiName(), result);
+        } catch (Exception e) {
+            fieldCalculationFailures.incrementAndGet();
+            LOGGER.error("Failed to calculate virtual field {}: {}", field.getApiName(), e.getMessage(), e);
         }
     }
     
@@ -729,7 +967,7 @@ public class ExpressionEngine {
             // 暂时注释掉isFormulaField()和getFormula()调用，因为SmartFieldMetadata类中似乎没有这些方法
             // if (field.isFormulaField() && field.getFormula() != null) {
             //     try {
-            //         log.debug("计算公式字段: {}, 公式: {}", field.getApiName(), field.getFormula());
+            //         LOGGER.debug("Calculating formula field: {}, formula: {}", field.getApiName(), field.getFormula());
             //         
             //         // 处理简单的数学公式
             //         Object result = evaluateMathExpression(field.getFormula(), context);
@@ -737,7 +975,8 @@ public class ExpressionEngine {
             //         // 设置计算结果到实体
             //         setFieldValue(entity, field.getApiName(), result);
             //     } catch (Exception e) {
-            //         log.error("计算公式字段 '{}' 出错: {}", field.getApiName(), e.getMessage());
+            //         fieldCalculationFailures.incrementAndGet();
+            //         LOGGER.error("Error calculating formula field '{}': {}", field.getApiName(), e.getMessage());
             //     }
             // }
         }
@@ -745,18 +984,26 @@ public class ExpressionEngine {
     
     /**
      * 计算数学表达式
+     * 使用SpEL引擎进行高性能的数学表达式计算
      */
     private Object evaluateMathExpression(String formula, Map<String, Object> context) {
         // 替换公式中的变量引用
         String processedFormula = replaceVariables(formula, context);
         
-        // 简单的数学表达式计算实现
-        // 支持: +, -, *, /, % 操作符
         try {
-            return evaluateSimpleMath(processedFormula);
+            // 使用SpEL引擎计算数学表达式
+            Expression expr = getOrCompileExpression(processedFormula);
+            EvaluationContext evalContext = createEvaluationContext(context);
+            return expr.getValue(evalContext);
         } catch (Exception e) {
-            log.warn("简单数学表达式计算失败，返回原始值: {}", e.getMessage());
-            return processedFormula;
+            // SpEL计算失败时，回退到原始实现
+            LOGGER.warn("SpEL mathematical expression calculation failed, falling back to original implementation: {}", e.getMessage());
+            try {
+                return evaluateSimpleMath(processedFormula);
+            } catch (Exception ex) {
+                LOGGER.warn("Simple mathematical expression calculation failed, returning original value: {}", ex.getMessage());
+                return processedFormula;
+            }
         }
     }
     
@@ -870,36 +1117,41 @@ public class ExpressionEngine {
                 dynamicEntity.setField(fieldName, value);
             } else {
                 // 对于普通实体，使用反射设置字段值
-                String setterName = "set" + Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1);
-                // 由于T是SmartBaseEntity的子类，而SmartBaseEntity继承自Object，所以应该可以调用getClass()
-                Object entityObj = entity;
-                Class<?> entityClass = entityObj.getClass();
-                
-                // 尝试查找精确匹配类型的setter方法
-                Method setterMethod = null;
-                for (Method method : entityClass.getMethods()) {
-                    if (method.getName().equals(setterName) && method.getParameterCount() == 1) {
-                        // 找到匹配名称的setter方法
-                        setterMethod = method;
-                        // 尝试类型转换并设置值
-                        Class<?> paramType = setterMethod.getParameterTypes()[0];
-                        Object convertedValue = convertValueToType(value, paramType);
-                        setterMethod.invoke(entity, convertedValue);
-                        break;
-                    }
-                }
-                
-                if (setterMethod == null) {
-                    log.warn("无法设置字段 {} 的值，setter方法不存在", fieldName);
-                }
+                setFieldValueUsingReflection(entity, fieldName, value);
             }
         } catch (Exception e) {
-            Object entityObj = entity;
-            log.error("设置字段值失败: {}.{}", entityObj.getClass().getName(), fieldName, e);
+            LOGGER.error("Failed to set field value: {}.{}", entity.getClass().getName(), fieldName, e);
             if (strictMode) {
                 throw new RuntimeException("设置字段值失败: " + fieldName, e);
             }
         }
+    }
+    
+    /**
+     * 使用反射设置字段值
+     */
+    private <T extends SmartBaseEntity> void setFieldValueUsingReflection(T entity, String fieldName, Object value) {
+        String setterName = "set" + Character.toUpperCase(fieldName.charAt(0)) + fieldName.substring(1);
+        Class<?> entityClass = entity.getClass();
+        
+        // 尝试查找精确匹配类型的setter方法
+        for (Method method : entityClass.getMethods()) {
+            if (method.getName().equals(setterName) && method.getParameterCount() == 1) {
+                // 找到匹配名称的setter方法
+                // 尝试类型转换并设置值
+                Class<?> paramType = method.getParameterTypes()[0];
+                Object convertedValue = convertValueToType(value, paramType);
+                try {
+                    method.invoke(entity, convertedValue);
+                } catch (Exception e) {
+                    LOGGER.error("Failed to call setter method: {}.{}", entityClass.getName(), setterName, e);
+                    // 不再重新抛出异常，避免IllegalAccessException未捕获问题
+                }
+                return;
+            }
+        }
+        
+        LOGGER.warn("Failed to set value for field {}, setter method does not exist", fieldName);
     }
     
     /**
@@ -960,7 +1212,7 @@ public class ExpressionEngine {
             try {
                 return objectMapper.convertValue(value, targetType);
             } catch (Exception e) {
-                log.debug("类型转换失败: {} -> {}", value.getClass().getName(), targetType.getName());
+                LOGGER.debug("Type conversion failed: {} -> {}", value.getClass().getName(), targetType.getName());
             }
         }
         
@@ -976,6 +1228,19 @@ public class ExpressionEngine {
         }
         
         public ExpressionEvaluationException(String message, Throwable cause) {
+            super(message, cause);
+        }
+    }
+    
+    /**
+     * 表达式编译异常
+     */
+    public static class ExpressionCompilationException extends RuntimeException {
+        public ExpressionCompilationException(String message) {
+            super(message);
+        }
+        
+        public ExpressionCompilationException(String message, Throwable cause) {
             super(message, cause);
         }
     }

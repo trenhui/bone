@@ -356,7 +356,9 @@ public class TransformationEngine {
             return new HashMap<>();
         }
         try {
-            return objectMapper.readValue(json, Map.class);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> resultMap = (Map<String, Object>) objectMapper.readValue(json, Map.class);
+            return resultMap;
         } catch (JsonProcessingException e) {
             log.error("JSON反序列化失败: {}", e.getMessage(), e);
             return new HashMap<>();
@@ -368,7 +370,8 @@ public class TransformationEngine {
      * @param maps 多个映射
      * @return 合并后的映射
      */
-    public Map<String, Object> mergeMaps(Map<String, Object>... maps) {
+    @SafeVarargs
+    public final Map<String, Object> mergeMaps(Map<String, Object>... maps) {
         Map<String, Object> result = new HashMap<>();
         
         for (Map<String, Object> map : maps) {

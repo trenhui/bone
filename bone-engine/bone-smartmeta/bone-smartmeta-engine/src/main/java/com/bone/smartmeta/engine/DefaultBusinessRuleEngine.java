@@ -4,7 +4,6 @@ import com.bone.smartmeta.engine.model.BusinessRuleMetadata;
 import com.bone.smartmeta.engine.model.DynamicSmartEntity;
 import com.bone.smartmeta.engine.model.ValidationResult;
 import com.bone.smartmeta.engine.rule.BusinessRuleRegistry;
-import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -17,32 +16,30 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * 业务规则引擎默认实现
- * 提供业务规则的验证和执行功能
+ * Default implementation of the Business Rule Engine
+ * Provides business rule validation and execution functionality
  */
-@Slf4j
 public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
-    // 显式声明Logger以避免注解问题
-    private static final Logger log = LoggerFactory.getLogger(DefaultBusinessRuleEngine.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultBusinessRuleEngine.class);
     
-    // 元数据引擎
+    // Metadata engine
     private final MetadataEngine metadataEngine;
     
-    // 规则执行超时时间（毫秒）
+    // Rule execution timeout (milliseconds)
     private final long ruleExecutionTimeoutMs;
     
-    // 线程池，用于规则执行
+    // Thread pool for rule execution
     private final ExecutorService executorService;
     
-    // 字段引用模式
+    // Field reference pattern
     private static final Pattern FIELD_REFERENCE_PATTERN = Pattern.compile("\\$\\{([\\w\\.]+)\\}");
     
-    // 规则执行结果缓存
+    // Rule execution result cache
     private final ConcurrentHashMap<String, Boolean> ruleValidationCache = new ConcurrentHashMap<>();
     
     /**
-     * 构造函数
-     * @param metadataEngine 元数据引擎
+     * Constructor with metadata engine
+     * @param metadataEngine the metadata engine
      */
     public DefaultBusinessRuleEngine(MetadataEngine metadataEngine) {
         this.metadataEngine = metadataEngine;
@@ -64,7 +61,7 @@ public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
     }
     
     /**
-     * 默认构造函数
+     * Default constructor
      */
     public DefaultBusinessRuleEngine() {
         this.metadataEngine = null;
@@ -100,7 +97,7 @@ public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
                 entityApiName = (String) apiNameObj;
             }
         } catch (Exception ignore) {
-            // 忽略异常
+            // Ignore exception
         }
         
         if (entityApiName == null) {
@@ -126,7 +123,7 @@ public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
                     entityApiNameObj = entityApiNameField.get(entity);
                 }
             } catch (Exception e) {
-                log.warn("Failed to get entityApiName field", e);
+                LOGGER.warn("Failed to get entityApiName field", e);
             }
             String entityApiName = entityApiNameObj instanceof String ? (String) entityApiNameObj : "unknown";
             
@@ -157,13 +154,13 @@ public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
                     } catch (Exception ex) {
                         // 忽略获取名称时的异常
                     }
-                    log.error("Error executing action rule {} for entity {} on event {}", 
+                    LOGGER.error("Error executing action rule {} for entity {} on event {}", 
                               ruleName, entityApiName, eventType, e);
                     // 操作规则失败不应阻止主流程，仅记录错误
                 }
             }
         } catch (Exception e) {
-            log.error("Error in executeActionRules", e);
+            LOGGER.error("Error in executeActionRules", e);
         }
     }
     
@@ -184,7 +181,7 @@ public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
                     expression = (String) exprObj;
                 }
             } catch (Exception e) {
-                log.warn("Failed to get expression field", e);
+                LOGGER.warn("Failed to get expression field", e);
             }
             
             // 验证规则表达式格式
@@ -201,7 +198,7 @@ public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
                 } catch (Exception e) {
                     // 忽略获取名称时的异常
                 }
-                log.error("Invalid rule expression format for rule {}", ruleName);
+                LOGGER.error("Invalid rule expression format for rule {}", ruleName);
                 return null;
             }
             
@@ -218,7 +215,7 @@ public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
             // 执行表达式
             return executeExpression(processedExpression, executionContext);
         } catch (Exception e) {
-            log.error("Error executing rule: {}", e.getMessage(), e);
+            LOGGER.error("Error executing rule: {}", e.getMessage(), e);
             return null;
         }
     }
@@ -239,7 +236,7 @@ public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
                 expression = (String) exprObj;
             }
         } catch (Exception e) {
-            log.warn("Failed to get expression field", e);
+            LOGGER.warn("Failed to get expression field", e);
             return false;
         }
         
@@ -277,7 +274,7 @@ public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
             } catch (Exception ex) {
                 // 忽略获取名称时的异常
             }
-            log.warn("Rule validation failed: {}", ruleName, e);
+            LOGGER.warn("Rule validation failed: {}", ruleName, e);
             return false;
         }
     }
@@ -298,7 +295,7 @@ public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
                 expression = (String) exprObj;
             }
         } catch (Exception e) {
-            log.warn("Failed to get expression field", e);
+            LOGGER.warn("Failed to get expression field", e);
             return Collections.emptyList();
         }
         
@@ -327,13 +324,13 @@ public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
             // 简化实现：返回空列表，因为metadataEngine.getMetadataRegistry()方法不存在
             return Collections.emptyList();
         } catch (Exception e) {
-            log.error("Error getting rules for entity {} and event {}", entityApiName, eventType, e);
+            LOGGER.error("Error getting rules for entity {} and event {}", entityApiName, eventType, e);
             return Collections.emptyList();
         }
     }
     
     /**
-     * 执行验证规则
+     * Execute validation rule
      */
     private boolean executeValidationRule(DynamicSmartEntity entity, BusinessRuleMetadata rule) {
         try {
@@ -367,7 +364,7 @@ public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
             } catch (Exception ex) {
                 // 忽略获取名称时的异常
             }
-            log.error("Validation rule {} execution timed out", ruleName);
+            LOGGER.error("Validation rule {} execution timed out", ruleName);
             return false;
         } catch (Exception e) {
             // 使用默认名称避免调用不存在的方法
@@ -382,13 +379,13 @@ public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
             } catch (Exception ex) {
                 // 忽略获取名称时的异常
             }
-            log.error("Error executing validation rule {}", ruleName, e);
+            LOGGER.error("Error executing validation rule {}", ruleName, e);
             return false;
         }
     }
     
     /**
-     * 执行操作规则
+     * Execute action rule
      */
     private void executeActionRule(DynamicSmartEntity entity, BusinessRuleMetadata rule, String eventType) {
         if (entity == null || rule == null || eventType == null) {
@@ -411,7 +408,7 @@ public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
                 }
             }
         } catch (Exception e) {
-            log.warn("Failed to get triggerEvents field", e);
+            LOGGER.warn("Failed to get triggerEvents field", e);
         }
         
         // 检查规则是否匹配当前事件
@@ -440,12 +437,12 @@ public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
             } catch (Exception ex) {
                 // 忽略获取名称时的异常
             }
-            log.error("Error executing action rule {}", ruleName, e);
+            LOGGER.error("Error executing action rule {}", ruleName, e);
         }
     }
     
     /**
-     * 替换字段引用为实际值
+     * Replace field references with actual values
      */
     private String replaceFieldReferences(String expression, DynamicSmartEntity entity) {
         String result = expression;
@@ -464,7 +461,7 @@ public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
     }
     
     /**
-     * 获取字段值
+     * Get field value
      */
     private Object getFieldValue(DynamicSmartEntity entity, String fieldPath) {
         if (fieldPath.contains(".")) {
@@ -490,7 +487,7 @@ public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
     }
     
     /**
-     * 将值转换为字符串表示
+     * Convert value to string representation
      */
     private String convertValueToString(Object value) {
         if (value == null) {
@@ -509,7 +506,7 @@ public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
     }
     
     /**
-     * 执行表达式
+     * Execute expression
      */
     private Object executeExpression(String expression, Map<String, Object> context) {
         // 简单实现，实际应使用表达式引擎如SpEL、OGNL等
@@ -527,16 +524,16 @@ public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
             // 例如使用反射执行方法调用，处理算术表达式等
             
             // 对于复杂表达式，建议使用第三方表达式引擎
-            log.warn("Simple expression execution only supports basic literals, consider using a full expression engine");
+            LOGGER.warn("Simple expression execution only supports basic literals, consider using a full expression engine");
             return expression;
         } catch (Exception e) {
-            log.error("Error executing expression: {}", expression, e);
+            LOGGER.error("Error executing expression: {}", expression, e);
             throw e;
         }
     }
     
     /**
-     * 验证表达式格式
+     * Validate expression format
      */
     private boolean isValidExpressionFormat(String expression) {
         // 检查括号匹配
@@ -552,7 +549,7 @@ public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
     }
     
     /**
-     * 关闭引擎，释放资源
+     * Shutdown engine and release resources
      */
     public void shutdown() {
         executorService.shutdown();
@@ -568,6 +565,6 @@ public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
         // 清空缓存
         ruleValidationCache.clear();
         
-        log.info("BusinessRuleEngine shutdown");
+        LOGGER.info("BusinessRuleEngine shutdown");
     }
 }

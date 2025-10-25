@@ -1,6 +1,7 @@
 package com.bone.engine.extension.config;
 
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -27,10 +28,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Bone Engine Team
  * @version 1.0.0
  */
-@Slf4j
 @Component
 public class ExtensionConfigManager {
-
+    private static final Logger log = LoggerFactory.getLogger(ExtensionConfigManager.class);
+    
     private static final String PROPERTY_PREFIX = "bone.extension.";
     
     // 配置缓存

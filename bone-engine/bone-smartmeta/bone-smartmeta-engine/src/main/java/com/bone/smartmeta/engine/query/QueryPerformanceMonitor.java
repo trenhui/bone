@@ -8,12 +8,11 @@ import org.springframework.stereotype.Component;
 /**
  * 查询性能监控器，用于记录和监控查询执行性能
  */
-@Slf4j
 @Component
 public class QueryPerformanceMonitor {
     
     // 手动添加log变量，因为@Slf4j注解可能没有正确工作
-    private static final Logger log = LoggerFactory.getLogger(QueryPerformanceMonitor.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(QueryPerformanceMonitor.class);
     
     // 慢查询阈值（毫秒）
     private static final long SLOW_QUERY_THRESHOLD = 1000;
@@ -41,11 +40,11 @@ public class QueryPerformanceMonitor {
         // 记录日志
         if (executionTime > SLOW_QUERY_THRESHOLD) {
             // 慢查询记录为警告级别
-            log.warn("{}", metricsBuilder.toString());
-            log.warn("慢查询SQL: {}", context.getGeneratedSql());
+            LOGGER.warn("{}", metricsBuilder.toString());
+        LOGGER.warn("Slow query SQL: {}", context.getGeneratedSql());
         } else {
             // 普通查询记录为调试级别
-            log.debug("{}", metricsBuilder.toString());
+            LOGGER.debug("{}", metricsBuilder.toString());
         }
         
         // 这里可以添加将性能指标保存到数据库或监控系统的逻辑

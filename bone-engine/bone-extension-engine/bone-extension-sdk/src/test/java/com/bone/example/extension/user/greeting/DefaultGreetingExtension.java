@@ -4,7 +4,8 @@ import com.bone.engine.extension.context.BizContext;
 import com.bone.engine.extension.Extension;
 import com.bone.engine.extension.annotation.ExtensionDoc;
 import org.springframework.stereotype.Service;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 默认问候实现
@@ -36,8 +37,8 @@ import lombok.extern.slf4j.Slf4j;
     createDate = "2024-01-01"
 )
 @Service
-@Slf4j
 public class DefaultGreetingExtension implements GreetingExtPoint {
+    private static final Logger log = LoggerFactory.getLogger(DefaultGreetingExtension.class);
     private static final String DEFAULT_GREETING_TEMPLATE = "Hello, %s!";
     
     @Override

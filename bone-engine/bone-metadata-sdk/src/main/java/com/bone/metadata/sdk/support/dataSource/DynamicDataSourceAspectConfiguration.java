@@ -12,7 +12,7 @@ import org.springframework.core.Ordered;
 
 /**
  * 动态数据源切面配置类
- * 配置AOP切面，拦截@DS注解的方法调用
+ * 配置AOP切面，拦截@DataSourceSwitch注解的方法调用
  */
 @Configuration(proxyBeanMethods = false)
 public class DynamicDataSourceAspectConfiguration {
@@ -20,9 +20,9 @@ public class DynamicDataSourceAspectConfiguration {
     private static final Logger log = LoggerFactory.getLogger(DynamicDataSourceAspectConfiguration.class);
     
     /**
-     * 默认的切点表达式，拦截所有带有@DS注解的方法和类
+     * 默认的切点表达式，拦截所有带有@DataSourceSwitch注解的方法和类
      */
-    private static final String DEFAULT_POINTCUT_EXPRESSION = "@annotation(com.bone.metadata.sdk.support.dataSource.DS) || @within(com.bone.metadata.sdk.support.dataSource.DS)";
+    private static final String DEFAULT_POINTCUT_EXPRESSION = "@annotation(com.bone.metadata.sdk.support.dataSource.DataSourceSwitch) || @within(com.bone.metadata.sdk.support.dataSource.DataSourceSwitch)";
     
     /**
      * 创建数据源切换拦截器
