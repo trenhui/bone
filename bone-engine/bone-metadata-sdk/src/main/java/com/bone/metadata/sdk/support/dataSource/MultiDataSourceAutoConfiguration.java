@@ -27,6 +27,7 @@ public class MultiDataSourceAutoConfiguration implements InitializingBean {
     
     /**
      * 创建数据源管理器，负责多数据源的注册、获取和切换逻辑。
+     * 使用@ConditionalOnMissingBean确保只创建一个实例，避免与DynamicDataSourceAutoConfiguration冲突
      * 
      * @return 数据源管理器实例
      */
@@ -52,47 +53,20 @@ public class MultiDataSourceAutoConfiguration implements InitializingBean {
     }
     
     /**
-     * 创建数据源路由拦截器，用于实现基于注解的数据源动态切换。
+     * 创建数据源切换拦截器，用于实现基于@DataSourceSwitch注解的数据源动态切换。
      * 
-     * @param dataSourceManager 数据源管理器
-     * @return 数据源路由拦截器
+     * @return 数据源切换拦截器
      */
     @Bean
     @ConditionalOnMissingBean
     @DependsOn("dataSourceManager")
-    public DataSourceRoutingInterceptor dataSourceRoutingInterceptor(DataSourceManager dataSourceManager) {
-        logger.debug("创建数据源路由拦截器");
-        return new DataSourceRoutingInterceptor(dataSourceManager);
+    public DataSourceAnnotationInterceptor dataSourceAnnotationInterceptor() {
+        logger.debug("创建数据源切换拦截器");
+        return new DataSourceAnnotationInterceptor();
     }
     
     @Override
     public void afterPropertiesSet() {
         logger.info("多数据源自动配置已初始化完成");
-    }
-    
-    /**
-     * 数据源健康检查器，用于验证数据源连接状态。
-     */
-    public static class DataSourceHealthChecker {
-        private final DataSourceManager dataSourceManager;
-        
-        public DataSourceHealthChecker(DataSourceManager dataSourceManager) {
-            this.dataSourceManager = dataSourceManager;
-        }
-        
-        /**
-         * 检查所有已注册数据源的健康状态。
-         * 
-         * @return 如果所有数据源都健康则返回true，否则返回false
-         */
-        public boolean isAllHealthy() {
-            for (String dataSourceName : dataSourceManager.getAllDataSourceNames()) {
-                if (!dataSourceManager.isDataSourceHealthy(dataSourceName)) {
-                    logger.warn("数据源 [{}] 连接状态异常", dataSourceName);
-                    return false;
-                }
-            }
-            return true;
-        }
     }
 }

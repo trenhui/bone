@@ -96,11 +96,11 @@ public class QueryBuilder {
         
         logger.fine("Creating query builder for entity class: " + entityClass.getName());
         try {
-            return new SimpleQueryBuilderImpl<>(entityClass);
+            return new SqlQueryBuilderImpl<>(entityClass);
         } catch (Exception e) {
             logger.severe("Failed to create query builder for entity class: " + entityClass.getName());
             
-            // 使用标准RuntimeException替代不存在的QueryBuildException
+            // 使用标准RuntimeException
             RuntimeException exception = new RuntimeException("Failed to initialize query builder", e);
             
             // 如果存在异常处理器，则使用它处理异常

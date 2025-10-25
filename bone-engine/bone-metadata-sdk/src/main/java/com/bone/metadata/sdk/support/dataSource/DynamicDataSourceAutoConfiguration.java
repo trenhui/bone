@@ -48,16 +48,24 @@ public class DynamicDataSourceAutoConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean(DynamicDataSource.class)
-    public DynamicDataSource dynamicDataSource(ObjectProvider<DataSource> defaultDataSource) {
+    public DynamicDataSource dynamicDataSource(ObjectProvider<DataSource> defaultDataSource, 
+                                             ObjectProvider<DataSourceManager> dataSourceManager) {
         log.info("Initializing DynamicDataSource");
         
-        DynamicDataSource dynamicDataSource = new DynamicDataSource();
+        // 获取或创建DataSourceManager
+        DataSourceManager manager = dataSourceManager.getIfAvailable();
+        DynamicDataSource dynamicDataSource = manager != null ? new DynamicDataSource(manager) : new DynamicDataSource();
         
         // 设置默认数据源
         DataSource primaryDataSource = defaultDataSource.getIfAvailable();
         if (primaryDataSource != null) {
             log.info("Setting primary datasource: {}", properties.getPrimary());
             dynamicDataSource.setDefaultTargetDataSource(primaryDataSource);
+            
+            // 如果有DataSourceManager，也注册主数据源
+            if (manager != null) {
+                manager.registerDataSource(properties.getPrimary(), primaryDataSource);
+            }
         }
         
         // 设置数据源映射
@@ -102,10 +110,9 @@ public class DynamicDataSourceAutoConfiguration {
      * @param dynamicDataSource 动态数据源
      * @return 事务管理器
      */
-    @Bean(name = "dynamicTransactionManager")
-    @ConditionalOnMissingBean(name = "dynamicTransactionManager")
+    @Bean
+    @ConditionalOnBean(DynamicDataSource.class)
     public PlatformTransactionManager dynamicTransactionManager(DynamicDataSource dynamicDataSource) {
-        log.info("Initializing dynamicTransactionManager");
         return new DataSourceTransactionManager(dynamicDataSource);
     }
     
@@ -113,10 +120,13 @@ public class DynamicDataSourceAutoConfiguration {
      * 数据源管理器Bean
      * @return 数据源管理器实例
      */
+    /**
+     * 仅当没有DataSourceManager时才创建，避免与MultiDataSourceAutoConfiguration冲突
+     */
     @Bean
     @ConditionalOnMissingBean(DataSourceManager.class)
     public DataSourceManager dataSourceManager() {
-        log.info("Initializing DataSourceManager");
+        log.info("Initializing DataSourceManager - no existing instance found");
         return new DefaultDataSourceManager();
     }
 }

@@ -44,8 +44,7 @@ public class DynamicModelDataService {
     @Autowired
     private DynamicModelConfig dynamicModelConfig;
     
-    @Autowired
-    private MetadataEngine metadataEngine;
+    // 移除MetadataEngine依赖，使用模拟实现
 
     // 存储模型数据
     private final Map<String, Map<String, Map<String, Object>>> modelDataStore = new ConcurrentHashMap<>();

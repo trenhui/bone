@@ -287,8 +287,7 @@ class MicroAppCommunicator {
   sendUnmounting(cleanupStats = {}) {
     return this.sendMessage('main', MESSAGE_TYPES.COMPONENT_UNMOUNTING, {
       timestamp: Date.now(),
-      resourceCleanup: cleanupStats,
-      timestamp: Date.now()
+      resourceCleanup: cleanupStats
     });
   }
 

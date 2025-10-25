@@ -1,8 +1,5 @@
 package com.bone.engine.extension.studio.model;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -12,9 +9,6 @@ import java.util.List;
  * 扩展点实体类
  * 用于存储扩展点的元数据信息
  */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 @Entity
 @Table(name = "bone_extension_point")
 public class ExtPointEntity {
@@ -106,6 +100,148 @@ public class ExtPointEntity {
      */
     @OneToMany(mappedBy = "extPoint", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ExtensionEntity> extensions = new ArrayList<>();
+    
+    // 构造函数
+    public ExtPointEntity() {
+        // 默认构造函数
+    }
+    
+    // Getter和Setter方法
+    public Long getId() {
+        return id;
+    }
+    
+    public void setId(Long id) {
+        this.id = id;
+    }
+    
+    public String getName() {
+        return name;
+    }
+    
+    public void setName(String name) {
+        this.name = name;
+    }
+    
+    public String getDescription() {
+        return description;
+    }
+    
+    public void setDescription(String description) {
+        this.description = description;
+    }
+    
+    public String getInterfaceName() {
+        return interfaceName;
+    }
+    
+    public void setInterfaceName(String interfaceName) {
+        this.interfaceName = interfaceName;
+    }
+    
+    public String getDomain() {
+        return domain;
+    }
+    
+    public void setDomain(String domain) {
+        this.domain = domain;
+    }
+    
+    public String getCategory() {
+        return category;
+    }
+    
+    public void setCategory(String category) {
+        this.category = category;
+    }
+    
+    public String getType() {
+        return type;
+    }
+    
+    public void setType(String type) {
+        this.type = type;
+    }
+    
+    public String getVersion() {
+        return version;
+    }
+    
+    public void setVersion(String version) {
+        this.version = version;
+    }
+    
+    public boolean isEnabled() {
+        return enabled;
+    }
+    
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+    
+    public boolean isDeprecated() {
+        return deprecated;
+    }
+    
+    public void setDeprecated(boolean deprecated) {
+        this.deprecated = deprecated;
+    }
+    
+    public String getDeprecatedSince() {
+        return deprecatedSince;
+    }
+    
+    public void setDeprecatedSince(String deprecatedSince) {
+        this.deprecatedSince = deprecatedSince;
+    }
+    
+    public String getDeprecatedIn() {
+        return deprecatedIn;
+    }
+    
+    public void setDeprecatedIn(String deprecatedIn) {
+        this.deprecatedIn = deprecatedIn;
+    }
+    
+    public LocalDateTime getCreateTime() {
+        return createTime;
+    }
+    
+    public void setCreateTime(LocalDateTime createTime) {
+        this.createTime = createTime;
+    }
+    
+    public LocalDateTime getUpdateTime() {
+        return updateTime;
+    }
+    
+    public void setUpdateTime(LocalDateTime updateTime) {
+        this.updateTime = updateTime;
+    }
+    
+    public List<ExtensionEntity> getExtensions() {
+        return extensions;
+    }
+    
+    public void setExtensions(List<ExtensionEntity> extensions) {
+        this.extensions = extensions;
+    }
+    
+    // 添加单个扩展实现
+    public void addExtension(ExtensionEntity extension) {
+        if (extension != null) {
+            extensions.add(extension);
+            extension.setExtPoint(this);
+        }
+    }
+    
+    // 移除单个扩展实现
+    public void removeExtension(ExtensionEntity extension) {
+        if (extension != null) {
+            extensions.remove(extension);
+            extension.setExtPoint(null);
+        }
+    }
 
     /**
      * JPA回调，创建前设置时间戳
