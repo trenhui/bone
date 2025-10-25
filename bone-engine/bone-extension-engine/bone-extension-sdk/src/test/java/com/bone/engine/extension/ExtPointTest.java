@@ -417,8 +417,6 @@ public class ExtPointTest {
     @ExtPoint(
         name = "测试扩展点",
         description = "用于单元测试的扩展点接口",
-        domain = "扩展引擎",
-        category = "测试",
         version = "1.0.0",
         enabled = true,
         priority = 100,
@@ -443,10 +441,10 @@ public class ExtPointTest {
             )
         },
         returnInfo = @ExtPointDoc.Return(
-            type = "String",
-            description = "处理结果",
-            successExample = "Default: test-parameter"
-        ),
+                type = "String",
+                description = "返回处理后的结果字符串",
+                example = "Default: test-input-value"
+            ),
         notes = "测试用扩展点接口，用于验证扩展引擎核心功能",
         creator = "测试团队",
         createDate = "2024-01-01"

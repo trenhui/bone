@@ -5,19 +5,19 @@ import java.lang.annotation.*;
 /**
  * 扩展实现文档注解
  * <p>
- * 用于为扩展实现类提供详细的文档信息，支持自动生成API文档和开发工具提示
+ * 用于为扩展点实现提供详细的文档信息，支持自动生成API文档和开发工具提示
  * <strong>主要用途：</strong>
  * <ul>
- *   <li>提供扩展实现的详细描述和适配场景</li>
- *   <li>定义实现细节和与其他实现的差异</li>
- *   <li>指定性能特征和资源消耗</li>
- *   <li>配置作者和版本信息</li>
- *   <li>提供注意事项和使用建议</li>
+ *   <li>提供扩展实现的详细描述和使用说明</li>
+ *   <li>定义扩展实现的适用场景和边界条件</li>
+ *   <li>指定扩展实现的配置说明和依赖关系</li>
+ *   <li>提供性能考量和注意事项</li>
+ *   <li>支持版本变更历史记录</li>
  * </ul>
  * </p>
  *
  * @author Bone Engine Team
- * @version 2.0.0
+ * @version 2.1.0
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.SOURCE)
@@ -25,19 +25,24 @@ import java.lang.annotation.*;
 public @interface ExtensionDoc {
     
     /**
+     * 扩展实现标题
+     */
+    String title() default "";
+    
+    /**
      * 扩展实现详细描述
      */
     String description() default "";
     
     /**
-     * 适用场景说明
+     * 适用场景描述
      */
-    String scenarios() default "";
+    String applicableScenarios() default "";
     
     /**
-     * 实现细节说明
+     * 适用场景（兼容旧版）
      */
-    String implementationDetails() default "";
+    String scenarios() default "";
     
     /**
      * 与其他实现的差异
@@ -45,7 +50,22 @@ public @interface ExtensionDoc {
     String differences() default "";
     
     /**
-     * 性能特征描述
+     * 实现细节说明
+     */
+    String implementationDetails() default "";
+    
+    /**
+     * 配置依赖说明
+     */
+    String configurationDependencies() default "";
+    
+    /**
+     * 性能考量
+     */
+    String performanceConsiderations() default "";
+    
+    /**
+     * 性能考量（兼容旧版）
      */
     String performance() default "";
     
@@ -60,6 +80,21 @@ public @interface ExtensionDoc {
     String notes() default "";
     
     /**
+     * 已知限制
+     */
+    String limitations() default "";
+    
+    /**
+     * 推荐配置
+     */
+    String recommendedConfig() default "";
+    
+    /**
+     * 版本信息
+     */
+    String version() default "";
+    
+    /**
      * 作者信息
      */
     String author() default "";
@@ -70,22 +105,52 @@ public @interface ExtensionDoc {
     String createDate() default "";
     
     /**
-     * 最后修改日期
+     * 常见问题解答
      */
-    String lastModifiedDate() default "";
+    FAQ[] faqs() default {};
     
     /**
-     * 测试覆盖情况
+     * 版本变更历史
      */
-    String testCoverage() default "";
+    Change[] changes() default {};
     
     /**
-     * 已知限制
+     * FAQ内部注解
      */
-    String limitations() default "";
+    @interface FAQ {
+        /**
+         * 问题
+         */
+        String question();
+        
+        /**
+         * 答案
+         */
+        String answer();
+    }
     
     /**
-     * 推荐配置
+     * 变更记录内部注解
      */
-    String recommendedConfig() default "";
+    @interface Change {
+        /**
+         * 版本号
+         */
+        String version();
+        
+        /**
+         * 变更内容
+         */
+        String content();
+        
+        /**
+         * 变更日期
+         */
+        String date() default "";
+        
+        /**
+         * 变更作者
+         */
+        String author() default "";
+    }
 }

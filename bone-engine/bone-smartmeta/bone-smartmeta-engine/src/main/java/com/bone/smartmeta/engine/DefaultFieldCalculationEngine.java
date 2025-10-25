@@ -4,7 +4,6 @@ import com.bone.smartmeta.engine.exception.CalculationException;
 import com.bone.smartmeta.engine.model.DynamicSmartEntity;
 import com.bone.smartmeta.engine.model.FieldMetadata;
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -21,13 +20,16 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * 字段计算引擎默认实现
- * 提供基于表达式的字段值计算功能，支持复杂表达式计算、字段依赖解析和循环依赖检测
+ * Default implementation of the Field Calculation Engine
+ * Provides expression-based field value calculation functionality, supporting complex expression evaluation,
+ * field dependency resolution, and circular dependency detection
  */
-@Slf4j
 public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
+    private static final Logger LOGGER = LoggerFactory.getLogger(DefaultFieldCalculationEngine.class);
     
     // 元数据引擎
     private final MetadataEngine metadataEngine;
@@ -53,20 +55,20 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
     private static final Pattern FIELD_REFERENCE_PATTERN = Pattern.compile("\\{([\\w\\.]+)\\}");
     
     /**
-     * 构造函数
-     * @param metadataEngine 元数据引擎
+     * Constructor with metadata engine
+     * @param metadataEngine the metadata engine instance
      */
     public DefaultFieldCalculationEngine(MetadataEngine metadataEngine) {
         this.metadataEngine = metadataEngine;
-        log.info("DefaultFieldCalculationEngine initialized with metadata engine");
+        LOGGER.info("DefaultFieldCalculationEngine initialized with metadata engine");
     }
     
     /**
-     * 默认构造函数，用于测试或独立使用场景
+     * Default constructor, used for testing or standalone scenarios
      */
     public DefaultFieldCalculationEngine() {
         this.metadataEngine = null;
-        log.info("DefaultFieldCalculationEngine initialized without metadata engine (standalone mode)");
+        LOGGER.info("DefaultFieldCalculationEngine initialized without metadata engine (standalone mode)");
     }
     
     @Override
@@ -78,17 +80,17 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
             }
             
             String fieldName = fieldMetadata.getApiName();
-            log.debug("Calculating field: {} for entity type: {}", fieldName, entity.getEntityType());
+            LOGGER.debug("Calculating field: {} for entity type: {}", fieldName, (String) entity.getField("entityType"));
             
             // 检查字段是否可计算
             boolean isCalculated = isFieldCalculated(fieldMetadata);
             if (!isCalculated) {
-                throw new CalculationException("Field is not calculated", fieldName, entity.getEntityType());
+                throw new CalculationException("Field is not calculated", fieldName, (String) entity.getField("entityType"));
             }
             
             String expression = fieldMetadata.getCalculationExpression();
             if (expression == null || expression.trim().isEmpty()) {
-                throw new CalculationException("Calculation expression is empty", fieldName, entity.getEntityType());
+                throw new CalculationException("Calculation expression is empty", fieldName, (String) entity.getField("entityType"));
             }
             
             // 清除可能的空白字符
@@ -100,45 +102,40 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
             // 计算表达式值
             return evaluateExpression(parsedExpression, entity, new HashSet<>());
         } catch (CalculationException e) {
-            log.error("Error calculating field: {}", e.getMessage(), e);
+            LOGGER.error("Error calculating field: {}", e.getMessage(), e);
             throw e;
         } catch (Exception e) {
             String fieldName = fieldMetadata != null ? fieldMetadata.getApiName() : "unknown";
-            String entityType = entity != null ? entity.getEntityType() : "unknown";
-            log.error("Unexpected error calculating field {} for entity {}", fieldName, entityType, e);
+            String entityType = entity != null ? (String) entity.getField("entityType") : "unknown";
+            LOGGER.error("Unexpected error calculating field {} for entity {}", fieldName, entityType, e);
             throw new CalculationException("Failed to calculate field: " + e.getMessage(), fieldName, entityType, e);
         }
     }
     
     /**
-     * 检查字段是否为计算字段
-     * @param fieldMetadata 字段元数据
-     * @return 是否为计算字段
+     * Checks if a field is a calculated field
+     * @param fieldMetadata the field metadata
+     * @return true if the field is calculated
      */
     private boolean isFieldCalculated(FieldMetadata fieldMetadata) {
         if (fieldMetadata == null) {
             return false;
         }
         
-        try {
-            // 直接检查计算表达式是否存在且不为空
-            String expression = fieldMetadata.getCalculationExpression();
-            return expression != null && !expression.trim().isEmpty();
-        } catch (Exception e) {
-            log.debug("Error checking if field is calculated: {}", e.getMessage());
-            return false;
-        }
+        // 检查计算表达式是否存在且不为空
+        String expression = fieldMetadata.getCalculationExpression();
+        return expression != null && !expression.trim().isEmpty();
     }
     
     @Override
     public void calculateAllFields(DynamicSmartEntity entity) {
         if (entity == null) {
-            log.warn("Null entity passed to calculateAllFields");
+            LOGGER.warn("Null entity passed to calculateAllFields");
             return;
         }
         
-        String entityType = entity.getEntityType();
-        log.debug("Calculating all fields for entity type: {}", entityType);
+        String entityType = (String) entity.getField("entityType");
+        LOGGER.debug("Calculating all fields for entity type: {}", entityType);
         
         try {
             // 从元数据引擎获取实体的所有字段元数据
@@ -150,11 +147,11 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
                     .collect(Collectors.toList());
             
             if (calculatedFields.isEmpty()) {
-                log.debug("No calculated fields found for entity type: {}", entityType);
+                LOGGER.debug("No calculated fields found for entity type: {}", entityType);
                 return;
             }
             
-            log.debug("Found {} calculated fields for entity type: {}", calculatedFields.size(), entityType);
+            LOGGER.debug("Found {} calculated fields for entity type: {}", calculatedFields.size(), entityType);
             
             // 按照依赖关系排序，确保依赖的字段先计算
             List<FieldMetadata> sortedFields = sortFieldsByDependency(calculatedFields, entityType);
@@ -165,19 +162,21 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
                     Object value = calculateField(entity, field);
                     // 使用更通用的方式设置字段值
                     setEntityField(entity, field.getApiName(), value);
-                    log.debug("Successfully calculated and set field: {} = {}", field.getApiName(), value);
+                    LOGGER.debug("Successfully calculated and set field: {} = {}", field.getApiName(), value);
                 } catch (Exception e) {
-                    log.error("Error calculating field {} for entity {}", field.getApiName(), entityType, e);
+                    LOGGER.error("Error calculating field {} for entity {}", field.getApiName(), entityType, e);
                     // 继续计算其他字段，避免单个字段失败影响整体
                 }
             }
         } catch (Exception e) {
-            log.error("Failed to calculate all fields for entity type: {}", entityType, e);
+            LOGGER.error("Failed to calculate all fields for entity type: {}", entityType, e);
         }
     }
     
     /**
-     * 获取实体的所有字段元数据
+     * Gets all field metadata for an entity
+     * @param entity the dynamic smart entity
+     * @return list of field metadata
      */
     private List<FieldMetadata> getEntityFields(DynamicSmartEntity entity) {
         List<FieldMetadata> fields = new ArrayList<>();
@@ -185,14 +184,14 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
         if (metadataEngine != null) {
             try {
                 // 尝试从元数据引擎获取字段信息
-                Object entityMetadata = metadataEngine.getEntityMetadata(entity.getEntityType());
+                Object entityMetadata = metadataEngine.getEntityMetadata((String) entity.getField("entityType"));
                 if (entityMetadata instanceof Map) {
                     // 从元数据中提取字段信息
                     // 这里是简化实现，实际应该根据元数据引擎的API进行适配
-                    log.debug("Retrieving fields from metadata engine for entity: {}", entity.getEntityType());
+                    LOGGER.debug("Retrieving fields from metadata engine for entity: {}", entity.getField("entityType"));
                 }
             } catch (Exception e) {
-                log.warn("Failed to retrieve fields from metadata engine: {}", e.getMessage());
+                LOGGER.warn("Failed to retrieve fields from metadata engine: {}", e.getMessage());
             }
         }
         
@@ -206,14 +205,17 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
                 fields.addAll(entityFields);
             }
         } catch (Exception e) {
-            log.debug("Entity does not support getFields method: {}", e.getMessage());
+            LOGGER.debug("Entity does not support getFields method: {}", e.getMessage());
         }
         
         return fields;
     }
     
     /**
-     * 设置实体字段值，使用安全的反射调用
+     * Sets entity field value using safe reflection
+     * @param entity the dynamic smart entity
+     * @param fieldName the field name
+     * @param value the field value
      */
     private void setEntityField(DynamicSmartEntity entity, String fieldName, Object value) {
         try {
@@ -222,14 +224,14 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
             setMethod.invoke(entity, fieldName, value);
         } catch (Exception e) {
             // 如果反射调用失败，记录警告
-            log.warn("Failed to set calculated field {}: {}", fieldName, e.getMessage());
+            LOGGER.warn("Failed to set calculated field {}: {}", fieldName, e.getMessage());
         }
     }
     
     @Override
     public boolean validateExpression(FieldMetadata fieldMetadata) {
         if (fieldMetadata == null) {
-            log.warn("Null fieldMetadata passed to validateExpression");
+            LOGGER.warn("Null fieldMetadata passed to validateExpression");
             return false;
         }
         
@@ -239,7 +241,7 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
             expression = fieldMetadata.getCalculationExpression();
             
             if (expression == null || expression.trim().isEmpty()) {
-                log.debug("Empty expression for field: {}", fieldMetadata.getApiName());
+                LOGGER.debug("Empty expression for field: {}", fieldMetadata.getApiName());
                 return false;
             }
             
@@ -250,12 +252,12 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
             boolean isValid = validateExpressionStructure(parsedExpression);
             
             if (!isValid) {
-                log.warn("Invalid expression structure for field {}: {}", fieldMetadata.getApiName(), expression);
+                LOGGER.warn("Invalid expression structure for field {}: {}", fieldMetadata.getApiName(), expression);
             }
             
             return isValid;
         } catch (Exception e) {
-            log.warn("Expression validation failed for field {}: {} - Error: {}", 
+            LOGGER.warn("Expression validation failed for field {}: {} - Error: {}", 
                      fieldMetadata.getApiName(), expression, e.getMessage());
             return false;
         }
@@ -276,16 +278,18 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
                 dependencies.add(fieldName);
             }
             
-            log.debug("Found {} dependencies in expression: {}", dependencies.size(), expression);
+            LOGGER.debug("Found {} dependencies in expression: {}", dependencies.size(), expression);
         } catch (Exception e) {
-            log.warn("Error extracting expression dependencies: {}", e.getMessage());
+            LOGGER.warn("Error extracting expression dependencies: {}", e.getMessage());
         }
         
         return new ArrayList<>(dependencies);
     }
     
     /**
-     * 解析表达式
+     * Parses an expression into a ParsedExpression object
+     * @param expression the expression string
+     * @return parsed expression object
      */
     private ParsedExpression parseExpression(String expression) {        
         // 解析字段引用
@@ -298,7 +302,9 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
     }
     
     /**
-     * 从缓存获取或解析表达式
+     * Gets a parsed expression from cache or parses it if not found
+     * @param expression the expression string
+     * @return parsed expression object
      */
     private ParsedExpression getParsedExpression(String expression) {
         ParsedExpression cached = expressionCache.get(expression);
@@ -306,19 +312,19 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
             cacheHits++;
             // 增加使用计数
             expressionUsageCount.compute(expression, (k, v) -> v == null ? 1 : v + 1);
-            log.trace("Expression cache hit for: {}", expression.substring(0, Math.min(50, expression.length())));
+            LOGGER.trace("Expression cache hit for: {}", expression.substring(0, Math.min(50, expression.length())));
             return cached;
         }
         
         cacheMisses++;
-        log.trace("Expression cache miss, parsing: {}", expression.substring(0, Math.min(50, expression.length())));
+        LOGGER.trace("Expression cache miss, parsing: {}", expression.substring(0, Math.min(50, expression.length())));
         ParsedExpression parsed = parseExpression(expression);
         expressionCache.put(expression, parsed);
         expressionUsageCount.put(expression, 1);
         
         // 记录缓存统计信息
         if (expressionCache.size() % 100 == 0) {
-            log.info("Expression cache statistics - Size: {}, Hits: {}, Misses: {}", 
+            LOGGER.info("Expression cache statistics - Size: {}, Hits: {}, Misses: {}", 
                     expressionCache.size(), cacheHits, cacheMisses);
         }
         
@@ -326,7 +332,8 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
     }
     
     /**
-     * 获取缓存统计信息
+     * Gets cache statistics
+     * @return map containing cache statistics
      */
     public Map<String, Object> getCacheStatistics() {
         Map<String, Object> stats = new HashMap<>();
@@ -347,7 +354,9 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
     }
     
     /**
-     * 提取表达式中的常量值
+     * Extracts constant values from an expression
+     * @param expression the expression string
+     * @return list of extracted constants
      */
     private List<Constant> extractConstants(String expression) {
         List<Constant> constants = new ArrayList<>();
@@ -409,7 +418,7 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
             if (currentFieldName != null) {
                 if (visitedFields.contains(currentFieldName)) {
                     throw new CalculationException("Circular dependency detected", 
-                            currentFieldName, entity.getEntityType());
+                            currentFieldName, (String) entity.getField("entityType"));
                 }
                 visitedFields.add(currentFieldName);
             }
@@ -418,12 +427,14 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
             String expression = parsedExpression.getExpression();
             expression = replaceFieldReferences(expression, parsedExpression.getFieldReferences(), entity, visitedFields);
             
-            // 执行计算
-            return executeCalculation(expression);
+            // Execute calculation
+        Object result = executeCalculation(expression);
+        LOGGER.debug("Expression evaluated to: {}", result);
+        return result;
         } catch (CalculationException e) {
             throw e;
         } catch (Exception e) {
-            String entityType = entity != null ? entity.getEntityType() : "unknown";
+            String entityType = entity != null ? (String) entity.getField("entityType") : "unknown";
             throw new CalculationException("Failed to evaluate expression: " + e.getMessage(), 
                     getCurrentFieldName(entity, parsedExpression), entityType, e);
         }
@@ -436,19 +447,8 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
      * @return 字段名
      */
     private String getCurrentFieldName(DynamicSmartEntity entity, ParsedExpression parsedExpression) {
-        // 从解析后的表达式中获取字段名
-        // 这里可以根据实际情况从表达式或元数据中提取字段名
-        // 如果无法确定，返回null
-        try {
-            if (parsedExpression != null && parsedExpression.getExpression() != null) {
-                // 尝试从表达式上下文中获取字段名
-                // 这里需要根据实际情况调整获取逻辑
-                // 目前实现为返回null，作为占位符
-                return null;
-            }
-        } catch (Exception e) {
-            log.debug("Failed to get current field name: {}", e.getMessage());
-        }
+        // This method is intended to extract the field name from context
+        // Currently returns null as a placeholder - implement based on actual requirements
         return null;
     }
     
@@ -467,7 +467,7 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
         for (String fieldRef : fieldRefs) {
             try {
                 // 字段引用格式为{fieldName}，提取字段名
-                log.trace("Resolving field reference: {}", fieldRef);
+                LOGGER.trace("Resolving field reference: {}", fieldRef);
                 
                 // 获取字段值
                 Object fieldValue = getFieldValue(entity, fieldRef, visitedFields);
@@ -478,9 +478,9 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
                 // 替换表达式中的引用
                 result = result.replace("{" + fieldRef + "}", stringValue);
                 
-                log.trace("Replaced {{{}}} with {}", fieldRef, stringValue);
+                LOGGER.trace("Replaced {{{}}} with {}", fieldRef, stringValue);
             } catch (Exception e) {
-                log.warn("Failed to resolve field reference {}: {}", fieldRef, e.getMessage());
+                LOGGER.warn("Failed to resolve field reference {}: {}", fieldRef, e.getMessage());
                 // 使用null作为默认值
                 result = result.replace("{" + fieldRef + "}", "null");
             }
@@ -499,7 +499,7 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
     private Object getFieldValue(DynamicSmartEntity entity, String fieldPath, Set<String> visitedFields) {
         // 检查参数有效性
         if (entity == null || fieldPath == null || fieldPath.trim().isEmpty()) {
-            log.warn("Invalid parameters for getFieldValue: entity={}, fieldPath={}", entity, fieldPath);
+            LOGGER.warn("Invalid parameters for getFieldValue: entity={}, fieldPath={}", entity, fieldPath);
             return null;
         }
         
@@ -509,14 +509,14 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
         
         for (String part : parts) {
             if (current == null) {
-                log.debug("Null value encountered at path segment: {} in {}", part, fieldPath);
+                LOGGER.debug("Null value encountered at path segment: {} in {}", part, fieldPath);
                 return null;
             }
             
             try {
                 if (current instanceof Map) {
                     current = ((Map<?, ?>) current).get(part);
-                    log.trace("Retrieved map value for {}: {}", part, current);
+                    LOGGER.trace("Retrieved map value for {}: {}", part, current);
                 } else if (current instanceof DynamicSmartEntity) {
                     // 尝试通过getField方法获取值
                     Method getMethod = current.getClass().getMethod("getField", String.class);
@@ -527,34 +527,34 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
                         FieldMetadata fieldMeta = (FieldMetadata) value;
                         if (visitedFields.contains(fieldMeta.getApiName())) {
                             throw new CalculationException("Circular dependency in nested field reference", 
-                                    fieldMeta.getApiName(), ((DynamicSmartEntity) current).getEntityType());
+                                    fieldMeta.getApiName(), (String) ((DynamicSmartEntity) current).getField("entityType"));
                         }
                         // 递归计算嵌套字段值
                         value = calculateField((DynamicSmartEntity) current, fieldMeta);
                     }
                     
                     current = value;
-                    log.trace("Retrieved entity field value for {}: {}", part, current);
+                    LOGGER.trace("Retrieved entity field value for {}: {}", part, current);
                 } else {
                     // 对于非Map和非DynamicSmartEntity类型，尝试通过反射获取字段值
                     Optional<Object> fieldValue = getFieldValueByReflection(current, part);
                     if (fieldValue.isPresent()) {
                         current = fieldValue.get();
-                        log.trace("Retrieved reflection field value for {}: {}", part, current);
+                        LOGGER.trace("Retrieved reflection field value for {}: {}", part, current);
                     } else {
                         // 如果字段不存在，尝试通过getter方法获取
                         Optional<Object> getterValue = getFieldValueByGetter(current, part);
                         if (getterValue.isPresent()) {
                             current = getterValue.get();
-                            log.trace("Retrieved getter value for {}: {}", part, current);
+                            LOGGER.trace("Retrieved getter value for {}: {}", part, current);
                         } else {
-                            log.debug("No value found for field: {} in path: {}", part, fieldPath);
+                            LOGGER.debug("No value found for field: {} in path: {}", part, fieldPath);
                             return null;
                         }
                     }
                 }
             } catch (Exception e) {
-                log.warn("Error retrieving value for field segment {} in path {}: {}", part, fieldPath, e.getMessage());
+                LOGGER.warn("Error retrieving value for field segment {} in path {}: {}", part, fieldPath, e.getMessage());
                 return null;
             }
         }
@@ -573,7 +573,7 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
                 return Optional.ofNullable(field.get(obj));
             }
         } catch (Exception e) {
-            log.debug("Reflection error for field {}: {}", fieldName, e.getMessage());
+            LOGGER.debug("Reflection error for field {}: {}", fieldName, e.getMessage());
         }
         return Optional.empty();
     }
@@ -597,7 +597,7 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
                 }
             }
         } catch (Exception e) {
-            log.debug("Getter error for field {}: {}", fieldName, e.getMessage());
+            LOGGER.debug("Getter error for field {}: {}", fieldName, e.getMessage());
         }
         return Optional.empty();
     }
@@ -617,7 +617,12 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
     }
     
     /**
-     * 计算字段值
+     * Evaluates field calculation
+     * @param entity the dynamic smart entity
+     * @param fieldMetadata the field metadata
+     * @param visitedFields set of already visited fields for circular dependency detection
+     * @return calculated field value
+     * @throws Exception if calculation fails
      */
     private Object evaluateFieldCalculation(DynamicSmartEntity entity, FieldMetadata fieldMetadata, 
                                           Set<String> visitedFields) throws Exception {
@@ -641,7 +646,9 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
     }
     
     /**
-     * 将值转换为字符串表示
+     * Converts a value to its string representation
+     * @param value the value to convert
+     * @return string representation of the value
      */
     private String convertValueToString(Object value) {
         if (value == null) {
@@ -660,9 +667,9 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
     }
     
     /**
-     * 执行表达式计算
-     * @param expression 表达式字符串
-     * @return 计算结果
+     * Executes expression calculation
+     * @param expression the expression string
+     * @return calculation result
      */
     private Object executeCalculation(String expression) {  
         if (expression == null || expression.trim().isEmpty()) {
@@ -722,18 +729,19 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
                 }
             }
         } catch (Exception e) {
-            log.error("Error executing calculation for expression '{}': {}", expression, e.getMessage());
-            // 发生异常时返回原始表达式，避免整个计算失败
+            LOGGER.error("Error executing calculation for expression '{}': {}", expression, e.getMessage());
+            // On exception, return the original expression value
+            LOGGER.error("Error during calculation, returning original expression as fallback: {}", expression);
             return expression;
         }
     }
     
     /**
-     * 计算两个操作数的算术表达式
-     * @param left 左操作数
-     * @param right 右操作数
-     * @param operator 运算符
-     * @return 计算结果
+     * Evaluates arithmetic expression with two operands
+     * @param left the left operand
+     * @param right the right operand
+     * @param operator the operator (+, -, *, /)
+     * @return calculation result as BigDecimal
      */
     private BigDecimal evaluateArithmeticExpression(Object left, Object right, String operator) {
         try {
@@ -749,24 +757,24 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
                     return leftValue.multiply(rightValue);
                 case "/":
                     if (rightValue.compareTo(BigDecimal.ZERO) == 0) {
-                        log.warn("Division by zero detected");
+                        LOGGER.warn("Division by zero detected");
                         return BigDecimal.ZERO; // 避免除零异常
                     }
                     return leftValue.divide(rightValue, 10, RoundingMode.HALF_UP);
                 default:
-                    log.error("Unsupported operator: {}", operator);
+                    LOGGER.error("Unsupported operator: {}", operator);
                     return BigDecimal.ZERO;
             }
         } catch (Exception e) {
-            log.error("Error evaluating arithmetic expression: {}", e.getMessage());
+            LOGGER.error("Error evaluating arithmetic expression: {}", e.getMessage());
             return BigDecimal.ZERO;
         }
     }
     
     /**
-     * 将对象转换为BigDecimal
-     * @param value 要转换的值
-     * @return 转换后的BigDecimal
+     * Converts an object to BigDecimal
+     * @param value the value to convert
+     * @return converted BigDecimal value
      */
     private BigDecimal convertToBigDecimal(Object value) {
         if (value == null) {
@@ -781,18 +789,21 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
             try {
                 return new BigDecimal(value.toString());
             } catch (NumberFormatException e) {
-                log.warn("Failed to convert {} to BigDecimal, returning 0", value);
+                LOGGER.warn("Failed to convert {} to BigDecimal, returning 0", value);
                 return BigDecimal.ZERO;
             }
         }
     }
     
     /**
-     * 根据依赖关系排序字段
+     * Sorts fields by their dependency relationships
+     * @param fields list of field metadata
+     * @param entityApiName the entity API name
+     * @return sorted list of field metadata
      */
     private List<FieldMetadata> sortFieldsByDependency(List<FieldMetadata> fields, String entityApiName) {
         try {
-            log.debug("Sorting {} fields by dependency for entity: {}", fields.size(), entityApiName);
+            LOGGER.debug("Sorting {} fields by dependency for entity: {}", fields.size(), entityApiName);
             
             // 构建依赖图
             Map<String, Set<String>> dependencyGraph = new HashMap<>();
@@ -811,7 +822,7 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
                         // 只考虑当前实体的字段依赖
                         if (!dep.contains(".")) {
                             dependencies.add(dep);
-                            log.trace("Field {} depends on {}", fieldApiName, dep);
+                            LOGGER.trace("Field {} depends on {}", fieldApiName, dep);
                         }
                     }
                 }
@@ -822,14 +833,17 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
             // 使用拓扑排序
             return topologicalSort(dependencyGraph, fields);
         } catch (Exception e) {
-            log.error("Error sorting fields by dependency for entity {}: {}", entityApiName, e.getMessage());
+            LOGGER.error("Error sorting fields by dependency for entity {}: {}", entityApiName, e.getMessage());
             // 发生异常时，返回原始字段列表作为后备
             return fields;
         }
     }
     
     /**
-     * 拓扑排序
+     * Performs topological sort on fields based on dependencies
+     * @param dependencyGraph the dependency graph
+     * @param fields list of field metadata
+     * @return topologically sorted list of field metadata
      */
     private List<FieldMetadata> topologicalSort(Map<String, Set<String>> dependencyGraph, 
                                               List<FieldMetadata> fields) {
@@ -866,38 +880,45 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
     }
     
     /**
-     * 深度优先搜索，用于拓扑排序
-     * @throws IllegalArgumentException 当检测到循环依赖时抛出异常
+     * Performs depth-first search for topological sorting
+     * @param node current node being visited
+     * @param graph the dependency graph
+     * @param visited set of already visited nodes
+     * @param visiting set of nodes being visited in current traversal
+     * @param result list to store the topological order
+     * @throws IllegalArgumentException when circular dependency is detected
      */
     private void dfs(String node, Map<String, Set<String>> graph, 
                     Set<String> visited, Set<String> visiting, List<String> result) {
         visiting.add(node);
-        
+
         Set<String> neighbors = graph.getOrDefault(node, Collections.emptySet());
         for (String neighbor : neighbors) {
             if (!visited.contains(neighbor)) {
                 if (visiting.contains(neighbor)) {
-                    // 检测到循环依赖，抛出异常而不仅是记录日志
+                    // Detect circular dependency
                     String errorMsg = String.format("Circular dependency detected between %s and %s", node, neighbor);
-                    System.err.println(errorMsg);
+                    LOGGER.error(errorMsg);
                     throw new IllegalArgumentException(errorMsg);
                 } else {
                     dfs(neighbor, graph, visited, visiting, result);
                 }
             }
         }
-        
+
         visiting.remove(node);
         visited.add(node);
         result.add(node);
     }
     
     /**
-     * 验证表达式结构
+     * Validates expression structure
+     * @param expression the parsed expression
+     * @return true if expression structure is valid
      */
     private boolean validateExpressionStructure(ParsedExpression expression) {
         if (expression == null || expression.getExpression() == null) {
-            log.debug("Null expression provided for validation");
+            LOGGER.debug("Null expression provided for validation");
             return false;
         }
         
@@ -911,7 +932,7 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
                 } else if (c == ')') {
                     balance--;
                     if (balance < 0) {
-                        log.debug("Unbalanced parentheses in expression: {}", exprStr);
+                        LOGGER.debug("Unbalanced parentheses in expression: {}", exprStr);
                         return false;
                     }
                 }
@@ -919,18 +940,18 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
             
             boolean result = (balance == 0);
             if (!result) {
-                log.debug("Unclosed parentheses in expression: {}", exprStr);
+                LOGGER.debug("Unclosed parentheses in expression: {}", exprStr);
             }
             
             return result;
         } catch (Exception e) {
-            log.warn("Error validating expression structure: {}", e.getMessage());
+            LOGGER.warn("Error validating expression structure: {}", e.getMessage());
             return false;
         }
     }
     
     /**
-     * 解析后的表达式
+     * Represents a parsed expression with field references and constants
      */
     private static class ParsedExpression {
         private final String expression;
@@ -957,7 +978,7 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
     }
     
     /**
-     * 常量值
+     * Represents a constant value in an expression
      */
     private static class Constant {
         private final String placeholder;
@@ -978,7 +999,7 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
     }
     
     /**
-     * 清理缓存
+     * Clears the expression cache
      */
     public void clearCache() {
         try {
@@ -987,23 +1008,23 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
             expressionUsageCount.clear();
             cacheHits = 0;
             cacheMisses = 0;
-            log.info("Expression cache cleared, removed {} entries", size);
+            LOGGER.info("Expression cache cleared, removed {} entries", size);
         } catch (Exception e) {
-            log.error("Error clearing expression cache: {}", e.getMessage());
+            LOGGER.error("Error clearing expression cache: {}", e.getMessage());
         }
     }
     
     /**
-     * 获取当前缓存大小
-     * @return 缓存条目数量
+     * Gets current cache size
+     * @return number of cache entries
      */
     public int getCacheSize() {
         return expressionCache.size();
     }
     
     /**
-     * 使用LRU策略清理缓存，保留使用频率最高的N个表达式
-     * @param retainCount 要保留的表达式数量
+     * Prunes cache using LRU strategy, retaining the most frequently used expressions
+     * @param retainCount number of expressions to retain
      */
     public void pruneCache(int retainCount) {
         if (retainCount <= 0) {
@@ -1031,7 +1052,7 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
             expressionUsageCount.remove(expr);
         }
         
-        log.info("Cache pruned, removed {} entries, retained {}", 
+        LOGGER.info("Cache pruned, removed {} entries, retained {}", 
                 toRemove.size(), toKeep.size());
     }
 }

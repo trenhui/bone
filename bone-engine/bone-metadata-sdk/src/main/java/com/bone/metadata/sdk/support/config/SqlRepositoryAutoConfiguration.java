@@ -174,15 +174,12 @@ public class SqlRepositoryAutoConfiguration {
 
     /**
      * 注册 SQL 模板加载器。
-     * 增加 Cache 和 ConcurrentHashMap 参数
+     * 提供模板加载、缓存管理和多源支持功能。
      */
     @Bean
-    public SqlTemplateLoader sqlTemplateLoader(
-            SqlConfigProperties config,
-            List<TemplateSourceProvider> sourceProviders,
-            List<TemplateContentParser> contentParsers,
-            TemplateSecurityValidator securityValidator
-    ) {
-        return new UnifiedSqlTemplateLoader(config, sourceProviders, contentParsers, securityValidator);
+    @ConditionalOnMissingBean
+    public SqlTemplateLoader sqlTemplateLoader() {
+        // 使用正确的类型转换
+        return (SqlTemplateLoader) new SqlTemplateLoaderImpl();
     }
 }

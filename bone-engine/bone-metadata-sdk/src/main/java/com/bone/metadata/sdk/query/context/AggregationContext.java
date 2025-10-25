@@ -6,20 +6,17 @@ import com.bone.metadata.sdk.domain.model.TableMetadata;
 import java.util.Collections;
 import java.util.List;
 
-public class AggregationContext {
-    private final TableMetadata tableMetadata;
+public class AggregationContext extends AbstractQueryContext {
     private final List<String> aggregations;
-    private final Criteria<?> criteria;
     private final List<String> groupByFields;
     private final List<String> havingConditions;
 
     public AggregationContext(TableMetadata tableMetadata, List<String> aggregations,
                               Criteria<?> criteria, List<String> groupByFields, List<String> havingConditions) {
-        this.tableMetadata = tableMetadata;
-        this.aggregations = aggregations != null ? aggregations : Collections.emptyList();
-        this.criteria = criteria;
-        this.groupByFields = groupByFields != null ? groupByFields : Collections.emptyList();
-        this.havingConditions = havingConditions != null ? havingConditions : Collections.emptyList();
+        super(tableMetadata, criteria, null);
+        this.aggregations = safeList(aggregations);
+        this.groupByFields = safeList(groupByFields);
+        this.havingConditions = safeList(havingConditions);
     }
 
     /** 聚合表达式列表，比如 ["COUNT(*)", "SUM(amount)"] */
@@ -27,14 +24,9 @@ public class AggregationContext {
         return aggregations;
     }
 
-    /** 过滤条件 */
-    public Criteria<?> getCriteria() {
-        return criteria;
-    }
-
     /** 表元数据 */
     public TableMetadata getTableMetadata() {
-        return tableMetadata;
+        return getTable();
     }
 
     /** GROUP BY 字段列表 */

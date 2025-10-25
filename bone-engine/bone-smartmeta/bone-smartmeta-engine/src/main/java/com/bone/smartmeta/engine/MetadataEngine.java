@@ -214,9 +214,9 @@ public class MetadataEngine implements InitializingBean {
             }
             
             if (metadata instanceof EntityMetadata) {
-                return ((EntityMetadata) metadata).getName();
+                return ((EntityMetadata) metadata).getApiName();
             } else if (metadata instanceof com.bone.smartmeta.engine.metadata.EntityMetadata) {
-                return ((com.bone.smartmeta.engine.metadata.EntityMetadata) metadata).getName();
+                return ((com.bone.smartmeta.engine.metadata.EntityMetadata) metadata).getApiName();
             } else if (metadata instanceof Map) {
                 Object nameObj = ((Map<?, ?>) metadata).get("name");
                 if (nameObj != null) {
@@ -382,7 +382,7 @@ public class MetadataEngine implements InitializingBean {
         
         // 如果找到了，更新缓存
         if (metadata != null && cacheEnabled) {
-            entityMetadataCache.put(entityName, new CacheEntry(metadata, cacheExpirationTime));
+            entityMetadataCache.put(entityName, new CacheEntry<>(metadata, cacheExpirationTime));
         }
         
         return metadata;

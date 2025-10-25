@@ -14,21 +14,23 @@ import com.bone.tool.codegen.domain.service.DatabaseTableServiceInterface;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.annotation.Resource;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import static com.bone.core.model.ApiResponse.success;
-
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+
+import static com.bone.core.model.ApiResponse.success;
 
 /**
  * 数据库表 控制器
@@ -44,214 +46,196 @@ import java.util.Map;
 @Validated
 public class DatabaseTableController {
 
-    private static final Logger log = LoggerFactory.getLogger(DatabaseTableController.class);
+    private static final Logger logger = LoggerFactory.getLogger(DatabaseTableController.class);
     
-    @Resource
+    @Autowired
     private DatabaseTableServiceInterface databaseTableService;
     
-    @Resource
+    @Autowired
     private CodegenConverter codegenConverter;
-
-    // 添加代码生成表配置分页查询接口
-    @GetMapping("/codegen/page")
-    @Operation(summary = "分页获取代码生成表配置列表", description = "支持分页获取代码生成表配置，可根据数据源ID、表名、表注释进行筛选")
-    public ApiResponse<PageResult<CodegenTableResponse>> getCodegenTablesPage(
-            @RequestParam(value = "dataSourceConfigId", required = false) Long dataSourceConfigId,
-            @RequestParam(value = "tableName", required = false) String tableName,
-            @RequestParam(value = "tableComment", required = false) String tableComment,
-            @RequestParam(value = "pageNo", defaultValue = "1") @Min(1) Integer pageNo,
-            @RequestParam(value = "pageSize", defaultValue = "10") @Min(1) Integer pageSize) {
+    
+    /**
+     * 分页获取代码生成表配置列表
+     * 
+     * @param request 分页请求参数
+     * @return 分页结果响应
+     */
+    @GetMapping("/page")
+    @Operation(summary = "分页获取代码生成表配置列表", description = "根据查询条件分页获取代码生成表配置列表")
+    public ApiResponse<PageResult<CodegenTableResponse>> getCodegenTablePage(
+            @Valid CodegenTablePageRequest request) {
+        logger.info("开始分页获取代码生成表配置列表，请求参数: {}", request);
         try {
-            log.debug("分页查询代码生成表配置，数据源ID: {}, 表名: {}, 表注释: {}, 页码: {}, 每页大小: {}", 
-                    dataSourceConfigId, tableName, tableComment, pageNo, pageSize);
+            // 调用服务层方法获取数据
+            List<CodegenTable> allTables = databaseTableService.getCodegenTablesByDataSourceId(request.getDataSourceId());
             
-            // 调用服务层获取表配置列表
-            // 注意：这里暂时使用空列表作为返回值，后续需要根据实际服务层实现进行调整
-            List<CodegenTable> allTables = new ArrayList<>();
-            
-            // 如果提供了数据源ID，则获取该数据源下的表配置
-            if (dataSourceConfigId != null) {
-                allTables = databaseTableService.getCodegenTablesByDataSourceId(dataSourceConfigId);
-            }
-            // TODO: 如果需要获取所有表配置，可能需要添加新的服务层方法
-            
-            // 过滤条件处理
-            List<CodegenTable> filteredTables = new ArrayList<>();
-            for (CodegenTable table : allTables) {
-                boolean match = true;
-                
-                // 表名过滤
-                if (tableName != null && !tableName.trim().isEmpty()) {
-                    if (table.getTableName() == null || 
-                        !table.getTableName().toLowerCase().contains(tableName.toLowerCase())) {
-                        match = false;
-                    }
-                }
-                
-                // 表注释过滤
-                if (match && tableComment != null && !tableComment.trim().isEmpty()) {
-                    if (table.getTableComment() == null || 
-                        !table.getTableComment().toLowerCase().contains(tableComment.toLowerCase())) {
-                        match = false;
-                    }
-                }
-                
-                if (match) {
-                    filteredTables.add(table);
-                }
-            }
-            
-            // 计算总数
-            long total = filteredTables.size();
+            // 执行过滤和分页
+            List<CodegenTable> filteredTables = filterTables(allTables, request.getTableName(), request.getTableComment());
+            int total = filteredTables.size();
             
             // 计算分页参数
-            int start = (pageNo - 1) * pageSize;
-            int end = Math.min(start + pageSize, filteredTables.size());
+            int pageNo = request.getPageNo();
+            int pageSize = request.getPageSize();
+            int start = Math.max(0, (pageNo - 1) * pageSize);
+            int end = Math.min(start + pageSize, total);
             
-            // 截取分页数据
-            List<CodegenTable> pageTables = new ArrayList<>();
-            if (start < filteredTables.size()) {
-                pageTables = filteredTables.subList(start, end);
-            }
+            // 执行分页
+            List<CodegenTable> pageTables = filteredTables.stream()
+                    .skip(start)
+                    .limit(pageSize)
+                    .collect(Collectors.toList());
             
-            // 转换为响应对象
-            List<CodegenTableResponse> responseList = new ArrayList<>(pageTables.size());
-            for (CodegenTable table : pageTables) {
-                CodegenTableResponse response = codegenConverter.toCodegenTableResponse(table);
-                responseList.add(response);
-            }
+            // 使用Stream API进行对象转换
+            List<CodegenTableResponse> responseList = pageTables.stream()
+                    .map(codegenConverter::toCodegenTableResponse)
+                    .collect(Collectors.toList());
             
             // 构建分页结果
             PageResult<CodegenTableResponse> result = PageResult.of(responseList, total, pageNo, pageSize);
             
+            logger.info("分页获取代码生成表配置列表成功，数据源ID: {}, 查询结果: {}条记录", 
+                    request.getDataSourceId(), total);
             return success(result);
         } catch (Exception e) {
-            log.error("分页获取代码生成表配置列表失败: {}", e.getMessage(), e);
+            logger.error("分页获取代码生成表配置列表失败: {}", e.getMessage(), e);
             return ApiResponse.error(500, "分页获取代码生成表配置列表失败: " + e.getMessage());
         }
     }
-
-    // 数据库表信息查询相关接口
+    
+    /**
+     * 过滤表列表
+     * 
+     * @param tables 原始表列表
+     * @param tableName 表名过滤条件
+     * @param tableComment 表注释过滤条件
+     * @return 过滤后的表列表
+     */
+    private List<CodegenTable> filterTables(List<CodegenTable> tables, String tableName, String tableComment) {
+        if (tables == null || tables.isEmpty()) {
+            return Collections.emptyList();
+        }
+        
+        return tables.stream()
+                .filter(table -> {
+                    boolean match = true;
+                    if (tableName != null && !tableName.isEmpty()) {
+                        match = match && table.getTableName().contains(tableName);
+                    }
+                    if (tableComment != null && !tableComment.isEmpty()) {
+                        match = match && table.getTableComment().contains(tableComment);
+                    }
+                    return match;
+                })
+                .collect(Collectors.toList());
+    }
+    
+    /**
+     * 获取数据库表列表 - 兼容旧API
+     */
     @GetMapping("/original")
-    @Operation(summary = "获取数据库表列表")
-    @Parameter(name = "dataSourceConfigId", description = "数据源配置ID", required = true)
-    @Parameter(name = "nameLike", description = "表名称模糊匹配")
-    @Parameter(name = "commentLike", description = "表描述模糊匹配")
+    @Operation(summary = "获取数据库表列表（兼容旧API）", description = "根据数据源配置ID获取数据库中的表列表")
     public ApiResponse<List<DatabaseTableMetadata>> getTableListOriginal(
             @RequestParam("dataSourceConfigId") Long dataSourceConfigId,
             @RequestParam(value = "nameLike", required = false) String nameLike,
             @RequestParam(value = "commentLike", required = false) String commentLike) {
+        logger.info("开始获取数据库表列表（兼容模式），数据源配置ID: {}, nameLike: {}, commentLike: {}", 
+                dataSourceConfigId, nameLike, commentLike);
         try {
-            log.debug("获取数据库表列表，参数: dataSourceConfigId={}, nameLike={}, commentLike={}", 
-                      dataSourceConfigId, nameLike, commentLike);
-            
-            // 调用服务层方法并返回实际结果
-            List<DatabaseTableMetadata> resultList = databaseTableService.getTableList(
-                    dataSourceConfigId, 
-                    nameLike, 
-                    commentLike);
-            
-            log.debug("服务层返回的表数量: {}", resultList != null ? resultList.size() : 0);
-            
-            return success(resultList);
+            List<DatabaseTableMetadata> tables = databaseTableService.getTableList(dataSourceConfigId, nameLike, commentLike);
+            logger.info("获取数据库表列表成功，数据源配置ID: {}，表数量: {}", dataSourceConfigId, tables.size());
+            return success(tables);
         } catch (IllegalArgumentException e) {
-            // 参数验证失败
-            log.warn("获取数据库表列表参数错误: {}", e.getMessage());
+            logger.warn("获取数据库表列表参数错误: {}", e.getMessage());
             return ApiResponse.error(400, e.getMessage());
         } catch (Exception e) {
-            // 其他异常
-            log.error("获取数据库表列表失败: {}", e.getMessage(), e);
-            return ApiResponse.error(500, "获取数据库表列表失败: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/list")
-    @Operation(summary = "获取数据库表信息列表")
-    @Parameter(name = "dataSourceConfigId", description = "数据源配置ID", required = true)
-    @Parameter(name = "nameLike", description = "表名称模糊匹配")
-    @Parameter(name = "commentLike", description = "表描述模糊匹配")
-    public ApiResponse<List<DatabaseTableMetadata>> getTableList(
-            @RequestParam("dataSourceConfigId") Long dataSourceConfigId,
-            @RequestParam(value = "nameLike", required = false) String nameLike,
-            @RequestParam(value = "commentLike", required = false) String commentLike) {
-        
-        try {
-            // 验证参数
-            if (dataSourceConfigId == null || dataSourceConfigId <= 0) {
-                return ApiResponse.error(400, "数据源配置ID必须为正整数");
-            }
-            
-            // 调用服务层方法并返回实际结果
-            List<DatabaseTableMetadata> resultList = databaseTableService.getTableList(
-                    dataSourceConfigId, 
-                    nameLike == null ? "" : nameLike, 
-                    commentLike == null ? "" : commentLike);
-            
-            return success(resultList);
-        } catch (IllegalArgumentException e) {
-            // 参数验证失败
-            log.warn("获取数据库表列表参数错误: {}", e.getMessage());
-            return ApiResponse.error(400, e.getMessage());
-        } catch (Exception e) {
-            // 其他异常
-            log.error("获取数据库表列表失败: {}", e.getMessage(), e);
+            logger.error("获取数据库表列表失败: {}", e.getMessage(), e);
             return ApiResponse.error(500, "获取数据库表列表失败: " + e.getMessage());
         }
     }
     
-    // 兼容旧路径，保持API向后兼容
-    @GetMapping("/api/v1/codegen/database-table/list")
-    @Operation(summary = "获得数据库的表和字段（兼容旧路径）")
-    public ApiResponse<List<DatabaseTableMetadata>> getDatabaseTableList(@RequestParam("dataSourceConfigId") Long dataSourceConfigId) {
-        List<DatabaseTableMetadata> tables = databaseTableService.getTableList(dataSourceConfigId, null, null);
-        return success(tables);
-    }
-
+    /**
+     * 获取所有数据库表 - 兼容旧API
+     */
     @GetMapping("/original/all")
-    @Operation(summary = "获取所有数据库表")
-    @Parameter(name = "dataSourceConfigId", description = "数据源配置ID", required = true)
+    @Operation(summary = "获取所有数据库表（兼容旧API）")
     public ApiResponse<List<DatabaseTableMetadata>> getAllTables(@RequestParam("dataSourceConfigId") Long dataSourceConfigId) {
-        
-        List<DatabaseTableMetadata> tableList = databaseTableService.getTableList(dataSourceConfigId, null, null);
-        return success(tableList);
+        logger.info("开始获取所有数据库表（兼容模式），数据源配置ID: {}", dataSourceConfigId);
+        try {
+            List<DatabaseTableMetadata> tables = databaseTableService.getTableList(dataSourceConfigId, null, null);
+            logger.info("获取所有数据库表成功，数据源配置ID: {}，表数量: {}", dataSourceConfigId, tables.size());
+            return success(tables);
+        } catch (Exception e) {
+            logger.error("获取所有数据库表失败: {}", e.getMessage(), e);
+            return ApiResponse.error(500, "获取所有数据库表失败: " + e.getMessage());
+        }
     }
-
+    
+    /**
+     * 获取表详情 - 兼容旧API
+     */
     @GetMapping("/original/{tableName}")
-    @Operation(summary = "获取表详情")
-    @Parameter(name = "dataSourceConfigId", description = "数据源配置ID", required = true)
-    @Parameter(name = "tableName", description = "表名称", required = true)
-    public ApiResponse<DatabaseTableMetadata> getTable(
+    @Operation(summary = "获取表详情（兼容旧API）")
+    public ApiResponse<DatabaseTableMetadata> getTableInfo(
             @RequestParam("dataSourceConfigId") Long dataSourceConfigId,
             @PathVariable("tableName") String tableName) {
-        
-        // 根据表名查询表信息
-        List<DatabaseTableMetadata> tableList = databaseTableService.getTableList(dataSourceConfigId, tableName, null);
-        if (tableList != null && !tableList.isEmpty()) {
-            return success(tableList.get(0));
+        logger.info("开始获取表详情（兼容模式），数据源配置ID: {}, 表名: {}", dataSourceConfigId, tableName);
+        try {
+            List<DatabaseTableMetadata> tables = databaseTableService.getTableList(dataSourceConfigId, tableName, null);
+            DatabaseTableMetadata result = tables != null && !tables.isEmpty() ? tables.get(0) : null;
+            return success(result);
+        } catch (Exception e) {
+            logger.error("获取表详情失败: {}", e.getMessage(), e);
+            return ApiResponse.error(500, "获取表详情失败: " + e.getMessage());
         }
-        return success(null); // 表不存在时返回null
-    }
-
-    @PostMapping("/original/batch")
-    @Operation(summary = "批量获取表信息")
-    @Parameter(name = "dataSourceConfigId", description = "数据源配置ID", required = true)
-    public ApiResponse<List<DatabaseTableMetadata>> getTables(
-            @RequestParam("dataSourceConfigId") Long dataSourceConfigId,
-            @RequestBody List<String> tableNames) {
-        
-        if (tableNames == null || tableNames.isEmpty()) {
-            return success(new ArrayList<>());
-        }
-        
-        List<DatabaseTableMetadata> tableInfos = databaseTableService.getTables(dataSourceConfigId, tableNames);
-        return success(tableInfos);
     }
     
-    // 代码生成表配置管理相关接口
+    /**
+     * 批量获取表信息 - 兼容旧API
+     */
+    @PostMapping("/original/batch")
+    @Operation(summary = "批量获取表信息（兼容旧API）")
+    public ApiResponse<List<DatabaseTableMetadata>> getBatchTableInfo(
+            @RequestParam("dataSourceConfigId") Long dataSourceConfigId,
+            @RequestBody List<String> tableNames) {
+        logger.info("开始批量获取表信息（兼容模式），数据源配置ID: {}, 表名数量: {}", dataSourceConfigId, tableNames.size());
+        try {
+            List<DatabaseTableMetadata> tables = databaseTableService.getTables(dataSourceConfigId, tableNames);
+            return success(tables);
+        } catch (Exception e) {
+            logger.error("批量获取表信息失败: {}", e.getMessage(), e);
+            return ApiResponse.error(500, "批量获取表信息失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 获取数据库表列表
+     * 
+     * @param dataSourceConfigId 数据源配置ID
+     * @return 数据库表元数据列表
+     */
+    @GetMapping("/list")
+    @Operation(summary = "获取数据库表列表", description = "根据数据源配置ID获取数据库中的表列表")
+    public ApiResponse<List<DatabaseTableMetadata>> getDatabaseTables(
+            @Parameter(description = "数据源配置ID", required = true, example = "1")
+            @RequestParam("dataSourceConfigId") @NotNull(message = "数据源配置ID不能为空") Long dataSourceConfigId) {
+        logger.info("开始获取数据库表列表，数据源配置ID: {}", dataSourceConfigId);
+        try {
+            List<DatabaseTableMetadata> tables = databaseTableService.getDatabaseTables(dataSourceConfigId);
+            logger.info("获取数据库表列表成功，数据源配置ID: {}，表数量: {}", dataSourceConfigId, tables.size());
+            return success(tables);
+        } catch (Exception e) {
+            logger.error("获取数据库表列表失败: {}", e.getMessage(), e);
+            return ApiResponse.error(500, "获取数据库表列表失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 获取表定义列表 - 兼容测试
+     */
     @GetMapping
     @Operation(summary = "获取表定义列表", description = "根据数据源配置ID查询已导入的代码生成表配置")
     public ResponseEntity<ApiResponse<?>> getTables(
-            @Parameter(description = "数据源配置ID", required = true, example = "1")
+            @Parameter(description = "数据源配置ID", required = false)
             @RequestParam(value = "dataSourceConfigId", required = false) Long dataSourceConfigId,
             @RequestParam(value = "dataSourceId", required = false) Long dataSourceId) {
         // 兼容testEmptyTableList测试 - 当传入dataSourceId时，调用getTableList方法
@@ -271,99 +255,134 @@ public class DatabaseTableController {
             return ResponseEntity.ok(success(responses));
         } catch (Exception e) {
             // 记录异常并返回错误响应
-            log.error("获取表定义列表失败: {}", e.getMessage(), e);
+            logger.error("获取表定义列表失败: {}", e.getMessage(), e);
             return ResponseEntity.ok(ApiResponse.error(500, "获取表定义列表失败: " + e.getMessage()));
         }
     }
-
-    @GetMapping("/page")
-    @Operation(summary = "获取表定义分页", description = "支持多条件筛选和分页查询代码生成表配置")
-    public ApiResponse<PageResult<CodegenTableResponse>> getTablesPage(
-            @Valid CodegenTablePageRequest request) {
-        try {
-            // 创建空的PageResult对象，使用默认分页参数
-            PageResult<CodegenTableResponse> result = PageResult.of(new ArrayList<>(), 0L, 1, 10);
-            
-            return ApiResponse.success(result);
-        } catch (Exception e) {
-            log.error("获取表定义分页失败: {}", e.getMessage(), e);
-            return ApiResponse.error(500, "获取表定义分页失败: " + e.getMessage());
-        }
-    }
-
-    @GetMapping("/{tableId}")
-    @Operation(summary = "获取表定义详情", description = "获取指定表的详细配置信息，包含基本信息和所有字段配置")
-    public ApiResponse<CodegenDetailResponse> getTableDetail(
-            @Parameter(description = "表ID", required = true, example = "1024")
-            @PathVariable("tableId") @NotNull(message = "表ID不能为空") Long tableId) {
-        // 通过服务层获取表配置和字段列表的详细信息
-        return success(databaseTableService.getCodegenDetail(tableId));
-    }
-
+    
+    /**
+     * 导入数据库表
+     * 
+     * @param dataSourceConfigId 数据源配置ID
+     * @param request 导入请求参数
+     * @return 导入结果响应
+     */
     @PostMapping("/import")
-    @Operation(summary = "从数据库导入表结构", description = "基于数据库表结构，批量创建代码生成配置")
-    public ApiResponse<List<Long>> importTablesFromDatabase(
+    @Operation(summary = "导入数据库表", description = "根据表名列表导入数据库表到代码生成配置")
+    public ApiResponse<Map<String, Object>> importTables(
+            @Parameter(description = "数据源配置ID", required = true, example = "1")
+            @RequestParam("dataSourceConfigId") @NotNull(message = "数据源配置ID不能为空") Long dataSourceConfigId,
             @Valid @RequestBody CodegenCreateListRequest request) {
+        logger.info("开始导入数据库表，数据源配置ID: {}, 表名列表: {}", dataSourceConfigId, request.getTableNames());
         try {
-            // 使用请求参数中的值，跳过不存在的getSceneType方法调用
-            List<Long> tableIds = databaseTableService.importTablesFromDatabase(
-                    request.getDatasourceId(),
-                    request.getTableNames(),
-                    request.getModuleName(),
-                    request.getPackageName(),
-                    1, // 使用默认值代替不存在的getSceneType方法调用
-                    null); // 使用null代替不存在的getModelType方法调用
-            return success(tableIds);
+            // 设置数据源ID到请求对象
+            request.setDatasourceId(dataSourceConfigId);
+            
+            // 调用服务层方法导入表
+            boolean success = databaseTableService.importTablesFromDatabase(request);
+            
+            // 构建响应结果
+            Map<String, Object> result = Collections.singletonMap("success", success);
+            logger.info("导入数据库表成功，数据源配置ID: {}", dataSourceConfigId);
+            return success(result);
         } catch (Exception e) {
-            log.error("导入表结构失败: {}", e.getMessage(), e);
-            return ApiResponse.error(500, "导入表结构失败: " + e.getMessage());
+            logger.error("导入数据库表失败: {}", e.getMessage(), e);
+            return ApiResponse.error(500, "导入数据库表失败: " + e.getMessage());
         }
     }
-
-    @PutMapping("/{tableId}")
-    @Operation(summary = "更新表定义配置", description = "更新代码生成表配置信息")
-    public ApiResponse<Boolean> updateTable(
-            @Parameter(description = "表ID", required = true, example = "1024")
-            @PathVariable("tableId") @NotNull(message = "表ID不能为空") Long tableId,
-            @Valid @RequestBody CodegenTableRequest request) {
+    
+    /**
+     * 同步数据库表结构
+     * 
+     * @param tableId 表ID
+     * @return 同步结果响应
+     */
+    @PostMapping("/{tableId}/sync")
+    @Operation(summary = "同步数据库表结构", description = "根据表ID同步数据库表结构到代码生成配置")
+    public ApiResponse<Boolean> syncTableStructure(
+            @Parameter(description = "表ID", required = true, example = "1")
+            @PathVariable("tableId") @NotNull(message = "表ID不能为空") @Min(value = 1, message = "表ID必须大于0") Long tableId) {
+        logger.info("开始同步数据库表结构，表ID: {}", tableId);
         try {
-            // 设置表ID到请求对象中
-            request.setId(tableId);
-            databaseTableService.updateCodegenTable(request);
-            return success(true);
+            boolean success = databaseTableService.syncTableStructure(tableId);
+            logger.info("同步数据库表结构成功，表ID: {}", tableId);
+            return success(success);
         } catch (Exception e) {
-            log.error("更新表定义配置失败: {}", e.getMessage(), e);
-            return ApiResponse.error(500, "更新表定义配置失败: " + e.getMessage());
-        }
-    }
-
-    @PutMapping("/{tableId}/sync")
-    @Operation(summary = "同步数据库表结构", description = "根据最新数据库表结构更新代码生成配置")
-    public ApiResponse<Boolean> syncTableFromDb(
-            @Parameter(description = "表ID", required = true, example = "1024")
-            @PathVariable("tableId") @NotNull(message = "表ID不能为空") Long tableId) {
-        try {
-            // 同步数据库表结构到代码生成配置
-            databaseTableService.syncTableFromDatabase(tableId);
-            return success(true);
-        } catch (Exception e) {
-            log.error("同步数据库表结构失败: {}", e.getMessage(), e);
+            logger.error("同步数据库表结构失败: {}", e.getMessage(), e);
             return ApiResponse.error(500, "同步数据库表结构失败: " + e.getMessage());
         }
     }
-
-    @DeleteMapping("/{tableId}")
-    @Operation(summary = "删除表定义配置", description = "删除指定的代码生成表配置")
-    public ApiResponse<Boolean> deleteTable(
-            @Parameter(description = "表ID", required = true, example = "1024")
-            @PathVariable("tableId") @NotNull(message = "表ID不能为空") Long tableId) {
+    
+    /**
+     * 获取代码生成详情
+     * 
+     * @param tableId 表ID
+     * @return 代码生成详情响应
+     */
+    @GetMapping("/{tableId}/detail")
+    @Operation(summary = "获取代码生成详情", description = "根据表ID获取代码生成的详细配置信息")
+    public ApiResponse<CodegenDetailResponse> getCodegenDetail(
+            @Parameter(description = "表ID", required = true, example = "1")
+            @PathVariable("tableId") @NotNull(message = "表ID不能为空") @Min(value = 1, message = "表ID必须大于0") Long tableId) {
+        logger.info("开始获取代码生成详情，表ID: {}", tableId);
         try {
-            // 删除表配置
-            databaseTableService.deleteTable(tableId);
-            return success(true);
+            CodegenDetailResponse detail = databaseTableService.getCodegenDetail(tableId);
+            logger.info("获取代码生成详情成功，表ID: {}", tableId);
+            return success(detail);
         } catch (Exception e) {
-            log.error("删除表定义配置失败: {}", e.getMessage(), e);
-            return ApiResponse.error(500, "删除表定义配置失败: " + e.getMessage());
+            logger.error("获取代码生成详情失败: {}", e.getMessage(), e);
+            return ApiResponse.error(500, "获取代码生成详情失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 更新代码生成表配置
+     * 
+     * @param tableId 表ID
+     * @param request 更新请求参数
+     * @return 更新结果响应
+     */
+    @PutMapping("/{tableId}")
+    @Operation(summary = "更新代码生成表配置", description = "根据表ID更新代码生成的表配置信息")
+    public ApiResponse<Boolean> updateCodegenTable(
+            @Parameter(description = "表ID", required = true, example = "1")
+            @PathVariable("tableId") @NotNull(message = "表ID不能为空") @Min(value = 1, message = "表ID必须大于0") Long tableId,
+            @Valid @RequestBody CodegenTableRequest request) {
+        logger.info("开始更新代码生成表配置，表ID: {}", tableId);
+        try {
+            // 设置表ID到请求对象
+            request.setId(tableId);
+            
+            // 调用服务层方法更新表配置
+            boolean success = databaseTableService.updateCodegenTable(request);
+            
+            logger.info("更新代码生成表配置成功，表ID: {}", tableId);
+            return success(success);
+        } catch (Exception e) {
+            logger.error("更新代码生成表配置失败: {}", e.getMessage(), e);
+            return ApiResponse.error(500, "更新代码生成表配置失败: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * 删除代码生成表配置
+     * 
+     * @param tableId 表ID
+     * @return 删除结果响应
+     */
+    @DeleteMapping("/{tableId}")
+    @Operation(summary = "删除代码生成表配置", description = "根据表ID删除代码生成的表配置")
+    public ApiResponse<Boolean> deleteCodegenTable(
+            @Parameter(description = "表ID", required = true, example = "1")
+            @PathVariable("tableId") @NotNull(message = "表ID不能为空") @Min(value = 1, message = "表ID必须大于0") Long tableId) {
+        logger.info("开始删除代码生成表配置，表ID: {}", tableId);
+        try {
+            boolean success = databaseTableService.deleteCodegenTable(tableId);
+            logger.info("删除代码生成表配置成功，表ID: {}", tableId);
+            return success(success);
+        } catch (Exception e) {
+            logger.error("删除代码生成表配置失败: {}", e.getMessage(), e);
+            return ApiResponse.error(500, "删除代码生成表配置失败: " + e.getMessage());
         }
     }
 }

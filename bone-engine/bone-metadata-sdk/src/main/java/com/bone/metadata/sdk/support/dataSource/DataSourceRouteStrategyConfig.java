@@ -37,13 +37,13 @@ public class DataSourceRouteStrategyConfig {
             @Override
             public String choose(List<String> dsNames, String sql) {
                 if (dsNames == null || dsNames.isEmpty()) {
-                    log.warn("No available datasources for load balancing");
+                    log.warn("没有可用的数据源进行负载均衡");
                     return null;
                 }
                 
                 int index = Math.abs(counter.getAndIncrement() % dsNames.size());
                 String chosenDs = dsNames.get(index);
-                log.debug("Round-robin load balance chosen datasource: {} (index: {})", chosenDs, index);
+                log.debug("轮询负载均衡选择的数据源: {} (索引: {})", chosenDs, index);
                 return chosenDs;
             }
         };
@@ -61,13 +61,13 @@ public class DataSourceRouteStrategyConfig {
             @Override
             public String choose(List<String> dsNames, String sql) {
                 if (dsNames == null || dsNames.isEmpty()) {
-                    log.warn("No available datasources for load balancing");
+                    log.warn("没有可用的数据源进行负载均衡");
                     return null;
                 }
                 
                 int index = random.nextInt(dsNames.size());
                 String chosenDs = dsNames.get(index);
-                log.debug("Random load balance chosen datasource: {} (index: {})", chosenDs, index);
+                log.debug("随机负载均衡选择的数据源: {} (索引: {})", chosenDs, index);
                 return chosenDs;
             }
         };
@@ -77,6 +77,13 @@ public class DataSourceRouteStrategyConfig {
      * 数据源路由策略接口
      */
     public interface RoutingStrategy {
+        /**
+         * 根据SQL语句选择合适的数据源
+         * 
+         * @param sql SQL语句
+         * @param availableDataSources 可用的数据源列表
+         * @return 选择的数据源名称
+         */
         String route(String sql, List<String> availableDataSources);
     }
     
@@ -89,8 +96,8 @@ public class DataSourceRouteStrategyConfig {
         return new RoutingStrategy() {
             @Override
             public String route(String sql, List<String> availableDataSources) {
-                if (StringUtils.isEmpty(sql)) {
-                    log.warn("Empty SQL for routing");
+                if (!StringUtils.hasText(sql)) {
+                    log.warn("空SQL无法进行路由，使用默认数据源");
                     return "master"; // 默认使用主库
                 }
                 
@@ -99,18 +106,19 @@ public class DataSourceRouteStrategyConfig {
                 
                 // 检查是否为写操作SQL
                 if (isWriteOperation(upperSql)) {
-                    log.debug("SQL identified as write operation, routing to master");
+                    log.debug("SQL已识别为写操作，路由到主数据源");
                     return "master";
                 } else {
                     // 读操作，使用第一个可用的从库，如果没有从库则使用主库
                     String slaveDs = getAvailableSlaveDataSource(availableDataSources);
-                    log.debug("SQL identified as read operation, routing to: {}", slaveDs);
+                    log.debug("SQL已识别为读操作，路由到: {}", slaveDs);
                     return slaveDs;
                 }
             }
             
             /**
              * 判断SQL是否为写操作
+             * 
              * @param upperSql 大写的SQL字符串
              * @return 是否为写操作
              */

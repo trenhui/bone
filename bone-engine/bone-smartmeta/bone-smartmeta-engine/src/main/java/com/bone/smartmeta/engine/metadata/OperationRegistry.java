@@ -1,7 +1,8 @@
 package com.bone.smartmeta.engine.metadata;
 
 import org.springframework.stereotype.Component;
-import javax.annotation.PostConstruct;
+import org.springframework.beans.factory.InitializingBean;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -14,7 +15,7 @@ import com.bone.smartmeta.engine.repository.MetadataRepository;
  * 负责管理所有业务操作的元数据
  */
 @Component
-public class OperationRegistry {
+public class OperationRegistry implements InitializingBean {
     
     private final Map<String, OperationMetadata> operationMap = new ConcurrentHashMap<>();
     private final MetadataRepository metadataRepository;
@@ -25,8 +26,8 @@ public class OperationRegistry {
         this.metadataRegistry = metadataRegistry;
     }
     
-    @PostConstruct
-    public void init() {
+    @Override
+    public void afterPropertiesSet() {
         // 加载预定义操作
         loadPredefinedOperations();
         // 加载动态操作

@@ -59,8 +59,8 @@ public class DynamicDataSourceTest extends BaseDataSourceTest {
         targetDataSources.put("slave", slaveDataSource);
         
         dynamicDataSource.setTargetDataSources(targetDataSources);
-        dynamicDataSource.setPrimary("master");
-        dynamicDataSource.setStrict(false);
+        dynamicDataSource.setDefaultDataSourceKey("master");
+        dynamicDataSource.setStrictMode(false);
         dynamicDataSource.afterPropertiesSet();
         
 
@@ -89,7 +89,7 @@ public class DynamicDataSourceTest extends BaseDataSourceTest {
         DataSourceContextHolder.clearAll();
         
         DataSource currentDs = dynamicDataSource.getCurrentDataSource();
-        assertEquals(masterDataSource, currentDs, "Should use master datasource by default");
+        assertEquals(masterDataSource, currentDs, "Should use default datasource by default");
         
         // 验证能够访问主库的数据
         JdbcTemplate jdbcTemplate = new JdbcTemplate(dynamicDataSource);
@@ -114,7 +114,7 @@ public class DynamicDataSourceTest extends BaseDataSourceTest {
     @Test
     public void testNonExistentDataSource_LenientMode() {
         // 测试非严格模式下访问不存在的数据源（应该回退到默认数据源）
-        dynamicDataSource.setStrict(false);
+        dynamicDataSource.setStrictMode(false);
         DataSourceContextHolder.setDataSource("non_existent");
         
         DataSource currentDs = dynamicDataSource.getCurrentDataSource();
@@ -124,7 +124,7 @@ public class DynamicDataSourceTest extends BaseDataSourceTest {
     @Test
     public void testNonExistentDataSource_StrictMode() {
         // 测试严格模式下访问不存在的数据源（应该抛出异常）
-        dynamicDataSource.setStrict(true);
+        dynamicDataSource.setStrictMode(true);
         DataSourceContextHolder.setDataSource("non_existent");
         
         assertThrows(RuntimeException.class, () -> {
@@ -150,7 +150,7 @@ public class DynamicDataSourceTest extends BaseDataSourceTest {
         dynamicDataSource.removeDataSource("slave");
         
         // 在非严格模式下，应该回退到默认数据源
-        dynamicDataSource.setStrict(false);
+        dynamicDataSource.setStrictMode(false);
         DataSourceContextHolder.setDataSource("slave");
         DataSource currentDs = dynamicDataSource.getCurrentDataSource();
         assertEquals(masterDataSource, currentDs, "Should fallback to master after removing datasource");

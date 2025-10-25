@@ -3,45 +3,50 @@ package com.bone.smartmeta.engine.model;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 /**
- * 智能字段元数据类
- * 继承自基础字段元数据，提供更高级的字段特性
+ * Smart field metadata class
+ * Extends from base field metadata, providing advanced field features
  */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper=false)
 public class SmartFieldMetadata extends FieldMetadata {
-    // 字段计算表达式
+    // Field calculation expression
     private String calculationExpression;
     
-    // 默认值表达式
+    // Default value expression
     private String defaultValueExpression;
     
-    // 字段格式化模板
+    // Field formatting template
     private String formatPattern;
     
-    // 字段验证表达式
+    // Field validation expression
     private String validationExpression;
     
-    // 是否为虚拟字段（不存储在数据库中）
+    // Whether the field is virtual (not stored in database)
+    @Builder.Default
     private boolean virtual = false;
     
-    // 是否为计算字段
+    // Whether the field is calculated
+    @Builder.Default
     private boolean calculated = false;
     
-    // 是否为只读字段
+    // Whether the field is read-only
+    @Builder.Default
     private boolean readonly = false;
     
-    // 字段数据字典
+    // Field data dictionary
     private String dataDictionaryCode;
     
-    // 字段关联的业务规则
+    // Business rule associated with the field
     private String businessRuleCode;
     
-    // 字段的条件显示规则
+    // Conditional display rule for the field
     private String conditionalDisplayRule;
     
     @Override
@@ -50,26 +55,28 @@ public class SmartFieldMetadata extends FieldMetadata {
     }
     
     /**
-     * 判断字段是否为虚拟字段
+     * Checks if the field is virtual
      */
+    @Override
     public boolean isVirtual() {
         return this.virtual;
     }
     
     /**
-     * 判断字段是否为计算字段
+     * Checks if the field is calculated
      */
+    @Override
     public boolean isCalculated() {
         return this.calculated;
     }
     
     /**
-     * 获取字段的显示值
+     * Gets the display value of the field
      */
     public Object getDisplayValue(Object rawValue) {
-        // 简单实现，实际可能需要更复杂的格式化逻辑
+        // Simple implementation, may require more complex formatting logic in practice
         if (formatPattern != null && rawValue != null) {
-            // 这里可以实现格式化逻辑
+            // Formatting logic can be implemented here
             return String.format(formatPattern, rawValue);
         }
         return rawValue;

@@ -129,11 +129,11 @@ public class QueryBuilderTestConfig {
     }
     
     /**
-     * 配置ExceptionHandler
+     * 配置ExceptionHandler，使用单例模式
      */
     @Bean
     public ExceptionHandler exceptionHandler() {
-        return Mockito.mock(ExceptionHandler.class);
+        return ExceptionHandler.getInstance();
     }
     
     /**
@@ -141,15 +141,23 @@ public class QueryBuilderTestConfig {
      */
     @Bean
     public ExtensionCoordinator extensionCoordinator() {
+        // 使用Spring应用上下文创建ExtensionCoordinator实例
         return Mockito.mock(ExtensionCoordinator.class);
     }
     
     /**
-     * 配置MetadataService
+     * 配置MetadataService，确保实现所有必要的泛型方法
      */
     @Bean
     public MetadataService metadataService() {
-        return Mockito.mock(MetadataService.class);
+        MetadataService mockService = Mockito.mock(MetadataService.class);
+        // 配置getTableMetadata方法，使用正确的泛型签名
+        Mockito.when(mockService.getTableMetadata(Mockito.<Class<?>>any())).thenAnswer(invocation -> {
+            Class<?> entityClass = invocation.getArgument(0);
+            // 返回一个简单的TableMetadata实例，包含表名
+            return new TableMetadata(entityClass.getSimpleName(), Collections.emptyList());
+        });
+        return mockService;
     }
     
     /**

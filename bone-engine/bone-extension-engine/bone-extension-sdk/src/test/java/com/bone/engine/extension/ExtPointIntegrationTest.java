@@ -328,8 +328,6 @@ public class ExtPointIntegrationTest {
     @ExtPoint(
         name = "订单服务扩展点",
         description = "处理订单业务的核心扩展点接口",
-        domain = "订单系统",
-        category = "业务处理",
         version = "1.0.0",
         enabled = true,
         priority = 100,
@@ -356,7 +354,7 @@ public class ExtPointIntegrationTest {
         returnInfo = @ExtPointDoc.Return(
             type = "String",
             description = "处理结果",
-            successExample = "Default Order Processing - ORD1234567890"
+            example = "Default Order Processing - ORD1234567890"
         ),
         notes = "支持多租户场景的订单处理扩展点",
         creator = "测试团队",
@@ -515,8 +513,6 @@ public class ExtPointIntegrationTest {
     @ExtPoint(
         name = "用户服务扩展点",
         description = "处理用户相关操作的扩展点接口",
-        domain = "用户管理",
-        category = "核心服务",
         version = "1.0.0",
         enabled = true,
         priority = 100,
@@ -543,7 +539,7 @@ public class ExtPointIntegrationTest {
         returnInfo = @ExtPointDoc.Return(
             type = "String",
             description = "问候信息",
-            successExample = "Default User Greeting - john_doe"
+            example = "Default User Greeting - john_doe"
         ),
         notes = "用于测试用户交互场景的扩展点"
 )
@@ -591,8 +587,6 @@ public class ExtPointIntegrationTest {
     @ExtPoint(
         name = "通知服务扩展点",
         description = "处理通知发送的扩展点接口",
-        domain = "消息系统",
-        category = "通知",
         version = "1.0.0",
         enabled = true,
         priority = 100,
@@ -619,7 +613,7 @@ public class ExtPointIntegrationTest {
         returnInfo = @ExtPointDoc.Return(
             type = "String",
             description = "发送结果",
-            successExample = "Notification sent to user@example.com"
+            example = "Notification sent to user@example.com"
         ),
         notes = "用于测试通知功能的扩展点",
         creator = "测试团队",

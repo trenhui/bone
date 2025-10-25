@@ -23,9 +23,9 @@ import java.util.UUID;
 )
 @ExtensionDoc(
     description = "基于支付宝开放平台的支付处理扩展",
-    scenarios = "适用于电商平台的在线支付场景",
+    applicableScenarios = "适用于电商平台的在线支付场景",
     implementationDetails = "通过支付宝开放平台SDK实现支付功能",
-    performance = "平均响应时间：200ms",
+    performanceConsiderations = "平均响应时间：200ms",
     notes = "需要配置支付宝开放平台的appId和私钥",
     author = "payment-team"
 )

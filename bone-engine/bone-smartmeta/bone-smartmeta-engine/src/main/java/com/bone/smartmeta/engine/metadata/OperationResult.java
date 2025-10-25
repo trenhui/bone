@@ -10,8 +10,9 @@ import java.util.Map;
 import java.io.Serializable;
 
 /**
- * 操作执行结果
- * <p>提供标准化的操作结果封装，支持成功/失败状态、消息、数据、错误码和详细信息</p>
+ * Operation execution result
+ * <p>Provides standardized operation result encapsulation, supporting success/failure status, 
+ * messages, data, error codes, and detailed information</p>
  */
 @Data
 @Builder
@@ -24,52 +25,72 @@ public class OperationResult implements Serializable {
     private String message;
     private Object data;
     private String errorCode;
+    @Builder.Default
     private Map<String, Object> details = new HashMap<>();
     
     /**
-     * 创建成功结果
+     * Creates a success result
      */
     public static OperationResult success() {
-        return new OperationResult();
+        OperationResult result = new OperationResult();
+        result.setSuccess(true);
+        return result;
     }
     
     /**
-     * 创建带数据的成功结果
+     * Creates a success result with data and message
      */
     public static OperationResult success(Object data, String message) {
-        return new OperationResult();
+        OperationResult result = new OperationResult();
+        result.setSuccess(true);
+        result.setData(data);
+        result.setMessage(message);
+        return result;
     }
     
     /**
-     * 创建只有数据的成功结果
+     * Creates a success result with data only
      */
     public static OperationResult success(Object data) {
-        return new OperationResult();
+        OperationResult result = new OperationResult();
+        result.setSuccess(true);
+        result.setData(data);
+        return result;
     }
     
     /**
-     * 创建只有消息的成功结果
+     * Creates a success result with message only
      */
     public static OperationResult successWithMessage(String message) {
-        return new OperationResult();
+        OperationResult result = new OperationResult();
+        result.setSuccess(true);
+        result.setMessage(message);
+        return result;
     }
     
     /**
-     * 创建失败结果
+     * Creates a failure result
      */
     public static OperationResult failure(String message) {
-        return new OperationResult();
+        OperationResult result = new OperationResult();
+        result.setSuccess(false);
+        result.setMessage(message);
+        return result;
     }
     
     /**
-     * 创建带错误码的失败结果
+     * Creates a failure result with error code
      */
     public static OperationResult failure(String message, String errorCode) {
-        return new OperationResult();
+        OperationResult result = new OperationResult();
+        result.setSuccess(false);
+        result.setMessage(message);
+        result.setErrorCode(errorCode);
+        return result;
     }
     
     /**
-     * 添加详细信息
+     * Adds detailed information
      */
     public OperationResult addDetail(String key, Object value) {
         this.details.put(key, value);
@@ -77,7 +98,7 @@ public class OperationResult implements Serializable {
     }
     
     /**
-     * 添加多个详细信息
+     * Adds multiple detailed information items
      */
     public OperationResult addDetails(Map<String, Object> details) {
         if (details != null) {
@@ -87,25 +108,29 @@ public class OperationResult implements Serializable {
     }
     
     /**
-     * 获取详细信息（返回不可修改的Map）
+     * Gets detailed information (returns an unmodifiable Map)
      */
     public Map<String, Object> getDetails() {
         return Collections.unmodifiableMap(this.details);
     }
     
     /**
-     * 设置详细信息
+     * Sets detailed information
      */
     public void setDetails(Map<String, Object> details) {
         this.details = new HashMap<>(details != null ? details : Collections.emptyMap());
     }
     
     /**
-     * 克隆当前结果
+     * Clones the current result
      */
     public OperationResult clone() {
         OperationResult result = new OperationResult();
-        // 简单返回新实例，移除所有不存在的方法调用
+        result.setSuccess(this.success);
+        result.setMessage(this.message);
+        result.setData(this.data);
+        result.setErrorCode(this.errorCode);
+        result.setDetails(this.details);
         return result;
     }
 }

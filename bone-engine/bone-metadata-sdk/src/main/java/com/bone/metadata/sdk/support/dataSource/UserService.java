@@ -34,7 +34,7 @@ public class UserService {
     /**
      * 查询用户列表 - 使用从库，提高主库性能
      */
-    @DS("slave")
+    @DataSourceSwitch("slave")
     public int getUserCount() {
         log.info("Counting users from slave database");
         
@@ -47,7 +47,7 @@ public class UserService {
     /**
      * 保存用户信息 - 强制使用主库
      */
-    @DS("master")
+    @DataSourceSwitch("master")
     @Transactional(rollbackFor = Exception.class)
     public void createUser(Long userId, String username) {
         log.info("Creating user: {} with id: {}", username, userId);
@@ -61,7 +61,7 @@ public class UserService {
     /**
      * 更新用户信息 - 强制使用主库
      */
-    @DS(value = "master", force = true) // 设置force=true，在事务中也强制使用主库
+    @DataSourceSwitch(value = "master", force = true) // 设置force=true，在事务中也强制使用主库
     @Transactional(rollbackFor = Exception.class)
     public void updateUser(Long userId, String newUsername) {
         log.info("Updating user: {} to new username: {}", userId, newUsername);
@@ -75,7 +75,7 @@ public class UserService {
     /**
      * 嵌套数据源切换示例
      */
-    @DS("master")
+    @DataSourceSwitch("master")
     public void nestedDataSourceExample(Long userId) {
         log.info("Outer method using master datasource");
         

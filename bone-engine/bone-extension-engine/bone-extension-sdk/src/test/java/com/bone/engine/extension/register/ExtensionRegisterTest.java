@@ -4,25 +4,26 @@ import com.bone.engine.extension.ExtPoint;
 import com.bone.engine.extension.Extension;
 import com.bone.engine.extension.event.ExtensionEventPublisher;
 import com.bone.engine.extension.repository.ExtPointRepository;
-import org.junit.jupiter.api.BeforeEach;
 import com.bone.engine.extension.annotation.ExtPointDoc;
 import com.bone.engine.extension.annotation.ExtensionDoc;
+import com.bone.engine.extension.config.ExtensionProperties;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.Mockito;
 import org.springframework.context.ApplicationContext;
-import com.bone.engine.extension.config.ExtensionProperties;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import static org.mockito.ArgumentMatchers.*;
 
 /**
- * ExtensionRegister测试类，验证扩展点注册器的功能正确性
+ * 扩展点注册器测试类
+ * <p>
+ * 全面验证ExtensionRegister的功能正确性，包括扩展注册、重复检测、无效扩展过滤等核心功能
  */
 @ExtendWith(MockitoExtension.class)
 public class ExtensionRegisterTest {
@@ -41,24 +42,31 @@ public class ExtensionRegisterTest {
 
     private ExtensionRegister extensionRegister;
 
+    /**
+     * 测试环境设置
+     * <p>
+     * 初始化所有必要的模拟对象和测试实例
+     */
     @BeforeEach
     public void setup() {
-        // 先创建ScanConfig mock并设置行为
+        // 准备扫描配置模拟对象
         ExtensionProperties.ScanConfig scanConfig = mock(ExtensionProperties.ScanConfig.class);
         when(scanConfig.getBasePackages()).thenReturn(new String[]{});
         
-        // 在创建extensionRegister之前先设置ExtensionProperties的mock行为
+        // 配置扩展属性
         when(extensionProperties.getScan()).thenReturn(scanConfig);
         
-        // 现在创建extensionRegister实例
+        // 创建注册器实例
         extensionRegister = new ExtensionRegister(extPointRepository, eventPublisher, extensionProperties);
         
-        // 设置ApplicationContext
+        // 设置应用上下文
         extensionRegister.setApplicationContext(applicationContext);
     }
 
     /**
-     * 测试注册有效的扩展提供者
+     * 测试有效扩展提供者注册
+     * <p>
+     * 验证正确实现了ExtPoint接口并带有Extension注解的提供者能被成功注册
      */
     @Test
     public void testRegisterValidExtension() {
@@ -68,12 +76,14 @@ public class ExtensionRegisterTest {
         // 执行注册
         extensionRegister.registerExtension(provider);
 
-        // 验证结果 - 只验证我们关心的repository调用
+        // 验证结果 - 确认仓库中成功添加了扩展
         verify(extPointRepository).put(anyString(), eq(provider));
     }
 
     /**
-     * 测试注册没有@Extension注解的提供者（非严格模式）
+     * 测试无注解提供者注册
+     * <p>
+     * 验证没有@Extension注解的提供者不会被注册
      */
     @Test
     public void testRegisterProviderWithoutAnnotation() {
@@ -83,12 +93,14 @@ public class ExtensionRegisterTest {
         // 执行注册
         extensionRegister.registerExtension(provider);
 
-        // 验证结果 - 不应调用repository
+        // 验证结果 - 确认仓库未被调用
         verifyNoInteractions(extPointRepository);
     }
 
     /**
-     * 测试注册没有实现@ExtPoint接口的提供者（非严格模式）
+     * 测试无扩展点接口实现的提供者注册
+     * <p>
+     * 验证没有实现@ExtPoint接口的提供者不会被注册
      */
     @Test
     public void testRegisterProviderWithoutExtPointInterface() {
@@ -98,12 +110,14 @@ public class ExtensionRegisterTest {
         // 执行注册
         extensionRegister.registerExtension(provider);
 
-        // 验证结果 - 不应调用repository
+        // 验证结果 - 确认仓库未被调用
         verifyNoInteractions(extPointRepository);
     }
 
     /**
-     * 测试注册重复的扩展提供者
+     * 测试重复扩展注册
+     * <p>
+     * 验证同一个扩展提供者只能被注册一次
      */
     @Test
     public void testRegisterDuplicateExtension() {
@@ -113,40 +127,42 @@ public class ExtensionRegisterTest {
         // 第一次注册
         extensionRegister.registerExtension(provider);
         
-        // 重置mock
+        // 重置模拟对象以清除之前的交互记录
         reset(extPointRepository);
 
-        // 第二次注册（应该被忽略）
+        // 第二次注册（预期会被忽略）
         extensionRegister.registerExtension(provider);
 
-        // 验证结果 - 不应再次调用repository
+        // 验证结果 - 确认仓库未被再次调用
         verifyNoInteractions(extPointRepository);
     }
 
     /**
-     * 测试在严格模式下注册无效的扩展提供者
+     * 测试严格模式下的无效扩展注册
+     * <p>
+     * 验证在严格模式下无效扩展的处理行为
      */
     @Test
     public void testRegisterInvalidExtensionInStrictMode() {
-        // 准备测试数据 - 没有@Extension注解
+        // 准备测试数据 - 没有@Extension注解的提供者
         NoAnnotationProvider provider = new NoAnnotationProvider();
 
         // 执行注册（在非严格模式下不会抛出异常）
         extensionRegister.registerExtension(provider);
         
-        // 验证结果 - 不应调用repository
+        // 验证结果 - 确认仓库未被调用
         verifyNoInteractions(extPointRepository);
     }
 
     /**
-     * 测试扩展点接口 - 主接口
+     * 测试扩展点主接口
+     * <p>
+     * 定义用于测试扩展注册功能的主接口
      */
     @ExtPoint(
         name = "注册测试扩展点",
         description = "用于测试扩展注册功能的主扩展点接口",
-        version = "1.0.0",
-        category = "测试",
-        domain = "扩展注册"
+        version = "1.0.0"
     )
     @ExtPointDoc(
         title = "注册测试主扩展点接口",
@@ -160,13 +176,15 @@ public class ExtensionRegisterTest {
     public interface TestExtPoint {
         /**
          * 执行测试方法
-         * @return 测试结果
+         * @return 测试结果字符串
          */
         String test();
     }
 
     /**
-     * 有效的扩展提供者实现
+     * 有效扩展提供者实现
+     * <p>
+     * 符合所有要求的标准扩展实现，用于测试正常注册流程
      */
     @Extension(
         name = "有效测试扩展实现",
@@ -186,7 +204,9 @@ public class ExtensionRegisterTest {
     }
 
     /**
-     * 没有@Extension注解的提供者 - 用于测试无效注册
+     * 无注解提供者实现
+     * <p>
+     * 没有@Extension注解但实现了ExtPoint接口，用于测试无效注册场景
      */
     public class NoAnnotationProvider implements TestExtPoint {
         @Override
@@ -196,7 +216,9 @@ public class ExtensionRegisterTest {
     }
 
     /**
-     * 有@Extension注解但没有实现@ExtPoint接口的提供者 - 用于测试无效注册
+     * 非扩展点实现
+     * <p>
+     * 有@Extension注解但未实现ExtPoint接口，用于测试无效注册场景
      */
     @Extension(
         name = "非扩展点实现",
@@ -214,14 +236,14 @@ public class ExtensionRegisterTest {
     }
 
     /**
-     * 测试扩展点接口 - 第二个接口
+     * 多实现测试扩展点接口
+     * <p>
+     * 用于测试一个实现类可以同时实现多个扩展点接口的情况
      */
     @ExtPoint(
         name = "第二个测试扩展点",
         description = "用于测试多扩展点实现的辅助接口",
-        version = "1.0.0",
-        category = "测试",
-        domain = "扩展注册"
+        version = "1.0.0"
     )
     @ExtPointDoc(
         title = "多实现测试扩展点接口",
@@ -234,13 +256,15 @@ public class ExtensionRegisterTest {
     public interface SecondTestExtPoint {
         /**
          * 执行第二个测试方法
-         * @return 测试结果
+         * @return 测试结果字符串
          */
         String secondTest();
     }
 
     /**
-     * 实现多个@ExtPoint接口的提供者 - 用于测试多接口实现
+     * 多扩展点实现提供者
+     * <p>
+     * 同时实现多个@ExtPoint接口的实现类，用于测试多接口实现的注册机制
      */
     @Extension(
         name = "多扩展点实现",

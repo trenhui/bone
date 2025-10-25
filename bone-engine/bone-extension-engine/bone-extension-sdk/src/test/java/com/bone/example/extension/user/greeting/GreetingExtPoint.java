@@ -16,8 +16,6 @@ import com.bone.engine.extension.annotation.ExtPointDoc;
 @ExtPoint(
     name = "用户问候扩展点",
     description = "根据用户类型返回不同的问候语的扩展点接口",
-    domain = "用户系统",
-    category = "用户交互",
     version = "1.0.0",
     enabled = true,
     priority = 100,
@@ -38,14 +36,14 @@ import com.bone.engine.extension.annotation.ExtPointDoc;
         )
     },
     returnInfo = @ExtPointDoc.Return(
-        type = "String",
-        description = "个性化问候语",
-        successExample = "Hello, user123! Welcome back.",
-        errorCodes = {
-            @ExtPointDoc.ErrorCode(code = "GREETING_GENERATE_FAILED", description = "问候语生成失败", solution = "检查用户数据是否完整"),
-            @ExtPointDoc.ErrorCode(code = "CONTEXT_PARAM_ERROR", description = "上下文参数错误", solution = "验证传入的BizContext是否包含必要信息")
-        }
-    ),
+            type = "String",
+            description = "个性化问候语",
+            example = "Hello, user123! Welcome back.",
+            errorCodes = {
+                @ExtPointDoc.ErrorCode(code = "GREETING_GENERATE_FAILED", description = "问候语生成失败", solution = "检查用户数据是否完整"),
+                @ExtPointDoc.ErrorCode(code = "CONTEXT_PARAM_ERROR", description = "上下文参数错误", solution = "验证传入的BizContext是否包含必要信息")
+            }
+        ),
     notes = "用户交互体验的重要组成部分，良好的问候语可以提升用户满意度。建议根据用户画像和行为数据动态调整问候内容。"
 )
 public interface GreetingExtPoint {

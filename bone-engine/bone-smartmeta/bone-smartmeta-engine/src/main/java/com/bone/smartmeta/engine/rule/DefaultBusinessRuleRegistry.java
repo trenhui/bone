@@ -345,8 +345,10 @@ public class DefaultBusinessRuleRegistry implements BusinessRuleRegistry {
                 eventsField.setAccessible(true);
                 Object value = eventsField.get(rule);
                 if (value instanceof List) {
-                    triggerEvents = (List<String>) value;
-                }
+                @SuppressWarnings("unchecked")
+                List<String> eventList = (List<String>) value;
+                triggerEvents = eventList;
+            }
             } catch (Exception ignore) {
                 // 如果无法获取或类型转换失败，保持为null
             }
@@ -382,8 +384,10 @@ public class DefaultBusinessRuleRegistry implements BusinessRuleRegistry {
                 eventsField.setAccessible(true);
                 Object value = eventsField.get(rule);
                 if (value instanceof List) {
-                    triggerEvents = (List<String>) value;
-                }
+                @SuppressWarnings("unchecked")
+                List<String> eventList = (List<String>) value;
+                triggerEvents = eventList;
+            }
             } catch (Exception ignore) {
                 // 如果无法获取或类型转换失败，保持为null
             }

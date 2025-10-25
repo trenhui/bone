@@ -20,6 +20,12 @@ public class DynamicSqlProcessor implements SqlProcessor {
 
     private static final Logger LOGGER = Logger.getLogger(DynamicSqlProcessor.class.getName());
 
+    /**
+     * A closure that modifies SQL content based on some condition
+     */
+    // 函数式接口定义
+        
+
     // 增强版标签正则表达式，支持嵌套标签
     private static final Pattern TAG_PATTERN = Pattern.compile(
             "<([/]?)(\\w+)(?:\\s+((?:\"[^\"]*\"|'[^']*'|[^>])*))?>(.*?)</\\2>",
@@ -240,56 +246,14 @@ public class DynamicSqlProcessor implements SqlProcessor {
         }
     }
 
-    static class SqlContext {
-        private final StringBuilder sql = new StringBuilder();
-        private final StringBuilder currentTagContent = new StringBuilder();
-        private final Map<String, Object> params;
-        private final Deque<Closure> closures = new ArrayDeque<>();
-        private boolean isProcessingTagContent = false;
-
+    static class SqlContext extends AbstractSqlContext<Closure> {
         SqlContext(Map<String, Object> params) {
-            this.params = new HashMap<>();
-            if (params != null) {
-                // 过滤掉null值
-                params.forEach((key, value) -> {
-                    if (value != null) {
-                        this.params.put(key, value);
-                    }
-                });
-            }
+            super(params);
         }
+        
+        // 重写一些方法以保持API兼容性（如果需要）
 
-        void append(String text) {
-            if (isProcessingTagContent) {
-                currentTagContent.append(text);
-            } else {
-                sql.append(text);
-            }
-        }
-
-        void startTagContent() {
-            isProcessingTagContent = true;
-            currentTagContent.setLength(0);
-        }
-
-        String finishTagContent() {
-            isProcessingTagContent = false;
-            String content = currentTagContent.toString();
-            currentTagContent.setLength(0);
-            return content;
-        }
-
-        void addParam(String name, Object value) {
-            if (value != null) {
-                params.put(name, value);
-            }
-        }
-
-        void pushClosure(Closure closure) {
-            closures.push(closure);
-        }
-
-        void closeTag(String tagName) {
+        public void closeTag(String tagName) {
             if (!closures.isEmpty()) {
                 Closure closure = closures.pop();
                 boolean wasProcessingTagContent = isProcessingTagContent;
@@ -305,11 +269,13 @@ public class DynamicSqlProcessor implements SqlProcessor {
             }
         }
 
-        String getSql() {
+        @Override
+        public String getSql() {
             return sql.toString().replaceAll("\\s+", " ").trim();
         }
 
-        Map<String, Object> getParams() {
+        @Override
+        public Map<String, Object> getParams() {
             return Collections.unmodifiableMap(params);
         }
     }

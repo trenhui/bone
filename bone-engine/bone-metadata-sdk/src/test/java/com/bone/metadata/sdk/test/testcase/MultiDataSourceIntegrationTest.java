@@ -92,7 +92,7 @@ public class MultiDataSourceIntegrationTest extends BaseDataSourceTest {
         when(slaveJdbcTemplate.queryForObject(anyString(), eq(String.class), any())).thenReturn(userName + "_slave");
         
         // 写操作：使用主库插入用户
-        dataSourceManager.withMaster(() -> {
+        dataSourceManager.executeWithDataSource("master", () -> {
             masterJdbcTemplate.update(
                 "INSERT INTO test_user (id, name, email) VALUES (?, ?, ?)",
                 userId, userName, userEmail
@@ -101,7 +101,7 @@ public class MultiDataSourceIntegrationTest extends BaseDataSourceTest {
         });
         
         // 模拟主从复制延迟（在测试环境中手动设置从库数据）
-        dataSourceManager.withSlave(() -> {
+        dataSourceManager.executeWithDataSource("slave", () -> {
             slaveJdbcTemplate.update(
                 "INSERT INTO test_user (id, name, email) VALUES (?, ?, ?)",
                 userId, userName + "_slave", userEmail
@@ -110,14 +110,14 @@ public class MultiDataSourceIntegrationTest extends BaseDataSourceTest {
         });
         
         // 读操作：从主库读取
-        String masterUserName = dataSourceManager.withMaster(() -> {
+        String masterUserName = dataSourceManager.executeWithDataSource("master", () -> {
             return masterJdbcTemplate.queryForObject(
                 "SELECT name FROM test_user WHERE id = ?", String.class, userId
             );
         });
         
         // 读操作：从从库读取
-        String slaveUserName = dataSourceManager.withSlave(() -> {
+        String slaveUserName = dataSourceManager.executeWithDataSource("slave", () -> {
             return slaveJdbcTemplate.queryForObject(
                 "SELECT name FROM test_user WHERE id = ?", String.class, userId
             );
@@ -146,7 +146,7 @@ public class MultiDataSourceIntegrationTest extends BaseDataSourceTest {
         
         try {
             // 步骤1：在主库创建用户
-            dataSourceManager.withMaster(() -> {
+            dataSourceManager.executeWithDataSource("master", () -> {
                 masterJdbcTemplate.update(
                     "INSERT INTO test_user (id, name, email) VALUES (?, ?, ?)",
                     userId, "transaction_user", "transaction@example.com"
@@ -161,7 +161,7 @@ public class MultiDataSourceIntegrationTest extends BaseDataSourceTest {
             );
             
             // 步骤2：在主库创建订单
-            dataSourceManager.withMaster(() -> {
+            dataSourceManager.executeWithDataSource("master", () -> {
                 masterJdbcTemplate.update(
                     "INSERT INTO test_order (id, user_id, amount, status) VALUES (?, ?, ?, ?)",
                     orderId, userId, 100.00, "PENDING"
@@ -176,7 +176,7 @@ public class MultiDataSourceIntegrationTest extends BaseDataSourceTest {
             );
             
             // 验证数据是否正确插入
-            Long orderCount = dataSourceManager.withMaster(() -> {
+            Long orderCount = dataSourceManager.executeWithDataSource("master", () -> {
                 return masterJdbcTemplate.queryForObject(
                     "SELECT COUNT(*) FROM test_order WHERE user_id = ?", Long.class, userId
                 );
@@ -213,7 +213,7 @@ public class MultiDataSourceIntegrationTest extends BaseDataSourceTest {
         // 这里我们使用主库和tenantA数据源来模拟
         
         // 检查租户A的数据在tenantA数据源中存在
-        boolean tenantADataExists = dataSourceManager.withDataSource("tenantA", () -> {
+        boolean tenantADataExists = dataSourceManager.executeWithDataSource("tenantA", () -> {
             try {
                 // tenantA数据源在测试环境中可能没有实际数据，这里主要验证数据源切换功能
                 // 实际应用中这里应该查询tenantA数据源中的数据
@@ -233,7 +233,7 @@ public class MultiDataSourceIntegrationTest extends BaseDataSourceTest {
      * @param userName 用户名
      */
     private void simulateTenantOperation(String tenantDataSource, Long userId, String userName) {
-        dataSourceManager.withDataSource(tenantDataSource, () -> {
+        dataSourceManager.executeWithDataSource(tenantDataSource, () -> {
             // 在实际应用中，这里会使用对应的租户数据源
             // 在测试环境中，我们只是验证数据源切换功能
             System.out.println("Executing operation for tenant using data source: " + tenantDataSource);
@@ -256,7 +256,7 @@ public class MultiDataSourceIntegrationTest extends BaseDataSourceTest {
         when(slaveJdbcTemplate.queryForObject("SELECT COUNT(*) FROM test_user", Long.class)).thenReturn(0L);
         
         // 批量插入数据到主库
-        dataSourceManager.withMaster(() -> {
+        dataSourceManager.executeWithDataSource("master", () -> {
             for (int i = 0; i < batchSize; i++) {
                 Long userId = 4000L + i;
                 masterJdbcTemplate.update(
@@ -273,7 +273,7 @@ public class MultiDataSourceIntegrationTest extends BaseDataSourceTest {
         );
         
         // 统计主库中的数据量
-        Long masterCount = dataSourceManager.withMaster(() -> {
+        Long masterCount = dataSourceManager.executeWithDataSource("master", () -> {
             return masterJdbcTemplate.queryForObject("SELECT COUNT(*) FROM test_user", Long.class);
         });
         
@@ -281,7 +281,7 @@ public class MultiDataSourceIntegrationTest extends BaseDataSourceTest {
                 "主库中应有正确数量的批量插入数据");
         
         // 验证从库中还没有这些数据（因为我们没有同步）
-        Long slaveCount = dataSourceManager.withSlave(() -> {
+        Long slaveCount = dataSourceManager.executeWithDataSource("slave", () -> {
             return slaveJdbcTemplate.queryForObject("SELECT COUNT(*) FROM test_user", Long.class);
         });
         
@@ -313,7 +313,7 @@ public class MultiDataSourceIntegrationTest extends BaseDataSourceTest {
         
         try {
             // 步骤1：在主库创建用户
-            dataSourceManager.withMaster(() -> {
+            dataSourceManager.executeWithDataSource("master", () -> {
                 masterJdbcTemplate.update(
                     "INSERT INTO test_user (id, name, email) VALUES (?, ?, ?)",
                     userId, "cross_tx_user", "cross_tx@example.com"
@@ -328,7 +328,7 @@ public class MultiDataSourceIntegrationTest extends BaseDataSourceTest {
             );
             
             // 步骤2：在从库创建订单
-            dataSourceManager.withSlave(() -> {
+            dataSourceManager.executeWithDataSource("slave", () -> {
                 slaveJdbcTemplate.update(
                     "INSERT INTO test_order (id, user_id, amount, status) VALUES (?, ?, ?, ?)",
                     orderId, userId, 200.00, "PENDING"

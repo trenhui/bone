@@ -795,30 +795,16 @@ public class MyBatisSqlProcessor implements SqlProcessor {
         }
     }
 
-    static class SqlContext {
-        private static final Pattern ALLOWED_DOLLAR_PATTERN = Pattern.compile("^[a-zA-Z0-9_]+$");
+    static class SqlContext extends AbstractSqlContext<SqlContext.SqlClosure> {
+        private static final Pattern ALLOWED_DOLLAR_PATTERN = Pattern.compile("^[a-zA-Z0-9_]+");
 
         private final MyBatisSqlProcessor processor;
         private final SqlConfigProperties properties;
-        private final StringBuilder sql = new StringBuilder();
-        private final StringBuilder currentTagContent = new StringBuilder();
-        private final Map<String, Object> params;
-        private final Deque<SqlClosure> closures = new ArrayDeque<>();
-        private boolean isProcessingTagContent = false;
 
         public SqlContext(MyBatisSqlProcessor processor, SqlConfigProperties properties, Map<String, Object> params) {
+            super(params);
             this.processor = processor;
             this.properties = properties;
-            this.params = params;
-        }
-
-        public void append(String text) {
-            (isProcessingTagContent ? currentTagContent : sql).append(text);
-        }
-
-        public void startTagContent() {
-            isProcessingTagContent = true;
-            currentTagContent.setLength(0);
         }
 
         public void closeTag(String tagName) {

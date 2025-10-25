@@ -41,9 +41,29 @@ public class PaymentRequest {
      */
     private Map<String, Object> extraParams;
     
-    // 手动添加 getter 方法以确保编译通过
-    public BigDecimal getAmount() {
-        return amount;
+    // 手动添加 setter 方法以确保编译通过
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+    
+    public void setPaymentMethod(String paymentMethod) {
+        this.paymentMethod = paymentMethod;
+    }
+    
+    public void setOrderId(String orderId) {
+        this.orderId = orderId;
+    }
+    
+    public void setAmount(BigDecimal amount) {
+        this.amount = amount;
+    }
+    
+    public void setCurrency(String currency) {
+        this.currency = currency;
+    }
+    
+    public void setExtraParams(Map<String, Object> extraParams) {
+        this.extraParams = extraParams;
     }
     
     public String getPaymentMethod() {

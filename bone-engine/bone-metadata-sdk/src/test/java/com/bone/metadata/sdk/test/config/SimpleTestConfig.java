@@ -21,9 +21,7 @@ import com.bone.metadata.sdk.sql.template.SqlTemplateLoader;
 import com.bone.metadata.sdk.sql.template.SqlTemplate;
 import com.bone.metadata.sdk.support.config.SqlConfigProperties;
 import com.bone.metadata.sdk.support.util.DistributedLockUtil;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -70,7 +68,7 @@ public class SimpleTestConfig {
     
     @Bean
     public ExceptionHandler exceptionHandler() {
-        return Mockito.mock(ExceptionHandler.class);
+        return ExceptionHandler.getInstance();
     }
     
     @Bean
@@ -96,7 +94,14 @@ public class SimpleTestConfig {
 
     @Bean
     public MetadataService metadataService() {
-        return Mockito.mock(MetadataService.class);
+        MetadataService mockService = Mockito.mock(MetadataService.class);
+        // 配置getTableMetadata方法，使用正确的泛型签名
+        Mockito.when(mockService.getTableMetadata(Mockito.<Class<?>>any())).thenAnswer(invocation -> {
+            Class<?> entityClass = invocation.getArgument(0);
+            // 返回一个简单的TableMetadata实例，包含表名
+            return new TableMetadata(entityClass.getSimpleName(), Collections.emptyList());
+        });
+        return mockService;
     }
     
     @Bean
@@ -111,6 +116,7 @@ public class SimpleTestConfig {
 
     @Bean
     public ExtensionCoordinator extensionCoordinator() {
+        // ExtensionCoordinator需要ApplicationContext参数，使用mock对象模拟
         return Mockito.mock(ExtensionCoordinator.class);
     }
     

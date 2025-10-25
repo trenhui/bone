@@ -113,19 +113,25 @@ public class TestConfig {
     }
     
     /**
-     * 配置异常处理器，统一处理应用异常
-     * @return 异常处理器模拟实例
+     * 配置异常处理器，创建一个简单的异常处理器实现
+     * @return 异常处理器实例
      */
     @Bean
-    public ExceptionHandler exceptionHandler() {
-        ExceptionHandler mockHandler = Mockito.mock(ExceptionHandler.class);
-        // 配置异常处理行为
-        Mockito.when(mockHandler.handleException(any(Exception.class)))
-                .thenAnswer(invocation -> {
-                    Exception ex = invocation.getArgument(0);
-                    return new RuntimeException("Mock exception handler: " + ex.getMessage(), ex);
-                });
-        return mockHandler;
+    public Object exceptionHandler() {
+        // 创建一个简单的异常处理器实现，避免依赖ExceptionHandler类
+        return new Object() {
+            public RuntimeException handleException(Exception e) {
+                return new RuntimeException("Test exception handler: " + e.getMessage(), e);
+            }
+            
+            public RuntimeException handleException(Exception e, String message) {
+                return new RuntimeException(message, e);
+            }
+            
+            public void logException(Exception e) {
+                System.out.println("Test exception log: " + e.getMessage());
+            }
+        };
     }
 
     /**

@@ -2,7 +2,8 @@ package com.bone.metadata.sdk.test.config;
 
 import com.bone.metadata.sdk.support.dataSource.DynamicDataSource;
 import com.bone.metadata.sdk.support.dataSource.DataSourceManager;
-import com.bone.metadata.sdk.test.config.DataSourceAnnotationInterceptor;
+import com.bone.metadata.sdk.support.dataSource.DefaultDataSourceManager;
+import com.bone.metadata.sdk.support.dataSource.DataSourceAnnotationInterceptor;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -162,11 +163,11 @@ public class MultiDataSourceTestConfig {
     @Bean
     public DataSourceManager dataSourceManager() {
         // 创建数据源管理器，这里简化实现
-        return new DataSourceManager();
+        return new DefaultDataSourceManager();
     }
     
     /**
-     * 配置数据源注解拦截器，处理@DS注解
+     * 配置数据源注解拦截器，处理@DataSourceSwitch注解
      * @return 数据源注解拦截器实例
      */
     @Bean
@@ -175,14 +176,15 @@ public class MultiDataSourceTestConfig {
     }
     
     /**
-     * 配置AOP切面，拦截带有@DS注解的方法调用
+     * 配置AOP切面，拦截带有@DataSourceSwitch注解的方法调用
      * @param interceptor 数据源注解拦截器
      * @return AOP切面顾问
      */
     @Bean
     public Advisor dataSourceAdvisor(DataSourceAnnotationInterceptor interceptor) {
         AspectJExpressionPointcut pointcut = new AspectJExpressionPointcut();
-        pointcut.setExpression("@annotation(com.bone.metadata.sdk.support.dataSource.annotation.DS)");
+        pointcut.setExpression("@annotation(com.bone.metadata.sdk.support.dataSource.DataSourceSwitch) || " +
+                              "@within(com.bone.metadata.sdk.support.dataSource.DataSourceSwitch)");
         return new DefaultPointcutAdvisor(pointcut, interceptor);
     }
 }

@@ -291,15 +291,17 @@ public class DynamicModelManager implements InitializingBean {
             Map<String, DynamicModelConfig.DynamicFieldDefinition> fields = new HashMap<>();
             
             // 从简化的模型数据中获取字段信息
-            if (sourceMetadata instanceof Map && ((Map<?,?>)sourceMetadata).get("fields") instanceof Map) {
-                Map<String, Object> sourceFields = (Map<String, Object>) ((Map<?,?>)sourceMetadata).get("fields");
+            if (sourceMetadata instanceof Map<?, ?> sourceMap && sourceMap.get("fields") instanceof Map<?, ?>) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> sourceFields = (Map<String, Object>) sourceMap.get("fields");
                 
                 for (Map.Entry<String, Object> entry : sourceFields.entrySet()) {
                     String fieldName = entry.getKey();
                     // 跳过ID字段，让createEntityMetadata方法自动创建
                     if (!"id".equals(fieldName)) {
                         Object fieldValue = entry.getValue();
-                        if (fieldValue instanceof Map) {
+                        if (fieldValue instanceof Map<?, ?>) {
+                            @SuppressWarnings("unchecked")
                             Map<String, Object> fieldMap = (Map<String, Object>) fieldValue;
                             DynamicModelConfig.DynamicFieldDefinition newField = new DynamicModelConfig.DynamicFieldDefinition();
                             // 使用工具方法简化类型转换
@@ -615,14 +617,26 @@ public class DynamicModelManager implements InitializingBean {
     public Map<String, Object> getModelFields(String modelName) {
         Assert.hasText(modelName, "模型名称不能为空");
         
-        Map<String, Object> model = (Map<String, Object>) getModelByName(modelName);
-        if (model == null) {
+        Object modelObj = getModelByName(modelName);
+        if (modelObj == null) {
             log.error("尝试获取不存在的模型字段: {}", modelName);
             return Collections.emptyMap();
         }
         
-        Map<String, Object> fields = (Map<String, Object>) model.get("fields");
-        return fields != null ? fields : Collections.emptyMap();
+        if (!(modelObj instanceof Map<?, ?> modelMap)) {
+            log.error("模型数据格式错误: {}", modelName);
+            return Collections.emptyMap();
+        }
+        
+        Object fieldsObj = modelMap.get("fields");
+        if (!(fieldsObj instanceof Map<?, ?> fieldsMap)) {
+            log.error("模型字段数据格式错误: {}", modelName);
+            return Collections.emptyMap();
+        }
+        
+        @SuppressWarnings("unchecked")
+        Map<String, Object> typedFields = (Map<String, Object>) fieldsMap;
+        return typedFields;
     }
     
     /**
@@ -632,10 +646,13 @@ public class DynamicModelManager implements InitializingBean {
         Assert.hasText(modelName, "模型名称不能为空");
         Assert.hasText(fieldName, "字段名称不能为空");
         
-        // 简化实现，返回基础Map
-        Map<String, Object> fields = new HashMap<>();
-        Object field = fields.get(fieldName);
+        // 获取模型字段映射
+        Map<String, Object> fields = getModelFields(modelName);
+        if (fields.isEmpty()) {
+            throw new BusinessException("字段不存在: " + fieldName);
+        }
         
+        Object field = fields.get(fieldName);
         if (field == null) {
             throw new BusinessException("字段不存在: " + fieldName);
         }

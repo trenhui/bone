@@ -4,28 +4,18 @@ import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.domain.model.AllocationContext;
 import com.bone.metadata.sdk.domain.model.TableMetadata;
 
-public class SelectContext {
-    private final TableMetadata table;
-    private final Criteria<?> criteria;
-    private final AllocationContext extContext;
+public class SelectContext extends AbstractQueryContext {
     private final boolean includeDeleted;
 
     public SelectContext(TableMetadata table, Criteria<?> criteria, AllocationContext extContext, boolean includeDeleted) {
-        this.table = table;
-        this.criteria = criteria;
-        this.extContext = extContext;
+        super(table, criteria, extContext);
         this.includeDeleted = includeDeleted;
     }
 
     public SelectContext(TableMetadata table, Criteria<?> criteria, boolean includeDeleted) {
-        this.table = table;
-        this.criteria = criteria;
-        this.extContext = null;
+        super(table, criteria, null);
         this.includeDeleted = includeDeleted;
     }
     
-    public TableMetadata getTable() { return table; }
-    public Criteria<?> getCriteria() { return criteria; }
-    public AllocationContext getExtContext() { return extContext; }
     public boolean isIncludeDeleted() { return includeDeleted; }
 }

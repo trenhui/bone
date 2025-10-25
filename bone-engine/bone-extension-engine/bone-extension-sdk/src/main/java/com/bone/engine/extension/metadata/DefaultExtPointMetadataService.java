@@ -148,11 +148,18 @@ public class DefaultExtPointMetadataService implements ExtPointMetadataService, 
         
         // 从@ExtPoint注解中提取元数据
         ExtPoint extPoint = AnnotationUtils.findAnnotation(extPointClass, ExtPoint.class);
+        com.bone.engine.extension.annotation.ExtPointDoc extPointDoc = AnnotationUtils.findAnnotation(extPointClass, com.bone.engine.extension.annotation.ExtPointDoc.class);
+        
         if (extPoint != null) {
             metadata.setDescription(extPoint.description());
-                metadata.setOwner(""); // 使用默认值
-                metadata.setDocumentationUrl(""); // 使用默认值
-            metadata.setCategory(extPoint.category());
+            metadata.setOwner(""); // 使用默认值
+            metadata.setDocumentationUrl(""); // 使用默认值
+            // 使用ExtPointDoc注解获取category信息
+            if (extPointDoc != null) {
+                metadata.setCategory(extPointDoc.category());
+            } else {
+                metadata.setCategory("default");
+            }
             metadata.setTags(Collections.emptyList()); // ExtPoint没有tags()方法
             metadata.setDeprecated(!extPoint.deprecatedSince().isEmpty()); // 使用deprecatedSince作为判断依据
             metadata.setDeprecatedSince(extPoint.deprecatedSince());
@@ -223,25 +230,32 @@ public class DefaultExtPointMetadataService implements ExtPointMetadataService, 
             }
             
             Extension extension = AnnotationUtils.findAnnotation(implClass, Extension.class);
+            com.bone.engine.extension.annotation.ExtensionDoc extensionDoc = AnnotationUtils.findAnnotation(implClass, com.bone.engine.extension.annotation.ExtensionDoc.class);
+            
             if (extension != null && ExtPointUtils.isExtensionImplementation(implClass)) {
                 ExtensionImplMetadata implMetadata = new ExtensionImplMetadata();
                 implMetadata.setImplClassName(implClass.getName());
                 implMetadata.setImplSimpleName(implClass.getSimpleName());
                 
                 // 设置路由配置信息
-            implMetadata.setTenantCode(extension.tenantCode()); // 假设需要字符串
-            implMetadata.setBizCode(extension.bizCode()); // 使用字符串
+                implMetadata.setTenantCode(extension.tenantCode()); // 假设需要字符串
+                implMetadata.setBizCode(extension.bizCode()); // 使用字符串
                 implMetadata.setUseCase(extension.useCase());
                 implMetadata.setScenario(extension.scenario());
                 implMetadata.setExpression(""); // Extension没有expression()方法
             
-            // 设置版本信息
-            implMetadata.setVersion(extension.version());
-            implMetadata.setCompatibleWith(new String[0]); // Extension没有compatibleWith()方法，使用空数组
+                // 设置版本信息
+                implMetadata.setVersion(extension.version());
+                implMetadata.setCompatibleWith(new String[0]); // Extension没有compatibleWith()方法，使用空数组
                 
                 // 从@Extension注解中提取新添加的元数据
                 implMetadata.setDescription(extension.description());
-                implMetadata.setAuthor(extension.author());
+                // 使用ExtensionDoc注解获取author信息
+                if (extensionDoc != null) {
+                    implMetadata.setAuthor(extensionDoc.author());
+                } else {
+                    implMetadata.setAuthor("");
+                }
                 implMetadata.setDefault(extension.isDefault() || ExtPointConstants.DEFAULT_VALUE.equals(extension.bizCode()));
                 // 不再重复设置已经设置过的字段
                 implMetadata.setRecommended(false); // 使用默认值

@@ -35,6 +35,25 @@ const App: React.FC = () => {
           appId: 'user-456',
           theme: 'light'
         }
+      },
+      {
+        name: 'bone-extension-studio-ui',
+        entry: 'http://localhost:3003', // 假设微应用运行在3003端口
+        container: '#micro-app-container',
+        activeRule: '/extension-studio',
+        sandbox: true,
+        props: {
+          appId: 'extension-789',
+          theme: 'light',
+          config: {
+            apiBaseUrl: '/api/extension',
+            environment: process.env.NODE_ENV || 'development'
+          },
+          context: {
+            token: localStorage.getItem('bone-token') || '',
+            userId: localStorage.getItem('bone-user-id') || ''
+          }
+        }
       }
     ];
 

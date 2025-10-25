@@ -1,23 +1,15 @@
 package com.bone.procurement.exception;
 
 import com.bone.procurement.dto.ErrorResponse;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.context.request.WebRequest;
-import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
-
-import java.util.List;
-import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +18,7 @@ import org.slf4j.LoggerFactory;
  * 统一处理系统中的各种异常，并返回标准化的错误响应
  */
 @ControllerAdvice
-public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
+public class GlobalExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     /**
@@ -38,7 +30,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     @ResponseBody
     public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException ex, WebRequest request) {
-        // 简化实现，使用默认状态
+        // 使用默认的BAD_REQUEST状态码
         HttpStatus status = HttpStatus.BAD_REQUEST;
         
         log.warn("业务异常: {}", ex.getMessage());
@@ -56,17 +48,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     /**
      * 处理参数验证异常
      * @param ex 参数验证异常
-     * @param headers HTTP头
-     * @param status HTTP状态码
      * @param request Web请求
      * @return 响应实体
      */
-    // 移除被覆盖的方法，避免编译错误
-    public ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
-                                                                 HttpHeaders headers,
-                                                                 HttpStatus status,
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseBody
+    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex,
                                                                  WebRequest request) {
-        // 简化实现
         log.warn("参数验证失败");
         
         ErrorResponse errorResponse = new ErrorResponse(
@@ -78,8 +66,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         
         return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
-    
-
     
     /**
      * 处理空指针异常
