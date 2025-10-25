@@ -10,14 +10,12 @@ import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
-import com.bone.engine.extension.EnableExtPoints;
 /**
  * @author renhui.trh
  */
 @ConfigurationPropertiesScan
 @EnableFeignClients
 @EnableDiscoveryClient
-@EnableExtPoints
 @MapperScan(basePackages = {"com.bone.lowcode.integration.infrastructure.repository"})
 @EnableAspectJAutoProxy(exposeProxy = true, proxyTargetClass = true)
 @SpringBootApplication(exclude = {

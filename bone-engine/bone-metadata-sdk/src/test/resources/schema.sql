@@ -6,7 +6,7 @@ CREATE TABLE roles (
 );
 
 -- 创建用户表
-CREATE TABLE users (
+CREATE TABLE user (
     id BIGINT PRIMARY KEY,
     username VARCHAR(100),
     password VARCHAR(100),

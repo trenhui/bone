@@ -6,6 +6,7 @@ import { ThemeProvider } from '@bone/ui/styled-system';
 import { lightTheme } from '@bone/ui/design-system';
 import { initializeTheme } from '@bone/ui/design-system';
 import { getPerformanceMonitor } from '@bone/core/performance-monitor';
+import { getApplicationRegistry } from '@bone/core/micro-fe-runtime';
 
 // 初始化主题
 initializeTheme('light');
@@ -20,6 +21,23 @@ const performanceMonitor = getPerformanceMonitor({
 (window as any).__BONE_PERFORMANCE__ = {
   recordAppInit: (duration: number) => {
     console.log('App initialized in', duration, 'ms');
+  }
+};
+
+// 标记为Bone微前端环境
+(window as any).__BONE_MICRO_FRONTEND__ = true;
+
+// 提供微应用注册方法
+(window as any).registerMicroApp = (appConfig: any) => {
+  const registry = getApplicationRegistry();
+  if (registry && typeof registry.register === 'function') {
+    registry.register({
+      name: appConfig.name,
+      entry: window.location.origin,
+      activeRule: `/app/${appConfig.name}`,
+      lifecycle: appConfig
+    });
+    console.log(`Micro app ${appConfig.name} registered`);
   }
 };
 
