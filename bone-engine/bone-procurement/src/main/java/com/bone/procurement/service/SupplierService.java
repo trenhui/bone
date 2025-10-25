@@ -22,8 +22,7 @@ public class SupplierService {
 
     private static final Logger logger = LoggerFactory.getLogger(SupplierService.class);
     
-    @Autowired
-    private SupplierRepository supplierRepository;
+    // 移除Repository依赖，使用模拟实现
     
     /**
      * 创建供应商

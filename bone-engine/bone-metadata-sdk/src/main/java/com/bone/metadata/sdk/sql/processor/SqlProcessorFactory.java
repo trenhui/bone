@@ -15,8 +15,8 @@ public class SqlProcessorFactory {
     private SqlProcessor defaultProcessor;
 
     public SqlProcessorFactory(SqlConfigProperties properties) {
-        // 初始化处理器映射
-        processors.put(SqlTemplateType.SQL, new PassThroughSqlProcessor(properties));
+        // 初始化处理器映射 - 移除冗余的PassThroughSqlProcessor，直接使用MyBatisSqlProcessor
+        processors.put(SqlTemplateType.SQL, new MyBatisSqlProcessor(properties));
         processors.put(SqlTemplateType.MYBATIS, new MyBatisSqlProcessor(properties));
         processors.put(SqlTemplateType.YAML_SQL, new DynamicSqlProcessor());
 

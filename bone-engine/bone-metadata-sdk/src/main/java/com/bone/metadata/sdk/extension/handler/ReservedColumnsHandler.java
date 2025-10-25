@@ -23,6 +23,7 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import com.bone.metadata.sdk.sql.executor.TypeConverter;
 
 public class ReservedColumnsHandler implements ExtensionStorageHandler {
     private static final Logger LOGGER = Logger.getLogger(ReservedColumnsHandler.class.getName());
@@ -131,9 +132,39 @@ public class ReservedColumnsHandler implements ExtensionStorageHandler {
         }
     }
 
+    private static Object convert(Object value, DataType type) {
+        try {
+            switch (type) {
+                case INTEGER -> {
+                    if (value == null) return null;
+                    return TypeConverter.convert(value, Long.class);
+                }
+                case NUMBER -> {
+                    if (value == null) return null;
+                    return TypeConverter.convert(value, BigDecimal.class);
+                }
+                case BOOLEAN -> {
+                    if (value == null) return null;
+                    return TypeConverter.convert(value, Boolean.class);
+                }
+                case DATE -> {
+                    if (value == null) return null;
+                    return TypeConverter.convert(value, LocalDateTime.class);
+                }
+                default -> {
+                    return value;
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.warning("Conversion failed for value: " + value + " to type: " + type + ", error: " + e.getMessage());
+            return null;
+        }
+    }
+    
     private Object convertFieldValue(Object rawValue, String dataType) {
         try {
-            return TypeConverter.convert(rawValue, DataType.valueOf(dataType));
+            DataType type = DataType.valueOf(dataType);
+            return convert(rawValue, type);
         } catch (IllegalArgumentException e) {
             LOGGER.warning("Unsupported data type conversion: " + dataType);
             return rawValue;
@@ -144,71 +175,7 @@ public class ReservedColumnsHandler implements ExtensionStorageHandler {
         return TypeDetector.detect(value, TEXT_LENGTH_THRESHOLD);
     }
 
-    private static class TypeConverter {
-        static Object convert(Object value, DataType type) {
-            return switch (type) {
-                case INTEGER -> convertToLong(value);
-                case NUMBER -> convertToBigDecimal(value);
-                case BOOLEAN -> convertToBoolean(value);
-                case DATE -> convertToDateTime(value);
-                default -> value;
-            };
-        }
 
-        private static Long convertToLong(Object value) {
-            if (value instanceof Number num) return num.longValue();
-            if (value instanceof String str) {
-                try {
-                    return Long.parseLong(str);
-                } catch (NumberFormatException e) {
-                    LOGGER.warning("Long conversion failed for value: " + str);
-                    return null;
-                }
-            }
-            return null;
-        }
-
-        private static BigDecimal convertToBigDecimal(Object value) {
-            if (value instanceof BigDecimal bd) return bd.stripTrailingZeros();
-            if (value instanceof Number num) return new BigDecimal(num.toString());
-            if (value instanceof String str) {
-                try {
-                    return new BigDecimal(str);
-                } catch (NumberFormatException e) {
-                    LOGGER.warning("BigDecimal conversion failed for value: " + str);
-                    return null;
-                }
-            }
-            return null;
-        }
-
-        private static Boolean convertToBoolean(Object value) {
-            if (value instanceof Boolean bool) return bool;
-            if (value instanceof Number num) return num.intValue() != 0;
-            if (value instanceof String str) {
-                return Boolean.parseBoolean(str) || "1".equals(str);
-            }
-            return null;
-        }
-
-        private static LocalDateTime convertToDateTime(Object value) {
-            if (value instanceof LocalDateTime ldt) return ldt;
-            if (value instanceof Date date) {
-                return date.toInstant()
-                        .atZone(ZoneId.systemDefault())
-                        .toLocalDateTime();
-            }
-            if (value instanceof String str) {
-                try {
-                    return LocalDateTime.parse(str);
-                } catch (DateTimeParseException e) {
-                    LOGGER.warning("DateTime conversion failed for value: " + str);
-                    return null;
-                }
-            }
-            return null;
-        }
-    }
 
     private static class TypeDetector {
         private static final Map<Class<?>, DataType> TYPE_MAPPINGS = createTypeMappings();
