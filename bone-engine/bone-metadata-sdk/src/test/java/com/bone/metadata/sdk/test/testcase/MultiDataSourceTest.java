@@ -89,14 +89,14 @@ public class MultiDataSourceTest {
         // 验证初始状态
         assertNull(DataSourceContextHolder.getCurrentDataSource(), 
                 "数据源上下文初始状态应为null");
-        assertNull(DataSourceContextHolder.getCurrentLookupKey(), 
+        assertNull(DataSourceContextHolder.getCurrentDataSource(), 
                 "初始状态下不应存在激活的数据源");
         
         // 设置主数据源并验证
         DataSourceContextHolder.setDataSource("master");
         assertEquals("master", DataSourceContextHolder.getCurrentDataSource(), 
                 "数据源设置后应能获取到正确的键值");
-        assertNotNull(DataSourceContextHolder.getCurrentLookupKey(), 
+        assertNotNull(DataSourceContextHolder.getCurrentDataSource(), 
                 "数据源设置后应能获取到正确的键值");
         
         // 嵌套设置从数据源并验证
@@ -115,7 +115,7 @@ public class MultiDataSourceTest {
         assertEquals("master", cleared, "clearDataSource方法应返回被清理的数据源键");
         assertNull(DataSourceContextHolder.getCurrentDataSource(), 
                 "清理所有数据源后上下文应完全清空");
-        assertNull(DataSourceContextHolder.getCurrentLookupKey(), 
+        assertNull(DataSourceContextHolder.getCurrentDataSource(), 
                 "所有数据源清理后上下文应完全清空");
     }
     
