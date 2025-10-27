@@ -14,11 +14,11 @@ import com.bone.tool.codegen.domain.repository.DataSourceConfigRepository;
 import com.bone.tool.codegen.domain.repository.CodegenTableRepository;
 import com.bone.tool.codegen.domain.repository.CodegenColumnRepository;
 import com.bone.tool.codegen.domain.repository.DatabaseTableRepository;
+import com.bone.tool.codegen.adapter.GlobalExceptionHandler.BusinessException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -67,11 +67,21 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
             DatabaseTableRepository databaseTableRepository,
             CodegenConverter codegenConverter) {
         // 参数验证
-        Assert.notNull(dataSourceConfigRepository, "数据源配置仓库不能为空");
-        Assert.notNull(codegenTableRepository, "代码生成表仓库不能为空");
-        Assert.notNull(codegenColumnRepository, "代码生成列仓库不能为空");
-        Assert.notNull(databaseTableRepository, "数据库表仓库不能为空");
-        Assert.notNull(codegenConverter, "代码生成转换器不能为空");
+        if (dataSourceConfigRepository == null) {
+            throw new BusinessException(400, "数据源配置仓库不能为空");
+        }
+        if (codegenTableRepository == null) {
+            throw new BusinessException(400, "代码生成表仓库不能为空");
+        }
+        if (codegenColumnRepository == null) {
+            throw new BusinessException(400, "代码生成列仓库不能为空");
+        }
+        if (databaseTableRepository == null) {
+            throw new BusinessException(400, "数据库表仓库不能为空");
+        }
+        if (codegenConverter == null) {
+            throw new BusinessException(400, "代码生成转换器不能为空");
+        }
         
         this.dataSourceConfigRepository = dataSourceConfigRepository;
         this.codegenTableRepository = codegenTableRepository;
@@ -93,7 +103,9 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
      */
     @Override
     public List<DatabaseTableMetadata> getTableList(Long dataSourceConfigId, String nameLike, String commentLike) {
-        Assert.notNull(dataSourceConfigId, "数据源ID不能为空");
+        if (dataSourceConfigId == null) {
+            throw new BusinessException(400, "数据源ID不能为空");
+        }
         
         // 获取完整的表列表
         List<DatabaseTableMetadata> tableMetadataList = retrieveTableListFromDatabase(dataSourceConfigId, null);
@@ -123,7 +135,9 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
      */
     @Override
     public List<DatabaseTableMetadata> getTables(Long dataSourceConfigId, List<String> tableNames) {
-        Assert.notNull(dataSourceConfigId, "数据源配置ID不能为空");
+        if (dataSourceConfigId == null) {
+            throw new BusinessException(400, "数据源配置ID不能为空");
+        }
         
         if (CollectionUtils.isEmpty(tableNames)) {
             logger.debug("表名列表为空，返回空列表");
@@ -226,7 +240,9 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
     @Override
     public List<CodegenTable> getCodegenTablesByDataSourceId(Long dataSourceConfigId) {
         // 验证参数
-        Assert.notNull(dataSourceConfigId, "数据源配置ID不能为空");
+        if (dataSourceConfigId == null) {
+            throw new BusinessException(400, "数据源配置ID不能为空");
+        }
         
         try {
             // 简化实现，返回空列表
@@ -246,7 +262,9 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
      * @throws RuntimeException 当分页查询不支持时抛出
      */
     public PageResult<CodegenTable> getCodegenTablePageResponse(CodegenTablePageRequest request) {
-        Assert.notNull(request, "请求参数不能为空");
+        if (request == null) {
+            throw new BusinessException(400, "请求参数不能为空");
+        }
         
         // 简化实现，使用静态工厂方法
         // 在实际应用中应该实现真正的分页查询逻辑
@@ -267,7 +285,9 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
      */
     @Override
     public CodegenDetailResponse getCodegenDetail(Long tableId) {
-        Assert.notNull(tableId, "表ID不能为空");
+        if (tableId == null) {
+            throw new BusinessException(400, "表ID不能为空");
+        }
         
         // 获取表配置
         CodegenTable codegenTable = codegenTableRepository.findById(tableId)
@@ -332,10 +352,18 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
      */
     private void validateImportParameters(Long dataSourceConfigId, String tableName, 
                                          String moduleName, String packageName) {
-        Assert.notNull(dataSourceConfigId, "数据源配置ID不能为空");
-        Assert.hasText(tableName, "表名不能为空");
-        Assert.hasText(moduleName, "模块名不能为空");
-        Assert.hasText(packageName, "包名不能为空");
+        if (dataSourceConfigId == null) {
+            throw new BusinessException(400, "数据源配置ID不能为空");
+        }
+        if (!StringUtils.hasText(tableName)) {
+            throw new BusinessException(400, "表名不能为空");
+        }
+        if (!StringUtils.hasText(moduleName)) {
+            throw new BusinessException(400, "模块名不能为空");
+        }
+        if (!StringUtils.hasText(packageName)) {
+            throw new BusinessException(400, "包名不能为空");
+        }
     }
     
     /**
@@ -386,10 +414,18 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
     public List<Long> importTablesFromDatabase(Long dataSourceConfigId, List<String> tableNames,
                                              String moduleName, String packageName,
                                              Integer sceneType, Integer modelType) {
-        Assert.notNull(dataSourceConfigId, "数据源配置ID不能为空");
-        Assert.notEmpty(tableNames, "表名列表不能为空");
-        Assert.hasText(moduleName, "模块名不能为空");
-        Assert.hasText(packageName, "包名不能为空");
+        if (dataSourceConfigId == null) {
+            throw new BusinessException(400, "数据源配置ID不能为空");
+        }
+        if (CollectionUtils.isEmpty(tableNames)) {
+            throw new BusinessException(400, "表名列表不能为空");
+        }
+        if (!StringUtils.hasText(moduleName)) {
+            throw new BusinessException(400, "模块名不能为空");
+        }
+        if (!StringUtils.hasText(packageName)) {
+            throw new BusinessException(400, "包名不能为空");
+        }
         
         List<Long> importedTableIds = new ArrayList<>(tableNames.size());
         
@@ -461,9 +497,13 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
     @Override
     public void updateCodegenTable(CodegenTableRequest request) {
         // 参数验证
-        Assert.notNull(request, "请求参数不能为空");
+        if (request == null) {
+            throw new BusinessException(400, "请求参数不能为空");
+        }
         final Long tableId = request.getId();
-        Assert.notNull(tableId, "表ID不能为空");
+        if (tableId == null) {
+            throw new BusinessException(400, "表ID不能为空");
+        }
         
         logger.debug("开始更新表配置，ID: {}", tableId);
         
@@ -516,7 +556,9 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
      */
     @Override
     public void syncTableFromDatabase(Long tableId) {
-        Assert.notNull(tableId, "表配置ID不能为空");
+        if (tableId == null) {
+            throw new BusinessException(400, "表配置ID不能为空");
+        }
 
         try {
             CodegenTable codegenTable = codegenTableRepository.findById(tableId)
@@ -911,15 +953,15 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
         }
         
         try {
-            codegenColumnRepository.deleteByTableId(tableId);
-        } catch (Exception e) {
-            logger.error("删除表字段配置失败，表ID: {}", tableId, e);
-            throw new BusinessException(500, "删除表字段配置失败: " + e.getMessage());
-        }
-        
-        try {
+            // 先删除相关的字段配置
+            deleteTableColumns(tableId);
+            
+            // 然后删除表配置
             codegenTableRepository.deleteById(tableId);
+            
             logger.info("删除表配置成功，表ID: {}", tableId);
+        } catch (BusinessException e) {
+            throw e;
         } catch (Exception e) {
             logger.error("删除表配置失败，表ID: {}", tableId, e);
             throw new BusinessException(500, "删除表配置失败: " + e.getMessage());

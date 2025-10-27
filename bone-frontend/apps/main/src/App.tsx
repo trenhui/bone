@@ -679,7 +679,7 @@ const App: React.FC = () => {
     
     const { menuHeaderRender } = props;
     
-    // 混合布局的特殊处理 - 只添加平台名称
+    // 混合布局的特殊处理
     if (themeConfig.layout === 'mix') {
       return (
         <div className="ant-pro-layout-header">
@@ -687,16 +687,16 @@ const App: React.FC = () => {
             <span style={{ fontSize: 16, fontWeight: 500, marginRight: 24, marginLeft: 8, color: themeConfig.navTheme === 'dark' ? '#fff' : '#000' }}>
               Bone Platform
             </span>
-            {/* 重要：直接使用ProLayout提供的menuHeaderRender，不做任何额外修改 */}
             {menuHeaderRender(props)}
           </div>
         </div>
       );
     }
     
-    // 顶部布局和其他布局 - 完全使用ProLayout的默认实现
-    // 这是解决子菜单展开问题的最佳方式，让ProLayout处理所有菜单交互逻辑
-    return menuHeaderRender(props);
+    // 对于顶部布局，不应该过度自定义menuBarRender
+    // 让ProLayout自身处理菜单的渲染和交互逻辑是最佳实践
+    // 这里我们直接返回null，让ProLayout使用默认的顶部菜单渲染逻辑
+    return null;
   };
 
   // 自定义面包屑配置

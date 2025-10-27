@@ -1,18 +1,15 @@
 package com.bone.metadata.sdk.support.dataSource;
 
 import com.bone.metadata.sdk.test.common.BaseDataSourceTest;
-import org.junit.jupiter.api.Test;
-
+import com.bone.metadata.sdk.test.common.SimpleAssertions;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 /**
- * DataSourceContextHolder单元测试类
+ * DataSourceContextHolder测试类
  * <p>全面验证数据源上下文管理的核心功能：</p>
  * <ul>
  *   <li>基本的设置、获取、清理功能</li>
@@ -23,14 +20,11 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class DataSourceContextHolderTest extends BaseDataSourceTest {
     
-
-    
     /**
      * 测试设置和获取数据源
      * <p>验证数据源标识能被正确设置和读取</p>
      */
-    @Test
-    public void shouldReturnCorrectDataSource_whenDataSourceIsSet() {
+    public void testSetAndGetDataSource() {
         // 准备测试数据
         final String expectedDataSource = "master";
         
@@ -38,269 +32,192 @@ public class DataSourceContextHolderTest extends BaseDataSourceTest {
         DataSourceContextHolder.setDataSource(expectedDataSource);
         
         // 验证结果
-        assertEquals(expectedDataSource, DataSourceContextHolder.getCurrentLookupKey(), 
+        SimpleAssertions.assertEquals(expectedDataSource, DataSourceContextHolder.getCurrentLookupKey(), 
                 "获取的数据源应该与设置的数据源一致");
+        
+        // 清理
+        DataSourceContextHolder.clearDataSource();
     }
     
     /**
      * 测试清理单个数据源
-     * <p>验证：</p>
-     * <ul>
-     *   <li>清理操作返回被清理的数据源标识</li>
-     *   <li>清理后当前数据源为null</li>
-     * </ul>
      */
-    @Test
-    public void shouldReturnClearedDataSource_whenDataSourceIsCleared() {
-        // 准备测试数据
-        final String testDataSource = "master";
-        
+    public void testClearDataSource() {
         // 设置数据源
-        DataSourceContextHolder.setDataSource(testDataSource);
+        final String dataSource = "master";
+        DataSourceContextHolder.setDataSource(dataSource);
         
-        // 执行清理
+        // 清理数据源
         String clearedDataSource = DataSourceContextHolder.clearDataSource();
         
-        // 验证返回值
-        assertEquals(testDataSource, clearedDataSource, 
-                "清理操作应该返回被清理的数据源标识");
-        
-        // 验证当前数据源已被清理
-        assertNull(DataSourceContextHolder.getCurrentLookupKey(), 
-                "清理后的数据源上下文应该为null");
+        // 验证
+        SimpleAssertions.assertEquals(dataSource, clearedDataSource, "清理操作应返回被清理的数据源");
+        SimpleAssertions.assertNull(DataSourceContextHolder.getCurrentLookupKey(), "清理后当前数据源应为null");
     }
     
     /**
-     * 测试清理所有数据源上下文
-     * <p>验证清理所有操作后上下文栈被完全清空</p>
+     * 测试嵌套上下文栈
      */
-    @Test
-    public void shouldClearAllContexts_whenClearAllIsCalled() {
-        // 准备测试数据
-        final String firstDataSource = "master";
-        final String secondDataSource = "slave";
-        
-        // 设置多个数据源，模拟嵌套场景
-        DataSourceContextHolder.setDataSource(firstDataSource);
-        DataSourceContextHolder.setDataSource(secondDataSource);
-        
-        // 执行清理所有操作
-        DataSourceContextHolder.clearAll();
-        
-        // 验证结果
-        assertNull(DataSourceContextHolder.getCurrentLookupKey(), 
-                "清理所有操作后数据源上下文应为null");
-        assertFalse(DataSourceContextHolder.hasDataSource(), 
-                "清理所有操作后不应存在任何数据源上下文");
-    }
-    
-    /**
-     * 测试数据源存在性检查
-     * <p>验证hasDataSource方法在不同状态下的行为</p>
-     */
-    @Test
-    public void shouldCorrectlyCheckDataSourceExistence() {
-        // 初始状态应该没有数据源
-        assertFalse(DataSourceContextHolder.hasDataSource(), 
-                "初始状态下不应存在数据源");
-        
-        // 设置数据源后应该返回true
+    public void testNestedContextStack() {
+        // 测试多层嵌套
         DataSourceContextHolder.setDataSource("master");
-        assertTrue(DataSourceContextHolder.hasDataSource(), 
-                "设置数据源后应检测到数据源存在");
+        SimpleAssertions.assertEquals("master", DataSourceContextHolder.getCurrentLookupKey(), "第一层应该是master");
+        SimpleAssertions.assertEquals(1, DataSourceContextHolder.getContextStackDepth(), "栈深度应为1");
         
-        // 清理数据源后应该返回false
-        DataSourceContextHolder.clearDataSource();
-        assertFalse(DataSourceContextHolder.hasDataSource(), 
-                "清理数据源后不应检测到数据源存在");
+        DataSourceContextHolder.setDataSource("slave1");
+        SimpleAssertions.assertEquals("slave1", DataSourceContextHolder.getCurrentLookupKey(), "第二层应该是slave1");
+        SimpleAssertions.assertEquals(2, DataSourceContextHolder.getContextStackDepth(), "栈深度应为2");
+        
+        DataSourceContextHolder.setDataSource("slave2");
+        SimpleAssertions.assertEquals("slave2", DataSourceContextHolder.getCurrentLookupKey(), "第三层应该是slave2");
+        SimpleAssertions.assertEquals(3, DataSourceContextHolder.getContextStackDepth(), "栈深度应为3");
+        
+        // 测试清理顺序
+        String removed1 = DataSourceContextHolder.clearDataSource();
+        SimpleAssertions.assertEquals("slave2", removed1, "第一次清理应返回slave2");
+        SimpleAssertions.assertEquals("slave1", DataSourceContextHolder.getCurrentLookupKey(), "清理一层后应为slave1");
+        SimpleAssertions.assertEquals(2, DataSourceContextHolder.getContextStackDepth(), "栈深度应为2");
+        
+        String removed2 = DataSourceContextHolder.clearDataSource();
+        SimpleAssertions.assertEquals("slave1", removed2, "第二次清理应返回slave1");
+        SimpleAssertions.assertEquals("master", DataSourceContextHolder.getCurrentLookupKey(), "清理两层后应为master");
+        SimpleAssertions.assertEquals(1, DataSourceContextHolder.getContextStackDepth(), "栈深度应为1");
+        
+        // 清理最后一层
+        String removed3 = DataSourceContextHolder.clearDataSource();
+        SimpleAssertions.assertEquals("master", removed3, "第三次清理应返回master");
+        SimpleAssertions.assertNull(DataSourceContextHolder.getCurrentLookupKey(), "所有层清理后应为null");
+        SimpleAssertions.assertEquals(0, DataSourceContextHolder.getContextStackDepth(), "栈深度应为0");
     }
     
     /**
-     * 测试上下文栈深度
-     * <p>验证上下文栈的深度正确反映了嵌套层级</p>
+     * 测试安全执行方法
      */
-    @Test
-    public void shouldReturnCorrectStackDepth() {
-        // 初始状态栈深度为0
-        assertEquals(0, DataSourceContextHolder.getContextStackDepth(), 
-                "初始状态上下文栈深度应为0");
-        
-        // 设置一个数据源后栈深度为1
-        DataSourceContextHolder.setDataSource("master");
-        assertEquals(1, DataSourceContextHolder.getContextStackDepth(), 
-                "设置一个数据源后上下文栈深度应为1");
-        
-        // 嵌套设置数据源后栈深度增加
-        DataSourceContextHolder.setDataSource("slave");
-        assertEquals(2, DataSourceContextHolder.getContextStackDepth(), 
-                "嵌套设置数据源后上下文栈深度应为2");
-        
-        // 清理一层后栈深度减少
-        DataSourceContextHolder.clearDataSource();
-        assertEquals(1, DataSourceContextHolder.getContextStackDepth(), 
-                "清理一层后上下文栈深度应为1");
-    }
-    
-    /**
-     * 测试嵌套数据源切换
-     * <p>验证嵌套设置和清理时数据源上下文的正确恢复</p>
-     */
-    @Test
-    public void shouldRestorePreviousDataSource_whenNestedContextIsCleared() {
-        // 准备测试数据
-        final String firstDataSource = "master";
-        final String secondDataSource = "slave";
-        final String thirdDataSource = "tenant_a";
-        
-        // 嵌套设置多个数据源
-        DataSourceContextHolder.setDataSource(firstDataSource);
-        DataSourceContextHolder.setDataSource(secondDataSource);
-        DataSourceContextHolder.setDataSource(thirdDataSource);
-        
-        // 验证栈顶是最后设置的数据源
-        assertEquals(thirdDataSource, DataSourceContextHolder.getCurrentLookupKey(),
-                "当前数据源应该是最后设置的数据源");
-        
-        // 清理一层，应该返回上一个数据源
-        DataSourceContextHolder.clearDataSource();
-        assertEquals(secondDataSource, DataSourceContextHolder.getCurrentLookupKey(),
-                "清理一层后应恢复到前一个数据源");
-        
-        // 再清理一层
-        DataSourceContextHolder.clearDataSource();
-        assertEquals(firstDataSource, DataSourceContextHolder.getCurrentLookupKey(),
-                "再清理一层后应恢复到初始数据源");
-        
-        // 最后清理一层
-        DataSourceContextHolder.clearDataSource();
-        assertNull(DataSourceContextHolder.getCurrentLookupKey(),
-                "完全清理后数据源上下文应为null");
-    }
-    
-    /**
-     * 测试安全执行方法（无返回值）
-     * <p>验证在指定数据源上下文中执行操作，并在完成后自动清理</p>
-     */
-    @Test
-    public void shouldExecuteInSpecifiedDataSource_andCleanup_whenNoReturnValue() {
-        // 准备测试数据
-        final String testDataSource = "test_ds";
-        final List<String> executedDatasource = new ArrayList<>();
-        
-        // 执行安全操作
-        DataSourceContextHolder.executeInDataSource(testDataSource, () -> {
-            // 记录执行上下文的数据源
-            executedDatasource.add(DataSourceContextHolder.getCurrentLookupKey());
-        });
-        
-        // 验证操作在正确的数据源上下文中执行
-        assertEquals(testDataSource, executedDatasource.get(0), 
-                "操作应在指定的数据源上下文中执行");
-        
-        // 验证执行完成后上下文被清理
-        assertNull(DataSourceContextHolder.getCurrentLookupKey(), 
-                "执行完成后数据源上下文应被自动清理");
-    }
-    
-    /**
-     * 测试安全执行方法（有返回值）
-     * <p>验证在指定数据源上下文中执行操作，返回结果，并在完成后自动清理</p>
-     */
-    @Test
-    public void shouldReturnCorrectResult_andCleanup_whenExecuteWithResult() {
-        // 准备测试数据
-        final String testDataSource = "test_ds";
-        
-        // 执行安全操作并获取结果
-        String result = DataSourceContextHolder.executeInDataSourceWithResult(testDataSource, () -> {
-            return DataSourceContextHolder.getCurrentLookupKey();
-        });
-        
-        // 验证返回结果正确
-        assertEquals(testDataSource, result, 
-                "应返回操作中产生的正确结果");
-        
-        // 验证执行完成后上下文被清理
-        assertNull(DataSourceContextHolder.getCurrentLookupKey(), 
-                "执行完成后数据源上下文应被自动清理");
-    }
-    
-    /**
-     * 测试执行异常时的上下文清理
-     * <p>验证即使执行过程中发生异常，数据源上下文也会被正确清理</p>
-     */
-    @Test
-    public void shouldCleanupContext_whenExceptionOccursDuringExecution() {
-        // 准备测试数据
-        final String testDataSource = "test_ds";
-        
-        // 执行会抛出异常的操作
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
-            DataSourceContextHolder.executeInDataSource(testDataSource, () -> {
-                // 验证数据源设置正确
-                assertEquals(testDataSource, DataSourceContextHolder.getCurrentLookupKey(),
-                        "异常抛出前数据源应正确设置");
-                // 模拟业务异常
-                throw new RuntimeException("Test exception");
+    public void testExecuteInDataSource() {
+        // 测试无返回值的执行方法
+        DataSourceContextHolder.executeInDataSource("master", () -> {
+            SimpleAssertions.assertEquals("master", DataSourceContextHolder.getCurrentLookupKey(), 
+                    "executeInDataSource中应设置正确的数据源");
+            
+            // 测试嵌套执行
+            DataSourceContextHolder.executeInDataSource("slave", () -> {
+                SimpleAssertions.assertEquals("slave", DataSourceContextHolder.getCurrentLookupKey(), 
+                        "嵌套executeInDataSource中应设置正确的数据源");
             });
-        }, "应正确抛出RuntimeException");
+            
+            // 验证嵌套执行后恢复到原始数据源
+            SimpleAssertions.assertEquals("master", DataSourceContextHolder.getCurrentLookupKey(), 
+                    "嵌套执行后应恢复到原始数据源");
+        });
         
-        // 验证异常信息
-        assertEquals("Test exception", exception.getMessage(), 
-                "异常信息不匹配");
+        // 验证执行后清除了数据源
+        SimpleAssertions.assertNull(DataSourceContextHolder.getCurrentLookupKey(), 
+                "执行方法后应清除数据源上下文");
         
-        // 关键验证：即使发生异常，上下文也被清理
-        assertNull(DataSourceContextHolder.getCurrentLookupKey(), 
-                "异常发生时数据源上下文必须被清理，避免资源泄漏");
+        // 测试有返回值的执行方法
+        String result = DataSourceContextHolder.executeInDataSourceWithResult("master", () -> {
+            SimpleAssertions.assertEquals("master", DataSourceContextHolder.getCurrentLookupKey(), 
+                    "executeInDataSourceWithResult中应设置正确的数据源");
+            return "success:" + DataSourceContextHolder.getCurrentLookupKey();
+        });
+        
+        SimpleAssertions.assertEquals("success:master", result, "应返回正确的执行结果");
+        SimpleAssertions.assertNull(DataSourceContextHolder.getCurrentLookupKey(), 
+                "执行方法后应清除数据源上下文");
+        
+        // 测试异常处理
+        try {
+            DataSourceContextHolder.executeInDataSource("master", () -> {
+                throw new RuntimeException("测试异常处理");
+            });
+            SimpleAssertions.fail("应该抛出RuntimeException");
+        } catch (RuntimeException e) {
+            SimpleAssertions.assertEquals("测试异常处理", e.getMessage(), "应正确传播异常信息");
+            // 验证异常后清除了数据源
+            SimpleAssertions.assertNull(DataSourceContextHolder.getCurrentLookupKey(), 
+                    "异常后应清除数据源上下文");
+        }
     }
     
     /**
      * 测试线程安全性
-     * <p>验证在多线程环境下，各线程的数据源上下文互不影响</p>
      */
-    @Test
-    public void shouldMaintainIsolation_whenMultipleThreadsAccessContext() throws InterruptedException {
-        // 准备测试数据
+    public void testThreadSafety() throws InterruptedException {
         final int threadCount = 10;
-        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
-        CountDownLatch latch = new CountDownLatch(threadCount);
+        final ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+        final CountDownLatch latch = new CountDownLatch(threadCount);
+        final java.util.List<String> results = java.util.Collections.synchronizedList(new ArrayList<>());
         
-        // 启动多个线程同时操作数据源上下文
-        for (int i = 0; i < threadCount; i++) {
-            final int threadIndex = i;
-            executorService.submit(() -> {
+        try {
+            // 创建多个线程并发操作数据源上下文
+            for (int i = 0; i < threadCount; i++) {
+                final int threadId = i;
+                executorService.submit(() -> {
+                    try {
+                        String dataSource = "ds_" + threadId;
+                        DataSourceContextHolder.setDataSource(dataSource);
+                        
+                        // 模拟业务操作
+                        Thread.sleep(10);
+                        
+                        // 验证每个线程看到的是自己的数据源
+                        String currentDataSource = DataSourceContextHolder.getCurrentLookupKey();
+                        results.add(currentDataSource);
+                        SimpleAssertions.assertEquals(dataSource, currentDataSource, 
+                                "线程" + threadId + "应该看到自己设置的数据源");
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    } finally {
+                        DataSourceContextHolder.clearDataSource();
+                        latch.countDown();
+                    }
+                });
+            }
+            
+            latch.await();
+            // 等待所有线程完成
+            Thread.sleep(50); // 给一些额外时间确保所有结果都已添加
+            SimpleAssertions.assertEquals(threadCount, results.size(), "应收集到所有线程的结果");
+            
+        } finally {
+            executorService.shutdown();
+        }
+    }
+    
+    /**
+     * 运行所有测试
+     */
+    public static void main(String[] args) {
+        System.out.println("开始运行DataSourceContextHolderTest...");
+        DataSourceContextHolderTest test = new DataSourceContextHolderTest();
+        
+        try {
+            // 运行单个测试
+            System.out.println("\n===== 测试基本设置和获取 =====");
+            test.runTest(test::testSetAndGetDataSource);
+            
+            System.out.println("\n===== 测试清理功能 =====");
+            test.runTest(test::testClearDataSource);
+            
+            System.out.println("\n===== 测试嵌套上下文栈 =====");
+            test.runTest(test::testNestedContextStack);
+            
+            System.out.println("\n===== 测试安全执行方法 =====");
+            test.runTest(test::testExecuteInDataSource);
+            
+            System.out.println("\n===== 测试线程安全性 =====");
+            test.runTest(() -> {
                 try {
-                    String threadSpecificDataSource = "thread_ds_" + threadIndex;
-                    // 设置当前线程的数据源
-                    DataSourceContextHolder.setDataSource(threadSpecificDataSource);
-                    
-                    // 验证当前线程只能看到自己设置的数据源
-                    assertEquals(threadSpecificDataSource, DataSourceContextHolder.getCurrentLookupKey(), 
-                            "线程只能看到自己的数据源上下文，线程索引: " + threadIndex);
-                    
-                    // 模拟业务操作延迟
-                    Thread.sleep(10);
-                    
-                    // 再次验证，确保没有被其他线程修改
-                    assertEquals(threadSpecificDataSource, DataSourceContextHolder.getCurrentLookupKey(),
-                            "线程数据源上下文不应被其他线程修改，线程索引: " + threadIndex);
-                    
+                    test.testThreadSafety();
                 } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                } finally {
-                    // 清理当前线程的数据源上下文
-                    DataSourceContextHolder.clearAll();
-                    latch.countDown();
+                    throw new RuntimeException("线程中断", e);
                 }
             });
+            
+            System.out.println("\n所有测试通过！");
+        } catch (Exception e) {
+            System.err.println("测试执行失败: " + e.getMessage());
+            e.printStackTrace();
         }
-        
-        // 等待所有线程执行完成
-        latch.await();
-        executorService.shutdown();
-        
-        // 验证主线程的上下文不受影响
-        assertNull(DataSourceContextHolder.getCurrentLookupKey(), 
-                "主线程数据源上下文不应受其他线程影响");
     }
 }

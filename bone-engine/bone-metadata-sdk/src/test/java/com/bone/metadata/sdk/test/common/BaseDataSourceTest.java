@@ -1,71 +1,12 @@
 package com.bone.metadata.sdk.test.common;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import com.bone.metadata.sdk.support.dataSource.DataSourceContextHolder;
 
 /**
  * 数据源测试基类
- * 提供数据源上下文管理和线程隔离支持
+ * 提供数据源上下文管理和测试执行框架
  */
 public abstract class BaseDataSourceTest {
-    
-    /**
-     * 数据源上下文持有者
-     * 用于在不同线程中管理数据源切换
-     */
-    public static class DataSourceContextHolder {
-        private static final ThreadLocal<String> CONTEXT_HOLDER = new ThreadLocal<>();
-        private static final Map<String, String> DATA_SOURCE_KEYS = new ConcurrentHashMap<>();
-        
-        /**
-         * 设置当前线程使用的数据源
-         */
-        public static void setDataSource(String dataSource) {
-            CONTEXT_HOLDER.set(dataSource);
-            if (dataSource != null) {
-                DATA_SOURCE_KEYS.put(Thread.currentThread().getName(), dataSource);
-            }
-        }
-        
-        /**
-         * 获取当前线程使用的数据源
-         */
-        public static String getCurrentLookupKey() {
-            return CONTEXT_HOLDER.get();
-        }
-        
-        /**
-         * 清除当前线程的数据源
-         */
-        public static void clearDataSource() {
-            String threadName = Thread.currentThread().getName();
-            DATA_SOURCE_KEYS.remove(threadName);
-            CONTEXT_HOLDER.remove();
-        }
-        
-        /**
-         * 检查是否已设置数据源
-         */
-        public static boolean hasDataSource() {
-            return CONTEXT_HOLDER.get() != null;
-        }
-        
-        /**
-         * 清除所有线程的数据源（仅用于测试）
-         */
-        public static void clearAll() {
-            DATA_SOURCE_KEYS.clear();
-            CONTEXT_HOLDER.remove();
-        }
-        
-        /**
-         * 获取当前所有线程的数据源状态（仅用于调试）
-         */
-        public static Map<String, String> getAllActiveDataSources() {
-            return new HashMap<>(DATA_SOURCE_KEYS);
-        }
-    }
     
     /**
      * 测试前置准备
@@ -113,7 +54,6 @@ public abstract class BaseDataSourceTest {
      */
     protected void switchDataSource(String dataSourceName) {
         DataSourceContextHolder.setDataSource(dataSourceName);
-        System.out.println("设置数据源: " + dataSourceName);
     }
     
     /**
@@ -131,7 +71,21 @@ public abstract class BaseDataSourceTest {
     public String getCurrentDataSourceInfo() {
         StringBuilder info = new StringBuilder();
         info.append("当前线程数据源: ").append(DataSourceContextHolder.getCurrentLookupKey()).append("\n");
-        info.append("所有活跃数据源: ").append(DataSourceContextHolder.getAllActiveDataSources());
+        info.append("上下文栈深度: ").append(DataSourceContextHolder.getContextStackDepth());
         return info.toString();
+    }
+    
+    /**
+     * 在指定数据源上下文中执行操作
+     */
+    protected void executeInDataSource(String dataSource, Runnable action) {
+        DataSourceContextHolder.executeInDataSource(dataSource, action);
+    }
+    
+    /**
+     * 在指定数据源上下文中执行操作并返回结果
+     */
+    protected <T> T executeInDataSourceWithResult(String dataSource, java.util.function.Supplier<T> supplier) {
+        return DataSourceContextHolder.executeInDataSourceWithResult(dataSource, supplier);
     }
 }
