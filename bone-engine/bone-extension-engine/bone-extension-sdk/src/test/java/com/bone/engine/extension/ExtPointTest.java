@@ -31,7 +31,7 @@ class BizContext<T> {
         return new BizContext<>();
     }
     
-    public void putAttribute(String key, Object value) {
+    public void setAttribute(String key, Object value) {
         attributes.put(key, value);
     }
     
@@ -76,12 +76,6 @@ class ExtensionContextManager {
         copied.setBizCode(current.getBizCode());
         copied.setData(current.getData());
         
-        if (current.getAttributes() != null) {
-            for (Map.Entry<String, Object> entry : current.getAttributes().entrySet()) {
-                copied.putAttribute(entry.getKey(), entry.getValue());
-            }
-        }
-        
         return () -> CONTEXT_HOLDER.set(copied);
     }
     
@@ -113,15 +107,16 @@ class ExtensionScope implements AutoCloseable {
 
 // 模拟扩展实现注解
 @interface Extension {
-    String name();
-    String description();
-    String tenantCode() default "*";
-    String bizCode() default "*";
-    String scenario() default "*";
-    int priority() default 100;
-    boolean enabled() default true;
-    String version() default "1.0.0";
-    String condition() default "";
+        String name();
+        String description();
+        String tenantCode() default "*";
+        String bizCode() default "*";
+        String scenario() default "*";
+        int priority() default 100;
+        boolean enabled() default true;
+        String version() default "1.0.0";
+        String condition() default "";
+    }
 
 /**
  * SPI扩展点机制的单元测试，测试不同场景下的扩展点使用
