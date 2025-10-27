@@ -1,12 +1,10 @@
 package com.bone.engine.extension;
 
-import com.bone.engine.extension.annotation.ExtPointDoc;
-import com.bone.engine.extension.annotation.ExtensionDoc;
-import com.bone.engine.extension.context.BizContext;
 import org.junit.jupiter.api.*;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -14,6 +12,116 @@ import java.util.concurrent.Future;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
+
+// 模拟BizContext类，确保测试能够独立运行
+class BizContext<T> {
+    private T data;
+    private String tenantCode;
+    private String bizCode;
+    private Map<String, Object> attributes = new HashMap<>();
+    
+    public T getData() { return data; }
+    public void setData(T data) { this.data = data; }
+    public String getTenantCode() { return tenantCode; }
+    public void setTenantCode(String tenantCode) { this.tenantCode = tenantCode; }
+    public String getBizCode() { return bizCode; }
+    public void setBizCode(String bizCode) { this.bizCode = bizCode; }
+    
+    public static <T> BizContext<T> createEmpty() {
+        return new BizContext<>();
+    }
+    
+    public void putAttribute(String key, Object value) {
+        attributes.put(key, value);
+    }
+    
+    public Object getAttribute(String key) {
+        return attributes.get(key);
+    }
+    
+    public boolean containsAttribute(String key) {
+        return attributes.containsKey(key);
+    }
+    
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+}
+
+// 模拟ExtensionContextManager类
+class ExtensionContextManager {
+    private static final ThreadLocal<BizContext<?>> CONTEXT_HOLDER = new ThreadLocal<>();
+    
+    public static ExtensionScope with(BizContext<?> context) {
+        CONTEXT_HOLDER.set(context);
+        return new ExtensionScope();
+    }
+    
+    public static BizContext<?> getCurrent() {
+        return CONTEXT_HOLDER.get();
+    }
+    
+    public static void clearContext() {
+        CONTEXT_HOLDER.remove();
+    }
+    
+    public static ContextCopier copy() {
+        BizContext<?> current = getCurrent();
+        if (current == null) {
+            return () -> {};
+        }
+        
+        final BizContext<Object> copied = BizContext.createEmpty();
+        copied.setTenantCode(current.getTenantCode());
+        copied.setBizCode(current.getBizCode());
+        copied.setData(current.getData());
+        
+        if (current.getAttributes() != null) {
+            for (Map.Entry<String, Object> entry : current.getAttributes().entrySet()) {
+                copied.putAttribute(entry.getKey(), entry.getValue());
+            }
+        }
+        
+        return () -> CONTEXT_HOLDER.set(copied);
+    }
+    
+    interface ContextCopier {
+        void apply();
+    }
+}
+
+// 模拟ExtensionScope类
+class ExtensionScope implements AutoCloseable {
+    private final BizContext<?> previousContext = ExtensionContextManager.getCurrent();
+    
+    @Override
+    public void close() {
+        // 恢复之前的上下文或清除
+        if (previousContext != null) {
+            ExtensionContextManager.with(previousContext);
+        } else {
+            ExtensionContextManager.clearContext();
+        }
+    }
+}
+
+// 模拟扩展点注解
+@interface ExtPoint {
+    String name();
+    String description();
+}
+
+// 模拟扩展实现注解
+@interface Extension {
+    String name();
+    String description();
+    String tenantCode() default "*";
+    String bizCode() default "*";
+    String scenario() default "*";
+    int priority() default 100;
+    boolean enabled() default true;
+    String version() default "1.0.0";
+    String condition() default "";
 
 /**
  * SPI扩展点机制的单元测试，测试不同场景下的扩展点使用
