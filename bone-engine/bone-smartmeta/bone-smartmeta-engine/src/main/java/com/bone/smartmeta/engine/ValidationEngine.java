@@ -30,6 +30,7 @@ import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
+
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -1358,15 +1359,10 @@ public class ValidationEngine implements InitializingBean, RelationshipValidatio
      * @return true if the value is null, empty string, or empty collection
      */
     private boolean isEmpty(Object value) {
-        if (value == null) {
-            return true;
-        }
-        if (value instanceof String) {
-            return ((String) value).trim().isEmpty();
-        }
-        if (value instanceof Collection) {
-            return ((Collection<?>) value).isEmpty();
-        }
+        if (value == null) return true;
+        if (value instanceof String str) return str.trim().isEmpty();
+        if (value instanceof Collection<?> coll) return coll.isEmpty();
+        if (value instanceof Map<?, ?> map) return map.isEmpty();
         return false;
     }
     

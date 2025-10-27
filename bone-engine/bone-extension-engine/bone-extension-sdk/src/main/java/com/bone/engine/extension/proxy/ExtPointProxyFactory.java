@@ -3,7 +3,6 @@ package com.bone.engine.extension.proxy;
 import com.bone.engine.extension.ExtPoint;
 import com.bone.engine.extension.context.BizContext;
 import com.bone.engine.extension.config.ExtensionConfigManager;
-import com.bone.engine.extension.config.ExtensionEventPublisher;
 import com.bone.engine.extension.lifecycle.ExtensionLifecycle;
 import com.bone.engine.extension.router.ExtPointRouter;
 import org.springframework.beans.BeansException;
@@ -46,8 +45,7 @@ public class ExtPointProxyFactory implements ApplicationContextAware, Initializi
     @Autowired
     private ExtPointRouter extPointRouter;
     
-    @Autowired(required = false)
-    private ExtensionEventPublisher eventPublisher;
+    // 事件发布器被移除，因为ExtensionEventPublisher类不存在
     
     @Autowired
     private ExtensionConfigManager configManager;
@@ -166,20 +164,14 @@ public class ExtPointProxyFactory implements ApplicationContextAware, Initializi
                     throw new IllegalStateException("No suitable extension implementation found for: " + extPointName);
                 }
             } catch (Exception e) {
-                // 发布路由失败事件
-                if (eventPublisher != null) {
-                    eventPublisher.publishRouteFailedEvent(extPointInterface, context, e.getMessage());
-                }
+                // 移除路由失败事件发布，因为ExtensionEventPublisher类不存在
                 
                 // 尝试降级处理
                 lifecycle = getLifecycleForExtension(null);
                 return lifecycle.onFallback(context, method.getName(), args, (Throwable)e);
             }
             
-            // 发布路由事件
-            if (eventPublisher != null) {
-                eventPublisher.publishRouteEvent(extPointInterface, targetImpl, context);
-            }
+            // 移除路由事件发布，因为ExtensionEventPublisher类不存在
             
             // 获取目标实现的生命周期处理器
             lifecycle = getLifecycleForExtension(targetImpl);
@@ -190,10 +182,7 @@ public class ExtPointProxyFactory implements ApplicationContextAware, Initializi
             // 执行前置处理
             lifecycle.beforeInvoke(context, method.getName(), args);
             
-            // 发布执行前事件
-            if (eventPublisher != null) {
-                eventPublisher.publishBeforeEvent(extPointInterface, targetImpl, context);
-            }
+            // 移除执行前事件发布，因为ExtensionEventPublisher类不存在
             
             Object result;
             try {
@@ -217,10 +206,7 @@ public class ExtPointProxyFactory implements ApplicationContextAware, Initializi
                 // 执行后置处理
                 lifecycle.afterInvoke(context, method.getName(), result, executionTimeMs);
                 
-                // 发布执行后事件
-                if (eventPublisher != null) {
-                    eventPublisher.publishAfterEvent(extPointInterface, targetImpl, context, result);
-                }
+                // 移除事件发布，因为ExtensionEventPublisher类不存在
             } catch (Exception e) {
                 // 计算执行时间
                 long executionTimeMs = System.currentTimeMillis() - startTime;
@@ -232,10 +218,7 @@ public class ExtPointProxyFactory implements ApplicationContextAware, Initializi
                 // 执行异常处理
                 lifecycle.onException(context, method.getName(), ex, executionTimeMs);
                 
-                // 发布异常事件
-                if (eventPublisher != null) {
-                    eventPublisher.publishExceptionEvent(extPointInterface, targetImpl, context, ex);
-                }
+                // 移除事件发布，因为ExtensionEventPublisher类不存在
                 
                 // 尝试降级处理
                 try {

@@ -3,6 +3,7 @@ package com.bone.metadata.sdk.extension;
 import com.bone.metadata.sdk.domain.exception.FieldAllocationException;
 import com.bone.metadata.sdk.extension.handler.ExtensionStorageHandler;
 import com.bone.metadata.sdk.domain.enums.ExtensionMode;
+import com.bone.metadata.sdk.support.dataSource.DataSourceContextHolder;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -54,7 +55,15 @@ public class ExtensionCoordinator {
     @Async
     @Transactional
     public CompletableFuture<Void> saveAsync(ExtensionContext context) {
-        return CompletableFuture.runAsync(() -> save(context));
+        // 获取当前数据源上下文，确保异步操作在正确的数据源中执行
+        String currentDataSource = DataSourceContextHolder.getCurrentDataSource();
+        if (currentDataSource != null) {
+            // 如果有明确的数据源上下文，使用DataSourceContextHolder的异步方法
+            return DataSourceContextHolder.executeAsyncInDataSource(currentDataSource, () -> save(context));
+        } else {
+            // 否则使用默认的异步执行
+            return CompletableFuture.runAsync(() -> save(context));
+        }
     }
 
     @Transactional(readOnly = true)

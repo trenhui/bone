@@ -1,17 +1,22 @@
 package com.bone.tool.codegen.adapter;
 
 import com.bone.core.model.ApiResponse;
-import com.bone.tool.codegen.application.dto.CodegenTableResponse;
-import com.bone.tool.codegen.application.dto.GenerateCustomCodeRequest;
-import com.bone.tool.codegen.domain.service.CodegenServiceInterface;
-import com.bone.tool.codegen.domain.service.DatabaseTableServiceInterface;
 import com.bone.tool.codegen.application.converter.CodegenConverter;
+import com.bone.tool.codegen.application.dto.CodegenTablePageRequest;
+import com.bone.tool.codegen.application.dto.CodegenTableRequest;
+import com.bone.tool.codegen.application.dto.CodegenTableResponse;
+import com.bone.tool.codegen.application.dto.GenerateCodeRequest;
+import com.bone.tool.codegen.application.dto.GenerateCustomCodeRequest;
+import com.bone.tool.codegen.application.dto.CodegenDetailResponse;
+import com.bone.tool.codegen.domain.service.CodegenService;
+import com.bone.tool.codegen.domain.service.DatabaseTableService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.bone.tool.codegen.adapter.GlobalExceptionHandler.BusinessException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -25,6 +30,7 @@ import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.zip.ZipOutputStream;
 
 import static com.bone.core.model.ApiResponse.success;
 
@@ -33,6 +39,7 @@ import static com.bone.core.model.ApiResponse.success;
  * <p>
  * 提供代码生成配置管理和代码生成的RESTful API接口
  * 遵循RESTful设计风格，确保接口清晰、直观
+ * </p>
  * 
  * @author bone-team
  */
@@ -41,17 +48,29 @@ import static com.bone.core.model.ApiResponse.success;
 @RequestMapping("/api/v1/code-generation")
 @Validated
 public class CodeGenerationController {
-      private static final Logger logger = LoggerFactory.getLogger(CodeGenerationController.class);
-      
-      @Autowired
-      private CodegenServiceInterface codegenService;
-      
-      @Autowired
-      private DatabaseTableServiceInterface databaseTableService;
-      
-      @Autowired
-      private CodegenConverter codegenConverter;
-      
+    private static final Logger logger = LoggerFactory.getLogger(CodeGenerationController.class);
+    
+    // 使用final修饰注入的字段确保不可变性
+    private final CodegenService codegenService;
+    private final DatabaseTableService databaseTableService;
+    private final CodegenConverter codegenConverter;
+    
+    /**
+     * 构造函数 - 依赖注入
+     * 
+     * @param codegenService 代码生成服务
+     * @param databaseTableService 数据库表服务
+     * @param codegenConverter 代码生成转换器
+     */
+    @Autowired
+    public CodeGenerationController(CodegenService codegenService, 
+                                  DatabaseTableService databaseTableService,
+                                  CodegenConverter codegenConverter) {
+        this.codegenService = codegenService;
+        this.databaseTableService = databaseTableService;
+        this.codegenConverter = codegenConverter;
+    }
+    
     /**
      * 获取表定义列表
      * 根据数据源配置ID查询已导入的代码生成表配置
@@ -113,22 +132,18 @@ public class CodeGenerationController {
             HttpServletResponse response) throws IOException {
         logger.info("开始生成代码，表ID列表: {}, 分组: {}, 模型类型: {}", tableIds, groupId, modelType);
         
-        try {
-            // 设置响应头
-            response.setContentType("application/zip");
-            String fileName = tableIds.size() == 1 ? "code-single.zip" : "code-multi.zip";
-            response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(fileName, StandardCharsets.UTF_8));
-            
-            // 生成代码并写入响应流
-            try (OutputStream out = response.getOutputStream()) {
-                codegenService.generateBatchCodes(tableIds, groupId, modelType, out);
-                out.flush();
-            }
-            
-            logger.info("代码生成成功，表ID列表: {}", tableIds);
-        } catch (Exception e) {
-            handleGenerationError(response, e, "代码生成失败");
+        // 设置响应头
+        response.setContentType("application/zip");
+        String fileName = tableIds.size() == 1 ? "code-single.zip" : "code-multi.zip";
+        response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(fileName, StandardCharsets.UTF_8));
+        
+        // 生成代码并写入响应流
+        try (OutputStream out = response.getOutputStream()) {
+            codegenService.generateBatchCodes(tableIds, groupId, modelType, out);
+            out.flush();
         }
+        
+        logger.info("代码生成成功，表ID列表: {}", tableIds);
     }
     
     /**
@@ -151,46 +166,26 @@ public class CodeGenerationController {
             HttpServletResponse response) throws IOException {
         logger.info("开始自定义生成代码");
         
-        try {
-            // 使用getter方法直接获取项目名称，避免反射
-            String projectName = request.getProjectName();
-            if (projectName == null || projectName.trim().isEmpty()) {
-                projectName = "custom";
-                logger.debug("项目名称为空，使用默认值: custom");
-            }
-            
-            // 设置响应头
-            String fileName = "code-" + projectName + ".zip";
-            response.setContentType("application/zip");
-            response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(fileName, StandardCharsets.UTF_8));
-            
-            // 生成自定义代码并写入响应流
-            try (OutputStream out = response.getOutputStream()) {
-                // 直接调用服务方法，该方法会将代码写入输出流
-                codegenService.generateCustomCode(request, out);
-                out.flush();
-            }
-            
-            logger.info("自定义代码生成成功，项目名称: {}", projectName);
-        } catch (Exception e) {
-            handleGenerationError(response, e, "自定义代码生成失败");
+        // 使用getter方法直接获取项目名称，避免反射
+        String projectName = request.getProjectName();
+        if (projectName == null || projectName.trim().isEmpty()) {
+            projectName = "custom";
+            logger.debug("项目名称为空，使用默认值: custom");
         }
+        
+        // 设置响应头
+        String fileName = "code-" + projectName + ".zip";
+        response.setContentType("application/zip");
+        response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(fileName, StandardCharsets.UTF_8));
+        
+        // 生成自定义代码并写入响应流
+        try (OutputStream out = response.getOutputStream()) {
+            // 直接调用服务方法，该方法会将代码写入输出流
+            codegenService.generateCustomCode(request, out);
+            out.flush();
+        }
+        
+        logger.info("自定义代码生成成功，项目名称: {}", projectName);
     }
     
-    /**
-     * 处理代码生成过程中的错误
-     * 
-     * @param response HTTP响应对象
-     * @param e 异常对象
-     * @param errorMessage 错误消息前缀
-     */
-    private void handleGenerationError(HttpServletResponse response, Exception e, String errorMessage) {
-        logger.error("{}: {}", errorMessage, e.getMessage(), e);
-        response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-        try (OutputStream out = response.getOutputStream()) {
-            out.write((errorMessage + ": " + e.getMessage()).getBytes(StandardCharsets.UTF_8));
-        } catch (IOException ioe) {
-            logger.warn("写入错误响应失败", ioe);
-        }
-    }
 }

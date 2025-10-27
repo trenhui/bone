@@ -2,7 +2,7 @@ package com.bone.smartmeta.engine;
 
 import com.bone.smartmeta.engine.model.BusinessRuleMetadata;
 import com.bone.smartmeta.engine.model.DynamicSmartEntity;
-import com.bone.smartmeta.engine.model.ValidationResult;
+import com.bone.smartmeta.engine.validation.ValidationResult;
 import com.bone.smartmeta.engine.rule.BusinessRuleRegistry;
 
 import java.lang.reflect.Field;
@@ -16,61 +16,58 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Default implementation of the Business Rule Engine
- * Provides business rule validation and execution functionality
+ * 通用业务规则引擎默认实现
+ * 提供业务规则验证和执行功能，支持多种业务场景
  */
 public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultBusinessRuleEngine.class);
     
-    // Metadata engine
+    // 元数据引擎
     private final MetadataEngine metadataEngine;
     
-    // Rule execution timeout (milliseconds)
+    // 规则执行超时时间（毫秒）
     private final long ruleExecutionTimeoutMs;
     
-    // Thread pool for rule execution
+    // 规则执行线程池
     private final ExecutorService executorService;
     
-    // Field reference pattern
+    // 字段引用模式
     private static final Pattern FIELD_REFERENCE_PATTERN = Pattern.compile("\\$\\{([\\w\\.]+)\\}");
     
-    // Rule execution result cache
+    // 规则验证结果缓存
     private final ConcurrentHashMap<String, Boolean> ruleValidationCache = new ConcurrentHashMap<>();
     
+    // 高价值订单阈值
+    private static final double HIGH_VALUE_THRESHOLD = 100000.0;
+    
     /**
-     * Constructor with metadata engine
-     * @param metadataEngine the metadata engine
+     * 带元数据引擎的构造函数
+     * @param metadataEngine 元数据引擎
      */
     public DefaultBusinessRuleEngine(MetadataEngine metadataEngine) {
         this.metadataEngine = metadataEngine;
-        // 默认超时时间
         this.ruleExecutionTimeoutMs = 5000; // 默认5秒
-        this.executorService = Executors.newFixedThreadPool(
+        this.executorService = createThreadPool();
+    }
+    
+    /**
+     * 默认构造函数
+     */
+    public DefaultBusinessRuleEngine() {
+        this.metadataEngine = null;
+        this.ruleExecutionTimeoutMs = 5000; // 默认5秒
+        this.executorService = createThreadPool();
+    }
+    
+    /**
+     * 创建线程池
+     */
+    private ExecutorService createThreadPool() {
+        return Executors.newFixedThreadPool(
                 Runtime.getRuntime().availableProcessors() * 2,
                 new ThreadFactory() {
                     private final AtomicInteger counter = new AtomicInteger(0);
                     
-                    @Override
-                    public Thread newThread(Runnable r) {
-                        Thread thread = new Thread(r, "business-rule-executor-" + counter.incrementAndGet());
-                        thread.setDaemon(true);
-                        return thread;
-                    }
-                }
-        );
-    }
-    
-    /**
-     * Default constructor
-     */
-    public DefaultBusinessRuleEngine() {
-        this.metadataEngine = null;
-        // 默认超时时间
-        this.ruleExecutionTimeoutMs = 5000; // 默认5秒
-        this.executorService = Executors.newFixedThreadPool(
-                Runtime.getRuntime().availableProcessors() * 2,
-                new ThreadFactory() {
-                    private final AtomicInteger counter = new AtomicInteger(0);
                     @Override
                     public Thread newThread(Runnable r) {
                         Thread thread = new Thread(r, "business-rule-executor-" + counter.incrementAndGet());
@@ -566,5 +563,66 @@ public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
         ruleValidationCache.clear();
         
         LOGGER.info("BusinessRuleEngine shutdown");
+    }
+    
+    @Override
+    public com.bone.smartmeta.engine.validation.ValidationResult evaluateHighValueOrderRule(java.util.Map<String, Object> orderData) {
+        com.bone.smartmeta.engine.validation.ValidationResult result = com.bone.smartmeta.engine.validation.ValidationResult.success();
+        
+        if (orderData == null) {
+            result.addError("订单数据不能为空");
+            return result;
+        }
+        
+        try {
+            Double amount = (Double) orderData.get("amount");
+            if (amount != null && amount > HIGH_VALUE_THRESHOLD) {
+                result.addWarning("高价值订单，需要额外审批");
+            }
+        } catch (Exception e) {
+            result.addError("订单金额格式错误");
+        }
+        
+        return result;
+    }
+    
+    @Override
+    public com.bone.smartmeta.engine.validation.ValidationResult evaluateOrderPriorityRule(java.util.Map<String, Object> orderData) {
+        com.bone.smartmeta.engine.validation.ValidationResult result = com.bone.smartmeta.engine.validation.ValidationResult.success();
+        
+        if (orderData == null) {
+            result.addError("订单数据不能为空");
+            return result;
+        }
+        
+        try {
+            String priority = (String) orderData.get("priority");
+            if ("HIGH".equals(priority)) {
+                result.addWarning("高优先级订单，需要加急处理");
+            }
+        } catch (Exception e) {
+            result.addError("订单优先级格式错误");
+        }
+        
+        return result;
+    }
+    
+    @Override
+    public com.bone.smartmeta.engine.validation.ValidationResult executeRules(Object entity, String ruleType) {
+        com.bone.smartmeta.engine.validation.ValidationResult result = com.bone.smartmeta.engine.validation.ValidationResult.success();
+        
+        if (entity == null) {
+            result.addError("实体不能为空");
+            return result;
+        }
+        
+        if ("highValueOrder".equals(ruleType)) {
+            return evaluateHighValueOrderRule((java.util.Map<String, Object>) entity);
+        } else if ("orderPriority".equals(ruleType)) {
+            return evaluateOrderPriorityRule((java.util.Map<String, Object>) entity);
+        } else {
+            result.addError("不支持的规则类型: " + ruleType);
+            return result;
+        }
     }
 }

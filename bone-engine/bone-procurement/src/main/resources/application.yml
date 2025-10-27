@@ -4,6 +4,7 @@ server:
 spring:
   main:
     allow-bean-definition-overriding: true
+    allow-circular-references: true
   # 禁用不必要的自动配置
   autoconfigure:
     exclude:
@@ -12,7 +13,6 @@ spring:
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
       - org.redisson.spring.starter.RedissonAutoConfigurationV2
-      - com.bone.metadata.sdk.support.config.SqlRepositoryAutoConfiguration
   # 禁用SQL初始化脚本
   sql:
     init:

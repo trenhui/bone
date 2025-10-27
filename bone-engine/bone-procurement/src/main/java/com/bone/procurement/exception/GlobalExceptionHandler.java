@@ -1,6 +1,7 @@
 package com.bone.procurement.exception;
 
 import com.bone.procurement.dto.ErrorResponse;
+import com.bone.smartmeta.engine.common.ErrorCodes;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -59,7 +60,7 @@ public class GlobalExceptionHandler {
         
         ErrorResponse errorResponse = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
-                "VALIDATION_ERROR",
+                ErrorCodes.VALIDATION_ERROR,
                 "参数验证失败",
                 request.getDescription(false)
         );

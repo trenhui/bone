@@ -2,6 +2,8 @@ package com.bone.procurement.service;
 
 import com.bone.procurement.config.DynamicModelConfig;
 import com.bone.procurement.exception.BusinessException;
+import com.bone.smartmeta.engine.common.ErrorCodes;
+import com.bone.smartmeta.engine.util.CommonUtils;
 import java.util.Date;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +40,7 @@ public class DynamicModelManager implements InitializingBean {
         log.info("开始初始化动态模型管理器...");
         
         // 初始化模型缓存
-        this.modelsCache = new ConcurrentHashMap<>();
+        this.modelsCache = CommonUtils.createConcurrentHashMap(16);
         
         // 加载所有动态模型配置
         if (dynamicModelConfig.isEnabled()) {
@@ -85,7 +87,7 @@ public class DynamicModelManager implements InitializingBean {
             
         } catch (Exception e) {
             log.error("加载动态模型失败", e);
-            throw new BusinessException("加载动态模型失败: " + e.getMessage(), "MODEL_LOAD_FAILED");
+            throw new BusinessException("加载动态模型失败: " + e.getMessage(), ErrorCodes.MODEL_LOAD_FAILED);
         }
     }
 
@@ -152,8 +154,6 @@ public class DynamicModelManager implements InitializingBean {
     
     // 所有FieldMetadata相关方法已被删除，现在使用简单的Map实现代替复杂的字段元数据结构
     
-    // 使用后面的isValidFieldType方法实现
-
     /**
      * 注册模型
      */
@@ -162,12 +162,12 @@ public class DynamicModelManager implements InitializingBean {
         
         try {
             // 从元数据中提取模型名称
-            String modelName = getStringValue(entityMetadata, "apiName", null);
+            String modelName = CommonUtils.getStringValue(entityMetadata, "apiName", null);
             if (modelName == null || modelName.trim().isEmpty()) {
-                modelName = getStringValue(entityMetadata, "name", null);
+                modelName = CommonUtils.getStringValue(entityMetadata, "name", null);
             }
             
-            Assert.hasText(modelName, "模型名称不能为空");
+            CommonUtils.validateNotEmpty(modelName, "模型名称不能为空");
             
             // 验证模型是否已经存在
             if (modelExists(modelName)) {
@@ -175,7 +175,7 @@ public class DynamicModelManager implements InitializingBean {
             }
             
             // 深拷贝元数据以防止外部修改
-            Map<String, Object> metadataCopy = deepCopyMap(entityMetadata);
+            Map<String, Object> metadataCopy = CommonUtils.deepCopyMap(entityMetadata);
             
             // 线程安全地注册模型
             modelsCache.put(modelName, metadataCopy);
@@ -189,9 +189,9 @@ public class DynamicModelManager implements InitializingBean {
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {
-            String modelName = entityMetadata != null ? getStringValue(entityMetadata, "apiName", "未知模型") : "未知模型";
+            String modelName = entityMetadata != null ? CommonUtils.getStringValue(entityMetadata, "apiName", "未知模型") : "未知模型";
             log.error("注册模型失败: {}", modelName, e);
-            throw new BusinessException("注册模型失败: " + e.getMessage(), "MODEL_REGISTER_FAILED");
+            throw new BusinessException("注册模型失败: " + e.getMessage(), ErrorCodes.MODEL_REGISTER_FAILED);
         }
     }
 
@@ -201,8 +201,8 @@ public class DynamicModelManager implements InitializingBean {
     public Collection<Object> getAllRegisteredModels() {
         // 返回深拷贝以防止外部修改
         return modelsCache.values().stream()
-                .map(model -> model instanceof Map ? deepCopyMap((Map<String, Object>) model) : model)
-                .collect(Collectors.toList());
+                .map(model -> model instanceof Map ? CommonUtils.deepCopyMap((Map<String, Object>) model) : model)
+            .collect(Collectors.toList());
     }
 
     /**
@@ -213,7 +213,7 @@ public class DynamicModelManager implements InitializingBean {
         
         // 返回深拷贝以防止外部修改
         Object model = modelsCache.get(modelName);
-        return model instanceof Map ? deepCopyMap((Map<String, Object>) model) : model;
+        return model instanceof Map ? CommonUtils.deepCopyMap((Map<String, Object>) model) : model;
     }
     
     /**
@@ -224,44 +224,7 @@ public class DynamicModelManager implements InitializingBean {
         return modelsCache.containsKey(modelName);
     }
     
-    /**
-     * 深拷贝Map对象，防止外部修改影响内部数据
-     */
-    private Map<String, Object> deepCopyMap(Map<String, Object> source) {
-        if (source == null) {
-            return null;
-        }
-        
-        Map<String, Object> copy = new HashMap<>();
-        for (Map.Entry<String, Object> entry : source.entrySet()) {
-            Object value = entry.getValue();
-            if (value instanceof Map) {
-                // 递归复制嵌套的Map
-                @SuppressWarnings("unchecked")
-                Map<String, Object> nestedMap = (Map<String, Object>) value;
-                copy.put(entry.getKey(), deepCopyMap(nestedMap));
-            } else if (value instanceof List) {
-                // 复制List
-                @SuppressWarnings("unchecked")
-                List<Object> originalList = (List<Object>) value;
-                List<Object> copiedList = new ArrayList<>(originalList.size());
-                for (Object item : originalList) {
-                    if (item instanceof Map) {
-                        @SuppressWarnings("unchecked")
-                        Map<String, Object> nestedMap = (Map<String, Object>) item;
-                        copiedList.add(deepCopyMap(nestedMap));
-                    } else {
-                        copiedList.add(item); // 基本类型直接添加
-                    }
-                }
-                copy.put(entry.getKey(), copiedList);
-            } else {
-                // 基本类型直接添加
-                copy.put(entry.getKey(), value);
-            }
-        }
-        return copy;
-    }
+    // deepCopyMap方法已移至CommonUtils类中
     
     /**
      * 复制模型（创建新模型）
@@ -272,8 +235,8 @@ public class DynamicModelManager implements InitializingBean {
      * @throws BusinessException 当模型不存在或创建失败时抛出
      */
     public Object duplicateModel(String sourceModelName, String newModelName, String newModelLabel) {
-        Assert.hasText(sourceModelName, "源模型名称不能为空");
-        Assert.hasText(newModelName, "新模型名称不能为空");
+        CommonUtils.validateNotEmpty(sourceModelName, "源模型名称不能为空");
+        CommonUtils.validateNotEmpty(newModelName, "新模型名称不能为空");
         
         try {
             // 检查源模型是否存在
@@ -305,9 +268,9 @@ public class DynamicModelManager implements InitializingBean {
                             Map<String, Object> fieldMap = (Map<String, Object>) fieldValue;
                             DynamicModelConfig.DynamicFieldDefinition newField = new DynamicModelConfig.DynamicFieldDefinition();
                             // 使用工具方法简化类型转换
-                            newField.setType(getStringValue(fieldMap, "type", "string"));
-                            newField.setLabel(getStringValue(fieldMap, "label", fieldName));
-                            newField.setRequired(getBooleanValue(fieldMap, "required", false));
+                            newField.setType(CommonUtils.getStringValue(fieldMap, "type", "string"));
+                        newField.setLabel(CommonUtils.getStringValue(fieldMap, "label", fieldName));
+                        newField.setRequired(CommonUtils.getBooleanValue(fieldMap, "required", false));
                             
                             // 设置默认值
                             Object defaultValueObj = fieldMap.get("defaultValue");
@@ -315,8 +278,8 @@ public class DynamicModelManager implements InitializingBean {
                                 newField.setDefaultValue(defaultValueObj.toString());
                             }
                             
-                            newField.setDescription(getStringValue(fieldMap, "description", null));
-                            newField.setMaxLength(getIntegerValue(fieldMap, "maxLength"));
+                            newField.setDescription(CommonUtils.getStringValue(fieldMap, "description", null));
+                        newField.setMaxLength(CommonUtils.getIntegerValue(fieldMap, "maxLength"));
                             fields.put(fieldName, newField);
                         }
                     }
@@ -329,7 +292,7 @@ public class DynamicModelManager implements InitializingBean {
             
             // 从源模型获取描述
             if (sourceMetadata instanceof Map) {
-                newDefinition.setDescription(getStringValue((Map<String, Object>) sourceMetadata, "description", null));
+                newDefinition.setDescription(CommonUtils.getStringValue((Map<String, Object>) sourceMetadata, "description", null));
             }
             
             newDefinition.setFields(fields);
@@ -346,7 +309,7 @@ public class DynamicModelManager implements InitializingBean {
             return newEntityMetadata;
         } catch (Exception e) {
             log.error("复制模型失败: {} -> {}", sourceModelName, newModelName, e);
-            throw new BusinessException("复制模型失败: " + e.getMessage(), "MODEL_DUPLICATE_FAILED");
+            throw new BusinessException("复制模型失败: " + e.getMessage(), ErrorCodes.MODEL_DUPLICATE_FAILED);
         }
     }
 
@@ -675,38 +638,7 @@ public class DynamicModelManager implements InitializingBean {
         return validTypes.contains(fieldType.toLowerCase());
     }
     
-    /**
-     * 安全地从Map中获取String类型值
-     */
-    private String getStringValue(Map<String, Object> map, String key, String defaultValue) {
-        Object value = map.get(key);
-        return value instanceof String ? (String) value : defaultValue;
-    }
-    
-    /**
-     * 安全地从Map中获取Boolean类型值
-     */
-    private Boolean getBooleanValue(Map<String, Object> map, String key, Boolean defaultValue) {
-        Object value = map.get(key);
-        return value instanceof Boolean ? (Boolean) value : defaultValue;
-    }
-    
-    /**
-     * 安全地从Map中获取Integer类型值
-     */
-    private Integer getIntegerValue(Map<String, Object> map, String key) {
-        Object value = map.get(key);
-        if (value instanceof Integer) {
-            return (Integer) value;
-        } else if (value instanceof String) {
-            try {
-                return Integer.parseInt((String) value);
-            } catch (NumberFormatException e) {
-                log.debug("Invalid integer value for key {}: {}", key, value);
-            }
-        }
-        return null;
-    }
+    // 辅助方法已移至 CommonUtils 类中
     
     /**
      * 验证模型定义是否合法

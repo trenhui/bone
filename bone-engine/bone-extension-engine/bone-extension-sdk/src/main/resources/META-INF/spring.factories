@@ -1,2 +1,2 @@
 # Auto Configure
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=com.bone.engine.extension.config.ExtensionAutoConfiguration
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=com.bone.engine.extension.config.UnifiedExtPointAutoConfiguration

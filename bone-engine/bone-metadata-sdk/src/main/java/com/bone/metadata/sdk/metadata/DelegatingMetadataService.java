@@ -1,6 +1,5 @@
 package com.bone.metadata.sdk.metadata;
 
-import java.util.logging.Logger;
 import com.bone.metadata.sdk.support.cache.FieldCache;
 import com.bone.metadata.sdk.support.config.MetadataSdkProperties;
 import com.bone.metadata.sdk.domain.enums.DeploymentMode;
@@ -9,6 +8,8 @@ import com.bone.metadata.sdk.domain.model.FieldMetadata;
 import com.bone.metadata.sdk.domain.model.TableMetadata;
 import com.bone.metadata.sdk.metadata.api.MetadataService;
 import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cloud.context.scope.refresh.RefreshScopeRefreshedEvent;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -19,7 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class DelegatingMetadataService implements MetadataService, ApplicationContextAware {
 
-    private static final Logger LOGGER = Logger.getLogger(DelegatingMetadataService.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(DelegatingMetadataService.class.getName());
     
     // 当前激活的服务实例（原子引用保证线程安全）
     private final AtomicReference<MetadataService> activeDelegate = new AtomicReference<>();
@@ -47,7 +48,7 @@ public class DelegatingMetadataService implements MetadataService, ApplicationCo
      */
     @EventListener(RefreshScopeRefreshedEvent.class)
     public void onConfigurationRefresh(RefreshScopeRefreshedEvent event) {
-        LOGGER.info("Metadata service configuration refreshed");
+        logger.info("Metadata service configuration refreshed");
         refreshActiveDelegate();
     }
 
@@ -66,7 +67,7 @@ public class DelegatingMetadataService implements MetadataService, ApplicationCo
             MetadataService newDelegate = applicationContext.getBean(targetMode.equals(DeploymentMode.REMOTE) ? "remoteMetadataService" : "embeddedMetadataService", MetadataService.class);
             activeDelegate.set(newDelegate);
             currentMode.set(targetMode);
-            LOGGER.info("Metadata service is now running in " + targetMode + " mode");
+            logger.info("Metadata service is now running in " + targetMode + " mode");
         } catch (Exception e) {
             handleDelegateException(targetMode, e);
         }
@@ -76,19 +77,19 @@ public class DelegatingMetadataService implements MetadataService, ApplicationCo
      * 处理服务初始化异常（带自动恢复）
      */
     private void handleDelegateException(DeploymentMode mode, Exception ex) {
-        LOGGER.severe("Failed to initialize " + mode + " metadata service");
+        logger.error("Failed to initialize {} metadata service", mode, ex);
 
         DeploymentMode fallbackMode = (mode == DeploymentMode.REMOTE)
                 ? DeploymentMode.EMBEDDED
                 : DeploymentMode.REMOTE;
 
         try {
-            LOGGER.warning("Attempting fallback to " + fallbackMode + " mode");
+            logger.warn("Attempting fallback to {} mode", fallbackMode);
             MetadataService fallbackService =  applicationContext.getBean("embeddedMetadataService", MetadataService.class);
             activeDelegate.set(fallbackService);
             currentMode.set(fallbackMode);
         } catch (Exception fallbackEx) {
-            LOGGER.severe("Critical failure: Fallback to " + fallbackMode + " mode failed");
+            logger.error("Critical failure: Fallback to {} mode failed", fallbackMode, fallbackEx);
             throw new IllegalStateException("Unable to initialize metadata service", fallbackEx);
         }
     }
@@ -144,37 +145,8 @@ public class DelegatingMetadataService implements MetadataService, ApplicationCo
     }
 
     @Override
-    public List<FieldMetadata> findExtensionFieldsByNames(AllocationContext ctx, List<String> names) {
-        if (names == null || names.isEmpty()) {
-            return List.of();
-        }
-
-        List<String> sortedNames = names.stream().sorted().toList();
-        String key = String.join("|",
-                ctx.getTenantId().toString(),
-                ctx.getAppCode(),
-                ctx.getBizIdentityCode(),
-                ctx.getEntityType(),
-                String.join(",", sortedNames)
-        );
-
-        String cacheKey = ctx.getAppCode() + "." + ctx.getEntityType();
-
-        // 先查精细缓存
-        List<FieldMetadata> cached = FieldCache.getByCacheKey(key);
-        if (cached != null && !cached.isEmpty()) {
-            return cached;
-        }
-
-        // 缓存未命中，查数据库
-        List<FieldMetadata> newMetadata = getDelegate().findExtensionFieldsByNames(ctx, names);
-
-        // 更新粗粒度缓存（合并）
-        FieldCache.mergeFieldMetadataCache(cacheKey, newMetadata);
-
-        // 写入精细粒度缓存并返回
-        FieldCache.putToCache(key, newMetadata);
-        return newMetadata;
+    public List<FieldMetadata> findExtensionFieldsByNames(AllocationContext ctx, List<String> logicalNames) {
+        return getDelegate().findExtensionFieldsByNames(ctx, logicalNames);
     }
 
     @Override
@@ -184,7 +156,8 @@ public class DelegatingMetadataService implements MetadataService, ApplicationCo
 
     @Override
     public boolean isHealthy() {
-        return activeDelegate.get().isHealthy();
+        MetadataService delegate = activeDelegate.get();
+        return delegate != null && delegate.isHealthy();
     }
     
     @Override

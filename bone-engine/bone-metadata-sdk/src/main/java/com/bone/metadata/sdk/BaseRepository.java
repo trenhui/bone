@@ -29,6 +29,7 @@ import com.bone.metadata.sdk.query.converter.QueryObjectConverter;
 import com.bone.metadata.sdk.query.criteria.Condition;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.sql.executor.SqlExecutor;
+import com.bone.metadata.sdk.sql.executor.TypeConverter;
 import com.bone.metadata.sdk.support.cache.FieldCache;
 import com.bone.metadata.sdk.support.config.MetadataSdkContext;
 import com.bone.metadata.sdk.support.util.ParamConvertUtil;
@@ -83,17 +84,33 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
 
     // ========== 基础 CRUD ==========
 
-    @Override
+    /**
+     * 内部通用方法：根据ID查询实体
+     * @param id 实体ID
+     * @param includeDeleted 是否包含已删除实体
+     * @return 查询到的实体，如果未找到则返回null
+     */
     @Transactional(readOnly = true)
-    public T findById(ID id) {
+    private T findByIdInternal(ID id, boolean includeDeleted) {
         Assert.notNull(id, "ID must not be null");
         try {
             TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
             Criteria<T> criteria = Criteria.<T>create().eq(tableMetadata.getPrimaryKey().getName(), id);
-            AllocationContext context = Extensible.class.isAssignableFrom(entityClass) ? getAllocationContext() : null;
-            CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria, context);
+            
+            CompiledQuery query;
+            if (includeDeleted) {
+                // 包含软删除的版本
+                query = sqlBuilder.buildSelect(entityClass, criteria, true);
+            } else {
+                // 正常查询版本
+                AllocationContext context = Extensible.class.isAssignableFrom(entityClass) ? getAllocationContext() : null;
+                query = sqlBuilder.buildSelect(entityClass, criteria, context);
+            }
+            
             T entity = sqlExecutor.executeSingleQuery(query, entityClass);
-            if (entity != null) loadExtensionFields(entity);
+            if (entity != null && Extensible.class.isAssignableFrom(entityClass)) {
+                loadExtensionFields(entity);
+            }
             return entity;
         } catch (Exception e) {
             throw new QueryExecutionException(String.format("Failed to query %s with id %s", 
@@ -103,16 +120,39 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
 
     @Override
     @Transactional(readOnly = true)
-    public List<T> findByIds(List<ID> idList) {
+    public T findById(ID id) {
+        return findByIdInternal(id, false);
+    }
+
+    /**
+     * 内部通用方法：根据ID列表查询实体
+     * @param idList 实体ID列表
+     * @param includeDeleted 是否包含已删除实体
+     * @return 查询到的实体列表
+     */
+    @Transactional(readOnly = true)
+    private List<T> findByIdsInternal(List<ID> idList, boolean includeDeleted) {
         if (idList == null || idList.isEmpty()) return Collections.emptyList();
         Assert.noNullElements(idList, "ID list must not contain null elements");
         try {
             TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
             Criteria<T> criteria = Criteria.<T>create().in(tableMetadata.getPrimaryKey().getName(), idList);
-            AllocationContext context = Extensible.class.isAssignableFrom(entityClass) ? getAllocationContext() : null;
-            CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria, context);
+            
+            CompiledQuery query;
+            if (includeDeleted) {
+                // 包含软删除的版本
+                query = sqlBuilder.buildSelect(entityClass, criteria, true);
+            } else {
+                // 正常查询版本
+                AllocationContext context = Extensible.class.isAssignableFrom(entityClass) ? getAllocationContext() : null;
+                query = sqlBuilder.buildSelect(entityClass, criteria, context);
+            }
+            
             List<T> list = sqlExecutor.executeQuery(query, entityClass);
-            list.forEach(this::loadExtensionFields);
+            // 只有在实体实现Extensible接口时才加载扩展字段
+            if (Extensible.class.isAssignableFrom(entityClass)) {
+                list.forEach(this::loadExtensionFields);
+            }
             return list;
         } catch (Exception e) {
             throw new QueryExecutionException(
@@ -122,34 +162,20 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
 
     @Override
     @Transactional(readOnly = true)
+    public List<T> findByIds(List<ID> idList) {
+        return findByIdsInternal(idList, false);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<T> findByIdsIncludingDeleted(List<ID> idList) {
-        if (idList == null || idList.isEmpty()) return Collections.emptyList();
-        Assert.noNullElements(idList, "ID list must not contain null elements");
-        TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
-        Criteria<T> criteria = Criteria.<T>create().in(tableMetadata.getPrimaryKey().getName(), idList);
-        // 直接使用包含deleted=true的版本
-        CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria, true);
-        List<T> list = sqlExecutor.executeQuery(query, entityClass);
-        // 只有在实体实现Extensible接口时才加载扩展字段
-        if (Extensible.class.isAssignableFrom(entityClass)) {
-            list.forEach(this::loadExtensionFields);
-        }
-        return list;
+        return findByIdsInternal(idList, true);
     }
 
     @Override
     @Transactional(readOnly = true)
     public T findByIdIncludingDeleted(ID id) {
-        Assert.notNull(id, "ID must not be null");
-        TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
-        Criteria<T> criteria = Criteria.<T>create().eq(tableMetadata.getPrimaryKey().getName(), id);
-        // 直接使用包含deleted=true的版本，同时只有在实体实现Extensible接口时才会处理扩展字段
-        CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria, true);
-        T entity = sqlExecutor.executeSingleQuery(query, entityClass);
-        if (entity != null && Extensible.class.isAssignableFrom(entityClass)) {
-            loadExtensionFields(entity);
-        }
-        return entity;
+        return findByIdInternal(id, true);
     }
 
     @Override
@@ -361,18 +387,24 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
         });
     }
 
+    /**
+     * 内部通用方法：创建基于主键的删除查询
+     * @param criteria 基于主键的查询条件
+     * @return 编译后的删除查询
+     */
+    private CompiledQuery createDeleteQueryByPrimaryKey(Criteria<T> criteria) {
+        AllocationContext context = Extensible.class.isAssignableFrom(entityClass) ? getAllocationContext() : null;
+        return sqlBuilder.buildDelete(entityClass, criteria, context);
+    }
+
     @Override
     @Transactional
     public boolean deleteById(ID id) {
         Assert.notNull(id, "ID must not be null");
         try {
             TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
-            AllocationContext context = Extensible.class.isAssignableFrom(entityClass) ? getAllocationContext() : null;
-            CompiledQuery query = sqlBuilder.buildDelete(
-                    entityClass,
-                    Criteria.<T>create().eq(tableMetadata.getPrimaryKey().getName(), id),
-                    context
-            );
+            Criteria<T> criteria = Criteria.<T>create().eq(tableMetadata.getPrimaryKey().getName(), id);
+            CompiledQuery query = createDeleteQueryByPrimaryKey(criteria);
             int affectedRows = sqlExecutor.executeUpdate(query);
             return affectedRows > 0;
         } catch (Exception e) {
@@ -388,12 +420,8 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
         Assert.noNullElements(ids, "ID list must not contain null elements");
         try {
             TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
-            AllocationContext context = Extensible.class.isAssignableFrom(entityClass) ? getAllocationContext() : null;
-            CompiledQuery query = sqlBuilder.buildDelete(
-                    entityClass,
-                    Criteria.<T>create().in(tableMetadata.getPrimaryKey().getName(), ids),
-                    context
-            );
+            Criteria<T> criteria = Criteria.<T>create().in(tableMetadata.getPrimaryKey().getName(), ids);
+            CompiledQuery query = createDeleteQueryByPrimaryKey(criteria);
             sqlExecutor.executeUpdate(query);
         } catch (Exception e) {
             throw new QueryExecutionException(
@@ -574,6 +602,22 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
 
     // ========== 通用查询 ==========
 
+    /**
+     * 处理分页参数，设置默认值
+     * @param pageNo 页码
+     * @param pageSize 每页大小
+     * @return 包含处理后页码和每页大小的数组 [pageNo, pageSize]
+     */
+    private int[] processPaginationParams(Integer pageNo, Integer pageSize) {
+        int processedPageNo = (pageNo != null && pageNo > 0) ? pageNo : DEFAULT_PAGE_NUMBER;
+        int processedPageSize = (pageSize != null && pageSize > 0) ? pageSize : DEFAULT_PAGE_SIZE;
+        return new int[]{processedPageNo, processedPageSize};
+    }
+
+
+
+
+
     @Override
     @Transactional(readOnly = true)
     public PageResult<T> queryByCondition(List<QueryParam> queryParams,
@@ -581,14 +625,13 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
                                           Integer pageNo,
                                           Integer pageSize,
                                           String bizIdentityCode) {
-        List<QueryParam> processedQueryParams = (queryParams != null) ? queryParams : Collections.emptyList();
-        List<SortingField> processedSortingFields = (sortingFields != null) ? sortingFields : Collections.emptyList();
-        Criteria<T> criteria = buildCriteria(processedQueryParams, bizIdentityCode);
-        addSortingToCriteria(criteria, processedSortingFields);
-        int processedPageNo = (pageNo != null && pageNo > 0) ? pageNo : DEFAULT_PAGE_NUMBER;
-        int processedPageSize = (pageSize != null && pageSize > 0) ? pageSize : DEFAULT_PAGE_SIZE;
-        criteria.setPageNo(processedPageNo);
-        criteria.setPageSize(processedPageSize);
+        Criteria<T> criteria = buildCriteria(queryParams, bizIdentityCode);
+        addSortingToCriteria(criteria, sortingFields);
+        
+        int[] paginationParams = processPaginationParams(pageNo, pageSize);
+        criteria.setPageNo(paginationParams[0]);
+        criteria.setPageSize(paginationParams[1]);
+        
         return pageByCriteria(criteria);
     }
 
@@ -701,34 +744,13 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
     }
 
     private Object convertToTargetType(Object rawId, Class<?> targetType) {
-        if (rawId == null) return null;
-        if (rawId instanceof BigInteger bi) {
-            if (targetType == Long.class || targetType == long.class || targetType == Object.class)
-                return bi.longValue();
-            if (targetType == Integer.class || targetType == int.class) return bi.intValue();
-        }
-        if (targetType.isInstance(rawId)) return rawId;
-        if (rawId instanceof Number number) {
-            if (targetType == Long.class || targetType == long.class) return number.longValue();
-            if (targetType == Integer.class || targetType == int.class) return number.intValue();
-            if (targetType == Short.class || targetType == short.class) return number.shortValue();
-            if (targetType == Byte.class || targetType == byte.class) return number.byteValue();
-            if (targetType == BigInteger.class) return BigInteger.valueOf(number.longValue());
-            if (targetType == BigDecimal.class) return BigDecimal.valueOf(number.doubleValue());
-        }
-        if (targetType == String.class) return rawId.toString();
         try {
-            Constructor<?> constructor = targetType.getConstructor(String.class);
-            return constructor.newInstance(rawId.toString());
-        } catch (Exception ignored) {
+            // 使用TypeConverter进行类型转换，提供统一的类型转换机制
+            return TypeConverter.convert(rawId, targetType);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("ID类型转换失败: "
+                    + rawId.getClass().getSimpleName() + " → " + targetType.getSimpleName(), e);
         }
-        try {
-            Method valueOf = targetType.getMethod("valueOf", String.class);
-            return valueOf.invoke(null, rawId.toString());
-        } catch (Exception ignored) {
-        }
-        throw new IllegalArgumentException("ID类型转换失败: "
-                + rawId.getClass().getSimpleName() + " → " + targetType.getSimpleName());
     }
 
     private AllocationContext getAllocationContext() {

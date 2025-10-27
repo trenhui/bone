@@ -7,6 +7,8 @@ import com.bone.core.model.SortingField;
 import com.bone.metadata.sdk.domain.annotation.QueryField;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.domain.enums.SortDirection;
+import com.bone.metadata.sdk.sql.executor.TypeConverter;
+import com.bone.metadata.sdk.domain.model.FieldMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
@@ -29,8 +31,8 @@ public class QueryObjectConverter {
 
     private static final Logger logger = LoggerFactory.getLogger(QueryObjectConverter.class);
 
-    // 字段元数据缓存
-    private static final Map<Class<?>, List<FieldMetadata>> FIELD_METADATA_CACHE = new ConcurrentHashMap<>();
+    // 字段元数据缓存 - 存储查询相关的字段信息
+    private static final Map<Class<?>, List<QueryFieldMetadata>> FIELD_METADATA_CACHE = new ConcurrentHashMap<>();
 
     // 默认操作符映射 - 使用不可变Map
     private static final Map<Class<?>, Operator> DEFAULT_OPERATOR_MAP;
@@ -60,8 +62,7 @@ public class QueryObjectConverter {
     // 日期范围字段后缀模式
     private static final Pattern DATE_RANGE_PATTERN = Pattern.compile("(Start|End|From|To)$");
 
-    // 自定义类型转换器注册表 - 简化版本，避免复杂泛型
-    private static final Map<Class<?>, Function<Object, Object>> CUSTOM_CONVERTERS = new ConcurrentHashMap<>();
+    // 移除了自定义类型转换器注册表，统一使用TypeConverter
 
     // 需要忽略的字段名集合
     private static final Set<String> IGNORED_FIELD_NAMES = Set.of(
@@ -69,13 +70,13 @@ public class QueryObjectConverter {
             "sortingFields", "sorting_fields", "order", "sort"
     );
 
-    // 字段元数据类
-    private static class FieldMetadata {
+    // 查询字段元数据类 - 内部使用，避免与领域模型的FieldMetadata冲突
+    private static class QueryFieldMetadata {
         final Field field;
         final String fieldName;
         final QueryField queryField;
 
-        FieldMetadata(Field field, String fieldName, QueryField queryField) {
+        QueryFieldMetadata(Field field, String fieldName, QueryField queryField) {
             this.field = field;
             this.fieldName = fieldName;
             this.queryField = queryField;
@@ -83,12 +84,23 @@ public class QueryObjectConverter {
     }
 
     /**
-     * 注册自定义类型转换器（简化版本）
+     * 注册自定义类型转换器 - 已移除，请使用TypeConverter.registerConverter方法替代
+     * @deprecated 使用TypeConverter.registerConverter方法进行类型转换注册
      */
+    @Deprecated
     @SuppressWarnings("unchecked")
     public static <T> void registerConverter(Class<T> type, Function<T, Object> converter) {
-        // 安全转换：Function<T, Object> 到 Function<Object, Object>
-        CUSTOM_CONVERTERS.put(type, (Function<Object, Object>) converter);
+        logger.warn("QueryObjectConverter.registerConverter已弃用，请使用TypeConverter.registerConverter方法");
+        // 适配到TypeConverter
+        TypeConverter.registerConverter(type, new TypeConverter.Converter<T>() {
+            @Override
+            public T convert(Object value, Class<T> targetType) {
+                if (converter != null) {
+                    return targetType.cast(converter.apply((T) value));
+                }
+                return (T) value;
+            }
+        });
     }
 
     /**
@@ -112,9 +124,9 @@ public class QueryObjectConverter {
      * 处理查询条件
      */
     private static <T> void processQueryConditions(Object queryObject, Criteria<T> criteria, Class<T> entityClass) {
-        List<FieldMetadata> fields = getCachedFields(queryObject.getClass());
+        List<QueryFieldMetadata> fields = getCachedFields(queryObject.getClass());
 
-        for (FieldMetadata metadata : fields) {
+        for (QueryFieldMetadata metadata : fields) {
             processField(queryObject, metadata, criteria, entityClass);
         }
     }
@@ -122,9 +134,9 @@ public class QueryObjectConverter {
     /**
      * 获取缓存的字段元数据
      */
-    private static List<FieldMetadata> getCachedFields(Class<?> clazz) {
+    private static List<QueryFieldMetadata> getCachedFields(Class<?> clazz) {
         return FIELD_METADATA_CACHE.computeIfAbsent(clazz, key -> {
-            List<FieldMetadata> metadataList = new ArrayList<>();
+            List<QueryFieldMetadata> metadataList = new ArrayList<>();
             Class<?> currentClass = clazz;
 
             // 遍历所有字段，包括父类字段
@@ -141,7 +153,8 @@ public class QueryObjectConverter {
                     QueryField queryField = field.getAnnotation(QueryField.class);
                     String fieldName = getFieldName(field, queryField);
 
-                    metadataList.add(new FieldMetadata(field, fieldName, queryField));
+                    // 使用内部QueryFieldMetadata类
+                    metadataList.add(new QueryFieldMetadata(field, fieldName, queryField));
                 }
                 currentClass = currentClass.getSuperclass();
             }
@@ -153,7 +166,7 @@ public class QueryObjectConverter {
     /**
      * 处理单个字段
      */
-    private static <T> void processField(Object queryObject, FieldMetadata metadata,
+    private static <T> void processField(Object queryObject, QueryFieldMetadata metadata,
                                          Criteria<T> criteria, Class<T> entityClass) {
         try {
             Object value = metadata.field.get(queryObject);
@@ -184,24 +197,21 @@ public class QueryObjectConverter {
     }
 
     /**
-     * 应用自定义类型转换（简化版本）
+     * 应用类型转换，统一使用TypeConverter
      */
     private static Object applyCustomConverter(Field field, Object value) {
         if (value == null) {
             return null;
         }
 
-        Function<Object, Object> converter = CUSTOM_CONVERTERS.get(field.getType());
-        if (converter != null) {
-            try {
-                return converter.apply(value);
-            } catch (ClassCastException e) {
-                logger.warn("Type conversion failed for field {}: {}", field.getName(), e.getMessage());
-                return value; // 转换失败时返回原值
-            }
+        try {
+            // 使用TypeConverter进行统一的类型转换
+            return TypeConverter.convert(value, field.getType());
+        } catch (Exception e) {
+            logger.debug("Type conversion failed for field {}: {}", field.getName(), e.getMessage());
+            // 转换失败时返回原值
+            return value;
         }
-
-        return value;
     }
 
     /**
@@ -334,13 +344,13 @@ public class QueryObjectConverter {
     /**
      * 处理日期范围字段
      */
-    private static <T> void processDateRangeField(Object queryObject, FieldMetadata metadata, Criteria<T> criteria) {
+    private static <T> void processDateRangeField(Object queryObject, QueryFieldMetadata metadata, Criteria<T> criteria) {
         try {
             String baseFieldName = metadata.fieldName.replaceAll("(Start|End|From|To)$", "");
             Object value = metadata.field.get(queryObject);
 
             // 查找对应的范围字段
-            FieldMetadata pairMetadata = findPairDateField(queryObject, metadata);
+            QueryFieldMetadata pairMetadata = findPairDateField(queryObject, metadata);
             if (pairMetadata != null) {
                 Object pairValue = pairMetadata.field.get(queryObject);
 
@@ -370,7 +380,7 @@ public class QueryObjectConverter {
     /**
      * 查找对应的日期范围字段
      */
-    private static FieldMetadata findPairDateField(Object queryObject, FieldMetadata metadata) {
+    private static QueryFieldMetadata findPairDateField(Object queryObject, QueryFieldMetadata metadata) {
         String fieldName = metadata.field.getName();
         String baseName;
         String suffix;
@@ -394,8 +404,8 @@ public class QueryObjectConverter {
         String pairFieldName = baseName + suffix;
 
         // 在缓存的字段元数据中查找对应的字段
-        List<FieldMetadata> fields = getCachedFields(queryObject.getClass());
-        for (FieldMetadata fieldMetadata : fields) {
+        List<QueryFieldMetadata> fields = getCachedFields(queryObject.getClass());
+        for (QueryFieldMetadata fieldMetadata : fields) {
             if (fieldMetadata.field.getName().equals(pairFieldName)) {
                 try {
                     Object value = fieldMetadata.field.get(queryObject);

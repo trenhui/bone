@@ -2,6 +2,7 @@ package com.bone.metadata.sdk.support.dataSource;
 
 import javax.sql.DataSource;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
 /**
@@ -102,6 +103,27 @@ public interface DataSourceManager {
             }
         }
     }
+    
+    /**
+     * 使用指定的数据源异步执行给定的可运行操作。
+     * 
+     * @param dataSourceName 用于执行的数据源名称
+     * @param action 要使用指定数据源执行的可运行操作
+     * @return CompletableFuture实例，用于异步操作管理
+     * @throws IllegalArgumentException 如果数据源名称无效或操作为null
+     */
+    CompletableFuture<Void> executeAsyncWithDataSource(String dataSourceName, Runnable action);
+    
+    /**
+     * 使用指定的数据源异步执行给定的供应商操作。
+     * 
+     * @param <T> 返回值类型
+     * @param dataSourceName 用于执行的数据源名称
+     * @param action 要使用指定数据源执行的供应商操作
+     * @return CompletableFuture实例，包含异步操作的结果
+     * @throws IllegalArgumentException 如果数据源名称无效或操作为null
+     */
+    <T> CompletableFuture<T> executeAsyncWithDataSource(String dataSourceName, Supplier<T> action);
     
     /**
      * Sets the name of the default data source.

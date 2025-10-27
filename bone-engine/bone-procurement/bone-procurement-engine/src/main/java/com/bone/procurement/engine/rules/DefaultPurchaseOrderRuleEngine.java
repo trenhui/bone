@@ -1,11 +1,14 @@
 package com.bone.procurement.engine.rules;
 
 import com.bone.procurement.engine.model.*;
+import com.bone.core.util.StringUtils;
+import com.bone.core.util.CollectionUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -1837,7 +1840,7 @@ public class DefaultPurchaseOrderRuleEngine implements PurchaseOrderRuleEngine {
                     if (priceScale > 4) {
                         logWarning(requestId, orderCode, "item has price with excessive precision ({} decimal places): {}, ID: {}, Name: {}", 
                                 priceScale, price, itemId, itemName);
-                        price = price.setScale(4, BigDecimal.ROUND_HALF_UP);
+                        price = price.setScale(4, RoundingMode.HALF_UP);
                         pricePrecisionErrors++;
                     }
                     
@@ -1866,7 +1869,7 @@ public class DefaultPurchaseOrderRuleEngine implements PurchaseOrderRuleEngine {
                             continue;
                         }
                         
-                        itemTotal = itemTotal.setScale(2, BigDecimal.ROUND_HALF_UP);
+                        itemTotal = itemTotal.setScale(2, RoundingMode.HALF_UP);
                     } catch (ArithmeticException e) {
                         logError(requestId, orderCode, e, "Arithmetic error calculating amount for item {}: {}", itemId, e.getMessage());
                         skippedItems++;
@@ -1906,7 +1909,7 @@ public class DefaultPurchaseOrderRuleEngine implements PurchaseOrderRuleEngine {
             }
             
             // 对最终结果进行精度处理
-            BigDecimal finalTotal = total.setScale(2, BigDecimal.ROUND_HALF_UP);
+            BigDecimal finalTotal = total.setScale(2, RoundingMode.HALF_UP);
             
             long endTime = System.currentTimeMillis();
             long processingTime = endTime - startTime;

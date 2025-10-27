@@ -1,38 +1,52 @@
 package com.bone.example.extension.risk.exception;
 
+import com.bone.engine.extension.exception.BusinessException;
+
 /**
- * 风控模块的自定义异常类
- * 用于风控评估过程中的业务异常
+ * 风控异常类
+ * <p>
+ * 提供风控领域特有的异常功能和业务方法
  */
-public class RiskControlException extends RuntimeException {
+public class RiskControlException extends BusinessException {
+    private static final long serialVersionUID = 1L;
     
-    private String errorCode;
-    private String riskFactor;
-    
-    public RiskControlException(String message) {
-        super(message);
+    /**
+     * 构建风控异常
+     * @param errorCode 错误码
+     * @param message 错误消息
+     */
+    public RiskControlException(String errorCode, String message) {
+        super("RISK_CONTROL", errorCode, message);
     }
     
-    public RiskControlException(String message, Throwable cause) {
-        super(message, cause);
+    /**
+     * 构建风控异常
+     * @param errorCode 错误码
+     * @param message 错误消息
+     * @param cause 异常原因
+     */
+    public RiskControlException(String errorCode, String message, Throwable cause) {
+        super("RISK_CONTROL", errorCode, message, cause);
     }
     
-    public RiskControlException(String message, String errorCode) {
-        super(message);
-        this.errorCode = errorCode;
+    /**
+     * 创建风控规则拦截异常
+     * @param ruleId 规则ID
+     * @param message 拦截原因
+     * @return 风控异常实例
+     */
+    public static RiskControlException ruleRejected(String ruleId, String message) {
+        return new RiskControlException("RULE_REJECTED", "规则拦截[" + ruleId + "]: " + message);
     }
     
-    public RiskControlException(String message, String errorCode, String riskFactor) {
-        super(message);
-        this.errorCode = errorCode;
-        this.riskFactor = riskFactor;
-    }
-    
-    public String getErrorCode() {
-        return errorCode;
-    }
-    
-    public String getRiskFactor() {
-        return riskFactor;
+    /**
+     * 创建风控评分异常
+     * @param scoreThreshold 评分阈值
+     * @param actualScore 实际评分
+     * @return 风控异常实例
+     */
+    public static RiskControlException scoreBelowThreshold(int scoreThreshold, int actualScore) {
+        return new RiskControlException("SCORE_BELOW_THRESHOLD", 
+                "评分未达标: 阈值=" + scoreThreshold + ", 实际=" + actualScore);
     }
 }

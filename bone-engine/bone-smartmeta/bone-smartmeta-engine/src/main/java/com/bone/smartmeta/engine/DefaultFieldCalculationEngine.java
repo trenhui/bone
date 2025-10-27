@@ -3,6 +3,8 @@ package com.bone.smartmeta.engine;
 import com.bone.smartmeta.engine.exception.CalculationException;
 import com.bone.smartmeta.engine.model.DynamicSmartEntity;
 import com.bone.smartmeta.engine.model.FieldMetadata;
+import com.bone.smartmeta.engine.util.CommonUtils;
+import java.util.Objects;
 import lombok.Getter;
 
 import java.lang.reflect.Field;
@@ -124,7 +126,7 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
         
         // 检查计算表达式是否存在且不为空
         String expression = fieldMetadata.getCalculationExpression();
-        return expression != null && !expression.trim().isEmpty();
+        return CommonUtils.isNotEmpty(expression);
     }
     
     @Override

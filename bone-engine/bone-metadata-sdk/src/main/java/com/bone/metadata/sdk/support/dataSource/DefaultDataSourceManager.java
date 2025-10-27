@@ -14,6 +14,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
+import com.bone.metadata.sdk.support.dataSource.DataSourceContextHolder;
+
 /**
  * {@link DataSourceManager} 接口的默认实现类。
  * 提供管理多个数据源的核心功能，包括数据源注册、切换、健康检查和指标收集。
@@ -357,62 +359,82 @@ public class DefaultDataSourceManager implements DataSourceManager, Initializing
             throw new IllegalArgumentException(String.format("Data source does not exist: %s", dataSourceName));
         }
         
-        // 保存原始数据源上下文
-         String originalDataSource = DataSourceContextHolder.getCurrentDataSource();
-        
+        // 委托给DataSourceContextHolder，添加指标记录
+        long startTime = System.currentTimeMillis();
         try {
-            // Set current data source
-            DataSourceContextHolder.setDataSource(dataSourceName);
-            // Update internal state
+            // 更新内部状态
+            String originalDataSource = currentDataSourceName.get();
             currentDataSourceName.set(dataSourceName);
             
-            // Execute action and record metrics
-            long startTime = System.currentTimeMillis();
-            try {
-                return action.get();
-            } finally {
-                // Record operation metrics
-                long executionTime = System.currentTimeMillis() - startTime;
-                DataSourceMetrics metrics = dataSourceMetrics.get(dataSourceName);
-                if (metrics != null) {
-                    metrics.recordAccess(executionTime);
-                }
-            }
+            // 使用DataSourceContextHolder的方法执行操作
+            return DataSourceContextHolder.executeInDataSourceWithResult(dataSourceName, action);
         } finally {
-            // Ensure original data source is restored
-            restoreOriginalDataSource(originalDataSource);
+            // 记录执行指标
+            long executionTime = System.currentTimeMillis() - startTime;
+            DataSourceMetrics metrics = dataSourceMetrics.get(dataSourceName);
+            if (metrics != null) {
+                metrics.recordAccess(executionTime);
+            }
+            
+            // 注意：DataSourceContextHolder已经处理了上下文的清理，这里不需要额外处理
         }
     }
     
     /**
-     * 执行后恢复原始数据源上下文。
-     * 此方法确保即使发生异常，也能正确恢复数据源上下文。
+     * 使用指定的数据源异步执行给定的可运行操作。
+     * 委托给DataSourceContextHolder实现核心逻辑，同时保留指标记录功能。
      * 
-     * @param originalDataSource 要恢复的原始数据源名称
+     * @param dataSourceName 用于执行的数据源名称
+     * @param action 要使用指定数据源执行的可运行操作
+     * @return CompletableFuture实例，用于异步操作管理
+     * @throws IllegalArgumentException 如果数据源名称无效或操作为null
      */
-    private void restoreOriginalDataSource(String originalDataSource) {
+    public CompletableFuture<Void> executeAsyncWithDataSource(String dataSourceName, Runnable action) {
+        Assert.notNull(dataSourceName, "Data source cannot be null");
+        Assert.hasText(dataSourceName, "Data source name cannot be empty");
+        Assert.notNull(action, "Execution action cannot be null");
+        
+        // Check if data source exists in strict mode
+        if (strictMode && !dataSources.containsKey(dataSourceName)) {
+            throw new IllegalArgumentException(String.format("Data source does not exist: %s", dataSourceName));
+        }
+        
+        // 委托给DataSourceContextHolder，添加指标记录
+        long startTime = System.currentTimeMillis();
+        
+        // 更新内部状态
+        String originalDataSource = currentDataSourceName.get();
+        currentDataSourceName.set(dataSourceName);
+        
         try {
-            if (originalDataSource != null) {
-                // 清除当前数据源并恢复原始数据源
-                 DataSourceContextHolder.clearDataSource();
-                 if (DataSourceContextHolder.getCurrentDataSource() == null) {
-                     DataSourceContextHolder.setDataSource(originalDataSource);
-                 }
-                currentDataSourceName.set(originalDataSource);
-            } else {
-                // If original data source was null, clear current data source
-                DataSourceContextHolder.clearDataSource();
-                currentDataSourceName.set(null);
-            }
+            // 使用DataSourceContextHolder的方法执行异步操作
+            return DataSourceContextHolder.executeAsyncInDataSource(dataSourceName, action)
+                    .whenComplete((v, e) -> {
+                        // 记录执行指标
+                        long executionTime = System.currentTimeMillis() - startTime;
+                        DataSourceMetrics metrics = dataSourceMetrics.get(dataSourceName);
+                        if (metrics != null) {
+                            metrics.recordAccess(executionTime);
+                        }
+                        
+                        // 注意：DataSourceContextHolder已经处理了上下文的清理
+                    });
         } catch (Exception e) {
-            logger.error("Failed to restore original data source: {}", originalDataSource, e);
+            // 记录执行指标
+            long executionTime = System.currentTimeMillis() - startTime;
+            DataSourceMetrics metrics = dataSourceMetrics.get(dataSourceName);
+            if (metrics != null) {
+                metrics.recordAccess(executionTime);
+            }
+            
+            // 重新抛出异常
+            throw e;
         }
     }
     
     /**
      * 使用指定的数据源执行给定的可运行操作。
-     * 处理自动上下文切换、指标记录，并确保正确清理。
-     * 即使发生异常，也保证在执行后恢复原始数据源上下文。
+     * 委托给DataSourceContextHolder实现核心逻辑，同时保留指标记录功能。
      * 
      * @param dataSourceName 用于执行的数据源名称
      * @param action 要使用指定数据源执行的可运行操作
@@ -424,30 +446,79 @@ public class DefaultDataSourceManager implements DataSourceManager, Initializing
         Assert.hasText(dataSourceName, "Data source name cannot be empty");
         Assert.notNull(action, "Execution action cannot be null");
         
-        // 保存原始数据源上下文
-    String originalDataSource = DataSourceContextHolder.getCurrentDataSource();
-        
+        // 委托给DataSourceContextHolder，添加指标记录
+        long startTime = System.currentTimeMillis();
         try {
-            // Set current data source
-            DataSourceContextHolder.setDataSource(dataSourceName);
-            // Update internal state
+            // 更新内部状态
+            String originalDataSource = currentDataSourceName.get();
             currentDataSourceName.set(dataSourceName);
             
-            // Execute action and record metrics
-            long startTime = System.currentTimeMillis();
-            try {
-                action.run();
-            } finally {
-                // Record operation metrics
-                long executionTime = System.currentTimeMillis() - startTime;
-                DataSourceMetrics metrics = dataSourceMetrics.get(dataSourceName);
-                if (metrics != null) {
-                    metrics.recordAccess(executionTime);
-                }
-            }
+            // 使用DataSourceContextHolder的方法执行操作
+            DataSourceContextHolder.executeInDataSource(dataSourceName, action);
+            
+            return;
         } finally {
-            // Ensure original data source is restored
-            restoreOriginalDataSource(originalDataSource);
+            // 记录执行指标
+            long executionTime = System.currentTimeMillis() - startTime;
+            DataSourceMetrics metrics = dataSourceMetrics.get(dataSourceName);
+            if (metrics != null) {
+                metrics.recordAccess(executionTime);
+            }
+            
+            // 注意：DataSourceContextHolder已经处理了上下文的清理，这里不需要额外处理
+        }
+    }
+    
+    /**
+     * 使用指定的数据源异步执行给定的供应商操作。
+     * 委托给DataSourceContextHolder实现核心逻辑，同时保留指标记录功能。
+     * 
+     * @param <T> 返回值类型
+     * @param dataSourceName 用于执行的数据源名称
+     * @param action 要使用指定数据源执行的供应商操作
+     * @return CompletableFuture实例，包含异步操作的结果
+     * @throws IllegalArgumentException 如果数据源名称无效或操作为null
+     */
+    public <T> CompletableFuture<T> executeAsyncWithDataSource(String dataSourceName, Supplier<T> action) {
+        Assert.notNull(dataSourceName, "Data source cannot be null");
+        Assert.hasText(dataSourceName, "Data source name cannot be empty");
+        Assert.notNull(action, "Execution action cannot be null");
+        
+        // Check if data source exists in strict mode
+        if (strictMode && !dataSources.containsKey(dataSourceName)) {
+            throw new IllegalArgumentException(String.format("Data source does not exist: %s", dataSourceName));
+        }
+        
+        // 委托给DataSourceContextHolder，添加指标记录
+        long startTime = System.currentTimeMillis();
+        
+        // 更新内部状态
+        String originalDataSource = currentDataSourceName.get();
+        currentDataSourceName.set(dataSourceName);
+        
+        try {
+            // 使用DataSourceContextHolder的方法执行异步操作
+            return DataSourceContextHolder.executeAsyncInDataSourceWithResult(dataSourceName, action)
+                    .whenComplete((v, e) -> {
+                        // 记录执行指标
+                        long executionTime = System.currentTimeMillis() - startTime;
+                        DataSourceMetrics metrics = dataSourceMetrics.get(dataSourceName);
+                        if (metrics != null) {
+                            metrics.recordAccess(executionTime);
+                        }
+                        
+                        // 注意：DataSourceContextHolder已经处理了上下文的清理
+                    });
+        } catch (Exception e) {
+            // 记录执行指标
+            long executionTime = System.currentTimeMillis() - startTime;
+            DataSourceMetrics metrics = dataSourceMetrics.get(dataSourceName);
+            if (metrics != null) {
+                metrics.recordAccess(executionTime);
+            }
+            
+            // 重新抛出异常
+            throw e;
         }
     }
     

@@ -15,13 +15,14 @@ public class SqlProcessorFactory {
     private SqlProcessor defaultProcessor;
 
     public SqlProcessorFactory(SqlConfigProperties properties) {
-        // 初始化处理器映射 - 移除冗余的PassThroughSqlProcessor，直接使用MyBatisSqlProcessor
-        processors.put(SqlTemplateType.SQL, new MyBatisSqlProcessor(properties));
-        processors.put(SqlTemplateType.MYBATIS, new MyBatisSqlProcessor(properties));
-        processors.put(SqlTemplateType.YAML_SQL, new DynamicSqlProcessor());
+        // 使用MyBatisSqlProcessor处理所有类型的SQL模板，它功能最完善且性能最优
+        MyBatisSqlProcessor myBatisSqlProcessor = new MyBatisSqlProcessor(properties);
+        processors.put(SqlTemplateType.SQL, myBatisSqlProcessor);
+        processors.put(SqlTemplateType.MYBATIS, myBatisSqlProcessor);
+        processors.put(SqlTemplateType.YAML_SQL, myBatisSqlProcessor);
 
-        // 设置默认处理器（不再使用 null 键）
-        this.defaultProcessor = processors.get(SqlTemplateType.YAML_SQL);
+        // 设置默认处理器为功能最完善的MyBatisSqlProcessor
+        this.defaultProcessor = myBatisSqlProcessor;
     }
 
     /**

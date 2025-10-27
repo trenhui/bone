@@ -1,9 +1,11 @@
 package com.bone.smartmeta.engine;
 
+import com.bone.smartmeta.engine.util.CommonUtils;
 import com.bone.smartmeta.engine.metadata.EntityMetadata;
 import com.bone.smartmeta.engine.metadata.SmartFieldMetadata;
 import com.bone.smartmeta.engine.model.DynamicSmartEntity;
 import com.bone.smartmeta.engine.core.SmartBaseEntity;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -387,18 +389,29 @@ public class ExpressionEngine {
      * 表达式工具类，提供常用的函数
      */
     public static class ExpressionUtils {
-        public boolean isEmpty(Object obj) {
-            return obj == null || (obj instanceof String && ((String)obj).isEmpty()) || 
-                   (obj instanceof Collection && ((Collection<?>)obj).isEmpty()) ||
-                   (obj instanceof Map && ((Map<?,?>)obj).isEmpty());
+        /**
+         * 检查对象是否为空
+         * @param value 待检查的值
+         * @return 如果对象为null或空集合/空字符串则返回true
+         */
+        public boolean isEmpty(Object value) {
+            return CommonUtils.isEmpty(value);
         }
         
-        public boolean isNotEmpty(Object obj) {
-            return !isEmpty(obj);
+        /**
+         * 检查对象是否不为空
+         * @param value 待检查的值
+         * @return 如果对象不为null且不为空集合/空字符串则返回true
+         */
+        public boolean isNotEmpty(Object value) {
+            return CommonUtils.isNotEmpty(value);
         }
         
         public String toString(Object obj) {
-            return obj != null ? obj.toString() : "";
+            if (obj == null) {
+                return "";
+            }
+            return String.valueOf(obj);
         }
         
         public Number parseNumber(String str) {

@@ -20,6 +20,9 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportAware;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.type.AnnotationMetadata;
+import org.springframework.core.task.AsyncTaskExecutor;
+import org.springframework.beans.factory.annotation.Qualifier;
+import com.bone.engine.extension.router.RouteStatsCollector;
 
 /**
  * 统一的扩展点框架自动配置类
@@ -55,13 +58,22 @@ public class UnifiedExtPointAutoConfiguration implements ImportAware {
     }
 
     /**
+     * 配置路由统计收集器
+     */
+    @Bean
+    @ConditionalOnMissingBean(RouteStatsCollector.class)
+    public RouteStatsCollector routeStatsCollector() {
+        return new RouteStatsCollector();
+    }
+
+    /**
      * 配置扩展点路由引擎
      */
     @Bean
     @ConditionalOnMissingBean(ExtPointRouter.class)
-    public ExtPointRouter extPointRouter(ApplicationContext applicationContext, ExtensionProperties extensionProperties) {
-        // 创建DefaultExtPointRouter实例，传入ApplicationContext
-        DefaultExtPointRouter router = new DefaultExtPointRouter(applicationContext);
+    public ExtPointRouter extPointRouter(ApplicationContext applicationContext, ExtensionProperties extensionProperties, RouteStatsCollector routeStatsCollector) {
+        // 创建DefaultExtPointRouter实例，传入ApplicationContext和RouteStatsCollector
+        DefaultExtPointRouter router = new DefaultExtPointRouter(applicationContext, routeStatsCollector);
         // 设置缓存启用状态，优先使用注解属性，其次使用配置属性
         boolean finalEnableCache = this.enableCache && extensionProperties.getCache().isEnabled();
         router.setEnableCache(finalEnableCache);
@@ -86,8 +98,11 @@ public class UnifiedExtPointAutoConfiguration implements ImportAware {
     @Bean
     @ConditionalOnProperty(name = "bone.extension.events.enabled", havingValue = "true", matchIfMissing = true)
     @ConditionalOnMissingBean(ExtensionEventPublisher.class)
-    public ExtensionEventPublisher extensionEventPublisher(org.springframework.context.ApplicationEventPublisher applicationEventPublisher) {
-        return new DefaultExtensionEventPublisher(applicationEventPublisher);
+    public ExtensionEventPublisher extensionEventPublisher(
+            org.springframework.context.ApplicationEventPublisher applicationEventPublisher,
+            AsyncTaskExecutor taskExecutor,
+            RouteStatsCollector routeStatsCollector) {
+        return new DefaultExtensionEventPublisher(applicationEventPublisher, taskExecutor, routeStatsCollector);
     }
 
     /**

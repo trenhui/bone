@@ -9,6 +9,7 @@ import org.springframework.util.StringUtils;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+import com.bone.metadata.sdk.support.util.SqlUtil;
 
 /**
  * 自定义数据源路由策略配置
@@ -119,19 +120,11 @@ public class DataSourceRouteStrategyConfig {
             /**
              * 判断SQL是否为写操作
              * 
-             * @param upperSql 大写的SQL字符串
+             * @param upperSql SQL字符串
              * @return 是否为写操作
              */
             private boolean isWriteOperation(String upperSql) {
-                // 基本的SQL类型判断，实际项目中可以使用更复杂的SQL解析器
-                return upperSql.startsWith("INSERT") || 
-                       upperSql.startsWith("UPDATE") || 
-                       upperSql.startsWith("DELETE") || 
-                       upperSql.startsWith("CREATE") || 
-                       upperSql.startsWith("ALTER") || 
-                       upperSql.startsWith("DROP") || 
-                       upperSql.startsWith("TRUNCATE") || 
-                       upperSql.contains(" FOR UPDATE");
+                return SqlUtil.isWriteOperation(upperSql);
             }
             
             /**

@@ -1,8 +1,13 @@
 package com.bone.metadata.sdk.support.dataSource;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.jdbc.DataSourceBuilder;
+import org.springframework.jdbc.datasource.lookup.JndiDataSourceLookup;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -30,6 +35,8 @@ import java.util.stream.Collectors;
 @Component
 @ConfigurationProperties(prefix = "bone.metadata.datasource")
 public class DataSourceProperties {
+    
+    private static final Logger log = LoggerFactory.getLogger(DataSourceProperties.class);
     
     /**
      * Whether multi-data source functionality is enabled.
@@ -133,6 +140,103 @@ public class DataSourceProperties {
      */
     public boolean isEnabled() {
         return enabled;
+    }
+    
+    /**
+     * 缓存已创建的数据源实例，避免重复创建
+     */
+    private final Map<String, javax.sql.DataSource> dataSourceCache = new java.util.concurrent.ConcurrentHashMap<>();
+    
+    /**
+     * 从缓存获取或创建数据源
+     * @param name 数据源名称
+     * @return 数据源实例
+     */
+    public javax.sql.DataSource getDataSource(String name) {
+        DataSourceConfig config = getDataSources().get(name);
+        if (config == null) {
+            throw new RuntimeException("DataSource not found: " + name);
+        }
+        return dataSourceCache.computeIfAbsent(name, key -> buildDataSource(config));
+    }
+    
+    /**
+     * 从缓存获取或创建数据源
+     * @param name 数据源名称
+     * @param config 数据源配置
+     * @return 数据源实例
+     */
+    public javax.sql.DataSource getDataSource(String name, DataSourceConfig config) {
+        return dataSourceCache.computeIfAbsent(name, key -> buildDataSource(config));
+    }
+    
+    /**
+     * 构建数据源实例
+     * @param config 数据源配置
+     * @return 数据源实例，如果配置不完整则返回null
+     */
+    private javax.sql.DataSource buildDataSource(DataSourceConfig config) {
+        if (config == null) {
+            log.warn("Invalid datasource configuration, config is null");
+            return null;
+        }
+        
+        // 检查必要的属性
+        if (!StringUtils.hasText(config.getUrl())) {
+            log.warn("Invalid datasource configuration, url is required");
+            return null;
+        }
+        
+        try {
+            // 使用Spring Boot的DataSourceBuilder创建数据源
+            DataSourceBuilder<?> builder = DataSourceBuilder.create();
+            
+            // 设置基础属性
+            builder.url(config.getUrl());
+            
+            if (StringUtils.hasText(config.getUsername())) {
+                builder.username(config.getUsername());
+            }
+            
+            if (StringUtils.hasText(config.getPassword())) {
+                builder.password(config.getPassword());
+            }
+            
+            if (StringUtils.hasText(config.getDriverClassName())) {
+                builder.driverClassName(config.getDriverClassName());
+            }
+            
+            // 设置类型（如果指定）
+            // 检查并设置数据源类型（如果有）
+            if (config.getType() != null) {
+                String typeName = config.getType().toString();
+                try {
+                    Class<? extends javax.sql.DataSource> type = (Class<? extends javax.sql.DataSource>) Class.forName(typeName);
+                    builder.type(type);
+                } catch (ClassNotFoundException e) {
+                    log.warn("Could not load data source type: {}", typeName, e);
+                }
+            }
+            
+            // 构建数据源
+            javax.sql.DataSource dataSource = builder.build();
+            
+            // 如果有额外属性，可以在这里设置
+            // 由于DataSourceBuilder没有直接的方法来设置额外属性，我们需要根据具体的数据源类型进行类型转换和设置
+            
+            return dataSource;
+        } catch (Exception e) {
+            log.error("Failed to build datasource: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to build datasource: " + e.getMessage(), e);
+        }
+    }
+    
+    /**
+     * 获取数据源缓存
+     * @return 数据源缓存映射
+     */
+    public Map<String, javax.sql.DataSource> getDataSourceCache() {
+        return dataSourceCache;
     }
     
     /**

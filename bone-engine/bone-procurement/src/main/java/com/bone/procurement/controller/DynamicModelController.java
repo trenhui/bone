@@ -176,11 +176,7 @@ public class DynamicModelController {
             String newModelName = request.get("newModelName");
             String newModelLabel = request.get("newModelLabel");
             
-            if (newModelName == null || newModelName.trim().isEmpty()) {
-                return ResponseEntity.badRequest().body(Collections.singletonMap("error", "新模型名称不能为空"));
-            }
-            
-            // 复制模型
+            // 复制模型 - 服务层已经进行参数验证，这里直接调用
             Object newModelObj = dynamicModelManager.duplicateModel(modelName, newModelName, newModelLabel);
             log.info("模型复制成功: {} -> {}", modelName, newModelName);
             

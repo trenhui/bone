@@ -48,6 +48,11 @@ public class DynamicSmartEntity extends SmartBaseEntity implements Serializable 
         this.dynamicFields = dynamicFields;
     }
     
+    // getter方法
+    public String getEntityApiName() {
+        return entityApiName;
+    }
+    
     public void setRecordType(String recordType) {
         this.recordType = recordType;
     }

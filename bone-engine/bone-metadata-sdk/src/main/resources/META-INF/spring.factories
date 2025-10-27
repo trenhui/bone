@@ -1,0 +1,3 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+com.bone.metadata.sdk.support.dataSource.UnifiedDataSourceAutoConfiguration,\
+com.bone.metadata.sdk.support.config.SqlRepositoryAutoConfiguration

@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+import com.bone.example.extension.medical.MedicalClaimResult;
 
 /**
  * 医疗保险理赔服务
@@ -241,7 +242,7 @@ public class MedicalClaimService {
         if (claimType == null) {
             String errorMessage = "理赔类型不能为空";
             LOGGER.warn("理赔类型为空，无法获取对应的扩展点实现");
-            throw new MedicalClaimException(errorMessage, "INVALID_CLAIM_TYPE");
+            throw new MedicalClaimException("INVALID_CLAIM_TYPE", errorMessage, null);
         }
         
         final MedicalClaimExtPoint extPoint = extPointMap.get(claimType);
@@ -249,7 +250,7 @@ public class MedicalClaimService {
             String errorMessage = "未找到理赔类型[" + claimType + "]对应的处理实现";
             LOGGER.warn("未找到理赔类型 [{}] 的处理实现，当前已注册类型: {}", 
                     claimType, extPointMap.keySet());
-            throw new MedicalClaimException(errorMessage, "UNSUPPORTED_CLAIM_TYPE");
+            throw new MedicalClaimException("UNSUPPORTED_CLAIM_TYPE", errorMessage, null);
         }
         
         LOGGER.debug("为理赔类型 [{}] 找到扩展点实现: {}", 

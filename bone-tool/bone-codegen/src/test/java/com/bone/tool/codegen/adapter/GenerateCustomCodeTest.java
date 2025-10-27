@@ -3,7 +3,7 @@ package com.bone.tool.codegen.adapter;
 import com.bone.tool.codegen.application.dto.GenerateCustomCodeRequest;
 import com.bone.tool.codegen.domain.repository.CodegenColumnRepository;
 import com.bone.tool.codegen.domain.repository.CodegenTableRepository;
-import com.bone.tool.codegen.domain.service.CodegenService;
+import com.bone.tool.codegen.domain.service.CodegenServiceImpl;
 import com.bone.tool.codegen.domain.service.DatabaseTableService;
 import com.bone.tool.codegen.domain.service.DataSourceConfigService;
 import com.bone.tool.codegen.application.converter.CodegenConverter;
@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class GenerateCustomCodeTest {
 
     // 使用实际的CodegenService实例进行测试
-    private CodegenService codegenService;
+    private CodegenServiceImpl codegenService;
     
     // 模拟所有依赖项
     @Mock
@@ -58,7 +58,7 @@ public class GenerateCustomCodeTest {
         // 初始化测试环境
         MockitoAnnotations.openMocks(this);
         // 使用正确的构造函数创建CodegenService实例
-        codegenService = new CodegenService(
+        codegenService = new CodegenServiceImpl(
             codeGenerator,
             databaseTableService,
             codegenTableRepository,

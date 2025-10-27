@@ -10,6 +10,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 
 import java.lang.reflect.Method;
+import com.bone.metadata.sdk.domain.exception.ExceptionUtils;
+import com.bone.metadata.sdk.domain.exception.ExceptionHandler;
 
 /**
  * 查询构建器主类 - 提供流畅的API设计，降低使用门槛
@@ -26,23 +28,7 @@ public class QueryBuilder {
     // 使用final修饰正则表达式模式确保线程安全
     private static final Pattern VALID_NAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_\\.]+$");
     
-    // 创建一个默认的异常处理器，避免在没有外部设置时出现空指针或反射错误
-    private static final Object DEFAULT_EXCEPTION_HANDLER = new Object() {
-        public RuntimeException handleException(Exception e) {
-            return new RuntimeException("默认异常处理器: " + e.getMessage(), e);
-        }
-        
-        public RuntimeException handleException(Exception e, String message) {
-            return new RuntimeException(message, e);
-        }
-        
-        public void logException(Exception e) {
-            System.out.println("默认异常记录: " + e.getMessage());
-        }
-    };
-    
-    // 使用volatile修饰以确保多线程环境中的可见性，默认为默认处理器
-    private static volatile Object exceptionHandler = DEFAULT_EXCEPTION_HANDLER;
+    // 不再需要异常处理器字段，使用ExceptionUtils工具类处理所有异常
     
     /**
      * 设置SqlExecutor实例（兼容方法）
@@ -54,22 +40,22 @@ public class QueryBuilder {
     }
     
     /**
-     * 设置ExceptionHandler实例
+     * 设置ExceptionHandler实例（向后兼容）
      * 使用synchronized确保原子性操作
      * @param handler ExceptionHandler实例
      */
     public static synchronized void setExceptionHandler(Object handler) {
-        exceptionHandler = handler;
+        // 保持向后兼容，但不再实际使用传入的handler
+        // 现在使用的是ExceptionUtils中的单例ExceptionHandler
         logger.fine("ExceptionHandler set: " + (handler != null ? handler.getClass().getName() : "null"));
     }
     
     /**
-     * 获取异常处理器实例
-     * 安全地读取volatile字段
-     * @return ExceptionHandler实例
+     * 获取异常处理器实例（向后兼容）
+     * @return ExceptionHandler单例实例，保持与原有行为更一致
      */
     protected static Object getExceptionHandler() {
-        return exceptionHandler;
+        return ExceptionHandler.getInstance();
     }
     
     /**
@@ -103,16 +89,8 @@ public class QueryBuilder {
             // 使用标准RuntimeException
             RuntimeException exception = new RuntimeException("Failed to initialize query builder", e);
             
-            // 如果存在异常处理器，则使用它处理异常
-            if (exceptionHandler != null) {
-                try {
-                    exceptionHandler.getClass().getMethod("handleException", Exception.class)
-                        .invoke(exceptionHandler, exception);
-                } catch (Exception ex) {
-                    logger.severe("Failed to call exception handler");
-                }
-            }
-            
+            // 使用统一的异常工具类处理异常
+            ExceptionUtils.handleException(exception);
             throw exception;
         }
     }
@@ -680,20 +658,8 @@ public class QueryBuilder {
          * @param message 异常消息
          */
         private void handleException(Exception e, String message) {
-            // 创建异常并使用ExceptionHandler处理
-            RuntimeException exception = new RuntimeException(message, e);
-            
-            // 获取全局异常处理器
-            Object handler = QueryBuilder.getExceptionHandler();
-            if (handler != null) {
-                try {
-                    // 使用反射调用handleException方法
-                    java.lang.reflect.Method handleMethod = handler.getClass().getMethod("handleException", Exception.class);
-                    handleMethod.invoke(handler, exception);
-                } catch (Exception ex) {
-                    logger.severe("Failed to invoke exception handler: " + ex.getMessage());
-                }
-            }
+            // 使用统一的异常工具类处理异常
+            ExceptionUtils.handleAndWrapException(e, message);
         }
         
         public SqlQueryBuilderImpl(Class<T> entityClass) {
@@ -1078,19 +1044,8 @@ public class QueryBuilder {
                 // 创建异常并使用ExceptionHandler处理
                 RuntimeException exception = new RuntimeException("Error adding WHERE condition", e);
                 
-                // 如果存在异常处理器，则使用它处理异常
-                if (exceptionHandler != null) {
-                    try {
-                        // 使用反射调用handleException方法
-                        java.lang.reflect.Method handleMethod = exceptionHandler.getClass().getMethod("handleException", Exception.class);
-                        handleMethod.invoke(exceptionHandler, exception);
-                    } catch (Exception ex) {
-                        logger.severe("Failed to invoke exception handler: " + ex.getMessage());
-                        // 即使反射调用失败，也不应该影响主流程
-                    }
-                } else {
-                    logger.severe("Error adding WHERE condition");
-                }
+                // 使用统一的异常工具类处理异常
+                ExceptionUtils.handleException(exception);
                 
                 // 创建一个空的条件构建器以保持链式调用
                 return new ConditionBuilderImpl<>(this, "id", "where");
@@ -1119,19 +1074,8 @@ public class QueryBuilder {
                 // 创建异常并使用ExceptionHandler处理
                 RuntimeException exception = new RuntimeException("Error adding JOIN clause", e);
                 
-                // 如果存在异常处理器，则使用它处理异常
-                if (exceptionHandler != null) {
-                    try {
-                        // 使用反射调用handleException方法
-                        java.lang.reflect.Method handleMethod = exceptionHandler.getClass().getMethod("handleException", Exception.class);
-                        handleMethod.invoke(exceptionHandler, exception);
-                    } catch (Exception ex) {
-                        logger.severe("Failed to invoke exception handler: " + ex.getMessage());
-                        // 即使反射调用失败，也不应该影响主流程
-                    }
-                } else {
-                    logger.severe("Error adding JOIN clause");
-                }
+                // 使用统一的异常工具类处理异常
+                ExceptionUtils.handleException(exception);
                 
                 // 创建一个默认的JoinClause以保持链式调用
                 return new JoinBuilderImpl<>(this, (Class<J>)context.getEntityClass(), "INNER");
@@ -1146,22 +1090,10 @@ public class QueryBuilder {
                 }
                 return new JoinBuilderImpl<>(this, joinEntityClass, "LEFT");
             } catch (Exception e) {
-                // 创建异常并使用ExceptionHandler处理
+                // 创建异常并使用统一的异常工具类处理
                 RuntimeException exception = new RuntimeException("Error adding LEFT JOIN clause", e);
-                
-                // 如果存在异常处理器，则使用它处理异常
-                if (exceptionHandler != null) {
-                    try {
-                        // 使用反射调用handleException方法
-                        java.lang.reflect.Method handleMethod = exceptionHandler.getClass().getMethod("handleException", Exception.class);
-                        handleMethod.invoke(exceptionHandler, exception);
-                    } catch (Exception ex) {
-                        logger.severe("Failed to invoke exception handler: " + ex.getMessage());
-                        // 即使反射调用失败，也不应该影响主流程
-                    }
-                } else {
-                    logger.severe("Error adding LEFT JOIN clause, no exception handler available");
-                }
+                ExceptionUtils.handleException(exception);
+                logger.severe("Error adding LEFT JOIN clause");
                 
                 // 创建一个默认的JoinClause以保持链式调用
                 return new JoinBuilderImpl<>(this, (Class<J>)context.getEntityClass(), "LEFT");
@@ -1180,18 +1112,9 @@ public class QueryBuilder {
                 RuntimeException exception = new RuntimeException("Error adding RIGHT JOIN clause", e);
                 
                 // 如果存在异常处理器，则使用它处理异常
-                if (exceptionHandler != null) {
-                    try {
-                        // 使用反射调用handleException方法
-                        java.lang.reflect.Method handleMethod = exceptionHandler.getClass().getMethod("handleException", Exception.class);
-                        handleMethod.invoke(exceptionHandler, exception);
-                    } catch (Exception ex) {
-                        logger.severe("Failed to invoke exception handler: " + ex.getMessage());
-                        // 即使反射调用失败，也不应该影响主流程
-                    }
-                } else {
-                    logger.severe("Error adding RIGHT JOIN clause, no exception handler available");
-                }
+                // 使用统一的异常工具类处理异常
+                ExceptionUtils.handleException(exception);
+                logger.severe("Error adding RIGHT JOIN clause");
                 
                 // 创建一个默认的JoinClause以保持链式调用
                 return new JoinBuilderImpl<>(this, (Class<J>)context.getEntityClass(), "RIGHT");
@@ -1236,35 +1159,10 @@ public class QueryBuilder {
                 logger.fine("Added ORDER BY: " + fieldName + " " + direction);
                 return this;
             } catch (Exception e) {
-                // 创建异常并使用ExceptionHandler处理
+                // 创建异常并使用统一的异常工具类处理
                 RuntimeException exception = new RuntimeException("Error adding ORDER BY clause", e);
-                
-                // 如果存在异常处理器，则使用它处理异常
-                if (exceptionHandler != null) {
-                    try {
-                        // 使用反射调用handleException方法
-                        java.lang.reflect.Method handleMethod = exceptionHandler.getClass().getMethod("handleException", Exception.class);
-                        handleMethod.invoke(exceptionHandler, exception);
-                    } catch (Exception ex) {
-                        logger.severe("Failed to invoke exception handler: " + ex.getMessage());
-                        // 即使反射调用失败，也不应该影响主流程
-                    }
-                } else {
-                    logger.severe("Error adding ORDER BY clause, no exception handler available");
-                }
-                
-                // 如果存在异常处理器，则使用它处理异常
-                if (exceptionHandler != null) {
-                    try {
-                        // 使用反射调用handleException方法
-                        java.lang.reflect.Method handleMethod = exceptionHandler.getClass().getMethod("handleException", Exception.class);
-                        handleMethod.invoke(exceptionHandler, exception);
-                    } catch (Exception ex) {
-                        logger.severe("Failed to invoke exception handler: " + ex.getMessage());
-                    }
-                } else {
-                    logger.severe("Error adding ORDER BY clause");
-                }
+                ExceptionUtils.handleException(exception);
+                logger.severe("Error adding ORDER BY clause");
                 
                 // 为了保持测试兼容性，继续返回this
                 return this;
@@ -1288,18 +1186,9 @@ public class QueryBuilder {
                 RuntimeException exception = new RuntimeException("Error setting LIMIT", e);
                 
                 // 如果存在异常处理器，则使用它处理异常
-                if (exceptionHandler != null) {
-                    try {
-                        // 使用反射调用handleException方法
-                        java.lang.reflect.Method handleMethod = exceptionHandler.getClass().getMethod("handleException", Exception.class);
-                        handleMethod.invoke(exceptionHandler, exception);
-                    } catch (Exception ex) {
-                        logger.severe("Failed to invoke exception handler: " + ex.getMessage());
-                        // 即使反射调用失败，也不应该影响主流程
-                    }
-                } else {
-                    logger.severe("Error setting LIMIT, no exception handler available");
-                }
+                // 使用统一的异常工具类处理异常
+                ExceptionUtils.handleException(exception);
+                logger.severe("Error setting LIMIT");
                 
                 // 为了保持测试兼容性，继续返回this
                 return this;
@@ -1321,19 +1210,9 @@ public class QueryBuilder {
                 // 创建异常并使用ExceptionHandler处理
                 RuntimeException exception = new RuntimeException("Error setting OFFSET", e);
                 
-                // 如果存在异常处理器，则使用它处理异常
-                if (exceptionHandler != null) {
-                    try {
-                        // 使用反射调用handleException方法
-                        java.lang.reflect.Method handleMethod = exceptionHandler.getClass().getMethod("handleException", Exception.class);
-                        handleMethod.invoke(exceptionHandler, exception);
-                    } catch (Exception ex) {
-                        logger.severe("Failed to invoke exception handler: " + ex.getMessage());
-                        // 即使反射调用失败，也不应该影响主流程
-                    }
-                } else {
-                    logger.severe("Error setting OFFSET, no exception handler available");
-                }
+                // 使用统一的异常工具类处理异常
+                ExceptionUtils.handleException(exception);
+                logger.severe("Error setting OFFSET");
                 
                 // 为了保持测试兼容性，继续返回this
                 return this;
@@ -1530,16 +1409,8 @@ public class QueryBuilder {
                 
                 RuntimeException exception = new RuntimeException("Failed to build SQL query", e);
                 
-                // 使用异常处理器
-                if (exceptionHandler != null) {
-                    try {
-                        // 使用反射调用handleException方法
-                        java.lang.reflect.Method handleMethod = exceptionHandler.getClass().getMethod("handleException", Exception.class);
-                        handleMethod.invoke(exceptionHandler, exception);
-                    } catch (Exception ex) {
-                        logger.severe("Failed to invoke exception handler: " + ex.getMessage());
-                    }
-                }
+                // 使用统一的异常工具类处理异常
+                ExceptionUtils.handleException(exception);
                 
                 // 返回一个安全的默认查询
                 return "SELECT * FROM " + convertCamelToSnake(context.getEntityClass().getSimpleName()) + " LIMIT 1";
@@ -1909,16 +1780,9 @@ public class QueryBuilder {
                 // 记录警告日志，不使用自定义异常
                 logger.warning("Invalid characters in snake case conversion: " + camelCase + " -> " + snakeCase + ", cleaned to " + cleanedName);
                 
-                if (exceptionHandler != null) {
-                    RuntimeException exception = new RuntimeException("Invalid characters in snake case conversion, cleaned");
-                    try {
-                        // 使用反射调用handleException方法
-                        java.lang.reflect.Method handleMethod = exceptionHandler.getClass().getMethod("handleException", Exception.class);
-                        handleMethod.invoke(exceptionHandler, exception);
-                    } catch (Exception ex) {
-                        logger.severe("Failed to invoke exception handler: " + ex.getMessage());
-                    }
-                }
+                // 使用统一的异常工具类处理异常
+                RuntimeException exception = new RuntimeException("Invalid characters in snake case conversion, cleaned");
+                ExceptionUtils.handleException(exception);
                 
                 // 缓存清理后的结果
                 FIELD_NAME_CACHE.put(camelCase, cleanedName);
@@ -1934,15 +1798,8 @@ public class QueryBuilder {
             // 创建异常并使用ExceptionHandler处理
             RuntimeException exception = new RuntimeException("Error converting camel case to snake case", e);
             
-            if (exceptionHandler != null) {
-                try {
-                    // 使用反射调用handleException方法
-                    java.lang.reflect.Method handleMethod = exceptionHandler.getClass().getMethod("handleException", Exception.class);
-                    handleMethod.invoke(exceptionHandler, exception);
-                } catch (Exception ex) {
-                    logger.severe("Failed to invoke exception handler: " + ex.getMessage());
-                }
-            }
+            // 使用统一的异常工具类处理异常
+            ExceptionUtils.handleException(exception);
             
             return "id"; // 出错时返回默认字段名
         }
@@ -1963,16 +1820,8 @@ public class QueryBuilder {
             RuntimeException exception = new RuntimeException("Null getter function passed to getFieldName");
             
             // 如果存在异常处理器，则使用它处理异常
-            if (exceptionHandler != null) {
-                try {
-                    // 使用反射调用handleException方法
-                    java.lang.reflect.Method handleMethod = exceptionHandler.getClass().getMethod("handleException", Exception.class);
-                    handleMethod.invoke(exceptionHandler, exception);
-                } catch (Exception ex) {
-                    logger.severe("Failed to invoke exception handler: " + ex.getMessage());
-                    // 即使反射调用失败，也不应该影响主流程
-                }
-            }
+            // 使用统一的异常工具类处理异常
+            ExceptionUtils.handleException(exception);
             
             return "id";
         }
@@ -2027,16 +1876,8 @@ public class QueryBuilder {
                 // 创建异常并使用ExceptionHandler处理
                 RuntimeException exception = new RuntimeException("Potentially unsafe field name generated");
                 
-                // 如果存在异常处理器，则使用它处理异常
-                if (exceptionHandler != null) {
-                    try {
-                        // 使用反射调用handleException方法
-                        java.lang.reflect.Method handleMethod = exceptionHandler.getClass().getMethod("handleException", Exception.class);
-                        handleMethod.invoke(exceptionHandler, exception);
-                    } catch (Exception ex) {
-                        logger.severe("Failed to invoke exception handler: " + ex.getMessage());
-                    }
-                }
+                // 使用统一的异常工具类处理异常
+                ExceptionUtils.handleException(exception);
                 
                 fieldName = "id"; // 使用默认值
             }
@@ -2053,15 +1894,8 @@ public class QueryBuilder {
             RuntimeException exception = new RuntimeException("Error extracting field name from getter", e);
             
             // 如果存在异常处理器，则使用它处理异常
-            if (exceptionHandler != null) {
-                try {
-                    // 使用反射调用handleException方法
-                    java.lang.reflect.Method handleMethod = exceptionHandler.getClass().getMethod("handleException", Exception.class);
-                    handleMethod.invoke(exceptionHandler, exception);
-                } catch (Exception ex) {
-                    logger.severe("Failed to invoke exception handler: " + ex.getMessage());
-                }
-            }
+            // 使用统一的异常工具类处理异常
+            ExceptionUtils.handleException(exception);
             
             return "id"; // 默认返回id作为连接字段
         }

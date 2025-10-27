@@ -10,6 +10,7 @@ import lombok.Data;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.Objects;
 import java.util.Arrays;
 import java.util.List;
@@ -188,7 +189,7 @@ public class Supplier extends Entity<Long> {
             return BigDecimal.ZERO;
         }
         BigDecimal totalAmount = totalOrderAmount != null ? totalOrderAmount : BigDecimal.ZERO;
-        return totalAmount.divide(new BigDecimal(count), 2, BigDecimal.ROUND_HALF_UP);
+        return totalAmount.divide(new BigDecimal(count), 2, RoundingMode.HALF_UP);
     }
     
     /**

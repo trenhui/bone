@@ -966,13 +966,13 @@ public class RuleEngine {
     /**
      * 计算异常类
      */
-    public static class CalculationException extends RuntimeException {
+    public static class CalculationException extends com.bone.smartmeta.engine.exception.CalculationException {
         public CalculationException(String message) {
-            super(message);
+            super(message, null, null);
         }
         
         public CalculationException(String message, Throwable cause) {
-            super(message, cause);
+            super(message, null, null, cause);
         }
     }
     

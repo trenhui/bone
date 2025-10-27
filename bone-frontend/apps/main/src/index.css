@@ -1,71 +1,69 @@
-/* CSS Reset & Base Styles */
+/* 全局样式重置 */
 * {
-  box-sizing: border-box;
   margin: 0;
   padding: 0;
+  box-sizing: border-box;
 }
 
-html, body {
+html,
+body,
+#root {
+  width: 100%;
   height: 100%;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  overflow-x: hidden;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(0, 0, 0, 0.85);
+  background-color: #f0f2f5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
-#root {
-  height: 100%;
-}
-
-/* Base Typography */
-h1, h2, h3, h4, h5, h6 {
-  margin: 0;
-  font-weight: 600;
-  line-height: 1.2;
-}
-
-p {
-  margin: 0;
-  line-height: 1.6;
-}
-
-/* Links */
+/* 链接样式 */
 a {
-  color: #1a73e8;
+  color: #1890ff;
   text-decoration: none;
-  transition: color 0.2s ease;
+  transition: color 0.3s;
 }
 
 a:hover {
-  color: #1557b0;
-  text-decoration: underline;
+  color: #40a9ff;
 }
 
-/* Lists */
+/* 代码块样式 */
+code {
+  font-family: 'Consolas', 'Monaco', 'Andale Mono', monospace;
+  background-color: #f5f5f5;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+/* 移除默认的列表样式 */
 ul, ol {
-  margin: 0;
-  padding: 0;
   list-style: none;
 }
 
-/* Forms */
-input, button, textarea, select {
-  font-family: inherit;
-  font-size: inherit;
+/* 表格样式重置 */
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  width: 100%;
 }
 
-button {
-  cursor: pointer;
-}
-
-/* Images */
+/* 图片响应式 */
 img {
   max-width: 100%;
   height: auto;
+  display: block;
 }
 
-/* Scrollbar Styles */
+/* 滚动条美化 */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -77,58 +75,43 @@ img {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #888;
+  background: #c1c1c1;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: #a8a8a8;
 }
 
-/* Utilities */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
+/* 选择文本样式 */
+::selection {
+  background-color: #b3d4fc;
+  color: #000;
 }
 
-/* Focus Styles */
-:focus-visible {
-  outline: 2px solid #1a73e8;
-  outline-offset: 2px;
+/* 禁用文本选择 */
+.no-select {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
 }
 
-/* Animation Utilities */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+/* 工具类 */
+.text-center {
+  text-align: center;
 }
 
-@keyframes slideIn {
-  from {
-    transform: translateY(20px);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+.text-left {
+  text-align: left;
 }
 
-.fade-in {
-  animation: fadeIn 0.3s ease-in-out;
+.text-right {
+  text-align: right;
 }
 
-.slide-in {
-  animation: slideIn 0.3s ease-in-out;
+.clearfix::after {
+  content: "";
+  display: table;
+  clear: both;
 }

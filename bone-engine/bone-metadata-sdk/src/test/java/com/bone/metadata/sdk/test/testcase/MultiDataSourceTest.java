@@ -2,8 +2,6 @@ package com.bone.metadata.sdk.test.testcase;
 
 import com.bone.metadata.sdk.support.dataSource.DataSourceContextHolder;
 import com.bone.metadata.sdk.support.dataSource.DataSourceManager;
-import com.bone.metadata.sdk.test.common.BaseDataSourceTest;
-import com.bone.metadata.sdk.test.config.SimpleMultiDataSourceConfig;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
@@ -11,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -23,9 +20,8 @@ import static org.mockito.Mockito.*;
  * <p>测试场景包括：数据源切换、嵌套调用、异常处理、上下文清理等</p>
  */
 @ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = {SimpleMultiDataSourceConfig.class})
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class MultiDataSourceTest extends BaseDataSourceTest {
+public class MultiDataSourceTest {
     
     @Autowired
     private DataSourceManager dataSourceManager;
@@ -47,7 +43,10 @@ public class MultiDataSourceTest extends BaseDataSourceTest {
      */
     @BeforeEach
     public void setUp() {
-        super.setUp(); // 调用父类的setUp方法清理数据源上下文
+        // 清理数据源上下文
+        while (DataSourceContextHolder.hasActiveDataSource()) {
+            DataSourceContextHolder.clearDataSource();
+        }
         
         // 重置mock行为
         reset(masterJdbcTemplate, slaveJdbcTemplate);
@@ -65,8 +64,10 @@ public class MultiDataSourceTest extends BaseDataSourceTest {
      */
     @AfterEach
     public void tearDown() {
-        // 调用父类的tearDown方法清理数据源上下文
-        super.tearDown();
+        // 清理数据源上下文
+        while (DataSourceContextHolder.hasActiveDataSource()) {
+            DataSourceContextHolder.clearDataSource();
+        }
     }
     
     /**
@@ -82,36 +83,36 @@ public class MultiDataSourceTest extends BaseDataSourceTest {
     @Order(1)
     public void testDataSourceContextManagement() {
         // 验证初始状态
-        assertNull(DataSourceContextHolder.getCurrentLookupKey(), 
+        assertNull(DataSourceContextHolder.getCurrentDataSource(), 
                 "数据源上下文初始状态应为null");
-        assertFalse(DataSourceContextHolder.hasDataSource(), 
+        assertFalse(DataSourceContextHolder.hasActiveDataSource(), 
                 "初始状态下不应存在激活的数据源");
         
         // 设置主数据源并验证
         DataSourceContextHolder.setDataSource("master");
-        assertEquals("master", DataSourceContextHolder.getCurrentLookupKey(), 
+        assertEquals("master", DataSourceContextHolder.getCurrentDataSource(), 
                 "数据源设置后应能获取到正确的键值");
-        assertTrue(DataSourceContextHolder.hasDataSource(), 
-                "数据源设置后hasDataSource方法应返回true");
+        assertTrue(DataSourceContextHolder.hasActiveDataSource(), 
+                "数据源设置后hasActiveDataSource方法应返回true");
         
         // 嵌套设置从数据源并验证
         DataSourceContextHolder.setDataSource("slave");
-        assertEquals("slave", DataSourceContextHolder.getCurrentLookupKey(), 
+        assertEquals("slave", DataSourceContextHolder.getCurrentDataSource(), 
                 "嵌套设置数据源时应正确覆盖为内层数据源键");
         
         // 清理内层数据源并验证恢复到外层
         String cleared = DataSourceContextHolder.clearDataSource();
         assertEquals("slave", cleared, "clearDataSource方法应返回被清理的数据源键");
-        assertEquals("master", DataSourceContextHolder.getCurrentLookupKey(), 
+        assertEquals("master", DataSourceContextHolder.getCurrentDataSource(), 
                 "清理内层数据源后应正确恢复到外层数据源");
         
         // 清理最后一个数据源并验证完全清空
         cleared = DataSourceContextHolder.clearDataSource();
         assertEquals("master", cleared, "clearDataSource方法应返回被清理的数据源键");
-        assertNull(DataSourceContextHolder.getCurrentLookupKey(), 
+        assertNull(DataSourceContextHolder.getCurrentDataSource(), 
                 "清理所有数据源后上下文应完全清空");
-        assertFalse(DataSourceContextHolder.hasDataSource(), 
-                "所有数据源清理后hasDataSource方法应返回false");
+        assertFalse(DataSourceContextHolder.hasActiveDataSource(), 
+                "所有数据源清理后hasActiveDataSource方法应返回false");
     }
     
     /**
@@ -128,7 +129,7 @@ public class MultiDataSourceTest extends BaseDataSourceTest {
     public void testOperationExecutionWithSpecifiedDataSource() {
         // 使用主数据源执行操作
         String result1 = dataSourceManager.executeWithDataSource("master", () -> {
-            assertEquals("master", DataSourceContextHolder.getCurrentLookupKey(), 
+            assertEquals("master", DataSourceContextHolder.getCurrentDataSource(), 
                     "executeWithDataSource方法执行期间数据源键应正确设置");
             // 使用预期结果
             return "master_user";
@@ -137,14 +138,14 @@ public class MultiDataSourceTest extends BaseDataSourceTest {
         
         // 使用从数据源执行操作
         String result2 = dataSourceManager.executeWithDataSource("slave", () -> {
-            assertEquals("slave", DataSourceContextHolder.getCurrentLookupKey(), 
+            assertEquals("slave", DataSourceContextHolder.getCurrentDataSource(), 
                     "executeWithDataSource方法执行期间数据源键应正确设置");
             return "slave_user";
         });
         assertEquals("slave_user", result2, "应返回从数据源中的数据");
         
         // 验证所有操作完成后数据源上下文被清理
-        assertNull(DataSourceContextHolder.getCurrentLookupKey(), 
+        assertNull(DataSourceContextHolder.getCurrentDataSource(), 
                 "executeWithDataSource方法执行完成后应自动清理数据源上下文");
     }
     
@@ -157,7 +158,7 @@ public class MultiDataSourceTest extends BaseDataSourceTest {
     public void testConvenienceMethodsForDataSource() {
         // 测试主数据源便捷方法
         String masterResult = dataSourceManager.executeWithDataSource("master", () -> {
-            assertEquals("master", DataSourceContextHolder.getCurrentLookupKey(), 
+            assertEquals("master", DataSourceContextHolder.getCurrentDataSource(), 
                     "withMaster方法应设置master数据源");
             return "master_result";
         });
@@ -165,14 +166,14 @@ public class MultiDataSourceTest extends BaseDataSourceTest {
         
         // 测试从数据源便捷方法
         String slaveResult = dataSourceManager.executeWithDataSource("slave", () -> {
-            assertEquals("slave", DataSourceContextHolder.getCurrentLookupKey(), 
+            assertEquals("slave", DataSourceContextHolder.getCurrentDataSource(), 
                     "withSlave方法应设置slave数据源");
             return "slave_result";
         });
         assertEquals("slave_result", slaveResult, "应返回正确的执行结果");
         
         // 验证便捷方法执行后数据源上下文被清理
-        assertNull(DataSourceContextHolder.getCurrentLookupKey(), 
+        assertNull(DataSourceContextHolder.getCurrentDataSource(), 
                 "数据源执行方法完成后应自动清理上下文");
     }
     
@@ -191,19 +192,19 @@ public class MultiDataSourceTest extends BaseDataSourceTest {
         // 使用mock行为模拟嵌套调用
         String result = dataSourceManager.executeWithDataSource("master", () -> {
             // 验证外层主数据源设置
-            assertEquals("master", DataSourceContextHolder.getCurrentLookupKey(), 
+            assertEquals("master", DataSourceContextHolder.getCurrentDataSource(), 
                     "外层应设置为master数据源");
             
             // 嵌套切换到从数据源
             String nestedResult = dataSourceManager.executeWithDataSource("slave", () -> {
                 // 验证内层从数据源设置
-                assertEquals("slave", DataSourceContextHolder.getCurrentLookupKey(), 
+                assertEquals("slave", DataSourceContextHolder.getCurrentDataSource(), 
                         "内层应设置为slave数据源");
                 return "nested_slave";
             });
             
             // 验证内层调用完成后恢复到外层主数据源
-            assertEquals("master", DataSourceContextHolder.getCurrentLookupKey(), 
+            assertEquals("master", DataSourceContextHolder.getCurrentDataSource(), 
                     "内层调用完成后应恢复到外层master数据源");
             assertEquals("nested_slave", nestedResult, "应正确获取内层执行结果");
             
@@ -213,7 +214,7 @@ public class MultiDataSourceTest extends BaseDataSourceTest {
         // 验证所有调用完成后返回正确结果
         assertEquals("outer_master", result, "嵌套操作应该正确返回外层执行结果");
         // 验证所有调用完成后数据源上下文被清理
-        assertNull(DataSourceContextHolder.getCurrentLookupKey(), 
+        assertNull(DataSourceContextHolder.getCurrentDataSource(), 
                 "嵌套数据源调用完成后应完全清理上下文");
     }
     
@@ -228,7 +229,7 @@ public class MultiDataSourceTest extends BaseDataSourceTest {
         
         // 执行无返回值操作
         dataSourceManager.executeWithDataSource("master", () -> {
-            assertEquals("master", DataSourceContextHolder.getCurrentLookupKey(), 
+            assertEquals("master", DataSourceContextHolder.getCurrentDataSource(), 
                     "执行期间应设置正确的数据源");
             capturedValue[0] = "consumer_executed";
             return null;
@@ -237,7 +238,7 @@ public class MultiDataSourceTest extends BaseDataSourceTest {
         // 验证操作执行
         assertEquals("consumer_executed", capturedValue[0], "操作应正确执行");
         // 验证操作完成后数据源上下文被清理
-        assertNull(DataSourceContextHolder.getCurrentLookupKey(), 
+        assertNull(DataSourceContextHolder.getCurrentDataSource(), 
                 "无返回值操作完成后应自动清理上下文");
     }
     
@@ -254,7 +255,7 @@ public class MultiDataSourceTest extends BaseDataSourceTest {
         // 验证结果
         assertEquals("master_user", result, "应正确获取主数据源数据");
         // 验证数据源上下文被清理
-        assertNull(DataSourceContextHolder.getCurrentLookupKey(), 
+        assertNull(DataSourceContextHolder.getCurrentDataSource(), 
                 "注解模拟操作完成后应自动清理上下文");
     }
     
@@ -280,7 +281,7 @@ public class MultiDataSourceTest extends BaseDataSourceTest {
         RuntimeException exception = assertThrows(RuntimeException.class, () -> {
             dataSourceManager.executeWithDataSource("master", () -> {
                 // 验证数据源设置
-                assertEquals("master", DataSourceContextHolder.getCurrentLookupKey(), 
+                assertEquals("master", DataSourceContextHolder.getCurrentDataSource(), 
                         "异常抛出前应该设置正确的数据源: master");
                 // 模拟异常情况
                 throw new RuntimeException("Test exception");
@@ -290,7 +291,7 @@ public class MultiDataSourceTest extends BaseDataSourceTest {
         // 验证异常信息
         assertEquals("Test exception", exception.getMessage(), "异常信息应该匹配");
         // 关键验证：异常发生后数据源上下文被清理
-        assertNull(DataSourceContextHolder.getCurrentLookupKey(), 
+        assertNull(DataSourceContextHolder.getCurrentDataSource(), 
                 "异常情况下数据源上下文必须被清理，确保线程安全和避免资源泄漏");
     }
 }

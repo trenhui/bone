@@ -1,47 +1,88 @@
 package com.bone.metadata.sdk.test.domain.query;
 
-import com.bone.core.model.Query;
-import com.bone.core.model.SortablePageParam;
-import com.bone.metadata.sdk.domain.annotation.QueryField;
-import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.*;
-
 import java.time.LocalDateTime;
 
-@Schema(description = "用户分页查询")
-@Data
-@EqualsAndHashCode(callSuper = true)
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class UserPageQuery extends SortablePageParam implements Query {
-
+/**
+ * 简化的用户分页查询类
+ * 移除了所有外部依赖
+ */
+public class UserPageQuery {
+    
     private Long id;
-
-    @QueryField("name")
     private String userName;
-
     private String roleName;
-
     private String permCode;
-
     private String permName;
-
     private String permPath;
-
-    private String bizCode;
-
-    private Integer permType;
-
-    private Integer sortOrder;
-
-    private LocalDateTime createTime;
-
-    private Long createBy;
-
-    private LocalDateTime updateTime;
-
-    private Long updateBy;
-
-    private Integer deleted;
+    private Integer pageNumber = 1;
+    private Integer pageSize = 10;
+    
+    // 简单的构造器
+    public UserPageQuery() {
+    }
+    
+    // Getter和Setter方法
+    public Long getId() {
+        return id;
+    }
+    
+    public void setId(Long id) {
+        this.id = id;
+    }
+    
+    public String getUserName() {
+        return userName;
+    }
+    
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+    
+    public String getRoleName() {
+        return roleName;
+    }
+    
+    public void setRoleName(String roleName) {
+        this.roleName = roleName;
+    }
+    
+    public String getPermCode() {
+        return permCode;
+    }
+    
+    public void setPermCode(String permCode) {
+        this.permCode = permCode;
+    }
+    
+    public String getPermName() {
+        return permName;
+    }
+    
+    public void setPermName(String permName) {
+        this.permName = permName;
+    }
+    
+    public String getPermPath() {
+        return permPath;
+    }
+    
+    public void setPermPath(String permPath) {
+        this.permPath = permPath;
+    }
+    
+    public Integer getPageNumber() {
+        return pageNumber;
+    }
+    
+    public void setPageNumber(Integer pageNumber) {
+        this.pageNumber = pageNumber;
+    }
+    
+    public Integer getPageSize() {
+        return pageSize;
+    }
+    
+    public void setPageSize(Integer pageSize) {
+        this.pageSize = pageSize;
+    }
 }

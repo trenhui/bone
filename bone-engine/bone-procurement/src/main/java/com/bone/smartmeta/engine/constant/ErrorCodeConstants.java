@@ -2,8 +2,11 @@ package com.bone.smartmeta.engine.constant;
 
 /**
  * 错误代码常量类
- * 集中管理所有业务规则和工作流相关的错误代码
+ * <p>
+ * <strong>已废弃：</strong>请使用 {@link com.bone.smartmeta.engine.common.ErrorCodes} 替代
+ * </p>
  */
+@Deprecated
 public final class ErrorCodeConstants {
     
     // 私有构造函数，防止实例化
@@ -27,4 +30,9 @@ public final class ErrorCodeConstants {
     // 通用错误代码
     public static final String SYSTEM_ERROR = "SYSTEM_ERROR";
     public static final String VALIDATION_ERROR = "VALIDATION_ERROR";
+    
+    // 动态模型错误代码
+    public static final String MODEL_LOAD_FAILED = "MODEL_LOAD_FAILED";
+    public static final String MODEL_REGISTER_FAILED = "MODEL_REGISTER_FAILED";
+    public static final String MODEL_DUPLICATE_FAILED = "MODEL_DUPLICATE_FAILED";
 }

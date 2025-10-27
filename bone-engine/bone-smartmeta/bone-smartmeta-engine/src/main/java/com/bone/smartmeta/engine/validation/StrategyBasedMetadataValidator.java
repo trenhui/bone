@@ -1,7 +1,6 @@
 package com.bone.smartmeta.engine.validation;
 
 import com.bone.smartmeta.engine.ValidationEngine;
-import com.bone.smartmeta.engine.ValidationResult;
 import com.bone.smartmeta.engine.metadata.EntityMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

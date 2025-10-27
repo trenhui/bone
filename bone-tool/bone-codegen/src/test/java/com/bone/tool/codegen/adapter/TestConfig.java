@@ -4,6 +4,7 @@ import com.bone.tool.codegen.application.converter.CodegenConverter;
 import com.bone.tool.codegen.domain.repository.CodegenTableRepository;
 import com.bone.tool.codegen.domain.repository.CodegenColumnRepository;
 import com.bone.tool.codegen.domain.service.CodegenService;
+import com.bone.tool.codegen.domain.service.CodegenServiceImpl;
 import com.bone.tool.codegen.domain.service.DataSourceConfigService;
 import com.bone.tool.codegen.domain.service.DatabaseTableService;
 import com.bone.tool.codegen.domain.service.generator.DefaultCodeGenerator;
@@ -20,8 +21,8 @@ public class TestConfig {
 
     @Bean
     public CodegenService codegenService() {
-        // 使用正确的构造函数创建CodegenService实例
-        return new CodegenService(
+        // 返回实现类的实例，因为接口是抽象的
+        return new CodegenServiceImpl(
             defaultCodeGenerator(),
             databaseTableService(),
             codegenTableRepository(),

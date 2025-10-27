@@ -4,6 +4,7 @@ import com.bone.procurement.config.DynamicModelConfig;
 import com.bone.procurement.exception.BusinessException;
 import com.bone.smartmeta.engine.MetadataEngine;
 import com.bone.smartmeta.engine.metadata.EntityMetadata;
+import com.bone.smartmeta.engine.util.CommonUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -544,36 +545,10 @@ public class DynamicModelDataService {
     }
     
     /**
-     * 比较两个值
+     * 比较两个值 - 使用CommonUtils中的compare方法
      */
     private int compare(Object value1, Object value2) {
-        if (value1 == value2) return 0;
-        if (value1 == null) return -1;
-        if (value2 == null) return 1;
-        
-        // 处理相同类型的比较
-        if (value1.getClass().equals(value2.getClass())) {
-            if (value1 instanceof Comparable) {
-                @SuppressWarnings("unchecked")
-                Comparable<Object> comparable = (Comparable<Object>) value1;
-                return comparable.compareTo(value2);
-            }
-        }
-        
-        // 数值类型比较
-        if (value1 instanceof Number && value2 instanceof Number) {
-            double d1 = ((Number) value1).doubleValue();
-            double d2 = ((Number) value2).doubleValue();
-            return Double.compare(d1, d2);
-        }
-        
-        // 日期类型比较
-        if (value1 instanceof Date && value2 instanceof Date) {
-            return ((Date) value1).compareTo((Date) value2);
-        }
-        
-        // 字符串比较
-        return value1.toString().compareTo(value2.toString());
+        return CommonUtils.compare(value1, value2);
     }
     
     /**
