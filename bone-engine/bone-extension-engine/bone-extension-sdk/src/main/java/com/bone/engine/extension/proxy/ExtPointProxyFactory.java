@@ -165,14 +165,14 @@ public class ExtPointProxyFactory implements ApplicationContextAware, Initializi
                     throw new IllegalStateException("No suitable extension implementation found for: " + extPointName);
                 }
             } catch (Exception e) {
-                // 移除路由失败事件发布，因为ExtensionEventPublisher类不存在
+    
                 
                 // 尝试降级处理
                 lifecycle = getLifecycleForExtension(null);
                 return lifecycle.onFallback(context, method.getName(), args, (Throwable)e);
             }
             
-            // 移除路由事件发布，因为ExtensionEventPublisher类不存在
+
             
             // 获取目标实现的生命周期处理器
             lifecycle = getLifecycleForExtension(targetImpl);
@@ -183,7 +183,7 @@ public class ExtPointProxyFactory implements ApplicationContextAware, Initializi
             // 执行前置处理
             lifecycle.beforeInvoke(context, method.getName(), args);
             
-            // 移除执行前事件发布，因为ExtensionEventPublisher类不存在
+
             
             Object result;
             try {
@@ -207,7 +207,7 @@ public class ExtPointProxyFactory implements ApplicationContextAware, Initializi
                 // 执行后置处理
                 lifecycle.afterInvoke(context, method.getName(), result, executionTimeMs);
                 
-                // 移除事件发布，因为ExtensionEventPublisher类不存在
+    
             } catch (Exception e) {
                 // 计算执行时间
                 long executionTimeMs = System.currentTimeMillis() - startTime;
@@ -219,7 +219,7 @@ public class ExtPointProxyFactory implements ApplicationContextAware, Initializi
                 // 执行异常处理
                 lifecycle.onException(context, method.getName(), ex, executionTimeMs);
                 
-                // 移除事件发布，因为ExtensionEventPublisher类不存在
+    
                 
                 // 尝试降级处理
                 try {
@@ -273,11 +273,8 @@ public class ExtPointProxyFactory implements ApplicationContextAware, Initializi
             }
             return null;
         }
-
-        // 移除重复的方法定义，使用上面的完整实现版本
     }
-    
-/**
+    /**
      * 清除生命周期缓存
      */
     public void clearLifecycleCache() {

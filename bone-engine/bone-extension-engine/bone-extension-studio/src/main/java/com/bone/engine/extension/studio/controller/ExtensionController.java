@@ -1,5 +1,6 @@
 package com.bone.engine.extension.studio.controller;
 
+import com.bone.engine.extension.studio.controller.common.ApiResponse;
 import com.bone.engine.extension.studio.model.ExtensionEntity;
 import com.bone.engine.extension.studio.service.ExtensionService;
 import org.slf4j.Logger;
@@ -30,57 +31,6 @@ public class ExtensionController {
 
     @Autowired
     private ExtensionService extensionService;
-
-    /**
-     * 统一的API响应包装器
-     */
-    static class ApiResponse<T> {
-        private boolean success;
-        private String message;
-        private T data;
-        private Map<String, Object> meta;
-        
-        private ApiResponse(boolean success, String message, T data) {
-            this.success = success;
-            this.message = message;
-            this.data = data;
-            this.meta = new HashMap<>();
-        }
-        
-        public static <T> ApiResponse<T> success(T data) {
-            return new ApiResponse<>(true, "操作成功", data);
-        }
-        
-        public static <T> ApiResponse<T> success(String message, T data) {
-            return new ApiResponse<>(true, message, data);
-        }
-        
-        public static <T> ApiResponse<T> error(String message) {
-            return new ApiResponse<>(false, message, null);
-        }
-        
-        public ApiResponse<T> withMeta(String key, Object value) {
-            this.meta.put(key, value);
-            return this;
-        }
-        
-        // Getters for all properties
-        public boolean isSuccess() {
-            return success;
-        }
-        
-        public String getMessage() {
-            return message;
-        }
-        
-        public T getData() {
-            return data;
-        }
-        
-        public Map<String, Object> getMeta() {
-            return meta;
-        }
-    }
     
     /**
      * 获取扩展实现列表（分页）

@@ -126,7 +126,7 @@ public class RepositoryRegistrar implements ImportBeanDefinitionRegistrar, Resou
     private void registerRepositoryBean(Class<?> repositoryInterface, BeanDefinitionRegistry registry) {
         try {
             // 解析泛型参数
-            Class<?>[] genericTypes = resolveGenericTypes(repositoryInterface);
+            Class<?>[] genericTypes = RepositoryClassUtils.resolveGenericTypes(repositoryInterface);
             if (genericTypes == null || genericTypes.length != 2) {
                 logger.error("Failed to resolve generic types for {}", repositoryInterface.getName());
                 return;
@@ -159,11 +159,5 @@ public class RepositoryRegistrar implements ImportBeanDefinitionRegistrar, Resou
         }
     }
 
-    /**
-     * 解析泛型类型
-     */
-    // 使用公共工具类替代重复方法
-    private Class<?>[] resolveGenericTypes(Class<?> repositoryInterface) {
-        return RepositoryClassUtils.resolveGenericTypes(repositoryInterface);
-    }
+
 }

@@ -28,6 +28,10 @@ public class DataSourceExceptionHandlingTest {
             currentDataSource = null;
         }
         
+        public static boolean hasActiveDataSource() {
+            return currentDataSource != null;
+        }
+        
         public static void clearAll() {
             currentDataSource = null;
         }

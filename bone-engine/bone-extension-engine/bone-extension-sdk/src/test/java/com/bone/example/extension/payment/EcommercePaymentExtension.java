@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import com.bone.example.extension.payment.PaymentTestRequest;
 import com.bone.example.extension.payment.PaymentResult;
-import com.bone.example.extension.payment.ValidationResult;
+import com.bone.example.extension.result.ValidationResult;
 import com.bone.example.extension.payment.PaymentCalculationResult;
 /**
  * 电商支付扩展点实现类
@@ -48,15 +48,10 @@ public class EcommercePaymentExtension implements PaymentExtPoint {
     @Override
     public ValidationResult prePayValidate(final BizContext<PaymentTestRequest> context) {
         logger.info("开始执行电商支付前置验证");
-        ValidationResult result = new ValidationResult();
-        
         // 检查上下文是否有效
         if (context == null || context.getData() == null) {
             logger.warn("支付上下文或请求数据为空");
-            result.success(false);
-            result.setErrorCode("INVALID_CONTEXT");
-            result.setMessage("支付上下文或请求数据不能为空");
-            return result;
+            return ValidationResult.fail("INVALID_CONTEXT", "支付上下文或请求数据不能为空");
         }
         
         PaymentTestRequest request = context.getData();
@@ -65,25 +60,17 @@ public class EcommercePaymentExtension implements PaymentExtPoint {
         String orderId = request.getOrderId();
         if (orderId == null || !orderId.startsWith(ECOMMERCE_PREFIX)) {
             logger.warn("无效的电商平台订单ID: {}", orderId);
-            result.success(false);
-            result.setErrorCode("INVALID_ECOMMERCE_ORDER_ID");
-            result.setMessage("无效的电商平台订单ID");
-            return result;
+            return ValidationResult.fail("INVALID_ECOMMERCE_ORDER_ID", "无效的电商平台订单ID");
         }
         
         // 验证金额有效性
         if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            result.success(false);
-            result.setErrorCode("INVALID_AMOUNT");
-            result.setMessage("支付金额必须大于零");
-            return result;
+            return ValidationResult.fail("INVALID_AMOUNT", "支付金额必须大于零");
         }
         
         // 所有验证通过
-        result.success(true);
-        result.setMessage("验证通过");
         logger.info("电商支付前置验证通过，订单ID: {}", orderId);
-        return result;
+        return ValidationResult.success();
     }
 
     /**

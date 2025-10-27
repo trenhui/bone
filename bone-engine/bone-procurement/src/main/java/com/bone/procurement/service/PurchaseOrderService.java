@@ -4,10 +4,9 @@ import com.bone.procurement.entity.PurchaseOrder;
 import com.bone.procurement.entity.PurchaseOrderItem;
 import com.bone.procurement.entity.Supplier;
 import com.bone.procurement.exception.BusinessException;
+import com.bone.smartmeta.engine.service.DynamicDataService;
+import com.bone.smartmeta.engine.service.GenericOperationService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -15,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -33,7 +33,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * 提供采购订单的创建、审批、执行等业务逻辑
  */
 @Service
-@CacheConfig(cacheNames = "purchaseOrders")
 public class PurchaseOrderService {
     private static final Logger log = LoggerFactory.getLogger(PurchaseOrderService.class);
     
@@ -88,9 +87,17 @@ public class PurchaseOrderService {
     
     private final SupplierService supplierService;
     
+    // 注入元数据引擎服务
+    private final DynamicDataService dynamicDataService;
+    private final GenericOperationService genericOperationService;
+    
     @Autowired
-    public PurchaseOrderService(SupplierService supplierService) {
+    public PurchaseOrderService(SupplierService supplierService, 
+                               DynamicDataService dynamicDataService, 
+                               GenericOperationService genericOperationService) {
         this.supplierService = supplierService;
+        this.dynamicDataService = dynamicDataService;
+        this.genericOperationService = genericOperationService;
     }
     
     /**
@@ -140,37 +147,15 @@ public class PurchaseOrderService {
                 item.setTaxRate(DEFAULT_TAX_RATE);
             }
             
-            // 计算订单项金额
-            calculateItemFields(item);
+            // 订单项金额通过元数据引擎自动计算
         }
     }
     
     /**
-     * 计算订单项金额和相关字段
-     * @param item 订单项
+     * 计算订单项字段值
+     * @param item 采购订单项
      */
-    private void calculateItemFields(PurchaseOrderItem item) {
-        if (item == null) {
-            return;
-        }
-        
-        try {
-            // 不含税金额 = 单价 * 数量
-            BigDecimal amountWithoutTax = item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
-            item.setAmountWithoutTax(amountWithoutTax);
-            
-            // 税额 = 不含税金额 * 税率
-            BigDecimal taxAmount = amountWithoutTax.multiply(BigDecimal.valueOf(item.getTaxRate()));
-            item.setTaxAmount(taxAmount);
-            
-            // 含税总金额 = 不含税金额 + 税额
-            BigDecimal totalAmount = amountWithoutTax.add(taxAmount);
-            item.setTotalAmount(totalAmount);
-        } catch (Exception e) {
-            log.error("计算订单项字段失败", e);
-            // 即使计算失败也不抛出异常，避免中断流程
-        }
-    }
+
     
     /**
      * 获取订单锁
@@ -193,31 +178,60 @@ public class PurchaseOrderService {
         log.debug("开始计算订单字段值");
         
         try {
-            // 计算订单总金额（不含税）
-            BigDecimal totalAmountWithoutTax = BigDecimal.ZERO;
+            // 处理订单项目的计算字段（通过元数据引擎）
             List<PurchaseOrderItem> items = Optional.ofNullable(order.getOrderItems())
                     .orElse(Collections.emptyList());
             
             for (PurchaseOrderItem item : items) {
-                // 计算每个订单项的金额
-                calculateItemFields(item);
-                // 累加总金额
-                totalAmountWithoutTax = totalAmountWithoutTax.add(
-                        Optional.ofNullable(item.getAmountWithoutTax()).orElse(BigDecimal.ZERO));
+                // 使用元数据引擎处理订单项的计算字段
+                Map<String, Object> itemMap = new HashMap<>();
+                
+                // 复制订单项基础字段到Map
+                itemMap.put("id", item.getId());
+                itemMap.put("purchaseOrderId", item.getPurchaseOrderId());
+                itemMap.put("productId", item.getProductId());
+                itemMap.put("productCode", item.getProductCode());
+                itemMap.put("productName", item.getProductName());
+                itemMap.put("description", item.getDescription());
+                itemMap.put("quantity", item.getQuantity());
+                itemMap.put("unit", item.getUnit());
+                itemMap.put("unitPrice", item.getUnitPrice());
+                itemMap.put("taxRate", item.getTaxRate() != null ? item.getTaxRate() : DEFAULT_TAX_RATE);
+                itemMap.put("brand", item.getBrand());
+                itemMap.put("specification", item.getSpecification());
+                itemMap.put("category", item.getCategory());
+                itemMap.put("origin", item.getOrigin());
+                itemMap.put("warehouseId", item.getWarehouseId());
+                itemMap.put("priorityLevel", item.getPriorityLevel());
+                itemMap.put("remarks", item.getRemarks());
+                
+                // 使用元数据引擎验证数据（会触发计算字段处理）
+                Map<String, Object> processedItemMap = dynamicDataService.validateData(
+                        "PurchaseOrderItem", itemMap);
+                
+                // 更新订单项的计算字段
+                if (processedItemMap.containsKey("amountWithoutTax")) {
+                    item.setAmountWithoutTax((BigDecimal) processedItemMap.get("amountWithoutTax"));
+                }
+                if (processedItemMap.containsKey("taxAmount")) {
+                    item.setTaxAmount((BigDecimal) processedItemMap.get("taxAmount"));
+                }
+                if (processedItemMap.containsKey("totalAmount")) {
+                    item.setTotalAmount((BigDecimal) processedItemMap.get("totalAmount"));
+                }
             }
             
-            // 计算税额
-            double taxRate = DEFAULT_TAX_RATE; // 使用默认税率
-            BigDecimal taxAmount = totalAmountWithoutTax.multiply(BigDecimal.valueOf(taxRate));
+            // 使用元数据引擎处理订单的计算字段
+            processCalculatedFields(order);
             
-            // 计算含税总金额
-            BigDecimal totalAmountWithTax = totalAmountWithoutTax.add(taxAmount);
-            
-            // 简化实现，避免调用可能不存在的方法
-        // 不再设置订单金额相关字段
+            // 更新预计金额（如果为空或小于计算值）
+            if (order.getEstimatedAmount() == null || 
+                order.getTotalAmountWithTax().compareTo(order.getEstimatedAmount()) > 0) {
+                order.setEstimatedAmount(order.getTotalAmountWithTax());
+            }
             
             log.debug("订单字段计算完成，不含税金额: {}, 税额: {}, 含税总金额: {}", 
-                    totalAmountWithoutTax, taxAmount, totalAmountWithTax);
+                    order.getTotalAmountWithoutTax(), order.getTaxAmount(), order.getTotalAmountWithTax());
         } catch (Exception e) {
             log.error("计算订单字段失败", e);
             // 即使计算失败也不中断流程
@@ -225,27 +239,74 @@ public class PurchaseOrderService {
     }
     
     /**
-     * 计算虚拟字段
+     * 使用元数据引擎处理实体计算字段
+     * @param order 采购订单
      */
-    private void calculateVirtualFields(PurchaseOrder order) {
+    private void processCalculatedFields(PurchaseOrder order) {
         if (order == null) {
             return;
         }
         
-        log.debug("开始计算订单虚拟字段");
+        log.debug("通过元数据引擎处理计算字段");
         
         try {
-            // 简化实现，避免使用不存在的方法
-            String supplierName = "未知供应商";
+            // 转换为Map，交给元数据引擎处理计算字段
+            Map<String, Object> orderMap = convertToMap(order);
             
-            // 使用简单的摘要信息
-            String orderSummary = "订单摘要";
+            // 调用元数据引擎处理计算字段
+            Map<String, Object> processedMap = dynamicDataService.validateData("PurchaseOrder", orderMap);
             
-            log.debug("订单虚拟字段计算完成");
+            // 更新计算结果回订单对象
+            updateOrderFromMap(order, processedMap);
+            
+            log.debug("元数据引擎计算字段处理完成");
         } catch (Exception e) {
-            log.error("计算订单虚拟字段失败", e);
-            // 即使失败也不中断流程
+            log.error("元数据引擎处理计算字段失败", e);
+            // 即使计算失败也不中断流程
         }
+    }
+    
+    /**
+     * 将PurchaseOrder对象转换为Map
+     */
+    private Map<String, Object> convertToMap(PurchaseOrder order) {
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", order.getId());
+        map.put("orderCode", order.getOrderCode());
+        map.put("supplierId", order.getSupplierId());
+        map.put("orderType", order.getOrderType());
+        map.put("orderStatus", order.getOrderStatus());
+        map.put("estimatedAmount", order.getEstimatedAmount());
+        map.put("expectedDeliveryDate", order.getExpectedDeliveryDate());
+        map.put("taxRate", order.getTaxRate());
+        map.put("totalAmountWithoutTax", order.getTotalAmountWithoutTax());
+        map.put("taxAmount", order.getTaxAmount());
+        map.put("totalAmountWithTax", order.getTotalAmountWithTax());
+        map.put("orderItems", order.getOrderItems());
+        map.put("creationDate", order.getCreationDate());
+        map.put("createdBy", order.getCreatedBy());
+        map.put("approvedBy", order.getApprovedBy());
+        map.put("approvedDate", order.getApprovedDate());
+        map.put("executionDate", order.getExecutionDate());
+        map.put("currentApprovalNode", order.getCurrentApprovalNode());
+        map.put("approvalProcessId", order.getApprovalProcessId());
+        map.put("deliveryAddress", order.getDeliveryAddress());
+        map.put("paymentTerms", order.getPaymentTerms());
+        map.put("deliveryMethod", order.getDeliveryMethod());
+        map.put("trackingNumber", order.getTrackingNumber());
+        map.put("internalRemarks", order.getInternalRemarks());
+        map.put("externalRemarks", order.getExternalRemarks());
+        return map;
+    }
+    
+    /**
+     * 从Map更新PurchaseOrder对象
+     */
+    private void updateOrderFromMap(PurchaseOrder order, Map<String, Object> map) {
+        if (map.containsKey("isOverdue")) order.setIsOverdue((Boolean) map.get("isOverdue"));
+        if (map.containsKey("delayDays")) order.setDelayDays((Long) map.get("delayDays"));
+        if (map.containsKey("orderSummary")) order.setOrderSummary((String) map.get("orderSummary"));
+        // 可以根据需要更新更多计算字段
     }
     
     /**
@@ -310,7 +371,6 @@ public class PurchaseOrderService {
      * @return 提交审批后的订单
      * @throws BusinessException 业务规则验证失败或订单不存在时抛出
      */
-    @CacheEvict(key = "#orderId")
     public PurchaseOrder submitForApproval(Long orderId) {
         // 验证订单ID
         Assert.notNull(orderId, "订单ID不能为空");
@@ -362,7 +422,6 @@ public class PurchaseOrderService {
      * @return 审批后的订单
      * @throws BusinessException 业务规则验证失败或订单不存在时抛出
      */
-    @CacheEvict(key = "#orderId")
     public PurchaseOrder approveOrder(Long orderId, String approverId, String comment) {
         log.info("审批订单，ID: {}, 审批人: {}", orderId, approverId);
         
@@ -432,7 +491,6 @@ public class PurchaseOrderService {
      * @return 执行后的订单
      * @throws BusinessException 业务规则验证失败或订单不存在时抛出
      */
-    @CacheEvict(key = "#orderId")
     public PurchaseOrder executeOrder(Long orderId) {
         Assert.notNull(orderId, "订单ID不能为空");
         log.info("执行订单，ID: {}", orderId);
@@ -480,7 +538,6 @@ public class PurchaseOrderService {
      * @param orderId 订单ID
      * @return 订单对象，不存在返回null
      */
-    @Cacheable(key = "#orderId", unless = "#result == null")
     public PurchaseOrder getOrder(Long orderId) {
         log.info("查询订单，ID: {}", orderId);
         
@@ -501,7 +558,7 @@ public class PurchaseOrderService {
             }
             
             // 计算虚拟字段（如逾期状态）
-            calculateVirtualFields(order);
+            processCalculatedFields(order);
             log.debug("订单查询成功，ID: {}", orderId);
         } else {
             log.warn("订单不存在，ID: {}", orderId);
@@ -516,7 +573,6 @@ public class PurchaseOrderService {
      * @return 取消后的订单
      * @throws BusinessException 业务规则验证失败或订单不存在时抛出
      */
-    @CacheEvict(key = "#orderId")
     public PurchaseOrder cancelOrder(Long orderId, String cancelReason) {
         log.info("取消订单，ID: {}, 原因: {}", orderId, cancelReason);
         

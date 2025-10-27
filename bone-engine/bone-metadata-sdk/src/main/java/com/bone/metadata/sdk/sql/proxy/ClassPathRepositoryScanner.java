@@ -156,7 +156,7 @@ class ClassPathRepositoryScanner extends ClassPathBeanDefinitionScanner {
                 return;
             }
 
-            Class<?>[] genericTypes = resolveGenericTypes(repoInterface);
+            Class<?>[] genericTypes = RepositoryClassUtils.resolveGenericTypes(repoInterface);
             if (genericTypes == null || genericTypes.length != 2) {
                 logger.error("Invalid Repository interface: {} (must extend Repository<T, ID>)", repoInterfaceName);
                 return;
@@ -176,10 +176,5 @@ class ClassPathRepositoryScanner extends ClassPathBeanDefinitionScanner {
         }
     }
 
-    // 使用公共工具类替代重复方法，checkIndirectRepositoryImplementation方法已移至RepositoryClassUtils
 
-    // 使用公共工具类替代重复方法
-    private Class<?>[] resolveGenericTypes(Class<?> repoInterface) {
-        return RepositoryClassUtils.resolveGenericTypes(repoInterface);
-    }
 }

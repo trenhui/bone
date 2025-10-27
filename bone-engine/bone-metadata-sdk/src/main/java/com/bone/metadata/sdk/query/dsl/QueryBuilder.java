@@ -760,9 +760,8 @@ public class QueryBuilder {
                 
                 return results;
             } catch (Exception e) {
-                // 处理所有异常
-                RuntimeException queryException = new RuntimeException("Error executing list query", e);
-                logger.severe("Query execution failed: " + e.getMessage());
+                // 使用统一的异常处理方法
+                handleException(e, "Error executing list query");
                 return results;
             }
         }
@@ -878,9 +877,8 @@ public class QueryBuilder {
                 
                 return results.get(0);
             } catch (Exception e) {
-                // 处理所有异常
-                RuntimeException queryException = new RuntimeException("Error executing single query", e);
-                logger.severe("Query execution failed: " + e.getMessage());
+                // 使用统一的异常处理方法
+                handleException(e, "Error executing single query");
                 return null;
             }
         }
@@ -969,8 +967,8 @@ public class QueryBuilder {
                 logger.fine("Returning mock count for entity: " + context.getEntityClass().getName());
                 return 2L; // 测试环境返回固定值
             } catch (Exception e) {
+                // 使用统一的异常处理方法
                 handleException(e, "Error executing count query");
-                logger.severe("Error executing count query");
                 
                 // 为了保持测试兼容性，返回默认值
                 logger.warning("Returning 0 due to count query execution error");

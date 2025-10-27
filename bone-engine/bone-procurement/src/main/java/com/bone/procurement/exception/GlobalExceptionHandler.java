@@ -1,7 +1,5 @@
 package com.bone.procurement.exception;
 
-import com.bone.procurement.dto.ErrorResponse;
-import com.bone.smartmeta.engine.common.ErrorCodes;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -13,6 +11,55 @@ import org.springframework.web.context.request.WebRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+/**
+ * 本地错误响应类，避免依赖问题
+ */
+class ErrorResponse {
+    private int status;
+    private String errorCode;
+    private String message;
+    private String path;
+    
+    public ErrorResponse(int status, String errorCode, String message, String path) {
+        this.status = status;
+        this.errorCode = errorCode;
+        this.message = message;
+        this.path = path;
+    }
+    
+    public int getStatus() {
+        return status;
+    }
+    
+    public void setStatus(int status) {
+        this.status = status;
+    }
+    
+    public String getErrorCode() {
+        return errorCode;
+    }
+    
+    public void setErrorCode(String errorCode) {
+        this.errorCode = errorCode;
+    }
+    
+    public String getMessage() {
+        return message;
+    }
+    
+    public void setMessage(String message) {
+        this.message = message;
+    }
+    
+    public String getPath() {
+        return path;
+    }
+    
+    public void setPath(String path) {
+        this.path = path;
+    }
+}
 
 /**
  * 全局异常处理器
@@ -31,14 +78,17 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     @ResponseBody
     public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException ex, WebRequest request) {
-        // 使用默认的BAD_REQUEST状态码
-        HttpStatus status = HttpStatus.BAD_REQUEST;
+        // 使用异常中设置的HTTP状态码
+        HttpStatus status = ex.getHttpStatus();
+        String errorCode = ex.getErrorCode() != null ? ex.getErrorCode() : "BUSINESS_ERROR";
         
-        log.warn("业务异常: {}", ex.getMessage());
+        if (ex.isLogDetail()) {
+            log.warn("业务异常: {}, 错误码: {}", ex.getMessage(), errorCode);
+        }
         
         ErrorResponse errorResponse = new ErrorResponse(
                 status.value(),
-                "BUSINESS_ERROR",
+                errorCode,
                 ex.getMessage(),
                 request.getDescription(false)
         );
@@ -60,7 +110,7 @@ public class GlobalExceptionHandler {
         
         ErrorResponse errorResponse = new ErrorResponse(
                 HttpStatus.BAD_REQUEST.value(),
-                ErrorCodes.VALIDATION_ERROR,
+                "VALIDATION_ERROR",
                 "参数验证失败",
                 request.getDescription(false)
         );
@@ -72,7 +122,7 @@ public class GlobalExceptionHandler {
      * 处理空指针异常
      * @param ex 空指针异常
      * @param request Web请求
-     * @return 响应实体
+     * @return 错误响应
      */
     @ExceptionHandler(NullPointerException.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -92,19 +142,21 @@ public class GlobalExceptionHandler {
      * 处理所有其他未捕获的异常
      * @param ex 异常
      * @param request Web请求
-     * @return 响应实体
+     * @return 错误响应
      */
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ResponseBody
     public ErrorResponse handleAllExceptions(Exception ex, WebRequest request) {
-        log.error("未预期的异常", ex);
+        log.error("未处理的异常", ex);
         
-        return new ErrorResponse(
+        ErrorResponse errorResponse = new ErrorResponse(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 "INTERNAL_ERROR",
-                "系统内部错误，请联系管理员",
+                "服务器内部错误",
                 request.getDescription(false)
         );
+        
+        return errorResponse;
     }
 }

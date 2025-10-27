@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import com.bone.example.extension.payment.PaymentTestRequest;
 import com.bone.example.extension.payment.PaymentResult;
-import com.bone.example.extension.payment.ValidationResult;
+import com.bone.example.extension.result.ValidationResult;
 import com.bone.example.extension.payment.PaymentCalculationResult;
 
 /**
@@ -60,10 +60,7 @@ public class FinancialPaymentExtension implements PaymentExtPoint {
         // 检查上下文是否有效
         if (context == null || context.getData() == null) {
             logger.warn("支付上下文或请求数据为空");
-            ValidationResult result = new ValidationResult();
-            result.success(false);
-            result.setMessage("支付上下文或请求数据不能为空");
-            return result;
+            return ValidationResult.fail("INVALID_CONTEXT", "支付上下文或请求数据不能为空");
         }
         
         PaymentTestRequest request = context.getData();
@@ -72,27 +69,18 @@ public class FinancialPaymentExtension implements PaymentExtPoint {
         String orderId = request.getOrderId();
         if (orderId == null || !orderId.startsWith(FINANCIAL_PREFIX)) {
             logger.warn("无效的金融机构订单ID: {}", orderId);
-            ValidationResult result = new ValidationResult();
-            result.success(false);
-            result.setMessage("无效的金融机构订单ID");
-            return result;
+            return ValidationResult.fail("INVALID_FINANCIAL_ORDER", "无效的金融机构订单ID");
         }
         
         // 额外的金融场景验证：验证金额是否合法
         if (request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
             logger.warn("支付金额不合法: {}", request.getAmount());
-            ValidationResult result = new ValidationResult();
-            result.success(false);
-            result.setMessage("支付金额必须大于零");
-            return result;
+            return ValidationResult.fail("INVALID_AMOUNT", "支付金额必须大于零");
         }
         
         // 设置验证状态为成功
-        ValidationResult result = new ValidationResult();
-        result.success(true);
-        
         logger.info("金融支付前置验证通过，订单ID: {}", orderId);
-        return result;
+            return ValidationResult.success();
     }
     
     /**

@@ -237,7 +237,7 @@ public class SqlExecutor {
     public <T> List<T> queryForList(String sql, Map<String, Object> parameters, Class<T> entityClass) {
         SqlSecurityGuard.scanForInjectionKeywords(sql);
         // 仅对非简单类型进行字段校验
-        if (!isSimpleType(entityClass)) {
+        if (!RepositoryClassUtils.isSimpleType(entityClass)) {
             //SqlSecurityGuard.validateQueryParameters(sql, entityClass);
             //todo more
         }
@@ -288,12 +288,6 @@ public class SqlExecutor {
         }
     }
 
-    // 简单类型判断（与MethodHandler保持一致）
-    // 使用公共工具类替代重复方法
-    private boolean isSimpleType(Class<?> type) {
-        return RepositoryClassUtils.isSimpleType(type);
-    }
-
     /**
      * 执行预编译查询并返回Map列表
      */
@@ -309,7 +303,7 @@ public class SqlExecutor {
         try {
             SqlSecurityGuard.scanForInjectionKeywords(query.getSql());
             // 仅对非简单类型进行字段校验
-            if (!isSimpleType(resultType)) {
+            if (!RepositoryClassUtils.isSimpleType(resultType)) {
                 SqlSecurityGuard.validateQueryParameters(query, resultType);
             }
             

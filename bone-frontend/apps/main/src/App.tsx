@@ -39,7 +39,6 @@ import './App.css';
 
 const { Title, Paragraph } = Typography;
 
-// 使用ProComponents内置的Settings类型，确保配置与官方示例一致
 type ThemeConfig = Settings;
 
 const App: React.FC = () => {
@@ -48,13 +47,13 @@ const App: React.FC = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [settingVisible, setSettingVisible] = useState(false);
   const [notifications, setNotifications] = useState<number>(3);
-  // 跟踪当前选中的顶部菜单项，用于混合布局下的子菜单展开
-  const [selectedTopMenuKey, setSelectedTopMenuKey] = useState<string | null>(null); // 默认不选中任何菜单项，符合Ant Design Pro最佳实践
-  
-  // 主题配置 - 使用Ant Design Pro标准配置
+  const [selectedTopMenuKey, setSelectedTopMenuKey] = useState<string | null>(null);
+  const [openKeys, setOpenKeys] = useState<string[]>([]);
+  // 用于跟踪用户交互状态，提高菜单响应性能
+  const [isUserInteracting, setIsUserInteracting] = useState(false);
   const [themeConfig, setThemeConfig] = useState<ThemeConfig>({
-    layout: 'mix', // 默认布局为混合模式
-    primaryColor: 'daybreak', // 使用预设主题名而非直接颜色值
+    layout: 'mix',
+    primaryColor: 'daybreak',
     navTheme: 'dark',
     contentWidth: 'Fluid',
     fixedHeader: true,
@@ -62,60 +61,141 @@ const App: React.FC = () => {
     autoHideHeader: false,
     colorWeak: false,
   });
-  
-  // 暗黑模式状态
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
-
-  // 从localStorage加载主题配置
-  useEffect(() => {
-    try {
-      const savedConfig = localStorage.getItem('bone-theme-config');
-      if (savedConfig) {
-        setThemeConfig(JSON.parse(savedConfig));
-      }
-    } catch (error) {
-      console.error('加载主题配置失败:', error);
-    }
-  }, []);
   
-  // 监听主题配置变化，更新页面样式
-  useEffect(() => {
-    // 这里可以根据配置动态调整页面样式
-  }, [themeConfig]);
+  // 切换暗黑模式
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode);
+    setThemeConfig(prev => ({
+      ...prev,
+      navTheme: !isDarkMode ? 'dark' : 'light'
+    }));
+  };
+  
+  // 切换全屏
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else {
+      document.exitFullscreen();
+    }
+  };
+  
+  // 切换设置抽屉
+  const toggleSettingDrawer = () => {
+    setSettingVisible(!settingVisible);
+  };
+  
+  // 处理主题配置变更
+  const handleThemeChange = (newSettings: Settings) => {
+    setThemeConfig(newSettings);
+  };
   
   // 监听全屏状态变化
   useEffect(() => {
     const handleFullscreenChange = () => {
-      const fullscreenElement = 
-        document.fullscreenElement || 
-        (document as any).webkitFullscreenElement || 
-        (document as any).mozFullScreenElement || 
-        (document as any).msFullscreenElement;
-      setIsFullscreen(!!fullscreenElement);
+      setIsFullscreen(!!document.fullscreenElement);
     };
     
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
-    
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
     };
   }, []);
   
-  // 当布局类型改变时，重置折叠状态
+  // 页面加载时设置默认选中菜单项
   useEffect(() => {
-    // 顶部布局下不应该折叠
-    if (themeConfig.layout === 'top') {
-      setCollapsed(false);
+    // 如果没有选中的菜单项，默认选中第一个菜单项
+    if (!selectedTopMenuKey && menuData.length > 0) {
+      setSelectedTopMenuKey(menuData[0].key);
     }
-  }, [themeConfig.layout]);
-
-  // 菜单配置 - 采用 Ant Design Pro 标准 MenuDataItem 格式，按照 Bone 工程模块结构组织
+  }, [selectedTopMenuKey]);
+  
+  // 处理布局类型变化时重置选中状态
+  useEffect(() => {
+    if (themeConfig.layout === 'mix' && menuData.length > 0) {
+      // 确保在混合布局下有选中的菜单项
+      if (!selectedTopMenuKey) {
+        setSelectedTopMenuKey(menuData[0].key);
+        // 默认展开第一个菜单项的子菜单
+        const firstMenuItem = menuData[0];
+        if (firstMenuItem.children && firstMenuItem.children.length > 0) {
+          setOpenKeys([firstMenuItem.key]);
+        }
+      }
+    }
+  }, [themeConfig.layout, selectedTopMenuKey]);
+  
+  // 当选中的顶部菜单项改变时，自动展开对应的侧边栏子菜单 - 核心修复
+  useEffect(() => {
+    // 在混合布局下，只要有选中的顶部菜单，立即展开对应的侧边栏子菜单
+    if (selectedTopMenuKey && themeConfig.layout === 'mix') {
+      // 立即执行，不使用延迟，确保响应迅速
+      const menuItem = menuData.find(item => item.key === selectedTopMenuKey);
+      if (menuItem && menuItem.children && menuItem.children.length > 0) {
+        // 强制设置展开状态，确保侧边栏子菜单显示
+        setOpenKeys([selectedTopMenuKey]);
+      } else {
+        // 无子菜单时收起所有菜单
+        setOpenKeys([]);
+      }
+    }
+  }, [selectedTopMenuKey, themeConfig.layout]);
+  
+  // 监听URL变化，确保菜单状态与当前路由同步
+  useEffect(() => {
+    const handleLocationChange = () => {
+      // 获取当前URL路径
+      const currentPath = window.location.pathname;
+      
+      // 查找匹配的菜单项
+      let matchedTopMenuKey: string | null = null;
+      
+      // 检查是否匹配顶层菜单
+      const topMenuMatch = menuData.find(item => currentPath === item.key);
+      if (topMenuMatch) {
+        matchedTopMenuKey = topMenuMatch.key;
+      } else {
+        // 检查是否匹配子菜单
+        const parentMenuMatch = menuData.find(item => 
+          item.children && item.children.some(child => currentPath === child.key)
+        );
+        if (parentMenuMatch) {
+          matchedTopMenuKey = parentMenuMatch.key;
+        }
+      }
+      
+      // 如果找到匹配项且与当前选中项不同，则更新选中状态和展开状态
+      if (matchedTopMenuKey && matchedTopMenuKey !== selectedTopMenuKey) {
+        setSelectedTopMenuKey(matchedTopMenuKey);
+        
+        // 如果是混合布局且有子菜单，自动展开
+        if (themeConfig.layout === 'mix') {
+          const menuItem = menuData.find(item => item.key === matchedTopMenuKey);
+          if (menuItem && menuItem.children && menuItem.children.length > 0) {
+            setOpenKeys([matchedTopMenuKey]);
+          }
+        }
+      }
+    };
+    
+    // 监听popstate事件（浏览器前进/后退按钮）
+    window.addEventListener('popstate', handleLocationChange);
+    
+    // 初始检查
+    handleLocationChange();
+    
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+    };
+  }, [selectedTopMenuKey, themeConfig.layout]);
+  
+  // 监听侧边栏展开状态变化，优化用户体验
+  useEffect(() => {
+    // 可以在这里添加额外的交互逻辑，例如记录用户的菜单偏好等
+  }, [openKeys]);
+  
+  // 菜单数据
   const menuData: MenuDataItem[] = [
     {
       path: '/',
@@ -147,20 +227,6 @@ const App: React.FC = () => {
           key: '/platform/masterdata',
           locale: false,
         },
-        {
-          path: '/platform/notification',
-          name: '通知中心',
-          icon: <BellOutlined />,
-          key: '/platform/notification',
-          locale: false,
-        },
-        {
-          path: '/platform/file',
-          name: '文件管理',
-          icon: <FileOutlined />,
-          key: '/platform/file',
-          locale: false,
-        },
       ],
     },
     {
@@ -177,723 +243,393 @@ const App: React.FC = () => {
           icon: <CodeOutlined />,
           key: '/engine/extension',
           locale: false,
-          children: [
-            {
-              path: '/engine/extension/studio',
-              name: '扩展工作室',
-              icon: <LayoutOutlined />,
-              key: '/engine/extension/studio',
-              locale: false,
-            },
-            {
-              path: '/engine/extension/sdk',
-              name: '扩展SDK',
-              icon: <CodeOutlined />,
-              key: '/engine/extension/sdk',
-              locale: false,
-            },
-          ],
-        },
-        {
-          path: '/engine/metadata',
-          name: '元数据管理',
-          icon: <DatabaseOutlined />,
-          key: '/engine/metadata',
-          locale: false,
-        },
-        {
-          path: '/engine/smartmeta',
-          name: '智能元数据',
-          icon: <DatabaseOutlined />,
-          key: '/engine/smartmeta',
-          locale: false,
-        },
-        {
-          path: '/engine/procurement',
-          name: '采购引擎',
-          icon: <ShoppingCartOutlined />,
-          key: '/engine/procurement',
-          locale: false,
-        },
-        {
-          path: '/engine/workflow',
-          name: '工作流引擎',
-          icon: <ArrowUpOutlined />,
-          key: '/engine/workflow',
-          locale: false,
-        },
-      ],
-    },
-    {
-      path: '/business',
-      name: '业务模块',
-      icon: <TransactionOutlined />,
-      key: '/business',
-      type: 'menu',
-      locale: false,
-      children: [
-        {
-          path: '/business/admin',
-          name: '后台管理',
-          icon: <SettingOutlined />,
-          key: '/business/admin',
-          locale: false,
-        },
-        {
-          path: '/business/trade',
-          name: '交易业务',
-          icon: <TransactionOutlined />,
-          key: '/business/trade',
-          locale: false,
-        },
-      ],
-    },
-    {
-      path: '/framework',
-      name: '框架组件',
-      icon: <LayoutOutlined />,
-      key: '/framework',
-      type: 'menu',
-      locale: false,
-      children: [
-        {
-          path: '/framework/core',
-          name: '核心框架',
-          icon: <AppstoreOutlined />,
-          key: '/framework/core',
-          locale: false,
-        },
-        {
-          path: '/framework/security',
-          name: '安全框架',
-          icon: <LockOutlined />,
-          key: '/framework/security',
-          locale: false,
-        },
-        {
-          path: '/framework/datasource',
-          name: '数据源',
-          icon: <DatabaseOutlined />,
-          key: '/framework/datasource',
-          locale: false,
-        },
-        {
-          path: '/framework/utils',
-          name: '工具类',
-          icon: <ToolOutlined />,
-          key: '/framework/utils',
-          locale: false,
-        },
-      ],
-    },
-    {
-      path: '/tool',
-      name: '开发工具',
-      icon: <ToolOutlined />,
-      key: '/tool',
-      type: 'menu',
-      locale: false,
-      children: [
-        {
-          path: '/tool/codegen',
-          name: '代码生成器',
-          icon: <CodeOutlined />,
-          key: '/tool/codegen',
-          locale: false,
-        },
-        {
-          path: '/tool/scaffold',
-          name: '脚手架',
-          icon: <LayoutOutlined />,
-          key: '/tool/scaffold',
-          locale: false,
-        },
-      ],
-    },
-    {
-      path: '/sdk',
-      name: 'SDK接口',
-      icon: <CodeOutlined />,
-      key: '/sdk',
-      type: 'menu',
-      locale: false,
-      children: [
-        {
-          path: '/sdk/client',
-          name: '客户端SDK',
-          icon: <AppstoreOutlined />,
-          key: '/sdk/client',
-          locale: false,
-        },
-        {
-          path: '/sdk/openapi',
-          name: 'OpenAPI',
-          icon: <AppstoreOutlined />,
-          key: '/sdk/openapi',
-          locale: false,
-        },
-      ],
-    },
-    {
-      path: '/dashboard',
-      name: '数据分析',
-      icon: <LineChartOutlined />,
-      key: '/dashboard',
-      type: 'menu',
-      locale: false,
-      children: [
-        {
-          path: '/dashboard/analysis',
-          name: '分析页',
-          icon: <PieChartOutlined />,
-          key: '/dashboard/analysis',
-          locale: false,
-        },
-        {
-          path: '/dashboard/monitor',
-          name: '系统监控',
-          icon: <EyeOutlined />,
-          key: '/dashboard/monitor',
-          locale: false,
-        },
-      ],
-    },
-    {
-      path: '/system',
-      name: '系统管理',
-      icon: <SettingOutlined />,
-      key: '/system',
-      type: 'menu',
-      locale: false,
-      children: [
-        {
-          path: '/system/log',
-          name: '日志管理',
-          icon: <FileTextOutlined />,
-          key: '/system/log',
-          locale: false,
-        },
-        {
-          path: '/system/config',
-          name: '系统配置',
-          icon: <SettingOutlined />,
-          key: '/system/config',
-          locale: false,
         },
       ],
     },
   ];
-
-  // 自定义右侧用户菜单
-  const userMenu: MenuProps['items'] = [
-    {
-      key: '1',
-      label: '个人中心',
-      icon: <UserOutlined />,
-    },
-    {
-      key: '2',
-      label: '系统设置',
-      icon: <SettingOutlined />,
-    },
-    {
-      key: '3',
-      label: '退出登录',
-      icon: <LogoutOutlined />,
-      danger: true,
-    },
-  ];
-
-  // 自定义通知菜单
-  const notificationMenu: MenuProps['items'] = [
-    {
-      key: '1',
-      label: (
-        <div style={{ padding: 8, lineHeight: 1.4 }}>
-          <div style={{ fontWeight: 500 }}>系统更新通知</div>
-          <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>系统已更新至最新版本 v1.2.0</div>
-          <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>2小时前</div>
-        </div>
-      ),
-    },
-    {
-      key: '2',
-      label: (
-        <div style={{ padding: 8, lineHeight: 1.4 }}>
-          <div style={{ fontWeight: 500 }}>任务完成提醒</div>
-          <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>数据同步任务已成功完成</div>
-          <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>4小时前</div>
-        </div>
-      ),
-    },
-    {
-      key: '3',
-      label: (
-        <div style={{ padding: 8, lineHeight: 1.4 }}>
-          <div style={{ fontWeight: 500 }}>新消息提醒</div>
-          <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>您有3条未读消息</div>
-          <div style={{ fontSize: 12, color: '#999', marginTop: 4 }}>昨天</div>
-        </div>
-      ),
-    },
-    {
-      key: '4',
-      label: '查看全部通知',
-      style: { textAlign: 'center', borderTop: '1px solid #f0f0f0', marginTop: 8 },
-    },
-  ];
-
+  
   // 自定义logo
-  const logo = () => {
-    return (
+  const logo = () => (
+    <div style={{ 
+      display: 'flex', 
+      alignItems: 'center', 
+      paddingLeft: themeConfig.navTheme === 'dark' ? 10 : 0,
+      height: '100%'
+    }}>
       <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        paddingLeft: themeConfig.navTheme === 'dark' ? 10 : 0,
-        height: '100%'
+        width: 32, 
+        height: 32, 
+        borderRadius: 4, 
+        backgroundColor: '#1890ff', 
+        marginRight: 10,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        color: '#fff',
+        fontWeight: 'bold',
+        fontSize: 16
       }}>
-        <div style={{ 
-          width: 32, 
-          height: 32, 
-          borderRadius: 4, 
-          backgroundColor: themeConfig.primaryColor, 
-          marginRight: 10,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#fff',
-          fontWeight: 'bold',
-          fontSize: 16
-        }}>
-          B
-        </div>
-        {!collapsed && (
-          <span style={{ 
-            fontSize: 18, 
-            fontWeight: 'bold', 
-            color: themeConfig.navTheme === 'dark' ? '#fff' : '#000',
-            transition: 'all 0.3s'
-          }}>
-            Bone Platform
-          </span>
-        )}
+        B
       </div>
-    );
-  };
-
-  // 处理主题配置变更
-  const handleThemeChange = (newConfig: Settings) => {
-    setThemeConfig(newConfig);
-    localStorage.setItem('bone-theme-config', JSON.stringify(newConfig));
-  };
-
-  // 切换设置抽屉可见性
-  const toggleSettingDrawer = () => {
-    setSettingVisible(!settingVisible);
-  };
-
-  // 切换全屏
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => {
-        message.error(`全屏切换失败: ${err.message}`);
-      });
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
+      {!collapsed && (
+        <span style={{ 
+          fontSize: 18, 
+          fontWeight: 'bold', 
+          color: themeConfig.navTheme === 'dark' ? '#fff' : '#000',
+          transition: 'all 0.3s'
+        }}>
+          Bone Platform
+        </span>
+      )}
+    </div>
+  );
+  
+  // 面包屑配置
+  const breadcrumbRender = (routers?: MenuDataItem[]) => [
+    { path: '/', breadcrumbName: '首页' },
+    ...(routers || []),
+  ];
+  
+  // 菜单数据处理函数
+  const menuDataRender = () => menuData;
+  
+  // 处理顶部菜单点击 - 简化逻辑，确保混合布局下子菜单正确展开
+  const onMenuHeaderClick = (e: { key: string }) => {
+    const clickedKey = e.key;
+    
+    // 1. 立即更新选中状态
+    setSelectedTopMenuKey(clickedKey);
+    
+    // 2. 在混合布局下，强制展开对应的侧边栏子菜单
+    if (themeConfig.layout === 'mix') {
+      const menuItem = menuData.find(item => item.key === clickedKey);
+      if (menuItem && menuItem.children && menuItem.children.length > 0) {
+        // 直接设置展开状态
+        setOpenKeys([clickedKey]);
       }
     }
+    
+    // 滚动到顶部
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-
-  // 清除通知
-  const clearNotifications = () => {
-    setNotifications(0);
-    message.success('通知已清空');
+  
+  // 处理菜单项点击 - 简化逻辑，确保状态同步
+  const onMenuClick = (e: { key: string }) => {
+    const clickedKey = e.key;
+    
+    // 查找点击项所属的顶层菜单
+    let targetTopMenuKey = clickedKey;
+    
+    // 检查是否是子菜单项
+    const parentMenu = menuData.find(item => 
+      item.children && item.children.some(child => child.key === clickedKey)
+    );
+    
+    if (parentMenu) {
+      // 子菜单点击 - 设置父菜单为顶部选中项
+      targetTopMenuKey = parentMenu.key;
+    }
+    
+    // 更新顶部选中状态
+    setSelectedTopMenuKey(targetTopMenuKey);
+    
+    // 滚动到顶部
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+  
+  // 处理侧边栏菜单展开/收起 - 简化逻辑，确保与顶部菜单正确联动
+  const onOpenChange = (newOpenKeys: string[]) => {
+    // 获取顶层菜单的key
+    const topKeys = menuData.map(item => item.key);
+    
+    // 在混合布局下，确保只有一个顶层菜单处于展开状态
+    const topLevelOpenKeys = newOpenKeys.filter(key => topKeys.includes(key));
+    
+    if (topLevelOpenKeys.length > 0) {
+      // 只保留最后一个展开的顶层菜单
+      const lastTopLevelOpenKey = topLevelOpenKeys[topLevelOpenKeys.length - 1];
+      
+      // 同步更新顶部菜单选中状态
+      setSelectedTopMenuKey(lastTopLevelOpenKey);
+      
+      // 仅保留该顶层菜单的展开状态
+      setOpenKeys([lastTopLevelOpenKey]);
+    } else {
+      // 没有展开的顶层菜单
+      setOpenKeys([]);
+    }
+  };
+  
+  // 右侧工具栏渲染
+  const rightContentRender = () => {
+    const textColor = themeConfig.navTheme === 'dark' ? '#fff' : '#333';
+    const userMenuItems: MenuProps['items'] = [
+      {
+        key: '1',
+        label: '个人中心',
+        icon: <UserOutlined />,
+      },
+      {
+        key: '2',
+        label: '账户设置',
+        icon: <SettingOutlined />,
+      },
+      {
+        type: 'divider',
+      },
+      {
+        key: '3',
+        label: '退出登录',
+        icon: <LogoutOutlined />,
+        danger: true,
+      },
+    ];
 
-  // 自定义右侧内容 - 确保Ant Design Pro的标准布局
-  const rightContentRender = () => (
-    <Space size="small" className="ant-pro-global-header-item-right">
-      {/* 系统更新日志 */}
-      <Tooltip title="系统更新日志">
-        <Button type="text" icon={<DeploymentUnitOutlined />} />
-      </Tooltip>
-      
-      {/* 暗黑模式切换 */}
-      <Tooltip title={isDarkMode ? '切换到亮色模式' : '切换到暗黑模式'}>
-        <Button 
-          type="text" 
-          icon={isDarkMode ? <SunOutlined /> : <MoonOutlined />} 
-          onClick={() => setIsDarkMode(!isDarkMode)} 
-        />
-      </Tooltip>
-      
-      {/* 通知中心 */}
-      <Dropdown menu={{ items: notificationMenu }}>
-        <Badge dot={notifications > 0} offset={[0, 0]}>
-          <Button type="text" icon={<BellOutlined />} />
-        </Badge>
-      </Dropdown>
-      
-      {/* 全屏切换 */}
-      <Tooltip title={isFullscreen ? '退出全屏' : '进入全屏'}>
+    return (
+      <Space size="small" className="ant-pro-global-header-item-right">
+        {/* 通知按钮 */}
+        <Dropdown menu={{ items: [] }}>
+          <Badge count={notifications} showZero>
+            <Button type="text" icon={<BellOutlined />} />
+          </Badge>
+        </Dropdown>
+        
+        {/* 全屏按钮 */}
         <Button 
           type="text" 
           icon={isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />} 
           onClick={toggleFullscreen} 
         />
-      </Tooltip>
-      
-      {/* 整体风格设置按钮 - 企业级应用标准位置 */}
-      <Tooltip title="设置">
+        
+        {/* 主题切换按钮 */}
+        <Button 
+          type="text" 
+          icon={isDarkMode ? <SunOutlined /> : <MoonOutlined />} 
+          onClick={toggleTheme} 
+        />
+        
+        {/* 设置按钮 */}
         <Button 
           type="text" 
           icon={<SettingOutlined />} 
           onClick={toggleSettingDrawer} 
         />
-      </Tooltip>
-      
-      {/* 用户信息 */}
-      <Dropdown 
-        menu={{
-          items: [
-            {
-              key: 'user',
-              label: '个人中心',
-              icon: <UserOutlined />,
-            },
-            {
-              key: 'setting',
-              label: '系统设置',
-              icon: <SettingOutlined />,
-            },
-            {
-              type: 'divider',
-            },
-            {
-              key: 'logout',
-              label: '退出登录',
-              icon: <LogoutOutlined />,
-              danger: true,
-            },
-          ],
-        }}
-      >
-        <div className="ant-pro-global-header-item">
-          <Avatar size={24} icon={<UserOutlined />} />
-        </div>
-      </Dropdown>
-    </Space>
-  );
-
-  // 自定义头部渲染 - 确保顶部导航元素在所有布局模式下都正确显示
-  const headerRender = (props: any) => {
-    if (!props) {
-      return null;
-    }
-    
-    // 混合布局下返回null，让menuBarRender负责渲染顶部菜单
-    if (themeConfig.layout === 'mix') {
-      return null;
-    }
-    
-    const { collapsed, onCollapse } = props;
-    
-    return (
-      <div 
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          width: '100%',
-          height: '100%',
-          padding: '0 20px',
-        }}
-      >
-        {/* 左侧标题区域 */}
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          {/* 在侧边布局下显示Logo和折叠按钮 */}
-          {themeConfig.layout === 'side' && (
-            <>
-              {logo()}
-              <Button
-                type="text"
-                icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-                onClick={() => onCollapse && onCollapse(!collapsed)}
-                style={{ 
-                  marginLeft: 16, 
-                  color: themeConfig.navTheme === 'dark' ? '#fff' : '#000'
-                }}
-              />
-            </>
-          )}
-          
-          {/* 在顶部布局下只显示Logo */}
-          {themeConfig.layout === 'top' && logo()}
-        </div>
         
-        {/* 右侧内容区域 */}
-        <div style={{ display: 'flex', alignItems: 'center' }}>
-          {rightContentRender()}
-        </div>
-      </div>
-    );
-  };
-
-  // 自定义折叠按钮
-  const collapsedButtonRender = () => {
-    // 根据布局类型和状态显示不同的折叠按钮
-    if (themeConfig.layout === 'top') {
-      return null; // 顶部布局不显示折叠按钮
-    }
-    
-    return (
-      <Tooltip title={collapsed ? '展开菜单' : '收起菜单'}>
-        <div 
-          style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center',
-            width: '100%',
-            height: 48,
-            cursor: 'pointer',
-            transition: 'all 0.3s',
-            backgroundColor: themeConfig.navTheme === 'dark' ? '#1f1f1f' : '#fafafa',
-            borderTop: `1px solid ${themeConfig.navTheme === 'dark' ? 'rgba(255,255,255,0.1)' : '#f0f0f0'}`,
-            // 在混合布局下固定在底部
-            position: themeConfig.layout === 'mix' ? 'absolute' : 'relative',
-            bottom: 0,
-            left: 0,
-            right: 0,
-          }}
-          onClick={() => setCollapsed(!collapsed)}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = themeConfig.navTheme === 'dark' ? '#2f2f2f' : '#f0f0f0';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = themeConfig.navTheme === 'dark' ? '#1f1f1f' : '#fafafa';
-          }}
+        {/* 用户头像和下拉菜单 */}
+        <Dropdown 
+          menu={{ items: userMenuItems }} 
+          placement="bottomRight"
         >
-          {collapsed ? <ArrowRightOutlined /> : <ArrowLeftOutlined />}
-        </div>
-      </Tooltip>
+          <Avatar size={24} icon={<UserOutlined />} />
+        </Dropdown>
+      </Space>
     );
   };
   
-  // 自定义菜单项渲染 - 确保在混合布局下正确处理菜单交互
-  const menuItemRender = (item: MenuDataItem, dom: React.ReactNode) => {
-    // 确保dom存在，防止渲染错误
-    if (!dom) return null;
-    
-    return (
-      <Tooltip title={item.name} placement="right">
-        {dom}
-      </Tooltip>
-    );
-  };
-  
-  // 处理顶部菜单项点击 - 这是混合布局下菜单展开的关键
-  const handleMenuHeaderClick = (e: React.MouseEvent<HTMLElement>, key: string | null) => {
-    setSelectedTopMenuKey(key);
-  };
-  
-  // 自定义菜单栏渲染（顶部） - 符合Ant Design Pro最佳实践
-  const menuBarRender = () => {
-    // 检查布局类型
-    const isMixLayout = themeConfig.layout === 'mix';
-    console.log('menuBarRender - 布局类型:', themeConfig.layout, '是否混合布局:', isMixLayout);
-    
-    // 只在混合布局下渲染顶部菜单
-    if (!isMixLayout) {
-      return null;
-    }
-    
-    console.log('menuBarRender - 开始渲染顶部菜单，可用菜单项数量:', menuData.length);
-    
-    // 直接使用menuData中的顶级菜单项
-    const menuItems = menuData.map(item => {
-      if (!item || !item.key || !item.name) {
-        console.log('menuBarRender - 跳过无效菜单项:', item);
-        return null;
-      }
-      
-      console.log('menuBarRender - 渲染菜单项:', item.key, item.name);
-      const isSelected = selectedTopMenuKey === item.key;
-      
-      return (
-        <div
-          key={item.key}
-          className="ant-pro-global-header-nav-item"
-          style={{
-            padding: '0 20px',
-            height: '100%',
-            lineHeight: '64px',
-            cursor: 'pointer',
-            fontSize: 14,
-            color: isSelected ? '#1890ff' : '#666',
-            backgroundColor: isSelected ? 'rgba(24, 144, 255, 0.06)' : 'transparent',
-            transition: 'all 0.3s',
-            borderBottom: isSelected ? '2px solid #1890ff' : '2px solid transparent',
-            // 添加额外的样式确保可见性
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative',
-            zIndex: 10
-          }}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('menuBarRender - 点击菜单项:', item.key);
-            handleMenuHeaderClick(e, selectedTopMenuKey === item.key ? null : item.key);
-          }}
-        >
-          {item.name}
-        </div>
-      );
-    }).filter(Boolean);
-    
-    console.log('menuBarRender - 渲染后的菜单项数量:', menuItems.length);
-    
-    // 返回完整的顶部菜单布局
-    return (
-      <div style={{display: 'flex', alignItems: 'center', height: '64px', width: '100%', background: '#fff', position: 'relative', zIndex: 100}}>
-        <div style={{padding: '0 24px'}}>{logo()}</div>
-        <div style={{flex: 1, display: 'flex', alignItems: 'center'}}>
-          <div style={{display: 'flex', alignItems: 'center', height: '100%'}}>
-            {menuItems}
-          </div>
-        </div>
-        <div style={{padding: '0 24px'}}>{rightContentRender()}</div>
-      </div>
-    );
-  };
-
-  // 自定义面包屑配置
-  const breadcrumbRender = (routers?: MenuDataItem[]) => [
-    { path: '/', breadcrumbName: '首页' },
-    ...(routers || []),
-  ];
-
-  // 全局样式设置
+  // 全局样式设置 - 基于Ant Design设计规范的混合布局菜单交互优化
   const CustomStyle = () => (
-      <style>
-        {
-          `
-          /* 符合Ant Design Pro的标准样式 */
-          .ant-pro-global-header-item {
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            padding: 0 8px;
-            transition: all 0.3s;
-          }
-          
-          .ant-pro-global-header-item:hover {
-            background-color: rgba(255, 255, 255, 0.06);
-          }
-          
-          .ant-pro-global-header-item-right {
-            margin-left: auto;
-          }
-          
-          /* 修复侧边栏折叠动画 */
-          .ant-pro-sider-children {
-            height: 100%;
-            overflow-y: auto;
-          }
-          `
+    <style>
+      {`
+        /* 优化顶部和混合布局的样式 */
+        .ant-pro-header {
+          padding: 0 16px !important;
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+          background: inherit;
         }
-      </style>
-    );
+        
+        /* 修复混合布局下的顶部菜单项样式 - 符合Ant Design企业级应用规范 */
+        .ant-pro-menu-top-menu > .ant-menu-item {
+          padding: 0 20px !important;
+          margin: 0 4px !important;
+          height: 52px !important;
+          line-height: 52px !important;
+          position: relative;
+          overflow: hidden;
+          border-radius: 4px;
+          user-select: none;
+        }
+        
+        /* 修复混合布局下的顶部菜单选中样式 */
+        .ant-pro-menu-top-menu > .ant-menu-item.ant-menu-item-selected {
+          background-color: rgba(24, 144, 255, 0.1) !important;
+          color: #1890ff !important;
+          font-weight: 600;
+        }
+        
+        /* 提升顶部菜单项的交互体验 - 添加下划线动画效果 */
+        .ant-pro-menu-top-menu > .ant-menu-item {
+          transition: all 0.2s ease-in-out;
+        }
+        
+        .ant-pro-menu-top-menu > .ant-menu-item:hover {
+          background-color: rgba(24, 144, 255, 0.05) !important;
+          transform: translateY(-1px);
+        }
+        
+        .ant-pro-menu-top-menu > .ant-menu-item::after {
+          content: '';
+          position: absolute;
+          left: 0;
+          bottom: 0;
+          width: 0;
+          height: 2px;
+          background-color: #1890ff;
+          transition: width 0.3s ease;
+        }
+        
+        .ant-pro-menu-top-menu > .ant-menu-item.ant-menu-item-selected::after {
+          width: 100%;
+        }
+        
+        /* 优化混合布局下侧边栏菜单的样式 */
+        .ant-pro-sider-menu.ant-menu-root.ant-menu-vertical {
+          padding: 8px 0;
+          background: transparent !important;
+        }
+        
+        /* 侧边栏菜单项样式优化 */
+        .ant-pro-sider-menu .ant-menu-item {
+          padding: 0 24px !important;
+          margin: 0 !important;
+          transition: all 0.2s ease;
+          border-radius: 4px;
+          margin: 2px 8px !important;
+          user-select: none;
+        }
+        
+        /* 侧边栏菜单项选中和悬停效果 */
+        .ant-pro-sider-menu .ant-menu-item:hover,
+        .ant-pro-sider-menu .ant-menu-submenu-title:hover {
+          background-color: rgba(24, 144, 255, 0.05) !important;
+        }
+        
+        .ant-pro-sider-menu .ant-menu-item.ant-menu-item-selected {
+          background-color: rgba(24, 144, 255, 0.1) !important;
+          color: #1890ff !important;
+        }
+        
+        /* 侧边栏子菜单项样式 */
+        .ant-pro-sider-menu .ant-menu-sub .ant-menu-item {
+          padding-left: 40px !important;
+        }
+        
+        /* 确保子菜单展开/收起时有平滑过渡效果 */
+        .ant-menu-vertical .ant-menu-sub {
+          background-color: transparent !important;
+          transition: all 0.3s ease-in-out;
+          padding: 4px 0;
+          overflow: hidden;
+        }
+        
+        /* 优化混合布局下的菜单展开/收起图标 */
+        .ant-menu-submenu-arrow {
+          transition: transform 0.3s ease;
+        }
+        
+        /* 优化侧边栏展开/收起动画 */
+        .ant-pro-sider {
+          transition: all 0.3s ease;
+          will-change: width;
+        }
+        
+        /* 确保内容区域不被固定头部遮挡 */
+        .ant-pro-layout-top-menu .ant-pro-layout-content,
+        .ant-pro-layout-mix .ant-pro-layout-content {
+          padding-top: 72px !important;
+          transition: all 0.3s ease;
+        }
+        
+        /* 在混合布局下优化布局结构 */
+        .ant-pro-layout-mix .ant-pro-sider.ant-pro-sider-fixed {
+          box-shadow: 1px 0 4px rgba(0, 0, 0, 0.05);
+          background: inherit;
+          z-index: 10;
+        }
+        
+        /* 优化菜单交互反馈 */
+        .ant-menu-item:active,
+        .ant-menu-submenu-title:active {
+          background-color: rgba(24, 144, 255, 0.08) !important;
+        }
+        
+        /* 为可展开的菜单项添加视觉提示 */
+        .ant-menu-submenu:hover .ant-menu-submenu-title {
+          color: #1890ff !important;
+        }
+        
+        /* 提升菜单动画性能 */
+        .ant-menu-item,
+        .ant-menu-submenu-title {
+          will-change: background-color, transform;
+        }
+        
+        /* 菜单项加载时的过渡效果 */
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateX(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        /* 应用子菜单动画 */
+        .ant-menu-submenu-open .ant-menu-sub {
+          animation: fadeIn 0.3s ease-out;
+        }
+      `}
+    </style>
+  );
 
   return (
     <>
       <ProLayout
         logo={logo}
-        // 使用mock数据确保菜单正常显示
-        menuDataRender={() => {
-          // 在混合布局下，根据选中的顶部菜单项过滤左侧子菜单
-          if (themeConfig.layout === 'mix') {
-            // 如果没有选中的顶部菜单项，返回一个空状态菜单项，符合Ant Design Pro最佳实践
-            if (!selectedTopMenuKey) {
-              return [{
-                path: '/welcome',
-                name: '欢迎使用',
-                icon: <HomeOutlined />,
-                key: '/welcome',
-                type: 'menu',
-                locale: false,
-                disabled: true,
-              }];
-            }
-            
-            const selectedMenuItem = menuData.find(item => item.key === selectedTopMenuKey);
-            // 如果找到了选中的菜单项且有子菜单，则返回子菜单，否则返回空状态
-            if (selectedMenuItem && selectedMenuItem.children && selectedMenuItem.children.length > 0) {
-              return selectedMenuItem.children;
-            }
-            
-            return [{
-              path: '/empty',
-              name: '暂无内容',
-              icon: <HomeOutlined />,
-              key: '/empty',
-              type: 'menu',
-              locale: false,
-              disabled: true,
-            }];
-          }
-          // 非混合布局下返回完整菜单
-          return menuData;
-        }}
-        // 配置分割菜单，在混合布局下必须启用
+        menuDataRender={menuDataRender}
         splitMenus={themeConfig.layout === 'mix'}
-        // 配置面包屑
         breadcrumbRender={breadcrumbRender}
-        // 配置右侧内容渲染
         rightContentRender={rightContentRender}
-        // 配置菜单栏渲染 - 这是顶部和混合布局下显示顶部菜单的关键
-        menuBarRender={menuBarRender}
-        // 自定义菜单项渲染
-        menuItemRender={menuItemRender}
-        // 设置选中的菜单项
-        selectedKeys={selectedTopMenuKey ? [selectedTopMenuKey] : []}
-        // 配置主题和布局
+        selectedKeys={selectedTopMenuKey ? [selectedTopMenuKey] : ['/']}
+        openKeys={openKeys}
+        onMenuHeaderClick={onMenuHeaderClick}
+        onMenuClick={onMenuClick}
+        onOpenChange={onOpenChange}
         layout={themeConfig.layout}
         navTheme={themeConfig.navTheme}
         primaryColor={themeConfig.primaryColor}
         contentWidth={themeConfig.contentWidth}
-        fixedHeader={true} // 混合布局必须固定头部
-        fixSiderbar={themeConfig.layout === 'mix'} // 混合布局必须固定侧边栏
-        autoHideHeader={false} // 混合布局不自动隐藏头部
+        fixedHeader={true}
+        fixSiderbar={themeConfig.layout === 'mix'}
+        autoHideHeader={false}
         colorWeak={themeConfig.colorWeak}
-        // 在混合布局下，启用顶部菜单的固定
-        fixedMenuBar={themeConfig.layout === 'mix'}
-        // 侧边栏配置
         siderWidth={220}
         collapsedWidth={56}
-        collapsed={themeConfig.layout !== 'top' ? collapsed : false}
+        collapsed={themeConfig.layout === 'top' ? true : collapsed}
         onCollapse={(value) => {
           if (themeConfig.layout !== 'top') {
             setCollapsed(value);
           }
         }}
-        // 其他布局配置
         breakpoint="lg"
         headerHeight={64}
-        clickToCollapse={true}
+        clickToCollapse={themeConfig.layout !== 'mix'}
         autoHideScrollbar={true}
         showBreadcrumb={true}
       >
-        {/* 主要内容区域 - 使用ProComponents的标准空白页样式 */}
-        <div style={{ padding: 24, minHeight: 360, textAlign: 'center' }}>
+        {/* 主要内容区域 */}
+        <div style={{ 
+          padding: 24, 
+          minHeight: 360, 
+          textAlign: 'center'
+        }}>
           <Typography.Title level={3}>Bone Platform</Typography.Title>
           <Typography.Paragraph>欢迎使用Bone Platform，请从左侧菜单选择功能</Typography.Paragraph>
         </div>
       </ProLayout>
       
-      {/* 使用ProComponents提供的SettingDrawer组件替代自定义模态框 */}
+      {/* 设置抽屉 */}
       <SettingDrawer
         settings={themeConfig}
         onSettingChange={handleThemeChange}
@@ -906,6 +642,6 @@ const App: React.FC = () => {
       <CustomStyle />
     </>
   );
-}
+};
 
 export default App;

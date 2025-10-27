@@ -170,21 +170,18 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
-                    <encoding>${project.build.sourceEncoding}</encoding>
-                    <compilerArgs>
-                        <arg>-parameters</arg>
-                        <arg>-Xlint:unchecked</arg>
-                        <arg>-Xlint:deprecation</arg>
-                    </compilerArgs>
-                    <showWarnings>true</showWarnings>
-                    <showDeprecation>true</showDeprecation>
-                    <!-- 排除有编译错误的测试配置类 -->
-                    <testExcludes>
-                        <testExclude>**/config/**</testExclude>
-                    </testExcludes>
-                </configuration>
+                <source>${java.version}</source>
+                <target>${java.version}</target>
+                <encoding>${project.build.sourceEncoding}</encoding>
+                <compilerArgs>
+                    <arg>-parameters</arg>
+                    <arg>-Xlint:unchecked</arg>
+                    <arg>-Xlint:deprecation</arg>
+                </compilerArgs>
+                <showWarnings>true</showWarnings>
+                <showDeprecation>true</showDeprecation>
+                <!-- 不排除任何测试类，确保所有编译错误和警告都能正常显示 -->
+            </configuration>
             </plugin>
             
             <!-- 该模块作为SDK，不需要Spring Boot打包插件 -->

@@ -1,12 +1,30 @@
 package com.bone.engine.extension.studio.service.impl;
 
-import com.bone.engine.extension.Extension;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
-import com.bone.engine.extension.studio.model.ExtPointEntity;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.ClassUtils;
+
+import com.bone.engine.extension.Extension;
 import com.bone.engine.extension.studio.model.ExtensionEntity;
-import com.bone.engine.extension.studio.repository.ExtPointRepository;
+import com.bone.engine.extension.studio.model.ExtPointEntity;
 import com.bone.engine.extension.studio.repository.ExtensionRepository;
+import com.bone.engine.extension.studio.repository.ExtPointRepository;
 import com.bone.engine.extension.studio.service.ExtensionService;
+import com.bone.engine.extension.studio.service.common.ClassScanner;
+import com.bone.engine.extension.studio.service.common.ResourceUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,8 +34,6 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
-import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.core.type.classreading.CachingMetadataReaderFactory;
 import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
@@ -27,7 +43,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ClassUtils;
-import org.springframework.util.ResourceUtils;
 import org.springframework.util.StringUtils;
 
 import jakarta.persistence.criteria.Predicate;
@@ -308,53 +323,20 @@ public class ExtensionServiceImpl implements ExtensionService {
     @CacheEvict(value = {"allExtensions", "extensionsByExtPoint"}, allEntries = true)
     public int scanAndRegisterExtensions() {
         log.info("开始扫描并注册扩展实现，基础包: {}", scanBasePackages);
-        int registeredCount = 0;
         
         try {
             // 重置验证缓存
             extensionValidationCache.clear();
             
-            // 扫描指定包下的所有带@Extension注解的类
-            List<String> basePackages = Arrays.asList(scanBasePackages.split(","));
-            for (String basePackage : basePackages) {
-                String searchPath = "classpath*:" + basePackage.replace(".", "/") + "/**/*.class";
-                try {
-                    Set<Resource> resources = new HashSet<>();
-                    try {
-                        // 使用ResourcePatternResolver获取多个资源
-                        ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-                        Resource[] foundResources = resolver.getResources(searchPath);
-                        for (Resource resource : foundResources) {
-                            if (resource.exists()) {
-                                resources.add(resource);
-                            }
-                        }
-                    } catch (IOException e) {
-                        log.warn("Error loading resources for path: {}", searchPath, e);
-                    }
-                    
-                    for (Resource resource : resources) {
-                        try {
-                            // 解析资源为类文件
-                            String className = getClassNameFromResource(resource, basePackage);
-                            if (className != null) {
-                                // 加载类并检查注解
-                                Class<?> clazz = ClassUtils.forName(className, ClassUtils.getDefaultClassLoader());
-                                Extension extensionAnnotation = clazz.getAnnotation(Extension.class);
-                                
-                                if (extensionAnnotation != null) {
-                                    // 处理带注解的类
-                                    registeredCount += registerExtensionClass(clazz, extensionAnnotation);
-                                }
-                            }
-                        } catch (Exception e) {
-                            log.warn("处理资源时出错: {}", resource.getURI(), e);
-                        }
-                    }
-                } catch (Exception e) {
-                    log.warn("扫描包时出错: {}", basePackage, e);
-                }
-            }
+            // 解析基础包列表
+            List<String> basePackages = ClassScanner.parseBasePackages(scanBasePackages);
+            
+            // 使用ClassScanner扫描并处理带有@Extension注解的类
+            int registeredCount = ClassScanner.scanAndProcessAnnotatedClasses(
+                basePackages,
+                Extension.class,
+                (clazz, annotation) -> registerExtensionClass(clazz, annotation)
+            );
             
             log.info("扫描并注册扩展实现完成，共注册: {} 个", registeredCount);
             return registeredCount;
@@ -424,36 +406,7 @@ public class ExtensionServiceImpl implements ExtensionService {
         }
     }
     
-    private String getClassNameFromResource(Resource resource, String basePackage) {
-        try {
-            String resourcePath = resource.getURI().getPath();
-            String packagePath = basePackage.replace('.', '/');
-            int startIndex = resourcePath.indexOf(packagePath);
-            if (startIndex != -1) {
-                String className = resourcePath.substring(startIndex).replace('/', '.');
-                int classIndex = className.lastIndexOf(".class");
-                if (classIndex != -1) {
-                    return className.substring(0, classIndex);
-                }
-            }
-            return null;
-        } catch (Exception e) {
-            return null;
-        }
-    }
-    
-    private Set<Resource> getResources(String locationPattern) throws IOException {
-        Set<Resource> result = new HashSet<>();
-        // 使用ResourcePatternResolver获取多个资源
-        ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-        Resource[] resources = resolver.getResources(locationPattern);
-        for (Resource resource : resources) {
-            if (resource.exists()) {
-                result.add(resource);
-            }
-        }
-        return result;
-    }
+    // 移除重复的方法，使用common包中的ResourceUtils
     
 
 

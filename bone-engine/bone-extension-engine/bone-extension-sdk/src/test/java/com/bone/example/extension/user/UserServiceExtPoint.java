@@ -4,50 +4,47 @@ import com.bone.engine.extension.context.BizContext;
 import com.bone.engine.extension.ExtPoint;
 import com.bone.engine.extension.annotation.ExtPointDoc;
 
-
-
+/**
+ * 用户服务处理结果类
+ */
+class UserResult {
+    private String userId;
+    private String username;
+    private boolean success;
     
-    /**
-     * 用户服务处理结果类
-     */
-    class UserResult {
-        private String userId;
-        private String username;
-        private boolean success;
-        
-        public String getUserId() {
-            return userId;
-        }
-        
-        public void setUserId(String userId) {
-            this.userId = userId;
-        }
-        
-        public String getUsername() {
-            return username;
-        }
-        
-        public void setUsername(String username) {
-            this.username = username;
-        }
-        
-        public boolean isSuccess() {
-            return success;
-        }
-        
-        public void setSuccess(boolean success) {
-            this.success = success;
-        }
-        
-        @Override
-        public String toString() {
-            return "UserResult{" +
-                "userId='" + userId + "'" +
-                ", username='" + username + "'" +
-                ", success=" + success +
-                '}';
-        }
+    public String getUserId() {
+        return userId;
     }
+    
+    public void setUserId(String userId) {
+        this.userId = userId;
+    }
+    
+    public String getUsername() {
+        return username;
+    }
+    
+    public void setUsername(String username) {
+        this.username = username;
+    }
+    
+    public boolean isSuccess() {
+        return success;
+    }
+    
+    public void setSuccess(boolean success) {
+        this.success = success;
+    }
+    
+    @Override
+    public String toString() {
+        return "UserResult{" +
+            "userId='" + userId + "'" +
+            ", username='" + username + "'" +
+            ", success=" + success +
+            '}';
+    }
+}
 
 /**
  * 用户服务扩展点接口

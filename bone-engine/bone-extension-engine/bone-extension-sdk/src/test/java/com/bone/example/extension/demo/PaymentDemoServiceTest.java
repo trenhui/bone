@@ -10,6 +10,8 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.bone.example.extension.common.PaymentRequest;
+
 /**
  * 支付演示服务测试类
  */
@@ -46,22 +48,10 @@ class PaymentDemoServiceTest {
     
     /**
      * 支付演示请求类
+     * <p>
+     * 继承自通用PaymentRequest，用于演示服务的支付请求
      */
-    static class PaymentDemoRequest {
-        private String orderId;
-        private String userId;
-        private BigDecimal amount;
-        private String paymentMethod;
-        
-        // Getter和Setter方法
-        public String getOrderId() { return orderId; }
-        public void setOrderId(String orderId) { this.orderId = orderId; }
-        public String getUserId() { return userId; }
-        public void setUserId(String userId) { this.userId = userId; }
-        public BigDecimal getAmount() { return amount; }
-        public void setAmount(BigDecimal amount) { this.amount = amount; }
-        public String getPaymentMethod() { return paymentMethod; }
-        public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+    static class PaymentDemoRequest extends PaymentRequest {
     }
     
     /**

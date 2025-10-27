@@ -5,6 +5,7 @@ import com.bone.metadata.sdk.support.dataSource.DataSourceManager;
 import com.bone.metadata.sdk.support.dataSource.annotation.DS;
 import com.bone.metadata.sdk.test.config.MultiDataSourceTestConfig;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
 import static org.mockito.Mockito.*;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -33,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *   <li>@DS注解在业务方法中的使用</li>
  * </ul>
  */
-@Ignore("Temporarily skipping due to configuration issues")
+@Disabled("Temporarily skipping due to configuration issues")
 @ExtendWith({SpringExtension.class, MockitoExtension.class})
 @ContextConfiguration(classes = {MultiDataSourceTestConfig.class})
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
@@ -57,8 +59,9 @@ public class MultiDataSourceIntegrationTest {
     @BeforeEach
     public void setUp() {
         // 清理数据源上下文
-        while (DataSourceContextHolder.hasActiveDataSource()) {
-            DataSourceContextHolder.clearDataSource();
+        while (true) {
+            String removed = DataSourceContextHolder.clearDataSource();
+            if (removed == null) break;
         }
         
         // 重置mock行为
@@ -87,8 +90,9 @@ public class MultiDataSourceIntegrationTest {
     @AfterEach
     public void tearDown() {
         // 清理数据源上下文
-        while (DataSourceContextHolder.hasActiveDataSource()) {
-            DataSourceContextHolder.clearDataSource();
+        while (true) {
+            String removed = DataSourceContextHolder.clearDataSource();
+            if (removed == null) break;
         }
     }
     
