@@ -416,12 +416,7 @@ public class ExtPointTest {
     // 运行时配置 - 专注于扩展点注册和行为控制
     @ExtPoint(
         name = "测试扩展点",
-        description = "用于单元测试的扩展点接口",
-        version = "1.0.0",
-        enabled = true,
-        priority = 100,
-        enableCache = true,
-        timeout = 1000
+        description = "用于单元测试的扩展点接口"
     )
     // 接口文档 - 提供使用指导（编译时注解，不影响运行时）
     @ExtPointDoc(

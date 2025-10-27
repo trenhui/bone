@@ -161,8 +161,7 @@ public class ExtensionRegisterTest {
      */
     @ExtPoint(
         name = "注册测试扩展点",
-        description = "用于测试扩展注册功能的主扩展点接口",
-        version = "1.0.0"
+        description = "用于测试扩展注册功能的主扩展点接口"
     )
     @ExtPointDoc(
         title = "注册测试主扩展点接口",
@@ -242,8 +241,7 @@ public class ExtensionRegisterTest {
      */
     @ExtPoint(
         name = "第二个测试扩展点",
-        description = "用于测试多扩展点实现的辅助接口",
-        version = "1.0.0"
+        description = "用于测试多扩展点实现的辅助接口"
     )
     @ExtPointDoc(
         title = "多实现测试扩展点接口",

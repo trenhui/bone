@@ -13,9 +13,7 @@ import com.bone.engine.extension.annotation.ExtPointDoc;
  */
 @ExtPoint(
     name = "支付扩展点",
-    description = "支付处理扩展点，支持多种支付方式的实现",
-    version = "1.0.0",
-    enabled = true
+    description = "支付处理扩展点，支持多种支付方式的实现"
 )
 @ExtPointDoc(
     title = "支付服务扩展点",

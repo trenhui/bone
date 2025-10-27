@@ -1,9 +1,10 @@
 package com.bone.example.extension.risk;
 
-import com.bone.engine.extension.context.BizContext;
 import com.bone.engine.extension.ExtPoint;
 import com.bone.engine.extension.annotation.ExtPointDoc;
-import java.math.BigDecimal;
+import com.bone.engine.extension.context.BizContext;
+import com.bone.example.extension.risk.TransactionRequest;
+import com.bone.example.extension.risk.RiskAssessmentResult;
 
 /**
  * 风控规则扩展点
@@ -14,12 +15,7 @@ import java.math.BigDecimal;
 // 运行时配置 - 提供扩展点基本信息和默认配置
 @ExtPoint(
     name = "风控规则扩展点",
-    description = "处理各类交易风险的评估和分析逻辑",
-    version = "1.0.0",
-    enabled = true,
-    priority = 100,
-    enableCache = true,
-    timeout = 1000
+    description = "处理各类交易风险的评估和分析逻辑"
 )
 // 接口文档 - 详细描述扩展点功能、参数和使用场景（编译时注解，不影响运行时）
 @ExtPointDoc(

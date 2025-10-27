@@ -327,12 +327,7 @@ public class ExtPointIntegrationTest {
     // 运行时配置 - 专注于扩展点注册和行为控制
     @ExtPoint(
         name = "订单服务扩展点",
-        description = "处理订单业务的核心扩展点接口",
-        version = "1.0.0",
-        enabled = true,
-        priority = 100,
-        enableCache = false,
-        timeout = 2000
+        description = "处理订单业务的核心扩展点接口"
     )
     // 接口文档 - 提供使用指导（编译时注解，不影响运行时）
     @ExtPointDoc(
@@ -512,12 +507,7 @@ public class ExtPointIntegrationTest {
     // 运行时配置 - 提供扩展点基本信息和默认配置
     @ExtPoint(
         name = "用户服务扩展点",
-        description = "处理用户相关操作的扩展点接口",
-        version = "1.0.0",
-        enabled = true,
-        priority = 100,
-        enableCache = false,
-        timeout = 1000
+        description = "处理用户相关操作的扩展点接口"
     )
     // 接口文档 - 详细描述扩展点功能、参数和使用场景（编译时注解，不影响运行时）
     @ExtPointDoc(
@@ -586,12 +576,7 @@ public class ExtPointIntegrationTest {
     // 运行时配置 - 提供扩展点基本信息和默认配置
     @ExtPoint(
         name = "通知服务扩展点",
-        description = "处理通知发送的扩展点接口",
-        version = "1.0.0",
-        enabled = true,
-        priority = 100,
-        enableCache = false,
-        timeout = 3000
+        description = "处理通知发送的扩展点接口"
     )
     // 接口文档 - 详细描述扩展点功能、参数和使用场景（编译时注解，不影响运行时）
     @ExtPointDoc(

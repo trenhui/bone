@@ -15,12 +15,7 @@ import com.bone.engine.extension.annotation.ExtPointDoc;
  */
 @ExtPoint(
     name = "用户问候扩展点",
-    description = "根据用户类型返回不同的问候语的扩展点接口",
-    version = "1.0.0",
-    enabled = true,
-    priority = 100,
-    enableCache = false,
-    timeout = 500
+    description = "根据用户类型返回不同的问候语的扩展点接口"
 )
 @ExtPointDoc(
     description = "该扩展点用于根据用户类型、上下文和环境生成个性化的问候语，支持普通用户和VIP用户的差异化服务。",

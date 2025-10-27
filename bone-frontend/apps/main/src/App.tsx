@@ -48,6 +48,8 @@ const App: React.FC = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [settingVisible, setSettingVisible] = useState(false);
   const [notifications, setNotifications] = useState<number>(3);
+  // 跟踪当前选中的顶部菜单项，用于混合布局下的子菜单展开
+  const [selectedTopMenuKey, setSelectedTopMenuKey] = useState<string | null>(null); // 默认不选中任何菜单项，符合Ant Design Pro最佳实践
   
   // 主题配置 - 使用Ant Design Pro标准配置
   const [themeConfig, setThemeConfig] = useState<ThemeConfig>({
@@ -509,7 +511,7 @@ const App: React.FC = () => {
     message.success('通知已清空');
   };
 
-  // 自定义右侧内容 - 符合Ant Design Pro的标准布局
+  // 自定义右侧内容 - 确保Ant Design Pro的标准布局
   const rightContentRender = () => (
     <Space size="small" className="ant-pro-global-header-item-right">
       {/* 系统更新日志 */}
@@ -585,7 +587,16 @@ const App: React.FC = () => {
   );
 
   // 自定义头部渲染 - 确保顶部导航元素在所有布局模式下都正确显示
-  const headerRender = (props) => {
+  const headerRender = (props: any) => {
+    if (!props) {
+      return null;
+    }
+    
+    // 混合布局下返回null，让menuBarRender负责渲染顶部菜单
+    if (themeConfig.layout === 'mix') {
+      return null;
+    }
+    
     const { collapsed, onCollapse } = props;
     
     return (
@@ -617,8 +628,8 @@ const App: React.FC = () => {
             </>
           )}
           
-          {/* 在顶部和混合布局下只显示Logo */}
-          {(themeConfig.layout === 'top' || themeConfig.layout === 'mix') && logo()}
+          {/* 在顶部布局下只显示Logo */}
+          {themeConfig.layout === 'top' && logo()}
         </div>
         
         {/* 右侧内容区域 */}
@@ -669,34 +680,93 @@ const App: React.FC = () => {
     );
   };
   
-  // 自定义菜单项渲染已移至ProLayout组件中直接定义
+  // 自定义菜单项渲染 - 确保在混合布局下正确处理菜单交互
+  const menuItemRender = (item: MenuDataItem, dom: React.ReactNode) => {
+    // 确保dom存在，防止渲染错误
+    if (!dom) return null;
+    
+    return (
+      <Tooltip title={item.name} placement="right">
+        {dom}
+      </Tooltip>
+    );
+  };
   
-  // 自定义菜单栏渲染（顶部） - 这是顶部和混合布局下显示顶部菜单的关键
-  const menuBarRender = (props) => {
-    if (!props) {
+  // 处理顶部菜单项点击 - 这是混合布局下菜单展开的关键
+  const handleMenuHeaderClick = (e: React.MouseEvent<HTMLElement>, key: string | null) => {
+    setSelectedTopMenuKey(key);
+  };
+  
+  // 自定义菜单栏渲染（顶部） - 符合Ant Design Pro最佳实践
+  const menuBarRender = () => {
+    // 检查布局类型
+    const isMixLayout = themeConfig.layout === 'mix';
+    console.log('menuBarRender - 布局类型:', themeConfig.layout, '是否混合布局:', isMixLayout);
+    
+    // 只在混合布局下渲染顶部菜单
+    if (!isMixLayout) {
       return null;
     }
     
-    const { menuHeaderRender } = props;
+    console.log('menuBarRender - 开始渲染顶部菜单，可用菜单项数量:', menuData.length);
     
-    // 混合布局的特殊处理
-    if (themeConfig.layout === 'mix') {
+    // 直接使用menuData中的顶级菜单项
+    const menuItems = menuData.map(item => {
+      if (!item || !item.key || !item.name) {
+        console.log('menuBarRender - 跳过无效菜单项:', item);
+        return null;
+      }
+      
+      console.log('menuBarRender - 渲染菜单项:', item.key, item.name);
+      const isSelected = selectedTopMenuKey === item.key;
+      
       return (
-        <div className="ant-pro-layout-header">
-          <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-            <span style={{ fontSize: 16, fontWeight: 500, marginRight: 24, marginLeft: 8, color: themeConfig.navTheme === 'dark' ? '#fff' : '#000' }}>
-              Bone Platform
-            </span>
-            {menuHeaderRender(props)}
-          </div>
+        <div
+          key={item.key}
+          className="ant-pro-global-header-nav-item"
+          style={{
+            padding: '0 20px',
+            height: '100%',
+            lineHeight: '64px',
+            cursor: 'pointer',
+            fontSize: 14,
+            color: isSelected ? '#1890ff' : '#666',
+            backgroundColor: isSelected ? 'rgba(24, 144, 255, 0.06)' : 'transparent',
+            transition: 'all 0.3s',
+            borderBottom: isSelected ? '2px solid #1890ff' : '2px solid transparent',
+            // 添加额外的样式确保可见性
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            position: 'relative',
+            zIndex: 10
+          }}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('menuBarRender - 点击菜单项:', item.key);
+            handleMenuHeaderClick(e, selectedTopMenuKey === item.key ? null : item.key);
+          }}
+        >
+          {item.name}
         </div>
       );
-    }
+    }).filter(Boolean);
     
-    // 对于顶部布局，不应该过度自定义menuBarRender
-    // 让ProLayout自身处理菜单的渲染和交互逻辑是最佳实践
-    // 这里我们直接返回null，让ProLayout使用默认的顶部菜单渲染逻辑
-    return null;
+    console.log('menuBarRender - 渲染后的菜单项数量:', menuItems.length);
+    
+    // 返回完整的顶部菜单布局
+    return (
+      <div style={{display: 'flex', alignItems: 'center', height: '64px', width: '100%', background: '#fff', position: 'relative', zIndex: 100}}>
+        <div style={{padding: '0 24px'}}>{logo()}</div>
+        <div style={{flex: 1, display: 'flex', alignItems: 'center'}}>
+          <div style={{display: 'flex', alignItems: 'center', height: '100%'}}>
+            {menuItems}
+          </div>
+        </div>
+        <div style={{padding: '0 24px'}}>{rightContentRender()}</div>
+      </div>
+    );
   };
 
   // 自定义面包屑配置
@@ -742,8 +812,42 @@ const App: React.FC = () => {
       <ProLayout
         logo={logo}
         // 使用mock数据确保菜单正常显示
-        menuDataRender={() => menuData}
-        // 配置分割菜单，仅在混合布局下使用
+        menuDataRender={() => {
+          // 在混合布局下，根据选中的顶部菜单项过滤左侧子菜单
+          if (themeConfig.layout === 'mix') {
+            // 如果没有选中的顶部菜单项，返回一个空状态菜单项，符合Ant Design Pro最佳实践
+            if (!selectedTopMenuKey) {
+              return [{
+                path: '/welcome',
+                name: '欢迎使用',
+                icon: <HomeOutlined />,
+                key: '/welcome',
+                type: 'menu',
+                locale: false,
+                disabled: true,
+              }];
+            }
+            
+            const selectedMenuItem = menuData.find(item => item.key === selectedTopMenuKey);
+            // 如果找到了选中的菜单项且有子菜单，则返回子菜单，否则返回空状态
+            if (selectedMenuItem && selectedMenuItem.children && selectedMenuItem.children.length > 0) {
+              return selectedMenuItem.children;
+            }
+            
+            return [{
+              path: '/empty',
+              name: '暂无内容',
+              icon: <HomeOutlined />,
+              key: '/empty',
+              type: 'menu',
+              locale: false,
+              disabled: true,
+            }];
+          }
+          // 非混合布局下返回完整菜单
+          return menuData;
+        }}
+        // 配置分割菜单，在混合布局下必须启用
         splitMenus={themeConfig.layout === 'mix'}
         // 配置面包屑
         breadcrumbRender={breadcrumbRender}
@@ -751,15 +855,21 @@ const App: React.FC = () => {
         rightContentRender={rightContentRender}
         // 配置菜单栏渲染 - 这是顶部和混合布局下显示顶部菜单的关键
         menuBarRender={menuBarRender}
+        // 自定义菜单项渲染
+        menuItemRender={menuItemRender}
+        // 设置选中的菜单项
+        selectedKeys={selectedTopMenuKey ? [selectedTopMenuKey] : []}
         // 配置主题和布局
         layout={themeConfig.layout}
         navTheme={themeConfig.navTheme}
         primaryColor={themeConfig.primaryColor}
         contentWidth={themeConfig.contentWidth}
-        fixedHeader={themeConfig.fixedHeader}
-        fixSiderbar={themeConfig.fixSiderbar}
-        autoHideHeader={themeConfig.autoHideHeader}
+        fixedHeader={true} // 混合布局必须固定头部
+        fixSiderbar={themeConfig.layout === 'mix'} // 混合布局必须固定侧边栏
+        autoHideHeader={false} // 混合布局不自动隐藏头部
         colorWeak={themeConfig.colorWeak}
+        // 在混合布局下，启用顶部菜单的固定
+        fixedMenuBar={themeConfig.layout === 'mix'}
         // 侧边栏配置
         siderWidth={220}
         collapsedWidth={56}

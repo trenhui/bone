@@ -8,10 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.util.regex.Pattern;
-
-// 导入已定义的模型类
-import com.bone.engine.extension.metadata.example.PaymentRequest;
+import com.bone.example.extension.payment.PaymentTestRequest;
 import com.bone.example.extension.payment.PaymentResult;
 import com.bone.example.extension.payment.ValidationResult;
 import com.bone.example.extension.payment.PaymentCalculationResult;
@@ -49,7 +46,7 @@ public class EcommercePaymentExtension implements PaymentExtPoint {
      * @return 验证结果
      */
     @Override
-    public ValidationResult prePayValidate(final BizContext<PaymentRequest> context) {
+    public ValidationResult prePayValidate(final BizContext<PaymentTestRequest> context) {
         logger.info("开始执行电商支付前置验证");
         ValidationResult result = new ValidationResult();
         
@@ -62,7 +59,7 @@ public class EcommercePaymentExtension implements PaymentExtPoint {
             return result;
         }
         
-        PaymentRequest request = context.getData();
+        PaymentTestRequest request = context.getData();
         
         // 验证订单ID是否为电商平台
         String orderId = request.getOrderId();
@@ -98,7 +95,7 @@ public class EcommercePaymentExtension implements PaymentExtPoint {
      * @return 支付计算结果对象，包含计算后的金额和明细
      */
     @Override
-    public PaymentCalculationResult calculatePayment(final BizContext<PaymentRequest> context) {
+    public PaymentCalculationResult calculatePayment(final BizContext<PaymentTestRequest> context) {
         logger.info("开始计算电商支付金额");
         
         // 参数校验
@@ -107,7 +104,7 @@ public class EcommercePaymentExtension implements PaymentExtPoint {
             throw new IllegalArgumentException("支付上下文或请求数据不能为空");
         }
         
-        PaymentRequest request = context.getData();
+        PaymentTestRequest request = context.getData();
         
         // 获取原始金额
         BigDecimal originalAmount = request.getAmount();
@@ -161,18 +158,6 @@ public class EcommercePaymentExtension implements PaymentExtPoint {
     }
 
     /**
-     * 获取扩展点优先级
-     * <p>
-     * 设置中等优先级(20)，确保在特定领域扩展之后但在默认实现之前执行
-     * 
-     * @return 优先级值：20
-     */
-    @Override
-    public int getPriority() {
-        return 20; // 中等优先级
-    }
-    
-    /**
      * 判断扩展点是否适用于当前请求
      * <p>
      * 根据商户ID判断是否为电商平台请求
@@ -183,12 +168,12 @@ public class EcommercePaymentExtension implements PaymentExtPoint {
     @Override
     public boolean isApplicable(final BizContext<?> context) {
         // 检查上下文是否有效
-        if (context == null || !(context.getData() instanceof PaymentRequest)) {
+        if (context == null || !(context.getData() instanceof PaymentTestRequest)) {
             return false;
         }
         
         // 检查订单ID是否以电商平台前缀开头
-        PaymentRequest request = (PaymentRequest) context.getData();
+        PaymentTestRequest request = (PaymentTestRequest) context.getData();
         boolean isApplicable = request.getOrderId() != null && 
                request.getOrderId().startsWith(ECOMMERCE_PREFIX);
         
@@ -196,5 +181,11 @@ public class EcommercePaymentExtension implements PaymentExtPoint {
                 request.getOrderId(), isApplicable);
         
         return isApplicable;
+    }
+    
+    @Override
+    public int getPriority() {
+        // 中等优先级
+        return 20;
     }
 }
