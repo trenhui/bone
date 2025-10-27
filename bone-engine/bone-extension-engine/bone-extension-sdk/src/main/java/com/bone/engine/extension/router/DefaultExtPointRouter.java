@@ -4,6 +4,7 @@ import com.bone.engine.extension.ExtPoint;
 import com.bone.engine.extension.Extension;
 import com.bone.engine.extension.config.ExtensionProperties;
 import com.bone.engine.extension.context.BizContext;
+import com.bone.engine.extension.register.ExtensionRegistry;
 import com.bone.engine.extension.utils.ExtPointUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,26 +80,43 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     // 表达式解析器
     private final ExpressionParser expressionParser = new SpelExpressionParser();
     
-    // 扩展点实现映射（扩展点接口 -> 实现列表）
-    private final Map<Class<?>, List<Object>> extPointImplementations = new ConcurrentHashMap<>();
-    
-    // 默认实现映射
-    private final Map<Class<?>, Object> defaultImplementations = new ConcurrentHashMap<>();
+    // 扩展点注册服务
+    private final ExtensionRegistry extensionRegistry;
     
     /**
      * 构造函数，支持自动注入ApplicationContext和RouteStatsCollector
      */
     @Autowired
-    public DefaultExtPointRouter(ApplicationContext applicationContext, RouteStatsCollector routeStatsCollector) {
+    public DefaultExtPointRouter(ApplicationContext applicationContext, 
+                              RouteStatsCollector routeStatsCollector,
+                              ExtensionRegistry extensionRegistry) {
         Assert.notNull(applicationContext, "ApplicationContext must not be null");
         Assert.notNull(routeStatsCollector, "RouteStatsCollector must not be null");
+        Assert.notNull(extensionRegistry, "ExtensionRegistry must not be null");
         this.applicationContext = applicationContext;
         this.statsCollector = routeStatsCollector;
+        this.extensionRegistry = extensionRegistry;
         
         // 初始化其他组件
         this.cacheManager = new CacheManager();
         this.scoreCalculator = new RouteScoreCalculator();
         this.weightAndGraySelector = new WeightAndGraySelector();
+    }
+    
+    /**
+     * 构造函数，支持自动注入ApplicationContext（向后兼容）
+     */
+    @Autowired
+    @Deprecated
+    public DefaultExtPointRouter(ApplicationContext applicationContext, ExtensionRegistry extensionRegistry) {
+        this.applicationContext = applicationContext;
+        this.extensionRegistry = extensionRegistry;
+        
+        // 初始化各个组件
+        this.cacheManager = new CacheManager();
+        this.scoreCalculator = new RouteScoreCalculator();
+        this.weightAndGraySelector = new WeightAndGraySelector();
+        this.statsCollector = new RouteStatsCollector();
     }
     
     /**
@@ -114,6 +132,8 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
         this.scoreCalculator = new RouteScoreCalculator();
         this.weightAndGraySelector = new WeightAndGraySelector();
         this.statsCollector = new RouteStatsCollector();
+        // 注入extensionRegistry - 这种方式可能会导致循环依赖，建议使用第一种构造函数
+        this.extensionRegistry = null;
     }
     
     /**
@@ -123,12 +143,14 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
                               CacheManager cacheManager,
                               RouteScoreCalculator scoreCalculator,
                               WeightAndGraySelector weightAndGraySelector,
-                              RouteStatsCollector statsCollector) {
+                              RouteStatsCollector statsCollector,
+                              ExtensionRegistry extensionRegistry) {
         this.applicationContext = applicationContext;
         this.cacheManager = cacheManager;
         this.scoreCalculator = scoreCalculator;
         this.weightAndGraySelector = weightAndGraySelector;
         this.statsCollector = statsCollector;
+        this.extensionRegistry = extensionRegistry;
     }
     
     // 扩展点配置属性
@@ -867,8 +889,11 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
      * 获取或创建路由规则缓存
      */
     private List<Object> getOrCreateRouteRuleCache(Class<?> extPointClass) {
+        if (extensionRegistry == null) {
+            return Collections.emptyList();
+        }
         return cacheManager.getOrCreateRouteRuleCache(extPointClass, 
-                k -> extPointImplementations.getOrDefault(k, Collections.emptyList()));
+                k -> extensionRegistry.getAllImplementations(extPointClass));
     }
     
     /**
@@ -883,10 +908,10 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     @Override
     @SuppressWarnings("unchecked")
     public <T> List<T> getAllImplementations(Class<T> extPointClass) {
-        List<Object> implementations = extPointImplementations.get(extPointClass);
-        return CollectionUtils.isEmpty(implementations) ? 
-               Collections.emptyList() : 
-               (List<T>) new ArrayList<>(implementations);
+        if (extensionRegistry == null) {
+            return Collections.emptyList();
+        }
+        return extensionRegistry.getAllImplementations(extPointClass);
     }
     
     @Override
@@ -916,30 +941,19 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
         Assert.notNull(extPointClass, "ExtPoint class must not be null");
         Assert.notNull(implementation, "Implementation must not be null");
         
-        // 验证实现类是否实现了扩展点接口
-        Assert.isAssignable(extPointClass, implementation.getClass(), 
-                           "Implementation must implement the extPoint interface");
-        
-        // 获取Extension注解
-        Extension extension = implementation.getClass().getAnnotation(Extension.class);
-        if (extension == null) {
-            log.warn("Implementation {} does not have @Extension annotation", 
-                     implementation.getClass().getName());
-        }
-        
-        // 添加到实现列表
-        extPointImplementations.computeIfAbsent(extPointClass, k -> new ArrayList<>())
-                               .add(implementation);
-        
-        // 检查是否为默认实现
-        if (extension != null && extension.isDefault()) {
-            // 如果已有默认实现，记录日志
-            Object existingDefault = defaultImplementations.put(extPointClass, implementation);
-            if (existingDefault != null) {
-                log.warn("Replaced default implementation: {} with {} for extPoint: {}",
-                         existingDefault.getClass().getSimpleName(),
-                         implementation.getClass().getSimpleName(),
-                         extPointClass.getSimpleName());
+        // 使用统一的注册服务
+        if (extensionRegistry != null) {
+            extensionRegistry.registerImplementation(extPointClass, implementation);
+        } else {
+            // 验证实现类是否实现了扩展点接口
+            Assert.isAssignable(extPointClass, implementation.getClass(), 
+                               "Implementation must implement the extPoint interface");
+            
+            // 获取Extension注解
+            Extension extension = implementation.getClass().getAnnotation(Extension.class);
+            if (extension == null) {
+                log.warn("Implementation {} does not have @Extension annotation", 
+                         implementation.getClass().getName());
             }
         }
         
@@ -957,36 +971,26 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
         Assert.notNull(extPointClass, "ExtPoint class must not be null");
         Assert.notNull(implementation, "Implementation must not be null");
         
-        List<Object> implementations = extPointImplementations.get(extPointClass);
-        if (!CollectionUtils.isEmpty(implementations)) {
-            boolean removed = implementations.remove(implementation);
-            if (removed) {
-                // 如果是默认实现，清除默认实现记录
-                Extension extension = implementation.getClass().getAnnotation(Extension.class);
-                if (extension != null && extension.isDefault()) {
-                    Object currentDefault = defaultImplementations.get(extPointClass);
-                    if (currentDefault == implementation) {
-                        defaultImplementations.remove(extPointClass);
-                        log.info("Removed default implementation: {} for extPoint: {}",
-                                 implementation.getClass().getSimpleName(),
-                                 extPointClass.getSimpleName());
-                    }
-                }
-                
-                // 清理缓存
-                clearCache(extPointClass);
-                
-                log.info("Unregistered implementation: {} for extPoint: {}", 
-                         implementation.getClass().getSimpleName(), 
-                         extPointClass.getSimpleName());
-            }
+        // 使用统一的注册服务
+        if (extensionRegistry != null) {
+            extensionRegistry.unregisterImplementation(extPointClass, implementation);
         }
+        
+        // 清理缓存
+        clearCache(extPointClass);
+        
+        log.info("Unregistered implementation: {} for extPoint: {}", 
+                 implementation.getClass().getSimpleName(), 
+                 extPointClass.getSimpleName());
     }
     
     @Override
     @SuppressWarnings("unchecked")
     public <T> T getDefaultImplementation(Class<T> extPointClass) {
-        return (T) defaultImplementations.get(extPointClass);
+        if (extensionRegistry == null) {
+            return null;
+        }
+        return extensionRegistry.getDefaultImplementation(extPointClass);
     }
     
     /**
@@ -997,11 +1001,15 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
         Assert.notNull(extPointClass, "ExtPoint class must not be null");
         Assert.notNull(implementation, "Implementation must not be null");
         
-        // 验证实现类是否实现了扩展点接口
-        Assert.isAssignable(extPointClass, implementation.getClass(), 
-                           "Implementation must implement the extPoint interface");
+        // 使用统一的注册服务
+        if (extensionRegistry != null) {
+            extensionRegistry.setDefaultImplementation(extPointClass, implementation);
+        } else {
+            // 验证实现类是否实现了扩展点接口
+            Assert.isAssignable(extPointClass, implementation.getClass(), 
+                               "Implementation must implement the extPoint interface");
+        }
         
-        defaultImplementations.put(extPointClass, implementation);
         clearCache(extPointClass);
         
         log.info("Set default implementation: {} for extPoint: {}",
@@ -1027,11 +1035,10 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
      * 获取扩展点的实现统计信息
      */
     public Map<String, Integer> getImplementationStats() {
-        Map<String, Integer> stats = new HashMap<>();
-        extPointImplementations.forEach((extPointClass, implementations) -> {
-            stats.put(extPointClass.getSimpleName(), implementations.size());
-        });
-        return stats;
+        if (extensionRegistry == null) {
+            return Collections.emptyMap();
+        }
+        return extensionRegistry.getImplementationStats();
     }
     
     /**
@@ -1077,13 +1084,12 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
             }
             
             // 记录初始化统计
-            int totalExtensions = this.extPointImplementations.values().stream()
-                    .mapToInt(List::size)
-                    .sum();
+            int totalExtensions = extensionRegistry != null ? extensionRegistry.getRegisteredProviderCount() : 0;
+            int extPointCount = extensionRegistry != null ? extensionRegistry.getExtPointCount() : 0;
             
             long costTime = System.currentTimeMillis() - startTime;
             log.info("ExtPoint router initialized in {}ms with {} extension implementations across {} extension points", 
-                    costTime, totalExtensions, this.extPointImplementations.size());
+                    costTime, totalExtensions, extPointCount);
             
             if (failedRegistrations > 0) {
                 log.warn("Failed to register {} extension implementations", failedRegistrations);
@@ -1093,18 +1099,16 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
             if (log.isDebugEnabled()) {
                 StringBuilder sb = new StringBuilder();
                 sb.append("Extension point implementations summary:\n");
-                this.extPointImplementations.forEach((extPointClass, implementations) -> {
-                    sb.append(String.format("  %s: %d implementations\n", 
-                            extPointClass.getSimpleName(), implementations.size()));
-                    implementations.forEach(impl -> {
-                        Extension ext = impl.getClass().getAnnotation(Extension.class);
-                        sb.append(String.format("    - %s (enabled=%s, priority=%d, default=%s)\n",
-                                impl.getClass().getSimpleName(),
-                                ext != null ? ext.enabled() : "unknown",
-                                ext != null ? ext.priority() : 0,
-                                ext != null ? ext.isDefault() : false));
+                if (extensionRegistry != null) {
+                    Map<String, Integer> implementationStats = extensionRegistry.getImplementationStats();
+                    implementationStats.forEach((extPointName, count) -> {
+                        sb.append(String.format("  %s: %d implementations\n", 
+                                extPointName, count));
+                        // 注意：这里无法获取具体的实现详情，因为统一注册服务可能不会暴露这级别的信息
                     });
-                });
+                } else {
+                    sb.append("  No extension registry available, cannot display implementation details\n");
+                }
                 log.debug(sb.toString());
             }
             

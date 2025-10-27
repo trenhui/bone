@@ -6,6 +6,7 @@ import com.bone.engine.extension.config.ExtensionProperties;
 import com.bone.engine.extension.event.ExtensionEventPublisher;
 import com.bone.engine.extension.ExtPointConstants;
 import com.bone.engine.extension.repository.ExtPointRepository;
+import com.bone.engine.extension.util.ExtensionKeyGenerator;
 import com.bone.engine.extension.version.ExtensionVersionManager;
 import com.bone.engine.extension.utils.ExtPointUtils;
 import jakarta.annotation.PostConstruct;
@@ -63,6 +64,9 @@ public class ExtensionRegister implements ApplicationContextAware {
     // 缓存已注册的扩展提供者，避免重复注册
     private final Set<Object> registeredProviders = ConcurrentHashMap.newKeySet();
     
+    // 统一的扩展点注册服务
+    private final ExtensionRegistry extensionRegistry;
+    
     // 用于并行注册的线程池
     private ExecutorService registrationExecutor;
     
@@ -80,6 +84,8 @@ public class ExtensionRegister implements ApplicationContextAware {
     public ExtensionRegister(ExtPointRepository extPointRepository, 
                            ExtensionEventPublisher eventPublisher,
                            ExtensionProperties configProperties) {
+        // 创建统一的扩展点注册服务
+        this.extensionRegistry = new ExtensionRegistry(extPointRepository, eventPublisher);
         Assert.notNull(extPointRepository, "ExtPointRepository must not be null");
         Assert.notNull(eventPublisher, "ExtensionEventPublisher must not be null");
         Assert.notNull(configProperties, "ExtensionProperties must not be null");
@@ -409,21 +415,11 @@ public class ExtensionRegister implements ApplicationContextAware {
             // 等待所有注册完成
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
         } else {
-            // 串行注册
-            extensionBeans.forEach((beanName, extProvider) -> {
-                try {
-                    registerExtension(extProvider);
-                    log.info("Successfully registered extension provider: {} ({})", 
-                            beanName, extProvider.getClass().getSimpleName());
-                } catch (Exception e) {
-                    log.error("Failed to register extension provider: {} ({})", 
-                            beanName, extProvider.getClass().getSimpleName(), e);
-                    Map<String, Object> failure = new HashMap<>();
-                    failure.put("className", extProvider.getClass().getName());
-                    failure.put("error", e.getMessage());
-                    registrationFailures.add(failure);
-                }
-            });
+                    // 串行注册
+            ExtensionRegistry.RegistrationResult result = extensionRegistry.registerAll(extensionBeans.values());
+            registrationFailures.addAll(result.getFailures());
+            log.info("Batch registration result: total={}, success={}, failed={}", 
+                    result.getTotal(), result.getSuccess(), result.getFailed());
         }
         
         final long scanEndTime = System.currentTimeMillis();
@@ -464,7 +460,12 @@ public class ExtensionRegister implements ApplicationContextAware {
                             if (!extPointInterfaces.isEmpty()) {
                                 // 获取Bean实例并注册
                                 Object provider = applicationContext.getBean(clazz);
-                                registerExtension(provider);
+                                if (!extensionRegistry.registerExtension(provider)) {
+                                    Map<String, Object> failure = new HashMap<>();
+                                    failure.put("className", className);
+                                    failure.put("error", "Registration rejected");
+                                    registrationFailures.add(failure);
+                                }
                             }
                     } catch (Exception e) {
                         log.warn("Failed to register extension class: {}", className, e);
@@ -492,7 +493,16 @@ public class ExtensionRegister implements ApplicationContextAware {
      * @return 唯一的注册键
      */
     private String generateRegistrationKey(String interfaceName, Object provider) {
-        return interfaceName + ":" + provider.getClass().getCanonicalName() + ":" + System.identityHashCode(provider);
+        return ExtensionKeyGenerator.generateExtensionKey(interfaceName, provider);
+    }
+    
+    /**
+     * 获取扩展点注册服务
+     * 
+     * @return 扩展点注册服务实例
+     */
+    public ExtensionRegistry getExtensionRegistry() {
+        return extensionRegistry;
     }
     
     /**
@@ -501,7 +511,7 @@ public class ExtensionRegister implements ApplicationContextAware {
      * @return 已注册的扩展提供者数量
      */
     public int getRegisteredProviderCount() {
-        return registeredProviders.size();
+        return extensionRegistry.getRegisteredProviderCount();
     }
     
     /**
@@ -519,14 +529,12 @@ public class ExtensionRegister implements ApplicationContextAware {
      * @param provider 扩展提供者
      */
     private void registerExtensionInternal(Class<?> interfaceClass, Object provider) {
-        if (!registeredProviders.add(provider)) {
-            return; // 已注册，避免重复
-        }
+        // 使用统一的注册服务
+        @SuppressWarnings("unchecked")
+        Class<Object> typedInterface = (Class<Object>) interfaceClass;
+        extensionRegistry.registerImplementation(typedInterface, provider);
         
-        String registrationKey = generateRegistrationKey(interfaceClass.getCanonicalName(), provider);
-        extPointRepository.put(registrationKey, provider);
-        
-        // 处理版本信息
+        // 处理版本信息（保留特定于版本管理的逻辑）
         try {
             Extension extAnnotation = AnnotationUtils.findAnnotation(provider.getClass(), Extension.class);
             if (extAnnotation != null && versionManager != null) {
@@ -559,15 +567,11 @@ public class ExtensionRegister implements ApplicationContextAware {
             throw new IllegalArgumentException("Provider does not implement the interface: " + interfaceClass.getName());
         }
         
-        // 生成唯一的注册键并使用标准的put方法注册扩展
-        String registrationKey = generateRegistrationKey(interfaceClass.getCanonicalName(), provider);
-        
         // 发布注册前事件
         eventPublisher.publishBeforeRegister(this, interfaceClass.getCanonicalName(), provider.getClass().getCanonicalName());
         
-        // 注册到仓库
-        extPointRepository.put(registrationKey, provider);
-        registeredProviders.add(provider);
+        // 使用统一的注册服务
+        extensionRegistry.registerImplementation(interfaceClass, provider);
         
         // 处理版本相关逻辑
         try {

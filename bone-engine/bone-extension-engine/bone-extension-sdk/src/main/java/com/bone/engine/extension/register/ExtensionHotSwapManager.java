@@ -5,6 +5,7 @@ import com.bone.engine.extension.Extension;
 import com.bone.engine.extension.event.DefaultExtensionEventPublisher;
 import com.bone.engine.extension.event.ExtensionEventPublisher;
 import com.bone.engine.extension.repository.ExtPointRepository;
+import com.bone.engine.extension.util.ExtensionKeyGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -377,10 +378,10 @@ public class ExtensionHotSwapManager {
     }
     
     /**
-     * 生成扩展点键，类似于ExtensionRegister中的generateRegistrationKey方法
+     * 生成扩展点键，使用统一的ExtensionKeyGenerator
      */
     private String generateExtensionKey(Class<?> extensionPointClass, Object provider) {
-        return extensionPointClass.getCanonicalName() + ":" + provider.getClass().getCanonicalName() + ":" + System.identityHashCode(provider);
+        return ExtensionKeyGenerator.generateExtensionKey(extensionPointClass, provider);
     }
     
     /**

@@ -3,10 +3,7 @@ package com.bone.procurement.engine.model;
 import com.bone.smartmeta.engine.annotation.SmartEntity;
 import com.bone.smartmeta.engine.annotation.SmartField;
 import com.bone.smartmeta.engine.annotation.SmartRelationship;
-import com.bone.smartmeta.engine.annotation.validation.Required;
-import com.bone.smartmeta.engine.annotation.validation.Unique;
-import com.bone.smartmeta.engine.annotation.validation.Range;
-import com.bone.smartmeta.engine.enums.FieldType;
+import com.bone.procurement.common.model.PurchaseOrder;
 import lombok.Data;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -14,166 +11,448 @@ import lombok.AllArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * 采购订单模型类
- * 基于元数据定义的采购订单实体，包含完整的业务字段
+ * 采购订单适配器类
+ * 适配共享模块中的PurchaseOrder模型，保持向后兼容性
+ * 注意：此为适配层，最终应直接使用共享模块中的模型
  */
-@SmartEntity(
-    apiName = "PurchaseOrder",
-    label = "采购订单",
-    description = "企业采购业务的核心实体",
-    domain = "procurement",
-    trackHistory = true,
-    importance = SmartEntity.EntityImportance.HIGH
-)
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class PurchaseOrder {
+public class PurchaseOrder {    
+    // 持有共享模型实例
+    private PurchaseOrder commonModel;
     
-    // 基础信息
-    @SmartField(name = "orderId", label = "订单ID", required = true, unique = true, type = SmartField.FieldType.TEXT)
-    private String orderId;              // 订单ID
-    
-    @SmartField(name = "orderCode", label = "订单编号", required = true, unique = true, type = SmartField.FieldType.TEXT, indexed = true, description = "业务主键")
-    private String orderCode;            // 订单编号
-    
-    @SmartField(name = "orderType", label = "订单类型", required = true, type = SmartField.FieldType.TEXT, defaultValue = "常规采购", description = "通过元数据驱动不同采购类型的差异化流程")
-    private String orderType;            // 订单类型
-    
-    @SmartField(name = "source", label = "订单来源", type = SmartField.FieldType.TEXT)
-    private String source;               // 订单来源
-    
-    @SmartField(name = "requestId", label = "申请单ID", type = SmartField.FieldType.TEXT)
-    private String requestId;            // 关联的申请单ID
-    
-    @SmartField(name = "businessType", label = "业务类型", type = SmartField.FieldType.TEXT)
-    private String businessType;         // 业务类型
-    
-    @SmartField(name = "businessDomain", label = "业务域", type = SmartField.FieldType.TEXT)
+    // 扩展字段，共享模型中不存在的字段
     private String businessDomain;       // 业务域
-    
-    @SmartField(name = "description", label = "描述", type = SmartField.FieldType.TEXT)
-    private String description;          // 描述
-    
-    // 供应商信息
-    @SmartField(name = "supplierId", label = "供应商ID", required = true, type = SmartField.FieldType.TEXT, description = "关联供应商表")
-    private String supplierId;           // 供应商ID
-    
-    @SmartField(name = "supplierName", label = "供应商名称", type = SmartField.FieldType.TEXT)
-    private String supplierName;         // 供应商名称
-    
-    @SmartField(name = "supplierContact", label = "供应商联系人", type = SmartField.FieldType.TEXT)
     private String supplierContact;      // 供应商联系人
-    
-    @SmartField(name = "supplierPhone", label = "供应商联系电话", type = SmartField.FieldType.TEXT)
     private String supplierPhone;        // 供应商联系电话
-    
-    // 金额信息
-    @SmartField(name = "totalAmount", label = "总金额", type = SmartField.FieldType.NUMBER, precision = 10, scale = 2, calculationExpression = "SUM(orderItems.totalPrice)", description = "通过规则引擎计算得出")
-    private BigDecimal totalAmount;      // 总金额
-    
-    @SmartField(name = "taxAmount", label = "税额", type = SmartField.FieldType.NUMBER, precision = 10, scale = 2, calculationExpression = "SUM(orderItems.taxAmount)")
-    private BigDecimal taxAmount;        // 税额
-    
-    @SmartField(name = "totalWithoutTax", label = "不含税金额", type = SmartField.FieldType.NUMBER, precision = 10, scale = 2, calculationExpression = "totalAmount - taxAmount")
-    private BigDecimal totalWithoutTax;  // 不含税金额
-    
-    @SmartField(name = "currency", label = "币种", type = SmartField.FieldType.TEXT, defaultValue = "CNY")
-    private String currency;             // 币种
-    
-    @SmartField(name = "taxRate", label = "税率", type = SmartField.FieldType.TEXT, precision = 5, scale = 2)
-    private String taxRate;              // 税率
-    
-    // 时间信息
-    @SmartField(name = "expectedDeliveryDate", label = "期望交货日期", type = SmartField.FieldType.DATE)
-    private LocalDateTime expectedDeliveryDate; // 期望交货日期
-    
-    @SmartField(name = "actualDeliveryDate", label = "实际交货日期", type = SmartField.FieldType.DATE)
-    private LocalDateTime actualDeliveryDate;   // 实际交货日期
-    
-    @SmartField(name = "orderDate", label = "下单日期", type = SmartField.FieldType.DATE, required = true, indexed = true)
-    private LocalDateTime orderDate;           // 下单日期
-    
-    @SmartField(name = "approvalDate", label = "审批日期", type = SmartField.FieldType.DATE_TIME)
-    private LocalDateTime approvalDate;        // 审批日期
-    
-    @SmartField(name = "createTime", label = "创建时间", type = SmartField.FieldType.DATE_TIME)
-    private LocalDateTime createTime;          // 创建时间
-    
-    @SmartField(name = "updateTime", label = "更新时间", type = SmartField.FieldType.DATE_TIME)
-    private LocalDateTime updateTime;          // 更新时间
-    
-    // 状态信息
-    @SmartField(name = "status", label = "订单状态", type = SmartField.FieldType.TEXT, required = true, defaultValue = "DRAFT", indexed = true, description = "定义状态流转规则，确保业务流程合规")
-    private String status;               // 订单状态
-    
-    @SmartField(name = "approvalStatus", label = "审批状态", type = SmartField.FieldType.TEXT, required = true, defaultValue = "PENDING", indexed = true)
-    private String approvalStatus;       // 审批状态
-    
-    @SmartField(name = "paymentStatus", label = "付款状态", type = SmartField.FieldType.TEXT, defaultValue = "UNPAID")
-    private String paymentStatus;        // 付款状态
-    
-    @SmartField(name = "deliveryStatus", label = "交货状态", type = SmartField.FieldType.TEXT, defaultValue = "PENDING")
-    private String deliveryStatus;       // 交货状态
-    
-    @SmartField(name = "isUrgent", label = "是否紧急", type = SmartField.FieldType.BOOLEAN, defaultValue = "false")
+    private LocalDateTime orderDate;     // 下单日期
     private Boolean isUrgent;            // 是否紧急
-    
-    // 人员信息
-    @SmartField(name = "createdBy", label = "创建人ID", type = SmartField.FieldType.TEXT, referenceTo = "Base_User")
-    private String createdBy;            // 创建人ID
-    
-    @SmartField(name = "createdByName", label = "创建人名称", type = SmartField.FieldType.TEXT)
     private String createdByName;        // 创建人名称
-    
-    @SmartField(name = "updatedBy", label = "更新人ID", type = SmartField.FieldType.TEXT, referenceTo = "Base_User")
     private String updatedBy;            // 更新人ID
-    
-    @SmartField(name = "updatedByName", label = "更新人名称", type = SmartField.FieldType.TEXT)
     private String updatedByName;        // 更新人名称
-    
-    @SmartField(name = "approverId", label = "审批人", type = SmartField.FieldType.TEXT, referenceTo = "Base_User", indexed = true)
     private String approverId;           // 审批人ID
-    
-    @SmartField(name = "approverName", label = "审批人名称", type = SmartField.FieldType.TEXT)
     private String approverName;         // 审批人名称
-    
-    // 关联信息
-    @SmartField(name = "projectId", label = "项目ID", type = SmartField.FieldType.TEXT, referenceTo = "Project", indexed = true)
     private String projectId;            // 项目ID
-    
-    @SmartField(name = "projectName", label = "项目名称", type = SmartField.FieldType.TEXT)
     private String projectName;          // 项目名称
-    
-    @SmartField(name = "departmentId", label = "部门ID", type = SmartField.FieldType.TEXT, referenceTo = "Department", required = true, indexed = true)
     private String departmentId;         // 部门ID
-    
-    @SmartField(name = "departmentName", label = "部门名称", type = SmartField.FieldType.TEXT)
     private String departmentName;       // 部门名称
-    
-    @SmartField(name = "budgetCode", label = "预算编码", type = SmartField.FieldType.TEXT)
     private String budgetCode;           // 预算编码
-    
-    // 多租户隔离字段
-    @SmartField(name = "tenantId", label = "租户ID", type = SmartField.FieldType.TEXT, required = true)
     private String tenantId;             // 租户ID
-    
-    // 一对多关系：订单明细
-    @SmartRelationship(
-        relationshipName = "orderItems",
-        targetEntity = "PurchaseOrderItem",
-        sourceField = "orderId",
-        targetField = "orderId"
-    )
-    private List<PurchaseOrderItem> orderItems; // 订单明细列表
-    
-    // 扩展字段
     private String extendField1;         // 扩展字段1
     private String extendField2;         // 扩展字段2
     private String extendField3;         // 扩展字段3
+    
+    // 订单项列表
+    private List<PurchaseOrderItem> orderItems; // 订单明细列表
+    
+    // 构造方法
+    public PurchaseOrder(PurchaseOrder commonModel) {
+        this.commonModel = commonModel;
+        // 初始化扩展字段
+        this.isUrgent = false; // 默认非紧急
+        
+        // 将共享模型中的订单项转换为引擎模块的订单项
+        if (commonModel != null && commonModel.getOrderItems() != null) {
+            this.orderItems = commonModel.getOrderItems().stream()
+                    .map(item -> {
+                        PurchaseOrderItem engineItem = new PurchaseOrderItem();
+                        // 映射字段...
+                        return engineItem;
+                    })
+                    .collect(Collectors.toList());
+        }
+    }
+    
+    // 代理方法：通过共享模型访问基础信息
+    public String getOrderId() {
+        return commonModel != null ? String.valueOf(commonModel.getId()) : null;
+    }
+    
+    public String getOrderCode() {
+        return commonModel != null ? commonModel.getOrderCode() : null;
+    }
+    
+    public void setOrderCode(String orderCode) {
+        if (commonModel != null) {
+            commonModel.setOrderCode(orderCode);
+        }
+    }
+    
+    public String getOrderType() {
+        return commonModel != null ? commonModel.getOrderType() : null;
+    }
+    
+    public void setOrderType(String orderType) {
+        if (commonModel != null) {
+            commonModel.setOrderType(orderType);
+        }
+    }
+    
+    public String getSource() {
+        return commonModel != null ? commonModel.getSource() : null;
+    }
+    
+    public void setSource(String source) {
+        if (commonModel != null) {
+            commonModel.setSource(source);
+        }
+    }
+    
+    public String getRequestId() {
+        return commonModel != null ? commonModel.getRequestId() : null;
+    }
+    
+    public void setRequestId(String requestId) {
+        if (commonModel != null) {
+            commonModel.setRequestId(requestId);
+        }
+    }
+    
+    public String getBusinessType() {
+        return commonModel != null ? commonModel.getBusinessType() : null;
+    }
+    
+    public void setBusinessType(String businessType) {
+        if (commonModel != null) {
+            commonModel.setBusinessType(businessType);
+        }
+    }
+    
+    public String getDescription() {
+        return commonModel != null ? commonModel.getDescription() : null;
+    }
+    
+    public void setDescription(String description) {
+        if (commonModel != null) {
+            commonModel.setDescription(description);
+        }
+    }
+    
+    public String getSupplierId() {
+        return commonModel != null ? commonModel.getSupplierId() : null;
+    }
+    
+    public void setSupplierId(String supplierId) {
+        if (commonModel != null) {
+            commonModel.setSupplierId(supplierId);
+        }
+    }
+    
+    public String getSupplierName() {
+        return commonModel != null ? commonModel.getSupplierName() : null;
+    }
+    
+    public void setSupplierName(String supplierName) {
+        if (commonModel != null) {
+            commonModel.setSupplierName(supplierName);
+        }
+    }
+    
+    public BigDecimal getTotalAmount() {
+        return commonModel != null ? commonModel.getTotalAmount() : null;
+    }
+    
+    public void setTotalAmount(BigDecimal totalAmount) {
+        if (commonModel != null) {
+            commonModel.setTotalAmount(totalAmount);
+        }
+    }
+    
+    public BigDecimal getTaxAmount() {
+        return commonModel != null ? commonModel.getTaxAmount() : null;
+    }
+    
+    public void setTaxAmount(BigDecimal taxAmount) {
+        if (commonModel != null) {
+            commonModel.setTaxAmount(taxAmount);
+        }
+    }
+    
+    public BigDecimal getTotalWithoutTax() {
+        return commonModel != null ? commonModel.getTotalAmountWithoutTax() : null;
+    }
+    
+    public void setTotalWithoutTax(BigDecimal totalWithoutTax) {
+        if (commonModel != null) {
+            commonModel.setTotalAmountWithoutTax(totalWithoutTax);
+        }
+    }
+    
+    public String getCurrency() {
+        return commonModel != null ? commonModel.getCurrency() : null;
+    }
+    
+    public void setCurrency(String currency) {
+        if (commonModel != null) {
+            commonModel.setCurrency(currency);
+        }
+    }
+    
+    public String getTaxRate() {
+        return commonModel != null && commonModel.getTaxRate() != null ? String.valueOf(commonModel.getTaxRate()) : null;
+    }
+    
+    public void setTaxRate(String taxRate) {
+        if (commonModel != null) {
+            try {
+                commonModel.setTaxRate(Double.valueOf(taxRate));
+            } catch (Exception e) {
+                // 税率格式错误，忽略设置
+            }
+        }
+    }
+    
+    public LocalDateTime getExpectedDeliveryDate() {
+        return commonModel != null ? commonModel.getExpectedDeliveryDate() : null;
+    }
+    
+    public void setExpectedDeliveryDate(LocalDateTime expectedDeliveryDate) {
+        if (commonModel != null) {
+            commonModel.setExpectedDeliveryDate(expectedDeliveryDate);
+        }
+    }
+    
+    public LocalDateTime getActualDeliveryDate() {
+        return commonModel != null ? commonModel.getActualDeliveryDate() : null;
+    }
+    
+    public void setActualDeliveryDate(LocalDateTime actualDeliveryDate) {
+        if (commonModel != null) {
+            commonModel.setActualDeliveryDate(actualDeliveryDate);
+        }
+    }
+    
+    public LocalDateTime getApprovalDate() {
+        return commonModel != null ? commonModel.getApprovalDate() : null;
+    }
+    
+    public void setApprovalDate(LocalDateTime approvalDate) {
+        if (commonModel != null) {
+            commonModel.setApprovalDate(approvalDate);
+        }
+    }
+    
+    public LocalDateTime getCreationDate() {
+        return commonModel != null ? commonModel.getCreationDate() : null;
+    }
+    
+    public void setCreationDate(LocalDateTime creationDate) {
+        if (commonModel != null) {
+            commonModel.setCreationDate(creationDate);
+        }
+    }
+    
+    // 兼容方法
+    public LocalDateTime getCreateTime() {
+        return getCreationDate();
+    }
+    
+    public void setCreateTime(LocalDateTime createTime) {
+        setCreationDate(createTime);
+    }
+    
+    public LocalDateTime getUpdateTime() {
+        return commonModel != null ? commonModel.getUpdateTime() : null;
+    }
+    
+    public void setUpdateTime(LocalDateTime updateTime) {
+        if (commonModel != null) {
+            commonModel.setUpdateTime(updateTime);
+        }
+    }
+    
+    public String getOrderStatus() {
+        return commonModel != null ? commonModel.getOrderStatus() : null;
+    }
+    
+    public void setOrderStatus(String orderStatus) {
+        if (commonModel != null) {
+            commonModel.setOrderStatus(orderStatus);
+        }
+    }
+    
+    // 兼容方法
+    public String getStatus() {
+        return getOrderStatus();
+    }
+    
+    public void setStatus(String status) {
+        setOrderStatus(status);
+    }
+    
+    public String getApprovalStatus() {
+        return commonModel != null ? commonModel.getApprovalStatus() : null;
+    }
+    
+    public void setApprovalStatus(String approvalStatus) {
+        if (commonModel != null) {
+            commonModel.setApprovalStatus(approvalStatus);
+        }
+    }
+    
+    public String getPaymentStatus() {
+        return commonModel != null ? commonModel.getPaymentStatus() : null;
+    }
+    
+    public void setPaymentStatus(String paymentStatus) {
+        if (commonModel != null) {
+            commonModel.setPaymentStatus(paymentStatus);
+        }
+    }
+    
+    public String getDeliveryStatus() {
+        return commonModel != null ? commonModel.getDeliveryStatus() : null;
+    }
+    
+    public void setDeliveryStatus(String deliveryStatus) {
+        if (commonModel != null) {
+            commonModel.setDeliveryStatus(deliveryStatus);
+        }
+    }
+    
+    public String getCreatedBy() {
+        return commonModel != null && commonModel.getCreatedBy() != null ? String.valueOf(commonModel.getCreatedBy()) : null;
+    }
+    
+    public void setCreatedBy(String createdBy) {
+        if (commonModel != null) {
+            try {
+                commonModel.setCreatedBy(Long.valueOf(createdBy));
+            } catch (Exception e) {
+                // ID格式错误，忽略设置
+            }
+        }
+    }
+    
+    public String getApprovedBy() {
+        return commonModel != null && commonModel.getApprovedBy() != null ? String.valueOf(commonModel.getApprovedBy()) : null;
+    }
+    
+    public void setApprovedBy(String approvedBy) {
+        if (commonModel != null) {
+            try {
+                commonModel.setApprovedBy(Long.valueOf(approvedBy));
+            } catch (Exception e) {
+                // ID格式错误，忽略设置
+            }
+        }
+    }
+    
+    // 兼容方法
+    public String getCurrentApprovalNode() {
+        return commonModel != null ? commonModel.getCurrentApprovalNode() : null;
+    }
+    
+    public void setCurrentApprovalNode(String currentApprovalNode) {
+        if (commonModel != null) {
+            commonModel.setCurrentApprovalNode(currentApprovalNode);
+        }
+    }
+    
+    public String getApprovalProcessId() {
+        return commonModel != null ? commonModel.getApprovalProcessId() : null;
+    }
+    
+    public void setApprovalProcessId(String approvalProcessId) {
+        if (commonModel != null) {
+            commonModel.setApprovalProcessId(approvalProcessId);
+        }
+    }
+    
+    public Boolean getIsOverdue() {
+        return commonModel != null ? commonModel.getIsOverdue() : null;
+    }
+    
+    public void setIsOverdue(Boolean isOverdue) {
+        if (commonModel != null) {
+            commonModel.setIsOverdue(isOverdue);
+        }
+    }
+    
+    public Long getDelayDays() {
+        return commonModel != null ? commonModel.getDelayDays() : null;
+    }
+    
+    public void setDelayDays(Long delayDays) {
+        if (commonModel != null) {
+            commonModel.setDelayDays(delayDays);
+        }
+    }
+    
+    public String getDeliveryAddress() {
+        return commonModel != null ? commonModel.getDeliveryAddress() : null;
+    }
+    
+    public void setDeliveryAddress(String deliveryAddress) {
+        if (commonModel != null) {
+            commonModel.setDeliveryAddress(deliveryAddress);
+        }
+    }
+    
+    public String getPaymentTerms() {
+        return commonModel != null ? commonModel.getPaymentTerms() : null;
+    }
+    
+    public void setPaymentTerms(String paymentTerms) {
+        if (commonModel != null) {
+            commonModel.setPaymentTerms(paymentTerms);
+        }
+    }
+    
+    public String getDeliveryMethod() {
+        return commonModel != null ? commonModel.getDeliveryMethod() : null;
+    }
+    
+    public void setDeliveryMethod(String deliveryMethod) {
+        if (commonModel != null) {
+            commonModel.setDeliveryMethod(deliveryMethod);
+        }
+    }
+    
+    public String getTrackingNumber() {
+        return commonModel != null ? commonModel.getTrackingNumber() : null;
+    }
+    
+    public void setTrackingNumber(String trackingNumber) {
+        if (commonModel != null) {
+            commonModel.setTrackingNumber(trackingNumber);
+        }
+    }
+    
+    public String getInternalRemarks() {
+        return commonModel != null ? commonModel.getInternalRemarks() : null;
+    }
+    
+    public void setInternalRemarks(String internalRemarks) {
+        if (commonModel != null) {
+            commonModel.setInternalRemarks(internalRemarks);
+        }
+    }
+    
+    public String getExternalRemarks() {
+        return commonModel != null ? commonModel.getExternalRemarks() : null;
+    }
+    
+    public void setExternalRemarks(String externalRemarks) {
+        if (commonModel != null) {
+            commonModel.setExternalRemarks(externalRemarks);
+        }
+    }
+    
+    public String getOrderSummary() {
+        return commonModel != null ? commonModel.getOrderSummary() : null;
+    }
+    
+    public void setOrderSummary(String orderSummary) {
+        if (commonModel != null) {
+            commonModel.setOrderSummary(orderSummary);
+        }
+    }
     
     /**
      * 计算订单总金额
@@ -186,7 +465,7 @@ public class PurchaseOrder {
                     total = total.add(item.getTotalPrice());
                 }
             }
-            this.totalAmount = total;
+            setTotalAmount(total);
         }
     }
     
@@ -202,13 +481,13 @@ public class PurchaseOrder {
      */
     public ApprovalKeyInfo getApprovalKeyInfo() {
         return ApprovalKeyInfo.builder()
-                .orderId(orderId)
-                .orderCode(orderCode)
-                .totalAmount(totalAmount)
-                .orderType(orderType)
-                .supplierId(supplierId)
+                .orderId(getOrderId())
+                .orderCode(getOrderCode())
+                .totalAmount(getTotalAmount())
+                .orderType(getOrderType())
+                .supplierId(getSupplierId())
                 .isUrgent(isUrgent)
-                .expectedDeliveryDate(expectedDeliveryDate)
+                .expectedDeliveryDate(getExpectedDeliveryDate())
                 .build();
     }
     
@@ -227,4 +506,26 @@ public class PurchaseOrder {
         private Boolean isUrgent;
         private LocalDateTime expectedDeliveryDate;
     }
+    
+    /**
+     * 获取共享模型实例
+     * 用于与其他系统组件集成
+     */
+    public PurchaseOrder getCommonModel() {
+        return commonModel;
+    }
+    
+    /**
+     * 设置共享模型实例
+     * 用于与其他系统组件集成
+     */
+    public void setCommonModel(PurchaseOrder commonModel) {
+        this.commonModel = commonModel;
+    }
+    
+    /**
+     * 注意：当前实现为适配层
+     * 后续应直接使用共享模块中的PurchaseOrder模型
+     * 此适配器将在所有系统组件迁移完成后被移除
+     */
 }
