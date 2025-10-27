@@ -1,13 +1,12 @@
 package com.bone.metadata.sdk.support.dataSource;
 
+import com.bone.metadata.sdk.support.util.RepositoryClassUtils;
 import org.aopalliance.intercept.MethodInterceptor;
 import org.aopalliance.intercept.MethodInvocation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.StringUtils;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Objects;
 
@@ -36,8 +35,8 @@ public class DataSourceAnnotationInterceptor implements MethodInterceptor {
         Class<?> targetClass = Objects.requireNonNull(invocation.getThis()).getClass();
         
         // 解析方法和类上的注解
-        DataSourceSwitch methodAnnotation = findAnnotation(method, DataSourceSwitch.class);
-        DataSourceSwitch classAnnotation = findAnnotation(targetClass, DataSourceSwitch.class);
+        DataSourceSwitch methodAnnotation = RepositoryClassUtils.findAnnotation(method, DataSourceSwitch.class);
+        DataSourceSwitch classAnnotation = RepositoryClassUtils.findAnnotation(targetClass, DataSourceSwitch.class);
         
         // 确定目标数据源名称
         String targetDataSourceName = resolveDataSourceName(methodAnnotation, classAnnotation);
@@ -100,26 +99,7 @@ public class DataSourceAnnotationInterceptor implements MethodInterceptor {
         return null;
     }
     
-    /**
-     * 从方法或类中检索注解实例，考虑继承关系
-     * <p>
-     * 此方法使用Spring的{@link AnnotationUtils}查找注解，它能正确处理
-     * 注解继承和元注解。
-     * </p>
-     * 
-     * @param <A> 要检索的注解类型
-     * @param element 要检查注解的方法或类
-     * @param annotationType 要检索的注解类
-     * @return 注解实例（如找到），否则返回null
-     */
-    private <A extends Annotation> A findAnnotation(Object element, Class<A> annotationType) {
-        if (element instanceof Method) {
-            return AnnotationUtils.findAnnotation((Method) element, annotationType);
-        } else if (element instanceof Class) {
-            return AnnotationUtils.findAnnotation((Class<?>) element, annotationType);
-        }
-        return null;
-    }
+
     
     /**
      * 方法调用后清理数据源上下文

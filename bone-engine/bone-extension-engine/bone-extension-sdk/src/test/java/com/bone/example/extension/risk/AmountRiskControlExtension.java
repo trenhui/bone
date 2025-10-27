@@ -3,6 +3,9 @@ package com.bone.example.extension.risk;
 import com.bone.engine.extension.Extension;
 import com.bone.engine.extension.annotation.ExtensionDoc;
 import com.bone.engine.extension.context.BizContext;
+import com.bone.example.extension.model.RiskAssessmentResult;
+import com.bone.example.extension.model.TransactionRequest;
+import com.bone.example.extension.point.RiskControlExtPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -11,9 +14,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Collections;
 import java.util.List;
-
-// 导入已定义的风险评估结果类
-import com.bone.example.extension.risk.RiskAssessmentResult;
 
 // 移除冲突的内部TransactionRequest类定义
 
@@ -28,6 +28,9 @@ import com.bone.example.extension.risk.RiskAssessmentResult;
     description = "根据交易金额自动评估风险等级并提供相应的风险控制策略",
     tenantCode = "*",
     bizCode = "AMOUNT_RISK",
+    condition = "#root.getBizContext().getData() != null && " +
+               "#root.getBizContext().getData().getAmount() != null && " +
+               "#root.getBizContext().getData().getAmount().compareTo(java.math.BigDecimal.ZERO) > 0",
     priority = 100,
     enabled = true,
     version = "1.0.0"

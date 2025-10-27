@@ -45,13 +45,22 @@ public class PurchaseOrder {
     @SmartField(name = "taxRate", label = "税率", type = FieldType.PERCENT, defaultValue = "0.13")
     private Double taxRate = 0.13;
     
-    @SmartField(name = "totalAmountWithoutTax", label = "不含税总金额", type = FieldType.CURRENCY)
+    @SmartField(name = "totalAmountWithoutTax", label = "不含税总金额", type = FieldType.CURRENCY,
+               calculationExpression = "${orderItems != null ? orderItems.stream().filter(item -> item.getAmountWithoutTax() != null).mapToDouble(item -> item.getAmountWithoutTax().doubleValue()).sum() : 0}",
+               calculationDependencies = {"orderItems"},
+               virtual = true)
     private BigDecimal totalAmountWithoutTax;
     
-    @SmartField(name = "taxAmount", label = "税额", type = FieldType.CURRENCY)
+    @SmartField(name = "taxAmount", label = "总税额", type = FieldType.CURRENCY,
+               calculationExpression = "${orderItems != null ? orderItems.stream().filter(item -> item.getTaxAmount() != null).mapToDouble(item -> item.getTaxAmount().doubleValue()).sum() : 0}",
+               calculationDependencies = {"orderItems"},
+               virtual = true)
     private BigDecimal taxAmount;
     
-    @SmartField(name = "totalAmountWithTax", label = "含税总金额", type = FieldType.CURRENCY)
+    @SmartField(name = "totalAmountWithTax", label = "含税总金额", type = FieldType.CURRENCY,
+               calculationExpression = "${orderItems != null ? orderItems.stream().filter(item -> item.getTotalAmount() != null).mapToDouble(item -> item.getTotalAmount().doubleValue()).sum() : 0}",
+               calculationDependencies = {"orderItems"},
+               virtual = true)
     private BigDecimal totalAmountWithTax;
     
     @SmartField(name = "items", label = "订单项列表", type = FieldType.TEXT)
@@ -78,10 +87,14 @@ public class PurchaseOrder {
     @SmartField(name = "approvalProcessId", label = "审批流程ID", type = FieldType.TEXT, length = 50)
     private String approvalProcessId;
     
-    @SmartField(name = "isOverdue", label = "是否逾期", type = FieldType.BOOLEAN)
+    @SmartField(name = "isOverdue", label = "是否逾期", type = FieldType.BOOLEAN, 
+                calculationExpression = "${expectedDeliveryDate} != null && ${expectedDeliveryDate}.isBefore(java.time.LocalDateTime.now())",
+                calculationDependencies = {"expectedDeliveryDate"}, virtual = true)
     private Boolean isOverdue;
     
-    @SmartField(name = "delayDays", label = "延迟天数", type = FieldType.NUMBER)
+    @SmartField(name = "delayDays", label = "延迟天数", type = FieldType.NUMBER, 
+                calculationExpression = "${expectedDeliveryDate} != null && ${expectedDeliveryDate}.isBefore(java.time.LocalDateTime.now()) ? java.time.temporal.ChronoUnit.DAYS.between(${expectedDeliveryDate}, java.time.LocalDateTime.now()) : 0",
+                calculationDependencies = {"expectedDeliveryDate", "isOverdue"}, virtual = true)
     private Long delayDays;
     
     @SmartField(name = "deliveryAddress", label = "交货地址", type = FieldType.TEXT, length = 500)
@@ -102,6 +115,8 @@ public class PurchaseOrder {
     @SmartField(name = "externalRemarks", label = "外部备注", type = FieldType.TEXT, length = 1000)
     private String externalRemarks;
     
-    @SmartField(name = "orderSummary", label = "订单摘要", type = FieldType.TEXT)
+    @SmartField(name = "orderSummary", label = "订单摘要", type = FieldType.TEXT, 
+                calculationExpression = "def summary = new StringBuilder(); if(${orderCode} != null) summary.append('订单编号: ' + ${orderCode}); if(${orderType} != null) { if(summary.length() > 0) summary.append(', '); summary.append('类型: ' + ${orderType}); } if(${orderStatus} != null) { if(summary.length() > 0) summary.append(', '); summary.append('状态: ' + ${orderStatus}); } if(${orderItems} != null) { if(summary.length() > 0) summary.append(', '); summary.append('商品数量: ' + ${orderItems}.size()); } if(${totalAmountWithTax} != null) { if(summary.length() > 0) summary.append(', '); summary.append('总价: ' + ${totalAmountWithTax}); } return summary.toString()",
+                calculationDependencies = {"orderCode", "orderType", "orderStatus", "orderItems", "totalAmountWithTax"}, virtual = true)
     private String orderSummary;
 }

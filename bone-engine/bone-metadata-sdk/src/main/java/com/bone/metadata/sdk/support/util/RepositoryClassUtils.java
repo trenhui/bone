@@ -3,10 +3,15 @@ package com.bone.metadata.sdk.support.util;
 import com.bone.metadata.sdk.Repository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.annotation.AnnotationUtils;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.Map;
 
 /**
@@ -95,5 +100,85 @@ public class RepositoryClassUtils {
             }
         }
         return false;
+    }
+    
+    /**
+     * 检查对象是否有指定名称的方法
+     */
+    public static boolean hasMethod(Object obj, String methodName) {
+        try {
+            obj.getClass().getMethod(methodName);
+            return true;
+        } catch (NoSuchMethodException e) {
+            return false;
+        }
+    }
+    
+    /**
+     * 从方法或类中查找指定类型的注解
+     * @param <A> 要检索的注解类型
+     * @param element 要检查注解的方法或类
+     * @param annotationType 要检索的注解类
+     * @return 注解实例（如找到），否则返回null
+     */
+    public static <A extends Annotation> A findAnnotation(Object element, Class<A> annotationType) {
+        if (element instanceof Method) {
+            return AnnotationUtils.findAnnotation((Method) element, annotationType);
+        } else if (element instanceof Class) {
+            return AnnotationUtils.findAnnotation((Class<?>) element, annotationType);
+        }
+        return null;
+    }
+    
+    /**
+     * 执行带有重试机制的操作，处理并发冲突情况
+     * @param action 要执行的操作
+     * @param maxAttempts 最大尝试次数
+     * @param exceptionType 要捕获并重试的异常类型
+     * @param errorMessage 失败时的错误消息
+     * @param <E> 异常类型
+     * @throws E 当达到最大重试次数时抛出指定类型的异常
+     */
+    public static <E extends Exception> void runWithRetry(Runnable action, int maxAttempts, 
+                                                         Class<E> exceptionType, String errorMessage) throws E {
+        int attempts = 0;
+        Random rnd = new Random();
+        while (true) {
+            try {
+                action.run();
+                return;
+            } catch (Exception ex) {
+                if (!exceptionType.isInstance(ex)) {
+                    throw ex;
+                }
+                
+                if (++attempts > maxAttempts) {
+                    E exception;
+                    try {
+                        exception = exceptionType.getDeclaredConstructor(String.class, Throwable.class)
+                                .newInstance(errorMessage + "，次数：" + maxAttempts, ex);
+                    } catch (ReflectiveOperationException e) {
+                        throw (E) new RuntimeException(errorMessage, ex);
+                    }
+                    throw exception;
+                }
+                
+                // 指数退避 + 随机抖动
+                long backoff = (50L << Math.min(attempts, 10)) + rnd.nextInt(50);
+                try {
+                    TimeUnit.MILLISECONDS.sleep(backoff);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    E exception;
+                    try {
+                        exception = exceptionType.getDeclaredConstructor(String.class, Throwable.class)
+                                .newInstance("操作重试被中断", ie);
+                    } catch (ReflectiveOperationException e) {
+                        throw (E) new RuntimeException("操作重试被中断", ie);
+                    }
+                    throw exception;
+                }
+            }
+        }
     }
 }

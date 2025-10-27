@@ -315,7 +315,7 @@ public class RepositoryFactoryBean<T, E, ID> implements FactoryBean<T>, Initiali
             if (Optional.class.equals(returnType)) {
                 return executeOptionalQuery(query);
             }
-            if (isSimpleType(returnType)) {
+            if (RepositoryClassUtils.isSimpleType(returnType)) {
                 return sqlExecutor.queryForObject(query, returnType);
             }
             return executeSingleResultQuery(query, returnType);
@@ -323,7 +323,7 @@ public class RepositoryFactoryBean<T, E, ID> implements FactoryBean<T>, Initiali
 
         private Object executeListQuery(CompiledQuery query) {
             Class<?> elementType = listElementTypeCache.get(method);
-            return isSimpleType(elementType)
+            return RepositoryClassUtils.isSimpleType(elementType)
                     ? sqlExecutor.queryForList(query.getSql(), query.getParameters(), elementType)
                     : sqlExecutor.executeQuery(query, elementType);
         }
@@ -392,11 +392,6 @@ public class RepositoryFactoryBean<T, E, ID> implements FactoryBean<T>, Initiali
         return discoveredNames != null && discoveredNames.length > index && discoveredNames[index] != null
                 ? discoveredNames[index]
                 : "arg" + index;
-    }
-
-    // 使用公共工具类替代重复方法
-    private static boolean isSimpleType(Class<?> type) {
-        return RepositoryClassUtils.isSimpleType(type);
     }
 
     private MethodHandle toHandle(Method method, Object target) throws NoSuchMethodException, IllegalAccessException {

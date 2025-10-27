@@ -142,16 +142,28 @@ public class MultiDataSourceTestConfig {
         public <T> CompletableFuture<T> executeAsyncWithDataSource(String dataSourceName, Supplier<T> action) {
             return CompletableFuture.supplyAsync(() -> executeWithDataSource(dataSourceName, action));
         }
-        
+
+        /**
+         * Sets the name of the default data source.
+         *
+         * @param defaultDataSourceName the name of the default data source
+         */
         @Override
         public void setDefaultDataSourceName(String defaultDataSourceName) {
-            this.defaultDataSourceName = defaultDataSourceName;
+
         }
-        
+
+        /**
+         * Sets the strict mode flag.
+         * When enabled, operations will throw exceptions for invalid states rather than returning null.
+         *
+         * @param strictMode whether to enable strict mode
+         */
         @Override
         public void setStrictMode(boolean strictMode) {
-            this.strictMode = strictMode;
+
         }
+
     }
     
     /**

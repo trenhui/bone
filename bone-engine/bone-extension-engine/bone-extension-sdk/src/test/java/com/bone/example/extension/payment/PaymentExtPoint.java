@@ -3,6 +3,7 @@ package com.bone.example.extension.payment;
 import com.bone.engine.extension.ExtPoint;
 import com.bone.engine.extension.annotation.ExtPointDoc;
 import com.bone.engine.extension.context.BizContext;
+import com.bone.example.extension.result.ValidationResult;
 
 /**
  * 支付扩展点接口

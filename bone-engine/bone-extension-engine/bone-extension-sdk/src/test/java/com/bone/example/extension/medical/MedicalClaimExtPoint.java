@@ -1,5 +1,7 @@
 package com.bone.example.extension.medical;
 
+import com.bone.engine.extension.ExtPoint;
+import com.bone.engine.extension.annotation.ExtPointDoc;
 import com.bone.engine.extension.context.BizContext;
 import com.bone.example.extension.result.ValidationResult;
 
@@ -17,6 +19,19 @@ import com.bone.example.extension.result.ValidationResult;
  *     <li>生成理赔结果</li>
  * </ul>
  */
+@ExtPoint(
+    name = "医疗保险理赔扩展点",
+    description = "医疗保险理赔处理标准扩展点，支持不同类型理赔处理的统一接口"
+)
+@ExtPointDoc(
+    title = "医疗保险理赔扩展点接口",
+    domain = "医疗系统",
+    category = "理赔处理",
+    description = "该扩展点定义了医疗保险理赔处理的核心流程，包括理赔类型支持声明、理赔请求验证和理赔处理三个关键环节，确保各扩展实现遵循一致的行为模式。",
+    usage = "实现该接口并通过@Extension注解注册，系统会根据理赔类型自动选择合适的扩展实现。",
+    bestPractices = "1. 每个实现类只支持一种理赔类型，保持职责单一\n2. 完整实现验证逻辑，确保数据完整性\n3. 妥善处理异常情况，提供明确的错误信息\n4. 记录关键操作日志，便于问题排查\n5. 考虑性能优化，尤其是在高并发场景下",
+    notes = "理赔处理涉及财务敏感信息，各实现类需确保安全性和数据一致性"
+)
 public interface MedicalClaimExtPoint {
     /**
      * 获取支持的理赔类型

@@ -84,7 +84,7 @@ public final class SqlSecurityGuard {
         }
 
         // 如果是简单类型，跳过字段校验
-        if (isSimpleType(entityClass)) {
+        if (RepositoryClassUtils.isSimpleType(entityClass)) {
             log.debug("Skipping parameter validation for simple type: {}", entityClass.getName());
             return;
         }
@@ -115,7 +115,7 @@ public final class SqlSecurityGuard {
             Object paramValue = query.getParameters().get(paramKey);
             
             // 验证字段是否存在，对于简单类型参数执行严格校验
-            if (!FieldCache.hasFieldByColumn(entityClass, baseColumn) && isSimpleType(paramValue != null ? paramValue.getClass() : Object.class)) {
+            if (!FieldCache.hasFieldByColumn(entityClass, baseColumn) && RepositoryClassUtils.isSimpleType(paramValue != null ? paramValue.getClass() : Object.class)) {
                 String errorMsg = String.format("Field '%s' is undefined in entity %s", baseColumn, entityClass.getSimpleName());
                 log.warn("Undefined field '{}' detected in query: {}, parameter value: {}", 
                         baseColumn, query.getSql(), maskSensitiveValue(paramKey, paramValue));
@@ -144,7 +144,7 @@ public final class SqlSecurityGuard {
         }
 
         // 如果是简单类型，跳过字段校验
-        if (isSimpleType(entityClass)) {
+        if (RepositoryClassUtils.isSimpleType(entityClass)) {
             log.debug("Skipping parameter validation for simple type: {}", entityClass.getName());
             return;
         }
@@ -175,7 +175,7 @@ public final class SqlSecurityGuard {
             Object paramValue = parameters.get(paramKey);
             
             // 验证字段是否存在，对于简单类型参数执行严格校验
-            if (!FieldCache.hasFieldByColumn(entityClass, baseColumn) && isSimpleType(paramValue != null ? paramValue.getClass() : Object.class)) {
+            if (!FieldCache.hasFieldByColumn(entityClass, baseColumn) && RepositoryClassUtils.isSimpleType(paramValue != null ? paramValue.getClass() : Object.class)) {
                 String errorMsg = String.format("Field '%s' is undefined in entity %s", baseColumn, entityClass.getSimpleName());
                 log.warn("Undefined field '{}' detected in query parameters, parameter value: {}", 
                         baseColumn, maskSensitiveValue(paramKey, paramValue));
@@ -217,13 +217,5 @@ public final class SqlSecurityGuard {
 //            }
 //
 //            if (!fieldMappings.containsKey(paramName)) {
-//                throw new UndefinedFieldException("Field '" + paramName + "' is undefined in entity " + resultType.getSimpleName());
-//            }
-//        }
-//    }
 
-    // 使用公共工具类替代重复方法
-    private static boolean isSimpleType(Class<?> type) {
-        return RepositoryClassUtils.isSimpleType(type);
-    }
 }

@@ -4,10 +4,7 @@ import com.bone.engine.extension.context.BizContext;
 import com.bone.engine.extension.Extension;
 import com.bone.engine.extension.annotation.ExtensionDoc;
 import org.springframework.stereotype.Service;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import lombok.extern.slf4j.Slf4j;
-
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -45,7 +42,6 @@ import java.time.format.DateTimeFormatter;
 @Service
 @Slf4j
 public class VipGreetingExtension implements GreetingExtPoint {
-    private static final Logger log = LoggerFactory.getLogger(VipGreetingExtension.class);
     private static final String MORNING_TEMPLATE = "尊敬的VIP用户 %s，早上好！今日又是美好的一天。";
     private static final String AFTERNOON_TEMPLATE = "尊敬的VIP用户 %s，下午好！感谢您一直以来的支持。";
     private static final String EVENING_TEMPLATE = "尊敬的VIP用户 %s，晚上好！祝您度过愉快的夜晚。";

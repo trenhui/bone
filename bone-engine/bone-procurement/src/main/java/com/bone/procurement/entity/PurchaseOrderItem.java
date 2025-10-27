@@ -47,13 +47,22 @@ public class PurchaseOrderItem {
     @SmartField(name = "taxRate", label = "税率", type = FieldType.PERCENT, defaultValue = "0.13")
     private Double taxRate = 0.13;
     
-    @SmartField(name = "amountWithoutTax", label = "不含税金额", type = FieldType.CURRENCY)
+    @SmartField(name = "amountWithoutTax", label = "不含税金额", type = FieldType.CURRENCY, 
+               calculationExpression = "${quantity != null && unitPrice != null ? (new java.math.BigDecimal(quantity).multiply(unitPrice)).setScale(2, java.math.RoundingMode.HALF_UP) : java.math.BigDecimal.ZERO}",
+               calculationDependencies = {"quantity", "unitPrice"},
+               virtual = true)
     private BigDecimal amountWithoutTax;
     
-    @SmartField(name = "taxAmount", label = "税额", type = FieldType.CURRENCY)
+    @SmartField(name = "taxAmount", label = "税额", type = FieldType.CURRENCY,
+               calculationExpression = "${amountWithoutTax != null && taxRate != null ? amountWithoutTax.multiply(new java.math.BigDecimal(taxRate)).setScale(2, java.math.RoundingMode.HALF_UP) : java.math.BigDecimal.ZERO}",
+               calculationDependencies = {"amountWithoutTax", "taxRate"},
+               virtual = true)
     private BigDecimal taxAmount;
     
-    @SmartField(name = "totalAmount", label = "含税总金额", type = FieldType.CURRENCY)
+    @SmartField(name = "totalAmount", label = "含税总金额", type = FieldType.CURRENCY,
+               calculationExpression = "${amountWithoutTax != null && taxAmount != null ? amountWithoutTax.add(taxAmount).setScale(2, java.math.RoundingMode.HALF_UP) : java.math.BigDecimal.ZERO}",
+               calculationDependencies = {"amountWithoutTax", "taxAmount"},
+               virtual = true)
     private BigDecimal totalAmount;
     
     @SmartField(name = "brand", label = "品牌", type = FieldType.TEXT, length = 100)

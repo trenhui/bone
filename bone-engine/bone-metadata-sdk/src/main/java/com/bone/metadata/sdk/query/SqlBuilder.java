@@ -14,6 +14,7 @@ import com.bone.metadata.sdk.query.criteria.Condition;
 import com.bone.metadata.sdk.sql.dialect.DatabaseDialect;
 import com.bone.metadata.sdk.domain.exception.SqlInjectionRiskException;
 import com.bone.metadata.sdk.support.config.MetadataSdkContext;
+import com.bone.metadata.sdk.support.util.RepositoryClassUtils;
 import jakarta.annotation.PostConstruct;
 
 import org.slf4j.Logger;
@@ -203,7 +204,7 @@ public class SqlBuilder {
         
         // 检查子条件组（使用反射安全地检查是否支持）
         try {
-            if (hasMethod(criteria, "getGroups")) {
+            if (RepositoryClassUtils.hasMethod(criteria, "getGroups")) {
                 java.lang.reflect.Method method = criteria.getClass().getMethod("getGroups");
                 Object result = method.invoke(criteria);
                 if (result instanceof List) {
@@ -221,7 +222,7 @@ public class SqlBuilder {
         
         // 检查连接条件（使用反射安全地检查是否支持）
         try {
-            if (hasMethod(criteria, "getJoins")) {
+            if (RepositoryClassUtils.hasMethod(criteria, "getJoins")) {
                 java.lang.reflect.Method method = criteria.getClass().getMethod("getJoins");
                 Object result = method.invoke(criteria);
                 if (result instanceof List) {
@@ -235,7 +236,7 @@ public class SqlBuilder {
         
         // 检查排序条件（使用反射安全地检查是否支持）
         try {
-            if (hasMethod(criteria, "getOrders")) {
+            if (RepositoryClassUtils.hasMethod(criteria, "getOrders")) {
                 java.lang.reflect.Method method = criteria.getClass().getMethod("getOrders");
                 Object result = method.invoke(criteria);
                 if (result instanceof List) {
@@ -251,17 +252,7 @@ public class SqlBuilder {
         validatePaginationParameters(criteria);
     }
     
-    /**
-     * 检查对象是否有指定名称的方法
-     */
-    private boolean hasMethod(Object obj, String methodName) {
-        try {
-            obj.getClass().getMethod(methodName);
-            return true;
-        } catch (NoSuchMethodException e) {
-            return false;
-        }
-    }
+
     
     /**
      * 验证连接条件
@@ -269,7 +260,7 @@ public class SqlBuilder {
     private void validateJoinConditions(List<?> joins) {
         for (Object join : joins) {
             try {
-                if (hasMethod(join, "getCriteria")) {
+                if (RepositoryClassUtils.hasMethod(join, "getCriteria")) {
                     java.lang.reflect.Method criteriaMethod = join.getClass().getMethod("getCriteria");
                     Object criteriaObj = criteriaMethod.invoke(join);
                     if (criteriaObj instanceof Criteria) {
@@ -280,7 +271,7 @@ public class SqlBuilder {
                 }
                 
                 // 检查join类型
-                if (hasMethod(join, "getType")) {
+                if (RepositoryClassUtils.hasMethod(join, "getType")) {
                     java.lang.reflect.Method typeMethod = join.getClass().getMethod("getType");
                     Object typeObj = typeMethod.invoke(join);
                     if (typeObj instanceof String) {
@@ -306,7 +297,7 @@ public class SqlBuilder {
     private void validateOrderConditions(List<?> orders) {
         for (Object order : orders) {
             try {
-                if (hasMethod(order, "getField")) {
+                if (RepositoryClassUtils.hasMethod(order, "getField")) {
                     java.lang.reflect.Method fieldMethod = order.getClass().getMethod("getField");
                     Object fieldObj = fieldMethod.invoke(order);
                     if (fieldObj instanceof String) {
@@ -316,7 +307,7 @@ public class SqlBuilder {
                 }
                 
                 // 检查排序方向
-                if (hasMethod(order, "getDirection")) {
+                if (RepositoryClassUtils.hasMethod(order, "getDirection")) {
                     java.lang.reflect.Method dirMethod = order.getClass().getMethod("getDirection");
                     Object dirObj = dirMethod.invoke(order);
                     if (dirObj instanceof String) {
@@ -342,7 +333,7 @@ public class SqlBuilder {
     private void validatePaginationParameters(Criteria<?> criteria) {
         try {
             // 检查分页大小
-            if (hasMethod(criteria, "getPageSize")) {
+            if (RepositoryClassUtils.hasMethod(criteria, "getPageSize")) {
                 java.lang.reflect.Method method = criteria.getClass().getMethod("getPageSize");
                 Object result = method.invoke(criteria);
                 if (result instanceof Integer) {
@@ -386,7 +377,7 @@ public class SqlBuilder {
         
         // 检查扩展字段名（使用反射安全地检查）
         try {
-            if (hasMethod(condition, "getExtFieldName")) {
+            if (RepositoryClassUtils.hasMethod(condition, "getExtFieldName")) {
                 java.lang.reflect.Method method = condition.getClass().getMethod("getExtFieldName");
                 Object result = method.invoke(condition);
                 if (result instanceof String) {
@@ -405,7 +396,7 @@ public class SqlBuilder {
         
         // 检查操作符（使用反射安全地检查）
         try {
-            if (hasMethod(condition, "getOperator")) {
+            if (RepositoryClassUtils.hasMethod(condition, "getOperator")) {
                 java.lang.reflect.Method method = condition.getClass().getMethod("getOperator");
                 Object result = method.invoke(condition);
                 if (result instanceof String) {

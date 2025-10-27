@@ -2,11 +2,30 @@ package com.bone.engine.extension.studio.service.impl;
 
 import com.bone.engine.extension.ExtPoint;
 import com.bone.engine.extension.annotation.ExtPointDoc;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.ClassUtils;
 import com.bone.engine.extension.studio.model.ExtPointEntity;
 import com.bone.engine.extension.studio.model.ExtensionEntity;
 import com.bone.engine.extension.studio.repository.ExtPointRepository;
 import com.bone.engine.extension.studio.repository.ExtensionRepository;
 import com.bone.engine.extension.studio.service.ExtPointService;
+import com.bone.engine.extension.studio.service.common.ClassScanner;
+import com.bone.engine.extension.studio.service.common.ResourceUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,8 +35,6 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.io.Resource;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
-import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.core.type.classreading.CachingMetadataReaderFactory;
 import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.core.type.classreading.MetadataReaderFactory;
@@ -27,7 +44,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ClassUtils;
-import org.springframework.util.ResourceUtils;
 import org.springframework.util.StringUtils;
 
 import jakarta.persistence.criteria.Predicate;
@@ -280,75 +296,27 @@ public class ExtPointServiceImpl implements ExtPointService {
     @CacheEvict(value = {"allExtPoints", "allDomains", "allCategories"}, allEntries = true)
     public int scanAndRegisterExtPoints() {
         log.info("开始扫描并注册扩展点，基础包: {}", scanBasePackages);
-        int registeredCount = 0;
-        
-        // 参数校验
-        if (scanBasePackages == null || scanBasePackages.trim().isEmpty()) {
-            log.warn("扫描包名配置为空，跳过扫描");
-            return 0;
-        }
         
         try {
             // 重置接口缓存
             extPointInterfaceCache.clear();
             
-            // 扫描指定包下的所有带@ExtPoint注解的接口
-            List<String> basePackages = Arrays.asList(scanBasePackages.split(","));
-            for (String basePackage : basePackages) {
-                basePackage = basePackage.trim();
-                if (basePackage.isEmpty()) {
-                    log.warn("跳过空包名");
-                    continue;
-                }
-                
-                log.debug("开始扫描包: {}", basePackage);
-                String searchPath = "classpath*:" + basePackage.replace(".", "/") + "/**/*.class";
-                
-                try {
-                    Set<Resource> resources = getResources(searchPath);
-                    log.debug("包 {} 下扫描到 {} 个资源", basePackage, resources.size());
-                    
-                    for (Resource resource : resources) {
-                        try {
-                            if (!resource.exists() || !resource.isReadable()) {
-                                log.warn("资源不可用或不可读: {}", resource.getURI());
-                                continue;
-                            }
-                            
-                            // 解析资源为类文件
-                            String className = getClassNameFromResource(resource, basePackage);
-                            if (className == null) {
-                                log.debug("无法从资源中提取类名: {}", resource.getURI());
-                                continue;
-                            }
-                            
-                            // 加载类并检查是否为接口且带有@ExtPoint注解
-                            Class<?> clazz = null;
-                            try {
-                                clazz = ClassUtils.forName(className, ClassUtils.getDefaultClassLoader());
-                            } catch (ClassNotFoundException e) {
-                                log.warn("类未找到: {}", className);
-                                continue;
-                            }
-                            
-                            // 验证扩展点接口是否合法
-                            if (!validateExtPointInterface(clazz)) {
-                                log.warn("扩展点接口 {} 验证失败，跳过", className);
-                                continue;
-                            }
-                            
-                            if (clazz.isInterface() && clazz.isAnnotationPresent(ExtPoint.class)) {
-                                int count = registerExtPointInterface(clazz, clazz.getAnnotation(ExtPoint.class));
-                                registeredCount += count;
-                            }
-                        } catch (Exception e) {
-                            log.warn("处理资源时出错: {}", resource.getURI(), e);
-                        }
+            // 解析基础包列表
+            List<String> basePackages = ClassScanner.parseBasePackages(scanBasePackages);
+            
+            // 使用ClassScanner扫描并处理带有@ExtPoint注解的接口
+            int registeredCount = ClassScanner.scanAndProcessAnnotatedClasses(
+                basePackages, 
+                ExtPoint.class, 
+                (clazz, annotation) -> {
+                    // 验证扩展点接口是否合法
+                    if (validateExtPointInterface(clazz)) {
+                        registerExtPointInterface(clazz, annotation);
+                    } else {
+                        log.warn("扩展点接口 {} 验证失败，跳过", clazz.getName());
                     }
-                } catch (Exception e) {
-                    log.warn("扫描包时出错: {}", basePackage, e);
                 }
-            }
+            );
             
             log.info("扫描并注册扩展点完成，共注册: {} 个", registeredCount);
             return registeredCount;
@@ -441,40 +409,7 @@ public class ExtPointServiceImpl implements ExtPointService {
         }
     }
     
-    private String getClassNameFromResource(Resource resource, String basePackage) {
-        try {
-            String resourcePath = resource.getURI().getPath();
-            String packagePath = basePackage.replace('.', '/');
-            int startIndex = resourcePath.indexOf(packagePath);
-            if (startIndex != -1) {
-                String className = resourcePath.substring(startIndex).replace('/', '.');
-                int classIndex = className.lastIndexOf(".class");
-                if (classIndex != -1) {
-                    return className.substring(0, classIndex);
-                }
-            }
-            return null;
-        } catch (Exception e) {
-            return null;
-        }
-    }
-    
-    private Set<Resource> getResources(String locationPattern) throws IOException {
-        Set<Resource> result = new HashSet<>();
-        try {
-            // 使用ResourcePatternResolver获取多个资源
-            ResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
-            Resource[] resources = resolver.getResources(locationPattern);
-            for (Resource resource : resources) {
-                if (resource.exists()) {
-                    result.add(resource);
-                }
-            }
-        } catch (IOException e) {
-            log.warn("Error loading resources for pattern: {}", locationPattern, e);
-        }
-        return result;
-    }
+    // 移除重复的方法，使用common包中的ResourceUtils
     
     // 添加Arrays类的导入
     // 使用标准库的java.util.Arrays类
