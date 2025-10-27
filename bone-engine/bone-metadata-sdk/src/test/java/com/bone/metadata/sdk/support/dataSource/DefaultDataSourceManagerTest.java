@@ -112,6 +112,31 @@ class DefaultDataSourceManagerTest {
         public boolean isWrapperFor(Class<?> iface) throws java.sql.SQLException {
             return false;
         }
+        
+        @Override
+        public int getLoginTimeout() throws java.sql.SQLException {
+            return 0;
+        }
+        
+        @Override
+        public void setLoginTimeout(int seconds) throws java.sql.SQLException {
+            // 不做任何操作
+        }
+        
+        @Override
+        public java.io.PrintWriter getLogWriter() throws java.sql.SQLException {
+            return null;
+        }
+        
+        @Override
+        public void setLogWriter(java.io.PrintWriter out) throws java.sql.SQLException {
+            // 不做任何操作
+        }
+        
+        @Override
+        public java.util.logging.Logger getParentLogger() throws java.sql.SQLFeatureNotSupportedException {
+            throw new java.sql.SQLFeatureNotSupportedException("不支持getParentLogger操作");
+        }
     }
     
     /**
@@ -126,8 +151,103 @@ class DefaultDataSourceManagerTest {
         }
         
         @Override
+        public java.sql.Struct createStruct(String typeName, Object[] attributes) throws java.sql.SQLException {
+            return null;
+        }
+        
+        @Override
+        public java.sql.Array createArrayOf(String typeName, Object[] elements) throws java.sql.SQLException {
+            return null;
+        }
+        
+        @Override
+        public java.util.Properties getClientInfo() throws java.sql.SQLException {
+            return new java.util.Properties();
+        }
+        
+        @Override
+        public String getClientInfo(String name) throws java.sql.SQLException {
+            return null;
+        }
+        
+        @Override
+        public void setClientInfo(java.util.Properties properties) {
+            // 空实现，用于测试
+        }
+
+        @Override
+        public void setClientInfo(String name, String value) {
+            // 空实现，用于测试
+        }
+        
+        @Override
         public boolean isClosed() throws java.sql.SQLException {
             return closed;
+        }
+        
+        @Override
+        public boolean isValid(int timeout) throws java.sql.SQLException {
+            return !closed;
+        }
+        
+        @Override
+        public java.sql.SQLXML createSQLXML() throws java.sql.SQLException {
+            throw new java.sql.SQLException("Not implemented");
+        }
+        
+        @Override
+        public java.sql.NClob createNClob() throws java.sql.SQLException {
+            throw new java.sql.SQLException("Not implemented");
+        }
+        
+        @Override
+        public java.sql.Blob createBlob() throws java.sql.SQLException {
+            throw new java.sql.SQLException("Not implemented");
+        }
+        
+        @Override
+        public java.sql.Clob createClob() throws java.sql.SQLException {
+            throw new java.sql.SQLException("Not implemented");
+        }
+        
+        @Override
+        public void releaseSavepoint(java.sql.Savepoint savepoint) throws java.sql.SQLException {
+            throw new java.sql.SQLException("Not implemented");
+        }
+        
+        @Override
+        public void rollback(java.sql.Savepoint savepoint) throws java.sql.SQLException {
+            throw new java.sql.SQLException("Not implemented");
+        }
+        
+        @Override
+        public java.sql.Savepoint setSavepoint(String name) throws java.sql.SQLException {
+            throw new java.sql.SQLException("Not implemented");
+        }
+        
+        @Override
+        public java.sql.Savepoint setSavepoint() throws java.sql.SQLException {
+            throw new java.sql.SQLException("Not implemented");
+        }
+        
+        @Override
+        public int getHoldability() throws java.sql.SQLException {
+            return java.sql.ResultSet.HOLD_CURSORS_OVER_COMMIT;
+        }
+        
+        @Override
+        public void setHoldability(int holdability) throws java.sql.SQLException {
+            // 空实现
+        }
+        
+        @Override
+        public void setTypeMap(java.util.Map<String, Class<?>> map) throws java.sql.SQLException {
+            // 空实现
+        }
+        
+        @Override
+        public java.util.Map<String, Class<?>> getTypeMap() throws java.sql.SQLException {
+            return new java.util.HashMap<>();
         }
         
         // 其他方法都返回默认值或抛出不支持的异常

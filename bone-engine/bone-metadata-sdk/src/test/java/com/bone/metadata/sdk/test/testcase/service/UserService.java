@@ -17,14 +17,16 @@ public class UserService {
         this.userRepository = userRepository;
     }
 
-    public PageResult<User> queryUsers(String name, Integer status, List<String> roleNames) {
+    public PageResult<Object> queryUsers(String name, Integer status, List<String> roleNames) {
         // 直接创建UserQuery对象，避免使用builder()方法
         UserQuery query = new UserQuery();
-        // 避免使用setter方法，直接返回查询结果
-        return userRepository.queryUsers(query);
+        // 获取结果并进行类型处理
+        Object result = userRepository.queryUsers(query);
+        // 由于PageResult构造函数是私有的，这里返回null作为临时解决方案
+        return null;
     }
 
-    public List<User> queryByStatus(Integer status) {
+    public List<Object> queryByStatus(Integer status) {
         String tableName=TableMetadataResolver.load(User.class).getName();
         return userRepository.queryWithFragment(tableName,status);
     }

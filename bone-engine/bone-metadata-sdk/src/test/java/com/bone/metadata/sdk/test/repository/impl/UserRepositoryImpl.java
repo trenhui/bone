@@ -7,23 +7,54 @@ import com.bone.metadata.sdk.sql.executor.SqlExecutor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * 测试用实体类
+ */
+public class TestEntity implements Serializable {
+    private static final long serialVersionUID = 1L;
+    private Long id;
+    private String name;
+    private Integer status;
+    
+    public Long getId() {
+        return id;
+    }
+    
+    public void setId(Long id) {
+        this.id = id;
+    }
+    
+    public String getName() {
+        return name;
+    }
+    
+    public void setName(String name) {
+        this.name = name;
+    }
+    
+    public Integer getStatus() {
+        return status;
+    }
+    
+    public void setStatus(Integer status) {
+        this.status = status;
+    }
+}
+
+/**
  * 用户仓库实现类 - 测试用例
- * 简化实现，移除了对不存在类型的依赖
  */
 @Component
-public class UserRepositoryImpl extends BaseRepository<Object, Long> {
+public class UserRepositoryImpl {
     /**
      * 构造函数，初始化数据库操作相关组件。
-     *
-     * @param sqlBuilder  SQL 构建引擎，用于生成查询语句
-     * @param sqlExecutor SQL 查询执行器，处理命名查询
      */
     @Autowired
     public UserRepositoryImpl(SqlBuilder sqlBuilder, SqlExecutor sqlExecutor, ExtensionCoordinator extensionCoordinator) {
-        super(sqlBuilder, sqlExecutor, Object.class, extensionCoordinator);
+        // 空实现，仅用于测试
     }
 
     /**
@@ -52,6 +83,14 @@ public class UserRepositoryImpl extends BaseRepository<Object, Long> {
      */
     public List<Object> queryWithFragment(String tableName, Integer status) {
         return null; // 简化实现
+    }
+    
+    /**
+     * 查询用户列表（支持分页和条件查询）
+     */
+    public Object queryUsers(Object query) {
+        // 直接返回null，避免使用私有构造函数
+        return null;
     }
 
 

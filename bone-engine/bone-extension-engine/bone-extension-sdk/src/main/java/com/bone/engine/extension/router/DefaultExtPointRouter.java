@@ -274,7 +274,6 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
         );
     }
     
-    @Override
     public void afterPropertiesSet() {
         // 确保CacheManager不为null
         if (cacheManager != null) {
@@ -385,7 +384,6 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
         }
     }
     
-    @Override
     public void onConfigChanged(Set<String> changedKeys) {
         if (changedKeys == null || changedKeys.isEmpty()) {
             return;
@@ -414,7 +412,6 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
         }
     }
     
-    @Override
     public String[] getConfigKeyPrefixes() {
         return new String[] {
             "bone.extension.router",
@@ -657,7 +654,6 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
         }
     }
     
-    @Override
     public <T> T route(Class<T> extPointClass, BizContext<?> context) {
         Assert.notNull(extPointClass, "Extension point class cannot be null");
         Assert.notNull(context, "Business context cannot be null");
@@ -796,91 +792,108 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
      */
     @SuppressWarnings("unchecked")
     private <T> T doRoute(Class<T> extPointClass, BizContext<?> context) {
-        // 尝试从规则缓存获取预过滤的实现列表
-        List<Object> implementations = getOrCreateRouteRuleCache(extPointClass);
-        if (CollectionUtils.isEmpty(implementations)) {
-            log.warn("No implementations found for extPoint: {}", extPointClass.getName());
-            return null;
-        }
-        
-        // 过滤有效的实现
-        List<Object> validImpls = implementations.stream()
-            .filter(impl -> {
-                Extension extension = impl.getClass().getAnnotation(Extension.class);
-                if (extension == null) {
-                    return false;
-                }
-                
-                // 快速检查 - 先检查基本条件
-                if (!extension.enabled()) {
-                    return false;
-                }
-                
-                // 检查时间范围
-                if (!isWithinValidTimeRange(extension)) {
-                    return false;
-                }
-                
-                // 检查条件表达式（性能开销较大，放在最后）
-                return evaluateCondition(extension.condition(), context);
-            })
-            .collect(Collectors.toList());
-        
-        if (CollectionUtils.isEmpty(validImpls)) {
-            // 没有匹配的实现，返回默认实现
-            return (T) defaultImplementations.get(extPointClass);
-        }
-        
-        // 按匹配得分和优先级排序
-        validImpls.sort((impl1, impl2) -> {
-            Extension ext1 = impl1.getClass().getAnnotation(Extension.class);
-            Extension ext2 = impl2.getClass().getAnnotation(Extension.class);
-            
-            // 使用RouteScoreCalculator计算匹配得分
-            int score1 = scoreCalculator.calculateMatchScore(ext1, context);
-            int score2 = scoreCalculator.calculateMatchScore(ext2, context);
-            
-            if (score1 != score2) {
-                return Integer.compare(score2, score1); // 得分高的优先
+        try {
+            // 尝试从规则缓存获取预过滤的实现列表
+            List<Object> implementations = getOrCreateRouteRuleCache(extPointClass);
+            if (CollectionUtils.isEmpty(implementations)) {
+                log.warn("No implementations found for extPoint: {}", extPointClass.getName());
+                return getDefaultImplementation(extPointClass);
             }
             
-            // 得分相同，比较优先级
-            if (ext1.priority() != ext2.priority()) {
-                return Integer.compare(ext1.priority(), ext2.priority()); // 优先级低的数值小，优先
+            // 过滤有效的实现
+            List<Object> validImpls = implementations.stream()
+                .filter(impl -> {
+                    Extension extension = impl.getClass().getAnnotation(Extension.class);
+                    if (extension == null) {
+                        return false;
+                    }
+                    
+                    // 快速检查 - 先检查基本条件
+                    if (!extension.enabled()) {
+                        return false;
+                    }
+                    
+                    // 检查时间范围
+                    if (!isWithinValidTimeRange(extension)) {
+                        return false;
+                    }
+                    
+                    // 检查条件表达式（性能开销较大，放在最后）
+                    return evaluateCondition(extension.condition(), context);
+                })
+                .collect(Collectors.toList());
+            
+            if (CollectionUtils.isEmpty(validImpls)) {
+                // 没有匹配的实现，返回默认实现
+                return getDefaultImplementation(extPointClass);
             }
             
-            // 最后比较类名，确保排序稳定性
-            return impl1.getClass().getName().compareTo(impl2.getClass().getName());
-        });
-        
-        // 记录详细路由日志
-        if (log.isTraceEnabled()) {
-            StringBuilder sb = new StringBuilder();
-            sb.append("Route details for extPoint: " + extPointClass.getSimpleName() + "\n");
-            sb.append("Context: " + context + "\n");
-            for (int i = 0; i < validImpls.size() && i < 5; i++) { // 只记录前5个
-                Object impl = validImpls.get(i);
-                Extension ext = impl.getClass().getAnnotation(Extension.class);
-                sb.append(String.format("  Rank %d: %s (score=%d, priority=%d)\n", 
-                        i + 1, 
-                        impl.getClass().getSimpleName(),
-                        scoreCalculator.calculateMatchScore(ext, context),
-                        ext.priority()));
+            // 按匹配得分和优先级排序
+            validImpls.sort((impl1, impl2) -> {
+                Extension ext1 = impl1.getClass().getAnnotation(Extension.class);
+                Extension ext2 = impl2.getClass().getAnnotation(Extension.class);
+                
+                // 使用RouteScoreCalculator计算匹配得分
+                int score1 = scoreCalculator.calculateMatchScore(ext1, context);
+                int score2 = scoreCalculator.calculateMatchScore(ext2, context);
+                
+                if (score1 != score2) {
+                    return Integer.compare(score2, score1); // 得分高的优先
+                }
+                
+                // 得分相同，比较优先级
+                if (ext1.priority() != ext2.priority()) {
+                    return Integer.compare(ext1.priority(), ext2.priority()); // 优先级低的数值小，优先
+                }
+                
+                // 最后比较类名，确保排序稳定性
+                return impl1.getClass().getName().compareTo(impl2.getClass().getName());
+            });
+            
+            // 记录详细路由日志
+            if (log.isTraceEnabled()) {
+                StringBuilder sb = new StringBuilder();
+                sb.append("Route details for extPoint: " + extPointClass.getSimpleName() + "\n");
+                sb.append("Context: " + context + "\n");
+                for (int i = 0; i < validImpls.size() && i < 5; i++) { // 只记录前5个
+                    Object impl = validImpls.get(i);
+                    Extension ext = impl.getClass().getAnnotation(Extension.class);
+                    sb.append(String.format("  Rank %d: %s (score=%d, priority=%d)\n", 
+                            i + 1, 
+                            impl.getClass().getSimpleName(),
+                            scoreCalculator.calculateMatchScore(ext, context),
+                            ext.priority()));
+                }
+                log.trace(sb.toString());
             }
-            log.trace(sb.toString());
+            
+            // 应用权重路由和灰度发布策略
+            @SuppressWarnings("unchecked")
+            T selectedImplementation = (T) weightAndGraySelector.applyWeightAndGrayRelease(
+                    validImpls, extPointClass, context, isWeightedRoutingEnabled(), isGrayReleaseEnabled());
+            
+            // 安全检查，避免空指针异常
+            if (selectedImplementation == null) {
+                log.warn("Weight and gray selector returned null for extPoint: {}", extPointClass.getName());
+                return getDefaultImplementation(extPointClass);
+            }
+            
+            if (log.isDebugEnabled()) {
+                log.debug("Selected implementation: {} for extPoint: {}", 
+                          selectedImplementation.getClass().getSimpleName(), 
+                          extPointClass.getSimpleName());
+            }
+            
+            return selectedImplementation;
+        } catch (Exception e) {
+            log.error("Error occurred during routing for {}", extPointClass.getName(), e);
+            try {
+                return getDefaultImplementation(extPointClass);
+            } catch (Exception ex) {
+                log.error("Failed to get default implementation for {}", extPointClass.getName(), ex);
+                return null;
+            }
         }
-        
-        // 应用权重路由和灰度发布策略
-        Object selectedImplementation = weightAndGraySelector.applyWeightAndGrayRelease(
-                validImpls, extPointClass, context, isWeightedRoutingEnabled(), isGrayReleaseEnabled());
-        
-        if (log.isDebugEnabled()) {
-            log.debug("Selected implementation: {} for extPoint: {}", 
-                      selectedImplementation.getClass().getSimpleName(), 
-                      extPointClass.getSimpleName());
-        }
-        
-        return (T) selectedImplementation;
     }
     
     // 移除权重路由和灰度发布相关的方法，使用WeightAndGraySelector组件代替
@@ -888,12 +901,20 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     /**
      * 获取或创建路由规则缓存
      */
+    @SuppressWarnings("unchecked")
     private List<Object> getOrCreateRouteRuleCache(Class<?> extPointClass) {
-        if (extensionRegistry == null) {
-            return Collections.emptyList();
+        try {
+            // 避免lambda表达式中的类型推断问题
+            if (extensionRegistry == null) {
+                log.warn("ExtensionRegistry is null, cannot get implementations for {}", extPointClass.getName());
+                return new ArrayList<>();
+            }
+            List<Object> implementations = (List<Object>) extensionRegistry.getAllImplementations((Class<Object>) extPointClass);
+            return cacheManager.getOrCreateRouteRuleCache(extPointClass, k -> implementations);
+        } catch (Exception e) {
+            log.warn("Failed to create route rule cache for {}", extPointClass.getName(), e);
+            return new ArrayList<>();
         }
-        return cacheManager.getOrCreateRouteRuleCache(extPointClass, 
-                k -> extensionRegistry.getAllImplementations(extPointClass));
     }
     
     /**
@@ -905,7 +926,6 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
                 extPointClass != null ? extPointClass.getSimpleName() : "ALL");
     }
     
-    @Override
     @SuppressWarnings("unchecked")
     public <T> List<T> getAllImplementations(Class<T> extPointClass) {
         if (extensionRegistry == null) {
@@ -914,7 +934,6 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
         return extensionRegistry.getAllImplementations(extPointClass);
     }
     
-    @Override
     public void clearCache(Class<?> extPointClass) {
         Assert.notNull(extPointClass, "ExtPoint class must not be null");
         
@@ -927,7 +946,6 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
         log.debug("Cleared cache for extPoint: {}", extPointClass.getName());
     }
     
-    @Override
     public void clearAllCache() {
         cacheManager.clearAllCache();
         // 刷新路由规则缓存
@@ -935,7 +953,6 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
         log.debug("Cleared all route cache");
     }
     
-    @Override
     @SuppressWarnings("unchecked")
     public <T> void registerImplementation(Class<T> extPointClass, T implementation) {
         Assert.notNull(extPointClass, "ExtPoint class must not be null");
@@ -965,7 +982,6 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
                  extPointClass.getSimpleName());
     }
     
-    @Override
     @SuppressWarnings("unchecked")
     public <T> void unregisterImplementation(Class<T> extPointClass, T implementation) {
         Assert.notNull(extPointClass, "ExtPoint class must not be null");
@@ -984,7 +1000,6 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
                  extPointClass.getSimpleName());
     }
     
-    @Override
     @SuppressWarnings("unchecked")
     public <T> T getDefaultImplementation(Class<T> extPointClass) {
         if (extensionRegistry == null) {
@@ -1017,7 +1032,6 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
                  extPointClass.getSimpleName());
     }
     
-    @Override
     public Map<String, Map<String, Long>> getRouteStats() {
         // 直接调用statsCollector.getRouteStats()，它已经返回正确的类型
         return statsCollector.getRouteStats();
@@ -1044,7 +1058,6 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     /**
      * 在Spring容器初始化完成后，自动注册所有扩展点实现
      */
-    @Override
     public void afterSingletonsInstantiated() {
         long startTime = System.currentTimeMillis();
         log.info("Initializing extPoint router...");

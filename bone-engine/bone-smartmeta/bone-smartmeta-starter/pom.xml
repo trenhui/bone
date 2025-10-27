@@ -21,13 +21,6 @@
             <groupId>com.bone</groupId>
             <artifactId>bone-smartmeta-engine</artifactId>
             <version>1.0.0-SNAPSHOT</version>
-            <!-- 排除传递依赖的bone-metadata-sdk -->
-            <exclusions>
-                <exclusion>
-                    <groupId>com.bone</groupId>
-                    <artifactId>bone-metadata-sdk</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         
         <!-- Spring Boot 核心依赖 -->

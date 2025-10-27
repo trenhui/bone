@@ -6,9 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
+import java.util.HashMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -17,12 +16,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * 负责管理扩展点的全局配置，包括缓存设置、路由规则、扩展点开关等
  * <strong>主要功能：</strong>
  * <ul>
- *   <li>加载和管理扩展点配置</li>
- *   <li>提供配置访问接口</li>
- *   <li>支持动态配置更新</li>
- *   <li>配置缓存管理</li>
+ *   <li>提供统一的配置访问接口</li>
+ *   <li>支持扩展点特定配置</li>
+ *   <li>作为ExtensionProperties的适配层</li>
  * </ul>
- * <strong>注意：此为适配层，内部使用ExtensionProperties进行实际配置管理</strong>
  * </p>
  *
  * @author Bone Engine Team
@@ -32,12 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ExtensionConfigManager {
     private static final Logger log = LoggerFactory.getLogger(ExtensionConfigManager.class);
     
-    private static final String PROPERTY_PREFIX = "bone.extension.";
-    
-    // 配置缓存
-    private final Map<String, String> configCache = new ConcurrentHashMap<>();
-    
-    // 扩展点特定配置
+    // 扩展点特定配置（非全局配置，仅用于单个扩展点）
     private final Map<String, Map<String, String>> extPointConfigs = new ConcurrentHashMap<>();
     
     @Autowired
@@ -47,32 +39,15 @@ public class ExtensionConfigManager {
      * 初始化配置管理器
      */
     public void init() {
-        // 作为适配层，初始化缓存以保持向后兼容性
-        if (extensionProperties != null) {
-            // 初始化全局配置缓存 - 缓存配置
-            configCache.put(PROPERTY_PREFIX + "cache.enabled", String.valueOf(extensionProperties.getCache().isEnabled()));
-            configCache.put(PROPERTY_PREFIX + "cache.expire-time", String.valueOf(extensionProperties.getCache().getExpireTime()));
-            configCache.put(PROPERTY_PREFIX + "cache.max-size", String.valueOf(extensionProperties.getCache().getMaxSize()));
-            
-            // 扫描配置
-            configCache.put(PROPERTY_PREFIX + "scan.enabled", String.valueOf(extensionProperties.getScan().isEnabled()));
-            configCache.put(PROPERTY_PREFIX + "scan.auto-register", String.valueOf(extensionProperties.getScan().isAutoRegister()));
-            
-            // 事件配置
-            configCache.put(PROPERTY_PREFIX + "events.enabled", String.valueOf(extensionProperties.getEvents().isEnabled()));
-            configCache.put(PROPERTY_PREFIX + "events.async", String.valueOf(extensionProperties.getEvents().isAsync()));
-            configCache.put(PROPERTY_PREFIX + "events.executor", extensionProperties.getEvents().getExecutor());
-            
-            log.info("Initialized ExtensionConfigManager with ExtensionProperties");
-        }
+        log.info("Initialized ExtensionConfigManager with ExtensionProperties");
     }
 
     /**
      * 获取全局配置值
-     * <p>采用一致的配置访问模式，优先从ExtensionProperties获取，其次从缓存获取</p>
+     * <p>直接从ExtensionProperties获取配置，提供统一的访问接口</p>
      */
     public String getGlobalConfig(String configKey) {
-        // 优先从ExtensionProperties获取配置 - 使用统一的命名映射
+        // 直接从ExtensionProperties获取配置
         if (extensionProperties != null) {
             // 缓存配置
             if (configKey.equals("cache.enabled")) {
@@ -98,12 +73,13 @@ public class ExtensionConfigManager {
             }
         }
         
-        // 向后兼容 - 从缓存获取
-        return configCache.get(PROPERTY_PREFIX + configKey);
+        // 不再从缓存获取，直接返回null
+        return null;
     }
 
     /**
-     * 获取全局配置的布尔值
+     * 获取布尔类型的全局配置值
+     * <p>直接从ExtensionProperties获取配置，提供类型转换</p>
      */
     public boolean getGlobalConfigBoolean(String configKey, boolean defaultValue) {
         String value = getGlobalConfig(configKey);
@@ -130,9 +106,6 @@ public class ExtensionConfigManager {
      * 设置扩展点配置（运行时更新）
      */
     public void setExtPointConfig(String extPointName, String configKey, String value) {
-        String fullKey = PROPERTY_PREFIX + extPointName + "." + configKey;
-        configCache.put(fullKey, value);
-        
         extPointConfigs.computeIfAbsent(extPointName, k -> new HashMap<>())
                 .put(configKey, value);
     }
@@ -212,17 +185,24 @@ public class ExtensionConfigManager {
     /**
      * 清理配置缓存
      */
+    /**
+     * 清除扩展点特定配置缓存
+     * （全局配置直接从ExtensionProperties获取，无需缓存）
+     */
     public void clearCache() {
-        configCache.clear();
         extPointConfigs.clear();
-        init(); // 重新初始化缓存
+        log.debug("Extension point specific configs cleared");
     }
 
     /**
      * 获取所有配置项
+     * 注意：此方法仅返回扩展点特定配置，全局配置应通过getGlobalConfig方法获取
+     *
+     * @return 所有配置项的Map
      */
     public Map<String, String> getAllConfigs() {
-        return new HashMap<>(configCache);
+        // 全局配置不再缓存，此方法仅保留向后兼容性
+        return Map.of();
     }
     
     /**

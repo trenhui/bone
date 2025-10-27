@@ -40,20 +40,16 @@
             <groupId>com.bone</groupId>
             <artifactId>bone-smartmeta-engine</artifactId>
             <version>1.0.0-SNAPSHOT</version>
-        </dependency>
-        
-        <!-- 元数据SDK -->
-        <dependency>
-            <groupId>com.bone</groupId>
-            <artifactId>bone-metadata-sdk</artifactId>
-            <version>1.0.0</version>
-        </dependency>
-        
-        <!-- 添加共享的采购领域模型依赖 -->
-        <dependency>
-            <groupId>com.bone</groupId>
-            <artifactId>bone-procurement-common</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.bone</groupId>
+                    <artifactId>bone-metadata-sdk</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.bone</groupId>
+                    <artifactId>bone-core</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         
         <!-- 使用父POM中依赖管理的版本 -->

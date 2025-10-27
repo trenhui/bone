@@ -8,7 +8,9 @@
  * - 提供友好的用户提示
  */
 import { notification } from 'antd';
-import { APP_ID } from '../App';
+
+// 应用ID常量
+const APP_ID = 'bone-extension-studio-ui';
 
 // 错误类型常量
 export const ERROR_TYPES = {
