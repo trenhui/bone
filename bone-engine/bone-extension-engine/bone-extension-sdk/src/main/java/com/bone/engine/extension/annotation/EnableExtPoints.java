@@ -1,6 +1,6 @@
 package com.bone.engine.extension.annotation;
 
-import com.bone.engine.extension.config.ExtensionAutoConfiguration;
+import com.bone.engine.extension.config.UnifiedExtPointAutoConfiguration;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.*;
@@ -31,7 +31,7 @@ import java.lang.annotation.*;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Import(ExtensionAutoConfiguration.class)
+@Import(UnifiedExtPointAutoConfiguration.class)
 public @interface EnableExtPoints {
     
     /**

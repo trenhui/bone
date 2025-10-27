@@ -3,6 +3,7 @@ package org.bone.engine.metadata.util;
 import org.bone.engine.metadata.model.EntityMetadata;
 import org.bone.engine.metadata.model.FieldMetadata;
 import org.bone.engine.metadata.model.RelationshipMetadata;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
@@ -450,20 +451,6 @@ public class MetadataUtils {
     }
     
     // ================ 内部工具类 ================
-    
-    /**
-     * 字符串工具类
-     */
-    private static class StringUtils {
-        
-        public static boolean isEmpty(String str) {
-            return str == null || str.trim().isEmpty();
-        }
-        
-        public static boolean isNotEmpty(String str) {
-            return !isEmpty(str);
-        }
-    }
     
     /**
      * 索引字段内部类

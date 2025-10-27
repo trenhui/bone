@@ -3,17 +3,13 @@ package com.bone.metadata.sdk.test.testcase;
 import com.bone.metadata.sdk.support.dataSource.DataSourceContextHolder;
 import com.bone.metadata.sdk.support.dataSource.DataSourceManager;
 import com.bone.metadata.sdk.support.dataSource.annotation.DS;
-import com.bone.metadata.sdk.test.common.BaseDataSourceTest;
-import com.bone.metadata.sdk.test.config.MultiDataSourceTestConfig;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
 import static org.mockito.Mockito.*;
@@ -34,9 +30,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * </ul>
  */
 @ExtendWith({SpringExtension.class, MockitoExtension.class})
-@ContextConfiguration(classes = {MultiDataSourceTestConfig.class})
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class MultiDataSourceIntegrationTest extends BaseDataSourceTest {
+public class MultiDataSourceIntegrationTest {
     
     @Autowired
     private DataSourceManager dataSourceManager;
@@ -55,7 +50,10 @@ public class MultiDataSourceIntegrationTest extends BaseDataSourceTest {
      */
     @BeforeEach
     public void setUp() {
-        super.setUp();
+        // 清理数据源上下文
+        while (DataSourceContextHolder.hasActiveDataSource()) {
+            DataSourceContextHolder.clearDataSource();
+        }
         
         // 重置mock行为
         reset(masterJdbcTemplate, slaveJdbcTemplate);
@@ -67,6 +65,17 @@ public class MultiDataSourceIntegrationTest extends BaseDataSourceTest {
         when(slaveJdbcTemplate.update(anyString(), any(), any(), any())).thenReturn(1);
         when(slaveJdbcTemplate.update(anyString(), any(), any())).thenReturn(1);
         when(slaveJdbcTemplate.update(anyString())).thenReturn(1);
+    }
+    
+    /**
+     * 测试后置清理
+     */
+    @AfterEach
+    public void tearDown() {
+        // 清理数据源上下文
+        while (DataSourceContextHolder.hasActiveDataSource()) {
+            DataSourceContextHolder.clearDataSource();
+        }
     }
     
     // createTestTables和cleanupTestData方法已移除，使用mock替代实际数据库操作
@@ -128,7 +137,7 @@ public class MultiDataSourceIntegrationTest extends BaseDataSourceTest {
         assertEquals(userName + "_slave", slaveUserName);
         
         // 验证数据源上下文已清理
-        assertNull(DataSourceContextHolder.getCurrentLookupKey(), "操作完成后数据源上下文未清理");
+        assertNull(DataSourceContextHolder.getCurrentDataSource(), "操作完成后数据源上下文未清理");
     }
     
     /**
@@ -192,7 +201,7 @@ public class MultiDataSourceIntegrationTest extends BaseDataSourceTest {
         }
         
         // 验证数据源上下文已清理
-        assertNull(DataSourceContextHolder.getCurrentLookupKey(), "操作完成后数据源上下文未清理");
+        assertNull(DataSourceContextHolder.getCurrentDataSource(), "操作完成后数据源上下文未清理");
     }
     
     /**
@@ -289,7 +298,7 @@ public class MultiDataSourceIntegrationTest extends BaseDataSourceTest {
                 "从库中不应有未同步的数据");
         
         // 验证数据源上下文已清理
-        assertNull(DataSourceContextHolder.getCurrentLookupKey(), "操作完成后数据源上下文未清理");
+        assertNull(DataSourceContextHolder.getCurrentDataSource(), "操作完成后数据源上下文未清理");
     }
     
     /**
@@ -360,7 +369,7 @@ public class MultiDataSourceIntegrationTest extends BaseDataSourceTest {
         }
         
         // 验证数据源上下文已清理
-        assertNull(DataSourceContextHolder.getCurrentLookupKey(), "操作完成后数据源上下文未清理");
+        assertNull(DataSourceContextHolder.getCurrentDataSource(), "操作完成后数据源上下文未清理");
     }
     
     /**

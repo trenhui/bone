@@ -21,11 +21,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import com.bone.engine.extension.router.RouteStatsCollector;
 
 import java.util.EnumSet;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 基于Spring的默认扩展点事件发布器实现
@@ -58,15 +59,10 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
     
     // 失败事件回退队列
     private final ConcurrentLinkedQueue<ExtensionEvent<?>> fallbackEventQueue = new ConcurrentLinkedQueue<>();
-    
-    // 回退处理线程
     private ExecutorService fallbackExecutor;
     
-    // 事件统计计数器
-    private final AtomicInteger totalPublishedEvents = new AtomicInteger(0);
-    private final AtomicInteger asyncEvents = new AtomicInteger(0);
-    private final AtomicInteger syncEvents = new AtomicInteger(0);
-    private final AtomicInteger failedEvents = new AtomicInteger(0);
+    // 注入路由统计收集器
+    private final RouteStatsCollector routeStatsCollector;
     
     /**
      * 构造函数
@@ -75,9 +71,10 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
      */
     @Autowired
     public DefaultExtensionEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
-        this(applicationEventPublisher, null);
+        // 创建默认的事件统计收集器实现
+        this(applicationEventPublisher, null, null);
     }
-    
+
     /**
      * 构造函数，支持异步发布
      * 
@@ -87,9 +84,25 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
     @Autowired(required = false)
     public DefaultExtensionEventPublisher(ApplicationEventPublisher applicationEventPublisher, 
                                          @Qualifier(ExtensionAsyncConfig.EXTENSION_EVENT_EXECUTOR_BEAN_NAME) AsyncTaskExecutor taskExecutor) {
+        // 创建默认的事件统计收集器实现
+        this(applicationEventPublisher, taskExecutor, null);
+    }
+    
+    /**
+     * 构造函数，支持完整注入
+     * 
+     * @param applicationEventPublisher Spring事件发布器
+     * @param taskExecutor 异步任务执行器
+     * @param routeStatsCollector 路由统计收集器
+     */
+    @Autowired(required = false)
+    public DefaultExtensionEventPublisher(ApplicationEventPublisher applicationEventPublisher, 
+                                         AsyncTaskExecutor taskExecutor,
+                                         RouteStatsCollector routeStatsCollector) {
         Assert.notNull(applicationEventPublisher, "ApplicationEventPublisher must not be null");
         this.applicationEventPublisher = applicationEventPublisher;
         this.taskExecutor = taskExecutor;
+        this.routeStatsCollector = routeStatsCollector;
     }
     
     @Override
@@ -182,20 +195,17 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
             return;
         }
         
-        // 统计总发布事件数
-        totalPublishedEvents.incrementAndGet();
+        boolean isAsync = asyncPublish && taskExecutor != null;
         
         try {
-            if (asyncPublish && taskExecutor != null) {
+            if (isAsync) {
                 // 异步发布事件
                 asyncPublishEvent(event);
             } else {
                 // 同步发布事件
-                syncEvents.incrementAndGet();
                 doPublishEvent(event);
             }
         } catch (Exception e) {
-            failedEvents.incrementAndGet();
             // 事件发布失败不应影响主流程，但尝试放入回退队列
             log.error("Failed to publish extension event: {}", event.getEventType(), e);
             addToFallbackQueue(event);
@@ -208,27 +218,22 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
      */
     private void asyncPublishEvent(ExtensionEvent<?> event) {
         try {
-            asyncEvents.incrementAndGet();
-            
             // 使用CompletableFuture包装异步任务，提供更好的异常处理和任务编排能力
             CompletableFuture.runAsync(() -> {
                 try {
                     doPublishEvent(event);
                 } catch (Exception e) {
-                    failedEvents.incrementAndGet();
                     log.error("Error in async event publishing for type: {}", event.getEventType(), e);
                     // 将失败的事件添加到回退队列
                     addToFallbackQueue(event);
                 }
             }, taskExecutor);
         } catch (TaskRejectedException e) {
-            failedEvents.incrementAndGet();
             log.warn("Async task rejected, event queue may be full. Switching to fallback mode for event: {}", 
                     event.getEventType(), e);
             // 任务被拒绝时添加到回退队列
             addToFallbackQueue(event);
         } catch (Exception e) {
-            failedEvents.incrementAndGet();
             log.error("Failed to submit async event task: {}", event.getEventType(), e);
             addToFallbackQueue(event);
         }
@@ -469,28 +474,51 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
     }
     
     /**
-     * 获取事件发布统计信息
-     * @return 统计信息字符串
+     * 获取事件统计摘要信息
+     * @return 统计摘要字符串
      */
     public String getEventStats() {
+        // 从RouteStatsCollector获取路由统计信息（如果可用）
+        String routeStatsInfo = "Route stats not available";
+        if (routeStatsCollector != null) {
+            Map<String, Map<String, Long>> routeStats = routeStatsCollector.getRouteStats();
+            routeStatsInfo = "Routes: " + routeStats.size();
+        }
+        
         return String.format(
-            "Event Stats - Total: %d, Async: %d, Sync: %d, Failed: %d, Fallback Queue Size: %d",
-            totalPublishedEvents.get(),
-            asyncEvents.get(),
-            syncEvents.get(),
-            failedEvents.get(),
-            fallbackEventQueue.size()
+            "Event Stats - %s, Fallback Queue Size: %d",
+            routeStatsInfo, fallbackEventQueue.size()
         );
+    }
+    
+    /**
+     * 获取事件发布统计信息
+     * @return 统计信息映射
+     */
+    public Map<String, Object> getStatistics() {
+        Map<String, Object> stats = new HashMap<>();
+        
+        // 使用RouteStatsCollector获取统计信息（如果可用）
+        if (routeStatsCollector != null) {
+            // 获取路由统计信息
+            Map<String, Map<String, Long>> routeStats = routeStatsCollector.getRouteStats();
+            stats.put("routeStats", routeStats);
+        }
+        
+        // 基本事件队列统计
+        stats.put("fallbackQueueSize", fallbackEventQueue.size());
+        
+        return stats;
     }
     
     /**
      * 重置事件统计计数
      */
     public void resetEventStats() {
-        totalPublishedEvents.set(0);
-        asyncEvents.set(0);
-        syncEvents.set(0);
-        failedEvents.set(0);
+        // 重置RouteStatsCollector（如果可用）
+        if (routeStatsCollector != null) {
+            routeStatsCollector.resetAllStats();
+        }
         log.info("Event statistics reset");
     }
     

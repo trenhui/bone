@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -747,7 +749,7 @@ public class PurchaseOrderServiceImpl implements PurchaseOrderService {
         // 计算平均订单金额
         if (!filteredOrders.isEmpty()) {
             BigDecimal averageAmount = totalAmount.divide(
-                    new BigDecimal(filteredOrders.size()), 2, BigDecimal.ROUND_HALF_UP);
+                    new BigDecimal(filteredOrders.size()), 2, RoundingMode.HALF_UP);
             statistics.put("averageAmount", averageAmount);
         } else {
             statistics.put("averageAmount", BigDecimal.ZERO);

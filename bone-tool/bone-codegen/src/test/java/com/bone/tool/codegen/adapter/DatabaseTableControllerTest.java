@@ -3,7 +3,7 @@ package com.bone.tool.codegen.adapter;
 import com.bone.core.model.ApiResponse;
 import com.bone.tool.codegen.domain.entity.DatabaseTableMetadata;
 import com.bone.tool.codegen.domain.service.DatabaseTableService;
-import com.bone.tool.codegen.domain.service.DatabaseTableServiceInterface;
+import com.bone.tool.codegen.domain.service.DatabaseTableService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -34,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class DatabaseTableControllerTest {
 
     @Mock
-    private DatabaseTableServiceInterface databaseTableService;
+    private DatabaseTableService databaseTableService;
 
     @InjectMocks
     private DatabaseTableController databaseTableController;

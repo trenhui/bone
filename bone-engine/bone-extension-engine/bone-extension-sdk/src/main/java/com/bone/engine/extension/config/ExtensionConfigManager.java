@@ -49,9 +49,19 @@ public class ExtensionConfigManager {
     public void init() {
         // 作为适配层，初始化缓存以保持向后兼容性
         if (extensionProperties != null) {
-            // 初始化全局配置缓存
+            // 初始化全局配置缓存 - 缓存配置
             configCache.put(PROPERTY_PREFIX + "cache.enabled", String.valueOf(extensionProperties.getCache().isEnabled()));
             configCache.put(PROPERTY_PREFIX + "cache.expire-time", String.valueOf(extensionProperties.getCache().getExpireTime()));
+            configCache.put(PROPERTY_PREFIX + "cache.max-size", String.valueOf(extensionProperties.getCache().getMaxSize()));
+            
+            // 扫描配置
+            configCache.put(PROPERTY_PREFIX + "scan.enabled", String.valueOf(extensionProperties.getScan().isEnabled()));
+            configCache.put(PROPERTY_PREFIX + "scan.auto-register", String.valueOf(extensionProperties.getScan().isAutoRegister()));
+            
+            // 事件配置
+            configCache.put(PROPERTY_PREFIX + "events.enabled", String.valueOf(extensionProperties.getEvents().isEnabled()));
+            configCache.put(PROPERTY_PREFIX + "events.async", String.valueOf(extensionProperties.getEvents().isAsync()));
+            configCache.put(PROPERTY_PREFIX + "events.executor", extensionProperties.getEvents().getExecutor());
             
             log.info("Initialized ExtensionConfigManager with ExtensionProperties");
         }
@@ -59,16 +69,36 @@ public class ExtensionConfigManager {
 
     /**
      * 获取全局配置值
+     * <p>采用一致的配置访问模式，优先从ExtensionProperties获取，其次从缓存获取</p>
      */
     public String getGlobalConfig(String configKey) {
-        // 优先从ExtensionProperties获取配置
-        if (extensionProperties != null && configKey.equals("cache.enabled")) {
-            return String.valueOf(extensionProperties.getCache().isEnabled());
-        } else if (extensionProperties != null && configKey.equals("cache.expire-time")) {
-            return String.valueOf(extensionProperties.getCache().getExpireTime());
+        // 优先从ExtensionProperties获取配置 - 使用统一的命名映射
+        if (extensionProperties != null) {
+            // 缓存配置
+            if (configKey.equals("cache.enabled")) {
+                return String.valueOf(extensionProperties.getCache().isEnabled());
+            } else if (configKey.equals("cache.expire-time")) {
+                return String.valueOf(extensionProperties.getCache().getExpireTime());
+            } else if (configKey.equals("cache.max-size")) {
+                return String.valueOf(extensionProperties.getCache().getMaxSize());
+            }
+            // 扫描配置
+            else if (configKey.equals("scan.enabled")) {
+                return String.valueOf(extensionProperties.getScan().isEnabled());
+            } else if (configKey.equals("scan.auto-register")) {
+                return String.valueOf(extensionProperties.getScan().isAutoRegister());
+            }
+            // 事件配置
+            else if (configKey.equals("events.enabled")) {
+                return String.valueOf(extensionProperties.getEvents().isEnabled());
+            } else if (configKey.equals("events.async")) {
+                return String.valueOf(extensionProperties.getEvents().isAsync());
+            } else if (configKey.equals("events.executor")) {
+                return extensionProperties.getEvents().getExecutor();
+            }
         }
         
-        // 向后兼容
+        // 向后兼容 - 从缓存获取
         return configCache.get(PROPERTY_PREFIX + configKey);
     }
 
@@ -118,11 +148,7 @@ public class ExtensionConfigManager {
      * 检查扩展点是否启用缓存
      */
     public boolean isExtPointCacheEnabled(String extPointName) {
-        // 优先从ExtensionProperties获取配置
-        if (extensionProperties != null) {
-            return extensionProperties.getCache().isEnabled();
-        }
-        // 向后兼容
+        // 优先检查扩展点特定配置，其次使用全局配置
         return getExtPointConfigBoolean(extPointName, "cache.enabled", 
                 getGlobalConfigBoolean("cache.enabled", true));
     }
@@ -131,20 +157,56 @@ public class ExtensionConfigManager {
      * 获取扩展点的缓存过期时间（毫秒）
      */
     public long getExtPointCacheExpireTime(String extPointName) {
-        // 优先从ExtensionProperties获取配置
-        if (extensionProperties != null) {
-            return extensionProperties.getCache().getExpireTime();
-        }
-        // 向后兼容
+        // 优先检查扩展点特定配置
         String value = getExtPointConfig(extPointName, "cache.expire-time");
         if (StringUtils.hasText(value)) {
             try {
                 return Long.parseLong(value);
             } catch (NumberFormatException e) {
-                // 忽略格式错误
+                log.warn("Invalid cache expire time format for extPoint {}: {}", extPointName, value);
             }
         }
+        
+        // 其次使用全局配置
+        value = getGlobalConfig("cache.expire-time");
+        if (StringUtils.hasText(value)) {
+            try {
+                return Long.parseLong(value);
+            } catch (NumberFormatException e) {
+                log.warn("Invalid global cache expire time format: {}", value);
+            }
+        }
+        
+        // 默认值
         return 300000; // 默认5分钟
+    }
+    
+    /**
+     * 获取扩展点的缓存最大大小
+     */
+    public int getExtPointCacheMaxSize(String extPointName) {
+        // 优先检查扩展点特定配置
+        String value = getExtPointConfig(extPointName, "cache.max-size");
+        if (StringUtils.hasText(value)) {
+            try {
+                return Integer.parseInt(value);
+            } catch (NumberFormatException e) {
+                log.warn("Invalid cache max size format for extPoint {}: {}", extPointName, value);
+            }
+        }
+        
+        // 其次使用全局配置
+        value = getGlobalConfig("cache.max-size");
+        if (StringUtils.hasText(value)) {
+            try {
+                return Integer.parseInt(value);
+            } catch (NumberFormatException e) {
+                log.warn("Invalid global cache max size format: {}", value);
+            }
+        }
+        
+        // 默认值
+        return 1000; // 默认1000个条目
     }
 
     /**

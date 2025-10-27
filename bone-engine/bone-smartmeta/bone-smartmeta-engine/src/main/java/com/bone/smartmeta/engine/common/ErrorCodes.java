@@ -15,6 +15,24 @@ public final class ErrorCodes {
     public static final String SUCCESS = "SUCCESS";
     public static final String SYSTEM_ERROR = "SYSTEM_ERROR";
     
+    // 业务规则错误代码 - 从ErrorCodeConstants合并
+    public static final String HIGH_VALUE_ORDER_REQUIRES_APPROVAL = "HIGH_VALUE_ORDER_REQUIRES_APPROVAL";
+    public static final String RULE_EVALUATION_FAILED = "RULE_EVALUATION_FAILED";
+    public static final String RULE_EXECUTION_FAILED = "RULE_EXECUTION_FAILED";
+    public static final String UNSUPPORTED_RULE_TYPE = "UNSUPPORTED_RULE_TYPE";
+    public static final String INVALID_ENTITY_TYPE = "INVALID_ENTITY_TYPE";
+    
+    // 工作流错误代码 - 从ErrorCodeConstants合并
+    public static final String WORKFLOW_START_FAILED = "WORKFLOW_START_FAILED";
+    public static final String TRANSITION_EXECUTION_FAILED = "TRANSITION_EXECUTION_FAILED";
+    public static final String TASK_COMPLETION_FAILED = "TASK_COMPLETION_FAILED";
+    public static final String INVALID_WORKFLOW_PARAMETER = "INVALID_WORKFLOW_PARAMETER";
+    
+    // 模型相关错误代码 - 从业务异常中提取
+    public static final String MODEL_LOAD_FAILED = "MODEL_LOAD_FAILED";
+    public static final String MODEL_REGISTER_FAILED = "MODEL_REGISTER_FAILED";
+    public static final String MODEL_DUPLICATE_FAILED = "MODEL_DUPLICATE_FAILED";
+    
     // 参数相关错误码
     public static final String INVALID_PARAMETER = "INVALID_PARAMETER";
     public static final String ILLEGAL_ARGUMENT = "ILLEGAL_ARGUMENT";
@@ -38,6 +56,7 @@ public final class ErrorCodes {
     
     // 验证相关错误
     public static final String VALIDATION_FAILED = "VALIDATION_FAILED";      // 验证失败
+    public static final String VALIDATION_ERROR = "VALIDATION_ERROR";        // 验证错误（兼容旧代码）
     
     // 外部服务错误
     public static final String EXTERNAL_SERVICE_ERROR = "EXTERNAL_SERVICE_ERROR"; // 外部服务调用失败

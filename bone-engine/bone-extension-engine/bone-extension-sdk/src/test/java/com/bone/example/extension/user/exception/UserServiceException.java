@@ -1,38 +1,49 @@
 package com.bone.example.extension.user.exception;
 
+import com.bone.engine.extension.exception.BusinessException;
+
 /**
- * 用户服务模块的自定义异常类
- * 用于用户服务处理过程中的业务异常
+ * 用户服务异常类
+ * <p>
+ * 提供用户服务领域特有的异常功能和业务方法
  */
-public class UserServiceException extends RuntimeException {
+public class UserServiceException extends BusinessException {
+    private static final long serialVersionUID = 1L;
     
-    private String errorCode;
-    private String userId;
-    
-    public UserServiceException(String message) {
-        super(message);
+    /**
+     * 构建用户服务异常
+     * @param errorCode 错误码
+     * @param message 错误消息
+     */
+    public UserServiceException(String errorCode, String message) {
+        super("USER_SERVICE", errorCode, message);
     }
     
-    public UserServiceException(String message, Throwable cause) {
-        super(message, cause);
+    /**
+     * 构建用户服务异常
+     * @param errorCode 错误码
+     * @param message 错误消息
+     * @param cause 异常原因
+     */
+    public UserServiceException(String errorCode, String message, Throwable cause) {
+        super("USER_SERVICE", errorCode, message, cause);
     }
     
-    public UserServiceException(String message, String errorCode) {
-        super(message);
-        this.errorCode = errorCode;
+    /**
+     * 创建用户未找到异常
+     * @param userId 用户ID
+     * @return 用户服务异常实例
+     */
+    public static UserServiceException userNotFound(String userId) {
+        return new UserServiceException("USER_NOT_FOUND", "用户不存在: " + userId);
     }
     
-    public UserServiceException(String message, String errorCode, String userId) {
-        super(message);
-        this.errorCode = errorCode;
-        this.userId = userId;
-    }
-    
-    public String getErrorCode() {
-        return errorCode;
-    }
-    
-    public String getUserId() {
-        return userId;
+    /**
+     * 创建用户验证异常
+     * @param message 验证失败消息
+     * @return 用户服务异常实例
+     */
+    public static UserServiceException validationError(String message) {
+        return new UserServiceException("USER_VALIDATION_ERROR", message);
     }
 }

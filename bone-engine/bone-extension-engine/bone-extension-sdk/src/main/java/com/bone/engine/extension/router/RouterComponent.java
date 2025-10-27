@@ -119,33 +119,52 @@ public interface RouterComponent {
     // 统计收集器相关
     interface StatsCollectorComponent extends RouterComponent {
         /**
-         * 记录路由统计
+         * 记录路由统计信息
+         * 
+         * @param extPointClass 扩展点类型
+         * @param method 调用方法
+         * @param implementationType 实现类型
+         * @param executionTimeMs 执行时间（毫秒）
+         * @param success 是否成功
          */
-        void recordRouteStats(Class<?> extPointClass, Object implementation);
+        void recordRouteStats(Class<?> extPointClass, java.lang.reflect.Method method, 
+                             Class<?> implementationType, long executionTimeMs, boolean success);
         
         /**
          * 记录路由失败
+         * 
+         * @param extPointClass 扩展点类型
+         * @param method 调用方法
+         * @param implementationType 实现类型
          */
-        void recordRouteFailure(Class<?> extPointClass, Throwable ex);
-        
-        /**
-         * 记录路由指标
-         */
-        void recordMetrics(Class<?> extPointClass, boolean success, long costTime, long warningThreshold);
+        void recordRouteFailure(Class<?> extPointClass, java.lang.reflect.Method method, 
+                               Class<?> implementationType);
         
         /**
          * 获取路由统计
+         * 
+         * @return 路由统计信息映射
          */
         Map<String, Map<String, Long>> getRouteStats();
         
         /**
          * 获取实现统计
+         * 
+         * @param implementationName 实现名称
+         * @return 实现统计信息映射
          */
         Map<String, Long> getImplementationStats(String implementationName);
         
         /**
-         * 重置路由统计
+         * 重置所有统计信息
          */
-        void resetRouteStats();
+        void resetAllStats();
+        
+        /**
+         * 重置特定扩展点的统计
+         * 
+         * @param extPointClass 扩展点类型
+         */
+        void resetStatsForExtPoint(Class<?> extPointClass);
     }
 }

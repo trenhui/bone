@@ -5,6 +5,7 @@ import com.bone.smartmeta.engine.annotation.SmartField;
 import lombok.Data;
 import lombok.Builder;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 
 /**
@@ -138,7 +139,7 @@ public class PurchaseOrderItem {
         if (unitPrice != null && taxRate != null) {
             try {
                 BigDecimal rate = new BigDecimal(taxRate);
-                this.priceWithoutTax = unitPrice.divide(rate.add(BigDecimal.ONE), 4, BigDecimal.ROUND_HALF_UP);
+                this.priceWithoutTax = unitPrice.divide(rate.add(BigDecimal.ONE), 4, RoundingMode.HALF_UP);
             } catch (Exception e) {
                 // 税率格式错误，默认不做计算
             }
@@ -152,7 +153,7 @@ public class PurchaseOrderItem {
         if (totalPrice != null && taxRate != null) {
             try {
                 BigDecimal rate = new BigDecimal(taxRate);
-                this.taxAmount = totalPrice.subtract(totalPrice.divide(rate.add(BigDecimal.ONE), 4, BigDecimal.ROUND_HALF_UP));
+                this.taxAmount = totalPrice.subtract(totalPrice.divide(rate.add(BigDecimal.ONE), 4, RoundingMode.HALF_UP));
             } catch (Exception e) {
                 // 税率格式错误，默认不做计算
             }

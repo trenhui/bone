@@ -5,6 +5,7 @@ import com.bone.tool.codegen.application.dto.GenerateCustomCodeRequest;
 import com.bone.tool.codegen.domain.repository.CodegenTableRepository;
 import com.bone.tool.codegen.domain.repository.CodegenColumnRepository;
 import com.bone.tool.codegen.domain.service.CodegenService;
+import com.bone.tool.codegen.domain.service.CodegenServiceImpl;
 import com.bone.tool.codegen.domain.service.DataSourceConfigService;
 import com.bone.tool.codegen.domain.service.DatabaseTableService;
 import com.bone.tool.codegen.domain.service.generator.DefaultCodeGenerator;
@@ -35,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class CodegenServiceTest {
 
     @InjectMocks
-    private CodegenService codegenService;
+    private CodegenServiceImpl codegenService;
     
     @Mock
     private CodegenTableRepository codegenTableRepository;

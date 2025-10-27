@@ -1,55 +1,43 @@
 package com.bone.metadata.sdk.test.domain.query;
 
-
-import com.bone.core.model.Query;
-import com.bone.core.model.SortableParam;
-import com.bone.metadata.sdk.domain.annotation.QueryField;
-import io.swagger.v3.oas.annotations.media.Schema;
-import lombok.*;
-
 import java.time.LocalDateTime;
 
 /**
- *
- * 用户查询对象
- *
+ * 简化的用户查询类
+ * 移除了所有外部依赖
  */
-@EqualsAndHashCode(callSuper = true)
-@Schema(description = "用户查询对象")
-@Data
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class UserQuery extends SortableParam implements Query {
-
+public class UserQuery {
+    
     private Long id;
-
-    @QueryField("name")
     private String userName;
-
     private Long roleId;
-
-    private String roleName;
-
-    private String permCode;
-
-    private String permName;
-
-    private String permPath;
-
-    private String bizCode;
-
-    private Integer permType;
-
-    private Integer sortOrder;
-
-    private LocalDateTime createTime;
-
-    private Long createBy;
-
-    private LocalDateTime updateTime;
-
-    private Long updateBy;
-
-    private Integer deleted;
+    
+    // 简单的构造器
+    public UserQuery() {
+    }
+    
+    // Getter和Setter方法
+    public Long getId() {
+        return id;
+    }
+    
+    public void setId(Long id) {
+        this.id = id;
+    }
+    
+    public String getUserName() {
+        return userName;
+    }
+    
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+    
+    public Long getRoleId() {
+        return roleId;
+    }
+    
+    public void setRoleId(Long roleId) {
+        this.roleId = roleId;
+    }
 }

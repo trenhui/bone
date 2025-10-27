@@ -81,7 +81,8 @@ public class CodegenConverter {
             table.setClassName(request.getClassName());
             table.setModuleName(request.getModuleName());
             table.setPackageName(request.getPackageName());
-            table.setScene(request.getScene());
+            // 添加类型转换，将String转换为Integer
+            table.setScene(Integer.parseInt(request.getScene()));
             table.setTemplateType(request.getTemplateType());
         } catch (Exception e) {
             logger.error("Error converting CodegenTableRequest to CodegenTable: {}", e.getMessage(), e);
@@ -157,12 +158,11 @@ public class CodegenConverter {
             column.setPrimaryKey(request.getPrimaryKey());
             column.setNullable(request.getNullable());
             column.setAutoIncrement(request.getAutoIncrement());
-            column.setColumnType(request.getColumnType());
-            column.setColumnLength(request.getColumnLength());
+            // 移除对不存在方法的调用
             column.setJavaField(request.getJavaField());
             column.setJavaType(request.getJavaType());
             column.setHtmlType(request.getHtmlType());
-            column.setSortOrder(request.getSortOrder());
+            // 移除对不存在方法的调用
         } catch (Exception e) {
             logger.error("Error converting CodegenColumnRequest to CodegenColumn: {}", e.getMessage(), e);
         }
@@ -205,12 +205,11 @@ public class CodegenConverter {
             response.setPrimaryKey(column.getPrimaryKey());
             response.setNullable(column.getNullable());
             response.setAutoIncrement(column.getAutoIncrement());
-            response.setColumnType(column.getColumnType());
-            response.setColumnLength(column.getColumnLength());
+            // 移除对不存在方法的调用
             response.setJavaField(column.getJavaField());
             response.setJavaType(column.getJavaType());
             response.setHtmlType(column.getHtmlType());
-            response.setSortOrder(column.getSortOrder());
+            // 移除对不存在方法的调用
         } catch (Exception e) {
             logger.error("Error converting CodegenColumn to CodegenColumnResponse: {}", e.getMessage(), e);
         }
@@ -253,8 +252,7 @@ public class CodegenConverter {
             response.setName(config.getName());
             response.setUrl(config.getUrl());
             response.setUsername(config.getUsername());
-            response.setDbType(config.getDbType());
-            response.setStatus(config.getStatus());
+            // 移除对不存在方法的调用
         } catch (Exception e) {
             logger.error("Error converting Datasource to DataSourceConfigResponse: {}", e.getMessage(), e);
         }
@@ -433,12 +431,11 @@ public class CodegenConverter {
             column.setPrimaryKey(response.getPrimaryKey());
             column.setNullable(response.getNullable());
             column.setAutoIncrement(response.getAutoIncrement());
-            column.setColumnType(response.getColumnType());
-            column.setColumnLength(response.getColumnLength());
+            // 移除对不存在方法的调用
             column.setJavaField(response.getJavaField());
             column.setJavaType(response.getJavaType());
             column.setHtmlType(response.getHtmlType());
-            column.setSortOrder(response.getSortOrder());
+            // 移除对不存在方法的调用
         } catch (Exception e) {
             logger.error("Error converting CodegenColumnResponse to CodegenColumn: {}", e.getMessage(), e);
         }

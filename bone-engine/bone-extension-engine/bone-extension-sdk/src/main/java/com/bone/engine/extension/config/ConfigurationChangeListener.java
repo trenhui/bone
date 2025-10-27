@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
+import java.util.Arrays;
 
 /**
  * 配置变更监听器
@@ -47,6 +48,31 @@ public class ConfigurationChangeListener implements ApplicationListener<Environm
         this.configManager = configManager;
         this.environment = environment;
         this.applicationContext = applicationContext;
+        // 自动注册所有ConfigChangeListener实现
+        Map<String, ConfigChangeListener> listeners = applicationContext.getBeansOfType(ConfigChangeListener.class);
+        for (ConfigChangeListener listener : listeners.values()) {
+            addConfigChangeListener(listener);
+        }
+    }
+    
+    /**
+     * 添加配置变更监听器
+     */
+    public void addConfigChangeListener(ConfigChangeListener listener) {
+        if (listener != null && !configChangeListeners.contains(listener)) {
+            configChangeListeners.add(listener);
+            log.debug("Added config change listener: {}", listener.getClass().getSimpleName());
+        }
+    }
+    
+    /**
+     * 移除配置变更监听器
+     */
+    public void removeConfigChangeListener(ConfigChangeListener listener) {
+        if (listener != null) {
+            configChangeListeners.remove(listener);
+            log.debug("Removed config change listener: {}", listener.getClass().getSimpleName());
+        }
     }
 
     // 移除setEnvironment方法，通过构造函数注入
@@ -86,6 +112,28 @@ public class ConfigurationChangeListener implements ApplicationListener<Environm
             
             // 触发配置更新回调
             triggerConfigUpdateCallbacks();
+        }
+        
+        // 通知所有注册的配置变更监听器
+        for (ConfigChangeListener listener : configChangeListeners) {
+            try {
+                String[] prefixes = listener.getConfigKeyPrefixes();
+                if (prefixes != null && prefixes.length > 0) {
+                    // 过滤出与监听器相关的变更键
+                    Set<String> relevantKeys = changedKeys.stream()
+                            .filter(key -> Arrays.stream(prefixes).anyMatch(key::startsWith))
+                            .collect(Collectors.toSet());
+                    
+                    if (!relevantKeys.isEmpty()) {
+                        listener.onConfigChanged(relevantKeys);
+                    }
+                } else {
+                    // 如果监听器没有指定前缀，则通知所有变更
+                    listener.onConfigChanged(changedKeys);
+                }
+            } catch (Exception e) {
+                log.error("Error notifying config change listener: {}", listener.getClass().getSimpleName(), e);
+            }
         }
     }
 

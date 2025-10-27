@@ -2,14 +2,14 @@ package com.bone.smartmeta.engine;
 
 import com.bone.smartmeta.engine.model.BusinessRuleMetadata;
 import com.bone.smartmeta.engine.model.DynamicSmartEntity;
-import com.bone.smartmeta.engine.model.ValidationResult;
+import com.bone.smartmeta.engine.validation.ValidationResult;
 
 import java.util.List;
 import java.util.Map;
 
 /**
- * 业务规则引擎接口
- * 负责执行业务规则的验证和操作
+ * 通用业务规则引擎接口
+ * 负责执行业务规则的验证和操作，支持多种业务场景
  */
 public interface BusinessRuleEngine {
     
@@ -57,4 +57,26 @@ public interface BusinessRuleEngine {
      * @return 规则列表
      */
     List<BusinessRuleMetadata> getRulesForEvent(String entityApiName, String eventType);
+    
+    /**
+     * 评估高价值订单规则
+     * @param orderData 订单数据
+     * @return 规则执行结果
+     */
+    ValidationResult evaluateHighValueOrderRule(Map<String, Object> orderData);
+    
+    /**
+     * 评估订单优先级规则
+     * @param orderData 订单数据
+     * @return 规则执行结果
+     */
+    ValidationResult evaluateOrderPriorityRule(Map<String, Object> orderData);
+    
+    /**
+     * 执行指定类型的业务规则
+     * @param entity 实体对象
+     * @param ruleType 规则类型
+     * @return 规则执行结果
+     */
+    ValidationResult executeRules(Object entity, String ruleType);
 }

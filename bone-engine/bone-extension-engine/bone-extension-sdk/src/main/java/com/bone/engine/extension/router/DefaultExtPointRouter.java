@@ -20,6 +20,7 @@ import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.stereotype.Component;
+import com.bone.engine.extension.config.ExtensionConfigManager;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
@@ -34,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import com.bone.engine.extension.config.ConfigChangeListener;
 
@@ -84,9 +86,26 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     private final Map<Class<?>, Object> defaultImplementations = new ConcurrentHashMap<>();
     
     /**
-     * 构造函数，支持自动注入ApplicationContext
+     * 构造函数，支持自动注入ApplicationContext和RouteStatsCollector
      */
     @Autowired
+    public DefaultExtPointRouter(ApplicationContext applicationContext, RouteStatsCollector routeStatsCollector) {
+        Assert.notNull(applicationContext, "ApplicationContext must not be null");
+        Assert.notNull(routeStatsCollector, "RouteStatsCollector must not be null");
+        this.applicationContext = applicationContext;
+        this.statsCollector = routeStatsCollector;
+        
+        // 初始化其他组件
+        this.cacheManager = new CacheManager();
+        this.scoreCalculator = new RouteScoreCalculator();
+        this.weightAndGraySelector = new WeightAndGraySelector();
+    }
+    
+    /**
+     * 构造函数，支持自动注入ApplicationContext（向后兼容）
+     */
+    @Autowired
+    @Deprecated
     public DefaultExtPointRouter(ApplicationContext applicationContext) {
         this.applicationContext = applicationContext;
         
@@ -124,52 +143,113 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     @Autowired(required = false)
     private ExtensionLifecycle extensionLifecycle;
     
-    // 获取缓存过期时间配置
-    private long getCacheExpireTime() {
-        if (extensionProperties != null && extensionProperties.getCache() != null) {
-            return extensionProperties.getCache().getExpireTime();
+    // 扩展点配置管理器
+    @Autowired(required = false)
+    private ExtensionConfigManager configManager;
+    
+    // 配置访问工具方法 - 获取整型配置值
+    private int getIntConfig(Supplier<Integer> configSupplier, int defaultValue) {
+        try {
+            return configSupplier != null ? configSupplier.get() : defaultValue;
+        } catch (Exception e) {
+            return defaultValue;
         }
-        return 300000L;
+    }
+    
+    // 获取缓存过期时间配置（秒）
+    private int getCacheExpireTime() {
+        // 配置优先级：ExtensionConfigManager > ExtensionProperties > 默认值
+        return getIntConfig(
+            () -> {
+                // 优先从ExtensionConfigManager获取（单位：秒）
+                if (configManager != null) {
+                    return (int) (configManager.getExtPointCacheExpireTime(null) / 1000);
+                }
+                // 回退到ExtensionProperties（单位：秒）
+                if (extensionProperties != null && extensionProperties.getCache() != null) {
+                    return (int) (extensionProperties.getCache().getExpireTime() / 1000);
+                }
+                return 300;
+            },
+            300 // 默认5分钟（300秒）
+        );
     }
     
     // 获取缓存最大容量配置
-    private long getCacheMaxSize() {
-        if (extensionProperties != null && extensionProperties.getCache() != null) {
-            return extensionProperties.getCache().getMaxSize();
+    private int getCacheMaxSize() {
+        // 配置优先级：ExtensionConfigManager > ExtensionProperties > 默认值
+        return getIntConfig(
+            () -> {
+                // 优先从ExtensionConfigManager获取
+                if (configManager != null) {
+                    return configManager.getExtPointCacheMaxSize(null);
+                }
+                // 回退到ExtensionProperties
+                if (extensionProperties != null && extensionProperties.getCache() != null) {
+                    return extensionProperties.getCache().getMaxSize();
+                }
+                return 1000;
+            },
+            1000 // 默认1000个条目
+        );
+    }
+    
+    // 配置访问工具方法 - 获取布尔配置值
+    private boolean getBooleanConfig(Supplier<Boolean> configSupplier, boolean defaultValue) {
+        try {
+            return configSupplier != null ? configSupplier.get() : defaultValue;
+        } catch (Exception e) {
+            return defaultValue;
         }
-        return 1000L;
+    }
+    
+    // 配置访问工具方法 - 获取长整型配置值
+    private long getLongConfig(Supplier<Long> configSupplier, long defaultValue) {
+        try {
+            return configSupplier != null ? configSupplier.get() : defaultValue;
+        } catch (Exception e) {
+            return defaultValue;
+        }
     }
     
     // 是否启用权重路由
     private boolean isWeightedRoutingEnabled() {
-        if (extensionProperties != null && extensionProperties.getRouter() != null && extensionProperties.getRouter().getWeighted() != null) {
-            return extensionProperties.getRouter().getWeighted().isEnabled();
-        }
-        return false;
+        return getBooleanConfig(
+            () -> extensionProperties != null && extensionProperties.getRouter() != null && 
+                  extensionProperties.getRouter().getWeighted() != null ? 
+                  extensionProperties.getRouter().getWeighted().isEnabled() : false, 
+            false
+        );
     }
     
     // 是否启用灰度发布
     private boolean isGrayReleaseEnabled() {
-        if (extensionProperties != null && extensionProperties.getRouter() != null && extensionProperties.getRouter().getGrayRelease() != null) {
-            return extensionProperties.getRouter().getGrayRelease().isEnabled();
-        }
-        return false;
+        return getBooleanConfig(
+            () -> extensionProperties != null && extensionProperties.getRouter() != null && 
+                  extensionProperties.getRouter().getGrayRelease() != null ? 
+                  extensionProperties.getRouter().getGrayRelease().isEnabled() : false, 
+            false
+        );
     }
     
     // 是否启用指标收集
     private boolean isMetricsEnabled() {
-        if (extensionProperties != null && extensionProperties.getRouter() != null && extensionProperties.getRouter().getMetrics() != null) {
-            return extensionProperties.getRouter().getMetrics().isEnabled();
-        }
-        return false;
+        return getBooleanConfig(
+            () -> extensionProperties != null && extensionProperties.getRouter() != null && 
+                  extensionProperties.getRouter().getMetrics() != null ? 
+                  extensionProperties.getRouter().getMetrics().isEnabled() : false, 
+            false
+        );
     }
     
     // 获取性能警告阈值（毫秒）
     private long getWarningThreshold() {
-        if (extensionProperties != null && extensionProperties.getRouter() != null && extensionProperties.getRouter().getMetrics() != null) {
-            return extensionProperties.getRouter().getMetrics().getWarningThreshold();
-        }
-        return 1000L;
+        return getLongConfig(
+            () -> extensionProperties != null && extensionProperties.getRouter() != null && 
+                  extensionProperties.getRouter().getMetrics() != null ? 
+                  extensionProperties.getRouter().getMetrics().getWarningThreshold() : 1000L, 
+            1000L
+        );
     }
     
     @Override
@@ -236,22 +316,36 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     }
     
     /**
+     * 使用反射设置布尔字段值的通用方法
+     */
+    private <T> void setBooleanField(T targetObject, String fieldName, boolean value, String configName) {
+        if (targetObject == null) {
+            return;
+        }
+        
+        try {
+            // 反射设置值，避免修改接口
+            java.lang.reflect.Field field = targetObject.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            field.setBoolean(targetObject, value);
+            log.info("{} set to: {}", configName, value);
+            clearCache();
+        } catch (Exception e) {
+            log.warn("Failed to update {} configuration", configName, e);
+        }
+    }
+    
+    /**
      * 设置是否启用权重路由
      */
     public void setWeightedRoutingEnabled(boolean weightedRoutingEnabled) {
-        // 使用ExtensionProperties更新配置
-        if (extensionProperties != null && extensionProperties.getRouter() != null && 
-            extensionProperties.getRouter().getWeighted() != null) {
-            try {
-                // 反射设置值，避免修改接口
-                java.lang.reflect.Field field = extensionProperties.getRouter().getWeighted().getClass().getDeclaredField("enabled");
-                field.setAccessible(true);
-                field.setBoolean(extensionProperties.getRouter().getWeighted(), weightedRoutingEnabled);
-                log.info("Weighted routing enabled set to: {}", weightedRoutingEnabled);
-                clearCache();
-            } catch (Exception e) {
-                log.warn("Failed to update weighted routing configuration", e);
-            }
+        if (extensionProperties != null && extensionProperties.getRouter() != null) {
+            setBooleanField(
+                extensionProperties.getRouter().getWeighted(),
+                "enabled",
+                weightedRoutingEnabled,
+                "Weighted routing enabled"
+            );
         }
     }
     
@@ -259,19 +353,13 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
      * 设置是否启用灰度发布
      */
     public void setGrayReleaseEnabled(boolean grayReleaseEnabled) {
-        // 使用ExtensionProperties更新配置
-        if (extensionProperties != null && extensionProperties.getRouter() != null && 
-            extensionProperties.getRouter().getGrayRelease() != null) {
-            try {
-                // 反射设置值，避免修改接口
-                java.lang.reflect.Field field = extensionProperties.getRouter().getGrayRelease().getClass().getDeclaredField("enabled");
-                field.setAccessible(true);
-                field.setBoolean(extensionProperties.getRouter().getGrayRelease(), grayReleaseEnabled);
-                log.info("Gray release enabled set to: {}", grayReleaseEnabled);
-                clearCache();
-            } catch (Exception e) {
-                log.warn("Failed to update gray release configuration", e);
-            }
+        if (extensionProperties != null && extensionProperties.getRouter() != null) {
+            setBooleanField(
+                extensionProperties.getRouter().getGrayRelease(),
+                "enabled",
+                grayReleaseEnabled,
+                "Gray release enabled"
+            );
         }
     }
     
@@ -342,22 +430,35 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     }
     
     /**
+     * 使用反射设置长整型字段值的通用方法
+     */
+    private <T> void setLongField(T targetObject, String fieldName, long value, String configName) {
+        if (targetObject == null) {
+            return;
+        }
+        
+        try {
+            // 反射设置值，避免修改接口
+            java.lang.reflect.Field field = targetObject.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            field.setLong(targetObject, value);
+            log.info("{} set to: {}", configName, value);
+        } catch (Exception e) {
+            log.warn("Failed to update {} configuration", configName, e);
+        }
+    }
+    
+    /**
      * 设置是否启用指标收集
      */
     public void setMetricsEnabled(boolean metricsEnabled) {
-        // 使用ExtensionProperties更新配置
-        if (extensionProperties != null && extensionProperties.getRouter() != null && 
-            extensionProperties.getRouter().getMetrics() != null) {
-            try {
-                // 反射设置值，避免修改接口
-                java.lang.reflect.Field field = extensionProperties.getRouter().getMetrics().getClass().getDeclaredField("enabled");
-                field.setAccessible(true);
-                field.setBoolean(extensionProperties.getRouter().getMetrics(), metricsEnabled);
-                log.info("Metrics enabled set to: {}", metricsEnabled);
-                clearCache();
-            } catch (Exception e) {
-                log.warn("Failed to update metrics configuration", e);
-            }
+        if (extensionProperties != null && extensionProperties.getRouter() != null) {
+            setBooleanField(
+                extensionProperties.getRouter().getMetrics(),
+                "enabled",
+                metricsEnabled,
+                "Metrics enabled"
+            );
         }
     }
     
@@ -365,18 +466,13 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
      * 设置性能警告阈值
      */
     public void setWarningThreshold(long warningThreshold) {
-        // 使用ExtensionProperties更新配置
-        if (extensionProperties != null && extensionProperties.getRouter() != null && 
-            extensionProperties.getRouter().getMetrics() != null) {
-            try {
-                // 反射设置值，避免修改接口
-                java.lang.reflect.Field field = extensionProperties.getRouter().getMetrics().getClass().getDeclaredField("warningThreshold");
-                field.setAccessible(true);
-                field.setLong(extensionProperties.getRouter().getMetrics(), warningThreshold);
-                log.info("Warning threshold set to: {}ms", warningThreshold);
-            } catch (Exception e) {
-                log.warn("Failed to update warning threshold configuration", e);
-            }
+        if (extensionProperties != null && extensionProperties.getRouter() != null) {
+            setLongField(
+                extensionProperties.getRouter().getMetrics(),
+                "warningThreshold",
+                warningThreshold,
+                "Warning threshold (ms)"
+            );
         }
     }
     

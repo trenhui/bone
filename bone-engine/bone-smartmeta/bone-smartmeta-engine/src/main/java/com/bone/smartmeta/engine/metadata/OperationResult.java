@@ -15,7 +15,6 @@ import java.io.Serializable;
  * messages, data, error codes, and detailed information</p>
  */
 @Data
-@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class OperationResult implements Serializable {
@@ -25,7 +24,6 @@ public class OperationResult implements Serializable {
     private String message;
     private Object data;
     private String errorCode;
-    @Builder.Default
     private Map<String, Object> details = new HashMap<>();
     
     /**
@@ -132,5 +130,33 @@ public class OperationResult implements Serializable {
         result.setErrorCode(this.errorCode);
         result.setDetails(this.details);
         return result;
+    }
+    
+    /**
+     * 设置操作是否成功
+     */
+    public void setSuccess(boolean success) {
+        this.success = success;
+    }
+    
+    /**
+     * 设置消息
+     */
+    public void setMessage(String message) {
+        this.message = message;
+    }
+    
+    /**
+     * 设置数据
+     */
+    public void setData(Object data) {
+        this.data = data;
+    }
+    
+    /**
+     * 设置错误码
+     */
+    public void setErrorCode(String errorCode) {
+        this.errorCode = errorCode;
     }
 }

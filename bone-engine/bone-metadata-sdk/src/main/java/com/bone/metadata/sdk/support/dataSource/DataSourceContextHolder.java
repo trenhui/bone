@@ -231,6 +231,101 @@ public final class DataSourceContextHolder {
     }
     
     /**
+     * 异步执行Runnable任务的内部辅助方法
+     * 
+     * @param dataSource 数据源标识符
+     * @param executor 执行器
+     * @param action 要执行的操作
+     * @param withExecutor 是否使用自定义执行器
+     * @return CompletableFuture实例
+     */
+    private static CompletableFuture<Void> doExecuteAsync(String dataSource, Executor executor, 
+                                                        Runnable action, boolean withExecutor) {
+        // 保存当前线程的数据源上下文快照
+        Deque<String> currentContext = createContextSnapshot();
+        
+        if (withExecutor) {
+            return CompletableFuture.runAsync(() -> {
+                try {
+                    // 恢复数据源上下文快照
+                    restoreContextSnapshot(currentContext);
+                    // 在指定数据源上执行操作
+                    executeInDataSource(dataSource, action);
+                } catch (Exception e) {
+                    logger.error("使用自定义执行器在数据源[{}]中异步执行操作失败", dataSource, e);
+                    throw e;
+                } finally {
+                    // 清理当前线程的上下文
+                    clearAllDataSources();
+                }
+            }, executor);
+        } else {
+            return CompletableFuture.runAsync(() -> {
+                try {
+                    // 恢复数据源上下文快照
+                    restoreContextSnapshot(currentContext);
+                    // 在指定数据源上执行操作
+                    executeInDataSource(dataSource, action);
+                } catch (Exception e) {
+                    logger.error("在数据源[{}]中异步执行操作失败", dataSource, e);
+                    throw e;
+                } finally {
+                    // 清理当前线程的上下文
+                    clearAllDataSources();
+                }
+            });
+        }
+    }
+    
+    /**
+     * 异步执行Supplier任务的内部辅助方法
+     * 
+     * @param <T> 返回类型
+     * @param dataSource 数据源标识符
+     * @param executor 执行器
+     * @param action 要执行的操作
+     * @param withExecutor 是否使用自定义执行器
+     * @return 包含操作结果的CompletableFuture实例
+     */
+    private static <T> CompletableFuture<T> doExecuteAsyncWithResult(String dataSource, Executor executor, 
+                                                                   Supplier<T> action, boolean withExecutor) {
+        // 保存当前线程的数据源上下文快照
+        Deque<String> currentContext = createContextSnapshot();
+        
+        if (withExecutor) {
+            return CompletableFuture.supplyAsync(() -> {
+                try {
+                    // 恢复数据源上下文快照
+                    restoreContextSnapshot(currentContext);
+                    // 在指定数据源上执行操作
+                    return executeInDataSourceWithResult(dataSource, action);
+                } catch (Exception e) {
+                    logger.error("使用自定义执行器在数据源[{}]中异步执行带返回值的操作失败", dataSource, e);
+                    throw e;
+                } finally {
+                    // 清理当前线程的上下文
+                    clearAllDataSources();
+                }
+            }, executor);
+        } else {
+            return CompletableFuture.supplyAsync(() -> {
+                try {
+                    // 恢复数据源上下文快照
+                    restoreContextSnapshot(currentContext);
+                    // 在指定数据源上执行操作
+                    return executeInDataSourceWithResult(dataSource, action);
+                } catch (Exception e) {
+                    logger.error("在数据源[{}]中异步执行带返回值的操作失败", dataSource, e);
+                    throw e;
+                } finally {
+                    // 清理当前线程的上下文
+                    clearAllDataSources();
+                }
+            });
+        }
+    }
+    
+    /**
      * 使用指定数据源异步执行runnable操作
      * 保留并传播父线程的数据源上下文到异步任务
      * 
@@ -242,24 +337,7 @@ public final class DataSourceContextHolder {
     public static CompletableFuture<Void> executeAsyncInDataSource(String dataSource, Runnable action) {
         Objects.requireNonNull(dataSource, "数据源不能为空");
         Objects.requireNonNull(action, "操作不能为空");
-        
-        // 保存当前线程的数据源上下文快照
-        Deque<String> currentContext = createContextSnapshot();
-        
-        return CompletableFuture.runAsync(() -> {
-            try {
-                // 恢复数据源上下文快照
-                restoreContextSnapshot(currentContext);
-                // 在指定数据源上执行操作
-                executeInDataSource(dataSource, action);
-            } catch (Exception e) {
-                logger.error("在数据源[{}]中异步执行操作失败", dataSource, e);
-                throw e;
-            } finally {
-                // 清理当前线程的上下文，避免线程池重用导致的上下文泄漏
-                clearAllDataSources();
-            }
-        });
+        return doExecuteAsync(dataSource, null, action, false);
     }
     
     /**
@@ -275,24 +353,7 @@ public final class DataSourceContextHolder {
     public static <T> CompletableFuture<T> executeAsyncInDataSourceWithResult(String dataSource, Supplier<T> action) {
         Objects.requireNonNull(dataSource, "数据源不能为空");
         Objects.requireNonNull(action, "操作不能为空");
-        
-        // 保存当前线程的数据源上下文快照
-        Deque<String> currentContext = createContextSnapshot();
-        
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                // 恢复数据源上下文快照
-                restoreContextSnapshot(currentContext);
-                // 在指定数据源上执行操作
-                return executeInDataSourceWithResult(dataSource, action);
-            } catch (Exception e) {
-                logger.error("在数据源[{}]中异步执行带返回值的操作失败", dataSource, e);
-                throw e;
-            } finally {
-                // 清理当前线程的上下文，避免线程池重用导致的上下文泄漏
-                clearAllDataSources();
-            }
-        });
+        return doExecuteAsyncWithResult(dataSource, null, action, false);
     }
     
     /**
@@ -308,24 +369,7 @@ public final class DataSourceContextHolder {
         Objects.requireNonNull(dataSource, "数据源不能为空");
         Objects.requireNonNull(executor, "执行器不能为空");
         Objects.requireNonNull(action, "操作不能为空");
-        
-        // 保存当前线程的数据源上下文快照
-        Deque<String> currentContext = createContextSnapshot();
-        
-        return CompletableFuture.runAsync(() -> {
-            try {
-                // 恢复数据源上下文快照
-                restoreContextSnapshot(currentContext);
-                // 在指定数据源上执行操作
-                executeInDataSource(dataSource, action);
-            } catch (Exception e) {
-                logger.error("使用自定义执行器在数据源[{}]中异步执行操作失败", dataSource, e);
-                throw e;
-            } finally {
-                // 清理当前线程的上下文
-                clearAllDataSources();
-            }
-        }, executor);
+        return doExecuteAsync(dataSource, executor, action, true);
     }
     
     /**
@@ -342,24 +386,7 @@ public final class DataSourceContextHolder {
         Objects.requireNonNull(dataSource, "数据源不能为空");
         Objects.requireNonNull(executor, "执行器不能为空");
         Objects.requireNonNull(action, "操作不能为空");
-        
-        // 保存当前线程的数据源上下文快照
-        Deque<String> currentContext = createContextSnapshot();
-        
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                // 恢复数据源上下文快照
-                restoreContextSnapshot(currentContext);
-                // 在指定数据源上执行操作
-                return executeInDataSourceWithResult(dataSource, action);
-            } catch (Exception e) {
-                logger.error("使用自定义执行器在数据源[{}]中异步执行带返回值的操作失败", dataSource, e);
-                throw e;
-            } finally {
-                // 清理当前线程的上下文
-                clearAllDataSources();
-            }
-        }, executor);
+        return doExecuteAsyncWithResult(dataSource, executor, action, true);
     }
     
     /**

@@ -113,11 +113,8 @@ public class DefaultExtensionLifecycle implements ExtensionLifecycle {
             Object result = invocation.proceed();
             long executionTime = System.currentTimeMillis() - startTime;
             
-            // 记录执行时间
-            if (executionTime > 100 && logger.isWarnEnabled()) {
-                logger.warn("Slow extension invocation detected: method={}, time={}ms", 
-                        methodName, executionTime);
-            }
+            // 不再记录详细性能统计，避免重复实现
+            // RouteStatsCollector应由路由层负责调用记录
             
             return CompletableFuture.completedFuture(result);
         } catch (Throwable e) {

@@ -12,12 +12,17 @@
     "generate:app": "node ./tools/cli/dist/index.js generate:app"
   },
   "dependencies": {
+    "@ant-design/icons": "^6.1.0",
+    "@ant-design/pro-components": "^2.8.10",
+    "@ant-design/pro-layout": "^7.22.7",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
+    "@umijs/max": "^4.5.3",
+    "antd": "^5.27.6",
     "lodash-es": "^4.17.21",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.16.0"
+    "react-router-dom": "^6.30.1"
   },
   "devDependencies": {
     "@types/lodash-es": "^4.17.9",

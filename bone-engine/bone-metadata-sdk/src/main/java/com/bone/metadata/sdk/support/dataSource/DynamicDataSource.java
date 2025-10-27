@@ -751,14 +751,18 @@ public class DynamicDataSource extends AbstractRoutingDataSource {
         logger.info("Data source strict mode has been {}", strictMode ? "enabled" : "disabled");
     }
     
-    public String getPrimaryDataSourceKey() {
-        return defaultDataSourceKey;
+    /**
+     * 设置主数据源名称（与setDefaultDataSourceKey功能相同，为了兼容性保留）
+     */
+    public void setPrimaryDataSourceKey(String primaryDataSourceKey) {
+        setDefaultDataSourceKey(primaryDataSourceKey);
     }
     
-    public void setPrimaryDataSourceKey(String primaryDataSourceKey) {
-        Assert.hasText(primaryDataSourceKey, "Primary data source identifier cannot be empty");
-        this.defaultDataSourceKey = primaryDataSourceKey;
-        logger.info("Primary data source identifier has been set to: {}", primaryDataSourceKey);
+    /**
+     * 获取主数据源名称（与getDefaultDataSourceKey功能相同，为了兼容性保留）
+     */
+    public String getPrimaryDataSourceKey() {
+        return getDefaultDataSourceKey();
     }
     
     public DataSourceManager getDataSourceManager() {

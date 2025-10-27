@@ -16,6 +16,7 @@ import com.bone.metadata.sdk.support.config.SqlConfigProperties;
 import com.bone.metadata.sdk.support.util.ParamConvertUtil;
 import com.bone.metadata.sdk.support.util.SqlUtil;
 import com.bone.metadata.sdk.support.util.RepositoryClassUtils;
+import com.bone.metadata.sdk.sql.processor.SqlSecurityGuard;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.stats.CacheStats;
@@ -119,18 +120,18 @@ public class SqlExecutor {
     }
 
     /**
-     * 执行分页查询（基于实体类自动映射）
+     * 核心分页查询方法，处理所有分页查询的共同逻辑
      */
     @Transactional(readOnly = true)
-    public <T> PageResult<T> executePaged(
+    private <T> PageResult<T> executePagedInternal(
             String templateId,
             Map<String, Object> parameters,
-            Class<T> entityClass,
-            Integer pageNumber,
-            Integer pageSize
+            String tableName,
+            RowMapper<T> rowMapper,
+            int pageNumber,
+            int pageSize
     ) {
         validatePaginationParams(pageNumber, pageSize);
-        String tableName = SqlUtil.toSnakeCase(entityClass.getSimpleName());
         SqlTemplate template = loadSqlTemplate(tableName + "/" + templateId);
         Map<String, Object> safeParameters = parameters != null ? new HashMap<>(parameters) : new HashMap<>();
 
@@ -141,11 +142,26 @@ public class SqlExecutor {
         int offset = (pageNumber - 1) * pageSize;
         String pagedSql = buildPagedSql(originalSql, pageSize, offset);
 
-        RowMapper<T> rowMapper = new SmartRowMapper<>(entityClass);
         List<T> content = jdbc.query(pagedSql, effectiveParams, rowMapper);
         Long total = executeCountQuery(templateId, template, safeParameters);
 
         return PageResult.of(content, total, pageNumber, pageSize);
+    }
+
+    /**
+     * 执行分页查询（基于实体类自动映射）
+     */
+    @Transactional(readOnly = true)
+    public <T> PageResult<T> executePaged(
+            String templateId,
+            Map<String, Object> parameters,
+            Class<T> entityClass,
+            Integer pageNumber,
+            Integer pageSize
+    ) {
+        String tableName = SqlUtil.toSnakeCase(entityClass.getSimpleName());
+        RowMapper<T> rowMapper = new SmartRowMapper<>(entityClass);
+        return executePagedInternal(templateId, parameters, tableName, rowMapper, pageNumber, pageSize);
     }
 
     /**
@@ -159,22 +175,8 @@ public class SqlExecutor {
             int pageNumber,
             int pageSize
     ) {
-        validatePaginationParams(pageNumber, pageSize);
         String tableName = "Default";
-        SqlTemplate template = loadSqlTemplate(tableName + "/" + templateId);
-        Map<String, Object> safeParameters = parameters != null ? new HashMap<>(parameters) : new HashMap<>();
-
-        ProcessedSql processedSql = processSqlByTemplate(templateId, template, safeParameters);
-        String originalSql = processedSql.getSql();
-        Map<String, Object> effectiveParams = processedSql.getEffectiveParams();
-
-        int offset = (pageNumber - 1) * pageSize;
-        String pagedSql = buildPagedSql(originalSql, pageSize, offset);
-
-        List<T> content = jdbc.query(pagedSql, effectiveParams, rowMapper);
-        Long total = executeCountQuery(templateId, template, safeParameters);
-
-        return PageResult.of(content, total, pageNumber, pageSize);
+        return executePagedInternal(templateId, parameters, tableName, rowMapper, pageNumber, pageSize);
     }
 
     /**
@@ -189,22 +191,8 @@ public class SqlExecutor {
             int pageNumber,
             int pageSize
     ) {
-        validatePaginationParams(pageNumber, pageSize);
         String tableName = SqlUtil.toSnakeCase(entityClass.getSimpleName());
-        SqlTemplate template = loadSqlTemplate(tableName + "/" + templateId);
-        Map<String, Object> safeParameters = parameters != null ? new HashMap<>(parameters) : new HashMap<>();
-
-        ProcessedSql processedSql = processSqlByTemplate(templateId, template, safeParameters);
-        String originalSql = processedSql.getSql();
-        Map<String, Object> effectiveParams = processedSql.getEffectiveParams();
-
-        int offset = (pageNumber - 1) * pageSize;
-        String pagedSql = buildPagedSql(originalSql, pageSize, offset);
-
-        List<R> content = jdbc.query(pagedSql, effectiveParams, rowMapper);
-        Long total = executeCountQuery(templateId, template, safeParameters);
-
-        return PageResult.of(content, total, pageNumber, pageSize);
+        return executePagedInternal(templateId, parameters, tableName, rowMapper, pageNumber, pageSize);
     }
 
     /**
@@ -663,15 +651,13 @@ public class SqlExecutor {
      * 判断是否为SELECT查询
      */
     private boolean isSelectQuery(String sql) {
-        String normalized = sql.trim().toUpperCase().replaceAll("\\s+", " ");
-        return normalized.startsWith("SELECT ") || normalized.startsWith("WITH ");
+        return SqlUtil.isSelectQuery(sql);
     }
 
     /**
      * 判断是否为DML操作
      */
     private boolean isDmlQuery(String sql) {
-        String normalized = sql.trim().toUpperCase().replaceAll("\\s+", " ");
-        return normalized.startsWith("INSERT ") || normalized.startsWith("UPDATE ") || normalized.startsWith("DELETE ");
+        return SqlUtil.isDmlQuery(sql);
     }
 }
