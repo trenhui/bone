@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -91,5 +92,14 @@ public class MemExtPointRepository implements ExtPointRepository {
     public boolean containsKey(Object key) {
         Assert.notNull(key, "Extension key must not be null");
         return extensionRepo.containsKey(key);
+    }
+    
+    /**
+     * 获取所有扩展点的键集合
+     * 
+     * @return 包含所有扩展点键的集合
+     */
+    public Set<Object> keySet() {
+        return extensionRepo.keySet();
     }
 }

@@ -4,7 +4,7 @@ package com.bone.procurement.entity;
 import com.bone.smartmeta.engine.annotation.SmartEntity;
 import com.bone.smartmeta.engine.annotation.SmartField;
 import com.bone.smartmeta.engine.annotation.BusinessRule;
-import com.bone.smartmeta.engine.enums.FieldType;
+import com.bone.smartmeta.engine.annotation.FieldType;
 import lombok.Data;
 
 import java.math.BigDecimal;

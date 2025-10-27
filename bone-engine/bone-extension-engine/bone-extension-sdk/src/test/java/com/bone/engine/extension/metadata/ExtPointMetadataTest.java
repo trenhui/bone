@@ -87,10 +87,7 @@ public class ExtPointMetadataTest {
     // 测试扩展点接口
     @ExtPoint(
         name = "元数据测试扩展点",
-        description = "用于测试扩展点元数据收集和管理功能的扩展点接口",
-        version = "1.0.0",
-        enabled = true,
-        priority = 100
+        description = "用于测试扩展点元数据收集和管理功能的扩展点接口"
     )
     @ExtPointDoc(
         description = "该接口用于验证扩展点元数据的收集、存储和导出功能。",

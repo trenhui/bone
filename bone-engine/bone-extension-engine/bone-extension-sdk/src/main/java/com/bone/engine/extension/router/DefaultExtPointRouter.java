@@ -667,8 +667,7 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
         
         try {
             // 检查是否启用缓存
-            ExtPoint extPoint = extPointClass.getAnnotation(ExtPoint.class);
-            boolean useCache = extPoint != null && extPoint.enableCache();
+            boolean useCache = this.enableCache;
             
             // 尝试从缓存获取
             if (useCache) {

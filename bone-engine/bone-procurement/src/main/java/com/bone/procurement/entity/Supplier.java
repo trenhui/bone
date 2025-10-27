@@ -1,6 +1,5 @@
 package com.bone.procurement.entity;
 
-import com.bone.core.domain.entity.Entity;
 import com.bone.smartmeta.engine.annotation.SmartEntity;
 import com.bone.smartmeta.engine.annotation.SmartField;
 import com.bone.smartmeta.engine.annotation.BusinessRule;
@@ -22,7 +21,7 @@ import java.util.List;
 @SmartEntity(apiName = "Supplier", label = "供应商", description = "提供物料或服务的企业或个人", 
              pluralLabel = "供应商列表", table = "procurement_supplier")
 @Data
-public class Supplier extends Entity<Long> {
+public class Supplier {
     
     @SmartField(name = "id", label = "供应商ID", type = FieldType.NUMBER)
     private Long id;

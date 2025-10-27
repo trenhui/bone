@@ -8,7 +8,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import com.bone.engine.extension.metadata.example.PaymentRequest;
+import com.bone.example.extension.payment.PaymentTestRequest;
+import com.bone.example.extension.payment.PaymentResult;
+import com.bone.example.extension.payment.ValidationResult;
+import com.bone.example.extension.payment.PaymentCalculationResult;
 
 /**
  * 金融支付扩展点实现类
@@ -51,7 +54,7 @@ public class FinancialPaymentExtension implements PaymentExtPoint {
      * @return 验证结果对象，包含验证状态和错误信息
      */
     @Override
-    public ValidationResult prePayValidate(final BizContext<PaymentRequest> context) {
+    public ValidationResult prePayValidate(final BizContext<PaymentTestRequest> context) {
         logger.info("开始执行金融支付前置验证");
         
         // 检查上下文是否有效
@@ -63,7 +66,7 @@ public class FinancialPaymentExtension implements PaymentExtPoint {
             return result;
         }
         
-        PaymentRequest request = context.getData();
+        PaymentTestRequest request = context.getData();
         
         // 验证订单ID是否为金融机构
         String orderId = request.getOrderId();
@@ -102,7 +105,7 @@ public class FinancialPaymentExtension implements PaymentExtPoint {
      * @throws IllegalArgumentException 当参数不合法时抛出
      */
     @Override
-    public PaymentCalculationResult calculatePayment(final BizContext<PaymentRequest> context) {
+    public PaymentCalculationResult calculatePayment(final BizContext<PaymentTestRequest> context) {
         logger.info("开始计算金融支付金额");
         
         // 参数校验
@@ -111,7 +114,7 @@ public class FinancialPaymentExtension implements PaymentExtPoint {
             throw new IllegalArgumentException("支付上下文或请求数据不能为空");
         }
         
-        PaymentRequest request = context.getData();
+        PaymentTestRequest request = context.getData();
         
         // 获取原始金额
         BigDecimal originalAmount = request.getAmount();
@@ -167,12 +170,12 @@ public class FinancialPaymentExtension implements PaymentExtPoint {
     @Override
     public boolean isApplicable(final BizContext<?> context) {
         // 检查上下文是否有效
-        if (context == null || !(context.getData() instanceof PaymentRequest)) {
+        if (context == null || !(context.getData() instanceof PaymentTestRequest)) {
             return false;
         }
         
         // 检查订单ID是否以金融机构前缀开头
-        PaymentRequest request = (PaymentRequest) context.getData();
+        PaymentTestRequest request = (PaymentTestRequest) context.getData();
         boolean isApplicable = request.getOrderId() != null && 
                request.getOrderId().startsWith(FINANCIAL_PREFIX);
         
@@ -180,5 +183,17 @@ public class FinancialPaymentExtension implements PaymentExtPoint {
                 request.getOrderId(), isApplicable);
         
         return isApplicable;
+    }
+    
+    /**
+     * 获取扩展点优先级
+     * <p>
+     * 设置高优先级(100)，确保在其他扩展之前执行
+     * 
+     * @return 优先级值：100
+     */
+    @Override
+    public int getPriority() {
+        return 100; // 高优先级
     }
 }

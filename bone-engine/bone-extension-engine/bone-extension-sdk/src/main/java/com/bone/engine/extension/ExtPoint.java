@@ -20,16 +20,10 @@ import java.lang.annotation.*;
  * <h3>使用示例：</h3>
  * <pre>
  * {@code
- * // 1. 定义扩展点接口
+ * // 定义扩展点接口
  * @ExtPoint(
  *     name = "订单折扣计算",
- *     description = "不同场景下的订单折扣逻辑",
- *     version = "1.0.0",
- *     priority = 100,
- *     enableCache = true,
- *     allowParallelExecution = true,
- *     timeout = 5000,
- *     circuitBreakerEnabled = true
+ *     description = "不同场景下的订单折扣逻辑"
  * )
  * public interface OrderDiscountExtPoint {
  *     DiscountResult calculate(BizContext<Order> context);
@@ -55,21 +49,6 @@ public @interface ExtPoint {
     String description() default "";
     
     /**
-     * 扩展点版本号
-     */
-    String version() default "1.0.0";
-    
-    /**
-     * 是否启用
-     */
-    boolean enabled() default true;
-    
-    /**
-     * 默认优先级
-     */
-    int priority() default 100;
-    
-    /**
      * 废弃版本
      */
     String deprecatedSince() default "";
@@ -80,52 +59,7 @@ public @interface ExtPoint {
     String deprecatedIn() default "";
     
     /**
-     * 是否允许动态替换实现（默认允许）
-     */
-    boolean allowDynamicReplace() default true;
-    
-    /**
-     * 是否启用缓存（默认启用）
-     */
-    boolean enableCache() default true;
-    
-    /**
-     * 缓存过期时间（毫秒），默认300000ms（5分钟）
-     */
-    long cacheExpireTime() default 300000L;
-    
-    /**
-     * 是否允许并行执行多个实现
-     */
-    boolean allowParallelExecution() default false;
-    
-    /**
-     * 执行超时时间（毫秒），默认0表示不限制
-     */
-    long timeout() default 0L;
-    
-    /**
-     * 是否启用熔断器
-     */
-    boolean circuitBreakerEnabled() default false;
-    
-    /**
-     * 熔断器失败阈值，默认5
-     */
-    int circuitBreakerFailureThreshold() default 5;
-    
-    /**
-     * 熔断器半开状态超时时间（毫秒），默认30000ms（30秒）
-     */
-    long circuitBreakerHalfOpenTimeout() default 30000L;
-    
-    /**
-     * 是否进行参数验证
-     */
-    boolean validateParams() default false;
-    
-    /**
-     * 是否需要事务支持
+     * 是否启用事务（适用于所有实现）
      */
     boolean transactional() default false;
 }

@@ -4,15 +4,11 @@ import com.bone.engine.extension.ExtPoint;
 import com.bone.engine.extension.Extension;
 import com.bone.engine.extension.config.ExtensionProperties;
 import com.bone.engine.extension.event.ExtensionEventPublisher;
-import com.bone.engine.extension.ExtPointConstants;
 import com.bone.engine.extension.repository.ExtPointRepository;
-import com.bone.engine.extension.util.ExtensionKeyGenerator;
 import com.bone.engine.extension.version.ExtensionVersionManager;
-import com.bone.engine.extension.utils.ExtPointUtils;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -54,15 +50,10 @@ public class ExtensionRegister implements ApplicationContextAware {
     private ApplicationContext applicationContext;
     
     // 从Spring容器注入的核心组件
-    private final ExtPointRepository extPointRepository;
-    private final ExtensionEventPublisher eventPublisher;
     private final ExtensionProperties configProperties;
     
     // 版本管理器，可选注入
     private ExtensionVersionManager versionManager;
-    
-    // 缓存已注册的扩展提供者，避免重复注册
-    private final Set<Object> registeredProviders = ConcurrentHashMap.newKeySet();
     
     // 统一的扩展点注册服务
     private final ExtensionRegistry extensionRegistry;
@@ -86,11 +77,7 @@ public class ExtensionRegister implements ApplicationContextAware {
                            ExtensionProperties configProperties) {
         // 创建统一的扩展点注册服务
         this.extensionRegistry = new ExtensionRegistry(extPointRepository, eventPublisher);
-        Assert.notNull(extPointRepository, "ExtPointRepository must not be null");
-        Assert.notNull(eventPublisher, "ExtensionEventPublisher must not be null");
         Assert.notNull(configProperties, "ExtensionProperties must not be null");
-        this.extPointRepository = extPointRepository;
-        this.eventPublisher = eventPublisher;
         this.configProperties = configProperties;
         log.info("ExtensionRegister initialized with config: scanPackages={}",
                 Arrays.toString(configProperties.getScan().getBasePackages()));
@@ -173,7 +160,7 @@ public class ExtensionRegister implements ApplicationContextAware {
             
             final long endTime = System.currentTimeMillis();
             log.info("Extension provider registration completed in {}ms. Total registered: {}, Failures: {}", 
-                    (endTime - startTime), registeredProviders.size(), registrationFailures.size());
+                    (endTime - startTime), extensionRegistry.getRegisteredProviderCount(), registrationFailures.size());
             
             // 如果有注册失败的扩展，记录详细信息
             if (!registrationFailures.isEmpty()) {
@@ -202,127 +189,17 @@ public class ExtensionRegister implements ApplicationContextAware {
      * @throws IllegalStateException 当注册失败时抛出
      */
     public void registerExtension(Object extProvider) {
-        // 1. 参数验证
-        Assert.notNull(extProvider, "Extension provider must not be null");
-        
-        // 2. 检查是否已经注册过
-        if (registeredProviders.contains(extProvider)) {
-            if (true) { // 默认为启用日志
-                log.debug("Extension provider already registered: {}", extProvider.getClass().getName());
-            }
-            return; // 避免重复注册
-        }
-        
-        final long startTime = System.currentTimeMillis();
         try {
-            // 3. 获取实际的类（处理代理对象）
-            Class<?> extProviderClass = AopUtils.isAopProxy(extProvider) 
-                    ? ClassUtils.getUserClass(extProvider) 
-                    : extProvider.getClass();
-            
-            String providerClassName = extProviderClass.getCanonicalName();
-            if (true) { // 默认为启用日志
-                log.debug("Registering extension provider: {}", providerClassName);
-            }
-            
-            // 4. 检查@Extension注解
-            Extension extAnnotation = AnnotationUtils.findAnnotation(extProviderClass, Extension.class);
-            if (extAnnotation == null) {
-                 if (false) { // 默认为不启用安全检查
-                     throw new IllegalArgumentException("Extension provider must be annotated with @Extension: " + providerClassName);
-                 }
-                  log.warn("Class {} does not have @Extension annotation, skipping registration", providerClassName);
-                  return;
-            }
-            
-            // 5. 获取扩展点接口 - 支持多接口实现
-            List<Class<?>> extPointInterfaces = ExtPointUtils.findExtPointInterfaces(extProviderClass);
-            if (CollectionUtils.isEmpty(extPointInterfaces)) {
-                if (false) { // 默认为不启用安全检查
-                    throw new IllegalStateException("Extension provider must implement at least one interface annotated with @ExtPoint: " + providerClassName);
-                }
-                log.warn("Class {} does not implement any @ExtPoint interfaces, skipping registration", providerClassName);
-                return;
-            }
-            
-            // 6. 为每个扩展点接口注册实现
-            for (Class<?> extPointInterface : extPointInterfaces) {
-                String interfaceName = extPointInterface.getCanonicalName();
-                
-                // 7. 检查类型兼容性
-                if (!extPointInterface.isInstance(extProvider)) {
-                    String errorMsg = "Extension provider does not implement the extension point interface: " + interfaceName;
-                    if (false) { // 默认为不启用安全检查
-                        throw new IllegalArgumentException(errorMsg);
-                    }
-                    log.warn(errorMsg);
-                    continue;
-                }
-                
-                // 8. 生成唯一的注册键
-                String registrationKey = generateRegistrationKey(interfaceName, extProvider);
-                
-                // 9. 发布注册前事件
-                if (true) { // 默认为启用异步事件
-                    eventPublisher.publishBeforeRegister(this, interfaceName, providerClassName);
-                }
-                
-                // 10. 使用标准的put方法注册扩展
-                extPointRepository.put(registrationKey, extProvider);
-                registeredProviders.add(extProvider);
-                
-                // 11. 如果版本管理器存在且版本管理功能启用，注册版本信息
-                if (versionManager != null && false) { // 默认为不启用版本管理
-                    String version = extAnnotation.version();
-                    try {
-                        // 确保类型安全，强制转换为ExtPoint类型
-                        @SuppressWarnings("unchecked")
-                        Class<? extends ExtPoint> extPointClass = (Class<? extends ExtPoint>) extPointInterface;
-                        
-                        // 注册版本扩展
-                        versionManager.registerVersionExtension(extPointClass, version, extProvider);
-                        
-                        // 发布版本注册事件
-                        if (true) { // 默认为启用异步事件
-                            eventPublisher.publishVersionRegister(this, interfaceName, version, providerClassName);
-                        }
-                        
-                        // 检查是否为默认实现（bizCode为DEFAULT时视为默认实现）
-                        if (ExtPointConstants.DEFAULT_VALUE.equals(extAnnotation.bizCode())) {
-                            versionManager.setDefaultVersion(extPointClass, version);
-                                if (true) { // 默认为启用日志
-                                log.debug("Set default version {} for extension point {}", version, interfaceName);
-                            }
-                        }
-                    } catch (Exception e) {
-                        log.warn("Failed to register version information for {} version {}", providerClassName, version, e);
-                        if (false) { // 默认为不启用安全检查
-                            throw new IllegalStateException("Failed to register version information", e);
-                        }
-                    }
-                }
-                
-                // 12. 发布注册成功事件
-                if (true) { // 默认为启用异步事件
-                    eventPublisher.publishAfterRegister(this, interfaceName, providerClassName);
-                }
-                
-                // 13. 记录注册信息，包含版本信息
-                if (true) { // 默认为启用日志
-                    log.debug("Registered extension provider {} for interface {} with version {}",
-                            providerClassName, interfaceName, extAnnotation.version());
-                }
-            }
-            
-            final long endTime = System.currentTimeMillis();
-            if (true) { // 默认为启用日志
-                log.info("Successfully registered extension provider: {} (took {}ms)", 
-                        providerClassName, (endTime - startTime));
+            // 直接调用extensionRegistry进行注册，移除重复的注册逻辑实现
+            boolean registered = extensionRegistry.registerExtension(extProvider);
+            if (registered) {
+                log.debug("Successfully registered extension provider via ExtensionRegistry: {}", 
+                        extProvider.getClass().getName());
             }
         } catch (Exception e) {
             // 记录注册失败信息
             Map<String, Object> failureInfo = new HashMap<>();
-            failureInfo.put("className", extProvider.getClass().getName());
+            failureInfo.put("className", extProvider != null ? extProvider.getClass().getName() : "null");
             failureInfo.put("error", e.getMessage());
             registrationFailures.add(failureInfo);
             
@@ -427,7 +304,7 @@ public class ExtensionRegister implements ApplicationContextAware {
                 (scanEndTime - scanStartTime), scanCount, beanCount);
         
         // 发布注册完成事件（使用现有方法）
-        log.info("Extension registration completed. Total extensions registered: {}", registeredProviders.size());
+        log.info("Extension registration completed. Total extensions registered: {}", extensionRegistry.getRegisteredProviderCount());
     }
     
     
@@ -455,18 +332,14 @@ public class ExtensionRegister implements ApplicationContextAware {
                 if (reader.getAnnotationMetadata().isAnnotated(Extension.class.getName())) {
                     try {
                         Class<?> clazz = ClassUtils.forName(className, getClass().getClassLoader());
-                        // 获取所有实现的扩展点接口
-                            List<Class<?>> extPointInterfaces = ExtPointUtils.findExtPointInterfaces(clazz);
-                            if (!extPointInterfaces.isEmpty()) {
-                                // 获取Bean实例并注册
-                                Object provider = applicationContext.getBean(clazz);
-                                if (!extensionRegistry.registerExtension(provider)) {
-                                    Map<String, Object> failure = new HashMap<>();
-                                    failure.put("className", className);
-                                    failure.put("error", "Registration rejected");
-                                    registrationFailures.add(failure);
-                                }
-                            }
+                        // 获取Bean实例并注册
+                        Object provider = applicationContext.getBean(clazz);
+                        if (!extensionRegistry.registerExtension(provider)) {
+                            Map<String, Object> failure = new HashMap<>();
+                            failure.put("className", className);
+                            failure.put("error", "Registration rejected");
+                            registrationFailures.add(failure);
+                        }
                     } catch (Exception e) {
                         log.warn("Failed to register extension class: {}", className, e);
                     }
@@ -477,16 +350,7 @@ public class ExtensionRegister implements ApplicationContextAware {
     
     // 直接使用ExtPointUtils.findExtPointInterfaces方法，无需本地封装
     
-    /**
-     * 生成唯一的注册键
-     * 
-     * @param interfaceName 接口名称
-     * @param provider 提供者实例
-     * @return 唯一的注册键
-     */
-    private String generateRegistrationKey(String interfaceName, Object provider) {
-        return ExtensionKeyGenerator.generateExtensionKey(interfaceName, provider);
-    }
+
     
     /**
      * 获取扩展点注册服务
@@ -510,7 +374,7 @@ public class ExtensionRegister implements ApplicationContextAware {
      * 清除注册缓存
      */
     public void clearRegisteredProviders() {
-        registeredProviders.clear();
+        extensionRegistry.clearRegisteredProviders();
         log.info("Cleared extension provider registration cache");
     }
     
@@ -520,84 +384,47 @@ public class ExtensionRegister implements ApplicationContextAware {
      * @param interfaceClass 扩展点接口类
      * @param provider 扩展提供者
      */
-    private void registerExtensionInternal(Class<?> interfaceClass, Object provider) {
-        // 使用统一的注册服务
-        @SuppressWarnings("unchecked")
-        Class<Object> typedInterface = (Class<Object>) interfaceClass;
-        extensionRegistry.registerImplementation(typedInterface, provider);
-        
-        // 处理版本信息（保留特定于版本管理的逻辑）
-        try {
-            Extension extAnnotation = AnnotationUtils.findAnnotation(provider.getClass(), Extension.class);
-            if (extAnnotation != null && versionManager != null) {
-                String version = extAnnotation.version();
-                @SuppressWarnings("unchecked")
-                Class<? extends ExtPoint> extPointClass = (Class<? extends ExtPoint>) interfaceClass;
-                versionManager.registerVersionExtension(extPointClass, version, provider);
-            }
-        } catch (Exception e) {
-            log.warn("Failed to process version information for {}", provider.getClass().getSimpleName(), e);
-        }
-    }
+    // 不再需要此内部方法，功能已由ExtensionRegistry提供
     
     /**
-     * 手动注册扩展提供者（用于动态注册场景）
+     * 注册指定接口的扩展实现
      * 
      * @param interfaceClass 扩展点接口类
-     * @param provider 扩展提供者实例
+     * @param provider 扩展实现
      * @param <T> 扩展点类型
      */
     public <T> void registerExtension(Class<T> interfaceClass, T provider) {
+        // 验证参数
         Assert.notNull(interfaceClass, "Interface class must not be null");
         Assert.notNull(provider, "Provider must not be null");
         
-        if (!interfaceClass.isAnnotationPresent(ExtPoint.class)) {
-            throw new IllegalArgumentException("Interface must be annotated with @ExtPoint: " + interfaceClass.getName());
-        }
-        
+        // 验证类型兼容性
         if (!interfaceClass.isInstance(provider)) {
             throw new IllegalArgumentException("Provider does not implement the interface: " + interfaceClass.getName());
         }
         
-        // 发布注册前事件
-        eventPublisher.publishBeforeRegister(this, interfaceClass.getCanonicalName(), provider.getClass().getCanonicalName());
-        
         // 使用统一的注册服务
         extensionRegistry.registerImplementation(interfaceClass, provider);
         
-        // 处理版本相关逻辑
-        try {
-            Extension extAnnotation = AnnotationUtils.findAnnotation(provider.getClass(), Extension.class);
-            if (extAnnotation != null && versionManager != null) {
-                String version = extAnnotation.version();
-                
-                @SuppressWarnings("unchecked")
-                Class<? extends ExtPoint> extPointClass = (Class<? extends ExtPoint>) interfaceClass;
-                
-                // 注册版本扩展
-                versionManager.registerVersionExtension(extPointClass, version, provider);
-                
-                // 发布版本注册事件
-                eventPublisher.publishVersionRegister(this, interfaceClass.getCanonicalName(), version, 
-                        provider.getClass().getCanonicalName());
-                
-                // 设置默认或推荐版本
-                if (ExtPointConstants.DEFAULT_VALUE.equals(extAnnotation.bizCode())) {
-                    versionManager.setDefaultVersion(extPointClass, version);
+        // 处理版本相关逻辑（仅保留特定于版本管理的部分）
+        if (versionManager != null) {
+            try {
+                Extension extAnnotation = AnnotationUtils.findAnnotation(provider.getClass(), Extension.class);
+                if (extAnnotation != null) {
+                    String version = extAnnotation.version();
+                    
+                    @SuppressWarnings("unchecked")
+                    Class<? extends ExtPoint> extPointClass = (Class<? extends ExtPoint>) interfaceClass;
+                    
+                    versionManager.registerVersionExtension(extPointClass, version, provider);
+                    log.debug("Registered version information for manually registered provider: {}", 
+                            provider.getClass().getSimpleName());
                 }
-                
-                // 暂时注释掉推荐版本设置，等待API完善
-                // if (extAnnotation.recommended()) {
-                //     versionManager.setRecommendedVersion(extPointClass, version);
-                // }
+            } catch (Exception e) {
+                log.warn("Failed to process version information for manually registered provider {}", 
+                        provider.getClass().getSimpleName(), e);
             }
-        } catch (Exception e) {
-            log.warn("Failed to process version information for manually registered provider {}", 
-                    provider.getClass().getSimpleName(), e);
         }
-        
-        // 发布注册成功事件
-        eventPublisher.publishAfterRegister(this, interfaceClass.getCanonicalName(), provider.getClass().getCanonicalName());
         
         log.info("Manually registered extension provider: {} for interface: {}", 
                 provider.getClass().getSimpleName(), interfaceClass.getSimpleName());

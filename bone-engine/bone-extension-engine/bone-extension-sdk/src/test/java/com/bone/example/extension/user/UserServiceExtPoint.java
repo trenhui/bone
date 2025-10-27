@@ -56,10 +56,7 @@ import com.bone.engine.extension.annotation.ExtPointDoc;
 // 运行时配置 - 提供扩展点基本信息和默认配置
 @ExtPoint(
     name = "用户服务扩展点",
-    description = "处理各类用户服务相关的操作",
-    version = "1.0.0",
-    enabled = true,
-    priority = 100
+    description = "处理各类用户服务相关的操作"
 )
 // 接口文档 - 详细描述扩展点功能、参数和使用场景（编译时注解，不影响运行时）
 @ExtPointDoc(

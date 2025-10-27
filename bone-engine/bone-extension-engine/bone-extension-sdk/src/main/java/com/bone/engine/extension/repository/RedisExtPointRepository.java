@@ -11,6 +11,7 @@ import org.springframework.util.Assert;
 
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * Redis扩展点仓库实现，提供分布式环境下的扩展点存储和管理
@@ -220,6 +221,27 @@ public class RedisExtPointRepository implements ExtPointRepository {
         } catch (Exception e) {
             log.error("Failed to check if key exists in Redis: {}", redisKey, e);
             return false;
+        }
+    }
+    
+    /**
+     * 获取所有存储的扩展点键集合
+     * 
+     * @return 扩展点键集合
+     */
+    public Set<Object> keySet() {
+        try {
+            Set<String> redisKeys = redisTemplate.keys(EXTENSION_PREFIX + "*");
+            if (redisKeys != null && !redisKeys.isEmpty()) {
+                // 移除前缀，返回原始键
+                return redisKeys.stream()
+                        .map(key -> key.substring(EXTENSION_PREFIX.length()))
+                        .collect(Collectors.toSet());
+            }
+            return java.util.Collections.emptySet();
+        } catch (Exception e) {
+            log.error("Failed to get extension keys from Redis", e);
+            return java.util.Collections.emptySet();
         }
     }
 }
