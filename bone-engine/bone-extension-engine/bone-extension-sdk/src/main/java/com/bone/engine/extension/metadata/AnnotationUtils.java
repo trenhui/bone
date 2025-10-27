@@ -136,8 +136,8 @@ public class AnnotationUtils {
      */
     public static boolean isRecommendedImplementation(Class<?> clazz) {
         Extension extension = clazz.getAnnotation(Extension.class);
-        // 移除对不存在的recommended属性的调用，返回false
-        return false;
+        // 使用isDefault属性作为推荐实现的判断依据
+        return extension != null && extension.isDefault();
     }
     
     /**

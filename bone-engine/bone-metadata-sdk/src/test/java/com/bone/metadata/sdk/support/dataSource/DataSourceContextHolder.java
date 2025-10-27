@@ -68,7 +68,72 @@ public class DataSourceContextHolder {
      */
     public static boolean hasDataSource() {
         List<String> contextStack = CONTEXT_HOLDER.get();
-        return contextStack != null && !contextStack.isEmpty();
+        return !contextStack.isEmpty();
+    }
+    
+    /**
+     * 检查是否有活动的数据源（别名hasDataSource）
+     */
+    public static boolean hasActiveDataSource() {
+        return hasDataSource();
+    }
+    
+    /**
+     * 获取当前数据源实例
+     */
+    public static javax.sql.DataSource getCurrentDataSource() {
+        // 返回一个MockDataSource用于测试
+        return new MockDataSource();
+    }
+    
+    /**
+     * 内部Mock数据源类
+     */
+    private static class MockDataSource implements javax.sql.DataSource {
+        @Override
+        public java.sql.Connection getConnection() throws java.sql.SQLException {
+            throw new java.sql.SQLException("Not implemented");
+        }
+        
+        @Override
+        public java.sql.Connection getConnection(String username, String password) throws java.sql.SQLException {
+            throw new java.sql.SQLException("Not implemented");
+        }
+        
+        @Override
+        public <T> T unwrap(Class<T> iface) throws java.sql.SQLException {
+            throw new java.sql.SQLException("Not implemented");
+        }
+        
+        @Override
+        public boolean isWrapperFor(Class<?> iface) throws java.sql.SQLException {
+            return false;
+        }
+        
+        @Override
+        public java.io.PrintWriter getLogWriter() throws java.sql.SQLException {
+            return null;
+        }
+        
+        @Override
+        public void setLogWriter(java.io.PrintWriter out) throws java.sql.SQLException {
+            // 空实现
+        }
+        
+        @Override
+        public void setLoginTimeout(int seconds) throws java.sql.SQLException {
+            // 空实现
+        }
+        
+        @Override
+        public int getLoginTimeout() throws java.sql.SQLException {
+            return 0;
+        }
+        
+        @Override
+        public java.util.logging.Logger getParentLogger() throws java.sql.SQLFeatureNotSupportedException {
+            throw new java.sql.SQLFeatureNotSupportedException();
+        }
     }
     
     /**

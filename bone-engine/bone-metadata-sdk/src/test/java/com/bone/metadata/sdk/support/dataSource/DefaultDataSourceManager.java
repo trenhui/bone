@@ -1,5 +1,6 @@
 package com.bone.metadata.sdk.support.dataSource;
 
+import java.sql.Connection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;

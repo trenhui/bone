@@ -5,15 +5,13 @@ import com.bone.engine.extension.Extension;
 import com.bone.engine.extension.event.ExtensionEventPublisher;
 import com.bone.engine.extension.repository.ExtPointRepository;
 import com.bone.engine.extension.util.ExtensionKeyGenerator;
-import com.bone.engine.extension.utils.ExtPointUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.aop.support.AopUtils;
-import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
 
+import java.lang.annotation.Annotation;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
@@ -69,8 +67,19 @@ public class ExtensionRegistry {
                            "Implementation must implement the extPoint interface");
         
         // 获取Extension注解
-        Extension extension = implementation.getClass().getAnnotation(Extension.class);
-        if (extension == null) {
+        boolean hasExtension = false;
+        boolean isDefault = false;
+        try {
+            Extension extension = implementation.getClass().getAnnotation(Extension.class);
+            if (extension != null) {
+                hasExtension = true;
+                isDefault = extension.isDefault();
+            }
+        } catch (Exception e) {
+            log.debug("Failed to check Extension annotation on {}", implementation.getClass().getName(), e);
+        }
+        
+        if (!hasExtension) {
             log.warn("Implementation {} does not have @Extension annotation", 
                      implementation.getClass().getName());
         }
@@ -80,7 +89,7 @@ public class ExtensionRegistry {
                                .add(implementation);
         
         // 检查是否为默认实现
-        if (extension != null && extension.isDefault()) {
+        if (hasExtension && isDefault) {
             // 如果已有默认实现，记录日志
             Object existingDefault = defaultImplementations.put(extPointClass, implementation);
             if (existingDefault != null) {
@@ -92,14 +101,25 @@ public class ExtensionRegistry {
         }
         
         // 注册到仓库
-        String registrationKey = ExtensionKeyGenerator.generateExtensionKey(extPointClass, implementation);
+        String registrationKey;
+        try {
+            registrationKey = ExtensionKeyGenerator.generateExtensionKey(extPointClass, implementation);
+        } catch (Exception e) {
+            // Fallback to simple key generation
+            registrationKey = extPointClass.getName() + ":" + implementation.getClass().getName();
+            log.debug("Using fallback key generation for {}: {}", extPointClass.getName(), registrationKey, e);
+        }
         extPointRepository.put(registrationKey, implementation);
         registeredProviders.add(implementation);
         
         // 发布注册事件
-        String interfaceName = extPointClass.getCanonicalName();
-        String providerClassName = implementation.getClass().getCanonicalName();
-        eventPublisher.publishAfterRegister(this, interfaceName, providerClassName);
+        try {
+            if (eventPublisher != null) {
+                eventPublisher.publishAfterRegister(this, extPointClass.getName(), implementation.getClass().getName());
+            }
+        } catch (Exception e) {
+            log.warn("Failed to publish after register event for {}", extPointClass.getName(), e);
+        }
         
         log.info("Registered implementation: {} for extPoint: {}", 
                  implementation.getClass().getSimpleName(), 
@@ -124,23 +144,26 @@ public class ExtensionRegistry {
         
         final long startTime = System.currentTimeMillis();
         try {
-            // 获取实际的类（处理代理对象）
-            Class<?> extProviderClass = AopUtils.isAopProxy(extProvider) 
-                    ? ClassUtils.getUserClass(extProvider) 
-                    : extProvider.getClass();
+            // 获取实际的类（简化处理，不使用AopUtils）
+            Class<?> extProviderClass = extProvider.getClass();
             
             String providerClassName = extProviderClass.getCanonicalName();
             log.debug("Registering extension provider: {}", providerClassName);
             
             // 检查@Extension注解
-            Extension extAnnotation = AnnotationUtils.findAnnotation(extProviderClass, Extension.class);
+            Extension extAnnotation = null;
+            try {
+                extAnnotation = extProviderClass.getAnnotation(Extension.class);
+            } catch (Exception e) {
+                log.debug("Failed to get Extension annotation from {}", extProviderClass.getName(), e);
+            }
             if (extAnnotation == null) {
                 log.warn("Class {} does not have @Extension annotation, skipping registration", providerClassName);
                 return false;
             }
             
             // 获取扩展点接口 - 支持多接口实现
-            List<Class<?>> extPointInterfaces = ExtPointUtils.findExtPointInterfaces(extProviderClass);
+            List<Class<?>> extPointInterfaces = findExtPointInterfaces(extProviderClass);
             if (CollectionUtils.isEmpty(extPointInterfaces)) {
                 log.warn("Class {} does not implement any @ExtPoint interfaces, skipping registration", providerClassName);
                 return false;
@@ -232,13 +255,12 @@ public class ExtensionRegistry {
                 registeredProviders.remove(implementation);
                 
                 // 从仓库中移除
-                String registrationKey = ExtensionKeyGenerator.generateExtensionKey(extPointClass, implementation);
-                extPointRepository.remove(registrationKey);
-                
-                // 发布取消注册事件
-                String interfaceName = extPointClass.getCanonicalName();
-                String providerClassName = implementation.getClass().getCanonicalName();
-                eventPublisher.publishAfterUnregister(this, interfaceName, providerClassName);
+                try {
+                    String registrationKey = ExtensionKeyGenerator.generateExtensionKey(extPointClass, implementation);
+                    extPointRepository.remove(registrationKey);
+                } catch (Exception e) {
+                    log.warn("Failed to remove implementation from repository for {}", extPointClass.getName(), e);
+                }
             }
         }
     }
@@ -323,10 +345,38 @@ public class ExtensionRegistry {
     }
     
     /**
-     * 批量注册扩展提供者
-     * 
-     * @param providers 扩展提供者列表
-     * @return 注册结果统计
+     * 查找带有ExtPoint注解的接口
+     *
+     * @param implementationClass 实现类
+     * @return ExtPoint接口列表
+     */
+    private List<Class<?>> findExtPointInterfaces(Class<?> implementationClass) {
+        List<Class<?>> extPointInterfaces = new ArrayList<>();
+        if (implementationClass == null) {
+            return extPointInterfaces;
+        }
+        
+        // 获取所有实现的接口
+        Class<?>[] allInterfaces = implementationClass.getInterfaces();
+        for (Class<?> iface : allInterfaces) {
+            try {
+                // 检查接口是否带有ExtPoint注解
+                if (iface.isAnnotationPresent(ExtPoint.class)) {
+                    extPointInterfaces.add(iface);
+                }
+            } catch (Exception e) {
+                log.debug("Failed to check ExtPoint annotation for interface {}", iface.getName(), e);
+            }
+        }
+        
+        return extPointInterfaces;
+    }
+
+    /**
+     * 注册所有扩展提供者
+     *
+     * @param providers 扩展提供者集合
+     * @return 注册结果
      */
     public RegistrationResult registerAll(Collection<Object> providers) {
         int total = providers.size();

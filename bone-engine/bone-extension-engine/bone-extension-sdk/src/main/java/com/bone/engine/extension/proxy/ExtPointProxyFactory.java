@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CompletableFuture;
+// 移除不存在的导入
 
 /**
  * 扩展点代理工厂
@@ -263,18 +264,15 @@ public class ExtPointProxyFactory implements ApplicationContextAware, Initializi
          * 从方法参数中提取业务上下文
          */
         private BizContext<?> getBizContextFromArgs(Object[] args) {
-             if (args == null || args.length == 0) {
-                 return null;
-             }
-              
-             for (Object arg : args) {
-                 if (arg instanceof BizContext) {
-                     return (BizContext<?>) arg;
-                 }
-             }
-              
-             return null;
-          }
+            if (args != null) {
+                for (Object arg : args) {
+                    if (arg instanceof BizContext) {
+                        return (BizContext<?>) arg;
+                    }
+                }
+            }
+            return null;
+        }
 
         // 移除重复的方法定义，使用上面的完整实现版本
     }

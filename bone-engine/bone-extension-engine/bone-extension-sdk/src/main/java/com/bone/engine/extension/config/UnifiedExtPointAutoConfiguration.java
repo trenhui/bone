@@ -72,8 +72,8 @@ public class UnifiedExtPointAutoConfiguration implements ImportAware {
     @Bean
     @ConditionalOnMissingBean(ExtPointRouter.class)
     public ExtPointRouter extPointRouter(ApplicationContext applicationContext, ExtensionProperties extensionProperties, RouteStatsCollector routeStatsCollector) {
-        // 创建DefaultExtPointRouter实例，传入ApplicationContext和RouteStatsCollector
-        DefaultExtPointRouter router = new DefaultExtPointRouter(applicationContext, routeStatsCollector);
+        // 创建DefaultExtPointRouter实例，使用正确的构造函数
+        DefaultExtPointRouter router = new DefaultExtPointRouter(applicationContext, routeStatsCollector, null);
         // 设置缓存启用状态，优先使用注解属性，其次使用配置属性
         boolean finalEnableCache = this.enableCache && extensionProperties.getCache().isEnabled();
         router.setEnableCache(finalEnableCache);

@@ -236,7 +236,7 @@ public class ExtensionRegister implements ApplicationContextAware {
             }
             
             // 5. 获取扩展点接口 - 支持多接口实现
-            List<Class<?>> extPointInterfaces = findExtPointInterfaces(extProviderClass);
+            List<Class<?>> extPointInterfaces = ExtPointUtils.findExtPointInterfaces(extProviderClass);
             if (CollectionUtils.isEmpty(extPointInterfaces)) {
                 if (false) { // 默认为不启用安全检查
                     throw new IllegalStateException("Extension provider must implement at least one interface annotated with @ExtPoint: " + providerClassName);
@@ -475,15 +475,7 @@ public class ExtensionRegister implements ApplicationContextAware {
         }
     }
     
-    /**
-     * 查找实现类中所有带有@ExtPoint注解的接口
-     * 
-     * @param implementationClass 实现类
-     * @return 带有@ExtPoint注解的接口列表
-     */
-    private List<Class<?>> findExtPointInterfaces(Class<?> implementationClass) {
-        return ExtPointUtils.findExtPointInterfaces(implementationClass);
-    }
+    // 直接使用ExtPointUtils.findExtPointInterfaces方法，无需本地封装
     
     /**
      * 生成唯一的注册键

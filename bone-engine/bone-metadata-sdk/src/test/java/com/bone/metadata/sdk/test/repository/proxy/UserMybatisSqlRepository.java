@@ -19,7 +19,7 @@ import java.util.List;
  */
 @SqlFragment(id = "userColumns",
         value = "u.id, u.name, u.role_id, u.create_time, u.create_by, u.update_time, u.update_by, u.deleted")
-public interface UserMybatisSqlRepository extends Repository<User, Long> {
+public interface UserMybatisSqlRepository {
 
     /**
      * 搜索用户（带分页和多重条件）

@@ -1,6 +1,7 @@
 package com.bone.engine.extension.repository;
 
 import org.springframework.lang.Nullable;
+import java.util.Set;
 
 /**
  * 扩展点仓库接口，提供扩展实现的存储和检索机制
@@ -53,4 +54,26 @@ public interface ExtPointRepository {
      * 通常在系统重启或配置刷新时调用
      */
     void clear();
+    
+    /**
+     * 检查扩展点实例是否存在
+     * 
+     * @param key 扩展点标识
+     * @return 如果存在则返回true，否则返回false
+     */
+    boolean containsKey(Object key);
+    
+    /**
+     * 获取所有扩展点实例的键集合
+     * 
+     * @return 键集合
+     */
+    Set<Object> keySet();
+    
+    /**
+     * 获取存储的扩展点实例数量
+     * 
+     * @return 实例数量
+     */
+    int size();
 }

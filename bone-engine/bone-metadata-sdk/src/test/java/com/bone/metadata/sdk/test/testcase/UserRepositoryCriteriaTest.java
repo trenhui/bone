@@ -2,33 +2,36 @@ package com.bone.metadata.sdk.test.testcase;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import java.util.*;
+import org.junit.jupiter.api.Assertions;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * 简单的标准测试示例
- * 移除了对不存在类的依赖
+ * 用户仓储条件查询测试
+ * 测试基于不同条件的用户数据查询功能
  */
 public class UserRepositoryCriteriaTest {
     
-    private SimpleRepository repository;
+    private UserSearchRepository userSearchRepository;
     
     @BeforeEach
     void setUp() {
-        repository = new SimpleRepository();
+        userSearchRepository = new UserSearchRepository();
         
-        // 预加载一些测试数据
-        repository.add(new SimpleData(1L, "Alice", "alice@example.com"));
-        repository.add(new SimpleData(2L, "Bob", "bob@example.com"));
-        repository.add(new SimpleData(3L, "Charlie", "charlie@example.com"));
+        // 预加载测试数据
+        userSearchRepository.add(new UserInfo(1L, "Alice", "alice@example.com"));
+        userSearchRepository.add(new UserInfo(2L, "Bob", "bob@example.com"));
+        userSearchRepository.add(new UserInfo(3L, "Charlie", "charlie@example.com"));
     }
     
-    // 简单的数据类
-    private static class SimpleData {
-        private Long id;
-        private String name;
-        private String email;
+    // 用户信息数据模型
+    private static class UserInfo {
+        private final Long id;
+        private final String name;
+        private final String email;
         
-        public SimpleData(Long id, String name, String email) {
+        public UserInfo(Long id, String name, String email) {
             this.id = id;
             this.name = name;
             this.email = email;
@@ -40,59 +43,63 @@ public class UserRepositoryCriteriaTest {
         
         @Override
         public String toString() {
-            return "SimpleData{id=" + id + ", name='" + name + "', email='" + email + "'}";
+            return "UserInfo{id=" + id + ", name='" + name + "', email='" + email + "'}";
         }
     }
     
-    // 简单的仓库类
-    private static class SimpleRepository {
-        private List<SimpleData> dataList = new ArrayList<>();
+    // 用户搜索仓储实现
+    private static class UserSearchRepository {
+        private final List<UserInfo> userInfoList = new ArrayList<>();
         
-        public void add(SimpleData data) {
-            dataList.add(data);
+        public void add(UserInfo userInfo) {
+            userInfoList.add(userInfo);
         }
         
-        public List<SimpleData> findAll() {
-            return new ArrayList<>(dataList);
+        public List<UserInfo> findAllUsers() {
+            return new ArrayList<>(userInfoList);
         }
         
-        public SimpleData findById(Long id) {
-            return dataList.stream()
-                .filter(data -> data.getId().equals(id))
+        public UserInfo findUserById(Long id) {
+            return userInfoList.stream()
+                .filter(userInfo -> userInfo.getId().equals(id))
                 .findFirst()
                 .orElse(null);
         }
         
-        public List<SimpleData> findByName(String name) {
-            return dataList.stream()
-                .filter(data -> data.getName().contains(name))
-                .collect(java.util.stream.Collectors.toList());
+        public List<UserInfo> findUsersByNameContaining(String nameKeyword) {
+            return userInfoList.stream()
+                .filter(userInfo -> userInfo.getName().contains(nameKeyword))
+                .collect(Collectors.toList());
         }
     }
     
     @Test
-    void testFindAll() {
-        List<SimpleData> results = repository.findAll();
-        org.junit.jupiter.api.Assertions.assertEquals(3, results.size(), "应返回3条测试数据");
+    void testFindAllUsers_ShouldReturnAllRecords() {
+        List<UserInfo> results = userSearchRepository.findAllUsers();
+        Assertions.assertEquals(3, results.size(), "应返回全部3条预加载的用户数据");
     }
     
     @Test
-    void testFindById() {
-        SimpleData result = repository.findById(2L);
-        org.junit.jupiter.api.Assertions.assertNotNull(result, "应找到ID为2的数据");
-        org.junit.jupiter.api.Assertions.assertEquals("Bob", result.getName(), "名称应匹配");
+    void testFindUserById_ShouldReturnMatchingUser() {
+        // 测试存在的用户
+        UserInfo foundUser = userSearchRepository.findUserById(2L);
+        Assertions.assertNotNull(foundUser, "应找到ID为2的用户数据");
+        Assertions.assertEquals("Bob", foundUser.getName(), "找到的用户名称应匹配");
         
-        SimpleData nonExistent = repository.findById(999L);
-        org.junit.jupiter.api.Assertions.assertNull(nonExistent, "不存在的数据应返回null");
+        // 测试不存在的用户
+        UserInfo nonExistentUser = userSearchRepository.findUserById(999L);
+        Assertions.assertNull(nonExistentUser, "查找不存在的用户ID时应返回null");
     }
     
     @Test
-    void testFindByName() {
-        List<SimpleData> results = repository.findByName("B");
-        org.junit.jupiter.api.Assertions.assertEquals(1, results.size(), "应找到1条包含'B'的记录");
-        org.junit.jupiter.api.Assertions.assertEquals("Bob", results.get(0).getName(), "名称应匹配");
+    void testFindUsersByNameContaining_ShouldReturnMatchingUsers() {
+        // 测试有匹配结果的查询
+        List<UserInfo> matchingUsers = userSearchRepository.findUsersByNameContaining("B");
+        Assertions.assertEquals(1, matchingUsers.size(), "应找到1条包含'B'的用户记录");
+        Assertions.assertEquals("Bob", matchingUsers.get(0).getName(), "找到的用户名应匹配");
         
-        List<SimpleData> noResults = repository.findByName("Z");
-        org.junit.jupiter.api.Assertions.assertTrue(noResults.isEmpty(), "找不到匹配项时应返回空列表");
+        // 测试无匹配结果的查询
+        List<UserInfo> noResults = userSearchRepository.findUsersByNameContaining("Z");
+        Assertions.assertTrue(noResults.isEmpty(), "找不到匹配项时应返回空列表");
     }
 }

@@ -10,8 +10,7 @@ import org.springframework.context.annotation.ComponentScan;
  */
 @SpringBootApplication
 @ComponentScan({
-        "com.bone.procurement",
-        "com.bone.smartmeta"
+        "com.bone.procurement"
 })
 public class ProcurementApplication {
     

@@ -2,8 +2,6 @@ package com.bone.procurement.engine.model;
 
 import com.bone.smartmeta.engine.annotation.SmartEntity;
 import com.bone.smartmeta.engine.annotation.SmartField;
-import com.bone.smartmeta.engine.annotation.SmartRelationship;
-import com.bone.procurement.common.model.PurchaseOrder;
 import lombok.Data;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
