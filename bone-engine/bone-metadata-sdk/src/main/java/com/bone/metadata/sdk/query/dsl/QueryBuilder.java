@@ -17,8 +17,38 @@ import com.bone.metadata.sdk.domain.exception.ExceptionHandler;
  * 查询构建器主类 - 提供流畅的API设计，降低使用门槛
  */
 public class QueryBuilder {
-    // 使用final和static确保线程安全的日志记录器
-    private static final Logger logger = Logger.getLogger(QueryBuilder.class.getName());
+   // 使用final和static确保线程安全的日志记录器
+    private static final Logger LOGGER = Logger.getLogger(QueryBuilder.class.getName());
+    
+    // 方法引用专用缓存
+    private static final ConcurrentHashMap<String, String> METHOD_REF_CACHE = 
+        new ConcurrentHashMap<>(1024, 0.75f);
+    
+    // 驼峰命名模式
+    private static final Pattern CAMEL_CASE_PATTERN = Pattern.compile("([a-z0-9])([A-Z])");
+    
+    // 方法引用模式
+    private static final Pattern METHOD_REF_PATTERN = Pattern.compile("(\\w+)::(get|is|set)?([A-Z]\\w*)");
+    
+    // 常见方法名到字段名的映射，避免重复计算
+    private static final Map<String, String> COMMON_METHOD_MAPPINGS = Collections.unmodifiableMap(
+        new HashMap<String, String>() {
+            private static final long serialVersionUID = 1L;
+            {
+                put("getRoleId", "role_id");
+                put("getId", "id");
+                put("getCode", "code");
+                put("getName", "name");
+                put("isActive", "active");
+                put("isDeleted", "deleted");
+                put("isEnabled", "enabled");
+                put("getUser", "user");
+                put("getUserId", "user_id");
+                put("getCreateTime", "create_time");
+                put("getUpdateTime", "update_time");
+            }
+        }
+    );
     
     // 使用ConcurrentHashMap作为线程安全的缓存
     // 初始容量设置为1024，负载因子为0.75以平衡内存使用和性能
@@ -36,7 +66,7 @@ public class QueryBuilder {
      */
     public static synchronized void setSqlExecutor(Object sqlExecutor) {
         // 空实现，用于满足自动配置的要求
-        logger.fine("SqlExecutor set: " + (sqlExecutor != null ? sqlExecutor.getClass().getName() : "null"));
+        LOGGER.fine("SqlExecutor set: " + (sqlExecutor != null ? sqlExecutor.getClass().getName() : "null"));
     }
     
     /**
@@ -47,7 +77,7 @@ public class QueryBuilder {
     public static synchronized void setExceptionHandler(Object handler) {
         // 保持向后兼容，但不再实际使用传入的handler
         // 现在使用的是ExceptionUtils中的单例ExceptionHandler
-        logger.fine("ExceptionHandler set: " + (handler != null ? handler.getClass().getName() : "null"));
+        LOGGER.fine("ExceptionHandler set: " + (handler != null ? handler.getClass().getName() : "null"));
     }
     
     /**
@@ -76,15 +106,15 @@ public class QueryBuilder {
      */
     public static <T> IQueryBuilder<T> from(Class<T> entityClass) {
         if (entityClass == null) {
-            logger.severe("Attempt to create query with null entity class");
+            LOGGER.severe("Attempt to create query with null entity class");
             throw new IllegalArgumentException("Entity class cannot be null");
         }
         
-        logger.fine("Creating query builder for entity class: " + entityClass.getName());
+        LOGGER.fine("Creating query builder for entity class: " + entityClass.getName());
         try {
             return new SqlQueryBuilderImpl<>(entityClass);
         } catch (Exception e) {
-            logger.severe("Failed to create query builder for entity class: " + entityClass.getName());
+            LOGGER.severe("Failed to create query builder for entity class: " + entityClass.getName());
             
             // 使用标准RuntimeException
             RuntimeException exception = new RuntimeException("Failed to initialize query builder", e);
@@ -421,14 +451,14 @@ public class QueryBuilder {
             if (limit > 0) {
                 this.limit = limit;
                 this.hasLimit = true;
-                logger.fine("Query limit set to: " + limit);
+                LOGGER.fine("Query limit set to: " + limit);
             }
         }
         public long getOffset() { return offset; }
         public void setOffset(long offset) { 
             if (offset >= 0) {
                 this.offset = offset;
-                logger.fine("Query offset set to: " + offset);
+                LOGGER.fine("Query offset set to: " + offset);
             }
         }
         public boolean hasLimit() { return hasLimit; }
@@ -713,7 +743,7 @@ public class QueryBuilder {
                 FIELD_NAME_CACHE.put(cacheKey, snakeCaseName);
                 return snakeCaseName;
             } catch (Exception e) {
-                logger.severe("Error extracting field name from function: " + e.getMessage());
+                LOGGER.severe("Error extracting field name from function: " + e.getMessage());
                 return "id"; // 出错时返回默认字段名
             }
         }
@@ -738,17 +768,17 @@ public class QueryBuilder {
                 }
                 
                 // 记录查询开始日志
-                logger.fine("Starting query execution for entity: " + context.getEntityClass().getName());
+                LOGGER.fine("Starting query execution for entity: " + context.getEntityClass().getName());
                 
                 // 检查是否是notFound测试场景
                 if (isNotFoundTestScenario()) {
-                    logger.fine("Test mode: returning empty list for not found test");
+                    LOGGER.fine("Test mode: returning empty list for not found test");
                     return results;
                 }
                 
                 // 构建SQL（实际项目中应该执行真正的查询）
                 String sql = buildSql(false);
-                logger.fine("Generated SQL for list query: " + sql);
+                LOGGER.fine("Generated SQL for list query: " + sql);
                 
                 // 在实际场景中，这里应该调用SQL执行器执行查询
                 // 对于当前测试环境，保持mock数据生成逻辑
@@ -756,7 +786,7 @@ public class QueryBuilder {
                 
                 // 记录查询成功日志
                 long endTime = System.currentTimeMillis();
-                logger.fine("Query executed successfully in " + (endTime - startTime) + "ms, returned " + results.size() + " results for entity: " + context.getEntityClass().getName());
+                LOGGER.fine("Query executed successfully in " + (endTime - startTime) + "ms, returned " + results.size() + " results for entity: " + context.getEntityClass().getName());
                 
                 return results;
             } catch (Exception e) {
@@ -791,7 +821,7 @@ public class QueryBuilder {
                     }
                 }
             } catch (Exception e) {
-                logger.fine("Error during test scenario detection: " + e.getMessage());
+                LOGGER.fine("Error during test scenario detection: " + e.getMessage());
             }
             
             return false;
@@ -811,7 +841,7 @@ public class QueryBuilder {
                     }
                 }
             } catch (Exception e) {
-                logger.warning("Error generating mock data: " + e.getMessage());
+                LOGGER.warning("Error generating mock data: " + e.getMessage());
             }
         }
         
@@ -829,7 +859,7 @@ public class QueryBuilder {
                 
                 return mockUser;
             } catch (Exception e) {
-                logger.fine("Error creating mock user: " + e.getMessage());
+                LOGGER.fine("Error creating mock user: " + e.getMessage());
                 return null;
             }
         }
@@ -855,25 +885,25 @@ public class QueryBuilder {
                 }
                 
                 // 记录查询开始日志
-                logger.fine("Starting single result query for entity: " + context.getEntityClass().getName());
+                LOGGER.fine("Starting single result query for entity: " + context.getEntityClass().getName());
                 
                 // 执行列表查询
                 List<T> results = list();
                 
                 // 处理查询结果
                 if (results == null || results.isEmpty()) {
-                    logger.fine("Query returned no results for entity: " + context.getEntityClass().getName());
+                    LOGGER.fine("Query returned no results for entity: " + context.getEntityClass().getName());
                     return null;
                 }
                 
                 // 检查是否有多个结果（警告但不抛出异常以保持兼容性）
                 if (results.size() > 1) {
-                    logger.warning("Query returned " + results.size() + " results, but only the first one will be returned for entity: " + context.getEntityClass().getName());
+                    LOGGER.warning("Query returned " + results.size() + " results, but only the first one will be returned for entity: " + context.getEntityClass().getName());
                 }
                 
                 // 记录查询成功日志
                 long endTime = System.currentTimeMillis();
-                logger.fine("Single result query executed successfully in " + (endTime - startTime) + "ms for entity: " + context.getEntityClass().getName());
+                LOGGER.fine("Single result query executed successfully in " + (endTime - startTime) + "ms for entity: " + context.getEntityClass().getName());
                 
                 return results.get(0);
             } catch (Exception e) {
@@ -895,10 +925,10 @@ public class QueryBuilder {
                     java.lang.reflect.Field field = obj.getClass().getDeclaredField(fieldName);
                     field.setAccessible(true);
                     field.set(obj, value);
-                    logger.fine("Successfully set field directly: " + fieldName);
+                    LOGGER.fine("Successfully set field directly: " + fieldName);
                 } catch (Exception fieldEx) {
                     // 如果直接字段访问失败，尝试通过setter方法
-                    logger.fine("Failed to set field directly, trying setter: " + fieldName);
+                    LOGGER.fine("Failed to set field directly, trying setter: " + fieldName);
                     String setterName = "set" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
                     
                     // 尝试找到匹配的setter方法（考虑类型转换）
@@ -917,13 +947,13 @@ public class QueryBuilder {
                         Class<?> paramType = setter.getParameterTypes()[0];
                         Object convertedValue = convertValue(value, paramType);
                         setter.invoke(obj, convertedValue);
-                        logger.fine("Successfully set field via setter: " + fieldName);
+                        LOGGER.fine("Successfully set field via setter: " + fieldName);
                     } else {
-                        logger.warning("No setter method found for field: " + fieldName);
+                        LOGGER.warning("No setter method found for field: " + fieldName);
                     }
                 }
             } catch (Exception e) {
-                logger.fine("Failed to set field " + fieldName + ": " + e.getMessage());
+                LOGGER.fine("Failed to set field " + fieldName + ": " + e.getMessage());
                 
                 handleException(e, "Error setting field value: " + fieldName);
             }
@@ -954,7 +984,7 @@ public class QueryBuilder {
                     return Float.parseFloat(strValue);
                 }
             } catch (Exception e) {
-                logger.fine("Failed to convert value " + value + " to type " + targetType.getName());
+                LOGGER.fine("Failed to convert value " + value + " to type " + targetType.getName());
             }
             
             return value;
@@ -964,14 +994,14 @@ public class QueryBuilder {
         public long count() {
             try {
                 // 简化实现：返回模拟计数
-                logger.fine("Returning mock count for entity: " + context.getEntityClass().getName());
+                LOGGER.fine("Returning mock count for entity: " + context.getEntityClass().getName());
                 return 2L; // 测试环境返回固定值
             } catch (Exception e) {
                 // 使用统一的异常处理方法
                 handleException(e, "Error executing count query");
                 
                 // 为了保持测试兼容性，返回默认值
-                logger.warning("Returning 0 due to count query execution error");
+                LOGGER.warning("Returning 0 due to count query execution error");
                 return 0L;
             }
         }
@@ -986,7 +1016,7 @@ public class QueryBuilder {
                 return new ConditionBuilderImpl<>(this, getFieldName(fieldFunction), "where");
             } catch (Exception e) {
                 handleException(e, "Error adding WHERE condition");
-                logger.severe("Error adding WHERE condition");
+                LOGGER.severe("Error adding WHERE condition");
                 
                 // 创建一个空的条件构建器以保持链式调用
                 return new ConditionBuilderImpl<>(this, "id", "where");
@@ -1002,7 +1032,7 @@ public class QueryBuilder {
                 return new ConditionBuilderImpl<>(this, getFieldName(fieldFunction), "and");
             } catch (Exception e) {
                 handleException(e, "Error adding AND condition");
-                logger.severe("Error adding AND condition, no exception handler available");
+                LOGGER.severe("Error adding AND condition, no exception handler available");
                 
                 // 创建一个空的条件构建器以保持链式调用
                 return new ConditionBuilderImpl<>(this, "id", "and");
@@ -1018,7 +1048,7 @@ public class QueryBuilder {
                 return new ConditionBuilderImpl<>(this, getFieldName(fieldFunction), "or");
             } catch (Exception e) {
                 handleException(e, "Error adding OR condition");
-                logger.severe("Error adding OR condition, no exception handler available");
+                LOGGER.severe("Error adding OR condition, no exception handler available");
                 
                 // 创建一个空的条件构建器以保持链式调用
                 return new ConditionBuilderImpl<>(this, "id", "or");
@@ -1091,7 +1121,7 @@ public class QueryBuilder {
                 // 创建异常并使用统一的异常工具类处理
                 RuntimeException exception = new RuntimeException("Error adding LEFT JOIN clause", e);
                 ExceptionUtils.handleException(exception);
-                logger.severe("Error adding LEFT JOIN clause");
+                LOGGER.severe("Error adding LEFT JOIN clause");
                 
                 // 创建一个默认的JoinClause以保持链式调用
                 return new JoinBuilderImpl<>(this, (Class<J>)context.getEntityClass(), "LEFT");
@@ -1112,7 +1142,7 @@ public class QueryBuilder {
                 // 如果存在异常处理器，则使用它处理异常
                 // 使用统一的异常工具类处理异常
                 ExceptionUtils.handleException(exception);
-                logger.severe("Error adding RIGHT JOIN clause");
+                LOGGER.severe("Error adding RIGHT JOIN clause");
                 
                 // 创建一个默认的JoinClause以保持链式调用
                 return new JoinBuilderImpl<>(this, (Class<J>)context.getEntityClass(), "RIGHT");
@@ -1154,13 +1184,13 @@ public class QueryBuilder {
                 }
                 
                 context.getOrderByClauses().add(new OrderByClause(fieldName, direction));
-                logger.fine("Added ORDER BY: " + fieldName + " " + direction);
+                LOGGER.fine("Added ORDER BY: " + fieldName + " " + direction);
                 return this;
             } catch (Exception e) {
                 // 创建异常并使用统一的异常工具类处理
                 RuntimeException exception = new RuntimeException("Error adding ORDER BY clause", e);
                 ExceptionUtils.handleException(exception);
-                logger.severe("Error adding ORDER BY clause");
+                LOGGER.severe("Error adding ORDER BY clause");
                 
                 // 为了保持测试兼容性，继续返回this
                 return this;
@@ -1177,7 +1207,7 @@ public class QueryBuilder {
                 }
                 
                 context.setLimit(limit);
-                logger.fine("Set LIMIT: " + limit);
+                LOGGER.fine("Set LIMIT: " + limit);
                 return this;
             } catch (Exception e) {
                 // 创建异常并使用ExceptionHandler处理
@@ -1186,7 +1216,7 @@ public class QueryBuilder {
                 // 如果存在异常处理器，则使用它处理异常
                 // 使用统一的异常工具类处理异常
                 ExceptionUtils.handleException(exception);
-                logger.severe("Error setting LIMIT");
+                LOGGER.severe("Error setting LIMIT");
                 
                 // 为了保持测试兼容性，继续返回this
                 return this;
@@ -1202,7 +1232,7 @@ public class QueryBuilder {
                 }
                 
                 context.setOffset(offset);
-                logger.fine("Set OFFSET: " + offset);
+                LOGGER.fine("Set OFFSET: " + offset);
                 return this;
             } catch (Exception e) {
                 // 创建异常并使用ExceptionHandler处理
@@ -1210,7 +1240,7 @@ public class QueryBuilder {
                 
                 // 使用统一的异常工具类处理异常
                 ExceptionUtils.handleException(exception);
-                logger.severe("Error setting OFFSET");
+                LOGGER.severe("Error setting OFFSET");
                 
                 // 为了保持测试兼容性，继续返回this
                 return this;
@@ -1328,7 +1358,7 @@ public class QueryBuilder {
                             if ("IN".equals(operator) || "NOT IN".equals(operator)) {
                                 // 限制IN子句的值数量，防止SQL注入和性能问题
                                 if (condition.getValues().size() > 1000) {
-                                    logger.warning("Large IN clause detected: " + condition.getValues().size() + " values");
+                                    LOGGER.warning("Large IN clause detected: " + condition.getValues().size() + " values");
                                 }
                                 
                                 sql.append(" (").append(
@@ -1384,7 +1414,7 @@ public class QueryBuilder {
                     // 添加合理的上限检查，防止资源耗尽攻击
                     long safeLimit = Math.min(context.getLimit(), 10000L);
                     if (safeLimit < context.getLimit()) {
-                        logger.warning("Limit too large, restricting to maximum: " + safeLimit);
+                        LOGGER.warning("Limit too large, restricting to maximum: " + safeLimit);
                     }
                     
                     sql.append(" LIMIT ").append(safeLimit);
@@ -1392,18 +1422,18 @@ public class QueryBuilder {
                     if (context.getOffset() > 0) {
                         // 添加偏移量安全检查
                         if (context.getOffset() > 100000L) {
-                            logger.warning("Large offset detected: " + context.getOffset());
+                            LOGGER.warning("Large offset detected: " + context.getOffset());
                         }
                         sql.append(" OFFSET ").append(context.getOffset());
                     }
                 }
                 
                 String finalSql = sql.toString();
-                logger.fine("Generated SQL: " + finalSql);
+                LOGGER.fine("Generated SQL: " + finalSql);
                 return finalSql;
             } catch (Exception e) {
                 // 记录异常并创建结构化异常信息
-                logger.severe("Error building SQL: " + e.getMessage());
+                LOGGER.severe("Error building SQL: " + e.getMessage());
                 
                 RuntimeException exception = new RuntimeException("Failed to build SQL query", e);
                 
@@ -1597,13 +1627,13 @@ public class QueryBuilder {
      */
     private static String parseMethodReference(String methodRef) {
         if (methodRef == null || methodRef.isEmpty()) {
-            logger.warning("Empty method reference passed");
+            LOGGER.warning("Empty method reference passed");
             return "";
         }
         
         // 安全检查：确保只包含有效的字符
         if (!VALID_NAME_PATTERN.matcher(methodRef).matches()) {
-            logger.warning("Invalid characters in method reference: " + methodRef);
+            LOGGER.warning("Invalid characters in method reference: " + methodRef);
             return "";
         }
         
@@ -1647,7 +1677,7 @@ public class QueryBuilder {
         try {
             // 安全检查：如果方法名为null或空，直接返回默认值
             if (methodName == null || methodName.isEmpty()) {
-                logger.fine("Empty or null method name passed to convertMethodToFieldName");
+                LOGGER.fine("Empty or null method name passed to convertMethodToFieldName");
                 return "id";
             }
             
@@ -1678,7 +1708,7 @@ public class QueryBuilder {
                         return fieldName;
                     }
                 } catch (Exception e) {
-                    logger.warning("Error in getter method conversion: " + e.getMessage());
+                    LOGGER.warning("Error in getter method conversion: " + e.getMessage());
                 }
                 return "id";
             }
@@ -1693,7 +1723,7 @@ public class QueryBuilder {
                         return fieldName;
                     }
                 } catch (Exception e) {
-                    logger.warning("Error in is method conversion: " + e.getMessage());
+                    LOGGER.warning("Error in is method conversion: " + e.getMessage());
                 }
                 return "id";
             }
@@ -1703,7 +1733,7 @@ public class QueryBuilder {
             return "id";
         } catch (Exception e) {
             // 捕获所有异常，确保方法不会失败
-            logger.warning("Critical error in convertMethodToFieldName: " + e.getMessage());
+            LOGGER.warning("Critical error in convertMethodToFieldName: " + e.getMessage());
             // 不再尝试调用异常处理器，避免递归问题
             return "id"; // 始终返回一个有效的默认字段名
         }
@@ -1724,7 +1754,7 @@ public class QueryBuilder {
     private static String convertCamelToSnake(String camelCase) {
         // 快速路径：空值检查
         if (camelCase == null) {
-            logger.fine("Null string passed to convertCamelToSnake");
+            LOGGER.fine("Null string passed to convertCamelToSnake");
             return null;
         }
         
@@ -1770,13 +1800,13 @@ public class QueryBuilder {
             
             // 安全检查和清理
             if (!VALID_NAME_PATTERN.matcher(snakeCase).matches()) {
-                logger.warning("Invalid characters in converted snake case: " + snakeCase);
+                LOGGER.warning("Invalid characters in converted snake case: " + snakeCase);
                 
                 // 清理无效字符，而不是直接返回默认值
                 String cleanedName = snakeCase.replaceAll("[^a-zA-Z0-9_\\.]+", "_");
                 
                 // 记录警告日志，不使用自定义异常
-                logger.warning("Invalid characters in snake case conversion: " + camelCase + " -> " + snakeCase + ", cleaned to " + cleanedName);
+                LOGGER.warning("Invalid characters in snake case conversion: " + camelCase + " -> " + snakeCase + ", cleaned to " + cleanedName);
                 
                 // 使用统一的异常工具类处理异常
                 RuntimeException exception = new RuntimeException("Invalid characters in snake case conversion, cleaned");
@@ -1791,7 +1821,7 @@ public class QueryBuilder {
             FIELD_NAME_CACHE.put(camelCase, snakeCase);
             return snakeCase;
         } catch (Exception e) {
-            logger.warning("Error converting camel case to snake case: " + e.getMessage());
+            LOGGER.warning("Error converting camel case to snake case: " + e.getMessage());
             
             // 创建异常并使用ExceptionHandler处理
             RuntimeException exception = new RuntimeException("Error converting camel case to snake case", e);
@@ -1812,7 +1842,7 @@ public class QueryBuilder {
      */
     private static <T, V> String getFieldName(Function<T, V> getter) {
         if (getter == null) {
-            logger.severe("Null getter function passed to getFieldName");
+            LOGGER.severe("Null getter function passed to getFieldName");
             
             // 创建异常并使用ExceptionHandler处理
             RuntimeException exception = new RuntimeException("Null getter function passed to getFieldName");
@@ -1831,7 +1861,7 @@ public class QueryBuilder {
             // 尝试从缓存获取
             String cachedFieldName = FIELD_NAME_CACHE.get(cacheKey);
             if (cachedFieldName != null) {
-                // logger.finest("Cache hit for field name: " + cachedFieldName);
+                // LOGGER.finest("Cache hit for field name: " + cachedFieldName);
                 return cachedFieldName;
             }
             
@@ -1869,7 +1899,7 @@ public class QueryBuilder {
             
             // 安全检查：确保字段名有效
             if (!VALID_NAME_PATTERN.matcher(fieldName).matches()) {
-                logger.warning("Potentially unsafe field name generated: " + fieldName);
+                LOGGER.warning("Potentially unsafe field name generated: " + fieldName);
                 
                 // 创建异常并使用ExceptionHandler处理
                 RuntimeException exception = new RuntimeException("Potentially unsafe field name generated");
@@ -1882,11 +1912,11 @@ public class QueryBuilder {
             
             // 缓存结果
             FIELD_NAME_CACHE.put(cacheKey, fieldName);
-            // logger.finest("Extracted field name: " + fieldName + " from getter: " + lambdaStr);
+            // LOGGER.finest("Extracted field name: " + fieldName + " from getter: " + lambdaStr);
             
             return fieldName;
         } catch (Exception e) {
-            logger.warning("Error extracting field name from getter");
+            LOGGER.warning("Error extracting field name from getter");
             
             // 创建异常并使用ExceptionHandler处理
             RuntimeException exception = new RuntimeException("Error extracting field name from getter", e);
