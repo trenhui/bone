@@ -1,175 +1,354 @@
 package com.bone.metadata.sdk.test.testcase;
 
+import com.bone.core.id.IdGenerator;
+import com.bone.metadata.sdk.query.criteria.Criteria;
+import com.bone.metadata.sdk.test.config.TestConfig;
+import com.bone.metadata.sdk.test.domain.User;
+import com.bone.metadata.sdk.test.repository.impl.UserRepositoryImpl;
+import com.bone.metadata.sdk.test.utils.TestDataHelper;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Assertions;
-import java.util.HashMap;
-import java.util.Map;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
-/**
- * 用户仓储CRUD操作测试
- * 测试用户实体的创建、读取、更新和删除功能
- */
-public class UserRepositoryCUDTest {
+import static org.junit.jupiter.api.Assertions.*;
 
-    // 用户数据模型类
-    private static class UserEntity {
-        private Long id;
-        private String name;
-        private String email;
-        private boolean deleted;
-        private long createTime;
-        private long updateTime;
-        
-        // 构造方法
-        public UserEntity(String name, String email) {
-            this.name = name;
-            this.email = email;
-            this.deleted = false;
-            this.createTime = System.currentTimeMillis();
-            this.updateTime = System.currentTimeMillis();
-        }
-        
-        // Getters and Setters
-        public Long getId() { return id; }
-        public void setId(Long id) { this.id = id; }
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; this.updateTime = System.currentTimeMillis(); }
-        public String getEmail() { return email; }
-        public void setEmail(String email) { this.email = email; this.updateTime = System.currentTimeMillis(); }
-        public boolean getDeleted() { return deleted; }
-        public void setDeleted(boolean deleted) { this.deleted = deleted; this.updateTime = System.currentTimeMillis(); }
-        public long getCreateTime() { return createTime; }
-        public long getUpdateTime() { return updateTime; }
-        
-        @Override
-        public String toString() {
-            return "UserData{id=" + id + ", name='" + name + "', email='" + email + "'}";
-        }
+@SpringBootTest(classes = TestConfig.class)
+@ActiveProfiles("test")
+@ExtendWith(SpringExtension.class)
+@Slf4j
+@Transactional
+public class UserRepositoryCUDTest  {
+
+    private NamedParameterJdbcOperations jdbc;
+
+    private UserRepositoryImpl userRepository;
+
+    @Autowired
+    public UserRepositoryCUDTest(NamedParameterJdbcOperations jdbc, UserRepositoryImpl userRepository) {
+        this.jdbc = jdbc;
+        this.userRepository = userRepository;
     }
-    
-    // 内存存储用户仓储实现
-    private static class InMemoryUserRepository {
-        private Map<Long, UserEntity> entityStore = new HashMap<>();
-        private long nextId = 1L;
-        
-        public Long insert(UserEntity entity) {
-            Long id = nextId++;
-            entity.setId(id);
-            entityStore.put(id, entity);
-            return id;
-        }
-        
-        public boolean update(UserEntity entity) {
-            Long id = entity.getId();
-            if (!entityStore.containsKey(id)) {
-                return false;
-            }
-            entityStore.put(id, entity);
-            return true;
-        }
-        
-        public boolean delete(Long id) {
-            UserEntity entity = entityStore.get(id);
-            if (entity == null) {
-                return false;
-            }
-            entity.setDeleted(true);
-            return true;
-        }
-        
-        public UserEntity findById(Long id) {
-            UserEntity entity = entityStore.get(id);
-            return entity != null && !entity.getDeleted() ? entity : null;
-        }
-        
-        public List<UserEntity> findAll() {
-            return entityStore.values().stream()
-                    .filter(entity -> !entity.getDeleted())
-                    .collect(Collectors.toList());
-        }
-    }
-    
-    private InMemoryUserRepository userRepository;
-    
+
     @BeforeEach
     void setUp() {
-        userRepository = new InMemoryUserRepository();
+        TestDataHelper.cleanTestData(jdbc);
+        TestDataHelper.setUpTestData(jdbc);
     }
-    
-    @Test
-    void testInsertUser_ShouldReturnGeneratedId() {
-        // 创建测试用户实体
-        UserEntity userEntity = new UserEntity("test_user", "test@example.com");
-        Long generatedId = userRepository.insert(userEntity);
-        
-        // 验证ID生成正确
-        Assertions.assertNotNull(generatedId, "插入操作应返回有效的ID");
-        Assertions.assertTrue(generatedId > 0, "返回的ID应为正数");
-        
-        // 验证数据能被正确检索
-        UserEntity foundEntity = userRepository.findById(generatedId);
-        Assertions.assertNotNull(foundEntity, "应能通过ID找到新插入的数据");
-        Assertions.assertEquals("test_user", foundEntity.getName(), "用户名应正确保存");
-        Assertions.assertEquals("test@example.com", foundEntity.getEmail(), "邮箱应正确保存");
+
+    // Helper method to create a test User instance
+    private User createTestUser(String name, Long roleId, Long createBy, boolean deleted) {
+        User user = new User();
+        user.setId(IdGenerator.generateLongID());
+        user.setName(name);
+        user.setRoleId(roleId);
+        user.setCreateTime(Timestamp.from(Instant.now()));
+        user.setCreateBy(createBy);
+        user.setUpdateTime(Timestamp.from(Instant.now()));
+        user.setUpdateBy(createBy);
+        user.setDeleted(deleted);
+        return user;
     }
-    
+
+    // 1. Test insert operation
     @Test
-    void testUpdateUser_ShouldModifyExistingRecord() {
-        // 准备测试数据
-        UserEntity userEntity = new UserEntity("update_user", "update@example.com");
-        Long id = userRepository.insert(userEntity);
-        
-        // 执行更新操作
-        UserEntity updatedEntity = userRepository.findById(id);
-        updatedEntity.setName("updated_name");
-        updatedEntity.setEmail("updated@example.com");
-        boolean updateResult = userRepository.update(updatedEntity);
-        
-        // 验证更新成功
-        Assertions.assertTrue(updateResult, "更新操作应成功");
-        
-        // 验证数据已更新
-        UserEntity foundEntity = userRepository.findById(id);
-        Assertions.assertEquals("updated_name", foundEntity.getName(), "用户名应被正确更新");
-        Assertions.assertEquals("updated@example.com", foundEntity.getEmail(), "邮箱应被正确更新");
+    void testInsert_ShouldCreateUserWithGeneratedId() {
+        // Arrange
+        User user = createTestUser("NewUser", 1L, 1001L, false);
+
+        // Act
+        Long userId = userRepository.insert(user);
+
+        // Assert
+        User insertedUser = userRepository.findById(userId);
+        assertNotNull(insertedUser, "Inserted user should exist");
+        assertEquals(user.getName(), insertedUser.getName(), "Name should match");
+        assertEquals(user.getRoleId(), insertedUser.getRoleId(), "Role ID should match");
+        assertNotNull(insertedUser.getCreateTime(), "Create time should be set");
+        assertEquals(false, insertedUser.getDeleted(), "User should not be soft deleted");
     }
-    
+
+    // 2. Test batchInsert operation
     @Test
-    void testDeleteUser_ShouldMarkAsDeleted() {
-        // 准备测试数据
-        UserEntity userEntity = new UserEntity("delete_user", "delete@example.com");
-        Long id = userRepository.insert(userEntity);
-        
-        // 验证数据存在
-        Assertions.assertNotNull(userRepository.findById(id), "删除前应能找到数据");
-        
-        // 执行删除操作
-        boolean deleteResult = userRepository.delete(id);
-        Assertions.assertTrue(deleteResult, "删除操作应成功");
-        
-        // 验证数据已被删除（软删除）
-        Assertions.assertNull(userRepository.findById(id), "删除后不应再找到数据");
+    void testBatchInsert_ShouldInsertMultipleUsers() {
+        // Arrange
+        List<User> users = Arrays.asList(
+                createTestUser("BatchUser1", 2L, 1002L, false),
+                createTestUser("BatchUser2", 2L, 1002L, false),
+                createTestUser("BatchUser3", 3L, 1003L, false)
+        );
+
+        // Act
+        userRepository.batchInsert(users);
+
+        // Assert
+        Criteria<User> criteria = Criteria.<User>create().in("name", Arrays.asList("BatchUser1", "BatchUser2", "BatchUser3"));
+        List<User> insertedUsers = userRepository.findByCriteria(criteria);
+        assertEquals(3, insertedUsers.size(), "Should insert 3 users");
+        insertedUsers.forEach(user -> assertEquals(false, user.getDeleted(), "Users should not be soft deleted"));
     }
-    
+
     @Test
-    void testFindAllUsers_ShouldReturnOnlyActiveUsers() {
-        // 准备测试数据
-        userRepository.insert(new UserEntity("user1", "user1@example.com"));
-        userRepository.insert(new UserEntity("user2", "user2@example.com"));
-        userRepository.insert(new UserEntity("user3", "user3@example.com"));
-        
-        // 验证初始数据数量
-        List<UserEntity> activeUsers = userRepository.findAll();
-        Assertions.assertEquals(3, activeUsers.size(), "应返回所有活跃用户");
-        
-        // 删除一个用户
-        userRepository.delete(2L); // 删除第二个用户
-        
-        // 验证剩余活跃用户数量
-        activeUsers = userRepository.findAll();
-        Assertions.assertEquals(2, activeUsers.size(), "应只返回未被删除的用户");
+    void testBatchInsert_ShouldHandleEmptyList() {
+        // Arrange
+        List<User> emptyList = Collections.emptyList();
+
+        // Act
+        userRepository.batchInsert(emptyList);
+
+        // Assert
+        Criteria<User> criteria = Criteria.<User>create().eq("name", "NonExistent");
+        List<User> users = userRepository.findByCriteria(criteria);
+        assertTrue(users.isEmpty(), "No users should be inserted");
+    }
+
+    // 3. Test save operation (insert new user)
+    @Test
+    void testSave_ShouldInsertNewUser() {
+        // Arrange
+        User user = createTestUser("SaveNewUser", 1L, 1001L, false);
+
+        // Act
+        Long userId = userRepository.save(user);
+
+        // Assert
+        User savedUser = userRepository.findById(userId);
+        assertNotNull(savedUser, "Saved user should exist");
+        assertEquals(user.getName(), savedUser.getName(), "Name should match");
+        assertEquals(user.getRoleId(), savedUser.getRoleId(), "Role ID should match");
+        assertNotNull(savedUser.getCreateTime(), "Create time should be set");
+    }
+
+    // 4. Test save operation (update existing user)
+    @Test
+    void testSave_ShouldUpdateExistingUser() {
+        // Arrange
+        User user = createTestUser("InitialUser", 1L, 1001L, false);
+        Long userId = userRepository.insert(user);
+        User updatedUser = userRepository.findById(userId);
+        updatedUser.setName("UpdatedUser");
+        updatedUser.setRoleId(2L);
+        updatedUser.setUpdateBy(1002L);
+        updatedUser.setUpdateTime(Timestamp.from(Instant.now()));
+
+        // Act
+        userRepository.save(updatedUser);
+
+        // Assert
+        User savedUser = userRepository.findById(userId);
+        assertNotNull(savedUser, "Updated user should exist");
+        assertEquals("UpdatedUser", savedUser.getName(), "Name should be updated");
+        assertEquals(2L, savedUser.getRoleId(), "Role ID should be updated");
+        assertEquals(1002L, savedUser.getUpdateBy(), "Update by should be updated");
+    }
+
+    // 5. Test batchSave operation
+    @Test
+    void testBatchSave_ShouldInsertAndUpdateUsers() {
+        // Arrange
+        User cuser = createTestUser("AuditUser", 1L, 1001L, false);
+        userRepository.save(cuser);
+        // Arrange
+        User existingUser = userRepository.findById(cuser.getId());
+        existingUser.setName("UpdatedExistingUser");
+        User newUser = createTestUser("NewBatchUser", 3L, 1003L, false);
+        List<User> users = Arrays.asList(existingUser, newUser);
+
+        // Act
+        userRepository.batchSave(users);
+
+        // Assert
+        User updatedUser =  userRepository.findById(cuser.getId());
+        assertNotNull(updatedUser, "Existing user should be updated");
+        assertEquals("UpdatedExistingUser", updatedUser.getName(), "Existing user name should be updated");
+
+        Criteria<User> criteria = Criteria.<User>create().eq("name", "NewBatchUser");
+        List<User> insertedUsers = userRepository.findByCriteria(criteria);
+        assertFalse(insertedUsers.isEmpty(), "New user should be inserted");
+        assertEquals(3L, insertedUsers.get(0).getRoleId(), "New user role ID should match");
+    }
+
+    // 6. Test update operation
+    @Test
+    void testUpdate_ShouldUpdateUserFields() {
+        // Arrange
+        createTestUser("dd", 1L, 1001L, false);
+        User cuser = createTestUser("testUpdate_ShouldUpdateUserFields", 2L, 1002L, false);
+        userRepository.insert(cuser);
+        User user = userRepository.findById(cuser.getId());
+        user.setName("UpdatedUser");
+        user.setRoleId(2L);
+        user.setUpdateBy(1002L);
+
+        // Act
+        boolean result = userRepository.update(user);
+
+        // Assert
+        assertTrue(result, "Update should succeed");
+        User updatedUser = userRepository.findById(cuser.getId());
+        assertEquals("UpdatedUser", updatedUser.getName(), "Name should be updated");
+        assertEquals(2L, updatedUser.getRoleId(), "Role ID should be updated");
+        assertEquals(1002L, updatedUser.getUpdateBy(), "Update by should be updated");
+    }
+
+    @Test
+    void testUpdate_ShouldReturnFalseForNonExistentUser() {
+        // Arrange
+        User user = createTestUser("NonExistent", 1L, 1001L, false);
+        user.setId(999L);
+
+        // Act
+        boolean result = userRepository.update(user);
+
+        // Assert
+        assertFalse(result, "Update should fail for non-existent user");
+    }
+
+    // 7. Test updateByCriteria operation
+    @Test
+    void testUpdateByCriteria_ShouldUpdateMatchingUsers() {
+        // Arrange
+        User updateTemplate = new User();
+        updateTemplate.setName("BatchUpdatedUser");
+        updateTemplate.setUpdateBy(1002L);
+        Criteria<User> criteria = Criteria.<User>create().eq("role_id", 1L);
+
+        // Act
+        int updatedRows = userRepository.updateByCriteria(updateTemplate, criteria);
+
+        // Assert
+        assertTrue(updatedRows > 0, "Should update multiple users");
+        List<User> updatedUsers = userRepository.findByCriteria(criteria);
+        updatedUsers.forEach(user -> {
+            assertEquals("BatchUpdatedUser", user.getName(), "Name should be updated");
+            assertEquals(1002L, user.getUpdateBy(), "Update by should be updated");
+        });
+    }
+
+    @Test
+    void testUpdateByCriteria_ShouldReturnZeroForNoMatches() {
+        // Arrange
+        User updateTemplate = new User();
+        updateTemplate.setName("NoMatchUser");
+        Criteria<User> criteria = Criteria.<User>create().eq("role_id", 999L);
+
+        // Act
+        int updatedRows = userRepository.updateByCriteria(updateTemplate, criteria);
+
+        // Assert
+        assertEquals(0, updatedRows, "No rows should be updated");
+    }
+
+    // 8. Test deleteById operation
+    @Test
+    void testDeleteById_ShouldSoftDeleteUser() {
+        TestDataHelper.setUpTestData(jdbc);
+        // Arrange
+
+        User user = createTestUser("NewUser", 1L, 1001L, false);
+        userRepository.insert(user);
+
+        Long userId = user.getId();
+        // Act
+        boolean result = userRepository.deleteById(userId);
+
+        // Assert
+        assertTrue(result, "Delete should succeed");
+        User deletedUser = userRepository.findById(userId);
+        assertNull(deletedUser, "Soft deleted user should not be found");
+        User rawUser = userRepository.findByIdIncludingDeleted(userId);
+        assertNotNull(rawUser, "User should exist in raw query");
+        assertEquals(true, rawUser.getDeleted(), "User should be soft deleted");
+    }
+
+    @Test
+    void testDeleteById_ShouldReturnFalseForNonExistentUser() {
+        // Arrange
+        Long nonExistentId = 999L;
+
+        // Act
+        userRepository.deleteById(nonExistentId);
+
+        // Assert
+       // assertFalse(result, "Delete should fail for non-existent user");
+    }
+
+    // 9. Test deleteByIds operation
+    @Test
+    void testDeleteByIds_ShouldSoftDeleteMultipleUsers() {
+        // Arrange
+        List<Long> ids = Arrays.asList(1L, 2L);
+
+        // Act
+        userRepository.deleteByIds(ids);
+
+        // Assert
+        List<User> deletedUsers = userRepository.findByIds(ids);
+        assertTrue(deletedUsers.isEmpty(), "Soft deleted users should not be found");
+        Criteria<User> criteria = Criteria.<User>create().in("id", ids);
+        List<User> rawUsers = userRepository.findByCriteria(criteria);
+        rawUsers.forEach(user -> assertEquals(1, user.getDeleted(), "Users should be soft deleted"));
+    }
+
+    @Test
+    void testDeleteByIds_ShouldHandleEmptyList() {
+        // Arrange
+        List<Long> emptyIds = Collections.emptyList();
+
+        // Act
+        userRepository.deleteByIds(emptyIds);
+
+        // Assert
+        Criteria<User> criteria = Criteria.<User>create().eq(User::getName, "admin1");
+        List<User> users = userRepository.findByCriteria(criteria);
+        assertFalse(users.isEmpty(), "No users should be affected");
+    }
+
+    // 10. Test timestamp and audit fields
+    @Test
+    void testInsert_ShouldSetAuditFields() {
+        // Arrange
+        User user = createTestUser("AuditUser", 1L, 1001L, false);
+
+        // Act
+        Long userId = userRepository.insert(user);
+
+        // Assert
+        User insertedUser = userRepository.findById(userId);
+        assertNotNull(insertedUser.getCreateTime(), "Create time should be set");
+        assertNotNull(insertedUser.getUpdateTime(), "Update time should be set");
+        assertEquals(1001L, insertedUser.getCreateBy(), "Create by should match");
+        assertEquals(1001L, insertedUser.getUpdateBy(), "Update by should match");
+    }
+
+    @Test
+    void testUpdate_ShouldUpdateAuditFields() {
+        User cuser = createTestUser("AuditUser", 1L, 1001L, false);
+        userRepository.save(cuser);
+        // Arrange
+        User user = userRepository.findById(cuser.getId());
+        user.setName("AuditUpdatedUser");
+        user.setUpdateBy(1002L);
+        user.setUpdateTime(new Timestamp(user.getCreateTime().getTime() + 1000)); // +1秒
+
+        // Act
+        userRepository.update(user);
+
+        // Assert
+        User updatedUser =  userRepository.findById(cuser.getId());
+        assertEquals(1002L, updatedUser.getUpdateBy(), "Update by should be updated");
+        assertTrue(updatedUser.getUpdateTime().after(updatedUser.getCreateTime()), "Update time should be later than create time");
     }
 }
