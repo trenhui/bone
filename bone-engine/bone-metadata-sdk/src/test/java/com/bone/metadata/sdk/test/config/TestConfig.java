@@ -1,195 +1,181 @@
 package com.bone.metadata.sdk.test.config;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.bone.metadata.sdk.domain.annotation.EnableSqlRepositories;
+import com.bone.metadata.sdk.support.config.*;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import feign.RequestInterceptor;
+import org.mockito.Mockito;
+import org.redisson.api.RAtomicLong;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.cloud.openfeign.EnableFeignClients;
+import org.springframework.cloud.openfeign.FeignAutoConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.core.env.Environment;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.transaction.PlatformTransactionManager;
+
+import javax.sql.DataSource;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/**
- * 简化的测试配置类
- * 移除了所有外部依赖
- */
+import static org.mockito.ArgumentMatchers.*;
+
+@Configuration
+@EnableAutoConfiguration
+@ImportAutoConfiguration({
+        MetadataAutoConfiguration.class,
+        SqlRepositoryAutoConfiguration.class,
+        InterceptorAutoConfiguration.class,
+        FeignAutoConfiguration.class
+})
+@ComponentScan("com.bone.metadata.sdk")
+@EnableSqlRepositories(basePackages = "com.bone.metadata.sdk.test.repository.proxy")
+@EnableFeignClients("com.bone.metadata.sdk.metadata.client")
+@EnableConfigurationProperties(MetadataSdkProperties.class)
 public class TestConfig {
-    
-    /**
-     * 配置映射
-     */
-    private final Map<String, Object> configMap = new HashMap<>();
-    
-    /**
-     * 简化的构造器
-     */
-    public TestConfig() {
-        // 初始化配置
-        initConfig();
+
+    @Autowired
+    private Environment environment;
+
+    //    @Bean
+//    public MetaPermissionService metaPermissionService() {
+//        return new DefaultMetaPermissionService();
+//    }
+//    @Bean
+//    @Primary
+//    public H2ColumnAllocationDialect h2ColumnAllocationDialect() {
+//        return new H2ColumnAllocationDialect();
+//    }
+
+
+    @Bean
+    @Primary
+    public DataSource dataSource() {
+        // 修改点1：统一使用HikariDataSource
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl(environment.getProperty("spring.datasource.url"));
+        config.setUsername(environment.getProperty("spring.datasource.username"));
+        config.setPassword(environment.getProperty("spring.datasource.password"));
+        config.setPoolName("TestDBPool");
+
+        // 设置数据库驱动
+        String url = environment.getProperty("spring.datasource.url", "").toLowerCase();
+        if (url.contains("mysql:")) {
+            config.setDriverClassName("com.mysql.cj.jdbc.Driver");
+        } else {
+            // H2或其他数据库
+            config.setDriverClassName("org.h2.Driver");
+        }
+
+        // 修改点2：统一返回HikariDataSource实例
+        return new HikariDataSource(config);
     }
-    
-    /**
-     * 初始化配置
-     */
-    private void initConfig() {
-        // 设置基本配置项
-        configMap.put("dataSource", new SimpleDataSource());
-        configMap.put("transactionManager", new SimpleTransactionManager());
-        configMap.put("redisClient", new SimpleRedisClient());
-        configMap.put("exceptionHandler", new SimpleExceptionHandler());
-        configMap.put("dataSourceManager", new SimpleDataSourceManager());
+
+    @Bean
+    @Primary
+    public NamedParameterJdbcOperations jdbc(DataSource dataSource) {
+        return new NamedParameterJdbcTemplate(dataSource);
     }
-    
-    /**
-     * 获取配置项
-     */
-    public Object getConfig(String name) {
-        return configMap.get(name);
+
+    @Bean
+    @Primary
+    public PlatformTransactionManager transactionManager(DataSource dataSource) {
+        return new DataSourceTransactionManager(dataSource);
     }
-    
-    /**
-     * 设置配置项
-     */
-    public void setConfig(String name, Object value) {
-        configMap.put(name, value);
+
+
+    @Bean
+    public RedisConnectionFactory redisConnectionFactory() {
+        RedisStandaloneConfiguration config = new RedisStandaloneConfiguration();
+        config.setHostName("localhost");
+        config.setPort(6379);
+        return new LettuceConnectionFactory(config);
     }
-    
-    /**
-     * 获取数据源
-     */
-    public SimpleDataSource getDataSource() {
-        return (SimpleDataSource) configMap.get("dataSource");
+
+    // Mock Redis 相关配置保持不变
+    @Bean
+    public RedissonClient redissonClient() throws InterruptedException {
+        // 1. Mock RedissonClient
+        RedissonClient redissonMock = Mockito.mock(RedissonClient.class);
+        RLock lockMock = Mockito.mock(RLock.class);
+        Mockito.when(lockMock.tryLock(anyLong(), anyLong(), any(TimeUnit.class))).thenReturn(true);
+        Mockito.when(redissonMock.getLock(anyString())).thenReturn(lockMock);
+
+        // 2. Mock RAtomicLong
+        RAtomicLong atomicLongMock = Mockito.mock(RAtomicLong.class);
+        AtomicBoolean initialized = new AtomicBoolean(false);
+        Mockito.when(atomicLongMock.isExists()).thenAnswer(inv -> initialized.get());
+        Mockito.when(atomicLongMock.get()).thenAnswer(inv -> initialized.get() ? 100L : 0L);
+        Mockito.when(atomicLongMock.compareAndSet(eq(0L), anyLong())).thenAnswer(inv -> {
+            initialized.set(true);
+            Mockito.when(atomicLongMock.get()).thenReturn(inv.getArgument(1));
+            return true;
+        });
+        Mockito.when(atomicLongMock.getAndAdd(anyInt())).thenAnswer(inv -> {
+            int delta = inv.getArgument(0);
+            long current = atomicLongMock.get();
+            Mockito.when(atomicLongMock.get()).thenReturn(current + delta);
+            return current;
+        });
+
+        Mockito.when(redissonMock.getAtomicLong(anyString())).thenReturn(atomicLongMock);
+
+        return redissonMock;
     }
-    
-    /**
-     * 获取事务管理器
-     */
-    public SimpleTransactionManager getTransactionManager() {
-        return (SimpleTransactionManager) configMap.get("transactionManager");
+
+    @Bean
+    @Primary
+    @SuppressWarnings("unchecked")
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
+        template.setConnectionFactory(connectionFactory);
+        template.afterPropertiesSet();
+        return template;
     }
-    
-    /**
-     * 简化的数据源内部类
-     */
-    public static class SimpleDataSource {
-        public void init() {
-            System.out.println("初始化数据源");
-        }
-        
-        public void close() {
-            System.out.println("关闭数据源");
-        }
+
+
+    @Bean
+    @Primary
+    public RequestContext testRequestContext() {
+        return new RequestContext() {
+            @Override
+            public String getRequestId() {
+                return "test-request-id";
+            }
+
+            @Override
+            public void init() {
+            }
+
+            @Override
+            public void clear() {
+            }
+        };
     }
-    
-    /**
-     * 简化的事务管理器内部类
-     */
-    public static class SimpleTransactionManager {
-        private final AtomicBoolean transactionActive = new AtomicBoolean(false);
-        
-        public void beginTransaction() {
-            transactionActive.set(true);
-            System.out.println("开始事务");
-        }
-        
-        public void commit() {
-            transactionActive.set(false);
-            System.out.println("提交事务");
-        }
-        
-        public void rollback() {
-            transactionActive.set(false);
-            System.out.println("回滚事务");
-        }
-        
-        public boolean isTransactionActive() {
-            return transactionActive.get();
-        }
+
+    @Bean
+    @Primary
+    public RequestInterceptor testAuthInterceptor() {
+        return template -> {
+            template.header("Authorization", "Bearer test-token");
+            template.header("X-Request-ID", "test-request-id");
+        };
     }
-    
-    /**
-     * 简化的Redis客户端内部类
-     */
-    public static class SimpleRedisClient {
-        public SimpleAtomicLong getAtomicLong(String key) {
-            return new SimpleAtomicLong(key);
-        }
-        
-        public SimpleLock getLock(String name) {
-            return new SimpleLock(name);
-        }
-    }
-    
-    /**
-     * 简化的原子长整型内部类
-     */
-    public static class SimpleAtomicLong {
-        private final String key;
-        private long value;
-        
-        public SimpleAtomicLong(String key) {
-            this.key = key;
-            this.value = 0;
-        }
-        
-        public long incrementAndGet() {
-            return ++value;
-        }
-        
-        public long get() {
-            return value;
-        }
-    }
-    
-    /**
-     * 简化的锁内部类
-     */
-    public static class SimpleLock {
-        private final String name;
-        private final AtomicBoolean locked = new AtomicBoolean(false);
-        
-        public SimpleLock(String name) {
-            this.name = name;
-        }
-        
-        public boolean tryLock(long waitTime, long leaseTime) {
-            boolean acquired = locked.compareAndSet(false, true);
-            System.out.println("尝试获取锁: " + name + " 结果: " + acquired);
-            return acquired;
-        }
-        
-        public void unlock() {
-            locked.set(false);
-            System.out.println("释放锁: " + name);
-        }
-    }
-    
-    /**
-     * 简化的异常处理器内部类
-     */
-    public static class SimpleExceptionHandler {
-        private static final SimpleExceptionHandler INSTANCE = new SimpleExceptionHandler();
-        
-        private SimpleExceptionHandler() {
-        }
-        
-        public static SimpleExceptionHandler getInstance() {
-            return INSTANCE;
-        }
-        
-        public void handleException(Exception e) {
-            System.err.println("处理异常: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * 简化的数据源管理器内部类
-     */
-    public static class SimpleDataSourceManager {
-        private String currentDataSource = "default";
-        
-        public void setCurrentDataSource(String name) {
-            this.currentDataSource = name;
-            System.out.println("切换到数据源: " + name);
-        }
-        
-        public String getCurrentDataSource() {
-            return currentDataSource;
-        }
-    }
+
+
 }

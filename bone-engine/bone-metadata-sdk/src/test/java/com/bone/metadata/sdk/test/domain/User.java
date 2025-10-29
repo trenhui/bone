@@ -1,38 +1,45 @@
 package com.bone.metadata.sdk.test.domain;
 
-import com.bone.metadata.sdk.domain.annotation.Table;
+import com.bone.core.annotation.Id;
+import com.bone.core.annotation.Table;
+import com.bone.core.domain.entity.AbstractEntity;
+import com.bone.core.domain.id.GeneratedValue;
+import com.bone.core.domain.id.GenerationStrategy;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
-/**
- * 简化的User类，不依赖外部AbstractEntity类
- */
+@EqualsAndHashCode(callSuper = true)
+@AllArgsConstructor
+@NoArgsConstructor
 @Data
-@Table("user")
-public class User {
-    private Long id;
+@Table("users")
+public class User extends AbstractEntity<Long> {
     private String name;
     private Long roleId;
-    private Date createTime;
-    private Long createBy;
-    private Date updateTime;
-    private Long updateBy;
-    private Boolean deleted;
-    
-    // 无参构造器
-    public User() {
-    }
-    
-    // 简化的构造函数
-    public User(Long id, String name, Long roleId) {
+
+    /**
+     * 实体的主键id，使用自定义生成策略
+     */
+    @Schema(description = "主键id")
+    @JsonSerialize(using = ToStringSerializer.class)
+    @Id
+    @GeneratedValue(strategy = GenerationStrategy.CUSTOM)
+    private Long id;
+
+    // 手动编写包含父类字段的构造函数
+    public User(Long id, String name, Long roleId,
+                Date createTime, Long createBy,
+                Date updateTime, Long updateBy, Boolean deleted) {
+        super(id, createTime, createBy, updateTime, updateBy, deleted);
         this.id = id;
         this.name = name;
-        this.roleId = roleId;
-    }
-    
-    // 为了支持基本类型long参数
-    public void setRoleId(long roleId) {
         this.roleId = roleId;
     }
 }

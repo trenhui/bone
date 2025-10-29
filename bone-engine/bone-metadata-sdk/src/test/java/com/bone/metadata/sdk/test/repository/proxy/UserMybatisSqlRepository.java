@@ -1,6 +1,6 @@
 package com.bone.metadata.sdk.test.repository.proxy;
 
-import com.bone.core.model.PageResult;
+import com.bone.core.result.PageResult;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.domain.annotation.Param;
 import com.bone.metadata.sdk.domain.annotation.Sql;
@@ -19,7 +19,7 @@ import java.util.List;
  */
 @SqlFragment(id = "userColumns",
         value = "u.id, u.name, u.role_id, u.create_time, u.create_by, u.update_time, u.update_by, u.deleted")
-public interface UserMybatisSqlRepository {
+public interface UserMybatisSqlRepository extends Repository<User, Long> {
 
     /**
      * 搜索用户（带分页和多重条件）
@@ -35,22 +35,24 @@ public interface UserMybatisSqlRepository {
     /**
      * 查询用户权限（分页）
      */
-    @Sql("SELECT <include refid=\"userWithRoleColumns\"/> " +
-         "FROM users u " +
-         "LEFT JOIN roles r ON u.role_id = r.id " +
-         "<where> " +
-         "    u.deleted = 0 " +
-         "    <if test=\"userPageQuery.name != null and userPageQuery.name != ''\"> " +
-         "        AND u.name LIKE CONCAT('%', #{userPageQuery.name}, '%') " +
-         "    </if> " +
-         "    <if test=\"userPageQuery.roleId != null\"> " +
-         "        AND u.role_id = #{userPageQuery.roleId} " +
-         "    </if> " +
-         "</where> " +
-         "ORDER BY u.create_time DESC " +
-         "<if test=\"userPageQuery.page != null and userPageQuery.pageSize != null\"> " +
-         "    LIMIT #{userPageQuery.pageSize} OFFSET #{userPageQuery.page} " +
-         "</if>")
+    @Sql("""
+                SELECT <include refid="userWithRoleColumns"/>
+                FROM users u 
+                LEFT JOIN roles r ON u.role_id = r.id 
+                <where>
+                    u.deleted = 0
+                    <if test="userPageQuery.name != null and userPageQuery.name != ''">
+                        AND u.name LIKE CONCAT('%', #{userPageQuery.name}, '%')
+                    </if>
+                    <if test="userPageQuery.roleId != null">
+                        AND u.role_id = #{userPageQuery.roleId}
+                    </if>
+                </where>
+                ORDER BY u.create_time DESC
+                <if test="userPageQuery.page != null and userPageQuery.pageSize != null">
+                    LIMIT #{userPageQuery.pageSize} OFFSET #{userPageQuery.page}
+                </if>
+            """)
     PageResult<UserRoleDTO> queryUerPermPage(@Param("userPageQuery") UserPageQuery userPageQuery);
 
     List<UserWithRoleDTO> findUsersWithRole(@Param("name") String name, @Param("roleId") Long roleId);
@@ -58,21 +60,23 @@ public interface UserMybatisSqlRepository {
     /**
      * 查询用户
      */
-    @Sql("SELECT <include refid=\"userColumns\"/> " +
-         "FROM users u " +
-         "<where> " +
-         "    u.deleted = 0 " +
-         "    <if test=\"query.name != null and query.name != ''\"> " +
-         "        AND u.name LIKE CONCAT('%', #{query.name}, '%') " +
-         "    </if> " +
-         "    <if test=\"query.roleId != null\"> " +
-         "        AND u.role_id = #{query.roleId} " +
-         "    </if> " +
-         "</where> " +
-         "ORDER BY u.create_time DESC " +
-         "<if test=\"query.page != null and query.pageSize != null\"> " +
-         "    LIMIT #{query.pageSize} OFFSET #{query.page} " +
-         "</if>")
+    @Sql("""
+                SELECT <include refid="userColumns"/>
+                FROM users u
+                <where>
+                    u.deleted = 0
+                    <if test="query.name != null and query.name != ''">
+                        AND u.name LIKE CONCAT('%', #{query.name}, '%')
+                    </if>
+                    <if test="query.roleId != null">
+                        AND u.role_id = #{query.roleId}
+                    </if>
+                </where>
+                ORDER BY u.create_time DESC
+                <if test="query.page != null and query.pageSize != null">
+                    LIMIT #{query.pageSize} OFFSET #{query.page}
+                </if>
+            """)
     PageResult<User> queryUsers(@Param("query") UserQuery query);
 
     /**
@@ -81,26 +85,33 @@ public interface UserMybatisSqlRepository {
     List<User> queryWithFragment(@Param("tableName") String tableName, @Param("status") Integer status);
 
     /**
-     * 更新用户
+     * 更新用户姓名
      */
-    @Sql("UPDATE users " +
-         "SET name = #{name}, " +
-         "    role_id = #{roleId}, " +
-         "    update_time = NOW(), " +
-         "    update_by = #{updateBy} " +
-         "WHERE id = #{id} AND deleted = 0")
-    int updateName(@Param("id") Long id, @Param("name") String name, @Param("roleId") Long roleId, @Param("updateBy") Long updateBy);
+    @Sql("""
+                UPDATE users 
+                <set>
+                    <if test="name != null and name != ''">
+                        name = #{name},
+                    </if>
+                    update_time = NOW(),
+                    update_by = #{updateBy}
+                </set>
+                WHERE id = #{id} AND deleted = 0
+            """)
+    int updateName(@Param("id") Long id, @Param("name") String name, @Param("updateBy") Long updateBy);
 
     /**
      * 软删除用户
      */
-    @Sql("UPDATE users " +
-         "<set> " +
-         "    deleted = 1, " +
-         "    update_time = NOW(), " +
-         "    update_by = #{updateBy} " +
-         "</set> " +
-         "WHERE id = #{id}")
+    @Sql("""
+                UPDATE users 
+                <set>
+                    deleted = 1,
+                    update_time = NOW(),
+                    update_by = #{updateBy}
+                </set>
+                WHERE id = #{id}
+            """)
     int deleteById(@Param("id") Long id, @Param("updateBy") Long updateBy);
 
     /**
