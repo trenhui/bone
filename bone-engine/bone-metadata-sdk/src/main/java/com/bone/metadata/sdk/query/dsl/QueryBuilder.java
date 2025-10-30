@@ -424,14 +424,14 @@ public class QueryBuilder {
             if (limit > 0) {
                 this.limit = limit;
                 this.hasLimit = true;
-                logger.fine("Query limit set to: " + limit);
+                logger.debug("Query limit set to: " + limit);
             }
         }
         public long getOffset() { return offset; }
         public void setOffset(long offset) { 
             if (offset >= 0) {
                 this.offset = offset;
-                logger.fine("Query offset set to: " + offset);
+                logger.debug("Query offset set to: " + offset);
             }
         }
         public boolean hasLimit() { return hasLimit; }
@@ -811,7 +811,7 @@ public class QueryBuilder {
                     }
                 }
             } catch (Exception e) {
-                logger.fine("Error during test scenario detection: " + e.getMessage());
+                logger.debug("Error during test scenario detection: " + e.getMessage());
             }
             
             return false;
@@ -831,7 +831,7 @@ public class QueryBuilder {
                     }
                 }
             } catch (Exception e) {
-                logger.warning("Error generating mock data: " + e.getMessage());
+                logger.warn("Error generating mock data: " + e.getMessage());
             }
         }
         
@@ -849,7 +849,7 @@ public class QueryBuilder {
                 
                 return mockUser;
             } catch (Exception e) {
-                logger.fine("Error creating mock user: " + e.getMessage());
+                logger.debug("Error creating mock user: " + e.getMessage());
                 return null;
             }
         }
@@ -916,10 +916,10 @@ public class QueryBuilder {
                     java.lang.reflect.Field field = obj.getClass().getDeclaredField(fieldName);
                     field.setAccessible(true);
                     field.set(obj, value);
-                    logger.fine("Successfully set field directly: " + fieldName);
+                    logger.debug("Successfully set field directly: " + fieldName);
                 } catch (Exception fieldEx) {
                     // 如果直接字段访问失败，尝试通过setter方法
-                    logger.fine("Failed to set field directly, trying setter: " + fieldName);
+                    logger.debug("Failed to set field directly, trying setter: " + fieldName);
                     String setterName = "set" + fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
                     
                     // 尝试找到匹配的setter方法（考虑类型转换）
@@ -938,13 +938,13 @@ public class QueryBuilder {
                         Class<?> paramType = setter.getParameterTypes()[0];
                         Object convertedValue = convertValue(value, paramType);
                         setter.invoke(obj, convertedValue);
-                        logger.fine("Successfully set field via setter: " + fieldName);
+                        logger.debug("Successfully set field via setter: " + fieldName);
                     } else {
-                        logger.warning("No setter method found for field: " + fieldName);
+                        logger.warn("No setter method found for field: " + fieldName);
                     }
                 }
             } catch (Exception e) {
-                logger.fine("Failed to set field " + fieldName + ": " + e.getMessage());
+                logger.debug("Failed to set field " + fieldName + ": " + e.getMessage());
                 
                 handleException(e, "Error setting field value: " + fieldName);
             }
@@ -975,7 +975,7 @@ public class QueryBuilder {
                     return Float.parseFloat(strValue);
                 }
             } catch (Exception e) {
-                logger.fine("Failed to convert value " + value + " to type " + targetType.getName());
+                logger.debug("Failed to convert value " + value + " to type " + targetType.getName());
             }
             
             return value;
@@ -1305,7 +1305,7 @@ public class QueryBuilder {
                             if ("IN".equals(operator) || "NOT IN".equals(operator)) {
                                 // 限制IN子句的值数量，防止SQL注入和性能问题
                                 if (condition.getValues().size() > 1000) {
-                                    logger.warning("Large IN clause detected: " + condition.getValues().size() + " values");
+                                    logger.warn("Large IN clause detected: " + condition.getValues().size() + " values");
                                 }
                                 
                                 sql.append(" (").append(
@@ -1361,7 +1361,7 @@ public class QueryBuilder {
                     // 添加合理的上限检查，防止资源耗尽攻击
                     long safeLimit = Math.min(context.getLimit(), 10000L);
                     if (safeLimit < context.getLimit()) {
-                        logger.warning("Limit too large, restricting to maximum: " + safeLimit);
+                        logger.warn("Limit too large, restricting to maximum: " + safeLimit);
                     }
                     
                     sql.append(" LIMIT ").append(safeLimit);
@@ -1369,7 +1369,7 @@ public class QueryBuilder {
                     if (context.getOffset() > 0) {
                         // 添加偏移量安全检查
                         if (context.getOffset() > 100000L) {
-                            logger.warning("Large offset detected: " + context.getOffset());
+                            logger.warn("Large offset detected: " + context.getOffset());
                         }
                         sql.append(" OFFSET ").append(context.getOffset());
                     }
@@ -1561,13 +1561,13 @@ public class QueryBuilder {
      */
     private static String parseMethodReference(String methodRef) {
         if (methodRef == null || methodRef.isEmpty()) {
-            logger.warning("Empty method reference passed");
+            logger.warn("Empty method reference passed");
             return "";
         }
         
         // 安全检查：确保只包含有效的字符
         if (!VALID_NAME_PATTERN.matcher(methodRef).matches()) {
-            logger.warning("Invalid characters in method reference: " + methodRef);
+            logger.warn("Invalid characters in method reference: " + methodRef);
             return "";
         }
         
@@ -1611,7 +1611,7 @@ public class QueryBuilder {
         try {
             // 安全检查：如果方法名为null或空，直接返回默认值
             if (methodName == null || methodName.isEmpty()) {
-                logger.fine("Empty or null method name passed to convertMethodToFieldName");
+                logger.debug("Empty or null method name passed to convertMethodToFieldName");
                 return "id";
             }
             
@@ -1642,7 +1642,7 @@ public class QueryBuilder {
                         return fieldName;
                     }
                 } catch (Exception e) {
-                    logger.warning("Error in getter method conversion: " + e.getMessage());
+                    logger.warn("Error in getter method conversion: " + e.getMessage());
                 }
                 return "id";
             }
@@ -1657,7 +1657,7 @@ public class QueryBuilder {
                         return fieldName;
                     }
                 } catch (Exception e) {
-                    logger.warning("Error in is method conversion: " + e.getMessage());
+                    logger.warn("Error in is method conversion: " + e.getMessage());
                 }
                 return "id";
             }
@@ -1667,7 +1667,7 @@ public class QueryBuilder {
             return "id";
         } catch (Exception e) {
             // 捕获所有异常，确保方法不会失败
-            logger.warning("Critical error in convertMethodToFieldName: " + e.getMessage());
+            logger.warn("Critical error in convertMethodToFieldName: " + e.getMessage());
             // 不再尝试调用异常处理器，避免递归问题
             return "id"; // 始终返回一个有效的默认字段名
         }
@@ -1688,7 +1688,7 @@ public class QueryBuilder {
     private static String convertCamelToSnake(String camelCase) {
         // 快速路径：空值检查
         if (camelCase == null) {
-            logger.fine("Null string passed to convertCamelToSnake");
+            logger.debug("Null string passed to convertCamelToSnake");
             return null;
         }
         
@@ -1734,28 +1734,23 @@ public class QueryBuilder {
             
             // 安全检查和清理
             if (!VALID_NAME_PATTERN.matcher(snakeCase).matches()) {
-                logger.warning("Invalid characters in converted snake case: " + snakeCase);
+                logger.warn("Invalid characters in converted snake case: " + snakeCase);
                 
                 // 清理无效字符，而不是直接返回默认值
                 String cleanedName = snakeCase.replaceAll("[^a-zA-Z0-9_\\.]+", "_");
                 
                 // 记录警告日志，不使用自定义异常
-                logger.warning("Invalid characters in snake case conversion: " + camelCase + " -> " + snakeCase + ", cleaned to " + cleanedName);
+                logger.warn("Invalid characters in snake case conversion: " + camelCase + " -> " + snakeCase + ", cleaned to " + cleanedName);
                 
-                // 使用统一的异常工具类处理异常
-                RuntimeException exception = new RuntimeException("Invalid characters in snake case conversion, cleaned");
-                ExceptionUtils.handleException(exception);
-                
-                // 缓存清理后的结果
-                FIELD_NAME_CACHE.put(camelCase, cleanedName);
-                return cleanedName;
+                // 直接抛出异常，使用合适的异常处理
+                throw new RuntimeException("Invalid characters in snake case conversion, cleaned");
             }
             
             // 缓存并返回结果
             FIELD_NAME_CACHE.put(camelCase, snakeCase);
             return snakeCase;
         } catch (Exception e) {
-            logger.warning("Error converting camel case to snake case: " + e.getMessage());
+            logger.warn("Error converting camel case to snake case: " + e.getMessage());
             
             // 创建异常并使用ExceptionHandler处理
             RuntimeException exception = new RuntimeException("Error converting camel case to snake case", e);
@@ -1777,7 +1772,7 @@ public class QueryBuilder {
     private static <T, V> String getFieldName(Function<T, V> getter) {
         if (getter == null) {
             logger.error("Null getter function passed to getFieldName");
-            throw handleException(new RuntimeException("Null getter function passed to getFieldName"), "Invalid getter function");
+            throw new RuntimeException("Null getter function passed to getFieldName");
         }
         
         try {
@@ -1824,7 +1819,7 @@ public class QueryBuilder {
             
             // 安全检查：确保字段名有效
             if (!VALID_NAME_PATTERN.matcher(fieldName).matches()) {
-                logger.warning("Potentially unsafe field name generated: " + fieldName);
+                logger.warn("Potentially unsafe field name generated: " + fieldName);
                 
                 // 创建异常并使用ExceptionHandler处理
                 RuntimeException exception = new RuntimeException("Potentially unsafe field name generated");
@@ -1842,7 +1837,7 @@ public class QueryBuilder {
             return fieldName;
         } catch (Exception e) {
             logger.error("Error extracting field name from getter", e);
-            throw handleException(e, "Failed to extract field name from getter");
+            throw new RuntimeException("Failed to extract field name from getter", e);
         }
     }
     
@@ -1874,26 +1869,7 @@ public class QueryBuilder {
         }
     }
     
-    // 转换方法名为字段名
-    private static String convertMethodToFieldName(String methodName) {
-        try {
-            // 移除括号
-            String cleanMethodName = methodName.replaceAll("\\(.*\\)", "").trim();
-            
-            // 处理getter方法
-            if (cleanMethodName.startsWith("get") && cleanMethodName.length() > 3) {
-                return Character.toLowerCase(cleanMethodName.charAt(3)) + cleanMethodName.substring(4);
-            }
-            // 处理is方法
-            else if (cleanMethodName.startsWith("is") && cleanMethodName.length() > 2) {
-                return Character.toLowerCase(cleanMethodName.charAt(2)) + cleanMethodName.substring(3);
-            }
-            return cleanMethodName;
-        } catch (Exception e) {
-            logger.warn("Failed to convert method name to field name: {}", methodName, e);
-            return "id"; // 出错时返回默认字段名
-        }
-    }
+    // 重复的方法已移除
     
     // 移除重复的clearFieldNameCache方法，避免编译错误
 }
