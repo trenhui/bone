@@ -2,26 +2,53 @@ spring:
   config:
     activate:
       on-profile: test
+  
+  # 多数据源配置 - 严格遵循测试环境最佳实践
   datasource:
-    type: com.zaxxer.hikari.HikariDataSource
-    url: ${DB_URL:jdbc:mysql://localhost:3306/extTest?useSSL=false&autoReconnect=true&characterEncoding=utf8}
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:mysql123}
-    hikari:
-      pool-name: TestDBPool
-      minimum-idle: 5
-      idle-timeout: 600000
-      maximum-pool-size: 10
-      auto-commit: true
-      max-lifetime: 1800000
-      connection-timeout: 30000
-      # Optional H2 configuration for testing
-      # url: ${DB_URL:jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;TRACE_LEVEL_SYSTEM_OUT=3}
-      # driver-class-name: org.h2.Driver
-      # username: ${DB_USERNAME:sa}
-      # password: ${DB_PASSWORD:""}
+    # 主数据源配置 - 使用extTest数据库
+    primary:
+      url: ${DB_PRIMARY_URL:jdbc:mysql://localhost:3306/extTest?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&useSSL=false}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      username: ${DB_PRIMARY_USERNAME:root}
+      password: ${DB_PRIMARY_PASSWORD:root}
+      hikari:
+        # 精简测试环境连接池配置
+        pool-name: PrimaryDBPool
+        minimum-idle: 2
+        maximum-pool-size: 5
+        connection-timeout: 10000
+        leak-detection-threshold: 30000
+    
+    # 从数据源配置 - 使用bone数据库
+    secondary:
+      url: ${DB_SECONDARY_URL:jdbc:mysql://localhost:3306/bone?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC&useSSL=false}
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      username: ${DB_SECONDARY_USERNAME:root}
+      password: ${DB_SECONDARY_PASSWORD:root}
+      hikari:
+        pool-name: SecondaryDBPool
+        minimum-idle: 1
+        maximum-pool-size: 3
+        connection-timeout: 10000
+  
+  # SQL初始化配置 - 测试环境专用
+  sql:
+    init:
+      mode: always
+      continue-on-error: true
+      separator: ;
+    datasource:
+      platform: mysql
+  
+  # 测试框架配置
+  test:
+    database:
+      replace: none  # 使用实际配置的数据源
+  main:
+    banner-mode: off  # 禁用启动banner加速测试
+    web-application-type: none  # 非Web应用模式
 
+# Bone Metadata SDK 核心配置 - 基于最佳实践优化
 metadata:
   sdk:
     # 基础配置
@@ -31,7 +58,7 @@ metadata:
     cache-enabled: true
     sql-cache-size: 500  # 测试环境优化缓存大小
     sql-cache-expire-hours: 1  # 测试环境缩短缓存过期时间
-
+    
     # 服务配置 - 仅保留必要参数
     service:
       config:
@@ -40,25 +67,25 @@ metadata:
         # 测试环境下禁用远程服务配置
         remote:
           enabled: false
-
+    
     # SQL执行配置 - 精简结构
     sql:
       enabled: true
-
+      
       # 执行器配置 - 测试环境专用设置
       executor:
         allow:
           dml: true
           batch: true
           max-rows: 5000  # 限制最大返回行数防止内存溢出
-
+      
       # 数据库配置
       database:
         type: ${DB_TYPE:MYSQL}
         auto-detect-dialect: true
         default-ds: primary
         batch-size: 500
-
+      
       # 模板配置 - 测试环境精简缓存
       template:
         base-path: classpath:/sql/
@@ -68,19 +95,19 @@ metadata:
         cache-size: 500
         expire-hours: 1
         async-preload: true
-
+      
       # 监控配置 - 仅保留关键参数
       monitor:
         enabled: true
         slow-query-threshold-ms: 500
-
+      
       # 缓存配置 - 测试环境减小缓存
       cache:
         expression-cache-size: 1000
         ast-cache-size: 500
         spel-cache-size: 500
         expire-hours: 1
-
+      
       # 安全配置 - 测试环境简化
       security:
         allowed-tables:
@@ -107,3 +134,4 @@ logging:
     org.springframework.jdbc: DEBUG
   pattern:
     console: '%d{HH:mm:ss.SSS} [%thread] %-5level %logger{20} - %msg%n'  # 简化日志格式
+

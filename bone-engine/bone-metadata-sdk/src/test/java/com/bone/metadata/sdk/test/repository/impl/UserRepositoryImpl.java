@@ -1,6 +1,6 @@
 package com.bone.metadata.sdk.test.repository.impl;
 
-import com.bone.core.result.PageResult;
+import com.bone.core.model.PageResult;
 import com.bone.metadata.sdk.BaseRepository;
 import com.bone.metadata.sdk.extension.ExtensionCoordinator;
 import com.bone.metadata.sdk.query.SqlBuilder;

@@ -1,6 +1,6 @@
 package com.bone.metadata.sdk.test.utils;
 
-import com.bone.core.id.IdGenerator;
+import com.bone.core.util.DistributedIdGenerator;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
 
@@ -71,16 +71,16 @@ public class TestDataHelper {
 
         // Insert 10 users with varied roles and states
         MapSqlParameterSource[] params = new MapSqlParameterSource[] {
-                createUserParams(IdGenerator.generateLongID(), "admin1", 1L, 1001L, false),
-                createUserParams(IdGenerator.generateLongID(), "admin2", 1L, 1001L, false),
-                createUserParams(IdGenerator.generateLongID(), "user1", 2L, 1002L, false),
-                createUserParams(IdGenerator.generateLongID(), "user2", 2L, 1003L, true),
-                createUserParams(IdGenerator.generateLongID(), "user3", 3L, 1004L, false),
-                createUserParams(IdGenerator.generateLongID(), "admin5", 1L, 1005L, false),
-                createUserParams(IdGenerator.generateLongID(), "user7", 2L, 1006L, false),
-                createUserParams(IdGenerator.generateLongID(), "admin4", 1L, 1007L, false),
-                createUserParams(IdGenerator.generateLongID(), "admin3", 1L, 1008L, false),
-                createUserParams(IdGenerator.generateLongID(), "user10", 3L, 1009L, false)
+                createUserParams(DistributedIdGenerator.generateLongId(), "admin1", 1L, 1001L, false),
+                createUserParams(DistributedIdGenerator.generateLongId(), "admin2", 1L, 1001L, false),
+                createUserParams(DistributedIdGenerator.generateLongId(), "user1", 2L, 1002L, false),
+                createUserParams(DistributedIdGenerator.generateLongId(), "user2", 2L, 1003L, true),
+                createUserParams(DistributedIdGenerator.generateLongId(), "user3", 3L, 1004L, false),
+                createUserParams(DistributedIdGenerator.generateLongId(), "admin5", 1L, 1005L, false),
+                createUserParams(DistributedIdGenerator.generateLongId(), "user7", 2L, 1006L, false),
+                createUserParams(DistributedIdGenerator.generateLongId(), "admin4", 1L, 1007L, false),
+                createUserParams(DistributedIdGenerator.generateLongId(), "admin3", 1L, 1008L, false),
+                createUserParams(DistributedIdGenerator.generateLongId(), "user10", 3L, 1009L, false)
         };
         jdbc.batchUpdate(sql, params);
     }
