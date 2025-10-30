@@ -1,6 +1,6 @@
 package com.bone.metadata.sdk.test.testcase;
 
-import com.bone.core.result.PageResult;
+import com.bone.core.model.PageResult;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.test.config.TestConfig;
 import com.bone.metadata.sdk.test.domain.SalesRecord;
@@ -171,10 +171,10 @@ public class SalesRecordRepositoryTest {
         );
 
         assertNotNull(pageResult);
-        assertEquals(3, pageResult.getTotalCount()); // 总共3个类别
-        assertEquals(2, pageResult.getData().size()); // 第一页有2条记录
-        assertEquals(1, pageResult.getCurrPage()); // 当前是第一页
-        assertEquals(2, pageResult.getPageSize()); // 每页2条
+        assertEquals(3, pageResult.getTotal()); // 总共3个类别
+        assertEquals(2, pageResult.getRecords().size()); // 第一页有2条记录
+        assertEquals(1, pageResult.getPage()); // 当前是第一页
+        assertEquals(2, pageResult.getSize()); // 每页2条
 
         log.info("分页聚合查询结果: {}", pageResult);
     }

@@ -1,6 +1,6 @@
 package com.bone.metadata.sdk.test.testcase.service;
 
-import com.bone.core.result.PageResult;
+import com.bone.core.model.PageResult;
 import com.bone.metadata.sdk.domain.spec.TableMetadataResolver;
 import com.bone.metadata.sdk.test.domain.User;
 import com.bone.metadata.sdk.test.domain.query.UserQuery;

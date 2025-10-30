@@ -1,9 +1,9 @@
 package com.bone.metadata.sdk.test.testcase;
 
 import com.bone.core.enums.Operator;
-import com.bone.core.result.PageResult;
-import com.bone.core.result.QueryParam;
-import com.bone.core.result.SortingField;
+import com.bone.core.model.PageResult;
+import com.bone.core.model.QueryParam;
+import com.bone.core.model.SortingField;
 import com.bone.metadata.sdk.domain.enums.SortDirection;
 import com.bone.metadata.sdk.test.config.TestConfig;
 import com.bone.metadata.sdk.test.domain.User;
@@ -21,7 +21,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Test class for the queryByCondition method in BaseRepository.
@@ -69,9 +69,9 @@ public class UserRepositoryQueryByConditionTest {
 
         // Assert
         assertNotNull(pageResult, "Page result should not be null");
-        assertTrue(pageResult.getData().size() <= pageSize, "Page size should not exceed the specified limit");
-        assertEquals(2L, pageResult.getData().get(0).getRoleId(), "User role_id should match the query condition");
-       // assertEquals("active", pageResult.getData().get(0).getStatus(), "User status should match the query condition");
+        assertTrue(pageResult.getRecords().size() <= pageSize, "Page size should not exceed the specified limit");
+        assertEquals(2L, pageResult.getRecords().get(0).getRoleId(), "User role_id should match the query condition");
+       // assertEquals("active", pageResult.getRecords().get(0).getStatus(), "User status should match the query condition");
     }
 
     /**
@@ -89,7 +89,7 @@ public class UserRepositoryQueryByConditionTest {
 
         // Assert
         assertNotNull(pageResult, "Page result should not be null");
-        assertTrue(pageResult.getData().isEmpty(), "Page should be empty when no users match the criteria");
+        assertTrue(pageResult.getRecords().isEmpty(), "Page should be empty when no users match the criteria");
     }
 
     /**
@@ -113,10 +113,10 @@ public class UserRepositoryQueryByConditionTest {
 
         // Assert
         assertNotNull(pageResult, "Page result should not be null");
-        assertFalse(pageResult.getData().isEmpty(), "There should be users matching the criteria");
-        assertTrue(pageResult.getData().get(0).getName().compareTo(pageResult.getData().get(1).getName()) < 0,
+        assertFalse(pageResult.getRecords().isEmpty(), "There should be users matching the criteria");
+        assertTrue(pageResult.getRecords().get(0).getName().compareTo(pageResult.getRecords().get(1).getName()) < 0,
                 "Users should be sorted by username in ascending order");
-       // assertTrue(pageResult.getData().get(0).getEmail().compareTo(pageResult.getData().get(1).getEmail()) > 0,
+       // assertTrue(pageResult.getRecords().get(0).getEmail().compareTo(pageResult.getRecords().get(1).getEmail()) > 0,
          //       "Users should be sorted by email in descending order");
     }
 
@@ -135,7 +135,7 @@ public class UserRepositoryQueryByConditionTest {
 
         // Assert
         assertNotNull(pageResult, "Page result should not be null");
-        assertTrue(pageResult.getData().isEmpty(), "Page should be empty for a large page number without enough data");
+        assertTrue(pageResult.getRecords().isEmpty(), "Page should be empty for a large page number without enough data");
     }
 
 
@@ -157,8 +157,8 @@ public class UserRepositoryQueryByConditionTest {
 
         // Assert
         assertNotNull(pageResult, "Page result should not be null");
-        assertFalse(pageResult.getData().isEmpty(), "There should be users with age between 18 and 30");
-        pageResult.getData().forEach(user -> {
+        assertFalse(pageResult.getRecords().isEmpty(), "There should be users with age between 18 and 30");
+        pageResult.getRecords().forEach(user -> {
             assertTrue(user.getRoleId() >= 1 && user.getRoleId() <= 10, "User age should be between 18 and 30");
         });
     }

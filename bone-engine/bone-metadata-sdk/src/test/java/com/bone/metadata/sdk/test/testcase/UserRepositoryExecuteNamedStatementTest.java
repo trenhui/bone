@@ -1,8 +1,8 @@
 package com.bone.metadata.sdk.test.testcase;
 
-import com.bone.core.id.IdGenerator;
-import com.bone.core.result.PageResult;
-import com.bone.core.result.SortingField;
+import com.bone.core.util.DistributedIdGenerator;
+import com.bone.core.model.PageResult;
+import com.bone.core.model.SortingField;
 import com.bone.core.util.JsonUtil;
 import com.bone.metadata.sdk.sql.executor.SmartRowMapper;
 import com.bone.metadata.sdk.test.config.TestConfig;
@@ -41,7 +41,7 @@ public class UserRepositoryExecuteNamedStatementTest  {
     @Test
     void testExecuteNamedStatement_CreateUser_ShouldInsertNewUser() {
         // Arrange
-        Long id = IdGenerator.generateLongID();
+        Long id = DistributedIdGenerator.generateLongId();
         String username = "new user" + id;
         User newUser = new User(id, username, 2L, new Date(), id, new Date(), id, false);
         Map<String, Object> params = new HashMap<>();
@@ -166,7 +166,7 @@ public class UserRepositoryExecuteNamedStatementTest  {
         PageResult<UserRoleDTO> result = userRepository.executePagedNamedStatement("user_search_page", params, new SmartRowMapper<>(UserRoleDTO.class), 1, 10);
 
         // Assert
-        assertTrue(result.getTotalCount() > 0, "Should return at least one role for the username 'admin1'");
+        assertTrue(result.getTotal() > 0, "Should return at least one role for the username 'admin1'");
 //        result.forEach(user -> {
 //            assertEquals(username, user.getName(), "Username should be 'admin1'");
 //            assertNotNull(user.getRole(), "Role should not be null");
@@ -181,13 +181,13 @@ public class UserRepositoryExecuteNamedStatementTest  {
                 .roleName("ROOT_ADMIN")
                 .build();
 
-        userPageQuery.setPageNo(1);
-        userPageQuery.setPageSize(10);
+        userPageQuery.setPage(1);
+        userPageQuery.setSize(10);
 
         // Act
         PageResult<UserRoleDTO> result = userRepository.queryUerPermPage( userPageQuery);
         log.info("result:"+JsonUtil.toJson(result));
-        assertEquals(6, result.getTotalCount(), "Should return at least one role for the userName 'ROOT_ADMIN'");
+        assertEquals(6, result.getTotal(), "Should return at least one role for the userName 'ROOT_ADMIN'");
     }
 
 
@@ -207,7 +207,7 @@ public class UserRepositoryExecuteNamedStatementTest  {
         // Act
         PageResult<UserRoleDTO> result = userRepository.queryUerPermPageOrderBy( userPageQuery);
         log.info("result:"+JsonUtil.toJson(result));
-        assertEquals(6, result.getTotalCount(), "Should return at least one role for the userName 'ROOT_ADMIN'");
+        assertEquals(6, result.getTotal(), "Should return at least one role for the userName 'ROOT_ADMIN'");
     }
 
     @Test

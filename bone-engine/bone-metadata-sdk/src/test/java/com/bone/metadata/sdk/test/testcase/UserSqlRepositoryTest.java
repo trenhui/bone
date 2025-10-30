@@ -1,9 +1,9 @@
 package com.bone.metadata.sdk.test.testcase;
 
 import com.bone.core.enums.Operator;
-import com.bone.core.result.PageResult;
-import com.bone.core.result.QueryParam;
-import com.bone.core.result.SortingField;
+import com.bone.core.model.PageResult;
+import com.bone.core.model.QueryParam;
+import com.bone.core.model.SortingField;
 import com.bone.metadata.sdk.domain.enums.SortDirection;
 import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
 import com.bone.metadata.sdk.query.criteria.Criteria;
@@ -312,8 +312,8 @@ public class UserSqlRepositoryTest {
 
             PageResult<User> page = userRepository.pageByCriteria(criteria);
             assertNotNull(page, "Page result should not be null");
-            assertEquals(3, page.getTotalCount(), "Should have 3 total users");
-            assertEquals(2, page.getData().size(), "Should return 2 users per page");
+            assertEquals(3, page.getTotal(), "Should have 3 total users");
+            assertEquals(2, page.getRecords().size(), "Should return 2 users per page");
         }
 
         @Test
@@ -399,8 +399,8 @@ public class UserSqlRepositoryTest {
                     "findActiveUsersPaged", params, rowMapper, 1, 2);
 
             assertNotNull(page, "Page result should not be null");
-            assertEquals(3, page.getTotalCount(), "Should have 3 total active users");
-            assertEquals(2, page.getData().size(), "Should return 2 users per page");
+            assertEquals(3, page.getTotal(), "Should have 3 total active users");
+            assertEquals(2, page.getRecords().size(), "Should return 2 users per page");
         }
 
         @Test
@@ -413,7 +413,7 @@ public class UserSqlRepositoryTest {
             PageResult<UserRoleDTO> page = userRepository.executePagedNamedStatement("searchUsersPaged", request);
 
             assertNotNull(page, "Page result should not be null");
-            assertEquals(2, page.getTotalCount(), "Should have 2 total users with role ID 2");
+            assertEquals(2, page.getTotal(), "Should have 2 total users with role ID 2");
         }
     }
 
@@ -438,8 +438,8 @@ public class UserSqlRepositoryTest {
                     queryParams, sortingFields, 1, 10, "user");
 
             assertNotNull(page, "Page result should not be null");
-            assertEquals(1, page.getTotalCount(), "Should find 1 user matching criteria");
-            assertEquals("Alice", page.getData().get(0).getName(), "User name should be Alice");
+            assertEquals(1, page.getTotal(), "Should find 1 user matching criteria");
+            assertEquals("Alice", page.getRecords().get(0).getName(), "User name should be Alice");
         }
 
         @Test
@@ -458,14 +458,14 @@ public class UserSqlRepositoryTest {
         @DisplayName("Query page with page param returns paged results")
         void testQueryPage_WithPageParam_ReturnsPagedResults() {
             UserPageQuery pageQuery = new UserPageQuery();
-            pageQuery.setPageNo(1);
-            pageQuery.setPageSize(2);
+            pageQuery.setPage(1);
+            pageQuery.setSize(2);
             pageQuery.setUserName("A");
 
             PageResult<User> page = userRepository.queryPage(pageQuery);
             assertNotNull(page, "Page result should not be null");
-            assertTrue(page.getTotalCount() >= 1, "Should find at least 1 user with name containing A");
-            assertEquals(2, page.getData().size(), "Should return up to 2 users per page");
+            assertTrue(page.getTotal() >= 1, "Should find at least 1 user with name containing A");
+            assertEquals(2, page.getRecords().size(), "Should return up to 2 users per page");
         }
     }
 
@@ -557,8 +557,8 @@ public class UserSqlRepositoryTest {
                     aggregations, criteria, groupBy, null,1, 10);
 
             assertNotNull(page, "Page result should not be null");
-            assertEquals(2, page.getTotalCount(), "Should have 2 total groups"); // 改为2
-            assertEquals(2, page.getData().size(), "Should return 2 groups per page");
+            assertEquals(2, page.getTotal(), "Should have 2 total groups"); // 改为2
+            assertEquals(2, page.getRecords().size(), "Should return 2 groups per page");
         }
     }
 

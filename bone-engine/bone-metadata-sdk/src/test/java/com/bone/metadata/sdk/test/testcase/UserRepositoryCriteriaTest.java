@@ -1,6 +1,6 @@
 package com.bone.metadata.sdk.test.testcase;
 
-import com.bone.core.result.PageResult;
+import com.bone.core.model.PageResult;
 import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.test.config.TestConfig;
@@ -253,7 +253,7 @@ public class UserRepositoryCriteriaTest  {
         // Arrange
         setUpTestData();
         Criteria<User> criteria = Criteria.<User>create().eq("role_id", 2L);  // 查询 role_id 为 2 的用户
-        criteria.setPageNumber(1);
+        criteria.setPageNo(1);
         criteria.setPageSize(2);
 
         // Act
@@ -261,7 +261,7 @@ public class UserRepositoryCriteriaTest  {
 
         // Assert
         assertNotNull(pageResult, "Page result should not be null");
-        assertTrue(pageResult.getData().size() <= 2, "Page should contain no more than 2 users");
+        assertTrue(pageResult.getRecords().size() <= 2, "Page should contain no more than 2 users");
     }
 
     @Test
@@ -269,7 +269,7 @@ public class UserRepositoryCriteriaTest  {
         // Arrange
         setUpTestData();
         Criteria<User> criteria = Criteria.<User>create().eq("role_id", 999L);  // 查询不存在的 role_id
-        criteria.setPageNumber(1);
+        criteria.setPageNo(1);
         criteria.setPageSize(10);
 
         // Act
@@ -277,7 +277,7 @@ public class UserRepositoryCriteriaTest  {
 
         // Assert
         assertNotNull(pageResult, "Page result should not be null");
-        assertTrue(pageResult.getData().isEmpty(), "Page should be empty when no users match the criteria");
+        assertTrue(pageResult.getRecords().isEmpty(), "Page should be empty when no users match the criteria");
     }
 
     // 7. 测试查询记录总数 (countByCriteria)

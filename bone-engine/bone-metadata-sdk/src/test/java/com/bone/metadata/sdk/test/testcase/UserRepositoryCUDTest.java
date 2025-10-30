@@ -1,6 +1,6 @@
 package com.bone.metadata.sdk.test.testcase;
 
-import com.bone.core.id.IdGenerator;
+import com.bone.core.util.DistributedIdGenerator;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.test.config.TestConfig;
 import com.bone.metadata.sdk.test.domain.User;
@@ -51,7 +51,7 @@ public class UserRepositoryCUDTest  {
     // Helper method to create a test User instance
     private User createTestUser(String name, Long roleId, Long createBy, boolean deleted) {
         User user = new User();
-        user.setId(IdGenerator.generateLongID());
+        user.setId(DistributedIdGenerator.generateLongId());
         user.setName(name);
         user.setRoleId(roleId);
         user.setCreateTime(Timestamp.from(Instant.now()));

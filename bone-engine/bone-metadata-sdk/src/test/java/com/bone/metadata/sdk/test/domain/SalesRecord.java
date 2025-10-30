@@ -1,7 +1,7 @@
 package com.bone.metadata.sdk.test.domain;
 
-import com.bone.core.annotation.Table;
 import com.bone.core.domain.entity.Entity;
+import com.bone.metadata.sdk.domain.annotation.Table;
 import lombok.*;
 
 import java.math.BigDecimal;

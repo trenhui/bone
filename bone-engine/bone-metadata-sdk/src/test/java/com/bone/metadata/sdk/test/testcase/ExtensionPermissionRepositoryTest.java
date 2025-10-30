@@ -1,21 +1,5 @@
 package com.bone.metadata.sdk.test.testcase;
 
-import com.bone.core.id.IdGenerator;
-import com.bone.core.tenant.context.TenantContext;
-import com.bone.metadata.sdk.domain.enums.DataType;
-import com.bone.metadata.sdk.domain.exception.FieldAllocationException;
-import com.bone.metadata.sdk.domain.exception.UndefinedFieldException;
-import com.bone.metadata.sdk.domain.model.AllocationContext;
-import com.bone.metadata.sdk.domain.model.FieldMetadata;
-import com.bone.metadata.sdk.extension.ColumnAllocator;
-import com.bone.metadata.sdk.extension.repository.FieldMetadataRepository;
-import com.bone.metadata.sdk.metadata.api.MetadataService;
-import com.bone.metadata.sdk.query.criteria.Criteria;
-import com.bone.metadata.sdk.test.config.TestConfig;
-import com.bone.metadata.sdk.test.domain.DataPermission;
-import com.bone.metadata.sdk.test.domain.Permission;
-import com.bone.metadata.sdk.test.repository.impl.PermissionRepository;
-import com.bone.metadata.sdk.test.utils.TestDataHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,6 +21,23 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import com.bone.core.util.DistributedIdGenerator;
+import com.bone.core.tenant.context.TenantContext;
+import com.bone.metadata.sdk.domain.enums.DataType;
+import com.bone.metadata.sdk.domain.exception.FieldAllocationException;
+import com.bone.metadata.sdk.domain.exception.UndefinedFieldException;
+import com.bone.metadata.sdk.domain.model.AllocationContext;
+import com.bone.metadata.sdk.domain.model.FieldMetadata;
+import com.bone.metadata.sdk.extension.ColumnAllocator;
+import com.bone.metadata.sdk.extension.repository.FieldMetadataRepository;
+import com.bone.metadata.sdk.metadata.api.MetadataService;
+import com.bone.metadata.sdk.query.criteria.Criteria;
+import com.bone.metadata.sdk.test.config.TestConfig;
+import com.bone.metadata.sdk.test.domain.DataPermission;
+import com.bone.metadata.sdk.test.domain.Permission;
+import com.bone.metadata.sdk.test.repository.impl.PermissionRepository;
+import com.bone.metadata.sdk.test.utils.TestDataHelper;
 
 @SpringBootTest(classes = TestConfig.class)
 @ActiveProfiles("test")
@@ -94,7 +95,7 @@ public class ExtensionPermissionRepositoryTest {
     // 创建字段元数据
     private FieldMetadata createFieldMetadata(String entityType, String fieldName, DataType dataType) {
         FieldMetadata metadata = new FieldMetadata();
-        metadata.setId(IdGenerator.generateLongID());
+        metadata.setId(DistributedIdGenerator.generateLongId());
         metadata.setTenantId(TenantContext.getTenantId());
         metadata.setAppCode("extTest");
         metadata.setBizIdentityCode("pukang");
