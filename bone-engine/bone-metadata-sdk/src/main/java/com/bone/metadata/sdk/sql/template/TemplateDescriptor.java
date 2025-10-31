@@ -20,37 +20,4 @@ public class TemplateDescriptor {
     private String checksum;             // Content checksum for validation
     private Duration ttl;                // Time-to-live for caching
     private String fallbackId;           // Fallback template ID for resilience
-    
-    // 显式添加getter方法
-    public String getTemplateId() {
-        return templateId;
-    }
-    
-    public String getSourceUri() {
-        return sourceUri;
-    }
-    
-    public SqlTemplateType getFormat() {
-        return format;
-    }
-    
-    public Map<String, String> getTags() {
-        return tags;
-    }
-    
-    public String getVersion() {
-        return version;
-    }
-    
-    public String getChecksum() {
-        return checksum;
-    }
-    
-    public Duration getTtl() {
-        return ttl;
-    }
-    
-    public String getFallbackId() {
-        return fallbackId;
-    }
 }

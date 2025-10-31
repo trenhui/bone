@@ -10,7 +10,6 @@ import org.springframework.validation.annotation.Validated;
 
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -51,36 +50,21 @@ public class SqlConfigProperties {
      * 缓存配置。
      */
     private Cache cache = new Cache();
-    
+
     /**
-     * 监控配置。
+     * 多租户配置。
+     */
+    private Tenant tenant = new Tenant();
+
+    /**
+     * SQL 监控配置。
      */
     private Monitor monitor = new Monitor();
-    
+
     /**
-     * 连接池配置。
+     * 安全配置。
      */
-    private ConnectionPool connectionPool = new ConnectionPool();
-    
-    /**
-     * 是否启用缓存
-     * @return true如果启用缓存，false否则
-     */
-    public boolean isCacheEnabled() {
-        return enabled && template.asyncPreload && cache.expressionCacheSize > 0;
-    }
-    
-    public Cache getCache() {
-        return cache;
-    }
-    
-    public Monitor getMonitor() {
-        return monitor;
-    }
-    
-    public ConnectionPool getConnectionPool() {
-        return connectionPool;
-    }
+    private Security security = new Security();
 
     @Data
     public static class Executor {
@@ -218,14 +202,6 @@ public class SqlConfigProperties {
          */
         @Min(value = 100, message = "AST cache size must be at least 100")
         private int astCacheSize = 2000;
-        
-        public int getSpelCacheSize() {
-            return expressionCacheSize;
-        }
-        
-        public int getAstCacheSize() {
-            return astCacheSize;
-        }
 
         /**
          * SpEL 缓存大小。
@@ -238,10 +214,6 @@ public class SqlConfigProperties {
          */
         @Min(value = 1, message = "Cache expiry time cannot be less than 1 hour")
         private int expireHours = 24;
-        
-        public int getExpireHours() {
-            return expireHours;
-        }
     }
 
     @Data
@@ -314,124 +286,5 @@ public class SqlConfigProperties {
          */
         @NotNull(message = "Allowed hosts cannot be null")
         private Set<String> allowedHosts = Set.of("*.company.com", "localhost");
-    }
-    
-    @Data
-    public static class ConnectionPool {
-        /**
-         * 连接池名称。
-         */
-        private String poolName = "MetadataSdkPool";
-        
-        /**
-         * 最小空闲连接数。
-         */
-        @Min(value = 1, message = "Minimum idle connections must be at least 1")
-        private int minimumIdle = 5;
-        
-        /**
-         * 最大连接池大小。
-         */
-        @Min(value = 5, message = "Maximum pool size must be at least 5")
-        private int maximumPoolSize = 20;
-        
-        /**
-         * 连接超时时间（毫秒）。
-         */
-        @Min(value = 1000, message = "Connection timeout must be at least 1000ms")
-        private long connectionTimeout = 30000;
-        
-        /**
-         * 空闲超时时间（毫秒）。
-         */
-        @Min(value = 60000, message = "Idle timeout must be at least 60000ms")
-        private long idleTimeout = 600000;
-        
-        /**
-         * 连接最大生命周期（毫秒）。
-         */
-        @Min(value = 60000, message = "Max lifetime must be at least 60000ms")
-        private long maxLifetime = 1800000;
-        
-        /**
-         * 是否自动提交。
-         */
-        private boolean autoCommit = true;
-        
-        /**
-         * 验证超时时间（毫秒）。
-         */
-        @Min(value = 1000, message = "Validation timeout must be at least 1000ms")
-        private long validationTimeout = 5000;
-        
-        /**
-         * 连接测试查询。
-         */
-        private String connectionTestQuery = "SELECT 1";
-        
-        /**
-         * 是否启用连接泄漏检测。
-         */
-        private boolean leakDetectionEnabled = true;
-        
-        /**
-         * 泄漏检测阈值（毫秒）。
-         */
-        @Min(value = 60000, message = "Leak detection threshold must be at least 60000ms")
-        private long leakDetectionThreshold = 60000;
-    }
-    
-    public Template getTemplate() {
-        return template;
-    }
-    
-    public TemplateProperties getTemplateProperties() {
-        return new TemplateProperties();
-    }
-    
-    public SecurityProperties getSecurity() {
-        return new SecurityProperties();
-    }
-    
-    public TenantProperties getTenant() {
-        return new TenantProperties();
-    }
-    
-    public static class SecurityProperties {
-        public boolean isEnabled() {
-            return true;
-        }
-        
-        public List<String> getAllowedHosts() {
-            return Collections.emptyList();
-        }
-    }
-    
-    public static class TenantProperties {
-        public boolean isEnabled() {
-            return true;
-        }
-    }
-    
-    public static class TemplateProperties {
-        public int getMaxTemplateSize() {
-            return 1024 * 1024; // 默认1MB
-        }
-        
-        public int getCacheSize() {
-            return 1000;
-        }
-        
-        public int getExpireHours() {
-            return 24;
-        }
-        
-        public boolean isFallbackEnabled() {
-            return true;
-        }
-        
-        public String getLoadPriority() {
-            return "annotation-first";
-        }
     }
 }

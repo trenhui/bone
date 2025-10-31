@@ -2,14 +2,17 @@ package com.bone.metadata.sdk.query.builder;
 
 import com.bone.core.domain.extension.ExtensibleObject;
 import com.bone.core.util.ReflectionUtil;
-import com.bone.metadata.sdk.query.context.DynamicUpdateContext;
-import com.bone.metadata.sdk.domain.query.CompiledQuery;
 import com.bone.metadata.sdk.domain.model.ColumnMetadata;
 import com.bone.metadata.sdk.domain.model.TableMetadata;
+import com.bone.metadata.sdk.domain.query.CompiledQuery;
+import com.bone.metadata.sdk.query.context.DynamicUpdateContext;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
-public class DynamicUpdateSqlBuilder implements SqlQueryBuilder<DynamicUpdateContext> {
+public class DynamicUpdateBuilder implements SqlQueryBuilder<DynamicUpdateContext> {
     @Override
     public CompiledQuery build(DynamicUpdateContext ctx) {
         TableMetadata table = ctx.getTable();

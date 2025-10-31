@@ -8,9 +8,9 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author renhui.trh
  */
-public class IdGenerator {
+public class DistributedIdGenerator {
 
-    static SnowFlakeIdGenerator snowFlakeIdGenerator= new SnowFlakeIdGenerator();
+    static SnowFlakeDistributedIdGenerator snowFlakeDistributedIdGenerator= new SnowFlakeDistributedIdGenerator();
 
     private static final AtomicLong sequence = new AtomicLong(0);
 
@@ -19,11 +19,11 @@ public class IdGenerator {
     }
 
     public static String generateSnowFlakeID() {
-        return snowFlakeIdGenerator.generate();
+        return snowFlakeDistributedIdGenerator.generate();
     }
 
     public static Long generateLongID() {
-         return snowFlakeIdGenerator.nextId();
+         return snowFlakeDistributedIdGenerator.nextId();
     }
 
     public static String generateSequenceNo(String prefix, Boolean needDate, Integer length) {

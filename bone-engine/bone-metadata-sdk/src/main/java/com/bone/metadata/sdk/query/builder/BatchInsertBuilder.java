@@ -1,18 +1,21 @@
 package com.bone.metadata.sdk.query.builder;
 
-import com.bone.core.util.ReflectionUtil;
-import com.bone.metadata.sdk.query.context.BatchInsertContext;
-import com.bone.metadata.sdk.domain.query.BatchCompiledQuery;
-import com.bone.metadata.sdk.domain.model.ColumnMetadata;
 import com.bone.core.domain.extension.ExtensibleObject;
+import com.bone.core.util.ReflectionUtil;
+import com.bone.metadata.sdk.domain.model.ColumnMetadata;
+import com.bone.metadata.sdk.domain.query.BatchCompiledQuery;
+import com.bone.metadata.sdk.query.context.BatchInsertContext;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class BatchInsertBuilder implements BatchQueryBuilder<BatchInsertContext> {
 
     @Override
-    public BatchCompiledQuery build(BatchInsertContext ctx)  {
+    public BatchCompiledQuery build(BatchInsertContext ctx) {
         var table = ctx.getTable();
         List<?> ents = ctx.getEntities();
         var cols = table.getColumns().stream()

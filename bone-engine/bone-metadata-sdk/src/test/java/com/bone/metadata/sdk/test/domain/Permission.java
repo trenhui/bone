@@ -1,6 +1,6 @@
 package com.bone.metadata.sdk.test.domain;
 
-import com.bone.core.annotation.Id;
+import com.bone.core.annotation.Id;;
 import com.bone.core.annotation.Transient;
 import com.bone.core.domain.entity.Entity;
 import com.bone.core.domain.extension.Extensible;

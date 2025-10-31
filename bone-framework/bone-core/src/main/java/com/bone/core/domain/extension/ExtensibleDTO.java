@@ -1,6 +1,6 @@
 package com.bone.core.domain.extension;
 
-import com.bone.core.annotation.Transient;
+import  com.bone.core.annotation.Transient;
 import com.bone.core.tenant.TenantAbstractDTO;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

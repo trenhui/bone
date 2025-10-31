@@ -21,12 +21,10 @@ import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 import java.util.stream.Collectors;
-import com.bone.metadata.sdk.sql.executor.TypeConverter;
 
+@Slf4j
 public class ReservedColumnsHandler implements ExtensionStorageHandler {
-    private static final Logger LOGGER = Logger.getLogger(ReservedColumnsHandler.class.getName());
     // Configuration constants
     private static final String LOCK_KEY_PREFIX = "meta:reserved:";
     private static final int LOCK_ACQUIRE_TIMEOUT = 3;
@@ -104,18 +102,15 @@ public class ReservedColumnsHandler implements ExtensionStorageHandler {
 
         ensureValidContext(ctx);
 
-        List<FieldMetadata> defs = new ArrayList<>();
-        for (String n : missing) {
-            DataType dataType = determineType(ctx.getExtraProperties().get(n));
-            FieldMetadata field = new FieldMetadata();
-            field.setTenantId(ctx.getTenantId());
-            field.setAppCode(ctx.getAppCode());
-            field.setBizIdentityCode(ctx.getBizIdentityCode());
-            field.setEntityType(ctx.getEntityType());
-            field.setName(n);
-            field.setDataType(dataType.name());
-            defs.add(field);
-        }
+        List<FieldMetadata> defs = missing.stream().map(n -> FieldMetadata.builder()
+                .tenantId(ctx.getTenantId())
+                .appCode(ctx.getAppCode())
+                .bizIdentityCode(ctx.getBizIdentityCode())
+                .entityType(ctx.getEntityType())
+                .name(n)
+                .dataType(determineType(ctx.getExtraProperties().get(n)).name())
+                .build()
+        ).collect(Collectors.toList());
 
         List<FieldMetadata> created = metadataService.allocateAndPersistFields(defs);
         existing.addAll(created);
@@ -132,41 +127,11 @@ public class ReservedColumnsHandler implements ExtensionStorageHandler {
         }
     }
 
-    private static Object convert(Object value, DataType type) {
-        try {
-            switch (type) {
-                case INTEGER -> {
-                    if (value == null) return null;
-                    return TypeConverter.convert(value, Long.class);
-                }
-                case NUMBER -> {
-                    if (value == null) return null;
-                    return TypeConverter.convert(value, BigDecimal.class);
-                }
-                case BOOLEAN -> {
-                    if (value == null) return null;
-                    return TypeConverter.convert(value, Boolean.class);
-                }
-                case DATE -> {
-                    if (value == null) return null;
-                    return TypeConverter.convert(value, LocalDateTime.class);
-                }
-                default -> {
-                    return value;
-                }
-            }
-        } catch (Exception e) {
-            LOGGER.warning("Conversion failed for value: " + value + " to type: " + type + ", error: " + e.getMessage());
-            return null;
-        }
-    }
-    
     private Object convertFieldValue(Object rawValue, String dataType) {
         try {
-            DataType type = DataType.valueOf(dataType);
-            return convert(rawValue, type);
+            return TypeConverter.convert(rawValue, DataType.valueOf(dataType));
         } catch (IllegalArgumentException e) {
-            LOGGER.warning("Unsupported data type conversion: " + dataType);
+            log.warn("Unsupported data type conversion: {}", dataType);
             return rawValue;
         }
     }
@@ -175,7 +140,71 @@ public class ReservedColumnsHandler implements ExtensionStorageHandler {
         return TypeDetector.detect(value, TEXT_LENGTH_THRESHOLD);
     }
 
+    private static class TypeConverter {
+        static Object convert(Object value, DataType type) {
+            return switch (type) {
+                case INTEGER -> convertToLong(value);
+                case NUMBER -> convertToBigDecimal(value);
+                case BOOLEAN -> convertToBoolean(value);
+                case DATE -> convertToDateTime(value);
+                default -> value;
+            };
+        }
 
+        private static Long convertToLong(Object value) {
+            if (value instanceof Number num) return num.longValue();
+            if (value instanceof String str) {
+                try {
+                    return Long.parseLong(str);
+                } catch (NumberFormatException e) {
+                    log.warn("Long conversion failed for value: {}", str);
+                    return null;
+                }
+            }
+            return null;
+        }
+
+        private static BigDecimal convertToBigDecimal(Object value) {
+            if (value instanceof BigDecimal bd) return bd.stripTrailingZeros();
+            if (value instanceof Number num) return new BigDecimal(num.toString());
+            if (value instanceof String str) {
+                try {
+                    return new BigDecimal(str);
+                } catch (NumberFormatException e) {
+                    log.warn("BigDecimal conversion failed for value: {}", str);
+                    return null;
+                }
+            }
+            return null;
+        }
+
+        private static Boolean convertToBoolean(Object value) {
+            if (value instanceof Boolean bool) return bool;
+            if (value instanceof Number num) return num.intValue() != 0;
+            if (value instanceof String str) {
+                return Boolean.parseBoolean(str) || "1".equals(str);
+            }
+            return null;
+        }
+
+        private static LocalDateTime convertToDateTime(Object value) {
+            if (value instanceof LocalDateTime ldt) return ldt;
+            if (value instanceof Date date) {
+                return date.toInstant()
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDateTime();
+            }
+            if (value instanceof String str) {
+                try {
+                    return LocalDateTime.parse(str);
+                } catch (DateTimeParseException e) {
+                    log.warn("DateTime conversion failed for value: {}", str);
+                    return null;
+                }
+            }
+            return null;
+        }
+    }
 
     private static class TypeDetector {
         private static final Map<Class<?>, DataType> TYPE_MAPPINGS = createTypeMappings();
@@ -201,7 +230,7 @@ public class ReservedColumnsHandler implements ExtensionStorageHandler {
             Map<Class<?>, DataType> map = new HashMap<>();
             map.put(Boolean.class, DataType.BOOLEAN);
             map.put(Number.class, DataType.NUMBER);
-            map.put(java.util.Date.class, DataType.DATE);
+            map.put(Date.class, DataType.DATE);
             map.put(java.time.temporal.Temporal.class, DataType.DATE);
             map.put(Map.class, DataType.JSON);
             map.put(com.fasterxml.jackson.databind.JsonNode.class, DataType.JSON);

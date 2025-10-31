@@ -18,14 +18,13 @@ import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.ReflectivePropertyAccessor;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
 import org.springframework.util.DigestUtils;
+import org.springframework.util.StringUtils;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-
 
 /**
  * High-performance MyBatis-compatible SQL processor.
@@ -45,23 +44,10 @@ public class MyBatisSqlProcessor implements SqlProcessor {
             "(\\w+)\\s*=\\s*(\"([^\"]*)\"|'([^']*)'|(\\S+))",
             Pattern.CASE_INSENSITIVE
     );
-    
-    // 用于匹配SQL片段定义的模式
-    private static final Pattern SQL_FRAGMENT_PATTERN = Pattern.compile(
-            "<sql\\s+id=\\\"([^\\\"]*)\\\">([\\s\\S]*?)</sql>",
-            Pattern.CASE_INSENSITIVE
-    );
 
-    // 内部工具类，替代对StringUtils的依赖
-    private static class SqlFunctions {
-        public static boolean hasText(String str) {
-            return str != null && !str.trim().isEmpty();
-        }
-        
-        public static boolean isEmpty(String str) {
-            return str == null || str.trim().isEmpty();
-        }
-    }
+    private static final Pattern SQL_FRAGMENT_PATTERN = Pattern.compile(
+            "<sql\\s+id\\s*=\\s*['\"]([^'\"]+)['\"]\\s*>(.*?)</sql>",
+            Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
     private static final Pattern INCLUDE_PATTERN = Pattern.compile(
             "<include\\s+refid\\s*=\\s*['\"]([^'\"]+)['\"]\\s*/>",
             Pattern.CASE_INSENSITIVE);
@@ -197,7 +183,7 @@ public class MyBatisSqlProcessor implements SqlProcessor {
 
             String refId = matcher.group(1);
             String fragment = FragmentCache.getById( className + "." + refId);
-            if (!SqlFunctions.hasText(fragment)) {
+            if (!StringUtils.hasText(fragment)) {
                 log.warn("SQL fragment not found: class={}, id={}, leaving unchanged", className, refId);
                 matcher.appendReplacement(result, Matcher.quoteReplacement(matcher.group(0)));
             } else {
@@ -251,7 +237,7 @@ public class MyBatisSqlProcessor implements SqlProcessor {
 
     private Map<String, String> parseAttributes(String attributesStr) {
         Map<String, String> attrs = new HashMap<>();
-        if (SqlFunctions.hasText(attributesStr)) {
+        if (StringUtils.hasText(attributesStr)) {
             Matcher attrMatcher = ATTRIBUTE_PATTERN.matcher(attributesStr);
             while (attrMatcher.find()) {
                 String value = attrMatcher.group(3);  // 双引号值
@@ -310,7 +296,7 @@ public class MyBatisSqlProcessor implements SqlProcessor {
 
     private boolean evaluateSpel(String expression, Map<String, Object> params) {
         try {
-            if (!SqlFunctions.hasText(expression)) {
+            if (!StringUtils.hasText(expression)) {
                 log.warn("Empty SpEL expression.");
                 return false;
             }
@@ -353,7 +339,7 @@ public class MyBatisSqlProcessor implements SqlProcessor {
 
             // 评估表达式
             Boolean result = expr.getValue(evalContext, Boolean.class);
-            log.debug("SpEL evaluation model for '{}': {}", expression, result);
+            log.debug("SpEL evaluation result for '{}': {}", expression, result);
 
             return Boolean.TRUE.equals(result);
         } catch (SpelEvaluationException e) {
@@ -495,9 +481,9 @@ public class MyBatisSqlProcessor implements SqlProcessor {
                 }
             }
 
-            // 暂时移除对allowedTables的检查，因为SecurityProperties类中没有getAllowedTables()方法
-            if ("tableName".equals(entry.getKey())) {
-                // 可以在这里添加其他验证逻辑
+            if ("tableName".equals(entry.getKey()) && !properties.getSecurity().getAllowedTables().contains(String.valueOf(entry.getValue()))) {
+                log.error("SQL Injection risk: Invalid table name: {}", entry.getValue());
+                throw new SqlInjectionRiskException("Invalid table name: " + entry.getValue());
             }
         }
     }
@@ -553,67 +539,11 @@ public class MyBatisSqlProcessor implements SqlProcessor {
         return astCache.stats();
     }
 
-    /**
-     * SqlNode接口定义SQL处理节点的基本行为
-     */
     interface SqlNode {
         void process(SqlContext context);
     }
 
-    /**
-     * SqlNode抽象基类，提供通用功能和模板方法
-     */
-    abstract static class BaseSqlNode implements SqlNode {
-        // 子类共享的日志记录
-        protected static final Logger log = LoggerFactory.getLogger(BaseSqlNode.class);
-    }
-
-    /**
-     * 内容型SQL节点的抽象基类
-     */
-    abstract static class ContentSqlNode extends BaseSqlNode {
-        protected final String content;
-
-        protected ContentSqlNode(String content) {
-            this.content = content;
-        }
-
-        /**
-         * 处理节点内容
-         * @param context SQL上下文
-         */
-        protected void processContent(SqlContext context) {
-            if (SqlFunctions.hasText(content)) {
-                context.processFragment(content);
-            }
-        }
-    }
-
-    /**
-     * 条件型SQL节点的抽象基类
-     */
-    abstract static class ConditionalSqlNode extends ContentSqlNode {
-        protected final String testExpr;
-
-        protected ConditionalSqlNode(String testExpr, String content) {
-            super(content);
-            this.testExpr = testExpr;
-        }
-
-        /**
-         * 评估条件表达式
-         * @param context SQL上下文
-         * @return 表达式评估结果
-         */
-        protected boolean evaluateCondition(SqlContext context) {
-            return SqlFunctions.hasText(testExpr) && context.evaluateSpel(testExpr);
-        }
-    }
-
-    /**
-     * 文本节点，直接输出文本内容
-     */
-    static class TextNode extends BaseSqlNode {
+    static class TextNode implements SqlNode {
         private final String text;
 
         public TextNode(String text) {
@@ -626,42 +556,42 @@ public class MyBatisSqlProcessor implements SqlProcessor {
         }
     }
 
-    /**
-     * 条件节点，根据表达式结果决定是否处理内容
-     */
-    static class IfNode extends ConditionalSqlNode {
+    static class IfNode implements SqlNode {
+        private final String testExpr;
+        private final String content;
+
         public IfNode(String testExpr, String content) {
-            super(testExpr, content);
+            this.testExpr = testExpr;
+            this.content = content;
         }
 
         @Override
         public void process(SqlContext context) {
-            if (evaluateCondition(context)) {
-                processContent(context);
+            if (StringUtils.hasText(testExpr) && context.evaluateSpel(testExpr)) {
+                context.processFragment(content);
             }
         }
     }
 
-    /**
-     * Where节点，生成WHERE子句并处理前导的AND/OR关键字
-     */
-    static class WhereNode extends ContentSqlNode {
+    static class WhereNode implements SqlNode {
+        private final String content;
+
         public WhereNode(String content) {
-            super(content);
+            this.content = content;
         }
 
         @Override
         public void process(SqlContext context) {
             context.pushClosure(sql -> {
                 String trimmed = sql.trim();
-                if (SqlFunctions.hasText(trimmed)) {
+                if (StringUtils.hasText(trimmed)) {
                     trimmed = trimmed.replaceAll("(?i)^\\s*(AND|OR)\\s+", "");
                     return "WHERE " + trimmed;
                 }
                 return "";
             });
             context.startTagContent();
-            processContent(context);
+            context.processFragment(content);
             context.closeTag("where");
         }
     }
@@ -716,150 +646,141 @@ public class MyBatisSqlProcessor implements SqlProcessor {
         }
     }
 
-    /**
-     * Choose节点，作为when和otherwise节点的容器
-     */
-    static class ChooseNode extends ContentSqlNode {
+    static class ChooseNode implements SqlNode {
+        private final String content;
+
         public ChooseNode(String content) {
-            super(content);
+            this.content = content;
         }
 
         @Override
         public void process(SqlContext context) {
-            processContent(context);
+            context.processFragment(content);
         }
     }
 
-    /**
-     * When节点，在choose结构中表示条件分支
-     */
-    static class WhenNode extends ConditionalSqlNode {
+    static class WhenNode implements SqlNode {
+        private final String testExpr;
+        private final String content;
+
         public WhenNode(String testExpr, String content) {
-            super(testExpr, content);
+            this.testExpr = testExpr;
+            this.content = content;
         }
 
         @Override
         public void process(SqlContext context) {
-            if (evaluateCondition(context)) {
-                processContent(context);
+            if (StringUtils.hasText(testExpr) && context.evaluateSpel(testExpr)) {
+                context.processFragment(content);
                 context.getParams().put("_choose_matched", true);
             }
         }
     }
 
-    /**
-     * Otherwise节点，在choose结构中表示默认分支
-     */
-    static class OtherwiseNode extends ContentSqlNode {
+    static class OtherwiseNode implements SqlNode {
+        private final String content;
+
         public OtherwiseNode(String content) {
-            super(content);
+            this.content = content;
         }
 
         @Override
         public void process(SqlContext context) {
             if (!Boolean.TRUE.equals(context.getParams().get("_choose_matched"))) {
-                processContent(context);
+                context.processFragment(content);
             }
         }
     }
 
-    /**
-     * Set节点，生成SET子句并处理末尾的逗号
-     */
-    static class SetNode extends ContentSqlNode {
+    static class SetNode implements SqlNode {
+        private final String content;
+
         public SetNode(String content) {
-            super(content);
+            this.content = content;
         }
 
         @Override
         public void process(SqlContext context) {
             context.pushClosure(sql -> {
                 String trimmed = sql.trim();
-                if (SqlFunctions.hasText(trimmed)) {
+                if (StringUtils.hasText(trimmed)) {
                     trimmed = trimmed.replaceAll(",\\s*$", "");
                     return "SET " + trimmed;
                 }
                 return "";
             });
             context.startTagContent();
-            processContent(context);
+            context.processFragment(content);
             context.closeTag("set");
         }
     }
 
-    /**
-     * Trim节点，用于灵活地定制SQL片段的前缀和后缀，并移除指定的前缀和后缀内容
-     */
-    static class TrimNode extends ContentSqlNode {
+    static class TrimNode implements SqlNode {
         private final String prefix;
         private final String suffix;
         private final String prefixOverrides;
         private final String suffixOverrides;
+        private final String content;
 
         public TrimNode(String prefix, String suffix,
                         String prefixOverrides, String suffixOverrides, String content) {
-            super(content);
             this.prefix = prefix;
             this.suffix = suffix;
             this.prefixOverrides = prefixOverrides;
             this.suffixOverrides = suffixOverrides;
+            this.content = content;
         }
 
         @Override
         public void process(SqlContext context) {
             context.pushClosure(sql -> {
                 String trimmed = sql.trim();
-                if (SqlFunctions.hasText(prefixOverrides)) {
+                if (StringUtils.hasText(prefixOverrides)) {
                     for (String override : prefixOverrides.split("\\|")) {
                         String pattern = "(?i)^" + Pattern.quote(override.trim());
                         trimmed = trimmed.replaceAll(pattern, "");
                     }
                 }
-                if (SqlFunctions.hasText(suffixOverrides)) {
+                if (StringUtils.hasText(suffixOverrides)) {
                     for (String override : suffixOverrides.split("\\|")) {
                         String pattern = "(?i)" + Pattern.quote(override.trim()) + "$";
                         trimmed = trimmed.replaceAll(pattern, "");
                     }
                 }
                 trimmed = trimmed.trim();
-                if (SqlFunctions.hasText(trimmed)) {
-                    return (SqlFunctions.hasText(prefix) ? prefix + " " : "") +
+                if (StringUtils.hasText(trimmed)) {
+                    return (StringUtils.hasText(prefix) ? prefix + " " : "") +
                             trimmed +
-                            (SqlFunctions.hasText(suffix) ? " " + suffix : "");
+                            (StringUtils.hasText(suffix) ? " " + suffix : "");
                 }
                 return "";
             });
             context.startTagContent();
-            processContent(context);
+            context.processFragment(content);
             context.closeTag("trim");
         }
     }
 
-    /**
-     * Bind节点，用于将表达式结果绑定到参数中
-     */
-    static class BindNode extends ContentSqlNode {
+    static class BindNode implements SqlNode {
         private final String name;
         private final String valueExpr;
+        private final String content;
 
         public BindNode(String name, String valueExpr, String content) {
-            super(content);
             this.name = name;
             this.valueExpr = valueExpr;
+            this.content = content;
         }
 
         @Override
         public void process(SqlContext context) {
             Object value = context.evaluateExpression(valueExpr);
             context.getParams().put(name, value);
-            processContent(context);
+            context.processFragment(content);
         }
     }
 
-    /**
-     * 组合节点，包含并处理多个子节点
-     */
-    static class CompositeNode extends BaseSqlNode {
+    static class CompositeNode implements SqlNode {
         private final List<SqlNode> nodes;
 
         public CompositeNode(List<SqlNode> nodes) {
@@ -874,16 +795,30 @@ public class MyBatisSqlProcessor implements SqlProcessor {
         }
     }
 
-    static class SqlContext extends AbstractSqlContext<SqlContext.SqlClosure> {
-        private static final Pattern ALLOWED_DOLLAR_PATTERN = Pattern.compile("^[a-zA-Z0-9_]+");
+    static class SqlContext {
+        private static final Pattern ALLOWED_DOLLAR_PATTERN = Pattern.compile("^[a-zA-Z0-9_]+$");
 
         private final MyBatisSqlProcessor processor;
         private final SqlConfigProperties properties;
+        private final StringBuilder sql = new StringBuilder();
+        private final StringBuilder currentTagContent = new StringBuilder();
+        private final Map<String, Object> params;
+        private final Deque<SqlClosure> closures = new ArrayDeque<>();
+        private boolean isProcessingTagContent = false;
 
         public SqlContext(MyBatisSqlProcessor processor, SqlConfigProperties properties, Map<String, Object> params) {
-            super(params);
             this.processor = processor;
             this.properties = properties;
+            this.params = params;
+        }
+
+        public void append(String text) {
+            (isProcessingTagContent ? currentTagContent : sql).append(text);
+        }
+
+        public void startTagContent() {
+            isProcessingTagContent = true;
+            currentTagContent.setLength(0);
         }
 
         public void closeTag(String tagName) {
@@ -985,5 +920,29 @@ public class MyBatisSqlProcessor implements SqlProcessor {
         }
     }
 
-    // SqlFunctions已替换为统一的StringUtils工具类
+    public static class SqlFunctions {
+        public static boolean isEmpty(Object value) {
+            if (value == null) return true;
+            if (value instanceof String str) return str.trim().isEmpty();
+            if (value instanceof Collection<?> coll) return coll.isEmpty();
+            if (value instanceof Map<?, ?> map) return map.isEmpty();
+            if (value.getClass().isArray()) return ((Object[]) value).length == 0;
+            return false;
+        }
+
+        public static boolean isNotEmpty(Object value) {
+            return !isEmpty(value);
+        }
+
+        public static boolean contains(Object collection, Object item) {
+            if (collection == null || item == null) return false;
+            if (collection instanceof Collection<?> coll) return coll.contains(item);
+            if (collection instanceof String str) return str.contains(item.toString());
+            return false;
+        }
+
+        public static String concat(String... parts) {
+            return String.join("", parts);
+        }
+    }
 }

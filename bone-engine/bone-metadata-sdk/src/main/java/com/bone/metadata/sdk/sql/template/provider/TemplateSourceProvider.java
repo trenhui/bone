@@ -1,11 +1,10 @@
 package com.bone.metadata.sdk.sql.template.provider;
 
-import java.lang.reflect.Method;
-import java.net.URI;
-
-import com.bone.metadata.sdk.domain.enums.SqlTemplateType;
 import com.bone.metadata.sdk.domain.exception.TemplateLoadException;
 import com.bone.metadata.sdk.sql.template.TemplateDescriptor;
+
+import java.lang.reflect.Method;
+import java.net.URI;
 
 public interface TemplateSourceProvider {
     boolean supports(URI sourceUri);

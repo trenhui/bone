@@ -1,7 +1,7 @@
 package com.bone.metadata.sdk.extension.handler;
 
-import com.bone.metadata.sdk.extension.ExtensionContext;
 import com.bone.metadata.sdk.domain.enums.ExtensionMode;
+import com.bone.metadata.sdk.extension.ExtensionContext;
 
 import java.util.Map;
 

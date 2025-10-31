@@ -3,8 +3,8 @@ package com.bone.metadata.sdk.query.criteria;
 import com.bone.core.enums.Operator;
 import com.bone.metadata.sdk.domain.enums.DatabaseType;
 import com.bone.metadata.sdk.support.config.MetadataSdkContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -13,52 +13,9 @@ import java.util.function.Function;
 /**
  * 查询条件模型，支持主表(m)和扩展表(ext)前缀。
  */
-// 移除@Data注解，显式添加必要的getter方法
+@Slf4j
+@Data
 public class Condition {
-    private static final Logger log = LoggerFactory.getLogger(Condition.class);
-    
-    // 显式添加getter方法
-    public String getParamName() {
-        return paramName;
-    }
-    
-    public String getColumn() {
-        return column;
-    }
-    
-    public Operator getOperator() {
-        return operator;
-    }
-    
-    public Object[] getValues() {
-        return values;
-    }
-    
-    // 添加缺失的getter方法
-    public String getFieldName() {
-        return fieldName;
-    }
-    
-    public boolean isExtension() {
-        return extension;
-    }
-    
-    /**
-     * 获取自定义SQL片段
-     * @return 自定义SQL片段
-     */
-    public String getCustomSql() {
-        return customSql;
-    }
-    
-    /**
-     * 检查是否包含自定义SQL
-     * @return 是否包含自定义SQL
-     */
-    public boolean hasCustomSql() {
-        return customSql != null && !customSql.isEmpty();
-    }
-    
     /**
      * 字段（snakecase）
      */
@@ -85,11 +42,6 @@ public class Condition {
      * 是否扩展表字段
      */
     private final boolean extension;
-    
-    /**
-     * 自定义SQL片段
-     */
-    private final String customSql;
 
     // LIKE 模板：数据库类型 -> SQL 生成函数
     private static final Map<DatabaseType, Function<LikeContext, String>> LIKE_TEMPLATES = new HashMap<>();
@@ -140,58 +92,45 @@ public class Condition {
     }
 
     public Condition(String fieldName, String column, String paramName, Operator operator, boolean extension, Object... values) {
-        this(fieldName, column, paramName, operator, extension, null, values);
-    }
-
-    public Condition(String fieldName, String column, String paramName, Operator operator, Object... values) {
-        this(fieldName, column, paramName, operator, false, null, values);
-    }
-    
-    /**
-     * 完整构造函数，支持自定义SQL
-     * @param fieldName 字段名
-     * @param column 列名
-     * @param paramName 参数名
-     * @param operator 操作符
-     * @param extension 是否是扩展表的条件
-     * @param customSql 自定义SQL片段
-     * @param values 参数值数组
-     */
-    public Condition(String fieldName, String column, String paramName, Operator operator, boolean extension, String customSql, Object... values) {
         this.fieldName = fieldName;
         this.column = column;
         this.paramName = paramName;
         this.operator = operator;
         this.extension = extension;
-        this.customSql = customSql;
+        this.values = values;
+    }
+
+    public Condition(String fieldName, String column, String paramName, Operator operator, Object... values) {
+        this.fieldName = fieldName;
+        this.column = column;
+        this.paramName = paramName;
+        this.operator = operator;
+        this.extension = false;
         this.values = values;
     }
 
     /**
-     * 生成 SQL 片段，只返回纯列名，表别名由上层调用者添加
+     * 生成 SQL 片段，自动选择 m. 或 ext. 前缀
      */
     public String toSql() {
-        // 如果存在自定义SQL，直接返回
-        if (hasCustomSql()) {
-            return customSql;
-        }
-        
+        String alias = extension ? "ext" : "m";
+        String col = alias + "." + column;
         return switch (operator) {
-            case EQ -> String.format("%s = :%s", column, paramName);
-            case NE -> String.format("%s <> :%s", column, paramName);
-            case GT -> String.format("%s > :%s", column, paramName);
-            case GTE -> String.format("%s >= :%s", column, paramName);
-            case LT -> String.format("%s < :%s", column, paramName);
-            case LTE -> String.format("%s <= :%s", column, paramName);
-            case LIKE -> buildLikeSql(column, "%%", "%%", false);
-            case NOT_LIKE -> buildLikeSql(column, "%%", "%%", true);
-            case LIKE_LEFT -> buildLikeSql(column, "%%", "", false);
-            case LIKE_RIGHT -> buildLikeSql(column, "", "%%", false);
-            case IN -> String.format("%s IN (:%s)", column, paramName);
-            case NOT_IN -> String.format("%s NOT IN (:%s)", column, paramName);
-            case BETWEEN -> String.format("%s BETWEEN :%s_0 AND :%s_1", column, column, column);
-            case IS_NULL -> column + " IS NULL";
-            case IS_NOT_NULL -> column + " IS NOT NULL";
+            case EQ -> String.format("%s = :%s", col, paramName);
+            case NE -> String.format("%s <> :%s", col, paramName);
+            case GT -> String.format("%s > :%s", col, paramName);
+            case GTE -> String.format("%s >= :%s", col, paramName);
+            case LT -> String.format("%s < :%s", col, paramName);
+            case LTE -> String.format("%s <= :%s", col, paramName);
+            case LIKE -> buildLikeSql(col, "%%", "%%", false);
+            case NOT_LIKE -> buildLikeSql(col, "%%", "%%", true);
+            case LIKE_LEFT -> buildLikeSql(col, "%%", "", false);
+            case LIKE_RIGHT -> buildLikeSql(col, "", "%%", false);
+            case IN -> String.format("%s IN (:%s)", col, paramName);
+            case NOT_IN -> String.format("%s NOT IN (:%s)", col, paramName);
+            case BETWEEN -> String.format("%s BETWEEN :%s_0 AND :%s_1", col, column, column);
+            case IS_NULL -> String.format("%s IS NULL", col);
+            case IS_NOT_NULL -> String.format("%s IS NOT NULL", col);
             default -> throw new IllegalStateException("Unsupported operator " + operator);
         };
     }

@@ -1,13 +1,11 @@
 package com.bone.metadata.sdk.extension;
 
+import com.bone.metadata.sdk.domain.enums.ExtensionMode;
 import com.bone.metadata.sdk.domain.exception.FieldAllocationException;
 import com.bone.metadata.sdk.extension.handler.ExtensionStorageHandler;
-import com.bone.metadata.sdk.domain.enums.ExtensionMode;
-import com.bone.metadata.sdk.support.dataSource.DataSourceContextHolder;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -21,15 +19,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * 扩展字段协调器，负责策略分发、缓存、事件发布和监控。
  */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class ExtensionCoordinator {
-    private static final Logger log = LoggerFactory.getLogger(ExtensionCoordinator.class);
     private final ApplicationContext context;
     private final Map<ExtensionMode, ExtensionStorageHandler> handlers = new ConcurrentHashMap<>();
     private final ExtensionMode defaultMode = ExtensionMode.RESERVED_COLUMNS;
-    
-    public ExtensionCoordinator(ApplicationContext context) {
-        this.context = context;
-    }
 
     public void fallbackToJson(ExtensionContext context) {
         getHandler(ExtensionMode.JSON).save(context);
@@ -55,15 +50,7 @@ public class ExtensionCoordinator {
     @Async
     @Transactional
     public CompletableFuture<Void> saveAsync(ExtensionContext context) {
-        // 获取当前数据源上下文，确保异步操作在正确的数据源中执行
-        String currentDataSource = DataSourceContextHolder.getCurrentDataSource();
-        if (currentDataSource != null) {
-            // 如果有明确的数据源上下文，使用DataSourceContextHolder的异步方法
-            return DataSourceContextHolder.executeAsyncInDataSource(currentDataSource, () -> save(context));
-        } else {
-            // 否则使用默认的异步执行
-            return CompletableFuture.runAsync(() -> save(context));
-        }
+        return CompletableFuture.runAsync(() -> save(context));
     }
 
     @Transactional(readOnly = true)

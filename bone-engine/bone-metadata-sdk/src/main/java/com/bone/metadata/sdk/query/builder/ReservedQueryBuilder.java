@@ -1,17 +1,18 @@
 package com.bone.metadata.sdk.query.builder;
 
 import com.bone.metadata.sdk.domain.enums.DatabaseType;
-import com.bone.metadata.sdk.extension.ExtensionContext;
 import com.bone.metadata.sdk.domain.model.FieldMetadata;
+import com.bone.metadata.sdk.extension.ExtensionContext;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import java.util.logging.Logger;
+import lombok.extern.slf4j.Slf4j;
+
 import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 public final class ReservedQueryBuilder {
-    private static final Logger LOGGER = Logger.getLogger(ReservedQueryBuilder.class.getName());
     private static final Cache<String, String> SELECT_CACHE = Caffeine.newBuilder()
             .maximumSize(2048)
             .expireAfterWrite(Duration.ofHours(4))
@@ -62,10 +63,10 @@ public final class ReservedQueryBuilder {
         fields.stream().map(FieldMetadata::getColumnName).forEach(allColumnsSet::add);
         List<String> allColumns = new ArrayList<>(allColumnsSet);
         // 新增调试日志
-        LOGGER.info("Generating UPSERT SQL for " + dbType + " with columns: " + allColumns);
-        LOGGER.info("Key columns: " + keyColumns);
-        LOGGER.info("All columns count: " + allColumns.size());
-        LOGGER.info("Generating UPSERT SQL with " + allColumns.size() + " columns: " + allColumns);
+        log.debug("Generating UPSERT SQL for {} with columns: {}", dbType, allColumns);
+        log.debug("Key columns: {}", keyColumns);
+        log.debug("All columns count: {}", allColumns.size());
+        log.debug("Generating UPSERT SQL with {} columns: {}", allColumns.size(), allColumns);
 
         String sql = switch (dbType) {
             case MYSQL -> buildMySQLUpsert(allColumns, keyColumns);
@@ -75,7 +76,7 @@ public final class ReservedQueryBuilder {
             default -> throw new UnsupportedOperationException("Unsupported database: " + dbType);
         };
 
-        LOGGER.info("Generated SQL: " + sql);
+        log.info("Generated SQL: {}", sql);
         return sql;
     }
 

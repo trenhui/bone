@@ -8,12 +8,12 @@ import java.util.Map;
  */
 public class QueryExecutionException extends SDKException {
     private static final long serialVersionUID = 1L;
-    
+
     // SQL语句
     private String sql;
     // 查询参数
     private Map<String, Object> parameters;
-    
+
     /**
      * 创建查询执行异常
      * @param message 异常消息
@@ -21,7 +21,7 @@ public class QueryExecutionException extends SDKException {
     public QueryExecutionException(String message) {
         super("QUERY_EXECUTION_ERROR", message);
     }
-    
+
     /**
      * 创建查询执行异常
      * @param message 异常消息
@@ -30,7 +30,7 @@ public class QueryExecutionException extends SDKException {
     public QueryExecutionException(String message, Throwable cause) {
         super("QUERY_EXECUTION_ERROR", message, cause);
     }
-    
+
     /**
      * 设置SQL语句
      * @param sql SQL语句
@@ -41,7 +41,7 @@ public class QueryExecutionException extends SDKException {
         addContext("sql", sql);
         return this;
     }
-    
+
     /**
      * 获取SQL语句
      * @return SQL语句
@@ -49,7 +49,7 @@ public class QueryExecutionException extends SDKException {
     public String getSql() {
         return sql;
     }
-    
+
     /**
      * 设置查询参数
      * @param parameters 参数映射
@@ -60,7 +60,7 @@ public class QueryExecutionException extends SDKException {
         addContext("parameters", parameters);
         return this;
     }
-    
+
     /**
      * 获取查询参数
      * @return 参数映射

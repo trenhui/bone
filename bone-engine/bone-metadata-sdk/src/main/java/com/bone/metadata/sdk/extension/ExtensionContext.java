@@ -1,9 +1,11 @@
 package com.bone.metadata.sdk.extension;
 
 import com.bone.metadata.sdk.domain.enums.ExtensionMode;
+import lombok.Data;
 
 import java.util.Map;
 
+@Data
 public class ExtensionContext {
     private final Long tenantId;
     private String appCode;
@@ -12,15 +14,6 @@ public class ExtensionContext {
     private final Object entityId;
     private final Map<String, Object> extraProperties;
     private final ExtensionMode mode;
-    
-    public Long getTenantId() { return tenantId; }
-    public String getAppCode() { return appCode; }
-    public void setAppCode(String appCode) { this.appCode = appCode; }
-    public String getBizIdentityCode() { return bizIdentityCode; }
-    public String getEntityType() { return entityType; }
-    public Object getEntityId() { return entityId; }
-    public Map<String, Object> getExtraProperties() { return extraProperties; }
-    public ExtensionMode getMode() { return mode; }
 
     public String getEntityTable() {
         return entityType;

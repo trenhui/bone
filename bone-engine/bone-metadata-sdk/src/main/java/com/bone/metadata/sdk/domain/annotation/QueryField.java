@@ -1,6 +1,7 @@
 package com.bone.metadata.sdk.domain.annotation;
 
 import com.bone.core.enums.Operator;
+
 import java.lang.annotation.*;
 
 @Target(ElementType.FIELD)

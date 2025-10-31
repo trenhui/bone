@@ -5,46 +5,6 @@ import java.lang.reflect.Method;
 import java.util.function.Function;
 
 public class SqlUtil {
-    /**
-     * 判断是否为SELECT查询
-     */
-    public static boolean isSelectQuery(String sql) {
-        if (sql == null || sql.trim().isEmpty()) {
-            return false;
-        }
-        String normalized = sql.trim().toUpperCase().replaceAll("\\s+", " ");
-        return normalized.startsWith("SELECT ") || normalized.startsWith("WITH ");
-    }
-
-    /**
-     * 判断是否为DML操作 (INSERT, UPDATE, DELETE)
-     */
-    public static boolean isDmlQuery(String sql) {
-        if (sql == null || sql.trim().isEmpty()) {
-            return false;
-        }
-        String normalized = sql.trim().toUpperCase().replaceAll("\\s+", " ");
-        return normalized.startsWith("INSERT ") || normalized.startsWith("UPDATE ") || normalized.startsWith("DELETE ");
-    }
-
-    /**
-     * 判断是否为写操作 (包括DML和DDL)
-     */
-    public static boolean isWriteOperation(String sql) {
-        if (sql == null || sql.trim().isEmpty()) {
-            return false;
-        }
-        String normalized = sql.trim().toUpperCase().replaceAll("\\s+", " ");
-        return normalized.startsWith("INSERT ") || 
-               normalized.startsWith("UPDATE ") || 
-               normalized.startsWith("DELETE ") || 
-               normalized.startsWith("CREATE ") || 
-               normalized.startsWith("ALTER ") || 
-               normalized.startsWith("DROP ") || 
-               normalized.startsWith("TRUNCATE ") || 
-               normalized.contains(" FOR UPDATE");
-    }
-
     public static <T, R> String getFieldName(Function<T, R> keyExtractor) {
         try {
             // 获取 SerializedLambda
@@ -88,5 +48,23 @@ public class SqlUtil {
             return input.toLowerCase();
         }
         return Character.toLowerCase(input.charAt(0)) + input.substring(1);
+    }
+
+    /**
+     * 判断是否为写操作 (包括DML和DDL)
+     */
+    public static boolean isWriteOperation(String sql) {
+        if (sql == null || sql.trim().isEmpty()) {
+            return false;
+        }
+        String normalized = sql.trim().toUpperCase().replaceAll("\\s+", " ");
+        return normalized.startsWith("INSERT ") ||
+                normalized.startsWith("UPDATE ") ||
+                normalized.startsWith("DELETE ") ||
+                normalized.startsWith("CREATE ") ||
+                normalized.startsWith("ALTER ") ||
+                normalized.startsWith("DROP ") ||
+                normalized.startsWith("TRUNCATE ") ||
+                normalized.contains(" FOR UPDATE");
     }
 }

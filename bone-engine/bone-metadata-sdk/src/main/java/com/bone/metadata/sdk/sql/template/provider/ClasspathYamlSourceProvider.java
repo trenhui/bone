@@ -14,14 +14,14 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
 /**
- * 从类路径加载SQL模板，支持结构化路径（如 sql/<package>/<ClassName>/<methodName>.sql）。
+ * 从类路径加载YAML SQL模板，支持结构化路径（如 sql-templates/<ClassName>/<methodName>.yaml）。
  */
 @Slf4j
-public class ClasspathSourceProvider implements TemplateSourceProvider {
+public class ClasspathYamlSourceProvider implements TemplateSourceProvider {
     private final ResourceLoader resourceLoader;
     private final SqlConfigProperties config;
 
-    public ClasspathSourceProvider(ResourceLoader resourceLoader, SqlConfigProperties config) {
+    public ClasspathYamlSourceProvider(ResourceLoader resourceLoader, SqlConfigProperties config) {
         this.resourceLoader = resourceLoader;
         this.config = config;
     }
@@ -39,7 +39,6 @@ public class ClasspathSourceProvider implements TemplateSourceProvider {
             if (!resource.exists()) {
                 log.warn("类路径资源未找到: {}。请确保文件存在于 src/main/resources。", path);
                 return null;
-                //throw new TemplateNotFoundException("类路径资源未找到: " + path);
             }
             if (!resource.isReadable()) {
                 log.error("类路径资源不可读: {}", path);
@@ -55,7 +54,6 @@ public class ClasspathSourceProvider implements TemplateSourceProvider {
                     System.currentTimeMillis()
             );
         } catch (TemplateNotFoundException e) {
-            log.error("加载类路径模板失败: {}, 原因: {}", path, e.getMessage(), e);
             throw e;
         } catch (Exception e) {
             log.error("加载类路径模板失败: {}, 原因: {}", path, e.getMessage(), e);
