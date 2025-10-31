@@ -9,14 +9,14 @@ import java.util.Arrays;
  */
 public class SqlInjectionRiskException extends SDKException {
     private static final long serialVersionUID = 1L;
-    
+
     // 触发风险检测的SQL语句片段
     private String suspiciousSqlFragment;
     // 检测到的注入关键词
     private List<String> detectedKeywords;
     // 风险级别 (HIGH, MEDIUM, LOW)
     private String riskLevel;
-    
+
     /**
      * 创建SQL注入风险异常
      * @param message 异常消息
@@ -24,7 +24,7 @@ public class SqlInjectionRiskException extends SDKException {
     public SqlInjectionRiskException(String message) {
         super("SQL_INJECTION_RISK", message);
     }
-    
+
     /**
      * 创建SQL注入风险异常
      * @param message 异常消息
@@ -33,7 +33,7 @@ public class SqlInjectionRiskException extends SDKException {
     public SqlInjectionRiskException(String message, Throwable cause) {
         super("SQL_INJECTION_RISK", message, cause);
     }
-    
+
     /**
      * 创建SQL注入风险异常
      * @param message 异常消息
@@ -47,7 +47,7 @@ public class SqlInjectionRiskException extends SDKException {
         addContext("suspiciousFragment", suspiciousFragment);
         addContext("detectedKeywords", detectedKeywords);
     }
-    
+
     /**
      * 获取可疑的SQL片段
      * @return SQL片段
@@ -55,7 +55,7 @@ public class SqlInjectionRiskException extends SDKException {
     public String getSuspiciousSqlFragment() {
         return suspiciousSqlFragment;
     }
-    
+
     /**
      * 设置可疑的SQL片段
      * @param fragment SQL片段
@@ -66,7 +66,7 @@ public class SqlInjectionRiskException extends SDKException {
         addContext("suspiciousFragment", fragment);
         return this;
     }
-    
+
     /**
      * 获取检测到的注入关键词
      * @return 关键词列表
@@ -74,7 +74,7 @@ public class SqlInjectionRiskException extends SDKException {
     public List<String> getDetectedKeywords() {
         return detectedKeywords;
     }
-    
+
     /**
      * 设置检测到的注入关键词
      * @param keywords 关键词列表
@@ -85,7 +85,7 @@ public class SqlInjectionRiskException extends SDKException {
         addContext("detectedKeywords", keywords);
         return this;
     }
-    
+
     /**
      * 获取风险级别
      * @return 风险级别
@@ -93,7 +93,7 @@ public class SqlInjectionRiskException extends SDKException {
     public String getRiskLevel() {
         return riskLevel;
     }
-    
+
     /**
      * 设置风险级别
      * @param level 风险级别 (HIGH, MEDIUM, LOW)

@@ -2,22 +2,16 @@ package com.bone.metadata.sdk.sql.template;
 
 import com.bone.metadata.sdk.domain.exception.TemplateSecurityException;
 import com.bone.metadata.sdk.support.config.SqlConfigProperties;
-
+import lombok.RequiredArgsConstructor;
 
 import java.net.URI;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+@RequiredArgsConstructor
 public class TemplateSecurityValidator {
     private final SqlConfigProperties config;
-    
-    public TemplateSecurityValidator(SqlConfigProperties config) {
-        this.config = config;
-    }
     private static final Pattern SQL_INJECTION_PATTERN = Pattern.compile("(?i)(\\b(drop|delete|truncate|exec|union\\s+all)\\b)");
 
     // 不再使用硬编码的 ALLOWED_HOSTS
@@ -31,7 +25,7 @@ public class TemplateSecurityValidator {
     }
 
     public void validateContent(String content, TemplateDescriptor descriptor) {
-        if (content.length() > config.getTemplateProperties().getMaxTemplateSize()) {
+        if (content.length() > config.getTemplate().getMaxTemplateSize()) {
             throw new TemplateSecurityException("Template size exceeds limit");
         }
         if (SQL_INJECTION_PATTERN.matcher(content).find()) {
@@ -41,8 +35,7 @@ public class TemplateSecurityValidator {
 
     private void validateSourceUri(URI uri) {
         if ("http".equalsIgnoreCase(uri.getScheme()) || "https".equalsIgnoreCase(uri.getScheme())) {
-            List<String> allowedHostsList = config.getSecurity().getAllowedHosts();
-        Set<String> allowedHosts = new HashSet<>(allowedHostsList);
+            Set<String> allowedHosts = config.getSecurity().getAllowedHosts();
             String host = uri.getHost();
 
             if (!isHostAllowed(host, allowedHosts)) {

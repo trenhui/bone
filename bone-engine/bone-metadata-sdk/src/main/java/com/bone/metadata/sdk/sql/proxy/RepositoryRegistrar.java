@@ -1,8 +1,12 @@
 package com.bone.metadata.sdk.sql.proxy;
 
+import com.bone.metadata.sdk.Repository;
+import com.bone.metadata.sdk.domain.annotation.EnableSqlRepositories;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.support.*;
+import org.springframework.beans.factory.support.AbstractBeanDefinition;
+import org.springframework.beans.factory.support.BeanDefinitionBuilder;
+import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.context.ResourceLoaderAware;
 import org.springframework.context.annotation.ImportBeanDefinitionRegistrar;
 import org.springframework.core.annotation.AnnotationAttributes;
@@ -19,11 +23,9 @@ import org.springframework.util.StringUtils;
 import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.*;
-
-import com.bone.metadata.sdk.Repository;
-import com.bone.metadata.sdk.domain.annotation.EnableSqlRepositories;
-import com.bone.metadata.sdk.support.util.RepositoryClassUtils;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class RepositoryRegistrar implements ImportBeanDefinitionRegistrar, ResourceLoaderAware {
     private static final Logger logger = LoggerFactory.getLogger(RepositoryRegistrar.class);
@@ -126,7 +128,7 @@ public class RepositoryRegistrar implements ImportBeanDefinitionRegistrar, Resou
     private void registerRepositoryBean(Class<?> repositoryInterface, BeanDefinitionRegistry registry) {
         try {
             // 解析泛型参数
-            Class<?>[] genericTypes = RepositoryClassUtils.resolveGenericTypes(repositoryInterface);
+            Class<?>[] genericTypes = resolveGenericTypes(repositoryInterface);
             if (genericTypes == null || genericTypes.length != 2) {
                 logger.error("Failed to resolve generic types for {}", repositoryInterface.getName());
                 return;
@@ -159,5 +161,27 @@ public class RepositoryRegistrar implements ImportBeanDefinitionRegistrar, Resou
         }
     }
 
-
+    /**
+     * 解析泛型类型
+     */
+    private Class<?>[] resolveGenericTypes(Class<?> repositoryInterface) {
+        for (Type genericInterface : repositoryInterface.getGenericInterfaces()) {
+            if (genericInterface instanceof ParameterizedType) {
+                ParameterizedType parameterizedType = (ParameterizedType) genericInterface;
+                if (parameterizedType.getRawType().equals(Repository.class)) {
+                    Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
+                    if (actualTypeArguments.length == 2) {
+                        try {
+                            Class<?> entityClass = Class.forName(actualTypeArguments[0].getTypeName());
+                            Class<?> idClass = Class.forName(actualTypeArguments[1].getTypeName());
+                            return new Class<?>[]{entityClass, idClass};
+                        } catch (ClassNotFoundException e) {
+                            logger.error("Failed to resolve generic types", e);
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
 }

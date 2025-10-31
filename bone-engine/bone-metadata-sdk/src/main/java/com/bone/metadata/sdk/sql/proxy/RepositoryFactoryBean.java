@@ -2,7 +2,7 @@ package com.bone.metadata.sdk.sql.proxy;
 
 import com.bone.metadata.sdk.BaseRepository;
 import com.bone.metadata.sdk.domain.annotation.Param;
-import com.bone.metadata.sdk.domain.enums.SqlType;
+import com.bone.metadata.sdk.domain.annotation.SqlType;
 import com.bone.metadata.sdk.domain.query.CompiledQuery;
 import com.bone.metadata.sdk.extension.ExtensionCoordinator;
 import com.bone.metadata.sdk.query.SqlBuilder;
@@ -13,8 +13,7 @@ import com.bone.metadata.sdk.sql.processor.SqlProcessorFactory;
 import com.bone.metadata.sdk.sql.template.SqlFragmentLoader;
 import com.bone.metadata.sdk.sql.template.SqlTemplate;
 import com.bone.metadata.sdk.sql.template.SqlTemplateLoader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.ApplicationContext;
@@ -26,7 +25,6 @@ import org.springframework.dao.IncorrectResultSizeDataAccessException;
 import org.springframework.util.Assert;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
-import com.bone.metadata.sdk.support.util.RepositoryClassUtils;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -43,8 +41,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * Repository 代理工厂 Bean，基于业界最佳实践实现
  * 支持注解和类路径 SQL 模板加载，集成多源回退机制
  */
+@Slf4j
 public class RepositoryFactoryBean<T, E, ID> implements FactoryBean<T>, InitializingBean, ApplicationContextAware {
-    private static final Logger log = LoggerFactory.getLogger(RepositoryFactoryBean.class);
     private static final String TEMPLATE_ID_FORMAT = "%s.%s";
     private static final int MAX_SQL_LOG_LENGTH = 500;
 
@@ -107,7 +105,7 @@ public class RepositoryFactoryBean<T, E, ID> implements FactoryBean<T>, Initiali
         Assert.notNull(sqlExecutor, "SqlExecutor 不能为空");
         Assert.notNull(sqlTemplateLoader, "SqlTemplateLoader 不能为空");
         Assert.notNull(sqlProcessorFactory, "SqlProcessorFactory 不能为空");
-        Assert.notNull(sqlBuilder, "QueryBuilder 不能为空");
+        Assert.notNull(sqlBuilder, "SqlBuilder 不能为空");
         Assert.notNull(extensionCoordinator, "ExtensionCoordinator 不能为空");
         Assert.notNull(sqlFragmentLoader, "SqlFragmentLoader 不能为空");
     }
@@ -315,7 +313,7 @@ public class RepositoryFactoryBean<T, E, ID> implements FactoryBean<T>, Initiali
             if (Optional.class.equals(returnType)) {
                 return executeOptionalQuery(query);
             }
-            if (RepositoryClassUtils.isSimpleType(returnType)) {
+            if (isSimpleType(returnType)) {
                 return sqlExecutor.queryForObject(query, returnType);
             }
             return executeSingleResultQuery(query, returnType);
@@ -323,7 +321,7 @@ public class RepositoryFactoryBean<T, E, ID> implements FactoryBean<T>, Initiali
 
         private Object executeListQuery(CompiledQuery query) {
             Class<?> elementType = listElementTypeCache.get(method);
-            return RepositoryClassUtils.isSimpleType(elementType)
+            return isSimpleType(elementType)
                     ? sqlExecutor.queryForList(query.getSql(), query.getParameters(), elementType)
                     : sqlExecutor.executeQuery(query, elementType);
         }
@@ -392,6 +390,16 @@ public class RepositoryFactoryBean<T, E, ID> implements FactoryBean<T>, Initiali
         return discoveredNames != null && discoveredNames.length > index && discoveredNames[index] != null
                 ? discoveredNames[index]
                 : "arg" + index;
+    }
+
+    private static boolean isSimpleType(Class<?> type) {
+        return type.isPrimitive()
+                || Number.class.isAssignableFrom(type)
+                || CharSequence.class.isAssignableFrom(type)
+                || Boolean.class.equals(type)
+                || Date.class.isAssignableFrom(type)
+                || Temporal.class.isAssignableFrom(type)
+                || type == Object.class;
     }
 
     private MethodHandle toHandle(Method method, Object target) throws NoSuchMethodException, IllegalAccessException {

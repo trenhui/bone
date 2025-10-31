@@ -1,14 +1,16 @@
 package com.bone.metadata.sdk.extension.repository;
 
-import com.bone.metadata.sdk.domain.enums.DataType;
 import com.bone.metadata.sdk.domain.enums.AllocationColumnStatus;
+import com.bone.metadata.sdk.domain.enums.DataType;
 import com.bone.metadata.sdk.domain.model.AllocationContext;
 import com.bone.metadata.sdk.domain.model.ColumnAllocation;
 import com.bone.metadata.sdk.sql.dialect.ColumnAllocationDialect;
 import com.bone.metadata.sdk.sql.dialect.ColumnAllocationDialectFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
-import org.springframework.jdbc.core.namedparam.*;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcOperations;
+import org.springframework.jdbc.core.namedparam.SqlParameterSource;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,15 +24,11 @@ import java.util.Map;
  * ColumnAllocationRepository 负责所有与 column_allocation 表相关的持久化操作。
  */
 @Repository
+@RequiredArgsConstructor
 public class ColumnAllocationRepository {
 
     private final NamedParameterJdbcOperations jdbc;
     private final ColumnAllocationDialectFactory dialectFactory;
-    
-    public ColumnAllocationRepository(NamedParameterJdbcOperations jdbc, ColumnAllocationDialectFactory dialectFactory) {
-        this.jdbc = jdbc;
-        this.dialectFactory = dialectFactory;
-    }
 
     // 查询可回收列（RECYCLED），不含分页/锁定，后面拼接 LIMIT … FOR UPDATE SKIP LOCKED
     private static final String FIND_RECYCLED_SQL = """

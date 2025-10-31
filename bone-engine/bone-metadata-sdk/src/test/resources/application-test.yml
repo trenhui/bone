@@ -3,107 +3,64 @@ spring:
     activate:
       on-profile: test
   datasource:
-    type: com.zaxxer.hikari.HikariDataSource
     url: ${DB_URL:jdbc:mysql://localhost:3306/extTest?useSSL=false&autoReconnect=true&characterEncoding=utf8}
-    driver-class-name: com.mysql.cj.jdbc.Driver
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:mysql123}
     hikari:
-      pool-name: TestDBPool
-      minimum-idle: 5
-      idle-timeout: 600000
-      maximum-pool-size: 10
-      auto-commit: true
-      max-lifetime: 1800000
-      connection-timeout: 30000
-      # Optional H2 configuration for testing
-      # url: ${DB_URL:jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;TRACE_LEVEL_SYSTEM_OUT=3}
-      # driver-class-name: org.h2.Driver
-      # username: ${DB_USERNAME:sa}
-      # password: ${DB_PASSWORD:""}
+      maximum-pool-size: 5
+      connection-timeout: 3000
 
 metadata:
   sdk:
-    # 基础配置
-    appcode: ${APP_CODE:extTest}
-    deployment-mode: EMBEDDED
-    slow-query-threshold: 1000  # 测试环境降低慢查询阈值
-    cache-enabled: true
-    sql-cache-size: 500  # 测试环境优化缓存大小
-    sql-cache-expire-hours: 1  # 测试环境缩短缓存过期时间
-
-    # 服务配置 - 仅保留必要参数
-    service:
-      config:
-        embedded:
-          cache-ttl: 300  # 测试环境优化TTL
-        # 测试环境下禁用远程服务配置
-        remote:
-          enabled: false
-
-    # SQL执行配置 - 精简结构
     sql:
       enabled: true
-
-      # 执行器配置 - 测试环境专用设置
       executor:
         allow:
           dml: true
           batch: true
-          max-rows: 5000  # 限制最大返回行数防止内存溢出
-
-      # 数据库配置
+          max-rows: 5000
       database:
-        type: ${DB_TYPE:MYSQL}
+        type: MYSQL
         auto-detect-dialect: true
         default-ds: primary
         batch-size: 500
-
-      # 模板配置 - 测试环境精简缓存
       template:
         base-path: classpath:/sql/
         yaml-path: classpath:/sql-templates/
         load-priority: annotation-first
         fallback-enabled: true
+        enable-classpath-scan: true
+        enable-annotation-templates: true
         cache-size: 500
+        max-template-size: 1048576
         expire-hours: 1
         async-preload: true
-
-      # 监控配置 - 仅保留关键参数
-      monitor:
-        enabled: true
-        slow-query-threshold-ms: 500
-
-      # 缓存配置 - 测试环境减小缓存
+        stale-while-revalidate: 5m
+        preload: []
       cache:
         expression-cache-size: 1000
         ast-cache-size: 500
         spel-cache-size: 500
         expire-hours: 1
-
-      # 安全配置 - 测试环境简化
+      tenant:
+        enabled: false
+        header-name: X-Tenant-Id
+        column-name: tenant_id
+        excluded-tables: []
+      monitor:
+        enabled: false
+        endpoint: /sql-monitor
+        slow-query-threshold-ms: 500
+        prometheus-enabled: false
       security:
         allowed-tables:
           - "*"
+        allowed-dollar-pattern: "^[a-zA-Z0-9_]+$"
+        allowed-hosts:
+          - "localhost"
+          - "*.test.company.com"
 
-# 测试环境配置优化
-feign:
-  client:
-    config:
-      default:
-        logger-level: NONE  # 测试环境禁用日志
-        connect-timeout: 2000  # 测试环境快速失败
-        read-timeout: 2000
-        retryer:
-          max-attempts: 1  # 测试环境禁用重试以加速测试
-
-# 日志配置 - 最佳实践优化
 logging:
   level:
-    root: ERROR  # 保持最小干扰
-    com.bone: INFO
-    com.bone.metadata.sdk.query: DEBUG  # 仅对关键组件开启DEBUG
-    com.bone.metadata.sdk.sql: DEBUG
-    org.springframework.jdbc: DEBUG
-  pattern:
-    console: '%d{HH:mm:ss.SSS} [%thread] %-5level %logger{20} - %msg%n'  # 简化日志格式
+    root: WARN
+    com.bone.metadata.sdk: INFO

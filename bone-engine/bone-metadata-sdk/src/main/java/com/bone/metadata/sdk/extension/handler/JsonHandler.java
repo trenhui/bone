@@ -33,8 +33,7 @@ public class JsonHandler implements ExtensionStorageHandler {
     public void save(ExtensionContext context) {
         try {
             String json = JsonUtil.toJson(context.getExtraProperties());
-            // 使用java.util.logging.Logger代替lombok log
-            java.util.logging.Logger.getLogger(getClass().getName()).info(String.format("Saving JSON for entity %s#%s: %s", context.getEntityType(), context.getEntityId(), json));
+            log.info("Saving JSON for entity {}#{}: {}", context.getEntityType(), context.getEntityId(), json);
 
             Map<String, Object> params = Map.of(
                     "entityType", context.getEntityType(),

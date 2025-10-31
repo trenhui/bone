@@ -6,10 +6,12 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.TemporalAccessor;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-import java.util.ServiceLoader;
 
 /**
  * 类型转换工具类，基于策略模式实现，支持线程安全、可扩展的类型转换。
@@ -28,7 +30,7 @@ public final class TypeConverter {
         public TypeConversionException(String message) {
             super(message);
         }
-        
+
         public TypeConversionException(String message, Throwable cause) {
             super(message, cause);
         }
@@ -48,38 +50,8 @@ public final class TypeConverter {
     }
     // endregion
 
-    /**
-     * 类型转换器扩展接口，用于SPI机制
-     */
-    public interface TypeConverterExtension {
-        /**
-         * 注册自定义转换器
-         */
-        void registerConverters();
-    }
-    
     // region 静态初始化 - 内置转换器
     static {
-        // 注册内置转换器
-        registerBuiltinConverters();
-        
-        // 加载SPI实现
-        try {
-            ServiceLoader<TypeConverterExtension> extensions = ServiceLoader.load(TypeConverterExtension.class);
-            
-            for (TypeConverterExtension extension : extensions) {
-                extension.registerConverters();
-            }
-        } catch (Throwable e) {
-            // 如果加载SPI时出错，记录日志但不中断初始化
-            System.err.println("Failed to load TypeConverter extensions: " + e.getMessage());
-        }
-    }
-    
-    /**
-     * 注册所有内置转换器
-     */
-    private static void registerBuiltinConverters() {
         registerConverter(Boolean.class, new BooleanConverter());
         registerConverter(boolean.class, new BooleanConverter());
         registerConverter(Integer.class, new IntegerConverter());
@@ -274,6 +246,16 @@ public final class TypeConverter {
             if (value instanceof java.sql.Date) return ((java.sql.Date) value).toLocalDate();
             throw new TypeConversionException("Unsupported LocalDate conversion: " + value);
         }
+
+        private LocalDate parseLocalDate(String value) {
+            return parseDateTime(value, formatter -> {
+                try {
+                    return LocalDate.parse(value, formatter);
+                } catch (DateTimeParseException ignored) {
+                    return null;
+                }
+            });
+        }
     }
 
     static class TimestampConverter implements Converter<Timestamp> {
@@ -299,55 +281,6 @@ public final class TypeConverter {
     }
     // endregion
 
-    /**
-     * 从字符串转换到指定类型
-     */
-    @SuppressWarnings("unchecked")
-    public static <T> T convertFromString(String value, Class<T> targetType) {
-        if (value == null || value.trim().isEmpty()) {
-            return null;
-        }
-        
-        // 对于原始类型的特殊处理
-        if (targetType.isPrimitive()) {
-            if (targetType == boolean.class) return (T) Boolean.valueOf(Boolean.parseBoolean(value));
-            if (targetType == byte.class) return (T) Byte.valueOf(value);
-            if (targetType == short.class) return (T) Short.valueOf(value);
-            if (targetType == int.class) return (T) Integer.valueOf(value);
-            if (targetType == long.class) return (T) Long.valueOf(value);
-            if (targetType == float.class) return (T) Float.valueOf(value);
-            if (targetType == double.class) return (T) Double.valueOf(value);
-            if (targetType == char.class) {
-                if (value.length() == 1) return (T) Character.valueOf(value.charAt(0));
-                throw new TypeConversionException("Invalid char value: " + value);
-            }
-        }
-        
-        // 对于包装类型和其他常见类型
-        if (targetType == Boolean.class) return (T) Boolean.valueOf(value.trim().toLowerCase().matches("true|yes|on|1"));
-        if (targetType == Byte.class) return (T) Byte.valueOf(value);
-        if (targetType == Short.class) return (T) Short.valueOf(value);
-        if (targetType == Integer.class) return (T) Integer.valueOf(value);
-        if (targetType == Long.class) return (T) Long.valueOf(value);
-        if (targetType == Float.class) return (T) Float.valueOf(value);
-        if (targetType == Double.class) return (T) Double.valueOf(value);
-        if (targetType == String.class) return (T) value;
-        
-        // 对于日期类型
-        if (targetType == LocalDateTime.class) return (T) parseLocalDateTime(value);
-        if (targetType == LocalDate.class) return (T) parseLocalDate(value);
-        if (targetType == Date.class) {
-            DateConverter converter = new DateConverter();
-            return (T) converter.convert(value, Date.class);
-        }
-        if (targetType == Timestamp.class) {
-            TimestampConverter converter = new TimestampConverter();
-            return (T) converter.convert(value, Timestamp.class);
-        }
-        
-        throw new UnsupportedConversionException(String.class, targetType);
-    }
-    
     // region 通用的数值转换方法
     private static <T extends Number> T parseNumber(Object value, Class<T> targetType) {
         if (value instanceof Number) {
@@ -381,16 +314,6 @@ public final class TypeConverter {
         return parseDateTime(value, formatter -> {
             try {
                 return LocalDateTime.parse(value, formatter);
-            } catch (DateTimeParseException ignored) {
-                return null;
-            }
-        });
-    }
-    
-    public static LocalDate parseLocalDate(String value) {
-        return parseDateTime(value, formatter -> {
-            try {
-                return LocalDate.parse(value, formatter);
             } catch (DateTimeParseException ignored) {
                 return null;
             }

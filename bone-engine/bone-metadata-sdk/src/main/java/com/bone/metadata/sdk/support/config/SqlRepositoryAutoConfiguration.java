@@ -1,6 +1,5 @@
 package com.bone.metadata.sdk.support.config;
 
-import com.bone.metadata.sdk.domain.exception.ExceptionHandler;
 import com.bone.metadata.sdk.extension.ColumnAllocator;
 import com.bone.metadata.sdk.extension.ColumnNamingStrategy;
 import com.bone.metadata.sdk.extension.DefaultColumnNamingStrategy;
@@ -10,19 +9,22 @@ import com.bone.metadata.sdk.extension.handler.ReservedColumnsHandler;
 import com.bone.metadata.sdk.extension.repository.ColumnAllocationRepository;
 import com.bone.metadata.sdk.metadata.api.MetadataService;
 import com.bone.metadata.sdk.query.SqlBuilder;
-
 import com.bone.metadata.sdk.sql.dialect.*;
 import com.bone.metadata.sdk.sql.executor.SqlExecutor;
-import com.bone.metadata.sdk.sql.template.*;
 import com.bone.metadata.sdk.sql.processor.SqlProcessorFactory;
 import com.bone.metadata.sdk.sql.proxy.RepositoryFactoryBean;
 import com.bone.metadata.sdk.sql.proxy.RepositoryRegistrar;
+import com.bone.metadata.sdk.sql.template.SqlFragmentLoader;
+import com.bone.metadata.sdk.sql.template.SqlTemplateLoader;
+import com.bone.metadata.sdk.sql.template.TemplateSecurityValidator;
+import com.bone.metadata.sdk.sql.template.UnifiedSqlTemplateLoader;
 import com.bone.metadata.sdk.sql.template.parser.MyBatisTemplateParser;
 import com.bone.metadata.sdk.sql.template.parser.SqlTemplateParser;
 import com.bone.metadata.sdk.sql.template.parser.TemplateContentParser;
 import com.bone.metadata.sdk.sql.template.parser.YamlTemplateParser;
 import com.bone.metadata.sdk.sql.template.provider.AnnotationSourceProvider;
 import com.bone.metadata.sdk.sql.template.provider.ClasspathSourceProvider;
+import com.bone.metadata.sdk.sql.template.provider.ClasspathYamlSourceProvider;
 import com.bone.metadata.sdk.sql.template.provider.TemplateSourceProvider;
 import com.bone.metadata.sdk.support.util.DistributedLockUtil;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -102,14 +104,6 @@ public class SqlRepositoryAutoConfiguration {
         return new SqlExecutor(jdbcOperations, sqlTemplateLoader, sqlProcessorFactory, properties);
     }
 
-
-
-    @Bean
-    @ConditionalOnMissingBean
-    public ExceptionHandler exceptionHandler() {
-        return ExceptionHandler.getInstance();
-    }
-
     @Bean
     public SqlFragmentLoader sqlFragmentLoader(SqlConfigProperties sqlConfigProperties) {
         return new SqlFragmentLoader(sqlConfigProperties);
@@ -151,7 +145,8 @@ public class SqlRepositoryAutoConfiguration {
     public List<TemplateSourceProvider> templateSourceProviders(ResourceLoader resourceLoader, SqlConfigProperties config) {
         return Arrays.asList(
                 new ClasspathSourceProvider(resourceLoader, config),
-                new AnnotationSourceProvider()
+                new AnnotationSourceProvider(),
+                new ClasspathYamlSourceProvider(resourceLoader, config)
         );
     }
 
@@ -174,12 +169,15 @@ public class SqlRepositoryAutoConfiguration {
 
     /**
      * 注册 SQL 模板加载器。
-     * 提供模板加载、缓存管理和多源支持功能。
+     * 增加 Cache 和 ConcurrentHashMap 参数
      */
     @Bean
-    @ConditionalOnMissingBean
-    public SqlTemplateLoader sqlTemplateLoader() {
-        // 使用正确的类型转换
-        return (SqlTemplateLoader) new SqlTemplateLoaderImpl();
+    public SqlTemplateLoader sqlTemplateLoader(
+            SqlConfigProperties config,
+            List<TemplateSourceProvider> sourceProviders,
+            List<TemplateContentParser> contentParsers,
+            TemplateSecurityValidator securityValidator
+    ) {
+        return new UnifiedSqlTemplateLoader(config, sourceProviders, contentParsers, securityValidator);
     }
 }

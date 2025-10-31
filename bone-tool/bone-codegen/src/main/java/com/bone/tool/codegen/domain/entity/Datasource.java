@@ -1,6 +1,6 @@
 package com.bone.tool.codegen.domain.entity;
 
-import com.bone.core.annotation.Id;
+import com.bone.core.annotation.Id;;
 import com.bone.core.domain.entity.AbstractEntity;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

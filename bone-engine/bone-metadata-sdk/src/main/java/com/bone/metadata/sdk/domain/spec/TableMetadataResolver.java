@@ -3,10 +3,12 @@ package com.bone.metadata.sdk.domain.spec;
 import com.bone.core.annotation.Deleted;
 import com.bone.core.annotation.Id;
 import com.bone.core.annotation.Transient;
-import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.core.domain.id.GeneratedValue;
+import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.core.domain.id.SequenceGenerator;
-import com.bone.metadata.sdk.domain.annotation.*;
+import com.bone.metadata.sdk.domain.annotation.Column;
+import com.bone.metadata.sdk.domain.annotation.Table;
+import com.bone.metadata.sdk.domain.annotation.Version;
 import com.bone.metadata.sdk.domain.exception.MetadataException;
 import com.bone.metadata.sdk.domain.model.ColumnMetadata;
 import com.bone.metadata.sdk.domain.model.TableMetadata;
@@ -17,19 +19,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Field;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
  * 元数据解析器，支持缓存。
  */
-import java.util.logging.Logger;
-
+@Slf4j
 public final class TableMetadataResolver {
 
-    // 使用java.util.logging.Logger代替lombok log
-    private static final Logger LOGGER = Logger.getLogger(TableMetadataResolver.class.getName());
-    
     // 使用Caffeine实现的线程安全缓存
     private static final Cache<String, TableMetadata> METADATA_CACHE = Caffeine.newBuilder()
             .maximumSize(2000)  // 最大缓存容量
@@ -64,7 +65,7 @@ public final class TableMetadataResolver {
         }
         List<ColumnMetadata> columns = parseColumns(entityClass);
 
-        LOGGER.fine(String.format("Parsed TableMetadata for table: %s with %d columns", tableName, columns.size()));
+        log.debug("Parsed TableMetadata for table: {} with {} columns", tableName, columns.size());
         return new TableMetadata(tableName, columns);
     }
 
@@ -87,7 +88,7 @@ public final class TableMetadataResolver {
             currentClass = currentClass.getSuperclass();
         }
 
-        LOGGER.fine(String.format("Parsed %d columns from class %s", columns.size(), entityClass.getName()));
+        log.debug("Parsed {} columns from class {}", columns.size(), entityClass.getName());
         return columns;
     }
 
@@ -164,7 +165,7 @@ public final class TableMetadataResolver {
      */
     public static void clearCache() {
         METADATA_CACHE.invalidateAll();
-        LOGGER.info("All metadata cache cleared.");
+        log.info("All metadata cache cleared.");
     }
 
     /**
@@ -172,6 +173,6 @@ public final class TableMetadataResolver {
      */
     public static void clearCacheForTable(String tableName) {
         METADATA_CACHE.invalidate(tableName);
-        LOGGER.info(String.format("Cache for table %s cleared.", tableName));
+        log.info("Cache for table {} cleared.", tableName);
     }
 }

@@ -2,14 +2,16 @@ package com.bone.metadata.sdk.query.builder;
 
 import com.bone.core.domain.extension.ExtensibleObject;
 import com.bone.core.util.ReflectionUtil;
-import com.bone.metadata.sdk.query.context.UpsertContext;
-import com.bone.metadata.sdk.domain.query.CompiledQuery;
 import com.bone.metadata.sdk.domain.model.ColumnMetadata;
+import com.bone.metadata.sdk.domain.query.CompiledQuery;
+import com.bone.metadata.sdk.query.context.UpsertContext;
 
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-public class UpsertSqlBuilder implements SqlQueryBuilder<UpsertContext> {
+public class UpsertBuilder implements SqlQueryBuilder<UpsertContext> {
 
     // —— 1. 支持 SqlQueryBuilder<UpsertContext> —— //
 

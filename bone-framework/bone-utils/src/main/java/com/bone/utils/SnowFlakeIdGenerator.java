@@ -6,7 +6,7 @@ import java.time.ZoneId;
 import java.util.Calendar;
 import java.util.Date;
 
-public class SnowFlakeIdGenerator {
+public class SnowFlakeDistributedIdGenerator {
     private static final long START_STMP = 1480166465631L;
     private static final long SEQUENCE_BIT = 12L;
     private static final long MACHINE_BIT = 5L;
@@ -23,10 +23,10 @@ public class SnowFlakeIdGenerator {
     private long lastStmp = -1L;
     private String dateTime;
 
-    public SnowFlakeIdGenerator() {
+    public SnowFlakeDistributedIdGenerator() {
     }
 
-    public SnowFlakeIdGenerator(long datacenterId, long machineId) {
+    public SnowFlakeDistributedIdGenerator(long datacenterId, long machineId) {
         if (datacenterId <= 31L && datacenterId >= 0L) {
             if (machineId <= 31L && machineId >= 0L) {
                 this.datacenterId = datacenterId;
@@ -39,7 +39,7 @@ public class SnowFlakeIdGenerator {
         }
     }
 
-    public SnowFlakeIdGenerator(long datacenterId, long machineId, long sequence, long lastStmp) {
+    public SnowFlakeDistributedIdGenerator(long datacenterId, long machineId, long sequence, long lastStmp) {
         this.datacenterId = datacenterId;
         this.machineId = machineId;
         this.sequence = sequence;
@@ -86,7 +86,7 @@ public class SnowFlakeIdGenerator {
         return System.currentTimeMillis();
     }
 
-    public SnowFlakeIdGenerator parse(long id) {
+    public SnowFlakeDistributedIdGenerator parse(long id) {
         String sonwFlakeId = Long.toBinaryString(id);
         System.out.println(sonwFlakeId);
         int len = sonwFlakeId.length();
@@ -102,7 +102,7 @@ public class SnowFlakeIdGenerator {
         int dataCenterIdInt = Integer.valueOf(dataCenterId, 2);
         long diffTime = Long.parseLong(time, 2);
         long timeLong = diffTime + 1480166465631L;
-        SnowFlakeIdGenerator snowFlakeIdParse = new SnowFlakeIdGenerator((long) dataCenterIdInt, (long) workerIdInt, (long) sequenceInt, timeLong);
+        SnowFlakeDistributedIdGenerator snowFlakeIdParse = new SnowFlakeDistributedIdGenerator((long) dataCenterIdInt, (long) workerIdInt, (long) sequenceInt, timeLong);
         return snowFlakeIdParse;
     }
 

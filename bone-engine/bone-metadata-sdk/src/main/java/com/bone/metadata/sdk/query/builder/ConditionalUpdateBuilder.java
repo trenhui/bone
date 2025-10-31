@@ -1,19 +1,19 @@
 package com.bone.metadata.sdk.query.builder;
 
 import com.bone.core.util.ReflectionUtil;
+import com.bone.metadata.sdk.domain.model.ColumnMetadata;
+import com.bone.metadata.sdk.domain.model.TableMetadata;
+import com.bone.metadata.sdk.domain.query.CompiledQuery;
+import com.bone.metadata.sdk.query.context.ConditionalUpdateContext;
 import com.bone.metadata.sdk.query.criteria.Condition;
 import com.bone.metadata.sdk.query.criteria.Criteria;
-import com.bone.metadata.sdk.domain.model.ColumnMetadata;
-import com.bone.metadata.sdk.domain.query.CompiledQuery;
-import com.bone.metadata.sdk.domain.model.TableMetadata;
-import com.bone.metadata.sdk.query.context.ConditionalUpdateContext;
 
 import java.util.*;
 
 /**
  * 动态构建带条件的 UPDATE（支持实体字段和扩展字段）。
  */
-public class ConditionalUpdateSqlBuilder implements SqlQueryBuilder<ConditionalUpdateContext> {
+public class ConditionalUpdateBuilder implements SqlQueryBuilder<ConditionalUpdateContext> {
 
     @Override
     public CompiledQuery build(ConditionalUpdateContext ctx) {

@@ -1,14 +1,14 @@
 package com.bone.metadata.sdk.query.builder;
 
-import com.bone.metadata.sdk.query.context.AggregationContext;
 import com.bone.metadata.sdk.domain.query.CompiledQuery;
+import com.bone.metadata.sdk.query.context.AggregationContext;
 import com.bone.metadata.sdk.support.util.SqlInjectionPreventer;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.StringJoiner;
 
-public class AggregationSqlBuilder implements SqlQueryBuilder<AggregationContext> {
+public class AggregationBuilder implements SqlQueryBuilder<AggregationContext> {
     @Override
     public CompiledQuery build(AggregationContext ctx) {
         ctx.validate();

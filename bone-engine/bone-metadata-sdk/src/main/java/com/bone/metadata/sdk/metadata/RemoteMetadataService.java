@@ -2,14 +2,12 @@ package com.bone.metadata.sdk.metadata;
 
 
 import com.bone.metadata.sdk.domain.exception.FieldAllocationException;
+import com.bone.metadata.sdk.domain.model.AllocationContext;
+import com.bone.metadata.sdk.domain.model.FieldMetadata;
 import com.bone.metadata.sdk.metadata.api.MetadataService;
 import com.bone.metadata.sdk.metadata.client.FieldsByNamesRequest;
 import com.bone.metadata.sdk.metadata.client.MetadataServiceClient;
-import com.bone.metadata.sdk.domain.model.AllocationContext;
-import com.bone.metadata.sdk.domain.model.FieldMetadata;
-import com.bone.metadata.sdk.domain.model.TableMetadata;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.http.ResponseEntity;
 
@@ -17,8 +15,8 @@ import java.util.Collections;
 import java.util.List;
 
 @RefreshScope
+@Slf4j
 public class RemoteMetadataService implements MetadataService {
-    private static final Logger log = LoggerFactory.getLogger(RemoteMetadataService.class);
     private final MetadataServiceClient metadataServiceClient;
 
     public RemoteMetadataService(MetadataServiceClient metadataServiceClient) {
@@ -35,11 +33,7 @@ public class RemoteMetadataService implements MetadataService {
         if (logicalNames == null || logicalNames.isEmpty()) {
             return Collections.emptyList();
         }
-        // 手动创建对象并设置字段，避免使用构造器
-        FieldsByNamesRequest request = new FieldsByNamesRequest();
-        request.setContext(context);
-        request.setLogicalNames(logicalNames);
-        return metadataServiceClient.findExtensionFieldsByNames(request);
+        return metadataServiceClient.findExtensionFieldsByNames(new FieldsByNamesRequest(context, logicalNames));
     }
 
     @Override
@@ -69,11 +63,5 @@ public class RemoteMetadataService implements MetadataService {
             log.error("Remote service health check failed", e);
             return false;
         }
-    }
-    
-    @Override
-    public <T> TableMetadata getTableMetadata(Class<T> entityClass) {
-        // 这里提供一个基本实现，实际使用时可能需要调用远程服务
-        throw new UnsupportedOperationException("Remote table metadata not implemented yet");
     }
 }

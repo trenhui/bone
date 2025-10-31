@@ -2,11 +2,13 @@ package com.bone.metadata.sdk.support.config;
 
 import com.bone.metadata.sdk.domain.enums.DeploymentMode;
 import jakarta.annotation.PostConstruct;
+import lombok.Data;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
-import lombok.Data;
 
+@Data
+@Validated
 @ConfigurationProperties(prefix = "metadata.sdk")
 public class MetadataSdkProperties {
 
@@ -15,61 +17,6 @@ public class MetadataSdkProperties {
     private DeploymentMode deploymentMode = DeploymentMode.EMBEDDED;
 
     private long slowQueryThreshold = 3000; // 3s in milliseconds
-    
-    private boolean cacheEnabled = true;
-    
-    private int sqlCacheSize = 2000;
-    
-    private int sqlCacheExpireHours = 24;
-    
-    // 手动添加getter方法
-    public String getAppcode() {
-        return appcode;
-    }
-    
-    public void setAppcode(String appcode) {
-        this.appcode = appcode;
-    }
-    
-    public DeploymentMode getDeploymentMode() {
-        return deploymentMode;
-    }
-    
-    public void setDeploymentMode(DeploymentMode deploymentMode) {
-        this.deploymentMode = deploymentMode;
-    }
-    
-    public long getSlowQueryThreshold() {
-        return slowQueryThreshold;
-    }
-    
-    public void setSlowQueryThreshold(long slowQueryThreshold) {
-        this.slowQueryThreshold = slowQueryThreshold;
-    }
-    
-    public boolean isCacheEnabled() {
-        return cacheEnabled;
-    }
-    
-    public void setCacheEnabled(boolean cacheEnabled) {
-        this.cacheEnabled = cacheEnabled;
-    }
-    
-    public int getSqlCacheSize() {
-        return sqlCacheSize;
-    }
-    
-    public void setSqlCacheSize(int sqlCacheSize) {
-        this.sqlCacheSize = sqlCacheSize;
-    }
-    
-    public int getSqlCacheExpireHours() {
-        return sqlCacheExpireHours;
-    }
-    
-    public void setSqlCacheExpireHours(int sqlCacheExpireHours) {
-        this.sqlCacheExpireHours = sqlCacheExpireHours;
-    }
 
     private Service service = new Service();
 

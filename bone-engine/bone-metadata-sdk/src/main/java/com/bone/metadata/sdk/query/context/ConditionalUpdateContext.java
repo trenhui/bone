@@ -1,7 +1,7 @@
 package com.bone.metadata.sdk.query.context;
 
-import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.domain.model.TableMetadata;
+import com.bone.metadata.sdk.query.criteria.Criteria;
 
 public class ConditionalUpdateContext {
     private final TableMetadata table;

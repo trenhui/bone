@@ -1,6 +1,6 @@
 package com.bone.metadata.sdk.test.domain;
 
-import com.bone.core.annotation.Id;
+import com.bone.core.annotation.Id;;
 import com.bone.core.domain.entity.AbstractEntity;
 import com.bone.core.domain.id.GeneratedValue;
 import com.bone.core.domain.id.GenerationStrategy;

@@ -4,11 +4,7 @@ import com.bone.core.enums.Operator;
 import com.bone.metadata.sdk.support.function.SFunction;
 import com.bone.metadata.sdk.domain.enums.SortDirection;
 import com.bone.metadata.sdk.support.util.SqlUtil;
-import com.bone.metadata.sdk.query.dsl.JoinType;
 import lombok.Data;
-import lombok.experimental.Accessors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -17,6 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * 支持主表和扩展表条件、排序与分页的通用查询构造器。
  */
+@Data
 public class Criteria<T> {
     private final List<Condition> mainConditions = new ArrayList<>();
     private final List<Condition> extConditions = new ArrayList<>();
@@ -24,50 +21,8 @@ public class Criteria<T> {
     private final Map<String, AtomicInteger> columnCounterMap = new ConcurrentHashMap<>();
 
     private final List<String> sortItems = new ArrayList<>();
-    private final List<JoinInfo<?>> joinInfos = new ArrayList<>();
     private int pageSize = 5000;
     private int pageNo = 1;
-    
-    // 手动添加getter和setter方法
-    public int getPageNo() {
-        return pageNo;
-    }
-    
-    public void setPageNo(int pageNo) {
-        this.pageNo = pageNo;
-    }
-    
-    public int getPageSize() {
-        return pageSize;
-    }
-    
-    public void setPageSize(int pageSize) {
-        this.pageSize = pageSize;
-    }
-    
-    public List<Condition> getMainConditions() {
-        return mainConditions;
-    }
-    
-    public List<Condition> getExtConditions() {
-        return extConditions;
-    }
-    
-    public Map<String, Object> getParameters() {
-        return parameters;
-    }
-    
-    public Map<String, AtomicInteger> getColumnCounterMap() {
-        return columnCounterMap;
-    }
-    
-    public List<String> getSortItems() {
-        return sortItems;
-    }
-    
-    public List<JoinInfo<?>> getJoinInfos() {
-        return joinInfos;
-    }
 
     private Criteria() {
     }
@@ -84,8 +39,8 @@ public class Criteria<T> {
     /**
      * 分页设置，从1开始
      */
-    public Criteria<T> page(int pageNo, int pageSize) {
-        this.pageNo = pageNo;
+    public Criteria<T> page(int pageNumber, int pageSize) {
+        this.pageNo = pageNumber;
         this.pageSize = pageSize;
         return this;
     }
@@ -427,53 +382,6 @@ public class Criteria<T> {
      */
     public boolean requiresExtJoin() {
         return !extConditions.isEmpty();
-    }
-
-    /**
-     * 添加关联表信息
-     */
-    public <J> Criteria<T> addJoinInfo(Class<J> joinEntityClass, JoinType joinType, String joinCondition, Map<String, Object> joinParameters) {
-        JoinInfo<J> joinInfo = new JoinInfo<>(joinEntityClass, joinType, joinCondition, joinParameters);
-        this.joinInfos.add(joinInfo);
-        return this;
-    }
-
-    /**
-     * 获取所有关联表信息
-     */
-    // 所有getter方法已在前面定义，这里不再重复定义
-    
-    /**
-     * 关联表信息内部类
-     */
-    public static class JoinInfo<T> {
-        private Class<T> joinEntityClass;
-        private JoinType joinType;
-        private String joinCondition;
-        private Map<String, Object> joinParameters;
-        
-        public JoinInfo(Class<T> joinEntityClass, JoinType joinType, String joinCondition, Map<String, Object> joinParameters) {
-            this.joinEntityClass = joinEntityClass;
-            this.joinType = joinType;
-            this.joinCondition = joinCondition;
-            this.joinParameters = joinParameters;
-        }
-        
-        public Class<T> getJoinEntityClass() {
-            return joinEntityClass;
-        }
-        
-        public JoinType getJoinType() {
-            return joinType;
-        }
-        
-        public String getJoinCondition() {
-            return joinCondition;
-        }
-        
-        public Map<String, Object> getJoinParameters() {
-            return joinParameters;
-        }
     }
 
     public <R> Criteria<T> addSort(boolean condition, SFunction<T, R> fn, SortDirection dir) {

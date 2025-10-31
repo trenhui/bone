@@ -6,7 +6,6 @@ import com.bone.metadata.sdk.domain.exception.FieldAllocationException;
 import com.bone.metadata.sdk.domain.model.AllocationContext;
 import com.bone.metadata.sdk.domain.model.ColumnAllocation;
 import com.bone.metadata.sdk.extension.repository.ColumnAllocationRepository;
-import com.bone.metadata.sdk.support.util.RepositoryClassUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.transaction.annotation.Propagation;
@@ -14,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -68,10 +69,7 @@ public class ColumnAllocator {
                 .collect(Collectors.toList());
 
         // 使用重试机制批量插入，处理可能的唯一键冲突
-        RepositoryClassUtils.runWithRetry(() -> repo.batchInsert(toInsert), 
-                                         MAX_RETRIES, 
-                                         FieldAllocationException.class, 
-                                         "分配列重试失败");
+        runWithRetry(() -> repo.batchInsert(toInsert), MAX_RETRIES);
         return toInsert;
     }
 
@@ -106,6 +104,32 @@ public class ColumnAllocator {
                 .createdBy(userId) // 可根据实际场景设置 createdBy
                 .updatedBy(userId)
                 .build();
+    }
+
+    /**
+     * 对唯一键冲突做重试，并统计冲突次数
+     */
+    private void runWithRetry(Runnable action, int maxAttempts) {
+        int attempts = 0;
+        Random rnd = new Random();
+        while (true) {
+            try {
+                action.run();
+                return;
+            } catch (DuplicateKeyException ex) {
+                if (++attempts > maxAttempts) {
+                    throw new FieldAllocationException("分配列重试失败，次数：" + maxAttempts, ex);
+                }
+                // 指数退避 + 随机抖动
+                long backoff = (50L << attempts) + rnd.nextInt(50);
+                try {
+                    TimeUnit.MILLISECONDS.sleep(backoff);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    throw new FieldAllocationException("分配重试被中断", ie);
+                }
+            }
+        }
     }
 
     /**

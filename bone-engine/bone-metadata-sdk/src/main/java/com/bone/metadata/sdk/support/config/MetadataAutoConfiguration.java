@@ -1,5 +1,6 @@
 package com.bone.metadata.sdk.support.config;
 
+import com.bone.metadata.sdk.domain.exception.ExceptionHandler;
 import com.bone.metadata.sdk.extension.ColumnAllocator;
 import com.bone.metadata.sdk.extension.repository.FieldMetadataRepository;
 import com.bone.metadata.sdk.metadata.DelegatingMetadataService;
@@ -68,6 +69,13 @@ public class MetadataAutoConfiguration {
     @Bean
     public DistributedLockUtil distributedLockUtil() {
         return new DistributedLockUtil();
+    }
+
+    // 新增：注册 ExceptionHandler 为 Spring Bean
+    @Bean
+    @ConditionalOnMissingBean
+    public ExceptionHandler exceptionHandler() {
+        return ExceptionHandler.getInstance();
     }
 
 }

@@ -9,20 +9,19 @@ import com.bone.metadata.sdk.domain.query.BatchCompiledQuery;
 import com.bone.metadata.sdk.domain.query.CompiledQuery;
 import com.bone.metadata.sdk.domain.query.CompositeQuery;
 import com.bone.metadata.sdk.domain.spec.TableMetadataResolver;
-import com.bone.metadata.sdk.sql.processor.*;
+import com.bone.metadata.sdk.sql.processor.ProcessedSql;
+import com.bone.metadata.sdk.sql.processor.SqlProcessor;
+import com.bone.metadata.sdk.sql.processor.SqlProcessorFactory;
+import com.bone.metadata.sdk.sql.processor.SqlSecurityGuard;
 import com.bone.metadata.sdk.sql.template.SqlTemplate;
 import com.bone.metadata.sdk.sql.template.SqlTemplateLoader;
 import com.bone.metadata.sdk.support.config.SqlConfigProperties;
 import com.bone.metadata.sdk.support.util.ParamConvertUtil;
 import com.bone.metadata.sdk.support.util.SqlUtil;
-import com.bone.metadata.sdk.support.util.RepositoryClassUtils;
-import com.bone.metadata.sdk.sql.processor.SqlSecurityGuard;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.stats.CacheStats;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -47,10 +46,10 @@ import java.util.regex.Pattern;
  * 基于模板的高性能 SQL 执行器
  * 支持动态 SQL 处理、多数据库方言、分页查询、批量操作、缓存和监控
  */
+@Slf4j
 @Transactional
 public class SqlExecutor {
 
-    private static final Logger log = LoggerFactory.getLogger(SqlExecutor.class);
     private final NamedParameterJdbcOperations jdbc;
     private final SqlTemplateLoader sqlTemplateLoader;
     private final SqlProcessorFactory sqlProcessorFactory;
@@ -69,10 +68,10 @@ public class SqlExecutor {
         this.properties = properties;
         this.idGenerator = new DefaultIdGenerator(jdbc);
 
-        // 使用配置参数初始化缓存
-        sqlCache = Caffeine.newBuilder()
-                .maximumSize(2000) // 使用默认值作为安全保障
-                .expireAfterWrite(24, TimeUnit.HOURS) // 使用默认值作为安全保障
+        // 配置 SQL 处理结果缓存
+        this.sqlCache = Caffeine.newBuilder()
+                .maximumSize(properties.getTemplate().getCacheSize())
+                .expireAfterWrite(properties.getCache().getExpireHours(), TimeUnit.HOURS)
                 .recordStats()
                 .build();
 
@@ -89,63 +88,20 @@ public class SqlExecutor {
         return idGenerator.generateId(strategy, entity);
     }
 
+
     /**
      * 执行查询并返回对象列表（带自定义RowMapper）
      */
-    @Cacheable(cacheNames = "sqlQueries", 
-              key = "#templateId + '-' + T(java.util.Objects).hashCode(#parameters) + '-' + #entityClass.getName()",
-              unless = "@properties.isCacheEnabled() == false")
-    public <T, R> List<R> execute(String templateId, Map<String, Object> parameters, 
+    @Cacheable(cacheNames = "sqlQueries", key = "#templateId + #parameters.toString() + #entityClass.getName()")
+    public <T, R> List<R> execute(String templateId, Map<String, Object> parameters,
                                   Class<T> entityClass, RowMapper<R> rowMapper) {
-        try {
-            log.debug("Executing query with template: {}, entity class: {}, params: {}", 
-                    templateId, entityClass.getSimpleName(), maskSensitiveParameters(parameters));
-            
-            List<R> results = executeInternal(templateId, parameters, entityClass, processedSql -> {
-                String sql = processedSql.getSql();
-                if (!isSelectQuery(sql)) {
-                    throw new QueryExecutionException("Only SELECT operations are supported with custom RowMapper");
-                }
-                
-                log.trace("Executing SQL: {}", sql);
-                SqlParameterSource processedParams = processParameters(processedSql.getEffectiveParams());
-                return jdbc.query(sql, processedParams, rowMapper);
-            });
-            
-            log.debug("Query executed successfully, returned {} results", results.size());
-            return results;
-        } catch (Exception e) {
-            throw handleExecutionException(e, "Failed to execute query with template: %s", templateId);
-        }
-    }
-
-    /**
-     * 核心分页查询方法，处理所有分页查询的共同逻辑
-     */
-    @Transactional(readOnly = true)
-    private <T> PageResult<T> executePagedInternal(
-            String templateId,
-            Map<String, Object> parameters,
-            String tableName,
-            RowMapper<T> rowMapper,
-            int pageNumber,
-            int pageSize
-    ) {
-        validatePaginationParams(pageNumber, pageSize);
-        SqlTemplate template = loadSqlTemplate(tableName + "/" + templateId);
-        Map<String, Object> safeParameters = parameters != null ? new HashMap<>(parameters) : new HashMap<>();
-
-        ProcessedSql processedSql = processSqlByTemplate(templateId, template, safeParameters);
-        String originalSql = processedSql.getSql();
-        Map<String, Object> effectiveParams = processedSql.getEffectiveParams();
-
-        int offset = (pageNumber - 1) * pageSize;
-        String pagedSql = buildPagedSql(originalSql, pageSize, offset);
-
-        List<T> content = jdbc.query(pagedSql, effectiveParams, rowMapper);
-        Long total = executeCountQuery(templateId, template, safeParameters);
-
-        return PageResult.of(content, total, pageNumber, pageSize);
+        return executeInternal(templateId, parameters, entityClass, processedSql -> {
+            String sql = processedSql.getSql();
+            if (!isSelectQuery(sql)) {
+                throw new QueryExecutionException("Only SELECT operations are supported with custom RowMapper");
+            }
+            return jdbc.query(sql, processParameters(processedSql.getEffectiveParams()), rowMapper);
+        });
     }
 
     /**
@@ -159,9 +115,23 @@ public class SqlExecutor {
             Integer pageNumber,
             Integer pageSize
     ) {
+        validatePaginationParams(pageNumber, pageSize);
         String tableName = SqlUtil.toSnakeCase(entityClass.getSimpleName());
+        SqlTemplate template = loadSqlTemplate(tableName + "/" + templateId);
+        Map<String, Object> safeParameters = parameters != null ? new HashMap<>(parameters) : new HashMap<>();
+
+        ProcessedSql processedSql = processSqlByTemplate(templateId, template, safeParameters);
+        String originalSql = processedSql.getSql();
+        Map<String, Object> effectiveParams = processedSql.getEffectiveParams();
+
+        int offset = (pageNumber - 1) * pageSize;
+        String pagedSql = buildPagedSql(originalSql, pageSize, offset);
+
         RowMapper<T> rowMapper = new SmartRowMapper<>(entityClass);
-        return executePagedInternal(templateId, parameters, tableName, rowMapper, pageNumber, pageSize);
+        List<T> content = jdbc.query(pagedSql, effectiveParams, rowMapper);
+        Long total = executeCountQuery(templateId, template, safeParameters);
+
+        return  PageResult.of(content, total, pageNumber, pageSize);
     }
 
     /**
@@ -175,8 +145,22 @@ public class SqlExecutor {
             int pageNumber,
             int pageSize
     ) {
+        validatePaginationParams(pageNumber, pageSize);
         String tableName = "Default";
-        return executePagedInternal(templateId, parameters, tableName, rowMapper, pageNumber, pageSize);
+        SqlTemplate template = loadSqlTemplate(tableName + "/" + templateId);
+        Map<String, Object> safeParameters = parameters != null ? new HashMap<>(parameters) : new HashMap<>();
+
+        ProcessedSql processedSql = processSqlByTemplate(templateId, template, safeParameters);
+        String originalSql = processedSql.getSql();
+        Map<String, Object> effectiveParams = processedSql.getEffectiveParams();
+
+        int offset = (pageNumber - 1) * pageSize;
+        String pagedSql = buildPagedSql(originalSql, pageSize, offset);
+
+        List<T> content = jdbc.query(pagedSql, effectiveParams, rowMapper);
+        Long total = executeCountQuery(templateId, template, safeParameters);
+
+        return  PageResult.of(content, total, pageNumber, pageSize);
     }
 
     /**
@@ -191,8 +175,22 @@ public class SqlExecutor {
             int pageNumber,
             int pageSize
     ) {
+        validatePaginationParams(pageNumber, pageSize);
         String tableName = SqlUtil.toSnakeCase(entityClass.getSimpleName());
-        return executePagedInternal(templateId, parameters, tableName, rowMapper, pageNumber, pageSize);
+        SqlTemplate template = loadSqlTemplate(tableName + "/" + templateId);
+        Map<String, Object> safeParameters = parameters != null ? new HashMap<>(parameters) : new HashMap<>();
+
+        ProcessedSql processedSql = processSqlByTemplate(templateId, template, safeParameters);
+        String originalSql = processedSql.getSql();
+        Map<String, Object> effectiveParams = processedSql.getEffectiveParams();
+
+        int offset = (pageNumber - 1) * pageSize;
+        String pagedSql = buildPagedSql(originalSql, pageSize, offset);
+
+        List<R> content = jdbc.query(pagedSql, effectiveParams, rowMapper);
+        Long total = executeCountQuery(templateId, template, safeParameters);
+
+        return PageResult.of(content, total, pageNumber, pageSize);
     }
 
     /**
@@ -237,7 +235,7 @@ public class SqlExecutor {
     public <T> List<T> queryForList(String sql, Map<String, Object> parameters, Class<T> entityClass) {
         SqlSecurityGuard.scanForInjectionKeywords(sql);
         // 仅对非简单类型进行字段校验
-        if (!RepositoryClassUtils.isSimpleType(entityClass)) {
+        if (!isSimpleType(entityClass)) {
             //SqlSecurityGuard.validateQueryParameters(sql, entityClass);
             //todo more
         }
@@ -260,32 +258,34 @@ public class SqlExecutor {
      * 执行预编译查询
      */
     public <T> List<T> executeQuery(CompiledQuery query, Class<T> resultType) {
-        try {
-            // 只验证SQL中实际使用的参数，而不是所有参数
-            Set<String> usedParams = extractUsedParameters(query.getSql());
-            Map<String, Object> filteredParams = new HashMap<>();
+        // 只验证SQL中实际使用的参数，而不是所有参数
+        Set<String> usedParams = extractUsedParameters(query.getSql());
+        Map<String, Object> filteredParams = new HashMap<>();
 
-            for (String usedParam : usedParams) {
-                if (query.getParameters().containsKey(usedParam)) {
-                    filteredParams.put(usedParam, query.getParameters().get(usedParam));
-                }
+        for (String usedParam : usedParams) {
+            if (query.getParameters().containsKey(usedParam)) {
+                filteredParams.put(usedParam, query.getParameters().get(usedParam));
             }
-
-            // 使用过滤后的参数进行验证
-            SqlSecurityGuard.scanForInjectionKeywords(query.getSql());
-            // 仅对非简单类型进行字段校验
-            SqlSecurityGuard.validateQueryParameters(filteredParams, resultType);
-            
-            log.debug("Executing query: {}, params: {}", 
-                    query.getSql(), maskSensitiveParameters(query.getParameters()));
-            
-            SqlParameterSource parameterSource = new NestedMapSqlParameterSource(query.getParameters());
-            List<T> results = jdbc.query(query.getSql(), parameterSource, new SmartRowMapper<>(resultType));
-            log.debug("Query executed successfully, returned {} results", results.size());
-            return results;
-        } catch (Exception e) {
-            throw handleExecutionException(e, "Failed to execute query: %s", query.getSql());
         }
+
+        // 使用过滤后的参数进行验证
+        SqlSecurityGuard.scanForInjectionKeywords(query.getSql());
+        // 仅对非简单类型进行字段校验
+        SqlSecurityGuard.validateQueryParameters(filteredParams, resultType);
+        SqlParameterSource parameterSource = new NestedMapSqlParameterSource(query.getParameters());
+        return jdbc.query(query.getSql(), parameterSource, new SmartRowMapper<>(resultType));
+        //return jdbc.query(query.getSql(), query.getParameters(), new SmartRowMapper<>(resultType));
+    }
+
+    // 简单类型判断（与MethodHandler保持一致）
+    private boolean isSimpleType(Class<?> type) {
+        return type.isPrimitive() ||
+                Number.class.isAssignableFrom(type) ||
+                CharSequence.class.isAssignableFrom(type) ||
+                Boolean.class.equals(type) ||
+                Date.class.isAssignableFrom(type) ||
+                java.time.temporal.Temporal.class.isAssignableFrom(type) ||
+                type == Object.class;
     }
 
     /**
@@ -303,45 +303,18 @@ public class SqlExecutor {
         try {
             SqlSecurityGuard.scanForInjectionKeywords(query.getSql());
             // 仅对非简单类型进行字段校验
-            if (!RepositoryClassUtils.isSimpleType(resultType)) {
+            if (!isSimpleType(resultType)) {
                 SqlSecurityGuard.validateQueryParameters(query, resultType);
             }
-            
-            log.debug("Executing single result query: {}, params: {}", 
-                    query.getSql(), maskSensitiveParameters(query.getParameters()));
-            
             return jdbc.queryForObject(
                     query.getSql(),
                     query.getParameters(),
                     new SmartRowMapper<>(resultType)
             );
         } catch (EmptyResultDataAccessException e) {
-            // 空结果是有效情况，记录为debug级别
-            log.debug("No results found for query: {}", query.getSql());
+            log.warn("No result found for query: {}", query.getSql());
             return null;
-        } catch (Exception e) {
-            // 包装其他异常为SDK统一异常
-            throw handleExecutionException(e, "Failed to execute query: %s", query.getSql());
         }
-    }
-    
-    /**
-     * 掩码敏感参数，用于日志记录
-     */
-    private Map<String, Object> maskSensitiveParameters(Map<String, Object> parameters) {
-        if (parameters == null || parameters.isEmpty()) {
-            return Collections.emptyMap();
-        }
-        
-        Map<String, Object> maskedParams = new HashMap<>(parameters);
-        for (Map.Entry<String, Object> entry : maskedParams.entrySet()) {
-            String key = entry.getKey().toLowerCase();
-            if (key.contains("password") || key.contains("secret") || key.contains("token") || 
-                key.contains("passwd") || key.contains("pwd")) {
-                entry.setValue("***masked***");
-            }
-        }
-        return maskedParams;
     }
 
     /**
@@ -371,8 +344,7 @@ public class SqlExecutor {
             SqlSecurityGuard.scanForInjectionKeywords(query.getSql());
             return jdbc.queryForObject(query.getSql(), query.getParameters(), requiredType);
         } catch (EmptyResultDataAccessException e) {
-            // 使用SLF4J日志记录器
-            log.warn("No model found for query: {}", query.getSql());
+            log.warn("No result found for query: {}", query.getSql());
             return null;
         }
     }
@@ -380,7 +352,6 @@ public class SqlExecutor {
     /**
      * 执行插入操作并返回生成的主键
      */
-    @SuppressWarnings("unchecked")
     public <R> R executeInsert(CompiledQuery query, Class<?> entityClass) {
         SqlSecurityGuard.scanForInjectionKeywords(query.getSql());
         KeyHolder keyHolder = new GeneratedKeyHolder();
@@ -389,6 +360,7 @@ public class SqlExecutor {
                 new MapSqlParameterSource(query.getParameters()),
                 keyHolder,
                 new String[]{tableMetadata.getPrimaryKey().getName()});
+        @SuppressWarnings("unchecked")
         R key = (R) keyHolder.getKey();
         return key;
     }
@@ -440,23 +412,15 @@ public class SqlExecutor {
             ProcessedSql processedSql = processSqlByTemplate(templateId, template, batchParams.get(0));
             log.debug("Executing batch update: {}", processedSql.getSql());
 
-            // 使用默认批处理大小，避免配置属性依赖
-            int batchSize = 100;
+            int batchSize = properties.getDatabase().getBatchSize();
 
             return batchProcess(batchParams, batchSize, batch ->
-                    jdbc.batchUpdate(processedSql.getSql(), createBatchArray(batch))
+                    jdbc.batchUpdate(processedSql.getSql(), batch.toArray(new Map[0]))
             );
         } catch (Exception e) {
-            throw handleExecutionException(e, "Batch update failed: %s", templateId);
+            log.error("Batch update failed, template: {}, error: {}", templateId, e.getMessage(), e);
+            throw new QueryExecutionException("Batch update failed: " + templateId, e);
         }
-    }
-
-    /**
-     * 创建类型安全的批量参数数组
-     */
-    @SuppressWarnings("unchecked")
-    private Map<String, Object>[] createBatchArray(List<Map<String, Object>> batch) {
-        return batch.toArray(new Map[0]);
     }
 
     /**
@@ -494,7 +458,7 @@ public class SqlExecutor {
             return executorFunction.apply(processedSql);
 
         } catch (Exception e) {
-            throw handleExecutionException(e, "Failed to execute query for template: %s", templateId);
+            throw new QueryExecutionException("Failed to execute query for template: " + templateId, e);
         }
     }
 
@@ -521,8 +485,7 @@ public class SqlExecutor {
      * 构建分页SQL（支持多种数据库方言）
      */
     private String buildPagedSql(String sql, int pageSize, int offset) {
-        // 使用默认数据库方言，避免配置属性依赖
-        String dialect = "mysql";
+        String dialect = properties.getDatabase().getType();
 
         switch (dialect.toLowerCase()) {
             case "mysql":
@@ -582,7 +545,7 @@ public class SqlExecutor {
         try {
             return sqlTemplateLoader.loadTemplate(templateId);
         } catch (Exception e) {
-            throw handleExecutionException(e, "Failed to load template: %s", templateId);
+            throw new QueryExecutionException("Failed to load template: " + templateId, e);
         }
     }
 
@@ -600,8 +563,8 @@ public class SqlExecutor {
     /**
      * 批量处理
      */
-    private int[] batchProcess(List<Map<String, Object>> params, int batchSize,
-                               Function<List<Map<String, Object>>, int[]> processor) {
+    private <T> int[] batchProcess(List<Map<String, Object>> params, int batchSize,
+                                   Function<List<Map<String, Object>>, int[]> processor) {
         int[] results = new int[params.size()];
         for (int i = 0; i < params.size(); i += batchSize) {
             List<Map<String, Object>> batch = params.subList(i, Math.min(i + batchSize, params.size()));
@@ -610,19 +573,7 @@ public class SqlExecutor {
         }
         return results;
     }
-    
-    /**
-     * 统一的异常处理方法，减少代码重复
-     * @param e 原始异常
-     * @param message 异常消息格式
-     * @param args 消息参数
-     * @return 包装后的异常
-     */
-    private QueryExecutionException handleExecutionException(Exception e, String message, Object... args) {
-        String errorMsg = String.format(message, args);
-        log.error(errorMsg, e);
-        return new QueryExecutionException(errorMsg, e);
-    }
+
 
     /**
      * 验证输入参数
@@ -645,13 +596,15 @@ public class SqlExecutor {
      * 判断是否为SELECT查询
      */
     private boolean isSelectQuery(String sql) {
-        return SqlUtil.isSelectQuery(sql);
+        String normalized = sql.trim().toUpperCase().replaceAll("\\s+", " ");
+        return normalized.startsWith("SELECT ") || normalized.startsWith("WITH ");
     }
 
     /**
      * 判断是否为DML操作
      */
     private boolean isDmlQuery(String sql) {
-        return SqlUtil.isDmlQuery(sql);
+        String normalized = sql.trim().toUpperCase().replaceAll("\\s+", " ");
+        return normalized.startsWith("INSERT ") || normalized.startsWith("UPDATE ") || normalized.startsWith("DELETE ");
     }
 }

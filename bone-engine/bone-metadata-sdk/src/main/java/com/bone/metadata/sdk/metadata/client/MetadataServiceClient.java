@@ -1,8 +1,8 @@
 package com.bone.metadata.sdk.metadata.client;
 
-import com.bone.metadata.sdk.support.config.MetadataServiceClientConfig;
 import com.bone.metadata.sdk.domain.model.AllocationContext;
 import com.bone.metadata.sdk.domain.model.FieldMetadata;
+import com.bone.metadata.sdk.support.config.MetadataServiceClientConfig;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

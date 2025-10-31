@@ -1,10 +1,6 @@
 package com.bone.metadata.sdk.domain.annotation;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Repeatable;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 
 /**
  * 用于定义可重用的 SQL 片段，兼容 MyBatis 的 <sql> 标签。

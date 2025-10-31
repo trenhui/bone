@@ -1,22 +1,23 @@
 package com.bone.metadata.sdk.metadata;
 
-import com.bone.metadata.sdk.metadata.api.MetadataService;
-import com.bone.metadata.sdk.support.cache.FieldCache;
 import com.bone.metadata.sdk.domain.enums.DataType;
 import com.bone.metadata.sdk.domain.model.AllocationContext;
 import com.bone.metadata.sdk.domain.model.FieldMetadata;
-import com.bone.metadata.sdk.domain.model.TableMetadata;
 import com.bone.metadata.sdk.extension.ColumnAllocator;
 import com.bone.metadata.sdk.extension.repository.FieldMetadataRepository;
+import com.bone.metadata.sdk.metadata.api.MetadataService;
+import com.bone.metadata.sdk.support.cache.FieldCache;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import com.bone.metadata.sdk.domain.model.ColumnMetadata;
 
 public class EmbeddedMetadataService implements MetadataService {
     private final ColumnAllocator allocator;
@@ -27,29 +28,42 @@ public class EmbeddedMetadataService implements MetadataService {
         this.allocator = allocator;
         this.fieldMetadataRepository = fieldMetadataRepository;
     }
-    
-    @Override
-    public <T> TableMetadata getTableMetadata(Class<T> entityClass) {
-        // 将类名转换为表名（简单实现：转为小写）
-        String tableName = entityClass.getSimpleName().toLowerCase();
-        // 创建空的列元数据列表
-        List<ColumnMetadata> columns = Collections.emptyList();
-        // 使用正确的构造函数创建TableMetadata
-        return new TableMetadata(tableName, columns);
-    }
 
     public List<FieldMetadata> findExtensionFields(AllocationContext ctx) {
         return fieldMetadataRepository.findByContext(ctx);
     }
 
-    @Override
     public List<FieldMetadata> findExtensionFieldsByNames(AllocationContext ctx, List<String> logicalNames) {
         if (logicalNames == null || logicalNames.isEmpty()) {
             return List.of();
         }
-        // 直接调用Repository获取数据，缓存逻辑由DelegatingMetadataService统一处理
+
         List<String> sortedNames = logicalNames.stream().sorted().toList();
-        return fieldMetadataRepository.findByContextAndNames(ctx, sortedNames);
+        String key = String.join("|",
+                ctx.getTenantId().toString(),
+                ctx.getAppCode(),
+                ctx.getBizIdentityCode(),
+                ctx.getEntityType(),
+                String.join(",", sortedNames)
+        );
+
+        String cacheKey = ctx.getAppCode() + "." + ctx.getEntityType();
+
+        // 先查精细缓存
+        List<FieldMetadata> cached = FieldCache.getByCacheKey(key);
+        if (cached != null && !cached.isEmpty()) {
+            return cached;
+        }
+
+        // 缓存未命中，查数据库
+        List<FieldMetadata> newMetadata = fieldMetadataRepository.findByContextAndNames(ctx, sortedNames);
+
+        // 更新粗粒度缓存（合并）
+        FieldCache.mergeFieldMetadataCache(cacheKey, newMetadata);
+
+        // 写入精细粒度缓存并返回
+        FieldCache.putToCache(key, newMetadata);
+        return newMetadata;
     }
 
 
@@ -69,35 +83,25 @@ public class EmbeddedMetadataService implements MetadataService {
             return Collections.emptyList();
         }
 
-        // 1. 按数据类型分组 - 直接使用dataType字符串作为分组键
-        Map<String, List<FieldMetadata>> groupedFields = fields.stream()
-                .collect(Collectors.groupingBy(f -> f.getDataType() != null ? f.getDataType() : "UNKNOWN"));
+        // 1. 按数据类型分组
+        Map<DataType, List<FieldMetadata>> groupedFields = fields.stream()
+                .collect(Collectors.groupingBy(f -> DataType.valueOf(f.getDataType())));
 
 
         List<FieldMetadata> results = new ArrayList<>();
-        // 使用第一个字段的信息创建上下文，添加空值检查
         FieldMetadata fieldMetadata = fields.get(0);
-        Long tenantId = fieldMetadata.getTenantId();
-        String appCode = fieldMetadata.getAppCode();
-        String bizIdentityCode = fieldMetadata.getBizIdentityCode();
-        String entityType = fieldMetadata.getEntityType();
-        AllocationContext ctx = AllocationContext.of(tenantId, appCode, bizIdentityCode, entityType);
+        AllocationContext ctx = AllocationContext.of(fieldMetadata.getTenantId(), fieldMetadata.getAppCode(), fieldMetadata.getBizIdentityCode(), fieldMetadata.getEntityType());
         // 2. 按数据类型批量分配
-        groupedFields.forEach((dataTypeStr, fieldGroup) -> {
-            // 将字符串类型的dataTypeStr转换为DataType枚举类型
-            DataType dataType = DataType.fromCode(dataTypeStr);
-            if (dataType == null) {
-                // 如果无法转换，默认为STRING类型
-                dataType = DataType.STRING;
-            }
-            // 分配物理列名 - 使用DataType枚举类型
-            List<String> allocatedColumnNames = allocator.allocate(ctx, dataType, fieldGroup.size());
+        groupedFields.forEach((dataType, fieldGroup) -> {
+
+            // 分配物理列名
+            List<String> columns = allocator.allocate(ctx, dataType, fieldGroup.size());
 
             // 更新字段元数据
             IntStream.range(0, fieldGroup.size()).forEach(i -> {
                 FieldMetadata field = fieldGroup.get(i);
                 validateField(field);
-                field.setColumnName(allocatedColumnNames.get(i));
+                field.setColumnName(columns.get(i));
                 field.setExtension(true);
             });
 
