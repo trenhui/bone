@@ -144,56 +144,6 @@ public interface Repository<T extends Entity<ID>, ID> {
     Long countByCriteria(Criteria<T> criteria);
 
     /**
-     * 执行预定义的SQL模板
-     *
-     * @param statementId 自动定义sql的ID
-     * @param parameters  参数
-     * @return 执行结果
-     */
-    <R> R executeNamedStatement(String statementId, Map<String, Object> parameters);
-
-    /**
-     * 执行预定义的分页SQL模板
-     * @param statementId 自动定义分页sql的ID
-     * @param parameters  查询参数
-     * @param rowMapper   返回结果对象Mapper
-     * @param pageNumber  当前页
-     * @param pageSize    页面大小
-     * @return 分页查询结果
-     * @param <R> 返回对象类型
-     */
-    <R> PageResult<R> executePagedNamedStatement(String statementId, Map<String, Object> parameters, RowMapper<R> rowMapper, int pageNumber, int pageSize);
-
-
-    /***
-     * 执行预定义的分页SQL模板
-     * @param statementId 自动定义分页sql的ID
-     * @param paramBean  查询参数
-     * @return 分页查询结果
-     * @param <R> 返回对象类类型
-     */
-     <R> PageResult<R> executePagedNamedStatement(String statementId, Object paramBean);
-
-    /**
-     * 执行预定义的SQL模板
-     *
-     * @param statementId 自动定义sql的ID
-     * @param parameters  参数
-     * @param rowMapper   返回结果转换
-     * @return 执行结果
-     */
-    <R> List<R> executeNamedStatement(String statementId, Map<String, Object> parameters, RowMapper<R> rowMapper);
-
-    /**
-     * 执行预定义的命名SQL模板
-     *
-     * @param statementId 自动定义sql的ID
-     * @param parameters  参数
-     * @return 执行结果
-     */
-    List<Map<String, Object>> executeNamedStatementForMap(String statementId, Map<String, Object> parameters);
-
-    /**
      * 全面通用查询
      * 包含查询条件、排序条件、分页
      *

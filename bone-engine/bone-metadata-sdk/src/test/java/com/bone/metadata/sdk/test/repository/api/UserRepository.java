@@ -12,11 +12,11 @@ import java.util.List;
 
 public interface UserRepository extends Repository<User, Long>{
 
-    PageResult<UserRoleDTO> queryUerPermPage(UserPageQuery userPageQuery);
-
-    PageResult<UserRoleDTO> queryUerPermPageOrderBy(UserPageQuery userQuery);
-
-    List<UserRoleDTO> queryUerPermOrderBy(UserQuery userQuery);
+//    PageResult<UserRoleDTO> queryUerPermPage(UserPageQuery userPageQuery);
+//
+//    PageResult<UserRoleDTO> queryUerPermPageOrderBy(UserPageQuery userQuery);
+//
+//    List<UserRoleDTO> queryUerPermOrderBy(UserQuery userQuery);
 
     PageResult<User> queryUsers(UserQuery query);
 

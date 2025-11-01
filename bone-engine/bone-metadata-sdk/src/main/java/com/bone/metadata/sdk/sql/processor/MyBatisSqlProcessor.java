@@ -891,9 +891,10 @@ public class MyBatisSqlProcessor implements SqlProcessor {
                     if (value == null) {
                         throw new SqlProcessingException("#{" + hashParam + "} is null");
                     }
-                    //String paramName = "param_" + hashParam.replace('.', '_');
-                    addParam(hashParam, value);
-                   matcher.appendReplacement(result, ":" + hashParam);
+                    // 为嵌套属性生成一个扁平化的参数名，以支持Spring JDBC的命名参数
+                    String paramName = hashParam.replace('.', '_');
+                    addParam(paramName, value);
+                    matcher.appendReplacement(result, ":" + paramName);
                 } else if (dollarParam != null) {
                     Object value = evaluateExpression(dollarParam);
                     if (value == null) {

@@ -9,7 +9,10 @@ WHERE u.deleted = 0
     AND u.role_id = #{request.roleId}
 </if>
 <if test="request.roleIds != null and !request.roleIds.isEmpty()">
-    AND u.role_id IN (#{request.roleIds})
+    AND u.role_id IN
+    <foreach collection="request.roleIds" item="item" open="(" close=")" separator=",">
+        #{item}
+    </foreach>
 </if>
 <if test="request.pageNumber != null and request.pageSize != null">
     ORDER BY u.create_time DESC

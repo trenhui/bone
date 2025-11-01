@@ -29,21 +29,6 @@ public class UserRepositoryImpl extends BaseRepository<User, Long> implements Us
     }
 
     @Override
-    public PageResult<UserRoleDTO> queryUerPermPage(UserPageQuery user_page_query) {
-        return super.executePagedNamedStatement("user_perm_page", user_page_query);
-    }
-
-    @Override
-    public PageResult<UserRoleDTO> queryUerPermPageOrderBy(UserPageQuery userQuery) {
-        return super.executePagedNamedStatement("user_perm_page_orderby", userQuery);
-    }
-
-    @Override
-    public List<UserRoleDTO> queryUerPermOrderBy(UserQuery userQuery) {
-        return super.executeNamedStatement("user_perm_query_orderby", userQuery);
-    }
-
-    @Override
     public PageResult<User> queryUsers(UserQuery query) {
         return null;
     }

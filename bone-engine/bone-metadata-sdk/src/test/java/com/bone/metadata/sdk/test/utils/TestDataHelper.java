@@ -24,11 +24,11 @@ public class TestDataHelper {
 
         // 创建并插入权限数据
         MapSqlParameterSource[] params = new MapSqlParameterSource[] {
-                createPermissionParams(1L, "pukang","READ", "READ", 1, 0L, "/read", "ReadComponent", "read-icon", 1),
-                createPermissionParams(2L, "pukang","WRITE", "WRITE", 1, 0L, "/write", "WriteComponent", "write-icon", 2),
-                createPermissionParams(3L, "pukang","EXECUTE", "EXECUTE", 1, 0L, "/execute", "ExecuteComponent", "execute-icon", 3),
-                createPermissionParams(4L, "pukang","DELETE", "DELETE", 1, 0L, "/delete", "DeleteComponent", "delete-icon", 4),
-                createPermissionParams(5L, "pukang","MANAGE", "MANAGE", 1, 0L, "/manage", "ManageComponent", "manage-icon", 5)
+                createPermissionParams(1L, "bone","READ", "READ", 1, 0L, "/read", "ReadComponent", "read-icon", 1),
+                createPermissionParams(2L, "bone","WRITE", "WRITE", 1, 0L, "/write", "WriteComponent", "write-icon", 2),
+                createPermissionParams(3L, "bone","EXECUTE", "EXECUTE", 1, 0L, "/execute", "ExecuteComponent", "execute-icon", 3),
+                createPermissionParams(4L, "bone","DELETE", "DELETE", 1, 0L, "/delete", "DeleteComponent", "delete-icon", 4),
+                createPermissionParams(5L, "bone","MANAGE", "MANAGE", 1, 0L, "/manage", "ManageComponent", "manage-icon", 5)
         };
 
         // 批量插入权限数据

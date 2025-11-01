@@ -32,14 +32,4 @@ public class User extends AbstractEntity<Long> {
     @Id
     @GeneratedValue(strategy = GenerationStrategy.CUSTOM)
     private Long id;
-
-    // 手动编写包含父类字段的构造函数
-    public User(Long id, String name, Long roleId,
-                Date createTime, Long createBy,
-                Date updateTime, Long updateBy, Boolean deleted) {
-        super(id, createTime, createBy, updateTime, updateBy, deleted);
-        this.id = id;
-        this.name = name;
-        this.roleId = roleId;
-    }
 }

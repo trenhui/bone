@@ -91,6 +91,12 @@ public class SelectBuilder implements SqlQueryBuilder<SelectContext> {
         if (c.requiresExtJoin()) {
             for (Condition cond : c.getExtConditions()) {
                 FieldMetadata meta = logicalToMeta.get(cond.getColumn());
+                // 添加空值检查
+                if (meta == null) {
+                    throw new IllegalStateException("扩展字段 '" + cond.getColumn() + "' 的元数据未找到。"
+                            + "可用字段: " + logicalToMeta.keySet()
+                            + "，查询字段: " + logicalToMeta);
+                }
                 String phys = meta.getColumnName();
                 String op   = cond.getOperator().getSymbol();
                 // 参数名仍然是 logical snake_case
@@ -98,7 +104,6 @@ public class SelectBuilder implements SqlQueryBuilder<SelectContext> {
                 where.add("ext." + phys + " " + op + " :" + param);
             }
         }
-
         // 4.3 软删除
         if (tbl.isSoftDeletable() && !ctx.isIncludeDeleted()) {
             where.add("m.deleted = false");

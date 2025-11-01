@@ -86,7 +86,7 @@ public class PermissionRepositoryTest {
         Permission newPermission =new DataPermission();
         newPermission.setPermName("NEW_PERMISSION");
         newPermission.setPermCode("NEW_CODE");
-        newPermission.setBizIdentityCode("pukang");
+        newPermission.setBizIdentityCode("bone");
         newPermission.setPermType(2);
         Long generatedId = permissionRepository.insert(newPermission);
         assertNotNull(generatedId, "Generated ID should not be null");
@@ -100,11 +100,11 @@ public class PermissionRepositoryTest {
         Permission permission1=new DataPermission();
         permission1.setPermName("BATCH_PERMISSION1");
         permission1.setPermCode("CODE1");
-        permission1.setBizIdentityCode("pukang");
+        permission1.setBizIdentityCode("bone");
         permission1.setPermType(1);
         Permission permission2=new DataPermission();
         permission2.setPermName("BATCH_PERMISSION2");
-        permission2.setBizIdentityCode("pukang");
+        permission2.setBizIdentityCode("bone");
         permission2.setPermCode("CODE2");
         permission2.setPermType(2);
 
@@ -144,7 +144,7 @@ public class PermissionRepositoryTest {
         Permission newPermission =new Permission();
         newPermission.setPermName("SAVE_NEW");
         newPermission.setPermCode("SAVE_CODE");
-        newPermission.setBizIdentityCode("pukang");
+        newPermission.setBizIdentityCode("bone");
         newPermission.setPermType(3);
         Long generatedId = permissionRepository.save(newPermission);
         assertNotNull(generatedId, "Generated ID should not be null");
@@ -166,13 +166,13 @@ public class PermissionRepositoryTest {
     void testBatchSave_ShouldInsertAndUpdatePermissions() {
         Permission existingPermission = permissionRepository.findById(1L);
         existingPermission.setPermCode("UPDATED_VIA_BATCH");
-        existingPermission.setBizIdentityCode("pukang");
+        existingPermission.setBizIdentityCode("bone");
         existingPermission.setPermType(1);
 
         Permission newPermission =new DataPermission();
         newPermission.setPermName("BATCH_SAVE_NEW");
         newPermission.setPermCode("NEW_VIA_BATCH");
-        newPermission.setBizIdentityCode("pukang");
+        newPermission.setBizIdentityCode("bone");
         newPermission.setPermType(2);
         List<Permission> permissionsToSave = Arrays.asList(existingPermission, newPermission);
         permissionRepository.batchSave(permissionsToSave);
@@ -322,7 +322,7 @@ public class PermissionRepositoryTest {
         DataPermission dataPermission =new  DataPermission();
         dataPermission.setPermName("DATA_PERM");
         dataPermission.setPermCode("DATA_CODE");
-        dataPermission.setBizIdentityCode("pukang");
+        dataPermission.setBizIdentityCode("bone");
         dataPermission.setPermType(1);
         dataPermission.setDataScope(DataPermission.DataScope.CUSTOM);
         dataPermission.getRowFilter().put("user_id", "${currentUser.id}");

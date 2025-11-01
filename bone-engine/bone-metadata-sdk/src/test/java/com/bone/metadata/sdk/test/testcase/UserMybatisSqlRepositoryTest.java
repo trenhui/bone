@@ -272,7 +272,7 @@ public class UserMybatisSqlRepositoryTest {
         @DisplayName("Find by criteria returns matching users")
         void testFindByCriteria_WithConditions_ReturnsMatchingUsers() {
             // Create criteria to find users with role ID 2
-            Criteria<User> criteria = Criteria.<User>create().eq(User::getRoleId,2L);
+            Criteria<User> criteria = Criteria.<User>create().eq(User::getRoleId, 2L);
             List<User> users = userMybatisSqlRepository.findByCriteria(criteria);
             assertEquals(2, users.size(), "Should find two users with role ID 2");
             assertTrue(users.stream().allMatch(u -> u.getRoleId() == 2L),
@@ -295,7 +295,7 @@ public class UserMybatisSqlRepositoryTest {
         @DisplayName("Find one by criteria with multiple results throws exception")
         void testFindOneByCriteria_WithMultipleResults_ThrowsException() {
             // Create criteria that will match multiple users
-            Criteria<User> criteria = Criteria.<User>builder().eq(User::getRoleId,2L);
+            Criteria<User> criteria = Criteria.<User>builder().eq(User::getRoleId, 2L);
 
             assertThrows(MultipleResultsException.class, () -> {
                 userMybatisSqlRepository.findOneByCriteria(criteria);
@@ -307,7 +307,7 @@ public class UserMybatisSqlRepositoryTest {
         void testPageByCriteria_WithPaging_ReturnsPagedResults() {
             // Create criteria with paging
             Criteria<User> criteria = Criteria.<User>builder()
-                    .page(1,2)
+                    .page(1, 2)
                     .addSort(User::getId, SortDirection.ASC);
 
             PageResult<User> page = userMybatisSqlRepository.pageByCriteria(criteria);
@@ -320,102 +320,13 @@ public class UserMybatisSqlRepositoryTest {
         @DisplayName("Count by criteria returns correct count")
         void testCountByCriteria_WithConditions_ReturnsCorrectCount() {
             // Create criteria to count users with role ID 2
-            Criteria<User> criteria = Criteria.<User>builder().eq(User::getRoleId,2L);
+            Criteria<User> criteria = Criteria.<User>builder().eq(User::getRoleId, 2L);
 
             Long count = userMybatisSqlRepository.countByCriteria(criteria);
             assertEquals(2L, count, "Should count 2 users with role ID 2");
         }
     }
 
-    // Named Statement 测试
-    @Nested
-    @DisplayName("Named Statement Operations")
-    class NamedStatementTests {
-
-        @Test
-        @DisplayName("Execute named statement with parameters returns result")
-        void testExecuteNamedStatement_WithParameters_ReturnsResult() {
-            Map<String, Object> params = new HashMap<>();
-            params.put("name", "Alice");
-
-            // Assuming there's a named statement "findUserByName"
-            List<User> result = userMybatisSqlRepository.executeNamedStatement("findUserByName", params);
-            assertNotNull(result, "Should find user with name Alice");
-            assertEquals(1L, result.get(0).getId(), "User ID should be 1");
-        }
-
-        @Test
-        @DisplayName("Execute named statement with row mapper returns converted results")
-        void testExecuteNamedStatement_WithRowMapper_ReturnsConvertedResults() {
-            Map<String, Object> params = new HashMap<>();
-            params.put("roleId", 2L);
-
-            RowMapper<User> rowMapper = new RowMapper<User>() {
-                @Override
-                public User mapRow(ResultSet rs, int rowNum) throws SQLException {
-                    User user = new User();
-                    user.setId(rs.getLong("id"));
-                    user.setName(rs.getString("name"));
-                    user.setRoleId(rs.getLong("roleId"));
-                    return user;
-                }
-            };
-
-            // Assuming there's a named statement "findUsersByRole"
-            List<User> users = userMybatisSqlRepository.executeNamedStatement("findUsersByRole", params, rowMapper);
-            assertEquals(2, users.size(), "Should find 2 users with role ID 2");
-        }
-
-        @Test
-        @DisplayName("Execute named statement for map returns map results")
-        void testExecuteNamedStatementForMap_WithParameters_ReturnsMapResults() {
-            Map<String, Object> params = new HashMap<>();
-            params.put("id", 1L);
-
-            // Assuming there's a named statement "findUserByIdForMap"
-            List<Map<String, Object>> results = userMybatisSqlRepository.executeNamedStatementForMap("findUserByIdForMap", params);
-            assertFalse(results.isEmpty(), "Should find user with ID 1");
-            assertEquals("Alice", results.get(0).get("name"), "User name should be Alice");
-        }
-
-        @Test
-        @DisplayName("Execute paged named statement returns paged results")
-        void testExecutePagedNamedStatement_WithParameters_ReturnsPagedResults() {
-            Map<String, Object> params = new HashMap<>();
-            params.put("deleted", 0);
-
-            RowMapper<User> rowMapper = new RowMapper<User>() {
-                @Override
-                public User mapRow(ResultSet rs, int rowNum) throws SQLException {
-                    User user = new User();
-                    user.setId(rs.getLong("id"));
-                    user.setName(rs.getString("name"));
-                    return user;
-                }
-            };
-
-            // Assuming there's a named statement "findActiveUsersPaged"
-            PageResult<User> page = userMybatisSqlRepository.executePagedNamedStatement(
-                    "findActiveUsersPaged", params, rowMapper, 1, 2);
-
-            assertNotNull(page, "Page result should not be null");
-            assertEquals(3, page.getTotal(), "Should have 3 total active users");
-            assertEquals(2, page.getRecords().size(), "Should return 2 users per page");
-        }
-
-        @Test
-        @DisplayName("Execute paged named statement with param bean returns paged results")
-        void testExecutePagedNamedStatement_WithParamBean_ReturnsPagedResults() {
-            UserSearchRequest request = new UserSearchRequest();
-            request.setRoleId(2L);
-
-            // Assuming there's a named statement "searchUsersPaged" that accepts UserSearchRequest
-            PageResult<UserRoleDTO> page = userMybatisSqlRepository.executePagedNamedStatement("searchUsersPaged", request);
-
-            assertNotNull(page, "Page result should not be null");
-            assertEquals(2, page.getTotal(), "Should have 2 total users with role ID 2");
-        }
-    }
 
     // 通用查询测试
     @Nested
@@ -427,7 +338,7 @@ public class UserMybatisSqlRepositoryTest {
         void testQueryByCondition_WithParameters_ReturnsResults() {
             List<QueryParam> queryParams = Arrays.asList(
                     new QueryParam("name", "Ali", Operator.LIKE),
-                    new QueryParam("role_id", 1L,Operator.EQ)
+                    new QueryParam("role_id", 1L, Operator.EQ)
             );
 
             List<SortingField> sortingFields = Arrays.asList(
@@ -554,7 +465,7 @@ public class UserMybatisSqlRepositoryTest {
             Criteria<User> criteria = Criteria.<User>builder().eq(User::getDeleted, false);
 
             PageResult<Map<String, Object>> page = userMybatisSqlRepository.aggregateWithPagination(
-                    aggregations, criteria, groupBy, null,1, 10);
+                    aggregations, criteria, groupBy, null, 1, 10);
 
             assertNotNull(page, "Page result should not be null");
             assertEquals(2, page.getTotal(), "Should have 2 total groups"); // 改为2

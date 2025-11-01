@@ -190,7 +190,15 @@ public class QueryObjectConverter {
 
         // 默认将驼峰命名转换为下划线命名
         String fieldName = field.getName();
-        return camelToSnake(fieldName);
+        String snakeCase = camelToSnake(fieldName);
+
+        // 验证字段名是否合法（只包含字母、数字、下划线）
+        if (!snakeCase.matches("^[a-zA-Z_][a-zA-Z0-9_]*$")) {
+            logger.warn("Invalid field name generated: {} from {}", snakeCase, fieldName);
+            return fieldName; // 返回原始字段名
+        }
+
+        return snakeCase;
     }
 
     /**
@@ -266,11 +274,13 @@ public class QueryObjectConverter {
      */
     private static boolean shouldIgnoreField(Object value, QueryField queryField, String fieldName) {
         // 特殊字段跳过（分页和排序字段）
-        // You'll need access to the Field object
-        if ("pageNo".equals(fieldName) || "pageSize".equals(fieldName) ||
-                "page_no".equals(fieldName) || "page_size".equals(fieldName) ||
-                "sortingFields".equals(fieldName) || "sorting_fields".equals(fieldName) ||
-                "order".equals(fieldName)) {
+        Set<String> ignoredFields = Set.of(
+                "page", "size", "pageNo", "pageSize", "page_no", "page_size",
+                "sortingFields", "sorting_fields", "order", "sort", "offset", "limit",
+                "current", "total", "records"  // 分页相关字段
+        );
+
+        if (ignoredFields.contains(fieldName)) {
             return true;
         }
 
