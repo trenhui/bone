@@ -386,79 +386,6 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
         return sqlExecutor.queryForObject(query, Long.class);
     }
 
-    // ========== 命名查询 ==========
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public <R> R executeNamedStatement(String statementId, Map<String, Object> parameters) {
-        Assert.hasText(statementId, "Statement ID must not be null or empty");
-        Assert.notNull(parameters, "Parameters must not be null");
-        return (R) sqlExecutor.execute(statementId, parameters, entityClass);
-    }
-
-    /**
-     * 非接口方法：Bean 参数版本（可选用）
-     */
-    public <R> R executeNamedStatement(String statementId, Object paramBean) {
-        Assert.hasText(statementId, "Statement ID must not be null or empty");
-        Assert.notNull(paramBean, "Parameter bean must not be null");
-        if (paramBean instanceof SortableParam sortableParam) {
-            Map<String, Object> map = ParamConvertUtil.toParamMap(paramBean);
-            if (sortableParam.getSortingFields() != null && !sortableParam.getSortingFields().isEmpty()) {
-                map.put(ORDER_BY_PARAM, convertSortingFieldsToOrderBy(sortableParam.getSortingFields()));
-            }
-            return executeNamedStatement(statementId, map);
-        }
-        throw new IllegalArgumentException("Parameter must be of type SortableParam");
-    }
-
-    @Override
-    public <R> List<R> executeNamedStatement(String statementId, Map<String, Object> parameters, RowMapper<R> rowMapper) {
-        Assert.hasText(statementId, "Statement ID must not be null or empty");
-        Assert.notNull(parameters, "Parameters must not be null");
-        Assert.notNull(rowMapper, "RowMapper must not be null");
-        return sqlExecutor.execute(statementId, parameters, entityClass, rowMapper);
-    }
-
-    @Override
-    public <R> PageResult<R> executePagedNamedStatement(String statementId,
-                                                        Map<String, Object> parameters,
-                                                        RowMapper<R> rowMapper,
-                                                        int pageNumber,
-                                                        int pageSize) {
-        Assert.hasText(statementId, "Statement ID must not be null or empty");
-        Assert.notNull(parameters, "Parameters must not be null");
-        Assert.notNull(rowMapper, "RowMapper must not be null");
-        Assert.isTrue(pageNumber >= 1, "Page number must be >= 1");
-        Assert.isTrue(pageSize >= 1, "Page size must be >= 1");
-        return sqlExecutor.executePaged(statementId, parameters, entityClass, rowMapper, pageNumber, pageSize);
-    }
-
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    @Override
-    public <R> PageResult<R> executePagedNamedStatement(String statementId, Object paramBean) {
-        Assert.hasText(statementId, "Statement ID must not be null or empty");
-        Assert.notNull(paramBean, "Parameter bean must not be null");
-        if (paramBean instanceof SortablePageParam pageParam) {
-            Map<String, Object> map = ParamConvertUtil.toParamMap(paramBean);
-            if (pageParam.getSortingFields() != null && !pageParam.getSortingFields().isEmpty()) {
-                map.put(ORDER_BY_PARAM, convertSortingFieldsToOrderBy(pageParam.getSortingFields()));
-            }
-            PageResult<T> result = sqlExecutor.executePaged(
-                    statementId, map, entityClass, pageParam.getPage(), pageParam.getSize());
-            // 双重擦除：满足接口签名 <R>
-            return (PageResult<R>) (PageResult) result;
-        }
-        throw new IllegalArgumentException("Parameter must be of type SortablePageParam");
-    }
-
-    @Override
-    public List<Map<String, Object>> executeNamedStatementForMap(String statementId, Map<String, Object> parameters) {
-        Assert.hasText(statementId, "Statement ID must not be null or empty");
-        Assert.notNull(parameters, "Parameters must not be null");
-        return sqlExecutor.executeForMap(statementId, parameters, entityClass);
-    }
-
     // ========== 通用查询 ==========
 
     @Override
@@ -496,6 +423,12 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
 
         // 使用通用转换器将PageParam对象转换为Criteria
         Criteria<T> criteria = QueryObjectConverter.convert(pageParam, entityClass);
+        // 添加调试信息
+        if (log.isDebugEnabled()) {
+            log.debug("QueryPage - Criteria conditions: {}", criteria.getMainConditions());
+            log.debug("QueryPage - Page params: pageNo={}, pageSize={}",
+                    criteria.getPageNo(), criteria.getPageSize());
+        }
         return pageByCriteria(criteria);
     }
 

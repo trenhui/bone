@@ -12,6 +12,9 @@ spring:
 
 metadata:
   sdk:
+    appcode: ${APP_CODE:extTest}
+    deployment-mode: EMBEDDED
+    slow-query-threshold: 3000
     sql:
       enabled: true
       executor:

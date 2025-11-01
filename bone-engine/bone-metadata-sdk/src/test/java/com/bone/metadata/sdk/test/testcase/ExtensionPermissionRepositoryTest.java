@@ -1,5 +1,6 @@
 package com.bone.metadata.sdk.test.testcase;
 
+import com.bone.core.tenant.context.BizIdentityContext;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -85,7 +86,7 @@ public class ExtensionPermissionRepositoryTest {
         DataPermission perm = new DataPermission();
         perm.setPermName(permName);
         perm.setPermCode(permName + "_CODE");
-        perm.setBizIdentityCode("pukang");
+        perm.setBizIdentityCode("bone");
         perm.setPermType(1); // 默认类型为菜单
         perm.setParentId(0L); // 根节点
         perm.setSortOrder(99); // 测试排序号
@@ -98,7 +99,7 @@ public class ExtensionPermissionRepositoryTest {
         metadata.setId(DistributedIdGenerator.generateLongId());
         metadata.setTenantId(TenantContext.getTenantId());
         metadata.setAppCode("extTest");
-        metadata.setBizIdentityCode("pukang");
+        metadata.setBizIdentityCode("bone");
         metadata.setEntityType(entityType);
         metadata.setName(fieldName);
         metadata.setDataType(dataType.name());
@@ -137,7 +138,7 @@ public class ExtensionPermissionRepositoryTest {
         AllocationContext ctx = new AllocationContext(
                 TenantContext.getTenantId(),
                 "extTest",
-                "pukang",
+                "bone",
                 entityType
         );
         DataType dataType = DataType.STRING;
@@ -199,7 +200,7 @@ public class ExtensionPermissionRepositoryTest {
                 Map.of(
                         "tenant_id", TenantContext.getTenantId(),
                         "app_code", "extTest",
-                        "biz_identity_code", "pukang",
+                        "biz_identity_code", "bone",
                         "entity_type", entityType,
                         "entity_id", id
                 )
@@ -334,7 +335,7 @@ public class ExtensionPermissionRepositoryTest {
                 Map.of(
                         "tenant_id", TenantContext.getTenantId(),
                         "app_code", "extTest",
-                        "biz_identity_code", "pukang",
+                        "biz_identity_code", "bone",
                         "entity_type", entityType,
                         "entity_id", id
                 )
@@ -359,6 +360,7 @@ public class ExtensionPermissionRepositoryTest {
         );
         metadataService.allocateAndPersistFields(fieldDefinitions);
 
+        BizIdentityContext.setBizIdentityCode("bone");
         // 准备测试数据
         DataPermission perm1 = createBasePermission("QUERY_TEST_1");
         perm1.putExtraProperty("department", "Engineering");

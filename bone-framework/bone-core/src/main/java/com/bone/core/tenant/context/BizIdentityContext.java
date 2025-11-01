@@ -18,7 +18,7 @@ public class BizIdentityContext {
      *
      * @param bizIdentityCode  业务身份
      */
-    public static void setBizIdentityCoder(String bizIdentityCode ) {
+    public static void setBizIdentityCode(String bizIdentityCode ) {
         Biz_Identity_CONTEXT.set(bizIdentityCode);
     }
 
