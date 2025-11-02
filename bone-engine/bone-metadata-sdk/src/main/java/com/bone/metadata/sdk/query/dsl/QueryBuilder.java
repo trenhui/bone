@@ -1,15 +1,15 @@
 package com.bone.metadata.sdk.query.dsl;
 
 import java.util.*;
-import java.util.function.Function;
+import java.util.function.*;
 import java.util.stream.Collectors;
 import java.util.regex.Pattern;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 import java.lang.reflect.Method;
+import java.lang.reflect.Field;
 import com.bone.metadata.sdk.domain.exception.ExceptionUtils;
 import com.bone.metadata.sdk.domain.exception.ExceptionHandler;
 
@@ -24,6 +24,26 @@ public class QueryBuilder {
     // 初始容量设置为1024，负载因子为0.75以平衡内存使用和性能
     private static final ConcurrentHashMap<String, String> FIELD_NAME_CACHE = 
         new ConcurrentHashMap<>(1024, 0.75f);
+    
+    // 预编译SQL模板缓存
+    private static final ConcurrentHashMap<String, SqlTemplate> SQL_TEMPLATE_CACHE = 
+        new ConcurrentHashMap<>(1024, 0.75f);
+    
+    /**
+     * SQL模板类，用于缓存和重用SQL结构
+     */
+    private static class SqlTemplate {
+        private final String template;
+        
+        public SqlTemplate(String template) {
+            this.template = template;
+        }
+        
+        public String format(QueryContext<?> context) {
+            // 这里可以根据需要实现更复杂的格式化逻辑
+            return template;
+        }
+    }
     
     // 使用final修饰正则表达式模式确保线程安全
     private static final Pattern VALID_NAME_PATTERN = Pattern.compile("^[a-zA-Z0-9_\\.]+$");
@@ -308,10 +328,20 @@ public class QueryBuilder {
         // 条件方法
         <V> ConditionBuilder<T, V> where(Function<T, V> fieldFunction);
         <V> ConditionBuilder<T, V> where(String fieldName);
+        <V> ConditionBuilder<T, V> where(TypeSafeField<T, V> field);
         <V> ConditionBuilder<T, V> and(Function<T, V> fieldFunction);
         <V> ConditionBuilder<T, V> and(String fieldName);
+        <V> ConditionBuilder<T, V> and(TypeSafeField<T, V> field);
         <V> ConditionBuilder<T, V> or(Function<T, V> fieldFunction);
         <V> ConditionBuilder<T, V> or(String fieldName);
+        <V> ConditionBuilder<T, V> or(TypeSafeField<T, V> field);
+        
+        // 批量条件支持
+        IQueryBuilder<T> where(Consumer<IQueryBuilder<T>> conditionsConsumer);
+        <V> IQueryBuilder<T> whereIn(Function<T, V> fieldFunction, Collection<V> values);
+        
+        // 动态查询支持
+        IQueryBuilder<T> dynamic(Consumer<IQueryBuilder<T>> dynamicBuilder);
         
         // 排序方法
         <V> IQueryBuilder<T> orderBy(Function<T, V> fieldFunction);
@@ -333,27 +363,70 @@ public class QueryBuilder {
         <J> JoinBuilder<T, J> rightJoin(Class<J> joinEntityClass);
         <J> JoinBuilder<T, J> fullJoin(Class<J> joinEntityClass);
         
+        // 子查询支持
+        <S> ConditionBuilder<T, List<S>> whereIn(Function<T, ?> fieldFunction, Supplier<IQueryBuilder<S>> subQuerySupplier);
+        <S> ConditionBuilder<T, S> whereExists(Supplier<IQueryBuilder<S>> subQuerySupplier);
+        <S> ConditionBuilder<T, S> whereNotExists(Supplier<IQueryBuilder<S>> subQuerySupplier);
+        
+        // 投影查询支持
+        <R> IProjectionQuery<T, R> select(Function<T, R> projection);
+        <R> IProjectionQuery<T, R> select(Class<R> resultType, Function<T, ?>... projections);
+        
         // 执行方法
         List<T> list();
         T single();
         long count();
+    }
+    
+    /**
+     * 投影查询接口
+     */
+    public interface IProjectionQuery<T, R> {
+        List<R> list();
+        R single();
+        long count();
+    }
+    
+    /**
+     * 类型安全字段引用类
+     */
+    public static class TypeSafeField<T, V> {
+        private final String fieldName;
+        private final Class<V> fieldType;
+        
+        public TypeSafeField(String fieldName, Class<V> fieldType) {
+            this.fieldName = fieldName;
+            this.fieldType = fieldType;
+        }
+        
+        public String getFieldName() { return fieldName; }
+        public Class<V> getFieldType() { return fieldType; }
     }
 
     /**
      * 条件构建器接口
      */
     public interface ConditionBuilder<T, V> {
-        IQueryBuilder<T> eq(V value);
-        IQueryBuilder<T> neq(V value);
-        IQueryBuilder<T> gt(V value);
-        IQueryBuilder<T> gte(V value);
-        IQueryBuilder<T> lt(V value);
-        IQueryBuilder<T> lte(V value);
-        IQueryBuilder<T> like(String value);
-        IQueryBuilder<T> notLike(String value);
-        IQueryBuilder<T> in(Collection<?> values);
-        IQueryBuilder<T> notIn(Collection<?> values);
-        IQueryBuilder<T> between(V start, V end);
+        // 使用更严格的泛型
+        <R extends T> IQueryBuilder<R> eq(V value);
+        <R extends T> IQueryBuilder<R> neq(V value);
+        <R extends T> IQueryBuilder<R> gt(V value);
+        <R extends T> IQueryBuilder<R> gte(V value);
+        <R extends T> IQueryBuilder<R> lt(V value);
+        <R extends T> IQueryBuilder<R> lte(V value);
+        <R extends T> IQueryBuilder<R> like(String value);
+        <R extends T> IQueryBuilder<R> likeIgnoreCase(String value);
+        <R extends T> IQueryBuilder<R> notLike(String value);
+        <R extends T> IQueryBuilder<R> in(Collection<?> values);
+        <R extends T> IQueryBuilder<R> notIn(Collection<?> values);
+        
+        // 类型安全的范围查询
+        <N extends Number & Comparable<N>> IQueryBuilder<T> between(N start, N end);
+        
+        // 集合专用方法
+        IQueryBuilder<T> isEmpty();
+        IQueryBuilder<T> isNotEmpty();
+        
         IQueryBuilder<T> isNull();
         IQueryBuilder<T> isNotNull();
     }
@@ -365,6 +438,17 @@ public class QueryBuilder {
         // 连接条件
         JoinBuilder<T, J> on(Function<T, Object> leftField, Function<J, Object> rightField);
         JoinBuilder<T, J> on(String leftFieldName, String rightFieldName);
+        
+        // 新增方法：支持直接在连接条件中设置值
+        <V1, V2> JoinBuilder<T, J> onEq(Function<T, V1> leftField, Function<J, V2> rightField);
+        JoinBuilder<T, J> onEq(String leftFieldName, Object rightFieldValue);
+        <V> JoinBuilder<T, J> onEq(Function<J, V> fieldFunction, Object value);
+        
+        // 新增方法：支持别名设置
+        JoinBuilder<T, J> as(String alias);
+        
+        // 新增方法：支持在一次调用中设置多个条件
+        JoinBuilder<T, J> withConditions(Consumer<JoinBuilder<T, J>> conditionsConsumer);
         
         // 条件方法 - 主表条件
         <V> ConditionBuilder<T, V> where(Function<T, V> fieldFunction);
@@ -700,7 +784,7 @@ public class QueryBuilder {
                 String functionStr = cacheKey;
                 String fieldName;
                 
-                // 优先检查特定的getter方法（快速路径）
+                // 优化快速路径：使用更高效的匹配策略
                 if (functionStr.contains("getRoleId") || functionStr.contains("getRoleId()")) {
                     fieldName = "role_id";
                 } else if (functionStr.contains("getCode") || functionStr.contains("getCode()")) {
@@ -723,9 +807,23 @@ public class QueryBuilder {
                     } else {
                         fieldName = "id"; // 默认值
                     }
+                } else if (functionStr.contains("TypeSafeField")) {
+                    // 支持TypeSafeField提取
+                    int fieldNameStart = functionStr.lastIndexOf('"') + 1;
+                    int fieldNameEnd = functionStr.lastIndexOf('"', functionStr.length() - 1);
+                    if (fieldNameStart > 0 && fieldNameEnd > fieldNameStart) {
+                        fieldName = functionStr.substring(fieldNameStart, fieldNameEnd);
+                    } else {
+                        fieldName = extractFromLambdaExpression(functionStr);
+                    }
                 } else {
                     // 默认处理：尝试从Lambda表达式中提取
                     fieldName = extractFromLambdaExpression(functionStr);
+                }
+                
+                // 安全验证：确保字段名符合规范
+                if (fieldName == null || fieldName.isEmpty()) {
+                    fieldName = "id";
                 }
                 
                 // 转换为下划线命名并缓存
@@ -733,8 +831,32 @@ public class QueryBuilder {
                 FIELD_NAME_CACHE.put(cacheKey, snakeCaseName);
                 return snakeCaseName;
             } catch (Exception e) {
-                logger.error("Error extracting field name from function", e);
-                return "id"; // 出错时返回默认字段名
+                logger.error("Error extracting field name from function: {}", e.getMessage());
+                // 更智能的默认处理：尝试从异常信息中提取线索
+                String fallbackName = extractFromExceptionContext(e, functionStr);
+                return fallbackName != null ? fallbackName : "id";
+            }
+        }
+        
+        /**
+         * 从异常上下文中提取字段名的智能回退方法
+         */
+        private String extractFromExceptionContext(Exception e, String functionStr) {
+            try {
+                // 尝试从堆栈跟踪或异常信息中提取线索
+                if (functionStr.contains("lambda$")) {
+                    // 处理Lambda表达式
+                    int startIdx = functionStr.indexOf('$') + 1;
+                    int endIdx = functionStr.indexOf('.');
+                    if (startIdx > 0 && endIdx > startIdx) {
+                        String lambdaPart = functionStr.substring(startIdx, endIdx);
+                        // 基于Lambda部分生成合理的字段名
+                        return "field_" + lambdaPart;
+                    }
+                }
+                return null;
+            } catch (Exception ex) {
+                return null;
             }
         }
         
@@ -1038,6 +1160,73 @@ public class QueryBuilder {
             try {
                 // 验证字段名
                 if (fieldName == null || fieldName.trim().isEmpty()) {
+                    throw handleException(new IllegalArgumentException("Field name cannot be null or empty"), "Invalid field name");
+                }
+                // 验证操作符
+                if (!isValidOperator(operator)) {
+                    throw new IllegalArgumentException("Invalid operator: " + operator);
+                }
+                
+                // 创建条件
+                Condition condition = new Condition(fieldName, operator, value instanceof Collection ? (Collection<?>) value : Collections.singletonList(value));
+                context.getConditions().add(condition);
+                context.getConditionTypes().add("where");
+                
+                return this;
+            } catch (Exception e) {
+                logger.error("Error adding typed WHERE condition", e);
+                throw handleException(e, "Error adding typed WHERE condition");
+            }
+        }
+        
+        /**
+         * 新增：批量添加WHERE条件
+         * 支持在单个调用中设置多个条件
+         */
+        public IQueryBuilder<T> where(Consumer<IQueryBuilder<T>> conditionsConsumer) {
+            try {
+                if (conditionsConsumer == null) {
+                    throw handleException(new IllegalArgumentException("Conditions consumer cannot be null"), "Invalid conditions consumer");
+                }
+                conditionsConsumer.accept(this);
+                return this;
+            } catch (Exception e) {
+                logger.error("Error adding batch WHERE conditions", e);
+                throw handleException(e, "Error adding batch WHERE conditions");
+            }
+        }
+        
+        /**
+         * 新增：类型安全的字段名提取和条件设置
+         * 支持TypeSafeField和子查询
+         */
+        public <V> IQueryBuilder<T> where(Function<T, V> fieldFunction, String operator, Object value) {
+            try {
+                String fieldName = getFieldName(fieldFunction);
+                // 验证操作符
+                if (!isValidOperator(operator)) {
+                    throw new IllegalArgumentException("Invalid operator: " + operator);
+                }
+                
+                // 创建条件
+                Condition condition = new Condition(fieldName, operator, value instanceof Collection ? (Collection<?>) value : Collections.singletonList(value));
+                context.getConditions().add(condition);
+                context.getConditionTypes().add("where");
+                
+                return this;
+            } catch (Exception e) {
+                logger.error("Error adding typed WHERE condition", e);
+                throw handleException(e, "Error adding typed WHERE condition");
+            }
+        }
+        
+        /**
+         * 新增：类型安全的字段名提取和条件设置 - 字符串字段名版本
+         */
+        public IQueryBuilder<T> where(String fieldName, String operator, Object value) {
+            try {
+                // 验证字段名
+                if (fieldName == null || fieldName.trim().isEmpty()) {
                     throw new IllegalArgumentException("Field name cannot be null or empty");
                 }
                 
@@ -1219,6 +1408,17 @@ public class QueryBuilder {
          */
         protected String buildSql(boolean isCount) {
             try {
+                // 生成SQL模板缓存键
+                String templateKey = generateTemplateKey(context, isCount);
+                
+                // 尝试从缓存获取SQL模板
+                SqlTemplate cachedTemplate = SQL_TEMPLATE_CACHE.get(templateKey);
+                if (cachedTemplate != null) {
+                    String cachedSql = cachedTemplate.format(context);
+                    logger.debug("Using cached SQL template: {}", cachedSql);
+                    return cachedSql;
+                }
+                
                 // 预分配足够大小的StringBuilder以提高性能
                 // 根据SQL复杂度预估大小
                 int estimatedSize = 200; // 基础大小
@@ -1376,6 +1576,11 @@ public class QueryBuilder {
                 }
                 
                 String finalSql = sql.toString();
+                
+                // 缓存SQL模板
+                SqlTemplate newTemplate = new SqlTemplate(finalSql);
+                SQL_TEMPLATE_CACHE.put(templateKey, newTemplate);
+                
                 logger.debug("Generated SQL: {}", finalSql);
                 return finalSql;
             } catch (Exception e) {
@@ -1383,6 +1588,48 @@ public class QueryBuilder {
                 logger.error("Error building SQL", e);
                 throw handleException(e, "Failed to build SQL query");
             }
+        }
+        
+        /**
+         * 生成SQL模板缓存键
+         */
+        private String generateTemplateKey(QueryContext<?> context, boolean isCount) {
+            StringBuilder keyBuilder = new StringBuilder();
+            keyBuilder.append(context.getEntityClass().getName()).append(":");
+            keyBuilder.append(isCount ? "count" : "select").append(":");
+            
+            // 添加连接信息
+            for (JoinInfo<?> join : context.getJoins()) {
+                keyBuilder.append(join.getJoinType()).append(":");
+                keyBuilder.append(join.getJoinEntityClass().getSimpleName()).append(":");
+                keyBuilder.append(join.getLeftField()).append(":");
+                keyBuilder.append(join.getRightField()).append(":");
+            }
+            
+            // 添加条件信息（仅操作符和字段名，不包括值）
+            for (int i = 0; i < context.getConditions().size(); i++) {
+                keyBuilder.append(context.getConditionTypes().get(i)).append(":");
+                Condition condition = context.getConditions().get(i);
+                keyBuilder.append(condition.getFieldName()).append(":");
+                keyBuilder.append(condition.getOperator()).append(":");
+            }
+            
+            // 添加分组信息
+            for (String groupField : context.getGroupByFields()) {
+                keyBuilder.append("group:").append(groupField).append(":");
+            }
+            
+            // 添加排序信息
+            for (OrderByClause clause : context.getOrderByClauses()) {
+                keyBuilder.append("order:").append(clause.getFieldName()).append(":");
+                keyBuilder.append(clause.getDirection()).append(":");
+            }
+            
+            // 添加分页信息
+            keyBuilder.append("limit:").append(context.getLimit()).append(":");
+            keyBuilder.append("offset:").append(context.getOffset());
+            
+            return keyBuilder.toString();
         }
         
         /**
@@ -1401,8 +1648,6 @@ public class QueryBuilder {
         private final SqlQueryBuilderImpl<T> parent;
         private final JoinInfo<J> joinInfo;
         
-        // 使用父类的extractFieldName方法
-        
         public JoinBuilderImpl(SqlQueryBuilderImpl<T> parent, Class<J> joinEntityClass, String joinType) {
             this.parent = parent;
             this.joinInfo = new JoinInfo<>(joinEntityClass, joinType);
@@ -1410,19 +1655,93 @@ public class QueryBuilder {
         }
         
         @Override
-        public JoinBuilder<T, J> on(Function<T, Object> leftField, Function<J, Object> rightField) {
-            // 使用父类的extractFieldName方法提取字段名
-            String leftFieldName = parent.extractFieldName(leftField);
-            String rightFieldName = parent.extractFieldName(rightField);
-            
-            joinInfo.setOnClause(leftFieldName, rightFieldName);
+        public JoinBuilder<T, J> as(String alias) {
+            if (alias == null || alias.trim().isEmpty()) {
+                throw new IllegalArgumentException("Table alias cannot be null or empty");
+            }
+            joinInfo.setAlias(alias);
             return this;
         }
         
         @Override
+        public JoinBuilder<T, J> on(Function<T, Object> leftField, Function<J, Object> rightField) {
+            try {
+                String leftFieldName = parent.extractFieldName(leftField);
+                String rightFieldName = parent.extractFieldName(rightField);
+                
+                joinInfo.setOnClause(leftFieldName, rightFieldName);
+                return this;
+            } catch (Exception e) {
+                logger.error("Error setting join condition with field functions", e);
+                throw handleException(e, "Invalid join condition");
+            }
+        }
+        
+        @Override
         public JoinBuilder<T, J> on(String leftFieldName, String rightFieldName) {
-            joinInfo.setOnClause(leftFieldName, rightFieldName);
-            return this;
+            try {
+                if (leftFieldName == null || rightFieldName == null || 
+                    leftFieldName.trim().isEmpty() || rightFieldName.trim().isEmpty()) {
+                    throw new IllegalArgumentException("Field names cannot be null or empty");
+                }
+                joinInfo.setOnClause(leftFieldName, rightFieldName);
+                return this;
+            } catch (Exception e) {
+                logger.error("Error setting join condition with field names", e);
+                throw handleException(e, "Invalid join condition");
+            }
+        }
+        
+        @Override
+        public JoinBuilder<T, J> onEq(String leftFieldName, Object rightFieldValue) {
+            try {
+                if (leftFieldName == null || leftFieldName.trim().isEmpty()) {
+                    throw new IllegalArgumentException("Field name cannot be null or empty");
+                }
+                // 构建表名.字段名格式
+                String tableName = joinInfo.getEntityClass().getSimpleName().toLowerCase();
+                String qualifiedFieldName = joinInfo.getAlias() != null ? 
+                    joinInfo.getAlias() + "." + leftFieldName : 
+                    tableName + "." + leftFieldName;
+                
+                // 添加等于条件
+                parent.where(qualifiedFieldName, "=", rightFieldValue);
+                return this;
+            } catch (Exception e) {
+                logger.error("Error setting join equality condition", e);
+                throw handleException(e, "Invalid join equality condition");
+            }
+        }
+        
+        @Override
+        public <V> JoinBuilder<T, J> onEq(Function<J, V> fieldFunction, Object value) {
+            try {
+                String fieldName = parent.extractFieldName(fieldFunction);
+                String tableName = joinInfo.getEntityClass().getSimpleName().toLowerCase();
+                String qualifiedFieldName = joinInfo.getAlias() != null ? 
+                    joinInfo.getAlias() + "." + fieldName : 
+                    tableName + "." + fieldName;
+                
+                parent.where(qualifiedFieldName, "=", value);
+                return this;
+            } catch (Exception e) {
+                logger.error("Error setting join equality condition with field function", e);
+                throw handleException(e, "Invalid join equality condition");
+            }
+        }
+        
+        @Override
+        public JoinBuilder<T, J> withConditions(Consumer<JoinBuilder<T, J>> conditionsConsumer) {
+            try {
+                if (conditionsConsumer == null) {
+                    throw new IllegalArgumentException("Conditions consumer cannot be null");
+                }
+                conditionsConsumer.accept(this);
+                return this;
+            } catch (Exception e) {
+                logger.error("Error applying join conditions", e);
+                throw handleException(e, "Failed to apply join conditions");
+            }
         }
         
         // 条件方法委托给父构建器
@@ -1433,25 +1752,212 @@ public class QueryBuilder {
         
         @Override
         public <V> ConditionBuilder<T, V> where(String fieldName) {
-            // 检查是否是方法引用字符串格式，如"Role::getCode"
-            if (fieldName.contains("::")) {
-                // 对于连接查询中的方法引用，我们直接返回带表名前缀的字段名
-                // 不需要依赖parent.where，因为我们知道连接表的信息
-                String[] parts = fieldName.split("::");
-                if (parts.length == 2) {
-                    String entityName = parts[0];
-                    String methodName = parts[1];
-                    String tableName = entityName.toLowerCase();
-                    String field = convertMethodToFieldName(methodName);
-                    return new ConditionBuilderImpl<>(parent, tableName + "." + field, "where");
+            try {
+                // 检查是否是方法引用字符串格式，如"Role::getCode"
+                if (fieldName != null && fieldName.contains("::")) {
+                    // 对于连接查询中的方法引用，我们直接返回带表名前缀的字段名
+                    String[] parts = fieldName.split("::");
+                    if (parts.length == 2) {
+                        String entityName = parts[0];
+                        String methodName = parts[1];
+                        String tableName = entityName.toLowerCase();
+                        // 使用父类的extractFieldName功能处理方法名
+                        String field = parent.extractFieldName(fieldName);
+                        return new ConditionBuilderImpl<>(parent, tableName + "." + field, "where");
+                    }
                 }
+                return parent.where(fieldName);
+            } catch (Exception e) {
+                logger.error("Error creating condition builder for join query", e);
+                throw handleException(e, "Invalid condition field name");
             }
-            return parent.where(fieldName);
         }
         
         @Override
         public <V> ConditionBuilder<T, V> and(Function<T, V> fieldFunction) {
-            return parent.and(fieldFunction);
+            try {
+                return parent.and(fieldFunction);
+            } catch (Exception e) {
+                logger.error("Error creating AND condition builder with field function", e);
+                throw handleException(e, "Invalid AND condition field function");
+            }
+        }
+        
+        @Override
+        public <V> ConditionBuilder<T, V> and(String fieldName) {
+            try {
+                return parent.and(fieldName);
+            } catch (Exception e) {
+                logger.error("Error creating AND condition builder with field name", e);
+                throw handleException(e, "Invalid AND condition field name");
+            }
+        }
+        
+        @Override
+        public <V> ConditionBuilder<T, V> or(Function<T, V> fieldFunction) {
+            try {
+                return parent.or(fieldFunction);
+            } catch (Exception e) {
+                logger.error("Error creating OR condition builder with field function", e);
+                throw handleException(e, "Invalid OR condition field function");
+            }
+        }
+        
+        @Override
+        public <V> ConditionBuilder<T, V> or(String fieldName) {
+            try {
+                return parent.or(fieldName);
+            } catch (Exception e) {
+                logger.error("Error creating OR condition builder with field name", e);
+                throw handleException(e, "Invalid OR condition field name");
+            }
+        }
+        
+        @Override
+        public <V> ConditionBuilder<T, V> onWhere(Function<J, V> fieldFunction) {
+            try {
+                String fieldName = parent.extractFieldName(fieldFunction);
+                String tableName = joinInfo.getEntityClass().getSimpleName().toLowerCase();
+                String qualifiedFieldName = joinInfo.getAlias() != null ? 
+                    joinInfo.getAlias() + "." + fieldName : 
+                    tableName + "." + fieldName;
+                return new ConditionBuilderImpl<>(parent, qualifiedFieldName, "where");
+            } catch (Exception e) {
+                logger.error("Error creating join table WHERE condition builder", e);
+                throw handleException(e, "Invalid join table condition field function");
+            }
+        }
+        
+        @Override
+        public <V> ConditionBuilder<T, V> onAnd(Function<J, V> fieldFunction) {
+            try {
+                String fieldName = parent.extractFieldName(fieldFunction);
+                String tableName = joinInfo.getEntityClass().getSimpleName().toLowerCase();
+                String qualifiedFieldName = joinInfo.getAlias() != null ? 
+                    joinInfo.getAlias() + "." + fieldName : 
+                    tableName + "." + fieldName;
+                return new ConditionBuilderImpl<>(parent, qualifiedFieldName, "and");
+            } catch (Exception e) {
+                logger.error("Error creating join table AND condition builder", e);
+                throw handleException(e, "Invalid join table AND condition field function");
+            }
+        }
+        
+        @Override
+        public <V> ConditionBuilder<T, V> onOr(Function<J, V> fieldFunction) {
+            try {
+                String fieldName = parent.extractFieldName(fieldFunction);
+                String tableName = joinInfo.getEntityClass().getSimpleName().toLowerCase();
+                String qualifiedFieldName = joinInfo.getAlias() != null ? 
+                    joinInfo.getAlias() + "." + fieldName : 
+                    tableName + "." + fieldName;
+                return new ConditionBuilderImpl<>(parent, qualifiedFieldName, "or");
+            } catch (Exception e) {
+                logger.error("Error creating join table OR condition builder", e);
+                throw handleException(e, "Invalid join table OR condition field function");
+            }
+        }
+        
+        @Override
+        public <V> JoinBuilder<T, J> orderBy(Function<T, V> fieldFunction) {
+            try {
+                return parent.orderBy(fieldFunction);
+            } catch (Exception e) {
+                logger.error("Error setting ORDER BY with field function", e);
+                throw handleException(e, "Invalid ORDER BY field function");
+            }
+        }
+        
+        @Override
+        public <V> JoinBuilder<T, J> orderBy(Function<T, V> fieldFunction, String direction) {
+            try {
+                return parent.orderBy(fieldFunction, direction);
+            } catch (Exception e) {
+                logger.error("Error setting ORDER BY with field function and direction", e);
+                throw handleException(e, "Invalid ORDER BY specification");
+            }
+        }
+        
+        @Override
+        public JoinBuilder<T, J> orderBy(String fieldName) {
+            try {
+                return parent.orderBy(fieldName);
+            } catch (Exception e) {
+                logger.error("Error setting ORDER BY with field name", e);
+                throw handleException(e, "Invalid ORDER BY field name");
+            }
+        }
+        
+        @Override
+        public JoinBuilder<T, J> orderBy(String fieldName, String direction) {
+            try {
+                return parent.orderBy(fieldName, direction);
+            } catch (Exception e) {
+                logger.error("Error setting ORDER BY with field name and direction", e);
+                throw handleException(e, "Invalid ORDER BY specification");
+            }
+        }
+        
+        @Override
+        public JoinBuilder<T, J> limit(long limit) {
+            try {
+                if (limit <= 0) {
+                    throw new IllegalArgumentException("Limit must be greater than 0");
+                }
+                parent.limit(limit);
+                return this;
+            } catch (Exception e) {
+                logger.error("Error setting LIMIT", e);
+                throw handleException(e, "Invalid LIMIT value");
+            }
+        }
+        
+        @Override
+        public JoinBuilder<T, J> offset(long offset) {
+            try {
+                if (offset < 0) {
+                    throw new IllegalArgumentException("Offset must be non-negative");
+                }
+                parent.offset(offset);
+                return this;
+            } catch (Exception e) {
+                logger.error("Error setting OFFSET", e);
+                throw handleException(e, "Invalid OFFSET value");
+            }
+        }
+        
+        @Override
+        public List<T> list() {
+            try {
+                return parent.list();
+            } catch (Exception e) {
+                logger.error("Error executing list query", e);
+                throw handleException(e, "Failed to execute list query");
+            }
+        }
+        
+        @Override
+        public T single() {
+            try {
+                return parent.single();
+            } catch (Exception e) {
+                logger.error("Error executing single query", e);
+                throw handleException(e, "Failed to execute single query");
+            }
+        }
+        
+        @Override
+        public long count() {
+            try {
+                return parent.count();
+            } catch (Exception e) {
+                logger.error("Error executing count query", e);
+                throw handleException(e, "Failed to execute count query");
+            }
+        }
+        
+        private RuntimeException handleException(Exception e, String message) {
+            return new RuntimeException(message + ": " + e.getMessage(), e);
         }
         
         @Override
