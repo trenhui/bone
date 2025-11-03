@@ -268,4 +268,50 @@ public class QueryContext<T> {
             this.groupByFields.add(fieldName);
         }
     }
+    
+    /**
+     * 创建一个新的查询上下文，复制当前上下文的所有信息，但移除排序和分页相关信息
+     * 用于优化count查询性能
+     */
+    @SuppressWarnings("unchecked")
+    public <S extends QueryContext<T>> S cloneWithoutOrderLimit() {
+        QueryContext<T> newContext = new QueryContext<>(this.entityClass, this.entityAlias, this.fluentQuery);
+        
+        // 复制条件
+        for (Condition condition : this.conditions) {
+            Condition newCondition = new Condition();
+            newCondition.setFieldName(condition.getFieldName());
+            newCondition.setOperator(condition.getOperator());
+            newCondition.setValue1(condition.getValue1());
+            newCondition.setValue2(condition.getValue2());
+            newCondition.setOr(condition.isOr());
+            newContext.addCondition(newCondition);
+        }
+        
+        // 复制关联信息
+        for (Join join : this.joins) {
+            Join newJoin = new Join();
+            newJoin.setJoinClass(join.getJoinClass());
+            newJoin.setJoinEntityAlias(join.getJoinEntityAlias());
+            newJoin.setJoinType(join.getJoinType());
+            
+            // 复制关联条件
+            for (Join.JoinCondition joinCondition : join.getJoinConditions()) {
+                Join.JoinCondition newJoinCondition = new Join.JoinCondition();
+                newJoinCondition.setEntityField(joinCondition.getEntityField());
+                newJoinCondition.setOperator(joinCondition.getOperator());
+                newJoinCondition.setJoinEntityField(joinCondition.getJoinEntityField());
+                newJoinCondition.setValue(joinCondition.getValue());
+                newJoinCondition.setOr(joinCondition.isOr());
+                newJoin.addJoinCondition(newJoinCondition);
+            }
+            
+            newContext.getJoins().add(newJoin);
+        }
+        
+        // 复制分组字段
+        newContext.addGroupByFields(this.groupByFields.toArray(new String[0]));
+        
+        return (S) newContext;
+    }
 }

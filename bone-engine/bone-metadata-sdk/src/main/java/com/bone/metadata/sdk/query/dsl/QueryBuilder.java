@@ -12,15 +12,13 @@ public class QueryBuilder {
 
     private static final Logger logger = LoggerFactory.getLogger(QueryBuilder.class);
     private static SqlExecutorAdapter sqlExecutorAdapter;
-    private static QueryProperties queryProperties;
 
     // 私有构造函数，防止实例化
     private QueryBuilder() {}
 
     // 静态初始化方法，供Spring Boot自动配置使用
-    public static void initialize(SqlExecutorAdapter adapter, QueryProperties properties) {
+    public static void initialize(SqlExecutorAdapter adapter) {
         sqlExecutorAdapter = adapter;
-        queryProperties = properties;
         logger.info("QueryBuilder initialized successfully");
     }
 
@@ -34,6 +32,7 @@ public class QueryBuilder {
         if (sqlExecutorAdapter == null) {
             throw new IllegalStateException("QueryBuilder not initialized. Call initialize() first.");
         }
+        // 使用外部定义的DefaultFluentQuery类，避免重复定义
         return new DefaultFluentQuery<>(entityClass, sqlExecutorAdapter);
     }
 
@@ -180,38 +179,5 @@ public class QueryBuilder {
         <N extends Number> N avg(String fieldName, Class<N> resultType);
         <N> N max(String fieldName, Class<N> resultType);
         <N> N min(String fieldName, Class<N> resultType);
-    }
-
-    /**
-     * 查询属性配置类
-     */
-    public static class QueryProperties {
-        private boolean enableCache = true;
-        private int cacheSize = 1000;
-        private int cacheExpireSeconds = 3600;
-
-        public boolean isEnableCache() {
-            return enableCache;
-        }
-
-        public void setEnableCache(boolean enableCache) {
-            this.enableCache = enableCache;
-        }
-
-        public int getCacheSize() {
-            return cacheSize;
-        }
-
-        public void setCacheSize(int cacheSize) {
-            this.cacheSize = cacheSize;
-        }
-
-        public int getCacheExpireSeconds() {
-            return cacheExpireSeconds;
-        }
-
-        public void setCacheExpireSeconds(int cacheExpireSeconds) {
-            this.cacheExpireSeconds = cacheExpireSeconds;
-        }
     }
 }

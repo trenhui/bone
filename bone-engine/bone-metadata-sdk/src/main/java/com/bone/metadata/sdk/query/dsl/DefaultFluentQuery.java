@@ -3,14 +3,13 @@ package com.bone.metadata.sdk.query.dsl;
 import com.bone.metadata.sdk.domain.query.CompiledQuery;
 import com.bone.metadata.sdk.query.dsl.builder.SqlBuilder;
 import com.bone.metadata.sdk.query.dsl.context.QueryContext;
-// 移除了对外部Condition接口的导入，使用QueryBuilder内部的Condition接口
+import com.bone.metadata.sdk.query.dsl.context.QueryContext.JoinType;
+import com.bone.metadata.sdk.query.dsl.util.SqlSafeUtils;
+import com.bone.metadata.sdk.query.dsl.util.SecurityValidator;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import com.bone.metadata.sdk.query.dsl.context.QueryContext.JoinType;
-// 移除了对外部Join接口的导入，使用QueryBuilder内部的Join接口
-
-import java.util.List;
 import java.util.function.Function;
 
 /**
@@ -28,6 +27,11 @@ public class DefaultFluentQuery<T> implements QueryBuilder.FluentQuery<T> {
 
     @Override
     public <F> QueryBuilder.Condition<T, F> where(String fieldName) {
+        // 添加字段名验证，防止SQL注入
+        if (!SecurityValidator.isValidFieldName(fieldName)) {
+            throw new IllegalArgumentException("Invalid field name: " + fieldName);
+        }
+        
         // 使用内部类实现Condition接口
         return new QueryBuilder.Condition<T, F>() {
             @Override
@@ -170,6 +174,10 @@ public class DefaultFluentQuery<T> implements QueryBuilder.FluentQuery<T> {
 
     @Override
     public QueryBuilder.FluentQuery<T> orderBy(String fieldName, boolean isAsc) {
+        // 添加字段名验证，防止SQL注入
+        if (!SecurityValidator.isValidFieldName(fieldName)) {
+            throw new IllegalArgumentException("Invalid field name for orderBy: " + fieldName);
+        }
         queryContext.addOrder(new QueryContext.Order(fieldName, isAsc));
         return this;
     }
@@ -188,6 +196,12 @@ public class DefaultFluentQuery<T> implements QueryBuilder.FluentQuery<T> {
 
     @Override
     public QueryBuilder.FluentQuery<T> groupBy(String... fieldNames) {
+        // 添加字段名验证，防止SQL注入
+        for (String fieldName : fieldNames) {
+            if (!SecurityValidator.isValidFieldName(fieldName)) {
+                throw new IllegalArgumentException("Invalid field name for groupBy: " + fieldName);
+            }
+        }
         queryContext.addGroupByFields(fieldNames);
         return this;
     }
@@ -219,6 +233,21 @@ public class DefaultFluentQuery<T> implements QueryBuilder.FluentQuery<T> {
     /**
      * 创建Join接口的实现
      */
+    /**
+     * 统一构建编译后的查询对象
+     * @param sql SQL语句
+     * @param parameters 查询参数
+     * @return 编译后的查询对象
+     */
+    private CompiledQuery buildCompiledQuery(String sql, List<Object> parameters) {
+        // 创建参数映射
+        Map<String, Object> paramMap = new HashMap<>();
+        for (int i = 0; i < parameters.size(); i++) {
+            paramMap.put("param" + i, parameters.get(i));
+        }
+        return new CompiledQuery(sql, paramMap);
+    }
+    
     private <J> QueryBuilder.Join<T, J> createJoinImpl(String joinAlias) {
         return new QueryBuilder.Join<T, J>() {
             @Override
@@ -265,13 +294,7 @@ public class DefaultFluentQuery<T> implements QueryBuilder.FluentQuery<T> {
     public List<T> list() {
         try {
             SqlBuilder<T> sqlBuilder = new SqlBuilder<>(queryContext);
-            // 创建参数映射
-            Map<String, Object> paramMap = new java.util.HashMap<>();
-            List<Object> params = sqlBuilder.getParameters();
-            for (int i = 0; i < params.size(); i++) {
-                paramMap.put("param" + i, params.get(i));
-            }
-            CompiledQuery query = new CompiledQuery(sqlBuilder.buildSelectSql(), paramMap);
+            CompiledQuery query = buildCompiledQuery(sqlBuilder.buildSelectSql(), sqlBuilder.getParameters());
             return sqlExecutorAdapter.execute(query, queryContext.getEntityClass());
         } catch (Exception e) {
             throw new RuntimeException("Error executing query", e);
@@ -282,15 +305,7 @@ public class DefaultFluentQuery<T> implements QueryBuilder.FluentQuery<T> {
     public T single() {
         try {
             SqlBuilder<T> sqlBuilder = new SqlBuilder<>(queryContext);
-            String sql = sqlBuilder.buildSelectSql();
-            List<Object> parameters = sqlBuilder.getParameters();
-            
-            // 创建参数映射
-            Map<String, Object> paramMap = new java.util.HashMap<>();
-            for (int i = 0; i < parameters.size(); i++) {
-                paramMap.put("param" + i, parameters.get(i));
-            }
-            CompiledQuery query = new CompiledQuery(sql, paramMap);
+            CompiledQuery query = buildCompiledQuery(sqlBuilder.buildSelectSql(), sqlBuilder.getParameters());
             List<T> results = sqlExecutorAdapter.execute(query, queryContext.getEntityClass());
             if (results.isEmpty()) {
                 return null;
@@ -307,14 +322,10 @@ public class DefaultFluentQuery<T> implements QueryBuilder.FluentQuery<T> {
     @Override
     public long count() {
         try {
-            SqlBuilder<T> sqlBuilder = new SqlBuilder<>(queryContext);
-            // 创建参数映射
-            Map<String, Object> paramMap = new java.util.HashMap<>();
-            List<Object> params = sqlBuilder.getParameters();
-            for (int i = 0; i < params.size(); i++) {
-                paramMap.put("param" + i, params.get(i));
-            }
-            CompiledQuery query = new CompiledQuery(sqlBuilder.buildCountSql(), paramMap);
+            // 创建临时查询上下文，移除排序和分页相关信息以优化count查询
+            QueryContext<T> countContext = queryContext.cloneWithoutOrderLimit();
+            SqlBuilder<T> sqlBuilder = new SqlBuilder<>(countContext);
+            CompiledQuery query = buildCompiledQuery(sqlBuilder.buildCountSql(), sqlBuilder.getParameters());
             return sqlExecutorAdapter.executeCount(query);
         } catch (Exception e) {
             throw new RuntimeException("Error executing count query", e);
