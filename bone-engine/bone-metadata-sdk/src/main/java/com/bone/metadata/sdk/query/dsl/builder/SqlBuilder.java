@@ -95,15 +95,15 @@ public class SqlBuilder<T> {
                 if (joinCondition.getJoinEntityField() != null) {
                     // 实体字段与关联表字段相等的条件
                     sql.append(queryContext.getEntityAlias()).append(".")
-                       .append(joinCondition.getEntityField()).append(" ")
+                       .append(camelToSnake(joinCondition.getEntityField())).append(" ")
                        .append(joinCondition.getOperator()).append(" ")
                        .append(joinAlias).append(".")
-                       .append(joinCondition.getJoinEntityField());
+                       .append(camelToSnake(joinCondition.getJoinEntityField()));
                 } else if (joinCondition.getValue() != null) {
                     // 实体字段与值比较的条件
-                    sql.append(queryContext.getEntityAlias()).append(".")
-                       .append(joinCondition.getEntityField()).append(" ")
-                       .append(joinCondition.getOperator()).append(" ?");
+            sql.append(queryContext.getEntityAlias()).append(".")
+               .append(camelToSnake(joinCondition.getEntityField())).append(" ")
+               .append(joinCondition.getOperator()).append(" ?");
                     parameters.add(joinCondition.getValue());
                 }
             }
@@ -136,11 +136,12 @@ public class SqlBuilder<T> {
      */
     private void buildCondition(Condition condition) {
         String fieldName = condition.getFieldName();
+        String columnName = camelToSnake(fieldName);
         String operator = condition.getOperator();
         Object value1 = condition.getValue1();
         Object value2 = condition.getValue2();
 
-        sql.append(queryContext.getEntityAlias()).append(".").append(fieldName).append(" ").append(operator);
+        sql.append(queryContext.getEntityAlias()).append(".").append(columnName).append(" ").append(operator);
 
         switch (operator) {
             case "IN":
@@ -182,7 +183,7 @@ public class SqlBuilder<T> {
 
         sql.append(" GROUP BY ")
            .append(groupByFields.stream()
-               .map(field -> queryContext.getEntityAlias() + "." + field)
+               .map(field -> queryContext.getEntityAlias() + "." + camelToSnake(field))
                .collect(Collectors.joining(", ")));
     }
 
@@ -197,7 +198,7 @@ public class SqlBuilder<T> {
 
         sql.append(" ORDER BY ")
            .append(orders.stream()
-               .map(order -> queryContext.getEntityAlias() + "." + order.getFieldName() + 
+               .map(order -> queryContext.getEntityAlias() + "." + camelToSnake(order.getFieldName()) + 
                             (order.isAsc() ? " ASC" : " DESC"))
                .collect(Collectors.joining(", ")));
     }
@@ -218,10 +219,67 @@ public class SqlBuilder<T> {
     }
 
     /**
-     * 获取表名（简化实现，实际可能需要从实体注解或元数据中获取）
+     * 驼峰命名转下划线命名
+     */
+    private String camelToSnake(String input) {
+        if (input == null) {
+            return null;
+        }
+        StringBuilder result = new StringBuilder();
+        result.append(Character.toLowerCase(input.charAt(0)));
+        for (int i = 1; i < input.length(); i++) {
+            char c = input.charAt(i);
+            if (Character.isUpperCase(c)) {
+                result.append('_');
+                result.append(Character.toLowerCase(c));
+            } else {
+                result.append(c);
+            }
+        }
+        return result.toString();
+    }
+
+    /**
+     * 获取表名 - 支持自定义@Table注解
      */
     private String getTableName(Class<?> entityClass) {
-        // 这里简化实现，实际应该从实体注解或元数据中获取表名
-        return entityClass.getSimpleName();
+        try {
+            // 检查是否有自定义的@Table注解
+            Class<?> tableAnnotationClass = null;
+            try {
+                // 尝试加载自定义Table注解
+                tableAnnotationClass = Class.forName("com.bone.metadata.sdk.domain.annotation.Table");
+                // 获取注解实例（使用反射避免直接引用）
+                java.lang.reflect.Method getAnnotationMethod = Class.class.getMethod("getAnnotation", Class.class);
+                Object tableAnnotation = getAnnotationMethod.invoke(entityClass, tableAnnotationClass);
+                
+                if (tableAnnotation != null) {
+                    // 获取name属性
+                    java.lang.reflect.Method nameMethod = tableAnnotationClass.getMethod("value");
+                    Object tableNameObj = nameMethod.invoke(tableAnnotation);
+                    if (tableNameObj instanceof String) {
+                        String tableName = (String) tableNameObj;
+                        if (!tableName.isEmpty()) {
+                            return tableName;
+                        }
+                    }
+                }
+            } catch (ClassNotFoundException e) {
+                // 自定义注解不存在，继续处理
+            }
+        } catch (Exception e) {
+            // 解析注解失败，使用默认命名规则
+        }
+        
+        // 默认使用实体类名作为表名（转为小写并添加s后缀）
+        String className = entityClass.getSimpleName().toLowerCase();
+        if (className.endsWith("s") || className.endsWith("x") || 
+            className.endsWith("z") || (className.length() > 1 && 
+            className.endsWith("h") && !className.endsWith("ch") && 
+            !className.endsWith("sh"))) {
+            return className;
+        } else {
+            return className + "s";
+        }
     }
 }

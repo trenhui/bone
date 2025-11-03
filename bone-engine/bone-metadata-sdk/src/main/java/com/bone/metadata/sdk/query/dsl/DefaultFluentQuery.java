@@ -5,8 +5,6 @@ import com.bone.metadata.sdk.query.dsl.builder.SqlBuilder;
 import com.bone.metadata.sdk.query.dsl.context.QueryContext;
 import com.bone.metadata.sdk.query.dsl.context.QueryContext.JoinType;
 import com.bone.metadata.sdk.query.dsl.util.SqlSafeUtils;
-import com.bone.metadata.sdk.query.dsl.util.SecurityValidator;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +26,7 @@ public class DefaultFluentQuery<T> implements QueryBuilder.FluentQuery<T> {
     @Override
     public <F> QueryBuilder.Condition<T, F> where(String fieldName) {
         // 添加字段名验证，防止SQL注入
-        if (!SecurityValidator.isValidFieldName(fieldName)) {
+        if (!SqlSafeUtils.isValidFieldName(fieldName)) {
             throw new IllegalArgumentException("Invalid field name: " + fieldName);
         }
         
@@ -175,7 +173,7 @@ public class DefaultFluentQuery<T> implements QueryBuilder.FluentQuery<T> {
     @Override
     public QueryBuilder.FluentQuery<T> orderBy(String fieldName, boolean isAsc) {
         // 添加字段名验证，防止SQL注入
-        if (!SecurityValidator.isValidFieldName(fieldName)) {
+        if (!SqlSafeUtils.isValidFieldName(fieldName)) {
             throw new IllegalArgumentException("Invalid field name for orderBy: " + fieldName);
         }
         queryContext.addOrder(new QueryContext.Order(fieldName, isAsc));
@@ -198,7 +196,7 @@ public class DefaultFluentQuery<T> implements QueryBuilder.FluentQuery<T> {
     public QueryBuilder.FluentQuery<T> groupBy(String... fieldNames) {
         // 添加字段名验证，防止SQL注入
         for (String fieldName : fieldNames) {
-            if (!SecurityValidator.isValidFieldName(fieldName)) {
+            if (!SqlSafeUtils.isValidFieldName(fieldName)) {
                 throw new IllegalArgumentException("Invalid field name for groupBy: " + fieldName);
             }
         }
@@ -240,12 +238,26 @@ public class DefaultFluentQuery<T> implements QueryBuilder.FluentQuery<T> {
      * @return 编译后的查询对象
      */
     private CompiledQuery buildCompiledQuery(String sql, List<Object> parameters) {
-        // 创建参数映射
+        // 将问号占位符替换为命名参数格式，并创建对应的参数映射
+        StringBuilder namedParamSql = new StringBuilder(sql);
         Map<String, Object> paramMap = new HashMap<>();
-        for (int i = 0; i < parameters.size(); i++) {
-            paramMap.put("param" + i, parameters.get(i));
+        
+        // 替换所有问号为命名参数
+        int paramIndex = 0;
+        int pos = 0;
+        while ((pos = namedParamSql.indexOf("?", pos)) != -1) {
+            if (paramIndex < parameters.size()) {
+                String paramName = "param" + paramIndex;
+                namedParamSql.replace(pos, pos + 1, ":" + paramName);
+                paramMap.put(paramName, parameters.get(paramIndex));
+                paramIndex++;
+                pos += paramName.length() + 1; // 跳过已替换的部分
+            } else {
+                break; // 没有更多参数了
+            }
         }
-        return new CompiledQuery(sql, paramMap);
+        
+        return new CompiledQuery(namedParamSql.toString(), paramMap);
     }
     
     private <J> QueryBuilder.Join<T, J> createJoinImpl(String joinAlias) {
