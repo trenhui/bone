@@ -221,29 +221,6 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
         return entity.getId();
     }
 
-//    @Override
-//    @Transactional
-//    public ID save(@Valid T entity) {
-//        // 1. 确保ID初始化（非自增策略且ID为空时生成）
-//        ensureIdInitialized(entity);
-//
-//        // 2. 判断记录是否存在（包含软删除的记录）
-//        ID entityId = entity.getId();
-//        boolean exists = (entityId != null && findByIdIncludingDeleted(entityId) != null);
-//
-//        if (exists) {
-//            // 3. 记录存在：执行更新
-//            update(entity);
-//        } else {
-//            // 4. 记录不存在且不支持UPSERT：执行插入
-//            setEntityId(entity, insert(entity));
-//        }
-//
-//        // 5. 统一保存扩展字段
-//        saveExtensionFields(entity);
-//        return entity.getId();
-//    }
-
     @Override
     @Transactional
     public void batchSave(List<T> entities) {
