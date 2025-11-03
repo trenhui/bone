@@ -1,7 +1,11 @@
 package com.bone.metadata.sdk.test.config;
 
 import com.bone.metadata.sdk.domain.annotation.EnableSqlRepositories;
+import com.bone.metadata.sdk.query.dsl.QueryAutoConfiguration;
 import com.bone.metadata.sdk.support.config.*;
+import com.bone.metadata.sdk.query.dsl.SqlExecutorAdapter;
+import com.bone.metadata.sdk.sql.executor.SqlExecutor;
+import com.bone.metadata.sdk.domain.query.CompiledQuery;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import feign.RequestInterceptor;
@@ -30,6 +34,10 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -41,6 +49,7 @@ import static org.mockito.ArgumentMatchers.*;
         MetadataAutoConfiguration.class,
         SqlRepositoryAutoConfiguration.class,
         InterceptorAutoConfiguration.class,
+        QueryAutoConfiguration.class,
         FeignAutoConfiguration.class
 })
 @ComponentScan("com.bone.metadata.sdk")
@@ -148,24 +157,66 @@ public class TestConfig {
         return template;
     }
 
+    // 添加SqlExecutor和SqlExecutorAdapter的实现，用于测试
+    @Bean
+    public SqlExecutor sqlExecutor() {
+        // 提供一个模拟的SqlExecutor实现，用于测试
+        return new SqlExecutor() {
+            @Override
+            public <T> List<T> executeQuery(CompiledQuery query, Class<T> resultType) {
+                return new ArrayList<>();
+            }
+            
+            @Override
+            public <T> T queryForObject(CompiledQuery query, Class<T> resultType) {
+                if (resultType == Long.class) {
+                    return (T) Long.valueOf(0);
+                }
+                return null;
+            }
+            
+            @Override
+            public int executeUpdate(CompiledQuery query) {
+                return 0;
+            }
+            
+            @Override
+            public <T> List<T> executePaged(CompiledQuery query, Class<T> resultType, int pageNum, int pageSize) {
+                return new ArrayList<>();
+            }
+        };
+    }
+
+    @Bean
+    public SqlExecutorAdapter sqlExecutorAdapter(SqlExecutor sqlExecutor) {
+        // 提供一个模拟的SqlExecutorAdapter实现，用于测试
+        return new SqlExecutorAdapter(sqlExecutor);
+    }
+
+    public static class RequestContext {
+        private ThreadLocal<Map<String, Object>> threadLocal = ThreadLocal.withInitial(() -> new HashMap<>());
+
+        public void setAttribute(String key, Object value) {
+            threadLocal.get().put(key, value);
+        }
+
+        public Object getAttribute(String key) {
+            return threadLocal.get().get(key);
+        }
+
+        public void removeAttribute(String key) {
+            threadLocal.get().remove(key);
+        }
+
+        public void clear() {
+            threadLocal.remove();
+        }
+    }
 
     @Bean
     @Primary
     public RequestContext testRequestContext() {
-        return new RequestContext() {
-            @Override
-            public String getRequestId() {
-                return "test-request-id";
-            }
-
-            @Override
-            public void init() {
-            }
-
-            @Override
-            public void clear() {
-            }
-        };
+        return new RequestContext();
     }
 
     @Bean

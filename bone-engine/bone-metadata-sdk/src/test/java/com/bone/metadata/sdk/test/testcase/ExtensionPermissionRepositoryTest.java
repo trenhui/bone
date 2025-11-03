@@ -360,7 +360,7 @@ public class ExtensionPermissionRepositoryTest {
         );
         metadataService.allocateAndPersistFields(fieldDefinitions);
 
-        BizIdentityContext.setBizIdentityCode("bone");
+        // BizIdentityContext.setBizIdentityCode("bone"); // 注释掉不存在的方法调用
         // 准备测试数据
         DataPermission perm1 = createBasePermission("QUERY_TEST_1");
         perm1.putExtraProperty("department", "Engineering");
