@@ -59,7 +59,7 @@ public class SqlExecutorAdapter {
         
         // 注意：实际使用时，total应该通过单独的count查询获取
         // 这里保留现有逻辑，但在实际应用中应该提供一个单独的countQuery参数
-        Long total = content.size(); // 临时实现，仅用于演示
+        Long total = Long.valueOf(content.size()); // 临时实现，仅用于演示
         
         return PageResult.of(content, total, pageNum, pageSize);
     }
