@@ -37,7 +37,7 @@ public class QueryBuilderTest {
     @BeforeEach
     void setUp() {
         // 初始化QueryBuilder
-        QueryBuilder.initialize(sqlExecutorAdapter, new QueryBuilder.QueryProperties());
+        QueryBuilder.initialize(sqlExecutorAdapter);
         
         // 初始化测试数据
         initTestData();

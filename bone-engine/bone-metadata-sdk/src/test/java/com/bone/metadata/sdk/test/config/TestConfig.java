@@ -157,41 +157,6 @@ public class TestConfig {
         return template;
     }
 
-    // 添加SqlExecutor和SqlExecutorAdapter的实现，用于测试
-    @Bean
-    public SqlExecutor sqlExecutor() {
-        // 提供一个模拟的SqlExecutor实现，用于测试
-        return new SqlExecutor() {
-            @Override
-            public <T> List<T> executeQuery(CompiledQuery query, Class<T> resultType) {
-                return new ArrayList<>();
-            }
-            
-            @Override
-            public <T> T queryForObject(CompiledQuery query, Class<T> resultType) {
-                if (resultType == Long.class) {
-                    return (T) Long.valueOf(0);
-                }
-                return null;
-            }
-            
-            @Override
-            public int executeUpdate(CompiledQuery query) {
-                return 0;
-            }
-            
-            @Override
-            public <T> List<T> executePaged(CompiledQuery query, Class<T> resultType, int pageNum, int pageSize) {
-                return new ArrayList<>();
-            }
-        };
-    }
-
-    @Bean
-    public SqlExecutorAdapter sqlExecutorAdapter(SqlExecutor sqlExecutor) {
-        // 提供一个模拟的SqlExecutorAdapter实现，用于测试
-        return new SqlExecutorAdapter(sqlExecutor);
-    }
 
     public static class RequestContext {
         private ThreadLocal<Map<String, Object>> threadLocal = ThreadLocal.withInitial(() -> new HashMap<>());
