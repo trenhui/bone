@@ -2,24 +2,25 @@ package com.bone.metadata.sdk.test.testcase;
 
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import com.bone.metadata.sdk.sql.executor.SqlExecutor;
+import com.bone.metadata.sdk.test.config.TestConfig;
 import com.bone.metadata.sdk.test.domain.Role;
 import com.bone.metadata.sdk.test.domain.SalesRecord;
 import com.bone.metadata.sdk.test.domain.User;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -27,10 +28,15 @@ import static org.junit.jupiter.api.Assertions.*;
  * QueryBuilder测试类 - 使用真实数据库进行测试
  * 基于纯Lambda版本实现，遵循业界最佳实践
  */
-@SpringBootTest(classes = com.bone.metadata.sdk.test.config.TestConfig.class)
+//@SpringBootTest(classes = com.bone.metadata.sdk.test.config.TestConfig.class)
+//@ActiveProfiles("test")
+//@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+//@Transactional
+
+@SpringBootTest(classes = TestConfig.class)
 @ActiveProfiles("test")
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-@Transactional
+@ExtendWith(SpringExtension.class)
+@Slf4j
 public class QueryBuilderTest {
 
     @Autowired
@@ -39,81 +45,93 @@ public class QueryBuilderTest {
     @BeforeEach
     void setUp() {
         // 初始化QueryBuilder
-
+        QueryBuilder.initialize(sqlExecutor);
         // 初始化测试数据
         initTestData();
     }
 
-    /**
-     * 初始化测试数据
-     */
     private void initTestData() {
         try {
             // 1. 清理数据
-            sqlExecutor.execute("DELETE FROM sales_record WHERE 1=1");
-            sqlExecutor.execute("DELETE FROM users WHERE 1=1");
-            sqlExecutor.execute("DELETE FROM roles WHERE 1=1");
+            sqlExecutor.delete("DELETE FROM sales_record WHERE 1=1");
+            sqlExecutor.delete("DELETE FROM users WHERE 1=1");
+            sqlExecutor.delete("DELETE FROM roles WHERE 1=1");
 
-            // 2. 插入角色（用命名参数）
+            // 2. 插入角色 - 使用命名参数
             sqlExecutor.execute(
-                    "INSERT INTO roles(id, role_name, description) VALUES(:id, :roleName, :desc)",
-                    Map.of("id", 1, "roleName", "管理员", "desc", "系统管理员")
+                    "INSERT INTO roles(role_name, description) VALUES(:roleName, :description)",
+                    Map.of("roleName", "管理员", "description", "系统管理员")
             );
             sqlExecutor.execute(
-                    "INSERT INTO roles(id, role_name, description) VALUES(:id, :roleName, :desc)",
-                    Map.of("id", 2, "roleName", "普通用户", "desc", "普通用户角色")
+                    "INSERT INTO roles(role_name, description) VALUES(:roleName, :description)",
+                    Map.of("roleName", "普通用户", "description", "普通用户角色")
             );
 
-            // 3. 插入用户
-            List.of(
-                    Map.of("id", 1L, "name", "张三", "roleId", 1L),
-                    Map.of("id", 2L, "name", "李四", "roleId", 2L),
-                    Map.of("id", 3L, "name", "王五", "roleId", 2L),
-                    Map.of("id", 4L, "name", "赵六", "roleId", 1L)
-            ).forEach(params -> sqlExecutor.execute(
-                    "INSERT INTO users(id, name, role_id) VALUES(:id, :name, :roleId)", params
-            ));
-
-            // 4. 插入销售记录（重点！全部改成 :createTime）
+            // 3. 插入用户 - 使用命名参数
             LocalDateTime now = LocalDateTime.now();
-            List<Map<String, Object>> sales = List.of(
-                    Map.<String, Object>of(
-                            "id", 1L, "category", "电子产品", "amount", new BigDecimal("2999.99"),
-                            "price", new BigDecimal("2999.99"), "status", "已完成", "createTime", now,
-                            "region", "华东", "productName", "智能手机A", "quantity", 1, "isDeleted", false
-                    ),
-                    Map.<String, Object>of(
-                            "id", 2L, "category", "电子产品", "amount", new BigDecimal("5999.99"),
-                            "price", new BigDecimal("5999.99"), "status", "已完成", "createTime", now,
-                            "region", "华北", "productName", "笔记本电脑B", "quantity", 1, "isDeleted", false
-                    ),
-                    Map.<String, Object>of(
-                            "id", 3L, "category", "家居用品", "amount", new BigDecimal("299.99"),
-                            "price", new BigDecimal("299.99"), "status", "处理中", "createTime", now,
-                            "region", "华南", "productName", "沙发罩C", "quantity", 2, "isDeleted", false
-                    ),
-                    Map.<String, Object>of(
-                            "id", 4L, "category", "电子产品", "amount", new BigDecimal("1999.99"),
-                            "price", new BigDecimal("1999.99"), "status", "已完成", "createTime", now,
-                            "region", "华东", "productName", "平板电脑D", "quantity", 1, "isDeleted", true
-                    )
+            List<Map<String, Object>> users = Arrays.asList(
+                    createUserParams(1L, "张三", 10000L, now),
+                    createUserParams(2L, "李四", 10001L, now),
+                    createUserParams(3L, "王五", 10001L, now),
+                    createUserParams(4L, "赵六", 10000L, now)
             );
 
-            String insertSalesSql = """
-            INSERT INTO sales_record(
-                id, category, amount, price, status, create_time, 
-                region, product_name, quantity, is_deleted
-            ) VALUES (
-                :id, :category, :amount, :price, :status, :createTime,
-                :region, :productName, :quantity, :isDeleted
-            )
-            """;
+            String insertUserSql = "INSERT INTO users(id, name, role_id, create_time, create_by, update_time, update_by, deleted) VALUES(:id, :name, :roleId, :createTime, :createBy, :updateTime, :updateBy, :deleted)";
 
-            sales.forEach(params -> sqlExecutor.execute(insertSalesSql, params));
+            for (Map<String, Object> user : users) {
+                sqlExecutor.execute(insertUserSql, user);
+            }
+
+            // 4. 插入销售记录 - 使用命名参数
+            List<Map<String, Object>> sales = Arrays.asList(
+                    createSalesParams(1L, "电子产品", "2999.99", "2999.99", "已完成", now, "华东", "智能手机A", 1, 0),
+                    createSalesParams(2L, "电子产品", "5999.99", "5999.99", "已完成", now, "华北", "笔记本电脑B", 1, 0),
+                    createSalesParams(3L, "家居用品", "299.99", "299.99", "处理中", now, "华南", "沙发罩C", 2, 0),
+                    createSalesParams(4L, "电子产品", "1999.99", "1999.99", "已完成", now, "华东", "平板电脑D", 1, 1)
+            );
+
+            String insertSalesSql = "INSERT INTO sales_record(id, category, amount, price, status, create_time, region, product_name, quantity, is_deleted) VALUES (:id, :category, :amount, :price, :status, :createTime, :region, :productName, :quantity, :isDeleted)";
+
+            for (Map<String, Object> sale : sales) {
+                sqlExecutor.execute(insertSalesSql, sale);
+            }
+
+            System.out.println("测试数据初始化完成");
 
         } catch (Exception e) {
+            e.printStackTrace();
             throw new RuntimeException("初始化测试数据失败: " + e.getMessage(), e);
         }
+    }
+
+    private Map<String, Object> createUserParams(Long id, String name, Long roleId, LocalDateTime now) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("id", id);
+        params.put("name", name);
+        params.put("roleId", roleId);
+        params.put("createTime", now);
+        params.put("createBy", 1L);
+        params.put("updateTime", now);
+        params.put("updateBy", 1L);
+        params.put("deleted", 0);
+        return params;
+    }
+
+    private Map<String, Object> createSalesParams(Long id, String category, String amount, String price,
+                                                  String status, LocalDateTime createTime, String region,
+                                                  String productName, Integer quantity, Integer isDeleted) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("id", id);
+        params.put("category", category);
+        params.put("amount", new BigDecimal(amount));
+        params.put("price", new BigDecimal(price));
+        params.put("status", status);
+        params.put("createTime", createTime);
+        params.put("region", region);
+        params.put("productName", productName);
+        params.put("quantity", quantity);
+        params.put("isDeleted", isDeleted);
+        return params;
     }
     // ===== 基础功能测试 =====
 
@@ -605,9 +623,9 @@ public class QueryBuilderTest {
         // 由于使用了@Transactional注解，事务会自动回滚
         // 这里保留清理逻辑作为额外保障
         try {
-            sqlExecutor.execute("DELETE FROM sales_record WHERE 1=1");
-            sqlExecutor.execute("DELETE FROM users WHERE 1=1");
-            sqlExecutor.execute("DELETE FROM roles WHERE 1=1");
+            sqlExecutor.delete("DELETE FROM sales_record WHERE 1=1");
+            sqlExecutor.delete("DELETE FROM users WHERE 1=1");
+            sqlExecutor.delete("DELETE FROM roles WHERE 1=1");
         } catch (Exception e) {
             System.err.println("清理测试数据失败: " + e.getMessage());
         }
