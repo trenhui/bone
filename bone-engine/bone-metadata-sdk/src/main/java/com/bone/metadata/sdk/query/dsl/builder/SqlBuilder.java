@@ -427,12 +427,12 @@ public class SqlBuilder<T> {
      */
     private void buildLimitOffsetClause() {
         if (queryContext.getLimit() != null) {
-            sql.append(" LIMIT ?");
-            parameters.add(queryContext.getLimit());
+            // 直接拼接LIMIT值，避免参数绑定问题
+            sql.append(" LIMIT ").append(queryContext.getLimit());
 
             if (queryContext.getOffset() != null) {
-                sql.append(" OFFSET ?");
-                parameters.add(queryContext.getOffset());
+                // 直接拼接OFFSET值，避免参数绑定问题
+                sql.append(" OFFSET ").append(queryContext.getOffset());
             }
         }
     }
