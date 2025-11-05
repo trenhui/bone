@@ -33,7 +33,7 @@ public class DefaultFluentQuery<T> implements FluentQuery<T> {
     }
 
     public DefaultFluentQuery(Class<T> entityClass, SqlExecutor sqlExecutor, String alias) {
-        this.sqlExecutor = Objects.requireNonNull(sqlExecutor, "SqlExecutorAdapter cannot be null");
+        this.sqlExecutor = Objects.requireNonNull(sqlExecutor, "SqlExecutor cannot be null");
         this.queryContext = new QueryContext<>(entityClass, alias, this);
     }
 
@@ -252,13 +252,14 @@ public class DefaultFluentQuery<T> implements FluentQuery<T> {
     }
 
     @Override
-    public T singleOpt() {
+    public Optional<T> singleOpt() {
         CompiledQuery query = buildSelectQuery();
-        return sqlExecutor.querySingle(query, queryContext.getEntityClass());
+        T result = sqlExecutor.querySingle(query, queryContext.getEntityClass());
+        return Optional.ofNullable(result);
     }
 
     @Override
-    public T first() {
+    public Optional<T> first() {
         return limit(1).singleOpt();
     }
 
