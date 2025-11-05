@@ -1,11 +1,10 @@
 package com.bone.metadata.sdk.test.config;
 
 import com.bone.metadata.sdk.domain.annotation.EnableSqlRepositories;
-import com.bone.metadata.sdk.query.dsl.QueryAutoConfiguration;
-import com.bone.metadata.sdk.support.config.*;
-import com.bone.metadata.sdk.query.dsl.SqlExecutorAdapter;
-import com.bone.metadata.sdk.sql.executor.SqlExecutor;
-import com.bone.metadata.sdk.domain.query.CompiledQuery;
+import com.bone.metadata.sdk.support.config.InterceptorAutoConfiguration;
+import com.bone.metadata.sdk.support.config.MetadataAutoConfiguration;
+import com.bone.metadata.sdk.support.config.MetadataSdkProperties;
+import com.bone.metadata.sdk.support.config.SqlRepositoryAutoConfiguration;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import feign.RequestInterceptor;
@@ -34,9 +33,7 @@ import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import javax.sql.DataSource;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -49,7 +46,6 @@ import static org.mockito.ArgumentMatchers.*;
         MetadataAutoConfiguration.class,
         SqlRepositoryAutoConfiguration.class,
         InterceptorAutoConfiguration.class,
-        QueryAutoConfiguration.class,
         FeignAutoConfiguration.class
 })
 @ComponentScan("com.bone.metadata.sdk")

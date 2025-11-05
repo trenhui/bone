@@ -1,13 +1,10 @@
 package com.bone.metadata.sdk.query.dsl.context;
 
-import com.bone.metadata.sdk.query.dsl.QueryBuilder;
-import com.bone.metadata.sdk.query.dsl.join.JoinImpl;
+import com.bone.metadata.sdk.query.dsl.FluentQuery;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Stack;
 
 /**
  * 查询上下文管理类 - 存储和管理查询的所有状态信息
@@ -16,7 +13,7 @@ public class QueryContext<T> {
 
     private final Class<T> entityClass;
     private final String entityAlias;
-    private final QueryBuilder.FluentQuery<T> fluentQuery;
+    private final FluentQuery<T> fluentQuery;
     private final List<Condition> conditions = new ArrayList<>();
     private final List<Order> orders = new ArrayList<>();
     private final List<Join> joins = new ArrayList<>();
@@ -24,8 +21,13 @@ public class QueryContext<T> {
     private Integer limit;
     private Integer offset;
     private Join currentJoin;
+    private String currentLogicalOperator = "AND";
 
-    public QueryContext(Class<T> entityClass, String entityAlias, QueryBuilder.FluentQuery<T> fluentQuery) {
+    // 在 QueryContext 类中添加分组支持
+    private final Stack<String> groupStack = new Stack<>();
+    private boolean inGroup = false;
+
+    public QueryContext(Class<T> entityClass, String entityAlias, FluentQuery<T> fluentQuery) {
         this.entityClass = entityClass;
         this.entityAlias = entityAlias;
         this.fluentQuery = fluentQuery;
@@ -38,6 +40,7 @@ public class QueryContext<T> {
         private Object value1;
         private Object value2;
         private boolean or = false;
+        private boolean having = false;
 
         public String getFieldName() {
             return fieldName;
@@ -77,6 +80,14 @@ public class QueryContext<T> {
 
         public void setOr(boolean or) {
             this.or = or;
+        }
+
+        public boolean isHaving() {
+            return having;
+        }
+
+        public void setHaving(boolean having) {
+            this.having = having;
         }
     }
 
@@ -202,7 +213,7 @@ public class QueryContext<T> {
         return entityAlias;
     }
 
-    public QueryBuilder.FluentQuery<T> getFluentQuery() {
+    public FluentQuery<T> getFluentQuery() {
         return fluentQuery;
     }
 
@@ -242,6 +253,36 @@ public class QueryContext<T> {
         return currentJoin;
     }
 
+    public String getCurrentLogicalOperator() {
+        return currentLogicalOperator;
+    }
+
+    public void setCurrentLogicalOperator(String currentLogicalOperator) {
+        this.currentLogicalOperator = currentLogicalOperator;
+    }
+
+    public void openGroup(String operator) {
+        groupStack.push(operator);
+        inGroup = true;
+        // 这里可以添加分组开始标记到条件中
+    }
+
+    public void closeGroup() {
+        if (!groupStack.isEmpty()) {
+            groupStack.pop();
+        }
+        inGroup = groupStack.isEmpty();
+        // 这里可以添加分组结束标记到条件中
+    }
+
+    public String getCurrentGroupOperator() {
+        return groupStack.isEmpty() ? null : groupStack.peek();
+    }
+
+    public boolean isInGroup() {
+        return inGroup;
+    }
+
     // 添加条件
     public void addCondition(Condition condition) {
         this.conditions.add(condition);
@@ -268,15 +309,15 @@ public class QueryContext<T> {
             this.groupByFields.add(fieldName);
         }
     }
-    
+
     /**
      * 创建一个新的查询上下文，复制当前上下文的所有信息，但移除排序和分页相关信息
      * 用于优化count查询性能
      */
     @SuppressWarnings("unchecked")
-    public <S extends QueryContext<T>> S cloneWithoutOrderLimit() {
+    public QueryContext<T> cloneWithoutOrderLimit() {
         QueryContext<T> newContext = new QueryContext<>(this.entityClass, this.entityAlias, this.fluentQuery);
-        
+
         // 复制条件
         for (Condition condition : this.conditions) {
             Condition newCondition = new Condition();
@@ -285,16 +326,17 @@ public class QueryContext<T> {
             newCondition.setValue1(condition.getValue1());
             newCondition.setValue2(condition.getValue2());
             newCondition.setOr(condition.isOr());
+            newCondition.setHaving(condition.isHaving());
             newContext.addCondition(newCondition);
         }
-        
+
         // 复制关联信息
         for (Join join : this.joins) {
             Join newJoin = new Join();
             newJoin.setJoinClass(join.getJoinClass());
             newJoin.setJoinEntityAlias(join.getJoinEntityAlias());
             newJoin.setJoinType(join.getJoinType());
-            
+
             // 复制关联条件
             for (Join.JoinCondition joinCondition : join.getJoinConditions()) {
                 Join.JoinCondition newJoinCondition = new Join.JoinCondition();
@@ -305,13 +347,22 @@ public class QueryContext<T> {
                 newJoinCondition.setOr(joinCondition.isOr());
                 newJoin.addJoinCondition(newJoinCondition);
             }
-            
+
             newContext.getJoins().add(newJoin);
         }
-        
+
         // 复制分组字段
         newContext.addGroupByFields(this.groupByFields.toArray(new String[0]));
-        
-        return (S) newContext;
+
+        return newContext;
+    }
+
+    /**
+     * 创建投影查询的上下文
+     */
+    public QueryContext<T> cloneForProjection(String fieldName) {
+        QueryContext<T> newContext = cloneWithoutOrderLimit();
+        // 这里可以添加投影特定的逻辑
+        return newContext;
     }
 }

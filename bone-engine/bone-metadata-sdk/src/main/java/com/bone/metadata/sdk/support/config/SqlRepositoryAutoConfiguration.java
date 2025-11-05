@@ -98,10 +98,8 @@ public class SqlRepositoryAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public SqlExecutor sqlExecutor(NamedParameterJdbcOperations jdbcOperations,
-                                   SqlTemplateLoader sqlTemplateLoader,
-                                   SqlProcessorFactory sqlProcessorFactory) {
-        return new SqlExecutor(jdbcOperations, sqlTemplateLoader, sqlProcessorFactory, properties);
+    public SqlExecutor sqlExecutor(NamedParameterJdbcOperations jdbcOperations) {
+        return new SqlExecutor(jdbcOperations, properties);
     }
 
     @Bean

@@ -1,40 +1,43 @@
 package com.bone.metadata.sdk.query.dsl.condition;
 
-import com.bone.metadata.sdk.query.dsl.QueryBuilder;
+import com.bone.metadata.sdk.query.dsl.FluentQuery;
+import com.bone.metadata.sdk.support.function.SFunction;
 
 import java.util.Collection;
+
 
 /**
  * 条件构建器接口 - 提供类型安全的条件查询API
  */
 public interface Condition<T, V> {
-    // 基础比较操作
-    QueryBuilder.FluentQuery<T> eq(V value);
-    QueryBuilder.FluentQuery<T> neq(V value);
-    QueryBuilder.FluentQuery<T> gt(V value);
-    QueryBuilder.FluentQuery<T> gte(V value);
-    QueryBuilder.FluentQuery<T> lt(V value);
-    QueryBuilder.FluentQuery<T> lte(V value);
 
-    // 字符串操作
-    QueryBuilder.FluentQuery<T> like(String value);
-    QueryBuilder.FluentQuery<T> notLike(String value);
-    QueryBuilder.FluentQuery<T> startsWith(String value);
-    QueryBuilder.FluentQuery<T> endsWith(String value);
-    QueryBuilder.FluentQuery<T> contains(String value);
+    // ===== 比较操作 =====
+    FluentQuery<T> eq(V value);
+    FluentQuery<T> neq(V value);
+    FluentQuery<T> gt(V value);
+    FluentQuery<T> gte(V value);
+    FluentQuery<T> lt(V value);
+    FluentQuery<T> lte(V value);
 
-    // 集合操作
-    QueryBuilder.FluentQuery<T> in(Collection<V> values);
-    QueryBuilder.FluentQuery<T> notIn(Collection<V> values);
+    // ===== 字符串操作 =====
+    FluentQuery<T> like(String value);
+    FluentQuery<T> notLike(String value);
+    FluentQuery<T> startsWith(String value);
+    FluentQuery<T> endsWith(String value);
+    FluentQuery<T> contains(String value);
 
-    // 空值操作
-    QueryBuilder.FluentQuery<T> isNull();
-    QueryBuilder.FluentQuery<T> isNotNull();
+    // ===== 集合操作 =====
+    FluentQuery<T> in(Collection<V> values);
+    FluentQuery<T> notIn(Collection<V> values);
 
-    // 范围操作
-    QueryBuilder.FluentQuery<T> between(V start, V end);
+    // ===== 空值操作 =====
+    FluentQuery<T> isNull();
+    FluentQuery<T> isNotNull();
 
-    // 逻辑组合
-    <NV> Condition<T, NV> and(Class<T> entityClass, String fieldName);
-    <NV> Condition<T, NV> or(Class<T> entityClass, String fieldName);
+    // ===== 范围操作 =====
+    FluentQuery<T> between(V start, V end);
+
+    // ===== 链式条件方法 =====
+    <NV> FluentQuery<T> and(SFunction<T, NV> fieldGetter);
+    <NV> FluentQuery<T> or(SFunction<T, NV> fieldGetter);
 }

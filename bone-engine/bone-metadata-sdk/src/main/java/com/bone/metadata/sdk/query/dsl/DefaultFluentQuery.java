@@ -1,383 +1,434 @@
 package com.bone.metadata.sdk.query.dsl;
 
+import com.bone.core.model.PageResult;
 import com.bone.metadata.sdk.domain.query.CompiledQuery;
 import com.bone.metadata.sdk.query.dsl.builder.SqlBuilder;
+import com.bone.metadata.sdk.query.dsl.condition.Condition;
+import com.bone.metadata.sdk.query.dsl.condition.ConditionImpl;
 import com.bone.metadata.sdk.query.dsl.context.QueryContext;
-import com.bone.metadata.sdk.query.dsl.context.QueryContext.JoinType;
+import com.bone.metadata.sdk.query.dsl.join.Join;
+import com.bone.metadata.sdk.query.dsl.join.JoinImpl;
 import com.bone.metadata.sdk.query.dsl.util.SqlSafeUtils;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import com.bone.metadata.sdk.sql.executor.SqlExecutor;
+import com.bone.metadata.sdk.support.function.SFunction;
+import com.bone.metadata.sdk.support.util.SqlUtil;
+
+import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
- * FluentQuery接口的默认实现类 - 提供流畅的查询API实现
+ * 默认流畅查询实现 - 纯Lambda版本
+ * 基于业界最佳实践，提供完全类型安全的API，复用现有组件
  */
-public class DefaultFluentQuery<T> implements QueryBuilder.FluentQuery<T> {
+public class DefaultFluentQuery<T> implements FluentQuery<T> {
 
     private final QueryContext<T> queryContext;
-    private final SqlExecutorAdapter sqlExecutorAdapter;
+    private final SqlExecutor sqlExecutor;
 
-    public DefaultFluentQuery(Class<T> entityClass, SqlExecutorAdapter sqlExecutorAdapter) {
-        this.sqlExecutorAdapter = sqlExecutorAdapter;
-        this.queryContext = new QueryContext<>(entityClass, "t", this);
+    public DefaultFluentQuery(Class<T> entityClass, SqlExecutor sqlExecutor) {
+        this(entityClass, sqlExecutor, "t");
+    }
+
+    public DefaultFluentQuery(Class<T> entityClass, SqlExecutor sqlExecutor, String alias) {
+        this.sqlExecutor = Objects.requireNonNull(sqlExecutor, "SqlExecutorAdapter cannot be null");
+        this.queryContext = new QueryContext<>(entityClass, alias, this);
+    }
+
+
+    // ===== 条件查询实现 =====
+
+    @Override
+    public <F> Condition<T, F> where(SFunction<T, F> fieldGetter) {
+        String fieldName = SqlUtil.extractFieldName(fieldGetter);
+        validateFieldName(fieldName, "where");
+        // 明确指定类型参数，解决类型推断问题
+        return new ConditionImpl<T, F>(queryContext, fieldName);
     }
 
     @Override
-    public <F> QueryBuilder.Condition<T, F> where(String fieldName) {
-        // 添加字段名验证，防止SQL注入
-        if (!SqlSafeUtils.isValidFieldName(fieldName)) {
-            throw new IllegalArgumentException("Invalid field name: " + fieldName);
-        }
-        
-        // 使用内部类实现Condition接口
-        return new QueryBuilder.Condition<T, F>() {
-            @Override
-            public QueryBuilder.FluentQuery<T> eq(F value) {
-                QueryContext.Condition condition = new QueryContext.Condition();
-                condition.setFieldName(fieldName);
-                condition.setOperator("=");
-                condition.setValue1(value);
-                queryContext.addCondition(condition);
-                return DefaultFluentQuery.this;
-            }
-
-            @Override
-            public QueryBuilder.FluentQuery<T> neq(F value) {
-                QueryContext.Condition condition = new QueryContext.Condition();
-                condition.setFieldName(fieldName);
-                condition.setOperator("<>");
-                condition.setValue1(value);
-                queryContext.addCondition(condition);
-                return DefaultFluentQuery.this;
-            }
-
-            @Override
-            public QueryBuilder.FluentQuery<T> gt(F value) {
-                QueryContext.Condition condition = new QueryContext.Condition();
-                condition.setFieldName(fieldName);
-                condition.setOperator(">");
-                
-                condition.setValue1(value);
-                queryContext.addCondition(condition);
-                return DefaultFluentQuery.this;
-            }
-
-            @Override
-            public QueryBuilder.FluentQuery<T> gte(F value) {
-                QueryContext.Condition condition = new QueryContext.Condition();
-                condition.setFieldName(fieldName);
-                condition.setOperator(">=");
-                condition.setValue1(value);
-                queryContext.addCondition(condition);
-                return DefaultFluentQuery.this;
-            }
-
-            @Override
-            public QueryBuilder.FluentQuery<T> lt(F value) {
-                QueryContext.Condition condition = new QueryContext.Condition();
-                condition.setFieldName(fieldName);
-                condition.setOperator("<");
-                condition.setValue1(value);
-                queryContext.addCondition(condition);
-                return DefaultFluentQuery.this;
-            }
-
-            @Override
-            public QueryBuilder.FluentQuery<T> lte(F value) {
-                QueryContext.Condition condition = new QueryContext.Condition();
-                condition.setFieldName(fieldName);
-                condition.setOperator("<=");
-                condition.setValue1(value);
-                queryContext.addCondition(condition);
-                return DefaultFluentQuery.this;
-            }
-
-            @Override
-            public QueryBuilder.FluentQuery<T> like(String value) {
-                QueryContext.Condition condition = new QueryContext.Condition();
-                condition.setFieldName(fieldName);
-                condition.setOperator("LIKE");
-                condition.setValue1(value);
-                queryContext.addCondition(condition);
-                return DefaultFluentQuery.this;
-            }
-
-            @Override
-            public QueryBuilder.FluentQuery<T> notLike(String value) {
-                QueryContext.Condition condition = new QueryContext.Condition();
-                condition.setFieldName(fieldName);
-                condition.setOperator("NOT LIKE");
-                condition.setValue1(value);
-                queryContext.addCondition(condition);
-                return DefaultFluentQuery.this;
-            }
-
-            @Override
-            public QueryBuilder.FluentQuery<T> in(java.util.Collection<F> values) {
-                QueryContext.Condition condition = new QueryContext.Condition();
-                condition.setFieldName(fieldName);
-                condition.setOperator("IN");
-                condition.setValue1(values);
-                queryContext.addCondition(condition);
-                return DefaultFluentQuery.this;
-            }
-
-            @Override
-            public QueryBuilder.FluentQuery<T> notIn(java.util.Collection<F> values) {
-                QueryContext.Condition condition = new QueryContext.Condition();
-                condition.setFieldName(fieldName);
-                condition.setOperator("NOT IN");
-                condition.setValue1(values);
-                queryContext.addCondition(condition);
-                return DefaultFluentQuery.this;
-            }
-
-            @Override
-            public QueryBuilder.FluentQuery<T> between(F start, F end) {
-                QueryContext.Condition condition = new QueryContext.Condition();
-                condition.setFieldName(fieldName);
-                condition.setOperator("BETWEEN");
-                condition.setValue1(start);
-                condition.setValue2(end);
-                queryContext.addCondition(condition);
-                return DefaultFluentQuery.this;
-            }
-
-            @Override
-            public QueryBuilder.FluentQuery<T> isNull() {
-                QueryContext.Condition condition = new QueryContext.Condition();
-                condition.setFieldName(fieldName);
-                condition.setOperator("IS NULL");
-                queryContext.addCondition(condition);
-                return DefaultFluentQuery.this;
-            }
-
-            @Override
-            public QueryBuilder.FluentQuery<T> isNotNull() {
-                QueryContext.Condition condition = new QueryContext.Condition();
-                condition.setFieldName(fieldName);
-                condition.setOperator("IS NOT NULL");
-                queryContext.addCondition(condition);
-                return DefaultFluentQuery.this;
-            }
-        };
+    public FluentQuery<T> where(Consumer<WhereBuilder<T>> conditionBuilder) {
+        DefaultWhereBuilder builder = new DefaultWhereBuilder();
+        conditionBuilder.accept(builder);
+        return this;
     }
 
-    @Override
-    public <F> QueryBuilder.Condition<T, F> where(Function<T, F> fieldGetter) {
-        // 简化实现，实际应该从Lambda表达式中提取字段名
-        throw new UnsupportedOperationException("Lambda expression not supported yet");
-    }
+    // ===== 排序实现 =====
 
     @Override
-    public QueryBuilder.FluentQuery<T> orderBy(String fieldName, boolean isAsc) {
-        // 添加字段名验证，防止SQL注入
-        if (!SqlSafeUtils.isValidFieldName(fieldName)) {
-            throw new IllegalArgumentException("Invalid field name for orderBy: " + fieldName);
-        }
+    public FluentQuery<T> orderBy(SFunction<T, ?> fieldGetter, boolean isAsc) {
+        String fieldName = SqlUtil.extractFieldName(fieldGetter);
+        validateFieldName(fieldName, "orderBy");
         queryContext.addOrder(new QueryContext.Order(fieldName, isAsc));
         return this;
     }
 
     @Override
-    public QueryBuilder.FluentQuery<T> limit(int limit) {
+    public FluentQuery<T> orderByAsc(SFunction<T, ?> fieldGetter) {
+        return orderBy(fieldGetter, true);
+    }
+
+    @Override
+    public FluentQuery<T> orderByDesc(SFunction<T, ?> fieldGetter) {
+        return orderBy(fieldGetter, false);
+    }
+
+    // ===== 分页控制实现 =====
+
+    @Override
+    public FluentQuery<T> limit(int limit) {
+        validateNonNegative(limit, "Limit");
         queryContext.setLimit(limit);
         return this;
     }
 
     @Override
-    public QueryBuilder.FluentQuery<T> offset(int offset) {
+    public FluentQuery<T> offset(int offset) {
+        validateNonNegative(offset, "Offset");
         queryContext.setOffset(offset);
         return this;
     }
 
+    // ===== 分组实现 =====
+
     @Override
-    public QueryBuilder.FluentQuery<T> groupBy(String... fieldNames) {
-        // 添加字段名验证，防止SQL注入
-        for (String fieldName : fieldNames) {
-            if (!SqlSafeUtils.isValidFieldName(fieldName)) {
-                throw new IllegalArgumentException("Invalid field name for groupBy: " + fieldName);
-            }
+    public FluentQuery<T> groupBy(Function<T, ?>... fieldGetters) {
+        for (Function<T, ?> fieldGetter : fieldGetters) {
+            String fieldName = SqlUtil.extractFieldName(fieldGetter);
+            validateFieldName(fieldName, "groupBy");
+            queryContext.addGroupByFields(fieldName);
         }
-        queryContext.addGroupByFields(fieldNames);
         return this;
     }
 
     @Override
-    public <J> QueryBuilder.Join<T, J> join(Class<J> joinClass, String joinAlias) {
-        queryContext.addJoin(joinClass, joinAlias, JoinType.INNER);
-        return createJoinImpl(joinAlias);
+    public <F> Condition<T, F> having(SFunction<T, F> fieldGetter) {
+        String fieldName = SqlUtil.extractFieldName(fieldGetter);
+        validateFieldName(fieldName, "having");
+        // 明确指定类型参数，解决类型推断问题
+        return new ConditionImpl<T, F>(queryContext, fieldName, false);
+    }
+
+    // ===== 关联查询实现 =====
+
+    @Override
+    public <J> Join<T, J> join(Class<J> joinClass, String joinAlias) {
+        validateJoinAlias(joinAlias);
+        return createJoin(joinClass, joinAlias, QueryContext.JoinType.INNER);
     }
 
     @Override
-    public <J> QueryBuilder.Join<T, J> leftJoin(Class<J> joinClass, String joinAlias) {
-        queryContext.addJoin(joinClass, joinAlias, JoinType.LEFT);
-        return createJoinImpl(joinAlias);
+    public <J> Join<T, J> leftJoin(Class<J> joinClass, String joinAlias) {
+        validateJoinAlias(joinAlias);
+        return createJoin(joinClass, joinAlias, QueryContext.JoinType.LEFT);
     }
 
     @Override
-    public <J> QueryBuilder.Join<T, J> rightJoin(Class<J> joinClass, String joinAlias) {
-        queryContext.addJoin(joinClass, joinAlias, JoinType.RIGHT);
-        return createJoinImpl(joinAlias);
+    public <J> Join<T, J> rightJoin(Class<J> joinClass, String joinAlias) {
+        validateJoinAlias(joinAlias);
+        return createJoin(joinClass, joinAlias, QueryContext.JoinType.RIGHT);
     }
 
     @Override
-    public <J> QueryBuilder.Join<T, J> fullJoin(Class<J> joinClass, String joinAlias) {
-        queryContext.addJoin(joinClass, joinAlias, JoinType.FULL);
-        return createJoinImpl(joinAlias);
+    public <J> Join<T, J> fullJoin(Class<J> joinClass, String joinAlias) {
+        validateJoinAlias(joinAlias);
+        return createJoin(joinClass, joinAlias, QueryContext.JoinType.FULL);
     }
-    
-    /**
-     * 创建Join接口的实现
-     */
-    /**
-     * 统一构建编译后的查询对象
-     * @param sql SQL语句
-     * @param parameters 查询参数
-     * @return 编译后的查询对象
-     */
-    private CompiledQuery buildCompiledQuery(String sql, List<Object> parameters) {
-        // 将问号占位符替换为命名参数格式，并创建对应的参数映射
-        StringBuilder namedParamSql = new StringBuilder(sql);
-        Map<String, Object> paramMap = new HashMap<>();
-        
-        // 替换所有问号为命名参数
-        int paramIndex = 0;
-        int pos = 0;
-        while ((pos = namedParamSql.indexOf("?", pos)) != -1) {
-            if (paramIndex < parameters.size()) {
-                String paramName = "param" + paramIndex;
-                namedParamSql.replace(pos, pos + 1, ":" + paramName);
-                paramMap.put(paramName, parameters.get(paramIndex));
-                paramIndex++;
-                pos += paramName.length() + 1; // 跳过已替换的部分
-            } else {
-                break; // 没有更多参数了
-            }
+
+    @Override
+    public <J> FluentQuery<T> joinOn(Class<J> joinClass, String joinAlias,
+                                     Function<T, ?> entityFieldGetter, Function<J, ?> joinFieldGetter) {
+        validateJoinAlias(joinAlias);
+
+        String entityField = SqlUtil.extractFieldName(entityFieldGetter);
+        String joinField = SqlUtil.extractFieldName(joinFieldGetter);
+
+        validateFieldName(entityField, "join entity field");
+        validateFieldName(joinField, "join entity field");
+
+        // 创建关联并设置条件
+        queryContext.addJoin(joinClass, joinAlias, QueryContext.JoinType.INNER);
+        QueryContext.Join currentJoin = queryContext.getCurrentJoin();
+
+        if (currentJoin != null) {
+            QueryContext.Join.JoinCondition joinCondition = new QueryContext.Join.JoinCondition();
+            joinCondition.setEntityField(entityField);
+            joinCondition.setOperator("=");
+            joinCondition.setJoinEntityField(joinField);
+            currentJoin.addJoinCondition(joinCondition);
         }
-        
-        return new CompiledQuery(namedParamSql.toString(), paramMap);
+
+        return this;
     }
-    
-    private <J> QueryBuilder.Join<T, J> createJoinImpl(String joinAlias) {
-        return new QueryBuilder.Join<T, J>() {
-            @Override
-            public <F, JF> QueryBuilder.FluentQuery<T> on(String entityField, String joinEntityField) {
-                QueryContext.Join currentJoin = queryContext.getCurrentJoin();
-                if (currentJoin != null) {
-                    QueryContext.Join.JoinCondition joinCondition = new QueryContext.Join.JoinCondition();
-                    joinCondition.setEntityField(entityField);
-                    joinCondition.setOperator("=");
-                    joinCondition.setJoinEntityField(joinEntityField);
-                    currentJoin.addJoinCondition(joinCondition);
-                }
-                return DefaultFluentQuery.this;
-            }
-            
-            @Override
-            public <F> QueryBuilder.Condition<T, F> where(String fieldName) {
-                return DefaultFluentQuery.this.where(fieldName);
-            }
-            
-            @Override
-            public QueryBuilder.FluentQuery<T> orderBy(String fieldName, boolean isAsc) {
-                return DefaultFluentQuery.this.orderBy(fieldName, isAsc);
-            }
-            
-            @Override
-            public QueryBuilder.FluentQuery<T> limit(int limit) {
-                return DefaultFluentQuery.this.limit(limit);
-            }
-            
-            @Override
-            public QueryBuilder.FluentQuery<T> offset(int offset) {
-                return DefaultFluentQuery.this.offset(offset);
-            }
-            
-            @Override
-            public QueryBuilder.FluentQuery<T> groupBy(String... fieldNames) {
-                return DefaultFluentQuery.this.groupBy(fieldNames);
-            }
-        };
+
+    @Override
+    public <J> FluentQuery<T> leftJoinOn(Class<J> joinClass, String joinAlias,
+                                         Function<T, ?> entityFieldGetter, Function<J, ?> joinFieldGetter) {
+        validateJoinAlias(joinAlias);
+
+        String entityField = SqlUtil.extractFieldName(entityFieldGetter);
+        String joinField = SqlUtil.extractFieldName(joinFieldGetter);
+
+        validateFieldName(entityField, "join entity field");
+        validateFieldName(joinField, "join entity field");
+
+        // 创建左关联并设置条件
+        queryContext.addJoin(joinClass, joinAlias, QueryContext.JoinType.LEFT);
+        QueryContext.Join currentJoin = queryContext.getCurrentJoin();
+
+        if (currentJoin != null) {
+            QueryContext.Join.JoinCondition joinCondition = new QueryContext.Join.JoinCondition();
+            joinCondition.setEntityField(entityField);
+            joinCondition.setOperator("=");
+            joinCondition.setJoinEntityField(joinField);
+            currentJoin.addJoinCondition(joinCondition);
+        }
+
+        return this;
     }
+
+    private <J> Join<T, J> createJoin(Class<J> joinClass, String joinAlias, QueryContext.JoinType joinType) {
+        queryContext.addJoin(joinClass, joinAlias, joinType);
+        return new JoinImpl<>(queryContext, this, joinAlias);
+    }
+
+    // ===== 新增方法实现 =====
+
+    @Override
+    public <F> Condition<T, F> and(SFunction<T, F> fieldGetter) {
+        String fieldName = SqlUtil.extractFieldName(fieldGetter);
+        validateFieldName(fieldName, "and");
+        // 设置逻辑操作符为AND
+        queryContext.setCurrentLogicalOperator("AND");
+        return new ConditionImpl<T, F>(queryContext, fieldName, false);
+    }
+
+    @Override
+    public <F> Condition<T, F> or(SFunction<T, F> fieldGetter) {
+        String fieldName = SqlUtil.extractFieldName(fieldGetter);
+        validateFieldName(fieldName, "or");
+        // 设置逻辑操作符为OR
+        queryContext.setCurrentLogicalOperator("OR");
+        return new ConditionImpl<T, F>(queryContext, fieldName, true);
+    }
+
+    @Override
+    public FluentQuery<T> and(Consumer<FluentQuery<T>> groupBuilder) {
+        // 开始AND分组
+        queryContext.openGroup("AND");
+        groupBuilder.accept(this);
+        queryContext.closeGroup();
+        return this;
+    }
+
+    @Override
+    public FluentQuery<T> or(Consumer<FluentQuery<T>> groupBuilder) {
+        // 开始OR分组
+        queryContext.openGroup("OR");
+        groupBuilder.accept(this);
+        queryContext.closeGroup();
+        return this;
+    }
+
+    // ===== 查询执行实现 =====
 
     @Override
     public List<T> list() {
-        try {
-            SqlBuilder<T> sqlBuilder = new SqlBuilder<>(queryContext);
-            CompiledQuery query = buildCompiledQuery(sqlBuilder.buildSelectSql(), sqlBuilder.getParameters());
-            return sqlExecutorAdapter.execute(query, queryContext.getEntityClass());
-        } catch (Exception e) {
-            throw new RuntimeException("Error executing query", e);
-        }
+        CompiledQuery query = buildSelectQuery();
+        return sqlExecutor.queryList(query, queryContext.getEntityClass());
     }
 
     @Override
     public T single() {
-        try {
-            SqlBuilder<T> sqlBuilder = new SqlBuilder<>(queryContext);
-            CompiledQuery query = buildCompiledQuery(sqlBuilder.buildSelectSql(), sqlBuilder.getParameters());
-            List<T> results = sqlExecutorAdapter.execute(query, queryContext.getEntityClass());
-            if (results.isEmpty()) {
-                return null;
-            }
-            if (results.size() > 1) {
-                throw new RuntimeException("Expected single result, but found " + results.size() + " results");
-            }
-            return results.get(0);
-        } catch (Exception e) {
-            throw new RuntimeException("Error executing single query", e);
-        }
+        List<T> results = list();
+        return switch (results.size()) {
+            case 0 -> null;
+            case 1 -> results.get(0);
+            default -> throw new NonUniqueResultException(
+                    String.format("Query returned %d results but expected single result", results.size()));
+        };
+    }
+
+    @Override
+    public T singleOpt() {
+        CompiledQuery query = buildSelectQuery();
+        return sqlExecutor.querySingle(query, queryContext.getEntityClass());
+    }
+
+    @Override
+    public T first() {
+        return limit(1).singleOpt();
     }
 
     @Override
     public long count() {
-        try {
-            // 创建临时查询上下文，移除排序和分页相关信息以优化count查询
-            QueryContext<T> countContext = queryContext.cloneWithoutOrderLimit();
-            SqlBuilder<T> sqlBuilder = new SqlBuilder<>(countContext);
-            CompiledQuery query = buildCompiledQuery(sqlBuilder.buildCountSql(), sqlBuilder.getParameters());
-            return sqlExecutorAdapter.executeCount(query);
-        } catch (Exception e) {
-            throw new RuntimeException("Error executing count query", e);
-        }
+        QueryContext<T> countContext = queryContext.cloneWithoutOrderLimit();
+        SqlBuilder<T> sqlBuilder = new SqlBuilder<>(countContext);
+        return sqlExecutor.count(sqlBuilder.buildQuery());
     }
 
     @Override
-    public QueryBuilder.PageResult<T> page(int pageNum, int pageSize) {
+    public PageResult<T> page(int pageNum, int pageSize) {
+        validatePositive(pageNum, "Page number");
+        validatePositive(pageSize, "Page size");
+
+        // 保存原始分页设置
+        Integer originalLimit = queryContext.getLimit();
+        Integer originalOffset = queryContext.getOffset();
+
         try {
-            // 设置分页参数
-            offset((pageNum - 1) * pageSize);
-            limit(pageSize);
-            
-            // 查询数据列表
+            // 设置分页参数并查询数据
+            int offset = (pageNum - 1) * pageSize;
+            queryContext.setLimit(pageSize);
+            queryContext.setOffset(offset);
+
             List<T> records = list();
-            
+
             // 查询总数
+            queryContext.setLimit(originalLimit);
+            queryContext.setOffset(originalOffset);
             long total = count();
-            
-            // 计算总页数
-            int totalPages = (int) Math.ceil((double) total / pageSize);
-            
-            // 创建分页结果
-            QueryBuilder.PageResult<T> pageResult = new QueryBuilder.PageResult<>();
-            pageResult.setRecords(records);
-            pageResult.setTotal(total);
-            pageResult.setPageNum(pageNum);
-            pageResult.setPageSize(pageSize);
-            pageResult.setTotalPages(totalPages);
-            pageResult.setHasNext(totalPages > pageNum);
-            pageResult.setHasPrevious(pageNum > 1);
-            
-            return pageResult;
-        } catch (Exception e) {
-            throw new RuntimeException("Error executing page query", e);
+
+            return PageResult.of(records, total, pageNum, pageSize);
+        } finally {
+            // 恢复原始设置
+            queryContext.setLimit(originalLimit);
+            queryContext.setOffset(originalOffset);
         }
     }
 
     @Override
     public boolean exists() {
         return count() > 0;
+    }
+
+    // ===== 高级功能实现 =====
+
+    @Override
+    public <R> List<R> select(SFunction<T, R> fieldGetter, Class<R> resultType) {
+        String fieldName = SqlUtil.extractFieldName(fieldGetter);
+        validateFieldName(fieldName, "select");
+
+        QueryContext<T> projectionContext = queryContext.cloneForProjection(fieldName);
+        SqlBuilder<T> sqlBuilder = new SqlBuilder<>(projectionContext);
+
+        return sqlExecutor.query(sqlBuilder.buildQuery(), resultType);
+    }
+
+    @Override
+    public <R> Optional<R> aggregate(String function, SFunction<T, ?> fieldGetter, Class<R> resultType) {
+        String fieldName = SqlUtil.extractFieldName(fieldGetter);
+        validateFieldName(fieldName, "aggregate");
+        validateAggregateFunction(function);
+
+        SqlBuilder<T> sqlBuilder = new SqlBuilder<>(queryContext);
+        CompiledQuery query = sqlBuilder.buildAggregateQuery(function, fieldName);
+
+        R result = sqlExecutor.queryForObject(query, resultType);
+        return Optional.ofNullable(result);
+    }
+
+    @Override
+    public <R> List<R> map(Function<T, R> mapper) {
+        return list().stream().map(mapper).collect(Collectors.toList());
+    }
+
+    @Override
+    public void forEach(Consumer<T> action) {
+        list().forEach(action);
+    }
+
+    @Override
+    public Stream<T> stream() {
+        return list().stream();
+    }
+
+    // ===== 内部辅助方法 =====
+
+    private CompiledQuery buildSelectQuery() {
+        SqlBuilder<T> sqlBuilder = new SqlBuilder<>(queryContext);
+        return sqlBuilder.buildQuery();
+    }
+
+
+    private String buildAggregateSql(String function, String fieldName, SqlBuilder<T> sqlBuilder) {
+        // 简化实现，实际应该使用SqlBuilder构建完整的聚合查询
+        return "SELECT " + function + "(" + fieldName + ") FROM " + getTableName(queryContext.getEntityClass());
+    }
+
+    private String getTableName(Class<?> entityClass) {
+        // 简化实现，使用类名的小写形式
+        return entityClass.getSimpleName().toLowerCase();
+    }
+
+    private void validateFieldName(String fieldName, String operation) {
+        if (!SqlSafeUtils.isValidFieldName(fieldName)) {
+            throw new IllegalArgumentException(
+                    String.format("Invalid field name for %s: %s", operation, fieldName));
+        }
+    }
+
+    private void validateJoinAlias(String alias) {
+        if (alias == null || alias.trim().isEmpty()) {
+            throw new IllegalArgumentException("Join alias cannot be null or empty");
+        }
+        if (!SqlSafeUtils.isValidFieldName(alias)) {
+            throw new IllegalArgumentException("Invalid join alias: " + alias);
+        }
+    }
+
+    private void validateAggregateFunction(String function) {
+        Set<String> validFunctions = Set.of("COUNT", "SUM", "AVG", "MAX", "MIN");
+        if (!validFunctions.contains(function.toUpperCase())) {
+            throw new IllegalArgumentException("Invalid aggregate function: " + function);
+        }
+    }
+
+    private void validateNonNegative(int value, String field) {
+        if (value < 0) {
+            throw new IllegalArgumentException(field + " must be non-negative");
+        }
+    }
+
+    private void validatePositive(int value, String field) {
+        if (value <= 0) {
+            throw new IllegalArgumentException(field + " must be positive");
+        }
+    }
+
+    // ===== 内部构建器类 =====
+
+    /**
+     * 默认WHERE构建器实现
+     */
+    private class DefaultWhereBuilder implements WhereBuilder<T> {
+        @Override
+        public <F> Condition<T, F> and(SFunction<T, F> fieldGetter) {
+            queryContext.setCurrentLogicalOperator("AND");
+            String fieldName = SqlUtil.extractFieldName(fieldGetter);
+            // 明确指定类型参数
+            return new ConditionImpl<T, F>(queryContext, fieldName, false);
+        }
+
+        @Override
+        public <F> Condition<T, F> or(SFunction<T, F> fieldGetter) {
+            queryContext.setCurrentLogicalOperator("OR");
+            String fieldName = SqlUtil.extractFieldName(fieldGetter);
+            // 明确指定类型参数
+            return new ConditionImpl<T, F>(queryContext, fieldName, true);
+        }
+    }
+
+    // ===== 自定义异常类 =====
+
+    /**
+     * 非唯一结果异常
+     */
+    public static class NonUniqueResultException extends RuntimeException {
+        public NonUniqueResultException(String message) {
+            super(message);
+        }
     }
 }

@@ -1,12 +1,16 @@
 package com.bone.metadata.sdk.query.dsl.builder;
 
+import com.bone.metadata.sdk.domain.query.CompiledQuery;
 import com.bone.metadata.sdk.query.dsl.context.QueryContext;
 import com.bone.metadata.sdk.query.dsl.context.QueryContext.Condition;
 import com.bone.metadata.sdk.query.dsl.context.QueryContext.Join;
 import com.bone.metadata.sdk.query.dsl.context.QueryContext.Order;
+import com.bone.metadata.sdk.query.dsl.util.SqlSafeUtils;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -27,6 +31,9 @@ public class SqlBuilder<T> {
      * 构建完整的SELECT查询SQL
      */
     public String buildSelectSql() {
+        sql.setLength(0);
+        parameters.clear();
+
         buildSelectClause();
         buildFromClause();
         buildJoinClauses();
@@ -41,6 +48,9 @@ public class SqlBuilder<T> {
      * 构建COUNT查询SQL
      */
     public String buildCountSql() {
+        sql.setLength(0);
+        parameters.clear();
+
         sql.append("SELECT COUNT(*)");
         buildFromClause();
         buildJoinClauses();
@@ -49,11 +59,115 @@ public class SqlBuilder<T> {
     }
 
     /**
+     * 构建聚合查询SQL
+     */
+    public String buildAggregateSql(String function, String fieldName) {
+        sql.setLength(0);
+        parameters.clear();
+
+        // 验证字段名
+        if (!SqlSafeUtils.isValidFieldName(fieldName)) {
+            throw new IllegalArgumentException("Invalid field name for aggregate: " + fieldName);
+        }
+
+        String columnName = camelToSnake(fieldName);
+        sql.append("SELECT ").append(function).append("(")
+                .append(queryContext.getEntityAlias()).append(".").append(columnName).append(")");
+
+        buildFromClause();
+        buildJoinClauses();
+        buildWhereClause();
+        buildGroupByClause();
+
+        return sql.toString();
+    }
+
+    /**
+     * 构建投影查询SQL（选择特定字段）
+     */
+    public String buildProjectionSql(String fieldName) {
+        sql.setLength(0);
+        parameters.clear();
+
+        // 验证字段名
+        if (!SqlSafeUtils.isValidFieldName(fieldName)) {
+            throw new IllegalArgumentException("Invalid field name for projection: " + fieldName);
+        }
+
+        String columnName = camelToSnake(fieldName);
+        sql.append("SELECT ").append(queryContext.getEntityAlias()).append(".").append(columnName);
+
+        buildFromClause();
+        buildJoinClauses();
+        buildWhereClause();
+        buildGroupByClause();
+        buildOrderByClause();
+        buildLimitOffsetClause();
+
+        return sql.toString();
+    }
+
+    /**
+     * 构建完整的查询 CompiledQuery
+     */
+    public CompiledQuery buildQuery() {
+        String sql = buildSelectSql();
+        return createCompiledQuery(sql);
+    }
+
+    /**
+     * 构建计数查询 CompiledQuery
+     */
+    public CompiledQuery buildCountQuery() {
+        String sql = buildCountSql();
+        return createCompiledQuery(sql);
+    }
+
+    /**
+     * 构建聚合查询 CompiledQuery
+     */
+    public CompiledQuery buildAggregateQuery(String function, String fieldName) {
+        String sql = buildAggregateSql(function, fieldName);
+        return createCompiledQuery(sql);
+    }
+
+    /**
+     * 构建投影查询 CompiledQuery
+     */
+    public CompiledQuery buildProjectionQuery(String fieldName) {
+        String sql = buildProjectionSql(fieldName);
+        return createCompiledQuery(sql);
+    }
+
+    /**
+     * 创建 CompiledQuery 对象
+     */
+    private CompiledQuery createCompiledQuery(String sql) {
+        Map<String, Object> paramMap = convertToParamMap(parameters);
+        return new CompiledQuery(sql, paramMap);
+    }
+
+    /**
+     * 参数转换工具方法
+     */
+    private Map<String, Object> convertToParamMap(List<Object> params) {
+        Map<String, Object> paramMap = new HashMap<>();
+        if (params != null) {
+            for (int i = 0; i < params.size(); i++) {
+                paramMap.put("p" + i, params.get(i));
+            }
+        }
+        return paramMap;
+    }
+
+    /**
      * 获取SQL参数
      */
     public List<Object> getParameters() {
         return parameters;
     }
+
+    // ===== SQL 子句构建方法 =====
 
     /**
      * 构建SELECT子句
@@ -80,30 +194,30 @@ public class SqlBuilder<T> {
             String joinType = join.getJoinType().name();
             String joinTableName = getTableName(join.getJoinClass());
             String joinAlias = join.getJoinEntityAlias();
-            
+
             sql.append(" ").append(joinType).append(" JOIN ")
-               .append(joinTableName).append(" ").append(joinAlias).append(" ON ");
-            
+                    .append(joinTableName).append(" ").append(joinAlias).append(" ON ");
+
             // 构建关联条件
             for (int i = 0; i < join.getJoinConditions().size(); i++) {
                 Join.JoinCondition joinCondition = join.getJoinConditions().get(i);
-                
+
                 if (i > 0) {
                     sql.append(joinCondition.isOr() ? " OR " : " AND ");
                 }
-                
+
                 if (joinCondition.getJoinEntityField() != null) {
                     // 实体字段与关联表字段相等的条件
                     sql.append(queryContext.getEntityAlias()).append(".")
-                       .append(camelToSnake(joinCondition.getEntityField())).append(" ")
-                       .append(joinCondition.getOperator()).append(" ")
-                       .append(joinAlias).append(".")
-                       .append(camelToSnake(joinCondition.getJoinEntityField()));
+                            .append(camelToSnake(joinCondition.getEntityField())).append(" ")
+                            .append(joinCondition.getOperator()).append(" ")
+                            .append(joinAlias).append(".")
+                            .append(camelToSnake(joinCondition.getJoinEntityField()));
                 } else if (joinCondition.getValue() != null) {
                     // 实体字段与值比较的条件
-            sql.append(queryContext.getEntityAlias()).append(".")
-               .append(camelToSnake(joinCondition.getEntityField())).append(" ")
-               .append(joinCondition.getOperator()).append(" ?");
+                    sql.append(queryContext.getEntityAlias()).append(".")
+                            .append(camelToSnake(joinCondition.getEntityField())).append(" ")
+                            .append(joinCondition.getOperator()).append(" ?");
                     parameters.add(joinCondition.getValue());
                 }
             }
@@ -122,11 +236,11 @@ public class SqlBuilder<T> {
         sql.append(" WHERE ");
         for (int i = 0; i < conditions.size(); i++) {
             Condition condition = conditions.get(i);
-            
+
             if (i > 0) {
                 sql.append(condition.isOr() ? " OR " : " AND ");
             }
-            
+
             buildCondition(condition);
         }
     }
@@ -182,9 +296,9 @@ public class SqlBuilder<T> {
         }
 
         sql.append(" GROUP BY ")
-           .append(groupByFields.stream()
-               .map(field -> queryContext.getEntityAlias() + "." + camelToSnake(field))
-               .collect(Collectors.joining(", ")));
+                .append(groupByFields.stream()
+                        .map(field -> queryContext.getEntityAlias() + "." + camelToSnake(field))
+                        .collect(Collectors.joining(", ")));
     }
 
     /**
@@ -197,10 +311,10 @@ public class SqlBuilder<T> {
         }
 
         sql.append(" ORDER BY ")
-           .append(orders.stream()
-               .map(order -> queryContext.getEntityAlias() + "." + camelToSnake(order.getFieldName()) + 
-                            (order.isAsc() ? " ASC" : " DESC"))
-               .collect(Collectors.joining(", ")));
+                .append(orders.stream()
+                        .map(order -> queryContext.getEntityAlias() + "." + camelToSnake(order.getFieldName()) +
+                                (order.isAsc() ? " ASC" : " DESC"))
+                        .collect(Collectors.joining(", ")));
     }
 
     /**
@@ -210,13 +324,15 @@ public class SqlBuilder<T> {
         if (queryContext.getLimit() != null) {
             sql.append(" LIMIT ?");
             parameters.add(queryContext.getLimit());
-            
+
             if (queryContext.getOffset() != null) {
                 sql.append(" OFFSET ?");
                 parameters.add(queryContext.getOffset());
             }
         }
     }
+
+    // ===== 工具方法 =====
 
     /**
      * 驼峰命名转下划线命名
@@ -252,7 +368,7 @@ public class SqlBuilder<T> {
                 // 获取注解实例（使用反射避免直接引用）
                 java.lang.reflect.Method getAnnotationMethod = Class.class.getMethod("getAnnotation", Class.class);
                 Object tableAnnotation = getAnnotationMethod.invoke(entityClass, tableAnnotationClass);
-                
+
                 if (tableAnnotation != null) {
                     // 获取name属性
                     java.lang.reflect.Method nameMethod = tableAnnotationClass.getMethod("value");
@@ -270,13 +386,13 @@ public class SqlBuilder<T> {
         } catch (Exception e) {
             // 解析注解失败，使用默认命名规则
         }
-        
+
         // 默认使用实体类名作为表名（转为小写并添加s后缀）
         String className = entityClass.getSimpleName().toLowerCase();
-        if (className.endsWith("s") || className.endsWith("x") || 
-            className.endsWith("z") || (className.length() > 1 && 
-            className.endsWith("h") && !className.endsWith("ch") && 
-            !className.endsWith("sh"))) {
+        if (className.endsWith("s") || className.endsWith("x") ||
+                className.endsWith("z") || (className.length() > 1 &&
+                className.endsWith("h") && !className.endsWith("ch") &&
+                !className.endsWith("sh"))) {
             return className;
         } else {
             return className + "s";

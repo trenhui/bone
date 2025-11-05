@@ -63,7 +63,7 @@ public class ReservedColumnsHandler implements ExtensionStorageHandler {
                     () -> {
                         List<FieldMetadata> fields = loadOrCreateFields(ctx);
                         String sql = ReservedQueryBuilder.buildUpsertSQL(ctx, fields, MetadataSdkContext.getDatabaseType());
-                        sqlExecutor.executeUpdate(new CompiledQuery(sql, buildUpsertParams(ctx, fields)));
+                        sqlExecutor.update(new CompiledQuery(sql, buildUpsertParams(ctx, fields)));
                         return null;
                     }
             );
@@ -82,7 +82,7 @@ public class ReservedColumnsHandler implements ExtensionStorageHandler {
         }
 
         CompiledQuery cq = new CompiledQuery(ReservedQueryBuilder.buildSelectSQL(ctx, fields), buildSelectParams(ctx));
-        List<Map<String, Object>> rows = sqlExecutor.executeQueryForMap(cq);
+        List<Map<String, Object>> rows = sqlExecutor.queryForMap(cq);
         if (rows.isEmpty()) {
             return Collections.emptyMap();
         }

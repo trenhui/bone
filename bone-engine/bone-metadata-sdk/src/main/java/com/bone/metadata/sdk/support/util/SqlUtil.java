@@ -5,11 +5,17 @@ import java.lang.reflect.Method;
 import java.util.function.Function;
 
 public class SqlUtil {
+
+    public static <T, R> String extractFieldName(Function<T, R> keyExtractor) {
+        return getFieldName(keyExtractor);
+    }
+
+
     public static <T, R> String getFieldName(Function<T, R> keyExtractor) {
         try {
             // 获取 SerializedLambda
             SerializedLambda lambda = resolve(keyExtractor);
-            String methodName = lambda.getImplMethodName();  // 获取方法名，像 'getRoleId'
+            String methodName = lambda.getImplMethodName();  //
 
             // 如果是 getter 方法，去掉 'get' 前缀
             if (methodName.startsWith("get")) {

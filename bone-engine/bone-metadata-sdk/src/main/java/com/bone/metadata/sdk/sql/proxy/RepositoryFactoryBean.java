@@ -298,7 +298,7 @@ public class RepositoryFactoryBean<T, E, ID> implements FactoryBean<T>, Initiali
                     return handleInsert(query);
                 case UPDATE:
                 case DELETE:
-                    return sqlExecutor.executeUpdate(query);
+                    return sqlExecutor.update(query);
                 default:
                     throw new UnsupportedOperationException("不支持的 SQL 类型: " + sqlType);
             }
@@ -322,20 +322,20 @@ public class RepositoryFactoryBean<T, E, ID> implements FactoryBean<T>, Initiali
         private Object executeListQuery(CompiledQuery query) {
             Class<?> elementType = listElementTypeCache.get(method);
             return isSimpleType(elementType)
-                    ? sqlExecutor.queryForList(query.getSql(), query.getParameters(), elementType)
-                    : sqlExecutor.executeQuery(query, elementType);
+                    ? sqlExecutor.queryList(query, elementType)
+                    : sqlExecutor.query(query, elementType);
         }
 
         private Object executeOptionalQuery(CompiledQuery query) {
             Class<?> elementType = optionalElementTypeCache.get(method);
-            List<?> results = sqlExecutor.executeQuery(query, elementType);
+            List<?> results = sqlExecutor.query(query, elementType);
             if (results.isEmpty()) return Optional.empty();
             if (results.size() == 1) return Optional.of(results.get(0));
             throw new IncorrectResultSizeDataAccessException(1, results.size());
         }
 
         private Object executeSingleResultQuery(CompiledQuery query, Class<?> returnType) {
-            List<?> results = sqlExecutor.executeQuery(query, returnType);
+            List<?> results = sqlExecutor.query(query, returnType);
             if (results.isEmpty()) return null;
             if (results.size() == 1) return results.get(0);
             throw new IncorrectResultSizeDataAccessException(1, results.size());
@@ -344,9 +344,9 @@ public class RepositoryFactoryBean<T, E, ID> implements FactoryBean<T>, Initiali
         private Object handleInsert(CompiledQuery query) {
             Class<?> returnType = method.getReturnType();
             if (Long.class.equals(returnType) || long.class.equals(returnType)) {
-                return sqlExecutor.executeInsert(query, entityClass);
+                return sqlExecutor.insert(query, entityClass);
             }
-            return sqlExecutor.executeUpdate(query);
+            return sqlExecutor.update(query);
         }
 
         private IllegalStateException createExecutionException(String sql, RuntimeException ex) {
