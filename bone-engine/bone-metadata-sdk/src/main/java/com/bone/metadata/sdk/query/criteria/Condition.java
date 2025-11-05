@@ -128,7 +128,7 @@ public class Condition {
             case LIKE_RIGHT -> buildLikeSql(col, "", "%%", false);
             case IN -> String.format("%s IN (:%s)", col, paramName);
             case NOT_IN -> String.format("%s NOT IN (:%s)", col, paramName);
-            case BETWEEN -> String.format("%s BETWEEN :%s_0 AND :%s_1", col, column, column);
+            case BETWEEN -> String.format("%s BETWEEN :%s_0 AND :%s_1", col, paramName, paramName);
             case IS_NULL -> String.format("%s IS NULL", col);
             case IS_NOT_NULL -> String.format("%s IS NOT NULL", col);
             default -> throw new IllegalStateException("Unsupported operator " + operator);

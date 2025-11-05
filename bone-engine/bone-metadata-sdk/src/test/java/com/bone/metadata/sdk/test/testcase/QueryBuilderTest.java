@@ -196,7 +196,7 @@ public class QueryBuilderTest {
 
         // 按条件计数
         long role1Count = QueryBuilder.from(User.class)
-                .where(User::getRoleId).eq(1L)
+                .where(User::getRoleId).eq(10000L)
                 .count();
 
         assertEquals(2, role1Count);
@@ -543,7 +543,7 @@ public class QueryBuilderTest {
     void testComplexConditionWithAndOr() {
         // 正确的使用方式：通过Condition的and/or方法返回FluentQuery后继续链式调用
         List<User> users = QueryBuilder.from(User.class)
-                .where(User::getRoleId).eq(1L)
+                .where(User::getRoleId).eq(10000L)
                 .or(User::getName).contains("李")
                 .list();
 

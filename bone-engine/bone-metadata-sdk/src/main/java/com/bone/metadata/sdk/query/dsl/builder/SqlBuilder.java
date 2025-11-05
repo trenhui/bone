@@ -51,18 +51,80 @@ public class SqlBuilder<T> {
         sql.setLength(0);
         parameters.clear();
 
-        // 确保COUNT查询只返回单列
-        sql.append("SELECT COUNT(*)");
-        
-        // 简化COUNT查询，避免JOIN操作影响结果列数
+        // 创建一个完全独立的COUNT查询，不与其他构建方法共享逻辑
         String tableName = getTableName(queryContext.getEntityClass());
-        String entityAlias = queryContext.getEntityAlias();
-        sql.append(" FROM " + tableName + " " + entityAlias);
+        sql.append("SELECT COUNT(*) FROM " + tableName);
         
-        // 只添加WHERE条件
-        buildWhereClause();
+        // 处理WHERE条件
+        List<Condition> conditions = queryContext.getConditions();
+        if (!conditions.isEmpty()) {
+            sql.append(" WHERE ");
+            for (int i = 0; i < conditions.size(); i++) {
+                if (i > 0) {
+                    sql.append(conditions.get(i).isOr() ? " OR " : " AND ");
+                }
+                buildCountCondition(conditions.get(i));
+            }
+        }
         
         return sql.toString();
+    }
+    
+    /**
+     * 为COUNT查询构建条件，确保只处理简单条件
+     */
+    private void buildCountCondition(Condition condition) {
+        String fieldName = condition.getFieldName();
+        String columnName = camelToSnake(fieldName);
+        String operator = condition.getOperator();
+        Object value1 = condition.getValue1();
+        
+        sql.append(columnName).append(" ").append(operator);
+        
+        switch (operator) {
+            case "IN":
+            case "NOT IN":
+                if (value1 instanceof List) {
+                    List<?> values = (List<?>) value1;
+                    if (values.isEmpty()) {
+                        sql.append(" (NULL)");
+                    } else {
+                        StringBuilder placeholders = new StringBuilder();
+                        for (int i = 0; i < values.size(); i++) {
+                            if (i > 0) {
+                                placeholders.append(", ");
+                            }
+                            String paramName = "p" + paramIndex;
+                            placeholders.append(":").append(paramName);
+                            parameters.add(values.get(i));
+                            paramIndex++;
+                        }
+                        sql.append(" (").append(placeholders).append(")");
+                    }
+                }
+                break;
+            case "BETWEEN":
+                String paramName1 = "p" + paramIndex;
+                sql.append(" :").append(paramName1);
+                parameters.add(value1);
+                paramIndex++;
+                
+                String paramName2 = "p" + paramIndex;
+                sql.append(" AND :").append(paramName2);
+                parameters.add(condition.getValue2());
+                paramIndex++;
+                break;
+            case "IS NULL":
+            case "IS NOT NULL":
+                // 不需要添加参数
+                break;
+            default:
+                String paramName = "p" + paramIndex;
+                sql.append(" :").append(paramName);
+                parameters.add(value1);
+                paramIndex++;
+                break;
+        }
     }
 
     /**
@@ -150,10 +212,10 @@ public class SqlBuilder<T> {
      * 创建 CompiledQuery 对象
      */
     private CompiledQuery createCompiledQuery(String sql) {
-        // 使用命名参数，避免参数位置不匹配问题
+        // 将参数列表转换为命名参数字典，确保与SQL中的":p1", ":p2"等命名参数匹配
         Map<String, Object> paramMap = new HashMap<>();
         for (int i = 0; i < parameters.size(); i++) {
-            paramMap.put("param" + i, parameters.get(i));
+            paramMap.put("p" + (i + 1), parameters.get(i));
         }
         return new CompiledQuery(sql, paramMap);
     }
@@ -265,43 +327,66 @@ public class SqlBuilder<T> {
         String operator = condition.getOperator();
         Object value1 = condition.getValue1();
         Object value2 = condition.getValue2();
-
-        sql.append(queryContext.getEntityAlias()).append(".").append(columnName).append(" ").append(operator);
-
+        
+        // 直接使用实体别名
+        String entityAlias = queryContext.getEntityAlias();
+        
+        // 构建条件
         switch (operator) {
             case "IN":
             case "NOT IN":
+                sql.append(entityAlias).append(".").append(columnName).append(" ").append(operator).append(" (");
                 if (value1 instanceof List) {
                     List<?> values = (List<?>) value1;
                     if (values.isEmpty()) {
-                        sql.append(" (NULL)"); // 处理空列表情况
+                        sql.append("NULL");
                     } else {
-                        StringBuilder placeholders = new StringBuilder();
                         for (int i = 0; i < values.size(); i++) {
                             if (i > 0) {
-                                placeholders.append(", ");
+                                sql.append(", ");
                             }
-                            String paramName = ":param" + parameters.size();
-                            placeholders.append(paramName);
+                            String paramName = "p" + paramIndex;
+                            sql.append(":").append(paramName);
                             parameters.add(values.get(i));
+                            paramIndex++;
                         }
-                        sql.append(" (").append(placeholders).append(")");
                     }
                 }
+                sql.append(")");
                 break;
+                
             case "BETWEEN":
-                sql.append(" :param").append(parameters.size());
+                String paramName1 = "p" + paramIndex;
+                sql.append(entityAlias).append(".").append(columnName).append(" ").append(operator)
+                    .append(" :").append(paramName1);
                 parameters.add(value1);
-                sql.append(" AND :param").append(parameters.size());
+                paramIndex++;
+                
+                String paramName2 = "p" + paramIndex;
+                sql.append(" AND :").append(paramName2);
                 parameters.add(value2);
+                paramIndex++;
                 break;
+                
+            case "LIKE":
+            case "NOT LIKE":
+                String paramName = "p" + paramIndex;
+                sql.append(entityAlias).append(".").append(columnName).append(" ").append(operator).append(" :").append(paramName);
+                parameters.add(value1);
+                paramIndex++;
+                break;
+                
             case "IS NULL":
             case "IS NOT NULL":
+                sql.append(entityAlias).append(".").append(columnName).append(" ").append(operator);
                 // 不需要添加参数
                 break;
+                
             default:
-                sql.append(" :param").append(parameters.size());
+                paramName = "p" + paramIndex;
+                sql.append(entityAlias).append(".").append(columnName).append(" ").append(operator).append(" :").append(paramName);
                 parameters.add(value1);
+                paramIndex++;
                 break;
         }
     }
@@ -342,11 +427,11 @@ public class SqlBuilder<T> {
      */
     private void buildLimitOffsetClause() {
         if (queryContext.getLimit() != null) {
-            sql.append(" LIMIT :param").append(parameters.size());
+            sql.append(" LIMIT ?");
             parameters.add(queryContext.getLimit());
 
             if (queryContext.getOffset() != null) {
-                sql.append(" OFFSET :param").append(parameters.size());
+                sql.append(" OFFSET ?");
                 parameters.add(queryContext.getOffset());
             }
         }
