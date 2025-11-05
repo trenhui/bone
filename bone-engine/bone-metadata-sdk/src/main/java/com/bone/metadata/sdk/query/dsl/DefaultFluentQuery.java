@@ -267,7 +267,7 @@ public class DefaultFluentQuery<T> implements FluentQuery<T> {
     public long count() {
         QueryContext<T> countContext = queryContext.cloneWithoutOrderLimit();
         SqlBuilder<T> sqlBuilder = new SqlBuilder<>(countContext);
-        return sqlExecutor.count(sqlBuilder.buildQuery());
+        return sqlExecutor.count(sqlBuilder.buildCountQuery());
     }
 
     @Override
