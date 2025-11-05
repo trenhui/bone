@@ -51,10 +51,17 @@ public class SqlBuilder<T> {
         sql.setLength(0);
         parameters.clear();
 
+        // 确保COUNT查询只返回单列
         sql.append("SELECT COUNT(*)");
-        buildFromClause();
-        buildJoinClauses();
+        
+        // 简化COUNT查询，避免JOIN操作影响结果列数
+        String tableName = getTableName(queryContext.getEntityClass());
+        String entityAlias = queryContext.getEntityAlias();
+        sql.append(" FROM " + tableName + " " + entityAlias);
+        
+        // 只添加WHERE条件
         buildWhereClause();
+        
         return sql.toString();
     }
 
@@ -143,22 +150,26 @@ public class SqlBuilder<T> {
      * 创建 CompiledQuery 对象
      */
     private CompiledQuery createCompiledQuery(String sql) {
-        Map<String, Object> paramMap = convertToParamMap(parameters);
+        // 使用命名参数，避免参数位置不匹配问题
+        Map<String, Object> paramMap = new HashMap<>();
+        for (int i = 0; i < parameters.size(); i++) {
+            paramMap.put("param" + i, parameters.get(i));
+        }
         return new CompiledQuery(sql, paramMap);
     }
 
-    /**
-     * 参数转换工具方法
-     */
-    private Map<String, Object> convertToParamMap(List<Object> params) {
-        Map<String, Object> paramMap = new HashMap<>();
-        if (params != null) {
-            for (int i = 0; i < params.size(); i++) {
-                paramMap.put("p" + i, params.get(i));
-            }
-        }
-        return paramMap;
-    }
+    // /**
+    //  * 参数转换工具方法
+    //  */
+    // private Map<String, Object> convertToParamMap(List<Object> params) {
+    //     Map<String, Object> paramMap = new HashMap<>();
+    //     if (params != null) {
+    //         for (int i = 0; i < params.size(); i++) {
+    //             paramMap.put("p" + i, params.get(i));
+    //         }
+    //     }
+    //     return paramMap;
+    // }
 
     /**
      * 获取SQL参数
@@ -217,7 +228,7 @@ public class SqlBuilder<T> {
                     // 实体字段与值比较的条件
                     sql.append(queryContext.getEntityAlias()).append(".")
                             .append(camelToSnake(joinCondition.getEntityField())).append(" ")
-                            .append(joinCondition.getOperator()).append(" ?");
+                            .append(joinCondition.getOperator()).append(" :param").append(parameters.size());
                     parameters.add(joinCondition.getValue());
                 }
             }
@@ -265,14 +276,23 @@ public class SqlBuilder<T> {
                     if (values.isEmpty()) {
                         sql.append(" (NULL)"); // 处理空列表情况
                     } else {
-                        sql.append(" (").append("?,".repeat(values.size() - 1)).append("?)");
-                        parameters.addAll(values);
+                        StringBuilder placeholders = new StringBuilder();
+                        for (int i = 0; i < values.size(); i++) {
+                            if (i > 0) {
+                                placeholders.append(", ");
+                            }
+                            String paramName = ":param" + parameters.size();
+                            placeholders.append(paramName);
+                            parameters.add(values.get(i));
+                        }
+                        sql.append(" (").append(placeholders).append(")");
                     }
                 }
                 break;
             case "BETWEEN":
-                sql.append(" ? AND ?");
+                sql.append(" :param").append(parameters.size());
                 parameters.add(value1);
+                sql.append(" AND :param").append(parameters.size());
                 parameters.add(value2);
                 break;
             case "IS NULL":
@@ -280,7 +300,7 @@ public class SqlBuilder<T> {
                 // 不需要添加参数
                 break;
             default:
-                sql.append(" ?");
+                sql.append(" :param").append(parameters.size());
                 parameters.add(value1);
                 break;
         }
@@ -322,11 +342,11 @@ public class SqlBuilder<T> {
      */
     private void buildLimitOffsetClause() {
         if (queryContext.getLimit() != null) {
-            sql.append(" LIMIT ?");
+            sql.append(" LIMIT :param").append(parameters.size());
             parameters.add(queryContext.getLimit());
 
             if (queryContext.getOffset() != null) {
-                sql.append(" OFFSET ?");
+                sql.append(" OFFSET :param").append(parameters.size());
                 parameters.add(queryContext.getOffset());
             }
         }
