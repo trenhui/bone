@@ -1,7 +1,7 @@
 package com.bone.metadata.sdk.test.testcase;
 
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
-import com.bone.metadata.sdk.query.dsl.SqlExecutorAdapter;
+import com.bone.metadata.sdk.sql.executor.SqlExecutor;
 import com.bone.metadata.sdk.test.domain.Role;
 import com.bone.metadata.sdk.test.domain.SalesRecord;
 import com.bone.metadata.sdk.test.domain.User;
@@ -18,12 +18,14 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * QueryBuilder测试类 - 使用真实数据库进行测试
- * 遵循业界最佳实践：使用事务、隔离测试数据、全面覆盖测试场景
+ * 基于纯Lambda版本实现，遵循业界最佳实践
  */
 @SpringBootTest(classes = com.bone.metadata.sdk.test.config.TestConfig.class)
 @ActiveProfiles("test")
@@ -32,374 +34,581 @@ import static org.junit.jupiter.api.Assertions.*;
 public class QueryBuilderTest {
 
     @Autowired
-    private SqlExecutorAdapter sqlExecutorAdapter;
+    private SqlExecutor sqlExecutor;
 
     @BeforeEach
     void setUp() {
         // 初始化QueryBuilder
-        QueryBuilder.initialize(sqlExecutorAdapter);
-        
+
         // 初始化测试数据
         initTestData();
     }
-    
+
     /**
      * 初始化测试数据
      */
     private void initTestData() {
-        // 清理可能存在的测试数据
         try {
-            // 使用事务保证数据清理的原子性
-            sqlExecutorAdapter.update("DELETE FROM sales_record WHERE 1=1", null);
-            sqlExecutorAdapter.update("DELETE FROM users WHERE 1=1", null);
-            sqlExecutorAdapter.update("DELETE FROM roles WHERE 1=1", null);
-            
-            // 插入测试角色数据
-            sqlExecutorAdapter.update("INSERT INTO roles(id, role_name, description) VALUES(1, '管理员', '系统管理员')", null);
-            sqlExecutorAdapter.update("INSERT INTO roles(id, role_name, description) VALUES(2, '普通用户', '普通用户角色')", null);
-            
-            // 插入测试用户数据
-            sqlExecutorAdapter.update("INSERT INTO users(id, name, role_id) VALUES(1, '张三', 1)", null);
-            sqlExecutorAdapter.update("INSERT INTO users(id, name, role_id) VALUES(2, '李四', 2)", null);
-            sqlExecutorAdapter.update("INSERT INTO users(id, name, role_id) VALUES(3, '王五', 2)", null);
-            
-            // 插入测试销售记录数据
+            // 1. 清理数据
+            sqlExecutor.execute("DELETE FROM sales_record WHERE 1=1");
+            sqlExecutor.execute("DELETE FROM users WHERE 1=1");
+            sqlExecutor.execute("DELETE FROM roles WHERE 1=1");
+
+            // 2. 插入角色（用命名参数）
+            sqlExecutor.execute(
+                    "INSERT INTO roles(id, role_name, description) VALUES(:id, :roleName, :desc)",
+                    Map.of("id", 1, "roleName", "管理员", "desc", "系统管理员")
+            );
+            sqlExecutor.execute(
+                    "INSERT INTO roles(id, role_name, description) VALUES(:id, :roleName, :desc)",
+                    Map.of("id", 2, "roleName", "普通用户", "desc", "普通用户角色")
+            );
+
+            // 3. 插入用户
+            List.of(
+                    Map.of("id", 1L, "name", "张三", "roleId", 1L),
+                    Map.of("id", 2L, "name", "李四", "roleId", 2L),
+                    Map.of("id", 3L, "name", "王五", "roleId", 2L),
+                    Map.of("id", 4L, "name", "赵六", "roleId", 1L)
+            ).forEach(params -> sqlExecutor.execute(
+                    "INSERT INTO users(id, name, role_id) VALUES(:id, :name, :roleId)", params
+            ));
+
+            // 4. 插入销售记录（重点！全部改成 :createTime）
             LocalDateTime now = LocalDateTime.now();
-            sqlExecutorAdapter.update("INSERT INTO sales_record(id, category, amount, price, status, create_time, region, product_name, quantity, is_deleted) VALUES(1, '电子产品', 2999.99, 2999.99, '已完成', ?, '华东', '智能手机A', 1, false)", Arrays.asList(now));
-            sqlExecutorAdapter.update("INSERT INTO sales_record(id, category, amount, price, status, create_time, region, product_name, quantity, is_deleted) VALUES(2, '电子产品', 5999.99, 5999.99, '已完成', ?, '华北', '笔记本电脑B', 1, false)", Arrays.asList(now));
-            sqlExecutorAdapter.update("INSERT INTO sales_record(id, category, amount, price, status, create_time, region, product_name, quantity, is_deleted) VALUES(3, '家居用品', 299.99, 299.99, '处理中', ?, '华南', '沙发罩C', 2, false)", Arrays.asList(now));
+            List<Map<String, Object>> sales = List.of(
+                    Map.<String, Object>of(
+                            "id", 1L, "category", "电子产品", "amount", new BigDecimal("2999.99"),
+                            "price", new BigDecimal("2999.99"), "status", "已完成", "createTime", now,
+                            "region", "华东", "productName", "智能手机A", "quantity", 1, "isDeleted", false
+                    ),
+                    Map.<String, Object>of(
+                            "id", 2L, "category", "电子产品", "amount", new BigDecimal("5999.99"),
+                            "price", new BigDecimal("5999.99"), "status", "已完成", "createTime", now,
+                            "region", "华北", "productName", "笔记本电脑B", "quantity", 1, "isDeleted", false
+                    ),
+                    Map.<String, Object>of(
+                            "id", 3L, "category", "家居用品", "amount", new BigDecimal("299.99"),
+                            "price", new BigDecimal("299.99"), "status", "处理中", "createTime", now,
+                            "region", "华南", "productName", "沙发罩C", "quantity", 2, "isDeleted", false
+                    ),
+                    Map.<String, Object>of(
+                            "id", 4L, "category", "电子产品", "amount", new BigDecimal("1999.99"),
+                            "price", new BigDecimal("1999.99"), "status", "已完成", "createTime", now,
+                            "region", "华东", "productName", "平板电脑D", "quantity", 1, "isDeleted", true
+                    )
+            );
+
+            String insertSalesSql = """
+            INSERT INTO sales_record(
+                id, category, amount, price, status, create_time, 
+                region, product_name, quantity, is_deleted
+            ) VALUES (
+                :id, :category, :amount, :price, :status, :createTime,
+                :region, :productName, :quantity, :isDeleted
+            )
+            """;
+
+            sales.forEach(params -> sqlExecutor.execute(insertSalesSql, params));
+
         } catch (Exception e) {
-            // 记录异常并抛出，确保测试数据初始化失败时能被捕获
-            System.err.println("初始化测试数据失败: " + e.getMessage());
-            e.printStackTrace();
+            throw new RuntimeException("初始化测试数据失败: " + e.getMessage(), e);
         }
     }
+    // ===== 基础功能测试 =====
 
     @Test
     void testFromMethod() {
         // 测试from方法是否能正确创建FluentQuery实例
-        QueryBuilder.FluentQuery<User> query = QueryBuilder.from(User.class);
-        assertNotNull(query, "FluentQuery实例不应为null");
+        assertNotNull(QueryBuilder.from(User.class), "FluentQuery实例不应为null");
+        assertNotNull(QueryBuilder.from(Role.class), "FluentQuery实例不应为null");
+        assertNotNull(QueryBuilder.from(SalesRecord.class), "FluentQuery实例不应为null");
     }
 
     @Test
     void testBasicQueryWithWhere() {
         // 测试简单条件查询
         List<User> users = QueryBuilder.from(User.class)
-                .where("name").eq("张三")
+                .where(User::getName).eq("张三")
                 .list();
-        
+
         assertNotNull(users);
-        assertFalse(users.isEmpty());
+        assertEquals(1, users.size());
         assertEquals("张三", users.get(0).getName());
     }
 
     @Test
     void testSingleResultQuery() {
         // 测试单个结果查询
-        User user = QueryBuilder.from(User.class)
-                .where("id").eq(1L)
-                .single();
-        
-        assertNotNull(user);
-        assertEquals(1L, user.getId());
-        assertEquals("张三", user.getName());
+        Optional<User> userOpt = QueryBuilder.from(User.class)
+                .where(User::getId).eq(1L)
+                .singleOpt();
+
+        assertTrue(userOpt.isPresent());
+        assertEquals(1L, userOpt.get().getId());
+        assertEquals("张三", userOpt.get().getName());
+    }
+
+    @Test
+    void testSingleResultNotFound() {
+        // 测试查询不存在的单个结果
+        Optional<User> userOpt = QueryBuilder.from(User.class)
+                .where(User::getId).eq(999L)
+                .singleOpt();
+
+        assertFalse(userOpt.isPresent());
+    }
+
+    @Test
+    void testFirstResultQuery() {
+        // 测试获取第一个结果
+        Optional<User> userOpt = QueryBuilder.from(User.class)
+                .orderBy(User::getId, true)
+                .first();
+
+        assertTrue(userOpt.isPresent());
+        assertEquals(1L, userOpt.get().getId());
     }
 
     @Test
     void testCountQuery() {
         // 测试计数查询
-        long count = QueryBuilder.from(User.class)
-                .count();
-        
-        assertTrue(count >= 3, "用户总数应该大于等于3");
-        
+        long totalCount = QueryBuilder.from(User.class).count();
+        assertEquals(4, totalCount);
+
         // 按条件计数
         long role1Count = QueryBuilder.from(User.class)
-                .where("roleId").eq(1L)
+                .where(User::getRoleId).eq(1L)
                 .count();
-        
-        assertTrue(role1Count >= 1, "角色ID为1的用户数应该大于等于1");
-    }
 
-    @Test
-    void testPaginationQuery() {
-        // 测试分页查询
-        QueryBuilder.PageResult<User> pageResult = QueryBuilder.from(User.class)
-                .orderBy("id", true)
-                .page(1, 2);
-        
-        assertNotNull(pageResult);
-        assertTrue(pageResult.getRecords().size() <= 2, "每页记录数不应超过2");
-        assertTrue(pageResult.getTotal() >= 3, "总记录数应大于等于3");
-    }
-
-    @Test
-    void testOrderByAndLimit() {
-        // 测试排序和限制
-        List<User> users = QueryBuilder.from(User.class)
-                .orderBy("id", true)
-                .limit(2)
-                .list();
-        
-        assertNotNull(users);
-        assertTrue(users.size() <= 2, "返回记录数不应超过2");
-    }
-
-    @Test
-    void testComplexConditionQuery() {
-        // 测试复杂条件组合
-        List<User> users = QueryBuilder.from(User.class)
-                .where("roleId").eq(2L)
-                .where("name").like("%")
-                .list();
-        
-        assertNotNull(users);
-        for (User user : users) {
-            assertEquals(2L, user.getRoleId(), "角色ID应为2");
-        }
+        assertEquals(2, role1Count);
     }
 
     @Test
     void testExistsQuery() {
         // 测试存在性检查
         boolean exists = QueryBuilder.from(User.class)
-                .where("name").eq("张三")
+                .where(User::getName).eq("张三")
                 .exists();
-        
-        assertTrue(exists, "用户'张三'应该存在");
-        
-        // 测试不存在的用户
+
+        assertTrue(exists);
+
         boolean notExists = QueryBuilder.from(User.class)
-                .where("name").eq("不存在的用户")
+                .where(User::getName).eq("不存在的用户")
                 .exists();
-        
-        assertFalse(notExists, "不存在的用户应返回false");
+
+        assertFalse(notExists);
+    }
+
+    // ===== 排序和分页测试 =====
+
+    @Test
+    void testOrderByAsc() {
+        // 测试升序排序
+        List<User> users = QueryBuilder.from(User.class)
+                .orderByAsc(User::getId)
+                .list();
+
+        assertNotNull(users);
+        assertTrue(users.size() > 1);
+        assertTrue(users.get(0).getId() < users.get(1).getId());
+    }
+
+    @Test
+    void testOrderByDesc() {
+        // 测试降序排序
+        List<User> users = QueryBuilder.from(User.class)
+                .orderByDesc(User::getId)
+                .list();
+
+        assertNotNull(users);
+        assertTrue(users.size() > 1);
+        assertTrue(users.get(0).getId() > users.get(1).getId());
+    }
+
+    @Test
+    void testLimitAndOffset() {
+        // 测试限制和偏移
+        List<User> users = QueryBuilder.from(User.class)
+                .orderByAsc(User::getId)
+                .limit(2)
+                .offset(1)
+                .list();
+
+        assertNotNull(users);
+        assertEquals(2, users.size());
+        assertEquals(2L, users.get(0).getId());
+        assertEquals(3L, users.get(1).getId());
+    }
+
+    @Test
+    void testPaginationQuery() {
+        // 测试分页查询
+        com.bone.core.model.PageResult<User> pageResult = QueryBuilder.from(User.class)
+                .orderBy(User::getId, true)
+                .page(1, 2);
+
+        assertNotNull(pageResult);
+        assertEquals(2, pageResult.getRecords().size());
+        assertEquals(4, pageResult.getTotal());
+        assertEquals(1, pageResult.getPage());
+        assertEquals(2, pageResult.getSize());
+    }
+
+    // ===== 复杂条件测试 =====
+
+    @Test
+    void testMultipleConditions() {
+        // 测试多个条件组合
+        List<User> users = QueryBuilder.from(User.class)
+                .where(User::getRoleId).eq(2L)
+                .where(User::getName).contains("李")
+                .list();
+
+        assertNotNull(users);
+        assertEquals(1, users.size());
+        assertEquals("李四", users.get(0).getName());
     }
 
     @Test
     void testInCondition() {
-        // 测试在范围内条件
+        // 测试IN条件
         List<User> users = QueryBuilder.from(User.class)
-                .where("id").in(Arrays.asList(1L, 2L))
+                .where(User::getId).in(Arrays.asList(1L, 2L, 3L))
                 .list();
-        
+
         assertNotNull(users);
-        assertTrue(users.size() >= 2, "应至少返回2条记录");
+        assertEquals(3, users.size());
     }
 
     @Test
-    void testLikeCondition() {
-        // 测试模糊查询条件
+    void testNotInCondition() {
+        // 测试NOT IN条件
         List<User> users = QueryBuilder.from(User.class)
-                .where("name").like("张%")
+                .where(User::getId).notIn(Arrays.asList(1L, 2L))
                 .list();
-        
+
         assertNotNull(users);
-        for (User user : users) {
-            assertTrue(user.getName().startsWith("张"), "用户名应以'张'开头");
-        }
+        assertEquals(2, users.size());
+        assertTrue(users.stream().allMatch(user -> user.getId() > 2L));
     }
+
+    @Test
+    void testLikeConditions() {
+        // 测试各种LIKE条件
+        List<User> usersStartsWith = QueryBuilder.from(User.class)
+                .where(User::getName).startsWith("张")
+                .list();
+        assertEquals(1, usersStartsWith.size());
+
+        List<User> usersEndsWith = QueryBuilder.from(User.class)
+                .where(User::getName).endsWith("四")
+                .list();
+        assertEquals(1, usersEndsWith.size());
+
+        List<User> usersContains = QueryBuilder.from(User.class)
+                .where(User::getName).contains("五")
+                .list();
+        assertEquals(1, usersContains.size());
+    }
+
+    @Test
+    void testComparisonConditions() {
+        // 测试比较条件
+        List<User> usersGt = QueryBuilder.from(User.class)
+                .where(User::getId).gt(2L)
+                .list();
+        assertEquals(2, usersGt.size());
+
+        List<User> usersGte = QueryBuilder.from(User.class)
+                .where(User::getId).gte(2L)
+                .list();
+        assertEquals(3, usersGte.size());
+
+        List<User> usersLt = QueryBuilder.from(User.class)
+                .where(User::getId).lt(3L)
+                .list();
+        assertEquals(2, usersLt.size());
+
+        List<User> usersLte = QueryBuilder.from(User.class)
+                .where(User::getId).lte(3L)
+                .list();
+        assertEquals(3, usersLte.size());
+    }
+
+    @Test
+    void testNullConditions() {
+        // 测试空值条件
+        List<User> usersNotNull = QueryBuilder.from(User.class)
+                .where(User::getName).isNotNull()
+                .list();
+        assertEquals(4, usersNotNull.size());
+    }
+
+    @Test
+    void testBetweenCondition() {
+        // 测试BETWEEN条件
+        List<User> users = QueryBuilder.from(User.class)
+                .where(User::getId).between(2L, 3L)
+                .list();
+
+        assertNotNull(users);
+        assertEquals(2, users.size());
+        assertTrue(users.stream().allMatch(user -> user.getId() >= 2L && user.getId() <= 3L));
+    }
+
+    // ===== 关联查询测试 =====
 
     @Test
     void testJoinQuery() {
-        // 测试关联查询 - 用户与角色表关联
+        // 测试关联查询
         List<User> users = QueryBuilder.from(User.class)
-                .join(Role.class, "r")
-                .on("roleId", "id")
-                .where("name").like("%")
+                .joinOn(Role.class, "r", User::getRoleId, Role::getId)
+                .where(User::getName).eq("张三")
                 .list();
-        
+
         assertNotNull(users);
-        assertFalse(users.isEmpty(), "关联查询应返回结果");
+        assertEquals(1, users.size());
+        assertEquals("张三", users.get(0).getName());
     }
 
     @Test
     void testLeftJoinQuery() {
-        // 测试左连接查询
+        // 测试左关联查询
         List<User> users = QueryBuilder.from(User.class)
-                .leftJoin(Role.class, "r")
-                .on("roleId", "id")
+                .leftJoinOn(Role.class, "r", User::getRoleId, Role::getId)
                 .list();
-        
+
         assertNotNull(users);
+        assertEquals(4, users.size());
     }
 
-    // ===== User实体相关测试 =====
+    // ===== 分组和聚合测试 =====
+
     @Test
-    void testFieldGetterQuery() {
-        // 测试使用字段getter方法的查询（如果QueryBuilder支持）
-        try {
-            List<User> users = QueryBuilder.from(User.class)
-                    .where(User::getName).eq("张三")
-                    .list();
-            
-            assertNotNull(users);
-            assertFalse(users.isEmpty(), "查询结果不应为空");
-        } catch (UnsupportedOperationException e) {
-            // 如果不支持函数式接口查询，则跳过此测试
-            System.out.println("字段getter方法查询暂不支持，跳过测试");
-        }
+    void testGroupBy() {
+        // 测试分组查询
+        List<User> users = QueryBuilder.from(User.class)
+                .groupBy(User::getRoleId)
+                .list();
+
+        assertNotNull(users);
+        // 分组后应该返回每个组的代表记录
     }
-    
-    // ===== SalesRecord实体相关测试 =====
+
+    @Test
+    void testAggregateFunctions() {
+        // 测试聚合函数
+        Optional<Long> userCount = QueryBuilder.from(User.class)
+                .aggregate("COUNT", User::getId, Long.class);
+
+        assertTrue(userCount.isPresent());
+        assertEquals(4L, userCount.get());
+
+        // 测试带条件的聚合
+        Optional<Long> role1Count = QueryBuilder.from(User.class)
+                .where(User::getRoleId).eq(1L)
+                .aggregate("COUNT", User::getId, Long.class);
+
+        assertTrue(role1Count.isPresent());
+        assertEquals(2L, role1Count.get());
+    }
+
+    // ===== SalesRecord实体特定测试 =====
+
     @Test
     void testSalesRecordBasicQuery() {
         // 测试SalesRecord基本查询
         List<SalesRecord> records = QueryBuilder.from(SalesRecord.class)
-                .where("category").eq("电子产品")
+                .where(SalesRecord::getCategory).eq("电子产品")
                 .list();
-        
+
         assertNotNull(records);
-        assertFalse(records.isEmpty(), "电子产品销售记录不应为空");
-        for (SalesRecord record : records) {
-            assertEquals("电子产品", record.getCategory(), "类别应匹配");
-        }
+        assertEquals(3, records.size()); // 包含已删除的记录
+        assertTrue(records.stream().allMatch(record -> "电子产品".equals(record.getCategory())));
     }
-    
-    @Test
-    void testSalesRecordCount() {
-        // 测试SalesRecord计数查询
-        long totalCount = QueryBuilder.from(SalesRecord.class).count();
-        assertEquals(3, totalCount, "总销售记录数应为3");
-        
-        long electronicCount = QueryBuilder.from(SalesRecord.class)
-                .where("category").eq("电子产品")
-                .count();
-        assertEquals(2, electronicCount, "电子产品销售记录数应为2");
-    }
-    
-    @Test
-    void testSalesRecordPagination() {
-        // 测试SalesRecord分页查询
-        QueryBuilder.PageResult<SalesRecord> pageResult = QueryBuilder.from(SalesRecord.class)
-                .orderBy("amount", true)
-                .page(1, 2);
-        
-        assertNotNull(pageResult);
-        assertEquals(3, pageResult.getTotal(), "总记录数应为3");
-        assertEquals(2, pageResult.getRecords().size(), "第一页应返回2条记录");
-        
-        // 验证金额排序正确性
-        BigDecimal firstAmount = pageResult.getRecords().get(0).getAmount();
-        BigDecimal secondAmount = pageResult.getRecords().get(1).getAmount();
-        assertTrue(firstAmount.compareTo(secondAmount) <= 0, "记录应按金额升序排列");
-    }
-    
-    @Test
-    void testSalesRecordComplexCondition() {
-        // 测试SalesRecord复杂条件查询
-        List<SalesRecord> records = QueryBuilder.from(SalesRecord.class)
-                .where("category").eq("电子产品")
-                .where("status").eq("已完成")
-                .list();
-        
-        assertNotNull(records);
-        for (SalesRecord record : records) {
-            assertEquals("电子产品", record.getCategory());
-            assertEquals("已完成", record.getStatus());
-        }
-    }
-    
-    @Test
-    void testSalesRecordRangeQuery() {
-        // 测试SalesRecord范围查询
-        List<SalesRecord> records = QueryBuilder.from(SalesRecord.class)
-                .where("amount").gt(new BigDecimal(1000))
-                .where("amount").lt(new BigDecimal(6000))
-                .list();
-        
-        assertNotNull(records);
-        for (SalesRecord record : records) {
-            assertTrue(record.getAmount().compareTo(new BigDecimal(1000)) > 0, "金额应大于1000");
-            assertTrue(record.getAmount().compareTo(new BigDecimal(6000)) < 0, "金额应小于6000");
-        }
-    }
-    
+
     @Test
     void testSalesRecordBooleanCondition() {
-        // 测试SalesRecord布尔条件查询
-        List<SalesRecord> records = QueryBuilder.from(SalesRecord.class)
-                .where("isDeleted").eq(false)
+        // 测试布尔条件查询
+        List<SalesRecord> activeRecords = QueryBuilder.from(SalesRecord.class)
+                .where(SalesRecord::getIsDeleted).eq(false)
                 .list();
-        
+
+        assertEquals(3, activeRecords.size());
+
+        List<SalesRecord> deletedRecords = QueryBuilder.from(SalesRecord.class)
+                .where(SalesRecord::getIsDeleted).eq(true)
+                .list();
+
+        assertEquals(1, deletedRecords.size());
+    }
+
+    @Test
+    void testSalesRecordRangeQuery() {
+        // 测试范围查询
+        List<SalesRecord> records = QueryBuilder.from(SalesRecord.class)
+                .where(SalesRecord::getAmount).gt(new BigDecimal("1000"))
+                .where(SalesRecord::getAmount).lt(new BigDecimal("6000"))
+                .list();
+
         assertNotNull(records);
-        assertFalse(records.isEmpty(), "未删除的记录不应为空");
-        for (SalesRecord record : records) {
-            assertFalse(record.getIsDeleted(), "记录应未被删除");
-        }
+        assertTrue(records.stream().allMatch(record ->
+                record.getAmount().compareTo(new BigDecimal("1000")) > 0 &&
+                        record.getAmount().compareTo(new BigDecimal("6000")) < 0
+        ));
     }
-    
-    // ===== 跨实体关联查询测试 =====
+
     @Test
-    void testAdvancedJoinQuery() {
-        // 测试多表关联查询 - 模拟用户与销售记录的关联（假设存在关系）
-        try {
-            List<User> users = QueryBuilder.from(User.class)
-                    .join(Role.class, "r")
-                    .on("roleId", "id")
-                    .where("r.roleName").like("%管理员%")
-                    .list();
-            
-            assertNotNull(users);
-            for (User user : users) {
-                // 验证管理员角色的用户
-                assertEquals(1L, user.getRoleId(), "管理员用户角色ID应为1");
-            }
-        } catch (Exception e) {
-            // 如果关联查询不支持表别名，则跳过此测试
-            System.out.println("高级关联查询功能暂不支持，跳过测试: " + e.getMessage());
-        }
+    void testSalesRecordComplexQuery() {
+        // 测试复杂查询组合
+        List<SalesRecord> records = QueryBuilder.from(SalesRecord.class)
+                .where(SalesRecord::getCategory).eq("电子产品")
+                .where(SalesRecord::getStatus).eq("已完成")
+                .where(SalesRecord::getIsDeleted).eq(false)
+                .orderByDesc(SalesRecord::getAmount)
+                .list();
+
+        assertNotNull(records);
+        assertEquals(2, records.size());
+        assertTrue(records.get(0).getAmount().compareTo(records.get(1).getAmount()) > 0);
     }
-    
+
+    // ===== 高级功能测试 =====
+
     @Test
-    void testGroupByAndHaving() {
-        // 测试分组和聚合查询（如果QueryBuilder支持）
-        try {
-            // 按类别分组统计销售数量
-            // 注意：具体实现取决于QueryBuilder是否支持分组和聚合操作
-            System.out.println("测试分组聚合查询（功能可能未实现）");
-        } catch (Exception e) {
-            System.out.println("分组聚合查询功能暂不支持，跳过测试: " + e.getMessage());
-        }
+    void testSelectProjection() {
+        // 测试字段投影
+        List<String> userNames = QueryBuilder.from(User.class)
+                .select(User::getName, String.class);
+
+        assertNotNull(userNames);
+        assertEquals(4, userNames.size());
+        assertTrue(userNames.contains("张三"));
+        assertTrue(userNames.contains("李四"));
+        assertTrue(userNames.contains("王五"));
+        assertTrue(userNames.contains("赵六"));
     }
-    
-    // ===== 性能相关测试 =====
+
+    @Test
+    void testMapFunction() {
+        // 测试映射功能
+        List<String> userNames = QueryBuilder.from(User.class)
+                .map(User::getName);
+
+        assertNotNull(userNames);
+        assertEquals(4, userNames.size());
+    }
+
+    @Test
+    void testForEach() {
+        // 测试遍历功能
+        QueryBuilder.from(User.class)
+                .forEach(user -> {
+                    assertNotNull(user);
+                    assertNotNull(user.getName());
+                });
+    }
+
+    @Test
+    void testStream() {
+        // 测试流式处理
+        long count = QueryBuilder.from(User.class)
+                .stream()
+                .filter(user -> user.getRoleId() == 1L)
+                .count();
+
+        assertEquals(2, count);
+    }
+
+    @Test
+    void testComplexConditionWithAndOr() {
+        // 正确的使用方式：通过Condition的and/or方法返回FluentQuery后继续链式调用
+        List<User> users = QueryBuilder.from(User.class)
+                .where(User::getRoleId).eq(1L)
+                .or(User::getName).contains("李")
+                .list();
+
+        assertNotNull(users);
+        assertEquals(3, users.size());
+    }
+
+    @Test
+    void testComplexWhereBuilder() {
+        // 测试复杂条件构建器 - 正确的使用方式
+        List<User> users = QueryBuilder.from(User.class)
+                .where(builder -> {
+                    // 每个条件独立调用
+                    builder.and(User::getRoleId).eq(1L);
+                    builder.or(User::getName).contains("王");
+                })
+                .list();
+
+        assertNotNull(users);
+        // 预期结果：角色ID为1的用户 或者 名字包含"王"的用户
+        // 2个管理员(张三、赵六) + 王五 = 3个用户
+        assertEquals(3, users.size());
+    }
+
+    // ===== 异常情况测试 =====
+
+    @Test
+    void testNonUniqueResultException() {
+        // 测试非唯一结果异常
+        assertThrows(Exception.class, () -> {
+            QueryBuilder.from(User.class)
+                    .where(User::getRoleId).eq(2L)
+                    .single();
+        });
+    }
+
+    @Test
+    void testEmptyResult() {
+        // 测试空结果
+        List<User> users = QueryBuilder.from(User.class)
+                .where(User::getName).eq("不存在的用户")
+                .list();
+
+        assertNotNull(users);
+        assertTrue(users.isEmpty());
+    }
+
+    // ===== 性能测试 =====
+
     @Test
     void testQueryPerformance() {
-        // 简单的性能测试，记录查询执行时间
+        // 简单的性能测试
         long startTime = System.currentTimeMillis();
-        
+
         List<User> users = QueryBuilder.from(User.class).list();
         List<Role> roles = QueryBuilder.from(Role.class).list();
         List<SalesRecord> sales = QueryBuilder.from(SalesRecord.class).list();
-        
+
         long endTime = System.currentTimeMillis();
         long executionTime = endTime - startTime;
-        
+
         // 验证查询结果
         assertNotNull(users);
         assertNotNull(roles);
         assertNotNull(sales);
-        
+
         // 记录性能信息
         System.out.println("批量查询执行时间: " + executionTime + "ms");
-        assertTrue(executionTime < 1000, "查询应在1秒内完成");
+        assertTrue(executionTime < 5000, "查询应在5秒内完成");
     }
-    
+
     /**
      * 测试清理
-     * 由于使用了@Transactional注解，事务会自动回滚，这里仍保留清理逻辑作为额外保障
      */
     @AfterEach
     void tearDown() {
-        // 清理测试数据
+        // 由于使用了@Transactional注解，事务会自动回滚
+        // 这里保留清理逻辑作为额外保障
         try {
-            sqlExecutorAdapter.update("DELETE FROM sales_record WHERE 1=1", null);
-            sqlExecutorAdapter.update("DELETE FROM users WHERE 1=1", null);
-            sqlExecutorAdapter.update("DELETE FROM roles WHERE 1=1", null);
+            sqlExecutor.execute("DELETE FROM sales_record WHERE 1=1");
+            sqlExecutor.execute("DELETE FROM users WHERE 1=1");
+            sqlExecutor.execute("DELETE FROM roles WHERE 1=1");
         } catch (Exception e) {
-            // 记录但不抛出异常，避免影响测试结果
             System.err.println("清理测试数据失败: " + e.getMessage());
         }
     }

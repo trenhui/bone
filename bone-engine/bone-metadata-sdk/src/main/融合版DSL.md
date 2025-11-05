@@ -618,7 +618,6 @@ import com.bone.metadata.sdk.sql.executor.SqlExecutor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * SqlExecutor适配器 - 100%复用现有执行器
@@ -627,54 +626,54 @@ import java.util.Map;
 @Component
 public class SqlExecutorAdapter {
     private final SqlExecutor sqlExecutor;
-    
+
     public SqlExecutorAdapter(SqlExecutor sqlExecutor) {
         this.sqlExecutor = sqlExecutor;
     }
-    
+
     /**
      * 执行查询返回列表
      */
     public <T> List<T> executeQuery(CompiledQuery query, Class<T> entityClass) {
-        return sqlExecutor.executeQuery(query, entityClass);
+        return sqlExecutor.query(query, entityClass);
     }
-    
+
     /**
      * 执行计数查询
      */
     public Long executeCount(CompiledQuery query) {
         return sqlExecutor.queryForObject(query, Long.class);
     }
-    
+
     /**
      * 执行标量查询
      */
     public <T> T executeScalar(CompiledQuery query, Class<T> type) {
         return sqlExecutor.queryForObject(query, type);
     }
-    
+
     /**
      * 执行分页查询
      */
-    public <T> PageResult<T> executePage(CompiledQuery query, Class<T> entityClass, 
-                                       int pageNum, int pageSize) {
+    public <T> PageResult<T> executePage(CompiledQuery query, Class<T> entityClass,
+                                         int pageNum, int pageSize) {
         return sqlExecutor.executePaged(query, entityClass, pageNum, pageSize);
     }
-    
+
     /**
      * 执行更新操作
      */
     public int executeUpdate(CompiledQuery query) {
-        return sqlExecutor.executeUpdate(query);
+        return sqlExecutor.update(query);
     }
-    
+
     /**
      * 批量执行
      */
     public int[] executeBatch(List<CompiledQuery> queries) {
         return sqlExecutor.executeBatch(queries);
     }
-    
+
     /**
      * 获取底层SqlExecutor
      */

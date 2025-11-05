@@ -1,12 +1,16 @@
 package com.bone.metadata.sdk.query.dsl.condition;
 
-import com.bone.metadata.sdk.query.dsl.QueryBuilder;
+import com.bone.metadata.sdk.query.dsl.FluentQuery;
 import com.bone.metadata.sdk.query.dsl.context.QueryContext;
+import com.bone.metadata.sdk.support.util.SqlUtil;
+import com.bone.metadata.sdk.support.function.SFunction;
+
 
 import java.util.Collection;
 
 /**
- * 条件构建器实现类 - 提供具体的条件查询功能实现
+ * 条件构建器实现类 - 纯Lambda版本
+ * 基于业界最佳实践，提供完全类型安全的API
  */
 public class ConditionImpl<T, V> implements Condition<T, V> {
 
@@ -24,113 +28,146 @@ public class ConditionImpl<T, V> implements Condition<T, V> {
         this.isOrCondition = isOrCondition;
     }
 
+    // ===== 比较操作实现 =====
     @Override
-    public QueryBuilder.FluentQuery<T> eq(V value) {
+    public FluentQuery<T> eq(V value) {
         return addCondition("=", value);
     }
 
     @Override
-    public QueryBuilder.FluentQuery<T> neq(V value) {
+    public FluentQuery<T> neq(V value) {
         return addCondition("<>", value);
     }
 
     @Override
-    public QueryBuilder.FluentQuery<T> gt(V value) {
+    public FluentQuery<T> gt(V value) {
         return addCondition(">", value);
     }
 
     @Override
-    public QueryBuilder.FluentQuery<T> gte(V value) {
+    public FluentQuery<T> gte(V value) {
         return addCondition(">=", value);
     }
 
     @Override
-    public QueryBuilder.FluentQuery<T> lt(V value) {
+    public FluentQuery<T> lt(V value) {
         return addCondition("<", value);
     }
 
     @Override
-    public QueryBuilder.FluentQuery<T> lte(V value) {
+    public FluentQuery<T> lte(V value) {
         return addCondition("<=", value);
     }
 
+    // ===== 字符串操作实现 =====
     @Override
-    public QueryBuilder.FluentQuery<T> like(String value) {
+    public FluentQuery<T> like(String value) {
         return addCondition("LIKE", value);
     }
 
     @Override
-    public QueryBuilder.FluentQuery<T> notLike(String value) {
+    public FluentQuery<T> notLike(String value) {
         return addCondition("NOT LIKE", value);
     }
 
     @Override
-    public QueryBuilder.FluentQuery<T> startsWith(String value) {
+    public FluentQuery<T> startsWith(String value) {
         return addCondition("LIKE", value + "%");
     }
 
     @Override
-    public QueryBuilder.FluentQuery<T> endsWith(String value) {
+    public FluentQuery<T> endsWith(String value) {
         return addCondition("LIKE", "%" + value);
     }
 
     @Override
-    public QueryBuilder.FluentQuery<T> contains(String value) {
+    public FluentQuery<T> contains(String value) {
         return addCondition("LIKE", "%" + value + "%");
     }
 
+    // ===== 集合操作实现 =====
     @Override
-    public QueryBuilder.FluentQuery<T> in(Collection<V> values) {
+    public FluentQuery<T> in(Collection<V> values) {
         return addCondition("IN", values);
     }
 
     @Override
-    public QueryBuilder.FluentQuery<T> notIn(Collection<V> values) {
+    public FluentQuery<T> notIn(Collection<V> values) {
         return addCondition("NOT IN", values);
     }
 
+    // ===== 空值操作实现 =====
     @Override
-    public QueryBuilder.FluentQuery<T> isNull() {
+    public FluentQuery<T> isNull() {
         return addCondition("IS NULL", null);
     }
 
     @Override
-    public QueryBuilder.FluentQuery<T> isNotNull() {
+    public FluentQuery<T> isNotNull() {
         return addCondition("IS NOT NULL", null);
     }
 
+    // ===== 范围操作实现 =====
     @Override
-    public QueryBuilder.FluentQuery<T> between(V start, V end) {
-        QueryContext.Condition condition = new QueryContext.Condition();
-        condition.setFieldName(fieldName);
-        condition.setOperator("BETWEEN");
+    public FluentQuery<T> between(V start, V end) {
+        QueryContext.Condition condition = createCondition("BETWEEN");
         condition.setValue1(start);
         condition.setValue2(end);
-        condition.setOr(isOrCondition);
         queryContext.addCondition(condition);
         return queryContext.getFluentQuery();
     }
 
-    @Override
-    public <NV> Condition<T, NV> and(Class<T> entityClass, String fieldName) {
-        return new ConditionImpl<>(queryContext, fieldName, false);
-    }
+    // ===== 链式条件方法实现 =====
 
+    /**
+     * AND 条件连接 - Lambda版本
+     */
     @Override
-    public <NV> Condition<T, NV> or(Class<T> entityClass, String fieldName) {
-        return new ConditionImpl<>(queryContext, fieldName, true);
+    public <NV> FluentQuery<T> and(SFunction<T, NV> fieldGetter) {
+        String extractedFieldName = SqlUtil.extractFieldName(fieldGetter);
+        // 设置逻辑操作符为AND，返回FluentQuery继续链式
+        queryContext.setCurrentLogicalOperator("AND");
+        return queryContext.getFluentQuery();
     }
 
     /**
-     * 添加单个条件
+     * OR 条件连接 - Lambda版本
      */
-    private QueryBuilder.FluentQuery<T> addCondition(String operator, Object value) {
+    @Override
+    public <NV> FluentQuery<T> or(SFunction<T, NV> fieldGetter) {
+        String extractedFieldName = SqlUtil.extractFieldName(fieldGetter);
+        // 设置逻辑操作符为OR，返回FluentQuery继续链式
+        queryContext.setCurrentLogicalOperator("OR");
+        return queryContext.getFluentQuery();
+    }
+
+    // ===== 私有辅助方法 =====
+
+    /**
+     * 添加条件到查询上下文
+     */
+    private FluentQuery<T> addCondition(String operator, Object value) {
+        QueryContext.Condition condition = createCondition(operator);
+        condition.setValue1(value);
+        queryContext.addCondition(condition);
+        return queryContext.getFluentQuery();
+    }
+
+    /**
+     * 创建条件对象
+     */
+    private QueryContext.Condition createCondition(String operator) {
         QueryContext.Condition condition = new QueryContext.Condition();
         condition.setFieldName(fieldName);
         condition.setOperator(operator);
-        condition.setValue1(value);
         condition.setOr(isOrCondition);
-        queryContext.addCondition(condition);
-        return queryContext.getFluentQuery();
+        return condition;
+    }
+
+    /**
+     * 创建新的条件构建器 - 解决类型推断问题
+     */
+    private <NV> Condition<T, NV> createCondition(String fieldName, boolean isOr) {
+        return new ConditionImpl<>(queryContext, fieldName, isOr);
     }
 }

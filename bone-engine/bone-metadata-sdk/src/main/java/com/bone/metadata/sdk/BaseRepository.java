@@ -27,12 +27,10 @@ import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.sql.executor.SqlExecutor;
 import com.bone.metadata.sdk.support.cache.FieldCache;
 import com.bone.metadata.sdk.support.config.MetadataSdkContext;
-import com.bone.metadata.sdk.support.util.ParamConvertUtil;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -85,7 +83,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
         TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
         Criteria<T> criteria = Criteria.<T>create().eq(tableMetadata.getPrimaryKey().getName(), id);
         CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria);
-        T entity = sqlExecutor.executeSingleQuery(query, entityClass);
+        T entity = sqlExecutor.querySingle(query, entityClass);
         if (entity != null) loadExtensionFields(entity);
         return entity;
     }
@@ -98,7 +96,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
         TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
         Criteria<T> criteria = Criteria.<T>create().in(tableMetadata.getPrimaryKey().getName(), idList);
         CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria);
-        List<T> list = sqlExecutor.executeQuery(query, entityClass);
+        List<T> list = sqlExecutor.query(query, entityClass);
         list.forEach(this::loadExtensionFields);
         return list;
     }
@@ -111,7 +109,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
         TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
         Criteria<T> criteria = Criteria.<T>create().in(tableMetadata.getPrimaryKey().getName(), idList);
         CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria, true);
-        List<T> list = sqlExecutor.executeQuery(query, entityClass);
+        List<T> list = sqlExecutor.query(query, entityClass);
         list.forEach(this::loadExtensionFields);
         return list;
     }
@@ -123,7 +121,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
         TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
         Criteria<T> criteria = Criteria.<T>create().eq(tableMetadata.getPrimaryKey().getName(), id);
         CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria, true);
-        T entity = sqlExecutor.executeSingleQuery(query, entityClass);
+        T entity = sqlExecutor.querySingle(query, entityClass);
         if (entity != null) loadExtensionFields(entity);
         return entity;
     }
@@ -142,13 +140,13 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
             Object generatedId = sqlExecutor.generateId(strategy, entity);
             setEntityId(entity, generatedId);
             BatchCompiledQuery batch = sqlBuilder.buildBatchInsert(entityClass, Collections.singletonList(entity));
-            sqlExecutor.executeBatchUpdate(batch);
+            sqlExecutor.batchUpdate(batch);
         } else {
             // 自增：将 BatchCompiledQuery 收敛为单条 CompiledQuery 再取回主键
             BatchCompiledQuery batch = sqlBuilder.buildBatchInsert(entityClass, Collections.singletonList(entity));
             Map<String, Object> firstParams = batch.getBatchParameters().get(0);
             CompiledQuery singleInsert = new CompiledQuery(batch.getSql(), firstParams);
-            Object newId = sqlExecutor.executeInsert(singleInsert, entityClass);
+            Object newId = sqlExecutor.insert(singleInsert, entityClass);
             setEntityId(entity, newId);
         }
         saveExtensionFields(entity);
@@ -174,7 +172,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
         }
 
         partition(entities, maxBatchSize).forEach(batch -> {
-            sqlExecutor.executeBatchUpdate(sqlBuilder.buildBatchInsert(entityClass, batch));
+            sqlExecutor.batchUpdate(sqlBuilder.buildBatchInsert(entityClass, batch));
             batch.forEach(this::saveExtensionFields);
         });
     }
@@ -185,7 +183,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
         Assert.notNull(entity, "Entity must not be null");
         Assert.notNull(entity.getId(), "Entity ID must not be null for update");
         CompiledQuery query = sqlBuilder.buildDynamicUpdate(entityClass, entity);
-        int affectedRows = sqlExecutor.executeUpdate(query);
+        int affectedRows = sqlExecutor.update(query);
         saveExtensionFields(entity);
         if (affectedRows == 0) {
             log.warn("No rows updated for entity id={}", entity.getId());
@@ -200,7 +198,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
         Assert.notNull(entity, "Entity must not be null");
         Assert.notNull(criteria, "Criteria must not be null");
         CompiledQuery query = sqlBuilder.buildConditionalUpdate(entityClass, entity, criteria);
-        int affectedRows = sqlExecutor.executeUpdate(query);
+        int affectedRows = sqlExecutor.update(query);
         saveExtensionFields(entity);
         return affectedRows;
     }
@@ -254,7 +252,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
         if (entities == null || entities.isEmpty()) return;
         partition(entities, maxBatchSize).forEach(batch -> {
             BatchCompiledQuery query = sqlBuilder.buildBatchUpdate(entityClass, batch);
-            sqlExecutor.executeBatchUpdate(query);
+            sqlExecutor.batchUpdate(query);
             batch.forEach(this::saveExtensionFields);
         });
     }
@@ -270,7 +268,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
                 Criteria.<T>create().eq(tableMetadata.getPrimaryKey().getName(), id),
                 context
         );
-        int affectedRows = sqlExecutor.executeUpdate(query);
+        int affectedRows = sqlExecutor.update(query);
         return affectedRows > 0;
     }
 
@@ -286,7 +284,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
                 Criteria.<T>create().in(tableMetadata.getPrimaryKey().getName(), ids),
                 context
         );
-        sqlExecutor.executeUpdate(query);
+        sqlExecutor.update(query);
     }
 
     // ========== 条件查询 / 统计 ==========
@@ -307,7 +305,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
         validateCriteriaFields(criteria);
         AllocationContext context = getAllocationContext();
         CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria, context);
-        List<T> list = sqlExecutor.executeQuery(query, entityClass);
+        List<T> list = sqlExecutor.query(query, entityClass);
         list.forEach(this::loadExtensionFields);
         return list;
     }
@@ -317,7 +315,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
     public T findOneByCriteria(Criteria<T> criteria) throws MultipleResultsException {
         Assert.notNull(criteria, "Criteria must not be null");
         CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria);
-        List<T> results = sqlExecutor.executeQuery(query, entityClass);
+        List<T> results = sqlExecutor.query(query, entityClass);
         if (results.size() > 1) {
             throw new MultipleResultsException("Expected single result, found: " + results.size());
         }
@@ -336,7 +334,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
 
         // 查询当前页
         CompiledQuery select = sqlBuilder.buildSelect(entityClass, criteria);
-        List<T> content = sqlExecutor.executeQuery(select, entityClass);
+        List<T> content = sqlExecutor.query(select, entityClass);
         content.forEach(this::loadExtensionFields);
 
         // 计数（若你的 CountBuilder 已忽略分页，可直接用 countByCriteria(criteria)）
@@ -425,7 +423,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
                                                List<String> having) {
         validateAggregations(aggregations);
         CompiledQuery query = sqlBuilder.buildAggregation(entityClass, aggregations, criteria, groupBy, having);
-        return sqlExecutor.executeQueryForMap(query);
+        return sqlExecutor.queryForMap(query);
     }
 
     @Override

@@ -1385,10 +1385,10 @@ public class PageResult<T> {
 ## 三、非DSL组件（保持原结构）
 
 ### 1. `adapter/SqlExecutorAdapter.java`
+
 ```java
 package com.bone.metadata.sdk.query.adapter;
 
-import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import com.bone.metadata.sdk.query.core.model.CompiledQuery;
 import com.bone.metadata.sdk.query.core.model.PageResult;
 import com.bone.metadata.sdk.sql.executor.SqlExecutor;
@@ -1405,7 +1405,7 @@ public class SqlExecutorAdapter {
     }
 
     public <T> List<T> executeList(CompiledQuery query, Class<T> entityClass) {
-        return sqlExecutor.executeQuery(query, entityClass);
+        return sqlExecutor.query(query, entityClass);
     }
 
     public Long executeCount(CompiledQuery query) {
