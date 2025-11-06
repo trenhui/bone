@@ -68,14 +68,7 @@ public class ExtPointRepositoryFactory {
         switch (className) {
             case "MemExtPointRepository":
                 return new MemExtPointRepository();
-            case "RedisExtPointRepository":
-                // RedisExtPointRepository需要RedisTemplate参数，暂时返回内存实现
-                log.warn("RedisExtPointRepository requires RedisTemplate, using MemExtPointRepository instead");
-                return new MemExtPointRepository();
-            case "NacosExtPointRepository":
-                // NacosExtPointRepository可能需要额外参数，暂时返回内存实现
-                log.warn("NacosExtPointRepository requires additional parameters, using MemExtPointRepository instead");
-                return new MemExtPointRepository();
+            // 可以添加更多仓库实现的case
             default:
                 log.warn("Unsupported repository type: {}, using MemExtPointRepository as default", className);
                 return new MemExtPointRepository();

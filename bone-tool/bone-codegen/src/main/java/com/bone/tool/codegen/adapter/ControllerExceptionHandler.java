@@ -23,7 +23,7 @@ public class ControllerExceptionHandler {
      * @param <T> 返回值类型
      * @return 包含操作结果的API响应
      */
-    public static <T> ApiResponse<T> handleException(Logger logger, String operation, Supplier<T> action) {
+    public static <T> ApiResponse<T> handleException(final Logger logger, final String operation, final Supplier<T> action) {
         logger.info("开始{}", operation);
         try {
             T result = action.get();
@@ -46,7 +46,7 @@ public class ControllerExceptionHandler {
      * @param action 实际执行的操作
      * @return 成功/失败的API响应
      */
-    public static ApiResponse<Boolean> handleVoidException(Logger logger, String operation, Runnable action) {
+    public static ApiResponse<Boolean> handleVoidException(final Logger logger, final String operation, final Runnable action) {
         logger.info("开始{}", operation);
         try {
             action.run();
@@ -70,7 +70,7 @@ public class ControllerExceptionHandler {
      * @param <T> 响应体类型
      * @return 包含操作结果的ResponseEntity
      */
-    public static <T> ResponseEntity<ApiResponse<T>> handleResponseEntity(Logger logger, String operation, Supplier<ResponseEntity<ApiResponse<T>>> action) {
+    public static <T> ResponseEntity<ApiResponse<T>> handleResponseEntity(final Logger logger, final String operation, final Supplier<ResponseEntity<ApiResponse<T>>> action) {
         logger.info("开始{}", operation);
         try {
             ResponseEntity<ApiResponse<T>> result = action.get();

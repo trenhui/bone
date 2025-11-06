@@ -21,7 +21,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CompletableFuture;
-// 移除不存在的导入
 
 /**
  * 扩展点代理工厂
@@ -46,7 +45,7 @@ public class ExtPointProxyFactory implements ApplicationContextAware, Initializi
     @Autowired
     private ExtPointRouter extPointRouter;
     
-    // 事件发布器被移除，因为ExtensionEventPublisher类不存在
+    // 注意：ExtensionEventPublisher类实际存在，但在当前版本的代理工厂中暂未使用
     
     @Autowired
     private ExtensionConfigManager configManager;

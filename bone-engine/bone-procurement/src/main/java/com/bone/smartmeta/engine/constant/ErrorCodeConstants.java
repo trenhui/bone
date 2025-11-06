@@ -5,6 +5,11 @@ package com.bone.smartmeta.engine.constant;
  * <p>
  * <strong>已废弃：</strong>请使用 {@link com.bone.smartmeta.engine.common.ErrorCodes} 替代
  * </p>
+ * <p>
+ * 所有常量已迁移至 ErrorCodes 类中，此类仅为保持向后兼容性而保留。
+ * 建议在所有新代码中直接使用 ErrorCodes 类。
+ * </p>
+ * @deprecated 请使用 {@link com.bone.smartmeta.engine.common.ErrorCodes} 替代
  */
 @Deprecated
 public final class ErrorCodeConstants {

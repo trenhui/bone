@@ -5,7 +5,7 @@ import com.bone.engine.extension.Extension;
 import com.bone.engine.extension.config.ExtensionProperties;
 import com.bone.engine.extension.event.ExtensionEventPublisher;
 import com.bone.engine.extension.repository.ExtPointRepository;
-import com.bone.engine.extension.version.ExtensionVersionManager;
+
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,8 +52,7 @@ public class ExtensionRegister implements ApplicationContextAware {
     // 从Spring容器注入的核心组件
     private final ExtensionProperties configProperties;
     
-    // 版本管理器，可选注入
-    private ExtensionVersionManager versionManager;
+
     
     // 统一的扩展点注册服务
     private final ExtensionRegistry extensionRegistry;
@@ -133,16 +132,7 @@ public class ExtensionRegister implements ApplicationContextAware {
         }
     }
     
-    /**
-     * 注入版本管理器
-     * 
-     * @param versionManager 扩展点版本管理器
-     */
-    @Autowired(required = false)
-    public void setVersionManager(ExtensionVersionManager versionManager) {
-        this.versionManager = versionManager;
-        log.info("Extension version manager injected: {}", versionManager != null ? versionManager.getClass().getSimpleName() : "null");
-    }
+
     
     /**
      * 初始化时自动注册所有标记了@Extension注解的Bean
@@ -406,59 +396,11 @@ public class ExtensionRegister implements ApplicationContextAware {
         // 使用统一的注册服务
         extensionRegistry.registerImplementation(interfaceClass, provider);
         
-        // 处理版本相关逻辑（仅保留特定于版本管理的部分）
-        if (versionManager != null) {
-            try {
-                Extension extAnnotation = AnnotationUtils.findAnnotation(provider.getClass(), Extension.class);
-                if (extAnnotation != null) {
-                    String version = extAnnotation.version();
-                    
-                    @SuppressWarnings("unchecked")
-                    Class<? extends ExtPoint> extPointClass = (Class<? extends ExtPoint>) interfaceClass;
-                    
-                    versionManager.registerVersionExtension(extPointClass, version, provider);
-                    log.debug("Registered version information for manually registered provider: {}", 
-                            provider.getClass().getSimpleName());
-                }
-            } catch (Exception e) {
-                log.warn("Failed to process version information for manually registered provider {}", 
-                        provider.getClass().getSimpleName(), e);
-            }
-        }
+    
         
         log.info("Manually registered extension provider: {} for interface: {}", 
                 provider.getClass().getSimpleName(), interfaceClass.getSimpleName());
     }
     
-    /**
-     * 更新扩展点的版本信息
-     * 
-     * @param extPointClass 扩展点接口类
-     * @param version 版本号
-     * @param isDefault 是否设为默认版本
-     * @param isRecommended 是否设为推荐版本
-     * @param <T> 扩展点类型
-     */
-    public <T extends ExtPoint> void updateExtensionVersion(Class<T> extPointClass, String version, 
-                                                           boolean isDefault, boolean isRecommended) {
-        if (versionManager == null) {
-            log.warn("Version manager not available, cannot update extension version");
-            return;
-        }
-        
-        try {
-            if (isDefault) {
-                versionManager.setDefaultVersion(extPointClass, version);
-                log.info("Updated default version for {} to {}", extPointClass.getName(), version);
-            }
-            
-            // 暂时注释掉推荐版本设置，等待API完善
-            // if (isRecommended) {
-            //     versionManager.setRecommendedVersion(extPointClass, version);
-            //     log.info("Updated recommended version for {} to {}", extPointClass.getName(), version);
-            // }
-        } catch (Exception e) {
-            log.error("Failed to update extension version for {}", extPointClass.getName(), e);
-        }
-    }
+
 }

@@ -16,8 +16,6 @@ import java.util.Set;
  * @author renhui.trh 2023-10-30
  * @since 1.0.0
  * @see MemExtPointRepository 内存实现的扩展点仓库
- * @see RedisExtPointRepository Redis实现的扩展点仓库
- * @see NacosExtPointRepository Nacos实现的扩展点仓库
  */
 public interface ExtPointRepository {
 

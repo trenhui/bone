@@ -25,6 +25,7 @@ import com.bone.metadata.sdk.query.converter.QueryObjectConverter;
 import com.bone.metadata.sdk.query.criteria.Condition;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.metadata.sdk.sql.executor.SqlExecutor;
+import com.bone.metadata.sdk.sql.executor.TypeConverter;
 import com.bone.metadata.sdk.support.cache.FieldCache;
 import com.bone.metadata.sdk.support.config.MetadataSdkContext;
 import jakarta.validation.Valid;
@@ -629,44 +630,12 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
             if (rawId == null) return;
             TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
             Class<?> targetType = tableMetadata.getPrimaryKey().getType();
-            Object converted = convertToTargetType(rawId, targetType);
+            Object converted = TypeConverter.convert(rawId, targetType);
             entity.setId((ID) converted);
         } catch (Exception e) {
             throw new PersistenceException("ID 字段赋值失败: " + entityClass.getSimpleName(), e);
         }
     }
-
-    private Object convertToTargetType(Object rawId, Class<?> targetType) {
-        if (rawId == null) return null;
-        if (rawId instanceof BigInteger bi) {
-            if (targetType == Long.class || targetType == long.class || targetType == Object.class)
-                return bi.longValue();
-            if (targetType == Integer.class || targetType == int.class) return bi.intValue();
-        }
-        if (targetType.isInstance(rawId)) return rawId;
-        if (rawId instanceof Number number) {
-            if (targetType == Long.class || targetType == long.class) return number.longValue();
-            if (targetType == Integer.class || targetType == int.class) return number.intValue();
-            if (targetType == Short.class || targetType == short.class) return number.shortValue();
-            if (targetType == Byte.class || targetType == byte.class) return number.byteValue();
-            if (targetType == BigInteger.class) return BigInteger.valueOf(number.longValue());
-            if (targetType == BigDecimal.class) return BigDecimal.valueOf(number.doubleValue());
-        }
-        if (targetType == String.class) return rawId.toString();
-        try {
-            Constructor<?> constructor = targetType.getConstructor(String.class);
-            return constructor.newInstance(rawId.toString());
-        } catch (Exception ignored) {
-        }
-        try {
-            Method valueOf = targetType.getMethod("valueOf", String.class);
-            return valueOf.invoke(null, rawId.toString());
-        } catch (Exception ignored) {
-        }
-        throw new IllegalArgumentException("ID类型转换失败: "
-                + rawId.getClass().getSimpleName() + " → " + targetType.getSimpleName());
-    }
-
 
     private AllocationContext getAllocationContext() {
         String bizIdentityCode = "bone";

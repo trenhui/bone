@@ -11,8 +11,10 @@ import com.bone.metadata.sdk.extension.ExtensionContext;
 import com.bone.metadata.sdk.metadata.api.MetadataService;
 import com.bone.metadata.sdk.query.builder.ReservedQueryBuilder;
 import com.bone.metadata.sdk.sql.executor.SqlExecutor;
+import com.bone.metadata.sdk.sql.executor.TypeConverter;
 import com.bone.metadata.sdk.support.config.MetadataSdkContext;
 import com.bone.metadata.sdk.support.util.DistributedLockUtil;
+import com.bone.metadata.sdk.support.util.TypeDetector;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
@@ -129,7 +131,10 @@ public class ReservedColumnsHandler implements ExtensionStorageHandler {
 
     private Object convertFieldValue(Object rawValue, String dataType) {
         try {
-            return TypeConverter.convert(rawValue, DataType.valueOf(dataType));
+            DataType type = DataType.valueOf(dataType);
+            // 根据DataType获取对应的Java类型
+            Class<?> targetClass = getTargetClass(type);
+            return TypeConverter.convert(rawValue, targetClass);
         } catch (IllegalArgumentException e) {
             log.warn("Unsupported data type conversion: {}", dataType);
             return rawValue;
@@ -140,103 +145,19 @@ public class ReservedColumnsHandler implements ExtensionStorageHandler {
         return TypeDetector.detect(value, TEXT_LENGTH_THRESHOLD);
     }
 
-    private static class TypeConverter {
-        static Object convert(Object value, DataType type) {
-            return switch (type) {
-                case INTEGER -> convertToLong(value);
-                case NUMBER -> convertToBigDecimal(value);
-                case BOOLEAN -> convertToBoolean(value);
-                case DATE -> convertToDateTime(value);
-                default -> value;
-            };
-        }
+    // 移除内部TypeConverter类，统一使用SDK的TypeConverter类
 
-        private static Long convertToLong(Object value) {
-            if (value instanceof Number num) return num.longValue();
-            if (value instanceof String str) {
-                try {
-                    return Long.parseLong(str);
-                } catch (NumberFormatException e) {
-                    log.warn("Long conversion failed for value: {}", str);
-                    return null;
-                }
-            }
-            return null;
-        }
-
-        private static BigDecimal convertToBigDecimal(Object value) {
-            if (value instanceof BigDecimal bd) return bd.stripTrailingZeros();
-            if (value instanceof Number num) return new BigDecimal(num.toString());
-            if (value instanceof String str) {
-                try {
-                    return new BigDecimal(str);
-                } catch (NumberFormatException e) {
-                    log.warn("BigDecimal conversion failed for value: {}", str);
-                    return null;
-                }
-            }
-            return null;
-        }
-
-        private static Boolean convertToBoolean(Object value) {
-            if (value instanceof Boolean bool) return bool;
-            if (value instanceof Number num) return num.intValue() != 0;
-            if (value instanceof String str) {
-                return Boolean.parseBoolean(str) || "1".equals(str);
-            }
-            return null;
-        }
-
-        private static LocalDateTime convertToDateTime(Object value) {
-            if (value instanceof LocalDateTime ldt) return ldt;
-            if (value instanceof Date date) {
-                return date.toInstant()
-                        .atZone(ZoneId.systemDefault())
-                        .toLocalDateTime();
-            }
-            if (value instanceof String str) {
-                try {
-                    return LocalDateTime.parse(str);
-                } catch (DateTimeParseException e) {
-                    log.warn("DateTime conversion failed for value: {}", str);
-                    return null;
-                }
-            }
-            return null;
-        }
+    private Class<?> getTargetClass(DataType type) {
+        return switch (type) {
+            case INTEGER -> Long.class;
+            case NUMBER -> BigDecimal.class;
+            case BOOLEAN -> Boolean.class;
+            case DATE -> LocalDateTime.class;
+            default -> String.class;
+        };
     }
 
-    private static class TypeDetector {
-        private static final Map<Class<?>, DataType> TYPE_MAPPINGS = createTypeMappings();
 
-        static DataType detect(Object value, int textThreshold) {
-            if (value == null) return DataType.STRING;
-
-            DataType type = TYPE_MAPPINGS.entrySet().stream()
-                    .filter(entry -> entry.getKey().isInstance(value))
-                    .findFirst()
-                    .map(Map.Entry::getValue)
-                    .orElse(DataType.STRING);
-
-            if (type == DataType.STRING && value instanceof String str) {
-                return str.length() > textThreshold
-                        ? DataType.TEXT
-                        : DataType.STRING;
-            }
-            return type;
-        }
-
-        private static Map<Class<?>, DataType> createTypeMappings() {
-            Map<Class<?>, DataType> map = new HashMap<>();
-            map.put(Boolean.class, DataType.BOOLEAN);
-            map.put(Number.class, DataType.NUMBER);
-            map.put(Date.class, DataType.DATE);
-            map.put(java.time.temporal.Temporal.class, DataType.DATE);
-            map.put(Map.class, DataType.JSON);
-            map.put(com.fasterxml.jackson.databind.JsonNode.class, DataType.JSON);
-            return Collections.unmodifiableMap(map);
-        }
-    }
 
     private String getDimensionKey(ExtensionContext ctx) {
         return String.join("|",

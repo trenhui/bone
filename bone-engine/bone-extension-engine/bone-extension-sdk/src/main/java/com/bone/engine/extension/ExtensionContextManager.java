@@ -175,14 +175,13 @@ public final class ExtensionContextManager {
         String scenario = extractor.getScenario(data);
         
         // 创建上下文
-        BizContext<T> context = BizContext.of(tenantCode, bizCode);
-        // 暂时不设置useCase和scenario，因为方法不存在
-        // context.setUseCase(useCase);
-        // context.setScenario(scenario);
-        // 移除setData方法调用，等待后续处理
-        // context.setData(data);
-        
-        return context;
+        return BizContext.<T>builder()
+                .tenantCode(tenantCode)
+                .bizCode(bizCode)
+                .useCase(useCase)
+                .scenario(scenario)
+                .data(data)
+                .build();
     }
     
     /**

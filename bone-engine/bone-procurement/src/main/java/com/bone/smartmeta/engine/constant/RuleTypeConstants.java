@@ -1,9 +1,14 @@
 package com.bone.smartmeta.engine.constant;
 
+import com.bone.smartmeta.engine.common.Constants;
+
 /**
  * 规则类型常量类
  * 统一管理业务规则引擎支持的规则类型
+ * 
+ * @deprecated 请使用 {@link Constants.RuleType} 枚举替代
  */
+@Deprecated
 public final class RuleTypeConstants {
     
     // 私有构造函数，防止实例化
