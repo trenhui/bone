@@ -22,9 +22,9 @@ public class FieldEncryptor {
         try {
             Cipher cipher = Cipher.getInstance(ALGORITHM);
             cipher.init(Cipher.ENCRYPT_MODE, keySpec);
-            byte[] encrypted = cipher.doFinal(value.getBytes("UTF-8"));
+            byte[] encrypted = cipher.doFinal(value.getBytes(java.nio.charset.StandardCharsets.UTF_8));
             return Base64.getEncoder().encodeToString(encrypted);
-        } catch (Exception e) {
+        } catch (java.security.GeneralSecurityException e) {
             throw new SecurityException("Encryption failed", e);
         }
     }
@@ -35,8 +35,8 @@ public class FieldEncryptor {
             cipher.init(Cipher.DECRYPT_MODE, keySpec);
             byte[] decoded = Base64.getDecoder().decode(encryptedValue);
             byte[] decrypted = cipher.doFinal(decoded);
-            return new String(decrypted, "UTF-8");
-        } catch (Exception e) {
+            return new String(decrypted, java.nio.charset.StandardCharsets.UTF_8);
+        } catch (java.security.GeneralSecurityException e) {
             throw new SecurityException("Decryption failed", e);
         }
     }

@@ -33,6 +33,64 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
 
 
     private static final long SLOW_ROUTE_THRESHOLD_MS = 100; // 慢路由阈值（毫秒）
+    private static final Logger logger = LoggerFactory.getLogger(RouteStatsCollector.class);
+    
+    /**
+     * 记录慢调用
+     */
+    public <T> void recordSlowCall(Class<T> extPointClass, long executionTimeMs, long thresholdMs) {
+        if (extPointClass != null && logger.isWarnEnabled()) {
+            logger.warn("Slow route detected: {} - took {}ms (threshold: {}ms)",
+                    extPointClass.getSimpleName(), executionTimeMs, thresholdMs);
+        }
+    }
+    
+    // 缓存相关统计
+    private final Map<String, CacheStats> cacheStatsMap = new ConcurrentHashMap<>();
+    private final AtomicLong totalCacheHits = new AtomicLong(0);
+    private final AtomicLong totalCacheMisses = new AtomicLong(0);
+    private final AtomicLong totalCacheEvictions = new AtomicLong(0);
+    
+    /**
+     * 缓存统计数据类
+     */
+    public static class CacheStats {
+        private final AtomicLong hits = new AtomicLong(0);
+        private final AtomicLong misses = new AtomicLong(0);
+        private final AtomicLong evictions = new AtomicLong(0);
+        private final AtomicLong size = new AtomicLong(0);
+        private final AtomicLong lastAccessTime = new AtomicLong(0);
+        
+        public void incrementHits() {
+            hits.incrementAndGet();
+            lastAccessTime.set(System.currentTimeMillis());
+        }
+        
+        public void incrementMisses() {
+            misses.incrementAndGet();
+            lastAccessTime.set(System.currentTimeMillis());
+        }
+        
+        public void incrementEvictions() {
+            evictions.incrementAndGet();
+        }
+        
+        public void updateSize(long newSize) {
+            size.set(newSize);
+        }
+        
+        public double getHitRate() {
+            long total = hits.get() + misses.get();
+            return total > 0 ? (double) hits.get() / total * 100 : 0;
+        }
+        
+        // Getters
+        public long getHits() { return hits.get(); }
+        public long getMisses() { return misses.get(); }
+        public long getEvictions() { return evictions.get(); }
+        public long getSize() { return size.get(); }
+        public long getLastAccessTime() { return lastAccessTime.get(); }
+    }
 
     /**
      * 路由统计数据类
@@ -140,14 +198,14 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
     private final Map<String, RouteStats> implementationStatsMap = new ConcurrentHashMap<>(); // 单独存储实现类的统计信息
 
     /**
-     * 构建统计键
+     * 构建统计键 - 委托给CacheKeyFactory
      */
     private String buildStatsKey(Class<?> extPointClass, Method method) {
-        return extPointClass.getSimpleName() + ":" + method.getName();
+        return CacheKeyFactory.createStatsKey(extPointClass, method);
     }
     
     /**
-     * 构建实现统计键
+     * 构建实现统计键 - 委托给CacheKeyFactory
      */
     private String buildImplStatsKey(Class<?> extPointClass, Method method, Class<?> implementationType) {
         String implName = implementationType != null ? implementationType.getSimpleName() : "unknown";
@@ -155,10 +213,142 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
     }
     
     /**
-     * 构建失败键
+     * 构建失败键 - 委托给CacheKeyFactory
      */
     private String buildFailureKey(Class<?> extPointClass, Method method, Class<?> implementationType) {
-        return buildImplStatsKey(extPointClass, method, implementationType) + ":failure";
+        return CacheKeyFactory.createFailureKey(extPointClass, method, implementationType);
+    }
+    
+    /**
+     * 记录带业务上下文的路由统计信息
+     */
+    public void recordRouteStatsWithContext(Class<?> extPointClass, Method method, 
+                                          Class<?> implementationType, long executionTimeMs, 
+                                          boolean success, BizContext<?> context, Map<String, Object> extraInfo) {
+        recordRouteStatsInternal(extPointClass, method, implementationType, executionTimeMs, success);
+        
+        // 记录业务上下文相关的统计信息
+        if (context != null) {
+            String tenant = context.getTenantId();
+            String businessDomain = context.getBusinessDomain();
+            String scenario = context.getScenario();
+            
+            // 可以根据业务需求扩展，记录更多上下文信息
+            if (logger.isDebugEnabled()) {
+                logger.debug("Route stats with context: extPoint={}, method={}, tenant={}, domain={}, scenario={}, time={}ms",
+                        extPointClass.getSimpleName(), method.getName(), tenant, businessDomain, scenario, executionTimeMs);
+            }
+            
+            // 记录慢调用时的上下文信息
+            if (executionTimeMs > SLOW_ROUTE_THRESHOLD_MS) {
+                recordSlowInvocationDetails(extPointClass, method, implementationType, executionTimeMs, context, extraInfo);
+            }
+        }
+    }
+    
+    /**
+     * 记录慢调用详情
+     */
+    private void recordSlowInvocationDetails(Class<?> extPointClass, Method method, 
+                                          Class<?> implementationType, long executionTimeMs, 
+                                          BizContext<?> context, Map<String, Object> extraInfo) {
+        Map<String, Object> slowCallInfo = new HashMap<>();
+        slowCallInfo.put("timestamp", System.currentTimeMillis());
+        slowCallInfo.put("extPoint", extPointClass.getName());
+        slowCallInfo.put("method", method.getName());
+        slowCallInfo.put("implementation", implementationType != null ? implementationType.getName() : "unknown");
+        slowCallInfo.put("executionTimeMs", executionTimeMs);
+        
+        // 添加业务上下文信息
+        if (context != null) {
+            slowCallInfo.put("tenantId", context.getTenantId());
+            slowCallInfo.put("businessDomain", context.getBusinessDomain());
+            slowCallInfo.put("scenario", context.getScenario());
+            slowCallInfo.put("tags", context.getTags());
+        }
+        
+        // 添加额外信息
+        if (extraInfo != null) {
+            slowCallInfo.putAll(extraInfo);
+        }
+        
+        // 记录慢调用日志
+        logger.warn("Slow route invocation details: {}", slowCallInfo);
+        
+        // 这里可以扩展为发送告警、记录到监控系统等
+    }
+    
+    /**
+     * 记录缓存统计信息
+     */
+    public void recordCacheStats(String cacheName, boolean isHit) {
+        CacheStats stats = cacheStatsMap.computeIfAbsent(cacheName, k -> new CacheStats());
+        
+        if (isHit) {
+            stats.incrementHits();
+            totalCacheHits.incrementAndGet();
+        } else {
+            stats.incrementMisses();
+            totalCacheMisses.incrementAndGet();
+        }
+    }
+    
+    /**
+     * 记录缓存驱逐事件
+     */
+    public void recordCacheEviction(String cacheName) {
+        CacheStats stats = cacheStatsMap.computeIfAbsent(cacheName, k -> new CacheStats());
+        stats.incrementEvictions();
+        totalCacheEvictions.incrementAndGet();
+    }
+    
+    /**
+     * 更新缓存大小
+     */
+    public void updateCacheSize(String cacheName, long size) {
+        CacheStats stats = cacheStatsMap.computeIfAbsent(cacheName, k -> new CacheStats());
+        stats.updateSize(size);
+    }
+    
+    /**
+     * 获取缓存统计信息
+     */
+    public Map<String, Object> getCacheStats(String cacheName) {
+        CacheStats stats = cacheStatsMap.get(cacheName);
+        if (stats == null) {
+            return null;
+        }
+        
+        Map<String, Object> result = new HashMap<>();
+        result.put("hits", stats.getHits());
+        result.put("misses", stats.getMisses());
+        result.put("hitRate", stats.getHitRate());
+        result.put("evictions", stats.getEvictions());
+        result.put("size", stats.getSize());
+        result.put("lastAccessTime", stats.getLastAccessTime());
+        
+        return result;
+    }
+    
+    /**
+     * 获取所有缓存统计信息
+     */
+    public Map<String, Map<String, Object>> getAllCacheStats() {
+        Map<String, Map<String, Object>> result = new HashMap<>();
+        
+        for (Map.Entry<String, CacheStats> entry : cacheStatsMap.entrySet()) {
+            result.put(entry.getKey(), getCacheStats(entry.getKey()));
+        }
+        
+        return result;
+    }
+    
+    /**
+     * 获取总体缓存命中率
+     */
+    public double getOverallCacheHitRate() {
+        long total = totalCacheHits.get() + totalCacheMisses.get();
+        return total > 0 ? (double) totalCacheHits.get() / total * 100 : 0;
     }
     
     /**

@@ -1,0 +1,63 @@
+<?xml version="1.0"?>
+<ruleset name="Bone Extension SDK Rules" 
+    xmlns="http://pmd.sourceforge.net/ruleset/2.0.0" 
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+    xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 http://pmd.sourceforge.net/ruleset_2_0_0.xsd">
+    
+    <description>Bone扩展SDK的PMD规则配置</description>
+    
+    <!-- 导入核心规则集 -->
+    <rule ref="category/java/bestpractices.xml">
+        <exclude name="AvoidCatchingThrowable"/>
+        <exclude name="AvoidLiteralsInIfCondition"/>
+        <exclude name="CheckResultSet"/>
+    </rule>
+    
+    <rule ref="category/java/codestyle.xml">
+        <exclude name="AtLeastOneConstructor"/>
+        <exclude name="Braces"/>
+        <exclude name="MethodArgumentCouldBeFinal"/>
+        <exclude name="LocalVariableCouldBeFinal"/>
+    </rule>
+    
+    <rule ref="category/java/design.xml">
+        <exclude name="AvoidDeeplyNestedIfStmts"/>
+        <exclude name="AvoidThrowingRawExceptionTypes"/>
+        <exclude name="LawOfDemeter"/>
+    </rule>
+    
+    <rule ref="category/java/errorprone.xml">
+        <exclude name="AvoidDuplicateLiterals"/>
+        <exclude name="AvoidUsingOctalValues"/>
+        <exclude name="BeanMembersShouldSerialize"/>
+        <exclude name="CheckSkipResult"/>
+        <exclude name="OverrideBothEqualsAndHashcode"/>
+    </rule>
+    
+    <rule ref="category/java/multithreading.xml">
+        <exclude name="DoNotUseThreads"/>
+    </rule>
+    
+    <rule ref="category/java/performance.xml"/>
+    
+    <!-- 自定义规则 -->
+    <rule name="AvoidSystemOutPrintln" language="java" message="不应使用System.out.println，应使用日志框架" class="net.sourceforge.pmd.lang.rule.XPathRule">
+        <description>避免使用System.out.println进行输出，应使用标准日志框架</description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value>//MethodCall[Expression/PrimaryExpression/PrimaryPrefix/Name[starts-with(@Image, 'System.out.println')]]</value>
+            </property>
+        </properties>
+    </rule>
+    
+    <rule name="AvoidHardCodedMagicNumbers" language="java" message="避免硬编码的魔法数字" class="net.sourceforge.pmd.lang.rule.XPathRule">
+        <description>避免在代码中使用无注释说明的魔法数字</description>
+        <priority>3</priority>
+        <properties>
+            <property name="xpath">
+                <value>//Literal[not(@TokenValue='0' or @TokenValue='1' or @TokenValue='2' or @TokenValue='3' or @TokenValue='4' or @TokenValue='5' or @TokenValue='6' or @TokenValue='7' or @TokenValue='8' or @TokenValue='9' or @TokenValue='10') and starts-with(@TokenValue, '-')=false and @TokenValue != '"]</value>
+            </property>
+        </properties>
+    </rule>
+</ruleset>

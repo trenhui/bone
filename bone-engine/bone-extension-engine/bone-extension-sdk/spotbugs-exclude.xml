@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter>
+    <!-- 排除第三方生成的代码 -->
+    <Match>
+        <Class name="~.*\$.*"/>
+    </Match>
+    
+    <!-- 排除测试类 -->
+    <Match>
+        <Class name="~.*Test$"/>
+    </Match>
+    
+    <!-- 排除特定警告类型 -->
+    <Match>
+        <Bug category="EXPERIMENTAL"/>
+    </Match>
+    
+    <Match>
+        <Bug category="I18N"/>
+    </Match>
+    
+    <!-- 排除特定警告码 -->
+    <Match>
+        <Bug code="EI"/>
+    </Match>
+    
+    <Match>
+        <Bug code="DM"/>
+    </Match>
+    
+    <Match>
+        <Bug code="URF"/>
+    </Match>
+    
+    <!-- 排除序列化相关警告 -->
+    <Match>
+        <Bug pattern="SE_NO_SERIALVERSIONID"/>
+    </Match>
+    
+    <Match>
+        <Bug pattern="SE_BAD_FIELD"/>
+    </Match>
+    
+    <!-- 排除一些常见但影响不大的警告 -->
+    <Match>
+        <Bug pattern="NP_NULL_ON_SOME_PATH"/>
+    </Match>
+    
+    <Match>
+        <Bug pattern="RV_RETURN_VALUE_IGNORED"/>
+    </Match>
+</FindBugsFilter>

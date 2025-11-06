@@ -2,6 +2,7 @@ package com.bone.engine.extension.router;
 
 import com.bone.engine.extension.ExtPoint;
 import com.bone.engine.extension.Extension;
+import com.bone.engine.extension.config.RouterConfiguration;
 import com.bone.engine.extension.context.BizContext;
 import com.bone.engine.extension.router.RouteKey;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -47,13 +48,32 @@ public class CacheManager extends AbstractRouterComponent implements RouterCompo
     
     // Spring EL表达式缓存
     private final Map<String, Object> expressionCache = new ConcurrentHashMap<>();
+    
+    // 路由统计收集器
+    private final RouteStatsCollector statsCollector;
+    
+    // 统一配置管理组件
+    private final RouterConfiguration config;
+    
+    // 随机数生成器，用于采样统计
+    private final Random random = new Random();
 
     /**
-     * 默认构造函数，使用默认缓存配置
+     * 默认构造函数，使用默认缓存配置和全局RouterConfiguration
      */
     public CacheManager() {
-        this.cacheMaxSize = 10000;
-        this.cacheExpireTime = 10;
+        this(RouterConfiguration.getInstance());
+    }
+    
+    /**
+     * 构造函数，使用指定的RouterConfiguration
+     */
+    public CacheManager(RouterConfiguration config) {
+        this.config = config != null ? config : RouterConfiguration.getInstance();
+        // 从统一配置获取缓存设置
+        this.cacheMaxSize = config.getCacheMaxSize();
+        this.cacheExpireTime = config.getCacheExpireTime();
+        this.statsCollector = new RouteStatsCollector();
         // 延迟初始化，等待initialize()调用
     }
 
@@ -61,8 +81,10 @@ public class CacheManager extends AbstractRouterComponent implements RouterCompo
      * 构造函数，支持自定义缓存配置
      */
     public CacheManager(int maximumSize, long expireMinutes) {
+        this.config = RouterConfiguration.getInstance();
         this.cacheMaxSize = maximumSize;
         this.cacheExpireTime = (int) expireMinutes;
+        this.statsCollector = new RouteStatsCollector();
         // 延迟初始化，等待initialize()调用
     }
     
@@ -73,14 +95,22 @@ public class CacheManager extends AbstractRouterComponent implements RouterCompo
     
     @Override
     protected void doInitialize() throws Exception {
-        initializeCache(cacheExpireTime, cacheMaxSize);
-        logger.info("CacheManager initialized");
+        // 初始化缓存，使用统一配置的值
+        int expireTime = config.getCacheExpireTime();
+        int maxSize = config.getCacheMaxSize();
+        initializeCache(expireTime, maxSize);
+        logger.info("CacheManager initialized with cacheExpireTime={} minutes, cacheMaxSize={}", 
+                   expireTime, maxSize);
     }
     
     @Override
     protected void doShutdown() {
         clearAllCache();
         routeResultCache = null;
+        // 关闭统计收集器
+        if (statsCollector != null) {
+            statsCollector.shutdown();
+        }
         logger.info("CacheManager shut down");
     }
     
@@ -95,6 +125,10 @@ public class CacheManager extends AbstractRouterComponent implements RouterCompo
      */
     @Override
     public void initializeCache(int expireTime, int maxSize) {
+        // 更新本地配置值
+        this.cacheExpireTime = expireTime;
+        this.cacheMaxSize = maxSize;
+        
         this.routeResultCache = Caffeine.newBuilder()
                 .maximumSize(maxSize)
                 .expireAfterWrite(Duration.ofMinutes(expireTime))
@@ -198,7 +232,15 @@ public class CacheManager extends AbstractRouterComponent implements RouterCompo
      * 从缓存获取路由结果
      */
     public Object getRouteResult(RouteCacheKey cacheKey) {
-        return routeResultCache.getIfPresent(cacheKey);
+        Object result = routeResultCache.getIfPresent(cacheKey);
+        boolean isHit = result != null;
+        
+        // 记录缓存统计（仅当统计功能启用时）
+        if (config.isStatsEnabled()) {
+            statsCollector.recordCacheStats("routeResultCache", isHit);
+        }
+        
+        return result;
     }
     
     /**
@@ -230,6 +272,10 @@ public class CacheManager extends AbstractRouterComponent implements RouterCompo
     public void putRouteResult(RouteCacheKey cacheKey, Object result, boolean enableCache) {
         if (enableCache && result != null) {
             routeResultCache.put(cacheKey, result);
+            // 定期更新缓存大小统计（采样更新，避免每次put都更新）
+            if (statsCollector != null && random.nextBoolean()) {
+                statsCollector.updateCacheSize(cacheKey.getExtPointClass().getName(), routeResultCache.estimatedSize());
+            }
         }
     }
 
@@ -359,15 +405,67 @@ public class CacheManager extends AbstractRouterComponent implements RouterCompo
 
     /**
      * 获取缓存统计信息
+     * @return 缓存统计数据
      */
     public Map<String, Object> getCacheStats() {
         Map<String, Object> stats = new HashMap<>();
+        if (routeResultCache != null) {
+            stats.put("hitCount", routeResultCache.stats().hitCount());
+            stats.put("missCount", routeResultCache.stats().missCount());
+            stats.put("requestCount", routeResultCache.stats().requestCount());
+            stats.put("hitRate", routeResultCache.stats().hitRate());
+            stats.put("evictionCount", routeResultCache.stats().evictionCount());
+            stats.put("loadFailureCount", routeResultCache.stats().loadFailureCount());
+        }
         stats.put("routeRuleCacheSize", routeRuleCache.size());
         stats.put("extensionImplementationMapSize", extensionImplementationMap.size());
         stats.put("defaultImplementationCacheSize", defaultImplementationCache.size());
-        stats.put("routeResultCacheStats", routeResultCache.stats());
         stats.put("expressionCacheSize", expressionCache.size());
         return stats;
+    }
+    
+    /**
+     * 自适应优化缓存配置
+     * 根据运行时统计数据动态调整缓存参数
+     * 当命中率高时延长缓存时间，命中率低时缩短缓存时间
+     */
+    public void optimizeCacheConfig() {
+        Map<String, Object> stats = getCacheStats();
+        Double hitRate = (Double) stats.getOrDefault("hitRate", 0.0);
+        long requestCount = (Long) stats.getOrDefault("requestCount", 0L);
+        
+        // 只有当请求数达到一定量时才进行优化，避免统计偏差
+        if (requestCount < 100) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Skip cache optimization, request count too low: {}", requestCount);
+            }
+            return;
+        }
+        
+        int oldExpireTime = this.cacheExpireTime;
+        
+        // 根据命中率动态调整缓存过期时间
+        if (hitRate > 0.8) {
+            // 命中率高，提高缓存时间，减少缓存刷新频率
+            int newExpireTime = (int)(cacheExpireTime * 1.5);
+            // 限制最大缓存时间，避免缓存数据过期不及时
+            newExpireTime = Math.min(newExpireTime, 120); // 最多2小时
+            if (newExpireTime != oldExpireTime) {
+                this.cacheExpireTime = newExpireTime;
+                reinitializeConfig(newExpireTime, cacheMaxSize);
+                logger.info("Cache optimization: increased expire time from {} to {} minutes (hit rate: {:.2f})", 
+                        oldExpireTime, newExpireTime, hitRate);
+            }
+        } else if (hitRate < 0.4) {
+            // 命中率低，降低缓存时间，提高缓存新鲜度
+            int newExpireTime = Math.max(1, cacheExpireTime / 2);
+            if (newExpireTime != oldExpireTime) {
+                this.cacheExpireTime = newExpireTime;
+                reinitializeConfig(newExpireTime, cacheMaxSize);
+                logger.info("Cache optimization: decreased expire time from {} to {} minutes (hit rate: {:.2f})", 
+                        oldExpireTime, newExpireTime, hitRate);
+            }
+        }
     }
 
     /**
@@ -405,20 +503,29 @@ public class CacheManager extends AbstractRouterComponent implements RouterCompo
      */
     @Override
     public void reinitializeConfig(int expireTime, int maxSize) {
-        // 重新初始化配置
+        // 更新本地配置值，优先使用传入的参数
         this.cacheExpireTime = expireTime;
         this.cacheMaxSize = maxSize;
-        // 重新初始化缓存
+        
+        // 重新初始化缓存以应用新配置
         initializeCache(expireTime, maxSize);
-        logger.info("Cache reinitialized with expireTime: {} minutes, maxSize: {}", expireTime, maxSize);
+        logger.info("CacheManager configuration reinitialized with expireTime={}, maxSize={}", 
+                   expireTime, maxSize);
     }
     
     /**
      * 配置变更处理（兼容旧方法）
      */
     public void onConfigChanged(String configKey) {
-        // 清除相关缓存
-        clearAllCache();
-        logger.info("Cache cleared due to config change: {}", configKey);
+        // 处理配置变更 - 委托给统一配置管理
+        switch (configKey) {
+            case "cacheExpireTime":
+            case "cacheMaxSize":
+                initializeCache(config.getCacheExpireTime(), config.getCacheMaxSize());
+                logger.info("CacheManager reinitialized due to config change: {}", configKey);
+                break;
+            default:
+                break;
+        }
     }
 }

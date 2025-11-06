@@ -30,6 +30,8 @@ public class ExtensionProperties {
     private EventConfig events = new EventConfig();
     
     private RouterConfig router = new RouterConfig();
+    
+    private MonitorConfig monitor = new MonitorConfig();
 
     public boolean isEnabled() {
         return enabled;
@@ -69,6 +71,14 @@ public class ExtensionProperties {
 
     public void setRouter(RouterConfig router) {
         this.router = router;
+    }
+    
+    public MonitorConfig getMonitor() {
+        return monitor;
+    }
+    
+    public void setMonitor(MonitorConfig monitor) {
+        this.monitor = monitor;
     }
 
     /**
@@ -282,6 +292,30 @@ public class ExtensionProperties {
         
         public void setWarningThreshold(long warningThreshold) {
             this.warningThreshold = warningThreshold;
+        }
+    }
+    
+    /**
+     * 监控配置
+     */
+    public static class MonitorConfig {
+        private boolean enabled = true;
+        private long slowRouteThreshold = 100; // 默认100ms
+        
+        public boolean isEnabled() {
+            return enabled;
+        }
+        
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+        
+        public long getSlowRouteThreshold() {
+            return slowRouteThreshold;
+        }
+        
+        public void setSlowRouteThreshold(long slowRouteThreshold) {
+            this.slowRouteThreshold = slowRouteThreshold;
         }
     }
 }

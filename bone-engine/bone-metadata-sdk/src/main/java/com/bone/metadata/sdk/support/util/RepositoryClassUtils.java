@@ -78,7 +78,7 @@ public class RepositoryClassUtils {
                 }
             }
 
-            return null;
+            return new Class<?>[0];
         });
     }
     
