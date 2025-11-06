@@ -38,7 +38,9 @@ public class EavHandler implements ExtensionStorageHandler {
                         "attrValue", String.valueOf(entry.getValue())
                 ))
                 .toList();
-        jdbc.batchUpdate(sql, batchParams.toArray(new Map[0]));
+        @SuppressWarnings({"unchecked", "rawtypes"})
+        Map<String, ?>[] paramsArray = batchParams.toArray(new Map[0]);
+        jdbc.batchUpdate(sql, paramsArray);
     }
 
     @Override

@@ -391,12 +391,13 @@ public class MyBatisSqlProcessor implements SqlProcessor {
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public TypedValue read(EvaluationContext context, Object target, String name) throws AccessException {
             if (!(target instanceof Map)) {
                 throw new AccessException("Target is not a Map");
             }
 
-            Map<?, ?> map = (Map<?, ?>) target;
+            Map<String, Object> map = (Map<String, Object>) target;
 
             // 直接属性
             if (map.containsKey(name)) {
@@ -435,6 +436,7 @@ public class MyBatisSqlProcessor implements SqlProcessor {
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         public void write(EvaluationContext context, Object target, String name, Object newValue) throws AccessException {
             if (target instanceof Map) {
                 ((Map<String, Object>) target).put(name, newValue);

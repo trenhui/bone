@@ -94,7 +94,9 @@ public class DefaultFluentQuery<T> implements FluentQuery<T> {
     // ===== 分组实现 =====
 
     @Override
-    public FluentQuery<T> groupBy(Function<T, ?>... fieldGetters) {
+    @SafeVarargs
+    @SuppressWarnings("varargs")
+    public final FluentQuery<T> groupBy(Function<T, ?>... fieldGetters) {
         for (Function<T, ?> fieldGetter : fieldGetters) {
             String fieldName = SqlUtil.extractFieldName(fieldGetter);
             validateFieldName(fieldName, "groupBy");

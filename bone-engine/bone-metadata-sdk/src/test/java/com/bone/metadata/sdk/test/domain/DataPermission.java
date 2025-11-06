@@ -2,11 +2,13 @@ package com.bone.metadata.sdk.test.domain;
 
 import com.bone.core.util.JsonUtil;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Data
+@EqualsAndHashCode(callSuper = true)
 public class DataPermission extends Permission  {
     // 扩展属性键定义（原始部分）
     public static final String DATA_SCOPE = "data_scope";
@@ -62,6 +64,7 @@ public class DataPermission extends Permission  {
      *
      * @return 可见字段列表，默认值为空列表
      */
+    @SuppressWarnings("unchecked")
     public List<String> getVisibleFields() {
         return getExtraProperty(VISIBLE_FIELDS, List.class).orElseGet(ArrayList::new);
     }
@@ -92,6 +95,7 @@ public class DataPermission extends Permission  {
      *
      * @return 允许的操作列表，默认值为空列表
      */
+    @SuppressWarnings("unchecked")
     public List<String> getAllowedOps() {
         return getExtraProperty(ALLOWED_OPS, List.class).orElseGet(ArrayList::new);
     }
@@ -112,6 +116,7 @@ public class DataPermission extends Permission  {
      *
      * @return 行级过滤条件，默认值为空映射
      */
+    @SuppressWarnings("unchecked")
     public Map<String, String> getRowFilter() {
         return getExtraProperty(ROW_FILTER, Map.class).orElseGet(ConcurrentHashMap::new);
     }
@@ -163,6 +168,7 @@ public class DataPermission extends Permission  {
      *
      * @return 角色集合，默认值为空集合
      */
+    @SuppressWarnings("unchecked")
     public Set<String> getRequiredRoles() {
         return getExtraProperty(REQUIRED_ROLES, Set.class).orElseGet(HashSet::new);
     }
@@ -206,6 +212,7 @@ public class DataPermission extends Permission  {
      *
      * @return 地理位置限制列表，默认值为空列表
      */
+    @SuppressWarnings("unchecked")
     public List<String> getGeoRestrictions() {
         return getExtraProperty(GEO_RESTRICTIONS, List.class).orElseGet(ArrayList::new);
     }

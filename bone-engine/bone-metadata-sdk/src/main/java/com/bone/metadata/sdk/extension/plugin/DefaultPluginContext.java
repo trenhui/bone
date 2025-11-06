@@ -33,6 +33,7 @@ public class DefaultPluginContext implements PluginContext {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public <T> T getService(Class<T> serviceType) throws ServiceNotFoundException {
         // 1. 检查本地服务
         T localService = (T) localServices.get(serviceType);

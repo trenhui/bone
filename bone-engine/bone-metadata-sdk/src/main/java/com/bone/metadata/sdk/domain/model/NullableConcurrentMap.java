@@ -41,6 +41,7 @@ public class NullableConcurrentMap<K, V> implements Map<K, V> {
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public boolean containsValue(Object value) {
         for (Object v : internalMap.values()) {
             if (Objects.equals(v, wrapNull((V) value))) {

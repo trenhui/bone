@@ -23,6 +23,8 @@ import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import com.bone.engine.extension.router.RouteStatsCollector;
+import com.bone.engine.extension.register.ExtensionRegister;
+import com.bone.engine.extension.register.ExtensionRegistry;
 
 /**
  * 统一的扩展点框架自动配置类
@@ -71,9 +73,12 @@ public class UnifiedExtPointAutoConfiguration implements ImportAware {
      */
     @Bean
     @ConditionalOnMissingBean(ExtPointRouter.class)
-    public ExtPointRouter extPointRouter(ApplicationContext applicationContext, ExtensionProperties extensionProperties, RouteStatsCollector routeStatsCollector) {
+    public ExtPointRouter extPointRouter(ApplicationContext applicationContext, ExtensionProperties extensionProperties, 
+                                       RouteStatsCollector routeStatsCollector, ExtensionRegister extensionRegister) {
+        // 通过ExtensionRegister获取ExtensionRegistry实例
+        ExtensionRegistry extensionRegistry = extensionRegister.getExtensionRegistry();
         // 创建DefaultExtPointRouter实例，使用正确的构造函数
-        DefaultExtPointRouter router = new DefaultExtPointRouter(applicationContext, routeStatsCollector, null);
+        DefaultExtPointRouter router = new DefaultExtPointRouter(applicationContext, routeStatsCollector, extensionRegistry);
         // 设置缓存启用状态，优先使用注解属性，其次使用配置属性
         boolean finalEnableCache = this.enableCache && extensionProperties.getCache().isEnabled();
         router.setEnableCache(finalEnableCache);
