@@ -124,7 +124,20 @@ public class UserRepositoryCriteriaTest  {
     }
 
     @Test
-    void testFindByIdIgnoreDeleted_ShouldSkipSoftDeletedUsers() {
+    void testFindById_ShouldSkipSoftDeletedUsers() {
+        // Arrange
+        setUpTestData();
+        Long deletedUserId = 4L; // User 4 is soft deleted
+
+        // Act
+        User user = userRepository.findById(deletedUserId);
+
+        // Assert
+        assertNull(user, "User 4 should be skipped as it's soft deleted");
+    }
+    
+    @Test
+    void testFindByIdIncludingDeleted_ShouldFindSoftDeletedUsers() {
         // Arrange
         setUpTestData();
         Long deletedUserId = 4L; // User 4 is soft deleted
@@ -133,7 +146,8 @@ public class UserRepositoryCriteriaTest  {
         User user = userRepository.findByIdIncludingDeleted(deletedUserId);
 
         // Assert
-        assertNull(user, "User 4 should be skipped as it's soft deleted");
+        assertNotNull(user, "User 4 should be found when including deleted records");
+        assertEquals("user2", user.getName(), "Should return the correct soft deleted user");
     }
 
     // 4. 测试条件查询 (findByCriteria)
