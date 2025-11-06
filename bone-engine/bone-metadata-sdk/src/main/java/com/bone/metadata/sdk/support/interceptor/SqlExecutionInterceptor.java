@@ -154,7 +154,7 @@ public class SqlExecutionInterceptor {
 
             // 深度解析 paramMap 中的嵌套对象（如 request）
             return deepResolveNestedParams(paramMap);
-        } catch (Exception e) {
+        } catch (ReflectiveOperationException e) {
             log.trace("提取 NestedMapSqlParameterSource 参数失败", e);
             return Collections.emptyMap();
         }
@@ -169,7 +169,7 @@ public class SqlExecutionInterceptor {
             beanField.setAccessible(true);
             Object bean = beanField.get(beanSource);
             return extractBeanProperties(bean);
-        } catch (Exception e) {
+        } catch (ReflectiveOperationException e) {
             log.trace("提取 BeanPropertySqlParameterSource 参数失败", e);
             return Collections.emptyMap();
         }

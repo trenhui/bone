@@ -92,6 +92,14 @@ public class BizContext<T> implements Serializable {
     }
     
     /**
+     * 获取租户ID（别名方法）
+     * @return 租户代码
+     */
+    public String getTenantId() {
+        return getTenantCode();
+    }
+    
+    /**
      * 业务域代码
      */
     private String bizCode;
@@ -102,6 +110,14 @@ public class BizContext<T> implements Serializable {
      */
     public String getBizCode() {
         return bizCode;
+    }
+    
+    /**
+     * 获取业务域（别名方法）
+     * @return 业务域代码
+     */
+    public String getBusinessDomain() {
+        return getBizCode();
     }
     
     /**

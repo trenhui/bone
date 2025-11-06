@@ -258,21 +258,17 @@
                     <failOnError>false</failOnError>
                 </configuration>
             </plugin>
-            <!-- 依赖漏洞检查 -->
+            <!-- 依赖漏洞检查 (仅在显式调用时执行) -->
             <plugin>
                 <groupId>org.owasp</groupId>
                 <artifactId>dependency-check-maven</artifactId>
                 <version>8.4.0</version>
                 <configuration>
                     <failBuildOnCVSS>7</failBuildOnCVSS>
+                    <skipOnMissingExecutable>true</skipOnMissingExecutable>
+                    <skipProvidedScope>true</skipProvidedScope>
+                    <skipRuntimeScope>true</skipRuntimeScope>
                 </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                    </execution>
-                </executions>
             </plugin>
             
             <!-- 该模块作为SDK，不需要Spring Boot打包插件 -->

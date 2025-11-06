@@ -28,13 +28,19 @@ public class SqlUtil {
         }
     }
 
+    /**
+     * 解析Lambda表达式获取SerializedLambda对象
+     * 注意：这里使用setAccessible是必要的，用于访问Lambda表达式的内部实现细节
+     * 在当前SDK上下文中，这是安全的，因为我们只访问用户传递的Lambda函数
+     */
     public static <T> SerializedLambda resolve(Function<T, ?> keyExtractor) {
         try {
             // 通过反射获取 'writeReplace' 方法
             Method writeReplaceMethod = keyExtractor.getClass().getDeclaredMethod("writeReplace");
+            // 设置方法可访问，这在Lambda表达式处理中是必要的
             writeReplaceMethod.setAccessible(true);
             return (SerializedLambda) writeReplaceMethod.invoke(keyExtractor);
-        } catch (Exception e) {
+        } catch (ReflectiveOperationException e) {
             throw new IllegalArgumentException("Unable to resolve Lambda expression", e);
         }
     }
@@ -43,7 +49,7 @@ public class SqlUtil {
      * 将驼峰命名转为蛇形命名。
      */
     public static String toSnakeCase(String name) {
-        return name.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
+        return name.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase(java.util.Locale.ROOT);
     }
 
     public static String toCamelCase(String input) {
@@ -51,7 +57,7 @@ public class SqlUtil {
             return input;
         }
         if (input.length() == 1) {
-            return input.toLowerCase();
+            return input.toLowerCase(java.util.Locale.ROOT);
         }
         return Character.toLowerCase(input.charAt(0)) + input.substring(1);
     }
@@ -63,7 +69,7 @@ public class SqlUtil {
         if (sql == null || sql.trim().isEmpty()) {
             return false;
         }
-        String normalized = sql.trim().toUpperCase().replaceAll("\\s+", " ");
+        String normalized = sql.trim().toUpperCase(java.util.Locale.ROOT).replaceAll("\\s+", " ");
         return normalized.startsWith("INSERT ") ||
                 normalized.startsWith("UPDATE ") ||
                 normalized.startsWith("DELETE ") ||

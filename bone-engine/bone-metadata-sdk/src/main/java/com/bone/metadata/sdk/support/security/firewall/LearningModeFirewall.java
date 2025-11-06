@@ -53,7 +53,7 @@ public class LearningModeFirewall {
         if (!m.find()) {
             throw new SqlSecurityException("无法识别的 SQL 结构");
         }
-        String op = m.group(1).toUpperCase();
+        String op = m.group(1).toUpperCase(java.util.Locale.ROOT);
         String table = m.group(2);
         if (!SAFE_PATTERN.matcher(table).matches()) {
             throw new SqlSecurityException("表名包含非法字符: " + table);
@@ -75,7 +75,7 @@ public class LearningModeFirewall {
 
     /** 审批通过后调用，将对应模式加入白名单 */
     public void approveTable(String operation, String tableName) {
-        String key = operation.toUpperCase() + ":" + tableName;
+        String key = operation.toUpperCase(java.util.Locale.ROOT) + ":" + tableName;
         allowedTables.add(key);
         // 更新所有对应签名的状态
         String sig = createSignature(operation, tableName);

@@ -7,6 +7,8 @@ import com.bone.engine.extension.lifecycle.ExtensionLifecycle;
 import com.bone.engine.extension.proxy.ExtPointProxyFactory;
 import com.bone.engine.extension.router.DefaultExtPointRouter;
 import com.bone.engine.extension.router.ExtPointRouter;
+import com.bone.engine.extension.router.CacheManager;
+import com.bone.engine.extension.config.RouterConfiguration;
 import com.bone.engine.extension.event.DefaultExtensionEventPublisher;
 import com.bone.engine.extension.event.ExtensionEventPublisher;
 import org.slf4j.Logger;
@@ -138,5 +140,51 @@ public class UnifiedExtPointAutoConfiguration implements ImportAware {
     @ConditionalOnMissingBean(ExtensionConfigValidator.class)
     public ExtensionConfigValidator extensionConfigValidator() {
         return new ExtensionConfigValidator();
+    }
+    
+    /**
+     * 配置缓存管理器
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public CacheManager cacheManager(RouterConfiguration routerConfiguration) {
+        // 使用统一配置创建缓存管理器
+        CacheManager cacheManager = new CacheManager();
+        // 初始化配置
+        cacheManager.initialize();
+        return cacheManager;
+    }
+    
+    /**
+     * 配置路由统一配置管理器
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public RouterConfiguration routerConfiguration(ExtensionProperties properties) {
+        // 创建并初始化统一配置管理
+        RouterConfiguration config = RouterConfiguration.getInstance();
+        java.util.Properties props = new java.util.Properties();
+        
+        // 从ExtensionProperties加载配置
+        if (properties != null) {
+            if (properties.getCache() != null) {
+                props.setProperty("cache.expireTime", 
+                        String.valueOf(properties.getCache().getExpireTime() / 60000)); // 转换为分钟
+                props.setProperty("cache.maxSize", 
+                        String.valueOf(properties.getCache().getMaxSize()));
+                props.setProperty("cache.enabled", 
+                        String.valueOf(properties.getCache().isEnabled()));
+            }
+            
+            if (properties.getMonitor() != null) {
+                props.setProperty("stats.enabled", 
+                        String.valueOf(properties.getMonitor().isEnabled()));
+                props.setProperty("route.slowThresholdMs", 
+                        String.valueOf(properties.getMonitor().getSlowRouteThreshold()));
+            }
+        }
+        
+        config.initialize(props);
+        return config;
     }
 }

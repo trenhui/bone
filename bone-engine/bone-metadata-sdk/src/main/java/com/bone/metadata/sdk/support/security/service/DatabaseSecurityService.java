@@ -31,14 +31,4 @@ public class DatabaseSecurityService implements SecurityService {
     public void validateConfigUpdate(String pluginId) {
         // 只允许管理员角色更新配置
     }
-
-    private boolean isTrustedPluginSource(URL location) {
-        // 实现信任源验证逻辑
-        return location.toString().startsWith("https://plugins.bone.com/");
-    }
-
-    private boolean hasValidSignature(PluginDescriptor descriptor) {
-        // 实现插件签名验证逻辑
-        return true; // 模拟实现
-    }
 }

@@ -14,7 +14,7 @@ public class SecretUtil {
         Cipher cipher = Cipher.getInstance(CIPHER_ALGORITHM);
         SecretKeySpec secretKeySpec = new SecretKeySpec(Base64.getDecoder().decode(key), ALGORITHM);
         cipher.init(Cipher.ENCRYPT_MODE, secretKeySpec);
-        byte[] encryptedBytes = cipher.doFinal(data.getBytes());
+        byte[] encryptedBytes = cipher.doFinal(data.getBytes(java.nio.charset.StandardCharsets.UTF_8));
         return Base64.getEncoder().encodeToString(encryptedBytes);
     }
 
@@ -24,7 +24,7 @@ public class SecretUtil {
         SecretKeySpec secretKeySpec = new SecretKeySpec(Base64.getDecoder().decode(key), ALGORITHM);
         cipher.init(Cipher.DECRYPT_MODE, secretKeySpec);
         byte[] decryptedBytes = cipher.doFinal(Base64.getDecoder().decode(data));
-        return new String(decryptedBytes);
+        return new String(decryptedBytes, java.nio.charset.StandardCharsets.UTF_8);
     }
 
     // 生成密钥

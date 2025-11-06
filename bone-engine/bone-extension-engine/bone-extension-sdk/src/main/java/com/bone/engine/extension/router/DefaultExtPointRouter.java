@@ -4,6 +4,7 @@ import com.bone.engine.extension.ExtPoint;
 import com.bone.engine.extension.Extension;
 import com.bone.engine.extension.config.ExtensionProperties;
 import com.bone.engine.extension.context.BizContext;
+import com.bone.engine.extension.config.RouterConfiguration;
 import com.bone.engine.extension.register.ExtensionRegistry;
 import com.bone.engine.extension.utils.ExtPointUtils;
 import org.slf4j.Logger;
@@ -26,6 +27,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
+import com.bone.engine.extension.router.CacheKeyFactory;
+import com.bone.engine.extension.monitor.ExtPointFrameworkEndpoint;
 
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
@@ -66,6 +69,9 @@ import com.bone.engine.extension.config.ConfigChangeListener;
  */
 @Component
 public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingSingleton, InitializingBean, ConfigChangeListener {
+
+    // 使用统一配置管理
+    private final RouterConfiguration config = RouterConfiguration.getInstance();
     private static final Logger log = LoggerFactory.getLogger(DefaultExtPointRouter.class);
     
     // Spring上下文
@@ -90,15 +96,18 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     public DefaultExtPointRouter(ApplicationContext applicationContext, 
                               RouteStatsCollector routeStatsCollector,
                               ExtensionRegistry extensionRegistry) {
+        // 参数校验
         Assert.notNull(applicationContext, "ApplicationContext must not be null");
         Assert.notNull(routeStatsCollector, "RouteStatsCollector must not be null");
         Assert.notNull(extensionRegistry, "ExtensionRegistry must not be null");
+        
+        // 初始化共享属性
         this.applicationContext = applicationContext;
         this.statsCollector = routeStatsCollector;
         this.extensionRegistry = extensionRegistry;
         
-        // 初始化其他组件
-        this.cacheManager = new CacheManager();
+        // 使用统一配置初始化组件
+        this.cacheManager = new CacheManager(config);
         this.scoreCalculator = new RouteScoreCalculator();
         this.weightAndGraySelector = new WeightAndGraySelector();
     }
@@ -114,6 +123,13 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
                               WeightAndGraySelector weightAndGraySelector,
                               RouteStatsCollector statsCollector,
                               ExtensionRegistry extensionRegistry) {
+        // 参数校验
+        Assert.notNull(applicationContext, "ApplicationContext must not be null");
+        Assert.notNull(cacheManager, "CacheManager must not be null");
+        Assert.notNull(statsCollector, "RouteStatsCollector must not be null");
+        Assert.notNull(extensionRegistry, "ExtensionRegistry must not be null");
+        
+        // 初始化所有属性
         this.applicationContext = applicationContext;
         this.cacheManager = cacheManager;
         this.scoreCalculator = scoreCalculator;
@@ -149,7 +165,7 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     
     // 获取缓存过期时间配置（秒）
     private int getCacheExpireTime() {
-        // 配置优先级：ExtensionConfigManager > ExtensionProperties > 默认值
+        // 配置优先级：ExtensionConfigManager > ExtensionProperties > RouterConfiguration > 默认值
         return getIntConfig(
             () -> {
                 // 优先从ExtensionConfigManager获取（单位：秒）
@@ -160,7 +176,8 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
                 if (extensionProperties != null && extensionProperties.getCache() != null) {
                     return (int) (extensionProperties.getCache().getExpireTime() / 1000);
                 }
-                return 300;
+                // 使用统一配置
+                return (int)(config.getCacheExpireTime() * 60); // 转换为秒
             },
             300 // 默认5分钟（300秒）
         );
@@ -168,7 +185,7 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     
     // 获取缓存最大容量配置
     private int getCacheMaxSize() {
-        // 配置优先级：ExtensionConfigManager > ExtensionProperties > 默认值
+        // 配置优先级：ExtensionConfigManager > ExtensionProperties > RouterConfiguration > 默认值
         return getIntConfig(
             () -> {
                 // 优先从ExtensionConfigManager获取
@@ -179,7 +196,8 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
                 if (extensionProperties != null && extensionProperties.getCache() != null) {
                     return extensionProperties.getCache().getMaxSize();
                 }
-                return 1000;
+                // 使用统一配置
+                return (int)config.getCacheMaxSize();
             },
             1000 // 默认1000个条目
         );
@@ -205,90 +223,96 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     
     // 是否启用权重路由
     private boolean isWeightedRoutingEnabled() {
+        // 优先从extensionProperties获取，否则使用统一配置
         return getBooleanConfig(
             () -> extensionProperties != null && extensionProperties.getRouter() != null && 
                   extensionProperties.getRouter().getWeighted() != null ? 
-                  extensionProperties.getRouter().getWeighted().isEnabled() : false, 
-            false
+                  extensionProperties.getRouter().getWeighted().isEnabled() : config.isWeightedRoutingEnabled(), 
+            config.isWeightedRoutingEnabled()
         );
     }
     
     // 是否启用灰度发布
     private boolean isGrayReleaseEnabled() {
+        // 优先从extensionProperties获取，否则使用统一配置
         return getBooleanConfig(
             () -> extensionProperties != null && extensionProperties.getRouter() != null && 
                   extensionProperties.getRouter().getGrayRelease() != null ? 
-                  extensionProperties.getRouter().getGrayRelease().isEnabled() : false, 
-            false
+                  extensionProperties.getRouter().getGrayRelease().isEnabled() : config.isGrayReleaseEnabled(), 
+            config.isGrayReleaseEnabled()
         );
     }
     
     // 是否启用指标收集
     private boolean isMetricsEnabled() {
+        // 优先从extensionProperties获取，否则使用统一配置
         return getBooleanConfig(
             () -> extensionProperties != null && extensionProperties.getRouter() != null && 
                   extensionProperties.getRouter().getMetrics() != null ? 
-                  extensionProperties.getRouter().getMetrics().isEnabled() : false, 
-            false
+                  extensionProperties.getRouter().getMetrics().isEnabled() : config.isStatsEnabled(), 
+            config.isStatsEnabled()
         );
     }
     
     // 获取性能警告阈值（毫秒）
     private long getWarningThreshold() {
+        // 优先从extensionProperties获取，否则使用统一配置
         return getLongConfig(
             () -> extensionProperties != null && extensionProperties.getRouter() != null && 
                   extensionProperties.getRouter().getMetrics() != null ? 
-                  extensionProperties.getRouter().getMetrics().getWarningThreshold() : 1000L, 
-            1000L
+                  extensionProperties.getRouter().getMetrics().getWarningThreshold() : config.getSlowThresholdMs(), 
+            config.getSlowThresholdMs()
         );
     }
     
+    @Override
     public void afterPropertiesSet() {
         // 确保CacheManager不为null
         if (cacheManager != null) {
             // 委托给CacheManager初始化缓存
             cacheManager.initializeCache((int)getCacheExpireTime(), (int)getCacheMaxSize());
             
-            log.info("Initialized extPoint router cache with expireTime={}s, maxSize={}", 
-                    getCacheExpireTime(), getCacheMaxSize());
+            log.info("Initialized extPoint router cache with expireTime={}s, maxSize={}, cacheEnabled={}", 
+                    getCacheExpireTime(), getCacheMaxSize(), enableCache);
         }
+        
+        // 初始化计数器
+        lastOptimizeTime = System.currentTimeMillis();
+        
+        // 初始化端点（如果需要）
+        if (applicationContext != null) {
+            try {
+                ExtPointFrameworkEndpoint endpoint = applicationContext.getBean(ExtPointFrameworkEndpoint.class);
+                if (endpoint != null) {
+                    endpoint.setRouter(this);
+                    endpoint.setCacheManager(cacheManager);
+                    endpoint.setStatsCollector(statsCollector);
+                }
+            } catch (Exception e) {
+                log.warn("Failed to initialize monitor endpoint", e);
+            }
+        }
+        
+        log.info("DefaultExtPointRouter initialized with weighted routing={}, gray release={}", 
+                isWeightedRoutingEnabled(), isGrayReleaseEnabled());
     }
     
     /**
-     * 获取缓存键
+       * 获取缓存键 - 使用CacheKeyFactory统一管理
+       */
+     private String getCacheKey(Class<?> extPointClass, BizContext<?> context) {
+         // 添加空值检查以提高健壮性
+         if (extPointClass == null) {
+             throw new IllegalArgumentException("Extension point class cannot be null");
+         }
+         return CacheKeyFactory.createExtPointCacheKey(extPointClass, context);
+     }
+    
+    /**
+     * 获取方法名称，如果方法为null则返回默认值
      */
-    private String getCacheKey(Class<?> extPointClass, BizContext<?> context) {
-        StringBuilder key = new StringBuilder(extPointClass.getName());
-        key.append("_")
-           .append(safeGetNestedProperty(context, "tenantId") != null ? safeGetNestedProperty(context, "tenantId") : "DEFAULT")
-           .append("_")
-           .append(safeGetNestedProperty(context, "bizDomain") != null ? safeGetNestedProperty(context, "bizDomain") : "")
-           .append("_")
-           .append(safeGetNestedProperty(context, "useCase") != null ? safeGetNestedProperty(context, "useCase") : "")
-           .append("_")
-           .append(safeGetNestedProperty(context, "scenario") != null ? safeGetNestedProperty(context, "scenario") : "")
-           .append("_")
-           .append("DEFAULT") // 暂时不调用getUserGroup()方法
-           .append("_")
-           .append("PROD"); // 暂时不调用getEnv()方法
-        
-        // 添加标签信息到缓存键
-            try {
-                Method method = context.getClass().getMethod("getAllTags");
-                Map<String, String> tags = (Map<String, String>) method.invoke(context);
-                if (tags != null && !tags.isEmpty()) {
-                    String tagsStr = tags.entrySet().stream()
-                        .map(e -> e.getKey() + ":" + e.getValue())
-                        .sorted()
-                        .collect(Collectors.joining(","));
-                    key.append("_tags_")
-                       .append(tagsStr);
-                }
-            } catch (Exception e) {
-                // 如果获取标签失败，不添加标签信息
-            }
-        
-        return key.toString();
+    private String getMethodName(Method method) {
+        return method != null ? method.getName() : "default";
     }
     
     /**
@@ -465,7 +489,8 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     }
     
     // 用于向后兼容的临时字段
-    private boolean enableCache = true;
+    private boolean enableCache = true; // 是否启用缓存（可覆盖全局配置）
+    private boolean enableEventPublish = true; // 是否启用事件发布
     
     /**
      * 设置是否启用缓存
@@ -476,6 +501,14 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
         // 注意：这个方法主要用于向后兼容ExtensionAutoConfiguration
         // 主要配置应通过ExtensionProperties统一管理
         log.debug("Cache enable state set to: {}", enableCache);
+    }
+    
+    /**
+     * 获取缓存是否启用
+     * @return 缓存是否启用
+     */
+    public boolean isCacheEnabled() {
+        return enableCache;
     }
     
     /**
@@ -490,6 +523,7 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
      * 记录路由统计
      */
     private void recordRouteStats(Class<?> extPointClass, Object implementation) {
+        // 委托给statsCollector记录路由统计信息
         statsCollector.recordRouteStats(extPointClass, implementation);
     }
     
@@ -497,6 +531,7 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
      * 记录路由失败统计
      */
     private void recordRouteFailure(Class<?> extPointClass, Throwable ex) {
+        // 委托给statsCollector记录路由失败信息
         statsCollector.recordRouteFailure(extPointClass, ex);
     }
     
@@ -690,42 +725,116 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     /**
      * 执行路由并记录统计信息
      */
+    /**
+     * 带统计信息的路由执行方法
+     * 添加细粒度监控、慢调用检测和自适应缓存优化
+     */
     private <T> T doRouteWithStats(Class<T> extPointClass, BizContext<?> context) {
-        long startTime = System.currentTimeMillis();
+        long startTime = System.nanoTime();
         boolean success = false;
-        T result = null;
+        Object result = null;
         
         try {
             // 执行路由
             result = doRoute(extPointClass, context);
             success = true;
-            return result;
+            return (T) result;
+        } catch (Exception e) {
+            if (statsCollector != null) {
+                statsCollector.recordRouteFailure(extPointClass, e);
+            }
+            throw e;
         } finally {
-            // 记录路由性能指标
-            long endTime = System.currentTimeMillis();
-            long costTime = endTime - startTime;
+            long endTime = System.nanoTime();
+            long durationNanos = endTime - startTime;
+            long durationMs = durationNanos / 1_000_000;
             
-            // 记录路由性能指标
-            if (isMetricsEnabled()) {
-                statsCollector.recordMetrics(extPointClass, success, costTime, getWarningThreshold());
+            // 使用统一配置判断是否启用统计
+            if ((config.isStatsEnabled() || isMetricsEnabled()) && statsCollector != null) {
+                // 使用statsCollector记录所有统计信息
+                
+                // 记录路由统计
+                if (result != null) {
+                    statsCollector.recordRouteStats(extPointClass, result);
+                }
+                
+                // 记录详细指标
+                long warningThresholdMs = getWarningThreshold();
+                statsCollector.recordMetrics(extPointClass, success, durationMs, warningThresholdMs);
+                
+                // 慢调用检测和详情记录
+                long slowThreshold = Math.min(warningThresholdMs, config.getSlowThresholdMs());
+                if (durationMs > slowThreshold) {
+                    statsCollector.recordSlowCall(extPointClass, durationMs, slowThreshold);
+                    log.warn("Slow route detected for {}: {}ms (threshold: {}ms)", 
+                            extPointClass.getName(), durationMs, slowThreshold);
+                    
+                    // 记录慢调用上下文信息
+                    if (log.isDebugEnabled()) {
+                        log.debug("Slow route context: tenantCode={}, bizCode={}, useCase={}, scenario={}",
+                                context.getTenantCode(), context.getBizCode(), 
+                                context.getUseCase(), context.getScenario());
+                    }
+                }
             }
             
             // 记录详细日志
             if (log.isTraceEnabled()) {
                 log.trace("Route for extPoint: {} took {}ms, success: {}, result: {}", 
                         extPointClass.getSimpleName(), 
-                        costTime, 
+                        durationMs, 
                         success, 
                         result != null ? result.getClass().getSimpleName() : "null");
             }
             
-            // 记录性能警告
-            if (costTime > getWarningThreshold()) {
-                log.warn("Slow route detected for extPoint: {}, cost: {}ms", 
-                        extPointClass.getSimpleName(), 
-                        costTime);
+            // 定期执行缓存优化（每1000次调用或每分钟调用一次）
+            if (isCacheOptimizationNeeded()) {
+                try {
+                    if (cacheManager != null) {
+                        cacheManager.optimizeCacheConfig();
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to optimize cache configuration", e);
+                }
             }
         }
+    }
+    
+    // 用于控制缓存优化频率的计数器
+    private final AtomicLong routeCounter = new AtomicLong(0);
+    private volatile long lastOptimizeTime = System.currentTimeMillis();
+    
+    /**
+     * 检查是否需要执行缓存优化
+     * 基于调用次数和时间间隔的双重触发机制，完全使用统一配置
+     */
+    private boolean isCacheOptimizationNeeded() {
+        if (!config.isCacheOptimizationEnabled()) {
+            return false;
+        }
+        
+        long currentTime = System.currentTimeMillis();
+        long optimizeIntervalMs = config.getOptimizeIntervalMs();
+        long callThreshold = config.getOptimizeCallThreshold();
+        
+        // 检查是否达到调用阈值
+        boolean callThresholdReached = routeCounter.incrementAndGet() % callThreshold == 0;
+        
+        // 检查是否达到时间间隔阈值
+        boolean timeIntervalReached = (currentTime - lastOptimizeTime) > optimizeIntervalMs;
+        
+        if (callThresholdReached || timeIntervalReached) {
+            // 获取当前的lastOptimizeTime用于CAS比较
+            long currentLastOptimize = lastOptimizeTime;
+            
+            // 双重检查确保仍然满足条件
+            if (callThresholdReached || (currentTime - currentLastOptimize) > optimizeIntervalMs) {
+                // 更新时间戳并返回true
+                lastOptimizeTime = currentTime;
+                return true;
+            }
+        }
+        return false;
     }
     
     // 移除单独的recordMetrics方法，使用statsCollector代替
