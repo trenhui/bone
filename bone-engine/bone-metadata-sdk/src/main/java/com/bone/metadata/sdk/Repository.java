@@ -4,10 +4,19 @@ import com.bone.core.domain.entity.Entity;
 import com.bone.core.model.*;
 import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
 import com.bone.metadata.sdk.query.criteria.Criteria;
+import com.bone.metadata.sdk.query.dsl.DefaultFluentQuery;
+import com.bone.metadata.sdk.query.dsl.FluentQuery;
+import com.bone.metadata.sdk.query.dsl.QueryBuilder;
+import com.bone.metadata.sdk.query.dsl.condition.Condition;
+import com.bone.metadata.sdk.sql.executor.SqlExecutor;
+import com.bone.metadata.sdk.support.function.SFunction;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Consumer;
 
 /**
  * 通用存储库接口，用于基本的 CRUD 操作。
@@ -221,5 +230,58 @@ public interface Repository<T extends Entity<ID>, ID> {
             List<String> having,
             int pageNumber,
             int pageSize);
+    
+    /**
+     * 获取SQL执行器 - 为DSL查询提供底层支持
+     * 实现类应提供此方法的具体实现
+     */
+    SqlExecutor getSqlExecutor();
+    
+    /**
+     * 获取实体类类型 - 为DSL查询提供类型信息
+     */
+    default Class<T> getEntityClass() {
+        @SuppressWarnings("unchecked")
+        Class<T> entityClass = (Class<T>) getClass().getGenericInterfaces()[0];
+        return entityClass;
+    }
+    
+    /**
+     * 创建DSL查询构建器
+     * @return DSL查询构建器实例
+     */
+    default FluentQuery<T> query() {
+        SqlExecutor sqlExecutor = getSqlExecutor();
+        Objects.requireNonNull(sqlExecutor, "SqlExecutor cannot be null");
+        
+        try {
+            @SuppressWarnings("unchecked")
+            Class<T> entityClass = (Class<T>) ((java.lang.reflect.ParameterizedType) getClass()
+                    .getGenericInterfaces()[0]).getActualTypeArguments()[0];
+            return new DefaultFluentQuery<>(entityClass, sqlExecutor);
+        } catch (Exception e) {
+            // 降级方案：使用QueryBuilder静态方法
+            return QueryBuilder.from(getEntityClass());
+        }
+    }
+    
+    /**
+     * 直接开始条件查询
+     * @param fieldGetter 字段获取器
+     * @param <F> 字段类型
+     * @return 条件构建器
+     */
+    default <F> Condition<T, F> where(SFunction<T, F> fieldGetter) {
+        return query().where(fieldGetter);
+    }
+    
+    /**
+     * 使用Lambda表达式构建条件查询
+     * @param conditionBuilder 条件构建器
+     * @return DSL查询构建器
+     */
+    default FluentQuery<T> where(Consumer<FluentQuery.WhereBuilder<T>> conditionBuilder) {
+        return query().where(conditionBuilder);
+    }
 
 }

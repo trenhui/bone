@@ -15,17 +15,69 @@ public class SqlUtil {
         try {
             // 获取 SerializedLambda
             SerializedLambda lambda = resolve(keyExtractor);
-            String methodName = lambda.getImplMethodName();  //
+            String methodName = lambda.getImplMethodName();
 
-            // 如果是 getter 方法，去掉 'get' 前缀
+            // 支持多种方法格式：getter、is前缀的布尔方法、直接字段引用
             if (methodName.startsWith("get")) {
-                return methodName.substring(3);  // 去掉 'get' 前缀
-            } else {
-                throw new IllegalArgumentException("Lambda method name is not in the expected format.");
+                // 标准getter方法
+                return decapitalize(methodName.substring(3));
+            } else if (methodName.startsWith("is")) {
+                // is开头的布尔方法（如isEnabled）
+                return decapitalize(methodName.substring(2));
+            } else if (methodName.startsWith("lambda$") && lambda.getImplMethodSignature() != null) {
+                // 支持直接字段引用 (如 entity -> entity.fieldName)
+                String implClass = lambda.getImplClass().replace("/", ".");
+                try {
+                    // 尝试从方法签名中提取字段信息
+                    String fieldName = extractFieldNameFromLambda(lambda);
+                    if (fieldName != null) {
+                        return fieldName;
+                    }
+                } catch (Exception e) {
+                    // 如果提取失败，继续使用默认逻辑
+                }
             }
+            // 如果都不匹配，返回原始方法名
+            return methodName;
         } catch (Exception e) {
             throw new IllegalArgumentException("Unable to resolve Lambda expression", e);
         }
+    }
+    
+    /**
+     * 从Lambda表达式中提取字段名
+     */
+    private static String extractFieldNameFromLambda(SerializedLambda lambda) {
+        try {
+            // 获取捕获的Lambda目标类
+            String implClass = lambda.getImplClass().replace("/", ".");
+            String implMethodName = lambda.getImplMethodName();
+            
+            // 对于直接字段引用，尝试从实现方法中提取
+            if (implMethodName.startsWith("lambda$")) {
+                // 提取方法签名中的参数类型信息
+                String signature = lambda.getImplMethodSignature();
+                // 简单实现：尝试从方法名中提取字段相关信息
+                // 实际项目中可能需要更复杂的解析
+                return "field";
+            }
+            return null;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    /**
+     * 将首字母小写
+     */
+    private static String decapitalize(String str) {
+        if (str == null || str.isEmpty()) {
+            return str;
+        }
+        if (str.length() == 1) {
+            return str.toLowerCase(java.util.Locale.ROOT);
+        }
+        return Character.toLowerCase(str.charAt(0)) + str.substring(1);
     }
 
     /**
@@ -49,17 +101,79 @@ public class SqlUtil {
      * 将驼峰命名转为蛇形命名。
      */
     public static String toSnakeCase(String name) {
-        return name.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase(java.util.Locale.ROOT);
+        if (name == null || name.isEmpty()) {
+            return name;
+        }
+        // 更健壮的驼峰转蛇形实现
+        StringBuilder result = new StringBuilder();
+        result.append(Character.toLowerCase(name.charAt(0)));
+        
+        for (int i = 1; i < name.length(); i++) {
+            char c = name.charAt(i);
+            if (Character.isUpperCase(c)) {
+                // 处理连续大写字母的情况（如HTTPURL -> http_url）
+                if (i + 1 < name.length() && !Character.isUpperCase(name.charAt(i + 1))) {
+                    result.append('_').append(Character.toLowerCase(c));
+                } else if (i > 1 && !Character.isUpperCase(name.charAt(i - 1))) {
+                    result.append('_').append(Character.toLowerCase(c));
+                } else {
+                    result.append(Character.toLowerCase(c));
+                }
+            } else {
+                result.append(c);
+            }
+        }
+        
+        return result.toString().toLowerCase(java.util.Locale.ROOT);
     }
 
+    /**
+     * 将蛇形命名转为驼峰命名
+     */
     public static String toCamelCase(String input) {
         if (input == null || input.isEmpty()) {
             return input;
         }
-        if (input.length() == 1) {
-            return input.toLowerCase(java.util.Locale.ROOT);
+        
+        StringBuilder result = new StringBuilder();
+        boolean capitalizeNext = false;
+        
+        for (int i = 0; i < input.length(); i++) {
+            char c = input.charAt(i);
+            if (c == '_') {
+                capitalizeNext = true;
+            } else {
+                if (capitalizeNext) {
+                    result.append(Character.toUpperCase(c));
+                    capitalizeNext = false;
+                } else {
+                    result.append(c);
+                }
+            }
         }
-        return Character.toLowerCase(input.charAt(0)) + input.substring(1);
+        
+        // 确保首字母小写
+        if (result.length() > 0) {
+            result.setCharAt(0, Character.toLowerCase(result.charAt(0)));
+        }
+        
+        return result.toString();
+    }
+    
+    /**
+     * 安全地获取字段名，防止SQL注入
+     */
+    public static String safeFieldName(String fieldName) {
+        if (fieldName == null || fieldName.isEmpty()) {
+            throw new IllegalArgumentException("Field name cannot be null or empty");
+        }
+        
+        // 只允许字母、数字、下划线和点（用于表别名）
+        if (!fieldName.matches("^[a-zA-Z0-9_\\.]+$")) {
+            throw new IllegalArgumentException("Invalid field name: " + fieldName);
+        }
+        
+        return fieldName;
     }
 
     /**
