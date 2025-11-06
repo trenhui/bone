@@ -9,6 +9,7 @@ import lombok.Data;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 /**
  * 支持主表和扩展表条件、排序与分页的通用查询构造器。
@@ -399,6 +400,44 @@ public class Criteria<T> {
         sortItems.add(SqlUtil.toSnakeCase(field) + " " + dir.getDirection());
         return this;
     }
+    
+    /**
+     * 批量添加排序字段
+     */
+    public Criteria<T> addSorts(Map<String, SortDirection> sorts) {
+        if (sorts != null && !sorts.isEmpty()) {
+            sorts.forEach(this::addSort);
+        }
+        return this;
+    }
+    
+    /**
+     * 添加升序排序
+     */
+    public <R> Criteria<T> orderByAsc(SFunction<T, R> fn) {
+        return addSort(fn, SortDirection.ASC);
+    }
+    
+    /**
+     * 添加降序排序
+     */
+    public <R> Criteria<T> orderByDesc(SFunction<T, R> fn) {
+        return addSort(fn, SortDirection.DESC);
+    }
+    
+    /**
+     * 添加升序排序（字符串字段名）
+     */
+    public Criteria<T> orderByAsc(String fieldName) {
+        return addSort(fieldName, SortDirection.ASC);
+    }
+    
+    /**
+     * 添加降序排序（字符串字段名）
+     */
+    public Criteria<T> orderByDesc(String fieldName) {
+        return addSort(fieldName, SortDirection.DESC);
+    }
 
     // ------------------ SQL 片段生成 ------------------
 
@@ -427,6 +466,107 @@ public class Criteria<T> {
         return sb.toString();
     }
 
+    /**
+     * 添加OR条件组
+     */
+    public Criteria<T> or(Consumer<Criteria<T>> orConditions) {
+        if (orConditions != null) {
+            Criteria<T> orCriteria = Criteria.create();
+            orConditions.accept(orCriteria);
+            
+            // 将OR条件组合并到当前条件中
+            if (!orCriteria.getMainConditions().isEmpty() || !orCriteria.getExtConditions().isEmpty()) {
+                // 创建OR条件组
+                StringBuilder orConditionBuilder = new StringBuilder("(");
+                List<String> orConditionParts = new ArrayList<>();
+                
+                // 处理主表条件
+                for (Condition cond : orCriteria.getMainConditions()) {
+                    // 复用现有条件的SQL生成逻辑
+                    orConditionParts.add(cond.getColumn() + " " + cond.getOperator().getSymbol() + 
+                                        (cond.getOperator() == Operator.IS_NULL || cond.getOperator() == Operator.IS_NOT_NULL ? "" : " :" + cond.getParamName()));
+                }
+                
+                // 处理扩展表条件
+                for (Condition cond : orCriteria.getExtConditions()) {
+                    orConditionParts.add(cond.getColumn() + " " + cond.getOperator().getSymbol() + 
+                                        (cond.getOperator() == Operator.IS_NULL || cond.getOperator() == Operator.IS_NOT_NULL ? "" : " :" + cond.getParamName()));
+                }
+                
+                // 复制所有参数
+                parameters.putAll(orCriteria.getParameters());
+                
+                orConditionBuilder.append(String.join(" OR ", orConditionParts))
+                               .append(")");
+                
+                // 添加原生SQL条件片段
+                addNativeCondition(orConditionBuilder.toString());
+            }
+        }
+        return this;
+    }
+    
+    /**
+     * 添加原生SQL条件片段
+     */
+    private void addNativeCondition(String condition) {
+         // 直接添加SQL片段作为条件，使用最基本的构造函数参数
+         mainConditions.add(new Condition(null, condition, null, Operator.EQ));
+     }
+    
+    /**
+     * 智能处理NULL值的相等条件
+     */
+    public <R> Criteria<T> eqOrNull(SFunction<T, R> fn, Object v) {
+        if (v == null) {
+            return isNull(fn);
+        } else {
+            return eq(fn, v);
+        }
+    }
+    
+    /**
+     * 智能处理NULL值的相等条件（字符串字段名）
+     */
+    public Criteria<T> eqOrNull(String fieldName, Object v) {
+        if (v == null) {
+            return isNull(fieldName);
+        } else {
+            return eq(fieldName, v);
+        }
+    }
+    
+    /**
+     * 智能处理空字符串和NULL值的like条件
+     */
+    public <R> Criteria<T> likeIfPresent(SFunction<T, R> fn, String v) {
+        if (v != null && !v.trim().isEmpty()) {
+            return like(fn, v);
+        }
+        return this;
+    }
+    
+    /**
+     * 智能处理空字符串和NULL值的like条件（字符串字段名）
+     */
+    public Criteria<T> likeIfPresent(String fieldName, String v) {
+        if (v != null && !v.trim().isEmpty()) {
+            return like(fieldName, v);
+        }
+        return this;
+    }
+    
+    /**
+     * 清空所有条件
+     */
+    public Criteria<T> clear() {
+        mainConditions.clear();
+        extConditions.clear();
+        parameters.clear();
+        sortItems.clear();
+        return this;
+    }
+    
     // ------------------ 私有方法 ------------------
 
     private Criteria<T> add(List<Condition> target,
@@ -434,9 +574,16 @@ public class Criteria<T> {
                             Operator op,
                             boolean ext,
                             Object... vals) {
+        // 智能跳过空的IN条件
+        if (op == Operator.IN || op == Operator.NOT_IN) {
+            if (vals == null || vals.length == 0 || (vals.length == 1 && vals[0] == null)) {
+                return this;
+            }
+        }
+        
         String column = SqlUtil.toSnakeCase(fieldName);
         String paramName = generateParamName(column);
-        Condition cond = new Condition(SqlUtil.toCamelCase(fieldName),column, paramName, op, ext, vals);
+        Condition cond = new Condition(SqlUtil.toCamelCase(fieldName), column, paramName, op, ext, vals);
         target.add(cond);
         bind(cond);
         return this;

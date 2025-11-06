@@ -73,6 +73,16 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
         this.extensionCoordinator = Objects.requireNonNull(extensionCoordinator, "ExtensionCoordinator must not be null");
         this.cachedFieldNames = Collections.unmodifiableSet(FieldCache.getCachedFields(entityClass).keySet());
     }
+    
+    @Override
+    public SqlExecutor getSqlExecutor() {
+        return this.sqlExecutor;
+    }
+    
+    @Override
+    public Class<T> getEntityClass() {
+        return this.entityClass;
+    }
 
     // ========== 基础 CRUD ==========
 
@@ -227,36 +237,95 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
         if (entities == null || entities.isEmpty()) return;
         Assert.noNullElements(entities, "Entities list must not contain null elements");
 
-        List<ID> ids = entities.stream()
-                .map(Entity::getId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        // 优化：使用并行流处理大数据量
+        Map<Boolean, List<T>> partitionedEntities = entities.parallelStream().collect(
+                Collectors.partitioningBy(e -> e.getId() == null)
+        );
 
-        Set<ID> existingIds = ids.isEmpty() ? Collections.emptySet()
-                : findByIds(ids).stream().map(Entity::getId).collect(Collectors.toSet());
+        // 分离需要插入和需要检查更新的实体
+        List<T> toInsert = partitionedEntities.get(true);
+        List<T> maybeToUpdate = partitionedEntities.get(false);
 
-        List<T> toInsert = new ArrayList<>();
-        List<T> toUpdate = new ArrayList<>();
+        // 批量插入新实体
+        if (!toInsert.isEmpty()) {
+            batchInsert(toInsert);
+        }
 
-        entities.forEach(e -> {
-            if (e.getId() == null || !existingIds.contains(e.getId())) {
-                toInsert.add(e);
-            } else {
-                toUpdate.add(e);
-            }
-        });
+        // 优化更新逻辑：减少数据库查询
+        if (!maybeToUpdate.isEmpty()) {
+            // 分批处理大量实体，避免内存溢出
+            partition(maybeToUpdate, Math.min(maxBatchSize, 1000)).forEach(batch -> {
+                List<ID> ids = batch.stream().map(Entity::getId).collect(Collectors.toList());
+                Set<ID> existingIds = findByIds(ids).stream()
+                        .map(Entity::getId)
+                        .collect(Collectors.toSet());
 
-        if (!toInsert.isEmpty()) batchInsert(toInsert);
-        if (!toUpdate.isEmpty()) batchUpdate(toUpdate);
+                List<T> toUpdate = new ArrayList<>();
+                List<T> toInsertFromUpdate = new ArrayList<>();
+
+                // 分离真正需要更新和实际需要插入的实体
+                batch.forEach(e -> {
+                    if (existingIds.contains(e.getId())) {
+                        toUpdate.add(e);
+                    } else {
+                        // ID不为null但数据库中不存在，需要插入
+                        toInsertFromUpdate.add(e);
+                    }
+                });
+
+                if (!toUpdate.isEmpty()) {
+                    batchUpdate(toUpdate);
+                }
+                if (!toInsertFromUpdate.isEmpty()) {
+                    batchInsert(toInsertFromUpdate);
+                }
+            });
+        }
     }
 
     private void batchUpdate(List<T> entities) {
         if (entities == null || entities.isEmpty()) return;
-        partition(entities, maxBatchSize).forEach(batch -> {
-            BatchCompiledQuery query = sqlBuilder.buildBatchUpdate(entityClass, batch);
-            sqlExecutor.batchUpdate(query);
-            batch.forEach(this::saveExtensionFields);
-        });
+        
+        // 优化：根据实体大小动态调整批次大小
+        int optimalBatchSize = calculateOptimalBatchSize(entities);
+        
+        // 使用并行流处理批次（如果实体数量足够多）
+        if (entities.size() > optimalBatchSize * 2) {
+            entities.parallelStream()
+                    .collect(Collectors.groupingBy(e -> e.hashCode() % (entities.size() / optimalBatchSize + 1)))
+                    .values()
+                    .forEach(batch -> {
+                        BatchCompiledQuery query = sqlBuilder.buildBatchUpdate(entityClass, batch);
+                        sqlExecutor.batchUpdate(query);
+                        batch.forEach(this::saveExtensionFields);
+                    });
+        } else {
+            partition(entities, optimalBatchSize).forEach(batch -> {
+                BatchCompiledQuery query = sqlBuilder.buildBatchUpdate(entityClass, batch);
+                sqlExecutor.batchUpdate(query);
+                batch.forEach(this::saveExtensionFields);
+            });
+        }
+    }
+    
+    /**
+     * 根据实体大小和数量计算最佳批次大小
+     */
+    private int calculateOptimalBatchSize(List<T> entities) {
+        // 基础批次大小
+        int baseBatchSize = maxBatchSize;
+        
+        // 对于大量小实体，可以使用更大的批次
+        if (entities.size() > 10000 && entities.get(0) != null) {
+            baseBatchSize = Math.min(maxBatchSize * 2, 5000);
+        }
+        
+        // 对于少量大实体，使用更小的批次
+        if (entities.size() < 100 && entities.get(0) != null) {
+            baseBatchSize = Math.max(baseBatchSize / 2, 100);
+        }
+        
+        return baseBatchSize;
     }
 
     @Override
@@ -353,28 +422,75 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
     @Transactional(readOnly = true)
     public PageResult<T> pageByCriteria(Criteria<T> criteria) {
         Assert.notNull(criteria, "Criteria must not be null");
-        if (criteria.getPageNo() > MAX_PAGINATION_THRESHOLD) {
-            log.warn("Large page number: {} (consider cursor pagination).", criteria.getPageNo());
+        validateCriteriaFields(criteria);
+        
+        // 验证分页参数
+        Integer pageNoObj = criteria.getPageNo();
+        Integer pageSizeObj = criteria.getPageSize();
+        int pageNo = Math.max(1, pageNoObj != null ? pageNoObj : DEFAULT_PAGE_NUMBER);
+        int pageSize = Math.min(Math.max(1, pageSizeObj != null ? pageSizeObj : DEFAULT_PAGE_SIZE), MAX_PAGINATION_THRESHOLD);
+        
+        if (pageNo > MAX_PAGINATION_THRESHOLD) {
+            log.warn("Large page number: {} (consider cursor pagination).", pageNo);
         }
 
-        // 查询当前页
-        CompiledQuery select = sqlBuilder.buildSelect(entityClass, criteria);
-        List<T> content = sqlExecutor.query(select, entityClass);
-        content.forEach(this::loadExtensionFields);
-
-        // 计数（若你的 CountBuilder 已忽略分页，可直接用 countByCriteria(criteria)）
+        // 保存原始参数
         Integer originalPageNumber = criteria.getPageNo();
         Integer originalPageSize = criteria.getPageSize();
+        
+        // 优化：对于大数据集，使用延迟计数
         Long total;
-        try {
-            total = countByCriteria(criteria);
-        } finally {
-            criteria.setPageNo(originalPageNumber);
-            criteria.setPageSize(originalPageSize);
+        List<T> content;
+        
+        // 快速路径：对于第一页且数据量不大时，可以先查询数据再决定是否需要精确计数
+        if (pageNo == 1 && pageSize <= 100) {
+            // 先查询数据
+            criteria.setPageNo(pageNo);
+            criteria.setPageSize(pageSize);
+            CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria);
+            content = sqlExecutor.query(query, entityClass);
+            
+            // 如果结果少于请求的页数，说明就是总数
+            if (content.size() < pageSize) {
+                total = (long) content.size();
+            } else {
+                // 否则需要精确计数
+                try {
+                    total = countByCriteria(criteria);
+                } finally {
+                    criteria.setPageNo(originalPageNumber);
+                    criteria.setPageSize(originalPageSize);
+                }
+            }
+        } else {
+            // 标准路径：先查询总数
+            try {
+                total = countByCriteria(criteria);
+            } finally {
+                criteria.setPageNo(originalPageNumber);
+                criteria.setPageSize(originalPageSize);
+            }
+            
+            // 如果总数为0，直接返回空结果
+            if (total == 0) {
+                return PageResult.of(Collections.emptyList(), total, pageNo, pageSize);
+            }
+            
+            // 查询数据
+            criteria.setPageNo(pageNo);
+            criteria.setPageSize(pageSize);
+            CompiledQuery query = sqlBuilder.buildSelect(entityClass, criteria);
+            content = sqlExecutor.query(query, entityClass);
         }
-        int pageNo = originalPageNumber != null ? originalPageNumber : DEFAULT_PAGE_NUMBER;
-        int pageSize = originalPageSize != null ? originalPageSize : DEFAULT_PAGE_SIZE;
-        return  PageResult.of(content, total, pageNo, pageSize);
+        
+        // 并行加载扩展字段（如果有足够多的实体）
+        if (!content.isEmpty() && content.size() > 20) {
+            content.parallelStream().forEach(this::loadExtensionFields);
+        } else {
+            content.forEach(this::loadExtensionFields);
+        }
+
+        return PageResult.of(content, total, pageNo, pageSize);
     }
 
     @Override
