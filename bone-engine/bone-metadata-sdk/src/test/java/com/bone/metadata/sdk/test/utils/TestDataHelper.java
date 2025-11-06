@@ -65,22 +65,22 @@ public class TestDataHelper {
     }
 
     public static void setUpTestData(NamedParameterJdbcOperations jdbc) {
-       // cleanTestData(jdbc);
+        cleanTestData(jdbc);
         String sql = "INSERT INTO users (id, name, role_id, create_time, create_by, update_time, update_by, deleted) " +
                 "VALUES (:id, :name, :role_id, :create_time, :create_by, :update_time, :update_by, :deleted)";
 
-        // Insert 10 users with varied roles and states
+        // Insert 10 users with fixed IDs for consistent testing
         MapSqlParameterSource[] params = new MapSqlParameterSource[] {
-                createUserParams(DistributedIdGenerator.generateLongId(), "admin1", 1L, 1001L, false),
-                createUserParams(DistributedIdGenerator.generateLongId(), "admin2", 1L, 1001L, false),
-                createUserParams(DistributedIdGenerator.generateLongId(), "user1", 2L, 1002L, false),
-                createUserParams(DistributedIdGenerator.generateLongId(), "user2", 2L, 1003L, true),
-                createUserParams(DistributedIdGenerator.generateLongId(), "user3", 3L, 1004L, false),
-                createUserParams(DistributedIdGenerator.generateLongId(), "admin5", 1L, 1005L, false),
-                createUserParams(DistributedIdGenerator.generateLongId(), "user7", 2L, 1006L, false),
-                createUserParams(DistributedIdGenerator.generateLongId(), "admin4", 1L, 1007L, false),
-                createUserParams(DistributedIdGenerator.generateLongId(), "admin3", 1L, 1008L, false),
-                createUserParams(DistributedIdGenerator.generateLongId(), "user10", 3L, 1009L, false)
+                createUserParams(1L, "admin1", 1L, 1001L, false),
+                createUserParams(2L, "admin2", 1L, 1001L, false),
+                createUserParams(3L, "user1", 2L, 1002L, false),
+                createUserParams(4L, "user2", 2L, 1003L, true),  // 软删除的用户
+                createUserParams(5L, "user3", 3L, 1004L, false),
+                createUserParams(6L, "admin5", 1L, 1005L, false),
+                createUserParams(7L, "user7", 2L, 1006L, false),
+                createUserParams(8L, "admin4", 1L, 1007L, false),
+                createUserParams(9L, "admin3", 1L, 1008L, false),
+                createUserParams(10L, "user10", 3L, 1009L, false)
         };
         jdbc.batchUpdate(sql, params);
     }
