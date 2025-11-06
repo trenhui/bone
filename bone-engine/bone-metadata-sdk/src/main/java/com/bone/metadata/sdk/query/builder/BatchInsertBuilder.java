@@ -30,8 +30,11 @@ public class BatchInsertBuilder implements BatchQueryBuilder<BatchInsertContext>
             for(var c:cols){
                 m.put(c.getName(), ReflectionUtil.getFieldValue(e,c.getFieldName()));
             }
+            // 扩展属性
             if(e instanceof ExtensibleObject ext){
-                ext.getExtraProperties().forEach((k,v)->m.put("ext_"+k,v));
+                @SuppressWarnings("unchecked")
+                Map<String, Object> extraProps = ext.getExtraProperties();
+                extraProps.forEach((k,v)->m.put("ext_"+k,v));
             }
             batch.add(m);
         }

@@ -19,5 +19,6 @@ public interface Join<T, J> {
     FluentQuery<T> orderBy(SFunction<T, ?> fieldGetter, boolean isAsc);
     FluentQuery<T> limit(int limit);
     FluentQuery<T> offset(int offset);
+    @SuppressWarnings("varargs")
     FluentQuery<T> groupBy(SFunction<T, ?>... fieldGetters);
 }

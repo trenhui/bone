@@ -123,7 +123,9 @@ public class SqlExecutor {
                 new String[]{meta.getPrimaryKey().getName()}
         );
 
-        return (R) keyHolder.getKey();
+        @SuppressWarnings("unchecked")
+        R result = (R) keyHolder.getKey();
+        return result;
     }
 
     public int[] batchUpdate(BatchCompiledQuery query) {

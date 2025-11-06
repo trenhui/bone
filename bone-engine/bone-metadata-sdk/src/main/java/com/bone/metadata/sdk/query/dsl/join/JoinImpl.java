@@ -57,7 +57,9 @@ public class JoinImpl<T, J> implements Join<T, J> {
     }
 
     @Override
-    public FluentQuery<T> groupBy(SFunction<T, ?>... fieldGetters) {
+    @SafeVarargs
+    @SuppressWarnings("varargs")
+    public final FluentQuery<T> groupBy(SFunction<T, ?>... fieldGetters) {
         return fluentQuery.groupBy(fieldGetters);
     }
 

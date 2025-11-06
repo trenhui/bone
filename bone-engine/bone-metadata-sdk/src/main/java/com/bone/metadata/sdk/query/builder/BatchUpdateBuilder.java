@@ -45,7 +45,9 @@ public class BatchUpdateBuilder implements BatchQueryBuilder<BatchUpdateContext>
             }
             // 扩展属性
             if (e instanceof ExtensibleObject ext) {
-                ext.getExtraProperties().forEach((k,v) -> m.put("ext_"+k, v));
+                @SuppressWarnings("unchecked")
+                Map<String, Object> extraProps = ext.getExtraProperties();
+                extraProps.forEach((k,v) -> m.put("ext_"+k, v));
             }
             batch.add(m);
         }

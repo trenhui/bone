@@ -29,7 +29,9 @@ public class DynamicUpdateBuilder implements SqlQueryBuilder<DynamicUpdateContex
             params.put(c.getName(), v);
         }
         if (e instanceof ExtensibleObject ext) {
-            ext.getExtraProperties().forEach((k, v) -> {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> extraProps = ext.getExtraProperties();
+            extraProps.forEach((k, v) -> {
                 clauses.add("ext_" + k + " = :ext_" + k);
                 params.put("ext_" + k, v);
             });

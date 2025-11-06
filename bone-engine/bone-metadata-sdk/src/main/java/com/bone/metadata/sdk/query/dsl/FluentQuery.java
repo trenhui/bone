@@ -55,6 +55,7 @@ public interface FluentQuery<T> {
     FluentQuery<T> offset(int offset);
 
     // ===== 分组 =====
+    @SuppressWarnings("varargs")
     FluentQuery<T> groupBy(Function<T, ?>... fieldGetters);
 
     <F> Condition<T, F> having(SFunction<T, F> fieldGetter);

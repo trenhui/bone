@@ -158,7 +158,9 @@ public class RepositoryClassUtils {
                         exception = exceptionType.getDeclaredConstructor(String.class, Throwable.class)
                                 .newInstance(errorMessage + "，次数：" + maxAttempts, ex);
                     } catch (ReflectiveOperationException e) {
-                        throw (E) new RuntimeException(errorMessage, ex);
+                        @SuppressWarnings("unchecked")
+                        E result = (E) new RuntimeException(errorMessage, ex);
+                        throw result;
                     }
                     throw exception;
                 }
@@ -174,7 +176,9 @@ public class RepositoryClassUtils {
                         exception = exceptionType.getDeclaredConstructor(String.class, Throwable.class)
                                 .newInstance("操作重试被中断", ie);
                     } catch (ReflectiveOperationException e) {
-                        throw (E) new RuntimeException("操作重试被中断", ie);
+                        @SuppressWarnings("unchecked")
+                        E result = (E) new RuntimeException("操作重试被中断", ie);
+                        throw result;
                     }
                     throw exception;
                 }

@@ -104,6 +104,7 @@ public class PluginManager {
                 .put(serviceType, service);
     }
 
+    @SuppressWarnings("unchecked")
     public <T> T getService(Class<T> serviceType, String pluginId) {
         // 1. 检查插件特定服务
         if (pluginId != null) {

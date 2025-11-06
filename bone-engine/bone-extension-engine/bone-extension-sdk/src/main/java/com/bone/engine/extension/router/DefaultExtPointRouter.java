@@ -103,38 +103,7 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
         this.weightAndGraySelector = new WeightAndGraySelector();
     }
     
-    /**
-     * 构造函数，支持自动注入ApplicationContext（向后兼容）
-     */
-    @Autowired
-    @Deprecated
-    public DefaultExtPointRouter(ApplicationContext applicationContext, ExtensionRegistry extensionRegistry) {
-        this.applicationContext = applicationContext;
-        this.extensionRegistry = extensionRegistry;
-        
-        // 初始化各个组件
-        this.cacheManager = new CacheManager();
-        this.scoreCalculator = new RouteScoreCalculator();
-        this.weightAndGraySelector = new WeightAndGraySelector();
-        this.statsCollector = new RouteStatsCollector();
-    }
-    
-    /**
-     * 构造函数，支持自动注入ApplicationContext（向后兼容）
-     */
-    @Autowired
-    @Deprecated
-    public DefaultExtPointRouter(ApplicationContext applicationContext) {
-        this.applicationContext = applicationContext;
-        
-        // 初始化各个组件
-        this.cacheManager = new CacheManager();
-        this.scoreCalculator = new RouteScoreCalculator();
-        this.weightAndGraySelector = new WeightAndGraySelector();
-        this.statsCollector = new RouteStatsCollector();
-        // 注入extensionRegistry - 这种方式可能会导致循环依赖，建议使用第一种构造函数
-        this.extensionRegistry = null;
-    }
+
     
     /**
      * 构造函数，支持自定义组件配置

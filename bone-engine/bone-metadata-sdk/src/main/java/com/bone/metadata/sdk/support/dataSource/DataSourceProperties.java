@@ -210,6 +210,7 @@ public class DataSourceProperties {
             if (config.getType() != null) {
                 String typeName = config.getType().toString();
                 try {
+                    @SuppressWarnings("unchecked")
                     Class<? extends javax.sql.DataSource> type = (Class<? extends javax.sql.DataSource>) Class.forName(typeName);
                     builder.type(type);
                 } catch (ClassNotFoundException e) {

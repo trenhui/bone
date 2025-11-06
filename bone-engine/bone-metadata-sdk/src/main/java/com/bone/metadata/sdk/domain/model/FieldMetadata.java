@@ -27,6 +27,7 @@ public class FieldMetadata {
     private String constraints;
     private boolean isVirtual;
     private boolean isExtension;
+    @Builder.Default
     private Boolean deleted = false;
     private Long createBy;
     private Long updateBy;

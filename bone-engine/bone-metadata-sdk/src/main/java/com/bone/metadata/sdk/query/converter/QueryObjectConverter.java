@@ -70,6 +70,7 @@ public class QueryObjectConverter {
     /**
      * 注册自定义类型转换器
      */
+    @SuppressWarnings("unchecked")
     public static <T> void registerConverter(Class<T> type, Function<T, Object> converter) {
         CUSTOM_CONVERTERS.put(type, (Function<Object, Object>) converter);
     }

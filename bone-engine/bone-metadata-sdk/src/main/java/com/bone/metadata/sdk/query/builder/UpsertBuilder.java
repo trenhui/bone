@@ -49,8 +49,9 @@ public class UpsertBuilder implements SqlQueryBuilder<UpsertContext> {
             params.put(c.getName(), ReflectionUtil.getFieldValue(entity, c.getFieldName()));
         }
         if (entity instanceof ExtensibleObject ext) {
-            ext.getExtraProperties()
-                    .forEach((k,v) -> params.put("ext_" + k, v));
+            @SuppressWarnings("unchecked")
+            Map<String, Object> extraProps = ext.getExtraProperties();
+            extraProps.forEach((k,v) -> params.put("ext_" + k, v));
         }
         return new CompiledQuery(sql, params);
     }
@@ -81,8 +82,9 @@ public class UpsertBuilder implements SqlQueryBuilder<UpsertContext> {
             params.put(c.getName(), ReflectionUtil.getFieldValue(entity, c.getFieldName()));
         }
         if (entity instanceof ExtensibleObject ext) {
-            ext.getExtraProperties()
-                    .forEach((k,v) -> params.put("ext_" + k, v));
+            @SuppressWarnings("unchecked")
+            Map<String, Object> extraProps = ext.getExtraProperties();
+            extraProps.forEach((k,v) -> params.put("ext_" + k, v));
         }
         return new CompiledQuery(sql, params);
     }
