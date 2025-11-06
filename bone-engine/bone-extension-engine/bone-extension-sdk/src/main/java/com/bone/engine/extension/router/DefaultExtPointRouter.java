@@ -106,8 +106,8 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
         this.statsCollector = routeStatsCollector;
         this.extensionRegistry = extensionRegistry;
         
-        // 使用统一配置初始化组件
-        this.cacheManager = new CacheManager(config);
+        // 从ApplicationContext获取CacheManager Bean，避免重复创建实例
+        this.cacheManager = applicationContext.getBean(CacheManager.class);
         this.scoreCalculator = new RouteScoreCalculator();
         this.weightAndGraySelector = new WeightAndGraySelector();
     }

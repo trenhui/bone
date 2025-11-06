@@ -5,7 +5,7 @@ import com.bone.engine.extension.Extension;
 import com.bone.engine.extension.event.DefaultExtensionEventPublisher;
 import com.bone.engine.extension.event.ExtensionEventPublisher;
 import com.bone.engine.extension.repository.ExtPointRepository;
-import com.bone.engine.extension.util.ExtensionKeyGenerator;
+import com.bone.engine.extension.utils.ExtensionKeyGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

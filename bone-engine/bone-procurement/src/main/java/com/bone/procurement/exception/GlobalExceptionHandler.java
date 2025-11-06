@@ -1,65 +1,21 @@
 package com.bone.procurement.exception;
 
+import com.bone.procurement.dto.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.context.request.WebRequest;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * 本地错误响应类，避免依赖问题
- */
-class ErrorResponse {
-    private int status;
-    private String errorCode;
-    private String message;
-    private String path;
-    
-    public ErrorResponse(int status, String errorCode, String message, String path) {
-        this.status = status;
-        this.errorCode = errorCode;
-        this.message = message;
-        this.path = path;
-    }
-    
-    public int getStatus() {
-        return status;
-    }
-    
-    public void setStatus(int status) {
-        this.status = status;
-    }
-    
-    public String getErrorCode() {
-        return errorCode;
-    }
-    
-    public void setErrorCode(String errorCode) {
-        this.errorCode = errorCode;
-    }
-    
-    public String getMessage() {
-        return message;
-    }
-    
-    public void setMessage(String message) {
-        this.message = message;
-    }
-    
-    public String getPath() {
-        return path;
-    }
-    
-    public void setPath(String path) {
-        this.path = path;
-    }
-}
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 全局异常处理器
@@ -77,7 +33,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(BusinessException.class)
     @ResponseBody
-    public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException ex, WebRequest request) {
+    public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException ex, WebRequest request) {
         // 使用异常中设置的HTTP状态码
         HttpStatus status = ex.getHttpStatus();
         String errorCode = ex.getErrorCode() != null ? ex.getErrorCode() : "BUSINESS_ERROR";
@@ -86,16 +42,14 @@ public class GlobalExceptionHandler {
             log.warn("业务异常: {}, 错误码: {}", ex.getMessage(), errorCode);
         }
         
-        ErrorResponse errorResponse = new ErrorResponse(
+        ApiResponse<Void> response = ApiResponse.failure(
                 status.value(),
-                errorCode,
-                ex.getMessage(),
-                request.getDescription(false)
+                ex.getMessage()
         );
         
-        return new ResponseEntity<>(errorResponse, status);
+        return new ResponseEntity<>(response, status);
     }
-    
+
     /**
      * 处理参数验证异常
      * @param ex 参数验证异常
@@ -104,20 +58,32 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseBody
-    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex,
-                                                                 WebRequest request) {
+    public ResponseEntity<ApiResponse<Void>> handleMethodArgumentNotValidException(MethodArgumentNotValidException ex,
+                                                                           WebRequest request) {
         log.warn("参数验证失败");
         
-        ErrorResponse errorResponse = new ErrorResponse(
+        BindingResult bindingResult = ex.getBindingResult();
+        List<ApiResponse.ErrorDetail> errors = new ArrayList<>();
+        
+        // 提取所有字段验证错误
+        for (FieldError fieldError : bindingResult.getFieldErrors()) {
+            ApiResponse.ErrorDetail errorDetail = new ApiResponse.ErrorDetail(
+                    fieldError.getField(),
+                    fieldError.getCode(),
+                    fieldError.getDefaultMessage()
+            );
+            errors.add(errorDetail);
+        }
+        
+        ApiResponse<Void> response = ApiResponse.failure(
                 HttpStatus.BAD_REQUEST.value(),
-                "VALIDATION_ERROR",
                 "参数验证失败",
-                request.getDescription(false)
+                errors
         );
         
-        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
-    
+
     /**
      * 处理空指针异常
      * @param ex 空指针异常
@@ -125,38 +91,65 @@ public class GlobalExceptionHandler {
      * @return 错误响应
      */
     @ExceptionHandler(NullPointerException.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ResponseBody
-    public ErrorResponse handleNullPointerException(NullPointerException ex, WebRequest request) {
+    public ResponseEntity<ApiResponse<Void>> handleNullPointerException(NullPointerException ex, WebRequest request) {
         log.error("空指针异常", ex);
         
-        return new ErrorResponse(
+        ApiResponse<Void> response = ApiResponse.failure(
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "NULL_POINTER",
-                "处理请求时发生内部错误",
-                request.getDescription(false)
+                "处理请求时发生内部错误"
         );
+        
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
-    
+
     /**
-     * 处理所有其他未捕获的异常
-     * @param ex 异常
+     * 处理实体未找到异常
+     * @param ex 实体未找到异常
      * @param request Web请求
      * @return 错误响应
      */
-    @ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ExceptionHandler(EntityNotFoundException.class)
     @ResponseBody
-    public ErrorResponse handleAllExceptions(Exception ex, WebRequest request) {
-        log.error("未处理的异常", ex);
+    public ResponseEntity<ApiResponse<Void>> handleEntityNotFoundException(EntityNotFoundException ex, WebRequest request) {
+        log.warn("实体未找到: {}", ex.getMessage());
         
-        ErrorResponse errorResponse = new ErrorResponse(
-                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "INTERNAL_ERROR",
-                "服务器内部错误",
-                request.getDescription(false)
+        ApiResponse<Void> response = ApiResponse.failure(
+                HttpStatus.NOT_FOUND.value(),
+                ex.getMessage()
         );
         
-        return errorResponse;
+        return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+
+    /**
+     * 处理非法参数异常
+     * @param ex 非法参数异常
+     * @param request Web请求
+     * @return 错误响应
+     */
+    @ExceptionHandler(IllegalArgumentException.class)
+    @ResponseBody
+    public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(IllegalArgumentException ex, WebRequest request) {
+        log.warn("非法参数: {}", ex.getMessage());
+        
+        ApiResponse<Void> response = ApiResponse.failure(
+                HttpStatus.BAD_REQUEST.value(),
+                "参数非法: " + ex.getMessage()
+        );
+        
+        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+    @ExceptionHandler(Exception.class)
+    @ResponseBody
+    public ResponseEntity<ApiResponse<Void>> handleAllExceptions(Exception ex, WebRequest request) {
+        log.error("未处理的异常", ex);
+        
+        ApiResponse<Void> response = ApiResponse.failure(
+                HttpStatus.INTERNAL_SERVER_ERROR.value(),
+                "服务器内部错误"
+        );
+        
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 }

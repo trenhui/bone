@@ -1,11 +1,13 @@
 package com.bone.metadata.sdk.domain.exception;
 
-public class ServiceNotFoundException extends RuntimeException {
+public class ServiceNotFoundException extends SDKException {
+    private static final long serialVersionUID = 1L;
+    
     public ServiceNotFoundException(String message, Throwable cause) {
-        super(message, cause);
+        super("SERVICE_NOT_FOUND_ERROR", message, cause);
     }
 
     public ServiceNotFoundException(String message) {
-        super(message);
+        super("SERVICE_NOT_FOUND_ERROR", message);
     }
 }

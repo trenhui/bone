@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.regex.Pattern;
+import com.bone.metadata.sdk.support.util.RepositoryClassUtils;
 
 /**
  * SQL 安全防护工具类，提供注入攻击检测和查询参数合法性校验.
@@ -48,7 +49,7 @@ public final class SqlSecurityGuard {
     public static void validateQueryParameters(CompiledQuery query, Class<?> entityClass) throws UndefinedFieldException {
 
         // 如果是简单类型，跳过字段校验
-        if (isSimpleType(entityClass)) {
+        if (RepositoryClassUtils.isSimpleType(entityClass)) {
             return;
         }
 
@@ -65,7 +66,7 @@ public final class SqlSecurityGuard {
                 continue;
             }
 
-            if (!FieldCache.hasFieldByColumn(entityClass, baseColumn)&& isSimpleType(query.getParameters().get(paramKey).getClass())) {
+            if (!FieldCache.hasFieldByColumn(entityClass, baseColumn)&& RepositoryClassUtils.isSimpleType(query.getParameters().get(paramKey).getClass())) {
                 String errorMsg = String.format("Field '%s' is undefined in entity %s", baseColumn, entityClass.getSimpleName());
                 log.warn("Undefined field '{}' detected in query: {}", baseColumn, query.getSql());
                 throw new UndefinedFieldException(errorMsg);
@@ -83,7 +84,7 @@ public final class SqlSecurityGuard {
     public static void validateQueryParameters(Map<String, Object> parameters, Class<?> entityClass) throws UndefinedFieldException {
 
         // 如果是简单类型，跳过字段校验
-        if (isSimpleType(entityClass)) {
+        if (RepositoryClassUtils.isSimpleType(entityClass)) {
             return;
         }
 
@@ -100,7 +101,7 @@ public final class SqlSecurityGuard {
                 continue;
             }
 
-            if (!FieldCache.hasFieldByColumn(entityClass, baseColumn)&& isSimpleType(parameters.get(paramKey).getClass())) {
+            if (!FieldCache.hasFieldByColumn(entityClass, baseColumn)&& RepositoryClassUtils.isSimpleType(parameters.get(paramKey).getClass())) {
                 String errorMsg = String.format("Field '%s' is undefined in entity %s", baseColumn, entityClass.getSimpleName());
                 log.warn("Undefined field '{}' detected in query", baseColumn);
                 throw new UndefinedFieldException(errorMsg);
@@ -130,13 +131,5 @@ public final class SqlSecurityGuard {
 //        }
 //    }
 
-    private static boolean isSimpleType(Class<?> type) {
-        return type.isPrimitive() ||
-                Number.class.isAssignableFrom(type) ||
-                CharSequence.class.isAssignableFrom(type) ||
-                Boolean.class.equals(type) ||
-                java.util.Date.class.isAssignableFrom(type) ||
-                java.time.temporal.Temporal.class.isAssignableFrom(type) ||
-                type == Object.class;
-    }
+    // 使用RepositoryClassUtils中的isSimpleType方法
 }

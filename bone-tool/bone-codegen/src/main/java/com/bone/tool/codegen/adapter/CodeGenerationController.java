@@ -2,12 +2,8 @@ package com.bone.tool.codegen.adapter;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.tool.codegen.application.converter.CodegenConverter;
-import com.bone.tool.codegen.application.dto.CodegenTablePageRequest;
-import com.bone.tool.codegen.application.dto.CodegenTableRequest;
 import com.bone.tool.codegen.application.dto.CodegenTableResponse;
-import com.bone.tool.codegen.application.dto.GenerateCodeRequest;
 import com.bone.tool.codegen.application.dto.GenerateCustomCodeRequest;
-import com.bone.tool.codegen.application.dto.CodegenDetailResponse;
 import com.bone.tool.codegen.domain.service.CodegenService;
 import com.bone.tool.codegen.domain.service.DatabaseTableService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -16,7 +12,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.bone.tool.codegen.adapter.GlobalExceptionHandler.BusinessException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -30,7 +25,6 @@ import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.zip.ZipOutputStream;
 
 import static com.bone.core.model.ApiResponse.success;
 
@@ -48,7 +42,7 @@ import static com.bone.core.model.ApiResponse.success;
 @RequestMapping("/api/v1/code-generation")
 @Validated
 public class CodeGenerationController {
-    private static final Logger logger = LoggerFactory.getLogger(CodeGenerationController.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(CodeGenerationController.class);
     
     // 使用final修饰注入的字段确保不可变性
     private final CodegenService codegenService;
@@ -63,9 +57,9 @@ public class CodeGenerationController {
      * @param codegenConverter 代码生成转换器
      */
     @Autowired
-    public CodeGenerationController(CodegenService codegenService, 
-                                  DatabaseTableService databaseTableService,
-                                  CodegenConverter codegenConverter) {
+    public CodeGenerationController(final CodegenService codegenService, 
+                                  final DatabaseTableService databaseTableService,
+                                  final CodegenConverter codegenConverter) {
         this.codegenService = codegenService;
         this.databaseTableService = databaseTableService;
         this.codegenConverter = codegenConverter;
@@ -87,20 +81,20 @@ public class CodeGenerationController {
     })
     public ApiResponse<List<CodegenTableResponse>> getTables(
             @Parameter(description = "数据源配置ID", required = true, example = "1")
-            @RequestParam("dataSourceConfigId") @NotNull(message = "数据源配置ID不能为空") Long dataSourceConfigId) {
+            @RequestParam("dataSourceConfigId") @NotNull(message = "数据源配置ID不能为空") final Long dataSourceConfigId) {
         logger.info("开始获取表定义列表，数据源配置ID: {}", dataSourceConfigId);
         try {
             // 直接调用数据库表服务获取数据
-            List<com.bone.tool.codegen.domain.entity.CodegenTable> tables = databaseTableService.getCodegenTablesByDataSourceId(dataSourceConfigId);
+            final List<com.bone.tool.codegen.domain.entity.CodegenTable> tables = databaseTableService.getCodegenTablesByDataSourceId(dataSourceConfigId);
             // 使用converter批量转换为响应对象列表
-            List<CodegenTableResponse> tableList = codegenConverter.toCodegenTableResponseList(tables);
+            final List<CodegenTableResponse> tableList = codegenConverter.toCodegenTableResponseList(tables);
             logger.info("成功获取表定义列表，数据源配置ID: {}，表数量: {}", dataSourceConfigId, tableList.size());
             return success(tableList);
         } catch (IllegalArgumentException e) {
-            logger.warn("获取表定义列表参数错误: {}", e.getMessage());
+            LOGGER.warn("获取表定义列表参数错误: {}", e.getMessage());
             return ApiResponse.error(400, e.getMessage());
         } catch (Exception e) {
-            logger.error("获取表定义列表失败: {}", e.getMessage(), e);
+            LOGGER.error("获取表定义列表失败: {}", e.getMessage(), e);
             return ApiResponse.error(500, "获取表定义列表失败: " + e.getMessage());
         }
     }
@@ -124,13 +118,13 @@ public class CodeGenerationController {
     })
     public void generateAndDownloadCode(
             @Parameter(description = "表ID列表", required = true, example = "1,2,3")
-            @RequestParam("tableIds") @NotEmpty(message = "表ID列表不能为空") List<Long> tableIds,
+            @RequestParam("tableIds") @NotEmpty(message = "表ID列表不能为空") final List<Long> tableIds,
             @Parameter(description = "分组名称", example = "default")
-            @RequestParam(value = "groupId", defaultValue = "default") String groupId,
+            @RequestParam(value = "groupId", defaultValue = "default") final String groupId,
             @Parameter(description = "模型类型: 1-SaaS, 2-单租户", example = "1")
-            @RequestParam(value = "modelType", defaultValue = "1") Integer modelType,
+            @RequestParam(value = "modelType", defaultValue = "1") final Integer modelType,
             HttpServletResponse response) throws IOException {
-        logger.info("开始生成代码，表ID列表: {}, 分组: {}, 模型类型: {}", tableIds, groupId, modelType);
+        LOGGER.info("开始生成代码，表ID列表: {}, 分组: {}, 模型类型: {}", tableIds, groupId, modelType);
         
         // 设置响应头
         response.setContentType("application/zip");
@@ -143,7 +137,7 @@ public class CodeGenerationController {
             out.flush();
         }
         
-        logger.info("代码生成成功，表ID列表: {}", tableIds);
+        LOGGER.info("代码生成成功，表ID列表: {}", tableIds);
     }
     
     /**
@@ -162,19 +156,19 @@ public class CodeGenerationController {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "自定义代码生成失败")
     })
     public void generateCustomCode(
-            @Valid @RequestBody GenerateCustomCodeRequest request,
+            @Valid @RequestBody final GenerateCustomCodeRequest request,
             HttpServletResponse response) throws IOException {
-        logger.info("开始自定义生成代码");
+        LOGGER.info("开始自定义生成代码");
         
         // 使用getter方法直接获取项目名称，避免反射
-        String projectName = request.getProjectName();
+        final String projectName = request.getProjectName();
         if (projectName == null || projectName.trim().isEmpty()) {
             projectName = "custom";
-            logger.debug("项目名称为空，使用默认值: custom");
+            LOGGER.debug("项目名称为空，使用默认值: custom");
         }
         
         // 设置响应头
-        String fileName = "code-" + projectName + ".zip";
+        final String fileName = "code-" + projectName + ".zip";
         response.setContentType("application/zip");
         response.setHeader("Content-Disposition", "attachment; filename=" + URLEncoder.encode(fileName, StandardCharsets.UTF_8));
         
@@ -185,7 +179,7 @@ public class CodeGenerationController {
             out.flush();
         }
         
-        logger.info("自定义代码生成成功，项目名称: {}", projectName);
+        LOGGER.info("自定义代码生成成功，项目名称: {}", projectName);
     }
     
 }

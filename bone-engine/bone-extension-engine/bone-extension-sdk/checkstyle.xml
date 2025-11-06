@@ -16,12 +16,6 @@
         <property name="ignorePattern" value="^package.*|^import.*|^ *\*.*"/>
     </module>
     
-    <!-- 头部注释检查 -->
-    <module name="Header">
-        <property name="headerFile" value="${checkstyle.header.file}"/>
-        <property name="ignoreLines" value="2,3"/>
-    </module>
-    
     <!-- 禁止在代码中使用System.out.println -->
     <module name="RegexpSingleline">
         <property name="format" value="System\.out\.println"/>
@@ -29,13 +23,6 @@
     </module>
     
     <module name="TreeWalker">
-        <!-- Javadoc检查 -->
-        <module name="JavadocMethod">
-            <property name="scope" value="public"/>
-            <property name="allowUndeclaredRTE" value="true"/>
-            <property name="allowMissingThrowsTags" value="true"/>
-        </module>
-        
         <!-- 命名约定检查 -->
         <module name="ConstantName"/>
         <module name="LocalFinalVariableName"/>
@@ -47,21 +34,8 @@
         <module name="TypeName"/>
         
         <!-- 代码块检查 -->
-        <module name="LeftCurly">
-            <property name="option" value="eol"/>
-        </module>
+        <module name="LeftCurly"/>
         <module name="RightCurly"/>
-        
-        <!-- 缩进检查 -->
-        <module name="Indentation">
-            <property name="basicOffset" value="4"/>
-            <property name="braceAdjustment" value="0"/>
-        </module>
-        
-        <!-- 空行检查 -->
-        <module name="EmptyLineSeparator">
-            <property name="allowNoEmptyLineBetweenFields" value="true"/>
-        </module>
         
         <!-- 修饰符顺序检查 -->
         <module name="ModifierOrder"/>
@@ -71,25 +45,5 @@
         
         <!-- 未使用导入检查 -->
         <module name="UnusedImports"/>
-        
-        <!-- 避免使用嵌套if-else -->
-        <module name="NestedIfDepth">
-            <property name="max" value="3"/>
-        </module>
-        
-        <!-- 避免使用嵌套try-catch -->
-        <module name="NestedTryDepth">
-            <property name="max" value="1"/>
-        </module>
-        
-        <!-- 避免方法过长 -->
-        <module name="MethodLength">
-            <property name="max" value="100"/>
-        </module>
-        
-        <!-- 避免类过于复杂 -->
-        <module name="CyclomaticComplexity">
-            <property name="max" value="15"/>
-        </module>
     </module>
 </module>

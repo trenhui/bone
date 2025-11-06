@@ -33,9 +33,9 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Proxy;
-import java.time.temporal.Temporal;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import com.bone.metadata.sdk.support.util.RepositoryClassUtils;
 
 /**
  * Repository 代理工厂 Bean，基于业界最佳实践实现
@@ -313,7 +313,7 @@ public class RepositoryFactoryBean<T, E, ID> implements FactoryBean<T>, Initiali
             if (Optional.class.equals(returnType)) {
                 return executeOptionalQuery(query);
             }
-            if (isSimpleType(returnType)) {
+            if (RepositoryClassUtils.isSimpleType(returnType)) {
                 return sqlExecutor.queryForObject(query, returnType);
             }
             return executeSingleResultQuery(query, returnType);
@@ -321,7 +321,7 @@ public class RepositoryFactoryBean<T, E, ID> implements FactoryBean<T>, Initiali
 
         private Object executeListQuery(CompiledQuery query) {
             Class<?> elementType = listElementTypeCache.get(method);
-            return isSimpleType(elementType)
+            return RepositoryClassUtils.isSimpleType(elementType)
                     ? sqlExecutor.queryList(query, elementType)
                     : sqlExecutor.query(query, elementType);
         }
@@ -392,15 +392,7 @@ public class RepositoryFactoryBean<T, E, ID> implements FactoryBean<T>, Initiali
                 : "arg" + index;
     }
 
-    private static boolean isSimpleType(Class<?> type) {
-        return type.isPrimitive()
-                || Number.class.isAssignableFrom(type)
-                || CharSequence.class.isAssignableFrom(type)
-                || Boolean.class.equals(type)
-                || Date.class.isAssignableFrom(type)
-                || Temporal.class.isAssignableFrom(type)
-                || type == Object.class;
-    }
+    // 使用RepositoryClassUtils中的isSimpleType方法
 
     private MethodHandle toHandle(Method method, Object target) throws NoSuchMethodException, IllegalAccessException {
         try {

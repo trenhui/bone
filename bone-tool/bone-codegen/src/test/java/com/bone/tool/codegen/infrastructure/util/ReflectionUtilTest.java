@@ -10,29 +10,29 @@ class ReflectionUtilTest {
 
     // 用于测试的示例类
     private static class TestClass {
-        private String privateField = "privateValue";
-        public String publicField = "publicValue";
-        private int intField = 42;
-        private boolean booleanField = true;
-        private long longField = 1000L;
+        private String privateField = "privateValue"; // 用于测试getFieldValue方法
+        public String publicField = "publicValue"; // 用于测试getFieldValue方法
+        private int intField = 42; // 用于测试getIntegerFieldValue方法
+        private boolean booleanField = true; // 用于测试getBooleanFieldValue方法
+        private long longField = 1000L; // 用于测试getLongFieldValue方法
         
         private String privateMethod(String input) {
-            return "private:" + input;
+            return "private:" + input; // 用于测试invokeMethod方法
         }
         
         public String publicMethod(String input) {
-            return "public:" + input;
+            return "public:" + input; // 用于测试invokeMethod方法
         }
         
         private int sum(int a, int b) {
-            return a + b;
+            return a + b; // 用于测试invokeMethod方法
         }
     }
     
     // 父类用于测试继承的方法调用
     private static class ParentTestClass {
         private String parentPrivateMethod() {
-            return "parentPrivate";
+            return "parentPrivate"; // 用于测试从子类调用父类的私有方法
         }
     }
     
@@ -43,6 +43,13 @@ class ReflectionUtilTest {
     @Test
     void testGetFieldValue() {
         TestClass testObj = new TestClass();
+        
+        // 直接访问字段以避免未读取字段警告
+        String privateValue = testObj.privateField;
+        String publicValue = testObj.publicField;
+        int intValue = testObj.intField;
+        boolean boolValue = testObj.booleanField;
+        long longValue = testObj.longField;
         
         // 测试私有字段
         assertEquals("privateValue", ReflectionUtil.getFieldValue(testObj, "privateField"));

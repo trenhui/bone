@@ -3,14 +3,15 @@ package com.bone.engine.extension.utils;
 import com.bone.engine.extension.ExtPoint;
 import com.bone.engine.extension.Extension;
 import com.bone.engine.extension.context.BizContext;
+import com.bone.engine.extension.router.CacheManager;
 import com.bone.engine.extension.router.RouteKey;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 扩展点相关的通用工具类
@@ -19,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author renhui.trh
  * @since 1.0.0
  */
-public abstract class ExtPointUtils {
+public class ExtPointUtils implements ApplicationContextAware {
 
     /**
      * 查找指定实现类中所有标记了@ExtPoint注解的接口
@@ -84,11 +85,49 @@ public abstract class ExtPointUtils {
         return extPointClass.getCanonicalName();
     }
 
-    // 扩展点名称缓存
-    private static final Map<Class<?>, String> EXT_POINT_NAME_CACHE = new ConcurrentHashMap<>();
+    // 使用统一的缓存管理器
+    private static ApplicationContext applicationContext;
+    private static CacheManager cacheManager;
     
-    // 扩展点实现标识缓存
-    private static final Map<Object, String> EXTENSION_ID_CACHE = new ConcurrentHashMap<>();
+    // 缓存键前缀，用于区分不同类型的缓存
+    private static final String EXT_POINT_NAME_KEY_PREFIX = "extPointName:";
+    private static final String EXTENSION_ID_KEY_PREFIX = "extensionId:";
+    
+    @Override
+    public void setApplicationContext(ApplicationContext context) {
+        ExtPointUtils.applicationContext = context;
+    }
+    
+    /**
+     * 获取缓存管理器实例
+     */
+    private static CacheManager getCacheManager() {
+        if (cacheManager == null) {
+            // 如果ApplicationContext已初始化，从容器中获取CacheManager
+            if (applicationContext != null) {
+                try {
+                    cacheManager = applicationContext.getBean(CacheManager.class);
+                } catch (Exception e) {
+                    // 如果容器中没有CacheManager，创建一个默认实例作为回退
+                    cacheManager = new CacheManager();
+                    try {
+                        cacheManager.initialize();
+                    } catch (Exception ex) {
+                        throw new RuntimeException("Failed to initialize fallback CacheManager", ex);
+                    }
+                }
+            } else {
+                // ApplicationContext尚未初始化时，创建默认实例作为回退
+                cacheManager = new CacheManager();
+                try {
+                    cacheManager.initialize();
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to initialize fallback CacheManager", e);
+                }
+            }
+        }
+        return cacheManager;
+    }
 
     /**
      * 验证是否为有效的扩展点接口
@@ -132,12 +171,15 @@ public abstract class ExtPointUtils {
      * 获取扩展点名称
      */
     public static String getExtPointName(Class<?> extPointInterface) {
-        return EXT_POINT_NAME_CACHE.computeIfAbsent(extPointInterface, clazz -> {
-            ExtPoint annotation = AnnotationUtils.getAnnotation(clazz, ExtPoint.class);
-            if (annotation != null && StringUtils.hasText(annotation.name())) {
-                return annotation.name();
+        // 使用统一缓存管理器减少重复计算
+        String cacheKey = EXT_POINT_NAME_KEY_PREFIX + extPointInterface.getName();
+        return getCacheManager().getFromCache(cacheKey, key -> {
+            // 获取@ExtPoint注解
+            ExtPoint extPoint = extPointInterface.getAnnotation(ExtPoint.class);
+            if (extPoint != null && StringUtils.hasText(extPoint.name())) {
+                return extPoint.name();
             }
-            return clazz.getSimpleName();
+            return extPointInterface.getSimpleName();
         });
     }
 
@@ -145,12 +187,14 @@ public abstract class ExtPointUtils {
      * 获取扩展点实现标识
      */
     public static String getExtensionId(Object extensionImpl) {
-        return EXTENSION_ID_CACHE.computeIfAbsent(extensionImpl, impl -> {
-            Extension annotation = AnnotationUtils.getAnnotation(impl.getClass(), Extension.class);
-            if (annotation != null && StringUtils.hasText(annotation.name())) {
-                return annotation.name();
+        // 使用统一缓存管理器减少重复计算
+        String cacheKey = EXTENSION_ID_KEY_PREFIX + extensionImpl.getClass().getName() + ":" + extensionImpl.hashCode();
+        return getCacheManager().getFromCache(cacheKey, key -> {
+            Extension extension = extensionImpl.getClass().getAnnotation(Extension.class);
+            if (extension != null && StringUtils.hasText(extension.name())) {
+                return extension.name();
             }
-            return impl.getClass().getSimpleName();
+            return extensionImpl.getClass().getSimpleName();
         });
     }
     
@@ -296,11 +340,11 @@ public abstract class ExtPointUtils {
     }
     
     /**
-     * 清理缓存
+     * 清除所有缓存
      */
     public static void clearCache() {
-        EXT_POINT_NAME_CACHE.clear();
-        EXTENSION_ID_CACHE.clear();
+        // 使用统一的缓存管理器清理缓存
+        getCacheManager().clearAllCache();
     }
 
     /**
