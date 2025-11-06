@@ -86,13 +86,16 @@ public class TestDataHelper {
     }
 
     private static MapSqlParameterSource createUserParams(Long id, String name, Long roleId, Long createdBy, boolean deleted) {
+        // 使用固定的时间值以确保测试稳定性
+        // 设置创建时间为2025-01-01，在测试查询的时间范围内
+        Instant fixedTime = Instant.parse("2025-01-01T00:00:00Z");
         return new MapSqlParameterSource()
                 .addValue("id", id)
                 .addValue("name", name)
                 .addValue("role_id", roleId)
-                .addValue("create_time", Timestamp.from(Instant.now()))
+                .addValue("create_time", Timestamp.from(fixedTime))
                 .addValue("create_by", createdBy)
-                .addValue("update_time", Timestamp.from(Instant.now()))
+                .addValue("update_time", Timestamp.from(fixedTime))
                 .addValue("update_by", createdBy)
                 .addValue("deleted", deleted ? 1 : 0);
     }
