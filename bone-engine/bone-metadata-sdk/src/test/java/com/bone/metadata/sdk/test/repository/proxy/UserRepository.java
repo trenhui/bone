@@ -65,17 +65,17 @@ public interface UserRepository extends Repository<User, Long> {
          LEFT JOIN roles r ON u.role_id = r.id 
          WHERE u.deleted = 0 
          <if test="request.name != null and request.name != ''">
-             AND u.name LIKE :request.name
+             AND u.name LIKE CONCAT('%', #{request.name}, '%')
          </if>
          <if test="request.roleId != null">
-             AND u.role_id = :request.roleId
+             AND u.role_id = #{request.roleId}
          </if>
          <if test="request.roleIds != null and !request.roleIds.isEmpty()">
-             AND u.role_id IN :request.roleIds
+             AND u.role_id IN #{request.roleIds}
          </if>
          <if test="request.pageNumber != null and request.pageSize != null">
              ORDER BY u.create_time DESC 
-             LIMIT :request.pageSize OFFSET :request.offset
+             LIMIT #{request.pageSize} OFFSET #{request.offset}
          </if>
          """)
     List<UserWithRoleDTO> searchUsers(@Param("request") UserSearchRequest request);
