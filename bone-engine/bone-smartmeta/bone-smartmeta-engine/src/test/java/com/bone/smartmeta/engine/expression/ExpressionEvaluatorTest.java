@@ -1,6 +1,7 @@
 package com.bone.smartmeta.engine.expression;
 
 import com.bone.smartmeta.engine.ExpressionEngine;
+import com.bone.smartmeta.engine.ExpressionEngine.ExpressionEvaluationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import java.util.HashMap;
@@ -42,10 +43,10 @@ class ExpressionEvaluatorTest {
     @Test
     void testEvaluateBooleanExpression() {
         // 测试简单布尔表达式
-        assertTrue(evaluator.eval("age > 18", context));
-        assertTrue(evaluator.eval("age >= 25 && salary > 8000", context));
-        assertFalse(evaluator.eval("age < 18 || salary < 5000", context));
-        assertTrue(evaluator.eval("isActive", context));
+        assertTrue(Boolean.valueOf(evaluator.eval("age > 18", context).toString()));
+        assertTrue(Boolean.valueOf(evaluator.eval("age >= 25 && salary > 8000", context).toString()));
+        assertFalse(Boolean.valueOf(evaluator.eval("age < 18 || salary < 5000", context).toString()));
+        assertTrue(Boolean.valueOf(evaluator.eval("isActive", context).toString()));
     }
 
     @Test
@@ -63,7 +64,7 @@ class ExpressionEvaluatorTest {
         // 测试字符串表达式
         assertEquals("张三", evaluator.eval("name", context));
         assertEquals(2, evaluator.eval("name.length()", context));
-        assertTrue(evaluator.eval("name.contains('张')", context));
+        assertTrue(Boolean.valueOf(evaluator.eval("name.contains('张')", context).toString()));
         assertEquals("张三先生", evaluator.eval("name + '先生'", context));
     }
 
@@ -71,8 +72,8 @@ class ExpressionEvaluatorTest {
     void testEvaluateObjectPathExpression() {
         // 测试对象路径表达式
         assertEquals("北京", evaluator.eval("address.city", context));
-        assertTrue(evaluator.eval("address.city.equals('北京')", context));
-        assertTrue(evaluator.eval("address.zipCode.length() == 6", context));
+        assertTrue(Boolean.valueOf(evaluator.eval("address.city.equals('北京')", context).toString()));
+        assertTrue(Boolean.valueOf(evaluator.eval("address.zipCode.length() == 6", context).toString()));
     }
 
     @Test
@@ -84,8 +85,8 @@ class ExpressionEvaluatorTest {
         Object result2 = evaluator.eval("salary * 12 + (salary * 0.3)", context);
         assertEquals(8500.50 * 12 + (8500.50 * 0.3), result2);
         
-        boolean result3 = evaluator.eval("age > 20 && (address.city.equals('北京') || address.city.equals('上海'))", context);
-        assertTrue(result3);
+        Object result3 = evaluator.eval("age > 20 && (address.city.equals('北京') || address.city.equals('上海'))", context);
+        assertTrue(Boolean.valueOf(result3.toString()));
     }
 
     @Test
@@ -158,8 +159,8 @@ class ExpressionEvaluatorTest {
     void testEvaluateMethodCall() {
         // 测试方法调用
         assertEquals(2, evaluator.eval("'AB'.length()", context));
-        assertTrue(evaluator.eval("'hello'.startsWith('h')", context));
-        assertTrue(evaluator.eval("'hello'.endsWith('o')", context));
+        assertTrue(Boolean.valueOf(evaluator.eval("'hello'.startsWith('h')", context).toString()));
+        assertTrue(Boolean.valueOf(evaluator.eval("'hello'.endsWith('o')", context).toString()));
         assertEquals("HELLO", evaluator.eval("'hello'.toUpperCase()", context));
         assertEquals("hello", evaluator.eval("' HELLO '.trim()", context));
     }
@@ -197,8 +198,8 @@ class ExpressionEvaluatorTest {
         Object result1 = evaluator.eval("(age > 20 ? (salary > 8000 ? '符合条件' : '薪资不符合') : '年龄不符合')", context);
         assertEquals("符合条件", result1);
         
-        boolean result2 = evaluator.eval("(address.city.equals('北京') && address.district.equals('朝阳区'))", context);
-        assertTrue(result2);
+        Object result2 = evaluator.eval("(address.city.equals('北京') && address.district.equals('朝阳区'))", context);
+        assertTrue(Boolean.valueOf(result2.toString()));
     }
 
     @Test
@@ -227,7 +228,7 @@ class ExpressionEvaluatorTest {
         
         // 使用不同的上下文计算相同的表达式
         assertEquals("李四", evaluator.eval("name", newContext));
-        assertTrue(evaluator.eval("age > 25", newContext));
-        assertTrue(evaluator.eval("salary > 8500", newContext));
+        assertTrue(Boolean.valueOf(evaluator.eval("age > 25", newContext).toString()));
+        assertTrue(Boolean.valueOf(evaluator.eval("salary > 8500", newContext).toString()));
     }
 }
