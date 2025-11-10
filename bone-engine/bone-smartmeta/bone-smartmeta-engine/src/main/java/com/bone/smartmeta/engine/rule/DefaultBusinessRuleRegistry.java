@@ -4,6 +4,7 @@ import com.bone.smartmeta.engine.model.BusinessRuleMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,23 +36,34 @@ public class DefaultBusinessRuleRegistry implements BusinessRuleRegistry {
     @Override
     public void registerRule(BusinessRuleMetadata rule) {
         if (rule == null) {
-            throw new IllegalArgumentException("Rule cannot be null");
+            throw new IllegalArgumentException("规则不能为空");
         }
         
-        // 使用反射获取属性值，避免方法调用错误
-        String apiName = getFieldValue(rule, "apiName");
+        // 使用反射方法获取属性值
+        String apiName = getRuleApiName(rule);
         if (apiName == null || apiName.trim().isEmpty()) {
             // 如果没有apiName，尝试使用name作为备选
-            apiName = getFieldValue(rule, "name");
+            apiName = getRuleName(rule);
             if (apiName == null || apiName.trim().isEmpty()) {
                 throw new IllegalArgumentException("Rule name cannot be null or empty");
             }
         }
         
         // 获取其他属性值
-        String ruleName = getFieldValue(rule, "name");
-        String ruleId = getFieldValue(rule, "id");
-        String entityApiName = getFieldValue(rule, "entityApiName");
+        String ruleName = getRuleName(rule);
+        String ruleId = getRuleId(rule);
+        String entityApiName = null;
+        try {
+            // 尝试通过反射获取entityApiName
+            Field field = rule.getClass().getDeclaredField("entityApiName");
+            field.setAccessible(true);
+            Object value = field.get(rule);
+            if (value instanceof String) {
+                entityApiName = (String) value;
+            }
+        } catch (Exception ignored) {
+            // 如果没有entityApiName字段，则忽略
+        }
         
         // 使用安全的日志记录
         if (log != null) {
@@ -85,23 +97,6 @@ public class DefaultBusinessRuleRegistry implements BusinessRuleRegistry {
         }
     }
     
-    /**
-     * 通过反射安全获取对象字段值
-     */
-    private String getFieldValue(Object obj, String fieldName) {
-        if (obj == null || fieldName == null) {
-            return null;
-        }
-        try {
-            java.lang.reflect.Field field = obj.getClass().getDeclaredField(fieldName);
-            field.setAccessible(true);
-            Object value = field.get(obj);
-            return value != null ? value.toString() : null;
-        } catch (Exception e) {
-            // 如果字段不存在或访问出错，返回null
-            return null;
-        }
-    }
     
     @Override
     public void registerRules(List<BusinessRuleMetadata> rules) {
@@ -114,13 +109,10 @@ public class DefaultBusinessRuleRegistry implements BusinessRuleRegistry {
         // 预先验证所有规则
         for (BusinessRuleMetadata rule : rules) {
             try {
-                String apiName = getFieldValue(rule, "apiName");
-                String name = getFieldValue(rule, "name");
-                String id = getFieldValue(rule, "id");
-                String entityApiName = getFieldValue(rule, "entityApiName");
-                
-                // 使用任何可用的标识符
-                String ruleIdentifier = id != null ? id : (apiName != null ? apiName : name);
+                // 使用反射方法获取属性
+                String ruleIdentifier = getRuleId(rule) != null ? getRuleId(rule) : 
+                                       (getRuleName(rule) != null ? getRuleName(rule) : 
+                                       (getRuleApiName(rule) != null ? getRuleApiName(rule) : null));
                 
                 if (rule != null && ruleIdentifier != null && !ruleIdentifier.trim().isEmpty()) {
                     validRules.add(rule);
@@ -129,15 +121,17 @@ public class DefaultBusinessRuleRegistry implements BusinessRuleRegistry {
                     log.warn("Skipping invalid rule: {}", ruleIdentifier != null ? ruleIdentifier : "null");
                 }
             } catch (Exception e) {
-                String ruleIdentifier = rule != null ? getFieldValue(rule, "id") : "null";
-                log.warn("Error validating rule: {}", ruleIdentifier != null ? ruleIdentifier : "null", e);
+                // 使用反射方法获取属性值
+                String ruleIdentifier = rule != null && getRuleId(rule) != null ? getRuleId(rule) : "null";
+                log.warn("Error validating rule: {}", ruleIdentifier, e);
             }
         }
         
         // 批量注册有效规则
         for (BusinessRuleMetadata rule : validRules) {
-            String ruleId = getFieldValue(rule, "id") != null ? getFieldValue(rule, "id") : 
-                           (getFieldValue(rule, "apiName") != null ? getFieldValue(rule, "apiName") : getFieldValue(rule, "name"));
+            // 使用反射方法获取属性值
+            String ruleId = getRuleId(rule) != null ? getRuleId(rule) : 
+                           (getRuleApiName(rule) != null ? getRuleApiName(rule) : getRuleName(rule));
             BusinessRuleMetadata oldRule = rulesById.put(ruleId, rule);
             updateEntityIndex(rule);
             updateEventIndex(rule);
@@ -158,9 +152,10 @@ public class DefaultBusinessRuleRegistry implements BusinessRuleRegistry {
             return false;
         }
         
-        String ruleId = getFieldValue(rule, "id") != null ? getFieldValue(rule, "id") : 
-                       (getFieldValue(rule, "apiName") != null ? getFieldValue(rule, "apiName") : getFieldValue(rule, "name"));
-                       
+        // 使用反射方法获取属性值
+        String ruleId = getRuleId(rule) != null ? getRuleId(rule) : 
+                       (getRuleApiName(rule) != null ? getRuleApiName(rule) : getRuleName(rule));
+                        
         if (ruleId == null) {
             return false;
         }
@@ -196,7 +191,19 @@ public class DefaultBusinessRuleRegistry implements BusinessRuleRegistry {
         // 更新类型索引
         updateTypeIndexOnRemove(rule);
         
-        String entityApiName = getFieldValue(rule, "entityApiName");
+        String entityApiName = null;
+        try {
+            // 尝试通过反射获取entityApiName
+            Field field = rule.getClass().getDeclaredField("entityApiName");
+            field.setAccessible(true);
+            Object value = field.get(rule);
+            if (value instanceof String) {
+                entityApiName = (String) value;
+            }
+        } catch (Exception ignored) {
+            // 如果没有entityApiName字段，则忽略
+        }
+        
         log.info("Unregistered rule: {}, Entity: {}", ruleId, entityApiName != null ? entityApiName : "unknown");
         notifyRuleUnregistered(ruleId);
         
@@ -218,6 +225,107 @@ public class DefaultBusinessRuleRegistry implements BusinessRuleRegistry {
         return rules != null ? Collections.unmodifiableList(rules) : Collections.emptyList();
     }
     
+    // 测试中使用的方法
+    public List<BusinessRuleMetadata> getRulesByEventType(String entityApiName, String eventType) {
+        if (entityApiName == null || eventType == null) {
+            return Collections.emptyList();
+        }
+        
+        // 构建事件键
+        String eventKey = entityApiName + ":" + eventType;
+        List<BusinessRuleMetadata> rules = rulesByEvent.get(eventKey);
+        
+        if (rules != null) {
+            // 过滤出激活的规则
+            return rules.stream()
+                    .filter(rule -> isRuleActive(rule))
+                    .collect(Collectors.toUnmodifiableList());
+        }
+        
+        return Collections.emptyList();
+    }
+    
+    // 测试中使用的方法
+    public List<BusinessRuleMetadata> getRulesByEntityAndType(String entityApiName, String ruleType) {
+        if (entityApiName == null || ruleType == null) {
+            return Collections.emptyList();
+        }
+        
+        // 构建类型键
+        String typeKey = entityApiName + ":" + ruleType;
+        List<BusinessRuleMetadata> rules = rulesByType.get(typeKey);
+        
+        if (rules != null) {
+            // 过滤出激活的规则
+            return rules.stream()
+                    .filter(rule -> isRuleActive(rule))
+                    .collect(Collectors.toUnmodifiableList());
+        }
+        
+        return Collections.emptyList();
+    }
+    
+    // 测试中使用的方法
+    public List<BusinessRuleMetadata> getRulesByType(String ruleType) {
+        if (ruleType == null) {
+            return Collections.emptyList();
+        }
+        
+        // 从所有规则中查找指定类型的规则
+        return rulesById.values().stream()
+                .filter(rule -> {
+                    String ruleRuleType = getRuleType(rule);
+                    return ruleRuleType != null && ruleType.equals(ruleRuleType);
+                })
+                .filter(rule -> isRuleActive(rule))
+                .collect(Collectors.toUnmodifiableList());
+        }
+    
+    // updateRule方法已在上面实现，无需重复定义
+    
+    // 测试中使用的方法
+    public void deleteRule(String ruleId) {
+        if (ruleId == null) {
+            return;
+        }
+        
+        BusinessRuleMetadata removedRule = rulesById.remove(ruleId);
+        if (removedRule != null) {
+            // 重新构建索引
+            rebuildIndexes();
+        }
+    }
+    
+    // 测试中使用的方法
+    public void activateRule(String ruleId) {
+        BusinessRuleMetadata rule = rulesById.get(ruleId);
+        if (rule != null) {
+            setRuleActive(rule, true);
+            updateRule(rule);
+        }
+    }
+    
+    // 测试中使用的方法
+    public void deactivateRule(String ruleId) {
+        BusinessRuleMetadata rule = rulesById.get(ruleId);
+        if (rule != null) {
+            setRuleActive(rule, false);
+            updateRule(rule);
+        }
+    }
+    
+    // 重建所有索引
+    private void rebuildIndexes() {
+        rulesByEntity.clear();
+        rulesByEvent.clear();
+        rulesByType.clear();
+        
+        for (BusinessRuleMetadata rule : rulesById.values()) {
+            updateEntityIndex(rule);
+            updateEventIndex(rule);
+            updateTypeIndex(rule);
+        }
+    }
     @Override
     public List<BusinessRuleMetadata> getRulesByEvent(String entityApiName, String eventType) {
         if (entityApiName == null || eventType == null) {
@@ -295,11 +403,29 @@ public class DefaultBusinessRuleRegistry implements BusinessRuleRegistry {
      * 更新实体索引
      */
     private void updateEntityIndex(BusinessRuleMetadata rule) {
-        String entityApiName = getFieldValue(rule, "entityApiName");
+        String entityApiName = null;
+        try {
+            // 尝试通过反射获取entityApiName
+            Field field = rule.getClass().getDeclaredField("entityApiName");
+            field.setAccessible(true);
+            Object value = field.get(rule);
+            if (value instanceof String) {
+                entityApiName = (String) value;
+            }
+        } catch (Exception ignored) {
+            // 如果没有entityApiName字段，则忽略
+        }
+        
         if (entityApiName != null) {
-            String ruleId = getRuleIdentifier(rule);
+            // 使用反射方法获取属性值
+            String ruleId = getRuleId(rule) != null ? getRuleId(rule) : 
+                           (getRuleApiName(rule) != null ? getRuleApiName(rule) : getRuleName(rule));
             rulesByEntity.computeIfAbsent(entityApiName, k -> new CopyOnWriteArrayList<>())
-                    .removeIf(r -> getRuleIdentifier(r).equals(ruleId));
+                    .removeIf(r -> {
+                        String existingRuleId = getRuleId(r) != null ? getRuleId(r) : 
+                                               (getRuleApiName(r) != null ? getRuleApiName(r) : getRuleName(r));
+                        return existingRuleId != null && existingRuleId.equals(ruleId);
+                    });
             rulesByEntity.get(entityApiName).add(rule);
         }
     }
@@ -308,12 +434,30 @@ public class DefaultBusinessRuleRegistry implements BusinessRuleRegistry {
      * 移除时更新实体索引
      */
     private void updateEntityIndexOnRemove(BusinessRuleMetadata rule) {
-        String entityApiName = getFieldValue(rule, "entityApiName");
+        String entityApiName = null;
+        try {
+            // 尝试通过反射获取entityApiName
+            Field field = rule.getClass().getDeclaredField("entityApiName");
+            field.setAccessible(true);
+            Object value = field.get(rule);
+            if (value instanceof String) {
+                entityApiName = (String) value;
+            }
+        } catch (Exception ignored) {
+            // 如果没有entityApiName字段，则忽略
+        }
+        
         if (entityApiName != null) {
             List<BusinessRuleMetadata> rules = rulesByEntity.get(entityApiName);
             if (rules != null) {
-                String ruleId = getRuleIdentifier(rule);
-                rules.removeIf(r -> getRuleIdentifier(r).equals(ruleId));
+                // 使用反射方法获取属性值
+                String ruleId = getRuleId(rule) != null ? getRuleId(rule) : 
+                               (getRuleApiName(rule) != null ? getRuleApiName(rule) : getRuleName(rule));
+                rules.removeIf(r -> {
+                    String existingRuleId = getRuleId(r) != null ? getRuleId(r) : 
+                                           (getRuleApiName(r) != null ? getRuleApiName(r) : getRuleName(r));
+                    return existingRuleId != null && existingRuleId.equals(ruleId);
+                });
                 if (rules.isEmpty()) {
                     rulesByEntity.remove(entityApiName);
                 }
@@ -326,11 +470,102 @@ public class DefaultBusinessRuleRegistry implements BusinessRuleRegistry {
      */
     private String getRuleIdentifier(BusinessRuleMetadata rule) {
         if (rule == null) return null;
-        String id = getFieldValue(rule, "id");
-        if (id != null) return id;
-        String apiName = getFieldValue(rule, "apiName");
-        if (apiName != null) return apiName;
-        return getFieldValue(rule, "name");
+        try {
+            // 使用反射获取id字段
+            try {
+                Field idField = BusinessRuleMetadata.class.getDeclaredField("id");
+                idField.setAccessible(true);
+                String id = (String) idField.get(rule);
+                if (id != null) {
+                    return id;
+                }
+            } catch (Exception e) {
+                // 忽略异常，继续尝试其他字段
+            }
+            
+            // 回退使用apiName和name
+            try {
+                Field apiNameField = BusinessRuleMetadata.class.getDeclaredField("apiName");
+                apiNameField.setAccessible(true);
+                String apiName = (String) apiNameField.get(rule);
+                if (apiName != null) {
+                    return apiName;
+                }
+            } catch (Exception e) {
+                // 忽略异常，继续尝试
+            }
+            
+            try {
+                Field nameField = BusinessRuleMetadata.class.getDeclaredField("name");
+                nameField.setAccessible(true);
+                String name = (String) nameField.get(rule);
+                return name;
+            } catch (Exception e) {
+                return null;
+            }
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    private String getRuleId(BusinessRuleMetadata rule) {
+        try {
+            Field idField = BusinessRuleMetadata.class.getDeclaredField("id");
+            idField.setAccessible(true);
+            return (String) idField.get(rule);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    private String getRuleApiName(BusinessRuleMetadata rule) {
+        try {
+            Field apiNameField = BusinessRuleMetadata.class.getDeclaredField("apiName");
+            apiNameField.setAccessible(true);
+            return (String) apiNameField.get(rule);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    private String getRuleName(BusinessRuleMetadata rule) {
+        try {
+            Field nameField = BusinessRuleMetadata.class.getDeclaredField("name");
+            nameField.setAccessible(true);
+            return (String) nameField.get(rule);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    
+    private String getRuleType(BusinessRuleMetadata rule) {
+        try {
+            Field ruleTypeField = BusinessRuleMetadata.class.getDeclaredField("ruleType");
+            ruleTypeField.setAccessible(true);
+            return (String) ruleTypeField.get(rule);
+        } catch (Exception e) {
+            return "default";
+        }
+    }
+    
+    private boolean isRuleActive(BusinessRuleMetadata rule) {
+        try {
+            Field activeField = BusinessRuleMetadata.class.getDeclaredField("active");
+            activeField.setAccessible(true);
+            return (Boolean) activeField.get(rule);
+        } catch (Exception e) {
+            return true; // 默认返回true表示激活状态
+        }
+    }
+    
+    private void setRuleActive(BusinessRuleMetadata rule, boolean active) {
+        try {
+            Field activeField = BusinessRuleMetadata.class.getDeclaredField("active");
+            activeField.setAccessible(true);
+            activeField.set(rule, active);
+        } catch (Exception e) {
+            // 忽略设置失败的情况
+        }
     }
     
     /**
@@ -338,23 +573,31 @@ public class DefaultBusinessRuleRegistry implements BusinessRuleRegistry {
      */
     private void updateEventIndex(BusinessRuleMetadata rule) {
         try {
-            // 使用反射安全获取triggerEvents字段，避免直接类型转换错误
+            // 使用反射获取triggerEvents字段
             List<String> triggerEvents = null;
             try {
-                java.lang.reflect.Field eventsField = rule.getClass().getDeclaredField("triggerEvents");
-                eventsField.setAccessible(true);
-                Object value = eventsField.get(rule);
-                if (value instanceof List) {
-                @SuppressWarnings("unchecked")
-                List<String> eventList = (List<String>) value;
-                triggerEvents = eventList;
-            }
-            } catch (Exception ignore) {
-                // 如果无法获取或类型转换失败，保持为null
+                Field triggerEventsField = BusinessRuleMetadata.class.getDeclaredField("triggerEvents");
+                triggerEventsField.setAccessible(true);
+                triggerEvents = (List<String>) triggerEventsField.get(rule);
+            } catch (Exception e) {
+                // 如果获取失败，使用空列表
+                triggerEvents = new ArrayList<>();
             }
             
             if (triggerEvents != null && !triggerEvents.isEmpty()) {
-                String entityApiName = getFieldValue(rule, "entityApiName");
+                String entityApiName = null;
+                try {
+                    // 尝试通过反射获取entityApiName
+                    Field field = rule.getClass().getDeclaredField("entityApiName");
+                    field.setAccessible(true);
+                    Object value = field.get(rule);
+                    if (value instanceof String) {
+                        entityApiName = (String) value;
+                    }
+                } catch (Exception ignored) {
+                    // 如果没有entityApiName字段，则忽略
+                }
+                
                 String ruleId = getRuleIdentifier(rule);
                 if (entityApiName != null && ruleId != null) {
                     for (String eventType : triggerEvents) {
@@ -377,23 +620,31 @@ public class DefaultBusinessRuleRegistry implements BusinessRuleRegistry {
      */
     private void updateEventIndexOnRemove(BusinessRuleMetadata rule) {
         try {
-            // 使用反射安全获取triggerEvents字段，避免直接类型转换错误
+            // 使用反射获取triggerEvents字段
             List<String> triggerEvents = null;
             try {
-                java.lang.reflect.Field eventsField = rule.getClass().getDeclaredField("triggerEvents");
-                eventsField.setAccessible(true);
-                Object value = eventsField.get(rule);
-                if (value instanceof List) {
-                @SuppressWarnings("unchecked")
-                List<String> eventList = (List<String>) value;
-                triggerEvents = eventList;
-            }
-            } catch (Exception ignore) {
-                // 如果无法获取或类型转换失败，保持为null
+                Field triggerEventsField = BusinessRuleMetadata.class.getDeclaredField("triggerEvents");
+                triggerEventsField.setAccessible(true);
+                triggerEvents = (List<String>) triggerEventsField.get(rule);
+            } catch (Exception e) {
+                // 如果获取失败，使用空列表
+                triggerEvents = new ArrayList<>();
             }
             
             if (triggerEvents != null && !triggerEvents.isEmpty()) {
-                String entityApiName = getFieldValue(rule, "entityApiName");
+                String entityApiName = null;
+                try {
+                    // 尝试通过反射获取entityApiName
+                    Field field = rule.getClass().getDeclaredField("entityApiName");
+                    field.setAccessible(true);
+                    Object value = field.get(rule);
+                    if (value instanceof String) {
+                        entityApiName = (String) value;
+                    }
+                } catch (Exception ignored) {
+                    // 如果没有entityApiName字段，则忽略
+                }
+                
                 String ruleId = getRuleIdentifier(rule);
                 if (entityApiName != null && ruleId != null) {
                     for (String eventType : triggerEvents) {
@@ -420,28 +671,33 @@ public class DefaultBusinessRuleRegistry implements BusinessRuleRegistry {
      */
     private void updateTypeIndex(BusinessRuleMetadata rule) {
         try {
-            String entityApiName = getFieldValue(rule, "entityApiName");
-            String ruleType = getFieldValue(rule, "ruleType");
+            String entityApiName = null;
+            try {
+                // 尝试通过反射获取entityApiName
+                Field field = rule.getClass().getDeclaredField("entityApiName");
+                field.setAccessible(true);
+                Object value = field.get(rule);
+                if (value instanceof String) {
+                    entityApiName = (String) value;
+                }
+            } catch (Exception ignored) {
+                // 如果没有entityApiName字段，则忽略
+            }
+            
+            // 使用反射获取ruleType字段值
+            String ruleType = null;
+            try {
+                Field ruleTypeField = BusinessRuleMetadata.class.getDeclaredField("ruleType");
+                ruleTypeField.setAccessible(true);
+                ruleType = (String) ruleTypeField.get(rule);
+            } catch (Exception e) {
+                ruleType = "default";
+            }
+            
             String ruleId = getRuleIdentifier(rule);
             
             if (entityApiName != null && ruleType != null && ruleId != null) {
-                // 如果ruleType是枚举类型，尝试获取name()方法的值
-                String ruleTypeName = ruleType;
-                try {
-                    Object ruleTypeObj = getFieldValue(rule, "ruleType");
-                    if (ruleTypeObj != null && ruleTypeObj.getClass().isEnum()) {
-                        // 尝试使用反射获取name()方法的值
-                        ruleTypeName = getFieldValue(ruleTypeObj, "name");
-                        if (ruleTypeName == null) {
-                            ruleTypeName = ruleTypeObj.toString();
-                        }
-                    }
-                } catch (Exception e) {
-                    // 如果反射失败，使用字符串表示
-                    ruleTypeName = ruleType;
-                }
-                
-                String key = entityApiName + ":" + ruleTypeName;
+                String key = entityApiName + ":" + ruleType;
                 rulesByType.computeIfAbsent(key, k -> new CopyOnWriteArrayList<>())
                         .removeIf(r -> getRuleIdentifier(r).equals(ruleId));
                 rulesByType.get(key).add(rule);
@@ -458,28 +714,33 @@ public class DefaultBusinessRuleRegistry implements BusinessRuleRegistry {
      */
     private void updateTypeIndexOnRemove(BusinessRuleMetadata rule) {
         try {
-            String entityApiName = getFieldValue(rule, "entityApiName");
-            String ruleType = getFieldValue(rule, "ruleType");
+            String entityApiName = null;
+            try {
+                // 尝试通过反射获取entityApiName
+                Field field = rule.getClass().getDeclaredField("entityApiName");
+                field.setAccessible(true);
+                Object value = field.get(rule);
+                if (value instanceof String) {
+                    entityApiName = (String) value;
+                }
+            } catch (Exception ignored) {
+                // 如果没有entityApiName字段，则忽略
+            }
+            
+            // 使用反射获取ruleType字段值
+            String ruleType = null;
+            try {
+                Field ruleTypeField = BusinessRuleMetadata.class.getDeclaredField("ruleType");
+                ruleTypeField.setAccessible(true);
+                ruleType = (String) ruleTypeField.get(rule);
+            } catch (Exception e) {
+                ruleType = "default";
+            }
+            
             String ruleId = getRuleIdentifier(rule);
             
             if (entityApiName != null && ruleType != null && ruleId != null) {
-                // 如果ruleType是枚举类型，尝试获取name()方法的值
-                String ruleTypeName = ruleType;
-                try {
-                    Object ruleTypeObj = getFieldValue(rule, "ruleType");
-                    if (ruleTypeObj != null && ruleTypeObj.getClass().isEnum()) {
-                        // 尝试使用反射获取name()方法的值
-                        ruleTypeName = getFieldValue(ruleTypeObj, "name");
-                        if (ruleTypeName == null) {
-                            ruleTypeName = ruleTypeObj.toString();
-                        }
-                    }
-                } catch (Exception e) {
-                    // 如果反射失败，使用字符串表示
-                    ruleTypeName = ruleType;
-                }
-                
-                String key = entityApiName + ":" + ruleTypeName;
+                String key = entityApiName + ":" + ruleType;
                 List<BusinessRuleMetadata> rules = rulesByType.get(key);
                 if (rules != null) {
                     rules.removeIf(r -> getRuleIdentifier(r).equals(ruleId));

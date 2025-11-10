@@ -1,13 +1,11 @@
 package com.bone.integration.uitls;
 import com.bone.integration.uitls.customMethod.MD5Util;
 import com.bone.integration.uitls.customMethod.ScriptContext;
-import com.bone.integration.core.log.LogSendManager;
 import groovy.lang.GroovyShell;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.Map;
-import com.bone.integration.core.log.ConsoleLogger;
 import org.apache.camel.Exchange;
 
 
@@ -41,9 +39,6 @@ public class ScriptExecutor {
         // 传递静态 MD5Util 类给 Groovy 脚本
         shell.setVariable("md5Util", new MD5Util());
 
-        // 从容器获取
-        LogSendManager logSendManager = WebApplicationContextUtils.getBean(LogSendManager.class);
-
         // 创建请求对象，包含 header 和 body
         Map<String, Object> request = new HashMap<>();
         request.put("header", headers);  // 将 headers 映射传递给 Groovy 脚本
@@ -51,8 +46,15 @@ public class ScriptExecutor {
         shell.setVariable("request", request);
 
         // 传递 logger 给脚本
-        ConsoleLogger consoleLogger = new ConsoleLogger(debugConnId, logSendManager);
-        shell.setVariable("logger", consoleLogger);
+        shell.setVariable("logger", log);
+        
+        // 如果有debug连接ID，则启用调试模式
+        if (debugConnId != null) {
+            // 创建调试上下文（使用闭包作为debug函数）
+            shell.setVariable("debug", (Runnable) () -> {
+                log.debug("Debug breakpoint hit for connection: {}", debugConnId);
+            });
+        }
 
         // 创建 Header 实例，并将其传递给脚本
         ScriptContext scriptContext = new ScriptContext(exchange);  // 使用模拟的 Header 类

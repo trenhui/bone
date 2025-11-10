@@ -3,7 +3,7 @@ package com.bone.procurement.controller;
 import com.bone.procurement.dto.ApiResponse;
 import com.bone.procurement.dto.ApprovalRequest;
 import com.bone.procurement.dto.CancellationRequest;
-import com.bone.procurement.model.PurchaseOrder;
+import com.bone.procurement.entity.PurchaseOrder;
 import com.bone.procurement.exception.BusinessException;
 import com.bone.procurement.service.PurchaseOrderService;
 import io.swagger.annotations.Api;

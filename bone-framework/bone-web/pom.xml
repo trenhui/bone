@@ -12,7 +12,7 @@
 
     <groupId>com.bone</groupId>
     <artifactId>bone-web</artifactId>
-    <version>${project.parent.version}</version>
+    <version>1.0.0</version>
     <name>Bone Web</name>
     <description>Web component providing web capabilities for Bone platform</description>
 

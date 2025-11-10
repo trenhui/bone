@@ -1,14 +1,9 @@
 package com.bone.smartmeta.engine.constant;
 
-import com.bone.smartmeta.engine.common.Constants;
-
 /**
  * 工作流状态常量类
  * 统一管理工作流引擎中的状态码
- * 
- * @deprecated 请使用 {@link Constants.WorkflowStatus} 枚举替代
  */
-@Deprecated
 public final class WorkflowStatusConstants {
     
     // 私有构造函数，防止实例化

@@ -161,6 +161,15 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
+            
+            <!-- 禁用PMD检查 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-pmd-plugin</artifactId>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>

@@ -2,7 +2,7 @@ package com.bone.integration.application.service.impl;
 
 import com.bone.integration.application.dto.FreemarkerDTO;
 import com.bone.integration.application.service.IFreemarkerToolService;
-import com.bone.integration.uitls.FreemarkerUtils;
+import com.bone.integration.utils.FreemarkerUtils;
 import org.springframework.stereotype.Component;
 
 @Component

@@ -2,7 +2,7 @@ package com.bone.procurement.repository;
 
 import com.bone.procurement.entity.PurchaseOrder;
 import com.bone.procurement.entity.PurchaseOrderItem;
-import com.bone.procurement.model.OrderQueryCriteria;
+import com.bone.procurement.dto.OrderQueryCriteria;
 import com.bone.procurement.model.OrderStatus;
 
 import java.util.List;

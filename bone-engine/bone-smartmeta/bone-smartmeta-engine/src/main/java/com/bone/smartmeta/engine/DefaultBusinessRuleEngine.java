@@ -1,628 +1,237 @@
 package com.bone.smartmeta.engine;
 
-import com.bone.smartmeta.engine.model.BusinessRuleMetadata;
-import com.bone.smartmeta.engine.model.DynamicSmartEntity;
-import com.bone.smartmeta.engine.validation.ValidationResult;
-import com.bone.smartmeta.engine.rule.BusinessRuleRegistry;
-
-import java.lang.reflect.Field;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
+import com.bone.smartmeta.engine.model.BusinessRule;
+import com.bone.smartmeta.engine.model.RuleExecutionResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * 通用业务规则引擎默认实现
- * 提供业务规则验证和执行功能，支持多种业务场景
+ * 默认业务规则引擎实现
+ * 采用单例模式设计，确保全局只有一个规则引擎实例
+ * 使用线程安全的集合和原子操作保证并发安全
  */
+@Component
 public class DefaultBusinessRuleEngine implements BusinessRuleEngine {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultBusinessRuleEngine.class);
     
-    // 元数据引擎
-    private final MetadataEngine metadataEngine;
+    // 线程安全的单例实例（双重检查锁定模式）
+    private static volatile DefaultBusinessRuleEngine instance;
     
-    // 规则执行超时时间（毫秒）
-    private final long ruleExecutionTimeoutMs;
+    // 使用AtomicBoolean确保初始化的线程安全
+    private static final AtomicBoolean initialized = new AtomicBoolean(false);
     
-    // 规则执行线程池
-    private final ExecutorService executorService;
+    // 性能统计指标
+    private final AtomicLong totalExecutions = new AtomicLong(0);
+    private final AtomicLong successfulExecutions = new AtomicLong(0);
+    private final AtomicLong failedExecutions = new AtomicLong(0);
+    private final AtomicLong executionTime = new AtomicLong(0);
     
-    // 字段引用模式
-    private static final Pattern FIELD_REFERENCE_PATTERN = Pattern.compile("\\$\\{([\\w\\.]+)\\}");
+    // 注入表达式引擎
+    private final ExpressionEngine expressionEngine;
     
-    // 规则验证结果缓存
-    private final ConcurrentHashMap<String, Boolean> ruleValidationCache = new ConcurrentHashMap<>();
+    // 规则缓存，提高性能
+    private final Map<String, BusinessRule> ruleCache = new ConcurrentHashMap<>();
     
-    // 高价值订单阈值
-    private static final double HIGH_VALUE_THRESHOLD = 100000.0;
-    
-    /**
-     * 带元数据引擎的构造函数
-     * @param metadataEngine 元数据引擎
-     */
-    public DefaultBusinessRuleEngine(MetadataEngine metadataEngine) {
-        this.metadataEngine = metadataEngine;
-        this.ruleExecutionTimeoutMs = 5000; // 默认5秒
-        this.executorService = createThreadPool();
+    // 私有构造函数，防止外部实例化
+    @Autowired
+    private DefaultBusinessRuleEngine(ExpressionEngine expressionEngine) {
+        this.expressionEngine = expressionEngine;
+        if (initialized.compareAndSet(false, true)) {
+            LOGGER.info("BusinessRuleEngine initialized successfully");
+        }
     }
     
     /**
-     * 默认构造函数
+     * 获取单例实例
+     * @return DefaultBusinessRuleEngine实例
      */
-    public DefaultBusinessRuleEngine() {
-        this.metadataEngine = null;
-        this.ruleExecutionTimeoutMs = 5000; // 默认5秒
-        this.executorService = createThreadPool();
-    }
-    
-    /**
-     * 创建线程池
-     */
-    private ExecutorService createThreadPool() {
-        return Executors.newFixedThreadPool(
-                Runtime.getRuntime().availableProcessors() * 2,
-                new ThreadFactory() {
-                    private final AtomicInteger counter = new AtomicInteger(0);
-                    
-                    @Override
-                    public Thread newThread(Runnable r) {
-                        Thread thread = new Thread(r, "business-rule-executor-" + counter.incrementAndGet());
-                        thread.setDaemon(true);
-                        return thread;
-                    }
+    public static DefaultBusinessRuleEngine getInstance() {
+        if (instance == null) {
+            synchronized (DefaultBusinessRuleEngine.class) {
+                if (instance == null) {
+                    // 注意：在Spring环境中，应该通过Spring容器获取实例
+                    // 这里仅作为备用方案，避免在非Spring环境中使用时出现问题
+                    LOGGER.warn("Getting BusinessRuleEngine instance outside Spring context, creating new instance");
+                    instance = new DefaultBusinessRuleEngine(new ExpressionEngine());
                 }
-        );
+            }
+        }
+        return instance;
     }
     
     @Override
-    public void executeValidationRules(DynamicSmartEntity entity, ValidationResult result) {
-        if (entity == null || result == null) {
-            return;
-        }
+    public RuleExecutionResult executeRule(BusinessRule rule, Map<String, Object> context) {
+        long startTime = System.currentTimeMillis();
+        totalExecutions.incrementAndGet();
         
-        // 使用反射获取entityApiName
-        String entityApiName = null;
+        RuleExecutionResult result = new RuleExecutionResult();
+        result.setRuleId(rule.getRuleId());
+        result.setRuleName(rule.getRuleName());
+        
         try {
-            java.lang.reflect.Field apiNameField = entity.getClass().getDeclaredField("entityApiName");
-            apiNameField.setAccessible(true);
-            Object apiNameObj = apiNameField.get(entity);
-            if (apiNameObj instanceof String) {
-                entityApiName = (String) apiNameObj;
-            }
-        } catch (Exception ignore) {
-            // Ignore exception
-        }
-        
-        if (entityApiName == null) {
-            return;
-        }
-        
-        // 暂时返回空列表，避免依赖不存在的方法
-        List<BusinessRuleMetadata> rules = new ArrayList<>();
-        
-        // 由于规则列表为空，直接返回
-        return;
-    }
-    
-    @Override
-    public void executeActionRules(DynamicSmartEntity entity, String eventType) {
-        try {
-            // 使用反射获取entityApiName字段值
-            Object entityApiNameObj = null;
-            try {
-                if (entity != null) {
-                    java.lang.reflect.Field entityApiNameField = entity.getClass().getDeclaredField("entityApiName");
-                    entityApiNameField.setAccessible(true);
-                    entityApiNameObj = entityApiNameField.get(entity);
-                }
-            } catch (Exception e) {
-                LOGGER.warn("Failed to get entityApiName field", e);
-            }
-            String entityApiName = entityApiNameObj instanceof String ? (String) entityApiNameObj : "unknown";
+            // 验证规则条件
+            boolean conditionMet = evaluateCondition(rule.getCondition(), context);
+            result.setConditionMet(conditionMet);
             
-            // 获取当前事件类型触发的规则（简化版本）
-            List<BusinessRuleMetadata> rules = getRulesForEvent(entityApiName, eventType);
-            
-            // 简化实现：如果规则为空则返回
-            if (rules == null || rules.isEmpty()) {
-                return;
-            }
-            
-            // 简化规则执行逻辑
-            for (BusinessRuleMetadata rule : rules) {
-                try {
-                    executeActionRule(entity, rule, eventType);
-                } catch (Exception e) {
-                    // 使用默认名称避免调用不存在的方法
-                    String ruleName = "unknown_rule";
-                    try {
-                        if (rule != null) {
-                            java.lang.reflect.Field nameField = rule.getClass().getDeclaredField("name");
-                            nameField.setAccessible(true);
-                            Object nameObj = nameField.get(rule);
-                            if (nameObj instanceof String) {
-                                ruleName = (String) nameObj;
-                            }
-                        }
-                    } catch (Exception ex) {
-                        // 忽略获取名称时的异常
-                    }
-                    LOGGER.error("Error executing action rule {} for entity {} on event {}", 
-                              ruleName, entityApiName, eventType, e);
-                    // 操作规则失败不应阻止主流程，仅记录错误
-                }
+            // 如果条件满足，执行规则动作
+            if (conditionMet) {
+                executeActions(rule, context, result);
+                successfulExecutions.incrementAndGet();
+                result.setSuccess(true);
+                LOGGER.debug("Rule executed successfully: {}", rule.getRuleId());
+            } else {
+                // 条件不满足，规则未执行
+                result.setSuccess(true);
+                result.setMessage("Condition not met, rule not executed");
+                LOGGER.debug("Rule condition not met, rule not executed: {}", rule.getRuleId());
             }
         } catch (Exception e) {
-            LOGGER.error("Error in executeActionRules", e);
-        }
-    }
-    
-    @Override
-    public Object executeRule(DynamicSmartEntity entity, BusinessRuleMetadata rule, Map<String, Object> context) {
-        if (rule == null || entity == null) {
-            return null;
+            failedExecutions.incrementAndGet();
+            result.setSuccess(false);
+            result.setErrorMessage("Rule execution failed: " + e.getMessage());
+            LOGGER.error("Failed to execute rule: {}", rule.getRuleId(), e);
+        } finally {
+            // 计算执行时间
+            long endTime = System.currentTimeMillis();
+            long timeSpent = endTime - startTime;
+            executionTime.addAndGet(timeSpent);
+            result.setExecutionTime(timeSpent);
         }
         
-        try {
-            // 使用反射获取expression字段值
-            String expression = "";
-            try {
-                Field expressionField = rule.getClass().getDeclaredField("expression");
-                expressionField.setAccessible(true);
-                Object exprObj = expressionField.get(rule);
-                if (exprObj instanceof String) {
-                    expression = (String) exprObj;
-                }
-            } catch (Exception e) {
-                LOGGER.warn("Failed to get expression field", e);
-            }
-            
-            // 验证规则表达式格式
-            if (!isValidExpressionFormat(expression)) {
-                // 使用默认名称避免调用不存在的方法
-                String ruleName = "unknown_rule";
-                try {
-                    Field nameField = rule.getClass().getDeclaredField("name");
-                    nameField.setAccessible(true);
-                    Object nameObj = nameField.get(rule);
-                    if (nameObj instanceof String) {
-                        ruleName = (String) nameObj;
-                    }
-                } catch (Exception e) {
-                    // 忽略获取名称时的异常
-                }
-                LOGGER.error("Invalid rule expression format for rule {}", ruleName);
-                return null;
-            }
-            
-            // 构建执行上下文
-            Map<String, Object> executionContext = new HashMap<>();
-            if (context != null) {
-                executionContext.putAll(context);
-            }
-            executionContext.put("entity", entity);
-            
-            // 替换字段引用
-            String processedExpression = replaceFieldReferences(expression, entity);
-            
-            // 执行表达式
-            return executeExpression(processedExpression, executionContext);
-        } catch (Exception e) {
-            LOGGER.error("Error executing rule: {}", e.getMessage(), e);
-            return null;
-        }
+        return result;
     }
     
     @Override
-    public boolean validateRule(BusinessRuleMetadata rule) {
+    public RuleExecutionResult executeRuleById(String ruleId, Map<String, Object> context) {
+        // 从缓存中获取规则，如果没有则抛出异常
+        BusinessRule rule = ruleCache.get(ruleId);
         if (rule == null) {
-            return false;
+            throw new IllegalArgumentException("Rule not found: " + ruleId);
         }
         
-        // 使用反射获取expression字段值
-        String expression = "";
-        try {
-            Field expressionField = rule.getClass().getDeclaredField("expression");
-            expressionField.setAccessible(true);
-            Object exprObj = expressionField.get(rule);
-            if (exprObj instanceof String) {
-                expression = (String) exprObj;
-            }
-        } catch (Exception e) {
-            LOGGER.warn("Failed to get expression field", e);
-            return false;
+        return executeRule(rule, context);
+    }
+    
+    @Override
+    public void registerRule(BusinessRule rule) {
+        if (rule == null || rule.getRuleId() == null) {
+            throw new IllegalArgumentException("Invalid rule: rule or ruleId cannot be null");
         }
         
-        if (expression.trim().isEmpty()) {
-            return false;
+        ruleCache.put(rule.getRuleId(), rule);
+        LOGGER.info("Rule registered: {}", rule.getRuleId());
+    }
+    
+    @Override
+    public void unregisterRule(String ruleId) {
+        if (ruleCache.remove(ruleId) != null) {
+            LOGGER.info("Rule unregistered: {}", ruleId);
+        } else {
+            LOGGER.warn("Attempted to unregister non-existent rule: {}", ruleId);
         }
-        
-        try {
-            // 检查表达式格式
-            if (!isValidExpressionFormat(expression)) {
-                return false;
-            }
-            
-            // 验证字段引用
-            List<String> dependencies = getRuleDependencies(rule);
-            for (String dependency : dependencies) {
-                if (dependency.contains(".")) {
-                    // 嵌套字段引用，暂时跳过详细验证
-                    continue;
-                }
-                // 这里可以添加对字段是否存在的验证
-            }
-            
+    }
+    
+    @Override
+    public void clearRuleCache() {
+        ruleCache.clear();
+        LOGGER.info("Rule cache cleared");
+    }
+    
+    @Override
+    public Map<String, Object> getPerformanceStats() {
+        Map<String, Object> stats = new ConcurrentHashMap<>();
+        stats.put("totalExecutions", totalExecutions.get());
+        stats.put("successfulExecutions", successfulExecutions.get());
+        stats.put("failedExecutions", failedExecutions.get());
+        stats.put("averageExecutionTime", totalExecutions.get() > 0 
+                ? (double) executionTime.get() / totalExecutions.get() 
+                : 0.0);
+        stats.put("ruleCacheSize", ruleCache.size());
+        return stats;
+    }
+    
+    /**
+     * 评估规则条件
+     */
+    private boolean evaluateCondition(String condition, Map<String, Object> context) {
+        if (condition == null || condition.trim().isEmpty()) {
+            // 如果条件为空，则默认为true
             return true;
-        } catch (Exception e) {
-            // 使用默认名称避免调用不存在的方法
-            String ruleName = "unknown_rule";
-            try {
-                Field nameField = rule.getClass().getDeclaredField("name");
-                nameField.setAccessible(true);
-                Object nameObj = nameField.get(rule);
-                if (nameObj instanceof String) {
-                    ruleName = (String) nameObj;
-                }
-            } catch (Exception ex) {
-                // 忽略获取名称时的异常
-            }
-            LOGGER.warn("Rule validation failed: {}", ruleName, e);
-            return false;
-        }
-    }
-    
-    @Override
-    public List<String> getRuleDependencies(BusinessRuleMetadata rule) {
-        if (rule == null) {
-            return Collections.emptyList();
-        }
-        
-        // 使用反射获取expression字段值
-        String expression = "";
-        try {
-            Field expressionField = rule.getClass().getDeclaredField("expression");
-            expressionField.setAccessible(true);
-            Object exprObj = expressionField.get(rule);
-            if (exprObj instanceof String) {
-                expression = (String) exprObj;
-            }
-        } catch (Exception e) {
-            LOGGER.warn("Failed to get expression field", e);
-            return Collections.emptyList();
-        }
-        
-        if (expression == null || expression.isEmpty()) {
-            return Collections.emptyList();
-        }
-        
-        Set<String> dependencies = new HashSet<>();
-        Matcher matcher = FIELD_REFERENCE_PATTERN.matcher(expression);
-        
-        while (matcher.find()) {
-            String fieldPath = matcher.group(1);
-            dependencies.add(fieldPath);
-        }
-        
-        return new ArrayList<>(dependencies);
-    }
-    
-    @Override
-    public List<BusinessRuleMetadata> getRulesForEvent(String entityApiName, String eventType) {
-        if (entityApiName == null || eventType == null) {
-            return Collections.emptyList();
         }
         
         try {
-            // 简化实现：返回空列表，因为metadataEngine.getMetadataRegistry()方法不存在
-            return Collections.emptyList();
+            return expressionEngine.evaluateBooleanExpression(condition, context);
         } catch (Exception e) {
-            LOGGER.error("Error getting rules for entity {} and event {}", entityApiName, eventType, e);
-            return Collections.emptyList();
+            LOGGER.error("Failed to evaluate rule condition: {}", condition, e);
+            throw new RuntimeException("Condition evaluation failed: " + condition, e);
         }
     }
     
     /**
-     * Execute validation rule
+     * 执行规则动作
      */
-    private boolean executeValidationRule(DynamicSmartEntity entity, BusinessRuleMetadata rule) {
-        try {
-            // 使用Future执行规则，支持超时控制
-            Future<Boolean> future = executorService.submit(() -> {
-                Map<String, Object> context = Collections.singletonMap("eventType", "VALIDATE");
-                Object result = executeRule(entity, rule, context);
-                
-                // 验证规则应返回布尔值
-                if (result instanceof Boolean) {
-                    return (Boolean) result;
-                } else {
-                    // 非布尔值结果，转换为布尔值
-                    return result != null && !result.toString().trim().isEmpty() && 
-                           !"false".equalsIgnoreCase(result.toString());
-                }
-            });
-            
-            // 获取执行结果，支持超时
-            return future.get(ruleExecutionTimeoutMs, TimeUnit.MILLISECONDS);
-        } catch (TimeoutException e) {
-            // 使用默认名称避免调用不存在的方法
-            String ruleName = "unknown_rule";
-            try {
-                Field nameField = rule.getClass().getDeclaredField("name");
-                nameField.setAccessible(true);
-                Object nameObj = nameField.get(rule);
-                if (nameObj instanceof String) {
-                    ruleName = (String) nameObj;
-                }
-            } catch (Exception ex) {
-                // 忽略获取名称时的异常
-            }
-            LOGGER.error("Validation rule {} execution timed out", ruleName);
-            return false;
-        } catch (Exception e) {
-            // 使用默认名称避免调用不存在的方法
-            String ruleName = "unknown_rule";
-            try {
-                Field nameField = rule.getClass().getDeclaredField("name");
-                nameField.setAccessible(true);
-                Object nameObj = nameField.get(rule);
-                if (nameObj instanceof String) {
-                    ruleName = (String) nameObj;
-                }
-            } catch (Exception ex) {
-                // 忽略获取名称时的异常
-            }
-            LOGGER.error("Error executing validation rule {}", ruleName, e);
-            return false;
-        }
-    }
-    
-    /**
-     * Execute action rule
-     */
-    private void executeActionRule(DynamicSmartEntity entity, BusinessRuleMetadata rule, String eventType) {
-        if (entity == null || rule == null || eventType == null) {
+    private void executeActions(BusinessRule rule, Map<String, Object> context, RuleExecutionResult result) {
+        if (rule.getActions() == null || rule.getActions().isEmpty()) {
+            result.setMessage("No actions defined for rule");
             return;
         }
         
-        // 使用反射获取triggerEvents字段值
-        List<String> triggerEvents = null;
-        try {
-            Field triggerEventsField = rule.getClass().getDeclaredField("triggerEvents");
-            triggerEventsField.setAccessible(true);
-            Object eventsObj = triggerEventsField.get(rule);
-            if (eventsObj instanceof List) {
-                // 安全转换为List<String>
-                triggerEvents = new ArrayList<>();
-                for (Object item : (List<?>) eventsObj) {
-                    if (item instanceof String) {
-                        triggerEvents.add((String) item);
+        StringBuilder actionResults = new StringBuilder();
+        
+        for (Map.Entry<String, String> action : rule.getActions().entrySet()) {
+            String actionType = action.getKey();
+            String actionExpression = action.getValue();
+            
+            try {
+                Object actionResult = expressionEngine.eval(actionExpression, context);
+                actionResults.append(actionType).append(": ").append(actionResult).append("; ");
+                
+                // 如果动作是设置上下文值，则更新上下文
+                if (actionType.equals("setContext")) {
+                    // 解析表达式，假设格式为 "key=value"
+                    if (actionExpression.contains("=")) {
+                        String[] parts = actionExpression.split("=", 2);
+                        if (parts.length == 2) {
+                            String key = parts[0].trim();
+                            String value = parts[1].trim();
+                            // 移除可能的引号
+                            if (value.startsWith("\"") && value.endsWith("\"")) {
+                                value = value.substring(1, value.length() - 1);
+                            }
+                            context.put(key, value);
+                        }
                     }
                 }
-            }
-        } catch (Exception e) {
-            LOGGER.warn("Failed to get triggerEvents field", e);
-        }
-        
-        // 检查规则是否匹配当前事件
-        if (triggerEvents != null && !triggerEvents.isEmpty() && !triggerEvents.contains(eventType)) {
-            return;
-        }
-        
-        try {
-            // 构建上下文
-            Map<String, Object> context = new HashMap<>();
-            context.put("entity", entity);
-            context.put("eventType", eventType);
-            
-            // 执行规则
-            executeRule(entity, rule, context);
-        } catch (Exception e) {
-            // 使用默认名称避免调用不存在的方法
-            String ruleName = "unknown_rule";
-            try {
-                Field nameField = rule.getClass().getDeclaredField("name");
-                nameField.setAccessible(true);
-                Object nameObj = nameField.get(rule);
-                if (nameObj instanceof String) {
-                    ruleName = (String) nameObj;
+            } catch (Exception e) {
+                String errorMsg = "Failed to execute action " + actionType + ": " + e.getMessage();
+                actionResults.append(errorMsg).append("; ");
+                LOGGER.error(errorMsg, e);
+                // 根据规则配置决定是否继续执行其他动作
+                if (rule.isFailFast()) {
+                    result.setSuccess(false);
+                    result.setErrorMessage(errorMsg);
+                    return;
                 }
-            } catch (Exception ex) {
-                // 忽略获取名称时的异常
-            }
-            LOGGER.error("Error executing action rule {}", ruleName, e);
-        }
-    }
-    
-    /**
-     * Replace field references with actual values
-     */
-    private String replaceFieldReferences(String expression, DynamicSmartEntity entity) {
-        String result = expression;
-        Matcher matcher = FIELD_REFERENCE_PATTERN.matcher(expression);
-        StringBuffer sb = new StringBuffer();
-        
-        while (matcher.find()) {
-            String fieldPath = matcher.group(1);
-            Object value = getFieldValue(entity, fieldPath);
-            String valueStr = convertValueToString(value);
-            matcher.appendReplacement(sb, Matcher.quoteReplacement(valueStr));
-        }
-        matcher.appendTail(sb);
-        
-        return sb.toString();
-    }
-    
-    /**
-     * Get field value
-     */
-    private Object getFieldValue(DynamicSmartEntity entity, String fieldPath) {
-        if (fieldPath.contains(".")) {
-            // 处理嵌套字段访问
-            String[] parts = fieldPath.split("\\.", 2);
-            String firstField = parts[0];
-            String remainingPath = parts[1];
-            
-            Object value = entity.getField(firstField);
-            if (value instanceof Map) {
-                // 从Map获取嵌套值
-                Map<?, ?> map = (Map<?, ?>) value;
-                return map.get(remainingPath);
-            } else if (value instanceof DynamicSmartEntity) {
-                // 从关联实体获取字段值
-                DynamicSmartEntity relatedEntity = (DynamicSmartEntity) value;
-                return relatedEntity.getField(remainingPath);
             }
         }
         
-        // 获取基本字段值
-        return entity.getField(fieldPath);
+        result.setMessage(actionResults.toString());
     }
     
     /**
-     * Convert value to string representation
+     * 设置实例（仅用于测试）
      */
-    private String convertValueToString(Object value) {
-        if (value == null) {
-            return "null";
-        } else if (value instanceof String) {
-            return "\"" + ((String) value).replace("\"", "\\\"") + "\"";
-        } else if (value instanceof Boolean) {
-            return value.toString();
-        } else if (value instanceof Number) {
-            return value.toString();
-        } else if (value instanceof Date) {
-            return "new java.util.Date(" + ((Date) value).getTime() + ")";
-        } else {
-            return value.toString();
-        }
-    }
-    
-    /**
-     * Execute expression
-     */
-    private Object executeExpression(String expression, Map<String, Object> context) {
-        // 简单实现，实际应使用表达式引擎如SpEL、OGNL等
-        // 这里仅提供基础功能，生产环境应使用专业表达式引擎
-        
-        try {
-            // 处理简单的条件表达式
-            if (expression.equals("true")) {
-                return Boolean.TRUE;
-            } else if (expression.equals("false")) {
-                return Boolean.FALSE;
-            }
-            
-            // 这里可以扩展更多表达式处理逻辑
-            // 例如使用反射执行方法调用，处理算术表达式等
-            
-            // 对于复杂表达式，建议使用第三方表达式引擎
-            LOGGER.warn("Simple expression execution only supports basic literals, consider using a full expression engine");
-            return expression;
-        } catch (Exception e) {
-            LOGGER.error("Error executing expression: {}", expression, e);
-            throw e;
-        }
-    }
-    
-    /**
-     * Validate expression format
-     */
-    private boolean isValidExpressionFormat(String expression) {
-        // 检查括号匹配
-        int balance = 0;
-        for (char c : expression.toCharArray()) {
-            if (c == '(') balance++;
-            else if (c == ')') balance--;
-            
-            if (balance < 0) return false;
-        }
-        
-        return balance == 0;
-    }
-    
-    /**
-     * Shutdown engine and release resources
-     */
-    public void shutdown() {
-        executorService.shutdown();
-        try {
-            if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
-                executorService.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            executorService.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
-        
-        // 清空缓存
-        ruleValidationCache.clear();
-        
-        LOGGER.info("BusinessRuleEngine shutdown");
-    }
-    
-    @Override
-    public com.bone.smartmeta.engine.validation.ValidationResult evaluateHighValueOrderRule(java.util.Map<String, Object> orderData) {
-        com.bone.smartmeta.engine.validation.ValidationResult result = com.bone.smartmeta.engine.validation.ValidationResult.success();
-        
-        if (orderData == null) {
-            result.addError("订单数据不能为空");
-            return result;
-        }
-        
-        try {
-            Double amount = (Double) orderData.get("amount");
-            if (amount != null && amount > HIGH_VALUE_THRESHOLD) {
-                result.addWarning("高价值订单，需要额外审批");
-            }
-        } catch (Exception e) {
-            result.addError("订单金额格式错误");
-        }
-        
-        return result;
-    }
-    
-    @Override
-    public com.bone.smartmeta.engine.validation.ValidationResult evaluateOrderPriorityRule(java.util.Map<String, Object> orderData) {
-        com.bone.smartmeta.engine.validation.ValidationResult result = com.bone.smartmeta.engine.validation.ValidationResult.success();
-        
-        if (orderData == null) {
-            result.addError("订单数据不能为空");
-            return result;
-        }
-        
-        try {
-            String priority = (String) orderData.get("priority");
-            if ("HIGH".equals(priority)) {
-                result.addWarning("高优先级订单，需要加急处理");
-            }
-        } catch (Exception e) {
-            result.addError("订单优先级格式错误");
-        }
-        
-        return result;
-    }
-    
-    @Override
-    public com.bone.smartmeta.engine.validation.ValidationResult executeRules(Object entity, String ruleType) {
-        com.bone.smartmeta.engine.validation.ValidationResult result = com.bone.smartmeta.engine.validation.ValidationResult.success();
-        
-        if (entity == null) {
-            result.addError("实体不能为空");
-            return result;
-        }
-        
-        if ("highValueOrder".equals(ruleType)) {
-            return evaluateHighValueOrderRule((java.util.Map<String, Object>) entity);
-        } else if ("orderPriority".equals(ruleType)) {
-            return evaluateOrderPriorityRule((java.util.Map<String, Object>) entity);
-        } else {
-            result.addError("不支持的规则类型: " + ruleType);
-            return result;
+    protected static void setInstance(DefaultBusinessRuleEngine testInstance) {
+        synchronized (DefaultBusinessRuleEngine.class) {
+            instance = testInstance;
+            initialized.set(true);
         }
     }
 }

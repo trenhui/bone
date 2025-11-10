@@ -1,10 +1,9 @@
 package com.bone.smartmeta.engine.metadata;
 
-import com.bone.smartmeta.engine.model.FieldMetadata;
-import com.bone.smartmeta.engine.model.FieldType;
-import com.bone.smartmeta.engine.model.ValidationRule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import java.util.HashMap;
+import java.util.Map;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -16,10 +15,10 @@ import static org.junit.jupiter.api.Assertions.*;
 class EntityMetadataTest {
 
     private EntityMetadata customerMetadata;
-    private FieldMetadata idField;
-    private FieldMetadata nameField;
-    private FieldMetadata ageField;
-    private FieldMetadata emailField;
+    private SmartFieldMetadata idField;
+    private SmartFieldMetadata nameField;
+    private SmartFieldMetadata ageField;
+    private SmartFieldMetadata emailField;
 
     @BeforeEach
     void setUp() {
@@ -33,7 +32,7 @@ class EntityMetadataTest {
         initFields();
         
         // 添加字段到实体
-        List<FieldMetadata> fields = Arrays.asList(idField, nameField, ageField, emailField);
+        List<SmartFieldMetadata> fields = Arrays.asList(idField, nameField, ageField, emailField);
         customerMetadata.setFields(fields);
         
         // 设置主键字段
@@ -42,26 +41,26 @@ class EntityMetadataTest {
 
     private void initFields() {
         // ID字段
-        idField = new FieldMetadata();
+        idField = new SmartFieldMetadata();
         idField.setFieldName("id");
-        idField.setFieldType(FieldType.STRING);
+        idField.setType("STRING");
         idField.setDescription("客户ID");
         idField.setRequired(true);
         idField.setUnique(true);
         
         // 名称字段
-        nameField = new FieldMetadata();
+        nameField = new SmartFieldMetadata();
         nameField.setFieldName("name");
-        nameField.setFieldType(FieldType.STRING);
+        nameField.setType("STRING");
         nameField.setDescription("客户姓名");
         nameField.setRequired(true);
         nameField.setMinLength(2);
         nameField.setMaxLength(50);
         
         // 年龄字段
-        ageField = new FieldMetadata();
+        ageField = new SmartFieldMetadata();
         ageField.setFieldName("age");
-        ageField.setFieldType(FieldType.INTEGER);
+        ageField.setType("INTEGER");
         ageField.setDescription("客户年龄");
         ageField.setRequired(true);
         ageField.setMinValue(18);
@@ -75,9 +74,9 @@ class EntityMetadataTest {
         ageField.setValidationRules(Arrays.asList(ageValidationRule));
         
         // 邮箱字段
-        emailField = new FieldMetadata();
+        emailField = new SmartFieldMetadata();
         emailField.setFieldName("email");
-        emailField.setFieldType(FieldType.STRING);
+        emailField.setType("STRING");
         emailField.setDescription("客户邮箱");
         emailField.setRequired(true);
         emailField.setPattern("^[\\w-\\.]+@([\\w-]+\\.)+[\\w-]{2,4}$");

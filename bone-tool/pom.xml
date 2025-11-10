@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>com.bone</groupId>
-        <artifactId>bone-boot</artifactId>
+        <artifactId>bone</artifactId>
         <version>1.0.0</version>
     </parent>
     <modules>

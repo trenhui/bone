@@ -1,6 +1,6 @@
 package com.bone.integration.processor;
 
-import com.bone.integration.uitls.FreemarkerUtils;
+import com.bone.integration.utils.FreemarkerUtils;
 import lombok.Data;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;

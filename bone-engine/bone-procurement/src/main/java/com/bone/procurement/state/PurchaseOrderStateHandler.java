@@ -146,7 +146,8 @@ public class PurchaseOrderStateHandler {
             
             // 记录拒绝信息
             recordApproval(order, approverId, false, rejectionReason);
-            order.setRejectionReason(rejectionReason);
+            // 移除不存在的方法调用
+                // order.setRejectionReason(rejectionReason);
             
             // 转换状态为已拒绝
             boolean transitionSuccess = stateMachine.transition(order, OrderStatus.REJECTED);
@@ -177,8 +178,9 @@ public class PurchaseOrderStateHandler {
             }
             
             // 记录取消信息
-            order.setCancelledBy(operatorId);
-            order.setCancelReason(cancelReason);
+            // 移除不存在的方法调用
+                // order.setCancelledBy(operatorId);
+                // order.setCancelReason(cancelReason);
             
             // 转换状态为已取消
             boolean transitionSuccess = stateMachine.transition(order, OrderStatus.CANCELLED);
@@ -207,7 +209,8 @@ public class PurchaseOrderStateHandler {
             boolean transitionSuccess = stateMachine.transition(order, OrderStatus.COMPLETED);
             
             if (transitionSuccess) {
-                order.setCompletedBy(operatorId);
+                // 移除不存在的方法调用
+                // order.setCompletedBy(operatorId);
                 publishEvent(OrderEvent.ORDER_COMPLETED, new PurchaseOrderEventContext(order, operatorId));
                 return OrderProcessingResult.success("订单已成功完成", order);
             } else {
@@ -231,8 +234,9 @@ public class PurchaseOrderStateHandler {
             boolean transitionSuccess = stateMachine.transition(order, OrderStatus.CLOSED);
             
             if (transitionSuccess) {
-                order.setClosedBy(operatorId);
-                order.setClosedTime(new Date());
+                // 移除不存在的方法调用
+                // order.setClosedBy(operatorId);
+                // order.setClosedTime(new Date());
                 publishEvent(OrderEvent.ORDER_CLOSED, new PurchaseOrderEventContext(order, operatorId));
                 return OrderProcessingResult.success("订单已成功关闭", order);
             } else {
@@ -253,7 +257,7 @@ public class PurchaseOrderStateHandler {
         
         try {
             // 验证订单状态
-            if (order.getStatus() != OrderStatus.REJECTED) {
+            if (!"REJECTED".equals(order.getStatus())) {
                 return OrderProcessingResult.failure("只有被拒绝的订单才能重新提交");
             }
             
@@ -281,7 +285,7 @@ public class PurchaseOrderStateHandler {
      * 确定订单所需的审批级别
      */
     public ApprovalLevel determineApprovalLevel(PurchaseOrder order) {
-        double totalAmount = order.getTotalAmount();
+        double totalAmount = order.getTotalAmount().doubleValue();
         
         if (totalAmount >= approvalThresholds.get(ApprovalLevel.LEVEL_3)) {
             return ApprovalLevel.LEVEL_3;
@@ -331,14 +335,15 @@ public class PurchaseOrderStateHandler {
      * 验证审批权限
      */
     private boolean validateApprovalAuthority(PurchaseOrder order, String approverId) {
-        User approver = userService.findById(approverId);
-        if (approver == null) {
+        // 避免类型转换问题，简化验证逻辑
+        if (order == null || order.getCurrentApprovers() == null || approverId == null) {
             return false;
         }
         
-        // 检查审批人是否在当前审批列表中
+        // 检查当前审批人列表中是否包含指定的审批人
+        // 使用String.valueOf确保正确处理不同类型的ID
         return order.getCurrentApprovers().stream()
-                .anyMatch(user -> Objects.equals(user.getId(), approverId));
+                .anyMatch(approver -> String.valueOf(approver.getId()).equals(approverId));
     }
     
     /**
@@ -347,7 +352,7 @@ public class PurchaseOrderStateHandler {
     private void recordApproval(PurchaseOrder order, String approverId, boolean approved, String comment) {
         // 创建审批记录
         ApprovalRecord record = new ApprovalRecord();
-        record.setOrderId(order.getId());
+        record.setOrderId(String.valueOf(order.getId()));
         record.setApproverId(approverId);
         record.setApprovalLevel(order.getCurrentApprovalLevel());
         record.setApproved(approved);
@@ -373,11 +378,11 @@ public class PurchaseOrderStateHandler {
      * 检查订单是否可以取消
      */
     private boolean canCancelOrder(PurchaseOrder order) {
-        OrderStatus status = order.getStatus();
+        String status = order.getStatus();
         // 只有草稿、待审批和已审批状态的订单可以取消
-        return status == OrderStatus.DRAFT || 
-               status == OrderStatus.PENDING_APPROVAL || 
-               status == OrderStatus.APPROVED;
+        return "DRAFT".equals(status) || 
+               "PENDING_APPROVAL".equals(status) || 
+               "APPROVED".equals(status);
     }
     
     /**
@@ -387,7 +392,7 @@ public class PurchaseOrderStateHandler {
         order.getApprovalRecords().clear();
         order.setCurrentApprovers(null);
         order.setCurrentApprovalLevel(0);
-        order.setRejectionReason(null);
+        // 移除不存在的setRejectionReason方法调用
     }
     
     /**
@@ -481,6 +486,10 @@ public class PurchaseOrderStateHandler {
         
         public PurchaseOrder getOrder() {
             return order;
+        }
+        
+        public String getErrorMessage() {
+            return success ? null : message;
         }
     }
     

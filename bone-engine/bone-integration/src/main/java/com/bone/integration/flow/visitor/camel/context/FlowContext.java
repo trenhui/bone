@@ -1,7 +1,7 @@
 package com.bone.integration.flow.visitor.camel.context;
 
 import com.bone.integration.enums.EnvEnum;
-import com.bone.integration.uitls.RouteUtils;
+import com.bone.integration.utils.RouteUtils;
 import lombok.Data;
 
 @Data

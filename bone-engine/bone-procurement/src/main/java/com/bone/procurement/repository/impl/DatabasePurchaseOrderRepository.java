@@ -2,7 +2,7 @@ package com.bone.procurement.repository.impl;
 
 import com.bone.procurement.entity.PurchaseOrder;
 import com.bone.procurement.entity.PurchaseOrderItem;
-import com.bone.procurement.model.OrderQueryCriteria;
+import com.bone.procurement.dto.OrderQueryCriteria;
 import com.bone.procurement.model.OrderStatus;
 import com.bone.procurement.repository.PurchaseOrderRepository;
 import org.hibernate.Session;
@@ -14,10 +14,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -109,14 +109,8 @@ public class DatabasePurchaseOrderRepository implements PurchaseOrderRepository 
             query.where(builder.and(predicates.toArray(new Predicate[0])));
         }
         
-        // 添加排序
-        if (criteria.getSortField() != null) {
-            if (criteria.isAscending()) {
-                query.orderBy(builder.asc(root.get(criteria.getSortField())));
-            } else {
-                query.orderBy(builder.desc(root.get(criteria.getSortField())));
-            }
-        }
+        // 默认按创建日期降序排序
+        query.orderBy(builder.desc(root.get("creationDate")));
         
         return session.createQuery(query).list();
     }
@@ -144,21 +138,15 @@ public class DatabasePurchaseOrderRepository implements PurchaseOrderRepository 
             dataQuery.where(builder.and(dataPredicates.toArray(new Predicate[0])));
         }
         
-        // 添加排序
-        if (criteria.getSortField() != null) {
-            if (criteria.isAscending()) {
-                dataQuery.orderBy(builder.asc(dataRoot.get(criteria.getSortField())));
-            } else {
-                dataQuery.orderBy(builder.desc(dataRoot.get(criteria.getSortField())));
-            }
-        }
+        // 默认按创建日期降序排序
+        dataQuery.orderBy(builder.desc(dataRoot.get("creationDate")));
         
         List<PurchaseOrder> content = session.createQuery(dataQuery)
                 .setFirstResult((page - 1) * size)
                 .setMaxResults(size)
                 .list();
         
-        return new PageResult<>(content, page, size, totalElements);
+        return new PurchaseOrderRepository.PageResult<>(content, page, size, totalElements);
     }
     
     @Override
@@ -281,7 +269,7 @@ public class DatabasePurchaseOrderRepository implements PurchaseOrderRepository 
         try {
             PurchaseOrder order = session.get(PurchaseOrder.class, orderId);
             if (order != null) {
-                item.setOrder(order);
+                item.setPurchaseOrderId(orderId);
                 session.save(item);
                 transaction.commit();
                 return item;
@@ -303,7 +291,7 @@ public class DatabasePurchaseOrderRepository implements PurchaseOrderRepository 
             PurchaseOrder order = session.get(PurchaseOrder.class, orderId);
             if (order != null) {
                 for (PurchaseOrderItem item : items) {
-                    item.setOrder(order);
+                    item.setPurchaseOrderId(orderId);
                     session.save(item);
                 }
                 transaction.commit();
@@ -458,7 +446,7 @@ public class DatabasePurchaseOrderRepository implements PurchaseOrderRepository 
         
         // 添加排序
         if (searchCriteria.getSortFields() != null && !searchCriteria.getSortFields().isEmpty()) {
-            List<javax.persistence.criteria.Order> orders = new ArrayList<>();
+            List<jakarta.persistence.criteria.Order> orders = new ArrayList<>();
             boolean ascending = "ASC".equalsIgnoreCase(searchCriteria.getSortOrder());
             
             for (String field : searchCriteria.getSortFields()) {
@@ -525,35 +513,39 @@ public class DatabasePurchaseOrderRepository implements PurchaseOrderRepository 
         List<Predicate> predicates = new ArrayList<>();
         
         if (criteria.getStatus() != null) {
-            predicates.add(builder.equal(root.get("status"), criteria.getStatus()));
+            predicates.add(builder.equal(root.get("orderStatus"), criteria.getStatus()));
         }
         
         if (criteria.getSupplierId() != null) {
             predicates.add(builder.equal(root.get("supplierId"), criteria.getSupplierId()));
         }
         
-        if (criteria.getDepartmentId() != null) {
-            predicates.add(builder.equal(root.get("departmentId"), criteria.getDepartmentId()));
-        }
-        
         if (criteria.getCreatedBy() != null) {
             predicates.add(builder.equal(root.get("createdBy"), criteria.getCreatedBy()));
         }
         
-        if (criteria.getMinTotalAmount() != null) {
-            predicates.add(builder.greaterThanOrEqualTo(root.get("totalAmount"), criteria.getMinTotalAmount()));
+        if (criteria.getMinAmount() != null) {
+            predicates.add(builder.greaterThanOrEqualTo(root.get("totalAmount"), criteria.getMinAmount()));
         }
         
-        if (criteria.getMaxTotalAmount() != null) {
-            predicates.add(builder.lessThanOrEqualTo(root.get("totalAmount"), criteria.getMaxTotalAmount()));
+        if (criteria.getMaxAmount() != null) {
+            predicates.add(builder.lessThanOrEqualTo(root.get("totalAmount"), criteria.getMaxAmount()));
         }
         
-        if (criteria.getFromDate() != null) {
-            predicates.add(builder.greaterThanOrEqualTo(root.get("creationDate"), criteria.getFromDate()));
+        if (criteria.getStartDate() != null) {
+            predicates.add(builder.greaterThanOrEqualTo(root.get("creationDate"), criteria.getStartDate()));
         }
         
-        if (criteria.getToDate() != null) {
-            predicates.add(builder.lessThanOrEqualTo(root.get("creationDate"), criteria.getToDate()));
+        if (criteria.getEndDate() != null) {
+            predicates.add(builder.lessThanOrEqualTo(root.get("creationDate"), criteria.getEndDate()));
+        }
+        
+        if (criteria.getOrderCode() != null) {
+            predicates.add(builder.equal(root.get("orderCode"), criteria.getOrderCode()));
+        }
+        
+        if (criteria.getOrderType() != null) {
+            predicates.add(builder.equal(root.get("orderType"), criteria.getOrderType()));
         }
         
         return predicates;

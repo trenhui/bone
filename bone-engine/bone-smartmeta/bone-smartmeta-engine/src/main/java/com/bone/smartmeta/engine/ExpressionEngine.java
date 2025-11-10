@@ -1,5 +1,6 @@
 package com.bone.smartmeta.engine;
 
+import com.bone.smartmeta.engine.expression.ExpressionEvaluator;
 import com.bone.smartmeta.engine.util.CommonUtils;
 import com.bone.smartmeta.engine.metadata.EntityMetadata;
 import com.bone.smartmeta.engine.metadata.SmartFieldMetadata;
@@ -15,10 +16,11 @@ import org.springframework.cache.CacheManager;
 import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
-import java.text.SimpleDateFormat;
+import org.springframework.expression.ParserContext;
 import org.springframework.expression.common.TemplateParserContext;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
+import java.text.SimpleDateFormat;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -40,7 +42,7 @@ import java.util.regex.Pattern;
  * 支持SpEL风格的表达式计算
  */
 @Component
-public class ExpressionEngine {
+public class ExpressionEngine implements ExpressionEvaluator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ExpressionEngine.class);
     
@@ -1255,6 +1257,51 @@ public class ExpressionEngine {
         
         public ExpressionCompilationException(String message, Throwable cause) {
             super(message, cause);
+        }
+    }
+    
+    /**
+     * 实现ExpressionEvaluator接口的eval方法
+     */
+    @Override
+    public Object eval(String expression, Map<String, Object> context) {
+        // 参数校验
+        if (expression == null || expression.trim().isEmpty()) {
+            throw new IllegalArgumentException("表达式不能为空");
+        }
+        
+        try {
+            // 增加表达式求值计数
+            expressionEvaluations.incrementAndGet();
+            
+            // 创建评估上下文
+            StandardEvaluationContext evaluationContext = new StandardEvaluationContext();
+            
+            // 将Map中的所有变量设置到上下文中
+            if (context != null) {
+                // 设置Map为根对象，支持通过[]操作符访问
+                evaluationContext.setRootObject(context);
+                // 同时将每个键值对设置为变量，支持通过#变量名访问
+                for (Map.Entry<String, Object> entry : context.entrySet()) {
+                    evaluationContext.setVariable(entry.getKey(), entry.getValue());
+                }
+            }
+            
+            // 编译并缓存表达式
+            Expression compiledExpression = getOrCompileExpression(expression);
+            
+            // 执行表达式求值
+            return compiledExpression.getValue(evaluationContext);
+        } catch (ExpressionCompilationException e) {
+            throw e;
+        } catch (Exception e) {
+            LOGGER.error("表达式求值失败: {}", expression, e);
+            // 根据strictMode决定是抛出异常还是返回null
+            if (!strictMode) {
+                LOGGER.warn("非严格模式下，表达式求值失败返回null: {}", expression);
+                return null;
+            }
+            throw new ExpressionEvaluationException("表达式求值失败: " + expression, e);
         }
     }
 }

@@ -2,12 +2,14 @@ package com.bone.smartmeta.engine.config;
 
 import com.bone.smartmeta.engine.BusinessRuleEngine;
 import com.bone.smartmeta.engine.DefaultBusinessRuleEngine;
-import com.bone.smartmeta.engine.MetadataEngine;
 import com.bone.smartmeta.engine.UnifiedRuleEngine;
 import com.bone.smartmeta.engine.RuleContext;
 import com.bone.smartmeta.engine.model.BusinessRuleMetadata;
 import com.bone.smartmeta.engine.model.DynamicSmartEntity;
 import com.bone.smartmeta.engine.validation.ValidationResult;
+import com.bone.smartmeta.engine.ExpressionEngine;
+import com.bone.smartmeta.engine.repository.MetadataRepository;
+import com.bone.smartmeta.engine.rule.BusinessRuleRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -23,9 +25,8 @@ public class RuleEngineConfig {
      * 主业务规则引擎Bean
      */
     @Bean
-    @Primary
-    public BusinessRuleEngine businessRuleEngine(MetadataEngine metadataEngine) {
-        return new DefaultBusinessRuleEngine(metadataEngine);
+    public BusinessRuleEngine businessRuleEngine(MetadataRepository metadataRepository, BusinessRuleRegistry businessRuleRegistry, ExpressionEngine expressionEngine) {
+        return new DefaultBusinessRuleEngine(metadataRepository, businessRuleRegistry, expressionEngine);
     }
     
     /**

@@ -4,8 +4,8 @@
  */
 package com.bone.procurement.rule;
 
-import com.bone.procurement.model.PurchaseOrder;
-import com.bone.procurement.model.PurchaseOrderItem;
+import com.bone.procurement.entity.PurchaseOrder;
+import com.bone.procurement.entity.PurchaseOrderItem;
 import com.bone.procurement.exception.BusinessException;
 import java.util.List;
 import java.math.BigDecimal;
