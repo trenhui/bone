@@ -8,7 +8,7 @@ import com.bone.smartmeta.engine.model.BusinessRuleMetadata;
 import com.bone.smartmeta.engine.model.DynamicSmartEntity;
 import com.bone.smartmeta.engine.validation.ValidationResult;
 import com.bone.smartmeta.engine.ExpressionEngine;
-import com.bone.smartmeta.engine.repository.MetadataRepository;
+
 import com.bone.smartmeta.engine.rule.BusinessRuleRegistry;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,8 +25,8 @@ public class RuleEngineConfig {
      * 主业务规则引擎Bean
      */
     @Bean
-    public BusinessRuleEngine businessRuleEngine(MetadataRepository metadataRepository, BusinessRuleRegistry businessRuleRegistry, ExpressionEngine expressionEngine) {
-        return new DefaultBusinessRuleEngine(metadataRepository, businessRuleRegistry, expressionEngine);
+    public BusinessRuleEngine businessRuleEngine(BusinessRuleRegistry businessRuleRegistry, ExpressionEngine expressionEngine) {
+        return new DefaultBusinessRuleEngine(businessRuleRegistry, expressionEngine);
     }
     
     /**

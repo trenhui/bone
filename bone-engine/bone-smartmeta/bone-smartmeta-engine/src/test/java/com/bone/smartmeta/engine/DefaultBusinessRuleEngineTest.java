@@ -1,45 +1,47 @@
 package com.bone.smartmeta.engine;
 
 import com.bone.smartmeta.engine.model.BusinessRuleMetadata;
-import com.bone.smartmeta.engine.validation.ValidationResult;
+import com.bone.smartmeta.engine.model.RuleResult;
 import com.bone.smartmeta.engine.rule.BusinessRuleRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.InjectMocks;
+import com.bone.smartmeta.engine.ExpressionEngine;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
+/**
+ * DefaultBusinessRuleEngine的单元测试类
+ * 遵循JUnit 5和Mockito最佳实践
+ */
 class DefaultBusinessRuleEngineTest {
 
     @Mock
     private BusinessRuleRegistry businessRuleRegistry;
 
+    @Mock
+    private ExpressionEngine expressionEngine;
+
     @InjectMocks
     private DefaultBusinessRuleEngine ruleEngine;
 
     private List<BusinessRuleMetadata> validationRules;
-    private List<BusinessRuleMetadata> actionRules;
     private Map<String, Object> customerData;
+    private Map<String, Object> orderData;
 
     @BeforeEach
     void setUp() {
+        // 使用最新的Mockito初始化方式
         MockitoAnnotations.openMocks(this);
         
         // 初始化测试数据
         initRules();
-        initCustomerData();
-        
-        // 设置mock行为
-        when(businessRuleRegistry.getRulesByEventType("Customer", "CREATE")).thenReturn(validationRules);
-        when(businessRuleRegistry.getRulesByEventType("Customer", "UPDATE")).thenReturn(actionRules);
+        initTestData();
     }
 
     private void initRules() {
@@ -67,84 +69,83 @@ class DefaultBusinessRuleEngineTest {
         emailRule.setErrorMessage("请输入有效的邮箱地址");
         emailRule.setActive(true);
         validationRules.add(emailRule);
-        
-        // 操作规则
-        actionRules = new ArrayList<>();
-        
-        BusinessRuleMetadata vipRule = new BusinessRuleMetadata();
-        vipRule.setId("vip-rule");
-        vipRule.setName("VIPCheckRule");
-        vipRule.setApiName("Customer");
-        vipRule.setRuleType("ACTION");
-        vipRule.getTriggerEvents().add("UPDATE");
-        vipRule.setExpression("spendAmount >= 10000");
-        vipRule.setAction("setVipLevel('GOLD')");
-        vipRule.setActive(true);
-        actionRules.add(vipRule);
     }
 
-    private void initCustomerData() {
+    private void initTestData() {
+        // 客户数据
         customerData = new HashMap<>();
         customerData.put("name", "张三");
         customerData.put("age", 25);
         customerData.put("email", "zhangsan@example.com");
         customerData.put("spendAmount", 15000.0);
+        
+        // 订单数据
+        orderData = new HashMap<>();
+        orderData.put("orderId", "ORD-2024-001");
+        orderData.put("amount", 20000.0);
+        orderData.put("currency", "CNY");
     }
 
     @Test
-    void testExecuteValidationRules_Success() {
+    void testExecuteRules_Success() {
+        // 准备测试数据
+        List<String> ruleNames = Arrays.asList("AgeValidation", "EmailValidation");
+        
+        // 模拟getRulesByName方法返回规则列表
+        when(businessRuleRegistry.getRulesByName(ruleNames)).thenReturn(validationRules);
+        
+        // 模拟expressionEngine.eval方法返回true
+        when(expressionEngine.eval(anyString(), eq(customerData))).thenReturn(true);
+        
         // 执行测试
-        List<ValidationResult> results = ruleEngine.executeValidationRules("Customer", customerData, "CREATE");
+        RuleResult result = ruleEngine.executeRules("Customer", customerData, ruleNames);
         
         // 验证结果
-        assertNotNull(results);
-        assertFalse(results.isEmpty());
-        for (ValidationResult result : results) {
-            assertTrue(result.isValid());
-        }
+        assertNotNull(result);
+        assertTrue(result.isSuccess());
+        assertTrue(result.getWarnings().isEmpty());
+        assertTrue(result.getErrors().isEmpty());
+        
+        // 验证mock调用
+        verify(businessRuleRegistry).getRulesByName(ruleNames);
+        verify(expressionEngine, times(2)).eval(anyString(), eq(customerData));
     }
 
     @Test
-    void testExecuteValidationRules_Failure() {
+    void testExecuteRules_ValidationFailure() {
+        // 准备测试数据
+        List<String> ruleNames = Arrays.asList("AgeValidation");
+        
         // 修改数据使验证失败
         customerData.put("age", 16); // 年龄不足18岁
         
+        // 模拟getRulesByName方法返回规则列表
+        when(businessRuleRegistry.getRulesByName(ruleNames)).thenReturn(Collections.singletonList(validationRules.get(0)));
+        
+        // 模拟expressionEngine.eval方法返回false
+        when(expressionEngine.eval("age >= 18", customerData)).thenReturn(false);
+        
         // 执行测试
-        List<ValidationResult> results = ruleEngine.executeValidationRules("Customer", customerData, "CREATE");
+        RuleResult result = ruleEngine.executeRules("Customer", customerData, ruleNames);
         
         // 验证结果
-        assertNotNull(results);
-        assertFalse(results.isEmpty());
-        boolean hasInvalidResult = false;
-        for (ValidationResult result : results) {
-            if (!result.isValid()) {
-                hasInvalidResult = true;
-                assertTrue(result.getErrors().containsValue("客户年龄必须满18岁"));
-            }
-        }
-        assertTrue(hasInvalidResult);
+        assertNotNull(result);
+        assertFalse(result.isSuccess());
+        assertFalse(result.getErrors().isEmpty());
+        assertTrue(result.getErrors().containsKey("AgeValidation"));
+        assertTrue(result.getErrors().get("AgeValidation").contains("客户年龄必须满18岁"));
     }
 
     @Test
-    void testExecuteActionRules() {
-        // 执行测试
-        List<RuleExecutionResult> results = ruleEngine.executeActionRules("Customer", customerData, "UPDATE");
+    void testValidate_Success() {
+        // 模拟getRulesByEventType方法返回验证规则
+        when(businessRuleRegistry.getRulesByEventType("Customer", "CREATE")).thenReturn(validationRules);
         
-        // 验证结果
-        assertNotNull(results);
-        assertFalse(results.isEmpty());
-        for (RuleExecutionResult result : results) {
-            assertTrue(result.isSuccess());
-        }
-    }
-
-    @Test
-    void testExecuteRule_ValidationRule() {
-        // 获取验证规则
-        BusinessRuleMetadata validationRule = validationRules.get(0);
+        // 模拟expressionEngine.eval方法返回true
+        when(expressionEngine.eval(anyString(), eq(customerData))).thenReturn(true);
         
         // 执行测试
-        RuleExecutionResult result = ruleEngine.executeRule(validationRule, "Customer", customerData);
+        RuleResult result = ruleEngine.validate("Customer", customerData, "CREATE");
         
         // 验证结果
         assertNotNull(result);
@@ -152,91 +153,75 @@ class DefaultBusinessRuleEngineTest {
     }
 
     @Test
-    void testExecuteRule_ActionRule() {
-        // 获取操作规则
-        BusinessRuleMetadata actionRule = actionRules.get(0);
+    void testValidate_NoRules() {
+        // 模拟getRulesByEventType方法返回空列表
+        when(businessRuleRegistry.getRulesByEventType("Customer", "DELETE")).thenReturn(Collections.emptyList());
         
         // 执行测试
-        RuleExecutionResult result = ruleEngine.executeRule(actionRule, "Customer", customerData);
+        RuleResult result = ruleEngine.validate("Customer", customerData, "DELETE");
         
         // 验证结果
         assertNotNull(result);
-        assertTrue(result.isSuccess());
+        assertTrue(result.isSuccess()); // 没有规则时默认验证通过
     }
 
     @Test
-    void testValidateRuleExpression_Valid() {
+    void testCalculateFields() {
+        // 准备计算字段的上下文
+        Map<String, Object> fieldDefinitions = new HashMap<>();
+        fieldDefinitions.put("discountAmount", "amount * 0.1");
+        fieldDefinitions.put("finalAmount", "amount - discountAmount");
+        
+        // 模拟expressionEngine.eval方法的返回值
+        when(expressionEngine.eval("amount * 0.1", orderData)).thenReturn(2000.0);
+        when(expressionEngine.eval("amount - discountAmount", anyMap())).thenReturn(18000.0);
+        
         // 执行测试
-        boolean isValid = ruleEngine.validateRuleExpression("age > 18 && status == 'ACTIVE'");
+        Map<String, Object> result = ruleEngine.calculateFields(orderData, fieldDefinitions);
         
         // 验证结果
-        assertTrue(isValid);
+        assertNotNull(result);
+        assertEquals(2000.0, result.get("discountAmount"));
+        assertEquals(18000.0, result.get("finalAmount"));
     }
 
     @Test
-    void testValidateRuleExpression_Invalid() {
-        // 执行测试 - 无效表达式
-        boolean isValid = ruleEngine.validateRuleExpression("age > 18 &&"); // 缺少右侧操作数
+    void testExecuteRules_WithExpressionError() {
+        // 准备测试数据
+        List<String> ruleNames = Arrays.asList("AgeValidation");
         
-        // 验证结果
-        assertFalse(isValid);
-    }
-
-    @Test
-    void testGetRuleDependencies() {
+        // 模拟getRulesByName方法返回规则列表
+        when(businessRuleRegistry.getRulesByName(ruleNames)).thenReturn(Collections.singletonList(validationRules.get(0)));
+        
+        // 模拟expressionEngine.eval方法抛出异常
+        when(expressionEngine.eval("age >= 18", customerData)).thenThrow(new RuntimeException("表达式计算错误"));
+        
         // 执行测试
-        String expression = "age > 18 && email != null && status == 'ACTIVE'";
-        java.util.Set<String> dependencies = ruleEngine.getRuleDependencies(expression);
+        RuleResult result = ruleEngine.executeRules("Customer", customerData, ruleNames);
         
         // 验证结果
-        assertNotNull(dependencies);
-        assertEquals(3, dependencies.size());
-        assertTrue(dependencies.contains("age"));
-        assertTrue(dependencies.contains("email"));
-        assertTrue(dependencies.contains("status"));
+        assertNotNull(result);
+        assertFalse(result.isSuccess());
+        assertFalse(result.getErrors().isEmpty());
     }
 
     @Test
-    void testGetRulesByEventType() {
-        // 执行测试
-        List<BusinessRuleMetadata> rules = ruleEngine.getRulesByEventType("Customer", "CREATE");
-        
-        // 验证结果
-        assertNotNull(rules);
-        assertEquals(2, rules.size());
-        assertEquals("AgeValidation", rules.get(0).getName());
-        assertEquals("EmailValidation", rules.get(1).getName());
-    }
-
-    @Test
-    void testExecuteRule_EmptyExpression() {
-        // 创建空表达式规则
-        BusinessRuleMetadata emptyRule = new BusinessRuleMetadata();
-        emptyRule.setId("empty-rule");
-        emptyRule.setName("EmptyRule");
-        emptyRule.setApiName("Customer");
-        emptyRule.setRuleType("VALIDATION");
-        emptyRule.setExpression("");
-        emptyRule.setActive(true);
-        
+    void testExecuteRules_NullRuleNames() {
         // 执行测试并验证异常
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-            ruleEngine.executeRule(emptyRule, "Customer", customerData);
+            ruleEngine.executeRules("Customer", customerData, null);
         });
         
-        assertTrue(exception.getMessage().contains("规则表达式不能为空"));
+        assertNotNull(exception.getMessage());
     }
 
     @Test
-    void testExecuteValidationRules_NoRules() {
-        // 设置无规则
-        when(businessRuleRegistry.getRulesByEventType("Customer", "DELETE")).thenReturn(new ArrayList<>());
+    void testExecuteRules_NullEntityData() {
+        // 执行测试并验证异常
+        Exception exception = assertThrows(IllegalArgumentException.class, () -> {
+            ruleEngine.executeRules("Customer", null, Collections.singletonList("AgeValidation"));
+        });
         
-        // 执行测试
-        List<ValidationResult> results = ruleEngine.executeValidationRules("Customer", customerData, "DELETE");
-        
-        // 验证结果 - 应该返回空列表
-        assertNotNull(results);
-        assertTrue(results.isEmpty());
+        assertNotNull(exception.getMessage());
     }
 }

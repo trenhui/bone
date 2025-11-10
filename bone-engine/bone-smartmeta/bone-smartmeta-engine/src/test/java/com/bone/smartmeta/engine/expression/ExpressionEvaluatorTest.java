@@ -167,20 +167,20 @@ class ExpressionEvaluatorTest {
     @Test
     void testEvaluateComparisonOperators() {
         // 测试比较运算符
-        assertTrue(evaluator.eval("age > 18", context));
-        assertTrue(evaluator.eval("age >= 25", context));
-        assertFalse(evaluator.eval("age < 18", context));
-        assertFalse(evaluator.eval("age <= 20", context));
-        assertTrue(evaluator.eval("age == 25", context));
-        assertFalse(evaluator.eval("age != 25", context));
+        assertTrue(Boolean.valueOf(evaluator.eval("age > 18", context).toString()));
+        assertTrue(Boolean.valueOf(evaluator.eval("age >= 25", context).toString()));
+        assertFalse(Boolean.valueOf(evaluator.eval("age < 18", context).toString()));
+        assertFalse(Boolean.valueOf(evaluator.eval("age <= 20", context).toString()));
+        assertTrue(Boolean.valueOf(evaluator.eval("age == 25", context).toString()));
+        assertFalse(Boolean.valueOf(evaluator.eval("age != 25", context).toString()));
     }
 
     @Test
     void testEvaluateLogicalOperators() {
         // 测试逻辑运算符
-        assertTrue(evaluator.eval("age > 20 && salary > 8000", context));
-        assertTrue(evaluator.eval("age > 30 || salary > 8000", context));
-        assertFalse(evaluator.eval("!(age > 20)", context));
+        assertTrue(Boolean.valueOf(evaluator.eval("age > 20 && salary > 8000", context).toString()));
+        assertTrue(Boolean.valueOf(evaluator.eval("age > 30 || salary > 8000", context).toString()));
+        assertFalse(Boolean.valueOf(evaluator.eval("!(age > 20)", context).toString()));
     }
 
     @Test
