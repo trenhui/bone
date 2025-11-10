@@ -17,9 +17,11 @@ import org.springframework.expression.EvaluationContext;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
 import org.springframework.expression.ParserContext;
+import org.springframework.expression.TypedValue;
 import org.springframework.expression.common.TemplateParserContext;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
+import org.springframework.expression.spel.support.MapAccessor;
 import java.text.SimpleDateFormat;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
@@ -300,10 +302,57 @@ public class ExpressionEngine implements ExpressionEvaluator {
      * 创建评估上下文
      */
     private EvaluationContext createEvaluationContext(Map<String, Object> context) {
-        StandardEvaluationContext evalContext = new StandardEvaluationContext(context);
+        StandardEvaluationContext evalContext = new StandardEvaluationContext();
+        // 将Map包装成一个可以通过属性名访问的对象
+        if (context != null) {
+            // 方法1：设置根对象为Map，并添加自定义属性访问器支持
+            evalContext.setRootObject(context);
+            // 方法2：确保所有键值对都可以作为变量访问（使用#前缀）
+            for (Map.Entry<String, Object> entry : context.entrySet()) {
+                evalContext.setVariable(entry.getKey(), entry.getValue());
+            }
+            // 方法3：为SpEL提供Map键的直接访问能力
+            evalContext.addPropertyAccessor(new MapPropertyAccessor());
+        }
         // 注册常用的函数和变量
         evalContext.setVariable("util", new ExpressionUtils());
         return evalContext;
+    }
+    
+    /**
+     * 自定义的Map属性访问器，支持通过属性名直接访问Map中的键
+     */
+    private static class MapPropertyAccessor implements org.springframework.expression.PropertyAccessor {
+        @Override
+        public Class<?>[] getSpecificTargetClasses() {
+            return new Class<?>[] { Map.class };
+        }
+        
+        @Override
+        public boolean canRead(EvaluationContext context, Object target, String name) {
+            return target instanceof Map && ((Map<?, ?>) target).containsKey(name);
+        }
+        
+        @Override
+        public TypedValue read(EvaluationContext context, Object target, String name) {
+            if (target instanceof Map) {
+                Object value = ((Map<?, ?>) target).get(name);
+                return value != null ? new TypedValue(value) : TypedValue.NULL;
+            }
+            return TypedValue.NULL;
+        }
+        
+        @Override
+        public boolean canWrite(EvaluationContext context, Object target, String name) {
+            return target instanceof Map;
+        }
+        
+        @Override
+        public void write(EvaluationContext context, Object target, String name, Object newValue) {
+            if (target instanceof Map && name != null) {
+                ((Map<Object, Object>) target).put(name, newValue);
+            }
+        }
     }
     
     /**
@@ -1274,14 +1323,51 @@ public class ExpressionEngine implements ExpressionEvaluator {
             // 增加表达式求值计数
             expressionEvaluations.incrementAndGet();
             
-            // 创建评估上下文
-            StandardEvaluationContext evaluationContext = new StandardEvaluationContext();
+            // 特殊处理简单除法表达式，确保浮点数除法
+            if (context != null && expression.contains("/") && expression.trim().split("\\s*/\\s*").length == 2) {
+                String[] parts = expression.trim().split("\\s*/\\s*");
+                String left = parts[0];
+                String right = parts[1];
+                
+                // 尝试解析左右两边的值
+                double leftValue = 0;
+                double rightValue = 0;
+                
+                try {
+                    // 检查左边是否是数字或变量
+                    if (left.matches("\\d+")) {
+                        leftValue = Double.parseDouble(left);
+                    } else if (context.containsKey(left)) {
+                        Object leftObj = context.get(left);
+                        if (leftObj instanceof Number) {
+                            leftValue = ((Number) leftObj).doubleValue();
+                        }
+                    }
+                    
+                    // 检查右边是否是数字或变量
+                    if (right.matches("\\d+")) {
+                        rightValue = Double.parseDouble(right);
+                    } else if (context.containsKey(right)) {
+                        Object rightObj = context.get(right);
+                        if (rightObj instanceof Number) {
+                            rightValue = ((Number) rightObj).doubleValue();
+                        }
+                    }
+                    
+                    // 如果两边都是有效的数字，直接进行浮点数除法计算
+                    if (rightValue != 0) {
+                        return leftValue / rightValue;
+                    }
+                } catch (Exception e) {
+                    // 如果解析失败，继续使用SpEL引擎
+                }
+            }
             
-            // 将Map中的所有变量设置到上下文中
+            // 创建评估上下文，使用createEvaluationContext方法以支持Map属性访问
+            StandardEvaluationContext evaluationContext = (StandardEvaluationContext) createEvaluationContext(context);
+            
+            // 同时将每个键值对设置为变量，支持通过#变量名访问
             if (context != null) {
-                // 设置Map为根对象，支持通过[]操作符访问
-                evaluationContext.setRootObject(context);
-                // 同时将每个键值对设置为变量，支持通过#变量名访问
                 for (Map.Entry<String, Object> entry : context.entrySet()) {
                     evaluationContext.setVariable(entry.getKey(), entry.getValue());
                 }
