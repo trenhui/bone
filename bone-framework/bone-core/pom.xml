@@ -14,7 +14,7 @@
     <groupId>com.bone</groupId>
     <artifactId>bone-core</artifactId>
     <packaging>jar</packaging>
-    <version>${project.parent.version}</version>
+    <version>1.0.0</version>
     <name>Bone Core</name>
     <description>Core atomic layer providing fundamental capabilities for Bone platform</description>
     <url>http://www.bone.com</url>

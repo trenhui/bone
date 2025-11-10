@@ -18,6 +18,13 @@
             <version>3.2.5</version>
         </dependency>
         
+        <!-- Spring Expression Language (SpEL) -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-expression</artifactId>
+            <version>6.1.6</version>
+        </dependency>
+        
         <!-- SLF4J 日志 -->
         <dependency>
             <groupId>org.slf4j</groupId>

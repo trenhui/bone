@@ -1,6 +1,7 @@
 package com.bone.smartmeta.engine;
 
-import com.bone.smartmeta.engine.model.*;
+import com.bone.smartmeta.engine.model.BusinessRuleMetadata;
+import com.bone.smartmeta.engine.validation.ValidationResult;
 import com.bone.smartmeta.engine.rule.BusinessRuleRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,8 +25,8 @@ class DefaultBusinessRuleEngineTest {
     @InjectMocks
     private DefaultBusinessRuleEngine ruleEngine;
 
-    private List<BusinessRule> validationRules;
-    private List<BusinessRule> actionRules;
+    private List<BusinessRuleMetadata> validationRules;
+    private List<BusinessRuleMetadata> actionRules;
     private Map<String, Object> customerData;
 
     @BeforeEach
@@ -45,37 +46,40 @@ class DefaultBusinessRuleEngineTest {
         // 验证规则
         validationRules = new ArrayList<>();
         
-        BusinessRule ageRule = new BusinessRule();
-        ageRule.setRuleName("AgeValidation");
-        ageRule.setEntityName("Customer");
-        ageRule.setRuleType(RuleType.VALIDATION);
-        ageRule.setEventType("CREATE");
+        BusinessRuleMetadata ageRule = new BusinessRuleMetadata();
+        ageRule.setId("age-rule");
+        ageRule.setName("AgeValidation");
+        ageRule.setApiName("Customer");
+        ageRule.setRuleType("VALIDATION");
+        ageRule.getTriggerEvents().add("CREATE");
         ageRule.setExpression("age >= 18");
         ageRule.setErrorMessage("客户年龄必须满18岁");
-        ageRule.setPriority(10);
+        ageRule.setActive(true);
         validationRules.add(ageRule);
         
-        BusinessRule emailRule = new BusinessRule();
-        emailRule.setRuleName("EmailValidation");
-        emailRule.setEntityName("Customer");
-        emailRule.setRuleType(RuleType.VALIDATION);
-        emailRule.setEventType("CREATE");
+        BusinessRuleMetadata emailRule = new BusinessRuleMetadata();
+        emailRule.setId("email-rule");
+        emailRule.setName("EmailValidation");
+        emailRule.setApiName("Customer");
+        emailRule.setRuleType("VALIDATION");
+        emailRule.getTriggerEvents().add("CREATE");
         emailRule.setExpression("email != null && email.contains('@')");
         emailRule.setErrorMessage("请输入有效的邮箱地址");
-        emailRule.setPriority(5);
+        emailRule.setActive(true);
         validationRules.add(emailRule);
         
         // 操作规则
         actionRules = new ArrayList<>();
         
-        BusinessRule vipRule = new BusinessRule();
-        vipRule.setRuleName("VIPCheckRule");
-        vipRule.setEntityName("Customer");
-        vipRule.setRuleType(RuleType.ACTION);
-        vipRule.setEventType("UPDATE");
+        BusinessRuleMetadata vipRule = new BusinessRuleMetadata();
+        vipRule.setId("vip-rule");
+        vipRule.setName("VIPCheckRule");
+        vipRule.setApiName("Customer");
+        vipRule.setRuleType("ACTION");
+        vipRule.getTriggerEvents().add("UPDATE");
         vipRule.setExpression("spendAmount >= 10000");
         vipRule.setAction("setVipLevel('GOLD')");
-        vipRule.setPriority(15);
+        vipRule.setActive(true);
         actionRules.add(vipRule);
     }
 
@@ -137,7 +141,7 @@ class DefaultBusinessRuleEngineTest {
     @Test
     void testExecuteRule_ValidationRule() {
         // 获取验证规则
-        BusinessRule validationRule = validationRules.get(0);
+        BusinessRuleMetadata validationRule = validationRules.get(0);
         
         // 执行测试
         RuleExecutionResult result = ruleEngine.executeRule(validationRule, "Customer", customerData);
@@ -150,7 +154,7 @@ class DefaultBusinessRuleEngineTest {
     @Test
     void testExecuteRule_ActionRule() {
         // 获取操作规则
-        BusinessRule actionRule = actionRules.get(0);
+        BusinessRuleMetadata actionRule = actionRules.get(0);
         
         // 执行测试
         RuleExecutionResult result = ruleEngine.executeRule(actionRule, "Customer", customerData);
@@ -195,23 +199,25 @@ class DefaultBusinessRuleEngineTest {
     @Test
     void testGetRulesByEventType() {
         // 执行测试
-        List<BusinessRule> rules = ruleEngine.getRulesByEventType("Customer", "CREATE");
+        List<BusinessRuleMetadata> rules = ruleEngine.getRulesByEventType("Customer", "CREATE");
         
         // 验证结果
         assertNotNull(rules);
         assertEquals(2, rules.size());
-        assertEquals("AgeValidation", rules.get(0).getRuleName());
-        assertEquals("EmailValidation", rules.get(1).getRuleName());
+        assertEquals("AgeValidation", rules.get(0).getName());
+        assertEquals("EmailValidation", rules.get(1).getName());
     }
 
     @Test
     void testExecuteRule_EmptyExpression() {
         // 创建空表达式规则
-        BusinessRule emptyRule = new BusinessRule();
-        emptyRule.setRuleName("EmptyRule");
-        emptyRule.setEntityName("Customer");
-        emptyRule.setRuleType(RuleType.VALIDATION);
+        BusinessRuleMetadata emptyRule = new BusinessRuleMetadata();
+        emptyRule.setId("empty-rule");
+        emptyRule.setName("EmptyRule");
+        emptyRule.setApiName("Customer");
+        emptyRule.setRuleType("VALIDATION");
         emptyRule.setExpression("");
+        emptyRule.setActive(true);
         
         // 执行测试并验证异常
         Exception exception = assertThrows(IllegalArgumentException.class, () -> {

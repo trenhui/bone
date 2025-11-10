@@ -1,7 +1,8 @@
 package com.bone.smartmeta.engine;
 
-import com.bone.smartmeta.engine.model.EntityMetadata;
-import com.bone.smartmeta.engine.model.FieldMetadata;
+import com.bone.smartmeta.engine.metadata.EntityMetadata;
+import com.bone.smartmeta.engine.metadata.SmartFieldMetadata;
+import com.bone.smartmeta.engine.repository.MetadataRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
@@ -17,7 +18,7 @@ import static org.mockito.Mockito.when;
 class DefaultFieldCalculationEngineTest {
 
     @Mock
-    private MetadataRegistry metadataRegistry;
+    private MetadataRepository metadataRepository;
 
     @InjectMocks
     private DefaultFieldCalculationEngine calculationEngine;
@@ -34,19 +35,19 @@ class DefaultFieldCalculationEngineTest {
         initOrderData();
         
         // 设置mock行为
-        when(metadataRegistry.getEntityMetadata("Order")).thenReturn(orderMetadata);
+        when(metadataRepository.getEntityMetadata("Order")).thenReturn(orderMetadata);
     }
 
     private void initOrderMetadata() {
         orderMetadata = new EntityMetadata();
         orderMetadata.setEntityName("Order");
         
-        Map<String, FieldMetadata> fields = new HashMap<>();
+        Map<String, SmartFieldMetadata> fields = new HashMap<>();
         
         // 基础字段
-        FieldMetadata quantityField = new FieldMetadata();
+        SmartFieldMetadata quantityField = new SmartFieldMetadata();
         quantityField.setFieldName("quantity");
-        quantityField.setDataType("INTEGER");
+        quantityField.setType("INTEGER");
         fields.put("quantity", quantityField);
         
         FieldMetadata unitPriceField = new FieldMetadata();

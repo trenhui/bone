@@ -10,6 +10,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -72,6 +73,18 @@ public class PurchaseOrder {
     @SmartField(name = "createdBy", label = "创建人", type = FieldType.NUMBER)
     private Long createdBy;
     
+    @SmartField(name = "submittedBy", label = "提交人", type = FieldType.TEXT, length = 50)
+    private String submittedBy;
+    
+    @SmartField(name = "submittedTime", label = "提交时间", type = FieldType.DATE)
+    private Date submittedTime;
+    
+    @SmartField(name = "resubmittedBy", label = "重新提交人", type = FieldType.TEXT, length = 50)
+    private String resubmittedBy;
+    
+    @SmartField(name = "resubmittedTime", label = "重新提交时间", type = FieldType.DATE)
+    private Date resubmittedTime;
+    
     @SmartField(name = "approvedBy", label = "审批人", type = FieldType.NUMBER)
     private Long approvedBy;
     
@@ -86,6 +99,18 @@ public class PurchaseOrder {
     
     @SmartField(name = "approvalProcessId", label = "审批流程ID", type = FieldType.TEXT, length = 50)
     private String approvalProcessId;
+    
+    @SmartField(name = "approvalLevel", label = "审批级别", type = FieldType.NUMBER)
+    private Integer approvalLevel;
+    
+    @SmartField(name = "currentApprovers", label = "当前审批人列表", type = FieldType.TEXT)
+    private List<User> currentApprovers = new ArrayList<>();
+    
+    @SmartField(name = "approvalRecords", label = "审批记录列表", type = FieldType.TEXT)
+    private List<Object> approvalRecords = new ArrayList<>();
+    
+    @SmartField(name = "currentApprovalLevel", label = "当前审批级别", type = FieldType.NUMBER)
+    private Integer currentApprovalLevel;
     
     @SmartField(name = "isOverdue", label = "是否逾期", type = FieldType.BOOLEAN, 
                 calculationExpression = "${expectedDeliveryDate} != null && ${expectedDeliveryDate}.isBefore(java.time.LocalDateTime.now())",
@@ -119,4 +144,73 @@ public class PurchaseOrder {
                 calculationExpression = "def summary = new StringBuilder(); if(${orderCode} != null) summary.append('订单编号: ' + ${orderCode}); if(${orderType} != null) { if(summary.length() > 0) summary.append(', '); summary.append('类型: ' + ${orderType}); } if(${orderStatus} != null) { if(summary.length() > 0) summary.append(', '); summary.append('状态: ' + ${orderStatus}); } if(${orderItems} != null) { if(summary.length() > 0) summary.append(', '); summary.append('商品数量: ' + ${orderItems}.size()); } if(${totalAmountWithTax} != null) { if(summary.length() > 0) summary.append(', '); summary.append('总价: ' + ${totalAmountWithTax}); } return summary.toString()",
                 calculationDependencies = {"orderCode", "orderType", "orderStatus", "orderItems", "totalAmountWithTax"}, virtual = true)
     private String orderSummary;
+    
+    /**
+     * 获取总金额（用于兼容旧代码）
+     */
+    public BigDecimal getTotalAmount() {
+        return this.totalAmountWithTax;
+    }
+    
+    /**
+     * 获取订单状态（用于兼容旧代码）
+     */
+    public String getStatus() {
+        return this.orderStatus;
+    }
+    
+    /**
+     * 添加审批记录
+     */
+    public void addApprovalRecord(Object record) {
+        if (this.approvalRecords == null) {
+            this.approvalRecords = new ArrayList<>();
+        }
+        this.approvalRecords.add(record);
+    }
+    
+    /**
+     * 获取审批记录列表
+     */
+    public List<Object> getApprovalRecords() {
+        if (this.approvalRecords == null) {
+            this.approvalRecords = new ArrayList<>();
+        }
+        return this.approvalRecords;
+    }
+    
+    /**
+     * 设置审批记录列表
+     */
+    public void setApprovalRecords(List<Object> records) {
+        this.approvalRecords = records;
+    }
+    
+    /**
+     * 获取当前审批级别
+     */
+    public Integer getCurrentApprovalLevel() {
+        return this.currentApprovalLevel;
+    }
+    
+    /**
+     * 设置当前审批级别
+     */
+    public void setCurrentApprovalLevel(Integer level) {
+        this.currentApprovalLevel = level;
+    }
+    
+    /**
+     * 添加订单项
+     */
+    public void addItem(PurchaseOrderItem item) {
+        if (item == null) {
+            throw new IllegalArgumentException("PurchaseOrderItem cannot be null");
+        }
+        if (orderItems == null) {
+            orderItems = new ArrayList<>();
+        }
+        item.setPurchaseOrderId(this.id);
+        orderItems.add(item);
+    }
 }

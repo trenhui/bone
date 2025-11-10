@@ -11,7 +11,7 @@
         <relativePath>./bone-parent/pom.xml</relativePath>
     </parent>
 
-    <artifactId>bone-boot</artifactId>
+    <artifactId>bone</artifactId>
     <packaging>pom</packaging>
 
     <modules>

@@ -13,7 +13,7 @@ import com.bone.integration.flow.convertor.FlowSchemaConvertor;
 import com.bone.integration.flow.node.StartNode;
 import com.bone.integration.flow.visitor.camel.builder.BuilderFactory;
 import com.bone.integration.route.DevCamelContextManager;
-import com.bone.integration.uitls.RouteUtils;
+import com.bone.integration.utils.RouteUtils;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;

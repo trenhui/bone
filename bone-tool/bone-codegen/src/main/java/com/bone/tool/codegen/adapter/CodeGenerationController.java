@@ -82,13 +82,13 @@ public class CodeGenerationController {
     public ApiResponse<List<CodegenTableResponse>> getTables(
             @Parameter(description = "数据源配置ID", required = true, example = "1")
             @RequestParam("dataSourceConfigId") @NotNull(message = "数据源配置ID不能为空") final Long dataSourceConfigId) {
-        logger.info("开始获取表定义列表，数据源配置ID: {}", dataSourceConfigId);
+        LOGGER.info("开始获取表定义列表，数据源配置ID: {}", dataSourceConfigId);
         try {
             // 直接调用数据库表服务获取数据
             final List<com.bone.tool.codegen.domain.entity.CodegenTable> tables = databaseTableService.getCodegenTablesByDataSourceId(dataSourceConfigId);
             // 使用converter批量转换为响应对象列表
             final List<CodegenTableResponse> tableList = codegenConverter.toCodegenTableResponseList(tables);
-            logger.info("成功获取表定义列表，数据源配置ID: {}，表数量: {}", dataSourceConfigId, tableList.size());
+            LOGGER.info("成功获取表定义列表，数据源配置ID: {}，表数量: {}", dataSourceConfigId, tableList.size());
             return success(tableList);
         } catch (IllegalArgumentException e) {
             LOGGER.warn("获取表定义列表参数错误: {}", e.getMessage());
@@ -161,7 +161,7 @@ public class CodeGenerationController {
         LOGGER.info("开始自定义生成代码");
         
         // 使用getter方法直接获取项目名称，避免反射
-        final String projectName = request.getProjectName();
+        String projectName = request.getProjectName();
         if (projectName == null || projectName.trim().isEmpty()) {
             projectName = "custom";
             LOGGER.debug("项目名称为空，使用默认值: custom");

@@ -64,6 +64,12 @@ public class FieldMetadata {
     /** 计算表达式 */
     private String calculationExpression;
     
+    /** 验证表达式 */
+    private String validationExpression;
+    
+    /** 验证错误消息 */
+    private String errorMessage;
+    
     /**
      * 获取字段名称（兼容方法，返回name属性）
      */
@@ -225,6 +231,22 @@ public class FieldMetadata {
      * 获取计算表达式
      */
     public String getCalculationExpression() {
-        return this.calculationExpression;
+        return calculationExpression;
+    }
+    
+    public String getValidationExpression() {
+        return validationExpression;
+    }
+    
+    public void setValidationExpression(String validationExpression) {
+        this.validationExpression = validationExpression;
+    }
+    
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+    
+    public void setErrorMessage(String errorMessage) {
+        this.errorMessage = errorMessage;
     }
 }

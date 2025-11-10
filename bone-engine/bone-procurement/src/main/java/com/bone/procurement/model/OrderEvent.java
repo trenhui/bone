@@ -7,6 +7,12 @@ package com.bone.procurement.model;
 public enum OrderEvent {
     
     /**
+     * 创建事件
+     * 用于创建操作的通用事件
+     */
+    CREATE("创建", 0),
+    
+    /**
      * 订单创建事件
      * 当新订单被创建时触发
      */

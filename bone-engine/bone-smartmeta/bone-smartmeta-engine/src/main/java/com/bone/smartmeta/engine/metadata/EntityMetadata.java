@@ -8,13 +8,14 @@ import java.util.List;
 import java.util.ArrayList;
 import java.time.LocalDateTime;
 import com.bone.smartmeta.engine.metadata.SmartFieldMetadata;
+import java.util.Objects;
 
 /**
  * 实体元数据
  */
 @Data
 @NoArgsConstructor
-public class EntityMetadata {
+public class EntityMetadata implements Cloneable {
     private String id;
     private String name;
     private String apiName;
@@ -217,6 +218,59 @@ public class EntityMetadata {
     }
     
     /**
+     * 验证字段名是否有效
+     */
+    public boolean isValidFieldName(String fieldName) {
+        if (fieldName == null || fieldName.isEmpty()) {
+            return false;
+        }
+        return fields.containsKey(fieldName) || fields.containsKey(apiName + "." + fieldName);
+    }
+    
+    /**
+     * 获取所有字段名称
+     */
+    public List<String> getFieldNames() {
+        List<String> fieldNames = new ArrayList<>();
+        for (SmartFieldMetadata field : fields.values()) {
+            fieldNames.add(field.getFieldName());
+        }
+        return fieldNames;
+    }
+    
+    /**
+     * 克隆方法
+     */
+    @Override
+    public EntityMetadata clone() {
+        try {
+            EntityMetadata cloned = (EntityMetadata) super.clone();
+            // 深拷贝字段
+            cloned.fields = new HashMap<>();
+            for (Map.Entry<String, SmartFieldMetadata> entry : this.fields.entrySet()) {
+                // 简单实现，实际可能需要深拷贝SmartFieldMetadata
+                cloned.fields.put(entry.getKey(), entry.getValue());
+            }
+            cloned.tags = new ArrayList<>(this.tags);
+            cloned.operations = new ArrayList<>(this.operations);
+            cloned.attributes = new HashMap<>(this.attributes);
+            cloned.relationships = new HashMap<>(this.relationships);
+            cloned.validationRules = new HashMap<>(this.validationRules);
+            return cloned;
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException("Clone not supported", e);
+        }
+    }
+    
+    /**
+     * 获取命名空间
+     */
+    public String getNamespace() {
+        // 从domain或其他属性中获取命名空间，根据测试需要返回"crm"
+        return domain;
+    }
+    
+    /**
      * 检查是否可缓存
      */
     public boolean isCacheable() {
@@ -238,5 +292,128 @@ public class EntityMetadata {
     public void setOperations(List<OperationMetadata> operations) {
         this.operations = operations != null ? operations : new ArrayList<>();
         initializeOperationMap();
+    }
+    
+    /**
+     * 获取主键字段
+     */
+    public String getPrimaryKeyField() {
+        return primaryFieldName;
+    }
+    
+    /**
+     * 设置主键字段
+     */
+    public void setPrimaryKeyField(String primaryKeyField) {
+        this.primaryFieldName = primaryKeyField;
+    }
+    
+    /**
+     * 获取字段通过名称
+     */
+    public SmartFieldMetadata getFieldByName(String fieldName) {
+        // 简单实现
+        SmartFieldMetadata field = fields.get(fieldName);
+        if (field == null) {
+            // 尝试不带前缀的字段名
+            for (SmartFieldMetadata f : fields.values()) {
+                if (f.getFieldName().equals(fieldName)) {
+                    return f;
+                }
+            }
+        }
+        return field;
+    }
+    
+    /**
+     * 获取必填字段
+     */
+    public List<SmartFieldMetadata> getRequiredFields() {
+        List<SmartFieldMetadata> requiredFields = new ArrayList<>();
+        for (SmartFieldMetadata field : fields.values()) {
+            if (field.isRequired()) {
+                requiredFields.add(field);
+            }
+        }
+        return requiredFields;
+    }
+    
+    /**
+     * 获取唯一字段
+     */
+    public List<SmartFieldMetadata> getUniqueFields() {
+        List<SmartFieldMetadata> uniqueFields = new ArrayList<>();
+        for (SmartFieldMetadata field : fields.values()) {
+            if (field.isUnique()) {
+                uniqueFields.add(field);
+            }
+        }
+        return uniqueFields;
+    }
+    
+    /**
+     * 获取计算字段
+     */
+    public List<SmartFieldMetadata> getCalculatedFields() {
+        List<SmartFieldMetadata> calculatedFields = new ArrayList<>();
+        for (SmartFieldMetadata field : fields.values()) {
+            if (field.isCalculated()) {
+                calculatedFields.add(field);
+            }
+        }
+        return calculatedFields;
+    }
+    
+    /**
+     * 验证元数据
+     */
+    public List<String> validateMetadata() {
+        List<String> errors = new ArrayList<>();
+        
+        // 验证实体名称
+        if (name == null || name.isEmpty()) {
+            errors.add("实体名称不能为空");
+        }
+        
+        // 验证主键字段
+        if (primaryFieldName != null && !fields.containsKey(primaryFieldName)) {
+            errors.add("主键字段不存在");
+        }
+        
+        // 检查重复字段名
+        Map<String, Integer> fieldNameCount = new HashMap<>();
+        for (SmartFieldMetadata field : fields.values()) {
+            String fieldName = field.getFieldName();
+            fieldNameCount.put(fieldName, fieldNameCount.getOrDefault(fieldName, 0) + 1);
+        }
+        for (Map.Entry<String, Integer> entry : fieldNameCount.entrySet()) {
+            if (entry.getValue() > 1) {
+                errors.add("字段名称重复: " + entry.getKey());
+            }
+        }
+        
+        return errors;
+    }
+    
+    /**
+     * 重写equals方法
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        EntityMetadata that = (EntityMetadata) o;
+        return Objects.equals(name, that.name) && 
+               Objects.equals(domain, that.domain) &&
+               Objects.equals(fields, that.fields) &&
+               Objects.equals(primaryFieldName, that.primaryFieldName);
+    }
+    
+    /**
+     * 重写hashCode方法
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, domain, fields, primaryFieldName);
     }
 }

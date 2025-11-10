@@ -1,9 +1,5 @@
 package com.bone.smartmeta.engine.model;
 
-import lombok.Data;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
@@ -12,10 +8,6 @@ import java.util.ArrayList;
  * 业务规则执行结果
  * 包含规则执行的成功/失败状态、错误信息和警告信息
  */
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class RuleResult {
     
     /**
@@ -26,20 +18,63 @@ public class RuleResult {
     /**
      * 错误信息列表
      */
-    @Builder.Default
-    private List<RuleError> errors = new ArrayList<>();
+    private List<RuleError> errors;
     
     /**
      * 警告信息列表
      */
-    @Builder.Default
-    private List<RuleWarning> warnings = new ArrayList<>();
+    private List<RuleWarning> warnings;
     
     /**
      * 规则执行过程中的附加信息
      */
-    @Builder.Default
-    private Map<String, Object> additionalInfo = new java.util.HashMap<>();
+    private Map<String, Object> additionalInfo;
+    
+    public RuleResult() {
+        this.errors = new ArrayList<>();
+        this.warnings = new ArrayList<>();
+        this.additionalInfo = new java.util.HashMap<>();
+        this.success = true;
+    }
+    
+    public RuleResult(boolean success, List<RuleError> errors, List<RuleWarning> warnings, Map<String, Object> additionalInfo) {
+        this.success = success;
+        this.errors = (errors != null) ? errors : new ArrayList<>();
+        this.warnings = (warnings != null) ? warnings : new ArrayList<>();
+        this.additionalInfo = (additionalInfo != null) ? additionalInfo : new java.util.HashMap<>();
+    }
+    
+    public boolean isSuccess() {
+        return success;
+    }
+    
+    public void setSuccess(boolean success) {
+        this.success = success;
+    }
+    
+    public List<RuleError> getErrors() {
+        return errors;
+    }
+    
+    public void setErrors(List<RuleError> errors) {
+        this.errors = errors;
+    }
+    
+    public List<RuleWarning> getWarnings() {
+        return warnings;
+    }
+    
+    public void setWarnings(List<RuleWarning> warnings) {
+        this.warnings = warnings;
+    }
+    
+    public Map<String, Object> getAdditionalInfo() {
+        return additionalInfo;
+    }
+    
+    public void setAdditionalInfo(Map<String, Object> additionalInfo) {
+        this.additionalInfo = additionalInfo;
+    }
     
     /**
      * 添加错误信息
@@ -74,24 +109,64 @@ public class RuleResult {
     /**
      * 规则错误信息
      */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
     public static class RuleError {
         private String ruleName;
         private String message;
+        
+        public RuleError() {
+        }
+        
+        public RuleError(String ruleName, String message) {
+            this.ruleName = ruleName;
+            this.message = message;
+        }
+        
+        public String getRuleName() {
+            return ruleName;
+        }
+        
+        public void setRuleName(String ruleName) {
+            this.ruleName = ruleName;
+        }
+        
+        public String getMessage() {
+            return message;
+        }
+        
+        public void setMessage(String message) {
+            this.message = message;
+        }
     }
     
     /**
      * 规则警告信息
      */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
     public static class RuleWarning {
         private String ruleName;
         private String message;
+        
+        public RuleWarning() {
+        }
+        
+        public RuleWarning(String ruleName, String message) {
+            this.ruleName = ruleName;
+            this.message = message;
+        }
+        
+        public String getRuleName() {
+            return ruleName;
+        }
+        
+        public void setRuleName(String ruleName) {
+            this.ruleName = ruleName;
+        }
+        
+        public String getMessage() {
+            return message;
+        }
+        
+        public void setMessage(String message) {
+            this.message = message;
+        }
     }
 }
