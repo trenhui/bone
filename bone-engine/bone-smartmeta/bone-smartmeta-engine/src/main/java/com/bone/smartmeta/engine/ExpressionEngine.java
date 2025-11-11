@@ -21,7 +21,7 @@ import org.springframework.expression.TypedValue;
 import org.springframework.expression.common.TemplateParserContext;
 import org.springframework.expression.spel.standard.SpelExpressionParser;
 import org.springframework.expression.spel.support.StandardEvaluationContext;
-import org.springframework.expression.spel.support.MapAccessor;
+// MapAccessor导入暂时注释，因为类内部已经实现了MapPropertyAccessor
 import java.text.SimpleDateFormat;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
