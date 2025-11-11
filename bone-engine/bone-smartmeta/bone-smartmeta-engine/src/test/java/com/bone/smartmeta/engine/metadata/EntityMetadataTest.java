@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -79,26 +80,25 @@ class EntityMetadataTest {
     void testFieldMetadataManagement() {
         // 测试字段元数据管理功能
         // 先检查初始状态
-        List<SmartFieldMetadata> initialFields = customerMetadata.getFieldMetadataList();
-        assertNotNull(initialFields, "字段列表不应该为null");
-        assertTrue(initialFields.isEmpty(), "初始字段列表应该为空");
+        customerMetadata.setFields(new ArrayList<>()); // 初始化字段列表
+        Map<String, SmartFieldMetadata> initialFields = customerMetadata.getFields();
+        assertNotNull(initialFields, "字段映射不应该为null");
+        assertTrue(initialFields.isEmpty(), "初始字段映射应该为空");
 
         // 添加字段
         SmartFieldMetadata fieldMetadata = new SmartFieldMetadata();
         fieldMetadata.setFieldName("name");
-        fieldMetadata.setFieldLabel("姓名");
+        fieldMetadata.setApiName("name"); // 设置apiName作为Map的key
+        fieldMetadata.setLabel("姓名");
         
-        // 假设EntityMetadata有addFieldMetadata方法
-        // customerMetadata.addFieldMetadata(fieldMetadata);
-        
-        // 如果没有add方法，直接测试set方法
-        // List<SmartFieldMetadata> fields = new ArrayList<>();
-        // fields.add(fieldMetadata);
-        // customerMetadata.setFieldMetadataList(fields);
+        // 使用正确的方法设置字段
+        List<SmartFieldMetadata> fields = new ArrayList<>();
+        fields.add(fieldMetadata);
+        customerMetadata.setFields(fields);
         
         // 验证字段添加成功
-        // assertEquals(1, customerMetadata.getFieldMetadataList().size(), "字段数量不匹配");
-        // assertEquals("name", customerMetadata.getFieldMetadataList().get(0).getFieldName(), "字段名称不匹配");
+        assertEquals(1, customerMetadata.getFields().size(), "字段数量不匹配");
+        assertTrue(customerMetadata.getFields().containsKey("name"), "字段映射应该包含name字段");
     }
 
     @Test

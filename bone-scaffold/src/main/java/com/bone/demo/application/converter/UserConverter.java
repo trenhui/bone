@@ -39,6 +39,6 @@ public interface UserConverter {
             return new PageResult<>();
         }
         List<UserDTO> dtoList = toDtoList(pageResult.getRecords());
-        return new PageResult<>(dtoList, pageResult.getTotal(), pageResult.getSize(), pageResult.getPageNum());
+        return new PageResult<>(dtoList, pageResult.getTotal(), pageResult.getPageSize(), pageResult.getPageNum());
     }
 }
