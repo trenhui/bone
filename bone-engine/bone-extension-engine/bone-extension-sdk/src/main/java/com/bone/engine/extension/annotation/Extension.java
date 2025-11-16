@@ -1,8 +1,7 @@
-package com.bone.engine.extension;
+package com.bone.engine.extension.annotation;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
-import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -115,12 +114,10 @@ import java.lang.annotation.Target;
  * @author Bone Engine Team
  * @version 2.1.0
  * @see ExtPoint 扩展点接口注解
- * @see Extensions 扩展点容器注解
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-@Repeatable(Extensions.class)
 public @interface Extension {
     
     /**
@@ -289,15 +286,5 @@ public @interface Extension {
      * 最大执行超时时间（毫秒），优先级高于扩展点默认配置
      */
     long maxExecutionTime() default 0L;
-}
-
-/**
- * Extension注解的容器类，支持在一个类上标注多个Extension注解
- */
-@Documented
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-@interface Extensions {
-    Extension[] value();
 }
 

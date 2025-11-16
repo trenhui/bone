@@ -1,7 +1,6 @@
 package com.bone.engine.extension.event;
 
 import com.bone.engine.extension.context.BizContext;
-import com.bone.engine.extension.ExtPoint;
 import com.bone.engine.extension.event.ExtensionEvent.EventType;
 
 /**

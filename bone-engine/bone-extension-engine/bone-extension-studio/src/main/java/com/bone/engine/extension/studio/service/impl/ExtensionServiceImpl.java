@@ -1,12 +1,11 @@
 package com.bone.engine.extension.studio.service.impl;
 
-import java.util.HashSet;
-import java.util.Set;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import com.bone.engine.extension.annotation.ExtPoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
@@ -17,50 +16,26 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ClassUtils;
 
-import com.bone.engine.extension.Extension;
+import com.bone.engine.extension.annotation.Extension;
 import com.bone.engine.extension.studio.model.ExtensionEntity;
 import com.bone.engine.extension.studio.model.ExtPointEntity;
 import com.bone.engine.extension.studio.repository.ExtensionRepository;
 import com.bone.engine.extension.studio.repository.ExtPointRepository;
 import com.bone.engine.extension.studio.service.ExtensionService;
 import com.bone.engine.extension.studio.service.common.ClassScanner;
-import com.bone.engine.extension.studio.service.common.ResourceUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.core.type.classreading.CachingMetadataReaderFactory;
-import org.springframework.core.type.classreading.MetadataReader;
-import org.springframework.core.type.classreading.MetadataReaderFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
 import jakarta.persistence.criteria.Predicate;
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
+
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Arrays;
 import java.util.Optional;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.HashMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 /**
  * 扩展实现服务实现类
@@ -357,7 +332,7 @@ public class ExtensionServiceImpl implements ExtensionService {
             
             // 查找对应的扩展点实体
             for (Class<?> intf : interfaces) {
-                if (intf.isAnnotationPresent(com.bone.engine.extension.ExtPoint.class)) {
+                if (intf.isAnnotationPresent(ExtPoint.class)) {
                     ExtPointEntity extPoint = extPointRepository.findByInterfaceName(intf.getName())
                             .orElseGet(() -> {
                                 // 如果扩展点不存在，创建新的扩展点

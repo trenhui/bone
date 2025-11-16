@@ -1,9 +1,8 @@
 package com.bone.example.extension.promotion;
 
 import com.bone.engine.extension.context.BizContext;
-import com.bone.engine.extension.ExtPoint;
+import com.bone.engine.extension.annotation.ExtPoint;
 import com.bone.engine.extension.annotation.ExtPointDoc;
-import java.math.BigDecimal;
 
 /**
  * 促销策略扩展点

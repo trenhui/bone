@@ -1,7 +1,7 @@
 package com.bone.engine.extension.register;
 
-import com.bone.engine.extension.ExtPoint;
-import com.bone.engine.extension.Extension;
+import com.bone.engine.extension.annotation.ExtPoint;
+import com.bone.engine.extension.annotation.Extension;
 import com.bone.engine.extension.event.ExtensionEventPublisher;
 import com.bone.engine.extension.repository.ExtPointRepository;
 import com.bone.engine.extension.annotation.ExtPointDoc;
@@ -11,14 +11,11 @@ import com.bone.engine.extension.config.ExtensionProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.Mockito;
 import org.springframework.context.ApplicationContext;
 
 import static org.mockito.Mockito.*;
-import static org.mockito.ArgumentMatchers.*;
 
 /**
  * 扩展点注册器测试类

@@ -1,6 +1,6 @@
 package com.bone.engine.extension.router;
 
-import com.bone.engine.extension.Extension;
+import com.bone.engine.extension.annotation.Extension;
 import com.bone.engine.extension.context.BizContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,4 +1,4 @@
-package com.bone.engine.extension;
+package com.bone.engine.extension.annotation;
 
 import java.lang.annotation.*;
 

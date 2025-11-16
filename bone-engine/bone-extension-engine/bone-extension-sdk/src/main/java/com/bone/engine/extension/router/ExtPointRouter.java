@@ -2,6 +2,8 @@ package com.bone.engine.extension.router;
 
 import com.bone.engine.extension.context.BizContext;
 
+import java.util.Map;
+
 /**
  * 扩展点路由器接口
  * <p>
@@ -42,26 +44,14 @@ public interface ExtPointRouter {
      */
     <T> T route(Class<T> extPointClass, BizContext<?> context);
     
-    /**
-     * 获取扩展点接口的所有可用实现
-     * 
-     * @param <T> 扩展点接口类型
-     * @param extPointClass 扩展点接口类
-     * @return 所有可用的实现类实例列表
-     */
-    <T> java.util.List<T> getAllImplementations(Class<T> extPointClass);
-    
+
     /**
      * 清除指定扩展点接口的路由缓存
      * 
      * @param extPointClass 扩展点接口类
      */
     void clearCache(Class<?> extPointClass);
-    
-    /**
-     * 清除所有路由缓存
-     */
-    void clearAllCache();
+
     
     /**
      * 注册扩展点实现
@@ -95,5 +85,5 @@ public interface ExtPointRouter {
      * 
      * @return 路由统计信息映射
      */
-    java.util.Map<String, java.util.Map<String, Long>> getRouteStats();
+    Map<String, Map<String, Long>> getRouteStats();
 }

@@ -1,7 +1,7 @@
 package com.bone.example.extension.promotion;
 
 import com.bone.engine.extension.context.BizContext;
-import com.bone.engine.extension.Extension;
+import com.bone.engine.extension.annotation.Extension;
 import com.bone.engine.extension.annotation.ExtensionDoc;
 
 /**

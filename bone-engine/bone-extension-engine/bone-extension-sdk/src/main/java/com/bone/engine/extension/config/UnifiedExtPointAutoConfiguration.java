@@ -1,14 +1,12 @@
 package com.bone.engine.extension.config;
 
 import com.bone.engine.extension.annotation.EnableExtPoints;
-import com.bone.engine.extension.config.ExtensionProperties;
 import com.bone.engine.extension.lifecycle.DefaultExtensionLifecycle;
 import com.bone.engine.extension.lifecycle.ExtensionLifecycle;
 import com.bone.engine.extension.proxy.ExtPointProxyFactory;
 import com.bone.engine.extension.router.DefaultExtPointRouter;
 import com.bone.engine.extension.router.ExtPointRouter;
 import com.bone.engine.extension.router.CacheManager;
-import com.bone.engine.extension.config.RouterConfiguration;
 import com.bone.engine.extension.event.DefaultExtensionEventPublisher;
 import com.bone.engine.extension.event.ExtensionEventPublisher;
 import org.slf4j.Logger;
@@ -23,10 +21,7 @@ import org.springframework.context.annotation.ImportAware;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.core.task.AsyncTaskExecutor;
-import org.springframework.beans.factory.annotation.Qualifier;
 import com.bone.engine.extension.router.RouteStatsCollector;
-import com.bone.engine.extension.register.ExtensionRegister;
-import com.bone.engine.extension.register.ExtensionRegistry;
 
 /**
  * 统一的扩展点框架自动配置类

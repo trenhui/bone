@@ -1,10 +1,8 @@
 package com.bone.engine.extension.router;
 
-import com.bone.engine.extension.ExtPoint;
-import com.bone.engine.extension.Extension;
+import com.bone.engine.extension.annotation.Extension;
 import com.bone.engine.extension.config.RouterConfiguration;
 import com.bone.engine.extension.context.BizContext;
-import com.bone.engine.extension.router.RouteKey;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalListener;

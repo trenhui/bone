@@ -1,6 +1,6 @@
 package com.bone.example.extension.payment;
 
-import com.bone.engine.extension.Extension;
+import com.bone.engine.extension.annotation.Extension;
 import com.bone.engine.extension.annotation.ExtensionDoc;
 import com.bone.engine.extension.context.BizContext;
 import org.slf4j.Logger;
@@ -8,10 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import com.bone.example.extension.payment.PaymentTestRequest;
-import com.bone.example.extension.payment.PaymentResult;
+
 import com.bone.example.extension.result.ValidationResult;
-import com.bone.example.extension.payment.PaymentCalculationResult;
 
 /**
  * 金融支付扩展点实现类
