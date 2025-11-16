@@ -1,6 +1,8 @@
 package com.bone.engine.extension;
 
+import com.bone.engine.extension.annotation.ExtPoint;
 import com.bone.engine.extension.annotation.ExtPointDoc;
+import com.bone.engine.extension.annotation.Extension;
 import com.bone.engine.extension.annotation.ExtensionDoc;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

@@ -1,13 +1,12 @@
 package com.bone.engine.extension.utils;
 
-import com.bone.engine.extension.ExtPoint;
-import com.bone.engine.extension.Extension;
+import com.bone.engine.extension.annotation.ExtPoint;
+import com.bone.engine.extension.annotation.Extension;
 import com.bone.engine.extension.context.BizContext;
 import com.bone.engine.extension.router.CacheManager;
 import com.bone.engine.extension.router.RouteKey;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.util.StringUtils;
 
 import java.lang.reflect.Method;

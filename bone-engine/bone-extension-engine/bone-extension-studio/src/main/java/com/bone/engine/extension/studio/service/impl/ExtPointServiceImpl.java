@@ -1,12 +1,10 @@
 package com.bone.engine.extension.studio.service.impl;
 
-import com.bone.engine.extension.ExtPoint;
-import com.bone.engine.extension.annotation.ExtPointDoc;
+import com.bone.engine.extension.annotation.ExtPoint;
+
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
@@ -25,39 +23,20 @@ import com.bone.engine.extension.studio.repository.ExtPointRepository;
 import com.bone.engine.extension.studio.repository.ExtensionRepository;
 import com.bone.engine.extension.studio.service.ExtPointService;
 import com.bone.engine.extension.studio.service.common.ClassScanner;
-import com.bone.engine.extension.studio.service.common.ResourceUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.core.io.Resource;
-import org.springframework.core.type.classreading.CachingMetadataReaderFactory;
-import org.springframework.core.type.classreading.MetadataReader;
-import org.springframework.core.type.classreading.MetadataReaderFactory;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.ClassUtils;
 import org.springframework.util.StringUtils;
 
 import jakarta.persistence.criteria.Predicate;
-import java.io.IOException;
-import java.lang.annotation.Annotation;
+
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.*;
-import java.util.HashMap;
 import java.util.Optional;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 /**
  * 扩展点服务实现类

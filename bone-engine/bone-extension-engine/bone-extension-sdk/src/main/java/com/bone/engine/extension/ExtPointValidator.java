@@ -1,6 +1,7 @@
 package com.bone.engine.extension;
 
-import com.bone.engine.extension.register.ExtensionRegister;
+import com.bone.engine.extension.annotation.ExtPoint;
+import com.bone.engine.extension.annotation.Extension;
 import com.bone.engine.extension.repository.ExtPointRepository;
 import com.bone.engine.extension.utils.ExtPointUtils;
 
@@ -12,9 +13,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.core.type.classreading.MetadataReader;
-import org.springframework.core.type.classreading.MetadataReaderFactory;
-import org.springframework.core.type.classreading.SimpleMetadataReaderFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
