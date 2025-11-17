@@ -139,8 +139,9 @@ public class ColumnAllocator {
         int limit = switch (type) {
             case STRING -> 20;
             case TEXT, BOOLEAN -> 5;
+            case JSON -> 3;
             case NUMBER, DATE, INTEGER -> 10;
-            case JSON, XML, GEO -> 1;
+            case XML, GEO -> 1;
         };
         if (idx > limit) {
             throw new FieldAllocationException("超出最大列数限制: " + type);

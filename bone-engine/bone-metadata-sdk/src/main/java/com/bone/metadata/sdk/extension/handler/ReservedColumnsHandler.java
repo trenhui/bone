@@ -11,11 +11,14 @@ import com.bone.metadata.sdk.extension.ExtensionContext;
 import com.bone.metadata.sdk.metadata.api.MetadataService;
 import com.bone.metadata.sdk.query.builder.ReservedQueryBuilder;
 import com.bone.metadata.sdk.sql.executor.SqlExecutor;
-import com.bone.metadata.sdk.sql.executor.TypeConverter;
 import com.bone.metadata.sdk.support.config.MetadataSdkContext;
 import com.bone.metadata.sdk.support.util.DistributedLockUtil;
-import com.bone.metadata.sdk.support.util.TypeDetector;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -26,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
+@Component
 public class ReservedColumnsHandler implements ExtensionStorageHandler {
     // Configuration constants
     private static final String LOCK_KEY_PREFIX = "meta:reserved:";
@@ -36,12 +40,22 @@ public class ReservedColumnsHandler implements ExtensionStorageHandler {
     private final SqlExecutor sqlExecutor;
     private final MetadataService metadataService;
     private final DistributedLockUtil distributedLockUtil;
+    private final ObjectMapper objectMapper;
 
-
-    public ReservedColumnsHandler(SqlExecutor sqlExecutor, MetadataService metadataService, DistributedLockUtil distributedLockUtil) {
+    public ReservedColumnsHandler(SqlExecutor sqlExecutor, MetadataService metadataService,
+                                  DistributedLockUtil distributedLockUtil) {
         this.sqlExecutor = sqlExecutor;
         this.metadataService = metadataService;
         this.distributedLockUtil = distributedLockUtil;
+        this.objectMapper = createObjectMapper();
+    }
+
+    private ObjectMapper createObjectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
+        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        mapper.registerModule(new JavaTimeModule());
+        return mapper;
     }
 
     @Override
@@ -65,7 +79,8 @@ public class ReservedColumnsHandler implements ExtensionStorageHandler {
                     () -> {
                         List<FieldMetadata> fields = loadOrCreateFields(ctx);
                         String sql = ReservedQueryBuilder.buildUpsertSQL(ctx, fields, MetadataSdkContext.getDatabaseType());
-                        sqlExecutor.update(new CompiledQuery(sql, buildUpsertParams(ctx, fields)));
+                        Map<String, Object> params = buildUpsertParams(ctx, fields);
+                        sqlExecutor.update(new CompiledQuery(sql, params));
                         return null;
                     }
             );
@@ -131,10 +146,7 @@ public class ReservedColumnsHandler implements ExtensionStorageHandler {
 
     private Object convertFieldValue(Object rawValue, String dataType) {
         try {
-            DataType type = DataType.valueOf(dataType);
-            // 根据DataType获取对应的Java类型
-            Class<?> targetClass = getTargetClass(type);
-            return TypeConverter.convert(rawValue, targetClass);
+            return TypeConverter.convert(rawValue, DataType.valueOf(dataType));
         } catch (IllegalArgumentException e) {
             log.warn("Unsupported data type conversion: {}", dataType);
             return rawValue;
@@ -144,20 +156,6 @@ public class ReservedColumnsHandler implements ExtensionStorageHandler {
     private DataType determineType(Object value) {
         return TypeDetector.detect(value, TEXT_LENGTH_THRESHOLD);
     }
-
-    // 移除内部TypeConverter类，统一使用SDK的TypeConverter类
-
-    private Class<?> getTargetClass(DataType type) {
-        return switch (type) {
-            case INTEGER -> Long.class;
-            case NUMBER -> BigDecimal.class;
-            case BOOLEAN -> Boolean.class;
-            case DATE -> LocalDateTime.class;
-            default -> String.class;
-        };
-    }
-
-
 
     private String getDimensionKey(ExtensionContext ctx) {
         return String.join("|",
@@ -185,7 +183,185 @@ public class ReservedColumnsHandler implements ExtensionStorageHandler {
         params.put("entity_type", ctx.getEntityType());
         params.put("entity_id", ctx.getEntityId());
 
-        fields.forEach(f -> params.put(f.getColumnName(), ctx.getExtraProperties().get(f.getName())));
+        fields.forEach(f -> {
+            Object value = ctx.getExtraProperties().get(f.getName());
+
+            // 对JSON类型进行特殊处理 - 序列化为JSON字符串
+            if (DataType.JSON.name().equals(f.getDataType()) && value != null) {
+                value = serializeJsonValue(value);
+            }
+
+            params.put(f.getColumnName(), value);
+        });
         return params;
+    }
+
+    /**
+     * 将对象序列化为JSON字符串
+     */
+    private String serializeJsonValue(Object value) {
+        try {
+            if (value instanceof String) {
+                String strValue = (String) value;
+                // 验证字符串是否是有效的JSON
+                if (isValidJson(strValue)) {
+                    return strValue;
+                } else {
+                    // 如果不是有效的JSON，将其作为普通字符串值包装成JSON
+                    log.debug("String value is not valid JSON, wrapping as JSON string: {}", strValue);
+                    return objectMapper.writeValueAsString(strValue);
+                }
+            } else {
+                // 序列化对象为JSON字符串
+                return objectMapper.writeValueAsString(value);
+            }
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to serialize value to JSON: {}. Falling back to toString()", value, e);
+            // 作为最后手段，使用toString()并包装为JSON字符串
+            try {
+                return objectMapper.writeValueAsString(value.toString());
+            } catch (JsonProcessingException ex) {
+                log.error("Critical: Failed to serialize even toString() value to JSON: {}", value, ex);
+                // 如果连这个都失败，返回空对象
+                return "{}";
+            }
+        }
+    }
+
+    /**
+     * 验证字符串是否是有效的JSON
+     */
+    private boolean isValidJson(String json) {
+        if (json == null || json.trim().isEmpty()) {
+            return false;
+        }
+        String trimmed = json.trim();
+        // 快速检查：以 { 或 [ 开头
+        if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
+            return false;
+        }
+        // 详细验证
+        try {
+            objectMapper.readTree(trimmed);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    // ========== 内部类保持不变 ==========
+
+    private static class TypeConverter {
+        static Object convert(Object value, DataType type) {
+            return switch (type) {
+                case INTEGER -> convertToLong(value);
+                case NUMBER -> convertToBigDecimal(value);
+                case BOOLEAN -> convertToBoolean(value);
+                case DATE -> convertToDateTime(value);
+                default -> value;
+            };
+        }
+
+        private static Long convertToLong(Object value) {
+            if (value instanceof Number num) return num.longValue();
+            if (value instanceof String str) {
+                try {
+                    return Long.parseLong(str);
+                } catch (NumberFormatException e) {
+                    log.warn("Long conversion failed for value: {}", str);
+                    return null;
+                }
+            }
+            return null;
+        }
+
+        private static BigDecimal convertToBigDecimal(Object value) {
+            if (value instanceof BigDecimal bd) return bd.stripTrailingZeros();
+            if (value instanceof Number num) return new BigDecimal(num.toString());
+            if (value instanceof String str) {
+                try {
+                    return new BigDecimal(str);
+                } catch (NumberFormatException e) {
+                    log.warn("BigDecimal conversion failed for value: {}", str);
+                    return null;
+                }
+            }
+            return null;
+        }
+
+        private static Boolean convertToBoolean(Object value) {
+            if (value instanceof Boolean bool) return bool;
+            if (value instanceof Number num) return num.intValue() != 0;
+            if (value instanceof String str) {
+                return Boolean.parseBoolean(str) || "1".equals(str);
+            }
+            return null;
+        }
+
+        private static LocalDateTime convertToDateTime(Object value) {
+            if (value instanceof LocalDateTime ldt) return ldt;
+            if (value instanceof Date date) {
+                return date.toInstant()
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDateTime();
+            }
+            if (value instanceof String str) {
+                try {
+                    return LocalDateTime.parse(str);
+                } catch (DateTimeParseException e) {
+                    log.warn("DateTime conversion failed for value: {}", str);
+                    return null;
+                }
+            }
+            return null;
+        }
+    }
+
+    private static class TypeDetector {
+        private static final Map<Class<?>, DataType> TYPE_MAPPINGS = createTypeMappings();
+
+        static DataType detect(Object value, int textThreshold) {
+            if (value == null) return DataType.STRING;
+
+            // 检查是否是JSON字符串
+            if (value instanceof String str && isLikelyJsonString(str)) {
+                return DataType.JSON;
+            }
+
+            DataType type = TYPE_MAPPINGS.entrySet().stream()
+                    .filter(entry -> entry.getKey().isInstance(value))
+                    .findFirst()
+                    .map(Map.Entry::getValue)
+                    .orElse(DataType.STRING);
+
+            if (type == DataType.STRING && value instanceof String str) {
+                return str.length() > textThreshold
+                        ? DataType.TEXT
+                        : DataType.STRING;
+            }
+            return type;
+        }
+
+        private static boolean isLikelyJsonString(String str) {
+            if (str == null || str.trim().isEmpty()) {
+                return false;
+            }
+            String trimmed = str.trim();
+            // 快速启发式检查：以 { 或 [ 开头，以 } 或 ] 结尾
+            return (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+                    (trimmed.startsWith("[") && trimmed.endsWith("]"));
+        }
+
+        private static Map<Class<?>, DataType> createTypeMappings() {
+            Map<Class<?>, DataType> map = new HashMap<>();
+            map.put(Boolean.class, DataType.BOOLEAN);
+            map.put(Number.class, DataType.NUMBER);
+            map.put(java.util.Date.class, DataType.DATE);
+            map.put(java.time.temporal.Temporal.class, DataType.DATE);
+            map.put(Map.class, DataType.JSON);
+            map.put(List.class, DataType.JSON);
+            map.put(com.fasterxml.jackson.databind.JsonNode.class, DataType.JSON);
+            return Collections.unmodifiableMap(map);
+        }
     }
 }
