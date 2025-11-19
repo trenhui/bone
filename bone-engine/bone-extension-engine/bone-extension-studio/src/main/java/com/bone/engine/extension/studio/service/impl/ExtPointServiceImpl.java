@@ -1,6 +1,6 @@
 package com.bone.engine.extension.studio.service.impl;
 
-import com.bone.engine.extension.annotation.ExtPoint;
+import com.bone.engine.extension.api.annotation.ExtPoint;
 
 import java.util.HashMap;
 import java.util.List;
@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import com.bone.engine.extension.api.annotation.ExtPointDoc;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
@@ -359,7 +360,7 @@ public class ExtPointServiceImpl implements ExtPointService {
             extPoint.setInterfaceName(interfaceName);
             
             // 从ExtPointDoc注解获取domain和category信息
-            com.bone.engine.extension.annotation.ExtPointDoc extPointDoc = interfaceClass.getAnnotation(com.bone.engine.extension.annotation.ExtPointDoc.class);
+            ExtPointDoc extPointDoc = interfaceClass.getAnnotation(ExtPointDoc.class);
             extPoint.setDomain(extPointDoc != null && StringUtils.hasText(extPointDoc.domain()) ? extPointDoc.domain() : "default");
             extPoint.setCategory(extPointDoc != null && StringUtils.hasText(extPointDoc.category()) ? extPointDoc.category() : "general");
                 extPoint.setType("interface");

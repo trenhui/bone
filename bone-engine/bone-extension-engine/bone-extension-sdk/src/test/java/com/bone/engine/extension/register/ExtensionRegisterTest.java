@@ -1,12 +1,13 @@
 package com.bone.engine.extension.register;
 
-import com.bone.engine.extension.annotation.ExtPoint;
-import com.bone.engine.extension.annotation.Extension;
+import com.bone.engine.extension.api.annotation.ExtPoint;
+import com.bone.engine.extension.api.annotation.Extension;
+import com.bone.engine.extension.core.register.ExtensionRegister;
 import com.bone.engine.extension.event.ExtensionEventPublisher;
-import com.bone.engine.extension.repository.ExtPointRepository;
-import com.bone.engine.extension.annotation.ExtPointDoc;
-import com.bone.engine.extension.annotation.ExtensionDoc;
-import com.bone.engine.extension.config.ExtensionProperties;
+import com.bone.engine.extension.support.repository.ExtPointRepository;
+import com.bone.engine.extension.api.annotation.ExtPointDoc;
+import com.bone.engine.extension.api.annotation.ExtensionDoc;
+import com.bone.engine.extension.support.config.ExtensionProperties;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

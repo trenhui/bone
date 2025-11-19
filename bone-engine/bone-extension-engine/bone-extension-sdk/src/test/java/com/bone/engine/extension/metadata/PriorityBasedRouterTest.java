@@ -1,7 +1,7 @@
 package com.bone.engine.extension.metadata;
 
-import com.bone.engine.extension.annotation.ExtPoint;
-import com.bone.engine.extension.annotation.Extension;
+import com.bone.engine.extension.api.annotation.ExtPoint;
+import com.bone.engine.extension.api.annotation.Extension;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;

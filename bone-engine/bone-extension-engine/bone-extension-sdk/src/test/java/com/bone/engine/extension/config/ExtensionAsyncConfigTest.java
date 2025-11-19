@@ -1,5 +1,6 @@
 package com.bone.engine.extension.config;
 
+import com.bone.engine.extension.support.config.ExtensionAsyncConfig;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 

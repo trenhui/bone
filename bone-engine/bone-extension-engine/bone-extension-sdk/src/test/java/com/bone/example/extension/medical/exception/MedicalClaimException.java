@@ -1,6 +1,6 @@
 package com.bone.example.extension.medical.exception;
 
-import com.bone.engine.extension.exception.BusinessException;
+import com.bone.engine.extension.api.exception.BusinessException;
 
 /**
  * 医疗理赔异常类
