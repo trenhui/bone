@@ -1,6 +1,6 @@
 package com.bone.example.extension.payment.exception;
 
-import com.bone.engine.extension.exception.BusinessException;
+import com.bone.engine.extension.api.exception.BusinessException;
 
 /**
  * 支付异常类

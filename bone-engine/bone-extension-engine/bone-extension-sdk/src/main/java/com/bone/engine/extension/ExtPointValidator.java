@@ -1,9 +1,10 @@
 package com.bone.engine.extension;
 
-import com.bone.engine.extension.annotation.ExtPoint;
-import com.bone.engine.extension.annotation.Extension;
-import com.bone.engine.extension.repository.ExtPointRepository;
-import com.bone.engine.extension.utils.ExtPointUtils;
+import com.bone.engine.extension.api.annotation.ExtPoint;
+import com.bone.engine.extension.api.annotation.Extension;
+import com.bone.engine.extension.support.repository.ExtPointRepository;
+import com.bone.engine.extension.support.expression.ExpressionEvaluator;
+import com.bone.engine.extension.support.utils.ExtPointUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -195,7 +196,7 @@ public class ExtPointValidator implements ApplicationListener<ContextRefreshedEv
                 String condition = (String) conditionMethod.invoke(extension);
                 if (condition != null && !condition.isEmpty()) {
                     // 验证表达式语法
-                    com.bone.engine.extension.expression.ExpressionEvaluator.evaluateWithCurrentContext(condition);
+                    ExpressionEvaluator.evaluateWithCurrentContext(condition);
                 }
             } catch (NoSuchMethodException e) {
                 // Extension注解没有condition方法，跳过表达式验证

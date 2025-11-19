@@ -1,7 +1,5 @@
 package com.bone.example.extension.promotion;
 
-import com.bone.engine.extension.context.BizContext;
-
 /**
  * 促销服务
  * 负责协调促销活动的处理流程

@@ -1,7 +1,9 @@
 package com.bone.engine.extension;
 
 import com.bone.core.threadlocal.TransmittableThreadLocal;
-import com.bone.engine.extension.context.BizContext;
+import com.bone.engine.extension.support.context.BizContext;
+import com.bone.engine.extension.support.extractor.BizParamExtractor;
+import com.bone.engine.extension.support.extractor.ReflectionBizParamExtractor;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -166,7 +168,7 @@ public final class ExtensionContextManager {
         Objects.requireNonNull(data, "Data object must not be null");
         
         // 直接使用反射提取器
-        com.bone.engine.extension.extractor.BizParamExtractor extractor = new com.bone.engine.extension.extractor.ReflectionBizParamExtractor();
+        BizParamExtractor extractor = new ReflectionBizParamExtractor();
         
         // 提取业务维度信息
         String tenantCode = extractor.getTenantCode(data);

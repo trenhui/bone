@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import com.bone.engine.extension.annotation.ExtPoint;
+import com.bone.engine.extension.api.annotation.ExtPoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ClassUtils;
 
-import com.bone.engine.extension.annotation.Extension;
+import com.bone.engine.extension.api.annotation.Extension;
 import com.bone.engine.extension.studio.model.ExtensionEntity;
 import com.bone.engine.extension.studio.model.ExtPointEntity;
 import com.bone.engine.extension.studio.repository.ExtensionRepository;

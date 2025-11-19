@@ -1,8 +1,8 @@
 package com.bone.example.extension.medical;
 
-import com.bone.engine.extension.context.BizContext;
-import com.bone.engine.extension.annotation.Extension;
-import com.bone.engine.extension.annotation.ExtensionDoc;
+import com.bone.engine.extension.support.context.BizContext;
+import com.bone.engine.extension.api.annotation.Extension;
+import com.bone.engine.extension.api.annotation.ExtensionDoc;
 import com.bone.example.extension.result.ValidationResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

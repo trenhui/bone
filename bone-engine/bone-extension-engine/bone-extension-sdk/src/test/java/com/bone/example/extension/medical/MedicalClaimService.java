@@ -1,6 +1,6 @@
 package com.bone.example.extension.medical;
 
-import com.bone.engine.extension.context.BizContext;
+import com.bone.engine.extension.support.context.BizContext;
 import com.bone.example.extension.medical.exception.MedicalClaimException;
 import com.bone.example.extension.result.ValidationResult;
 import org.slf4j.Logger;
@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import com.bone.example.extension.medical.MedicalClaimResult;
 
 /**
  * 医疗保险理赔服务

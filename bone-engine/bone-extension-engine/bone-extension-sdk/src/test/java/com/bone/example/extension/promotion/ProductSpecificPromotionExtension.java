@@ -1,8 +1,8 @@
 package com.bone.example.extension.promotion;
 
-import com.bone.engine.extension.context.BizContext;
-import com.bone.engine.extension.annotation.Extension;
-import com.bone.engine.extension.annotation.ExtensionDoc;
+import com.bone.engine.extension.support.context.BizContext;
+import com.bone.engine.extension.api.annotation.Extension;
+import com.bone.engine.extension.api.annotation.ExtensionDoc;
 
 /**
  * 特定产品促销扩展点实现
