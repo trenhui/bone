@@ -1,6 +1,6 @@
 package com.bone.engine.extension.support.utils;
 
-import com.bone.engine.extension.api.annotation.ExtPoint;
+import com.bone.engine.extension.api.annotation.ExtensionPoint;
 import com.bone.engine.extension.api.annotation.Extension;
 import com.bone.engine.extension.support.context.BizContext;
 import com.bone.engine.extension.core.router.CacheManager;
@@ -32,7 +32,7 @@ public class ExtPointUtils implements ApplicationContextAware {
         
         // 获取所有直接实现的接口
         for (Class<?> iface : implementationClass.getInterfaces()) {
-            if (iface.isAnnotationPresent(ExtPoint.class)) {
+            if (iface.isAnnotationPresent(ExtensionPoint.class)) {
                 result.add(iface);
             }
         }
@@ -137,7 +137,7 @@ public class ExtPointUtils implements ApplicationContextAware {
     public static boolean isValidExtPointInterface(Class<?> clazz) {
         return clazz != null && 
                clazz.isInterface() && 
-               clazz.isAnnotationPresent(ExtPoint.class) &&
+               clazz.isAnnotationPresent(ExtensionPoint.class) &&
                !Object.class.equals(clazz);
     }
     
@@ -148,7 +148,7 @@ public class ExtPointUtils implements ApplicationContextAware {
      * @return 是否为扩展点接口
      */
     public static boolean isExtPointInterface(Class<?> clazz) {
-        return clazz != null && clazz.isAnnotationPresent(ExtPoint.class);
+        return clazz != null && clazz.isAnnotationPresent(ExtensionPoint.class);
     }
     
     /**
@@ -174,9 +174,9 @@ public class ExtPointUtils implements ApplicationContextAware {
         String cacheKey = EXT_POINT_NAME_KEY_PREFIX + extPointInterface.getName();
         return getCacheManager().getFromCache(cacheKey, key -> {
             // 获取@ExtPoint注解
-            ExtPoint extPoint = extPointInterface.getAnnotation(ExtPoint.class);
-            if (extPoint != null && StringUtils.hasText(extPoint.name())) {
-                return extPoint.name();
+            ExtensionPoint extensionPoint = extPointInterface.getAnnotation(ExtensionPoint.class);
+            if (extensionPoint != null && StringUtils.hasText(extensionPoint.name())) {
+                return extensionPoint.name();
             }
             return extPointInterface.getSimpleName();
         });
@@ -212,7 +212,7 @@ public class ExtPointUtils implements ApplicationContextAware {
         
         // 检查是否实现了至少一个带@ExtPoint注解的接口
         for (Class<?> ifc : clazz.getInterfaces()) {
-            if (ifc.isAnnotationPresent(ExtPoint.class)) {
+            if (ifc.isAnnotationPresent(ExtensionPoint.class)) {
                 return true;
             }
         }
@@ -229,7 +229,7 @@ public class ExtPointUtils implements ApplicationContextAware {
         }
         
         for (Class<?> ifc : extensionImpl.getClass().getInterfaces()) {
-            if (ifc.isAnnotationPresent(ExtPoint.class)) {
+            if (ifc.isAnnotationPresent(ExtensionPoint.class)) {
                 return ifc;
             }
         }

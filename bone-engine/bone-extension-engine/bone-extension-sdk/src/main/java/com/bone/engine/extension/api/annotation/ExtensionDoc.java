@@ -4,153 +4,129 @@ import java.lang.annotation.*;
 
 /**
  * 扩展实现文档注解
- * <p>
- * 用于为扩展点实现提供详细的文档信息，支持自动生成API文档和开发工具提示
- * <strong>主要用途：</strong>
- * <ul>
- *   <li>提供扩展实现的详细描述和使用说明</li>
- *   <li>定义扩展实现的适用场景和边界条件</li>
- *   <li>指定扩展实现的配置说明和依赖关系</li>
- *   <li>提供性能考量和注意事项</li>
- *   <li>支持版本变更历史记录</li>
- * </ul>
- * </p>
  *
- * @author Bone Engine Team
- * @version 2.1.0
+ * 为扩展点实现提供详细的文档信息，支持自动文档生成。
+ * 该注解仅在编译期生效，不会增加运行时内存开销。
+ *
+ * @since 1.0.0
+ * @see ExtensionDoc
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.SOURCE)
 @Documented
 public @interface ExtensionDoc {
-    
+
     /**
-     * 扩展实现标题
+     * 扩展实现业务名称（中文）
      */
-    String title() default "";
-    
+    String name() default "";
+
     /**
-     * 扩展实现详细描述
+     * 所属业务领域
+     */
+    String domain() default "";
+
+    /**
+     * 实现分类
+     * 例如：standard, custom, test, mock, integration, thirdparty
+     */
+    String category() default "";
+
+    /**
+     * 详细描述
      */
     String description() default "";
-    
+
     /**
-     * 适用场景描述
+     * 适用场景
      */
-    String applicableScenarios() default "";
-    
+    String scenario() default "";
+
     /**
-     * 适用场景（兼容旧版）
+     * 实现特点
      */
-    String scenarios() default "";
-    
+    String feature() default "";
+
     /**
-     * 与其他实现的差异
+     * 配置说明
      */
-    String differences() default "";
-    
+    String configuration() default "";
+
     /**
-     * 实现细节说明
-     */
-    String implementationDetails() default "";
-    
-    /**
-     * 配置依赖说明
-     */
-    String configurationDependencies() default "";
-    
-    /**
-     * 性能考量
-     */
-    String performanceConsiderations() default "";
-    
-    /**
-     * 性能考量（兼容旧版）
+     * 性能说明
      */
     String performance() default "";
-    
-    /**
-     * 资源消耗说明
-     */
-    String resourceUsage() default "";
-    
+
     /**
      * 注意事项
      */
-    String notes() default "";
-    
+    String note() default "";
+
     /**
-     * 已知限制
+     * 使用限制
      */
-    String limitations() default "";
-    
-    /**
-     * 推荐配置
-     */
-    String recommendedConfig() default "";
-    
+    String limitation() default "";
+
     /**
      * 版本信息
      */
-    String version() default "";
-    
+    String version() default "1.0.0";
+
     /**
      * 作者信息
      */
     String author() default "";
-    
+
     /**
      * 创建日期
      */
-    String createDate() default "";
-    
+    String created() default "";
+
     /**
-     * 常见问题解答
+     * 最后更新日期
+     */
+    String updated() default "";
+
+    /**
+     * 常见问题
      */
     FAQ[] faqs() default {};
-    
+
     /**
-     * 版本变更历史
+     * 变更记录
      */
     Change[] changes() default {};
-    
+
     /**
-     * FAQ内部注解
+     * 与标准实现的差异
+     */
+    String differences() default "";
+
+    /**
+     * 依赖组件
+     */
+    String dependencies() default "";
+
+    /**
+     * 扩展能力
+     * 描述该实现扩展了哪些能力
+     */
+    String capabilities() default "";
+
+    /**
+     * 常见问题
      */
     @interface FAQ {
-        /**
-         * 问题
-         */
         String question();
-        
-        /**
-         * 答案
-         */
         String answer();
     }
-    
+
     /**
-     * 变更记录内部注解
+     * 变更记录
      */
     @interface Change {
-        /**
-         * 版本号
-         */
         String version();
-        
-        /**
-         * 变更内容
-         */
-        String content();
-        
-        /**
-         * 变更日期
-         */
+        String description() default "";
         String date() default "";
-        
-        /**
-         * 变更作者
-         */
-        String author() default "";
     }
 }

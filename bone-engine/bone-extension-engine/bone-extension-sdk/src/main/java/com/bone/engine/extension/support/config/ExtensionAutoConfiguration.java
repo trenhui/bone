@@ -1,6 +1,6 @@
 package com.bone.engine.extension.support.config;
 
-import com.bone.engine.extension.api.annotation.EnableExtPoints;
+import com.bone.engine.extension.api.annotation.EnableExtensionPoints;
 import com.bone.engine.extension.core.lifecycle.DefaultExtensionLifecycle;
 import com.bone.engine.extension.core.lifecycle.ExtensionLifecycle;
 import com.bone.engine.extension.proxy.ExtPointProxyFactory;
@@ -36,8 +36,8 @@ import com.bone.engine.extension.core.router.RouteStatsCollector;
 @Configuration
 @EnableConfigurationProperties(ExtensionProperties.class)
 @ConditionalOnProperty(prefix = "bone.extension", name = "enabled", havingValue = "true", matchIfMissing = true)
-public class UnifiedExtPointAutoConfiguration implements ImportAware {
-    private static final Logger log = LoggerFactory.getLogger(UnifiedExtPointAutoConfiguration.class);
+public class ExtensionAutoConfiguration implements ImportAware {
+    private static final Logger log = LoggerFactory.getLogger(ExtensionAutoConfiguration.class);
 
     private String[] basePackages = {};
     private boolean enableAutoScan = true;
@@ -47,7 +47,7 @@ public class UnifiedExtPointAutoConfiguration implements ImportAware {
     @Override
     public void setImportMetadata(AnnotationMetadata importMetadata) {
         AnnotationAttributes attributes = AnnotationAttributes
-                .fromMap(importMetadata.getAnnotationAttributes(EnableExtPoints.class.getName(), false));
+                .fromMap(importMetadata.getAnnotationAttributes(EnableExtensionPoints.class.getName(), false));
         if (attributes != null) {
             this.basePackages = attributes.getStringArray("basePackages");
             this.enableAutoScan = attributes.getBoolean("enableAutoScan");

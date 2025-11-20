@@ -1,7 +1,7 @@
 package com.bone.engine.extension.core.register;
 
-import com.bone.engine.extension.api.annotation.EnableExtPoints;
-import com.bone.engine.extension.api.annotation.ExtPoint;
+import com.bone.engine.extension.api.annotation.EnableExtensionPoints;
+import com.bone.engine.extension.api.annotation.ExtensionPoint;
 import com.bone.engine.extension.core.proxy.ExtPointFactoryBean;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -56,13 +56,13 @@ public final class ExtPointRegister implements ImportBeanDefinitionRegistrar, Re
         LinkedHashSet<BeanDefinition> candidateComponents = new LinkedHashSet();
         ClassPathScanningCandidateComponentProvider scanner = this.getScanner();
         scanner.setResourceLoader(this.resourceLoader);
-        scanner.addIncludeFilter(new AnnotationTypeFilter(ExtPoint.class));
+        scanner.addIncludeFilter(new AnnotationTypeFilter(ExtensionPoint.class));
         String[] basePackages = this.getBasePackages(metadata);
         for (String basePackage : basePackages) {
             candidateComponents.addAll(scanner.findCandidateComponents(basePackage));
         }
 
-        Map<String, Object> attrs = metadata.getAnnotationAttributes(EnableExtPoints.class.getCanonicalName());
+        Map<String, Object> attrs = metadata.getAnnotationAttributes(EnableExtensionPoints.class.getCanonicalName());
         registerBeanDefinition(metadata, registry, attrs, candidateComponents);
     }
 
@@ -81,7 +81,7 @@ public final class ExtPointRegister implements ImportBeanDefinitionRegistrar, Re
 
             if (candidateComponent instanceof AnnotatedBeanDefinition annotatedBeanDefinition) {
                 AnnotationMetadata annotationMetadata = annotatedBeanDefinition.getMetadata();
-                Assert.isTrue(annotationMetadata.isInterface(), "@ExtPoint can only be specified on an interface");
+                Assert.isTrue(annotationMetadata.isInterface(), "@ExtensionPoint can only be specified on an interface");
                 String className = annotationMetadata.getClassName();
                 BeanDefinitionHolder holder = new BeanDefinitionHolder(beanDefinition, className);
                 BeanDefinitionReaderUtils.registerBeanDefinition(holder, registry);
@@ -103,7 +103,7 @@ public final class ExtPointRegister implements ImportBeanDefinitionRegistrar, Re
     }
 
     protected String[] getBasePackages(AnnotationMetadata importingClassMetadata) {
-        Map<String, Object> attributes = importingClassMetadata.getAnnotationAttributes(EnableExtPoints.class.getCanonicalName());
+        Map<String, Object> attributes = importingClassMetadata.getAnnotationAttributes(EnableExtensionPoints.class.getCanonicalName());
         Set<String> basePackages = new HashSet();
         String[] basePackagesArr = (String[]) ((String[]) attributes.get("basePackages"));
         for (String item : basePackagesArr) {

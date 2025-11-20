@@ -1,6 +1,6 @@
 package com.bone.engine.extension.studio.service.impl;
 
-import com.bone.engine.extension.api.annotation.ExtPoint;
+import com.bone.engine.extension.api.annotation.ExtensionPoint;
 
 import java.util.HashMap;
 import java.util.List;
@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import com.bone.engine.extension.api.annotation.ExtPointDoc;
+import com.bone.engine.extension.api.annotation.ExtensionPointDoc;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
@@ -103,8 +103,8 @@ public class ExtPointServiceImpl implements ExtPointService {
                 if (!interfaceClass.isInterface()) {
                     throw new IllegalArgumentException("指定的类不是接口类型: " + extPoint.getInterfaceName());
                 }
-                if (!interfaceClass.isAnnotationPresent(ExtPoint.class)) {
-                    log.warn("接口 {} 未添加 @ExtPoint 注解", extPoint.getInterfaceName());
+                if (!interfaceClass.isAnnotationPresent(ExtensionPoint.class)) {
+                    log.warn("接口 {} 未添加 @ExtensionPoint 注解", extPoint.getInterfaceName());
                 }
             } catch (ClassNotFoundException e) {
                 log.warn("接口 {} 未找到，将继续创建扩展点", extPoint.getInterfaceName());
@@ -287,7 +287,7 @@ public class ExtPointServiceImpl implements ExtPointService {
             // 使用ClassScanner扫描并处理带有@ExtPoint注解的接口
             int registeredCount = ClassScanner.scanAndProcessAnnotatedClasses(
                 basePackages, 
-                ExtPoint.class, 
+                ExtensionPoint.class,
                 (clazz, annotation) -> {
                     // 验证扩展点接口是否合法
                     if (validateExtPointInterface(clazz)) {
@@ -346,7 +346,7 @@ public class ExtPointServiceImpl implements ExtPointService {
         return true;
     }
     
-    private int registerExtPointInterface(Class<?> interfaceClass, ExtPoint annotation) {
+    private int registerExtPointInterface(Class<?> interfaceClass, ExtensionPoint annotation) {
         try {
             String interfaceName = interfaceClass.getName();
             
@@ -360,9 +360,9 @@ public class ExtPointServiceImpl implements ExtPointService {
             extPoint.setInterfaceName(interfaceName);
             
             // 从ExtPointDoc注解获取domain和category信息
-            ExtPointDoc extPointDoc = interfaceClass.getAnnotation(ExtPointDoc.class);
-            extPoint.setDomain(extPointDoc != null && StringUtils.hasText(extPointDoc.domain()) ? extPointDoc.domain() : "default");
-            extPoint.setCategory(extPointDoc != null && StringUtils.hasText(extPointDoc.category()) ? extPointDoc.category() : "general");
+            ExtensionPointDoc extensionPointDoc = interfaceClass.getAnnotation(ExtensionPointDoc.class);
+            extPoint.setDomain(extensionPointDoc != null && StringUtils.hasText(extensionPointDoc.domain()) ? extensionPointDoc.domain() : "default");
+            extPoint.setCategory(extensionPointDoc != null && StringUtils.hasText(extensionPointDoc.category()) ? extensionPointDoc.category() : "general");
                 extPoint.setType("interface");
                 extPoint.setVersion("1.0.0");
                 extPoint.setEnabled(true);

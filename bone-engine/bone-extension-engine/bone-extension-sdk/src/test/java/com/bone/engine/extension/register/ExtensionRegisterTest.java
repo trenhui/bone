@@ -1,11 +1,11 @@
 package com.bone.engine.extension.register;
 
-import com.bone.engine.extension.api.annotation.ExtPoint;
+import com.bone.engine.extension.api.annotation.ExtensionPoint;
 import com.bone.engine.extension.api.annotation.Extension;
+import com.bone.engine.extension.api.annotation.ExtensionPointDoc;
 import com.bone.engine.extension.core.register.ExtensionRegister;
 import com.bone.engine.extension.core.event.ExtensionEventPublisher;
 import com.bone.engine.extension.support.repository.ExtPointRepository;
-import com.bone.engine.extension.api.annotation.ExtPointDoc;
 import com.bone.engine.extension.api.annotation.ExtensionDoc;
 import com.bone.engine.extension.support.config.ExtensionProperties;
 
@@ -157,11 +157,11 @@ public class ExtensionRegisterTest {
      * <p>
      * 定义用于测试扩展注册功能的主接口
      */
-    @ExtPoint(
+    @ExtensionPoint(
         name = "注册测试扩展点",
         description = "用于测试扩展注册功能的主扩展点接口"
     )
-    @ExtPointDoc(
+    @ExtensionPointDoc(
         title = "注册测试主扩展点接口",
         domain = "扩展引擎",
         category = "注册机制",
@@ -237,11 +237,11 @@ public class ExtensionRegisterTest {
      * <p>
      * 用于测试一个实现类可以同时实现多个扩展点接口的情况
      */
-    @ExtPoint(
+    @ExtensionPoint(
         name = "第二个测试扩展点",
         description = "用于测试多扩展点实现的辅助接口"
     )
-    @ExtPointDoc(
+    @ExtensionPointDoc(
         title = "多实现测试扩展点接口",
         domain = "扩展引擎",
         category = "多实现测试",

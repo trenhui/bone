@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import com.bone.engine.extension.api.annotation.ExtPoint;
+import com.bone.engine.extension.api.annotation.ExtensionPoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
@@ -332,7 +332,7 @@ public class ExtensionServiceImpl implements ExtensionService {
             
             // 查找对应的扩展点实体
             for (Class<?> intf : interfaces) {
-                if (intf.isAnnotationPresent(ExtPoint.class)) {
+                if (intf.isAnnotationPresent(ExtensionPoint.class)) {
                     ExtPointEntity extPoint = extPointRepository.findByInterfaceName(intf.getName())
                             .orElseGet(() -> {
                                 // 如果扩展点不存在，创建新的扩展点

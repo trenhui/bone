@@ -1,6 +1,6 @@
 package com.bone.engine.extension.support.validator;
 
-import com.bone.engine.extension.api.annotation.ExtPoint;
+import com.bone.engine.extension.api.annotation.ExtensionPoint;
 import com.bone.engine.extension.api.annotation.Extension;
 import com.bone.engine.extension.support.repository.ExtPointRepository;
 import com.bone.engine.extension.support.expression.ExpressionEvaluator;
@@ -225,7 +225,7 @@ public class ExtPointValidator implements ApplicationListener<ContextRefreshedEv
                 Class<?>[] interfaces = bean.getClass().getInterfaces();
                 
                 for (Class<?> iface : interfaces) {
-                    if (iface.isAnnotationPresent(ExtPoint.class)) {
+                    if (iface.isAnnotationPresent(ExtensionPoint.class)) {
                         String routeKey = ExtPointUtils.generateRouteKey(
                                         iface,
                                         extension.tenantCode(),

@@ -983,7 +983,7 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
 
     
     public void clearCache(Class<?> extPointClass) {
-        Assert.notNull(extPointClass, "ExtPoint class must not be null");
+        Assert.notNull(extPointClass, "ExtensionPoint class must not be null");
         
         // 使用CacheManager清理缓存
         cacheManager.clearCache(extPointClass);
@@ -1003,7 +1003,7 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     
     @SuppressWarnings("unchecked")
     public <T> void registerImplementation(Class<T> extPointClass, T implementation) {
-        Assert.notNull(extPointClass, "ExtPoint class must not be null");
+        Assert.notNull(extPointClass, "ExtensionPoint class must not be null");
         Assert.notNull(implementation, "Implementation must not be null");
         
         // 使用统一的注册服务
@@ -1032,7 +1032,7 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
     
     @SuppressWarnings("unchecked")
     public <T> void unregisterImplementation(Class<T> extPointClass, T implementation) {
-        Assert.notNull(extPointClass, "ExtPoint class must not be null");
+        Assert.notNull(extPointClass, "ExtensionPoint class must not be null");
         Assert.notNull(implementation, "Implementation must not be null");
         
         // 使用统一的注册服务
@@ -1061,7 +1061,7 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
      */
     @SuppressWarnings("unchecked")
     public <T> void setDefaultImplementation(Class<T> extPointClass, T implementation) {
-        Assert.notNull(extPointClass, "ExtPoint class must not be null");
+        Assert.notNull(extPointClass, "ExtensionPoint class must not be null");
         Assert.notNull(implementation, "Implementation must not be null");
         
         // 使用统一的注册服务
@@ -1134,7 +1134,7 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
                     }
                     
                     if (!registered) {
-                        log.warn("Implementation bean {} has @Extension annotation but implements no @ExtPoint interfaces", 
+                        log.warn("Implementation bean {} has @Extension annotation but implements no @ExtensionPoint interfaces",
                                 beanName);
                         failedRegistrations++;
                     }
@@ -1149,7 +1149,7 @@ public class DefaultExtPointRouter implements ExtPointRouter, SmartInitializingS
             int extPointCount = extensionRegistry != null ? extensionRegistry.getExtPointCount() : 0;
             
             long costTime = System.currentTimeMillis() - startTime;
-            log.info("ExtPoint router initialized in {}ms with {} extension implementations across {} extension points", 
+            log.info("ExtensionPoint router initialized in {}ms with {} extension implementations across {} extension points",
                     costTime, totalExtensions, extPointCount);
             
             if (failedRegistrations > 0) {
