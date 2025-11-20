@@ -1,4 +1,4 @@
-package com.bone.engine.extension.event;
+package com.bone.engine.extension.core.event;
 
 import com.bone.engine.extension.support.context.BizContext;
 import org.springframework.context.ApplicationEvent;

@@ -42,8 +42,8 @@ class BizContext<T> {
 
 // 模拟ExtensionContextManager类
 class ExtensionContextManager {
-    public static ExtensionScope with(BizContext<?> context) {
-        return new ExtensionScope();
+    public static com.bone.engine.extension.support.context.ExtensionScope with(BizContext<?> context) {
+        return new com.bone.engine.extension.support.context.ExtensionScope();
     }
 }
 

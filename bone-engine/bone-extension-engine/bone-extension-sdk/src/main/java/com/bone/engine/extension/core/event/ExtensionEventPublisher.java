@@ -1,7 +1,7 @@
-package com.bone.engine.extension.event;
+package com.bone.engine.extension.core.event;
 
 import com.bone.engine.extension.support.context.BizContext;
-import com.bone.engine.extension.event.ExtensionEvent.EventType;
+import com.bone.engine.extension.core.event.ExtensionEvent.EventType;
 
 /**
  * 扩展点事件发布器接口，定义扩展点事件的发布机制

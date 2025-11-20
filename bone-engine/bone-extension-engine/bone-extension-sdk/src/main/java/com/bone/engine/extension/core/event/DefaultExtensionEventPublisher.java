@@ -1,8 +1,7 @@
-package com.bone.engine.extension.event;
+package com.bone.engine.extension.core.event;
 
 import com.bone.engine.extension.support.context.BizContext;
 import com.bone.engine.extension.support.config.ExtensionAsyncConfig;
-import com.bone.engine.extension.event.ExtensionEvent.EventType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -47,7 +46,7 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
     private volatile boolean enabled = true;
     
     // 启用的事件类型集合
-    private final Set<EventType> enabledEventTypes = new CopyOnWriteArraySet<>(EnumSet.allOf(EventType.class));
+    private final Set<ExtensionEvent.EventType> enabledEventTypes = new CopyOnWriteArraySet<>(EnumSet.allOf(ExtensionEvent.EventType.class));
     
     // 是否异步发布事件
     private boolean asyncPublish = true; // 默认启用异步发布
@@ -265,7 +264,7 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
     @Override
     public void publishBeforeRegister(Object source, String extensionPointName, String extensionImplName) {
         ExtensionEvent<?> event = ExtensionEvent.builder(source)
-                .eventType(EventType.BEFORE_REGISTER)
+                .eventType(ExtensionEvent.EventType.BEFORE_REGISTER)
                 .extensionPointName(extensionPointName)
                 .extensionImplName(extensionImplName)
                 .build();
@@ -275,7 +274,7 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
     @Override
     public void publishAfterRegister(Object source, String extensionPointName, String extensionImplName) {
         ExtensionEvent<?> event = ExtensionEvent.builder(source)
-                .eventType(EventType.AFTER_REGISTER)
+                .eventType(ExtensionEvent.EventType.AFTER_REGISTER)
                 .extensionPointName(extensionPointName)
                 .extensionImplName(extensionImplName)
                 .build();
@@ -286,7 +285,7 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
     public <T> void publishBeforeInvoke(Object source, String extensionPointName, 
                                       String extensionImplName, BizContext<T> bizContext) {
         ExtensionEvent<T> event = ExtensionEvent.<T>builder(source)
-                .eventType(EventType.BEFORE_INVOKE)
+                .eventType(ExtensionEvent.EventType.BEFORE_INVOKE)
                 .extensionPointName(extensionPointName)
                 .extensionImplName(extensionImplName)
                 .bizContext(bizContext)
@@ -299,7 +298,7 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
                                             String extensionImplName, BizContext<T> bizContext,
                                             Object result, long executionTimeMs) {
         ExtensionEvent<T> event = ExtensionEvent.<T>builder(source)
-                .eventType(EventType.AFTER_INVOKE_SUCCESS)
+                .eventType(ExtensionEvent.EventType.AFTER_INVOKE_SUCCESS)
                 .extensionPointName(extensionPointName)
                 .extensionImplName(extensionImplName)
                 .bizContext(bizContext)
@@ -314,7 +313,7 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
                                             String extensionImplName, BizContext<T> bizContext,
                                             Throwable error, long executionTimeMs) {
         ExtensionEvent<T> event = ExtensionEvent.<T>builder(source)
-                .eventType(EventType.AFTER_INVOKE_FAILURE)
+                .eventType(ExtensionEvent.EventType.AFTER_INVOKE_FAILURE)
                 .extensionPointName(extensionPointName)
                 .extensionImplName(extensionImplName)
                 .bizContext(bizContext)
@@ -327,7 +326,7 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
     @Override
     public <T> void publishExtensionNotFound(Object source, String extensionPointName, BizContext<T> bizContext) {
         ExtensionEvent<T> event = ExtensionEvent.<T>builder(source)
-                .eventType(EventType.EXTENSION_NOT_FOUND)
+                .eventType(ExtensionEvent.EventType.EXTENSION_NOT_FOUND)
                 .extensionPointName(extensionPointName)
                 .bizContext(bizContext)
                 .build();
@@ -338,7 +337,7 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
     public <T> void publishRoutingDecision(Object source, String extensionPointName, 
                                         String selectedImpl, BizContext<T> bizContext) {
         ExtensionEvent<T> event = ExtensionEvent.<T>builder(source)
-                .eventType(EventType.ROUTING_DECISION)
+                .eventType(ExtensionEvent.EventType.ROUTING_DECISION)
                 .extensionPointName(extensionPointName)
                 .extensionImplName(selectedImpl)
                 .bizContext(bizContext)
@@ -349,7 +348,7 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
     @Override
     public <T> void publishCacheHit(Object source, String extensionPointName, BizContext<T> bizContext) {
         ExtensionEvent<T> event = ExtensionEvent.<T>builder(source)
-                .eventType(EventType.CACHE_HIT)
+                .eventType(ExtensionEvent.EventType.CACHE_HIT)
                 .extensionPointName(extensionPointName)
                 .bizContext(bizContext)
                 .build();
@@ -359,7 +358,7 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
     @Override
     public <T> void publishCacheMiss(Object source, String extensionPointName, BizContext<T> bizContext) {
         ExtensionEvent<T> event = ExtensionEvent.<T>builder(source)
-                .eventType(EventType.CACHE_MISS)
+                .eventType(ExtensionEvent.EventType.CACHE_MISS)
                 .extensionPointName(extensionPointName)
                 .bizContext(bizContext)
                 .build();
@@ -369,7 +368,7 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
     @Override
     public void publishConfigurationChanged(Object source, String extensionPointName, String changeType) {
         ExtensionEvent<?> event = ExtensionEvent.builder(source)
-                .eventType(EventType.CONFIGURATION_CHANGED)
+                .eventType(ExtensionEvent.EventType.CONFIGURATION_CHANGED)
                 .extensionPointName(extensionPointName)
                 .build();
         publishEvent(event);
@@ -387,12 +386,12 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
     }
     
     @Override
-    public boolean isEventTypeEnabled(EventType eventType) {
+    public boolean isEventTypeEnabled(ExtensionEvent.EventType eventType) {
         return eventType != null && enabledEventTypes.contains(eventType);
     }
     
     @Override
-    public void setEventTypeEnabled(EventType eventType, boolean enabled) {
+    public void setEventTypeEnabled(ExtensionEvent.EventType eventType, boolean enabled) {
         if (eventType == null) {
             return;
         }
@@ -410,7 +409,7 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
     public void publishVersionRegister(Object source, String extensionPointName, String version, String extensionImplName) {
         // 由于ExtensionEvent.Builder没有attribute方法，我们使用extensionImplName字段存储版本信息
         ExtensionEvent<?> event = ExtensionEvent.builder(source)
-                .eventType(EventType.VERSION_REGISTER)
+                .eventType(ExtensionEvent.EventType.VERSION_REGISTER)
                 .extensionPointName(extensionPointName)
                 .extensionImplName(extensionImplName + "[version=" + version + "]")
                 .build();
@@ -422,7 +421,7 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
                                        String newVersion, BizContext<T> bizContext) {
         // 使用extensionImplName字段存储版本切换信息
         ExtensionEvent<T> event = ExtensionEvent.<T>builder(source)
-                .eventType(EventType.VERSION_SWITCH)
+                .eventType(ExtensionEvent.EventType.VERSION_SWITCH)
                 .extensionPointName(extensionPointName)
                 .bizContext(bizContext)
                 .extensionImplName(oldVersion + "->" + newVersion)
@@ -436,7 +435,7 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
                                                  BizContext<T> bizContext) {
         // 使用extensionImplName字段存储兼容性检查结果
         ExtensionEvent<T> event = ExtensionEvent.<T>builder(source)
-                .eventType(EventType.VERSION_COMPATIBILITY_CHECK)
+                .eventType(ExtensionEvent.EventType.VERSION_COMPATIBILITY_CHECK)
                 .extensionPointName(extensionPointName)
                 .bizContext(bizContext)
                 .extensionImplName(targetVersion + "[compatible=" + isCompatible + "]")
@@ -450,7 +449,7 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
                                               BizContext<T> bizContext) {
         // 使用extensionImplName字段存储废弃版本信息
         ExtensionEvent<T> event = ExtensionEvent.<T>builder(source)
-                .eventType(EventType.DEPRECATED_VERSION_USED)
+                .eventType(ExtensionEvent.EventType.DEPRECATED_VERSION_USED)
                 .extensionPointName(extensionPointName)
                 .bizContext(bizContext)
                 .extensionImplName(deprecatedVersion + "(recommended: " + recommendedVersion + ")")
@@ -524,7 +523,7 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
      * 启用所有事件类型
      */
     public void enableAllEventTypes() {
-        enabledEventTypes.addAll(EnumSet.allOf(EventType.class));
+        enabledEventTypes.addAll(EnumSet.allOf(ExtensionEvent.EventType.class));
         log.info("All event types enabled");
     }
     
@@ -539,7 +538,7 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
     /**
      * 启用指定的事件类型集合
      */
-    public void enableEventTypes(Set<EventType> eventTypes) {
+    public void enableEventTypes(Set<ExtensionEvent.EventType> eventTypes) {
         if (eventTypes != null) {
             enabledEventTypes.addAll(eventTypes);
             log.info("Enabled event types: {}", eventTypes);
@@ -549,7 +548,7 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
     /**
      * 获取当前启用的事件类型集合
      */
-    public Set<EventType> getEnabledEventTypes() {
+    public Set<ExtensionEvent.EventType> getEnabledEventTypes() {
         return new CopyOnWriteArraySet<>(enabledEventTypes);
     }
 }
