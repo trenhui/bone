@@ -44,11 +44,11 @@ public final class ExtPointRegister implements ImportBeanDefinitionRegistrar, Re
 
     public void registerBeanDefinitions(AnnotationMetadata metadata, BeanDefinitionRegistry registry) {
         this.registerExtPoints(metadata, registry);
-        this.registerExtProviders(metadata, registry);
+        this.registerExtensions(metadata, registry);
     }
 
-    private void registerExtProviders(AnnotationMetadata metadata, BeanDefinitionRegistry registry) {
-        ExtProviderBeanDefinitionScanner scanner = new ExtProviderBeanDefinitionScanner(registry);
+    private void registerExtensions(AnnotationMetadata metadata, BeanDefinitionRegistry registry) {
+        ExtensionBeanDefinitionScanner scanner = new ExtensionBeanDefinitionScanner(registry);
         scanner.scan(getBasePackages(metadata));
     }
 

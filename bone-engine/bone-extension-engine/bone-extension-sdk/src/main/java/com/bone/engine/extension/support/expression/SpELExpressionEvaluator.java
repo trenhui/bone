@@ -24,8 +24,8 @@ import java.util.concurrent.TimeUnit;
  *
  * @author renhui.trh 2023-11-9
  */
-public final class ExpressionEvaluator {
-    private static final Logger log = LoggerFactory.getLogger(ExpressionEvaluator.class);
+public final class SpELExpressionEvaluator {
+    private static final Logger log = LoggerFactory.getLogger(SpELExpressionEvaluator.class);
     // 最大缓存表达式数量，避免内存溢出
     private static final int MAX_CACHE_SIZE = 1000;
     // 表达式缓存，使用Caffeine提供高性能LRU缓存
@@ -45,7 +45,7 @@ public final class ExpressionEvaluator {
     /**
      * 私有构造函数，防止实例化
      */
-    private ExpressionEvaluator() {
+    private SpELExpressionEvaluator() {
         throw new AssertionError("Cannot instantiate utility class");
     }
 

@@ -1,5 +1,7 @@
 package com.bone.engine.extension.api.model.definition;
 
+import com.bone.engine.extension.support.config.ExtPointConstants;
+import lombok.Builder;
 import lombok.Data;
 import java.io.Serializable;
 
@@ -7,6 +9,7 @@ import java.io.Serializable;
  * 扩展实现核心定义 - 路由匹配对象
  */
 @Data
+@Builder
 public class ExtensionDefinition implements Comparable<ExtensionDefinition>, Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -17,7 +20,8 @@ public class ExtensionDefinition implements Comparable<ExtensionDefinition>, Ser
 
     // 路由维度
     private String tenant = "*";
-    private String biz = "*";
+    private String bizCode = "*";
+    private String useCase = "*";
     private String scenario = "*";
     private String env = "*";
     private String version = "1.0.0";
@@ -36,6 +40,14 @@ public class ExtensionDefinition implements Comparable<ExtensionDefinition>, Ser
     private String endTime = "";
     private boolean async = false;
     private int timeout = 0;
+
+    public String getBizIdentity() {
+        return tenant + ExtPointConstants.SEPARATOR
+                + bizCode + ExtPointConstants.SEPARATOR
+                + useCase + ExtPointConstants.SEPARATOR
+                + scenario;
+    }
+
 
     @Override
     public int compareTo(ExtensionDefinition o) {
