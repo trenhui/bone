@@ -57,7 +57,7 @@ class App extends React.Component {
     // communicator.on('extension.created', this.handleExtensionCreated);
     // communicator.on('extension.updated', this.handleExtensionUpdated);
     // communicator.on('extension.deleted', this.handleExtensionDeleted);
-    // communicator.on('extPoint.updated', this.handleExtPointUpdated);
+    // communicator.on('extensionPoint.updated', this.handleExtPointUpdated);
     
     // 注册组件资源管理器到全局统计（仅开发环境）
     if (process.env.NODE_ENV === 'development') {
@@ -132,7 +132,7 @@ class App extends React.Component {
   async loadExtensionPoints() {
     try {
       // 使用组件级别的资源管理器
-      const response = await ApiService.extPoint.getExtPoints({});
+      const response = await ApiService.extensionPoint.getExtPoints({});
       const { data } = response;
       
       this.setState({
@@ -634,20 +634,20 @@ class App extends React.Component {
                           <div className="table-cell">返回类型</div>
                           <div className="table-cell">使用次数</div>
                         </div>
-                        {extensionPoints.map(extPoint => (
-                          <div key={extPoint.id} className="table-row">
-                            <div className="table-cell">{extPoint.id}</div>
-                            <div className="table-cell">{extPoint.name}</div>
-                            <div className="table-cell">{extPoint.description}</div>
-                            <div className="table-cell">{extPoint.interfaceClass}</div>
+                        {extensionPoints.map(extensionPoint => (
+                          <div key={extensionPoint.id} className="table-row">
+                            <div className="table-cell">{extensionPoint.id}</div>
+                            <div className="table-cell">{extensionPoint.name}</div>
+                            <div className="table-cell">{extensionPoint.description}</div>
+                            <div className="table-cell">{extensionPoint.interfaceClass}</div>
                             <div className="table-cell">
-                              {Array.isArray(extPoint.parameters) ? 
-                                extPoint.parameters.map(p => `${p.name}: ${p.type}`).join(', ') : 
-                                extPoint.parameters}
+                              {Array.isArray(extensionPoint.parameters) ?
+                                extensionPoint.parameters.map(p => `${p.name}: ${p.type}`).join(', ') :
+                                extensionPoint.parameters}
                             </div>
-                            <div className="table-cell">{extPoint.returnType}</div>
+                            <div className="table-cell">{extensionPoint.returnType}</div>
                             <div className="table-cell">
-                              {extensions.filter(e => e.extPointId === extPoint.id).length}
+                              {extensions.filter(e => e.extPointId === extensionPoint.id).length}
                             </div>
                           </div>
                         ))}

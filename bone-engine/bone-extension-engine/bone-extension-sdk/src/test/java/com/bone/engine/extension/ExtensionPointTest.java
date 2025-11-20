@@ -19,7 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 // 直接在测试类内部定义模拟类，避免可见性问题
-public class ExtPointTest {
+public class ExtensionPointTest {
 
     // 模拟BizContext类
     public static class BizContext<T> {

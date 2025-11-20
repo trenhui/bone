@@ -1,7 +1,7 @@
 package com.bone.example.extension.medical;
 
-import com.bone.engine.extension.api.annotation.ExtPoint;
-import com.bone.engine.extension.api.annotation.ExtPointDoc;
+import com.bone.engine.extension.api.annotation.ExtensionPoint;
+import com.bone.engine.extension.api.annotation.ExtensionPointDoc;
 import com.bone.engine.extension.support.context.BizContext;
 import com.bone.example.extension.result.ValidationResult;
 
@@ -19,11 +19,11 @@ import com.bone.example.extension.result.ValidationResult;
  *     <li>生成理赔结果</li>
  * </ul>
  */
-@ExtPoint(
+@ExtensionPoint(
     name = "医疗保险理赔扩展点",
     description = "医疗保险理赔处理标准扩展点，支持不同类型理赔处理的统一接口"
 )
-@ExtPointDoc(
+@ExtensionPointDoc(
     title = "医疗保险理赔扩展点接口",
     domain = "医疗系统",
     category = "理赔处理",

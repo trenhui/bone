@@ -5,7 +5,7 @@ package com.bone.engine.extension.core.register;
 //import com.bone.core.extension.repository.MemExtPointRepository;
 //import com.bone.core.extension.spec.ExtProviderSpec;
 import com.bone.core.util.ReflectionUtil;
-import com.bone.engine.extension.api.annotation.ExtPoint;
+import com.bone.engine.extension.api.annotation.ExtensionPoint;
 import com.bone.engine.extension.api.annotation.Extension;
 import com.bone.engine.extension.support.repository.ExtPointRepository;
 import com.bone.engine.extension.support.repository.ExtPointRepositoryFactory;
@@ -63,7 +63,7 @@ public class ExtensionRegister implements ApplicationContextAware {
                 .build();
 
         ExtPointRepository extProviderRepo = ExtPointRepositoryFactory.createExtPointRepository(MemExtPointRepository.class);
-        Class<?> extPointClass = ReflectionUtil.getInterfaceByAnnotation(extProviderClass, ExtPoint.class);
+        Class<?> extPointClass = ReflectionUtil.getInterfaceByAnnotation(extProviderClass, ExtensionPoint.class);
 
         if (!StringUtils.hasText(extProviderSpec.getExpression())) {
             Object preVal = extProviderRepo.put(extPointClass.getCanonicalName() + "." + extProviderSpec.getBizIdentity(), extProvider);

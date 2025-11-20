@@ -1,7 +1,7 @@
 package com.bone.example.extension.payment;
 
-import com.bone.engine.extension.api.annotation.ExtPoint;
-import com.bone.engine.extension.api.annotation.ExtPointDoc;
+import com.bone.engine.extension.api.annotation.ExtensionPoint;
+import com.bone.engine.extension.api.annotation.ExtensionPointDoc;
 import com.bone.engine.extension.support.context.BizContext;
 import com.bone.example.extension.result.ValidationResult;
 
@@ -11,11 +11,11 @@ import com.bone.example.extension.result.ValidationResult;
  * 定义支付处理相关的扩展能力，包括支付前验证、支付金额计算和支付后处理。
  * 提供统一的扩展点机制，允许不同业务场景定制化支付流程。
  */
-@ExtPoint(
+@ExtensionPoint(
     name = "支付扩展点",
     description = "支付处理相关的扩展点，支持支付前验证、金额计算和支付后处理"
 )
-@ExtPointDoc(
+@ExtensionPointDoc(
     title = "支付处理扩展点接口",
     domain = "支付系统",
     category = "交易处理",

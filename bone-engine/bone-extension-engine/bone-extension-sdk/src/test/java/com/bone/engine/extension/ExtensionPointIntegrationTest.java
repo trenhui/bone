@@ -1,7 +1,7 @@
 package com.bone.engine.extension;
 
-import com.bone.engine.extension.api.annotation.ExtPoint;
-import com.bone.engine.extension.api.annotation.ExtPointDoc;
+import com.bone.engine.extension.api.annotation.ExtensionPoint;
+import com.bone.engine.extension.api.annotation.ExtensionPointDoc;
 import com.bone.engine.extension.api.annotation.Extension;
 import com.bone.engine.extension.api.annotation.ExtensionDoc;
 import org.junit.jupiter.api.BeforeEach;
@@ -78,7 +78,7 @@ interface TestExtPoint {
  * 扩展点集成测试类
  * 全面测试扩展点框架的各项功能，包括基础功能、多租户隔离、线程安全、动态注册等复杂场景
  */
-public class ExtPointIntegrationTest {
+public class ExtensionPointIntegrationTest {
 
     private Object proxyFactory;
     private TestExtPointRepository repository;
@@ -664,12 +664,12 @@ public class ExtPointIntegrationTest {
     
     // 订单服务扩展点接口
     // 运行时配置 - 专注于扩展点注册和行为控制
-    @ExtPoint(
+    @ExtensionPoint(
         name = "订单服务扩展点",
         description = "处理订单业务的核心扩展点接口"
     )
     // 接口文档 - 提供使用指导（编译时注解，不影响运行时）
-    @ExtPointDoc(
+    @ExtensionPointDoc(
         title = "订单服务扩展点接口",
         domain = "订单系统",
         category = "业务处理",
@@ -677,7 +677,7 @@ public class ExtPointIntegrationTest {
         usage = "1. 在订单处理流程中调用\n2. 根据不同租户或业务场景自动选择合适的实现\n3. 支持动态注册和切换实现",
         bestPractices = "1. 确保实现类的幂等性\n2. 根据租户隔离实现\n3. 考虑线程安全问题\n4. 动态实现应谨慎使用",
         params = {
-            @ExtPointDoc.Param(
+            @ExtensionPointDoc.Param(
                 name = "orderId",
                 type = "String",
                 description = "订单ID",
@@ -685,7 +685,7 @@ public class ExtPointIntegrationTest {
                 example = "ORD1234567890"
             )
         },
-        returnInfo = @ExtPointDoc.Return(
+        returnInfo = @ExtensionPointDoc.Return(
             type = "String",
             description = "处理结果",
             example = "Default Order Processing - ORD1234567890"
@@ -844,12 +844,12 @@ public class ExtPointIntegrationTest {
     
     // 用户服务扩展点接口
     // 运行时配置 - 提供扩展点基本信息和默认配置
-    @ExtPoint(
+    @ExtensionPoint(
         name = "用户服务扩展点",
         description = "处理用户相关操作的扩展点接口"
     )
     // 接口文档 - 详细描述扩展点功能、参数和使用场景（编译时注解，不影响运行时）
-    @ExtPointDoc(
+    @ExtensionPointDoc(
         title = "用户服务扩展点",
         domain = "用户管理",
         category = "核心服务",
@@ -857,7 +857,7 @@ public class ExtPointIntegrationTest {
         usage = "1. 在需要与用户交互的场景中使用\n2. 用于生成欢迎信息、用户问候等\n3. 支持多租户场景的用户交互",
         bestPractices = "1. 保持接口简洁\n2. 考虑国际化支持\n3. 确保线程安全",
         params = {
-            @ExtPointDoc.Param(
+            @ExtensionPointDoc.Param(
                 name = "username",
                 type = "String",
                 description = "用户名",
@@ -865,7 +865,7 @@ public class ExtPointIntegrationTest {
                 example = "john_doe"
             )
         },
-        returnInfo = @ExtPointDoc.Return(
+        returnInfo = @ExtensionPointDoc.Return(
             type = "String",
             description = "问候信息",
             example = "Default User Greeting - john_doe"
@@ -913,12 +913,12 @@ public class ExtPointIntegrationTest {
     
     // 通知服务扩展点接口
     // 运行时配置 - 提供扩展点基本信息和默认配置
-    @ExtPoint(
+    @ExtensionPoint(
         name = "通知服务扩展点",
         description = "处理通知发送的扩展点接口"
     )
     // 接口文档 - 详细描述扩展点功能、参数和使用场景（编译时注解，不影响运行时）
-    @ExtPointDoc(
+    @ExtensionPointDoc(
         title = "通知服务扩展点接口",
         domain = "消息系统",
         category = "通知",
@@ -926,7 +926,7 @@ public class ExtPointIntegrationTest {
         usage = "1. 在需要发送各种通知的场景中使用\n2. 用于发送订单确认、状态更新等通知\n3. 支持多种通知渠道扩展",
         bestPractices = "1. 确保通知的可靠性\n2. 考虑消息重试机制\n3. 支持多种通知渠道",
         params = {
-            @ExtPointDoc.Param(
+            @ExtensionPointDoc.Param(
                 name = "target",
                 type = "String",
                 description = "通知目标",
@@ -934,7 +934,7 @@ public class ExtPointIntegrationTest {
                 example = "user@example.com"
             )
         },
-        returnInfo = @ExtPointDoc.Return(
+        returnInfo = @ExtensionPointDoc.Return(
             type = "String",
             description = "发送结果",
             example = "Notification sent to user@example.com"

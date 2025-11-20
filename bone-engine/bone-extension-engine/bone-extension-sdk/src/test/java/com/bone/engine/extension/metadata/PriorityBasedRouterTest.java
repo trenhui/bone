@@ -1,6 +1,6 @@
 package com.bone.engine.extension.metadata;
 
-import com.bone.engine.extension.api.annotation.ExtPoint;
+import com.bone.engine.extension.api.annotation.ExtensionPoint;
 import com.bone.engine.extension.api.annotation.Extension;
 import org.junit.jupiter.api.Test;
 
@@ -20,7 +20,7 @@ public class PriorityBasedRouterTest {
         assertTrue(true, "测试通过");
     }
     
-    @ExtPoint
+    @ExtensionPoint
     public interface TestExtPoint {
         String getName();
     }

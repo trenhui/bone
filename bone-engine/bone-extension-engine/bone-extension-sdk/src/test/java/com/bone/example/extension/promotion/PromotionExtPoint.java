@@ -1,8 +1,8 @@
 package com.bone.example.extension.promotion;
 
+import com.bone.engine.extension.api.annotation.ExtensionPoint;
 import com.bone.engine.extension.support.context.BizContext;
-import com.bone.engine.extension.api.annotation.ExtPoint;
-import com.bone.engine.extension.api.annotation.ExtPointDoc;
+import com.bone.engine.extension.api.annotation.ExtensionPointDoc;
 
 /**
  * 促销策略扩展点
@@ -11,12 +11,12 @@ import com.bone.engine.extension.api.annotation.ExtPointDoc;
  * 提供了统一的促销策略实现规范，支持多种促销类型的灵活扩展。
  */
 // 运行时配置 - 提供扩展点基本信息和默认配置
-@ExtPoint(
+@ExtensionPoint(
     name = "促销策略扩展点",
     description = "处理各类促销活动计算和适用性检查"
 )
 // 接口文档 - 详细描述扩展点功能、参数和使用场景（编译时注解，不影响运行时）
-@ExtPointDoc(
+@ExtensionPointDoc(
     title = "促销策略扩展点接口",
     domain = "营销",
     category = "促销计算",
@@ -24,14 +24,14 @@ import com.bone.engine.extension.api.annotation.ExtPointDoc;
     usage = "1. 实现接口并添加@Extension注解\n2. 根据促销类型配置路由条件\n3. 注入到服务层使用",
     bestPractices = "1. 确保实现的幂等性\n2. 性能敏感场景考虑缓存\n3. 区分不同促销类型的实现\n4. 使用BigDecimal进行金额计算以确保精度",
     params = {
-        @ExtPointDoc.Param(
+        @ExtensionPointDoc.Param(
             name = "context",
             type = "BizContext<PromotionRequest>",
             description = "包含促销请求信息的业务上下文",
             required = true
         )
     },
-    returnInfo = @ExtPointDoc.Return(
+    returnInfo = @ExtensionPointDoc.Return(
             type = "PromotionResult",
             description = "促销计算结果，包含优惠金额等信息",
             example = "PromotionResult.builder().discountAmount(BigDecimal.valueOf(100)).discountType(\"PERCENT\").build()"
