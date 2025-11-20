@@ -3,7 +3,7 @@ package com.bone.engine.extension.register;
 import com.bone.engine.extension.api.annotation.ExtPoint;
 import com.bone.engine.extension.api.annotation.Extension;
 import com.bone.engine.extension.core.register.ExtensionRegister;
-import com.bone.engine.extension.event.ExtensionEventPublisher;
+import com.bone.engine.extension.core.event.ExtensionEventPublisher;
 import com.bone.engine.extension.support.repository.ExtPointRepository;
 import com.bone.engine.extension.api.annotation.ExtPointDoc;
 import com.bone.engine.extension.api.annotation.ExtensionDoc;

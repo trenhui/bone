@@ -1,7 +1,7 @@
 package com.bone.engine.extension.support.expression;
 
 import com.bone.engine.extension.support.context.BizContext;
-import com.bone.engine.extension.ExtensionContextManager;
+import com.bone.engine.extension.support.context.ExtensionContextManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.expression.EvaluationContext;

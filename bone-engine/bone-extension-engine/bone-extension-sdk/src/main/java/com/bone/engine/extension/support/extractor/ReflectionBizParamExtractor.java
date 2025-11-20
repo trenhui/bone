@@ -1,6 +1,6 @@
 package com.bone.engine.extension.support.extractor;
 
-import com.bone.engine.extension.ExtPointConstants;
+import com.bone.engine.extension.support.config.ExtPointConstants;
 
 import java.lang.reflect.Field;
 

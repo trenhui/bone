@@ -1,7 +1,6 @@
-package com.bone.engine.extension;
+package com.bone.engine.extension.support.context;
 
 import com.bone.core.threadlocal.TransmittableThreadLocal;
-import com.bone.engine.extension.support.context.BizContext;
 import com.bone.engine.extension.support.extractor.BizParamExtractor;
 import com.bone.engine.extension.support.extractor.ReflectionBizParamExtractor;
 import jakarta.servlet.http.HttpServletRequest;

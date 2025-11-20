@@ -1,4 +1,4 @@
-package com.bone.engine.extension;
+package com.bone.engine.extension.support.config;
 
 /**
  * 扩展点框架常量定义

@@ -1,6 +1,5 @@
-package com.bone.engine.extension;
+package com.bone.engine.extension.support.context;
 
-import com.bone.engine.extension.support.context.BizContext;
 import org.springframework.lang.Nullable;
 
 /**

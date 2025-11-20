@@ -1,4 +1,4 @@
-package com.bone.engine.extension;
+package com.bone.engine.extension.support.validator;
 
 import com.bone.engine.extension.api.annotation.ExtPoint;
 import com.bone.engine.extension.api.annotation.Extension;
