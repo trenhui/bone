@@ -34,7 +34,12 @@ public @interface Extension {
     /**
      * 业务域代码
      */
-    String biz() default "*";
+    String bizCode() default "*";
+
+    /**
+     * 业务用例
+     */
+    String useCase() default "*";
 
     /**
      * 场景代码

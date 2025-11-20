@@ -1,6 +1,6 @@
 package com.bone.engine.extension.expression;
 
-import com.bone.engine.extension.support.expression.ExpressionEvaluator;
+import com.bone.engine.extension.support.expression.SpELExpressionEvaluator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -46,9 +46,9 @@ class BizContext<T> {
  * ExpressionEvaluator的单元测试类
  * 基于业界最佳实践优化，支持复杂condition表达式测试
  */
-public class ExpressionEvaluatorTest {
+public class SpELExpressionEvaluatorTest {
 
-    private ExpressionEvaluator evaluator;
+    private SpELExpressionEvaluator evaluator;
     private TestContext rootContext;
 
     @BeforeEach
@@ -448,7 +448,7 @@ public class ExpressionEvaluatorTest {
             assertTrue(true, "表达式2执行成功");
             
             // 清空缓存（模拟）
-            ExpressionEvaluator.clearCache();
+            SpELExpressionEvaluator.clearCache();
             assertTrue(true, "缓存已清空");
             
             // 验证功能正常

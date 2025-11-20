@@ -3,7 +3,7 @@ package com.bone.engine.extension.support.validator;
 import com.bone.engine.extension.api.annotation.ExtensionPoint;
 import com.bone.engine.extension.api.annotation.Extension;
 import com.bone.engine.extension.support.repository.ExtPointRepository;
-import com.bone.engine.extension.support.expression.ExpressionEvaluator;
+import com.bone.engine.extension.support.expression.SpELExpressionEvaluator;
 import com.bone.engine.extension.support.utils.ExtPointUtils;
 
 import org.slf4j.Logger;
@@ -196,7 +196,7 @@ public class ExtPointValidator implements ApplicationListener<ContextRefreshedEv
                 String condition = (String) conditionMethod.invoke(extension);
                 if (condition != null && !condition.isEmpty()) {
                     // 验证表达式语法
-                    ExpressionEvaluator.evaluateWithCurrentContext(condition);
+                    SpELExpressionEvaluator.evaluateWithCurrentContext(condition);
                 }
             } catch (NoSuchMethodException e) {
                 // Extension注解没有condition方法，跳过表达式验证
