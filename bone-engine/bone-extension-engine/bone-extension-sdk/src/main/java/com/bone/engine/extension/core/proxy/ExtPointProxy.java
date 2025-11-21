@@ -4,7 +4,7 @@ import com.bone.core.util.ReflectionUtil;
 import com.bone.engine.extension.support.context.ExtensionContextManager;
 import com.bone.engine.extension.support.context.BizContext;
 import com.bone.engine.extension.core.invoker.ExtPointInvocationHandler;
-import com.bone.engine.extension.support.repository.ExtPointRepository;
+import com.bone.engine.extension.support.repository.ExtensionRepository;
 import com.bone.engine.extension.support.repository.ExtPointRepositoryFactory;
 import com.bone.engine.extension.core.router.ExtPointRouter;
 import lombok.extern.slf4j.Slf4j;
@@ -50,9 +50,9 @@ public class ExtPointProxy<T> implements InvocationHandler, Serializable {
 
     private ExtPointRouter getExtPointRouter(Class<?> extPointRouterClazz) {
         Class<?> extPointRepository = (Class<?>) attrs.get(EXT_POINT_REPOSITORY);
-        ExtPointRepository extPointRepo = ExtPointRepositoryFactory.createExtPointRepository(extPointRepository);
+        ExtensionRepository extPointRepo = ExtPointRepositoryFactory.createExtPointRepository(extPointRepository);
         return (ExtPointRouter) ReflectionUtil.newInstance(extPointRouterClazz,
-                new Class<?>[]{ExtPointRepository.class},
+                new Class<?>[]{ExtensionRepository.class},
                 new Object[]{extPointRepo});
     }
 }

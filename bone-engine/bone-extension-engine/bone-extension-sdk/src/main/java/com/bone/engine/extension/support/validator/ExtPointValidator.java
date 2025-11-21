@@ -2,7 +2,7 @@ package com.bone.engine.extension.support.validator;
 
 import com.bone.engine.extension.api.annotation.ExtensionPoint;
 import com.bone.engine.extension.api.annotation.Extension;
-import com.bone.engine.extension.support.repository.ExtPointRepository;
+import com.bone.engine.extension.support.repository.ExtensionRepository;
 import com.bone.engine.extension.support.expression.SpELExpressionEvaluator;
 import com.bone.engine.extension.support.utils.ExtPointUtils;
 
@@ -45,7 +45,7 @@ public class ExtPointValidator implements ApplicationListener<ContextRefreshedEv
     private ExtensionRegister extensionRegister;
     
     @Autowired
-    private ExtPointRepository extPointRepository;
+    private ExtensionRepository extensionRepository;
     
 
     

@@ -74,11 +74,6 @@ public @interface Extension {
     int traffic() default 100;
 
     /**
-     * 是否默认实现
-     */
-    boolean primary() default false;
-
-    /**
      * 是否启用
      */
     boolean enabled() default true;
