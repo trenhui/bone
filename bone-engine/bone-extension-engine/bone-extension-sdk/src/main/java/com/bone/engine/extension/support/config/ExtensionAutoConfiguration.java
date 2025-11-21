@@ -3,14 +3,11 @@ package com.bone.engine.extension.support.config;
 import com.bone.engine.extension.api.annotation.EnableExtensionPoints;
 import com.bone.engine.extension.core.lifecycle.DefaultExtensionLifecycle;
 import com.bone.engine.extension.core.lifecycle.ExtensionLifecycle;
-import com.bone.engine.extension.proxy.ExtPointProxyFactory;
-import com.bone.engine.extension.core.router.DefaultExtPointRouter;
-import com.bone.engine.extension.core.router.ExtPointRouter;
-import com.bone.engine.extension.core.router.CacheManager;
-import com.bone.engine.extension.core.event.DefaultExtensionEventPublisher;
-import com.bone.engine.extension.core.event.ExtensionEventPublisher;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.bone.engine.extension.core.register.ExtensionRegister;
+import com.bone.engine.extension.core.router.*;
+import com.bone.engine.extension.support.repository.*;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -20,166 +17,117 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportAware;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.type.AnnotationMetadata;
-import org.springframework.core.task.AsyncTaskExecutor;
-import com.bone.engine.extension.core.router.RouteStatsCollector;
+import org.springframework.util.StringUtils;
 
 /**
- * 统一的扩展点框架自动配置类
- * <p>
- * 整合所有扩展点框架的配置管理，提供一致的配置入口
- * 解决之前多个配置类和配置属性类并存的问题
- * </p>
+ * Bone Extension SDK v2.0 GA - 统一自动配置中心
+ * 100% 兼容 @EnableExtensionPoints 所有属性
  *
  * @author Bone Engine Team
- * @version 1.0.0
+ * @since 2.0.0-GA 2025-11-21
  */
-@Configuration
+@Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(ExtensionProperties.class)
 @ConditionalOnProperty(prefix = "bone.extension", name = "enabled", havingValue = "true", matchIfMissing = true)
+@Slf4j
 public class ExtensionAutoConfiguration implements ImportAware {
-    private static final Logger log = LoggerFactory.getLogger(ExtensionAutoConfiguration.class);
 
-    private String[] basePackages = {};
-    private boolean enableAutoScan = true;
-    private boolean enableCache = true;
-    private boolean enableEvents = true;
+    private AnnotationAttributes attrs = new AnnotationAttributes();
 
     @Override
-    public void setImportMetadata(AnnotationMetadata importMetadata) {
-        AnnotationAttributes attributes = AnnotationAttributes
-                .fromMap(importMetadata.getAnnotationAttributes(EnableExtensionPoints.class.getName(), false));
+    public void setImportMetadata(AnnotationMetadata metadata) {
+        AnnotationAttributes attributes = AnnotationAttributes.fromMap(
+                metadata.getAnnotationAttributes(EnableExtensionPoints.class.getName(), false));
         if (attributes != null) {
-            this.basePackages = attributes.getStringArray("basePackages");
-            this.enableAutoScan = attributes.getBoolean("enableAutoScan");
-            this.enableCache = attributes.getBoolean("enableCache");
-            this.enableEvents = attributes.getBoolean("enableEvents");
+            this.attrs = attributes;
         }
     }
 
-    /**
-     * 配置路由统计收集器
-     */
     @Bean
-    @ConditionalOnMissingBean(RouteStatsCollector.class)
+    public ExtensionRegister extensionRegister() {
+        return new ExtensionRegister();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
     public RouteStatsCollector routeStatsCollector() {
         return new RouteStatsCollector();
     }
 
-    /**
-     * 配置扩展点路由引擎
-     */
     @Bean
-    @ConditionalOnMissingBean(ExtPointRouter.class)
-    public ExtPointRouter extPointRouter(ApplicationContext applicationContext, ExtensionProperties extensionProperties, 
-                                       RouteStatsCollector routeStatsCollector, ExtensionRegister extensionRegister) {
-        // 通过ExtensionRegister获取ExtensionRegistry实例
-        ExtensionRegistry extensionRegistry = extensionRegister.getExtensionRegistry();
-        // 创建DefaultExtPointRouter实例，使用正确的构造函数
-        DefaultExtPointRouter router = new DefaultExtPointRouter(applicationContext, routeStatsCollector, extensionRegistry);
-        // 设置缓存启用状态，优先使用注解属性，其次使用配置属性
-        boolean finalEnableCache = this.enableCache && extensionProperties.getCache().isEnabled();
-        router.setEnableCache(finalEnableCache);
-        log.info("Configured ExtPointRouter with cache enabled: {}", finalEnableCache);
-        return router;
-    }
-
-    /**
-     * 配置扩展点代理工厂
-     */
-    @Bean
-    @ConditionalOnMissingBean(ExtPointProxyFactory.class)
-    public ExtPointProxyFactory extPointProxyFactory() {
-        ExtPointProxyFactory factory = new ExtPointProxyFactory();
-        factory.setEnableCache(enableCache);
-        return factory;
-    }
-
-    /**
-     * 配置扩展点事件发布器
-     */
-    @Bean
-    @ConditionalOnProperty(name = "bone.extension.events.enabled", havingValue = "true", matchIfMissing = true)
-    @ConditionalOnMissingBean(ExtensionEventPublisher.class)
-    public ExtensionEventPublisher extensionEventPublisher(
-            org.springframework.context.ApplicationEventPublisher applicationEventPublisher,
-            AsyncTaskExecutor taskExecutor,
-            RouteStatsCollector routeStatsCollector) {
-        return new DefaultExtensionEventPublisher(applicationEventPublisher, taskExecutor, routeStatsCollector);
-    }
-
-    /**
-     * 配置扩展点配置管理器
-     * 注意：这里返回的是一个适配层，内部使用ExtensionProperties进行实际配置管理
-     */
-    @Bean
-    @ConditionalOnMissingBean(ExtensionConfigManager.class)
-    public ExtensionConfigManager extensionConfigManager() {
-        ExtensionConfigManager manager = new ExtensionConfigManager();
-        manager.init();
+    @ConditionalOnMissingBean
+    public CacheManager cacheManager(ExtensionProperties properties) {
+        CacheManager manager = new CacheManager();
+        manager.initializeCache(
+                (int) (properties.getCache().getExpireAfterWrite() / 60_000),
+                properties.getCache().getMaxSize()
+        );
         return manager;
     }
 
-    /**
-     * 配置扩展点生命周期管理器
-     */
+    // ==================== 仓库自动装配 ====================
+
     @Bean
-    @ConditionalOnMissingBean(ExtensionLifecycle.class)
+    @ConditionalOnMissingBean(ExtensionRepository.class)
+    public ExtensionRepository extensionRepository(ApplicationContext ctx) {
+        Class<?> repoClass = attrs.getClass("extensionRepository");
+        if (repoClass != null && repoClass != InMemoryExtensionRepository.class) {
+            log.info("Using custom ExtensionRepository from @EnableExtensionPoints: {}", repoClass.getName());
+            return ExtensionRepositoryFactory.create((Class<? extends ExtensionRepository>) repoClass);
+        }
+        ExtensionRepository repo = ExtensionRepositoryFactory.getDefault();
+        log.info("Using default ExtensionRepository: {}", repo.getClass().getSimpleName());
+        return repo;
+    }
+
+    // ==================== 路由器自动装配（三优先级） ====================
+
+    @Bean
+    @ConditionalOnMissingBean(ExtPointRouter.class)
+    public ExtPointRouter extensionRouter(
+            @Autowired ApplicationContext ctx,
+            @Autowired RouteStatsCollector stats,
+            @Autowired ExtensionRegister register) {
+
+        // 1. customRouter 字符串（最高优先级）
+        String custom = attrs.getString("customRouter");
+        if (StringUtils.hasText(custom)) {
+            try {
+                Class<?> clazz = Class.forName(custom.trim());
+                log.info("Using custom router from customRouter(): {}", custom);
+                return (ExtPointRouter) clazz.getDeclaredConstructor().newInstance();
+            } catch (Exception e) {
+                throw new IllegalStateException("Failed to load custom router: " + custom, e);
+            }
+        }
+
+        // 2. extensionRouter Class 属性
+        Class<?> routerClass = attrs.getClass("extensionRouter");
+        if (routerClass != null && routerClass != DefaultExtPointRouter.class) {
+            log.info("Using custom router from extensionRouter(): {}", routerClass.getName());
+            return (ExtPointRouter) ExtensionRepositoryFactory.createBean(routerClass);
+        }
+
+        // 3. 默认路由器
+        log.info("Using DefaultExtPointRouter");
+        return new DefaultExtPointRouter(ctx, stats, register);
+    }
+
+
+    @Bean
+    @ConditionalOnMissingBean
     public ExtensionLifecycle extensionLifecycle() {
         return new DefaultExtensionLifecycle();
     }
 
-    /**
-     * 配置扩展点配置验证器
-     */
     @Bean
-    @ConditionalOnMissingBean(ExtensionConfigValidator.class)
-    public ExtensionConfigValidator extensionConfigValidator() {
-        return new ExtensionConfigValidator();
-    }
-    
-    /**
-     * 配置缓存管理器
-     */
-    @Bean
-    @ConditionalOnMissingBean
-    public CacheManager cacheManager(RouterConfiguration routerConfiguration) {
-        // 使用统一配置创建缓存管理器
-        CacheManager cacheManager = new CacheManager();
-        // 初始化配置
-        cacheManager.initialize();
-        return cacheManager;
-    }
-    
-    /**
-     * 配置路由统一配置管理器
-     */
-    @Bean
-    @ConditionalOnMissingBean
     public RouterConfiguration routerConfiguration(ExtensionProperties properties) {
-        // 创建并初始化统一配置管理
         RouterConfiguration config = RouterConfiguration.getInstance();
-        java.util.Properties props = new java.util.Properties();
-        
-        // 从ExtensionProperties加载配置
-        if (properties != null) {
-            if (properties.getCache() != null) {
-                props.setProperty("cache.expireTime", 
-                        String.valueOf(properties.getCache().getExpireTime() / 60000)); // 转换为分钟
-                props.setProperty("cache.maxSize", 
-                        String.valueOf(properties.getCache().getMaxSize()));
-                props.setProperty("cache.enabled", 
-                        String.valueOf(properties.getCache().isEnabled()));
-            }
-            
-            if (properties.getMonitor() != null) {
-                props.setProperty("stats.enabled", 
-                        String.valueOf(properties.getMonitor().isEnabled()));
-                props.setProperty("route.slowThresholdMs", 
-                        String.valueOf(properties.getMonitor().getSlowRouteThreshold()));
-            }
-        }
-        
-        config.initialize(props);
+        java.util.Properties p = new java.util.Properties();
+        p.setProperty("cache.enabled", String.valueOf(properties.getCache().isEnabled()));
+        p.setProperty("cache.expireTime", String.valueOf(properties.getCache().getExpireAfterWrite() / 60_000));
+        p.setProperty("cache.maxSize", String.valueOf(properties.getCache().getMaxSize()));
+        config.initialize(p);
         return config;
     }
 }

@@ -15,16 +15,16 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ExtPointRepositoryFactory {
     private static final Logger log = LoggerFactory.getLogger(ExtPointRepositoryFactory.class);
     // 缓存已创建的仓库实例
-    private static final Map<String, ExtPointRepository> REPOSITORY_CACHE = new ConcurrentHashMap<>();
+    private static final Map<String, ExtensionRepository> REPOSITORY_CACHE = new ConcurrentHashMap<>();
     // 默认仓库类型
-    private static final Class<? extends ExtPointRepository> DEFAULT_REPOSITORY_CLASS = MemExtPointRepository.class;
+    private static final Class<? extends ExtensionRepository> DEFAULT_REPOSITORY_CLASS = MemExtensionRepository.class;
 
     /**
      * 创建默认的扩展点仓库实例
      * 
      * @return 默认的扩展点仓库实例（内存仓库）
      */
-    public static ExtPointRepository createExtPointRepository() {
+    public static ExtensionRepository createExtPointRepository() {
         return createExtPointRepository(DEFAULT_REPOSITORY_CLASS);
     }
 
@@ -34,7 +34,7 @@ public class ExtPointRepositoryFactory {
      * @param repositoryClass 仓库类型
      * @return 扩展点仓库实例
      */
-    public static ExtPointRepository createExtPointRepository(Class<?> repositoryClass) {
+    public static ExtensionRepository createExtPointRepository(Class<?> repositoryClass) {
         Assert.notNull(repositoryClass, "Repository class must not be null");
         
         String className = repositoryClass.getSimpleName();
@@ -43,10 +43,10 @@ public class ExtPointRepositoryFactory {
         return REPOSITORY_CACHE.computeIfAbsent(className, key -> {
             try {
                 // 优先尝试通过反射创建实例（更灵活）
-                if (ExtPointRepository.class.isAssignableFrom(repositoryClass)) {
-                    return (ExtPointRepository) repositoryClass.getDeclaredConstructor().newInstance();
+                if (ExtensionRepository.class.isAssignableFrom(repositoryClass)) {
+                    return (ExtensionRepository) repositoryClass.getDeclaredConstructor().newInstance();
                 } else {
-                    log.warn("Repository class {} does not implement ExtPointRepository interface", className);
+                    log.warn("Repository class {} does not implement ExtensionRepository interface", className);
                     // 回退到硬编码的创建方式
                     return createRepositoryByType(className);
                 }
@@ -62,14 +62,14 @@ public class ExtPointRepositoryFactory {
     /**
      * 通过类型名称创建仓库实例（硬编码方式）
      */
-    private static ExtPointRepository createRepositoryByType(String className) {
+    private static ExtensionRepository createRepositoryByType(String className) {
         switch (className) {
-            case "MemExtPointRepository":
-                return new MemExtPointRepository();
+            case "MemExtensionRepository":
+                return new InMemoryExtensionRepository();
             // 可以添加更多仓库实现的case
             default:
-                log.warn("Unsupported repository type: {}, using MemExtPointRepository as default", className);
-                return new MemExtPointRepository();
+                log.warn("Unsupported repository type: {}, using MemExtensionRepository as default", className);
+                return new InMemoryExtensionRepository();
         }
     }
     

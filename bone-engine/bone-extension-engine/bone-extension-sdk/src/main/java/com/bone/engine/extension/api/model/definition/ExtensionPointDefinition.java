@@ -1,12 +1,25 @@
 package com.bone.engine.extension.api.model.definition;
 
-import lombok.Data;
+import lombok.*;
+import lombok.experimental.Accessors;
+
 import java.io.Serializable;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 扩展点核心定义 - 参与路由决策
+ * 扩展点核心定义 - 运行时路由决策模型
+ *
+ * @author renhui.trh
+ * @since  2025-11-21
  */
 @Data
+@Builder
+@Accessors(chain = true)
+@NoArgsConstructor
+@AllArgsConstructor
 public class ExtensionPointDefinition implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -15,7 +28,75 @@ public class ExtensionPointDefinition implements Serializable {
     private String description = "";
     private String version = "1.0.0";
     private boolean transactional = false;
-    private int timeoutSeconds = 30;
+    private int timeout = 30;
     private boolean singleton = true;
     private Class<?> interfaceType;
+
+    /**
+     * 所有已注册的扩展实现（线程安全）
+     * 使用 lazy getter 避免 Lombok 生成可变返回
+     */
+    @Getter(lazy = true)
+    private final Map<String, ExtensionDefinition> extensions = new ConcurrentHashMap<>();
+
+    // ==================== 核心访问方法（完美兼容你的注册逻辑） ====================
+
+    /**
+     * 获取线程安全的 extensions Map
+     * 直接用于 putIfAbsent 检查重复注册
+     */
+    public Map<String, ExtensionDefinition> getExtensions() {
+        return getExtensions(); // 触发 lazy 初始化
+    }
+
+    // ==================== 其他安全访问方法（生产推荐） ====================
+
+    public ExtensionDefinition addExtension(ExtensionDefinition extension) {
+        return getExtensions().put(extension.getCode(), extension);
+    }
+
+    public ExtensionDefinition removeExtension(String code) {
+        return getExtensions().remove(code);
+    }
+
+    public ExtensionDefinition getExtension(String code) {
+        return getExtensions().get(code);
+    }
+
+    public Collection<ExtensionDefinition> getAllExtensions() {
+        return Collections.unmodifiableCollection(getExtensions().values());
+    }
+
+    public Collection<ExtensionDefinition> getEnabledExtensions() {
+        return getExtensions().values().stream()
+                .filter(ExtensionDefinition::isEnabled)
+                .toList();
+    }
+
+    public Map<String, ExtensionDefinition> getExtensionsView() {
+        return Collections.unmodifiableMap(getExtensions());
+    }
+
+    public int getExtensionCount() {
+        return getExtensions().size();
+    }
+
+    public boolean isEmpty() {
+        return getExtensions().isEmpty();
+    }
+
+    // ==================== 兜底实现（无 primary 字段时代的最优方案） ====================
+
+    public ExtensionDefinition getDefaultExtension() {
+        return getExtensions().values().stream()
+                .filter(ExtensionDefinition::isEnabled)
+                .min(ExtensionDefinition::compareTo)
+                .orElse(null);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("ExtensionPointDefinition[code=%s, extensions=%d, singleton=%b]",
+                code, getExtensionCount(), singleton);
+    }
 }

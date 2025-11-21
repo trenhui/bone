@@ -5,7 +5,7 @@ import com.bone.engine.extension.api.annotation.Extension;
 import com.bone.engine.extension.api.annotation.ExtensionPointDoc;
 import com.bone.engine.extension.core.register.ExtensionRegister;
 import com.bone.engine.extension.core.event.ExtensionEventPublisher;
-import com.bone.engine.extension.support.repository.ExtPointRepository;
+import com.bone.engine.extension.support.repository.ExtensionRepository;
 import com.bone.engine.extension.api.annotation.ExtensionDoc;
 import com.bone.engine.extension.support.config.ExtensionProperties;
 
@@ -27,7 +27,7 @@ import static org.mockito.Mockito.*;
 public class ExtensionRegisterTest {
 
     @Mock
-    private ExtPointRepository extPointRepository;
+    private ExtensionRepository extensionRepository;
 
     @Mock
     private ExtensionEventPublisher eventPublisher;
@@ -55,7 +55,7 @@ public class ExtensionRegisterTest {
         when(extensionProperties.getScan()).thenReturn(scanConfig);
         
         // 创建注册器实例
-        extensionRegister = new ExtensionRegister(extPointRepository, eventPublisher, extensionProperties);
+        extensionRegister = new ExtensionRegister(extensionRepository, eventPublisher, extensionProperties);
         
         // 设置应用上下文
         extensionRegister.setApplicationContext(applicationContext);
@@ -75,7 +75,7 @@ public class ExtensionRegisterTest {
         extensionRegister.registerExtension(provider);
 
         // 验证结果 - 确认仓库中成功添加了扩展
-        verify(extPointRepository).put(anyString(), eq(provider));
+        verify(extensionRepository).put(anyString(), eq(provider));
     }
 
     /**
@@ -92,7 +92,7 @@ public class ExtensionRegisterTest {
         extensionRegister.registerExtension(provider);
 
         // 验证结果 - 确认仓库未被调用
-        verifyNoInteractions(extPointRepository);
+        verifyNoInteractions(extensionRepository);
     }
 
     /**
@@ -109,7 +109,7 @@ public class ExtensionRegisterTest {
         extensionRegister.registerExtension(provider);
 
         // 验证结果 - 确认仓库未被调用
-        verifyNoInteractions(extPointRepository);
+        verifyNoInteractions(extensionRepository);
     }
 
     /**
@@ -126,13 +126,13 @@ public class ExtensionRegisterTest {
         extensionRegister.registerExtension(provider);
         
         // 重置模拟对象以清除之前的交互记录
-        reset(extPointRepository);
+        reset(extensionRepository);
 
         // 第二次注册（预期会被忽略）
         extensionRegister.registerExtension(provider);
 
         // 验证结果 - 确认仓库未被再次调用
-        verifyNoInteractions(extPointRepository);
+        verifyNoInteractions(extensionRepository);
     }
 
     /**
@@ -149,7 +149,7 @@ public class ExtensionRegisterTest {
         extensionRegister.registerExtension(provider);
         
         // 验证结果 - 确认仓库未被调用
-        verifyNoInteractions(extPointRepository);
+        verifyNoInteractions(extensionRepository);
     }
 
     /**

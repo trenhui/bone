@@ -1,6 +1,8 @@
 package com.bone.engine.extension.api.annotation;
 
+import com.bone.engine.extension.core.router.DefaultExtPointRouter;
 import com.bone.engine.extension.support.config.ExtensionAutoConfiguration;
+import com.bone.engine.extension.support.repository.InMemoryExtensionRepository;
 import org.springframework.context.annotation.Import;
 
 import java.lang.annotation.*;
@@ -26,6 +28,10 @@ public @interface EnableExtensionPoints {
      * 未指定时默认扫描注解所在包及其子包
      */
     String[] basePackages() default {};
+
+    Class<?> extensionRepository() default InMemoryExtensionRepository.class;
+
+    Class<?> extensionRouter() default DefaultExtPointRouter.class;
 
     /**
      * 自定义路由器实现类

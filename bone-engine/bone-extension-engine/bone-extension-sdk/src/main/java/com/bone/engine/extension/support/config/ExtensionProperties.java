@@ -91,7 +91,7 @@ public class ExtensionProperties {
         /** 缓存过期时间（毫秒） */
         private long expireAfterWrite = 600_000L;
         /** 缓存最大条目数 */
-        private int maximumSize = 1000;
+        private int maxSize = 1000;
         /** 是否记录缓存统计 */
         private boolean recordStats = false;
 
@@ -111,12 +111,12 @@ public class ExtensionProperties {
             this.expireAfterWrite = expireAfterWrite;
         }
 
-        public int getMaximumSize() {
-            return maximumSize;
+        public int getMaxSize() {
+            return maxSize;
         }
 
-        public void setMaximumSize(int maximumSize) {
-            this.maximumSize = maximumSize;
+        public void setMaxSize(int maxSize) {
+            this.maxSize = maxSize;
         }
 
         public boolean isRecordStats() {
