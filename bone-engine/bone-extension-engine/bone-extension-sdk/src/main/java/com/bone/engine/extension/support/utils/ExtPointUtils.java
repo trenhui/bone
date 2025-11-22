@@ -3,7 +3,6 @@ package com.bone.engine.extension.support.utils;
 import com.bone.engine.extension.api.annotation.ExtensionPoint;
 import com.bone.engine.extension.api.annotation.Extension;
 import com.bone.engine.extension.support.context.BizContext;
-import com.bone.engine.extension.core.router.CacheManager;
 import com.bone.engine.extension.core.router.RouteKey;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -299,7 +298,7 @@ public class ExtPointUtils implements ApplicationContextAware {
         }
         
         // 租户代码匹配
-        if (context1.getTenantCode() != null && !context1.getTenantCode().equals(context2.getTenantCode())) {
+        if (context1.getTenant() != null && !context1.getTenant().equals(context2.getTenant())) {
             return false;
         }
         
@@ -323,7 +322,7 @@ public class ExtPointUtils implements ApplicationContextAware {
         }
         
         // 检查租户代码匹配
-        if (Arrays.asList(extension.tenantCode()).contains(context.getTenantCode())) {
+        if (Arrays.asList(extension.tenantCode()).contains(context.getTenant())) {
             score += 80;
         }
         
@@ -373,7 +372,7 @@ public class ExtPointUtils implements ApplicationContextAware {
             key.append(":")
                .append(context.getBizCode() != null ? context.getBizCode() : "default")
                .append(":")
-               .append(context.getTenantCode() != null ? context.getTenantCode() : "default")
+               .append(context.getTenant() != null ? context.getTenant() : "default")
                .append(":")
                .append(context.getScenario() != null ? context.getScenario() : "default")
                .append(":")

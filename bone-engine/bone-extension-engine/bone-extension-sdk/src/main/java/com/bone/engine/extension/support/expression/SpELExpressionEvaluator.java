@@ -143,7 +143,7 @@ public final class SpELExpressionEvaluator {
         StandardEvaluationContext context = new StandardEvaluationContext();
         
         // 注入标准业务维度变量，方便直接在表达式中使用
-        context.setVariable("tenantCode", bizContext.getTenantCode());
+        context.setVariable("tenantCode", bizContext.getTenant());
         context.setVariable("bizCode", bizContext.getBizCode());
         context.setVariable("useCase", bizContext.getUseCase());
         context.setVariable("scenario", bizContext.getScenario());

@@ -5,10 +5,13 @@ import com.bone.engine.extension.api.annotation.ExtensionPoint;
 import com.bone.engine.extension.api.exception.ExtensionRegistrationException;
 import com.bone.engine.extension.api.model.definition.ExtensionDefinition;
 import com.bone.engine.extension.api.model.definition.ExtensionPointDefinition;
+import com.bone.engine.extension.api.spi.ExpressionEvaluator;
 import com.bone.engine.extension.core.router.DefaultExtPointRouter;
 import com.bone.engine.extension.support.repository.ExtensionRepository;
-import com.bone.engine.extension.support.utils.AviatorExpressionEvaluator;
+import com.bone.engine.extension.support.repository.InMemoryExtensionRepository;
+import com.bone.engine.extension.support.expression.AviatorExpressionEvaluator;
 import jakarta.annotation.PostConstruct;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.BeansException;
@@ -61,7 +64,7 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
     private final ExtensionRepository extensionRepository;
 
     // 表达式引擎
-    private final AviatorExpressionEvaluator expressionEvaluator = new AviatorExpressionEvaluator();
+    private final ExpressionEvaluator expressionEvaluator = new AviatorExpressionEvaluator();
 
     // ==================== 注册统计 ====================
     private final AtomicInteger totalScannedCount = new AtomicInteger(0);
@@ -70,7 +73,7 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
     private final Set<String> registeredExtensionCodes = ConcurrentHashMap.newKeySet();
 
     public ExtensionRegister() {
-        this.extensionRepository = new InMemoryExtensionRepository("BoneExtensionRepository");
+        this.extensionRepository = new InMemoryExtensionRepository("inMemoryExtensionRepository");
     }
 
     public ExtensionRegister(ExtensionRepository extensionRepository) {
@@ -273,7 +276,6 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
             @Override public int order() { return annotation.order(); }
             @Override public int weight() { return annotation.weight(); }
             @Override public int traffic() { return annotation.traffic(); }
-            @Override public boolean primary() { return annotation.primary(); }
             @Override public boolean enabled() { return annotation.enabled(); }
             @Override public String condition() { return resolvePlaceholder(annotation.condition()); }
             @Override public String[] tags() { return Arrays.stream(annotation.tags()).map(this::resolvePlaceholder).toArray(String[]::new); }
@@ -342,7 +344,6 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
                 .order(annotation.order())
                 .weight(annotation.weight())
                 .traffic(annotation.traffic())
-                .primary(annotation.primary())
                 .enabled(annotation.enabled())
                 .condition(annotation.condition())
                 .tags(annotation.tags())

@@ -208,7 +208,7 @@ public class SpELExpressionEvaluatorTest {
     private void testEnhancedExpressionVariants() {
         try {
             // 测试表达式变体1: 检查是否为企业租户
-            String tenantExpression = "#root.getBizContext().getTenantCode() == 'ENTERPRISE'";
+            String tenantExpression = "#root.getBizContext().getTenant() == 'ENTERPRISE'";
             
             // 企业租户测试
             BizContext<TestContext> enterpriseContext = BizContext.createEmpty();
