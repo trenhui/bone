@@ -26,7 +26,7 @@ public class RouteKey {
      */
     public RouteKey(Class<?> extPointClass, BizContext<?> context) {
         this.extPointClass = extPointClass;
-        this.tenantCode = context != null ? context.getTenantCode() : null;
+        this.tenantCode = context != null ? context.getTenant() : null;
         this.bizCode = context != null ? context.getBizCode() : null;
         this.useCase = context != null ? context.getUseCase() : null;
         this.scenario = context != null ? context.getScenario() : null;

@@ -38,7 +38,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * {@code
  * // 创建并配置业务上下文
  * BizContext<Order> context = BizContext.<Order>builder()
- *     .tenantCode("TENANT_A")
+ *     .tenant("TENANT_A")
  *     .bizCode("ORDER")
  *     .useCase("CREATE")
  *     .scenario("NORMAL")
@@ -52,7 +52,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * 
  * // 在扩展点实现中使用上下文
  * public PaymentResult pay(PaymentRequest request, BizContext<?> context) {
- *     String tenantCode = context.getTenantCode();
+ *     String tenant = context.getTenant();
  *     String userGroup = context.getUserGroup();
  *     String userId = context.getAttribute("userId");
  *     // 业务逻辑处理
@@ -81,23 +81,16 @@ public class BizContext<T> implements Serializable {
     /**
      * 租户代码
      */
-    private String tenantCode = "DEFAULT";
+    private String tenant = "DEFAULT";
     
     /**
      * 获取租户代码
      * @return 租户代码
      */
-    public String getTenantCode() {
-        return tenantCode;
+    public String getTenant() {
+        return tenant;
     }
-    
-    /**
-     * 获取租户ID（别名方法）
-     * @return 租户代码
-     */
-    public String getTenantId() {
-        return getTenantCode();
-    }
+
     
     /**
      * 业务域代码
@@ -200,10 +193,10 @@ public class BizContext<T> implements Serializable {
      * 构建者构造函数
      */
     @Builder
-    public BizContext(String tenantCode, String bizCode, String useCase, String scenario, 
-                     String env, String group, String userGroup, String requestId, 
-                     T data, Map<String, Object> attributes, Map<String, String> headers) {
-        this.tenantCode = tenantCode;
+    public BizContext(String tenant, String bizCode, String useCase, String scenario,
+                      String env, String group, String userGroup, String requestId,
+                      T data, Map<String, Object> attributes, Map<String, String> headers) {
+        this.tenant = tenant;
         this.bizCode = bizCode;
         this.useCase = useCase;
         this.scenario = scenario;
@@ -457,7 +450,7 @@ public class BizContext<T> implements Serializable {
     @SuppressWarnings("unchecked")
     public BizContext<T> clone() {
         BizContext<T> cloned = new BizContext<>(
-            this.tenantCode,
+            this.tenant,
             this.bizCode,
             this.useCase,
             this.scenario,
@@ -510,8 +503,8 @@ public class BizContext<T> implements Serializable {
         }
         
         // 合并基础信息（仅当当前值为空时）
-        if (!StringUtils.hasText(this.tenantCode) && StringUtils.hasText(other.getTenantCode())) {
-            this.tenantCode = other.getTenantCode();
+        if (!StringUtils.hasText(this.tenant) && StringUtils.hasText(other.getTenant())) {
+            this.tenant = other.getTenant();
         }
         if (!StringUtils.hasText(this.bizCode) && StringUtils.hasText(other.getBizCode())) {
             this.bizCode = other.getBizCode();
