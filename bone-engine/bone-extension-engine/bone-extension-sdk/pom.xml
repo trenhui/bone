@@ -68,6 +68,12 @@
             <groupId>com.bone</groupId>
             <artifactId>bone-core</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>com.googlecode.aviator</groupId>
+            <artifactId>aviator</artifactId>
+            <version>5.4.1</version> <!-- 请检查最新版本 -->
+        </dependency>
         
         <!-- Caffeine缓存 -->
         <dependency>
@@ -145,7 +151,6 @@
                 <version>${checkstyle.version}</version>
                 <configuration>
                     <configLocation>checkstyle.xml</configLocation>
-                    <encoding>UTF-8</encoding>
                     <consoleOutput>true</consoleOutput>
                     <failsOnError>false</failsOnError>
                     <linkXRef>false</linkXRef>

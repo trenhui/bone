@@ -1,11 +1,25 @@
 package com.bone.engine.extension.api.spi;
 
-import com.bone.engine.extension.support.context.BizContext;
-
 import java.util.function.Predicate;
 
-// com.bone.extension.api.spi.SpELExpressionEvaluator
 public interface ExpressionEvaluator {
-    boolean evaluate(String expression, BizContext<?> context, Object implementation);
-    Predicate<BizContext<?>> compile(String expression);
+
+    /**
+     * 评估表达式在当前业务上下文中的结果
+     *
+     * @param expression 表达式字符串
+     * @param context 业务上下文
+     * @return 表达式求值结果
+     * @throws IllegalArgumentException 如果参数无效
+     */
+    boolean evaluate(String expression, Object context);
+
+    /**
+     * 编译表达式为可重用的谓词
+     *
+     * @param expression 表达式字符串
+     * @return 编译后的谓词
+     * @throws IllegalArgumentException 如果表达式无效
+     */
+    Predicate<Object> compile(String expression);
 }
