@@ -6,7 +6,6 @@ import com.bone.engine.extension.support.context.BizContext;
 import com.bone.engine.extension.core.invoker.ExtPointInvocationHandler;
 import com.bone.engine.extension.support.repository.ExtensionRepository;
 import com.bone.engine.extension.support.repository.ExtPointRepositoryFactory;
-import com.bone.engine.extension.core.router.ExtPointRouter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.Serial;

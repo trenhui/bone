@@ -4,10 +4,14 @@ import com.bone.engine.extension.support.context.BizContext;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
+import java.util.Map;
+
 /**
  * 统一的扩展点路由器接口
  */
 public interface ExtPointRouter {
+
+    void stop();
 
     /**
      * 为扩展点选择实现
@@ -46,17 +50,19 @@ public interface ExtPointRouter {
     @Nullable
     <T> T getDefaultImplementation(@NonNull Class<T> extPointClass);
 
+    Map<String, Map<String, Long>> getRouteStats();
+
     /**
      * 获取路由统计信息
      */
     @NonNull
-    com.bone.engine.extension.core.router.ExtPointRouter.RouterStats getStats();
+    RouterStats getStats();
 
     /**
      * 获取路由器状态
      */
     @NonNull
-    com.bone.engine.extension.core.router.ExtPointRouter.RouterStatus getStatus();
+    RouterStatus getStatus();
 
     /**
      * 重置路由统计
