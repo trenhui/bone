@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
-public class DefaultExtPointRouter implements ExtPointRouter, InitializingBean, DisposableBean {
+public class DefaultExtPointRouter implements ExtPointRouter, InitializingBean, DisposableBean, SmartLifecycle {
 
     // ==================== 依赖组件 ====================
     private final ExtensionRegister extensionRegister;
@@ -267,14 +267,14 @@ public class DefaultExtPointRouter implements ExtPointRouter, InitializingBean, 
 
     @NonNull
     @Override
-    public com.bone.engine.extension.core.router.ExtPointRouter.RouterStats getStats() {
+    public RouterStats getStats() {
         return statsCollector.getStats();
     }
 
     @NonNull
     @Override
-    public com.bone.engine.extension.core.router.ExtPointRouter.RouterStatus getStatus() {
-        return new com.bone.engine.extension.core.router.ExtPointRouter.RouterStatus(
+    public RouterStatus getStatus() {
+        return new RouterStatus(
                 extensionCache.size(),
                 extensionCache.values().stream().mapToInt(List::size).sum(),
                 routeResultCache.estimatedSize(),
@@ -561,13 +561,13 @@ public class DefaultExtPointRouter implements ExtPointRouter, InitializingBean, 
         }
 
         @NonNull
-        com.bone.engine.extension.core.router.ExtPointRouter.RouterStats getStats() {
+        RouterStats getStats() {
             long total = totalRequests.get();
             long hits = cacheHits.get();
             long success = successfulRequests.get();
             double avgTime = total > 0 ? (double) totalResponseTime.get() / total / 1_000_000.0 : 0.0;
 
-            return new com.bone.engine.extension.core.router.ExtPointRouter.RouterStats(total, hits, success, avgTime);
+            return new RouterStats(total, hits, success, avgTime);
         }
 
         void reset() {

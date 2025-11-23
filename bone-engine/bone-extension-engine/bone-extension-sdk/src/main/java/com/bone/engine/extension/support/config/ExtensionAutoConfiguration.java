@@ -1,6 +1,7 @@
 package com.bone.engine.extension.support.config;
 
 import com.bone.engine.extension.api.annotation.EnableExtensionPoints;
+import com.bone.engine.extension.api.spi.ExtPointRouter;
 import com.bone.engine.extension.core.lifecycle.DefaultExtensionLifecycle;
 import com.bone.engine.extension.core.lifecycle.ExtensionLifecycle;
 import com.bone.engine.extension.core.register.ExtensionRegister;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -54,16 +56,6 @@ public class ExtensionAutoConfiguration implements ImportAware {
         return new RouteStatsCollector();
     }
 
-    @Bean
-    @ConditionalOnMissingBean
-    public CacheManager cacheManager(ExtensionProperties properties) {
-        CacheManager manager = new CacheManager();
-        manager.initializeCache(
-                (int) (properties.getCache().getExpireAfterWrite() / 60_000),
-                properties.getCache().getMaxSize()
-        );
-        return manager;
-    }
 
     // ==================== 仓库自动装配 ====================
 
@@ -86,7 +78,6 @@ public class ExtensionAutoConfiguration implements ImportAware {
     @ConditionalOnMissingBean(ExtPointRouter.class)
     public ExtPointRouter extensionRouter(
             @Autowired ApplicationContext ctx,
-            @Autowired RouteStatsCollector stats,
             @Autowired ExtensionRegister register) {
 
         // 1. customRouter 字符串（最高优先级）
@@ -110,7 +101,7 @@ public class ExtensionAutoConfiguration implements ImportAware {
 
         // 3. 默认路由器
         log.info("Using DefaultExtPointRouter");
-        return new DefaultExtPointRouter(ctx, stats, register);
+        return new DefaultExtPointRouter(register, ctx);
     }
 
 
