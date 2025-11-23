@@ -82,7 +82,7 @@ public class ExtensionConfigValidator {
     
     private void validateExpireTime(ExtensionProperties properties, List<String> errors) {
         // 使用配置中的过期时间（转换为秒）
-        long expireTimeSeconds = properties.getCache().getExpireTime() / 1000;
+        long expireTimeSeconds = properties.getCache().getExpireAfterWrite() / 1000;
         if (expireTimeSeconds < MIN_EXPIRE_TIME || expireTimeSeconds > MAX_EXPIRE_TIME) {
             errors.add(String.format("Cache expire time must be between %d and %d seconds", MIN_EXPIRE_TIME, MAX_EXPIRE_TIME));
         }
@@ -122,7 +122,7 @@ public class ExtensionConfigValidator {
     public long validateExpireTime(long expireTime) {
         // 优先使用ExtensionProperties中的配置值
         if (properties != null) {
-            expireTime = properties.getCache().getExpireTime();
+            expireTime = properties.getCache().getExpireAfterWrite();
         }
         
         if (expireTime <= 0) {

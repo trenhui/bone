@@ -1,6 +1,7 @@
 package com.bone.engine.extension.core.proxy;
 
 import com.bone.core.util.ReflectionUtil;
+import com.bone.engine.extension.api.spi.ExtPointRouter;
 import com.bone.engine.extension.support.context.ExtensionContextManager;
 import com.bone.engine.extension.support.context.BizContext;
 import com.bone.engine.extension.core.invoker.ExtPointInvocationHandler;
