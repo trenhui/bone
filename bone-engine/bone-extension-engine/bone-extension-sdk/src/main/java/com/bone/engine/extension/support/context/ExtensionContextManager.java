@@ -177,7 +177,7 @@ public final class ExtensionContextManager {
         
         // 创建上下文
         return BizContext.<T>builder()
-                .tenantCode(tenantCode)
+                .tenant(tenantCode)
                 .bizCode(bizCode)
                 .useCase(useCase)
                 .scenario(scenario)
