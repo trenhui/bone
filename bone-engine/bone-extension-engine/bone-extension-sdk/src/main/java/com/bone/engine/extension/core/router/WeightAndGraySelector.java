@@ -260,7 +260,7 @@ public class WeightAndGraySelector extends AbstractRouterComponent implements Ro
             return false;
         }
 
-        int trafficRate = extension.trafficRate();
+        int trafficRate = extension.traffic();
         // 流量比例为100%，直接返回true
         if (trafficRate >= 100) {
             return true;
