@@ -6,10 +6,11 @@ import com.bone.engine.extension.api.exception.ExtensionRegistrationException;
 import com.bone.engine.extension.api.model.definition.ExtensionDefinition;
 import com.bone.engine.extension.api.model.definition.ExtensionPointDefinition;
 import com.bone.engine.extension.api.spi.ExpressionEvaluator;
+import com.bone.engine.extension.core.event.ExtensionEventPublisher;
 import com.bone.engine.extension.core.router.DefaultExtPointRouter;
-import com.bone.engine.extension.support.repository.ExtensionRepository;
-import com.bone.engine.extension.support.repository.InMemoryExtensionRepository;
+import com.bone.engine.extension.support.config.ExtensionProperties;
 import com.bone.engine.extension.support.expression.AviatorExpressionEvaluator;
+import com.bone.engine.extension.support.repository.ExtensionRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -34,7 +35,7 @@ import java.util.regex.Pattern;
 
 /**
  * 扩展点注册中心 - 基于业界最佳实践实现
- *
+ * <p>
  * 设计原则：
  * 1. 单一职责：专注于扩展点的注册和管理
  * 2. 明确命名：方法名清晰表达业务意图
@@ -62,6 +63,8 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
 
     // 扩展仓库
     private final ExtensionRepository extensionRepository;
+    private final ExtensionProperties extensionProperties;
+    private final ExtensionEventPublisher eventPublisher;
 
     // 表达式引擎
     private final ExpressionEvaluator expressionEvaluator = new AviatorExpressionEvaluator();
@@ -72,13 +75,14 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
     private final AtomicInteger failedRegistrationCount = new AtomicInteger(0);
     private final Set<String> registeredExtensionCodes = ConcurrentHashMap.newKeySet();
 
-    public ExtensionRegister() {
-        this.extensionRepository = new InMemoryExtensionRepository("inMemoryExtensionRepository");
-    }
 
-    public ExtensionRegister(ExtensionRepository extensionRepository) {
+    public ExtensionRegister(ExtensionRepository extensionRepository, ExtensionProperties extensionProperties, ExtensionEventPublisher eventPublisher) {
         this.extensionRepository = Objects.requireNonNull(extensionRepository,
                 "ExtensionRepository cannot be null");
+        this.extensionProperties = Objects.requireNonNull(extensionProperties,
+                "ExtensionProperties cannot be null");
+        this.eventPublisher = Objects.requireNonNull(eventPublisher,
+                "ExtensionEventPublisher cannot be null");
     }
 
     @Override
@@ -271,25 +275,100 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
 
     private Extension resolveEnvironmentPlaceholders(Extension annotation) {
         return new Extension() {
-            @Override public Class<? extends Annotation> annotationType() { return Extension.class; }
-            @Override public String value() { return resolvePlaceholder(annotation.value()); }
-            @Override public String description() { return resolvePlaceholder(annotation.description()); }
-            @Override public String tenant() { return resolvePlaceholder(annotation.tenant()); }
-            @Override public String bizCode() { return resolvePlaceholder(annotation.bizCode()); }
-            @Override public String useCase() { return resolvePlaceholder(annotation.useCase()); }
-            @Override public String scenario() { return resolvePlaceholder(annotation.scenario()); }
-            @Override public String env() { return resolvePlaceholder(annotation.env()); }
-            @Override public String version() { return resolvePlaceholder(annotation.version()); }
-            @Override public int order() { return annotation.order(); }
-            @Override public int weight() { return annotation.weight(); }
-            @Override public int traffic() { return annotation.traffic(); }
-            @Override public boolean enabled() { return annotation.enabled(); }
-            @Override public String condition() { return resolvePlaceholder(annotation.condition()); }
-            @Override public String[] tags() { return Arrays.stream(annotation.tags()).map(this::resolvePlaceholder).toArray(String[]::new); }
-            @Override public String startTime() { return resolvePlaceholder(annotation.startTime()); }
-            @Override public String endTime() { return resolvePlaceholder(annotation.endTime()); }
-            @Override public boolean async() { return annotation.async(); }
-            @Override public int timeout() { return annotation.timeout(); }
+            @Override
+            public Class<? extends Annotation> annotationType() {
+                return Extension.class;
+            }
+
+            @Override
+            public String name() {
+                return resolvePlaceholder(annotation.name());
+            }
+
+            @Override
+            public String description() {
+                return resolvePlaceholder(annotation.description());
+            }
+
+            @Override
+            public String tenant() {
+                return resolvePlaceholder(annotation.tenant());
+            }
+
+            @Override
+            public String bizCode() {
+                return resolvePlaceholder(annotation.bizCode());
+            }
+
+            @Override
+            public String useCase() {
+                return resolvePlaceholder(annotation.useCase());
+            }
+
+            @Override
+            public String scenario() {
+                return resolvePlaceholder(annotation.scenario());
+            }
+
+            @Override
+            public String env() {
+                return resolvePlaceholder(annotation.env());
+            }
+
+            @Override
+            public String version() {
+                return resolvePlaceholder(annotation.version());
+            }
+
+            @Override
+            public int order() {
+                return annotation.order();
+            }
+
+            @Override
+            public int weight() {
+                return annotation.weight();
+            }
+
+            @Override
+            public int traffic() {
+                return annotation.traffic();
+            }
+
+            @Override
+            public boolean enabled() {
+                return annotation.enabled();
+            }
+
+            @Override
+            public String condition() {
+                return resolvePlaceholder(annotation.condition());
+            }
+
+            @Override
+            public String[] tags() {
+                return Arrays.stream(annotation.tags()).map(this::resolvePlaceholder).toArray(String[]::new);
+            }
+
+            @Override
+            public String startTime() {
+                return resolvePlaceholder(annotation.startTime());
+            }
+
+            @Override
+            public String endTime() {
+                return resolvePlaceholder(annotation.endTime());
+            }
+
+            @Override
+            public boolean async() {
+                return annotation.async();
+            }
+
+            @Override
+            public int timeout() {
+                return annotation.timeout();
+            }
 
             private String resolvePlaceholder(String value) {
                 return StringUtils.hasText(value) ? environment.resolvePlaceholders(value) : value;
@@ -335,7 +414,7 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
 
     private ExtensionDefinition buildExtensionDefinition(Object instance, Class<?> implClass,
                                                          Extension annotation, ExtensionPointDefinition pointDefinition) {
-        String extensionCode = generateExtensionCode(annotation.value(), implClass);
+        String extensionCode = generateExtensionCode(annotation.name(), implClass);
 
         return ExtensionDefinition.builder()
                 .code(extensionCode)
@@ -476,18 +555,18 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
         ExtensionRepository.RepositoryStats repoStats = extensionRepository.getStats();
 
         log.info("""
-                =========================================================================
-                Bone Extension Registry - Registration Report
-                =========================================================================
-                Scanned Beans     : {}
-                Successful        : {}
-                Failed            : {}
-                Extension Points  : {}
-                Total Extensions  : {}
-                Repository        : {} ({} points, {} extensions)
-                Time Elapsed      : {} ms
-                =========================================================================
-                """,
+                        =========================================================================
+                        Bone Extension Registry - Registration Report
+                        =========================================================================
+                        Scanned Beans     : {}
+                        Successful        : {}
+                        Failed            : {}
+                        Extension Points  : {}
+                        Total Extensions  : {}
+                        Repository        : {} ({} points, {} extensions)
+                        Time Elapsed      : {} ms
+                        =========================================================================
+                        """,
                 stats.getTotalScanned(), stats.getSuccessfulRegistrations(),
                 stats.getFailedRegistrations(), stats.getExtensionPointCount(),
                 stats.getTotalExtensions(), repoStats.getRepositoryName(),
@@ -533,11 +612,28 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
         }
 
         // Getters
-        public int getTotalScanned() { return totalScanned; }
-        public int getSuccessfulRegistrations() { return successfulRegistrations; }
-        public int getFailedRegistrations() { return failedRegistrations; }
-        public int getExtensionPointCount() { return extensionPointCount; }
-        public int getTotalExtensions() { return totalExtensions; }
-        public int getUniqueExtensionCodes() { return uniqueExtensionCodes; }
+        public int getTotalScanned() {
+            return totalScanned;
+        }
+
+        public int getSuccessfulRegistrations() {
+            return successfulRegistrations;
+        }
+
+        public int getFailedRegistrations() {
+            return failedRegistrations;
+        }
+
+        public int getExtensionPointCount() {
+            return extensionPointCount;
+        }
+
+        public int getTotalExtensions() {
+            return totalExtensions;
+        }
+
+        public int getUniqueExtensionCodes() {
+            return uniqueExtensionCodes;
+        }
     }
 }

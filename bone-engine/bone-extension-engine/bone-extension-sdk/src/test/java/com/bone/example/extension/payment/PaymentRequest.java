@@ -1,4 +1,4 @@
-package com.bone.example.extension.common;
+package com.bone.example.extension.payment;
 
 import java.math.BigDecimal;
 

@@ -19,23 +19,23 @@ import java.math.BigDecimal;
 @Extension(
     name = "特殊疾病理赔扩展实现",
     description = "处理特殊疾病类型的医疗保险理赔请求",
-    tenantCode = "default",
+    tenant = "default",
     bizCode = "MEDICAL_CLAIM",  // 统一使用MEDICAL_CLAIM作为业务编码
     scenario = "SPECIAL_DISEASE_CLAIM",
     condition = "#data.claimType == T(com.bone.example.extension.medical.MedicalClaimRequest.ClaimType).SPECIAL_TREATMENT",
-    priority = 120,
+    order = 120,
     enabled = true,
     version = "1.0.0"
 )
 // 实现类文档 - 描述适配场景和实现细节（编译时注解，不影响运行时）
 @ExtensionDoc(
     description = "专门处理特殊疾病类型的医疗保险理赔，包括特殊疾病费用验证和理赔计算",
-    scenarios = "适用于特殊疾病患者的理赔场景",
-    implementationDetails = "验证特殊疾病诊断证明，计算特殊疾病相关费用的理赔金额",
+    scenario = "适用于特殊疾病患者的理赔场景",
+    feature = "验证特殊疾病诊断证明，计算特殊疾病相关费用的理赔金额",
     differences = "与普通门诊和住院理赔相比，针对特殊疾病有专门的理赔标准和限额",
-    notes = "提供了基础的特殊疾病理赔处理逻辑",
+    note = "提供了基础的特殊疾病理赔处理逻辑",
     author = "测试团队",
-    createDate = "2024-01-01"
+    created = "2024-01-01"
 )
 public class SpecialDiseaseClaimExtension implements MedicalClaimExtPoint {
     // 日志记录器

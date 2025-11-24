@@ -34,19 +34,27 @@ public class ExtensionPointDefinition implements Serializable {
 
     /**
      * 所有已注册的扩展实现（线程安全）
-     * 使用 lazy getter 避免 Lombok 生成可变返回
+     * 使用 volatile + 双重检查锁定确保线程安全
      */
-    @Getter(lazy = true)
-    private final Map<String, ExtensionDefinition> extensions = new ConcurrentHashMap<>();
+    private transient volatile Map<String, ExtensionDefinition> extensions;
 
     // ==================== 核心访问方法（完美兼容你的注册逻辑） ====================
 
     /**
-     * 获取线程安全的 extensions Map
-     * 直接用于 putIfAbsent 检查重复注册
+     * 获取线程安全的 extensions Map（懒加载 + 双重检查锁定）
      */
     public Map<String, ExtensionDefinition> getExtensions() {
-        return getExtensions(); // 触发 lazy 初始化
+        Map<String, ExtensionDefinition> result = extensions;
+        if (result == null) {
+            synchronized (this) {
+                result = extensions;
+                if (result == null) {
+                    result = new ConcurrentHashMap<>();
+                    extensions = result;
+                }
+            }
+        }
+        return result;
     }
 
     // ==================== 其他安全访问方法（生产推荐） ====================

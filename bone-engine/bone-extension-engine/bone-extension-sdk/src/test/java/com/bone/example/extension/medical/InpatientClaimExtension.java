@@ -22,23 +22,23 @@ import java.time.temporal.ChronoUnit;
 @Extension(
     name = "住院理赔扩展实现",
     description = "处理住院类型的医疗保险理赔请求",
-    tenantCode = "default",
+    tenant= "default",
     bizCode = "MEDICAL_CLAIM",
     scenario = "INPATIENT_CLAIM",
     condition = "#data.claimType == T(com.bone.example.extension.medical.MedicalClaimRequest.ClaimType).INPATIENT",
-    priority = 110,
+    order = 110,
     enabled = true,
     version = "1.0.0"
 )
 // 实现类文档 - 描述适配场景和实现细节（编译时注解，不影响运行时）
 @ExtensionDoc(
     description = "专门处理住院类型的医疗保险理赔，包括住院费用验证和理赔计算",
-    scenarios = "适用于住院就医后的理赔场景",
-    implementationDetails = "验证住院就诊信息，计算住院期间所有费用的理赔金额",
+    scenario = "适用于住院就医后的理赔场景",
+    feature = "验证住院就诊信息，计算住院期间所有费用的理赔金额",
     differences = "与门诊理赔相比，需要验证更多住院相关信息，理赔标准和限额不同",
-    notes = "提供了完整的住院理赔处理逻辑，包括参数验证和理赔金额计算",
+    note = "提供了完整的住院理赔处理逻辑，包括参数验证和理赔金额计算",
     author = "测试团队",
-    createDate = "2024-01-01"
+    created = "2024-01-01"
 )
 public class InpatientClaimExtension implements MedicalClaimExtPoint {
     // 日志记录器

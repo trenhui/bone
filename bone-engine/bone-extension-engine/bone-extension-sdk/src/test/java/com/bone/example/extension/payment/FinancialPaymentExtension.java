@@ -19,19 +19,19 @@ import com.bone.example.extension.result.ValidationResult;
 @Extension(
     name = "金融支付扩展实现",
     description = "处理金融场景下的支付请求，提供专业的金融支付计算逻辑",
-    tenantCode = "FINANCIAL_TENANT",
-    priority = 100,
+    tenant = "FINANCIAL_TENANT",
+    order = 100,
     enabled = true,
     version = "1.0.0"
 )
 @ExtensionDoc(
     description = "专为金融机构设计的支付扩展实现，提供符合金融场景特点的支付计算和合规检查功能",
-    scenarios = "金融租户的支付场景",
-    implementationDetails = "实现金融行业特定的支付验证和处理逻辑",
+    scenario = "金融租户的支付场景",
+    feature = "实现金融行业特定的支付验证和处理逻辑",
     performance = "测试实现，单次执行耗时<5ms",
-    notes = "仅对金融租户生效的支付实现\n使用说明：当支付请求来源于金融机构且商户ID以'FIN'开头时自动应用此扩展\n最佳实践：\n1. 确保支付计算精确到小数点后四位\n2. 实现严格的合规性检查\n3. 对所有操作进行详细日志记录\n4. 实现幂等性处理避免重复支付",
+    note = "仅对金融租户生效的支付实现\n使用说明：当支付请求来源于金融机构且商户ID以'FIN'开头时自动应用此扩展\n最佳实践：\n1. 确保支付计算精确到小数点后四位\n2. 实现严格的合规性检查\n3. 对所有操作进行详细日志记录\n4. 实现幂等性处理避免重复支付",
     author = "测试团队",
-    createDate = "2024-01-01"
+    created = "2024-01-01"
 )
 @Component
 public class FinancialPaymentExtension implements PaymentExtPoint {

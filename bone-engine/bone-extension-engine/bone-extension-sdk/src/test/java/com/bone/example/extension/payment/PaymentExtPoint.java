@@ -16,13 +16,13 @@ import com.bone.example.extension.result.ValidationResult;
     description = "支付处理相关的扩展点，支持支付前验证、金额计算和支付后处理"
 )
 @ExtensionPointDoc(
-    title = "支付处理扩展点接口",
+    name = "支付处理扩展点接口",
     domain = "支付系统",
     category = "交易处理",
     description = "该扩展点定义了支付处理的核心流程，包括支付前验证、金额计算和支付后处理三个关键环节，允许不同业务场景定制化支付逻辑。",
     usage = "实现该接口并通过@Extension注解注册，系统会根据业务上下文和优先级自动选择合适的扩展实现。",
-    bestPractices = "1. 确保实现类线程安全\n2. 适当设置优先级以便正确选择扩展\n3. 实现isApplicable方法实现精准路由\n4. 添加完整的错误处理机制\n5. 对关键操作进行日志记录",
-    notes = "各实现类应关注性能优化，尤其是在高频交易场景下"
+    bestPractice = "1. 确保实现类线程安全\n2. 适当设置优先级以便正确选择扩展\n3. 实现isApplicable方法实现精准路由\n4. 添加完整的错误处理机制\n5. 对关键操作进行日志记录",
+    note = "各实现类应关注性能优化，尤其是在高频交易场景下"
 )
 public interface PaymentExtPoint {
     /**
