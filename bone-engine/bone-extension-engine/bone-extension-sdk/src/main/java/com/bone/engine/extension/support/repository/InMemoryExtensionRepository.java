@@ -1,6 +1,5 @@
 package com.bone.engine.extension.support.repository;
 
-import com.alibaba.nacos.api.config.ConfigService;
 import com.bone.engine.extension.api.model.definition.ExtensionDefinition;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -25,7 +24,7 @@ import java.util.stream.Collectors;
  * 4. 监控支持：内置统计信息
  */
 @Component("inMemoryExtensionRepository")
-@ConditionalOnClass(ConfigService.class)
+@ConditionalOnClass(com.alibaba.nacos.api.config.ConfigService.class)
 @Slf4j
 public class InMemoryExtensionRepository implements ExtensionRepository {
 
@@ -48,22 +47,23 @@ public class InMemoryExtensionRepository implements ExtensionRepository {
 
     @Override
     @Nullable
-    public ExtensionDefinition save(@NonNull String extensionPoint, @NonNull ExtensionDefinition definition) {
+    public ExtensionDefinition register(@NonNull String extensionPoint, @NonNull ExtensionDefinition extension) {
         Objects.requireNonNull(extensionPoint, "Extension point cannot be null");
-        Objects.requireNonNull(definition, "Extension definition cannot be null");
+        Objects.requireNonNull(extension, "Extension definition cannot be null");
 
         ConcurrentMap<String, ExtensionDefinition> pointExtensions = storage.computeIfAbsent(
                 extensionPoint, k -> new ConcurrentHashMap<>(16));
 
-        ExtensionDefinition previous = pointExtensions.put(definition.getCode(), definition);
+        ExtensionDefinition previous = pointExtensions.put(extension.getCode(), extension);
         lastModifiedTime.set(System.currentTimeMillis());
 
+        log.debug("Extension registered: {} -> {}", extensionPoint, extension.getCode());
         return previous;
     }
 
     @Override
     @Nullable
-    public ExtensionDefinition delete(@NonNull String extensionPoint, @NonNull String extensionCode) {
+    public ExtensionDefinition unregister(@NonNull String extensionPoint, @NonNull String extensionCode) {
         ConcurrentMap<String, ExtensionDefinition> pointExtensions = storage.get(extensionPoint);
         if (pointExtensions != null) {
             ExtensionDefinition removed = pointExtensions.remove(extensionCode);
@@ -73,6 +73,7 @@ public class InMemoryExtensionRepository implements ExtensionRepository {
                 if (pointExtensions.isEmpty()) {
                     storage.remove(extensionPoint);
                 }
+                log.debug("Extension unregistered: {} -> {}", extensionPoint, extensionCode);
             }
             return removed;
         }
@@ -81,7 +82,7 @@ public class InMemoryExtensionRepository implements ExtensionRepository {
 
     @Override
     @Nullable
-    public ExtensionDefinition deleteByCode(@NonNull String extensionCode) {
+    public ExtensionDefinition unregisterByCode(@NonNull String extensionCode) {
         for (Map.Entry<String, ConcurrentMap<String, ExtensionDefinition>> entry : storage.entrySet()) {
             ExtensionDefinition removed = entry.getValue().remove(extensionCode);
             if (removed != null) {
@@ -90,6 +91,7 @@ public class InMemoryExtensionRepository implements ExtensionRepository {
                 if (entry.getValue().isEmpty()) {
                     storage.remove(entry.getKey());
                 }
+                log.debug("Extension globally unregistered: {}", extensionCode);
                 return removed;
             }
         }
@@ -97,15 +99,37 @@ public class InMemoryExtensionRepository implements ExtensionRepository {
     }
 
     @Override
+    @NonNull
+    public Collection<ExtensionDefinition> getEnabledExtensions(@NonNull String extensionPoint) {
+        ConcurrentMap<String, ExtensionDefinition> pointExtensions = storage.get(extensionPoint);
+        if (pointExtensions == null) {
+            return Collections.emptyList();
+        }
+
+        return pointExtensions.values().stream()
+                .filter(ExtensionDefinition::isEnabled)
+                .collect(Collectors.toUnmodifiableList());
+    }
+
+    @Override
+    @NonNull
+    public Collection<ExtensionDefinition> getAllExtensions(@NonNull String extensionPoint) {
+        ConcurrentMap<String, ExtensionDefinition> pointExtensions = storage.get(extensionPoint);
+        return pointExtensions != null ?
+                Collections.unmodifiableCollection(new ArrayList<>(pointExtensions.values())) :
+                Collections.emptyList();
+    }
+
+    @Override
     @Nullable
-    public ExtensionDefinition findByPointAndCode(@NonNull String extensionPoint, @NonNull String extensionCode) {
+    public ExtensionDefinition getExtension(@NonNull String extensionPoint, @NonNull String extensionCode) {
         ConcurrentMap<String, ExtensionDefinition> pointExtensions = storage.get(extensionPoint);
         return pointExtensions != null ? pointExtensions.get(extensionCode) : null;
     }
 
     @Override
     @Nullable
-    public ExtensionDefinition findByCode(@NonNull String extensionCode) {
+    public ExtensionDefinition getExtensionByCode(@NonNull String extensionCode) {
         return storage.values().stream()
                 .map(extensions -> extensions.get(extensionCode))
                 .filter(Objects::nonNull)
@@ -114,58 +138,24 @@ public class InMemoryExtensionRepository implements ExtensionRepository {
     }
 
     @Override
-    @NonNull
-    public Collection<ExtensionDefinition> findAllByPoint(@NonNull String extensionPoint) {
-        ConcurrentMap<String, ExtensionDefinition> pointExtensions = storage.get(extensionPoint);
-        return pointExtensions != null ?
-                Collections.unmodifiableCollection(new ArrayList<>(pointExtensions.values())) :
-                Collections.emptyList();
-    }
-
-    @Override
-    @NonNull
-    public Collection<ExtensionDefinition> findAll() {
-        return storage.values().stream()
-                .flatMap(extensions -> extensions.values().stream())
-                .collect(Collectors.toUnmodifiableList());
-    }
-
-    @Override
-    @NonNull
-    public Collection<ExtensionDefinition> findByCondition(@NonNull Predicate<ExtensionDefinition> predicate) {
-        return storage.values().stream()
-                .flatMap(extensions -> extensions.values().stream())
-                .filter(predicate)
-                .collect(Collectors.toUnmodifiableList());
-    }
-
-    @Override
-    @NonNull
-    public Collection<ExtensionDefinition> findEnabledByPoint(@NonNull String extensionPoint) {
-        return findAllByPoint(extensionPoint).stream()
-                .filter(ExtensionDefinition::isEnabled)
-                .collect(Collectors.toUnmodifiableList());
-    }
-
-    @Override
-    public boolean exists(@NonNull String extensionPoint, @NonNull String extensionCode) {
+    public boolean isRegistered(@NonNull String extensionPoint, @NonNull String extensionCode) {
         ConcurrentMap<String, ExtensionDefinition> pointExtensions = storage.get(extensionPoint);
         return pointExtensions != null && pointExtensions.containsKey(extensionCode);
     }
 
     @Override
-    public boolean existsByPoint(@NonNull String extensionPoint) {
+    public boolean hasExtensions(@NonNull String extensionPoint) {
         ConcurrentMap<String, ExtensionDefinition> pointExtensions = storage.get(extensionPoint);
         return pointExtensions != null && !pointExtensions.isEmpty();
     }
 
     @Override
-    public int saveAll(@NonNull Map<String, Collection<ExtensionDefinition>> definitions) {
+    public int registerAll(@NonNull Map<String, Collection<ExtensionDefinition>> extensionsByPoint) {
         int count = 0;
-        for (Map.Entry<String, Collection<ExtensionDefinition>> entry : definitions.entrySet()) {
+        for (Map.Entry<String, Collection<ExtensionDefinition>> entry : extensionsByPoint.entrySet()) {
             String extensionPoint = entry.getKey();
-            for (ExtensionDefinition definition : entry.getValue()) {
-                save(extensionPoint, definition);
+            for (ExtensionDefinition extension : entry.getValue()) {
+                register(extensionPoint, extension);
                 count++;
             }
         }
@@ -173,17 +163,34 @@ public class InMemoryExtensionRepository implements ExtensionRepository {
     }
 
     @Override
-    public int clearByPoint(@NonNull String extensionPoint) {
+    public int clearExtensions(@NonNull String extensionPoint) {
         ConcurrentMap<String, ExtensionDefinition> removed = storage.remove(extensionPoint);
         if (removed != null) {
             lastModifiedTime.set(System.currentTimeMillis());
+            log.debug("Cleared {} extensions from point: {}", removed.size(), extensionPoint);
             return removed.size();
         }
         return 0;
     }
 
     @Override
-    public int countPoints() {
+    public void clearAll() {
+        storage.clear();
+        lastModifiedTime.set(System.currentTimeMillis());
+        log.debug("All extensions cleared from repository");
+    }
+
+    @Override
+    @NonNull
+    public Collection<ExtensionDefinition> findExtensions(@NonNull Predicate<ExtensionDefinition> condition) {
+        return storage.values().stream()
+                .flatMap(extensions -> extensions.values().stream())
+                .filter(condition)
+                .collect(Collectors.toUnmodifiableList());
+    }
+
+    @Override
+    public int countExtensionPoints() {
         return storage.size();
     }
 
@@ -195,28 +202,22 @@ public class InMemoryExtensionRepository implements ExtensionRepository {
     }
 
     @Override
-    public int countByPoint(@NonNull String extensionPoint) {
+    public int countExtensionsInPoint(@NonNull String extensionPoint) {
         ConcurrentMap<String, ExtensionDefinition> pointExtensions = storage.get(extensionPoint);
         return pointExtensions != null ? pointExtensions.size() : 0;
     }
 
     @Override
     @NonNull
-    public Set<String> getAllExtensionPoints() {
+    public Set<String> getExtensionPointNames() {
         return Collections.unmodifiableSet(new HashSet<>(storage.keySet()));
     }
 
     @Override
-    public void clear() {
-        storage.clear();
-        lastModifiedTime.set(System.currentTimeMillis());
-    }
-
-    @Override
     @NonNull
-    public RepositoryStatistics getStatistics() {
-        return new RepositoryStatistics(
-                countPoints(),
+    public RepositoryStats getStats() {
+        return new RepositoryStats(
+                countExtensionPoints(),
                 countExtensions(),
                 lastModifiedTime.get(),
                 name

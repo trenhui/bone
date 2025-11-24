@@ -176,7 +176,8 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
 
         ExtensionPointDefinition pointDefinition = extensionPointRegistry.get(extensionPoint);
         if (pointDefinition != null && pointDefinition.getExtensions().remove(extensionCode) != null) {
-            ExtensionDefinition removed = extensionRepository.delete(extensionPoint, extensionCode);
+            // 更新：使用新的 unregister 方法
+            ExtensionDefinition removed = extensionRepository.unregister(extensionPoint, extensionCode);
             if (removed != null) {
                 registeredExtensionCodes.remove(extensionCode);
                 log.info("Extension unregistered successfully: {} -> {}", extensionPoint, extensionCode);
@@ -197,29 +198,32 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
      * 根据扩展点和扩展代码查询扩展定义
      */
     public Optional<ExtensionDefinition> findExtension(@NonNull String extensionPoint, @NonNull String extensionCode) {
-        return Optional.ofNullable(
-                extensionRepository.findByPointAndCode(extensionPoint, extensionCode));
+        // 更新：使用新的 getExtension 方法
+        return Optional.ofNullable(extensionRepository.getExtension(extensionPoint, extensionCode));
     }
 
     /**
      * 查询扩展点下的所有扩展定义
      */
     public Collection<ExtensionDefinition> findExtensionsByPoint(@NonNull String extensionPoint) {
-        return extensionRepository.findAllByPoint(extensionPoint);
+        // 更新：使用新的 getAllExtensions 方法
+        return extensionRepository.getAllExtensions(extensionPoint);
     }
 
     /**
      * 查询扩展点下启用的扩展定义
      */
     public Collection<ExtensionDefinition> findEnabledExtensionsByPoint(@NonNull String extensionPoint) {
-        return extensionRepository.findEnabledByPoint(extensionPoint);
+        // 更新：使用新的 getEnabledExtensions 方法
+        return extensionRepository.getEnabledExtensions(extensionPoint);
     }
 
     /**
      * 全局搜索扩展定义
      */
     public Optional<ExtensionDefinition> findExtensionByCode(@NonNull String extensionCode) {
-        return Optional.ofNullable(extensionRepository.findByCode(extensionCode));
+        // 更新：使用新的 getExtensionByCode 方法
+        return Optional.ofNullable(extensionRepository.getExtensionByCode(extensionCode));
     }
 
     // ==================== 统计信息 ====================
@@ -232,7 +236,9 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
                 totalScannedCount.get(),
                 successfulRegistrationCount.get(),
                 failedRegistrationCount.get(),
-                extensionRepository.countPoints(),
+                // 更新：使用新的 countExtensionPoints 方法
+                extensionRepository.countExtensionPoints(),
+                // 更新：使用新的 countExtensions 方法
                 extensionRepository.countExtensions(),
                 registeredExtensionCodes.size()
         );
@@ -248,8 +254,9 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
     /**
      * 获取仓库统计信息
      */
-    public ExtensionRepository.RepositoryStatistics getRepositoryStatistics() {
-        return extensionRepository.getStatistics();
+    public ExtensionRepository.RepositoryStats getRepositoryStatistics() {
+        // 更新：使用新的 getStats 方法
+        return extensionRepository.getStats();
     }
 
     // ==================== 内部辅助方法 ====================
@@ -421,8 +428,8 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
     }
 
     private void validateExtensionDefinition(ExtensionDefinition definition) {
-        // 检查重复注册
-        if (extensionRepository.exists(definition.getPoint().getCode(), definition.getCode())) {
+        // 更新：使用新的 isRegistered 方法进行重复注册检查
+        if (extensionRepository.isRegistered(definition.getPoint().getCode(), definition.getCode())) {
             throw new ExtensionRegistrationException(
                     "Duplicate extension code: " + definition.getCode() + " for point: " + definition.getPoint().getCode());
         }
@@ -447,8 +454,8 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
     }
 
     private void executeRegistration(String extensionPoint, ExtensionDefinition definition) {
-        // 注册到仓库
-        ExtensionDefinition previous = extensionRepository.save(extensionPoint, definition);
+        // 更新：使用新的 register 方法进行注册
+        ExtensionDefinition previous = extensionRepository.register(extensionPoint, definition);
         if (previous != null) {
             throw new ExtensionRegistrationException(
                     "Extension code already exists: " + definition.getCode());
@@ -465,7 +472,8 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
 
     private void logRegistrationReport(long startTime) {
         RegistrationStatistics stats = getRegistrationStatistics();
-        ExtensionRepository.RepositoryStatistics repoStats = getRepositoryStatistics();
+        // 更新：使用新的 getStats 方法获取仓库统计
+        ExtensionRepository.RepositoryStats repoStats = extensionRepository.getStats();
 
         log.info("""
                 =========================================================================
@@ -478,17 +486,8 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
                 Total Extensions  : {}
                 Repository        : {} ({} points, {} extensions)
                 Time Elapsed      : {} ms
-                =========================================================================                =========================================================================
-                Bone Extension Registry - Registration Report
                 =========================================================================
-                Scanned Beans     : {}
-                Successful        : {}
-                Failed            : {}
-                Extension Points  : {}
-                Total Extensions  : {}
-                Repository        : {} ({} points, {} extensions)
-                Time Elapsed      : {} ms
-                =========================================================================""",
+                """,
                 stats.getTotalScanned(), stats.getSuccessfulRegistrations(),
                 stats.getFailedRegistrations(), stats.getExtensionPointCount(),
                 stats.getTotalExtensions(), repoStats.getRepositoryName(),

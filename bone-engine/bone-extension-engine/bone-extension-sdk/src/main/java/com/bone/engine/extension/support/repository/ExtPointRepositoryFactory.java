@@ -17,7 +17,7 @@ public class ExtPointRepositoryFactory {
     // 缓存已创建的仓库实例
     private static final Map<String, ExtensionRepository> REPOSITORY_CACHE = new ConcurrentHashMap<>();
     // 默认仓库类型
-    private static final Class<? extends ExtensionRepository> DEFAULT_REPOSITORY_CLASS = MemExtensionRepository.class;
+    private static final Class<? extends ExtensionRepository> DEFAULT_REPOSITORY_CLASS = InMemoryExtensionRepository.class;
 
     /**
      * 创建默认的扩展点仓库实例
