@@ -17,7 +17,7 @@ public @interface ExtensionPoint {
     /**
      * 扩展点名称
      */
-    String value() default "";
+    String name() default "";
 
     /**
      * 扩展点描述

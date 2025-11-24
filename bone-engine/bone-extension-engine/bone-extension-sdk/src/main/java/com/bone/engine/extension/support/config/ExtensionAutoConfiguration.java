@@ -2,6 +2,7 @@ package com.bone.engine.extension.support.config;
 
 import com.bone.engine.extension.api.annotation.EnableExtensionPoints;
 import com.bone.engine.extension.api.spi.ExtPointRouter;
+import com.bone.engine.extension.core.event.ExtensionEventPublisher;
 import com.bone.engine.extension.core.lifecycle.DefaultExtensionLifecycle;
 import com.bone.engine.extension.core.lifecycle.ExtensionLifecycle;
 import com.bone.engine.extension.core.register.ExtensionRegister;
@@ -46,8 +47,8 @@ public class ExtensionAutoConfiguration implements ImportAware {
     }
 
     @Bean
-    public ExtensionRegister extensionRegister() {
-        return new ExtensionRegister();
+    public ExtensionRegister extensionRegister(ExtensionRepository extensionRepository, ExtensionProperties extensionProperties, ExtensionEventPublisher eventPublisher) {
+        return new ExtensionRegister(extensionRepository,extensionProperties,eventPublisher);
     }
 
     @Bean

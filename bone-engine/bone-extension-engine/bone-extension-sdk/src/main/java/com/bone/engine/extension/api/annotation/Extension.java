@@ -17,7 +17,7 @@ public @interface Extension {
     /**
      * 扩展名称
      */
-    String value() default "";
+    String name() default "";
 
     /**
      * 扩展描述

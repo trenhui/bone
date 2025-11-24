@@ -7,7 +7,7 @@ import java.io.Serializable;
  * @Extension 注解原始元数据
  */
 @Data
-public class ExtensionMetadata implements Serializable {
+public class ExtensionPointDocMetadata implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private String value = "";

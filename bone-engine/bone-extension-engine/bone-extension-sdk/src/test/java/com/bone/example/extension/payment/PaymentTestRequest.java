@@ -1,7 +1,5 @@
 package com.bone.example.extension.payment;
 
-import com.bone.example.extension.common.PaymentRequest;
-
 /**
  * 支付请求测试类
  * <p>

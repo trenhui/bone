@@ -163,7 +163,7 @@ public @interface ExtensionPointDoc {
         /**
          * 成功示例
          */
-        String successExample() default "";
+        String example() default "";
 
         /**
          * 错误码
