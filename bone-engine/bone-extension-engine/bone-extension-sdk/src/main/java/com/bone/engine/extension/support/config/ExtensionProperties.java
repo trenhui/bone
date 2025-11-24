@@ -36,6 +36,10 @@ public class ExtensionProperties {
     @NestedConfigurationProperty
     private MonitorConfig monitor = new MonitorConfig();
 
+    /** 事件配置 */
+    @NestedConfigurationProperty
+    private EventsConfig events = new EventsConfig();
+
     public boolean isEnabled() {
         return enabled;
     }
@@ -82,6 +86,14 @@ public class ExtensionProperties {
 
     public void setMonitor(MonitorConfig monitor) {
         this.monitor = monitor;
+    }
+
+    public EventsConfig getEvents() {
+        return events;
+    }
+
+    public void setEvents(EventsConfig events) {
+        this.events = events;
     }
 
     /** 缓存配置 */
@@ -138,6 +150,8 @@ public class ExtensionProperties {
         private boolean scanClasspath = true;
         /** 扫描时包含的注解 */
         private String[] includeAnnotations = {};
+        /** 是否自动注册发现的扩展点 */
+        private boolean autoRegister = true;
 
         public boolean isEnabled() {
             return enabled;
@@ -169,6 +183,14 @@ public class ExtensionProperties {
 
         public void setIncludeAnnotations(String[] includeAnnotations) {
             this.includeAnnotations = includeAnnotations;
+        }
+
+        public boolean isAutoRegister() {
+            return autoRegister;
+        }
+
+        public void setAutoRegister(boolean autoRegister) {
+            this.autoRegister = autoRegister;
         }
     }
 
@@ -331,6 +353,40 @@ public class ExtensionProperties {
 
         public void setMetricsPrefix(String metricsPrefix) {
             this.metricsPrefix = metricsPrefix;
+        }
+    }
+
+    /** 事件配置 */
+    public static class EventsConfig {
+        /** 是否启用事件 */
+        private boolean enabled = true;
+        /** 是否启用异步事件 */
+        private boolean async = false;
+        /** 事件执行器 */
+        private String executor = "default";
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public boolean isAsync() {
+            return async;
+        }
+
+        public void setAsync(boolean async) {
+            this.async = async;
+        }
+
+        public String getExecutor() {
+            return executor;
+        }
+
+        public void setExecutor(String executor) {
+            this.executor = executor;
         }
     }
 }
