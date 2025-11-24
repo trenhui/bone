@@ -53,7 +53,7 @@ public class ExtensionConfigManager {
             if (configKey.equals("cache.enabled")) {
                 return String.valueOf(extensionProperties.getCache().isEnabled());
             } else if (configKey.equals("cache.expire-time")) {
-                return String.valueOf(extensionProperties.getCache().getExpireTime());
+                return String.valueOf(extensionProperties.getCache().getExpireAfterWrite());
             } else if (configKey.equals("cache.max-size")) {
                 return String.valueOf(extensionProperties.getCache().getMaxSize());
             }

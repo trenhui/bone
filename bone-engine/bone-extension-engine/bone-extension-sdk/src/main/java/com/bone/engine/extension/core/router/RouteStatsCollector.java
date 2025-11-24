@@ -31,26 +31,15 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
     private final AtomicInteger syncEvents = new AtomicInteger(0);
     private final AtomicInteger failedEvents = new AtomicInteger(0);
 
-
     private static final long SLOW_ROUTE_THRESHOLD_MS = 100; // 慢路由阈值（毫秒）
     private static final Logger logger = LoggerFactory.getLogger(RouteStatsCollector.class);
-    
-    /**
-     * 记录慢调用
-     */
-    public <T> void recordSlowCall(Class<T> extPointClass, long executionTimeMs, long thresholdMs) {
-        if (extPointClass != null && logger.isWarnEnabled()) {
-            logger.warn("Slow route detected: {} - took {}ms (threshold: {}ms)",
-                    extPointClass.getSimpleName(), executionTimeMs, thresholdMs);
-        }
-    }
-    
+
     // 缓存相关统计
     private final Map<String, CacheStats> cacheStatsMap = new ConcurrentHashMap<>();
     private final AtomicLong totalCacheHits = new AtomicLong(0);
     private final AtomicLong totalCacheMisses = new AtomicLong(0);
     private final AtomicLong totalCacheEvictions = new AtomicLong(0);
-    
+
     /**
      * 缓存统计数据类
      */
@@ -60,30 +49,30 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
         private final AtomicLong evictions = new AtomicLong(0);
         private final AtomicLong size = new AtomicLong(0);
         private final AtomicLong lastAccessTime = new AtomicLong(0);
-        
+
         public void incrementHits() {
             hits.incrementAndGet();
             lastAccessTime.set(System.currentTimeMillis());
         }
-        
+
         public void incrementMisses() {
             misses.incrementAndGet();
             lastAccessTime.set(System.currentTimeMillis());
         }
-        
+
         public void incrementEvictions() {
             evictions.incrementAndGet();
         }
-        
+
         public void updateSize(long newSize) {
             size.set(newSize);
         }
-        
+
         public double getHitRate() {
             long total = hits.get() + misses.get();
             return total > 0 ? (double) hits.get() / total * 100 : 0;
         }
-        
+
         // Getters
         public long getHits() { return hits.get(); }
         public long getMisses() { return misses.get(); }
@@ -150,14 +139,14 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
 
         public double getAverageExecutionTimeMs() {
             int successCount = successRequests.get();
-            return successCount > 0 ? 
-                   (double) totalExecutionTimeMs.get() / successCount : 0;
+            return successCount > 0 ?
+                    (double) totalExecutionTimeMs.get() / successCount : 0;
         }
 
         public double getSuccessRate() {
             int totalCount = totalRequests.get();
-            return totalCount > 0 ? 
-                   (double) successRequests.get() / totalCount * 100 : 100;
+            return totalCount > 0 ?
+                    (double) successRequests.get() / totalCount * 100 : 100;
         }
 
         // Getters
@@ -165,11 +154,11 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
         public int getSuccessRequests() { return successRequests.get(); }
         public int getFailedRequests() { return failedRequests.get(); }
         public long getTotalExecutionTimeMs() { return totalExecutionTimeMs.get(); }
-        public long getMaxExecutionTimeMs() { 
+        public long getMaxExecutionTimeMs() {
             long max = maxExecutionTimeMs.get();
             return max == Long.MAX_VALUE ? 0 : max;
         }
-        public long getMinExecutionTimeMs() { 
+        public long getMinExecutionTimeMs() {
             long min = minExecutionTimeMs.get();
             return min == Long.MAX_VALUE ? 0 : min;
         }
@@ -180,110 +169,114 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
         @Override
         public String toString() {
             return "RouteStats{" +
-                   "totalRequests=" + totalRequests +
-                   ", successRequests=" + successRequests +
-                   ", failedRequests=" + failedRequests +
-                   ", avgExecutionTimeMs=" + String.format("%.2f", getAverageExecutionTimeMs()) +
-                   ", maxExecutionTimeMs=" + getMaxExecutionTimeMs() +
-                   ", minExecutionTimeMs=" + getMinExecutionTimeMs() +
-                   ", successRate=" + String.format("%.2f%%", getSuccessRate()) +
-                   ", lastRequestTime=" + lastRequestTime +
-                   "}";
+                    "totalRequests=" + totalRequests +
+                    ", successRequests=" + successRequests +
+                    ", failedRequests=" + failedRequests +
+                    ", avgExecutionTimeMs=" + String.format("%.2f", getAverageExecutionTimeMs()) +
+                    ", maxExecutionTimeMs=" + getMaxExecutionTimeMs() +
+                    ", minExecutionTimeMs=" + getMinExecutionTimeMs() +
+                    ", successRate=" + String.format("%.2f%%", getSuccessRate()) +
+                    ", lastRequestTime=" + lastRequestTime +
+                    "}";
         }
     }
 
     // 统计数据存储
     private final Map<String, RouteStats> routeStatsMap = new ConcurrentHashMap<>();
     private final Map<String, AtomicInteger> failureCounterMap = new ConcurrentHashMap<>();
-    private final Map<String, RouteStats> implementationStatsMap = new ConcurrentHashMap<>(); // 单独存储实现类的统计信息
+    private final Map<String, RouteStats> implementationStatsMap = new ConcurrentHashMap<>();
 
     /**
-     * 构建统计键 - 委托给CacheKeyFactory
+     * 构建统计键
      */
     private String buildStatsKey(Class<?> extPointClass, Method method) {
-        return CacheKeyFactory.createStatsKey(extPointClass, method);
+        if (extPointClass == null || method == null) {
+            return "unknown:unknown";
+        }
+        return "stats:" + extPointClass.getSimpleName() + ":" + method.getName();
     }
-    
+
     /**
-     * 构建实现统计键 - 委托给CacheKeyFactory
+     * 构建实现统计键
      */
     private String buildImplStatsKey(Class<?> extPointClass, Method method, Class<?> implementationType) {
+        String statsKey = buildStatsKey(extPointClass, method);
         String implName = implementationType != null ? implementationType.getSimpleName() : "unknown";
-        return buildStatsKey(extPointClass, method) + ":" + implName;
+        return statsKey + ":" + implName;
     }
-    
+
     /**
-     * 构建失败键 - 委托给CacheKeyFactory
+     * 构建失败键
      */
     private String buildFailureKey(Class<?> extPointClass, Method method, Class<?> implementationType) {
-        return CacheKeyFactory.createFailureKey(extPointClass, method, implementationType);
+        if (extPointClass == null || method == null) {
+            return "unknown:unknown:unknown";
+        }
+        String implName = implementationType != null ? implementationType.getSimpleName() : "unknown";
+        return "failure:" + extPointClass.getSimpleName() + ":" + method.getName() + ":" + implName;
     }
-    
+
     /**
      * 记录带业务上下文的路由统计信息
      */
-    public void recordRouteStatsWithContext(Class<?> extPointClass, Method method, 
-                                          Class<?> implementationType, long executionTimeMs, 
-                                          boolean success, BizContext<?> context, Map<String, Object> extraInfo) {
+    public void recordRouteStatsWithContext(Class<?> extPointClass, Method method,
+                                            Class<?> implementationType, long executionTimeMs,
+                                            boolean success, BizContext<?> context, Map<String, Object> extraInfo) {
         recordRouteStatsInternal(extPointClass, method, implementationType, executionTimeMs, success);
-        
+
         // 记录业务上下文相关的统计信息
         if (context != null) {
-            String tenant = context.getTenantId();
+            String tenant = context.getTenant();
             String businessDomain = context.getBusinessDomain();
             String scenario = context.getScenario();
-            
-            // 可以根据业务需求扩展，记录更多上下文信息
+
             if (logger.isDebugEnabled()) {
                 logger.debug("Route stats with context: extPoint={}, method={}, tenant={}, domain={}, scenario={}, time={}ms",
                         extPointClass.getSimpleName(), method.getName(), tenant, businessDomain, scenario, executionTimeMs);
             }
-            
+
             // 记录慢调用时的上下文信息
             if (executionTimeMs > SLOW_ROUTE_THRESHOLD_MS) {
                 recordSlowInvocationDetails(extPointClass, method, implementationType, executionTimeMs, context, extraInfo);
             }
         }
     }
-    
+
     /**
      * 记录慢调用详情
      */
-    private void recordSlowInvocationDetails(Class<?> extPointClass, Method method, 
-                                          Class<?> implementationType, long executionTimeMs, 
-                                          BizContext<?> context, Map<String, Object> extraInfo) {
+    private void recordSlowInvocationDetails(Class<?> extPointClass, Method method,
+                                             Class<?> implementationType, long executionTimeMs,
+                                             BizContext<?> context, Map<String, Object> extraInfo) {
         Map<String, Object> slowCallInfo = new HashMap<>();
         slowCallInfo.put("timestamp", System.currentTimeMillis());
         slowCallInfo.put("extPoint", extPointClass.getName());
         slowCallInfo.put("method", method.getName());
         slowCallInfo.put("implementation", implementationType != null ? implementationType.getName() : "unknown");
         slowCallInfo.put("executionTimeMs", executionTimeMs);
-        
+
         // 添加业务上下文信息
         if (context != null) {
-            slowCallInfo.put("tenantId", context.getTenantId());
+            slowCallInfo.put("tenantId", context.getTenant());
             slowCallInfo.put("businessDomain", context.getBusinessDomain());
             slowCallInfo.put("scenario", context.getScenario());
             slowCallInfo.put("tags", context.getTags());
         }
-        
+
         // 添加额外信息
         if (extraInfo != null) {
             slowCallInfo.putAll(extraInfo);
         }
-        
-        // 记录慢调用日志
+
         logger.warn("Slow route invocation details: {}", slowCallInfo);
-        
-        // 这里可以扩展为发送告警、记录到监控系统等
     }
-    
+
     /**
      * 记录缓存统计信息
      */
     public void recordCacheStats(String cacheName, boolean isHit) {
         CacheStats stats = cacheStatsMap.computeIfAbsent(cacheName, k -> new CacheStats());
-        
+
         if (isHit) {
             stats.incrementHits();
             totalCacheHits.incrementAndGet();
@@ -292,7 +285,7 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
             totalCacheMisses.incrementAndGet();
         }
     }
-    
+
     /**
      * 记录缓存驱逐事件
      */
@@ -301,7 +294,7 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
         stats.incrementEvictions();
         totalCacheEvictions.incrementAndGet();
     }
-    
+
     /**
      * 更新缓存大小
      */
@@ -309,7 +302,7 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
         CacheStats stats = cacheStatsMap.computeIfAbsent(cacheName, k -> new CacheStats());
         stats.updateSize(size);
     }
-    
+
     /**
      * 获取缓存统计信息
      */
@@ -318,7 +311,7 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
         if (stats == null) {
             return null;
         }
-        
+
         Map<String, Object> result = new HashMap<>();
         result.put("hits", stats.getHits());
         result.put("misses", stats.getMisses());
@@ -326,23 +319,23 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
         result.put("evictions", stats.getEvictions());
         result.put("size", stats.getSize());
         result.put("lastAccessTime", stats.getLastAccessTime());
-        
+
         return result;
     }
-    
+
     /**
      * 获取所有缓存统计信息
      */
     public Map<String, Map<String, Object>> getAllCacheStats() {
         Map<String, Map<String, Object>> result = new HashMap<>();
-        
+
         for (Map.Entry<String, CacheStats> entry : cacheStatsMap.entrySet()) {
             result.put(entry.getKey(), getCacheStats(entry.getKey()));
         }
-        
+
         return result;
     }
-    
+
     /**
      * 获取总体缓存命中率
      */
@@ -350,12 +343,12 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
         long total = totalCacheHits.get() + totalCacheMisses.get();
         return total > 0 ? (double) totalCacheHits.get() / total * 100 : 0;
     }
-    
+
     /**
      * 记录路由统计信息内部实现
      */
-    private void recordRouteStatsInternal(Class<?> extPointClass, Method method, 
-                                        Class<?> implementationType, long executionTimeMs, boolean success) {
+    private void recordRouteStatsInternal(Class<?> extPointClass, Method method,
+                                          Class<?> implementationType, long executionTimeMs, boolean success) {
         if (extPointClass == null || method == null) {
             return;
         }
@@ -388,7 +381,7 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
             recordRouteFailureInternal(extPointClass, method, implementationType, null);
         }
 
-        // 定期记录统计日志（可配置）
+        // 定期记录统计日志
         if (stats.getTotalRequests() % 100 == 0) {
             logger.info("Route stats for {}#{}, implementation {}: {}",
                     extPointClass.getSimpleName(), method.getName(),
@@ -400,25 +393,23 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
     /**
      * 记录路由失败内部实现
      */
-    private void recordRouteFailureInternal(Class<?> extPointClass, Method method, 
-                                          Class<?> implementationType, Throwable ex) {
+    private void recordRouteFailureInternal(Class<?> extPointClass, Method method,
+                                            Class<?> implementationType, Throwable ex) {
         if (extPointClass == null || method == null) {
             return;
         }
-        
-        // 构建统计键
+
         String statsKey = buildStatsKey(extPointClass, method);
         String implStatsKey = buildImplStatsKey(extPointClass, method, implementationType);
         String failureKey = buildFailureKey(extPointClass, method, implementationType);
-        
+
         // 更新路由统计
         routeStatsMap.computeIfAbsent(statsKey, k -> new RouteStats())
                 .incrementFailedRequests();
-                
-        // 更新实现类统计
+
         implementationStatsMap.computeIfAbsent(implStatsKey, k -> new RouteStats())
                 .incrementFailedRequests();
-        
+
         // 更新失败计数
         AtomicInteger counter = failureCounterMap.computeIfAbsent(failureKey, k -> new AtomicInteger(0));
         int failureCount = counter.incrementAndGet();
@@ -438,39 +429,39 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
             }
         }
     }
-    
+
     // ----------- 接口方法实现 -----------
-    
+
     /**
      * 记录路由统计信息（接口实现）
      */
     @Override
-    public void recordRouteStats(Class<?> extPointClass, Method method, 
-                                Class<?> implementationType, long executionTimeMs, boolean success) {
+    public void recordRouteStats(Class<?> extPointClass, Method method,
+                                 Class<?> implementationType, long executionTimeMs, boolean success) {
         recordRouteStatsInternal(extPointClass, method, implementationType, executionTimeMs, success);
     }
-    
+
     /**
      * 记录路由失败（接口实现）
      */
     @Override
-    public void recordRouteFailure(Class<?> extPointClass, Method method, 
-                                  Class<?> implementationType) {
+    public void recordRouteFailure(Class<?> extPointClass, Method method,
+                                   Class<?> implementationType) {
         recordRouteFailureInternal(extPointClass, method, implementationType, null);
     }
-    
+
     /**
      * 获取路由统计（接口实现）
      */
     @Override
     public Map<String, Map<String, Long>> getRouteStats() {
         Map<String, Map<String, Long>> result = new HashMap<>();
-        
+
         synchronized (routeStatsMap) {
             for (Map.Entry<String, RouteStats> entry : routeStatsMap.entrySet()) {
                 String key = entry.getKey();
                 RouteStats stats = entry.getValue();
-                
+
                 Map<String, Long> statMap = new HashMap<>();
                 statMap.put("totalRequests", (long)stats.getTotalRequests());
                 statMap.put("successRequests", (long)stats.getSuccessRequests());
@@ -478,14 +469,14 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
                 statMap.put("totalExecutionTimeMs", stats.getTotalExecutionTimeMs());
                 statMap.put("maxExecutionTimeMs", stats.getMaxExecutionTimeMs());
                 statMap.put("minExecutionTimeMs", stats.getMinExecutionTimeMs());
-                
+
                 result.put(key, statMap);
             }
         }
-        
+
         return result;
     }
-    
+
     /**
      * 获取实现统计（接口实现）
      */
@@ -493,7 +484,7 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
     public Map<String, Long> getImplementationStats(String implementationName) {
         ensureInitialized();
         Map<String, Long> result = new HashMap<>();
-        
+
         for (Map.Entry<String, RouteStats> entry : implementationStatsMap.entrySet()) {
             if (entry.getKey().endsWith(implementationName)) {
                 RouteStats stats = entry.getValue();
@@ -506,7 +497,7 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
                 break;
             }
         }
-        
+
         // 同时也检查routeStatsMap
         if (result.isEmpty()) {
             for (Map.Entry<String, RouteStats> entry : routeStatsMap.entrySet()) {
@@ -522,10 +513,10 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
                 }
             }
         }
-        
+
         return result;
     }
-    
+
     /**
      * 重置所有统计信息（接口实现）
      */
@@ -538,7 +529,7 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
             logger.info("All route statistics have been reset");
         }
     }
-    
+
     /**
      * 重置特定扩展点的统计（接口实现）
      */
@@ -547,28 +538,26 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
         if (extPointClass == null) {
             return;
         }
-        
+
         String extPointPrefix = extPointClass.getSimpleName();
         synchronized (routeStatsMap) {
             // 移除扩展点相关的统计数据
             routeStatsMap.keySet().removeIf(key -> key.startsWith(extPointPrefix));
             implementationStatsMap.keySet().removeIf(key -> key.startsWith(extPointPrefix));
             failureCounterMap.keySet().removeIf(key -> key.startsWith(extPointPrefix));
-            
+
             logger.info("Route statistics for {} have been reset", extPointPrefix);
         }
     }
-    
+
     // ----------- 向后兼容方法 -----------
-    
+
     /**
      * 记录路由统计信息（向后兼容方法）
      */
     public void recordRouteStats(Class<?> extPointClass, Object implementation) {
-        // 提供默认实现以保持向后兼容性
         if (extPointClass != null && implementation != null) {
             try {
-                // 获取第一个方法作为代表方法
                 Method[] methods = extPointClass.getMethods();
                 if (methods.length > 0) {
                     recordRouteStatsInternal(extPointClass, methods[0], implementation.getClass(), 0, true);
@@ -578,15 +567,13 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
             }
         }
     }
-    
+
     /**
      * 记录路由失败（向后兼容方法）
      */
     public void recordRouteFailure(Class<?> extPointClass, Throwable ex) {
-        // 提供默认实现以保持向后兼容性
         if (extPointClass != null) {
             try {
-                // 获取第一个方法作为代表方法
                 Method[] methods = extPointClass.getMethods();
                 if (methods.length > 0) {
                     recordRouteFailureInternal(extPointClass, methods[0], null, ex);
@@ -596,15 +583,14 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
             }
         }
     }
-    
+
     /**
      * 记录路由失败（向后兼容方法）
      */
     public void recordRouteFailure(Class<?> extPointClass, Exception ex, Object context) {
-        // 提供默认实现以保持向后兼容性
         recordRouteFailure(extPointClass, ex);
     }
-    
+
     /**
      * 记录路由指标（向后兼容方法）
      */
@@ -612,29 +598,26 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
         if (extPointClass == null) {
             return;
         }
-        
+
         try {
-            // 获取扩展点的第一个方法作为代表方法
             Method[] methods = extPointClass.getMethods();
             Method representativeMethod = methods.length > 0 ? methods[0] : null;
-            
+
             if (representativeMethod != null) {
-                // 调用内部实现方法
                 recordRouteStatsInternal(extPointClass, representativeMethod, null, costTime, success);
             }
         } catch (Exception e) {
             logger.error("Error recording metrics for {}", extPointClass.getSimpleName(), e);
         }
     }
-    
+
     /**
      * 重置路由统计（向后兼容方法）
      */
     public void resetRouteStats() {
-        // 重置所有路由统计数据
         resetAllStats();
     }
-    
+
     /**
      * 重置特定扩展点方法的统计信息（向后兼容方法）
      */
@@ -645,16 +628,16 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
 
         String statsKey = buildStatsKey(extPointType, method);
         routeStatsMap.remove(statsKey);
-        
+
         // 移除所有相关实现的统计
         String prefix = extPointType.getSimpleName() + ":" + method.getName() + ":";
         routeStatsMap.keySet().removeIf(key -> key.startsWith(prefix));
         implementationStatsMap.keySet().removeIf(key -> key.startsWith(prefix));
         failureCounterMap.keySet().removeIf(key -> key.startsWith(prefix));
-        
+
         logger.info("Reset route stats for {}#{}", extPointType.getSimpleName(), method.getName());
     }
-    
+
     /**
      * 获取路由统计信息（向后兼容方法）
      */
@@ -668,73 +651,81 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
     /**
      * 获取特定实现的路由统计信息（向后兼容方法）
      */
-    public RouteStats getImplementationStats(Class<?> extPointType, Method method, 
-                                           Class<?> implementationType) {
+    public RouteStats getImplementationStats(Class<?> extPointType, Method method,
+                                             Class<?> implementationType) {
         if (extPointType == null || method == null || implementationType == null) {
             return null;
         }
         return implementationStatsMap.get(buildImplStatsKey(extPointType, method, implementationType));
     }
-    
+
+    /**
+     * 记录慢调用
+     */
+    public <T> void recordSlowCall(Class<T> extPointClass, long executionTimeMs, long thresholdMs) {
+        if (extPointClass != null && logger.isWarnEnabled()) {
+            logger.warn("Slow route detected: {} - took {}ms (threshold: {}ms)",
+                    extPointClass.getSimpleName(), executionTimeMs, thresholdMs);
+        }
+    }
+
     // ----------- RouterComponent接口实现 -----------
-    
+
     @Override
     protected void doInitialize() throws Exception {
-        // 初始化路由统计收集器
         logger.info("RouteStatsCollector initialized");
     }
-    
+
     @Override
     protected void doShutdown() {
-        // 清理资源
         resetAllStats();
         logger.info("RouteStatsCollector shutdown");
     }
-    
+
     @Override
     public String getComponentName() {
         return "RouteStatsCollector";
     }
-    
+
     @Override
     public boolean isAvailable() {
         return true;
     }
-    
+
     // ----------- 事件统计相关方法 -----------
-    
+
     public void incrementTotalPublishedEvents() {
         totalPublishedEvents.incrementAndGet();
     }
-    
+
     public void incrementAsyncEvents() {
         asyncEvents.incrementAndGet();
     }
-    
+
     public void incrementSyncEvents() {
         syncEvents.incrementAndGet();
     }
-    
+
     public void incrementFailedEvents() {
         failedEvents.incrementAndGet();
     }
-    
+
     public int getTotalPublishedEvents() {
         return totalPublishedEvents.get();
     }
-    
+
     public int getAsyncEvents() {
         return asyncEvents.get();
     }
-    
+
     public int getSyncEvents() {
         return syncEvents.get();
     }
-    
+
     public int getFailedEvents() {
         return failedEvents.get();
     }
-    
+
     /**
      * 获取统计摘要
      */
@@ -743,30 +734,30 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
         int totalRequests = 0;
         int totalSuccess = 0;
         long totalTime = 0;
-        
+
         // 汇总所有路由统计
         for (RouteStats stats : routeStatsMap.values()) {
             totalRequests += stats.getTotalRequests();
             totalSuccess += stats.getSuccessRequests();
             totalTime += stats.getTotalExecutionTimeMs();
         }
-        
+
         summary.put("totalRequests", totalRequests);
         summary.put("totalSuccess", totalSuccess);
         summary.put("totalFailed", totalRequests - totalSuccess);
-        summary.put("overallSuccessRate", totalRequests > 0 ? 
-                    String.format("%.2f%%", (double) totalSuccess / totalRequests * 100) : "0%");
-        summary.put("avgExecutionTimeMs", totalSuccess > 0 ? 
-                    String.format("%.2f", (double) totalTime / totalSuccess) : "0.00");
-        
+        summary.put("overallSuccessRate", totalRequests > 0 ?
+                String.format("%.2f%%", (double) totalSuccess / totalRequests * 100) : "0%");
+        summary.put("avgExecutionTimeMs", totalSuccess > 0 ?
+                String.format("%.2f", (double) totalTime / totalSuccess) : "0.00");
+
         // 添加事件统计信息
         summary.put("totalPublishedEvents", totalPublishedEvents.get());
         summary.put("asyncEvents", asyncEvents.get());
         summary.put("syncEvents", syncEvents.get());
         summary.put("failedEvents", failedEvents.get());
         summary.put("eventSuccessRate", totalPublishedEvents.get() > 0 ?
-                    String.format("%.2f%%", (double)(totalPublishedEvents.get() - failedEvents.get()) / totalPublishedEvents.get() * 100) : "100%");
-        
+                String.format("%.2f%%", (double)(totalPublishedEvents.get() - failedEvents.get()) / totalPublishedEvents.get() * 100) : "100%");
+
         return summary;
     }
 }
