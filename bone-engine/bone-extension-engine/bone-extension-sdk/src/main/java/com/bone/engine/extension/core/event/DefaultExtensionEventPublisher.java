@@ -34,7 +34,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * @author renhui.trh
  * @since 1.0.0
  */
-@Component
 public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, InitializingBean {
     
     private static final Logger log = LoggerFactory.getLogger(DefaultExtensionEventPublisher.class);

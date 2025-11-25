@@ -33,7 +33,6 @@ import com.bone.example.extension.result.ValidationResult;
     author = "测试团队",
     created = "2024-01-01"
 )
-@Component
 public class FinancialPaymentExtension implements PaymentExtPoint {
     // 日志记录器
     private static final Logger logger = LoggerFactory.getLogger(FinancialPaymentExtension.class);

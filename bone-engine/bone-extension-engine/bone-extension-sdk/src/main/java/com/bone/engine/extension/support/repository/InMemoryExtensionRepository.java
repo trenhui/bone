@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
  * 4. 监控支持：内置统计信息
  */
 @Component("inMemoryExtensionRepository")
-@ConditionalOnClass(com.alibaba.nacos.api.config.ConfigService.class)
+//@ConditionalOnClass(com.alibaba.nacos.api.config.ConfigService.class)
 @Slf4j
 public class InMemoryExtensionRepository implements ExtensionRepository {
 
@@ -43,6 +43,18 @@ public class InMemoryExtensionRepository implements ExtensionRepository {
         this.lastModifiedTime = new AtomicLong(System.currentTimeMillis());
         this.name = name;
         this.type = "InMemory";
+    }
+
+    /**
+     * 注册扩展实现到指定扩展点
+     *
+     * @param extensionPoint 扩展点全限定名
+     * @param extension      扩展定义
+     * @return 如果扩展代码已存在，返回已注册的定义，否则返回null
+     */
+    @Override
+    public ExtensionDefinition register(String extensionPoint, Object extension) {
+        return null;
     }
 
     @Override

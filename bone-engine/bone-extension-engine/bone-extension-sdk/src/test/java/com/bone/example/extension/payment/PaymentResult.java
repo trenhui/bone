@@ -31,7 +31,12 @@ public class PaymentResult {
      * 用户ID
      */
     private String userId;
-    
+
+    /**
+     * 订单ID
+     */
+    private String orderId;
+
     /**
      * 扣除的积分数量
      */
@@ -66,4 +71,12 @@ public class PaymentResult {
     public void setErrorCode(String errorCode) { this.errorCode = errorCode; }
     public String getErrorMessage() { return errorMessage; }
     public void setErrorMessage(String errorMessage) { this.errorMessage = errorMessage; }
+
+    public String getOrderId() {
+        return orderId;
+    }
+
+    public void setOrderId(String orderId) {
+        this.orderId = orderId;
+    }
 }

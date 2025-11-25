@@ -1,7 +1,7 @@
 package com.bone.engine.extension.api.annotation;
 
+import com.bone.engine.extension.core.register.ExtensionPointRegister;
 import com.bone.engine.extension.core.router.DefaultExtPointRouter;
-import com.bone.engine.extension.support.config.ExtensionAutoConfiguration;
 import com.bone.engine.extension.support.repository.InMemoryExtensionRepository;
 import org.springframework.context.annotation.Import;
 
@@ -19,7 +19,8 @@ import java.lang.annotation.*;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Import(ExtensionAutoConfiguration.class)
+@Import(ExtensionPointRegister.class)
+
 public @interface EnableExtensionPoints {
 
     /**

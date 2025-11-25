@@ -2,6 +2,7 @@ package com.bone.engine.extension.support.config;
 
 import com.bone.engine.extension.api.annotation.EnableExtensionPoints;
 import com.bone.engine.extension.api.spi.ExtPointRouter;
+import com.bone.engine.extension.core.event.DefaultExtensionEventPublisher;
 import com.bone.engine.extension.core.event.ExtensionEventPublisher;
 import com.bone.engine.extension.core.lifecycle.DefaultExtensionLifecycle;
 import com.bone.engine.extension.core.lifecycle.ExtensionLifecycle;
@@ -15,10 +16,12 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.ImportAware;
 import org.springframework.core.annotation.AnnotationAttributes;
+import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.core.type.AnnotationMetadata;
 import org.springframework.util.StringUtils;
 
@@ -44,6 +47,15 @@ public class ExtensionAutoConfiguration implements ImportAware {
         if (attributes != null) {
             this.attrs = attributes;
         }
+    }
+
+
+    @Bean
+    @ConditionalOnMissingBean
+    public ExtensionEventPublisher extensionEventPublisher(ApplicationEventPublisher applicationEventPublisher,
+                                                           AsyncTaskExecutor taskExecutor,
+                                                           RouteStatsCollector routeStatsCollector) {
+        return new DefaultExtensionEventPublisher(applicationEventPublisher,taskExecutor,routeStatsCollector);
     }
 
     @Bean

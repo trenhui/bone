@@ -25,7 +25,6 @@ import com.bone.example.extension.result.ValidationResult;
     description = "专为电商平台设计的支付扩展实现，提供符合电商场景特点的支付计算和处理功能",
     note = "该扩展具有中等优先级(20)，确保在特定领域扩展之后但在默认实现之前执行\n使用说明：当支付请求来源于电商平台且商户ID以'ECOM'开头时自动应用此扩展\n最佳实践：\n1. 确保支付计算精确到小数点后两位\n2. 在处理大量订单时注意性能优化\n3. 关键计算结果应记录日志以便追踪"
 )
-@Component
 public class EcommercePaymentExtension implements PaymentExtPoint {
     // 日志记录器
     private static final Logger logger = LoggerFactory.getLogger(EcommercePaymentExtension.class);
