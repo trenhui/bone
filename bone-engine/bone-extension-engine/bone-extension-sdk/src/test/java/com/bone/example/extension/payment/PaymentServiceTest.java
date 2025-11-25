@@ -1,7 +1,14 @@
 package com.bone.example.extension.payment;
 
+import com.bone.example.extension.config.TestConfig;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -12,19 +19,43 @@ import java.math.BigDecimal;
  * <p>
  * 测试支付服务的各种功能场景，包括正常支付处理、参数验证等
  */
+@SpringBootTest(classes = TestConfig.class)
+@ActiveProfiles("test")
+@ExtendWith(SpringExtension.class)
+@Slf4j
 class PaymentServiceTest {
 
-    private PaymentService paymentService;
-    
-    /**
-     * 测试环境初始化
-     * <p>
-     * 在每个测试方法执行前初始化测试对象
-     */
-    @BeforeEach
-    void setUp() {
-        paymentService = new PaymentService();
+    private final PaymentService paymentService;
+
+    @Autowired
+    PaymentServiceTest(PaymentService paymentService) {
+        this.paymentService = paymentService;
     }
+
+
+    @Test
+    void testProcessPaymentSuccess() {
+        log.info("开始测试完整支付流程...");
+
+        PaymentTestRequest ecommerceRequest = createSamplePaymentRequest();
+
+        // 使用Spring注入的服务实例执行完整支付流程
+        PaymentResult result = paymentService.processPayment(ecommerceRequest, "ECOMMERCE");
+
+        // 验证结果
+        assertNotNull(result, "支付结果不应为null");
+        assertTrue(result instanceof PaymentResult, "结果应为PaymentResult类型");
+
+        PaymentResult paymentResult = (PaymentResult) result;
+        assertEquals("ECOM123", paymentResult.getOrderId(), "订单ID应匹配");
+        assertEquals("USER123", paymentResult.getUserId(), "用户ID应匹配");
+        assertNotNull(paymentResult.getTransactionId(), "交易ID不应为null");
+        assertNotNull(paymentResult.getStatus(), "支付状态不应为null");
+
+        log.info("完整支付流程测试通过");
+    }
+
+
 
     /**
      * 测试基本支付处理流程

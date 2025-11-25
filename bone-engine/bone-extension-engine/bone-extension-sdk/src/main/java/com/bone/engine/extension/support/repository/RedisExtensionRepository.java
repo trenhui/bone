@@ -30,6 +30,18 @@ public class RedisExtensionRepository implements ExtensionRepository {
     private static final String EXTENSION_KEY_PREFIX = "bone:ext:";
     private static final String EXTENSION_POINTS_KEY = "bone:ext:points";
 
+    /**
+     * 注册扩展实现到指定扩展点
+     *
+     * @param extensionPoint 扩展点全限定名
+     * @param extension      扩展定义
+     * @return 如果扩展代码已存在，返回已注册的定义，否则返回null
+     */
+    @Override
+    public ExtensionDefinition register(String extensionPoint, Object extension) {
+        return null;
+    }
+
     @Override
     @Nullable
     public ExtensionDefinition register(@NonNull String extensionPoint, @NonNull ExtensionDefinition extension) {

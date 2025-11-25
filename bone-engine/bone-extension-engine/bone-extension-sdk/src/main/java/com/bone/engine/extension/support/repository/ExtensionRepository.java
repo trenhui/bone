@@ -33,6 +33,16 @@ public interface ExtensionRepository {
      * @return 如果扩展代码已存在，返回已注册的定义，否则返回null
      */
     @Nullable
+    ExtensionDefinition register(@NonNull String extensionPoint, @NonNull Object extension);
+
+    /**
+     * 注册扩展实现到指定扩展点
+     *
+     * @param extensionPoint 扩展点全限定名
+     * @param extension 扩展定义
+     * @return 如果扩展代码已存在，返回已注册的定义，否则返回null
+     */
+    @Nullable
     ExtensionDefinition register(@NonNull String extensionPoint, @NonNull ExtensionDefinition extension);
 
     /**

@@ -31,11 +31,11 @@ import java.util.Set;
  *
  * @author renhui.trh 2023-10-30
  */
-public final class ExtPointRegister implements ImportBeanDefinitionRegistrar, ResourceLoaderAware, EnvironmentAware {
+public final class ExtensionPointRegister implements ImportBeanDefinitionRegistrar, ResourceLoaderAware, EnvironmentAware {
     private ResourceLoader resourceLoader;
     private Environment environment;
 
-    ExtPointRegister() {
+    ExtensionPointRegister() {
     }
 
     public void setResourceLoader(ResourceLoader resourceLoader) {
@@ -43,7 +43,7 @@ public final class ExtPointRegister implements ImportBeanDefinitionRegistrar, Re
     }
 
     public void registerBeanDefinitions(AnnotationMetadata metadata, BeanDefinitionRegistry registry) {
-        this.registerExtPoints(metadata, registry);
+        this.registerExtensionPoints(metadata, registry);
         this.registerExtensions(metadata, registry);
     }
 
@@ -52,7 +52,7 @@ public final class ExtPointRegister implements ImportBeanDefinitionRegistrar, Re
         scanner.scan(getBasePackages(metadata));
     }
 
-    public void registerExtPoints(AnnotationMetadata metadata, BeanDefinitionRegistry registry) {
+    public void registerExtensionPoints(AnnotationMetadata metadata, BeanDefinitionRegistry registry) {
         LinkedHashSet<BeanDefinition> candidateComponents = new LinkedHashSet();
         ClassPathScanningCandidateComponentProvider scanner = this.getScanner();
         scanner.setResourceLoader(this.resourceLoader);
