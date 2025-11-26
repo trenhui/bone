@@ -9,7 +9,7 @@ import java.util.Map;
 /**
  * 统一的扩展点路由器接口
  */
-public interface ExtPointRouter {
+public interface ExtensionPointRouter {
 
     void stop();
 

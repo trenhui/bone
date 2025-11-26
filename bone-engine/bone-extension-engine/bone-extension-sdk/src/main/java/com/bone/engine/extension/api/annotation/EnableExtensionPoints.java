@@ -1,7 +1,7 @@
 package com.bone.engine.extension.api.annotation;
 
 import com.bone.engine.extension.core.register.ExtensionPointRegister;
-import com.bone.engine.extension.core.router.DefaultExtPointRouter;
+import com.bone.engine.extension.core.router.DefaultExtensionPointRouter;
 import com.bone.engine.extension.support.repository.InMemoryExtensionRepository;
 import org.springframework.context.annotation.Import;
 
@@ -30,23 +30,27 @@ public @interface EnableExtensionPoints {
      */
     String[] basePackages() default {};
 
+    /**
+     * 自定义仓库实现类
+     *
+     * 必须实现 ExtensionRepository 接口
+     */
     Class<?> extensionRepository() default InMemoryExtensionRepository.class;
-
-    Class<?> extensionRouter() default DefaultExtPointRouter.class;
 
     /**
      * 自定义路由器实现类
      *
      * 必须实现 ExtensionRouter 接口，优先级高于内置路由器
      */
-    String customRouter() default "";
+    Class<?> extensionPointRouter() default DefaultExtensionPointRouter.class;
+
 
     /**
      * 自定义执行器实现类
      *
      * 必须实现 ExtensionExecutor 接口，优先级高于内置执行器
      */
-    String customExecutor() default "";
+    String extensionExecutor() default "";
 
     /**
      * 是否启用路由缓存

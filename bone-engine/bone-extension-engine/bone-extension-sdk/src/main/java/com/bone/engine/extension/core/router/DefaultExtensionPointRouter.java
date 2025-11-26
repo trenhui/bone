@@ -3,11 +3,12 @@ package com.bone.engine.extension.core.router;
 import com.bone.engine.extension.api.annotation.Extension;
 import com.bone.engine.extension.api.model.definition.ExtensionDefinition;
 import com.bone.engine.extension.api.model.definition.ExtensionPointDefinition;
-import com.bone.engine.extension.api.spi.ExtPointRouter;
+import com.bone.engine.extension.api.spi.ExtensionPointRouter;
 import com.bone.engine.extension.api.spi.ExpressionEvaluator;
 import com.bone.engine.extension.core.register.ExtensionRegister;
 import com.bone.engine.extension.support.context.BizContext;
 import com.bone.engine.extension.support.expression.AviatorExpressionEvaluator;
+import com.bone.engine.extension.support.repository.ExtensionRepository;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +41,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
-public class DefaultExtPointRouter implements ExtPointRouter, InitializingBean, DisposableBean, SmartLifecycle {
+public class DefaultExtensionPointRouter implements ExtensionPointRouter, InitializingBean, DisposableBean, SmartLifecycle {
 
     // ==================== 依赖组件 ====================
     private final ExtensionRegister extensionRegister;
@@ -64,17 +65,41 @@ public class DefaultExtPointRouter implements ExtPointRouter, InitializingBean, 
     private static final int DEFAULT_CACHE_EXPIRE_MINUTES = 10;
     private static final long WARMUP_TIMEOUT_MS = 10000L;
 
+    /**
+     * 兼容性构造函数 - 用于反射创建
+     * 业界最佳实践：提供向后兼容的构造函数
+     */
+    public DefaultExtensionPointRouter(@NonNull ExtensionRepository extensionRepository) {
+        this.extensionRegister = null;
+        this.applicationContext = null;
+        this.expressionEvaluator = new AviatorExpressionEvaluator();
+
+        // 初始化缓存系统
+        this.routeResultCache = Caffeine.newBuilder()
+                .maximumSize(DEFAULT_CACHE_MAX_SIZE)
+                .expireAfterWrite(Duration.ofMinutes(DEFAULT_CACHE_EXPIRE_MINUTES))
+                .build();
+
+        this.routeRuleCache = Caffeine.newBuilder()
+                .maximumSize(DEFAULT_CACHE_MAX_SIZE)
+                .expireAfterWrite(Duration.ofMinutes(DEFAULT_CACHE_EXPIRE_MINUTES))
+                .build();
+
+        log.warn("DefaultExtensionPointRouter created with compatibility constructor - consider using Spring DI");
+    }
+
+
     @Autowired
-    public DefaultExtPointRouter(@NonNull ExtensionRegister extensionRegister,
-                                 @NonNull ApplicationContext applicationContext) {
+    public DefaultExtensionPointRouter(@NonNull ExtensionRegister extensionRegister,
+                                       @NonNull ApplicationContext applicationContext) {
         this(extensionRegister, applicationContext, new AviatorExpressionEvaluator(),
                 DEFAULT_CACHE_MAX_SIZE, DEFAULT_CACHE_EXPIRE_MINUTES);
     }
 
-    public DefaultExtPointRouter(@NonNull ExtensionRegister extensionRegister,
-                                 @NonNull ApplicationContext applicationContext,
-                                 @NonNull ExpressionEvaluator expressionEvaluator,
-                                 int cacheMaxSize, int cacheExpireMinutes) {
+    public DefaultExtensionPointRouter(@NonNull ExtensionRegister extensionRegister,
+                                       @NonNull ApplicationContext applicationContext,
+                                       @NonNull ExpressionEvaluator expressionEvaluator,
+                                       int cacheMaxSize, int cacheExpireMinutes) {
         Assert.notNull(extensionRegister, "ExtensionRegister cannot be null");
         Assert.notNull(applicationContext, "ApplicationContext cannot be null");
         Assert.notNull(expressionEvaluator, "ExpressionEvaluator cannot be null");
@@ -94,21 +119,21 @@ public class DefaultExtPointRouter implements ExtPointRouter, InitializingBean, 
                 .expireAfterWrite(Duration.ofMinutes(cacheExpireMinutes))
                 .build();
 
-        log.info("DefaultExtPointRouter initialized with cacheSize: {}", cacheMaxSize);
+        log.info("DefaultExtensionPointRouter initialized with cacheSize: {}", cacheMaxSize);
     }
 
     // ==================== 生命周期管理 ====================
 
     @Override
     public void afterPropertiesSet() {
-        log.info("DefaultExtPointRouter ready for routing");
+        log.info("DefaultExtensionPointRouter ready for routing");
     }
 
     @Override
     public void destroy() {
         this.running = false;
         clearAllCache();
-        log.info("DefaultExtPointRouter destroyed");
+        log.info("DefaultExtensionPointRouter destroyed");
     }
 
     @Override

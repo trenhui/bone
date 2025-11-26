@@ -1,7 +1,7 @@
 package com.bone.engine.extension.support.config;
 
 import com.bone.engine.extension.api.annotation.EnableExtensionPoints;
-import com.bone.engine.extension.api.spi.ExtPointRouter;
+import com.bone.engine.extension.api.spi.ExtensionPointRouter;
 import com.bone.engine.extension.core.event.DefaultExtensionEventPublisher;
 import com.bone.engine.extension.core.event.ExtensionEventPublisher;
 import com.bone.engine.extension.core.lifecycle.DefaultExtensionLifecycle;
@@ -14,7 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
@@ -88,8 +87,8 @@ public class ExtensionAutoConfiguration implements ImportAware {
     // ==================== 路由器自动装配（三优先级） ====================
 
     @Bean
-    @ConditionalOnMissingBean(ExtPointRouter.class)
-    public ExtPointRouter extensionRouter(
+    @ConditionalOnMissingBean(ExtensionPointRouter.class)
+    public ExtensionPointRouter extensionRouter(
             @Autowired ApplicationContext ctx,
             @Autowired ExtensionRegister register) {
 
@@ -99,7 +98,7 @@ public class ExtensionAutoConfiguration implements ImportAware {
             try {
                 Class<?> clazz = Class.forName(custom.trim());
                 log.info("Using custom router from customRouter(): {}", custom);
-                return (ExtPointRouter) clazz.getDeclaredConstructor().newInstance();
+                return (ExtensionPointRouter) clazz.getDeclaredConstructor().newInstance();
             } catch (Exception e) {
                 throw new IllegalStateException("Failed to load custom router: " + custom, e);
             }
@@ -107,14 +106,14 @@ public class ExtensionAutoConfiguration implements ImportAware {
 
         // 2. extensionRouter Class 属性
         Class<?> routerClass = attrs.getClass("extensionRouter");
-        if (routerClass != null && routerClass != DefaultExtPointRouter.class) {
+        if (routerClass != null && routerClass != DefaultExtensionPointRouter.class) {
             log.info("Using custom router from extensionRouter(): {}", routerClass.getName());
-            return (ExtPointRouter) ExtensionRepositoryFactory.createBean(routerClass);
+            return (ExtensionPointRouter) ExtensionRepositoryFactory.createBean(routerClass);
         }
 
         // 3. 默认路由器
-        log.info("Using DefaultExtPointRouter");
-        return new DefaultExtPointRouter(register, ctx);
+        log.info("Using DefaultExtensionPointRouter");
+        return new DefaultExtensionPointRouter(register, ctx);
     }
 
 

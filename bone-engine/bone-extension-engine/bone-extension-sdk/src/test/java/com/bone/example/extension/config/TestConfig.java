@@ -18,7 +18,7 @@ import org.springframework.core.env.Environment;
 })
 @ComponentScan({"com.bone.example.extension", "com.bone.engine.extension"})
 @EnableConfigurationProperties(ExtensionProperties.class)
-@EnableExtensionPoints
+@EnableExtensionPoints(basePackages={"com.bone.example.extension", "com.bone.engine.extension"})
 public class TestConfig {
 
     @Autowired

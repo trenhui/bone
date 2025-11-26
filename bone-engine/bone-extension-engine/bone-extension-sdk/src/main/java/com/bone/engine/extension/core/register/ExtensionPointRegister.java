@@ -2,7 +2,7 @@ package com.bone.engine.extension.core.register;
 
 import com.bone.engine.extension.api.annotation.EnableExtensionPoints;
 import com.bone.engine.extension.api.annotation.ExtensionPoint;
-import com.bone.engine.extension.core.proxy.ExtPointFactoryBean;
+import com.bone.engine.extension.core.proxy.ExtensionPointFactoryBean;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinitionHolder;
@@ -75,7 +75,7 @@ public final class ExtensionPointRegister implements ImportBeanDefinitionRegistr
                     addGenericArgumentValue(beanDefinition.getBeanClassName());
             beanDefinition.getConstructorArgumentValues()
                     .addGenericArgumentValue(attrs);
-            beanDefinition.setBeanClass(ExtPointFactoryBean.class);
+            beanDefinition.setBeanClass(ExtensionPointFactoryBean.class);
             beanDefinition.setPrimary(true);
             beanDefinition.setAutowireMode(GenericBeanDefinition.AUTOWIRE_BY_TYPE);
 
