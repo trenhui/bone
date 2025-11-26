@@ -8,29 +8,29 @@ import java.lang.reflect.Proxy;
 import java.util.Map;
 
 /**
- * ExtPointFactoryBean
+ * ExtensionPointFactoryBean
  *
  * @author renhui.trh 2023-10-30
  */
 @Slf4j
-public class ExtPointFactoryBean<T> implements FactoryBean<T>, InitializingBean//, ApplicationContextAware, BeanFactoryAware {
+public class ExtensionPointFactoryBean<T> implements FactoryBean<T>, InitializingBean//, ApplicationContextAware, BeanFactoryAware {
 {
     private final Class<T> extPoint;
     private final Map<String, Object> attrs;
 
     @Override
     public void afterPropertiesSet() throws Exception {
-        log.debug("ExtPointFactoryBean afterPropertiesSet");
+        log.debug("ExtensionPointFactoryBean afterPropertiesSet");
     }
 
-    public ExtPointFactoryBean(Class<T> extPoint, Map<String, Object> attrs) {
+    public ExtensionPointFactoryBean(Class<T> extPoint, Map<String, Object> attrs) {
         this.extPoint = extPoint;
         this.attrs = attrs;
     }
 
     @Override
     public T getObject() throws Exception {
-        return (T) Proxy.newProxyInstance(this.extPoint.getClassLoader(), new Class[]{this.extPoint}, new ExtPointProxy(extPoint, attrs));
+        return (T) Proxy.newProxyInstance(this.extPoint.getClassLoader(), new Class[]{this.extPoint}, new ExtensionPointProxy(extPoint, attrs));
     }
 
     @Override

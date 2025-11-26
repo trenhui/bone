@@ -6,8 +6,8 @@ import java.lang.reflect.Method;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
-// com.bone.extension.api.spi.ExtPointExecutor
-public interface ExtPointExecutor {
+// com.bone.extension.api.spi.ExtensionPointExecutor
+public interface ExtensionPointExecutor {
     <T> T execute(Object implementation, BizContext<?> context, Method method, Object[] args) throws Throwable;
 
     default <T> CompletableFuture<T> executeAsync(Object impl, BizContext<?> ctx, Method method,

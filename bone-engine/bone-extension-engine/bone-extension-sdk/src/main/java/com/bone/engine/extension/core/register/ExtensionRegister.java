@@ -7,7 +7,7 @@ import com.bone.engine.extension.api.model.definition.ExtensionDefinition;
 import com.bone.engine.extension.api.model.definition.ExtensionPointDefinition;
 import com.bone.engine.extension.api.spi.ExpressionEvaluator;
 import com.bone.engine.extension.core.event.ExtensionEventPublisher;
-import com.bone.engine.extension.core.router.DefaultExtPointRouter;
+import com.bone.engine.extension.core.router.DefaultExtensionPointRouter;
 import com.bone.engine.extension.support.config.ExtensionProperties;
 import com.bone.engine.extension.support.expression.AviatorExpressionEvaluator;
 import com.bone.engine.extension.support.repository.ExtensionRepository;
@@ -576,7 +576,7 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
 
     private void warmupExtensionRouters() {
         try {
-            Optional.ofNullable(applicationContext.getBean(DefaultExtPointRouter.class))
+            Optional.ofNullable(applicationContext.getBean(DefaultExtensionPointRouter.class))
                     .ifPresent(router -> {
                         log.info("Warming up extension routers for {} extension points",
                                 extensionPointRegistry.size());
