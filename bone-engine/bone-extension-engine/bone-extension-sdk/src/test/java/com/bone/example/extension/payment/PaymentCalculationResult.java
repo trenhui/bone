@@ -1,111 +1,112 @@
 package com.bone.example.extension.payment;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
 /**
- * 支付计算结果类
+ * 支付计算结果领域对象 - 精炼实现
  * <p>
- * 封装支付金额计算的详细结果，包括原始金额、最终金额、折扣明细、手续费、税费及货币类型等信息
+ * 支持 Builder 模式构建，确保对象不可变性。
+ * 包含支付金额计算相关明细。
+ *
+ * <h3>设计原则：</h3>
+ * <ul>
+ * <li>不可变性：字段 final，通过 Builder 构建</li>
+ * <li>完整性：包含所有计算相关信息</li>
+ * <li>业务方法：如 getDiscountAmount() 计算折扣</li>
+ * <li>扩展性：extendedAttributes 支持自定义属性</li>
+ * <li>安全性：字段非null校验，金额默认零值</li>
+ * </ul>
  */
 public class PaymentCalculationResult {
-    /** 原始金额 */
-    private BigDecimal originalAmount;
-    /** 最终支付金额 */
-    private BigDecimal finalAmount;
-    /** 折扣明细，键为折扣类型，值为折扣金额 */
-    private Map<String, BigDecimal> deductionDetails;
-    /** 手续费金额 */
-    private BigDecimal feeAmount;
-    /** 税费金额 */
-    private BigDecimal taxAmount;
-    /** 货币类型代码 */
-    private String currency;
-    
+
+    private final BigDecimal originalAmount;
+    private final BigDecimal finalAmount;
+    private final BigDecimal feeAmount;
+    private final BigDecimal taxAmount;
+    private final String currency;
+    private final Map<String, Object> extendedAttributes;
+
+    // ==================== Builder 模式 ====================
+
+    private PaymentCalculationResult(Builder builder) {
+        this.originalAmount = Objects.requireNonNull(builder.originalAmount, "originalAmount cannot be null");
+        this.finalAmount = Objects.requireNonNull(builder.finalAmount, "finalAmount cannot be null");
+        this.feeAmount = builder.feeAmount != null ? builder.feeAmount : BigDecimal.ZERO;
+        this.taxAmount = builder.taxAmount != null ? builder.taxAmount : BigDecimal.ZERO;
+        this.currency = Objects.requireNonNull(builder.currency, "currency cannot be null");
+        this.extendedAttributes = builder.extendedAttributes != null ? new HashMap<>(builder.extendedAttributes) : new HashMap<>();
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private BigDecimal originalAmount;
+        private BigDecimal finalAmount;
+        private BigDecimal feeAmount;
+        private BigDecimal taxAmount;
+        private String currency;
+        private Map<String, Object> extendedAttributes = new HashMap<>();
+
+        public Builder originalAmount(BigDecimal originalAmount) { this.originalAmount = originalAmount; return this; }
+        public Builder finalAmount(BigDecimal finalAmount) { this.finalAmount = finalAmount; return this; }
+        public Builder feeAmount(BigDecimal feeAmount) { this.feeAmount = feeAmount; return this; }
+        public Builder taxAmount(BigDecimal taxAmount) { this.taxAmount = taxAmount; return this; }
+        public Builder currency(String currency) { this.currency = currency; return this; }
+        public Builder extendedAttribute(String key, Object value) { this.extendedAttributes.put(key, value); return this; }
+        public Builder extendedAttributes(Map<String, Object> extendedAttributes) { this.extendedAttributes = extendedAttributes; return this; }
+
+        public PaymentCalculationResult build() {
+            return new PaymentCalculationResult(this);
+        }
+    }
+
+    // ==================== 业务方法 ====================
+
+    /**
+     * 计算折扣金额（原始金额 - 最终金额）
+     */
+    public BigDecimal getDiscountAmount() {
+        return originalAmount.subtract(finalAmount);
+    }
+
+    /**
+     * 计算总费用（最终金额 + 手续费 + 税费）
+     */
+    public BigDecimal getTotalCost() {
+        return finalAmount.add(feeAmount).add(taxAmount);
+    }
+
+    /**
+     * 获取扩展属性值
+     * @param key 属性键
+     * @return 属性值，或 null
+     */
+    public Object getExtendedAttribute(String key) {
+        return extendedAttributes.get(key);
+    }
+
+    // ==================== Getter 方法 ====================
+
+    public BigDecimal getOriginalAmount() { return originalAmount; }
+    public BigDecimal getFinalAmount() { return finalAmount; }
+    public BigDecimal getFeeAmount() { return feeAmount; }
+    public BigDecimal getTaxAmount() { return taxAmount; }
+    public String getCurrency() { return currency; }
+    public Map<String, Object> getExtendedAttributes() { return new HashMap<>(extendedAttributes); }
+
     @Override
     public String toString() {
         return "PaymentCalculationResult{" +
                 "originalAmount=" + originalAmount +
                 ", finalAmount=" + finalAmount +
-                ", deductionDetails=" + deductionDetails +
                 ", feeAmount=" + feeAmount +
                 ", taxAmount=" + taxAmount +
                 ", currency='" + currency + '\'' +
                 '}';
-    }
-    
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        PaymentCalculationResult that = (PaymentCalculationResult) o;
-        return Objects.equals(originalAmount, that.originalAmount) &&
-               Objects.equals(finalAmount, that.finalAmount) &&
-               Objects.equals(deductionDetails, that.deductionDetails) &&
-               Objects.equals(feeAmount, that.feeAmount) &&
-               Objects.equals(taxAmount, that.taxAmount) &&
-               Objects.equals(currency, that.currency);
-    }
-    
-    @Override
-    public int hashCode() {
-        return Objects.hash(originalAmount, finalAmount, deductionDetails, feeAmount, taxAmount, currency);
-    }
-    
-    // 手动实现builder方法
-    public static PaymentCalculationResultBuilder builder() {
-        return new PaymentCalculationResultBuilder();
-    }
-    
-    public static class PaymentCalculationResultBuilder {
-        private BigDecimal originalAmount;
-        private BigDecimal finalAmount;
-        private Map<String, BigDecimal> deductionDetails;
-        private BigDecimal feeAmount;
-        private BigDecimal taxAmount;
-        private String currency;
-        
-        public PaymentCalculationResultBuilder originalAmount(BigDecimal originalAmount) {
-            this.originalAmount = originalAmount;
-            return this;
-        }
-        
-        public PaymentCalculationResultBuilder finalAmount(BigDecimal finalAmount) {
-            this.finalAmount = finalAmount;
-            return this;
-        }
-        
-        public PaymentCalculationResultBuilder deductionDetails(Map<String, BigDecimal> deductionDetails) {
-            this.deductionDetails = deductionDetails;
-            return this;
-        }
-        
-        public PaymentCalculationResultBuilder feeAmount(BigDecimal feeAmount) {
-            this.feeAmount = feeAmount;
-            return this;
-        }
-        
-        public PaymentCalculationResultBuilder taxAmount(BigDecimal taxAmount) {
-            this.taxAmount = taxAmount;
-            return this;
-        }
-        
-        public PaymentCalculationResultBuilder currency(String currency) {
-            this.currency = currency;
-            return this;
-        }
-        
-        public PaymentCalculationResult build() {
-            PaymentCalculationResult result = new PaymentCalculationResult();
-            // 直接设置字段，不使用setter方法
-            result.originalAmount = this.originalAmount;
-            result.finalAmount = this.finalAmount;
-            result.deductionDetails = this.deductionDetails;
-            result.feeAmount = this.feeAmount;
-            result.taxAmount = this.taxAmount;
-            result.currency = this.currency;
-            return result;
-        }
     }
 }

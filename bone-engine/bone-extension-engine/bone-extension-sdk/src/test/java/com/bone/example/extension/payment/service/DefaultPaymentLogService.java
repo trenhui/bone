@@ -50,7 +50,7 @@ public class DefaultPaymentLogService implements PaymentLogService {
                 .append(formatField("用户ID", safeValue(result.getUserId())))
                 .append(formatField("交易ID", safeValue(result.getTransactionId())))
                 .append(formatField("状态", result.isSuccess() ? SUCCESS_STATUS : FAILURE_STATUS))
-                .append(formatField("最终金额", safeValue(result.getFinalAmount() != null ? result.getFinalAmount().toString() : ZERO_AMOUNT_PLACEHOLDER)))
+                .append(formatField("最终金额", safeValue(result.getAmount() != null ? result.getAmount().toString() : ZERO_AMOUNT_PLACEHOLDER)))
                 .append(formatField("扣除积分", String.valueOf(result.getPointsDeducted())));
         
         // 失败时添加错误详情

@@ -1,10 +1,12 @@
 package com.bone.engine.extension.support.repository;
 
 import com.bone.engine.extension.api.model.definition.ExtensionDefinition;
+import com.bone.engine.extension.api.model.definition.ExtensionPointDefinition;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -75,6 +77,16 @@ public interface ExtensionRepository {
     @NonNull
     Collection<ExtensionDefinition> getEnabledExtensions(@NonNull String extensionPoint);
 
+
+    /**
+     * 获取扩展点下所有启用的扩展实现（路由器高频调用）
+     *
+     * @param extPointClazz 扩展点类
+     * @return 启用的扩展定义集合，不会返回null
+     */
+    @NonNull
+    Collection<Object> getEnabledExtensionObjects(@NonNull Class<?> extPointClazz);
+
     // ==================== 管理与调试查询 ====================
 
     /**
@@ -85,6 +97,16 @@ public interface ExtensionRepository {
      */
     @NonNull
     Collection<ExtensionDefinition> getAllExtensions(@NonNull String extensionPoint);
+
+    /**
+     * 获取扩展点下所有扩展实现（包含禁用扩展）
+     *
+     * @return 所有扩展定义集合，不会返回null
+     */
+    @NonNull
+    Collection<ExtensionPointDefinition> getAllExtensionPointDefinitions();
+
+
 
     /**
      * 精确查找扩展实现
