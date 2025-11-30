@@ -44,17 +44,4 @@ public interface PaymentExtPoint {
      * @param context 支付结果上下文
      */
     void postPayProcess(BizContext<PaymentResult> context);
-    
-    /**
-     * 获取扩展点优先级
-     * @return 优先级值
-     */
-    int getPriority();
-    
-    /**
-     * 判断扩展点是否适用于当前请求
-     * @param context 业务上下文
-     * @return 是否适用
-     */
-    boolean isApplicable(BizContext<?> context);
 }

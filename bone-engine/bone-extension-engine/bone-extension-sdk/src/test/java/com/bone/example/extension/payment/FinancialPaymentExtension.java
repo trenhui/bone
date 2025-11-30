@@ -143,42 +143,4 @@ public class FinancialPaymentExtension implements PaymentExtPoint {
         // 简化实现，实际应用中可以执行风控检查、合规报告等操作
         // 例如：记录详细日志、发送风控通知等
     }
-    
-    /**
-     * 判断扩展点是否适用于当前请求
-     * <p>
-     * 根据订单ID判断是否为金融机构请求
-     * 
-     * @param context 业务上下文
-     * @return 是否适用于金融场景
-     */
-    @Override
-    public boolean isApplicable(final BizContext<?> context) {
-        // 检查上下文是否有效
-        if (context == null || !(context.getData() instanceof PaymentTestRequest)) {
-            return false;
-        }
-        
-        // 检查订单ID是否以金融机构前缀开头
-        PaymentTestRequest request = (PaymentTestRequest) context.getData();
-        boolean isApplicable = request.getOrderId() != null && 
-               request.getOrderId().startsWith(FINANCIAL_PREFIX);
-        
-        logger.debug("检查金融支付扩展适用性，订单ID: {}, 适用结果: {}", 
-                request.getOrderId(), isApplicable);
-        
-        return isApplicable;
-    }
-    
-    /**
-     * 获取扩展点优先级
-     * <p>
-     * 设置高优先级(100)，确保在其他扩展之前执行
-     * 
-     * @return 优先级值：100
-     */
-    @Override
-    public int getPriority() {
-        return 100; // 高优先级
-    }
 }

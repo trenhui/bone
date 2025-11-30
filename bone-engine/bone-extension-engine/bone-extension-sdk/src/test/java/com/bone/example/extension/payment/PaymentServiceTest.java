@@ -47,14 +47,15 @@ class PaymentServiceTest {
         assertTrue(result instanceof PaymentResult, "结果应为PaymentResult类型");
 
         PaymentResult paymentResult = (PaymentResult) result;
-        assertEquals("ECOM123", paymentResult.getOrderId(), "订单ID应匹配");
-        assertEquals("USER123", paymentResult.getUserId(), "用户ID应匹配");
+
+        // 使用请求中的实际订单ID进行验证，而不是硬编码的期望值
+        assertEquals(ecommerceRequest.getOrderId(), paymentResult.getOrderId(), "订单ID应匹配");
+        assertEquals(ecommerceRequest.getUserId(), paymentResult.getUserId(), "用户ID应匹配");
         assertNotNull(paymentResult.getTransactionId(), "交易ID不应为null");
         assertNotNull(paymentResult.getStatus(), "支付状态不应为null");
 
         log.info("完整支付流程测试通过");
     }
-
 
 
     /**

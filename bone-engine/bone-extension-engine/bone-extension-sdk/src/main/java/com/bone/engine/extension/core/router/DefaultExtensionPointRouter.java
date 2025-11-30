@@ -40,18 +40,16 @@ import java.util.stream.Collectors;
  * 4. 生命周期管理：预热、清理、状态管理
  */
 @Slf4j
-@Component
 public class DefaultExtensionPointRouter implements ExtensionPointRouter, InitializingBean, DisposableBean, SmartLifecycle {
 
     // ==================== 依赖组件 ====================
-    private final ExtensionRegister extensionRegister;
-    private final ApplicationContext applicationContext;
     private final ExpressionEvaluator expressionEvaluator;
+    private final ExtensionRepository extensionRepository;
 
     // ==================== 缓存系统 ====================
     private final Cache<String, Object> routeResultCache;
     private final ConcurrentMap<Class<?>, List<ExtensionDefinition>> extensionCache = new ConcurrentHashMap<>();
-    private final Cache<String, List<Object>> routeRuleCache;
+    private final Cache<String, Collection<Object>> routeRuleCache;
 
     // ==================== 统计系统 ====================
     private final RouterStatsCollector statsCollector = new RouterStatsCollector();
@@ -70,10 +68,8 @@ public class DefaultExtensionPointRouter implements ExtensionPointRouter, Initia
      * 业界最佳实践：提供向后兼容的构造函数
      */
     public DefaultExtensionPointRouter(@NonNull ExtensionRepository extensionRepository) {
-        this.extensionRegister = null;
-        this.applicationContext = null;
         this.expressionEvaluator = new AviatorExpressionEvaluator();
-
+        this.extensionRepository=extensionRepository;
         // 初始化缓存系统
         this.routeResultCache = Caffeine.newBuilder()
                 .maximumSize(DEFAULT_CACHE_MAX_SIZE)
@@ -86,40 +82,6 @@ public class DefaultExtensionPointRouter implements ExtensionPointRouter, Initia
                 .build();
 
         log.warn("DefaultExtensionPointRouter created with compatibility constructor - consider using Spring DI");
-    }
-
-
-    @Autowired
-    public DefaultExtensionPointRouter(@NonNull ExtensionRegister extensionRegister,
-                                       @NonNull ApplicationContext applicationContext) {
-        this(extensionRegister, applicationContext, new AviatorExpressionEvaluator(),
-                DEFAULT_CACHE_MAX_SIZE, DEFAULT_CACHE_EXPIRE_MINUTES);
-    }
-
-    public DefaultExtensionPointRouter(@NonNull ExtensionRegister extensionRegister,
-                                       @NonNull ApplicationContext applicationContext,
-                                       @NonNull ExpressionEvaluator expressionEvaluator,
-                                       int cacheMaxSize, int cacheExpireMinutes) {
-        Assert.notNull(extensionRegister, "ExtensionRegister cannot be null");
-        Assert.notNull(applicationContext, "ApplicationContext cannot be null");
-        Assert.notNull(expressionEvaluator, "ExpressionEvaluator cannot be null");
-
-        this.extensionRegister = extensionRegister;
-        this.applicationContext = applicationContext;
-        this.expressionEvaluator = expressionEvaluator;
-
-        // 初始化缓存系统
-        this.routeResultCache = Caffeine.newBuilder()
-                .maximumSize(cacheMaxSize)
-                .expireAfterWrite(Duration.ofMinutes(cacheExpireMinutes))
-                .build();
-
-        this.routeRuleCache = Caffeine.newBuilder()
-                .maximumSize(cacheMaxSize)
-                .expireAfterWrite(Duration.ofMinutes(cacheExpireMinutes))
-                .build();
-
-        log.info("DefaultExtensionPointRouter initialized with cacheSize: {}", cacheMaxSize);
     }
 
     // ==================== 生命周期管理 ====================
@@ -204,13 +166,12 @@ public class DefaultExtensionPointRouter implements ExtensionPointRouter, Initia
         log.info("Starting warmup for all extension points");
 
         try {
-            Map<String, ExtensionPointDefinition> pointDefinitions =
-                    extensionRegister.getAllExtensionPointDefinitions();
+            Collection<ExtensionPointDefinition>  pointDefinitions = extensionRepository.getAllExtensionPointDefinitions();
 
             int totalPoints = pointDefinitions.size();
             int warmedPoints = 0;
 
-            for (ExtensionPointDefinition pointDef : pointDefinitions.values()) {
+            for (ExtensionPointDefinition pointDef : pointDefinitions) {
                 try {
                     if (warmupExtensionPoint(pointDef.getInterfaceType())) {
                         warmedPoints++;
@@ -318,7 +279,7 @@ public class DefaultExtensionPointRouter implements ExtensionPointRouter, Initia
     @Nullable
     private <T> T executeRoute(@NonNull Class<T> extPointClass, @NonNull BizContext<?> context) {
         // 获取所有候选实现
-        List<Object> candidates = getOrCreateRouteRuleCache(extPointClass);
+        Collection<Object> candidates = getOrCreateRouteRuleCache(extPointClass);
 
         if (candidates.isEmpty()) {
             return null;
@@ -437,10 +398,9 @@ public class DefaultExtensionPointRouter implements ExtensionPointRouter, Initia
 
     // ==================== 缓存管理 ====================
 
-    private List<Object> getOrCreateRouteRuleCache(Class<?> extPointClass) {
+    private Collection<Object> getOrCreateRouteRuleCache(Class<?> extPointClass) {
         return routeRuleCache.get(extPointClass.getName(), key -> {
-            Map<String, Object> beans = (Map<String, Object>) applicationContext.getBeansOfType(extPointClass);
-            return new ArrayList<>(beans.values());
+            return extensionRepository.getEnabledExtensionObjects(extPointClass);
         });
     }
 
@@ -452,7 +412,7 @@ public class DefaultExtensionPointRouter implements ExtensionPointRouter, Initia
         }
 
         Collection<ExtensionDefinition> extensions =
-                extensionRegister.findEnabledExtensionsByPoint(extPointClass.getName());
+                extensionRepository.getEnabledExtensions(extPointClass.getName());
 
         if (extensions.isEmpty()) {
             return null;
@@ -469,7 +429,7 @@ public class DefaultExtensionPointRouter implements ExtensionPointRouter, Initia
 
         try {
             Collection<ExtensionDefinition> extensions =
-                    extensionRegister.findEnabledExtensionsByPoint(pointName);
+                    extensionRepository.getEnabledExtensions(pointName);
 
             if (!extensions.isEmpty()) {
                 List<ExtensionDefinition> sorted = new ArrayList<>(extensions);

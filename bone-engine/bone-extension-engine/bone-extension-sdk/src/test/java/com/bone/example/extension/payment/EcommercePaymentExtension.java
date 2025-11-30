@@ -140,36 +140,4 @@ public class EcommercePaymentExtension implements PaymentExtPoint {
             logger.warn("电商支付失败，跳过后续处理");
         }
     }
-
-    /**
-     * 判断扩展点是否适用于当前请求
-     * <p>
-     * 根据商户ID判断是否为电商平台请求
-     * 
-     * @param context 业务上下文
-     * @return 是否适用于电商场景
-     */
-    @Override
-    public boolean isApplicable(final BizContext<?> context) {
-        // 检查上下文是否有效
-        if (context == null || !(context.getData() instanceof PaymentTestRequest)) {
-            return false;
-        }
-        
-        // 检查订单ID是否以电商平台前缀开头
-        PaymentTestRequest request = (PaymentTestRequest) context.getData();
-        boolean isApplicable = request.getOrderId() != null && 
-               request.getOrderId().startsWith(ECOMMERCE_PREFIX);
-        
-        logger.debug("检查电商支付扩展适用性，订单ID: {}, 适用结果: {}", 
-                request.getOrderId(), isApplicable);
-        
-        return isApplicable;
-    }
-    
-    @Override
-    public int getPriority() {
-        // 中等优先级
-        return 20;
-    }
 }

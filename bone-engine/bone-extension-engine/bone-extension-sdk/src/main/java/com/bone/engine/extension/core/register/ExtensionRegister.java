@@ -10,6 +10,7 @@ import com.bone.engine.extension.core.event.ExtensionEventPublisher;
 import com.bone.engine.extension.core.router.DefaultExtensionPointRouter;
 import com.bone.engine.extension.support.config.ExtensionProperties;
 import com.bone.engine.extension.support.expression.AviatorExpressionEvaluator;
+import com.bone.engine.extension.support.expression.SpELExpressionEvaluator;
 import com.bone.engine.extension.support.repository.ExtensionRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.NonNull;
@@ -67,7 +68,7 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
     private final ExtensionEventPublisher eventPublisher;
 
     // 表达式引擎
-    private final ExpressionEvaluator expressionEvaluator = new AviatorExpressionEvaluator();
+    private final ExpressionEvaluator expressionEvaluator = new SpELExpressionEvaluator();
 
     // ==================== 注册统计 ====================
     private final AtomicInteger totalScannedCount = new AtomicInteger(0);
