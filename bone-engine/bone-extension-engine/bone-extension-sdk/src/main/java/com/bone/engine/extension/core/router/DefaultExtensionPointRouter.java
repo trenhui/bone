@@ -71,7 +71,7 @@ public final class DefaultExtensionPointRouter implements ExtensionPointRouter {
      */
     public DefaultExtensionPointRouter(@NonNull ExtensionRepository extensionRepo) {
         this(extensionRepo, new AviatorExpressionEvaluator(),
-                50000, Duration.ofHours(1), true);
+                50000, Duration.ofHours(1), false);
     }
 
     /**
@@ -398,7 +398,7 @@ public final class DefaultExtensionPointRouter implements ExtensionPointRouter {
         } else {
             // 预加载模式
             List<ExtensionDefinition> extensions = extDefinitionCache.getIfPresent(extPointClass);
-            if (extensions == null) {
+            if (extensions == null||extensions.isEmpty()) {
                 // 如果缓存中没有，则加载并放入缓存
                 extensions = loadAndSortExtensions(extPointClass);
                 extDefinitionCache.put(extPointClass, extensions);
