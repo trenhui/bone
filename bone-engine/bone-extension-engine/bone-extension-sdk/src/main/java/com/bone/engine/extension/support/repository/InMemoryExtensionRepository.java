@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
  * 3. 内存友好：使用紧凑的数据结构
  * 4. 监控支持：内置统计信息
  */
-@Component("inMemoryExtensionRepository")
+//@Component("inMemoryExtensionRepository")
 @Slf4j
 public class InMemoryExtensionRepository implements ExtensionRepository {
 
