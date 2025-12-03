@@ -260,7 +260,7 @@ public class RouteStatsCollector extends AbstractRouterComponent implements Rout
             slowCallInfo.put("tenantId", context.getTenant());
             slowCallInfo.put("businessDomain", context.getBusinessDomain());
             slowCallInfo.put("scenario", context.getScenario());
-            slowCallInfo.put("tags", context.getTags());
+            slowCallInfo.put("tags", context.getParams());
         }
 
         // 添加额外信息

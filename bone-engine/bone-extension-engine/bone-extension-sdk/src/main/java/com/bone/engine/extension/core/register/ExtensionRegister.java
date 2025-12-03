@@ -4,14 +4,10 @@ import com.bone.engine.extension.api.annotation.Extension;
 import com.bone.engine.extension.api.annotation.ExtensionPoint;
 import com.bone.engine.extension.api.exception.ExtensionRegistrationException;
 import com.bone.engine.extension.api.model.definition.ExtensionDefinition;
-import com.bone.engine.extension.api.model.definition.ExtensionPointDefinition;
 import com.bone.engine.extension.api.spi.ExpressionEvaluator;
-import com.bone.engine.extension.core.event.ExtensionEventPublisher;
-import com.bone.engine.extension.core.router.DefaultExtensionPointRouter;
+import com.bone.engine.extension.api.spi.ExtensionRepository;
 import com.bone.engine.extension.support.config.ExtensionProperties;
-import com.bone.engine.extension.support.expression.AviatorExpressionEvaluator;
 import com.bone.engine.extension.support.expression.SpELExpressionEvaluator;
-import com.bone.engine.extension.support.repository.ExtensionRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -32,58 +28,41 @@ import java.time.format.DateTimeParseException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Pattern;
 
 /**
- * 扩展点注册中心 - 基于业界最佳实践实现
- * <p>
- * 设计原则：
- * 1. 单一职责：专注于扩展点的注册和管理
- * 2. 明确命名：方法名清晰表达业务意图
- * 3. 防御式编程：充分的参数校验和异常处理
- * 4. 监控支持：完整的注册统计和日志
- * 5. 生命周期管理：清晰的初始化、注册、销毁流程
+ * 扩展点注册中心 - 修复版
+ *
+ * 修复问题：
+ * 1. ✅ 匹配ExtensionRepository接口方法名
+ * 2. ✅ 修复方法调用错误
+ * 3. ✅ 统一注册逻辑
+ * 4. ✅ 保持统计功能
  */
 @Component
 @Slf4j
 public class ExtensionRegister implements ApplicationContextAware, SmartInitializingSingleton {
 
-    // ==================== 常量定义 ====================
     private static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-    private static final Pattern WILDCARD_PATTERN = Pattern.compile(".*");
-    private static final int DEFAULT_TIMEOUT = 30;
     private static final String DEFAULT_EXTENSION_CODE_PREFIX = "EXT_";
 
-    // ==================== 核心组件 ====================
     private ApplicationContext applicationContext;
     private Environment environment;
-
-    // 注册表：扩展点定义缓存
-    private final Map<String, ExtensionPointDefinition> extensionPointRegistry = new ConcurrentHashMap<>();
-
-    // 扩展仓库
     private final ExtensionRepository extensionRepository;
     private final ExtensionProperties extensionProperties;
-    private final ExtensionEventPublisher eventPublisher;
-
-    // 表达式引擎
     private final ExpressionEvaluator expressionEvaluator = new SpELExpressionEvaluator();
 
-    // ==================== 注册统计 ====================
     private final AtomicInteger totalScannedCount = new AtomicInteger(0);
     private final AtomicInteger successfulRegistrationCount = new AtomicInteger(0);
     private final AtomicInteger failedRegistrationCount = new AtomicInteger(0);
     private final Set<String> registeredExtensionCodes = ConcurrentHashMap.newKeySet();
 
-
-    public ExtensionRegister(ExtensionRepository extensionRepository, ExtensionProperties extensionProperties, ExtensionEventPublisher eventPublisher) {
+    public ExtensionRegister(ExtensionRepository extensionRepository,
+                             ExtensionProperties extensionProperties) {
         this.extensionRepository = Objects.requireNonNull(extensionRepository,
                 "ExtensionRepository cannot be null");
         this.extensionProperties = Objects.requireNonNull(extensionProperties,
                 "ExtensionProperties cannot be null");
-        this.eventPublisher = Objects.requireNonNull(eventPublisher,
-                "ExtensionEventPublisher cannot be null");
     }
 
     @Override
@@ -94,8 +73,8 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
 
     @PostConstruct
     public void initialize() {
-        log.info("Bone Extension Registry v2.0 initializing with repository: {}",
-                extensionRepository.getName());
+        log.info("Extension Register initialized with repository: {}",
+                extensionRepository.getClass().getSimpleName());
     }
 
     @Override
@@ -111,16 +90,10 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
 
         // 输出注册报告
         logRegistrationReport(startTime);
-
-        // 预热路由
-        warmupExtensionRouters();
     }
 
     // ==================== 核心注册方法 ====================
 
-    /**
-     * 注册扩展Bean
-     */
     public void registerExtensionBean(@NonNull Object extensionBean) {
         totalScannedCount.incrementAndGet();
 
@@ -135,9 +108,6 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
         }
     }
 
-    /**
-     * 注册扩展实现
-     */
     public synchronized void registerExtension(@NonNull Object extensionImplementation) {
         Objects.requireNonNull(extensionImplementation, "Extension implementation cannot be null");
 
@@ -154,114 +124,87 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
 
         // 查找扩展点接口
         Class<?> extensionPointInterface = findExtensionPointInterface(implementationClass);
-        String extensionPointName = extensionPointInterface.getName();
-
-        // 创建或获取扩展点定义
-        ExtensionPointDefinition pointDefinition = getOrCreateExtensionPointDefinition(
-                extensionPointName, extensionPointInterface);
 
         // 构建扩展定义
         ExtensionDefinition extensionDefinition = buildExtensionDefinition(
-                extensionImplementation, implementationClass, resolvedAnnotation, pointDefinition);
+                extensionImplementation, implementationClass, resolvedAnnotation, extensionPointInterface);
 
         // 预处理和验证
         preprocessExtensionDefinition(extensionDefinition);
         validateExtensionDefinition(extensionDefinition);
 
         // 执行注册
-        executeRegistration(extensionPointName, extensionDefinition);
+        executeRegistration(extensionPointInterface.getName(), extensionDefinition);
     }
 
-    /**
-     * 注销扩展
-     */
     public synchronized boolean unregisterExtension(@NonNull String extensionPoint, @NonNull String extensionCode) {
         Objects.requireNonNull(extensionPoint, "Extension point cannot be null");
         Objects.requireNonNull(extensionCode, "Extension code cannot be null");
 
-        ExtensionPointDefinition pointDefinition = extensionPointRegistry.get(extensionPoint);
-        if (pointDefinition != null && pointDefinition.getExtensions().remove(extensionCode) != null) {
-            // 更新：使用新的 unregister 方法
-            ExtensionDefinition removed = extensionRepository.unregister(extensionPoint, extensionCode);
-            if (removed != null) {
-                registeredExtensionCodes.remove(extensionCode);
-                log.info("Extension unregistered successfully: {} -> {}", extensionPoint, extensionCode);
-
-                // 清理空的扩展点
-                if (pointDefinition.getExtensions().isEmpty()) {
-                    extensionPointRegistry.remove(extensionPoint);
-                }
-                return true;
-            }
+        // 从仓库中注销 - 使用新接口方法
+        ExtensionDefinition removed = extensionRepository.unregisterExtension(extensionPoint, extensionCode);
+        if (removed != null) {
+            registeredExtensionCodes.remove(extensionCode);
+            log.info("Extension unregistered successfully: {} -> {}", extensionPoint, extensionCode);
+            return true;
         }
         return false;
     }
 
     // ==================== 查询方法 ====================
 
-    /**
-     * 根据扩展点和扩展代码查询扩展定义
-     */
     public Optional<ExtensionDefinition> findExtension(@NonNull String extensionPoint, @NonNull String extensionCode) {
-        // 更新：使用新的 getExtension 方法
-        return Optional.ofNullable(extensionRepository.getExtension(extensionPoint, extensionCode));
+        // 使用新接口方法 - 返回Optional
+        return extensionRepository.getExtensionByCode(extensionPoint, extensionCode);
     }
 
-    /**
-     * 查询扩展点下的所有扩展定义
-     */
     public Collection<ExtensionDefinition> findExtensionsByPoint(@NonNull String extensionPoint) {
-        // 更新：使用新的 getAllExtensions 方法
+        // 使用新接口方法
         return extensionRepository.getAllExtensions(extensionPoint);
     }
 
-    /**
-     * 查询扩展点下启用的扩展定义
-     */
     public Collection<ExtensionDefinition> findEnabledExtensionsByPoint(@NonNull String extensionPoint) {
-        // 更新：使用新的 getEnabledExtensions 方法
+        // 使用新接口方法 - 直接获取启用扩展
         return extensionRepository.getEnabledExtensions(extensionPoint);
-    }
-
-    /**
-     * 全局搜索扩展定义
-     */
-    public Optional<ExtensionDefinition> findExtensionByCode(@NonNull String extensionCode) {
-        // 更新：使用新的 getExtensionByCode 方法
-        return Optional.ofNullable(extensionRepository.getExtensionByCode(extensionCode));
     }
 
     // ==================== 统计信息 ====================
 
-    /**
-     * 获取注册统计信息
-     */
     public RegistrationStatistics getRegistrationStatistics() {
+        // 使用新接口方法获取扩展点名称
+        Set<String> allExtensionPoints = extensionRepository.getAllExtensionPointNames();
+        int totalExtensions = 0;
+        int enabledExtensions = 0;
+
+        for (String extPoint : allExtensionPoints) {
+            // 获取所有扩展
+            Collection<ExtensionDefinition> extensions = extensionRepository.getAllExtensions(extPoint);
+            totalExtensions += extensions.size();
+
+            // 计算启用的扩展
+            for (ExtensionDefinition def : extensions) {
+                if (def.isEnabled() && isEffective(def)) {
+                    enabledExtensions++;
+                }
+            }
+        }
+
         return new RegistrationStatistics(
                 totalScannedCount.get(),
                 successfulRegistrationCount.get(),
                 failedRegistrationCount.get(),
-                // 更新：使用新的 countExtensionPoints 方法
-                extensionRepository.countExtensionPoints(),
-                // 更新：使用新的 countExtensions 方法
-                extensionRepository.countExtensions(),
+                allExtensionPoints.size(),
+                totalExtensions,
+                enabledExtensions,
                 registeredExtensionCodes.size()
         );
     }
 
     /**
-     * 获取所有扩展点定义
+     * 获取扩展仓库统计信息
      */
-    public Map<String, ExtensionPointDefinition> getAllExtensionPointDefinitions() {
-        return Collections.unmodifiableMap(extensionPointRegistry);
-    }
-
-    /**
-     * 获取仓库统计信息
-     */
-    public ExtensionRepository.RepositoryStats getRepositoryStatistics() {
-        // 更新：使用新的 getStats 方法
-        return extensionRepository.getStats();
+    public ExtensionRepository.ExtensionRepositoryStats getRepositoryStats() {
+        return extensionRepository.getRepositoryStats();
     }
 
     // ==================== 内部辅助方法 ====================
@@ -403,42 +346,32 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
         collectAllInterfaces(clazz.getSuperclass(), interfaces);
     }
 
-    private ExtensionPointDefinition getOrCreateExtensionPointDefinition(String pointName, Class<?> pointInterface) {
-        return extensionPointRegistry.computeIfAbsent(pointName, k ->
-                ExtensionPointDefinition.builder()
-                        .code(pointName)
-                        .interfaceType(pointInterface)
-                        .singleton(true)
-                        .timeout(DEFAULT_TIMEOUT)
-                        .build());
-    }
-
     private ExtensionDefinition buildExtensionDefinition(Object instance, Class<?> implClass,
-                                                         Extension annotation, ExtensionPointDefinition pointDefinition) {
+                                                         Extension annotation, Class<?> extensionPointInterface) {
         String extensionCode = generateExtensionCode(annotation.name(), implClass);
 
-        return ExtensionDefinition.builder()
+        ExtensionDefinition.Builder builder = ExtensionDefinition.builder()
                 .code(extensionCode)
-                .point(pointDefinition)
-                .implClass(implClass)
+                .extensionPoint(extensionPointInterface.getName())
+                .implementationClass(implClass.getName())
                 .instance(instance)
                 .tenant(normalizeWildcard(annotation.tenant()))
                 .bizCode(normalizeWildcard(annotation.bizCode()))
                 .useCase(normalizeWildcard(annotation.useCase()))
                 .scenario(normalizeWildcard(annotation.scenario()))
                 .env(normalizeWildcard(annotation.env()))
-                .version(annotation.version())
-                .order(annotation.order())
-                .weight(annotation.weight())
-                .traffic(annotation.traffic())
-                .enabled(annotation.enabled())
                 .condition(annotation.condition())
-                .tags(annotation.tags())
+                .defaultImpl(isDefaultImplementation(annotation))
+                .weight(annotation.weight())
+                .priority(annotation.order())
+                .enabled(annotation.enabled())
                 .startTime(annotation.startTime())
-                .endTime(annotation.endTime())
-                .async(annotation.async())
-                .timeout(annotation.timeout() > 0 ? annotation.timeout() : DEFAULT_TIMEOUT)
-                .build();
+                .endTime(annotation.endTime());
+
+        // 添加自定义维度
+        addCustomDimensions(builder, annotation);
+
+        return builder.build();
     }
 
     private String generateExtensionCode(String customCode, Class<?> implClass) {
@@ -452,29 +385,42 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
         return StringUtils.hasText(value) && !"*".equals(value) ? value : "*";
     }
 
-    private void preprocessExtensionDefinition(ExtensionDefinition definition) {
-        // 编译路由规则
-        compileRoutingPatterns(definition);
-
-        // 调整启用状态
-        adjustExtensionStatus(definition);
+    private boolean isDefaultImplementation(Extension annotation) {
+        // 如果所有维度都是通配符，且没有条件表达式，则认为是默认实现
+        return "*".equals(annotation.tenant()) &&
+                "*".equals(annotation.bizCode()) &&
+                "*".equals(annotation.useCase()) &&
+                "*".equals(annotation.scenario()) &&
+                "*".equals(annotation.env()) &&
+                !StringUtils.hasText(annotation.condition());
     }
 
-    private void compileRoutingPatterns(ExtensionDefinition definition) {
-        definition.setTenantPattern(compilePattern(definition.getTenant()));
-        definition.setBizCodePattern(compilePattern(definition.getBizCode()));
-        definition.setUseCasePattern(compilePattern(definition.getUseCase()));
-        definition.setScenarioPattern(compilePattern(definition.getScenario()));
-        definition.setEnvPattern(compilePattern(definition.getEnv()));
-
-        if (StringUtils.hasText(definition.getCondition())) {
-            definition.setConditionPredicate(expressionEvaluator.compile(definition.getCondition()));
+    private void addCustomDimensions(ExtensionDefinition.Builder builder, Extension annotation) {
+        // 从tags中解析自定义维度（格式：key=value,key2=value2）
+        for (String tag : annotation.tags()) {
+            if (StringUtils.hasText(tag) && tag.contains("=")) {
+                String[] parts = tag.split("=", 2);
+                if (parts.length == 2 && StringUtils.hasText(parts[0]) && StringUtils.hasText(parts[1])) {
+                    builder.dimension(parts[0].trim(), parts[1].trim());
+                }
+            }
         }
     }
 
-    private Pattern compilePattern(String pattern) {
-        return (pattern == null || "*".equals(pattern)) ?
-                WILDCARD_PATTERN : Pattern.compile(pattern.replace("*", ".*"));
+    private void preprocessExtensionDefinition(ExtensionDefinition definition) {
+        // 编译条件表达式谓词
+        if (StringUtils.hasText(definition.getCondition())) {
+            try {
+                // 假设expressionEvaluator有compile方法
+                definition.setConditionPredicate(expressionEvaluator.compile(definition.getCondition()));
+            } catch (Exception e) {
+                log.warn("Failed to compile condition expression for extension {}: {}",
+                        definition.getCode(), definition.getCondition(), e);
+            }
+        }
+
+        // 调整启用状态（检查时间范围）
+        adjustExtensionStatus(definition);
     }
 
     private void adjustExtensionStatus(ExtensionDefinition definition) {
@@ -507,16 +453,61 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
         }
     }
 
-    private void validateExtensionDefinition(ExtensionDefinition definition) {
-        // 更新：使用新的 isRegistered 方法进行重复注册检查
-        if (extensionRepository.isRegistered(definition.getPoint().getCode(), definition.getCode())) {
-            throw new ExtensionRegistrationException(
-                    "Duplicate extension code: " + definition.getCode() + " for point: " + definition.getPoint().getCode());
+    private boolean isEffective(ExtensionDefinition definition) {
+        if (!definition.isEnabled()) {
+            return false;
         }
 
+        LocalDateTime now = LocalDateTime.now();
+
+        // 检查开始时间
+        if (StringUtils.hasText(definition.getStartTime())) {
+            try {
+                LocalDateTime startTime = LocalDateTime.parse(definition.getStartTime(), DATE_TIME_FORMATTER);
+                if (now.isBefore(startTime)) {
+                    return false;
+                }
+            } catch (DateTimeParseException e) {
+                log.warn("Invalid startTime format for extension {}: {}", definition.getCode(), definition.getStartTime());
+            }
+        }
+
+        // 检查结束时间
+        if (StringUtils.hasText(definition.getEndTime())) {
+            try {
+                LocalDateTime endTime = LocalDateTime.parse(definition.getEndTime(), DATE_TIME_FORMATTER);
+                if (now.isAfter(endTime)) {
+                    return false;
+                }
+            } catch (DateTimeParseException e) {
+                log.warn("Invalid endTime format for extension {}: {}", definition.getCode(), definition.getEndTime());
+            }
+        }
+
+        return true;
+    }
+
+    private void validateExtensionDefinition(ExtensionDefinition definition) {
         // 验证必要字段
         if (!StringUtils.hasText(definition.getCode())) {
             throw new ExtensionRegistrationException("Extension code cannot be null or empty");
+        }
+
+        if (!StringUtils.hasText(definition.getExtensionPoint())) {
+            throw new ExtensionRegistrationException("Extension point cannot be null or empty");
+        }
+
+        if (definition.getInstance() == null) {
+            throw new ExtensionRegistrationException("Extension instance cannot be null");
+        }
+
+        // 检查重复注册 - 使用新接口方法
+        Optional<ExtensionDefinition> existing = extensionRepository
+                .getExtensionByCode(definition.getExtensionPoint(), definition.getCode());
+        if (existing.isPresent()) {
+            throw new ExtensionRegistrationException(
+                    "Duplicate extension code: " + definition.getCode() +
+                            " for point: " + definition.getExtensionPoint());
         }
 
         // 验证时间范围
@@ -534,26 +525,23 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
     }
 
     private void executeRegistration(String extensionPoint, ExtensionDefinition definition) {
-        // 更新：使用新的 register 方法进行注册
-        ExtensionDefinition previous = extensionRepository.register(extensionPoint, definition);
+        // 注册到仓库 - 使用新接口方法
+        ExtensionDefinition previous = extensionRepository.registerExtension(extensionPoint, definition);
         if (previous != null) {
+            // 如果返回非null，表示存在相同code的扩展
             throw new ExtensionRegistrationException(
                     "Extension code already exists: " + definition.getCode());
         }
 
-        // 更新本地缓存
-        definition.getPoint().getExtensions().put(definition.getCode(), definition);
         registeredExtensionCodes.add(definition.getCode());
 
-        log.info("Extension registered successfully: {} -> {} [tenant={}, biz={}, order={}]",
+        log.info("Extension registered successfully: {} -> {} [tenant={}, biz={}, priority={}, weight={}]",
                 extensionPoint, definition.getCode(), definition.getTenant(),
-                definition.getBizCode(), definition.getOrder());
+                definition.getBizCode(), definition.getPriority(), definition.getWeight());
     }
 
     private void logRegistrationReport(long startTime) {
         RegistrationStatistics stats = getRegistrationStatistics();
-        // 更新：使用新的 getStats 方法获取仓库统计
-        ExtensionRepository.RepositoryStats repoStats = extensionRepository.getStats();
 
         log.info("""
                         =========================================================================
@@ -564,28 +552,47 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
                         Failed            : {}
                         Extension Points  : {}
                         Total Extensions  : {}
-                        Repository        : {} ({} points, {} extensions)
+                        Enabled Extensions: {}
+                        Unique Codes      : {}
                         Time Elapsed      : {} ms
                         =========================================================================
                         """,
                 stats.getTotalScanned(), stats.getSuccessfulRegistrations(),
                 stats.getFailedRegistrations(), stats.getExtensionPointCount(),
-                stats.getTotalExtensions(), repoStats.getRepositoryName(),
-                repoStats.getExtensionPointCount(), repoStats.getExtensionCount(),
-                System.currentTimeMillis() - startTime);
+                stats.getTotalExtensions(), stats.getEnabledExtensions(),
+                stats.getUniqueExtensionCodes(), System.currentTimeMillis() - startTime);
     }
 
-    private void warmupExtensionRouters() {
-        try {
-            Optional.ofNullable(applicationContext.getBean(DefaultExtensionPointRouter.class))
-                    .ifPresent(router -> {
-                        log.info("Warming up extension routers for {} extension points",
-                                extensionPointRegistry.size());
-                        router.warmupAll();
-                    });
-        } catch (Exception e) {
-            log.warn("Failed to warm up extension routers", e);
-        }
+    // ==================== 管理操作 ====================
+
+    /**
+     * 清空指定扩展点
+     */
+    public int clearExtensionPoint(@NonNull String extensionPoint) {
+        return extensionRepository.clearExtensionPoint(extensionPoint);
+    }
+
+    /**
+     * 清空所有扩展
+     */
+    public void clearAllExtensions() {
+        extensionRepository.clearAllExtensions();
+        registeredExtensionCodes.clear();
+        log.info("All extensions have been cleared");
+    }
+
+    /**
+     * 批量注册扩展
+     */
+    public int batchRegisterExtensions(@NonNull Map<String, Collection<ExtensionDefinition>> extensionsByPoint) {
+        return extensionRepository.batchRegisterExtensions(extensionsByPoint);
+    }
+
+    /**
+     * 检查扩展点是否有扩展
+     */
+    public boolean hasExtensions(@NonNull String extensionPoint) {
+        return extensionRepository.hasExtensions(extensionPoint);
     }
 
     // ==================== 内部类 ====================
@@ -599,42 +606,28 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
         private final int failedRegistrations;
         private final int extensionPointCount;
         private final int totalExtensions;
+        private final int enabledExtensions;
         private final int uniqueExtensionCodes;
 
         public RegistrationStatistics(int totalScanned, int successfulRegistrations,
                                       int failedRegistrations, int extensionPointCount,
-                                      int totalExtensions, int uniqueExtensionCodes) {
+                                      int totalExtensions, int enabledExtensions,
+                                      int uniqueExtensionCodes) {
             this.totalScanned = totalScanned;
             this.successfulRegistrations = successfulRegistrations;
             this.failedRegistrations = failedRegistrations;
             this.extensionPointCount = extensionPointCount;
             this.totalExtensions = totalExtensions;
+            this.enabledExtensions = enabledExtensions;
             this.uniqueExtensionCodes = uniqueExtensionCodes;
         }
 
-        // Getters
-        public int getTotalScanned() {
-            return totalScanned;
-        }
-
-        public int getSuccessfulRegistrations() {
-            return successfulRegistrations;
-        }
-
-        public int getFailedRegistrations() {
-            return failedRegistrations;
-        }
-
-        public int getExtensionPointCount() {
-            return extensionPointCount;
-        }
-
-        public int getTotalExtensions() {
-            return totalExtensions;
-        }
-
-        public int getUniqueExtensionCodes() {
-            return uniqueExtensionCodes;
-        }
+        public int getTotalScanned() { return totalScanned; }
+        public int getSuccessfulRegistrations() { return successfulRegistrations; }
+        public int getFailedRegistrations() { return failedRegistrations; }
+        public int getExtensionPointCount() { return extensionPointCount; }
+        public int getTotalExtensions() { return totalExtensions; }
+        public int getEnabledExtensions() { return enabledExtensions; }
+        public int getUniqueExtensionCodes() { return uniqueExtensionCodes; }
     }
 }

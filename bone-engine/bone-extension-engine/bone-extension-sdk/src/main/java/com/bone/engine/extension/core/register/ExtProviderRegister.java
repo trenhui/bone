@@ -5,7 +5,7 @@
 //import com.bone.engine.extension.api.annotation.ExtensionPoint;
 //import com.bone.engine.extension.api.model.definition.ExtensionDefinition;
 //import com.bone.engine.extension.support.repository.ExtPointRepositoryFactory;
-//import com.bone.engine.extension.support.repository.ExtensionRepository;
+//import com.bone.engine.extension.api.spi.ExtensionRepository;
 //import com.bone.engine.extension.support.repository.InMemoryExtensionRepository;
 //import jakarta.annotation.PostConstruct;
 //import org.springframework.aop.support.AopUtils;

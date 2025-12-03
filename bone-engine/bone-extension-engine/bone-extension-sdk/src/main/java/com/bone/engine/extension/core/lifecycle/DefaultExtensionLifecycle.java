@@ -154,7 +154,7 @@ public class DefaultExtensionLifecycle implements ExtensionLifecycle {
             
             // 记录上下文信息以帮助诊断
             if (context != null && logger.isDebugEnabled()) {
-                logger.debug("Detailed context for error: {}", context.getAllAttributes());
+                logger.debug("Detailed context for error: {}", context.getAttributes());
             }
         }
     }

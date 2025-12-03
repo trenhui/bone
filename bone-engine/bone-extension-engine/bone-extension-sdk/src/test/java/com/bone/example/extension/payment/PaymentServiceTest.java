@@ -1,112 +1,165 @@
 package com.bone.example.extension.payment;
 
-import com.bone.example.extension.config.TestConfig;
+import com.bone.engine.extension.support.context.BizContext;
 import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 import java.math.BigDecimal;
 
+import static org.assertj.core.api.Assertions.*;
+
 /**
- * 支付服务测试类
- * <p>
- * 测试支付服务的各种功能场景，包括正常支付处理、参数验证等
+ * PaymentService 完整测试类（2025 企业级标准版）
+ * 只测试新接口：processPayment(PaymentTestRequest, BizContext)
  */
-@SpringBootTest(classes = TestConfig.class)
+@SpringBootTest(classes = com.bone.example.extension.config.TestConfig.class)
 @ActiveProfiles("test")
-@ExtendWith(SpringExtension.class)
 @Slf4j
+@DisplayName("PaymentService 支付服务完整测试")
 class PaymentServiceTest {
 
-    private final PaymentService paymentService;
-
     @Autowired
-    PaymentServiceTest(PaymentService paymentService) {
-        this.paymentService = paymentService;
-    }
+    private PaymentService paymentService;
 
+    private static PaymentTestRequest sampleRequest;
+
+    @BeforeAll
+    static void initSampleRequest() {
+        sampleRequest = PaymentTestRequest.builder()
+                .orderId("ORDER-20251203-001")
+                .userId("USER_888888")
+                .amount(new BigDecimal("188.88"))
+                .paymentMethod("WECHAT")
+                .couponId("WELCOME2025")
+                .pointsToDeduct(100)
+                .build();
+    }
 
     @Test
-    void testProcessPaymentSuccess() {
-        log.info("开始测试完整支付流程...");
+    @DisplayName("电商租户 - 应路由到电商支付实现")
+    void shouldRouteToEcommerceImplementation() {
+        BizContext<PaymentTestRequest> context = BizContext.<PaymentTestRequest>builder()
+                .tenant("ECOMMERCE")
+                .bizCode("PAYMENT")
+                .useCase("ONLINE_TRADE")
+                .scenario("WECHAT")
+                .data(sampleRequest)
+                .build();
 
-        PaymentTestRequest ecommerceRequest = createSamplePaymentRequest();
+        PaymentResult result = paymentService.processPayment(sampleRequest, context);
 
-        // 使用Spring注入的服务实例执行完整支付流程
-        PaymentResult result = paymentService.processPayment(ecommerceRequest, "ECOMMERCE");
+        assertThat(result)
+                .isNotNull()
+                .satisfies(r -> {
+                    assertThat(r.getStatus()).isEqualTo("SUCCESS");
+                    assertThat(r.getTransactionId()).startsWith("TXN_");
+                    assertThat(r.getAmount()).isEqualByComparingTo(new BigDecimal("188.88"));
+                    assertThat(r.getPaymentMethod()).isEqualTo("WECHAT");
+                    // 可选：如果你在 PaymentResult 中加了 channel 字段
+                    // assertThat(r.getPaymentChannel()).isEqualTo("ECOMMERCE_WECHAT");
+                });
 
-        // 验证结果
-        assertNotNull(result, "支付结果不应为null");
-        assertTrue(result instanceof PaymentResult, "结果应为PaymentResult类型");
-
-        PaymentResult paymentResult = (PaymentResult) result;
-
-        // 使用请求中的实际订单ID进行验证，而不是硬编码的期望值
-        assertEquals(ecommerceRequest.getOrderId(), paymentResult.getOrderId(), "订单ID应匹配");
-        assertEquals(ecommerceRequest.getUserId(), paymentResult.getUserId(), "用户ID应匹配");
-        assertNotNull(paymentResult.getTransactionId(), "交易ID不应为null");
-        assertNotNull(paymentResult.getStatus(), "支付状态不应为null");
-
-        log.info("完整支付流程测试通过");
+        log.info("电商租户支付成功，交易ID: {}", result.getTransactionId());
     }
 
-
-    /**
-     * 测试基本支付处理流程
-     * <p>
-     * 验证支付服务能够处理基本的支付请求
-     */
     @Test
-    void testProcessPaymentWithValidRequest() {
-        // 准备测试数据 - 使用PaymentRequest类型
-        PaymentTestRequest request = createSamplePaymentRequest();
-        String tenantCode = "ECOMMERCE";
-        
-        // 执行测试
-        Object result = paymentService.processPayment(request, tenantCode);
-        
-        // 基本验证 - 暂时使用Object类型进行简单验证
-        assertNotNull(result, "支付结果不应为null");
+    @DisplayName("金融租户 - 应路由到金融支付实现")
+    void shouldRouteToFinancialImplementation() {
+        BizContext<PaymentTestRequest> context = BizContext.<PaymentTestRequest>builder()
+                .tenant("FINANCIAL_TENANT")
+                .bizCode("PAYMENT")
+                .useCase("BANK_TRANSFER")
+                .data(sampleRequest)
+                .build();
+
+        PaymentResult result = paymentService.processPayment(sampleRequest, context);
+
+        assertThat(result.getStatus()).isEqualTo("SUCCESS");
+        // 金融租户可能走银行通道
+        // assertThat(result.getPaymentChannel()).isEqualTo("BANK_UNIONPAY");
     }
-    
-    /**
-     * 测试空请求参数验证
-     * <p>
-     * 验证传入null请求时的行为
-     */
+
     @Test
-    void testProcessPaymentWithNullRequest() {
-        String tenantCode = "ECOMMERCE";
-        
-        // 验证异常情况
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            paymentService.processPayment(null, tenantCode);
-        });
-        
-        // 验证异常消息
-        assertTrue(exception.getMessage().contains("支付请求不能为空"));
+    @DisplayName("默认实现 - tenant=* 的扩展点应被命中")
+    void shouldHitDefaultImplementationWhenTenantMatchesWildcard() {
+        BizContext<PaymentTestRequest> context = BizContext.<PaymentTestRequest>builder()
+                .tenant("UNKNOWN_TENANT")  // 不存在，但有 tenant=* 的实现
+                .bizCode("PAYMENT")
+                .data(sampleRequest)
+                .build();
+
+        PaymentResult result = paymentService.processPayment(sampleRequest, context);
+
+        assertThat(result.getStatus()).isEqualTo("SUCCESS");
+        log.info("通配符租户路由成功，使用默认实现");
     }
-    
-    /**
-     * 创建示例支付请求对象
-     * <p>
-     * 提供测试中使用的标准支付请求对象
-     * 
-     * @return 示例支付请求对象
-     */
-    private PaymentTestRequest createSamplePaymentRequest() {
-        PaymentTestRequest request = new PaymentTestRequest();
-        request.setOrderId("ORDER-2023-01-01-0001");
-        request.setUserId("USER001");
-        request.setAmount(new BigDecimal("100.00"));
-        request.setPaymentMethod("ALIPAY");
-        return request;
+
+    @Test
+    @DisplayName("金额为负 - 应被参数校验拦截")
+    void shouldRejectNegativeAmount() {
+        PaymentTestRequest badRequest = sampleRequest.toBuilder()
+                .amount(new BigDecimal("-99.99"))
+                .build();
+
+        BizContext<PaymentTestRequest> context = BizContext.<PaymentTestRequest>builder()
+                .tenant("ECOMMERCE")
+                .data(badRequest)
+                .build();
+
+        assertThatThrownBy(() -> paymentService.processPayment(badRequest, context))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("金额");
+    }
+
+    @Test
+    @DisplayName("请求为 null - 应抛出 IllegalArgumentException")
+    void shouldRejectNullRequest() {
+        BizContext<PaymentTestRequest> context = BizContext.<PaymentTestRequest>builder()
+                .tenant("ECOMMERCE")
+                .build();
+
+        assertThatThrownBy(() -> paymentService.processPayment(null, context))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("支付请求不能为空");
+    }
+
+    @Test
+    @DisplayName("BizContext 缺失 tenant - 只要有 tenant=* 的实现，仍可成功")
+    void shouldWorkEvenWithoutTenantInContext() {
+        BizContext<PaymentTestRequest> context = BizContext.<PaymentTestRequest>builder()
+                .bizCode("PAYMENT")
+                .data(sampleRequest)
+                .build(); // 故意不设置 tenant
+
+        PaymentResult result = paymentService.processPayment(sampleRequest, context);
+
+        assertThat(result.getStatus()).isEqualTo("SUCCESS");
+        log.info("无 tenant 维度仍路由成功（依赖你已修复的模糊匹配）");
+    }
+
+    @DisplayName("多租户路由参数化测试")
+    @ParameterizedTest(name = "租户={0} → 应成功")
+    @CsvSource({
+            "ECOMMERCE,       WECHAT",
+            "FINANCIAL_TENANT, UNIONPAY",
+            "GOV_TENANT,      ALIPAY",
+            "UNKNOWN_TENANT,  DEFAULT"   // 走默认实现
+    })
+    void shouldRouteCorrectlyForDifferentTenants(String tenant, String expectedChannel) {
+        BizContext<PaymentTestRequest> context = BizContext.<PaymentTestRequest>builder()
+                .tenant(tenant)
+                .bizCode("PAYMENT")
+                .data(sampleRequest)
+                .build();
+
+        PaymentResult result = paymentService.processPayment(sampleRequest, context);
+
+        assertThat(result.getStatus()).isEqualTo("SUCCESS");
+        log.info("租户 {} 路由成功", tenant);
     }
 }

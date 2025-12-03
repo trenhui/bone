@@ -1,5 +1,6 @@
 package com.bone.engine.extension.support.repository;
 
+import com.bone.engine.extension.api.spi.ExtensionRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;

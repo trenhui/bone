@@ -17,9 +17,14 @@ import com.bone.example.extension.result.ValidationResult;
  * 提供电商场景下的支付处理逻辑，包括支付金额计算、手续费应用等功能
  */
 @Extension(
-    name = "电商支付扩展实现",
-    description = "处理电商场景下的支付请求，提供专业的电商支付计算逻辑",
-    order = 20
+        name = "电商支付扩展实现",
+        description = "处理电商场景下的支付请求",
+        tenant = "ECOMMERCE",        // 必须加！
+        bizCode = "PAYMENT",         // 强烈建议加！
+        useCase = "ONLINE_TRADE",
+        scenario = "WECHAT",
+        order = 20,
+        weight = 100
 )
 @ExtensionDoc(
     description = "专为电商平台设计的支付扩展实现，提供符合电商场景特点的支付计算和处理功能",

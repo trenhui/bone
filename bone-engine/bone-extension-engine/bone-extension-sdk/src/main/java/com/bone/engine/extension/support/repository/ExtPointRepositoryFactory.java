@@ -1,5 +1,6 @@
 package com.bone.engine.extension.support.repository;
 
+import com.bone.engine.extension.api.spi.ExtensionRepository;
 import org.springframework.util.Assert;
 
 import org.slf4j.Logger;
