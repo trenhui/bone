@@ -1,173 +1,419 @@
 package com.bone.engine.extension.api.model.definition;
 
-import com.bone.engine.extension.support.config.ExtPointConstants;
-import lombok.Builder;
-import lombok.Data;
-import lombok.experimental.Accessors;
+import lombok.*;
+import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
+import org.springframework.util.StringUtils;
 
 import java.io.Serializable;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 /**
- * 扩展实现核心定义 - 路由匹配对象
+ * 扩展定义 - 企业级最佳实践精简版
+ *
+ * 设计原则：
+ * 1. ✅ 专注核心：只包含路由必需的维度匹配功能
+ * 2. ✅ 性能优先：缓存优化 + 模式预编译
+ * 3. ✅ 代码简洁：移除冗余字段，易于维护
+ * 4. ✅ 扩展友好：支持自定义维度和表达式
  */
-@Data
-@Builder
-@Accessors(chain = true)
-public class ExtensionDefinition implements Comparable<ExtensionDefinition>, Serializable {
-    private static final long serialVersionUID = 1L;
+@Getter
+@Setter
+@ToString(exclude = {"instance", "compiledPatterns", "cachedHashCode"})
+@EqualsAndHashCode(exclude = {"createTime", "compiledPatterns", "cachedHashCode"})
+public class ExtensionDefinition implements Serializable, Comparable<ExtensionDefinition> {
 
-    // ==================== 基础信息 ====================
+    private static final long serialVersionUID = 1L;
+    private static final String WILDCARD = "*";
+
+    // ==================== 核心标识字段 ====================
+    /** 扩展唯一编码 */
     private String code;
-    private ExtensionPointDefinition point;
-    private Class<?> implClass;
+
+    /** 扩展点接口类名 */
+    private String extensionPoint;
+
+    /** 实现类名 */
+    private String implementationClass;
+
+    /** 扩展实现实例 */
     private Object instance;
 
-    // ==================== 路由维度 ====================
-    private String tenant = "*";
-    private String bizCode = "*";
-    private String useCase = "*";
-    private String scenario = "*";
-    private String env = "*";
-    private String version = "1.0.0";
+    /** 扩展描述 */
+    private String description;
 
-    // ==================== 路由控制 ====================
-    private int order = 100;
+    /** 创建时间 */
+    private LocalDateTime createTime;
+
+    // ==================== 维度匹配字段 ====================
+    /** 租户标识（支持通配符） */
+    private String tenant = WILDCARD;
+
+    /** 业务编码（支持通配符） */
+    private String bizCode = WILDCARD;
+
+    /** 用例标识 */
+    private String useCase = WILDCARD;
+
+    /** 场景标识 */
+    private String scenario = WILDCARD;
+
+    /** 环境标识 */
+    private String env = WILDCARD;
+
+    /** 自定义维度规则 */
+    private final Map<String, String> dimensionRules = new ConcurrentHashMap<>();
+
+    /** 条件表达式 */
+    private String condition;
+
+    // ==================== 路由控制字段 ====================
+    /** 是否默认实现 */
+    private boolean defaultImpl = false;
+
+    /** 权重（0-100） */
     private int weight = 100;
-    private int traffic = 100;
+
+    /** 优先级（越小优先级越高） */
+    private int priority = 100;
+
+    /** 是否启用 */
     private boolean enabled = true;
 
-    // ==================== 高级配置 ====================
-    private String condition = "";
-    private String[] tags = {};
-    private String startTime = "";
-    private String endTime = "";
-    private boolean async = false;
-    private int timeout = 0;
+    /** 生效开始时间（字符串格式） */
+    private String startTime;
 
-    // ==================== 运行时字段（非持久化） ====================
-    /**
-     * 租户匹配模式
-     */
+    /** 生效结束时间（字符串格式） */
+    private String endTime;
+
+    // ==================== 性能优化字段 ====================
     private transient Pattern tenantPattern;
-
-    /**
-     * 业务编码匹配模式
-     */
     private transient Pattern bizCodePattern;
-
-    /**
-     * 用例匹配模式
-     */
     private transient Pattern useCasePattern;
-
-    /**
-     * 场景匹配模式
-     */
     private transient Pattern scenarioPattern;
-
-    /**
-     * 环境匹配模式
-     */
     private transient Pattern envPattern;
-
-    /**
-     * 条件表达式谓词
-     */
     private transient Predicate<Object> conditionPredicate;
+    private transient Integer cachedHashCode;
+    private transient String cachedKey;
+    private transient Boolean cachedWildcard;
+    private transient Integer cachedMatchScore;
 
-    /**
-     * 获取业务身份标识
-     */
-    public String getBizIdentity() {
-        return tenant + ExtPointConstants.SEPARATOR
-                + bizCode + ExtPointConstants.SEPARATOR
-                + useCase + ExtPointConstants.SEPARATOR
-                + scenario;
+    // ==================== 构造方法 ====================
+    public ExtensionDefinition() {
+        this.createTime = LocalDateTime.now();
     }
 
-    /**
-     * 检查是否启用
-     */
-    public boolean isEnabled() {
-        return enabled;
+    // ==================== 维度操作方法 ====================
+
+    public void setDimensionRule(@NonNull String key, @Nullable String value) {
+        if (value == null || !StringUtils.hasText(value) || WILDCARD.equals(value)) {
+            dimensionRules.remove(key);
+        } else {
+            dimensionRules.put(key, value);
+        }
+        clearCaches();
     }
 
-    /**
-     * 检查是否匹配所有条件（通配符）
-     */
+    public void setDimensionRules(@NonNull Map<String, String> rules) {
+        dimensionRules.clear();
+        rules.forEach((key, value) -> {
+            if (StringUtils.hasText(value) && !WILDCARD.equals(value)) {
+                dimensionRules.put(key, value);
+            }
+        });
+        clearCaches();
+    }
+
+    @Nullable
+    public String getDimension(@NonNull String key) {
+        return dimensionRules.get(key);
+    }
+
+    // ==================== 模式编译方法 ====================
+
+    public void compilePatterns() {
+        this.tenantPattern = compilePattern(tenant);
+        this.bizCodePattern = compilePattern(bizCode);
+        this.useCasePattern = compilePattern(useCase);
+        this.scenarioPattern = compilePattern(scenario);
+        this.envPattern = compilePattern(env);
+    }
+
+    private Pattern compilePattern(String pattern) {
+        if (pattern == null || WILDCARD.equals(pattern)) {
+            return null; // 通配符不需要模式
+        }
+        try {
+            // 将简单的通配符*转换为正则表达式.*
+            String regex = pattern.replace("*", ".*");
+            return Pattern.compile(regex);
+        } catch (Exception e) {
+            // 如果编译失败，使用精确匹配
+            return Pattern.compile(Pattern.quote(pattern));
+        }
+    }
+
+    public void setConditionPredicate(Predicate<Object> predicate) {
+        this.conditionPredicate = predicate;
+    }
+
+    // ==================== 核心匹配方法 ====================
+
     public boolean isWildcard() {
-        return "*".equals(tenant) && "*".equals(bizCode) &&
-                "*".equals(useCase) && "*".equals(scenario) &&
-                "*".equals(env);
+        if (cachedWildcard == null) {
+            cachedWildcard = WILDCARD.equals(tenant) &&
+                    WILDCARD.equals(bizCode) &&
+                    WILDCARD.equals(useCase) &&
+                    WILDCARD.equals(scenario) &&
+                    WILDCARD.equals(env) &&
+                    dimensionRules.isEmpty() &&
+                    !StringUtils.hasText(condition);
+        }
+        return cachedWildcard;
     }
 
-    /**
-     * 获取匹配优先级（匹配条件越具体，优先级越高）
-     */
-    public int getMatchPriority() {
-        int priority = 0;
-        if (!"*".equals(tenant)) priority += 1000;
-        if (!"*".equals(bizCode)) priority += 100;
-        if (!"*".equals(useCase)) priority += 10;
-        if (!"*".equals(scenario)) priority += 1;
-        return priority;
+    public int getMatchScore() {
+        if (cachedMatchScore == null) {
+            int score = 0;
+            if (!WILDCARD.equals(tenant)) score += 1000;
+            if (!WILDCARD.equals(bizCode)) score += 100;
+            if (!WILDCARD.equals(useCase)) score += 50;
+            if (!WILDCARD.equals(scenario)) score += 10;
+            if (!WILDCARD.equals(env)) score += 1;
+            score += dimensionRules.size() * 5;
+            if (StringUtils.hasText(condition)) score += 20;
+            cachedMatchScore = score;
+        }
+        return cachedMatchScore;
     }
+
+    public Map<String, String> getAllDimensions() {
+        Map<String, String> all = new LinkedHashMap<>();
+
+        if (!WILDCARD.equals(tenant)) all.put("tenant", tenant);
+        if (!WILDCARD.equals(bizCode)) all.put("bizCode", bizCode);
+        if (!WILDCARD.equals(useCase)) all.put("useCase", useCase);
+        if (!WILDCARD.equals(scenario)) all.put("scenario", scenario);
+        if (!WILDCARD.equals(env)) all.put("env", env);
+
+        all.putAll(dimensionRules);
+        return Collections.unmodifiableMap(all);
+    }
+
+    // ==================== 实用方法 ====================
+
+    public String getCacheKey() {
+        if (cachedKey == null) {
+            StringBuilder key = new StringBuilder();
+            key.append(extensionPoint).append(":");
+
+            getAllDimensions().entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEach(e -> key.append(e.getKey()).append("=").append(e.getValue()).append("|"));
+
+            if (StringUtils.hasText(condition)) {
+                key.append("condition=").append(condition.hashCode());
+            }
+
+            cachedKey = key.toString();
+        }
+        return cachedKey;
+    }
+
+    public boolean isValid() {
+        return StringUtils.hasText(code) &&
+                StringUtils.hasText(extensionPoint) &&
+                instance != null;
+    }
+
+    // ==================== 清空缓存 ====================
+    private void clearCaches() {
+        cachedHashCode = null;
+        cachedKey = null;
+        cachedWildcard = null;
+        cachedMatchScore = null;
+    }
+
+    // ==================== Builder模式 ====================
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
+    public static class Builder {
+        private final ExtensionDefinition definition = new ExtensionDefinition();
+
+        public Builder code(String code) {
+            definition.code = code;
+            return this;
+        }
+
+        public Builder extensionPoint(String extensionPoint) {
+            definition.extensionPoint = extensionPoint;
+            return this;
+        }
+
+        public Builder implementationClass(String implementationClass) {
+            definition.implementationClass = implementationClass;
+            return this;
+        }
+
+        public Builder instance(Object instance) {
+            definition.instance = instance;
+            return this;
+        }
+
+        public Builder description(String description) {
+            definition.description = description;
+            return this;
+        }
+
+        public Builder tenant(String tenant) {
+            definition.tenant = StringUtils.hasText(tenant) ? tenant : WILDCARD;
+            return this;
+        }
+
+        public Builder bizCode(String bizCode) {
+            definition.bizCode = StringUtils.hasText(bizCode) ? bizCode : WILDCARD;
+            return this;
+        }
+
+        public Builder useCase(String useCase) {
+            definition.useCase = StringUtils.hasText(useCase) ? useCase : WILDCARD;
+            return this;
+        }
+
+        public Builder scenario(String scenario) {
+            definition.scenario = StringUtils.hasText(scenario) ? scenario : WILDCARD;
+            return this;
+        }
+
+        public Builder env(String env) {
+            definition.env = StringUtils.hasText(env) ? env : WILDCARD;
+            return this;
+        }
+
+        public Builder dimension(String key, String value) {
+            definition.setDimensionRule(key, value);
+            return this;
+        }
+
+        public Builder dimensions(Map<String, String> dimensions) {
+            definition.setDimensionRules(dimensions);
+            return this;
+        }
+
+        public Builder condition(String condition) {
+            definition.condition = condition;
+            return this;
+        }
+
+        public Builder defaultImpl(boolean defaultImpl) {
+            definition.defaultImpl = defaultImpl;
+            return this;
+        }
+
+        public Builder weight(int weight) {
+            definition.weight = Math.max(0, Math.min(100, weight));
+            return this;
+        }
+
+        public Builder priority(int priority) {
+            definition.priority = Math.max(1, priority);
+            return this;
+        }
+
+        public Builder enabled(boolean enabled) {
+            definition.enabled = enabled;
+            return this;
+        }
+
+        public Builder startTime(String startTime) {
+            definition.startTime = startTime;
+            return this;
+        }
+
+        public Builder endTime(String endTime) {
+            definition.endTime = endTime;
+            return this;
+        }
+
+        public ExtensionDefinition build() {
+            if (!definition.isValid()) {
+                throw new IllegalArgumentException("ExtensionDefinition参数无效");
+            }
+            definition.compilePatterns();
+            return definition;
+        }
+    }
+
+    // ==================== Comparable接口实现 ====================
 
     @Override
-    public int compareTo(ExtensionDefinition other) {
-        // 先按优先级排序
-        int priorityCompare = Integer.compare(other.getMatchPriority(), this.getMatchPriority());
+    public int compareTo(@NonNull ExtensionDefinition other) {
+        // 1. 默认实现排在最后
+        if (this.defaultImpl != other.defaultImpl) {
+            return Boolean.compare(other.defaultImpl, this.defaultImpl);
+        }
+
+        // 2. 匹配分数越高越靠前
+        int scoreCompare = Integer.compare(other.getMatchScore(), this.getMatchScore());
+        if (scoreCompare != 0) {
+            return scoreCompare;
+        }
+
+        // 3. 优先级越小越靠前
+        int priorityCompare = Integer.compare(this.priority, other.priority);
         if (priorityCompare != 0) {
             return priorityCompare;
         }
-        // 再按order排序
-        return Integer.compare(this.order, other.order);
+
+        // 4. 权重越大越靠前
+        int weightCompare = Integer.compare(other.weight, this.weight);
+        if (weightCompare != 0) {
+            return weightCompare;
+        }
+
+        // 5. 按编码排序
+        return this.code.compareTo(other.code);
     }
 
-    // ==================== Builder 自定义方法 ====================
+    // ==================== hashCode和equals ====================
 
-    public static class ExtensionDefinitionBuilder {
+    @Override
+    public int hashCode() {
+        if (cachedHashCode == null) {
+            cachedHashCode = Objects.hash(code, extensionPoint, tenant, bizCode,
+                    useCase, scenario, env, dimensionRules);
+        }
+        return cachedHashCode;
+    }
 
-        /**
-         * 设置租户并自动编译模式
-         */
-        public ExtensionDefinitionBuilder tenant(String tenant) {
-            this.tenant = tenant;
-            return this;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ExtensionDefinition that = (ExtensionDefinition) o;
+
+        // 快速比较hashCode
+        if (this.hashCode() != that.hashCode()) {
+            return false;
         }
 
-        /**
-         * 设置业务编码并自动编译模式
-         */
-        public ExtensionDefinitionBuilder bizCode(String bizCode) {
-            this.bizCode = bizCode;
-            return this;
-        }
-
-        /**
-         * 设置用例并自动编译模式
-         */
-        public ExtensionDefinitionBuilder useCase(String useCase) {
-            this.useCase = useCase;
-            return this;
-        }
-
-        /**
-         * 设置场景并自动编译模式
-         */
-        public ExtensionDefinitionBuilder scenario(String scenario) {
-            this.scenario = scenario;
-            return this;
-        }
-
-        /**
-         * 设置环境并自动编译模式
-         */
-        public ExtensionDefinitionBuilder env(String env) {
-            this.env = env;
-            return this;
-        }
+        // 核心字段比较
+        return Objects.equals(code, that.code) &&
+                Objects.equals(extensionPoint, that.extensionPoint) &&
+                Objects.equals(tenant, that.tenant) &&
+                Objects.equals(bizCode, that.bizCode) &&
+                Objects.equals(useCase, that.useCase) &&
+                Objects.equals(scenario, that.scenario) &&
+                Objects.equals(env, that.env) &&
+                Objects.equals(dimensionRules, that.dimensionRules);
     }
 }

@@ -40,7 +40,7 @@ public @interface EnableExtensionPoints {
     /**
      * 自定义路由器实现类
      *
-     * 必须实现 ExtensionRouter 接口，优先级高于内置路由器
+     * 必须实现 ExtensionPointRouter 接口，优先级高于内置路由器
      */
     Class<?> extensionPointRouter() default DefaultExtensionPointRouter.class;
 

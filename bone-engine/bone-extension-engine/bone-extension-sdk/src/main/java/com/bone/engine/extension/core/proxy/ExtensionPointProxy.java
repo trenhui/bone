@@ -5,7 +5,7 @@ import com.bone.engine.extension.api.spi.ExtensionPointRouter;
 import com.bone.engine.extension.support.context.ExtensionContextManager;
 import com.bone.engine.extension.support.context.BizContext;
 import com.bone.engine.extension.core.invoker.ExtPointInvocationHandler;
-import com.bone.engine.extension.support.repository.ExtensionRepository;
+import com.bone.engine.extension.api.spi.ExtensionRepository;
 import com.bone.engine.extension.support.repository.ExtensionRepositoryFactory;
 import lombok.extern.slf4j.Slf4j;
 

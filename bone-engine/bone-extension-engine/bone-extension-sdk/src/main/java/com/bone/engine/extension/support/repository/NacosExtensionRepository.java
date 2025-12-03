@@ -6,26 +6,22 @@
 //import com.bone.engine.extension.api.model.definition.ExtensionDefinition;
 //import com.fasterxml.jackson.core.type.TypeReference;
 //import com.fasterxml.jackson.databind.ObjectMapper;
+//import com.bone.engine.extension.api.spi.ExtensionRepository;
 //import jakarta.annotation.PostConstruct;
 //import jakarta.annotation.PreDestroy;
 //import lombok.extern.slf4j.Slf4j;
-//import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 //import org.springframework.lang.NonNull;
 //import org.springframework.lang.Nullable;
-//import org.springframework.stereotype.Component;
 //
 //import java.util.*;
 //import java.util.concurrent.ConcurrentHashMap;
 //import java.util.concurrent.Executor;
 //import java.util.concurrent.Executors;
-//import java.util.function.Predicate;
 //import java.util.stream.Collectors;
 //
 ///**
 // * Nacos 扩展点仓库 - 支持配置热加载、集群全节点同步
 // */
-////@Component("nacosExtensionRepository")
-////@ConditionalOnClass(ConfigService.class)
 //@Slf4j
 //public class NacosExtensionRepository implements ExtensionRepository {
 //
@@ -126,7 +122,7 @@
 //
 //    @Override
 //    @Nullable
-//    public ExtensionDefinition register(@NonNull String extensionPoint, @NonNull ExtensionDefinition extension) {
+//    public ExtensionDefinition registerExtension(@NonNull String extensionPoint, @NonNull ExtensionDefinition extension) {
 //        Map<String, ExtensionDefinition> pointExtensions = storage.computeIfAbsent(
 //                extensionPoint, k -> new ConcurrentHashMap<>());
 //
@@ -139,7 +135,7 @@
 //
 //    @Override
 //    @Nullable
-//    public ExtensionDefinition unregister(@NonNull String extensionPoint, @NonNull String extensionCode) {
+//    public ExtensionDefinition unregisterExtension(@NonNull String extensionPoint, @NonNull String extensionCode) {
 //        Map<String, ExtensionDefinition> pointExtensions = storage.get(extensionPoint);
 //        if (pointExtensions != null) {
 //            ExtensionDefinition removed = pointExtensions.remove(extensionCode);
@@ -152,24 +148,6 @@
 //                log.debug("Extension unregistered from Nacos: {} -> {}", extensionPoint, extensionCode);
 //            }
 //            return removed;
-//        }
-//        return null;
-//    }
-//
-//    @Override
-//    @Nullable
-//    public ExtensionDefinition unregisterByCode(@NonNull String extensionCode) {
-//        for (Map.Entry<String, Map<String, ExtensionDefinition>> entry : storage.entrySet()) {
-//            ExtensionDefinition removed = entry.getValue().remove(extensionCode);
-//            if (removed != null) {
-//                // 清理空的扩展点
-//                if (entry.getValue().isEmpty()) {
-//                    storage.remove(entry.getKey());
-//                }
-//                publishToNacos();
-//                log.debug("Extension globally unregistered from Nacos: {}", extensionCode);
-//                return removed;
-//            }
 //        }
 //        return null;
 //    }
@@ -197,41 +175,22 @@
 //    }
 //
 //    @Override
-//    @Nullable
-//    public ExtensionDefinition getExtension(@NonNull String extensionPoint, @NonNull String extensionCode) {
+//    @NonNull
+//    public Optional<ExtensionDefinition> getExtensionByCode(@NonNull String extensionPoint, @NonNull String extensionCode) {
 //        Map<String, ExtensionDefinition> pointExtensions = storage.get(extensionPoint);
-//        return pointExtensions != null ? pointExtensions.get(extensionCode) : null;
+//        if (pointExtensions != null) {
+//            return Optional.ofNullable(pointExtensions.get(extensionCode));
+//        }
+//        return Optional.empty();
 //    }
 //
 //    @Override
-//    @Nullable
-//    public ExtensionDefinition getExtensionByCode(@NonNull String extensionCode) {
-//        return storage.values().stream()
-//                .map(extensions -> extensions.get(extensionCode))
-//                .filter(Objects::nonNull)
-//                .findFirst()
-//                .orElse(null);
-//    }
-//
-//    @Override
-//    public boolean isRegistered(@NonNull String extensionPoint, @NonNull String extensionCode) {
-//        Map<String, ExtensionDefinition> pointExtensions = storage.get(extensionPoint);
-//        return pointExtensions != null && pointExtensions.containsKey(extensionCode);
-//    }
-//
-//    @Override
-//    public boolean hasExtensions(@NonNull String extensionPoint) {
-//        Map<String, ExtensionDefinition> pointExtensions = storage.get(extensionPoint);
-//        return pointExtensions != null && !pointExtensions.isEmpty();
-//    }
-//
-//    @Override
-//    public int registerAll(@NonNull Map<String, Collection<ExtensionDefinition>> extensionsByPoint) {
+//    public int batchRegisterExtensions(@NonNull Map<String, Collection<ExtensionDefinition>> extensionsByPoint) {
 //        int count = 0;
 //        for (Map.Entry<String, Collection<ExtensionDefinition>> entry : extensionsByPoint.entrySet()) {
 //            String extensionPoint = entry.getKey();
 //            for (ExtensionDefinition extension : entry.getValue()) {
-//                register(extensionPoint, extension);
+//                registerExtension(extensionPoint, extension);
 //                count++;
 //            }
 //        }
@@ -239,7 +198,7 @@
 //    }
 //
 //    @Override
-//    public int clearExtensions(@NonNull String extensionPoint) {
+//    public int clearExtensionPoint(@NonNull String extensionPoint) {
 //        Map<String, ExtensionDefinition> removed = storage.remove(extensionPoint);
 //        if (removed != null) {
 //            publishToNacos();
@@ -250,7 +209,7 @@
 //    }
 //
 //    @Override
-//    public void clearAll() {
+//    public void clearAllExtensions() {
 //        storage.clear();
 //        publishToNacos();
 //        log.debug("All extensions cleared from Nacos repository");
@@ -258,57 +217,80 @@
 //
 //    @Override
 //    @NonNull
-//    public Collection<ExtensionDefinition> findExtensions(@NonNull Predicate<ExtensionDefinition> condition) {
-//        return storage.values().stream()
-//                .flatMap(extensions -> extensions.values().stream())
-//                .filter(condition)
-//                .collect(Collectors.toUnmodifiableList());
+//    public Set<String> getAllExtensionPointNames() {
+//        return Collections.unmodifiableSet(new HashSet<>(storage.keySet()));
 //    }
 //
 //    @Override
-//    public int countExtensionPoints() {
-//        return storage.size();
+//    public boolean hasExtensions(@NonNull String extensionPoint) {
+//        Map<String, ExtensionDefinition> pointExtensions = storage.get(extensionPoint);
+//        return pointExtensions != null && !pointExtensions.isEmpty();
 //    }
 //
 //    @Override
-//    public int countExtensions() {
-//        return storage.values().stream()
+//    @NonNull
+//    public ExtensionRepositoryStats getRepositoryStats() {
+//        int totalExtensionPoints = storage.size();
+//        int totalExtensions = storage.values().stream()
 //                .mapToInt(Map::size)
 //                .sum();
+//
+//        int enabledExtensions = storage.values().stream()
+//                .mapToInt(extMap -> (int) extMap.values().stream()
+//                        .filter(ExtensionDefinition::isEnabled)
+//                        .count())
+//                .sum();
+//
+//        return new ExtensionRepositoryStats(
+//                "Nacos",
+//                totalExtensionPoints,
+//                totalExtensions,
+//                enabledExtensions,
+//                System.currentTimeMillis()
+//        );
 //    }
 //
-//    @Override
+//    // ==================== 辅助方法（非接口方法）====================
+//
+//    /**
+//     * 全局按扩展码查找扩展（非接口方法，内部使用）
+//     */
+//    @Nullable
+//    public ExtensionDefinition findExtensionByCodeGlobally(@NonNull String extensionCode) {
+//        return storage.values().stream()
+//                .map(extensions -> extensions.get(extensionCode))
+//                .filter(Objects::nonNull)
+//                .findFirst()
+//                .orElse(null);
+//    }
+//
+//    /**
+//     * 检查扩展码是否已注册（非接口方法）
+//     */
+//    public boolean isExtensionRegistered(@NonNull String extensionPoint, @NonNull String extensionCode) {
+//        Map<String, ExtensionDefinition> pointExtensions = storage.get(extensionPoint);
+//        return pointExtensions != null && pointExtensions.containsKey(extensionCode);
+//    }
+//
+//    /**
+//     * 统计指定扩展点的扩展数量（非接口方法）
+//     */
 //    public int countExtensionsInPoint(@NonNull String extensionPoint) {
 //        Map<String, ExtensionDefinition> pointExtensions = storage.get(extensionPoint);
 //        return pointExtensions != null ? pointExtensions.size() : 0;
 //    }
 //
-//    @Override
-//    @NonNull
-//    public Set<String> getExtensionPointNames() {
-//        return Collections.unmodifiableSet(new HashSet<>(storage.keySet()));
-//    }
-//
-//    @Override
-//    @NonNull
-//    public RepositoryStats getStats() {
-//        return new RepositoryStats(
-//                countExtensionPoints(),
-//                countExtensions(),
-//                System.currentTimeMillis(),
-//                "Nacos"
-//        );
-//    }
-//
-//    @Override
-//    @NonNull
-//    public String getName() {
+//    /**
+//     * 获取仓库名称
+//     */
+//    public String getRepositoryName() {
 //        return "Nacos";
 //    }
 //
-//    @Override
-//    @NonNull
-//    public String getType() {
+//    /**
+//     * 获取仓库类型
+//     */
+//    public String getRepositoryType() {
 //        return "Nacos";
 //    }
 //}

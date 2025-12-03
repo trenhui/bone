@@ -1,8 +1,8 @@
 package com.bone.engine.extension.support.repository;
 
 import com.bone.engine.extension.api.model.definition.ExtensionDefinition;
+import com.bone.engine.extension.api.spi.ExtensionRepository;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
@@ -11,7 +11,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -24,7 +23,6 @@ import java.util.stream.Collectors;
  * 4. 监控支持：内置统计信息
  */
 @Component("inMemoryExtensionRepository")
-//@ConditionalOnClass(com.alibaba.nacos.api.config.ConfigService.class)
 @Slf4j
 public class InMemoryExtensionRepository implements ExtensionRepository {
 
@@ -45,21 +43,9 @@ public class InMemoryExtensionRepository implements ExtensionRepository {
         this.type = "InMemory";
     }
 
-    /**
-     * 注册扩展实现到指定扩展点
-     *
-     * @param extensionPoint 扩展点全限定名
-     * @param extension      扩展定义
-     * @return 如果扩展代码已存在，返回已注册的定义，否则返回null
-     */
-    @Override
-    public ExtensionDefinition register(String extensionPoint, Object extension) {
-        return null;
-    }
-
     @Override
     @Nullable
-    public ExtensionDefinition register(@NonNull String extensionPoint, @NonNull ExtensionDefinition extension) {
+    public ExtensionDefinition registerExtension(@NonNull String extensionPoint, @NonNull ExtensionDefinition extension) {
         Objects.requireNonNull(extensionPoint, "Extension point cannot be null");
         Objects.requireNonNull(extension, "Extension definition cannot be null");
 
@@ -75,7 +61,7 @@ public class InMemoryExtensionRepository implements ExtensionRepository {
 
     @Override
     @Nullable
-    public ExtensionDefinition unregister(@NonNull String extensionPoint, @NonNull String extensionCode) {
+    public ExtensionDefinition unregisterExtension(@NonNull String extensionPoint, @NonNull String extensionCode) {
         ConcurrentMap<String, ExtensionDefinition> pointExtensions = storage.get(extensionPoint);
         if (pointExtensions != null) {
             ExtensionDefinition removed = pointExtensions.remove(extensionCode);
@@ -88,24 +74,6 @@ public class InMemoryExtensionRepository implements ExtensionRepository {
                 log.debug("Extension unregistered: {} -> {}", extensionPoint, extensionCode);
             }
             return removed;
-        }
-        return null;
-    }
-
-    @Override
-    @Nullable
-    public ExtensionDefinition unregisterByCode(@NonNull String extensionCode) {
-        for (Map.Entry<String, ConcurrentMap<String, ExtensionDefinition>> entry : storage.entrySet()) {
-            ExtensionDefinition removed = entry.getValue().remove(extensionCode);
-            if (removed != null) {
-                lastModifiedTime.set(System.currentTimeMillis());
-                // 清理空的扩展点
-                if (entry.getValue().isEmpty()) {
-                    storage.remove(entry.getKey());
-                }
-                log.debug("Extension globally unregistered: {}", extensionCode);
-                return removed;
-            }
         }
         return null;
     }
@@ -133,41 +101,22 @@ public class InMemoryExtensionRepository implements ExtensionRepository {
     }
 
     @Override
-    @Nullable
-    public ExtensionDefinition getExtension(@NonNull String extensionPoint, @NonNull String extensionCode) {
+    @NonNull
+    public Optional<ExtensionDefinition> getExtensionByCode(@NonNull String extensionPoint, @NonNull String extensionCode) {
         ConcurrentMap<String, ExtensionDefinition> pointExtensions = storage.get(extensionPoint);
-        return pointExtensions != null ? pointExtensions.get(extensionCode) : null;
+        if (pointExtensions != null) {
+            return Optional.ofNullable(pointExtensions.get(extensionCode));
+        }
+        return Optional.empty();
     }
 
     @Override
-    @Nullable
-    public ExtensionDefinition getExtensionByCode(@NonNull String extensionCode) {
-        return storage.values().stream()
-                .map(extensions -> extensions.get(extensionCode))
-                .filter(Objects::nonNull)
-                .findFirst()
-                .orElse(null);
-    }
-
-    @Override
-    public boolean isRegistered(@NonNull String extensionPoint, @NonNull String extensionCode) {
-        ConcurrentMap<String, ExtensionDefinition> pointExtensions = storage.get(extensionPoint);
-        return pointExtensions != null && pointExtensions.containsKey(extensionCode);
-    }
-
-    @Override
-    public boolean hasExtensions(@NonNull String extensionPoint) {
-        ConcurrentMap<String, ExtensionDefinition> pointExtensions = storage.get(extensionPoint);
-        return pointExtensions != null && !pointExtensions.isEmpty();
-    }
-
-    @Override
-    public int registerAll(@NonNull Map<String, Collection<ExtensionDefinition>> extensionsByPoint) {
+    public int batchRegisterExtensions(@NonNull Map<String, Collection<ExtensionDefinition>> extensionsByPoint) {
         int count = 0;
         for (Map.Entry<String, Collection<ExtensionDefinition>> entry : extensionsByPoint.entrySet()) {
             String extensionPoint = entry.getKey();
             for (ExtensionDefinition extension : entry.getValue()) {
-                register(extensionPoint, extension);
+                registerExtension(extensionPoint, extension);
                 count++;
             }
         }
@@ -175,7 +124,7 @@ public class InMemoryExtensionRepository implements ExtensionRepository {
     }
 
     @Override
-    public int clearExtensions(@NonNull String extensionPoint) {
+    public int clearExtensionPoint(@NonNull String extensionPoint) {
         ConcurrentMap<String, ExtensionDefinition> removed = storage.remove(extensionPoint);
         if (removed != null) {
             lastModifiedTime.set(System.currentTimeMillis());
@@ -186,7 +135,7 @@ public class InMemoryExtensionRepository implements ExtensionRepository {
     }
 
     @Override
-    public void clearAll() {
+    public void clearAllExtensions() {
         storage.clear();
         lastModifiedTime.set(System.currentTimeMillis());
         log.debug("All extensions cleared from repository");
@@ -194,57 +143,80 @@ public class InMemoryExtensionRepository implements ExtensionRepository {
 
     @Override
     @NonNull
-    public Collection<ExtensionDefinition> findExtensions(@NonNull Predicate<ExtensionDefinition> condition) {
-        return storage.values().stream()
-                .flatMap(extensions -> extensions.values().stream())
-                .filter(condition)
-                .collect(Collectors.toUnmodifiableList());
+    public Set<String> getAllExtensionPointNames() {
+        return Collections.unmodifiableSet(new HashSet<>(storage.keySet()));
     }
 
     @Override
-    public int countExtensionPoints() {
-        return storage.size();
+    public boolean hasExtensions(@NonNull String extensionPoint) {
+        ConcurrentMap<String, ExtensionDefinition> pointExtensions = storage.get(extensionPoint);
+        return pointExtensions != null && !pointExtensions.isEmpty();
     }
 
     @Override
-    public int countExtensions() {
-        return storage.values().stream()
+    @NonNull
+    public ExtensionRepositoryStats getRepositoryStats() {
+        int totalExtensionPoints = storage.size();
+        int totalExtensions = storage.values().stream()
                 .mapToInt(Map::size)
                 .sum();
+
+        int enabledExtensions = storage.values().stream()
+                .mapToInt(extMap -> (int) extMap.values().stream()
+                        .filter(ExtensionDefinition::isEnabled)
+                        .count())
+                .sum();
+
+        return new ExtensionRepositoryStats(
+                name,
+                totalExtensionPoints,
+                totalExtensions,
+                enabledExtensions,
+                lastModifiedTime.get()
+        );
     }
 
-    @Override
+    // ==================== 辅助方法（非接口方法）====================
+
+    /**
+     * 全局按扩展码查找扩展（非接口方法，内部使用）
+     */
+    @Nullable
+    public ExtensionDefinition findExtensionByCodeGlobally(@NonNull String extensionCode) {
+        return storage.values().stream()
+                .map(extensions -> extensions.get(extensionCode))
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * 检查扩展码是否已注册（非接口方法）
+     */
+    public boolean isExtensionRegistered(@NonNull String extensionPoint, @NonNull String extensionCode) {
+        ConcurrentMap<String, ExtensionDefinition> pointExtensions = storage.get(extensionPoint);
+        return pointExtensions != null && pointExtensions.containsKey(extensionCode);
+    }
+
+    /**
+     * 统计指定扩展点的扩展数量（非接口方法）
+     */
     public int countExtensionsInPoint(@NonNull String extensionPoint) {
         ConcurrentMap<String, ExtensionDefinition> pointExtensions = storage.get(extensionPoint);
         return pointExtensions != null ? pointExtensions.size() : 0;
     }
 
-    @Override
-    @NonNull
-    public Set<String> getExtensionPointNames() {
-        return Collections.unmodifiableSet(new HashSet<>(storage.keySet()));
-    }
-
-    @Override
-    @NonNull
-    public RepositoryStats getStats() {
-        return new RepositoryStats(
-                countExtensionPoints(),
-                countExtensions(),
-                lastModifiedTime.get(),
-                name
-        );
-    }
-
-    @Override
-    @NonNull
-    public String getName() {
+    /**
+     * 获取仓库名称
+     */
+    public String getRepositoryName() {
         return name;
     }
 
-    @Override
-    @NonNull
-    public String getType() {
+    /**
+     * 获取仓库类型
+     */
+    public String getRepositoryType() {
         return type;
     }
 }

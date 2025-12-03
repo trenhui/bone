@@ -2,6 +2,7 @@ package com.bone.engine.extension.support.config;
 
 import com.bone.engine.extension.api.annotation.EnableExtensionPoints;
 import com.bone.engine.extension.api.spi.ExtensionPointRouter;
+import com.bone.engine.extension.api.spi.ExtensionRepository;
 import com.bone.engine.extension.core.event.DefaultExtensionEventPublisher;
 import com.bone.engine.extension.core.event.ExtensionEventPublisher;
 import com.bone.engine.extension.core.lifecycle.DefaultExtensionLifecycle;
@@ -59,7 +60,7 @@ public class ExtensionAutoConfiguration implements ImportAware {
 
     @Bean
     public ExtensionRegister extensionRegister(ExtensionRepository extensionRepository, ExtensionProperties extensionProperties, ExtensionEventPublisher eventPublisher) {
-        return new ExtensionRegister(extensionRepository,extensionProperties,eventPublisher);
+        return new ExtensionRegister(extensionRepository,extensionProperties);
     }
 
     @Bean
@@ -88,32 +89,18 @@ public class ExtensionAutoConfiguration implements ImportAware {
 
     @Bean
     @ConditionalOnMissingBean(ExtensionPointRouter.class)
-    public ExtensionPointRouter extensionRouter(
-            @Autowired ApplicationContext ctx,
-            @Autowired ExtensionRegister register) {
+    public ExtensionPointRouter extensionRouter(ExtensionRepository extensionRepo) {
 
-        // 1. customRouter 字符串（最高优先级）
-        String custom = attrs.getString("customRouter");
-        if (StringUtils.hasText(custom)) {
-            try {
-                Class<?> clazz = Class.forName(custom.trim());
-                log.info("Using custom router from customRouter(): {}", custom);
-                return (ExtensionPointRouter) clazz.getDeclaredConstructor().newInstance();
-            } catch (Exception e) {
-                throw new IllegalStateException("Failed to load custom router: " + custom, e);
-            }
-        }
-
-        // 2. extensionRouter Class 属性
-        Class<?> routerClass = attrs.getClass("extensionRouter");
+        // 1. extensionRouter Class 属性
+        Class<?> routerClass = attrs.getClass("extensionPointRouter");
         if (routerClass != null && routerClass != DefaultExtensionPointRouter.class) {
-            log.info("Using custom router from extensionRouter(): {}", routerClass.getName());
+            log.info("Using custom router from extensionPointRouter(): {}", routerClass.getName());
             return (ExtensionPointRouter) ExtensionRepositoryFactory.createBean(routerClass);
         }
 
-        // 3. 默认路由器
+        // 2. 默认路由器
         log.info("Using DefaultExtensionPointRouter");
-        return new DefaultExtensionPointRouter(register, ctx);
+        return new DefaultExtensionPointRouter(extensionRepo);
     }
 
 
