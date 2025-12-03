@@ -166,19 +166,6 @@ public final class ExtensionContextManager {
         return CONTEXT_HOLDER.get() != null;
     }
 
-    /**
-     * 复制当前上下文到新线程
-     *
-     * @return 上下文复制器
-     */
-    public static ContextCopier copy() {
-        final BizContext<?> context = CONTEXT_HOLDER.get();
-        return () -> {
-            if (context != null) {
-                CONTEXT_HOLDER.set(context.cloneContext());
-            }
-        };
-    }
 
     /**
      * 从数据对象构建上下文
