@@ -52,6 +52,12 @@ public @interface Extension {
     String env() default "*";
 
     /**
+     * 用户组标识
+     */
+    String userGroup() default "*";
+
+
+    /**
      * 版本号
      */
     String version() default "1.0.0";

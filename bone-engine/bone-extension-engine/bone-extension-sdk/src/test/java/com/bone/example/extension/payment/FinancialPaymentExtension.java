@@ -3,13 +3,11 @@ package com.bone.example.extension.payment;
 import com.bone.engine.extension.api.annotation.Extension;
 import com.bone.engine.extension.api.annotation.ExtensionDoc;
 import com.bone.engine.extension.support.context.BizContext;
+import com.bone.example.extension.result.ValidationResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-
-import com.bone.example.extension.result.ValidationResult;
 
 /**
  * 金融支付扩展点实现类

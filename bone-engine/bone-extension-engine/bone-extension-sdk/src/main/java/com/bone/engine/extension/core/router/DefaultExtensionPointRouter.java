@@ -1,10 +1,10 @@
 package com.bone.engine.extension.core.router;
 
-import com.bone.engine.extension.support.context.BizContext;
 import com.bone.engine.extension.api.model.definition.ExtensionDefinition;
 import com.bone.engine.extension.api.spi.ExpressionEvaluator;
 import com.bone.engine.extension.api.spi.ExtensionPointRouter;
 import com.bone.engine.extension.api.spi.ExtensionRepository;
+import com.bone.engine.extension.support.context.BizContext;
 import com.bone.engine.extension.support.expression.AviatorExpressionEvaluator;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -19,7 +19,6 @@ import org.springframework.util.StringUtils;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 /**
  * 企业级扩展点路由器终极方案（修复版）
@@ -71,7 +70,7 @@ public final class DefaultExtensionPointRouter implements ExtensionPointRouter {
      */
     public DefaultExtensionPointRouter(@NonNull ExtensionRepository extensionRepo) {
         this(extensionRepo, new AviatorExpressionEvaluator(),
-                50000, Duration.ofHours(1), false);
+                50000, Duration.ofHours(1), true);
     }
 
     /**

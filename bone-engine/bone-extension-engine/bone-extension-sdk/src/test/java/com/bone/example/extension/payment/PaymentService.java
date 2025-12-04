@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashMap;
-import java.util.Map;
+import java.util.Optional;
 
 /**
  * 支付服务核心实现类（企业级终极版）
@@ -203,6 +203,7 @@ public class PaymentService {
                 .userId(request.getUserId())
                 .transactionId("FAIL-" + DistributedIdGenerator.generateSnowflakeId())
                 .amount(request.getAmount())
+                .currency(Optional.ofNullable(request.getCurrency()).orElse(DEFAULT_CURRENCY)) // 更健壮
                 .status(FAILED)
                 .errorCode(code)
                 .errorMessage(msg)
