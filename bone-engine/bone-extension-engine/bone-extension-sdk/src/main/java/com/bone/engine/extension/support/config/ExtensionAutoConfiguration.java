@@ -74,9 +74,9 @@ public class ExtensionAutoConfiguration implements ImportAware {
 
     @Bean
     @ConditionalOnMissingBean(ExtensionRepository.class)
-    public ExtensionRepository extensionRepository(ApplicationContext ctx) {
+    public ExtensionRepository extensionRepository() {
         Class<?> repoClass = attrs.getClass("extensionRepository");
-        if (repoClass != null && repoClass != InMemoryExtensionRepository.class) {
+        if (repoClass != null) {
             log.info("Using custom ExtensionRepository from @EnableExtensionPoints: {}", repoClass.getName());
             return ExtensionRepositoryFactory.create((Class<? extends ExtensionRepository>) repoClass);
         }

@@ -16,4 +16,5 @@ public class PaymentRequest {
     protected String userId;
     protected BigDecimal amount;
     protected String paymentMethod;
+    private String currency = "CNY";  // 默认值就是 CNY
 }

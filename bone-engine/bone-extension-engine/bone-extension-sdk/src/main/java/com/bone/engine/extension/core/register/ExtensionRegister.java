@@ -260,6 +260,11 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
             }
 
             @Override
+            public String userGroup() {
+                return resolvePlaceholder(annotation.userGroup());
+            }
+
+            @Override
             public String version() {
                 return resolvePlaceholder(annotation.version());
             }
@@ -355,11 +360,16 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
                 .extensionPoint(extensionPointInterface.getName())
                 .implementationClass(implClass.getName())
                 .instance(instance)
-                .tenant(normalizeWildcard(annotation.tenant()))
-                .bizCode(normalizeWildcard(annotation.bizCode()))
-                .useCase(normalizeWildcard(annotation.useCase()))
-                .scenario(normalizeWildcard(annotation.scenario()))
-                .env(normalizeWildcard(annotation.env()))
+                .description(annotation.description())
+
+                // 关键修复：直接使用注解值，不要 normalize！
+                .tenant(annotation.tenant())
+                .bizCode(annotation.bizCode())
+                .useCase(annotation.useCase())
+                .scenario(annotation.scenario())
+                .env(annotation.env())
+                .userGroup(annotation.userGroup())
+
                 .condition(annotation.condition())
                 .defaultImpl(isDefaultImplementation(annotation))
                 .weight(annotation.weight())
@@ -368,10 +378,16 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
                 .startTime(annotation.startTime())
                 .endTime(annotation.endTime());
 
-        // 添加自定义维度
         addCustomDimensions(builder, annotation);
 
-        return builder.build();
+        ExtensionDefinition def = builder.build();
+
+        // 加一行调试日志，永不踩坑！
+        log.debug("扩展注册成功: {} | 维度: tenant={}, bizCode={}, useCase={}, scenario={}, userGroup={}",
+                def.getCode(),
+                def.getTenant(), def.getBizCode(), def.getUseCase(), def.getScenario(), def.getUserGroup());
+
+        return def;
     }
 
     private String generateExtensionCode(String customCode, Class<?> implClass) {
@@ -379,10 +395,6 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
             return customCode;
         }
         return DEFAULT_EXTENSION_CODE_PREFIX + implClass.getSimpleName();
-    }
-
-    private String normalizeWildcard(String value) {
-        return StringUtils.hasText(value) && !"*".equals(value) ? value : "*";
     }
 
     private boolean isDefaultImplementation(Extension annotation) {

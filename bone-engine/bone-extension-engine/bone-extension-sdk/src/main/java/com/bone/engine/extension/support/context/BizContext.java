@@ -25,13 +25,13 @@ public class BizContext<T> implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private String businessDomain = "DEFAULT";
-    private String tenant = "DEFAULT";
+    private String businessDomain = "Default";
+    private String tenant = "*";
     private String bizCode;
     private String useCase;
     private String scenario;
-    private String env = "PROD";
-    private String userGroup = "DEFAULT";
+    private String env = "*";
+    private String userGroup = "*";
     private String requestId;
     private T data;
 
