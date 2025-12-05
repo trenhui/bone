@@ -35,7 +35,7 @@ public final class PaymentResult {
     private final Integer pointsDeducted;
     private final Map<String, Object> extendedAttributes;
 
-    // 私有构造函数 - 修复：提供合理的默认值
+    // 在 PaymentResult 的构造函数中添加默认值
     private PaymentResult(Builder builder) {
         this.orderId = Objects.requireNonNull(builder.orderId, "orderId cannot be null");
         this.userId = Objects.requireNonNull(builder.userId, "userId cannot be null");
@@ -43,11 +43,12 @@ public final class PaymentResult {
         this.status = Objects.requireNonNull(builder.status, "status cannot be null");
         this.amount = Objects.requireNonNull(builder.amount, "amount cannot be null");
 
-        // 修复：为 tenantCode 提供默认值
+        // 修复：为所有必填字段提供默认值
         this.tenantCode = builder.tenantCode != null ? builder.tenantCode : "UNKNOWN_TENANT";
         this.currency = builder.currency != null ? builder.currency : "CNY";
         this.paymentTime = builder.paymentTime != null ? builder.paymentTime : LocalDateTime.now();
 
+        // 关键修复：paymentMethod 使用 builder 中的值或默认值
         this.paymentMethod = builder.paymentMethod != null ? builder.paymentMethod : "UNKNOWN";
         this.feeAmount = builder.feeAmount != null ? builder.feeAmount : BigDecimal.ZERO;
         this.taxAmount = builder.taxAmount != null ? builder.taxAmount : BigDecimal.ZERO;
@@ -55,8 +56,7 @@ public final class PaymentResult {
         this.errorCode = builder.errorCode;
         this.errorMessage = builder.errorMessage;
         this.pointsDeducted = builder.pointsDeducted != null ? builder.pointsDeducted : 0;
-        this.extendedAttributes = builder.extendedAttributes != null ?
-                builder.extendedAttributes : new HashMap<>();
+        this.extendedAttributes = builder.extendedAttributes != null ? builder.extendedAttributes : new HashMap<>();
     }
 
     // ==================== Builder 模式 ====================
@@ -83,7 +83,8 @@ public final class PaymentResult {
         private Integer pointsDeducted;
         private Map<String, Object> extendedAttributes;
 
-        private Builder() {}
+        private Builder() {
+        }
 
         public Builder orderId(String orderId) {
             this.orderId = orderId;
@@ -172,22 +173,69 @@ public final class PaymentResult {
 
     // ==================== Getter 方法 ====================
 
-    public String getOrderId() { return orderId; }
-    public String getUserId() { return userId; }
-    public String getTransactionId() { return transactionId; }
-    public String getStatus() { return status; }
-    public BigDecimal getAmount() { return amount; }
-    public String getCurrency() { return currency; }
-    public LocalDateTime getPaymentTime() { return paymentTime; }
-    public String getTenantCode() { return tenantCode; }
-    public String getPaymentMethod() { return paymentMethod; }
-    public BigDecimal getFeeAmount() { return feeAmount; }
-    public BigDecimal getTaxAmount() { return taxAmount; }
-    public BigDecimal getOriginalAmount() { return originalAmount; }
-    public String getErrorCode() { return errorCode; }
-    public String getErrorMessage() { return errorMessage; }
-    public Integer getPointsDeducted() { return pointsDeducted; }
-    public Map<String, Object> getExtendedAttributes() { return extendedAttributes; }
+    public String getOrderId() {
+        return orderId;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public String getTransactionId() {
+        return transactionId;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public String getCurrency() {
+        return currency;
+    }
+
+    public LocalDateTime getPaymentTime() {
+        return paymentTime;
+    }
+
+    public String getTenantCode() {
+        return tenantCode;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public BigDecimal getFeeAmount() {
+        return feeAmount;
+    }
+
+    public BigDecimal getTaxAmount() {
+        return taxAmount;
+    }
+
+    public BigDecimal getOriginalAmount() {
+        return originalAmount;
+    }
+
+    public String getErrorCode() {
+        return errorCode;
+    }
+
+    public String getErrorMessage() {
+        return errorMessage;
+    }
+
+    public Integer getPointsDeducted() {
+        return pointsDeducted;
+    }
+
+    public Map<String, Object> getExtendedAttributes() {
+        return extendedAttributes;
+    }
 
     // ==================== 业务方法 ====================
 
