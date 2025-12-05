@@ -88,7 +88,7 @@ public class PaymentService {
             if (!validation.isSuccess()) {
                 log.warn("支付前验证失败 | orderId={} | code={} | msg={}",
                         request.getOrderId(), validation.getErrorCode(), validation.getErrorMessage());
-                return buildFailedResult(request, validation.getErrorCode(), validation.getErrorMessage());
+                return buildFailedResult(request, context, validation.getErrorCode(), validation.getErrorMessage());
             }
 
             // 2. 金额计算
@@ -197,18 +197,29 @@ public class PaymentService {
                 .build();
     }
 
-    private PaymentResult buildFailedResult(PaymentTestRequest request, String code, String msg) {
+    private PaymentResult buildFailedResult(PaymentTestRequest request, BizContext<PaymentTestRequest> context,String code, String msg) {
+        // 添加 paymentMethod 和 tenantCode
         return PaymentResult.builder()
                 .orderId(request.getOrderId())
                 .userId(request.getUserId())
                 .transactionId("FAIL-" + DistributedIdGenerator.generateSnowflakeId())
                 .amount(request.getAmount())
-                .currency(Optional.ofNullable(request.getCurrency()).orElse(DEFAULT_CURRENCY)) // 更健壮
+                .currency(Optional.ofNullable(request.getCurrency()).orElse(DEFAULT_CURRENCY))
                 .status(FAILED)
                 .errorCode(code)
                 .errorMessage(msg)
                 .paymentTime(LocalDateTime.now())
+                .paymentMethod(request.getPaymentMethod())  // 添加 paymentMethod
+                .tenantCode(extractTenantCode(context))     // 添加 tenantCode
                 .build();
+    }
+
+    // 添加提取 tenantCode 的方法
+    private String extractTenantCode(BizContext<PaymentTestRequest> context) {
+        if (context == null) {
+            return "UNKNOWN_TENANT";
+        }
+        return context.getTenant();
     }
 
     // ==================== 工具方法 ====================
