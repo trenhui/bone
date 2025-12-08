@@ -1,6 +1,5 @@
 package com.bone.example.extension.medical;
 
-import com.bone.engine.extension.api.exception.ExtensionInvocationException;
 import com.bone.engine.extension.support.context.BizContext;
 import com.bone.engine.extension.support.context.ExtensionContextManager;
 import com.bone.engine.extension.support.context.ExtensionScope;
@@ -13,11 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 /**
  * 医疗保险理赔服务（企业级终极版）
