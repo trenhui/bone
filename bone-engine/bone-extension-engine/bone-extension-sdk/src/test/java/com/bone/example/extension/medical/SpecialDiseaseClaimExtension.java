@@ -4,10 +4,10 @@ import com.bone.engine.extension.support.context.BizContext;
 import com.bone.engine.extension.api.annotation.Extension;
 import com.bone.engine.extension.api.annotation.ExtensionDoc;
 import com.bone.example.extension.result.ValidationResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 /**
  * 特殊疾病理赔扩展点实现类
@@ -37,20 +37,24 @@ import java.math.BigDecimal;
     author = "测试团队",
     created = "2024-01-01"
 )
+@Slf4j
 public class SpecialDiseaseClaimExtension implements MedicalClaimExtPoint {
-    // 日志记录器
-    private static final Logger logger = LoggerFactory.getLogger(SpecialDiseaseClaimExtension.class);
     
     // 常量定义
     private static final BigDecimal REIMBURSEMENT_RATE = new BigDecimal("0.9"); // 特殊疾病理赔报销比例90%
     
     @Override
     public ValidationResult validateClaim(final BizContext<MedicalClaimRequest> context) {
-        logger.info("开始验证特殊疾病理赔请求");
+        if (context == null) {
+            log.warn("特殊疾病理赔请求上下文为空");
+            return ValidationResult.fail("INVALID_REQUEST", "理赔请求信息不完整");
+        }
+        String requestId = context.getRequestId();
+        log.info("开始验证特殊疾病理赔请求 | requestId={}", requestId);
         
-        // 验证上下文和请求数据
-        if (context == null || context.getData() == null) {
-            logger.warn("特殊疾病理赔请求上下文或数据为空");
+        // 验证请求数据
+        if (context.getData() == null) {
+            log.warn("特殊疾病理赔请求数据为空 | requestId={}", requestId);
             return ValidationResult.fail("INVALID_REQUEST", "理赔请求信息不完整");
         }
         
@@ -59,41 +63,49 @@ public class SpecialDiseaseClaimExtension implements MedicalClaimExtPoint {
         // 验证特殊疾病必要信息
         ValidationResult validationResult = validateSpecialDiseaseInfo(request);
         if (!validationResult.isSuccess()) {
-            logger.warn("特殊疾病理赔必要信息验证失败，用户ID: {}, 错误: {}", 
-                    request.getUserId(), validationResult.getErrorMessage());
+            log.warn("特殊疾病理赔必要信息验证失败 | requestId={} | userId={} | error={}", 
+                    requestId, request.getUserId(), validationResult.getErrorMessage());
             return validationResult;
         }
         
-        logger.info("特殊疾病理赔请求验证通过，用户ID: {}, 诊断信息: {}", 
-                request.getUserId(), request.getDiagnosis());
+        log.info("特殊疾病理赔请求验证通过 | requestId={} | userId={} | diagnosis={}", 
+                requestId, request.getUserId(), request.getDiagnosis());
         return ValidationResult.success();
     }
     
     @Override
     public MedicalClaimResult processClaim(final BizContext<MedicalClaimRequest> context) {
-        logger.info("开始处理特殊疾病理赔请求");
+        if (context == null) {
+            log.warn("开始处理特殊疾病理赔请求 | 上下文为空");
+            throw new IllegalArgumentException("理赔请求信息不完整");
+        }
+        String requestId = context.getRequestId();
+        log.info("开始处理特殊疾病理赔请求 | requestId={}", requestId);
         
-        if (context == null || context.getData() == null) {
+        if (context.getData() == null) {
+            log.warn("特殊疾病理赔请求数据为空 | requestId={}", requestId);
             throw new IllegalArgumentException("理赔请求信息不完整");
         }
         
         final MedicalClaimRequest request = context.getData();
         
-        // 创建理赔结果对象
+        // 计算批准金额，应用特殊疾病理赔高报销比例
+        BigDecimal approvedAmount = calculateApprovedAmount(request.getTotalAmount());
+        
+        // 创建理赔结果对象，使用Builder模式设置所有字段
         final MedicalClaimResult result = MedicalClaimResult.builder()
                 .claimId(request.getClaimId())
                 .status(MedicalClaimResult.ClaimStatus.APPROVED)
-                .processingDate(new java.util.Date())
+                .processingDate(LocalDateTime.now())
                 .totalClaimAmount(request.getTotalAmount())
+                .approvedAmount(approvedAmount)
+                .rejectedAmount(request.getTotalAmount().subtract(approvedAmount))
+                .processorId("SYSTEM")
+                .paymentStatus("PENDING")
                 .build();
         
-        // 计算批准金额，应用特殊疾病理赔高报销比例
-        BigDecimal approvedAmount = calculateApprovedAmount(request.getTotalAmount());
-        result.setApprovedAmount(approvedAmount);
-        result.setRejectedAmount(request.getTotalAmount().subtract(approvedAmount));
-        
-        logger.info("特殊疾病理赔处理完成，理赔ID: {}, 诊断: {}, 申请金额: {}, 批准金额: {}", 
-                request.getClaimId(), request.getDiagnosis(), request.getTotalAmount(), approvedAmount);
+        log.info("特殊疾病理赔处理完成 | requestId={} | claimId={} | diagnosis={} | totalAmount={} | approvedAmount={}", 
+                requestId, request.getClaimId(), request.getDiagnosis(), request.getTotalAmount(), approvedAmount);
         return result;
     }
     
@@ -125,10 +137,5 @@ public class SpecialDiseaseClaimExtension implements MedicalClaimExtPoint {
         return totalAmount.multiply(REIMBURSEMENT_RATE)
                 .setScale(2, java.math.RoundingMode.HALF_UP);
     }
-    
-    @Override
-    public MedicalClaimRequest.ClaimType getSupportedClaimType() {
-        // 返回支持的理赔类型
-        return MedicalClaimRequest.ClaimType.SPECIAL_TREATMENT;
-    }
+
 }

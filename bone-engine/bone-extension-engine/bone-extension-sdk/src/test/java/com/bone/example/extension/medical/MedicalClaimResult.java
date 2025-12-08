@@ -1,12 +1,15 @@
 package com.bone.example.extension.medical;
 
+import lombok.*;
+
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * 医疗保险理赔结果对象
@@ -14,6 +17,11 @@ import java.util.stream.Collectors;
  * 封装医疗保险理赔处理的完整结果信息，包括理赔状态、金额明细、项目处理结果等。
  * 作为理赔流程的输出数据，用于返回给调用方和记录系统。
  */
+@Getter
+@ToString
+@Builder(toBuilder = true)
+@NoArgsConstructor
+@AllArgsConstructor
 public class MedicalClaimResult {
     /**
      * 理赔申请唯一标识，与理赔请求中的claimId对应
@@ -53,7 +61,7 @@ public class MedicalClaimResult {
     /**
      * 处理日期，记录理赔处理完成的时间
      */
-    private Date processingDate;
+    private LocalDateTime processingDate;
     
     /**
      * 处理人员ID，记录执行理赔处理的人员标识
@@ -68,7 +76,7 @@ public class MedicalClaimResult {
     /**
      * 支付日期，记录理赔款项支付的时间
      */
-    private Date paymentDate;
+    private LocalDateTime paymentDate;
     
     /**
      * 交易ID，支付系统生成的交易标识
@@ -80,23 +88,7 @@ public class MedicalClaimResult {
      */
     private String remarks;
     
-    /**
-     * 设置批准赔付金额
-     * 
-     * @param approvedAmount 批准赔付的金额
-     */
-    public void setApprovedAmount(BigDecimal approvedAmount) {
-        this.approvedAmount = approvedAmount;
-    }
-    
-    /**
-     * 设置拒绝赔付金额
-     * 
-     * @param rejectedAmount 拒绝赔付的金额
-     */
-    public void setRejectedAmount(BigDecimal rejectedAmount) {
-        this.rejectedAmount = rejectedAmount;
-    }
+
     
     /**
      * 获取理赔申请唯一标识
@@ -158,7 +150,7 @@ public class MedicalClaimResult {
      * 获取处理日期
      * @return 处理日期
      */
-    public Date getProcessingDate() {
+    public LocalDateTime getProcessingDate() {
         return processingDate;
     }
     
@@ -166,8 +158,16 @@ public class MedicalClaimResult {
      * 设置处理日期
      * @param processingDate 处理日期
      */
-    public void setProcessingDate(Date processingDate) {
+    public void setProcessingDate(LocalDateTime processingDate) {
         this.processingDate = processingDate;
+    }
+    
+    /**
+     * 设置处理日期（兼容Date类型）
+     * @param processingDate 处理日期
+     */
+    public void setProcessingDate(Date processingDate) {
+        this.processingDate = processingDate != null ? processingDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime() : null;
     }
     
     /**
@@ -417,10 +417,10 @@ public class MedicalClaimResult {
         private BigDecimal rejectedAmount;
         private String rejectionReason;
         private List<ClaimItemResult> itemResults = new ArrayList<>();
-        private Date processingDate;
+        private LocalDateTime processingDate;
         private String processorId;
         private String paymentStatus;
-        private Date paymentDate;
+        private LocalDateTime paymentDate;
         private String transactionId;
         private String remarks;
         
@@ -464,8 +464,16 @@ public class MedicalClaimResult {
             return this;
         }
         
-        public MedicalClaimResultBuilder processingDate(Date processingDate) {
+        public MedicalClaimResultBuilder processingDate(LocalDateTime processingDate) {
             this.processingDate = processingDate;
+            return this;
+        }
+        
+        /**
+         * 兼容旧版API，接收Date类型参数
+         */
+        public MedicalClaimResultBuilder processingDate(Date processingDate) {
+            this.processingDate = processingDate != null ? processingDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime() : null;
             return this;
         }
         
@@ -479,8 +487,16 @@ public class MedicalClaimResult {
             return this;
         }
         
-        public MedicalClaimResultBuilder paymentDate(Date paymentDate) {
+        public MedicalClaimResultBuilder paymentDate(LocalDateTime paymentDate) {
             this.paymentDate = paymentDate;
+            return this;
+        }
+        
+        /**
+         * 兼容旧版API，接收Date类型参数
+         */
+        public MedicalClaimResultBuilder paymentDate(Date paymentDate) {
+            this.paymentDate = paymentDate != null ? paymentDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime() : null;
             return this;
         }
         

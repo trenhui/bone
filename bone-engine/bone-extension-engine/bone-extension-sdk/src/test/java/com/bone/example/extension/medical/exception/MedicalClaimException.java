@@ -45,6 +45,16 @@ public class MedicalClaimException extends BusinessException {
         return claimId;
     }
     
+    @Override
+    public String toString() {
+        return "MedicalClaimException{" +
+                "errorCode='" + getErrorCode() + "'" +
+                ", module='" + getModule() + "'" +
+                ", message='" + getMessage() + "'" +
+                ", claimId='" + claimId + "'" +
+                '}';
+    }
+    
     /**
      * 创建理赔验证异常
      * @param claimId 理赔ID

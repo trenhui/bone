@@ -4,11 +4,11 @@ import com.bone.engine.extension.support.context.BizContext;
 import com.bone.engine.extension.api.annotation.Extension;
 import com.bone.engine.extension.api.annotation.ExtensionDoc;
 import com.bone.example.extension.result.ValidationResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 
@@ -40,9 +40,8 @@ import java.time.temporal.ChronoUnit;
     author = "测试团队",
     created = "2024-01-01"
 )
+@Slf4j
 public class InpatientClaimExtension implements MedicalClaimExtPoint {
-    // 日志记录器
-    private static final Logger logger = LoggerFactory.getLogger(InpatientClaimExtension.class);
     
     // 常量定义
     private static final int MIN_HOSPITAL_STAY_DAYS = 1;       // 最小住院天数
@@ -61,7 +60,8 @@ public class InpatientClaimExtension implements MedicalClaimExtPoint {
      */
     @Override
     public ValidationResult validateClaim(final BizContext<MedicalClaimRequest> context) {
-        logger.info("开始验证住院理赔请求");
+        String requestId = context.getRequestId();
+        log.info("开始验证住院理赔请求 | requestId={}", requestId);
         
         // 执行参数验证
         validateClaimContext(context);
@@ -71,20 +71,21 @@ public class InpatientClaimExtension implements MedicalClaimExtPoint {
         
         // 验证理赔类型
         if (request.getClaimType() != MedicalClaimRequest.ClaimType.INPATIENT) {
-            logger.warn("理赔类型不匹配，期望住院类型，实际类型: {}", request.getClaimType());
+            log.warn("理赔类型不匹配 | requestId={} | claimId={} | expected=INPATIENT | actual={}", 
+                    requestId, request.getClaimId(), request.getClaimType());
             return ValidationResult.fail("INVALID_CLAIM_TYPE", "理赔类型不匹配，该扩展点仅支持住院理赔");
         }
         
         // 验证住院特定信息
         ValidationResult validationResult = validateInpatientInfo(request);
         if (!validationResult.isSuccess()) {
-            logger.warn("住院理赔特定信息验证失败，用户ID: {}, 错误: {}", 
-                    request.getUserId(), validationResult.getErrorMessage());
+            log.warn("住院理赔特定信息验证失败 | requestId={} | claimId={} | userId={} | error={}", 
+                    requestId, request.getClaimId(), request.getUserId(), validationResult.getErrorMessage());
             return validationResult;
         }
         
-        logger.info("住院理赔请求验证通过，用户ID: {}, 住院天数: {}", 
-                request.getUserId(), calculateHospitalStayDays(request));
+        log.info("住院理赔请求验证通过 | requestId={} | claimId={} | userId={} | hospitalStayDays={}", 
+                requestId, request.getClaimId(), request.getUserId(), calculateHospitalStayDays(request));
         return ValidationResult.success();
     }
     
@@ -99,20 +100,13 @@ public class InpatientClaimExtension implements MedicalClaimExtPoint {
      */
     @Override
     public MedicalClaimResult processClaim(final BizContext<MedicalClaimRequest> context) {
-        logger.info("开始处理住院理赔请求");
+        String requestId = context.getRequestId();
+        log.info("开始处理住院理赔请求 | requestId={}", requestId);
         
         // 再次验证参数，确保数据有效性
         validateClaimContext(context);
         final MedicalClaimRequest request = context.getData();
         validateClaimRequest(request);
-        
-        // 创建理赔结果对象
-        final MedicalClaimResult result = MedicalClaimResult.builder()
-                .claimId(request.getClaimId())
-                .status(MedicalClaimResult.ClaimStatus.APPROVED)
-                .processingDate(new java.util.Date())
-                .totalClaimAmount(request.getTotalAmount())
-                .build();
         
         // 计算住院天数
         long hospitalStayDays = calculateHospitalStayDays(request);
@@ -124,23 +118,23 @@ public class InpatientClaimExtension implements MedicalClaimExtPoint {
         BigDecimal approvedAmount = calculateApprovedAmount(request.getTotalAmount(), 
                 hospitalStayDays, dailyAverageCost);
         
-        result.setApprovedAmount(approvedAmount);
-        result.setRejectedAmount(request.getTotalAmount().subtract(approvedAmount));
+        // 创建理赔结果对象
+        final MedicalClaimResult result = MedicalClaimResult.builder()
+                .claimId(request.getClaimId())
+                .status(MedicalClaimResult.ClaimStatus.APPROVED)
+                .processingDate(LocalDateTime.now())
+                .totalClaimAmount(request.getTotalAmount())
+                .approvedAmount(approvedAmount)
+                .rejectedAmount(request.getTotalAmount().subtract(approvedAmount))
+                .processorId("SYSTEM")
+                .paymentStatus("PENDING")
+                .build();
         
-        logger.info("住院理赔处理完成，理赔ID: {}, 申请金额: {}, 批准金额: {}, 住院天数: {}", 
-                request.getClaimId(), request.getTotalAmount(), approvedAmount, hospitalStayDays);
+        log.info("住院理赔处理完成 | requestId={} | claimId={} | totalAmount={} | approvedAmount={} | hospitalStayDays={}", 
+                requestId, request.getClaimId(), request.getTotalAmount(), approvedAmount, hospitalStayDays);
         return result;
     }
     
-    /**
-     * 获取当前实现支持的理赔类型
-     * 
-     * @return 住院理赔类型，固定返回INPATIENT
-     */
-    @Override
-    public MedicalClaimRequest.ClaimType getSupportedClaimType() {
-        return MedicalClaimRequest.ClaimType.INPATIENT;
-    }
     
     /**
      * 验证理赔上下文的有效性
@@ -198,7 +192,7 @@ public class InpatientClaimExtension implements MedicalClaimExtPoint {
         }
         
         // 验证入院日期不能晚于出院日期
-        if (request.getAdmissionDate().after(request.getDischargeDate())) {
+        if (request.getAdmissionDate().isAfter(request.getDischargeDate())) {
             return ValidationResult.fail("INVALID_DATE_RANGE", "入院日期不能晚于出院日期");
         }
         
@@ -236,10 +230,8 @@ public class InpatientClaimExtension implements MedicalClaimExtPoint {
      * @return 住院天数
      */
     private long calculateHospitalStayDays(final MedicalClaimRequest request) {
-        LocalDate admissionDate = request.getAdmissionDate().toInstant()
-                .atZone(ZoneId.systemDefault()).toLocalDate();
-        LocalDate dischargeDate = request.getDischargeDate().toInstant()
-                .atZone(ZoneId.systemDefault()).toLocalDate();
+        LocalDate admissionDate = request.getAdmissionDate().toLocalDate();
+        LocalDate dischargeDate = request.getDischargeDate().toLocalDate();
         
         // 计算日期差并加1（包括入院当天）
         return ChronoUnit.DAYS.between(admissionDate, dischargeDate) + 1;

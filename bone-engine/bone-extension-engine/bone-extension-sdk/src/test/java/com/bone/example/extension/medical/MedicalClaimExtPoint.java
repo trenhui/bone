@@ -33,15 +33,6 @@ import com.bone.example.extension.result.ValidationResult;
         note = "理赔处理涉及财务敏感信息，各实现类需确保安全性和数据一致性"
 )
 public interface MedicalClaimExtPoint {
-    /**
-     * 获取支持的理赔类型
-     * <p>
-     * 返回该扩展点实现支持处理的具体理赔类型，系统将根据此信息进行路由。
-     * 每个扩展点实现应该只支持一种理赔类型，确保职责单一。
-     *
-     * @return 支持的理赔类型，不可返回null
-     */
-    MedicalClaimRequest.ClaimType getSupportedClaimType();
 
     /**
      * 验证理赔请求
