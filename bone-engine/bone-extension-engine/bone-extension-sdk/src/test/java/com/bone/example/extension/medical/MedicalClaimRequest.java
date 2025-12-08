@@ -1,10 +1,13 @@
 package com.bone.example.extension.medical;
 
+import lombok.*;
+
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -13,6 +16,11 @@ import java.util.Optional;
  * 封装医疗保险理赔所需的所有信息，包括基本理赔信息、就诊信息、医疗费用明细等。
  * 作为理赔流程的输入数据，被传递给各个处理环节进行验证和处理。
  */
+@Getter
+@ToString
+@Builder(toBuilder = true)
+@NoArgsConstructor
+@AllArgsConstructor
 public class MedicalClaimRequest {
     /**
      * 理赔申请唯一标识，系统生成，确保全局唯一性
@@ -37,7 +45,7 @@ public class MedicalClaimRequest {
     /**
      * 就诊日期，记录就医发生的时间
      */
-    private Date medicalDate;
+    private LocalDateTime medicalDate;
     
     /**
      * 医院名称，提供医疗服务的机构名称
@@ -59,35 +67,6 @@ public class MedicalClaimRequest {
      */
     private List<ClaimItem> items;
     
-    // 显式添加getter方法以确保编译通过
-    public String getUserId() {
-        return userId;
-    }
-    
-    public List<ClaimItem> getItems() {
-        return items;
-    }
-    
-    public BigDecimal getTotalAmount() {
-        return totalAmount;
-    }
-    
-    public Date getMedicalDate() {
-        return medicalDate;
-    }
-    
-    public String getHospitalName() {
-        return hospitalName;
-    }
-    
-    public String getClaimId() {
-        return claimId;
-    }
-    
-    public String getDiagnosis() {
-        return diagnosis;
-    }
-    
     /**
      * 诊断信息，医生出具的诊断结果
      */
@@ -101,12 +80,12 @@ public class MedicalClaimRequest {
     /**
      * 入院日期，适用于住院理赔
      */
-    private Date admissionDate;
+    private LocalDateTime admissionDate;
     
     /**
      * 出院日期，适用于住院理赔
      */
-    private Date dischargeDate;
+    private LocalDateTime dischargeDate;
     
     /**
      * 银行账户信息，用于赔付资金转账
@@ -132,8 +111,17 @@ public class MedicalClaimRequest {
      * 
      * @return 入院日期
      */
-    public Date getAdmissionDate() {
+    public LocalDateTime getAdmissionDate() {
         return admissionDate;
+    }
+    
+    /**
+     * 获取入院日期（兼容Date类型）
+     * 
+     * @return 入院日期
+     */
+    public Date getAdmissionDateAsDate() {
+        return admissionDate != null ? Date.from(admissionDate.atZone(ZoneId.systemDefault()).toInstant()) : null;
     }
     
     /**
@@ -141,8 +129,17 @@ public class MedicalClaimRequest {
      * 
      * @return 出院日期
      */
-    public Date getDischargeDate() {
+    public LocalDateTime getDischargeDate() {
         return dischargeDate;
+    }
+    
+    /**
+     * 获取出院日期（兼容Date类型）
+     * 
+     * @return 出院日期
+     */
+    public Date getDischargeDateAsDate() {
+        return dischargeDate != null ? Date.from(dischargeDate.atZone(ZoneId.systemDefault()).toInstant()) : null;
     }
     
     public ClaimType getClaimType() {
@@ -166,15 +163,15 @@ public class MedicalClaimRequest {
         private String userId;
         private String policyNo;
         private ClaimType claimType;
-        private Date medicalDate;
+        private LocalDateTime medicalDate;
         private String hospitalName;
         private String hospitalLevel;
         private BigDecimal totalAmount;
         private List<ClaimItem> items = new ArrayList<>();
         private String diagnosis;
         private String admissionType;
-        private Date admissionDate;
-        private Date dischargeDate;
+        private LocalDateTime admissionDate;
+        private LocalDateTime dischargeDate;
         private String bankAccountInfo;
         private String remarks;
         
@@ -198,8 +195,16 @@ public class MedicalClaimRequest {
             return this;
         }
         
-        public MedicalClaimRequestBuilder medicalDate(Date medicalDate) {
+        public MedicalClaimRequestBuilder medicalDate(LocalDateTime medicalDate) {
             this.medicalDate = medicalDate;
+            return this;
+        }
+        
+        /**
+         * 兼容旧版API，接收Date类型参数
+         */
+        public MedicalClaimRequestBuilder medicalDate(Date medicalDate) {
+            this.medicalDate = medicalDate != null ? medicalDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime() : null;
             return this;
         }
         
@@ -238,13 +243,29 @@ public class MedicalClaimRequest {
             return this;
         }
         
-        public MedicalClaimRequestBuilder admissionDate(Date admissionDate) {
+        public MedicalClaimRequestBuilder admissionDate(LocalDateTime admissionDate) {
             this.admissionDate = admissionDate;
             return this;
         }
         
-        public MedicalClaimRequestBuilder dischargeDate(Date dischargeDate) {
+        /**
+         * 兼容旧版API，接收Date类型参数
+         */
+        public MedicalClaimRequestBuilder admissionDate(Date admissionDate) {
+            this.admissionDate = admissionDate != null ? admissionDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime() : null;
+            return this;
+        }
+        
+        public MedicalClaimRequestBuilder dischargeDate(LocalDateTime dischargeDate) {
             this.dischargeDate = dischargeDate;
+            return this;
+        }
+        
+        /**
+         * 兼容旧版API，接收Date类型参数
+         */
+        public MedicalClaimRequestBuilder dischargeDate(Date dischargeDate) {
+            this.dischargeDate = dischargeDate != null ? dischargeDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime() : null;
             return this;
         }
         
@@ -537,8 +558,8 @@ public class MedicalClaimRequest {
      */
     public long calculateHospitalStayDays() {
         if (claimType == ClaimType.INPATIENT && admissionDate != null && dischargeDate != null) {
-            long diffInMillies = dischargeDate.getTime() - admissionDate.getTime();
-            return diffInMillies / (1000 * 60 * 60 * 24) + 1; // 加1表示包含入院当天
+            // 计算两个日期之间的天数差（包含两端日期）
+            return dischargeDate.toLocalDate().toEpochDay() - admissionDate.toLocalDate().toEpochDay() + 1;
         }
         return 0;
     }

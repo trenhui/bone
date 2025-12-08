@@ -4,11 +4,11 @@ import com.bone.engine.extension.support.context.BizContext;
 import com.bone.engine.extension.api.annotation.Extension;
 import com.bone.engine.extension.api.annotation.ExtensionDoc;
 import com.bone.example.extension.result.ValidationResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 
 /**
@@ -39,9 +39,8 @@ import java.time.ZoneId;
     author = "测试团队",
     created = "2024-01-01"
 )
+@Slf4j
 public class OutpatientClaimExtension implements MedicalClaimExtPoint {
-    // 日志记录器
-    private static final Logger logger = LoggerFactory.getLogger(OutpatientClaimExtension.class);
     
     // 常量定义
     private static final int CLAIMS_VALIDITY_DAYS = 90; // 理赔有效期90天
@@ -49,11 +48,12 @@ public class OutpatientClaimExtension implements MedicalClaimExtPoint {
 
     @Override
     public ValidationResult validateClaim(final BizContext<MedicalClaimRequest> context) {
-        logger.info("开始验证门诊理赔请求");
+        String requestId = context.getRequestId();
+        log.info("开始验证门诊理赔请求 | requestId={}", requestId);
         
         // 验证上下文和请求数据
         if (context == null || context.getData() == null) {
-            logger.warn("门诊理赔请求上下文或数据为空");
+            log.warn("门诊理赔请求上下文或数据为空 | requestId={}", requestId);
             return ValidationResult.fail("INVALID_REQUEST", "理赔请求信息不完整");
         }
         
@@ -62,15 +62,15 @@ public class OutpatientClaimExtension implements MedicalClaimExtPoint {
         // 验证必要字段
         ValidationResult validationResult = validateRequiredFields(request);
         if (!validationResult.isSuccess()) {
-            logger.warn("门诊理赔必要字段验证失败，用户ID: {}, 错误: {}", 
-                    request.getUserId(), validationResult.getErrorMessage());
+            log.warn("门诊理赔必要字段验证失败 | requestId={} | userId={} | error={}", 
+                    requestId, request.getUserId(), validationResult.getErrorMessage());
             return validationResult;
         }
         
         // 验证理赔时效性
         if (!isWithinValidityPeriod(request.getMedicalDate())) {
-            logger.warn("门诊理赔超出有效期，用户ID: {}, 就诊日期: {}", 
-                    request.getUserId(), request.getMedicalDate());
+            log.warn("门诊理赔超出有效期 | requestId={} | userId={} | medicalDate={}", 
+                    requestId, request.getUserId(), request.getMedicalDate());
             return ValidationResult.fail("EXPIRED_CLAIM", "门诊理赔已超出90天有效期");
         }
         
@@ -79,14 +79,15 @@ public class OutpatientClaimExtension implements MedicalClaimExtPoint {
             return ValidationResult.fail("EMPTY_CLAIM_ITEMS", "理赔项目不能为空");
         }
         
-        logger.info("门诊理赔请求验证通过，用户ID: {}, 理赔项目数量: {}", 
-                request.getUserId(), request.getItems().size());
+        log.info("门诊理赔请求验证通过 | requestId={} | userId={} | itemCount={}", 
+                requestId, request.getUserId(), request.getItems().size());
         return ValidationResult.success();
     }
 
     @Override
     public MedicalClaimResult processClaim(final BizContext<MedicalClaimRequest> context) {
-        logger.info("开始处理门诊理赔请求");
+        String requestId = context.getRequestId();
+        log.info("开始处理门诊理赔请求 | requestId={}", requestId);
         
         if (context == null || context.getData() == null) {
             throw new IllegalArgumentException("理赔请求信息不完整");
@@ -94,38 +95,34 @@ public class OutpatientClaimExtension implements MedicalClaimExtPoint {
         
         final MedicalClaimRequest request = context.getData();
         
-        // 创建理赔结果
+        // 计算批准金额，应用门诊理赔报销比例
+        BigDecimal approvedAmount = calculateApprovedAmount(request.getTotalAmount());
+        
+        // 创建理赔结果，使用Builder模式设置所有字段
         final MedicalClaimResult result = MedicalClaimResult.builder()
                 .claimId(request.getClaimId())
                 .status(MedicalClaimResult.ClaimStatus.APPROVED)
-                .processingDate(new java.util.Date())
+                .processingDate(LocalDateTime.now())
                 .totalClaimAmount(request.getTotalAmount())
+                .approvedAmount(approvedAmount)
+                .rejectedAmount(request.getTotalAmount().subtract(approvedAmount))
+                .processorId("SYSTEM")
+                .paymentStatus("PENDING")
                 .build();
         
-        // 计算批准金额，应用门诊理赔报销比例
-        BigDecimal approvedAmount = calculateApprovedAmount(request.getTotalAmount());
-        result.setApprovedAmount(approvedAmount);
-        result.setRejectedAmount(request.getTotalAmount().subtract(approvedAmount));
-        
-        logger.info("门诊理赔处理完成，理赔ID: {}, 申请金额: {}, 批准金额: {}", 
-                request.getClaimId(), request.getTotalAmount(), approvedAmount);
+        log.info("门诊理赔处理完成 | requestId={} | claimId={} | totalAmount={} | approvedAmount={}", 
+                requestId, request.getClaimId(), request.getTotalAmount(), approvedAmount);
         return result;
     }
 
-    @Override
-    public MedicalClaimRequest.ClaimType getSupportedClaimType() {
-        return MedicalClaimRequest.ClaimType.OUTPATIENT;
-    }
-    
     /**
-     * 检查是否在理赔有效期内
+     * 验证理赔是否在有效期内
      * 
      * @param medicalDate 就诊日期
      * @return 是否在有效期内
      */
-    private boolean isWithinValidityPeriod(java.util.Date medicalDate) {
-        LocalDate medicalLocalDate = medicalDate.toInstant()
-                .atZone(ZoneId.systemDefault()).toLocalDate();
+    private boolean isWithinValidityPeriod(LocalDateTime medicalDate) {
+        LocalDate medicalLocalDate = medicalDate.toLocalDate();
         LocalDate currentDate = LocalDate.now();
         return !medicalLocalDate.plusDays(CLAIMS_VALIDITY_DAYS).isBefore(currentDate);
     }
