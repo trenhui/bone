@@ -183,7 +183,7 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
 
             // 计算启用的扩展
             for (ExtensionDefinition def : extensions) {
-                if (def.isEnabled() && isEffective(def)) {
+                if (isExtensionEffective(def)) {
                     enabledExtensions++;
                 }
             }
@@ -435,37 +435,31 @@ public class ExtensionRegister implements ApplicationContextAware, SmartInitiali
         adjustExtensionStatus(definition);
     }
 
+    /**
+     * 调整扩展的启用状态，基于当前时间和扩展的时间范围
+     * 使用公共的isExtensionEffective方法避免重复代码
+     */
     private void adjustExtensionStatus(ExtensionDefinition definition) {
-        LocalDateTime now = LocalDateTime.now();
-
-        // 检查开始时间
-        if (StringUtils.hasText(definition.getStartTime())) {
-            try {
-                LocalDateTime startTime = LocalDateTime.parse(definition.getStartTime(), DATE_TIME_FORMATTER);
-                if (now.isBefore(startTime)) {
-                    definition.setEnabled(false);
-                    log.debug("Extension {} disabled until {}", definition.getCode(), definition.getStartTime());
-                }
-            } catch (DateTimeParseException e) {
-                log.warn("Invalid startTime format for extension {}: {}", definition.getCode(), definition.getStartTime());
-            }
+        if (!definition.isEnabled()) {
+            return; // 已经禁用，无需调整
         }
 
-        // 检查结束时间
-        if (StringUtils.hasText(definition.getEndTime())) {
-            try {
-                LocalDateTime endTime = LocalDateTime.parse(definition.getEndTime(), DATE_TIME_FORMATTER);
-                if (now.isAfter(endTime)) {
-                    definition.setEnabled(false);
-                    log.debug("Extension {} expired at {}", definition.getCode(), definition.getEndTime());
-                }
-            } catch (DateTimeParseException e) {
-                log.warn("Invalid endTime format for extension {}: {}", definition.getCode(), definition.getEndTime());
+        boolean isEffective = isExtensionEffective(definition);
+        if (!isEffective) {
+            definition.setEnabled(false);
+            if (StringUtils.hasText(definition.getStartTime())) {
+                log.debug("Extension {} disabled until {}", definition.getCode(), definition.getStartTime());
+            } else if (StringUtils.hasText(definition.getEndTime())) {
+                log.debug("Extension {} expired at {}", definition.getCode(), definition.getEndTime());
             }
         }
     }
 
-    private boolean isEffective(ExtensionDefinition definition) {
+    /**
+     * 检查扩展是否在有效时间范围内
+     * 核心优化：提取公共时间范围检查逻辑，避免重复代码
+     */
+    private boolean isExtensionEffective(ExtensionDefinition definition) {
         if (!definition.isEnabled()) {
             return false;
         }

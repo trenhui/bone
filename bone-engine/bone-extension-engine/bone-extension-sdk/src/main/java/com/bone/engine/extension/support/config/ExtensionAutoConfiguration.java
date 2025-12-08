@@ -12,14 +12,13 @@ import com.bone.engine.extension.core.router.*;
 import com.bone.engine.extension.support.repository.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.ImportAware;
+import org.springframework.context.annotation.*;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.core.type.AnnotationMetadata;
@@ -36,6 +35,7 @@ import org.springframework.util.StringUtils;
 @EnableConfigurationProperties(ExtensionProperties.class)
 @ConditionalOnProperty(prefix = "bone.extension", name = "enabled", havingValue = "true", matchIfMissing = true)
 @Slf4j
+@Import(ExtensionAsyncConfig.class)
 public class ExtensionAutoConfiguration implements ImportAware {
 
     private AnnotationAttributes attrs = new AnnotationAttributes();
@@ -53,7 +53,7 @@ public class ExtensionAutoConfiguration implements ImportAware {
     @Bean
     @ConditionalOnMissingBean
     public ExtensionEventPublisher extensionEventPublisher(ApplicationEventPublisher applicationEventPublisher,
-                                                           AsyncTaskExecutor taskExecutor,
+                                                           @Qualifier(ExtensionAsyncConfig.EXTENSION_EVENT_EXECUTOR_BEAN_NAME) AsyncTaskExecutor taskExecutor,
                                                            RouteStatsCollector routeStatsCollector) {
         return new DefaultExtensionEventPublisher(applicationEventPublisher,taskExecutor,routeStatsCollector);
     }

@@ -40,6 +40,10 @@ public class ExtensionProperties {
     @NestedConfigurationProperty
     private EventsConfig events = new EventsConfig();
 
+    /** 异步执行配置 */
+    @NestedConfigurationProperty
+    private Async async = new Async();
+
     public boolean isEnabled() {
         return enabled;
     }
@@ -94,6 +98,14 @@ public class ExtensionProperties {
 
     public void setEvents(EventsConfig events) {
         this.events = events;
+    }
+
+    public Async getAsync() {
+        return async;
+    }
+
+    public void setAsync(Async async) {
+        this.async = async;
     }
 
     /** 缓存配置 */
@@ -387,6 +399,109 @@ public class ExtensionProperties {
 
         public void setExecutor(String executor) {
             this.executor = executor;
+        }
+    }
+
+    /**
+     * 异步执行配置
+     * <p>
+     * 支持通过配置文件调整线程池参数
+     * </p>
+     */
+    public static class Async {
+        /** 是否启用异步执行 */
+        private boolean enabled = true;
+        
+        // 扩展点异步执行线程池配置
+        /** 核心线程数 */
+        private int corePoolSize = 10;
+        /** 最大线程数 */
+        private int maxPoolSize = 50;
+        /** 队列容量 */
+        private int queueCapacity = 1000;
+        /** 线程存活时间（秒） */
+        private int keepAliveSeconds = 60;
+        
+        // 事件处理线程池配置
+        /** 事件处理核心线程数 */
+        private int eventCorePoolSize = Runtime.getRuntime().availableProcessors() / 2;
+        /** 事件处理最大线程数 */
+        private int eventMaxPoolSize = Runtime.getRuntime().availableProcessors();
+        /** 事件处理队列容量 */
+        private int eventQueueCapacity = 1000;
+        /** 事件处理线程存活时间（秒） */
+        private int eventKeepAliveSeconds = 60;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public int getCorePoolSize() {
+            return corePoolSize;
+        }
+
+        public void setCorePoolSize(int corePoolSize) {
+            this.corePoolSize = corePoolSize;
+        }
+
+        public int getMaxPoolSize() {
+            return maxPoolSize;
+        }
+
+        public void setMaxPoolSize(int maxPoolSize) {
+            this.maxPoolSize = maxPoolSize;
+        }
+
+        public int getQueueCapacity() {
+            return queueCapacity;
+        }
+
+        public void setQueueCapacity(int queueCapacity) {
+            this.queueCapacity = queueCapacity;
+        }
+
+        public int getKeepAliveSeconds() {
+            return keepAliveSeconds;
+        }
+
+        public void setKeepAliveSeconds(int keepAliveSeconds) {
+            this.keepAliveSeconds = keepAliveSeconds;
+        }
+
+        public int getEventCorePoolSize() {
+            return eventCorePoolSize;
+        }
+
+        public void setEventCorePoolSize(int eventCorePoolSize) {
+            this.eventCorePoolSize = eventCorePoolSize;
+        }
+
+        public int getEventMaxPoolSize() {
+            return eventMaxPoolSize;
+        }
+
+        public void setEventMaxPoolSize(int eventMaxPoolSize) {
+            this.eventMaxPoolSize = eventMaxPoolSize;
+        }
+
+        public int getEventQueueCapacity() {
+            return eventQueueCapacity;
+        }
+
+        public void setEventQueueCapacity(int eventQueueCapacity) {
+            this.eventQueueCapacity = eventQueueCapacity;
+        }
+
+        public int getEventKeepAliveSeconds() {
+            return eventKeepAliveSeconds;
+        }
+
+        public void setEventKeepAliveSeconds(int eventKeepAliveSeconds) {
+            this.eventKeepAliveSeconds = eventKeepAliveSeconds;
         }
     }
 }
