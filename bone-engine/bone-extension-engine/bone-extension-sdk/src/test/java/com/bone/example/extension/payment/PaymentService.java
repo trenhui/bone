@@ -80,10 +80,8 @@ public class PaymentService {
 
         try {
             // 1. 前置验证
-            ValidationResult validation = invokeWithFallback(
-                    () -> paymentExtPoint.prePayValidate(context),
-                    ValidationResult.success()
-            );
+            ValidationResult validation =paymentExtPoint.prePayValidate(context);
+
 
             if (!validation.isSuccess()) {
                 log.warn("支付前验证失败 | orderId={} | code={} | msg={}",
@@ -92,10 +90,7 @@ public class PaymentService {
             }
 
             // 2. 金额计算
-            PaymentCalculationResult calcResult = invokeWithFallback(
-                    () -> paymentExtPoint.calculatePayment(context),
-                    buildDefaultCalculation(request)
-            );
+            PaymentCalculationResult calcResult = paymentExtPoint.calculatePayment(context);
 
             validateCalculation(calcResult);
 
@@ -220,21 +215,6 @@ public class PaymentService {
             return "UNKNOWN_TENANT";
         }
         return context.getTenant();
-    }
-
-    // ==================== 工具方法 ====================
-
-    private <T> T invokeWithFallback(Supplier<T> supplier, T fallback) {
-        try {
-            return supplier.get();
-        } catch (Exception e) {
-            throw new ExtensionInvocationException("扩展点调用失败", e);
-        }
-    }
-
-    @FunctionalInterface
-    private interface Supplier<T> {
-        T get() throws Exception;
     }
 
     private void validateRequest(PaymentTestRequest request) {
