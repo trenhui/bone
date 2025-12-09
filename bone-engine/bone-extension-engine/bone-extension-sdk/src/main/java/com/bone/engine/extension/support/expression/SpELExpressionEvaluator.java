@@ -1,6 +1,7 @@
 package com.bone.engine.extension.support.expression;
 
 import com.bone.engine.extension.api.spi.ExpressionEvaluator;
+import com.bone.engine.extension.support.context.BizContext;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import org.slf4j.Logger;
@@ -17,7 +18,7 @@ import java.util.function.Predicate;
 
 /**
  * 高性能 SpEL 表达式求值器
- *
+ * <p>
  * 设计原则：
  * 1. 简洁高效：专注核心功能，避免过度设计
  * 2. 性能优先：合理的缓存策略
@@ -167,6 +168,12 @@ public class SpELExpressionEvaluator implements ExpressionEvaluator {
         // 注入上下文变量，支持 #context 引用
         evalContext.setVariable("context", context);
         evalContext.setVariable("ctx", context);
+
+        // 注入data变量，支持 #data 直接引用上下文数据
+        if (context instanceof BizContext) {
+            BizContext<?> bizContext = (BizContext<?>) context;
+            evalContext.setVariable("data", bizContext.getData());
+        }
 
         return evalContext;
     }

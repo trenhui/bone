@@ -53,20 +53,13 @@ public class ExtensionAutoConfiguration implements ImportAware {
     @Bean
     @ConditionalOnMissingBean
     public ExtensionEventPublisher extensionEventPublisher(ApplicationEventPublisher applicationEventPublisher,
-                                                           @Qualifier(ExtensionAsyncConfig.EXTENSION_EVENT_EXECUTOR_BEAN_NAME) AsyncTaskExecutor taskExecutor,
-                                                           RouteStatsCollector routeStatsCollector) {
-        return new DefaultExtensionEventPublisher(applicationEventPublisher,taskExecutor,routeStatsCollector);
+                                                           @Qualifier(ExtensionAsyncConfig.EXTENSION_EVENT_EXECUTOR_BEAN_NAME) AsyncTaskExecutor taskExecutor) {
+        return new DefaultExtensionEventPublisher(applicationEventPublisher,taskExecutor);
     }
 
     @Bean
     public ExtensionRegister extensionRegister(ExtensionRepository extensionRepository, ExtensionProperties extensionProperties, ExtensionEventPublisher eventPublisher) {
         return new ExtensionRegister(extensionRepository,extensionProperties);
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
-    public RouteStatsCollector routeStatsCollector() {
-        return new RouteStatsCollector();
     }
 
 

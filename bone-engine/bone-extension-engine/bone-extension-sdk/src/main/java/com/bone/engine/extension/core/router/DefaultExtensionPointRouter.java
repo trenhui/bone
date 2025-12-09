@@ -6,6 +6,7 @@ import com.bone.engine.extension.api.spi.ExtensionPointRouter;
 import com.bone.engine.extension.api.spi.ExtensionRepository;
 import com.bone.engine.extension.support.context.BizContext;
 import com.bone.engine.extension.support.expression.AviatorExpressionEvaluator;
+import com.bone.engine.extension.support.expression.SpELExpressionEvaluator;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.LoadingCache;
@@ -69,7 +70,7 @@ public final class DefaultExtensionPointRouter implements ExtensionPointRouter {
      * 默认构造函数（推荐生产使用）
      */
     public DefaultExtensionPointRouter(@NonNull ExtensionRepository extensionRepo) {
-        this(extensionRepo, new AviatorExpressionEvaluator(),
+        this(extensionRepo, new SpELExpressionEvaluator(),
                 50000, Duration.ofHours(1), true);
     }
 
@@ -354,8 +355,9 @@ public final class DefaultExtensionPointRouter implements ExtensionPointRouter {
             return (boolean) expressionCache.get(cacheKey,
                     k -> expressionEvaluator.evaluate(expression, context));
         } catch (Exception e) {
-            log.warn("表达式求值失败 | expression: {} | error: {}", expression, e.getMessage());
-            return false;
+            log.error("表达式求值失败 | expression: {} | error: {}", expression, e.getMessage());
+            throw new RouterException(RouterException.Type.SYSTEM_ERROR,
+                    String.format("表达式求值失败 | expression: %s", expression), e);
         }
     }
 

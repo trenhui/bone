@@ -149,8 +149,8 @@ public class PromotionService {
             T result = supplier.get();
             // 如果结果为null，返回降级结果
             return result != null ? result : fallback;
-        } catch (Exception e) {
-            // 捕获所有异常，返回降级结果
+        } catch (Throwable e) {
+            // 捕获所有异常和错误，返回降级结果
             log.warn("Extension invocation failed, using fallback | error: {}", e.getMessage());
             return fallback;
         }

@@ -22,7 +22,7 @@ import java.time.LocalDateTime;
     tenant = "default",
     bizCode = "MEDICAL_CLAIM",  // 统一使用MEDICAL_CLAIM作为业务编码
     scenario = "SPECIAL_DISEASE_CLAIM",
-    condition = "#data.claimType == T(com.bone.example.extension.medical.MedicalClaimRequest.ClaimType).SPECIAL_TREATMENT",
+    condition = "#data.claimType == 'SPECIAL_TREATMENT'",
     order = 120,
     enabled = true,
     version = "1.0.0"

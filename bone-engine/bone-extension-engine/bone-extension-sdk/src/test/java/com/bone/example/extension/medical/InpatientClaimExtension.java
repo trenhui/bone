@@ -25,7 +25,7 @@ import java.time.temporal.ChronoUnit;
     tenant= "default",
     bizCode = "MEDICAL_CLAIM",
     scenario = "INPATIENT_CLAIM",
-    condition = "#data.claimType == T(com.bone.example.extension.medical.MedicalClaimRequest.ClaimType).INPATIENT",
+    condition = "#data.claimType == 'INPATIENT'",
     order = 110,
     enabled = true,
     version = "1.0.0"

@@ -20,14 +20,10 @@ import java.time.ZoneId;
 // 运行时路由配置 - 负责匹配和选择
 @Extension(
     name = "门诊理赔扩展实现",
-    description = "处理门诊类型的医疗保险理赔请求",
     tenant = "default",
     bizCode = "MEDICAL_CLAIM",
-    scenario = "OUTPATIENT_CLAIM",
-    condition = "#data.claimType == T(com.bone.example.extension.medical.MedicalClaimRequest.ClaimType).OUTPATIENT",
-    order = 100,
-    enabled = true,
-    version = "1.0.0"
+    condition = "#data.claimType == 'OUTPATIENT'",
+    order = 100
 )
 // 实现类文档 - 描述适配场景和实现细节（编译时注解，不影响运行时）
 @ExtensionDoc(

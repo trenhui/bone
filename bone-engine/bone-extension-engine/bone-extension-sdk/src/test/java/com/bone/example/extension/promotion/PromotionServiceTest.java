@@ -156,9 +156,10 @@ class PromotionServiceTest {
 
         assertThat(result).isNotNull();
         assertThat(result.getOriginalTotal()).isEqualByComparingTo(BigDecimal.valueOf(2000.00));
-        // 当前预期：无折扣，返回原价
-        assertThat(result.getFinalTotal()).isEqualByComparingTo(BigDecimal.valueOf(2000.00));
-        assertThat(result.getAppliedPromotions()).isNotNull();
+        // 电子产品应享受5%折扣，最终价格应为1900.00
+        assertThat(result.getFinalTotal()).isEqualByComparingTo(BigDecimal.valueOf(1900.00));
+        assertThat(result.getAppliedPromotions()).isNotNull().isNotEmpty();
+        assertThat(result.isDiscountApplied()).isTrue();
 
         log.info("电子产品促销测试通过 | original={} | final={} | discountApplied={}",
                 result.getOriginalTotal(), result.getFinalTotal(), result.isDiscountApplied());
@@ -218,7 +219,7 @@ class PromotionServiceTest {
         PromotionRequest request = PromotionRequest.builder()
                 .subtotal(BigDecimal.valueOf(150.00))
                 .orderType("ELECTRONICS")
-                .userLevel("GOLD")
+                .userLevel("REGULAR")
                 .build();
 
         BizContext<PromotionRequest> context = BizContext.<PromotionRequest>builder()

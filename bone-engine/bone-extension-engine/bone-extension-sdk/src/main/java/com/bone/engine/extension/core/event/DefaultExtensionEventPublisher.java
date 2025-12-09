@@ -1,7 +1,7 @@
 package com.bone.engine.extension.core.event;
 
-import com.bone.engine.extension.support.context.BizContext;
 import com.bone.engine.extension.support.config.ExtensionAsyncConfig;
+import com.bone.engine.extension.support.context.BizContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.InitializingBean;
@@ -10,20 +10,13 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.task.AsyncTaskExecutor;
 import org.springframework.core.task.TaskRejectedException;
-import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
-
-import com.bone.engine.extension.core.router.RouteStatsCollector;
-
 import java.util.EnumSet;
-import java.util.*;
-import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.*;
 
 /**
  * 基于Spring的默认扩展点事件发布器实现
@@ -57,20 +50,6 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
     private final ConcurrentLinkedQueue<ExtensionEvent<?>> fallbackEventQueue = new ConcurrentLinkedQueue<>();
     private ExecutorService fallbackExecutor;
     
-    // 注入路由统计收集器
-    private final RouteStatsCollector routeStatsCollector;
-    
-    /**
-     * 构造函数
-     * 
-     * @param applicationEventPublisher Spring事件发布器
-     */
-    @Autowired
-    public DefaultExtensionEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
-        // 创建默认的事件统计收集器实现
-        this(applicationEventPublisher, null, null);
-    }
-
     /**
      * 构造函数，支持异步发布
      * 
@@ -78,27 +57,10 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
      * @param taskExecutor 异步任务执行器
      */
     @Autowired(required = false)
-    public DefaultExtensionEventPublisher(ApplicationEventPublisher applicationEventPublisher, 
-                                         @Qualifier(ExtensionAsyncConfig.EXTENSION_EVENT_EXECUTOR_BEAN_NAME) AsyncTaskExecutor taskExecutor) {
-        // 创建默认的事件统计收集器实现
-        this(applicationEventPublisher, taskExecutor, null);
-    }
-    
-    /**
-     * 构造函数，支持完整注入
-     * 
-     * @param applicationEventPublisher Spring事件发布器
-     * @param taskExecutor 异步任务执行器
-     * @param routeStatsCollector 路由统计收集器
-     */
-    @Autowired(required = false)
-    public DefaultExtensionEventPublisher(ApplicationEventPublisher applicationEventPublisher, 
-                                         AsyncTaskExecutor taskExecutor,
-                                         RouteStatsCollector routeStatsCollector) {
+    public DefaultExtensionEventPublisher(ApplicationEventPublisher applicationEventPublisher, AsyncTaskExecutor taskExecutor) {
         Assert.notNull(applicationEventPublisher, "ApplicationEventPublisher must not be null");
         this.applicationEventPublisher = applicationEventPublisher;
         this.taskExecutor = taskExecutor;
-        this.routeStatsCollector = routeStatsCollector;
     }
     
     @Override
@@ -474,16 +436,10 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
      * @return 统计摘要字符串
      */
     public String getEventStats() {
-        // 从RouteStatsCollector获取路由统计信息（如果可用）
-        String routeStatsInfo = "Route stats not available";
-        if (routeStatsCollector != null) {
-            Map<String, Map<String, Long>> routeStats = routeStatsCollector.getRouteStats();
-            routeStatsInfo = "Routes: " + routeStats.size();
-        }
         
         return String.format(
-            "Event Stats - %s, Fallback Queue Size: %d",
-            routeStatsInfo, fallbackEventQueue.size()
+            "Fallback Queue Size: %d",
+             fallbackEventQueue.size()
         );
     }
     
@@ -493,14 +449,7 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
      */
     public Map<String, Object> getStatistics() {
         Map<String, Object> stats = new HashMap<>();
-        
-        // 使用RouteStatsCollector获取统计信息（如果可用）
-        if (routeStatsCollector != null) {
-            // 获取路由统计信息
-            Map<String, Map<String, Long>> routeStats = routeStatsCollector.getRouteStats();
-            stats.put("routeStats", routeStats);
-        }
-        
+
         // 基本事件队列统计
         stats.put("fallbackQueueSize", fallbackEventQueue.size());
         
@@ -511,10 +460,6 @@ public class DefaultExtensionEventPublisher implements ExtensionEventPublisher, 
      * 重置事件统计计数
      */
     public void resetEventStats() {
-        // 重置RouteStatsCollector（如果可用）
-        if (routeStatsCollector != null) {
-            routeStatsCollector.resetAllStats();
-        }
         log.info("Event statistics reset");
     }
     
