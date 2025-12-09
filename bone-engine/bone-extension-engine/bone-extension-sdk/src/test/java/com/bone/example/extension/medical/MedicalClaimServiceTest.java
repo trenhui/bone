@@ -13,9 +13,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 
 import com.bone.example.extension.medical.MedicalClaimRequest.ClaimItem;
@@ -91,9 +91,9 @@ class MedicalClaimServiceTest {
                 .build());
 
         // 设置当前日期作为就诊日期（确保在90天有效期内）
-        Date currentDate = new Date();
-        Date yesterday = new Date(currentDate.getTime() - 24 * 60 * 60 * 1000);
-        Date threeDaysAgo = new Date(currentDate.getTime() - 3 * 24 * 60 * 60 * 1000);
+        LocalDateTime currentDate = LocalDateTime.now();
+        LocalDateTime yesterday = currentDate.minusDays(1);
+        LocalDateTime threeDaysAgo = currentDate.minusDays(3);
 
         outpatientRequest = MedicalClaimRequest.builder()
                 .claimId("OUT-20251208-001")
@@ -216,14 +216,14 @@ class MedicalClaimServiceTest {
                 .items(Collections.emptyList())
                 .build();
         
-        // 执行测试
-        ValidationResult result = medicalClaimService.validateClaim(invalidRequest);
+        // 执行测试 - 期望抛出IllegalArgumentException异常
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            medicalClaimService.validateClaim(invalidRequest);
+        });
         
-        // 验证结果
-        assertThat(result).isNotNull();
-        assertThat(result.isSuccess()).isFalse();
-        assertThat(result.getErrorMessage()).isNotNull();
+        // 验证异常信息
+        assertThat(exception.getMessage()).contains("用户ID不能为空");
   
-        log.info("无效理赔请求被正确拦截 | 错误信息={}", result.getErrorMessage());
+        log.info("无效理赔请求被正确拦截 | 错误信息={}", exception.getMessage());
     }
 }
