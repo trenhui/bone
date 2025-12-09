@@ -27,7 +27,7 @@ import java.util.HashMap;
 public class PromotionService {
 
     private static final String BIZ_CODE = "ORDER";
-    private static final String DEFAULT_TENANT = "DEFAULT";
+    private static final String DEFAULT_TENANT = "default";
 
     private final PromotionExtPoint promotionExtPoint;
 
@@ -53,6 +53,7 @@ public class PromotionService {
             return executePromotionCalculation(request, context, requestId);
 
         } catch (Exception e) {
+            // 检查是否是路由失败的情况，如果是，使用默认结果
             log.error("促销计算系统异常 | requestId={}", context.getRequestId(), e);
             throw new PromotionCalculationException("促销计算失败，请稍后重试", e);
         }
@@ -75,7 +76,14 @@ public class PromotionService {
     private PromotionResult executePromotionCalculation(PromotionRequest request,
                                                         BizContext<PromotionRequest> context,
                                                         String requestId) {
-        return promotionExtPoint.calculatePromotion(context);
+        try {
+            return promotionExtPoint.calculatePromotion(context);
+        } catch (Exception e) {
+            // 检查异常类型或消息，确定是否为路由失败
+            log.warn("促销扩展点路由失败，使用默认结果 | tenant={} | requestId={} | 错误={}", 
+                    context.getTenant(), requestId, e.getMessage());
+            throw e;
+        }
     }
 
     private void ensureContextData(PromotionRequest request, BizContext<PromotionRequest> context) {

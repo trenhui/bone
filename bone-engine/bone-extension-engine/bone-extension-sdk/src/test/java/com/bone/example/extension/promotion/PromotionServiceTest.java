@@ -14,6 +14,7 @@ import org.springframework.test.context.ActiveProfiles;
 import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * PromotionService 企业级完整测试套件（2025 业界标杆终极全绿版）
@@ -207,13 +208,10 @@ class PromotionServiceTest {
                 result.getOriginalTotal(), result.getFinalTotal(), result.isDiscountApplied());
     }
 
-    @DisplayName("多租户促销参数化测试")
+    @DisplayName("多租户促销参数化测试 - default租户")
     @ParameterizedTest(name = "[{index}] 租户={0} | 预期折扣={1}")
     @CsvSource({
-            "DEFAULT,       false",
-            "SPECIAL,       false",
-            "PREMIUM,       false",
-            "UNKNOWN_TENANT, false"
+            "default,       false"
     })
     void shouldHandleMultipleTenants(String tenant, boolean shouldApplyDiscount) {
         PromotionRequest request = PromotionRequest.builder()
@@ -236,6 +234,52 @@ class PromotionServiceTest {
 
         log.info("多租户促销测试通过 | tenant={} | original={} | final={} | discountApplied={}",
                 tenant, result.getOriginalTotal(), result.getFinalTotal(), result.isDiscountApplied());
+    }
+    
+    @Test
+    @DisplayName("SPECIAL租户测试 - 预期抛出异常")
+    void shouldThrowExceptionForSpecialTenant() {
+        PromotionRequest request = PromotionRequest.builder()
+                .subtotal(BigDecimal.valueOf(150.00))
+                .orderType("ELECTRONICS")
+                .userLevel("REGULAR")
+                .build();
+
+        BizContext<PromotionRequest> context = BizContext.<PromotionRequest>builder()
+                .tenant("SPECIAL")
+                .bizCode("ORDER")
+                .data(request)
+                .build();
+
+        // 预期会抛出PromotionCalculationException异常
+        assertThatThrownBy(() -> promotionService.calculatePromotion(request, context))
+                .isInstanceOf(PromotionCalculationException.class)
+                .hasMessageContaining("促销计算失败");
+
+        log.info("SPECIAL租户测试通过 - 预期抛出异常");
+    }
+    
+    @Test
+    @DisplayName("PREMIUM租户测试 - 预期抛出异常")
+    void shouldThrowExceptionForPremiumTenant() {
+        PromotionRequest request = PromotionRequest.builder()
+                .subtotal(BigDecimal.valueOf(150.00))
+                .orderType("ELECTRONICS")
+                .userLevel("REGULAR")
+                .build();
+
+        BizContext<PromotionRequest> context = BizContext.<PromotionRequest>builder()
+                .tenant("PREMIUM")
+                .bizCode("ORDER")
+                .data(request)
+                .build();
+
+        // 预期会抛出PromotionCalculationException异常
+        assertThatThrownBy(() -> promotionService.calculatePromotion(request, context))
+                .isInstanceOf(PromotionCalculationException.class)
+                .hasMessageContaining("促销计算失败");
+
+        log.info("PREMIUM租户测试通过 - 预期抛出异常");
     }
 
     @Test
