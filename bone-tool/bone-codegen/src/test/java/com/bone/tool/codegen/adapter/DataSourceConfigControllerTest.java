@@ -4,7 +4,7 @@ import com.bone.core.model.ApiResponse;
 import com.bone.tool.codegen.application.dto.*;
 import com.bone.tool.codegen.application.converter.CodegenConverter;
 import com.bone.tool.codegen.domain.entity.Datasource;
-import com.bone.tool.codegen.domain.service.DataSourceConfigService;
+import com.bone.tool.codegen.application.service.DataSourceConfigService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;

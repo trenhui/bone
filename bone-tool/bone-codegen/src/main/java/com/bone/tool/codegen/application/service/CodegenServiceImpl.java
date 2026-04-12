@@ -1,15 +1,16 @@
-package com.bone.tool.codegen.domain.service;
+package com.bone.tool.codegen.application.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
-import com.bone.tool.codegen.adapter.GlobalExceptionHandler.BusinessException;
+import com.bone.tool.codegen.domain.exception.CodegenBusinessException;
 
 import com.bone.tool.codegen.application.dto.CodegenTablePageRequest;
 import com.bone.tool.codegen.application.dto.CodegenTableRequest;
 import com.bone.tool.codegen.application.dto.GenerateCustomCodeRequest;
+import com.bone.core.model.PageResult;
 import com.bone.tool.codegen.application.dto.CodegenDetailResponse;
 import com.bone.tool.codegen.application.dto.CodegenTableResponse;
 import com.bone.tool.codegen.domain.entity.CodegenTable;
@@ -112,7 +113,7 @@ public class CodegenServiceImpl implements CodegenService {
             logger.info("代码生成完成，成功处理 {} 个表，共 {} 个表", successCount, tableNames.size());
         } catch (IOException e) {
             logger.error("生成代码时发生IO错误: {}", e.getMessage(), e);
-            throw new BusinessException(500, "生成代码失败: " + e.getMessage());
+            throw new CodegenBusinessException(500, "生成代码失败: " + e.getMessage());
         }
     }
 
@@ -128,13 +129,13 @@ public class CodegenServiceImpl implements CodegenService {
         try {
             // 参数验证 - 只验证request相关参数，不验证outputStream
             if (request == null) {
-                throw new BusinessException(400, "请求参数不能为空");
+                throw new CodegenBusinessException(400, "请求参数不能为空");
             }
             if (request.getDatasourceId() == null) {
-                throw new BusinessException(400, "数据源配置ID不能为空");
+                throw new CodegenBusinessException(400, "数据源配置ID不能为空");
             }
             if (request.getTableNames() == null || request.getTableNames().isEmpty()) {
-                throw new BusinessException(400, "表名列表不能为空");
+                throw new CodegenBusinessException(400, "表名列表不能为空");
             }
             
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -143,11 +144,11 @@ public class CodegenServiceImpl implements CodegenService {
             return baos.toByteArray();
         } catch (Exception e) {
             logger.error("生成自定义代码失败: {}", e.getMessage(), e);
-            // 如果已经是BusinessException，直接抛出；否则包装成BusinessException
-            if (e instanceof BusinessException) {
+            // 如果已经是CodegenBusinessException，直接抛出；否则包装成CodegenBusinessException
+            if (e instanceof CodegenBusinessException) {
                 throw e;
             }
-            throw new BusinessException(500, "生成代码失败: " + e.getMessage());
+            throw new CodegenBusinessException(500, "生成代码失败: " + e.getMessage());
         }
     }
 
@@ -198,7 +199,7 @@ public class CodegenServiceImpl implements CodegenService {
             logger.info("批量生成完成，成功处理 {} 个表，共 {} 个表", successCount, tableIds.size());
         } catch (IOException e) {
             logger.error("批量生成时发生IO错误: {}", e.getMessage(), e);
-            throw new BusinessException(500, "批量生成失败: " + e.getMessage());
+            throw new CodegenBusinessException(500, "批量生成失败: " + e.getMessage());
         }
     }
 
@@ -242,22 +243,22 @@ public class CodegenServiceImpl implements CodegenService {
     private void validateCodeGenRequest(GenerateCustomCodeRequest request, OutputStream outputStream) {
         // 输出流验证 - 当调用带有outputStream参数的方法时必须验证
         if (outputStream == null) {
-            throw new BusinessException(400, "输出流不能为空");
+            throw new CodegenBusinessException(400, "输出流不能为空");
         }
         
         // 请求对象验证
         if (request == null) {
-            throw new BusinessException(400, "请求参数不能为空");
+            throw new CodegenBusinessException(400, "请求参数不能为空");
         }
         
         // 数据源ID验证
         if (request.getDatasourceId() == null) {
-            throw new BusinessException(400, "数据源配置ID不能为空");
+            throw new CodegenBusinessException(400, "数据源配置ID不能为空");
         }
         
         // 表名列表验证
         if (request.getTableNames() == null || request.getTableNames().isEmpty()) {
-            throw new BusinessException(400, "表名列表不能为空");
+            throw new CodegenBusinessException(400, "表名列表不能为空");
         }
     }
     
@@ -269,10 +270,8 @@ public class CodegenServiceImpl implements CodegenService {
      * @return 代码生成表对象的Optional
      */
     private Optional<CodegenTable> findCodegenTable(Long datasourceId, String tableName) {
-        // 此处为简化实现，实际应该通过repository查询
-        // 可以根据实际需求实现具体的查询逻辑
         logger.debug("查找代码生成表，数据源ID: {}, 表名: {}", datasourceId, tableName);
-        return Optional.empty();
+        return databaseTableService.findCodegenTable(datasourceId, tableName);
     }
     
     @Override
@@ -285,11 +284,11 @@ public class CodegenServiceImpl implements CodegenService {
             return databaseTableService.getCodegenDetail(tableId);
         } catch (Exception e) {
             logger.error("获取代码生成详情失败: {}", e.getMessage(), e);
-            // 如果已经是BusinessException，直接抛出；否则包装成BusinessException
-            if (e instanceof BusinessException) {
+            // 如果已经是CodegenBusinessException，直接抛出；否则包装成CodegenBusinessException
+            if (e instanceof CodegenBusinessException) {
                 throw e;
             }
-            throw new BusinessException(500, "获取代码生成详情失败: " + e.getMessage());
+            throw new CodegenBusinessException(500, "获取代码生成详情失败: " + e.getMessage());
         }
     }
     
@@ -303,11 +302,11 @@ public class CodegenServiceImpl implements CodegenService {
             databaseTableService.deleteTable(tableId); // 修正方法名，从deleteCodegenTable改为deleteTable
         } catch (Exception e) {
             logger.error("删除表失败: {}", e.getMessage(), e);
-            // 如果已经是BusinessException，直接抛出；否则包装成BusinessException
-            if (e instanceof BusinessException) {
+            // 如果已经是CodegenBusinessException，直接抛出；否则包装成CodegenBusinessException
+            if (e instanceof CodegenBusinessException) {
                 throw e;
             }
-            throw new BusinessException(500, "删除表失败: " + e.getMessage());
+            throw new CodegenBusinessException(500, "删除表失败: " + e.getMessage());
         }
     }
     
@@ -327,16 +326,9 @@ public class CodegenServiceImpl implements CodegenService {
     }
     
     @Override
-    public CodegenTableResponse getCodegenTablePageResponse(CodegenTablePageRequest request) {
+    public PageResult<CodegenTableResponse> getCodegenTablePageResponse(CodegenTablePageRequest request) {
         logger.info("获取代码生成表分页响应");
         Assert.notNull(request, "请求参数不能为空");
-        
-        try {
-            // 此处为简化实现，实际应该根据请求参数查询数据
-            return new CodegenTableResponse();
-        } catch (Exception e) {
-            logger.error("获取代码生成表分页响应失败: {}", e.getMessage(), e);
-            throw e;
-        }
+        return databaseTableService.pageCodegenTables(request);
     }
 }

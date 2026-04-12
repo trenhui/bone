@@ -1,4 +1,4 @@
-package com.bone.tool.codegen.domain.repository;
+package com.bone.tool.codegen.infrastructure.persistence;
 
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -19,6 +19,7 @@ import java.sql.DriverManager;
 import com.bone.tool.codegen.domain.entity.DatabaseTableMetadata;
 import com.bone.tool.codegen.domain.entity.CodegenColumn;
 import com.bone.tool.codegen.domain.entity.Datasource;
+import com.bone.tool.codegen.domain.repository.DataSourceConfigRepository;
 
 import java.sql.*;
 import java.util.List;

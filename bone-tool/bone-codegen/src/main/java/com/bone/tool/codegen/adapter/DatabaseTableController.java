@@ -10,7 +10,7 @@ import com.bone.tool.codegen.application.dto.CodegenTableRequest;
 import com.bone.tool.codegen.application.dto.CodegenTableResponse;
 import com.bone.tool.codegen.domain.entity.CodegenTable;
 import com.bone.tool.codegen.domain.entity.DatabaseTableMetadata;
-import com.bone.tool.codegen.domain.service.DatabaseTableService;
+import com.bone.tool.codegen.application.service.DatabaseTableService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,8 +28,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-
 import static com.bone.core.model.ApiResponse.success;
 
 /**
@@ -76,67 +74,13 @@ public class DatabaseTableController {
             @Valid CodegenTablePageRequest request) {
         logger.info("开始分页获取代码生成表配置列表，请求参数: {}", request);
         try {
-            // 调用服务层方法获取数据
-            // 调用服务层方法获取数据，使用null作为数据源ID参数
-            List<CodegenTable> allTables = databaseTableService.getCodegenTablesByDataSourceId(null);
-            
-            // 执行过滤和分页
-            List<CodegenTable> filteredTables = filterTables(allTables, request.getTableName(), request.getTableComment());
-            int total = filteredTables.size();
-            
-            // 计算分页参数 - 使用默认值替代不存在的方法调用
-            int pageNo = 1; // 默认第一页
-            int pageSize = 10; // 默认每页10条记录
-            int start = Math.max(0, (pageNo - 1) * pageSize);
-            int end = Math.min(start + pageSize, total);
-            
-            // 执行分页
-            List<CodegenTable> pageTables = filteredTables.stream()
-                    .skip(start)
-                    .limit(pageSize)
-                    .collect(Collectors.toList());
-            
-            // 使用Stream API进行对象转换
-            List<CodegenTableResponse> responseList = pageTables.stream()
-                    .map(codegenConverter::toCodegenTableResponse)
-                    .collect(Collectors.toList());
-            
-            // 构建分页结果
-            PageResult<CodegenTableResponse> result = PageResult.of(responseList, (long) total, pageNo, pageSize);
-            
-            logger.info("分页获取代码生成表配置列表成功，查询结果: {}条记录", total);
+            PageResult<CodegenTableResponse> result = databaseTableService.pageCodegenTables(request);
+            logger.info("分页获取代码生成表配置列表成功，查询结果: {}条记录", result.getTotal());
             return success(result);
         } catch (Exception e) {
             logger.error("分页获取代码生成表配置列表失败: {}", e.getMessage(), e);
             return ApiResponse.error(500, "分页获取代码生成表配置列表失败: " + e.getMessage());
         }
-    }
-    
-    /**
-     * 过滤表列表
-     * 
-     * @param tables 原始表列表
-     * @param tableName 表名过滤条件
-     * @param tableComment 表注释过滤条件
-     * @return 过滤后的表列表
-     */
-    private List<CodegenTable> filterTables(List<CodegenTable> tables, String tableName, String tableComment) {
-        if (tables == null || tables.isEmpty()) {
-            return Collections.emptyList();
-        }
-        
-        return tables.stream()
-                .filter(table -> {
-                    boolean match = true;
-                    if (tableName != null && !tableName.isEmpty()) {
-                        match = match && table.getTableName().contains(tableName);
-                    }
-                    if (tableComment != null && !tableComment.isEmpty()) {
-                        match = match && table.getTableComment().contains(tableComment);
-                    }
-                    return match;
-                })
-                .collect(Collectors.toList());
     }
     
     /**

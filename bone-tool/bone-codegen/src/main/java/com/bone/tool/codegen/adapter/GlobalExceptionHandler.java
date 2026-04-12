@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
+import com.bone.tool.codegen.domain.exception.CodegenBusinessException;
+
 import java.sql.SQLException;
 
 /**
@@ -138,6 +140,18 @@ public class GlobalExceptionHandler {
      * @param ex 运行时异常
      * @return 包含错误信息的API响应
      */
+    @ExceptionHandler(CodegenBusinessException.class)
+    @ResponseBody
+    public ResponseEntity<ApiResponse<String>> handleCodegenBusinessException(CodegenBusinessException ex) {
+        logger.warn("业务异常: {}", ex.getMessage());
+        int code = ex.getErrorCode();
+        int statusCode = (code >= 400 && code < 600) ? code : HttpStatus.INTERNAL_SERVER_ERROR.value();
+        HttpStatus status = HttpStatus.valueOf(statusCode);
+        return new ResponseEntity<>(
+                ApiResponse.error(code, ex.getMessage()),
+                status);
+    }
+
     @ExceptionHandler(RuntimeException.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ResponseBody
@@ -166,35 +180,4 @@ public class GlobalExceptionHandler {
      * @param ex 异常
      * @return 包含错误信息的API响应
      */
-    @ExceptionHandler(BusinessException.class)
-    @ResponseBody
-    public ResponseEntity<ApiResponse<String>> handleBusinessException(BusinessException ex) {
-        logger.warn("业务异常: {}", ex.getMessage());
-        return new ResponseEntity<>(
-                ApiResponse.error(ex.getErrorCode(), ex.getMessage()),
-                HttpStatus.valueOf(ex.getErrorCode() < 600 ? ex.getErrorCode() : HttpStatus.INTERNAL_SERVER_ERROR.value())
-        );
-    }
-
-    /**
-     * 简单的业务异常基类（用于示例）
-     * 实际项目中可能需要更复杂的异常体系
-     */
-    public static class BusinessException extends RuntimeException {
-        private int errorCode;
-
-        public BusinessException(String message) {
-            super(message);
-            this.errorCode = HttpStatus.INTERNAL_SERVER_ERROR.value();
-        }
-
-        public BusinessException(int errorCode, String message) {
-            super(message);
-            this.errorCode = errorCode;
-        }
-
-        public int getErrorCode() {
-            return errorCode;
-        }
-    }
 }

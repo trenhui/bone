@@ -18,6 +18,9 @@ public class CodegenTablePageRequest extends PageParam {
 
     private static final String DATE_TIME_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
+    @Schema(description = "数据源配置 ID，为空时不按数据源过滤")
+    private Long dataSourceConfigId;
+
     @Schema(description = "表名，模糊匹配", example = "sys_user")
     private String tableName;
     

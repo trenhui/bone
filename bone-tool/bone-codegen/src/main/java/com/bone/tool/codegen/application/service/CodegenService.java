@@ -1,5 +1,6 @@
-package com.bone.tool.codegen.domain.service;
+package com.bone.tool.codegen.application.service;
 
+import com.bone.core.model.PageResult;
 import com.bone.tool.codegen.application.dto.CodegenTablePageRequest;
 import com.bone.tool.codegen.application.dto.CodegenTableRequest;
 import com.bone.tool.codegen.application.dto.GenerateCustomCodeRequest;
@@ -57,11 +58,9 @@ public interface CodegenService {
     void updateCodegenTable(CodegenTableRequest request);
     
     /**
-     * 获取代码生成表分页响应
-     * @param request 分页请求对象
-     * @return 分页响应对象
+     * 分页查询代码生成表配置
      */
-    CodegenTableResponse getCodegenTablePageResponse(CodegenTablePageRequest request);
+    PageResult<CodegenTableResponse> getCodegenTablePageResponse(CodegenTablePageRequest request);
     
     /**
      * 导入表结构从数据库

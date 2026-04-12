@@ -1,10 +1,11 @@
-package com.bone.tool.codegen.domain.service;
+package com.bone.tool.codegen.application.service;
 
 import com.bone.core.model.PageResult;
 import com.bone.tool.codegen.application.dto.CodegenTablePageRequest;
 import com.bone.tool.codegen.application.dto.CodegenTableRequest;
 import com.bone.tool.codegen.application.dto.CodegenColumnRequest;
 import com.bone.tool.codegen.application.dto.CodegenDetailResponse;
+import com.bone.tool.codegen.application.dto.CodegenTableResponse;
 import com.bone.tool.codegen.application.converter.CodegenConverter;
 import com.bone.tool.codegen.domain.entity.Datasource;
 import com.bone.tool.codegen.domain.entity.CodegenTable;
@@ -14,7 +15,7 @@ import com.bone.tool.codegen.domain.repository.DataSourceConfigRepository;
 import com.bone.tool.codegen.domain.repository.CodegenTableRepository;
 import com.bone.tool.codegen.domain.repository.CodegenColumnRepository;
 import com.bone.tool.codegen.domain.repository.DatabaseTableRepository;
-import com.bone.tool.codegen.adapter.GlobalExceptionHandler.BusinessException;
+import com.bone.tool.codegen.domain.exception.CodegenBusinessException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,19 +69,19 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
             CodegenConverter codegenConverter) {
         // 参数验证
         if (dataSourceConfigRepository == null) {
-            throw new BusinessException(400, "数据源配置仓库不能为空");
+            throw new CodegenBusinessException(400, "数据源配置仓库不能为空");
         }
         if (codegenTableRepository == null) {
-            throw new BusinessException(400, "代码生成表仓库不能为空");
+            throw new CodegenBusinessException(400, "代码生成表仓库不能为空");
         }
         if (codegenColumnRepository == null) {
-            throw new BusinessException(400, "代码生成列仓库不能为空");
+            throw new CodegenBusinessException(400, "代码生成列仓库不能为空");
         }
         if (databaseTableRepository == null) {
-            throw new BusinessException(400, "数据库表仓库不能为空");
+            throw new CodegenBusinessException(400, "数据库表仓库不能为空");
         }
         if (codegenConverter == null) {
-            throw new BusinessException(400, "代码生成转换器不能为空");
+            throw new CodegenBusinessException(400, "代码生成转换器不能为空");
         }
         
         this.dataSourceConfigRepository = dataSourceConfigRepository;
@@ -104,7 +105,7 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
     @Override
     public List<DatabaseTableMetadata> getTableList(Long dataSourceConfigId, String nameLike, String commentLike) {
         if (dataSourceConfigId == null) {
-            throw new BusinessException(400, "数据源ID不能为空");
+            throw new CodegenBusinessException(400, "数据源ID不能为空");
         }
         
         // 获取完整的表列表
@@ -136,7 +137,7 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
     @Override
     public List<DatabaseTableMetadata> getTables(Long dataSourceConfigId, List<String> tableNames) {
         if (dataSourceConfigId == null) {
-            throw new BusinessException(400, "数据源配置ID不能为空");
+            throw new CodegenBusinessException(400, "数据源配置ID不能为空");
         }
         
         if (CollectionUtils.isEmpty(tableNames)) {
@@ -239,40 +240,69 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
      */
     @Override
     public List<CodegenTable> getCodegenTablesByDataSourceId(Long dataSourceConfigId) {
-        // 验证参数
         if (dataSourceConfigId == null) {
-            throw new BusinessException(400, "数据源配置ID不能为空");
+            return Collections.emptyList();
         }
-        
         try {
-            // 简化实现，返回空列表
-            return new ArrayList<>();
+            List<CodegenTable> list = codegenTableRepository.selectListByDataSourceConfigId(dataSourceConfigId);
+            return list != null ? list : Collections.emptyList();
         } catch (Exception e) {
             logger.error("获取代码生成表配置失败，数据源ID: {}", dataSourceConfigId, e);
-            return new ArrayList<>();
+            return Collections.emptyList();
         }
     }
-    
-    /**
-     * 获取代码生成表分页响应
-     * 
-     * @param request 分页请求
-     * @return 分页结果
-     * @throws IllegalArgumentException 当请求参数为空时抛出
-     * @throws RuntimeException 当分页查询不支持时抛出
-     */
-    public PageResult<CodegenTable> getCodegenTablePageResponse(CodegenTablePageRequest request) {
+
+    @Override
+    public Optional<CodegenTable> findCodegenTable(Long datasourceId, String tableName) {
+        if (datasourceId == null || !StringUtils.hasText(tableName)) {
+            return Optional.empty();
+        }
+        return getCodegenTablesByDataSourceId(datasourceId).stream()
+                .filter(t -> tableName.equals(t.getTableName()))
+                .findFirst();
+    }
+
+    @Override
+    public PageResult<CodegenTableResponse> pageCodegenTables(CodegenTablePageRequest request) {
         if (request == null) {
-            throw new BusinessException(400, "请求参数不能为空");
+            throw new CodegenBusinessException(400, "请求参数不能为空");
         }
-        
-        // 简化实现，使用静态工厂方法
-        // 在实际应用中应该实现真正的分页查询逻辑
-        try {
-            return PageResult.of(Collections.emptyList(), 0L, 1, 10);
-        } catch (Exception e) {
-            throw new RuntimeException("暂不支持分页查询");
+        List<CodegenTable> allTables = getCodegenTablesByDataSourceId(request.getDataSourceConfigId());
+        List<CodegenTable> filtered = filterCodegenTablesForPage(allTables, request);
+        int total = filtered.size();
+        int pageNo = request.getPage() != null ? request.getPage() : 1;
+        int pageSize = request.getSize() != null ? request.getSize() : 10;
+        int start = Math.max(0, (pageNo - 1) * pageSize);
+        List<CodegenTable> pageSlice = filtered.stream()
+                .skip(start)
+                .limit(pageSize)
+                .collect(Collectors.toList());
+        List<CodegenTableResponse> records = codegenConverter.toCodegenTableResponseList(pageSlice);
+        return PageResult.of(records, (long) total, pageNo, pageSize);
+    }
+
+    private List<CodegenTable> filterCodegenTablesForPage(List<CodegenTable> tables, CodegenTablePageRequest request) {
+        if (CollectionUtils.isEmpty(tables)) {
+            return Collections.emptyList();
         }
+        return tables.stream()
+                .filter(table -> {
+                    boolean match = true;
+                    if (StringUtils.hasText(request.getTableName())) {
+                        match = match && table.getTableName() != null
+                                && table.getTableName().contains(request.getTableName());
+                    }
+                    if (StringUtils.hasText(request.getTableComment())) {
+                        match = match && table.getTableComment() != null
+                                && table.getTableComment().contains(request.getTableComment());
+                    }
+                    if (StringUtils.hasText(request.getClassName())) {
+                        match = match && table.getClassName() != null
+                                && table.getClassName().contains(request.getClassName());
+                    }
+                    return match;
+                })
+                .collect(Collectors.toList());
     }
     
     /**
@@ -286,7 +316,7 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
     @Override
     public CodegenDetailResponse getCodegenDetail(Long tableId) {
         if (tableId == null) {
-            throw new BusinessException(400, "表ID不能为空");
+            throw new CodegenBusinessException(400, "表ID不能为空");
         }
         
         // 获取表配置
@@ -353,16 +383,16 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
     private void validateImportParameters(Long dataSourceConfigId, String tableName, 
                                          String moduleName, String packageName) {
         if (dataSourceConfigId == null) {
-            throw new BusinessException(400, "数据源配置ID不能为空");
+            throw new CodegenBusinessException(400, "数据源配置ID不能为空");
         }
         if (!StringUtils.hasText(tableName)) {
-            throw new BusinessException(400, "表名不能为空");
+            throw new CodegenBusinessException(400, "表名不能为空");
         }
         if (!StringUtils.hasText(moduleName)) {
-            throw new BusinessException(400, "模块名不能为空");
+            throw new CodegenBusinessException(400, "模块名不能为空");
         }
         if (!StringUtils.hasText(packageName)) {
-            throw new BusinessException(400, "包名不能为空");
+            throw new CodegenBusinessException(400, "包名不能为空");
         }
     }
     
@@ -415,16 +445,16 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
                                              String moduleName, String packageName,
                                              Integer sceneType, Integer modelType) {
         if (dataSourceConfigId == null) {
-            throw new BusinessException(400, "数据源配置ID不能为空");
+            throw new CodegenBusinessException(400, "数据源配置ID不能为空");
         }
         if (CollectionUtils.isEmpty(tableNames)) {
-            throw new BusinessException(400, "表名列表不能为空");
+            throw new CodegenBusinessException(400, "表名列表不能为空");
         }
         if (!StringUtils.hasText(moduleName)) {
-            throw new BusinessException(400, "模块名不能为空");
+            throw new CodegenBusinessException(400, "模块名不能为空");
         }
         if (!StringUtils.hasText(packageName)) {
-            throw new BusinessException(400, "包名不能为空");
+            throw new CodegenBusinessException(400, "包名不能为空");
         }
         
         List<Long> importedTableIds = new ArrayList<>(tableNames.size());
@@ -498,11 +528,11 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
     public void updateCodegenTable(CodegenTableRequest request) {
         // 参数验证
         if (request == null) {
-            throw new BusinessException(400, "请求参数不能为空");
+            throw new CodegenBusinessException(400, "请求参数不能为空");
         }
         final Long tableId = request.getId();
         if (tableId == null) {
-            throw new BusinessException(400, "表ID不能为空");
+            throw new CodegenBusinessException(400, "表ID不能为空");
         }
         
         logger.debug("开始更新表配置，ID: {}", tableId);
@@ -557,7 +587,7 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
     @Override
     public void syncTableFromDatabase(Long tableId) {
         if (tableId == null) {
-            throw new BusinessException(400, "表配置ID不能为空");
+            throw new CodegenBusinessException(400, "表配置ID不能为空");
         }
 
         try {
@@ -949,7 +979,7 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
     @Override
     public void deleteTable(Long tableId) {
         if (tableId == null) {
-            throw new BusinessException(400, "表ID不能为空");
+            throw new CodegenBusinessException(400, "表ID不能为空");
         }
         
         try {
@@ -960,11 +990,11 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
             codegenTableRepository.deleteById(tableId);
             
             logger.info("删除表配置成功，表ID: {}", tableId);
-        } catch (BusinessException e) {
+        } catch (CodegenBusinessException e) {
             throw e;
         } catch (Exception e) {
             logger.error("删除表配置失败，表ID: {}", tableId, e);
-            throw new BusinessException(500, "删除表配置失败: " + e.getMessage());
+            throw new CodegenBusinessException(500, "删除表配置失败: " + e.getMessage());
         }
     }
     
@@ -983,7 +1013,7 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
                         codegenColumnRepository.deleteById(column.getId());
                     } catch (Exception e) {
                         logger.error("删除列配置失败，列ID: {}", column.getId(), e);
-                        throw new BusinessException(500, "删除列配置失败: " + e.getMessage());
+                        throw new CodegenBusinessException(500, "删除列配置失败: " + e.getMessage());
                     }
                 });
         }

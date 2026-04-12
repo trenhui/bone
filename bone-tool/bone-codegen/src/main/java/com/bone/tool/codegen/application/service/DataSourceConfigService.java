@@ -1,4 +1,4 @@
-package com.bone.tool.codegen.domain.service;
+package com.bone.tool.codegen.application.service;
 
 import com.bone.core.model.PageParam;
 import com.bone.core.model.PageResult;
