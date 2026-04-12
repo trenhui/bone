@@ -2,8 +2,7 @@ package com.bone.tool.codegen.adapter;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.tool.codegen.domain.entity.DatabaseTableMetadata;
-import com.bone.tool.codegen.domain.service.DatabaseTableService;
-import com.bone.tool.codegen.domain.service.DatabaseTableService;
+import com.bone.tool.codegen.application.service.DatabaseTableService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;

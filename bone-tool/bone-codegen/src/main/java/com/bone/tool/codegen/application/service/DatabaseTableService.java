@@ -1,9 +1,15 @@
-package com.bone.tool.codegen.domain.service;
+package com.bone.tool.codegen.application.service;
 
-import com.bone.tool.codegen.domain.entity.DatabaseTableMetadata;
-import com.bone.tool.codegen.application.dto.CodegenTableRequest;
+import com.bone.core.model.PageResult;
 import com.bone.tool.codegen.application.dto.CodegenDetailResponse;
+import com.bone.tool.codegen.application.dto.CodegenTablePageRequest;
+import com.bone.tool.codegen.application.dto.CodegenTableRequest;
+import com.bone.tool.codegen.application.dto.CodegenTableResponse;
+import com.bone.tool.codegen.domain.entity.CodegenTable;
+import com.bone.tool.codegen.domain.entity.DatabaseTableMetadata;
+
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 数据库表服务接口
@@ -83,5 +89,15 @@ public interface DatabaseTableService {
      * @param dataSourceConfigId 数据源配置ID
      * @return 代码生成表配置列表
      */
-    List<com.bone.tool.codegen.domain.entity.CodegenTable> getCodegenTablesByDataSourceId(Long dataSourceConfigId);
+    List<CodegenTable> getCodegenTablesByDataSourceId(Long dataSourceConfigId);
+
+    /**
+     * 按数据源与物理表名解析已导入的代码生成配置
+     */
+    Optional<CodegenTable> findCodegenTable(Long datasourceId, String tableName);
+
+    /**
+     * 分页查询代码生成表配置（应用层组装 DTO）
+     */
+    PageResult<CodegenTableResponse> pageCodegenTables(CodegenTablePageRequest request);
 }

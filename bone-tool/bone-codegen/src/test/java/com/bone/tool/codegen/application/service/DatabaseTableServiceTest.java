@@ -1,4 +1,4 @@
-package com.bone.tool.codegen.domain.service;
+package com.bone.tool.codegen.application.service;
 
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -26,7 +26,6 @@ import com.bone.tool.codegen.domain.repository.DataSourceConfigRepository;
 import com.bone.tool.codegen.domain.repository.CodegenTableRepository;
 import com.bone.tool.codegen.domain.repository.CodegenColumnRepository;
 import com.bone.tool.codegen.domain.repository.DatabaseTableRepository;
-import com.bone.tool.codegen.domain.service.DatabaseTableServiceImpl;
 
 import java.util.ArrayList;
 import java.util.Arrays;

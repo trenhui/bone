@@ -1,8 +1,10 @@
-package com.bone.tool.codegen.domain.repository;
+package com.bone.tool.codegen.infrastructure.persistence;
 
-import com.bone.tool.codegen.domain.entity.DatabaseTableMetadata;
 import com.bone.tool.codegen.domain.entity.CodegenColumn;
+import com.bone.tool.codegen.domain.entity.DatabaseTableMetadata;
 import com.bone.tool.codegen.domain.entity.Datasource;
+import com.bone.tool.codegen.domain.repository.DataSourceConfigRepository;
+import com.bone.tool.codegen.domain.repository.DatabaseTableRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
@@ -23,7 +25,7 @@ import java.util.Locale;
  */
 @Repository
 public class DefaultDatabaseTableRepository implements DatabaseTableRepository {
-    
+
     private static final Logger logger = LoggerFactory.getLogger(DefaultDatabaseTableRepository.class);
     private static final String[] TABLE_TYPES = {"TABLE"};
     
@@ -45,14 +47,12 @@ public class DefaultDatabaseTableRepository implements DatabaseTableRepository {
         
         Datasource config = dataSourceConfigRepository.findById(dataSourceId)
                 .orElseThrow(() -> new IllegalArgumentException("数据源配置不存在: " + dataSourceId));
-        
-        // 实际项目中应使用配置的值，这里使用示例值仅为演示
-        String url = "jdbc:mysql://localhost:3306/test";
-        String username = "root";
-        String password = "password";
-        String driverClass = "com.mysql.cj.jdbc.Driver";
-        
-        // 验证必要的连接信息
+
+        String url = config.getUrl();
+        String username = config.getUsername();
+        String password = config.getPassword();
+        String driverClass = config.getDriverClassName();
+
         if (!StringUtils.hasText(url) || !StringUtils.hasText(username)) {
             throw new IllegalArgumentException("数据源配置不完整，缺少必要的连接信息");
         }

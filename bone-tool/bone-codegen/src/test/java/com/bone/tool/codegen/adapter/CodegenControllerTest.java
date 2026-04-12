@@ -1,7 +1,7 @@
 package com.bone.tool.codegen.adapter;
 
 import com.bone.tool.codegen.application.dto.GenerateCustomCodeRequest;
-import com.bone.tool.codegen.domain.service.CodegenService;
+import com.bone.tool.codegen.application.service.CodegenService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;

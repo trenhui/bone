@@ -9,7 +9,7 @@ import com.bone.tool.codegen.application.dto.DataSourceConfigResponse;
 import com.bone.tool.codegen.application.dto.DataSourceConfigSaveRequest;
 import com.bone.tool.codegen.application.dto.TestConnectionRequest;
 import com.bone.tool.codegen.domain.entity.Datasource;
-import com.bone.tool.codegen.domain.service.DataSourceConfigService;
+import com.bone.tool.codegen.application.service.DataSourceConfigService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
