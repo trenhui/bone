@@ -1,10 +1,31 @@
 # **Bone — Build Once, Natively Everywhere**
 ## **企业级全栈开源原生快速开发平台**
 
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Build Status](https://img.shields.io/badge/build-passing-green.svg)
+![License](https://img.shields.io/badge/license-MIT-yellow.svg)
+
 > **100% 开源免费 · 企业级就绪 · 元数据驱动**  
 > **"构建可复用的系统，创造可持续的价值。"**  
 > —— **梅山**
 
+## 目录
+
+- [项目概述](#项目概述)
+- [核心价值](#核心价值)
+- [核心引擎架构](#核心引擎架构)
+- [技术栈](#技术栈)
+- [快速开始](#快速开始)
+- [效能对比](#效能对比)
+- [加入社区](#加入社区)
+- [支持我们](#支持我们)
+- [演进路线](#演进路线)
+- [平台愿景](#平台愿景)
+- [常见问题](#常见问题)
+
+## 项目概述
+
+Bone 是一个企业级全栈开源原生快速开发平台，以"Build Once, Natively Everywhere"为理念，通过元数据驱动开发，实现一次构建多端运行的能力。
 
 ## 🎯 **核心价值**
 
@@ -121,24 +142,38 @@ ExtPoint扩展引擎 → 注入个性化业务逻辑（解决“怎么做”）
   - Vitest 2.0（前端单元测试，保障代码质量）
 ```
 
-
-## ⚡ **5分钟快速开始**
+## ⚡ **快速开始**
 极简部署流程，降低上手门槛，快速体验核心功能。
+
+### 系统要求
+- JDK 17+
+- Maven 3.8+
+- Git
+- 操作系统：Windows/Linux/macOS
+
+### 环境变量配置
+可以通过设置以下环境变量来自定义配置：
+- `BONE_DB_URL`：数据库连接URL
+- `BONE_DB_USERNAME`：数据库用户名
+- `BONE_DB_PASSWORD`：数据库密码
+- `BONE_SERVER_PORT`：服务器端口
 
 ```bash
 # 1. 克隆项目（需提前安装Git）
 git clone https://gitee.com/meishan315/bone.git
 
-# 2. 一键编译启动（需JDK 17+、Maven 3.8+，内置默认数据库无需额外配置）
+# 2. 一键编译启动（内置默认数据库无需额外配置）
 cd bone && mvn clean install
 java -jar bone-admin/target/bone-admin.jar
 ```
 
-**访问信息(敬请期待)**：
+**访问信息**：
 - 管理后台：[http://localhost:8080](http://localhost:8080)
 - 默认账号：`admin` / `123456`（首次登录建议修改密码）
 - API文档：[http://localhost:8080/doc.html](http://localhost:8080/doc.html)（基于Swagger生成，支持在线调试）
 - 在线演示：[http://dashboard.bone.com](http://dashboard.bone.com)（无需本地部署，直接体验核心功能）
+
+> 💡 **提示**：首次登录后请及时修改默认密码，确保系统安全。
 
 
 ## 📊 **效能对比**
@@ -155,13 +190,13 @@ java -jar bone-admin/target/bone-admin.jar
 
 ## 🤝 **加入社区**
 
-### 📚 **学习资源(敬请期待)**
+### 📚 **学习资源**
 - **详细文档**：[https://bone.com/quick-start/](https://bone.com/quick-start/)（含快速入门、核心功能教程、常见问题解答）
 - **视频教程**：[https://bone.com/video/](https://bone.com/video/)（从环境搭建到实战案例的完整讲解，覆盖电商、政务等场景）
 - **最佳实践**：[https://bone.com/best-practices/](https://bone.com/best-practices/)（企业客户落地案例，含架构设计与性能优化方案）
 
 ### 🔧 **参与贡献**
-- **代码贡献**：提交PR参与核心功能开发或Bug修复（需遵循贡献指南），成为项目共建者
+- **代码贡献**：提交PR参与核心功能开发或Bug修复，[贡献指南](https://gitee.com/meishan315/bone/blob/master/CONTRIBUTING.md)
 - **文档改进**：协助完善使用指南、API文档，提升社区用户体验
 - **问题反馈**：通过Issue提交bug或需求建议（建议附复现步骤），帮助平台持续优化
 - **生态扩展**：开发插件（如自定义表单组件）、连接器（如新增ERP适配），丰富Bone生态体系
@@ -198,4 +233,18 @@ java -jar bone-admin/target/bone-admin.jar
 
 
 ### 💡 **平台愿景**
-Bone 致力于成为企业数字化转型的“核心基础设施”，通过四大引擎的协同运作，为企业提供从数据治理、业务开发到系统集成的全链路解决方案，助力企业构建“稳定、灵活、可扩展”的面向未来的数字化架构。
+Bone 致力于成为企业数字化转型的"核心基础设施"，通过四大引擎的协同运作，为企业提供从数据治理、业务开发到系统集成的全链路解决方案，助力企业构建"稳定、灵活、可扩展"的面向未来的数字化架构。
+
+## ❓ **常见问题**
+
+### Q: 启动失败怎么办？
+A: 请检查JDK版本是否为17+，Maven版本是否为3.8+，并确保网络连接正常。
+
+### Q: 如何自定义配置？
+A: 可以修改`application.yml`文件进行配置，详细配置说明请参考[配置文档](https://bone.com/docs/configuration)。
+
+### Q: 如何部署到生产环境？
+A: 请参考[生产部署指南](https://bone.com/docs/production-deployment)。
+
+### Q: 如何开发自定义插件？
+A: 请参考[插件开发指南](https://bone.com/docs/plugin-development)。
