@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
-import { DevCommand } from './commands/dev';
-import { BuildCommand } from './commands/build';
+// import { DevCommand } from './commands/dev';
+// import { BuildCommand } from './commands/build';
+import { GenerateCommand } from './commands/generate/GenerateCommand';
 import chalk from 'chalk';
 import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
@@ -21,14 +22,18 @@ program
 
 // 加载并注册命令
 function registerCommands(): void {
-  // 开发服务器命令
-  const devCommand = new DevCommand();
-  program.addCommand(devCommand.getCommand());
-  
-  // 构建命令
-  const buildCommand = new BuildCommand();
-  program.addCommand(buildCommand.getCommand());
-  
+  // // 开发服务器命令
+  // const devCommand = new DevCommand();
+  // program.addCommand(devCommand.getCommand());
+  //
+  // // 构建命令
+  // const buildCommand = new BuildCommand();
+  // program.addCommand(buildCommand.getCommand());
+
+  // 代码生成命令
+  const generateCommand = new GenerateCommand();
+  program.addCommand(generateCommand.getCommand());
+
   // 新增应用命令
   program
     .command('create')
@@ -139,17 +144,11 @@ async function checkForUpdates(): Promise<void> {
 
 // 配置帮助信息
 function configureHelp(): void {
-  program.configureHelp({
-    outputError: (str, write) => write(chalk.red(str)),
-  });
-  
   program.addHelpText('after', `
 ${chalk.gray('Examples:')}
-  ${chalk.cyan('bone dev')}         ${chalk.gray('# Start development server for main app')}
-  ${chalk.cyan('bone dev -a admin')} ${chalk.gray('# Start development server for admin app')}
-  ${chalk.cyan('bone build')}       ${chalk.gray('# Build main app for production')}
-  ${chalk.cyan('bone build -s')}    ${chalk.gray('# Build as sub-application')}
   ${chalk.cyan('bone list')}        ${chalk.gray('# List all applications')}
+  ${chalk.cyan('bone generate')}    ${chalk.gray('# Generate frontend CRUD code from backend codegen service')}
+  ${chalk.cyan('bone generate -t 1,2 -o ./src/pages')}    ${chalk.gray('# Generate tables 1 and 2 to src/pages')}
   `);
 }
 
@@ -179,7 +178,7 @@ async function main(): Promise<void> {
 }
 
 // 执行主函数
-main().catch((error) => {
-  console.error(chalk.red('Fatal error:', error));
+main().catch((error: unknown) => {
+  console.error(chalk.red('Fatal error:'), error);
   process.exit(1);
 });

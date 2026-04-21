@@ -35,4 +35,13 @@ public interface CodegenColumnRepository {
      * 根据条件查询列配置
      */
     List<CodegenColumn> findByCriteria(Object criteria);
+
+    /**
+     * 根据表ID查询列配置列表
+     * @param tableId 表ID
+     * @return 列配置列表
+     */
+    default List<CodegenColumn> findByCriteria(Long tableId) {
+        return findByCriteria((Object) tableId);
+    }
 }

@@ -1,0 +1,63 @@
+# L1 最小契约示例 - CRUD 场景
+# 复制此文件修改即可
+
+meta:
+  feature: user-management
+  owner: developer-name
+  level: L1
+  template: crud-base
+  lock: true
+
+mission: |
+  为系统增加用户管理 CRUD 功能，支持：
+  - 用户列表分页查询
+  - 新增用户
+  - 更新用户信息
+  - 删除用户
+
+api_contract:
+  base-path: /api/v1/system/users
+  endpoints:
+  - method: GET
+    path: /api/v1/system/users
+    description: 分页查询用户列表
+    request: page, pageSize, keyword (optional)
+    response: { total, list: [{id, username, email, enabled, createTime}] }
+
+  - method: GET
+    path: /api/v1/system/users/{id}
+    description: 获取用户详情
+    response: {id, username, email, enabled, roles}
+
+  - method: POST
+    path: /api/v1/system/users
+    description: 新增用户
+    request: {username, email, password, enabled, roles}
+    response: {id, username}
+
+  - method: PUT
+    path: /api/v1/system/users/{id}
+    description: 更新用户信息
+    request: {email, enabled, roles}
+    response: {success: true}
+
+  - method: DELETE
+    path: /api/v1/system/users/{id}
+    description: 删除用户
+    response: {success: true}
+
+domain_rules:
+- id: RULE-001
+  desc: "用户名不能为空"
+  check: "username 必须有校验"
+  severity: L1
+
+- id: RULE-002
+  desc: "邮箱格式必须正确"
+  check: "使用 @Email 注解校验"
+  severity: L1
+
+guardrails:
+  block_patterns: ["**/security/**", "generated/**"]
+  coverage: ">80%"
+  max_cyclomatic: 10

@@ -67,4 +67,29 @@ public enum ModelTypeEnum {
     public Map<String, String> getConfigTemplates(String name) {
         return new HashMap<>();
     }
+
+    /**
+     * 获取React前端模板映射
+     * @param name 模块名称
+     * @return 模板路径映射
+     */
+    public Map<String, String> getReactTemplates(String name) {
+        Map<String, String> templates = new HashMap<>();
+        // 模块导出
+        templates.put("codegen/react/pages/${moduleName}/${lowerClassName}/index.tsx.ftl",
+                "src/pages/" + name + "/${lowerClassName}/index.tsx");
+        // 类型定义
+        templates.put("codegen/react/pages/${moduleName}/${lowerClassName}/types.ts.ftl",
+                "src/pages/" + name + "/${lowerClassName}/types.ts");
+        // 列表页面
+        templates.put("codegen/react/pages/${moduleName}/${className}/List.tsx.ftl",
+                "src/pages/" + name + "/${lowerClassName}/List.tsx");
+        // 表单弹窗组件
+        templates.put("codegen/react/pages/${moduleName}/${className}/components/${className}FormModal.tsx.ftl",
+                "src/pages/" + name + "/${lowerClassName}/components/${className}FormModal.tsx");
+        // API服务
+        templates.put("codegen/react/services/${moduleName}/${lowerClassName}Api.ts.ftl",
+                "src/services/" + name + "/${lowerClassName}Api.ts");
+        return templates;
+    }
 }
