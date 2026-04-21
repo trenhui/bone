@@ -1,0 +1,42 @@
+{
+  "autoApprove": true,
+  "permissions": {
+    "allow": [
+      "Bash(mvn clean compile)",
+      "Bash(mvn test)",
+      "Bash(pnpm build)",
+      "Bash(git diff)",
+      "Bash(git status)",
+      "Read",
+      "Edit",
+      "Glob",
+      "Grep"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(git push --force)",
+      "Edit(**/security/*)",
+      "Edit(generated/**)",
+      "Edit(**/*secret*)",
+      "Edit(**/*password*)"
+    ]
+  },
+  "auto_fix_policy": {
+    "L1": { "auto": true, "max_attempts": 3 },
+    "L2_auto": { "auto": true, "patterns": ["assertion", "NullPointer", "mock", "compilation", "cannot find symbol"] },
+    "L2_confirm": { "auto": false, "patterns": ["domain_rules", "state", "schema", "contract"] },
+    "L3": { "auto": false, "block": true },
+    "L4": { "auto": false, "block": true }
+  },
+  "model_routing": {
+    "architect": "claude-opus-4-7",
+    "engineer": "claude-sonnet-4-6",
+    "guardian": "claude-sonnet-4-6"
+  },
+  "skill_versions": {
+    "editing": "v2.1",
+    "test-gen": "v1.8",
+    "code-localization": "v2.0"
+  },
+  "temperature": 0.2
+}
