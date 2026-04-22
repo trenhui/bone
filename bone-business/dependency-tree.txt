@@ -1,0 +1,1 @@
+com.bone:bone-business:pom:1.0.0

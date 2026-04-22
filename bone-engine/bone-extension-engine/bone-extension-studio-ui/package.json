@@ -21,7 +21,9 @@
     "antd": "^5.12.2",
     "react-router-dom": "^6.21.1",
     "qs": "^6.11.2",
-    "mockjs": "^1.1.0"
+    "mockjs": "^1.1.0",
+    "react-dnd": "^16.0.1",
+    "react-dnd-html5-backend": "^16.0.1"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": ["eslint --fix", "prettier --write"],

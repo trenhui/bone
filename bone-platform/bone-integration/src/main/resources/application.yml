@@ -1,0 +1,52 @@
+server:
+  port: 8085
+  servlet:
+    context-path: /api
+
+spring:
+  application:
+    name: bone-integration
+  datasource:
+    url: jdbc:mysql://localhost:3306/bone?useSSL=false&autoReconnect=true&characterEncoding=utf8
+    username: root
+    password: ${BONE_DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  redis:
+    host: localhost
+    port: 6379
+    password: ${BONE_REDIS_PASSWORD:}
+    database: 0
+  rocketmq:
+    name-server: localhost:9876
+    producer:
+      group: bone-integration-producer
+
+integration:
+  flow:
+    max.nodes: 50
+    execution.timeout: 300
+  connector:
+    max.count: 100
+  log:
+    retention.days: 30
+  alert:
+    enabled: true
+
+camel:
+  springboot:
+    name: bone-integration-camel
+  component:
+    http:
+      use-system-properties: false
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

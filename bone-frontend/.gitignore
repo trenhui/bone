@@ -19,3 +19,7 @@ logs/
 # 临时文件
 temp/
 .tmp/
+
+# 环境变量 - 本地私有配置不提交
+.env.local
+.env.*.local

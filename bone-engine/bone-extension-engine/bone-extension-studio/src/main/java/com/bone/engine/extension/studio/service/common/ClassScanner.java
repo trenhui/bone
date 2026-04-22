@@ -1,6 +1,7 @@
 package com.bone.engine.extension.studio.service.common;
 
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 import org.springframework.util.ClassUtils;
 
@@ -18,8 +19,9 @@ import com.bone.engine.extension.studio.service.common.ResourceUtils;
  * 类扫描工具类
  * 提供通用的类扫描、加载和处理功能
  */
-@Slf4j
 public class ClassScanner {
+
+    private static final Logger log = LoggerFactory.getLogger(ClassScanner.class);
 
     /**
      * 扫描指定包下的类并处理符合条件的类

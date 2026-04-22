@@ -14,19 +14,19 @@ alert:
         - ops@company.com
     dingtalk:
       enabled: true
-      webhook: https://oapi.dingtalk.com/robot/send?access_token=your_token
-      secret: your_secret
+      webhook: ${DINGTALK_WEBHOOK:}
+      secret: ${DINGTALK_SECRET:}
       atMobiles:
-        - "13800000000"
+        - ${DINGTALK_AT_MOBILE:}
     sms:
       enabled: true
       provider: "Aliyun"
-      apiKey: "your-api-key"
-      apiSecret: "your-api-secret"
+      apiKey: ${SMS_API_KEY:}
+      apiSecret: ${SMS_API_SECRET:}
       phoneNumbers:
-        - "13800000001"
-        - "13800000002"
-      templateId: "your-template-id"
+        - ${SMS_PHONE_1:}
+        - ${SMS_PHONE_2:}
+      templateId: ${SMS_TEMPLATE_ID:}
 
   async:
     corePoolSize: 10

@@ -1,0 +1,1 @@
+com.bone:bone-platform:pom:1.0.0

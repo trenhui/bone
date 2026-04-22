@@ -1,0 +1,112 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0.33
+    container_name: bone-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${BONE_DB_PASSWORD:-bone_root_pass}
+      MYSQL_DATABASE: bone
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./bone-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: bone-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  bone-iam:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        MODULE: bone-iam
+    container_name: bone-iam
+    ports:
+      - "8080:8080"
+    environment:
+      BONE_DB_URL: jdbc:mysql://mysql:3306/bone?useSSL=false&autoReconnect=true&characterEncoding=utf8
+      BONE_DB_USERNAME: root
+      BONE_DB_PASSWORD: ${BONE_DB_PASSWORD:-bone_root_pass}
+      BONE_REDIS_HOST: redis
+      BONE_REDIS_PASSWORD: ${BONE_REDIS_PASSWORD:-}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  bone-system:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        MODULE: bone-system
+    container_name: bone-system
+    ports:
+      - "8083:8083"
+    environment:
+      BONE_DB_URL: jdbc:mysql://mysql:3306/bone?useSSL=false&autoReconnect=true&characterEncoding=utf8
+      BONE_DB_USERNAME: root
+      BONE_DB_PASSWORD: ${BONE_DB_PASSWORD:-bone_root_pass}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8083/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+  bone-masterdata:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        MODULE: bone-masterdata
+    container_name: bone-masterdata
+    ports:
+      - "8084:8080"
+    environment:
+      BONE_DB_URL: jdbc:mysql://mysql:3306/bone?useSSL=false&autoReconnect=true&characterEncoding=utf8
+      BONE_DB_USERNAME: root
+      BONE_DB_PASSWORD: ${BONE_DB_PASSWORD:-bone_root_pass}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  mysql_data:
+  redis_data:

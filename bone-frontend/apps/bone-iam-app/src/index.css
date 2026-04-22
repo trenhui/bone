@@ -1,0 +1,46 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f0f2f5;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+/* 自定义样式 */
+.site-form-item-icon {
+  color: rgba(0, 0, 0, 0.25);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  .ant-layout {
+    flex-direction: column;
+  }
+  
+  .ant-layout-sider {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 100% !important;
+  }
+  
+  .ant-layout-header {
+    padding: 0 16px !important;
+  }
+  
+  .ant-layout-content {
+    margin: 16px !important;
+    padding: 16px !important;
+  }
+}

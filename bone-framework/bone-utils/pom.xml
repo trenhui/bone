@@ -26,16 +26,11 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- SLF4J API（必须） -->
+        <!-- Bone Core -->
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
-
-        <!-- Jackson JSR310 -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
+            <groupId>com.bone</groupId>
+            <artifactId>bone-core</artifactId>
+            <version>1.0.0</version>
         </dependency>
     </dependencies>
 </project>

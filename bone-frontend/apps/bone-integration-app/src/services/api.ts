@@ -1,0 +1,142 @@
+import axios from 'axios';
+import type {
+  Connector,
+  CreateConnectorReq,
+  UpdateConnectorReq,
+  IntegrationFlow,
+  CreateFlowReq,
+  UpdateFlowReq,
+  IntegrationLog,
+  FlowStatistics,
+  ApiResponse,
+  PageResult,
+  PageQuery
+} from '../types';
+
+// 创建 axios 实例
+const apiClient = axios.create({
+  baseURL: '/api/integration',
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+// 连接器相关 API
+export const connectorApi = {
+  // 获取连接器列表
+  getConnectors: (params: PageQuery): Promise<ApiResponse<PageResult<Connector>>> => {
+    return apiClient.get('/connectors', { params });
+  },
+  
+  // 创建连接器
+  createConnector: (data: CreateConnectorReq): Promise<ApiResponse<number>> => {
+    return apiClient.post('/connectors', data);
+  },
+  
+  // 获取连接器详情
+  getConnectorById: (id: number): Promise<ApiResponse<Connector>> => {
+    return apiClient.get(`/connectors/${id}`);
+  },
+  
+  // 更新连接器
+  updateConnector: (id: number, data: UpdateConnectorReq): Promise<ApiResponse<void>> => {
+    return apiClient.put(`/connectors/${id}`, data);
+  },
+  
+  // 删除连接器
+  deleteConnector: (id: number): Promise<ApiResponse<void>> => {
+    return apiClient.delete(`/connectors/${id}`);
+  },
+  
+  // 测试连接器
+  testConnector: (id: number): Promise<ApiResponse<{ success: boolean; message: string }>> => {
+    return apiClient.post(`/connectors/${id}/test`);
+  },
+  
+  // 启用连接器
+  enableConnector: (id: number): Promise<ApiResponse<void>> => {
+    return apiClient.post(`/connectors/${id}/enable`);
+  },
+  
+  // 禁用连接器
+  disableConnector: (id: number): Promise<ApiResponse<void>> => {
+    return apiClient.post(`/connectors/${id}/disable`);
+  }
+};
+
+// 流程相关 API
+export const flowApi = {
+  // 获取流程列表
+  getFlows: (params: PageQuery): Promise<ApiResponse<PageResult<IntegrationFlow>>> => {
+    return apiClient.get('/flows', { params });
+  },
+  
+  // 创建流程
+  createFlow: (data: CreateFlowReq): Promise<ApiResponse<number>> => {
+    return apiClient.post('/flows', data);
+  },
+  
+  // 获取流程详情
+  getFlowById: (id: number): Promise<ApiResponse<IntegrationFlow>> => {
+    return apiClient.get(`/flows/${id}`);
+  },
+  
+  // 更新流程
+  updateFlow: (id: number, data: UpdateFlowReq): Promise<ApiResponse<void>> => {
+    return apiClient.put(`/flows/${id}`, data);
+  },
+  
+  // 删除流程
+  deleteFlow: (id: number): Promise<ApiResponse<void>> => {
+    return apiClient.delete(`/flows/${id}`);
+  },
+  
+  // 测试流程
+  testFlow: (id: number, inputData: any): Promise<ApiResponse<{ success: boolean; output: any; error?: string }>> => {
+    return apiClient.post(`/flows/${id}/test`, { inputData });
+  },
+  
+  // 激活流程
+  activateFlow: (id: number): Promise<ApiResponse<void>> => {
+    return apiClient.post(`/flows/${id}/activate`);
+  },
+  
+  // 停用流程
+  deactivateFlow: (id: number): Promise<ApiResponse<void>> => {
+    return apiClient.post(`/flows/${id}/deactivate`);
+  },
+  
+  // 获取流程版本历史
+  getFlowVersions: (id: number): Promise<ApiResponse<any[]>> => {
+    return apiClient.get(`/flows/${id}/versions`);
+  }
+};
+
+// 监控相关 API
+export const monitorApi = {
+  // 获取执行记录列表
+  getExecutions: (params: PageQuery): Promise<ApiResponse<PageResult<IntegrationLog>>> => {
+    return apiClient.get('/executions', { params });
+  },
+  
+  // 获取执行记录详情
+  getExecutionById: (id: number): Promise<ApiResponse<IntegrationLog>> => {
+    return apiClient.get(`/executions/${id}`);
+  },
+  
+  // 获取执行日志
+  getExecutionLogs: (id: number): Promise<ApiResponse<any[]>> => {
+    return apiClient.get(`/executions/${id}/logs`);
+  },
+  
+  // 重试执行
+  retryExecution: (id: number): Promise<ApiResponse<number>> => {
+    return apiClient.post(`/executions/${id}/retry`);
+  },
+  
+  // 获取流程执行统计
+  getStatistics: (): Promise<ApiResponse<FlowStatistics[]>> => {
+    return apiClient.get('/statistics');
+  }
+};

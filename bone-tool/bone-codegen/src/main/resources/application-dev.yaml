@@ -18,6 +18,6 @@ metadata:
   sdk:
     appcode: tpa
     open: true
-    secret: REDACTED_METADATA_SDK_SECRET==
+    secret: ${METADATA_SDK_SECRET:}
     sqlpath: testsql/
     url: http://metabata.dev6.pukangbao.com

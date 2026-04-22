@@ -1,0 +1,19 @@
+package com.bone.masterdata.application.command.cmd;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class UpdateDataQualityRuleCmd {
+    private Long id;
+    private String name;
+    private String ruleType;
+    private String ruleConfig;
+    private String severity;
+    private String description;
+}

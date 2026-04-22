@@ -39,6 +39,7 @@
         <!-- 数据库相关 -->
         <mysql-connector.version>8.0.33</mysql-connector.version>
         <hikaricp.version>5.1.0</hikaricp.version>
+        <flyway.version>10.11.0</flyway.version>
 
         <!-- 缓存 -->
         <redisson.version>3.27.2</redisson.version>
@@ -50,6 +51,9 @@
         <!-- API文档 -->
         <springdoc.version>2.3.0</springdoc.version>
         <swagger-annotations.version>2.2.19</swagger-annotations.version>
+        
+        <!-- JWT -->
+        <jjwt.version>0.12.6</jjwt.version>
 
         <!-- 监控观测 -->
         <skywalking.version>9.7.0</skywalking.version>
@@ -66,6 +70,13 @@
         <maven-surefire-plugin.version>3.2.5</maven-surefire-plugin.version>
         <maven-resources-plugin.version>3.3.1</maven-resources-plugin.version>
         <maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
+        
+        <!-- Bone 内部模块版本 -->
+        <bone-core.version>1.0.0</bone-core.version>
+        <bone-metadata-sdk.version>1.0.0</bone-metadata-sdk.version>
+        <bone-auth.version>1.0.0</bone-auth.version>
+        <bone-auth-sdk.version>1.0.0</bone-auth-sdk.version>
+        <bone-codegen.version>1.0.0</bone-codegen.version>
         
         <!-- 静态代码分析 -->
         <spotless.version>2.43.0</spotless.version>
@@ -152,6 +163,18 @@
                 <groupId>com.zaxxer</groupId>
                 <artifactId>HikariCP</artifactId>
                 <version>${hikaricp.version}</version>
+            </dependency>
+            
+            <!-- Flyway 数据库迁移 -->
+            <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-core</artifactId>
+                <version>${flyway.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-mysql</artifactId>
+                <version>${flyway.version}</version>
             </dependency>
 
             <!-- ===== 缓存 ===== -->

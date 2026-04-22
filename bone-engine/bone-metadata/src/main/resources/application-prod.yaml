@@ -4,7 +4,7 @@ spring:
     url: jdbc:mysql://localhost:3306/tpa-saas?useSSL=false&autoReconnect=true&characterEncoding=utf8
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
-    password: mysql123
+    password: ${BONE_DB_PASSWORD:}
     # 指定为HikariDataSource
     type: com.zaxxer.hikari.HikariDataSource
     # hikari连接池配置
@@ -54,7 +54,7 @@ metadata:
   service:
     config:
       REMOTE:
-        secret: REDACTED_METADATA_SDK_SECRET==
+        secret: ${METADATA_SDK_SECRET:}
         endpoint: https://metadata-service.prod.svc.cluster.local
         timeout: 3000
       EMBEDDED:
@@ -62,7 +62,7 @@ metadata:
     # 测试覆盖配置
     endpoint: http://localhost:9999/mock
     remote:
-      token: test-token
+      token: ${METADATA_SDK_TOKEN:}
 
 feign:
   client:

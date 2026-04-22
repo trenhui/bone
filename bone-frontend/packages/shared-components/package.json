@@ -1,0 +1,23 @@
+{
+  "name": "@bone/shared-components",
+  "version": "1.0.0",
+  "description": "BONE shared components",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "antd": "^5.12.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.43",
+    "@typescript-eslint/eslint-plugin": "^6.14.0",
+    "@typescript-eslint/parser": "^6.14.0",
+    "eslint": "^8.55.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "typescript": "^5.2.2"
+  }
+}

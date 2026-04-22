@@ -37,7 +37,7 @@ spring:
     url: jdbc:mysql://rm-bp1j2malx5q68yn770o.mysql.rds.aliyuncs.com:3306/tpa-saas?useSSL=false&autoReconnect=true&characterEncoding=utf8
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: tpasaasuser
-    password: vqM#On1D
+    password: ${BONE_DB_PASSWORD:}
     # 指定为HikariDataSource
     type: com.zaxxer.hikari.HikariDataSource
     # hikari连接池配置
@@ -70,7 +70,7 @@ spring:
       host: 172.18.0.58 # 地址
       port: 6379 # 端口
       database: 0 # 数据库索引
-      password: '@Pukang_123' # 密码，建议生产环境开启
+      password: ${BONE_REDIS_PASSWORD:}
 
 
 --- #################### 服务保障相关配置 ####################
@@ -100,7 +100,7 @@ metadata:
   sdk:
     appcode: tpa
     open: true
-    secret: REDACTED_METADATA_SDK_SECRET==
+    secret: ${METADATA_SDK_SECRET:}
     url: http://localhost:8081
     sqlpath: customsql/
 
@@ -121,8 +121,8 @@ eureka:
 ##OSS
 oss:
   ENDPOINT: http://oss-cn-hangzhou.aliyuncs.com
-  ACCESSKEYID: LTAI4G1eXunQDKHkp3E3pxWz
-  ACCESSKEYSECRET: Fu4uhBw8suvrPGQ4dQHhhfGNIZIqqK
+  ACCESSKEYID: ${OSS_ACCESS_KEY_ID:}
+  ACCESSKEYSECRET: ${OSS_ACCESS_KEY_SECRET:}
   BUCKETNAME: bucket-pktest
   KEY: pktpaphotoclaim/
   VISITURL: https://bucket-pktest.oss-cn-hangzhou.aliyuncs.com/

@@ -1,0 +1,63 @@
+/* 全局样式 */
+.app {
+  min-height: 100vh;
+}
+
+/* 流程图设计器样式 */
+.flow-design-container {
+  display: flex;
+  height: 600px;
+}
+
+.flow-node-palette {
+  width: 150px;
+  padding: 10px;
+  border-right: 1px solid #e8e8e8;
+  background: #fafafa;
+}
+
+.flow-canvas {
+  flex: 1;
+  background: #fff;
+  position: relative;
+}
+
+/* 节点样式 */
+.flow-node {
+  padding: 8px;
+  margin-bottom: 8px;
+  background: #f0f2f5;
+  border-radius: 4px;
+  text-align: center;
+  cursor: move;
+  user-select: none;
+}
+
+.flow-node:hover {
+  background: #e6f7ff;
+}
+
+/* 统计卡片样式 */
+.statistics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+
+/* 执行详情样式 */
+.execution-detail pre {
+  background: #f5f5f5;
+  padding: 16px;
+  border-radius: 4px;
+  overflow: auto;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.execution-detail .error-pre {
+  background: #fff1f0;
+  border: 1px solid #ffccc7;
+  color: #cf1322;
+}

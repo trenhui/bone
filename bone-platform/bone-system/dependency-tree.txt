@@ -1,0 +1,17 @@
+com.bone:bone-system:jar:1.0.0
++- com.bone:bone-core:jar:1.0.0
++- com.bone:bone-metadata-sdk:jar:1.0.0
++- com.bone:bone-notification:jar:1.0.0
++- org.springframework.boot:spring-boot-starter-web:jar:3.2.x
++- org.springframework.boot:spring-boot-starter-validation:jar:3.2.x
++- org.springframework.boot:spring-boot-starter-actuator:jar:3.2.x
++- org.springframework.boot:spring-boot-starter-test:jar:3.2.x
++- org.projectlombok:lombok:jar:provided
++- org.mapstruct:mapstruct:jar:1.5.x
++- io.swagger.core.v3:swagger-annotations:jar:2.2.x
++- io.swagger.core.v3:swagger-models:jar:2.2.x
++- org.springdoc:springdoc-openapi-starter-webmvc-ui:jar:2.3.x
++- io.micrometer:micrometer-registry-prometheus:jar:1.12.x
++- com.h2database:h2:jar:runtime
++- com.mysql:mysql-connector-j:jar:runtime
++- com.tngtech.archunit:archunit-junit5:jar:1.2.x:test

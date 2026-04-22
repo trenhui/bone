@@ -123,7 +123,7 @@ ExtPoint扩展引擎 → 注入个性化业务逻辑（解决“怎么做”）
 ```yaml
 微服务框架: Spring Boot 3.2 + Spring Cloud 2023（轻量高效，生态完善）
 服务治理: Nacos 2.3（注册发现+配置中心） + Sentinel 2.0（流量控制+熔断降级）
-数据持久化: MyBatis Plus + 动态数据源（多库适配，简化CRUD操作）
+数据持久化: Bone Metadata SDK + 动态数据源（多库适配，简化CRUD操作，与MyBatis Plus对标）
 消息队列: RocketMQ 5.2（高可靠异步通信，支持事务消息）
 分布式事务: Seata 2.0（支持AT/TCC模式，保障跨服务数据一致性）
 缓存方案: Redis 7.2 + Redisson（分布式锁+缓存穿透防护，提升性能）
@@ -133,10 +133,11 @@ ExtPoint扩展引擎 → 注入个性化业务逻辑（解决“怎么做”）
 ### **前端生态**
 ```yaml
 管理后台: 
-  - Vue 3.4 + Vite 5.4 + Element Plus 2.8（组件丰富，开发效率高）
-  - TypeScript 5.5 + Pinia 2.1（类型安全，状态管理清晰）
+  - React 18 + Vite 5.4 + Ant Design 5.12（组件丰富，开发效率高）
+  - TypeScript 5.5 + Redux Toolkit 2.0（类型安全，状态管理清晰）
 移动端:
-  - uni-app 3.5（一套代码适配微信/支付宝小程序 + H5 + App，减少多端维护成本）
+  - React Native 0.74（原生移动应用开发，性能优异）
+  - Expo 51（快速开发和部署React Native应用）
 构建工具:
   - Vite 5.4（极速热更新，提升开发体验）
   - Vitest 2.0（前端单元测试，保障代码质量）
