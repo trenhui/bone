@@ -1,224 +1,181 @@
-# Bone Frontend Framework
+# BONE 前端项目
 
-<p align="center">
-  <img src="https://via.placeholder.com/200x100?text=Bone+Logo" alt="Bone Logo" width="200"/>
-</p>
+基于微前端架构的企业级全栈开发平台前端系统。
 
-<p align="center">
-  <a href="#"><img src="https://img.shields.io/badge/version-1.0.0-blue.svg" alt="Version"></a>
-  <a href="#"><img src="https://img.shields.io/badge/license-MIT-green.svg" alt="License"></a>
-  <a href="#"><img src="https://img.shields.io/badge/typeScript-yes-blue.svg" alt="TypeScript"></a>
-</p>
+## 📋 项目概述
 
-## 🌟 项目简介
+本项目采用 Qiankun 微前端框架，将整个系统拆分为一个主应用和多个微应用，实现了独立开发、独立部署的架构。
 
-Bone是一个企业级前端微服务框架，专为大型应用设计，提供完整的微前端解决方案、设计系统和开发工具链。
+## 🏗️ 架构说明
 
-### 核心特性
+### 主应用
+- **bone-shell**: 主应用，负责整体布局、导航和微应用管理（端口 3000）
 
-- **微前端架构**：基于增强型代理沙箱实现的微前端解决方案
-- **设计系统**：统一的设计令牌、主题管理和组件库
-- **开发工具链**：强大的CLI工具，支持快速开发和构建
-- **性能监控**：内置性能监控系统，实时追踪应用性能
-- **安全策略**：完善的安全策略执行机制
-- **TypeScript支持**：全面的类型定义，提供良好的开发体验
+### 微应用
+- **bone-iam-app**: IAM 身份管理系统（端口 3003）
+- **bone-metadata-app**: 元数据管理系统（端口 3004）
+- **bone-masterdata-app**: 主数据管理系统（端口 3005）
+- **bone-integration-app**: 集成管理系统（端口 3006）
+- **bone-system-app**: 系统管理系统（端口 3007）
+- **bone-extension-app**: 扩展引擎管理控制台（端口 3008）
 
 ## 🚀 快速开始
 
-### 环境要求
+### 前置要求
+- Node.js >= 18
+- npm >= 9
 
-- Node.js >= 16.x
-- npm >= 7.x 或 yarn >= 1.22.x
-- Git
+### 安装依赖
 
-### 安装CLI
+由于项目采用模块化架构，请依次在各个应用目录下安装依赖：
 
+#### 1. 安装主应用依赖
 ```bash
-# 使用npm
-npm install -g @bone/cli
-
-# 或使用yarn
-yarn global add @bone/cli
-
-# 或使用pnpm
-pnpm add -g @bone/cli
+cd apps/bone-shell
+npm install
 ```
 
-### 创建应用
-
+#### 2. 安装各个微应用依赖
 ```bash
-# 创建主应用
-bone create my-app
+# IAM 应用
+cd ../bone-iam-app
+npm install
 
-# 创建子应用
-bone create my-subapp -s
+# 元数据应用
+cd ../bone-metadata-app
+npm install
+
+# 主数据应用
+cd ../bone-masterdata-app
+npm install
+
+# 集成应用
+cd ../bone-integration-app
+npm install
+
+# 系统应用
+cd ../bone-system-app
+npm install
+
+# 扩展应用
+cd ../bone-extension-app
+npm install
 ```
 
-### 开发模式
+### 启动应用
 
+打开 7 个独立的终端窗口，分别启动各个应用：
+
+#### 终端 1 - 启动主应用
 ```bash
-# 启动主应用开发服务器
-bone dev
-
-# 启动指定应用开发服务器
-bone dev -a my-app
-
-# 启动子应用开发服务器
-bone dev -a my-subapp -s
+cd apps/bone-shell
+npm run dev
 ```
 
-### 构建项目
-
+#### 终端 2 - 启动 IAM 应用
 ```bash
-# 构建主应用
-bone build
-
-# 构建子应用
-bone build -a my-subapp -s
-
-# 构建并分析包大小
-bone build --analyze
+cd apps/bone-iam-app
+npm run dev
 ```
+
+#### 终端 3 - 启动元数据应用
+```bash
+cd apps/bone-metadata-app
+npm run dev
+```
+
+#### 终端 4 - 启动主数据应用
+```bash
+cd apps/bone-masterdata-app
+npm run dev
+```
+
+#### 终端 5 - 启动集成应用
+```bash
+cd apps/bone-integration-app
+npm run dev
+```
+
+#### 终端 6 - 启动系统应用
+```bash
+cd apps/bone-system-app
+npm run dev
+```
+
+#### 终端 7 - 启动扩展应用
+```bash
+cd apps/bone-extension-app
+npm run dev
+```
+
+### 访问应用
+
+所有应用启动后，在浏览器中访问：
+
+**http://localhost:3000**
 
 ## 📁 项目结构
 
 ```
 bone-frontend/
-├── apps/                  # 应用目录
-│   ├── main/              # 主应用
-│   ├── admin-portal/      # 管理门户应用
-│   └── ...                # 其他应用
-├── packages/              # 公共包
-│   ├── core/              # 核心库
-│   │   ├── micro-fe-runtime/   # 微前端运行时
-│   │   └── performance-monitor/ # 性能监控
-│   └── ui/                # UI相关包
-│       ├── components/    # 组件库
-│       ├── design-system/ # 设计系统
-│       └── styled-system/ # 样式系统
-├── tools/                 # 工具链
-│   ├── build/             # 构建工具
-│   └── cli/               # CLI工具
-├── config/                # 配置文件
-└── docs/                  # 文档
+├── apps/                          # 应用目录
+│   ├── bone-shell/               # 主应用
+│   │   ├── src/
+│   │   ├── index.html
+│   │   ├── package.json
+│   │   └── vite.config.ts
+│   ├── bone-iam-app/             # IAM 管理应用
+│   ├── bone-metadata-app/        # 元数据管理应用
+│   ├── bone-masterdata-app/      # 主数据管理应用
+│   ├── bone-integration-app/     # 集成管理应用
+│   ├── bone-system-app/          # 系统管理应用
+│   └── bone-extension-app/       # 扩展管理应用
+├── packages/                      # 共享包目录
+│   ├── shared-components/        # 共享组件
+│   ├── shared-utils/             # 共享工具
+│   ├── shared-services/          # 共享服务
+│   └── shared-types/             # 共享类型
+├── setup.sh                      # 设置脚本
+├── start-all.sh                  # 启动指南脚本
+├── START_GUIDE.md               # 详细启动指南
+└── README.md
 ```
 
-## 🔧 核心模块
+## 🛠️ 技术栈
 
-### 微前端运行时
+- **框架**: React 18+
+- **语言**: TypeScript
+- **UI 组件库**: Ant Design 5.12+
+- **路由**: React Router 6.20+
+- **构建工具**: Vite 5.0+
+- **微前端框架**: Qiankun 2.10+
+- **状态管理**: Redux Toolkit 2.0+
+- **HTTP 客户端**: Axios 1.6+
 
-```javascript
-import { ApplicationRegistry, MicroApplication } from '@bone/core/micro-fe-runtime';
+## 🔧 开发说明
 
-// 注册应用
-ApplicationRegistry.getInstance().register({
-  name: 'my-app',
-  entry: 'http://localhost:3001',
-  container: '#app-container',
-  activeRule: '/my-app'
-});
+### 代码规范
+- 使用 TypeScript 进行开发
+- 遵循 ESLint 规范
+- 使用 Prettier 格式化代码
 
-// 激活应用
-ApplicationRegistry.getInstance().activateApp('my-app');
-```
+### 添加新的微应用
 
-### 设计系统
+1. 在 `apps/` 目录下创建新应用
+2. 参考现有应用配置 `package.json` 和 `vite.config.ts`
+3. 在主应用 `App.tsx` 中注册新应用
+4. 配置正确的端口和路由
 
-```tsx
-import { ThemeProvider, Button } from '@bone/ui/components';
-import { lightTheme } from '@bone/ui/design-system';
+## 📞 帮助
 
-function App() {
-  return (
-    <ThemeProvider theme={lightTheme}>
-      <Button variant="primary" size="md">
-        Hello Bone
-      </Button>
-    </ThemeProvider>
-  );
-}
-```
+详细的启动指南请查看 [START_GUIDE.md](./START_GUIDE.md)。
 
-### 性能监控
+如果遇到问题，请检查：
+1. 所有应用是否都已正常启动
+2. 端口配置是否正确
+3. 网络连接是否正常
 
-```javascript
-import { getPerformanceMonitor, getAppLoadMonitor } from '@bone/core/performance-monitor';
+## 📄 相关文档
 
-// 初始化性能监控
-const monitor = getPerformanceMonitor({
-  reportUrl: '/api/performance',
-  sampleRate: 0.5
-});
-
-// 监控应用加载
-const appMonitor = getAppLoadMonitor();
-appMonitor.startAppLoad('my-app');
-// 应用加载完成
-appMonitor.endAppLoad('my-app');
-```
-
-## 📖 文档
-
-### 微前端开发指南
-
-- [微应用注册与路由](./docs/micro-frontend/registration.md)
-- [微应用通信机制](./docs/micro-frontend/communication.md)
-- [沙箱隔离原理](./docs/micro-frontend/sandbox.md)
-- [性能优化策略](./docs/micro-frontend/performance.md)
-
-### 组件库使用指南
-
-- [Button组件](./docs/components/button.md)
-- [表单组件](./docs/components/forms.md)
-- [布局组件](./docs/components/layout.md)
-- [自定义主题](./docs/components/theming.md)
-
-### 开发工具链
-
-- [CLI命令参考](./docs/toolchain/cli.md)
-- [构建配置](./docs/toolchain/build.md)
-- [开发服务器配置](./docs/toolchain/dev-server.md)
-
-## 🔒 安全最佳实践
-
-- 始终启用沙箱隔离
-- 配置适当的CSP策略
-- 避免在微应用间共享敏感数据
-- 使用官方提供的安全策略执行器
-
-## 📈 性能优化
-
-- 使用代码分割减少初始加载时间
-- 优化微应用资源预加载
-- 利用缓存策略提高加载速度
-- 监控并优化关键性能指标
-
-## 🔄 版本管理
-
-Bone使用语义化版本管理。详细的版本变更历史请查看[CHANGELOG](./CHANGELOG.md)文件。
-
-## 🤝 贡献指南
-
-欢迎参与Bone框架的开发和维护！请查看[贡献指南](./CONTRIBUTING.md)了解更多细节。
-
-### 开发流程
-
-1. Fork本仓库
-2. 创建功能分支 (`git checkout -b feature/amazing-feature`)
-3. 提交更改 (`git commit -m 'Add some amazing feature'`)
-4. 推送到分支 (`git push origin feature/amazing-feature`)
-5. 打开Pull Request
-
-## 📄 许可证
-
-本项目采用MIT许可证。详情请查看[LICENSE](./LICENSE)文件。
-
-## 📞 联系我们
-
-- 项目主页: https://github.com/your-org/bone
-- 问题反馈: https://github.com/your-org/bone/issues
-- 技术支持: support@bone.dev
-
----
-
-Made with ❤️ by Bone Team
+- [前端整体设计方案](./doc/architecture/bone-frontend-overall-design.md)
+- [技术架构文档](./doc/arch/technical-architecture.md)

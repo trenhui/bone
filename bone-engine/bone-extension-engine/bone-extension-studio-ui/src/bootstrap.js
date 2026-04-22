@@ -9,7 +9,7 @@ import { ConfigProvider } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import App from './App';
 import './index.css';
-import ResourceManager from './utils/resourceManager';
+import { ResourceManager } from './utils/resourceManager';
 
 // 导入微应用开发工具（仅在开发环境使用）
 let createMicroAppDevKit;
@@ -37,6 +37,7 @@ const ENVIRONMENT = {
                 window.__INJECTED_PUBLIC_PATH_BY_QIANKUN__ ||
                 window.__MICRO_APP__,
   IS_DEVELOPMENT: process.env.NODE_ENV === 'development',
+  NODE_ENV: process.env.NODE_ENV || 'development',
 };
 
 // 创建微应用开发工具实例（仅在开发环境使用）

@@ -233,9 +233,57 @@ export const extPointApi = {
   getExtPointById: (id) => apiClient.get(`/ext-points/${id}`)
 };
 
+/**
+ * 扩展点配置相关API
+ */
+export const extPointConfigApi = {
+  /**
+   * 获取扩展点配置列表
+   * @returns {Promise} 配置列表
+   */
+  getExtensionPointConfigs: () => apiClient.get('/extension-point-configs'),
+  
+  /**
+   * 根据ID获取扩展点配置详情
+   * @param {string} id - 配置ID
+   * @returns {Promise} 配置详情
+   */
+  getExtensionPointConfig: (id) => apiClient.get(`/extension-point-configs/${id}`),
+  
+  /**
+   * 创建扩展点配置
+   * @param {Object} config - 配置数据
+   * @returns {Promise} 创建结果
+   */
+  createExtensionPointConfig: (config) => apiClient.post('/extension-point-configs', config),
+  
+  /**
+   * 更新扩展点配置
+   * @param {string} id - 配置ID
+   * @param {Object} config - 配置数据
+   * @returns {Promise} 更新结果
+   */
+  updateExtensionPointConfig: (id, config) => apiClient.put(`/extension-point-configs/${id}`, config),
+  
+  /**
+   * 删除扩展点配置
+   * @param {string} id - 配置ID
+   * @returns {Promise} 删除结果
+   */
+  deleteExtensionPointConfig: (id) => apiClient.delete(`/extension-point-configs/${id}`),
+  
+  /**
+   * 根据扩展点ID获取配置列表
+   * @param {string} extPointId - 扩展点ID
+   * @returns {Promise} 配置列表
+   */
+  getExtensionPointConfigsByExtPointId: (extPointId) => apiClient.get(`/extension-point-configs/by-extension-point/${extPointId}`)
+};
+
 // 导出API服务对象
 export default {
   extension: extensionApi,
   extPoint: extPointApi,
+  extensionPointConfig: extPointConfigApi,
   client: apiClient
 };

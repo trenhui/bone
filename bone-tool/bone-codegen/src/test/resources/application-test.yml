@@ -6,4 +6,4 @@ bone:
         id: 1
         url: jdbc:mysql://localhost:3306/bone
         username: root
-        password: mysql123
+        password: ${BONE_DB_PASSWORD:}

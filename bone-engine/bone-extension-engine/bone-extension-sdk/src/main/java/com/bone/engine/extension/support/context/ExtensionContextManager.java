@@ -3,15 +3,11 @@ package com.bone.engine.extension.support.context;
 import com.bone.core.threadlocal.TransmittableThreadLocal;
 import com.bone.engine.extension.support.extractor.BizParamExtractor;
 import com.bone.engine.extension.support.extractor.ReflectionBizParamExtractor;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.lang.Nullable;
-import org.springframework.web.context.request.RequestAttributes;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.Objects;
 
@@ -256,12 +252,21 @@ public final class ExtensionContextManager {
      * @return 当前HTTP请求，如果不存在则返回null
      */
     @Nullable
-    public static HttpServletRequest getRequest() {
-        RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
-        if (!(requestAttributes instanceof ServletRequestAttributes servletRequestAttributes)) {
-            return null;
+    public static Object getRequest() {
+        // 这个方法使用反射来获取Request，因为HttpServletRequest是可选的依赖
+        try {
+            Class<?> requestAttributesClass = Class.forName("org.springframework.web.context.request.RequestAttributes");
+            Class<?> requestContextHolderClass = Class.forName("org.springframework.web.context.request.RequestContextHolder");
+            Class<?> servletRequestAttributesClass = Class.forName("org.springframework.web.context.request.ServletRequestAttributes");
+            
+            Object requestAttributes = requestContextHolderClass.getMethod("getRequestAttributes").invoke(null);
+            if (requestAttributes != null && servletRequestAttributesClass.isInstance(requestAttributes)) {
+                return servletRequestAttributesClass.getMethod("getRequest").invoke(requestAttributes);
+            }
+        } catch (Exception e) {
+            log.debug("Web environment not available, cannot get HttpServletRequest", e);
         }
-        return servletRequestAttributes.getRequest();
+        return null;
     }
 
     /**

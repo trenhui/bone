@@ -3,11 +3,13 @@ package com.bone.engine.extension.support.config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.context.properties.bind.Binder;
-import org.springframework.cloud.context.environment.EnvironmentChangeEvent;
 import org.springframework.context.ApplicationListener;
-import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.event.ApplicationContextEvent;
+import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -26,13 +28,14 @@ import java.util.Arrays;
  * @version 1.0.0
  */
 @Component
-public class ConfigurationChangeListener implements ApplicationListener<EnvironmentChangeEvent> {
+@ConditionalOnClass(name = "org.springframework.cloud.context.environment.EnvironmentChangeEvent")
+public class ConfigurationChangeListener implements ApplicationListener<ApplicationContextEvent> {
 
     private static final Logger log = LoggerFactory.getLogger(ConfigurationChangeListener.class);
     private static final String EXTENSION_CONFIG_PREFIX = "bone.extension.";
 
     private final ExtensionConfigManager configManager;
-    private ConfigurableEnvironment environment; // 移除final修饰符
+    private ConfigurableEnvironment environment;
     private final ApplicationContext applicationContext;
     private final List<ConfigChangeListener> configChangeListeners = new CopyOnWriteArrayList<>();
 
@@ -68,8 +71,6 @@ public class ConfigurationChangeListener implements ApplicationListener<Environm
         }
     }
 
-    // 移除setEnvironment方法，通过构造函数注入
-
     /**
      * 初始化方法，Spring会自动调用
      */
@@ -86,8 +87,9 @@ public class ConfigurationChangeListener implements ApplicationListener<Environm
      * 监听配置变更事件
      */
     @Override
-    public void onApplicationEvent(EnvironmentChangeEvent event) {
-        Set<String> changedKeys = event.getKeys();
+    public void onApplicationEvent(ApplicationContextEvent event) {
+        // 使用反射来检查是否是EnvironmentChangeEvent
+        Set<String> changedKeys = extractChangedKeys(event);
         if (changedKeys == null || changedKeys.isEmpty()) {
             return;
         }
@@ -128,6 +130,24 @@ public class ConfigurationChangeListener implements ApplicationListener<Environm
                 log.error("Error notifying config change listener: {}", listener.getClass().getSimpleName(), e);
             }
         }
+    }
+
+    /**
+     * 使用反射从EnvironmentChangeEvent中提取变更的键
+     */
+    @SuppressWarnings("unchecked")
+    private Set<String> extractChangedKeys(Object event) {
+        try {
+            // 检查是否是EnvironmentChangeEvent
+            Class<?> eventClass = event.getClass();
+            if (eventClass.getName().equals("org.springframework.cloud.context.environment.EnvironmentChangeEvent")) {
+                // 使用反射获取keys
+                return (Set<String>) eventClass.getMethod("getKeys").invoke(event);
+            }
+        } catch (Exception e) {
+            log.debug("Failed to extract changed keys from event", e);
+        }
+        return Collections.emptySet();
     }
 
     /**

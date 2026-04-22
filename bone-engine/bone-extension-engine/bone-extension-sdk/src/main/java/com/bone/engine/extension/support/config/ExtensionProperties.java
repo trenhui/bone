@@ -118,6 +118,14 @@ public class ExtensionProperties {
         private int maxSize = 1000;
         /** 是否记录缓存统计 */
         private boolean recordStats = false;
+        /** 是否启用分布式缓存 */
+        private boolean distributedEnabled = false;
+        /** 分布式缓存前缀 */
+        private String distributedPrefix = "bone:extension:route";
+        /** 分布式缓存过期时间（秒） */
+        private long distributedExpireSeconds = 3600;
+        /** 是否懒加载 */
+        private boolean lazyLoad = true;
 
         public boolean isEnabled() {
             return enabled;
@@ -135,6 +143,10 @@ public class ExtensionProperties {
             this.expireAfterWrite = expireAfterWrite;
         }
 
+        public java.time.Duration getExpireTime() {
+            return java.time.Duration.ofMillis(expireAfterWrite);
+        }
+
         public int getMaxSize() {
             return maxSize;
         }
@@ -149,6 +161,38 @@ public class ExtensionProperties {
 
         public void setRecordStats(boolean recordStats) {
             this.recordStats = recordStats;
+        }
+
+        public boolean isDistributedEnabled() {
+            return distributedEnabled;
+        }
+
+        public void setDistributedEnabled(boolean distributedEnabled) {
+            this.distributedEnabled = distributedEnabled;
+        }
+
+        public String getDistributedPrefix() {
+            return distributedPrefix;
+        }
+
+        public void setDistributedPrefix(String distributedPrefix) {
+            this.distributedPrefix = distributedPrefix;
+        }
+
+        public long getDistributedExpireSeconds() {
+            return distributedExpireSeconds;
+        }
+
+        public void setDistributedExpireSeconds(long distributedExpireSeconds) {
+            this.distributedExpireSeconds = distributedExpireSeconds;
+        }
+
+        public boolean isLazyLoad() {
+            return lazyLoad;
+        }
+
+        public void setLazyLoad(boolean lazyLoad) {
+            this.lazyLoad = lazyLoad;
         }
     }
 

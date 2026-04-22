@@ -1,0 +1,39 @@
+.App {
+  height: 100%;
+}
+
+.page-header {
+  margin-bottom: 16px;
+}
+
+.card-container {
+  margin-bottom: 24px;
+}
+
+.table-container {
+  padding: 24px 0;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.form-container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.field-editor {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.field-list {
+  flex: 1;
+}
+
+.field-form {
+  flex: 1;
+}

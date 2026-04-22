@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: bone-masterdata
+  datasource:
+    url: ${BONE_DB_URL:jdbc:mysql://localhost:3306/bone?useSSL=true&autoReconnect=true&characterEncoding=utf8}
+    username: ${BONE_DB_USERNAME:root}
+    password: ${BONE_DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when_authorized
+
+masterdata:
+  entity:
+    max.fields: 100
+  record:
+    max.size: 1048576
+  quality:
+    check:
+      batch.size: 1000
+  import:
+    batch.size: 500
+  export:
+    max.records: 10000

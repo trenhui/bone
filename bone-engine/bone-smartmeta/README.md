@@ -262,7 +262,7 @@ bone.smartmeta.enabled=true
 # AI增强配置
 bone.smartmeta.ai.enabled=true
 bone.smartmeta.ai.model=default
-bone.smartmeta.ai.api-key=your-api-key
+bone.smartmeta.ai.api-key=${SMARTMETA_AI_API_KEY:}
 
 # 缓存配置
 bone.smartmeta.cache.enabled=true

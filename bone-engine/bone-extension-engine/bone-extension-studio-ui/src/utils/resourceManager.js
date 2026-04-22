@@ -8,6 +8,26 @@
  * - 资源使用情况监控
  */
 class ResourceManager {
+  /**
+   * 资源分类常量
+   */
+  static RESOURCE_CATEGORIES = {
+    BOOTSTRAP: 'bootstrap',
+    DOM: 'dom',
+    EVENT: 'event',
+    REQUEST: 'request',
+    TIMER: 'timer',
+    OTHER: 'other'
+  };
+
+  /**
+   * 优先级常量
+   */
+  static PRIORITY_LEVELS = {
+    HIGH: 'high',
+    MEDIUM: 'medium',
+    LOW: 'low'
+  };
   constructor(options = {}) {
     this.options = {
       enableLogging: process.env.NODE_ENV === 'development',
@@ -66,12 +86,29 @@ class ResourceManager {
   
   /**
    * 添加通用资源
-   * @param {string} type - 资源类型
-   * @param {*} resource - 资源对象
-   * @param {Object} metadata - 资源元数据
+   * @param {*} resourceOrType - 资源对象或类型字符串（兼容模式）
+   * @param {*} metadataOrResource - 元数据对象或资源对象（兼容模式）
+   * @param {Object} metadata - 资源元数据（仅当有3个参数时使用）
    * @returns {string} 资源ID
    */
-  addResource(type, resource, metadata = {}) {
+  addResource(resourceOrType, metadataOrResource, metadata = {}) {
+    let type, resource, actualMetadata;
+    
+    // 兼容两种调用方式：
+    // 方式1: addResource(cleanupFunction, metadata)
+    // 方式2: addResource(type, resource, metadata)
+    if (arguments.length === 2 && typeof resourceOrType === 'function') {
+      // 方式1
+      type = metadataOrResource.category || 'resource';
+      resource = resourceOrType;
+      actualMetadata = metadataOrResource;
+    } else {
+      // 方式2
+      type = resourceOrType;
+      resource = metadataOrResource;
+      actualMetadata = metadata;
+    }
+    
     const resourceId = this._generateResourceId(type);
     
     const resourceWrapper = {
@@ -79,7 +116,7 @@ class ResourceManager {
       type,
       resource,
       createdAt: Date.now(),
-      ...metadata
+      ...actualMetadata
     };
     
     this.resources.set(resourceId, resourceWrapper);
@@ -253,11 +290,58 @@ class ResourceManager {
   }
   
   /**
+   * 获取资源使用情况统计（别名）
+   * @returns {Object} 资源统计信息
+   */
+  getResourceStatistics() {
+    return { ...this.resourceStats };
+  }
+
+  /**
    * 获取资源使用情况统计
    * @returns {Object} 资源统计信息
    */
   getResourceStats() {
-    return { ...this.resourceStats };
+    return this.getResourceStatistics();
+  }
+
+  /**
+   * 清理资源
+   * @param {Object} options - 清理选项
+   * @returns {Object} 清理结果
+   */
+  clearResources(options = {}) {
+    const result = {
+      clearedCount: 0,
+      errorCount: 0
+    };
+
+    try {
+      if (options.category) {
+        // 清理特定分类的资源
+        const resourcesToRemove = [];
+        this.resources.forEach((resource, resourceId) => {
+          if (resource.category === options.category) {
+            resourcesToRemove.push(resourceId);
+          }
+        });
+        resourcesToRemove.forEach(resourceId => {
+          if (this.removeResource(resourceId)) {
+            result.clearedCount++;
+          } else {
+            result.errorCount++;
+          }
+        });
+      } else {
+        // 清理所有资源
+        result.clearedCount = this.cleanupAll();
+      }
+    } catch (error) {
+      console.error('[ResourceManager] 清理资源失败:', error);
+      result.errorCount++;
+    }
+
+    return result;
   }
   
   /**
@@ -442,8 +526,12 @@ class ResourceManager {
         resource.controller.abort('cleanup');
       }
       
+      // 如果资源是函数，直接调用它
+      if (typeof resource.resource === 'function') {
+        resource.resource();
+      }
       // 如果资源有清理方法，调用它
-      if (resource.cleanupMethod && resource.resource) {
+      else if (resource.cleanupMethod && resource.resource) {
         resource.resource[resource.cleanupMethod]();
       }
       

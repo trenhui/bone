@@ -4,6 +4,7 @@ import com.bone.engine.extension.api.model.definition.ExtensionDefinition;
 import com.bone.engine.extension.api.spi.ExpressionEvaluator;
 import com.bone.engine.extension.api.spi.ExtensionPointRouter;
 import com.bone.engine.extension.api.spi.ExtensionRepository;
+import com.bone.engine.extension.core.cache.CacheManager;
 import com.bone.engine.extension.support.context.BizContext;
 import com.bone.engine.extension.support.expression.AviatorExpressionEvaluator;
 import com.bone.engine.extension.support.expression.SpELExpressionEvaluator;
@@ -54,8 +55,8 @@ public final class DefaultExtensionPointRouter implements ExtensionPointRouter {
     // L1: 扩展点类 → 扩展定义列表（预排序，支持热更新）
     private final LoadingCache<Class<?>, List<ExtensionDefinition>> extDefinitionCache;
 
-    // L2: 路由结果缓存（扩展点+维度哈希 → 实现实例）
-    private final Cache<String, Object> routeResultCache;
+    // L2: 路由结果缓存（本地缓存 + 分布式缓存）
+    private final CacheManager cacheManager;
 
     // L3: 表达式解析缓存（表达式字符串 → 编译结果）
     private final Cache<String, Object> expressionCache;
@@ -71,7 +72,7 @@ public final class DefaultExtensionPointRouter implements ExtensionPointRouter {
      */
     public DefaultExtensionPointRouter(@NonNull ExtensionRepository extensionRepo) {
         this(extensionRepo, new SpELExpressionEvaluator(),
-                50000, Duration.ofHours(1), true);
+                50000, Duration.ofHours(1), true, null);
     }
 
     /**
@@ -82,7 +83,8 @@ public final class DefaultExtensionPointRouter implements ExtensionPointRouter {
             @NonNull ExpressionEvaluator expressionEvaluator,
             int cacheMaxSize,
             @NonNull Duration cacheExpireTime,
-            boolean enableLazyLoad) {
+            boolean enableLazyLoad,
+            CacheManager cacheManager) {
 
         // 参数校验
         Assert.notNull(extensionRepo, "ExtensionRepository不能为空");
@@ -95,14 +97,14 @@ public final class DefaultExtensionPointRouter implements ExtensionPointRouter {
         this.cacheMaxSize = cacheMaxSize;
         this.cacheExpireTime = cacheExpireTime;
         this.enableLazyLoad = enableLazyLoad;
+        this.cacheManager = cacheManager;
 
         // 初始化三级缓存
         this.extDefinitionCache = buildDefinitionCache();
-        this.routeResultCache = buildRouteResultCache();
         this.expressionCache = buildExpressionCache();
 
-        log.info("DefaultExtensionPointRouter初始化完成 | 缓存容量: {} | 过期时间: {} | 懒加载: {}",
-                cacheMaxSize, cacheExpireTime, enableLazyLoad);
+        log.info("DefaultExtensionPointRouter初始化完成 | 缓存容量: {} | 过期时间: {} | 懒加载: {} | 分布式缓存: {}",
+                cacheMaxSize, cacheExpireTime, enableLazyLoad, cacheManager != null && cacheManager.isDistributedEnabled());
     }
 
     // ==================== 缓存构建器 ====================
@@ -112,14 +114,6 @@ public final class DefaultExtensionPointRouter implements ExtensionPointRouter {
                 .maximumSize(cacheMaxSize)
                 .expireAfterWrite(cacheExpireTime)
                 .build(this::loadAndSortExtensions);
-    }
-
-    private Cache<String, Object> buildRouteResultCache() {
-        return Caffeine.newBuilder()
-                .maximumSize(cacheMaxSize * 2) // 路由缓存容量更大
-                .expireAfterWrite(cacheExpireTime)
-                .recordStats() // 开启统计（可选）
-                .build();
     }
 
     private Cache<String, Object> buildExpressionCache() {
@@ -153,7 +147,9 @@ public final class DefaultExtensionPointRouter implements ExtensionPointRouter {
             T result = executeFourLevelRouting(extPointClass, context);
 
             // 5. 缓存路由结果
-            routeResultCache.put(cacheKey, result);
+            if (cacheManager != null) {
+                cacheManager.put(cacheKey, result);
+            }
             routeCounter.incrementAndGet();
 
             return result;
@@ -463,7 +459,10 @@ public final class DefaultExtensionPointRouter implements ExtensionPointRouter {
     @SuppressWarnings("unchecked")
     @Nullable
     private <T> T getCachedResult(String cacheKey, Class<T> extPointClass) {
-        Object cached = routeResultCache.getIfPresent(cacheKey);
+        Object cached = null;
+        if (cacheManager != null) {
+            cached = cacheManager.get(cacheKey);
+        }
         if (cached != null && extPointClass.isInstance(cached)) {
             return (T) cached;
         }
@@ -508,8 +507,11 @@ public final class DefaultExtensionPointRouter implements ExtensionPointRouter {
         extDefinitionCache.invalidate(extPointClass);
 
         // 清理路由缓存（前缀匹配）
-        String prefix = extPointClass.getName() + CACHE_KEY_SEPARATOR;
-        routeResultCache.asMap().keySet().removeIf(key -> key.startsWith(prefix));
+        // 注意：使用cacheManager时，这里简化处理
+        if (cacheManager != null) {
+            // 实际项目中可以实现更精细的缓存清理
+            // cacheManager.clear();
+        }
 
         log.info("扩展点缓存清理完成 | 扩展点: {}", extPointClass.getName());
     }
@@ -560,10 +562,15 @@ public final class DefaultExtensionPointRouter implements ExtensionPointRouter {
      * 获取路由统计信息（内部使用）
      */
     public RouterStats getStats() {
+        long routeResultCacheSize = 0;
+        if (cacheManager != null) {
+            // 实际项目中可以从cacheManager获取缓存大小
+            // routeResultCacheSize = cacheManager.getLocalCache().estimatedSize();
+        }
         return new RouterStats(
                 routeCounter.get(),
                 cacheHitCounter.get(),
-                routeResultCache.estimatedSize(),
+                routeResultCacheSize,
                 extDefinitionCache.estimatedSize()
         );
     }

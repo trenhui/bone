@@ -1,0 +1,435 @@
+# Bone — AI Agent 项目指南
+
+> 本文件供 AI 编程助手阅读。假设读者对项目一无所知，所有信息均基于实际代码与配置，不做臆测。
+
+---
+
+## 1. 项目概述
+
+**Bone**（口号：Build Once, Natively Everywhere）是一个企业级全栈开源快速开发平台，采用**元数据驱动**架构，目标是通过配置减少重复编码，实现一次构建、多端运行。
+
+项目为**前后端分离**的**微服务/模块化单体**混合架构：
+- **后端**：Java 17 + Spring Boot 3.2 多模块 Maven 工程
+- **前端**：React 18 + TypeScript 微前端（Qiankun）工程，使用 npm workspaces 管理
+
+业务定位覆盖四大引擎：
+1. **智能元数据引擎**（Smart Metadata）— 动态建模、代码生成
+2. **企业主数据平台**（Master Data）— 主数据治理与质量管控
+3. **ExtPoint 扩展引擎**（Extension）— 插件化扩展点机制
+4. **集成引擎**（Integration）— 多协议连接器与流程编排
+
+---
+
+## 2. 技术栈
+
+### 2.1 后端
+
+| 层级 | 技术 |
+|------|------|
+| 语言 | Java 17 |
+| 构建工具 | Maven 3.8+ |
+| 基础框架 | Spring Boot 3.2.5 |
+| 微服务生态 | Spring Cloud 2023.0.3 + Spring Cloud Alibaba 2023.0.1.2 |
+| 数据库 | MySQL 8.0.33 |
+| 连接池 | HikariCP 5.1.0 |
+| ORM | JPA（Hibernate）+ MyBatis（混合使用） |
+| 缓存 | Redis 7.x + Redisson 3.27.2 + Caffeine |
+| 认证授权 | SA-Token 1.39.0 |
+| API 文档 | SpringDoc OpenAPI 2.3.0（Swagger UI） |
+| 可观测性 | SkyWalking 9.7.0、Spring Boot Admin 3.0.0、Micrometer Prometheus |
+| 工具类 | Lombok 1.18.30、MapStruct 1.5.5.Final、Jackson |
+| 表达式引擎 | Aviator 5.4.1（扩展引擎使用） |
+| 消息队列 | RocketMQ 5.2（部分模块） |
+| 分布式事务 | Seata 2.0（支持 AT/TCC） |
+
+### 2.2 前端
+
+| 层级 | 技术 |
+|------|------|
+| 框架 | React 18 + TypeScript 5.2+ |
+| 构建工具 | Vite 5.0+ |
+| UI 组件库 | Ant Design 5.12 + @ant-design/pro-components |
+| 路由 | React Router 6.20+ |
+| 状态管理 | Redux Toolkit 2.0 + React Redux 9.0+ |
+| HTTP 客户端 | Axios 1.6+ |
+| 微前端 | Qiankun 2.10+ + vite-plugin-qiankun |
+| 代码检查 | ESLint 8 + Prettier 3.1+ |
+| 包管理 | npm workspaces（兼容 pnpm-workspace.yaml） |
+
+---
+
+## 3. 模块结构
+
+### 3.1 后端模块（Maven 多模块）
+
+根 POM（`pom.xml`）为聚合模块，所有版本与依赖在 `bone-parent/pom.xml` 中统一管理。
+
+```
+bone/                          # 根聚合模块
+├── bone-parent/               # BOM / 依赖管理 / 插件配置
+├── bone-framework/            # 原子核心能力
+│   ├── bone-core/             # 基础实体、注解、统一响应、工具类、租户上下文
+│   ├── bone-utils/            # 通用工具
+│   ├── bone-datasource/       # 数据源抽象与动态数据源
+│   ├── bone-security/         # 安全组件
+│   └── bone-web/              # Web 层封装（Spring Web、校验、AOP、全局异常）
+├── bone-engine/               # 四大引擎与核心中间件
+│   ├── bone-metadata/         # 元数据引擎
+│   ├── bone-metadata-sdk/     # 元数据 SDK（含 @EnableSqlRepositories 自定义仓储机制）
+│   ├── bone-smartmeta/        # 智能元数据引擎（engine + starter）
+│   ├── bone-extension-engine/ # 扩展引擎
+│   │   ├── bone-extension-sdk/
+│   │   └── bone-extension-studio/
+│   ├── bone-integration/      # 集成引擎
+│   ├── bone-workflow/         # 工作流引擎
+│   └── bone-procurement/      # 采购/供应链相关引擎
+├── bone-platform/             # 企业共享平台服务
+│   ├── bone-iam/              # 身份与访问管理（端口 8080）
+│   ├── bone-gateway/          # API 网关
+│   ├── bone-masterdata/       # 主数据服务
+│   ├── bone-system/           # 系统管理（端口 8083）
+│   ├── bone-file/             # 文件服务
+│   ├── bone-notification/     # 通知服务
+│   └── bone-integration/      # 平台级集成服务
+├── bone-business/             # 业务域模块（当前为骨架）
+│   ├── bone-admin/
+│   └── bone-trade/
+├── bone-sdk/                  # 客户端 SDK
+│   ├── bone-client-sdk/
+│   └── bone-openapi-sdk/
+└── bone-tool/                 # 开发工具
+    └── bone-codegen/          # 代码生成器（同样遵循 DDD 分层）
+```
+
+### 3.2 前端模块（npm workspaces）
+
+```
+bone-frontend/
+├── apps/
+│   ├── bone-shell/            # Qiankun 主应用（端口 3000）
+│   ├── bone-iam-app/          # IAM 微应用（端口 3003）
+│   ├── bone-metadata-app/     # 元数据微应用（端口 3004）
+│   ├── bone-masterdata-app/   # 主数据微应用（端口 3005）
+│   ├── bone-integration-app/  # 集成微应用（端口 3006）
+│   ├── bone-system-app/       # 系统管理微应用（端口 3007）
+│   ├── bone-extension-app/    # 扩展引擎微应用（端口 3008）
+│   └── main/、sub-app-1/、sub-app-2/   # 早期演示应用
+└── packages/
+    ├── shared-components/     # @bone/shared-components
+    ├── shared-utils/          # @bone/shared-utils
+    ├── shared-services/       # @bone/shared-services
+    ├── shared-types/          # @bone/shared-types
+    └── core/event-bus/        # @bone/core/event-bus（独立构建 dist/）
+```
+
+---
+
+## 4. 构建与运行命令
+
+### 4.1 后端（Maven）
+
+项目使用 **Aliyun Maven** 镜像加速依赖下载。
+
+```bash
+# 全量编译并安装到本地仓库
+mvn clean install
+
+# 跳过测试
+mvn clean install -DskipTests=true
+
+# 指定环境 profile（dev 为默认）
+mvn clean install -Pprod
+
+# 代码格式化（Google Java Format）
+mvn spotless:apply
+
+# 仅运行测试
+mvn test
+
+# 执行静态分析 + 测试 + 覆盖率（在绑定了质量插件的模块中）
+mvn verify
+```
+
+### 4.2 前端
+
+项目根目录和各子应用均独立管理依赖。推荐按应用单独启动。
+
+```bash
+# 进入 bone-frontend 后，为所有 workspace 安装依赖
+# 项目提供了辅助脚本：
+cd bone-frontend
+bash setup.sh                 # 为每个 app/package 单独执行 npm install
+
+# 启动主应用（Shell）
+npm run dev                   # 仅启动 bone-shell
+
+# 在单个微应用目录下启动
+npm run dev                   # 启动 Vite 开发服务器
+npm run build                 # tsc && vite build
+npm run lint                  # ESLint
+npm run preview               # Vite preview
+```
+
+批量启动所有前后端应用的脚本：
+- `bone-frontend/restart-all-apps.sh` — 停止并重启所有 7 个前端应用，日志输出到 `logs/` 目录。
+- 详细用法见 `bone-frontend/SCRIPT_USAGE.md`。
+
+### 4.3 开发环境要求
+
+- **JDK**：17+
+- **Maven**：3.8+
+- **Node.js**：18+（推荐，与 Vite 5 兼容）
+- **数据库**：MySQL 8.0+
+- **缓存**：Redis 7.x
+
+---
+
+## 5. 代码组织与架构规范
+
+### 5.1 分层架构（强制）
+
+后端严格遵循 **DDD + CQRS + 整洁架构/六边形架构（4 层）**。每个业务/平台模块内部包结构如下：
+
+```
+com.bone.{module}
+├── adapter/web/               # 适配器层（入站）
+│   ├── controller/            # REST Controller
+│   ├── converter/             # DTO <-> Command/Query 组装器
+│   └── dto/
+│       ├── req/               # 请求 DTO
+│       └── resp/              # 响应 DTO
+├── application/               # 应用层（用例编排）
+│   ├── command/
+│   │   ├── cmd/               # 命令对象
+│   │   └── handler/           # 命令处理器（@Transactional 边界）
+│   ├── query/
+│   │   ├── qry/               # 查询对象
+│   │   ├── handler/           # 查询处理器（只读）
+│   │   └── dto/               # 查询结果 DTO
+│   └── event/                 # 应用事件
+├── domain/                    # 领域层（**纯净，不允许依赖框架**）
+│   ├── model/
+│   │   ├── aggregate/         # 聚合根
+│   │   ├── entity/            # 实体
+│   │   ├── valueobject/       # 值对象
+│   │   └── event/             # 领域事件
+│   ├── service/               # 领域服务
+│   └── repository/            # 仓储接口（写侧）
+├── common/                    # 模块级公共工具
+│   ├── exception/
+│   ├── result/
+│   └── util/
+└── infrastructure/            # 基础设施层（出站适配器）
+    ├── persistence/           # JPA / MyBatis Mapper、PO、仓储实现
+    └── ...
+```
+
+### 5.2 依赖规则（不可违反）
+
+```
+adapter/web → application → domain ← infrastructure
+```
+
+- `domain` 层**禁止**依赖任何外部框架（Spring、MyBatis、JPA 注解除外仅在 PO 中使用，但领域模型本身应保持纯净）。
+- `application` 层**禁止**直接调用 `infrastructure`。
+- 跨模块调用通过 `domain.repository` 接口或应用层服务完成。
+
+### 5.3 核心基础类
+
+| 类 | 位置 | 作用 |
+|---|---|---|
+| `AbstractEntity` | `bone-core` | 全局基础实体，包含 `createTime`、`createBy`、`updateTime`、`updateBy`、`deleted`（软删） |
+| `TenantAbstractEntity` | `bone-core` | 多租户基础实体，增加 `tenantId`、`bizIdentityCode` |
+| `TenantContext` | `bone-core` | 线程级租户上下文传递 |
+| `ApiResponse<T>` | `bone-core` | 统一 REST 响应包装 |
+| `PageResult<T>` | `bone-core` | 统一分页结果包装 |
+
+### 5.4 关键设计模式
+
+- **CQRS 物理分离**：`command` 包与 `query` 包在同一模块内分离，命令走写模型（带事务），查询走读模型（只读）。
+- **富领域模型**：聚合根使用工厂方法构造，例如 `User.register(...)`、`Username.of(...)`。
+- **仓储模式**：接口定义在 `domain.repository`，实现放在 `infrastructure.persistence`。
+- **自定义元数据仓储**：`bone-metadata-sdk` 提供 `@EnableSqlRepositories` 机制，类似 Spring Data 但为自研实现。
+- **多租户**：表均含 `tenant_id` 与 `biz_identity_code`，配合 `TenantContext` 实现数据隔离。
+- **软删除**：全局逻辑删除字段 `deleted`（TINYINT）。
+
+### 5.5 详细规范文档
+
+- `doc/DDD/Bone-Blueprint-DDD工程规范.md` — 818 行 DDD + CQRS + 六边形架构工程规范
+- `doc/DDD/ddd.md` — DDD 铁律、ArchUnit 检查要求、命名约定、反模式预防
+- `doc/arch/` — 9 份总体架构与技术方案文档
+- `doc/design/modules/` — 7 份模块详细设计文档（控制台、元数据、主数据、集成、扩展、IAM、系统管理）
+- `doc/architecture/` — 前端架构规范、SmartMeta 设计文档
+- `doc/prd/` — 6 份产品需求文档
+
+---
+
+## 6. 测试策略
+
+### 6.1 后端测试
+
+| 工具 | 版本 | 用途 |
+|---|---|---|
+| JUnit 5（Jupiter） | Spring Boot 自带 | 单元与集成测试 |
+| Mockito | 5.11.0 | Mock |
+| Maven Surefire | 3.2.5 | 测试执行 |
+| ArchUnit | 1.2.1 | **架构规则静态校验**（重点） |
+
+- 测试类命名：`*Test.java`、`*Tests.java`
+- 排除：`Abstract*.java`
+- 已发现使用 ArchUnit 的模块：`bone-iam`、`bone-masterdata`、`bone-integration`，通过 `ArchitectureTest.java` 强制校验分层依赖。
+- 其他测试覆盖：扩展引擎（PromotionServiceTest 等）、SmartMeta 引擎（ExpressionEngineTest、BusinessRuleEngineTest 等）。
+- **现状**：多数模块已建立 `src/test/java` 目录，但覆盖率总体偏稀疏。
+
+### 6.2 前端测试
+
+- 框架：**Vitest 2.0**（README 提及，但实际配置以各应用为准）
+- 运行命令：`npm run test`（workspace 级别）
+
+---
+
+## 7. 代码质量
+
+### 7.1 格式化
+
+- **Spotless** 2.43.0 + **Google Java Format** 1.17.0
+- 执行：`mvn spotless:apply`
+- 当前仅在 `pluginManagement` 中定义，**未自动绑定到所有模块生命周期**，需显式调用。
+
+### 7.2 静态分析（bone-tool 模块激活）
+
+`bone-tool/pom.xml` 绑定了以下工具到 `validate` 阶段：
+
+| 工具 | 版本 | 配置 | 说明 |
+|---|---|---|---|
+| Checkstyle | 10.12.7 | `checkstyle.xml` | 120 字符行宽、禁止 Tab、命名规范 |
+| PMD | 6.55.0 | `pmd-ruleset.xml` | EmptyCatchBlock、EqualsNull、UseEqualsToCompareStrings、NullAssignment |
+| SpotBugs | 4.2.3 | Max effort / Medium threshold | Bug 模式检测 |
+| JaCoCo | 0.8.11 | — | 行覆盖率 ≥ 70%，分支覆盖率 ≥ 60%；排除 domain/entity、config、enums、DTO |
+
+**注意**：
+- 上述质量工具**并非所有模块都继承激活**，主要集中在 `bone-tool` 及少量显式配置模块。
+- `bone-extension-sdk/pom.xml` 有独立的 Checkstyle + SpotBugs 配置，且设置了 `failsOnError=false`，规则较宽松。
+
+### 7.3 前端代码质量
+
+- ESLint 配置位于 `bone-frontend/.eslintrc.json`
+- Prettier 3.1+ 格式化
+
+---
+
+## 8. 数据库与初始化
+
+- **数据库**：MySQL（InnoDB，utf8mb4，utf8mb4_unicode_ci）
+- **Schema 名**：`bone`
+- **初始化脚本**：
+  - `bone-init.sql`（项目根目录，676 行）— 包含表结构 + 初始数据
+  - `doc/deployment/sql/` — 额外的部署 SQL（`bone-midplatform.sql`、`bonecore.sql` 等）
+
+### 8.1 表设计共性
+
+所有业务表均包含：
+- `tenant_id` + `biz_identity_code`（租户隔离）
+- `create_time`、`create_by`、`update_time`、`update_by`（审计）
+- `deleted` TINYINT（软删除）
+- JSON 类型字段（灵活Schema）
+
+### 8.2 主要表域
+
+| 域 | 代表表 |
+|---|---|
+| 保险业务 | `ic_insurer`、`ic_policyholder`、`ic_proposal`、`ic_policy`、`ic_product_config` 等 |
+| IAM | `iam_user`、`iam_role`、`iam_permission`、`iam_user_role`、`iam_audit_log` |
+| 系统 | `sys_config`、`sys_log`、`sys_monitor` |
+| 集成 | `int_connector`、`int_flow`、`int_flow_execution` |
+
+### 8.3 初始数据
+
+- 默认租户
+- 管理员账号 `admin` / 密码（BCrypt 加密，默认 `123456`）
+- 基础角色与权限
+- 示例保险公司与产品数据
+
+---
+
+## 9. 部署与运维
+
+### 9.1 部署方式
+
+- **当前仓库未包含 Dockerfile 或 docker-compose.yml**，也未发现 CI/CD 流水线（GitHub Actions / GitLab CI）。
+- 部署产物为 **Spring Boot 可执行 JAR**（`spring-boot-maven-plugin` repackage）。
+- 启动方式：
+  ```bash
+  java -jar bone-iam/target/bone-iam-1.0.0.jar
+  ```
+
+### 9.2 环境配置
+
+- 环境 profile：`dev`（默认）、`test`、`prod`
+- 每个 Spring Boot 模块提供 `application.yml` 与 `application-{profile}.yml`
+- 支持的环境变量：
+  - `BONE_DB_URL`
+  - `BONE_DB_USERNAME`
+  - `BONE_DB_PASSWORD`
+  - `BONE_SERVER_PORT`
+
+### 9.3 已知服务端口
+
+| 服务 | 端口 |
+|---|---|
+| bone-iam | 8080 |
+| bone-system | 8083 |
+| bone-integration（引擎） | 30888 |
+| bone-shell（前端主应用） | 3000 |
+| bone-iam-app | 3003 |
+| bone-metadata-app | 3004 |
+| bone-masterdata-app | 3005 |
+| bone-integration-app | 3006 |
+| bone-system-app | 3007 |
+| bone-extension-app | 3008 |
+
+---
+
+## 10. 安全注意事项
+
+- **默认密码**：`admin` / `123456`，首次部署后**必须**修改。
+- **SA-Token**：用于认证与 SSO，配置需关注 token 有效期与签名密钥。
+- **数据库密码**：部分 `application.yml` 中硬编码了明文密码（如 `bone-engine/bone-integration/src/main/resources/application.yml`），生产环境**必须**改为环境变量或配置中心注入。
+- **Redis 密码**：同样存在明文配置，需通过外部化配置处理。
+- **API 文档**：SpringDoc 在生产环境建议关闭或增加认证拦截（`knife4j` 或 Spring Security）。
+- **CORS**：前端微应用开发服务器开启了跨域头，生产环境需收紧为明确域名白名单。
+
+---
+
+## 11. 给 AI 助手的关键提示
+
+1. **不要破坏分层依赖**：修改代码时，`domain` 层不能引入 Spring/MyBatis 等框架依赖；`application` 层不能直接调用 `infrastructure` 实现类。
+2. **保持 CQRS**：写操作使用 `*CommandHandler` 并在方法上加 `@Transactional`；读操作使用 `*QueryHandler`，保持只读。
+3. **统一响应格式**：Controller 返回统一使用 `ApiResponse<T>` 或 `PageResult<T>`，避免裸返回领域对象。
+4. **租户与审计字段**：新增实体应继承 `TenantAbstractEntity`（若需多租户）或 `AbstractEntity`；不要遗漏 `tenantId` 与审计字段的填充。
+5. **命名约定**：
+   - 聚合根：`{名词}`
+   - 值对象：`{名词}`（如 `Username`）
+   - 命令：`{动作}{对象}Command`（如 `CreateUserCommand`）
+   - 查询：`{对象}{条件}Qry`（如 `UserByIdQry`）
+   - 处理器：`{命令/查询名}Handler`
+6. **前端微应用约束**：
+   - 微应用使用 `vite-plugin-qiankun` 打包为 UMD，需配置 `fastRefresh: false`。
+   - Shell 不直接使用 `vite-plugin-qiankun`，运行时通过 Qiankun JS API 加载微应用。
+7. **格式化**：修改 Java 文件后，建议执行 `mvn spotless:apply` 保持格式一致。
+8. **文档语言**：项目注释与文档以**中文**为主，新增代码注释请使用中文。
+
+---
+
+## 12. 参考索引
+
+| 文件/目录 | 内容 |
+|---|---|
+| `README.md` | 项目营销概览、快速开始 |
+| `CODE_WIKI.md` | 项目知识库：四大引擎说明、关键类、依赖树、运行说明 |
+| `PROJECT_SUMMARY.md` | 模块完成度总结、DDD + CQRS 架构说明 |
+| `doc/DDD/Bone-Blueprint-DDD工程规范.md` | DDD 工程规范（必读） |
+| `doc/DDD/ddd.md` | DDD 铁律与 ArchUnit 检查要求 |
+| `bone-frontend/SCRIPT_USAGE.md` | 前端批量启动脚本说明 |
+| `bone-init.sql` | 数据库初始化脚本 |
+| `bone-parent/pom.xml` | 依赖版本锁定与全局插件配置 |

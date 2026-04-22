@@ -23,7 +23,7 @@ export default defineConfig({
     include: ['@ant-design/icons']
   },
   server: {
-    port: 3000,
+    port: 3010,
     open: true
   },
   build: {

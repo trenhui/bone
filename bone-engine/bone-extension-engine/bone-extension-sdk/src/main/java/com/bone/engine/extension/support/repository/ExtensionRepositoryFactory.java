@@ -5,36 +5,45 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
+import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * ExtensionRepository 工厂
+ * 
+ * 设计优化：
+ * 1. 作为Spring Bean管理，避免静态变量持有ApplicationContext
+ * 2. 使用依赖注入而非静态访问
+ * 3. 线程安全的缓存实现
  */
 @Slf4j
+@Component
 public class ExtensionRepositoryFactory implements ApplicationContextAware {
 
-    private static ApplicationContext ctx;
+    private ApplicationContext ctx;
 
-    private static final Map<String, ExtensionRepository> CACHE = new ConcurrentHashMap<>();
+    private final Map<String, ExtensionRepository> cache = new ConcurrentHashMap<>();
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-        ctx = applicationContext;
+        this.ctx = applicationContext;
     }
 
-    /** 创建仓库实例（支持注解自定义） */
-    public static ExtensionRepository create(Class<?> repoClass) {
+    /** 
+     * 创建仓库实例（支持注解自定义） 
+     */
+    public ExtensionRepository create(Class<? extends ExtensionRepository> repoClass) {
         String key = repoClass.getName();
-        return CACHE.computeIfAbsent(key, k -> {
+        return cache.computeIfAbsent(key, k -> {
             try {
                 // 优先从 Spring 容器获取（支持 @Component）
-                return (ExtensionRepository) ctx.getBean(repoClass);
+                return ctx.getBean(repoClass);
             } catch (Exception ignored) {
                 try {
                     // 反射创建
-                    return (ExtensionRepository) repoClass.getDeclaredConstructor().newInstance();
+                    return repoClass.getDeclaredConstructor().newInstance();
                 } catch (Exception e) {
                     throw new IllegalStateException("Cannot create ExtensionRepository: " + repoClass, e);
                 }
@@ -42,8 +51,10 @@ public class ExtensionRepositoryFactory implements ApplicationContextAware {
         });
     }
 
-    /** 创建 Bean 实例（通用工具） */
-    public static <T> T createBean(Class<T> clazz) {
+    /** 
+     * 创建 Bean 实例（通用工具） 
+     */
+    public <T> T createBean(Class<T> clazz) {
         try {
             return ctx.getBean(clazz);
         } catch (Exception ignored) {
@@ -55,16 +66,31 @@ public class ExtensionRepositoryFactory implements ApplicationContextAware {
         }
     }
 
-    public static ExtensionRepository getDefault() {
-        return CACHE.computeIfAbsent("default", k -> {
-            // 自动装配优先级：Nacos > Redis > InMemory
+    /**
+     * 获取默认仓库实现
+     * 优先级：Nacos > Redis > InMemory
+     */
+    public ExtensionRepository getDefault() {
+        return cache.computeIfAbsent("default", k -> {
             try {
                 return ctx.getBean("nacosExtensionRepository", ExtensionRepository.class);
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+                log.debug("NacosExtensionRepository not available, trying RedisExtensionRepository");
+            }
             try {
                 return ctx.getBean("redisExtensionRepository", ExtensionRepository.class);
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+                log.debug("RedisExtensionRepository not available, using InMemoryExtensionRepository");
+            }
             return new InMemoryExtensionRepository();
         });
+    }
+
+    /**
+     * 清理缓存（主要用于测试）
+     */
+    public void clearCache() {
+        cache.clear();
+        log.info("ExtensionRepositoryFactory cache cleared");
     }
 }

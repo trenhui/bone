@@ -1,0 +1,34 @@
+spring:
+  application:
+    name: bone-masterdata
+  datasource:
+    url: jdbc:mysql://localhost:3306/bone?useSSL=false&autoReconnect=true&characterEncoding=utf8
+    username: root
+    password: ${BONE_DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+server:
+  port: 8080
+  servlet:
+    context-path: /
+
+masterdata:
+  entity:
+    max.fields: 100
+  record:
+    max.size: 1048576
+  quality:
+    check:
+      batch.size: 1000
+  import:
+    batch.size: 500
+  export:
+    max.records: 10000
+
+logging:
+  level:
+    com.bone.masterdata: info

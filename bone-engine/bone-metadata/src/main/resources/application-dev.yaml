@@ -4,7 +4,7 @@ spring:
     url: jdbc:mysql://rds260kj5i2879nym9a9100.mysql.rds.aliyuncs.com:3306/tpa-saas?useSSL=false&autoReconnect=true&characterEncoding=utf8
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: tpasaasuser
-    password: G#EYff17
+    password: ${BONE_DB_PASSWORD:}
     # 指定为HikariDataSource
     type: com.zaxxer.hikari.HikariDataSource
     # hikari连接池配置
@@ -32,12 +32,12 @@ spring:
       host: 172.18.0.57
       port: 6379
       database: 0
-      password: "@Pukang_123"
+      password: ${BONE_REDIS_PASSWORD:}
   redis:
     host: 172.18.0.57 # 地址
     port: 6379 # 端口
     database: 0 # 数据库索引
-    password: "@Pukang_123" # 密码，建议生产环境开启
+    password: ${SA_TOKEN_REDIS_PASSWORD:}
 
 server:
   port: 8885
@@ -69,7 +69,7 @@ metadata:
   sdk:
     appcode: tpa
     open: true
-    secret: vxOFX0Kt6Rl6YSbicgYlfg==
+    secret: ${METADATA_SDK_SECRET:}
     url: http://metabata.dev6.pukangbao.com
     sqlpath: customsql/
 
@@ -91,14 +91,14 @@ eureka:
 sa-token:
   disable: true #关闭权限功能
   sign:
-    secret-key: kQwIOrYvnXmSDkwEiFngrKidMcdrgKor
+    secret-key: ${SA_TOKEN_SECRET:}
   timeout: 28800
   token-name: Satoken
   alone-redis:
     database: 11
     host: 47.105.112.106
     port: 6379
-    password: '@Pukang_123'
+    password: ${BONE_REDIS_PASSWORD:}
     connect-timeout: 10s
 
 
@@ -106,8 +106,8 @@ sa-token:
 ##OSS
 oss:
   ENDPOINT: http://oss-cn-hangzhou.aliyuncs.com
-  ACCESSKEYID: LTAI4G1eXunQDKHkp3E3pxWz
-  ACCESSKEYSECRET: Fu4uhBw8suvrPGQ4dQHhhfGNIZIqqK
+  ACCESSKEYID: ${OSS_ACCESS_KEY_ID:}
+  ACCESSKEYSECRET: ${OSS_ACCESS_KEY_SECRET:}
   BUCKETNAME: bucket-pktest
   KEY: pktpaphotoclaim/
   VISITURL: https://bucket-pktest.oss-cn-hangzhou.aliyuncs.com/

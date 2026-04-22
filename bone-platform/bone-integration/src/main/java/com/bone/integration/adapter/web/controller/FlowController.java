@@ -1,0 +1,114 @@
+package com.bone.integration.adapter.web.controller;
+
+import com.bone.integration.application.command.cmd.CreateFlowCmd;
+import com.bone.integration.application.command.cmd.UpdateFlowCmd;
+import com.bone.integration.application.command.handler.CreateFlowHandler;
+import com.bone.integration.application.command.handler.UpdateFlowHandler;
+import com.bone.integration.application.query.dto.FlowDTO;
+import com.bone.integration.application.query.handler.FlowPageQueryHandler;
+import com.bone.integration.application.query.qry.FlowPageQry;
+import com.bone.integration.domain.model.flow.FlowConnection;
+import com.bone.integration.domain.model.flow.FlowNode;
+import com.bone.integration.domain.model.flow.IntegrationFlow;
+import com.bone.integration.domain.repository.FlowConnectionRepository;
+import com.bone.integration.domain.repository.FlowNodeRepository;
+import com.bone.integration.domain.repository.IntegrationFlowRepository;
+import com.bone.core.model.PageResult;
+import com.bone.core.model.ApiResponse;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@RestController
+@RequestMapping("/integration/flows")
+@RequiredArgsConstructor
+public class FlowController {
+    private final CreateFlowHandler createFlowHandler;
+    private final UpdateFlowHandler updateFlowHandler;
+    private final FlowPageQueryHandler flowPageQueryHandler;
+    private final IntegrationFlowRepository flowRepository;
+    private final FlowNodeRepository nodeRepository;
+    private final FlowConnectionRepository connectionRepository;
+
+    @PostMapping
+    public ApiResponse<Long> create(@RequestBody CreateFlowCmd cmd) {
+        Long id = createFlowHandler.handle(cmd);
+        return ApiResponse.success(id);
+    }
+
+    @PutMapping("/{id}")
+    public ApiResponse<Void> update(@PathVariable Long id, @RequestBody UpdateFlowCmd cmd) {
+        updateFlowHandler.handle(new UpdateFlowCmd(id, cmd.name(), cmd.description(), cmd.nodes(), cmd.connections()));
+        return ApiResponse.success();
+    }
+
+    @GetMapping
+    public ApiResponse<PageResult<FlowDTO>> page(FlowPageQry qry) {
+        PageResult<FlowDTO> result = flowPageQueryHandler.handle(qry);
+        return ApiResponse.success(result);
+    }
+
+    @GetMapping("/{id}")
+    public ApiResponse<FlowDTO> detail(@PathVariable Long id) {
+        IntegrationFlow flow = flowRepository.findById(id)
+                .orElseThrow(() -> new com.bone.core.exception.DomainException("流程不存在"));
+        List<FlowNode> nodes = nodeRepository.findByFlowId(flow.getId());
+        List<FlowConnection> connections = connectionRepository.findByFlowId(flow.getId());
+
+        List<FlowDTO.FlowNodeDTO> nodeDTOs = nodes.stream()
+                .map(node -> new FlowDTO.FlowNodeDTO(
+                        node.getId().value(),
+                        node.getName(),
+                        node.getType().name(),
+                        node.getConfig(),
+                        node.getPositionX(),
+                        node.getPositionY()
+                ))
+                .collect(Collectors.toList());
+
+        List<FlowDTO.FlowConnectionDTO> connectionDTOs = connections.stream()
+                .map(conn -> new FlowDTO.FlowConnectionDTO(
+                        conn.getId(),
+                        conn.getSourceNodeId().value(),
+                        conn.getTargetNodeId().value(),
+                        conn.getCondition()
+                ))
+                .collect(Collectors.toList());
+
+        FlowDTO dto = new FlowDTO(
+                flow.getId().value(),
+                flow.getName(),
+                flow.getDescription(),
+                flow.getStatus().name(),
+                nodeDTOs,
+                connectionDTOs
+        );
+        return ApiResponse.success(dto);
+    }
+
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> delete(@PathVariable Long id) {
+        flowRepository.deleteById(id);
+        return ApiResponse.success();
+    }
+
+    @PostMapping("/{id}/activate")
+    public ApiResponse<Void> activate(@PathVariable Long id) {
+        IntegrationFlow flow = flowRepository.findById(id)
+                .orElseThrow(() -> new com.bone.core.exception.DomainException("流程不存在"));
+        flow.activate();
+        flowRepository.save(flow);
+        return ApiResponse.success();
+    }
+
+    @PostMapping("/{id}/deactivate")
+    public ApiResponse<Void> deactivate(@PathVariable Long id) {
+        IntegrationFlow flow = flowRepository.findById(id)
+                .orElseThrow(() -> new com.bone.core.exception.DomainException("流程不存在"));
+        flow.deactivate();
+        flowRepository.save(flow);
+        return ApiResponse.success();
+    }
+}

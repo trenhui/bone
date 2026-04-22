@@ -18,7 +18,7 @@ metadata:
   sdk:
     appcode: tpa
     open: true
-    secret: vxOFX0Kt6Rl6YSbicgYlfg==
+    secret: ${METADATA_SDK_SECRET:}
     url: http://127.0.0.1:8081
     sqlpath: customsql/
 
@@ -43,7 +43,7 @@ spring:
     url: jdbc:mysql://rds260kj5i2879nym9a9o.mysql.rds.aliyuncs.com:3306/tpa-saas?useSSL=false&autoReconnect=true&characterEncoding=utf8
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: tpasaasuser
-    password: G#EYff17
+    password: ${BONE_DB_PASSWORD:}
 
 #    # 指定为HikariDataSource
 #    type: com.zaxxer.hikari.HikariDataSource
@@ -70,7 +70,7 @@ spring:
       host: 47.105.112.106 # 地址
       port: 6379 # 端口
       database: 0 # 数据库索引
-      password: '@Pukang_123' # 密码，建议生产环境开启
+      password: ${BONE_REDIS_PASSWORD:}
       timeout: 10000
     jedis:
       pool:
@@ -82,7 +82,7 @@ spring:
 eureka:
   client:
     serviceUrl:
-      defaultZone: http://root:root@192.168.8.136:8099/eureka/
+      defaultZone: http://${EUREKA_USERNAME:root}:${EUREKA_PASSWORD:root}@${EUREKA_HOST:localhost}:${EUREKA_PORT:8761}/eureka/
 
 camel:
   cluster:
