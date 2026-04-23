@@ -6,6 +6,7 @@ import io.minio.PutObjectArgs;
 import io.minio.GetObjectArgs;
 import org.springframework.stereotype.Component;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
 @Component
@@ -24,12 +25,13 @@ public class MinioStorageClientImpl implements StorageClient {
     @Override
     public void save(String key, String content) {
         try {
+            byte[] bytes = content.getBytes();
             minioClient.putObject(
                     PutObjectArgs.builder()
                             .bucket(bucketName)
                             .object(key)
                             .contentType("text/plain")
-                            .stream(content.getBytes(), content.length(), -1)
+                            .stream(new ByteArrayInputStream(bytes), bytes.length, -1)
                             .build()
             );
         } catch (Exception e) {

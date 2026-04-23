@@ -24,6 +24,6 @@ public class CreateRoleHandler {
         RoleName roleName = RoleName.of(cmd.getName());
         Role role = Role.create(roleName, cmd.getDescription(), cmd.getTenantId());
         roleRepository.save(role);
-        return role.getId().getValue();
+        return role.getDbId();
     }
 }

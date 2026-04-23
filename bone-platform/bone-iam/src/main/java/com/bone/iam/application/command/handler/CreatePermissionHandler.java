@@ -22,9 +22,10 @@ public class CreatePermissionHandler {
         }
 
         PermissionCode code = PermissionCode.of(cmd.getCode());
-        Permission permission = Permission.create(code, cmd.getName(), cmd.getDescription(), 
-                                               cmd.getParentId(), cmd.getType());
+        String parentId = cmd.getParentId() != null ? String.valueOf(cmd.getParentId()) : null;
+        Permission permission = Permission.create(code, cmd.getName(), cmd.getDescription(),
+                                               parentId, cmd.getType());
         permissionRepository.save(permission);
-        return permission.getId().getValue();
+        return permission.getDbId();
     }
 }

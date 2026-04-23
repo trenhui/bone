@@ -1,5 +1,7 @@
 package com.bone.system.application.command.handler;
 
+import com.bone.metadata.sdk.query.dsl.FluentQuery;
+import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import com.bone.system.application.command.cmd.CreateConfigCmd;
 import com.bone.system.application.command.cmd.UpdateConfigCmd;
 import com.bone.system.common.exception.BusinessException;
@@ -21,7 +23,7 @@ public class ConfigCommandHandler {
     @Transactional
     public Long handle(CreateConfigCmd cmd) {
         ConfigKey configKey = ConfigKey.of(cmd.getConfigKey());
-        
+
         if (systemConfigRepository.existsByConfigKey(configKey)) {
             throw new BusinessException("配置键已存在: " + cmd.getConfigKey());
         }
@@ -35,13 +37,19 @@ public class ConfigCommandHandler {
         );
 
         systemConfigRepository.save(config);
-        return config.getId();
+        return config.getDbId();
     }
 
     @Transactional
     public void handle(UpdateConfigCmd cmd) {
-        SystemConfig config = systemConfigRepository.findById(cmd.getId())
-                .orElseThrow(() -> new NotFoundException("配置不存在: " + cmd.getId()));
+        // The repository is keyed by ConfigId (UUID), but we have Long dbId from API.
+        // This requires a custom query to find by dbId - let's implement it with the DSL.
+        SystemConfig config = QueryBuilder.from(SystemConfig.class)
+                .where(SystemConfig::getDbId).eq(cmd.getId())
+                .single();
+        if (config == null) {
+            throw new NotFoundException("配置不存在: " + cmd.getId());
+        }
 
         if (cmd.getConfigValue() != null) {
             config.updateValue(ConfigValue.of(cmd.getConfigValue()), "admin");
@@ -56,6 +64,12 @@ public class ConfigCommandHandler {
 
     @Transactional
     public void delete(Long id) {
-        systemConfigRepository.deleteById(id);
+        // Find by dbId first, then delete
+        SystemConfig config = QueryBuilder.from(SystemConfig.class)
+                .where(SystemConfig::getDbId).eq(id)
+                .single();
+        if (config != null) {
+            systemConfigRepository.deleteById(config.getId());
+        }
     }
 }

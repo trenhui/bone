@@ -1,6 +1,6 @@
 package com.bone.iam;
 
-import com.bone.metadata.sdk.annotation.EnableSqlRepositories;
+import com.bone.metadata.sdk.domain.annotation.EnableSqlRepositories;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 

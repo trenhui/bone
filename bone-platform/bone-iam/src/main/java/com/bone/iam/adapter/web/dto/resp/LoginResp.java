@@ -9,7 +9,7 @@ public class LoginResp {
 
     @Data
     public static class UserInfo {
-        private Long id;
+        private String id;
         private String username;
         private String email;
     }

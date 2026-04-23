@@ -1,10 +1,7 @@
-
 package com.bone.blueprint.application.query.dto;
 
-import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -12,49 +9,22 @@ import java.util.List;
 
 @Data
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class OrderDto {
-
-    private String id;
-    private String customerId;
-    private List<OrderItemDto> items;
+    private Long id;
+    private Long customerId;
     private BigDecimal totalAmount;
     private String status;
-    private String statusDescription;
-    private ShippingAddressDto shippingAddress;
-    private String remark;
     private LocalDateTime createTime;
-    private LocalDateTime updateTime;
-    private LocalDateTime paidTime;
-    private LocalDateTime shippedTime;
-    private LocalDateTime completedTime;
-    private LocalDateTime cancelledTime;
-
+    private List<OrderItemDto> items;
+    
     @Data
     @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
     public static class OrderItemDto {
-        private String productId;
+        private Long id;
+        private Long productId;
         private String productName;
-        private BigDecimal price;
         private Integer quantity;
+        private BigDecimal unitPrice;
         private BigDecimal subtotal;
     }
-
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    public static class ShippingAddressDto {
-        private String recipientName;
-        private String phone;
-        private String province;
-        private String city;
-        private String district;
-        private String detail;
-        private String postalCode;
-    }
 }
-

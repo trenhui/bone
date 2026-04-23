@@ -19,12 +19,11 @@ public class UpdateUserHandler {
     @Transactional
     public void handle(UpdateUserCmd cmd) {
         UserId userId = UserId.of(cmd.getId());
-        Optional<User> userOptional = userRepository.findById(userId);
-        if (userOptional.isEmpty()) {
+        User user = userRepository.findById(userId);
+        if (user == null) {
             throw new RuntimeException("用户不存在");
         }
 
-        User user = userOptional.get();
         Email email = Email.of(cmd.getEmail());
         user.updateEmail(email);
         userRepository.save(user);

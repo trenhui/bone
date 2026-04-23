@@ -21,7 +21,7 @@ public class LoginHandler {
             throw new RuntimeException("用户名或密码错误");
         }
 
-        String token = JwtUtils.generateToken(user.getId().value(), user.getUsername());
+        String token = JwtUtils.generateToken(user.getId().value(), user.getUsername().value());
         Map<String, Object> result = new HashMap<>();
         result.put("token", token);
         result.put("user", user);
