@@ -12,7 +12,7 @@ import java.math.BigDecimal;
     useCase = "order",
     scenario = "standard"
 )
-public class StandardOrderPriceCalculator implements OrderPriceCalculator {
+public class DefaultOrderPriceCalculator implements OrderPriceCalculator {
     @Override
     public BigDecimal calculate(OrderPriceCalculator.OrderPriceRequest request) {
         return request.getBaseAmount().add(request.getShippingFee());
