@@ -46,12 +46,11 @@ public class CreateOrderCommandHandler {
 
         Order order = Order.create(orderId, cmd.getCustomerId(), items);
 
-        BigDecimal finalPrice = priceCalculator.calculate(
-                OrderPriceCalculator.OrderPriceRequest.builder()
-                        .baseAmount(order.getTotalAmount())
-                        .shippingFee(BigDecimal.ZERO)
-                        .build()
-        );
+        OrderPriceCalculator.OrderPriceRequest request = OrderPriceCalculator.OrderPriceRequest.builder()
+                .baseAmount(order.getTotalAmount())
+                .shippingFee(BigDecimal.ZERO)
+                .build();
+        BigDecimal finalPrice = priceCalculator.calculate(request);
         order.updateTotalAmount(finalPrice);
 
         orderRepository.save(order);

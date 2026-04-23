@@ -14,7 +14,7 @@ import java.math.BigDecimal;
 public interface OrderPriceCalculator {
     BigDecimal calculate(OrderPriceRequest request);
     
-    class OrderPriceRequest {
+    public static class OrderPriceRequest {
         private BigDecimal baseAmount;
         private BigDecimal shippingFee;
         

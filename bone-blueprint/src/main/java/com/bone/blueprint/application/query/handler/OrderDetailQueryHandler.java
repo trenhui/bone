@@ -28,7 +28,6 @@ public class OrderDetailQueryHandler {
                 .customerId(order.getCustomerId())
                 .totalAmount(order.getTotalAmount())
                 .status(order.getStatus().name())
-                .createTime(order.getCreateTime())
                 .items(order.getItems().stream()
                         .map(item -> OrderDto.OrderItemDto.builder()
                                 .id(item.getId())

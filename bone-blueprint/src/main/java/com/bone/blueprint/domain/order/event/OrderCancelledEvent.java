@@ -1,13 +1,20 @@
 package com.bone.blueprint.domain.order.event;
 
-public class OrderCancelledEvent {
-    private final Long orderId;
+import com.bone.blueprint.domain.order.Order;
+import com.bone.core.domain.DomainEvent;
 
-    public OrderCancelledEvent(Long orderId) {
-        this.orderId = orderId;
+public class OrderCancelledEvent implements DomainEvent {
+    private final Order order;
+    
+    public OrderCancelledEvent(Order order) {
+        this.order = order;
     }
-
+    
+    public Order getOrder() {
+        return order;
+    }
+    
     public Long getOrderId() {
-        return orderId;
+        return order.getId();
     }
 }

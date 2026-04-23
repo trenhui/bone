@@ -1,19 +1,20 @@
 package com.bone.blueprint.domain.order.event;
 
-public class OrderPaidEvent {
-    private final Long orderId;
-    private final java.math.BigDecimal amount;
+import com.bone.blueprint.domain.order.Order;
+import com.bone.core.domain.DomainEvent;
 
-    public OrderPaidEvent(Long orderId, java.math.BigDecimal amount) {
-        this.orderId = orderId;
-        this.amount = amount;
+public class OrderPaidEvent implements DomainEvent {
+    private final Order order;
+    
+    public OrderPaidEvent(Order order) {
+        this.order = order;
     }
-
+    
+    public Order getOrder() {
+        return order;
+    }
+    
     public Long getOrderId() {
-        return orderId;
-    }
-
-    public java.math.BigDecimal getAmount() {
-        return amount;
+        return order.getId();
     }
 }
