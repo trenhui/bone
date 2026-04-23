@@ -74,7 +74,7 @@ public class AlertRule extends AggregateRoot<Long> {
         this.alertLevel = alertLevel;
         this.notificationChannels = notificationChannels;
         this.updateTime = LocalDateTime.now();
-        addDomainEvent(new AlertRuleUpdatedEvent(this.id, name, description, threshold.value(), alertLevel, notificationChannels));
+        addDomainEvent(new AlertRuleUpdatedEvent(getId(), name, description, threshold.value(), alertLevel, notificationChannels));
     }
 
     /**
@@ -108,7 +108,7 @@ public class AlertRule extends AggregateRoot<Long> {
      *
      * @param id ID值
      */
-    void setId(Long id) {
-        this.id = id;
+    public void setId(Long id) {
+        super.setId(id);
     }
 }

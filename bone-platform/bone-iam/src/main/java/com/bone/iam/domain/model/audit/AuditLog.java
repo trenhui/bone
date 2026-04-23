@@ -12,8 +12,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public class AuditLog extends AggregateRoot<Long> {
-    private AuditLogId id;
+public class AuditLog extends AggregateRoot<AuditLogId> {
     private Long tenantId;
     private Long userId;
     private OperationType operation;
@@ -26,8 +25,8 @@ public class AuditLog extends AggregateRoot<Long> {
     private Integer duration;
     private LocalDateTime createTime;
 
-    public static AuditLog create(Long tenantId, Long userId, OperationType operation, String resourceId, 
-                                  String resourceType, String ip, String userAgent, 
+    public static AuditLog create(Long tenantId, Long userId, OperationType operation, String resourceId,
+                                  String resourceType, String ip, String userAgent,
                                   String parameters, String result, Integer duration) {
         AuditLog auditLog = new AuditLog();
         auditLog.tenantId = tenantId;
@@ -45,7 +44,7 @@ public class AuditLog extends AggregateRoot<Long> {
         return auditLog;
     }
 
-    void setId(Long id) {
-        this.id = AuditLogId.of(id);
+    public void setId(AuditLogId id) {
+        super.setId(id);
     }
 }

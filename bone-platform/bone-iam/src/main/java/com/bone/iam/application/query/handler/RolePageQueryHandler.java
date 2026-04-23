@@ -4,29 +4,49 @@ import com.bone.core.model.PageResult;
 import com.bone.iam.application.query.dto.RoleDTO;
 import com.bone.iam.application.query.qry.RolePageQry;
 import com.bone.iam.domain.model.role.Role;
-import com.bone.metadata.sdk.query.QueryBuilder;
+import com.bone.metadata.sdk.query.dsl.FluentQuery;
+import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
 public class RolePageQueryHandler {
     @Transactional(readOnly = true)
     public PageResult<RoleDTO> handle(RolePageQry qry) {
-        QueryBuilder<Role> queryBuilder = QueryBuilder.from(Role.class);
-        
+        FluentQuery<Role> query = QueryBuilder.from(Role.class);
+
         if (qry.getKeyword() != null && !qry.getKeyword().isEmpty()) {
-            queryBuilder.where("name").like(qry.getKeyword())
-                       .or("description").like(qry.getKeyword());
+            query.where(Role::getName).like(qry.getKeyword())
+                       .or(Role::getDescription).like(qry.getKeyword());
         }
-        
+
         if (qry.getTenantId() != null) {
-            queryBuilder.where("tenantId").eq(qry.getTenantId());
+            query.where(Role::getTenantId).eq(qry.getTenantId());
         }
-        
-        return queryBuilder.orderBy("createTime", "desc")
-                          .page(qry.getPageNum(), qry.getPageSize())
-                          .mapTo(RoleDTO.class);
+
+        PageResult<Role> result = query.orderByDesc(Role::getCreateTime)
+                          .page(qry.getPage(), qry.getSize());
+
+        List<RoleDTO> dtoList = result.getRecords().stream()
+            .map(this::convertToDto)
+            .collect(Collectors.toList());
+
+        return PageResult.of(dtoList, result.getTotal(), result.getPage(), result.getSize());
+    }
+
+    private RoleDTO convertToDto(Role role) {
+        RoleDTO dto = new RoleDTO();
+        dto.setId(role.getDbId());
+        dto.setName(role.getName().value());
+        dto.setDescription(role.getDescription());
+        dto.setTenantId(role.getTenantId());
+        dto.setCreateTime(role.getCreateTime());
+        dto.setUpdateTime(role.getUpdateTime());
+        return dto;
     }
 }

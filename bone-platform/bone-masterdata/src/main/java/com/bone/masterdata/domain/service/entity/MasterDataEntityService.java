@@ -1,15 +1,15 @@
 package com.bone.masterdata.domain.service.entity;
 
 import com.bone.masterdata.domain.model.entity.MasterDataEntity;
+import com.bone.masterdata.domain.model.entity.MasterDataField;
 import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityId;
 import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityName;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
 import com.bone.masterdata.domain.repository.MasterDataFieldRepository;
-import com.bone.metadata.sdk.query.QueryBuilder;
+import com.bone.metadata.sdk.query.dsl.FluentQuery;
+import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import com.bone.core.exception.DomainException;
 import lombok.RequiredArgsConstructor;
-
-import java.util.List;
 
 /**
  * 主数据实体领域服务
@@ -29,7 +29,7 @@ public class MasterDataEntityService {
      */
     public MasterDataEntity createEntity(MasterDataEntityName name, String description, String category) {
         boolean exists = QueryBuilder.from(MasterDataEntity.class)
-                .where("name").eq(name.value())
+                .where(MasterDataEntity::getName).eq(name.value())
                 .exists();
         if (exists) {
             throw new DomainException("主数据实体名称已存在");
@@ -57,7 +57,7 @@ public class MasterDataEntityService {
      */
     public int getFieldCount(MasterDataEntityId entityId) {
         long count = QueryBuilder.from(MasterDataField.class)
-                .where("masterDataEntityId").eq(entityId.getValue())
+                .where(MasterDataField::getMasterDataEntityId).eq(entityId.getValue())
                 .count();
         return (int) count;
     }

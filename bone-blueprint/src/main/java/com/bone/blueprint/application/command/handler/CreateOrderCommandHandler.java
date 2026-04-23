@@ -1,16 +1,18 @@
-
 package com.bone.blueprint.application.command.handler;
 
 import com.bone.blueprint.application.command.cmd.CreateOrderCommand;
-import com.bone.blueprint.domain.model.order.Order;
-import com.bone.blueprint.domain.model.order.vo.OrderId;
-import com.bone.blueprint.domain.model.order.vo.OrderItem;
-import com.bone.blueprint.domain.model.order.vo.ShippingAddress;
+import com.bone.blueprint.domain.gateway.InventoryGateway;
+import com.bone.blueprint.domain.order.Order;
+import com.bone.blueprint.domain.order.OrderItem;
 import com.bone.blueprint.domain.repository.OrderRepository;
+import com.bone.blueprint.domain.extension.order.OrderPriceCalculator;
+import com.bone.core.exception.DomainException;
+import com.bone.core.util.DistributedIdGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,31 +21,40 @@ import java.util.stream.Collectors;
 public class CreateOrderCommandHandler {
 
     private final OrderRepository orderRepository;
+    private final InventoryGateway inventoryGateway;
+    private final OrderPriceCalculator priceCalculator;
 
     @Transactional
-    public OrderId handle(CreateOrderCommand cmd) {
-        List&lt;OrderItem&gt; orderItems = cmd.getItems().stream()
-                .map(item -&gt; OrderItem.of(
-                        item.getProductId(),
-                        item.getProductName(),
-                        item.getPrice(),
-                        item.getQuantity()
-                ))
+    public Long handle(CreateOrderCommand cmd) {
+        for (CreateOrderCommand.OrderItemDto dto : cmd.getItems()) {
+            if (!inventoryGateway.checkStock(dto.getProductId(), dto.getQuantity())) {
+                throw new DomainException("商品库存不足: " + dto.getProductId());
+            }
+        }
+
+        long orderId = DistributedIdGenerator.generateLongId();
+
+        List<OrderItem> items = cmd.getItems().stream()
+                .map(dto -> OrderItem.create(
+                        DistributedIdGenerator.generateLongId(),
+                        orderId,
+                        dto.getProductId(),
+                        dto.getProductName(),
+                        dto.getQuantity(),
+                        dto.getUnitPrice()))
                 .collect(Collectors.toList());
 
-        ShippingAddress address = ShippingAddress.of(
-                cmd.getShippingAddress().getRecipientName(),
-                cmd.getShippingAddress().getPhone(),
-                cmd.getShippingAddress().getProvince(),
-                cmd.getShippingAddress().getCity(),
-                cmd.getShippingAddress().getDistrict(),
-                cmd.getShippingAddress().getDetail(),
-                cmd.getShippingAddress().getPostalCode()
-        );
+        Order order = Order.create(orderId, cmd.getCustomerId(), items);
 
-        Order order = Order.create(cmd.getCustomerId(), orderItems, address, cmd.getRemark());
+        BigDecimal finalPrice = priceCalculator.calculate(
+                OrderPriceCalculator.OrderPriceRequest.builder()
+                        .baseAmount(order.getTotalAmount())
+                        .shippingFee(BigDecimal.ZERO)
+                        .build()
+        );
+        order.updateTotalAmount(finalPrice);
+
         orderRepository.save(order);
         return order.getId();
     }
 }
-

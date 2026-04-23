@@ -62,7 +62,7 @@ public class AlertEvent extends AggregateRoot<Long> {
     public void resolve() {
         this.status = AlertStatus.RESOLVED;
         this.resolveTime = LocalDateTime.now();
-        addDomainEvent(new AlertResolvedEvent(this.id, this.alertRuleId, this.ruleName));
+        addDomainEvent(new AlertResolvedEvent(getId(), this.alertRuleId, this.ruleName));
     }
 
     /**
@@ -70,7 +70,7 @@ public class AlertEvent extends AggregateRoot<Long> {
      *
      * @param id ID值
      */
-    void setId(Long id) {
-        this.id = id;
+    public void setId(Long id) {
+        super.setId(id);
     }
 }

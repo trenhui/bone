@@ -1,4 +1,3 @@
-
 package com.bone.blueprint;
 
 import com.bone.engine.extension.api.annotation.EnableExtensionPoints;
@@ -15,4 +14,3 @@ public class BoneBlueprintApplication {
         SpringApplication.run(BoneBlueprintApplication.class, args);
     }
 }
-

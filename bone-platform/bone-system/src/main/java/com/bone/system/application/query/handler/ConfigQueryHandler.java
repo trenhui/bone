@@ -1,6 +1,7 @@
 package com.bone.system.application.query.handler;
 
-import com.bone.metadata.sdk.query.QueryBuilder;
+import com.bone.metadata.sdk.query.dsl.FluentQuery;
+import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import com.bone.system.application.query.dto.ConfigDTO;
 import com.bone.system.application.query.qry.ConfigPageQry;
 import com.bone.system.common.result.PageResult;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -19,9 +21,11 @@ public class ConfigQueryHandler {
 
     @Transactional(readOnly = true)
     public ConfigDTO getById(Long id) {
-        return systemConfigRepository.findById(id)
-                .map(this::toDTO)
-                .orElse(null);
+        // Find by dbId (Long) using DSL since repository is keyed by ConfigId (UUID)
+        SystemConfig config = QueryBuilder.from(SystemConfig.class)
+                .where(SystemConfig::getDbId).eq(id)
+                .single();
+        return config != null ? toDTO(config) : null;
     }
 
     @Transactional(readOnly = true)
@@ -34,21 +38,25 @@ public class ConfigQueryHandler {
 
     @Transactional(readOnly = true)
     public PageResult<ConfigDTO> page(ConfigPageQry qry) {
-        QueryBuilder<SystemConfig> queryBuilder = QueryBuilder.from(SystemConfig.class);
-        
+        FluentQuery<SystemConfig> query = QueryBuilder.from(SystemConfig.class);
+
         if (qry.getKeyword() != null && !qry.getKeyword().isBlank()) {
-            queryBuilder = queryBuilder.where("configKey").like(qry.getKeyword())
-                    .or("description").like(qry.getKeyword());
+            query.where(SystemConfig::getConfigKey).like(qry.getKeyword())
+                    .or(SystemConfig::getDescription).like(qry.getKeyword());
         }
 
-        return queryBuilder
-                .page(qry.getPageNum(), qry.getPageSize())
-                .mapTo(ConfigDTO.class);
+        com.bone.core.model.PageResult<SystemConfig> result = query.page(qry.getPageNum(), qry.getPageSize());
+
+        List<ConfigDTO> dtoList = result.getRecords().stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+
+        return PageResult.of(dtoList, result.getTotal(), result.getPage(), result.getSize());
     }
 
     private ConfigDTO toDTO(SystemConfig config) {
         return ConfigDTO.builder()
-                .id(config.getId())
+                .id(config.getDbId())
                 .configKey(config.getConfigKey().value())
                 .configValue(config.isEncrypted() ? "******" : config.getConfigValue().value())
                 .description(config.getDescription())

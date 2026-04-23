@@ -1,5 +1,6 @@
 package com.bone.masterdata.domain.service.quality;
 
+import com.bone.masterdata.domain.model.entity.MasterDataRecord;
 import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityId;
 import com.bone.masterdata.domain.model.quality.DataQualityRule;
 import com.bone.masterdata.domain.model.quality.QualityCheck;
@@ -9,7 +10,8 @@ import com.bone.masterdata.domain.model.quality.vo.RuleName;
 import com.bone.masterdata.domain.model.quality.vo.RuleSeverity;
 import com.bone.masterdata.domain.repository.DataQualityRuleRepository;
 import com.bone.masterdata.domain.repository.MasterDataRecordRepository;
-import com.bone.metadata.sdk.query.QueryBuilder;
+import com.bone.metadata.sdk.query.dsl.FluentQuery;
+import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import com.bone.core.exception.DomainException;
 import lombok.RequiredArgsConstructor;
 
@@ -40,12 +42,12 @@ public class DataQualityService {
 
         // 获取实体的所有规则
         List<DataQualityRule> rules = QueryBuilder.from(DataQualityRule.class)
-                .where("masterDataEntityId").eq(masterDataEntityId.getValue())
+                .where(DataQualityRule::getMasterDataEntityId).eq(masterDataEntityId.getValue())
                 .list();
 
         // 获取实体的所有记录
-        var records = QueryBuilder.from(MasterDataRecord.class)
-                .where("masterDataEntityId").eq(masterDataEntityId.getValue())
+        List<MasterDataRecord> records = QueryBuilder.from(MasterDataRecord.class)
+                .where(MasterDataRecord::getMasterDataEntityId).eq(masterDataEntityId.getValue())
                 .list();
 
         // 执行质量检查逻辑（简化实现）

@@ -23,7 +23,7 @@ public class AuthWebConverter {
         
         User user = (User) result.get("user");
         LoginResp.UserInfo userInfo = new LoginResp.UserInfo();
-        userInfo.setId(user.getId().getValue());
+        userInfo.setId(user.getId().value());
         userInfo.setUsername(user.getUsername().value());
         userInfo.setEmail(user.getEmail().value());
         resp.setUser(userInfo);

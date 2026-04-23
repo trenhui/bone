@@ -1,9 +1,7 @@
-
 package com.bone.blueprint.application.command.handler;
 
 import com.bone.blueprint.application.command.cmd.CancelOrderCommand;
-import com.bone.blueprint.domain.model.order.Order;
-import com.bone.blueprint.domain.model.order.vo.OrderId;
+import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -17,13 +15,11 @@ public class CancelOrderCommandHandler {
 
     @Transactional
     public void handle(CancelOrderCommand cmd) {
-        OrderId orderId = OrderId.of(cmd.getOrderId());
-        Order order = orderRepository.findById(orderId);
+        Order order = orderRepository.findById(cmd.getOrderId());
         if (order == null) {
-            throw new IllegalArgumentException("Order not found: " + cmd.getOrderId());
+            throw new com.bone.core.exception.DomainException("订单不存在");
         }
-        order.cancel(cmd.getReason());
-        orderRepository.update(order);
+        order.cancel();
+        orderRepository.save(order);
     }
 }
-

@@ -1,5 +1,6 @@
 package com.bone.system.application.command.handler;
 
+import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import com.bone.system.application.command.cmd.CreateAlertRuleCmd;
 import com.bone.system.application.command.cmd.DisableAlertRuleCmd;
 import com.bone.system.application.command.cmd.EnableAlertRuleCmd;
@@ -53,8 +54,10 @@ public class AlertCommandHandler {
      */
     @Transactional
     public void handle(UpdateAlertRuleCmd cmd) {
-        AlertRule rule = alertRuleRepository.findById(cmd.getId())
-                .orElseThrow(() -> new NotFoundException("告警规则不存在: " + cmd.getId()));
+        AlertRule rule = alertRuleRepository.findById(cmd.getId());
+        if (rule == null) {
+            throw new NotFoundException("告警规则不存在: " + cmd.getId());
+        }
 
         rule.update(
                 cmd.getName() != null ? cmd.getName() : rule.getName(),
@@ -74,8 +77,10 @@ public class AlertCommandHandler {
      */
     @Transactional
     public void handle(EnableAlertRuleCmd cmd) {
-        AlertRule rule = alertRuleRepository.findById(cmd.getId())
-                .orElseThrow(() -> new NotFoundException("告警规则不存在: " + cmd.getId()));
+        AlertRule rule = alertRuleRepository.findById(cmd.getId());
+        if (rule == null) {
+            throw new NotFoundException("告警规则不存在: " + cmd.getId());
+        }
         rule.enable();
         alertRuleRepository.save(rule);
     }
@@ -87,8 +92,10 @@ public class AlertCommandHandler {
      */
     @Transactional
     public void handle(DisableAlertRuleCmd cmd) {
-        AlertRule rule = alertRuleRepository.findById(cmd.getId())
-                .orElseThrow(() -> new NotFoundException("告警规则不存在: " + cmd.getId()));
+        AlertRule rule = alertRuleRepository.findById(cmd.getId());
+        if (rule == null) {
+            throw new NotFoundException("告警规则不存在: " + cmd.getId());
+        }
         rule.disable();
         alertRuleRepository.save(rule);
     }
@@ -112,8 +119,10 @@ public class AlertCommandHandler {
      */
     @Transactional
     public Long createAlertEvent(Long ruleId, double actualValue) {
-        AlertRule rule = alertRuleRepository.findById(ruleId)
-                .orElseThrow(() -> new NotFoundException("告警规则不存在: " + ruleId));
+        AlertRule rule = alertRuleRepository.findById(ruleId);
+        if (rule == null) {
+            throw new NotFoundException("告警规则不存在: " + ruleId);
+        }
 
         if (!rule.shouldTrigger(actualValue)) {
             return null;
@@ -126,7 +135,7 @@ public class AlertCommandHandler {
                 actualValue,
                 rule.getThreshold().value(),
                 rule.getAlertLevel(),
-                String.format("指标 %s 当前值 %.2f 超过阈值 %.2f", 
+                String.format("指标 %s 当前值 %.2f 超过阈值 %.2f",
                         rule.getMetricName().value(), actualValue, rule.getThreshold().value())
         );
 
@@ -142,8 +151,10 @@ public class AlertCommandHandler {
      */
     @Transactional
     public void handle(ResolveAlertCmd cmd) {
-        AlertEvent event = alertEventRepository.findById(cmd.getId())
-                .orElseThrow(() -> new NotFoundException("告警事件不存在: " + cmd.getId()));
+        AlertEvent event = alertEventRepository.findById(cmd.getId());
+        if (event == null) {
+            throw new NotFoundException("告警事件不存在: " + cmd.getId());
+        }
         event.resolve();
         alertEventRepository.save(event);
     }
