@@ -3,14 +3,13 @@ package com.bone.iam.application.query.handler;
 import com.bone.core.model.PageResult;
 import com.bone.iam.application.query.dto.AuditLogDTO;
 import com.bone.iam.application.query.qry.AuditLogListQry;
-import com.bone.iam.domain.model.audit.AuditLog;
+import com.bone.iam.domain.audit.AuditLog;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -61,7 +60,7 @@ public class AuditLogListQueryHandler {
 
     private AuditLogDTO convertToDto(AuditLog auditLog) {
         AuditLogDTO dto = new AuditLogDTO();
-        dto.setId(auditLog.getId().value());
+        dto.setId(auditLog.getId());
         dto.setTenantId(auditLog.getTenantId());
         dto.setUserId(auditLog.getUserId());
         dto.setOperation(auditLog.getOperation());

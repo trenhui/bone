@@ -1,10 +1,10 @@
 package com.bone.masterdata.adapter.web.controller;
 
 import com.bone.masterdata.application.command.cmd.ImportMasterDataRecordsCmd;
-import com.bone.masterdata.application.command.handler.ImportMasterDataRecordsHandler;
-import com.bone.masterdata.application.command.handler.PublishMasterDataRecordHandler;
+import com.bone.masterdata.application.usecase.standard.ImportMasterDataRecordsUseCase;
+import com.bone.masterdata.application.usecase.standard.PublishMasterDataRecordUseCase;
+import com.bone.masterdata.application.usecase.standard.MasterDataRecordListQueryUseCase;
 import com.bone.masterdata.application.query.dto.MasterDataRecordDTO;
-import com.bone.masterdata.application.query.handler.MasterDataRecordListQueryHandler;
 import com.bone.masterdata.application.query.qry.MasterDataRecordListQry;
 import com.bone.core.result.ApiResponse;
 import com.bone.core.result.PageResult;
@@ -18,28 +18,28 @@ import java.util.List;
 @RequestMapping("/api/masterdata/records")
 @RequiredArgsConstructor
 public class MasterDataRecordController {
-    private final ImportMasterDataRecordsHandler importHandler;
-    private final MasterDataRecordListQueryHandler listQueryHandler;
-    private final PublishMasterDataRecordHandler publishHandler;
+    private final ImportMasterDataRecordsUseCase importMasterDataRecordsUseCase;
+    private final MasterDataRecordListQueryUseCase masterDataRecordListQueryUseCase;
+    private final PublishMasterDataRecordUseCase publishMasterDataRecordUseCase;
 
     @PostMapping
     public ApiResponse<List<Long>> importRecords(@RequestParam Long masterDataEntityId, @RequestParam MultipartFile file) {
         ImportMasterDataRecordsCmd cmd = new ImportMasterDataRecordsCmd();
         cmd.setMasterDataEntityId(masterDataEntityId);
         cmd.setFile(file);
-        List<Long> ids = importHandler.handle(cmd);
+        List<Long> ids = importMasterDataRecordsUseCase.execute(cmd);
         return ApiResponse.success(ids);
     }
 
     @GetMapping
     public ApiResponse<PageResult<MasterDataRecordDTO>> list(MasterDataRecordListQry qry) {
-        PageResult<MasterDataRecordDTO> result = listQueryHandler.handle(qry);
+        PageResult<MasterDataRecordDTO> result = masterDataRecordListQueryUseCase.execute(qry);
         return ApiResponse.success(result);
     }
 
     @PostMapping("/{id}/publish")
     public ApiResponse<Void> publish(@PathVariable Long id) {
-        publishHandler.handle(id);
+        publishMasterDataRecordUseCase.execute(id);
         return ApiResponse.success();
     }
 

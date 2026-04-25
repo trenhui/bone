@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Layout, Menu, Button, Dropdown, message } from 'antd';
-import { LogoutOutlined, UserOutlined, KeyOutlined, TeamOutlined, LockOutlined, AuditOutlined } from '@ant-design/icons';
+import { LogoutOutlined, UserOutlined, TeamOutlined, LockOutlined, AuditOutlined } from '@ant-design/icons';
 import { Link, useNavigate } from 'react-router-dom';
-import { apiService } from '../services/api';
+import * as api from '../services/api';
 
 const { Header, Sider, Content } = Layout;
 
@@ -12,10 +12,10 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   const handleLogout = async () => {
     try {
-      await apiService.logout();
+      await api.logout();
       localStorage.removeItem('token');
       navigate('/login');
-    } catch (error) {
+    } catch {
       message.error('退出登录失败');
     }
   };
@@ -24,7 +24,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     {
       key: '1',
       icon: <UserOutlined />,
-      label: <Link to="/users">用户管理</Link>,
+      label: <Link to="/accounts">账号管理</Link>,
     },
     {
       key: '2',

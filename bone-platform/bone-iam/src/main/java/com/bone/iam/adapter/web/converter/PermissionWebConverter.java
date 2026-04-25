@@ -11,8 +11,12 @@ public class PermissionWebConverter {
         cmd.setCode(req.getCode());
         cmd.setName(req.getName());
         cmd.setDescription(req.getDescription());
+        cmd.setResourceType(req.getResourceType());
+        cmd.setResourcePath(req.getResourcePath());
+        cmd.setAction(req.getAction());
         cmd.setParentId(req.getParentId());
         cmd.setType(req.getType());
+        cmd.setSortOrder(req.getSortOrder() == null ? 0 : req.getSortOrder());
         return cmd;
     }
 }

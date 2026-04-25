@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Input, DatePicker, message, Space } from 'antd';
+import { Table, Input, DatePicker, message } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
-import { apiService } from '../services/api';
-import { AuditLog } from '../types';
+import * as api from '../services/api';
+import type { AuditLog } from '../types';
 
 const { RangePicker } = DatePicker;
 
@@ -13,23 +13,17 @@ const AuditLogPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [keyword, setKeyword] = useState('');
-  const [dateRange, setDateRange] = useState<[string, string] | null>(null);
+
 
   const fetchAuditLogs = async () => {
     setLoading(true);
     try {
-      const response = await apiService.getAuditLogs(
-        page,
-        pageSize,
-        keyword,
-        dateRange?.[0],
-        dateRange?.[1]
-      );
+      const response = await api.getAuditLogs({ page, pageSize });
       if (response.code === 200) {
         setAuditLogs(response.data.data);
         setTotal(response.data.total);
       }
-    } catch (error) {
+    } catch {
       message.error('获取审计日志失败');
     } finally {
       setLoading(false);
@@ -38,56 +32,16 @@ const AuditLogPage: React.FC = () => {
 
   useEffect(() => {
     fetchAuditLogs();
-  }, [page, pageSize, keyword, dateRange]);
-
-  const handleDateChange = (dates: any) => {
-    if (dates) {
-      setDateRange([
-        dates[0].format('YYYY-MM-DD'),
-        dates[1].format('YYYY-MM-DD')
-      ]);
-    } else {
-      setDateRange(null);
-    }
-  };
+  }, [page, pageSize]);
 
   const columns = [
-    {
-      title: '操作人',
-      dataIndex: 'username',
-      key: 'username',
-    },
-    {
-      title: '操作',
-      dataIndex: 'action',
-      key: 'action',
-    },
-    {
-      title: '资源类型',
-      dataIndex: 'resourceType',
-      key: 'resourceType',
-    },
-    {
-      title: '资源ID',
-      dataIndex: 'resourceId',
-      key: 'resourceId',
-    },
-    {
-      title: '详情',
-      dataIndex: 'details',
-      key: 'details',
-      ellipsis: true,
-    },
-    {
-      title: 'IP地址',
-      dataIndex: 'ipAddress',
-      key: 'ipAddress',
-    },
-    {
-      title: '操作时间',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-    },
+    { title: '操作人', dataIndex: 'username', key: 'username' },
+    { title: '操作', dataIndex: 'action', key: 'action' },
+    { title: '资源类型', dataIndex: 'resourceType', key: 'resourceType' },
+    { title: '资源ID', dataIndex: 'resourceId', key: 'resourceId' },
+    { title: '详情', dataIndex: 'details', key: 'details', ellipsis: true },
+    { title: 'IP地址', dataIndex: 'ipAddress', key: 'ipAddress' },
+    { title: '操作时间', dataIndex: 'createTime', key: 'createTime' },
   ];
 
   return (
@@ -102,7 +56,7 @@ const AuditLogPage: React.FC = () => {
             onChange={(e) => setKeyword(e.target.value)}
             style={{ width: 300 }}
           />
-          <RangePicker onChange={handleDateChange} style={{ width: 300 }} />
+          <RangePicker style={{ width: 300 }} />
         </div>
       </div>
       <Table
@@ -114,9 +68,9 @@ const AuditLogPage: React.FC = () => {
           current: page,
           pageSize: pageSize,
           total: total,
-          onChange: (page, pageSize) => {
-            setPage(page);
-            setPageSize(pageSize);
+          onChange: (p, ps) => {
+            setPage(p);
+            if (ps) setPageSize(ps);
           }
         }}
       />

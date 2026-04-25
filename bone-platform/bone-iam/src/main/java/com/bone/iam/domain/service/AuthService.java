@@ -1,8 +1,8 @@
 package com.bone.iam.domain.service;
 
+import com.bone.iam.domain.account.Account;
 import com.bone.iam.domain.client.SsoClient;
-import com.bone.iam.domain.model.user.User;
-import com.bone.iam.domain.repository.UserRepository;
+import com.bone.iam.domain.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -12,20 +12,20 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class AuthService {
-    private final UserRepository userRepository;
+    private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
     private final SsoClient ssoClient;
 
-    public User authenticate(String username, String password) {
-        Optional<User> userOptional = userRepository.findByUsername(username);
-        if (userOptional.isEmpty()) {
+    public Account authenticate(String username, String password) {
+        Optional<Account> accountOptional = accountRepository.findByUsername(username);
+        if (accountOptional.isEmpty()) {
             return null;
         }
-        User user = userOptional.get();
-        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+        Account account = accountOptional.get();
+        if (!passwordEncoder.matches(password, account.getPasswordHash())) {
             return null;
         }
-        return user;
+        return account;
     }
 
     public boolean ssoAuthenticate(String username, String password) {

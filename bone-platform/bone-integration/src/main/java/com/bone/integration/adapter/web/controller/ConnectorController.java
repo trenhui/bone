@@ -2,10 +2,10 @@ package com.bone.integration.adapter.web.controller;
 
 import com.bone.integration.application.command.cmd.CreateConnectorCmd;
 import com.bone.integration.application.command.cmd.UpdateConnectorCmd;
-import com.bone.integration.application.command.handler.CreateConnectorHandler;
-import com.bone.integration.application.command.handler.UpdateConnectorHandler;
+import com.bone.integration.application.usecase.standard.CreateConnectorUseCase;
+import com.bone.integration.application.usecase.standard.UpdateConnectorUseCase;
+import com.bone.integration.application.usecase.standard.ConnectorPageQueryUseCase;
 import com.bone.integration.application.query.dto.ConnectorDTO;
-import com.bone.integration.application.query.handler.ConnectorPageQueryHandler;
 import com.bone.integration.application.query.qry.ConnectorPageQry;
 import com.bone.integration.domain.model.connector.Connector;
 import com.bone.integration.domain.repository.ConnectorRepository;
@@ -21,27 +21,27 @@ import java.util.Map;
 @RequestMapping("/integration/connectors")
 @RequiredArgsConstructor
 public class ConnectorController {
-    private final CreateConnectorHandler createConnectorHandler;
-    private final UpdateConnectorHandler updateConnectorHandler;
-    private final ConnectorPageQueryHandler connectorPageQueryHandler;
+    private final CreateConnectorUseCase createConnectorUseCase;
+    private final UpdateConnectorUseCase updateConnectorUseCase;
+    private final ConnectorPageQueryUseCase connectorPageQueryUseCase;
     private final ConnectorRepository connectorRepository;
     private final ConnectorService connectorService;
 
     @PostMapping
     public ApiResponse<Long> create(@RequestBody CreateConnectorCmd cmd) {
-        Long id = createConnectorHandler.handle(cmd);
+        Long id = createConnectorUseCase.execute(cmd);
         return ApiResponse.success(id);
     }
 
     @PutMapping("/{id}")
     public ApiResponse<Void> update(@PathVariable Long id, @RequestBody UpdateConnectorCmd cmd) {
-        updateConnectorHandler.handle(new UpdateConnectorCmd(id, cmd.name(), cmd.type(), cmd.config()));
+        updateConnectorUseCase.execute(new UpdateConnectorCmd(id, cmd.name(), cmd.type(), cmd.config()));
         return ApiResponse.success();
     }
 
     @GetMapping
     public ApiResponse<PageResult<ConnectorDTO>> page(ConnectorPageQry qry) {
-        PageResult<ConnectorDTO> result = connectorPageQueryHandler.handle(qry);
+        PageResult<ConnectorDTO> result = connectorPageQueryUseCase.execute(qry);
         return ApiResponse.success(result);
     }
 

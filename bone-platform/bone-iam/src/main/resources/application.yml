@@ -1,6 +1,13 @@
 spring:
+  main:
+    allow-circular-references: true
   application:
     name: bone-iam
+  sql:
+    init:
+      mode: never
+  flyway:
+    enabled: false
   datasource:
     url: jdbc:mysql://localhost:3306/bone?useSSL=false&autoReconnect=true&characterEncoding=utf8
     username: root
@@ -24,3 +31,12 @@ mybatis:
 logging:
   level:
     com.bone.iam: info
+
+bone:
+  iam:
+    jwt:
+      secret-key: ${BONE_JWT_SECRET:change-me-change-me-change-me-change-me-32bytes}
+      expiration-ms: ${BONE_JWT_EXPIRATION_MS:7200000}
+      refresh-expiration-ms: ${BONE_JWT_REFRESH_EXPIRATION_MS:604800000}
+      token-prefix: "Bearer "
+      header-name: "Authorization"

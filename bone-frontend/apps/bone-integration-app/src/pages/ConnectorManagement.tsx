@@ -283,7 +283,11 @@ export const ConnectorManagement: React.FC = () => {
             <TextArea
               rows={6}
               placeholder="请输入 JSON 格式的配置"
-              defaultValue="{\n  \"url\": \"\",\n  \"username\": \"\",\n  \"password\": \"\"\n}"
+              defaultValue={`{
+  "url": "",
+  "username": "",
+  "password": ""
+}`}
             />
           </Form.Item>
         </Form>

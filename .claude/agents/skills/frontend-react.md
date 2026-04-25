@@ -56,3 +56,32 @@ src/services/
 - 操作成功后自动刷新列表
 - 错误提示使用 `message.error`
 - 成功提示使用 `message.success`
+
+## 前端切片顺序
+1. **types** - 类型定义
+2. **api** - API 服务层
+3. **hooks** - 自定义 Hooks
+4. **components** - 组件/页面
+5. **styles** - 样式
+
+## 切片检查命令
+```bash
+# 类型检查
+npm run type-check
+
+# Lint 检查
+npm run lint
+
+# 单元测试
+npm run test -- --run
+
+# 完整构建
+npm run build
+```
+
+## 质量门禁
+- 禁止 `any` 类型，必须正确定义所有接口
+- 单文件不超过 500 行
+- 组件拆分合理，一个组件只做一件事
+- API 层和 UI 层严格分离
+- 所有请求使用统一的 `request` 封装

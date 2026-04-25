@@ -3,7 +3,7 @@ package com.bone.iam.application.query.handler;
 import com.bone.core.model.PageResult;
 import com.bone.iam.application.query.dto.RoleDTO;
 import com.bone.iam.application.query.qry.RolePageQry;
-import com.bone.iam.domain.model.role.Role;
+import com.bone.iam.domain.role.Role;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import lombok.RequiredArgsConstructor;
@@ -41,8 +41,8 @@ public class RolePageQueryHandler {
 
     private RoleDTO convertToDto(Role role) {
         RoleDTO dto = new RoleDTO();
-        dto.setId(role.getDbId());
-        dto.setName(role.getName().value());
+        dto.setId(role.getId());
+        dto.setName(role.getName());
         dto.setDescription(role.getDescription());
         dto.setTenantId(role.getTenantId());
         dto.setCreateTime(role.getCreateTime());

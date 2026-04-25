@@ -1,0 +1,152 @@
+# 示例 L2 契约 - 带领域规则的复杂功能
+# 使用方法: 复制此文件并重命名为 {feature}.yaml，填写内容
+
+meta:
+  feature: example-versioning
+  owner: yourname
+  level: L2
+  template: versioning
+  lock: true
+
+mission: "为示例实体增加版本管理功能，支持版本查看、对比和回滚"
+
+# 数据模型扩展
+data_model:
+  additional_tables:
+    - name: example_entity_version
+      fields:
+        - name: id
+          type: Long
+          primary: true
+          auto_increment: true
+        - name: entityId
+          type: Long
+          foreign_key: "example_entity.id"
+        - name: versionNo
+          type: Integer
+          nullable: false
+        - name: snapshot
+          type: JSON
+          nullable: false
+        - name: changeLog
+          type: Text
+          nullable: true
+        - name: operator
+          type: String
+          nullable: false
+        - name: createdAt
+          type: LocalDateTime
+          auto: "creation"
+
+# API 契约
+api_contract:
+  base_path: "/api/example/entities"
+
+  endpoints:
+    # 获取版本列表
+    - method: GET
+      path: "/{id}/versions"
+      path_params:
+        id: { type: long }
+      query:
+        page: { type: int, default: 1 }
+        size: { type: int, default: 20 }
+      response:
+        status: 200
+        data:
+          versions:
+            - versionNo: int
+              changeLog: string
+              operator: string
+              createdAt: datetime
+
+    # 获取版本详情
+    - method: GET
+      path: "/{id}/versions/{versionNo}"
+      path_params:
+        id: { type: long }
+        versionNo: { type: int }
+      response:
+        status: 200
+        data:
+          versionNo: int
+          snapshot: object
+          changeLog: string
+          operator: string
+          createdAt: datetime
+
+    # 版本对比
+    - method: GET
+      path: "/{id}/versions/compare"
+      query:
+        fromVersion: { type: int, required: true }
+        toVersion: { type: int, required: true }
+      response:
+        status: 200
+        data:
+          differences:
+            - field: string
+              from: any
+              to: any
+              changeType: "ADDED|MODIFIED|DELETED"
+
+    # 回滚到指定版本
+    - method: POST
+      path: "/{id}/rollback/{versionNo}"
+      path_params:
+        id: { type: long }
+        versionNo: { type: int }
+      request:
+        reason: { type: string, required: true }
+      response:
+        status: 200
+        data:
+          success: boolean
+          newVersion: int
+          message: string
+
+# 领域业务规则
+domain_rules:
+  - id: RULE-001
+    name: "版本号递增规则"
+    desc: "版本号必须从 1 开始递增，每次变更 +1"
+    check: |
+      newVersion == latestVersion + 1
+    severity: L3
+    auto_fix: false
+
+  - id: RULE-002
+    name: "回滚不可删除历史"
+    desc: "回滚时创建新版本快照，不可删除或覆盖历史版本"
+    check: |
+      回滚操作必须 INSERT 新记录，不能 DELETE 或 UPDATE 历史
+    severity: L3
+    auto_fix: false
+
+  - id: RULE-003
+    name: "字段变更记录 diff"
+    desc: "每次版本变更必须记录 changeLog，对比前后字段差异"
+    check: |
+      changeLog 字段必须有内容且包含字段差异
+    severity: L1
+    auto_fix: true
+    fix_pattern: "自动生成字段差异 JSON"
+
+  - id: RULE-004
+    name: "操作人记录"
+    desc: "所有版本操作必须记录操作人"
+    check: |
+      operator 字段不能为空
+    severity: L2
+    auto_fix: false
+
+# 质量门禁（L2 更严格）
+guardrails:
+  coverage: ">85%"
+  max_cyclomatic: 8
+  max_method_lines: 40
+  max_class_lines: 400
+
+  block_patterns:
+    - "**/security/*"
+    - "generated/**"

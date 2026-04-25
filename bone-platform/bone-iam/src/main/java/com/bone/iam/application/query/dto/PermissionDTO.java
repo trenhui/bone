@@ -1,9 +1,9 @@
 package com.bone.iam.application.query.dto;
 
-import com.bone.iam.domain.model.permission.vo.PermissionType;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class PermissionDTO {
@@ -11,8 +11,12 @@ public class PermissionDTO {
     private String code;
     private String name;
     private String description;
+    private String resourceType;
+    private String resourcePath;
+    private String action;
     private Long parentId;
-    private PermissionType type;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+    private Integer sortOrder;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private List<PermissionDTO> children;
 }

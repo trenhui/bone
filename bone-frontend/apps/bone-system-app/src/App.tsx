@@ -115,10 +115,10 @@ const AppContent: React.FC = () => {
 };
 
 interface AppProps {
-  user?: any;
+  user?: Record<string, any>;
 }
 
-const App: React.FC<AppProps> = ({ user }) => {
+const App: React.FC<AppProps> = () => {
   return (
     <BrowserRouter>
       <AppContent />

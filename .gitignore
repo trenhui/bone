@@ -146,3 +146,25 @@ dist-ssr
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# =========================
+# Bone Agentic OS 专用忽略规则
+# =========================
+# AI 状态文件（包含敏感度量数据）
+.claude/state/
+.claude/logs/
+.claude/archive/
+
+# 本地覆盖契约
+.claude/contracts/*.local.yaml
+
+# 运行时生成文件
+generated/
+*.tmp
+reports/
+
+# 测试覆盖率报告
+.coverage/
+jacoco-report/
+coverage/
+test-output/

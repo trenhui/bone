@@ -9,8 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <modules>
-        <module>bone-admin</module>
-        <module>bone-trade</module>
+
     </modules>
     <artifactId>bone-business</artifactId>
     <packaging>pom</packaging>

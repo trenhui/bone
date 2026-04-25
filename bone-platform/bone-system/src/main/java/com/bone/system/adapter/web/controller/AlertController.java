@@ -10,10 +10,19 @@ import com.bone.system.adapter.web.dto.resp.AlertRuleResp;
 import com.bone.system.application.command.cmd.DisableAlertRuleCmd;
 import com.bone.system.application.command.cmd.EnableAlertRuleCmd;
 import com.bone.system.application.command.cmd.ResolveAlertCmd;
-import com.bone.system.application.command.handler.AlertCommandHandler;
+import com.bone.system.application.usecase.standard.CreateAlertRuleUseCase;
+import com.bone.system.application.usecase.standard.UpdateAlertRuleUseCase;
+import com.bone.system.application.usecase.standard.EnableAlertRuleUseCase;
+import com.bone.system.application.usecase.standard.DisableAlertRuleUseCase;
+import com.bone.system.application.usecase.standard.DeleteAlertRuleUseCase;
+import com.bone.system.application.usecase.standard.CreateAlertEventUseCase;
+import com.bone.system.application.usecase.standard.ResolveAlertUseCase;
+import com.bone.system.application.usecase.standard.AlertRuleByIdQueryUseCase;
+import com.bone.system.application.usecase.standard.AlertRulePageQueryUseCase;
+import com.bone.system.application.usecase.standard.AlertEventByIdQueryUseCase;
+import com.bone.system.application.usecase.standard.AlertEventPageQueryUseCase;
 import com.bone.system.application.query.dto.AlertEventDTO;
 import com.bone.system.application.query.dto.AlertRuleDTO;
-import com.bone.system.application.query.handler.AlertQueryHandler;
 import com.bone.system.common.result.ApiResponse;
 import com.bone.system.common.result.PageResult;
 import io.swagger.v3.oas.annotations.Operation;
@@ -21,6 +30,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 告警管理控制器
@@ -30,19 +42,28 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/system/alert")
 @RequiredArgsConstructor
 public class AlertController {
-    private final AlertCommandHandler alertCommandHandler;
-    private final AlertQueryHandler alertQueryHandler;
+    private final CreateAlertRuleUseCase createAlertRuleUseCase;
+    private final UpdateAlertRuleUseCase updateAlertRuleUseCase;
+    private final EnableAlertRuleUseCase enableAlertRuleUseCase;
+    private final DisableAlertRuleUseCase disableAlertRuleUseCase;
+    private final DeleteAlertRuleUseCase deleteAlertRuleUseCase;
+    private final CreateAlertEventUseCase createAlertEventUseCase;
+    private final ResolveAlertUseCase resolveAlertUseCase;
+    private final AlertRuleByIdQueryUseCase alertRuleByIdQueryUseCase;
+    private final AlertRulePageQueryUseCase alertRulePageQueryUseCase;
+    private final AlertEventByIdQueryUseCase alertEventByIdQueryUseCase;
+    private final AlertEventPageQueryUseCase alertEventPageQueryUseCase;
 
     @Operation(summary = "创建告警规则")
     @PostMapping("/rules")
     public ApiResponse<Long> createRule(@Valid @RequestBody CreateAlertRuleReq req) {
-        return ApiResponse.success(alertCommandHandler.handle(AlertWebConverter.INSTANCE.toCmd(req)));
+        return ApiResponse.success(createAlertRuleUseCase.execute(AlertWebConverter.INSTANCE.toCmd(req)));
     }
 
     @Operation(summary = "更新告警规则")
     @PutMapping("/rules")
     public ApiResponse<Void> updateRule(@Valid @RequestBody UpdateAlertRuleReq req) {
-        alertCommandHandler.handle(AlertWebConverter.INSTANCE.toCmd(req));
+        updateAlertRuleUseCase.execute(AlertWebConverter.INSTANCE.toCmd(req));
         return ApiResponse.success();
     }
 
@@ -51,7 +72,7 @@ public class AlertController {
     public ApiResponse<Void> enableRule(@PathVariable Long id) {
         EnableAlertRuleCmd cmd = new EnableAlertRuleCmd();
         cmd.setId(id);
-        alertCommandHandler.handle(cmd);
+        enableAlertRuleUseCase.execute(cmd);
         return ApiResponse.success();
     }
 
@@ -60,35 +81,38 @@ public class AlertController {
     public ApiResponse<Void> disableRule(@PathVariable Long id) {
         DisableAlertRuleCmd cmd = new DisableAlertRuleCmd();
         cmd.setId(id);
-        alertCommandHandler.handle(cmd);
+        disableAlertRuleUseCase.execute(cmd);
         return ApiResponse.success();
     }
 
     @Operation(summary = "删除告警规则")
     @DeleteMapping("/rules/{id}")
     public ApiResponse<Void> deleteRule(@PathVariable Long id) {
-        alertCommandHandler.delete(id);
+        deleteAlertRuleUseCase.execute(id);
         return ApiResponse.success();
     }
 
     @Operation(summary = "根据ID获取告警规则")
     @GetMapping("/rules/{id}")
     public ApiResponse<AlertRuleResp> getRuleById(@PathVariable Long id) {
-        AlertRuleDTO dto = alertQueryHandler.getRuleById(id);
+        AlertRuleDTO dto = alertRuleByIdQueryUseCase.execute(id);
         return ApiResponse.success(dto != null ? AlertWebConverter.INSTANCE.toResp(dto) : null);
     }
 
     @Operation(summary = "分页查询告警规则列表")
     @GetMapping("/rules/page")
     public ApiResponse<PageResult<AlertRuleResp>> pageRules(AlertRulePageReq req) {
-        PageResult<AlertRuleDTO> pageResult = alertQueryHandler.pageRules(AlertWebConverter.INSTANCE.toQry(req));
+        PageResult<AlertRuleDTO> pageResult = alertRulePageQueryUseCase.execute(AlertWebConverter.INSTANCE.toQry(req));
         return ApiResponse.success(pageResult.map(AlertWebConverter.INSTANCE::toResp));
     }
 
     @Operation(summary = "创建告警事件")
     @PostMapping("/events")
     public ApiResponse<Long> createEvent(@RequestParam Long ruleId, @RequestParam Double actualValue) {
-        return ApiResponse.success(alertCommandHandler.createAlertEvent(ruleId, actualValue));
+        Map<String, Object> params = new HashMap<>();
+        params.put("ruleId", ruleId);
+        params.put("actualValue", actualValue);
+        return ApiResponse.success(createAlertEventUseCase.execute(params));
     }
 
     @Operation(summary = "解决告警事件")
@@ -96,21 +120,22 @@ public class AlertController {
     public ApiResponse<Void> resolveEvent(@PathVariable Long id) {
         ResolveAlertCmd cmd = new ResolveAlertCmd();
         cmd.setId(id);
-        alertCommandHandler.handle(cmd);
+        resolveAlertUseCase.execute(cmd);
         return ApiResponse.success();
     }
 
     @Operation(summary = "根据ID获取告警事件")
     @GetMapping("/events/{id}")
     public ApiResponse<AlertEventResp> getEventById(@PathVariable Long id) {
-        AlertEventDTO dto = alertQueryHandler.getEventById(id);
+        AlertEventDTO dto = alertEventByIdQueryUseCase.execute(id);
         return ApiResponse.success(dto != null ? AlertWebConverter.INSTANCE.toResp(dto) : null);
     }
 
     @Operation(summary = "分页查询告警事件列表")
     @GetMapping("/events/page")
     public ApiResponse<PageResult<AlertEventResp>> pageEvents(AlertEventPageReq req) {
-        PageResult<AlertEventDTO> pageResult = alertQueryHandler.pageEvents(req.getPageNum(), req.getPageSize());
+        int[] params = {req.getPageNum(), req.getPageSize()};
+        PageResult<AlertEventDTO> pageResult = alertEventPageQueryUseCase.execute(params);
         return ApiResponse.success(pageResult.map(AlertWebConverter.INSTANCE::toResp));
     }
 }

@@ -1,152 +1,251 @@
-import axios, { AxiosInstance } from 'axios';
-import {
-  User,
-  CreateUserRequest,
-  UpdateUserRequest,
-  ChangePasswordRequest,
-  Role,
-  CreateRoleRequest,
-  UpdateRoleRequest,
-  Permission,
-  CreatePermissionRequest,
-  UpdatePermissionRequest,
-  AuditLog,
-  LoginRequest,
-  LoginResponse,
-  PageResult,
-  ApiResponse
+import axios from 'axios';
+import type {
+  ApiResponse, PageResult,
+  Account, Role, Permission, AuditLog,
+  LoginRequest, LoginResponse,
+  CreateAccountRequest, UpdateAccountRequest, ResetPasswordRequest,
+  CreateRoleRequest, UpdateRoleRequest,
+  CreatePermissionRequest, UpdatePermissionRequest,
+  AuditSettings, RefreshTokenRequest,
 } from '../types';
 
-class ApiService {
-  private http: AxiosInstance;
+const api = axios.create({
+  baseURL: '/api/iam',
+  timeout: 10000,
+});
 
-  constructor() {
-    this.http = axios.create({
-      baseURL: '/api',
-      timeout: 10000,
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
-
-    // 请求拦截器，添加token
-    this.http.interceptors.request.use(
-      (config) => {
-        const token = localStorage.getItem('token');
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-      },
-      (error) => {
-        return Promise.reject(error);
-      }
-    );
-
-    // 响应拦截器，处理错误
-    this.http.interceptors.response.use(
-      (response) => {
-        return response.data;
-      },
-      (error) => {
-        // 处理401错误，跳转到登录页
-        if (error.response && error.response.status === 401) {
-          localStorage.removeItem('token');
-          window.location.href = '/login';
-        }
-        return Promise.reject(error);
-      }
-    );
+// 请求拦截器 - 添加Token
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
+  return config;
+});
 
-  // 登录相关
-  async login(data: LoginRequest): Promise<ApiResponse<LoginResponse>> {
-    return this.http.post('/auth/login', data);
+// 响应拦截器 - 处理401未授权
+api.interceptors.response.use(
+  (response) => response.data,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
   }
+);
 
-  async logout(): Promise<ApiResponse<void>> {
-    return this.http.post('/auth/logout');
-  }
+// ==================== 认证相关 ====================
 
-  // 用户相关
-  async getUsers(page: number, pageSize: number, keyword?: string): Promise<ApiResponse<PageResult<User>>> {
-    return this.http.get('/users', {
-      params: { page, pageSize, keyword }
-    });
-  }
+/**
+ * 用户登录
+ */
+export const login = (data: LoginRequest) =>
+  api.post<never, ApiResponse<LoginResponse>>('/login', data);
 
-  async getUserById(id: string): Promise<ApiResponse<User>> {
-    return this.http.get(`/users/${id}`);
-  }
+/**
+ * 用户登出
+ */
+export const logout = () =>
+  api.post<never, ApiResponse<void>>('/logout');
 
-  async createUser(data: CreateUserRequest): Promise<ApiResponse<User>> {
-    return this.http.post('/users', data);
-  }
+/**
+ * 刷新令牌
+ */
+export const refreshToken = (data: RefreshTokenRequest) =>
+  api.post<never, ApiResponse<LoginResponse>>('/refresh', data);
 
-  async updateUser(id: string, data: UpdateUserRequest): Promise<ApiResponse<User>> {
-    return this.http.put(`/users/${id}`, data);
-  }
+/**
+ * 获取SSO配置
+ */
+export const getSsoConfig = () =>
+  api.get<never, ApiResponse<{ enabled: boolean; providers: string[] }>>('/sso/config');
 
-  async deleteUser(id: string): Promise<ApiResponse<void>> {
-    return this.http.delete(`/users/${id}`);
-  }
+// ==================== 账号管理 ====================
 
-  async changePassword(data: ChangePasswordRequest): Promise<ApiResponse<void>> {
-    return this.http.post('/users/change-password', data);
-  }
+/**
+ * 分页查询账号列表
+ */
+export const getAccounts = (page = 1, pageSize = 10, keyword?: string, status?: number) =>
+  api.get<never, ApiResponse<PageResult<Account>>>('/accounts', {
+    params: { page, pageSize, keyword, status },
+  });
 
-  // 角色相关
-  async getRoles(page: number, pageSize: number, keyword?: string): Promise<ApiResponse<PageResult<Role>>> {
-    return this.http.get('/roles', {
-      params: { page, pageSize, keyword }
-    });
-  }
+/**
+ * 获取账号详情
+ */
+export const getAccount = (id: number) =>
+  api.get<never, ApiResponse<Account>>(`/accounts/${id}`);
 
-  async getRoleById(id: string): Promise<ApiResponse<Role>> {
-    return this.http.get(`/roles/${id}`);
-  }
+/**
+ * 创建账号
+ */
+export const createAccount = (data: CreateAccountRequest) =>
+  api.post<never, ApiResponse<number>>('/accounts', data);
 
-  async createRole(data: CreateRoleRequest): Promise<ApiResponse<Role>> {
-    return this.http.post('/roles', data);
-  }
+/**
+ * 更新账号
+ */
+export const updateAccount = (id: number, data: UpdateAccountRequest) =>
+  api.put<never, ApiResponse<void>>(`/accounts/${id}`, data);
 
-  async updateRole(id: string, data: UpdateRoleRequest): Promise<ApiResponse<Role>> {
-    return this.http.put(`/roles/${id}`, data);
-  }
+/**
+ * 删除账号
+ */
+export const deleteAccount = (id: number) =>
+  api.delete<never, ApiResponse<void>>(`/accounts/${id}`);
 
-  async deleteRole(id: string): Promise<ApiResponse<void>> {
-    return this.http.delete(`/roles/${id}`);
-  }
+/**
+ * 启用账号
+ */
+export const enableAccount = (id: number) =>
+  api.post<never, ApiResponse<void>>(`/accounts/${id}/enable`);
 
-  // 权限相关
-  async getPermissions(page: number, pageSize: number, keyword?: string): Promise<ApiResponse<PageResult<Permission>>> {
-    return this.http.get('/permissions', {
-      params: { page, pageSize, keyword }
-    });
-  }
+/**
+ * 禁用账号
+ */
+export const disableAccount = (id: number) =>
+  api.post<never, ApiResponse<void>>(`/accounts/${id}/disable`);
 
-  async getPermissionById(id: string): Promise<ApiResponse<Permission>> {
-    return this.http.get(`/permissions/${id}`);
-  }
+/**
+ * 重置密码
+ */
+export const resetAccountPassword = (id: number, data: ResetPasswordRequest) =>
+  api.post<never, ApiResponse<void>>(`/accounts/${id}/reset-password`, data);
 
-  async createPermission(data: CreatePermissionRequest): Promise<ApiResponse<Permission>> {
-    return this.http.post('/permissions', data);
-  }
+/**
+ * 批量导入用户
+ */
+export const importAccounts = (data: CreateAccountRequest[]) =>
+  api.post<never, ApiResponse<number>>('/accounts/import', data);
 
-  async updatePermission(id: string, data: UpdatePermissionRequest): Promise<ApiResponse<Permission>> {
-    return this.http.put(`/permissions/${id}`, data);
-  }
+/**
+ * 导出用户
+ */
+export const exportAccounts = (params?: { keyword?: string; status?: number }) =>
+  api.get<never, ApiResponse<Account[]>>('/accounts/export', { params });
 
-  async deletePermission(id: string): Promise<ApiResponse<void>> {
-    return this.http.delete(`/permissions/${id}`);
-  }
+// ==================== 角色管理 ====================
 
-  // 审计日志相关
-  async getAuditLogs(page: number, pageSize: number, keyword?: string, startDate?: string, endDate?: string): Promise<ApiResponse<PageResult<AuditLog>>> {
-    return this.http.get('/audit-logs', {
-      params: { page, pageSize, keyword, startDate, endDate }
-    });
-  }
-}
+/**
+ * 分页查询角色列表
+ */
+export const getRoles = (page = 1, pageSize = 10, keyword?: string) =>
+  api.get<never, ApiResponse<PageResult<Role>>>('/roles', { params: { page, pageSize, keyword } });
 
-export const apiService = new ApiService();
+/**
+ * 获取角色详情
+ */
+export const getRole = (id: number) =>
+  api.get<never, ApiResponse<Role>>(`/roles/${id}`);
+
+/**
+ * 创建角色
+ */
+export const createRole = (data: CreateRoleRequest) =>
+  api.post<never, ApiResponse<number>>('/roles', { ...data, tenantId: data.tenantId ?? 0 });
+
+/**
+ * 更新角色
+ */
+export const updateRole = (id: number, data: UpdateRoleRequest) =>
+  api.put<never, ApiResponse<void>>(`/roles/${id}`, { ...data, tenantId: data.tenantId ?? 0 });
+
+/**
+ * 删除角色
+ */
+export const deleteRole = (id: number) =>
+  api.delete<never, ApiResponse<void>>(`/roles/${id}`);
+
+/**
+ * 为角色分配权限
+ */
+export const assignPermissions = (roleId: number, permissionIds: number[]) =>
+  api.post<never, ApiResponse<void>>(`/roles/${roleId}/permissions`, permissionIds);
+
+/**
+ * 获取角色的权限列表
+ */
+export const getRolePermissions = (roleId: number) =>
+  api.get<never, ApiResponse<Permission[]>>(`/roles/${roleId}/permissions`);
+
+// ==================== 权限管理 ====================
+
+/**
+ * 分页查询权限列表
+ */
+export const getPermissions = (page = 1, pageSize = 10, keyword?: string) =>
+  api.get<never, ApiResponse<PageResult<Permission>>>('/permissions', { params: { page, pageSize, keyword } });
+
+/**
+ * 获取权限树
+ */
+export const getPermissionTree = () =>
+  api.get<never, ApiResponse<Permission[]>>('/permissions/tree');
+
+/**
+ * 获取权限详情
+ */
+export const getPermission = (id: number) =>
+  api.get<never, ApiResponse<Permission>>(`/permissions/${id}`);
+
+/**
+ * 创建权限
+ */
+export const createPermission = (data: CreatePermissionRequest) =>
+  api.post<never, ApiResponse<number>>('/permissions', data);
+
+/**
+ * 更新权限
+ */
+export const updatePermission = (id: number, data: UpdatePermissionRequest) =>
+  api.put<never, ApiResponse<void>>(`/permissions/${id}`, data);
+
+/**
+ * 删除权限
+ */
+export const deletePermission = (id: number) =>
+  api.delete<never, ApiResponse<void>>(`/permissions/${id}`);
+
+// ==================== 审计日志 ====================
+
+/**
+ * 分页查询审计日志
+ */
+export const getAuditLogs = (params: {
+  page?: number;
+  pageSize?: number;
+  userId?: number;
+  action?: string;
+  resourceType?: string;
+  startTime?: string;
+  endTime?: string;
+}) =>
+  api.get<never, ApiResponse<PageResult<AuditLog>>>('/audit/logs', { params });
+
+/**
+ * 导出审计日志
+ */
+export const exportAuditLogs = (params?: {
+  userId?: number;
+  action?: string;
+  resourceType?: string;
+  startTime?: string;
+  endTime?: string;
+}) =>
+  api.get<never, ApiResponse<AuditLog[]>>('/audit/logs/export', { params });
+
+/**
+ * 获取审计设置
+ */
+export const getAuditSettings = () =>
+  api.get<never, ApiResponse<AuditSettings>>('/audit/settings');
+
+/**
+ * 更新审计设置
+ */
+export const updateAuditSettings = (data: Partial<AuditSettings>) =>
+  api.put<never, ApiResponse<void>>('/audit/settings', data);
+
+export default api;

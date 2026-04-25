@@ -1,11 +1,13 @@
 package com.bone.integration.application.command.handler;
 
+import com.bone.core.usecase.Capability;
+import com.bone.core.util.DistributedIdGenerator;
 import com.bone.integration.application.command.cmd.UpdateFlowCmd;
-import com.bone.integration.domain.model.flow.FlowConnection;
-import com.bone.integration.domain.model.flow.FlowNode;
-import com.bone.integration.domain.model.flow.IntegrationFlow;
-import com.bone.integration.domain.model.flow.vo.FlowNodeId;
-import com.bone.integration.domain.model.flow.vo.NodeType;
+import com.bone.integration.domain.connector.FlowConnection;
+import com.bone.integration.domain.connector.FlowNode;
+import com.bone.integration.domain.connector.IntegrationFlow;
+import com.bone.integration.domain.connector.vo.FlowNodeId;
+import com.bone.integration.domain.connector.vo.NodeType;
 import com.bone.integration.domain.repository.FlowConnectionRepository;
 import com.bone.integration.domain.repository.FlowNodeRepository;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
@@ -16,6 +18,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Capability(
+    name = "UpdateFlow",
+    description = "更新集成流程配置",
+    inputSchema = "{\"id\": \"long\", \"name\": \"string\", \"description\": \"string\", \"nodes\": \"array\", \"connections\": \"array\"}",
+    outputSchema = "{\"success\": \"boolean\"}",
+    idempotent = true,
+    cost = 2,
+    retryable = true,
+    timeout = 30
+)
 @Component
 @RequiredArgsConstructor
 public class UpdateFlowHandler {
@@ -32,31 +44,36 @@ public class UpdateFlowHandler {
         flow.update(cmd.name(), cmd.description());
         flowRepository.save(flow);
 
-        // 删除旧的节点和连接
         nodeRepository.deleteByFlowId(flow.getId());
         connectionRepository.deleteByFlowId(flow.getId());
 
-        // 保存新的节点
         List<FlowNode> nodes = cmd.nodes().stream()
-                .map(nodeCmd -> FlowNode.create(
-                        flow.getId(),
-                        nodeCmd.name(),
-                        NodeType.fromString(nodeCmd.type()),
-                        nodeCmd.config(),
-                        nodeCmd.positionX(),
-                        nodeCmd.positionY()
-                ))
+                .map(nodeCmd -> {
+                    Long nodeId = DistributedIdGenerator.generateLongId();
+                    return FlowNode.create(
+                            nodeId,
+                            flow.getId(),
+                            nodeCmd.name(),
+                            NodeType.fromString(nodeCmd.type()),
+                            nodeCmd.config(),
+                            nodeCmd.positionX(),
+                            nodeCmd.positionY()
+                    );
+                })
                 .toList();
         nodeRepository.saveAll(nodes);
 
-        // 保存新的连接
         List<FlowConnection> connections = cmd.connections().stream()
-                .map(connCmd -> FlowConnection.create(
-                        flow.getId(),
-                        FlowNodeId.of(connCmd.sourceNodeId()),
-                        FlowNodeId.of(connCmd.targetNodeId()),
-                        connCmd.condition()
-                ))
+                .map(connCmd -> {
+                    Long connId = DistributedIdGenerator.generateLongId();
+                    return FlowConnection.create(
+                            connId,
+                            flow.getId(),
+                            FlowNodeId.of(connCmd.sourceNodeId()),
+                            FlowNodeId.of(connCmd.targetNodeId()),
+                            connCmd.condition()
+                    );
+                })
                 .toList();
         connectionRepository.saveAll(connections);
     }

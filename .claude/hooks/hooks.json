@@ -1,0 +1,55 @@
+{
+  "version": "1.0",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "name": "block-dangerous-commands",
+        "matcher": "Bash",
+        "priority": 1,
+        "hook": {
+          "type": "command",
+          "command": "scripts/security-check.sh '$TOOL_INPUT'"
+        }
+      },
+      {
+        "name": "block-contract-modification",
+        "matcher": "Edit|Write",
+        "priority": 2,
+        "hook": {
+          "type": "command",
+          "command": "scripts/contract-lock-check.sh '$TOOL_OUTPUT_FILE'"
+        }
+      }
+    ],
+    "PostToolUse": [
+      {
+        "name": "auto-format",
+        "matcher": "Edit|Write",
+        "priority": 1,
+        "hook": {
+          "type": "command",
+          "command": "scripts/auto-format.sh '$TOOL_OUTPUT_FILE'"
+        }
+      },
+      {
+        "name": "update-checkpoint",
+        "matcher": "Edit|Write",
+        "priority": 2,
+        "hook": {
+          "type": "command",
+          "command": "scripts/update-checkpoint.sh '$TOOL_OUTPUT_FILE'"
+        }
+      }
+    ],
+    "Stop": [
+      {
+        "name": "auto-commit-on-success",
+        "priority": 1,
+        "hook": {
+          "type": "command",
+          "command": "scripts/auto-commit.sh"
+        }
+      }
+    ]
+  }
+}

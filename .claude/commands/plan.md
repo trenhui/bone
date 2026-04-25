@@ -1,18 +1,83 @@
-# /plan 命令 - 功能规划与契约生成
+---
+description: "生成分层契约，初始化 Checkpoint"
+arguments:
+  - name: feature
+    description: "功能描述"
+    required: true
+  - name: level
+    description: "契约级别 (auto|L1|L2)"
+    default: "auto"
+  - name: dry-run
+    description: "预览契约不写入"
+    type: boolean
+    default: false
+---
 
-## 职责
-接收用户自然语言需求，生成分层契约 YAML 文件到 `.claude/contracts/`，初始化 checkpoint。
+## 执行流程
 
-## 执行步骤
-1. **代码定位**：扫描相关模块现有代码结构，理解上下文
-2. **需求分析**：分解需求，识别 API 端点、领域模型、领域规则
-3. **契约分级**：判断 L1（简单 CRUD）还是 L2（复杂功能）
-4. **生成契约**：写入 `.claude/contracts/{feature}.yaml`
-5. **初始化 checkpoint**：写入 `.claude/state/{feature}/checkpoint.json`
-6. **输出总结**：展示契约位置，等待用户确认后进入 /build
+1. **代码库扫描**
+   - 调用 `code-localization` 技能
+   - 分析现有代码结构
+   - 识别相关模块和依赖
 
-## 输出要求
-- 契约必须是合法 YAML，可被解析
-- 必须包含 `meta`、`mission`、`api_contract`
-- L2 必须包含 `domain_rules`（带 severity）和 `guardrails`
-- 提示用户确认："请确认契约无误后执行 `/build`"
+2. **复杂度判断**（当 level=auto 时）
+   ```
+   if (isCRUD or isSimpleQuery):
+       level = L1 (30秒)
+   elif (hasVersioning or hasWorkflow or hasComplexRules):
+       level = L2 (5分钟)
+   else:
+       level = L1 (默认)
+   ```
+
+3. **生成契约**
+   - L1：生成 api_contract + guardrails
+   - L2：生成 api_contract + domain_rules + guardrails
+
+4. **初始化 Checkpoint**
+   ```json
+   {
+     "feature": "{feature-name}",
+     "owner": "{current-user}",
+     "level": "L1|L2",
+     "status": "planned",
+     "next_phase": "api",
+     "created_at": "{timestamp}",
+     "metrics": {
+       "plan_time_sec": 0,
+       "build_time_sec": 0,
+       "test_time_sec": 0
+     }
+   }
+   ```
+
+5. **输出确认**
+   ```markdown
+   ## /plan 执行报告
+
+   ✅ 契约已生成: .claude/contracts/{feature}.yaml
+   ✅ Checkpoint 已初始化: .claude/state/{feature}/checkpoint.json
+
+   📋 契约摘要:
+   - Level: L1/L2
+   - API Endpoints: {count}
+   - Domain Rules: {count}
+
+   ⏱️ 预估时间: {estimated} 分钟
+
+   ## 下一步
+   确认契约后执行 `/build`
+   ```
+
+## 示例
+
+```bash
+# 标准用法
+/plan 为 bone-metadata 模块增加元数据实体的 CRUD 管理功能
+
+# 强制 L2
+/plan 增加版本管理功能 --level=L2
+
+# 预览模式
+/plan 功能描述 --dry-run
+```

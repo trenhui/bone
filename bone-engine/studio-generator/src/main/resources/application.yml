@@ -1,0 +1,42 @@
+spring:
+  application:
+    name: bone-studio-generator
+  profiles:
+    active: dev
+  datasource:
+    url: jdbc:mysql://localhost:3306/bone?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: mysql123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    database-platform: org.hibernate.dialect.MySQLDialect
+  cloud:
+    nacos:
+      discovery:
+        enabled: false
+      config:
+        enabled: false
+
+server:
+  port: 8085
+  servlet:
+    context-path: /
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+
+bone:
+  blueprint:
+    cqrs:
+      default-level: L1
+
+logging:
+  level:
+    com.bone: info
+    org.springframework: warn

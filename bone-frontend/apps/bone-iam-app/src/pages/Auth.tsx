@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { Card, Form, Input, Button, message, Typography } from 'antd';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { apiService } from '../services/api';
-import { LoginRequest } from '../types';
+import * as api from '../services/api';
+import type { LoginRequest } from '../types';
 
 const { Text } = Typography;
 
@@ -14,27 +14,16 @@ const Auth: React.FC = () => {
   const handleLogin = async (values: LoginRequest) => {
     setLoading(true);
     try {
-      // Mock登录逻辑
-      if (values.username === 'admin' && values.password === 'admin123') {
-        const mockResponse = {
-          code: 200,
-          data: {
-            token: 'mock-token-123456',
-            user: {
-              username: 'admin',
-              name: '管理员',
-              roles: ['admin']
-            }
-          }
-        };
-        localStorage.setItem('token', mockResponse.data.token);
-        localStorage.setItem('username', mockResponse.data.user.username);
+      const response = await api.login(values);
+      if (response.code === 200) {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('username', response.data.account.username);
         message.success('登录成功');
-        navigate('/users');
+        navigate('/accounts');
       } else {
-        message.error('用户名或密码错误');
+        message.error(response.message || '登录失败');
       }
-    } catch (error) {
+    } catch {
       message.error('登录失败，请检查用户名和密码');
     } finally {
       setLoading(false);

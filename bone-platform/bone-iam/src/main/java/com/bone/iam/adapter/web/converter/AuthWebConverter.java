@@ -3,7 +3,7 @@ package com.bone.iam.adapter.web.converter;
 import com.bone.iam.adapter.web.dto.req.LoginReq;
 import com.bone.iam.adapter.web.dto.resp.LoginResp;
 import com.bone.iam.application.command.cmd.LoginCmd;
-import com.bone.iam.domain.model.user.User;
+import com.bone.iam.domain.account.Account;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -20,14 +20,21 @@ public class AuthWebConverter {
     public LoginResp toLoginResp(Map<String, Object> result) {
         LoginResp resp = new LoginResp();
         resp.setToken((String) result.get("token"));
-        
-        User user = (User) result.get("user");
-        LoginResp.UserInfo userInfo = new LoginResp.UserInfo();
-        userInfo.setId(user.getId().value());
-        userInfo.setUsername(user.getUsername().value());
-        userInfo.setEmail(user.getEmail().value());
-        resp.setUser(userInfo);
-        
+
+        Account account = (Account) result.get("account");
+        LoginResp.AccountInfo accountInfo = new LoginResp.AccountInfo();
+        accountInfo.setId(account.getId());
+        accountInfo.setUsername(account.getUsername().value());
+        accountInfo.setEmail(account.getEmail().value());
+        accountInfo.setPhone(account.getPhone());
+        accountInfo.setRealName(account.getRealName());
+        accountInfo.setAvatarUrl(account.getAvatarUrl());
+        accountInfo.setStatus(account.getStatus().getCode());
+        accountInfo.setIsAdmin(account.isAdmin());
+        accountInfo.setLastLoginAt(account.getLastLoginAt());
+        accountInfo.setCreateTime(account.getCreateTime());
+        resp.setAccount(accountInfo);
+
         return resp;
     }
 }

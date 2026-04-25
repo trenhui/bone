@@ -8,9 +8,9 @@ import com.bone.blueprint.application.command.cmd.CreateOrderCommand;
 import com.bone.blueprint.application.command.cmd.PayOrderCommand;
 import com.bone.blueprint.application.query.qry.OrderDetailQuery;
 import com.bone.blueprint.application.usecase.simple.CancelOrderUseCase;
+import com.bone.blueprint.application.usecase.simple.GetOrderDetailUseCase;
 import com.bone.blueprint.application.usecase.standard.CreateOrderUseCase;
 import com.bone.blueprint.application.usecase.standard.PayOrderUseCase;
-import com.bone.blueprint.application.query.handler.OrderDetailQueryHandler;
 import com.bone.core.result.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -31,7 +31,7 @@ public class OrderController {
     private final CreateOrderUseCase createOrderUseCase;
     private final PayOrderUseCase payOrderUseCase;
     private final CancelOrderUseCase cancelOrderUseCase;
-    private final OrderDetailQueryHandler orderDetailQueryHandler;
+    private final GetOrderDetailUseCase getOrderDetailUseCase;
     private final OrderAssembler orderAssembler;
 
     @Operation(summary = "创建订单", description = "创建新的订单")
@@ -93,7 +93,7 @@ public class OrderController {
             log.info("收到查询订单详情请求: orderId={}", id);
             
             OrderDetailQuery query = orderAssembler.toOrderDetailQuery(id);
-            var orderDto = orderDetailQueryHandler.handle(query);
+            var orderDto = getOrderDetailUseCase.execute(query);
             var response = orderAssembler.toOrderDetailResponse(orderDto);
             
             log.info("查询订单详情成功: orderId={}", id);

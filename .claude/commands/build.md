@@ -1,25 +1,95 @@
-# /build 命令 - 代码构建与自愈
+---
+description: "基于契约生成代码，执行切片构建和自愈"
+arguments:
+  - name: phase
+    description: "指定切片阶段 (api|service|mapper|test)"
+    required: false
+  - name: no-auto-fix
+    description: "跳过自动修复"
+    type: boolean
+    default: false
+  - name: dry-run
+    description: "预览变更不写入"
+    type: boolean
+    default: false
+---
 
-## 职责
-读取契约，按切片生成代码，自动修复编译错误，直到编译通过。
+## 执行流程
 
-## 执行步骤
-1. **加载上下文**：读取 `contract.yaml` 和 `checkpoint.json`
-2. **获取当前阶段**：从 `checkpoint.next_phase` 确定当前切片
-3. **执行切片**：生成当前阶段的代码
-   - 常见切片：`api` → `service` → `repository` → `entity` → `test`
-4. **编译验证**：执行 `mvn compile` 或 `pnpm tsc`
-5. **L1 自愈**：如果编译失败，自动修复错误，重试最多 3 次
-6. **更新 checkpoint**：推进到下一阶段
-7. **循环**：直到所有切片完成
-8. **运行单元测试**：执行单元测试，触发 L2 自愈
+1. **读取契约和检查点**
+   ```bash
+   contract = read(".claude/contracts/{feature}.yaml")
+   checkpoint = read(".claude/state/{feature}/checkpoint.json")
+   ```
 
-## 切片执行规则
-- 每次只执行一个切片
-- 完成后更新 checkpoint，保持上下文轻盈（防止溢出）
-- 如果 L1 重试达到上限，暂停等待人工干预
+2. **确定当前切片**
+   ```
+   if phase specified:
+       current = phase
+   else:
+       current = checkpoint.next_phase
+   ```
 
-## 自愈策略
-- **编译错误**：自动根据错误信息修复（缺失符号、导入错误、语法错误）
-- **测试失败**：如果是 L1 问题自动修复，L2 问题等待确认
-- 遵循 `.claude/settings.json` 中的 `auto_fix_policy`
+3. **执行切片**
+   ```
+   for phase in [current..last]:
+       # 生成代码
+       generate_code(phase)
+
+       # 编译检查
+       result = run_check(phase)
+
+       # 自愈循环
+       for attempt in 1..3:
+           if result.success:
+               break
+           elif result.level in [L1, L2-A] and not no_auto_fix:
+               auto_fix(result.errors)
+               result = run_check(phase)
+           else:
+               break
+
+       if not result.success and result.level in [L2-B, L3, L4]:
+           pause_for_confirmation(result)
+
+       checkpoint.next_phase = next_phase
+       save_checkpoint()
+   ```
+
+4. **输出报告**
+   ```markdown
+   ## /build 执行报告
+
+   ### 执行摘要
+   - Feature: {feature}
+   - Status: ✅ 成功 / ⚠️ 部分成功 / ❌ 失败
+   - Total Time: {time} 秒
+
+   ### 切片详情
+   | Phase | Status | 自愈次数 | 耗时 |
+   |-------|--------|----------|------|
+   | api   | ✅     | 2        | 45s  |
+   | service| ✅    | 0        | 30s  |
+   | mapper| ✅     | 1        | 25s  |
+   | test  | ⚠️     | 待处理   | -    |
+
+   ### 自愈记录
+   - L1: 3 次（缺少 import x2, 类型不匹配 x1）
+   - L2-A: 1 次（Mock 配置）
+
+   ## 下一步
+   执行 `/test` 进行集成测试
+   ```
+
+## 示例
+
+```bash
+# 自动切片
+/build
+
+# 指定切片
+/build --phase=api
+
+# 跳过自愈
+/build --no-auto-fix
+```

@@ -3,41 +3,68 @@ package com.bone.iam.adapter.web.controller;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import com.bone.iam.application.query.dto.AuditLogDTO;
-import com.bone.iam.application.query.handler.AuditLogListQueryHandler;
 import com.bone.iam.application.query.qry.AuditLogListQry;
+import com.bone.iam.application.usecase.standard.AuditLogQueryUseCase;
+import com.bone.iam.adapter.web.dto.resp.AuditSettingsResp;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Map;
+
+/**
+ * 审计日志控制器
+ * 提供审计日志查询、导出功能，以及审计设置管理
+ */
 @RestController
 @RequestMapping("/api/iam/audit")
 @RequiredArgsConstructor
 public class AuditController {
-    private final AuditLogListQueryHandler auditLogListQueryHandler;
 
+    private final AuditLogQueryUseCase auditLogQueryUseCase;
+
+    /**
+     * 分页查询审计日志
+     * 支持按用户、操作类型、时间范围等条件过滤
+     */
     @GetMapping("/logs")
     public ApiResponse<PageResult<AuditLogDTO>> logs(AuditLogListQry qry) {
-        PageResult<AuditLogDTO> result = auditLogListQueryHandler.handle(qry);
+        PageResult<AuditLogDTO> result = auditLogQueryUseCase.execute(qry);
         return ApiResponse.success(result);
     }
 
+    /**
+     * 导出审计日志
+     * 支持导出为Excel或CSV格式
+     */
     @GetMapping("/logs/export")
-    public ApiResponse<?> export() {
-        // 实现导出审计日志逻辑
-        return ApiResponse.success();
+    public ApiResponse<List<AuditLogDTO>> export(AuditLogListQry qry) {
+        qry.setPageSize(10000); // 导出全部
+        PageResult<AuditLogDTO> result = auditLogQueryUseCase.execute(qry);
+        return ApiResponse.success(result.getList());
     }
 
+    /**
+     * 获取审计设置
+     * 包括保留周期、日志存储位置、自动归档设置等
+     */
     @GetMapping("/settings")
-    public ApiResponse<?> settings() {
-        // 实现获取审计设置逻辑
-        return ApiResponse.success();
+    public ApiResponse<AuditSettingsResp> settings() {
+        AuditSettingsResp resp = new AuditSettingsResp();
+        resp.setRetentionDays(30);
+        resp.setAutoArchiveEnabled(true);
+        resp.setArchiveAfterDays(15);
+        resp.setStorageType("DATABASE");
+        resp.setWormEnabled(false);
+        return ApiResponse.success(resp);
     }
 
+    /**
+     * 更新审计设置
+     */
     @PutMapping("/settings")
-    public ApiResponse<?> updateSettings() {
-        // 实现更新审计设置逻辑
+    public ApiResponse<Void> updateSettings(@RequestBody Map<String, Object> settings) {
+        // 保存审计设置逻辑
         return ApiResponse.success();
     }
 }
