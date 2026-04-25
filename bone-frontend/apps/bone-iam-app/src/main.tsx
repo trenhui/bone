@@ -20,7 +20,7 @@ function render(props: any) {
   );
 }
 
-if (!window.__POWERED_BY_QIANKUN__) {
+if (!(window as any).__POWERED_BY_QIANKUN__) {
   render({});
 }
 
@@ -33,7 +33,7 @@ export async function mount(props: any) {
   render(props);
 }
 
-export async function unmount(props: any) {
+export async function unmount(_props: any) {
   if (root) {
     root.unmount();
     root = null;

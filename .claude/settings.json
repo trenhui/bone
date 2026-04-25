@@ -3,28 +3,43 @@
   "permissions": {
     "allow": [
       "Bash(mvn clean compile)",
+      "Bash(mvn compile)",
       "Bash(mvn test)",
-      "Bash(pnpm build)",
+      "Bash(mvn verify)",
+      "Bash(npm run build)",
+      "Bash(npm run type-check)",
+      "Bash(npm run lint)",
+      "Bash(npm test)",
       "Bash(git diff)",
       "Bash(git status)",
+      "Bash(git add)",
+      "Bash(git commit)",
+      "Bash(git push)",
+      "Bash(find)",
+      "Bash(grep)",
+      "Bash(cat)",
       "Read",
       "Edit",
       "Glob",
-      "Grep"
+      "Grep",
+      "Write"
     ],
     "deny": [
+      "Bash(rm -rf /)",
       "Bash(rm -rf *)",
       "Bash(git push --force)",
+      "Bash(git push origin main)",
       "Edit(**/security/*)",
       "Edit(generated/**)",
       "Edit(**/*secret*)",
-      "Edit(**/*password*)"
+      "Edit(**/*password*)",
+      "Edit(**/*key*)"
     ]
   },
   "auto_fix_policy": {
     "L1": { "auto": true, "max_attempts": 3 },
-    "L2_auto": { "auto": true, "patterns": ["assertion", "NullPointer", "mock", "compilation", "cannot find symbol"] },
-    "L2_confirm": { "auto": false, "patterns": ["domain_rules", "state", "schema", "contract"] },
+    "L2_auto": { "auto": true, "patterns": ["assertion", "NullPointer", "mock", "compilation", "cannot find symbol", "syntax", "typescript", "eslint"] },
+    "L2_confirm": { "auto": false, "patterns": ["domain_rules", "schema", "contract", "api-change", "dependency-upgrade"] },
     "L3": { "auto": false, "block": true },
     "L4": { "auto": false, "block": true }
   },
@@ -36,7 +51,19 @@
   "skill_versions": {
     "editing": "v2.1",
     "test-gen": "v1.8",
-    "code-localization": "v2.0"
+    "code-localization": "v2.0",
+    "code-review": "v2.0",
+    "owasp-security": "v2026.1"
+  },
+  "agent_teams": {
+    "enabled": true,
+    "max_parallel_agents": 10,
+    "communication_protocol": "SendMessage+TaskUpdate",
+    "default_timeout_minutes": 60,
+    "auto_merge_on_completion": false
+  },
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   },
   "temperature": 0.2
 }

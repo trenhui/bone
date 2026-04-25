@@ -151,6 +151,8 @@
                     <include>**/*.properties</include>
                     <include>**/*.yml</include>
                     <include>**/*.xml</include>
+                    <include>**/*.imports</include>
+                    <include>**/spring.factories</include>
                 </includes>
             </resource>
             <resource>

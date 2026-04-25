@@ -1,16 +1,27 @@
 package com.bone.masterdata.application.command.handler;
 
+import com.bone.core.usecase.Capability;
+import com.bone.core.util.DistributedIdGenerator;
 import com.bone.masterdata.application.command.cmd.CreateMasterDataRecordCmd;
-import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityId;
 import com.bone.core.exception.NotFoundException;
-import com.bone.masterdata.domain.model.entity.MasterDataEntity;
-import com.bone.masterdata.domain.model.record.MasterDataRecord;
+import com.bone.masterdata.domain.entity.MasterDataEntity;
+import com.bone.masterdata.domain.record.MasterDataRecord;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
 import com.bone.masterdata.domain.repository.MasterDataRecordRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+@Capability(
+    name = "CreateMasterDataRecord",
+    description = "创建主数据记录",
+    inputSchema = "{\"masterDataEntityId\": \"long\", \"data\": \"object\"}",
+    outputSchema = "{\"recordId\": \"long\"}",
+    idempotent = false,
+    cost = 2,
+    retryable = true,
+    timeout = 15
+)
 @Component
 @RequiredArgsConstructor
 public class CreateMasterDataRecordHandler {
@@ -19,14 +30,14 @@ public class CreateMasterDataRecordHandler {
 
     @Transactional
     public Long handle(CreateMasterDataRecordCmd cmd) {
-        MasterDataEntityId entityId = MasterDataEntityId.of(cmd.getMasterDataEntityId());
-        MasterDataEntity entity = masterDataEntityRepository.findById(entityId);
+        MasterDataEntity entity = masterDataEntityRepository.findById(cmd.getMasterDataEntityId());
         if (entity == null) {
-            throw new NotFoundException("主数据实体不存在");
+            throw NotFoundException.of("主数据实体不存在");
         }
 
-        MasterDataRecord record = MasterDataRecord.create(entityId, cmd.getData());
+        Long recordId = DistributedIdGenerator.generateLongId();
+        MasterDataRecord record = MasterDataRecord.create(recordId, cmd.getMasterDataEntityId(), cmd.getData());
         masterDataRecordRepository.save(record);
-        return record.getId().getValue();
+        return record.getId();
     }
 }

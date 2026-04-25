@@ -2,6 +2,7 @@ import React, { useEffect, useState, createContext, useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
 import { Layout, Menu, Button, Avatar, Dropdown, Space, message, Form, Input, Card, Select, Switch, Popover, Tooltip } from 'antd';
 const { Password } = Input;
+import axios from 'axios';
 import {
   UserOutlined, LogoutOutlined, DashboardOutlined, UserAddOutlined, TeamOutlined, 
   LockOutlined, AuditOutlined, DatabaseOutlined, LinkOutlined, SettingOutlined, 
@@ -54,6 +55,12 @@ function App() {
     { key: 'system', label: '系统管理', icon: <SettingOutlined />, path: '/system', enabled: true },
     { key: 'extension', label: '扩展管理', icon: <AppstoreOutlined />, path: '/extension', enabled: true },
   ]);
+
+  // 应用初始主题
+  useEffect(() => {
+    // 模拟主题应用
+    document.body.className = theme;
+  }, []);
 
   useEffect(() => {
     // 启动 qiankun
@@ -160,8 +167,8 @@ function App() {
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
-    // 保存主题设置到localStorage
-    localStorage.setItem('bone-theme', newTheme);
+    // 模拟主题应用
+    document.body.className = newTheme;
   };
 
   // 切换布局模式
@@ -182,30 +189,47 @@ function App() {
   // 登录处理
   const [requirePasswordChange, setRequirePasswordChange] = useState(false);
 
-  const handleLogin = (values: any) => {
-    // 模拟登录（实际应调用后端API）
-    // 安全要求：首次使用默认密码登录必须强制修改
-    if (values.username === 'admin' && values.password === 'admin123') {
-      message.warning('首次登录，请修改默认密码');
-      setRequirePasswordChange(true);
-      return;
-    }
-    if (values.username === 'admin') {
-      message.success('登录成功');
-      const userInfo = { name: values.username, forceChangePassword: false };
+  const handleLogin = async (values: any) => {
+    // 说明：这里先打通最小闭环（主应用登录 -> token 落地 -> 进入 IAM 微应用）
+    setRequirePasswordChange(false);
+    try {
+      const resp = await axios.post('/api/iam/login', {
+        username: values.username,
+        password: values.password,
+      });
+      if (resp?.data?.code !== 200) {
+        message.error(resp?.data?.message || '登录失败');
+        return;
+      }
+      const token = resp.data.data?.token;
+      const username = resp.data.data?.account?.username || values.username;
+      if (token) {
+        localStorage.setItem('token', token);
+      }
+      localStorage.setItem('username', username);
+
+      const userInfo = { name: username, forceChangePassword: false };
       setUser(userInfo);
       localStorage.setItem('bone-user', JSON.stringify(userInfo));
-    } else {
-      message.error('用户名或密码错误');
+      message.success('登录成功');
+    } catch (e: any) {
+      message.error(e?.response?.data?.message || '登录失败，请检查用户名或密码');
     }
   };
 
   // 退出登录
-  const handleLogout = () => {
-    message.success('退出登录成功');
-    setUser(null);
-    // 从localStorage中删除用户信息
-    localStorage.removeItem('bone-user');
+  const handleLogout = async () => {
+    try {
+      await axios.post('/api/iam/logout');
+    } catch {
+      // JWT 模式下后端可无状态，失败也不影响前端清理
+    } finally {
+      setUser(null);
+      localStorage.removeItem('bone-user');
+      localStorage.removeItem('token');
+      localStorage.removeItem('username');
+      message.success('退出登录成功');
+    }
   };
 
   // 过滤启用的菜单

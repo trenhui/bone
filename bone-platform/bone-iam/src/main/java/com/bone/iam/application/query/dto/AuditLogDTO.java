@@ -1,6 +1,6 @@
 package com.bone.iam.application.query.dto;
 
-import com.bone.iam.domain.model.audit.vo.OperationType;
+import com.bone.iam.domain.audit.vo.OperationType;
 import lombok.Data;
 
 import java.time.LocalDateTime;

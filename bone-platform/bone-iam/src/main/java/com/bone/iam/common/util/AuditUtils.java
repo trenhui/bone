@@ -1,6 +1,6 @@
 package com.bone.iam.common.util;
 
-import com.bone.iam.domain.model.audit.vo.OperationType;
+import com.bone.iam.domain.audit.vo.OperationType;
 import com.bone.iam.domain.service.AuditService;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;

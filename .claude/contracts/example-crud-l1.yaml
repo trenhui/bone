@@ -1,63 +1,148 @@
-# L1 最小契约示例 - CRUD 场景
-# 复制此文件修改即可
+# 示例 L1 契约 - 完整 CRUD 功能
+# 使用方法: 复制此文件并重命名为 {feature}.yaml，填写内容
 
 meta:
-  feature: user-management
-  owner: developer-name
+  feature: example-crud
+  owner: yourname
   level: L1
   template: crud-base
-  lock: true
+  lock: false
 
-mission: |
-  为系统增加用户管理 CRUD 功能，支持：
-  - 用户列表分页查询
-  - 新增用户
-  - 更新用户信息
-  - 删除用户
+mission: "为示例模块增加完整的 CRUD 管理功能"
 
+# 数据模型
+data_model:
+  entity_name: "ExampleEntity"
+  table_name: "example_entity"
+  fields:
+    - name: id
+      type: Long
+      primary: true
+      auto_increment: true
+    - name: code
+      type: String
+      length: 64
+      nullable: false
+      unique: true
+    - name: name
+      type: String
+      length: 128
+      nullable: false
+    - name: description
+      type: String
+      length: 512
+      nullable: true
+    - name: status
+      type: Integer
+      default: 1
+    - name: createdAt
+      type: LocalDateTime
+      auto: "creation"
+    - name: updatedAt
+      type: LocalDateTime
+      auto: "update"
+
+# API 契约
 api_contract:
-  base-path: /api/v1/system/users
+  base_path: "/api/example/entities"
+
   endpoints:
-  - method: GET
-    path: /api/v1/system/users
-    description: 分页查询用户列表
-    request: page, pageSize, keyword (optional)
-    response: { total, list: [{id, username, email, enabled, createTime}] }
+    # 分页查询
+    - method: GET
+      path: ""
+      query:
+        page: { type: int, default: 1, min: 1 }
+        size: { type: int, default: 20, min: 1, max: 100 }
+        keyword: { type: string, required: false }
+        status: { type: int, required: false }
+      response:
+        status: 200
+        body:
+          code: 200
+          message: "success"
+          data:
+            list: [{ id, code, name, status, createdAt }]
+            total: long
+            page: int
+            size: int
 
-  - method: GET
-    path: /api/v1/system/users/{id}
-    description: 获取用户详情
-    response: {id, username, email, enabled, roles}
+    # 根据 ID 查询
+    - method: GET
+      path: "/{id}"
+      path_params:
+        id: { type: long }
+      response:
+        status: 200
+        body:
+          code: 200
+          data:
+            id: long
+            code: string
+            name: string
+            description: string
+            status: int
+            createdAt: datetime
+            updatedAt: datetime
 
-  - method: POST
-    path: /api/v1/system/users
-    description: 新增用户
-    request: {username, email, password, enabled, roles}
-    response: {id, username}
+    # 创建
+    - method: POST
+      path: ""
+      request:
+        code: { type: string, required: true, pattern: "^[A-Z][A-Z0-9_]*$" }
+        name: { type: string, required: true, maxLength: 128 }
+        description: { type: string, required: false, maxLength: 512 }
+      response:
+        status: 201
+        body:
+          code: 201
+          data:
+            id: long
+            code: string
+            name: string
 
-  - method: PUT
-    path: /api/v1/system/users/{id}
-    description: 更新用户信息
-    request: {email, enabled, roles}
-    response: {success: true}
+    # 更新
+    - method: PUT
+      path: "/{id}"
+      path_params:
+        id: { type: long }
+      request:
+        name: { type: string, required: true }
+        description: { type: string, required: false }
+        status: { type: integer, required: false }
+      response:
+        status: 200
+        body:
+          code: 200
+          data:
+            id: long
+            name: string
+            updatedAt: datetime
 
-  - method: DELETE
-    path: /api/v1/system/users/{id}
-    description: 删除用户
-    response: {success: true}
+    # 删除（软删除）
+    - method: DELETE
+      path: "/{id}"
+      path_params:
+        id: { type: long }
+      response:
+        status: 200
+        body:
+          code: 200
+          message: "删除成功"
+          data: { success: true }
 
-domain_rules:
-- id: RULE-001
-  desc: "用户名不能为空"
-  check: "username 必须有校验"
-  severity: L1
-
-- id: RULE-002
-  desc: "邮箱格式必须正确"
-  check: "使用 @Email 注解校验"
-  severity: L1
-
+# 质量门禁
 guardrails:
-  block_patterns: ["**/security/**", "generated/**"]
   coverage: ">80%"
   max_cyclomatic: 10
+  max_method_lines: 50
+  max_class_lines: 500
+
+  block_patterns:
+    - "**/security/*"
+    - "generated/**"
+
+  naming_convention:
+    controller: "*Controller"
+    service: "*Service"
+    mapper: "*Mapper"
+    dto: "*DTO"

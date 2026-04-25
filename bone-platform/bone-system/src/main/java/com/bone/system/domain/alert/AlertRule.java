@@ -1,0 +1,73 @@
+package com.bone.system.domain.alert;
+
+import com.bone.system.domain.alert.event.AlertRuleCreatedEvent;
+import com.bone.system.domain.alert.event.AlertRuleUpdatedEvent;
+import com.bone.system.domain.alert.vo.AlertLevel;
+import com.bone.system.domain.alert.vo.MetricName;
+import com.bone.system.domain.alert.vo.Threshold;
+import com.bone.metadata.sdk.domain.annotation.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Getter
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Table("sys_alert_rule")
+public class AlertRule extends com.bone.core.domain.AggregateRoot<Long> {
+    private Long id;
+    private String name;
+    private String description;
+    private MetricName metricName;
+    private Threshold threshold;
+    private AlertLevel alertLevel;
+    private List<String> notificationChannels;
+    private boolean enabled;
+    private LocalDateTime createTime;
+    private LocalDateTime updateTime;
+
+    public static AlertRule create(Long id, String name, String description, MetricName metricName,
+                                   Threshold threshold, AlertLevel alertLevel,
+                                   List<String> notificationChannels) {
+        AlertRule rule = new AlertRule();
+        rule.id = id;
+        rule.name = name;
+        rule.description = description;
+        rule.metricName = metricName;
+        rule.threshold = threshold;
+        rule.alertLevel = alertLevel;
+        rule.notificationChannels = notificationChannels;
+        rule.enabled = true;
+        rule.createTime = LocalDateTime.now();
+        rule.updateTime = LocalDateTime.now();
+        rule.addDomainEvent(new AlertRuleCreatedEvent(rule));
+        return rule;
+    }
+
+    public void update(String name, String description, Threshold threshold,
+                       AlertLevel alertLevel, List<String> notificationChannels) {
+        this.name = name;
+        this.description = description;
+        this.threshold = threshold;
+        this.alertLevel = alertLevel;
+        this.notificationChannels = notificationChannels;
+        this.updateTime = LocalDateTime.now();
+        addDomainEvent(new AlertRuleUpdatedEvent(getId(), name, description, threshold.value(), alertLevel, notificationChannels));
+    }
+
+    public void enable() {
+        this.enabled = true;
+        this.updateTime = LocalDateTime.now();
+    }
+
+    public void disable() {
+        this.enabled = false;
+        this.updateTime = LocalDateTime.now();
+    }
+
+    public boolean shouldTrigger(double currentValue) {
+        return enabled && currentValue >= threshold.value();
+    }
+}

@@ -1,0 +1,31 @@
+package com.bone.studio.generator.application.query.handler;
+
+import com.bone.core.usecase.Capability;
+import com.bone.studio.generator.application.query.qry.DataSourceTablesQry;
+import com.bone.studio.generator.domain.data.DataSource;
+import com.bone.studio.generator.domain.data.DatabaseTable;
+import com.bone.studio.generator.domain.gateway.DatabaseMetadataGateway;
+import com.bone.studio.generator.domain.repository.DataSourceRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+
+@Component
+@RequiredArgsConstructor
+@Capability(name = "getDataSourceTables", description = "获取数据源表列表", inputSchema = "{}", outputSchema = "{}")
+public class DataSourceTablesHandler {
+
+    private final DataSourceRepository dataSourceRepository;
+    private final DatabaseMetadataGateway metadataGateway;
+
+    @Transactional(readOnly = true)
+    public List<DatabaseTable> handle(DataSourceTablesQry query) {
+        DataSource dataSource = dataSourceRepository.findById(query.getDataSourceId());
+        if (dataSource == null) {
+            throw new IllegalArgumentException("数据源不存在: " + query.getDataSourceId());
+        }
+        return metadataGateway.loadTables(dataSource);
+    }
+}

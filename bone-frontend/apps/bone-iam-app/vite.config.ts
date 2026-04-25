@@ -18,6 +18,12 @@ export default defineConfig({
     open: true,
     cors: true,
     origin: 'http://localhost:3003',
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+    },
     headers: {
       'Access-Control-Allow-Origin': process.env.NODE_ENV === 'production' ? '' : 'http://localhost:3000',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
@@ -40,5 +46,10 @@ export default defineConfig({
   },
   define: {
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV)
+  },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: '../../tests/setup.ts',
   }
 })

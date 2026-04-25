@@ -1,14 +1,24 @@
 package com.bone.masterdata.application.command.handler;
 
+import com.bone.core.usecase.Capability;
 import com.bone.masterdata.application.command.cmd.UpdateMasterDataFieldCmd;
 import com.bone.core.exception.NotFoundException;
-import com.bone.masterdata.domain.model.field.MasterDataField;
-import com.bone.masterdata.domain.model.field.vo.MasterDataFieldId;
+import com.bone.masterdata.domain.entity.MasterDataField;
 import com.bone.masterdata.domain.repository.MasterDataFieldRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+@Capability(
+    name = "UpdateMasterDataField",
+    description = "更新主数据字段定义",
+    inputSchema = "{\"id\": \"long\", \"name\": \"string\", \"type\": \"string\", \"length\": \"int\", \"required\": \"boolean\"}",
+    outputSchema = "{\"success\": \"boolean\"}",
+    idempotent = true,
+    cost = 1,
+    retryable = true,
+    timeout = 15
+)
 @Component
 @RequiredArgsConstructor
 public class UpdateMasterDataFieldHandler {
@@ -16,9 +26,9 @@ public class UpdateMasterDataFieldHandler {
 
     @Transactional
     public void handle(UpdateMasterDataFieldCmd cmd) {
-        MasterDataField field = masterDataFieldRepository.findById(MasterDataFieldId.of(cmd.getId()));
+        MasterDataField field = masterDataFieldRepository.findById(cmd.getId());
         if (field == null) {
-            throw new NotFoundException("主数据字段不存在");
+            throw NotFoundException.of("主数据字段不存在");
         }
 
         field.update(cmd.getName(), cmd.getType(), cmd.getLength(), cmd.getRequired(),

@@ -1,110 +1,241 @@
-// 用户相关类型
-export interface User {
-  id: string;
+// ==================== 账号相关类型（对齐 IAM 详细设计方案 v2.0） ====================
+
+/**
+ * 账号信息
+ */
+export interface Account {
+  id: number;
+  tenantId: number;
   username: string;
   email: string;
-  name: string;
-  status: 'ACTIVE' | 'INACTIVE' | 'LOCKED';
+  phone?: string;
+  realName?: string;
+  avatarUrl?: string;
+  status: 0 | 1 | 2; // 0=禁用, 1=启用, 2=锁定
+  isAdmin: boolean;
+  lastLoginAt?: string;
+  lastLoginIp?: string;
+  loginFailCount?: number;
+  lockedUntil?: string;
+  pwdUpdatedAt?: string;
+  createdBy?: number;
+  updatedBy?: number;
   createdAt: string;
   updatedAt: string;
-  roles: Role[];
+  deleted: boolean;
+  version?: number;
+  roles?: Role[];
 }
 
-export interface CreateUserRequest {
+/**
+ * 创建账号请求
+ */
+export interface CreateAccountRequest {
   username: string;
-  email: string;
-  name: string;
   password: string;
-  roleIds: string[];
-}
-
-export interface UpdateUserRequest {
   email: string;
-  name: string;
-  status: 'ACTIVE' | 'INACTIVE' | 'LOCKED';
-  roleIds: string[];
+  phone?: string;
+  realName?: string;
+  tenantId?: number;
+  roleIds?: number[];
 }
 
+/**
+ * 更新账号请求
+ */
+export interface UpdateAccountRequest {
+  email: string;
+  phone?: string;
+  realName?: string;
+  status: 0 | 1 | 2;
+  roleIds?: number[];
+}
+
+/**
+ * 重置密码请求
+ */
+export interface ResetPasswordRequest {
+  password: string;
+}
+
+/**
+ * 修改密码请求
+ */
 export interface ChangePasswordRequest {
   currentPassword: string;
   newPassword: string;
 }
 
-// 角色相关类型
+// ==================== 角色相关类型 ====================
+
+/**
+ * 角色信息
+ */
 export interface Role {
-  id: string;
+  id: number;
+  tenantId: number;
   name: string;
+  code: string;
+  type: 0 | 1; // 0=系统角色, 1=自定义角色
   description: string;
+  parentRoleId?: number;
+  createdBy?: number;
+  updatedBy?: number;
   createdAt: string;
   updatedAt: string;
-  permissions: Permission[];
+  deleted: boolean;
+  version?: number;
+  permissions?: Permission[];
 }
 
+/**
+ * 创建角色请求
+ */
 export interface CreateRoleRequest {
   name: string;
   description: string;
-  permissionIds: string[];
+  code?: string;
+  tenantId?: number;
+  parentRoleId?: number;
 }
 
+/**
+ * 更新角色请求
+ */
 export interface UpdateRoleRequest {
   name: string;
   description: string;
-  permissionIds: string[];
+  code?: string;
+  tenantId?: number;
+  parentRoleId?: number;
 }
 
-// 权限相关类型
+// ==================== 权限相关类型 ====================
+
+/**
+ * 权限信息
+ */
 export interface Permission {
-  id: string;
+  id: number;
   name: string;
   code: string;
-  description: string;
+  description?: string;
   resourceType: string;
+  resourcePath: string;
   action: string;
+  parentId?: number;
+  sortOrder?: number;
+  createdBy?: number;
+  updatedBy?: number;
   createdAt: string;
   updatedAt: string;
+  deleted: boolean;
+  children?: Permission[];
 }
 
+/**
+ * 创建权限请求
+ */
 export interface CreatePermissionRequest {
   name: string;
   code: string;
-  description: string;
+  description?: string;
   resourceType: string;
+  resourcePath?: string;
   action: string;
+  parentId?: number;
+  type?: string;
+  sortOrder?: number;
 }
 
+/**
+ * 更新权限请求
+ */
 export interface UpdatePermissionRequest {
   name: string;
-  description: string;
-  resourceType: string;
-  action: string;
+  description?: string;
+  resourceType?: string;
+  resourcePath?: string;
+  action?: string;
+  parentId?: number;
+  type?: string;
+  sortOrder?: number;
 }
 
-// 审计日志相关类型
+// ==================== 审计日志相关类型 ====================
+
+/**
+ * 审计日志
+ */
 export interface AuditLog {
-  id: string;
-  userId: string;
-  username: string;
-  action: string;
+  id: number;
+  tenantId: number;
+  userId: number;
+  operation: string;
   resourceType: string;
-  resourceId: string;
-  details: string;
-  ipAddress: string;
-  userAgent: string;
-  createdAt: string;
+  resourceId?: string;
+  ip?: string;
+  userAgent?: string;
+  parameters?: string;
+  result: 'SUCCESS' | 'FAILED';
+  duration?: number;
+  createTime: string;
 }
 
-// 登录相关类型
+/**
+ * 审计设置
+ */
+export interface AuditSettings {
+  retentionDays: number;
+  autoArchiveEnabled: boolean;
+  archiveAfterDays: number;
+  storageType: 'DATABASE' | 'MINIO' | 'S3';
+  wormEnabled: boolean;
+}
+
+// ==================== 登录相关类型 ====================
+
+/**
+ * 登录请求
+ */
 export interface LoginRequest {
   username: string;
   password: string;
 }
 
-export interface LoginResponse {
-  token: string;
-  user: User;
+/**
+ * 刷新令牌请求
+ */
+export interface RefreshTokenRequest {
+  refreshToken: string;
 }
 
-// 通用响应类型
+/**
+ * 登录响应
+ */
+export interface LoginResponse {
+  token: string;
+  refreshToken: string;
+  tokenType: string;
+  expiresIn: number;
+  account: Account;
+}
+
+// ==================== SSO 相关类型 ====================
+
+/**
+ * SSO 配置
+ */
+export interface SsoConfig {
+  enabled: boolean;
+  providers: string[];
+}
+
+// ==================== 通用响应类型 ====================
+
+/**
+ * 分页结果
+ */
 export interface PageResult<T> {
   data: T[];
   total: number;
@@ -112,6 +243,9 @@ export interface PageResult<T> {
   pageSize: number;
 }
 
+/**
+ * API 响应
+ */
 export interface ApiResponse<T> {
   code: number;
   message: string;

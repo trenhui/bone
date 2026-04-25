@@ -9,6 +9,7 @@ public class RoleWebConverter {
     public CreateRoleCmd toCreateRoleCmd(CreateRoleReq req) {
         CreateRoleCmd cmd = new CreateRoleCmd();
         cmd.setName(req.getName());
+        cmd.setCode(req.getCode());
         cmd.setDescription(req.getDescription());
         cmd.setTenantId(req.getTenantId());
         return cmd;

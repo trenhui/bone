@@ -1,29 +1,38 @@
 package com.bone.iam.application.command.handler;
 
 import com.bone.iam.application.command.cmd.CreateRoleCmd;
-import com.bone.iam.domain.model.role.Role;
-import com.bone.iam.domain.model.role.vo.RoleName;
+import com.bone.iam.domain.role.Role;
 import com.bone.iam.domain.repository.RoleRepository;
-import com.bone.iam.domain.service.RoleService;
+import com.bone.core.usecase.Capability;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+@Capability(
+    name = "CreateRole",
+    description = "创建新角色",
+    inputSchema = "{\"name\": \"string\", \"description\": \"string\"}",
+    outputSchema = "{\"roleId\": \"long\"}",
+    idempotent = false,
+    cost = 1,
+    retryable = true,
+    timeout = 5
+)
 @Component
 @RequiredArgsConstructor
 public class CreateRoleHandler {
     private final RoleRepository roleRepository;
-    private final RoleService roleService;
 
     @Transactional
     public Long handle(CreateRoleCmd cmd) {
-        if (roleService.isRoleNameExists(cmd.getName())) {
-            throw new RuntimeException("角色名称已存在");
+        String code = cmd.getCode();
+        if (code == null || code.isBlank()) {
+            code = cmd.getName() == null ? "" : cmd.getName().trim()
+                    .replaceAll("\\s+", "_")
+                    .toUpperCase();
         }
-
-        RoleName roleName = RoleName.of(cmd.getName());
-        Role role = Role.create(roleName, cmd.getDescription(), cmd.getTenantId());
+        Role role = Role.create(cmd.getName(), code, cmd.getDescription(), 1, cmd.getTenantId(), null);
         roleRepository.save(role);
-        return role.getDbId();
+        return role.getId();
     }
 }

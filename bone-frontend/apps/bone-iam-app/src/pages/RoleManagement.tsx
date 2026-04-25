@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Input, Select, message, Popconfirm, Space } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
-import { apiService } from '../services/api';
-import { Role, CreateRoleRequest, UpdateRoleRequest } from '../types';
+import * as api from '../services/api';
+import type { Role, CreateRoleRequest, UpdateRoleRequest } from '../types';
 
 const { Option } = Select;
 
@@ -22,12 +22,12 @@ const RoleManagement: React.FC = () => {
   const fetchRoles = async () => {
     setLoading(true);
     try {
-      const response = await apiService.getRoles(page, pageSize, keyword);
+      const response = await api.getRoles(page, pageSize);
       if (response.code === 200) {
         setRoles(response.data.data);
         setTotal(response.data.total);
       }
-    } catch (error) {
+    } catch {
       message.error('获取角色列表失败');
     } finally {
       setLoading(false);
@@ -36,11 +36,11 @@ const RoleManagement: React.FC = () => {
 
   const fetchPermissions = async () => {
     try {
-      const response = await apiService.getPermissions(1, 200);
+      const response = await api.getPermissions(1, 200);
       if (response.code === 200) {
         setPermissions(response.data.data);
       }
-    } catch (error) {
+    } catch {
       message.error('获取权限列表失败');
     }
   };
@@ -50,32 +50,32 @@ const RoleManagement: React.FC = () => {
     fetchPermissions();
   }, [page, pageSize, keyword]);
 
-  const handleAddRole = () => {
+  const handleAdd = () => {
     setIsEditMode(false);
     setCurrentRole(null);
     form.resetFields();
     setIsModalVisible(true);
   };
 
-  const handleEditRole = (role: Role) => {
+  const handleEdit = (role: Role) => {
     setIsEditMode(true);
     setCurrentRole(role);
     form.setFieldsValue({
       name: role.name,
       description: role.description,
-      permissionIds: role.permissions.map(permission => permission.id)
+      permissionIds: role.permissions?.map((p) => p.id) || []
     });
     setIsModalVisible(true);
   };
 
-  const handleDeleteRole = async (id: string) => {
+  const handleDelete = async (id: number) => {
     try {
-      const response = await apiService.deleteRole(id);
+      const response = await api.deleteRole(id);
       if (response.code === 200) {
         message.success('删除角色成功');
         fetchRoles();
       }
-    } catch (error) {
+    } catch {
       message.error('删除角色失败');
     }
   };
@@ -87,9 +87,8 @@ const RoleManagement: React.FC = () => {
         const updateData: UpdateRoleRequest = {
           name: values.name,
           description: values.description,
-          permissionIds: values.permissionIds
         };
-        const response = await apiService.updateRole(currentRole.id, updateData);
+        const response = await api.updateRole(currentRole.id, updateData);
         if (response.code === 200) {
           message.success('更新角色成功');
           setIsModalVisible(false);
@@ -99,51 +98,38 @@ const RoleManagement: React.FC = () => {
         const createData: CreateRoleRequest = {
           name: values.name,
           description: values.description,
-          permissionIds: values.permissionIds
         };
-        const response = await apiService.createRole(createData);
+        const response = await api.createRole(createData);
         if (response.code === 200) {
           message.success('创建角色成功');
           setIsModalVisible(false);
           fetchRoles();
         }
       }
-    } catch (error) {
+    } catch {
       message.error('操作失败');
     }
   };
 
   const columns = [
-    {
-      title: '角色名称',
-      dataIndex: 'name',
-      key: 'name',
-    },
-    {
-      title: '描述',
-      dataIndex: 'description',
-      key: 'description',
-    },
+    { title: '角色名称', dataIndex: 'name', key: 'name' },
+    { title: '描述', dataIndex: 'description', key: 'description' },
     {
       title: '权限数量',
       dataIndex: 'permissions',
       key: 'permissions',
-      render: (permissions: any[]) => permissions.length
+      render: (permissions: any[]) => (permissions || []).length
     },
-    {
-      title: '创建时间',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-    },
+    { title: '创建时间', dataIndex: 'createTime', key: 'createTime' },
     {
       title: '操作',
       key: 'action',
       render: (_: any, record: Role) => (
         <Space size="middle">
-          <Button icon={<EditOutlined />} onClick={() => handleEditRole(record)} />
+          <Button icon={<EditOutlined />} onClick={() => handleEdit(record)} />
           <Popconfirm
             title="确定要删除这个角色吗？"
-            onConfirm={() => handleDeleteRole(record.id)}
+            onConfirm={() => handleDelete(record.id)}
             okText="确定"
             cancelText="取消"
           >
@@ -166,7 +152,7 @@ const RoleManagement: React.FC = () => {
             onChange={(e) => setKeyword(e.target.value)}
             style={{ width: 300 }}
           />
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAddRole}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
             新增角色
           </Button>
         </div>
@@ -180,9 +166,9 @@ const RoleManagement: React.FC = () => {
           current: page,
           pageSize: pageSize,
           total: total,
-          onChange: (page, pageSize) => {
-            setPage(page);
-            setPageSize(pageSize);
+          onChange: (p, ps) => {
+            setPage(p);
+            if (ps) setPageSize(ps);
           }
         }}
       />
@@ -211,7 +197,6 @@ const RoleManagement: React.FC = () => {
           <Form.Item
             name="permissionIds"
             label="权限"
-            rules={[{ required: true, message: '请选择权限!' }]}
           >
             <Select mode="multiple" placeholder="请选择权限" style={{ width: '100%' }} maxTagCount="responsive">
               {permissions.map(permission => (

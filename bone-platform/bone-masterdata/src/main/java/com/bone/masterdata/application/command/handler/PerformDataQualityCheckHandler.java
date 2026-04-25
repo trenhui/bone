@@ -1,8 +1,9 @@
 package com.bone.masterdata.application.command.handler;
 
+import com.bone.core.usecase.Capability;
+import com.bone.core.util.DistributedIdGenerator;
 import com.bone.masterdata.application.command.cmd.PerformDataQualityCheckCmd;
-import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityId;
-import com.bone.masterdata.domain.model.quality.QualityCheck;
+import com.bone.masterdata.domain.quality.QualityCheck;
 import com.bone.masterdata.domain.repository.QualityCheckRepository;
 import com.bone.masterdata.domain.service.quality.DataQualityService;
 import com.bone.core.exception.NotFoundException;
@@ -11,6 +12,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+@Capability(
+    name = "PerformDataQualityCheck",
+    description = "执行数据质量检查",
+    inputSchema = "{\"masterDataEntityId\": \"long\"}",
+    outputSchema = "{\"checkId\": \"long\"}",
+    idempotent = false,
+    cost = 5,
+    retryable = true,
+    timeout = 120
+)
 @Component
 @RequiredArgsConstructor
 public class PerformDataQualityCheckHandler {
@@ -20,12 +31,12 @@ public class PerformDataQualityCheckHandler {
 
     @Transactional
     public Long handle(PerformDataQualityCheckCmd cmd) {
-        MasterDataEntityId entityId = MasterDataEntityId.of(cmd.getMasterDataEntityId());
-        if (entityRepository.findById(entityId) == null) {
-            throw new NotFoundException("主数据实体不存在");
+        if (entityRepository.findById(cmd.getMasterDataEntityId()) == null) {
+            throw NotFoundException.of("主数据实体不存在");
         }
 
-        QualityCheck check = dataQualityService.performQualityCheck(entityId);
-        return qualityCheckRepository.save(check).getValue();
+        Long checkId = DistributedIdGenerator.generateLongId();
+        QualityCheck check = dataQualityService.performQualityCheck(checkId, cmd.getMasterDataEntityId());
+        return qualityCheckRepository.save(check).getId();
     }
 }

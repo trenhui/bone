@@ -1,14 +1,24 @@
 package com.bone.masterdata.application.command.handler;
 
+import com.bone.core.usecase.Capability;
 import com.bone.masterdata.application.command.cmd.UpdateMasterDataRecordCmd;
-import com.bone.masterdata.domain.model.record.vo.MasterDataRecordId;
 import com.bone.core.exception.NotFoundException;
-import com.bone.masterdata.domain.model.record.MasterDataRecord;
+import com.bone.masterdata.domain.record.MasterDataRecord;
 import com.bone.masterdata.domain.repository.MasterDataRecordRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+@Capability(
+    name = "UpdateMasterDataRecord",
+    description = "更新主数据记录",
+    inputSchema = "{\"id\": \"long\", \"data\": \"object\"}",
+    outputSchema = "{\"success\": \"boolean\"}",
+    idempotent = true,
+    cost = 1,
+    retryable = true,
+    timeout = 15
+)
 @Component
 @RequiredArgsConstructor
 public class UpdateMasterDataRecordHandler {
@@ -16,9 +26,9 @@ public class UpdateMasterDataRecordHandler {
 
     @Transactional
     public void handle(UpdateMasterDataRecordCmd cmd) {
-        MasterDataRecord record = masterDataRecordRepository.findById(MasterDataRecordId.of(cmd.getId()));
+        MasterDataRecord record = masterDataRecordRepository.findById(cmd.getId());
         if (record == null) {
-            throw new NotFoundException("主数据记录不存在");
+            throw NotFoundException.of("主数据记录不存在");
         }
 
         record.update(cmd.getData());

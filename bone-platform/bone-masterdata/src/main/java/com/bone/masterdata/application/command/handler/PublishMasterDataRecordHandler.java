@@ -1,13 +1,23 @@
 package com.bone.masterdata.application.command.handler;
 
-import com.bone.masterdata.domain.model.record.vo.MasterDataRecordId;
+import com.bone.core.usecase.Capability;
 import com.bone.core.exception.NotFoundException;
-import com.bone.masterdata.domain.model.record.MasterDataRecord;
+import com.bone.masterdata.domain.record.MasterDataRecord;
 import com.bone.masterdata.domain.repository.MasterDataRecordRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+@Capability(
+    name = "PublishMasterDataRecord",
+    description = "发布主数据记录",
+    inputSchema = "{\"id\": \"long\"}",
+    outputSchema = "{\"success\": \"boolean\"}",
+    idempotent = true,
+    cost = 2,
+    retryable = false,
+    timeout = 20
+)
 @Component
 @RequiredArgsConstructor
 public class PublishMasterDataRecordHandler {
@@ -15,9 +25,9 @@ public class PublishMasterDataRecordHandler {
 
     @Transactional
     public void handle(Long id) {
-        MasterDataRecord record = masterDataRecordRepository.findById(MasterDataRecordId.of(id));
+        MasterDataRecord record = masterDataRecordRepository.findById(id);
         if (record == null) {
-            throw new NotFoundException("主数据记录不存在");
+            throw NotFoundException.of("主数据记录不存在");
         }
 
         record.publish();

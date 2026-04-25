@@ -1,11 +1,11 @@
 package com.bone.masterdata.application.command.handler;
 
+import com.bone.core.usecase.Capability;
+import com.bone.core.util.DistributedIdGenerator;
 import com.bone.masterdata.application.command.cmd.ImportMasterDataRecordsCmd;
-import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityId;
-import com.bone.masterdata.domain.model.record.MasterDataRecord;
+import com.bone.masterdata.domain.record.MasterDataRecord;
 import com.bone.masterdata.domain.repository.MasterDataRecordRepository;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
-import com.bone.core.exception.BizException;
 import com.bone.core.exception.NotFoundException;
 import com.bone.masterdata.infrastructure.util.ExcelUtils;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +15,16 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+@Capability(
+    name = "ImportMasterDataRecords",
+    description = "批量导入主数据记录",
+    inputSchema = "{\"masterDataEntityId\": \"long\", \"file\": \"file\"}",
+    outputSchema = "{\"recordIds\": \"array\"}",
+    idempotent = false,
+    cost = 8,
+    retryable = false,
+    timeout = 300
+)
 @Component
 @RequiredArgsConstructor
 public class ImportMasterDataRecordsHandler {
@@ -23,24 +33,25 @@ public class ImportMasterDataRecordsHandler {
 
     @Transactional
     public List<Long> handle(ImportMasterDataRecordsCmd cmd) {
-        // 验证主数据实体存在
-        MasterDataEntityId entityId = MasterDataEntityId.of(cmd.getMasterDataEntityId());
-        if (entityRepository.findById(entityId) == null) {
-            throw new NotFoundException("主数据实体不存在");
+        if (entityRepository.findById(cmd.getMasterDataEntityId()) == null) {
+            throw NotFoundException.of("主数据实体不存在");
         }
 
-        // 解析Excel文件
         List<MasterDataRecord> records = ExcelUtils.parseExcelFile(
-            cmd.getFile(),
-            cmd.getMasterDataEntityId()
+                cmd.getFile(),
+                cmd.getMasterDataEntityId()
         );
 
-        // 保存记录
-        records.forEach(recordRepository::save);
+        records.forEach(record -> {
+            if (record.getId() == null) {
+                recordRepository.save(record);
+            } else {
+                recordRepository.update(record);
+            }
+        });
 
-        // 返回记录ID列表
         return records.stream()
-                .map(record -> record.getId().getValue())
+                .map(MasterDataRecord::getId)
                 .toList();
     }
 }

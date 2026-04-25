@@ -2,10 +2,10 @@ package com.bone.integration.adapter.web.controller;
 
 import com.bone.integration.application.command.cmd.CreateFlowCmd;
 import com.bone.integration.application.command.cmd.UpdateFlowCmd;
-import com.bone.integration.application.command.handler.CreateFlowHandler;
-import com.bone.integration.application.command.handler.UpdateFlowHandler;
+import com.bone.integration.application.usecase.standard.CreateFlowUseCase;
+import com.bone.integration.application.usecase.standard.UpdateFlowUseCase;
+import com.bone.integration.application.usecase.standard.FlowPageQueryUseCase;
 import com.bone.integration.application.query.dto.FlowDTO;
-import com.bone.integration.application.query.handler.FlowPageQueryHandler;
 import com.bone.integration.application.query.qry.FlowPageQry;
 import com.bone.integration.domain.model.flow.FlowConnection;
 import com.bone.integration.domain.model.flow.FlowNode;
@@ -25,28 +25,28 @@ import java.util.stream.Collectors;
 @RequestMapping("/integration/flows")
 @RequiredArgsConstructor
 public class FlowController {
-    private final CreateFlowHandler createFlowHandler;
-    private final UpdateFlowHandler updateFlowHandler;
-    private final FlowPageQueryHandler flowPageQueryHandler;
+    private final CreateFlowUseCase createFlowUseCase;
+    private final UpdateFlowUseCase updateFlowUseCase;
+    private final FlowPageQueryUseCase flowPageQueryUseCase;
     private final IntegrationFlowRepository flowRepository;
     private final FlowNodeRepository nodeRepository;
     private final FlowConnectionRepository connectionRepository;
 
     @PostMapping
     public ApiResponse<Long> create(@RequestBody CreateFlowCmd cmd) {
-        Long id = createFlowHandler.handle(cmd);
+        Long id = createFlowUseCase.execute(cmd);
         return ApiResponse.success(id);
     }
 
     @PutMapping("/{id}")
     public ApiResponse<Void> update(@PathVariable Long id, @RequestBody UpdateFlowCmd cmd) {
-        updateFlowHandler.handle(new UpdateFlowCmd(id, cmd.name(), cmd.description(), cmd.nodes(), cmd.connections()));
+        updateFlowUseCase.execute(new UpdateFlowCmd(id, cmd.name(), cmd.description(), cmd.nodes(), cmd.connections()));
         return ApiResponse.success();
     }
 
     @GetMapping
     public ApiResponse<PageResult<FlowDTO>> page(FlowPageQry qry) {
-        PageResult<FlowDTO> result = flowPageQueryHandler.handle(qry);
+        PageResult<FlowDTO> result = flowPageQueryUseCase.execute(qry);
         return ApiResponse.success(result);
     }
 

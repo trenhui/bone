@@ -1,13 +1,8 @@
 package com.bone.system.domain.repository;
 
 import com.bone.metadata.sdk.Repository;
-import com.bone.system.domain.model.config.SystemConfig;
-import com.bone.system.domain.model.config.vo.ConfigId;
-import com.bone.system.domain.model.config.vo.ConfigKey;
+import com.bone.system.domain.config.SystemConfig;
 
-import java.util.Optional;
-
-public interface SystemConfigRepository extends Repository<SystemConfig, ConfigId> {
-    Optional<SystemConfig> findByConfigKey(ConfigKey configKey);
-    boolean existsByConfigKey(ConfigKey configKey);
+public interface SystemConfigRepository extends Repository<SystemConfig, Long> {
+    // 空接口，所有查询能力由基类和 Criteria/QueryBuilder 提供
 }

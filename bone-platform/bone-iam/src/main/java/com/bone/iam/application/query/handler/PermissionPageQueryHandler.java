@@ -3,7 +3,7 @@ package com.bone.iam.application.query.handler;
 import com.bone.core.model.PageResult;
 import com.bone.iam.application.query.dto.PermissionDTO;
 import com.bone.iam.application.query.qry.PermissionPageQry;
-import com.bone.iam.domain.model.permission.Permission;
+import com.bone.iam.domain.permission.Permission;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import lombok.RequiredArgsConstructor;
@@ -31,7 +31,7 @@ public class PermissionPageQueryHandler {
         }
 
         if (qry.getParentId() != null) {
-            query.where(Permission::getParentId).eq(String.valueOf(qry.getParentId()));
+            query.where(Permission::getParentId).eq(qry.getParentId());
         }
 
         PageResult<Permission> result = query.orderByDesc(Permission::getCreateTime)
@@ -46,11 +46,11 @@ public class PermissionPageQueryHandler {
 
     private PermissionDTO convertToDto(Permission permission) {
         PermissionDTO dto = new PermissionDTO();
-        dto.setId(permission.getDbId());
-        dto.setCode(permission.getCode().value());
+        dto.setId(permission.getId());
+        dto.setCode(permission.getCode());
         dto.setName(permission.getName());
         dto.setDescription(permission.getDescription());
-        dto.setParentId(permission.getParentId() != null ? Long.parseLong(permission.getParentId()) : null);
+        dto.setParentId(permission.getParentId());
         dto.setType(permission.getType());
         dto.setCreateTime(permission.getCreateTime());
         dto.setUpdateTime(permission.getUpdateTime());

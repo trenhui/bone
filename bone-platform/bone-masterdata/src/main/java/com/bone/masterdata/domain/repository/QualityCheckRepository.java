@@ -1,8 +1,8 @@
 package com.bone.masterdata.domain.repository;
 
-import com.bone.masterdata.domain.model.quality.QualityCheck;
-import com.bone.masterdata.domain.model.quality.vo.QualityCheckId;
+import com.bone.masterdata.domain.quality.QualityCheck;
 import com.bone.metadata.sdk.Repository;
 
-public interface QualityCheckRepository extends Repository<QualityCheck, QualityCheckId> {
+public interface QualityCheckRepository extends Repository<QualityCheck, Long> {
+    // 空接口，所有查询能力由基类和 Criteria/QueryBuilder 提供
 }

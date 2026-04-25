@@ -816,7 +816,7 @@ src/main/java/com/bone/blueprint/
 │   │       └── VipOrderPriceCalculator.java
 │   ├── security/                               # 安全组件
 │   │   ├── JwtTokenProvider.java
-│   │   └── PasswordEncoderImpl.java
+│   │   └── PasswordEncoderProvider.java
 │   ├── config/                                 # 配置类
 │   │   ├── metadata/BoneMetadataConfiguration.java
 │   │   ├── extension/ExtensionConfiguration.java
@@ -1037,6 +1037,63 @@ public class ArchitectureTest {
     }
 }
 ```
+
+---
+
+### 9.5 RPC 服务规范
+
+**必须使用专门的 RPC DTO**：
+
+```java
+// RPC 请求 DTO
+@Data
+public class CreateOrderRpcRequest {
+    private Long customerId;
+    private List<OrderItemRpcRequest> items;
+    
+    @Data
+    public static class OrderItemRpcRequest {
+        private Long productId;
+        private String productName;
+        private Integer quantity;
+        private BigDecimal unitPrice;
+    }
+}
+
+// RPC 响应 DTO
+@Data
+public class CreateOrderRpcResponse {
+    private Long orderId;
+    private String status;
+}
+
+// RPC 服务实现
+@Service
+@RequiredArgsConstructor
+public class OrderRpcService {
+    private final CreateOrderCommandHandler createOrderCommandHandler;
+    
+    public CreateOrderRpcResponse createOrder(CreateOrderRpcRequest request) {
+        CreateOrderCommand command = convertToCommand(request);
+        Long orderId = createOrderCommandHandler.handle(command);
+        
+        CreateOrderRpcResponse response = new CreateOrderRpcResponse();
+        response.setOrderId(orderId);
+        response.setStatus("SUCCESS");
+        return response;
+    }
+    
+    private CreateOrderCommand convertToCommand(CreateOrderRpcRequest request) {
+        // 转换逻辑
+    }
+}
+```
+
+**核心原则**：
+- RPC 服务位于适配器层，负责处理远程调用请求
+- 使用专门的 RPC DTO 作为参数和返回值，避免直接使用应用层的命令对象
+- 在 RPC 服务中实现从 RPC DTO 到应用层命令对象的转换
+- RPC 接口的参数结构应该根据外部系统的需求设计，保持稳定
 
 ---
 

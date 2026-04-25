@@ -4,8 +4,8 @@ import com.bone.blueprint.adapter.rpc.dto.CreateOrderRpcRequest;
 import com.bone.blueprint.adapter.rpc.dto.CreateOrderRpcResponse;
 import com.bone.blueprint.application.command.cmd.CreateOrderCommand;
 import com.bone.blueprint.application.query.dto.OrderDto;
-import com.bone.blueprint.application.query.handler.OrderDetailQueryHandler;
 import com.bone.blueprint.application.query.qry.OrderDetailQuery;
+import com.bone.blueprint.application.usecase.simple.GetOrderDetailUseCase;
 import com.bone.blueprint.application.usecase.standard.CreateOrderUseCase;
 import com.bone.core.result.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,7 +34,7 @@ public class OrderRpcService {
     private static final Logger log = LoggerFactory.getLogger(OrderRpcService.class);
     
     private final CreateOrderUseCase createOrderUseCase;
-    private final OrderDetailQueryHandler orderDetailQueryHandler;
+    private final GetOrderDetailUseCase getOrderDetailUseCase;
     
     /**
      * 创建订单
@@ -97,7 +97,7 @@ public class OrderRpcService {
             
             OrderDetailQuery query = new OrderDetailQuery();
             query.setOrderId(orderId);
-            OrderDto orderDto = orderDetailQueryHandler.handle(query);
+            OrderDto orderDto = getOrderDetailUseCase.execute(query);
             
             if (orderDto != null) {
                 log.info("查询订单成功: orderId={}", orderId);
