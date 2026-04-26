@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8"/>
+  <title>理赔结案通知书模板</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      line-height: 1.5em;
+    }
+    body {
+      font-family: SimHei;
+      margin: 0;
+      padding: 20px 0;
+      font-size: 16px;
+    }
+    @page {
+      margin: 0 10px 0;
+    }
+    .center {
+      text-align: center;
+    }
+
+    .underline {
+      border-bottom: 1px solid #000;
+      display: inline-block;
+      min-width: 100px;
+      margin: 0 4px;
+    }
+    table {
+      width: 100%;
+      max-width: 100%;
+      border-collapse: collapse;
+      background-color: #c0c0c0;
+      table-layout: fixed;
+      display: table;
+      word-wrap: break-word;
+    }
+    th, td {
+      border: 1px solid #000;
+      padding: 6px 10px;
+      text-align: center;
+      white-space: normal; 
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      word-break: break-all;
+    }
+    .gray-bg {
+      background-color: #e6e6e6;
+    }
+    .note {
+      font-size: 13px;
+    }
+    .divider {
+      border-top: 2px solid #000;
+      margin: 30px 0 10px;
+    }
+  </style>
+</head>
+<body>
+  <div style="text-align:center;"><img style="width:400px" src="https://bucket-tpa.oss-cn-qingdao.aliyuncs.com/tpaStaticImg/250414/alltrust2.png"/></div>
+  <div class="center bold" style="font-size: 20px;">理赔结案通知书</div>
+  <p>尊敬的<span class="underline">${outInsureName!""}</span>先生/女士：</p>
+  <p>您好！您向我司申请（报案号：${gyTaskNo!""}）我们已经收到，经审慎核定您的申请材料，<br></br>将本次理赔结果向您通知如下：</p>
+  <p>※本案合计给付人民币：<span>${compensationAmount!""}</span>（<span>${compensationAmountChinese!""}</span>）。</p>
+
+  <p><span class="bold">*给付款项支付明细</span></p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>就诊人</th>
+        <th>给付金额</th>
+        <th>账户名</th>
+        <th>开户行</th>
+        <th>账号</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>${outInsureName!""}</td>
+        <td>${compensationAmount!""}</td>
+        <td>${collectUser!""}</td>
+        <td>${bankName!""}</td>
+        <td>${accountNo!""}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><span class="bold">*保单${policyNo!""}（保险期间${effDate!""}-${expDate!""}）赔付概要</span></p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>赔案号</th>
+        <th>理赔结论</th>
+        <th>本案赔付金额</th>
+        <th>理赔说明</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>${claimNumber!""}</td>
+        <td>${compensationConclusionName!""}</td>
+        <td>${compensationAmount!""}</td>
+        <td>${claimRejectedRemark!""}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><span class="bold">*医疗账单信息</span></p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>账单汇总</th>
+        <th>赔付金额</th>
+        <th>账单金额</th>
+        <th>医保统筹①</th>
+        <th>全部自费②</th>
+        <th>部分自费③</th>
+        <th>不合理费用④</th>
+        <th>第三方支付⑤</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>合计</td>
+        <td>${compensationAmount!""}</td>
+        <td>${invoiceAmount!""}</td>
+        <td>${pooledAmount!""}</td>
+        <td>${selfPayAmount!""}</td>
+        <td>${partSelfPayAmount!""}</td>
+        <td>${unReasonableAmount!""}</td>
+        <td>${thirdPartyAmount!""}</td></tr>
+    </tbody>
+  </table>
+
+  <p class="note">
+    *说明：<br/>
+    ①医保统筹:指社会保险统筹账户资金支付的参保人医疗费用；②全额自费:指不属于社保支付范围内的自费药品和诊疗项目费用;<br/>
+    ③部分自费:指不属于社保支付范围内的乙类药品和诊疗项目先行自费部分费用；④不合理费用:指经我司审核<br/>
+    不属于保险责任的费用；⑤第三方支付:指您从社保或其他途径获得的医疗补偿费用;<br/>
+    *本通知书是我们对您此次理赔申请处理结果的详细说明，不作为领款凭证，如有赔付则保险金款项将于本案结案后十日内以银行转账<br/>
+    或其他方式给付。
+  </p>
+
+  <p class="center">----------------------------------------------------------------------------------分割线以下为医疗账单明细----------------------------------------------------------------------------------</p>
+  <table>
+    <thead>
+      <tr>
+        <th>发票号</th><th>就诊日期</th><th>赔付金额</th><th>给付责任</th><th>理算公式</th>
+      </tr>
+    </thead>
+    <tbody>
+      <#list invoiceList as item>
+      <tr>
+        <td>${item.invoiceNo!""}</td>
+        <td>${item.liveStartDate!""}</td>
+        <td>${item.compensationAmount!""}</td>
+        <td>${item.responsibilityName!""}</td>
+        <td>${item.formulaValue!""}</td></tr>
+      </#list>
+    </tbody>
+  </table>
+
+  <p class="note">
+    温馨提示：本通知书是我司对您本次理赔申请处理结果的详细说明，不作为领款凭证。如您有任何疑问，请拨打客户服务电话，或登陆<br/>
+    好管家公众号在线查询。
+  </p>
+
+  <p class="right bold" style="text-align: right;">永诚财产保险股份有限公司</p>
+  <p class="center" style="text-align: right;">${auditEndTime!""}</p>
+</body>
+</html>

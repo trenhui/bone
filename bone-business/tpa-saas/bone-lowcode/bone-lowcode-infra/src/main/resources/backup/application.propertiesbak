@@ -1,0 +1,7 @@
+#\u4F7F\u7528Apollo\u65F6\u4F7F\u7528\u6B64\u6587\u4EF6
+apollo.meta=http://192.168.8.136:8096
+app.id=pk-pageConfig
+
+apollo.bootstrap.namespaces=application,IT.eureka,IT.boneAuth
+apollo.bootstrap.enabled=true
+apollo.bootstrap.eagerLoad.enabled=true

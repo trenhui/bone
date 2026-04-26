@@ -1,0 +1,5 @@
+ID,PolicyNo,PlanId,InsuranceCode,InsuranceName,LimitAmount,IsPublicLimit,Reserved1,Reserved2,CreateTime,CreatorID,UpdateTime,UpdatorID,IsDelete
+"1772794a-7b96-4961-96ac-3df63208a9ca","118B61244202500000001","3ed61327-8d47-4d72-87eb-f5faf8364d5f","10454","公共账户-团体门（急）诊医疗保险","500000.00","0",null,null,"2025-04-02 14:21:47","wangyujie",null,null,"0"
+"25e5b4c8-97fc-445d-ba3e-9f7866a87c1e","118B61244202500000001","d9161a59-d4b0-4efa-9a76-08ba1d531143","10454","公共账户-团体门（急）诊医疗保险","500000.00","0",null,null,"2025-04-02 14:10:01","wangyujie","2025-04-02 14:10:01","wangyujie","0"
+"514f895f-deee-4e85-9c94-f9e90908c2e1","118B61244202500000001","d9161a59-d4b0-4efa-9a76-08ba1d531143","10452","门急诊、药房-团体门（急）诊医疗保险","100000.00","0",null,null,"2025-04-02 14:07:59","wangyujie","2025-04-02 14:07:59","wangyujie","0"
+"d01fadfc-5bc9-4af9-aafb-d966ff795ed0","118B61244202500000001","3ed61327-8d47-4d72-87eb-f5faf8364d5f","10452","门急诊、药房-团体门（急）诊医疗保险","100000.00","0",null,null,"2025-04-02 14:21:47","wangyujie",null,null,"0"

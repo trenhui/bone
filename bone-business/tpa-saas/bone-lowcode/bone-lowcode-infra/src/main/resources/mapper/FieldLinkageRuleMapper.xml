@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bone.lowcode.infra.infrastructure.persistence.mapper.FieldLinkageRuleMapper">
+
+    <insert id="batchSaveWithId">
+        insert into cfg_field_linkage_rule (id, field_id, source_operator,
+                                            source_value_type, source_value, target_fields,
+                                            property_or_value, target_field_property_name,
+                                            target_field_property_value, target_operator,
+                                            target_value_type, target_value, error_prompt,
+                                            page_id, generic_or_exclusive, create_by, create_time,
+                                            update_by, update_time, status,deleted)
+        values
+        <foreach collection="fieldRuleDOList" item="item" separator=",">
+            (#{item.id,jdbcType=BIGINT}, #{item.fieldId,jdbcType=BIGINT}, #{item.sourceOperator,jdbcType=VARCHAR},
+            #{item.sourceValueType,jdbcType=VARCHAR}, #{item.sourceValue,jdbcType=VARCHAR}, #{item.targetFields,jdbcType=VARCHAR},
+            #{item.propertyOrValue,jdbcType=VARCHAR}, #{item.targetFieldPropertyName,jdbcType=VARCHAR},
+            #{item.targetFieldPropertyValue,jdbcType=TINYINT}, #{item.targetOperator,jdbcType=VARCHAR},
+            #{item.targetValueType,jdbcType=VARCHAR}, #{item.targetValue,jdbcType=VARCHAR}, #{item.errorPrompt,jdbcType=VARCHAR},
+            #{item.pageId,jdbcType=BIGINT}, #{item.genericOrExclusive,jdbcType=BIGINT}, #{item.createBy,jdbcType=BIGINT},
+            #{item.createTime,jdbcType=TIMESTAMP},#{item.updateBy,jdbcType=BIGINT}, #{item.updateTime,jdbcType=TIMESTAMP},
+            #{item.status,jdbcType=TINYINT},#{item.deleted,jdbcType=TINYINT})
+        </foreach>
+    </insert>
+
+    <select id="selectMaxSequenceByPageId" resultType="java.lang.Integer">
+        select max(sequence) from cfg_field_linkage_rule where page_id = #{pageId} and deleted = 0
+    </select>
+</mapper>

@@ -1,0 +1,17 @@
+.idea
+.gitee
+.DS_Store
+.idea/*
+.idea/**
+/target/
+**/target/
+**/logs/
+/bone-claim/bone-claimddd/target/
+/bone-core/target/
+/logs/
+.idea/compiler.xml
+.idea/misc.xml
+
+*.iml
+*.bak
+/.idea/

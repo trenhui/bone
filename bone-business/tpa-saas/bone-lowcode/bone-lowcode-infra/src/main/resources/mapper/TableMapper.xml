@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bone.lowcode.infra.infrastructure.persistence.mapper.TableMapper">
+
+
+    <insert id="batchSaveWithId">
+        insert into cfg_table (id, page_id, container_id, code,
+                               name, model_id_list,
+                               order_by_list, prompt, empty_prompt,
+                               operation_column_enabled, operation_column_fixed,
+                               pagination_enabled, display_default_page_size, display_total_page,
+                               display_total_size, deleted, create_by,
+                               create_time, update_by, update_time,
+                               parent_table_id, relation_field_code, init_api,
+                               submit_api)
+        values
+        <foreach collection="tableDOList" item="i" separator=",">
+            (#{i.id,jdbcType=BIGINT}, #{i.pageId}, #{i.containerId,jdbcType=BIGINT}, #{i.code,jdbcType=VARCHAR},
+            #{i.name,jdbcType=VARCHAR}, #{i.modelIdList,jdbcType=VARCHAR},
+            #{i.orderByList,jdbcType=VARCHAR}, #{i.prompt,jdbcType=VARCHAR}, #{i.emptyPrompt,jdbcType=VARCHAR},
+            #{i.operationColumnEnabled,jdbcType=BIT}, #{i.operationColumnFixed,jdbcType=BIT},
+            #{i.paginationEnabled,jdbcType=BIT}, #{i.displayDefaultPageSize,jdbcType=BIT}, #{i.displayTotalPage,jdbcType=BIT},
+            #{i.displayTotalSize,jdbcType=BIT}, #{i.deleted,jdbcType=BIT}, #{i.createBy,jdbcType=BIGINT},
+            #{i.createTime,jdbcType=TIMESTAMP}, #{i.updateBy,jdbcType=BIGINT}, #{i.updateTime,jdbcType=TIMESTAMP},
+            #{i.parentTableId,jdbcType=BIGINT}, #{i.relationFieldCode,jdbcType=VARCHAR}, #{i.initApi,jdbcType=VARCHAR},
+            #{i.submitApi,jdbcType=VARCHAR})
+        </foreach>
+    </insert>
+</mapper>

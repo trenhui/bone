@@ -1,0 +1,139 @@
+#liteflow:
+#  #规则文件路径
+#  rule-source: config/*.el.xml
+
+#liteflow:
+#  rule-source-ext-data-map:
+#    serverAddr: 127.0.0.1:8848
+#    dataId: liteflow_rule
+#    group: DEFAULT_GROUP
+#    namespace: a1b53442-8d95-44e5-9987-dadde657f4b8
+#    username: bone-boot
+#    password: bone-boot
+
+
+--- #################### 数据库相关配置 ####################
+spring:
+  datasource:
+    url: jdbc:mysql://rm-bp1j2malx5q68yn770o.mysql.rds.aliyuncs.com:3306/tpa-saas?useSSL=false&autoReconnect=true&characterEncoding=utf8
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: tpasaasuser
+    password: vqM#On1D
+    # 指定为HikariDataSource
+    type: com.zaxxer.hikari.HikariDataSource
+    # hikari连接池配置
+    hikari:
+      #连接池名
+      pool-name: HikariCP
+      #最小空闲连接数
+      minimum-idle: 5
+      # 空闲连接存活最大时间，默认10分钟
+      idle-timeout: 600000
+      # 连接池最大连接数，默认是10
+      maximum-pool-size: 10
+      # 此属性控制从池返回的连接的默认自动提交行为,默认值：true
+      auto-commit: true
+      # 此属性控制池中连接的最长生命周期，值0表示无限生命周期，默认30分钟
+      max-lifetime: 1800000
+      # 数据库连接超时时间,默认30秒
+      connection-timeout: 30000
+      # 连接测试query
+      connection-test-query: SELECT 1
+
+  # Redis 配置。Redisson 默认的配置足够使用，一般不需要进行调优
+  redis:
+    host: 172.18.0.58 # 地址
+    port: 6379 # 端口
+    database: 0 # 数据库索引
+    password: "@Pukang_123" # 密码，建议生产环境开启
+  data:
+    redis:
+      host: 172.18.0.58 # 地址
+      port: 6379 # 端口
+      database: 0 # 数据库索引
+      password: '@Pukang_123' # 密码，建议生产环境开启
+
+
+--- #################### 服务保障相关配置 ####################
+
+# Lock4j 配置项
+lock4j:
+  acquire-timeout: 3000 # 获取分布式锁超时时间，默认为 3000 毫秒
+  expire: 30000 # 分布式锁的超时时间，默认为 30 毫秒
+
+--- #################### 监控相关配置 ####################
+
+# Actuator 监控端点的配置项
+management:
+  endpoints:
+    web:
+      base-path: /actuator # Actuator 提供的 API 接口的根目录。默认为 /actuator
+      exposure:
+        include: '*' # 需要开放的端点。默认值只打开 health 和 info 两个端点。通过设置 * ，可以开放所有端点。
+
+# 日志文件配置
+logging:
+  level:
+    # 配置自己写的 MyBatis Mapper 打印日志
+    com.bone.lowcode.dal.mysql: info
+
+metadata:
+  sdk:
+    appcode: tpa
+    open: true
+    secret: vxOFX0Kt6Rl6YSbicgYlfg==
+    url: http://localhost:8081
+    sqlpath: customsql/
+
+#################### 登录模块相关配置 ####################
+sa-token:
+  disable: true #关闭权限功能
+  sign:
+    secret-key: kQwIOrYvnXmSDkwEiFngrKidMcdrgKor
+  timeout: 28800
+  token-name: Satoken
+  alone-redis:
+    database: 11
+    host: 172.18.0.58
+    port: 6379
+    password: '@Pukang_123'
+    connect-timeout: 10s
+
+#################### eureka相关配置 ####################
+eureka:
+  instance:
+    status-page-url: /actuator/info
+    health-check-url-path: /actuator/health
+    prefer-ip-address: true
+    instance-id: ${spring.cloud.client.ip-address}:${server.port}
+  client:
+    service-url:
+      defaultZone: http://172.20.0.16:8761/eureka/
+      registry-fetch-interval-seconds: 5
+
+
+#####################################################################################################
+##OSS
+oss:
+  ENDPOINT: http://oss-cn-hangzhou.aliyuncs.com
+  ACCESSKEYID: LTAI4G1eXunQDKHkp3E3pxWz
+  ACCESSKEYSECRET: Fu4uhBw8suvrPGQ4dQHhhfGNIZIqqK
+  BUCKETNAME: bucket-pktest
+  KEY: pktpaphotoclaim/
+  VISITURL: https://bucket-pktest.oss-cn-hangzhou.aliyuncs.com/
+##OSS
+xxl:
+  job:
+    admin:
+      addresses: http://pk-job.test0.pukangpay.com.cn/xxl-job-admin
+    executor:
+      appname: tpa-saas
+      ip: ${spring.cloud.client.ip-address}
+      port: 18000
+      logpath: ./api/logs/job_log
+      accessToken: ""
+      logretentiondays: 5
+
+tpa:
+  apiurl: "http://172.20.0.12:8070"
+#####################################################################################################
