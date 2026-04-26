@@ -117,7 +117,7 @@ order.pay();  // 内部校验状态、计算、发布事件
 | 必备审计字段 | `created_by`、`updated_by`、`created_at`、`updated_at` |
 | 软删除 | `deleted TINYINT(1) NOT NULL DEFAULT 0` |
 | 乐观锁 | 需要并发控制的表加 `version INT NOT NULL DEFAULT 0` |
-| 布尔字段 | `is_xxx TINYINT(1)` |
+| 布尔字段 | `is_xxx TINYINT(1)`，支持三态（true/false/null）使用 `Boolean` 包装类型 |
 | 时间字段 | `xxx_at DATETIME(3)` |
 | 金额字段 | `DECIMAL(18,2)` |
 | JSON 字段 | `JSON` 类型 |
@@ -125,11 +125,20 @@ order.pay();  // 内部校验状态、计算、发布事件
 | 索引 | 唯一索引 `uk_表名_字段`，普通索引 `idx_表名_字段`，外键只建索引不建约束 |
 | 分区 | 日志类大表按年 RANGE 分区，分区键纳入主键 |
 
+### 2.2.1 关于布尔字段 `is_` 前缀 + `TINYINT(1)` 的说明
+
+**结论：合理，不会影响 Java 对象序列化。**
+
+- **MySQL 端的处理**：`TINYINT(1)` 在 JDBC 驱动中默认会被映射为 `java.lang.Boolean`（包装类型）或 `boolean`（基本类型），与 Java 中的 `isXxx()` 命名风格一致，ORM 框架（JPA、MyBatis）能自动映射。
+- **JSON 序列化**：Jackson 等序列化库会根据字段类型（Boolean/boolean）生成 `true/false`，不会受数据库类型影响。若使用 `is` 前缀，JavaBean 的 getter 方法通常命名为 `isXxx()`，Jackson 会正确识别。
+- **唯一注意事项**：若某些字段需要三态（true/false/null），使用包装类型 `Boolean` 即可；`TINYINT(1)` 允许存储 0/1/NULL，完全兼容。
+- **业界实践**：大量企业级项目（包括阿里、美团等）均采用 `TINYINT(1)` 表示布尔值，稳定可靠。
+
 ### 2.3 数据库表示例（订单场景）
 
 ```sql
 -- 订单主表
-CREATE TABLE t_order (
+CREATE TABLE trx_order (
     id                  BIGINT          NOT NULL COMMENT '雪花算法生成的全局唯一ID',
     tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '所属租户ID',
     customer_id         BIGINT          NOT NULL COMMENT '客户ID',
@@ -142,15 +151,15 @@ CREATE TABLE t_order (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本号',
     PRIMARY KEY (id),
-    KEY idx_order_tenant (tenant_id),
-    KEY idx_order_customer (customer_id),
-    KEY idx_order_status (status)
+    KEY idx_trx_order_tenant (tenant_id),
+    KEY idx_trx_order_customer (customer_id),
+    KEY idx_trx_order_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='订单表';
 
 -- 订单明细表（实体，有独立主键，由聚合根管理）
-CREATE TABLE t_order_item (
+CREATE TABLE trx_order_item (
     id                  BIGINT          NOT NULL COMMENT '雪花算法生成的全局唯一ID',
-    order_id            BIGINT          NOT NULL COMMENT '关联 t_order.id',
+    order_id            BIGINT          NOT NULL COMMENT '关联 trx_order.id',
     product_id          BIGINT          NOT NULL COMMENT '商品ID',
     product_name        VARCHAR(200)    NOT NULL COMMENT '商品名称（快照）',
     quantity            INT             NOT NULL COMMENT '商品数量',
@@ -162,8 +171,8 @@ CREATE TABLE t_order_item (
     updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
     PRIMARY KEY (id),
-    KEY idx_order_item_order (order_id),
-    KEY idx_order_item_product (product_id)
+    KEY idx_trx_order_item_order (order_id),
+    KEY idx_trx_order_item_product (product_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='订单明细表';
 ```
 
@@ -186,8 +195,8 @@ import java.math.BigDecimal;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-@Table("t_order_item")
-public class OrderItem extends AbstractEntity&lt;Long&gt; {
+@Table("trx_order_item")
+public class OrderItem extends AbstractEntity<Long> {
 
     private Long id;
     private Long orderId;          // 所属订单ID
@@ -256,8 +265,8 @@ import java.util.List;
 
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-@Table("t_order")
-public class Order extends AggregateRoot&lt;Long&gt; {
+@Table("trx_order")
+public class Order extends AggregateRoot<Long> {
 
     private Long id;
     private Long tenantId;
@@ -443,8 +452,8 @@ public class OrderCancelledEvent implements DomainEvent {
 
 ### 3.1 核心原则
 
-- **Repository 子接口只需继承 `Repository&lt;T, ID&gt;`，不添加任何额外方法**
-- 基类 `Repository&lt;T, ID&gt;` 已提供完整的 CRUD 能力：
+- **Repository 子接口只需继承 `Repository<T, ID>`，不添加任何额外方法**
+- 基类 `Repository<T, ID>` 已提供完整的 CRUD 能力：
   - `findById`, `findByIds`, `findByIdIncludingDeleted`
   - `save`, `insert`, `batchInsert`, `batchSave`
   - `update`, `updateByCriteria`
@@ -466,7 +475,7 @@ package com.bone.blueprint.domain.repository;
 import com.bone.metadata.sdk.Repository;
 import com.bone.blueprint.domain.order.Order;
 
-public interface OrderRepository extends Repository&lt;Order, Long&gt; {
+public interface OrderRepository extends Repository<Order, Long> {
     // 空接口，所有查询能力由基类和 Criteria/QueryBuilder 提供
 }
 ```
@@ -527,52 +536,112 @@ src/main/java/com/bone/blueprint/
 │
 ├── adapter/                                    # 入站适配器层
 │   ├── web/
-│   │   ├── controller/                         # REST 控制器
+│   │   ├── controller/
+│   │   │   └── OrderController.java
 │   │   ├── dto/request/                        # 请求 DTO
 │   │   ├── dto/response/                       # 响应 DTO
-│   │   ├── assembler/                          # DTO 转换
+│   │   ├── assembler/
+│   │   │   └── OrderAssembler.java
 │   │   └── interceptor/                        # 拦截器
-│   ├── rpc/                                    # RPC 服务
-│   │   ├── dto/                                # RPC DTO
-│   │   └── {Domain}RpcService.java
-│   ├── mq/listener/                            # 消息监听器
-│   └── schedule/                               # 定时任务
+│   ├── rpc/
+│   │   ├── dto/
+│   │   │   ├── CreateOrderRpcRequest.java
+│   │   │   └── CreateOrderRpcResponse.java
+│   │   └── OrderRpcService.java
+│   ├── mq/listener/
+│   │   └── OrderPaidListener.java
+│   └── schedule/
+│       └── CancelExpiredOrderJob.java
 │
 ├── application/                                # 应用层
 │   ├── usecase/                                # 用例层
 │   │   ├── simple/                             # 🟢 Mode A
+│   │   │   ├── CancelOrderUseCase.java
+│   │   │   ├── GetOrderDetailUseCase.java
+│   │   │   └── GetOrderListUseCase.java
 │   │   └── standard/                           # 🔵 Mode B
-│   ├── command/                                # 命令处理器
+│   │       ├── CreateOrderUseCase.java
+│   │       └── PayOrderUseCase.java
+│   ├── command/
 │   │   ├── cmd/                                # 命令对象
+│   │   │   ├── CancelOrderCommand.java
+│   │   │   ├── CreateOrderCommand.java
+│   │   │   └── PayOrderCommand.java
 │   │   └── handler/                            # 命令处理器
-│   ├── query/                                  # 查询处理器
+│   │       ├── CancelOrderCommandHandler.java
+│   │       ├── CheckStockHandler.java
+│   │       ├── CreateOrderCommandHandler.java
+│   │       ├── CreateOrderHandler.java
+│   │       └── PayOrderCommandHandler.java
+│   ├── query/
 │   │   ├── qry/                                # 查询对象
+│   │   │   ├── OrderDetailQuery.java
+│   │   │   └── OrderPageQuery.java
 │   │   ├── handler/                            # 查询处理器
+│   │   │   ├── OrderDetailQueryHandler.java
+│   │   │   └── OrderPageQueryHandler.java
 │   │   ├── dto/                                # 查询结果 DTO
+│   │   │   └── OrderDto.java
 │   │   └── projection/                         # 投影对象
+│   │       └── OrderWithItemsProjection.java
 │   ├── event/                                  # 事件处理器
+│   │   └── OrderPaidEventHandler.java
 │   └── assembler/                              # 装配器
 │
 ├── domain/                                     # 领域层
-│   ├── {aggregate}/                            # 聚合根包
-│   │   ├── {Aggregate}.java                    # 聚合根
-│   │   ├── {Aggregate}{Component}.java         # 实体
-│   │   ├── valueobject/                        # 值对象
-│   │   └── event/                              # 领域事件
-│   ├── repository/                             # 仓储接口
-│   ├── gateway/                                # 防腐层接口
+│   ├── order/                                  # 订单聚合根
+│   │   ├── Order.java                          # 聚合根
+│   │   ├── OrderItem.java                      # 实体
+│   │   ├── valueobject/
+│   │   │   └── OrderStatus.java
+│   │   └── event/
+│   │       ├── OrderCancelledEvent.java
+│   │       ├── OrderCreatedEvent.java
+│   │       └── OrderPaidEvent.java
+│   ├── repository/
+│   │   └── OrderRepository.java
+│   ├── gateway/
+│   │   └── InventoryGateway.java
 │   ├── service/                                # 领域服务
-│   ├── extension/                              # 扩展点接口
-│   └── exception/                              # 领域异常
+│   ├── extension/
+│   │   └── order/
+│   │       └── OrderPriceCalculator.java
+│   └── exception/
+│       └── OrderDomainException.java
 │
 └── infrastructure/                             # 基础设施层
     ├── gateway/                                # 网关实现
+    │   └── feign/
+    │       └── InventoryFeignGatewayImpl.java
     ├── extension/                              # 扩展点实现
+    │   └── order/
+    │       ├── DefaultOrderPriceCalculator.java
+    │       ├── EnterpriseOrderPriceCalculator.java
+    │       ├── MemberOrderPriceCalculator.java
+    │       ├── PromotionOrderPriceCalculator.java
+    │       └── VipOrderPriceCalculator.java
     ├── query/native/                           # 原生查询
-    ├── security/                               # 安全组件
-    ├── config/                                 # 配置类
-    └── exception/                              # 基础设施异常
+    ├── security/
+    │   ├── JwtTokenProvider.java
+    │   └── PasswordEncoderImpl.java
+    ├── config/
+    │   ├── extension/
+    │   │   └── ExtensionConfiguration.java
+    │   ├── metadata/
+    │   │   └── BoneMetadataConfiguration.java
+    │   ├── security/
+    │   │   └── SecurityConfiguration.java
+    │   └── web/
+    │       └── WebMvcConfiguration.java
+    ├── handler/
+    │   └── HandlerRegistry.java
+    └── exception/
+        └── InfrastructureException.java
 ```
+
+**说明**：`ExtensionDecisionRecorder.java` 已从 blueprint 模块中移除，改为使用 `bone-extension-sdk` 中提供的标准实现。这样可以确保所有模块使用统一的、功能更完善的扩展决策记录器。
+
+**使用方式**：直接注入 `com.bone.engine.extension.infrastructure.ExtensionDecisionRecorder` 即可使用。
 
 ### 4.4 UseCase 接口定义
 

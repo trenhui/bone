@@ -2,36 +2,22 @@
 
 ## 1. 项目概述
 
-Bone 是一个企业级全栈开源原生快速开发平台，以"Build Once, Natively Everywhere"为理念，通过元数据驱动开发，实现一次构建多端运行的能力。
+**Bone**（口号：Build Once, Natively Everywhere）是一个企业级全栈开源快速开发平台，采用**元数据驱动**架构，目标是通过配置减少重复编码，实现一次构建、多端运行。
 
-### 核心价值
+### 1.1 项目定位
 
-- **开发效率革命性提升**：元数据驱动开发，减少70%重复编码工作
-- **智能全栈生成**：一键生成前后端代码、API文档、数据库脚本与单元测试
-- **多端统一架构**：一次配置自动适配Web管理端、移动端（App）、小程序
-- **企业级能力开箱即用**：RBAC权限体系、分布式事务保障、全链路可观测
+- **前后端分离**的**微服务/模块化单体**混合架构
+- **后端**：Java 17 + Spring Boot 3.2 多模块 Maven 工程
+- **前端**：React 18 + TypeScript 微前端（Qiankun）工程，使用 npm workspaces 管理
 
-## 2. 整体架构
+### 1.2 四大核心引擎
 
-Bone 采用模块化架构设计，以"数据-质量-功能-生态"为核心逻辑，构建四大引擎协同体系，形成企业级应用开发的完整技术闭环。
+1. **智能元数据引擎**（Smart Metadata）— 动态建模、代码生成
+2. **企业主数据平台**（Master Data）— 主数据治理与质量管控
+3. **ExtPoint 扩展引擎**（Extension）— 插件化扩展点机制
+4. **集成引擎**（Integration）— 多协议连接器与流程编排
 
-### 架构层次
-
-```
-bone-framework/     # 核心框架层，提供基础组件和工具
-bone-engine/        # 核心引擎层，包含四大核心引擎
-bone-business/      # 业务模块层，实现具体业务逻辑
-bone-frontend/      # 前端应用层，多端适配
-```
-
-### 四大核心引擎
-
-1. **智能元数据引擎（Smart Metadata Engine）**：平台的"数字大脑"，驱动应用全生命周期自动化
-2. **企业主数据平台（Master Data Platform）**：构建企业唯一可信数据源，消除数据孤岛
-3. **ExtPoint 扩展引擎（Extension Engine）**：打造可生长的插件化架构，平衡稳定性与灵活性
-4. **集成引擎（Integration Engine）**：打破系统壁垒，构建统一企业数字生态
-
-### 引擎协同流程
+### 1.3 引擎协同流程
 
 ```
 智能元数据引擎 → 定义数据骨架与基础业务规则（回答"是什么"）
@@ -45,268 +31,503 @@ ExtPoint扩展引擎 → 注入个性化业务逻辑（解决"怎么做"）
    企业级数字化平台（支撑全场景业务运行）
 ```
 
-## 3. 主要模块职责
+---
 
-### 3.1 bone-framework
+## 2. 技术栈
 
-核心框架层，提供基础组件和工具，是整个平台的技术基础。
+### 2.1 后端技术栈
 
-| 子模块 | 职责 | 关键组件 |
-|--------|------|----------|
-| bone-core | 核心基础组件 | 实体定义、异常处理、模型类、工具类 |
-| bone-datasource | 数据源管理 | 动态数据源、租户隔离 |
-| bone-security | 安全框架 | 认证授权、加密工具、权限管理 |
-| bone-utils | 工具类库 | ID生成、JSON处理、异常工具 |
-| bone-web | Web相关 | 全局异常处理 |
+| 层级 | 技术 | 版本 |
+|------|------|------|
+| 语言 | Java | 17 |
+| 构建工具 | Maven | 3.8+ |
+| 基础框架 | Spring Boot | 3.2.5 |
+| 微服务生态 | Spring Cloud | 2023.0.3 |
+| 微服务生态 | Spring Cloud Alibaba | 2023.0.1.2 |
+| 数据库 | MySQL | 8.0.33 |
+| 连接池 | HikariCP | 5.1.0 |
+| ORM | JPA（Hibernate）+ MyBatis | 混合使用 |
+| 缓存 | Redis | 7.x |
+| 缓存客户端 | Redisson | 3.27.2 |
+| 认证授权 | SA-Token | 1.39.0 |
+| API 文档 | SpringDoc OpenAPI | 2.3.0 |
+| 可观测性 | SkyWalking | 9.7.0 |
+| 可观测性 | Spring Boot Admin | 3.0.0 |
+| 工具类 | Lombok | 1.18.30 |
+| 工具类 | MapStruct | 1.5.5.Final |
+| 表达式引擎 | Aviator | 5.4.1 |
+| 消息队列 | RocketMQ | 5.2 |
+| 分布式事务 | Seata | 2.0 |
+| 数据库迁移 | Flyway | 10.11.0 |
 
-### 3.2 bone-engine
+### 2.2 前端技术栈
 
-核心引擎层，实现平台的核心能力。
+| 层级 | 技术 | 版本 |
+|------|------|------|
+| 框架 | React | 18 |
+| 类型系统 | TypeScript | 5.2+ |
+| 构建工具 | Vite | 5.0+ |
+| UI 组件库 | Ant Design | 5.12 |
+| UI 组件库 | @ant-design/pro-components | - |
+| 路由 | React Router | 6.20+ |
+| 状态管理 | Redux Toolkit | 2.0 |
+| 状态管理 | React Redux | 9.0+ |
+| HTTP 客户端 | Axios | 1.6+ |
+| 微前端 | Qiankun | 2.10+ |
+| 微前端插件 | vite-plugin-qiankun | - |
+| 代码检查 | ESLint | 8 |
+| 格式化 | Prettier | 3.1+ |
+| 测试 | Vitest | 2.0 |
 
-| 子模块 | 职责 | 关键组件 |
-|--------|------|----------|
-| bone-extension-engine | 扩展引擎 | 扩展点定义、插件管理、生命周期管理 |
-| bone-integration | 集成引擎 | 多协议兼容、流程编排、数据转换 |
-| bone-metadata | 元数据引擎 | 元数据定义、处理、验证 |
-| bone-metadata-sdk | 元数据SDK | 元数据服务、查询构建、扩展机制 |
-| bone-procurement | 采购业务示例 | 采购订单管理、审批流程 |
-| bone-smartmeta | 智能元数据 | 智能元数据处理、业务规则引擎 |
-| bone-workflow | 工作流引擎 | 流程定义、执行、监控 |
+---
 
-### 3.3 bone-business
+## 3. 模块结构
 
-业务模块层，实现具体业务逻辑。
+### 3.1 后端模块（Maven 多模块）
 
-| 子模块 | 职责 | 关键组件 |
-|--------|------|----------|
-| bone-admin | 管理后台 | 系统管理、用户管理、权限管理 |
-| bone-trade | 交易模块 | 订单管理、支付处理、物流跟踪 |
+根 POM（`pom.xml`）为聚合模块，所有版本与依赖在 `bone-parent/pom.xml` 中统一管理。
 
-### 3.4 bone-frontend
+```
+bone/                          # 根聚合模块
+├── bone-parent/               # BOM / 依赖管理 / 插件配置
+├── bone-framework/            # 原子核心能力
+│   ├── bone-core/             # 基础实体、注解、统一响应、工具类、租户上下文
+│   ├── bone-utils/            # 通用工具
+│   ├── bone-datasource/       # 数据源抽象与动态数据源
+│   ├── bone-security/         # 安全组件
+│   └── bone-web/              # Web 层封装（Spring Web、校验、AOP、全局异常）
+├── bone-engine/               # 四大引擎与核心中间件
+│   ├── bone-metadata/         # 元数据引擎
+│   ├── bone-metadata-sdk/     # 元数据 SDK（含 @EnableSqlRepositories 自定义仓储机制）
+│   ├── bone-smartmeta/        # 智能元数据引擎（engine + starter）
+│   ├── bone-extension-engine/ # 扩展引擎
+│   │   ├── bone-extension-sdk/
+│   │   └── bone-extension-studio/
+│   ├── bone-integration/      # 集成引擎
+│   ├── bone-workflow/         # 工作流引擎
+│   └── bone-procurement/      # 采购/供应链相关引擎
+├── bone-platform/             # 企业共享平台服务
+│   ├── bone-iam/              # 身份与访问管理（端口 8080）
+│   ├── bone-gateway/          # API 网关
+│   ├── bone-masterdata/       # 主数据服务
+│   ├── bone-system/           # 系统管理（端口 8083）
+│   ├── bone-file/             # 文件服务
+│   ├── bone-notification/     # 通知服务
+│   └── bone-integration/      # 平台级集成服务
+├── bone-business/             # 业务域模块
+│   ├── bone-admin/
+│   ├── bone-trade/
+│   └── tpa-saas/              # TPA SaaS 业务
+│       ├── bone-auth/
+│       ├── bone-auth-sdk/
+│       ├── bone-core/
+│       ├── bone-dependencies/
+│       ├── bone-log-sdk/
+│       ├── bone-lowcode/
+│       ├── bone-platform/
+│       └── bone-tpa-saas/
+│           ├── bone-tpa/
+│           ├── bone-tpa-sdk/
+│           ├── bone-tpa-push/
+│           ├── bone-tpa-intelligent-adjustment/
+│           ├── bone-tpa-core/
+│           ├── bone-tpa-api/
+│           └── bone-tpa-facade/
+├── bone-sdk/                  # 客户端 SDK
+│   ├── bone-client-sdk/
+│   └── bone-openapi-sdk/
+├── bone-tool/                 # 开发工具
+│   └── bone-codegen/          # 代码生成器（同样遵循 DDD 分层）
+└── bone-blueprint/            # 项目蓝图示例
+```
 
-前端应用层，实现多端适配。
+### 3.2 前端模块（npm workspaces）
 
-| 子模块 | 职责 | 技术栈 |
-|--------|------|----------|
-| apps/main | 主应用 | Vue 3.4 + Vite 5.4 + Element Plus 2.8 |
-| apps/sub-app-1 | 子应用1 | Vue 3.4 + TypeScript 5.5 |
-| apps/sub-app-2 | 子应用2 | Vue 3.4 + TypeScript 5.5 |
-| packages/core | 核心包 | 事件总线、微前端运行时 |
+```
+bone-frontend/
+├── apps/
+│   ├── bone-shell/            # Qiankun 主应用（端口 3000）
+│   ├── bone-iam-app/          # IAM 微应用（端口 3003）
+│   ├── bone-metadata-app/     # 元数据微应用（端口 3004）
+│   ├── bone-masterdata-app/   # 主数据微应用（端口 3005）
+│   ├── bone-integration-app/  # 集成微应用（端口 3006）
+│   ├── bone-system-app/       # 系统管理微应用（端口 3007）
+│   ├── bone-extension-app/    # 扩展引擎微应用（端口 3008）
+│   ├── bone-generator-app/    # 代码生成器微应用
+│   ├── main/
+│   ├── sub-app-1/
+│   └── sub-app-2/
+└── packages/
+    ├── core/
+    │   └── event-bus/         # @bone/core/event-bus（独立构建 dist/）
+    ├── shared-components/     # @bone/shared-components
+    ├── shared-utils/          # @bone/shared-utils
+    ├── shared-services/       # @bone/shared-services
+    ├── shared-types/          # @bone/shared-types
+    └── ui/
+        └── design-system/
+```
+
+---
 
 ## 4. 关键类与函数说明
 
-### 4.1 核心框架类
+### 4.1 核心框架类（bone-framework）
 
 #### 4.1.1 bone-core
 
-| 类名 | 说明 | 关键方法 | 路径 |
-|------|------|----------|------|
-| AbstractEntity | 实体基类 | - | [AbstractEntity.java](file:///Users/renhui.trh/wps/bone/bone-framework/bone-core/src/main/java/com/bone/core/domain/entity/AbstractEntity.java) |
-| ApiResponse | API响应模型 | success(), error() | [ApiResponse.java](file:///Users/renhui.trh/wps/bone/bone-framework/bone-core/src/main/java/com/bone/core/model/ApiResponse.java) |
-| BizException | 业务异常 | - | [BizException.java](file:///Users/renhui.trh/wps/bone/bone-framework/bone-core/src/main/java/com/bone/core/exception/BizException.java) |
-| DistributedIdGenerator | 分布式ID生成器 | generate() | [DistributedIdGenerator.java](file:///Users/renhui.trh/wps/bone/bone-framework/bone-core/src/main/java/com/bone/core/util/DistributedIdGenerator.java) |
+| 类名 | 说明 | 关键方法 | 文件路径 |
+|------|------|----------|----------|
+| `AbstractEntity<ID>` | 实体基类，包含审计字段和逻辑删除 | - | [AbstractEntity.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/domain/entity/AbstractEntity.java) |
+| `TenantAbstractEntity` | 多租户基础实体，增加 `tenantId`、`bizIdentityCode` | - | [TenantAbstractEntity.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/tenant/TenantAbstractEntity.java) |
+| `TenantContext` | 线程级租户上下文传递 | - | [TenantContext.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/tenant/context/TenantContext.java) |
+| `ApiResponse<T>` | 统一 REST 响应包装 | `success(T data)`, `error(String message)` | [ApiResponse.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/result/ApiResponse.java) |
+| `PageResult<T>` | 统一分页结果包装 | - | [PageResult.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/result/PageResult.java) |
+| `BizException` | 业务异常 | - | [BizException.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/exception/BizException.java) |
+| `DistributedIdGenerator` | 分布式 ID 生成器 | - | [DistributedIdGenerator.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/util/DistributedIdGenerator.java) |
+| `AggregateRoot` | 聚合根标记接口 | - | [AggregateRoot.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/domain/AggregateRoot.java) |
+| `DomainEvent` | 领域事件基类 | - | [DomainEvent.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/domain/DomainEvent.java) |
+| `TransmittableThreadLocal` | 可传递的线程本地变量 | - | [TransmittableThreadLocal.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/threadlocal/TransmittableThreadLocal.java) |
+| `UseCaseExecutor` | 用例执行器 | - | [UseCaseExecutor.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/usecase/UseCaseExecutor.java) |
 
-#### 4.1.2 bone-datasource
+#### 4.1.2 关键注解
 
-| 类名 | 说明 | 关键方法 | 路径 |
-|------|------|----------|------|
-| DataSourceContextHolder | 数据源上下文 | setDataSource(), getDataSource() | [DataSourceContextHolder.java](file:///Users/renhui.trh/wps/bone/bone-framework/bone-datasource/src/main/java/com/bone/core/datasource/dynamic/DataSourceContextHolder.java) |
-| DynamicDataSource | 动态数据源 | determineCurrentLookupKey() | [DynamicDataSource.java](file:///Users/renhui.trh/wps/bone/bone-framework/bone-datasource/src/main/java/com/bone/core/datasource/dynamic/DynamicDataSource.java) |
-
-#### 4.1.3 bone-security
-
-| 类名 | 说明 | 关键方法 | 路径 |
-|------|------|----------|------|
-| JwtTokenProvider | JWT令牌提供者 | generateToken(), validateToken() | [JwtTokenProvider.java](file:///Users/renhui.trh/wps/bone/bone-framework/bone-security/src/main/java/com/bone/core/security/auth/JwtTokenProvider.java) |
-| PermissionChecker | 权限检查器 | checkPermission() | [PermissionChecker.java](file:///Users/renhui.trh/wps/bone/bone-framework/bone-security/src/main/java/com/bone/core/security/permission/PermissionChecker.java) |
+| 注解名 | 说明 | 文件路径 |
+|--------|------|----------|
+| `@Id` | 标识主键字段 | [Id.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/annotation/Id.java) |
+| `@Deleted` | 标识逻辑删除字段 | [Deleted.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/annotation/Deleted.java) |
+| `@Version` | 标识乐观锁版本字段 | [Version.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/annotation/Version.java) |
 
 ### 4.2 核心引擎类
 
 #### 4.2.1 bone-extension-engine
 
-| 类名 | 说明 | 关键方法 | 路径 |
-|------|------|----------|------|
-| ExtensionPoint | 扩展点注解 | - | [ExtensionPoint.java](file:///Users/renhui.trh/wps/bone/bone-engine/bone-extension-engine/bone-extension-sdk/src/main/resources/META-INF/services/com.bone.engine.extension.api.annotation.ExtensionPoint) |
+| 类名 | 说明 | 文件路径 |
+|------|------|----------|
+| `ExtensionPoint` | 扩展点注解 | - |
+| （待补充更多） | - | - |
 
-#### 4.2.2 bone-integration
+#### 4.2.2 bone-metadata-sdk
 
-| 类名 | 说明 | 关键方法 | 路径 |
-|------|------|----------|------|
-| CamelRouteController | Camel路由控制器 | createRoute(), updateRoute() | [CamelRouteController.java](file:///Users/renhui.trh/wps/bone/bone-engine/bone-integration/src/main/java/com/bone/integration/interfaces/CamelRouteController.java) |
-| DynamicRouteManager | 动态路由管理器 | addRoute(), removeRoute() | [DynamicRouteManager.java](file:///Users/renhui.trh/wps/bone/bone-engine/bone-integration/src/main/java/com/bone/integration/route/DynamicRouteManager.java) |
-| RuleEngine | 规则引擎 | execute() | [RuleEngine.java](file:///Users/renhui.trh/wps/bone/bone-engine/bone-integration/src/main/java/com/bone/integration/rule/RuleEngine.java) |
-
-#### 4.2.3 bone-metadata
-
-| 类名 | 说明 | 关键方法 | 路径 |
-|------|------|----------|------|
-| MetadataController | 元数据控制器 | createMetadata(), updateMetadata() | [MetadataController.java](file:///Users/renhui.trh/wps/bone/bone-engine/bone-metadata/src/main/java/com/bone/metadata/controller/MetadataController.java) |
-| EntityMetadata | 实体元数据模型 | - | [EntityMetadata.java](file:///Users/renhui.trh/wps/bone/bone-engine/bone-metadata/src/main/java/org/bone/engine/metadata/model/EntityMetadata.java) |
-| MetadataService | 元数据服务 | getMetadata(), saveMetadata() | [MetadataService.java](file:///Users/renhui.trh/wps/bone/bone-engine/bone-metadata/src/main/java/org/bone/engine/metadata/service/MetadataService.java) |
-
-#### 4.2.4 bone-metadata-sdk
-
-| 类名 | 说明 | 关键方法 | 路径 |
-|------|------|----------|------|
-| BaseRepository | 基础仓库 | findById(), save() | [BaseRepository.java](file:///Users/renhui.trh/wps/bone/bone-engine/bone-metadata-sdk/src/main/java/com/bone/metadata/sdk/BaseRepository.java) |
-| Repository | 仓库接口 | - | [Repository.java](file:///Users/renhui.trh/wps/bone/bone-engine/bone-metadata-sdk/src/main/java/com/bone/metadata/sdk/Repository.java) |
-| SqlBuilder | SQL构建器 | build() | [SqlBuilder.java](file:///Users/renhui.trh/wps/bone/bone-engine/bone-metadata-sdk/src/main/java/com/bone/metadata/sdk/query/SqlBuilder.java) |
+| 类名 | 说明 | 关键特性 | 文件路径 |
+|------|------|----------|----------|
+| `@EnableSqlRepositories` | 启用自定义元数据仓储机制 | - | - |
+| `BaseRepository` | 基础仓储接口 | - | - |
+| `SqlBuilder` | SQL 构建器 | - | - |
 
 ### 4.3 业务模块类
 
-#### 4.3.1 bone-procurement
-
-| 类名 | 说明 | 关键方法 | 路径 |
-|------|------|----------|------|
-| PurchaseOrderController | 采购订单控制器 | createOrder(), updateOrder() | [PurchaseOrderController.java](file:///Users/renhui.trh/wps/bone/bone-engine/bone-procurement/src/main/java/com/bone/procurement/controller/PurchaseOrderController.java) |
-| PurchaseOrder | 采购订单实体 | - | [PurchaseOrder.java](file:///Users/renhui.trh/wps/bone/bone-engine/bone-procurement/src/main/java/com/bone/procurement/entity/PurchaseOrder.java) |
-
-## 5. 依赖关系
-
-### 5.1 模块依赖
-
-```
-bone-parent
-├── bone-framework
-│   ├── bone-core
-│   ├── bone-datasource
-│   ├── bone-security
-│   ├── bone-utils
-│   └── bone-web
-├── bone-engine
-│   ├── bone-extension-engine
-│   ├── bone-integration
-│   ├── bone-metadata
-│   ├── bone-metadata-sdk
-│   ├── bone-procurement
-│   ├── bone-smartmeta
-│   └── bone-workflow
-├── bone-platform
-├── bone-business
-│   ├── bone-admin
-│   └── bone-trade
-├── bone-sdk
-└── bone-tool
-```
-
-### 5.2 技术依赖
-
-| 技术 | 版本 | 用途 | 路径 |
-|------|------|------|------|
-| Spring Boot | 3.2 | 微服务框架 | [pom.xml](file:///Users/renhui.trh/wps/bone/pom.xml) |
-| Spring Cloud | 2023 | 服务治理 | [pom.xml](file:///Users/renhui.trh/wps/bone/pom.xml) |
-| MyBatis Plus | - | 数据持久化 | [pom.xml](file:///Users/renhui.trh/wps/bone/pom.xml) |
-| Redis | 7.2 | 缓存方案 | [pom.xml](file:///Users/renhui.trh/wps/bone/pom.xml) |
-| Spring Security | 6.2 | 安全框架 | [pom.xml](file:///Users/renhui.trh/wps/bone/pom.xml) |
-| Vue | 3.4 | 前端框架 | [package.json](file:///Users/renhui.trh/wps/bone/bone-frontend/package.json) |
-| TypeScript | 5.5 | 类型安全 | [package.json](file:///Users/renhui.trh/wps/bone/bone-frontend/package.json) |
-
-## 6. 项目运行方式
-
-### 6.1 后端运行
-
-```bash
-# 1. 克隆项目
-git clone https://gitee.com/meishan315/bone.git
-
-# 2. 编译项目（需JDK 17+、Maven 3.8+）
-cd bone && mvn clean install
-
-# 3. 启动管理后台
-java -jar bone-admin/target/bone-admin.jar
-```
-
-### 6.2 前端运行
-
-```bash
-# 1. 进入前端目录
-cd bone-frontend
-
-# 2. 安装依赖
-npm install
-
-# 3. 启动开发服务器
-npm run dev
-```
-
-### 6.3 访问信息
-
-- 管理后台：[http://localhost:8080](http://localhost:8080)
-- 默认账号：`admin` / `123456`（首次登录建议修改密码）
-- API文档：[http://localhost:8080/doc.html](http://localhost:8080/doc.html)（基于Swagger生成，支持在线调试）
-
-## 7. 开发指南
-
-### 7.1 核心概念
-
-- **元数据**：描述数据的数据，是Bone平台的核心驱动
-- **扩展点**：在核心流程中预设的可定制化接口
-- **集成流**：连接外部系统的业务流程
-- **主数据**：企业核心业务数据的唯一可信来源
-
-### 7.2 开发流程
-
-1. **定义元数据**：通过元数据引擎定义业务实体和关系
-2. **配置业务规则**：使用规则引擎配置业务逻辑
-3. **扩展定制**：通过扩展引擎注入个性化逻辑
-4. **系统集成**：使用集成引擎连接外部系统
-5. **前端生成**：基于元数据自动生成前端代码
-
-### 7.3 最佳实践
-
-- **元数据设计**：优先设计清晰的元数据模型，确保数据结构合理
-- **扩展点使用**：合理使用扩展点，避免过度定制导致维护困难
-- **集成配置**：使用可视化配置工具编排集成流程，减少代码编写
-- **性能优化**：合理使用缓存，优化数据库查询，确保系统性能
-
-## 8. 部署与运维
-
-### 8.1 部署方式
-
-- **单机部署**：适合开发和测试环境
-- **集群部署**：适合生产环境，通过负载均衡提高可用性
-- **容器化部署**：使用Docker和Kubernetes实现弹性伸缩
-
-### 8.2 监控与告警
-
-- **全链路追踪**：基于SkyWalking实现链路追踪
-- **性能监控**：监控系统性能指标，如响应时间、吞吐量
-- **异常告警**：配置异常告警机制，及时发现和处理问题
-
-### 8.3 日志管理
-
-- **集中式日志**：使用ELK Stack集中管理日志
-- **日志分级**：根据不同环境配置合适的日志级别
-- **日志分析**：定期分析日志，发现系统问题和优化机会
-
-## 9. 版本管理
-
-### 9.1 版本号规则
-
-采用语义化版本号：`MAJOR.MINOR.PATCH`
-
-- **MAJOR**：不兼容的API变更
-- **MINOR**：向后兼容的功能添加
-- **PATCH**：向后兼容的bug修复
-
-### 9.2 发布流程
-
-1. **开发阶段**：在feature分支开发新功能
-2. **测试阶段**：在test分支进行测试
-3. **发布阶段**：合并到master分支并发布
-
-## 10. 总结与亮点回顾
-
-Bone 平台通过四大核心引擎的协同工作，为企业提供了一套完整的数字化转型解决方案：
-
-- **元数据驱动**：实现了业务与技术的解耦，让业务人员参与模型设计
-- **多端适配**：一次配置自动生成多端代码，减少重复开发
-- **插件化架构**：通过扩展引擎实现系统的灵活定制
-- **标准化集成**：通过集成引擎实现异构系统的高效对接
-- **企业级能力**：内置RBAC权限体系、分布式事务、全链路可观测等企业级特性
-
-Bone 平台的设计理念是"构建可复用的系统，创造可持续的价值"，通过标准化和自动化，大幅提升开发效率，降低维护成本，为企业数字化转型提供了强有力的技术支撑。
+（业务模块具体类待补充，主要遵循 DDD 分层架构）
 
 ---
 
-*本文档基于Bone项目的当前状态生成，随着项目的演进，内容可能会有所变化。*
+## 5. 代码组织与架构规范
+
+### 5.1 分层架构（强制）
+
+后端严格遵循 **DDD + CQRS + 整洁架构/六边形架构（4 层）**。每个业务/平台模块内部包结构如下：
+
+```
+com.bone.{module}
+├── adapter/web/               # 适配器层（入站）
+│   ├── controller/            # REST Controller
+│   ├── converter/             # DTO <-> Command/Query 组装器
+│   └── dto/
+│       ├── req/               # 请求 DTO
+│       └── resp/              # 响应 DTO
+├── application/               # 应用层（用例编排）
+│   ├── command/
+│   │   ├── cmd/               # 命令对象
+│   │   └── handler/           # 命令处理器（@Transactional 边界）
+│   ├── query/
+│   │   ├── qry/               # 查询对象
+│   │   ├── handler/           # 查询处理器（只读）
+│   │   └── dto/               # 查询结果 DTO
+│   └── event/                 # 应用事件
+├── domain/                    # 领域层（**纯净，不允许依赖框架**）
+│   ├── model/
+│   │   ├── aggregate/         # 聚合根
+│   │   ├── entity/            # 实体
+│   │   ├── valueobject/       # 值对象
+│   │   └── event/             # 领域事件
+│   ├── service/               # 领域服务
+│   └── repository/            # 仓储接口（写侧）
+├── common/                    # 模块级公共工具
+│   ├── exception/
+│   ├── result/
+│   └── util/
+└── infrastructure/            # 基础设施层（出站适配器）
+    ├── persistence/           # JPA / MyBatis Mapper、PO、仓储实现
+    └── ...
+```
+
+### 5.2 依赖规则（不可违反）
+
+```
+adapter/web → application → domain ← infrastructure
+```
+
+- `domain` 层**禁止**依赖任何外部框架（Spring、MyBatis、JPA 注解除外仅在 PO 中使用，但领域模型本身应保持纯净）
+- `application` 层**禁止**直接调用 `infrastructure`
+- 跨模块调用通过 `domain.repository` 接口或应用层服务完成
+
+### 5.3 关键设计模式
+
+- **CQRS 物理分离**：`command` 包与 `query` 包在同一模块内分离，命令走写模型（带事务），查询走读模型（只读）
+- **富领域模型**：聚合根使用工厂方法构造，例如 `User.register(...)`、`Username.of(...)`
+- **仓储模式**：接口定义在 `domain.repository`，实现放在 `infrastructure.persistence`
+- **自定义元数据仓储**：`bone-metadata-sdk` 提供 `@EnableSqlRepositories` 机制，类似 Spring Data 但为自研实现
+- **多租户**：表均含 `tenant_id` 与 `biz_identity_code`，配合 `TenantContext` 实现数据隔离
+- **软删除**：全局逻辑删除字段 `deleted`（TINYINT）
+
+### 5.4 命名约定
+
+| 元素类型 | 命名规则 | 示例 |
+|----------|----------|------|
+| 聚合根 | `{名词}` | `User` |
+| 值对象 | `{名词}` | `Username` |
+| 命令 | `{动作}{对象}Command` | `CreateUserCommand` |
+| 查询 | `{对象}{条件}Qry` | `UserByIdQry` |
+| 命令处理器 | `{命令名}Handler` | `CreateUserCommandHandler` |
+| 查询处理器 | `{查询名}Handler` | `UserByIdQryHandler` |
+
+---
+
+## 6. 构建与运行
+
+### 6.1 后端构建与运行
+
+项目使用 **Aliyun Maven** 镜像加速依赖下载。
+
+```bash
+# 全量编译并安装到本地仓库
+mvn clean install
+
+# 跳过测试
+mvn clean install -DskipTests=true
+
+# 指定环境 profile（dev 为默认）
+mvn clean install -Pprod
+
+# 代码格式化（Google Java Format）
+mvn spotless:apply
+
+# 仅运行测试
+mvn test
+
+# 执行静态分析 + 测试 + 覆盖率（在绑定了质量插件的模块中）
+mvn verify
+
+# 运行特定服务
+java -jar bone-iam/target/bone-iam-1.0.0.jar
+```
+
+### 6.2 前端构建与运行
+
+项目根目录和各子应用均独立管理依赖。推荐按应用单独启动。
+
+```bash
+# 进入 bone-frontend 后，为所有 workspace 安装依赖
+cd bone-frontend
+bash setup.sh                 # 为每个 app/package 单独执行 npm install
+
+# 启动主应用（Shell）
+npm run dev                   # 仅启动 bone-shell
+
+# 在单个微应用目录下启动
+npm run dev                   # 启动 Vite 开发服务器
+npm run build                 # tsc && vite build
+npm run lint                  # ESLint
+npm run preview               # Vite preview
+```
+
+批量启动所有前端应用的脚本：
+- `bone-frontend/restart-all-apps.sh` — 停止并重启所有 7 个前端应用，日志输出到 `logs/` 目录
+- 详细用法见 [SCRIPT_USAGE.md](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-frontend/SCRIPT_USAGE.md)
+
+### 6.3 开发环境要求
+
+| 工具 | 版本要求 |
+|------|----------|
+| JDK | 17+ |
+| Maven | 3.8+ |
+| Node.js | 18+（推荐，与 Vite 5 兼容） |
+| MySQL | 8.0+ |
+| Redis | 7.x |
+
+### 6.4 已知服务端口
+
+| 服务 | 端口 |
+|------|------|
+| bone-iam | 8080 |
+| bone-system | 8083 |
+| bone-integration（引擎） | 30888 |
+| bone-shell（前端主应用） | 3000 |
+| bone-iam-app | 3003 |
+| bone-metadata-app | 3004 |
+| bone-masterdata-app | 3005 |
+| bone-integration-app | 3006 |
+| bone-system-app | 3007 |
+| bone-extension-app | 3008 |
+
+---
+
+## 7. 数据库与初始化
+
+### 7.1 数据库配置
+
+- **数据库**：MySQL（InnoDB，utf8mb4，utf8mb4_unicode_ci）
+- **Schema 名**：`bone`
+- **初始化脚本**：
+  - `bone-init.sql`（项目根目录）— 包含表结构 + 初始数据
+  - `doc/deployment/sql/` — 额外的部署 SQL
+
+### 7.2 表设计共性
+
+所有业务表均包含：
+- `tenant_id` + `biz_identity_code`（租户隔离）
+- `create_time`、`create_by`、`update_time`、`update_by`（审计）
+- `deleted` TINYINT（软删除）
+- JSON 类型字段（灵活 Schema）
+
+### 7.3 主要表域
+
+| 域 | 代表表 |
+|------|--------|
+| 保险业务 | `ic_insurer`、`ic_policyholder`、`ic_proposal`、`ic_policy`、`ic_product_config` |
+| IAM | `iam_user`、`iam_role`、`iam_permission`、`iam_user_role`、`iam_audit_log` |
+| 系统 | `sys_config`、`sys_log`、`sys_monitor` |
+| 集成 | `int_connector`、`int_flow`、`int_flow_execution` |
+
+### 7.4 初始数据
+
+- 默认租户
+- 管理员账号 `admin` / 密码（BCrypt 加密，默认 `123456`）
+- 基础角色与权限
+- 示例保险公司与产品数据
+
+---
+
+## 8. 测试策略
+
+### 8.1 后端测试
+
+| 工具 | 版本 | 用途 |
+|------|------|------|
+| JUnit 5（Jupiter） | Spring Boot 自带 | 单元与集成测试 |
+| Mockito | 5.11.0 | Mock |
+| Maven Surefire | 3.2.5 | 测试执行 |
+| ArchUnit | 1.2.1 | 架构规则静态校验 |
+
+- 测试类命名：`*Test.java`、`*Tests.java`
+- 排除：`Abstract*.java`
+- 已发现使用 ArchUnit 的模块：`bone-iam`、`bone-masterdata`、`bone-integration`，通过 `ArchitectureTest.java` 强制校验分层依赖
+
+### 8.2 前端测试
+
+- 框架：**Vitest 2.0**
+- 运行命令：`npm run test`（workspace 级别）
+
+---
+
+## 9. 代码质量
+
+### 9.1 格式化
+
+- **Spotless** 2.43.0 + **Google Java Format** 1.17.0
+- 执行：`mvn spotless:apply`
+- 当前仅在 `pluginManagement` 中定义，**未自动绑定到所有模块生命周期**，需显式调用
+
+### 9.2 静态分析
+
+`bone-tool/pom.xml` 绑定了以下工具到 `validate` 阶段：
+
+| 工具 | 版本 | 配置 | 说明 |
+|------|------|------|------|
+| Checkstyle | 10.12.7 | `checkstyle.xml` | 120 字符行宽、禁止 Tab、命名规范 |
+| PMD | 6.55.0 | `pmd-ruleset.xml` | EmptyCatchBlock、EqualsNull、UseEqualsToCompareStrings、NullAssignment |
+| SpotBugs | 4.2.3 | Max effort / Medium threshold | Bug 模式检测 |
+| JaCoCo | 0.8.11 | - | 行覆盖率 ≥ 70%，分支覆盖率 ≥ 60%；排除 domain/entity、config、enums、DTO |
+
+注意：上述质量工具**并非所有模块都继承激活**，主要集中在 `bone-tool` 及少量显式配置模块。
+
+### 9.3 前端代码质量
+
+- ESLint 配置位于 [.eslintrc.json](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-frontend/.eslintrc.json)
+- Prettier 3.1+ 格式化
+
+---
+
+## 10. 部署与运维
+
+### 10.1 部署方式
+
+- **当前仓库未包含 Dockerfile 或 docker-compose.yml**，也未发现 CI/CD 流水线（GitHub Actions / GitLab CI）
+- 部署产物为 **Spring Boot 可执行 JAR**（`spring-boot-maven-plugin` repackage）
+- 启动方式：
+  ```bash
+  java -jar bone-iam/target/bone-iam-1.0.0.jar
+  ```
+
+### 10.2 环境配置
+
+- 环境 profile：`dev`（默认）、`test`、`prod`
+- 每个 Spring Boot 模块提供 `application.yml` 与 `application-{profile}.yml`
+- 支持的环境变量：
+  - `BONE_DB_URL`
+  - `BONE_DB_USERNAME`
+  - `BONE_DB_PASSWORD`
+  - `BONE_SERVER_PORT`
+
+---
+
+## 11. 安全注意事项
+
+- **默认密码**：`admin` / `123456`，首次部署后**必须**修改
+- **SA-Token**：用于认证与 SSO，配置需关注 token 有效期与签名密钥
+- **数据库密码**：部分 `application.yml` 中硬编码了明文密码，生产环境**必须**改为环境变量或配置中心注入
+- **Redis 密码**：同样存在明文配置，需通过外部化配置处理
+- **API 文档**：SpringDoc 在生产环境建议关闭或增加认证拦截（`knife4j` 或 Spring Security）
+- **CORS**：前端微应用开发服务器开启了跨域头，生产环境需收紧为明确域名白名单
+
+---
+
+## 12. 开发最佳实践
+
+### 12.1 给开发者的关键提示
+
+1. **不要破坏分层依赖**：修改代码时，`domain` 层不能引入 Spring/MyBatis 等框架依赖；`application` 层不能直接调用 `infrastructure` 实现类
+2. **保持 CQRS**：写操作使用 `*CommandHandler` 并在方法上加 `@Transactional`；读操作使用 `*QueryHandler`，保持只读
+3. **统一响应格式**：Controller 返回统一使用 `ApiResponse<T>` 或 `PageResult<T>`，避免裸返回领域对象
+4. **租户与审计字段**：新增实体应继承 `TenantAbstractEntity`（若需多租户）或 `AbstractEntity`；不要遗漏 `tenantId` 与审计字段的填充
+5. **前端微应用约束**：
+   - 微应用使用 `vite-plugin-qiankun` 打包为 UMD，需配置 `fastRefresh: false`
+   - Shell 不直接使用 `vite-plugin-qiankun`，运行时通过 Qiankun JS API 加载微应用
+6. **格式化**：修改 Java 文件后，建议执行 `mvn spotless:apply` 保持格式一致
+7. **文档语言**：项目注释与文档以**中文**为主，新增代码注释请使用中文
+
+### 12.2 详细规范文档
+
+- [doc/DDD/Bone-Blueprint-DDD工程规范.md](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/doc/DDD/Bone-Blueprint-DDD工程规范.md) — 818 行 DDD + CQRS + 六边形架构工程规范
+- [doc/DDD/ddd.md](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/doc/DDD/ddd.md) — DDD 铁律、ArchUnit 检查要求、命名约定、反模式预防
+- `doc/arch/` — 9 份总体架构与技术方案文档
+- `doc/design/modules/` — 7 份模块详细设计文档（控制台、元数据、主数据、集成、扩展、IAM、系统管理）
+- `doc/architecture/` — 前端架构规范、SmartMeta 设计文档
+- `doc/prd/` — 6 份产品需求文档
+
+---
+
+## 13. 参考索引
+
+| 文件/目录 | 内容 |
+|-----------|------|
+| [README.md](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/README.md) | 项目营销概览、快速开始 |
+| [AGENTS.md](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/AGENTS.md) | AI 助手项目指南 |
+| [PROJECT_SUMMARY.md](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/PROJECT_SUMMARY.md) | 模块完成度总结、DDD + CQRS 架构说明 |
+| [bone-parent/pom.xml](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-parent/pom.xml) | 依赖版本锁定与全局插件配置 |
+| [bone-init.sql](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-init.sql) | 数据库初始化脚本 |
+| [bone-frontend/package.json](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-frontend/package.json) | 前端项目配置与工作区定义 |
+
+---
+
+*本文档基于 Bone 项目的当前状态生成，随着项目的演进，内容可能会有所变化。*
