@@ -4,7 +4,7 @@ spring:
   profiles:
     active: dev
   datasource:
-    url: jdbc:mysql://localhost:3306/bone?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3306/bone?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&characterEncoding=utf8&useUnicode=true
     username: root
     password: mysql123
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -24,6 +24,12 @@ server:
   port: 8085
   servlet:
     context-path: /
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+      force-request: true
+      force-response: true
 
 management:
   endpoints:
@@ -32,6 +38,9 @@ management:
         include: health,info,metrics
 
 bone:
+  metadata:
+    datasource:
+      enabled: false
   blueprint:
     cqrs:
       default-level: L1

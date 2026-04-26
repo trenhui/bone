@@ -1,65 +1,129 @@
 package spec
 
 import (
-	"github.com/bone-engine/bone-metadata-go/domain/enums"
+	"reflect"
+	"strings"
+
+	"github.com/bone-engine/bone-metadata-go/domain/model"
 )
 
-type Specification interface {
-	IsSatisfiedBy(entity interface{}) bool
+type EntityMetadataResolver interface {
+	Resolve(entityType reflect.Type) (*model.EntityMetadata, error)
 }
 
-type AndSpec struct {
-	Left  Specification
-	Right Specification
+type DefaultEntityMetadataResolver struct {
 }
 
-func (s *AndSpec) IsSatisfiedBy(entity interface{}) bool {
-	return s.Left.IsSatisfiedBy(entity) && s.Right.IsSatisfiedBy(entity)
+func NewEntityMetadataResolver() *DefaultEntityMetadataResolver {
+	return &DefaultEntityMetadataResolver{}
 }
 
-type OrSpec struct {
-	Left  Specification
-	Right Specification
+func (r *DefaultEntityMetadataResolver) Resolve(entityType reflect.Type) (*model.EntityMetadata, error) {
+	if entityType.Kind() == reflect.Ptr {
+		entityType = entityType.Elem()
+	}
+
+	tableName := r.getTableName(entityType)
+	columns := r.getColumns(entityType)
+	primaryKey := r.findPrimaryKey(columns)
+
+	return &model.EntityMetadata{
+		TableName:    tableName,
+		Columns:      columns,
+		PrimaryKey:   primaryKey,
+		EntityType:   entityType,
+		SoftDeletable: r.hasDeletedField(columns),
+	}, nil
 }
 
-func (s *OrSpec) IsSatisfiedBy(entity interface{}) bool {
-	return s.Left.IsSatisfiedBy(entity) || s.Right.IsSatisfiedBy(entity)
+func (r *DefaultEntityMetadataResolver) getTableName(entityType reflect.Type) string {
+	// 简单实现：将驼峰命名转换为下划线命名
+	name := entityType.Name()
+	tableName := ""
+	for i, c := range name {
+		if i > 0 && c >= 'A' && c <= 'Z' {
+			tableName += "_"
+		}
+		tableName += strings.ToLower(string(c))
+	}
+	return tableName
 }
 
-type NotSpec struct {
-	Spec Specification
+func (r *DefaultEntityMetadataResolver) getColumns(entityType reflect.Type) []model.ColumnMetadata {
+	columns := make([]model.ColumnMetadata, 0)
+
+	for i := 0; i < entityType.NumField(); i++ {
+		field := entityType.Field(i)
+		boneTag := field.Tag.Get("bone")
+		if boneTag == "" {
+			continue
+		}
+
+		tagParts := strings.Split(boneTag, ",")
+		columnName := tagParts[0]
+		isPrimary := false
+		isAutoIncr := false
+		generationStrategy := ""
+
+		for _, part := range tagParts[1:] {
+			switch part {
+			case "primary":
+				isPrimary = true
+			case "autoincr":
+				isAutoIncr = true
+				generationStrategy = "IDENTITY"
+			}
+		}
+
+		columns = append(columns, model.ColumnMetadata{
+			FieldName:         field.Name,
+			ColumnName:        columnName,
+			ColumnType:        r.getColumnType(field.Type),
+			IsPrimary:         isPrimary,
+			IsNullable:        !isPrimary,
+			IsAutoIncr:        isAutoIncr,
+			FieldType:         field.Type,
+			GenerationStrategy: generationStrategy,
+		})
+	}
+
+	return columns
 }
 
-func (s *NotSpec) IsSatisfiedBy(entity interface{}) bool {
-	return !s.Spec.IsSatisfiedBy(entity)
+func (r *DefaultEntityMetadataResolver) getColumnType(fieldType reflect.Type) string {
+	switch fieldType.Kind() {
+	case reflect.Int, reflect.Int32, reflect.Int64:
+		return "BIGINT"
+	case reflect.Float32, reflect.Float64:
+		return "DOUBLE"
+	case reflect.Bool:
+		return "BOOLEAN"
+	case reflect.String:
+		return "VARCHAR(255)"
+	case reflect.Struct:
+		if fieldType.String() == "time.Time" {
+			return "DATETIME"
+		}
+		return "JSON"
+	default:
+		return "VARCHAR(255)"
+	}
 }
 
-type ComparisonSpec struct {
-	Field string
-	Op    enums.Operator
-	Value interface{}
+func (r *DefaultEntityMetadataResolver) findPrimaryKey(columns []model.ColumnMetadata) *model.ColumnMetadata {
+	for i := range columns {
+		if columns[i].IsPrimary {
+			return &columns[i]
+		}
+	}
+	return nil
 }
 
-func (s *ComparisonSpec) IsSatisfiedBy(entity interface{}) bool {
-	return true
-}
-
-func And(left, right Specification) Specification {
-	return &AndSpec{Left: left, Right: right}
-}
-
-func Or(left, right Specification) Specification {
-	return &OrSpec{Left: left, Right: right}
-}
-
-func Not(spec Specification) Specification {
-	return &NotSpec{Spec: spec}
-}
-
-func Eq(field string, value interface{}) Specification {
-	return &ComparisonSpec{Field: field, Op: enums.EQ, Value: value}
-}
-
-func Like(field string, value interface{}) Specification {
-	return &ComparisonSpec{Field: field, Op: enums.LIKE, Value: value}
+func (r *DefaultEntityMetadataResolver) hasDeletedField(columns []model.ColumnMetadata) bool {
+	for _, col := range columns {
+		if col.ColumnName == "deleted" {
+			return true
+		}
+	}
+	return false
 }

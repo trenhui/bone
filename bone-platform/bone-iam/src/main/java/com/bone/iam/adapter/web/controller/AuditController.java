@@ -39,9 +39,9 @@ public class AuditController {
      */
     @GetMapping("/logs/export")
     public ApiResponse<List<AuditLogDTO>> export(AuditLogListQry qry) {
-        qry.setPageSize(10000); // 导出全部
+        qry.setSize(10000); // 导出全部
         PageResult<AuditLogDTO> result = auditLogQueryUseCase.execute(qry);
-        return ApiResponse.success(result.getList());
+        return ApiResponse.success(result.getRecords());
     }
 
     /**

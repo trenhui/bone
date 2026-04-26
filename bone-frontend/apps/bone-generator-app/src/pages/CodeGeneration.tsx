@@ -96,19 +96,21 @@ const CodeGeneration: React.FC = () => {
   // 同步表结构
   const handleSyncTables = async () => {
     try {
+      // 先获取表单值，避免直接操作可能有循环引用的数据
       const values = await syncForm.validateFields();
-      const { dataSourceId, tableNames } = values;
+      // 创建新对象，确保没有循环引用
+      const syncData = {
+        dataSourceId: values.dataSourceId,
+        tableNames: values.tableNames ? [...values.tableNames] : []
+      };
       
-      if (!tableNames || tableNames.length === 0) {
+      if (!syncData.tableNames || syncData.tableNames.length === 0) {
         message.error('请选择要同步的表');
         return;
       }
       
       setLoading(true);
-      await tableMetadataApi.sync({
-        dataSourceId,
-        tableNames
-      });
+      await tableMetadataApi.sync(syncData);
       message.success('表结构同步成功');
       setSyncModalVisible(false);
       loadSyncedTables(); // 刷新已同步表列表
@@ -316,8 +318,12 @@ const CodeGeneration: React.FC = () => {
                   try {
                     setLoading(true);
                     const tables = await handleLoadDataSourceTables(dataSourceId);
-                    // 对数据进行浅拷贝，避免循环引用警告
-                    setDataSourceTables(JSON.parse(JSON.stringify(tables)));
+                    // 只保留必要字段，彻底消除循环引用
+                    const processedTables = tables.map(table => ({
+                      tableName: table.tableName,
+                      tableComment: table.tableComment
+                    }));
+                    setDataSourceTables(processedTables);
                     syncForm.setFieldValue('tableNames', []);
                   } catch (error) {
                     console.error('加载表列表失败:', error);
@@ -349,10 +355,15 @@ const CodeGeneration: React.FC = () => {
               showSearch
               optionFilterProp="children"
               loading={loading}
-              options={dataSourceTables.map(table => ({
-                value: table.tableName,
-                label: `${table.tableName}${table.tableComment ? ` (${table.tableComment})` : ''}`
-              }))}
+              options={dataSourceTables.map(table => {
+                // 创建全新的纯数据对象，彻底避免循环引用
+                const tableName = table.tableName || '';
+                const tableComment = table.tableComment || '';
+                return {
+                  value: tableName,
+                  label: `${tableName}${tableComment ? ` (${tableComment})` : ''}`
+                };
+              })}
             />
           </Form.Item>
         </Form>

@@ -105,6 +105,7 @@ const DataSourceManagement: React.FC = () => {
       if (editingDataSource) {
         dataSourceId = editingDataSource.id;
       } else {
+        // 创建临时数据源
         const createResponse = await dataSourceApi.create(values);
         dataSourceId = createResponse.data.data;
       }
@@ -115,6 +116,16 @@ const DataSourceManagement: React.FC = () => {
         message.success('连接成功');
       } else {
         message.error('连接失败: ' + response.data.message);
+      }
+      
+      // 如果是新增的临时数据源，测试完成后删除
+      if (!editingDataSource) {
+        try {
+          await dataSourceApi.delete(dataSourceId);
+        } catch (error) {
+          // 忽略删除错误，不影响测试结果
+          console.error('删除临时数据源失败:', error);
+        }
       }
     } catch (error) {
       message.error('连接失败');

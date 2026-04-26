@@ -1,8 +1,6 @@
 package invoker
 
 import (
-	"context"
-
 	"github.com/bone-engine/bone-extension-go/api/model"
 	"github.com/bone-engine/bone-extension-go/api/spi"
 )
