@@ -65,7 +65,7 @@ func (r *DefaultExtensionRegistry) Unregister(name string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	ext, exists := r.extensions[name]
+	_, exists := r.extensions[name]
 	if !exists {
 		return fmt.Errorf("extension with name %s not found", name)
 	}

@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"fmt"
 	"reflect"
 	"time"
 
@@ -94,7 +95,7 @@ func (p *CachingProxy) Target() interface{} {
 func (p *CachingProxy) Invoke(ctx *model.Context, method string, args ...interface{}) (interface{}, error) {
 	cacheKey := method
 	for _, arg := range args {
-		cacheKey += ":" + string(arg)
+		cacheKey += ":" + fmt.Sprintf("%v", arg)
 	}
 
 	if result, ok := p.cache.Get(cacheKey); ok {

@@ -2,446 +2,413 @@ package repository
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"sync"
+	"time"
+
+	"github.com/go-redis/redis/v8"
+	"github.com/nacos-group/nacos-sdk-go/v2/clients"
+	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
+	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 
 	"github.com/bone-engine/bone-extension-go/api/spi"
 )
 
-type MemoryRepository struct {
-	items map[string]interface{}
-	mu    sync.RWMutex
+// ExtensionRepository 扩展仓库接口
+type ExtensionRepository interface {
+	Save(ctx context.Context, ext spi.Extension) error
+	Get(ctx context.Context, name string) (spi.Extension, error)
+	Delete(ctx context.Context, name string) error
+	List(ctx context.Context) ([]spi.Extension, error)
+	Exists(ctx context.Context, name string) (bool, error)
 }
 
-func NewMemoryRepository() *MemoryRepository {
-	return &MemoryRepository{
-		items: make(map[string]interface{}),
+// InMemoryExtensionRepository 内存扩展仓库
+type InMemoryExtensionRepository struct {
+	extensions map[string]spi.Extension
+	mu         sync.RWMutex
+}
+
+// NewInMemoryExtensionRepository 创建内存扩展仓库
+func NewInMemoryExtensionRepository() *InMemoryExtensionRepository {
+	return &InMemoryExtensionRepository{
+		extensions: make(map[string]spi.Extension),
 	}
 }
 
-func (r *MemoryRepository) Save(ctx context.Context, entity interface{}) error {
+// Save 保存扩展
+func (r *InMemoryExtensionRepository) Save(ctx context.Context, ext spi.Extension) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	id := r.extractID(entity)
-	if id == "" {
-		id = r.generateID()
-	}
-	r.items[id] = entity
+	r.extensions[ext.Name()] = ext
 	return nil
 }
 
-func (r *MemoryRepository) FindByID(ctx context.Context, id interface{}) (interface{}, error) {
+// Get 获取扩展
+func (r *InMemoryExtensionRepository) Get(ctx context.Context, name string) (spi.Extension, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	idStr, _ := id.(string)
-	item, ok := r.items[idStr]
+	ext, ok := r.extensions[name]
 	if !ok {
-		return nil, nil
+		return nil, fmt.Errorf("extension not found: %s", name)
 	}
-	return item, nil
+
+	return ext, nil
 }
 
-func (r *MemoryRepository) FindAll(ctx context.Context) ([]interface{}, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	all := make([]interface{}, 0, len(r.items))
-	for _, item := range r.items {
-		all = append(all, item)
-	}
-	return all, nil
-}
-
-func (r *MemoryRepository) Delete(ctx context.Context, id interface{}) error {
+// Delete 删除扩展
+func (r *InMemoryExtensionRepository) Delete(ctx context.Context, name string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	idStr, _ := id.(string)
-	delete(r.items, idStr)
+	delete(r.extensions, name)
 	return nil
 }
 
-func (r *MemoryRepository) Update(ctx context.Context, entity interface{}) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	id := r.extractID(entity)
-	if id == "" {
-		return fmt.Errorf("entity has no id")
-	}
-	r.items[id] = entity
-	return nil
-}
-
-func (r *MemoryRepository) Count(ctx context.Context) (int64, error) {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-	return int64(len(r.items)), nil
-}
-
-func (r *MemoryRepository) Paginate(ctx context.Context, pageNum, pageSize int) ([]interface{}, int64, error) {
+// List 列出所有扩展
+func (r *InMemoryExtensionRepository) List(ctx context.Context) ([]spi.Extension, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	all := make([]interface{}, 0, len(r.items))
-	for _, item := range r.items {
-		all = append(all, item)
+	exts := make([]spi.Extension, 0, len(r.extensions))
+	for _, ext := range r.extensions {
+		exts = append(exts, ext)
 	}
 
-	total := int64(len(all))
-	if pageNum <= 0 {
-		pageNum = 1
-	}
-	if pageSize <= 0 {
-		pageSize = 10
-	}
-
-	start := (pageNum - 1) * pageSize
-	if start >= len(all) {
-		return []interface{}{}, total, nil
-	}
-
-	end := start + pageSize
-	if end > len(all) {
-		end = len(all)
-	}
-
-	return all[start:end], total, nil
+	return exts, nil
 }
 
-func (r *MemoryRepository) extractID(entity interface{}) string {
-	if idGetter, ok := entity.(interface{ GetID() string }); ok {
-		return idGetter.GetID()
-	}
-	if idGetter, ok := entity.(interface{ GetID() interface{} }); ok {
-		id := idGetter.GetID()
-		if idStr, ok := id.(string); ok {
-			return idStr
-		}
-		return fmt.Sprintf("%v", id)
-	}
-	return ""
-}
-
-func (r *MemoryRepository) generateID() string {
-	b := make([]byte, 16)
-	rand.Read(b)
-	return base64.URLEncoding.EncodeToString(b)
-}
-
-type CachedRepository struct {
-	delegate spi.Repository
-	cache    map[string]interface{}
-	mu       sync.RWMutex
-}
-
-func NewCachedRepository(delegate spi.Repository) *CachedRepository {
-	return &CachedRepository{
-		delegate: delegate,
-		cache:    make(map[string]interface{}),
-	}
-}
-
-func (r *CachedRepository) Save(ctx context.Context, entity interface{}) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	r.clearCache()
-	return r.delegate.Save(ctx, entity)
-}
-
-func (r *CachedRepository) FindByID(ctx context.Context, id interface{}) (interface{}, error) {
+// Exists 检查扩展是否存在
+func (r *InMemoryExtensionRepository) Exists(ctx context.Context, name string) (bool, error) {
 	r.mu.RLock()
-	idStr := fmt.Sprintf("%v", id)
-	if item, ok := r.cache[idStr]; ok {
-		r.mu.RUnlock()
-		return item, nil
-	}
-	r.mu.RUnlock()
+	defer r.mu.RUnlock()
 
-	item, err := r.delegate.FindByID(ctx, id)
+	_, ok := r.extensions[name]
+	return ok, nil
+}
+
+// RedisExtensionRepository Redis扩展仓库
+type RedisExtensionRepository struct {
+	client *redis.Client
+	prefix string
+}
+
+// NewRedisExtensionRepository 创建Redis扩展仓库
+func NewRedisExtensionRepository(addr string, password string, db int, prefix string) *RedisExtensionRepository {
+	client := redis.NewClient(&redis.Options{
+		Addr:     addr,
+		Password: password,
+		DB:       db,
+	})
+
+	if prefix == "" {
+		prefix = "extension:"
+	}
+
+	return &RedisExtensionRepository{
+		client: client,
+		prefix: prefix,
+	}
+}
+
+// key 生成键
+func (r *RedisExtensionRepository) key(name string) string {
+	return r.prefix + name
+}
+
+// Save 保存扩展
+func (r *RedisExtensionRepository) Save(ctx context.Context, ext spi.Extension) error {
+	data, err := json.Marshal(ext)
 	if err != nil {
-		return nil, err
-	}
-
-	if item != nil {
-		r.mu.Lock()
-		r.cache[idStr] = item
-		r.mu.Unlock()
-	}
-
-	return item, nil
-}
-
-func (r *CachedRepository) FindAll(ctx context.Context) ([]interface{}, error) {
-	r.mu.RLock()
-	if items, ok := r.cache["__all__"].([]interface{}); ok {
-		r.mu.RUnlock()
-		return items, nil
-	}
-	r.mu.RUnlock()
-
-	items, err := r.delegate.FindAll(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	r.mu.Lock()
-	r.cache["__all__"] = items
-	r.mu.Unlock()
-
-	return items, nil
-}
-
-func (r *CachedRepository) Delete(ctx context.Context, id interface{}) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	r.clearCache()
-	return r.delegate.Delete(ctx, id)
-}
-
-func (r *CachedRepository) Update(ctx context.Context, entity interface{}) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	r.clearCache()
-	return r.delegate.Update(ctx, entity)
-}
-
-func (r *CachedRepository) Count(ctx context.Context) (int64, error) {
-	r.mu.RLock()
-	if count, ok := r.cache["__count__"].(int64); ok {
-		r.mu.RUnlock()
-		return count, nil
-	}
-	r.mu.RUnlock()
-
-	count, err := r.delegate.Count(ctx)
-	if err != nil {
-		return 0, err
-	}
-
-	r.mu.Lock()
-	r.cache["__count__"] = count
-	r.mu.Unlock()
-
-	return count, nil
-}
-
-func (r *CachedRepository) Paginate(ctx context.Context, pageNum, pageSize int) ([]interface{}, int64, error) {
-	key := fmt.Sprintf("__page_%d_%d__", pageNum, pageSize)
-	r.mu.RLock()
-	if cached, ok := r.cache[key]; ok {
-		if result, ok := cached.(struct {
-			items []interface{}
-			total int64
-		}); ok {
-			r.mu.RUnlock()
-			return result.items, result.total, nil
-		}
-	}
-	r.mu.RUnlock()
-
-	items, total, err := r.delegate.Paginate(ctx, pageNum, pageSize)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	r.mu.Lock()
-	r.cache[key] = struct {
-		items []interface{}
-		total int64
-	}{items, total}
-	r.mu.Unlock()
-
-	return items, total, nil
-}
-
-func (r *CachedRepository) clearCache() {
-	r.cache = make(map[string]interface{})
-}
-
-func (r *CachedRepository) ClearCache() {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	r.clearCache()
-}
-
-type MultiTenantRepository struct {
-	delegate spi.Repository
-	tenantID string
-}
-
-func NewMultiTenantRepository(delegate spi.Repository, tenantID string) *MultiTenantRepository {
-	return &MultiTenantRepository{
-		delegate: delegate,
-		tenantID: tenantID,
-	}
-}
-
-func (r *MultiTenantRepository) Save(ctx context.Context, entity interface{}) error {
-	if tenanted, ok := entity.(interface{ SetTenantID(string) }); ok {
-		tenanted.SetTenantID(r.tenantID)
-	}
-	return r.delegate.Save(ctx, entity)
-}
-
-func (r *MultiTenantRepository) FindByID(ctx context.Context, id interface{}) (interface{}, error) {
-	item, err := r.delegate.FindByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	if item == nil {
-		return nil, nil
-	}
-	if tenanted, ok := item.(interface{ GetTenantID() string }); ok {
-		if tenanted.GetTenantID() != r.tenantID {
-			return nil, nil
-		}
-	}
-	return item, nil
-}
-
-func (r *MultiTenantRepository) FindAll(ctx context.Context) ([]interface{}, error) {
-	all, err := r.delegate.FindAll(ctx)
-	if err != nil {
-		return nil, err
-	}
-	filtered := make([]interface{}, 0)
-	for _, item := range all {
-		if tenanted, ok := item.(interface{ GetTenantID() string }); ok {
-			if tenanted.GetTenantID() == r.tenantID {
-				filtered = append(filtered, item)
-			}
-		}
-	}
-	return filtered, nil
-}
-
-func (r *MultiTenantRepository) Delete(ctx context.Context, id interface{}) error {
-	return r.delegate.Delete(ctx, id)
-}
-
-func (r *MultiTenantRepository) Update(ctx context.Context, entity interface{}) error {
-	return r.delegate.Update(ctx, entity)
-}
-
-func (r *MultiTenantRepository) Count(ctx context.Context) (int64, error) {
-	all, err := r.FindAll(ctx)
-	if err != nil {
-		return 0, err
-	}
-	return int64(len(all)), nil
-}
-
-func (r *MultiTenantRepository) Paginate(ctx context.Context, pageNum, pageSize int) ([]interface{}, int64, error) {
-	all, err := r.FindAll(ctx)
-	if err != nil {
-		return nil, 0, err
-	}
-
-	total := int64(len(all))
-	if pageNum <= 0 {
-		pageNum = 1
-	}
-	if pageSize <= 0 {
-		pageSize = 10
-	}
-
-	start := (pageNum - 1) * pageSize
-	if start >= len(all) {
-		return []interface{}{}, total, nil
-	}
-
-	end := start + pageSize
-	if end > len(all) {
-		end = len(all)
-	}
-
-	return all[start:end], total, nil
-}
-
-type RepositoryWrapper struct {
-	delegate spi.Repository
-	hooks    []RepositoryHook
-}
-
-type RepositoryHook interface {
-	BeforeSave(ctx context.Context, entity interface{}) error
-	AfterSave(ctx context.Context, entity interface{}) error
-	BeforeDelete(ctx context.Context, id interface{}) error
-	AfterDelete(ctx context.Context, id interface{}) error
-}
-
-func NewRepositoryWrapper(delegate spi.Repository) *RepositoryWrapper {
-	return &RepositoryWrapper{
-		delegate: delegate,
-		hooks:    make([]RepositoryHook, 0),
-	}
-}
-
-func (w *RepositoryWrapper) AddHook(hook RepositoryHook) {
-	w.hooks = append(w.hooks, hook)
-}
-
-func (w *RepositoryWrapper) Save(ctx context.Context, entity interface{}) error {
-	for _, hook := range w.hooks {
-		if err := hook.BeforeSave(ctx, entity); err != nil {
-			return err
-		}
-	}
-
-	if err := w.delegate.Save(ctx, entity); err != nil {
 		return err
 	}
 
-	for _, hook := range w.hooks {
-		if err := hook.AfterSave(ctx, entity); err != nil {
-			return err
+	return r.client.Set(ctx, r.key(ext.Name()), data, 24*time.Hour).Err()
+}
+
+// Get 获取扩展
+func (r *RedisExtensionRepository) Get(ctx context.Context, name string) (spi.Extension, error) {
+	data, err := r.client.Get(ctx, r.key(name)).Result()
+	if err == redis.Nil {
+		return nil, fmt.Errorf("extension not found: %s", name)
+	} else if err != nil {
+		return nil, err
+	}
+
+	var ext spi.Extension
+	if err := json.Unmarshal([]byte(data), &ext); err != nil {
+		return nil, err
+	}
+
+	return ext, nil
+}
+
+// Delete 删除扩展
+func (r *RedisExtensionRepository) Delete(ctx context.Context, name string) error {
+	return r.client.Del(ctx, r.key(name)).Err()
+}
+
+// List 列出所有扩展
+func (r *RedisExtensionRepository) List(ctx context.Context) ([]spi.Extension, error) {
+	keys, err := r.client.Keys(ctx, r.prefix+"*").Result()
+	if err != nil {
+		return nil, err
+	}
+
+	exts := make([]spi.Extension, 0, len(keys))
+	for _, key := range keys {
+		data, err := r.client.Get(ctx, key).Result()
+		if err != nil {
+			continue
+		}
+
+		var ext spi.Extension
+		if err := json.Unmarshal([]byte(data), &ext); err != nil {
+			continue
+		}
+
+		exts = append(exts, ext)
+	}
+
+	return exts, nil
+}
+
+// Exists 检查扩展是否存在
+func (r *RedisExtensionRepository) Exists(ctx context.Context, name string) (bool, error) {
+	result, err := r.client.Exists(ctx, r.key(name)).Result()
+	if err != nil {
+		return false, err
+	}
+
+	return result > 0, nil
+}
+
+// NacosExtensionRepository Nacos扩展仓库
+type NacosExtensionRepository struct {
+	client     clients.ConfigClient
+	dataID     string
+	group      string
+	timeoutMs  uint64
+}
+
+// NewNacosExtensionRepository 创建Nacos扩展仓库
+func NewNacosExtensionRepository(serverAddr string, namespaceID string, dataID string, group string) (*NacosExtensionRepository, error) {
+	client, err := clients.NewConfigClient(
+		constant.ClientConfig{
+			NamespaceId:         namespaceID,
+			TimeoutMs:           5000,
+			NotLoadCacheAtStart: true,
+			LogDir:              "./logs",
+			CacheDir:            "./cache",
+		},
+		[]constant.ServerConfig{
+			{
+				IpAddr: serverAddr,
+				Port:   8848,
+			},
+		},
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if dataID == "" {
+		dataID = "extensions"
+	}
+	if group == "" {
+		group = "DEFAULT_GROUP"
+	}
+
+	return &NacosExtensionRepository{
+		client:    client,
+		dataID:    dataID,
+		group:     group,
+		timeoutMs: 5000,
+	}, nil
+}
+
+// Save 保存扩展
+func (r *NacosExtensionRepository) Save(ctx context.Context, ext spi.Extension) error {
+	// 先获取现有配置
+	content, err := r.client.GetConfig(vo.ConfigParam{
+		DataId:   r.dataID,
+		Group:    r.group,
+		TimeoutMs: r.timeoutMs,
+	})
+
+	var extensions map[string]spi.Extension
+	if err != nil {
+		extensions = make(map[string]spi.Extension)
+	} else {
+		if err := json.Unmarshal([]byte(content), &extensions); err != nil {
+			extensions = make(map[string]spi.Extension)
 		}
 	}
 
-	return nil
-}
+	// 添加或更新扩展
+	extensions[ext.Name()] = ext
 
-func (w *RepositoryWrapper) FindByID(ctx context.Context, id interface{}) (interface{}, error) {
-	return w.delegate.FindByID(ctx, id)
-}
-
-func (w *RepositoryWrapper) FindAll(ctx context.Context) ([]interface{}, error) {
-	return w.delegate.FindAll(ctx)
-}
-
-func (w *RepositoryWrapper) Delete(ctx context.Context, id interface{}) error {
-	for _, hook := range w.hooks {
-		if err := hook.BeforeDelete(ctx, id); err != nil {
-			return err
-		}
-	}
-
-	if err := w.delegate.Delete(ctx, id); err != nil {
+	// 保存回Nacos
+	newContent, err := json.Marshal(extensions)
+	if err != nil {
 		return err
 	}
 
-	for _, hook := range w.hooks {
-		if err := hook.AfterDelete(ctx, id); err != nil {
-			return err
-		}
+	return r.client.PublishConfig(vo.ConfigParam{
+		DataId:  r.dataID,
+		Group:   r.group,
+		Content: string(newContent),
+	})
+}
+
+// Get 获取扩展
+func (r *NacosExtensionRepository) Get(ctx context.Context, name string) (spi.Extension, error) {
+	content, err := r.client.GetConfig(vo.ConfigParam{
+		DataId:   r.dataID,
+		Group:    r.group,
+		TimeoutMs: r.timeoutMs,
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("extension not found: %s", name)
 	}
 
-	return nil
+	var extensions map[string]spi.Extension
+	if err := json.Unmarshal([]byte(content), &extensions); err != nil {
+		return nil, fmt.Errorf("extension not found: %s", name)
+	}
+
+	ext, ok := extensions[name]
+	if !ok {
+		return nil, fmt.Errorf("extension not found: %s", name)
+	}
+
+	return ext, nil
 }
 
-func (w *RepositoryWrapper) Update(ctx context.Context, entity interface{}) error {
-	return w.delegate.Update(ctx, entity)
+// Delete 删除扩展
+func (r *NacosExtensionRepository) Delete(ctx context.Context, name string) error {
+	// 先获取现有配置
+	content, err := r.client.GetConfig(vo.ConfigParam{
+		DataId:   r.dataID,
+		Group:    r.group,
+		TimeoutMs: r.timeoutMs,
+	})
+
+	if err != nil {
+		return nil // 配置不存在，视为删除成功
+	}
+
+	var extensions map[string]spi.Extension
+	if err := json.Unmarshal([]byte(content), &extensions); err != nil {
+		return nil // 配置格式错误，视为删除成功
+	}
+
+	// 删除扩展
+	delete(extensions, name)
+
+	// 保存回Nacos
+	newContent, err := json.Marshal(extensions)
+	if err != nil {
+		return err
+	}
+
+	return r.client.PublishConfig(vo.ConfigParam{
+		DataId:  r.dataID,
+		Group:   r.group,
+		Content: string(newContent),
+	})
 }
 
-func (w *RepositoryWrapper) Count(ctx context.Context) (int64, error) {
-	return w.delegate.Count(ctx)
+// List 列出所有扩展
+func (r *NacosExtensionRepository) List(ctx context.Context) ([]spi.Extension, error) {
+	content, err := r.client.GetConfig(vo.ConfigParam{
+		DataId:   r.dataID,
+		Group:    r.group,
+		TimeoutMs: r.timeoutMs,
+	})
+
+	if err != nil {
+		return []spi.Extension{}, nil
+	}
+
+	var extensions map[string]spi.Extension
+	if err := json.Unmarshal([]byte(content), &extensions); err != nil {
+		return []spi.Extension{}, nil
+	}
+
+	exts := make([]spi.Extension, 0, len(extensions))
+	for _, ext := range extensions {
+		exts = append(exts, ext)
+	}
+
+	return exts, nil
 }
 
-func (w *RepositoryWrapper) Paginate(ctx context.Context, pageNum, pageSize int) ([]interface{}, int64, error) {
-	return w.delegate.Paginate(ctx, pageNum, pageSize)
+// Exists 检查扩展是否存在
+func (r *NacosExtensionRepository) Exists(ctx context.Context, name string) (bool, error) {
+	content, err := r.client.GetConfig(vo.ConfigParam{
+		DataId:   r.dataID,
+		Group:    r.group,
+		TimeoutMs: r.timeoutMs,
+	})
+
+	if err != nil {
+		return false, nil
+	}
+
+	var extensions map[string]spi.Extension
+	if err := json.Unmarshal([]byte(content), &extensions); err != nil {
+		return false, nil
+	}
+
+	_, ok := extensions[name]
+	return ok, nil
+}
+
+// ExtensionRepositoryFactory 扩展仓库工厂
+type ExtensionRepositoryFactory struct {
+	repositories map[string]ExtensionRepository
+	mu           sync.RWMutex
+}
+
+// NewExtensionRepositoryFactory 创建扩展仓库工厂
+func NewExtensionRepositoryFactory() *ExtensionRepositoryFactory {
+	return &ExtensionRepositoryFactory{
+		repositories: make(map[string]ExtensionRepository),
+	}
+}
+
+// RegisterRepository 注册仓库
+func (f *ExtensionRepositoryFactory) RegisterRepository(name string, repo ExtensionRepository) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	f.repositories[name] = repo
+}
+
+// GetRepository 获取仓库
+func (f *ExtensionRepositoryFactory) GetRepository(name string) (ExtensionRepository, bool) {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
+
+	repo, ok := f.repositories[name]
+	return repo, ok
+}
+
+// DefaultExtensionRepositoryFactory 默认扩展仓库工厂
+var DefaultExtensionRepositoryFactory *ExtensionRepositoryFactory
+
+func init() {
+	DefaultExtensionRepositoryFactory = NewExtensionRepositoryFactory()
+	DefaultExtensionRepositoryFactory.RegisterRepository("memory", NewInMemoryExtensionRepository())
+}
+
+// GetDefaultExtensionRepositoryFactory 获取默认扩展仓库工厂
+func GetDefaultExtensionRepositoryFactory() *ExtensionRepositoryFactory {
+	return DefaultExtensionRepositoryFactory
 }

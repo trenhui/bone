@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/bone-engine/bone-extension-go/api/model"
-	"github.com/bone-engine/bone-extension-go/api/spi"
 	"github.com/bone-engine/bone-extension-go/core/executor"
 	"github.com/bone-engine/bone-extension-go/support/repository"
 )
