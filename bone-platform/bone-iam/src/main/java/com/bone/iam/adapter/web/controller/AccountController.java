@@ -111,8 +111,8 @@ public class AccountController {
      */
     @GetMapping("/export")
     public ApiResponse<java.util.List<AccountDTO>> export(AccountPageQry qry) {
-        qry.setPageSize(10000); // 导出全部
+        qry.setSize(10000); // 导出全部
         PageResult<AccountDTO> result = accountPageQueryUseCase.execute(qry);
-        return ApiResponse.success(result.getList());
+        return ApiResponse.success(result.getRecords());
     }
 }

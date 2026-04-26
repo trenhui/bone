@@ -1,22 +1,18 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"log"
 
 	"github.com/bone-engine/bone-metadata-go/domain/enums"
 	"github.com/bone-engine/bone-metadata-go/query/builder"
-	"github.com/bone-engine/bone-metadata-go/sql/executor"
 	"github.com/bone-engine/bone-metadata-go/support/config"
-	"github.com/bone-engine/bone-metadata-go/support/datasource"
 )
 
 func main() {
 	fmt.Println("=== Bone Metadata Go Example ===")
 
 	// 1. 创建配置
-	cfg := config.NewConfig(
+	_ = config.NewConfig(
 		config.WithDriver("sqlite3"),
 		config.WithShowSQL(true),
 	)
@@ -31,7 +27,7 @@ func main() {
 	qb.Select("id", "name", "email").
 		From("users").
 		Where("status", enums.EQ, "active").
-		And("age", enums.GTE, 18).
+		And("age", enums.GE, 18).
 		OrderBy("created_at", enums.DESC).
 		Limit(10, 0)
 
@@ -62,11 +58,11 @@ func main() {
 
 	// 6. 多数据源示例
 	fmt.Println("\n4. 多数据源示例")
-	dsManager := datasource.NewMultiDataSourceManager()
-	// 实际项目中会添加真实的数据源配置
+	// 实际项目中会创建和配置数据源
+	// dsManager := datasource.NewMultiDataSourceManager()
 	// dsManager.AddDataSource("primary", primaryCfg)
 	// dsManager.AddDataSource("replica", replicaCfg)
-	fmt.Println("MultiDataSourceManager initialized")
+	fmt.Println("MultiDataSourceManager can be initialized in real projects")
 
 	fmt.Println("\n=== Example Complete ===")
 }
