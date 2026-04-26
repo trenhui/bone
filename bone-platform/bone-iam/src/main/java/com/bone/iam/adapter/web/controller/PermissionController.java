@@ -14,6 +14,7 @@ import com.bone.iam.adapter.web.dto.req.CreatePermissionReq;
 import com.bone.iam.adapter.web.converter.PermissionWebConverter;
 import com.bone.iam.domain.permission.Permission;
 import com.bone.iam.domain.repository.PermissionRepository;
+import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -52,7 +53,7 @@ public class PermissionController {
      */
     @GetMapping("/tree")
     public ApiResponse<List<PermissionDTO>> tree() {
-        List<Permission> allPermissions = permissionRepository.findAll();
+        List<Permission> allPermissions = QueryBuilder.from(Permission.class).list();
 
         // 转换为DTO
         List<PermissionDTO> dtoList = allPermissions.stream()
@@ -113,7 +114,9 @@ public class PermissionController {
 
     @GetMapping("/{id}")
     public ApiResponse<PermissionDTO> detail(@PathVariable Long id) {
-        Permission permission = permissionRepository.findById(id)
+        Permission permission = QueryBuilder.from(Permission.class)
+                .where(Permission::getId).eq(id)
+                .first()
                 .orElseThrow(() -> new IllegalArgumentException("权限不存在"));
         PermissionDTO dto = new PermissionDTO();
         dto.setId(permission.getId());

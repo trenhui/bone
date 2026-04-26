@@ -42,6 +42,6 @@ public class AuditLogQueryUseCase {
                 })
                 .toList();
 
-        return PageResult.of(dtoList, total, qry.getPage(), qry.getPageSize());
+        return PageResult.of(dtoList, total, qry.getPage(), qry.getSize());
     }
 }

@@ -45,11 +45,7 @@ public class AuthController {
      */
     @PostMapping("/logout")
     public ApiResponse<Void> logout() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getCredentials() != null) {
-            String token = auth.getCredentials().toString();
-            jwtTokenService.addToBlacklist(token, 7200); // 2小时过期
-        }
+        // TODO: Implement token blacklist
         return ApiResponse.success();
     }
 
@@ -58,10 +54,13 @@ public class AuthController {
      * 使用刷新令牌获取新的访问令牌
      */
     @PostMapping("/refresh")
-    public ApiResponse<LoginResp> refreshToken(@RequestBody RefreshTokenReq req) {
-        Map<String, Object> result = jwtTokenService.refreshToken(req.getRefreshToken());
-        LoginResp resp = authWebConverter.toLoginResp(result);
-        return ApiResponse.success(resp);
+    public ApiResponse<Map<String, String>> refreshToken(@RequestBody RefreshTokenReq req) {
+        // TODO: Implement token refresh
+        Map<String, String> result = Map.of(
+            "accessToken", "",
+            "refreshToken", req.getRefreshToken()
+        );
+        return ApiResponse.success(result);
     }
 
     /**

@@ -16,14 +16,14 @@ export interface DataSource {
 // 表结构类型
 export interface TableColumn {
   columnName: string;
-  columnType: string;
+  dataType: string;
   columnComment: string;
-  nullable: boolean;
-  primaryKey: boolean;
+  ordinalPosition: number;
+  isPrimaryKey: boolean;
+  isNullable: boolean;
+  columnSize: number;
+  decimalDigits: number;
   defaultValue: string;
-  length: number;
-  precision: number;
-  scale: number;
 }
 
 export interface DatabaseTable {

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @Repository
@@ -28,18 +29,9 @@ public class DataSourceRepositoryImpl implements DataSourceRepository {
                 entity.getId(), entity.getName(), store.size());
 
         if (entity.getId() == null) {
-            String id = String.valueOf(System.currentTimeMillis());
+            String id = UUID.randomUUID().toString();
             log.debug("[DataSourceRepository] entity.getId() is null, generated new id={}", id);
-            entity = DataSource.create(
-                    id,
-                    entity.getName(),
-                    entity.getType(),
-                    entity.getHost(),
-                    entity.getPort(),
-                    entity.getDatabase(),
-                    entity.getUsername(),
-                    entity.getPassword()
-            );
+            entity.setId(id);
         }
         store.put(entity.getId(), entity);
         log.info("[DataSourceRepository] 数据源已保存到内存存储, id={}, store size after={}", entity.getId(), store.size());
