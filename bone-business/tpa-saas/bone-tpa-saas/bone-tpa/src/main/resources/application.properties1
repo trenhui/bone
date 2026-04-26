@@ -1,0 +1,5 @@
+apollo.bootstrap.namespaces=application,IT.eureka,IT.boneAuth,IT.aliyunLogback
+apollo.bootstrap.enabled = true
+apollo.bootstrap.eagerLoad.enabled = true
+apollo.longPolling.initialDelayTimeOnError=8000000
+spring.autoconfigure.exclude=com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration

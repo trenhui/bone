@@ -1,0 +1,16 @@
+apollo.bootstrap.namespaces=application,IT.eureka,IT.boneAuth
+apollo.bootstrap.enabled = true
+apollo.bootstrap.eagerLoad.enabled = true
+apollo.longPolling.initialDelayTimeOnError=8000000
+
+
+server.port=38081
+server.servlet.context-path=/cfg
+logging.file.name=${user.home}/logs/${spring.application.name}.log
+feign.client.config.default.connectTimeout=5000
+feign.client.config.default.readTimeout=5000
+mybatis-plus.configuration.log-impl=org.apache.ibatis.logging.stdout.StdOutImpl
+spring.application.name=pageConfig-server
+
+
+sa-token.disable=true

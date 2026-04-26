@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper  namespace="com.bone.tpa.sdk.dao.impl.ClaimRepositoryImpl">
+    <select id="ss_claim_stakeholder">
+        SELECT ss_claim.id AS id, ss_claim_stakeholder.id AS childId
+        FROM ss_claim LEFT JOIN ss_claim_stakeholder
+        ON ss_claim.id = ss_claim_stakeholder.related_id
+        AND ss_claim_stakeholder.deleted=0
+        AND ss_claim_stakeholder.person_type=${personType}
+        WHERE ss_claim.deleted=0
+        AND ss_claim.id IN ${idList}
+    </select>
+
+    <select id="ss_claim_stakeholder_Count">
+        SELECT Count(*)
+        FROM ss_claim LEFT JOIN ss_claim_stakeholder
+        ON ss_claim.id = ss_claim_stakeholder.related_id
+        AND ss_claim_stakeholder.deleted=0
+        AND ss_claim_stakeholder.person_type=${personType}
+        WHERE ss_claim.deleted=0
+        AND ss_claim.id IN ${idList}
+    </select>
+
+    <select id="ss_claim_invoice">
+        SELECT ss_claim.id AS id, ss_claim_invoice.id AS childId
+        FROM ss_claim LEFT JOIN ss_claim_invoice
+        ON ss_claim.id = ss_claim_invoice.related_id
+        AND ss_claim_invoice.deleted=0
+        WHERE ss_claim.deleted=0
+        AND ss_claim.id IN ${idList}
+    </select>
+
+    <select id="ss_claim_invoice_Count">
+        SELECT Count(*)
+        FROM ss_claim LEFT JOIN ss_claim_invoice
+        ON ss_claim.id = ss_claim_invoice.related_id
+        AND ss_claim_invoice.deleted=0
+        WHERE ss_claim.deleted=0
+        AND ss_claim.id IN ${idList}
+    </select>
+
+</mapper>

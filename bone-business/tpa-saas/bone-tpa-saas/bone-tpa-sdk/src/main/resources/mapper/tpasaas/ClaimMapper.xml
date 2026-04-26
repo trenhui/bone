@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.bone.tpa.sdk.tpasaasdb.mapper.ClaimMapper">
+
+    <select id="pageClaimPushFailDO" resultType="com.bone.tpa.sdk.tpasaasdb.model.ClaimPushFailDO">
+        select
+            c.id as id,
+            c.error_type as errorType,
+            c.vip_sign as signType,
+            c.policy_no as policyNo,
+            c.batch_no as batchNo,
+            c.claim_no as claimNo,
+            c.update_time as failTime,
+            c.push_back_reason as pushBackReason,
+            s.name as outInsureName,
+            s.identity_type_cn as outInsureIdentityTypeCn,
+            s.identity_no as outInsureIdentityNo,
+            <!-- 主备不能联调查，只能单独查 -->
+            c.insure_name as insureName,
+            c.insurance_name as insuranceName,
+            c.branch_name as branchName,
+            c.auditing_operator_name as auditingOperatorName,
+            c.biz_identity_code as bizIdentityCode,
+            c.tenant_id as tenantId
+        from ss_claim c
+            left join ss_claim_stakeholder s on c.id = s.related_id and s.person_type = 'OUT_INSURE'
+        where c.deleted = 0
+        and c.pk_push_status = #{pkPushStatus}
+        and c.insurance_push_status = #{insurancePushStatus}
+        <if test="batchNo != null and batchNo != ''">
+            and c.batch_no = #{batchNo}
+        </if>
+        <if test="claimNo != null and claimNo != ''">
+            and c.claim_no = #{claimNo}
+        </if>
+        <if test="policyNo != null and policyNo != ''">
+            and c.policy_no = #{policyNo}
+        </if>
+        <if test="outInsureName != null and outInsureName != ''">
+            and s.name = #{outInsureName}
+        </if>
+        <if test="outInsureIdentityNo != null and outInsureIdentityNo != ''">
+            and s.identity_no = #{outInsureIdentityNo}
+        </if>
+        <if test="insureName != null and insureName != ''">
+            and c.insure_name = #{insureName}
+        </if>
+        <if test="insuranceName != null and insuranceName != ''">
+            and c.insurance_name = #{insuranceName}
+        </if>
+        <if test="branchName != null and branchName != ''">
+            and c.branch_name = #{branchName}
+        </if>
+        <if test="errorType != null and errorType != ''">
+            and c.error_type = #{errorType}
+        </if>
+        <if test="auditingOperatorName != null and auditingOperatorName != ''">
+            and c.auditing_operator_name = #{auditingOperatorName}
+        </if>
+        <if test="vipSign != null and vipSign != ''">
+            and c.vip_sign = #{vipSign}
+        </if>
+    </select>
+
+    <select id="pageClaimPushFailOperateDO" resultType="com.bone.tpa.sdk.tpasaasdb.model.ClaimPushFailOperateDO">
+        select
+        c.id as id,
+        c.error_type as errorType,
+        c.vip_sign as signType,
+        c.policy_no as policyNo,
+        c.batch_no as batchNo,
+        c.claim_no as claimNo,
+        c.update_time as failTime,
+        log.create_time as createTime,
+        c.push_back_reason as pushBackReason,
+        s.name as outInsureName,
+        s.identity_type_cn as outInsureIdentityTypeCn,
+        s.identity_no as outInsureIdentityNo,
+        <!-- 主备不能联调查，只能单独查 -->
+        c.insure_name as insureName,
+        c.insurance_name as insuranceName,
+        c.branch_name as branchName,
+        c.auditing_operator_name as auditingOperatorName
+        from claim_push_fail_operate_log log
+        inner join ss_claim c on log.claim_id = c.id
+        left join ss_claim_stakeholder s on c.id = s.related_id and s.person_type = 'OUT_INSURE'
+        where c.deleted = 0
+        and c.pk_push_status = #{pkPushStatus}
+        and c.insurance_push_status = #{insurancePushStatus}
+        <if test="batchNo != null and batchNo != ''">
+            and c.batch_no = #{batchNo}
+        </if>
+        <if test="claimNo != null and claimNo != ''">
+            and c.claim_no = #{claimNo}
+        </if>
+        <if test="policyNo != null and policyNo != ''">
+            and c.policy_no = #{policyNo}
+        </if>
+        <if test="outInsureName != null and outInsureName != ''">
+            and s.name = #{outInsureName}
+        </if>
+        <if test="outInsureIdentityNo != null and outInsureIdentityNo != ''">
+            and s.identity_no = #{outInsureIdentityNo}
+        </if>
+        <if test="insureName != null and insureName != ''">
+            and c.insure_name = #{insureName}
+        </if>
+        <if test="insuranceName != null and insuranceName != ''">
+            and c.insurance_name = #{insuranceName}
+        </if>
+        <if test="branchName != null and branchName != ''">
+            and c.branch_name = #{branchName}
+        </if>
+        <if test="errorType != null and errorType != ''">
+            and c.error_type = #{errorType}
+        </if>
+        <if test="auditingOperatorName != null and auditingOperatorName != ''">
+            and c.auditing_operator_name = #{auditingOperatorName}
+        </if>
+        <if test="vipSign != null and vipSign != ''">
+            and c.vip_sign = #{vipSign}
+        </if>
+    </select>
+
+</mapper>
