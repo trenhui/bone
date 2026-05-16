@@ -67,7 +67,7 @@ bone-engine/bone-extension-engine/bone-extension-sdk,bone-engine/bone-extension-
 | 模块设计 | [doc/design/modules/](doc/design/modules/) |
 | Agentic 工程 | [doc/Agenticx编程/Bone-Agentic-Engineering.md](doc/Agenticx编程/Bone-Agentic-Engineering.md) |
 | Metadata SDK | [bone-engine/bone-metadata-sdk/README.md](bone-engine/bone-metadata-sdk/README.md)（快速开始）→ [doc/](bone-engine/bone-metadata-sdk/doc/)（使用指南 + 最佳实践） |
-| 扩展引擎 | [bone-engine/bone-extension-engine/README.md](bone-engine/bone-extension-engine/README.md)、[docs/使用指南.md](bone-engine/bone-extension-engine/docs/使用指南.md) |
+| 扩展引擎 | [docs/使用指南.md](bone-engine/bone-extension-engine/docs/使用指南.md)（接入）→ [README](bone-engine/bone-extension-engine/README.md)（摘要） |
 | 新人 / AI 总览 | [AGENTS.md](AGENTS.md)、[doc/wiki/](doc/wiki/) |
 
 - 平台未完成项：[doc/wiki/07-P0-TODO看板.md](doc/wiki/07-P0-TODO看板.md)

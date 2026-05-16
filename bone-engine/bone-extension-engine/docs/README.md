@@ -2,8 +2,9 @@
 
 | 文档 | 说明 |
 |------|------|
-| [使用指南.md](./使用指南.md) | 安装、配置、扩展点开发与排错 |
-| [../bone-extension-sdk/README.md](../bone-extension-sdk/README.md) | SDK API 与注解参考 |
-| [../README.md](../README.md) | 引擎产品能力说明 |
+| [使用指南.md](./使用指南.md) | **主路径**：依赖、`@EnableExtensionPoints`、上手、配置与排错 |
+| [../README.md](../README.md) | 引擎产品摘要（能力、架构、场景、构建） |
+| [../bone-extension-sdk/README.md](../bone-extension-sdk/README.md) | SDK 参考手册（注解、示例、FAQ） |
+| [../bone-extension-studio/README.md](../bone-extension-studio/README.md) | Studio 持久化与 DDL |
 
-设计类草稿已从仓库移除；以源码与上述文档为准。
+设计类长文已从仓库移除；以源码与上表为准。

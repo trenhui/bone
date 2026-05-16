@@ -1,4 +1,13 @@
-# Bone Extension Framework
+# bone-extension-sdk
+
+> **推荐阅读顺序**  
+> 1. [docs/使用指南.md](../docs/使用指南.md) — 接入、配置、排错（**主路径**）  
+> 2. [../README.md](../README.md) — 引擎产品摘要与模块端口  
+> 3. **本文** — 注解说明、场景示例与 FAQ（参考手册，篇幅较长）
+
+---
+
+# Bone Extension Framework（参考手册）
 
 ## 📖 文档目录
 
