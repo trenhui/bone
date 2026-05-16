@@ -91,9 +91,10 @@ bone/                          # 根聚合模块
 │   ├── bone-file/             # 文件服务
 │   ├── bone-notification/     # 通知服务
 │   └── bone-integration/      # 平台级集成服务
-├── bone-business/             # 业务域模块（当前为骨架）
-│   ├── bone-admin/
-│   └── bone-trade/
+├── bone-business/             # 行业业务（聚合 POM 无子 module；含 tpa-saas/、tpa-sass-vue3/ 等）
+│   ├── tpa-saas/              # TPA 后端（独立 Maven 树）
+│   ├── tpa-sass-vue3/         # TPA 管理端 Vue3
+│   └── tpa-sass-react/        # TPA React 前端（可选）
 ├── bone-sdk/                  # 客户端 SDK
 │   ├── bone-client-sdk/
 │   └── bone-openapi-sdk/
@@ -259,7 +260,7 @@ adapter/web → application → domain ← infrastructure
 - `doc/architecture/bone-前端架构.md` — 前端微前端与工程约定（UI 见 `doc/architecture/frontend/frontend-ui-spec.md`）
 - `doc/design/modules/` — 模块详细设计（控制台、元数据、主数据、集成、扩展、IAM、系统、Generator、SmartMeta）
 - `doc/prd/BONE产品需求文档正式版.md` — 主 PRD；索引见 `doc/prd/README.md`
-- `doc/README.md` — 全库文档索引；`doc/DDD/`、`doc/arch/`、`doc/前端规范/` 已废止
+- `doc/README.md` — 全库文档索引；历史 `doc/DDD/`、`doc/arch/`、`doc/前端规范/`、`doc/数据库/` 已移除，架构见 `doc/architecture/`
 
 ---
 

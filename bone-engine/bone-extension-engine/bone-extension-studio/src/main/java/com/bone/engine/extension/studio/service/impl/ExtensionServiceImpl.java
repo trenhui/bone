@@ -1,184 +1,228 @@
 package com.bone.engine.extension.studio.service.impl;
 
+import com.bone.engine.extension.studio.domain.model.ExtPoint;
 import com.bone.engine.extension.studio.domain.model.Extension;
-import com.bone.engine.extension.studio.domain.repository.ExtensionEntityRepository;
-import com.bone.engine.extension.studio.domain.repository.ExtPointRepository;
+import com.bone.engine.extension.studio.domain.store.ExtPointStore;
+import com.bone.engine.extension.studio.domain.store.ExtensionStore;
 import com.bone.engine.extension.studio.service.ExtensionService;
+import com.bone.engine.extension.studio.sync.RuntimeExtensionSyncService;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.util.*;
+import org.springframework.util.StringUtils;
 
 @Service
 public class ExtensionServiceImpl implements ExtensionService {
-    
+
     private static final Logger log = LoggerFactory.getLogger(ExtensionServiceImpl.class);
-    
+
     @Autowired
-    private ExtensionEntityRepository extensionRepository;
-    
+    private ExtensionStore extensionStore;
+
     @Autowired
-    private ExtPointRepository extPointRepository;
-    
+    private ExtPointStore extPointStore;
+
+    @Autowired(required = false)
+    private RuntimeExtensionSyncService runtimeSyncService;
+
     @Override
     public List<Extension> findAllExtensions() {
-        List<Extension> result = new ArrayList<>();
-        try {
-            log.debug("findAllExtensions called");
-        } catch (Exception e) {
-            log.error("Error in findAllExtensions", e);
-        }
-        return result;
+        return extensionStore.findAll();
     }
-    
+
     @Override
     public Extension findExtensionById(Long id) {
-        try {
-            return extensionRepository.findById(id);
-        } catch (Exception e) {
-            log.error("Error in findExtensionById", e);
-            return null;
-        }
+        return extensionStore.findById(id);
     }
-    
+
     @Override
     public List<Extension> findExtensionsByExtPointId(Long extPointId) {
-        List<Extension> result = new ArrayList<>();
-        try {
-            log.debug("findExtensionsByExtPointId called for: {}", extPointId);
-        } catch (Exception e) {
-            log.error("Error in findExtensionsByExtPointId", e);
-        }
-        return result;
+        return extensionStore.findByExtPointId(extPointId);
     }
-    
+
     @Override
     public Extension saveExtension(Extension extension) {
-        try {
-            extensionRepository.save(extension);
-            return extension;
-        } catch (Exception e) {
-            log.error("Error in saveExtension", e);
-            return null;
+        if (extension.getExtPointId() != null && extPointStore.findById(extension.getExtPointId()) == null) {
+            throw new IllegalArgumentException("关联扩展点不存在: " + extension.getExtPointId());
         }
+        return extensionStore.save(extension);
     }
-    
+
     @Override
     public Extension updateExtension(Long id, Extension extension) {
-        try {
-            Extension existing = extensionRepository.findById(id);
-            if (existing != null) {
-                existing.setName(extension.getName());
-                existing.setDescription(extension.getDescription());
-                existing.setClassName(extension.getClassName());
-                existing.setTenantCode(extension.getTenantCode());
-                existing.setPriority(extension.getPriority());
-                existing.setConfig(extension.getConfig());
-                existing.setEnabled(extension.isEnabled());
-                extensionRepository.update(existing);
-                return existing;
-            }
-        } catch (Exception e) {
-            log.error("Error in updateExtension", e);
+        Extension existing = extensionStore.findById(id);
+        if (existing == null) {
+            return null;
         }
-        return null;
+        if (extension.getExtPointId() != null) {
+            existing.setExtPointId(extension.getExtPointId());
+        }
+        existing.setName(extension.getName());
+        existing.setDescription(extension.getDescription());
+        existing.setClassName(extension.getClassName());
+        existing.setTenantCode(extension.getTenantCode());
+        existing.setBizCode(extension.getBizCode());
+        existing.setUseCase(extension.getUseCase());
+        existing.setScenario(extension.getScenario());
+        existing.setUserGroup(extension.getUserGroup());
+        existing.setPriority(extension.getPriority());
+        existing.setConfig(extension.getConfig());
+        existing.setEnabled(extension.isEnabled());
+        extensionStore.update(existing);
+        return existing;
     }
-    
+
     @Override
     public void deleteExtension(Long id) {
-        try {
-            extensionRepository.deleteById(id);
-        } catch (Exception e) {
-            log.error("Error in deleteExtension", e);
+        Extension extension = extensionStore.findById(id);
+        if (extension != null && runtimeSyncService != null) {
+            ExtPoint point = extPointStore.findById(extension.getExtPointId());
+            runtimeSyncService.unpublish(extension, point);
         }
+        extensionStore.deleteById(id);
     }
-    
+
     @Override
     public Extension enableExtension(Long id, boolean enabled) {
-        try {
-            Extension extension = extensionRepository.findById(id);
-            if (extension != null) {
-                extension.setEnabled(enabled);
-                extensionRepository.update(extension);
-                return extension;
-            }
-        } catch (Exception e) {
-            log.error("Error in enableExtension", e);
+        Extension extension = extensionStore.findById(id);
+        if (extension == null) {
+            return null;
         }
-        return null;
+        extension.setEnabled(enabled);
+        extensionStore.update(extension);
+        return extension;
     }
-    
+
     @Override
     public Extension updateExtensionPriority(Long id, int priority) {
-        try {
-            Extension extension = extensionRepository.findById(id);
-            if (extension != null) {
-                extension.setPriority(priority);
-                extensionRepository.update(extension);
-                return extension;
-            }
-        } catch (Exception e) {
-            log.error("Error in updateExtensionPriority", e);
+        Extension extension = extensionStore.findById(id);
+        if (extension == null) {
+            return null;
         }
-        return null;
+        extension.setPriority(priority);
+        extensionStore.update(extension);
+        return extension;
     }
-    
+
     @Override
     public List<Extension> findExtensionsByTenantCode(String tenantCode) {
-        List<Extension> result = new ArrayList<>();
-        try {
-            log.debug("findExtensionsByTenantCode called for: {}", tenantCode);
-        } catch (Exception e) {
-            log.error("Error in findExtensionsByTenantCode", e);
-        }
-        return result;
+        return extensionStore.findByTenantCode(tenantCode);
     }
-    
+
     @Override
     public List<Extension> searchExtensions(String keyword) {
-        List<Extension> result = new ArrayList<>();
-        try {
-            log.debug("searchExtensions called for: {}", keyword);
-        } catch (Exception e) {
-            log.error("Error in searchExtensions", e);
-        }
-        return result;
+        return extensionStore.search(keyword);
     }
-    
+
     @Override
     public int registerExtensions() {
+        log.info("扩展实现 classpath 扫描暂未接入，返回 0");
         return 0;
     }
-    
+
     @Override
     public long getTotalExtensionCount() {
-        return 0;
+        return extensionStore.count();
     }
-    
+
     @Override
     public Map<String, Long> getExtensionStatsByStatus() {
-        return new HashMap<>();
+        Map<String, Long> stats = new HashMap<>();
+        long enabled =
+                extensionStore.findAll().stream().filter(Extension::isEnabled).count();
+        stats.put("enabled", enabled);
+        stats.put("disabled", extensionStore.count() - enabled);
+        return stats;
     }
-    
+
     @Override
     public Map<String, Long> getExtensionStatsByExtPoint() {
-        return new HashMap<>();
+        return extensionStore.findAll().stream()
+                .collect(Collectors.groupingBy(
+                        e -> e.getExtPointId() == null ? "unknown" : String.valueOf(e.getExtPointId()),
+                        Collectors.counting()));
     }
-    
+
     @Override
     public boolean validateExtension(Extension extension) {
-        return true;
+        if (runtimeSyncService == null) {
+            return StringUtils.hasText(extension.getClassName()) && extension.getExtPointId() != null;
+        }
+        return runtimeSyncService.validateForRuntime(extension).isEmpty();
     }
-    
+
     @Override
     public String getExtensionStatistics(Long id) {
-        return "{}";
+        Extension extension = extensionStore.findById(id);
+        if (extension == null) {
+            return "{}";
+        }
+        return String.format(
+                "{\"id\":%d,\"enabled\":%s,\"priority\":%d}",
+                extension.getId(), extension.isEnabled(), extension.getPriority());
     }
-    
+
     @Override
     public void resetExtensionStatistics(Long id) {
-        // do nothing
+        log.debug("resetExtensionStatistics id={}", id);
+    }
+
+    public boolean deployExtension(Long id) {
+        Extension extension = requireExtension(id);
+        extension.enable();
+        extensionStore.update(extension);
+        return publishRuntime(id);
+    }
+
+    public boolean undeployExtension(Long id) {
+        Extension extension = requireExtension(id);
+        if (runtimeSyncService != null) {
+            ExtPoint point = extPointStore.findById(extension.getExtPointId());
+            runtimeSyncService.unpublish(extension, point);
+        }
+        extension.disable();
+        extensionStore.update(extension);
+        return true;
+    }
+
+    public boolean publishRuntime(Long id) {
+        Extension extension = requireExtension(id);
+        if (!extension.isEnabled()) {
+            throw new IllegalStateException("插件未启用，无法发布到运行时");
+        }
+        if (runtimeSyncService == null) {
+            log.warn("RuntimeExtensionSyncService 未配置，跳过运行时发布");
+            return true;
+        }
+        List<String> errors = runtimeSyncService.validateForRuntime(extension);
+        if (!errors.isEmpty()) {
+            throw new IllegalArgumentException(String.join("; ", errors));
+        }
+        return runtimeSyncService.publish(extension);
+    }
+
+    public boolean rollbackExtension(Long id) {
+        Extension extension = requireExtension(id);
+        if (runtimeSyncService != null) {
+            ExtPoint point = extPointStore.findById(extension.getExtPointId());
+            runtimeSyncService.unpublish(extension, point);
+        }
+        extension.disable();
+        extensionStore.update(extension);
+        log.info("插件 {} 已回滚为禁用状态（版本表能力待接入）", id);
+        return true;
+    }
+
+    private Extension requireExtension(Long id) {
+        Extension extension = extensionStore.findById(id);
+        if (extension == null) {
+            throw new IllegalArgumentException("插件不存在: " + id);
+        }
+        return extension;
     }
 }

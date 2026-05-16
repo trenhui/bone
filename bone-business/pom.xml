@@ -16,8 +16,7 @@
 
     <name>${project.artifactId}</name>
     <description>
-        业务层 (business) - 领域模块实现
-        bone-admin: 管理模块。
-        bone-trade: 交易模块。
+        业务层 (business) - 行业包与业务域实现目录。
+        当前 Maven 子模块为空；TPA 等行业源码见 tpa-saas/、tpa-sass-vue3/ 等（独立构建）。
     </description>
 </project>

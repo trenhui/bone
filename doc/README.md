@@ -22,13 +22,7 @@
 | 前端 | [architecture/bone-前端架构.md](./architecture/bone-前端架构.md) |
 | UI | [architecture/frontend/frontend-ui-spec.md](./architecture/frontend/frontend-ui-spec.md) |
 
-## 历史目录（仅保留 README 跳转）
-
-| 目录 | 替代 |
-|------|------|
-| [arch/](./arch/)、[DDD/](./DDD/)、[前端规范/](./前端规范/)、[数据库/](./数据库/) | 见各目录 `README.md` → `doc/architecture/` |
-
-根目录 `PROJECT_SUMMARY.md`、`*_SUMMARY.md`、`*PLAN*` / `*ANALYSIS*` 草稿及 `dependency-tree.txt` 等**已删除**，需要时查 Git 历史。
+原 `doc/arch`、`doc/DDD`、`doc/前端规范`、`doc/数据库` 及根目录 `PROJECT_SUMMARY.md`、`*_SUMMARY.md`、`*PLAN*` / `*ANALYSIS*` 草稿等**已删除**；架构与规范统一见 [architecture/](./architecture/)，需要历史版本时查 Git。
 
 ## 其他
 

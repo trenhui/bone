@@ -8,14 +8,14 @@
 | 平台架构 | [`doc/architecture/`](../architecture/) | 总体架构、DDD 门禁、前端、数据库规范 |
 | 模块详设 | 本目录 | 单模块功能、数据模型、接口与工程结构（**规划 + As-Is 对照**） |
 
-**真源优先级**：默认端口、可运行模块边界以根目录 [**README.md**](../../../README.md)「端口与模块对照」及各模块 **`application.yml`** 为准；详设中的端口/API 若为历史规划示例，文中会标注「规划示例」。
+**真源优先级**：默认端口、可运行模块边界以 [**doc/wiki/03-本地开发与构建.md**](../../wiki/03-本地开发与构建.md)「常见服务端口」及各模块 **`application.yml`** 为准；详设中的端口/API 若为历史规划示例，文中会标注「规划示例」。
 
 ## 模块文档
 
 | 编号 | 文档 | 仓库模块（As-Is） | 默认端口（开发） | PRD |
 |------|------|-------------------|------------------|-----|
 | 1 | [控制台](./1.%20控制台与仪表盘模块详细设计方案.md) | **规划中**（无 `bone-console`；能力分散在 Shell + 各微应用） | — | §4.3 |
-| 2 | [元数据](./2.%20元数据管理模块详细设计方案.md) | `bone-metadata-server`、`bone-metadata-sdk` | 见 `application*.yml`（如 9001） | §4.4 |
+| 2 | [元数据](./2.%20元数据管理模块详细设计方案.md) | `bone-metadata-server`、`bone-metadata-sdk` | **9001**（`bone-metadata-server/application.yaml`） | §4.4 |
 | 3 | [主数据](./3.%20主数据管理模块详细设计方案.md) | `bone-platform/bone-masterdata` | **8080** | §4.5 |
 | 4 | [集成](./4.%20集成管理模块详细设计方案.md) | `bone-engine/bone-integration` / `bone-platform/bone-integration` | **30888** / **8085** | §4.7 |
 | 5 | [扩展](./5.%20扩展管理模块详细设计方案.md) | `bone-extension-engine`、`bone-extension-studio` | Studio **8080**；`bone-extension-app` **3008** | §4.6 |

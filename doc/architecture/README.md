@@ -24,14 +24,7 @@
 ## 其他交叉引用
 
 - **扩展模块详设**：[design/modules/5](../design/modules/5.%20扩展管理模块详细设计方案.md)
-- **端口与快速开始**：根 [README.md](../../README.md)、[wiki/03-本地开发与构建.md](../wiki/03-本地开发与构建.md)
+- **默认端口（As-Is）**：[wiki/03-本地开发与构建.md](../wiki/03-本地开发与构建.md)「常见服务端口」（与各模块 `application.yml` 对照）；快速开始见根 [README.md](../../README.md)
 - **全文档索引**：[doc/README.md](../README.md)
 
-## 占位跳转
-
-| 文件 | 说明 |
-|------|------|
-| [core-design.md](./core-design.md) | 指向 DDD / 总体架构 |
-| [deployment.md](./deployment.md) | 指向 wiki 部署与数据库规范 |
-
-原 `doc/arch`、`doc/前端规范`、`doc/DDD` 及各类 `*_SUMMARY.md` / `dependency-tree.txt` 等历史文件**已从仓库移除**；需要时见 Git 历史。
+部署与数据环境见 [wiki/04-数据与部署.md](../wiki/04-数据与部署.md)。原 `doc/arch`、`doc/前端规范`、`doc/DDD` 及各类 `*_SUMMARY.md` / `dependency-tree.txt` 等历史文件**已从仓库移除**；需要时见 Git 历史。

@@ -256,7 +256,7 @@ flowchart TD
 | 主数据服务 | 主数据实体、质量、记录、发布 | 同上（持久化与查询以 Metadata SDK 为主路径） |
 | 集成服务 | 连接器、流程、执行历史 | 编排引擎（如 Camel）与团队封装 |
 | 扩展服务 | 扩展点、插件元数据、发布回滚 | 类加载隔离 / Wasm 等为增强路线 |
-| IAM 服务 | 认证、授权、审计 | SA-Token / JWT / SSO 按模块落地 |
+| IAM 服务 | 认证、授权、审计 | `bone-platform/bone-iam`：**Spring Security + JWT**（见模块 `pom.xml`）；行业包等可另用 **SA-Token**（如 `bone-business/tpa-saas`），勿在文档中混为同一默认栈 |
 | 各引擎 | 领域内核计算 | 与平台服务 Jar 依赖或进程分离 |
 
 ### 4.5 典型数据流（五条）
@@ -386,7 +386,7 @@ flowchart TD
 | 框架 | `bone-framework/*` |
 | DDD 蓝图 | `bone-blueprint/`（是否纳入根 `pom.xml` 以仓库为准） |
 
-**易混点**：引擎与平台下可能存在同名业务域（如 integration），文档、日志与监控指标须用 **全限定模块名**。与根目录 **README** 对齐：`bone-iam` 默认 HTTP 端口以 **`bone-platform/bone-iam/src/main/resources/application.yml` 中 `server.port` 为准**（当前仓库示例为 **8081**），勿与历史文档中的 8080 混用。**各模块默认端口总表**见根目录 [README.md](../../README.md)「端口与模块对照」一节（与 `doc/wiki/03-本地开发与构建.md` 同步）。
+**易混点**：引擎与平台下可能存在同名业务域（如 integration），文档、日志与监控指标须用 **全限定模块名**。`bone-iam` 默认 HTTP 端口以 **`bone-platform/bone-iam/src/main/resources/application.yml` 中 `server.port` 为准**（当前仓库为 **8081**），勿与 `bone-masterdata` / `bone-extension-studio` 的 **8080** 混用。**各模块默认端口总表**见 [doc/wiki/03-本地开发与构建.md](../wiki/03-本地开发与构建.md)「常见服务端口」；根 [README.md](../../README.md) 快速开始中的 **8080** 为营销/演示入口示意，非 IAM 真源。
 
 ---
 
@@ -1096,7 +1096,7 @@ components:
 | 用户目录 | user-service | /api/v1/users | user_db | 8086 |
 | 网关 | bone-gateway | — | — | 8080 |
 
-**说明**：上表为 **目标微服务拆分示例**；当前仓库可为模块化单体或多进程混合，**以实际 `application.yml` 端口与模块边界为准**。
+**说明**：上表为 **目标微服务拆分示例**（端口与当前 As-Is **不一一对应**，例如规划态 `metadata-service:8081` 在仓库中常为 `bone-iam:8081`、`bone-metadata-server:9001`）。当前仓库为 **模块化单体 + 多进程可选** 混合形态，**以各模块 `application.yml` 与 [wiki/03](../wiki/03-本地开发与构建.md) 端口表为准**。
 
 ---
 
