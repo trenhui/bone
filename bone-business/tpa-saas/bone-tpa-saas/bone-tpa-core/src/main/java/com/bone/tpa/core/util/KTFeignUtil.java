@@ -29,7 +29,7 @@ public class KTFeignUtil {
             return token;
         }
 
-        String res = ktFeignClient.getToken(ktProperties.getACCESS_KEY(), ktProperties.getACCESS_SECRET());
+        String res = ktFeignClient.getToken(ktProperties.getAccessKey(), ktProperties.getAccessSecret());
         String tokenStr = KTResponseHandle.getToken(res);
         if (!StringUtils.hasText(tokenStr)) {
             throw new RuntimeException("获取token发生异常,快瞳响应:" + res);
@@ -46,7 +46,7 @@ public class KTFeignUtil {
             log.info("通过url参数调用快瞳接口发生异常:", e);
             if (e.getMessage().contains("[401]")) {
                 log.info("token失效,重新获取token并请求, imgUrl:{}", imgUrl);
-                String res = ktFeignClient.getToken(ktProperties.getACCESS_KEY(), ktProperties.getACCESS_SECRET());
+                String res = ktFeignClient.getToken(ktProperties.getAccessKey(), ktProperties.getAccessSecret());
                 String newToken = KTResponseHandle.getToken(res);
                 if (!StringUtils.hasText(newToken)) {
                     throw new RuntimeException("重新获取token发生异常,快瞳响应:" + res);
@@ -70,7 +70,7 @@ public class KTFeignUtil {
             log.info("通过文件参数调用快瞳接口发生异常:", e);
             if (e.getMessage().contains("[401]")) {
                 log.info("token失效，重新获取token并请求");
-                String res = ktFeignClient.getToken(ktProperties.getACCESS_KEY(), ktProperties.getACCESS_SECRET());
+                String res = ktFeignClient.getToken(ktProperties.getAccessKey(), ktProperties.getAccessSecret());
                 String newToken = KTResponseHandle.getToken(res);
                 if (!StringUtils.hasText(newToken)) {
                     throw new RuntimeException("重新获取token发生异常,快瞳响应:" + res);

@@ -153,10 +153,7 @@ bone-frontend/
 │   ├── bone-integration-app/  # 集成微应用（端口 3006）
 │   ├── bone-system-app/       # 系统管理微应用（端口 3007）
 │   ├── bone-extension-app/    # 扩展引擎微应用（端口 3008）
-│   ├── bone-generator-app/    # 代码生成器微应用
-│   ├── main/
-│   ├── sub-app-1/
-│   └── sub-app-2/
+│   └── bone-generator-app/    # 代码生成器微应用（端口 3009）
 └── packages/
     ├── core/
     │   └── event-bus/         # @bone/core/event-bus（独立构建 dist/）

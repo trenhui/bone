@@ -1,0 +1,4 @@
+# Auto Configure
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=
+  com.bone.metadata.engine.starter.config.MetadataEngineStarterAutoConfiguration
+  com.bone.metadata.engine.config.MetadataEngineAutoConfiguration

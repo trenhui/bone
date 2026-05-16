@@ -12,8 +12,8 @@
         <module>bone-extension-engine/bone-extension-sdk</module>
         <module>bone-extension-engine/bone-extension-studio</module>
         <module>bone-metadata-sdk</module>
-        <module>bone-metadata</module>
-        <module>bone-smartmeta</module>
+        <module>bone-metadata-server</module>
+        <module>bone-metadata-engine</module>
         <module>bone-integration</module>
 
     </modules>
@@ -21,11 +21,8 @@
     <packaging>pom</packaging>
     <name>${project.artifactId}</name>
     <description>
-        核心引擎层，包含四大引擎：
-        bone-metadata: 元数据模型、解析、代码生成。
-        bone-extension: 扩展点、SPI加载、插件管理、生命周期。
-        bone-integration: 连接器、数据转换、路由、流程编排。
-        bone-workflow: BPMN、状态机、规则引擎。
+        核心引擎层：bone-metadata-sdk / bone-metadata-server / bone-metadata-engine、
+        bone-extension、bone-integration 等。
     </description>
 
 </project>

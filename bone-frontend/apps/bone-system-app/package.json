@@ -11,6 +11,7 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@bone/ui": "1.0.0",
     "@ant-design/icons": "^6.1.1",
     "@ant-design/pro-components": "^2.8.10",
     "antd": "^5.27.6",

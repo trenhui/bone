@@ -1,0 +1,27 @@
+{
+  "name": "@bone/ui",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BONE design system and themed Ant Design provider",
+  "type": "module",
+  "main": "./design-system/src/index.ts",
+  "types": "./design-system/src/index.ts",
+  "exports": {
+    ".": "./design-system/src/index.ts",
+    "./theme": "./design-system/src/theme/index.ts",
+    "./tokens": "./design-system/src/tokens/index.ts"
+  },
+  "dependencies": {
+    "antd": "^5.12.8"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.43",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "typescript": "^5.2.2"
+  }
+}

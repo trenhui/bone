@@ -9,7 +9,7 @@
 ```mermaid
 graph TB
     subgraph "控制面 Control Plane"
-        A[bone-extension-studio-ui] --> B[bone-extension-studio]
+        A[bone-extension-app 微前端] --> B[bone-extension-studio]
     end
     
     subgraph "数据面 Data Plane"
@@ -1549,10 +1549,12 @@ logging:
 
 ---
 
-## 🎨 **3. bone-extension-studio-ui - React管理界面**
+## 🎨 **3. 扩展管理控制台 UI（已迁移）**
 
-### **🎯 模块定位**
-**现代化、响应式React管理控制台**，为Bone扩展引擎提供专业的管理界面。
+> **已废止**：`bone-extension-studio-ui` 目录已删除。产品化 UI 以 **`bone-frontend/apps/bone-extension-app`**（Qiankun 微应用，端口 3008）为准，对接 `bone-extension-studio` 的 `/api/extension/*`。
+
+### **🎯 模块定位（历史参考）**
+**现代化、响应式 React 管理控制台**，为 Bone 扩展引擎提供专业的管理界面。
 
 ### **📁 完整项目结构**
 ```
@@ -2479,20 +2481,7 @@ export default defineConfig({
 version: '3.8'
 
 services:
-  # 前端UI服务
-  bone-extension-studio-ui:
-    image: bone/extension-studio-ui:${VERSION}
-    build:
-      context: ./bone-extension-studio-ui
-      dockerfile: Dockerfile
-    ports:
-      - "80:80"
-    environment:
-      - API_BASE_URL=http://bone-extension-studio:8080
-    depends_on:
-      - bone-extension-studio
-    networks:
-      - bone-network
+  # 前端 UI：构建 bone-frontend/apps/bone-extension-app，静态资源由网关或 Shell 托管
 
   # 管理后端服务
   bone-extension-studio:

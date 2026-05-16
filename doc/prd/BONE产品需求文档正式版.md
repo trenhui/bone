@@ -1,11 +1,13 @@
 # BONE 产品需求文档（PRD）
 
-## —— 企业级全栈开源快速开发平台 · 正式版
+## —— 企业级全栈开源快速开发平台 · 正式版（v2.1 修订，基线 v2.0 + 文档真源对齐）
 
+> **产品口号（与根目录 README 一致）**：**Build Once, Natively Everywhere** — 元数据驱动，一次构建、多端运行。  
+> **真源优先级**：**开源许可、仓库地址、默认端口与快速开始** 以根目录 **README.md**、**LICENSE** 及 **`bone-parent` / 各模块 `application.yml`** 为准；本 PRD 若与之冲突，以仓库为准并应回写修订本 PRD。  
 > **文档性质**：正式产品需求文档，可直接指导研发排期、测试用例编写  
 > **适用产品**：BONE企业级全栈开源快速开发平台  
 > **对标标准**：业界最佳实践、字节跳动 DRF、腾讯 TAPD、阿里云效、OutSystems / Mendix 元数据驱动架构  
-> **版本**：v2.0 Final | **发布日期**：2026‑04‑19 | **文档状态**：✅ 已发布 | **密级**：内部机密  
+> **版本**：v2.1（v2.0 Final 修订稿） | **发布日期**：2026‑04‑19 | **最近修订**：2026‑05‑16 | **文档状态**：✅ 已发布 | **密级**：内部机密  
 
 ---
 
@@ -15,7 +17,7 @@
 |------|------|
 | 产品名称 | BONE企业级全栈开源快速开发平台 |
 | 产品代号 | BONE |
-| 文档版本 | v2.0 Final |
+| 文档版本 | v2.1（v2.0 Final 修订稿，与 README/LICENSE 对齐） |
 | 文档状态 | ✅ 已发布 |
 | 密级 | 内部机密 |
 | 产品经理 | [姓名] |
@@ -36,6 +38,7 @@
 | v1.0 | 2026-04-19 | 产品全组 | 全员 | 完整版：补充详细功能需求、非功能需求、发布策略 | Final |
 | v1.1 | 2026-04-19 | 产品+架构组 | 技术委 | 结构级优化：三层强约束体系、统一领域模型、收敛为三大核心能力 | Final |
 | **v2.0** | **2026-04-19** | **产品+架构组** | **技术委** | **正式版**：增加多租户、K8s部署、审计日志WORM存储、工期调整、质量门禁、开源社区策略、自研SDK优化指南、统一实体模型 | **Final** |
+| v2.1 | 2026-05-16 | 产品+文档组 | 技术委 | 恢复 §7～§12 正文；与 README/MIT/Gitee monorepo、Bone-DDD 持久化 P0、架构/详设索引对齐；§1.2 补充「三大能力 ↔ 四大引擎」映射 | Final |
 
 **评审记录**  
 - T0 架构评审：2026-04-16 ✅ 通过  
@@ -131,11 +134,26 @@
 
 **市场机会**：2026年中国企业级低代码/元数据驱动开发平台市场规模预计**85亿元**，年复合增长率52%。金融、制造、政务三大行业占比超65%，且愿意为“快速开发+标准化架构”支付**250%溢价**（客单价可达80万/套以上）。当前市场处于快速发展期，存在显著的市场机会。开源元数据平台如 NocoBase 等逐渐兴起，但企业级集成和主数据治理能力较弱，BONE 可填补这一空白。
 
+> **数据口径（业界惯例）**：上段量化指标为**内部研判与叙事辅助**；若用于对外商务、投融资或监管材料，须替换为**可引用来源的第三方数据**或标注为估算区间，避免将 PRD 当作单一事实源。
+
 ### 1.2 产品愿景与价值主张
 
 **产品愿景**：构建元数据驱动的企业开发平台——通过三大核心能力（应用生成、企业集成、扩展运行时），将企业应用开发从“代码驱动”转变为“模型驱动”，实现开发效率的数量级提升。
 
 **一句话定位**：面向企业级场景的、**开源**的、元数据驱动的快速开发平台，提供应用生成、企业集成和扩展运行时三大核心能力。
+
+#### 与 README「四大引擎」的对应（避免「三大 vs 四大」歧义）
+
+根目录 README 用 **四大引擎** 描述技术闭环（数据—质量—功能—生态）；本 PRD 用 **三大核心能力** 描述立项与交付边界。二者**分工不同、互为补充**，映射如下：
+
+| PRD 三大核心能力（产品叙事） | README 技术引擎 / 能力域 |
+|------------------------------|---------------------------|
+| **应用生成** | **智能元数据引擎**（动态建模、代码生成、热更新等）+ 控制台入口 |
+| **企业集成** | **集成引擎**（连接器、流程编排）；**主数据与质量**由 **企业主数据平台** 独立承载，在消费链路与集成侧协同 |
+| **扩展运行时** | **ExtPoint 扩展引擎**（扩展点、插件生命周期、隔离与观测） |
+| （横切，贯穿上表） | **IAM / 审计 / 多租户（商业版）/ 系统管理** — 企业级安全与运维基线 |
+
+总体技术边界与非功能基线仍以 **[doc/architecture/BONE-总体架构设计方案.md](../architecture/BONE-总体架构设计方案.md)** 为准。
 
 **核心价值主张矩阵**：
 
@@ -1341,7 +1359,376 @@ flowchart TD
     IntegrationService --> Registry
     IAMService --> Registry
     
-    AdminService --> Config
-    MetadataService --> Config
-    MasterDataService --> Config
-    ExtensionService --> Config
+    IntegrationService --> Config
+    IAMService --> Config
+    
+    AdminService --> Monitor
+    MetadataService --> Monitor
+    MasterDataService --> Monitor
+    ExtensionService --> Monitor
+    IntegrationService --> Monitor
+    IAMService --> Monitor
+```
+
+**三层强约束体系说明**：
+- **前端层（UI）**：负责用户界面展示和交互，不直接与引擎层交互
+- **应用层（Service）**：负责业务逻辑处理，作为前端和引擎之间的桥梁
+- **引擎层（Engine）**：负责核心计算和处理，纯计算层，不直接与前端交互
+- **例外**：读操作可绕过 Engine 层，Service 可直接查询缓存或只读从库，以提升性能。
+
+这种分层架构解决了职责混乱、双写和依赖反转问题，确保系统的可维护性和可扩展性。
+
+### 7.2 技术选型（含自研SDK优化指南）
+
+| 分类 | 技术 | 版本 | 用途 |
+|------|------|------|------|
+| 前端框架 | React | 18+ | 构建用户界面 |
+| 构建工具 | Vite | 4.4+ | 前端构建和开发服务器 |
+| UI组件库 | Ant Design | 5.12+ | 提供UI组件 |
+| 跨端框架 | React Native | 0.74+ | 实现多端适配 |
+| 后端框架 | Spring Boot | 3.2+ | 构建后端服务 |
+| 微服务框架 | Spring Cloud | 2023+ | 微服务治理 |
+| **数据持久化** | **Bone Metadata SDK（自研）** | **2.0** | **已实现，提供元数据实体CRUD、动态建表、多数据库适配** |
+| 服务注册与发现 | Nacos | 2.2+ | 服务管理 |
+| 服务熔断与限流 | Sentinel | 1.8+ | 系统保护 |
+| 消息队列 | RocketMQ | 5.1+ | 异步通信 |
+| 分布式事务 | Seata | 1.6+ | 事务一致性 |
+| 缓存 | Redis | 7.0+ | 数据缓存 |
+| 数据库 | MySQL | 8.0+ | 主数据库（开发阶段） |
+| 数据库（信创） | 达梦8 / 人大金仓 | - | 商业版适配 |
+| 集成框架 | Apache Camel | 4.0+ | 系统集成 |
+| 规则引擎 | LiteFlow | 2.10+ | 业务规则管理 |
+| **容器编排** | **Kubernetes** | **1.24+** | **生产部署** |
+| **监控** | **Prometheus + Grafana** | **latest** | **系统监控** |
+
+**Bone Metadata SDK 优化指南**（基于已实现版本）：
+- **连接池管理**：使用 HikariCP，支持动态配置最大连接数、最小空闲连接、超时时间。
+- **二级缓存**：集成 Redis，支持实体级缓存失效策略（TTL 可配置）。
+- **多数据库方言**：已实现 MySQL、PostgreSQL 方言，信创数据库通过 SQL 重写适配（性能损耗 <30% 可接受）。
+- **分页优化**：支持 `offset/limit` 和 `cursor` 两种分页模式，大数据量场景推荐 cursor。
+- **动态建表**：根据实体定义自动创建表、索引、外键，支持增量迁移。
+- **性能监控**：集成 Micrometer，暴露 SQL 执行时间、慢查询统计（阈值 >200ms）。
+- **遗留迁移**：个别模块若仍保留 MyBatis 路径，仅作 **ADR 登记的遗留迁移**；新模块默认 **Bone Metadata SDK**（见《Bone-DDD》§5.1.1），不得以 MyBatis-Plus 作为默认栈。
+
+### 7.3 核心API定义
+
+**元数据服务 API**：
+- `GET /api/metadata/entities` - 获取业务实体列表
+- `POST /api/metadata/entities` - 创建业务实体
+- `PUT /api/metadata/entities/{id}` - 更新业务实体
+- `DELETE /api/metadata/entities/{id}` - 删除业务实体
+- `POST /api/metadata/generate` - 生成代码
+- `GET /api/metadata/generate/{id}` - 获取生成结果
+
+**主数据服务 API**：
+- `GET /api/masterdata/entities` - 获取主数据实体列表
+- `POST /api/masterdata/entities` - 创建主数据实体
+- `PUT /api/masterdata/entities/{id}` - 更新主数据实体
+- `GET /api/masterdata/quality` - 获取数据质量报告
+
+**扩展服务 API**：
+- `GET /api/extension/points` - 获取扩展点列表
+- `POST /api/extension/plugins` - 上传插件
+- `PUT /api/extension/plugins/{id}` - 更新插件
+- `POST /api/extension/plugins/{id}/deploy` - 部署插件
+- `POST /api/extension/plugins/{id}/rollback` - 回滚插件
+
+**集成服务 API**：
+- `GET /api/integration/connectors` - 获取连接器列表
+- `POST /api/integration/flows` - 创建集成流程
+- `PUT /api/integration/flows/{id}` - 更新集成流程
+- `POST /api/integration/flows/{id}/test` - 测试集成流程
+
+**IAM服务 API**：
+- `GET /api/iam/users` - 获取用户列表
+- `POST /api/iam/users` - 创建用户
+- `PUT /api/iam/users/{id}` - 更新用户
+- `DELETE /api/iam/users/{id}` - 删除用户
+- `GET /api/iam/roles` - 获取角色列表
+- `POST /api/iam/roles` - 创建角色
+- `PUT /api/iam/roles/{id}` - 更新角色
+- `POST /api/iam/roles/{id}/permissions` - 为角色分配权限
+- `GET /api/iam/permissions` - 获取权限列表
+- `POST /api/iam/sso/config` - 配置SSO（商业版）
+- `GET /api/iam/audit/logs` - 获取审计日志
+- `POST /api/iam/tenants` - 创建租户（商业版）
+
+### 7.4 数据模型
+
+#### 7.4.1 统一领域模型（Core Domain Model）
+
+| 模型 | 描述 | 用途 |
+|------|------|------|
+| **Entity** | 业务实体 | 定义业务对象的结构和属性，包含 entity_type（BUSINESS/MASTER_DATA） |
+| **Attribute** | 属性 | 定义实体的字段和特性 |
+| **Relation** | 关系 | 定义实体之间的关联关系 |
+| **Policy** | 策略 | 定义业务规则和权限控制 |
+| **Event** | 事件 | 定义系统事件和触发机制 |
+| **ExtensionPoint** | 扩展点 | 定义系统的可扩展接口 |
+
+#### 7.4.2 功能域模型
+
+**元数据模型**：
+- Entity: 业务实体（id, name, entity_type, status, version, tenant_id）
+- Field: 字段（id, entity_id, name, type, required, default_value）
+- Relationship: 关系（id, source_entity_id, target_entity_id, type）
+- ValidationRule: 校验规则（id, entity_id, field_id, rule_type, rule_params）
+- CodeTemplate: 代码模板（id, name, type, content, version）
+
+**主数据模型**：
+- MasterDataEntity: 主数据实体（继承 Entity）
+- MasterDataRecord: 主数据记录（id, entity_id, data_json, status, tenant_id）
+- DataQualityRule: 数据质量规则（id, entity_id, rule_type, params）
+- DataQualityResult: 数据质量结果（id, rule_id, execution_time, pass_count, fail_count）
+
+**扩展模型**：
+- ExtensionPoint: 扩展点（id, name, target, type, enabled）
+- ExtensionPlugin: 扩展插件（id, name, version, jar_path, status, tenant_id）
+- ExtensionConfig: 扩展配置（id, plugin_id, config_json）
+- ExtensionExecution: 扩展执行记录（id, plugin_id, execution_time, duration, success）
+- Sandbox: 插件沙箱（资源限制配置）
+
+**集成模型**：
+- Connector: 连接器（id, name, type, config, status, tenant_id）
+- IntegrationFlow: 集成流程（id, name, definition_json, status, tenant_id）
+- FlowNode: 流程节点（id, flow_id, node_type, config）
+- FlowConnection: 流程连接（id, flow_id, source_node_id, target_node_id）
+- IntegrationLog: 集成日志（id, flow_id, execution_id, log_level, message, timestamp）
+
+**IAM模型**：
+- User: 用户（id, username, email, password_hash, status, tenant_id）
+- Role: 角色（id, name, description, tenant_id）
+- Permission: 权限（id, code, name, type）
+- Policy: 策略（id, role_id, permission_id, effect）
+- AuditLog: 审计日志（id, tenant_id, user_id, action, resource_id, params, result, ip, user_agent, timestamp）
+- Tenant: 租户（id, name, admin_email, quota_config, status）
+
+### 7.5 部署方案
+
+- **开发环境**：Docker Compose，包含 BONE 所有服务 + MySQL + Redis + Nacos。
+- **测试环境**：Kubernetes（minikube 或云厂商托管），使用 Helm Chart 部署。
+- **生产环境**：Kubernetes 集群，多可用区部署，使用 Helm Chart 配置高可用（3 个副本 + HPA）。
+
+### 7.6 配置管理
+
+- **环境变量**：使用环境变量管理配置（数据库连接、Redis 地址等）。
+- **配置中心**：使用 Nacos 作为配置中心，支持动态刷新。
+- **密钥管理**：使用 Kubernetes Secret 或外部密钥管理服务（如 HashiCorp Vault）存储敏感信息。
+
+### 7.7 监控与告警
+
+- **系统监控**：使用 Prometheus 采集指标，Grafana 展示仪表盘。
+- **链路追踪**：使用 SkyWalking 实现全链路追踪。
+- **告警机制**：Alertmanager 配置告警规则，对接钉钉/企业微信/邮件。
+
+### 7.8 架构决策记录(ADR)
+
+| 决策ID | 决策内容 | 背景 | 最终选择 | 影响范围 |
+|--------|----------|------|----------|----------|
+| ADR-001 | 选择React作为前端框架 | 前端技术选型 | React 18+ | 前端开发 |
+| ADR-002 | 使用自研 Bone Metadata SDK | 数据持久化方案 | Bone Metadata SDK 2.0 | 数据访问层 |
+| ADR-003 | 采用微服务架构 | 系统架构设计 | Spring Cloud 2023+ | 整体架构 |
+| ADR-004 | 支持多数据库 | 数据库选型 | MySQL 8.0+ 作为主要数据库 | 数据存储 |
+| ADR-005 | 采用三层强约束体系 | 系统架构设计 | UI → Service → Engine，读操作可 bypass | 整体架构 |
+| ADR-006 | 引入统一领域模型 | 数据模型设计 | Entity、Attribute、Relation、Policy、Event、ExtensionPoint | 全系统 |
+| ADR-007 | 收敛为三大核心能力 | 产品定位 | 应用生成、企业集成、扩展运行时 | 产品战略 |
+| ADR-008 | IAM升级为Policy Decision Engine | 安全架构 | Policy Decision Engine | 安全模块 |
+| ADR-009 | 插件系统增强 | 扩展架构 | Sandbox + ClassLoader隔离 + 版本回滚 | 扩展模块 |
+| ADR-010 | 支持多租户行级隔离 | 大型集团客户需求 | 共享 Schema + tenant_id 过滤 | 所有服务、数据层 |
+| ADR-011 | 采用 Kubernetes 为官方部署平台 | 企业运维标准化 | Helm Chart + HPA | 运维、部署 |
+| ADR-012 | 审计日志使用 WORM 对象存储（商业版） | 金融合规要求 | MinIO + 对象锁定 | IAM 模块 |
+
+---
+
+## 8. 发布与灰度策略
+
+### 8.1 分阶段发布里程碑
+
+| 阶段 | 时间 | 核心功能 | 验收标准 |
+|------|------|----------|----------|
+| **MVP** | 2026年Q2（6月） | 元数据管理（实体、字段、关系）、代码生成（默认模板）、IAM（用户/角色/权限）、控制台、K8s Helm Chart | 功能跑通，可独立部署，文档基础版 |
+| **阶段0：基础平台** | 2026年Q3（7-9月） | 模板管理、审计日志（DB版）、系统配置、监控告警、扩展点管理 | 功能完整，性能达标，可生产试用 |
+| **阶段1：核心能力** | 2026年Q4（10-12月） | 主数据管理（实体+质量规则）、插件管理（含回滚）、多租户（行级隔离） | 功能完整，性能达标 |
+| **阶段2：集成能力** | 2027年Q1（1-3月） | 集成管理（全连接器+流程编排）、信创数据库适配（达梦/金仓） | 功能完整，性能达标 |
+| **阶段3：生态扩展** | 2027年Q2（4-6月） | 插件市场、社区运营、商业版高级特性（SSO、WORM审计） | 生态完善，文档完整 |
+
+### 8.2 灰度发布计划
+
+| 阶段 | 灰度比例 | 目标用户 | 验证重点 |
+|------|----------|----------|----------|
+| **灰度1** | 10% | 内部测试用户 | 系统稳定性 |
+| **灰度2** | 30% | 友好客户 | 功能完整性 |
+| **灰度3** | 60% | 部分客户 | 性能与扩展性 |
+| **灰度4** | 100% | 所有客户 | 全面验证 |
+
+### 8.3 准入与退出条件
+
+**准入条件**：
+- 功能测试通过率 ≥95%
+- 性能测试达标（P99延迟不超过SLO的120%）
+- 安全测试通过（OWASP无高危）
+- 代码覆盖率达标（单元≥70%，集成≥50%）
+- 文档完整（用户手册、API文档、部署指南）
+
+**退出条件**：
+- 严重bug数量 ≤3个
+- 关键功能无P0故障
+- 性能指标达标
+- 用户反馈良好
+
+### 8.4 回滚策略
+
+- **代码回滚**：自动/手动回滚，目标 ≤10分钟。
+- **数据库回滚**：所有 DDL 变更必须提供回滚 SQL；采用蓝绿部署或金丝雀发布，数据层变更向后兼容（新增字段允许 NULL）。
+- **回滚流程**：停止新流量 → 回滚代码 → 执行数据库回滚（如需）→ 恢复数据 → 验证系统 → 恢复流量。
+
+---
+
+## 9. 实施计划
+
+### 9.1 开发阶段
+
+1. **MVP冲刺（2个月，4-5月）**：元数据管理核心 + 代码生成（默认模板）+ IAM 基础 + 控制台 + K8s Helm Chart，不依赖外部消息队列（可选）。
+2. **阶段0（3个月，7-9月）**：完善模板管理、审计日志（DB版）、系统配置、监控告警、扩展点管理。
+3. **阶段1（3个月，10-12月）**：主数据管理、插件管理（含回滚）、多租户（行级隔离）。
+4. **阶段2（3个月，1-3月）**：集成管理（Camel 集成）、信创数据库适配（达梦/金仓）。
+5. **阶段3（3个月，4-6月）**：插件生态、社区建设、商业版打包（SSO、WORM审计）。
+
+### 9.2 上线计划
+
+1. **内部测试**：在内部环境进行全面测试（MVP后）。
+2. **公测**：邀请部分用户进行公测（阶段0后）。
+3. **正式上线**：发布正式版本（阶段1后）。
+4. **持续迭代**：根据用户反馈进行持续优化。
+
+---
+
+## 10. 风险与依赖
+
+### 10.1 风险登记册
+
+| 风险ID | 风险描述 | 影响等级 | 可能性 | 缓解措施 |
+|--------|----------|----------|----------|----------|
+| R001 | 元数据模型复杂度高，用户学习成本大 | 中 | 中 | 提供详细文档和视频教程，开发向导式界面 |
+| R002 | 代码生成质量不满足复杂业务需求 | 高 | 中 | 提供模板定制能力，支持代码后处理 |
+| R003 | 系统集成复杂度高，连接器适配困难 | 中 | 中 | 提供标准连接器库，支持自定义连接器 |
+| R004 | 性能瓶颈，大规模数据处理慢 | 高 | 中 | 优化数据库查询，引入缓存机制，支持异步处理 |
+| R005 | 安全漏洞，权限控制不严格 | 高 | 低 | 定期安全审计，实施最小权限原则，加密敏感数据 |
+| R006 | 自研 Bone Metadata SDK 性能或稳定性不足 | 高 | 中 | 持续性能压测，增加监控指标；遗留模块按 ADR 迁移，新代码禁止回退为 MyBatis-Plus 默认栈 |
+| R007 | 多租户数据隔离实现复杂，可能引入性能损耗 | 中 | 中 | 初期采用行级隔离，提供租户级性能监控，必要时升级到 Schema 隔离 |
+| R008 | 开源社区活跃度低，生态建设失败 | 中 | 中 | 设立社区经理，定期举办活动，激励贡献者，与高校合作 |
+
+### 10.2 外部依赖清单
+
+| 依赖项 | 版本要求 | 用途 | 风险等级 |
+|--------|----------|------|----------|
+| Spring Boot | 3.2+ | 后端框架 | 低 |
+| Spring Cloud | 2023+ | 微服务框架 | 低 |
+| Bone Metadata SDK | 2.0+ | 数据持久化 | 中 |
+| Nacos | 2.2+ | 服务注册与发现 | 中 |
+| RocketMQ | 5.1+ | 消息队列 | 中 |
+| Redis | 7.0+ | 缓存 | 中 |
+| MySQL | 8.0+ | 关系型数据库 | 中 |
+| PostgreSQL | 15.0+ | 关系型数据库 | 中 |
+| Apache Camel | 4.0+ | 系统集成 | 中 |
+| React | 18+ | 前端框架 | 低 |
+| Ant Design | 5.12+ | UI组件库 | 低 |
+| Kubernetes | 1.24+ | 容器编排 | 中 |
+| Prometheus | latest | 监控 | 低 |
+
+---
+
+## 11. 开源与社区策略
+
+### 11.1 许可证
+
+- **仓库默认可用许可**：以根目录 **[LICENSE](../../LICENSE)** 为准（当前为 **MIT**）。
+- **商业版 / 专有插件**：可另行约定专有许可证，须在发行物中明示，且不得与开源主干许可混淆。
+
+### 11.2 代码仓库与治理
+
+- **主仓库**：[Gitee `meishan315/bone`](https://gitee.com/meishan315/bone)（**Maven + npm workspaces 单体 monorepo**，见根 README）。
+- **模块划分**：`bone-framework`、`bone-engine`、`bone-platform`、`bone-frontend`、`bone-blueprint` 等，以仓库目录与 `pom.xml` 聚合为准。
+- **治理模式**：BDFL（产品经理最终决策）+ 技术委员会（核心贡献者）；贡献流程见 [CONTRIBUTING.md](../../CONTRIBUTING.md)。
+
+### 11.3 社区激励计划
+
+- 贡献者等级：Contributor → Committer → Maintainer。
+- 奖励：GitHub 徽章、技术书籍、免费商业版授权、年度大会门票。
+- 定期举办线上贡献者会议、Bug 悬赏活动（每季度一次）。
+
+### 11.4 文档与示例
+
+- **仓库内权威**：`doc/architecture/`（总体架构、DDD）、`doc/prd/`（本 PRD）、`doc/design/`（模块详设）、`doc/wiki/`（新人指引）、根 [README.md](../../README.md)。
+- **示例应用**：`bone-blueprint`（订单 DDD 参考实现）；对外官网/文档站点为规划能力，以实际发布为准。
+
+---
+
+## 12. 附录
+
+### 12.1 术语表
+
+| 术语 | 解释 |
+|------|------|
+| 元数据 | 描述数据的数据，如实体结构、字段定义、关系等 |
+| 主数据 | 企业核心业务数据，如客户、产品、供应商等 |
+| 扩展点 | 系统中可被插件扩展的接口或事件 |
+| 连接器 | 与外部系统通信的组件，如REST、SOAP等 |
+| 集成流程 | 定义系统间数据流转的流程 |
+| IAM | 身份与访问管理，负责用户认证和授权 |
+| RBAC | 基于角色的访问控制，通过角色分配权限 |
+| JWT | JSON Web Token，用于无状态认证 |
+| SLA | 服务级别协议，定义服务的可用性和性能 |
+| RTO | 恢复时间目标，系统从故障中恢复的时间 |
+| RPO | 恢复点目标，系统故障后数据丢失的时间 |
+| 多租户 | 多个组织共享同一套系统，但数据相互隔离 |
+| WORM | Write Once Read Many，一次写入多次读取，用于合规存储 |
+| Helm Chart | Kubernetes 的包管理工具 |
+
+### 12.2 错误码列表
+
+| 错误码 | 描述 | 解决方案 |
+|--------|------|----------|
+| 400 | 请求参数错误 | 检查请求参数格式和值 |
+| 401 | 未授权 | 检查用户凭证 |
+| 403 | 禁止访问 | 检查用户权限 |
+| 404 | 资源不存在 | 检查资源ID是否正确 |
+| 409 | 资源冲突 | 如实体名称已存在 |
+| 500 | 服务器内部错误 | 查看系统日志，联系管理员 |
+| 502 | 网关错误 | 检查服务是否可用 |
+| 503 | 服务不可用 | 检查服务状态 |
+| 504 | 网关超时 | 检查服务响应时间 |
+| **META_001** | 实体名称重复 | 使用其他名称 |
+| **PLUGIN_001** | 插件部署失败 | 检查插件包格式和依赖 |
+| **AUDIT_001** | 审计日志写入失败 | 检查对象存储配置 |
+
+### 12.3 参考文档
+
+| 文档名称 | 版本 | 用途 |
+|----------|------|------|
+| 根目录 README.md（Bone — Build Once, Natively Everywhere） | 随仓库 | 产品理念、四大引擎叙事、快速开始与端口真源 |
+| LICENSE（MIT） | 随仓库 | 开源许可真源 |
+| BONE-总体架构设计方案（doc/architecture/BONE-总体架构设计方案.md） | v2.1 | 总体架构与技术方案唯一权威 |
+| Bone-DDD 最终实践方案（doc/architecture/Bone-DDD-最终实践方案.md） | 3.3 | DDD 分层、CQRS、Metadata SDK 持久化 P0 门禁 |
+| 模块详细设计索引（doc/design/modules/README.md） | 随仓库 | 控制台、元数据、主数据、集成、扩展、IAM、系统、Generator、SmartMeta |
+| BONE X Studio 详细设计（doc/design/BONE-X-Studio-详细设计方案.md） | v5.0 | Studio 跨模块技术详设 |
+| bone-metadata-sdk/doc/README.md | 随仓库 | Metadata SDK 使用说明 |
+| Spring Boot官方文档 | 3.2 | 后端框架参考 |
+| React官方文档 | 18 | 前端框架参考 |
+| Apache Camel官方文档 | 4.0 | 系统集成参考 |
+
+---
+
+**文档审批**
+
+| 审批角色 | 审批人 | 审批日期 | 审批状态 |
+|----------|--------|----------|----------|
+| 产品经理 | [姓名] | 2026-04-19 | ✅ 通过 |
+| 技术负责人 | [姓名] | 2026-04-19 | ✅ 通过 |
+| 架构师 | [姓名] | 2026-04-19 | ✅ 通过 |
+| 安全专家 | [姓名] | 2026-04-19 | ✅ 通过 |
+| 运维负责人 | [姓名] | 2026-04-19 | ✅ 通过 |
+
+**发布日期**：2026-04-19  
+**生效日期**：2026-04-19  
+**文档状态**：✅ 已发布

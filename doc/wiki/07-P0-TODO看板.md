@@ -1,0 +1,83 @@
+# 07 — P0 未完成项看板（平台内核）
+
+[← Wiki 首页](./README.md)
+
+> **用途**：与 PRD MoSCoW **P0** 对齐的**工程债清单**；完成一项请改状态并链到 PR。  
+> **范围**：`bone-platform` 内核 + `bone-iam` 架构测试；不含 `bone-business/tpa-saas` 行业包。
+
+---
+
+## 状态说明
+
+| 状态 | 含义 |
+|------|------|
+| `open` | 未开始或仅占位 |
+| `wip` | 开发中 |
+| `done` | 已合并主干 |
+
+---
+
+## 集成引擎（bone-platform/bone-integration）
+
+| ID | 位置 | 描述 | 状态 | 优先级 |
+|----|------|------|------|--------|
+| INT-01 | `RestClientImpl` | HTTP 连接测试与请求发送 | open | P0 |
+| INT-02 | `FtpClientImpl` | FTP 连接与文件操作 | open | P1 |
+| INT-03 | `JdbcClientImpl` | JDBC 连接与 SQL 执行 | open | P1 |
+| INT-04 | `MqClientImpl` | MQ 连接与消息发送 | open | P1 |
+| INT-05 | `FlowStatisticsJob` | 流程执行统计定时任务 | open | P2 |
+| INT-06 | `*Handler` 事件类 | 连接器/流程事件后续动作（通知等） | open | P2 |
+
+**建议**：对外 API 在未实现前返回 **501** + 明确错误码，避免「假成功」。
+
+---
+
+## 主数据（bone-platform/bone-masterdata）
+
+| ID | 位置 | 描述 | 状态 | 优先级 |
+|----|------|------|------|--------|
+| MD-01 | `DataQualityController` | 质量报告查询 | open | P1 |
+| MD-02 | `MasterDataRecordController` | 主数据记录导出 | open | P1 |
+| MD-03 | `MasterDataEntityController` | 从业务实体转换为主数据实体 | open | P1 |
+
+---
+
+## IAM（bone-platform/bone-iam）
+
+| ID | 位置 | 描述 | 状态 | 优先级 |
+|----|------|------|------|--------|
+| IAM-01 | `AuthController` | Token 黑名单 | open | P0 |
+| IAM-02 | `AuthController` | Token 刷新 | open | P0 |
+| IAM-03 | `ArchitectureTest` | 5 条 ArchUnit 规则被 TODO 跳过，需修复并重新启用 | open | P0 |
+
+---
+
+## 扩展管理（bone-engine/bone-extension-engine + bone-frontend）
+
+> 详设：[`doc/design/modules/5. 扩展管理模块详细设计方案.md`](../design/modules/5.%20扩展管理模块详细设计方案.md) §0.4。PRD：§4.6。
+
+| ID | 位置 | 描述 | 状态 | 优先级 |
+|----|------|------|------|--------|
+| EXT-MVP-01 | `bone-extension-app` | 扩展点/实现 CRUD、config 编辑、publish-runtime | done | P1 |
+| EXT-MVP-02 | `bone-extension-app` | Vite 代理 Studio 8080 | done | P1 |
+| EXT-MVP-03 | `bone-extension-studio-ui` | 已删除目录；以 `bone-extension-app` 为准 | done | P1 |
+| EXT-MVP-04 | Studio + IAM | 扩展管理权限与 API 鉴权 | open | P1 |
+| EXT-MVP-05 | `bone-extension-studio` | 列表 API 分页 | open | P2 |
+| EXT-MVP-06 | Studio | `rollback` 真实版本回滚（Phase 2） | open | P2 |
+| EXT-PH2-01 | Studio | JAR Multipart 上传 + `ext_plugin_version` | open | P2 |
+| EXT-PH3-01 | SDK | Wasm 隔离运行时 | open | P3 |
+
+---
+
+## Metadata Engine（bone-engine/bone-metadata-engine，原 bone-smartmeta）
+
+| ID | 位置 | 描述 | 状态 | 优先级 |
+|----|------|------|------|--------|
+| SM-01 | `MetadataImpactAnalyzer` | 关系/依赖/工作流/规则影响分析 | open | P2 |
+
+---
+
+## 维护约定
+
+- 新增占位实现时**同步**在本表登记一行。  
+- 季度评审：与 [BONE产品需求文档正式版](../prd/BONE产品需求文档正式版.md) §4 功能需求对照，关闭或降级非 P0 项。

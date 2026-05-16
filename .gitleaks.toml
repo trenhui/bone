@@ -1,0 +1,42 @@
+# Gitleaks 配置 — 与 CI job secrets-scan 配合
+# 文档：https://github.com/gitleaks/gitleaks
+
+title = "Bone repository secret scan"
+
+[extend]
+useDefault = true
+
+# 全局路径排除（工作区 + Git 均生效）
+[allowlist]
+description = "Bone global path allowlist"
+paths = [
+  '''\.gitleaks\.baseline\.json$''',
+  '''(^|/)bone-modules/''',
+  '''(^|/)bone-framework/bone-metadata/''',
+  '''bone-engine/bone-metadata-sdk/logs/''',
+  '''(^|/)sql/''',
+  '''/target/''',
+  '''(^|/)dist/''',
+  '''(^|/)logs/''',
+  '''\.log$''',
+  '''dependency-tree\.txt$''',
+  '''\.mock\.ts$''',
+  '''bone-business/tpa-saas/.*/backup/''',
+  '''scripts/scan-secrets\.sh$''',
+  '''\.github/workflows/ci\.yml$''',
+  '''CONTRIBUTING\.md$''',
+  '''\.md$''',
+]
+
+# 脱敏模板、环境变量占位、文档示例 — 不当作泄露
+[[rules.allowlists]]
+description = "Spring / YAML env placeholders"
+regexes = [
+  '''\$\{[A-Z0-9_]+(:[^}]*)?\}''',
+  '''password:\s*["']?\s*["']''',
+  '''change-me''',
+  '''your-api-key''',
+  '''your_secret''',
+  '''ftp_user''',
+]
+

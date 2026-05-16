@@ -1,0 +1,20 @@
+# 本地开发：H2 + Redis 运行时同步（详设 §0.4 EXT-MVP-07）
+# 启动：mvn spring-boot:run -Dspring-boot.run.profiles=dev
+spring:
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+bone:
+  extension:
+    studio:
+      persistence:
+        mode: metadata
+      runtime-sync:
+        enabled: true
+        refresh-channel: bone:ext:metadata:refresh
+
+logging:
+  level:
+    com.bone.engine.extension.studio.sync: DEBUG

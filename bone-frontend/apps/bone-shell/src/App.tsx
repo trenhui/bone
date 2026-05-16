@@ -1,6 +1,6 @@
 import React, { useEffect, useState, createContext, useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, Button, Avatar, Dropdown, Space, message, Form, Input, Card, Select, Switch, Popover, Tooltip } from 'antd';
+import { Layout, Menu, Button, Avatar, Dropdown, Space, message, Form, Input, Card, Select, Switch, Popover, Tooltip, theme as antdTheme } from 'antd';
 const { Password } = Input;
 import axios from 'axios';
 import {
@@ -9,16 +9,31 @@ import {
   SunOutlined, MoonOutlined, MenuOutlined, AppstoreOutlined, 
   LayoutOutlined, SettingOutlined as SettingIcon, PlusOutlined, MinusOutlined
 } from '@ant-design/icons';
-import { registerMicroApps, start } from 'qiankun';
+import {
+  applyTheme,
+  BoneAppProvider,
+  publishThemeChange,
+  readStoredTheme,
+  resolveThemeMode,
+  themePreferenceLabel,
+  type Theme,
+} from '@bone/ui';
+import { initGlobalState, registerMicroApps, start } from 'qiankun';
 import './App.css';
+
+const boneGlobalActions = initGlobalState({
+  themeMode: readStoredTheme(),
+  user: null,
+});
 
 const { Header, Sider, Content } = Layout;
 const { Option } = Select;
 
-// 主题上下文
+// 主题上下文（preference + 解析后的亮/暗）
 const ThemeContext = createContext({
-  theme: 'light',
-  toggleTheme: () => {}
+  theme: 'system' as Theme,
+  resolvedTheme: 'light' as 'light' | 'dark',
+  toggleTheme: () => {},
 });
 
 // 布局上下文
@@ -40,11 +55,8 @@ function App() {
     const savedUser = localStorage.getItem('bone-user');
     return savedUser ? JSON.parse(savedUser) : null;
   });
-  const [theme, setTheme] = useState(() => {
-    // 从localStorage中读取主题设置
-    const savedTheme = localStorage.getItem('bone-theme');
-    return savedTheme || 'light';
-  });
+  const [theme, setTheme] = useState<Theme>(() => readStoredTheme());
+  const resolvedTheme = resolveThemeMode(theme);
   const [layoutMode, setLayoutMode] = useState('side');
   const [menuConfig, setMenuConfig] = useState([
     { key: 'dashboard', label: '首页', icon: <DashboardOutlined />, path: '/', enabled: true },
@@ -56,11 +68,15 @@ function App() {
     { key: 'extension', label: '扩展管理', icon: <AppstoreOutlined />, path: '/extension', enabled: true },
   ]);
 
-  // 应用初始主题
   useEffect(() => {
-    // 模拟主题应用
-    document.body.className = theme;
+    applyTheme(theme);
   }, []);
+
+  useEffect(() => {
+    applyTheme(theme);
+    publishThemeChange(theme);
+    boneGlobalActions.setGlobalState({ themeMode: theme, user });
+  }, [theme, user]);
 
   useEffect(() => {
     // 启动 qiankun
@@ -96,79 +112,63 @@ function App() {
     });
   }, []);
 
-  // 注册微应用
+  const microAppProps = (name: string) => ({
+    name,
+    user,
+    themeMode: theme,
+  });
+
   useEffect(() => {
-    // 只注册微应用，但不立即加载
     registerMicroApps([
       {
         name: 'bone-iam-app',
         entry: 'http://localhost:3003',
         container: '#micro-app-container',
         activeRule: '/iam',
-        props: {
-          name: 'bone-iam-app',
-          user: user
-        }
+        props: microAppProps('bone-iam-app'),
       },
       {
         name: 'bone-metadata-app',
         entry: 'http://localhost:3004',
         container: '#micro-app-container',
         activeRule: '/metadata',
-        props: {
-          name: 'bone-metadata-app',
-          user: user
-        }
+        props: microAppProps('bone-metadata-app'),
       },
       {
         name: 'bone-masterdata-app',
         entry: 'http://localhost:3005',
         container: '#micro-app-container',
         activeRule: '/masterdata',
-        props: {
-          name: 'bone-masterdata-app',
-          user: user
-        }
+        props: microAppProps('bone-masterdata-app'),
       },
       {
         name: 'bone-integration-app',
         entry: 'http://localhost:3006',
         container: '#micro-app-container',
         activeRule: '/integration',
-        props: {
-          name: 'bone-integration-app',
-          user: user
-        }
+        props: microAppProps('bone-integration-app'),
       },
       {
         name: 'bone-system-app',
         entry: 'http://localhost:3007',
         container: '#micro-app-container',
         activeRule: '/system',
-        props: {
-          name: 'bone-system-app',
-          user: user
-        }
+        props: microAppProps('bone-system-app'),
       },
       {
         name: 'bone-extension-app',
         entry: 'http://localhost:3008',
         container: '#micro-app-container',
         activeRule: '/extension',
-        props: {
-          name: 'bone-extension-app',
-          user: user
-        }
-      }
+        props: microAppProps('bone-extension-app'),
+      },
     ]);
-  }, [user]);
+  }, [user, theme]);
 
-  // 切换主题
   const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    // 模拟主题应用
-    document.body.className = newTheme;
+    const cycle: Theme[] = ['system', 'light', 'dark'];
+    const next = cycle[(cycle.indexOf(theme) + 1) % cycle.length];
+    setTheme(next);
   };
 
   // 切换布局模式
@@ -236,10 +236,11 @@ function App() {
   const enabledMenus = menuConfig.filter(item => item.enabled);
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <BoneAppProvider themeMode={theme}>
+    <ThemeContext.Provider value={{ theme, resolvedTheme, toggleTheme }}>
       <LayoutContext.Provider value={{ layoutMode, toggleLayoutMode }}>
         <MenuConfigContext.Provider value={{ menuConfig, updateMenuConfig }}>
-          <div className={`app-container ${theme}`}>
+          <div className={`app-container ${resolvedTheme}`}>
             <Router>
               {!user ? (
                 <LoginPage 
@@ -257,11 +258,11 @@ function App() {
                       collapsible 
                       collapsed={collapsed} 
                       onCollapse={(value) => setCollapsed(value)}
-                      theme={theme === 'dark' ? 'dark' : 'light'}
+                      theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
                     >
                       <div className="logo" />
                       <Menu 
-            theme={theme === 'dark' ? 'dark' : 'light'}
+            theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
             mode="inline" 
             defaultSelectedKeys={['dashboard']}
             items={enabledMenus.map(item => ({
@@ -274,13 +275,13 @@ function App() {
                   )}
                   <Layout className="site-layout">
                     <Header 
-                      className={`site-layout-background ${theme === 'dark' ? 'dark-header' : ''}`} 
+                      className={`site-layout-background ${resolvedTheme === 'dark' ? 'dark-header' : ''}`} 
                       style={{ padding: 0 }}
                     >
                       <div className="header-left">
                         {layoutMode === 'top' && (
                           <Menu 
-                            theme={theme === 'dark' ? 'dark' : 'light'}
+                            theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
                             mode="horizontal" 
                             defaultSelectedKeys={['dashboard']}
                             style={{ lineHeight: '64px' }}
@@ -294,10 +295,10 @@ function App() {
                       </div>
                       <div className="header-right">
                         <Space size="middle">
-                          <Tooltip title="切换主题">
+                          <Tooltip title={`切换主题（当前：${themePreferenceLabel(theme)}）`}>
                             <Button 
                               type="text" 
-                              icon={theme === 'light' ? <MoonOutlined /> : <SunOutlined />}
+                              icon={resolvedTheme === 'light' ? <MoonOutlined /> : <SunOutlined />}
                               onClick={toggleTheme}
                               className="header-button"
                             />
@@ -321,7 +322,7 @@ function App() {
                       </div>
                     </Header>
                     <Content
-                      className={`site-layout-background ${theme === 'dark' ? 'dark-content' : ''}`}
+                      className={`site-layout-background ${resolvedTheme === 'dark' ? 'dark-content' : ''}`}
                       style={{
                         margin: '24px 16px',
                         padding: 24,
@@ -353,13 +354,14 @@ function App() {
         </MenuConfigContext.Provider>
       </LayoutContext.Provider>
     </ThemeContext.Provider>
+    </BoneAppProvider>
   );
 }
 
 // 登录页面
 function LoginPage({ onLogin, requirePasswordChange, onPasswordChange }: any) {
   const [form] = Form.useForm();
-  const { theme } = useContext(ThemeContext);
+  const { resolvedTheme } = useContext(ThemeContext);
 
   // 设置默认值
   useEffect(() => {
@@ -375,12 +377,12 @@ function LoginPage({ onLogin, requirePasswordChange, onPasswordChange }: any) {
 
   if (requirePasswordChange) {
     return (
-      <PasswordChangePage theme={theme} onPasswordChange={onPasswordChange} />
+      <PasswordChangePage theme={resolvedTheme} onPasswordChange={onPasswordChange} />
     );
   }
 
   return (
-    <div className={`login-container ${theme}`}>
+    <div className={`login-container ${resolvedTheme}`}>
       <Card className="login-card" title="BONE 平台登录">
         <Form
           form={form}
@@ -467,12 +469,12 @@ function PasswordChangePage({ theme, onPasswordChange }: any) {
 // 菜单配置组件
 function MenuConfig() {
   const { menuConfig, updateMenuConfig } = useContext(MenuConfigContext);
-  const { theme } = useContext(ThemeContext);
+  const { resolvedTheme } = useContext(ThemeContext);
 
   return (
     <Popover
       content={
-        <div className={`menu-config ${theme}`}>
+        <div className={`menu-config ${resolvedTheme}`}>
           <h3>菜单配置</h3>
           {menuConfig.map(item => (
             <div key={item.key} className="menu-config-item">
@@ -512,15 +514,15 @@ function userMenu(onLogout: any) {
 
 // 仪表盘
 function Dashboard() {
-  const { theme } = useContext(ThemeContext);
+  const { theme, resolvedTheme } = useContext(ThemeContext);
   const { layoutMode } = useContext(LayoutContext);
+  const { token } = antdTheme.useToken();
 
-  // 模拟数据
   const stats = [
-    { title: '用户数量', value: 1, icon: <UserOutlined />, color: '#1890ff' },
-    { title: '实体数量', value: 0, icon: <DatabaseOutlined />, color: '#52c41a' },
-    { title: '集成流程', value: 0, icon: <LinkOutlined />, color: '#faad14' },
-    { title: '扩展插件', value: 0, icon: <AppstoreOutlined />, color: '#f5222d' },
+    { title: '用户数量', value: 1, icon: <UserOutlined />, color: token.colorPrimary },
+    { title: '实体数量', value: 0, icon: <DatabaseOutlined />, color: token.colorSuccess },
+    { title: '集成流程', value: 0, icon: <LinkOutlined />, color: token.colorWarning },
+    { title: '扩展插件', value: 0, icon: <AppstoreOutlined />, color: token.colorError },
   ];
 
   const recentActivities = [
@@ -530,16 +532,16 @@ function Dashboard() {
   ];
 
   const systemStatus = [
-    { service: 'IAM服务', status: 'running', color: '#52c41a' },
-    { service: '元数据服务', status: 'running', color: '#52c41a' },
-    { service: '主数据服务', status: 'running', color: '#52c41a' },
-    { service: '集成服务', status: 'running', color: '#52c41a' },
-    { service: '系统服务', status: 'running', color: '#52c41a' },
-    { service: '扩展服务', status: 'running', color: '#52c41a' },
+    { service: 'IAM服务', status: 'running', color: token.colorSuccess },
+    { service: '元数据服务', status: 'running', color: token.colorSuccess },
+    { service: '主数据服务', status: 'running', color: token.colorSuccess },
+    { service: '集成服务', status: 'running', color: token.colorSuccess },
+    { service: '系统服务', status: 'running', color: token.colorSuccess },
+    { service: '扩展服务', status: 'running', color: token.colorSuccess },
   ];
 
   return (
-    <div className={`dashboard ${theme}`}>
+    <div className={`dashboard ${resolvedTheme}`}>
       {/* 页面标题 */}
       <div className="dashboard-header">
         <h1>BONE 平台控制台</h1>
@@ -547,7 +549,7 @@ function Dashboard() {
         <div className="dashboard-info">
           <div className="info-item">
             <span>当前主题: </span>
-            <span>{theme === 'light' ? '亮色' : '暗色'}</span>
+            <span>{themePreferenceLabel(theme)}</span>
           </div>
           <div className="info-item">
             <span>布局模式: </span>

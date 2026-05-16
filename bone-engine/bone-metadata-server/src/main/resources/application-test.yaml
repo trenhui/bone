@@ -1,0 +1,36 @@
+# =============================================================================
+# bone-metadata-server — test profile（脱敏模板）
+# 禁止提交真实凭据；通过环境变量注入，见 CONTRIBUTING.md
+# =============================================================================
+spring:
+  application:
+    name: bone-metadata
+  profiles:
+    active: test
+
+server:
+  port: ${SERVER_PORT:8082}
+
+spring:
+  datasource:
+    url: ${BONE_DB_URL:jdbc:mysql://127.0.0.1:3306/bone?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${BONE_DB_USERNAME:root}
+    password: ${BONE_DB_PASSWORD:}
+  data:
+    redis:
+      host: ${BONE_REDIS_HOST:127.0.0.1}
+      port: ${BONE_REDIS_PORT:6379}
+      database: 0
+      password: ${BONE_REDIS_PASSWORD:}
+
+metadata:
+  sdk:
+    open: ${METADATA_SDK_OPEN:false}
+    appcode: ${METADATA_APPCODE:bone}
+    secret: ${METADATA_SDK_SECRET:}
+    url: ${METADATA_SDK_URL:http://127.0.0.1:8081}
+
+logging:
+  level:
+    root: info

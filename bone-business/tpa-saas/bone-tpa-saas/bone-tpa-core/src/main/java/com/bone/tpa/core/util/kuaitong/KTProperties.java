@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "kt")
 public class KTProperties {
 
-    private String ACCESS_KEY = "REDACTED_KT_ACCESS_KEY";
+    private String accessKey = "";
 
-    private String ACCESS_SECRET = "REDACTED_KT_ACCESS_SECRET";
+    private String accessSecret = "";
 }

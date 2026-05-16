@@ -1,5 +1,7 @@
 # Bone SmartMeta 智能元数据引擎：动态业务建模与智能代码生成最佳实践方案（2025 企业级落地版）
 
+> **阅读提示**：概念性方案，与实现对齐时以 [`doc/design/modules/9. SmartMeta 引擎模块技术说明.md`](../../design/modules/9.%20SmartMeta%20引擎模块技术说明.md) 及 `bone-metadata-engine-core` 源码为准；文中 `bone-smartmeta` 等命名可能已退役。
+
 > **版本**：1.0  
 > **日期**：2025年10月8日  
 > **目标**：实现“配置即开发”的动态范式，支持可视化定义业务实体、AI 智能生成 CRUD 接口，并确保生成的接口/实体秒级生效、无需重启部署。融合 Salesforce 的 SObject 动态模型（运行时变更）、Workday 的配置化建模（零代码调整）和 Coupa 的合规驱动（内置权限/审计），基于 Spring Boot 生态构建开源方案。强调 agentic AI 代理支持（e.g., 自动优化接口）和 DaaS（Data-as-a-Service）集成。  

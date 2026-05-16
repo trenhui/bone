@@ -113,7 +113,6 @@ bone-frontend/
 │   ├── bone-integration-app/  # 集成微应用（端口 3006）
 │   ├── bone-system-app/       # 系统管理微应用（端口 3007）
 │   ├── bone-extension-app/    # 扩展引擎微应用（端口 3008）
-│   └── main/、sub-app-1/、sub-app-2/   # 早期演示应用
 └── packages/
     ├── shared-components/     # @bone/shared-components
     ├── shared-utils/          # @bone/shared-utils

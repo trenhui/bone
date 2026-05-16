@@ -1,0 +1,33 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:studio-test;DB_CLOSE_DELAY=-1;MODE=MySQL;DATABASE_TO_LOWER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/schema-h2.sql
+  jpa:
+    hibernate:
+      ddl-auto: none
+
+metadata:
+  sdk:
+    appcode: bone-extension-studio-test
+    deploymentMode: EMBEDDED
+
+bone:
+  metadata:
+    enabled: true
+    mode: EMBEDDED
+    scan-packages: com.bone.engine.extension.studio.infrastructure.persistence.entity
+  extension:
+    enabled: false
+    studio:
+      seed:
+        enabled: false
+      runtime-sync:
+        enabled: false
+      persistence:
+        mode: metadata

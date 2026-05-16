@@ -163,7 +163,7 @@ export class DevCommand {
     }
 
     // 如果找不到，返回默认路径
-    return isSubApp ? `apps/${appName}` : `apps/main`;
+    return isSubApp ? `apps/${appName}` : `apps/bone-shell`;
   }
 
   private async loadAppConfig(appRoot: string, appName: string, isSubApp: boolean): Promise<any> {

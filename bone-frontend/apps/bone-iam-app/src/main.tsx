@@ -1,42 +1,13 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
 import App from './App';
 import './index.css';
-import { ConfigProvider } from 'antd';
-import zhCN from 'antd/lib/locale/zh_CN';
+import { createBoneMicroAppRenderer } from '@bone/ui';
 
-let root: ReactDOM.Root | null = null;
+const lifecycle = createBoneMicroAppRenderer(App, 'bone-iam-app');
 
-function render(props: any) {
-  const { container, user } = props;
-  const rootElement = (container || document.getElementById('root'))!;
-  root = ReactDOM.createRoot(rootElement);
-  root.render(
-    <React.StrictMode>
-      <ConfigProvider locale={zhCN}>
-        <App user={user} />
-      </ConfigProvider>
-    </React.StrictMode>,
-  );
+if (!(window as unknown as { __POWERED_BY_QIANKUN__?: boolean }).__POWERED_BY_QIANKUN__) {
+  lifecycle.render({});
 }
 
-if (!(window as any).__POWERED_BY_QIANKUN__) {
-  render({});
-}
-
-export async function bootstrap() {
-  console.log('[bone-iam-app] bootstraped');
-}
-
-export async function mount(props: any) {
-  console.log('[bone-iam-app] mounted', props);
-  render(props);
-}
-
-export async function unmount(_props: any) {
-  if (root) {
-    root.unmount();
-    root = null;
-  }
-  console.log('[bone-iam-app] unmounted');
-}
+export const bootstrap = lifecycle.bootstrap;
+export const mount = lifecycle.mount;
+export const unmount = lifecycle.unmount;

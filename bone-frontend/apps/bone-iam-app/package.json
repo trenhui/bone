@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@bone/ui": "1.0.0",
     "@ant-design/pro-components": "^2.6.27",
     "antd": "^5.12.8",
     "axios": "^1.6.7",
