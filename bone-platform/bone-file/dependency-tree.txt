@@ -1,1 +1,0 @@
-org.example:bone-file:jar:1.0.0

@@ -254,12 +254,12 @@ adapter/web → application → domain ← infrastructure
 
 ### 5.5 详细规范文档
 
-- `doc/DDD/Bone-Blueprint-DDD工程规范.md` — 818 行 DDD + CQRS + 六边形架构工程规范
-- `doc/DDD/ddd.md` — DDD 铁律、ArchUnit 检查要求、命名约定、反模式预防
-- `doc/arch/` — 9 份总体架构与技术方案文档
-- `doc/design/modules/` — 7 份模块详细设计文档（控制台、元数据、主数据、集成、扩展、IAM、系统管理）
-- `doc/architecture/` — 前端架构规范、SmartMeta 设计文档
-- `doc/prd/` — 6 份产品需求文档
+- `doc/architecture/Bone-DDD-最终实践方案.md` — **DDD 与分层门禁唯一权威**
+- `doc/architecture/BONE-总体架构设计方案.md` — 平台总体架构、NFR、安全与数据策略
+- `doc/architecture/bone-前端架构.md` — 前端微前端与工程约定（UI 见 `doc/architecture/frontend/frontend-ui-spec.md`）
+- `doc/design/modules/` — 模块详细设计（控制台、元数据、主数据、集成、扩展、IAM、系统、Generator、SmartMeta）
+- `doc/prd/BONE产品需求文档正式版.md` — 主 PRD；索引见 `doc/prd/README.md`
+- `doc/README.md` — 全库文档索引；`doc/DDD/`、`doc/arch/`、`doc/前端规范/` 已废止
 
 ---
 
@@ -426,9 +426,12 @@ adapter/web → application → domain ← infrastructure
 |---|---|
 | `README.md` | 项目营销概览、快速开始 |
 | `CODE_WIKI.md` | 项目知识库：四大引擎说明、关键类、依赖树、运行说明 |
-| `PROJECT_SUMMARY.md` | 模块完成度总结、DDD + CQRS 架构说明 |
-| `doc/DDD/Bone-Blueprint-DDD工程规范.md` | DDD 工程规范（必读） |
-| `doc/DDD/ddd.md` | DDD 铁律与 ArchUnit 检查要求 |
+| `doc/architecture/Bone-DDD-最终实践方案.md` | DDD 与分层门禁（必读） |
+| `doc/architecture/README.md` | 架构文档索引 |
+| `doc/wiki/07-P0-TODO看板.md` | 平台未完成项与工程债 |
+| `doc/README.md` | `doc/` 总索引 |
 | `bone-frontend/SCRIPT_USAGE.md` | 前端批量启动脚本说明 |
 | `bone-init.sql` | 数据库初始化脚本 |
 | `bone-parent/pom.xml` | 依赖版本锁定与全局插件配置 |
+| `bone-engine/bone-metadata-sdk/` | 默认持久化 SDK（[README](bone-engine/bone-metadata-sdk/README.md) + [doc/](bone-engine/bone-metadata-sdk/doc/)） |
+| `bone-engine/README.md` | 引擎层模块索引 |

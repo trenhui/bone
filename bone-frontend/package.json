@@ -5,14 +5,22 @@
   "description": "BONE frontend monorepo",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "packages/ui"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=apps/bone-shell",
-    "build": "npm run build --workspaces",
-    "lint": "npm run lint --workspaces",
+    "dev": "npm run dev --workspace=bone-shell",
+    "build": "npm run build --workspaces --if-present",
+    "build:apps": "npm run build --workspace=bone-shell --workspace=bone-iam-app --workspace=bone-metadata-app --workspace=bone-masterdata-app --workspace=bone-integration-app --workspace=bone-system-app --workspace=bone-extension-app --workspace=bone-generator-app",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"
+  },
+  "overrides": {
+    "antd": "5.27.6",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
@@ -40,8 +48,9 @@
     "rollup-plugin-visualizer": "^5.9.2",
     "typescript": "^5.3.3",
     "unzipper": "^0.12.3",
-    "vite": "^4.4.9",
+    "vite": "^5.4.21",
     "vite-plugin-dts": "^3.5.3",
+    "vite-plugin-qiankun": "^1.0.15",
     "vitest": "^2.0.5"
   },
   "engines": {

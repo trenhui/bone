@@ -6,7 +6,6 @@
 
 - 权威约定：[doc/architecture/Bone-DDD-最终实践方案.md](../doc/architecture/Bone-DDD-最终实践方案.md)（**第一部分**业界原则 + **第二部分**Bone 落地；**附录 A** 废止旧「Blueprint v×」版本号）  
 - 与主工程对齐：[doc/wiki/08-blueprint与主工程对齐.md](../doc/wiki/08-blueprint与主工程对齐.md)  
-- 重构完成记录（历史清单）：[REFACTOR_PLAN.md](./REFACTOR_PLAN.md)  
 - 测试说明：[TEST_GUIDE.md](./TEST_GUIDE.md)  
 - **§23 极简 / 低成本**：新建业务应优先对齐 **§14.2 + P0（§12.1）**，按需再引入本模块里的演示能力。
 

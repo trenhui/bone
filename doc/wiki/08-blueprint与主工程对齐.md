@@ -53,6 +53,5 @@ mvn clean install -DskipTests=true
 
 - [02-仓库结构与模块](./02-仓库结构与模块.md)  
 - [bone-blueprint/README.md](../../bone-blueprint/README.md) — 如何使用参考实现（极简 vs 全量演示）  
-- [bone-blueprint/REFACTOR_PLAN.md](../../bone-blueprint/REFACTOR_PLAN.md) — 已完成的对齐重构记录（非日常入口）  
 - [Bone-DDD 最终实践方案](../architecture/Bone-DDD-最终实践方案.md) — **唯一架构门禁**（附录 A：废止 Blueprint 版本号）  
 - [CONTRIBUTING.md](../../CONTRIBUTING.md)

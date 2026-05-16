@@ -10,4 +10,4 @@
 
 **关联**：架构 [`doc/architecture/`](../architecture/) · 详设 [`doc/design/`](../design/)
 
-> `BONE产品需求文档.md`、`BONE产品需求文档_融合版.md` 等为历史稿，以正式版为准。
+> 历史 PRD 草稿已从仓库删除，以正式版为准。

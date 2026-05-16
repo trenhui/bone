@@ -1,13 +1,13 @@
-import React, { useEffect, useState, createContext, useContext } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, Navigate, useLocation } from 'react-router-dom';
-import { Layout, Menu, Button, Avatar, Dropdown, Space, message, Form, Input, Card, Select, Switch, Popover, Tooltip, theme as antdTheme } from 'antd';
+import { useEffect, useState, createContext, useContext, type ReactNode } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
+import { Layout, Menu, Button, Avatar, Dropdown, Space, message, Form, Input, Card, Switch, Popover, Tooltip, theme as antdTheme } from 'antd';
 const { Password } = Input;
 import axios from 'axios';
 import {
-  UserOutlined, LogoutOutlined, DashboardOutlined, UserAddOutlined, TeamOutlined, 
-  LockOutlined, AuditOutlined, DatabaseOutlined, LinkOutlined, SettingOutlined, 
-  SunOutlined, MoonOutlined, MenuOutlined, AppstoreOutlined, 
-  LayoutOutlined, SettingOutlined as SettingIcon, PlusOutlined, MinusOutlined
+  UserOutlined, LogoutOutlined, DashboardOutlined, UserAddOutlined,
+  LockOutlined, DatabaseOutlined, LinkOutlined, SettingOutlined,
+  SunOutlined, MoonOutlined, AppstoreOutlined, CodeOutlined,
+  LayoutOutlined, SettingOutlined as SettingIcon,
 } from '@ant-design/icons';
 import {
   applyTheme,
@@ -27,7 +27,14 @@ const boneGlobalActions = initGlobalState({
 });
 
 const { Header, Sider, Content } = Layout;
-const { Option } = Select;
+
+interface ShellMenuItem {
+  key: string;
+  label: string;
+  icon: ReactNode;
+  path: string;
+  enabled: boolean;
+}
 
 // 主题上下文（preference + 解析后的亮/暗）
 const ThemeContext = createContext({
@@ -42,10 +49,12 @@ const LayoutContext = createContext({
   toggleLayoutMode: () => {}
 });
 
-// 菜单配置上下文
-const MenuConfigContext = createContext({
+const MenuConfigContext = createContext<{
+  menuConfig: ShellMenuItem[];
+  updateMenuConfig: (key: string, enabled: boolean) => void;
+}>({
   menuConfig: [],
-  updateMenuConfig: () => {}
+  updateMenuConfig: () => {},
 });
 
 function App() {
@@ -58,7 +67,7 @@ function App() {
   const [theme, setTheme] = useState<Theme>(() => readStoredTheme());
   const resolvedTheme = resolveThemeMode(theme);
   const [layoutMode, setLayoutMode] = useState('side');
-  const [menuConfig, setMenuConfig] = useState([
+  const [menuConfig, setMenuConfig] = useState<ShellMenuItem[]>([
     { key: 'dashboard', label: '首页', icon: <DashboardOutlined />, path: '/', enabled: true },
     { key: 'iam', label: 'IAM管理', icon: <UserAddOutlined />, path: '/iam', enabled: true },
     { key: 'metadata', label: '元数据管理', icon: <DatabaseOutlined />, path: '/metadata', enabled: true },
@@ -66,6 +75,7 @@ function App() {
     { key: 'integration', label: '集成管理', icon: <LinkOutlined />, path: '/integration', enabled: true },
     { key: 'system', label: '系统管理', icon: <SettingOutlined />, path: '/system', enabled: true },
     { key: 'extension', label: '扩展管理', icon: <AppstoreOutlined />, path: '/extension', enabled: true },
+    { key: 'generator', label: '代码生成', icon: <CodeOutlined />, path: '/generator', enabled: true },
   ]);
 
   useEffect(() => {
@@ -80,36 +90,31 @@ function App() {
 
   useEffect(() => {
     // 启动 qiankun
+    // qiankun 类型定义未覆盖 Vite importEntry 钩子，运行时仍生效
     start({
       sandbox: {
         strictStyleIsolation: true,
-        experimentalStyleIsolation: true
-      },
-      onError: (err) => {
-        console.log('qiankun error:', err);
+        experimentalStyleIsolation: true,
       },
       importEntry: {
         getTemplate: (tpl: string) => {
-          // 移除所有包含React Refresh的脚本标签
           let processedTpl = tpl.replace(/<script[^>]*react-refresh[^>]*>.*?<\/script>/gis, '');
-          // 移除所有 type="module" 的脚本标签
           processedTpl = processedTpl.replace(/<script[^>]*type="module"[^>]*>.*?<\/script>/gis, '');
-          // 移除所有 vite 相关的脚本标签
           processedTpl = processedTpl.replace(/<script[^>]*vite[^>]*>.*?<\/script>/gis, '');
-          // 确保所有外部脚本都有正确的类型
           return processedTpl;
         },
         getScriptValue: (scriptText: string) => {
-          // 跳过所有包含React Refresh的脚本
-          if (scriptText.includes('react-refresh') || 
-              scriptText.includes('injectIntoGlobalHook') ||
-              scriptText.includes('vite/client')) {
+          if (
+            scriptText.includes('react-refresh') ||
+            scriptText.includes('injectIntoGlobalHook') ||
+            scriptText.includes('vite/client')
+          ) {
             return '';
           }
           return scriptText;
-        }
-      }
-    });
+        },
+      },
+    } as Parameters<typeof start>[0]);
   }, []);
 
   const microAppProps = (name: string) => ({
@@ -162,6 +167,13 @@ function App() {
         activeRule: '/extension',
         props: microAppProps('bone-extension-app'),
       },
+      {
+        name: 'bone-generator-app',
+        entry: 'http://localhost:3009',
+        container: '#micro-app-container',
+        activeRule: '/generator',
+        props: microAppProps('bone-generator-app'),
+      },
     ]);
   }, [user, theme]);
 
@@ -180,10 +192,10 @@ function App() {
   };
 
   // 更新菜单配置
-  const updateMenuConfig = (key: any, enabled: any) => {
-    setMenuConfig(menuConfig.map(item => 
-      item.key === key ? { ...item, enabled } : item
-    ));
+  const updateMenuConfig = (key: string, enabled: boolean) => {
+    setMenuConfig((prev) =>
+      prev.map((item) => (item.key === key ? { ...item, enabled } : item)),
+    );
   };
 
   // 登录处理
@@ -343,6 +355,8 @@ function App() {
                         <Route path="/system/*" element={<MicroAppContainer />} />
                         <Route path="/extension" element={<MicroAppContainer />} />
                         <Route path="/extension/*" element={<MicroAppContainer />} />
+                        <Route path="/generator" element={<MicroAppContainer />} />
+                        <Route path="/generator/*" element={<MicroAppContainer />} />
                         <Route path="*" element={<Navigate to="/" replace />} />
                       </Routes>
                     </Content>

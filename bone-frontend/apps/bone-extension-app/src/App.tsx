@@ -1,7 +1,6 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { Layout, Menu, Breadcrumb } from 'antd';
-import { AppstoreOutlined, CodeOutlined, SafetyOutlined, SettingOutlined } from '@ant-design/icons';
+import { AppstoreOutlined, SafetyOutlined, SettingOutlined } from '@ant-design/icons';
 import './App.css';
 
 const { Header, Content, Sider } = Layout;
@@ -10,7 +9,7 @@ interface AppProps {
   user?: any;
 }
 
-function App({ user }: AppProps) {
+function App({ user: _user }: AppProps) {
   return (
     <Router>
       <Layout style={{ minHeight: '100vh' }}>

@@ -18,6 +18,9 @@
 - **bone-integration-app**: 集成管理系统（端口 3006）
 - **bone-system-app**: 系统管理系统（端口 3007）
 - **bone-extension-app**: 扩展引擎管理控制台（端口 3008）
+- **bone-generator-app**: Studio 代码生成（端口 3009）
+
+共享设计系统：`packages/ui`（`@bone/ui`，含主题与 `BoneAppProvider`）。
 
 ## 🚀 快速开始
 
@@ -25,41 +28,22 @@
 - Node.js >= 18
 - npm >= 9
 
-### 安装依赖
+### 安装依赖（推荐）
 
-由于项目采用模块化架构，请依次在各个应用目录下安装依赖：
+在 `bone-frontend` 根目录一次安装全部 workspaces：
 
-#### 1. 安装主应用依赖
 ```bash
-cd apps/bone-shell
+bash setup.sh
+# 或
 npm install
 ```
 
-#### 2. 安装各个微应用依赖
+### 构建与类型检查
+
 ```bash
-# IAM 应用
-cd ../bone-iam-app
-npm install
-
-# 元数据应用
-cd ../bone-metadata-app
-npm install
-
-# 主数据应用
-cd ../bone-masterdata-app
-npm install
-
-# 集成应用
-cd ../bone-integration-app
-npm install
-
-# 系统应用
-cd ../bone-system-app
-npm install
-
-# 扩展应用
-cd ../bone-extension-app
-npm install
+npm run build:apps    # 生产构建 Shell + 全部微应用
+npm run typecheck     # 各 workspace 类型检查（若已配置）
+npm test              # Vitest
 ```
 
 ### 启动应用
@@ -177,5 +161,5 @@ bone-frontend/
 
 ## 📄 相关文档
 
-- [前端整体设计方案](./doc/architecture/bone-frontend-overall-design.md)
-- [技术架构文档](./doc/arch/technical-architecture.md)
+- [前端架构（权威）](../doc/architecture/bone-前端架构.md)
+- [UI 规范](../doc/architecture/frontend/frontend-ui-spec.md)

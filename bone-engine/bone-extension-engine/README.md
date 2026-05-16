@@ -1,5 +1,10 @@
-# ExtPoint 扩展引擎（Extension Engine）：打造可生长的企业级插件化架构
+# ExtPoint 扩展引擎（Extension Engine）
 
+> **开发**：[bone-extension-sdk/README.md](./bone-extension-sdk/README.md) · **使用与运维**：[docs/使用指南.md](./docs/使用指南.md) · **平台 DDD**：[Bone-DDD](../../../doc/architecture/Bone-DDD-最终实践方案.md)
+
+下文为产品与能力说明；接入步骤以 SDK README 与使用指南为准。
+
+---
 
 ## 一、引擎定位与核心理念
 

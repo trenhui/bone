@@ -24,4 +24,4 @@
 mvn -pl bone-engine/bone-metadata-engine -am test
 ```
 
-默认不参与平台单体启动；与 `bone-metadata-sdk` 集成路线见 `doc/architecture/smartmeta/`。
+默认不参与平台单体启动。设计说明见 [doc/design/modules/9. SmartMeta 引擎模块技术说明.md](../../../doc/design/modules/9.%20SmartMeta%20引擎模块技术说明.md)。

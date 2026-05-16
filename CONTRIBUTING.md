@@ -66,14 +66,16 @@ bone-engine/bone-extension-engine/bone-extension-sdk,bone-engine/bone-extension-
 | 数据库 | [doc/architecture/数据库开发规范.md](doc/architecture/数据库开发规范.md)、[初始脚本.sql](doc/architecture/初始脚本.sql) |
 | 模块设计 | [doc/design/modules/](doc/design/modules/) |
 | Agentic 工程 | [doc/Agenticx编程/Bone-Agentic-Engineering.md](doc/Agenticx编程/Bone-Agentic-Engineering.md) |
-| Metadata SDK | [bone-engine/bone-metadata-sdk/doc/](bone-engine/bone-metadata-sdk/doc/)（最佳实践 + 使用指南） |
+| Metadata SDK | [bone-engine/bone-metadata-sdk/README.md](bone-engine/bone-metadata-sdk/README.md)（快速开始）→ [doc/](bone-engine/bone-metadata-sdk/doc/)（使用指南 + 最佳实践） |
 | 扩展引擎 | [bone-engine/bone-extension-engine/README.md](bone-engine/bone-extension-engine/README.md)、[docs/使用指南.md](bone-engine/bone-extension-engine/docs/使用指南.md) |
 | 新人 / AI 总览 | [AGENTS.md](AGENTS.md)、[doc/wiki/](doc/wiki/) |
 
 - 平台未完成项：[doc/wiki/07-P0-TODO看板.md](doc/wiki/07-P0-TODO看板.md)
 - 蓝图与主工程：[doc/wiki/08-blueprint与主工程对齐.md](doc/wiki/08-blueprint与主工程对齐.md)（`bone-blueprint` 为 DDD 参考实现；**不以「Blueprint v×」版本号**为门禁，见 Bone-DDD 附录 A）
 
-**已废止**：仓库根目录的 `PROJECT_SUMMARY.md`、各模块 `*_SUMMARY.md` / `重构计划.md`、引擎内 `doc/` 草稿与 `dependency-tree.txt` 等；内容已合并进上表或应直接以源码为准。
+**文档分层（推荐）**：模块根 `README.md` = 概述 + 快速开始 + 文档索引；详细内容放 `doc/` 或 `doc/architecture/`，避免多份重复长文。
+
+**勿再提交**：`PROJECT_SUMMARY.md`、各模块 `*_SUMMARY.md`、根目录 `*PLAN*` / `*ANALYSIS*` 草稿、`dependency-tree.txt`、`**/*优化方案*.md` 放在 `src/main/` 下、`test_output.txt` / `build_output.txt` / `classpath.txt`、运行日志 `*.log`；以 `doc/architecture`、各模块 `README.md` / `doc/` 索引与源码为准。
 
 ## 提交信息
 

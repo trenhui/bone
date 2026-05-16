@@ -14,7 +14,7 @@ import {
   Descriptions,
   DatePicker
 } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, PublishOutlined, CloseCircleOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, RocketOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { ProTable } from '@ant-design/pro-components';
 import type {
   MasterDataEntity,
@@ -226,7 +226,7 @@ const EntityManagement: React.FC = () => {
           </Popconfirm>
           {record.status === 'DRAFT' && (
             <Button
-              icon={<PublishOutlined />}
+              icon={<RocketOutlined />}
               onClick={() => handlePublish(record.id)}
             >
               发布

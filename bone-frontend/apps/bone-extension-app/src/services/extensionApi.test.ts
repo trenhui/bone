@@ -19,7 +19,6 @@ vi.mock('axios', () => ({
 
 import {
   createExtPoint,
-  createPlugin,
   listExtPoints,
   listPlugins,
   publishPluginRuntime,

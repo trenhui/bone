@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { Layout, Menu, Breadcrumb } from 'antd';
 import { DatabaseOutlined, FieldTimeOutlined, CodeOutlined, FileTextOutlined } from '@ant-design/icons';
@@ -10,7 +9,7 @@ interface AppProps {
   user?: any;
 }
 
-function App({ user }: AppProps) {
+function App({ user: _user }: AppProps) {
   return (
     <Router>
       <Layout style={{ minHeight: '100vh' }}>

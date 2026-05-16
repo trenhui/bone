@@ -505,12 +505,11 @@ npm run preview               # Vite preview
 
 ### 12.2 详细规范文档
 
-- [doc/DDD/Bone-Blueprint-DDD工程规范.md](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/doc/DDD/Bone-Blueprint-DDD工程规范.md) — 818 行 DDD + CQRS + 六边形架构工程规范
-- [doc/DDD/ddd.md](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/doc/DDD/ddd.md) — DDD 铁律、ArchUnit 检查要求、命名约定、反模式预防
-- `doc/arch/` — 9 份总体架构与技术方案文档
-- `doc/design/modules/` — 7 份模块详细设计文档（控制台、元数据、主数据、集成、扩展、IAM、系统管理）
-- `doc/architecture/` — 前端架构规范、SmartMeta 设计文档
-- `doc/prd/` — 6 份产品需求文档
+- [doc/architecture/Bone-DDD-最终实践方案.md](doc/architecture/Bone-DDD-最终实践方案.md) — DDD 与分层门禁（唯一权威）
+- [doc/architecture/BONE-总体架构设计方案.md](doc/architecture/BONE-总体架构设计方案.md) — 平台总体架构
+- [doc/design/modules/](doc/design/modules/) — 模块详细设计
+- [doc/prd/BONE产品需求文档正式版.md](doc/prd/BONE产品需求文档正式版.md) — 主 PRD
+- [doc/README.md](doc/README.md) — `doc/` 总索引
 
 ---
 
@@ -520,7 +519,7 @@ npm run preview               # Vite preview
 |-----------|------|
 | [README.md](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/README.md) | 项目营销概览、快速开始 |
 | [AGENTS.md](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/AGENTS.md) | AI 助手项目指南 |
-| [PROJECT_SUMMARY.md](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/PROJECT_SUMMARY.md) | 模块完成度总结、DDD + CQRS 架构说明 |
+| [doc/wiki/07-P0-TODO看板.md](doc/wiki/07-P0-TODO看板.md) | 平台未完成项与工程债 |
 | [bone-parent/pom.xml](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-parent/pom.xml) | 依赖版本锁定与全局插件配置 |
 | [bone-init.sql](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-init.sql) | 数据库初始化脚本 |
 | [bone-frontend/package.json](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-frontend/package.json) | 前端项目配置与工作区定义 |

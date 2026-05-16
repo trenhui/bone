@@ -168,3 +168,14 @@ reports/
 jacoco-report/
 coverage/
 test-output/
+
+# =========================
+# 勿提交的临时/草稿产物
+# =========================
+dependency-tree.txt
+classpath.txt
+build_output.txt
+test_output.txt
+test_doc.txt
+**/*优化方案*.md
+**/*升级方案*.md

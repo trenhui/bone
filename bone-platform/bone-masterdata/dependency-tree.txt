@@ -1,1 +1,0 @@
-com.bone:bone-masterdata:jar:1.0.0

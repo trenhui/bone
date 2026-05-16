@@ -10,7 +10,7 @@ interface AppProps {
   user?: any;
 }
 
-export const App: React.FC<AppProps> = ({ user }) => {
+export const App: React.FC<AppProps> = ({ user: _user }) => {
   return (
     <Router>
       <AppLayout>

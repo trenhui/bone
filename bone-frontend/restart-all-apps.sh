@@ -12,14 +12,14 @@ echo ""
 mkdir -p logs
 
 # 应用列表
-apps=("bone-shell" "bone-iam-app" "bone-metadata-app" "bone-masterdata-app" "bone-integration-app" "bone-system-app" "bone-extension-app")
-ports=("3000" "3003" "3004" "3005" "3006" "3007" "3008")
+apps=("bone-shell" "bone-iam-app" "bone-metadata-app" "bone-masterdata-app" "bone-integration-app" "bone-system-app" "bone-extension-app" "bone-generator-app")
+ports=("3000" "3003" "3004" "3005" "3006" "3007" "3008" "3009")
 
 # 停止所有应用
 echo "正在停止所有应用..."
 echo "=========================================="
 
-for i in 0 1 2 3 4 5 6; do
+for i in 0 1 2 3 4 5 6 7; do
   app=${apps[$i]}
   port=${ports[$i]}
   pid_file="logs/$app.pid"
@@ -69,7 +69,7 @@ echo ""
 echo "正在启动所有应用..."
 echo "=========================================="
 
-for i in 0 1 2 3 4 5 6; do
+for i in 0 1 2 3 4 5 6 7; do
   app=${apps[$i]}
   port=${ports[$i]}
   

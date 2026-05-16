@@ -1,1 +1,0 @@
-com.bone:bone-gateway:jar:1.0.0
