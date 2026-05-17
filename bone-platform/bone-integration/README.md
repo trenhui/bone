@@ -24,6 +24,15 @@ mvn -pl :bone-platform-integration test
 | `CamelIntegrationContext` | Camel 上下文 + `extend-http` 组件（自 legacy 抽取） |
 | `CamelFlowCompiler` | INT-11 占位：将 `int_flow_node` 编译为 Camel 路由 |
 
+## 领域事件 Outbox（INT-10）
+
+| 环境变量 | 默认 | 说明 |
+|----------|------|------|
+| `BONE_INTEGRATION_OUTBOX_ENABLED` | `true` | 业务事务内写 `int_outbox` |
+| `BONE_INTEGRATION_OUTBOX_MQ_ENABLED` | `false` | `true` 时中继至 RocketMQ；否则结构化日志 |
+
+Topic 登记见 [Bone-消息与事件规范.md](../../doc/architecture/Bone-消息与事件规范.md) §4。
+
 ## 安全与告警
 
 - JWT：`BONE_INTEGRATION_JWT_ENABLED`（见 `SecurityConfig`）

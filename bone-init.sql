@@ -395,6 +395,27 @@ CREATE TABLE int_dead_letter (
     KEY idx_int_dl_next_retry (status, next_retry_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='死信队列表';
 
+CREATE TABLE int_outbox (
+    id                  BIGINT          NOT NULL COMMENT 'Outbox 主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    event_id            VARCHAR(36)     NOT NULL COMMENT '信封 eventId（UUID）',
+    event_type          VARCHAR(80)     NOT NULL COMMENT '事件类型',
+    topic               VARCHAR(200)    NOT NULL COMMENT 'MQ Topic',
+    partition_key       VARCHAR(100)    NOT NULL COMMENT '分区键（默认 tenant_id）',
+    envelope_json       JSON            NOT NULL COMMENT '消息信封 JSON',
+    status              VARCHAR(20)     NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING/SENT/FAILED',
+    retry_count         INT             NOT NULL DEFAULT 0 COMMENT '中继重试次数',
+    sent_at             DATETIME(3)     DEFAULT NULL COMMENT '发送成功时间',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    updated_by          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_int_outbox_event_id (event_id),
+    KEY idx_int_outbox_status (status, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='集成领域事件 Outbox';
+
 CREATE TABLE int_template (
     id                  BIGINT          NOT NULL COMMENT '模板主键（Snowflake）',
     tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',

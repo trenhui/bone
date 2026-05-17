@@ -9,6 +9,7 @@ import com.bone.integration.domain.model.execution.event.ExecutionStartedEvent;
 import com.bone.integration.domain.model.flow.event.FlowActivatedEvent;
 import com.bone.integration.domain.model.flow.event.FlowCreatedEvent;
 import com.bone.integration.domain.model.flow.event.FlowExecutedEvent;
+import com.bone.integration.application.event.outbox.IntegrationOutboxWriter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -24,6 +25,7 @@ import java.util.List;
 @Slf4j
 public class IntegrationDomainEventPublisher {
 
+    private final IntegrationOutboxWriter outboxWriter;
     private final ConnectorCreatedHandler connectorCreatedHandler;
     private final ConnectorTestedHandler connectorTestedHandler;
     private final FlowCreatedHandler flowCreatedHandler;
@@ -46,6 +48,7 @@ public class IntegrationDomainEventPublisher {
             return;
         }
         try {
+            outboxWriter.append(event);
             dispatch(event);
         } catch (Exception ex) {
             log.error("领域事件处理失败: type={}", event.getClass().getSimpleName(), ex);

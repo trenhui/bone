@@ -23,6 +23,12 @@ spring:
 
 bone:
   integration:
+    outbox:
+      enabled: ${BONE_INTEGRATION_OUTBOX_ENABLED:true}
+      mq-enabled: ${BONE_INTEGRATION_OUTBOX_MQ_ENABLED:false}
+      batch-size: 50
+      max-retries: 5
+      relay-interval-ms: 5000
     security:
       jwt-enabled: ${BONE_INTEGRATION_JWT_ENABLED:false}
   iam:

@@ -75,6 +75,12 @@
 | `CodeGenerated` | `domain.metadata.code_generated.v1` | `tenant_id` |
 | `PermissionChanged` | `domain.authz.permission_changed.v1` | `tenant_id` |
 | `FlowActivated` | `domain.integration.flow_activated.v1` | `tenant_id` |
+| `FlowCreated` | `domain.integration.flow_created.v1` | `tenant_id` |
+| `FlowExecuted` | `domain.integration.flow_executed.v1` | `tenant_id` |
+| `ConnectorCreated` | `domain.integration.connector_created.v1` | `tenant_id` |
+| `ConnectorTested` | `domain.integration.connector_tested.v1` | `tenant_id` |
+| `ExecutionStarted` | `domain.integration.execution_started.v1` | `tenant_id` |
+| `ExecutionCompleted` | `domain.integration.execution_completed.v1` | `tenant_id` |
 | `PluginDeployed` | `domain.extension.plugin_deployed.v1` | `tenant_id` |
 | `PluginExecutionFailed` | `domain.extension.plugin_execution_failed.v1` | `tenant_id` |
 

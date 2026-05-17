@@ -2,6 +2,7 @@ package com.bone.integration.application.event;
 
 import com.bone.integration.domain.connector.Connector;
 import com.bone.integration.domain.model.connector.vo.ConnectorType;
+import com.bone.integration.application.event.outbox.IntegrationOutboxWriter;
 import com.bone.integration.domain.model.flow.event.FlowCreatedEvent;
 import com.bone.integration.domain.flow.IntegrationFlow;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,9 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class IntegrationDomainEventPublisherTest {
+
+    @Mock
+    private IntegrationOutboxWriter outboxWriter;
 
     @Mock
     private ConnectorCreatedHandler connectorCreatedHandler;
@@ -47,6 +51,7 @@ class IntegrationDomainEventPublisherTest {
 
         publisher.publishFrom(connector);
 
+        verify(outboxWriter).append(org.mockito.ArgumentMatchers.any());
         verify(connectorCreatedHandler).handle(org.mockito.ArgumentMatchers.any());
     }
 
@@ -56,6 +61,7 @@ class IntegrationDomainEventPublisherTest {
 
         publisher.publish(event);
 
+        verify(outboxWriter).append(event);
         verify(flowCreatedHandler).handle(event);
     }
 }
