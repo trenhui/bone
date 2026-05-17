@@ -1,6 +1,6 @@
-import { useEffect, useState, createContext, useContext, type ReactNode } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
-import { Layout, Menu, Button, Avatar, Dropdown, Space, message, Form, Input, Card, Switch, Popover, Tooltip, theme as antdTheme } from 'antd';
+import { Layout, Menu, Button, Avatar, Dropdown, Space, message, Form, Input, Card, Switch, Popover, Tooltip } from 'antd';
 const { Password } = Input;
 import axios from 'axios';
 import {
@@ -28,34 +28,13 @@ const boneGlobalActions = initGlobalState({
 
 const { Header, Sider, Content } = Layout;
 
-interface ShellMenuItem {
-  key: string;
-  label: string;
-  icon: ReactNode;
-  path: string;
-  enabled: boolean;
-}
-
-// 主题上下文（preference + 解析后的亮/暗）
-const ThemeContext = createContext({
-  theme: 'system' as Theme,
-  resolvedTheme: 'light' as 'light' | 'dark',
-  toggleTheme: () => {},
-});
-
-// 布局上下文
-const LayoutContext = createContext({
-  layoutMode: 'side', // side, top, mix
-  toggleLayoutMode: () => {}
-});
-
-const MenuConfigContext = createContext<{
-  menuConfig: ShellMenuItem[];
-  updateMenuConfig: (key: string, enabled: boolean) => void;
-}>({
-  menuConfig: [],
-  updateMenuConfig: () => {},
-});
+import DashboardPage from './pages/DashboardPage';
+import {
+  LayoutContext,
+  MenuConfigContext,
+  ThemeContext,
+  type ShellMenuItem,
+} from './shellContext';
 
 function App() {
   const [collapsed, setCollapsed] = useState(false);
@@ -66,7 +45,7 @@ function App() {
   });
   const [theme, setTheme] = useState<Theme>(() => readStoredTheme());
   const resolvedTheme = resolveThemeMode(theme);
-  const [layoutMode, setLayoutMode] = useState('side');
+  const [layoutMode, setLayoutMode] = useState<'side' | 'top' | 'mix'>('side');
   const [menuConfig, setMenuConfig] = useState<ShellMenuItem[]>([
     { key: 'dashboard', label: '首页', icon: <DashboardOutlined />, path: '/', enabled: true },
     { key: 'iam', label: 'IAM管理', icon: <UserAddOutlined />, path: '/iam', enabled: true },
@@ -185,7 +164,7 @@ function App() {
 
   // 切换布局模式
   const toggleLayoutMode = () => {
-    const modes = ['side', 'top', 'mix'];
+    const modes = ['side', 'top', 'mix'] as const;
     const currentIndex = modes.indexOf(layoutMode);
     const nextIndex = (currentIndex + 1) % modes.length;
     setLayoutMode(modes[nextIndex]);
@@ -342,7 +321,7 @@ function App() {
                       }}
                     >
                       <Routes>
-                        <Route path="/" element={<Dashboard />} />
+                        <Route path="/" element={<DashboardPage />} />
                         <Route path="/iam" element={<MicroAppContainer />} />
                         <Route path="/iam/*" element={<MicroAppContainer />} />
                         <Route path="/metadata" element={<MicroAppContainer />} />
@@ -526,154 +505,6 @@ function userMenu(onLogout: any) {
   ];
 }
 
-// 仪表盘
-function Dashboard() {
-  const { theme, resolvedTheme } = useContext(ThemeContext);
-  const { layoutMode } = useContext(LayoutContext);
-  const { token } = antdTheme.useToken();
-
-  const stats = [
-    { title: '用户数量', value: 1, icon: <UserOutlined />, color: token.colorPrimary },
-    { title: '实体数量', value: 0, icon: <DatabaseOutlined />, color: token.colorSuccess },
-    { title: '集成流程', value: 0, icon: <LinkOutlined />, color: token.colorWarning },
-    { title: '扩展插件', value: 0, icon: <AppstoreOutlined />, color: token.colorError },
-  ];
-
-  const recentActivities = [
-    { time: '刚刚', action: '系统登录', user: 'admin', status: 'success' },
-    { time: '10分钟前', action: '用户创建', user: 'admin', status: 'success' },
-    { time: '30分钟前', action: '角色更新', user: 'admin', status: 'success' },
-  ];
-
-  const systemStatus = [
-    { service: 'IAM服务', status: 'running', color: token.colorSuccess },
-    { service: '元数据服务', status: 'running', color: token.colorSuccess },
-    { service: '主数据服务', status: 'running', color: token.colorSuccess },
-    { service: '集成服务', status: 'running', color: token.colorSuccess },
-    { service: '系统服务', status: 'running', color: token.colorSuccess },
-    { service: '扩展服务', status: 'running', color: token.colorSuccess },
-  ];
-
-  return (
-    <div className={`dashboard ${resolvedTheme}`}>
-      {/* 页面标题 */}
-      <div className="dashboard-header">
-        <h1>BONE 平台控制台</h1>
-        <p>欢迎回来，admin！</p>
-        <div className="dashboard-info">
-          <div className="info-item">
-            <span>当前主题: </span>
-            <span>{themePreferenceLabel(theme)}</span>
-          </div>
-          <div className="info-item">
-            <span>布局模式: </span>
-            <span>
-              {layoutMode === 'side' ? '侧边菜单' : 
-               layoutMode === 'top' ? '顶部菜单' : '混合模式'}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* 数据统计卡片 */}
-      <div className="stats-section">
-        <h2 className="section-title">系统概览</h2>
-        <div className="stats-cards">
-          {stats.map((stat, index) => (
-            <div key={index} className="stat-card">
-              <div className="stat-icon" style={{ backgroundColor: `${stat.color}20`, color: stat.color }}>
-                {stat.icon}
-              </div>
-              <div className="stat-content">
-                <div className="stat-value">{stat.value}</div>
-                <div className="stat-title">{stat.title}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* 系统状态和最近活动 */}
-      <div className="dashboard-grid">
-        {/* 系统状态 */}
-        <div className="dashboard-section">
-          <h2 className="section-title">服务状态</h2>
-          <div className="status-list">
-            {systemStatus.map((item, index) => (
-              <div key={index} className="status-item">
-                <span className="status-service">{item.service}</span>
-                <span className="status-indicator" style={{ backgroundColor: item.color }}></span>
-                <span className="status-text">{item.status === 'running' ? '运行中' : item.status}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 最近活动 */}
-        <div className="dashboard-section">
-          <h2 className="section-title">最近活动</h2>
-          <div className="activity-list">
-            {recentActivities.map((activity, index) => (
-              <div key={index} className="activity-item">
-                <div className="activity-time">{activity.time}</div>
-                <div className="activity-content">
-                  <span className="activity-action">{activity.action}</span>
-                  <span className="activity-user">by {activity.user}</span>
-                </div>
-                <div className={`activity-status ${activity.status}`}>
-                  {activity.status === 'success' ? '成功' : '失败'}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* 快捷操作 */}
-      <div className="dashboard-section">
-        <h2 className="section-title">快捷操作</h2>
-        <div className="quick-actions">
-          <Link to="/iam" className="quick-action-item">
-            <div className="quick-action-icon">
-              <UserAddOutlined />
-            </div>
-            <span>用户管理</span>
-          </Link>
-          <Link to="/metadata" className="quick-action-item">
-            <div className="quick-action-icon">
-              <DatabaseOutlined />
-            </div>
-            <span>实体管理</span>
-          </Link>
-          <Link to="/integration" className="quick-action-item">
-            <div className="quick-action-icon">
-              <LinkOutlined />
-            </div>
-            <span>流程编排</span>
-          </Link>
-          <Link to="/system" className="quick-action-item">
-            <div className="quick-action-icon">
-              <SettingOutlined />
-            </div>
-            <span>系统配置</span>
-          </Link>
-          <Link to="/extension" className="quick-action-item">
-            <div className="quick-action-icon">
-              <AppstoreOutlined />
-            </div>
-            <span>扩展管理</span>
-          </Link>
-          <Link to="/masterdata" className="quick-action-item">
-            <div className="quick-action-icon">
-              <DatabaseOutlined />
-            </div>
-            <span>主数据管理</span>
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // 微应用容器
 function MicroAppContainer() {

@@ -1,8 +1,15 @@
 openapi: 3.1.0
 info:
   title: Bone Extension Studio API
-  version: 1.0.0
-  description: 扩展引擎管理台；规范见 Bone-API-规范.md §13.1
+  version: 1.1.0
+  description: |
+    扩展引擎管理台（As-Is）。规范见 Bone-API-规范.md §13.1；
+    详设 v2.1：doc/design/modules/5. 扩展管理模块详细设计方案.md。
+
+    **术语**：路径 `/plugins/{id}` 的 id = 扩展实现 ID（exts_extension_impl），非独立插件主表。
+
+    **[Target]**：POST 创建 201+Location；写操作 Idempotency-Key；PUT If-Match/version；
+    大制品 :deploy 202 LRO。当前实现多为 200 同步，以 Controller 为准。
 servers:
   - url: /api/v1/extension
 paths:
@@ -24,9 +31,13 @@ paths:
                 $ref: './components/ApiResponse.yaml'
     post:
       summary: 创建扩展点
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
       responses:
         '201':
-          description: Created
+          description: Created（[Target] Location 头）
+        '200':
+          description: OK（As-Is 兼容）
   /points/{id}:
     get:
       summary: 扩展点详情
@@ -38,8 +49,10 @@ paths:
       summary: 更新扩展点
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - $ref: '#/components/parameters/IfMatch'
       responses:
         '200': { description: OK }
+        '412': { description: Precondition Failed（[Target] 乐观锁） }
     delete:
       summary: 删除扩展点
       parameters:
@@ -62,64 +75,78 @@ paths:
         '200': { description: OK }
   /plugins:
     get:
-      summary: 插件列表
+      summary: 扩展实现列表（控制台称插件）
       responses:
         '200': { description: OK }
     post:
-      summary: 创建插件
+      summary: 创建扩展实现元数据
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
       responses:
-        '201': { description: Created }
+        '201': { description: Created（[Target]） }
+        '200': { description: OK（As-Is） }
   /plugins/{id}:
     get:
-      summary: 插件详情
+      summary: 扩展实现详情
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
       responses:
         '200': { description: OK }
     put:
-      summary: 更新插件
+      summary: 更新扩展实现
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - $ref: '#/components/parameters/IfMatch'
       responses:
         '200': { description: OK }
     delete:
-      summary: 删除插件
+      summary: 删除扩展实现
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
       responses:
         '204': { description: No Content }
   /plugins:upload:
     post:
-      summary: 上传插件 JAR
+      summary: 上传 JAR 制品
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
       responses:
         '201': { description: Created }
+        '200': { description: OK（As-Is） }
   /plugins/{id}:deploy:
     post:
-      summary: 部署插件
+      summary: 部署/激活扩展实现
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - $ref: '#/components/parameters/IdempotencyKey'
       responses:
-        '200': { description: OK }
+        '200': { description: OK（As-Is 同步） }
+        '202': { description: Accepted（[Target] LRO，见 Bone-API-规范 §7） }
   /plugins/{id}:undeploy:
     post:
-      summary: 卸载插件
+      summary: 卸载
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
       responses:
         '200': { description: OK }
   /plugins/{id}:rollback:
     post:
-      summary: 回滚插件版本
+      summary: 回滚制品版本
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - $ref: '#/components/parameters/IdempotencyKey'
       responses:
         '200': { description: OK }
   /plugins/{id}:publish-runtime:
     post:
-      summary: 发布运行时元数据
+      summary: 发布运行时路由元数据
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
       responses:
         '200': { description: OK }
   /plugins/{id}:simulate:
     post:
-      summary: 模拟插件执行
+      summary: 沙箱模拟执行
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
       responses:
@@ -170,3 +197,17 @@ paths:
           headers:
             Link:
               schema: { type: string }
+components:
+  parameters:
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: '[Target] 幂等写；TTL 24h，见 Bone-API-规范 §8'
+      schema: { type: string, format: uuid }
+    IfMatch:
+      name: If-Match
+      in: header
+      required: false
+      description: '[Target] 乐观锁，值为实体 version 或 ETag'
+      schema: { type: string }

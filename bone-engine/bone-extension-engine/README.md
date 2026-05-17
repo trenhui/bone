@@ -9,7 +9,7 @@ Bone 四大引擎之一：在**不修改核心代码**的前提下，通过标�
 | [bone-extension-sdk/README.md](./bone-extension-sdk/README.md) | 业务/平台开发 | 注解、路由、`BizContext`、示例与 FAQ（篇幅较长，作参考手册） |
 | [docs/使用指南.md](./docs/使用指南.md) | 接入与运维 | **推荐路径**：依赖、`@EnableExtensionPoints`、五分钟上手、配置与排错 |
 | [docs/README.md](./docs/README.md) | — | 文档索引 |
-| [doc/design/modules/5. 扩展管理模块详细设计方案.md](../../doc/design/modules/5.%20扩展管理模块详细设计方案.md) | 产品/架构 | 控制台能力、API、Phase 1 MVP |
+| [doc/design/modules/5. 扩展管理模块详细设计方案.md](../../doc/design/modules/5.%20扩展管理模块详细设计方案.md) | 产品/架构 | 详设 **v2.1**（As-Is / [Target] / [Vision] 分层） |
 | [Bone-DDD 最终实践方案](../../doc/architecture/Bone-DDD-最终实践方案.md) | 全栈开发 | 分层与持久化 P0（扩展实现仍须符合平台规约） |
 
 **事实来源**：`bone-extension-sdk/src/main/java`、测试包 `com.bone.example.extension`；勿在仓库中恢复已删除的长篇「设计方案」副本。
@@ -19,7 +19,7 @@ Bone 四大引擎之一：在**不修改核心代码**的前提下，通过标�
 | 模块 | 角色 | 默认端口（开发） |
 |------|------|------------------|
 | **bone-extension-sdk** | 运行时：扩展点注册、代理调用、路由（租户/业务/场景/SpEL）、类加载隔离、事件与指标 | 嵌入业务进程 |
-| **bone-extension-studio** | 控制面：扩展点/插件元数据、上传与启停（具体以 Studio 配置为准） | **8080**（与 `bone-masterdata` 冲突时注意改端口） |
+| **bone-extension-studio** | 控制面：扩展点/扩展实现（控制台称插件）、JAR 制品与路由发布 | **8088**（`BONE_EXTENSION_STUDIO_PORT`） |
 | **bone-extension-app**（前端） | 扩展管理微应用 | **3008** |
 
 ## 核心能力（摘要）

@@ -8,17 +8,13 @@
 
 ---
 
-## TPA 迁移（bone-business，可选）
+## TPA 迁移（已废止）
 
-| ID | 描述 | 状态 | 备注 |
-|----|------|------|------|
-| TPA-00 | Java API 基线清单 | done | [API-INVENTORY.md](../../bone-business/tpa-go/contracts/API-INVENTORY.md) |
-| TPA-01 | `tpa-go` 骨架（health + migration/status） | done | [tpa-go/README.md](../../bone-business/tpa-go/README.md) |
-| TPA-02 | OpenAPI 契约 CI 校验 | open | `contracts/openapi.yaml` |
-| TPA-03 | 首条业务只读 API Go 实现或代理 | open | 建议从 `/tpa/query` 或 `/health` 邻域开始 |
-| TPA-04 | React `VITE_API_BASE` 灰度切换方案 | open | 见 `tpa-sass-react/.env.example` |
-| TPA-05 | Vue3 功能 parity 清单 | open | 对照 React |
-| TPA-06 | Java `tpa-saas` 域级下线 | open | 阶段 3 |
+> **2026-05**：`bone-business/` 行业包已移出本仓库主干；下列 **TPA-*** 项一律 **cancelled**，勿再排期。
+
+| ID | 描述 | 状态 |
+|----|------|------|
+| TPA-00～06 | 原 Go/React 迁移路线 | cancelled |
 
 ---
 
@@ -41,8 +37,11 @@
 | INT-03 | `JdbcClientImpl` | JDBC 未实现时 **HTTP 501** + `INT_CONNECTOR_NOT_IMPLEMENTED` | done | P1 |
 | INT-04 | `MqClientImpl` | MQ 未实现时 **HTTP 501** + `INT_CONNECTOR_NOT_IMPLEMENTED` | done | P1 |
 | INT-05 | `FlowStatisticsJob` | 每日汇总 `int_execution_log` 成功率（`FlowMonitorService`） | done | P2 |
-| INT-06 | `*Handler` 事件类 | 连接器/流程事件后续动作（`IntegrationDomainEventPublisher` + 7 类 Handler 骨架） | done | P2 |
+| INT-06 | `*Handler` 事件类 | 连接器/流程事件后续动作（`IntegrationDomainEventPublisher` + 7 类 Handler + `bone-notification`） | done | P2 |
 | INT-07 | `bone-platform/pom.xml` | `bone-platform-integration` 入 reactor（与 engine 侧 `bone-integration` 构件区分） | done | P0 |
+| INT-08 | `RestClientImpl` | REST/HTTP/HTTPS 连接器真实 `HttpClient` 调用 | done | P1 |
+| INT-09 | `application.service.FlowExecutionService` | 流程同步执行 START→HTTP→END（`ExecuteFlowHandler` 写回执行日志） | done | P1 |
+| INT-10 | 领域事件 | Outbox/MQ 投递（对齐消息规范 Topic） | open | P2 |
 | INT-SEC-01 | `SecurityConfig` | `BONE_INTEGRATION_JWT_ENABLED=true` 时 `/integration/**` 需 IAM JWT | done | P1 |
 
 **建议**：对外 API 在未实现前返回 **501** + 明确错误码，避免「假成功」。
@@ -80,7 +79,7 @@
 | EXT-MVP-03 | `bone-extension-studio-ui` | 已删除目录；以 `bone-extension-app` 为准 | done | P1 |
 | EXT-MVP-04 | Studio + IAM | `/api/**` JWT 鉴权（`bone.iam.jwt`，CORS 含 3008） | done | P1 |
 | EXT-MVP-05 | `bone-extension-studio` | `points`/`plugins` 支持 `page`/`size`（兼容全量列表） | done | P2 |
-| EXT-MVP-06 | Studio | `rollback` 真实版本回滚（Phase 2） | open | P2 |
+| EXT-MVP-06 | Studio | `rollback` 版本回滚（`ExtensionServiceImpl.rollbackExtension`） | done | P2 |
 | EXT-PH2-01 | Studio | JAR Multipart 上传 + `ext_plugin_version` | open | P2 |
 | EXT-PH3-01 | SDK | Wasm 隔离运行时 | open | P3 |
 
@@ -99,6 +98,18 @@
 | META-VIS-03 | `studio-generator` | 物理库 + **CATALOG_SNAPSHOT**；`GET /api/v1/generator/metadata-entity-snapshots`、`GET …/data-sources/{id}/tables` | done | P0 |
 | META-VIS-04 | `bone-generator-app` | 与 generator :8085 API 对齐 | done | P1 |
 | META-ENG-01 | `bone-metadata-engine` | `SdkMetadataPlatformBridge` 读 `meta_*` status=1 + starter 自动装配 | done | P1 |
+
+## 控制台与仪表盘（bone-shell + bone-system）
+
+> 详设：[1. 控制台与仪表盘模块详细设计方案.md](../design/modules/1.%20控制台与仪表盘模块详细设计方案.md) · PRD §4.3 DASH-001/002
+
+| ID | 位置 | 描述 | 状态 | 优先级 |
+|----|------|------|------|--------|
+| DASH-01 | `bone-shell` | 首页对接 `GET /api/v1/console/overview`（30s 刷新） | done | P0 |
+| DASH-02 | `bone-shell` | 快捷操作来自 `GET /api/v1/console/quick-actions` | done | P0 |
+| DASH-03 | `bone-system` | `ConsoleController` 聚合 JVM 指标与服务状态 | done | P0 |
+
+---
 
 ## Metadata Engine（bone-engine/bone-metadata-engine，原 bone-smartmeta）
 

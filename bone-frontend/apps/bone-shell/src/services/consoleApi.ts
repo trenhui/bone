@@ -3,7 +3,8 @@ import axios from 'axios';
 export type ConsoleOverview = {
   services?: Array<{ name?: string; serviceCode?: string; status?: string }>;
   resourceUsage?: Record<string, number>;
-  keyMetrics?: Record<string, number>;
+  keyMetrics?: Record<string, number | string>;
+  alerts?: Array<{ message?: string; level?: string }>;
   updatedAt?: string;
 };
 

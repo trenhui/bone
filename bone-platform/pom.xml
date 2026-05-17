@@ -4,8 +4,9 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <groupId>com.bone</groupId>
-        <artifactId>bone</artifactId>
+        <artifactId>bone-parent</artifactId>
         <version>1.0.0</version>
+        <relativePath>../bone-parent/pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <modules>
@@ -24,4 +25,13 @@
     <description>
         ⚙️平台服务层 - 企业级共享服务
     </description>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
 </project>

@@ -1,6 +1,8 @@
 # bone-extension-studio
 
-扩展引擎管理台：扩展点 / 扩展实现 CRUD，插件版本与执行日志，以及运行时路由元数据推送。
+扩展引擎管理台：扩展点 / 扩展实现 CRUD，JAR 制品版本与执行日志，以及运行时路由元数据推送。
+
+> **术语**（详设 v2.1）：控制台「插件」= 领域 `Extension`（表 `exts_extension_impl`）；`/plugins/{id}` 的 id 为实现 ID。Wasm 为 [Vision]。
 
 ## 持久化
 

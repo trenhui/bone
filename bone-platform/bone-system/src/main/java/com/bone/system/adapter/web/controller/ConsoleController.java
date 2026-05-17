@@ -90,7 +90,7 @@ public class ConsoleController {
         list.add(svc("主数据", "bone-masterdata", "—", "unknown"));
         list.add(svc("集成", "bone-integration", "—", "unknown"));
         list.add(svc("系统管理", "bone-system", "8083", localStatus));
-        list.add(svc("扩展 Studio", "bone-extension-studio", "8080", "unknown"));
+        list.add(svc("扩展 Studio", "bone-extension-studio", "8088", "unknown"));
         return list;
     }
 
@@ -116,8 +116,11 @@ public class ConsoleController {
 
     private Map<String, Object> keyMetrics() {
         Map<String, Object> m = new LinkedHashMap<>();
-        m.put("orderCount", 0);
         m.put("userCount", 0);
+        m.put("entityCount", 0);
+        m.put("integrationFlowCount", 0);
+        m.put("extensionPluginCount", 0);
+        m.put("orderCount", 0);
         m.put("transactionAmount", 0);
         m.put("jvmThreadsLive", (long) getGauge("jvm.threads.live", 0));
         m.put("jvmThreadsDaemon", (long) getGauge("jvm.threads.daemon", 0));

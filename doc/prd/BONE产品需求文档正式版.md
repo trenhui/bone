@@ -7,7 +7,7 @@
 > **文档性质**：正式产品需求文档，可直接指导研发排期、测试用例编写  
 > **适用产品**：BONE企业级全栈开源快速开发平台  
 > **对标标准**：业界最佳实践、字节跳动 DRF、腾讯 TAPD、阿里云效、OutSystems / Mendix 元数据驱动架构  
-> **版本**：v2.1（v2.0 Final 修订稿） | **发布日期**：2026‑04‑19 | **最近修订**：2026‑05‑16 | **文档状态**：✅ 已发布 | **密级**：内部机密  
+> **版本**：v2.1（v2.0 Final 修订稿） | **发布日期**：2026‑04‑19 | **最近修订**：2026‑05‑17 | **文档状态**：✅ 已发布 | **密级**：内部机密  
 
 ---
 
@@ -148,7 +148,7 @@
 
 | PRD 三大核心能力（产品叙事） | README 技术引擎 / 能力域 |
 |------------------------------|---------------------------|
-| **应用生成** | **智能元数据引擎**（规则/表达式/SmartQL）+ **studio-generator**（代码生成）+ **bone-metadata-sdk**（持久化）+ 控制台（`bone-metadata-app` / `bone-generator-app`）；映射见 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) |
+| **应用生成** | **智能元数据引擎**（双模式：**A** `sdk`+`server`+`studio-generator` 生成式；**B** `sdk`+`bone-metadata-engine` 运行时动态 CRUD）+ 控制台；详见 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §1.3 |
 | **企业集成** | **集成引擎**（连接器、流程编排）；**主数据与质量**由 **企业主数据平台** 独立承载，在消费链路与集成侧协同 |
 | **扩展运行时** | **ExtPoint 扩展引擎**（扩展点、插件生命周期、隔离与观测） |
 | （横切，贯穿上表） | **IAM / 审计 / 多租户（商业版）/ 系统管理** — 企业级安全与运维基线 |
@@ -254,13 +254,15 @@
 
 #### 旅程5：插件开发者 —— 扩展功能开发与部署
 
-1. **扩展点调研**：查看系统提供的扩展点文档，了解可扩展的功能点。
-2. **插件开发**：基于SDK开发自定义插件，实现业务逻辑扩展。
-3. **本地测试**：在开发环境中测试插件功能，确保代码质量。
-4. **插件上传**：将开发完成的插件包上传到BONE平台。
-5. **插件配置**：配置插件参数，设置插件的启用状态和作用范围。
-6. **插件部署**：热部署插件，无需重启系统即可生效（支持版本回滚）。
-7. **功能验证**：验证插件功能是否正常工作，监控插件执行日志。
+> **术语**：控制台「插件」= 扩展实现（`@Extension` + `exts_extension_impl`）；制品为 JAR（`exts_plugin_version`）。见 [扩展管理详设 v2.1](../design/modules/5.%20扩展管理模块详细设计方案.md) §3.1。
+
+1. **扩展点调研**：查看扩展点接口契约（Java FQCN）与路由维度说明。
+2. **扩展实现开发**：基于 `bone-extension-sdk` 实现 `@Extension`，配置 `BizContext` 维度（租户/业务/场景等）。
+3. **本地测试**：在宿主应用中联调扩展点调用与路由。
+4. **制品上传**：上传 JAR，登记版本与 checksum。
+5. **绑定与配置**：绑定扩展点、设置优先级/默认实现/`config_json`（含 SpEL）。
+6. **发布生效**：`:deploy` + `:publish-runtime` 推送路由元数据，无需重启宿主 JVM。
+7. **功能验证**：查看执行日志、审计记录与概览统计。
 
 #### 旅程6：开发团队 —— 项目协作与迭代开发
 
@@ -304,11 +306,11 @@
 
 | 核心能力 | 功能模块 | 详细能力 |
 |----------|----------|----------|
-| **应用生成（Metadata-driven App Gen）** | 元数据管理（能力包） | 业务建模、扩展字段、规则引擎、代码生成、模板管理；工程映射见 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) |
+| **应用生成（Metadata-driven App Gen）** | 元数据管理（能力包） | 业务建模、扩展字段、规则引擎；**模式 A** 代码生成/模板、**模式 B** 运行时动态 CRUD；见 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §1.3 |
 | | 控制台与仪表盘 | 系统概览、快速入口 |
 | **企业集成（Integration Fabric）** | 集成管理 | 连接器管理、流程编排、流程监控 |
 | | 主数据管理 | 主数据实体、数据质量、数据记录 |
-| **扩展运行时（Extension Runtime）** | 扩展管理 | 扩展点管理、插件管理、Sandbox隔离 |
+| **扩展运行时（Extension Runtime）** | 扩展管理 | 扩展点契约、扩展实现（控制台称插件）、JAR 制品与路由发布、执行/审计（详设 v2.1；Wasm 为 [Vision]） |
 | | IAM管理 | 用户管理、角色管理、权限管理、审计日志、多租户（商业版） |
 
 #### 3.1.2 支撑模块
@@ -462,11 +464,23 @@ Scenario: 使用快速入口
 ### 4.4 元数据管理（P0）
 
 > **工程实现映射（单一真源）**：[元数据能力-实现映射与竞品对照.md](../design/modules/元数据能力-实现映射与竞品对照.md)  
-> - **bone-metadata-sdk**：平台数据面（持久化 + 扩展字段 EAV），各业务模块必选。  
-> - **bone-metadata-server**（`:9001`）：**As-Is** 扩展字段 EAV + catalog REST（`/api/v1/metadata/*`，字段嵌套于实体，见对照文档 §1.2）。多应用共享扩展字段时用 `REMOTE`。  
-> - **bone-metadata-engine**：智能元数据引擎（规则/表达式/SmartQL），可选接入。  
-> - **代码生成**：`studio-generator` / `bone-codegen`；与引擎 **混合**，引擎不替代 DDD 源码交付。  
-> 下文 META-* 验收为目标态；As-Is 实现状态见对照文档 §7。
+> - **bone-metadata-sdk**：平台数据面（持久化 + 扩展字段 EAV），**模式 A / B 共用**。  
+> - **bone-metadata-server**（`:9001`）：元模型控制面 — 扩展字段 EAV + catalog REST（`/api/v1/metadata/*`）。多应用共享扩展字段时用 `REMOTE`。  
+> - **模式 A · 生成式**：`studio-generator` / `bone-codegen` → 可编译源码进 Git（信创、深度定制、ExtPoint）。  
+> - **模式 B · 运行时**：`bone-metadata-engine` → 按已发布 `meta_*` 提供动态 CRUD / SmartQL / 规则，**标准场景可不生成业务 Controller**（对标 Salesforce 声明式运行时）。  
+> 下文 META-* 验收为目标态；As-Is 见对照文档 §7（**当前主线为模式 A**；模式 B 引擎待接平台）。
+
+#### 双模式交付（产品定位）
+
+| 维度 | **模式 A · 生成式** | **模式 B · 运行时** |
+|------|---------------------|---------------------|
+| 消费方式 | 元数据 → 生成 Java/TS → 编译部署 | 元数据 → 解释执行 → `sdk` 直读写库 |
+| 主责模块 | `studio-generator` | `bone-metadata-engine` |
+| 优先场景 | 源码审计、DDD 门禁、复杂领域逻辑 | 运营台、配置型实体、多租户标准对象 |
+| 业界参照 | OutSystems、JHipster | Mendix 默认运行时、Directus / Hasura |
+| 演进 | 收窄为「骨架 + 逃逸舱」 | 覆盖标准 CRUD 后，**不必**为每实体生成代码 |
+
+**原则**：`engine` 与 `generator` 是同一 `meta_*` 的两种消费路径，**可并存**；企业可按系统/域选型（详见 [README](../README.md) 智能元数据引擎节）。
 
 #### 需求ID: META-001 业务实体管理
 
@@ -512,10 +526,10 @@ Scenario: 将业务实体转换为主数据实体
 
 ---
 
-#### 需求ID: META-002 代码生成
+#### 需求ID: META-002 代码生成（模式 A · 生成式交付）
 
 **用户故事**  
-> 作为开发人员，我希望基于业务实体生成前后端代码，支持多种模板，以减少重复编码工作。
+> 作为开发人员，我希望基于业务实体生成前后端代码，支持多种模板，以减少重复编码工作（**模式 A**；若实体已启用模式 B 运行时面，标准 CRUD 可不经过本需求）。
 
 **验收标准（BDD）**
 ```gherkin
@@ -545,6 +559,42 @@ Scenario: 查看生成历史
 - 生成的代码包含完整的项目结构和配置文件
 - 模板引擎使用 **FreeMarker 2.3.32**，提供内置函数库和变量模型文档
 - 模板版本与实体版本解耦：实体变更时，代码生成页面提示“模板可能不兼容”，用户可选择继续生成或升级模板
+- 实体可标注交付模式：`GENERATIVE`（默认，走本需求）/ `RUNTIME`（走 META-002B，跳过标准 CRUD 生成）
+
+---
+
+#### 需求ID: META-002B 运行时元数据面（模式 B · 规划 P1）
+
+**用户故事**  
+> 作为开发人员或实施顾问，我希望对已发布的业务实体直接获得标准 CRUD API 与列表能力，而无需为每个实体生成并部署 Controller 代码。
+
+**验收标准（BDD）**
+```gherkin
+Scenario: 发布实体后获得动态 API
+  Given 用户已发布业务实体 E，且 E 的交付模式为 RUNTIME
+  When 系统完成发布
+  Then 可通过统一前缀访问 E 的列表、详情、创建、更新、删除 API
+    And 请求经 bone-metadata-engine 解析 meta_* 后由 bone-metadata-sdk 执行持久化
+    And 不生成 E 专属的 Java Controller 源码
+
+Scenario: 规则与校验在运行时生效
+  Given 实体 E 已配置字段校验或业务规则
+  When 用户通过动态 API 写入不符合规则的数据
+  Then 返回统一错误码与校验说明
+    And 行为与模式 A 生成代码的校验语义一致（可配置对齐）
+
+Scenario: 模式 B 与模式 A 共存
+  Given 租户内实体 E1 为 RUNTIME、E2 为 GENERATIVE
+  When 用户分别访问两类实体
+  Then E1 走动态 API，E2 仍通过生成工程或手工 Controller 访问
+    And 元模型与控制面 API 一致（catalog @ bone-metadata-server）
+```
+
+**业务规则**
+- 动态 API 路径纳入 `/api/v1/metadata` 或独立 `dynamic` 域，以 [Bone-API-规范](../architecture/Bone-API-规范.md) 登记为准
+- **engine 编排、sdk 执行**：禁止在 engine 内重复实现 JDBC 栈
+- 复杂流程、ExtPoint 织入、信创源码交付仍走 **模式 A** 或手写
+- As-Is：`bone-metadata-engine` 库存在，本需求 **未** 验收；见对照文档 §1.3
 
 ---
 
@@ -682,84 +732,137 @@ Scenario: 发布主数据记录
 
 ### 4.6 扩展管理（P1）
 
-#### 需求ID: EXT-001 扩展点管理
+> **详设真源**：[扩展管理模块详细设计方案 v2.1](../design/modules/5.%20扩展管理模块详细设计方案.md)（As-Is / [Target] / [Vision] 分层）。  
+> **工程**：`bone-extension-sdk`（运行时）、`bone-extension-studio`（**8088**，`BONE_EXTENSION_STUDIO_PORT`）、`bone-extension-app`（**3008**）。  
+> **API**：`/api/v1/extension/*`；鉴权 Scope 见 [Bone-API-规范](../architecture/Bone-API-规范.md) §9.2。  
+> **As-Is 运行时**：Java 扩展点 + `BizContext` 四级路由 + JAR 制品；**非** Wasm 沙箱（Wasm 见详设 §12 [Vision]）。
+
+#### 需求ID: EXT-001 扩展点管理（As-Is）
 
 **用户故事**  
-> 作为开发人员，我希望定义系统扩展点，管理扩展点生命周期，以支持系统功能扩展。
+> 作为开发人员，我希望登记稳定扩展点接口（Java FQCN），并管理其启用状态，以支撑多实现路由。
 
 **验收标准（BDD）**
 ```gherkin
 Scenario: 创建扩展点
-  Given 用户已登录系统，且拥有扩展管理权限
-  When 用户点击“创建扩展点”，填写扩展点名称、描述、类型、目标对象
-  Then 系统保存扩展点，返回扩展点ID
+  Given 用户已登录且 JWT 含 scope extension:points:write
+  When 用户 POST /api/v1/extension/points，填写名称、描述、interfaceName（接口 FQCN）、业务域
+  Then 系统保存至 exts_extension_point 并返回扩展点 ID
+    And 响应为 ApiResponse 成功信封
 
-Scenario: 管理扩展点
-  Given 用户已创建扩展点
-  When 用户修改扩展点描述、类型或目标对象
-  Then 系统保存修改
-    And 扩展点状态保持为“启用”
+Scenario: 查询与搜索扩展点
+  Given 用户含 scope extension:points:read
+  When 用户 GET /api/v1/extension/points，可选 keyword、domain、category
+  Then 返回扩展点列表（支持 page/size 分页）
 
 Scenario: 禁用扩展点
-  Given 用户已创建扩展点，状态为“启用”
-  When 用户点击“禁用”按钮
-  Then 扩展点状态变为“禁用”
-    And 禁用的扩展点不再触发
+  Given 扩展点状态为 ENABLED
+  When 用户 POST /api/v1/extension/points/{id}:disable
+  Then 状态变为 DISABLED
+    And 运行时不再对该扩展点选路（已发布元数据同步后生效）
 ```
 
-**业务规则**
-- 扩展点类型包括：前置、后置、环绕
-- 目标对象包括：订单、用户、商品等业务对象
-- 扩展点状态包括：启用、禁用
+**业务规则（As-Is）**
+- 扩展点 = **稳定 Java 接口契约**（`interface_name` / `point_code`，通常 FQCN）；**不**使用「前置/后置/环绕」作为扩展点类型字段
+- 单次方法调用的 before/around/after 属于 SDK `ExtensionLifecycle`，与扩展点元数据无关
+- 状态：`ENABLED` / `DISABLED`
+- 租户隔离：`tenant_id`；禁止跨租户修改
+
+**[Target]**：创建返回 HTTP 201 + `Location`；PUT 支持 `If-Match` / `version` 乐观锁。
 
 ---
 
-#### 需求ID: EXT-002 插件管理
+#### 需求ID: EXT-002 扩展实现与 JAR 制品（As-Is，控制台称「插件」）
 
 **用户故事**  
-> 作为开发人员，我希望上传、部署、卸载插件，管理插件配置，支持版本回滚，以扩展系统功能。
+> 作为开发人员，我希望管理扩展实现及其 JAR 版本，完成部署、路由发布与回滚，使业务宿主在不重启 JVM 的情况下加载新逻辑。
 
 **验收标准（BDD）**
 ```gherkin
-Scenario: 上传插件
-  Given 用户已登录系统，且拥有插件管理权限
-  When 用户上传插件包（JAR文件），填写插件名称、版本、描述
-  Then 系统保存插件信息，返回插件ID
-    And 插件状态为“已安装”
+Scenario: 创建扩展实现并绑定扩展点
+  Given 用户含 scope extension:points:write，且已存在扩展点
+  When 用户创建扩展实现（POST /api/v1/extension/plugins 或控制台等价操作）
+    And 配置 className、路由维度（tenantCode/bizCode/useCase/scenario 等）与 priority
+    And POST /api/v1/extension/plugins/{id}:bind 指定 extensionPointId
+  Then 记录写入 exts_extension_impl
 
-Scenario: 部署插件
-  Given 用户已上传插件，状态为“已安装”
-  When 用户点击“部署”按钮
-  Then 系统加载插件，插件状态变为“已部署”
-    And 已部署的插件可响应扩展点事件
+Scenario: 上传 JAR 制品
+  Given 用户含 scope extension:plugins:deploy
+  When 用户 POST /api/v1/extension/plugins:upload（multipart JAR）
+  Then 写入 exts_plugin_version（checksum、release_version）
+    And 保留最近 3 个版本策略可配置
 
-Scenario: 插件升级失败自动回滚
-  Given 插件当前版本为 v1.0，状态为“已部署”
-  When 用户上传插件 v2.0 并部署
-    And 部署后系统检测到插件频繁崩溃（5分钟内3次异常）
-  Then 系统自动回滚到 v1.0
-    And 发送告警通知管理员
+Scenario: 部署并发布运行时
+  Given 用户含 scope extension:plugins:deploy
+  When 用户 POST /api/v1/extension/plugins/{id}:deploy
+    And POST /api/v1/extension/plugins/{id}:publish-runtime
+  Then 激活版本 is_active=1
+    And 路由元数据同步至 Redis 或内存（profile 可关闭 Redis）
 
-Scenario: 手动回滚插件版本
-  Given 插件当前版本为 v2.0，状态为“已部署”
-  When 用户点击“回滚”，选择历史版本 v1.0
-  Then 系统卸载 v2.0，重新加载 v1.0
-    And 插件状态恢复为“已部署”
+Scenario: 手动回滚版本
+  Given 存在多个 release_version
+  When 用户 POST /api/v1/extension/plugins/{id}:rollback
+  Then 当前激活版本切换为所选历史版本
+    And 须再次 publish-runtime 使路由生效
 
-Scenario: 卸载插件
-  Given 用户已部署插件，状态为“已部署”
-  When 用户点击“卸载”按钮
-  Then 系统卸载插件，插件状态变为“已卸载”
-    And 已卸载的插件不再响应扩展点事件
+Scenario: 卸载
+  When 用户 POST /api/v1/extension/plugins/{id}:undeploy
+  Then 扩展实现不再参与路由（元数据与启用状态按实现逻辑更新）
+```
+
+**业务规则（As-Is）**
+- 制品格式：**JAR**；`plugin_id` 在版本表中指 **扩展实现 ID**（无独立 `exts_plugin` 主表）
+- 热生效：依赖 **元数据发布**（`:publish-runtime`），非重启 `bone-extension-studio`
+- 路由：精确匹配 → SpEL → 模糊（`*`）→ 默认实现（`is_default`）；支持 `rollout_percent` 字段 **[Target：与路由金丝雀联动]**
+- 权限：`extension:points:read|write`、`extension:plugins:deploy`
+
+**[Target]**
+- 部署状态机：Uploaded → Validated → Staged → Active → Deprecated
+- 写操作 `Idempotency-Key`；大制品 `:deploy` 返回 202 LRO
+- 失败自动回滚（连续异常触发）+ 告警
+- 执行超时熔断、按插件 Bulkhead 线程池；上传病毒扫描与依赖漏洞扫描
+
+**[Vision]**：Wasm/WASI 运行时、插件市场、插件依赖图。
+
+---
+
+#### 需求ID: EXT-003 可观测与审计（As-Is）
+
+**用户故事**  
+> 作为运维/开发人员，我希望查询扩展执行日志与操作审计，支撑排障与合规。
+
+**验收标准（BDD）**
+```gherkin
+Scenario: 游标查询执行日志
+  Given 用户含 scope extension:points:read
+  When GET /api/v1/extension/execution-logs?limit=20
+  Then 返回 PageResult（records + nextCursor）
+    And 响应头可含 Link rel=next
+
+Scenario: SDK 上报执行日志
+  Given 宿主配置 studio report 且含 deploy scope
+  When SDK POST /api/v1/extension/execution-logs:ingest
+  Then 写入 exts_plugin_execution_log
+
+Scenario: 查询审计日志
+  When GET /api/v1/extension/audit-logs?limit=20
+  Then 返回管理操作审计（deploy/rollback 等），落库 exts_audit_log
 ```
 
 **业务规则**
-- 插件包格式为JAR文件
-- 插件部署支持热部署，无需重启服务
-- 插件包存储保留最近3个版本
-- 插件沙箱增加资源限制：CPU 配额 0.5 核，内存 512MB，超时 30 秒
-- 支持插件超时熔断：单次执行超过 30 秒自动终止
-- 插件状态包括：已安装、已部署、已卸载
+- 日志类接口**默认游标分页**（见 Bone-API-规范 §5）
+- `traceId` 与 `X-Request-Id` / MDC 一致
+- 社区版审计保留策略见 §3.1.3；商业版 WORM 见 ADR-012
+
+---
+
+#### 扩展管理 — 实现符合度（与详设 §2 同步）
+
+| 需求 | MVP 验收（As-Is） | [Target] | [Vision] |
+|------|-------------------|----------|----------|
+| EXT-001 | Studio CRUD + enable/disable | 201、乐观锁 | — |
+| EXT-002 | JAR 上传/部署/回滚/bind + publish-runtime | 幂等、LRO、状态机、熔断 | Wasm、市场 |
+| EXT-003 | 游标日志 + ingest + audit | Prometheus SLI | 资源计量表 |
 
 ---
 
@@ -1391,7 +1494,7 @@ flowchart TD
 这种分层架构解决了职责混乱、双写和依赖反转问题，确保系统的可维护性和可扩展性。
 
 > **与仓库 As-Is 的关系**：上图为**逻辑分层视图**（UI → 平台服务 → 引擎能力）。当前 monorepo 以 `bone-platform/*`、`bone-engine/*` 等 **Maven 模块**落地，可为多进程部署或同机多端口调试，**不必**一一对应图中每个 `*Service` 独立微服务。模块边界与默认端口见 [doc/wiki/03-本地开发与构建.md](../wiki/03-本地开发与构建.md)。  
-> **元数据落点**：图中 `MetadataService` 为目标态；As-Is 扩展字段 API 为 **bone-metadata-server**；全平台持久化为 **bone-metadata-sdk**；`MetadataEngine` 对应 **bone-metadata-engine**（默认未启用）。见 [元数据能力-实现映射与竞品对照](../design/modules/元数据能力-实现映射与竞品对照.md)。
+> **元数据落点**：图中 `MetadataService` 为目标态；As-Is 扩展字段 API 为 **bone-metadata-server**；全平台持久化为 **bone-metadata-sdk**；`MetadataEngine` 对应 **bone-metadata-engine**（模式 B，默认未启用）。双模式见 §4.4 与 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §1.3。
 
 ### 7.2 技术选型（含自研SDK优化指南）
 
@@ -1508,12 +1611,12 @@ flowchart TD
 - DataQualityRule: 数据质量规则（id, entity_id, rule_type, params）
 - DataQualityResult: 数据质量结果（id, rule_id, execution_time, pass_count, fail_count）
 
-**扩展模型**：
-- ExtensionPoint: 扩展点（id, name, target, type, enabled）
-- ExtensionPlugin: 扩展插件（id, name, version, jar_path, status, tenant_id）
-- ExtensionConfig: 扩展配置（id, plugin_id, config_json）
-- ExtensionExecution: 扩展执行记录（id, plugin_id, execution_time, duration, success）
-- Sandbox: 插件沙箱（资源限制配置）
+**扩展模型**（DDL 真源 `bone-init.sql` §5 `exts_*`，详设 v2.1）：
+- ExtPoint → `exts_extension_point`（interface_name, point_code, status, tenant_id）
+- Extension（控制台「插件」）→ `exts_extension_impl`（extension_point_id, class_name, 路由维度, config_json, rollout_percent）
+- PluginVersion → `exts_plugin_version`（plugin_id=实现 ID, checksum, is_active）
+- PluginExecutionLog → `exts_plugin_execution_log`；AuditLog → `exts_audit_log`
+- **[Vision]**：Wasm 运行时、插件市场、资源计量；**[Target]**：部署状态机、供应链签名校验
 
 **集成模型**：
 - Connector: 连接器（id, name, type, config, status, tenant_id）
@@ -1560,7 +1663,7 @@ flowchart TD
 | ADR-006 | 引入统一领域模型 | 数据模型设计 | Entity、Attribute、Relation、Policy、Event、ExtensionPoint | 全系统 |
 | ADR-007 | 收敛为三大核心能力 | 产品定位 | 应用生成、企业集成、扩展运行时 | 产品战略 |
 | ADR-008 | IAM升级为Policy Decision Engine | 安全架构 | Policy Decision Engine | 安全模块 |
-| ADR-009 | 插件系统增强 | 扩展架构 | Sandbox + ClassLoader隔离 + 版本回滚 | 扩展模块 |
+| ADR-009 | 插件系统增强 | 扩展架构 | JAR + ClassLoader 隔离思路 + 元数据热发布 + 版本回滚（Wasm 另立 ADR [Vision]） | 扩展模块 |
 | ADR-010 | 支持多租户行级隔离 | 大型集团客户需求 | 共享 Schema + tenant_id 过滤 | 所有服务、数据层 |
 | ADR-011 | 采用 Kubernetes 为官方部署平台 | 企业运维标准化 | Helm Chart + HPA | 运维、部署 |
 | ADR-012 | 审计日志使用 WORM 对象存储（商业版） | 金融合规要求 | MinIO + 对象锁定 | IAM 模块 |

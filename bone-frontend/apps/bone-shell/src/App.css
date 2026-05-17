@@ -132,6 +132,17 @@
   margin-bottom: 8px;
 }
 
+.dashboard-updated {
+  font-size: 12px;
+  color: #888;
+  margin-top: 4px;
+}
+
+.status-empty {
+  color: #999;
+  font-size: 13px;
+}
+
 .dashboard-header p {
   font-size: 16px;
   margin-bottom: 16px;

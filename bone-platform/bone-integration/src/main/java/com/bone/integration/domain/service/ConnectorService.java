@@ -17,19 +17,27 @@ public class ConnectorService {
     private final Map<String, ExternalSystemClient> externalSystemClients;
 
     public boolean testConnector(Connector connector) {
-        ExternalSystemClient client = externalSystemClients.get(connector.getType().name());
-        if (client == null) {
-            throw new DomainException("不支持的连接器类型: " + connector.getType());
-        }
-        return client.testConnection(connector.getConfig());
+        return resolveClient(connector).testConnection(connector.getConfig());
     }
 
     public Object executeConnector(Connector connector, String endpoint, Map<String, Object> params) {
-        ExternalSystemClient client = externalSystemClients.get(connector.getType().name());
+        return resolveClient(connector).sendRequest(endpoint, params, connector.getConfig());
+    }
+
+    private ExternalSystemClient resolveClient(Connector connector) {
+        String type = connector.getType().name();
+        ExternalSystemClient client = externalSystemClients.get(type);
+        if (client == null && isHttpFamily(type)) {
+            client = externalSystemClients.get("REST");
+        }
         if (client == null) {
             throw new DomainException("不支持的连接器类型: " + connector.getType());
         }
-        return client.sendRequest(endpoint, params, connector.getConfig());
+        return client;
+    }
+
+    private static boolean isHttpFamily(String type) {
+        return "HTTP".equals(type) || "HTTPS".equals(type);
     }
 
     public void validateConnectorName(String name, Long excludeId) {

@@ -8,7 +8,7 @@ Bone 四大引擎与相关中间件的 Maven 聚合目录。
 |------|------|----------|
 | [bone-metadata-sdk](./bone-metadata-sdk/) | **数据面**：平台 P0 持久化 + 扩展字段 EAV（嵌入业务进程） | [README](./bone-metadata-sdk/README.md) → [doc/](./bone-metadata-sdk/doc/) |
 | [bone-metadata-server](./bone-metadata-server/) | **控制面（选配）**：:9001 — As-Is 扩展字段 EAV；MVP-2 catalog（实体/字段/关系） | [README](./bone-metadata-server/README.md) |
-| [bone-metadata-engine](./bone-metadata-engine/) | **计算面（选配）**：智能元数据引擎（规则/表达式/SmartQL） | [README](./bone-metadata-engine/README.md) |
+| [bone-metadata-engine](./bone-metadata-engine/) | **模式 B 计算面**：运行时动态 CRUD / 规则 / SmartQL（增强后可减少标准代码生成） | [README](./bone-metadata-engine/README.md) |
 | — | **三模块定义、协作与竞品** | [doc/design/modules/元数据能力-实现映射与竞品对照.md](../doc/design/modules/元数据能力-实现映射与竞品对照.md) |
 | [bone-extension-engine](./bone-extension-engine/) | ExtPoint 扩展引擎（SDK + Studio） | [README](./bone-extension-engine/README.md)（摘要）→ [docs/使用指南](./bone-extension-engine/docs/使用指南.md) |
 | [bone-integration](./bone-integration/) | 集成引擎运行时 | [README](./bone-integration/README.md) |
