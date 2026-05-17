@@ -4,6 +4,7 @@ import com.bone.core.domain.AggregateRoot;
 import com.bone.core.exception.DomainException;
 import com.bone.integration.domain.model.execution.event.ExecutionCompletedEvent;
 import com.bone.integration.domain.model.execution.event.ExecutionStartedEvent;
+import com.bone.integration.domain.model.flow.event.FlowExecutedEvent;
 import com.bone.integration.domain.model.execution.vo.ExecutionStatus;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import lombok.AccessLevel;
@@ -55,6 +56,7 @@ public class IntegrationLog extends AggregateRoot<Long> {
         this.endedAt = LocalDateTime.now();
         this.outputData = outputData;
         this.addDomainEvent(new ExecutionCompletedEvent(this.id, this.flowId, true, outputData, null));
+        this.addFlowExecutedEvent(true, "执行成功");
     }
 
     public void fail(String errorMessage) {
@@ -65,6 +67,7 @@ public class IntegrationLog extends AggregateRoot<Long> {
         this.endedAt = LocalDateTime.now();
         this.errorMessage = errorMessage;
         this.addDomainEvent(new ExecutionCompletedEvent(this.id, this.flowId, false, null, errorMessage));
+        this.addFlowExecutedEvent(false, errorMessage);
     }
 
     public void timeout() {
@@ -75,5 +78,10 @@ public class IntegrationLog extends AggregateRoot<Long> {
         this.endedAt = LocalDateTime.now();
         this.errorMessage = "执行超时";
         this.addDomainEvent(new ExecutionCompletedEvent(this.id, this.flowId, false, null, "执行超时"));
+        this.addFlowExecutedEvent(false, "执行超时");
+    }
+
+    private void addFlowExecutedEvent(boolean success, String message) {
+        addDomainEvent(new FlowExecutedEvent(this.flowId, this.id, success, message));
     }
 }

@@ -1,8 +1,8 @@
 package com.bone.masterdata.infrastructure.util;
 
 import com.bone.masterdata.infrastructure.config.ExcelConfig;
-import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityId;
-import com.bone.masterdata.domain.model.record.MasterDataRecord;
+import com.bone.core.util.DistributedIdGenerator;
+import com.bone.masterdata.domain.record.MasterDataRecord;
 import com.bone.core.exception.SystemException;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.usermodel.DateUtil;
@@ -42,7 +42,8 @@ public class ExcelUtils {
                 dataBuilder.append("}");
                 String data = dataBuilder.toString();
                 
-                MasterDataRecord record = MasterDataRecord.create(MasterDataEntityId.of(masterDataEntityId), data);
+                Long recordId = DistributedIdGenerator.generateLongId();
+                MasterDataRecord record = MasterDataRecord.create(recordId, masterDataEntityId, data);
                 records.add(record);
             }
             

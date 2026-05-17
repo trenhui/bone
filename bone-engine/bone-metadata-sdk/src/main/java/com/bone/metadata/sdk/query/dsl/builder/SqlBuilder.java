@@ -6,6 +6,7 @@ import com.bone.metadata.sdk.query.dsl.context.QueryContext.Condition;
 import com.bone.metadata.sdk.query.dsl.context.QueryContext.Join;
 import com.bone.metadata.sdk.query.dsl.context.QueryContext.Order;
 import com.bone.metadata.sdk.query.dsl.util.SqlSafeUtils;
+import com.bone.metadata.sdk.support.util.SqlUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -96,7 +97,7 @@ public class SqlBuilder<T> {
                             }
                             String paramName = "p" + paramIndex;
                             placeholders.append(":").append(paramName);
-                            parameters.add(values.get(i));
+                            addParameter(values.get(i));
                             paramIndex++;
                         }
                         sql.append(" (").append(placeholders).append(")");
@@ -106,12 +107,12 @@ public class SqlBuilder<T> {
             case "BETWEEN":
                 String paramName1 = "p" + paramIndex;
                 sql.append(" :").append(paramName1);
-                parameters.add(value1);
+                addParameter(value1);
                 paramIndex++;
                 
                 String paramName2 = "p" + paramIndex;
                 sql.append(" AND :").append(paramName2);
-                parameters.add(condition.getValue2());
+                addParameter(condition.getValue2());
                 paramIndex++;
                 break;
             case "IS NULL":
@@ -121,7 +122,7 @@ public class SqlBuilder<T> {
             default:
                 String paramName = "p" + paramIndex;
                 sql.append(" :").append(paramName);
-                parameters.add(value1);
+                addParameter(value1);
                 paramIndex++;
                 break;
         }
@@ -291,7 +292,7 @@ public class SqlBuilder<T> {
                     sql.append(queryContext.getEntityAlias()).append(".")
                             .append(camelToSnake(joinCondition.getEntityField())).append(" ")
                             .append(joinCondition.getOperator()).append(" :param").append(parameters.size());
-                    parameters.add(joinCondition.getValue());
+                    addParameter(joinCondition.getValue());
                 }
             }
         }
@@ -347,7 +348,7 @@ public class SqlBuilder<T> {
                             }
                             String paramName = "p" + paramIndex;
                             sql.append(":").append(paramName);
-                            parameters.add(values.get(i));
+                            addParameter(values.get(i));
                             paramIndex++;
                         }
                     }
@@ -359,12 +360,12 @@ public class SqlBuilder<T> {
                 String paramName1 = "p" + paramIndex;
                 sql.append(entityAlias).append(".").append(columnName).append(" ").append(operator)
                     .append(" :").append(paramName1);
-                parameters.add(value1);
+                addParameter(value1);
                 paramIndex++;
                 
                 String paramName2 = "p" + paramIndex;
                 sql.append(" AND :").append(paramName2);
-                parameters.add(value2);
+                addParameter(value2);
                 paramIndex++;
                 break;
                 
@@ -372,7 +373,7 @@ public class SqlBuilder<T> {
             case "NOT LIKE":
                 String paramName = "p" + paramIndex;
                 sql.append(entityAlias).append(".").append(columnName).append(" ").append(operator).append(" :").append(paramName);
-                parameters.add(value1);
+                addParameter(value1);
                 paramIndex++;
                 break;
                 
@@ -385,7 +386,7 @@ public class SqlBuilder<T> {
             default:
                 paramName = "p" + paramIndex;
                 sql.append(entityAlias).append(".").append(columnName).append(" ").append(operator).append(" :").append(paramName);
-                parameters.add(value1);
+                addParameter(value1);
                 paramIndex++;
                 break;
         }
@@ -438,6 +439,10 @@ public class SqlBuilder<T> {
     }
 
     // ===== 工具方法 =====
+
+    private void addParameter(Object value) {
+        parameters.add(SqlUtil.toJdbcParameter(value));
+    }
 
     /**
      * 驼峰命名转下划线命名

@@ -2,12 +2,14 @@ package com.bone.studio.generator.application.command.handler;
 
 import com.bone.core.usecase.Capability;
 import com.bone.studio.generator.application.command.cmd.GenerateCodeCommand;
+import com.bone.studio.generator.domain.catalog.MetadataSourceType;
 import com.bone.studio.generator.domain.code.CodeGenerationRequest;
 import com.bone.studio.generator.domain.code.CodeGenerationResponse;
 import com.bone.studio.generator.domain.history.CodeGenerationHistory;
 import com.bone.studio.generator.domain.repository.CodeGenerationHistoryRepository;
 import com.bone.studio.generator.domain.repository.CodeTemplateRepository;
 import com.bone.studio.generator.domain.repository.DataSourceRepository;
+import com.bone.studio.generator.common.StudioIds;
 import com.bone.studio.generator.domain.service.CodeGeneratorService;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,9 +42,13 @@ public class GenerateCodeHandler {
             throw new IllegalArgumentException("模板不存在: " + command.getTemplateId());
         }
         
-        // 2. 验证数据源是否存在（如果指定了数据源）
-        if (command.getDataSourceId() != null && !command.getDataSourceId().isEmpty()) {
-            var dataSource = dataSourceRepository.findById(command.getDataSourceId());
+        MetadataSourceType sourceType = resolveMetadataSource(command.getMetadataSource());
+
+        // 2. 物理库模式：验证数据源
+        if (sourceType == MetadataSourceType.PHYSICAL_DB
+                && command.getDataSourceId() != null
+                && !command.getDataSourceId().isEmpty()) {
+            var dataSource = dataSourceRepository.findById(StudioIds.parseRequired(command.getDataSourceId()));
             if (dataSource == null) {
                 throw new IllegalArgumentException("数据源不存在: " + command.getDataSourceId());
             }
@@ -80,6 +86,9 @@ public class GenerateCodeHandler {
                     .tableNames(command.getTableNames())
                     .basePackage(command.getBasePackage())
                     .moduleName(command.getModuleName())
+                    .metadataSource(sourceType)
+                    .tenantId(command.getTenantId())
+                    .entityCodes(command.getEntityCodes())
                     .build();
             
             // 5. 执行代码生成
@@ -102,5 +111,12 @@ public class GenerateCodeHandler {
             historyRepository.save(history);
             throw new RuntimeException("代码生成失败: " + e.getMessage(), e);
         }
+    }
+
+    private static MetadataSourceType resolveMetadataSource(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return MetadataSourceType.PHYSICAL_DB;
+        }
+        return MetadataSourceType.valueOf(raw.trim().toUpperCase());
     }
 }

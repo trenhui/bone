@@ -1,11 +1,14 @@
 package com.bone.system.domain.config;
 
+import com.bone.core.annotation.Id;
 import com.bone.core.domain.AggregateRoot;
-import com.bone.system.domain.config.event.ConfigChangedEvent;
-import com.bone.system.domain.config.event.ConfigCreatedEvent;
-import com.bone.system.domain.config.vo.ConfigKey;
-import com.bone.system.domain.config.vo.ConfigType;
-import com.bone.system.domain.config.vo.ConfigValue;
+import com.bone.core.domain.id.GeneratedValue;
+import com.bone.core.domain.id.GenerationStrategy;
+import com.bone.system.domain.model.config.event.ConfigChangedEvent;
+import com.bone.system.domain.model.config.event.ConfigCreatedEvent;
+import com.bone.system.domain.model.config.vo.ConfigKey;
+import com.bone.system.domain.model.config.vo.ConfigType;
+import com.bone.system.domain.model.config.vo.ConfigValue;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -14,9 +17,11 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Getter
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table("sys_config")
 public class SystemConfig extends AggregateRoot<Long> {
+    @Id
+    @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
     private Long id;
     private ConfigKey configKey;
     private ConfigValue configValue;

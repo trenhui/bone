@@ -1,13 +1,14 @@
 package com.bone.studio.generator.adapter.web.controller;
 
 import com.bone.core.result.ApiResponse;
+import com.bone.studio.generator.common.GeneratorApiPaths;
 import com.bone.studio.generator.application.command.cmd.CreateCodeGenerationCommand;
 import com.bone.studio.generator.application.usecase.CreateCodeGenerationUseCase;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/code-generation")
+@RequestMapping(GeneratorApiPaths.CODE_GENERATION)
 @RequiredArgsConstructor
 public class CodeGenerationController {
 

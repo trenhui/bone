@@ -1,6 +1,7 @@
 package com.bone.metadata.sdk.sql.executor;
 
 import com.bone.metadata.sdk.support.cache.FieldCache;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.RowMapper;
 
@@ -40,9 +41,9 @@ public class SmartRowMapper<T> implements RowMapper<T> {
             if (field != null) {
                 try {
                     field.setAccessible(true);
-                    Object value = rs.getObject(i);  // 获取数据库列的值
-                    value = TypeConverter.convert(value, field.getType());  // 类型转换
-                    field.set(result, value);  // 设置字段值
+                    Object value = rs.getObject(i);
+                    value = convertFieldValue(value, field.getType());
+                    field.set(result, value);
                 } catch (IllegalAccessException e) {
                     throw new SQLException("Failed to set value for column: " + columnName + ", field: " + field.getName(), e);
                 }
@@ -54,9 +55,57 @@ public class SmartRowMapper<T> implements RowMapper<T> {
     /**
      * 创建目标类的实例
      */
+    private Object convertFieldValue(Object value, Class<?> targetType) throws SQLException {
+        if (value == null) {
+            return null;
+        }
+        value = unwrapJdbcLob(value);
+        if (targetType == boolean.class || targetType == Boolean.class) {
+            if (value instanceof Boolean boolValue) {
+                return boolValue;
+            }
+            if (value instanceof Number number) {
+                return number.intValue() != 0;
+            }
+            if (value instanceof String str) {
+                return Boolean.parseBoolean(str);
+            }
+        }
+        try {
+            return TypeConverter.convert(value, targetType);
+        } catch (TypeConverter.UnsupportedConversionException | TypeConverter.TypeConversionException ex) {
+            if (targetType.isEnum() && value instanceof String str) {
+                @SuppressWarnings({"unchecked", "rawtypes"})
+                Class<? extends Enum> enumType = (Class<? extends Enum>) targetType;
+                return Enum.valueOf(enumType, str);
+            }
+            if (targetType.isRecord() && value instanceof String str) {
+                try {
+                    return targetType.getMethod("of", String.class).invoke(null, str);
+                } catch (ReflectiveOperationException ignored) {
+                    // fall through
+                }
+            }
+            throw new SQLException(
+                    "Failed to convert column value to " + targetType.getName() + ": " + value, ex);
+        }
+    }
+
+    private static Object unwrapJdbcLob(Object value) throws SQLException {
+        if (value instanceof java.sql.Clob clob) {
+            long length = clob.length();
+            return clob.getSubString(1, (int) Math.min(length, Integer.MAX_VALUE));
+        }
+        if (value instanceof java.sql.NClob nclob) {
+            long length = nclob.length();
+            return nclob.getSubString(1, (int) Math.min(length, Integer.MAX_VALUE));
+        }
+        return value;
+    }
+
     private T createInstance() throws SQLException {
         try {
-            return mappedClass.getDeclaredConstructor().newInstance();
+            return BeanUtils.instantiateClass(mappedClass);
         } catch (Exception e) {
             throw new SQLException("Failed to instantiate " + mappedClass.getName(), e);
         }

@@ -1,0 +1,32 @@
+spring:
+  sql:
+    init:
+      mode: never
+  autoconfigure:
+    exclude:
+      - com.bone.metadata.sdk.support.config.MetadataAutoConfiguration
+  jpa:
+    hibernate:
+      ddl-auto: none
+
+metadata:
+  sdk:
+    appcode: bone-extension-studio-mysql-it
+    deploymentMode: EMBEDDED
+
+bone:
+  metadata:
+    enabled: true
+    mode: EMBEDDED
+    scan-packages: com.bone.engine.extension.studio.infrastructure.persistence.entity
+  extension:
+    enabled: false
+    studio:
+      persistence:
+        mode: metadata
+      runtime-sync:
+        enabled: false
+      seed:
+        enabled: false
+      security:
+        permit-unauthenticated: true

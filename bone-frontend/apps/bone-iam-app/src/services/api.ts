@@ -10,7 +10,7 @@ import type {
 } from '../types';
 
 const api = axios.create({
-  baseURL: '/api/iam',
+  baseURL: '/api/v1/iam',
   timeout: 10000,
 });
 

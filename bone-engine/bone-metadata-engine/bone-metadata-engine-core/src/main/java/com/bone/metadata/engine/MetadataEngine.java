@@ -8,6 +8,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.bone.metadata.engine.platform.MetadataPlatformBridge;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEvent;
@@ -25,6 +26,9 @@ public class MetadataEngine implements InitializingBean {
   private final MetadataRepository metadataRepository;
   private final MetadataProcessor metadataProcessor;
   private final ApplicationEventPublisher eventPublisher;
+
+  @Autowired(required = false)
+  private MetadataPlatformBridge metadataPlatformBridge;
 
   // 使用ConcurrentHashMap提高线程安全性
   private final Map<String, Object> entityMetadataMap = new ConcurrentHashMap<>();
@@ -129,8 +133,16 @@ public class MetadataEngine implements InitializingBean {
     validateDependencies();
     initialize();
     initializeOperationMetadata();
+    warmPlatformCatalog();
     startHealthCheck();
     log.info("MetadataEngine initialization completed");
+  }
+
+  private void warmPlatformCatalog() {
+    if (metadataPlatformBridge == null) {
+      return;
+    }
+    log.info("MetadataPlatformBridge active: {}", metadataPlatformBridge.getClass().getSimpleName());
   }
 
   private void initializeOperationMetadata() {

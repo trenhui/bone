@@ -1,14 +1,18 @@
 package com.bone.masterdata.application.query.handler;
 
-import com.bone.metadata.sdk.query.dsl.QueryBuilder;
+import com.bone.core.result.PageResult;
 import com.bone.masterdata.application.query.dto.MasterDataRecordDTO;
 import com.bone.masterdata.application.query.qry.MasterDataRecordListQry;
-import com.bone.core.result.PageResult;
-import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityId;
-import com.bone.masterdata.domain.model.record.MasterDataRecord;
+import com.bone.masterdata.domain.model.record.vo.MasterDataRecordStatus;
+import com.bone.masterdata.domain.record.MasterDataRecord;
+import com.bone.metadata.sdk.query.dsl.FluentQuery;
+import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -16,23 +20,39 @@ public class MasterDataRecordListQueryHandler {
 
     @Transactional(readOnly = true)
     public PageResult<MasterDataRecordDTO> handle(MasterDataRecordListQry qry) {
-        var query = QueryBuilder.from(MasterDataRecord.class);
-        
+        FluentQuery<MasterDataRecord> query = QueryBuilder.from(MasterDataRecord.class);
+
         if (qry.getMasterDataEntityId() != null) {
-            query.where(MasterDataRecord::getMasterDataEntityId, id -> id.eq(MasterDataEntityId.of(qry.getMasterDataEntityId())));
+            query.where(MasterDataRecord::getMasterDataEntityId).eq(qry.getMasterDataEntityId());
         }
-        
-        if (qry.getStatus() != null) {
-            query.where(MasterDataRecord::getStatus, status -> status.eq(qry.getStatus()));
+
+        if (qry.getStatus() != null && !qry.getStatus().isBlank()) {
+            query.where(MasterDataRecord::getStatus).eq(MasterDataRecordStatus.valueOf(qry.getStatus()));
         }
-        
-        if (qry.getKeyword() != null) {
-            query.where(MasterDataRecord::getData, data -> data.like(qry.getKeyword()));
+
+        if (qry.getKeyword() != null && !qry.getKeyword().isBlank()) {
+            query.where(MasterDataRecord::getData).like(qry.getKeyword());
         }
-        
-        return query
-                .orderBy(MasterDataRecord::getCreatedAt, "desc")
-                .page(qry.getPageNum(), qry.getPageSize())
-                .mapTo(MasterDataRecordDTO.class);
+
+        com.bone.core.model.PageResult<MasterDataRecord> result = query.orderByDesc(MasterDataRecord::getCreatedAt)
+                .page(qry.getPageNum(), qry.getPageSize());
+
+        List<MasterDataRecordDTO> dtoList = result.getRecords().stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+
+        return PageResult.of(dtoList, result.getTotal(), result.getPage(), result.getSize());
+    }
+
+    private MasterDataRecordDTO toDto(MasterDataRecord record) {
+        return MasterDataRecordDTO.builder()
+                .id(record.getId())
+                .masterDataEntityId(record.getMasterDataEntityId())
+                .data(record.getData())
+                .status(record.getStatus().name())
+                .createdAt(record.getCreatedAt())
+                .updatedAt(record.getUpdatedAt())
+                .publishTime(record.getPublishTime())
+                .build();
     }
 }

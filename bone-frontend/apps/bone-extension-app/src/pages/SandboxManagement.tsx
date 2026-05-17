@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   Alert,
+  Button,
   Card,
   Col,
   Descriptions,
@@ -14,8 +15,11 @@ import {
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import {
+  formatStudioError,
   getSandboxConfig,
+  listAuditLogs,
   listExecutionLogs,
+  type AuditLogRow,
   type ExecutionLogRow,
   type SandboxConfig,
 } from '@/services/extensionApi';
@@ -30,39 +34,65 @@ const statusColor: Record<string, string> = {
 const SandboxManagement: React.FC = () => {
   const [config, setConfig] = useState<SandboxConfig | null>(null);
   const [logs, setLogs] = useState<ExecutionLogRow[]>([]);
-  const [logTotal, setLogTotal] = useState(0);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
   const [loading, setLoading] = useState(true);
   const [logLoading, setLogLoading] = useState(false);
+  const [auditRows, setAuditRows] = useState<AuditLogRow[]>([]);
+  const [auditCursor, setAuditCursor] = useState<string | null>(null);
+  const [auditLoading, setAuditLoading] = useState(false);
 
   const loadConfig = useCallback(async () => {
     setConfig(await getSandboxConfig());
   }, []);
 
-  const loadLogs = useCallback(async (status?: string) => {
-    setLogLoading(true);
+  const loadLogs = useCallback(
+    async (status?: string, append = false, cursor?: string | null) => {
+      setLogLoading(true);
+      try {
+        const page = await listExecutionLogs({
+          status,
+          limit: 20,
+          cursor: append && cursor ? cursor : undefined,
+        });
+        setLogs((prev) => (append ? [...prev, ...page.rows] : page.rows));
+        setNextCursor(page.nextCursor ?? null);
+      } catch (e) {
+        message.error(formatStudioError(e, '加载执行日志失败'));
+      } finally {
+        setLogLoading(false);
+      }
+    },
+    [],
+  );
+
+  const loadAudit = useCallback(async (append = false, cursor?: string | null) => {
+    setAuditLoading(true);
     try {
-      const page = await listExecutionLogs({ status, page: 1, size: 20 });
-      setLogs(page.rows);
-      setLogTotal(page.total);
+      const page = await listAuditLogs({
+        limit: 15,
+        cursor: append && cursor ? cursor : undefined,
+      });
+      setAuditRows((prev) => (append ? [...prev, ...page.rows] : page.rows));
+      setAuditCursor(page.nextCursor ?? null);
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '加载执行日志失败');
+      message.error(formatStudioError(e, '加载审计日志失败'));
     } finally {
-      setLogLoading(false);
+      setAuditLoading(false);
     }
   }, []);
 
   useEffect(() => {
     (async () => {
       try {
-        await Promise.all([loadConfig(), loadLogs()]);
+        await Promise.all([loadConfig(), loadLogs(), loadAudit()]);
       } catch (e) {
-        message.error(e instanceof Error ? e.message : '加载沙箱数据失败');
+        message.error(formatStudioError(e, '加载沙箱数据失败'));
       } finally {
         setLoading(false);
       }
     })();
-  }, [loadConfig, loadLogs]);
+  }, [loadConfig, loadLogs, loadAudit]);
 
   const logColumns: ColumnsType<ExecutionLogRow> = [
     { title: '执行ID', dataIndex: 'executionId', width: 120, ellipsis: true },
@@ -164,7 +194,7 @@ const SandboxManagement: React.FC = () => {
               value={statusFilter}
               onChange={(v) => {
                 setStatusFilter(v);
-                loadLogs(v);
+                loadLogs(v, false);
               }}
               options={[
                 { value: 'SUCCESS', label: 'SUCCESS' },
@@ -180,8 +210,53 @@ const SandboxManagement: React.FC = () => {
             loading={logLoading}
             columns={logColumns}
             dataSource={logs}
-            pagination={{ total: logTotal, pageSize: 20, showSizeChanger: false }}
+            pagination={false}
           />
+          {nextCursor ? (
+            <div style={{ marginTop: 12, textAlign: 'center' }}>
+              <Button loading={logLoading} onClick={() => loadLogs(statusFilter, true, nextCursor)}>
+                加载更多
+              </Button>
+            </div>
+          ) : null}
+        </Card>
+      </Col>
+      <Col span={24}>
+        <Card title="操作审计">
+          <Table<AuditLogRow>
+            rowKey="id"
+            size="small"
+            loading={auditLoading}
+            pagination={false}
+            dataSource={auditRows}
+            columns={[
+              { title: '动作', dataIndex: 'action', width: 160 },
+              { title: '资源', dataIndex: 'resourceType', width: 80 },
+              { title: '资源ID', dataIndex: 'resourceId', width: 80 },
+              {
+                title: '结果',
+                dataIndex: 'result',
+                width: 80,
+                render: (r: string) => (
+                  <Tag color={r === 'SUCCESS' ? 'green' : 'red'}>{r}</Tag>
+                ),
+              },
+              { title: 'traceId', dataIndex: 'traceId', ellipsis: true },
+              {
+                title: '时间',
+                dataIndex: 'createdAt',
+                width: 170,
+                render: (v: string) => (v ? new Date(v).toLocaleString() : '-'),
+              },
+            ]}
+          />
+          {auditCursor ? (
+            <div style={{ marginTop: 12, textAlign: 'center' }}>
+              <Button loading={auditLoading} onClick={() => loadAudit(true, auditCursor)}>
+                加载更多
+              </Button>
+            </div>
+          ) : null}
         </Card>
       </Col>
     </Row>

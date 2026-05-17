@@ -11,8 +11,7 @@ import java.util.Map;
 @Component("REST")
 public class RestClientImpl implements ExternalSystemClient {
 
-    private static final String NOT_IMPLEMENTED =
-            "REST 连接器尚未实现，请等待 INT-01 完成或改用已支持的连接器类型";
+    private static final String DETAIL = "连接器尚未实现";
 
     @Override
     public boolean testConnection(Map<String, Object> config) {
@@ -20,7 +19,7 @@ public class RestClientImpl implements ExternalSystemClient {
         if (url == null || url.isBlank()) {
             return false;
         }
-        throw new UnsupportedOperationException(NOT_IMPLEMENTED);
+        throw ConnectorClientSupport.notImplemented("REST", DETAIL);
     }
 
     @Override
@@ -29,7 +28,7 @@ public class RestClientImpl implements ExternalSystemClient {
         if (url == null || url.isBlank()) {
             throw new IllegalArgumentException("URL不能为空");
         }
-        throw new UnsupportedOperationException(NOT_IMPLEMENTED);
+        throw ConnectorClientSupport.notImplemented("REST", DETAIL);
     }
 
     @Override

@@ -38,7 +38,37 @@ integration:
   log:
     retention.days: 30
   alert:
-    enabled: true
+    # true 时接入 bone-notification；通道未启用时仍写结构化日志
+    enabled: ${BONE_INTEGRATION_ALERT_ENABLED:true}
+
+# bone-notification（见 config/env/README.md § 集成告警）
+alert:
+  policies:
+    INFO:
+      channels: []
+    MEDIUM:
+      channels: [EMAIL]
+    HIGH:
+      channels: [DINGTALK, EMAIL]
+    CRITICAL:
+      channels: [DINGTALK, SMS, EMAIL]
+  channels:
+    mail:
+      enabled: ${BONE_ALERT_MAIL_ENABLED:false}
+      from: ${BONE_ALERT_MAIL_FROM:alerts@bone.local}
+      recipients:
+        - ${BONE_ALERT_MAIL_TO:ops@bone.local}
+    dingtalk:
+      enabled: ${BONE_ALERT_DINGTALK_ENABLED:false}
+      webhook: ${DINGTALK_WEBHOOK:}
+      secret: ${DINGTALK_SECRET:}
+    sms:
+      enabled: ${BONE_ALERT_SMS_ENABLED:false}
+      provider: Aliyun
+      apiKey: ${SMS_API_KEY:}
+      apiSecret: ${SMS_API_SECRET:}
+      phoneNumbers: []
+      templateId: ${SMS_TEMPLATE_ID:}
 
 camel:
   springboot:

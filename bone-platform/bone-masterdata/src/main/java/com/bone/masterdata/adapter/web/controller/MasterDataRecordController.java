@@ -7,7 +7,9 @@ import com.bone.masterdata.application.usecase.standard.MasterDataRecordListQuer
 import com.bone.masterdata.application.query.dto.MasterDataRecordDTO;
 import com.bone.masterdata.application.query.qry.MasterDataRecordListQry;
 import com.bone.core.result.ApiResponse;
+import com.bone.core.web.PlatformApiPaths;
 import com.bone.core.result.PageResult;
+import com.bone.masterdata.application.query.handler.ExportMasterDataRecordsQueryHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -15,12 +17,13 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/masterdata/records")
+@RequestMapping(PlatformApiPaths.MASTERDATA_V1 + "/records")
 @RequiredArgsConstructor
 public class MasterDataRecordController {
     private final ImportMasterDataRecordsUseCase importMasterDataRecordsUseCase;
     private final MasterDataRecordListQueryUseCase masterDataRecordListQueryUseCase;
     private final PublishMasterDataRecordUseCase publishMasterDataRecordUseCase;
+    private final ExportMasterDataRecordsQueryHandler exportMasterDataRecordsQueryHandler;
 
     @PostMapping
     public ApiResponse<List<Long>> importRecords(@RequestParam Long masterDataEntityId, @RequestParam MultipartFile file) {
@@ -44,8 +47,7 @@ public class MasterDataRecordController {
     }
 
     @GetMapping("/export")
-    public ApiResponse<String> export(@RequestParam Long masterDataEntityId) {
-        // TODO: 实现导出主数据记录的逻辑
-        return ApiResponse.success("导出成功");
+    public ApiResponse<String> export(@RequestParam("masterDataEntityId") Long masterDataEntityId) {
+        return ApiResponse.success(exportMasterDataRecordsQueryHandler.handle(masterDataEntityId));
     }
 }

@@ -1,10 +1,9 @@
 package com.bone.masterdata.domain.service.quality;
 
-import com.bone.masterdata.domain.model.entity.MasterDataRecord;
-import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityId;
-import com.bone.masterdata.domain.model.quality.DataQualityRule;
-import com.bone.masterdata.domain.model.quality.QualityCheck;
-import com.bone.masterdata.domain.model.quality.QualityReport;
+import com.bone.masterdata.domain.record.MasterDataRecord;
+import com.bone.masterdata.domain.quality.DataQualityRule;
+import com.bone.masterdata.domain.quality.QualityCheck;
+import com.bone.masterdata.domain.quality.QualityReport;
 import com.bone.masterdata.domain.model.quality.vo.QualityCheckId;
 import com.bone.masterdata.domain.model.quality.vo.RuleName;
 import com.bone.masterdata.domain.model.quality.vo.RuleSeverity;
@@ -27,27 +26,28 @@ public class DataQualityService {
     private final MasterDataRecordRepository recordRepository;
 
     public DataQualityRule createRule(
-            MasterDataEntityId masterDataEntityId,
+            Long id,
+            Long masterDataEntityId,
             RuleName name,
             String type,
             String expression,
             RuleSeverity severity,
             String description
     ) {
-        return DataQualityRule.create(masterDataEntityId, name, type, expression, severity, description);
+        return DataQualityRule.create(id, masterDataEntityId, name, type, expression, severity, description);
     }
 
-    public QualityCheck performQualityCheck(MasterDataEntityId masterDataEntityId) {
-        QualityCheck check = QualityCheck.create(masterDataEntityId);
+    public QualityCheck performQualityCheck(Long checkId, Long masterDataEntityId) {
+        QualityCheck check = QualityCheck.create(checkId, masterDataEntityId);
 
         // 获取实体的所有规则
         List<DataQualityRule> rules = QueryBuilder.from(DataQualityRule.class)
-                .where(DataQualityRule::getMasterDataEntityId).eq(masterDataEntityId.getValue())
+                .where(DataQualityRule::getMasterDataEntityId).eq(masterDataEntityId)
                 .list();
 
         // 获取实体的所有记录
         List<MasterDataRecord> records = QueryBuilder.from(MasterDataRecord.class)
-                .where(MasterDataRecord::getMasterDataEntityId).eq(masterDataEntityId.getValue())
+                .where(MasterDataRecord::getMasterDataEntityId).eq(masterDataEntityId)
                 .list();
 
         // 执行质量检查逻辑（简化实现）
@@ -70,7 +70,8 @@ public class DataQualityService {
         return check;
     }
 
-    public QualityReport generateQualityReport(QualityCheckId qualityCheckId, String reportData, Integer issueCount) {
-        return QualityReport.create(qualityCheckId, reportData, issueCount);
+    public QualityReport generateQualityReport(
+            Long reportId, Long qualityCheckId, String reportData, Integer issueCount) {
+        return QualityReport.create(reportId, qualityCheckId, reportData, issueCount);
     }
 }

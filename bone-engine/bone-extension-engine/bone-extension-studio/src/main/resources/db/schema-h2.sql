@@ -96,6 +96,21 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_exts_pel_exec ON exts_plugin_execution_log 
 CREATE INDEX IF NOT EXISTS idx_exts_pel_tenant ON exts_plugin_execution_log (tenant_id, plugin_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_exts_pel_plugin ON exts_plugin_execution_log (plugin_id);
 
+CREATE TABLE IF NOT EXISTS exts_audit_log (
+    id                  BIGINT          NOT NULL PRIMARY KEY,
+    tenant_id           BIGINT          NOT NULL DEFAULT 0,
+    trace_id            VARCHAR(64),
+    user_id             VARCHAR(64),
+    action              VARCHAR(80)     NOT NULL,
+    resource_type       VARCHAR(50),
+    resource_id         VARCHAR(100),
+    result              VARCHAR(20)     NOT NULL,
+    detail              CLOB,
+    created_at          TIMESTAMP       NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_exts_audit_tenant_time ON exts_audit_log (tenant_id, created_at);
+
 -- Metadata SDK 嵌入式模式所需（Studio 不使用 EAV，但需满足 SqlRepository 引导）
 CREATE TABLE IF NOT EXISTS column_allocation (
     id                  BIGINT          AUTO_INCREMENT PRIMARY KEY,

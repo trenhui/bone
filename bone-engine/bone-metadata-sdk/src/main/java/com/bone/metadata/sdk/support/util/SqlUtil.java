@@ -193,4 +193,27 @@ public class SqlUtil {
                 normalized.startsWith("TRUNCATE ") ||
                 normalized.contains(" FOR UPDATE");
     }
+
+    /**
+     * 将领域值对象/枚举转为 JDBC 可绑定参数。
+     */
+    public static Object toJdbcParameter(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Enum<?> enumValue) {
+            return enumValue.name();
+        }
+        if (value.getClass().isRecord()) {
+            try {
+                Method method = value.getClass().getMethod("value");
+                if (method.getParameterCount() == 0) {
+                    return method.invoke(value);
+                }
+            } catch (ReflectiveOperationException ignored) {
+                // 非标准 record，原样返回
+            }
+        }
+        return value;
+    }
 }

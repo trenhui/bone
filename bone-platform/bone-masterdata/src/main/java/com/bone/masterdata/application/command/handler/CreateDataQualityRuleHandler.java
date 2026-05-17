@@ -4,8 +4,8 @@ import com.bone.core.usecase.Capability;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.masterdata.application.command.cmd.CreateDataQualityRuleCmd;
 import com.bone.masterdata.domain.quality.DataQualityRule;
-import com.bone.masterdata.domain.quality.vo.RuleName;
-import com.bone.masterdata.domain.quality.vo.RuleSeverity;
+import com.bone.masterdata.domain.model.quality.vo.RuleName;
+import com.bone.masterdata.domain.model.quality.vo.RuleSeverity;
 import com.bone.masterdata.domain.repository.DataQualityRuleRepository;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
 import com.bone.core.exception.NotFoundException;
@@ -49,6 +49,6 @@ public class CreateDataQualityRuleHandler {
                 cmd.getDescription()
         );
 
-        return ruleRepository.save(rule).getId();
+        return ruleRepository.save(rule);
     }
 }

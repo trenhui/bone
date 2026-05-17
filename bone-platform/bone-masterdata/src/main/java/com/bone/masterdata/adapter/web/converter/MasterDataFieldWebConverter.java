@@ -15,13 +15,11 @@ public class MasterDataFieldWebConverter {
         return CreateMasterDataFieldCmd.builder()
                 .masterDataEntityId(req.getMasterDataEntityId())
                 .name(req.getName())
-                .code(req.getCode())
                 .type(req.getType())
                 .length(req.getLength())
                 .required(req.getRequired())
                 .defaultValue(req.getDefaultValue())
                 .description(req.getDescription())
-                .sortOrder(req.getSortOrder())
                 .build();
     }
 

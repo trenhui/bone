@@ -1,5 +1,6 @@
 package com.bone.system.adapter.web.controller;
 
+import com.bone.core.web.PlatformApiPaths;
 import com.bone.system.common.result.ApiResponse;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,7 +14,7 @@ import java.util.Map;
 
 @Tag(name = "系统管理", description = "系统状态和健康检查接口")
 @RestController
-@RequestMapping("/api/system")
+@RequestMapping(PlatformApiPaths.SYSTEM_V1)
 @RequiredArgsConstructor
 public class SystemController {
     private final HealthEndpoint healthEndpoint;

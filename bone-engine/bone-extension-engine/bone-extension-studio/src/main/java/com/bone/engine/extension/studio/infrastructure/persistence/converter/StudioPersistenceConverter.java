@@ -4,6 +4,8 @@ import com.bone.engine.extension.studio.domain.model.ExtPoint;
 import com.bone.engine.extension.studio.domain.model.Extension;
 import com.bone.engine.extension.studio.domain.model.PluginExecutionLog;
 import com.bone.engine.extension.studio.domain.model.PluginVersion;
+import com.bone.engine.extension.studio.domain.model.StudioAuditEntry;
+import com.bone.engine.extension.studio.infrastructure.persistence.entity.ExtStudioAuditLog;
 import com.bone.core.domain.entity.AbstractEntity;
 import com.bone.engine.extension.studio.infrastructure.persistence.entity.ExtStudioExtensionImpl;
 import com.bone.engine.extension.studio.infrastructure.persistence.entity.ExtStudioExtensionPoint;
@@ -194,6 +196,37 @@ public final class StudioPersistenceConverter {
         domain.setDurationMs(row.getDurationMs());
         domain.setCreatedAt(toLocalDateTime(row.getCreatedAt()));
         return domain;
+    }
+
+    @NonNull
+    public static StudioAuditEntry toAuditDomain(@NonNull ExtStudioAuditLog row) {
+        StudioAuditEntry entry = new StudioAuditEntry();
+        entry.setId(row.getId());
+        entry.setTenantId(row.getTenantId());
+        entry.setTraceId(row.getTraceId());
+        entry.setUserId(row.getUserId());
+        entry.setAction(row.getAction());
+        entry.setResourceType(row.getResourceType());
+        entry.setResourceId(row.getResourceId());
+        entry.setResult(row.getResult());
+        entry.setDetail(row.getDetail());
+        entry.setCreatedAt(toLocalDateTime(row.getCreatedAt()));
+        return entry;
+    }
+
+    @NonNull
+    public static ExtStudioAuditLog toAuditLogEntity(@NonNull StudioAuditEntry entry) {
+        ExtStudioAuditLog row = new ExtStudioAuditLog();
+        row.setTenantId(entry.getTenantId() != null ? entry.getTenantId() : 0L);
+        row.setTraceId(entry.getTraceId());
+        row.setUserId(entry.getUserId());
+        row.setAction(entry.getAction());
+        row.setResourceType(entry.getResourceType());
+        row.setResourceId(entry.getResourceId());
+        row.setResult(entry.getResult());
+        row.setDetail(entry.getDetail());
+        row.setCreatedAt(entry.getCreatedAt() != null ? toDate(entry.getCreatedAt()) : new Date());
+        return row;
     }
 
     private static void applyAuditDefaults(AbstractEntity<?> row) {

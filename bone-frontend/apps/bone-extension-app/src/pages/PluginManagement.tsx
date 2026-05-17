@@ -28,6 +28,7 @@ import {
   createPlugin,
   deletePlugin,
   deployPlugin,
+  formatStudioError,
   listExtPoints,
   listPluginVersions,
   listPlugins,
@@ -71,7 +72,7 @@ const PluginManagement: React.FC = () => {
       setPlugins(pluginRows);
       setExtPoints(pointRows);
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '加载插件失败');
+      message.error(formatStudioError(e, '加载插件失败'));
     } finally {
       setLoading(false);
     }
@@ -121,7 +122,7 @@ const PluginManagement: React.FC = () => {
     try {
       setVersions(await listPluginVersions(plugin.id));
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '加载版本失败');
+      message.error(formatStudioError(e, '加载版本失败'));
     } finally {
       setVersionLoading(false);
     }
@@ -156,7 +157,7 @@ const PluginManagement: React.FC = () => {
       setModalOpen(false);
       load();
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '保存失败');
+      message.error(formatStudioError(e, '保存失败'));
     }
   };
 
@@ -180,7 +181,7 @@ const PluginManagement: React.FC = () => {
       setUploadOpen(false);
       load();
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '上传失败');
+      message.error(formatStudioError(e, '上传失败'));
     }
   };
 
@@ -190,7 +191,7 @@ const PluginManagement: React.FC = () => {
       message.success(deploy ? '部署成功' : '已卸载');
       load();
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '操作失败');
+      message.error(formatStudioError(e, '操作失败'));
     }
   };
 
@@ -199,7 +200,7 @@ const PluginManagement: React.FC = () => {
       await publishPluginRuntime(id);
       message.success('已推送到运行时');
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '发布失败');
+      message.error(formatStudioError(e, '发布失败'));
     }
   };
 
@@ -208,7 +209,7 @@ const PluginManagement: React.FC = () => {
       const log = await simulatePlugin(id);
       message.success(`模拟调用成功，耗时 ${log.durationMs ?? '-'} ms`);
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '模拟调用失败');
+      message.error(formatStudioError(e, '模拟调用失败'));
     }
   };
 
@@ -221,7 +222,7 @@ const PluginManagement: React.FC = () => {
       }
       load();
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '回滚失败');
+      message.error(formatStudioError(e, '回滚失败'));
     }
   };
 
@@ -231,7 +232,7 @@ const PluginManagement: React.FC = () => {
       message.success('已删除');
       load();
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '删除失败');
+      message.error(formatStudioError(e, '删除失败'));
     }
   };
 

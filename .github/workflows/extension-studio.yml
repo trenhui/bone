@@ -1,0 +1,84 @@
+name: Extension Studio
+
+on:
+  push:
+    paths:
+      - 'bone-engine/bone-extension-engine/**'
+      - 'bone-frontend/apps/bone-extension-app/**'
+      - 'doc/architecture/openapi/extension-v1.yaml'
+      - 'doc/architecture/openapi/components/**'
+      - '.github/workflows/extension-studio.yml'
+  pull_request:
+    paths:
+      - 'bone-engine/bone-extension-engine/**'
+      - 'bone-frontend/apps/bone-extension-app/**'
+      - 'doc/architecture/openapi/extension-v1.yaml'
+      - 'doc/architecture/openapi/components/**'
+      - '.github/workflows/extension-studio.yml'
+
+jobs:
+  openapi-lint:
+    name: OpenAPI Lint (extension-v1)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Redocly lint
+        run: npx --yes @redocly/cli@1 lint doc/architecture/openapi/extension-v1.yaml --config doc/architecture/openapi/redocly.yaml
+
+  studio-backend:
+    name: Studio Backend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Install bone-core
+        run: mvn install -DskipTests -pl bone-framework/bone-core --batch-mode
+      - name: Test bone-extension-studio
+        run: >
+          mvn test -pl bone-engine/bone-extension-engine/bone-extension-studio --batch-mode
+          -Dtest=ExtensionApiContractTest,ExtensionManagementControllerTest,
+          StudioPersistenceConverterTest,PluginExecutionLogCursorTest,
+          MetadataPersistenceIntegrationTest,InMemoryStudioAuditStoreTest,
+          ExtensionStudioSmokeIT,StudioApplicationStartupTest
+
+  studio-mysql-it:
+    name: Studio MySQL IT (Testcontainers)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Install bone-core
+        run: mvn install -DskipTests -pl bone-framework/bone-core --batch-mode
+      - name: MySQL integration test
+        run: >
+          mvn test -pl bone-engine/bone-extension-engine/bone-extension-studio --batch-mode
+          -Dtest=StudioMetadataMysqlIT
+
+  extension-frontend:
+    name: Extension App (Vitest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bone-frontend/apps/bone-extension-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install
+        run: npm install
+      - name: Test
+        run: npm run test -- --run
+      - name: Typecheck
+        run: npm run typecheck

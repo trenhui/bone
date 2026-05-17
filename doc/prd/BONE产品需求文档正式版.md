@@ -323,7 +323,7 @@
 
 | 功能 | 社区版 | 商业版 |
 |------|--------|--------|
-| 元数据管理（实体、字段、关系） | 🔶 **MVP-2 交付**（**P0 能力保留**；DDL ✅；catalog REST/UI 建设中，见对照文档 §10） | ✅ |
+| 元数据管理（实体、字段、关系） | ✅ **MVP-2 基线**（catalog REST + 控制台 CRUD；版本历史/转主数据为 P1+） | ✅ |
 | 扩展字段 EAV（sdk + server） | ✅ | ✅ |
 | 代码生成（默认模板） | 🔶（studio-generator） | ✅ |
 | 自定义模板 | ❌ | ✅ |
@@ -463,7 +463,7 @@ Scenario: 使用快速入口
 
 > **工程实现映射（单一真源）**：[元数据能力-实现映射与竞品对照.md](../design/modules/元数据能力-实现映射与竞品对照.md)  
 > - **bone-metadata-sdk**：平台数据面（持久化 + 扩展字段 EAV），各业务模块必选。  
-> - **bone-metadata-server**（`:9001`）：**As-Is** 扩展字段 EAV REST；**MVP-2** 同进程交付 catalog（实体/字段/关系，`/api/v1/metadata/*`，字段嵌套于实体，见对照文档 §1.2）。多应用共享扩展字段时用 `REMOTE`。  
+> - **bone-metadata-server**（`:9001`）：**As-Is** 扩展字段 EAV + catalog REST（`/api/v1/metadata/*`，字段嵌套于实体，见对照文档 §1.2）。多应用共享扩展字段时用 `REMOTE`。  
 > - **bone-metadata-engine**：智能元数据引擎（规则/表达式/SmartQL），可选接入。  
 > - **代码生成**：`studio-generator` / `bone-codegen`；与引擎 **混合**，引擎不替代 DDD 源码交付。  
 > 下文 META-* 验收为目标态；As-Is 实现状态见对照文档 §7。
@@ -1427,27 +1427,31 @@ flowchart TD
 
 ### 7.3 核心API定义
 
-> **说明**：下列路径为 **REST 资源命名示意**（规划口径），非 OpenAPI 真源。实现以各模块 Controller、`bone-gateway` 路由及 SpringDoc 导出为准；版本前缀可能为 `/api/v1/{domain}` 或 `/api/{domain}`（见总体架构 §8.2）。
+> **说明**：下列路径为 **REST 资源命名示意**，非 OpenAPI 真源。实现以各模块 Controller、`bone-gateway` 路由及 SpringDoc 导出为准；**统一前缀** `/api/v1/{domain}`（见 [Bone-API-规范](../architecture/Bone-API-规范.md) §2、§13.2）。
 
 **元数据服务 API**（分 As-Is / Vision，真源见 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §5）：
 
 *已实现（bone-metadata-server，:9001）*：
-- `POST /v1/metadata/fields:search` — 扩展字段复合查询
-- `POST /v1/metadata/fields:searchByNames` — 按名批量查询
-- `POST /v1/metadata/fields:allocate` — 批量分配扩展字段
-- `GET /v1/metadata/health` — 健康检查
+- `POST /api/v1/metadata/fields:search` — 扩展字段复合查询
+- `POST /api/v1/metadata/fields:searchByNames` — 按名批量查询
+- `POST /api/v1/metadata/fields:allocate` — 批量分配扩展字段
+- `GET /api/v1/metadata/health` — 健康检查
 
-*规划（catalog · MVP-2，前缀 `/api/v1/metadata`；真源见对照文档 §1.2、§5.2）*：
+*catalog（As-Is，前缀 `/api/v1/metadata`；真源见对照文档 §1.2、§5.2）*：
 - `GET/POST/PUT/DELETE …/entities`、`POST …/entities/{id}/publish` — 业务实体
 - `GET/POST/PUT/DELETE …/entities/{entityId}/fields` — 建模字段（**嵌套**，非 EAV `fields:*`）
 - `GET/POST/PUT/DELETE …/relationships` — 实体关系
 - `POST /api/v1/generate` 等 — 代码生成（主责 **studio-generator** :8085）
 
-**主数据服务 API**：
-- `GET /api/masterdata/entities` - 获取主数据实体列表
-- `POST /api/masterdata/entities` - 创建主数据实体
-- `PUT /api/masterdata/entities/{id}` - 更新主数据实体
-- `GET /api/masterdata/quality` - 获取数据质量报告
+**主数据服务 API**（前缀 `/api/v1/masterdata`）：
+- `GET /api/v1/masterdata/entities` — 主数据实体列表
+- `POST /api/v1/masterdata/entities` — 创建实体
+- `PUT /api/v1/masterdata/entities/{id}` — 更新实体
+- `GET/POST /api/v1/masterdata/fields` — 字段
+- `GET/POST /api/v1/masterdata/records` — 记录/导入
+- `POST /api/v1/masterdata/records/{id}/publish` — 发布记录
+- `GET/POST /api/v1/masterdata/quality/rules` — 质量规则
+- `POST /api/v1/masterdata/quality/check` — 执行质检
 
 **扩展服务 API**：
 - `GET /api/v1/extension/points` - 获取扩展点列表
@@ -1456,25 +1460,25 @@ flowchart TD
 - `POST /api/v1/extension/plugins/{id}:deploy` - 部署插件
 - `POST /api/v1/extension/plugins/{id}:rollback` - 回滚插件
 
-**集成服务 API**：
-- `GET /api/integration/connectors` - 获取连接器列表
-- `POST /api/integration/flows` - 创建集成流程
-- `PUT /api/integration/flows/{id}` - 更新集成流程
-- `POST /api/integration/flows/{id}/test` - 测试集成流程
+**集成服务 API**（前缀 `/api/v1/integration`）：
+- `GET /api/v1/integration/connectors` — 连接器列表
+- `POST /api/v1/integration/flows` — 创建流程
+- `PUT /api/v1/integration/flows/{id}` — 更新流程
+- `POST /api/v1/integration/flows/{id}/test` — 测试流程
 
-**IAM服务 API**：
-- `GET /api/iam/users` - 获取用户列表
-- `POST /api/iam/users` - 创建用户
-- `PUT /api/iam/users/{id}` - 更新用户
-- `DELETE /api/iam/users/{id}` - 删除用户
-- `GET /api/iam/roles` - 获取角色列表
-- `POST /api/iam/roles` - 创建角色
-- `PUT /api/iam/roles/{id}` - 更新角色
-- `POST /api/iam/roles/{id}/permissions` - 为角色分配权限
-- `GET /api/iam/permissions` - 获取权限列表
-- `POST /api/iam/sso/config` - 配置SSO（商业版）
-- `GET /api/iam/audit/logs` - 获取审计日志
-- `POST /api/iam/tenants` - 创建租户（商业版）
+**IAM 服务 API**（前缀 `/api/v1/iam`；账号资源为 `accounts`，非 `users`）：
+- `POST /api/v1/iam/login` — 登录
+- `GET /api/v1/iam/accounts` — 账号列表
+- `POST /api/v1/iam/accounts` — 创建账号
+- `PUT /api/v1/iam/accounts/{id}` — 更新账号
+- `DELETE /api/v1/iam/accounts/{id}` — 删除账号
+- `GET /api/v1/iam/roles` — 角色列表
+- `POST /api/v1/iam/roles` — 创建角色
+- `PUT /api/v1/iam/roles/{id}` — 更新角色
+- `POST /api/v1/iam/roles/{id}/permissions` — 分配权限
+- `GET /api/v1/iam/permissions` — 权限列表
+- `POST /api/v1/iam/sso/config` — SSO 配置（商业版）
+- `GET /api/v1/iam/audit/logs` — 审计日志
 
 ### 7.4 数据模型
 

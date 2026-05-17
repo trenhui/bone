@@ -37,7 +37,7 @@ class ConsoleControllerTest {
 
     @Test
     void overview() throws Exception {
-        mockMvc.perform(get("/api/console/overview"))
+        mockMvc.perform(get("/api/v1/console/overview"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.services").isArray())
@@ -47,7 +47,7 @@ class ConsoleControllerTest {
 
     @Test
     void services() throws Exception {
-        mockMvc.perform(get("/api/console/services"))
+        mockMvc.perform(get("/api/v1/console/services"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data[0].name").exists());
@@ -55,7 +55,7 @@ class ConsoleControllerTest {
 
     @Test
     void resources() throws Exception {
-        mockMvc.perform(get("/api/console/resources"))
+        mockMvc.perform(get("/api/v1/console/resources"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.memoryUsedBytes").exists());
@@ -63,7 +63,7 @@ class ConsoleControllerTest {
 
     @Test
     void metrics() throws Exception {
-        mockMvc.perform(get("/api/console/metrics"))
+        mockMvc.perform(get("/api/v1/console/metrics"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.jvmThreadsLive").exists());
@@ -71,7 +71,7 @@ class ConsoleControllerTest {
 
     @Test
     void quickActions() throws Exception {
-        mockMvc.perform(get("/api/console/quick-actions"))
+        mockMvc.perform(get("/api/v1/console/quick-actions"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data[0].path").value("/iam"));

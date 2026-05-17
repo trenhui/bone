@@ -5,7 +5,5 @@ import com.bone.studio.generator.domain.data.DataSource;
 
 import java.util.List;
 
-public interface DataSourceRepository extends Repository<DataSource, String> {
-    List<DataSource> findByType(String type);
-    List<DataSource> findByStatus(String status);
+public interface DataSourceRepository extends Repository<DataSource, Long> {
 }

@@ -1,5 +1,6 @@
 package com.bone.studio.generator;
 
+import com.bone.metadata.sdk.domain.annotation.EnableSqlRepositories;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -10,6 +11,11 @@ import org.springframework.web.filter.CorsFilter;
 
 @SpringBootApplication
 @ComponentScan(basePackages = {"com.bone.studio.generator", "com.bone.metadata.sdk"})
+@EnableSqlRepositories(
+    basePackages = {
+      "com.bone.studio.generator.domain.repository",
+      "com.bone.studio.generator.domain.catalog.repository"
+    })
 public class StudioGeneratorApplication {
 
     public static void main(String[] args) {

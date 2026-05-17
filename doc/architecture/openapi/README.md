@@ -1,7 +1,7 @@
 # Bone 公共 OpenAPI 组件
 
 > 供各服务 `openapi.yaml` 通过 `$ref` 引用，避免 `ApiResponse` / `ProblemDetail` 字段不一致。  
-> 规范说明见 [Bone-API-规范.md](../Bone-API-规范.md)（§4 错误码、§11 OpenAPI）。
+> 规范说明见 [Bone-API-规范.md](../Bone-API-规范.md)（§4 错误信封 / ProblemDetail、§11 OpenAPI）；业务字符串 `errorCode` 台账见 [Bone-错误码登记.md](../Bone-错误码登记.md)。
 
 ## 使用方式
 

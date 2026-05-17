@@ -22,9 +22,11 @@ import type {
   ImportResult
 } from '../types';
 
-// 创建axios实例
+const MD = '/api/v1/masterdata';
+
+// 创建axios实例（开发走 Vite 代理 → masterdata :8080）
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || '',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
@@ -59,158 +61,128 @@ apiClient.interceptors.response.use(
 
 // 主数据实体相关API
 export const masterDataEntityApi = {
-  // 分页查询
   page: (params: MasterDataEntityPageQry): Promise<ApiResponse<PageResult<MasterDataEntity>>> => {
-    return apiClient.get('/master-data/entity/page', { params });
+    return apiClient.get(`${MD}/entities`, { params });
   },
-  // 详情
   detail: (id: number): Promise<ApiResponse<MasterDataEntity>> => {
-    return apiClient.get(`/master-data/entity/${id}`);
+    return apiClient.get(`${MD}/entities/${id}`);
   },
-  // 创建
   create: (data: CreateMasterDataEntityReq): Promise<ApiResponse<MasterDataEntity>> => {
-    return apiClient.post('/master-data/entity', data);
+    return apiClient.post(`${MD}/entities`, data);
   },
-  // 更新
   update: (id: number, data: UpdateMasterDataEntityReq): Promise<ApiResponse<MasterDataEntity>> => {
-    return apiClient.put(`/master-data/entity/${id}`, data);
+    return apiClient.put(`${MD}/entities/${id}`, data);
   },
-  // 删除
   delete: (id: number): Promise<ApiResponse<void>> => {
-    return apiClient.delete(`/master-data/entity/${id}`);
+    return apiClient.delete(`${MD}/entities/${id}`);
   },
-  // 发布
   publish: (id: number): Promise<ApiResponse<void>> => {
-    return apiClient.post(`/master-data/entity/${id}/publish`);
+    return apiClient.post(`${MD}/entities/${id}/publish`);
   },
-  // 停用
   disable: (id: number): Promise<ApiResponse<void>> => {
-    return apiClient.post(`/master-data/entity/${id}/disable`);
-  }
+    return apiClient.post(`${MD}/entities/${id}/disable`);
+  },
 };
 
 // 主数据字段相关API
 export const masterDataFieldApi = {
-  // 根据实体ID查询字段列表
   listByEntityId: (masterDataEntityId: number): Promise<ApiResponse<MasterDataField[]>> => {
-    return apiClient.get(`/master-data/field/entity/${masterDataEntityId}`);
+    return apiClient.get(`${MD}/fields`, { params: { masterDataEntityId } });
   },
-  // 详情
   detail: (id: number): Promise<ApiResponse<MasterDataField>> => {
-    return apiClient.get(`/master-data/field/${id}`);
+    return apiClient.get(`${MD}/fields/${id}`);
   },
-  // 创建
   create: (data: CreateMasterDataFieldReq): Promise<ApiResponse<MasterDataField>> => {
-    return apiClient.post('/master-data/field', data);
+    return apiClient.post(`${MD}/fields`, data);
   },
-  // 更新
   update: (id: number, data: UpdateMasterDataFieldReq): Promise<ApiResponse<MasterDataField>> => {
-    return apiClient.put(`/master-data/field/${id}`, data);
+    return apiClient.put(`${MD}/fields/${id}`, data);
   },
-  // 删除
   delete: (id: number): Promise<ApiResponse<void>> => {
-    return apiClient.delete(`/master-data/field/${id}`);
-  }
+    return apiClient.delete(`${MD}/fields/${id}`);
+  },
 };
 
 // 数据质量规则相关API
 export const dataQualityRuleApi = {
-  // 分页查询
   page: (params: DataQualityRuleListQry): Promise<ApiResponse<PageResult<DataQualityRule>>> => {
-    return apiClient.get('/master-data/quality-rule/page', { params });
+    return apiClient.get(`${MD}/quality/rules`, { params });
   },
-  // 详情
   detail: (id: number): Promise<ApiResponse<DataQualityRule>> => {
-    return apiClient.get(`/master-data/quality-rule/${id}`);
+    return apiClient.get(`${MD}/quality/rules/${id}`);
   },
-  // 创建
   create: (data: CreateDataQualityRuleReq): Promise<ApiResponse<DataQualityRule>> => {
-    return apiClient.post('/master-data/quality-rule', data);
+    return apiClient.post(`${MD}/quality/rules`, data);
   },
-  // 更新
   update: (id: number, data: UpdateDataQualityRuleReq): Promise<ApiResponse<DataQualityRule>> => {
-    return apiClient.put(`/master-data/quality-rule/${id}`, data);
+    return apiClient.put(`${MD}/quality/rules/${id}`, data);
   },
-  // 删除
   delete: (id: number): Promise<ApiResponse<void>> => {
-    return apiClient.delete(`/master-data/quality-rule/${id}`);
+    return apiClient.delete(`${MD}/quality/rules/${id}`);
   },
-  // 执行质量检查
   executeCheck: (masterDataEntityId: number): Promise<ApiResponse<QualityCheck>> => {
-    return apiClient.post(`/master-data/quality-rule/execute/${masterDataEntityId}`);
+    return apiClient.post(`${MD}/quality/check`, null, { params: { masterDataEntityId } });
   },
-  // 获取质量检查结果
   getCheckResult: (qualityCheckId: number): Promise<ApiResponse<QualityReport>> => {
-    return apiClient.get(`/master-data/quality-rule/check-result/${qualityCheckId}`);
-  }
+    return apiClient.get(`${MD}/quality/reports/${qualityCheckId}`);
+  },
 };
 
 // 主数据记录相关API
 export const masterDataRecordApi = {
-  // 分页查询
   page: (params: MasterDataRecordListQry): Promise<ApiResponse<PageResult<MasterDataRecord>>> => {
-    return apiClient.get('/master-data/record/page', { params });
+    return apiClient.get(`${MD}/records`, { params });
   },
-  // 详情
   detail: (id: number): Promise<ApiResponse<MasterDataRecord>> => {
-    return apiClient.get(`/master-data/record/${id}`);
+    return apiClient.get(`${MD}/records/${id}`);
   },
-  // 创建
   create: (masterDataEntityId: number, data: Record<string, any>): Promise<ApiResponse<MasterDataRecord>> => {
-    return apiClient.post(`/master-data/record/entity/${masterDataEntityId}`, data);
+    return apiClient.post(`${MD}/records/entity/${masterDataEntityId}`, data);
   },
-  // 更新
   update: (id: number, data: UpdateMasterDataRecordReq): Promise<ApiResponse<MasterDataRecord>> => {
-    return apiClient.put(`/master-data/record/${id}`, data);
+    return apiClient.put(`${MD}/records/${id}`, data);
   },
-  // 删除
   delete: (id: number): Promise<ApiResponse<void>> => {
-    return apiClient.delete(`/master-data/record/${id}`);
+    return apiClient.delete(`${MD}/records/${id}`);
   },
-  // 发布
   publish: (id: number): Promise<ApiResponse<void>> => {
-    return apiClient.post(`/master-data/record/${id}/publish`);
+    return apiClient.post(`${MD}/records/${id}/publish`);
   },
-  // 归档
   archive: (id: number): Promise<ApiResponse<void>> => {
-    return apiClient.post(`/master-data/record/${id}/archive`);
+    return apiClient.post(`${MD}/records/${id}/archive`);
   },
-  // 导入
   import: (masterDataEntityId: number, file: File): Promise<ApiResponse<ImportResult>> => {
     const formData = new FormData();
     formData.append('file', file);
-    return apiClient.post(`/master-data/record/import/${masterDataEntityId}`, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
+    formData.append('masterDataEntityId', String(masterDataEntityId));
+    return apiClient.post(`${MD}/records`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      params: { masterDataEntityId },
     });
   },
-  // 导出
   export: (masterDataEntityId: number): Promise<Blob> => {
-    return apiClient.get(`/master-data/record/export/${masterDataEntityId}`, {
-      responseType: 'blob'
+    return apiClient.get(`${MD}/records/export`, {
+      params: { masterDataEntityId },
+      responseType: 'blob',
     });
-  }
+  },
 };
 
 // 质量检查相关API
+/** [Vision] 质量检查分页/结果 API 尚未在 masterdata 服务落地 */
 export const qualityCheckApi = {
-  // 分页查询
   page: (params: { pageNum?: number; pageSize?: number; masterDataEntityId?: number }): Promise<ApiResponse<PageResult<QualityCheck>>> => {
-    return apiClient.get('/master-data/quality-check/page', { params });
+    return apiClient.get(`${MD}/quality/reports`, { params });
   },
-  // 详情
   detail: (id: number): Promise<ApiResponse<QualityCheck>> => {
-    return apiClient.get(`/master-data/quality-check/${id}`);
-  }
+    return apiClient.get(`${MD}/quality/reports/${id}`);
+  },
 };
 
-// 质量结果相关API
 export const qualityResultApi = {
-  // 根据记录ID查询质量结果
-  listByRecordId: (masterDataRecordId: number): Promise<ApiResponse<DataQualityResult[]>> => {
-    return apiClient.get(`/master-data/quality-result/record/${masterDataRecordId}`);
-  }
+  listByRecordId: (_masterDataRecordId: number): Promise<ApiResponse<DataQualityResult[]>> => {
+    return Promise.reject(new Error('MD quality result API not implemented'));
+  },
 };
 
 export default {

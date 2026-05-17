@@ -15,7 +15,7 @@ import type {
 
 // 创建 axios 实例
 const apiClient = axios.create({
-  baseURL: '/api/integration',
+  baseURL: '/api/v1/integration',
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json'

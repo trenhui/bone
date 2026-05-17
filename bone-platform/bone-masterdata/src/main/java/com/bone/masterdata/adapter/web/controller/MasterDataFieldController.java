@@ -6,13 +6,14 @@ import com.bone.masterdata.application.query.dto.MasterDataFieldDTO;
 import com.bone.masterdata.application.query.handler.MasterDataFieldListQueryHandler;
 import com.bone.masterdata.application.query.qry.MasterDataFieldListQry;
 import com.bone.core.result.ApiResponse;
+import com.bone.core.web.PlatformApiPaths;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/masterdata/fields")
+@RequestMapping(PlatformApiPaths.MASTERDATA_V1 + "/fields")
 @RequiredArgsConstructor
 public class MasterDataFieldController {
     private final CreateMasterDataFieldHandler createHandler;
@@ -25,7 +26,7 @@ public class MasterDataFieldController {
     }
 
     @GetMapping
-    public ApiResponse<List<MasterDataFieldDTO>> list(@RequestParam Long masterDataEntityId) {
+    public ApiResponse<List<MasterDataFieldDTO>> list(@RequestParam("masterDataEntityId") Long masterDataEntityId) {
         MasterDataFieldListQry qry = new MasterDataFieldListQry();
         qry.setMasterDataEntityId(masterDataEntityId);
         List<MasterDataFieldDTO> dtos = listQueryHandler.handle(qry);

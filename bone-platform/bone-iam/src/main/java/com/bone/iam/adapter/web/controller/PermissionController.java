@@ -1,6 +1,7 @@
 package com.bone.iam.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
+import com.bone.core.web.PlatformApiPaths;
 import com.bone.core.model.PageResult;
 import com.bone.iam.application.command.cmd.CreatePermissionCmd;
 import com.bone.iam.application.command.cmd.UpdatePermissionCmd;
@@ -24,7 +25,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/iam/permissions")
+@RequestMapping(PlatformApiPaths.IAM_V1 + "/permissions")
 @RequiredArgsConstructor
 public class PermissionController {
     private final CreatePermissionUseCase createPermissionUseCase;

@@ -33,7 +33,6 @@ public class GenColumnMetadata extends AggregateRoot<Long> {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private boolean deleted;
-    private int version;
 
     private GenColumnMetadata() {
     }
@@ -60,7 +59,6 @@ public class GenColumnMetadata extends AggregateRoot<Long> {
         metadata.createdAt = LocalDateTime.now();
         metadata.updatedAt = LocalDateTime.now();
         metadata.deleted = false;
-        metadata.version = 0;
         return metadata;
     }
 
@@ -115,7 +113,6 @@ public class GenColumnMetadata extends AggregateRoot<Long> {
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
         private boolean deleted;
-        private int version;
 
         public Builder id(Long id) {
             this.id = id;
@@ -227,11 +224,6 @@ public class GenColumnMetadata extends AggregateRoot<Long> {
             return this;
         }
 
-        public Builder version(int version) {
-            this.version = version;
-            return this;
-        }
-
         public GenColumnMetadata build() {
             GenColumnMetadata metadata = new GenColumnMetadata();
             metadata.id = id;
@@ -256,7 +248,6 @@ public class GenColumnMetadata extends AggregateRoot<Long> {
             metadata.createdAt = createdAt;
             metadata.updatedAt = updatedAt;
             metadata.deleted = deleted;
-            metadata.version = version;
             return metadata;
         }
     }

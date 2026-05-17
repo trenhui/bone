@@ -1,10 +1,13 @@
 package com.bone.system.domain.alert;
 
-import com.bone.system.domain.alert.event.AlertRuleCreatedEvent;
-import com.bone.system.domain.alert.event.AlertRuleUpdatedEvent;
-import com.bone.system.domain.alert.vo.AlertLevel;
-import com.bone.system.domain.alert.vo.MetricName;
-import com.bone.system.domain.alert.vo.Threshold;
+import com.bone.core.annotation.Id;
+import com.bone.core.domain.id.GeneratedValue;
+import com.bone.core.domain.id.GenerationStrategy;
+import com.bone.system.domain.model.alert.event.AlertRuleCreatedEvent;
+import com.bone.system.domain.model.alert.event.AlertRuleUpdatedEvent;
+import com.bone.system.domain.model.alert.vo.AlertLevel;
+import com.bone.system.domain.model.alert.vo.MetricName;
+import com.bone.system.domain.model.alert.vo.Threshold;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -14,9 +17,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table("sys_alert_rule")
 public class AlertRule extends com.bone.core.domain.AggregateRoot<Long> {
+    @Id
+    @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
     private Long id;
     private String name;
     private String description;

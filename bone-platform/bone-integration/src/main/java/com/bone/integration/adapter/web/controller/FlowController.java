@@ -1,6 +1,7 @@
 package com.bone.integration.adapter.web.controller;
 
 import com.bone.core.exception.DomainException;
+import com.bone.core.web.PlatformApiPaths;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import com.bone.integration.application.command.cmd.CreateFlowCmd;
@@ -9,6 +10,7 @@ import com.bone.integration.application.query.dto.FlowDTO;
 import com.bone.integration.application.query.qry.FlowPageQry;
 import com.bone.integration.application.usecase.standard.CreateFlowUseCase;
 import com.bone.integration.application.usecase.standard.FlowPageQueryUseCase;
+import com.bone.integration.application.event.IntegrationDomainEventPublisher;
 import com.bone.integration.application.usecase.standard.UpdateFlowUseCase;
 import com.bone.integration.domain.flow.FlowConnection;
 import com.bone.integration.domain.flow.FlowNode;
@@ -22,7 +24,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/integration/flows")
+@RequestMapping(PlatformApiPaths.INTEGRATION_V1 + "/flows")
 @RequiredArgsConstructor
 public class FlowController {
     private final CreateFlowUseCase createFlowUseCase;
@@ -30,6 +32,7 @@ public class FlowController {
     private final FlowPageQueryUseCase flowPageQueryUseCase;
     private final IntegrationFlowRepository flowRepository;
     private final FlowService flowService;
+    private final IntegrationDomainEventPublisher domainEventPublisher;
 
     @PostMapping
     public ApiResponse<Long> create(@RequestBody CreateFlowCmd cmd) {
@@ -97,6 +100,7 @@ public class FlowController {
         }
         flow.activate();
         flowRepository.save(flow);
+        domainEventPublisher.publishFrom(flow);
         return ApiResponse.success();
     }
 

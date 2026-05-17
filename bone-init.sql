@@ -548,6 +548,7 @@ CREATE TABLE meta_data_quality_rule (
 -- 5. Extension Studio（exts_*）
 -- ============================================================
 
+DROP TABLE IF EXISTS exts_audit_log;
 DROP TABLE IF EXISTS exts_plugin_execution_log;
 DROP TABLE IF EXISTS exts_plugin_version;
 DROP TABLE IF EXISTS exts_extension_impl;
@@ -649,6 +650,21 @@ CREATE TABLE exts_plugin_execution_log (
     KEY idx_exts_pel_tenant (tenant_id, plugin_id, created_at),
     KEY idx_exts_pel_plugin (plugin_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Studio 插件执行日志';
+
+CREATE TABLE exts_audit_log (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    trace_id            VARCHAR(64)     DEFAULT NULL COMMENT '链路ID',
+    user_id             VARCHAR(64)     DEFAULT NULL COMMENT '操作用户ID',
+    action              VARCHAR(80)     NOT NULL COMMENT '操作动作',
+    resource_type       VARCHAR(50)     DEFAULT NULL COMMENT '资源类型',
+    resource_id         VARCHAR(100)    DEFAULT NULL COMMENT '资源ID',
+    result              VARCHAR(20)     NOT NULL COMMENT '结果 SUCCESS/FAILED',
+    detail              TEXT            DEFAULT NULL COMMENT '详情',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    PRIMARY KEY (id),
+    KEY idx_exts_audit_tenant_time (tenant_id, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Studio 审计日志';
 
 -- ============================================================
 -- 6. Studio Generator（gen_*，bone-engine/studio-generator）
@@ -829,3 +845,249 @@ CREATE TABLE gen_code_generation_history (
     KEY idx_gen_cgh_task (task_id),
     KEY idx_gen_cgh_tenant (tenant_id, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='代码生成历史';
+
+-- ============================================================
+-- 7. 统一控制台（cnsl_*）
+-- ============================================================
+
+DROP TABLE IF EXISTS cnsl_recent_access;
+DROP TABLE IF EXISTS cnsl_notification;
+DROP TABLE IF EXISTS cnsl_dashboard_widget;
+
+CREATE TABLE cnsl_dashboard_widget (
+    id                  BIGINT          NOT NULL COMMENT 'Widget主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    user_id             BIGINT          NOT NULL COMMENT '用户ID',
+    type                VARCHAR(50)     NOT NULL COMMENT 'Widget类型',
+    config              JSON            NOT NULL COMMENT 'Widget配置',
+    position_x          INT             NOT NULL DEFAULT 0 COMMENT 'X轴位置',
+    position_y          INT             NOT NULL DEFAULT 0 COMMENT 'Y轴位置',
+    width               INT             NOT NULL DEFAULT 4 COMMENT '宽度（栅格）',
+    height              INT             NOT NULL DEFAULT 1 COMMENT '高度（行）',
+    is_enabled          TINYINT(1)      NOT NULL DEFAULT 1 COMMENT '是否启用',
+    sort_order          INT             NOT NULL DEFAULT 0 COMMENT '排序号',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    updated_by          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    PRIMARY KEY (id),
+    KEY idx_cnsl_dw_user (user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='仪表盘Widget配置';
+
+CREATE TABLE cnsl_notification (
+    id                  BIGINT          NOT NULL COMMENT '通知主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    user_id             BIGINT          NOT NULL COMMENT '用户ID',
+    type                VARCHAR(50)     NOT NULL COMMENT '通知类型',
+    title               VARCHAR(200)    NOT NULL COMMENT '通知标题',
+    content             TEXT            DEFAULT NULL COMMENT '通知内容',
+    action_url          VARCHAR(500)    DEFAULT NULL COMMENT '操作链接',
+    is_read             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否已读',
+    read_at             DATETIME(3)     DEFAULT NULL COMMENT '阅读时间',
+    source_module       VARCHAR(50)     NOT NULL COMMENT '来源模块',
+    source_event_id     VARCHAR(64)     DEFAULT NULL COMMENT '来源事件ID',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    PRIMARY KEY (id),
+    KEY idx_cnsl_notif_user_read (user_id, is_read),
+    KEY idx_cnsl_notif_time (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='通知';
+
+CREATE TABLE cnsl_recent_access (
+    id                  BIGINT          NOT NULL COMMENT '访问记录主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    user_id             BIGINT          NOT NULL COMMENT '用户ID',
+    resource_type       VARCHAR(50)     NOT NULL COMMENT '资源类型',
+    resource_id         VARCHAR(200)    NOT NULL COMMENT '资源ID',
+    resource_name       VARCHAR(200)    NOT NULL COMMENT '资源名称',
+    access_url          VARCHAR(500)    NOT NULL COMMENT '访问URL',
+    accessed_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '访问时间',
+    PRIMARY KEY (id),
+    KEY idx_cnsl_ra_user (user_id, accessed_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='最近访问记录';
+
+-- ============================================================
+-- 8. 主数据管理（mdm_*，bone-platform/bone-masterdata）
+-- ============================================================
+
+DROP TABLE IF EXISTS mdm_qcheck_report;
+DROP TABLE IF EXISTS mdm_qcheck_detail;
+DROP TABLE IF EXISTS mdm_qcheck_task;
+DROP TABLE IF EXISTS mdm_record_category;
+DROP TABLE IF EXISTS mdm_category;
+DROP TABLE IF EXISTS mdm_record_version;
+DROP TABLE IF EXISTS mdm_record;
+DROP TABLE IF EXISTS mdm_entity;
+
+CREATE TABLE mdm_entity (
+    id                  BIGINT          NOT NULL COMMENT '主数据实体主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    meta_entity_id      BIGINT          NOT NULL COMMENT '关联 meta_entity.id',
+    entity_code         VARCHAR(200)    NOT NULL COMMENT '主数据实体编码',
+    entity_name         VARCHAR(200)    NOT NULL COMMENT '显示名称',
+    description         TEXT            DEFAULT NULL COMMENT '描述',
+    is_versioning       TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否启用版本控制',
+    workflow_enabled    TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否启用审批流',
+    status              TINYINT         NOT NULL DEFAULT 1 COMMENT '状态：0-禁用，1-启用',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    updated_by          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_mdm_entity_code (tenant_id, entity_code),
+    UNIQUE KEY uk_mdm_entity_meta (tenant_id, meta_entity_id),
+    KEY idx_mdm_entity_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据实体扩展配置';
+
+CREATE TABLE mdm_record (
+    id                  BIGINT          NOT NULL COMMENT '记录主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    mdm_entity_id       BIGINT          NOT NULL COMMENT '主数据实体ID',
+    record_code         VARCHAR(200)    NOT NULL COMMENT '业务唯一编码',
+    display_name        VARCHAR(500)    NOT NULL COMMENT '显示名称',
+    current_data        JSON            NOT NULL COMMENT '当前生效属性数据',
+    status              VARCHAR(20)     NOT NULL DEFAULT 'DRAFT' COMMENT '状态',
+    version_number      INT             NOT NULL DEFAULT 1 COMMENT '当前版本号',
+    effective_from      DATETIME(3)     DEFAULT NULL COMMENT '生效开始时间',
+    effective_to        DATETIME(3)     DEFAULT NULL COMMENT '生效结束时间',
+    is_current          TINYINT(1)      NOT NULL DEFAULT 1 COMMENT '是否当前有效版本',
+    parent_record_id    BIGINT          DEFAULT NULL COMMENT '父记录ID',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    updated_by          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_mdm_record_code (tenant_id, mdm_entity_id, record_code),
+    KEY idx_mdm_record_entity (mdm_entity_id),
+    KEY idx_mdm_record_status (status),
+    KEY idx_mdm_record_parent (parent_record_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据记录';
+
+CREATE TABLE mdm_record_version (
+    id                  BIGINT          NOT NULL COMMENT '版本历史主键（Snowflake）',
+    record_id           BIGINT          NOT NULL COMMENT '关联记录ID',
+    version_number      INT             NOT NULL COMMENT '版本号',
+    data                JSON            NOT NULL COMMENT '属性快照',
+    status              VARCHAR(20)     NOT NULL COMMENT '版本状态',
+    change_description  TEXT            DEFAULT NULL COMMENT '变更说明',
+    approved_by         BIGINT          DEFAULT NULL COMMENT '审批人ID',
+    approved_at         DATETIME(3)     DEFAULT NULL COMMENT '审批时间',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_mdm_rv_record_version (record_id, version_number),
+    KEY idx_mdm_rv_record (record_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据记录版本历史';
+
+CREATE TABLE mdm_category (
+    id                  BIGINT          NOT NULL COMMENT '分类主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    mdm_entity_id       BIGINT          NOT NULL COMMENT '主数据实体ID',
+    name                VARCHAR(200)    NOT NULL COMMENT '分类名称',
+    code                VARCHAR(100)    NOT NULL COMMENT '分类编码',
+    description         VARCHAR(500)    DEFAULT NULL COMMENT '描述',
+    parent_category_id  BIGINT          DEFAULT NULL COMMENT '父分类ID',
+    level               INT             NOT NULL DEFAULT 0 COMMENT '层级',
+    sort_order          INT             NOT NULL DEFAULT 0 COMMENT '排序号',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    updated_by          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_mdm_cat_code (tenant_id, mdm_entity_id, code),
+    KEY idx_mdm_cat_parent (parent_category_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据分类';
+
+CREATE TABLE mdm_record_category (
+    id                  BIGINT          NOT NULL COMMENT '关联主键（Snowflake）',
+    record_id           BIGINT          NOT NULL COMMENT '主数据记录ID',
+    category_id         BIGINT          NOT NULL COMMENT '分类ID',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_mdm_rc_record_category (record_id, category_id),
+    KEY idx_mdm_rc_category (category_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据记录分类关联';
+
+CREATE TABLE mdm_qcheck_task (
+    id                  BIGINT          NOT NULL COMMENT '检查任务主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    mdm_entity_id       BIGINT          NOT NULL COMMENT '主数据实体ID',
+    check_name          VARCHAR(200)    NOT NULL COMMENT '检查任务名称',
+    status              VARCHAR(20)     NOT NULL DEFAULT 'PENDING' COMMENT '状态',
+    total_records       INT             NOT NULL DEFAULT 0 COMMENT '检查记录总数',
+    passed_records      INT             NOT NULL DEFAULT 0 COMMENT '通过记录数',
+    failed_records      INT             NOT NULL DEFAULT 0 COMMENT '失败记录数',
+    parameters          JSON            DEFAULT NULL COMMENT '检查参数',
+    started_at          DATETIME(3)     DEFAULT NULL COMMENT '开始时间',
+    completed_at        DATETIME(3)     DEFAULT NULL COMMENT '完成时间',
+    error_message       TEXT            DEFAULT NULL COMMENT '失败原因',
+    created_by          BIGINT          DEFAULT NULL COMMENT '触发人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    PRIMARY KEY (id),
+    KEY idx_mdm_qctask_entity (mdm_entity_id),
+    KEY idx_mdm_qctask_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据质量检查任务';
+
+CREATE TABLE mdm_qcheck_detail (
+    id                  BIGINT          NOT NULL COMMENT '明细主键（Snowflake）',
+    check_id            BIGINT          NOT NULL COMMENT '质量检查任务ID',
+    rule_id             BIGINT          NOT NULL COMMENT '质量规则ID',
+    record_id           BIGINT          NOT NULL COMMENT '主数据记录ID',
+    passed              TINYINT(1)      NOT NULL COMMENT '是否通过',
+    message             TEXT            DEFAULT NULL COMMENT '检查消息',
+    checked_at          DATETIME(3)     NOT NULL COMMENT '检查时间',
+    PRIMARY KEY (id),
+    KEY idx_mdm_qcd_check (check_id),
+    KEY idx_mdm_qcd_rule (rule_id),
+    KEY idx_mdm_qcd_record (record_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据质量检查明细';
+
+CREATE TABLE mdm_qcheck_report (
+    id                  BIGINT          NOT NULL COMMENT '报告主键（Snowflake）',
+    check_id            BIGINT          NOT NULL COMMENT '质量检查任务ID',
+    report_data         JSON            NOT NULL COMMENT '报告数据',
+    issue_count         INT             NOT NULL DEFAULT 0 COMMENT '质量问题数',
+    report_url          VARCHAR(500)    DEFAULT NULL COMMENT '报告URL',
+    created_by          BIGINT          DEFAULT NULL COMMENT '生成人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '生成时间',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_mdm_qrpt_check (check_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据质量检查报告';
+
+-- ============================================================
+-- 8.1 主数据运行时兼容表（bone-masterdata @Table md_*，收敛至 mdm_* 见详设）
+-- ============================================================
+
+DROP TABLE IF EXISTS md_record;
+DROP TABLE IF EXISTS md_entity;
+
+CREATE TABLE md_entity (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    name                VARCHAR(200)    NOT NULL COMMENT '实体名称',
+    description         TEXT            DEFAULT NULL COMMENT '描述',
+    category            VARCHAR(100)    DEFAULT NULL COMMENT '分类',
+    status              VARCHAR(32)     NOT NULL DEFAULT 'DRAFT' COMMENT '状态',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据实体（运行时兼容）';
+
+CREATE TABLE md_record (
+    id                      BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    master_data_entity_id   BIGINT          NOT NULL COMMENT '主数据实体ID',
+    data                    JSON            NOT NULL COMMENT '记录 JSON 数据',
+    status                  VARCHAR(32)     NOT NULL DEFAULT 'DRAFT' COMMENT '状态',
+    created_at              DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at              DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    publish_time            DATETIME(3)     DEFAULT NULL COMMENT '发布时间',
+    PRIMARY KEY (id),
+    KEY idx_md_record_entity (master_data_entity_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据记录（运行时兼容）';

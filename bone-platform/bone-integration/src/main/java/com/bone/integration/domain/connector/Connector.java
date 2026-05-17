@@ -3,6 +3,7 @@ package com.bone.integration.domain.connector;
 import com.bone.core.domain.AggregateRoot;
 import com.bone.core.exception.DomainException;
 import com.bone.integration.domain.model.connector.event.ConnectorCreatedEvent;
+import com.bone.integration.domain.model.connector.event.ConnectorTestedEvent;
 import com.bone.integration.domain.model.connector.vo.ConnectorStatus;
 import com.bone.integration.domain.model.connector.vo.ConnectorType;
 import com.bone.metadata.sdk.domain.annotation.Table;
@@ -74,5 +75,9 @@ public class Connector extends AggregateRoot<Long> {
             throw new DomainException("连接器配置不能为空");
         }
         this.config = config;
+    }
+
+    public void recordTestResult(boolean success, String message) {
+        addDomainEvent(new ConnectorTestedEvent(this.id, success, message));
     }
 }

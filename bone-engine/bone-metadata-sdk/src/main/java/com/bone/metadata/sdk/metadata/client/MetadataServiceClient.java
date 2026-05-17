@@ -1,5 +1,6 @@
 package com.bone.metadata.sdk.metadata.client;
 
+import com.bone.core.web.PlatformApiPaths;
 import com.bone.metadata.sdk.domain.model.AllocationContext;
 import com.bone.metadata.sdk.domain.model.FieldMetadata;
 import com.bone.metadata.sdk.support.config.MetadataServiceClientConfig;
@@ -18,15 +19,15 @@ import java.util.List;
 )
 public interface MetadataServiceClient {
 
-    @PostMapping("/v1/metadata/fields:search")
+    @PostMapping(PlatformApiPaths.METADATA_V1 + "/fields:search")
     List<FieldMetadata> findExtensionFields(@RequestBody AllocationContext context);
 
-    @PostMapping("/v1/metadata/fields:searchByNames")
+    @PostMapping(PlatformApiPaths.METADATA_V1 + "/fields:searchByNames")
     List<FieldMetadata> findExtensionFieldsByNames(@RequestBody FieldsByNamesRequest request);
 
-    @PostMapping("/v1/metadata/fields:allocate")
+    @PostMapping(PlatformApiPaths.METADATA_V1 + "/fields:allocate")
     List<FieldMetadata> allocateAndPersistFields(@RequestBody List<FieldMetadata> fields);
 
-    @GetMapping("/v1/metadata/health")
+    @GetMapping(PlatformApiPaths.METADATA_V1 + "/health")
     ResponseEntity<Void> healthCheck();
 }

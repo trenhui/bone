@@ -3,6 +3,7 @@ package com.bone.integration.application.command.handler;
 import com.bone.core.usecase.Capability;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.integration.application.command.cmd.CreateConnectorCmd;
+import com.bone.integration.application.event.IntegrationDomainEventPublisher;
 import com.bone.integration.domain.connector.Connector;
 import com.bone.integration.domain.model.connector.vo.ConnectorType;
 import com.bone.integration.domain.repository.ConnectorRepository;
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CreateConnectorHandler {
     private final ConnectorRepository connectorRepository;
     private final ConnectorService connectorService;
+    private final IntegrationDomainEventPublisher domainEventPublisher;
 
     @Transactional
     public Long handle(CreateConnectorCmd cmd) {
@@ -33,6 +35,7 @@ public class CreateConnectorHandler {
         ConnectorType type = ConnectorType.fromString(cmd.type());
         Connector connector = Connector.create(connectorId, cmd.name(), type, cmd.config());
         connectorRepository.save(connector);
+        domainEventPublisher.publishFrom(connector);
         return connector.getId();
     }
 }

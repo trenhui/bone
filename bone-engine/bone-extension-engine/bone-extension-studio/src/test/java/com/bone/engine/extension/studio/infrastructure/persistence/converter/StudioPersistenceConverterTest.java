@@ -2,6 +2,8 @@ package com.bone.engine.extension.studio.infrastructure.persistence.converter;
 
 import com.bone.engine.extension.studio.domain.model.ExtPoint;
 import com.bone.engine.extension.studio.domain.model.Extension;
+import com.bone.engine.extension.studio.domain.model.StudioAuditEntry;
+import com.bone.engine.extension.studio.infrastructure.persistence.entity.ExtStudioAuditLog;
 import com.bone.engine.extension.studio.infrastructure.persistence.entity.ExtStudioExtensionImpl;
 import com.bone.engine.extension.studio.infrastructure.persistence.entity.ExtStudioExtensionPoint;
 import org.junit.jupiter.api.Test;
@@ -43,5 +45,24 @@ class StudioPersistenceConverterTest {
         Extension back = StudioPersistenceConverter.toDomain(row);
         assertEquals("VIP", back.getName());
         assertEquals(10, back.getPriority());
+    }
+
+    @Test
+    void roundTripAuditEntry() {
+        StudioAuditEntry entry = new StudioAuditEntry();
+        entry.setTraceId("trace-1");
+        entry.setTenantId(0L);
+        entry.setUserId("u1");
+        entry.setAction("plugin.deploy");
+        entry.setResourceType("plugin");
+        entry.setResourceId("1");
+        entry.setResult("SUCCESS");
+
+        ExtStudioAuditLog row = StudioPersistenceConverter.toAuditLogEntity(entry);
+        assertEquals("plugin.deploy", row.getAction());
+
+        StudioAuditEntry back = StudioPersistenceConverter.toAuditDomain(row);
+        assertEquals("trace-1", back.getTraceId());
+        assertEquals("SUCCESS", back.getResult());
     }
 }

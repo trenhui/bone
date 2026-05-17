@@ -2,6 +2,7 @@ package com.bone.studio.generator.application.command.handler;
 
 import com.bone.core.usecase.Capability;
 import com.bone.studio.generator.application.command.cmd.TestDataSourceConnectionCommand;
+import com.bone.studio.generator.common.StudioIds;
 import com.bone.studio.generator.domain.data.DataSource;
 import com.bone.studio.generator.domain.gateway.DatabaseMetadataGateway;
 import com.bone.studio.generator.domain.repository.DataSourceRepository;
@@ -17,7 +18,7 @@ public class TestDataSourceConnectionHandler {
     private final DatabaseMetadataGateway metadataGateway;
 
     public boolean handle(TestDataSourceConnectionCommand command) {
-        DataSource dataSource = dataSourceRepository.findById(command.getId());
+        DataSource dataSource = dataSourceRepository.findById(StudioIds.parseRequired(command.getId()));
         if (dataSource == null) {
             throw new IllegalArgumentException("数据源不存在: " + command.getId());
         }

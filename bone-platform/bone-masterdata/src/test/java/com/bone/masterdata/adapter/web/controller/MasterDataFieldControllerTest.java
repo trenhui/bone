@@ -1,9 +1,7 @@
 package com.bone.masterdata.adapter.web.controller;
 
-import com.bone.core.result.ApiResponse;
 import com.bone.masterdata.application.command.cmd.CreateMasterDataFieldCmd;
 import com.bone.masterdata.application.command.handler.CreateMasterDataFieldHandler;
-import com.bone.masterdata.application.query.dto.MasterDataFieldDTO;
 import com.bone.masterdata.application.query.handler.MasterDataFieldListQueryHandler;
 import com.bone.masterdata.application.query.qry.MasterDataFieldListQry;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,14 +11,14 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Collections;
 
-import static org.mockito.Mockito.when;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 class MasterDataFieldControllerTest {
 
@@ -43,17 +41,12 @@ class MasterDataFieldControllerTest {
 
     @Test
     void testCreate() throws Exception {
-        CreateMasterDataFieldCmd cmd = new CreateMasterDataFieldCmd();
-        cmd.setName("测试字段");
-        cmd.setCode("test_field");
-        cmd.setDataType("STRING");
-        cmd.setMasterDataEntityId(1L);
+        when(createHandler.handle(any(CreateMasterDataFieldCmd.class))).thenReturn(1L);
 
-        when(createHandler.handle(cmd)).thenReturn(1L);
-
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/masterdata/fields")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"name\":\"测试字段\",\"code\":\"test_field\",\"dataType\":\"STRING\",\"masterDataEntityId\":1}"))
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/masterdata/fields")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(
+                                "{\"name\":\"测试字段\",\"type\":\"STRING\",\"masterDataEntityId\":1,\"length\":64,\"required\":true}"))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.code").value(200))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data").value(1));
@@ -61,11 +54,10 @@ class MasterDataFieldControllerTest {
 
     @Test
     void testList() throws Exception {
-        Long masterDataEntityId = 1L;
         when(listQueryHandler.handle(any(MasterDataFieldListQry.class))).thenReturn(Collections.emptyList());
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/masterdata/fields")
-                .param("masterDataEntityId", masterDataEntityId.toString()))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/masterdata/fields")
+                        .param("masterDataEntityId", "1"))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.code").value(200))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data").isArray());

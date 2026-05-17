@@ -9,9 +9,9 @@ import com.bone.system.application.command.cmd.UpdateConfigCmd;
 import com.bone.system.common.exception.BusinessException;
 import com.bone.system.common.exception.NotFoundException;
 import com.bone.system.domain.config.SystemConfig;
-import com.bone.system.domain.config.vo.ConfigKey;
-import com.bone.system.domain.config.vo.ConfigType;
-import com.bone.system.domain.config.vo.ConfigValue;
+import com.bone.system.domain.model.config.vo.ConfigKey;
+import com.bone.system.domain.model.config.vo.ConfigType;
+import com.bone.system.domain.model.config.vo.ConfigValue;
 import com.bone.system.domain.repository.SystemConfigRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -41,7 +41,7 @@ public class ConfigCommandHandler {
                 .where(SystemConfig::getConfigKey).eq(configKey)
                 .single();
         if (existingConfig != null) {
-            throw BusinessException.of("配置键已存在: " + cmd.getConfigKey());
+            throw new BusinessException("配置键已存在: " + cmd.getConfigKey());
         }
 
         Long configId = DistributedIdGenerator.generateLongId();
@@ -61,10 +61,10 @@ public class ConfigCommandHandler {
     @Transactional
     public void handle(UpdateConfigCmd cmd) {
         SystemConfig config = QueryBuilder.from(SystemConfig.class)
-                .where(SystemConfig::getDbId).eq(cmd.getId())
+                .where(SystemConfig::getId).eq(cmd.getId())
                 .single();
         if (config == null) {
-            throw NotFoundException.of("配置不存在: " + cmd.getId());
+            throw new NotFoundException("配置不存在: " + cmd.getId());
         }
 
         if (cmd.getConfigValue() != null) {
@@ -81,7 +81,7 @@ public class ConfigCommandHandler {
     @Transactional
     public void delete(Long id) {
         SystemConfig config = QueryBuilder.from(SystemConfig.class)
-                .where(SystemConfig::getDbId).eq(id)
+                .where(SystemConfig::getId).eq(id)
                 .single();
         if (config != null) {
             systemConfigRepository.deleteById(config.getId());

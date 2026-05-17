@@ -6,6 +6,7 @@ import com.bone.integration.application.command.cmd.CreateFlowCmd;
 import com.bone.integration.application.command.cmd.UpdateFlowCmd;
 import com.bone.integration.application.query.dto.FlowDTO;
 import com.bone.integration.application.query.qry.FlowPageQry;
+import com.bone.integration.application.event.IntegrationDomainEventPublisher;
 import com.bone.integration.application.usecase.standard.CreateFlowUseCase;
 import com.bone.integration.application.usecase.standard.FlowPageQueryUseCase;
 import com.bone.integration.application.usecase.standard.UpdateFlowUseCase;
@@ -44,6 +45,9 @@ class FlowControllerTest {
     @Mock
     private FlowService flowService;
 
+    @Mock
+    private IntegrationDomainEventPublisher domainEventPublisher;
+
     @InjectMocks
     private FlowController flowController;
 
@@ -79,5 +83,6 @@ class FlowControllerTest {
 
         assertTrue(response.isSuccess());
         verify(flowRepository).save(flow);
+        verify(domainEventPublisher).publishFrom(flow);
     }
 }

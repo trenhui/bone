@@ -5,21 +5,25 @@ import com.bone.masterdata.application.command.cmd.PerformDataQualityCheckCmd;
 import com.bone.masterdata.application.command.handler.CreateDataQualityRuleHandler;
 import com.bone.masterdata.application.command.handler.PerformDataQualityCheckHandler;
 import com.bone.masterdata.application.query.dto.DataQualityRuleDTO;
+import com.bone.masterdata.application.query.dto.QualityReportDTO;
 import com.bone.masterdata.application.query.handler.DataQualityRuleListQueryHandler;
+import com.bone.masterdata.application.query.handler.GetQualityReportQueryHandler;
 import com.bone.masterdata.application.query.qry.DataQualityRuleListQry;
 import com.bone.core.result.ApiResponse;
+import com.bone.core.web.PlatformApiPaths;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/masterdata/quality")
+@RequestMapping(PlatformApiPaths.MASTERDATA_V1 + "/quality")
 @RequiredArgsConstructor
 public class DataQualityController {
     private final CreateDataQualityRuleHandler createRuleHandler;
     private final DataQualityRuleListQueryHandler ruleListQueryHandler;
     private final PerformDataQualityCheckHandler performCheckHandler;
+    private final GetQualityReportQueryHandler getQualityReportQueryHandler;
 
     @PostMapping("/rules")
     public ApiResponse<Long> createRule(@RequestBody CreateDataQualityRuleCmd cmd) {
@@ -34,16 +38,15 @@ public class DataQualityController {
     }
 
     @PostMapping("/check")
-    public ApiResponse<Long> performCheck(@RequestParam Long masterDataEntityId) {
+    public ApiResponse<Long> performCheck(@RequestParam("masterDataEntityId") Long masterDataEntityId) {
         PerformDataQualityCheckCmd cmd = new PerformDataQualityCheckCmd();
         cmd.setMasterDataEntityId(masterDataEntityId);
-        Long checkId = performCheckHandler.handle(cmd);
-        return ApiResponse.success(checkId);
+        Long reportId = performCheckHandler.handle(cmd);
+        return ApiResponse.success(reportId);
     }
 
     @GetMapping("/reports/{id}")
-    public ApiResponse<String> getReport(@PathVariable Long id) {
-        // TODO: 实现获取质量报告的逻辑
-        return ApiResponse.success("质量报告内容");
+    public ApiResponse<QualityReportDTO> getReport(@PathVariable Long id) {
+        return ApiResponse.success(getQualityReportQueryHandler.handle(id));
     }
 }

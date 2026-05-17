@@ -2,138 +2,201 @@ package com.bone.studio.generator.domain.data;
 
 import com.bone.core.domain.AggregateRoot;
 import com.bone.core.exception.DomainException;
+import com.bone.metadata.sdk.domain.annotation.Column;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import java.time.LocalDateTime;
 
-@Table("data_source")
-public class DataSource extends AggregateRoot<String> {
+/**
+ * 代码生成数据源（对齐 bone-init {@code gen_data_source}）。
+ */
+@Table("gen_data_source")
+public class DataSource extends AggregateRoot<Long> {
 
-    private String id;
+    private Long id;
+    private Long tenantId;
     private String name;
-    private String type;
+    private String dbType;
     private String host;
-    private String port;
-    private String database;
+    private Integer port;
+    private String dbName;
     private String username;
-    private String password;
-    private String status;
+    private String passwordEncrypted;
+    private String params;
+    @Column(name = "is_enabled")
+    private boolean enabled = true;
+    private LocalDateTime lastTestAt;
+    private String lastTestResult;
+    private String lastTestMessage;
+    private Long createdBy;
+    private Long updatedBy;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private boolean deleted;
+    private int version;
 
     private DataSource() {
     }
 
-    public static Builder builder() {
-        return new Builder();
+    public static DataSource create(
+            Long id,
+            Long tenantId,
+            String name,
+            String dbType,
+            String host,
+            Integer port,
+            String dbName,
+            String username,
+            String passwordEncrypted) {
+        validate(name, dbType, host, port, dbName, username);
+        DataSource ds = new DataSource();
+        ds.id = id;
+        ds.tenantId = tenantId == null ? 0L : tenantId;
+        ds.name = name;
+        ds.dbType = dbType.toLowerCase();
+        ds.host = host;
+        ds.port = port;
+        ds.dbName = dbName;
+        ds.username = username;
+        ds.passwordEncrypted = passwordEncrypted;
+        ds.enabled = true;
+        LocalDateTime now = LocalDateTime.now();
+        ds.createdAt = now;
+        ds.updatedAt = now;
+        ds.deleted = false;
+        ds.version = 0;
+        return ds;
     }
 
-    public static DataSource create(String id, String name, String type, String host, 
-                                  String port, String database, String username, String password) {
-        if (name == null || name.isEmpty()) {
-            throw new DomainException("数据源名称不能为空");
-        }
-        if (type == null || type.isEmpty()) {
-            throw new DomainException("数据库类型不能为空");
-        }
-        if (host == null || host.isEmpty()) {
-            throw new DomainException("主机地址不能为空");
-        }
-        if (port == null || port.isEmpty()) {
-            throw new DomainException("端口不能为空");
-        }
-        if (database == null || database.isEmpty()) {
-            throw new DomainException("数据库名称不能为空");
-        }
-        if (username == null || username.isEmpty()) {
-            throw new DomainException("用户名不能为空");
-        }
-
-        DataSource dataSource = new DataSource();
-        dataSource.id = id;
-        dataSource.name = name;
-        dataSource.type = type;
-        dataSource.host = host;
-        dataSource.port = port;
-        dataSource.database = database;
-        dataSource.username = username;
-        dataSource.password = password;
-        dataSource.status = "INACTIVE";
-        dataSource.createdAt = LocalDateTime.now();
-        dataSource.updatedAt = LocalDateTime.now();
-
-        return dataSource;
-    }
-
-    public void update(String name, String type, String host, String port, 
-                     String database, String username, String password) {
-        if (name == null || name.isEmpty()) {
-            throw new DomainException("数据源名称不能为空");
-        }
-        if (type == null || type.isEmpty()) {
-            throw new DomainException("数据库类型不能为空");
-        }
-        if (host == null || host.isEmpty()) {
-            throw new DomainException("主机地址不能为空");
-        }
-        if (port == null || port.isEmpty()) {
-            throw new DomainException("端口不能为空");
-        }
-        if (database == null || database.isEmpty()) {
-            throw new DomainException("数据库名称不能为空");
-        }
-        if (username == null || username.isEmpty()) {
-            throw new DomainException("用户名不能为空");
-        }
-
+    public void update(
+            String name,
+            String dbType,
+            String host,
+            Integer port,
+            String dbName,
+            String username,
+            String passwordEncrypted) {
+        validate(name, dbType, host, port, dbName, username);
         this.name = name;
-        this.type = type;
+        this.dbType = dbType.toLowerCase();
         this.host = host;
         this.port = port;
-        this.database = database;
+        this.dbName = dbName;
         this.username = username;
-        this.password = password;
+        if (passwordEncrypted != null && !passwordEncrypted.isBlank()) {
+            this.passwordEncrypted = passwordEncrypted;
+        }
         this.updatedAt = LocalDateTime.now();
     }
 
-    public void setStatus(String status) {
-        this.status = status;
+    public void recordTestResult(boolean success, String message) {
+        this.lastTestAt = LocalDateTime.now();
+        this.lastTestResult = success ? "SUCCESS" : "FAILED";
+        this.lastTestMessage = message;
         this.updatedAt = LocalDateTime.now();
+        if (success) {
+            this.enabled = true;
+        }
     }
 
-    public String getId() {
+    private static void validate(
+            String name, String dbType, String host, Integer port, String dbName, String username) {
+        if (name == null || name.isBlank()) {
+            throw new DomainException("数据源名称不能为空");
+        }
+        if (dbType == null || dbType.isBlank()) {
+            throw new DomainException("数据库类型不能为空");
+        }
+        if (host == null || host.isBlank()) {
+            throw new DomainException("主机地址不能为空");
+        }
+        if (port == null || port <= 0) {
+            throw new DomainException("端口无效");
+        }
+        if (dbName == null || dbName.isBlank()) {
+            throw new DomainException("数据库名称不能为空");
+        }
+        if (username == null || username.isBlank()) {
+            throw new DomainException("用户名不能为空");
+        }
+    }
+
+    /** 兼容 JDBC 网关：库名 */
+    public String getDatabase() {
+        return dbName;
+    }
+
+    /** 兼容 JDBC 网关：类型 */
+    public String getType() {
+        return dbType;
+    }
+
+    /** 兼容 JDBC 网关：明文密码字段名历史调用 */
+    public String getPassword() {
+        return passwordEncrypted;
+    }
+
+    public Long getId() {
         return id;
+    }
+
+    public Long getTenantId() {
+        return tenantId;
     }
 
     public String getName() {
         return name;
     }
 
-    public String getType() {
-        return type;
+    public String getDbType() {
+        return dbType;
     }
 
     public String getHost() {
         return host;
     }
 
-    public String getPort() {
+    public Integer getPort() {
         return port;
     }
 
-    public String getDatabase() {
-        return database;
+    public String getDbName() {
+        return dbName;
     }
 
     public String getUsername() {
         return username;
     }
 
-    public String getPassword() {
-        return password;
+    public String getPasswordEncrypted() {
+        return passwordEncrypted;
     }
 
-    public String getStatus() {
-        return status;
+    public String getParams() {
+        return params;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public LocalDateTime getLastTestAt() {
+        return lastTestAt;
+    }
+
+    public String getLastTestResult() {
+        return lastTestResult;
+    }
+
+    public String getLastTestMessage() {
+        return lastTestMessage;
+    }
+
+    public Long getCreatedBy() {
+        return createdBy;
+    }
+
+    public Long getUpdatedBy() {
+        return updatedBy;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -144,70 +207,11 @@ public class DataSource extends AggregateRoot<String> {
         return updatedAt;
     }
 
-    public static class Builder {
-        private String id;
-        private String name;
-        private String type;
-        private String host;
-        private String port;
-        private String database;
-        private String username;
-        private String password;
+    public boolean isDeleted() {
+        return deleted;
+    }
 
-        public Builder id(String id) {
-            this.id = id;
-            return this;
-        }
-
-        public Builder name(String name) {
-            this.name = name;
-            return this;
-        }
-
-        public Builder type(String type) {
-            this.type = type;
-            return this;
-        }
-
-        public Builder host(String host) {
-            this.host = host;
-            return this;
-        }
-
-        public Builder port(String port) {
-            this.port = port;
-            return this;
-        }
-
-        public Builder database(String database) {
-            this.database = database;
-            return this;
-        }
-
-        public Builder username(String username) {
-            this.username = username;
-            return this;
-        }
-
-        public Builder password(String password) {
-            this.password = password;
-            return this;
-        }
-
-        public DataSource build() {
-            DataSource dataSource = new DataSource();
-            dataSource.id = id;
-            dataSource.name = name;
-            dataSource.type = type;
-            dataSource.host = host;
-            dataSource.port = port;
-            dataSource.database = database;
-            dataSource.username = username;
-            dataSource.password = password;
-            dataSource.status = "INACTIVE";
-            dataSource.createdAt = LocalDateTime.now();
-            dataSource.updatedAt = LocalDateTime.now();
-            return dataSource;
-        }
+    public int getVersion() {
+        return version;
     }
 }

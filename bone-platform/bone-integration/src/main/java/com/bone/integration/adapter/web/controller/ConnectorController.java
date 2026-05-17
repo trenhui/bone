@@ -1,6 +1,7 @@
 package com.bone.integration.adapter.web.controller;
 
 import com.bone.core.exception.DomainException;
+import com.bone.core.web.PlatformApiPaths;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import com.bone.integration.application.command.cmd.CreateConnectorCmd;
@@ -9,6 +10,7 @@ import com.bone.integration.application.query.dto.ConnectorDTO;
 import com.bone.integration.application.query.qry.ConnectorPageQry;
 import com.bone.integration.application.usecase.standard.ConnectorPageQueryUseCase;
 import com.bone.integration.application.usecase.standard.CreateConnectorUseCase;
+import com.bone.integration.application.event.IntegrationDomainEventPublisher;
 import com.bone.integration.application.usecase.standard.UpdateConnectorUseCase;
 import com.bone.integration.domain.connector.Connector;
 import com.bone.integration.domain.repository.ConnectorRepository;
@@ -17,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/integration/connectors")
+@RequestMapping(PlatformApiPaths.INTEGRATION_V1 + "/connectors")
 @RequiredArgsConstructor
 public class ConnectorController {
     private final CreateConnectorUseCase createConnectorUseCase;
@@ -25,6 +27,7 @@ public class ConnectorController {
     private final ConnectorPageQueryUseCase connectorPageQueryUseCase;
     private final ConnectorRepository connectorRepository;
     private final ConnectorService connectorService;
+    private final IntegrationDomainEventPublisher domainEventPublisher;
 
     @PostMapping
     public ApiResponse<Long> create(@RequestBody CreateConnectorCmd cmd) {
@@ -72,6 +75,9 @@ public class ConnectorController {
             throw new DomainException("连接器不存在");
         }
         boolean success = connectorService.testConnector(connector);
+        String message = success ? "连接测试成功" : "连接测试失败";
+        connector.recordTestResult(success, message);
+        domainEventPublisher.publishFrom(connector);
         return ApiResponse.success(success);
     }
 

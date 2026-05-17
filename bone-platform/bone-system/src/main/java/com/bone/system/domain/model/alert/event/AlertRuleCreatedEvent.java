@@ -1,7 +1,7 @@
 package com.bone.system.domain.model.alert.event;
 
 import com.bone.core.domain.DomainEvent;
-import com.bone.system.domain.model.alert.AlertRule;
+import com.bone.system.domain.alert.AlertRule;
 import com.bone.system.domain.model.alert.vo.AlertLevel;
 
 import java.time.LocalDateTime;

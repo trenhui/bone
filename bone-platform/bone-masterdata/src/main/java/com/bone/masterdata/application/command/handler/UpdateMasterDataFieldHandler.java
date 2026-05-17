@@ -4,6 +4,7 @@ import com.bone.core.usecase.Capability;
 import com.bone.masterdata.application.command.cmd.UpdateMasterDataFieldCmd;
 import com.bone.core.exception.NotFoundException;
 import com.bone.masterdata.domain.entity.MasterDataField;
+import com.bone.masterdata.domain.model.field.vo.FieldName;
 import com.bone.masterdata.domain.repository.MasterDataFieldRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -31,8 +32,14 @@ public class UpdateMasterDataFieldHandler {
             throw NotFoundException.of("主数据字段不存在");
         }
 
-        field.update(cmd.getName(), cmd.getType(), cmd.getLength(), cmd.getRequired(),
-                     cmd.getDefaultValue(), cmd.getDescription(), cmd.getSortOrder());
+        field.update(
+                FieldName.of(cmd.getName()),
+                cmd.getType(),
+                cmd.getLength(),
+                cmd.getRequired(),
+                cmd.getDefaultValue(),
+                cmd.getDescription(),
+                cmd.getSortOrder());
         masterDataFieldRepository.update(field);
     }
 }

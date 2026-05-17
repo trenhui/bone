@@ -14,7 +14,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 /**
  * 平台集成服务安全配置。
  *
- * <p>开发默认 {@code bone.integration.security.jwt-enabled=false} 放行 {@code /integration/**}；
+ * <p>开发默认 {@code bone.integration.security.jwt-enabled=false} 放行 {@code /v1/integration/**}；
  * 生产设置 {@code BONE_INTEGRATION_JWT_ENABLED=true} 与 IAM 共用 Bearer Token。
  */
 @Configuration
@@ -43,7 +43,7 @@ public class SecurityConfig {
                             .permitAll()
                             .requestMatchers("/actuator/**", "/swagger-ui/**", "/v3/api-docs/**")
                             .permitAll()
-                            .requestMatchers("/integration/**")
+                            .requestMatchers("/v1/integration/**")
                             .authenticated()
                             .anyRequest()
                             .permitAll());
@@ -51,7 +51,7 @@ public class SecurityConfig {
             http.authorizeHttpRequests(auth -> auth
                     .requestMatchers("/actuator/**", "/swagger-ui/**", "/v3/api-docs/**")
                     .permitAll()
-                    .requestMatchers("/integration/**")
+                    .requestMatchers("/v1/integration/**")
                     .permitAll()
                     .anyRequest()
                     .authenticated());

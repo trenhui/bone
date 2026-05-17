@@ -84,7 +84,7 @@ bone/                          # 根聚合模块
 │   ├── bone-workflow/         # 工作流引擎
 │   └── bone-procurement/      # 采购/供应链相关引擎
 ├── bone-platform/             # 企业共享平台服务
-│   ├── bone-iam/              # 身份与访问管理（端口 8080）
+│   ├── bone-iam/              # 身份与访问管理（端口 8081）
 │   ├── bone-gateway/          # API 网关
 │   ├── bone-masterdata/       # 主数据服务
 │   ├── bone-system/           # 系统管理（端口 8083）
@@ -98,8 +98,7 @@ bone/                          # 根聚合模块
 ├── bone-sdk/                  # 客户端 SDK
 │   ├── bone-client-sdk/
 │   └── bone-openapi-sdk/
-└── bone-tool/                 # 开发工具
-    └── bone-codegen/          # 代码生成器（同样遵循 DDD 分层）
+└── bone-engine/studio-generator/  # Studio 代码生成（DDD 分层，替代原 bone-tool/bone-codegen）
 ```
 
 ### 3.2 前端模块（npm workspaces）
@@ -298,9 +297,9 @@ adapter/web → application → domain ← infrastructure
 - 执行：`mvn spotless:apply`
 - 当前仅在 `pluginManagement` 中定义，**未自动绑定到所有模块生命周期**，需显式调用。
 
-### 7.2 静态分析（bone-tool 模块激活）
+### 7.2 静态分析（按模块配置）
 
-`bone-tool/pom.xml` 绑定了以下工具到 `validate` 阶段：
+部分模块在 `pom.xml` 中绑定了以下工具到 `validate` 阶段（原 `bone-tool` 已移除，以各子模块配置为准）：
 
 | 工具 | 版本 | 配置 | 说明 |
 |---|---|---|---|
@@ -310,7 +309,7 @@ adapter/web → application → domain ← infrastructure
 | JaCoCo | 0.8.11 | — | 行覆盖率 ≥ 70%，分支覆盖率 ≥ 60%；排除 domain/entity、config、enums、DTO |
 
 **注意**：
-- 上述质量工具**并非所有模块都继承激活**，主要集中在 `bone-tool` 及少量显式配置模块。
+- 上述质量工具**并非所有模块都继承激活**，以各子模块 `pom.xml` 为准（如 `bone-extension-sdk`）。
 - `bone-extension-sdk/pom.xml` 有独立的 Checkstyle + SpotBugs 配置，且设置了 `failsOnError=false`，规则较宽松。
 
 ### 7.3 前端代码质量
@@ -379,7 +378,7 @@ adapter/web → application → domain ← infrastructure
 
 | 服务 | 端口 |
 |---|---|
-| bone-iam | 8080 |
+| bone-iam | 8081 |
 | bone-system | 8083 |
 | bone-integration（引擎） | 30888 |
 | bone-shell（前端主应用） | 3000 |

@@ -1,7 +1,11 @@
 package com.bone.studio.generator.application.command.handler;
 
 import com.bone.core.usecase.Capability;
+import com.bone.core.util.DistributedIdGenerator;
+import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
+import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.studio.generator.application.command.cmd.SyncTableMetadataCmd;
+import com.bone.studio.generator.common.StudioIds;
 import com.bone.studio.generator.domain.data.DataSource;
 import com.bone.studio.generator.domain.data.DatabaseTable;
 import com.bone.studio.generator.domain.data.GenTableMetadata;
@@ -25,35 +29,38 @@ public class SyncTableMetadataHandler {
 
     @Transactional
     public void handle(SyncTableMetadataCmd cmd) {
-        // 1. 加载数据源实体
-        DataSource dataSource = dataSourceRepository.findById(cmd.getDataSourceId());
+        Long dataSourcePk = StudioIds.parseRequired(cmd.getDataSourceId());
+        DataSource dataSource = dataSourceRepository.findById(dataSourcePk);
         if (dataSource == null) {
             throw new IllegalArgumentException("DataSource not found: " + cmd.getDataSourceId());
         }
-        
-        // 2. 通过 Gateway 读取物理表结构
+
         List<DatabaseTable> dbTables = metadataGateway.loadTables(dataSource);
-        
-        // 3. 同步表元数据
+        String dataSourceKey = StudioIds.dataSourceKey(dataSourcePk);
+
         for (DatabaseTable dbTable : dbTables) {
-            // 查找现有元数据
-            GenTableMetadata metadata = findExistingMetadata(dataSource.getId(), dbTable.getTableName());
+            GenTableMetadata metadata = findExistingMetadata(dataSourceKey, dbTable.getTableName());
             if (metadata == null) {
                 metadata = GenTableMetadata.create(
-                        System.currentTimeMillis(),
+                        DistributedIdGenerator.generateLongId(),
                         0L,
-                        dataSource.getId(),
-                        dbTable
-                );
+                        dataSourceKey,
+                        dbTable);
+                tableMetadataRepo.insert(metadata);
             } else {
-                // 更新现有元数据
                 metadata.syncColumns(dbTable.getColumns());
+                tableMetadataRepo.update(metadata);
             }
-            tableMetadataRepo.save(metadata);
         }
     }
 
-    private GenTableMetadata findExistingMetadata(String dataSourceId, String tableName) {
-        return tableMetadataRepo.findByDataSourceIdAndTableName(dataSourceId, tableName);
+    private GenTableMetadata findExistingMetadata(String dataSourceKey, String tableName) {
+        try {
+            return tableMetadataRepo.findOneByCriteria(Criteria.<GenTableMetadata>create()
+                    .eq("dataSourceId", dataSourceKey)
+                    .eq("originalTableName", tableName));
+        } catch (MultipleResultsException e) {
+            throw new IllegalStateException("duplicate table metadata: " + dataSourceKey + "/" + tableName, e);
+        }
     }
 }

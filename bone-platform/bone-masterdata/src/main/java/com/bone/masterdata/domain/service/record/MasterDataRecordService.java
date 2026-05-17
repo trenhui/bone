@@ -1,27 +1,24 @@
 package com.bone.masterdata.domain.service.record;
 
-import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityId;
-import com.bone.masterdata.domain.model.record.MasterDataRecord;
-import com.bone.masterdata.domain.model.record.vo.MasterDataRecordId;
-import com.bone.masterdata.domain.repository.MasterDataRecordRepository;
 import com.bone.core.exception.DomainException;
+import com.bone.masterdata.domain.record.MasterDataRecord;
+import com.bone.masterdata.domain.repository.MasterDataRecordRepository;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 
 /**
  * 主数据记录领域服务
- * 处理主数据记录相关的业务逻辑
  */
 @RequiredArgsConstructor
 public class MasterDataRecordService {
     private final MasterDataRecordRepository recordRepository;
 
-    public MasterDataRecord createRecord(MasterDataEntityId masterDataEntityId, String data) {
-        return MasterDataRecord.create(masterDataEntityId, data);
+    public MasterDataRecord createRecord(Long id, Long masterDataEntityId, String data) {
+        return MasterDataRecord.create(id, masterDataEntityId, data);
     }
 
-    public void publishRecord(MasterDataRecordId recordId) {
+    public void publishRecord(Long recordId) {
         MasterDataRecord record = recordRepository.findById(recordId);
         if (record == null) {
             throw new DomainException("主数据记录不存在");
@@ -30,7 +27,7 @@ public class MasterDataRecordService {
         recordRepository.save(record);
     }
 
-    public void updateRecord(MasterDataRecordId recordId, String data) {
+    public void updateRecord(Long recordId, String data) {
         MasterDataRecord record = recordRepository.findById(recordId);
         if (record == null) {
             throw new DomainException("主数据记录不存在");
@@ -39,9 +36,12 @@ public class MasterDataRecordService {
         recordRepository.save(record);
     }
 
-    public List<MasterDataRecord> createRecords(MasterDataEntityId masterDataEntityId, List<String> dataList) {
-        return dataList.stream()
-                .map(data -> MasterDataRecord.create(masterDataEntityId, data))
+    public List<MasterDataRecord> createRecords(Long masterDataEntityId, List<Long> ids, List<String> dataList) {
+        if (ids.size() != dataList.size()) {
+            throw new DomainException("记录 ID 与数据条数不一致");
+        }
+        return java.util.stream.IntStream.range(0, dataList.size())
+                .mapToObj(i -> MasterDataRecord.create(ids.get(i), masterDataEntityId, dataList.get(i)))
                 .toList();
     }
 }

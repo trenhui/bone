@@ -1,6 +1,7 @@
 package com.bone.iam.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
+import com.bone.core.web.PlatformApiPaths;
 import com.bone.iam.adapter.web.converter.AuthWebConverter;
 import com.bone.iam.adapter.web.dto.req.LoginReq;
 import com.bone.iam.adapter.web.dto.req.RefreshTokenReq;
@@ -27,7 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 认证控制器：登录、登出、刷新令牌。
  */
 @RestController
-@RequestMapping("/api/iam")
+@RequestMapping(PlatformApiPaths.IAM_V1)
 @RequiredArgsConstructor
 public class AuthController {
 

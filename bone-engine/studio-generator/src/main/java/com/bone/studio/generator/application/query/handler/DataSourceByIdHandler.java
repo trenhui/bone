@@ -2,6 +2,7 @@ package com.bone.studio.generator.application.query.handler;
 
 import com.bone.core.usecase.Capability;
 import com.bone.studio.generator.application.query.qry.DataSourceByIdQry;
+import com.bone.studio.generator.common.StudioIds;
 import com.bone.studio.generator.domain.data.DataSource;
 import com.bone.studio.generator.domain.repository.DataSourceRepository;
 import org.springframework.stereotype.Component;
@@ -19,7 +20,8 @@ public class DataSourceByIdHandler {
 
     @Transactional(readOnly = true)
     public DataSource handle(DataSourceByIdQry query) {
-        DataSource dataSource = dataSourceRepository.findById(query.getId());
+        Long id = StudioIds.parseRequired(query.getId());
+        DataSource dataSource = dataSourceRepository.findById(id);
         if (dataSource == null) {
             throw new IllegalArgumentException("数据源不存在: " + query.getId());
         }

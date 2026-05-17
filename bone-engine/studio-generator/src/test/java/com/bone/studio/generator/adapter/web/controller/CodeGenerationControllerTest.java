@@ -23,7 +23,7 @@ class CodeGenerationControllerTest {
 
     @jakarta.annotation.PostConstruct
     void setUp() {
-        baseUrl = "http://localhost:" + port + "/api/code-generation";
+        baseUrl = "http://localhost:" + port + "/api/v1/generator/code-generation";
     }
 
     @Test

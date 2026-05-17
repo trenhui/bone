@@ -1,7 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Form, Select, Input, Checkbox, Button, message, Card, Typography, Table, Divider, Modal, Space } from 'antd';
 import { ReloadOutlined, DownloadOutlined, PlusOutlined } from '@ant-design/icons';
-import { dataSourceApi, tableMetadataApi, codeGenerationApi, codeTemplateApi } from '../services/api';
+import {
+  codeGenerationApi,
+  codeTemplateApi,
+  dataSourceApi,
+  metadataEntitySnapshotApi,
+  tableMetadataApi,
+} from '../services/api';
 import { DatabaseTable } from '../services/types';
 import { useGeneratorStore } from '../store';
 
@@ -21,6 +27,7 @@ const CodeGeneration: React.FC = () => {
   const [syncForm] = Form.useForm();
   const [generateForm] = Form.useForm();
   const [dataSourceTables, setDataSourceTables] = useState<any[]>([]);
+  const [metadataSource, setMetadataSource] = useState<'PHYSICAL' | 'CATALOG'>('PHYSICAL');
   
   const {
     dataSources,
@@ -134,6 +141,29 @@ const CodeGeneration: React.FC = () => {
     }
   };
 
+  const handleLoadCatalogEntities = async () => {
+    try {
+      setLoading(true);
+      const response = await metadataEntitySnapshotApi.list({
+        page: 1,
+        size: 500,
+        tenantId: 0,
+      });
+      const page = response.data.data;
+      const tables: DatabaseTable[] = page?.list ?? [];
+      setDataSourceTables(
+        tables.map((t) => ({ tableName: t.tableName, tableComment: t.tableComment })),
+      );
+      syncForm.setFieldValue('tableNames', []);
+    } catch (error) {
+      message.error('加载元数据目录失败');
+      console.error('加载元数据目录失败:', error);
+      setDataSourceTables([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // 打开生成配置模态框
   const handleOpenConfigModal = () => {
     if (selectedTables.length === 0) {
@@ -154,6 +184,7 @@ const CodeGeneration: React.FC = () => {
         projectName: values.projectName,
         basePackage: values.basePackage,
         moduleName: values.moduleName,
+        dataSourceId: values.dataSourceId,
         tableNames: selectedTables,
         templateIds: values.templateIds,
         genConfig: JSON.stringify({
@@ -304,16 +335,39 @@ const CodeGeneration: React.FC = () => {
           layout="vertical"
           requiredMark={false}
         >
+          <Form.Item label="元数据来源">
+            <Select
+              value={metadataSource}
+              onChange={(v: 'PHYSICAL' | 'CATALOG') => {
+                setMetadataSource(v);
+                setDataSourceTables([]);
+                syncForm.setFieldValue('tableNames', []);
+                if (v === 'CATALOG') {
+                  void handleLoadCatalogEntities();
+                }
+              }}
+              options={[
+                { value: 'PHYSICAL', label: '物理数据源' },
+                { value: 'CATALOG', label: '元数据目录（已发布 meta_*）' },
+              ]}
+            />
+          </Form.Item>
+
           <Form.Item
             name="dataSourceId"
             label="数据源"
-            rules={[{ required: true, message: '请选择数据源' }]}
+            rules={[{ required: metadataSource === 'PHYSICAL', message: '请选择数据源' }]}
           >
             <Select
               placeholder="请选择数据源"
               showSearch
               optionFilterProp="children"
+              disabled={metadataSource === 'CATALOG'}
               onChange={async (dataSourceId) => {
+                if (metadataSource !== 'PHYSICAL' || !dataSourceId) {
+                  setDataSourceTables([]);
+                  return;
+                }
                 if (dataSourceId) {
                   try {
                     setLoading(true);
@@ -391,6 +445,20 @@ const CodeGeneration: React.FC = () => {
             includeDocumentation: true,
           }}
         >
+          <Form.Item
+            name="dataSourceId"
+            label="数据源"
+            rules={[{ required: true, message: '请选择数据源' }]}
+          >
+            <Select placeholder="请选择数据源" showSearch optionFilterProp="children">
+              {dataSources?.map((ds) => (
+                <Option key={ds.id} value={ds.id}>
+                  {ds.name} ({ds.type ?? ds.dbType})
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
           <Form.Item
             name="projectName"
             label="项目名称"

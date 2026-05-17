@@ -4,6 +4,7 @@ import com.bone.core.exception.DomainException;
 import com.bone.core.usecase.Capability;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.integration.application.command.cmd.ExecuteFlowCmd;
+import com.bone.integration.application.event.IntegrationDomainEventPublisher;
 import com.bone.integration.domain.execution.IntegrationLog;
 import com.bone.integration.domain.flow.IntegrationFlow;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
@@ -28,6 +29,7 @@ public class ExecuteFlowHandler {
     private final IntegrationLogRepository logRepository;
     private final IntegrationFlowRepository flowRepository;
     private final FlowService flowService;
+    private final IntegrationDomainEventPublisher domainEventPublisher;
 
     @Transactional
     public Long handle(ExecuteFlowCmd cmd) {
@@ -40,6 +42,7 @@ public class ExecuteFlowHandler {
         Long logId = DistributedIdGenerator.generateLongId();
         IntegrationLog log = IntegrationLog.create(logId, flow.getId(), cmd.inputData());
         logRepository.save(log);
+        domainEventPublisher.publishFrom(log);
         return log.getId();
     }
 }

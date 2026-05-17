@@ -1,6 +1,7 @@
 package com.bone.integration.adapter.web.controller;
 
 import com.bone.core.exception.DomainException;
+import com.bone.core.web.PlatformApiPaths;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import com.bone.integration.application.command.cmd.ExecuteFlowCmd;
@@ -18,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/integration")
+@RequestMapping(PlatformApiPaths.INTEGRATION_V1)
 @RequiredArgsConstructor
 public class MonitorController {
     private final ExecuteFlowHandler executeFlowHandler;

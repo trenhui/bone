@@ -134,7 +134,7 @@ bone/                          # 根聚合模块
 ├── bone-sdk/                  # 客户端 SDK
 │   ├── bone-client-sdk/
 │   └── bone-openapi-sdk/
-├── bone-tool/                 # 开发工具
+├── bone-engine/studio-generator/  # Studio 代码生成
 │   └── bone-codegen/          # 代码生成器（同样遵循 DDD 分层）
 └── bone-blueprint/            # 项目蓝图示例
 ```
@@ -435,7 +435,7 @@ npm run preview               # Vite preview
 
 ### 9.2 静态分析
 
-`bone-tool/pom.xml` 绑定了以下工具到 `validate` 阶段：
+部分模块的 `pom.xml` 可绑定以下工具到 `validate` 阶段（原 `bone-tool` 已移除）：
 
 | 工具 | 版本 | 配置 | 说明 |
 |------|------|------|------|
@@ -444,7 +444,7 @@ npm run preview               # Vite preview
 | SpotBugs | 4.2.3 | Max effort / Medium threshold | Bug 模式检测 |
 | JaCoCo | 0.8.11 | - | 行覆盖率 ≥ 70%，分支覆盖率 ≥ 60%；排除 domain/entity、config、enums、DTO |
 
-注意：上述质量工具**并非所有模块都继承激活**，主要集中在 `bone-tool` 及少量显式配置模块。
+注意：上述质量工具**并非所有模块都继承激活**，以各子模块 `pom.xml` 为准。
 
 ### 9.3 前端代码质量
 

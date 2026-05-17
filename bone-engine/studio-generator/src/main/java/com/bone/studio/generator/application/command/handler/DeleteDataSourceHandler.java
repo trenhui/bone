@@ -2,6 +2,7 @@ package com.bone.studio.generator.application.command.handler;
 
 import com.bone.core.usecase.Capability;
 import com.bone.studio.generator.application.command.cmd.DeleteDataSourceCommand;
+import com.bone.studio.generator.common.StudioIds;
 import com.bone.studio.generator.domain.repository.DataSourceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,6 @@ public class DeleteDataSourceHandler {
 
     @Transactional
     public boolean handle(DeleteDataSourceCommand command) {
-        return dataSourceRepository.deleteById(command.getId());
+        return dataSourceRepository.deleteById(StudioIds.parseRequired(command.getId()));
     }
 }

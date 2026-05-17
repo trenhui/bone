@@ -1,5 +1,6 @@
 package com.bone.iam.adapter.web.controller;
 
+import com.bone.core.model.ApiResponse;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,49 +21,41 @@ import org.springframework.web.bind.annotation.RestController;
 public class ExtensionE2eController {
 
     @GetMapping("/points")
-    public Map<String, Object> listPoints() {
-        return ok(
+    public ApiResponse<List<Map<String, Object>>> listPoints() {
+        return ApiResponse.success(
                 "获取扩展点列表成功",
                 List.of(
                         point(1L, "订单价格计算", "order", "pricing", true),
                         point(2L, "用户注册校验", "user", "validation", true)));
     }
 
-    @PostMapping("/points/{id}/enable")
-    public Map<String, Object> enablePoint(@PathVariable Long id) {
-        return ok("启用扩展点成功", point(id, "扩展点-" + id, "demo", "default", true));
+    @PostMapping("/points/{id}:enable")
+    public ApiResponse<Map<String, Object>> enablePoint(@PathVariable Long id) {
+        return ApiResponse.success("启用扩展点成功", point(id, "扩展点-" + id, "demo", "default", true));
     }
 
-    @PostMapping("/points/{id}/disable")
-    public Map<String, Object> disablePoint(@PathVariable Long id) {
-        return ok("禁用扩展点成功", point(id, "扩展点-" + id, "demo", "default", false));
+    @PostMapping("/points/{id}:disable")
+    public ApiResponse<Map<String, Object>> disablePoint(@PathVariable Long id) {
+        return ApiResponse.success("禁用扩展点成功", point(id, "扩展点-" + id, "demo", "default", false));
     }
 
     @GetMapping("/plugins")
-    public Map<String, Object> listPlugins() {
-        return ok(
+    public ApiResponse<List<Map<String, Object>>> listPlugins() {
+        return ApiResponse.success(
                 "获取插件列表成功",
                 List.of(
                         plugin(101L, 1L, "默认价格扩展", true),
                         plugin(102L, 1L, "VIP 价格扩展", false)));
     }
 
-    @PostMapping("/plugins/{id}/deploy")
-    public Map<String, Object> deploy(@PathVariable Long id) {
-        return ok("部署插件成功", plugin(id, 1L, "插件-" + id, true));
+    @PostMapping("/plugins/{id}:deploy")
+    public ApiResponse<Map<String, Object>> deploy(@PathVariable Long id) {
+        return ApiResponse.success("部署插件成功", plugin(id, 1L, "插件-" + id, true));
     }
 
-    @PostMapping("/plugins/{id}/undeploy")
-    public Map<String, Object> undeploy(@PathVariable Long id) {
-        return ok("卸载插件成功", plugin(id, 1L, "插件-" + id, false));
-    }
-
-    private static Map<String, Object> ok(String message, Object data) {
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("success", true);
-        body.put("message", message);
-        body.put("data", data);
-        return body;
+    @PostMapping("/plugins/{id}:undeploy")
+    public ApiResponse<Map<String, Object>> undeploy(@PathVariable Long id) {
+        return ApiResponse.success("卸载插件成功", plugin(id, 1L, "插件-" + id, false));
     }
 
     private static Map<String, Object> point(

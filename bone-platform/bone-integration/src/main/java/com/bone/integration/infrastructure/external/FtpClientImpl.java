@@ -5,31 +5,29 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
+/**
+ * FTP 连接器：未实现前显式失败（INT-02）。
+ */
 @Component("FTP")
 public class FtpClientImpl implements ExternalSystemClient {
+
+    private static final String DETAIL = "连接器尚未实现";
+
     @Override
     public boolean testConnection(Map<String, Object> config) {
-        // 测试FTP连接
         String host = (String) config.get("host");
-        Integer port = (Integer) config.get("port");
-        String username = (String) config.get("username");
-        String password = (String) config.get("password");
         if (host == null || host.isBlank()) {
             return false;
         }
-        // TODO: 实现连接测试
-        return true;
+        throw ConnectorClientSupport.notImplemented("FTP", DETAIL);
     }
 
     @Override
     public Object sendRequest(String endpoint, Map<String, Object> params, Map<String, Object> config) {
-        // 执行FTP操作
-        String operation = endpoint;
-        if (operation == null || operation.isBlank()) {
-            throw new RuntimeException("操作类型不能为空");
+        if (endpoint == null || endpoint.isBlank()) {
+            throw new IllegalArgumentException("操作类型不能为空");
         }
-        // TODO: 实现FTP操作
-        return Map.of("status", "success", "operation", operation, "params", params);
+        throw ConnectorClientSupport.notImplemented("FTP", DETAIL);
     }
 
     @Override

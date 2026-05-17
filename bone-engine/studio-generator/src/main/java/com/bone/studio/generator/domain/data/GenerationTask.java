@@ -30,6 +30,9 @@ public class GenerationTask extends AggregateRoot<Long> {
     private LocalDateTime completedAt;
     private Long createdBy;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private boolean deleted;
+    private int version;
 
     private GenerationTask() {
     }
@@ -49,13 +52,18 @@ public class GenerationTask extends AggregateRoot<Long> {
         task.templateIds = templateIds;
         task.genConfig = genConfig;
         task.status = "PENDING";
-        task.createdAt = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now();
+        task.createdAt = now;
+        task.updatedAt = now;
+        task.deleted = false;
+        task.version = 0;
         return task;
     }
 
     public void markProcessing() {
         this.status = "PROCESSING";
         this.startedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
     public void markCompleted(List<GeneratedFile> files, String zipUrl) {
@@ -63,12 +71,14 @@ public class GenerationTask extends AggregateRoot<Long> {
         this.generatedFiles = files;
         this.zipUrl = zipUrl;
         this.completedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
     public void markFailed(String errorMessage) {
         this.status = "FAILED";
         this.errorMessage = errorMessage;
         this.completedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
     public static class Builder {

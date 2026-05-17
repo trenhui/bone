@@ -5,28 +5,29 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
+/**
+ * MQ 连接器：未实现前显式失败（INT-04）。
+ */
 @Component("MQ")
 public class MqClientImpl implements ExternalSystemClient {
+
+    private static final String DETAIL = "连接器尚未实现";
+
     @Override
     public boolean testConnection(Map<String, Object> config) {
-        // 测试MQ连接
         String brokerUrl = (String) config.get("brokerUrl");
         if (brokerUrl == null || brokerUrl.isBlank()) {
             return false;
         }
-        // TODO: 实现连接测试
-        return true;
+        throw ConnectorClientSupport.notImplemented("MQ", DETAIL);
     }
 
     @Override
     public Object sendRequest(String endpoint, Map<String, Object> params, Map<String, Object> config) {
-        // 发送消息到MQ
-        String queueName = endpoint;
-        if (queueName == null || queueName.isBlank()) {
-            throw new RuntimeException("队列名称不能为空");
+        if (endpoint == null || endpoint.isBlank()) {
+            throw new IllegalArgumentException("队列名称不能为空");
         }
-        // TODO: 实现消息发送
-        return Map.of("status", "success", "queue", queueName, "message", params);
+        throw ConnectorClientSupport.notImplemented("MQ", DETAIL);
     }
 
     @Override

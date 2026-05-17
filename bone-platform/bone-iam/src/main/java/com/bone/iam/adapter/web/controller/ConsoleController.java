@@ -1,6 +1,7 @@
 package com.bone.iam.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
+import com.bone.core.web.PlatformApiPaths;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.ThreadMXBean;
@@ -18,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
  * 对齐 doc/design/modules/1. 控制台与仪表盘模块详细设计方案.md §5。
  */
 @RestController
-@RequestMapping("/api/console")
+@RequestMapping(PlatformApiPaths.CONSOLE_V1)
 public class ConsoleController {
 
     @GetMapping("/overview")

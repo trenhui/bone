@@ -21,11 +21,11 @@ function isOk<T>(body: BoneApiResponse<T>): boolean {
 }
 
 export async function fetchConsoleOverview(): Promise<ConsoleOverview | null> {
-  const { data } = await axios.get<BoneApiResponse<ConsoleOverview>>('/api/console/overview');
+  const { data } = await axios.get<BoneApiResponse<ConsoleOverview>>('/api/v1/console/overview');
   return isOk(data) ? data.data : null;
 }
 
 export async function fetchQuickActions(): Promise<QuickAction[]> {
-  const { data } = await axios.get<BoneApiResponse<QuickAction[]>>('/api/console/quick-actions');
+  const { data } = await axios.get<BoneApiResponse<QuickAction[]>>('/api/v1/console/quick-actions');
   return isOk(data) ? data.data ?? [] : [];
 }

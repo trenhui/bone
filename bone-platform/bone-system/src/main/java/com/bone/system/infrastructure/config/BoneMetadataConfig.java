@@ -1,9 +1,10 @@
 package com.bone.system.infrastructure.config;
 
-import com.bone.metadata.sdk.domain.annotation.EnableSqlRepositories;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * metadata-sdk 仓储扫描由 {@link com.bone.system.SystemApplication} 统一启用。
+ */
 @Configuration
-@EnableSqlRepositories(basePackages = "com.bone.system.domain.repository")
 public class BoneMetadataConfig {
 }

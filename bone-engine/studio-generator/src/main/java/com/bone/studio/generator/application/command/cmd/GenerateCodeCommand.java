@@ -19,6 +19,11 @@ public class GenerateCodeCommand {
     private List<String> tableNames;
     private String basePackage;
     private String moduleName;
+    /** PHYSICAL_DB（默认）或 CATALOG_SNAPSHOT */
+    private String metadataSource;
+    private Long tenantId;
+    /** catalog 模式：按实体编码过滤；空=全部已发布 */
+    private List<String> entityCodes;
 
     private GenerateCodeCommand() {
     }
@@ -87,6 +92,30 @@ public class GenerateCodeCommand {
         return moduleName;
     }
 
+    public String getMetadataSource() {
+        return metadataSource;
+    }
+
+    public Long getTenantId() {
+        return tenantId;
+    }
+
+    public List<String> getEntityCodes() {
+        return entityCodes;
+    }
+
+    public void setMetadataSource(String metadataSource) {
+        this.metadataSource = metadataSource;
+    }
+
+    public void setTenantId(Long tenantId) {
+        this.tenantId = tenantId;
+    }
+
+    public void setEntityCodes(List<String> entityCodes) {
+        this.entityCodes = entityCodes;
+    }
+
     public static class Builder {
         private String templateId;
         private String name;
@@ -103,6 +132,9 @@ public class GenerateCodeCommand {
         private List<String> tableNames;
         private String basePackage;
         private String moduleName;
+        private String metadataSource;
+        private Long tenantId;
+        private List<String> entityCodes;
 
         public Builder templateId(String templateId) {
             this.templateId = templateId;
@@ -179,6 +211,21 @@ public class GenerateCodeCommand {
             return this;
         }
 
+        public Builder metadataSource(String metadataSource) {
+            this.metadataSource = metadataSource;
+            return this;
+        }
+
+        public Builder tenantId(Long tenantId) {
+            this.tenantId = tenantId;
+            return this;
+        }
+
+        public Builder entityCodes(List<String> entityCodes) {
+            this.entityCodes = entityCodes;
+            return this;
+        }
+
         public GenerateCodeCommand build() {
             GenerateCodeCommand command = new GenerateCodeCommand();
             command.templateId = templateId;
@@ -196,6 +243,9 @@ public class GenerateCodeCommand {
             command.tableNames = tableNames;
             command.basePackage = basePackage;
             command.moduleName = moduleName;
+            command.metadataSource = metadataSource;
+            command.tenantId = tenantId;
+            command.entityCodes = entityCodes;
             return command;
         }
     }

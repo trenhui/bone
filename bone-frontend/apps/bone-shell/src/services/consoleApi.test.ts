@@ -19,14 +19,14 @@ describe('consoleApi', () => {
       },
     });
     const result = await fetchConsoleOverview();
-    expect(axios.get).toHaveBeenCalledWith('/api/console/overview');
+    expect(axios.get).toHaveBeenCalledWith('/api/v1/console/overview');
     expect(result?.services).toHaveLength(1);
   });
 
   it('fetchQuickActions returns empty array on non-200', async () => {
     vi.mocked(axios.get).mockResolvedValue({ data: { code: 500, data: null } });
     const result = await fetchQuickActions();
-    expect(axios.get).toHaveBeenCalledWith('/api/console/quick-actions');
+    expect(axios.get).toHaveBeenCalledWith('/api/v1/console/quick-actions');
     expect(result).toEqual([]);
   });
 });

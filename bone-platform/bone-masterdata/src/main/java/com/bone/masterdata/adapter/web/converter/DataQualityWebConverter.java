@@ -6,6 +6,7 @@ import com.bone.masterdata.adapter.web.dto.resp.DataQualityRuleDetailResp;
 import com.bone.masterdata.application.command.cmd.CreateDataQualityRuleCmd;
 import com.bone.masterdata.application.command.cmd.UpdateDataQualityRuleCmd;
 import com.bone.masterdata.application.query.dto.DataQualityRuleDTO;
+import com.bone.masterdata.domain.model.quality.vo.RuleSeverity;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -14,11 +15,10 @@ public class DataQualityWebConverter {
     public CreateDataQualityRuleCmd toCmd(CreateDataQualityRuleReq req) {
         return CreateDataQualityRuleCmd.builder()
                 .masterDataEntityId(req.getMasterDataEntityId())
-                .masterDataFieldId(req.getMasterDataFieldId())
                 .name(req.getName())
-                .ruleType(req.getRuleType())
-                .ruleConfig(req.getRuleConfig())
-                .severity(req.getSeverity())
+                .type(req.getRuleType())
+                .expression(req.getRuleConfig())
+                .severity(parseSeverity(req.getSeverity()))
                 .description(req.getDescription())
                 .build();
     }
@@ -38,13 +38,15 @@ public class DataQualityWebConverter {
         return DataQualityRuleDetailResp.builder()
                 .id(dto.getId())
                 .masterDataEntityId(dto.getMasterDataEntityId())
-                .masterDataFieldId(dto.getMasterDataFieldId())
                 .name(dto.getName())
-                .ruleType(dto.getRuleType())
-                .ruleConfig(dto.getRuleConfig())
-                .severity(dto.getSeverity())
-                .status(dto.getStatus())
+                .ruleType(dto.getType())
+                .ruleConfig(dto.getExpression())
+                .severity(dto.getSeverity() != null ? dto.getSeverity().name() : null)
                 .description(dto.getDescription())
                 .build();
+    }
+
+    private static RuleSeverity parseSeverity(String severity) {
+        return severity != null && !severity.isBlank() ? RuleSeverity.valueOf(severity) : null;
     }
 }

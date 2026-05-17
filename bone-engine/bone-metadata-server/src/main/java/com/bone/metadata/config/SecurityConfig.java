@@ -35,7 +35,7 @@ public class SecurityConfig {
         .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authorizeHttpRequests(
             auth ->
-                auth.requestMatchers("/v1/metadata/health")
+                auth.requestMatchers("/api/v1/metadata/health")
                     .permitAll()
                     .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**")
                     .permitAll()

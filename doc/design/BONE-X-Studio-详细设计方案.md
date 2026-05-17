@@ -25,9 +25,9 @@
 |-------------------|------------------|------------------|------|
 | BONE Platform 各微应用 | `bone-frontend/apps/bone-*-app` + Qiankun Shell | 3000–3009 | 见 [wiki/03](../wiki/03-本地开发与构建.md) |
 | 代码生成（Generator） | `bone-engine/studio-generator` | **8085** | 与 `bone-platform/bone-integration` 同端口时需改 `server.port` |
-| 扩展 Studio | `bone-engine/bone-extension-engine/bone-extension-studio` | **8088** | 与 `bone-masterdata`（8080）勿同机默认端口并行 |
+| 扩展 Studio | `bone-engine/bone-extension-engine/bone-extension-studio` | **8088** | 默认与 `bone-masterdata`（8080）不冲突；仅当将 Studio 显式改为 8080 时需避端口占用 |
 | 元数据 · 数据面 SDK | `bone-engine/bone-metadata-sdk` | （嵌入业务进程） | 平台 P0 持久化；见 [三模块定义](./modules/元数据能力-实现映射与竞品对照.md) |
-| 元数据 · 扩展字段 REST | `bone-engine/bone-metadata-server` | **9001** | `/v1/metadata/fields:*`；非实体建模全量 API |
+| 元数据 · 扩展字段 REST | `bone-engine/bone-metadata-server` | **9001** | `/api/v1/metadata/fields:*`；非实体建模全量 API |
 | 元数据 · 智能引擎 | `bone-engine/bone-metadata-engine` | 随宿主 | 默认未接平台；详设 [§9](./modules/9.%20SmartMeta%20引擎模块技术说明.md) |
 | IAM / 主数据 / 系统 | `bone-platform/bone-iam` / `bone-masterdata` / `bone-system` | 8081 / 8080 / 8083 | 持久化均依赖 metadata-sdk |
 | DDD 参考实现 | `bone-blueprint/` | — | 非根聚合模块，单独 `mvn -f bone-blueprint/pom.xml test` |
@@ -430,7 +430,7 @@ spring:
 | studio-ai | 8081 | AI建模、自然语言处理 | `/api/v1/ai/generate` | 规划中；勿与 `bone-iam:8081` 混为同一进程 |
 | studio-generator | 8082 | 代码生成、模板管理 | `/api/v1/generate/**` | **`bone-engine/studio-generator`（当前 8085）** |
 | studio-guard | 8083 | 架构守护、规则执行 | `/api/v1/guard/**` | ArchUnit / 契约门禁（CI）；非独立 8083 服务 |
-| studio-metadata | 8084（**勿作端口**） | 元数据能力包（见文首表） | `/api/v1/metadata/**`（Vision 实体）；As-Is 扩展字段 **`/v1/metadata/fields:*` @ 9001** | sdk + server + engine + generator |
+| studio-metadata | 8084（**勿作端口**） | 元数据能力包（见文首表） | **As-Is** `/api/v1/metadata/**` @ **9001**（EAV + catalog）；代码生成见 generator | sdk + server + engine + generator |
 
 **4.3.4 引擎层**
 

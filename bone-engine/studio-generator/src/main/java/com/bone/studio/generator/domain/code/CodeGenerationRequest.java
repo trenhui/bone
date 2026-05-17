@@ -1,5 +1,6 @@
 package com.bone.studio.generator.domain.code;
 
+import com.bone.studio.generator.domain.catalog.MetadataSourceType;
 import java.util.List;
 import java.util.Map;
 
@@ -19,6 +20,9 @@ public class CodeGenerationRequest {
     private List<String> tableNames;
     private String basePackage;
     private String moduleName;
+    private MetadataSourceType metadataSource;
+    private Long tenantId;
+    private List<String> entityCodes;
 
     private CodeGenerationRequest() {
     }
@@ -87,6 +91,18 @@ public class CodeGenerationRequest {
         return moduleName;
     }
 
+    public MetadataSourceType getMetadataSource() {
+        return metadataSource != null ? metadataSource : MetadataSourceType.PHYSICAL_DB;
+    }
+
+    public Long getTenantId() {
+        return tenantId;
+    }
+
+    public List<String> getEntityCodes() {
+        return entityCodes;
+    }
+
     public static class Builder {
         private String templateId;
         private String name;
@@ -103,6 +119,9 @@ public class CodeGenerationRequest {
         private List<String> tableNames;
         private String basePackage;
         private String moduleName;
+        private MetadataSourceType metadataSource;
+        private Long tenantId;
+        private List<String> entityCodes;
 
         public Builder templateId(String templateId) {
             this.templateId = templateId;
@@ -179,6 +198,21 @@ public class CodeGenerationRequest {
             return this;
         }
 
+        public Builder metadataSource(MetadataSourceType metadataSource) {
+            this.metadataSource = metadataSource;
+            return this;
+        }
+
+        public Builder tenantId(Long tenantId) {
+            this.tenantId = tenantId;
+            return this;
+        }
+
+        public Builder entityCodes(List<String> entityCodes) {
+            this.entityCodes = entityCodes;
+            return this;
+        }
+
         public CodeGenerationRequest build() {
             CodeGenerationRequest request = new CodeGenerationRequest();
             request.templateId = templateId;
@@ -196,6 +230,9 @@ public class CodeGenerationRequest {
             request.tableNames = tableNames;
             request.basePackage = basePackage;
             request.moduleName = moduleName;
+            request.metadataSource = metadataSource;
+            request.tenantId = tenantId;
+            request.entityCodes = entityCodes;
             return request;
         }
     }

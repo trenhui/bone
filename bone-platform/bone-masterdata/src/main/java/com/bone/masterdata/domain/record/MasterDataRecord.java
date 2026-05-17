@@ -2,9 +2,10 @@ package com.bone.masterdata.domain.record;
 
 import com.bone.core.domain.AggregateRoot;
 import com.bone.core.exception.DomainException;
-import com.bone.masterdata.domain.record.event.MasterDataRecordCreatedEvent;
-import com.bone.masterdata.domain.record.event.MasterDataRecordPublishedEvent;
-import com.bone.masterdata.domain.record.vo.MasterDataRecordStatus;
+import com.bone.masterdata.domain.model.record.event.MasterDataRecordCreatedEvent;
+import com.bone.masterdata.domain.model.record.event.MasterDataRecordPublishedEvent;
+import com.bone.masterdata.domain.model.record.vo.MasterDataRecordStatus;
+import com.bone.metadata.sdk.domain.annotation.Column;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -17,6 +18,8 @@ import java.time.LocalDateTime;
 @Table("md_record")
 public class MasterDataRecord extends AggregateRoot<Long> {
     private Long id;
+
+    @Column(name = "master_data_entity_id")
     private Long masterDataEntityId;
     private String data;
     private MasterDataRecordStatus status;

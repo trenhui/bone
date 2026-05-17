@@ -13,14 +13,12 @@ import com.bone.system.application.query.dto.AlertRuleDTO;
 import com.bone.system.application.query.qry.AlertEventPageQry;
 import com.bone.system.application.query.qry.AlertRulePageQry;
 import org.mapstruct.Mapper;
-import org.mapstruct.factory.Mappers;
 
 /**
  * 告警Web转换器
  */
 @Mapper
 public interface AlertWebConverter {
-    AlertWebConverter INSTANCE = Mappers.getMapper(AlertWebConverter.class);
 
     CreateAlertRuleCmd toCmd(CreateAlertRuleReq req);
 

@@ -36,4 +36,8 @@ public class ApiResponse<T> {
     public static <T> ApiResponse<T> error(String message) {
         return error(500, message);
     }
+
+    public boolean isSuccess() {
+        return code == 200;
+    }
 }

@@ -9,6 +9,7 @@ import java.util.List;
 public class CodeGenerationHistory extends AggregateRoot<Long> {
 
     private Long id;
+    private Long tenantId;
     private String taskId;
     private String templateId;
     private String templateName;
@@ -25,6 +26,7 @@ public class CodeGenerationHistory extends AggregateRoot<Long> {
     private LocalDateTime startedAt;
     private LocalDateTime completedAt;
     private LocalDateTime createdAt;
+    private boolean deleted;
 
     private CodeGenerationHistory() {
     }
@@ -46,9 +48,11 @@ public class CodeGenerationHistory extends AggregateRoot<Long> {
         history.tableNames = tableNames;
         history.basePackage = basePackage;
         history.moduleName = moduleName;
+        history.tenantId = 0L;
         history.status = "PENDING";
         history.startedAt = LocalDateTime.now();
         history.createdAt = LocalDateTime.now();
+        history.deleted = false;
         return history;
     }
 

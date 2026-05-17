@@ -1,6 +1,7 @@
 package com.bone.iam.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
+import com.bone.core.web.PlatformApiPaths;
 import com.bone.core.model.PageResult;
 import com.bone.iam.application.query.dto.AuditLogDTO;
 import com.bone.iam.application.query.qry.AuditLogListQry;
@@ -17,7 +18,7 @@ import java.util.Map;
  * 提供审计日志查询、导出功能，以及审计设置管理
  */
 @RestController
-@RequestMapping("/api/iam/audit")
+@RequestMapping(PlatformApiPaths.IAM_V1 + "/audit")
 @RequiredArgsConstructor
 public class AuditController {
 

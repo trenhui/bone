@@ -2,6 +2,7 @@ package com.bone.studio.generator.application.query.handler;
 
 import com.bone.core.usecase.Capability;
 import com.bone.studio.generator.application.query.qry.DataSourceTablesQry;
+import com.bone.studio.generator.common.StudioIds;
 import com.bone.studio.generator.domain.data.DataSource;
 import com.bone.studio.generator.domain.data.DatabaseTable;
 import com.bone.studio.generator.domain.gateway.DatabaseMetadataGateway;
@@ -22,7 +23,8 @@ public class DataSourceTablesHandler {
 
     @Transactional(readOnly = true)
     public List<DatabaseTable> handle(DataSourceTablesQry query) {
-        DataSource dataSource = dataSourceRepository.findById(query.getDataSourceId());
+        Long id = StudioIds.parseRequired(query.getDataSourceId());
+        DataSource dataSource = dataSourceRepository.findById(id);
         if (dataSource == null) {
             throw new IllegalArgumentException("数据源不存在: " + query.getDataSourceId());
         }

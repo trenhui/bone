@@ -38,10 +38,22 @@ management:
       exposure:
         include: health,info,metrics
 
+metadata:
+  sdk:
+    appcode: bone
+    deployment-mode: EMBEDDED
+    sql:
+      enabled: true
+      executor:
+        allow:
+          dml: true
+      database:
+        type: MYSQL
+
 bone:
   metadata:
     datasource:
-      enabled: false
+      enabled: true
   blueprint:
     cqrs:
       default-level: L1

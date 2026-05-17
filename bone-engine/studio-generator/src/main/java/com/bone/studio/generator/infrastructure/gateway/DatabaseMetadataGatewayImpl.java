@@ -4,6 +4,7 @@ import com.bone.core.exception.InfrastructureException;
 import com.bone.studio.generator.domain.data.DataSource;
 import com.bone.studio.generator.domain.data.DatabaseTable;
 import com.bone.studio.generator.domain.data.TableColumn;
+import com.bone.studio.generator.common.StudioIds;
 import com.bone.studio.generator.domain.gateway.DatabaseMetadataGateway;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -100,7 +101,7 @@ public class DatabaseMetadataGatewayImpl implements DatabaseMetadataGateway {
     }
 
     private HikariDataSource getOrCreatePool(DataSource dataSource) {
-        return poolCache.computeIfAbsent(dataSource.getId(), id -> {
+        return poolCache.computeIfAbsent(StudioIds.dataSourceKey(dataSource.getId()), id -> {
             HikariConfig hc = new HikariConfig();
             hc.setJdbcUrl(buildUrl(dataSource));
             hc.setUsername(dataSource.getUsername());
@@ -114,17 +115,17 @@ public class DatabaseMetadataGatewayImpl implements DatabaseMetadataGateway {
 
     private String buildUrl(DataSource dataSource) {
         String host = dataSource.getHost();
-        String port = dataSource.getPort();
+        int port = dataSource.getPort();
         String dbName = dataSource.getDatabase();
         switch (dataSource.getType()) {
             case "mysql":
-                return String.format("jdbc:mysql://%s:%s/%s?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&characterEncoding=utf8&useUnicode=true", host, port, dbName);
+                return String.format("jdbc:mysql://%s:%d/%s?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&characterEncoding=utf8&useUnicode=true", host, port, dbName);
             case "postgresql":
-                return String.format("jdbc:postgresql://%s:%s/%s", host, port, dbName);
+                return String.format("jdbc:postgresql://%s:%d/%s", host, port, dbName);
             case "oracle":
-                return String.format("jdbc:oracle:thin:@%s:%s:%s", host, port, dbName);
+                return String.format("jdbc:oracle:thin:@%s:%d:%s", host, port, dbName);
             case "sqlserver":
-                return String.format("jdbc:sqlserver://%s:%s;databaseName=%s", host, port, dbName);
+                return String.format("jdbc:sqlserver://%s:%d;databaseName=%s", host, port, dbName);
             default:
                 throw new IllegalArgumentException("Unsupported database type: " + dataSource.getType());
         }

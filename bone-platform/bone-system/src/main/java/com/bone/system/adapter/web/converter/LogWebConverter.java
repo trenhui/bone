@@ -7,14 +7,12 @@ import com.bone.system.application.command.cmd.CreateLogCmd;
 import com.bone.system.application.query.dto.LogDTO;
 import com.bone.system.application.query.qry.LogPageQry;
 import org.mapstruct.Mapper;
-import org.mapstruct.factory.Mappers;
 
 /**
  * 日志Web转换器
  */
 @Mapper
 public interface LogWebConverter {
-    LogWebConverter INSTANCE = Mappers.getMapper(LogWebConverter.class);
 
     CreateLogCmd toCmd(CreateLogReq req);
 

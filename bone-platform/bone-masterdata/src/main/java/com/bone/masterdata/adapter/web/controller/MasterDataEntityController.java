@@ -11,12 +11,14 @@ import com.bone.masterdata.application.query.dto.MasterDataEntityDTO;
 import com.bone.masterdata.application.query.qry.MasterDataEntityByIdQry;
 import com.bone.masterdata.application.query.qry.MasterDataEntityPageQry;
 import com.bone.core.result.ApiResponse;
+import com.bone.core.web.PlatformApiPaths;
 import com.bone.core.result.PageResult;
+import com.bone.masterdata.application.command.handler.ConvertFromBusinessEntityHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/masterdata/entities")
+@RequestMapping(PlatformApiPaths.MASTERDATA_V1 + "/entities")
 @RequiredArgsConstructor
 public class MasterDataEntityController {
     private final CreateMasterDataEntityUseCase createMasterDataEntityUseCase;
@@ -24,6 +26,7 @@ public class MasterDataEntityController {
     private final PublishMasterDataEntityUseCase publishMasterDataEntityUseCase;
     private final MasterDataEntityPageQueryUseCase masterDataEntityPageQueryUseCase;
     private final MasterDataEntityDetailQueryUseCase masterDataEntityDetailQueryUseCase;
+    private final ConvertFromBusinessEntityHandler convertFromBusinessEntityHandler;
 
     @PostMapping
     public ApiResponse<Long> create(@RequestBody CreateMasterDataEntityCmd cmd) {
@@ -59,8 +62,8 @@ public class MasterDataEntityController {
     }
 
     @PostMapping("/convert")
-    public ApiResponse<Boolean> convertFromBusinessEntity(@RequestParam Long businessEntityId) {
-        // TODO: 实现从业务实体转换的逻辑
-        return ApiResponse.success(true);
+    public ApiResponse<Long> convertFromBusinessEntity(@RequestParam("businessEntityId") Long businessEntityId) {
+        Long mdmEntityId = convertFromBusinessEntityHandler.handle(businessEntityId);
+        return ApiResponse.success(mdmEntityId);
     }
 }

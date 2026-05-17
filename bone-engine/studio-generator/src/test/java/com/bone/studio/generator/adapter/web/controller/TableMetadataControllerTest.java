@@ -23,7 +23,7 @@ class TableMetadataControllerTest {
 
     @jakarta.annotation.PostConstruct
     void setUp() {
-        baseUrl = "http://localhost:" + port + "/api/table-metadata";
+        baseUrl = "http://localhost:" + port + "/api/v1/generator/table-metadata";
     }
 
     @Test

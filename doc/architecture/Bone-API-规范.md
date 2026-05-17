@@ -1,22 +1,22 @@
-# Bone 平台 API 与可观测性规范
+# Bone 平台 API 规范
 
-> **文档性质**：REST API、错误码、日志与审计的**统一工程契约**（单文档维护，避免规范碎片化）。  
+> **文档性质**：对外 **HTTP REST** 契约（URL、信封、分页、横切头、OpenAPI、契约测试）。  
 > **更新**：2026-05-17  
 > **关联**：[BONE-总体架构设计方案](./BONE-总体架构设计方案.md) §8、[Bone-DDD-最终实践方案](./Bone-DDD-最终实践方案.md)  
-> **独立成文（不并入本文）**：[数据库开发规范.md](./数据库开发规范.md)（DDL/表结构）、[Bone-DDD-最终实践方案.md](./Bone-DDD-最终实践方案.md)（分层/CQRS）
+> **配套规范**：[README.md](./README.md) 工程规范索引；错误码 / 日志 / 安全 / 可观测性等见同目录 `Bone-*.md`
 
 ### 文档地图
 
 | 章节 | 内容 |
 |------|------|
 | §2–§3 | URL、HTTP、成功响应与分页 |
-| **§4** | 错误模型、流程、**全平台错误码台账** |
+| **§4** | 失败信封、`ProblemDetail`（业务码见独立文档） |
 | §5–§9 | 分页、头、LRO、幂等、权限 |
-| **§10** | 日志、MDC、Access/Audit、Logback |
+| §10 | 日志与可观测性（摘要 → 独立文档） |
 | §11–§13 | OpenAPI、Controller、模块路径与迁移 |
 | **§14** | API 附属约定（时间/枚举/i18n 等） |
 | **§15** | **契约测试**（OpenAPI / Mock / Pact / CI） |
-| §16 | 其他主题索引（何时另立文档） |
+| §16 | 平台规范体系索引（另立文档建议） |
 | §17 | 实施检查清单 |
 
 ---
@@ -25,7 +25,7 @@
 
 | 项 | 说明 |
 |----|------|
-| **目标** | 统一 URL、HTTP 语义、响应/错误信封、错误码、分页、日志与横切头；可观测、可 i18n、可 CI 校验。 |
+| **目标** | 统一 URL、HTTP 语义、响应/错误信封、分页与横切头；可 i18n、可 CI 校验。错误码与日志见配套文档。 |
 | **适用** | `bone-platform/*`、`bone-engine/*` 对外 HTTP API；`bone-frontend` 各微应用；网关与 SA-Token 鉴权配置。 |
 | **真源优先级** | 本规范 > 模块详设 API 章 > 代码实现；偏离须 ADR 或 §13.2「迁移登记」。 |
 | **OpenAPI** | 每服务维护 OpenAPI 3.1；公共 schema 见 §11；CI 做破坏性 diff。 |
@@ -79,14 +79,14 @@
 | 新接口 | **必须** `/api/v1/...` |
 | v1 内变更 | **仅 additive**：可加可选字段；禁止删除/改类型/改必填 |
 | 破坏性变更 | 升 `v2`；v1 保留 ≥1 个 minor 并标 Sunset |
-| 无版本别名 | 网关可把 `/api/{domain}/...` 重写到 v1，**最长存活 2 个 release**，响应必带 `Deprecation: true` 与 `Sunset: <HTTP-date>` |
+| 无版本别名 | **已废止** `/api/{domain}`（无 `v1`）直出；仅 `/api/v1/{domain}/...`（见 §13.2） |
 
 ### 2.3 域（domain）注册表
 
-| domain | 服务 | 错误码前缀（§4.4） | 说明 |
+| domain | 服务 | 错误码前缀（[台账 §3.1](./Bone-错误码登记.md#31-字符串业务码新接口强制)） | 说明 |
 |--------|------|-------------------|------|
 | `iam` | bone-iam | `IAM_` | 认证、用户、角色、权限 |
-| `metadata` | 元数据（规划：实体/发布；As-Is：扩展字段见 server `/v1/metadata/fields:*`） | `META_` | 与 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) 一致 |
+| `metadata` | 元数据（catalog + 扩展字段 EAV，统一 `/api/v1/metadata/**`） | `META_` | 与 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) 一致 |
 | `generator` | studio-generator | `GEN_` | 代码生成（**非** metadata-server 职责） |
 | `masterdata` | bone-masterdata | `MD_` | 主数据、质量 |
 | `extension` | bone-extension-studio | `EXT_` | 扩展点、插件 |
@@ -216,14 +216,17 @@ export function isOk(res: BoneApiResponse<unknown>, httpStatus: number): boolean
 
 ---
 
-## 4. 错误模型与错误码
+## 4. 错误模型
 
-### 4.1 设计原则
+> **业务错误码**（命名、号段、台账、PR 流程）：真源见 **[Bone-错误码登记.md](./Bone-错误码登记.md)**。  
+> 本节仅定义 HTTP 层信封与 `ProblemDetail` 结构。
+
+### 4.1 设计原则（摘要）
 
 | 原则 | 说明 |
 |------|------|
 | HTTP 表达类别 | 4xx/5xx 表示客户端/服务端/网关问题 |
-| 业务码表达细节 | **稳定字符串** `EXT_PLUGIN_NOT_DEPLOYED`，供前端 i18n、告警聚合 |
+| 业务码表达细节 | 稳定字符串 `errorCode`，见 [错误码登记](./Bone-错误码登记.md) |
 | 不把两类码塞进一个整数 | `ApiResponse.code` 仅镜像 HTTP；业务码放 `data.errorCode` |
 
 ### 4.2 失败响应结构（对齐 RFC 7807）
@@ -264,212 +267,13 @@ export function isOk(res: BoneApiResponse<unknown>, httpStatus: number): boolean
 
 对外 Content-Type 可为 `application/json`（信封）或 `application/problem+json`（仅 `data` 部分语义）；实现阶段保持信封即可。
 
-### 4.3 Java 约定
+### 4.3 实现与登记（见独立文档）
 
-```java
-// 模块内：com.bone.{module}.common.exception.{Module}ErrorCode
-public enum ExtensionErrorCode implements BoneErrorCode {
-    PLUGIN_NOT_FOUND("EXT_PLUGIN_NOT_FOUND", 404, "插件不存在"),
-    PLUGIN_NOT_DEPLOYED("EXT_PLUGIN_NOT_DEPLOYED", 409, "插件未部署");
-
-    private final String code;
-    private final int httpStatus;
-    private final String defaultMessage;
-}
-
-// 抛出：BizException / ServiceException 携带 errorCode + httpStatus
-throw new BizException(ExtensionErrorCode.PLUGIN_NOT_FOUND, pluginId);
-```
-
-`GlobalExceptionHandler` 映射为 §4.2 JSON；**禁止** `catch (Exception e) { return error(e.getMessage()) }` 吞掉业务码。
-
-### 4.4 错误码命名与号段
-
-**字符串业务码（强制新接口使用）**
-
-```
-{DOMAIN_PREFIX}_{SNAKE_CASE_REASON}
-```
-
-| 前缀 | 域 | 示例 |
-|------|-----|------|
-| `IAM_` | 身份 | `IAM_TOKEN_EXPIRED` |
-| `META_` | 元数据 | `META_ENTITY_PUBLISHED` |
-| `MD_` | 主数据 | `MD_RECORD_DUPLICATE` |
-| `EXT_` | 扩展 | `EXT_PLUGIN_DEPLOY_FAILED` |
-| `INT_` | 集成 | `INT_CONNECTOR_TEST_FAILED` |
-| `SYS_` | 系统 | `SYS_CONFIG_LOCKED` |
-| `GEN_` | 生成器 | `GEN_TEMPLATE_INVALID` |
-| `COMMON_` | 跨模块 | `COMMON_IDEMPOTENCY_CONFLICT` |
-
-**整数码（存量 `ErrorCode` 对象，逐步迁移）**
-
-| 范围 | 用途 |
+| 主题 | 文档 |
 |------|------|
-| `0` | 历史成功码，**废弃**，改用 HTTP 200 |
-| `400–599` | 与 HTTP 对齐的系统错误（`GlobalErrorCodeConstants`） |
-| `1_000_000_000+` | 历史业务整型码（`ErrorCode.java` 注释） |
-| `2000–6999` | 模块预留整型段（**新模块优先字符串码**） |
-
-新增错误须登记到模块 `*ErrorCode` 枚举 + 模块 README 或 OpenAPI `x-errorCodes`。
-
-### 4.5 新增错误码流程（开发必做）
-
-```
-1. 在模块 *ErrorCode 枚举中定义（字符串 errorCode + httpStatus + defaultMessage）
-2. 在本文 §4.6 对应域表格追加一行（PR 必含）
-3. OpenAPI @Operation 或 x-errorCodes 补充该码
-4. PR 描述写明「新增 EXT_XXX，HTTP 409」
-5. 单测：断言响应含 errorCode、traceId
-```
-
-| 禁止 | 原因 |
-|------|------|
-| `throw new BizException("xxx失败")` 无码 | 前端/监控无法聚合 |
-| 复用含糊码 `COMMON_INTERNAL_ERROR` 表达已知业务失败 | 掩盖真实原因 |
-| 修改已发布 `errorCode` 字符串含义 | 破坏 i18n 与告警规则 |
-| 对外返回 `e.getMessage()` 含 SQL/堆栈 | 安全风险 |
-
-### 4.6 全平台错误码台账（随 PR 更新）
-
-新增码前先检索本节，避免重复。命名：`{前缀}_{SNAKE_CASE}`。
-
-| 前缀 | 模块 |
-|------|------|
-| `COMMON_` | 平台公共 |
-| `IAM_` | 身份与访问 |
-| `META_` | 元数据 |
-| `MD_` | 主数据 |
-| `EXT_` | 扩展 |
-| `INT_` | 集成 |
-| `SYS_` | 系统管理 |
-| `GEN_` | 代码生成 |
-
-#### COMMON_
-
-| errorCode | HTTP | 说明 |
-|-----------|------|------|
-| `COMMON_VALIDATION_FAILED` | 400 | 参数校验失败 |
-| `COMMON_UNAUTHORIZED` | 401 | 未认证 |
-| `COMMON_FORBIDDEN` | 403 | 无权限 |
-| `COMMON_NOT_FOUND` | 404 | 资源不存在 |
-| `COMMON_CONFLICT` | 409 | 版本/状态冲突 |
-| `COMMON_IDEMPOTENCY_CONFLICT` | 409 | 幂等键冲突且 body 不一致 |
-| `COMMON_RATE_LIMITED` | 429 | 限流 |
-| `COMMON_INTERNAL_ERROR` | 500 | 未预期系统错误 |
-
-#### IAM_
-
-| errorCode | HTTP | 说明 |
-|-----------|------|------|
-| `IAM_TOKEN_EXPIRED` | 401 | 访问令牌过期 |
-| `IAM_TOKEN_INVALID` | 401 | 令牌无效 |
-| `IAM_CREDENTIAL_INVALID` | 401 | 用户名或密码错误 |
-| `IAM_USER_NOT_FOUND` | 404 | 用户不存在 |
-| `IAM_USER_DISABLED` | 403 | 用户已禁用 |
-| `IAM_ROLE_NOT_FOUND` | 404 | 角色不存在 |
-| `IAM_PERMISSION_DENIED` | 403 | 缺少权限 |
-
-#### META_
-
-| errorCode | HTTP | 说明 |
-|-----------|------|------|
-| `META_ENTITY_NOT_FOUND` | 404 | 实体不存在 |
-| `META_ENTITY_PUBLISHED` | 409 | 实体已发布不可删 |
-| `META_FIELD_NOT_FOUND` | 404 | 字段不存在 |
-| `META_FIELD_NAME_DUPLICATE` | 409 | 字段名重复 |
-| `META_GENERATE_TASK_FAILED` | 500 | 代码生成任务失败 |
-| `META_TEMPLATE_INVALID` | 400 | 模板语法错误 |
-
-#### MD_
-
-| errorCode | HTTP | 说明 |
-|-----------|------|------|
-| `MD_ENTITY_NOT_FOUND` | 404 | 主数据实体不存在 |
-| `MD_RECORD_NOT_FOUND` | 404 | 记录不存在 |
-| `MD_RECORD_DUPLICATE` | 409 | 业务键重复 |
-| `MD_QUALITY_CHECK_FAILED` | 422 | 质量规则不通过 |
-| `MD_RECORD_NOT_PUBLISHED` | 409 | 记录未发布 |
-
-#### EXT_
-
-| errorCode | HTTP | 说明 |
-|-----------|------|------|
-| `EXT_POINT_NOT_FOUND` | 404 | 扩展点不存在 |
-| `EXT_POINT_DISABLED` | 409 | 扩展点已禁用 |
-| `EXT_PLUGIN_NOT_FOUND` | 404 | 插件不存在 |
-| `EXT_PLUGIN_NOT_DEPLOYED` | 409 | 插件未部署 |
-| `EXT_PLUGIN_ALREADY_DEPLOYED` | 409 | 插件已部署 |
-| `EXT_PLUGIN_DEPLOY_FAILED` | 500 | 部署失败 |
-| `EXT_PLUGIN_VERSION_NOT_FOUND` | 404 | 版本不存在 |
-| `EXT_ARTIFACT_TOO_LARGE` | 400 | 制品超过大小限制 |
-| `EXT_ARTIFACT_CHECKSUM_MISMATCH` | 400 | 校验和不匹配 |
-| `EXT_SANDBOX_TIMEOUT` | 504 | 沙箱执行超时 |
-
-#### INT_
-
-| errorCode | HTTP | 说明 |
-|-----------|------|------|
-| `INT_CONNECTOR_NOT_FOUND` | 404 | 连接器不存在 |
-| `INT_CONNECTOR_TEST_FAILED` | 502 | 连接测试失败 |
-| `INT_FLOW_NOT_FOUND` | 404 | 流程不存在 |
-| `INT_FLOW_INVALID_STATE` | 409 | 流程状态不允许该操作 |
-| `INT_EXECUTION_NOT_FOUND` | 404 | 执行记录不存在 |
-
-#### SYS_
-
-| errorCode | HTTP | 说明 |
-|-----------|------|------|
-| `SYS_CONFIG_NOT_FOUND` | 404 | 配置项不存在 |
-| `SYS_CONFIG_LOCKED` | 409 | 配置项锁定 |
-| `SYS_ALERT_RULE_NOT_FOUND` | 404 | 告警规则不存在 |
-
-#### GEN_
-
-| errorCode | HTTP | 说明 |
-|-----------|------|------|
-| `GEN_DATASOURCE_NOT_FOUND` | 404 | 数据源不存在 |
-| `GEN_DATASOURCE_CONNECTION_FAILED` | 502 | 数据源连接失败 |
-| `GEN_TEMPLATE_NOT_FOUND` | 404 | 模板不存在 |
-| `GEN_TEMPLATE_INVALID` | 400 | 模板校验失败 |
-| `GEN_TASK_NOT_FOUND` | 404 | 生成任务不存在 |
-| `GEN_TASK_FAILED` | 500 | 生成任务失败 |
-
-新增行模板：`| \`DOMAIN_REASON\` | 4xx | 说明 |`
-
-### 4.7 HTTP 与业务码对照（速查）
-
-| 场景 | HTTP | 推荐 errorCode 类型 |
-|------|------|---------------------|
-| 参数缺失/格式错误 | 400 | `COMMON_VALIDATION_FAILED` + `errors[]` |
-| 未登录 | 401 | `COMMON_UNAUTHORIZED` |
-| 无权限 | 403 | `COMMON_FORBIDDEN` |
-| 资源不存在 | 404 | `{DOMAIN}_*_NOT_FOUND` |
-| 状态不允许（未部署却回滚） | 409 | `{DOMAIN}_*_CONFLICT` / `*_NOT_DEPLOYED` |
-| 乐观锁冲突 | 409 | `COMMON_CONFLICT` |
-| 限流 | 429 | `COMMON_RATE_LIMITED` |
-| 依赖超时 | 504 | `{DOMAIN}_*_TIMEOUT` |
-| 未知异常 | 500 | `COMMON_INTERNAL_ERROR`（日志记堆栈） |
-
-### 4.8 目标实现（与存量对齐）
-
-当前 `BizException` 使用整型 `code`（见 `bone-core`）。**目标态**：
-
-1. 枚举实现统一契约：`getErrorCode()` 返回字符串、`getHttpStatus()` 返回 int。  
-2. `GlobalExceptionHandler` 组装 §4.2 `ProblemDetail` 写入 `ApiResponse.data`。  
-3. 存量整型码保留至迁移完成，新功能**只加字符串码**。
-
-```java
-// 目标枚举形态（各模块复制模式）
-@Getter
-@RequiredArgsConstructor
-public enum ExtensionErrorCode {
-    PLUGIN_NOT_FOUND("EXT_PLUGIN_NOT_FOUND", 404, "插件不存在");
-    private final String errorCode;
-    private final int httpStatus;
-    private final String defaultMessage;
-}
-```
+| 命名、号段、台账、PR 流程、Java 枚举 | [Bone-错误码登记.md](./Bone-错误码登记.md) |
+| OpenAPI `x-errorCodes` | 各服务 `openapi.yaml` + §11 |
+| `GlobalExceptionHandler` | `bone-web` / `bone-core`，组装 §4.2 |
 
 ---
 
@@ -575,122 +379,18 @@ Controller 使用 `@PreAuthorize` 或 SA-Token 注解，**权限码与 Scope 一
 
 ---
 
-## 10. 日志与审计规范
+## 10. 日志与可观测性（摘要）
 
-> 适用于所有后端服务（不仅 REST）。表审计列与 [数据库开发规范](./数据库开发规范.md) 对齐；链路对齐 SkyWalking / `traceparent`。
+HTTP 层与日志的**交叉约定**（须在实现中保持一致）：
 
-### 10.1 分类与保留
+| 项 | 约定 |
+|----|------|
+| `X-Request-Id` | 请求头推荐；响应头回显；写入 MDC `traceId` |
+| `ProblemDetail.traceId` | 与 MDC / 响应头 **同一值** |
+| Access Log | 每条 HTTP 一条 `[API]` INFO；`status>=400` 带 `errorCode` |
+| 审计 | 关键写操作落库（见独立文档 §6） |
 
-| 类型 | 前缀 | 用途 | 保留建议 |
-|------|------|------|----------|
-| Access | `[API]` | 每次 HTTP 一条摘要 | 30–90 天 |
-| Application | `[Biz]` | 用例/排障 | 7–30 天 |
-| Audit | `[Audit]` + DB | 合规 | ≥1 年（按政策） |
-| Integration | `[Integration]` | 出站调用 | 30 天 |
-| Job | `[Job]` | 定时任务 | 30 天 |
-
-### 10.2 MDC（强制）
-
-入口 Filter 设置，`finally` 中 `MDC.clear()`。
-
-| Key | 来源 |
-|-----|------|
-| `traceId` | `X-Request-Id` / SkyWalking |
-| `tenantId` | JWT / 头 |
-| `userId` | JWT |
-| `bizIdentityCode` | 头 / 上下文 |
-| `domain` | 服务域，如 `extension` |
-| `httpMethod` / `httpPath` | 请求（**path 用 URI 模板**） |
-
-```java
-@Component
-@Order(Ordered.HIGHEST_PRECEDENCE)
-public class BoneRequestContextFilter extends OncePerRequestFilter {
-    @Override
-    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
-            throws ServletException, IOException {
-        String traceId = Optional.ofNullable(req.getHeader("X-Request-Id"))
-                .filter(StringUtils::hasText)
-                .orElse(UUID.randomUUID().toString().replace("-", ""));
-        MDC.put("traceId", traceId);
-        res.setHeader("X-Request-Id", traceId);
-        long start = System.currentTimeMillis();
-        try {
-            chain.doFilter(req, res);
-        } finally {
-            log.info("[API] traceId={} method={} path={} status={} durationMs={} tenantId={} userId={}",
-                    traceId, req.getMethod(), req.getRequestURI(), res.getStatus(),
-                    System.currentTimeMillis() - start, MDC.get("tenantId"), MDC.get("userId"));
-            MDC.clear();
-        }
-    }
-}
-```
-
-### 10.3 级别与前缀
-
-| 级别 | 场景 | 生产 |
-|------|------|------|
-| ERROR | 未捕获异常、依赖不可用 | 开 |
-| WARN | 已知业务失败（带 errorCode）、慢请求、重试 | 开 |
-| INFO | Access、状态变更、审计 | 开 |
-| DEBUG | 诊断 | **关** |
-
-| 类型 | 级别 | 内容 |
-|------|------|------|
-| `BizException` / 已知码 | WARN | errorCode + message，默认不打满栈 |
-| 未知 `Exception` | ERROR | traceId + 堆栈 |
-
-### 10.4 Access Log
-
-每条对外 HTTP 至少一条 INFO；`status>=400` 必带 `errorCode`；`durationMs>3000` 额外 WARN。  
-**禁止**：Authorization 全文、密码、Cookie、大 body。
-
-### 10.5 审计
-
-**必须审计**：登录/登出、IAM 变更、插件部署/回滚、主数据发布/删除、系统配置、集成流程激活/删除。
-
-落库字段：`traceId`, `principal`, `tenantId`, `action`, `resourceType`, `resourceId`, `result`, `timestamp`（对齐 `iam_audit_log` 等）。
-
-### 10.6 脱敏
-
-| 数据 | 规则 |
-|------|------|
-| 密码、Token、API Key | 禁止 |
-| 手机/证件 | 掩码 |
-| SQL | 仅 local DEBUG |
-
-### 10.7 Logback（推荐）
-
-```xml
-<configuration>
-    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} [traceId=%X{traceId}] [tenantId=%X{tenantId}] - %msg%n</pattern>
-        </encoder>
-    </appender>
-    <logger name="com.bone" level="INFO"/>
-    <logger name="org.springframework" level="WARN"/>
-    <root level="INFO"><appender-ref ref="CONSOLE"/></root>
-</configuration>
-```
-
-生产可选用 `logstash-logback-encoder` 输出 JSON（`traceId`、`tenantId`、`level`、`message`）。
-
-### 10.8 链路、前端与告警
-
-- 响应头回显 `X-Request-Id`；`ProblemDetail.traceId` 与 MDC 一致。  
-- 前端：axios 注入 `X-Request-Id`；错误 UI 可展示 `traceId` + `errorCode`。  
-- 告警建议：5xx 率、P95 延迟、慢请求 WARN 数；Prometheus 标签用 `http_route`（模板路径）。
-
-### 10.9 分层职责
-
-| 层 | 可打 | 禁止 |
-|----|------|------|
-| Controller/Filter | `[API]` | 业务刷屏 |
-| Application | `[Biz]` | 完整 DTO（含 PII） |
-| Domain | 不变式 WARN | 基础设施日志 API |
-| Infrastructure | `[Integration]` 失败 | 吞异常 |
+**完整规范**（分类、MDC、级别、脱敏、Logback、告警、分层）：**[Bone-日志规范.md](./Bone-日志规范.md)**。
 
 ---
 
@@ -761,7 +461,7 @@ public class ExtensionPointController {
 ### 13.1 扩展（extension）规范路径
 
 前缀 `/api/v1/extension`；详设见 [5. 扩展管理模块](../design/modules/5.%20扩展管理模块详细设计方案.md) §5。  
-OpenAPI 草案：[openapi/extension-v1.yaml](./openapi/extension-v1.yaml)。
+OpenAPI 草案：[openapi/extension-v1.yaml](./openapi/extension-v1.yaml)（本地校验：`bash scripts/ci/validate-extension-openapi.sh`）。
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
@@ -788,21 +488,51 @@ OpenAPI 草案：[openapi/extension-v1.yaml](./openapi/extension-v1.yaml)。
 | GET | `/api/v1/extension/execution-logs` | 执行日志（cursor） |
 | POST | `/api/v1/extension/execution-logs:ingest` | SDK 上报 |
 | GET | `/api/v1/extension/sandbox/config` | 沙箱配置 |
+| GET | `/api/v1/extension/audit-logs` | Studio 审计（cursor；写操作见 §10.5） |
+| POST | `/api/v1/extension/plugins/{id}:publish-runtime` | 发布运行时元数据 |
 
 | GET | `/api/v1/extension/operations/{id}` | LRO 轮询 |
+
+### 13.1.1 代码生成（generator）规范路径
+
+前缀 `/api/v1/generator`；实现类见 `GeneratorApiPaths`（`studio-generator`）。**旧路径（`/api/data-sources`、`/api/code-generator` 等）已移除**。
+
+| 方法 | 路径（规范） | 说明 |
+|------|--------------|------|
+| GET/POST | `/api/v1/generator/data-sources` | 数据源 CRUD |
+| POST | `/api/v1/generator/data-sources/{id}/test` | 连接测试（过渡；目标 `{id}:test-connection`） |
+| GET | `/api/v1/generator/data-sources/{id}/tables` | 物理库表发现（JDBC） |
+| POST | `/api/v1/generator/data-sources/{id}/tables:sync` | 同步表结构到 `gen_*` |
+| GET | `/api/v1/generator/metadata-entity-snapshots` | 已发布 `meta_*` 快照分页（`CATALOG_SNAPSHOT` 选型） |
+| GET/POST | `/api/v1/generator/code-templates` | 模板（As-Is；目标 `/templates`） |
+| POST | `/api/v1/generator/code-generation` | Freemarker 异步生成（As-Is） |
+| POST | `/api/v1/generator/generation-tasks` | 同步字符串模板生成 |
+| GET | `/api/v1/generator/capabilities` | AI 能力发现 |
 
 ### 13.2 废弃与迁移
 
 | 状态 | 旧 | 新 | 截止 |
 |------|----|----|------|
 | 已移除 | `/api/ext-points`、`/api/extensions`、`/api/extension/*` | `/api/v1/extension/*` | — |
+| 已移除 | `/api/data-sources` | `/api/v1/generator/data-sources` | — |
+| 已移除 | `/api/table-metadata` | `/api/v1/generator/table-metadata` | — |
+| 已移除 | `/api/code-templates` | `/api/v1/generator/code-templates` | — |
+| 已移除 | `/api/code-generation` | `/api/v1/generator/code-generation` | — |
+| 已移除 | `/api/code-generator` | `/api/v1/generator/*`（见 §13.1.1） | — |
+| 已移除 | `/api/v1/generator/generate`、`/tables/{id}`、`/catalog/entities` | `generation-tasks`、`data-sources/{id}/tables`、`metadata-entity-snapshots` | — |
+| 已移除 | `/api/v1/generator/table-metadata/*` | `data-sources/{id}/tables`、`tables:sync` | — |
+| 过渡 | `/api/iam/users`（详设用语） | `/api/v1/iam/accounts`（As-Is Controller） | 2026-12-01 |
+| 已移除 | `/api/iam/*` | `/api/v1/iam/*` | — |
+| 已移除 | `/api/masterdata/*` | `/api/v1/masterdata/*` | — |
+| 已移除 | `/api/system/*`、`/api/console/*` | `/api/v1/system/*`、`/api/v1/console/*` | — |
+| 已移除 | `/api/integration/*`（`context-path=/api`） | `/api/v1/integration/*` | — |
+| 已移除 | `/v1/metadata/*`（EAV，无 `/api` 前缀） | `/api/v1/metadata/*` | — |
 | 过渡 | `ApiResponse` 无 `code` / 本地类 | `com.bone.core.model.ApiResponse` | 2026-09-01 |
 | 过渡 | 成功 `code=0` | `code=200` | 2026-09-01 |
 | 过渡 | 分页 `list` 字段 | `records` | 2026-09-01 |
 | 过渡 | HTTP 200 + `success:false` | HTTP 4xx/5xx | 2026-09-01 |
-| 过渡 | `/v1/metadata/*`（`bone-metadata-server`，扩展字段 EAV） | `/api/v1/metadata/*`（或经网关统一加 `/api` 前缀） | 2026-12-01 |
 
-> **说明**：当前 As-Is 仅 **扩展字段** `fields:search|searchByNames|allocate|health`（迁移后仍为 **动作式** `fields:*`）。**建模 catalog**（MVP-2）使用 `/api/v1/metadata/entities`、`…/entities/{entityId}/fields`、`…/relationships`；**禁止** catalog 与 EAV 共用顶层 `…/fields`，见 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §1.2。
+> **说明**：**As-Is** 含扩展字段 `fields:search|searchByNames|allocate|health`（**动作式** `fields:*`）及 **catalog** `entities`、`…/entities/{entityId}/fields`、`…/relationships`；**禁止** catalog 与 EAV 共用顶层 `…/fields`，见 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §1.2。
 
 ---
 
@@ -832,13 +562,7 @@ OpenAPI 草案：[openapi/extension-v1.yaml](./openapi/extension-v1.yaml)。
 
 ### 14.3 国际化（i18n）
 
-| 规则 | 说明 |
-|------|------|
-| 稳定键 | `errorCode`（如 `EXT_PLUGIN_NOT_FOUND`） |
-| 展示 | 前端 `errorCode → 文案`；`message` 为默认中文 fallback |
-| 禁止 | 修改已发布 `errorCode` 含义 |
-
-**原因**：控制台多语言不能依赖后端改中文 message。
+完整约定见 **[Bone-国际化规范.md](./Bone-国际化规范.md)**（`errorCode` 键、locale、UTC 时间）。
 
 ### 14.4 文件上传
 
@@ -853,19 +577,13 @@ OpenAPI 草案：[openapi/extension-v1.yaml](./openapi/extension-v1.yaml)。
 
 ### 14.5 Webhook 出站（集成）
 
-| 规则 | 说明 |
-|------|------|
-| 签名 | `X-Bone-Signature: HMAC-SHA256(body, secret)` |
-| 重试 | 指数退避；`eventId` 幂等 |
-| 失败 | 死信表（如 `int_dead_letter`） |
-
-**原因**：对外通知需可验证、可排障、防重放。
+见 **[Bone-消息与事件规范.md](./Bone-消息与事件规范.md) §8**（HMAC 签名、重试、死信）。
 
 ---
 
 ## 15. 契约测试（HTTP / OpenAPI）
 
-> **放置说明**：契约测试与 PR、OpenAPI、前端 Mock 强绑定，故写在 **本文 §15**；**异步消息 Topic** 见 [BONE-总体架构设计方案](./BONE-总体架构设计方案.md) **§8.4**（平台事件总线，非 HTTP 专属）。
+> **放置说明**：契约测试与 PR、OpenAPI、前端 Mock 强绑定，故写在 **本文 §15**；**异步消息**见 [Bone-消息与事件规范.md](./Bone-消息与事件规范.md)。
 
 ### 15.1 真源与职责
 
@@ -918,16 +636,32 @@ OpenAPI 草案：[openapi/extension-v1.yaml](./openapi/extension-v1.yaml)。
 
 ---
 
-## 16. 其他主题索引（何时另立文档）
+## 16. 平台规范体系索引
 
-| 主题 | 是否独立成文 | 原因 |
-|------|--------------|------|
-| REST / 错误码 / 日志 / **契约测试** | **否** → 本文 §2–§15 | 同一 HTTP 交付面 |
-| DDL / 表 / 索引 | **是** → [数据库开发规范](./数据库开发规范.md) | DBA、持久化，与 HTTP 正交 |
-| DDD 分层 / CQRS | **是** → [Bone-DDD-最终实践方案](./Bone-DDD-最终实践方案.md) | 代码结构 |
-| OpenAPI 组件 YAML | **是** → [openapi/](./openapi/) | 机器可读契约 |
-| **消息 Topic / 领域事件** | **否** → [BONE-总体架构](./BONE-总体架构设计方案.md) **§8.4** | 事件总线、跨服务，非 REST |
-| JSON:API / 全站 HATEOAS | **不建议** | 与 `ApiResponse` 冲突 |
+完整索引见 **[README.md](./README.md)**。与本文直接相关的独立规范：
+
+| 文档 | 职责 |
+|------|------|
+| [Bone-错误码登记.md](./Bone-错误码登记.md) | `errorCode` 台账与 PR 流程 |
+| [Bone-日志规范.md](./Bone-日志规范.md) | 日志、MDC、审计 |
+| [Bone-可观测性规范.md](./Bone-可观测性规范.md) | Metrics、Trace、SLO |
+| [Bone-安全开发规范.md](./Bone-安全开发规范.md) | 认证、密钥、沙箱、依赖扫描 |
+| [Bone-多租户规范.md](./Bone-多租户规范.md) | 租户上下文与数据隔离 |
+| [Bone-消息与事件规范.md](./Bone-消息与事件规范.md) | Topic、信封、DLQ |
+| [Bone-配置与环境规范.md](./Bone-配置与环境规范.md) | `.env`、Profile |
+| [Bone-版本与发布规范.md](./Bone-版本与发布规范.md) | API 版本、发布顺序 |
+| [Bone-测试策略.md](./Bone-测试策略.md) | 测试分层与 CI |
+| [Bone-国际化规范.md](./Bone-国际化规范.md) | i18n、时区 |
+| [Bone-缓存规范.md](./Bone-缓存规范.md) | Redis Key/TTL |
+| [adr/](./adr/) | 架构决策记录 |
+
+### 16.2 本规范不采纳的做法
+
+| 做法 | 原因 |
+|------|------|
+| JSON:API | 与现有 `ApiResponse` 割裂大 |
+| 全资源 HATEOAS | 前端以 OpenAPI 为主 |
+| 取消统一信封 | 与存量异常处理器一致 |
 
 ---
 
@@ -938,12 +672,13 @@ OpenAPI 草案：[openapi/extension-v1.yaml](./openapi/extension-v1.yaml)。
 - [ ] `/api/v1/{domain}/...` + SpringDoc  
 - [ ] 成功 `ApiResponse` + HTTP 状态一致  
 - [ ] 失败 `ProblemDetail` + `errorCode`  
-- [ ] 错误码登记 §4.6 + 流程 §4.5  
-- [ ] MDC + `[API]` 线（§10）  
+- [ ] 错误码登记 [Bone-错误码登记.md](./Bone-错误码登记.md) §6 + §5 流程  
+- [ ] MDC + `[API]`（[Bone-日志规范.md](./Bone-日志规范.md)）  
 - [ ] Access Log 一条 `[API]` INFO  
 - [ ] 列表分页类型正确（日志用 cursor）  
 - [ ] 幂等写带 `Idempotency-Key`（如适用）  
-- [ ] Scope 与 IAM 对齐  
+- [ ] Scope 与 IAM 对齐（[安全规范](./Bone-安全开发规范.md)）  
+- [ ] 租户上下文（[多租户规范](./Bone-多租户规范.md)）  
 
 ### 废弃接口
 
@@ -968,4 +703,7 @@ OpenAPI 草案：[openapi/extension-v1.yaml](./openapi/extension-v1.yaml)。
 | 2026-05-17 | 移除 `/api/extension`、`/api/ext-points`、`/api/extensions`，仅 `/api/v1/extension` |
 | 2026-05-17 | §15 契约测试；§16 索引；消息 Topic 见总体架构 §8.4 |
 | 2026-05-17 | 合并错误码台账与日志规范入本文；§14 附属约定；独立文档仅保留 DB/DDD/openapi |
+| 2026-05-17 | §13.1.1 generator 规范路径；§13.2 全模块迁移表；metadata/generator 双挂载 |
 | 2026-05-17 | §13.2：catalog 字段嵌套路径，与 EAV `fields:*` 区分 |
+| 2026-05-17 | 错误码、日志拆至独立文档；§16 增补规范体系建议 |
+| 2026-05-17 | 落地安全/可观测性/消息等独立规范；§16 改为规范索引 |

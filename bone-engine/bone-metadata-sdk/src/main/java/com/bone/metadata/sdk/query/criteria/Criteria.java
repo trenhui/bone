@@ -598,15 +598,15 @@ public class Criteria<T> {
         String paramName = cond.getParamName();
         switch (cond.getOperator()) {
             case BETWEEN -> {
-                // 使用paramName_0和paramName_1作为参数名，与toSql方法保持一致
-                parameters.put(paramName + "_0", cond.getValues()[0]);
-                parameters.put(paramName + "_1", cond.getValues()[1]);
+                parameters.put(paramName + "_0", SqlUtil.toJdbcParameter(cond.getValues()[0]));
+                parameters.put(paramName + "_1", SqlUtil.toJdbcParameter(cond.getValues()[1]));
             }
             case IN, NOT_IN -> parameters.put(paramName,
-                    cond.getValues().length > 1 ? Arrays.asList(cond.getValues())
-                            : cond.getValues()[0]);
+                    cond.getValues().length > 1
+                            ? Arrays.stream(cond.getValues()).map(SqlUtil::toJdbcParameter).toList()
+                            : SqlUtil.toJdbcParameter(cond.getValues()[0]));
             case IS_NULL, IS_NOT_NULL -> { /* no param */ }
-            default -> parameters.put(paramName, cond.getValues()[0]);
+            default -> parameters.put(paramName, SqlUtil.toJdbcParameter(cond.getValues()[0]));
         }
     }
 }

@@ -16,7 +16,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-/** 元数据目录：实体建模 API（与扩展字段 /v1/metadata/fields:* 分离） */
+/** 元数据目录：实体建模 API（与扩展字段 /api/v1/metadata/fields:* 分离） */
 @RestController
 @RequestMapping("/api/v1/metadata/entities")
 @RequiredArgsConstructor

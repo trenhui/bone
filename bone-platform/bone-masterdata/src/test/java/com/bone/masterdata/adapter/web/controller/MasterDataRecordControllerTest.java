@@ -7,6 +7,7 @@ import com.bone.masterdata.application.query.dto.MasterDataRecordDTO;
 import com.bone.masterdata.application.query.qry.MasterDataRecordListQry;
 import com.bone.masterdata.application.usecase.standard.ImportMasterDataRecordsUseCase;
 import com.bone.masterdata.application.usecase.standard.PublishMasterDataRecordUseCase;
+import com.bone.masterdata.application.query.handler.ExportMasterDataRecordsQueryHandler;
 import com.bone.masterdata.application.usecase.standard.MasterDataRecordListQueryUseCase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,9 @@ public class MasterDataRecordControllerTest {
 
     @Mock
     private PublishMasterDataRecordUseCase publishMasterDataRecordUseCase;
+
+    @Mock
+    private ExportMasterDataRecordsQueryHandler exportMasterDataRecordsQueryHandler;
 
     @Mock
     private MultipartFile file;
@@ -74,11 +78,7 @@ public class MasterDataRecordControllerTest {
         qry.setPageNum(1);
         qry.setPageSize(10);
 
-        PageResult<MasterDataRecordDTO> pageResult = new PageResult<>();
-        pageResult.setList(Collections.emptyList());
-        pageResult.setTotal(0);
-        pageResult.setPageNum(1);
-        pageResult.setPageSize(10);
+        PageResult<MasterDataRecordDTO> pageResult = PageResult.of(Collections.emptyList(), 0, 1, 10);
 
         // 模拟依赖
         when(masterDataRecordListQueryUseCase.execute(qry)).thenReturn(pageResult);
@@ -107,17 +107,13 @@ public class MasterDataRecordControllerTest {
 
     @Test
     public void testExport() {
-        // 准备测试数据
         Long masterDataEntityId = 1L;
+        when(exportMasterDataRecordsQueryHandler.handle(masterDataEntityId)).thenReturn("[]");
 
-        // 执行测试
         ApiResponse<String> apiResponse = masterDataRecordController.export(masterDataEntityId);
 
-        // 验证结果
         assertEquals(true, apiResponse.isSuccess());
-        assertEquals("导出成功", apiResponse.getData());
-        verifyNoInteractions(importMasterDataRecordsUseCase);
-        verifyNoInteractions(masterDataRecordListQueryUseCase);
-        verifyNoInteractions(publishMasterDataRecordUseCase);
+        assertEquals("[]", apiResponse.getData());
+        verify(exportMasterDataRecordsQueryHandler).handle(masterDataEntityId);
     }
 }

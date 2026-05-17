@@ -7,6 +7,7 @@ import com.bone.metadata.sdk.domain.query.CompiledQuery;
 import com.bone.metadata.sdk.query.context.ConditionalUpdateContext;
 import com.bone.metadata.sdk.query.criteria.Condition;
 import com.bone.metadata.sdk.query.criteria.Criteria;
+import com.bone.metadata.sdk.support.util.SqlUtil;
 
 import java.util.*;
 
@@ -29,7 +30,7 @@ public class ConditionalUpdateBuilder implements SqlQueryBuilder<ConditionalUpda
         // 2.1 主表普通列
         for (ColumnMetadata col : table.getColumns()) {
             if (col.isPrimaryKey()) continue;
-            Object value = ReflectionUtil.getFieldValue(entity, col.getFieldName());
+            Object value = SqlUtil.toJdbcParameter(ReflectionUtil.getFieldValue(entity, col.getFieldName()));
             if (value != null) {
                 setClauses.add("m." + col.getName() + " = :" + col.getName());
                 params.put(col.getName(), value);

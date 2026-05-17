@@ -97,44 +97,44 @@ JDBC URL: `jdbc:h2:mem:systemdb`
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| POST | /api/system/config | 创建配置 |
-| PUT | /api/system/config | 更新配置 |
-| DELETE | /api/system/config/{id} | 删除配置 |
-| GET | /api/system/config/{id} | 获取配置详情 |
-| GET | /api/system/config/key/{key} | 根据键获取配置 |
-| GET | /api/system/config/page | 分页查询配置 |
+| POST | /api/v1/system/config | 创建配置 |
+| PUT | /api/v1/system/config | 更新配置 |
+| DELETE | /api/v1/system/config/{id} | 删除配置 |
+| GET | /api/v1/system/config/{id} | 获取配置详情 |
+| GET | /api/v1/system/config/key/{key} | 根据键获取配置 |
+| GET | /api/v1/system/config/page | 分页查询配置 |
 
 ### 告警管理
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| POST | /api/system/alert/rules | 创建告警规则 |
-| PUT | /api/system/alert/rules | 更新告警规则 |
-| POST | /api/system/alert/rules/{id}/enable | 启用告警规则 |
-| POST | /api/system/alert/rules/{id}/disable | 禁用告警规则 |
-| DELETE | /api/system/alert/rules/{id} | 删除告警规则 |
-| GET | /api/system/alert/rules/{id} | 获取告警规则详情 |
-| GET | /api/system/alert/rules/page | 分页查询告警规则 |
-| POST | /api/system/alert/events | 创建告警事件 |
-| POST | /api/system/alert/events/{id}/resolve | 解决告警事件 |
-| GET | /api/system/alert/events/{id} | 获取告警事件详情 |
-| GET | /api/system/alert/events/page | 分页查询告警事件 |
+| POST | /api/v1/system/alert/rules | 创建告警规则 |
+| PUT | /api/v1/system/alert/rules | 更新告警规则 |
+| POST | /api/v1/system/alert/rules/{id}/enable | 启用告警规则 |
+| POST | /api/v1/system/alert/rules/{id}/disable | 禁用告警规则 |
+| DELETE | /api/v1/system/alert/rules/{id} | 删除告警规则 |
+| GET | /api/v1/system/alert/rules/{id} | 获取告警规则详情 |
+| GET | /api/v1/system/alert/rules/page | 分页查询告警规则 |
+| POST | /api/v1/system/alert/events | 创建告警事件 |
+| POST | /api/v1/system/alert/events/{id}/resolve | 解决告警事件 |
+| GET | /api/v1/system/alert/events/{id} | 获取告警事件详情 |
+| GET | /api/v1/system/alert/events/page | 分页查询告警事件 |
 
 ### 日志管理
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| POST | /api/system/logs | 创建日志 |
-| GET | /api/system/logs/{id} | 获取日志详情 |
-| GET | /api/system/logs/page | 分页查询日志 |
+| POST | /api/v1/system/logs | 创建日志 |
+| GET | /api/v1/system/logs/{id} | 获取日志详情 |
+| GET | /api/v1/system/logs/page | 分页查询日志 |
 
 ### 系统管理
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | /api/system/health | 获取系统健康状态 |
-| GET | /api/system/info | 获取系统信息 |
-| GET | /api/system/metrics | 获取系统指标 |
+| GET | /api/v1/system/health | 获取系统健康状态 |
+| GET | /api/v1/system/info | 获取系统信息 |
+| GET | /api/v1/system/metrics | 获取系统指标 |
 
 ## 配置说明
 

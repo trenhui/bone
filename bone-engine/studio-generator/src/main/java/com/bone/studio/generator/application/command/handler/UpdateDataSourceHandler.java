@@ -2,6 +2,7 @@ package com.bone.studio.generator.application.command.handler;
 
 import com.bone.core.usecase.Capability;
 import com.bone.studio.generator.application.command.cmd.UpdateDataSourceCommand;
+import com.bone.studio.generator.common.StudioIds;
 import com.bone.studio.generator.domain.data.DataSource;
 import com.bone.studio.generator.domain.repository.DataSourceRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,21 +18,23 @@ public class UpdateDataSourceHandler {
 
     @Transactional
     public String handle(UpdateDataSourceCommand command) {
-        DataSource dataSource = dataSourceRepository.findById(command.getId());
+        Long id = StudioIds.parseRequired(command.getId());
+        DataSource dataSource = dataSourceRepository.findById(id);
         if (dataSource == null) {
             throw new IllegalArgumentException("数据源不存在: " + command.getId());
         }
-        
+
+        int port = Integer.parseInt(command.getPort().trim());
         dataSource.update(
                 command.getName(),
                 command.getType(),
                 command.getHost(),
-                command.getPort(),
+                port,
                 command.getDatabase(),
                 command.getUsername(),
-                command.getPassword()
-        );
-        
-        return dataSourceRepository.save(dataSource);
+                command.getPassword());
+
+        dataSourceRepository.update(dataSource);
+        return StudioIds.toExternal(id);
     }
 }

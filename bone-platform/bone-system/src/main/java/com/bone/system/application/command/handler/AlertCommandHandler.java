@@ -11,8 +11,9 @@ import com.bone.system.application.command.cmd.UpdateAlertRuleCmd;
 import com.bone.system.common.exception.NotFoundException;
 import com.bone.system.domain.alert.AlertEvent;
 import com.bone.system.domain.alert.AlertRule;
-import com.bone.system.domain.alert.vo.MetricName;
-import com.bone.system.domain.alert.vo.Threshold;
+import com.bone.system.domain.model.alert.vo.MetricName;
+import com.bone.system.domain.model.alert.vo.Threshold;
+import com.bone.system.domain.model.alert.vo.AlertLevel;
 import com.bone.system.domain.repository.AlertEventRepository;
 import com.bone.system.domain.repository.AlertRuleRepository;
 import lombok.RequiredArgsConstructor;
@@ -44,7 +45,7 @@ public class AlertCommandHandler {
                 cmd.getDescription(),
                 MetricName.of(cmd.getMetricName()),
                 Threshold.of(cmd.getThreshold()),
-                com.bone.system.domain.alert.vo.AlertLevel.fromString(cmd.getAlertLevel()),
+                AlertLevel.fromString(cmd.getAlertLevel()),
                 cmd.getNotificationChannels()
         );
 
@@ -56,14 +57,14 @@ public class AlertCommandHandler {
     public void handle(UpdateAlertRuleCmd cmd) {
         AlertRule rule = alertRuleRepository.findById(cmd.getId());
         if (rule == null) {
-            throw NotFoundException.of("告警规则不存在: " + cmd.getId());
+            throw new NotFoundException("告警规则不存在: " + cmd.getId());
         }
 
         rule.update(
                 cmd.getName() != null ? cmd.getName() : rule.getName(),
                 cmd.getDescription() != null ? cmd.getDescription() : rule.getDescription(),
                 cmd.getThreshold() != null ? Threshold.of(cmd.getThreshold()) : rule.getThreshold(),
-                cmd.getAlertLevel() != null ? com.bone.system.domain.alert.vo.AlertLevel.fromString(cmd.getAlertLevel()) : rule.getAlertLevel(),
+                cmd.getAlertLevel() != null ? AlertLevel.fromString(cmd.getAlertLevel()) : rule.getAlertLevel(),
                 cmd.getNotificationChannels() != null ? cmd.getNotificationChannels() : rule.getNotificationChannels()
         );
 
@@ -74,7 +75,7 @@ public class AlertCommandHandler {
     public void handle(EnableAlertRuleCmd cmd) {
         AlertRule rule = alertRuleRepository.findById(cmd.getId());
         if (rule == null) {
-            throw NotFoundException.of("告警规则不存在: " + cmd.getId());
+            throw new NotFoundException("告警规则不存在: " + cmd.getId());
         }
         rule.enable();
         alertRuleRepository.save(rule);
@@ -84,7 +85,7 @@ public class AlertCommandHandler {
     public void handle(DisableAlertRuleCmd cmd) {
         AlertRule rule = alertRuleRepository.findById(cmd.getId());
         if (rule == null) {
-            throw NotFoundException.of("告警规则不存在: " + cmd.getId());
+            throw new NotFoundException("告警规则不存在: " + cmd.getId());
         }
         rule.disable();
         alertRuleRepository.save(rule);
@@ -99,7 +100,7 @@ public class AlertCommandHandler {
     public Long createAlertEvent(Long ruleId, double actualValue) {
         AlertRule rule = alertRuleRepository.findById(ruleId);
         if (rule == null) {
-            throw NotFoundException.of("告警规则不存在: " + ruleId);
+            throw new NotFoundException("告警规则不存在: " + ruleId);
         }
 
         if (!rule.shouldTrigger(actualValue)) {
@@ -128,7 +129,7 @@ public class AlertCommandHandler {
     public void handle(ResolveAlertCmd cmd) {
         AlertEvent event = alertEventRepository.findById(cmd.getId());
         if (event == null) {
-            throw NotFoundException.of("告警事件不存在: " + cmd.getId());
+            throw new NotFoundException("告警事件不存在: " + cmd.getId());
         }
         event.resolve();
         alertEventRepository.save(event);

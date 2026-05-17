@@ -8,11 +8,11 @@ const apiSource = readFileSync(
   'utf8',
 );
 
-/** 校验 IAM 前端 API 路径与设计文档 §5.2（/api/iam/users）对齐 */
-describe('iam api user paths', () => {
-  it('uses /users instead of legacy /accounts paths', () => {
-    expect(apiSource).toContain("'/users'");
-    expect(apiSource).not.toMatch(/['"]\/accounts['"]/);
+/** 校验 IAM 前端 API 与后端 AccountController（/api/v1/iam/accounts）对齐 */
+describe('iam api account paths', () => {
+  it('uses v1 base and /accounts paths', () => {
+    expect(apiSource).toContain("'/api/v1/iam'");
+    expect(apiSource).toContain("'/accounts'");
   });
 
   it('declares audit log endpoints under /audit', () => {

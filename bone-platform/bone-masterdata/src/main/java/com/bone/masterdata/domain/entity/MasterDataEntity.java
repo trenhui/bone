@@ -1,10 +1,13 @@
 package com.bone.masterdata.domain.entity;
 
+import com.bone.core.annotation.Id;
 import com.bone.core.domain.AggregateRoot;
+import com.bone.core.domain.id.GeneratedValue;
+import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.core.exception.DomainException;
-import com.bone.masterdata.domain.entity.event.MasterDataEntityCreatedEvent;
-import com.bone.masterdata.domain.entity.vo.MasterDataEntityName;
-import com.bone.masterdata.domain.entity.vo.MasterDataEntityStatus;
+import com.bone.masterdata.domain.model.entity.event.MasterDataEntityCreatedEvent;
+import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityName;
+import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityStatus;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -13,9 +16,11 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Getter
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table("md_entity")
 public class MasterDataEntity extends AggregateRoot<Long> {
+    @Id
+    @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
     private Long id;
     private MasterDataEntityName name;
     private String description;

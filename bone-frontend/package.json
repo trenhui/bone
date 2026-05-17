@@ -15,7 +15,8 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "test": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:extension-app": "npm run test --workspace=bone-extension-app -- --run"
   },
   "overrides": {
     "antd": "5.27.6",

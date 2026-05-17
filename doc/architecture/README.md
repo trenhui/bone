@@ -1,36 +1,78 @@
 # 架构设计文档（`doc/architecture`）
 
-本目录集中存放 **与仓库实现一致** 的平台架构、前端架构与 UI 规范。
+本目录集中存放 **与仓库实现一致** 的平台架构、工程规范与 UI 约定。
 
-## 阅读顺序
+## 阅读顺序（新人）
+
+| 顺序 | 文档 | 说明 |
+|------|------|------|
+| 1 | [BONE-总体架构设计方案.md](./BONE-总体架构设计方案.md) | 平台总体、模块、NFR |
+| 2 | [Bone-DDD-最终实践方案.md](./Bone-DDD-最终实践方案.md) | 分层、CQRS、ArchUnit |
+| 3 | [Bone-API-规范.md](./Bone-API-规范.md) | REST 契约、OpenAPI、契约测试 |
+| 4 | [数据库开发规范.md](./数据库开发规范.md) | DDL 真源 `bone-init.sql` |
+
+## 工程规范索引
+
+### HTTP 与契约
 
 | 文档 | 说明 |
 |------|------|
-| [BONE-总体架构设计方案.md](./BONE-总体架构设计方案.md) | **平台总体**架构、模块边界、NFR、安全、数据与 DevOps 基线 |
-| [Bone-API-规范.md](./Bone-API-规范.md) | **API + 错误码 + 日志** 统一契约（单文档） |
-| [数据库开发规范.md](./数据库开发规范.md) | **DDL** 唯一权威（与 API 文档分离） |
-| [openapi/](./openapi/) | 公共 OpenAPI 组件（`ApiResponse`、`ProblemDetail`、`PageResult`） |
-| [Bone-DDD-最终实践方案.md](./Bone-DDD-最终实践方案.md) | **DDD 唯一权威**：业界原则 + Bone 工程落地（铁律、包结构、Metadata SDK、读写路径） |
-| [元数据能力-实现映射与竞品对照](../design/modules/元数据能力-实现映射与竞品对照.md) | **sdk / server / engine** 定义、协作、API As-Is、竞品对标 |
-| [bone-前端架构.md](./bone-前端架构.md) | **前端唯一权威**：Qiankun 微前端、npm workspaces、`bone-frontend` 目录与工程约定 |
-| [frontend/frontend-ui-spec.md](./frontend/frontend-ui-spec.md) | 设计令牌、布局、组件与无障碍等 **UI 规范** |
-| [数据库开发规范.md](./数据库开发规范.md) | **DDL 唯一权威**：真源、`bone-init.sql` 表清单、命名、索引、分区、变更流程 |
-| [ADR-数据库迁移与DDL真源.md](./ADR-数据库迁移与DDL真源.md) | 已 supersede，指向《数据库开发规范》 |
-| ~~[初始脚本.sql](./初始脚本.sql)~~ | **已废止**（历史归档） |
-| ~~[DDL对齐说明.md](./DDL对齐说明.md)~~ | **已废止** |
-| [smartmeta/README.md](./smartmeta/README.md) | SmartMeta 补充说明；模块真源见 [design/modules/9](../design/modules/9.%20SmartMeta%20引擎模块技术说明.md) |
+| [Bone-API-规范.md](./Bone-API-规范.md) | URL、信封、分页、头、LRO、幂等 |
+| [Bone-错误码登记.md](./Bone-错误码登记.md) | `errorCode` 台账（真源） |
+| [openapi/](./openapi/) | 公共 OpenAPI 组件 |
+
+### 可观测性与运维
+
+| 文档 | 说明 |
+|------|------|
+| [Bone-日志规范.md](./Bone-日志规范.md) | 日志、MDC、审计、脱敏 |
+| [Bone-可观测性规范.md](./Bone-可观测性规范.md) | Metrics、Trace、SLO、告警 |
+| [Bone-配置与环境规范.md](./Bone-配置与环境规范.md) | 环境变量、Profile、密钥 |
+| [config/env/README.md](../../config/env/README.md) | 本地 `.env` 操作入口 |
+
+### 安全、数据与集成
+
+| 文档 | 说明 |
+|------|------|
+| [Bone-安全开发规范.md](./Bone-安全开发规范.md) | OWASP、认证、密钥、插件沙箱 |
+| [Bone-多租户规范.md](./Bone-多租户规范.md) | `tenant_id` 传递链 |
+| [Bone-缓存规范.md](./Bone-缓存规范.md) | Redis/Caffeine Key 与 TTL |
+| [Bone-消息与事件规范.md](./Bone-消息与事件规范.md) | Topic、信封、DLQ、Webhook |
+
+### 质量与交付
+
+| 文档 | 说明 |
+|------|------|
+| [Bone-测试策略.md](./Bone-测试策略.md) | 单测、契约、ArchUnit、CI |
+| [Bone-版本与发布规范.md](./Bone-版本与发布规范.md) | API 版本、发布顺序、回滚 |
+| [Bone-国际化规范.md](./Bone-国际化规范.md) | i18n、时区、errorCode 文案 |
+| [adr/](./adr/) | 架构决策记录（ADR） |
+
+### 前端
+
+| 文档 | 说明 |
+|------|------|
+| [bone-前端架构.md](./bone-前端架构.md) | Qiankun、workspaces |
+| [frontend/frontend-ui-spec.md](./frontend/frontend-ui-spec.md) | UI 令牌与组件 |
+
+### 其他
+
+| 文档 | 说明 |
+|------|------|
+| [元数据能力-实现映射与竞品对照](../design/modules/元数据能力-实现映射与竞品对照.md) | metadata sdk/server/engine |
+| [smartmeta/README.md](./smartmeta/README.md) | SmartMeta 补充 |
+| ~~[初始脚本.sql](./初始脚本.sql)~~ / ~~[DDL对齐说明.md](./DDL对齐说明.md)~~ | **已废止** |
+| [ADR-数据库迁移与DDL真源.md](./ADR-数据库迁移与DDL真源.md) | → [adr/0001](./adr/0001-database-ddl-single-source.md) |
 
 ## 与 `doc/design`、`doc/prd` 的关系
 
 | 目录 | 职责 |
 |------|------|
-| [`doc/prd/`](../prd/) | 产品需求（主 PRD） |
-| [`doc/design/modules/`](../design/modules/) | 各模块详细设计 |
+| [`doc/prd/`](../prd/) | 产品需求 |
+| [`doc/design/modules/`](../design/modules/) | 模块详设（API 细节以 OpenAPI + 本目录规范为准） |
 
-## 其他交叉引用
+## 交叉引用
 
-- **扩展模块详设**：[design/modules/5](../design/modules/5.%20扩展管理模块详细设计方案.md)
-- **默认端口（As-Is）**：[wiki/03-本地开发与构建.md](../wiki/03-本地开发与构建.md)「常见服务端口」（与各模块 `application.yml` 对照）；快速开始见根 [README.md](../../README.md)
-- **全文档索引**：[doc/README.md](../README.md)
-
-部署与数据环境见 [wiki/04-数据与部署.md](../wiki/04-数据与部署.md)。原 `doc/arch`、`doc/前端规范`、`doc/DDD` 及各类 `*_SUMMARY.md` / `dependency-tree.txt` 等历史文件**已从仓库移除**；需要时见 Git 历史。
+- **扩展详设**：[design/modules/5](../design/modules/5.%20扩展管理模块详细设计方案.md)  
+- **端口**：[wiki/03-本地开发与构建.md](../wiki/03-本地开发与构建.md)  
+- **全库索引**：[doc/README.md](../README.md)

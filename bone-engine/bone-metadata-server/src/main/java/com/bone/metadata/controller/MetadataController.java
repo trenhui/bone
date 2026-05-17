@@ -1,5 +1,6 @@
 package com.bone.metadata.controller;
 
+import com.bone.core.web.PlatformApiPaths;
 import com.bone.metadata.sdk.domain.model.AllocationContext;
 import com.bone.metadata.sdk.domain.model.FieldMetadata;
 import com.bone.metadata.sdk.metadata.api.MetadataService;
@@ -20,19 +21,18 @@ import org.springframework.web.bind.annotation.*;
 /**
  * 元数据服务 REST 控制器
  *
- * <p>1. POST /v1/metadata/fields:search — 复合查询（分页+排序+过滤） 2. POST /v1/metadata/fields:searchByNames
- * — 按名称列表精确查询 3. POST /v1/metadata/fields:allocate — 批量创建字段（事务+唯一性校验） 4. GET /v1/metadata/health —
- * 健康检查（公开无需认证）
+ * <p>1. POST /api/v1/metadata/fields:search — 复合查询 2. POST /api/v1/metadata/fields:searchByNames
+ * 3. POST /api/v1/metadata/fields:allocate — 批量创建 4. GET /api/v1/metadata/health — 健康检查（公开）
  */
 @RestController
-@RequestMapping("/v1/metadata")
+@RequestMapping(PlatformApiPaths.METADATA_V1)
 @RequiredArgsConstructor
 @Tag(name = "元数据管理", description = "扩展字段全生命周期管理")
 public class MetadataController {
 
   private final MetadataService metadataService;
 
-  /** 复合查询扩展字段（分页 + 排序 + 多维过滤） POST /v1/metadata/fields:search */
+  /** 复合查询扩展字段 POST /api/v1/metadata/fields:search */
   @PostMapping("/fields:search")
   @Operation(
       summary = "多条件组合查询扩展字段",
@@ -62,7 +62,7 @@ public class MetadataController {
     return ResponseEntity.ok(result);
   }
 
-  /** POST /v1/metadata/fields:searchByNames 按名称精确批量查询扩展字段 */
+  /** POST /api/v1/metadata/fields:searchByNames */
   @PostMapping("/fields:searchByNames")
   @Operation(
       summary = "按名称列表查询扩展字段",
@@ -93,7 +93,7 @@ public class MetadataController {
     return ResponseEntity.ok(result);
   }
 
-  /** POST /v1/metadata/fields:allocate 批量分配并持久化新的扩展字段 */
+  /** POST /api/v1/metadata/fields:allocate */
   @PostMapping("/fields:allocate")
   @Operation(
       summary = "批量创建扩展字段",
@@ -128,7 +128,7 @@ public class MetadataController {
     return ResponseEntity.status(HttpStatus.CREATED).body(created);
   }
 
-  /** GET /v1/metadata/health 服务健康检查（公开，无需认证） */
+  /** GET /api/v1/metadata/health */
   @GetMapping("/health")
   @Operation(
       summary = "服务健康检查",

@@ -23,6 +23,8 @@ public class PageResult<T> implements Serializable {
     private Integer pages;
     private Boolean hasNext;
     private Boolean hasPrevious;
+    /** 游标分页：下一页游标；offset 分页时为 null */
+    private String nextCursor;
 
     // 私有构造方法
     private PageResult(List<T> records, Long total, Integer page, Integer size) {
@@ -46,6 +48,18 @@ public class PageResult<T> implements Serializable {
         return new PageResult<>(Collections.emptyList(), 0L, 1, 10);
     }
 
+    /** 游标分页结果（由 nextCursor 驱动翻页；total/page/pages 不适用）。 */
+    public static <T> PageResult<T> cursorOf(List<T> records, String nextCursor, int limit) {
+        PageResult<T> page = new PageResult<>(records, 0L, 1, limit);
+        page.setTotal(null);
+        page.setPage(null);
+        page.setPages(null);
+        page.setNextCursor(nextCursor);
+        page.setHasNext(nextCursor != null && !nextCursor.isBlank());
+        page.setHasPrevious(false);
+        return page;
+    }
+
     // === 业务方法 ===
     private void calculateFields() {
         this.pages = (int) Math.ceil((double) this.total / this.size);
@@ -62,6 +76,9 @@ public class PageResult<T> implements Serializable {
     }
 
     public Integer getOffset() {
+        if (this.page == null) {
+            return null;
+        }
         return (this.page - 1) * this.size;
     }
 }

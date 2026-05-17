@@ -12,6 +12,7 @@ import com.bone.system.application.usecase.standard.ConfigByIdQueryUseCase;
 import com.bone.system.application.usecase.standard.ConfigByKeyQueryUseCase;
 import com.bone.system.application.usecase.standard.ConfigPageQueryUseCase;
 import com.bone.system.application.query.dto.ConfigDTO;
+import com.bone.core.web.PlatformApiPaths;
 import com.bone.system.common.result.ApiResponse;
 import com.bone.system.common.result.PageResult;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,7 +26,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @Tag(name = "系统配置", description = "系统配置管理接口")
 @RestController
-@RequestMapping("/api/system/config")
+@RequestMapping(PlatformApiPaths.SYSTEM_V1 + "/config")
 @RequiredArgsConstructor
 public class ConfigController {
     private final CreateConfigUseCase createConfigUseCase;
@@ -34,17 +35,18 @@ public class ConfigController {
     private final ConfigByIdQueryUseCase configByIdQueryUseCase;
     private final ConfigByKeyQueryUseCase configByKeyQueryUseCase;
     private final ConfigPageQueryUseCase configPageQueryUseCase;
+    private final ConfigWebConverter configWebConverter;
 
     @Operation(summary = "创建配置")
     @PostMapping
     public ApiResponse<Long> create(@Valid @RequestBody CreateConfigReq req) {
-        return ApiResponse.success(createConfigUseCase.execute(ConfigWebConverter.INSTANCE.toCmd(req)));
+        return ApiResponse.success(createConfigUseCase.execute(configWebConverter.toCmd(req)));
     }
 
     @Operation(summary = "更新配置")
     @PutMapping
     public ApiResponse<Void> update(@Valid @RequestBody UpdateConfigReq req) {
-        updateConfigUseCase.execute(ConfigWebConverter.INSTANCE.toCmd(req));
+        updateConfigUseCase.execute(configWebConverter.toCmd(req));
         return ApiResponse.success();
     }
 
@@ -59,20 +61,20 @@ public class ConfigController {
     @GetMapping("/{id}")
     public ApiResponse<ConfigResp> getById(@PathVariable Long id) {
         ConfigDTO dto = configByIdQueryUseCase.execute(id);
-        return ApiResponse.success(dto != null ? ConfigWebConverter.INSTANCE.toResp(dto) : null);
+        return ApiResponse.success(dto != null ? configWebConverter.toResp(dto) : null);
     }
 
     @Operation(summary = "根据配置键获取配置")
     @GetMapping("/key/{key}")
     public ApiResponse<ConfigResp> getByKey(@PathVariable String key) {
         ConfigDTO dto = configByKeyQueryUseCase.execute(key);
-        return ApiResponse.success(dto != null ? ConfigWebConverter.INSTANCE.toResp(dto) : null);
+        return ApiResponse.success(dto != null ? configWebConverter.toResp(dto) : null);
     }
 
     @Operation(summary = "分页查询配置列表")
     @GetMapping("/page")
     public ApiResponse<PageResult<ConfigResp>> page(ConfigPageReq req) {
-        PageResult<ConfigDTO> pageResult = configPageQueryUseCase.execute(ConfigWebConverter.INSTANCE.toQry(req));
-        return ApiResponse.success(pageResult.map(ConfigWebConverter.INSTANCE::toResp));
+        PageResult<ConfigDTO> pageResult = configPageQueryUseCase.execute(configWebConverter.toQry(req));
+        return ApiResponse.success(pageResult.map(configWebConverter::toResp));
     }
 }

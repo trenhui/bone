@@ -44,14 +44,14 @@ class SystemControllerTest {
         org.springframework.boot.actuate.health.Health health = org.springframework.boot.actuate.health.Health.up().build();
         when(healthEndpoint.health()).thenReturn(health);
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/system/health"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/system/health"))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.code").value(200));
     }
 
     @Test
     void testInfo() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/system/info"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/system/info"))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.code").value(200))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.data.name").value("bone-system"))
@@ -61,12 +61,12 @@ class SystemControllerTest {
 
     @Test
     void testMetrics() throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/system/metrics"))
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/system/metrics"))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.code").value(200))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.jvm.memory.used").exists())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.jvm.memory.max").exists())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.jvm.threads.live").exists())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.jvm.threads.daemon").exists());
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data['jvm.memory.used']").exists())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data['jvm.memory.max']").exists())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data['jvm.threads.live']").exists())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.data['jvm.threads.daemon']").exists());
     }
 }

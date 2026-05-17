@@ -6,6 +6,15 @@ import axios, { type AxiosResponse } from 'axios';
  * 契约：doc/design/modules/5. 扩展管理模块详细设计方案.md §5
  * PRD：doc/prd/BONE产品需求文档正式版.md §4.6
  */
+export type ProblemDetail = {
+  errorCode?: string;
+  status?: number;
+  detail?: string;
+  traceId?: string;
+  title?: string;
+  type?: string;
+};
+
 export type StudioApiResponse<T> = {
   code?: number;
   success: boolean;
@@ -13,6 +22,34 @@ export type StudioApiResponse<T> = {
   data: T;
   meta?: Record<string, unknown>;
 };
+
+/** 将 API 错误转为用户可读文案（含 traceId）。 */
+export function formatStudioError(error: unknown, fallback = '操作失败'): string {
+  if (error instanceof StudioApiError) {
+    return error.message;
+  }
+  if (error instanceof Error) {
+    return error.message || fallback;
+  }
+  return fallback;
+}
+
+export class StudioApiError extends Error {
+  readonly errorCode?: string;
+  readonly traceId?: string;
+  readonly httpStatus?: number;
+
+  constructor(
+    message: string,
+    opts?: { errorCode?: string; traceId?: string; httpStatus?: number },
+  ) {
+    super(message);
+    this.name = 'StudioApiError';
+    this.errorCode = opts?.errorCode;
+    this.traceId = opts?.traceId;
+    this.httpStatus = opts?.httpStatus;
+  }
+}
 
 /** 规范前缀，见 doc/architecture/Bone-API-规范.md §13.1 */
 const EXTENSION_BASE = '/v1/extension';
@@ -31,10 +68,56 @@ client.interceptors.request.use((config) => {
   return config;
 });
 
+function parseProblem(body: StudioApiResponse<unknown> | undefined): ProblemDetail | undefined {
+  const data = body?.data;
+  if (data && typeof data === 'object' && ('errorCode' in data || 'traceId' in data)) {
+    return data as ProblemDetail;
+  }
+  return undefined;
+}
+
+function toStudioError(
+  message: string,
+  body?: StudioApiResponse<unknown>,
+  httpStatus?: number,
+): StudioApiError {
+  const problem = parseProblem(body);
+  const traceId =
+    problem?.traceId ??
+    (typeof body?.meta?.traceId === 'string' ? body.meta.traceId : undefined);
+  const detail = problem?.detail ?? body?.message ?? message;
+  const errorCode = problem?.errorCode;
+  const suffix = traceId ? ` (traceId: ${traceId})` : '';
+  return new StudioApiError(`${detail}${suffix}`, {
+    errorCode,
+    traceId,
+    httpStatus: problem?.status ?? httpStatus ?? body?.code,
+  });
+}
+
+client.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const body = error.response?.data as StudioApiResponse<unknown> | undefined;
+    if (body) {
+      return Promise.reject(
+        toStudioError(body.message || '请求失败', body, error.response?.status),
+      );
+    }
+    const traceId = error.response?.headers?.['x-trace-id'] as string | undefined;
+    if (traceId) {
+      return Promise.reject(
+        new StudioApiError(`${error.message} (traceId: ${traceId})`, { traceId }),
+      );
+    }
+    return Promise.reject(error);
+  },
+);
+
 function assertSuccess<T>(response: AxiosResponse<StudioApiResponse<T>>): T {
   const body = response.data;
   if (body && body.success === false) {
-    throw new Error(body.message || '请求失败');
+    throw toStudioError(body.message || '请求失败', body as StudioApiResponse<unknown>);
   }
   return body?.data as T;
 }
@@ -110,7 +193,7 @@ export async function deleteExtPoint(id: number): Promise<void> {
     return;
   }
   if (res.data?.success === false) {
-    throw new Error(res.data.message || '删除失败');
+    throw toStudioError(res.data.message || '删除失败', res.data as StudioApiResponse<unknown>);
   }
 }
 
@@ -143,7 +226,7 @@ export async function deletePlugin(id: number): Promise<void> {
     return;
   }
   if (res.data?.success === false) {
-    throw new Error(res.data.message || '删除失败');
+    throw toStudioError(res.data.message || '删除失败', res.data as StudioApiResponse<unknown>);
   }
 }
 
@@ -253,12 +336,13 @@ export type ExecutionLogRow = {
 
 export type ExecutionLogPage = {
   records: ExecutionLogRow[];
-  total: number;
-  page: number;
-  size: number;
+  total?: number;
+  page?: number;
+  size?: number;
   pages?: number;
   hasNext?: boolean;
   hasPrevious?: boolean;
+  nextCursor?: string | null;
 };
 
 function unwrapPage<T>(data: T | { records?: T[]; list?: T[] }): T[] {
@@ -282,25 +366,79 @@ export async function getExtensionOverview(): Promise<SandboxConfig> {
   return assertSuccess(res);
 }
 
+export type AuditLogRow = {
+  id: number;
+  traceId?: string;
+  userId?: string;
+  action: string;
+  resourceType?: string;
+  resourceId?: string;
+  result: string;
+  detail?: string;
+  createdAt?: string;
+};
+
+export type AuditLogPage = {
+  records: AuditLogRow[];
+  nextCursor?: string | null;
+  hasNext?: boolean;
+};
+
+export async function listAuditLogs(params?: {
+  action?: string;
+  resourceType?: string;
+  cursor?: string;
+  limit?: number;
+}): Promise<AuditLogPage & { rows: AuditLogRow[] }> {
+  const res = await client.get<StudioApiResponse<AuditLogPage>>(`${EXTENSION_BASE}/audit-logs`, {
+    params: {
+      action: params?.action,
+      resourceType: params?.resourceType,
+      cursor: params?.cursor,
+      limit: params?.limit ?? 20,
+    },
+  });
+  const raw = assertSuccess(res);
+  const records = unwrapPage(raw);
+  return {
+    records,
+    rows: records,
+    nextCursor: raw.nextCursor ?? null,
+    hasNext: raw.hasNext,
+  };
+}
+
 export async function listExecutionLogs(params?: {
   pluginId?: number;
   status?: string;
+  cursor?: string;
+  limit?: number;
   page?: number;
   size?: number;
 }): Promise<ExecutionLogPage & { rows: ExecutionLogRow[] }> {
+  const query =
+    params?.page != null
+      ? { pluginId: params.pluginId, status: params.status, page: params.page, size: params.size ?? 20 }
+      : {
+          pluginId: params?.pluginId,
+          status: params?.status,
+          cursor: params?.cursor,
+          limit: params?.limit ?? 20,
+        };
   const res = await client.get<StudioApiResponse<ExecutionLogPage>>(`${EXTENSION_BASE}/execution-logs`, {
-    params,
+    params: query,
   });
   const raw = assertSuccess(res);
   const records = unwrapPage(raw);
   const page: ExecutionLogPage = {
     records,
-    total: raw.total ?? records.length,
-    page: raw.page ?? params?.page ?? 1,
-    size: raw.size ?? params?.size ?? 20,
+    total: raw.total,
+    page: raw.page,
+    size: raw.size ?? params?.limit ?? params?.size ?? 20,
     pages: raw.pages,
     hasNext: raw.hasNext,
     hasPrevious: raw.hasPrevious,
+    nextCursor: raw.nextCursor ?? null,
   };
   return { ...page, rows: records };
 }

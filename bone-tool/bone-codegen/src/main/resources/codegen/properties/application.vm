@@ -1,9 +1,0 @@
-server:
-    port: 48088
-
-spring:
-    application:
-        name: ${modelNameVar}-server
-    profiles:
-        active: local
-

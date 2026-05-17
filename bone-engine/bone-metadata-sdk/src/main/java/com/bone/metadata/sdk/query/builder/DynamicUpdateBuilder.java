@@ -6,6 +6,7 @@ import com.bone.metadata.sdk.domain.model.ColumnMetadata;
 import com.bone.metadata.sdk.domain.model.TableMetadata;
 import com.bone.metadata.sdk.domain.query.CompiledQuery;
 import com.bone.metadata.sdk.query.context.DynamicUpdateContext;
+import com.bone.metadata.sdk.support.util.SqlUtil;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -24,7 +25,7 @@ public class DynamicUpdateBuilder implements SqlQueryBuilder<DynamicUpdateContex
 
         for (ColumnMetadata c : table.getColumns()) {
             if (c.isPrimaryKey()) continue;
-            Object v = ReflectionUtil.getFieldValue(e, c.getFieldName());
+            Object v = SqlUtil.toJdbcParameter(ReflectionUtil.getFieldValue(e, c.getFieldName()));
             clauses.add(c.getName() + " = :" + c.getName());
             params.put(c.getName(), v);
         }
@@ -37,7 +38,7 @@ public class DynamicUpdateBuilder implements SqlQueryBuilder<DynamicUpdateContex
             });
         }
 
-        params.put(pk.getName(), ReflectionUtil.getFieldValue(e, pk.getFieldName()));
+        params.put(pk.getName(), SqlUtil.toJdbcParameter(ReflectionUtil.getFieldValue(e, pk.getFieldName())));
         if (clauses.isEmpty()) {
             throw new IllegalStateException("没有可更新字段");
         }

@@ -72,4 +72,8 @@ public class ApiResponse<T> implements Serializable {
     public static <T> ApiResponse<T> error(String message) {
         return new ApiResponse<>(500, message, null);
     }
+
+    public boolean isSuccess() {
+        return code == 200;
+    }
 }

@@ -1,6 +1,7 @@
 package com.bone.iam.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
+import com.bone.core.web.PlatformApiPaths;
 import com.bone.core.model.PageResult;
 import com.bone.iam.adapter.web.converter.AccountWebConverter;
 import com.bone.iam.adapter.web.dto.req.CreateAccountReq;
@@ -22,7 +23,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/iam/accounts")
+@RequestMapping(PlatformApiPaths.IAM_V1 + "/accounts")
 @RequiredArgsConstructor
 public class AccountController {
 

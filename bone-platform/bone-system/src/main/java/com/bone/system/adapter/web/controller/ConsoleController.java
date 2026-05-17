@@ -1,5 +1,6 @@
 package com.bone.system.adapter.web.controller;
 
+import com.bone.core.web.PlatformApiPaths;
 import com.bone.system.common.result.ApiResponse;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.swagger.v3.oas.annotations.Operation;
@@ -22,7 +23,7 @@ import java.util.Map;
  */
 @Tag(name = "控制台", description = "系统概览、服务状态、资源与快捷操作")
 @RestController
-@RequestMapping("/api/console")
+@RequestMapping(PlatformApiPaths.CONSOLE_V1)
 @RequiredArgsConstructor
 public class ConsoleController {
 

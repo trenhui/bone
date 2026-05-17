@@ -1,6 +1,7 @@
 package com.bone.iam.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
+import com.bone.core.web.PlatformApiPaths;
 import com.bone.core.model.PageResult;
 import com.bone.iam.application.command.cmd.AssignPermissionCmd;
 import com.bone.iam.application.command.cmd.CreateRoleCmd;
@@ -23,7 +24,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/iam/roles")
+@RequestMapping(PlatformApiPaths.IAM_V1 + "/roles")
 @RequiredArgsConstructor
 public class RoleController {
     private final CreateRoleUseCase createRoleUseCase;

@@ -107,10 +107,10 @@ VITE_API_BASE_URL=http://your-backend-api:8080
 
 应用使用以下主要 API 接口：
 
-- 系统配置：`/api/system/config`
-- 监控告警：`/api/system/metrics`, `/api/system/alerts`
-- 日志管理：`/api/system/logs`
-- 系统管理：`/api/system/info`, `/api/system/restart`, `/api/system/deploy`
+- 系统配置：`/api/v1/system/config`
+- 监控告警：`/api/v1/system/metrics`, `/api/v1/system/alert`
+- 日志管理：`/api/v1/system/logs`
+- 系统管理：`/api/v1/system/info`, `/api/v1/system/restart`, `/api/v1/system/deploy`
 
 ## 开发规范
 

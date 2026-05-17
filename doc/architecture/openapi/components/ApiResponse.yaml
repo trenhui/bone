@@ -11,8 +11,7 @@ properties:
     description: 与 HTTP 状态码一致；成功为 200
   message:
     type: string
-  data:
-    nullable: true
+  data: {}
   timestamp:
     type: string
     format: date-time

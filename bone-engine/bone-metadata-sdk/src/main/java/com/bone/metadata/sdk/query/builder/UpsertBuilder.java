@@ -5,6 +5,7 @@ import com.bone.core.util.ReflectionUtil;
 import com.bone.metadata.sdk.domain.model.ColumnMetadata;
 import com.bone.metadata.sdk.domain.query.CompiledQuery;
 import com.bone.metadata.sdk.query.context.UpsertContext;
+import com.bone.metadata.sdk.support.util.SqlUtil;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -46,7 +47,7 @@ public class UpsertBuilder implements SqlQueryBuilder<UpsertContext> {
 
         Map<String,Object> params = new LinkedHashMap<>();
         for (var c : cols) {
-            params.put(c.getName(), ReflectionUtil.getFieldValue(entity, c.getFieldName()));
+            params.put(c.getName(), SqlUtil.toJdbcParameter(ReflectionUtil.getFieldValue(entity, c.getFieldName())));
         }
         if (entity instanceof ExtensibleObject ext) {
             @SuppressWarnings("unchecked")
@@ -79,7 +80,7 @@ public class UpsertBuilder implements SqlQueryBuilder<UpsertContext> {
 
         Map<String,Object> params = new LinkedHashMap<>();
         for (var c : cols) {
-            params.put(c.getName(), ReflectionUtil.getFieldValue(entity, c.getFieldName()));
+            params.put(c.getName(), SqlUtil.toJdbcParameter(ReflectionUtil.getFieldValue(entity, c.getFieldName())));
         }
         if (entity instanceof ExtensibleObject ext) {
             @SuppressWarnings("unchecked")

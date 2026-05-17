@@ -1,9 +1,12 @@
 package com.bone.engine.extension.studio.service;
 
+import com.bone.core.model.PageResult;
 import com.bone.engine.extension.studio.domain.model.Extension;
 import com.bone.engine.extension.studio.domain.model.PluginExecutionLog;
 import com.bone.engine.extension.studio.domain.store.ExtensionStore;
 import com.bone.engine.extension.studio.domain.store.PluginExecutionLogStore;
+import com.bone.engine.extension.studio.util.CursorCodec;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -87,6 +90,46 @@ public class PluginExecutionLogService {
             return List.of();
         }
         return base.subList(from, to);
+    }
+
+    public PageResult<PluginExecutionLog> queryByCursor(Long pluginId, String status, String cursor, int limit) {
+        int safeLimit = Math.min(100, Math.max(1, limit));
+        List<PluginExecutionLog> sorted = sortedFiltered(pluginId, status);
+        Long afterId = CursorCodec.decode(cursor);
+        List<PluginExecutionLog> page = sorted.stream()
+                .filter(log -> afterId == null || (log.getId() != null && log.getId() < afterId))
+                .limit(safeLimit + 1L)
+                .toList();
+        String nextCursor = null;
+        List<PluginExecutionLog> records;
+        if (page.size() > safeLimit) {
+            records = page.subList(0, safeLimit);
+            Long lastId = records.get(records.size() - 1).getId();
+            nextCursor = CursorCodec.encode(lastId);
+        } else {
+            records = page;
+        }
+        return PageResult.cursorOf(records, nextCursor, safeLimit);
+    }
+
+    private List<PluginExecutionLog> sortedFiltered(Long pluginId, String status) {
+        List<PluginExecutionLog> base;
+        if (pluginId != null) {
+            base = logStore.findByPluginId(pluginId);
+        } else if (StringUtils.hasText(status)) {
+            base = logStore.findByStatus(status);
+        } else {
+            base = logStore.findAll();
+        }
+        if (pluginId != null && StringUtils.hasText(status)) {
+            base = base.stream()
+                    .filter(l -> status.equalsIgnoreCase(l.getStatus()))
+                    .collect(Collectors.toList());
+        }
+        return base.stream()
+                .sorted(Comparator.comparing(PluginExecutionLog::getId, Comparator.nullsLast(Comparator.reverseOrder()))
+                        .thenComparing(PluginExecutionLog::getCreatedAt, Comparator.reverseOrder()))
+                .collect(Collectors.toList());
     }
 
     public long count(Long pluginId, String status) {

@@ -1,6 +1,7 @@
 package com.bone.studio.generator.domain.data;
 
 import com.bone.core.domain.AggregateRoot;
+import com.bone.metadata.sdk.domain.annotation.Column;
 import com.bone.metadata.sdk.domain.annotation.Table;
 
 import java.time.LocalDateTime;
@@ -17,7 +18,8 @@ public class CodeTemplate extends AggregateRoot<Long> {
     private String type;
     private String language;
     private String engine;
-    private String version;
+    @Column(name = "template_version")
+    private String templateVersion;
     private String content;
     private String sampleOutput;
     private String status;
@@ -27,7 +29,7 @@ public class CodeTemplate extends AggregateRoot<Long> {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private boolean deleted;
-    private int versionLock;
+    private int version;
 
     private CodeTemplate() {
     }
@@ -43,13 +45,13 @@ public class CodeTemplate extends AggregateRoot<Long> {
         template.type = type;
         template.language = "java";
         template.engine = "FREEMARKER";
-        template.version = "1.0.0";
+        template.templateVersion = "1.0.0";
         template.content = content;
         template.status = "DRAFT";
         template.createdAt = LocalDateTime.now();
         template.updatedAt = LocalDateTime.now();
         template.deleted = false;
-        template.versionLock = 0;
+        template.version = 0;
         return template;
     }
 
@@ -57,7 +59,7 @@ public class CodeTemplate extends AggregateRoot<Long> {
         this.status = "PUBLISHED";
         this.publishedAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
-        this.versionLock++;
+        this.version++;
     }
 
     public void updateContent(String content) {
@@ -98,8 +100,8 @@ public class CodeTemplate extends AggregateRoot<Long> {
         return engine;
     }
 
-    public String getVersion() {
-        return version;
+    public String getTemplateVersion() {
+        return templateVersion;
     }
 
     public String getContent() {
@@ -138,8 +140,8 @@ public class CodeTemplate extends AggregateRoot<Long> {
         return deleted;
     }
 
-    public int getVersionLock() {
-        return versionLock;
+    public int getVersion() {
+        return version;
     }
 
     public static class Builder {
@@ -151,7 +153,7 @@ public class CodeTemplate extends AggregateRoot<Long> {
         private String type;
         private String language;
         private String engine;
-        private String version;
+        private String templateVersion;
         private String content;
         private String sampleOutput;
         private String status;
@@ -161,7 +163,7 @@ public class CodeTemplate extends AggregateRoot<Long> {
         private LocalDateTime createdAt;
         private LocalDateTime updatedAt;
         private boolean deleted;
-        private int versionLock;
+        private int version;
 
         public Builder id(Long id) {
             this.id = id;
@@ -203,8 +205,8 @@ public class CodeTemplate extends AggregateRoot<Long> {
             return this;
         }
 
-        public Builder version(String version) {
-            this.version = version;
+        public Builder templateVersion(String templateVersion) {
+            this.templateVersion = templateVersion;
             return this;
         }
 
@@ -253,8 +255,8 @@ public class CodeTemplate extends AggregateRoot<Long> {
             return this;
         }
 
-        public Builder versionLock(int versionLock) {
-            this.versionLock = versionLock;
+        public Builder version(int version) {
+            this.version = version;
             return this;
         }
 
@@ -268,7 +270,7 @@ public class CodeTemplate extends AggregateRoot<Long> {
             template.type = type;
             template.language = language;
             template.engine = engine;
-            template.version = version;
+            template.templateVersion = templateVersion;
             template.content = content;
             template.sampleOutput = sampleOutput;
             template.status = status;
@@ -278,7 +280,7 @@ public class CodeTemplate extends AggregateRoot<Long> {
             template.createdAt = createdAt;
             template.updatedAt = updatedAt;
             template.deleted = deleted;
-            template.versionLock = versionLock;
+            template.version = version;
             return template;
         }
     }

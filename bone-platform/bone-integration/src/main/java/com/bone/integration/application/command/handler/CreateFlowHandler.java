@@ -3,6 +3,7 @@ package com.bone.integration.application.command.handler;
 import com.bone.core.usecase.Capability;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.integration.application.command.cmd.CreateFlowCmd;
+import com.bone.integration.application.event.IntegrationDomainEventPublisher;
 import com.bone.integration.domain.flow.FlowConnection;
 import com.bone.integration.domain.flow.FlowNode;
 import com.bone.integration.domain.flow.IntegrationFlow;
@@ -34,6 +35,7 @@ public class CreateFlowHandler {
     private final FlowNodeRepository nodeRepository;
     private final FlowConnectionRepository connectionRepository;
     private final FlowService flowService;
+    private final IntegrationDomainEventPublisher domainEventPublisher;
 
     @Transactional
     public Long handle(CreateFlowCmd cmd) {
@@ -70,6 +72,7 @@ public class CreateFlowHandler {
                 .toList();
         connectionRepository.batchSave(connections);
 
+        domainEventPublisher.publishFrom(flow);
         return flow.getId();
     }
 }

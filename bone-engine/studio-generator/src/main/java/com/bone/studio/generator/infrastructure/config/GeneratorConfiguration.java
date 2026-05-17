@@ -26,8 +26,4 @@ public class GeneratorConfiguration {
         return config;
     }
 
-    @Bean
-    public com.bone.studio.generator.domain.service.CodeGeneratorService codeGeneratorService(com.bone.studio.generator.domain.repository.DataSourceRepository dataSourceRepository) {
-        return new com.bone.studio.generator.infrastructure.service.CodeGeneratorServiceImpl(dataSourceRepository);
-    }
 }

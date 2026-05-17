@@ -205,7 +205,7 @@ function App() {
     // 说明：这里先打通最小闭环（主应用登录 -> token 落地 -> 进入 IAM 微应用）
     setRequirePasswordChange(false);
     try {
-      const resp = await axios.post('/api/iam/login', {
+      const resp = await axios.post('/api/v1/iam/login', {
         username: values.username,
         password: values.password,
       });
@@ -232,7 +232,7 @@ function App() {
   // 退出登录
   const handleLogout = async () => {
     try {
-      await axios.post('/api/iam/logout');
+      await axios.post('/api/v1/iam/logout');
     } catch {
       // JWT 模式下后端可无状态，失败也不影响前端清理
     } finally {

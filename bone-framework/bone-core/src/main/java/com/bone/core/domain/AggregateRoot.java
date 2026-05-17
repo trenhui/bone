@@ -1,5 +1,6 @@
 package com.bone.core.domain;
 
+import com.bone.core.annotation.Transient;
 import com.bone.core.domain.entity.Entity;
 import lombok.Getter;
 
@@ -18,6 +19,7 @@ public abstract class AggregateRoot<ID> extends Entity<ID> {
     /**
      * 领域事件列表
      */
+    @Transient
     private final List<DomainEvent> domainEvents = new ArrayList<>();
 
     /**

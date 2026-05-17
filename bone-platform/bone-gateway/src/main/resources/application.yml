@@ -1,0 +1,58 @@
+server:
+  port: ${BONE_GATEWAY_PORT:8888}
+
+spring:
+  application:
+    name: bone-gateway
+  cloud:
+    gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_FIRST
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:3000"
+              - "http://localhost:3008"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+      routes:
+        - id: extension-studio
+          uri: ${BONE_EXTENSION_STUDIO_URI:http://localhost:8088}
+          predicates:
+            - Path=/api/v1/extension/**
+        - id: bone-iam
+          uri: ${BONE_IAM_URI:http://localhost:8081}
+          predicates:
+            - Path=/api/v1/iam/**
+        - id: bone-masterdata
+          uri: ${BONE_MASTERDATA_URI:http://localhost:8080}
+          predicates:
+            - Path=/api/v1/masterdata/**
+        - id: bone-system
+          uri: ${BONE_SYSTEM_URI:http://localhost:8083}
+          predicates:
+            - Path=/api/v1/system/**
+        - id: bone-console
+          uri: ${BONE_SYSTEM_URI:http://localhost:8083}
+          predicates:
+            - Path=/api/v1/console/**
+        - id: bone-integration
+          uri: ${BONE_INTEGRATION_URI:http://localhost:8085}
+          predicates:
+            - Path=/api/v1/integration/**
+        - id: studio-generator
+          uri: ${BONE_GENERATOR_URI:http://localhost:8085}
+          predicates:
+            - Path=/api/v1/generator/**
+        - id: bone-metadata-server
+          uri: ${BONE_METADATA_SERVER_URI:http://localhost:9001}
+          predicates:
+            - Path=/api/v1/metadata/**
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

@@ -16,7 +16,6 @@ COPY bone-framework/pom.xml bone-framework/
 COPY bone-engine/pom.xml bone-engine/
 COPY bone-platform/pom.xml bone-platform/
 COPY bone-sdk/pom.xml bone-sdk/
-COPY bone-tool/pom.xml bone-tool/
 
 # 下载依赖（利用缓存层）
 RUN mvn dependency:go-offline -B -q || true

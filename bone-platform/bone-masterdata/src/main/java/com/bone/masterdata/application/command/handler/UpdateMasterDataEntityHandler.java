@@ -3,7 +3,7 @@ package com.bone.masterdata.application.command.handler;
 import com.bone.core.usecase.Capability;
 import com.bone.masterdata.application.command.cmd.UpdateMasterDataEntityCmd;
 import com.bone.masterdata.domain.entity.MasterDataEntity;
-import com.bone.masterdata.domain.entity.vo.MasterDataEntityName;
+import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityName;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
 import com.bone.core.exception.BizException;
 import com.bone.core.exception.NotFoundException;

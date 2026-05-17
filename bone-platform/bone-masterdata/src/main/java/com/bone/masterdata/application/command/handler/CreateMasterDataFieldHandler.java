@@ -4,8 +4,8 @@ import com.bone.core.usecase.Capability;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.masterdata.application.command.cmd.CreateMasterDataFieldCmd;
 import com.bone.masterdata.domain.entity.MasterDataField;
-import com.bone.masterdata.domain.entity.vo.FieldCode;
-import com.bone.masterdata.domain.entity.vo.FieldName;
+import com.bone.masterdata.domain.model.field.vo.FieldCode;
+import com.bone.masterdata.domain.model.field.vo.FieldName;
 import com.bone.masterdata.domain.repository.MasterDataFieldRepository;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;
@@ -40,7 +40,8 @@ public class CreateMasterDataFieldHandler {
 
         boolean exists = QueryBuilder.from(MasterDataField.class)
                 .where(MasterDataField::getMasterDataEntityId).eq(cmd.getMasterDataEntityId())
-                .and(MasterDataField::getName).eq(cmd.getName())
+                .and(MasterDataField::getName)
+                .eq(FieldName.of(cmd.getName()))
                 .exists();
         if (exists) {
             throw BizException.of("字段名称已存在");
@@ -60,6 +61,6 @@ public class CreateMasterDataFieldHandler {
                 0
         );
 
-        return fieldRepository.save(field).getId();
+        return fieldRepository.save(field);
     }
 }

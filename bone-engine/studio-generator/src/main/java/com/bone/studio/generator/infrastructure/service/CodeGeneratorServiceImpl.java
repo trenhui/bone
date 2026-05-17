@@ -6,6 +6,8 @@ import com.bone.studio.generator.domain.code.GeneratedFile;
 import com.bone.studio.generator.domain.data.DataSource;
 import com.bone.studio.generator.domain.data.DatabaseTable;
 import com.bone.studio.generator.domain.data.TableColumn;
+import com.bone.studio.generator.domain.catalog.MetadataSourceType;
+import com.bone.studio.generator.domain.gateway.CatalogMetadataGateway;
 import com.bone.studio.generator.domain.repository.DataSourceRepository;
 import com.bone.studio.generator.domain.service.CodeGeneratorService;
 import org.springframework.stereotype.Service;
@@ -22,9 +24,13 @@ import java.util.stream.Collectors;
 public class CodeGeneratorServiceImpl implements CodeGeneratorService {
 
     private final DataSourceRepository dataSourceRepository;
+    private final CatalogMetadataGateway catalogMetadataGateway;
 
-    public CodeGeneratorServiceImpl(DataSourceRepository dataSourceRepository) {
+    public CodeGeneratorServiceImpl(
+            DataSourceRepository dataSourceRepository,
+            CatalogMetadataGateway catalogMetadataGateway) {
         this.dataSourceRepository = dataSourceRepository;
+        this.catalogMetadataGateway = catalogMetadataGateway;
     }
 
     @Override
@@ -33,17 +39,8 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
         List<GeneratedFile> generatedFiles = new ArrayList<>();
         
         try {
-            // 1. 加载表结构（如果指定了数据源）
-            List<DatabaseTable> tables = new ArrayList<>();
-            if (request.getDataSourceId() != null && !request.getDataSourceId().isEmpty()) {
-                tables = loadTables(request.getDataSourceId());
-                // 过滤出指定的表
-                if (request.getTableNames() != null && !request.getTableNames().isEmpty()) {
-                    tables = tables.stream()
-                            .filter(table -> request.getTableNames().contains(table.getTableName()))
-                            .collect(Collectors.toList());
-                }
-            }
+            // 1. 加载表结构：目录快照 或 物理库反向
+            List<DatabaseTable> tables = resolveTables(request);
             
             // 2. 生成代码
             for (DatabaseTable table : tables) {
@@ -114,8 +111,42 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
     }
 
     @Override
+    public List<DatabaseTable> loadCatalogTables(Long tenantId, List<String> entityCodes) {
+        return catalogMetadataGateway.loadPublishedSnapshots(tenantId, entityCodes);
+    }
+
+    private List<DatabaseTable> resolveTables(CodeGenerationRequest request) {
+        if (request.getMetadataSource() == MetadataSourceType.CATALOG_SNAPSHOT) {
+            List<DatabaseTable> tables =
+                    catalogMetadataGateway.loadPublishedSnapshots(
+                            request.getTenantId(), request.getEntityCodes());
+            if (request.getEntityCodes() != null && !request.getEntityCodes().isEmpty()) {
+                return tables;
+            }
+            if (request.getTableNames() != null && !request.getTableNames().isEmpty()) {
+                return tables.stream()
+                        .filter(t -> request.getTableNames().contains(t.getTableName()))
+                        .collect(Collectors.toList());
+            }
+            return tables;
+        }
+        List<DatabaseTable> tables = new ArrayList<>();
+        if (request.getDataSourceId() != null && !request.getDataSourceId().isEmpty()) {
+            tables = loadTables(request.getDataSourceId());
+            if (request.getTableNames() != null && !request.getTableNames().isEmpty()) {
+                tables =
+                        tables.stream()
+                                .filter(table -> request.getTableNames().contains(table.getTableName()))
+                                .collect(Collectors.toList());
+            }
+        }
+        return tables;
+    }
+
+    @Override
     public List<DatabaseTable> loadTables(String dataSourceId) {
-        DataSource dataSource = dataSourceRepository.findById(dataSourceId);
+        DataSource dataSource = dataSourceRepository.findById(
+                com.bone.studio.generator.common.StudioIds.parseRequired(dataSourceId));
         if (dataSource == null) {
             throw new IllegalArgumentException("数据源不存在: " + dataSourceId);
         }
@@ -525,6 +556,10 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
                 return "Double";
             case "float":
                 return "Float";
+            case "string":
+                return "String";
+            case "long":
+                return "Long";
             default:
                 return "String";
         }

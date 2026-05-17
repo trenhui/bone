@@ -1,28 +1,30 @@
 spring:
+  application:
+    name: bone-masterdata-test
   datasource:
-    url: jdbc:mysql://localhost:3306/bone?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
-    username: root
-    password: 123456
-    driver-class-name: com.mysql.cj.jdbc.Driver
-  jpa:
-    hibernate:
-      ddl-auto: create-drop
-    show-sql: true
-    properties:
-      hibernate.format_sql: true
-  redis:
-    host: localhost
-    port: 6379
-    password: 
-    database: 0
+    url: jdbc:h2:mem:bone_masterdata_test;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-test.sql
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
 
-server:
-  port: 8083
-
-mybatis:
-  mapper-locations: classpath:mapper/**/*.xml
-  type-aliases-package: com.bone.masterdata.domain.model
+metadata:
+  sdk:
+    appcode: bone-masterdata-test
+    deployment-mode: EMBEDDED
+    sql:
+      database:
+        type: H2
+        auto-detect-dialect: true
 
 logging:
   level:
-    com.bone: debug
+    com.bone: warn
+    org.springframework: warn

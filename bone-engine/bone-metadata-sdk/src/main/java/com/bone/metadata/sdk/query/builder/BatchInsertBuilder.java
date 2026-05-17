@@ -5,6 +5,7 @@ import com.bone.core.util.ReflectionUtil;
 import com.bone.metadata.sdk.domain.model.ColumnMetadata;
 import com.bone.metadata.sdk.domain.query.BatchCompiledQuery;
 import com.bone.metadata.sdk.query.context.BatchInsertContext;
+import com.bone.metadata.sdk.support.util.SqlUtil;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -28,7 +29,7 @@ public class BatchInsertBuilder implements BatchQueryBuilder<BatchInsertContext>
         for(var e:ents){
             var m = new LinkedHashMap<String,Object>();
             for(var c:cols){
-                m.put(c.getName(), ReflectionUtil.getFieldValue(e,c.getFieldName()));
+                m.put(c.getName(), SqlUtil.toJdbcParameter(ReflectionUtil.getFieldValue(e, c.getFieldName())));
             }
             // 扩展属性
             if(e instanceof ExtensibleObject ext){

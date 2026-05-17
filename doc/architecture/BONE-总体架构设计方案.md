@@ -386,7 +386,7 @@ flowchart TD
 | 框架 | `bone-framework/*` |
 | DDD 蓝图 | `bone-blueprint/`（是否纳入根 `pom.xml` 以仓库为准） |
 
-**易混点**：引擎与平台下可能存在同名业务域（如 integration），文档、日志与监控指标须用 **全限定模块名**。`bone-iam` 默认 HTTP 端口以 **`bone-platform/bone-iam/src/main/resources/application.yml` 中 `server.port` 为准**（当前仓库为 **8081**），勿与 `bone-masterdata` / `bone-extension-studio` 的 **8080** 混用。**各模块默认端口总表**见 [doc/wiki/03-本地开发与构建.md](../wiki/03-本地开发与构建.md)「常见服务端口」；根 [README.md](../../README.md) 快速开始中的 **8080** 为营销/演示入口示意，非 IAM 真源。
+**易混点**：引擎与平台下可能存在同名业务域（如 integration），文档、日志与监控指标须用 **全限定模块名**。`bone-iam` 默认 HTTP 端口以 **`bone-platform/bone-iam/src/main/resources/application.yml` 中 `server.port` 为准**（当前仓库为 **8081**），勿与 `bone-masterdata` 的 **8080**、`bone-extension-studio` 的 **8088** 等混用（全表见 wiki/03）。**各模块默认端口总表**见 [doc/wiki/03-本地开发与构建.md](../wiki/03-本地开发与构建.md)「常见服务端口」；根 [README.md](../../README.md) 快速开始中的 **8080** 为营销/演示入口示意，非 IAM 真源。
 
 ---
 
@@ -416,21 +416,21 @@ flowchart TD
 
 | API 路径 | 方法 | 功能 | 权限 |
 |----------|------|------|------|
-| `/api/iam/login` | POST | 登录 | 匿名 |
-| `/api/iam/logout` | POST | 登出 | 已认证 |
-| `/api/iam/refresh` | POST | 刷新令牌 | 已认证 |
-| `/api/iam/users` | GET/POST | 用户列表/创建 | 管理员 |
-| `/api/iam/users/{id}` | PUT/DELETE | 更新/删除用户 | 管理员 |
-| `/api/iam/roles` | GET/POST | 角色 | 管理员 |
-| `/api/iam/roles/{id}` | PUT/DELETE | 更新/删除角色 | 管理员 |
-| `/api/iam/roles/{id}/permissions` | POST | 分配权限 | 管理员 |
-| `/api/iam/permissions` | GET | 权限列表 | 管理员 |
-| `/api/iam/sso/config` | POST | SSO 配置 | 管理员 |
-| `/api/iam/audit/logs` | GET | 审计日志 | 管理员 |
+| `/api/v1/iam/login` | POST | 登录 | 匿名 |
+| `/api/v1/iam/logout` | POST | 登出 | 已认证 |
+| `/api/v1/iam/refresh` | POST | 刷新令牌 | 已认证 |
+| `/api/v1/iam/accounts` | GET/POST | 账号列表/创建 | 管理员 |
+| `/api/v1/iam/accounts/{id}` | PUT/DELETE | 更新/删除账号 | 管理员 |
+| `/api/v1/iam/roles` | GET/POST | 角色 | 管理员 |
+| `/api/v1/iam/roles/{id}` | PUT/DELETE | 更新/删除角色 | 管理员 |
+| `/api/v1/iam/roles/{id}/permissions` | POST | 分配权限 | 管理员 |
+| `/api/v1/iam/permissions` | GET | 权限列表 | 管理员 |
+| `/api/v1/iam/sso/config` | POST | SSO 配置 | 管理员 |
+| `/api/v1/iam/audit/logs` | GET | 审计日志 | 管理员 |
 
 #### 8.3.2 元数据
 
-> **分 As-Is / Vision**（真源：[元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §5）。**As-Is**：`bone-metadata-server` :9001 上 `POST/GET /v1/metadata/fields:*`（扩展字段 EAV）。**Vision / MVP-2 catalog** 下表；建模字段**嵌套**在实体下，避免与 EAV `fields:*` 冲突。
+> **分 As-Is / Vision**（真源：[元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §5）。**As-Is**：`bone-metadata-server` :9001 上 `POST/GET /api/v1/metadata/fields:*`（扩展字段 EAV）及 catalog REST。**Vision** 下表模板等；建模字段**嵌套**在实体下，避免与 EAV `fields:*` 冲突。
 
 | API 路径 | 方法 | 功能 |
 |----------|------|------|
@@ -450,15 +450,13 @@ flowchart TD
 
 | API 路径 | 方法 | 功能 |
 |----------|------|------|
-| `/api/masterdata/entities` | GET/POST | 主数据实体 |
-| `/api/masterdata/entities/{id}` | PUT/DELETE | 实体维护 |
-| `/api/masterdata/rules` | GET/POST | 质量规则 |
-| `/api/masterdata/rules/{id}` | PUT/DELETE | 规则维护 |
-| `/api/masterdata/records` | GET/POST | 记录/导入 |
-| `/api/masterdata/records/{id}` | PUT/DELETE | 记录维护 |
-| `/api/masterdata/records/{id}/publish` | POST | 发布记录 |
-| `/api/masterdata/quality` | GET | 质量报告 |
-| `/api/masterdata/quality/check` | POST | 执行质检 |
+| `/api/v1/masterdata/entities` | GET/POST | 主数据实体 |
+| `/api/v1/masterdata/entities/{id}` | PUT | 实体维护 |
+| `/api/v1/masterdata/fields` | GET/POST | 字段 |
+| `/api/v1/masterdata/records` | GET/POST | 记录/导入 |
+| `/api/v1/masterdata/records/{id}/publish` | POST | 发布记录 |
+| `/api/v1/masterdata/quality/rules` | GET/POST | 质量规则 |
+| `/api/v1/masterdata/quality/check` | POST | 执行质检 |
 
 #### 8.3.4 扩展
 
@@ -475,31 +473,31 @@ flowchart TD
 
 | API 路径 | 方法 | 功能 |
 |----------|------|------|
-| `/api/integration/connectors` | GET/POST | 连接器 |
-| `/api/integration/connectors/{id}` | PUT/DELETE | 连接器维护 |
-| `/api/integration/connectors/{id}/test` | POST | 测试连接 |
-| `/api/integration/flows` | GET/POST | 流程 |
-| `/api/integration/flows/{id}` | PUT/DELETE | 流程维护 |
-| `/api/integration/flows/{id}/test` | POST | 测试流程 |
-| `/api/integration/flows/{id}/activate` | POST | 激活 |
-| `/api/integration/flows/{id}/deactivate` | POST | 停用 |
-| `/api/integration/executions` | GET | 执行记录 |
-| `/api/integration/executions/{id}/logs` | GET | 执行日志 |
+| `/api/v1/integration/connectors` | GET/POST | 连接器 |
+| `/api/v1/integration/connectors/{id}` | PUT/DELETE | 连接器维护 |
+| `/api/v1/integration/connectors/{id}/test` | POST | 测试连接 |
+| `/api/v1/integration/flows` | GET/POST | 流程 |
+| `/api/v1/integration/flows/{id}` | PUT/DELETE | 流程维护 |
+| `/api/v1/integration/flows/{id}/test` | POST | 测试流程 |
+| `/api/v1/integration/flows/{id}/activate` | POST | 激活 |
+| `/api/v1/integration/flows/{id}/deactivate` | POST | 停用 |
+| `/api/v1/integration/executions` | GET | 执行记录 |
+| `/api/v1/integration/executions/{id}/logs` | GET | 执行日志 |
 
 #### 8.3.6 系统管理
 
 | API 路径 | 方法 | 功能 |
 |----------|------|------|
-| `/api/system/config` | GET/PUT | 系统配置 |
-| `/api/system/health` | GET | 健康检查 |
-| `/api/system/metrics` | GET | 指标 |
-| `/api/system/alerts` | GET/POST | 告警规则 |
-| `/api/system/alerts/{id}` | PUT/DELETE | 规则维护 |
-| `/api/system/logs` | GET | 系统日志 |
+| `/api/v1/system/config` | GET/PUT | 系统配置 |
+| `/api/v1/system/health` | GET | 健康检查 |
+| `/api/v1/system/metrics` | GET | 指标 |
+| `/api/v1/system/alert` | GET/POST | 告警规则 [As-Is 单数] |
+| `/api/v1/system/alert/{id}` | PUT/DELETE | 规则维护 |
+| `/api/v1/system/logs` | GET | 系统日志 |
 
 ### 8.4 领域事件与消息 Topic 规范
 
-> **放置说明**：Topic 属于**平台事件总线与跨服务集成**，写在总体架构；**HTTP 契约测试**见 **[Bone-API-规范.md](./Bone-API-规范.md) §15**。出站 Webhook 签名与重试见 API 规范 **§14.5**。
+> **可执行真源**：**[Bone-消息与事件规范.md](./Bone-消息与事件规范.md)**（Topic 命名、信封、注册表、DLQ、Webhook）。下列为摘要；**HTTP 契约测试**见 **[Bone-API-规范.md](./Bone-API-规范.md) §15**。
 
 #### 8.4.1 Topic 命名
 
@@ -1010,7 +1008,7 @@ sequenceDiagram
     participant QM as 质量管理
     participant DB as 数据库
 
-    C->>GW: POST /api/masterdata/records
+    C->>GW: POST /api/v1/masterdata/records
     GW->>MS: 转发
     MS->>RM: 创建记录
     RM->>DB: 保存
@@ -1147,7 +1145,7 @@ components:
 
 | 上下文 | 服务名（规划） | API 前缀（规划） | 逻辑库名 | 端口（规划示例） |
 |--------|----------------|------------------|----------|------------------|
-| 元数据（规划） | metadata-service | /api/v1/metadata（实体等 Vision） | metadata_db | **9001**（As-Is：`bone-metadata-server` 扩展字段；8081 常为 **bone-iam**） |
+| 元数据 | bone-metadata-server | `/api/v1/metadata/**`（EAV + catalog） | metadata_db | **9001** |
 | 权限 | authz-service | /api/v1/authz | authz_db | 8082 |
 | 集成 | integration-service | /api/v1/integration | integration_db | 8083 |
 | 扩展 | extension-service | /api/v1/extension | extension_db | 8084 |

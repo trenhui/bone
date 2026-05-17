@@ -37,7 +37,7 @@ class CodeTemplateControllerTest {
 
     @jakarta.annotation.PostConstruct
     void setUp() {
-        baseUrl = "http://localhost:" + port + "/api/code-templates";
+        baseUrl = "http://localhost:" + port + "/api/v1/generator/code-templates";
     }
 
     @Test

@@ -16,6 +16,7 @@ import type { ColumnsType } from 'antd/es/table';
 import {
   createExtPoint,
   deleteExtPoint,
+  formatStudioError,
   listExtPoints,
   postExtPointEnable,
   updateExtPoint,
@@ -35,7 +36,7 @@ const ExtensionPointManagement: React.FC = () => {
     try {
       setRows(await listExtPoints());
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '加载扩展点失败');
+      message.error(formatStudioError(e, '加载扩展点失败'));
     } finally {
       setLoading(false);
     }
@@ -78,7 +79,7 @@ const ExtensionPointManagement: React.FC = () => {
       setModalOpen(false);
       load();
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '保存失败');
+      message.error(formatStudioError(e, '保存失败'));
     }
   };
 
@@ -88,7 +89,7 @@ const ExtensionPointManagement: React.FC = () => {
       message.success(enable ? '已启用' : '已禁用');
       load();
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '操作失败');
+      message.error(formatStudioError(e, '操作失败'));
     }
   };
 
@@ -98,7 +99,7 @@ const ExtensionPointManagement: React.FC = () => {
       message.success('已删除');
       load();
     } catch (e) {
-      message.error(e instanceof Error ? e.message : '删除失败');
+      message.error(formatStudioError(e, '删除失败'));
     }
   };
 

@@ -3,7 +3,7 @@ package com.bone.masterdata.adapter.web.dto.resp;
 import lombok.Builder;
 import lombok.Data;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -13,6 +13,7 @@ public class MasterDataRecordDetailResp {
     private String data;
     private String status;
     private Integer version;
-    private Date createdAt;
-    private Date updatedAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private LocalDateTime publishTime;
 }

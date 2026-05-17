@@ -26,7 +26,7 @@ bone/
 ├── bone-platform/        # 平台模块（iam/system/audit）
 ├── bone-blueprint/       # DDD 架构蓝图（最佳实践参考）
 ├── bone-sdk/             # SDK 客户端
-├── bone-tool/            # 工具集（codegen）
+├── bone-engine/studio-generator/  # Studio 代码生成服务
 └── bone-frontend/        # 前端 Monorepo（React 18 + Ant Design 5）
     ├── apps/bone-shell/     # 主应用入口
     ├── apps/bone-iam-app/   # IAM 子应用

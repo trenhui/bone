@@ -2,8 +2,12 @@ package com.bone.engine.extension.studio.infrastructure.persistence;
 
 import com.bone.engine.extension.studio.domain.model.ExtPoint;
 import com.bone.engine.extension.studio.domain.model.Extension;
+import com.bone.engine.extension.studio.domain.model.StudioAuditEntry;
 import com.bone.engine.extension.studio.domain.store.ExtPointStore;
 import com.bone.engine.extension.studio.domain.store.ExtensionStore;
+import com.bone.engine.extension.studio.domain.store.StudioAuditStore;
+import com.bone.engine.extension.studio.infrastructure.persistence.entity.ExtStudioAuditLog;
+import com.bone.engine.extension.studio.infrastructure.persistence.repository.ExtStudioAuditLogRepository;
 import com.bone.engine.extension.studio.infrastructure.persistence.repository.ExtStudioExtensionImplRepository;
 import com.bone.engine.extension.studio.infrastructure.persistence.repository.ExtStudioExtensionPointRepository;
 import org.junit.jupiter.api.Test;
@@ -31,6 +35,12 @@ class MetadataPersistenceIntegrationTest {
 
     @Autowired
     private ExtStudioExtensionImplRepository extensionRepository;
+
+    @Autowired
+    private StudioAuditStore auditStore;
+
+    @Autowired
+    private ExtStudioAuditLogRepository auditLogRepository;
 
     @Test
     void contextLoadsRepositoriesAndStores() {
@@ -73,5 +83,22 @@ class MetadataPersistenceIntegrationTest {
         assertNotNull(reloaded);
         assertFalse(reloaded.isEnabled());
         assertTrue(reloaded.getConfig().contains("traffic"));
+    }
+
+    @Test
+    void auditLogPersistedThroughMetadataSdk() {
+        StudioAuditEntry entry = new StudioAuditEntry();
+        entry.setTraceId("meta-test-trace");
+        entry.setAction("plugin.deploy");
+        entry.setResourceType("plugin");
+        entry.setResourceId("99");
+        entry.setResult("SUCCESS");
+        auditStore.save(entry);
+        assertNotNull(entry.getId());
+
+        ExtStudioAuditLog row = auditLogRepository.findById(entry.getId());
+        assertNotNull(row);
+        assertEquals("plugin.deploy", row.getAction());
+        assertEquals("meta-test-trace", row.getTraceId());
     }
 }

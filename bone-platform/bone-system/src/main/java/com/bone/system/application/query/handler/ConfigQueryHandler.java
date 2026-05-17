@@ -5,7 +5,7 @@ import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import com.bone.system.application.query.dto.ConfigDTO;
 import com.bone.system.application.query.qry.ConfigPageQry;
 import com.bone.system.common.result.PageResult;
-import com.bone.system.domain.model.config.SystemConfig;
+import com.bone.system.domain.config.SystemConfig;
 import com.bone.system.domain.repository.SystemConfigRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -21,19 +21,17 @@ public class ConfigQueryHandler {
 
     @Transactional(readOnly = true)
     public ConfigDTO getById(Long id) {
-        // Find by dbId (Long) using DSL since repository is keyed by ConfigId (UUID)
-        SystemConfig config = QueryBuilder.from(SystemConfig.class)
-                .where(SystemConfig::getDbId).eq(id)
-                .single();
+        SystemConfig config = systemConfigRepository.findById(id);
         return config != null ? toDTO(config) : null;
     }
 
     @Transactional(readOnly = true)
     public ConfigDTO getByKey(String key) {
-        return systemConfigRepository.findByConfigKey(
-                        com.bone.system.domain.model.config.vo.ConfigKey.of(key))
-                .map(this::toDTO)
-                .orElse(null);
+        SystemConfig config = QueryBuilder.from(SystemConfig.class)
+                .where(SystemConfig::getConfigKey)
+                .eq(com.bone.system.domain.model.config.vo.ConfigKey.of(key))
+                .single();
+        return config != null ? toDTO(config) : null;
     }
 
     @Transactional(readOnly = true)
@@ -56,7 +54,7 @@ public class ConfigQueryHandler {
 
     private ConfigDTO toDTO(SystemConfig config) {
         return ConfigDTO.builder()
-                .id(config.getDbId())
+                .id(config.getId())
                 .configKey(config.getConfigKey().value())
                 .configValue(config.isEncrypted() ? "******" : config.getConfigValue().value())
                 .description(config.getDescription())

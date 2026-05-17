@@ -20,9 +20,6 @@
 ```bash
 # 仅蓝图（独立 POM，不依赖根聚合 install）
 mvn -f bone-blueprint/pom.xml clean test
-
-# 或根目录启用 profile（将 blueprint 加入 Reactor）
-mvn -Pblueprint -pl bone-blueprint test
 ```
 
 全平台仍用：
@@ -35,7 +32,7 @@ mvn clean install -DskipTests=true
 
 ## CI
 
-流水线 job **`blueprint-verify`** 对 `bone-blueprint` 执行 `mvn test`，防止蓝图与规范漂移而主仓无感知。
+根仓 [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) **未**单独跑 `bone-blueprint`；发布前建议本地或流水线追加 `mvn -f bone-blueprint/pom.xml test`。
 
 ---
 

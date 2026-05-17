@@ -53,7 +53,7 @@ class DataSourceControllerTest {
 
     @BeforeEach
     void setUp() {
-        baseUrl = "http://localhost:" + port + "/api/data-sources";
+        baseUrl = "http://localhost:" + port + "/api/v1/generator/data-sources";
     }
 
     @Test

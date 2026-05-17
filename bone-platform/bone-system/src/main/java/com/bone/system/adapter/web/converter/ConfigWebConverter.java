@@ -9,14 +9,12 @@ import com.bone.system.application.command.cmd.UpdateConfigCmd;
 import com.bone.system.application.query.dto.ConfigDTO;
 import com.bone.system.application.query.qry.ConfigPageQry;
 import org.mapstruct.Mapper;
-import org.mapstruct.factory.Mappers;
 
 /**
  * 配置Web转换器
  */
 @Mapper
 public interface ConfigWebConverter {
-    ConfigWebConverter INSTANCE = Mappers.getMapper(ConfigWebConverter.class);
 
     CreateConfigCmd toCmd(CreateConfigReq req);
 

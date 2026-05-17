@@ -24,3 +24,13 @@ DDL 真源：仓库根目录 [`bone-init.sql`](../../bone-init.sql)（`int_*` �
 
 - 开发默认：`bone.integration.security.jwt-enabled=false`（`/integration/**` 放行）
 - 生产：`export BONE_INTEGRATION_JWT_ENABLED=true`，与 IAM 共用 `bone.iam.jwt.secret-key` / `Authorization: Bearer`
+
+## 领域事件告警（INT-06）
+
+| 变量 | 说明 |
+|------|------|
+| `BONE_INTEGRATION_ALERT_ENABLED` | 是否接入 `bone-notification`（默认 `true`） |
+| `BONE_ALERT_DINGTALK_ENABLED` + `DINGTALK_WEBHOOK` | 钉钉通道 |
+| `BONE_ALERT_MAIL_ENABLED` + `BONE_ALERT_MAIL_*` | 邮件通道（需 SMTP） |
+
+通道未启用时**仅结构化日志**，不假成功。配置步骤见 [config/env/README.md](../../config/env/README.md) § 集成服务告警。

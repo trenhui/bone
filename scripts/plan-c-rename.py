@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 TARGET_DIRS = [
-    ROOT / "bone-tool" / "bone-codegen",
+    ROOT / "bone-engine" / "studio-generator",
     ROOT / "bone-blueprint",
     ROOT / "bone-engine" / "bone-extension-engine",
     ROOT / "bone-frontend" / "apps",

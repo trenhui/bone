@@ -5,6 +5,7 @@ import com.bone.core.util.ReflectionUtil;
 import com.bone.metadata.sdk.domain.model.ColumnMetadata;
 import com.bone.metadata.sdk.domain.model.TableMetadata;
 import com.bone.metadata.sdk.domain.query.BatchCompiledQuery;
+import com.bone.metadata.sdk.support.util.SqlUtil;
 import com.bone.metadata.sdk.query.context.BatchUpdateContext;
 
 import java.util.ArrayList;
@@ -38,10 +39,10 @@ public class BatchUpdateBuilder implements BatchQueryBuilder<BatchUpdateContext>
         for (Object e : ents) {
             Map<String,Object> m = new LinkedHashMap<>();
             // 主键值
-            m.put(pk.getName(), ReflectionUtil.getFieldValue(e, pk.getFieldName()));
+            m.put(pk.getName(), SqlUtil.toJdbcParameter(ReflectionUtil.getFieldValue(e, pk.getFieldName())));
             // 更新列值
             for (ColumnMetadata c : updCols) {
-                m.put(c.getName(), ReflectionUtil.getFieldValue(e, c.getFieldName()));
+                m.put(c.getName(), SqlUtil.toJdbcParameter(ReflectionUtil.getFieldValue(e, c.getFieldName())));
             }
             // 扩展属性
             if (e instanceof ExtensibleObject ext) {

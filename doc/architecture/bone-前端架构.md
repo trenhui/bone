@@ -15,7 +15,7 @@
 |------|------|------|
 | 框架 | React 18+ | 子应用与主应用均为 React |
 | 语言 | TypeScript 5+ | 全量 TS |
-| 构建 | Vite 4.x～5.x | 各应用独立 Vite 工程；根 `package.json` 当前为 **4.x**，升级 5+ 时须全仓对齐 |
+| 构建 | Vite 5.x | 各应用独立 Vite 工程；根 `bone-frontend/package.json` devDependencies 已为 **5.x**，主版本跃迁须 workspaces 一齐升级 |
 | 微前端 | **Qiankun 2.x** + `vite-plugin-qiankun` | 子应用 UMD 导出；主应用运行时注册 |
 | UI | Ant Design 5 + Pro Components | 管理类界面 |
 | 路由 | React Router 6+ | 主应用与子应用各自路由 |
