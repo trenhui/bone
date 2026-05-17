@@ -456,6 +456,7 @@ CREATE TABLE meta_entity (
     description         TEXT            DEFAULT NULL COMMENT '描述',
     table_name          VARCHAR(200)    NOT NULL COMMENT '对应数据库表名',
     type                TINYINT         NOT NULL DEFAULT 0 COMMENT '0-普通 1-主数据',
+    delivery_mode       TINYINT         NOT NULL DEFAULT 0 COMMENT '0-GENERATIVE生成式 1-RUNTIME运行时',
     status              TINYINT         NOT NULL DEFAULT 0 COMMENT '0-草稿 1-已发布 2-已归档',
     is_builtin          TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否内置',
     icon                VARCHAR(100)    DEFAULT NULL COMMENT '图标',

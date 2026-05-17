@@ -21,6 +21,8 @@ import org.springframework.util.StringUtils;
 public class CatalogMetadataGatewayImpl implements CatalogMetadataGateway {
 
   private static final int PUBLISHED = 1;
+  /** 0-GENERATIVE：参与标准 CRUD 代码生成；1-RUNTIME 走 engine 动态 API */
+  private static final int DELIVERY_RUNTIME = 1;
 
   private final CatalogMetaEntityRepository catalogMetaEntityRepository;
   private final CatalogMetaFieldRepository catalogMetaFieldRepository;
@@ -42,6 +44,9 @@ public class CatalogMetadataGatewayImpl implements CatalogMetadataGateway {
     List<DatabaseTable> tables = new ArrayList<>();
     for (CatalogMetaEntity entity : entities) {
       if (!codeFilter.isEmpty() && !codeFilter.contains(entity.getCode())) {
+        continue;
+      }
+      if (entity.getDeliveryMode() != null && entity.getDeliveryMode() == DELIVERY_RUNTIME) {
         continue;
       }
       tables.add(toDatabaseTable(entity));
@@ -76,6 +81,7 @@ public class CatalogMetadataGatewayImpl implements CatalogMetadataGateway {
         .tableName(entity.getCode())
         .tableComment(entity.getDisplayName() + " (物理表: " + entity.getTableName() + ")")
         .columns(columns)
+        .deliveryMode(entity.getDeliveryMode() != null ? entity.getDeliveryMode() : 0)
         .build();
   }
 }

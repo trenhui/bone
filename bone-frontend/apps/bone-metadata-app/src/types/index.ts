@@ -19,6 +19,9 @@ export interface MetaEntity {
   description?: string;
   tableName: string;
   type: number;
+  /** 0-GENERATIVE 1-RUNTIME */
+  deliveryMode?: number;
+  deliveryModeLabel?: string;
   status: number;
   statusLabel?: string;
   sortOrder?: number;
@@ -58,6 +61,7 @@ export interface CreateMetaEntityReq {
   description?: string;
   tableName: string;
   type?: number;
+  deliveryMode?: number;
   icon?: string;
 }
 
@@ -67,6 +71,7 @@ export interface UpdateMetaEntityReq {
   description?: string;
   tableName: string;
   sortOrder?: number;
+  deliveryMode?: number;
   icon?: string;
 }
 
@@ -108,6 +113,11 @@ export const ENTITY_STATUS: Record<number, string> = {
   0: '草稿',
   1: '已发布',
   2: '已归档',
+};
+
+export const DELIVERY_MODE: Record<number, string> = {
+  0: '生成式 (A)',
+  1: '运行时 (B)',
 };
 
 export const RELATION_TYPES = [

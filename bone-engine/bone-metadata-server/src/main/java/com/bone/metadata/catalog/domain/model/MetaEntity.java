@@ -2,6 +2,7 @@ package com.bone.metadata.catalog.domain.model;
 
 import com.bone.core.domain.entity.AbstractEntity;
 import com.bone.core.exception.DomainException;
+import com.bone.metadata.catalog.domain.enums.MetaDeliveryMode;
 import com.bone.metadata.catalog.domain.enums.MetaEntityStatus;
 import com.bone.metadata.sdk.domain.annotation.Column;
 import com.bone.metadata.sdk.domain.annotation.Table;
@@ -36,6 +37,9 @@ public class MetaEntity extends AbstractEntity<Long> {
   @Column(name = "type", nullable = false)
   private Integer type;
 
+  @Column(name = "delivery_mode", nullable = false)
+  private Integer deliveryMode;
+
   @Column(name = "status", nullable = false)
   private Integer status;
 
@@ -60,6 +64,7 @@ public class MetaEntity extends AbstractEntity<Long> {
       String description,
       String tableName,
       int entityType,
+      int deliveryMode,
       String icon) {
     MetaEntity e = new MetaEntity();
     e.setId(id);
@@ -70,6 +75,7 @@ public class MetaEntity extends AbstractEntity<Long> {
     e.description = description;
     e.tableName = tableName;
     e.type = entityType;
+    e.deliveryMode = deliveryMode;
     e.status = MetaEntityStatus.DRAFT.getCode();
     e.builtin = false;
     e.sortOrder = 0;
@@ -88,7 +94,8 @@ public class MetaEntity extends AbstractEntity<Long> {
       String description,
       String tableName,
       Integer sortOrder,
-      String icon) {
+      String icon,
+      Integer deliveryMode) {
     if (MetaEntityStatus.fromCode(this.status) == MetaEntityStatus.PUBLISHED) {
       throw new DomainException("已发布实体不可修改，请先归档或回退草稿");
     }
@@ -100,7 +107,14 @@ public class MetaEntity extends AbstractEntity<Long> {
       this.sortOrder = sortOrder;
     }
     this.icon = icon;
+    if (deliveryMode != null) {
+      this.deliveryMode = deliveryMode;
+    }
     this.setUpdatedAt(new Date());
+  }
+
+  public MetaDeliveryMode deliveryModeEnum() {
+    return MetaDeliveryMode.fromCode(deliveryMode);
   }
 
   public void publish() {

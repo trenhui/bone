@@ -16,7 +16,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { metadataEntityApi } from '../services/metadataApi';
 import type { CreateMetaEntityReq, MetaEntity, UpdateMetaEntityReq } from '../types';
-import { ENTITY_STATUS } from '../types';
+import { DELIVERY_MODE, ENTITY_STATUS } from '../types';
 
 const EntityManagement: React.FC = () => {
   const [form] = Form.useForm();
@@ -53,7 +53,7 @@ const EntityManagement: React.FC = () => {
   const openCreate = () => {
     setEditing(null);
     form.resetFields();
-    form.setFieldsValue({ type: 0 });
+    form.setFieldsValue({ type: 0, deliveryMode: 0 });
     setModalOpen(true);
   };
 
@@ -73,6 +73,7 @@ const EntityManagement: React.FC = () => {
           description: values.description,
           tableName: values.tableName,
           sortOrder: values.sortOrder,
+          deliveryMode: values.deliveryMode,
           icon: values.icon,
         };
         const res = await metadataEntityApi.update(editing.id, body);
@@ -104,6 +105,14 @@ const EntityManagement: React.FC = () => {
     { title: '编码', dataIndex: 'code', key: 'code' },
     { title: '显示名', dataIndex: 'displayName', key: 'displayName' },
     { title: '表名', dataIndex: 'tableName', key: 'tableName' },
+    {
+      title: '交付模式',
+      dataIndex: 'deliveryMode',
+      key: 'deliveryMode',
+      render: (m: number, row) => (
+        <Tag color={m === 1 ? 'purple' : 'default'}>{row.deliveryModeLabel ?? DELIVERY_MODE[m] ?? m}</Tag>
+      ),
+    },
     {
       title: '状态',
       dataIndex: 'status',
@@ -217,6 +226,15 @@ const EntityManagement: React.FC = () => {
           </Form.Item>
           <Form.Item name="description" label="描述">
             <Input.TextArea rows={2} />
+          </Form.Item>
+          <Form.Item name="deliveryMode" label="交付模式" tooltip="生成式走代码生成；运行时由 metadata-engine 提供动态 API（规划）">
+            <Select
+              disabled={!!editing && editing.status === 1}
+              options={[
+                { value: 0, label: DELIVERY_MODE[0] },
+                { value: 1, label: DELIVERY_MODE[1] },
+              ]}
+            />
           </Form.Item>
           {!editing && (
             <Form.Item name="type" label="类型">

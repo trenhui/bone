@@ -3,6 +3,7 @@ package com.bone.metadata.config;
 import com.bone.core.exception.BizException;
 import com.bone.core.exception.DomainException;
 import com.bone.core.util.JsonUtil;
+import com.bone.metadata.engine.runtime.RuntimeRecordException;
 import com.bone.metadata.exception.ErrorResponse;
 import com.bone.metadata.exception.FieldConflictException;
 import com.bone.metadata.exception.TooManyRequestsException;
@@ -30,6 +31,16 @@ public class GlobalExceptionHandler {
 
     ErrorResponse resp = new ErrorResponse("VALIDATION_FAILED", String.join(", ", errors), ex);
     return ResponseEntity.badRequest().body(resp);
+  }
+
+  @ExceptionHandler(RuntimeRecordException.class)
+  public ResponseEntity<ErrorResponse> handleRuntimeRecord(RuntimeRecordException ex) {
+    HttpStatus status =
+        "META_RUNTIME_RECORD_NOT_FOUND".equals(ex.getErrorCode())
+            ? HttpStatus.NOT_FOUND
+            : HttpStatus.BAD_REQUEST;
+    ErrorResponse resp = new ErrorResponse(ex.getErrorCode(), ex.getMessage(), ex);
+    return ResponseEntity.status(status).body(resp);
   }
 
   @ExceptionHandler({BizException.class, DomainException.class})

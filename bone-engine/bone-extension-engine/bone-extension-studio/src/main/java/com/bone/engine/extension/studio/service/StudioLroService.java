@@ -1,0 +1,94 @@
+package com.bone.engine.extension.studio.service;
+
+import com.bone.core.model.ProblemDetail;
+import com.bone.engine.extension.studio.common.StudioErrorCodes;
+import com.bone.engine.extension.studio.config.StudioRequestContextFilter;
+import com.bone.engine.extension.studio.domain.model.Extension;
+import com.bone.engine.extension.studio.domain.model.StudioOperation;
+import java.time.Instant;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import org.slf4j.MDC;
+import org.springframework.stereotype.Service;
+
+/** 插件部署等 LRO（进程内；生产可换 Redis/DB）。 */
+@Service
+public class StudioLroService {
+
+    private static final String TYPE_PLUGIN_DEPLOY = "plugin.deploy";
+
+    private final ExtensionService extensionService;
+    private final StudioAuditService auditService;
+    private final Map<String, StudioOperation> operations = new ConcurrentHashMap<>();
+    private final ExecutorService executor = Executors.newCachedThreadPool(r -> {
+        Thread t = new Thread(r, "studio-lro");
+        t.setDaemon(true);
+        return t;
+    });
+
+    public StudioLroService(ExtensionService extensionService, StudioAuditService auditService) {
+        this.extensionService = extensionService;
+        this.auditService = auditService;
+    }
+
+    public String startPluginDeploy(Long pluginId) {
+        String operationId = "op-" + UUID.randomUUID().toString().replace("-", "");
+        StudioOperation op = new StudioOperation();
+        op.setOperationId(operationId);
+        op.setType(TYPE_PLUGIN_DEPLOY);
+        op.setResourceId(pluginId);
+        op.setDone(false);
+        op.setProgress(0);
+        op.setCreatedAt(Instant.now());
+        operations.put(operationId, op);
+
+        Map<String, String> mdc = MDC.getCopyOfContextMap();
+        executor.submit(
+                () -> {
+                    if (mdc != null) {
+                        MDC.setContextMap(mdc);
+                    }
+                    runDeploy(operationId, pluginId);
+                    MDC.clear();
+                });
+        return operationId;
+    }
+
+    public StudioOperation getOperation(String operationId) {
+        return operations.get(operationId);
+    }
+
+    private void runDeploy(String operationId, Long pluginId) {
+        StudioOperation op = operations.get(operationId);
+        if (op == null) {
+            return;
+        }
+        try {
+            op.setProgress(20);
+            extensionService.deployExtension(pluginId);
+            op.setProgress(90);
+            Extension extension = extensionService.findExtensionById(pluginId);
+            Map<String, Object> result = new LinkedHashMap<>();
+            result.put("id", extension != null ? extension.getId() : pluginId);
+            result.put("enabled", extension != null && extension.isEnabled());
+            op.setResult(result);
+            op.setProgress(100);
+            op.setDone(true);
+            op.setCompletedAt(Instant.now());
+            auditService.success("plugin.deploy", "plugin", String.valueOf(pluginId));
+        } catch (Exception ex) {
+            ProblemDetail detail = ProblemDetail.of(StudioErrorCodes.STATE_INVALID, 409, ex.getMessage());
+            String traceId = MDC.get(StudioRequestContextFilter.TRACE_ID);
+            detail.setTraceId(traceId);
+            op.setError(detail);
+            op.setDone(true);
+            op.setProgress(100);
+            op.setCompletedAt(Instant.now());
+            auditService.failure("plugin.deploy", "plugin", String.valueOf(pluginId), ex.getMessage());
+        }
+    }
+}

@@ -12,3 +12,6 @@ bone:
         mode: in-memory
       security:
         permit-unauthenticated: true
+      lro:
+        deploy-enabled: true
+        deploy-sync-by-default: true

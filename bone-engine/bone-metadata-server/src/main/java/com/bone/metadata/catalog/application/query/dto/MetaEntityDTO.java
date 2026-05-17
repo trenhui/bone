@@ -11,6 +11,8 @@ public class MetaEntityDTO {
   private String description;
   private String tableName;
   private Integer type;
+  private Integer deliveryMode;
+  private String deliveryModeLabel;
   private Integer status;
   private String statusLabel;
   private Integer sortOrder;

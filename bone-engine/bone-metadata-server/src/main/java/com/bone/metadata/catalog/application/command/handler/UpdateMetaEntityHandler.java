@@ -26,7 +26,8 @@ public class UpdateMetaEntityHandler {
         cmd.getDescription(),
         cmd.getTableName(),
         cmd.getSortOrder(),
-        cmd.getIcon());
+        cmd.getIcon(),
+        cmd.getDeliveryMode());
     metaEntityRepository.update(entity);
   }
 }

@@ -25,6 +25,7 @@ public class Extension extends Entity<Long> {
     private Integer priority = 0;
     private String config;
     private boolean enabled = true;
+    private Integer version = 0;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     
@@ -180,5 +181,13 @@ public class Extension extends Entity<Long> {
     
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    public Integer getVersion() {
+        return version;
+    }
+
+    public void setVersion(Integer version) {
+        this.version = version;
     }
 }

@@ -8,6 +8,7 @@
 
 - `POST/GET /api/v1/metadata/fields:*` — 扩展字段 EAV（`MetadataController`）
 - **catalog**：`/api/v1/metadata/entities`、`…/entities/{entityId}/fields`、`…/relationships`（`catalog` 包 Controller）
+- **模式 B 运行时**：`/api/v1/runtime/entities/{entityCode}/records`（`delivery_mode=RUNTIME` 且已发布；`JdbcRuntimeRecordService`）
 - 内嵌 **bone-metadata-sdk**（`deploymentMode: EMBEDDED`），供其他应用 `REMOTE` Feign 调用
 
 **As-Is 不负责**：代码生成（见 `studio-generator`）、规则引擎（见 `bone-metadata-engine`）。

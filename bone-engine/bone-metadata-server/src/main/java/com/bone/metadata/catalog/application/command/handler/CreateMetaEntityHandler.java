@@ -4,6 +4,7 @@ import com.bone.core.exception.BizException;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.metadata.catalog.application.command.cmd.CreateMetaEntityCmd;
 import com.bone.metadata.catalog.common.CatalogTenantSupport;
+import com.bone.metadata.catalog.domain.enums.MetaDeliveryMode;
 import com.bone.metadata.catalog.domain.model.MetaEntity;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,10 @@ public class CreateMetaEntityHandler {
     }
     Long id = DistributedIdGenerator.generateLongId();
     int type = cmd.getType() != null ? cmd.getType() : 0;
+    int deliveryMode =
+        cmd.getDeliveryMode() != null
+            ? MetaDeliveryMode.fromCode(cmd.getDeliveryMode()).getCode()
+            : MetaDeliveryMode.GENERATIVE.getCode();
     MetaEntity entity =
         MetaEntity.create(
             id,
@@ -41,6 +46,7 @@ public class CreateMetaEntityHandler {
             cmd.getDescription(),
             cmd.getTableName(),
             type,
+            deliveryMode,
             cmd.getIcon());
     metaEntityRepository.insert(entity);
     return id;

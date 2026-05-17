@@ -25,6 +25,18 @@ public final class StudioApiResponses {
                 HttpStatus.NOT_FOUND, StudioErrorCodes.RESOURCE_NOT_FOUND, message);
     }
 
+    @SuppressWarnings("unchecked")
+    public static <T> ResponseEntity<ApiResponse<T>> idempotencyConflict(String message) {
+        return (ResponseEntity<ApiResponse<T>>) (Object) problem(
+                HttpStatus.CONFLICT, StudioErrorCodes.IDEMPOTENCY_CONFLICT, message);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static <T> ResponseEntity<ApiResponse<T>> preconditionFailed(String message) {
+        return (ResponseEntity<ApiResponse<T>>) (Object) problem(
+                HttpStatus.PRECONDITION_FAILED, StudioErrorCodes.PRECONDITION_FAILED, message);
+    }
+
     public static ResponseEntity<ApiResponse<ProblemDetail>> problem(
             HttpStatus status, String errorCode, String detail) {
         ProblemDetail body = ProblemDetail.of(errorCode, status.value(), detail);

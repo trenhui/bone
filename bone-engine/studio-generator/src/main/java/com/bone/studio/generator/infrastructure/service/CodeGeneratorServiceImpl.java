@@ -42,14 +42,25 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
             // 1. 加载表结构：目录快照 或 物理库反向
             List<DatabaseTable> tables = resolveTables(request);
             
-            // 2. 生成代码
+            // 2. 生成代码（跳过 RUNTIME 交付模式实体，由 bone-metadata-engine 动态 API 承担）
+            int skippedRuntime = 0;
             for (DatabaseTable table : tables) {
+                if (table.isRuntimeDelivery()) {
+                    skippedRuntime++;
+                    continue;
+                }
                 generatedFiles.addAll(generateEntity(table, request));
                 generatedFiles.addAll(generateRepository(table, request));
                 generatedFiles.addAll(generateService(table, request));
                 generatedFiles.addAll(generateController(table, request));
                 generatedFiles.addAll(generateDTOs(table, request));
             }
+            String successMsg =
+                    skippedRuntime > 0
+                            ? "代码生成成功（已跳过 "
+                                    + skippedRuntime
+                                    + " 个 RUNTIME 实体，请使用 /api/v1/runtime 动态 API）"
+                            : "代码生成成功";
             
             // 3. 保存生成的文件
             String outputPath = request.getOutputPath() != null && !request.getOutputPath().isEmpty() 
@@ -72,7 +83,7 @@ public class CodeGeneratorServiceImpl implements CodeGeneratorService {
             return CodeGenerationResponse.builder()
                     .generationId(generationId)
                     .status("SUCCESS")
-                    .message("代码生成成功")
+                    .message(successMsg)
                     .generatedFiles(generatedFiles)
                     .executionTime(0)
                     .outputPath(outputPath)

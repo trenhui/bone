@@ -10,5 +10,7 @@ public class UpdateMetaEntityCmd {
   private String description;
   @NotBlank private String tableName;
   private Integer sortOrder;
+  /** 0-GENERATIVE 1-RUNTIME；仅草稿可改 */
+  private Integer deliveryMode;
   private String icon;
 }

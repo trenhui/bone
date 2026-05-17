@@ -5,6 +5,7 @@ import com.bone.engine.extension.studio.domain.model.Extension;
 import com.bone.engine.extension.studio.domain.store.ExtPointStore;
 import com.bone.engine.extension.studio.domain.store.ExtensionStore;
 import com.bone.engine.extension.studio.service.ExtPointService;
+import com.bone.engine.extension.studio.service.StudioVersionSupport;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -39,21 +40,31 @@ public class ExtPointServiceImpl implements ExtPointService {
 
     @Override
     public ExtPoint saveExtPoint(ExtPoint extPoint) {
+        if (extPoint.getVersion() == null) {
+            extPoint.setVersion(0);
+        }
         return extPointStore.save(extPoint);
     }
 
     @Override
     public ExtPoint updateExtPoint(Long id, ExtPoint extPoint) {
+        return updateExtPoint(id, extPoint, null);
+    }
+
+    @Override
+    public ExtPoint updateExtPoint(Long id, ExtPoint extPoint, Integer expectedVersion) {
         ExtPoint existing = extPointStore.findById(id);
         if (existing == null) {
             return null;
         }
+        StudioVersionSupport.assertExpected(expectedVersion, existing.getVersion());
         existing.setName(extPoint.getName());
         existing.setDescription(extPoint.getDescription());
         existing.setInterfaceName(extPoint.getInterfaceName());
         existing.setDomain(extPoint.getDomain());
         existing.setCategory(extPoint.getCategory());
         existing.setEnabled(extPoint.isEnabled());
+        existing.setVersion(StudioVersionSupport.nextVersion(existing.getVersion()));
         extPointStore.update(existing);
         return existing;
     }

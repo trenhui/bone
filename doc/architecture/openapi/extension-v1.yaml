@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Bone Extension Studio API
-  version: 1.1.0
+  version: 1.2.0
   description: |
     扩展引擎管理台（As-Is）。规范见 Bone-API-规范.md §13.1；
     详设 v2.1：doc/design/modules/5. 扩展管理模块详细设计方案.md。
@@ -9,7 +9,7 @@ info:
     **术语**：路径 `/plugins/{id}` 的 id = 扩展实现 ID（exts_extension_impl），非独立插件主表。
 
     **[Target]**：POST 创建 201+Location；写操作 Idempotency-Key；PUT If-Match/version；
-    大制品 :deploy 202 LRO。当前实现多为 200 同步，以 Controller 为准。
+    大制品 :deploy 支持 202 LRO（默认异步）与 ?sync=true 同步 200。
 servers:
   - url: /api/v1/extension
 paths:
@@ -118,10 +118,20 @@ paths:
       summary: 部署/激活扩展实现
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: sync, in: query, schema: { type: boolean }, description: true 强制同步 200；false 强制 202 LRO }
         - $ref: '#/components/parameters/IdempotencyKey'
       responses:
-        '200': { description: OK（As-Is 同步） }
-        '202': { description: Accepted（[Target] LRO，见 Bone-API-规范 §7） }
+        '200': { description: OK（同步，?sync=true 或配置 deploy-sync-by-default） }
+        '202': { description: Accepted（LRO，Location 指向 /operations/{id}） }
+  /operations/{operationId}:
+    get:
+      summary: LRO 操作状态轮询
+      parameters:
+        - { name: operationId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200':
+          description: 含 done、progress、result、error（ApiResponse 信封）
+        '404': { description: 操作不存在 }
   /plugins/{id}:undeploy:
     post:
       summary: 卸载

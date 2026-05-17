@@ -46,7 +46,27 @@ jobs:
           -Dtest=ExtensionApiContractTest,ExtensionManagementControllerTest,
           StudioPersistenceConverterTest,PluginExecutionLogCursorTest,
           MetadataPersistenceIntegrationTest,InMemoryStudioAuditStoreTest,
-          ExtensionStudioSmokeIT,StudioApplicationStartupTest
+          ExtensionStudioSmokeIT,ExtensionApiTargetFeaturesTest,
+          ExtensionApiLroTest,StudioIdempotencyServiceTest,
+          StudioApplicationStartupTest
+
+  extension-sdk:
+    name: Extension SDK Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Install bone-core
+        run: mvn install -DskipTests -pl bone-framework/bone-core --batch-mode
+      - name: Test bone-extension-sdk
+        run: >
+          mvn test -pl bone-engine/bone-extension-engine/bone-extension-sdk --batch-mode
+          -Dtest=ExtensionExecutionGuardTest,DefaultExtensionPointRouterTest,
+          ExtensionPointProxyObjectMethodsTest
 
   studio-mysql-it:
     name: Studio MySQL IT (Testcontainers)

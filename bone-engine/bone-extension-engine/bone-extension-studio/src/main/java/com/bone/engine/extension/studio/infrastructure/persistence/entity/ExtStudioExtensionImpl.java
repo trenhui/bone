@@ -69,4 +69,7 @@ public class ExtStudioExtensionImpl extends AbstractEntity<Long> {
 
     @Column(name = "rollout_percent")
     private Integer rolloutPercent;
+
+    @Column(name = "version")
+    private Integer version = 0;
 }

@@ -149,6 +149,9 @@ throw new BizException(ExtensionErrorCode.PLUGIN_NOT_FOUND, pluginId);
 | `META_FIELD_NAME_DUPLICATE` | 409 | 字段名重复 |
 | `META_GENERATE_TASK_FAILED` | 500 | 代码生成任务失败（**过渡**；新接口优先 `GEN_TASK_FAILED`） |
 | `META_TEMPLATE_INVALID` | 400 | 模板语法错误（**过渡**；新接口优先 `GEN_TEMPLATE_INVALID`） |
+| `META_RUNTIME_ENTITY_NOT_FOUND` | 400 | 未找到已发布的 RUNTIME 实体 |
+| `META_RUNTIME_RECORD_NOT_FOUND` | 404 | 运行时记录不存在 |
+| `META_RUNTIME_INVALID_IDENTIFIER` | 400 | 非法表名/列名 |
 
 ### MD_
 

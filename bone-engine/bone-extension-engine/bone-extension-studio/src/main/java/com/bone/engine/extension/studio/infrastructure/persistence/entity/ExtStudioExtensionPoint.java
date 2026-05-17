@@ -44,4 +44,7 @@ public class ExtStudioExtensionPoint extends AbstractEntity<Long> {
 
     @Column(name = "status")
     private String status = "ENABLED";
+
+    @Column(name = "version")
+    private Integer version = 0;
 }

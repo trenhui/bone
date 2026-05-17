@@ -10,6 +10,8 @@ public class ExtPoint extends Entity<Long> {
     private String domain;
     private String category;
     private boolean enabled;
+    /** 乐观锁版本（对应 exts_extension_point.version） */
+    private Integer version = 0;
     
     // Getter methods
     public String getName() {
@@ -59,5 +61,13 @@ public class ExtPoint extends Entity<Long> {
     
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public Integer getVersion() {
+        return version;
+    }
+
+    public void setVersion(Integer version) {
+        this.version = version;
     }
 }

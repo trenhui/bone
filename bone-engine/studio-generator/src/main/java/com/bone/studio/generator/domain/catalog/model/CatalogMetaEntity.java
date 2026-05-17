@@ -32,6 +32,9 @@ public class CatalogMetaEntity extends AbstractEntity<Long> {
   @Column(name = "status", nullable = false)
   private Integer status;
 
+  @Column(name = "delivery_mode", nullable = false)
+  private Integer deliveryMode;
+
   public Long getTenantId() {
     return tenantId;
   }
@@ -54,5 +57,9 @@ public class CatalogMetaEntity extends AbstractEntity<Long> {
 
   public Integer getStatus() {
     return status;
+  }
+
+  public Integer getDeliveryMode() {
+    return deliveryMode;
   }
 }

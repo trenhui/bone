@@ -409,7 +409,7 @@ flowchart TD
 | 逻辑组件 | Maven / 目录示例 |
 |----------|-------------------|
 | 元数据能力族 | **sdk**（数据面，A+B 共用）· **server**（catalog + EAV，:9001）· **engine**（模式 B，选配）· **studio-generator**（模式 A）— [对照](../design/modules/元数据能力-实现映射与竞品对照.md) §1.3 |
-| 元数据 `delivery_mode` | `meta_entity.delivery_mode`：`0` GENERATIVE / `1` RUNTIME | As-Is 已落库；RUNTIME 动态 API 待 engine（META-002B） |
+| 元数据 `delivery_mode` | `meta_entity.delivery_mode`：`0` GENERATIVE / `1` RUNTIME（As-Is 已落库；RUNTIME 动态 API 见 META-002B-02） |
 | 扩展引擎 | `bone-engine/bone-extension-engine/*` |
 | 集成引擎 | `bone-platform/bone-integration` |
 | IAM、主数据、系统、网关等 | `bone-platform/bone-iam`、`bone-masterdata`、`bone-system`、`bone-gateway` 等 |
@@ -463,21 +463,23 @@ flowchart TD
 
 #### 8.3.2 元数据
 
-> **分 As-Is / [Target] / Vision**（真源：[元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §5）。**As-Is**：`bone-metadata-server` :9001 上 catalog REST + `fields:*`（EAV）。实体含 **`delivery_mode`**（GENERATIVE / RUNTIME）。**模式 A** 生成走 **`/api/v1/generate`**（`studio-generator`）。**模式 B** 动态 CRUD 由 `bone-metadata-engine` 提供，前缀 **[Target]**（META-002B）。建模字段**嵌套**在实体下，避免与 EAV `fields:*` 冲突。
+> **分 As-Is / [Target] / Vision**（真源：[元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §5）。**As-Is**：`bone-metadata-server` :9001 上 catalog REST + `fields:*`（EAV）。实体含 **`delivery_mode`**（GENERATIVE / RUNTIME）。**模式 A** 生成走 **`/api/v1/generate`**（`studio-generator`）。**模式 B** 动态 CRUD 由 `bone-metadata-engine` 提供（`/api/v1/runtime/entities/{code}/records`，META-002B-02）。建模字段**嵌套**在实体下，避免与 EAV `fields:*` 冲突。
 
 | API 路径 | 方法 | 功能 | 模式 |
 |----------|------|------|------|
 | `/api/v1/metadata/entities` | GET/POST | 实体列表/创建（含 `delivery_mode`） | A+B |
-| `/api/v1/metadata/entities/{id}` | GET/PUT/DELETE | 详情/更新/删除 |
-| `/api/v1/metadata/entities/{id}/publish` | POST | 发布实体 |
-| `/api/v1/metadata/entities/{entityId}/fields` | GET/POST | 建模字段（catalog） |
-| `/api/v1/metadata/entities/{entityId}/fields/{fieldId}` | GET/PUT/DELETE | 字段维护 |
-| `/api/v1/metadata/relationships` | GET/POST | 实体关系 |
-| `/api/v1/metadata/relationships/{id}` | GET/PUT/DELETE | 关系维护 |
-| `/api/v1/generate` | POST | 提交生成任务（**studio-generator** 域） |
-| `/api/v1/generate/{taskId}` | GET | 查询生成结果 |
-| `/api/v1/metadata/templates` | GET/POST | 模板（阶段 0） |
-| `/api/v1/metadata/templates/{id}` | PUT/DELETE | 模板维护 |
+| `/api/v1/metadata/entities/{id}` | GET/PUT/DELETE | 详情/更新/删除 | A+B |
+| `/api/v1/metadata/entities/{id}/publish` | POST | 发布实体 | A+B |
+| `/api/v1/metadata/entities/{entityId}/fields` | GET/POST | 建模字段（catalog） | A+B |
+| `/api/v1/metadata/entities/{entityId}/fields/{fieldId}` | GET/PUT/DELETE | 字段维护 | A+B |
+| `/api/v1/metadata/relationships` | GET/POST | 实体关系 | A+B |
+| `/api/v1/metadata/relationships/{id}` | GET/PUT/DELETE | 关系维护 | A+B |
+| `/api/v1/generate` | POST | 提交生成任务（**studio-generator**，模式 A） | A |
+| `/api/v1/generate/{taskId}` | GET | 查询生成结果 | A |
+| `/api/v1/runtime/entities/{code}/records` | GET/POST | 动态列表/创建 **[Target]** | B |
+| `/api/v1/runtime/entities/{code}/records/{id}` | GET/PUT/DELETE | 动态详情/更新/删除 **[Target]** | B |
+| `/api/v1/metadata/templates` | GET/POST | 模板（阶段 0） | Vision |
+| `/api/v1/metadata/templates/{id}` | PUT/DELETE | 模板维护 | Vision |
 
 #### 8.3.3 主数据
 
@@ -865,7 +867,7 @@ Intent → Plan → Generate → Validate → Self-Heal → Human Review → Lea
 
 | 任务 ID | 任务 | 说明 |
 |---------|------|------|
-| ENG-001 | 智能元数据引擎（`bone-metadata-engine`） | 规则/表达式/SmartQL；实体建模与 **生成内核** 见 `meta_*` + `studio-generator` |
+| ENG-001 | 智能元数据引擎（`bone-metadata-engine`） | **模式 B**：动态 CRUD、规则/表达式/SmartQL；catalog 与 **模式 A 生成** 见 `server` + `studio-generator` |
 | ENG-002 | 主数据平台 | 质量与发布 |
 | ENG-003 | 扩展引擎 | 扩展点与执行隔离 |
 | ENG-004 | 集成引擎 | 连接器与编排 |
@@ -1386,7 +1388,7 @@ flowchart LR
 | 研发负责人 | | | |
 | 安全负责人 | | | |
 
-**维护说明**：本文件位于 `doc/architecture/`，作为平台总体方案；模块级细节见 [`doc/design/modules/README.md`](../design/modules/README.md) 与 **Bone-DDD 统一方案**（同目录 `Bone-DDD-最终实践方案.md`）。§22.3 端口表为**规划态微服务示例**，与当前 `bone-*` 单体/多进程默认端口不一致时，以根 [README.md](../../README.md)「端口与模块对照」及各模块 `application.yml` 为准。v2.1 起增补 C4、SLO/NFR、API 工程化、韧性、数据一致性、威胁建模、成本与质量门禁等最佳实践章节。
+**维护说明**：本文件位于 `doc/architecture/`，作为平台总体方案；**产品理念与双模式**以根 [README.md](../../README.md) 为准；模块级细节见 [`doc/design/modules/README.md`](../design/modules/README.md) 与 **Bone-DDD 统一方案**（同目录 `Bone-DDD-最终实践方案.md`）。§22.3 端口表为**规划态微服务示例**，与当前 `bone-*` 默认端口不一致时，以 [wiki/03](../wiki/03-本地开发与构建.md) 与各模块 `application.yml` 为准。v2.1 起增补 C4、SLO/NFR、API 工程化等；**2026-05-17** 修订对齐 README 六大原则、元数据双模式与 `/api/v1` 单轨。
 
 ---
 

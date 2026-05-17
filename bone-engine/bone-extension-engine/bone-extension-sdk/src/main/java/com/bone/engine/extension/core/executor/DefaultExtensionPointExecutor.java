@@ -35,8 +35,15 @@ public class DefaultExtensionPointExecutor implements ExtensionPointExecutor {
     @Nullable
     private StudioExecutionLogReporter studioReporter;
 
+    @Nullable
+    private ExtensionExecutionGuard executionGuard;
+
     public void setStudioReporter(@Nullable StudioExecutionLogReporter studioReporter) {
         this.studioReporter = studioReporter;
+    }
+
+    public void setExecutionGuard(@Nullable ExtensionExecutionGuard executionGuard) {
+        this.executionGuard = executionGuard;
     }
 
     /**
@@ -72,8 +79,12 @@ public class DefaultExtensionPointExecutor implements ExtensionPointExecutor {
                 throw new SecurityException(errorMsg);
             }
 
-            // 4. 执行扩展点方法
-            T result = executeMethod(implementation, method, args);
+            // 4. 执行扩展点方法（可选舱壁 + 超时）
+            T result =
+                    executionGuard != null
+                            ? executionGuard.execute(
+                                    () -> invokeForGuard(implementation, method, args))
+                            : executeMethod(implementation, method, args);
 
             // 5. 记录执行完成信息
             long executionTime = System.currentTimeMillis() - startTime;
@@ -124,6 +135,16 @@ public class DefaultExtensionPointExecutor implements ExtensionPointExecutor {
      * @return 方法执行结果
      * @throws Throwable 执行过程中的异常
      */
+    private <T> T invokeForGuard(Object implementation, Method method, Object[] args) throws Exception {
+        try {
+            return executeMethod(implementation, method, args);
+        } catch (Exception | Error ex) {
+            throw ex;
+        } catch (Throwable ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
     private <T> T executeMethod(Object implementation, Method method, Object[] args) throws Throwable {
         try {
             return (T) method.invoke(implementation, args);

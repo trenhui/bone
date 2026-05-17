@@ -63,7 +63,10 @@ class ExtensionApiContractTest {
     @Test
     @DisplayName("冒号动作 deploy 返回 200 信封")
     void deployAction_colonSuffix() throws Exception {
-        mockMvc.perform(post("/api/v1/extension/plugins/1:deploy").accept(MediaType.APPLICATION_JSON))
+        mockMvc.perform(
+                        post("/api/v1/extension/plugins/1:deploy")
+                                .param("sync", "true")
+                                .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.id").value(1));

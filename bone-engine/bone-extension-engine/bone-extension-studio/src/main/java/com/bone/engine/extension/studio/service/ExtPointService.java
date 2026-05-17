@@ -11,6 +11,8 @@ public interface ExtPointService {
     ExtPoint findExtPointById(Long id);
     ExtPoint saveExtPoint(ExtPoint extPoint);
     ExtPoint updateExtPoint(Long id, ExtPoint extPoint);
+
+    ExtPoint updateExtPoint(Long id, ExtPoint extPoint, Integer expectedVersion);
     void deleteExtPoint(Long id);
     ExtPoint enableExtPoint(Long id, boolean enabled);
     List<Extension> findExtensionsByExtPointId(Long extPointId);

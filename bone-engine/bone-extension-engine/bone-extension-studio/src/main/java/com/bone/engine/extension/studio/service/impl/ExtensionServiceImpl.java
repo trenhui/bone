@@ -74,15 +74,25 @@ public class ExtensionServiceImpl implements ExtensionService {
         if (extension.getExtPointId() != null && extPointStore.findById(extension.getExtPointId()) == null) {
             throw new IllegalArgumentException("关联扩展点不存在: " + extension.getExtPointId());
         }
+        if (extension.getVersion() == null) {
+            extension.setVersion(0);
+        }
         return extensionStore.save(extension);
     }
 
     @Override
     public Extension updateExtension(Long id, Extension extension) {
+        return updateExtension(id, extension, null);
+    }
+
+    @Override
+    public Extension updateExtension(Long id, Extension extension, Integer expectedVersion) {
         Extension existing = extensionStore.findById(id);
         if (existing == null) {
             return null;
         }
+        com.bone.engine.extension.studio.service.StudioVersionSupport.assertExpected(
+                expectedVersion, existing.getVersion());
         if (extension.getExtPointId() != null) {
             existing.setExtPointId(extension.getExtPointId());
         }
@@ -103,6 +113,8 @@ public class ExtensionServiceImpl implements ExtensionService {
         existing.setPriority(extension.getPriority());
         existing.setConfig(extension.getConfig());
         existing.setEnabled(extension.isEnabled());
+        existing.setVersion(
+                com.bone.engine.extension.studio.service.StudioVersionSupport.nextVersion(existing.getVersion()));
         extensionStore.update(existing);
         return existing;
     }

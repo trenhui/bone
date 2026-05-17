@@ -15,6 +15,9 @@ public class ExtensionStudioProperties {
   @NestedConfigurationProperty
   private final SecurityConfig security = new SecurityConfig();
 
+  @NestedConfigurationProperty
+  private final LroConfig lro = new LroConfig();
+
   public RuntimeSyncConfig getRuntimeSync() {
     return runtimeSync;
   }
@@ -25,6 +28,10 @@ public class ExtensionStudioProperties {
 
   public SecurityConfig getSecurity() {
     return security;
+  }
+
+  public LroConfig getLro() {
+    return lro;
   }
 
   public static class SecurityConfig {
@@ -58,6 +65,32 @@ public class ExtensionStudioProperties {
 
     public void setRefreshChannel(String refreshChannel) {
       this.refreshChannel = refreshChannel;
+    }
+  }
+
+  public static class LroConfig {
+    /** 是否对 :deploy 启用 LRO */
+    private boolean deployEnabled = true;
+
+    /**
+     * true：:deploy 默认同步 200（联调/契约测试）；false：默认 202 异步（生产推荐）。
+     */
+    private boolean deploySyncByDefault = false;
+
+    public boolean isDeployEnabled() {
+      return deployEnabled;
+    }
+
+    public void setDeployEnabled(boolean deployEnabled) {
+      this.deployEnabled = deployEnabled;
+    }
+
+    public boolean isDeploySyncByDefault() {
+      return deploySyncByDefault;
+    }
+
+    public void setDeploySyncByDefault(boolean deploySyncByDefault) {
+      this.deploySyncByDefault = deploySyncByDefault;
     }
   }
 

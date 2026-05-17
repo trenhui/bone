@@ -49,7 +49,7 @@ spring:
         - id: bone-metadata-server
           uri: ${BONE_METADATA_SERVER_URI:http://localhost:9001}
           predicates:
-            - Path=/api/v1/metadata/**
+            - Path=/api/v1/metadata/**, /api/v1/runtime/**
 
 management:
   endpoints:

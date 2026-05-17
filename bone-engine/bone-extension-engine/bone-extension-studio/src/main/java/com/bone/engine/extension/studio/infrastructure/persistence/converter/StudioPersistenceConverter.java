@@ -38,6 +38,7 @@ public final class StudioPersistenceConverter {
         row.setBizDomain(domain.getDomain());
         row.setCategory(domain.getCategory());
         row.setStatus(domain.isEnabled() ? "ENABLED" : "DISABLED");
+        row.setVersion(domain.getVersion() != null ? domain.getVersion() : 0);
         applyAuditDefaults(row);
         return row;
     }
@@ -52,6 +53,7 @@ public final class StudioPersistenceConverter {
         domain.setDomain(row.getBizDomain());
         domain.setCategory(row.getCategory());
         domain.setEnabled("ENABLED".equalsIgnoreCase(row.getStatus()));
+        domain.setVersion(row.getVersion() != null ? row.getVersion() : 0);
         return domain;
     }
 
@@ -76,6 +78,7 @@ public final class StudioPersistenceConverter {
         ExtensionRuntimeConfig cfg = ExtensionRuntimeConfigParser.parse(domain.getConfig());
         row.setIsDefault(Boolean.TRUE.equals(cfg.getDefaultImpl()));
         row.setRolloutPercent(cfg.getTraffic());
+        row.setVersion(domain.getVersion() != null ? domain.getVersion() : 0);
         applyAuditDefaults(row);
         return row;
     }
@@ -98,6 +101,7 @@ public final class StudioPersistenceConverter {
         domain.setEnabled(row.getStatus() != null && row.getStatus() == 1);
         domain.setCreatedAt(toLocalDateTime(row.getCreatedAt()));
         domain.setUpdatedAt(toLocalDateTime(row.getUpdatedAt()));
+        domain.setVersion(row.getVersion() != null ? row.getVersion() : 0);
         return domain;
     }
 

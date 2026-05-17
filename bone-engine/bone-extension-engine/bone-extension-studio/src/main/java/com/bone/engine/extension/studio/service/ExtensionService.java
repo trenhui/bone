@@ -13,6 +13,8 @@ public interface ExtensionService {
     List<Extension> findExtensionsByExtPointId(Long extPointId);
     Extension saveExtension(Extension extension);
     Extension updateExtension(Long id, Extension extension);
+
+    Extension updateExtension(Long id, Extension extension, Integer expectedVersion);
     void deleteExtension(Long id);
     Extension enableExtension(Long id, boolean enabled);
     Extension updateExtensionPriority(Long id, int priority);

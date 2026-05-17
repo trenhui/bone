@@ -8,6 +8,8 @@ public class DatabaseTable {
     private List<TableColumn> columns;
     private String primaryKey;
     private List<String> indexes;
+    /** 0-GENERATIVE 1-RUNTIME */
+    private int deliveryMode;
 
     private DatabaseTable() {
     }
@@ -36,12 +38,21 @@ public class DatabaseTable {
         return indexes;
     }
 
+    public int getDeliveryMode() {
+        return deliveryMode;
+    }
+
+    public boolean isRuntimeDelivery() {
+        return deliveryMode == 1;
+    }
+
     public static class Builder {
         private String tableName;
         private String tableComment;
         private List<TableColumn> columns;
         private String primaryKey;
         private List<String> indexes;
+        private int deliveryMode;
 
         public Builder tableName(String tableName) {
             this.tableName = tableName;
@@ -68,6 +79,11 @@ public class DatabaseTable {
             return this;
         }
 
+        public Builder deliveryMode(int deliveryMode) {
+            this.deliveryMode = deliveryMode;
+            return this;
+        }
+
         public DatabaseTable build() {
             DatabaseTable table = new DatabaseTable();
             table.tableName = tableName;
@@ -75,6 +91,7 @@ public class DatabaseTable {
             table.columns = columns;
             table.primaryKey = primaryKey;
             table.indexes = indexes;
+            table.deliveryMode = deliveryMode;
             return table;
         }
     }

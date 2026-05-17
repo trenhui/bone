@@ -41,7 +41,7 @@
 | INT-07 | `bone-platform/pom.xml` | `bone-platform-integration` 入 reactor（唯一集成 Maven 构件） | done | P0 |
 | INT-08 | `RestClientImpl` | REST/HTTP/HTTPS 连接器真实 `HttpClient` 调用 | done | P1 |
 | INT-09 | `LinearSyncFlowRuntime` | **同步 MVP**：请求线程内 START→HTTP→END（`ExecuteFlowHandler` 写回执行日志） | done | P1 |
-| INT-10 | 领域事件 | Outbox/MQ 投递（对齐消息规范 Topic） | open | P2 |
+| INT-10 | 领域事件 | `int_outbox` + 信封 + 中继（`BONE_INTEGRATION_OUTBOX_MQ_ENABLED` 切 RocketMQ） | done | P2 |
 | INT-11 | `CamelFlowCompiler` | `int_flow_node` → Camel 路由（Choice/并行；HTTP 组件已迁入） | open | P2 |
 | INT-12 | 模块收敛 | 删除 `bone-engine/bone-integration`，唯一服务 `bone-platform-integration` | done | P0 |
 | INT-SEC-01 | `SecurityConfig` | `BONE_INTEGRATION_JWT_ENABLED=true` 时 `/integration/**` 需 IAM JWT | done | P1 |
@@ -82,6 +82,9 @@
 | EXT-MVP-04 | Studio + IAM | `/api/**` JWT 鉴权（`bone.iam.jwt`，CORS 含 3008） | done | P1 |
 | EXT-MVP-05 | `bone-extension-studio` | `points`/`plugins` 支持 `page`/`size`（兼容全量列表） | done | P2 |
 | EXT-MVP-06 | Studio | `rollback` 版本回滚（`ExtensionServiceImpl.rollbackExtension`） | done | P2 |
+| EXT-MVP-07 | Studio | LRO 部署：`POST …:deploy` → **202** + `GET /operations/{id}`（`StudioLroService`） | done | P2 |
+| EXT-MVP-08 | Studio | 幂等写 + `If-Match` 乐观锁（`StudioIdempotencyService`，412/409） | done | P2 |
+| EXT-MVP-09 | `bone-extension-sdk` | 执行防护 `ExtensionExecutionGuard`（超时/并发可配置） | done | P2 |
 | EXT-PH2-01 | Studio | JAR Multipart 上传 + `ext_plugin_version` | open | P2 |
 | EXT-PH3-01 | SDK | Wasm 隔离运行时 | open | P3 |
 
@@ -101,8 +104,8 @@
 | META-VIS-04 | `bone-generator-app` | 与 generator :8085 API 对齐 | done | P1 |
 | META-ENG-01 | `bone-metadata-engine` | `SdkMetadataPlatformBridge` 读 `meta_*` status=1 + starter 自动装配 | done | P1 |
 | META-002B-01 | `meta_entity.delivery_mode` + catalog API | 实体交付模式 0-GENERATIVE / 1-RUNTIME；`bone-metadata-app` 可选 | done | P1 |
-| META-002B-02 | `bone-metadata-engine` | 模式 B：已发布 `RUNTIME` 实体动态 CRUD REST（engine→sdk） | open | P1 |
-| META-002B-03 | `studio-generator` | 发布 `RUNTIME` 实体时跳过标准 CRUD 生成（模式 A 收窄） | open | P2 |
+| META-002B-02 | `bone-metadata-engine` + `bone-metadata-server` | 模式 B：`JdbcRuntimeRecordService` + `/api/v1/runtime/entities/{code}/records` | done | P1 |
+| META-002B-03 | `studio-generator` | `delivery_mode=RUNTIME` 实体跳过标准 CRUD 生成（catalog 快照过滤） | done | P2 |
 
 ## 控制台与仪表盘（bone-shell + bone-system）
 
