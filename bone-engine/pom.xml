@@ -9,9 +9,10 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <modules>
+        <!-- metadata-sdk 须先于 extension-studio（EMBEDDED 持久化依赖） -->
+        <module>bone-metadata-sdk</module>
         <module>bone-extension-engine/bone-extension-sdk</module>
         <module>bone-extension-engine/bone-extension-studio</module>
-        <module>bone-metadata-sdk</module>
         <module>bone-metadata-server</module>
         <module>bone-metadata-engine</module>
         <module>studio-generator</module>

@@ -2,6 +2,10 @@ spring:
   config:
     activate:
       on-profile: test
+  sql:
+    init:
+      # 由 ExternalScriptExecutor 按 sql/{h2|mysql}/ 加载，避免与根目录 schema.sql 重复建表
+      mode: never
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/extTest?useSSL=false&autoReconnect=true&characterEncoding=utf8}
     username: ${DB_USERNAME:root}
