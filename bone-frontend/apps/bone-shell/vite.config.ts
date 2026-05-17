@@ -8,9 +8,9 @@ export default defineConfig({
     port: 3000,
     host: '0.0.0.0',
     proxy: {
-      // 扩展 Studio；统一入口可改为 http://localhost:8888（bone-gateway）
+      // 扩展：经 Gateway 统一入口（Studio 直连可改为 8088）
       '/api/v1/extension': {
-        target: 'http://localhost:8088',
+        target: process.env.BONE_EXTENSION_PROXY_TARGET ?? 'http://localhost:8888',
         changeOrigin: true,
       },
       '/api/v1/iam': {

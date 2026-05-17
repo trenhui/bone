@@ -3,10 +3,11 @@ import { Form, Select, Input, Checkbox, Button, message, Card, Typography, Table
 import { ReloadOutlined, DownloadOutlined, PlusOutlined } from '@ant-design/icons';
 import {
   codeGenerationApi,
-  codeTemplateApi,
   dataSourceApi,
   metadataEntitySnapshotApi,
+  pageRecords,
   tableMetadataApi,
+  templateApi,
 } from '../services/api';
 import { DatabaseTable } from '../services/types';
 import { useGeneratorStore } from '../store';
@@ -44,7 +45,7 @@ const CodeGeneration: React.FC = () => {
     try {
       setLoadingDataSources(true);
       const response = await dataSourceApi.getList({ page: 1, size: 100 });
-      setDataSources(response.data.data.list || []);
+      setDataSources(pageRecords(response.data.data));
     } catch (error) {
       message.error('加载数据源失败');
       console.error('加载数据源失败:', error);
@@ -71,8 +72,8 @@ const CodeGeneration: React.FC = () => {
   const loadTemplates = async () => {
     try {
       setLoadingTemplates(true);
-      const response = await codeTemplateApi.getList({ page: 1, size: 100 });
-      setTemplates(response.data.data.list || []);
+      const response = await templateApi.getList({ page: 1, size: 100 });
+      setTemplates(pageRecords(response.data.data));
     } catch (error) {
       message.error('加载模板失败');
       console.error('加载模板失败:', error);
@@ -150,7 +151,7 @@ const CodeGeneration: React.FC = () => {
         tenantId: 0,
       });
       const page = response.data.data;
-      const tables: DatabaseTable[] = page?.list ?? [];
+      const tables: DatabaseTable[] = pageRecords(page);
       setDataSourceTables(
         tables.map((t) => ({ tableName: t.tableName, tableComment: t.tableComment })),
       );

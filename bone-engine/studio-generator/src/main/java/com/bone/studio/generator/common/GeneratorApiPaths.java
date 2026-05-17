@@ -7,18 +7,15 @@ public final class GeneratorApiPaths {
 
   public static final String DATA_SOURCES = V1_PREFIX + "/data-sources";
 
-  public static final String TABLE_METADATA = V1_PREFIX + "/table-metadata";
+  public static final String TEMPLATES = V1_PREFIX + "/templates";
 
-  public static final String CODE_TEMPLATES = V1_PREFIX + "/code-templates";
-
+  /** Freemarker 异步生成（As-Is） */
   public static final String CODE_GENERATION = V1_PREFIX + "/code-generation";
 
-  /** 同步代码生成（字符串模板内核，原 /generate） */
+  /** 同步字符串模板生成 */
   public static final String GENERATION_TASKS = V1_PREFIX + "/generation-tasks";
 
-  /**
-   * 已发布 meta_* 快照（只读，供 CATALOG_SNAPSHOT 生成）；非 metadata-server catalog CRUD。
-   */
+  /** 已发布 meta_* 快照（只读，供 CATALOG_SNAPSHOT 生成） */
   public static final String METADATA_ENTITY_SNAPSHOTS = V1_PREFIX + "/metadata-entity-snapshots";
 
   public static final String CAPABILITIES = V1_PREFIX + "/capabilities";

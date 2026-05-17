@@ -11,7 +11,7 @@ import com.bone.studio.generator.application.usecase.standard.CreateDataSourceUs
 import com.bone.studio.generator.application.usecase.standard.DeleteDataSourceUseCase;
 import com.bone.studio.generator.application.usecase.standard.UpdateDataSourceUseCase;
 import com.bone.studio.generator.domain.data.DataSource;
-import com.bone.core.result.PageResult;
+import com.bone.core.model.PageResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -86,7 +86,7 @@ class DataSourceControllerTest {
         PageResult<DataSource> result = getDataSourceListUseCase.execute(query);
 
         assertNotNull(result);
-        assertNotNull(result.getList());
+        assertNotNull(result.getRecords());
     }
 
     @Test
@@ -112,10 +112,10 @@ class DataSourceControllerTest {
 
         PageResult<DataSource> result = getDataSourceListUseCase.execute(query);
         assertNotNull(result);
-        assertNotNull(result.getList());
+        assertNotNull(result.getRecords());
 
-        boolean found = result.getList().stream()
-                .anyMatch(ds -> ds.getId().equals(dataSourceId));
+        boolean found = result.getRecords().stream()
+                .anyMatch(ds -> String.valueOf(ds.getId()).equals(dataSourceId));
         assertTrue(found, "创建的数据源应该能在列表中找到");
     }
 
@@ -167,7 +167,7 @@ class DataSourceControllerTest {
                 .size(100)
                 .build();
         PageResult<DataSource> resultBeforeDelete = getDataSourceListUseCase.execute(queryBeforeDelete);
-        long countBefore = resultBeforeDelete.getList().size();
+        long countBefore = resultBeforeDelete.getRecords().size();
 
         DeleteDataSourceCommand deleteCommand = DeleteDataSourceCommand.builder()
                 .id(dataSourceId)
@@ -179,7 +179,7 @@ class DataSourceControllerTest {
                 .size(100)
                 .build();
         PageResult<DataSource> resultAfterDelete = getDataSourceListUseCase.execute(queryAfterDelete);
-        long countAfter = resultAfterDelete.getList().size();
+        long countAfter = resultAfterDelete.getRecords().size();
 
         assertEquals(countBefore - 1, countAfter);
     }

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import type { PageResult } from './types';
 
 /** 空字符串时使用相对路径，由 vite.config 代理到 studio-generator :8085 */
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
@@ -13,6 +14,12 @@ const api = axios.create({
   },
 });
 
+/** 解析分页体（规范 records；兼容过渡 list） */
+export function pageRecords<T>(page?: PageResult<T> | { list?: T[]; records?: T[] } | null): T[] {
+  if (!page) return [];
+  return page.records ?? page.list ?? [];
+}
+
 export const dataSourceApi = {
   getList: (params: { page: number; size: number; name?: string; type?: string; status?: string }) =>
     api.get(`${G}/data-sources`, { params }),
@@ -25,9 +32,8 @@ export const dataSourceApi = {
 
   delete: (id: string) => api.delete(`${G}/data-sources/${id}`),
 
-  testConnection: (id: string) => api.post(`${G}/data-sources/${id}/test`),
+  testConnection: (id: string) => api.post(`${G}/data-sources/${id}:test-connection`),
 
-  /** JDBC 发现物理表（详设 §5.2） */
   listTables: (id: string) => api.get(`${G}/data-sources/${id}/tables`),
 
   syncTables: (id: string, data: { tableNames?: string[] }) =>
@@ -47,22 +53,24 @@ export const metadataEntitySnapshotApi = {
   }) => api.get(`${G}/metadata-entity-snapshots`, { params }),
 };
 
-export const codeTemplateApi = {
+export const templateApi = {
   getList: (params: { page: number; size: number; type?: string; status?: string }) =>
-    api.get(`${G}/code-templates`, { params }),
+    api.get(`${G}/templates`, { params }),
 
-  getById: (id: number) => api.get(`${G}/code-templates/${id}`),
+  getById: (id: number) => api.get(`${G}/templates/${id}`),
 
-  create: (data: Record<string, unknown>) => api.post(`${G}/code-templates`, data),
+  create: (data: Record<string, unknown>) => api.post(`${G}/templates`, data),
 
-  update: (id: number, data: Record<string, unknown>) => api.put(`${G}/code-templates/${id}`, data),
+  update: (id: number, data: Record<string, unknown>) => api.put(`${G}/templates/${id}`, data),
 
-  delete: (id: number) => api.delete(`${G}/code-templates/${id}`),
+  delete: (id: number) => api.delete(`${G}/templates/${id}`),
 
-  publish: (id: number) => api.post(`${G}/code-templates/${id}/publish`),
+  publish: (id: number) => api.post(`${G}/templates/${id}:publish`),
 };
 
-/** Freemarker 异步生成（As-Is） */
+/** @deprecated 使用 templateApi */
+export const codeTemplateApi = templateApi;
+
 export const codeGenerationApi = {
   generate: (data: Record<string, unknown>) => api.post(`${G}/code-generation`, data),
 
@@ -72,12 +80,10 @@ export const codeGenerationApi = {
     api.get(`${G}/code-generation/tasks/${taskId}/download`, { responseType: 'blob' }),
 };
 
-/** 同步字符串模板生成（详设 §5.4 generation-tasks） */
 export const generationTaskApi = {
   create: (data: Record<string, unknown>) => api.post(`${G}/generation-tasks`, data),
 };
 
-/** @deprecated 使用 dataSourceApi / metadataEntitySnapshotApi / generationTaskApi */
 export const tableMetadataApi = {
   sync: (data: { dataSourceId: string; tableNames?: string[] }) =>
     dataSourceApi.syncTables(data.dataSourceId, { tableNames: data.tableNames }),
@@ -85,7 +91,6 @@ export const tableMetadataApi = {
   getDataSourceTables: (dataSourceId: string) => dataSourceApi.listTables(dataSourceId),
 };
 
-/** @deprecated 使用 metadataEntitySnapshotApi / dataSourceApi / generationTaskApi */
 export const codeGeneratorApi = {
   loadPhysicalTables: (dataSourceId: string) => dataSourceApi.listTables(dataSourceId),
 

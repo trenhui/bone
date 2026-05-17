@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Table, Button, Modal, Form, Input, Select, message, Space, Card, Typography, Divider } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
-import { dataSourceApi } from '../services/api';
+import { dataSourceApi, pageRecords } from '../services/api';
 import { DataSource } from '../services/types';
 import { useGeneratorStore } from '../store';
 
@@ -34,7 +34,7 @@ const DataSourceManagement: React.FC = () => {
     try {
       setLoadingDataSources(true);
       const response = await dataSourceApi.getList({ page: 1, size: 100 });
-      setDataSources(response.data.data.list || []);
+      setDataSources(pageRecords(response.data.data));
     } catch (error) {
       message.error('加载数据源失败');
       console.error('加载数据源失败:', error);

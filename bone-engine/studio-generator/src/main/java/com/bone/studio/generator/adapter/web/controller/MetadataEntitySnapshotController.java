@@ -1,7 +1,7 @@
 package com.bone.studio.generator.adapter.web.controller;
 
 import com.bone.core.result.ApiResponse;
-import com.bone.core.result.PageResult;
+import com.bone.core.model.PageResult;
 import com.bone.studio.generator.application.query.handler.LoadCatalogTablesHandler;
 import com.bone.studio.generator.application.query.qry.LoadCatalogTablesQry;
 import com.bone.studio.generator.common.GeneratorApiPaths;

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Input, Select, message, Typography, Space, InputNumber, Card } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
-import { codeTemplateApi } from '../services/api';
+import { pageRecords, templateApi } from '../services/api';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
@@ -19,8 +19,8 @@ const TemplateManagement: React.FC = () => {
   const loadTemplates = async () => {
     try {
       setLoading(true);
-      const response = await codeTemplateApi.getList({ page: 1, size: 100 });
-      setTemplates(response.data.data.list || []);
+      const response = await templateApi.getList({ page: 1, size: 100 });
+      setTemplates(pageRecords(response.data.data));
     } catch (error) {
       message.error('加载模板失败');
       console.error('加载模板失败:', error);
@@ -51,7 +51,7 @@ const TemplateManagement: React.FC = () => {
   // 处理删除模板
   const handleDeleteTemplate = async (id: number) => {
     try {
-      await codeTemplateApi.delete(id);
+      await templateApi.delete(id);
       message.success('模板删除成功');
       loadTemplates();
     } catch (error) {
@@ -73,11 +73,11 @@ const TemplateManagement: React.FC = () => {
       
       if (editingTemplate) {
         // 更新模板
-        await codeTemplateApi.update(editingTemplate.id, values);
+        await templateApi.update(editingTemplate.id, values);
         message.success('模板更新成功');
       } else {
         // 创建模板
-        await codeTemplateApi.create(values);
+        await templateApi.create(values);
         message.success('模板创建成功');
       }
       
@@ -92,7 +92,7 @@ const TemplateManagement: React.FC = () => {
   // 处理发布模板
   const handlePublishTemplate = async (id: number) => {
     try {
-      await codeTemplateApi.publish(id);
+      await templateApi.publish(id);
       message.success('模板发布成功');
       loadTemplates();
     } catch (error) {

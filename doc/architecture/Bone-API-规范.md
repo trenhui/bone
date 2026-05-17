@@ -501,11 +501,11 @@ OpenAPI 草案：[openapi/extension-v1.yaml](./openapi/extension-v1.yaml)（本�
 | 方法 | 路径（规范） | 说明 |
 |------|--------------|------|
 | GET/POST | `/api/v1/generator/data-sources` | 数据源 CRUD |
-| POST | `/api/v1/generator/data-sources/{id}/test` | 连接测试（过渡；目标 `{id}:test-connection`） |
+| POST | `/api/v1/generator/data-sources/{id}:test-connection` | 连接测试 |
 | GET | `/api/v1/generator/data-sources/{id}/tables` | 物理库表发现（JDBC） |
 | POST | `/api/v1/generator/data-sources/{id}/tables:sync` | 同步表结构到 `gen_*` |
 | GET | `/api/v1/generator/metadata-entity-snapshots` | 已发布 `meta_*` 快照分页（`CATALOG_SNAPSHOT` 选型） |
-| GET/POST | `/api/v1/generator/code-templates` | 模板（As-Is；目标 `/templates`） |
+| GET/POST | `/api/v1/generator/templates` | 模板 CRUD；`POST …/{id}:publish` 发布 |
 | POST | `/api/v1/generator/code-generation` | Freemarker 异步生成（As-Is） |
 | POST | `/api/v1/generator/generation-tasks` | 同步字符串模板生成 |
 | GET | `/api/v1/generator/capabilities` | AI 能力发现 |
@@ -517,7 +517,9 @@ OpenAPI 草案：[openapi/extension-v1.yaml](./openapi/extension-v1.yaml)（本�
 | 已移除 | `/api/ext-points`、`/api/extensions`、`/api/extension/*` | `/api/v1/extension/*` | — |
 | 已移除 | `/api/data-sources` | `/api/v1/generator/data-sources` | — |
 | 已移除 | `/api/table-metadata` | `/api/v1/generator/table-metadata` | — |
-| 已移除 | `/api/code-templates` | `/api/v1/generator/code-templates` | — |
+| 已移除 | `/api/code-templates` | `/api/v1/generator/templates` | — |
+| 已移除 | `/api/v1/generator/code-templates` | `/api/v1/generator/templates` | — |
+| 已移除 | `data-sources/{id}/test` | `data-sources/{id}:test-connection` | — |
 | 已移除 | `/api/code-generation` | `/api/v1/generator/code-generation` | — |
 | 已移除 | `/api/code-generator` | `/api/v1/generator/*`（见 §13.1.1） | — |
 | 已移除 | `/api/v1/generator/generate`、`/tables/{id}`、`/catalog/entities` | `generation-tasks`、`data-sources/{id}/tables`、`metadata-entity-snapshots` | — |

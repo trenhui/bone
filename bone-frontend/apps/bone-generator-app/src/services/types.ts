@@ -71,13 +71,17 @@ export interface CodeGenerationResponse {
   outputPath: string;
 }
 
-// 分页结果类型
+// 分页结果类型（对齐 Bone-API §3.3）
 export interface PageResult<T> {
   records: T[];
+  /** @deprecated 过渡字段 */
+  list?: T[];
   total: number;
+  page: number;
   size: number;
-  current: number;
   pages: number;
+  hasNext?: boolean;
+  hasPrevious?: boolean;
 }
 
 // API响应类型

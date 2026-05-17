@@ -44,7 +44,7 @@ class PayOrderCommandHandlerTest {
         
         handler.handle(command);
         
-        assertEquals(com.bone.blueprint.domain.order.OrderStatus.PAID, order.getStatus());
+        assertEquals(com.bone.blueprint.domain.order.valueobject.OrderStatus.PAID, order.getStatus());
         verify(orderRepository, times(1)).findById(1L);
         verify(orderRepository, times(1)).save(any(Order.class));
     }

@@ -1,7 +1,7 @@
 package com.bone.studio.generator.adapter.web.controller;
 
 import com.bone.core.result.ApiResponse;
-import com.bone.core.result.PageResult;
+import com.bone.core.model.PageResult;
 import com.bone.studio.generator.common.GeneratorApiPaths;
 import com.bone.studio.generator.application.command.cmd.*;
 import com.bone.studio.generator.application.query.qry.GetCodeTemplateListQry;
@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping(GeneratorApiPaths.CODE_TEMPLATES)
+@RequestMapping(GeneratorApiPaths.TEMPLATES)
 @RequiredArgsConstructor
 public class CodeTemplateController {
 
@@ -46,7 +46,7 @@ public class CodeTemplateController {
         return ApiResponse.success(deleteCodeTemplateUseCase.execute(command));
     }
 
-    @PostMapping("/{id}/publish")
+    @PostMapping("/{id}:publish")
     public ApiResponse<Long> publishCodeTemplate(@PathVariable Long id) {
         PublishCodeTemplateCommand command = PublishCodeTemplateCommand.builder()
                 .id(id)

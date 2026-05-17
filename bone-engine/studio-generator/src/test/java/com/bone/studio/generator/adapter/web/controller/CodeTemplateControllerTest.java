@@ -5,7 +5,7 @@ import com.bone.studio.generator.application.query.qry.GetCodeTemplateListQry;
 import com.bone.studio.generator.application.usecase.CreateCodeTemplateUseCase;
 import com.bone.studio.generator.application.usecase.GetCodeTemplateListUseCase;
 import com.bone.studio.generator.domain.data.CodeTemplate;
-import com.bone.core.result.PageResult;
+import com.bone.core.model.PageResult;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -37,15 +37,16 @@ class CodeTemplateControllerTest {
 
     @jakarta.annotation.PostConstruct
     void setUp() {
-        baseUrl = "http://localhost:" + port + "/api/v1/generator/code-templates";
+        baseUrl = "http://localhost:" + port + "/api/v1/generator/templates";
     }
 
     @Test
     void testCreateCodeTemplate() {
-        String uniqueName = "测试模板_" + UUID.randomUUID().toString().substring(0, 8);
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        String uniqueName = "测试模板_" + suffix;
         CreateCodeTemplateCommand command = CreateCodeTemplateCommand.builder()
                 .name(uniqueName)
-                .code("test_template")
+                .code("test_template_" + suffix)
                 .description("测试模板描述")
                 .type("entity")
                 .content("public class ${className} { }")
@@ -67,7 +68,7 @@ class CodeTemplateControllerTest {
         PageResult<CodeTemplate> result = getCodeTemplateListUseCase.execute(query);
 
         assertNotNull(result);
-        assertNotNull(result.getList());
+        assertNotNull(result.getRecords());
     }
 
     @Test
@@ -80,6 +81,6 @@ class CodeTemplateControllerTest {
         PageResult<CodeTemplate> result = getCodeTemplateListUseCase.execute(query);
 
         assertNotNull(result);
-        assertNotNull(result.getList());
+        assertNotNull(result.getRecords());
     }
 }

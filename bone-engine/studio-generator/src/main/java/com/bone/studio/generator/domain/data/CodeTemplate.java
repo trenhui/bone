@@ -1,6 +1,9 @@
 package com.bone.studio.generator.domain.data;
 
+import com.bone.core.annotation.Id;
 import com.bone.core.domain.AggregateRoot;
+import com.bone.core.domain.id.GeneratedValue;
+import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.metadata.sdk.domain.annotation.Column;
 import com.bone.metadata.sdk.domain.annotation.Table;
 
@@ -10,6 +13,8 @@ import java.util.List;
 @Table("gen_code_template")
 public class CodeTemplate extends AggregateRoot<Long> {
 
+    @Id
+    @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
     private Long id;
     private Long tenantId;
     private String name;

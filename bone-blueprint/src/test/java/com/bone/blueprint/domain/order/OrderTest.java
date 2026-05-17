@@ -1,5 +1,6 @@
 package com.bone.blueprint.domain.order;
 
+import com.bone.blueprint.domain.order.valueobject.OrderStatus;
 import com.bone.core.exception.DomainException;
 import org.junit.jupiter.api.Test;
 
@@ -45,7 +46,7 @@ class OrderTest {
         order.pay();
         
         assertEquals(OrderStatus.PAID, order.getStatus());
-        assertEquals(1, order.getDomainEvents().size());
+        assertEquals(2, order.getDomainEvents().size());
     }
 
     @Test

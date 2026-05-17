@@ -1,6 +1,6 @@
 package com.bone.studio.generator.application.usecase;
 
-import com.bone.core.result.PageResult;
+import com.bone.core.model.PageResult;
 import com.bone.studio.generator.application.query.handler.GetCodeTemplateListQueryHandler;
 import com.bone.studio.generator.application.query.qry.GetCodeTemplateListQry;
 import com.bone.studio.generator.domain.data.CodeTemplate;

@@ -19,7 +19,7 @@ class PromotionOrderPriceCalculatorTest {
 
         BigDecimal result = calculator.calculate(request);
 
-        assertEquals(new BigDecimal("80"), result);
+        assertEquals(0, new BigDecimal("80").compareTo(result));
     }
 
     @Test
@@ -31,7 +31,7 @@ class PromotionOrderPriceCalculatorTest {
 
         BigDecimal result = calculator.calculate(request);
 
-        assertEquals(new BigDecimal("88"), result);
+        assertEquals(0, new BigDecimal("88").compareTo(result));
     }
 
     @Test
@@ -43,7 +43,7 @@ class PromotionOrderPriceCalculatorTest {
 
         BigDecimal result = calculator.calculate(request);
 
-        assertEquals(new BigDecimal("80400"), result);
+        assertEquals(0, new BigDecimal("80400").compareTo(result));
     }
 
     @Test
@@ -54,6 +54,6 @@ class PromotionOrderPriceCalculatorTest {
 
         BigDecimal result = calculator.calculate(request);
 
-        assertEquals(new BigDecimal("0"), result);
+        assertEquals(0, new BigDecimal("0").compareTo(result));
     }
 }

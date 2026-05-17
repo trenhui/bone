@@ -1,6 +1,7 @@
 name: Extension Studio
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - 'bone-engine/bone-extension-engine/**'
@@ -119,3 +120,19 @@ jobs:
         run: npm run test -- --run
       - name: Typecheck
         run: npm run typecheck
+
+  extension-e2e-api:
+    name: Extension API E2E (manual stack)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    defaults:
+      run:
+        working-directory: bone-frontend/apps/bone-extension-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: API smoke (expects Gateway+Studio on runner)
+        run: npm run e2e:api
+        continue-on-error: true

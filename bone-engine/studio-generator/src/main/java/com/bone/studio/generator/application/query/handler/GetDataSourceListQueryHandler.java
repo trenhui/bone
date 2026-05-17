@@ -1,9 +1,10 @@
 package com.bone.studio.generator.application.query.handler;
 
-import com.bone.core.result.PageResult;
+import com.bone.core.model.PageResult;
 import com.bone.studio.generator.application.query.qry.GetDataSourceListQry;
 import com.bone.studio.generator.domain.data.DataSource;
 import com.bone.studio.generator.domain.repository.DataSourceRepository;
+import com.bone.metadata.sdk.query.criteria.Criteria;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -16,8 +17,11 @@ public class GetDataSourceListQueryHandler {
     private final DataSourceRepository dataSourceRepository;
 
     public PageResult<DataSource> handle(GetDataSourceListQry qry) {
-        List<DataSource> dataSources = dataSourceRepository.findByCriteria(null);
-        int total = dataSources.size();
-        return PageResult.of(dataSources, total, qry.getPage(), qry.getSize());
+        int pageNo = qry.getPage() != null ? qry.getPage() : 1;
+        int pageSize = qry.getSize() != null ? qry.getSize() : 10;
+        Criteria<DataSource> criteria = Criteria.<DataSource>create().page(pageNo, pageSize);
+        com.bone.core.model.PageResult<DataSource> sdkPage = dataSourceRepository.pageByCriteria(criteria);
+        long total = sdkPage.getTotal() != null ? sdkPage.getTotal() : 0L;
+        return PageResult.of(sdkPage.getRecords(), total, pageNo, pageSize);
     }
 }

@@ -1,7 +1,7 @@
 package com.bone.studio.generator.adapter.web.controller;
 
 import com.bone.core.result.ApiResponse;
-import com.bone.core.result.PageResult;
+import com.bone.core.model.PageResult;
 import com.bone.studio.generator.application.command.cmd.*;
 import com.bone.studio.generator.application.query.qry.GetDataSourceListQry;
 import com.bone.studio.generator.application.query.qry.DataSourceByIdQry;
@@ -79,7 +79,7 @@ public class DataSourceController {
         return ApiResponse.success();
     }
 
-    @PostMapping("/{id}/test")
+    @PostMapping("/{id}:test-connection")
     public ApiResponse<Boolean> testDataSourceConnection(@PathVariable String id) {
         TestDataSourceConnectionCommand command = TestDataSourceConnectionCommand.builder()
                 .id(id)

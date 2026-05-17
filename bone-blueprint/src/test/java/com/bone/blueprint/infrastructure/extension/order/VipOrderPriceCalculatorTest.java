@@ -19,7 +19,7 @@ class VipOrderPriceCalculatorTest {
 
         BigDecimal result = calculator.calculate(request);
 
-        assertEquals(new BigDecimal("90"), result);
+        assertEquals(0, new BigDecimal("90").compareTo(result));
     }
 
     @Test
@@ -31,7 +31,7 @@ class VipOrderPriceCalculatorTest {
 
         BigDecimal result = calculator.calculate(request);
 
-        assertEquals(new BigDecimal("99"), result);
+        assertEquals(0, new BigDecimal("99").compareTo(result));
     }
 
     @Test
@@ -43,7 +43,7 @@ class VipOrderPriceCalculatorTest {
 
         BigDecimal result = calculator.calculate(request);
 
-        assertEquals(new BigDecimal("90450"), result);
+        assertEquals(0, new BigDecimal("90450").compareTo(result));
     }
 
     @Test
@@ -54,6 +54,6 @@ class VipOrderPriceCalculatorTest {
 
         BigDecimal result = calculator.calculate(request);
 
-        assertEquals(new BigDecimal("0"), result);
+        assertEquals(0, new BigDecimal("0").compareTo(result));
     }
 }
