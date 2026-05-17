@@ -12,12 +12,32 @@ public class ExtensionStudioProperties {
   @NestedConfigurationProperty
   private final ArtifactConfig artifact = new ArtifactConfig();
 
+  @NestedConfigurationProperty
+  private final SecurityConfig security = new SecurityConfig();
+
   public RuntimeSyncConfig getRuntimeSync() {
     return runtimeSync;
   }
 
   public ArtifactConfig getArtifact() {
     return artifact;
+  }
+
+  public SecurityConfig getSecurity() {
+    return security;
+  }
+
+  public static class SecurityConfig {
+    /** 本地联调：允许无 JWT 访问 Studio API（生产必须 false） */
+    private boolean permitUnauthenticated = false;
+
+    public boolean isPermitUnauthenticated() {
+      return permitUnauthenticated;
+    }
+
+    public void setPermitUnauthenticated(boolean permitUnauthenticated) {
+      this.permitUnauthenticated = permitUnauthenticated;
+    }
   }
 
   public static class RuntimeSyncConfig {

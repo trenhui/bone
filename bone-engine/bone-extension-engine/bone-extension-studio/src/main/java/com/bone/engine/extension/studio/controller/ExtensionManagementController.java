@@ -43,10 +43,12 @@ public class ExtensionManagementController {
     private final ExtensionStudioProperties studioProperties;
 
     @GetMapping("/points")
-    public ResponseEntity<ApiResponse<List<ExtPoint>>> listPoints(
+    public ResponseEntity<ApiResponse<?>> listPoints(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) String domain,
-            @RequestParam(required = false) String category) {
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
         List<ExtPoint> points;
         if (hasText(keyword)) {
             points = extPointService.searchExtPoints(keyword);
@@ -60,6 +62,9 @@ public class ExtensionManagementController {
             points = extPointService.findExtPointsByCategory(category);
         } else {
             points = extPointService.findAllExtPoints();
+        }
+        if (page != null || size != null) {
+            return ResponseEntity.ok(ApiResponse.success("获取扩展点列表成功", paginate(points, page, size)));
         }
         return ResponseEntity.ok(ApiResponse.success("获取扩展点列表成功", points));
     }
@@ -97,21 +102,23 @@ public class ExtensionManagementController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/points/{id}/enable")
+    @PostMapping("/points/{id}:enable")
     public ResponseEntity<ApiResponse<ExtPoint>> enablePoint(@PathVariable Long id) {
         return togglePoint(id, true);
     }
 
-    @PostMapping("/points/{id}/disable")
+    @PostMapping("/points/{id}:disable")
     public ResponseEntity<ApiResponse<ExtPoint>> disablePoint(@PathVariable Long id) {
         return togglePoint(id, false);
     }
 
     @GetMapping("/plugins")
-    public ResponseEntity<ApiResponse<List<Extension>>> listPlugins(
+    public ResponseEntity<ApiResponse<?>> listPlugins(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) Long extPointId,
-            @RequestParam(required = false) String tenantCode) {
+            @RequestParam(required = false) String tenantCode,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
         List<Extension> plugins;
         if (hasText(keyword)) {
             plugins = extensionService.searchExtensions(keyword);
@@ -121,6 +128,9 @@ public class ExtensionManagementController {
             plugins = extensionService.findExtensionsByTenantCode(tenantCode);
         } else {
             plugins = extensionService.findAllExtensions();
+        }
+        if (page != null || size != null) {
+            return ResponseEntity.ok(ApiResponse.success("获取插件列表成功", paginate(plugins, page, size)));
         }
         return ResponseEntity.ok(ApiResponse.success("获取插件列表成功", plugins));
     }
@@ -192,7 +202,7 @@ public class ExtensionManagementController {
         }
     }
 
-    @PostMapping(value = "/plugins/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/plugins:upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse<Extension>> uploadPlugin(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "extPointId", required = false) Long extPointId,
@@ -211,17 +221,17 @@ public class ExtensionManagementController {
         }
     }
 
-    @PostMapping("/plugins/{id}/deploy")
+    @PostMapping("/plugins/{id}:deploy")
     public ResponseEntity<ApiResponse<Extension>> deployPlugin(@PathVariable Long id) {
         return lifecycle(id, true, "部署");
     }
 
-    @PostMapping("/plugins/{id}/undeploy")
+    @PostMapping("/plugins/{id}:undeploy")
     public ResponseEntity<ApiResponse<Extension>> undeployPlugin(@PathVariable Long id) {
         return lifecycle(id, false, "卸载");
     }
 
-    @PostMapping("/plugins/{id}/rollback")
+    @PostMapping("/plugins/{id}:rollback")
     public ResponseEntity<ApiResponse<Extension>> rollbackPlugin(
             @PathVariable Long id, @RequestBody(required = false) Map<String, Object> body) {
         try {
@@ -234,7 +244,7 @@ public class ExtensionManagementController {
         }
     }
 
-    @PostMapping("/plugins/{id}/publish-runtime")
+    @PostMapping("/plugins/{id}:publish-runtime")
     public ResponseEntity<ApiResponse<Map<String, Object>>> publishRuntime(@PathVariable Long id) {
         try {
             boolean published = extensionService.publishRuntime(id);
@@ -247,7 +257,7 @@ public class ExtensionManagementController {
         }
     }
 
-    @PostMapping("/plugins/{id}/bind")
+    @PostMapping("/plugins/{id}:bind")
     public ResponseEntity<ApiResponse<Extension>> bindPlugin(
             @PathVariable Long id, @RequestBody Map<String, Object> body) {
         Object extPointId = body != null ? body.get("extensionPointId") : null;
@@ -266,7 +276,7 @@ public class ExtensionManagementController {
         return ResponseEntity.ok(ApiResponse.success("绑定扩展点成功", extension));
     }
 
-    @PostMapping("/plugins/{id}/unbind")
+    @PostMapping("/plugins/{id}:unbind")
     public ResponseEntity<ApiResponse<Extension>> unbindPlugin(@PathVariable Long id) {
         Extension extension = extensionService.findExtensionById(id);
         if (extension == null) {
@@ -287,7 +297,7 @@ public class ExtensionManagementController {
         return ResponseEntity.ok(ApiResponse.success("获取扩展概览成功", data));
     }
 
-    @PostMapping("/execution-logs/ingest")
+    @PostMapping({"/execution-logs/ingest", "/execution-logs:ingest"})
     public ResponseEntity<ApiResponse<PluginExecutionLog>> ingestExecutionLog(@RequestBody Map<String, Object> body) {
         if (body == null || body.get("className") == null) {
             return badRequest("className 不能为空");
@@ -317,6 +327,7 @@ public class ExtensionManagementController {
         List<PluginExecutionLog> list = executionLogService.query(pluginId, status, safePage, safeSize);
         long total = executionLogService.count(pluginId, status);
         Map<String, Object> data = new LinkedHashMap<>();
+        data.put("records", list);
         data.put("list", list);
         data.put("total", total);
         data.put("page", safePage);
@@ -325,7 +336,7 @@ public class ExtensionManagementController {
                 .withMeta("total", total));
     }
 
-    @PostMapping("/plugins/{id}/simulate")
+    @PostMapping("/plugins/{id}:simulate")
     public ResponseEntity<ApiResponse<PluginExecutionLog>> simulatePlugin(@PathVariable Long id) {
         try {
             return ResponseEntity.ok(ApiResponse.success("模拟调用成功", extensionService.simulatePluginExecution(id)));
@@ -376,11 +387,31 @@ public class ExtensionManagementController {
         return value != null && !value.isBlank();
     }
 
+    /** 分页结构：records（规范）+ list（兼容）/ total / page / size */
+    private static <T> Map<String, Object> paginate(List<T> all, Integer page, Integer size) {
+        int safePage = page != null ? Math.max(1, page) : 1;
+        int safeSize = size != null ? Math.min(100, Math.max(1, size)) : 20;
+        int from = (safePage - 1) * safeSize;
+        List<T> slice;
+        if (from >= all.size()) {
+            slice = List.of();
+        } else {
+            slice = all.subList(from, Math.min(from + safeSize, all.size()));
+        }
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("records", slice);
+        data.put("list", slice);
+        data.put("total", all.size());
+        data.put("page", safePage);
+        data.put("size", safeSize);
+        return data;
+    }
+
     private static <T> ResponseEntity<ApiResponse<T>> badRequest(String message) {
         return ResponseEntity.badRequest().body(ApiResponse.error(message));
     }
 
     private static <T> ResponseEntity<ApiResponse<T>> notFound(String message) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(message));
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(404, message, null));
     }
 }

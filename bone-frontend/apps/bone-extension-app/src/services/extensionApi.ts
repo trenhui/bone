@@ -7,6 +7,7 @@ import axios, { type AxiosResponse } from 'axios';
  * PRD：doc/prd/BONE产品需求文档正式版.md §4.6
  */
 export type StudioApiResponse<T> = {
+  code?: number;
   success: boolean;
   message?: string;
   data: T;
@@ -114,8 +115,10 @@ export async function deleteExtPoint(id: number): Promise<void> {
 }
 
 export async function postExtPointEnable(id: number, enable: boolean): Promise<void> {
-  const path = enable ? 'enable' : 'disable';
-  const res = await client.post<StudioApiResponse<ExtPointRow>>(`${EXTENSION_BASE}/points/${id}/${path}`);
+  const action = enable ? 'enable' : 'disable';
+  const res = await client.post<StudioApiResponse<ExtPointRow>>(
+    `${EXTENSION_BASE}/points/${id}:${action}`,
+  );
   assertSuccess(res);
 }
 
@@ -145,14 +148,16 @@ export async function deletePlugin(id: number): Promise<void> {
 }
 
 export async function deployPlugin(id: number, deploy: boolean): Promise<void> {
-  const path = deploy ? 'deploy' : 'undeploy';
-  const res = await client.post<StudioApiResponse<ExtensionRow>>(`${EXTENSION_BASE}/plugins/${id}/${path}`);
+  const action = deploy ? 'deploy' : 'undeploy';
+  const res = await client.post<StudioApiResponse<ExtensionRow>>(
+    `${EXTENSION_BASE}/plugins/${id}:${action}`,
+  );
   assertSuccess(res);
 }
 
 export async function publishPluginRuntime(id: number): Promise<void> {
   const res = await client.post<StudioApiResponse<{ id: number; published: boolean }>>(
-    `${EXTENSION_BASE}/plugins/${id}/publish-runtime`,
+    `${EXTENSION_BASE}/plugins/${id}:publish-runtime`,
   );
   assertSuccess(res);
 }
@@ -203,7 +208,7 @@ export async function uploadPlugin(params: UploadPluginParams): Promise<Extensio
   if (params.description) {
     form.append('description', params.description);
   }
-  const res = await client.post<StudioApiResponse<ExtensionRow>>(`${EXTENSION_BASE}/plugins/upload`, form, {
+  const res = await client.post<StudioApiResponse<ExtensionRow>>(`${EXTENSION_BASE}/plugins:upload`, form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
   return assertSuccess(res);
@@ -211,7 +216,7 @@ export async function uploadPlugin(params: UploadPluginParams): Promise<Extensio
 
 export async function rollbackPlugin(pluginId: number, version?: string): Promise<ExtensionRow> {
   const res = await client.post<StudioApiResponse<ExtensionRow>>(
-    `${EXTENSION_BASE}/plugins/${pluginId}/rollback`,
+    `${EXTENSION_BASE}/plugins/${pluginId}:rollback`,
     version ? { version } : {},
   );
   return assertSuccess(res);
@@ -247,11 +252,16 @@ export type ExecutionLogRow = {
 };
 
 export type ExecutionLogPage = {
-  list: ExecutionLogRow[];
+  records?: ExecutionLogRow[];
+  list?: ExecutionLogRow[];
   total: number;
   page: number;
   size: number;
 };
+
+function logRows(page: ExecutionLogPage): ExecutionLogRow[] {
+  return page.records ?? page.list ?? [];
+}
 
 export async function getSandboxConfig(): Promise<SandboxConfig> {
   const res = await client.get<StudioApiResponse<SandboxConfig>>(`${EXTENSION_BASE}/sandbox/config`);
@@ -268,16 +278,17 @@ export async function listExecutionLogs(params?: {
   status?: string;
   page?: number;
   size?: number;
-}): Promise<ExecutionLogPage> {
+}): Promise<ExecutionLogPage & { rows: ExecutionLogRow[] }> {
   const res = await client.get<StudioApiResponse<ExecutionLogPage>>(`${EXTENSION_BASE}/execution-logs`, {
     params,
   });
-  return assertSuccess(res);
+  const page = assertSuccess(res);
+  return { ...page, rows: logRows(page) };
 }
 
 export async function simulatePlugin(pluginId: number): Promise<ExecutionLogRow> {
   const res = await client.post<StudioApiResponse<ExecutionLogRow>>(
-    `${EXTENSION_BASE}/plugins/${pluginId}/simulate`,
+    `${EXTENSION_BASE}/plugins/${pluginId}:simulate`,
   );
   return assertSuccess(res);
 }

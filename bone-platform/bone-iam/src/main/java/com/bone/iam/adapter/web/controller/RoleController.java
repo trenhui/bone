@@ -16,7 +16,7 @@ import com.bone.iam.application.query.qry.RolePageQry;
 import com.bone.iam.adapter.web.dto.req.CreateRoleReq;
 import com.bone.iam.adapter.web.dto.resp.RoleDetailResp;
 import com.bone.iam.adapter.web.converter.RoleWebConverter;
-import com.bone.iam.domain.repository.PermissionRepository;
+import com.bone.iam.application.query.handler.RolePermissionsQueryHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -31,8 +31,8 @@ public class RoleController {
     private final UpdateRoleUseCase updateRoleUseCase;
     private final DeleteRoleUseCase deleteRoleUseCase;
     private final RolePageQueryUseCase rolePageQueryUseCase;
+    private final RolePermissionsQueryHandler rolePermissionsQueryHandler;
     private final RoleWebConverter roleWebConverter;
-    private final PermissionRepository permissionRepository;
 
     @PostMapping
     public ApiResponse<Long> create(@RequestBody CreateRoleReq req) {
@@ -80,19 +80,6 @@ public class RoleController {
 
     @GetMapping("/{id}/permissions")
     public ApiResponse<List<PermissionDTO>> getPermissions(@PathVariable Long id) {
-        List<PermissionDTO> permissions = permissionRepository.findByRoleId(id)
-                .stream()
-                .map(p -> {
-                    PermissionDTO dto = new PermissionDTO();
-                    dto.setId(p.getId());
-                    dto.setCode(p.getCode());
-                    dto.setName(p.getName());
-                    dto.setResourceType(p.getResourceType());
-                    dto.setResourcePath(p.getResourcePath());
-                    dto.setAction(p.getAction());
-                    return dto;
-                })
-                .toList();
-        return ApiResponse.success(permissions);
+        return ApiResponse.success(rolePermissionsQueryHandler.handle(id));
     }
 }

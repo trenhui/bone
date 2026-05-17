@@ -10,3 +10,5 @@ bone:
     studio:
       persistence:
         mode: in-memory
+      security:
+        permit-unauthenticated: true

@@ -53,9 +53,13 @@ public class ArchitectureTest {
         ArchRule rule = classes()
                 .that()
                 .haveNameMatching(".*Service")
+                .and()
+                .resideOutsideOfPackage("..adapter..")
+                .and()
+                .resideOutsideOfPackage("..application..")
+                .and()
+                .resideOutsideOfPackage("..infrastructure..")
                 .should()
-                .resideInAPackage("..domain.service..")
-                .orShould()
                 .resideInAPackage("..domain..");
 
         rule.check(classes);

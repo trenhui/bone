@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
-@SpringBootTest(classes = ExtensionStudioApplication.class)
+@SpringBootTest(classes = com.bone.engine.extension.studio.support.MetadataPersistenceTestApplication.class)
 @ActiveProfiles("test")
 class StudioApplicationStartupTest {
 

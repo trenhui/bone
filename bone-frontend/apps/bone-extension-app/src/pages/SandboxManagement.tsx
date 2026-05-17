@@ -43,7 +43,7 @@ const SandboxManagement: React.FC = () => {
     setLogLoading(true);
     try {
       const page = await listExecutionLogs({ status, page: 1, size: 20 });
-      setLogs(page.list);
+      setLogs(page.rows);
       setLogTotal(page.total);
     } catch (e) {
       message.error(e instanceof Error ? e.message : '加载执行日志失败');

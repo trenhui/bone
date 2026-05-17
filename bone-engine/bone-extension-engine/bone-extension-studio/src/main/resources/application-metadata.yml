@@ -31,3 +31,5 @@ bone:
     studio:
       persistence:
         mode: metadata
+      security:
+        permit-unauthenticated: true

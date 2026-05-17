@@ -22,4 +22,5 @@ DDL 真源：仓库根目录 [`bone-init.sql`](../../bone-init.sql)（`int_*` �
 
 ## 安全
 
-开发环境 `SecurityConfig` 对 `/integration/**` 放行；生产需完成 **INT-SEC-01**（IAM JWT），见 [`doc/wiki/07-P0-TODO看板.md`](../../doc/wiki/07-P0-TODO看板.md)。
+- 开发默认：`bone.integration.security.jwt-enabled=false`（`/integration/**` 放行）
+- 生产：`export BONE_INTEGRATION_JWT_ENABLED=true`，与 IAM 共用 `bone.iam.jwt.secret-key` / `Authorization: Bearer`

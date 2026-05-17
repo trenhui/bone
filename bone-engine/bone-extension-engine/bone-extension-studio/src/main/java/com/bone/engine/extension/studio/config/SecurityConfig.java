@@ -23,9 +23,12 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final ExtensionStudioProperties studioProperties;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfig(
+            JwtAuthenticationFilter jwtAuthenticationFilter, ExtensionStudioProperties studioProperties) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.studioProperties = studioProperties;
     }
 
     @Bean
@@ -33,15 +36,21 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(HttpMethod.OPTIONS, "/**")
-                        .permitAll()
-                        .requestMatchers("/actuator/**", "/h2-console/**")
-                        .permitAll()
-                        .requestMatchers("/api/**")
-                        .authenticated()
-                        .anyRequest()
-                        .permitAll())
+                .authorizeHttpRequests(authorize -> {
+                    authorize
+                            .requestMatchers(HttpMethod.OPTIONS, "/**")
+                            .permitAll()
+                            .requestMatchers("/actuator/**", "/h2-console/**")
+                            .permitAll();
+                    if (studioProperties.getSecurity().isPermitUnauthenticated()) {
+                        authorize.requestMatchers("/api/v1/extension/**").permitAll();
+                    }
+                    authorize
+                            .requestMatchers("/api/**")
+                            .authenticated()
+                            .anyRequest()
+                            .permitAll();
+                })
                 .headers(headers -> headers.frameOptions(frame -> frame.disable()))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

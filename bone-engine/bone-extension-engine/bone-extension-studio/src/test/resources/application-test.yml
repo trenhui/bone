@@ -31,3 +31,5 @@ bone:
         enabled: false
       persistence:
         mode: metadata
+      security:
+        permit-unauthenticated: true

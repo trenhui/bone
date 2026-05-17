@@ -34,7 +34,7 @@ public class StudioExecutionLogReporter {
         if (base.endsWith("/")) {
             base = base.substring(0, base.length() - 1);
         }
-        this.ingestUrl = base + "/api/v1/extension/execution-logs/ingest";
+        this.ingestUrl = base + "/api/v1/extension/execution-logs:ingest";
         this.restTemplate = restTemplateBuilder.build();
         log.info("Studio execution log reporter enabled, ingest={}", ingestUrl);
     }

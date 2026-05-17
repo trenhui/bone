@@ -1,9 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mockGet = vi.fn();
-const mockPost = vi.fn();
-const mockPut = vi.fn();
-const mockDelete = vi.fn();
+const { mockGet, mockPost, mockPut, mockDelete } = vi.hoisted(() => ({
+  mockGet: vi.fn(),
+  mockPost: vi.fn(),
+  mockPut: vi.fn(),
+  mockDelete: vi.fn(),
+}));
 
 vi.mock('axios', () => ({
   default: {
@@ -54,7 +56,7 @@ describe('extensionApi', () => {
       data: { success: true, data: { id: 1, published: true } },
     });
     await publishPluginRuntime(1);
-    expect(mockPost).toHaveBeenCalledWith('/v1/extension/plugins/1/publish-runtime');
+    expect(mockPost).toHaveBeenCalledWith('/v1/extension/plugins/1:publish-runtime');
   });
 
   it('listPlugins throws when API returns success=false', async () => {

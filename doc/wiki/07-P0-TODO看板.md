@@ -43,7 +43,7 @@
 | INT-05 | `FlowStatisticsJob` | 流程执行统计定时任务 | open | P2 |
 | INT-06 | `*Handler` 事件类 | 连接器/流程事件后续动作（通知等） | open | P2 |
 | INT-07 | `bone-platform/pom.xml` | `bone-platform-integration` 入 reactor（与 engine 侧 `bone-integration` 构件区分） | done | P0 |
-| INT-SEC-01 | `SecurityConfig` | 生产环境 `/integration/**` 接入 IAM JWT（当前 dev 放行） | open | P1 |
+| INT-SEC-01 | `SecurityConfig` | `BONE_INTEGRATION_JWT_ENABLED=true` 时 `/integration/**` 需 IAM JWT | done | P1 |
 
 **建议**：对外 API 在未实现前返回 **501** + 明确错误码，避免「假成功」。
 
@@ -65,7 +65,7 @@
 |----|------|------|------|--------|
 | IAM-01 | `AuthController` | Token 黑名单（Redis，无 Redis 时仅撤销 refresh） | done | P0 |
 | IAM-02 | `AuthController` | Token 刷新（`iam_refresh_token`） | done | P0 |
-| IAM-03 | `ArchitectureTest` | 5 条 ArchUnit 规则被 TODO 跳过，需修复并重新启用 | open | P0 |
+| IAM-03 | `ArchitectureTest` | ArchUnit 分层 + 空仓储接口；`AuthService` 允许 Spring Security | done | P0 |
 
 ---
 
@@ -79,7 +79,7 @@
 | EXT-MVP-02 | `bone-extension-app` | Vite 代理 Studio **8088** | done | P1 |
 | EXT-MVP-03 | `bone-extension-studio-ui` | 已删除目录；以 `bone-extension-app` 为准 | done | P1 |
 | EXT-MVP-04 | Studio + IAM | `/api/**` JWT 鉴权（`bone.iam.jwt`，CORS 含 3008） | done | P1 |
-| EXT-MVP-05 | `bone-extension-studio` | 列表 API 分页 | open | P2 |
+| EXT-MVP-05 | `bone-extension-studio` | `points`/`plugins` 支持 `page`/`size`（兼容全量列表） | done | P2 |
 | EXT-MVP-06 | Studio | `rollback` 真实版本回滚（Phase 2） | open | P2 |
 | EXT-PH2-01 | Studio | JAR Multipart 上传 + `ext_plugin_version` | open | P2 |
 | EXT-PH3-01 | SDK | Wasm 隔离运行时 | open | P3 |
@@ -94,8 +94,8 @@
 |----|------|------|------|--------|
 | META-ASIS-01 | `bone-metadata-server` | 扩展字段 API `/v1/metadata/fields:*` | done | P0 |
 | META-ASIS-02 | `bone-metadata-sdk` | 平台 `@EnableSqlRepositories` + EAV | done | P0 |
-| META-VIS-01 | 管理面 + `meta_*` | 实体/关系 REST（`/api/metadata/entities` 等） | open | P0 |
-| META-VIS-02 | `bone-metadata-app` | 建模 UI 与后端 API 对齐 | open | P1 |
+| META-VIS-01 | `bone-metadata-server` catalog | 实体/关系 REST：`/api/v1/metadata/entities`、`…/entities/{id}/fields`、`…/relationships` | open | P0 |
+| META-VIS-02 | `bone-metadata-app` :3004 | 建模 UI；开发代理指向 **9001**（非 IAM 8081） | open | P0 |
 | META-VIS-03 | `studio-generator` | As-Is：物理库表反向解析 + 模板；Vision：读 `meta_*` 发布快照 | open | P0 |
 | META-VIS-04 | `bone-generator-app` | 与 generator :8085 API 对齐 | open | P1 |
 | META-ENG-01 | `bone-metadata-engine` | 接入平台 + SPI 桥接 SDK 元模型 | open | P1 |

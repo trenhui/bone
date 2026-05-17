@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
  */
 @Getter
 @ToString(exclude = {"instance", "compiledPatterns", "cachedHashCode"})
-@EqualsAndHashCode(exclude = {"createTime", "compiledPatterns", "cachedHashCode"})
+@EqualsAndHashCode(exclude = {"createdAt", "compiledPatterns", "cachedHashCode"})
 public class ExtensionDefinition implements Serializable, Comparable<ExtensionDefinition> {
 
     private static final long serialVersionUID = 1L;
@@ -36,7 +36,7 @@ public class ExtensionDefinition implements Serializable, Comparable<ExtensionDe
     private String implementationClass;
     private Object instance;
     private String description;
-    private LocalDateTime createTime = LocalDateTime.now();
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     // ==================== 标准路由维度 ====================
     private String tenant = WILDCARD;
@@ -75,7 +75,7 @@ public class ExtensionDefinition implements Serializable, Comparable<ExtensionDe
 
     // ==================== 构造方法 ====================
     public ExtensionDefinition() {
-        this.createTime = LocalDateTime.now();
+        this.createdAt = LocalDateTime.now();
     }
 
     // ==================== 关键修复：兼容旧路由器的 getDimensionRules() ====================

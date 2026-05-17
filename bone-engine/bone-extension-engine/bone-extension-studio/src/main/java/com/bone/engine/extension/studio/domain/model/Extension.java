@@ -25,8 +25,8 @@ public class Extension extends Entity<Long> {
     private Integer priority = 0;
     private String config;
     private boolean enabled = true;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     
     // 工厂方法
     public static Extension create(Long extPointId, String name, String description, String className) {
@@ -35,8 +35,8 @@ public class Extension extends Entity<Long> {
         extension.name = name;
         extension.description = description;
         extension.className = className;
-        extension.createTime = LocalDateTime.now();
-        extension.updateTime = LocalDateTime.now();
+        extension.createdAt = LocalDateTime.now();
+        extension.updatedAt = LocalDateTime.now();
         return extension;
     }
     
@@ -44,85 +44,85 @@ public class Extension extends Entity<Long> {
     public void update(String name, String description) {
         this.name = name;
         this.description = description;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
     
     public void enable() {
         this.enabled = true;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
     
     public void disable() {
         this.enabled = false;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
     
     public void setPriority(int priority) {
         this.priority = priority;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
     
     public void setConfig(String config) {
         this.config = config;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
     
     public void setExtPointId(Long extPointId) {
         this.extPointId = extPointId;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
     
     public void setName(String name) {
         this.name = name;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
     
     public void setDescription(String description) {
         this.description = description;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
     
     public void setClassName(String className) {
         this.className = className;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
     
     public void setTenantCode(String tenantCode) {
         this.tenantCode = tenantCode;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
     
     public void setBizCode(String bizCode) {
         this.bizCode = bizCode;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
     
     public void setScenario(String scenario) {
         this.scenario = scenario;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
     public void setUseCase(String useCase) {
         this.useCase = useCase;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
     public void setUserGroup(String userGroup) {
         this.userGroup = userGroup;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
-    public void setCreateTime(LocalDateTime createTime) {
-        this.createTime = createTime;
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 
-    public void setUpdateTime(LocalDateTime updateTime) {
-        this.updateTime = updateTime;
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
     }
     
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
     
     // Getter方法
@@ -174,11 +174,11 @@ public class Extension extends Entity<Long> {
         return enabled;
     }
     
-    public LocalDateTime getCreateTime() {
-        return createTime;
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
     
-    public LocalDateTime getUpdateTime() {
-        return updateTime;
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
     }
 }

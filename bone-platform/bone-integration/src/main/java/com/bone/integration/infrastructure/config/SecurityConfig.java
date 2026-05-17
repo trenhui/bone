@@ -1,34 +1,61 @@
 package com.bone.integration.infrastructure.config;
 
+import com.bone.integration.infrastructure.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
  * 平台集成服务安全配置。
  *
- * <p>当前开发阶段对 {@code /integration/**} 放行；生产环境应接入与 bone-iam 一致的 JWT（见 INT-SEC-01）。
+ * <p>开发默认 {@code bone.integration.security.jwt-enabled=false} 放行 {@code /integration/**}；
+ * 生产设置 {@code BONE_INTEGRATION_JWT_ENABLED=true} 与 IAM 共用 Bearer Token。
  */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
+    private final IntegrationSecurityProperties securityProperties;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    public SecurityConfig(
+            IntegrationSecurityProperties securityProperties, JwtAuthenticationFilter jwtAuthenticationFilter) {
+        this.securityProperties = securityProperties;
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(
-                        session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/**", "/swagger-ui/**", "/v3/api-docs/**")
-                        .permitAll()
-                        .requestMatchers("/integration/**")
-                        .permitAll()
-                        .anyRequest()
-                        .authenticated());
+                        session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+        if (securityProperties.isJwtEnabled()) {
+            http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                    .authorizeHttpRequests(auth -> auth
+                            .requestMatchers(HttpMethod.OPTIONS, "/**")
+                            .permitAll()
+                            .requestMatchers("/actuator/**", "/swagger-ui/**", "/v3/api-docs/**")
+                            .permitAll()
+                            .requestMatchers("/integration/**")
+                            .authenticated()
+                            .anyRequest()
+                            .permitAll());
+        } else {
+            http.authorizeHttpRequests(auth -> auth
+                    .requestMatchers("/actuator/**", "/swagger-ui/**", "/v3/api-docs/**")
+                    .permitAll()
+                    .requestMatchers("/integration/**")
+                    .permitAll()
+                    .anyRequest()
+                    .authenticated());
+        }
         return http.build();
     }
 }

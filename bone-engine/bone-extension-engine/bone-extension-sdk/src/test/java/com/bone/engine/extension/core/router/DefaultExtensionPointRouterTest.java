@@ -93,126 +93,9 @@ class DefaultExtensionPointRouterTest {
   }
 
   @Test
-  void routeResultCacheRespectsDifferentPayloadFingerprint() {
-    DefaultExtensionPointRouter cachingRouter =
-        new DefaultExtensionPointRouter(
-            repository,
-            new SpELExpressionEvaluator(),
-            1000,
-            Duration.ofMinutes(10),
-            true,
-            new com.bone.engine.extension.core.cache.CacheManager(cacheProperties(), null));
-
-    BizContext<ClaimPayload> inpatient =
-        BizContext.<ClaimPayload>builder()
-            .tenant("default")
-            .bizCode("MEDICAL")
-            .requestId("req-1")
-            .data(new ClaimPayload("INPATIENT"))
-            .build();
-    BizContext<ClaimPayload> outpatient =
-        BizContext.<ClaimPayload>builder()
-            .tenant("default")
-            .bizCode("MEDICAL")
-            .requestId("req-2")
-            .data(new ClaimPayload("OUTPATIENT"))
-            .build();
-
-    assertSame(inpatientImpl, cachingRouter.route(SampleExtPoint.class, inpatient));
-    assertSame(outpatientImpl, cachingRouter.route(SampleExtPoint.class, outpatient));
-  }
-
-  @Test
-  void nonStrictModeFallsBackToBroadestExtension() {
-    DefaultExtensionPointRouter lenientRouter =
-        new DefaultExtensionPointRouter(
-            repository,
-            new SpELExpressionEvaluator(),
-            1000,
-            Duration.ofMinutes(10),
-            true,
-            null,
-            false,
-            false);
-
-    BizContext<ClaimPayload> ctx =
-        BizContext.<ClaimPayload>builder()
-            .tenant("default")
-            .bizCode("MEDICAL")
-            .data(new ClaimPayload("UNKNOWN"))
-            .build();
-
-    assertSame(broadImpl, lenientRouter.route(SampleExtPoint.class, ctx));
-  }
-
-  @Test
-  void firstStrategyUsesSortedListOrderNotExpressionLayer() {
-    InMemoryExtensionRepository firstRepo = new InMemoryExtensionRepository();
-    SampleExtPoint dimFirst = () -> "DIM_FIRST";
-    SampleExtPoint exprSecond = () -> "EXPR_SECOND";
-
-    firstRepo.registerExtension(
-        EXT_POINT,
-        ExtensionDefinition.builder()
-            .code("DIM_FIRST")
-            .extensionPoint(EXT_POINT)
-            .instance(dimFirst)
-            .tenant("default")
-            .bizCode("MEDICAL")
-            .scenario("SPECIAL")
-            .priority(50)
-            .build());
-    firstRepo.registerExtension(
-        EXT_POINT,
-        ExtensionDefinition.builder()
-            .code("EXPR_SECOND")
-            .extensionPoint(EXT_POINT)
-            .instance(exprSecond)
-            .tenant("*")
-            .bizCode("*")
-            .condition("#data.type == 'SPECIAL'")
-            .priority(5)
-            .build());
-
-    DefaultExtensionPointRouter firstRouter =
-        new DefaultExtensionPointRouter(
-            firstRepo,
-            new SpELExpressionEvaluator(),
-            1000,
-            Duration.ofMinutes(10),
-            true,
-            null,
-            true,
-            false,
-            "first");
-    DefaultExtensionPointRouter scoreRouter =
-        new DefaultExtensionPointRouter(
-            firstRepo,
-            new SpELExpressionEvaluator(),
-            1000,
-            Duration.ofMinutes(10),
-            true,
-            null,
-            true,
-            false,
-            "score");
-
-    BizContext<ClaimPayload> ctx =
-        BizContext.<ClaimPayload>builder()
-            .tenant("default")
-            .bizCode("MEDICAL")
-            .scenario("SPECIAL")
-            .data(new ClaimPayload("SPECIAL"))
-            .build();
-
-    assertSame(dimFirst, firstRouter.route(SampleExtPoint.class, ctx));
-    assertSame(exprSecond, scoreRouter.route(SampleExtPoint.class, ctx));
-  }
-
-  @Test
-  void strictModeThrowsWhenNoMatch() {
-    InMemoryExtensionRepository strictRepo = new InMemoryExtensionRepository();
-    strictRepo.registerExtension(
+  void routeResultCacheRespectsDifferentDimensionKeys() {
+    InMemoryExtensionRepository cacheRepo = new InMemoryExtensionRepository();
+    cacheRepo.registerExtension(
         EXT_POINT,
         ExtensionDefinition.builder()
             .code("INPATIENT")
@@ -220,19 +103,77 @@ class DefaultExtensionPointRouterTest {
             .instance(inpatientImpl)
             .tenant("default")
             .bizCode("MEDICAL")
+            .build());
+    cacheRepo.registerExtension(
+        EXT_POINT,
+        ExtensionDefinition.builder()
+            .code("OUTPATIENT")
+            .extensionPoint(EXT_POINT)
+            .instance(outpatientImpl)
+            .tenant("default")
+            .bizCode("RETAIL")
+            .build());
+
+    DefaultExtensionPointRouter cachingRouter =
+        new DefaultExtensionPointRouter(
+            cacheRepo,
+            new SpELExpressionEvaluator(),
+            1000,
+            Duration.ofMinutes(10),
+            true,
+            new com.bone.engine.extension.core.cache.CacheManager(cacheProperties(), null));
+
+    BizContext<ClaimPayload> medical =
+        BizContext.<ClaimPayload>builder()
+            .tenant("default")
+            .bizCode("MEDICAL")
+            .data(new ClaimPayload("ANY"))
+            .build();
+    BizContext<ClaimPayload> retail =
+        BizContext.<ClaimPayload>builder()
+            .tenant("default")
+            .bizCode("RETAIL")
+            .data(new ClaimPayload("ANY"))
+            .build();
+
+    assertSame(inpatientImpl, cachingRouter.route(SampleExtPoint.class, medical));
+    assertSame(outpatientImpl, cachingRouter.route(SampleExtPoint.class, retail));
+  }
+
+  @Test
+  void fallsBackToBroadDimensionWhenNoSpelMatch() {
+    BizContext<ClaimPayload> ctx =
+        BizContext.<ClaimPayload>builder()
+            .tenant("default")
+            .bizCode("MEDICAL")
+            .data(new ClaimPayload("UNKNOWN"))
+            .build();
+
+    assertSame(broadImpl, router.route(SampleExtPoint.class, ctx));
+  }
+
+  @Test
+  void throwsWhenNoExtensionMatches() {
+    InMemoryExtensionRepository strictRepo = new InMemoryExtensionRepository();
+    strictRepo.registerExtension(
+        EXT_POINT,
+        ExtensionDefinition.builder()
+            .code("INPATIENT")
+            .extensionPoint(EXT_POINT)
+            .instance(inpatientImpl)
+            .tenant("isolated")
+            .bizCode("ONLY")
             .condition("#data.type == 'INPATIENT'")
             .build());
 
-    DefaultExtensionPointRouter strictRouter =
+    DefaultExtensionPointRouter isolatedRouter =
         new DefaultExtensionPointRouter(
             strictRepo,
             new SpELExpressionEvaluator(),
             1000,
             Duration.ofMinutes(10),
             true,
-            null,
-            true,
-            false);
+            null);
 
     BizContext<ClaimPayload> ctx =
         BizContext.<ClaimPayload>builder()
@@ -243,7 +184,7 @@ class DefaultExtensionPointRouterTest {
 
     assertThrows(
         DefaultExtensionPointRouter.RouterException.class,
-        () -> strictRouter.route(SampleExtPoint.class, ctx));
+        () -> isolatedRouter.route(SampleExtPoint.class, ctx));
   }
 
   private static com.bone.engine.extension.support.config.ExtensionProperties cacheProperties() {

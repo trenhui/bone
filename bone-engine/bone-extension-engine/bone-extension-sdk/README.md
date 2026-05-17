@@ -3429,7 +3429,7 @@ extensionRegister.registerExtension(OrderExtPoint.class, newExtension, metadata)
 | **方法调用** | `T(java.util.Objects).equals(#scenario, 'MOBILE')` | 调用静态方法进行比较 |
 | | `T(java.lang.Math).random() > 0.5` | 随机值比较 |
 | **上下文属性** | `#context.getAttribute('vipLevel') == 'GOLD'` | 访问上下文中的自定义属性 |
-| **日期操作** | `#data.createTime.after(new java.util.Date())` | 日期比较 |
+| **日期操作** | `#data.createdAt.after(new java.util.Date())` | 日期比较 |
 | **默认值处理** | `#data.amount ?: 0` | 空值时使用默认值 |
 | **复杂组合** | `(#tenantCode == 'T1' && #data.amount > 1000) || (#tenantCode == 'T2' && #data.amount > 500)` | 多条件组合判断 |
 | | `#data.amount > 100 && #data.amount < 1000` | 范围判断 |

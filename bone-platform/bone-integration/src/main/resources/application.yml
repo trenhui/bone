@@ -21,6 +21,14 @@ spring:
     producer:
       group: bone-integration-producer
 
+bone:
+  integration:
+    security:
+      jwt-enabled: ${BONE_INTEGRATION_JWT_ENABLED:false}
+  iam:
+    jwt:
+      secret-key: ${BONE_IAM_JWT_SECRET:change-me-change-me-change-me-change-me-32bytes}
+
 integration:
   flow:
     max.nodes: 50

@@ -45,9 +45,16 @@ public class ExtensionPointProxy<T> implements InvocationHandler, Serializable {
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        // 1. Object 方法快速放行（防止 toString/equals 死循环）
+        // 1. Object 方法：基于代理实例身份，避免误用 handler 的 Object 语义
         if (method.getDeclaringClass() == Object.class) {
-            return method.invoke(this, args);
+            return switch (method.getName()) {
+                case "equals" -> proxy == (args != null && args.length == 1 ? args[0] : null);
+                case "hashCode" -> System.identityHashCode(proxy);
+                case "toString" ->
+                        "ExtensionPointProxy$" + extensionPoint.getSimpleName() + '@'
+                                + Integer.toHexString(System.identityHashCode(proxy));
+                default -> method.invoke(this, args);
+            };
         }
 
         // 2. 获取 BizContext（双保险：ThreadLocal 优先，参数其次）

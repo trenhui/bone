@@ -94,8 +94,8 @@ public final class StudioPersistenceConverter {
         domain.setPriority(row.getPriority());
         domain.setConfig(row.getConfigJson());
         domain.setEnabled(row.getStatus() != null && row.getStatus() == 1);
-        domain.setCreateTime(toLocalDateTime(row.getCreatedAt()));
-        domain.setUpdateTime(toLocalDateTime(row.getUpdatedAt()));
+        domain.setCreatedAt(toLocalDateTime(row.getCreatedAt()));
+        domain.setUpdatedAt(toLocalDateTime(row.getUpdatedAt()));
         return domain;
     }
 

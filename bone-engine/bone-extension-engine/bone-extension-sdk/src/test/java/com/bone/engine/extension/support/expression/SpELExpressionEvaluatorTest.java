@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.bone.engine.extension.api.exception.ExpressionEvaluationException;
 import com.bone.engine.extension.support.context.BizContext;
 import org.junit.jupiter.api.Test;
 
@@ -14,7 +13,7 @@ class SpELExpressionEvaluatorTest {
 
   @Test
   void compileInvalidExpressionFailsFast() {
-    assertThrows(ExpressionEvaluationException.class, () -> evaluator.compile("#data.["));
+    assertThrows(IllegalArgumentException.class, () -> evaluator.compile("#data.["));
   }
 
   @Test

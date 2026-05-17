@@ -35,7 +35,7 @@ public class BizContext<T> implements Serializable {
     private String requestId;
     private T data;
 
-    private final LocalDateTime createTime = LocalDateTime.now();
+    private final LocalDateTime createdAt = LocalDateTime.now();
 
     private final Map<String, String> dimensions = new ConcurrentHashMap<>();
     private final Map<String, Object> params = new ConcurrentHashMap<>();

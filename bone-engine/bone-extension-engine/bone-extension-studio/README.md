@@ -64,7 +64,8 @@ bone:
         base-url: http://localhost:8088
 ```
 
-上报：`POST /api/v1/extension/execution-logs/ingest`
+上报：`POST /api/v1/extension/execution-logs:ingest`  
+动作类接口使用 **冒号后缀**（如 `plugins/{id}:deploy`、`points/{id}:enable`），见 OpenAPI [extension-v1.yaml](../../../doc/architecture/openapi/extension-v1.yaml)。
 
 ## 运行时同步
 
