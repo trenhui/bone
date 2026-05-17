@@ -48,6 +48,10 @@ public class JwtTokenService {
         }
     }
 
+    public String stripBearerToken(String token) {
+        return stripPrefix(token);
+    }
+
     private String stripPrefix(String token) {
         if (token == null) {
             return "";

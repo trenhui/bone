@@ -37,7 +37,7 @@ public class AuditLogQueryUseCase {
                     dto.setParameters(log.getParameters());
                     dto.setResult(log.getResult());
                     dto.setDuration(log.getDuration());
-                    dto.setCreateTime(log.getCreateTime());
+                    dto.setCreatedAt(log.getCreatedAt());
                     return dto;
                 })
                 .toList();

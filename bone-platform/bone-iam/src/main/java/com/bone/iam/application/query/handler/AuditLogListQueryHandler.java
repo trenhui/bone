@@ -36,19 +36,19 @@ public class AuditLogListQueryHandler {
             query.where(AuditLog::getResult).eq(qry.getResult());
         }
 
-        if (qry.getStartTime() != null) {
-            query.where(AuditLog::getCreateTime).gte(qry.getStartTime());
+        if (qry.getStartedAt() != null) {
+            query.where(AuditLog::getCreatedAt).gte(qry.getStartedAt());
         }
 
-        if (qry.getEndTime() != null) {
-            query.where(AuditLog::getCreateTime).lte(qry.getEndTime());
+        if (qry.getEndedAt() != null) {
+            query.where(AuditLog::getCreatedAt).lte(qry.getEndedAt());
         }
 
         if (qry.getTenantId() != null) {
             query.where(AuditLog::getTenantId).eq(qry.getTenantId());
         }
 
-        PageResult<AuditLog> result = query.orderByDesc(AuditLog::getCreateTime)
+        PageResult<AuditLog> result = query.orderByDesc(AuditLog::getCreatedAt)
                           .page(qry.getPage(), qry.getSize());
 
         List<AuditLogDTO> dtoList = result.getRecords().stream()
@@ -71,7 +71,7 @@ public class AuditLogListQueryHandler {
         dto.setParameters(auditLog.getParameters());
         dto.setResult(auditLog.getResult());
         dto.setDuration(auditLog.getDuration());
-        dto.setCreateTime(auditLog.getCreateTime());
+        dto.setCreatedAt(auditLog.getCreatedAt());
         return dto;
     }
 }

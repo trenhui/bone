@@ -18,10 +18,15 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenService jwtTokenService;
     private final JwtConfig jwtConfig;
+    private final TokenBlacklistService tokenBlacklistService;
 
-    public JwtAuthenticationFilter(JwtTokenService jwtTokenService, JwtConfig jwtConfig) {
+    public JwtAuthenticationFilter(
+            JwtTokenService jwtTokenService,
+            JwtConfig jwtConfig,
+            TokenBlacklistService tokenBlacklistService) {
         this.jwtTokenService = jwtTokenService;
         this.jwtConfig = jwtConfig;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     @Override
@@ -31,6 +36,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String authHeader = request.getHeader(headerName);
 
         if (authHeader != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            String rawToken = jwtTokenService.stripBearerToken(authHeader);
+            if (tokenBlacklistService.isBlacklisted(rawToken)) {
+                filterChain.doFilter(request, response);
+                return;
+            }
             jwtTokenService.parse(authHeader).ifPresent(principal -> {
                 var authentication = new UsernamePasswordAuthenticationToken(
                         principal.username(),

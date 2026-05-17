@@ -12,7 +12,7 @@ public class ExecutionLogListQueryHandler {
 
     @Transactional(readOnly = true)
     public PageResult<ExecutionLogDTO> handle(ExecutionLogListQry qry) {
-        return QueryBuilder.from(com.bone.integration.domain.model.execution.IntegrationLog.class)
+        return QueryBuilder.from(com.bone.integration.domain.execution.IntegrationLog.class)
                 .where(qry.flowId() != null, "flowId").eq(qry.flowId())
                 .where(qry.status() != null, "status").eq(qry.status())
                 .orderBy("id", "desc")

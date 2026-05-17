@@ -1,88 +1,87 @@
 package com.bone.iam.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
-import com.bone.iam.application.command.cmd.LoginCmd;
-import com.bone.iam.application.usecase.standard.LoginUseCase;
+import com.bone.iam.adapter.web.converter.AuthWebConverter;
 import com.bone.iam.adapter.web.dto.req.LoginReq;
 import com.bone.iam.adapter.web.dto.req.RefreshTokenReq;
 import com.bone.iam.adapter.web.dto.resp.LoginResp;
-import com.bone.iam.adapter.web.converter.AuthWebConverter;
+import com.bone.iam.application.command.cmd.LoginCmd;
+import com.bone.iam.application.usecase.standard.LoginUseCase;
+import com.bone.iam.domain.repository.AccountRepository;
+import com.bone.iam.infrastructure.config.JwtConfig;
 import com.bone.iam.infrastructure.security.JwtTokenService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.*;
-
+import com.bone.iam.infrastructure.security.RefreshTokenService;
+import com.bone.iam.infrastructure.security.TokenBlacklistService;
+import jakarta.servlet.http.HttpServletRequest;
+import java.time.Duration;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 认证控制器
- * 提供登录、登出、刷新令牌、SSO相关接口
+ * 认证控制器：登录、登出、刷新令牌。
  */
 @RestController
 @RequestMapping("/api/iam")
 @RequiredArgsConstructor
 public class AuthController {
+
     private final LoginUseCase loginUseCase;
     private final AuthWebConverter authWebConverter;
     private final JwtTokenService jwtTokenService;
+    private final RefreshTokenService refreshTokenService;
+    private final TokenBlacklistService tokenBlacklistService;
+    private final AccountRepository accountRepository;
+    private final JwtConfig jwtConfig;
 
-    /**
-     * 用户登录
-     * 验证用户名密码，生成JWT令牌和刷新令牌
-     */
     @PostMapping("/login")
     public ApiResponse<LoginResp> login(@RequestBody LoginReq req) {
         LoginCmd cmd = authWebConverter.toLoginCmd(req);
         Map<String, Object> result = loginUseCase.execute(cmd);
-        LoginResp resp = authWebConverter.toLoginResp(result);
-        return ApiResponse.success(resp);
+        return ApiResponse.success(authWebConverter.toLoginResp(result));
     }
 
-    /**
-     * 用户登出
-     * 将当前令牌加入黑名单
-     */
     @PostMapping("/logout")
-    public ApiResponse<Void> logout() {
-        // TODO: Implement token blacklist
+    public ApiResponse<Void> logout(HttpServletRequest request) {
+        String header = request.getHeader(jwtConfig.getHeaderName());
+        if (header != null && !header.isBlank()) {
+            jwtTokenService.parse(header).ifPresent(principal -> {
+                String raw = jwtTokenService.stripBearerToken(header);
+                tokenBlacklistService.blacklist(raw, Duration.ofMillis(jwtConfig.getExpirationMs()));
+            });
+        }
         return ApiResponse.success();
     }
 
-    /**
-     * 刷新令牌
-     * 使用刷新令牌获取新的访问令牌
-     */
     @PostMapping("/refresh")
     public ApiResponse<Map<String, String>> refreshToken(@RequestBody RefreshTokenReq req) {
-        // TODO: Implement token refresh
-        Map<String, String> result = Map.of(
-            "accessToken", "",
-            "refreshToken", req.getRefreshToken()
-        );
-        return ApiResponse.success(result);
+        Map<String, String> rotated = refreshTokenService.rotate(req.getRefreshToken());
+        long accountId = Long.parseLong(rotated.get("accountId"));
+        var account = accountRepository.findById(accountId);
+        if (account == null) {
+            return ApiResponse.error(401, "账户不存在或已禁用");
+        }
+        String accessToken = jwtTokenService.generateToken(account.getId(), account.getUsername().value());
+        return ApiResponse.success(Map.of(
+                "accessToken", accessToken,
+                "refreshToken", rotated.get("refreshToken")));
     }
 
-    /**
-     * 获取SSO配置
-     */
     @GetMapping("/sso/config")
     public ApiResponse<Map<String, Object>> getSsoConfig() {
-        Map<String, Object> config = Map.of(
-            "enabled", false,
-            "providers", new String[]{"oauth2", "saml", "ldap"}
-        );
-        return ApiResponse.success(config);
+        return ApiResponse.success(Map.of(
+                "enabled", false,
+                "providers", new String[] {"oauth2", "saml", "ldap"}));
     }
 
-    /**
-     * SSO回调处理
-     */
     @GetMapping("/sso/callback")
     public ApiResponse<LoginResp> ssoCallback(
-            @RequestParam String code,
-            @RequestParam(required = false) String state) {
-        // SSO回调处理逻辑
+            @RequestParam String code, @RequestParam(required = false) String state) {
         return ApiResponse.success(null);
     }
 }

@@ -7,6 +7,7 @@ import java.time.LocalDateTime;
 @Data
 public class LoginResp {
     private String token;
+    private String refreshToken;
     private AccountInfo account;
 
     @Data
@@ -20,6 +21,6 @@ public class LoginResp {
         private Integer status;
         private Boolean isAdmin;
         private LocalDateTime lastLoginAt;
-        private LocalDateTime createTime;
+        private LocalDateTime createdAt;
     }
 }

@@ -18,6 +18,6 @@ public class AccountDetailQueryHandler {
 
     @Transactional(readOnly = true)
     public Optional<AccountDTO> handle(Long id) {
-        return accountRepository.findById(id).map(accountDtoMapper::toDto);
+        return Optional.ofNullable(accountRepository.findById(id)).map(accountDtoMapper::toDto);
     }
 }

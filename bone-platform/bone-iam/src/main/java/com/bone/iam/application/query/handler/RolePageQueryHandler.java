@@ -29,7 +29,7 @@ public class RolePageQueryHandler {
             query.where(Role::getTenantId).eq(qry.getTenantId());
         }
 
-        PageResult<Role> result = query.orderByDesc(Role::getCreateTime)
+        PageResult<Role> result = query.orderByDesc(Role::getCreatedAt)
                           .page(qry.getPage(), qry.getSize());
 
         List<RoleDTO> dtoList = result.getRecords().stream()
@@ -45,8 +45,8 @@ public class RolePageQueryHandler {
         dto.setName(role.getName());
         dto.setDescription(role.getDescription());
         dto.setTenantId(role.getTenantId());
-        dto.setCreateTime(role.getCreateTime());
-        dto.setUpdateTime(role.getUpdateTime());
+        dto.setCreatedAt(role.getCreatedAt());
+        dto.setUpdatedAt(role.getUpdatedAt());
         return dto;
     }
 }

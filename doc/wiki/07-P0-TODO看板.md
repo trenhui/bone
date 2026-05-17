@@ -61,8 +61,8 @@
 
 | ID | 位置 | 描述 | 状态 | 优先级 |
 |----|------|------|------|--------|
-| IAM-01 | `AuthController` | Token 黑名单 | open | P0 |
-| IAM-02 | `AuthController` | Token 刷新 | open | P0 |
+| IAM-01 | `AuthController` | Token 黑名单（Redis，无 Redis 时仅撤销 refresh） | done | P0 |
+| IAM-02 | `AuthController` | Token 刷新（`iam_refresh_token`） | done | P0 |
 | IAM-03 | `ArchitectureTest` | 5 条 ArchUnit 规则被 TODO 跳过，需修复并重新启用 | open | P0 |
 
 ---
@@ -76,7 +76,7 @@
 | EXT-MVP-01 | `bone-extension-app` | 扩展点/实现 CRUD、config 编辑、publish-runtime | done | P1 |
 | EXT-MVP-02 | `bone-extension-app` | Vite 代理 Studio 8080 | done | P1 |
 | EXT-MVP-03 | `bone-extension-studio-ui` | 已删除目录；以 `bone-extension-app` 为准 | done | P1 |
-| EXT-MVP-04 | Studio + IAM | 扩展管理权限与 API 鉴权 | open | P1 |
+| EXT-MVP-04 | Studio + IAM | 扩展管理权限与 API 鉴权（Studio `/api/**` 仍 permitAll） | open | P1 |
 | EXT-MVP-05 | `bone-extension-studio` | 列表 API 分页 | open | P2 |
 | EXT-MVP-06 | Studio | `rollback` 真实版本回滚（Phase 2） | open | P2 |
 | EXT-PH2-01 | Studio | JAR Multipart 上传 + `ext_plugin_version` | open | P2 |

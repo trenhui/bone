@@ -1,6 +1,6 @@
 package com.bone.integration.domain.service;
 
-import com.bone.integration.domain.model.execution.IntegrationLog;
+import com.bone.integration.domain.execution.IntegrationLog;
 import com.bone.integration.domain.model.flow.vo.FlowId;
 import com.bone.integration.domain.repository.IntegrationLogRepository;
 import lombok.RequiredArgsConstructor;

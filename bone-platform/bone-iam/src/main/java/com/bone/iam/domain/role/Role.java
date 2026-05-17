@@ -20,8 +20,8 @@ public class Role extends AggregateRoot<Long> {
     private int type;
     private String description;
     private Long parentRoleId;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public static Role create(String name, String code, String description, int type, Long tenantId, Long parentRoleId) {
         Role role = new Role();
@@ -31,14 +31,14 @@ public class Role extends AggregateRoot<Long> {
         role.type = type;
         role.tenantId = tenantId;
         role.parentRoleId = parentRoleId;
-        role.createTime = LocalDateTime.now();
-        role.updateTime = LocalDateTime.now();
+        role.createdAt = LocalDateTime.now();
+        role.updatedAt = LocalDateTime.now();
         role.addDomainEvent(new RoleCreatedEvent(role));
         return role;
     }
 
     public void update(String description) {
         this.description = description;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 }

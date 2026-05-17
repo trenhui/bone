@@ -35,7 +35,7 @@ public class AccountPageQueryHandler {
             query.where(Account::getTenantId).eq(qry.getTenantId());
         }
 
-        PageResult<Account> result = query.orderByDesc(Account::getCreateTime)
+        PageResult<Account> result = query.orderByDesc(Account::getCreatedAt)
                                           .page(qry.getPage(), qry.getSize());
 
         List<AccountDTO> dtoList = result.getRecords().stream()
@@ -58,8 +58,8 @@ public class AccountPageQueryHandler {
         dto.setTenantId(account.getTenantId());
         dto.setLastLoginAt(account.getLastLoginAt());
         dto.setLastLoginIp(account.getLastLoginIp());
-        dto.setCreateTime(account.getCreateTime());
-        dto.setUpdateTime(account.getUpdateTime());
+        dto.setCreatedAt(account.getCreatedAt());
+        dto.setUpdatedAt(account.getUpdatedAt());
         return dto;
     }
 }

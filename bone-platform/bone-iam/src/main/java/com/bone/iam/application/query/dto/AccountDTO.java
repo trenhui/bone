@@ -18,6 +18,6 @@ public class AccountDTO {
     private Long tenantId;
     private LocalDateTime lastLoginAt;
     private String lastLoginIp;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

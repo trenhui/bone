@@ -24,8 +24,8 @@ public class Permission extends AggregateRoot<Long> {
     private Long parentId;
     private PermissionType type;
     private int sortOrder;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public static Permission create(String code, String name, String description,
                                      String resourceType, String resourcePath, String action,
@@ -40,8 +40,8 @@ public class Permission extends AggregateRoot<Long> {
         permission.parentId = parentId;
         permission.type = type;
         permission.sortOrder = sortOrder;
-        permission.createTime = LocalDateTime.now();
-        permission.updateTime = LocalDateTime.now();
+        permission.createdAt = LocalDateTime.now();
+        permission.updatedAt = LocalDateTime.now();
         permission.addDomainEvent(new PermissionCreatedEvent(permission));
         return permission;
     }
@@ -56,6 +56,6 @@ public class Permission extends AggregateRoot<Long> {
         this.parentId = parentId;
         this.type = type;
         this.sortOrder = sortOrder;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 }

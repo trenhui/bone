@@ -34,10 +34,10 @@ public class Account extends AggregateRoot<Long> {
     private LocalDateTime lastLoginAt;
     private String lastLoginIp;
     private int loginFailCount;
-    private LocalDateTime lockedUntil;
-    private LocalDateTime pwdUpdatedAt;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+    private LocalDateTime lockedAt;
+    private LocalDateTime passwordUpdatedAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public static Account create(Long id, Username username, String passwordHash, Email email,
                                   String phone, String realName, Long tenantId) {
@@ -52,9 +52,9 @@ public class Account extends AggregateRoot<Long> {
         account.status = AccountStatus.ENABLED;
         account.isAdmin = false;
         account.loginFailCount = 0;
-        account.createTime = LocalDateTime.now();
-        account.updateTime = LocalDateTime.now();
-        account.pwdUpdatedAt = LocalDateTime.now();
+        account.createdAt = LocalDateTime.now();
+        account.updatedAt = LocalDateTime.now();
+        account.passwordUpdatedAt = LocalDateTime.now();
         account.addDomainEvent(new AccountCreatedEvent(account));
         return account;
     }
@@ -65,8 +65,8 @@ public class Account extends AggregateRoot<Long> {
         }
         this.status = AccountStatus.ENABLED;
         this.loginFailCount = 0;
-        this.lockedUntil = null;
-        this.updateTime = LocalDateTime.now();
+        this.lockedAt = null;
+        this.updatedAt = LocalDateTime.now();
         addDomainEvent(new AccountEnabledEvent(this.id));
     }
 
@@ -75,7 +75,7 @@ public class Account extends AggregateRoot<Long> {
             throw new IllegalStateException("账户已处于禁用状态");
         }
         this.status = AccountStatus.DISABLED;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
         addDomainEvent(new AccountDisabledEvent(this.id));
     }
 
@@ -83,23 +83,23 @@ public class Account extends AggregateRoot<Long> {
         this.lastLoginAt = LocalDateTime.now();
         this.lastLoginIp = ip;
         this.loginFailCount = 0;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
     public void recordLoginFailure() {
         this.loginFailCount++;
         if (this.loginFailCount >= 5) {
             this.status = AccountStatus.LOCKED;
-            this.lockedUntil = LocalDateTime.now().plusMinutes(30);
-            addDomainEvent(new AccountLockedEvent(this.id, this.lockedUntil));
+            this.lockedAt = LocalDateTime.now().plusMinutes(30);
+            addDomainEvent(new AccountLockedEvent(this.id, this.lockedAt));
         }
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
     public void updatePassword(String newPasswordHash) {
         this.passwordHash = newPasswordHash;
-        this.pwdUpdatedAt = LocalDateTime.now();
-        this.updateTime = LocalDateTime.now();
+        this.passwordUpdatedAt = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
         addDomainEvent(new PasswordChangedEvent(this.id));
     }
 
@@ -109,17 +109,17 @@ public class Account extends AggregateRoot<Long> {
         if (avatarUrl != null) {
             this.avatarUrl = avatarUrl;
         }
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
     public boolean isLocked() {
         if (this.status != AccountStatus.LOCKED) {
             return false;
         }
-        if (this.lockedUntil != null && this.lockedUntil.isBefore(LocalDateTime.now())) {
+        if (this.lockedAt != null && this.lockedAt.isBefore(LocalDateTime.now())) {
             this.status = AccountStatus.ENABLED;
             this.loginFailCount = 0;
-            this.lockedUntil = null;
+            this.lockedAt = null;
             return false;
         }
         return true;

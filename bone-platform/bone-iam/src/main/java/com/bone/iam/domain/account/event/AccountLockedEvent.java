@@ -9,5 +9,5 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class AccountLockedEvent implements com.bone.core.domain.DomainEvent {
     private final Long accountId;
-    private final LocalDateTime lockedUntil;
+    private final LocalDateTime lockedAt;
 }

@@ -25,7 +25,7 @@ public class AuditLog extends AggregateRoot<Long> {
     private String parameters;
     private String result;
     private Integer duration;
-    private LocalDateTime createTime;
+    private LocalDateTime createdAt;
 
     public static AuditLog create(Long tenantId, Long userId, OperationType operation, String resourceId,
                                   String resourceType, String ip, String userAgent,
@@ -41,7 +41,7 @@ public class AuditLog extends AggregateRoot<Long> {
         auditLog.parameters = parameters;
         auditLog.result = result;
         auditLog.duration = duration;
-        auditLog.createTime = LocalDateTime.now();
+        auditLog.createdAt = LocalDateTime.now();
         auditLog.addDomainEvent(new AuditLogCreatedEvent(auditLog));
         return auditLog;
     }

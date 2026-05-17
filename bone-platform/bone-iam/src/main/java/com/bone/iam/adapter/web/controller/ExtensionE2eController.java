@@ -3,6 +3,7 @@ package com.bone.iam.adapter.web.controller;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -10,11 +11,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 扩展管理 API 联调占位（Studio 未启动时供前端 E2E 验证）。
- * 响应格式与 extension-studio 的 {@code ApiResponse} 对齐（success/message/data）。
+ * 扩展管理 API 联调占位（仅当 Studio 未部署且显式开启 stub 时生效）。
+ * 生产/联调请启动 bone-extension-studio（8088），由网关或 Shell 将 {@code /api/extension} 转发至 Studio。
  */
 @RestController
 @RequestMapping("/api/extension")
+@ConditionalOnProperty(prefix = "bone.iam.extension", name = "stub-enabled", havingValue = "true")
 public class ExtensionE2eController {
 
     @GetMapping("/points")

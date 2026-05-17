@@ -16,6 +16,6 @@ public class AccountDetailResp {
     private Boolean isAdmin;
     private LocalDateTime lastLoginAt;
     private String lastLoginIp;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

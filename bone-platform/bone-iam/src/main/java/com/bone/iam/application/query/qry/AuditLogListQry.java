@@ -14,7 +14,7 @@ public class AuditLogListQry extends PageParam {
     private OperationType operation;
     private String resourceType;
     private String result;
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
+    private LocalDateTime startedAt;
+    private LocalDateTime endedAt;
     private Long tenantId;
 }

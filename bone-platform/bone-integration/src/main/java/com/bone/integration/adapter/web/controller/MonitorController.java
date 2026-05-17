@@ -6,7 +6,7 @@ import com.bone.integration.application.query.dto.ExecutionLogDTO;
 import com.bone.integration.application.query.dto.FlowStatisticsDTO;
 import com.bone.integration.application.query.handler.ExecutionLogListQueryHandler;
 import com.bone.integration.application.query.qry.ExecutionLogListQry;
-import com.bone.integration.domain.model.execution.IntegrationLog;
+import com.bone.integration.domain.execution.IntegrationLog;
 import com.bone.integration.domain.model.flow.IntegrationFlow;
 import com.bone.integration.domain.repository.IntegrationLogRepository;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;

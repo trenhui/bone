@@ -10,7 +10,7 @@ public class RoleDetailResp {
     private String name;
     private String description;
     private Long tenantId;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     private Long[] permissionIds;
 }

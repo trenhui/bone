@@ -34,7 +34,7 @@ public class PermissionPageQueryHandler {
             query.where(Permission::getParentId).eq(qry.getParentId());
         }
 
-        PageResult<Permission> result = query.orderByDesc(Permission::getCreateTime)
+        PageResult<Permission> result = query.orderByDesc(Permission::getCreatedAt)
                           .page(qry.getPage(), qry.getSize());
 
         List<PermissionDTO> dtoList = result.getRecords().stream()
@@ -52,8 +52,8 @@ public class PermissionPageQueryHandler {
         dto.setDescription(permission.getDescription());
         dto.setParentId(permission.getParentId());
         dto.setType(permission.getType());
-        dto.setCreateTime(permission.getCreateTime());
-        dto.setUpdateTime(permission.getUpdateTime());
+        dto.setCreatedAt(permission.getCreatedAt());
+        dto.setUpdatedAt(permission.getUpdatedAt());
         return dto;
     }
 }

@@ -20,7 +20,5 @@ public class PermissionDTO {
     private Integer sortOrder;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
     private List<PermissionDTO> children;
 }

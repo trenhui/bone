@@ -20,6 +20,7 @@ public class AuthWebConverter {
     public LoginResp toLoginResp(Map<String, Object> result) {
         LoginResp resp = new LoginResp();
         resp.setToken((String) result.get("token"));
+        resp.setRefreshToken((String) result.get("refreshToken"));
 
         Account account = (Account) result.get("account");
         LoginResp.AccountInfo accountInfo = new LoginResp.AccountInfo();
@@ -32,7 +33,7 @@ public class AuthWebConverter {
         accountInfo.setStatus(account.getStatus().getCode());
         accountInfo.setIsAdmin(account.isAdmin());
         accountInfo.setLastLoginAt(account.getLastLoginAt());
-        accountInfo.setCreateTime(account.getCreateTime());
+        accountInfo.setCreatedAt(account.getCreatedAt());
         resp.setAccount(accountInfo);
 
         return resp;

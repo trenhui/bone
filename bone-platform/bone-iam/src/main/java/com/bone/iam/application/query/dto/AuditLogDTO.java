@@ -18,5 +18,5 @@ public class AuditLogDTO {
     private String parameters;
     private String result;
     private Integer duration;
-    private LocalDateTime createTime;
+    private LocalDateTime createdAt;
 }
