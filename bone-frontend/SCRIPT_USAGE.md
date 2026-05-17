@@ -15,7 +15,7 @@
 | bone-iam-app | 3001 | IAM管理应用 |
 | bone-metadata-app | 3002 | 元数据管理应用 |
 | bone-masterdata-app | 3003 | 主数据管理应用 |
-| bone-integration-app | 3004 | 集成管理应用 |
+| bone-integration-app | 3006 | 集成管理应用 |
 | bone-system-app | 3005 | 系统管理应用 |
 | bone-extension-app | 3006 | 扩展管理应用 |
 

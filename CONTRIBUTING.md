@@ -33,7 +33,6 @@ mvn com.diffplug.spotless:spotless-maven-plugin:2.43.0:apply --batch-mode \
   -pl bone-framework,bone-platform,bone-sdk,bone-engine/studio-generator,\
 bone-engine/bone-metadata-sdk,bone-engine/bone-metadata-server,\
 bone-engine/bone-metadata-engine/bone-metadata-engine-core,bone-engine/bone-metadata-engine/bone-metadata-engine-starter,\
-bone-engine/bone-integration,\
 bone-engine/bone-extension-engine/bone-extension-sdk,bone-engine/bone-extension-engine/bone-extension-studio \
   -am
 ```

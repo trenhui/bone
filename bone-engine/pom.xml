@@ -14,7 +14,6 @@
         <module>bone-metadata-sdk</module>
         <module>bone-metadata-server</module>
         <module>bone-metadata-engine</module>
-        <module>bone-integration</module>
 
     </modules>
     <artifactId>bone-engine</artifactId>
@@ -22,7 +21,7 @@
     <name>${project.artifactId}</name>
     <description>
         核心引擎层：bone-metadata-sdk / bone-metadata-server / bone-metadata-engine、
-        bone-extension、bone-integration 等。
+        bone-extension 等（集成服务见 bone-platform/bone-integration）。
     </description>
 
 </project>

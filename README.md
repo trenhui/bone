@@ -123,6 +123,7 @@ Bone 以 **「数据 → 质量 → 功能 → 生态」** 组织四大引擎。
 | 规则与动态访问 | **bone-metadata-engine**：表达式/校验/SmartQL/动态 CRUD（模式 B 核心，逐步替代「为每张表生成代码」） |
 | 权限与多租户 | 元数据绑定行级租户、列级规则（两模式统一策略） |
 | 运行时演进 | 模型发布、热加载、低停机变更（引擎 + 发布流程分阶段实现） |
+| 交付模式标注 | `meta_entity.delivery_mode`：`GENERATIVE` / `RUNTIME`（**As-Is** 已落库） |
 
 **工程锚点**：`bone-metadata-sdk` · `bone-metadata-server` · `bone-metadata-engine` · `studio-generator`（模式 A）· `bone-metadata-app` · `bone-generator-app`
 
@@ -168,15 +169,20 @@ Bone 以 **「数据 → 质量 → 功能 → 生态」** 组织四大引擎。
 
 **定位**：打通 ERP / CRM / OA / 协作与消息系统，构建企业数字生态链。
 
-| 能力方向 | 说明 |
-|----------|------|
-| 多协议 | REST、gRPC、SOAP、Kafka、MQTT、JDBC 等 |
-| 连接器工厂 | SAP、Salesforce、钉钉、企微、用友等标准化连接器 |
-| 可视化映射 | 字段映射、格式转换、清洗与 ETL |
-| 流程编排 | 分支、并行、循环与长事务集成链路 |
-| 可靠性 | TCC/重试/幂等/熔断/死信 |
+| 能力方向 | 目标 | As-Is（当前仓库） |
+|----------|------|-------------------|
+| 多协议 | REST、gRPC、SOAP、Kafka、MQTT、JDBC 等 | **REST/HTTP** 已实现；FTP/JDBC/MQ 返回 501 |
+| 连接器工厂 | 标准化连接器 | CRUD + 连接测试（`int_connector`） |
+| 流程编排 | 分支、并行、循环 | **线性** START→HTTP→END（INT-09） |
+| 可靠性 | TCC/重试/幂等/死信 | 执行日志 + 领域事件；MQ Outbox 见 INT-10 |
+| Camel 编排 | 可视化 DSL 执行 | HTTP 组件已迁入平台；完整编译见 INT-11 |
 
-**工程锚点**：`bone-engine/bone-integration` · `bone-platform/bone-integration` · `bone-integration-app`
+**工程锚点**（唯一集成服务，勿与已移除的 engine 模块混淆）：
+
+- 后端：[`bone-platform/bone-integration`](bone-platform/bone-integration/)（Maven 构件 `bone-platform-integration`，默认 `:8085`）
+- 前端：[`bone-integration-app`](bone-frontend/apps/bone-integration-app/)（`:3006`，经 Shell `:3000` 加载）
+
+交付进度：[P0 看板 · 集成](doc/wiki/07-P0-TODO看板.md#集成引擎bone-platformbone-integration) · 运维说明：[平台集成 README](bone-platform/bone-integration/README.md) · 收敛决策：[ADR-集成单模块](doc/architecture/ADR-integration-consolidation.md)
 
 ---
 
@@ -208,6 +214,8 @@ ExtPoint 扩展引擎 ──► 个性化逻辑插件化（「怎么差异化」
 - **交付层**：简单域走 **模式 B**；强定制/合规域走 **模式 A**；可混合（同一企业不同系统）。  
 - **功能层**：扩展引擎承载变化，减少主干重构。  
 - **生态层**：集成引擎消除孤岛。
+
+> **物理部署**：集成能力由 **单一进程** `bone-platform/bone-integration` 承载（非独立 engine 服务）。当前执行为 **INT-09 同步线性**（`LinearSyncFlowRuntime`）；Camel 图编排（INT-11）与 MQ 事件（INT-10）按看板分阶段接入。
 
 ---
 
@@ -286,11 +294,15 @@ cd bone
 # 数据库（DDL 真源：bone-init.sql）
 mysql -u root -p < bone-init.sql
 
-# 后端
+# 后端（全量；仅验集成可用下一行子集）
 mvn clean install -DskipTests
+# mvn clean install -pl bone-platform/bone-integration -am -DskipTests
 
 # IAM（示例）
 cd bone-platform/bone-iam && mvn spring-boot:run
+
+# 集成（可选，另开终端；经网关访问见下表）
+# cd bone-platform/bone-integration && mvn spring-boot:run
 
 # 前端 Shell（新终端）
 cd bone-frontend && npm ci && npm run dev
@@ -303,10 +315,13 @@ cd bone-frontend && npm ci && npm run dev
 | 入口 | 地址 |
 |------|------|
 | 管理后台 Shell | http://localhost:3000 |
+| 集成微前端 | http://localhost:3006（Qiankun 子应用，亦可从 Shell 菜单进入） |
 | API 网关（推荐） | http://localhost:8888/api/v1/... |
 | IAM | http://localhost:8081 |
+| 集成 API（直连） | http://localhost:8085/api/v1/integration/... |
 | 元数据服务 | http://localhost:9001 |
 
+- **端口冲突**：`bone-platform/bone-integration` 与 `bone-engine/studio-generator` 默认均为 **8085**，同机调试只启其一或改 `server.port` / `BONE_SERVER_PORT`，详见 [本地开发与构建](doc/wiki/03-本地开发与构建.md)
 - 默认账号：`admin` / `123456`（首次登录请修改；与 `bone-init.sql` 一致）
 - DDL 策略：改 [bone-init.sql](bone-init.sql) 后重建库，见 [数据库开发规范](doc/architecture/数据库开发规范.md)
 - 仓库中**无** `bone-admin` 模块；在线演示环境以社区公告为准
@@ -374,6 +389,9 @@ A: 确认 JDK 17+、MySQL 已导入 `bone-init.sql`、端口无冲突；详见 [
 
 **Q: API 路径规范？**  
 A: 统一 `/api/v1/{domain}/**`，见 [Bone-API-规范](doc/architecture/Bone-API-规范.md)。
+
+**Q: 集成服务在哪个目录？**  
+A: 仅 **`bone-platform/bone-integration`**（构件 `bone-platform-integration`）；前端为 **`bone-integration-app`**。历史 `bone-engine/bone-integration` 已移除，见 [ADR-集成单模块](doc/architecture/ADR-integration-consolidation.md)。
 
 **Q: 如何开发扩展插件？**  
 A: 见 [扩展引擎使用指南](bone-engine/bone-extension-engine/docs/使用指南.md) 与 `bone-extension-sdk` 示例。

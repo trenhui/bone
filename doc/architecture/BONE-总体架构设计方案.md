@@ -5,7 +5,7 @@
 > **文档性质**：`doc/architecture/` 目录下**平台总体**架构与技术方案权威文档；本版在 v2.0 整合稿基础上，按 **C4、SRE（SLO/SLI）、Well-Architected、API 工程化、韧性模式、零信任与 SDL、数据一致性模式** 等业界最佳实践做了系统化补强。  
 > **文档沿革**：2026-05-15 起，原并行 `doc/arch` 方案已废止并合并至本文；2026-05-15 起本文迁入 `doc/architecture/`，与前端架构、UI 规范同目录索引；后续架构变更仅维护本文。  
 > **与实现关系**：愿景、分层、能力边界与非功能基线以本文为准；**具体 API 路径、表名 DDL** 与仓库不一致时以 **OpenAPI、`bone-init.sql`、各模块代码** 为准；**§7** 给出 Maven 模块映射。  
-> **版本**：v2.1 Best-Practice（最佳实践完整版） | **日期**：2026-05-15 | **状态**：发布
+> **版本**：v2.1 Best-Practice（最佳实践完整版） | **日期**：2026-05-15 | **最近修订**：2026-05-17 | **状态**：发布
 
 ---
 
@@ -119,6 +119,19 @@
 | **向后兼容** | 公共 API 变更遵循 semver/弃用期；破坏性变更须 ADR + 双轨运行窗口。 |
 | **可测试** | 核心领域逻辑可单测；跨边界通过契约测试与 Testcontainers 类集成测试。 |
 
+### 2.1.1 产品级设计原则（对齐 [README](../../README.md)）
+
+下列原则与根目录 README **设计原则** 一致，指导 PRD 与各模块详设；**不因单版本实现进度而削弱**：
+
+| 原则 | 架构落点 |
+|------|----------|
+| **元数据先行** | 统一 `meta_*` + EAV；应用生成含 **模式 A（生成式）** 与 **模式 B（运行时）**（§3.1、§7、§8.3.2） |
+| **开闭原则（ExtPoint）** | 行业差异走扩展点 + JAR 插件，**禁止** fork 主干交付变体（§8.3.4、[扩展详设](../design/modules/5.%20扩展管理模块详细设计方案.md) §1.5） |
+| **单一可信数据源** | 主数据平台治理核心对象；元数据 catalog 与 `mdm_*` 边界见 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §8 |
+| **契约化集成** | 连接器、编排、幂等、可观测（§8.3.5、第二十七部分） |
+| **契约化 API** | 对外统一 **`/api/v1/{domain}/**`**（§8.2、[Bone-API-规范](./Bone-API-规范.md)） |
+| **工程诚实** | 愿景在 README/PRD；As-Is 以 OpenAPI、`bone-init.sql`、代码与 [P0 看板](../wiki/07-P0-TODO看板.md) 为准 |
+
 ### 2.2 云架构五大支柱（对齐 Well-Architected 思想）
 
 | 支柱 | BONE 落地要点 |
@@ -147,15 +160,31 @@
 | **企业集成** | 异构系统可编排、可回放 | 集成引擎、连接器、流程 |
 | **扩展运行时** | 核心稳定、个性化外置 | 扩展点、插件生命周期、隔离执行 |
 
+**智能元数据 · 双模式交付**（同一 `meta_*`，按实体 `delivery_mode` 选型，**可并存**）：
+
+| 模式 | 路径 | 主责模块 | As-Is |
+|------|------|----------|-------|
+| **A · 生成式** | 元数据 → 生成源码 → 编译部署 | `studio-generator` + `bone-metadata-server`（catalog） | ✅ 主线 |
+| **B · 运行时** | 元数据 → 解释执行动态 API | `bone-metadata-engine` + `sdk` | ⚠️ 规划（META-002B） |
+
+标准 CRUD：**模式 B 成熟后不必为每实体生成 Controller**；生成器收窄为 DDD 骨架、信创审计、ExtPoint 织入等「逃逸舱」。详见 PRD §4.4、[元数据详设](../design/modules/2.%20元数据管理模块详细设计方案.md) §0.1。
+
 ### 3.2 四大引擎（对外表述）
 
-智能元数据引擎、企业主数据平台、ExtPoint 扩展引擎、集成引擎 —— 与三大能力互补：主数据强调 **唯一可信源与质量**，同时服务应用生成与集成消费。
+| 引擎 | 职责 | 与三大能力关系 |
+|------|------|----------------|
+| **智能元数据引擎** | 统一元模型 + 双模式应用生成 | 承载「应用生成」 |
+| **企业主数据平台** | 唯一可信源、质量、发布 | 消费 catalog 中主数据类实体 |
+| **ExtPoint 扩展引擎** | 稳定接口 + 插件实现行业差异 | 承载「扩展运行时」；**不替代** 元数据标准 CRUD |
+| **集成引擎** | 连接器与流程编排 | 承载「企业集成」 |
+
+协同顺序（README）：**元数据定义骨架 → 主数据保质量 → ExtPoint 注入差异 → 集成连外部**。ExtPoint 与元数据分工见 [扩展详设](../design/modules/5.%20扩展管理模块详细设计方案.md) §1.5。
 
 ### 3.3 七大价值流与关键事件
 
 | ID | 价值流 | 关键事件链（摘要） |
 |----|--------|-------------------|
-| V1 | 元数据与生成 | EntityCreated → Published → TemplateSelected → CodeGenerated |
+| V1 | 元数据与交付 | EntityCreated → Published →（**A**）TemplateSelected → CodeGenerated /（**B**）RuntimeApiEnabled |
 | V2 | 权限与安全 | UserLogin → PermissionChecked → AuditLogged |
 | V3 | 集成编排 | ConnectorConfigured → FlowDesigned → FlowTested → FlowActivated |
 | V4 | 插件扩展 | ExtensionPointDefined → PluginUploaded → PluginDeployed → PluginExecuted |
@@ -379,9 +408,10 @@ flowchart TD
 
 | 逻辑组件 | Maven / 目录示例 |
 |----------|-------------------|
-| 元数据能力族 | **sdk**（数据面，必选）· **server**（扩展字段 :9001，选配）· **engine**（智能引擎，选配）；生成见 `studio-generator` — [对照](../design/modules/元数据能力-实现映射与竞品对照.md) |
+| 元数据能力族 | **sdk**（数据面，A+B 共用）· **server**（catalog + EAV，:9001）· **engine**（模式 B，选配）· **studio-generator**（模式 A）— [对照](../design/modules/元数据能力-实现映射与竞品对照.md) §1.3 |
+| 元数据 `delivery_mode` | `meta_entity.delivery_mode`：`0` GENERATIVE / `1` RUNTIME | As-Is 已落库；RUNTIME 动态 API 待 engine（META-002B） |
 | 扩展引擎 | `bone-engine/bone-extension-engine/*` |
-| 集成引擎 | `bone-engine/bone-integration` |
+| 集成引擎 | `bone-platform/bone-integration` |
 | IAM、主数据、系统、网关等 | `bone-platform/bone-iam`、`bone-masterdata`、`bone-system`、`bone-gateway` 等 |
 | 框架 | `bone-framework/*` |
 | DDD 蓝图 | `bone-blueprint/`（是否纳入根 `pom.xml` 以仓库为准） |
@@ -406,7 +436,10 @@ flowchart TD
 
 ### 8.2 API 版本策略
 
-对外可同时支持 **`/api/{domain}/...`** 与 **`/api/v1/{domain}/...`**；**网关负责剥离版本前缀**，服务内保持统一 Controller 映射。具体以网关与模块 `context-path` 配置为准。
+- **规范真源**：对外统一 **`/api/v1/{domain}/**`**（见 [Bone-API-规范](./Bone-API-规范.md)）。
+- **As-Is**：各服务 Controller 以 `/api/v1/...` 为契约；网关 `bone-gateway` 按域转发。
+- **弃用**：历史无版本前缀（如 `/api/iam`、`/api/console`、`/v1/metadata`）**不再作为新集成入口**；存量调用须迁移至 v1（见 [文档治理](../文档治理-三目录审查子任务.md) T27）。
+- **演进**：未来 `v2` 须 ADR + 双轨窗口；网关可保留版本剥离能力。
 
 ### 8.3 核心 API 一览（契约级索引）
 
@@ -430,11 +463,11 @@ flowchart TD
 
 #### 8.3.2 元数据
 
-> **分 As-Is / Vision**（真源：[元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §5）。**As-Is**：`bone-metadata-server` :9001 上 `POST/GET /api/v1/metadata/fields:*`（扩展字段 EAV）及 catalog REST。**Vision** 下表模板等；建模字段**嵌套**在实体下，避免与 EAV `fields:*` 冲突。
+> **分 As-Is / [Target] / Vision**（真源：[元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §5）。**As-Is**：`bone-metadata-server` :9001 上 catalog REST + `fields:*`（EAV）。实体含 **`delivery_mode`**（GENERATIVE / RUNTIME）。**模式 A** 生成走 **`/api/v1/generate`**（`studio-generator`）。**模式 B** 动态 CRUD 由 `bone-metadata-engine` 提供，前缀 **[Target]**（META-002B）。建模字段**嵌套**在实体下，避免与 EAV `fields:*` 冲突。
 
-| API 路径 | 方法 | 功能 |
-|----------|------|------|
-| `/api/v1/metadata/entities` | GET/POST | 实体列表/创建 |
+| API 路径 | 方法 | 功能 | 模式 |
+|----------|------|------|------|
+| `/api/v1/metadata/entities` | GET/POST | 实体列表/创建（含 `delivery_mode`） | A+B |
 | `/api/v1/metadata/entities/{id}` | GET/PUT/DELETE | 详情/更新/删除 |
 | `/api/v1/metadata/entities/{id}/publish` | POST | 发布实体 |
 | `/api/v1/metadata/entities/{entityId}/fields` | GET/POST | 建模字段（catalog） |

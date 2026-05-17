@@ -80,7 +80,6 @@ bone/                          # 根聚合模块
 │   ├── bone-extension-engine/ # 扩展引擎
 │   │   ├── bone-extension-sdk/
 │   │   └── bone-extension-studio/
-│   ├── bone-integration/      # 集成引擎
 │   ├── bone-workflow/         # 工作流引擎
 │   └── bone-procurement/      # 采购/供应链相关引擎
 ├── bone-platform/             # 企业共享平台服务
@@ -90,7 +89,7 @@ bone/                          # 根聚合模块
 │   ├── bone-system/           # 系统管理（端口 8083）
 │   ├── bone-file/             # 文件服务
 │   ├── bone-notification/     # 通知服务
-│   └── bone-integration/      # 平台级集成服务
+│   └── bone-integration/      # 唯一集成服务（:8085，/api/v1/integration）
 │   ├── tpa-saas/              # TPA 后端 Java（在役，逐步切至 tpa-go）
 │   ├── tpa-go/                # TPA 后端 Go（目标主栈，阶段 1 骨架）
 │   ├── tpa-sass-react/        # TPA 管理端 React（目标唯一前端）
@@ -380,7 +379,6 @@ adapter/web → application → domain ← infrastructure
 |---|---|
 | bone-iam | 8081 |
 | bone-system | 8083 |
-| bone-integration（引擎） | 30888 |
 | bone-shell（前端主应用） | 3000 |
 | bone-iam-app | 3003 |
 | bone-metadata-app | 3004 |
@@ -395,7 +393,7 @@ adapter/web → application → domain ← infrastructure
 
 - **默认密码**：`admin` / `123456`，首次部署后**必须**修改。
 - **SA-Token**：用于认证与 SSO，配置需关注 token 有效期与签名密钥。
-- **数据库密码**：部分 `application.yml` 中硬编码了明文密码（如 `bone-engine/bone-integration/src/main/resources/application.yml`），生产环境**必须**改为环境变量或配置中心注入。
+- **数据库密码**：部分 `application.yml` 中硬编码了明文密码，生产环境**必须**改为环境变量或配置中心注入。
 - **Redis 密码**：同样存在明文配置，需通过外部化配置处理。
 - **API 文档**：SpringDoc 在生产环境建议关闭或增加认证拦截（`knife4j` 或 Spring Security）。
 - **CORS**：前端微应用开发服务器开启了跨域头，生产环境需收紧为明确域名白名单。

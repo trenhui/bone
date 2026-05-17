@@ -6,7 +6,8 @@
 
 | 顺序 | 文档 | 说明 |
 |------|------|------|
-| 1 | [BONE-总体架构设计方案.md](./BONE-总体架构设计方案.md) | 平台总体、模块、NFR |
+| 0 | [README.md](../../README.md) | 产品理念、四大引擎、**元数据双模式**、演进路线 |
+| 1 | [BONE-总体架构设计方案.md](./BONE-总体架构设计方案.md) | 平台总体、模块、NFR（§2.1.1 对齐 README 原则） |
 | 2 | [Bone-DDD-最终实践方案.md](./Bone-DDD-最终实践方案.md) | 分层、CQRS、ArchUnit |
 | 3 | [Bone-API-规范.md](./Bone-API-规范.md) | REST 契约、OpenAPI、契约测试 |
 | 4 | [数据库开发规范.md](./数据库开发规范.md) | DDL 真源 `bone-init.sql` |
@@ -38,6 +39,7 @@
 | [Bone-多租户规范.md](./Bone-多租户规范.md) | `tenant_id` 传递链 |
 | [Bone-缓存规范.md](./Bone-缓存规范.md) | Redis/Caffeine Key 与 TTL |
 | [Bone-消息与事件规范.md](./Bone-消息与事件规范.md) | Topic、信封、DLQ、Webhook |
+| [ADR-integration-consolidation.md](./ADR-integration-consolidation.md) | 集成单模块收敛（移除 engine 侧 `bone-integration`） |
 
 ### 质量与交付
 

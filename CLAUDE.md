@@ -22,7 +22,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 bone/
 ├── bone-parent/          # 父 POM，依赖版本管理
 ├── bone-framework/       # 框架层（web/security/core/datasource）
-├── bone-engine/          # 引擎层（metadata/masterdata/extension/integration）
+├── bone-engine/          # 引擎层（metadata/extension；集成见 bone-platform）
 ├── bone-platform/        # 平台模块（iam/system/audit）
 ├── bone-blueprint/       # DDD 架构蓝图（最佳实践参考）
 ├── bone-sdk/             # SDK 客户端

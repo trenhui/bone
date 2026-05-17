@@ -11,7 +11,7 @@ Bone 四大引擎与相关中间件的 Maven 聚合目录。
 | [bone-metadata-engine](./bone-metadata-engine/) | **模式 B 计算面**：运行时动态 CRUD / 规则 / SmartQL（增强后可减少标准代码生成） | [README](./bone-metadata-engine/README.md) |
 | — | **三模块定义、协作与竞品** | [doc/design/modules/元数据能力-实现映射与竞品对照.md](../doc/design/modules/元数据能力-实现映射与竞品对照.md) |
 | [bone-extension-engine](./bone-extension-engine/) | ExtPoint 扩展引擎（SDK + Studio） | [README](./bone-extension-engine/README.md)（摘要）→ [docs/使用指南](./bone-extension-engine/docs/使用指南.md) |
-| [bone-integration](./bone-integration/) | 集成引擎运行时 | [README](./bone-integration/README.md) |
+| — | **集成服务**已迁至 `bone-platform/bone-integration` | [ADR](../doc/architecture/ADR-integration-consolidation.md) |
 | [studio-generator](./studio-generator/) | 代码生成服务 | 产品详设见 [doc/design/modules/8](../doc/design/modules/8.Studio%20Generator%20详细设计方案.md) |
 | [go-engine](./go-engine/) | Go 实验性对照实现 | [README](./go-engine/README.md) |
 

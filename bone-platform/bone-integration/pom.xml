@@ -13,7 +13,7 @@
     <artifactId>bone-platform-integration</artifactId>
     <version>1.0.0</version>
     <name>bone-platform-integration</name>
-    <description>Platform integration management (Camel orchestration, distinct from bone-engine/bone-integration)</description>
+    <description>Platform integration service (connectors, flows, execution, events)</description>
 
     <dependencies>
         <!-- bone-core -->
@@ -68,7 +68,7 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
-        <!-- Apache Camel（与 bone-engine/bone-integration 对齐 4.8.0） -->
+        <!-- Apache Camel 4.8（INT-11 路由编译） -->
         <dependency>
             <groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-spring-boot-starter</artifactId>

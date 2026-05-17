@@ -30,6 +30,8 @@ bone:
       secret-key: ${BONE_IAM_JWT_SECRET:change-me-change-me-change-me-change-me-32bytes}
 
 integration:
+  camel:
+    enabled: true
   flow:
     max.nodes: 50
     execution.timeout: 300

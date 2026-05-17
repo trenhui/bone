@@ -103,9 +103,8 @@ bone/                          # 根聚合模块
 │   ├── bone-extension-engine/ # 扩展引擎
 │   │   ├── bone-extension-sdk/
 │   │   └── bone-extension-studio/
-│   ├── bone-integration/      # 集成引擎
 │   ├── bone-workflow/         # 工作流引擎
-│   └── bone-procurement/      # 采购/供应链相关引擎
+│   └── bone-procurement/      # 采购/供应链相关引擎（集成见 bone-platform/bone-integration）
 ├── bone-platform/             # 企业共享平台服务
 │   ├── bone-iam/              # 身份与访问管理（默认端口 8081，见 doc/wiki/03）
 │   ├── bone-gateway/          # API 网关
@@ -113,7 +112,7 @@ bone/                          # 根聚合模块
 │   ├── bone-system/           # 系统管理（端口 8083）
 │   ├── bone-file/             # 文件服务
 │   ├── bone-notification/     # 通知服务
-│   └── bone-integration/      # 平台级集成服务
+│   └── bone-integration/      # 唯一集成服务（:8085）
 │   ├── bone-trade/            # 骨架
 │   └── tpa-saas/              # TPA SaaS 业务
 │       ├── bone-auth/
@@ -356,7 +355,6 @@ npm run preview               # Vite preview
 |------|------|
 | bone-iam | 8080 |
 | bone-system | 8083 |
-| bone-integration（引擎） | 30888 |
 | bone-shell（前端主应用） | 3000 |
 | bone-iam-app | 3003 |
 | bone-metadata-app | 3004 |
