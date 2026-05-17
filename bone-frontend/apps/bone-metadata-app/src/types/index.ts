@@ -128,3 +128,21 @@ export const RELATION_TYPES = [
 ];
 
 export const FIELD_TYPES = ['STRING', 'INTEGER', 'LONG', 'DECIMAL', 'BOOLEAN', 'DATE', 'DATETIME', 'TEXT'];
+
+/** 模式 B 动态行（物理表列名 → 值） */
+export type RuntimeRecord = Record<string, unknown>;
+
+/** 运行时 API 不可在表单中编辑的系统列 */
+export const RUNTIME_READONLY_FIELDS = new Set([
+  'id',
+  'tenant_id',
+  'created_at',
+  'updated_at',
+  'created_by',
+  'updated_by',
+  'deleted',
+  'version',
+]);
+
+export const META_ENTITY_PUBLISHED = 1;
+export const META_DELIVERY_RUNTIME = 1;

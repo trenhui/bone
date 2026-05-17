@@ -1,0 +1,9 @@
+# Gateway 集成测试：仅挂载 extension-studio 路由，上游由 Mock HTTP Server 提供
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: extension-studio
+          uri: ${extension.studio.mock-uri}
+          predicates:
+            - Path=/api/v1/extension/**

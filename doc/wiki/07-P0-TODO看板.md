@@ -107,6 +107,8 @@
 | META-002B-01 | `meta_entity.delivery_mode` + catalog API | 实体交付模式 0-GENERATIVE / 1-RUNTIME；`bone-metadata-app` 可选 | done | P1 |
 | META-002B-02 | `bone-metadata-engine` + `bone-metadata-server` | 模式 B：`JdbcRuntimeRecordService` + `/api/v1/runtime/entities/{code}/records` | done | P1 |
 | META-002B-03 | `studio-generator` | `delivery_mode=RUNTIME` 实体跳过标准 CRUD 生成（catalog 快照过滤） | done | P2 |
+| META-002B-04 | `bone-metadata-app` | `runtimeRecordApi` + 实体 `deliveryMode` 建模 UI | done | P2 |
+| META-002B-05 | `bone-gateway` | `/api/v1/runtime/**` 路由至 metadata-server :9001 | done | P2 |
 
 ## 控制台与仪表盘（bone-shell + bone-system）
 

@@ -11,9 +11,21 @@ import type {
   UpdateMetaFieldReq,
   CreateMetaRelationReq,
   UpdateMetaRelationReq,
+  RuntimeRecord,
 } from '../types';
 
 const META = '/api/v1/metadata';
+const RUNTIME = '/api/v1/runtime';
+
+/** 兼容 catalog（list）与 engine 原始分页（records） */
+export function normalizePage<T>(raw: PageResult<T> & { records?: T[]; page?: number; size?: number }): PageResult<T> {
+  return {
+    list: raw.list ?? raw.records ?? [],
+    total: raw.total,
+    pageNum: raw.pageNum ?? raw.page ?? 1,
+    pageSize: raw.pageSize ?? raw.size ?? 10,
+  };
+}
 
 const api = axios.create({
   baseURL: '',
@@ -83,4 +95,34 @@ export const metadataRelationApi = {
 
   delete: (id: number) =>
     api.delete<never, ApiResponse<void>>(`${META}/relationships/${id}`),
+};
+
+export const runtimeRecordApi = {
+  page: (entityCode: string, params?: { page?: number; size?: number }) =>
+    api.get<never, ApiResponse<PageResult<RuntimeRecord>>>(
+      `${RUNTIME}/entities/${encodeURIComponent(entityCode)}/records`,
+      { params: { page: params?.page ?? 1, size: params?.size ?? 20 } },
+    ),
+
+  get: (entityCode: string, id: string) =>
+    api.get<never, ApiResponse<RuntimeRecord>>(
+      `${RUNTIME}/entities/${encodeURIComponent(entityCode)}/records/${encodeURIComponent(id)}`,
+    ),
+
+  create: (entityCode: string, body: RuntimeRecord) =>
+    api.post<never, ApiResponse<RuntimeRecord>>(
+      `${RUNTIME}/entities/${encodeURIComponent(entityCode)}/records`,
+      body,
+    ),
+
+  update: (entityCode: string, id: string, body: RuntimeRecord) =>
+    api.put<never, ApiResponse<RuntimeRecord>>(
+      `${RUNTIME}/entities/${encodeURIComponent(entityCode)}/records/${encodeURIComponent(id)}`,
+      body,
+    ),
+
+  delete: (entityCode: string, id: string) =>
+    api.delete<never, ApiResponse<void>>(
+      `${RUNTIME}/entities/${encodeURIComponent(entityCode)}/records/${encodeURIComponent(id)}`,
+    ),
 };

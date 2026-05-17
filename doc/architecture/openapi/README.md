@@ -25,3 +25,10 @@ components:
 | [PageResult.yaml](./components/PageResult.yaml) | 分页 |
 | [ProblemDetail.yaml](./components/ProblemDetail.yaml) | RFC 7807 对齐错误体（位于 `data`） |
 | [FieldError.yaml](./components/FieldError.yaml) | 字段校验错误 |
+
+## 域 API 契约（片段）
+
+| 文件 | 服务 | 前缀 |
+|------|------|------|
+| [extension-v1.yaml](./extension-v1.yaml) | bone-extension-studio | `/api/v1/extension` |
+| [metadata-runtime-v1.yaml](./metadata-runtime-v1.yaml) | bone-metadata-server（模式 B） | `/api/v1/runtime` |

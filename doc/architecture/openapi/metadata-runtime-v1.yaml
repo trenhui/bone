@@ -1,0 +1,223 @@
+openapi: 3.1.0
+info:
+  title: Bone Metadata Runtime API（模式 B）
+  version: 1.0.0
+  description: |
+    已发布且 `delivery_mode=RUNTIME` 的实体，通过 `bone-metadata-engine` 的 `JdbcRuntimeRecordService`
+    对物理表执行动态 CRUD。服务宿主：**bone-metadata-server** :9001。
+
+    - 规范：[Bone-API-规范.md](../Bone-API-规范.md)
+    - 详设：[元数据管理模块](../design/modules/2.%20元数据管理模块详细设计方案.md) §0.1、§2.4
+    - PRD：META-002B
+
+    **前置条件**：实体 status=已发布(1)、delivery_mode=RUNTIME(1)；物理表 `table_name` 已存在且列名与 `meta_field.code` 对齐。
+
+servers:
+  - url: /api/v1/runtime
+
+paths:
+  /entities/{entityCode}/records:
+    get:
+      summary: 分页查询运行时记录
+      operationId: listRuntimeRecords
+      tags: [RuntimeRecord]
+      parameters:
+        - $ref: '#/components/parameters/EntityCode'
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 1, default: 1 }
+          description: 页码（从 1 开始）
+        - name: size
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 200, default: 20 }
+          description: 每页条数
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './components/ApiResponse.yaml'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/RuntimeRecordPage'
+        '400':
+          $ref: '#/components/responses/RuntimeError'
+        '401':
+          description: 未认证
+    post:
+      summary: 创建运行时记录
+      operationId: createRuntimeRecord
+      tags: [RuntimeRecord]
+      parameters:
+        - $ref: '#/components/parameters/EntityCode'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuntimeRecordBody'
+      responses:
+        '200':
+          description: OK（创建后的完整记录）
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './components/ApiResponse.yaml'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/RuntimeRecord'
+        '400':
+          $ref: '#/components/responses/RuntimeError'
+
+  /entities/{entityCode}/records/{id}:
+    get:
+      summary: 按主键查询记录
+      operationId: getRuntimeRecord
+      tags: [RuntimeRecord]
+      parameters:
+        - $ref: '#/components/parameters/EntityCode'
+        - $ref: '#/components/parameters/RecordId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './components/ApiResponse.yaml'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/RuntimeRecord'
+        '404':
+          $ref: '#/components/responses/RuntimeError'
+    put:
+      summary: 更新运行时记录
+      operationId: updateRuntimeRecord
+      tags: [RuntimeRecord]
+      parameters:
+        - $ref: '#/components/parameters/EntityCode'
+        - $ref: '#/components/parameters/RecordId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuntimeRecordBody'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: './components/ApiResponse.yaml'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/RuntimeRecord'
+        '404':
+          $ref: '#/components/responses/RuntimeError'
+    delete:
+      summary: 删除运行时记录（有 deleted 列则软删）
+      operationId: deleteRuntimeRecord
+      tags: [RuntimeRecord]
+      parameters:
+        - $ref: '#/components/parameters/EntityCode'
+        - $ref: '#/components/parameters/RecordId'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: './components/ApiResponse.yaml'
+        '404':
+          $ref: '#/components/responses/RuntimeError'
+
+components:
+  parameters:
+    EntityCode:
+      name: entityCode
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^[a-zA-Z][a-zA-Z0-9_]*$'
+      description: 元数据实体编码（meta_entity.code）
+    RecordId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: 主键值（通常为 Snowflake 数字字符串）
+
+  schemas:
+    RuntimeRecord:
+      type: object
+      additionalProperties: true
+      description: 物理表行，键为列名（与 meta_field.code 对齐）
+      example:
+        id: 1234567890123456789
+        tenant_id: 1
+        order_no: O-20260517-001
+        amount: 99.5
+        deleted: 0
+
+    RuntimeRecordBody:
+      type: object
+      additionalProperties: true
+      description: 可写字段子集；禁止传 id/tenant_id 等系统列（服务端过滤）
+
+    RuntimeRecordPage:
+      type: object
+      description: 与 catalog API 一致，使用 list/pageNum/pageSize（CatalogPageMapper）
+      properties:
+        list:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuntimeRecord'
+        total:
+          type: integer
+          format: int64
+        pageNum:
+          type: integer
+        pageSize:
+          type: integer
+        pages:
+          type: integer
+        hasNext:
+          type: boolean
+        hasPrevious:
+          type: boolean
+
+    RuntimeErrorEnvelope:
+      type: object
+      properties:
+        errorCode:
+          type: string
+          enum:
+            - META_RUNTIME_ENTITY_NOT_FOUND
+            - META_RUNTIME_RECORD_NOT_FOUND
+            - META_RUNTIME_INVALID_IDENTIFIER
+        message:
+          type: string
+
+  responses:
+    RuntimeError:
+      description: 运行时数据面错误（GlobalExceptionHandler / ErrorResponse）
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              errorCode:
+                type: string
+              message:
+                type: string

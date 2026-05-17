@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'bone-engine/bone-extension-engine/**'
+      - 'bone-platform/bone-gateway/**'
       - 'bone-frontend/apps/bone-extension-app/**'
       - 'doc/architecture/openapi/extension-v1.yaml'
       - 'doc/architecture/openapi/components/**'
@@ -11,6 +12,7 @@ on:
   pull_request:
     paths:
       - 'bone-engine/bone-extension-engine/**'
+      - 'bone-platform/bone-gateway/**'
       - 'bone-frontend/apps/bone-extension-app/**'
       - 'doc/architecture/openapi/extension-v1.yaml'
       - 'doc/architecture/openapi/components/**'
@@ -49,6 +51,21 @@ jobs:
           ExtensionStudioSmokeIT,ExtensionApiTargetFeaturesTest,
           ExtensionApiLroTest,StudioIdempotencyServiceTest,
           StudioApplicationStartupTest
+
+  gateway-extension-route:
+    name: Gateway Extension Route IT
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Test bone-gateway extension routes
+        run: >
+          mvn test -pl bone-platform/bone-gateway --batch-mode
+          -Dtest=ExtensionGatewayRouteIT
 
   extension-sdk:
     name: Extension SDK Tests

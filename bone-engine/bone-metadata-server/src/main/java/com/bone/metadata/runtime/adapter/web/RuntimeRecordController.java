@@ -1,11 +1,11 @@
 package com.bone.metadata.runtime.adapter.web;
 
-import com.bone.core.model.PageResult;
 import com.bone.core.result.ApiResponse;
+import com.bone.core.result.PageResult;
 import com.bone.core.util.DistributedIdGenerator;
+import com.bone.metadata.catalog.common.CatalogPageMapper;
 import com.bone.metadata.catalog.common.CatalogTenantSupport;
 import com.bone.metadata.engine.runtime.JdbcRuntimeRecordService;
-import com.bone.metadata.engine.runtime.RuntimeRecordException;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -32,7 +32,8 @@ public class RuntimeRecordController {
       @RequestParam(defaultValue = "1") int page,
       @RequestParam(defaultValue = "20") int size) {
     long tenantId = CatalogTenantSupport.currentTenantId();
-    return ApiResponse.success(runtimeRecordService.page(entityCode, tenantId, page, size));
+    var sdkPage = runtimeRecordService.page(entityCode, tenantId, page, size);
+    return ApiResponse.success(CatalogPageMapper.toApiPage(sdkPage, row -> row));
   }
 
   @GetMapping("/{id}")
