@@ -87,6 +87,7 @@
 |--------|------|-------------------|------|
 | `iam` | bone-iam | `IAM_` | 认证、用户、角色、权限 |
 | `metadata` | 元数据（catalog + 扩展字段 EAV，统一 `/api/v1/metadata/**`） | `META_` | 与 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) 一致 |
+| `runtime` | bone-metadata-server（模式 B 动态 CRUD） | `META_RUNTIME_` | OpenAPI：[metadata-runtime-v1.yaml](./openapi/metadata-runtime-v1.yaml) |
 | `generator` | studio-generator | `GEN_` | 代码生成（**非** metadata-server 职责） |
 | `masterdata` | bone-masterdata | `MD_` | 主数据、质量 |
 | `extension` | bone-extension-studio | `EXT_` | 扩展点、插件 |
@@ -532,7 +533,7 @@ OpenAPI 草案：[openapi/extension-v1.yaml](./openapi/extension-v1.yaml)（本�
 | 过渡 | 分页 `list` 字段 | `records` | 2026-09-01 |
 | 过渡 | HTTP 200 + `success:false` | HTTP 4xx/5xx | 2026-09-01 |
 
-> **说明**：**As-Is** 含扩展字段 `fields:search|searchByNames|allocate|health`（**动作式** `fields:*`）及 **catalog** `entities`、`…/entities/{entityId}/fields`、`…/relationships`；**禁止** catalog 与 EAV 共用顶层 `…/fields`，见 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §1.2。
+> **说明**：**As-Is** 含扩展字段 `fields:search|searchByNames|allocate|health`（**动作式** `fields:*`）及 **catalog** `entities`、`…/entities/{entityId}/fields`、`…/relationships`；**模式 B** 动态数据 `/api/v1/runtime/entities/{entityCode}/records`（`delivery_mode=RUNTIME` 且已发布）。**禁止** catalog 与 EAV 共用顶层 `…/fields`，见 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §1.2。
 
 ---
 

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Button,
   Form,
@@ -16,7 +17,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { metadataEntityApi } from '../services/metadataApi';
 import type { CreateMetaEntityReq, MetaEntity, UpdateMetaEntityReq } from '../types';
-import { DELIVERY_MODE, ENTITY_STATUS } from '../types';
+import { DELIVERY_MODE, ENTITY_STATUS, META_DELIVERY_RUNTIME, META_ENTITY_PUBLISHED } from '../types';
 
 const EntityManagement: React.FC = () => {
   const [form] = Form.useForm();
@@ -131,6 +132,10 @@ const EntityManagement: React.FC = () => {
           <Button type="link" size="small" onClick={() => openEdit(record)} disabled={record.status === 1}>
             编辑
           </Button>
+          {record.deliveryMode === META_DELIVERY_RUNTIME &&
+            record.status === META_ENTITY_PUBLISHED && (
+              <Link to={`/metadata/runtime?entity=${encodeURIComponent(record.code)}`}>运行时数据</Link>
+            )}
           {record.status === 0 && (
             <Button
               type="link"

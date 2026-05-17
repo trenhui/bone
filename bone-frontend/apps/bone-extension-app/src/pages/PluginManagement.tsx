@@ -56,7 +56,10 @@ const PluginManagement: React.FC = () => {
   const [selectedPlugin, setSelectedPlugin] = useState<ExtensionRow | null>(null);
   const [editing, setEditing] = useState<ExtensionRow | null>(null);
   const [jarFile, setJarFile] = useState<File | null>(null);
-  const [deployingId, setDeployingId] = useState<number | null>(null);
+  const [deploying, setDeploying] = useState<{ id: number; name: string; progress: number } | null>(
+    null,
+  );
+  const [undeployingId, setUndeployingId] = useState<number | null>(null);
   const [form] = Form.useForm<ExtensionPayload>();
   const [uploadForm] = Form.useForm<{
     extPointId: number;
@@ -187,19 +190,36 @@ const PluginManagement: React.FC = () => {
     }
   };
 
-  const handleDeploy = async (id: number, deploy: boolean) => {
-    setDeployingId(id);
-    const hide = message.loading(deploy ? '部署中…' : '卸载中…', 0);
+  const handleDeploy = async (record: ExtensionRow, deploy: boolean) => {
+    if (!deploy) {
+      setUndeployingId(record.id);
+      const hide = message.loading('卸载中…', 0);
+      try {
+        await deployPlugin(record.id, false, { sync: true });
+        hide();
+        message.success('已卸载');
+        load();
+      } catch (e) {
+        hide();
+        message.error(formatStudioError(e, '卸载失败'));
+      } finally {
+        setUndeployingId(null);
+      }
+      return;
+    }
+    setDeploying({ id: record.id, name: record.name, progress: 0 });
     try {
-      await deployPlugin(id, deploy, deploy ? { sync: false } : { sync: true });
-      hide();
-      message.success(deploy ? '部署成功' : '已卸载');
+      await deployPlugin(record.id, true, {
+        sync: false,
+        onProgress: (progress) =>
+          setDeploying((prev) => (prev ? { ...prev, progress } : null)),
+      });
+      message.success('部署成功');
       load();
     } catch (e) {
-      hide();
-      message.error(formatStudioError(e, '操作失败'));
+      message.error(formatStudioError(e, '部署失败'));
     } finally {
-      setDeployingId(null);
+      setDeploying(null);
     }
   };
 
@@ -282,9 +302,9 @@ const PluginManagement: React.FC = () => {
             <Button
               type="link"
               size="small"
-              loading={deployingId === record.id}
-              disabled={deployingId != null && deployingId !== record.id}
-              onClick={() => handleDeploy(record.id, false)}
+              loading={undeployingId === record.id}
+              disabled={(!!deploying || undeployingId != null) && undeployingId !== record.id}
+              onClick={() => handleDeploy(record, false)}
             >
               卸载
             </Button>
@@ -292,9 +312,9 @@ const PluginManagement: React.FC = () => {
             <Button
               type="link"
               size="small"
-              loading={deployingId === record.id}
-              disabled={deployingId != null && deployingId !== record.id}
-              onClick={() => handleDeploy(record.id, true)}
+              loading={deploying?.id === record.id}
+              disabled={(!!deploying || undeployingId != null) && deploying?.id !== record.id}
+              onClick={() => handleDeploy(record, true)}
             >
               部署
             </Button>

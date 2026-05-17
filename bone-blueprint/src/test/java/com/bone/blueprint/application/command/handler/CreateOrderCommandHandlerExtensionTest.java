@@ -5,7 +5,6 @@ import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.repository.OrderRepository;
 import com.bone.blueprint.domain.extension.order.OrderPriceCalculator;
-import com.bone.engine.extension.api.ExtensionPointExecutor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;

@@ -6,10 +6,12 @@ import {
   CodeOutlined,
   FileTextOutlined,
   ShareAltOutlined,
+  ThunderboltOutlined,
 } from '@ant-design/icons';
 import EntityManagement from './pages/EntityManagement';
 import FieldManagement from './pages/FieldManagement';
 import RelationManagement from './pages/RelationManagement';
+import RuntimeDataManagement from './pages/RuntimeDataManagement';
 import './App.css';
 
 const { Header, Content, Sider } = Layout;
@@ -22,6 +24,7 @@ const breadcrumbMap: Record<string, string> = {
   '/metadata/entity': '实体管理',
   '/metadata/field': '字段管理',
   '/metadata/relation': '关系管理',
+  '/metadata/runtime': '运行时数据',
   '/metadata/code': '代码生成',
   '/metadata/template': '模板管理',
 };
@@ -54,6 +57,11 @@ function AppLayout({ user: _user }: AppProps) {
               label: <Link to="/metadata/relation">关系管理</Link>,
             },
             {
+              key: 'runtime',
+              icon: <ThunderboltOutlined />,
+              label: <Link to="/metadata/runtime">运行时数据</Link>,
+            },
+            {
               key: 'code',
               icon: <CodeOutlined />,
               label: <Link to="/metadata/code">代码生成</Link>,
@@ -78,6 +86,7 @@ function AppLayout({ user: _user }: AppProps) {
               <Route path="/metadata/entity" element={<EntityManagement />} />
               <Route path="/metadata/field" element={<FieldManagement />} />
               <Route path="/metadata/relation" element={<RelationManagement />} />
+              <Route path="/metadata/runtime" element={<RuntimeDataManagement />} />
               <Route path="/metadata/code" element={<Placeholder title="代码生成" />} />
               <Route path="/metadata/template" element={<Placeholder title="模板管理" />} />
               <Route path="*" element={<EntityManagement />} />

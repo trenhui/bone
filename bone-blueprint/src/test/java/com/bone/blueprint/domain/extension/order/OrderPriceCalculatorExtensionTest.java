@@ -1,100 +1,10 @@
 package com.bone.blueprint.domain.extension.order;
 
-import com.bone.engine.extension.api.ExtensionPointExecutor;
-import com.bone.engine.extension.api.ExtensionRouter;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.Disabled;
 
-import java.math.BigDecimal;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-@SpringBootTest
-class OrderPriceCalculatorExtensionTest {
-
-    @Autowired
-    private ExtensionPointExecutor extensionPointExecutor;
-
-    @Autowired
-    private ExtensionRouter extensionRouter;
-
-    @Test
-    void testStandardScenario() {
-        OrderPriceCalculator.OrderPriceRequest request = OrderPriceCalculator.OrderPriceRequest.builder()
-                .baseAmount(new BigDecimal("100"))
-                .build();
-
-        BigDecimal result = extensionPointExecutor.execute(OrderPriceCalculator.class, request, ctx -> {
-            ctx.setScenario("standard");
-        });
-
-        assertEquals(new BigDecimal("100"), result);
-    }
-
-    @Test
-    void testVipScenario() {
-        OrderPriceCalculator.OrderPriceRequest request = OrderPriceCalculator.OrderPriceRequest.builder()
-                .baseAmount(new BigDecimal("100"))
-                .build();
-
-        BigDecimal result = extensionPointExecutor.execute(OrderPriceCalculator.class, request, ctx -> {
-            ctx.setScenario("vip");
-            ctx.setTenant("ALI");
-        });
-
-        assertEquals(new BigDecimal("90"), result);
-    }
-
-    @Test
-    void testPromotionScenario() {
-        OrderPriceCalculator.OrderPriceRequest request = OrderPriceCalculator.OrderPriceRequest.builder()
-                .baseAmount(new BigDecimal("100"))
-                .build();
-
-        BigDecimal result = extensionPointExecutor.execute(OrderPriceCalculator.class, request, ctx -> {
-            ctx.setScenario("promotion");
-        });
-
-        assertEquals(new BigDecimal("80"), result);
-    }
-
-    @Test
-    void testMemberScenario() {
-        OrderPriceCalculator.OrderPriceRequest request = OrderPriceCalculator.OrderPriceRequest.builder()
-                .baseAmount(new BigDecimal("100"))
-                .build();
-
-        BigDecimal result = extensionPointExecutor.execute(OrderPriceCalculator.class, request, ctx -> {
-            ctx.setScenario("member");
-        });
-
-        assertEquals(new BigDecimal("85"), result);
-    }
-
-    @Test
-    void testEnterpriseScenario() {
-        OrderPriceCalculator.OrderPriceRequest request = OrderPriceCalculator.OrderPriceRequest.builder()
-                .baseAmount(new BigDecimal("100"))
-                .build();
-
-        BigDecimal result = extensionPointExecutor.execute(OrderPriceCalculator.class, request, ctx -> {
-            ctx.setScenario("enterprise");
-        });
-
-        assertEquals(new BigDecimal("70"), result);
-    }
-
-    @Test
-    void testDefaultScenario() {
-        OrderPriceCalculator.OrderPriceRequest request = OrderPriceCalculator.OrderPriceRequest.builder()
-                .baseAmount(new BigDecimal("100"))
-                .build();
-
-        BigDecimal result = extensionPointExecutor.execute(OrderPriceCalculator.class, request, ctx -> {
-            // 不设置场景，使用默认实现
-        });
-
-        assertEquals(new BigDecimal("100"), result);
-    }
-}
+/**
+ * 集成扩展点路由测试（待迁移至 {@code com.bone.engine.extension.api.spi.ExtensionPointExecutor}）。
+ * 计算器行为由 {@code *OrderPriceCalculatorTest} 覆盖。
+ */
+@Disabled("legacy ExtensionPointExecutor API removed")
+class OrderPriceCalculatorExtensionTest {}

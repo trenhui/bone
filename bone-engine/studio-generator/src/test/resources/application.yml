@@ -1,0 +1,38 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:studio_generator;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+  cloud:
+    nacos:
+      discovery:
+        enabled: false
+      config:
+        enabled: false
+  sql:
+    init:
+      mode: never
+
+bone:
+  metadata:
+    datasource:
+      enabled: false
+
+metadata:
+  sdk:
+    deployment-mode: EMBEDDED
+    sql:
+      enabled: true
+
+server:
+  port: 0
+
+logging:
+  level:
+    com.bone: warn
+    org.springframework: warn

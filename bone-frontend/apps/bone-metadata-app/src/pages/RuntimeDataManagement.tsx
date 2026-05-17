@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Alert,
   Button,
@@ -46,6 +47,7 @@ function formatCell(value: unknown): string {
 }
 
 const RuntimeDataManagement: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [form] = Form.useForm();
   const [entities, setEntities] = useState<MetaEntity[]>([]);
   const [entityCode, setEntityCode] = useState<string | null>(null);
@@ -80,11 +82,14 @@ const RuntimeDataManagement: React.FC = () => {
           e.deliveryMode === META_DELIVERY_RUNTIME && e.status === META_ENTITY_PUBLISHED,
       );
       setEntities(runtimePublished);
-      if (runtimePublished.length > 0 && entityCode == null) {
+      const fromQuery = searchParams.get('entity');
+      if (fromQuery && runtimePublished.some((e) => e.code === fromQuery)) {
+        setEntityCode(fromQuery);
+      } else if (runtimePublished.length > 0 && entityCode == null) {
         setEntityCode(runtimePublished[0].code);
       }
     });
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     if (!selectedEntity) {
@@ -122,43 +127,6 @@ const RuntimeDataManagement: React.FC = () => {
   useEffect(() => {
     load();
   }, [load]);
-
-  const tableColumns: ColumnsType<RuntimeRecord> = useMemo(() => {
-    const cols: ColumnsType<RuntimeRecord> = writableFields.slice(0, 8).map((f) => ({
-      title: f.displayName || f.code,
-      dataIndex: f.code,
-      key: f.code,
-      ellipsis: true,
-      render: (_: unknown, row) => formatCell(row[f.code]),
-    }));
-    if (cols.length === 0) {
-      cols.push({
-        title: 'id',
-        dataIndex: 'id',
-        key: 'id',
-        render: (_: unknown, row) => formatCell(row.id),
-      });
-    }
-    cols.push({
-      title: '操作',
-      key: 'actions',
-      fixed: 'right',
-      width: 160,
-      render: (_: unknown, row) => (
-        <Space>
-          <Button type="link" size="small" onClick={() => openEdit(row)}>
-            编辑
-          </Button>
-          <Popconfirm title="确认删除？" onConfirm={() => handleDelete(row)}>
-            <Button type="link" size="small" danger>
-              删除
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
-    });
-    return cols;
-  }, [writableFields]);
 
   const openCreate = () => {
     setEditing(null);
@@ -226,6 +194,43 @@ const RuntimeDataManagement: React.FC = () => {
     }
   };
 
+  const tableColumns: ColumnsType<RuntimeRecord> = useMemo(() => {
+    const cols: ColumnsType<RuntimeRecord> = writableFields.slice(0, 8).map((f) => ({
+      title: f.displayName || f.code,
+      dataIndex: f.code,
+      key: f.code,
+      ellipsis: true,
+      render: (_: unknown, row) => formatCell(row[f.code]),
+    }));
+    if (cols.length === 0) {
+      cols.push({
+        title: 'id',
+        dataIndex: 'id',
+        key: 'id',
+        render: (_: unknown, row) => formatCell(row.id),
+      });
+    }
+    cols.push({
+      title: '操作',
+      key: 'actions',
+      fixed: 'right',
+      width: 160,
+      render: (_: unknown, row) => (
+        <Space>
+          <Button type="link" size="small" onClick={() => openEdit(row)}>
+            编辑
+          </Button>
+          <Popconfirm title="确认删除？" onConfirm={() => handleDelete(row)}>
+            <Button type="link" size="small" danger>
+              删除
+            </Button>
+          </Popconfirm>
+        </Space>
+      ),
+    });
+    return cols;
+  }, [writableFields, entityCode]);
+
   const renderFieldInput = (field: MetaField) => {
     const type = (field.type || 'STRING').toUpperCase();
     if (type === 'BOOLEAN') {
@@ -280,7 +285,7 @@ const RuntimeDataManagement: React.FC = () => {
   };
 
   return (
-    <motion className="page">
+    <div className="page">
       <Alert
         type="info"
         showIcon
@@ -360,26 +365,12 @@ const RuntimeDataManagement: React.FC = () => {
               message="该实体尚未配置建模字段，请先在字段管理中维护 meta_field"
             />
           ) : (
-            writableFields.map((f) => <motion key={f.id}>{renderFieldInput(f)}</motion>)
+            writableFields.map((f) => <div key={f.id}>{renderFieldInput(f)}</div>)
           )}
         </Form>
       </Modal>
-    </motion>
+    </div>
   );
 };
 
-/** 避免与 framer-motion 冲突的轻量别名 */
-const motion = {
-  className: '',
-  key: undefined as string | number | undefined,
-  children: null as React.ReactNode,
-};
-// 使用 div 包装（上方 motion 占位有误，改为普通 fragment）
-export default function RuntimeDataManagementPage() {
-  return <RuntimeDataManagementInner />;
-}
-
-function RuntimeDataManagementInner() {
-  // 将上面组件内错误的 motion 标签修复 — 直接重写导出组件
-  return <RuntimeDataManagementFixed />;
-}
+export default RuntimeDataManagement;
