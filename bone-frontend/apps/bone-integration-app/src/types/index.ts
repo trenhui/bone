@@ -5,8 +5,8 @@ export interface Connector {
   type: string;
   config: Record<string, any>;
   status: string;
-  createTime: string;
-  updateTime: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CreateConnectorReq {
@@ -30,8 +30,8 @@ export interface FlowNode {
   config: Record<string, any>;
   positionX: number;
   positionY: number;
-  createTime: string;
-  updateTime: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface FlowConnection {
@@ -40,8 +40,8 @@ export interface FlowConnection {
   sourceNodeId: number;
   targetNodeId: number;
   condition: string;
-  createTime: string;
-  updateTime: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface IntegrationFlow {
@@ -49,8 +49,8 @@ export interface IntegrationFlow {
   name: string;
   description: string;
   status: string;
-  createTime: string;
-  updateTime: string;
+  createdAt: string;
+  updatedAt: string;
   nodes: FlowNode[];
   connections: FlowConnection[];
 }
@@ -102,7 +102,7 @@ export interface IntegrationLog {
   inputData: string;
   outputData: string;
   errorMessage: string;
-  createTime: string;
+  createdAt: string;
 }
 
 // 统计相关类型
@@ -113,7 +113,7 @@ export interface FlowStatistics {
   successCount: number;
   failureCount: number;
   avgExecutionTime: number;
-  updateTime: string;
+  updatedAt: string;
 }
 
 // 通用响应类型

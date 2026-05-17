@@ -3,7 +3,7 @@ SELECT
     o.customer_id,
     o.total_amount,
     o.status,
-    o.create_time,
+    o.created_at,
     oi.id as item_id,
     oi.product_id,
     oi.product_name,

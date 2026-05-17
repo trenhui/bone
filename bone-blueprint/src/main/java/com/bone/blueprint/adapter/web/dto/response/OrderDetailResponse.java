@@ -14,7 +14,7 @@ public class OrderDetailResponse {
     private Long customerId;
     private BigDecimal totalAmount;
     private String status;
-    private LocalDateTime createTime;
+    private LocalDateTime createdAt;
     private List<OrderItemResponse> items;
     
     @Data

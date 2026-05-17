@@ -360,8 +360,8 @@ const FieldManagement: React.FC = () => {
               {entities.find(e => e.id === currentField.masterDataEntityId)?.name || '-'}
             </Descriptions.Item>
             <Descriptions.Item label="描述" span={2}>{currentField.description || '-'}</Descriptions.Item>
-            <Descriptions.Item label="创建时间">{currentField.createTime}</Descriptions.Item>
-            <Descriptions.Item label="更新时间">{currentField.updateTime}</Descriptions.Item>
+            <Descriptions.Item label="创建时间">{currentField.createdAt}</Descriptions.Item>
+            <Descriptions.Item label="更新时间">{currentField.updatedAt}</Descriptions.Item>
           </Descriptions>
         )}
       </Modal>

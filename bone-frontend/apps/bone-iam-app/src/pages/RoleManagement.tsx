@@ -120,7 +120,7 @@ const RoleManagement: React.FC = () => {
       key: 'permissions',
       render: (permissions: any[]) => (permissions || []).length
     },
-    { title: '创建时间', dataIndex: 'createTime', key: 'createTime' },
+    { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt' },
     {
       title: '操作',
       key: 'action',

@@ -41,7 +41,7 @@ const AuditLogPage: React.FC = () => {
     { title: '资源ID', dataIndex: 'resourceId', key: 'resourceId' },
     { title: '详情', dataIndex: 'details', key: 'details', ellipsis: true },
     { title: 'IP地址', dataIndex: 'ipAddress', key: 'ipAddress' },
-    { title: '操作时间', dataIndex: 'createTime', key: 'createTime' },
+    { title: '操作时间', dataIndex: 'createdAt', key: 'createdAt' },
   ];
 
   return (

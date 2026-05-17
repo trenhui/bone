@@ -63,28 +63,28 @@ public class $className implements Serializable {
     /**
      * 创建时间
      */
-    private java.time.LocalDateTime createTime;
+    private java.time.LocalDateTime createdAt;
 
 #end
 #if($table.isUpdateTime)
     /**
      * 更新时间
      */
-    private java.time.LocalDateTime updateTime;
+    private java.time.LocalDateTime updatedAt;
 
 #end
 #if($table.isCreateBy)
     /**
      * 创建人
      */
-    private Long createBy;
+    private Long createdBy;
 
 #end
 #if($table.isUpdateBy)
     /**
      * 更新人
      */
-    private Long updateBy;
+    private Long updatedBy;
 
 #end
 #if($table.isDelFlag)

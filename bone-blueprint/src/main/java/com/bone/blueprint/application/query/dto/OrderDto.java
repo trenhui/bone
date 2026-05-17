@@ -9,7 +9,7 @@ public class OrderDto {
     private Long customerId;
     private BigDecimal totalAmount;
     private String status;
-    private LocalDateTime createTime;
+    private LocalDateTime createdAt;
     private List<OrderItemDto> items;
 
     private OrderDto() {
@@ -31,8 +31,8 @@ public class OrderDto {
         return status;
     }
 
-    public LocalDateTime getCreateTime() {
-        return createTime;
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
     public List<OrderItemDto> getItems() {
@@ -48,7 +48,7 @@ public class OrderDto {
         private Long customerId;
         private BigDecimal totalAmount;
         private String status;
-        private LocalDateTime createTime;
+        private LocalDateTime createdAt;
         private List<OrderItemDto> items;
 
         public Builder id(Long id) {
@@ -71,8 +71,8 @@ public class OrderDto {
             return this;
         }
 
-        public Builder createTime(LocalDateTime createTime) {
-            this.createTime = createTime;
+        public Builder createdAt(LocalDateTime createdAt) {
+            this.createdAt = createdAt;
             return this;
         }
 
@@ -87,7 +87,7 @@ public class OrderDto {
             dto.customerId = this.customerId;
             dto.totalAmount = this.totalAmount;
             dto.status = this.status;
-            dto.createTime = this.createTime;
+            dto.createdAt = this.createdAt;
             dto.items = this.items;
             return dto;
         }

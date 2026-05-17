@@ -323,7 +323,7 @@
 
 | 功能 | 社区版 | 商业版 |
 |------|--------|--------|
-| 元数据管理（实体、字段、关系） | 🔶 MVP-2（DDL 已有；REST/UI 演进中） | ✅ |
+| 元数据管理（实体、字段、关系） | 🔶 **MVP-2 交付**（**P0 能力保留**；DDL ✅；catalog REST/UI 建设中，见对照文档 §10） | ✅ |
 | 扩展字段 EAV（sdk + server） | ✅ | ✅ |
 | 代码生成（默认模板） | 🔶（studio-generator） | ✅ |
 | 自定义模板 | ❌ | ✅ |
@@ -463,7 +463,7 @@ Scenario: 使用快速入口
 
 > **工程实现映射（单一真源）**：[元数据能力-实现映射与竞品对照.md](../design/modules/元数据能力-实现映射与竞品对照.md)  
 > - **bone-metadata-sdk**：平台数据面（持久化 + 扩展字段 EAV），各业务模块必选。  
-> - **bone-metadata-server**：扩展字段元数据 REST（`:9001`），多应用共享时 `REMOTE` 调用。  
+> - **bone-metadata-server**（`:9001`）：**As-Is** 扩展字段 EAV REST；**MVP-2** 同进程交付 catalog（实体/字段/关系，`/api/v1/metadata/*`，字段嵌套于实体，见对照文档 §1.2）。多应用共享扩展字段时用 `REMOTE`。  
 > - **bone-metadata-engine**：智能元数据引擎（规则/表达式/SmartQL），可选接入。  
 > - **代码生成**：`studio-generator` / `bone-codegen`；与引擎 **混合**，引擎不替代 DDD 源码交付。  
 > 下文 META-* 验收为目标态；As-Is 实现状态见对照文档 §7。
@@ -507,7 +507,8 @@ Scenario: 将业务实体转换为主数据实体
 - 字段类型支持字符串、数字、日期、布尔值、枚举、关联等
 - 关系类型支持一对一、一对多、多对多
 - 实体状态包括：草稿、已发布、已归档
-- 实体类型包括：BUSINESS（业务实体）、MASTER_DATA（主数据实体）
+- 实体类型与 `meta_entity.type` 对齐：`0` 普通业务实体、`1` 主数据类实体（PRD 叙事 BUSINESS / MASTER_DATA）；「转主数据」为跨模块流程，见 [masterdata 边界](../design/modules/元数据能力-实现映射与竞品对照.md) §8
+- 实体版本历史（`/entities/{id}/versions`）为 **P1**，MVP-2 验收以草稿/发布/归档为主
 
 ---
 
@@ -1436,10 +1437,11 @@ flowchart TD
 - `POST /v1/metadata/fields:allocate` — 批量分配扩展字段
 - `GET /v1/metadata/health` — 健康检查
 
-*规划（业务实体与代码生成，目标前缀 `/api/metadata` 或 `/api/v1/metadata`）*：
-- `GET/POST/PUT/DELETE …/entities` — 业务实体 CRUD
-- `POST …/generate` — 生成代码（主责 **studio-generator**）
-- `GET …/generate/{id}` — 获取生成结果
+*规划（catalog · MVP-2，前缀 `/api/v1/metadata`；真源见对照文档 §1.2、§5.2）*：
+- `GET/POST/PUT/DELETE …/entities`、`POST …/entities/{id}/publish` — 业务实体
+- `GET/POST/PUT/DELETE …/entities/{entityId}/fields` — 建模字段（**嵌套**，非 EAV `fields:*`）
+- `GET/POST/PUT/DELETE …/relationships` — 实体关系
+- `POST /api/v1/generate` 等 — 代码生成（主责 **studio-generator** :8085）
 
 **主数据服务 API**：
 - `GET /api/masterdata/entities` - 获取主数据实体列表

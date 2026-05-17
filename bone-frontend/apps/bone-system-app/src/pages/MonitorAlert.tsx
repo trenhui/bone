@@ -243,8 +243,8 @@ const MonitorAlertPage: React.FC = () => {
     },
     {
       title: '创建时间',
-      dataIndex: 'createTime',
-      key: 'createTime',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
     },
     {
       title: '解决时间',

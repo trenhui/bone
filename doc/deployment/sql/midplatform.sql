@@ -1,3 +1,4 @@
+-- 【已废止】交易中台示例域历史脚本，非平台 DDL 真源。见 bone-init.sql + 数据库开发规范.md。
 -- ============================================================
 -- 交易模块
 -- ============================================================
@@ -35,10 +36,10 @@ CREATE TABLE tr_merchant (
     province VARCHAR(100) COMMENT '省份',
     city VARCHAR(100) COMMENT '城市',
     district VARCHAR(100) COMMENT '区县',
-    create_time DATETIME(3) NOT NULL COMMENT '创建时间',
-    create_by BIGINT NOT NULL COMMENT '创建人',
-    update_time DATETIME(3) NOT NULL COMMENT '修改时间',
-    update_by BIGINT NOT NULL COMMENT '修改人',
+    created_at DATETIME(3) NOT NULL COMMENT '创建时间',
+    created_by BIGINT NOT NULL COMMENT '创建人',
+    updated_at DATETIME(3) NOT NULL COMMENT '修改时间',
+    updated_by BIGINT NOT NULL COMMENT '修改人',
     deleted TINYINT DEFAULT 0 COMMENT '逻辑删除标记',
     INDEX idx_merchant_name (name),
     INDEX idx_merchant_code (merchant_code),
@@ -59,10 +60,10 @@ CREATE TABLE tr_product (
     insurance_price DECIMAL(18,2) GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(pricing_model, '$.insurance.basePrice'))) VIRTUAL COMMENT '保险结算价',
     cash_price DECIMAL(18,2) GENERATED ALWAYS AS (JSON_UNQUOTE(JSON_EXTRACT(pricing_model, '$.cashPrice'))) VIRTUAL COMMENT '现金支付价',
     min_purchase INT DEFAULT 1 COMMENT '最小购买数量',
-    create_time DATETIME(3) NOT NULL COMMENT '创建时间',
-    create_by BIGINT NOT NULL COMMENT '创建人',
-    update_time DATETIME(3) NOT NULL COMMENT '修改时间',
-    update_by BIGINT NOT NULL COMMENT '修改人',
+    created_at DATETIME(3) NOT NULL COMMENT '创建时间',
+    created_by BIGINT NOT NULL COMMENT '创建人',
+    updated_at DATETIME(3) NOT NULL COMMENT '修改时间',
+    updated_by BIGINT NOT NULL COMMENT '修改人',
     deleted TINYINT DEFAULT 0 COMMENT '逻辑删除标记'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 COMMENT = '产品';
@@ -72,10 +73,10 @@ CREATE TABLE tr_category (
     id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '品类唯一ID',
     category_code VARCHAR(50) NOT NULL UNIQUE COMMENT '品类编码',
     category_name VARCHAR(100) NOT NULL COMMENT '品类名称',
-    create_time DATETIME(3) NOT NULL COMMENT '创建时间',
-    create_by BIGINT NOT NULL COMMENT '创建人',
-    update_time DATETIME(3) NOT NULL COMMENT '修改时间',
-    update_by BIGINT NOT NULL COMMENT '修改人',
+    created_at DATETIME(3) NOT NULL COMMENT '创建时间',
+    created_by BIGINT NOT NULL COMMENT '创建人',
+    updated_at DATETIME(3) NOT NULL COMMENT '修改时间',
+    updated_by BIGINT NOT NULL COMMENT '修改人',
     deleted TINYINT DEFAULT 0 COMMENT '逻辑删除标记'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 COMMENT = '品类';
@@ -89,10 +90,10 @@ CREATE TABLE tr_item (
     total_price DECIMAL(18,2) GENERATED ALWAYS AS (quantity * unit_price) VIRTUAL COMMENT '小计金额',
     tenant_id BIGINT NOT NULL COMMENT '租户ID',
     biz_identity_code VARCHAR(32) NOT NULL COMMENT '业务身份',
-    create_time DATETIME(3) NOT NULL COMMENT '创建时间',
-    create_by BIGINT NOT NULL COMMENT '创建人',
-    update_time DATETIME(3) NOT NULL COMMENT '修改时间',
-    update_by BIGINT NOT NULL COMMENT '修改人',
+    created_at DATETIME(3) NOT NULL COMMENT '创建时间',
+    created_by BIGINT NOT NULL COMMENT '创建人',
+    updated_at DATETIME(3) NOT NULL COMMENT '修改时间',
+    updated_by BIGINT NOT NULL COMMENT '修改人',
     deleted TINYINT DEFAULT 0 COMMENT '逻辑删除标记'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 COMMENT = '订单商品';
@@ -119,12 +120,12 @@ CREATE TABLE tr_order (
     version INT DEFAULT 0 COMMENT '乐观锁版本号',
     tenant_id BIGINT NOT NULL COMMENT '租户ID',
     biz_identity_code VARCHAR(32) NOT NULL COMMENT '业务身份',
-    create_time DATETIME(3) NOT NULL COMMENT '创建时间',
-    create_by BIGINT NOT NULL COMMENT '创建人',
-    update_time DATETIME(3) NOT NULL COMMENT '修改时间',
-    update_by BIGINT NOT NULL COMMENT '修改人',
+    created_at DATETIME(3) NOT NULL COMMENT '创建时间',
+    created_by BIGINT NOT NULL COMMENT '创建人',
+    updated_at DATETIME(3) NOT NULL COMMENT '修改时间',
+    updated_by BIGINT NOT NULL COMMENT '修改人',
     deleted TINYINT DEFAULT 0 COMMENT '逻辑删除标记',
-    INDEX idx_settlement_status (settlement_status, create_time) COMMENT '结算状态+时间联合索引'
+    INDEX idx_settlement_status (settlement_status, created_at) COMMENT '结算状态+时间联合索引'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 COMMENT = '交易订单';
 
@@ -143,10 +144,10 @@ CREATE TABLE tr_order_item (
     expire_time DATETIME(6) NOT NULL COMMENT '支付过期时间',
     tenant_id BIGINT NOT NULL COMMENT '租户ID',
     biz_identity_code VARCHAR(32) NOT NULL COMMENT '业务身份',
-    create_time DATETIME(3) NOT NULL COMMENT '创建时间',
-    create_by BIGINT NOT NULL COMMENT '创建人',
-    update_time DATETIME(3) NOT NULL COMMENT '修改时间',
-    update_by BIGINT NOT NULL COMMENT '修改人',
+    created_at DATETIME(3) NOT NULL COMMENT '创建时间',
+    created_by BIGINT NOT NULL COMMENT '创建人',
+    updated_at DATETIME(3) NOT NULL COMMENT '修改时间',
+    updated_by BIGINT NOT NULL COMMENT '修改人',
     deleted TINYINT DEFAULT 0 COMMENT '逻辑删除标记',
     INDEX idx_order_product (order_id, product_id) COMMENT '订单-商品联合索引',
     CONSTRAINT chk_refund CHECK (refund_amount <= total_price)
@@ -165,10 +166,10 @@ CREATE TABLE tr_consume_rule (
     expiration_time DATETIME COMMENT '失效时间',
     tenant_id BIGINT NOT NULL COMMENT '租户ID',
     biz_identity_code VARCHAR(32) NOT NULL COMMENT '业务身份',
-    create_time DATETIME(3) NOT NULL COMMENT '创建时间',
-    create_by BIGINT NOT NULL COMMENT '创建人',
-    update_time DATETIME(3) NOT NULL COMMENT '修改时间',
-    update_by BIGINT NOT NULL COMMENT '修改人',
+    created_at DATETIME(3) NOT NULL COMMENT '创建时间',
+    created_by BIGINT NOT NULL COMMENT '创建人',
+    updated_at DATETIME(3) NOT NULL COMMENT '修改时间',
+    updated_by BIGINT NOT NULL COMMENT '修改人',
     deleted TINYINT DEFAULT 0 COMMENT '逻辑删除标记',
     INDEX idx_rule_scope (tenant_id, biz_identity_code) COMMENT '租户+业务身份联合索引'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
@@ -183,12 +184,12 @@ CREATE TABLE tr_rule_execution_log (
     evidence JSON NOT NULL COMMENT '执行证据链',
     tenant_id BIGINT NOT NULL COMMENT '租户ID',
     biz_identity_code VARCHAR(32) NOT NULL COMMENT '业务身份',
-    create_time DATETIME(3) NOT NULL COMMENT '创建时间',
-    create_by BIGINT NOT NULL COMMENT '创建人',
-    update_time DATETIME(3) NOT NULL COMMENT '修改时间',
-    update_by BIGINT NOT NULL COMMENT '修改人',
+    created_at DATETIME(3) NOT NULL COMMENT '创建时间',
+    created_by BIGINT NOT NULL COMMENT '创建人',
+    updated_at DATETIME(3) NOT NULL COMMENT '修改时间',
+    updated_by BIGINT NOT NULL COMMENT '修改人',
     deleted TINYINT DEFAULT 0 COMMENT '逻辑删除标记',
-    INDEX idx_decision_audit (decision, create_time) COMMENT '决策结果+时间联合索引'
+    INDEX idx_decision_audit (decision, created_at) COMMENT '决策结果+时间联合索引'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 COMMENT = '消费规则执行日志';
 
@@ -218,10 +219,10 @@ CREATE TABLE py_fund_account (
     version INT DEFAULT 0 COMMENT '乐观锁版本号',
     tenant_id BIGINT NOT NULL COMMENT '租户ID',
     biz_identity_code VARCHAR(32) NOT NULL COMMENT '业务身份',
-    create_time DATETIME(3) NOT NULL COMMENT '创建时间',
-    create_by BIGINT NOT NULL COMMENT '创建人',
-    update_time DATETIME(3) NOT NULL COMMENT '修改时间',
-    update_by BIGINT NOT NULL COMMENT '修改人',
+    created_at DATETIME(3) NOT NULL COMMENT '创建时间',
+    created_by BIGINT NOT NULL COMMENT '创建人',
+    updated_at DATETIME(3) NOT NULL COMMENT '修改时间',
+    updated_by BIGINT NOT NULL COMMENT '修改人',
     deleted TINYINT DEFAULT 0 COMMENT '逻辑删除标记'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 COMMENT = '主资金账户';
@@ -242,10 +243,10 @@ CREATE TABLE py_virtual_account (
     last_reset_time DATETIME NOT NULL COMMENT '额度重置时间',
     tenant_id BIGINT NOT NULL COMMENT '租户ID',
     biz_identity_code VARCHAR(32) NOT NULL COMMENT '业务身份',
-    create_time DATETIME(3) NOT NULL COMMENT '创建时间',
-    create_by BIGINT NOT NULL COMMENT '创建人',
-    update_time DATETIME(3) NOT NULL COMMENT '修改时间',
-    update_by BIGINT NOT NULL COMMENT '修改人',
+    created_at DATETIME(3) NOT NULL COMMENT '创建时间',
+    created_by BIGINT NOT NULL COMMENT '创建人',
+    updated_at DATETIME(3) NOT NULL COMMENT '修改时间',
+    updated_by BIGINT NOT NULL COMMENT '修改人',
     deleted TINYINT DEFAULT 0 COMMENT '逻辑删除标记',
     INDEX idx_va_quota (insurance_type, used_quota) COMMENT '险种+额度索引'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
@@ -267,12 +268,12 @@ CREATE TABLE py_fund_ledger (
     version INT DEFAULT 0 COMMENT '乐观锁版本号',
     tenant_id BIGINT NOT NULL COMMENT '租户ID',
     biz_identity_code VARCHAR(32) NOT NULL COMMENT '业务身份',
-    create_time DATETIME(3) NOT NULL COMMENT '创建时间',
-    create_by BIGINT NOT NULL COMMENT '创建人',
-    update_time DATETIME(3) NOT NULL COMMENT '修改时间',
-    update_by BIGINT NOT NULL COMMENT '修改人',
+    created_at DATETIME(3) NOT NULL COMMENT '创建时间',
+    created_by BIGINT NOT NULL COMMENT '创建人',
+    updated_at DATETIME(3) NOT NULL COMMENT '修改时间',
+    updated_by BIGINT NOT NULL COMMENT '修改人',
     deleted TINYINT DEFAULT 0 COMMENT '逻辑删除标记',
-    INDEX idx_ledger_flow (operation_type, create_time) COMMENT '操作类型+时间索引',
+    INDEX idx_ledger_flow (operation_type, created_at) COMMENT '操作类型+时间索引',
     INDEX idx_original_ledger (original_ledger_no) COMMENT '冲正流水索引'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 COMMENT = '资金流水';
@@ -288,10 +289,10 @@ CREATE TABLE py_payment_exception (
     version INT DEFAULT 0,
     tenant_id BIGINT NOT NULL COMMENT '租户ID',
     biz_identity_code VARCHAR(32) NOT NULL COMMENT '业务身份',
-    create_time DATETIME(3) NOT NULL COMMENT '创建时间',
-    create_by BIGINT NOT NULL COMMENT '创建人',
-    update_time DATETIME(3) NOT NULL COMMENT '修改时间',
-    update_by BIGINT NOT NULL COMMENT '修改人',
+    created_at DATETIME(3) NOT NULL COMMENT '创建时间',
+    created_by BIGINT NOT NULL COMMENT '创建人',
+    updated_at DATETIME(3) NOT NULL COMMENT '修改时间',
+    updated_by BIGINT NOT NULL COMMENT '修改人',
     deleted TINYINT DEFAULT 0 COMMENT '逻辑删除标记',
     INDEX idx_error_code(error_code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
@@ -307,10 +308,10 @@ CREATE TABLE py_benefit_fund_card (
     restriction_rule JSON NOT NULL COMMENT '限制规则',
     tenant_id BIGINT NOT NULL COMMENT '租户ID',
     biz_identity_code VARCHAR(32) NOT NULL COMMENT '业务身份',
-    create_time DATETIME(3) NOT NULL COMMENT '创建时间',
-    create_by BIGINT NOT NULL COMMENT '创建人',
-    update_time DATETIME(3) NOT NULL COMMENT '修改时间',
-    update_by BIGINT NOT NULL COMMENT '修改人',
+    created_at DATETIME(3) NOT NULL COMMENT '创建时间',
+    created_by BIGINT NOT NULL COMMENT '创建人',
+    updated_at DATETIME(3) NOT NULL COMMENT '修改时间',
+    updated_by BIGINT NOT NULL COMMENT '修改人',
     deleted TINYINT DEFAULT 0 COMMENT '逻辑删除标记',
     INDEX idx_holder_incentives (holder_id) COMMENT '持卡人索引'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
@@ -330,10 +331,10 @@ CREATE TABLE py_family_group (
     employer_id BIGINT COMMENT '投保单位ID',
     tenant_id BIGINT NOT NULL COMMENT '租户ID',
     biz_identity_code VARCHAR(32) NOT NULL COMMENT '业务身份',
-    create_time DATETIME(3) NOT NULL COMMENT '创建时间',
-    create_by BIGINT NOT NULL COMMENT '创建人',
-    update_time DATETIME(3) NOT NULL COMMENT '修改时间',
-    update_by BIGINT NOT NULL COMMENT '修改人',
+    created_at DATETIME(3) NOT NULL COMMENT '创建时间',
+    created_by BIGINT NOT NULL COMMENT '创建人',
+    updated_at DATETIME(3) NOT NULL COMMENT '修改时间',
+    updated_by BIGINT NOT NULL COMMENT '修改人',
     deleted TINYINT DEFAULT 0 COMMENT '逻辑删除标记',
     INDEX idx_insurer (insurer_id, employer_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
@@ -350,10 +351,10 @@ CREATE TABLE py_family_config (
     version INT DEFAULT 0,
     tenant_id BIGINT NOT NULL COMMENT '租户ID',
     biz_identity_code VARCHAR(32) NOT NULL COMMENT '业务身份',
-    create_time DATETIME(3) NOT NULL COMMENT '创建时间',
-    create_by BIGINT NOT NULL COMMENT '创建人',
-    update_time DATETIME(3) NOT NULL COMMENT '修改时间',
-    update_by BIGINT NOT NULL COMMENT '修改人',
+    created_at DATETIME(3) NOT NULL COMMENT '创建时间',
+    created_by BIGINT NOT NULL COMMENT '创建人',
+    updated_at DATETIME(3) NOT NULL COMMENT '修改时间',
+    updated_by BIGINT NOT NULL COMMENT '修改人',
     deleted TINYINT DEFAULT 0 COMMENT '逻辑删除标记',
     UNIQUE KEY uniq_config (config_level, related_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
@@ -370,10 +371,10 @@ CREATE TABLE py_family_member (
     end_date DATE,
     tenant_id BIGINT NOT NULL COMMENT '租户ID',
     biz_identity_code VARCHAR(32) NOT NULL COMMENT '业务身份',
-    create_time DATETIME(3) NOT NULL COMMENT '创建时间',
-    create_by BIGINT NOT NULL COMMENT '创建人',
-    update_time DATETIME(3) NOT NULL COMMENT '修改时间',
-    update_by BIGINT NOT NULL COMMENT '修改人',
+    created_at DATETIME(3) NOT NULL COMMENT '创建时间',
+    created_by BIGINT NOT NULL COMMENT '创建人',
+    updated_at DATETIME(3) NOT NULL COMMENT '修改时间',
+    updated_by BIGINT NOT NULL COMMENT '修改人',
     deleted TINYINT DEFAULT 0 COMMENT '逻辑删除标记'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 COMMENT = '家庭成员';
@@ -392,10 +393,10 @@ CREATE TABLE py_family_quota_alert_rules (
     notify_channels JSON COMMENT '通知渠道',
     tenant_id BIGINT NOT NULL COMMENT '租户ID',
     biz_identity_code VARCHAR(32) NOT NULL COMMENT '业务身份',
-    create_time DATETIME(3) NOT NULL COMMENT '创建时间',
-    create_by BIGINT NOT NULL COMMENT '创建人',
-    update_time DATETIME(3) NOT NULL COMMENT '修改时间',
-    update_by BIGINT NOT NULL COMMENT '修改人',
+    created_at DATETIME(3) NOT NULL COMMENT '创建时间',
+    created_by BIGINT NOT NULL COMMENT '创建人',
+    updated_at DATETIME(3) NOT NULL COMMENT '修改时间',
+    updated_by BIGINT NOT NULL COMMENT '修改人',
     deleted TINYINT DEFAULT 0 COMMENT '逻辑删除标记'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -408,10 +409,10 @@ CREATE TABLE py_family_audit_log (
     new_value JSON,
     tenant_id BIGINT NOT NULL COMMENT '租户ID',
     biz_identity_code VARCHAR(32) NOT NULL COMMENT '业务身份',
-    create_time DATETIME(3) NOT NULL COMMENT '创建时间',
-    create_by BIGINT NOT NULL COMMENT '创建人',
-    update_time DATETIME(3) NOT NULL COMMENT '修改时间',
-    update_by BIGINT NOT NULL COMMENT '修改人',
+    created_at DATETIME(3) NOT NULL COMMENT '创建时间',
+    created_by BIGINT NOT NULL COMMENT '创建人',
+    updated_at DATETIME(3) NOT NULL COMMENT '修改时间',
+    updated_by BIGINT NOT NULL COMMENT '修改人',
     deleted TINYINT DEFAULT 0 COMMENT '逻辑删除标记'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
 COMMENT = '家庭共享操作审计';

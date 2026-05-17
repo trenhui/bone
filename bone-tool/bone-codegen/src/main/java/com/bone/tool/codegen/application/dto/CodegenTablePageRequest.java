@@ -48,7 +48,7 @@ public class CodegenTablePageRequest extends PageParam {
 
     @Schema(description = "创建时间范围", example = "[2022-07-01 00:00:00,2022-07-01 23:59:59]")
     @DateTimeFormat(pattern = DATE_TIME_PATTERN)
-    private LocalDateTime[] createTime;
+    private LocalDateTime[] createdAt;
 
     @Schema(description = "开始时间")
     @DateTimeFormat(pattern = DATE_TIME_PATTERN)

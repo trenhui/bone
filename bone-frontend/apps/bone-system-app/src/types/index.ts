@@ -5,8 +5,8 @@ export interface SystemConfig {
   value: string;
   description?: string;
   type: 'SYSTEM' | 'SERVICE' | 'FEATURE';
-  createTime?: string;
-  updateTime?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ConfigHistory {
@@ -15,7 +15,7 @@ export interface ConfigHistory {
   oldValue?: string;
   newValue: string;
   operator?: string;
-  createTime?: string;
+  createdAt?: string;
 }
 
 // 告警规则类型
@@ -27,8 +27,8 @@ export interface AlertRule {
   level: 'CRITICAL' | 'WARNING' | 'INFO';
   notificationChannels: string[];
   enabled: boolean;
-  createTime?: string;
-  updateTime?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface AlertEvent {
@@ -37,7 +37,7 @@ export interface AlertEvent {
   value: number;
   message: string;
   status: 'TRIGGERED' | 'RESOLVED';
-  createTime?: string;
+  createdAt?: string;
   resolveTime?: string;
 }
 
@@ -48,7 +48,7 @@ export interface SystemLog {
   service: string;
   content: string;
   traceId?: string;
-  createTime?: string;
+  createdAt?: string;
 }
 
 // 监控指标类型

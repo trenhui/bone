@@ -201,8 +201,8 @@ const EntityManagement: React.FC = () => {
     },
     {
       title: '创建时间',
-      dataIndex: 'createTime',
-      key: 'createTime'
+      dataIndex: 'createdAt',
+      key: 'createdAt'
     },
     {
       title: '操作',
@@ -333,8 +333,8 @@ const EntityManagement: React.FC = () => {
             <Descriptions.Item label="分类">{currentEntity.category || '-'}</Descriptions.Item>
             <Descriptions.Item label="描述" span={2}>{currentEntity.description || '-'}</Descriptions.Item>
             <Descriptions.Item label="状态">{getStatusTag(currentEntity.status)}</Descriptions.Item>
-            <Descriptions.Item label="创建时间">{currentEntity.createTime}</Descriptions.Item>
-            <Descriptions.Item label="更新时间" span={2}>{currentEntity.updateTime}</Descriptions.Item>
+            <Descriptions.Item label="创建时间">{currentEntity.createdAt}</Descriptions.Item>
+            <Descriptions.Item label="更新时间" span={2}>{currentEntity.updatedAt}</Descriptions.Item>
           </Descriptions>
         )}
       </Modal>

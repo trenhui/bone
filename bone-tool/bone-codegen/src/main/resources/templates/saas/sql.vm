@@ -18,16 +18,16 @@ CREATE TABLE $table.tableName (
 #end
 
 #if($table.isCreateTime)
-    create_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
 #end
 #if($table.isUpdateTime)
-    update_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
 #end
 #if($table.isCreateBy)
-    create_by bigint DEFAULT NULL COMMENT '创建人',
+    created_by bigint DEFAULT NULL COMMENT '创建人',
 #end
 #if($table.isUpdateBy)
-    update_by bigint DEFAULT NULL COMMENT '更新人',
+    updated_by bigint DEFAULT NULL COMMENT '更新人',
 #end
 #if($table.isDelFlag)
     del_flag tinyint DEFAULT 0 COMMENT '删除标志（0正常 1删除）'

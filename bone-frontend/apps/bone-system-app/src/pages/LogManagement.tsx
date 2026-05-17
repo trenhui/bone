@@ -151,8 +151,8 @@ const LogManagementPage: React.FC = () => {
   const columns = [
     {
       title: '时间',
-      dataIndex: 'createTime',
-      key: 'createTime',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
       width: 180,
     },
     {
@@ -278,7 +278,7 @@ const LogManagementPage: React.FC = () => {
       >
         {selectedLog && (
           <div>
-            <p><strong>时间：</strong>{selectedLog.createTime}</p>
+            <p><strong>时间：</strong>{selectedLog.createdAt}</p>
             <p><strong>级别：</strong>{getLevelTag(selectedLog.level)}</p>
             <p><strong>服务：</strong>{selectedLog.service}</p>
             <p><strong>追踪ID：</strong>{selectedLog.traceId || '-'}</p>

@@ -8,10 +8,10 @@ class SysDataDict {
     - dict_value: VARCHAR(512)
     - description: VARCHAR(255)
     - tenant_id: BIGINT
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -24,10 +24,10 @@ class Insurer {
     - email: VARCHAR(50)
     - license_number: VARCHAR(50)
     - status: ENUM('ACTIVE','INACTIVE')
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -50,10 +50,10 @@ class InsuredPerson {
     - family_id: BIGINT
     - tenant_id: BIGINT
     - biz_identity_code: VARCHAR(32)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -68,10 +68,10 @@ class Company {
     - contact_phone: VARCHAR(20)
     - address: VARCHAR(500)
     - email: VARCHAR(50)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -81,10 +81,10 @@ class Policyholder {
     - code: VARCHAR(50)
     - holder_id: BIGINT
     - holder_type: ENUM('INDIVIDUAL','FAMILY','COMPANY')
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -108,10 +108,10 @@ class ProductConfig {
     - min_insured_age: INT UNSIGNED
     - tenant_id: BIGINT
     - biz_identity_code: VARCHAR(32)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -123,10 +123,10 @@ class ProductClause {
     - expire_date: DATE
     - tenant_id: BIGINT
     - biz_identity_code: VARCHAR(32)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -146,10 +146,10 @@ class Proposal {
     - effective_date: DATE
     - tenant_id: BIGINT
     - biz_identity_code: VARCHAR(32)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -168,10 +168,10 @@ class UnderwritingRule {
     - expire_date: DATE
     - tenant_id: BIGINT
     - biz_identity_code: VARCHAR(32)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -182,13 +182,13 @@ class HealthProfile {
     - exam_data: JSON
     - wearable_data: JSON
     - genetic_risk: JSON
-    - last_update_time: DATETIME(3)
+    - last_updated_at: DATETIME(3)
     - tenant_id: BIGINT
     - biz_identity_code: VARCHAR(32)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -219,10 +219,10 @@ class Policy {
     - last_sync_time: DATETIME(3)
     - tenant_id: BIGINT
     - biz_identity_code: VARCHAR(32)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -239,10 +239,10 @@ class PolicyInsured {
     - used_individual_quota: DECIMAL(18,2)
     - tenant_id: BIGINT
     - biz_identity_code: VARCHAR(32)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -260,10 +260,10 @@ class PolicyEndorsement {
     - operator_id: BIGINT
     - tenant_id: BIGINT
     - biz_identity_code: VARCHAR(32)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -280,10 +280,10 @@ class PolicyRenewal {
     - underwriting_flag: BOOLEAN
     - tenant_id: BIGINT
     - biz_identity_code: VARCHAR(32)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -303,10 +303,10 @@ class PolicyQuotaChange {
     - change_reason: TEXT
     - tenant_id: BIGINT
     - biz_identity_code: VARCHAR(32)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -325,10 +325,10 @@ class AuditLog {
     - session_id: VARCHAR(50)
     - tenant_id: BIGINT
     - biz_identity_code: VARCHAR(32)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -354,10 +354,10 @@ class Merchant {
     - province: VARCHAR(100)
     - city: VARCHAR(100)
     - district: VARCHAR(100)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -373,10 +373,10 @@ class Product {
     - insurance_price: DECIMAL(18,2)
     - cash_price: DECIMAL(18,2)
     - min_purchase: INT
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -384,10 +384,10 @@ class Category {
     - id: BIGINT
     - category_code: VARCHAR(50)
     - category_name: VARCHAR(100)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -399,10 +399,10 @@ class Goods {
     - total_price: DECIMAL(18,2)
     - tenant_id: BIGINT
     - biz_identity_code: VARCHAR(32)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -431,10 +431,10 @@ class Order {
     - clearing_date: DATE
     - tenant_id: BIGINT
     - biz_identity_code: VARCHAR(32)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -452,10 +452,10 @@ class OrderItem {
     - expire_time: DATETIME(6)
     - tenant_id: BIGINT
     - biz_identity_code: VARCHAR(32)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -470,10 +470,10 @@ class ConsumeRule {
     - expiration_time: DATE
     - tenant_id: BIGINT
     - biz_identity_code: VARCHAR(32)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -485,10 +485,10 @@ class RuleExecutionLog {
     - evidence: JSON
     - tenant_id: BIGINT
     - biz_identity_code: VARCHAR(32)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -506,10 +506,10 @@ class FundAccount {
     - version: INT
     - tenant_id: BIGINT
     - biz_identity_code: VARCHAR(32)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -528,10 +528,10 @@ class VirtualAccount {
     - last_reset_time: DATETIME(3)
     - tenant_id: BIGINT
     - biz_identity_code: VARCHAR(32)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -550,10 +550,10 @@ class FundLedger {
     - version: INT
     - tenant_id: BIGINT
     - biz_identity_code: VARCHAR(32)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -566,10 +566,10 @@ class PaymentException {
     - retry_count: INT
     - tenant_id: BIGINT
     - biz_identity_code: VARCHAR(32)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -582,10 +582,10 @@ class BenefitFundCard {
     - restriction_rule: JSON
     - tenant_id: BIGINT
     - biz_identity_code: VARCHAR(32)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -600,10 +600,10 @@ class FamilyGroup {
     - employer_id: BIGINT
     - tenant_id: BIGINT
     - biz_identity_code: VARCHAR(32)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -617,10 +617,10 @@ class FamilyConfig {
     - version: INT
     - tenant_id: BIGINT
     - biz_identity_code: VARCHAR(32)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 
@@ -635,10 +635,10 @@ class FamilyMember {
     - end_date: DATE
     - tenant_id: BIGINT
     - biz_identity_code: VARCHAR(32)
-    - create_time: DATETIME(3)
-    - create_by: BIGINT
-    - update_time: DATETIME(3)
-    - update_by: BIGINT
+    - created_at: DATETIME(3)
+    - created_by: BIGINT
+    - updated_at: DATETIME(3)
+    - updated_by: BIGINT
     - deleted: TINYINT
 }
 

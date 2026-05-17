@@ -37,7 +37,7 @@ public class DefaultDataSourceConfigRepository implements DataSourceConfigReposi
     @Override
     public Long save(Datasource datasource) {
         String sql = "INSERT INTO codegen_datasource (name, url, username, password, driver_class_name, " +
-                "create_time, update_time, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, false)";
+                "created_at, updated_at, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, false)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
@@ -56,7 +56,7 @@ public class DefaultDataSourceConfigRepository implements DataSourceConfigReposi
     @Override
     public void update(Datasource datasource) {
         String sql = "UPDATE codegen_datasource SET name = ?, url = ?, username = ?, password = ?, " +
-                "driver_class_name = ?, update_time = ? WHERE id = ?";
+                "driver_class_name = ?, updated_at = ? WHERE id = ?";
         jdbcTemplate.update(sql,
                 datasource.getName(),
                 datasource.getUrl(),
@@ -69,13 +69,13 @@ public class DefaultDataSourceConfigRepository implements DataSourceConfigReposi
 
     @Override
     public void deleteById(Long id) {
-        String sql = "UPDATE codegen_datasource SET deleted = true, update_time = ? WHERE id = ?";
+        String sql = "UPDATE codegen_datasource SET deleted = true, updated_at = ? WHERE id = ?";
         jdbcTemplate.update(sql, new java.sql.Timestamp(System.currentTimeMillis()), id);
     }
 
     @Override
     public List<Datasource> findAll() {
-        String sql = "SELECT * FROM codegen_datasource WHERE deleted = false ORDER BY create_time DESC";
+        String sql = "SELECT * FROM codegen_datasource WHERE deleted = false ORDER BY created_at DESC";
         return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(Datasource.class));
     }
 

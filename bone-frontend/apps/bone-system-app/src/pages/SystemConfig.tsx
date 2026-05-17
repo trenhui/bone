@@ -151,8 +151,8 @@ const SystemConfigPage: React.FC = () => {
     },
     {
       title: '更新时间',
-      dataIndex: 'updateTime',
-      key: 'updateTime',
+      dataIndex: 'updatedAt',
+      key: 'updatedAt',
     },
     {
       title: '操作',
@@ -190,8 +190,8 @@ const SystemConfigPage: React.FC = () => {
     },
     {
       title: '操作时间',
-      dataIndex: 'createTime',
-      key: 'createTime',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
     },
   ];
 

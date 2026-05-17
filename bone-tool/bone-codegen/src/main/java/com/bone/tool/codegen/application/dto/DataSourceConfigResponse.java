@@ -28,8 +28,8 @@ public class DataSourceConfigResponse {
     private String driverClassName;
 
     @Schema(description = "创建时间")
-    private LocalDateTime createTime;
+    private LocalDateTime createdAt;
 
     @Schema(description = "创建时间字符串")
-    private String createTimeStr;
+    private String createdAtStr;
 }

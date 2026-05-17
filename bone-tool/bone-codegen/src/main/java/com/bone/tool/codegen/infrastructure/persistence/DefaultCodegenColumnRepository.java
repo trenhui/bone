@@ -28,7 +28,7 @@ public class DefaultCodegenColumnRepository implements CodegenColumnRepository {
 
     @Override
     public void deleteById(Long id) {
-        String sql = "UPDATE codegen_column SET deleted = true, update_time = ? WHERE id = ?";
+        String sql = "UPDATE codegen_column SET deleted = true, updated_at = ? WHERE id = ?";
         jdbcTemplate.update(sql, new java.sql.Timestamp(System.currentTimeMillis()), id);
     }
 
@@ -44,7 +44,7 @@ public class DefaultCodegenColumnRepository implements CodegenColumnRepository {
     public CodegenColumn save(CodegenColumn column) {
         String sql = "INSERT INTO codegen_column (table_id, column_name, column_comment, data_type, " +
                 "java_type, java_field, html_type, primary_key, nullable, auto_increment, " +
-                "create_time, update_time, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, false)";
+                "created_at, updated_at, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, false)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
@@ -72,7 +72,7 @@ public class DefaultCodegenColumnRepository implements CodegenColumnRepository {
     public void update(CodegenColumn column) {
         String sql = "UPDATE codegen_column SET table_id = ?, column_name = ?, column_comment = ?, " +
                 "data_type = ?, java_type = ?, java_field = ?, html_type = ?, primary_key = ?, " +
-                "nullable = ?, auto_increment = ?, update_time = ? WHERE id = ?";
+                "nullable = ?, auto_increment = ?, updated_at = ? WHERE id = ?";
         jdbcTemplate.update(sql,
                 column.getTableId(),
                 column.getColumnName(),
@@ -90,7 +90,7 @@ public class DefaultCodegenColumnRepository implements CodegenColumnRepository {
 
     @Override
     public List<CodegenColumn> findAll() {
-        String sql = "SELECT * FROM codegen_column WHERE deleted = false ORDER BY create_time ASC";
+        String sql = "SELECT * FROM codegen_column WHERE deleted = false ORDER BY created_at ASC";
         return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(CodegenColumn.class));
     }
 

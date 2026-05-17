@@ -109,7 +109,7 @@ const PermissionManagement: React.FC = () => {
     { title: '资源类型', dataIndex: 'resourceType', key: 'resourceType' },
     { title: '操作', dataIndex: 'action', key: 'action' },
     { title: '描述', dataIndex: 'description', key: 'description' },
-    { title: '创建时间', dataIndex: 'createTime', key: 'createTime' },
+    { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt' },
     {
       title: '操作',
       key: 'action',

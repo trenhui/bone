@@ -11,7 +11,7 @@ public class OrderWithItemsProjection {
     private Long customerId;
     private BigDecimal totalAmount;
     private String status;
-    private LocalDateTime createTime;
+    private LocalDateTime createdAt;
     private Long itemId;
     private Long productId;
     private String productName;

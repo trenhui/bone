@@ -6,8 +6,8 @@ CREATE TABLE IF NOT EXISTS `codegen_datasource` (
   `username` VARCHAR(100) NOT NULL COMMENT '数据库用户名',
   `password` VARCHAR(100) NOT NULL COMMENT '数据库密码',
   `driver_class_name` VARCHAR(200) NOT NULL COMMENT '数据库驱动类名',
-  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='数据源配置表';
 
@@ -32,8 +32,8 @@ CREATE TABLE IF NOT EXISTS `codegen_table` (
   `tree_parent_column_id` BIGINT(20) DEFAULT NULL COMMENT '树表父字段ID',
   `tree_name_column_id` BIGINT(20) DEFAULT NULL COMMENT '树表名称字段ID',
   `code_files` TEXT COMMENT '生成的代码文件集合',
-  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   KEY `idx_datasource_id` (`datasource_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='代码生成表配置';
@@ -83,4 +83,4 @@ VALUES
 (4, 1, 'nickname', 'varchar', '昵称', 'String', 'nickname', 0, 0, 1, 1, 1, 1, 1, 'LIKE', 'input'),
 (5, 1, 'email', 'varchar', '邮箱', 'String', 'email', 0, 0, 1, 1, 1, 1, 1, 'LIKE', 'input'),
 (6, 1, 'status', 'tinyint', '状态', 'Integer', 'status', 0, 0, 0, 1, 1, 1, 1, 'EQ', 'select'),
-(7, 1, 'create_time', 'datetime', '创建时间', 'Date', 'createTime', 0, 0, 1, 1, 0, 1, 1, 'BETWEEN', 'datetime');
+(7, 1, 'created_at', 'datetime', '创建时间', 'Date', 'createTime', 0, 0, 1, 1, 0, 1, 1, 'BETWEEN', 'datetime');

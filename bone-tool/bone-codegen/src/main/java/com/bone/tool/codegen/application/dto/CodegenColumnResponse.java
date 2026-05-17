@@ -76,14 +76,14 @@ public class CodegenColumnResponse {
     private String extraAttrs;
 
     @Schema(description = "创建时间")
-    private LocalDateTime createTime;
+    private LocalDateTime createdAt;
 
     @Schema(description = "更新时间")
-    private LocalDateTime updateTime;
+    private LocalDateTime updatedAt;
 
     @Schema(description = "创建人")
-    private String createBy;
+    private String createdBy;
 
     @Schema(description = "更新人")
-    private String updateBy;
+    private String updatedBy;
 }

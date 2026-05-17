@@ -421,8 +421,8 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
         
         // 使用Date类型以兼容父类方法
         Date now = new Date();
-        codegenTable.setCreateTime(now);
-        codegenTable.setUpdateTime(now);
+        codegenTable.setCreatedAt(now);
+        codegenTable.setUpdatedAt(now);
         
         return codegenTable;
     }
@@ -571,10 +571,10 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
     private void updateTableBaseInfo(CodegenTable existingTable, CodegenTableRequest request) {
         // 直接在现有表对象上更新属性
         org.springframework.beans.BeanUtils.copyProperties(request, existingTable, 
-                "id", "createTime", "updateTime", "deleted", "createBy", "updateBy");
+                "id", "createdAt", "updatedAt", "deleted", "createdBy", "updatedBy");
         
         // 更新时间戳
-        existingTable.setUpdateTime(new Date());
+        existingTable.setUpdatedAt(new Date());
     }
     
     /**
@@ -632,7 +632,7 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
             boolean hasTableUpdate = updateTableComment(codegenTable, tableMetadata.getComment());
             
             if (hasTableUpdate) {
-                codegenTable.setUpdateTime(new Date());
+                codegenTable.setUpdatedAt(new Date());
                 codegenTableRepository.update(codegenTable);
             }
 
@@ -822,15 +822,15 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
         if (requestId != null && columnIdMap.containsKey(requestId)) {
             // 更新现有字段，保留时间戳
             CodegenColumn existingColumn = columnIdMap.get(requestId);
-            column.setCreateTime(existingColumn.getCreateTime());
-            column.setUpdateTime(now);
+            column.setCreatedAt(existingColumn.getCreatedAt());
+            column.setUpdatedAt(now);
             
             codegenColumnRepository.update(column);
             columnIdMap.remove(requestId);
         } else {
             // 新增字段
-            column.setCreateTime(now);
-            column.setUpdateTime(now);
+            column.setCreatedAt(now);
+            column.setUpdatedAt(now);
             codegenColumnRepository.save(column);
         }
     }
@@ -896,14 +896,14 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
         
         // 设置创建时间和更新时间
         Date now = new Date();
-        column.setCreateTime(now);
-        column.setUpdateTime(now);
+        column.setCreatedAt(now);
+        column.setUpdatedAt(now);
         
         // 复制源字段的其他属性
         if (sourceColumn != null) {
             // 使用BeanUtils进行属性复制
             org.springframework.beans.BeanUtils.copyProperties(sourceColumn, column, 
-                "id", "tableId", "createTime", "updateTime", "deleted", "createBy", "updateBy");
+                "id", "tableId", "createdAt", "updatedAt", "deleted", "createdBy", "updatedBy");
         }
         
         return column;
@@ -928,7 +928,7 @@ public class DatabaseTableServiceImpl implements DatabaseTableService {
             updateJavaFieldPropertiesIfEmpty(targetColumn, sourceColumn);
             
             // 更新时间戳
-            targetColumn.setUpdateTime(new Date());
+            targetColumn.setUpdatedAt(new Date());
         } catch (Exception e) {
             logger.error("更新字段配置失败", e);
         }

@@ -76,12 +76,12 @@ public class CodegenTableResponse {
     private String dataSourceConfigName;
 
     @Schema(description = "创建时间")
-    private LocalDateTime createTime;
+    private LocalDateTime createdAt;
 
-    private String createTimeStr;
+    private String createdAtStr;
 
     @Schema(description = "更新时间")
-    private LocalDateTime updateTime;
+    private LocalDateTime updatedAt;
 
-    private String updateTimeStr;
+    private String updatedAtStr;
 }

@@ -24,7 +24,7 @@
 | 编号 | 文档 | 仓库模块（As-Is） | 默认端口（开发） | PRD |
 |------|------|-------------------|------------------|-----|
 | 1 | [控制台](./1.%20控制台与仪表盘模块详细设计方案.md) | **规划中**（无 `bone-console`；能力分散在 Shell + 各微应用） | — | §4.3 |
-| 2 | [元数据](./2.%20元数据管理模块详细设计方案.md) · [**三模块定义/竞品**](./元数据能力-实现映射与竞品对照.md) | `bone-metadata-sdk`、`bone-metadata-server`、 `bone-metadata-engine`；生成见 §8 | **9001**（server） | §4.4 |
+| 2 | [元数据](./2.%20元数据管理模块详细设计方案.md) · [**三模块定义/竞品**](./元数据能力-实现映射与竞品对照.md) | sdk + server + engine；UI：`bone-metadata-app` **3004**、`bone-generator-app` **3009**；生成见 §8 | **9001**（server） | §4.4 |
 | 3 | [主数据](./3.%20主数据管理模块详细设计方案.md) | `bone-platform/bone-masterdata` | **8080** | §4.5 |
 | 4 | [集成](./4.%20集成管理模块详细设计方案.md) | `bone-engine/bone-integration` / `bone-platform/bone-integration` | **30888** / **8085** | §4.7 |
 | 5 | [扩展](./5.%20扩展管理模块详细设计方案.md) | `bone-extension-engine`、`bone-extension-studio` | Studio **8080**；`bone-extension-app` **3008** | §4.6 |

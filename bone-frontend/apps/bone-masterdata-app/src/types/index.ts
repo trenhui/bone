@@ -7,8 +7,8 @@ export interface MasterDataEntity {
   description?: string;
   category?: string;
   status: 'DRAFT' | 'PUBLISHED';
-  createTime: string;
-  updateTime: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface MasterDataField {
@@ -20,8 +20,8 @@ export interface MasterDataField {
   required: boolean;
   defaultValue?: string;
   description?: string;
-  createTime: string;
-  updateTime: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // 数据质量规则相关类型
@@ -33,8 +33,8 @@ export interface DataQualityRule {
   expression: string;
   severity: 'ERROR' | 'WARNING' | 'INFO';
   description?: string;
-  createTime: string;
-  updateTime: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface QualityCheck {
@@ -44,7 +44,7 @@ export interface QualityCheck {
   endTime?: string;
   status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
   issueCount: number;
-  createTime: string;
+  createdAt: string;
 }
 
 export interface QualityReport {
@@ -52,7 +52,7 @@ export interface QualityReport {
   qualityCheckId: number;
   reportData: Record<string, any>;
   issueCount: number;
-  createTime: string;
+  createdAt: string;
 }
 
 export interface DataQualityResult {
@@ -70,8 +70,8 @@ export interface MasterDataRecord {
   masterDataEntityId: number;
   data: Record<string, any>;
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
-  createTime: string;
-  updateTime: string;
+  createdAt: string;
+  updatedAt: string;
   publishTime?: string;
 }
 

@@ -25,7 +25,7 @@
 |-------------------|------------------|------------------|------|
 | BONE Platform 各微应用 | `bone-frontend/apps/bone-*-app` + Qiankun Shell | 3000–3009 | 见 [wiki/03](../wiki/03-本地开发与构建.md) |
 | 代码生成（Generator） | `bone-engine/studio-generator` | **8085** | 与 `bone-platform/bone-integration` 同端口时需改 `server.port` |
-| 扩展 Studio | `bone-engine/bone-extension-engine/bone-extension-studio` | **8080** | 与 `bone-masterdata` 冲突时勿同机并行 |
+| 扩展 Studio | `bone-engine/bone-extension-engine/bone-extension-studio` | **8088** | 与 `bone-masterdata`（8080）勿同机默认端口并行 |
 | 元数据 · 数据面 SDK | `bone-engine/bone-metadata-sdk` | （嵌入业务进程） | 平台 P0 持久化；见 [三模块定义](./modules/元数据能力-实现映射与竞品对照.md) |
 | 元数据 · 扩展字段 REST | `bone-engine/bone-metadata-server` | **9001** | `/v1/metadata/fields:*`；非实体建模全量 API |
 | 元数据 · 智能引擎 | `bone-engine/bone-metadata-engine` | 随宿主 | 默认未接平台；详设 [§9](./modules/9.%20SmartMeta%20引擎模块技术说明.md) |
@@ -2593,8 +2593,8 @@ public class CodeGenerationEngine {
                 id BIGINT PRIMARY KEY COMMENT '雪花算法ID',
                 tenant_id BIGINT COMMENT '租户ID',
                 %s
-                create_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                update_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 deleted TINYINT DEFAULT 0,
                 INDEX idx_tenant_id (tenant_id)
             ) COMMENT '%s';

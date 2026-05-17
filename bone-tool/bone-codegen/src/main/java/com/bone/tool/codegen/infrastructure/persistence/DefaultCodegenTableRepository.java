@@ -29,7 +29,7 @@ public class DefaultCodegenTableRepository implements CodegenTableRepository {
 
     @Override
     public void deleteById(Long id) {
-        String sql = "UPDATE codegen_table SET deleted = true, update_time = ? WHERE id = ?";
+        String sql = "UPDATE codegen_table SET deleted = true, updated_at = ? WHERE id = ?";
         jdbcTemplate.update(sql, new java.sql.Timestamp(System.currentTimeMillis()), id);
     }
 
@@ -47,7 +47,7 @@ public class DefaultCodegenTableRepository implements CodegenTableRepository {
                 "module_name, package_name, business_name, class_name, class_comment, author, " +
                 "template_type, scene, parent_menu_id, master_table_id, sub_join_column_id, " +
                 "sub_join_many, tree_parent_column_id, tree_name_column_id, code_files, " +
-                "create_time, update_time, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, false)";
+                "created_at, updated_at, deleted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, false)";
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
@@ -83,7 +83,7 @@ public class DefaultCodegenTableRepository implements CodegenTableRepository {
                 "module_name = ?, package_name = ?, business_name = ?, class_name = ?, class_comment = ?, " +
                 "author = ?, template_type = ?, scene = ?, parent_menu_id = ?, master_table_id = ?, " +
                 "sub_join_column_id = ?, sub_join_many = ?, tree_parent_column_id = ?, tree_name_column_id = ?, " +
-                "code_files = ?, update_time = ? WHERE id = ?";
+                "code_files = ?, updated_at = ? WHERE id = ?";
         jdbcTemplate.update(sql,
                 table.getDatasourceId(),
                 table.getTableName(),
@@ -127,7 +127,7 @@ public class DefaultCodegenTableRepository implements CodegenTableRepository {
 
     @Override
     public List<CodegenTable> selectListByDataSourceConfigId(Long dataSourceConfigId) {
-        String sql = "SELECT * FROM codegen_table WHERE datasource_id = ? AND deleted = false ORDER BY create_time DESC";
+        String sql = "SELECT * FROM codegen_table WHERE datasource_id = ? AND deleted = false ORDER BY created_at DESC";
         return jdbcTemplate.query(sql, new BeanPropertyRowMapper<>(CodegenTable.class), dataSourceConfigId);
     }
 }

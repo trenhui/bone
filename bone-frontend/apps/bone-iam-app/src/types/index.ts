@@ -16,8 +16,8 @@ export interface Account {
   lastLoginAt?: string;
   lastLoginIp?: string;
   loginFailCount?: number;
-  lockedUntil?: string;
-  pwdUpdatedAt?: string;
+  lockedAt?: string;
+  passwordUpdatedAt?: string;
   createdBy?: number;
   updatedBy?: number;
   createdAt: string;
@@ -179,7 +179,7 @@ export interface AuditLog {
   parameters?: string;
   result: 'SUCCESS' | 'FAILED';
   duration?: number;
-  createTime: string;
+  createdAt: string;
 }
 
 /**

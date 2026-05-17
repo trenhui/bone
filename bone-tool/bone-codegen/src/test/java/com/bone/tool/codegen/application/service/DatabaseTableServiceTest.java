@@ -74,7 +74,7 @@ public class DatabaseTableServiceTest {
         mockColumns = Arrays.asList(
             createMockColumn(1L, "id", "BIGINT", "Long", true, false),
             createMockColumn(2L, "name", "VARCHAR", "String", false, false),
-            createMockColumn(3L, "create_time", "DATETIME", "LocalDateTime", false, false)
+            createMockColumn(3L, "created_at", "DATETIME", "LocalDateTime", false, false)
         );
         mockTableInfo.setFieldList(mockColumns);
 
@@ -85,8 +85,8 @@ public class DatabaseTableServiceTest {
         mockCodegenTable.setTableComment("测试表");
         mockCodegenTable.setModuleName("test-module");
         mockCodegenTable.setPackageName("com.example.test");
-        mockCodegenTable.setCreateTime(new Date());
-        mockCodegenTable.setUpdateTime(new Date());
+        mockCodegenTable.setCreatedAt(new Date());
+        mockCodegenTable.setUpdatedAt(new Date());
     }
 
     private CodegenColumn createMockColumn(Long id, String columnName, String dataType, String javaType, 

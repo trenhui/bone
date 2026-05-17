@@ -341,8 +341,8 @@ const RecordManagement: React.FC = () => {
       },
       {
         title: '创建时间',
-        dataIndex: 'createTime',
-        key: 'createTime'
+        dataIndex: 'createdAt',
+        key: 'createdAt'
       },
       {
         title: '操作',
@@ -493,8 +493,8 @@ const RecordManagement: React.FC = () => {
                 </Descriptions.Item>
               ))}
               <Descriptions.Item label="状态">{getStatusTag(currentRecord.status)}</Descriptions.Item>
-              <Descriptions.Item label="创建时间">{currentRecord.createTime}</Descriptions.Item>
-              <Descriptions.Item label="更新时间">{currentRecord.updateTime}</Descriptions.Item>
+              <Descriptions.Item label="创建时间">{currentRecord.createdAt}</Descriptions.Item>
+              <Descriptions.Item label="更新时间">{currentRecord.updatedAt}</Descriptions.Item>
               {currentRecord.publishTime && (
                 <Descriptions.Item label="发布时间">{currentRecord.publishTime}</Descriptions.Item>
               )}

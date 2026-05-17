@@ -49,7 +49,7 @@ public class ${className}DTO implements Serializable {
      * 创建时间
      */
     @ApiModelProperty(value = "创建时间", readOnly = true)
-    private java.time.LocalDateTime createTime;
+    private java.time.LocalDateTime createdAt;
 
 #end
 #if($table.isUpdateTime)
@@ -57,7 +57,7 @@ public class ${className}DTO implements Serializable {
      * 更新时间
      */
     @ApiModelProperty(value = "更新时间", readOnly = true)
-    private java.time.LocalDateTime updateTime;
+    private java.time.LocalDateTime updatedAt;
 
 #end
 #if($table.isCreateBy)
@@ -65,7 +65,7 @@ public class ${className}DTO implements Serializable {
      * 创建人
      */
     @ApiModelProperty(value = "创建人", readOnly = true)
-    private Long createBy;
+    private Long createdBy;
 
 #end
 #if($table.isUpdateBy)
@@ -73,7 +73,7 @@ public class ${className}DTO implements Serializable {
      * 更新人
      */
     @ApiModelProperty(value = "更新人", readOnly = true)
-    private Long updateBy;
+    private Long updatedBy;
 
 #end
 #if($table.isStatus)

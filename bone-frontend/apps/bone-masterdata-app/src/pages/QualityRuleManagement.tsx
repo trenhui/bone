@@ -490,8 +490,8 @@ const QualityRuleManagement: React.FC = () => {
               {entities.find(e => e.id === currentRule.masterDataEntityId)?.name || '-'}
             </Descriptions.Item>
             <Descriptions.Item label="描述" span={2}>{currentRule.description || '-'}</Descriptions.Item>
-            <Descriptions.Item label="创建时间">{currentRule.createTime}</Descriptions.Item>
-            <Descriptions.Item label="更新时间">{currentRule.updateTime}</Descriptions.Item>
+            <Descriptions.Item label="创建时间">{currentRule.createdAt}</Descriptions.Item>
+            <Descriptions.Item label="更新时间">{currentRule.updatedAt}</Descriptions.Item>
           </Descriptions>
         )}
       </Modal>

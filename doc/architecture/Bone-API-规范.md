@@ -760,7 +760,8 @@ public class ExtensionPointController {
 
 ### 13.1 扩展（extension）规范路径
 
-前缀 `/api/v1/extension`；详设见 [5. 扩展管理模块](../design/modules/5.%20扩展管理模块详细设计方案.md) §5。
+前缀 `/api/v1/extension`；详设见 [5. 扩展管理模块](../design/modules/5.%20扩展管理模块详细设计方案.md) §5。  
+OpenAPI 草案：[openapi/extension-v1.yaml](./openapi/extension-v1.yaml)。
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
@@ -794,16 +795,14 @@ public class ExtensionPointController {
 
 | 状态 | 旧 | 新 | 截止 |
 |------|----|----|------|
-| 废弃 | `/api/ext-points` | `/api/v1/extension/points` | 2026-09-01 |
-| 废弃 | `/api/extensions` | `/api/v1/extension/plugins` | 2026-09-01 |
-| 已移除 | `/api/extension/*` | `/api/v1/extension/*` | — |
+| 已移除 | `/api/ext-points`、`/api/extensions`、`/api/extension/*` | `/api/v1/extension/*` | — |
 | 过渡 | `ApiResponse` 无 `code` / 本地类 | `com.bone.core.model.ApiResponse` | 2026-09-01 |
 | 过渡 | 成功 `code=0` | `code=200` | 2026-09-01 |
 | 过渡 | 分页 `list` 字段 | `records` | 2026-09-01 |
 | 过渡 | HTTP 200 + `success:false` | HTTP 4xx/5xx | 2026-09-01 |
 | 过渡 | `/v1/metadata/*`（`bone-metadata-server`，扩展字段 EAV） | `/api/v1/metadata/*`（或经网关统一加 `/api` 前缀） | 2026-12-01 |
 
-> **说明**：当前 As-Is 仅 **扩展字段** `fields:search|searchByNames|allocate|health`；建模类 `/api/metadata/entities` 等为 Vision，见 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §1.1、§5。
+> **说明**：当前 As-Is 仅 **扩展字段** `fields:search|searchByNames|allocate|health`（迁移后仍为 **动作式** `fields:*`）。**建模 catalog**（MVP-2）使用 `/api/v1/metadata/entities`、`…/entities/{entityId}/fields`、`…/relationships`；**禁止** catalog 与 EAV 共用顶层 `…/fields`，见 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §1.2。
 
 ---
 
@@ -964,6 +963,8 @@ public class ExtensionPointController {
 
 | 日期 | 说明 |
 |------|------|
-| 2026-05-17 | 移除 `/api/extension` 过渡路径，仅保留 `/api/v1/extension` |
+| 2026-05-17 | 扩展 API 动作用冒号后缀；分页 `records`；OpenAPI extension-v1.yaml |
+| 2026-05-17 | 移除 `/api/extension`、`/api/ext-points`、`/api/extensions`，仅 `/api/v1/extension` |
 | 2026-05-17 | §15 契约测试；§16 索引；消息 Topic 见总体架构 §8.4 |
 | 2026-05-17 | 合并错误码台账与日志规范入本文；§14 附属约定；独立文档仅保留 DB/DDD/openapi |
+| 2026-05-17 | §13.2：catalog 字段嵌套路径，与 EAV `fields:*` 区分 |

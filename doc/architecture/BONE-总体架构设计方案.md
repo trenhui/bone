@@ -430,17 +430,21 @@ flowchart TD
 
 #### 8.3.2 元数据
 
+> **分 As-Is / Vision**（真源：[元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §5）。**As-Is**：`bone-metadata-server` :9001 上 `POST/GET /v1/metadata/fields:*`（扩展字段 EAV）。**Vision / MVP-2 catalog** 下表；建模字段**嵌套**在实体下，避免与 EAV `fields:*` 冲突。
+
 | API 路径 | 方法 | 功能 |
 |----------|------|------|
-| `/api/metadata/entities` | GET/POST | 实体列表/创建 |
-| `/api/metadata/entities/{id}` | PUT/DELETE | 更新/删除 |
-| `/api/metadata/entities/{id}/publish` | POST | 发布实体 |
-| `/api/metadata/fields` | GET/POST | 字段 |
-| `/api/metadata/fields/{id}` | PUT/DELETE | 字段维护 |
-| `/api/metadata/generate` | POST | 提交生成任务 |
-| `/api/metadata/generate/{taskId}` | GET | 查询生成结果 |
-| `/api/metadata/templates` | GET/POST | 模板 |
-| `/api/metadata/templates/{id}` | PUT/DELETE | 模板维护 |
+| `/api/v1/metadata/entities` | GET/POST | 实体列表/创建 |
+| `/api/v1/metadata/entities/{id}` | GET/PUT/DELETE | 详情/更新/删除 |
+| `/api/v1/metadata/entities/{id}/publish` | POST | 发布实体 |
+| `/api/v1/metadata/entities/{entityId}/fields` | GET/POST | 建模字段（catalog） |
+| `/api/v1/metadata/entities/{entityId}/fields/{fieldId}` | GET/PUT/DELETE | 字段维护 |
+| `/api/v1/metadata/relationships` | GET/POST | 实体关系 |
+| `/api/v1/metadata/relationships/{id}` | GET/PUT/DELETE | 关系维护 |
+| `/api/v1/generate` | POST | 提交生成任务（**studio-generator** 域） |
+| `/api/v1/generate/{taskId}` | GET | 查询生成结果 |
+| `/api/v1/metadata/templates` | GET/POST | 模板（阶段 0） |
+| `/api/v1/metadata/templates/{id}` | PUT/DELETE | 模板维护 |
 
 #### 8.3.3 主数据
 
@@ -1055,7 +1059,7 @@ sequenceDiagram
     ES->>PM: 校验与存储元数据
     PM-->>ES: pluginId
 
-    C->>GW: POST .../plugins/{id}/deploy
+    C->>GW: POST .../plugins/{id}:deploy
     GW->>ES: 部署
     ES->>EE: 加载/注册
     EE-->>ES: 状态
@@ -1089,7 +1093,7 @@ command_mapping:
     rate_limit: 20 per user per minute
   - command: DeployPlugin
     http_method: POST
-    path: /api/v1/extension/plugins/{id}/deploy
+    path: /api/v1/extension/plugins/{id}:deploy
 ```
 
 ### 22.2 OpenAPI 3 片段（元数据创建实体）
