@@ -10,8 +10,8 @@ import java.util.Date;
 public class QualityCheckDTO {
     private Long id;
     private Long masterDataEntityId;
-    private Date startTime;
-    private Date endTime;
+    private Date startedAt;
+    private Date endedAt;
     private String status;
     private Integer totalRecords;
     private Integer passedRecords;

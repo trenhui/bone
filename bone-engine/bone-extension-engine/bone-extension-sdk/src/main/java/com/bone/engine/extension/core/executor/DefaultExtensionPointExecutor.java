@@ -3,11 +3,13 @@ package com.bone.engine.extension.core.executor;
 import com.bone.engine.extension.api.spi.ExtensionPointExecutor;
 import com.bone.engine.extension.core.security.ExtensionPermissionManager;
 import com.bone.engine.extension.support.context.BizContext;
+import com.bone.engine.extension.support.studio.StudioExecutionLogReporter;
 import com.bone.core.exception.BizException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
+import org.springframework.lang.Nullable;
 
 import java.lang.reflect.Method;
 import java.util.concurrent.Callable;
@@ -29,6 +31,13 @@ public class DefaultExtensionPointExecutor implements ExtensionPointExecutor {
 
     @Autowired
     private ExtensionPermissionManager extensionPermissionManager;
+
+    @Nullable
+    private StudioExecutionLogReporter studioReporter;
+
+    public void setStudioReporter(@Nullable StudioExecutionLogReporter studioReporter) {
+        this.studioReporter = studioReporter;
+    }
 
     /**
      * 执行扩展点实现的方法
@@ -70,15 +79,20 @@ public class DefaultExtensionPointExecutor implements ExtensionPointExecutor {
             long executionTime = System.currentTimeMillis() - startTime;
             log.info("Extension point execution successful: {}.{} completed in {}ms", 
                     extensionClassName, methodName, executionTime);
+            reportToStudio(extensionClassName, methodName, executionTime, true, null);
 
             return result;
         } catch (SecurityException ex) {
             // 5. 处理权限异常
+            long executionTime = System.currentTimeMillis() - startTime;
             handleSecurityException(ex, extensionClassName, methodName, startTime);
+            reportToStudio(extensionClassName, methodName, executionTime, false, ex.getMessage());
             throw ex;
         } catch (Exception e) {
             // 6. 处理其他异常
+            long executionTime = System.currentTimeMillis() - startTime;
             handleExecutionException(e, extensionClassName, methodName, startTime);
+            reportToStudio(extensionClassName, methodName, executionTime, false, e.getMessage());
             throw e;
         }
     }
@@ -157,5 +171,17 @@ public class DefaultExtensionPointExecutor implements ExtensionPointExecutor {
         
         log.error("Execution exception in extension point: {}.{} after {}ms",
                 className, methodName, executionTime, e);
+    }
+
+    private void reportToStudio(
+            String className, String methodName, long durationMs, boolean success, String errorMessage) {
+        if (studioReporter == null) {
+            return;
+        }
+        if (success) {
+            studioReporter.reportSuccess(className, methodName, durationMs);
+        } else {
+            studioReporter.reportFailure(className, methodName, durationMs, errorMessage);
+        }
     }
 }

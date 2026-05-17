@@ -360,7 +360,7 @@ public class DefaultDataSourceManager implements DataSourceManager, Initializing
         }
         
         // 委托给DataSourceContextHolder，添加指标记录
-        long startTime = System.currentTimeMillis();
+        long startedAt = System.currentTimeMillis();
         try {
             // 更新内部状态
             String originalDataSource = currentDataSourceName.get();
@@ -370,7 +370,7 @@ public class DefaultDataSourceManager implements DataSourceManager, Initializing
             return DataSourceContextHolder.executeInDataSourceWithResult(dataSourceName, action);
         } finally {
             // 记录执行指标
-            long executionTime = System.currentTimeMillis() - startTime;
+            long executionTime = System.currentTimeMillis() - startedAt;
             DataSourceMetrics metrics = dataSourceMetrics.get(dataSourceName);
             if (metrics != null) {
                 metrics.recordAccess(executionTime);
@@ -400,7 +400,7 @@ public class DefaultDataSourceManager implements DataSourceManager, Initializing
         }
         
         // 委托给DataSourceContextHolder，添加指标记录
-        long startTime = System.currentTimeMillis();
+        long startedAt = System.currentTimeMillis();
         
         // 更新内部状态
         String originalDataSource = currentDataSourceName.get();
@@ -411,7 +411,7 @@ public class DefaultDataSourceManager implements DataSourceManager, Initializing
             return DataSourceContextHolder.executeAsyncInDataSource(dataSourceName, action)
                     .whenComplete((v, e) -> {
                         // 记录执行指标
-                        long executionTime = System.currentTimeMillis() - startTime;
+                        long executionTime = System.currentTimeMillis() - startedAt;
                         DataSourceMetrics metrics = dataSourceMetrics.get(dataSourceName);
                         if (metrics != null) {
                             metrics.recordAccess(executionTime);
@@ -421,7 +421,7 @@ public class DefaultDataSourceManager implements DataSourceManager, Initializing
                     });
         } catch (Exception e) {
             // 记录执行指标
-            long executionTime = System.currentTimeMillis() - startTime;
+            long executionTime = System.currentTimeMillis() - startedAt;
             DataSourceMetrics metrics = dataSourceMetrics.get(dataSourceName);
             if (metrics != null) {
                 metrics.recordAccess(executionTime);
@@ -447,7 +447,7 @@ public class DefaultDataSourceManager implements DataSourceManager, Initializing
         Assert.notNull(action, "Execution action cannot be null");
         
         // 委托给DataSourceContextHolder，添加指标记录
-        long startTime = System.currentTimeMillis();
+        long startedAt = System.currentTimeMillis();
         try {
             // 更新内部状态
             String originalDataSource = currentDataSourceName.get();
@@ -459,7 +459,7 @@ public class DefaultDataSourceManager implements DataSourceManager, Initializing
             return;
         } finally {
             // 记录执行指标
-            long executionTime = System.currentTimeMillis() - startTime;
+            long executionTime = System.currentTimeMillis() - startedAt;
             DataSourceMetrics metrics = dataSourceMetrics.get(dataSourceName);
             if (metrics != null) {
                 metrics.recordAccess(executionTime);
@@ -490,7 +490,7 @@ public class DefaultDataSourceManager implements DataSourceManager, Initializing
         }
         
         // 委托给DataSourceContextHolder，添加指标记录
-        long startTime = System.currentTimeMillis();
+        long startedAt = System.currentTimeMillis();
         
         // 更新内部状态
         String originalDataSource = currentDataSourceName.get();
@@ -501,7 +501,7 @@ public class DefaultDataSourceManager implements DataSourceManager, Initializing
             return DataSourceContextHolder.executeAsyncInDataSourceWithResult(dataSourceName, action)
                     .whenComplete((v, e) -> {
                         // 记录执行指标
-                        long executionTime = System.currentTimeMillis() - startTime;
+                        long executionTime = System.currentTimeMillis() - startedAt;
                         DataSourceMetrics metrics = dataSourceMetrics.get(dataSourceName);
                         if (metrics != null) {
                             metrics.recordAccess(executionTime);
@@ -511,7 +511,7 @@ public class DefaultDataSourceManager implements DataSourceManager, Initializing
                     });
         } catch (Exception e) {
             // 记录执行指标
-            long executionTime = System.currentTimeMillis() - startTime;
+            long executionTime = System.currentTimeMillis() - startedAt;
             DataSourceMetrics metrics = dataSourceMetrics.get(dataSourceName);
             if (metrics != null) {
                 metrics.recordAccess(executionTime);
@@ -679,7 +679,7 @@ public class DefaultDataSourceManager implements DataSourceManager, Initializing
         }
         
         logger.debug("Starting health check for {} data sources", dataSources.size());
-        long startTime = System.currentTimeMillis();
+        long startedAt = System.currentTimeMillis();
         int checkedCount = 0;
         int healthyCount = 0;
         
@@ -696,9 +696,9 @@ public class DefaultDataSourceManager implements DataSourceManager, Initializing
             }
         }
         
-        long endTime = System.currentTimeMillis();
+        long endedAt = System.currentTimeMillis();
         logger.info("健康检查完成 - 已检查数据源: {}, 健康数据源: {}, 耗时: {}ms", 
-                checkedCount, healthyCount, (endTime - startTime));
+                checkedCount, healthyCount, (endedAt - startedAt));
     }
     
     /**

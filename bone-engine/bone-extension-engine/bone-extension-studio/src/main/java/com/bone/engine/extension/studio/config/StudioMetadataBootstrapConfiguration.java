@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
 /**
- * Studio 控制面 Metadata 引导：不启动完整嵌入式字段分配栈，仅满足 SQL Repository / SqlBuilder 依赖。
+ * Studio 控制面 Metadata 引导：排除完整 {@code MetadataAutoConfiguration}，仅保留 SQL Repository 所需 Bean。
  */
 @Configuration
 @ConditionalOnProperty(prefix = "bone.extension.studio.persistence", name = "mode", havingValue = "metadata")
@@ -33,6 +33,11 @@ public class StudioMetadataBootstrapConfiguration {
     public MetadataSdkContext metadataSdkContext(
             MetadataSdkProperties props, DataSourceProperties dsProps) {
         return new MetadataSdkContext(props, dsProps);
+    }
+
+    @Bean
+    public DistributedLockUtil distributedLockUtil() {
+        return new DistributedLockUtil();
     }
 
     @Bean
@@ -60,10 +65,5 @@ public class StudioMetadataBootstrapConfiguration {
                 return true;
             }
         };
-    }
-
-    @Bean
-    public DistributedLockUtil distributedLockUtil() {
-        return new DistributedLockUtil();
     }
 }

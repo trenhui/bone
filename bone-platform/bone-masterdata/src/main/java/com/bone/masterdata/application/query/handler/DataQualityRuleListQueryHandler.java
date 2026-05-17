@@ -33,8 +33,8 @@ public class DataQualityRuleListQueryHandler {
                     dto.setExpression(rule.getExpression());
                     dto.setSeverity(rule.getSeverity());
                     dto.setDescription(rule.getDescription());
-                    dto.setCreateTime(rule.getCreateTime());
-                    dto.setUpdateTime(rule.getUpdateTime());
+                    dto.setCreatedAt(rule.getCreatedAt());
+                    dto.setUpdatedAt(rule.getUpdatedAt());
                     return dto;
                 })
                 .collect(Collectors.toList());

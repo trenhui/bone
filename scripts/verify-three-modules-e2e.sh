@@ -3,6 +3,7 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 IAM="http://localhost:8081"
+STUDIO="http://localhost:8088"
 SHELL="http://localhost:3000"
 IAM_APP="http://localhost:3003"
 EXT_APP="http://localhost:3008"
@@ -24,8 +25,8 @@ echo "==> 后端直连 (8081)"
 check "IAM 控制台" "$IAM/api/console/overview" '"success":true'
 check "控制台概览" "$IAM/api/console/overview" '"success":true'
 check "快捷操作" "$IAM/api/console/quick-actions" '"success":true'
-check "扩展点列表" "$IAM/api/extension/points" '"success":true'
-check "插件列表" "$IAM/api/extension/plugins" '"success":true'
+check "扩展点列表" "$STUDIO/api/v1/extension/points" '"success":true'
+check "插件列表" "$STUDIO/api/v1/extension/plugins" '"success":true'
 
 echo "==> 登录"
 LOGIN=$(curl -sf -X POST "$IAM/api/iam/login" \
@@ -39,7 +40,7 @@ else
 fi
 
 echo "==> 经 Shell 代理 (3000)"
-for path in /api/console/overview /api/extension/points; do
+for path in /api/console/overview /api/v1/extension/points; do
   check "proxy $path" "$SHELL$path" '"success":true'
 done
 

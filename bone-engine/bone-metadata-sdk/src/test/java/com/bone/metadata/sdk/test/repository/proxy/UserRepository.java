@@ -18,9 +18,9 @@ import java.util.List;
  * 用户数据访问接口 - 完全兼容 MyBatis 语法
  */
 @SqlFragment(id = "userColumns",
-        value = "u.id, u.name, u.role_id, u.create_time, u.create_by, u.update_time, u.update_by, u.deleted")
+        value = "u.id, u.name, u.role_id, u.created_at, u.created_by, u.updated_at, u.updated_by, u.deleted")
 @SqlFragment(id = "userWithRoleColumns",
-        value = "u.id, u.name, u.role_id, u.create_time, u.create_by, u.update_time, u.update_by, u.deleted, " +
+        value = "u.id, u.name, u.role_id, u.created_at, u.created_by, u.updated_at, u.updated_by, u.deleted, " +
                 "r.role_name, r.description AS role_description")
 public interface UserRepository extends Repository<User, Long> {
 
@@ -52,7 +52,7 @@ public interface UserRepository extends Repository<User, Long> {
                         AND u.role_id = #{roleId}
                     </if>
                 </where>
-                ORDER BY u.create_time DESC
+                ORDER BY u.created_at DESC
             """)
     List<UserWithRoleDTO> findUsersWithRole(@Param("name") String name, @Param("roleId") Long roleId);
 
@@ -74,7 +74,7 @@ public interface UserRepository extends Repository<User, Long> {
              AND u.role_id IN #{request.roleIds}
          </if>
          <if test="request.pageNumber != null and request.pageSize != null">
-             ORDER BY u.create_time DESC 
+             ORDER BY u.created_at DESC 
              LIMIT #{request.pageSize} OFFSET #{request.offset}
          </if>
          """)
@@ -89,12 +89,12 @@ public interface UserRepository extends Repository<User, Long> {
                     <if test="name != null and name != ''">
                         name = #{name},
                     </if>
-                    update_time = NOW(),
-                    update_by = #{updateBy}
+                    updated_at = NOW(),
+                    updated_by = #{updatedBy}
                 </set>
                 WHERE id = #{id} AND deleted = 0
             """)
-    int updateName(@Param("id") Long id, @Param("name") String name, @Param("updateBy") Long updateBy);
+    int updateName(@Param("id") Long id, @Param("name") String name, @Param("updatedBy") Long updatedBy);
 
     /**
      * 软删除用户
@@ -103,18 +103,18 @@ public interface UserRepository extends Repository<User, Long> {
                 UPDATE users 
                 <set>
                     deleted = 1,
-                    update_time = NOW(),
-                    update_by = #{updateBy}
+                    updated_at = NOW(),
+                    updated_by = #{updatedBy}
                 </set>
                 WHERE id = #{id}
             """)
-    int deleteById(@Param("id") Long id, @Param("updateBy") Long updateBy);
+    int deleteById(@Param("id") Long id, @Param("updatedBy") Long updatedBy);
 
     /**
      * 插入用户
      */
-    @Sql("INSERT INTO users (name, role_id, create_time, create_by, deleted) VALUES (#{name}, #{roleId}, NOW(), #{createBy}, 0)")
-    void insertUser(@Param("name") String name, @Param("roleId") Long roleId, @Param("createBy") Long createBy);
+    @Sql("INSERT INTO users (name, role_id, created_at, created_by, deleted) VALUES (#{name}, #{roleId}, NOW(), #{createdBy}, 0)")
+    void insertUser(@Param("name") String name, @Param("roleId") Long roleId, @Param("createdBy") Long createdBy);
 
     /**
      * 获取最后插入的ID
@@ -126,9 +126,9 @@ public interface UserRepository extends Repository<User, Long> {
      * 批量插入用户
      */
     @Sql("""
-                INSERT INTO users (name, role_id, create_time, create_by, deleted) VALUES 
+                INSERT INTO users (name, role_id, created_at, created_by, deleted) VALUES 
                 <foreach collection="users" item="user" separator=",">
-                    (#{user.name}, #{user.roleId}, NOW(), #{user.createBy}, 0)
+                    (#{user.name}, #{user.roleId}, NOW(), #{user.createdBy}, 0)
                 </foreach>
             """)
     void batchInsert(@Param("users") List<User> users);
@@ -140,7 +140,7 @@ public interface UserRepository extends Repository<User, Long> {
                 SELECT <include refid="userColumns"/>
                 FROM users u
                 WHERE u.deleted = 0
-                ORDER BY u.create_time DESC
+                ORDER BY u.created_at DESC
                 LIMIT #{pageSize} OFFSET #{page}
             """)
     List<User> findUsersByPage(@Param("page") Integer page, @Param("pageSize") Integer pageSize);
@@ -167,7 +167,7 @@ public interface UserRepository extends Repository<User, Long> {
                         AND u.role_id = #{userPageQuery.roleId}
                     </if>
                 </where>
-                ORDER BY u.create_time DESC
+                ORDER BY u.created_at DESC
                 <if test="userPageQuery.page != null and userPageQuery.pageSize != null">
                     LIMIT #{userPageQuery.pageSize} OFFSET #{userPageQuery.page}
                 </if>
@@ -190,7 +190,7 @@ public interface UserRepository extends Repository<User, Long> {
                         AND u.role_id = #{userQuery.roleId}
                     </if>
                 </where>
-                ORDER BY u.create_time DESC, u.name ASC
+                ORDER BY u.created_at DESC, u.name ASC
                 <if test="userQuery.page != null and userQuery.pageSize != null">
                     LIMIT #{userQuery.pageSize} OFFSET #{userQuery.page}
                 </if>
@@ -213,7 +213,7 @@ public interface UserRepository extends Repository<User, Long> {
                         AND u.role_id = #{userQuery.roleId}
                     </if>
                 </where>
-                ORDER BY u.create_time DESC, u.name ASC
+                ORDER BY u.created_at DESC, u.name ASC
             """)
     List<UserRoleDTO> queryUerPermOrderBy(@Param("userQuery") UserQuery userQuery);
 
@@ -232,7 +232,7 @@ public interface UserRepository extends Repository<User, Long> {
                         AND u.role_id = #{query.roleId}
                     </if>
                 </where>
-                ORDER BY u.create_time DESC
+                ORDER BY u.created_at DESC
                 <if test="query.page != null and query.pageSize != null">
                     LIMIT #{query.pageSize} OFFSET #{query.page}
                 </if>
@@ -246,7 +246,7 @@ public interface UserRepository extends Repository<User, Long> {
                 SELECT <include refid="userColumns"/>
                 FROM ${tableName} u
                 WHERE u.deleted = #{status}
-                ORDER BY u.create_time DESC
+                ORDER BY u.created_at DESC
             """)
     List<User> queryWithFragment(@Param("tableName") String tableName, @Param("status") Integer status);
 }

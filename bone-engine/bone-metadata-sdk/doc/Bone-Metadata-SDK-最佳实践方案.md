@@ -314,7 +314,7 @@ DSL API      ──adapter──┘
 
 原「整体升级方案」中的字段级权限、脱敏、行级安全属 **平台能力**，建议：
 
-- 短中期：IAM + 应用层校验 + 审计字段（`createBy` / `updateBy`）  
+- 短中期：IAM + 应用层校验 + 审计字段（`createdBy` / `updatedBy`）  
 - 中长期：在 `sql.processor` 链插入 `FieldPermissionChecker` SPI
 
 ### 10.3 合规

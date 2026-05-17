@@ -25,8 +25,8 @@ public class AlertRule extends com.bone.core.domain.AggregateRoot<Long> {
     private AlertLevel alertLevel;
     private List<String> notificationChannels;
     private boolean enabled;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public static AlertRule create(Long id, String name, String description, MetricName metricName,
                                    Threshold threshold, AlertLevel alertLevel,
@@ -40,8 +40,8 @@ public class AlertRule extends com.bone.core.domain.AggregateRoot<Long> {
         rule.alertLevel = alertLevel;
         rule.notificationChannels = notificationChannels;
         rule.enabled = true;
-        rule.createTime = LocalDateTime.now();
-        rule.updateTime = LocalDateTime.now();
+        rule.createdAt = LocalDateTime.now();
+        rule.updatedAt = LocalDateTime.now();
         rule.addDomainEvent(new AlertRuleCreatedEvent(rule));
         return rule;
     }
@@ -53,18 +53,18 @@ public class AlertRule extends com.bone.core.domain.AggregateRoot<Long> {
         this.threshold = threshold;
         this.alertLevel = alertLevel;
         this.notificationChannels = notificationChannels;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
         addDomainEvent(new AlertRuleUpdatedEvent(getId(), name, description, threshold.value(), alertLevel, notificationChannels));
     }
 
     public void enable() {
         this.enabled = true;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
     public void disable() {
         this.enabled = false;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
     public boolean shouldTrigger(double currentValue) {

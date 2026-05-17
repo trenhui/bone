@@ -84,6 +84,20 @@
 
 ---
 
+## 元数据能力族（sdk / server / engine / generator）
+
+> 定义与协作：[元数据能力-实现映射与竞品对照.md](../design/modules/元数据能力-实现映射与竞品对照.md) · 详设 [§2](../design/modules/2.%20元数据管理模块详细设计方案.md) §0
+
+| ID | 位置 | 描述 | 状态 | 优先级 |
+|----|------|------|------|--------|
+| META-ASIS-01 | `bone-metadata-server` | 扩展字段 API `/v1/metadata/fields:*` | done | P0 |
+| META-ASIS-02 | `bone-metadata-sdk` | 平台 `@EnableSqlRepositories` + EAV | done | P0 |
+| META-VIS-01 | 管理面 + `meta_*` | 实体/关系 REST（`/api/metadata/entities` 等） | open | P0 |
+| META-VIS-02 | `bone-metadata-app` | 建模 UI 与后端 API 对齐 | open | P1 |
+| META-VIS-03 | `studio-generator` | As-Is：物理库表反向解析 + 模板；Vision：读 `meta_*` 发布快照 | open | P0 |
+| META-VIS-04 | `bone-generator-app` | 与 generator :8085 API 对齐 | open | P1 |
+| META-ENG-01 | `bone-metadata-engine` | 接入平台 + SPI 桥接 SDK 元模型 | open | P1 |
+
 ## Metadata Engine（bone-engine/bone-metadata-engine，原 bone-smartmeta）
 
 | ID | 位置 | 描述 | 状态 | 优先级 |

@@ -86,10 +86,10 @@ CREATE TABLE ext_data_reserved (
 
     -- 系统字段
     deleted BOOLEAN DEFAULT FALSE,
-    create_by BIGINT  NULL,
-    update_by BIGINT  NULL,
-    create_time TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6),
-    update_time TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6)
+    created_by BIGINT  NULL,
+    updated_by BIGINT  NULL,
+    created_at TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6)
 );
 
 -- 表注释
@@ -132,10 +132,10 @@ CREATE TABLE field_metadata (
 
     -- 系统字段
     deleted BOOLEAN DEFAULT FALSE,
-    create_by BIGINT  NULL,
-    update_by BIGINT  NULL,
-    create_time TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6),
-    update_time TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6),
+    created_by BIGINT  NULL,
+    updated_by BIGINT  NULL,
+    created_at TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6),
 
     -- 关键修复点：添加联合唯一约束
     CONSTRAINT uk_entity_field UNIQUE (entity_type, name)

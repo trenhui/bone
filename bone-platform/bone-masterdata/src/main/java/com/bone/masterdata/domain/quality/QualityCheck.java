@@ -15,26 +15,26 @@ import java.time.LocalDateTime;
 public class QualityCheck extends AggregateRoot<Long> {
     private Long id;
     private Long masterDataEntityId;
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
+    private LocalDateTime startedAt;
+    private LocalDateTime endedAt;
     private String status;
     private Integer totalRecords;
     private Integer passedRecords;
     private Integer failedRecords;
-    private LocalDateTime createTime;
+    private LocalDateTime createdAt;
 
     public static QualityCheck create(Long id, Long masterDataEntityId) {
         QualityCheck check = new QualityCheck();
         check.id = id;
         check.masterDataEntityId = masterDataEntityId;
-        check.startTime = LocalDateTime.now();
+        check.startedAt = LocalDateTime.now();
         check.status = "RUNNING";
-        check.createTime = LocalDateTime.now();
+        check.createdAt = LocalDateTime.now();
         return check;
     }
 
     public void complete(Integer totalRecords, Integer passedRecords, Integer failedRecords) {
-        this.endTime = LocalDateTime.now();
+        this.endedAt = LocalDateTime.now();
         this.status = "COMPLETED";
         this.totalRecords = totalRecords;
         this.passedRecords = passedRecords;

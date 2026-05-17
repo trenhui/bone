@@ -5,10 +5,10 @@ CREATE TABLE users (
     id BIGINT PRIMARY KEY,
     name VARCHAR(255),
     role_id BIGINT,
-    create_time DATETIME,
-    create_by BIGINT,
-    update_time DATETIME,
-    update_by BIGINT,
+    created_at DATETIME,
+    created_by BIGINT,
+    updated_at DATETIME,
+    updated_by BIGINT,
     deleted BOOLEAN DEFAULT FALSE
 );
 
@@ -38,8 +38,8 @@ CREATE TABLE sys_permission (
     component VARCHAR(200) COMMENT '前端组件',
     icon VARCHAR(50) COMMENT '图标',
     sort_order INT DEFAULT 0 COMMENT '排序号',
-    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     CONSTRAINT uk_perm_code UNIQUE (perm_code)
 );
 

@@ -544,15 +544,15 @@ CREATE TABLE meta_data_quality_rule (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数据质量规则表';
 
 -- ============================================================
--- 5. Extension Studio（ext_studio_*）
+-- 5. Extension Studio（exts_*）
 -- ============================================================
 
-DROP TABLE IF EXISTS ext_studio_plugin_execution_log;
-DROP TABLE IF EXISTS ext_studio_plugin_version;
-DROP TABLE IF EXISTS ext_studio_extension_impl;
-DROP TABLE IF EXISTS ext_studio_extension_point;
+DROP TABLE IF EXISTS exts_plugin_execution_log;
+DROP TABLE IF EXISTS exts_plugin_version;
+DROP TABLE IF EXISTS exts_extension_impl;
+DROP TABLE IF EXISTS exts_extension_point;
 
-CREATE TABLE ext_studio_extension_point (
+CREATE TABLE exts_extension_point (
     id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
     tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
     point_name          VARCHAR(255)    NOT NULL COMMENT '扩展点名称',
@@ -569,11 +569,12 @@ CREATE TABLE ext_studio_extension_point (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_ext_studio_ep_code (tenant_id, point_code),
-    KEY idx_ext_studio_ep_iface (interface_name)
+    UNIQUE KEY uk_exts_ep_code (tenant_id, point_code),
+    KEY idx_exts_ep_tenant (tenant_id, status),
+    KEY idx_exts_ep_iface (interface_name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Studio 扩展点';
 
-CREATE TABLE ext_studio_extension_impl (
+CREATE TABLE exts_extension_impl (
     id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
     tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
     extension_point_id  BIGINT          NOT NULL COMMENT '扩展点ID',
@@ -598,11 +599,12 @@ CREATE TABLE ext_studio_extension_impl (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_ext_studio_ei_code (extension_point_id, impl_code),
-    KEY idx_ext_studio_ei_point (extension_point_id)
+    UNIQUE KEY uk_exts_ei_code (extension_point_id, impl_code),
+    KEY idx_exts_ei_tenant (tenant_id, extension_point_id),
+    KEY idx_exts_ei_point (extension_point_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Studio 扩展实现';
 
-CREATE TABLE ext_studio_plugin_version (
+CREATE TABLE exts_plugin_version (
     id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
     tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
     plugin_id           BIGINT          NOT NULL COMMENT '插件/实现ID',
@@ -619,11 +621,12 @@ CREATE TABLE ext_studio_plugin_version (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_ext_studio_pv (plugin_id, release_version),
-    KEY idx_ext_studio_pv_plugin (plugin_id)
+    UNIQUE KEY uk_exts_pv (plugin_id, release_version),
+    KEY idx_exts_pv_tenant (tenant_id, plugin_id),
+    KEY idx_exts_pv_plugin (plugin_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Studio 插件版本';
 
-CREATE TABLE ext_studio_plugin_execution_log (
+CREATE TABLE exts_plugin_execution_log (
     id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
     tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
     plugin_id           BIGINT          NOT NULL COMMENT '插件ID',
@@ -641,6 +644,7 @@ CREATE TABLE ext_studio_plugin_execution_log (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
     version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_ext_studio_pel_exec (execution_id),
-    KEY idx_ext_studio_pel_plugin (plugin_id)
+    UNIQUE KEY uk_exts_pel_exec (execution_id),
+    KEY idx_exts_pel_tenant (tenant_id, plugin_id, created_at),
+    KEY idx_exts_pel_plugin (plugin_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Studio 插件执行日志';

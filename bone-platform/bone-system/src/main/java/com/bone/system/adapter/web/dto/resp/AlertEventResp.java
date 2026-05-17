@@ -24,6 +24,6 @@ public class AlertEventResp {
     private String alertLevel;
     private String message;
     private String status;
-    private LocalDateTime createTime;
+    private LocalDateTime createdAt;
     private LocalDateTime resolveTime;
 }

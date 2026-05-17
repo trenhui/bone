@@ -1,0 +1,37 @@
+type: object
+description: 失败时 ApiResponse.data 结构，对齐 RFC 7807
+required:
+  - type
+  - title
+  - status
+  - detail
+  - errorCode
+  - traceId
+properties:
+  type:
+    type: string
+    format: uri
+    example: https://bone.wps.cn/problems/extension/plugin-not-found
+  title:
+    type: string
+    example: Plugin Not Found
+  status:
+    type: integer
+    example: 404
+  detail:
+    type: string
+    example: id=123 的插件不存在
+  instance:
+    type: string
+    example: /api/v1/extension/plugins/123
+  errorCode:
+    type: string
+    description: 稳定业务错误码，格式 {DOMAIN}_{REASON}
+    example: EXT_PLUGIN_NOT_FOUND
+  traceId:
+    type: string
+    example: a1b2c3d4e5f67890
+  errors:
+    type: array
+    items:
+      $ref: './FieldError.yaml'

@@ -18,6 +18,6 @@ public class ConfigDTO {
     private String description;
     private String configType;
     private boolean encrypted;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

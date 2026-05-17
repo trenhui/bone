@@ -15,6 +15,6 @@ WHERE u.deleted = 0
     </foreach>
 </if>
 <if test="request.pageNumber != null and request.pageSize != null">
-    ORDER BY u.create_time DESC
+    ORDER BY u.created_at DESC
     LIMIT #{request.pageSize} OFFSET #{request.offset}
 </if>

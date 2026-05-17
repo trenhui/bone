@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Metadata SDK 表持久化（{@code ext_studio_extension_point} / {@code ext_studio_extension_impl}）。
+ * Metadata SDK 表持久化（扩展点/插件/版本/执行日志）。
  */
 @Configuration
 @ConditionalOnProperty(prefix = "bone.extension.studio.persistence", name = "mode", havingValue = "metadata")

@@ -19,8 +19,8 @@ public class TestDataHelper {
         jdbc.update("DELETE FROM sys_permission", new MapSqlParameterSource());
 
         // 插入测试数据
-        String sql = "INSERT INTO sys_permission (id,biz_identity_code, perm_name, perm_code, perm_type, parent_id, path, component, icon, sort_order, create_time, update_time) " +
-                "VALUES (:id, :biz_identity_code,:perm_name, :perm_code, :perm_type, :parent_id, :path, :component, :icon, :sort_order, :create_time, :update_time)";
+        String sql = "INSERT INTO sys_permission (id,biz_identity_code, perm_name, perm_code, perm_type, parent_id, path, component, icon, sort_order, created_at, updated_at) " +
+                "VALUES (:id, :biz_identity_code,:perm_name, :perm_code, :perm_type, :parent_id, :path, :component, :icon, :sort_order, :created_at, :updated_at)";
 
         // 创建并插入权限数据
         MapSqlParameterSource[] params = new MapSqlParameterSource[] {
@@ -47,8 +47,8 @@ public class TestDataHelper {
                 .addValue("component", component)
                 .addValue("icon", icon)
                 .addValue("sort_order", sortOrder)
-                .addValue("create_time", Timestamp.from(Instant.now()))
-                .addValue("update_time", Timestamp.from(Instant.now()));
+                .addValue("created_at", Timestamp.from(Instant.now()))
+                .addValue("updated_at", Timestamp.from(Instant.now()));
     }
 
 
@@ -66,8 +66,8 @@ public class TestDataHelper {
 
     public static void setUpTestData(NamedParameterJdbcOperations jdbc) {
         cleanTestData(jdbc);
-        String sql = "INSERT INTO users (id, name, role_id, create_time, create_by, update_time, update_by, deleted) " +
-                "VALUES (:id, :name, :role_id, :create_time, :create_by, :update_time, :update_by, :deleted)";
+        String sql = "INSERT INTO users (id, name, role_id, created_at, created_by, updated_at, updated_by, deleted) " +
+                "VALUES (:id, :name, :role_id, :created_at, :created_by, :updated_at, :updated_by, :deleted)";
 
         // Insert 10 users with fixed IDs for consistent testing
         MapSqlParameterSource[] params = new MapSqlParameterSource[] {
@@ -93,10 +93,10 @@ public class TestDataHelper {
                 .addValue("id", id)
                 .addValue("name", name)
                 .addValue("role_id", roleId)
-                .addValue("create_time", Timestamp.from(fixedTime))
-                .addValue("create_by", createdBy)
-                .addValue("update_time", Timestamp.from(fixedTime))
-                .addValue("update_by", createdBy)
+                .addValue("created_at", Timestamp.from(fixedTime))
+                .addValue("created_by", createdBy)
+                .addValue("updated_at", Timestamp.from(fixedTime))
+                .addValue("updated_by", createdBy)
                 .addValue("deleted", deleted ? 1 : 0);
     }
 }

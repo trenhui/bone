@@ -6,7 +6,7 @@
 | [PRD模板.md](./PRD模板.md) | 子需求 / 迭代 PRD 骨架（BONE 专用；勿与历史 K‑DocVerse 草稿混淆） |
 | [PRD一页纸模板.md](./PRD一页纸模板.md) | 轻量迭代一页纸 |
 
-**真源优先级**：许可、仓库、端口、快速开始以根 [README.md](../../README.md) 与各模块配置为准。
+**真源优先级**：许可、仓库、快速开始以根 [README.md](../../README.md) 为准；**默认端口**以 [wiki/03-本地开发与构建.md](../wiki/03-本地开发与构建.md) 与各模块 `application.yml` 为准。
 
 **关联**：架构 [`doc/architecture/`](../architecture/) · 详设 [`doc/design/`](../design/)
 

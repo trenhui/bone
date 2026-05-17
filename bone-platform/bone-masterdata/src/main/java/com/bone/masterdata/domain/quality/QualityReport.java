@@ -16,7 +16,7 @@ public class QualityReport extends AggregateRoot<Long> {
     private Long qualityCheckId;
     private String reportData;
     private Integer issueCount;
-    private LocalDateTime createTime;
+    private LocalDateTime createdAt;
 
     public static QualityReport create(Long id, Long qualityCheckId, String reportData, Integer issueCount) {
         QualityReport report = new QualityReport();
@@ -24,7 +24,7 @@ public class QualityReport extends AggregateRoot<Long> {
         report.qualityCheckId = qualityCheckId;
         report.reportData = reportData;
         report.issueCount = issueCount;
-        report.createTime = LocalDateTime.now();
+        report.createdAt = LocalDateTime.now();
         return report;
     }
 }

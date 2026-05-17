@@ -2,9 +2,9 @@ package com.bone.integration.domain.flow;
 
 import com.bone.core.domain.AggregateRoot;
 import com.bone.core.exception.DomainException;
-import com.bone.integration.domain.flow.event.FlowActivatedEvent;
-import com.bone.integration.domain.flow.event.FlowCreatedEvent;
-import com.bone.integration.domain.flow.vo.FlowStatus;
+import com.bone.integration.domain.model.flow.event.FlowActivatedEvent;
+import com.bone.integration.domain.model.flow.event.FlowCreatedEvent;
+import com.bone.integration.domain.model.flow.vo.FlowStatus;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import lombok.AccessLevel;
 import lombok.Getter;

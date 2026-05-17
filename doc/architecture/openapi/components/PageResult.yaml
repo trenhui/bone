@@ -1,0 +1,21 @@
+type: object
+properties:
+  records:
+    type: array
+    items: {}
+  total:
+    type: integer
+    format: int64
+  page:
+    type: integer
+  size:
+    type: integer
+  pages:
+    type: integer
+  hasNext:
+    type: boolean
+  hasPrevious:
+    type: boolean
+  nextCursor:
+    type: string
+    nullable: true

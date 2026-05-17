@@ -41,11 +41,25 @@ cd bone-platform/bone-iam && mvn spring-boot:run
 
 ## 与初始化 SQL
 
-- 运行时 DDL + 种子：[bone-init.sql](../../bone-init.sql)  
+- 运行时 DDL + 种子：[bone-init.sql](../../bone-init.sql)（含扩展 Studio 表 `exts_*`）  
   - **开发默认登录**：`admin` / `123456`（仅本地；生产必须改密）
-- 规范与文档化 DDL：[doc/architecture/数据库开发规范.md](../../doc/architecture/数据库开发规范.md)、[初始脚本.sql](../../doc/architecture/初始脚本.sql)
+- 规范：[doc/architecture/数据库开发规范.md](../../doc/architecture/数据库开发规范.md)
 
-本地库表若与脚本不一致，先运行 `./scripts/dev/db-verify.sh` 查看差异；**全量重建**（会 DROP 表）需显式执行 `./scripts/dev/db-init.sh`。
+本地库表若与脚本不一致，先运行 `./scripts/dev/db-verify.sh`；**全量重建**（会 DROP 库）：
+
+```bash
+./scripts/dev/db-init.sh
+```
+
+### 扩展 Studio（8088）连 MySQL
+
+```bash
+source scripts/dev/load-env.sh
+cd bone-engine/bone-extension-engine/bone-extension-studio
+mvn spring-boot:run -Dspring-boot.run.profiles=metadata-mysql -Dmaven.test.skip=true
+```
+
+勿对 MySQL 再跑 `schema-mysql.sql`；表结构以 `bone-init.sql` 为准。
 
 ## IDE
 

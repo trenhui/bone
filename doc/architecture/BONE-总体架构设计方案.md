@@ -143,7 +143,7 @@
 
 | 能力 | 用户价值 | 主要承载 |
 |------|----------|----------|
-| **应用生成** | 少写重复代码，模型即资产 | 元数据、智能元数据、代码生成 |
+| **应用生成** | 少写重复代码，模型即资产 | 元数据建模、**sdk/server/engine**、**studio-generator**（见 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md)） |
 | **企业集成** | 异构系统可编排、可回放 | 集成引擎、连接器、流程 |
 | **扩展运行时** | 核心稳定、个性化外置 | 扩展点、插件生命周期、隔离执行 |
 
@@ -379,7 +379,7 @@ flowchart TD
 
 | 逻辑组件 | Maven / 目录示例 |
 |----------|-------------------|
-| 元数据 / SDK / Engine | `bone-engine/bone-metadata-server`、`bone-metadata-sdk`、`bone-metadata-engine` |
+| 元数据能力族 | **sdk**（数据面，必选）· **server**（扩展字段 :9001，选配）· **engine**（智能引擎，选配）；生成见 `studio-generator` — [对照](../design/modules/元数据能力-实现映射与竞品对照.md) |
 | 扩展引擎 | `bone-engine/bone-extension-engine/*` |
 | 集成引擎 | `bone-engine/bone-integration` |
 | IAM、主数据、系统、网关等 | `bone-platform/bone-iam`、`bone-masterdata`、`bone-system`、`bone-gateway` 等 |
@@ -460,12 +460,12 @@ flowchart TD
 
 | API 路径 | 方法 | 功能 |
 |----------|------|------|
-| `/api/extension/points` | GET/POST | 扩展点 |
-| `/api/extension/points/{id}` | PUT/DELETE | 扩展点维护 |
-| `/api/extension/plugins` | GET/POST | 插件列表/上传 |
-| `/api/extension/plugins/{id}/deploy` | POST | 部署 |
-| `/api/extension/plugins/{id}/undeploy` | POST | 卸载 |
-| `/api/extension/plugins/{id}/rollback` | POST | 回滚 |
+| `/api/v1/extension/points` | GET/POST | 扩展点 |
+| `/api/v1/extension/points/{id}` | PUT/DELETE | 扩展点维护 |
+| `/api/v1/extension/plugins` | GET/POST | 插件列表/上传 |
+| `/api/v1/extension/plugins/{id}:deploy` | POST | 部署 |
+| `/api/v1/extension/plugins/{id}:undeploy` | POST | 卸载 |
+| `/api/v1/extension/plugins/{id}:rollback` | POST | 回滚 |
 
 #### 8.3.5 集成
 
@@ -493,7 +493,47 @@ flowchart TD
 | `/api/system/alerts/{id}` | PUT/DELETE | 规则维护 |
 | `/api/system/logs` | GET | 系统日志 |
 
-### 8.4 领域事件与 Topic 命名（建议）
+### 8.4 领域事件与消息 Topic 规范
+
+> **放置说明**：Topic 属于**平台事件总线与跨服务集成**，写在总体架构；**HTTP 契约测试**见 **[Bone-API-规范.md](./Bone-API-规范.md) §15**。出站 Webhook 签名与重试见 API 规范 **§14.5**。
+
+#### 8.4.1 Topic 命名
+
+格式（小写、点分、**末尾主版本**）：
+
+```text
+{scope}.{domain}.{resource}_{action}.v{major}
+```
+
+| 段 | 取值 | 示例 |
+|----|------|------|
+| `scope` | `domain`（领域内） / `platform`（横切） | `domain` |
+| `domain` | 引擎或平台域 | `metadata`、`authz`、`integration`、`extension` |
+| `resource_action` | 蛇形：资源 + 过去式动作 | `entity_published`、`plugin_deployed` |
+| `v{major}` | 不兼容 payload 时递增 | `.v1` → `.v2` |
+
+**禁止**：空格、驼峰、无版本后缀、与 REST 路径 1:1 混用（如 `POST /api/v1/users` 直接当 Topic）。
+
+**分区键**：默认 `tenant_id`；同一租户内顺序敏感的事件（如「配置发布链」）使用同一 key。全局事件可用 `biz_identity_code` 或固定 `platform`。
+
+#### 8.4.2 消息信封（Envelope）
+
+所有 Bone 出站/入站领域事件建议使用统一 JSON 信封（与 REST `traceId` 对齐）：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `eventId` | string (UUID) | 幂等键，消费者去重 |
+| `eventType` | string | 与注册表 `event` 列一致，如 `EntityPublished` |
+| `topic` | string | 实际 Topic 全名 |
+| `occurredAt` | string (ISO-8601 UTC) | 事件发生时间 |
+| `tenantId` | string | 租户 |
+| `traceId` | string | 与 HTTP MDC 一致 |
+| `schemaVersion` | string | 载荷 schema，如 `1.0` |
+| `payload` | object | 领域载荷 |
+
+**消费**：至少一次投递；处理逻辑必须 **幂等**（`eventId` 或业务唯一键落库去重）。
+
+#### 8.4.3 注册表示例
 
 ```yaml
 event_mapping:
@@ -512,7 +552,20 @@ event_mapping:
   - event: PluginDeployed
     topic: domain.extension.plugin_deployed.v1
     partition_key: tenant_id
+  - event: PluginExecutionFailed
+    topic: domain.extension.plugin_execution_failed.v1
+    partition_key: tenant_id
 ```
+
+新增事件：**先登记本表（或模块详设附录）→ 再实现 Producer**；禁止临时 Topic 名。
+
+#### 8.4.4 与 MQ / 集成的关系
+
+| 能力 | 约定 |
+|------|------|
+| 中间件 | RocketMQ / Kafka 等由部署选型；Topic 名与上表一致 |
+| 死信 | `{original_topic}.dlq` 或平台统一 `platform.dead_letter.v1` |
+| 对外 Webhook | HTTP 回调，载荷可复用 `payload`；签名见 API 规范 §14.5 |
 
 ### 8.5 租户隔离强制规则
 
@@ -520,6 +573,8 @@ event_mapping:
 - 网关向下游注入 `X-Tenant-Id` 或等价 metadata；业务层 `TenantContext` 与数据访问拦截器一致化。
 
 ### 8.6 API 工程化约定（REST 最佳实践）
+
+> **完整契约**（URL、响应、错误码、日志、分页、迁移）：见 **[Bone-API-规范.md](./Bone-API-规范.md)**。下列为摘要。
 
 | 主题 | 约定 |
 |------|------|
@@ -553,7 +608,7 @@ erDiagram
 
 | 概念表 | 说明 | 典型字段 |
 |--------|------|----------|
-| entity | 业务实体 | id, name, description, status, type, create_time, update_time |
+| entity | 业务实体 | id, name, description, status, type, created_at, updated_at |
 | field | 字段 | id, entity_id, name, type, length, required, default_value |
 | relationship | 关系 | source_entity_id, target_entity_id, type, cardinality |
 | validation_rule | 校验 | field_id, type, expression, message |
@@ -775,7 +830,7 @@ Intent → Plan → Generate → Validate → Self-Heal → Human Review → Lea
 
 | 任务 ID | 任务 | 说明 |
 |---------|------|------|
-| ENG-001 | 智能元数据引擎 | 实体、生成内核 |
+| ENG-001 | 智能元数据引擎（`bone-metadata-engine`） | 规则/表达式/SmartQL；实体建模与 **生成内核** 见 `meta_*` + `studio-generator` |
 | ENG-002 | 主数据平台 | 质量与发布 |
 | ENG-003 | 扩展引擎 | 扩展点与执行隔离 |
 | ENG-004 | 集成引擎 | 连接器与编排 |
@@ -1088,7 +1143,7 @@ components:
 
 | 上下文 | 服务名（规划） | API 前缀（规划） | 逻辑库名 | 端口（规划示例） |
 |--------|----------------|------------------|----------|------------------|
-| 元数据 | metadata-service | /api/v1/metadata | metadata_db | 8081 |
+| 元数据（规划） | metadata-service | /api/v1/metadata（实体等 Vision） | metadata_db | **9001**（As-Is：`bone-metadata-server` 扩展字段；8081 常为 **bone-iam**） |
 | 权限 | authz-service | /api/v1/authz | authz_db | 8082 |
 | 集成 | integration-service | /api/v1/integration | integration_db | 8083 |
 | 扩展 | extension-service | /api/v1/extension | extension_db | 8084 |
@@ -1269,7 +1324,8 @@ flowchart LR
 | 门禁项 | 说明 |
 |--------|------|
 | 分层与依赖 | ArchUnit / 包结构检查通过 |
-| API 契约 | OpenAPI diff 无破坏性或未走弃用流程 |
+| API 契约 | OpenAPI diff 无破坏性或未走弃用流程（见 [Bone-API-规范](./Bone-API-规范.md) §15） |
+| 事件 Topic | 新 Topic 符合 §8.4.1 且已登记 §8.4.3 |
 | 安全 | 依赖 CVSS 阈值、容器镜像扫描、密钥扫描 |
 | 可观测 | 新服务必须暴露 metrics + 结构化日志 + trace 透传 |
 | 运行手册 | 新关键路径须有 Runbook 与 on-call 路由 |

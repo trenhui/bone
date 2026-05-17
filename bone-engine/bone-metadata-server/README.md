@@ -1,19 +1,23 @@
 # bone-metadata-server
 
-元数据 **可部署服务**（默认端口 `9001`，应用名 `bone-metadata-server`）。
+**扩展字段元数据控制面**（可选部署）：Spring Boot 服务，默认端口 `9001`。
 
-## 职责
+> 三模块定义、协作与竞品：**[元数据能力-实现映射与竞品对照.md](../../doc/design/modules/元数据能力-实现映射与竞品对照.md)**
 
-- 对外提供扩展字段等 REST API（`MetadataController`）
-- 内嵌 **bone-metadata-sdk**（`deploymentMode: EMBEDDED`），与 MySQL + SQL 模板配合
+## 职责（As-Is）
+
+- `POST/GET /v1/metadata/fields:*` — 扩展字段查询与分配（`MetadataController`）
+- 内嵌 **bone-metadata-sdk**（`deploymentMode: EMBEDDED`），供其他应用 `REMOTE` Feign 调用
+
+**不负责**：业务实体 `meta_*` 全套 CRUD、代码生成（见 `studio-generator`）、规则引擎（见 `bone-metadata-engine`）。
 
 ## 与 sibling 模块
 
 | 模块 | 角色 |
 |------|------|
-| `bone-metadata-sdk` | 库：仓储、扩展字段、嵌入式/远程客户端 |
-| `bone-metadata-server` | 本模块：Spring Boot 服务壳 |
-| `bone-metadata-engine` | 智能引擎（规则、SmartQL；原 `bone-smartmeta`） |
+| `bone-metadata-sdk` | **数据面**：持久化 + EAV（各业务进程必选） |
+| `bone-metadata-server` | **本模块**：扩展字段 REST 集中端点 |
+| `bone-metadata-engine` | **计算面**：智能元数据引擎（可选） |
 
 ## 运行
 

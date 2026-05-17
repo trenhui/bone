@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
-@Table("ext_studio_extension_point")
+@Table("exts_extension_point")
 public class ExtStudioExtensionPoint extends AbstractEntity<Long> {
 
     @Id

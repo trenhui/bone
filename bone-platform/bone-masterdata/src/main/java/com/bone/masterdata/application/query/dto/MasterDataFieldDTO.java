@@ -18,6 +18,6 @@ public class MasterDataFieldDTO {
     private String defaultValue;
     private String description;
     private Integer sortOrder;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

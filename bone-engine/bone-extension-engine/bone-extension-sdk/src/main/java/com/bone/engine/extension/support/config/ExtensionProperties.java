@@ -44,6 +44,14 @@ public class ExtensionProperties {
     @NestedConfigurationProperty
     private Async async = new Async();
 
+    /** 运行时元数据同步 */
+    @NestedConfigurationProperty
+    private SyncConfig sync = new SyncConfig();
+
+    /** Studio 管理台集成（执行日志上报等） */
+    @NestedConfigurationProperty
+    private StudioConfig studio = new StudioConfig();
+
     public boolean isEnabled() {
         return enabled;
     }
@@ -106,6 +114,71 @@ public class ExtensionProperties {
 
     public void setAsync(Async async) {
         this.async = async;
+    }
+
+    public SyncConfig getSync() {
+        return sync;
+    }
+
+    public void setSync(SyncConfig sync) {
+        this.sync = sync;
+    }
+
+    public StudioConfig getStudio() {
+        return studio;
+    }
+
+    public void setStudio(StudioConfig studio) {
+        this.studio = studio;
+    }
+
+    /** Studio 管理台配置 */
+    public static class StudioConfig {
+        @NestedConfigurationProperty
+        private StudioReportConfig report = new StudioReportConfig();
+
+        public StudioReportConfig getReport() {
+            return report;
+        }
+
+        public void setReport(StudioReportConfig report) {
+            this.report = report;
+        }
+    }
+
+    /** 向 Studio 上报扩展执行日志 */
+    public static class StudioReportConfig {
+        private boolean enabled = false;
+        private String baseUrl = "http://localhost:8088";
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public String getBaseUrl() {
+            return baseUrl;
+        }
+
+        public void setBaseUrl(String baseUrl) {
+            this.baseUrl = baseUrl;
+        }
+    }
+
+    /** 运行时元数据同步配置 */
+    public static class SyncConfig {
+        private String refreshChannel = "bone:ext:metadata:refresh";
+
+        public String getRefreshChannel() {
+            return refreshChannel;
+        }
+
+        public void setRefreshChannel(String refreshChannel) {
+            this.refreshChannel = refreshChannel;
+        }
     }
 
     /** 缓存配置 */

@@ -1,1 +1,1 @@
-u.id, u.name, u.role_id, u.create_time, u.create_by, u.update_time, u.update_by, u.deleted
+u.id, u.name, u.role_id, u.created_at, u.created_by, u.updated_at, u.updated_by, u.deleted

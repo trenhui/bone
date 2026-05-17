@@ -24,6 +24,6 @@ public class AlertRuleResp {
     private String alertLevel;
     private List<String> notificationChannels;
     private boolean enabled;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

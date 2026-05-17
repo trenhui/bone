@@ -1,6 +1,8 @@
 # bone-metadata-engine
 
-智能元数据引擎（**原 `bone-smartmeta-*`，已退役该 Maven 坐标**）。
+**智能元数据引擎**（计算面）：规则、表达式、SmartQL、动态操作等（**原 `bone-smartmeta-*`**）。
+
+> 三模块定义、协作与竞品：**[元数据能力-实现映射与竞品对照.md](../../doc/design/modules/元数据能力-实现映射与竞品对照.md)**
 
 ## 模块
 

@@ -13,7 +13,7 @@
 - **前端**：React 18 + TypeScript 微前端（Qiankun）工程，使用 npm workspaces 管理
 
 业务定位覆盖四大引擎：
-1. **智能元数据引擎**（Smart Metadata）— 动态建模、代码生成
+1. **智能元数据引擎**（Smart Metadata）— 动态建模、规则/表达式；**代码生成**见 `studio-generator`（与 engine 混合，见 [元数据能力对照](doc/design/modules/元数据能力-实现映射与竞品对照.md)）
 2. **企业主数据平台**（Master Data）— 主数据治理与质量管控
 3. **ExtPoint 扩展引擎**（Extension）— 插件化扩展点机制
 4. **集成引擎**（Integration）— 多协议连接器与流程编排
@@ -74,9 +74,9 @@ bone/                          # 根聚合模块
 │   ├── bone-security/         # 安全组件
 │   └── bone-web/              # Web 层封装（Spring Web、校验、AOP、全局异常）
 ├── bone-engine/               # 四大引擎与核心中间件
-│   ├── bone-metadata/         # 元数据引擎
-│   ├── bone-metadata-sdk/     # 元数据 SDK（含 @EnableSqlRepositories 自定义仓储机制）
-│   ├── bone-smartmeta/        # 智能元数据引擎（engine + starter）
+│   ├── bone-metadata-sdk/     # 平台数据面（P0 持久化 + EAV）
+│   ├── bone-metadata-server/  # 扩展字段 REST（:9001，选配）
+│   ├── bone-metadata-engine/  # 智能元数据引擎（core + starter，选配）
 │   ├── bone-extension-engine/ # 扩展引擎
 │   │   ├── bone-extension-sdk/
 │   │   └── bone-extension-studio/
@@ -239,7 +239,7 @@ adapter/web → application → domain ← infrastructure
 
 | 类 | 位置 | 作用 |
 |---|---|---|
-| `AbstractEntity` | `bone-core` | 全局基础实体，包含 `createTime`、`createBy`、`updateTime`、`updateBy`、`deleted`（软删） |
+| `AbstractEntity` | `bone-core` | 全局基础实体，包含 `createdAt`、`createdBy`、`updatedAt`、`updatedBy`、`deleted`（软删） |
 | `TenantAbstractEntity` | `bone-core` | 多租户基础实体，增加 `tenantId`、`bizIdentityCode` |
 | `TenantContext` | `bone-core` | 线程级租户上下文传递 |
 | `ApiResponse<T>` | `bone-core` | 统一 REST 响应包装 |
@@ -257,6 +257,8 @@ adapter/web → application → domain ← infrastructure
 ### 5.5 详细规范文档
 
 - `doc/architecture/Bone-DDD-最终实践方案.md` — **DDD 与分层门禁唯一权威**
+- `doc/architecture/Bone-API-规范.md` — **API + 错误码 + 日志** 统一契约（§4 台账、§10 日志）
+- `doc/architecture/数据库开发规范.md` — DDL 与表结构（独立，不并入 API 文档）
 - `doc/architecture/BONE-总体架构设计方案.md` — 平台总体架构、NFR、安全与数据策略
 - `doc/architecture/bone-前端架构.md` — 前端微前端与工程约定（UI 见 `doc/architecture/frontend/frontend-ui-spec.md`）
 - `doc/design/modules/` — 模块详细设计（控制台、元数据、主数据、集成、扩展、IAM、系统、Generator、SmartMeta）
@@ -331,7 +333,7 @@ adapter/web → application → domain ← infrastructure
 
 所有业务表均包含：
 - `tenant_id` + `biz_identity_code`（租户隔离）
-- `create_time`、`create_by`、`update_time`、`update_by`（审计）
+- `created_at`、`created_by`、`updated_at`、`updated_by`（审计）
 - `deleted` TINYINT（软删除）
 - JSON 类型字段（灵活Schema）
 
@@ -342,7 +344,7 @@ adapter/web → application → domain ← infrastructure
 | 保险业务 | `ic_insurer`、`ic_policyholder`、`ic_proposal`、`ic_policy`、`ic_product_config` 等 |
 | IAM | `iam_user`、`iam_role`、`iam_permission`、`iam_user_role`、`iam_audit_log` |
 | 系统 | `sys_config`、`sys_log`、`sys_monitor` |
-| 集成 | `int_connector`、`int_flow`、`int_flow_execution` |
+| 集成 | `int_connector`、`int_flow`、`int_flow_node`、`int_flow_connection`、`int_execution_log`、`int_dead_letter`、`int_template` |
 
 ### 8.3 初始数据
 
@@ -436,4 +438,5 @@ adapter/web → application → domain ← infrastructure
 | `bone-init.sql` | 数据库初始化脚本 |
 | `bone-parent/pom.xml` | 依赖版本锁定与全局插件配置 |
 | `bone-engine/bone-metadata-sdk/` | 默认持久化 SDK（[README](bone-engine/bone-metadata-sdk/README.md) + [doc/](bone-engine/bone-metadata-sdk/doc/)） |
+| `doc/design/modules/元数据能力-实现映射与竞品对照.md` | sdk / server / engine 定义、协作、竞品 |
 | `bone-engine/README.md` | 引擎层模块索引 |

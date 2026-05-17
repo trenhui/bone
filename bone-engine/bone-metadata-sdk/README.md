@@ -62,6 +62,8 @@ mvn -pl bone-engine/bone-metadata-sdk test
 
 | 模块 | 说明 |
 |------|------|
-| `bone-metadata-server` | 可部署元数据服务（扩展字段 API 等） |
-| `bone-metadata-engine` | SmartMeta 运行时引擎 |
+| `bone-metadata-server` | 扩展字段 REST 控制面（:9001，选配） |
+| `bone-metadata-engine` | 智能元数据引擎（计算面，选配） |
 | `bone-datasource` | 动态多数据源（`bone-framework`） |
+
+**三模块协作与竞品对照**：[doc/design/modules/元数据能力-实现映射与竞品对照.md](../../doc/design/modules/元数据能力-实现映射与竞品对照.md)

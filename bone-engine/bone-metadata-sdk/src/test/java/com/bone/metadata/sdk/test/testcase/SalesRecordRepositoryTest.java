@@ -133,7 +133,7 @@ public class SalesRecordRepositoryTest {
         // 测试带GROUP BY和HAVING的聚合查询
         List<Map<String, Object>> results = salesRecordRepository.aggregate(
                 Arrays.asList("category", "COUNT(*) as count", "SUM(amount) as total"),
-                Criteria.<SalesRecord>create().between("createTime",
+                Criteria.<SalesRecord>create().between("createdAt",
                         LocalDateTime.of(2023, 1, 15, 0, 0),
                         LocalDateTime.of(2023, 2, 11, 23, 59)),
                 Arrays.asList("category"),
@@ -161,7 +161,7 @@ public class SalesRecordRepositoryTest {
         // 测试分页的聚合查询
         PageResult<Map<String, Object>> pageResult = salesRecordRepository.aggregateWithPagination(
                 Arrays.asList("category", "SUM(amount) as total"),
-                Criteria.<SalesRecord>create().between("createTime",
+                Criteria.<SalesRecord>create().between("createdAt",
                         LocalDateTime.of(2023, 1, 15, 0, 0),
                         LocalDateTime.of(2023, 2, 11, 23, 59)),
                 Arrays.asList("category"),

@@ -13,6 +13,9 @@ export type StudioApiResponse<T> = {
   meta?: Record<string, unknown>;
 };
 
+/** 规范前缀，见 doc/architecture/Bone-API-规范.md §13.1 */
+const EXTENSION_BASE = '/v1/extension';
+
 const client = axios.create({
   baseURL: '/api',
   timeout: 20000,
@@ -86,22 +89,22 @@ export type ExtensionPayload = {
 };
 
 export async function listExtPoints(): Promise<ExtPointRow[]> {
-  const res = await client.get<StudioApiResponse<ExtPointRow[]>>('/extension/points');
+  const res = await client.get<StudioApiResponse<ExtPointRow[]>>(`${EXTENSION_BASE}/points`);
   return assertSuccess(res) ?? [];
 }
 
 export async function createExtPoint(payload: ExtPointPayload): Promise<ExtPointRow> {
-  const res = await client.post<StudioApiResponse<ExtPointRow>>('/extension/points', payload);
+  const res = await client.post<StudioApiResponse<ExtPointRow>>(`${EXTENSION_BASE}/points`, payload);
   return assertSuccess(res);
 }
 
 export async function updateExtPoint(id: number, payload: ExtPointPayload): Promise<ExtPointRow> {
-  const res = await client.put<StudioApiResponse<ExtPointRow>>(`/extension/points/${id}`, payload);
+  const res = await client.put<StudioApiResponse<ExtPointRow>>(`${EXTENSION_BASE}/points/${id}`, payload);
   return assertSuccess(res);
 }
 
 export async function deleteExtPoint(id: number): Promise<void> {
-  const res = await client.delete<StudioApiResponse<void>>(`/extension/points/${id}`);
+  const res = await client.delete<StudioApiResponse<void>>(`${EXTENSION_BASE}/points/${id}`);
   if (res.status === 204) {
     return;
   }
@@ -112,27 +115,27 @@ export async function deleteExtPoint(id: number): Promise<void> {
 
 export async function postExtPointEnable(id: number, enable: boolean): Promise<void> {
   const path = enable ? 'enable' : 'disable';
-  const res = await client.post<StudioApiResponse<ExtPointRow>>(`/extension/points/${id}/${path}`);
+  const res = await client.post<StudioApiResponse<ExtPointRow>>(`${EXTENSION_BASE}/points/${id}/${path}`);
   assertSuccess(res);
 }
 
 export async function listPlugins(): Promise<ExtensionRow[]> {
-  const res = await client.get<StudioApiResponse<ExtensionRow[]>>('/extension/plugins');
+  const res = await client.get<StudioApiResponse<ExtensionRow[]>>(`${EXTENSION_BASE}/plugins`);
   return assertSuccess(res) ?? [];
 }
 
 export async function createPlugin(payload: ExtensionPayload): Promise<ExtensionRow> {
-  const res = await client.post<StudioApiResponse<ExtensionRow>>('/extension/plugins', payload);
+  const res = await client.post<StudioApiResponse<ExtensionRow>>(`${EXTENSION_BASE}/plugins`, payload);
   return assertSuccess(res);
 }
 
 export async function updatePlugin(id: number, payload: ExtensionPayload): Promise<ExtensionRow> {
-  const res = await client.put<StudioApiResponse<ExtensionRow>>(`/extension/plugins/${id}`, payload);
+  const res = await client.put<StudioApiResponse<ExtensionRow>>(`${EXTENSION_BASE}/plugins/${id}`, payload);
   return assertSuccess(res);
 }
 
 export async function deletePlugin(id: number): Promise<void> {
-  const res = await client.delete<StudioApiResponse<void>>(`/extension/plugins/${id}`);
+  const res = await client.delete<StudioApiResponse<void>>(`${EXTENSION_BASE}/plugins/${id}`);
   if (res.status === 204) {
     return;
   }
@@ -143,13 +146,138 @@ export async function deletePlugin(id: number): Promise<void> {
 
 export async function deployPlugin(id: number, deploy: boolean): Promise<void> {
   const path = deploy ? 'deploy' : 'undeploy';
-  const res = await client.post<StudioApiResponse<ExtensionRow>>(`/extension/plugins/${id}/${path}`);
+  const res = await client.post<StudioApiResponse<ExtensionRow>>(`${EXTENSION_BASE}/plugins/${id}/${path}`);
   assertSuccess(res);
 }
 
 export async function publishPluginRuntime(id: number): Promise<void> {
   const res = await client.post<StudioApiResponse<{ id: number; published: boolean }>>(
-    `/extension/plugins/${id}/publish-runtime`,
+    `${EXTENSION_BASE}/plugins/${id}/publish-runtime`,
   );
   assertSuccess(res);
+}
+
+export type PluginVersionRow = {
+  id: number;
+  pluginId: number;
+  version: string;
+  filePath: string;
+  fileSize: number;
+  checksum: string;
+  active: boolean;
+  changeLog?: string;
+  createdAt?: string;
+};
+
+export async function listPluginVersions(pluginId: number): Promise<PluginVersionRow[]> {
+  const res = await client.get<StudioApiResponse<PluginVersionRow[]>>(
+    `${EXTENSION_BASE}/plugins/${pluginId}/versions`,
+  );
+  return assertSuccess(res) ?? [];
+}
+
+export type UploadPluginParams = {
+  file: File;
+  name: string;
+  className: string;
+  extPointId?: number;
+  pluginId?: number;
+  version?: string;
+  description?: string;
+};
+
+export async function uploadPlugin(params: UploadPluginParams): Promise<ExtensionRow> {
+  const form = new FormData();
+  form.append('file', params.file);
+  form.append('name', params.name);
+  form.append('className', params.className);
+  if (params.extPointId != null) {
+    form.append('extPointId', String(params.extPointId));
+  }
+  if (params.pluginId != null) {
+    form.append('pluginId', String(params.pluginId));
+  }
+  if (params.version) {
+    form.append('version', params.version);
+  }
+  if (params.description) {
+    form.append('description', params.description);
+  }
+  const res = await client.post<StudioApiResponse<ExtensionRow>>(`${EXTENSION_BASE}/plugins/upload`, form, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return assertSuccess(res);
+}
+
+export async function rollbackPlugin(pluginId: number, version?: string): Promise<ExtensionRow> {
+  const res = await client.post<StudioApiResponse<ExtensionRow>>(
+    `${EXTENSION_BASE}/plugins/${pluginId}/rollback`,
+    version ? { version } : {},
+  );
+  return assertSuccess(res);
+}
+
+export type SandboxConfig = {
+  runtime: string;
+  maxMemoryMb: number;
+  maxCpuCores: number;
+  timeoutSeconds: number;
+  syncEnabled: boolean;
+  extPointCount?: number;
+  pluginCount?: number;
+  executionTotal?: number;
+  executionSuccess?: number;
+  executionFailed?: number;
+  executionRunning?: number;
+  successRate?: number;
+  runtimeSyncEnabled?: boolean;
+};
+
+export type ExecutionLogRow = {
+  id: number;
+  pluginId: number;
+  extensionPointId: number;
+  executionId: string;
+  status: string;
+  inputData?: string;
+  outputData?: string;
+  errorMessage?: string;
+  durationMs?: number;
+  createdAt?: string;
+};
+
+export type ExecutionLogPage = {
+  list: ExecutionLogRow[];
+  total: number;
+  page: number;
+  size: number;
+};
+
+export async function getSandboxConfig(): Promise<SandboxConfig> {
+  const res = await client.get<StudioApiResponse<SandboxConfig>>(`${EXTENSION_BASE}/sandbox/config`);
+  return assertSuccess(res);
+}
+
+export async function getExtensionOverview(): Promise<SandboxConfig> {
+  const res = await client.get<StudioApiResponse<SandboxConfig>>(`${EXTENSION_BASE}/overview`);
+  return assertSuccess(res);
+}
+
+export async function listExecutionLogs(params?: {
+  pluginId?: number;
+  status?: string;
+  page?: number;
+  size?: number;
+}): Promise<ExecutionLogPage> {
+  const res = await client.get<StudioApiResponse<ExecutionLogPage>>(`${EXTENSION_BASE}/execution-logs`, {
+    params,
+  });
+  return assertSuccess(res);
+}
+
+export async function simulatePlugin(pluginId: number): Promise<ExecutionLogRow> {
+  const res = await client.post<StudioApiResponse<ExecutionLogRow>>(
+    `${EXTENSION_BASE}/plugins/${pluginId}/simulate`,
+  );
+  return assertSuccess(res);
 }

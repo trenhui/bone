@@ -160,21 +160,36 @@ ExtPoint扩展引擎 → 注入个性化业务逻辑（解决“怎么做”）
 - `BONE_SERVER_PORT`：服务器端口
 
 ```bash
-# 1. 克隆项目（需提前安装Git）
+# 1. 克隆项目
 git clone https://gitee.com/meishan315/bone.git
+cd bone
 
-# 2. 一键编译启动（内置默认数据库无需额外配置）
-cd bone && mvn clean install
-java -jar bone-admin/target/bone-admin.jar
+# 2. 初始化数据库（MySQL 8+，需先创建可连库的账号）
+mysql -u root -p < bone-init.sql
+
+# 3. 编译（首次建议跳过测试以加快安装）
+mvn clean install -DskipTests
+
+# 4. 启动 IAM 服务（示例；端口见 doc/wiki/03-本地开发与构建.md）
+cd bone-platform/bone-iam && mvn spring-boot:run
+
+# 5. 启动前端 Shell（另开终端）
+cd bone-frontend && npm install && npm run dev
 ```
 
-**访问信息**：
-- 管理后台：[http://localhost:8080](http://localhost:8080)
-- 默认账号：`admin` / `123456`（首次登录建议修改密码）
-- API文档：[http://localhost:8080/doc.html](http://localhost:8080/doc.html)（基于Swagger生成，支持在线调试）
-- 在线演示：[http://dashboard.bone.com](http://dashboard.bone.com)（无需本地部署，直接体验核心功能）
+**访问信息**（本地开发默认值，以各模块 `application.yml` / `vite.config.ts` 为准）：
 
-> 💡 **提示**：首次登录后请及时修改默认密码，确保系统安全。
+| 入口 | 地址 |
+|------|------|
+| 管理后台（Shell） | [http://localhost:3000](http://localhost:3000) |
+| IAM API | [http://localhost:8081](http://localhost:8081)（`bone-iam`） |
+| 元数据服务 | [http://localhost:9001](http://localhost:9001)（`bone-metadata-server`） |
+
+- 默认账号：`admin` / `123456`（首次登录建议修改密码；须与 `bone-init.sql` 种子一致）
+- **端口与模块对照**：[doc/wiki/03-本地开发与构建.md](doc/wiki/03-本地开发与构建.md)
+- 在线演示：[http://dashboard.bone.com](http://dashboard.bone.com)（规划能力，以实际发布为准）
+
+> 💡 **说明**：仓库中**无** `bone-admin` 模块。DDL 见根目录 `bone-init.sql` 与 [数据库开发规范](doc/architecture/数据库开发规范.md)（改库即重建，无 Flyway 增量）。
 
 
 ## 📊 **效能对比**

@@ -32,8 +32,8 @@ public class MasterDataEntityDetailQueryHandler {
         dto.setDescription(entity.getDescription());
         dto.setCategory(entity.getCategory());
         dto.setStatus(entity.getStatus().getDescription());
-        dto.setCreateTime(entity.getCreateTime());
-        dto.setUpdateTime(entity.getUpdateTime());
+        dto.setCreatedAt(entity.getCreatedAt());
+        dto.setUpdatedAt(entity.getUpdatedAt());
 
         // 获取字段数量
         List<?> fields = fieldRepository.findByMasterDataEntityId(entity.getId());

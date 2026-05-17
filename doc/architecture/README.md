@@ -7,11 +7,17 @@
 | 文档 | 说明 |
 |------|------|
 | [BONE-总体架构设计方案.md](./BONE-总体架构设计方案.md) | **平台总体**架构、模块边界、NFR、安全、数据与 DevOps 基线 |
+| [Bone-API-规范.md](./Bone-API-规范.md) | **API + 错误码 + 日志** 统一契约（单文档） |
+| [数据库开发规范.md](./数据库开发规范.md) | **DDL** 唯一权威（与 API 文档分离） |
+| [openapi/](./openapi/) | 公共 OpenAPI 组件（`ApiResponse`、`ProblemDetail`、`PageResult`） |
 | [Bone-DDD-最终实践方案.md](./Bone-DDD-最终实践方案.md) | **DDD 唯一权威**：业界原则 + Bone 工程落地（铁律、包结构、Metadata SDK、读写路径） |
+| [元数据能力-实现映射与竞品对照](../design/modules/元数据能力-实现映射与竞品对照.md) | **sdk / server / engine** 定义、协作、API As-Is、竞品对标 |
 | [bone-前端架构.md](./bone-前端架构.md) | **前端唯一权威**：Qiankun 微前端、npm workspaces、`bone-frontend` 目录与工程约定 |
 | [frontend/frontend-ui-spec.md](./frontend/frontend-ui-spec.md) | 设计令牌、布局、组件与无障碍等 **UI 规范** |
-| [数据库开发规范.md](./数据库开发规范.md) | MySQL 命名、租户、审计、索引与分区约定 |
-| [初始脚本.sql](./初始脚本.sql) | 文档化全量 DDL；种子与线上一致以根 `bone-init.sql` 为准 |
+| [数据库开发规范.md](./数据库开发规范.md) | **DDL 唯一权威**：真源、`bone-init.sql` 表清单、命名、索引、分区、变更流程 |
+| [ADR-数据库迁移与DDL真源.md](./ADR-数据库迁移与DDL真源.md) | 已 supersede，指向《数据库开发规范》 |
+| ~~[初始脚本.sql](./初始脚本.sql)~~ | **已废止**（历史归档） |
+| ~~[DDL对齐说明.md](./DDL对齐说明.md)~~ | **已废止** |
 | [smartmeta/README.md](./smartmeta/README.md) | SmartMeta 补充说明；模块真源见 [design/modules/9](../design/modules/9.%20SmartMeta%20引擎模块技术说明.md) |
 
 ## 与 `doc/design`、`doc/prd` 的关系

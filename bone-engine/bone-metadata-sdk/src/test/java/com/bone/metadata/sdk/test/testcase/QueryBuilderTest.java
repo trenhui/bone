@@ -76,7 +76,7 @@ public class QueryBuilderTest {
                     createUserParams(4L, "赵六", 10000L, now)
             );
 
-            String insertUserSql = "INSERT INTO users(id, name, role_id, create_time, create_by, update_time, update_by, deleted) VALUES(:id, :name, :roleId, :createTime, :createBy, :updateTime, :updateBy, :deleted)";
+            String insertUserSql = "INSERT INTO users(id, name, role_id, created_at, created_by, updated_at, updated_by, deleted) VALUES(:id, :name, :roleId, :createdAt, :createdBy, :updatedAt, :updatedBy, :deleted)";
 
             for (Map<String, Object> user : users) {
                 sqlExecutor.execute(insertUserSql, user);
@@ -90,7 +90,7 @@ public class QueryBuilderTest {
                     createSalesParams(4L, "电子产品", "1999.99", "1999.99", "已完成", now, "华东", "平板电脑D", 1, 1)
             );
 
-            String insertSalesSql = "INSERT INTO sales_record(id, category, amount, price, status, create_time, region, product_name, quantity, is_deleted) VALUES (:id, :category, :amount, :price, :status, :createTime, :region, :productName, :quantity, :isDeleted)";
+            String insertSalesSql = "INSERT INTO sales_record(id, category, amount, price, status, created_at, region, product_name, quantity, is_deleted) VALUES (:id, :category, :amount, :price, :status, :createdAt, :region, :productName, :quantity, :isDeleted)";
 
             for (Map<String, Object> sale : sales) {
                 sqlExecutor.execute(insertSalesSql, sale);
@@ -109,16 +109,16 @@ public class QueryBuilderTest {
         params.put("id", id);
         params.put("name", name);
         params.put("roleId", roleId);
-        params.put("createTime", now);
-        params.put("createBy", 1L);
-        params.put("updateTime", now);
-        params.put("updateBy", 1L);
+        params.put("createdAt", now);
+        params.put("createdBy", 1L);
+        params.put("updatedAt", now);
+        params.put("updatedBy", 1L);
         params.put("deleted", 0);
         return params;
     }
 
     private Map<String, Object> createSalesParams(Long id, String category, String amount, String price,
-                                                  String status, LocalDateTime createTime, String region,
+                                                  String status, LocalDateTime createdAt, String region,
                                                   String productName, Integer quantity, Integer isDeleted) {
         Map<String, Object> params = new HashMap<>();
         params.put("id", id);
@@ -126,7 +126,7 @@ public class QueryBuilderTest {
         params.put("amount", new BigDecimal(amount));
         params.put("price", new BigDecimal(price));
         params.put("status", status);
-        params.put("createTime", createTime);
+        params.put("createdAt", createdAt);
         params.put("region", region);
         params.put("productName", productName);
         params.put("quantity", quantity);
@@ -570,14 +570,14 @@ public class QueryBuilderTest {
     @Test
     void testQueryPerformance() {
         // 简单的性能测试
-        long startTime = System.currentTimeMillis();
+        long startedAt = System.currentTimeMillis();
 
         List<User> users = QueryBuilder.from(User.class).list();
         List<Role> roles = QueryBuilder.from(Role.class).list();
         List<SalesRecord> sales = QueryBuilder.from(SalesRecord.class).list();
 
-        long endTime = System.currentTimeMillis();
-        long executionTime = endTime - startTime;
+        long endedAt = System.currentTimeMillis();
+        long executionTime = endedAt - startedAt;
 
         // 验证查询结果
         assertNotNull(users);

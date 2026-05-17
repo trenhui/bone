@@ -22,8 +22,8 @@ public class DataQualityRule extends AggregateRoot<Long> {
     private String expression;
     private RuleSeverity severity;
     private String description;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public static DataQualityRule create(
             Long id,
@@ -42,8 +42,8 @@ public class DataQualityRule extends AggregateRoot<Long> {
         rule.expression = expression;
         rule.severity = severity;
         rule.description = description;
-        rule.createTime = LocalDateTime.now();
-        rule.updateTime = LocalDateTime.now();
+        rule.createdAt = LocalDateTime.now();
+        rule.updatedAt = LocalDateTime.now();
         rule.addDomainEvent(new DataQualityRuleCreatedEvent(rule));
         return rule;
     }
@@ -60,6 +60,6 @@ public class DataQualityRule extends AggregateRoot<Long> {
         this.expression = expression;
         this.severity = severity;
         this.description = description;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 }

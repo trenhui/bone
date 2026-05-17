@@ -1,8 +1,9 @@
 package com.bone.integration.domain.service;
 
 import com.bone.integration.domain.execution.IntegrationLog;
-import com.bone.integration.domain.model.flow.vo.FlowId;
+import com.bone.integration.domain.model.execution.vo.ExecutionStatus;
 import com.bone.integration.domain.repository.IntegrationLogRepository;
+import com.bone.metadata.sdk.query.criteria.Criteria;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,29 +14,36 @@ import java.util.List;
 public class FlowMonitorService {
     private final IntegrationLogRepository logRepository;
 
-    public List<IntegrationLog> getExecutionLogs(FlowId flowId) {
-        return logRepository.findByFlowId(flowId);
+    public List<IntegrationLog> getExecutionLogs(Long flowId) {
+        return logRepository.findByCriteria(Criteria.<IntegrationLog>create().eq("flowId", flowId));
     }
 
-    public long getExecutionCount(FlowId flowId) {
-        return logRepository.countByFlowId(flowId);
+    public long getExecutionCount(Long flowId) {
+        Long count = logRepository.countByCriteria(Criteria.<IntegrationLog>create().eq("flowId", flowId));
+        return count != null ? count : 0L;
     }
 
-    public long getSuccessCount(FlowId flowId) {
-        return logRepository.countByFlowIdAndStatus(flowId, "SUCCESS");
+    public long getSuccessCount(Long flowId) {
+        return countByFlowAndStatus(flowId, ExecutionStatus.SUCCESS);
     }
 
-    public long getFailureCount(FlowId flowId) {
-        return logRepository.countByFlowIdAndStatus(flowId, "FAILED") +
-               logRepository.countByFlowIdAndStatus(flowId, "TIMEOUT");
+    public long getFailureCount(Long flowId) {
+        return countByFlowAndStatus(flowId, ExecutionStatus.FAILED)
+                + countByFlowAndStatus(flowId, ExecutionStatus.TIMEOUT);
     }
 
-    public double getSuccessRate(FlowId flowId) {
-        long total = logRepository.countByFlowId(flowId);
+    public double getSuccessRate(Long flowId) {
+        long total = getExecutionCount(flowId);
         if (total == 0) {
             return 0.0;
         }
-        long success = logRepository.countByFlowIdAndStatus(flowId, "SUCCESS");
-        return (double) success / total * 100;
+        return (double) getSuccessCount(flowId) / total * 100;
+    }
+
+    private long countByFlowAndStatus(Long flowId, ExecutionStatus status) {
+        Long count = logRepository.countByCriteria(Criteria.<IntegrationLog>create()
+                .eq("flowId", flowId)
+                .eq("status", status));
+        return count != null ? count : 0L;
     }
 }

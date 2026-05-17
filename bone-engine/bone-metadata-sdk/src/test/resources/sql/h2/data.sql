@@ -4,10 +4,10 @@ INSERT INTO users (
   id,
   name,
   role_id,
-  create_time,
-  create_by,
-  update_time,
-  update_by,
+  created_at,
+  created_by,
+  updated_at,
+  updated_by,
   deleted
 ) VALUES
 -- 系统管理员（未删除）

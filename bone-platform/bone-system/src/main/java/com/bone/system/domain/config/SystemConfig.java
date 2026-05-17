@@ -23,8 +23,8 @@ public class SystemConfig extends AggregateRoot<Long> {
     private String description;
     private ConfigType configType;
     private boolean encrypted;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public static SystemConfig create(Long id, ConfigKey configKey, ConfigValue configValue,
                                       String description, ConfigType configType, boolean encrypted) {
@@ -35,8 +35,8 @@ public class SystemConfig extends AggregateRoot<Long> {
         config.description = description;
         config.configType = configType;
         config.encrypted = encrypted;
-        config.createTime = LocalDateTime.now();
-        config.updateTime = LocalDateTime.now();
+        config.createdAt = LocalDateTime.now();
+        config.updatedAt = LocalDateTime.now();
         config.addDomainEvent(new ConfigCreatedEvent(config));
         return config;
     }
@@ -44,12 +44,12 @@ public class SystemConfig extends AggregateRoot<Long> {
     public void updateValue(ConfigValue newValue, String operator) {
         ConfigValue oldValue = this.configValue;
         this.configValue = newValue;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
         addDomainEvent(new ConfigChangedEvent(this.id, configKey.value(), oldValue.value(), newValue.value(), operator));
     }
 
     public void updateDescription(String description) {
         this.description = description;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 }

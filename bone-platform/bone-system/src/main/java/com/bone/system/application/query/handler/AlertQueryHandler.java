@@ -42,7 +42,7 @@ public class AlertQueryHandler {
             query.where(AlertRule::isEnabled).eq(qry.getEnabled());
         }
 
-        com.bone.core.model.PageResult<AlertRule> result = query.orderByDesc(AlertRule::getCreateTime)
+        com.bone.core.model.PageResult<AlertRule> result = query.orderByDesc(AlertRule::getCreatedAt)
                 .page(qry.getPageNum(), qry.getPageSize());
 
         List<AlertRuleDTO> dtoList = result.getRecords().stream()
@@ -61,7 +61,7 @@ public class AlertQueryHandler {
     @Transactional(readOnly = true)
     public PageResult<AlertEventDTO> pageEvents(int pageNum, int pageSize) {
         FluentQuery<AlertEvent> query = QueryBuilder.from(AlertEvent.class);
-        com.bone.core.model.PageResult<AlertEvent> result = query.orderByDesc(AlertEvent::getCreateTime)
+        com.bone.core.model.PageResult<AlertEvent> result = query.orderByDesc(AlertEvent::getCreatedAt)
                 .page(pageNum, pageSize);
 
         List<AlertEventDTO> dtoList = result.getRecords().stream()
@@ -81,8 +81,8 @@ public class AlertQueryHandler {
                 .alertLevel(rule.getAlertLevel().name())
                 .notificationChannels(rule.getNotificationChannels())
                 .enabled(rule.isEnabled())
-                .createTime(rule.getCreateTime())
-                .updateTime(rule.getUpdateTime())
+                .createdAt(rule.getCreatedAt())
+                .updatedAt(rule.getUpdatedAt())
                 .build();
     }
 
@@ -97,7 +97,7 @@ public class AlertQueryHandler {
                 .alertLevel(event.getAlertLevel().name())
                 .message(event.getMessage())
                 .status(event.getStatus().name())
-                .createTime(event.getCreateTime())
+                .createdAt(event.getCreatedAt())
                 .resolveTime(event.getResolveTime())
                 .build();
     }

@@ -10,10 +10,10 @@ sql: |
     p.biz_identity_code  AS bizCode,
     p.perm_type          AS permType,
     p.sort_order         AS sortOrder,
-    u.create_time        AS createTime,
-    u.create_by          AS createBy,
-    u.update_time        AS updateTime,
-    u.update_by          AS updateBy,
+    u.created_at         AS createdAt,
+    u.created_by         AS createdBy,
+    u.updated_at         AS updatedAt,
+    u.updated_by         AS updatedBy,
     u.deleted            AS deleted
   FROM users u
   LEFT JOIN sys_user_role ur   ON u.id = ur.user_id
@@ -45,11 +45,11 @@ sql: |
       <if test="deleted != null">
         AND u.deleted = :deleted
       </if>
-      <if test="createTimeBegin != null">
-        AND u.create_time >= :createTimeBegin
+      <if test="createdAtBegin != null">
+        AND u.created_at >= :createdAtBegin
       </if>
-      <if test="createTimeEnd != null">
-        AND u.create_time <= :createTimeEnd
+      <if test="createdAtEnd != null">
+        AND u.created_at <= :createdAtEnd
       </if>
   </where>
 mappedClassName: com.bone.metadata.sdk.test.domain.dto.UserPermPageDTO

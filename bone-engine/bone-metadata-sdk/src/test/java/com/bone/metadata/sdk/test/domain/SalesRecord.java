@@ -23,7 +23,7 @@ public class SalesRecord extends Entity<Long> {
 
     private String status;
 
-    private LocalDateTime createTime;
+    private LocalDateTime createdAt;
 
     private String region;
 

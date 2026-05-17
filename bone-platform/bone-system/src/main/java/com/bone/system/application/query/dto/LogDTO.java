@@ -17,5 +17,5 @@ public class LogDTO {
     private String serviceName;
     private String content;
     private String traceId;
-    private LocalDateTime createTime;
+    private LocalDateTime createdAt;
 }

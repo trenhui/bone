@@ -13,7 +13,7 @@ public class MasterDataEntityDTO {
     private String description;
     private String category;
     private String status;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     private int fieldCount;
 }

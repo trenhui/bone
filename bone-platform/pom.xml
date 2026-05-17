@@ -15,6 +15,7 @@
         <module>bone-notification</module>
         <module>bone-file</module>
         <module>bone-system</module>
+        <module>bone-integration</module>
     </modules>
     <artifactId>bone-platform</artifactId>
     <packaging>pom</packaging>

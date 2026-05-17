@@ -97,9 +97,9 @@ bone/                          # 根聚合模块
 │   ├── bone-security/         # 安全组件
 │   └── bone-web/              # Web 层封装（Spring Web、校验、AOP、全局异常）
 ├── bone-engine/               # 四大引擎与核心中间件
-│   ├── bone-metadata/         # 元数据引擎
-│   ├── bone-metadata-sdk/     # 元数据 SDK（含 @EnableSqlRepositories 自定义仓储机制）
-│   ├── bone-smartmeta/        # 智能元数据引擎（engine + starter）
+│   ├── bone-metadata-sdk/     # 平台数据面（P0 持久化 + EAV）
+│   ├── bone-metadata-server/  # 扩展字段 REST（:9001，选配）
+│   ├── bone-metadata-engine/  # 智能元数据引擎（core + starter，选配）
 │   ├── bone-extension-engine/ # 扩展引擎
 │   │   ├── bone-extension-sdk/
 │   │   └── bone-extension-studio/
@@ -107,16 +107,15 @@ bone/                          # 根聚合模块
 │   ├── bone-workflow/         # 工作流引擎
 │   └── bone-procurement/      # 采购/供应链相关引擎
 ├── bone-platform/             # 企业共享平台服务
-│   ├── bone-iam/              # 身份与访问管理（端口 8080）
+│   ├── bone-iam/              # 身份与访问管理（默认端口 8081，见 doc/wiki/03）
 │   ├── bone-gateway/          # API 网关
 │   ├── bone-masterdata/       # 主数据服务
 │   ├── bone-system/           # 系统管理（端口 8083）
 │   ├── bone-file/             # 文件服务
 │   ├── bone-notification/     # 通知服务
 │   └── bone-integration/      # 平台级集成服务
-├── bone-business/             # 业务域模块
-│   ├── bone-admin/
-│   ├── bone-trade/
+├── bone-business/             # 业务域模块（行业包等；无根级 bone-admin）
+│   ├── bone-trade/            # 骨架
 │   └── tpa-saas/              # TPA SaaS 业务
 │       ├── bone-auth/
 │       ├── bone-auth-sdk/
@@ -383,7 +382,7 @@ npm run preview               # Vite preview
 
 所有业务表均包含：
 - `tenant_id` + `biz_identity_code`（租户隔离）
-- `create_time`、`create_by`、`update_time`、`update_by`（审计）
+- `created_at`、`created_by`、`updated_at`、`updated_by`（审计）
 - `deleted` TINYINT（软删除）
 - JSON 类型字段（灵活 Schema）
 
@@ -394,7 +393,7 @@ npm run preview               # Vite preview
 | 保险业务 | `ic_insurer`、`ic_policyholder`、`ic_proposal`、`ic_policy`、`ic_product_config` |
 | IAM | `iam_user`、`iam_role`、`iam_permission`、`iam_user_role`、`iam_audit_log` |
 | 系统 | `sys_config`、`sys_log`、`sys_monitor` |
-| 集成 | `int_connector`、`int_flow`、`int_flow_execution` |
+| 集成 | `int_connector`、`int_flow`、`int_flow_node`、`int_flow_connection`、`int_execution_log` 等（见 `bone-init.sql`） |
 
 ### 7.4 初始数据
 

@@ -2,9 +2,13 @@ package com.bone.engine.extension.studio.infrastructure.persistence.converter;
 
 import com.bone.engine.extension.studio.domain.model.ExtPoint;
 import com.bone.engine.extension.studio.domain.model.Extension;
+import com.bone.engine.extension.studio.domain.model.PluginExecutionLog;
+import com.bone.engine.extension.studio.domain.model.PluginVersion;
 import com.bone.core.domain.entity.AbstractEntity;
 import com.bone.engine.extension.studio.infrastructure.persistence.entity.ExtStudioExtensionImpl;
 import com.bone.engine.extension.studio.infrastructure.persistence.entity.ExtStudioExtensionPoint;
+import com.bone.engine.extension.studio.infrastructure.persistence.entity.ExtStudioPluginExecutionLog;
+import com.bone.engine.extension.studio.infrastructure.persistence.entity.ExtStudioPluginVersion;
 import com.bone.engine.extension.studio.sync.RuntimeExtensionSyncService;
 import com.bone.engine.extension.support.sync.ExtensionRuntimeConfig;
 import com.bone.engine.extension.support.sync.ExtensionRuntimeConfigParser;
@@ -90,8 +94,8 @@ public final class StudioPersistenceConverter {
         domain.setPriority(row.getPriority());
         domain.setConfig(row.getConfigJson());
         domain.setEnabled(row.getStatus() != null && row.getStatus() == 1);
-        domain.setCreateTime(toLocalDateTime(row.getCreateTime()));
-        domain.setUpdateTime(toLocalDateTime(row.getUpdateTime()));
+        domain.setCreateTime(toLocalDateTime(row.getCreatedAt()));
+        domain.setUpdateTime(toLocalDateTime(row.getUpdatedAt()));
         return domain;
     }
 
@@ -122,13 +126,83 @@ public final class StudioPersistenceConverter {
         return Date.from(time.atZone(ZoneId.systemDefault()).toInstant());
     }
 
+    @NonNull
+    public static ExtStudioPluginVersion toPluginVersionEntity(@NonNull PluginVersion domain) {
+        ExtStudioPluginVersion row = new ExtStudioPluginVersion();
+        row.setId(domain.getId());
+        row.setPluginId(domain.getPluginId());
+        row.setReleaseVersion(domain.getVersion());
+        row.setFilePath(domain.getFilePath());
+        row.setFileSize(domain.getFileSize());
+        row.setChecksum(domain.getChecksum());
+        row.setIsActive(domain.isActive());
+        row.setChangeLog(domain.getChangeLog());
+        applyAuditDefaults(row);
+        if (domain.getCreatedAt() != null) {
+            row.setCreatedAt(toDate(domain.getCreatedAt()));
+        }
+        return row;
+    }
+
+    @NonNull
+    public static PluginVersion toPluginVersionDomain(@NonNull ExtStudioPluginVersion row) {
+        PluginVersion domain = new PluginVersion();
+        domain.setId(row.getId());
+        domain.setPluginId(row.getPluginId());
+        domain.setVersion(row.getReleaseVersion());
+        domain.setFilePath(row.getFilePath());
+        domain.setFileSize(row.getFileSize() != null ? row.getFileSize() : 0L);
+        domain.setChecksum(row.getChecksum());
+        domain.setActive(Boolean.TRUE.equals(row.getIsActive()));
+        domain.setChangeLog(row.getChangeLog());
+        domain.setCreatedAt(toLocalDateTime(row.getCreatedAt()));
+        return domain;
+    }
+
+    @NonNull
+    public static ExtStudioPluginExecutionLog toExecutionLogEntity(@NonNull PluginExecutionLog domain) {
+        ExtStudioPluginExecutionLog row = new ExtStudioPluginExecutionLog();
+        row.setId(domain.getId());
+        row.setTenantId(domain.getTenantId());
+        row.setPluginId(domain.getPluginId());
+        row.setExtensionPointId(domain.getExtensionPointId());
+        row.setExecutionId(domain.getExecutionId());
+        row.setStatus(domain.getStatus());
+        row.setInputData(domain.getInputData());
+        row.setOutputData(domain.getOutputData());
+        row.setErrorMessage(domain.getErrorMessage());
+        row.setDurationMs(domain.getDurationMs());
+        applyAuditDefaults(row);
+        if (domain.getCreatedAt() != null) {
+            row.setCreatedAt(toDate(domain.getCreatedAt()));
+        }
+        return row;
+    }
+
+    @NonNull
+    public static PluginExecutionLog toExecutionLogDomain(@NonNull ExtStudioPluginExecutionLog row) {
+        PluginExecutionLog domain = new PluginExecutionLog();
+        domain.setId(row.getId());
+        domain.setTenantId(row.getTenantId());
+        domain.setPluginId(row.getPluginId());
+        domain.setExtensionPointId(row.getExtensionPointId());
+        domain.setExecutionId(row.getExecutionId());
+        domain.setStatus(row.getStatus());
+        domain.setInputData(row.getInputData());
+        domain.setOutputData(row.getOutputData());
+        domain.setErrorMessage(row.getErrorMessage());
+        domain.setDurationMs(row.getDurationMs());
+        domain.setCreatedAt(toLocalDateTime(row.getCreatedAt()));
+        return domain;
+    }
+
     private static void applyAuditDefaults(AbstractEntity<?> row) {
         Date now = new Date();
-        if (row.getCreateTime() == null) {
-            row.setCreateTime(now);
+        if (row.getCreatedAt() == null) {
+            row.setCreatedAt(now);
         }
-        if (row.getUpdateTime() == null) {
-            row.setUpdateTime(now);
+        if (row.getUpdatedAt() == null) {
+            row.setUpdatedAt(now);
         }
         if (row.getDeleted() == null) {
             row.setDeleted(false);

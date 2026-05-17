@@ -17,6 +17,6 @@ public class DataQualityRuleDetailResp {
     private String severity;
     private String status;
     private String description;
-    private Date createTime;
-    private Date updateTime;
+    private Date createdAt;
+    private Date updatedAt;
 }

@@ -31,7 +31,7 @@ public class MasterDataRecordListQueryHandler {
         }
         
         return query
-                .orderBy(MasterDataRecord::getCreateTime, "desc")
+                .orderBy(MasterDataRecord::getCreatedAt, "desc")
                 .page(qry.getPageNum(), qry.getPageSize())
                 .mapTo(MasterDataRecordDTO.class);
     }

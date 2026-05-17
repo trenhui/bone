@@ -104,10 +104,10 @@ public class ExtensionPermissionRepositoryTest {
         metadata.setName(fieldName);
         metadata.setDataType(dataType.name());
         metadata.setExtension(true);
-        metadata.setCreateBy(10L);
-        metadata.setUpdateBy(10L);
-        metadata.setCreateTime(LocalDateTime.now());
-        metadata.setUpdateTime(LocalDateTime.now());
+        metadata.setCreatedBy(10L);
+        metadata.setUpdatedBy(10L);
+        metadata.setCreatedAt(LocalDateTime.now());
+        metadata.setUpdatedAt(LocalDateTime.now());
         return metadata;
     }
 

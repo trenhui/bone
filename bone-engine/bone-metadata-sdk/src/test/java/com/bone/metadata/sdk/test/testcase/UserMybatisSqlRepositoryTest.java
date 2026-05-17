@@ -67,16 +67,16 @@ public class UserMybatisSqlRepositoryTest {
 
         // Insert test users - 确保所有用户都有有效的 role_id
         jdbcTemplate.update(
-                "INSERT INTO users (id, name, role_id, create_time, create_by, update_time, update_by, deleted) VALUES (?, ?, ?, NOW(), ?, NULL, NULL, 0)",
+                "INSERT INTO users (id, name, role_id, created_at, created_by, updated_at, updated_by, deleted) VALUES (?, ?, ?, NOW(), ?, NULL, NULL, 0)",
                 1L, "Alice", 1L, 1001L);
         jdbcTemplate.update(
-                "INSERT INTO users (id, name, role_id, create_time, create_by, update_time, update_by, deleted) VALUES (?, ?, ?, NOW(), ?, NULL, NULL, 0)",
+                "INSERT INTO users (id, name, role_id, created_at, created_by, updated_at, updated_by, deleted) VALUES (?, ?, ?, NOW(), ?, NULL, NULL, 0)",
                 2L, "Bob", 2L, 1002L);
         jdbcTemplate.update(
-                "INSERT INTO users (id, name, role_id, create_time, create_by, update_time, update_by, deleted) VALUES (?, ?, ?, NOW(), ?, NULL, NULL, 0)",
+                "INSERT INTO users (id, name, role_id, created_at, created_by, updated_at, updated_by, deleted) VALUES (?, ?, ?, NOW(), ?, NULL, NULL, 0)",
                 3L, "Charlie", 2L, 1003L);
         jdbcTemplate.update(
-                "INSERT INTO users (id, name, role_id, create_time, create_by, update_time, update_by, deleted) VALUES (?, ?, ?, NOW(), ?, NULL, NULL, 1)",
+                "INSERT INTO users (id, name, role_id, created_at, created_by, updated_at, updated_by, deleted) VALUES (?, ?, ?, NOW(), ?, NULL, NULL, 1)",
                 4L, "DeletedUser", 1L, 1004L); // Soft-deleted user
 
         // 验证数据完整性
@@ -253,11 +253,11 @@ public class UserMybatisSqlRepositoryTest {
             assertFalse(newUsers.isEmpty(), "New user should be inserted");
         }
 
-        private User createUser(String name, Long roleId, Long createBy) {
+        private User createUser(String name, Long roleId, Long createdBy) {
             User user = new User();
             user.setName(name);
             user.setRoleId(roleId);
-            user.setCreateBy(createBy);
+            user.setCreatedBy(createdBy);
             user.setDeleted(false);
             return user;
         }
@@ -342,7 +342,7 @@ public class UserMybatisSqlRepositoryTest {
             );
 
             List<SortingField> sortingFields = Arrays.asList(
-                    new SortingField("create_time", SortingField.ORDER_DESC)
+                    new SortingField("created_at", SortingField.ORDER_DESC)
             );
 
             PageResult<User> page = userMybatisSqlRepository.queryByCondition(

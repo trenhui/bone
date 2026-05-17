@@ -1,22 +1,47 @@
 package com.bone.integration.application.query.handler;
 
+import com.bone.core.model.PageResult;
 import com.bone.integration.application.query.dto.ExecutionLogDTO;
 import com.bone.integration.application.query.qry.ExecutionLogListQry;
-import com.bone.metadata.sdk.query.QueryBuilder;
-import com.bone.core.model.PageResult;
+import com.bone.integration.domain.execution.IntegrationLog;
+import com.bone.integration.domain.model.execution.vo.ExecutionStatus;
+import com.bone.metadata.sdk.query.dsl.FluentQuery;
+import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class ExecutionLogListQueryHandler {
 
     @Transactional(readOnly = true)
     public PageResult<ExecutionLogDTO> handle(ExecutionLogListQry qry) {
-        return QueryBuilder.from(com.bone.integration.domain.execution.IntegrationLog.class)
-                .where(qry.flowId() != null, "flowId").eq(qry.flowId())
-                .where(qry.status() != null, "status").eq(qry.status())
-                .orderBy("id", "desc")
-                .page(qry.pageNum(), qry.pageSize())
-                .mapTo(ExecutionLogDTO.class);
+        FluentQuery<IntegrationLog> query = QueryBuilder.from(IntegrationLog.class);
+
+        if (qry.flowId() != null) {
+            query.where(IntegrationLog::getFlowId).eq(qry.flowId());
+        }
+        if (qry.status() != null && !qry.status().isBlank()) {
+            query.where(IntegrationLog::getStatus).eq(ExecutionStatus.valueOf(qry.status()));
+        }
+
+        PageResult<IntegrationLog> result =
+                query.orderByDesc(IntegrationLog::getId).page(qry.pageNum(), qry.pageSize());
+
+        List<ExecutionLogDTO> records = result.getRecords().stream()
+                .map(log -> new ExecutionLogDTO(
+                        log.getId(),
+                        log.getFlowId(),
+                        log.getStatus().name(),
+                        log.getStartedAt(),
+                        log.getEndedAt(),
+                        log.getInputData(),
+                        log.getOutputData(),
+                        log.getErrorMessage()))
+                .collect(Collectors.toList());
+
+        return PageResult.of(records, result.getTotal(), result.getPage(), result.getSize());
     }
 }

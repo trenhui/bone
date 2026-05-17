@@ -11,9 +11,9 @@ public class UserWithRoleDTO {
     private Long roleId;
     private String roleName;
     private String roleDescription;
-    private Date createTime;
-    private Long createBy;
-    private Date updateTime;
-    private Long updateBy;
+    private Date createdAt;
+    private Long createdBy;
+    private Date updatedAt;
+    private Long updatedBy;
     private Boolean deleted;
 }

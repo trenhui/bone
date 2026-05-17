@@ -21,8 +21,8 @@ public class MasterDataEntity extends AggregateRoot<Long> {
     private String description;
     private String category;
     private MasterDataEntityStatus status;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public static MasterDataEntity create(Long id, MasterDataEntityName name, String description, String category) {
         MasterDataEntity entity = new MasterDataEntity();
@@ -31,8 +31,8 @@ public class MasterDataEntity extends AggregateRoot<Long> {
         entity.description = description;
         entity.category = category;
         entity.status = MasterDataEntityStatus.DRAFT;
-        entity.createTime = LocalDateTime.now();
-        entity.updateTime = LocalDateTime.now();
+        entity.createdAt = LocalDateTime.now();
+        entity.updatedAt = LocalDateTime.now();
         entity.addDomainEvent(new MasterDataEntityCreatedEvent(entity));
         return entity;
     }
@@ -42,7 +42,7 @@ public class MasterDataEntity extends AggregateRoot<Long> {
             throw new DomainException("主数据实体已发布");
         }
         this.status = MasterDataEntityStatus.PUBLISHED;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 
     public void update(MasterDataEntityName name, String description, String category) {
@@ -52,6 +52,6 @@ public class MasterDataEntity extends AggregateRoot<Long> {
         this.name = name;
         this.description = description;
         this.category = category;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 }

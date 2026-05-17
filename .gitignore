@@ -8,6 +8,9 @@
 !**/src/it/**
 !**/src/assembly/**
 
+# Extension Studio 本地运行时产物（H2 / 插件目录）
+bone-engine/bone-extension-engine/bone-extension-studio/data/
+
 # =========================
 # 构建输出目录
 # =========================

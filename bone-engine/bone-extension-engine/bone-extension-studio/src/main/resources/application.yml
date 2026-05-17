@@ -33,8 +33,13 @@ spring:
       settings:
         web-allow-others: true
 
-# 扩展引擎配置
+# 与 bone-iam 对齐的 JWT（生产环境请外部化 secretKey）
 bone:
+  iam:
+    jwt:
+      secret-key: ${BONE_IAM_JWT_SECRET:change-me-change-me-change-me-change-me-32bytes}
+      header-name: Authorization
+      token-prefix: "Bearer "
   extension:
     enabled: false
     studio:

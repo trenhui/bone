@@ -175,8 +175,8 @@ public class UserRepositoryCriteriaTest  {
         Long adminId=20001L;
 
         Criteria<User> criteria = Criteria.<User>create()
-                .eq(true,User::getCreateBy,userId)
-                .eq(true,User::getCreateBy,adminId)
+                .eq(true,User::getCreatedBy,userId)
+                .eq(true,User::getCreatedBy,adminId)
                 .eq("role_id", 20000L);  // 查询 role_id 为 2 的用户
 
         // Act
@@ -209,8 +209,8 @@ public class UserRepositoryCriteriaTest  {
 
 
         Criteria<User> criteria = Criteria.<User>create()
-                .gt(User::getCreateTime,parseDateTime("2024-04-10 14:30:00"))
-                .lt(User::getCreateTime,parseDateTime("2025-08-22 17:13:30"));
+                .gt(User::getCreatedAt,parseDateTime("2024-04-10 14:30:00"))
+                .lt(User::getCreatedAt,parseDateTime("2025-08-22 17:13:30"));
 
         // Act
         List<User> users = userRepository.findByCriteria(criteria);

@@ -2,7 +2,7 @@ package com.bone.integration.domain.flow;
 
 import com.bone.core.domain.AggregateRoot;
 import com.bone.core.exception.DomainException;
-import com.bone.integration.domain.flow.vo.NodeType;
+import com.bone.integration.domain.model.flow.vo.NodeType;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import lombok.AccessLevel;
 import lombok.Getter;

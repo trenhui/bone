@@ -62,8 +62,8 @@ public class ConfigQueryHandler {
                 .description(config.getDescription())
                 .configType(config.getConfigType().name())
                 .encrypted(config.isEncrypted())
-                .createTime(config.getCreateTime())
-                .updateTime(config.getUpdateTime())
+                .createdAt(config.getCreatedAt())
+                .updatedAt(config.getUpdatedAt())
                 .build();
     }
 }

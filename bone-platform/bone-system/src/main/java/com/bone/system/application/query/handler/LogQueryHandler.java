@@ -42,7 +42,7 @@ public class LogQueryHandler {
             query.where(SystemLog::getService).eq(qry.getServiceName());
         }
 
-        com.bone.core.model.PageResult<SystemLog> result = query.orderByDesc(SystemLog::getCreateTime)
+        com.bone.core.model.PageResult<SystemLog> result = query.orderByDesc(SystemLog::getCreatedAt)
                 .page(qry.getPageNum(), qry.getPageSize());
 
         List<LogDTO> dtoList = result.getRecords().stream()
@@ -59,7 +59,7 @@ public class LogQueryHandler {
                 .serviceName(log.getService())
                 .content(log.getContent())
                 .traceId(log.getTraceId())
-                .createTime(log.getCreateTime())
+                .createdAt(log.getCreatedAt())
                 .build();
     }
 }

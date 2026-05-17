@@ -10,10 +10,10 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>bone-integration</artifactId>
+    <artifactId>bone-platform-integration</artifactId>
     <version>1.0.0</version>
-    <name>bone-integration</name>
-    <description>Integration Management Module</description>
+    <name>bone-platform-integration</name>
+    <description>Platform integration management (Camel orchestration, distinct from bone-engine/bone-integration)</description>
 
     <dependencies>
         <!-- bone-core -->
@@ -44,31 +44,26 @@
             <artifactId>spring-boot-starter-actuator</artifactId>
         </dependency>
 
-        <!-- Apache Camel -->
+        <!-- Apache Camel（与 bone-engine/bone-integration 对齐 4.8.0） -->
         <dependency>
-            <groupId>org.apache.camel</groupId>
+            <groupId>org.apache.camel.springboot</groupId>
             <artifactId>camel-spring-boot-starter</artifactId>
-            <version>4.0.0</version>
+            <version>4.8.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-http</artifactId>
-            <version>4.0.0</version>
+            <version>4.8.0</version>
         </dependency>
         <dependency>
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-jdbc</artifactId>
-            <version>4.0.0</version>
+            <version>4.8.0</version>
         </dependency>
         <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-ftp</artifactId>
-            <version>4.0.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.camel</groupId>
-            <artifactId>camel-rabbitmq</artifactId>
-            <version>4.0.0</version>
+            <groupId>org.apache.camel.springboot</groupId>
+            <artifactId>camel-ftp-starter</artifactId>
+            <version>4.8.0</version>
         </dependency>
 
         <!-- RocketMQ -->

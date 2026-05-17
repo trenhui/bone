@@ -27,8 +27,8 @@ public class MasterDataRecordDetailQueryHandler {
             .masterDataEntityId(record.getMasterDataEntityId().getValue())
             .data(record.getData())
             .status(record.getStatus().name())
-            .createTime(record.getCreateTime())
-            .updateTime(record.getUpdateTime())
+            .createdAt(record.getCreatedAt())
+            .updatedAt(record.getUpdatedAt())
             .publishTime(record.getPublishTime())
             .build();
     }

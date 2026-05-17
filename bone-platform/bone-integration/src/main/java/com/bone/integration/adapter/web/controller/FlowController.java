@@ -1,20 +1,20 @@
 package com.bone.integration.adapter.web.controller;
 
+import com.bone.core.exception.DomainException;
+import com.bone.core.model.ApiResponse;
+import com.bone.core.model.PageResult;
 import com.bone.integration.application.command.cmd.CreateFlowCmd;
 import com.bone.integration.application.command.cmd.UpdateFlowCmd;
-import com.bone.integration.application.usecase.standard.CreateFlowUseCase;
-import com.bone.integration.application.usecase.standard.UpdateFlowUseCase;
-import com.bone.integration.application.usecase.standard.FlowPageQueryUseCase;
 import com.bone.integration.application.query.dto.FlowDTO;
 import com.bone.integration.application.query.qry.FlowPageQry;
-import com.bone.integration.domain.model.flow.FlowConnection;
-import com.bone.integration.domain.model.flow.FlowNode;
-import com.bone.integration.domain.model.flow.IntegrationFlow;
-import com.bone.integration.domain.repository.FlowConnectionRepository;
-import com.bone.integration.domain.repository.FlowNodeRepository;
+import com.bone.integration.application.usecase.standard.CreateFlowUseCase;
+import com.bone.integration.application.usecase.standard.FlowPageQueryUseCase;
+import com.bone.integration.application.usecase.standard.UpdateFlowUseCase;
+import com.bone.integration.domain.flow.FlowConnection;
+import com.bone.integration.domain.flow.FlowNode;
+import com.bone.integration.domain.flow.IntegrationFlow;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
-import com.bone.core.model.PageResult;
-import com.bone.core.model.ApiResponse;
+import com.bone.integration.domain.service.FlowService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,8 +29,7 @@ public class FlowController {
     private final UpdateFlowUseCase updateFlowUseCase;
     private final FlowPageQueryUseCase flowPageQueryUseCase;
     private final IntegrationFlowRepository flowRepository;
-    private final FlowNodeRepository nodeRepository;
-    private final FlowConnectionRepository connectionRepository;
+    private final FlowService flowService;
 
     @PostMapping
     public ApiResponse<Long> create(@RequestBody CreateFlowCmd cmd) {
@@ -52,39 +51,35 @@ public class FlowController {
 
     @GetMapping("/{id}")
     public ApiResponse<FlowDTO> detail(@PathVariable Long id) {
-        IntegrationFlow flow = flowRepository.findById(id)
-                .orElseThrow(() -> new com.bone.core.exception.DomainException("流程不存在"));
-        List<FlowNode> nodes = nodeRepository.findByFlowId(flow.getId());
-        List<FlowConnection> connections = connectionRepository.findByFlowId(flow.getId());
+        IntegrationFlow flow = flowRepository.findById(id);
+        if (flow == null) {
+            throw new DomainException("流程不存在");
+        }
+        List<FlowNode> nodes = flowService.getFlowNodes(flow.getId());
+        List<FlowConnection> connections = flowService.getFlowConnections(flow.getId());
 
         List<FlowDTO.FlowNodeDTO> nodeDTOs = nodes.stream()
                 .map(node -> new FlowDTO.FlowNodeDTO(
-                        node.getId().value(),
+                        node.getId(),
                         node.getName(),
                         node.getType().name(),
                         node.getConfig(),
                         node.getPositionX(),
-                        node.getPositionY()
-                ))
+                        node.getPositionY()))
                 .collect(Collectors.toList());
 
         List<FlowDTO.FlowConnectionDTO> connectionDTOs = connections.stream()
                 .map(conn -> new FlowDTO.FlowConnectionDTO(
-                        conn.getId(),
-                        conn.getSourceNodeId().value(),
-                        conn.getTargetNodeId().value(),
-                        conn.getCondition()
-                ))
+                        conn.getId(), conn.getSourceNodeId(), conn.getTargetNodeId(), conn.getCondition()))
                 .collect(Collectors.toList());
 
         FlowDTO dto = new FlowDTO(
-                flow.getId().value(),
+                flow.getId(),
                 flow.getName(),
                 flow.getDescription(),
                 flow.getStatus().name(),
                 nodeDTOs,
-                connectionDTOs
-        );
+                connectionDTOs);
         return ApiResponse.success(dto);
     }
 
@@ -96,8 +91,10 @@ public class FlowController {
 
     @PostMapping("/{id}/activate")
     public ApiResponse<Void> activate(@PathVariable Long id) {
-        IntegrationFlow flow = flowRepository.findById(id)
-                .orElseThrow(() -> new com.bone.core.exception.DomainException("流程不存在"));
+        IntegrationFlow flow = flowRepository.findById(id);
+        if (flow == null) {
+            throw new DomainException("流程不存在");
+        }
         flow.activate();
         flowRepository.save(flow);
         return ApiResponse.success();
@@ -105,8 +102,10 @@ public class FlowController {
 
     @PostMapping("/{id}/deactivate")
     public ApiResponse<Void> deactivate(@PathVariable Long id) {
-        IntegrationFlow flow = flowRepository.findById(id)
-                .orElseThrow(() -> new com.bone.core.exception.DomainException("流程不存在"));
+        IntegrationFlow flow = flowRepository.findById(id);
+        if (flow == null) {
+            throw new DomainException("流程不存在");
+        }
         flow.deactivate();
         flowRepository.save(flow);
         return ApiResponse.success();

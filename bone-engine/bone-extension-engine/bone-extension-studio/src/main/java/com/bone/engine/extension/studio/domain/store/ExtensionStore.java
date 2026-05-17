@@ -13,6 +13,9 @@ public interface ExtensionStore {
     @Nullable
     Extension findById(Long id);
 
+    @Nullable
+    Extension findByClassName(String className);
+
     List<Extension> findByExtPointId(Long extPointId);
 
     List<Extension> findByTenantCode(String tenantCode);

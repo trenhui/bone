@@ -1,21 +1,20 @@
 package com.bone.integration.adapter.web.controller;
 
+import com.bone.core.exception.DomainException;
+import com.bone.core.model.ApiResponse;
+import com.bone.core.model.PageResult;
 import com.bone.integration.application.command.cmd.CreateConnectorCmd;
 import com.bone.integration.application.command.cmd.UpdateConnectorCmd;
-import com.bone.integration.application.usecase.standard.CreateConnectorUseCase;
-import com.bone.integration.application.usecase.standard.UpdateConnectorUseCase;
-import com.bone.integration.application.usecase.standard.ConnectorPageQueryUseCase;
 import com.bone.integration.application.query.dto.ConnectorDTO;
 import com.bone.integration.application.query.qry.ConnectorPageQry;
-import com.bone.integration.domain.model.connector.Connector;
+import com.bone.integration.application.usecase.standard.ConnectorPageQueryUseCase;
+import com.bone.integration.application.usecase.standard.CreateConnectorUseCase;
+import com.bone.integration.application.usecase.standard.UpdateConnectorUseCase;
+import com.bone.integration.domain.connector.Connector;
 import com.bone.integration.domain.repository.ConnectorRepository;
 import com.bone.integration.domain.service.ConnectorService;
-import com.bone.core.model.PageResult;
-import com.bone.core.model.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 @RestController
 @RequestMapping("/integration/connectors")
@@ -47,15 +46,16 @@ public class ConnectorController {
 
     @GetMapping("/{id}")
     public ApiResponse<ConnectorDTO> detail(@PathVariable Long id) {
-        Connector connector = connectorRepository.findById(id)
-                .orElseThrow(() -> new com.bone.core.exception.DomainException("连接器不存在"));
+        Connector connector = connectorRepository.findById(id);
+        if (connector == null) {
+            throw new DomainException("连接器不存在");
+        }
         ConnectorDTO dto = new ConnectorDTO(
-                connector.getId().value(),
+                connector.getId(),
                 connector.getName(),
                 connector.getType().name(),
                 connector.getConfig(),
-                connector.getStatus().name()
-        );
+                connector.getStatus().name());
         return ApiResponse.success(dto);
     }
 
@@ -67,16 +67,20 @@ public class ConnectorController {
 
     @PostMapping("/{id}/test")
     public ApiResponse<Boolean> test(@PathVariable Long id) {
-        Connector connector = connectorRepository.findById(id)
-                .orElseThrow(() -> new com.bone.core.exception.DomainException("连接器不存在"));
+        Connector connector = connectorRepository.findById(id);
+        if (connector == null) {
+            throw new DomainException("连接器不存在");
+        }
         boolean success = connectorService.testConnector(connector);
         return ApiResponse.success(success);
     }
 
     @PostMapping("/{id}/enable")
     public ApiResponse<Void> enable(@PathVariable Long id) {
-        Connector connector = connectorRepository.findById(id)
-                .orElseThrow(() -> new com.bone.core.exception.DomainException("连接器不存在"));
+        Connector connector = connectorRepository.findById(id);
+        if (connector == null) {
+            throw new DomainException("连接器不存在");
+        }
         connector.enable();
         connectorRepository.save(connector);
         return ApiResponse.success();
@@ -84,8 +88,10 @@ public class ConnectorController {
 
     @PostMapping("/{id}/disable")
     public ApiResponse<Void> disable(@PathVariable Long id) {
-        Connector connector = connectorRepository.findById(id)
-                .orElseThrow(() -> new com.bone.core.exception.DomainException("连接器不存在"));
+        Connector connector = connectorRepository.findById(id);
+        if (connector == null) {
+            throw new DomainException("连接器不存在");
+        }
         connector.disable();
         connectorRepository.save(connector);
         return ApiResponse.success();

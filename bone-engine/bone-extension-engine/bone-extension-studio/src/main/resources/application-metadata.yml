@@ -1,0 +1,33 @@
+# 持久化：H2 文件库 + Metadata SDK（扩展点/插件/版本/执行日志落表）
+# 启动：mvn spring-boot:run -Dspring-boot.run.profiles=metadata
+spring:
+  autoconfigure:
+    exclude:
+      - com.bone.metadata.sdk.support.config.MetadataAutoConfiguration
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:db/schema-h2.sql
+  datasource:
+    url: jdbc:h2:file:./data/extension-studio-metadata;MODE=MySQL;DB_CLOSE_DELAY=-1;AUTO_SERVER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: none
+
+metadata:
+  sdk:
+    appcode: bone-extension-studio
+    deploymentMode: EMBEDDED
+
+bone:
+  metadata:
+    enabled: true
+    mode: EMBEDDED
+    scan-packages: com.bone.engine.extension.studio.infrastructure.persistence.entity
+  extension:
+    studio:
+      persistence:
+        mode: metadata

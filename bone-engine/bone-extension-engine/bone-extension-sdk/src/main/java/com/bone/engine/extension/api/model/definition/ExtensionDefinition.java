@@ -1,5 +1,6 @@
 package com.bone.engine.extension.api.model.definition;
 
+import com.bone.engine.extension.api.model.sync.ExtensionRoutingMetadata;
 import lombok.*;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
@@ -241,6 +242,65 @@ public class ExtensionDefinition implements Serializable, Comparable<ExtensionDe
         return StringUtils.hasText(code) &&
                 StringUtils.hasText(extensionPoint) &&
                 instance != null;
+    }
+
+    /** 复制路由视图（用于运行时元数据叠加，保留实例引用）。 */
+    @NonNull
+    public ExtensionDefinition copyRoutingView() {
+        ExtensionDefinition copy = new ExtensionDefinition();
+        copy.code = this.code;
+        copy.extensionPoint = this.extensionPoint;
+        copy.implementationClass = this.implementationClass;
+        copy.instance = this.instance;
+        copy.description = this.description;
+        copy.tenant = this.tenant;
+        copy.bizCode = this.bizCode;
+        copy.useCase = this.useCase;
+        copy.scenario = this.scenario;
+        copy.env = this.env;
+        copy.userGroup = this.userGroup;
+        copy.dimensionRules.putAll(this.dimensionRules);
+        copy.condition = this.condition;
+        copy.defaultImpl = this.defaultImpl;
+        copy.weight = this.weight;
+        copy.priority = this.priority;
+        copy.enabled = this.enabled;
+        copy.startTime = this.startTime;
+        copy.endTime = this.endTime;
+        copy.compilePatterns();
+        return copy;
+    }
+
+    /** 将控制面下发的路由元数据叠加到当前视图。 */
+    public void applyRoutingOverlay(@NonNull ExtensionRoutingMetadata meta) {
+        if (StringUtils.hasText(meta.getTenant())) {
+            setTenant(meta.getTenant());
+        }
+        if (StringUtils.hasText(meta.getBizCode())) {
+            setBizCode(meta.getBizCode());
+        }
+        if (StringUtils.hasText(meta.getUseCase())) {
+            setUseCase(meta.getUseCase());
+        }
+        if (StringUtils.hasText(meta.getScenario())) {
+            setScenario(meta.getScenario());
+        }
+        if (StringUtils.hasText(meta.getEnv())) {
+            setEnv(meta.getEnv());
+        }
+        if (StringUtils.hasText(meta.getUserGroup())) {
+            setUserGroup(meta.getUserGroup());
+        }
+        if (meta.getCondition() != null) {
+            this.condition = meta.getCondition();
+        }
+        this.priority = meta.getPriority();
+        this.weight = meta.getWeight();
+        this.defaultImpl = meta.isDefaultImpl();
+        this.enabled = meta.isEnabled();
+        setDimensionRule("traffic", String.valueOf(meta.getTraffic()));
+        clearCaches();
+        compilePatterns();
     }
 
     private void clearCaches() {

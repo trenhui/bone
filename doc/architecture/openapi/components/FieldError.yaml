@@ -1,0 +1,10 @@
+type: object
+properties:
+  field:
+    type: string
+    example: name
+  message:
+    type: string
+    example: 不能为空
+  rejectedValue:
+    nullable: true

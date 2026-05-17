@@ -5,7 +5,39 @@
 > **文档性质**：技术详细设计文档，可直接指导架构实现、代码开发、部署运维  
 > **适用产品**：BONE X Studio 企业级研发操作系统  
 > **设计基准**（与仓库权威一致）：[`doc/architecture/Bone-DDD-最终实践方案.md`](../architecture/Bone-DDD-最终实践方案.md)（DDD 分层与 P0 铁律）、[`doc/prd/BONE产品需求文档正式版.md`](../prd/BONE产品需求文档正式版.md)（产品范围与能力）、[`doc/architecture/BONE-总体架构设计方案.md`](../architecture/BONE-总体架构设计方案.md)（总体架构与 NFR；与 `doc/architecture/README.md` 索引一致）。代码生成与 ArchUnit 规则对齐 **bone-blueprint** 示例仓库形态，**版本号不以「Blueprint v×」为准**，以 DDD 统一方案版本为准。  
-> **版本**：v5.0 Final | **发布日期**：2026‑04‑23 | **文档状态**：✅ 已发布 | **密级**：内部机密  
+> **版本**：v5.0 Final | **发布日期**：2026‑04‑23 | **最近修订**：2026‑05‑16 | **文档状态**：✅ 已发布（含 As-Is / 愿景分层） | **密级**：内部机密  
+
+---
+
+## 文档分层说明（As-Is vs 愿景）
+
+阅读本文时，请区分 **仓库已实现（As-Is）** 与 **BONE X Studio 终局愿景（Vision）**。未标注 **[Vision]** 的小节若与下表冲突，**以 As-Is 与 `doc/architecture` 权威文档为准**。
+
+| 标记 | 含义 | 典型内容 |
+|------|------|----------|
+| **As-Is** | 当前 monorepo 可构建、可运行的模块与端口 | 下表「仓库对照」 |
+| **Vision** | 目标态多微服务、多存储、AI Pipeline 全量能力 | §4.3.3 五服务拆分、PostgreSQL 主库、Module Federation 等 |
+| **Hybrid** | 部分落地、部分规划 | 代码生成（`studio-generator` 已有）、架构守护（规则与 ArchUnit 在演进） |
+
+### 仓库对照（As-Is，2026-05）
+
+| 本文档 / 愿景名称 | Maven / 目录真源 | 默认端口（开发） | 说明 |
+|-------------------|------------------|------------------|------|
+| BONE Platform 各微应用 | `bone-frontend/apps/bone-*-app` + Qiankun Shell | 3000–3009 | 见 [wiki/03](../wiki/03-本地开发与构建.md) |
+| 代码生成（Generator） | `bone-engine/studio-generator` | **8085** | 与 `bone-platform/bone-integration` 同端口时需改 `server.port` |
+| 扩展 Studio | `bone-engine/bone-extension-engine/bone-extension-studio` | **8080** | 与 `bone-masterdata` 冲突时勿同机并行 |
+| 元数据 · 数据面 SDK | `bone-engine/bone-metadata-sdk` | （嵌入业务进程） | 平台 P0 持久化；见 [三模块定义](./modules/元数据能力-实现映射与竞品对照.md) |
+| 元数据 · 扩展字段 REST | `bone-engine/bone-metadata-server` | **9001** | `/v1/metadata/fields:*`；非实体建模全量 API |
+| 元数据 · 智能引擎 | `bone-engine/bone-metadata-engine` | 随宿主 | 默认未接平台；详设 [§9](./modules/9.%20SmartMeta%20引擎模块技术说明.md) |
+| IAM / 主数据 / 系统 | `bone-platform/bone-iam` / `bone-masterdata` / `bone-system` | 8081 / 8080 / 8083 | 持久化均依赖 metadata-sdk |
+| DDD 参考实现 | `bone-blueprint/` | — | 非根聚合模块，单独 `mvn -f bone-blueprint/pom.xml test` |
+| **studio-api** [Vision] | 无独立进程 | 8080（示意） | 由网关 + 各平台服务组合，非单 Jar |
+| **studio-ai / studio-guard** [Vision] | 无独立进程 | 8081 / 8083（示意） | AI 与 Guard 能力规划为独立服务，当前分散在引擎与工具链 |
+| **studio-metadata** [Vision] | SDK + server + engine + metadata-app + generator | 8084（**勿作启动端口**） | 产品能力包；真源见 [元数据能力-实现映射与竞品对照](./modules/元数据能力-实现映射与竞品对照.md) |
+
+**端口真源**：[doc/wiki/03-本地开发与构建.md](../wiki/03-本地开发与构建.md)。**DDL 真源**：根目录 [`bone-init.sql`](../bone-init.sql) · [数据库开发规范.md](../architecture/数据库开发规范.md)。
+
+> 下文 **第一部分～第三部分** 中，产品叙事与双核心架构多为 **[Vision]**；落地排期请交叉查阅 [主 PRD](../prd/BONE产品需求文档正式版.md) 与 [模块详设](./modules/README.md)。
 
 ---
 
@@ -263,7 +295,9 @@ graph TD
 
 ### 4. 技术架构总览
 
-#### 4.1 整体架构图
+#### 4.1 整体架构图 **[Vision]**
+
+> 下图描述终局多服务形态；当前仓库以 `bone-frontend` 微前端 + `bone-platform` / `bone-engine` 模块化单体为主，见上文「仓库对照」。
 
 ```mermaid
 flowchart TD
@@ -331,7 +365,7 @@ flowchart TD
 | 前端框架 | React + TypeScript | 18.x | 复杂交互界面，生态成熟 |
 | 代码编辑器 | Monaco Editor | 0.44+ | 类VSCode体验，语法高亮 |
 | UI组件库 | Ant Design | 5.12+ | 企业级组件，设计规范 |
-| 微前端 | Module Federation | 2.0+ | 独立部署，运行时集成 |
+| 微前端 | **Qiankun**（As-Is）/ Module Federation（Vision） | 2.x | 仓库实现为 Qiankun + `vite-plugin-qiankun`，见 [bone-前端架构](../architecture/bone-前端架构.md) |
 | API框架 | Spring Boot + WebFlux | 3.2+ | 高性能响应式，生态丰富 |
 | API网关 | Spring Cloud Gateway | 2023+ | 路由灵活，性能优秀 |
 | 代码生成 | JavaPoet + Freemarker | 1.13+ / 2.3+ | 类型安全+模板灵活 |
@@ -386,17 +420,17 @@ spring:
             - Path=/ws/**
 ```
 
-**4.3.3 应用层**
+**4.3.3 应用层** **[Vision]**
 
-按业务领域划分为5个核心微服务：
+按业务领域划分的 **5 个核心微服务（目标态）**；与仓库 As-Is 对照见文首「仓库对照」表。
 
-| 服务 | 端口 | 职责 | 关键API |
-|------|------|------|---------|
-| studio-api | 8080 | 通用API、WebSocket | `/api/v1/**`, `/ws/**` |
-| studio-ai | 8081 | AI建模、自然语言处理 | `/api/v1/ai/generate` |
-| studio-generator | 8082 | 代码生成、模板管理 | `/api/v1/generate/**` |
-| studio-guard | 8083 | 架构守护、规则执行 | `/api/v1/guard/**` |
-| studio-metadata | 8084 | 元数据运行时 | `/api/v1/metadata/**` |
+| 服务 | 端口（Vision 示意） | 职责 | 关键API | As-Is 映射 |
+|------|---------------------|------|---------|------------|
+| studio-api | 8080 | 通用API、WebSocket | `/api/v1/**`, `/ws/**` | 网关 + 各 `bone-platform/*` 服务 |
+| studio-ai | 8081 | AI建模、自然语言处理 | `/api/v1/ai/generate` | 规划中；勿与 `bone-iam:8081` 混为同一进程 |
+| studio-generator | 8082 | 代码生成、模板管理 | `/api/v1/generate/**` | **`bone-engine/studio-generator`（当前 8085）** |
+| studio-guard | 8083 | 架构守护、规则执行 | `/api/v1/guard/**` | ArchUnit / 契约门禁（CI）；非独立 8083 服务 |
+| studio-metadata | 8084（**勿作端口**） | 元数据能力包（见文首表） | `/api/v1/metadata/**`（Vision 实体）；As-Is 扩展字段 **`/v1/metadata/fields:*` @ 9001** | sdk + server + engine + generator |
 
 **4.3.4 引擎层**
 
@@ -2371,6 +2405,8 @@ public class ExtensionRuntime {
 ---
 
 ### 11. 元数据应用工厂
+
+> **[Vision 为主]** 本节描述 BONE X「元数据应用工厂」目标体验。As-Is 工程映射：**sdk**（持久化）· **server**（`:9001` 扩展字段）· **engine**（智能引擎）· **studio-generator**（代码生成）· **bone-metadata-app**（UI）。勿将 `studio-metadata:8084` 当作启动端口。真源：[元数据能力-实现映射与竞品对照](./modules/元数据能力-实现映射与竞品对照.md)。
 
 #### 11.1 可视化实体建模器
 

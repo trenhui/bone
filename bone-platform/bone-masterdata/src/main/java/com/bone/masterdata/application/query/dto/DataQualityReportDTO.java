@@ -11,7 +11,7 @@ public class DataQualityReportDTO {
     private Long masterDataEntityId;
     private String reportData;
     private Integer issueCount;
-    private LocalDateTime createTime;
+    private LocalDateTime createdAt;
     private String status;
     private Integer totalRecords;
     private Integer passedRecords;

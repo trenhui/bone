@@ -1,0 +1,32 @@
+# Metadata 持久化 + 平台 MySQL（表由 bone-init.sql 提供，禁止二次 DDL）
+# 启动：source scripts/dev/load-env.sh && mvn spring-boot:run -Dspring-boot.run.profiles=metadata-mysql
+spring:
+  autoconfigure:
+    exclude:
+      - com.bone.metadata.sdk.support.config.MetadataAutoConfiguration
+  sql:
+    init:
+      mode: never
+  datasource:
+    url: ${BONE_DB_URL:jdbc:mysql://localhost:3306/bone?useSSL=false&allowPublicKeyRetrieval=true&characterEncoding=utf8&serverTimezone=UTC}
+    username: ${BONE_DB_USERNAME:root}
+    password: ${BONE_DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: none
+
+metadata:
+  sdk:
+    appcode: bone-extension-studio
+    deploymentMode: EMBEDDED
+
+bone:
+  metadata:
+    enabled: true
+    mode: EMBEDDED
+    scan-packages: com.bone.engine.extension.studio.infrastructure.persistence.entity
+  extension:
+    studio:
+      persistence:
+        mode: metadata

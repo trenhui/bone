@@ -24,10 +24,10 @@ CREATE TABLE `users` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '用户ID',
   `name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT '用户名',
   `role_id` BIGINT DEFAULT NULL COMMENT '角色id',
-  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
-  `create_by` bigint DEFAULT NULL COMMENT '创建者ID',
-  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
-  `update_by` bigint DEFAULT NULL COMMENT '更新者ID',
+  `created_at` datetime DEFAULT NULL COMMENT '创建时间',
+  `created_by` bigint DEFAULT NULL COMMENT '创建者ID',
+  `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
+  `updated_by` bigint DEFAULT NULL COMMENT '更新者ID',
   `deleted` tinyint(1) DEFAULT '0' COMMENT '逻辑删除标识',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
@@ -46,8 +46,8 @@ CREATE TABLE sys_permission (
     component VARCHAR(200) COMMENT '前端组件',
     icon VARCHAR(50) COMMENT '图标',
     sort_order INT DEFAULT 0 COMMENT '排序号',
-    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间'
 ) ENGINE=InnoDB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 COMMENT='系统权限表';
 
@@ -94,7 +94,7 @@ CREATE TABLE sales_record (
     amount DECIMAL(15, 2) NOT NULL,
     price DECIMAL(10, 2) NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
-    create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     region VARCHAR(50),
     product_name VARCHAR(100),
     quantity INT,
@@ -104,5 +104,5 @@ CREATE TABLE sales_record (
 ---- 创建索引以提高查询性能
 --CREATE INDEX idx_sales_category ON sales_record(category);
 --CREATE INDEX idx_sales_status ON sales_record(status);
---CREATE INDEX idx_sales_create_time ON sales_record(create_time);
+--CREATE INDEX idx_sales_created_at ON sales_record(created_at);
 --CREATE INDEX idx_sales_region ON sales_record(region);

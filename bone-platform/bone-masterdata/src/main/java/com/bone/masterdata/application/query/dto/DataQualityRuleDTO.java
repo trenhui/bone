@@ -14,6 +14,6 @@ public class DataQualityRuleDTO {
     private String expression;
     private RuleSeverity severity;
     private String description;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }

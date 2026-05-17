@@ -6,9 +6,10 @@ Bone 四大引擎与相关中间件的 Maven 聚合目录。
 
 | 目录 | 角色 | 文档入口 |
 |------|------|----------|
-| [bone-metadata-sdk](./bone-metadata-sdk/) | **默认持久化 SDK**（`@EnableSqlRepositories`） | [README](./bone-metadata-sdk/README.md) → [doc/](./bone-metadata-sdk/doc/) |
-| [bone-metadata-server](./bone-metadata-server/) | 元数据可部署服务 | [README](./bone-metadata-server/README.md) |
-| [bone-metadata-engine](./bone-metadata-engine/) | SmartMeta 运行时（原 smartmeta） | [README](./bone-metadata-engine/README.md) |
+| [bone-metadata-sdk](./bone-metadata-sdk/) | **数据面**：平台 P0 持久化 + 扩展字段 EAV（嵌入业务进程） | [README](./bone-metadata-sdk/README.md) → [doc/](./bone-metadata-sdk/doc/) |
+| [bone-metadata-server](./bone-metadata-server/) | **控制面（选配）**：扩展字段 REST，:9001 | [README](./bone-metadata-server/README.md) |
+| [bone-metadata-engine](./bone-metadata-engine/) | **计算面（选配）**：智能元数据引擎（规则/表达式/SmartQL） | [README](./bone-metadata-engine/README.md) |
+| — | **三模块定义、协作与竞品** | [doc/design/modules/元数据能力-实现映射与竞品对照.md](../doc/design/modules/元数据能力-实现映射与竞品对照.md) |
 | [bone-extension-engine](./bone-extension-engine/) | ExtPoint 扩展引擎（SDK + Studio） | [README](./bone-extension-engine/README.md)（摘要）→ [docs/使用指南](./bone-extension-engine/docs/使用指南.md) |
 | [bone-integration](./bone-integration/) | 集成引擎运行时 | [README](./bone-integration/README.md) |
 | [studio-generator](./studio-generator/) | 代码生成服务 | 产品详设见 [doc/design/modules/8](../doc/design/modules/8.Studio%20Generator%20详细设计方案.md) |

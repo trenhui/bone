@@ -1,19 +1,24 @@
 -- ============================================================
--- Bone 文档化全量 DDL（MySQL 8.0+）
--- 路径: doc/architecture/初始脚本.sql
--- 数据库: bone | 字符集: utf8mb4 | 排序规则: utf8mb4_bin
--- 约 58 张表（IAM / 元数据 / 主数据 / 集成 / 扩展 / 系统 / 审计等）
--- 设计约定见同目录: 数据库开发规范.md
+-- 【已废止 — 请勿执行】
+-- 本文件仅保留作历史参考。可执行 DDL 见仓库根目录 bone-init.sql
+-- 规范: doc/architecture/数据库开发规范.md
+-- ============================================================
+-- Bone 目标态全量 DDL — Part B only（MySQL 8.0+）— 历史归档
 -- ============================================================
 
 CREATE DATABASE IF NOT EXISTS bone
     DEFAULT CHARACTER SET utf8mb4
-    DEFAULT COLLATE utf8mb4_bin;
+    DEFAULT COLLATE utf8mb4_unicode_ci;
 
 USE bone;
 
 -- ============================================================
--- 1. 统一IAM（前缀 iam）
+-- Part B — 目标态全量 DDL（约 50+ 表，供评审与迁移设计）
+-- 执行前: 空库，或确认未执行过 bone-init.sql 中的同名表
+-- ============================================================
+
+-- ============================================================
+-- B1. 目标态 IAM（前缀 iam；与 bone-init 的 iam_user 等并存需迁移，见 DDL对齐说明）
 -- ============================================================
 
 CREATE TABLE iam_tenant (
@@ -39,7 +44,7 @@ CREATE TABLE iam_tenant (
     PRIMARY KEY (id),
     UNIQUE KEY uk_iam_tenant_code (code),
     KEY idx_iam_tenant_status (status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='租户表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='租户表';
 
 CREATE TABLE iam_account (
     id                  BIGINT          NOT NULL COMMENT '账户主键（Snowflake）',
@@ -67,7 +72,7 @@ CREATE TABLE iam_account (
     UNIQUE KEY uk_iam_account_username (tenant_id, username),
     KEY idx_iam_account_tenant (tenant_id),
     KEY idx_iam_account_email (email)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='账户表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='账户表';
 
 CREATE TABLE iam_role (
     id                  BIGINT          NOT NULL COMMENT '角色主键（Snowflake）',
@@ -86,7 +91,7 @@ CREATE TABLE iam_role (
     PRIMARY KEY (id),
     UNIQUE KEY uk_iam_role_code (tenant_id, code),
     KEY idx_iam_role_tenant (tenant_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='角色表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='角色表';
 
 CREATE TABLE iam_permission (
     id                  BIGINT          NOT NULL COMMENT '权限主键（Snowflake）',
@@ -105,7 +110,7 @@ CREATE TABLE iam_permission (
     PRIMARY KEY (id),
     UNIQUE KEY uk_iam_permission_code (code),
     KEY idx_iam_permission_resource (resource_type, resource_path)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='权限表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='权限表';
 
 CREATE TABLE iam_account_role (
     id                  BIGINT          NOT NULL COMMENT '关联主键（Snowflake）',
@@ -120,7 +125,7 @@ CREATE TABLE iam_account_role (
     PRIMARY KEY (id),
     UNIQUE KEY uk_iam_account_role (account_id, role_id),
     KEY idx_iam_account_role_tenant (tenant_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='账户角色关联表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='账户角色关联表';
 
 CREATE TABLE iam_role_permission (
     id                  BIGINT          NOT NULL COMMENT '关联主键（Snowflake）',
@@ -133,7 +138,7 @@ CREATE TABLE iam_role_permission (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
     PRIMARY KEY (id),
     UNIQUE KEY uk_iam_role_permission (role_id, permission_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='角色权限关联表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='角色权限关联表';
 
 CREATE TABLE iam_policy (
     id                  BIGINT          NOT NULL COMMENT '策略主键（Snowflake）',
@@ -156,7 +161,7 @@ CREATE TABLE iam_policy (
     PRIMARY KEY (id),
     UNIQUE KEY uk_iam_policy_code (code),
     KEY idx_iam_policy_resource (resource_type, resource_path, action)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='ABAC策略表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='ABAC策略表';
 
 CREATE TABLE iam_audit_log (
     id                  BIGINT          NOT NULL COMMENT '审计主键（Snowflake）',
@@ -180,7 +185,7 @@ CREATE TABLE iam_audit_log (
     PRIMARY KEY (id, created_at),
     KEY idx_iam_audit_tenant (tenant_id),
     KEY idx_iam_audit_user (user_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='审计日志表（分区）'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='审计日志表（分区）'
 PARTITION BY RANGE (YEAR(created_at)) (
     PARTITION p2025 VALUES LESS THAN (2026),
     PARTITION p2026 VALUES LESS THAN (2027),
@@ -200,7 +205,7 @@ CREATE TABLE iam_refresh_token (
     created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
     PRIMARY KEY (id),
     UNIQUE KEY uk_iam_refresh_token_hash (token_hash)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='刷新令牌表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='刷新令牌表';
 
 
 -- ============================================================
@@ -231,7 +236,7 @@ CREATE TABLE arch_blueprint_template (
     PRIMARY KEY (id),
     UNIQUE KEY uk_arch_bpt_code_version (tenant_id, code, version),
     KEY idx_arch_bpt_status (status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='Blueprint模板表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Blueprint模板表';
 
 CREATE TABLE arch_ddd_module (
     id                  BIGINT          NOT NULL COMMENT '模块主键（Snowflake）',
@@ -260,7 +265,7 @@ CREATE TABLE arch_ddd_module (
     UNIQUE KEY uk_arch_ddm_project_code (tenant_id, project_id, code),
     KEY idx_arch_ddm_project (project_id),
     KEY idx_arch_ddm_cqrs (cqrs_level)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='DDD模块表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='DDD模块表';
 
 CREATE TABLE arch_aggregate_root (
     id                  BIGINT          NOT NULL COMMENT '聚合根主键（Snowflake）',
@@ -280,7 +285,7 @@ CREATE TABLE arch_aggregate_root (
     PRIMARY KEY (id),
     UNIQUE KEY uk_arch_aggr_module_name (module_id, name),
     KEY idx_arch_aggr_tenant (tenant_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='聚合根表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='聚合根表';
 
 CREATE TABLE arch_extension_point (
     id                  BIGINT          NOT NULL COMMENT '扩展点主键（Snowflake）',
@@ -301,7 +306,7 @@ CREATE TABLE arch_extension_point (
     PRIMARY KEY (id),
     UNIQUE KEY uk_arch_ep_code (code),
     KEY idx_arch_ep_owner (owner_module)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='架构扩展点表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='架构扩展点表';
 
 CREATE TABLE arch_marketplace_item (
     id                  VARCHAR(64)     NOT NULL COMMENT '市场项目ID（UUID）',
@@ -328,7 +333,7 @@ CREATE TABLE arch_marketplace_item (
     PRIMARY KEY (id),
     UNIQUE KEY uk_arch_mi_code_version (code, plugin_version),
     KEY idx_arch_mi_ep (extension_point_code)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='扩展点市场项目表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='扩展点市场项目表';
 
 CREATE TABLE arch_guard_rule (
     id                  BIGINT          NOT NULL COMMENT '规则主键（Snowflake）',
@@ -350,7 +355,7 @@ CREATE TABLE arch_guard_rule (
     PRIMARY KEY (id),
     UNIQUE KEY uk_arch_gr_code (code),
     KEY idx_arch_gr_enabled (is_enabled)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='架构守护规则表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='架构守护规则表';
 
 CREATE TABLE arch_guard_report (
     id                  BIGINT          NOT NULL COMMENT '报告主键（Snowflake）',
@@ -370,7 +375,7 @@ CREATE TABLE arch_guard_report (
     PRIMARY KEY (id),
     KEY idx_arch_grp_project (tenant_id, project_id, checked_at),
     KEY idx_arch_grp_module (module_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='守护检查报告表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='守护检查报告表';
 
 
 -- ============================================================
@@ -398,7 +403,7 @@ CREATE TABLE meta_entity (
     PRIMARY KEY (id),
     UNIQUE KEY uk_meta_e_code (tenant_id, code),
     UNIQUE KEY uk_meta_e_table (tenant_id, table_name)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='元数据实体表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='元数据实体表';
 
 CREATE TABLE meta_field (
     id                  BIGINT          NOT NULL COMMENT '字段主键（Snowflake）',
@@ -427,7 +432,7 @@ CREATE TABLE meta_field (
     PRIMARY KEY (id),
     UNIQUE KEY uk_meta_f_entity_code (entity_id, code),
     KEY idx_meta_f_entity (entity_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='元数据字段表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='元数据字段表';
 
 CREATE TABLE meta_entity_relation (
     id                  BIGINT          NOT NULL COMMENT '关系主键（Snowflake）',
@@ -450,7 +455,7 @@ CREATE TABLE meta_entity_relation (
     UNIQUE KEY uk_meta_er_name (tenant_id, name),
     KEY idx_meta_er_source (source_entity_id),
     KEY idx_meta_er_target (target_entity_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='实体关系表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='实体关系表';
 
 CREATE TABLE meta_code_template (
     id                  BIGINT          NOT NULL COMMENT '模板主键（Snowflake）',
@@ -472,7 +477,7 @@ CREATE TABLE meta_code_template (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
     PRIMARY KEY (id),
     UNIQUE KEY uk_meta_ct_code_version (tenant_id, code, version)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='元数据代码生成模板表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='元数据代码生成模板表';
 
 CREATE TABLE meta_data_quality_rule (
     id                  BIGINT          NOT NULL COMMENT '规则主键（Snowflake）',
@@ -492,14 +497,17 @@ CREATE TABLE meta_data_quality_rule (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
     PRIMARY KEY (id),
     KEY idx_meta_dqr_entity (entity_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='数据质量规则表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数据质量规则表';
 
 
 -- ============================================================
--- 4. 系统集成模块（前缀 integ）
+-- B4. 系统集成模块（前缀 int；目标态）
+-- 运行时 As-Is 见 bone-init.sql: int_connector, int_flow, int_flow_execution
+-- 下列三表与 As-Is 同名但结构不同，已注释；演进见 DDL对齐说明.md
 -- ============================================================
 
-CREATE TABLE integ_connector (
+/*
+CREATE TABLE int_connector_target (
     id                  VARCHAR(64)     NOT NULL COMMENT '连接器ID（UUID）',
     tenant_id           BIGINT          NOT NULL COMMENT '租户ID',
     name                VARCHAR(200)    NOT NULL COMMENT '连接器名称',
@@ -521,7 +529,7 @@ CREATE TABLE integ_connector (
     PRIMARY KEY (id),
     KEY idx_integ_conn_tenant (tenant_id),
     KEY idx_integ_conn_type (type)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='连接器表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='连接器表';
 
 CREATE TABLE integ_flow (
     id                  VARCHAR(64)     NOT NULL COMMENT '流程ID（UUID）',
@@ -552,7 +560,7 @@ CREATE TABLE integ_flow (
     PRIMARY KEY (id),
     KEY idx_integ_flow_tenant (tenant_id),
     KEY idx_integ_flow_status (status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='集成流程表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='集成流程表';
 
 CREATE TABLE integ_flow_execution (
     id                  VARCHAR(64)     NOT NULL COMMENT '执行记录ID（UUID）',
@@ -573,7 +581,7 @@ CREATE TABLE integ_flow_execution (
     PRIMARY KEY (id, started_at),
     KEY idx_integ_fe_flow (flow_id),
     KEY idx_integ_fe_status (status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='流程执行记录表（分区）'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='流程执行记录表（分区）'
 PARTITION BY RANGE (TO_DAYS(started_at)) (
     PARTITION p202601 VALUES LESS THAN (TO_DAYS('2026-02-01')),
     PARTITION p202602 VALUES LESS THAN (TO_DAYS('2026-03-01')),
@@ -582,8 +590,9 @@ PARTITION BY RANGE (TO_DAYS(started_at)) (
     PARTITION p202605 VALUES LESS THAN (TO_DAYS('2026-06-01')),
     PARTITION p_future VALUES LESS THAN MAXVALUE
 );
+*/
 
-CREATE TABLE integ_dead_letter (
+CREATE TABLE int_dead_letter (
     id                  VARCHAR(64)     NOT NULL COMMENT '死信ID（UUID）',
     flow_id             VARCHAR(64)     NOT NULL COMMENT '流程ID',
     tenant_id           BIGINT          NOT NULL COMMENT '租户ID',
@@ -602,11 +611,11 @@ CREATE TABLE integ_dead_letter (
     created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
     updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
     PRIMARY KEY (id),
-    KEY idx_integ_dl_flow (flow_id),
-    KEY idx_integ_dl_next_retry (status, next_retry_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='死信队列表';
+    KEY idx_int_dl_flow (flow_id),
+    KEY idx_int_dl_next_retry (status, next_retry_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='死信队列表';
 
-CREATE TABLE integ_template (
+CREATE TABLE int_template (
     id                  VARCHAR(64)     NOT NULL COMMENT '模板ID（UUID）',
     name                VARCHAR(200)    NOT NULL COMMENT '模板名称',
     code                VARCHAR(100)    NOT NULL COMMENT '模板编码',
@@ -622,8 +631,8 @@ CREATE TABLE integ_template (
     updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
     PRIMARY KEY (id),
-    UNIQUE KEY uk_integ_tpl_code (code)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='集成模板表';
+    UNIQUE KEY uk_int_tpl_code (code)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='集成模板表';
 
 
 -- ============================================================
@@ -647,7 +656,7 @@ CREATE TABLE evt_events (
     UNIQUE KEY uk_evt_events_agg (aggregate_type, aggregate_id, aggregate_version, occurred_at),
     KEY idx_evt_events_tenant (tenant_id),
     KEY idx_evt_events_type (event_type)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='事件存储表（分区）'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='事件存储表（分区）'
 PARTITION BY RANGE (TO_DAYS(occurred_at)) (
     PARTITION p202601 VALUES LESS THAN (TO_DAYS('2026-02-01')),
     PARTITION p202602 VALUES LESS THAN (TO_DAYS('2026-03-01')),
@@ -668,7 +677,7 @@ CREATE TABLE evt_snapshots (
     PRIMARY KEY (id),
     UNIQUE KEY uk_evt_snap_agg (aggregate_type, aggregate_id, aggregate_version),
     KEY idx_evt_snap_tenant (tenant_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='事件快照表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='事件快照表';
 
 CREATE TABLE evt_delivery_tracker (
     id                  BIGINT          NOT NULL COMMENT '跟踪主键（Snowflake）',
@@ -685,7 +694,7 @@ CREATE TABLE evt_delivery_tracker (
     PRIMARY KEY (id),
     UNIQUE KEY uk_evt_dt_event_consumer (event_id, consumer_group, consumer_id),
     KEY idx_evt_dt_status (status, next_delivery_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='事件投递追踪表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='事件投递追踪表';
 
 
 -- ============================================================
@@ -711,7 +720,7 @@ CREATE TABLE cnsl_dashboard_widget (
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
     PRIMARY KEY (id),
     KEY idx_cnsl_dw_user (user_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='仪表盘Widget配置表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='仪表盘Widget配置表';
 
 CREATE TABLE cnsl_notification (
     id                  BIGINT          NOT NULL COMMENT '通知主键（Snowflake）',
@@ -730,7 +739,7 @@ CREATE TABLE cnsl_notification (
     PRIMARY KEY (id),
     KEY idx_cnsl_notif_user_read (user_id, is_read),
     KEY idx_cnsl_notif_time (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='通知表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='通知表';
 
 CREATE TABLE cnsl_recent_access (
     id                  BIGINT          NOT NULL COMMENT '访问记录主键（Snowflake）',
@@ -743,7 +752,7 @@ CREATE TABLE cnsl_recent_access (
     accessed_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '访问时间',
     PRIMARY KEY (id),
     KEY idx_cnsl_ra_user (user_id, accessed_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='最近访问记录表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='最近访问记录表';
 
 
 -- ============================================================
@@ -775,7 +784,7 @@ CREATE TABLE gen_data_source (
     UNIQUE KEY uk_gen_ds_tenant_name (tenant_id, name),
     KEY idx_gen_ds_type (type),
     KEY idx_gen_ds_enabled (is_enabled)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='数据源配置表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数据源配置表';
 
 CREATE TABLE gen_code_template (
     id                  BIGINT          NOT NULL COMMENT '模板主键（Snowflake）',
@@ -801,7 +810,7 @@ CREATE TABLE gen_code_template (
     UNIQUE KEY uk_gen_ct_tenant_code_version (tenant_id, code, version),
     KEY idx_gen_ct_type (type),
     KEY idx_gen_ct_status (status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='代码生成模板表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='代码生成模板表';
 
 CREATE TABLE gen_generation_history (
     id                  BIGINT          NOT NULL COMMENT '历史记录主键（Snowflake）',
@@ -825,7 +834,7 @@ CREATE TABLE gen_generation_history (
     KEY idx_gen_gh_tenant_project (tenant_id, project_name),
     KEY idx_gen_gh_status (status),
     KEY idx_gen_gh_created_at (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='代码生成历史表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='代码生成历史表';
 
 CREATE TABLE gen_type_mapping (
     id                  BIGINT          NOT NULL COMMENT '映射主键（Snowflake）',
@@ -844,7 +853,7 @@ CREATE TABLE gen_type_mapping (
     PRIMARY KEY (id),
     UNIQUE KEY uk_gen_tm_tenant_type_jdbc (tenant_id, source_db_type, jdbc_type),
     KEY idx_gen_tm_source_db (source_db_type)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='数据类型映射表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数据类型映射表';
 
 CREATE TABLE gen_table_metadata (
     id                  BIGINT          NOT NULL COMMENT '表元数据主键（Snowflake）',
@@ -867,7 +876,7 @@ CREATE TABLE gen_table_metadata (
     UNIQUE KEY uk_gen_tmd_tenant_ds_table (tenant_id, data_source_id, original_table_name),
     KEY idx_gen_tmd_data_source (data_source_id),
     KEY idx_gen_tmd_sync_status (sync_status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='表结构元数据表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='表结构元数据表';
 
 CREATE TABLE gen_column_metadata (
     id                  BIGINT          NOT NULL COMMENT '列元数据主键（Snowflake）',
@@ -895,11 +904,13 @@ CREATE TABLE gen_column_metadata (
     UNIQUE KEY uk_gen_cm_table_column (table_id, original_column_name),
     KEY idx_gen_cm_table_id (table_id),
     KEY idx_gen_cm_java_type (java_type)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='列元数据表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='列元数据表';
 
 
 -- ============================================================
--- 8. 系统管理模块（前缀 sys）
+-- B8. 系统管理模块（前缀 sys；目标态）
+-- ⚠️ sys_config / sys_alert_* 与 bone-init.sql 同名表结构不同，勿与 As-Is 混跑
+-- As-Is 使用 sys_log；目标态日志表为 sys_system_log
 -- ============================================================
 
 CREATE TABLE sys_config (
@@ -920,7 +931,7 @@ CREATE TABLE sys_config (
     PRIMARY KEY (id),
     UNIQUE KEY uk_sys_config_key (tenant_id, config_key),
     KEY idx_sys_config_type (config_type)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='系统配置表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统配置表';
 
 CREATE TABLE sys_config_history (
     id                  BIGINT          NOT NULL COMMENT '历史主键（Snowflake）',
@@ -936,7 +947,7 @@ CREATE TABLE sys_config_history (
     KEY idx_sys_ch_config_id (config_id),
     KEY idx_sys_ch_operator (operator_id),
     KEY idx_sys_ch_created_at (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='系统配置变更历史表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统配置变更历史表';
 
 CREATE TABLE sys_alert_rule (
     id                  BIGINT          NOT NULL COMMENT '规则主键（Snowflake）',
@@ -959,7 +970,7 @@ CREATE TABLE sys_alert_rule (
     KEY idx_sys_ar_tenant (tenant_id),
     KEY idx_sys_ar_enabled (is_enabled),
     KEY idx_sys_ar_metric (metric)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='告警规则表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='告警规则表';
 
 CREATE TABLE sys_alert_event (
     id                  BIGINT          NOT NULL COMMENT '事件主键（Snowflake）',
@@ -976,7 +987,7 @@ CREATE TABLE sys_alert_event (
     KEY idx_sys_ae_rule (rule_id),
     KEY idx_sys_ae_tenant_status (tenant_id, status),
     KEY idx_sys_ae_fired_at (fired_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='告警事件表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='告警事件表';
 
 CREATE TABLE sys_system_log (
     id                  BIGINT          NOT NULL COMMENT '日志主键（Snowflake）',
@@ -995,7 +1006,7 @@ CREATE TABLE sys_system_log (
     KEY idx_sys_log_service (service_name),
     KEY idx_sys_log_trace (trace_id),
     KEY idx_sys_log_created_at (created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='系统日志表（分区）'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统日志表（分区）'
 PARTITION BY RANGE (YEAR(created_at)) (
     PARTITION p2025 VALUES LESS THAN (2026),
     PARTITION p2026 VALUES LESS THAN (2027),
@@ -1027,7 +1038,7 @@ CREATE TABLE ext_extension_point (
     UNIQUE KEY uk_ext_ep_code (tenant_id, point_code),
     KEY idx_ext_ep_target (target_object),
     KEY idx_ext_ep_status (status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='应用扩展点表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='应用扩展点表';
 
 CREATE TABLE ext_plugin (
     id                  BIGINT          NOT NULL COMMENT '插件主键（Snowflake）',
@@ -1047,7 +1058,7 @@ CREATE TABLE ext_plugin (
     PRIMARY KEY (id),
     UNIQUE KEY uk_ext_plugin_code (tenant_id, plugin_code),
     KEY idx_ext_plugin_status (status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='插件表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='插件表';
 
 CREATE TABLE ext_plugin_version (
     id                  BIGINT          NOT NULL COMMENT '版本主键（Snowflake）',
@@ -1061,7 +1072,7 @@ CREATE TABLE ext_plugin_version (
     PRIMARY KEY (id),
     UNIQUE KEY uk_ext_pv_plugin_version (plugin_id, version),
     KEY idx_ext_pv_plugin (plugin_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='插件版本表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='插件版本表';
 
 CREATE TABLE ext_extension_impl (
     id                  BIGINT          NOT NULL COMMENT '实现主键（Snowflake）',
@@ -1086,7 +1097,7 @@ CREATE TABLE ext_extension_impl (
     KEY idx_ext_ei_point (extension_point_id),
     KEY idx_ext_ei_plugin_version (plugin_version_id),
     KEY idx_ext_ei_priority (extension_point_id, priority)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='扩展点实现表（多维度路由）';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='扩展点实现表（多维度路由）';
 
 CREATE TABLE ext_route_script (
     id                  BIGINT          NOT NULL COMMENT '脚本主键（Snowflake）',
@@ -1106,7 +1117,7 @@ CREATE TABLE ext_route_script (
     PRIMARY KEY (id),
     KEY idx_ext_rs_impl (extension_impl_id),
     KEY idx_ext_rs_order (extension_impl_id, sort_order)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='扩展点路由脚本表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='扩展点路由脚本表';
 
 
 -- ============================================================
@@ -1133,7 +1144,7 @@ CREATE TABLE mdm_entity (
     UNIQUE KEY uk_mdm_entity_code (tenant_id, entity_code),
     UNIQUE KEY uk_mdm_entity_meta (tenant_id, meta_entity_id),
     KEY idx_mdm_entity_status (status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='主数据实体扩展配置表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据实体扩展配置表';
 
 CREATE TABLE mdm_record (
     id                  BIGINT          NOT NULL COMMENT '记录主键（Snowflake）',
@@ -1159,7 +1170,7 @@ CREATE TABLE mdm_record (
     KEY idx_mdm_record_entity (mdm_entity_id),
     KEY idx_mdm_record_status (status),
     KEY idx_mdm_record_parent (parent_record_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='主数据记录表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据记录表';
 
 CREATE TABLE mdm_record_version (
     id                  BIGINT          NOT NULL COMMENT '版本历史主键（Snowflake）',
@@ -1175,7 +1186,7 @@ CREATE TABLE mdm_record_version (
     PRIMARY KEY (id),
     UNIQUE KEY uk_mdm_rv_record_version (record_id, version_number),
     KEY idx_mdm_rv_record (record_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='主数据记录版本历史表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据记录版本历史表';
 
 CREATE TABLE mdm_category (
     id                  BIGINT          NOT NULL COMMENT '分类主键（Snowflake）',
@@ -1196,7 +1207,7 @@ CREATE TABLE mdm_category (
     PRIMARY KEY (id),
     UNIQUE KEY uk_mdm_cat_code (tenant_id, mdm_entity_id, code),
     KEY idx_mdm_cat_parent (parent_category_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='主数据分类表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据分类表';
 
 CREATE TABLE mdm_record_category (
     id                  BIGINT          NOT NULL COMMENT '关联主键（Snowflake）',
@@ -1207,7 +1218,7 @@ CREATE TABLE mdm_record_category (
     PRIMARY KEY (id),
     UNIQUE KEY uk_mdm_rc_record_category (record_id, category_id),
     KEY idx_mdm_rc_category (category_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='主数据记录分类关联表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据记录分类关联表';
 
 CREATE TABLE mdm_qcheck_task (
     id                  BIGINT          NOT NULL COMMENT '检查任务主键（Snowflake）',
@@ -1227,7 +1238,7 @@ CREATE TABLE mdm_qcheck_task (
     PRIMARY KEY (id),
     KEY idx_mdm_qctask_entity (mdm_entity_id),
     KEY idx_mdm_qctask_status (status)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='主数据质量检查任务表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据质量检查任务表';
 
 CREATE TABLE mdm_qcheck_detail (
     id                  BIGINT          NOT NULL COMMENT '明细主键（Snowflake）',
@@ -1241,7 +1252,7 @@ CREATE TABLE mdm_qcheck_detail (
     KEY idx_mdm_qcd_check (check_id),
     KEY idx_mdm_qcd_rule (rule_id),
     KEY idx_mdm_qcd_record (record_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='主数据质量检查明细表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据质量检查明细表';
 
 CREATE TABLE mdm_qcheck_report (
     id                  BIGINT          NOT NULL COMMENT '报告主键（Snowflake）',
@@ -1253,7 +1264,7 @@ CREATE TABLE mdm_qcheck_report (
     created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '生成时间',
     PRIMARY KEY (id),
     UNIQUE KEY uk_mdm_qrpt_check (check_id)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='主数据质量检查报告表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据质量检查报告表';
 
 
 -- ============================================================

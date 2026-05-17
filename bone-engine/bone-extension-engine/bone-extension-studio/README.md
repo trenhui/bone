@@ -4,45 +4,46 @@
 
 ## 持久化
 
-| Profile / `bone.extension.studio.persistence.mode` | 说明 |
-|--------------------------------------------------|------|
-| **`in-memory`**（默认，`spring.profiles.default=in-memory`） | 内存 Store，单进程联调，不加载 Metadata 自动配置 |
-| **`metadata`** | Bone Metadata SDK + H2 文件库，落表扩展点/插件/版本/执行日志 |
+| Profile | `persistence.mode` | 数据源 | DDL |
+|---------|-------------------|--------|-----|
+| **`in-memory`**（默认） | `in-memory` | 无 | — |
+| **`metadata`** | `metadata` | H2 文件 `./data/extension-studio-metadata` | `schema-h2.sql`（仅本地） |
+| **`metadata-mysql`** / **`prod`** | `metadata` | MySQL `bone` 库（`BONE_DB_*`） | **[`bone-init.sql`](../../../bone-init.sql)** `exts_*`，**禁止** `spring.sql.init` |
 
 ### 内存模式（默认联调）
 
 ```bash
 cd bone-extension-studio
 mvn spring-boot:run -Dmaven.test.skip=true
-# 或显式：-Dspring-boot.run.profiles=in-memory
 ```
 
-### Metadata 模式（H2 文件持久化）
+### Metadata + H2（单机持久化）
 
 ```bash
 mvn spring-boot:run -Dspring-boot.run.profiles=metadata -Dmaven.test.skip=true
 ```
 
-数据目录：`./data/extension-studio-metadata`（可在 `application-metadata.yml` 调整）。
+首次启动会执行 `db/schema-h2.sql`；换库时删除 `./data/extension-studio-metadata*`。
 
-### 生产 MySQL
-
-1. 执行仓库根目录 [`bone-init.sql`](../../../bone-init.sql)（含 `ext_studio_*` 四表，见 [数据库开发规范](../../../doc/architecture/数据库开发规范.md)）
-2. 配置数据源并激活 `metadata` profile：
+### Metadata + MySQL（与平台库一致）
 
 ```bash
-export BONE_DB_URL=jdbc:mysql://localhost:3306/bone
-mvn spring-boot:run -Dspring-boot.run.profiles=metadata
+# 仓库根目录
+mysql -u root -p < bone-init.sql
+
+source ../../../scripts/dev/load-env.sh   # 或 export BONE_DB_*
+cd bone-extension-studio
+mvn spring-boot:run -Dspring-boot.run.profiles=metadata-mysql -Dmaven.test.skip=true
 ```
 
-DDL 脚本：
+`prod` profile 等价导入 `application-metadata-mysql.yml`，仅附加生产日志级别。
 
-- H2：`src/main/resources/db/schema-h2.sql`
-- MySQL：`src/main/resources/db/schema-mysql.sql`
+## API
+
+- 路径：`/api/v1/extension/*`（见 [Bone-API-规范](../../../doc/architecture/Bone-API-规范.md) §13）
+- 健康检查：`GET /actuator/health`
 
 ## 运行时 SDK 执行日志上报（可选）
-
-业务应用启用扩展 SDK 后，可配置将调用结果异步上报 Studio：
 
 ```yaml
 bone:
@@ -53,7 +54,7 @@ bone:
         base-url: http://localhost:8088
 ```
 
-上报接口：`POST /api/extension/execution-logs/ingest`（按插件 `className` 匹配）。
+上报：`POST /api/v1/extension/execution-logs/ingest`
 
 ## 运行时同步
 

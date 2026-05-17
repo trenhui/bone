@@ -29,10 +29,10 @@ public class FieldMetadata {
     private boolean isExtension;
     @Builder.Default
     private Boolean deleted = false;
-    private Long createBy;
-    private Long updateBy;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+    private Long createdBy;
+    private Long updatedBy;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     private transient Object sampleValue;
 
     public boolean isStringType() {

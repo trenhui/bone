@@ -12,7 +12,7 @@ public class MasterDataRecordDTO {
     private Long masterDataEntityId;
     private String data;
     private String status;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     private LocalDateTime publishTime;
 }

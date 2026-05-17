@@ -2,9 +2,9 @@ package com.bone.integration.domain.service;
 
 import com.bone.core.exception.DomainException;
 import com.bone.integration.domain.client.ExternalSystemClient;
-import com.bone.integration.domain.model.connector.Connector;
-import com.bone.integration.domain.model.connector.vo.ConnectorType;
+import com.bone.integration.domain.connector.Connector;
 import com.bone.integration.domain.repository.ConnectorRepository;
+import com.bone.metadata.sdk.query.criteria.Criteria;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -33,11 +33,10 @@ public class ConnectorService {
     }
 
     public void validateConnectorName(String name, Long excludeId) {
-        if (connectorRepository.existsByName(name)) {
-            Connector existing = connectorRepository.findByName(name);
-            if (excludeId == null || !existing.getId().value().equals(excludeId)) {
-                throw new DomainException("连接器名称已存在");
-            }
+        Connector existing =
+                connectorRepository.findOneByCriteria(Criteria.<Connector>create().eq("name", name));
+        if (existing != null && (excludeId == null || !excludeId.equals(existing.getId()))) {
+            throw new DomainException("连接器名称已存在");
         }
     }
 }

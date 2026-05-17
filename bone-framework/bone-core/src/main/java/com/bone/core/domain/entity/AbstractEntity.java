@@ -21,18 +21,18 @@ public abstract class AbstractEntity<ID> extends Entity<ID> implements SoftDelet
     @JsonFormat(timezone = "GMT+8", pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Schema(description = "创建时间")
-    private Date createTime;
+    private Date createdAt;
 
     @Schema(description = "创建人")
-    private Long createBy;
+    private Long createdBy;
 
     @JsonFormat(timezone = "GMT+8", pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Schema(description = "修改时间")
-    private Date updateTime;
+    private Date updatedAt;
 
     @Schema(description = "修改人")
-    private Long updateBy;
+    private Long updatedBy;
 
     @Schema(description = "逻辑删除")
     @Deleted
@@ -53,12 +53,12 @@ public abstract class AbstractEntity<ID> extends Entity<ID> implements SoftDelet
     /**
      * 带有所有字段的构造函数
      */
-    public AbstractEntity(ID id, Date createTime, Long createBy, Date updateTime, Long updateBy, Boolean deleted) {
+    public AbstractEntity(ID id, Date createdAt, Long createdBy, Date updatedAt, Long updatedBy, Boolean deleted) {
         super(id);
-        this.createTime = createTime;
-        this.createBy = createBy;
-        this.updateTime = updateTime;
-        this.updateBy = updateBy;
+        this.createdAt = createdAt;
+        this.createdBy = createdBy;
+        this.updatedAt = updatedAt;
+        this.updatedBy = updatedBy;
         this.deleted = deleted;
     }
 }

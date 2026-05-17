@@ -51,8 +51,8 @@ public class MasterDataEntityWebConverter {
                 .description(dto.getDescription())
                 .category(dto.getCategory())
                 .status(dto.getStatus())
-                .createTime(dto.getCreateTime())
-                .updateTime(dto.getUpdateTime())
+                .createdAt(dto.getCreatedAt())
+                .updatedAt(dto.getUpdatedAt())
                 .fieldCount(dto.getFieldCount())
                 .build();
     }

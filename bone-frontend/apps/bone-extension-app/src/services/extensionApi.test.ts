@@ -32,21 +32,21 @@ describe('extensionApi', () => {
     mockDelete.mockReset();
   });
 
-  it('listExtPoints calls GET /extension/points', async () => {
+  it('listExtPoints calls GET /v1/extension/points', async () => {
     mockGet.mockResolvedValue({
       data: { success: true, data: [{ id: 1, name: 'p1', enabled: true }] },
     });
     const rows = await listExtPoints();
-    expect(mockGet).toHaveBeenCalledWith('/extension/points');
+    expect(mockGet).toHaveBeenCalledWith('/v1/extension/points');
     expect(rows).toHaveLength(1);
   });
 
-  it('createExtPoint calls POST /extension/points', async () => {
+  it('createExtPoint calls POST /v1/extension/points', async () => {
     mockPost.mockResolvedValue({
       data: { success: true, data: { id: 2, name: 'n', interfaceName: 'com.X', enabled: true } },
     });
     await createExtPoint({ name: 'n', interfaceName: 'com.X' });
-    expect(mockPost).toHaveBeenCalledWith('/extension/points', { name: 'n', interfaceName: 'com.X' });
+    expect(mockPost).toHaveBeenCalledWith('/v1/extension/points', { name: 'n', interfaceName: 'com.X' });
   });
 
   it('publishPluginRuntime calls POST publish-runtime', async () => {
@@ -54,7 +54,7 @@ describe('extensionApi', () => {
       data: { success: true, data: { id: 1, published: true } },
     });
     await publishPluginRuntime(1);
-    expect(mockPost).toHaveBeenCalledWith('/extension/plugins/1/publish-runtime');
+    expect(mockPost).toHaveBeenCalledWith('/v1/extension/plugins/1/publish-runtime');
   });
 
   it('listPlugins throws when API returns success=false', async () => {

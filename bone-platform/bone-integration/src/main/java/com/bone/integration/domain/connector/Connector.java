@@ -2,9 +2,9 @@ package com.bone.integration.domain.connector;
 
 import com.bone.core.domain.AggregateRoot;
 import com.bone.core.exception.DomainException;
-import com.bone.integration.domain.connector.event.ConnectorCreatedEvent;
-import com.bone.integration.domain.connector.vo.ConnectorStatus;
-import com.bone.integration.domain.connector.vo.ConnectorType;
+import com.bone.integration.domain.model.connector.event.ConnectorCreatedEvent;
+import com.bone.integration.domain.model.connector.vo.ConnectorStatus;
+import com.bone.integration.domain.model.connector.vo.ConnectorType;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -55,6 +55,18 @@ public class Connector extends AggregateRoot<Long> {
             throw new DomainException("连接器已禁用");
         }
         this.status = ConnectorStatus.DISABLED;
+    }
+
+    public void update(String name, ConnectorType type, Map<String, Object> config) {
+        if (name == null || name.isBlank()) {
+            throw new DomainException("连接器名称不能为空");
+        }
+        if (type == null) {
+            throw new DomainException("连接器类型不能为空");
+        }
+        this.name = name;
+        this.type = type;
+        updateConfig(config);
     }
 
     public void updateConfig(Map<String, Object> config) {

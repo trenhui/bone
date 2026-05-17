@@ -6,10 +6,10 @@ INSERT INTO users (
   id,
   name,
   role_id,
-  create_time,
-  create_by,
-  update_time,
-  update_by,
+  created_at,
+  created_by,
+  updated_at,
+  updated_by,
   deleted
 ) VALUES
 -- 系统管理员（未删除）
@@ -92,7 +92,7 @@ INSERT INTO roles (id, role_name, description) VALUES
 -- 2. 用户表（50 个全新用户）
 -- 为方便演示，role_id 先用固定值，后面再统一建关联
 -- =========================================================
-INSERT INTO users (id, name, role_id, create_time, create_by, update_time, update_by, deleted) VALUES
+INSERT INTO users (id, name, role_id, created_at, created_by, updated_at, updated_by, deleted) VALUES
 (20000, 'Alpha',   20000, NOW(), 20000, NOW(), 20000, 0),
 (20001, 'Beta',    20000, NOW(), 20000, NOW(), 20000, 0),
 (20002, 'Gamma',   20000, NOW(), 20000, NOW(), 20000, 0),
@@ -286,7 +286,7 @@ INSERT INTO field_permission (role_code, entity_type, field_name, can_read, can_
 
 
 ---- 插入测试数据
---INSERT INTO sales_record (category, amount, price, status, create_time, region, product_name, quantity) VALUES
+--INSERT INTO sales_record (category, amount, price, status, created_at, region, product_name, quantity) VALUES
 --('电子产品', 1000.00, 500.00, 'ACTIVE', '2023-01-15 10:30:00', '华东', '智能手机', 2),
 --('电子产品', 2500.00, 1250.00, 'ACTIVE', '2023-01-16 14:20:00', '华东', '笔记本电脑', 2),
 --('电子产品', 800.00, 800.00, 'ACTIVE', '2023-01-17 09:15:00', '华东', '耳机', 1),

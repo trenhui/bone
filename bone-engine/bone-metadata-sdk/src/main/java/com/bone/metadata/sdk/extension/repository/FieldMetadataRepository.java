@@ -90,17 +90,17 @@ public class FieldMetadataRepository {
                     + "id, tenant_id, app_code, biz_identity_code, entity_type, "
                     + "name, column_name, data_type, is_primary_key, is_nullable, "
                     + "default_value, constraints, is_virtual, is_extension, "
-                    + "deleted, create_by, update_by, create_time, update_time"
+                    + "deleted, created_by, updated_by, created_at, updated_at"
                     + ") VALUES ("
                     + ":id, :tenantId, :appCode, :bizIdentityCode, :entityType, "
                     + ":name, :columnName, :dataType, :isPrimaryKey, :isNullable, "
                     + ":defaultValue, :constraints, :isVirtual, :isExtension, "
-                    + ":deleted, :createBy, :updateBy, :createTime, :updateTime"
+                    + ":deleted, :createdBy, :updatedBy, :createdAt, :updatedAt"
                     + ") ON DUPLICATE KEY UPDATE "
                     + "column_name = VALUES(column_name), "
                     + "data_type = VALUES(data_type), "
-                    + "update_by = VALUES(update_by), "
-                    + "update_time = VALUES(update_time)";
+                    + "updated_by = VALUES(updated_by), "
+                    + "updated_at = VALUES(updated_at)";
         } else {
             sql = "MERGE INTO field_metadata AS target "
                     + "USING (VALUES (:id, :tenantId, :appCode, :bizIdentityCode, :entityType, :name)) "
@@ -113,18 +113,18 @@ public class FieldMetadataRepository {
                     + "WHEN MATCHED THEN UPDATE SET "
                     + "  column_name = :columnName, "
                     + "  data_type = :dataType, "
-                    + "  update_by = :updateBy, "
-                    + "  update_time = :updateTime "
+                    + "  updated_by = :updatedBy, "
+                    + "  updated_at = :updatedAt "
                     + "WHEN NOT MATCHED THEN INSERT ("
                     + "  id, tenant_id, app_code, biz_identity_code, entity_type, name, "
                     + "  column_name, data_type, is_primary_key, is_nullable, "
                     + "  default_value, constraints, is_virtual, is_extension, "
-                    + "  deleted, create_by, update_by, create_time, update_time"
+                    + "  deleted, created_by, updated_by, created_at, updated_at"
                     + ") VALUES ("
                     + "  :id, :tenantId, :appCode, :bizIdentityCode, :entityType, :name, "
                     + "  :columnName, :dataType, :isPrimaryKey, :isNullable, "
                     + "  :defaultValue, :constraints, :isVirtual, :isExtension, "
-                    + "  :deleted, :createBy, :updateBy, :createTime, :updateTime"
+                    + "  :deleted, :createdBy, :updatedBy, :createdAt, :updatedAt"
                     + ")";
         }
 
@@ -174,10 +174,10 @@ public class FieldMetadataRepository {
                 .addValue("isVirtual",       m.isVirtual())
                 .addValue("isExtension",     m.isExtension())
                 .addValue("deleted",         m.getDeleted())
-                .addValue("createBy",        m.getCreateBy())
-                .addValue("updateBy",        m.getUpdateBy())
-                .addValue("createTime",      m.getCreateTime())
-                .addValue("updateTime",      m.getUpdateTime());
+                .addValue("createdBy",        m.getCreatedBy())
+                .addValue("updatedBy",        m.getUpdatedBy())
+                .addValue("createdAt",      m.getCreatedAt())
+                .addValue("updatedAt",      m.getUpdatedAt());
     }
 
     /** 构建 WHERE 公共参数 */

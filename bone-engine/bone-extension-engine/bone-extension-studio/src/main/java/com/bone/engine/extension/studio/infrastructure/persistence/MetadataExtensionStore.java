@@ -29,7 +29,7 @@ public class MetadataExtensionStore implements ExtensionStore {
     @Override
     public List<Extension> findAll() {
         return repository.findByCriteria(Criteria.<ExtStudioExtensionImpl>create().orderByDesc(
-                        ExtStudioExtensionImpl::getCreateTime))
+                        ExtStudioExtensionImpl::getCreatedAt))
                 .stream()
                 .map(StudioPersistenceConverter::toDomain)
                 .sorted(Comparator.comparing(Extension::getId, Comparator.nullsLast(Long::compareTo)))
@@ -41,6 +41,18 @@ public class MetadataExtensionStore implements ExtensionStore {
     public Extension findById(Long id) {
         ExtStudioExtensionImpl row = repository.findById(id);
         return row == null ? null : StudioPersistenceConverter.toDomain(row);
+    }
+
+    @Override
+    @Nullable
+    public Extension findByClassName(String className) {
+        if (!StringUtils.hasText(className)) {
+            return null;
+        }
+        Criteria<ExtStudioExtensionImpl> criteria = Criteria.<ExtStudioExtensionImpl>create()
+                .eq(ExtStudioExtensionImpl::getClassName, className.trim());
+        List<ExtStudioExtensionImpl> rows = repository.findByCriteria(criteria);
+        return rows.isEmpty() ? null : StudioPersistenceConverter.toDomain(rows.get(0));
     }
 
     @Override
@@ -102,7 +114,7 @@ public class MetadataExtensionStore implements ExtensionStore {
             return false;
         }
         ExtStudioExtensionImpl row = StudioPersistenceConverter.toEntity(extension);
-        row.setUpdateTime(new Date());
+        row.setUpdatedAt(new Date());
         return repository.update(row);
     }
 

@@ -49,15 +49,15 @@ public class UserRepositoryCUDTest  {
     }
 
     // Helper method to create a test User instance
-    private User createTestUser(String name, Long roleId, Long createBy, boolean deleted) {
+    private User createTestUser(String name, Long roleId, Long createdBy, boolean deleted) {
         User user = new User();
         user.setId(DistributedIdGenerator.generateLongId());
         user.setName(name);
         user.setRoleId(roleId);
-        user.setCreateTime(Timestamp.from(Instant.now()));
-        user.setCreateBy(createBy);
-        user.setUpdateTime(Timestamp.from(Instant.now()));
-        user.setUpdateBy(createBy);
+        user.setCreatedAt(Timestamp.from(Instant.now()));
+        user.setCreatedBy(createdBy);
+        user.setUpdatedAt(Timestamp.from(Instant.now()));
+        user.setUpdatedBy(createdBy);
         user.setDeleted(deleted);
         return user;
     }
@@ -76,7 +76,7 @@ public class UserRepositoryCUDTest  {
         assertNotNull(insertedUser, "Inserted user should exist");
         assertEquals(user.getName(), insertedUser.getName(), "Name should match");
         assertEquals(user.getRoleId(), insertedUser.getRoleId(), "Role ID should match");
-        assertNotNull(insertedUser.getCreateTime(), "Create time should be set");
+        assertNotNull(insertedUser.getCreatedAt(), "Create time should be set");
         assertEquals(false, insertedUser.getDeleted(), "User should not be soft deleted");
     }
 
@@ -128,7 +128,7 @@ public class UserRepositoryCUDTest  {
         assertNotNull(savedUser, "Saved user should exist");
         assertEquals(user.getName(), savedUser.getName(), "Name should match");
         assertEquals(user.getRoleId(), savedUser.getRoleId(), "Role ID should match");
-        assertNotNull(savedUser.getCreateTime(), "Create time should be set");
+        assertNotNull(savedUser.getCreatedAt(), "Create time should be set");
     }
 
     // 4. Test save operation (update existing user)
@@ -140,8 +140,8 @@ public class UserRepositoryCUDTest  {
         User updatedUser = userRepository.findById(userId);
         updatedUser.setName("UpdatedUser");
         updatedUser.setRoleId(2L);
-        updatedUser.setUpdateBy(1002L);
-        updatedUser.setUpdateTime(Timestamp.from(Instant.now()));
+        updatedUser.setUpdatedBy(1002L);
+        updatedUser.setUpdatedAt(Timestamp.from(Instant.now()));
 
         // Act
         userRepository.save(updatedUser);
@@ -151,7 +151,7 @@ public class UserRepositoryCUDTest  {
         assertNotNull(savedUser, "Updated user should exist");
         assertEquals("UpdatedUser", savedUser.getName(), "Name should be updated");
         assertEquals(2L, savedUser.getRoleId(), "Role ID should be updated");
-        assertEquals(1002L, savedUser.getUpdateBy(), "Update by should be updated");
+        assertEquals(1002L, savedUser.getUpdatedBy(), "Update by should be updated");
     }
 
     // 5. Test batchSave operation
@@ -190,7 +190,7 @@ public class UserRepositoryCUDTest  {
         User user = userRepository.findById(cuser.getId());
         user.setName("UpdatedUser");
         user.setRoleId(2L);
-        user.setUpdateBy(1002L);
+        user.setUpdatedBy(1002L);
 
         // Act
         boolean result = userRepository.update(user);
@@ -200,7 +200,7 @@ public class UserRepositoryCUDTest  {
         User updatedUser = userRepository.findById(cuser.getId());
         assertEquals("UpdatedUser", updatedUser.getName(), "Name should be updated");
         assertEquals(2L, updatedUser.getRoleId(), "Role ID should be updated");
-        assertEquals(1002L, updatedUser.getUpdateBy(), "Update by should be updated");
+        assertEquals(1002L, updatedUser.getUpdatedBy(), "Update by should be updated");
     }
 
     @Test
@@ -222,7 +222,7 @@ public class UserRepositoryCUDTest  {
         // Arrange
         User updateTemplate = new User();
         updateTemplate.setName("BatchUpdatedUser");
-        updateTemplate.setUpdateBy(1002L);
+        updateTemplate.setUpdatedBy(1002L);
         Criteria<User> criteria = Criteria.<User>create().eq("role_id", 1L);
 
         // Act
@@ -233,7 +233,7 @@ public class UserRepositoryCUDTest  {
         List<User> updatedUsers = userRepository.findByCriteria(criteria);
         updatedUsers.forEach(user -> {
             assertEquals("BatchUpdatedUser", user.getName(), "Name should be updated");
-            assertEquals(1002L, user.getUpdateBy(), "Update by should be updated");
+            assertEquals(1002L, user.getUpdatedBy(), "Update by should be updated");
         });
     }
 
@@ -327,10 +327,10 @@ public class UserRepositoryCUDTest  {
 
         // Assert
         User insertedUser = userRepository.findById(userId);
-        assertNotNull(insertedUser.getCreateTime(), "Create time should be set");
-        assertNotNull(insertedUser.getUpdateTime(), "Update time should be set");
-        assertEquals(1001L, insertedUser.getCreateBy(), "Create by should match");
-        assertEquals(1001L, insertedUser.getUpdateBy(), "Update by should match");
+        assertNotNull(insertedUser.getCreatedAt(), "Create time should be set");
+        assertNotNull(insertedUser.getUpdatedAt(), "Update time should be set");
+        assertEquals(1001L, insertedUser.getCreatedBy(), "Create by should match");
+        assertEquals(1001L, insertedUser.getUpdatedBy(), "Update by should match");
     }
 
     @Test
@@ -340,15 +340,15 @@ public class UserRepositoryCUDTest  {
         // Arrange
         User user = userRepository.findById(cuser.getId());
         user.setName("AuditUpdatedUser");
-        user.setUpdateBy(1002L);
-        user.setUpdateTime(new Timestamp(user.getCreateTime().getTime() + 1000)); // +1秒
+        user.setUpdatedBy(1002L);
+        user.setUpdatedAt(new Timestamp(user.getCreatedAt().getTime() + 1000)); // +1秒
 
         // Act
         userRepository.update(user);
 
         // Assert
         User updatedUser =  userRepository.findById(cuser.getId());
-        assertEquals(1002L, updatedUser.getUpdateBy(), "Update by should be updated");
-        assertTrue(updatedUser.getUpdateTime().after(updatedUser.getCreateTime()), "Update time should be later than create time");
+        assertEquals(1002L, updatedUser.getUpdatedBy(), "Update by should be updated");
+        assertTrue(updatedUser.getUpdatedAt().after(updatedUser.getCreatedAt()), "Update time should be later than create time");
     }
 }

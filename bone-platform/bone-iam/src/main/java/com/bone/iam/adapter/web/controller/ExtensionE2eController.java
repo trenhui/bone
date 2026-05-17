@@ -12,10 +12,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 扩展管理 API 联调占位（仅当 Studio 未部署且显式开启 stub 时生效）。
- * 生产/联调请启动 bone-extension-studio（8088），由网关或 Shell 将 {@code /api/extension} 转发至 Studio。
+ * 生产/联调请启动 bone-extension-studio（8088），由网关或 Shell 将 {@code /api/v1/extension} 转发至 Studio。
  */
 @RestController
-@RequestMapping("/api/extension")
+@RequestMapping("/api/v1/extension")
 @ConditionalOnProperty(prefix = "bone.iam.extension", name = "stub-enabled", havingValue = "true")
 public class ExtensionE2eController {
 

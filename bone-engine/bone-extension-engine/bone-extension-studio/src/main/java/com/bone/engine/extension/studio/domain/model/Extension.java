@@ -101,6 +101,24 @@ public class Extension extends Entity<Long> {
         this.scenario = scenario;
         this.updateTime = LocalDateTime.now();
     }
+
+    public void setUseCase(String useCase) {
+        this.useCase = useCase;
+        this.updateTime = LocalDateTime.now();
+    }
+
+    public void setUserGroup(String userGroup) {
+        this.userGroup = userGroup;
+        this.updateTime = LocalDateTime.now();
+    }
+
+    public void setCreateTime(LocalDateTime createTime) {
+        this.createTime = createTime;
+    }
+
+    public void setUpdateTime(LocalDateTime updateTime) {
+        this.updateTime = updateTime;
+    }
     
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;

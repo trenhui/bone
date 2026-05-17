@@ -24,7 +24,7 @@ public class AlertEvent extends com.bone.core.domain.AggregateRoot<Long> {
     private AlertLevel alertLevel;
     private String message;
     private AlertStatus status;
-    private LocalDateTime createTime;
+    private LocalDateTime createdAt;
     private LocalDateTime resolveTime;
 
     public static AlertEvent create(Long id, Long alertRuleId, String ruleName, String metricName,
@@ -40,7 +40,7 @@ public class AlertEvent extends com.bone.core.domain.AggregateRoot<Long> {
         event.alertLevel = alertLevel;
         event.message = message;
         event.status = AlertStatus.TRIGGERED;
-        event.createTime = LocalDateTime.now();
+        event.createdAt = LocalDateTime.now();
         return event;
     }
 

@@ -20,8 +20,8 @@ public class MasterDataRecord extends AggregateRoot<Long> {
     private Long masterDataEntityId;
     private String data;
     private MasterDataRecordStatus status;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     private LocalDateTime publishTime;
 
     public static MasterDataRecord create(Long id, Long masterDataEntityId, String data) {
@@ -30,8 +30,8 @@ public class MasterDataRecord extends AggregateRoot<Long> {
         record.masterDataEntityId = masterDataEntityId;
         record.data = data;
         record.status = MasterDataRecordStatus.DRAFT;
-        record.createTime = LocalDateTime.now();
-        record.updateTime = LocalDateTime.now();
+        record.createdAt = LocalDateTime.now();
+        record.updatedAt = LocalDateTime.now();
         record.addDomainEvent(new MasterDataRecordCreatedEvent(record));
         return record;
     }
@@ -42,7 +42,7 @@ public class MasterDataRecord extends AggregateRoot<Long> {
         }
         this.status = MasterDataRecordStatus.PUBLISHED;
         this.publishTime = LocalDateTime.now();
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
         this.addDomainEvent(new MasterDataRecordPublishedEvent(this));
     }
 
@@ -51,6 +51,6 @@ public class MasterDataRecord extends AggregateRoot<Long> {
             throw new DomainException("已发布的主数据记录不能修改");
         }
         this.data = data;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 }

@@ -8,15 +8,15 @@ import java.util.Date;
  *
  */
 public interface Auditable<U> {
-    U getCreateBy();
-    void setCreateBy(U createBy);
+    U getCreatedBy();
+    void setCreatedBy(U createdBy);
 
-    Date getCreateTime();
-    void setCreateTime(Date createTime);
+    Date getCreatedAt();
+    void setCreatedAt(Date createdAt);
 
-    U getUpdateBy();
-    void setUpdateBy(U updateBy);
+    U getUpdatedBy();
+    void setUpdatedBy(U updatedBy);
 
-    Date getUpdateTime();
-    void setUpdateTime(Date updateTime);
+    Date getUpdatedAt();
+    void setUpdatedAt(Date updatedAt);
 }

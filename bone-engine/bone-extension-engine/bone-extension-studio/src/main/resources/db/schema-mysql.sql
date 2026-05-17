@@ -1,6 +1,6 @@
--- 已合并至仓库根目录 bone-init.sql（§5 ext_studio_*）。本文件仅作对照，勿单独执行。
--- Studio 扩展管理表（与平台 ext_* 模块命名对齐，字段适配 Studio 领域模型）
-CREATE TABLE IF NOT EXISTS ext_studio_extension_point (
+-- 已合并至仓库根目录 bone-init.sql（§5 exts_*）。本文件仅作对照，勿单独执行。
+-- Studio 扩展管理表（前缀 exts_，与 metadata ext_data_* 区分）
+CREATE TABLE IF NOT EXISTS exts_extension_point (
     id                  BIGINT          NOT NULL COMMENT '主键',
     tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
     point_name          VARCHAR(255)    NOT NULL COMMENT '扩展点名称',
@@ -10,18 +10,19 @@ CREATE TABLE IF NOT EXISTS ext_studio_extension_point (
     biz_domain          VARCHAR(100)    DEFAULT NULL COMMENT '业务域',
     category            VARCHAR(100)    DEFAULT NULL COMMENT '分类',
     status              VARCHAR(20)     NOT NULL DEFAULT 'ENABLED',
-    created_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    updated_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
-    created_by           BIGINT          DEFAULT NULL,
-    updated_by           BIGINT          DEFAULT NULL,
+    created_by          BIGINT          DEFAULT NULL,
+    updated_by          BIGINT          DEFAULT NULL,
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
     deleted             TINYINT(1)      NOT NULL DEFAULT 0,
     version             INT             NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
-    UNIQUE KEY uk_ext_studio_ep_code (tenant_id, point_code),
-    KEY idx_ext_studio_ep_iface (interface_name)
+    UNIQUE KEY uk_exts_ep_code (tenant_id, point_code),
+    KEY idx_exts_ep_tenant (tenant_id, status),
+    KEY idx_exts_ep_iface (interface_name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Studio 扩展点';
 
-CREATE TABLE IF NOT EXISTS ext_studio_extension_impl (
+CREATE TABLE IF NOT EXISTS exts_extension_impl (
     id                  BIGINT          NOT NULL COMMENT '主键',
     tenant_id           BIGINT          NOT NULL DEFAULT 0,
     extension_point_id  BIGINT          NOT NULL,
@@ -39,18 +40,19 @@ CREATE TABLE IF NOT EXISTS ext_studio_extension_impl (
     status              TINYINT         NOT NULL DEFAULT 1,
     is_default          TINYINT(1)      NOT NULL DEFAULT 0,
     rollout_percent     TINYINT         DEFAULT NULL,
-    created_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    updated_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
-    created_by           BIGINT          DEFAULT NULL,
-    updated_by           BIGINT          DEFAULT NULL,
+    created_by          BIGINT          DEFAULT NULL,
+    updated_by          BIGINT          DEFAULT NULL,
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
     deleted             TINYINT(1)      NOT NULL DEFAULT 0,
     version             INT             NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
-    UNIQUE KEY uk_ext_studio_ei_code (extension_point_id, impl_code),
-    KEY idx_ext_studio_ei_point (extension_point_id)
+    UNIQUE KEY uk_exts_ei_code (extension_point_id, impl_code),
+    KEY idx_exts_ei_tenant (tenant_id, extension_point_id),
+    KEY idx_exts_ei_point (extension_point_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Studio 扩展实现';
 
-CREATE TABLE IF NOT EXISTS ext_studio_plugin_version (
+CREATE TABLE IF NOT EXISTS exts_plugin_version (
     id                  BIGINT          NOT NULL COMMENT '主键',
     tenant_id           BIGINT          NOT NULL DEFAULT 0,
     plugin_id           BIGINT          NOT NULL,
@@ -60,18 +62,19 @@ CREATE TABLE IF NOT EXISTS ext_studio_plugin_version (
     checksum            VARCHAR(64)     NOT NULL,
     is_active           TINYINT(1)      NOT NULL DEFAULT 0,
     change_log          VARCHAR(500)    DEFAULT NULL,
-    created_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    updated_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
-    created_by           BIGINT          DEFAULT NULL,
-    updated_by           BIGINT          DEFAULT NULL,
+    created_by          BIGINT          DEFAULT NULL,
+    updated_by          BIGINT          DEFAULT NULL,
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
     deleted             TINYINT(1)      NOT NULL DEFAULT 0,
     version             INT             NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
-    UNIQUE KEY uk_ext_studio_pv (plugin_id, release_version),
-    KEY idx_ext_studio_pv_plugin (plugin_id)
+    UNIQUE KEY uk_exts_pv (plugin_id, release_version),
+    KEY idx_exts_pv_tenant (tenant_id, plugin_id),
+    KEY idx_exts_pv_plugin (plugin_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Studio 插件版本';
 
-CREATE TABLE IF NOT EXISTS ext_studio_plugin_execution_log (
+CREATE TABLE IF NOT EXISTS exts_plugin_execution_log (
     id                  BIGINT          NOT NULL COMMENT '主键',
     tenant_id           BIGINT          NOT NULL DEFAULT 0,
     plugin_id           BIGINT          NOT NULL,
@@ -82,13 +85,14 @@ CREATE TABLE IF NOT EXISTS ext_studio_plugin_execution_log (
     output_data         JSON            DEFAULT NULL,
     error_message       TEXT,
     duration_ms         BIGINT          DEFAULT NULL,
-    created_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
-    updated_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
-    created_by           BIGINT          DEFAULT NULL,
-    updated_by           BIGINT          DEFAULT NULL,
+    created_by          BIGINT          DEFAULT NULL,
+    updated_by          BIGINT          DEFAULT NULL,
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
     deleted             TINYINT(1)      NOT NULL DEFAULT 0,
     version             INT             NOT NULL DEFAULT 0,
     PRIMARY KEY (id),
-    UNIQUE KEY uk_ext_studio_pel_exec (execution_id),
-    KEY idx_ext_studio_pel_plugin (plugin_id)
+    UNIQUE KEY uk_exts_pel_exec (execution_id),
+    KEY idx_exts_pel_tenant (tenant_id, plugin_id, created_at),
+    KEY idx_exts_pel_plugin (plugin_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Studio 插件执行日志';

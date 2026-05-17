@@ -20,8 +20,8 @@ public class MasterDataField extends AggregateRoot<Long> {
     private Boolean required;
     private String defaultValue;
     private String description;
-    private LocalDateTime createTime;
-    private LocalDateTime updateTime;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     public static MasterDataField create(
             Long masterDataEntityId,
@@ -40,8 +40,8 @@ public class MasterDataField extends AggregateRoot<Long> {
         field.required = required;
         field.defaultValue = defaultValue;
         field.description = description;
-        field.createTime = LocalDateTime.now();
-        field.updateTime = LocalDateTime.now();
+        field.createdAt = LocalDateTime.now();
+        field.updatedAt = LocalDateTime.now();
         field.addDomainEvent(new MasterDataFieldAddedEvent(field));
         return field;
     }
@@ -60,6 +60,6 @@ public class MasterDataField extends AggregateRoot<Long> {
         this.required = required;
         this.defaultValue = defaultValue;
         this.description = description;
-        this.updateTime = LocalDateTime.now();
+        this.updatedAt = LocalDateTime.now();
     }
 }

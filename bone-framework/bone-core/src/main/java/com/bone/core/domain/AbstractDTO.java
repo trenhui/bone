@@ -34,13 +34,13 @@ public abstract class AbstractDTO<ID> implements Serializable {
     @JsonFormat(timezone = "GMT+8", pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Schema(description = "创建时间")
-    private Date createTime;
+    private Date createdAt;
 
     /**
      * 创建人
      */
     @Schema(description = "创建人")
-    private Long createBy;
+    private Long createdBy;
 
     /**
      * 修改时间
@@ -48,13 +48,13 @@ public abstract class AbstractDTO<ID> implements Serializable {
     @JsonFormat(timezone = "GMT+8", pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Schema(description = "修改时间")
-    private Date updateTime;
+    private Date updatedAt;
 
     /**
      * 修改人
      */
     @Schema(description = "修改人")
-    private Long updateBy;
+    private Long updatedBy;
 
     @Schema(description = "逻辑删除")
     private Boolean deleted = false;

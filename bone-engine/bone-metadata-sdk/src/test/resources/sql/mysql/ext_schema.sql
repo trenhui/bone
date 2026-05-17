@@ -56,10 +56,10 @@ CREATE TABLE field_metadata (
     is_virtual TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否为虚拟字段',
     is_extension TINYINT(1) NOT NULL DEFAULT 0 COMMENT '是否为扩展字段',
     deleted TINYINT(1) DEFAULT 0 COMMENT '逻辑删除标识',
-    create_by BIGINT NULL COMMENT '创建者ID',
-    update_by BIGINT NULL COMMENT '更新者ID',
-    create_time TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6) COMMENT '创建时间',
-    update_time TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '更新时间',
+    created_by BIGINT NULL COMMENT '创建者ID',
+    updated_by BIGINT NULL COMMENT '更新者ID',
+    created_at TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6) COMMENT '创建时间',
+    updated_at TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '更新时间',
     CONSTRAINT uk_field_metadata UNIQUE (entity_type, name),
     INDEX idx_field_data_type (data_type)
 ) ENGINE=InnoDB CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
@@ -155,10 +155,10 @@ CREATE TABLE ext_data_reserved (
 
     -- 逻辑删除与审计字段
     deleted TINYINT(1) DEFAULT 0 COMMENT '逻辑删除标识（0未删除，1已删除）',
-    create_by BIGINT NULL COMMENT '创建者ID（关联sys_user.id，无外键）',
-    update_by BIGINT NULL COMMENT '更新者ID（关联sys_user.id，无外键）',
-    create_time TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6) COMMENT '创建时间（精确到微秒）',
-    update_time TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '更新时间（自动刷新）',
+    created_by BIGINT NULL COMMENT '创建者ID（关联sys_user.id，无外键）',
+    updated_by BIGINT NULL COMMENT '更新者ID（关联sys_user.id，无外键）',
+    created_at TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6) COMMENT '创建时间（精确到微秒）',
+    updated_at TIMESTAMP(6) DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '更新时间（自动刷新）',
 
     -- 唯一索引：强制租户+应用+业务身份+实体类型+实体ID 唯一
     CONSTRAINT uniq_ext_data_biz_uniq

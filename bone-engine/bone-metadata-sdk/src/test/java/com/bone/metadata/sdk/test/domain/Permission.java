@@ -57,13 +57,13 @@ public class Permission extends Entity<Long>  implements Extensible {
     @JsonFormat(timezone = "GMT+8", pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Schema(description = "创建时间")
-    private LocalDateTime createTime;
+    private LocalDateTime createdAt;
 
     // 修改时间：使用 LocalDateTime
     @JsonFormat(timezone = "GMT+8", pattern = "yyyy-MM-dd HH:mm:ss")
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Schema(description = "修改时间")
-    private LocalDateTime updateTime;
+    private LocalDateTime updatedAt;
 
     @Transient
     private Set<Role> roles = new HashSet<>();

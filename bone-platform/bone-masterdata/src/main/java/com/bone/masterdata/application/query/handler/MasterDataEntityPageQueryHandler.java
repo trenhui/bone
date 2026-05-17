@@ -30,7 +30,7 @@ public class MasterDataEntityPageQueryHandler {
         }
         
         return query
-                .orderBy("createTime", "desc")
+                .orderBy("createdAt", "desc")
                 .page(qry.getPageNum(), qry.getPageSize())
                 .mapTo(MasterDataEntityDTO.class);
     }

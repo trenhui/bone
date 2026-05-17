@@ -15,6 +15,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/** @deprecated 使用 {@link ExtensionManagementController} {@code /api/v1/extension/points}，2026-09-01 移除 */
+@Deprecated(since = "1.0.0", forRemoval = true)
 @RestController
 @RequestMapping("/api/ext-points")
 public class ExtPointController {

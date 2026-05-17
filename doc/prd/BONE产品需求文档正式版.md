@@ -3,7 +3,7 @@
 ## —— 企业级全栈开源快速开发平台 · 正式版（v2.1 修订，基线 v2.0 + 文档真源对齐）
 
 > **产品口号（与根目录 README 一致）**：**Build Once, Natively Everywhere** — 元数据驱动，一次构建、多端运行。  
-> **真源优先级**：**开源许可、仓库地址、默认端口与快速开始** 以根目录 **README.md**、**LICENSE** 及 **`bone-parent` / 各模块 `application.yml`** 为准；本 PRD 若与之冲突，以仓库为准并应回写修订本 PRD。  
+> **真源优先级**：**开源许可、仓库地址与快速开始** 以根目录 **README.md**、**LICENSE** 为准；**默认端口** 以 **`doc/wiki/03-本地开发与构建.md`** 与各模块 **`application.yml`** 为准；依赖版本以 **`bone-parent/pom.xml`** 为准。本 PRD 若与之冲突，以仓库为准并应回写修订本 PRD。  
 > **文档性质**：正式产品需求文档，可直接指导研发排期、测试用例编写  
 > **适用产品**：BONE企业级全栈开源快速开发平台  
 > **对标标准**：业界最佳实践、字节跳动 DRF、腾讯 TAPD、阿里云效、OutSystems / Mendix 元数据驱动架构  
@@ -148,7 +148,7 @@
 
 | PRD 三大核心能力（产品叙事） | README 技术引擎 / 能力域 |
 |------------------------------|---------------------------|
-| **应用生成** | **智能元数据引擎**（动态建模、代码生成、热更新等）+ 控制台入口 |
+| **应用生成** | **智能元数据引擎**（规则/表达式/SmartQL）+ **studio-generator**（代码生成）+ **bone-metadata-sdk**（持久化）+ 控制台（`bone-metadata-app` / `bone-generator-app`）；映射见 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) |
 | **企业集成** | **集成引擎**（连接器、流程编排）；**主数据与质量**由 **企业主数据平台** 独立承载，在消费链路与集成侧协同 |
 | **扩展运行时** | **ExtPoint 扩展引擎**（扩展点、插件生命周期、隔离与观测） |
 | （横切，贯穿上表） | **IAM / 审计 / 多租户（商业版）/ 系统管理** — 企业级安全与运维基线 |
@@ -304,7 +304,7 @@
 
 | 核心能力 | 功能模块 | 详细能力 |
 |----------|----------|----------|
-| **应用生成（Metadata-driven App Gen）** | 元数据管理 | 业务建模、代码生成、模板管理 |
+| **应用生成（Metadata-driven App Gen）** | 元数据管理（能力包） | 业务建模、扩展字段、规则引擎、代码生成、模板管理；工程映射见 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) |
 | | 控制台与仪表盘 | 系统概览、快速入口 |
 | **企业集成（Integration Fabric）** | 集成管理 | 连接器管理、流程编排、流程监控 |
 | | 主数据管理 | 主数据实体、数据质量、数据记录 |
@@ -323,8 +323,9 @@
 
 | 功能 | 社区版 | 商业版 |
 |------|--------|--------|
-| 元数据管理（实体、字段、关系） | ✅ | ✅ |
-| 代码生成（默认模板） | ✅ | ✅ |
+| 元数据管理（实体、字段、关系） | 🔶 MVP-2（DDL 已有；REST/UI 演进中） | ✅ |
+| 扩展字段 EAV（sdk + server） | ✅ | ✅ |
+| 代码生成（默认模板） | 🔶（studio-generator） | ✅ |
 | 自定义模板 | ❌ | ✅ |
 | 主数据管理（实体+质量规则） | ❌ | ✅ |
 | 集成管理（连接器+流程编排） | 仅支持 REST/SOAP 连接器 | 全部连接器 + 高级 EIP |
@@ -376,6 +377,8 @@
 | **P2** | 增值体验，有条件可纳入 | 阶段3 |
 
 ### 4.2 功能模块关系图
+
+> **工程注记**：图中「元数据管理」= 产品模块；实现为 `bone-metadata-sdk` + `server` + `engine` + `studio-generator` + `bone-metadata-app`，非单一服务。见 §4.4 实现映射。
 
 ```mermaid
 flowchart TD
@@ -457,6 +460,13 @@ Scenario: 使用快速入口
 ---
 
 ### 4.4 元数据管理（P0）
+
+> **工程实现映射（单一真源）**：[元数据能力-实现映射与竞品对照.md](../design/modules/元数据能力-实现映射与竞品对照.md)  
+> - **bone-metadata-sdk**：平台数据面（持久化 + 扩展字段 EAV），各业务模块必选。  
+> - **bone-metadata-server**：扩展字段元数据 REST（`:9001`），多应用共享时 `REMOTE` 调用。  
+> - **bone-metadata-engine**：智能元数据引擎（规则/表达式/SmartQL），可选接入。  
+> - **代码生成**：`studio-generator` / `bone-codegen`；与引擎 **混合**，引擎不替代 DDD 源码交付。  
+> 下文 META-* 验收为目标态；As-Is 实现状态见对照文档 §7。
 
 #### 需求ID: META-001 业务实体管理
 
@@ -1265,7 +1275,7 @@ Scenario: 水平自动伸缩
 | 事件名称 | 事件类型 | 事件参数 | 采集频率 |
 |----------|----------|----------|----------|
 | **用户登录** | user | tenant_id, user_id, username, ip, user_agent, login_time | 每次登录 |
-| **实体创建** | business | tenant_id, user_id, entity_name, field_count, create_time | 每次创建 |
+| **实体创建** | business | tenant_id, user_id, entity_name, field_count, created_at | 每次创建 |
 | **代码生成** | business | tenant_id, user_id, entity_id, template, generate_time, status | 每次生成 |
 | **流程执行** | business | tenant_id, user_id, flow_id, status, start_time, end_time | 每次执行 |
 | **权限变更** | security | tenant_id, user_id, role_id, permission_id, action, change_time | 每次变更 |
@@ -1379,7 +1389,8 @@ flowchart TD
 
 这种分层架构解决了职责混乱、双写和依赖反转问题，确保系统的可维护性和可扩展性。
 
-> **与仓库 As-Is 的关系**：上图为**逻辑分层视图**（UI → 平台服务 → 引擎能力）。当前 monorepo 以 `bone-platform/*`、`bone-engine/*` 等 **Maven 模块**落地，可为多进程部署或同机多端口调试，**不必**一一对应图中每个 `*Service` 独立微服务。模块边界与默认端口见 [doc/wiki/03-本地开发与构建.md](../wiki/03-本地开发与构建.md)。
+> **与仓库 As-Is 的关系**：上图为**逻辑分层视图**（UI → 平台服务 → 引擎能力）。当前 monorepo 以 `bone-platform/*`、`bone-engine/*` 等 **Maven 模块**落地，可为多进程部署或同机多端口调试，**不必**一一对应图中每个 `*Service` 独立微服务。模块边界与默认端口见 [doc/wiki/03-本地开发与构建.md](../wiki/03-本地开发与构建.md)。  
+> **元数据落点**：图中 `MetadataService` 为目标态；As-Is 扩展字段 API 为 **bone-metadata-server**；全平台持久化为 **bone-metadata-sdk**；`MetadataEngine` 对应 **bone-metadata-engine**（默认未启用）。见 [元数据能力-实现映射与竞品对照](../design/modules/元数据能力-实现映射与竞品对照.md)。
 
 ### 7.2 技术选型（含自研SDK优化指南）
 
@@ -1391,7 +1402,7 @@ flowchart TD
 | 跨端框架 | React Native | 0.74+ | 实现多端适配 |
 | 后端框架 | Spring Boot | 3.2+ | 构建后端服务 |
 | 微服务框架 | Spring Cloud | 2023+ | 微服务治理 |
-| **数据持久化** | **Bone Metadata SDK（自研）** | **1.0.x**（`bone-parent` BOM） | 元数据实体 CRUD、动态建表、多库适配；版本以 `bone-metadata-sdk.version` 为准 |
+| **数据持久化** | **Bone Metadata SDK（自研）** | **1.0.x**（`bone-parent` BOM） | 平台默认持久化：`@EnableSqlRepositories`、Criteria/DSL、扩展字段 EAV、多库适配；**不**等同于控制台「业务实体建模」全套 API。版本以 `bone-metadata-sdk.version` 为准 |
 | 服务注册与发现 | Nacos | 2.2+ | 服务管理（按需启用） |
 | 服务熔断与限流 | Sentinel | 2.x（按需） | 系统保护（非所有模块默认引入） |
 | 消息队列 | RocketMQ | 5.1+ | 异步通信（按需） |
@@ -1409,7 +1420,7 @@ flowchart TD
 - **二级缓存**：集成 Redis，支持实体级缓存失效策略（TTL 可配置）。
 - **多数据库方言**：已实现 MySQL、PostgreSQL 方言，信创数据库通过 SQL 重写适配（性能损耗 <30% 可接受）。
 - **分页优化**：支持 `offset/limit` 和 `cursor` 两种分页模式，大数据量场景推荐 cursor。
-- **动态建表**：根据实体定义自动创建表、索引、外键，支持增量迁移。
+- **动态建表**：**[Vision/引擎]** 根据实体定义自动建表等，以 ADR 与 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) 为准；SDK 当前强项为仓储与 EAV，非完整建模运行时。
 - **性能监控**：集成 Micrometer，暴露 SQL 执行时间、慢查询统计（阈值 >200ms）。
 - **遗留迁移**：个别模块若仍保留 MyBatis 路径，仅作 **ADR 登记的遗留迁移**；新模块默认 **Bone Metadata SDK**（见《Bone-DDD》§5.1.1），不得以 MyBatis-Plus 作为默认栈。
 
@@ -1417,13 +1428,18 @@ flowchart TD
 
 > **说明**：下列路径为 **REST 资源命名示意**（规划口径），非 OpenAPI 真源。实现以各模块 Controller、`bone-gateway` 路由及 SpringDoc 导出为准；版本前缀可能为 `/api/v1/{domain}` 或 `/api/{domain}`（见总体架构 §8.2）。
 
-**元数据服务 API**：
-- `GET /api/metadata/entities` - 获取业务实体列表
-- `POST /api/metadata/entities` - 创建业务实体
-- `PUT /api/metadata/entities/{id}` - 更新业务实体
-- `DELETE /api/metadata/entities/{id}` - 删除业务实体
-- `POST /api/metadata/generate` - 生成代码
-- `GET /api/metadata/generate/{id}` - 获取生成结果
+**元数据服务 API**（分 As-Is / Vision，真源见 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §5）：
+
+*已实现（bone-metadata-server，:9001）*：
+- `POST /v1/metadata/fields:search` — 扩展字段复合查询
+- `POST /v1/metadata/fields:searchByNames` — 按名批量查询
+- `POST /v1/metadata/fields:allocate` — 批量分配扩展字段
+- `GET /v1/metadata/health` — 健康检查
+
+*规划（业务实体与代码生成，目标前缀 `/api/metadata` 或 `/api/v1/metadata`）*：
+- `GET/POST/PUT/DELETE …/entities` — 业务实体 CRUD
+- `POST …/generate` — 生成代码（主责 **studio-generator**）
+- `GET …/generate/{id}` — 获取生成结果
 
 **主数据服务 API**：
 - `GET /api/masterdata/entities` - 获取主数据实体列表
@@ -1432,11 +1448,11 @@ flowchart TD
 - `GET /api/masterdata/quality` - 获取数据质量报告
 
 **扩展服务 API**：
-- `GET /api/extension/points` - 获取扩展点列表
-- `POST /api/extension/plugins` - 上传插件
-- `PUT /api/extension/plugins/{id}` - 更新插件
-- `POST /api/extension/plugins/{id}/deploy` - 部署插件
-- `POST /api/extension/plugins/{id}/rollback` - 回滚插件
+- `GET /api/v1/extension/points` - 获取扩展点列表
+- `POST /api/v1/extension/plugins` - 上传插件
+- `PUT /api/v1/extension/plugins/{id}` - 更新插件
+- `POST /api/v1/extension/plugins/{id}:deploy` - 部署插件
+- `POST /api/v1/extension/plugins/{id}:rollback` - 回滚插件
 
 **集成服务 API**：
 - `GET /api/integration/connectors` - 获取连接器列表
@@ -1551,7 +1567,7 @@ flowchart TD
 
 | 阶段 | 时间 | 核心功能 | 验收标准 |
 |------|------|----------|----------|
-| **MVP** | 2026年Q2（6月） | 元数据管理（实体、字段、关系）、代码生成（默认模板）、IAM（用户/角色/权限）、控制台、K8s Helm Chart | 功能跑通，可独立部署，文档基础版 |
+| **MVP** | 2026年Q2（6月） | **MVP-1**：扩展字段（sdk+server）+ IAM + 控制台 + Helm；**MVP-2**：`meta_*` 建模 REST/UI + generator 默认模板 | 分阶段验收；映射见 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §7 |
 | **阶段0：基础平台** | 2026年Q3（7-9月） | 模板管理、审计日志（DB版）、系统配置、监控告警、扩展点管理 | 功能完整，性能达标，可生产试用 |
 | **阶段1：核心能力** | 2026年Q4（10-12月） | 主数据管理（实体+质量规则）、插件管理（含回滚）、多租户（行级隔离） | 功能完整，性能达标 |
 | **阶段2：集成能力** | 2027年Q1（1-3月） | 集成管理（全连接器+流程编排）、信创数据库适配（达梦/金仓） | 功能完整，性能达标 |
@@ -1593,7 +1609,7 @@ flowchart TD
 
 ### 9.1 开发阶段
 
-1. **MVP冲刺（2个月，4-5月）**：元数据管理核心 + 代码生成（默认模板）+ IAM 基础 + 控制台 + K8s Helm Chart，不依赖外部消息队列（可选）。
+1. **MVP冲刺（2个月，4-5月）**：MVP-1 扩展字段与 IAM/控制台/Helm；并行推进 MVP-2 实体建模 API 与 generator 模板（以对照文档 §7 状态为准）。
 2. **阶段0（3个月，7-9月）**：完善模板管理、审计日志（DB版）、系统配置、监控告警、扩展点管理。
 3. **阶段1（3个月，10-12月）**：主数据管理、插件管理（含回滚）、多租户（行级隔离）。
 4. **阶段2（3个月，1-3月）**：集成管理（Camel 集成）、信创数据库适配（达梦/金仓）。
@@ -1715,13 +1731,16 @@ flowchart TD
 
 | 文档名称 | 版本 | 用途 |
 |----------|------|------|
-| 根目录 README.md（Bone — Build Once, Natively Everywhere） | 随仓库 | 产品理念、四大引擎叙事、快速开始与端口真源 |
+| 根目录 README.md（Bone — Build Once, Natively Everywhere） | 随仓库 | 产品理念、四大引擎叙事、快速开始 |
+| doc/wiki/03-本地开发与构建.md | 随仓库 | **默认端口**与各模块 `application.yml` 对照 |
+| doc/architecture/数据库开发规范.md | 随仓库 | DDL 唯一权威；可执行脚本为根目录 `bone-init.sql` |
 | LICENSE（MIT） | 随仓库 | 开源许可真源 |
 | BONE-总体架构设计方案（doc/architecture/BONE-总体架构设计方案.md） | v2.1 | 总体架构与技术方案唯一权威 |
 | Bone-DDD 最终实践方案（doc/architecture/Bone-DDD-最终实践方案.md） | 3.3 | DDD 分层、CQRS、Metadata SDK 持久化 P0 门禁 |
 | 模块详细设计索引（doc/design/modules/README.md） | 随仓库 | 控制台、元数据、主数据、集成、扩展、IAM、系统、Generator、SmartMeta |
 | BONE X Studio 详细设计（doc/design/BONE-X-Studio-详细设计方案.md） | v5.0 | Studio 跨模块技术详设 |
 | bone-metadata-sdk/doc/README.md | 随仓库 | Metadata SDK 使用说明 |
+| 元数据能力-实现映射与竞品对照（doc/design/modules/） | 随仓库 | 三模块定义、协作关系、竞品对标 |
 | Spring Boot官方文档 | 3.2 | 后端框架参考 |
 | React官方文档 | 18 | 前端框架参考 |
 | Apache Camel官方文档 | 4.0 | 系统集成参考 |

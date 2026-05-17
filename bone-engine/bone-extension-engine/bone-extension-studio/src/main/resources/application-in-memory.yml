@@ -1,0 +1,12 @@
+# 默认联调：内存 Store，不加载 Metadata SQL 仓储
+spring:
+  autoconfigure:
+    exclude:
+      - com.bone.metadata.sdk.support.config.MetadataAutoConfiguration
+      - com.bone.metadata.sdk.support.config.SqlRepositoryAutoConfiguration
+
+bone:
+  extension:
+    studio:
+      persistence:
+        mode: in-memory

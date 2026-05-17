@@ -92,7 +92,7 @@ public class MyBatisSqlProcessor implements SqlProcessor {
 
     @Override
     public ProcessedSql process(String templateId, String sqlTemplate, Map<String, Object> params) {
-        long startTime = System.currentTimeMillis();
+        long startedAt = System.currentTimeMillis();
 
         try {
             log.debug("sqlTemplate： " + sqlTemplate);
@@ -132,7 +132,7 @@ public class MyBatisSqlProcessor implements SqlProcessor {
             validateSql(finalSql);
 
             if (log.isDebugEnabled()) {
-                log.debug("SQL processed in {}ms: {}", System.currentTimeMillis() - startTime, finalSql);
+                log.debug("SQL processed in {}ms: {}", System.currentTimeMillis() - startedAt, finalSql);
                 log.debug("Final Parameters: {}", context.getParams());
             }
 

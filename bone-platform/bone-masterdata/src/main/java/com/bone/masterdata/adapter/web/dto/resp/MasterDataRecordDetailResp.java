@@ -13,6 +13,6 @@ public class MasterDataRecordDetailResp {
     private String data;
     private String status;
     private Integer version;
-    private Date createTime;
-    private Date updateTime;
+    private Date createdAt;
+    private Date updatedAt;
 }

@@ -43,13 +43,13 @@ public class UserQuery extends SortableParam implements Query {
 
     private Integer sortOrder;
 
-    private LocalDateTime createTime;
+    private LocalDateTime createdAt;
 
-    private Long createBy;
+    private Long createdBy;
 
-    private LocalDateTime updateTime;
+    private LocalDateTime updatedAt;
 
-    private Long updateBy;
+    private Long updatedBy;
 
     private Integer deleted;
 }

@@ -31,8 +31,8 @@ public class MasterDataRecordWebConverter {
                 .masterDataEntityId(dto.getMasterDataEntityId())
                 .data(dto.getData())
                 .status(dto.getStatus())
-                .createTime(dto.getCreateTime())
-                .updateTime(dto.getUpdateTime())
+                .createdAt(dto.getCreatedAt())
+                .updatedAt(dto.getUpdatedAt())
                 .publishTime(dto.getPublishTime())
                 .build();
     }

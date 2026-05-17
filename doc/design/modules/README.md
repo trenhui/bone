@@ -10,12 +10,21 @@
 
 **真源优先级**：默认端口、可运行模块边界以 [**doc/wiki/03-本地开发与构建.md**](../../wiki/03-本地开发与构建.md)「常见服务端口」及各模块 **`application.yml`** 为准；详设中的端口/API 若为历史规划示例，文中会标注「规划示例」。
 
+**元数据能力族**（sdk / server / engine / generator）：统一以 [**元数据能力-实现映射与竞品对照.md**](./元数据能力-实现映射与竞品对照.md) 为定义与协作真源（含 **§1.1 两类 Field**、**§8 与 masterdata 边界**）；详设 §2、PRD §4.4、BONE X 文首表与之对齐。
+
+### 详设阅读约定
+
+- **DDL 唯一真源**：根目录 [`bone-init.sql`](../../../bone-init.sql) + [数据库开发规范.md](../../architecture/数据库开发规范.md)。
+- **无增量迁移**：改表即改 init，开发库 `DROP DATABASE` 后重建。
+- **Hybrid**：部分能力仍在实现中（如 Generator 持久化），以各文 §0 与 P0 看板为准。
+- **审查清单**：[`doc/文档治理-三目录审查子任务.md`](../../文档治理-三目录审查子任务.md)。
+
 ## 模块文档
 
 | 编号 | 文档 | 仓库模块（As-Is） | 默认端口（开发） | PRD |
 |------|------|-------------------|------------------|-----|
 | 1 | [控制台](./1.%20控制台与仪表盘模块详细设计方案.md) | **规划中**（无 `bone-console`；能力分散在 Shell + 各微应用） | — | §4.3 |
-| 2 | [元数据](./2.%20元数据管理模块详细设计方案.md) | `bone-metadata-server`、`bone-metadata-sdk` | **9001**（`bone-metadata-server/application.yaml`） | §4.4 |
+| 2 | [元数据](./2.%20元数据管理模块详细设计方案.md) · [**三模块定义/竞品**](./元数据能力-实现映射与竞品对照.md) | `bone-metadata-sdk`、`bone-metadata-server`、 `bone-metadata-engine`；生成见 §8 | **9001**（server） | §4.4 |
 | 3 | [主数据](./3.%20主数据管理模块详细设计方案.md) | `bone-platform/bone-masterdata` | **8080** | §4.5 |
 | 4 | [集成](./4.%20集成管理模块详细设计方案.md) | `bone-engine/bone-integration` / `bone-platform/bone-integration` | **30888** / **8085** | §4.7 |
 | 5 | [扩展](./5.%20扩展管理模块详细设计方案.md) | `bone-extension-engine`、`bone-extension-studio` | Studio **8080**；`bone-extension-app` **3008** | §4.6 |

@@ -245,11 +245,10 @@ bone/                                       # Gitee 仓库根目录
 │   ├── pom.xml
 │   └── src/...
 │
-├── bone-admin/                             # 管理后台
-│   ├── pom.xml
-│   └── src/...
+├── bone-platform/bone-iam/                 # IAM（As-Is 平台服务，非 bone-admin）
+├── bone-frontend/                          # React 微前端 Monorepo（见 doc/architecture/bone-前端架构.md）
 │
-├── bone-ui/                                # React 前端
+├── bone-ui/                                # （示例/历史目录名，以 bone-frontend 为准）
 │   ├── package.json
 │   ├── vite.config.ts
 │   ├── tsconfig.json
@@ -1033,8 +1032,8 @@ bone/
 ├── bone-extpoint/
 ├── bone-integration/
 ├── bone-common/
-├── bone-admin/
-├── bone-ui/
+├── bone-platform/bone-iam/
+├── bone-frontend/
 │   ├── package.json
 │   ├── vitest.config.ts
 │   └── src/

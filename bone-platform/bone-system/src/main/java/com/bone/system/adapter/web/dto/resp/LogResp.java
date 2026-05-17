@@ -20,5 +20,5 @@ public class LogResp {
     private String serviceName;
     private String content;
     private String traceId;
-    private LocalDateTime createTime;
+    private LocalDateTime createdAt;
 }

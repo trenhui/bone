@@ -2,9 +2,9 @@ package com.bone.integration.domain.execution;
 
 import com.bone.core.domain.AggregateRoot;
 import com.bone.core.exception.DomainException;
-import com.bone.integration.domain.execution.event.ExecutionCompletedEvent;
-import com.bone.integration.domain.execution.event.ExecutionStartedEvent;
-import com.bone.integration.domain.execution.vo.ExecutionStatus;
+import com.bone.integration.domain.model.execution.event.ExecutionCompletedEvent;
+import com.bone.integration.domain.model.execution.event.ExecutionStartedEvent;
+import com.bone.integration.domain.model.execution.vo.ExecutionStatus;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -19,8 +19,8 @@ public class IntegrationLog extends AggregateRoot<Long> {
     private Long id;
     private Long flowId;
     private ExecutionStatus status;
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
+    private LocalDateTime startedAt;
+    private LocalDateTime endedAt;
     private String inputData;
     private String outputData;
     private String errorMessage;
@@ -44,7 +44,7 @@ public class IntegrationLog extends AggregateRoot<Long> {
             throw new DomainException("执行状态不是待处理，无法开始");
         }
         this.status = ExecutionStatus.RUNNING;
-        this.startTime = LocalDateTime.now();
+        this.startedAt = LocalDateTime.now();
     }
 
     public void complete(String outputData) {
@@ -52,7 +52,7 @@ public class IntegrationLog extends AggregateRoot<Long> {
             throw new DomainException("执行状态不是运行中，无法完成");
         }
         this.status = ExecutionStatus.SUCCESS;
-        this.endTime = LocalDateTime.now();
+        this.endedAt = LocalDateTime.now();
         this.outputData = outputData;
         this.addDomainEvent(new ExecutionCompletedEvent(this.id, this.flowId, true, outputData, null));
     }
@@ -62,7 +62,7 @@ public class IntegrationLog extends AggregateRoot<Long> {
             throw new DomainException("执行状态不是运行中，无法标记失败");
         }
         this.status = ExecutionStatus.FAILED;
-        this.endTime = LocalDateTime.now();
+        this.endedAt = LocalDateTime.now();
         this.errorMessage = errorMessage;
         this.addDomainEvent(new ExecutionCompletedEvent(this.id, this.flowId, false, null, errorMessage));
     }
@@ -72,7 +72,7 @@ public class IntegrationLog extends AggregateRoot<Long> {
             throw new DomainException("执行状态不是运行中，无法标记超时");
         }
         this.status = ExecutionStatus.TIMEOUT;
-        this.endTime = LocalDateTime.now();
+        this.endedAt = LocalDateTime.now();
         this.errorMessage = "执行超时";
         this.addDomainEvent(new ExecutionCompletedEvent(this.id, this.flowId, false, null, "执行超时"));
     }

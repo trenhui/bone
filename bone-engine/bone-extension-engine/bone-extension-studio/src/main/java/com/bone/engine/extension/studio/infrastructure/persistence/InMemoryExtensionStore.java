@@ -34,6 +34,18 @@ public class InMemoryExtensionStore implements ExtensionStore {
     }
 
     @Override
+    @Nullable
+    public Extension findByClassName(String className) {
+        if (className == null || className.isBlank()) {
+            return null;
+        }
+        return storage.values().stream()
+                .filter(e -> className.equals(e.getClassName()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    @Override
     public List<Extension> findByExtPointId(Long extPointId) {
         if (extPointId == null) {
             return List.of();

@@ -1,5 +1,8 @@
 package com.bone.integration.adapter.web.controller;
 
+import com.bone.core.exception.DomainException;
+import com.bone.core.model.ApiResponse;
+import com.bone.core.model.PageResult;
 import com.bone.integration.application.command.cmd.ExecuteFlowCmd;
 import com.bone.integration.application.command.handler.ExecuteFlowHandler;
 import com.bone.integration.application.query.dto.ExecutionLogDTO;
@@ -7,12 +10,10 @@ import com.bone.integration.application.query.dto.FlowStatisticsDTO;
 import com.bone.integration.application.query.handler.ExecutionLogListQueryHandler;
 import com.bone.integration.application.query.qry.ExecutionLogListQry;
 import com.bone.integration.domain.execution.IntegrationLog;
-import com.bone.integration.domain.model.flow.IntegrationFlow;
-import com.bone.integration.domain.repository.IntegrationLogRepository;
+import com.bone.integration.domain.flow.IntegrationFlow;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
+import com.bone.integration.domain.repository.IntegrationLogRepository;
 import com.bone.integration.domain.service.FlowMonitorService;
-import com.bone.core.model.PageResult;
-import com.bone.core.model.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,47 +41,51 @@ public class MonitorController {
 
     @GetMapping("/executions/{id}")
     public ApiResponse<ExecutionLogDTO> getExecution(@PathVariable Long id) {
-        IntegrationLog log = logRepository.findById(id)
-                .orElseThrow(() -> new com.bone.core.exception.DomainException("执行记录不存在"));
+        IntegrationLog log = logRepository.findById(id);
+        if (log == null) {
+            throw new DomainException("执行记录不存在");
+        }
         ExecutionLogDTO dto = new ExecutionLogDTO(
-                log.getId().value(),
-                log.getFlowId().value(),
+                log.getId(),
+                log.getFlowId(),
                 log.getStatus().name(),
-                log.getStartTime(),
-                log.getEndTime(),
+                log.getStartedAt(),
+                log.getEndedAt(),
                 log.getInputData(),
                 log.getOutputData(),
-                log.getErrorMessage()
-        );
+                log.getErrorMessage());
         return ApiResponse.success(dto);
     }
 
     @PostMapping("/executions/{id}/retry")
     public ApiResponse<Long> retry(@PathVariable Long id) {
-        IntegrationLog log = logRepository.findById(id)
-                .orElseThrow(() -> new com.bone.core.exception.DomainException("执行记录不存在"));
-        ExecuteFlowCmd cmd = new ExecuteFlowCmd(log.getFlowId().value(), log.getInputData());
+        IntegrationLog log = logRepository.findById(id);
+        if (log == null) {
+            throw new DomainException("执行记录不存在");
+        }
+        ExecuteFlowCmd cmd = new ExecuteFlowCmd(log.getFlowId(), log.getInputData());
         Long newId = executeFlowHandler.handle(cmd);
         return ApiResponse.success(newId);
     }
 
     @GetMapping("/statistics")
     public ApiResponse<FlowStatisticsDTO> getStatistics(@RequestParam Long flowId) {
-        IntegrationFlow flow = flowRepository.findById(flowId)
-                .orElseThrow(() -> new com.bone.core.exception.DomainException("流程不存在"));
+        IntegrationFlow flow = flowRepository.findById(flowId);
+        if (flow == null) {
+            throw new DomainException("流程不存在");
+        }
         long executionCount = flowMonitorService.getExecutionCount(flow.getId());
         long successCount = flowMonitorService.getSuccessCount(flow.getId());
         long failureCount = flowMonitorService.getFailureCount(flow.getId());
         double successRate = flowMonitorService.getSuccessRate(flow.getId());
 
         FlowStatisticsDTO dto = new FlowStatisticsDTO(
-                flow.getId().value(),
+                flow.getId(),
                 flow.getName(),
                 executionCount,
                 successCount,
                 failureCount,
-                successRate
-        );
+                successRate);
         return ApiResponse.success(dto);
     }
 }

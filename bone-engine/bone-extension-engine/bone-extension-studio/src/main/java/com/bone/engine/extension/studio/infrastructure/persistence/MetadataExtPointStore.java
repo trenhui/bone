@@ -29,7 +29,7 @@ public class MetadataExtPointStore implements ExtPointStore {
     @Override
     public List<ExtPoint> findAll() {
         return repository.findByCriteria(Criteria.<ExtStudioExtensionPoint>create().orderByDesc(
-                        ExtStudioExtensionPoint::getCreateTime))
+                        ExtStudioExtensionPoint::getCreatedAt))
                 .stream()
                 .map(StudioPersistenceConverter::toDomain)
                 .sorted(Comparator.comparing(ExtPoint::getId, Comparator.nullsLast(Long::compareTo)))
@@ -93,7 +93,7 @@ public class MetadataExtPointStore implements ExtPointStore {
             return false;
         }
         ExtStudioExtensionPoint row = StudioPersistenceConverter.toEntity(extPoint);
-        row.setUpdateTime(new Date());
+        row.setUpdatedAt(new Date());
         return repository.update(row);
     }
 

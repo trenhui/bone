@@ -18,6 +18,6 @@ public class MasterDataFieldDetailResp {
     private String defaultValue;
     private String description;
     private Integer sortOrder;
-    private Date createTime;
-    private Date updateTime;
+    private Date createdAt;
+    private Date updatedAt;
 }
