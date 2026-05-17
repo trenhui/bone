@@ -70,7 +70,7 @@ const ExtensionPointManagement: React.FC = () => {
     const values = await form.validateFields();
     try {
       if (editing?.id) {
-        await updateExtPoint(editing.id, values);
+        await updateExtPoint(editing.id, values, { version: editing.version });
         message.success('更新成功');
       } else {
         await createExtPoint(values);

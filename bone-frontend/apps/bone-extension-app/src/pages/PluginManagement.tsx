@@ -7,6 +7,7 @@ import {
   InputNumber,
   Modal,
   Popconfirm,
+  Progress,
   Select,
   Space,
   Table,
@@ -55,6 +56,7 @@ const PluginManagement: React.FC = () => {
   const [selectedPlugin, setSelectedPlugin] = useState<ExtensionRow | null>(null);
   const [editing, setEditing] = useState<ExtensionRow | null>(null);
   const [jarFile, setJarFile] = useState<File | null>(null);
+  const [deployingId, setDeployingId] = useState<number | null>(null);
   const [form] = Form.useForm<ExtensionPayload>();
   const [uploadForm] = Form.useForm<{
     extPointId: number;
@@ -148,7 +150,7 @@ const PluginManagement: React.FC = () => {
     const values = await form.validateFields();
     try {
       if (editing?.id) {
-        await updatePlugin(editing.id, values);
+        await updatePlugin(editing.id, values, { version: editing.version });
         message.success('更新成功');
       } else {
         await createPlugin(values);
@@ -186,12 +188,18 @@ const PluginManagement: React.FC = () => {
   };
 
   const handleDeploy = async (id: number, deploy: boolean) => {
+    setDeployingId(id);
+    const hide = message.loading(deploy ? '部署中…' : '卸载中…', 0);
     try {
-      await deployPlugin(id, deploy);
+      await deployPlugin(id, deploy, deploy ? { sync: false } : { sync: true });
+      hide();
       message.success(deploy ? '部署成功' : '已卸载');
       load();
     } catch (e) {
+      hide();
       message.error(formatStudioError(e, '操作失败'));
+    } finally {
+      setDeployingId(null);
     }
   };
 
@@ -271,11 +279,23 @@ const PluginManagement: React.FC = () => {
             上传包
           </Button>
           {record.enabled ? (
-            <Button type="link" size="small" onClick={() => handleDeploy(record.id, false)}>
+            <Button
+              type="link"
+              size="small"
+              loading={deployingId === record.id}
+              disabled={deployingId != null && deployingId !== record.id}
+              onClick={() => handleDeploy(record.id, false)}
+            >
               卸载
             </Button>
           ) : (
-            <Button type="link" size="small" onClick={() => handleDeploy(record.id, true)}>
+            <Button
+              type="link"
+              size="small"
+              loading={deployingId === record.id}
+              disabled={deployingId != null && deployingId !== record.id}
+              onClick={() => handleDeploy(record.id, true)}
+            >
               部署
             </Button>
           )}
@@ -444,6 +464,30 @@ const PluginManagement: React.FC = () => {
             </Upload>
           </Form.Item>
         </Form>
+      </Modal>
+
+      <Modal
+        title="正在部署插件"
+        open={!!deploying}
+        footer={null}
+        closable={false}
+        maskClosable={false}
+        width={420}
+      >
+        {deploying ? (
+          <>
+            <p style={{ marginBottom: 12 }}>
+              {deploying.name}（#{deploying.id}）
+            </p>
+            <Progress
+              percent={deploying.progress}
+              status={deploying.progress >= 100 ? 'success' : 'active'}
+            />
+            <p style={{ marginTop: 8, color: 'rgba(0,0,0,0.45)', fontSize: 12 }}>
+              大制品部署为异步任务，完成后将自动刷新列表
+            </p>
+          </>
+        ) : null}
       </Modal>
 
       <Drawer

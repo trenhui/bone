@@ -85,6 +85,7 @@
 | EXT-MVP-07 | Studio | LRO 部署：`POST …:deploy` → **202** + `GET /operations/{id}`（`StudioLroService`） | done | P2 |
 | EXT-MVP-08 | Studio | 幂等写 + `If-Match` 乐观锁（`StudioIdempotencyService`，412/409） | done | P2 |
 | EXT-MVP-09 | `bone-extension-sdk` | 执行防护 `ExtensionExecutionGuard`（超时/并发可配置） | done | P2 |
+| EXT-MVP-10 | `bone-extension-app` | Studio 客户端：LRO 部署轮询、If-Match 更新、`formatStudioError` | done | P2 |
 | EXT-PH2-01 | Studio | JAR Multipart 上传 + `ext_plugin_version` | open | P2 |
 | EXT-PH3-01 | SDK | Wasm 隔离运行时 | open | P3 |
 

@@ -130,6 +130,8 @@ export type ExtPointRow = {
   domain?: string;
   category?: string;
   enabled: boolean;
+  /** 乐观锁版本，更新时传 If-Match: "v{version}" */
+  version?: number;
 };
 
 export type ExtensionRow = {
@@ -146,7 +148,29 @@ export type ExtensionRow = {
   priority?: number;
   config?: string;
   enabled: boolean;
+  version?: number;
 };
+
+export type StudioWriteOptions = {
+  /** 乐观锁：对应服务端 ETag / If-Match */
+  version?: number;
+  idempotencyKey?: string;
+};
+
+export function ifMatchHeader(version?: number): Record<string, string> {
+  if (version == null) {
+    return {};
+  }
+  return { 'If-Match': `"v${version}"` };
+}
+
+function writeHeaders(opts?: StudioWriteOptions): Record<string, string> {
+  const headers: Record<string, string> = { ...ifMatchHeader(opts?.version) };
+  if (opts?.idempotencyKey) {
+    headers['Idempotency-Key'] = opts.idempotencyKey;
+  }
+  return headers;
+}
 
 export type ExtPointPayload = {
   name: string;
@@ -177,13 +201,24 @@ export async function listExtPoints(): Promise<ExtPointRow[]> {
   return assertSuccess(res) ?? [];
 }
 
-export async function createExtPoint(payload: ExtPointPayload): Promise<ExtPointRow> {
-  const res = await client.post<StudioApiResponse<ExtPointRow>>(`${EXTENSION_BASE}/points`, payload);
+export async function createExtPoint(
+  payload: ExtPointPayload,
+  opts?: StudioWriteOptions,
+): Promise<ExtPointRow> {
+  const res = await client.post<StudioApiResponse<ExtPointRow>>(`${EXTENSION_BASE}/points`, payload, {
+    headers: writeHeaders(opts),
+  });
   return assertSuccess(res);
 }
 
-export async function updateExtPoint(id: number, payload: ExtPointPayload): Promise<ExtPointRow> {
-  const res = await client.put<StudioApiResponse<ExtPointRow>>(`${EXTENSION_BASE}/points/${id}`, payload);
+export async function updateExtPoint(
+  id: number,
+  payload: ExtPointPayload,
+  opts?: StudioWriteOptions,
+): Promise<ExtPointRow> {
+  const res = await client.put<StudioApiResponse<ExtPointRow>>(`${EXTENSION_BASE}/points/${id}`, payload, {
+    headers: writeHeaders(opts),
+  });
   return assertSuccess(res);
 }
 
@@ -210,13 +245,24 @@ export async function listPlugins(): Promise<ExtensionRow[]> {
   return assertSuccess(res) ?? [];
 }
 
-export async function createPlugin(payload: ExtensionPayload): Promise<ExtensionRow> {
-  const res = await client.post<StudioApiResponse<ExtensionRow>>(`${EXTENSION_BASE}/plugins`, payload);
+export async function createPlugin(
+  payload: ExtensionPayload,
+  opts?: StudioWriteOptions,
+): Promise<ExtensionRow> {
+  const res = await client.post<StudioApiResponse<ExtensionRow>>(`${EXTENSION_BASE}/plugins`, payload, {
+    headers: writeHeaders(opts),
+  });
   return assertSuccess(res);
 }
 
-export async function updatePlugin(id: number, payload: ExtensionPayload): Promise<ExtensionRow> {
-  const res = await client.put<StudioApiResponse<ExtensionRow>>(`${EXTENSION_BASE}/plugins/${id}`, payload);
+export async function updatePlugin(
+  id: number,
+  payload: ExtensionPayload,
+  opts?: StudioWriteOptions,
+): Promise<ExtensionRow> {
+  const res = await client.put<StudioApiResponse<ExtensionRow>>(`${EXTENSION_BASE}/plugins/${id}`, payload, {
+    headers: writeHeaders(opts),
+  });
   return assertSuccess(res);
 }
 
@@ -230,11 +276,108 @@ export async function deletePlugin(id: number): Promise<void> {
   }
 }
 
-export async function deployPlugin(id: number, deploy: boolean): Promise<void> {
-  const action = deploy ? 'deploy' : 'undeploy';
-  const res = await client.post<StudioApiResponse<ExtensionRow>>(
-    `${EXTENSION_BASE}/plugins/${id}:${action}`,
+export type StudioOperation = {
+  operationId?: string;
+  type?: string;
+  resourceId?: number;
+  done: boolean;
+  progress?: number;
+  result?: Record<string, unknown>;
+  error?: ProblemDetail;
+};
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function operationIdFromDeployResponse(
+  response: AxiosResponse<StudioApiResponse<{ operationId?: string } | ExtensionRow>>,
+): string | undefined {
+  const location = response.headers?.location as string | undefined;
+  if (location) {
+    const trimmed = location.replace(/\/$/, '');
+    return trimmed.substring(trimmed.lastIndexOf('/') + 1);
+  }
+  const data = response.data?.data;
+  if (data && typeof data === 'object' && 'operationId' in data) {
+    return (data as { operationId?: string }).operationId;
+  }
+  return undefined;
+}
+
+export async function getOperation(operationId: string): Promise<StudioOperation> {
+  const res = await client.get<StudioApiResponse<StudioOperation>>(
+    `${EXTENSION_BASE}/operations/${operationId}`,
   );
+  return assertSuccess(res);
+}
+
+export type PollOperationOptions = {
+  intervalMs?: number;
+  timeoutMs?: number;
+  onProgress?: (progress: number, operation: StudioOperation) => void;
+};
+
+export async function pollOperationUntilDone(
+  operationId: string,
+  opts?: PollOperationOptions,
+): Promise<StudioOperation> {
+  const intervalMs = opts?.intervalMs ?? 500;
+  const deadline = Date.now() + (opts?.timeoutMs ?? 60_000);
+  let lastReported = -1;
+  while (Date.now() < deadline) {
+    const op = await getOperation(operationId);
+    const progress = op.progress ?? (op.done ? 100 : 0);
+    if (opts?.onProgress && progress !== lastReported) {
+      lastReported = progress;
+      opts.onProgress(progress, op);
+    }
+    if (op.done) {
+      if (op.error) {
+        throw toStudioError(op.error.detail ?? '操作失败', {
+          success: false,
+          data: op.error,
+        } as StudioApiResponse<unknown>);
+      }
+      return op;
+    }
+    await sleep(intervalMs);
+  }
+  throw new StudioApiError('操作超时，请稍后在操作历史中查看状态');
+}
+
+export type DeployPluginOptions = {
+  /** true：同步 200；false：LRO 202 并轮询；undefined：不传 sync，由服务端配置决定 */
+  sync?: boolean;
+  pollIntervalMs?: number;
+  pollTimeoutMs?: number;
+  /** LRO 轮询进度（0–100） */
+  onProgress?: (progress: number, operation: StudioOperation) => void;
+};
+
+export async function deployPlugin(
+  id: number,
+  deploy: boolean,
+  opts?: DeployPluginOptions,
+): Promise<void> {
+  const action = deploy ? 'deploy' : 'undeploy';
+  const params = opts?.sync != null ? { sync: opts.sync } : undefined;
+  const res = await client.post<StudioApiResponse<{ operationId?: string } | ExtensionRow>>(
+    `${EXTENSION_BASE}/plugins/${id}:${action}`,
+    {},
+    { params, validateStatus: (status) => status === 200 || status === 202 },
+  );
+  if (res.status === 202 && deploy) {
+    const operationId = operationIdFromDeployResponse(res);
+    if (!operationId) {
+      throw new StudioApiError('部署已接受但缺少 operationId');
+    }
+    opts?.onProgress?.(0, { operationId, done: false, progress: 0 });
+    await pollOperationUntilDone(operationId, {
+      intervalMs: opts?.pollIntervalMs,
+      timeoutMs: opts?.pollTimeoutMs,
+      onProgress: opts?.onProgress,
+    });
+    return;
+  }
   assertSuccess(res);
 }
 
