@@ -6,21 +6,25 @@ import com.bone.integration.application.command.cmd.CreateConnectorCmd;
 import com.bone.integration.application.command.cmd.UpdateConnectorCmd;
 import com.bone.integration.application.query.dto.ConnectorDTO;
 import com.bone.integration.application.query.qry.ConnectorPageQry;
+import com.bone.integration.application.usecase.standard.ConnectorPageQueryUseCase;
 import com.bone.integration.application.usecase.standard.CreateConnectorUseCase;
 import com.bone.integration.application.usecase.standard.UpdateConnectorUseCase;
-import com.bone.integration.application.usecase.standard.ConnectorPageQueryUseCase;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-public class ConnectorControllerTest {
+@ExtendWith(MockitoExtension.class)
+class ConnectorControllerTest {
 
     @Mock
     private CreateConnectorUseCase createConnectorUseCase;
@@ -34,72 +38,37 @@ public class ConnectorControllerTest {
     @InjectMocks
     private ConnectorController connectorController;
 
-    @BeforeEach
-    public void setUp() {
-        MockitoAnnotations.openMocks(this);
+    @Test
+    void create_delegatesToUseCase() {
+        CreateConnectorCmd cmd = new CreateConnectorCmd("http-conn", "HTTP", Map.of("url", "http://localhost"));
+        when(createConnectorUseCase.execute(cmd)).thenReturn(1L);
+
+        ApiResponse<Long> response = connectorController.create(cmd);
+
+        assertTrue(response.isSuccess());
+        assertEquals(1L, response.getData());
     }
 
     @Test
-    public void testCreate() {
-        // 准备测试数据
-        CreateConnectorCmd cmd = new CreateConnectorCmd();
-        cmd.setName("testconnector");
-        cmd.setType("HTTP");
+    void update_delegatesToUseCase() {
+        Long id = 1L;
+        UpdateConnectorCmd cmd = new UpdateConnectorCmd(id, "updated", "HTTP", Map.of());
 
-        Long connectorId = 1L;
+        ApiResponse<Void> response = connectorController.update(id, cmd);
 
-        // 模拟依赖
-        when(createConnectorUseCase.execute(cmd)).thenReturn(connectorId);
-
-        // 执行测试
-        ApiResponse<Long> apiResponse = connectorController.create(cmd);
-
-        // 验证结果
-        assertEquals(true, apiResponse.isSuccess());
-        assertEquals(connectorId, apiResponse.getData());
-        verify(createConnectorUseCase, times(1)).execute(cmd);
+        assertTrue(response.isSuccess());
+        verify(updateConnectorUseCase).execute(new UpdateConnectorCmd(id, "updated", "HTTP", Map.of()));
     }
 
     @Test
-    public void testUpdate() {
-        // 准备测试数据
-        Long connectorId = 1L;
-        UpdateConnectorCmd cmd = new UpdateConnectorCmd();
-        cmd.setName("updatedconnector");
-        cmd.setType("HTTP");
+    void page_returnsResult() {
+        ConnectorPageQry qry = new ConnectorPageQry(1, 10, null, null, null);
+        PageResult<ConnectorDTO> page = PageResult.of(Collections.emptyList(), 0L, 1, 10);
+        when(connectorPageQueryUseCase.execute(qry)).thenReturn(page);
 
-        UpdateConnectorCmd updatedCmd = new UpdateConnectorCmd(connectorId, cmd.name(), cmd.type(), cmd.config());
+        ApiResponse<PageResult<ConnectorDTO>> response = connectorController.page(qry);
 
-        // 执行测试
-        ApiResponse<Void> apiResponse = connectorController.update(connectorId, cmd);
-
-        // 验证结果
-        assertEquals(true, apiResponse.isSuccess());
-        verify(updateConnectorUseCase, times(1)).execute(updatedCmd);
-    }
-
-    @Test
-    public void testPage() {
-        // 准备测试数据
-        ConnectorPageQry qry = new ConnectorPageQry();
-        qry.setPageNum(1);
-        qry.setPageSize(10);
-
-        PageResult<ConnectorDTO> pageResult = new PageResult<>();
-        pageResult.setList(Collections.emptyList());
-        pageResult.setTotal(0);
-        pageResult.setPageNum(1);
-        pageResult.setPageSize(10);
-
-        // 模拟依赖
-        when(connectorPageQueryUseCase.execute(qry)).thenReturn(pageResult);
-
-        // 执行测试
-        ApiResponse<PageResult<ConnectorDTO>> apiResponse = connectorController.page(qry);
-
-        // 验证结果
-        assertEquals(true, apiResponse.isSuccess());
-        assertEquals(pageResult, apiResponse.getData());
-        verify(connectorPageQueryUseCase, times(1)).execute(qry);
+        assertTrue(response.isSuccess());
+        assertEquals(page, response.getData());
     }
 }

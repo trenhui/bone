@@ -12,7 +12,7 @@ import com.bone.engine.extension.studio.service.PluginExecutionLogService;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -34,23 +34,43 @@ import org.springframework.web.multipart.MultipartFile;
  */
 @RestController
 @RequestMapping("/api/v1/extension")
+@RequiredArgsConstructor
 public class ExtensionManagementController {
 
-    @Autowired
-    private ExtPointService extPointService;
-
-    @Autowired
-    private ExtensionService extensionService;
-
-    @Autowired
-    private PluginExecutionLogService executionLogService;
-
-    @Autowired
-    private ExtensionStudioProperties studioProperties;
+    private final ExtPointService extPointService;
+    private final ExtensionService extensionService;
+    private final PluginExecutionLogService executionLogService;
+    private final ExtensionStudioProperties studioProperties;
 
     @GetMapping("/points")
-    public ResponseEntity<ApiResponse<List<ExtPoint>>> listPoints() {
-        return ResponseEntity.ok(ApiResponse.success("获取扩展点列表成功", extPointService.findAllExtPoints()));
+    public ResponseEntity<ApiResponse<List<ExtPoint>>> listPoints(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String domain,
+            @RequestParam(required = false) String category) {
+        List<ExtPoint> points;
+        if (hasText(keyword)) {
+            points = extPointService.searchExtPoints(keyword);
+        } else if (hasText(domain) && hasText(category)) {
+            points = extPointService.findExtPointsByDomain(domain).stream()
+                    .filter(p -> category.equals(p.getCategory()))
+                    .toList();
+        } else if (hasText(domain)) {
+            points = extPointService.findExtPointsByDomain(domain);
+        } else if (hasText(category)) {
+            points = extPointService.findExtPointsByCategory(category);
+        } else {
+            points = extPointService.findAllExtPoints();
+        }
+        return ResponseEntity.ok(ApiResponse.success("获取扩展点列表成功", points));
+    }
+
+    @GetMapping("/points/{id}")
+    public ResponseEntity<ApiResponse<ExtPoint>> getPoint(@PathVariable Long id) {
+        ExtPoint point = extPointService.findExtPointById(id);
+        if (point == null) {
+            return notFound("扩展点不存在");
+        }
+        return ResponseEntity.ok(ApiResponse.success("获取扩展点详情成功", point));
     }
 
     @PostMapping("/points")
@@ -88,8 +108,21 @@ public class ExtensionManagementController {
     }
 
     @GetMapping("/plugins")
-    public ResponseEntity<ApiResponse<List<Extension>>> listPlugins() {
-        return ResponseEntity.ok(ApiResponse.success("获取插件列表成功", extensionService.findAllExtensions()));
+    public ResponseEntity<ApiResponse<List<Extension>>> listPlugins(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long extPointId,
+            @RequestParam(required = false) String tenantCode) {
+        List<Extension> plugins;
+        if (hasText(keyword)) {
+            plugins = extensionService.searchExtensions(keyword);
+        } else if (extPointId != null) {
+            plugins = extensionService.findExtensionsByExtPointId(extPointId);
+        } else if (hasText(tenantCode)) {
+            plugins = extensionService.findExtensionsByTenantCode(tenantCode);
+        } else {
+            plugins = extensionService.findAllExtensions();
+        }
+        return ResponseEntity.ok(ApiResponse.success("获取插件列表成功", plugins));
     }
 
     @GetMapping("/plugins/{id}")
@@ -99,6 +132,26 @@ public class ExtensionManagementController {
             return notFound("插件不存在");
         }
         return ResponseEntity.ok(ApiResponse.success("获取插件详情成功", extension));
+    }
+
+    @GetMapping("/plugins/{id}/doc")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getPluginDoc(@PathVariable Long id) {
+        Extension extension = extensionService.findExtensionById(id);
+        if (extension == null) {
+            return notFound("插件不存在");
+        }
+        Map<String, Object> doc = new LinkedHashMap<>();
+        doc.put("id", extension.getId());
+        doc.put("name", extension.getName());
+        doc.put("className", extension.getClassName());
+        doc.put("tenantCode", extension.getTenantCode());
+        doc.put("bizCode", extension.getBizCode());
+        doc.put("priority", extension.getPriority());
+        doc.put("enabled", extension.isEnabled());
+        doc.put("description", extension.getDescription());
+        doc.put("createdAt", extension.getCreatedAt());
+        doc.put("updatedAt", extension.getUpdatedAt());
+        return ResponseEntity.ok(ApiResponse.success("获取插件文档成功", doc));
     }
 
     @PostMapping("/plugins")

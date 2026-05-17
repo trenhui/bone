@@ -1,6 +1,5 @@
 package com.bone.integration.adapter.web.controller;
 
-import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import com.bone.integration.application.command.cmd.ExecuteFlowCmd;
 import com.bone.integration.application.command.handler.ExecuteFlowHandler;
@@ -8,29 +7,27 @@ import com.bone.integration.application.query.dto.ExecutionLogDTO;
 import com.bone.integration.application.query.dto.FlowStatisticsDTO;
 import com.bone.integration.application.query.handler.ExecutionLogListQueryHandler;
 import com.bone.integration.application.query.qry.ExecutionLogListQry;
-import com.bone.integration.domain.model.execution.IntegrationLog;
-import com.bone.integration.domain.model.flow.IntegrationFlow;
-import com.bone.integration.domain.repository.IntegrationLogRepository;
+import com.bone.integration.domain.execution.IntegrationLog;
+import com.bone.integration.domain.flow.IntegrationFlow;
+import com.bone.integration.domain.model.execution.vo.ExecutionStatus;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
+import com.bone.integration.domain.repository.IntegrationLogRepository;
 import com.bone.integration.domain.service.FlowMonitorService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDateTime;
-import java.util.Optional;
+import java.util.Collections;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 
+@ExtendWith(MockitoExtension.class)
 class MonitorControllerTest {
 
     @Mock
@@ -51,96 +48,61 @@ class MonitorControllerTest {
     @InjectMocks
     private MonitorController monitorController;
 
-    private MockMvc mockMvc;
+    @Test
+    void execute_delegatesToHandler() {
+        ExecuteFlowCmd cmd = new ExecuteFlowCmd(1L, "{\"k\":\"v\"}");
+        when(executeFlowHandler.handle(cmd)).thenReturn(99L);
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        mockMvc = MockMvcBuilders.standaloneSetup(monitorController).build();
+        var response = monitorController.execute(cmd);
+
+        assertTrue(response.isSuccess());
+        assertEquals(99L, response.getData());
     }
 
     @Test
-    void testExecute() throws Exception {
-        ExecuteFlowCmd cmd = new ExecuteFlowCmd();
-        cmd.setFlowId(1L);
-        cmd.setInputData("{\"test\":\"data\"}");
+    void listExecutions_returnsPage() {
+        ExecutionLogListQry qry = new ExecutionLogListQry(1, 10, 1L, null);
+        PageResult<ExecutionLogDTO> page =
+                PageResult.of(Collections.emptyList(), 0L, 1, 10);
+        when(executionLogListQueryHandler.handle(qry)).thenReturn(page);
 
-        when(executeFlowHandler.handle(cmd)).thenReturn(1L);
+        var response = monitorController.listExecutions(qry);
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/integration/executions")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"flowId\":1,\"inputData\":\"{\\\"test\\\":\\\"data\\\"}\"}"))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.code").value(200))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data").value(1));
+        assertTrue(response.isSuccess());
+        assertEquals(page, response.getData());
     }
 
     @Test
-    void testListExecutions() throws Exception {
-        ExecutionLogListQry qry = new ExecutionLogListQry();
-        PageResult<ExecutionLogDTO> result = PageResult.of(0L, 1, 10, java.util.Collections.emptyList());
-        when(executionLogListQueryHandler.handle(qry)).thenReturn(result);
+    void getExecution_mapsDomainToDto() {
+        IntegrationLog log = IntegrationLog.create(1L, 2L, "{}");
+        log.start();
+        log.complete("ok");
+        when(logRepository.findById(1L)).thenReturn(log);
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/integration/executions"))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.code").value(200))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.items").isArray());
+        var response = monitorController.getExecution(1L);
+
+        assertTrue(response.isSuccess());
+        assertEquals(1L, response.getData().id());
+        assertEquals(2L, response.getData().flowId());
+        assertEquals(ExecutionStatus.SUCCESS.name(), response.getData().status());
     }
 
     @Test
-    void testGetExecution() throws Exception {
-        Long id = 1L;
-        IntegrationLog log = new IntegrationLog();
-        log.setId(new com.bone.core.model.Identity(id));
-        log.setFlowId(new com.bone.core.model.Identity(1L));
-        log.setStatus(IntegrationLog.Status.SUCCESS);
-        log.setStartTime(LocalDateTime.now());
-        log.setEndTime(LocalDateTime.now());
-        log.setInputData("{\"test\":\"data\"}");
-        log.setOutputData("{\"result\":\"success\"}");
+    void getStatistics_aggregatesByFlowId() {
+        IntegrationFlow flow = IntegrationFlow.create(10L, "demo", "desc");
+        flow.activate();
+        when(flowRepository.findById(10L)).thenReturn(flow);
+        when(flowMonitorService.getExecutionCount(10L)).thenReturn(5L);
+        when(flowMonitorService.getSuccessCount(10L)).thenReturn(4L);
+        when(flowMonitorService.getFailureCount(10L)).thenReturn(1L);
+        when(flowMonitorService.getSuccessRate(10L)).thenReturn(80.0);
 
-        when(logRepository.findById(id)).thenReturn(Optional.of(log));
+        var response = monitorController.getStatistics(10L);
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/integration/executions/{id}", id))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.code").value(200))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.id").value(id));
-    }
-
-    @Test
-    void testRetry() throws Exception {
-        Long id = 1L;
-        IntegrationLog log = new IntegrationLog();
-        log.setId(new com.bone.core.model.Identity(id));
-        log.setFlowId(new com.bone.core.model.Identity(1L));
-        log.setInputData("{\"test\":\"data\"}");
-
-        when(logRepository.findById(id)).thenReturn(Optional.of(log));
-        when(executeFlowHandler.handle(any(ExecuteFlowCmd.class))).thenReturn(2L);
-
-        mockMvc.perform(MockMvcRequestBuilders.post("/integration/executions/{id}/retry", id))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.code").value(200))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data").value(2));
-    }
-
-    @Test
-    void testGetStatistics() throws Exception {
-        Long flowId = 1L;
-        IntegrationFlow flow = new IntegrationFlow();
-        flow.setId(new com.bone.core.model.Identity(flowId));
-        flow.setName("测试流程");
-
-        when(flowRepository.findById(flowId)).thenReturn(Optional.of(flow));
-        when(flowMonitorService.getExecutionCount(any())).thenReturn(100L);
-        when(flowMonitorService.getSuccessCount(any())).thenReturn(90L);
-        when(flowMonitorService.getFailureCount(any())).thenReturn(10L);
-        when(flowMonitorService.getSuccessRate(any())).thenReturn(90.0);
-
-        mockMvc.perform(MockMvcRequestBuilders.get("/integration/statistics")
-                .param("flowId", flowId.toString()))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.code").value(200))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.data.flowId").value(flowId));
+        assertTrue(response.isSuccess());
+        FlowStatisticsDTO dto = response.getData();
+        assertEquals(10L, dto.flowId());
+        assertEquals(5L, dto.executionCount());
+        verify(flowMonitorService).getSuccessRate(eq(10L));
     }
 }

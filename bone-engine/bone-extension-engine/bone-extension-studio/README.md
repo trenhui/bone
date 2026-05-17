@@ -41,7 +41,17 @@ mvn spring-boot:run -Dspring-boot.run.profiles=metadata-mysql -Dmaven.test.skip=
 ## API
 
 - 路径：`/api/v1/extension/*`（见 [Bone-API-规范](../../../doc/architecture/Bone-API-规范.md) §13）
-- 健康检查：`GET /actuator/health`
+- 健康检查：`GET /actuator/health`（无需 Token）
+## 鉴权（与 bone-iam 对齐）
+
+- `/api/**` 需携带 IAM 签发的 `Authorization: Bearer <accessToken>`
+- 配置项：`bone.iam.jwt.secret-key`（与 IAM 相同；生产务必 `BONE_IAM_JWT_SECRET` 外部化）
+- 本地联调：先访问 IAM `POST /api/iam/login`，再将返回的 `token` 写入前端 `localStorage.token` 或请求头
+
+```bash
+# 示例
+curl -s -H "Authorization: Bearer $TOKEN" http://localhost:8088/api/v1/extension/overview
+```
 
 ## 运行时 SDK 执行日志上报（可选）
 

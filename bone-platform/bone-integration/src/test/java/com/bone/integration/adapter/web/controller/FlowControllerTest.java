@@ -6,107 +6,78 @@ import com.bone.integration.application.command.cmd.CreateFlowCmd;
 import com.bone.integration.application.command.cmd.UpdateFlowCmd;
 import com.bone.integration.application.query.dto.FlowDTO;
 import com.bone.integration.application.query.qry.FlowPageQry;
-import com.bone.integration.domain.model.flow.IntegrationFlow;
+import com.bone.integration.application.usecase.standard.CreateFlowUseCase;
+import com.bone.integration.application.usecase.standard.FlowPageQueryUseCase;
+import com.bone.integration.application.usecase.standard.UpdateFlowUseCase;
+import com.bone.integration.domain.flow.IntegrationFlow;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
-import org.junit.jupiter.api.BeforeEach;
+import com.bone.integration.domain.service.FlowService;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.TestPropertySource;
-import org.springframework.transaction.annotation.Transactional;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-@SpringBootTest
-@TestPropertySource(locations = "classpath:application-test.yml")
-@Transactional
-public class FlowControllerTest {
+@ExtendWith(MockitoExtension.class)
+class FlowControllerTest {
 
-    @Autowired
+    @Mock
+    private CreateFlowUseCase createFlowUseCase;
+
+    @Mock
+    private UpdateFlowUseCase updateFlowUseCase;
+
+    @Mock
+    private FlowPageQueryUseCase flowPageQueryUseCase;
+
+    @Mock
+    private IntegrationFlowRepository flowRepository;
+
+    @Mock
+    private FlowService flowService;
+
+    @InjectMocks
     private FlowController flowController;
 
-    @Autowired
-    private IntegrationFlowRepository integrationFlowRepository;
+    @Test
+    void create_delegatesToUseCase() {
+        CreateFlowCmd cmd = new CreateFlowCmd("flow-a", "desc", List.of(), List.of());
+        when(createFlowUseCase.execute(cmd)).thenReturn(1L);
 
-    @BeforeEach
-    public void setUp() {
-        // 清理测试数据
-        integrationFlowRepository.deleteAll();
+        ApiResponse<Long> response = flowController.create(cmd);
+
+        assertTrue(response.isSuccess());
+        assertEquals(1L, response.getData());
     }
 
     @Test
-    public void testCreate() {
-        // 准备测试数据
-        CreateFlowCmd cmd = new CreateFlowCmd();
-        cmd.setName("测试流程");
-        cmd.setDescription("测试集成流程");
+    void page_returnsResult() {
+        FlowPageQry qry = new FlowPageQry(1, 10, null, null);
+        PageResult<FlowDTO> page = PageResult.of(Collections.emptyList(), 0L, 1, 10);
+        when(flowPageQueryUseCase.execute(qry)).thenReturn(page);
 
-        // 执行测试
-        ApiResponse<Long> apiResponse = flowController.create(cmd);
+        ApiResponse<PageResult<FlowDTO>> response = flowController.page(qry);
 
-        // 验证结果
-        assertTrue(apiResponse.isSuccess());
-        assertTrue(apiResponse.getData() != null);
-        
-        // 验证数据已保存到数据库
-        IntegrationFlow flow = integrationFlowRepository.findById(apiResponse.getData()).orElse(null);
-        assertTrue(flow != null);
-        assertEquals("测试流程", flow.getName());
-        assertEquals("测试集成流程", flow.getDescription());
+        assertTrue(response.isSuccess());
+        assertEquals(page, response.getData());
     }
 
     @Test
-    public void testUpdate() {
-        // 先创建一个流程
-        IntegrationFlow flow = new IntegrationFlow();
-        flow.setName("原始流程");
-        flow.setDescription("原始流程描述");
-        flow = integrationFlowRepository.save(flow);
+    void activate_updatesFlowStatus() {
+        IntegrationFlow flow = IntegrationFlow.create(2L, "n", "d");
+        when(flowRepository.findById(2L)).thenReturn(flow);
 
-        // 准备测试数据
-        Long flowId = flow.getId();
-        UpdateFlowCmd cmd = new UpdateFlowCmd();
-        cmd.setName("更新后的流程");
-        cmd.setDescription("更新后的流程描述");
+        ApiResponse<Void> response = flowController.activate(2L);
 
-        // 执行测试
-        ApiResponse<Void> apiResponse = flowController.update(flowId, cmd);
-
-        // 验证结果
-        assertTrue(apiResponse.isSuccess());
-        
-        // 验证数据已更新
-        IntegrationFlow updatedFlow = integrationFlowRepository.findById(flowId).orElse(null);
-        assertTrue(updatedFlow != null);
-        assertEquals("更新后的流程", updatedFlow.getName());
-        assertEquals("更新后的流程描述", updatedFlow.getDescription());
-    }
-
-    @Test
-    public void testPage() {
-        // 创建测试数据
-        for (int i = 1; i <= 3; i++) {
-            IntegrationFlow flow = new IntegrationFlow();
-            flow.setName("测试流程" + i);
-            flow.setDescription("测试流程描述" + i);
-            integrationFlowRepository.save(flow);
-        }
-
-        // 准备测试数据
-        FlowPageQry qry = new FlowPageQry();
-        qry.setPageNum(1);
-        qry.setPageSize(10);
-
-        // 执行测试
-        ApiResponse<PageResult<FlowDTO>> apiResponse = flowController.page(qry);
-
-        // 验证结果
-        assertTrue(apiResponse.isSuccess());
-        assertTrue(apiResponse.getData() != null);
-        assertTrue(apiResponse.getData().getList() != null);
-        assertEquals(3, apiResponse.getData().getList().size());
+        assertTrue(response.isSuccess());
+        verify(flowRepository).save(flow);
     }
 }

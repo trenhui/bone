@@ -9,13 +9,10 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 /**
- * 架构守护测试 - 确保DDD依赖规则不被违反
+ * 架构守护测试 - 确保 DDD 依赖规则不被违反。
  *
- * 规则：
- * 1. 领域层不应该依赖外层（adapter、application、infrastructure）
- * 2. 领域层只允许依赖：java.*、com.bone.core.*、自身领域包
- * 3. 应用层不应该被领域层依赖
- * 4. 基础设施不应该被领域层依赖
+ * <p>平台集成使用 Metadata SDK {@link com.bone.metadata.sdk.Repository}，领域层允许依赖
+ * {@code com.bone.metadata.sdk..}；仓储实现由 SDK 代理生成，无 {@code *RepositoryImpl} 类。
  */
 @AnalyzeClasses(packages = "com.bone.integration")
 public class ArchitectureTest {
@@ -23,13 +20,11 @@ public class ArchitectureTest {
     @ArchTest
     static void domainLayerShouldNotDependOnOuterLayers(JavaClasses classes) {
         ArchRule rule = noClasses()
-                .that().resideInAPackage("..domain..")
-                .should().dependOnClassesThat()
-                .resideInAnyPackage(
-                        "..adapter..",
-                        "..application..",
-                        "..infrastructure.."
-                );
+                .that()
+                .resideInAPackage("..domain..")
+                .should()
+                .dependOnClassesThat()
+                .resideInAnyPackage("..adapter..", "..application..", "..infrastructure..");
 
         rule.check(classes);
     }
@@ -37,15 +32,18 @@ public class ArchitectureTest {
     @ArchTest
     static void domainLayerShouldOnlyDependOnAllowedPackages(JavaClasses classes) {
         ArchRule rule = classes()
-                .that().resideInAPackage("..domain..")
-                .should().onlyDependOnClassesThat()
+                .that()
+                .resideInAPackage("..domain..")
+                .should()
+                .onlyDependOnClassesThat()
                 .resideInAnyPackage(
                         "..domain..",
                         "java..",
                         "com.bone.core..",
+                        "com.bone.metadata.sdk..",
                         "lombok..",
-                        "org.springframework.lang.."
-                );
+                        "org.springframework.lang..",
+                        "org.springframework.stereotype..");
 
         rule.check(classes);
     }
@@ -53,9 +51,12 @@ public class ArchitectureTest {
     @ArchTest
     static void domainServiceShouldResideInDomain(JavaClasses classes) {
         ArchRule rule = classes()
-                .that().haveNameMatching(".*Service")
-                .should().resideInAPackage("..domain.service..")
-                .orShould().resideInAPackage("..domain..");
+                .that()
+                .haveNameMatching(".*Service")
+                .should()
+                .resideInAPackage("..domain.service..")
+                .orShould()
+                .resideInAPackage("..domain..");
 
         rule.check(classes);
     }
@@ -63,8 +64,10 @@ public class ArchitectureTest {
     @ArchTest
     static void repositoryInterfacesShouldBeInDomain(JavaClasses classes) {
         ArchRule rule = classes()
-                .that().haveNameMatching(".*Repository")
-                .should().resideInAPackage("..domain..");
+                .that()
+                .haveNameMatching(".*Repository")
+                .should()
+                .resideInAPackage("..domain..");
 
         rule.check(classes);
     }
@@ -72,8 +75,11 @@ public class ArchitectureTest {
     @ArchTest
     static void repositoryImplementationsShouldBeInInfrastructure(JavaClasses classes) {
         ArchRule rule = classes()
-                .that().haveNameMatching(".*RepositoryImpl")
-                .should().resideInAPackage("..infrastructure..");
+                .that()
+                .haveNameMatching(".*RepositoryImpl")
+                .should()
+                .resideInAPackage("..infrastructure..")
+                .allowEmptyShould(true);
 
         rule.check(classes);
     }
