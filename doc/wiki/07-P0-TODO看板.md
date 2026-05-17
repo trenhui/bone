@@ -3,7 +3,22 @@
 [← Wiki 首页](./README.md)
 
 > **用途**：与 PRD MoSCoW **P0** 对齐的**工程债清单**；完成一项请改状态并链到 PR。  
-> **范围**：`bone-platform` 内核 + `bone-iam` 架构测试；不含 `bone-business/tpa-saas` 行业包。
+> **范围**：`bone-platform` 内核 + `bone-iam` 架构测试；**不含** `bone-business/tpa-saas` 行业包实现细节。  
+> **TPA 迁移**：路线 [bone-business/TPA-MIGRATION.md](../../bone-business/TPA-MIGRATION.md)；里程碑用 **TPA-*** 前缀登记。
+
+---
+
+## TPA 迁移（bone-business）
+
+| ID | 描述 | 状态 | 备注 |
+|----|------|------|------|
+| TPA-00 | Java API 基线清单 | done | [API-INVENTORY.md](../../bone-business/tpa-go/contracts/API-INVENTORY.md) |
+| TPA-01 | `tpa-go` 骨架（health + migration/status） | done | [tpa-go/README.md](../../bone-business/tpa-go/README.md) |
+| TPA-02 | OpenAPI 契约 CI 校验 | open | `contracts/openapi.yaml` |
+| TPA-03 | 首条业务只读 API Go 实现或代理 | open | 建议从 `/tpa/query` 或 `/health` 邻域开始 |
+| TPA-04 | React `VITE_API_BASE` 灰度切换方案 | open | 见 `tpa-sass-react/.env.example` |
+| TPA-05 | Vue3 功能 parity 清单 | open | 对照 React |
+| TPA-06 | Java `tpa-saas` 域级下线 | open | 阶段 3 |
 
 ---
 

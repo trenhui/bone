@@ -1,0 +1,97 @@
+openapi: 3.0.3
+info:
+  title: TPA Go Service (migration skeleton)
+  version: 0.1.0
+  description: |
+    阶段 1 契约。业务域 API 真源仍以 Java tpa-saas 为准，见 API-INVENTORY.md。
+servers:
+  - url: http://localhost:8090
+    description: 本地 tpa-go
+paths:
+  /health:
+    get:
+      summary: 存活探针
+      operationId: health
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseHealth"
+  /ready:
+    get:
+      summary: 就绪探针
+      operationId: ready
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseReady"
+  /api/v1/tpa/migration/status:
+    get:
+      summary: 迁移阶段只读状态
+      operationId: migrationStatus
+      tags: [migration]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiResponseMigrationStatus"
+components:
+  schemas:
+    ApiResponseBase:
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+        success:
+          type: boolean
+    MigrationStatus:
+      type: object
+      properties:
+        phase:
+          type: integer
+        phaseLabel:
+          type: string
+        goService:
+          type: string
+        javaBackendUrl:
+          type: string
+        frontendTarget:
+          type: string
+        note:
+          type: string
+    ApiResponseMigrationStatus:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/MigrationStatus"
+    ApiResponseHealth:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                status:
+                  type: string
+    ApiResponseReady:
+      allOf:
+        - $ref: "#/components/schemas/ApiResponseBase"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                ready:
+                  type: boolean

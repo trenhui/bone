@@ -11,3 +11,5 @@
 **文档真源**：平台架构与 DDD 以 [`doc/architecture/`](../../doc/architecture/README.md) 为准；各子目录 `README.md` 仅描述本语言模块的构建与入口。
 
 **说明**：历史迁移对比、一次性测试报告等临时 Markdown 已移除，避免与 Java 权威文档分叉。
+
+**行业包（规划）**：TPA 后端计划从 `bone-business/tpa-saas`（Java）迁至 Go，新模块建议 `bone-business/tpa-go/`，并复用本目录 `bone-metadata-go`、`bone-blueprint-go` 的分层与契约模式。见 [bone-business/TPA-MIGRATION.md](../../bone-business/TPA-MIGRATION.md)。

@@ -91,10 +91,11 @@ bone/                          # 根聚合模块
 │   ├── bone-file/             # 文件服务
 │   ├── bone-notification/     # 通知服务
 │   └── bone-integration/      # 平台级集成服务
-├── bone-business/             # 行业业务（聚合 POM 无子 module；含 tpa-saas/、tpa-sass-vue3/ 等）
-│   ├── tpa-saas/              # TPA 后端（独立 Maven 树）
-│   ├── tpa-sass-vue3/         # TPA 管理端 Vue3
-│   └── tpa-sass-react/        # TPA React 前端（可选）
+├── bone-business/             # 行业业务（TPA 迁移见 TPA-MIGRATION.md）
+│   ├── tpa-saas/              # TPA 后端 Java（在役，逐步切至 tpa-go）
+│   ├── tpa-go/                # TPA 后端 Go（目标主栈，阶段 1 骨架）
+│   ├── tpa-sass-react/        # TPA 管理端 React（目标唯一前端）
+│   └── tpa-sass-vue3/         # TPA 管理端 Vue3（维护至 React parity）
 ├── bone-sdk/                  # 客户端 SDK
 │   ├── bone-client-sdk/
 │   └── bone-openapi-sdk/
