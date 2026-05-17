@@ -24,7 +24,6 @@ bone/
 ├── bone-framework/       # 框架层（web/security/core/datasource）
 ├── bone-engine/          # 引擎层（metadata/masterdata/extension/integration）
 ├── bone-platform/        # 平台模块（iam/system/audit）
-├── bone-business/        # 业务模块（order/inventory）
 ├── bone-blueprint/       # DDD 架构蓝图（最佳实践参考）
 ├── bone-sdk/             # SDK 客户端
 ├── bone-tool/            # 工具集（codegen）

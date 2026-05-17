@@ -40,8 +40,14 @@ public class SecurityConfig {
                     authorize
                             .requestMatchers(HttpMethod.OPTIONS, "/**")
                             .permitAll()
-                            .requestMatchers("/actuator/**", "/h2-console/**")
-                            .permitAll();
+                        .requestMatchers("/actuator/**", "/h2-console/**")
+                        .permitAll()
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/api-docs/**")
+                        .permitAll();
                     if (studioProperties.getSecurity().isPermitUnauthenticated()) {
                         authorize.requestMatchers("/api/v1/extension/**").permitAll();
                     }

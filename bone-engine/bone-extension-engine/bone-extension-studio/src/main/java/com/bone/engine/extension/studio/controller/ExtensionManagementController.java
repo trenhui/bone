@@ -1,6 +1,8 @@
 package com.bone.engine.extension.studio.controller;
 
-import com.bone.engine.extension.studio.controller.common.ApiResponse;
+import com.bone.core.model.ApiResponse;
+import com.bone.core.model.PageResult;
+import com.bone.core.model.ResultCode;
 import com.bone.engine.extension.studio.domain.model.ExtPoint;
 import com.bone.engine.extension.studio.domain.model.Extension;
 import com.bone.engine.extension.studio.domain.model.PluginExecutionLog;
@@ -64,7 +66,8 @@ public class ExtensionManagementController {
             points = extPointService.findAllExtPoints();
         }
         if (page != null || size != null) {
-            return ResponseEntity.ok(ApiResponse.success("获取扩展点列表成功", paginate(points, page, size)));
+            return ResponseEntity.ok(
+                    ApiResponse.success("获取扩展点列表成功", slicePage(points, page, size)));
         }
         return ResponseEntity.ok(ApiResponse.success("获取扩展点列表成功", points));
     }
@@ -130,7 +133,8 @@ public class ExtensionManagementController {
             plugins = extensionService.findAllExtensions();
         }
         if (page != null || size != null) {
-            return ResponseEntity.ok(ApiResponse.success("获取插件列表成功", paginate(plugins, page, size)));
+            return ResponseEntity.ok(
+                    ApiResponse.success("获取插件列表成功", slicePage(plugins, page, size)));
         }
         return ResponseEntity.ok(ApiResponse.success("获取插件列表成功", plugins));
     }
@@ -317,7 +321,7 @@ public class ExtensionManagementController {
     }
 
     @GetMapping("/execution-logs")
-    public ResponseEntity<ApiResponse<Map<String, Object>>> executionLogs(
+    public ResponseEntity<ApiResponse<PageResult<PluginExecutionLog>>> executionLogs(
             @RequestParam(required = false) Long pluginId,
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "1") int page,
@@ -326,14 +330,9 @@ public class ExtensionManagementController {
         int safeSize = Math.min(100, Math.max(1, size));
         List<PluginExecutionLog> list = executionLogService.query(pluginId, status, safePage, safeSize);
         long total = executionLogService.count(pluginId, status);
-        Map<String, Object> data = new LinkedHashMap<>();
-        data.put("records", list);
-        data.put("list", list);
-        data.put("total", total);
-        data.put("page", safePage);
-        data.put("size", safeSize);
-        return ResponseEntity.ok(ApiResponse.success("获取执行日志成功", data)
-                .withMeta("total", total));
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "获取执行日志成功", PageResult.of(list, total, safePage, safeSize)));
     }
 
     @PostMapping("/plugins/{id}:simulate")
@@ -387,8 +386,7 @@ public class ExtensionManagementController {
         return value != null && !value.isBlank();
     }
 
-    /** 分页结构：records（规范）+ list（兼容）/ total / page / size */
-    private static <T> Map<String, Object> paginate(List<T> all, Integer page, Integer size) {
+    private static <T> PageResult<T> slicePage(List<T> all, Integer page, Integer size) {
         int safePage = page != null ? Math.max(1, page) : 1;
         int safeSize = size != null ? Math.min(100, Math.max(1, size)) : 20;
         int from = (safePage - 1) * safeSize;
@@ -398,20 +396,16 @@ public class ExtensionManagementController {
         } else {
             slice = all.subList(from, Math.min(from + safeSize, all.size()));
         }
-        Map<String, Object> data = new LinkedHashMap<>();
-        data.put("records", slice);
-        data.put("list", slice);
-        data.put("total", all.size());
-        data.put("page", safePage);
-        data.put("size", safeSize);
-        return data;
+        return PageResult.of(slice, (long) all.size(), safePage, safeSize);
     }
 
     private static <T> ResponseEntity<ApiResponse<T>> badRequest(String message) {
-        return ResponseEntity.badRequest().body(ApiResponse.error(message));
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error(ResultCode.BAD_REQUEST.getCode(), message));
     }
 
     private static <T> ResponseEntity<ApiResponse<T>> notFound(String message) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(404, message, null));
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error(ResultCode.NOT_FOUND.getCode(), message));
     }
 }

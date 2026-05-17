@@ -252,15 +252,24 @@ export type ExecutionLogRow = {
 };
 
 export type ExecutionLogPage = {
-  records?: ExecutionLogRow[];
-  list?: ExecutionLogRow[];
+  records: ExecutionLogRow[];
   total: number;
   page: number;
   size: number;
+  pages?: number;
+  hasNext?: boolean;
+  hasPrevious?: boolean;
 };
 
-function logRows(page: ExecutionLogPage): ExecutionLogRow[] {
-  return page.records ?? page.list ?? [];
+function unwrapPage<T>(data: T | { records?: T[]; list?: T[] }): T[] {
+  if (Array.isArray(data)) {
+    return data;
+  }
+  if (data && typeof data === 'object') {
+    const p = data as { records?: T[]; list?: T[] };
+    return p.records ?? p.list ?? [];
+  }
+  return [];
 }
 
 export async function getSandboxConfig(): Promise<SandboxConfig> {
@@ -282,8 +291,18 @@ export async function listExecutionLogs(params?: {
   const res = await client.get<StudioApiResponse<ExecutionLogPage>>(`${EXTENSION_BASE}/execution-logs`, {
     params,
   });
-  const page = assertSuccess(res);
-  return { ...page, rows: logRows(page) };
+  const raw = assertSuccess(res);
+  const records = unwrapPage(raw);
+  const page: ExecutionLogPage = {
+    records,
+    total: raw.total ?? records.length,
+    page: raw.page ?? params?.page ?? 1,
+    size: raw.size ?? params?.size ?? 20,
+    pages: raw.pages,
+    hasNext: raw.hasNext,
+    hasPrevious: raw.hasPrevious,
+  };
+  return { ...page, rows: records };
 }
 
 export async function simulatePlugin(pluginId: number): Promise<ExecutionLogRow> {

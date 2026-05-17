@@ -41,7 +41,9 @@ mvn spring-boot:run -Dspring-boot.run.profiles=metadata-mysql -Dmaven.test.skip=
 ## API
 
 - 路径：`/api/v1/extension/*`（见 [Bone-API-规范](../../../doc/architecture/Bone-API-规范.md) §13）
-- 健康检查：`GET /actuator/health`（无需 Token）
+- 响应：`com.bone.core.model.ApiResponse`；失败 `data` 为 `ProblemDetail`
+- Swagger UI：`http://localhost:8088/swagger-ui.html`
+- 健康检查：`GET /actuator/health`
 ## 鉴权（与 bone-iam 对齐）
 
 - `/api/**` 需携带 IAM 签发的 `Authorization: Bearer <accessToken>`

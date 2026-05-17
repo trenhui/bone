@@ -93,6 +93,13 @@ public class ApiResponse<T> implements Serializable {
     }
 
     /**
+     * 错误响应（HTTP/业务码 + 消息 + ProblemDetail 等 data）
+     */
+    public static <T> ApiResponse<T> error(Integer code, String message, T errorData) {
+        return new ApiResponse<>(false, code, message, errorData);
+    }
+
+    /**
      * 错误响应（带错误详情数据）
      */
     public static <T> ApiResponse<T> error(String message, T errorData) {

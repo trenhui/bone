@@ -61,6 +61,15 @@ mvn spring-boot:run -Dspring-boot.run.profiles=metadata-mysql -Dmaven.test.skip=
 
 勿对 MySQL 再跑 `schema-mysql.sql`；表结构以 `bone-init.sql` 为准。
 
+### 开发期路由（Shell → Studio）
+
+| 入口 | 目标 |
+|------|------|
+| `http://localhost:3000/api/v1/extension/**` | `bone-extension-studio` `:8088`（见 `bone-shell/vite.config.ts`） |
+| `http://localhost:3008/api/v1/extension/**` | 扩展微应用 dev server 直连 Studio |
+
+Swagger：`http://localhost:8088/swagger-ui.html`（本地 `in-memory` / `metadata` profile 免 JWT）。
+
 ## IDE
 
 - **IntelliJ**：Run Configuration → Environment → 勾选「EnvFile」或「Load from path」→ 选仓库根 `.env`

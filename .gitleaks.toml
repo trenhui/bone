@@ -21,7 +21,6 @@ paths = [
   '''\.log$''',
   '''dependency-tree\.txt$''',
   '''\.mock\.ts$''',
-  '''bone-business/tpa-saas/.*/backup/''',
   '''scripts/scan-secrets\.sh$''',
   '''\.github/workflows/ci\.yml$''',
   '''CONTRIBUTING\.md$''',

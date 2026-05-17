@@ -1,0 +1,93 @@
+openapi: 3.1.0
+info:
+  title: Bone Extension Studio API
+  version: 1.0.0
+  description: 扩展引擎管理台；规范见 Bone-API-规范.md §13.1
+servers:
+  - url: /api/v1/extension
+paths:
+  /points:
+    get:
+      summary: 扩展点列表
+      parameters:
+        - { name: keyword, in: query, schema: { type: string } }
+        - { name: domain, in: query, schema: { type: string } }
+        - { name: category, in: query, schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer } }
+        - { name: size, in: query, schema: { type: integer } }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: './components/ApiResponse.yaml'
+    post:
+      summary: 创建扩展点
+      responses:
+        '201':
+          description: Created
+  /points/{id}:
+    get:
+      summary: 扩展点详情
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        '200': { description: OK }
+    put:
+      summary: 更新扩展点
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: 删除扩展点
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        '204': { description: No Content }
+  /points/{id}:enable:
+    post:
+      summary: 启用扩展点
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        '200': { description: OK }
+  /points/{id}:disable:
+    post:
+      summary: 禁用扩展点
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        '200': { description: OK }
+  /plugins:
+    get:
+      summary: 插件列表
+      responses:
+        '200': { description: OK }
+    post:
+      summary: 创建插件
+      responses:
+        '201': { description: Created }
+  /plugins:upload:
+    post:
+      summary: 上传插件 JAR
+      responses:
+        '201': { description: Created }
+  /plugins/{id}:deploy:
+    post:
+      summary: 部署插件
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        '200': { description: OK }
+  /execution-logs:ingest:
+    post:
+      summary: SDK 执行日志上报
+      responses:
+        '200': { description: OK }
+  /overview:
+    get:
+      summary: 扩展概览
+      responses:
+        '200': { description: OK }

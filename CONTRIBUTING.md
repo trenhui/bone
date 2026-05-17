@@ -30,7 +30,7 @@ cd bone-frontend && npm ci && npm run lint && npm run build --workspace=bone-she
 
 ```bash
 mvn com.diffplug.spotless:spotless-maven-plugin:2.43.0:apply --batch-mode \
-  -pl bone-framework,bone-platform,bone-business,bone-sdk,bone-tool,\
+  -pl bone-framework,bone-platform,bone-sdk,bone-tool,\
 bone-engine/bone-metadata-sdk,bone-engine/bone-metadata-server,\
 bone-engine/bone-metadata-engine/bone-metadata-engine-core,bone-engine/bone-metadata-engine/bone-metadata-engine-starter,\
 bone-engine/bone-integration,\
@@ -51,7 +51,7 @@ bone-engine/bone-extension-engine/bone-extension-sdk,bone-engine/bone-extension-
 ## 安全与配置
 
 - **禁止**在 `src/main/resources` 提交真实密码、云 AK/SK、JWT secret。
-- 本地/测试配置使用 **`${ENV_VAR:}`**；参考 `bone-business/tpa-saas/**/backup/README.md`。
+- 本地/测试配置使用 **`${ENV_VAR:}`**；参考各模块 `application.yml` 与 `config/env/README.md`。
 - 若密钥曾误提交 Git，须 **轮换**；历史存量见 `.gitleaks.baseline.json`，彻底清除用 [doc/wiki/09-密钥与Git历史.md](doc/wiki/09-密钥与Git历史.md) 中的 `git filter-repo` 流程。
 
 ## 架构与文档真源

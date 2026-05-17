@@ -649,3 +649,183 @@ CREATE TABLE exts_plugin_execution_log (
     KEY idx_exts_pel_tenant (tenant_id, plugin_id, created_at),
     KEY idx_exts_pel_plugin (plugin_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Studio 插件执行日志';
+
+-- ============================================================
+-- 6. Studio Generator（gen_*，bone-engine/studio-generator）
+-- ============================================================
+
+DROP TABLE IF EXISTS gen_code_generation_history;
+DROP TABLE IF EXISTS gen_generation_task;
+DROP TABLE IF EXISTS gen_column_metadata;
+DROP TABLE IF EXISTS gen_table_metadata;
+DROP TABLE IF EXISTS gen_code_template;
+DROP TABLE IF EXISTS gen_type_mapping;
+DROP TABLE IF EXISTS gen_data_source;
+
+CREATE TABLE gen_data_source (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    name                VARCHAR(100)    NOT NULL COMMENT '数据源名称',
+    db_type             VARCHAR(32)     NOT NULL COMMENT '数据库类型 MYSQL/POSTGRESQL/...',
+    host                VARCHAR(255)    NOT NULL COMMENT '主机',
+    port                INT             NOT NULL COMMENT '端口',
+    db_name             VARCHAR(128)    NOT NULL COMMENT '库名',
+    username            VARCHAR(128)    NOT NULL COMMENT '用户名',
+    password_encrypted  VARCHAR(512)    NOT NULL COMMENT '密码（加密存储）',
+    params              VARCHAR(500)    DEFAULT NULL COMMENT 'JDBC 附加参数',
+    is_enabled          TINYINT(1)      NOT NULL DEFAULT 1 COMMENT '是否启用',
+    last_test_at        DATETIME(3)     DEFAULT NULL COMMENT '最近连通测试时间',
+    last_test_result    VARCHAR(20)     DEFAULT NULL COMMENT '最近测试结果 SUCCESS/FAILED',
+    last_test_message   VARCHAR(500)    DEFAULT NULL COMMENT '最近测试消息',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    updated_by          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_gen_ds_tenant_name (tenant_id, name),
+    KEY idx_gen_ds_tenant (tenant_id, deleted)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='代码生成数据源';
+
+CREATE TABLE gen_table_metadata (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    data_source_id      VARCHAR(64)     NOT NULL COMMENT '数据源ID（与 gen_data_source 或过渡期字符串ID）',
+    table_schema        VARCHAR(128)    DEFAULT NULL COMMENT '库/schema',
+    original_table_name VARCHAR(128)    NOT NULL COMMENT '物理表名',
+    custom_entity_name  VARCHAR(128)    DEFAULT NULL COMMENT '自定义实体名',
+    module_name         VARCHAR(100)    DEFAULT NULL COMMENT '模块名',
+    table_comment       VARCHAR(500)    DEFAULT NULL COMMENT '表注释',
+    sync_status         VARCHAR(20)     NOT NULL DEFAULT 'SYNCED' COMMENT '同步状态',
+    last_sync_at        DATETIME(3)     DEFAULT NULL COMMENT '最近同步时间',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    updated_by          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_gen_tm_ds_table (tenant_id, data_source_id, original_table_name),
+    KEY idx_gen_tm_ds (data_source_id, deleted)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='代码生成表元数据';
+
+CREATE TABLE gen_column_metadata (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    table_metadata_id   BIGINT          NOT NULL COMMENT '所属 gen_table_metadata.id',
+    original_column_name VARCHAR(128)   NOT NULL COMMENT '物理列名',
+    custom_field_name   VARCHAR(128)    DEFAULT NULL COMMENT '自定义字段名',
+    jdbc_type           VARCHAR(64)     DEFAULT NULL COMMENT 'JDBC 类型名',
+    java_type           VARCHAR(128)    DEFAULT NULL COMMENT 'Java 类型',
+    column_type         VARCHAR(64)     DEFAULT NULL COMMENT '数据库列类型',
+    column_length       INT             DEFAULT NULL COMMENT '长度',
+    precision_value     INT             DEFAULT NULL COMMENT '精度',
+    scale_value         INT             DEFAULT NULL COMMENT '小数位',
+    is_nullable         TINYINT(1)      NOT NULL DEFAULT 1 COMMENT '是否可空',
+    is_primary_key      TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否主键',
+    is_autoincrement    TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否自增',
+    default_value       VARCHAR(500)    DEFAULT NULL COMMENT '默认值',
+    column_comment      VARCHAR(500)    DEFAULT NULL COMMENT '列注释',
+    sort_order          INT             NOT NULL DEFAULT 0 COMMENT '排序',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    updated_by          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    PRIMARY KEY (id),
+    KEY idx_gen_cm_table (table_metadata_id, deleted)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='代码生成列元数据';
+
+CREATE TABLE gen_code_template (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    name                VARCHAR(200)    NOT NULL COMMENT '模板名称',
+    code                VARCHAR(200)    NOT NULL COMMENT '模板编码',
+    description         TEXT            DEFAULT NULL COMMENT '描述',
+    type                VARCHAR(50)     NOT NULL COMMENT '模板类型',
+    language            VARCHAR(20)     NOT NULL DEFAULT 'java' COMMENT '语言',
+    engine              VARCHAR(20)     NOT NULL DEFAULT 'FREEMARKER' COMMENT '模板引擎',
+    template_version    VARCHAR(50)     NOT NULL DEFAULT '1.0.0' COMMENT '模板语义版本',
+    content             MEDIUMTEXT      NOT NULL COMMENT '模板内容',
+    sample_output       MEDIUMTEXT      DEFAULT NULL COMMENT '示例输出',
+    status              VARCHAR(20)     NOT NULL DEFAULT 'DRAFT' COMMENT 'DRAFT/PUBLISHED',
+    published_at        DATETIME(3)     DEFAULT NULL COMMENT '发布时间',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    updated_by          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_gen_ct_code_ver (tenant_id, code, template_version),
+    KEY idx_gen_ct_tenant (tenant_id, status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='代码生成模板';
+
+CREATE TABLE gen_type_mapping (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    database_type       VARCHAR(32)     NOT NULL COMMENT '数据库类型',
+    jdbc_type_name      VARCHAR(64)     NOT NULL COMMENT 'JDBC 类型',
+    java_type           VARCHAR(128)    NOT NULL COMMENT '映射 Java 类型',
+    precision_expr      VARCHAR(200)    DEFAULT NULL COMMENT '精度表达式',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    updated_by          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_gen_type_map (tenant_id, database_type, jdbc_type_name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='JDBC 到 Java 类型映射';
+
+CREATE TABLE gen_generation_task (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    task_id             VARCHAR(64)     NOT NULL COMMENT '任务业务ID（UUID）',
+    project_name        VARCHAR(200)    NOT NULL COMMENT '工程名',
+    base_package        VARCHAR(300)    NOT NULL COMMENT '基础包名',
+    module_name         VARCHAR(100)    DEFAULT NULL COMMENT '模块名',
+    data_source_id      BIGINT          DEFAULT NULL COMMENT '数据源ID',
+    table_names         JSON            DEFAULT NULL COMMENT '表名列表',
+    template_ids        JSON            DEFAULT NULL COMMENT '模板ID列表',
+    gen_config          JSON            DEFAULT NULL COMMENT '生成配置',
+    generated_files     JSON            DEFAULT NULL COMMENT '生成文件清单',
+    zip_url             VARCHAR(512)    DEFAULT NULL COMMENT '产物 ZIP 地址',
+    status              VARCHAR(20)     NOT NULL DEFAULT 'PENDING' COMMENT '任务状态',
+    error_message       TEXT            DEFAULT NULL COMMENT '失败原因',
+    started_at          DATETIME(3)     DEFAULT NULL COMMENT '开始时间',
+    completed_at        DATETIME(3)     DEFAULT NULL COMMENT '完成时间',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_gen_gt_task (task_id),
+    KEY idx_gen_gt_tenant (tenant_id, status, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='代码生成任务';
+
+CREATE TABLE gen_code_generation_history (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    task_id             VARCHAR(64)     NOT NULL COMMENT '关联任务ID',
+    template_id         VARCHAR(64)     DEFAULT NULL COMMENT '模板ID',
+    template_name       VARCHAR(200)    DEFAULT NULL COMMENT '模板名称',
+    generation_name     VARCHAR(200)    DEFAULT NULL COMMENT '生成批次名称',
+    data_source_id      VARCHAR(64)     DEFAULT NULL COMMENT '数据源ID',
+    table_names         JSON            DEFAULT NULL COMMENT '表名列表',
+    base_package        VARCHAR(300)    DEFAULT NULL COMMENT '基础包名',
+    module_name         VARCHAR(100)    DEFAULT NULL COMMENT '模块名',
+    status              VARCHAR(20)     NOT NULL DEFAULT 'PENDING' COMMENT '状态',
+    file_count          INT             DEFAULT NULL COMMENT '生成文件数',
+    execution_time      BIGINT          DEFAULT NULL COMMENT '耗时毫秒',
+    output_path         VARCHAR(512)    DEFAULT NULL COMMENT '输出路径',
+    error_message       TEXT            DEFAULT NULL COMMENT '错误信息',
+    started_at          DATETIME(3)     DEFAULT NULL COMMENT '开始时间',
+    completed_at        DATETIME(3)     DEFAULT NULL COMMENT '完成时间',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    PRIMARY KEY (id),
+    KEY idx_gen_cgh_task (task_id),
+    KEY idx_gen_cgh_tenant (tenant_id, created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='代码生成历史';

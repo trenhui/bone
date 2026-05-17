@@ -114,7 +114,6 @@ bone/                          # 根聚合模块
 │   ├── bone-file/             # 文件服务
 │   ├── bone-notification/     # 通知服务
 │   └── bone-integration/      # 平台级集成服务
-├── bone-business/             # 业务域模块（行业包等；无根级 bone-admin）
 │   ├── bone-trade/            # 骨架
 │   └── tpa-saas/              # TPA SaaS 业务
 │       ├── bone-auth/

@@ -9,7 +9,9 @@
 - `POST/GET /v1/metadata/fields:*` — 扩展字段查询与分配（`MetadataController`）
 - 内嵌 **bone-metadata-sdk**（`deploymentMode: EMBEDDED`），供其他应用 `REMOTE` Feign 调用
 
-**不负责**：业务实体 `meta_*` 全套 CRUD、代码生成（见 `studio-generator`）、规则引擎（见 `bone-metadata-engine`）。
+**As-Is 不负责**：代码生成（见 `studio-generator`）、规则引擎（见 `bone-metadata-engine`）。
+
+**MVP-2（规划中）**：同一进程 **catalog** 包提供 `meta_*` 建模 REST（`/api/v1/metadata/entities`、`…/entities/{entityId}/fields`、`…/relationships`），与扩展字段路径分离，见对照文档 §1.2。
 
 ## 与 sibling 模块
 

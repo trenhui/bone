@@ -51,7 +51,14 @@ security:
 metadata:
   sdk:
     appcode: extTest
-    deploymentMode: EMBEDDED
+    deployment-mode: EMBEDDED
+    sql:
+      enabled: true
+      executor:
+        allow:
+          dml: true
+      database:
+        type: MYSQL
   service:
     config:
       remote:

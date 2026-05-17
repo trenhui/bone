@@ -16,6 +16,7 @@ import com.bone.engine.extension.support.sync.RedisExtensionMetadataStore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -35,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Studio {@link RuntimeExtensionSyncService} → Redis → {@link MetadataOverlayExtensionRepository} → 路由器 端到端。
  */
+@Disabled("需要 testcontainers 依赖与 Docker；本地执行 mvn test -Dtest='!StudioRuntimeSyncRedisE2ETest'")
 @Testcontainers(disabledWithoutDocker = true)
 class StudioRuntimeSyncRedisE2ETest {
 

@@ -1,6 +1,0 @@
-# 脱敏模板 — bone-lowcode（test）
-spring:
-  datasource:
-    url: ${LOWCODE_DB_URL:jdbc:mysql://127.0.0.1:3306/bone?useSSL=false&characterEncoding=utf8}
-    username: ${LOWCODE_DB_USERNAME:root}
-    password: ${LOWCODE_DB_PASSWORD:}

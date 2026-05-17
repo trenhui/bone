@@ -1,3 +1,0 @@
-apollo.bootstrap.namespaces=application,IT.eureka,IT.hystrix,IT.aliyunLogback,IT.boneAuth,IT.ygauthDB
-apollo.bootstrap.enabled=true
-apollo.bootstrap.eagerLoad.enabled=true

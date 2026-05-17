@@ -19,7 +19,6 @@
         <module>bone-framework</module>
         <module>bone-engine</module>
         <module>bone-platform</module>
-        <module>bone-business</module>
         <module>bone-sdk</module>
         <module>bone-tool</module>
     </modules>

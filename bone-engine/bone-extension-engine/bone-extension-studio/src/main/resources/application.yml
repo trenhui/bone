@@ -69,6 +69,14 @@ logging:
     root: INFO
     com.bone.engine.extension.studio: DEBUG
 
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+
 # 管理端点配置
 management:
   endpoints:

@@ -963,6 +963,7 @@ OpenAPI 草案：[openapi/extension-v1.yaml](./openapi/extension-v1.yaml)。
 
 | 日期 | 说明 |
 |------|------|
+| 2026-05-17 | Studio 切换 `com.bone.core.model.ApiResponse` + `ProblemDetail`；SpringDoc |
 | 2026-05-17 | 扩展 API 动作用冒号后缀；分页 `records`；OpenAPI extension-v1.yaml |
 | 2026-05-17 | 移除 `/api/extension`、`/api/ext-points`、`/api/extensions`，仅 `/api/v1/extension` |
 | 2026-05-17 | §15 契约测试；§16 索引；消息 Topic 见总体架构 §8.4 |

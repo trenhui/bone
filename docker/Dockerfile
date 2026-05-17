@@ -15,7 +15,6 @@ COPY bone-parent/pom.xml bone-parent/
 COPY bone-framework/pom.xml bone-framework/
 COPY bone-engine/pom.xml bone-engine/
 COPY bone-platform/pom.xml bone-platform/
-COPY bone-business/pom.xml bone-business/
 COPY bone-sdk/pom.xml bone-sdk/
 COPY bone-tool/pom.xml bone-tool/
 

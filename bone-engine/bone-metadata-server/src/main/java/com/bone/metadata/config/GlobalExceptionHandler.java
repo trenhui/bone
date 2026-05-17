@@ -1,5 +1,6 @@
 package com.bone.metadata.config;
 
+import com.bone.core.exception.BizException;
 import com.bone.core.util.JsonUtil;
 import com.bone.metadata.exception.ErrorResponse;
 import com.bone.metadata.exception.FieldConflictException;
@@ -28,6 +29,12 @@ public class GlobalExceptionHandler {
 
     ErrorResponse resp = new ErrorResponse("VALIDATION_FAILED", String.join(", ", errors), ex);
     return ResponseEntity.badRequest().body(resp);
+  }
+
+  @ExceptionHandler(BizException.class)
+  public ResponseEntity<ErrorResponse> handleBizException(BizException ex) {
+    ErrorResponse resp = new ErrorResponse("BIZ_ERROR", ex.getMessage(), ex);
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(resp);
   }
 
   @ExceptionHandler(FieldConflictException.class)

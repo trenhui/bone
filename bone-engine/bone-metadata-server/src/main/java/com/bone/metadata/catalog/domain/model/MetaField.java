@@ -1,0 +1,110 @@
+package com.bone.metadata.catalog.domain.model;
+
+import com.bone.core.domain.entity.AbstractEntity;
+import com.bone.metadata.sdk.domain.annotation.Column;
+import com.bone.metadata.sdk.domain.annotation.Table;
+import java.util.Date;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Getter
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@Table("meta_field")
+public class MetaField extends AbstractEntity<Long> {
+
+  @Column(name = "tenant_id", nullable = false)
+  private Long tenantId;
+
+  @Column(name = "entity_id", nullable = false)
+  private Long entityId;
+
+  @Column(name = "name", nullable = false)
+  private String name;
+
+  @Column(name = "code", nullable = false)
+  private String code;
+
+  @Column(name = "display_name", nullable = false)
+  private String displayName;
+
+  @Column(name = "type", nullable = false)
+  private String type;
+
+  @Column(name = "length")
+  private Integer length;
+
+  @Column(name = "precision")
+  private Integer precision;
+
+  @Column(name = "is_required", nullable = false)
+  private Boolean required;
+
+  @Column(name = "is_unique", nullable = false)
+  private Boolean unique;
+
+  @Column(name = "is_pk", nullable = false)
+  private Boolean pk;
+
+  @Column(name = "is_indexed", nullable = false)
+  private Boolean indexed;
+
+  @Column(name = "default_value")
+  private String defaultValue;
+
+  @Column(name = "comment")
+  private String comment;
+
+  @Column(name = "sort_order", nullable = false)
+  private Integer sortOrder;
+
+  public static MetaField create(
+      Long id,
+      Long tenantId,
+      Long entityId,
+      String name,
+      String code,
+      String displayName,
+      String fieldType) {
+    MetaField f = new MetaField();
+    f.setId(id);
+    f.tenantId = tenantId;
+    f.entityId = entityId;
+    f.name = name;
+    f.code = code;
+    f.displayName = displayName;
+    f.type = fieldType;
+    f.required = false;
+    f.unique = false;
+    f.pk = false;
+    f.indexed = false;
+    f.sortOrder = 0;
+    Date now = new Date();
+    f.setCreatedAt(now);
+    f.setUpdatedAt(now);
+    f.setDeleted(false);
+    return f;
+  }
+
+  public void update(
+      String displayName,
+      String fieldType,
+      Integer length,
+      Boolean required,
+      Boolean unique,
+      String defaultValue,
+      String comment,
+      Integer sortOrder) {
+    this.displayName = displayName;
+    this.type = fieldType;
+    this.length = length;
+    this.required = required != null ? required : false;
+    this.unique = unique != null ? unique : false;
+    this.defaultValue = defaultValue;
+    this.comment = comment;
+    if (sortOrder != null) {
+      this.sortOrder = sortOrder;
+    }
+    this.setUpdatedAt(new Date());
+  }
+}
