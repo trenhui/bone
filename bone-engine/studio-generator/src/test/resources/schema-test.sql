@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS gen_generation_task;
 DROP TABLE IF EXISTS gen_code_template;
 DROP TABLE IF EXISTS gen_data_source;
 
@@ -40,6 +41,30 @@ CREATE TABLE gen_code_template (
     published_at        TIMESTAMP,
     created_by          BIGINT,
     updated_by          BIGINT,
+    created_at          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted             BOOLEAN      NOT NULL DEFAULT FALSE,
+    version             INT          NOT NULL DEFAULT 0
+);
+
+CREATE TABLE gen_generation_task (
+    id                  BIGINT       NOT NULL PRIMARY KEY,
+    tenant_id           BIGINT       NOT NULL DEFAULT 0,
+    task_id             VARCHAR(64)  NOT NULL,
+    project_name        VARCHAR(200) NOT NULL,
+    base_package        VARCHAR(300) NOT NULL,
+    module_name         VARCHAR(100),
+    data_source_id      BIGINT,
+    table_names         CLOB,
+    template_ids        CLOB,
+    gen_config          CLOB,
+    generated_files     CLOB,
+    zip_url             VARCHAR(512),
+    status              VARCHAR(20)  NOT NULL DEFAULT 'PENDING',
+    error_message       CLOB,
+    started_at          TIMESTAMP,
+    completed_at        TIMESTAMP,
+    created_by          BIGINT,
     created_at          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted             BOOLEAN      NOT NULL DEFAULT FALSE,

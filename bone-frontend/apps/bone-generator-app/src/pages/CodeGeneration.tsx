@@ -1,5 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { Form, Select, Input, Checkbox, Button, message, Card, Typography, Table, Divider, Modal, Space } from 'antd';
+import {
+  Form,
+  Select,
+  Input,
+  Checkbox,
+  Button,
+  message,
+  Card,
+  Typography,
+  Table,
+  Divider,
+  Modal,
+  Space,
+  Progress,
+} from 'antd';
 import { ReloadOutlined, DownloadOutlined, PlusOutlined } from '@ant-design/icons';
 import {
   codeGenerationApi,
@@ -25,6 +39,7 @@ const CodeGeneration: React.FC = () => {
   const [configModalVisible, setConfigModalVisible] = useState(false);
   const [templates, setTemplates] = useState<any[]>([]);
   const [taskId, setTaskId] = useState<string>('');
+  const [generateProgress, setGenerateProgress] = useState(0);
   const [syncForm] = Form.useForm();
   const [generateForm] = Form.useForm();
   const [dataSourceTables, setDataSourceTables] = useState<any[]>([]);
@@ -194,30 +209,15 @@ const CodeGeneration: React.FC = () => {
         }),
       };
       
-      const response = await codeGenerationApi.generate(request);
-      const taskId = response.data.data;
-      setTaskId(taskId);
-      message.success('代码生成任务已创建');
+      setGenerateProgress(0);
+      const response = await codeGenerationApi.generate(request, {
+        onProgress: setGenerateProgress,
+      });
+      const newTaskId = response.data.data as string;
+      setTaskId(newTaskId);
+      message.success('代码生成成功');
       setConfigModalVisible(false);
       setResultModalVisible(true);
-      
-      // 轮询任务状态
-      const checkStatus = async () => {
-        try {
-          const statusResponse = await codeGenerationApi.getTaskStatus(taskId);
-          if (statusResponse.data.data === 'SUCCESS') {
-            message.success('代码生成成功');
-          } else if (statusResponse.data.data === 'FAILED') {
-            message.error('代码生成失败');
-          } else {
-            setTimeout(checkStatus, 1000);
-          }
-        } catch (error) {
-          console.error('检查任务状态失败:', error);
-        }
-      };
-      
-      setTimeout(checkStatus, 1000);
     } catch (error) {
       message.error('代码生成失败');
       console.error('代码生成失败:', error);
@@ -435,6 +435,9 @@ const CodeGeneration: React.FC = () => {
         width={800}
         confirmLoading={loadingGenerate}
       >
+        {loadingGenerate && (
+          <Progress percent={generateProgress} status="active" style={{ marginBottom: 16 }} />
+        )}
         <Form
           form={generateForm}
           layout="vertical"
@@ -454,7 +457,7 @@ const CodeGeneration: React.FC = () => {
             <Select placeholder="请选择数据源" showSearch optionFilterProp="children">
               {dataSources?.map((ds) => (
                 <Option key={ds.id} value={ds.id}>
-                  {ds.name} ({ds.type ?? ds.dbType})
+                  {ds.name} ({ds.type})
                 </Option>
               ))}
             </Select>

@@ -66,7 +66,7 @@ jobs:
       - name: Test bone-gateway extension routes
         run: >
           mvn test -pl bone-platform/bone-gateway --batch-mode
-          -Dtest=ExtensionGatewayRouteIT
+          -Dtest=ExtensionGatewayRouteIT,GeneratorGatewayRouteIT
 
   extension-sdk:
     name: Extension SDK Tests

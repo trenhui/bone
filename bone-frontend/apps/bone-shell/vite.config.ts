@@ -34,7 +34,7 @@ export default defineConfig({
         changeOrigin: true,
       },
       '/api/v1/generator': {
-        target: 'http://localhost:8085',
+        target: process.env.BONE_GENERATOR_PROXY_TARGET ?? 'http://localhost:8888',
         changeOrigin: true,
       },
       '/api/v1/metadata': {

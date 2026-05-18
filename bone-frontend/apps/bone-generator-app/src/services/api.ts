@@ -71,8 +71,73 @@ export const templateApi = {
 /** @deprecated 使用 templateApi */
 export const codeTemplateApi = templateApi;
 
+export type GeneratorOperation = {
+  operationId?: string;
+  type?: string;
+  done: boolean;
+  progress?: number;
+  result?: Record<string, unknown>;
+  error?: { errorCode?: string; detail?: string };
+};
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+export async function getGeneratorOperation(operationId: string) {
+  const res = await api.get(`${G}/operations/${operationId}`);
+  return res.data?.data as GeneratorOperation;
+}
+
+export async function pollGeneratorOperationUntilDone(
+  operationId: string,
+  opts?: { intervalMs?: number; timeoutMs?: number; onProgress?: (p: number) => void },
+): Promise<GeneratorOperation> {
+  const intervalMs = opts?.intervalMs ?? 500;
+  const deadline = Date.now() + (opts?.timeoutMs ?? 120_000);
+  let last = -1;
+  while (Date.now() < deadline) {
+    const op = await getGeneratorOperation(operationId);
+    const progress = op.progress ?? (op.done ? 100 : 0);
+    if (opts?.onProgress && progress !== last) {
+      last = progress;
+      opts.onProgress(progress);
+    }
+    if (op.done) {
+      if (op.error?.detail) {
+        throw new Error(op.error.detail);
+      }
+      return op;
+    }
+    await sleep(intervalMs);
+  }
+  throw new Error('代码生成超时');
+}
+
+export type CodeGenerationOptions = {
+  sync?: boolean;
+  onProgress?: (progress: number) => void;
+};
+
 export const codeGenerationApi = {
-  generate: (data: Record<string, unknown>) => api.post(`${G}/code-generation`, data),
+  async generate(data: Record<string, unknown>, opts?: CodeGenerationOptions) {
+    const params = opts?.sync != null ? { sync: opts.sync } : undefined;
+    const res = await api.post(`${G}/code-generation`, data, {
+      params,
+      validateStatus: (s) => s === 200 || s === 202,
+    });
+    if (res.status === 202) {
+      const operationId =
+        res.data?.data?.operationId ??
+        res.data?.data?.taskId ??
+        (res.headers.location ? String(res.headers.location).split('/').pop() : undefined);
+      if (!operationId) {
+        throw new Error('缺少 operationId');
+      }
+      opts?.onProgress?.(0);
+      await pollGeneratorOperationUntilDone(operationId, { onProgress: opts?.onProgress });
+      return { ...res, data: { ...res.data, data: operationId } };
+    }
+    return res;
+  },
 
   getTaskStatus: (taskId: string) => api.get(`${G}/code-generation/tasks/${taskId}/status`),
 

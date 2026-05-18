@@ -33,7 +33,9 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 class ExtensionGatewayRouteIT {
 
     private static HttpServer mockStudio;
+    private static HttpServer deadGenerator;
     private static int mockStudioPort;
+    private static int deadGeneratorPort;
     private static final AtomicReference<String> lastPath = new AtomicReference<>();
     private static final AtomicReference<String> lastMethod = new AtomicReference<>();
 
@@ -46,6 +48,14 @@ class ExtensionGatewayRouteIT {
         mockStudio.createContext("/", ExtensionGatewayRouteIT::handleStudio);
         mockStudio.start();
         mockStudioPort = mockStudio.getAddress().getPort();
+
+        deadGenerator = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        deadGenerator.createContext("/", exchange -> {
+            exchange.sendResponseHeaders(404, -1);
+            exchange.close();
+        });
+        deadGenerator.start();
+        deadGeneratorPort = deadGenerator.getAddress().getPort();
     }
 
     @AfterAll
@@ -53,11 +63,15 @@ class ExtensionGatewayRouteIT {
         if (mockStudio != null) {
             mockStudio.stop(0);
         }
+        if (deadGenerator != null) {
+            deadGenerator.stop(0);
+        }
     }
 
     @DynamicPropertySource
     static void registerMockStudioUri(DynamicPropertyRegistry registry) {
         registry.add("extension.studio.mock-uri", () -> "http://127.0.0.1:" + mockStudioPort);
+        registry.add("generator.mock-uri", () -> "http://127.0.0.1:" + deadGeneratorPort);
     }
 
     private static void handleStudio(HttpExchange exchange) throws IOException {

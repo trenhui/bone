@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Input, Select, message, Popconfirm, Space } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
 import * as api from '../services/api';
+import { unwrapPage } from '../utils/pageResult';
 import type { Role, CreateRoleRequest, UpdateRoleRequest } from '../types';
 
 const { Option } = Select;
@@ -24,8 +25,9 @@ const RoleManagement: React.FC = () => {
     try {
       const response = await api.getRoles(page, pageSize);
       if (response.code === 200) {
-        setRoles(response.data.data);
-        setTotal(response.data.total);
+        const { records, total } = unwrapPage(response.data);
+        setRoles(records);
+        setTotal(total);
       }
     } catch {
       message.error('获取角色列表失败');
@@ -38,7 +40,7 @@ const RoleManagement: React.FC = () => {
     try {
       const response = await api.getPermissions(1, 200);
       if (response.code === 200) {
-        setPermissions(response.data.data);
+        setPermissions(unwrapPage(response.data).records);
       }
     } catch {
       message.error('获取权限列表失败');

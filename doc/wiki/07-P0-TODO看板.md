@@ -67,6 +67,12 @@
 | IAM-01 | `AuthController` | Token 黑名单（Redis，无 Redis 时仅撤销 refresh） | done | P0 |
 | IAM-02 | `AuthController` | Token 刷新（`iam_refresh_token`） | done | P0 |
 | IAM-03 | `ArchitectureTest` | ArchUnit 分层 + 空仓储接口；`AuthService` 允许 Spring Security | done | P0 |
+| IAM-04 | `AccountController` / `RoleController` | 详情 API 接 QueryHandler（非空占位） | done | P1 |
+| IAM-05 | `bone-iam-app` | 分页对齐 `PageResult.records` + 查询参数 `size` | done | P1 |
+| IAM-06 | `TenantController` | 多租户 CRUD（商业版） | open | P2 |
+| IAM-07 | `AuditController` | 审计设置持久化 | open | P2 |
+| IAM-08 | SSO / MFA | IdP 联邦与 MFA | open | P2 |
+| IAM-09 | 契约 | `iam-v1.yaml` + Gateway IT | open | P2 |
 
 ---
 
@@ -105,6 +111,8 @@
 | META-VIS-03 | `studio-generator` | 物理库 + **CATALOG_SNAPSHOT**；`GET /api/v1/generator/metadata-entity-snapshots`、`GET …/data-sources/{id}/tables` | done | P0 |
 | META-VIS-04 | `bone-generator-app` | 与 generator :8085 API 对齐 | done | P1 |
 | GEN-TEST-01 | `studio-generator` | H2 `schema-test.sql` + 数据源/模板 Controller 集成测试 | done | P2 |
+| GEN-MVP-01 | `bone-gateway` + `bone-generator-app` | `GeneratorGatewayRouteIT`；Vite 代理 **8888**；`e2e:api` / `e2e:ui` | done | P2 |
+| GEN-MVP-02 | `studio-generator` | LRO `POST /code-generation` 202 + `GET /operations/{taskId}`；OpenAPI `generator-v1.yaml` | done | P2 |
 | META-ENG-01 | `bone-metadata-engine` | `SdkMetadataPlatformBridge` 读 `meta_*` status=1 + starter 自动装配 | done | P1 |
 | META-002B-01 | `meta_entity.delivery_mode` + catalog API | 实体交付模式 0-GENERATIVE / 1-RUNTIME；`bone-metadata-app` 可选 | done | P1 |
 | META-002B-02 | `bone-metadata-engine` + `bone-metadata-server` | 模式 B：`JdbcRuntimeRecordService` + `/api/v1/runtime/entities/{code}/records` | done | P1 |

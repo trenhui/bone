@@ -16,13 +16,12 @@ import com.bone.studio.generator.domain.repository.DataSourceRepository;
 import com.bone.studio.generator.domain.repository.GenTableMetadataRepository;
 import com.bone.studio.generator.domain.repository.GenerationTaskRepository;
 import com.bone.studio.generator.domain.service.FileGenerator;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -35,10 +34,95 @@ public class CreateCodeGenerationHandler {
     private final CodeTemplateRepository codeTemplateRepository;
     private final List<FileGenerator> fileGenerators;
 
+    /** 同步执行（原行为）。 */
     @Transactional
     public String handle(CreateCodeGenerationCommand command) {
         String taskId = UUID.randomUUID().toString();
+        runGenerationWork(taskId, command, true);
+        return taskId;
+    }
 
+    /** LRO：仅创建 PENDING 任务并持久化。 */
+    @Transactional
+    public String startPending(CreateCodeGenerationCommand command) {
+        String taskId = UUID.randomUUID().toString();
+        validateAndResolve(command);
+        GenerationTask task = buildPendingTask(taskId, command);
+        generationTaskRepository.save(task);
+        return taskId;
+    }
+
+    /** LRO：后台执行生成（不向外抛业务异常）。 */
+    public void executeByTaskId(String taskId, CreateCodeGenerationCommand command) {
+        try {
+            runGenerationWork(taskId, command, false);
+        } catch (Exception ex) {
+            // runGenerationWork 已标记 FAILED；异步路径仅记录
+        }
+    }
+
+    private void runGenerationWork(String taskId, CreateCodeGenerationCommand command, boolean propagateErrors) {
+        ResolvedInputs inputs = validateAndResolve(command);
+        GenerationTask task = loadOrCreateTask(taskId, command, inputs);
+        task.markProcessing();
+        generationTaskRepository.save(task);
+
+        List<GeneratedFile> generatedFiles = new ArrayList<>();
+        try {
+            for (GenTableMetadata table : inputs.tableMetadatas()) {
+                for (CodeTemplate template : inputs.templates()) {
+                    for (FileGenerator generator : fileGenerators) {
+                        if (generator.supports(template.getType())) {
+                            generatedFiles.add(generator.generate(
+                                    table, template, command.getBasePackage(), command.getModuleName()));
+                            break;
+                        }
+                    }
+                }
+            }
+            String zipUrl =
+                    "/api/v1/generator/code-generation/tasks/" + taskId + "/download";
+            task.markCompleted(generatedFiles, zipUrl);
+        } catch (Exception e) {
+            task.markFailed(e.getMessage());
+            if (propagateErrors) {
+                throw e;
+            }
+        } finally {
+            generationTaskRepository.save(task);
+        }
+    }
+
+    private GenerationTask loadOrCreateTask(
+            String taskId, CreateCodeGenerationCommand command, ResolvedInputs inputs) {
+        try {
+            GenerationTask existing = generationTaskRepository.findOneByCriteria(
+                    Criteria.<GenerationTask>create().eq("taskId", taskId));
+            if (existing != null) {
+                existing.markProcessing();
+                return existing;
+            }
+        } catch (MultipleResultsException ex) {
+            throw new IllegalStateException("duplicate generation task: " + taskId, ex);
+        }
+        return buildPendingTask(taskId, command);
+    }
+
+    private GenerationTask buildPendingTask(String taskId, CreateCodeGenerationCommand command) {
+        return GenerationTask.create(
+                DistributedIdGenerator.generateLongId(),
+                0L,
+                taskId,
+                command.getProjectName(),
+                command.getBasePackage(),
+                command.getModuleName(),
+                command.getDataSourceId(),
+                command.getTableNames(),
+                command.getTemplateIds(),
+                command.getGenConfig());
+    }
+
+    private ResolvedInputs validateAndResolve(CreateCodeGenerationCommand command) {
         DataSource dataSource = dataSourceRepository.findById(command.getDataSourceId());
         if (dataSource == null) {
             throw new IllegalArgumentException("数据源不存在: " + command.getDataSourceId());
@@ -61,44 +145,7 @@ public class CreateCodeGenerationHandler {
             }
             templates.add(template);
         }
-
-        GenerationTask task = GenerationTask.create(
-                DistributedIdGenerator.generateLongId(),
-                0L,
-                taskId,
-                command.getProjectName(),
-                command.getBasePackage(),
-                command.getModuleName(),
-                command.getDataSourceId(),
-                command.getTableNames(),
-                command.getTemplateIds(),
-                command.getGenConfig());
-
-        task.markProcessing();
-        List<GeneratedFile> generatedFiles = new ArrayList<>();
-
-        try {
-            for (GenTableMetadata table : tableMetadatas) {
-                for (CodeTemplate template : templates) {
-                    for (FileGenerator generator : fileGenerators) {
-                        if (generator.supports(template.getType())) {
-                            generatedFiles.add(generator.generate(
-                                    table, template, command.getBasePackage(), command.getModuleName()));
-                            break;
-                        }
-                    }
-                }
-            }
-            String zipUrl = "http://localhost:8080/api/generation-tasks/" + taskId + "/download";
-            task.markCompleted(generatedFiles, zipUrl);
-        } catch (Exception e) {
-            task.markFailed(e.getMessage());
-            throw e;
-        } finally {
-            generationTaskRepository.save(task);
-        }
-
-        return taskId;
+        return new ResolvedInputs(tableMetadatas, templates);
     }
 
     private GenTableMetadata findTableMetadata(Long dataSourceId, String tableName) {
@@ -110,4 +157,6 @@ public class CreateCodeGenerationHandler {
             throw new IllegalStateException("duplicate table metadata", e);
         }
     }
+
+    private record ResolvedInputs(List<GenTableMetadata> tableMetadatas, List<CodeTemplate> templates) {}
 }

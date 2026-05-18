@@ -234,13 +234,15 @@ export interface SsoConfig {
 // ==================== 通用响应类型 ====================
 
 /**
- * 分页结果
+ * 分页结果（对齐 bone-core PageResult）
  */
 export interface PageResult<T> {
-  data: T[];
+  records: T[];
   total: number;
-  page: number;
-  pageSize: number;
+  page?: number;
+  size?: number;
+  /** @deprecated 旧前端字段，兼容读取 */
+  data?: T[];
 }
 
 /**

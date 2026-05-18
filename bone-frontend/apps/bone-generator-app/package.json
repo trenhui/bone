@@ -9,7 +9,9 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "e2e:api": "node e2e-generator-api.mjs",
+    "e2e:ui": "node e2e-generator-ui.mjs"
   },
   "dependencies": {
     "@bone/ui": "1.0.0",

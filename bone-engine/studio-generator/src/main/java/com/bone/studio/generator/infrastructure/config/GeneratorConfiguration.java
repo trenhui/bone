@@ -1,6 +1,7 @@
 package com.bone.studio.generator.infrastructure.config;
 
 import com.bone.metadata.sdk.support.config.SqlConfigProperties;
+import com.bone.studio.generator.config.GeneratorProperties;
 import freemarker.template.DefaultObjectWrapperBuilder;
 import freemarker.template.TemplateExceptionHandler;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -10,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import java.io.IOException;
 
 @Configuration
-@EnableConfigurationProperties(SqlConfigProperties.class)
+@EnableConfigurationProperties({SqlConfigProperties.class, GeneratorProperties.class})
 public class GeneratorConfiguration {
 
     @Bean

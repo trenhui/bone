@@ -20,6 +20,10 @@ spring:
       schema-locations: classpath:schema-test.sql
 
 bone:
+  generator:
+    lro:
+      code-generation-enabled: true
+      code-generation-sync-by-default: true
   metadata:
     datasource:
       enabled: false

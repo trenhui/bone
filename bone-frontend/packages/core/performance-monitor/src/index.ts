@@ -57,7 +57,7 @@ class PerformanceMonitor {
 
   private monitorResources() {
     if ('performance' in window && 'addEventListener' in window.performance) {
-      window.performance.addEventListener('resource', (event) => {
+      window.performance.addEventListener('resource', (event: PerformanceEntryEvent) => {
         const resource = event.entry as PerformanceResourceTiming;
         this.addEntry({
           name: `resource.${resource.name}`,

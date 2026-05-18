@@ -18,7 +18,7 @@ public class AccountDtoMapper {
         dto.setPhone(account.getPhone());
         dto.setRealName(account.getRealName());
         dto.setAvatarUrl(account.getAvatarUrl());
-        dto.setStatus(account.getStatus());
+        dto.setStatus(account.getStatus() != null ? account.getStatus().getCode() : null);
         dto.setIsAdmin(account.isAdmin());
         dto.setTenantId(account.getTenantId());
         dto.setLastLoginAt(account.getLastLoginAt());

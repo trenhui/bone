@@ -1,6 +1,9 @@
 package com.bone.studio.generator.domain.data;
 
+import com.bone.core.annotation.Id;
 import com.bone.core.domain.AggregateRoot;
+import com.bone.core.domain.id.GeneratedValue;
+import com.bone.core.domain.id.GenerationStrategy;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import com.bone.studio.generator.domain.code.GeneratedFile;
 import lombok.Builder;
@@ -12,6 +15,8 @@ import java.util.List;
 @Table("gen_generation_task")
 public class GenerationTask extends AggregateRoot<Long> {
 
+    @Id
+    @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
     private Long id;
     private Long tenantId;
     private String taskId;

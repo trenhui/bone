@@ -5,6 +5,7 @@ import { pageRecords, templateApi } from '../services/api';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;
+const { Option } = Select;
 
 const TemplateManagement: React.FC = () => {
   const [templates, setTemplates] = useState<any[]>([]);

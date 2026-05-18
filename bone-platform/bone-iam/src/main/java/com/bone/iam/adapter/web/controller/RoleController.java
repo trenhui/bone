@@ -17,9 +17,12 @@ import com.bone.iam.application.query.qry.RolePageQry;
 import com.bone.iam.adapter.web.dto.req.CreateRoleReq;
 import com.bone.iam.adapter.web.dto.resp.RoleDetailResp;
 import com.bone.iam.adapter.web.converter.RoleWebConverter;
+import com.bone.iam.application.query.handler.RoleDetailQueryHandler;
 import com.bone.iam.application.query.handler.RolePermissionsQueryHandler;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -33,6 +36,7 @@ public class RoleController {
     private final DeleteRoleUseCase deleteRoleUseCase;
     private final RolePageQueryUseCase rolePageQueryUseCase;
     private final RolePermissionsQueryHandler rolePermissionsQueryHandler;
+    private final RoleDetailQueryHandler roleDetailQueryHandler;
     private final RoleWebConverter roleWebConverter;
 
     @PostMapping
@@ -50,8 +54,11 @@ public class RoleController {
 
     @GetMapping("/{id}")
     public ApiResponse<RoleDetailResp> detail(@PathVariable Long id) {
-        // 实现获取角色详情逻辑
-        return ApiResponse.success(new RoleDetailResp());
+        RoleDetailResp resp = roleDetailQueryHandler
+                .handle(id)
+                .map(roleWebConverter::toDetailResp)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "角色不存在"));
+        return ApiResponse.success(resp);
     }
 
     @PutMapping("/{id}")

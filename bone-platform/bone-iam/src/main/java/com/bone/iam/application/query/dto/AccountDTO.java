@@ -1,6 +1,5 @@
 package com.bone.iam.application.query.dto;
 
-import com.bone.iam.domain.account.vo.AccountStatus;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -13,7 +12,8 @@ public class AccountDTO {
     private String phone;
     private String realName;
     private String avatarUrl;
-    private AccountStatus status;
+    /** 0=禁用, 1=启用, 2=锁定 */
+    private Integer status;
     private Boolean isAdmin;
     private Long tenantId;
     private LocalDateTime lastLoginAt;

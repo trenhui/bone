@@ -1,0 +1,78 @@
+name: Studio Generator
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'bone-engine/studio-generator/**'
+      - 'bone-platform/bone-gateway/**'
+      - 'bone-frontend/apps/bone-generator-app/**'
+      - '.github/workflows/generator-studio.yml'
+  pull_request:
+    paths:
+      - 'bone-engine/studio-generator/**'
+      - 'bone-platform/bone-gateway/**'
+      - 'bone-frontend/apps/bone-generator-app/**'
+      - '.github/workflows/generator-studio.yml'
+
+jobs:
+  openapi-lint:
+    name: OpenAPI Lint (generator-v1)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Redocly lint
+        run: npx --yes @redocly/cli@1 lint doc/architecture/openapi/generator-v1.yaml --config doc/architecture/openapi/redocly.yaml
+
+  generator-backend:
+    name: studio-generator Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Install bone-core
+        run: mvn install -DskipTests -pl bone-framework/bone-core --batch-mode
+      - name: Test studio-generator
+        run: >
+          mvn test -pl bone-engine/studio-generator --batch-mode
+          -Dtest=DataSourceControllerTest,CodeTemplateControllerTest,
+          TableMetadataControllerTest,CodeGenerationControllerTest,
+          GeneratorOperationControllerTest,GenerateCodeUseCaseTest
+
+  gateway-generator-route:
+    name: Gateway Generator Route IT
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Test bone-gateway generator routes
+        run: >
+          mvn test -pl bone-platform/bone-gateway --batch-mode
+          -Dtest=GeneratorGatewayRouteIT
+
+  generator-frontend:
+    name: bone-generator-app (typecheck)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bone-frontend/apps/bone-generator-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install
+        run: npm install
+      - name: Typecheck
+        run: npm run typecheck

@@ -17,6 +17,9 @@ const Auth: React.FC = () => {
       const response = await api.login(values);
       if (response.code === 200) {
         localStorage.setItem('token', response.data.token);
+        if (response.data.refreshToken) {
+          localStorage.setItem('refreshToken', response.data.refreshToken);
+        }
         localStorage.setItem('username', response.data.account.username);
         message.success('登录成功');
         navigate('/accounts');
@@ -36,7 +39,7 @@ const Auth: React.FC = () => {
         <div style={{ marginBottom: 16, padding: 12, backgroundColor: '#f6ffed', border: '1px solid #b7eb8f', borderRadius: 4 }}>
           <Text strong>默认账号密码：</Text>
           <div>用户名：admin</div>
-          <div>密码：admin123</div>
+          <div>密码：123456</div>
         </div>
         <Form
           name="login"

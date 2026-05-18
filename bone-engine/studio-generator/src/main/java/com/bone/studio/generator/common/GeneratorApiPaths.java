@@ -20,5 +20,8 @@ public final class GeneratorApiPaths {
 
   public static final String CAPABILITIES = V1_PREFIX + "/capabilities";
 
+  /** LRO 轮询（operationId = taskId） */
+  public static final String OPERATIONS = V1_PREFIX + "/operations";
+
   private GeneratorApiPaths() {}
 }

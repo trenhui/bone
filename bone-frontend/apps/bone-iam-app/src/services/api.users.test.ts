@@ -19,4 +19,8 @@ describe('iam api account paths', () => {
     expect(apiSource).toContain("'/audit/logs'");
     expect(apiSource).toContain("'/audit/settings'");
   });
+
+  it('uses size query param for pagination', () => {
+    expect(apiSource).toContain('size: pageSize');
+  });
 });

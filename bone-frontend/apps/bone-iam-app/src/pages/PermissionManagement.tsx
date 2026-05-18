@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Input, message, Popconfirm, Space } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
 import * as api from '../services/api';
+import { unwrapPage } from '../utils/pageResult';
 import type { Permission, CreatePermissionRequest, UpdatePermissionRequest } from '../types';
 
 const PermissionManagement: React.FC = () => {
@@ -21,8 +22,9 @@ const PermissionManagement: React.FC = () => {
     try {
       const response = await api.getPermissions(page, pageSize);
       if (response.code === 200) {
-        setPermissions(response.data.data);
-        setTotal(response.data.total);
+        const { records, total } = unwrapPage(response.data);
+        setPermissions(records);
+        setTotal(total);
       }
     } catch {
       message.error('获取权限列表失败');

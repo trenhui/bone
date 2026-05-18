@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Input, Select, message, Popconfirm, Space, Tag } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, LockOutlined, UnlockOutlined, KeyOutlined } from '@ant-design/icons';
 import * as api from '../services/api';
+import { unwrapPage } from '../utils/pageResult';
 import type { Account, CreateAccountRequest, UpdateAccountRequest } from '../types';
 
 const { Option } = Select;
@@ -32,8 +33,9 @@ const AccountManagement: React.FC = () => {
     try {
       const response = await api.getAccounts(page, pageSize, keyword);
       if (response.code === 200) {
-        setAccounts(response.data.data);
-        setTotal(response.data.total);
+        const { records, total } = unwrapPage(response.data);
+        setAccounts(records);
+        setTotal(total);
       }
     } catch {
       message.error('获取账号列表失败');
@@ -46,7 +48,7 @@ const AccountManagement: React.FC = () => {
     try {
       const response = await api.getRoles(1, 100);
       if (response.code === 200) {
-        setRoles(response.data.data);
+        setRoles(unwrapPage(response.data).records);
       }
     } catch {
       message.error('获取角色列表失败');

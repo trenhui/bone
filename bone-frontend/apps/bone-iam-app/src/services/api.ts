@@ -69,7 +69,7 @@ export const getSsoConfig = () =>
  */
 export const getAccounts = (page = 1, pageSize = 10, keyword?: string, status?: number) =>
   api.get<never, ApiResponse<PageResult<Account>>>('/accounts', {
-    params: { page, pageSize, keyword, status },
+    params: { page, size: pageSize, keyword, status },
   });
 
 /**
@@ -132,7 +132,7 @@ export const exportAccounts = (params?: { keyword?: string; status?: number }) =
  * 分页查询角色列表
  */
 export const getRoles = (page = 1, pageSize = 10, keyword?: string) =>
-  api.get<never, ApiResponse<PageResult<Role>>>('/roles', { params: { page, pageSize, keyword } });
+  api.get<never, ApiResponse<PageResult<Role>>>('/roles', { params: { page, size: pageSize, keyword } });
 
 /**
  * 获取角色详情
@@ -176,7 +176,7 @@ export const getRolePermissions = (roleId: number) =>
  * 分页查询权限列表
  */
 export const getPermissions = (page = 1, pageSize = 10, keyword?: string) =>
-  api.get<never, ApiResponse<PageResult<Permission>>>('/permissions', { params: { page, pageSize, keyword } });
+  api.get<never, ApiResponse<PageResult<Permission>>>('/permissions', { params: { page, size: pageSize, keyword } });
 
 /**
  * 获取权限树
@@ -221,8 +221,18 @@ export const getAuditLogs = (params: {
   resourceType?: string;
   startTime?: string;
   endTime?: string;
-}) =>
-  api.get<never, ApiResponse<PageResult<AuditLog>>>('/audit/logs', { params });
+}) => {
+  const { page, pageSize, startTime, endTime, ...rest } = params;
+  return api.get<never, ApiResponse<PageResult<AuditLog>>>('/audit/logs', {
+    params: {
+      ...rest,
+      page,
+      size: pageSize,
+      startedAt: startTime,
+      endedAt: endTime,
+    },
+  });
+};
 
 /**
  * 导出审计日志

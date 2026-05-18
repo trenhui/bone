@@ -51,6 +51,10 @@ metadata:
         type: MYSQL
 
 bone:
+  generator:
+    lro:
+      code-generation-enabled: true
+      code-generation-sync-by-default: false
   metadata:
     datasource:
       enabled: true

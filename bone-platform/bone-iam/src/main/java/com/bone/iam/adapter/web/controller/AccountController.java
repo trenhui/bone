@@ -18,9 +18,12 @@ import com.bone.iam.application.usecase.standard.ResetPasswordUseCase;
 import com.bone.iam.application.usecase.standard.AccountPageQueryUseCase;
 import com.bone.iam.application.usecase.standard.DeleteAccountUseCase;
 import com.bone.iam.application.query.dto.AccountDTO;
+import com.bone.iam.application.query.handler.AccountDetailQueryHandler;
 import com.bone.iam.application.query.qry.AccountPageQry;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping(PlatformApiPaths.IAM_V1 + "/accounts")
@@ -35,6 +38,7 @@ public class AccountController {
     private final AccountPageQueryUseCase accountPageQueryUseCase;
     private final DeleteAccountUseCase deleteAccountUseCase;
     private final AccountWebConverter accountWebConverter;
+    private final AccountDetailQueryHandler accountDetailQueryHandler;
 
     @PostMapping
     public ApiResponse<Long> create(@RequestBody CreateAccountReq req) {
@@ -79,7 +83,11 @@ public class AccountController {
 
     @GetMapping("/{id}")
     public ApiResponse<AccountDetailResp> detail(@PathVariable Long id) {
-        return ApiResponse.success(new AccountDetailResp());
+        AccountDetailResp resp = accountDetailQueryHandler
+                .handle(id)
+                .map(accountWebConverter::toDetailResp)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "账号不存在"));
+        return ApiResponse.success(resp);
     }
 
     @GetMapping
