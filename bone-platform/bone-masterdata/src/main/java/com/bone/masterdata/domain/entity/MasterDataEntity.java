@@ -8,6 +8,7 @@ import com.bone.core.exception.DomainException;
 import com.bone.masterdata.domain.model.entity.event.MasterDataEntityCreatedEvent;
 import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityName;
 import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityStatus;
+import com.bone.metadata.sdk.domain.annotation.Column;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -22,6 +23,8 @@ public class MasterDataEntity extends AggregateRoot<Long> {
     @Id
     @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
     private Long id;
+    @Column(name = "meta_entity_id")
+    private Long metaEntityId;
     private MasterDataEntityName name;
     private String description;
     private String category;
@@ -29,9 +32,11 @@ public class MasterDataEntity extends AggregateRoot<Long> {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    public static MasterDataEntity create(Long id, MasterDataEntityName name, String description, String category) {
+    public static MasterDataEntity create(
+            Long id, Long metaEntityId, MasterDataEntityName name, String description, String category) {
         MasterDataEntity entity = new MasterDataEntity();
         entity.id = id;
+        entity.metaEntityId = metaEntityId;
         entity.name = name;
         entity.description = description;
         entity.category = category;

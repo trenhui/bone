@@ -39,8 +39,8 @@ public class CreateMasterDataEntityHandler {
         }
 
         Long entityId = DistributedIdGenerator.generateLongId();
-        MasterDataEntity entity = MasterDataEntity.create(
-                entityId, entityName, cmd.getDescription(), cmd.getCategory());
+        MasterDataEntity entity =
+                MasterDataEntity.create(entityId, null, entityName, cmd.getDescription(), cmd.getCategory());
 
         return entityRepository.save(entity);
     }

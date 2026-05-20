@@ -15,11 +15,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.bone.core.exception.BizException;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
@@ -34,9 +38,13 @@ public class MasterDataEntityControllerTest {
     @Autowired
     private MasterDataEntityRepository masterDataEntityRepository;
 
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
     private MasterDataEntity newEntity(String name) {
         return MasterDataEntity.create(
                 DistributedIdGenerator.generateLongId(),
+                null,
                 MasterDataEntityName.of(name),
                 "测试主数据实体",
                 "default");
@@ -124,8 +132,37 @@ public class MasterDataEntityControllerTest {
 
     @Test
     public void testConvertFromBusinessEntity() {
-        ApiResponse<Long> apiResponse = masterDataEntityController.convertFromBusinessEntity(1L);
-        assertTrue(apiResponse.isSuccess());
-        assertNotNull(apiResponse.getData());
+        long metaId = 9001L;
+        jdbcTemplate.update(
+                """
+                INSERT INTO meta_entity (id, tenant_id, name, code, display_name, status, deleted)
+                VALUES (?, 0, '客户', 'customer', '客户主数据', 1, 0)
+                """,
+                metaId);
+
+        ApiResponse<Long> first = masterDataEntityController.convertFromBusinessEntity(metaId);
+        assertTrue(first.isSuccess());
+        assertNotNull(first.getData());
+
+        ApiResponse<Long> second = masterDataEntityController.convertFromBusinessEntity(metaId);
+        assertTrue(second.isSuccess());
+        assertEquals(first.getData(), second.getData());
+    }
+
+    @Test
+    public void testConvertRejectsDraftMetaEntity() {
+        long metaId = 9002L;
+        jdbcTemplate.update(
+                """
+                INSERT INTO meta_entity (id, tenant_id, name, code, display_name, status, deleted)
+                VALUES (?, 0, '草稿', 'draft', '草稿实体', 0, 0)
+                """,
+                metaId);
+
+        BizException ex =
+                assertThrows(
+                        BizException.class,
+                        () -> masterDataEntityController.convertFromBusinessEntity(metaId));
+        assertEquals(422, ex.getCode());
     }
 }

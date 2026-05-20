@@ -34,9 +34,11 @@ class IamGatewayRouteIT {
     private static HttpServer mockIam;
     private static HttpServer deadExtension;
     private static HttpServer deadGenerator;
+    private static HttpServer deadIntegration;
     private static int mockIamPort;
     private static int deadExtensionPort;
     private static int deadGeneratorPort;
+    private static int deadIntegrationPort;
     private static final AtomicReference<String> lastPath = new AtomicReference<>();
     private static final AtomicReference<String> lastMethod = new AtomicReference<>();
 
@@ -65,6 +67,14 @@ class IamGatewayRouteIT {
         });
         deadGenerator.start();
         deadGeneratorPort = deadGenerator.getAddress().getPort();
+
+        deadIntegration = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        deadIntegration.createContext("/", exchange -> {
+            exchange.sendResponseHeaders(404, -1);
+            exchange.close();
+        });
+        deadIntegration.start();
+        deadIntegrationPort = deadIntegration.getAddress().getPort();
     }
 
     @AfterAll
@@ -78,6 +88,9 @@ class IamGatewayRouteIT {
         if (deadGenerator != null) {
             deadGenerator.stop(0);
         }
+        if (deadIntegration != null) {
+            deadIntegration.stop(0);
+        }
     }
 
     @DynamicPropertySource
@@ -85,6 +98,7 @@ class IamGatewayRouteIT {
         registry.add("iam.mock-uri", () -> "http://127.0.0.1:" + mockIamPort);
         registry.add("extension.studio.mock-uri", () -> "http://127.0.0.1:" + deadExtensionPort);
         registry.add("generator.mock-uri", () -> "http://127.0.0.1:" + deadGeneratorPort);
+        registry.add("integration.mock-uri", () -> "http://127.0.0.1:" + deadIntegrationPort);
     }
 
     private static void handleIam(HttpExchange exchange) throws IOException {
@@ -114,6 +128,8 @@ class IamGatewayRouteIT {
             body = "{\"success\":true,\"code\":200,\"data\":true}".getBytes(StandardCharsets.UTF_8);
         } else if (path.endsWith("/sso/config") && "GET".equals(method)) {
             body = "{\"success\":true,\"code\":200,\"data\":{\"enabled\":false}}".getBytes(StandardCharsets.UTF_8);
+        } else if (path.endsWith("/mfa/status") && "GET".equals(method)) {
+            body = "{\"success\":true,\"code\":200,\"data\":{\"enabled\":false,\"enrolled\":false}}".getBytes(StandardCharsets.UTF_8);
         } else if (path.endsWith("/audit/logs") && "GET".equals(method)) {
             body =
                     """
@@ -204,6 +220,22 @@ class IamGatewayRouteIT {
 
         assertNotNull(lastPath.get());
         assertTrue(lastPath.get().endsWith("/accounts/42/enable"));
+    }
+
+    @Test
+    void routesMfaStatusThroughGateway() {
+        lastPath.set(null);
+        webTestClient
+                .get()
+                .uri("/api/v1/iam/mfa/status")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.data.enabled")
+                .isEqualTo(false);
+
+        assertEquals("/api/v1/iam/mfa/status", lastPath.get());
     }
 
     @Test

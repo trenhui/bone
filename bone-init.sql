@@ -18,6 +18,7 @@ DROP TABLE IF EXISTS iam_refresh_token;
 DROP TABLE IF EXISTS iam_policy;
 DROP TABLE IF EXISTS iam_account_role;
 DROP TABLE IF EXISTS iam_role_permission;
+DROP TABLE IF EXISTS iam_audit_settings;
 DROP TABLE IF EXISTS iam_audit_log;
 DROP TABLE IF EXISTS iam_account;
 DROP TABLE IF EXISTS iam_role;

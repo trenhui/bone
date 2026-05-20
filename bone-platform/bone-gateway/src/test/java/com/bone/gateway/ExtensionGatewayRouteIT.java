@@ -35,9 +35,11 @@ class ExtensionGatewayRouteIT {
     private static HttpServer mockStudio;
     private static HttpServer deadGenerator;
     private static HttpServer deadIam;
+    private static HttpServer deadIntegration;
     private static int mockStudioPort;
     private static int deadGeneratorPort;
     private static int deadIamPort;
+    private static int deadIntegrationPort;
     private static final AtomicReference<String> lastPath = new AtomicReference<>();
     private static final AtomicReference<String> lastMethod = new AtomicReference<>();
 
@@ -66,6 +68,14 @@ class ExtensionGatewayRouteIT {
         });
         deadIam.start();
         deadIamPort = deadIam.getAddress().getPort();
+
+        deadIntegration = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        deadIntegration.createContext("/", exchange -> {
+            exchange.sendResponseHeaders(404, -1);
+            exchange.close();
+        });
+        deadIntegration.start();
+        deadIntegrationPort = deadIntegration.getAddress().getPort();
     }
 
     @AfterAll
@@ -79,6 +89,9 @@ class ExtensionGatewayRouteIT {
         if (deadIam != null) {
             deadIam.stop(0);
         }
+        if (deadIntegration != null) {
+            deadIntegration.stop(0);
+        }
     }
 
     @DynamicPropertySource
@@ -86,6 +99,7 @@ class ExtensionGatewayRouteIT {
         registry.add("extension.studio.mock-uri", () -> "http://127.0.0.1:" + mockStudioPort);
         registry.add("generator.mock-uri", () -> "http://127.0.0.1:" + deadGeneratorPort);
         registry.add("iam.mock-uri", () -> "http://127.0.0.1:" + deadIamPort);
+        registry.add("integration.mock-uri", () -> "http://127.0.0.1:" + deadIntegrationPort);
     }
 
     private static void handleStudio(HttpExchange exchange) throws IOException {

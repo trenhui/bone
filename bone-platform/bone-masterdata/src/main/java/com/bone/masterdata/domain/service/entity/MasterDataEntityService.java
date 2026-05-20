@@ -25,7 +25,7 @@ public class MasterDataEntityService {
         if (exists) {
             throw new DomainException("主数据实体名称已存在");
         }
-        return MasterDataEntity.create(id, name, description, category);
+        return MasterDataEntity.create(id, null, name, description, category);
     }
 
     public void publishEntity(Long entityId) {

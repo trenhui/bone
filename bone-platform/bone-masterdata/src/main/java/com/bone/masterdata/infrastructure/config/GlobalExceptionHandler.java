@@ -17,8 +17,19 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BizException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusinessException(BizException e) {
-        HttpStatus status = e.getCode() == NOT_IMPLEMENTED_CODE ? HttpStatus.NOT_IMPLEMENTED : HttpStatus.BAD_REQUEST;
-        return ResponseEntity.status(status).body(ApiResponse.error(e.getCode(), e.getMessage()));
+        return ResponseEntity.status(resolveHttpStatus(e.getCode()))
+                .body(ApiResponse.error(e.getCode(), e.getMessage()));
+    }
+
+    private static HttpStatus resolveHttpStatus(int code) {
+        if (code == NOT_IMPLEMENTED_CODE) {
+            return HttpStatus.NOT_IMPLEMENTED;
+        }
+        HttpStatus resolved = HttpStatus.resolve(code);
+        if (resolved != null && (resolved.is4xxClientError() || resolved.is5xxServerError())) {
+            return resolved;
+        }
+        return HttpStatus.BAD_REQUEST;
     }
 
     @ExceptionHandler(NotFoundException.class)

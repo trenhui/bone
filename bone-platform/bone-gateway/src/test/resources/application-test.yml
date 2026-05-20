@@ -15,3 +15,7 @@ spring:
           uri: ${iam.mock-uri}
           predicates:
             - Path=/api/v1/iam/**
+        - id: bone-integration
+          uri: ${integration.mock-uri}
+          predicates:
+            - Path=/api/v1/integration/**

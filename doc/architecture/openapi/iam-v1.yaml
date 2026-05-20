@@ -90,14 +90,29 @@ paths:
         '200': { description: OK }
   /sso/config:
     get:
-      summary: 获取 SSO 配置
+      summary: 获取 SSO 配置（社区版默认 enabled=false）
       responses:
         '200': { description: OK }
   /sso/callback:
     get:
-      summary: SSO 回调
+      summary: SSO 回调（未配置 IdP 时 501）
+      responses:
+        '501': { description: IAM_SSO_NOT_CONFIGURED }
+  /mfa/status:
+    get:
+      summary: MFA 状态（社区版 enabled=false）
       responses:
         '200': { description: OK }
+  /mfa/enroll:
+    post:
+      summary: MFA 注册（Vision · 501）
+      responses:
+        '501': { description: IAM_MFA_NOT_AVAILABLE }
+  /mfa/verify:
+    post:
+      summary: MFA 验证（Vision · 501）
+      responses:
+        '501': { description: IAM_MFA_NOT_AVAILABLE }
   /roles:
     get:
       summary: 角色列表

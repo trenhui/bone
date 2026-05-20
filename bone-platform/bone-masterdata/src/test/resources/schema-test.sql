@@ -12,13 +12,26 @@ CREATE TABLE IF NOT EXISTS md_field (
 );
 
 CREATE TABLE IF NOT EXISTS md_entity (
-    id          BIGINT       NOT NULL PRIMARY KEY,
-    name        VARCHAR(200) NOT NULL,
-    description CLOB,
-    category    VARCHAR(100),
-    status      VARCHAR(32)  NOT NULL DEFAULT 'DRAFT',
-    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+    id              BIGINT       NOT NULL PRIMARY KEY,
+    meta_entity_id  BIGINT,
+    name            VARCHAR(200) NOT NULL,
+    description     CLOB,
+    category        VARCHAR(100),
+    status          VARCHAR(32)  NOT NULL DEFAULT 'DRAFT',
+    created_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS uk_md_entity_meta ON md_entity (meta_entity_id);
+
+CREATE TABLE IF NOT EXISTS meta_entity (
+    id           BIGINT       NOT NULL PRIMARY KEY,
+    tenant_id    BIGINT       NOT NULL DEFAULT 0,
+    name         VARCHAR(200) NOT NULL,
+    code         VARCHAR(200) NOT NULL,
+    display_name VARCHAR(200),
+    status       TINYINT      NOT NULL DEFAULT 0,
+    deleted      TINYINT      NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS field_metadata (

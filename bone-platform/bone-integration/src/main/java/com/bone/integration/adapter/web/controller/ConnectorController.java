@@ -15,6 +15,7 @@ import com.bone.integration.application.usecase.standard.UpdateConnectorUseCase;
 import com.bone.integration.domain.connector.Connector;
 import com.bone.integration.domain.repository.ConnectorRepository;
 import com.bone.integration.domain.service.ConnectorService;
+import com.bone.integration.infrastructure.observability.IntegrationExecutionMetrics;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,6 +29,7 @@ public class ConnectorController {
     private final ConnectorRepository connectorRepository;
     private final ConnectorService connectorService;
     private final IntegrationDomainEventPublisher domainEventPublisher;
+    private final IntegrationExecutionMetrics integrationMetrics;
 
     @PostMapping
     public ApiResponse<Long> create(@RequestBody CreateConnectorCmd cmd) {
@@ -75,6 +77,7 @@ public class ConnectorController {
             throw new DomainException("连接器不存在");
         }
         boolean success = connectorService.testConnector(connector);
+        integrationMetrics.recordConnectorTest(connector.getType().name(), success);
         String message = success ? "连接测试成功" : "连接测试失败";
         connector.recordTestResult(success, message);
         domainEventPublisher.publishFrom(connector);

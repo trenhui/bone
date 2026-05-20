@@ -33,6 +33,7 @@ public class ConsoleController {
     @Operation(summary = "获取系统概览（聚合服务、资源、关键指标）")
     @GetMapping("/overview")
     public ApiResponse<Map<String, Object>> overview() {
+        meterRegistry.counter("bone_console_overview_refresh_total").increment();
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("services", serviceStatuses());
         body.put("resourceUsage", resourceUsage());

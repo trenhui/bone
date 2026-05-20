@@ -138,6 +138,8 @@ throw new BizException(ExtensionErrorCode.PLUGIN_NOT_FOUND, pluginId);
 | `IAM_USER_DISABLED` | 403 | 用户已禁用 |
 | `IAM_ROLE_NOT_FOUND` | 404 | 角色不存在 |
 | `IAM_PERMISSION_DENIED` | 403 | 缺少权限 |
+| `IAM_SSO_NOT_CONFIGURED` | 501 | SSO/IdP 未配置或未实现 |
+| `IAM_MFA_NOT_AVAILABLE` | 501 | MFA 未启用（社区版） |
 
 ### META_
 
