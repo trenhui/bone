@@ -1,7 +1,7 @@
 # Bone 平台 API 规范
 
 > **文档性质**：对外 **HTTP REST** 契约（URL、信封、分页、横切头、OpenAPI、契约测试）。  
-> **更新**：2026-05-17  
+> **更新**：2026-05-20  
 > **关联**：[BONE-总体架构设计方案](./BONE-总体架构设计方案.md) §8、[Bone-DDD-最终实践方案](./Bone-DDD-最终实践方案.md)  
 > **配套规范**：[README.md](./README.md) 工程规范索引；错误码 / 日志 / 安全 / 可观测性等见同目录 `Bone-*.md`
 
@@ -85,11 +85,11 @@
 
 | domain | 服务 | 错误码前缀（[台账 §3.1](./Bone-错误码登记.md#31-字符串业务码新接口强制)） | 说明 |
 |--------|------|-------------------|------|
-| `iam` | bone-iam | `IAM_` | 认证、用户、角色、权限 |
+| `iam` | bone-iam | `IAM_` | 认证、用户、角色、权限；OpenAPI：[iam-v1.yaml](./openapi/iam-v1.yaml)（骨架，持续补全） |
 | `metadata` | 元数据（catalog + 扩展字段 EAV，统一 `/api/v1/metadata/**`） | `META_` | 与 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) 一致 |
 | `runtime` | bone-metadata-server（模式 B 动态 CRUD） | `META_RUNTIME_` | OpenAPI：[metadata-runtime-v1.yaml](./openapi/metadata-runtime-v1.yaml) |
-| `generator` | studio-generator | `GEN_` | 代码生成（**非** metadata-server 职责） |
-| `masterdata` | bone-masterdata | `MD_` | 主数据、质量 |
+| `generator` | studio-generator | `GEN_` | 代码生成；OpenAPI：[generator-v1.yaml](./openapi/generator-v1.yaml) |
+| `masterdata` | bone-masterdata | `MD_` | 主数据、质量；OpenAPI：[masterdata-v1.yaml](./openapi/masterdata-v1.yaml) |
 | `extension` | bone-extension-studio | `EXT_` | 扩展点、插件 |
 | `integration` | bone-integration | `INT_` | 连接器、流程 |
 | `system` | bone-system | `SYS_` | 配置、告警 |
@@ -352,6 +352,21 @@ GET /api/v1/extension/operations/{operationId}
 | 存储 | 租户 + 用户 + 键 + 路径 → 响应快照，TTL **24h** |
 | 重复请求 | 相同 body 返回 **相同响应**（200/201） |
 | 键相同 body 不同 | **409** + `COMMON_IDEMPOTENCY_CONFLICT` |
+
+### 8.1 模块横切约定索引（详设 §5.0）
+
+各模块详设中的 **§5.0 / §5.A 横切表** 为本规范的**落地检查单**；实现须满足 §6–§8，不得仅在详设重复叙述而偏离平台契约。
+
+| 模块 | 详设横切节 | 强制头 / 行为 | 错误码前缀 |
+|------|------------|---------------|------------|
+| 元数据 | [§5.A](../design/modules/2.%20元数据管理模块详细设计方案.md#5a-横切约定对齐扩展-71) | `Idempotency-Key`（publish/allocate）；`If-Match`（catalog/runtime） | `META_` |
+| 主数据 | [§5.0](../design/modules/3.%20主数据管理模块详细设计方案.md#50-横切约定对齐扩展-71) | 同上；导入/质量检查幂等；LRO **[Target]** | `MD_` |
+| 集成 | [§5.0](../design/modules/4.%20集成管理模块详细设计方案.md#50-横切约定对齐扩展-71) | `POST /executions` 幂等；LRO **[Target]**（INT-11） | `INT_` |
+| 扩展 | [§7.1](../design/modules/5.%20扩展管理模块详细设计方案.md#71-横切约定) | 201+Location；`:deploy` 202+LRO；cursor 分页 | `EXT_` |
+| 代码生成 | [§5](../design/modules/8.Studio%20Generator%20详细设计方案.md#5-api-设计) + §0 LRO | `POST /code-generation` 202 + `/operations/{id}` | `GEN_` |
+| IAM / 系统 / 控制台 | 各文 §5 | 读接口无幂等要求；写接口按上表扩展 | `IAM_` / `SYS_` |
+
+**可观测性**：SLI 与 PromQL 见 [Bone-可观测性规范.md](./Bone-可观测性规范.md) §4.2.1。
 
 ---
 
@@ -709,5 +724,6 @@ OpenAPI 草案：[openapi/extension-v1.yaml](./openapi/extension-v1.yaml)（本�
 | 2026-05-17 | 合并错误码台账与日志规范入本文；§14 附属约定；独立文档仅保留 DB/DDD/openapi |
 | 2026-05-17 | §13.1.1 generator 规范路径；§13.2 全模块迁移表；metadata/generator 双挂载 |
 | 2026-05-17 | §13.2：catalog 字段嵌套路径，与 EAV `fields:*` 区分 |
+| 2026-05-20 | §8.1 模块横切约定索引；链到详设 §5.0 与可观测性 §4.2.1 |
 | 2026-05-17 | 错误码、日志拆至独立文档；§16 增补规范体系建议 |
 | 2026-05-17 | 落地安全/可观测性/消息等独立规范；§16 改为规范索引 |

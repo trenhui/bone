@@ -1,0 +1,181 @@
+openapi: 3.1.0
+info:
+  title: Bone IAM API
+  version: 1.0.0
+  description: |
+    身份与访问管理（As-Is）。规范见 Bone-API-规范.md §13.1；
+    详设：doc/design/modules/6. IAM账号权限管理模块详细设计方案.md。
+
+    网关前缀：`/api/v1/iam` → bone-iam :8081。
+servers:
+  - url: /api/v1/iam
+paths:
+  /login:
+    post:
+      summary: 用户登录
+      responses:
+        '200': { description: OK（ApiResponse + token） }
+  /logout:
+    post:
+      summary: 登出
+      responses:
+        '200': { description: OK }
+  /refresh:
+    post:
+      summary: 刷新令牌
+      responses:
+        '200': { description: OK }
+  /accounts:
+    get:
+      summary: 分页查询账号
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: size, in: query, schema: { type: integer, default: 10 } }
+        - { name: username, in: query, schema: { type: string } }
+      responses:
+        '200': { description: OK（PageResult.records） }
+    post:
+      summary: 创建账号
+      responses:
+        '200': { description: OK }
+  /accounts/{id}:
+    get:
+      summary: 账号详情
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    put:
+      summary: 更新账号
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: 删除账号
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /accounts/{id}/enable:
+    post:
+      summary: 启用账号
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /accounts/{id}/disable:
+    post:
+      summary: 禁用账号
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /accounts/{id}/reset-password:
+    post:
+      summary: 重置密码
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /accounts/import:
+    post:
+      summary: 批量导入账号
+      responses:
+        '200': { description: OK }
+  /accounts/export:
+    get:
+      summary: 导出账号
+      responses:
+        '200': { description: OK }
+  /sso/config:
+    get:
+      summary: 获取 SSO 配置
+      responses:
+        '200': { description: OK }
+  /sso/callback:
+    get:
+      summary: SSO 回调
+      responses:
+        '200': { description: OK }
+  /roles:
+    get:
+      summary: 角色列表
+      responses:
+        '200': { description: OK }
+    post:
+      summary: 创建角色
+      responses:
+        '200': { description: OK }
+  /roles/{id}:
+    get:
+      summary: 角色详情（含权限摘要）
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    put:
+      summary: 更新角色
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: 删除角色
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /roles/{id}/permissions:
+    get:
+      summary: 查询角色权限
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    post:
+      summary: 分配角色权限
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /permissions:
+    get:
+      summary: 权限列表
+      responses:
+        '200': { description: OK }
+    post:
+      summary: 创建权限
+      responses:
+        '200': { description: OK }
+  /permissions/tree:
+    get:
+      summary: 权限树
+      responses:
+        '200': { description: OK }
+  /permissions/{id}:
+    get:
+      summary: 权限详情
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /audit/logs:
+    get:
+      summary: 审计日志分页
+      responses:
+        '200': { description: OK }
+  /audit/logs/export:
+    get:
+      summary: 导出审计日志
+      responses:
+        '200': { description: OK }
+  /audit/settings:
+    get:
+      summary: 获取审计设置
+      responses:
+        '200': { description: OK }
+    put:
+      summary: 更新审计设置
+      responses:
+        '200': { description: OK }

@@ -139,6 +139,6 @@ apps/<app-name>/src/
 | 包管理 | **本地：npm workspaces**（`bone-frontend/package.json` 脚本均为 `npm run --workspace=...`）；**CI：pnpm**（[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) `frontend-quality` 使用 pnpm + `pnpm-lock.yaml`）。开发者可任选其一，**以同一 lockfile 为准**——不要同时提交 `package-lock.json` 与 `pnpm-lock.yaml`；如需切换主栈，须先在 CI 与本地文档同步迁移。 |
 | 单元测试 | **Vitest** + Testing Library（以各应用 `package.json` 与配置为准）。 |
 | 状态与数据 | **Redux Toolkit** 以各应用为准；Zustand、TanStack Query 可按业务点状引入，非强制全仓统一。 |
-| E2E | Cypress、Playwright 等按需引入；未统一前不写死版本门禁。 |
+| E2E | **Playwright**（关键路径，与 [Bone-测试策略.md](./Bone-测试策略.md) 一致）；Cypress 不作为平台门禁。 |
 
 Git 钩子、Commit 规范模板等团队外围流程以内部 playbook 为准；与目录、微前端、端口约定冲突时一律以本文为准。

@@ -5,7 +5,7 @@
 > **文档性质**：`doc/architecture/` 目录下**平台总体**架构与技术方案权威文档；本版在 v2.0 整合稿基础上，按 **C4、SRE（SLO/SLI）、Well-Architected、API 工程化、韧性模式、零信任与 SDL、数据一致性模式** 等业界最佳实践做了系统化补强。  
 > **文档沿革**：2026-05-15 起，原并行 `doc/arch` 方案已废止并合并至本文；2026-05-15 起本文迁入 `doc/architecture/`，与前端架构、UI 规范同目录索引；后续架构变更仅维护本文。  
 > **与实现关系**：愿景、分层、能力边界与非功能基线以本文为准；**具体 API 路径、表名 DDL** 与仓库不一致时以 **OpenAPI、`bone-init.sql`、各模块代码** 为准；**§7** 给出 Maven 模块映射。  
-> **版本**：v2.1 Best-Practice（最佳实践完整版） | **日期**：2026-05-15 | **最近修订**：2026-05-17 | **状态**：发布
+> **版本**：v2.1 Best-Practice（最佳实践完整版） | **日期**：2026-05-15 | **最近修订**：2026-05-20 | **状态**：发布
 
 ---
 
@@ -750,9 +750,11 @@ erDiagram
 
 ## 第十二部分 部署与可观测性
 
-### 12.1 容器化与 Helm
+### 12.1 容器化与 Helm **[Vision]**
 
-推荐 **Kubernetes + Helm**；Chart 包含 Deployment、Service、Ingress、ConfigMap、Secret、HPA、ServiceAccount。示例：`helm install bone ./bone-chart --set database.host=...`
+> **As-Is**：仓库**无** `bone-chart/` Helm 目录；部署以 Spring Boot 可执行 JAR + 环境变量为主（见 [wiki/03 §部署](../wiki/03-本地开发与构建.md)）。
+
+**[Vision]** 推荐 **Kubernetes + Helm**；Chart 包含 Deployment、Service、Ingress、ConfigMap、Secret、HPA、ServiceAccount。示例：`helm install bone ./bone-chart --set database.host=...`（Chart 待 `doc/deployment/` 落地）。
 
 ### 12.2 环境
 
@@ -1187,19 +1189,36 @@ components:
         version: { type: integer }
 ```
 
-### 22.3 规划态：上下文—服务—库—端口（与 bone-* 模块对照时须校准）
+### 22.3 服务—库—端口真源（As-Is + Vision）
 
-| 上下文 | 服务名（规划） | API 前缀（规划） | 逻辑库名 | 端口（规划示例） |
-|--------|----------------|------------------|----------|------------------|
-| 元数据 | bone-metadata-server | `/api/v1/metadata/**`（EAV + catalog） | metadata_db | **9001** |
-| 权限 | authz-service | /api/v1/authz | authz_db | 8082 |
-| 集成 | integration-service | /api/v1/integration | integration_db | 8083 |
-| 扩展 | extension-service | /api/v1/extension | extension_db | 8084 |
-| 主数据 | masterdata-service | /api/v1/masterdata | master_db | 8085 |
-| 用户目录 | user-service | /api/v1/users | user_db | 8086 |
-| 网关 | bone-gateway | — | — | 8080 |
+**As-Is（仓库默认）** — 真源：[wiki/03 §常见服务端口](../wiki/03-本地开发与构建.md)
 
-**说明**：上表为 **目标微服务拆分示例**（端口与当前 As-Is **不一一对应**，例如规划态 `metadata-service:8081` 在仓库中常为 `bone-iam:8081`、`bone-metadata-server:9001`）。当前仓库为 **模块化单体 + 多进程可选** 混合形态，**以各模块 `application.yml` 与 [wiki/03](../wiki/03-本地开发与构建.md) 端口表为准**。
+| 模块（Maven） | API 前缀 | MySQL 库 | 默认端口 |
+|---------------|----------|----------|----------|
+| `bone-iam` | `/api/v1/iam/**` | **`bone`**（共享） | **8081** |
+| `bone-system` | `/api/v1/system/**` | `bone` | **8083** |
+| `bone-integration` | `/api/v1/integration/**` | `bone` | **8085** |
+| `bone-masterdata` | `/api/v1/masterdata/**` | `bone` | **8080** |
+| `bone-metadata-server` | `/api/v1/metadata/**`、`/api/v1/runtime/**` | `bone` | **9001** |
+| `bone-extension-studio` | `/api/v1/extension/**` | `bone` | **8088** |
+| `studio-generator` | `/api/v1/generator/**` | `bone` | **8085** ⚠ 与 integration 同端口 |
+| `bone-gateway` | 聚合转发 | — | **8888** |
+
+> ⚠ **8085 双占**：`bone-integration` 与 `studio-generator` 同机调试时仅启其一，或改 `server.port` / `BONE_SERVER_PORT`。
+
+**[Vision] 微服务拆分示例**（逻辑库拆分、独立 `*_db`、端口仅为示意，**勿作实施或文档引用依据**）：
+
+| 上下文 | 服务名（规划） | API 前缀（规划） | 逻辑库名（规划） | 端口（示意） |
+|--------|----------------|------------------|------------------|--------------|
+| 元数据 | bone-metadata-server | `/api/v1/metadata/**` | metadata_db | 9001 |
+| 权限 | authz-service | `/api/v1/authz` | authz_db | 8082 |
+| 集成 | integration-service | `/api/v1/integration` | integration_db | 8085 |
+| 扩展 | extension-service | `/api/v1/extension` | extension_db | 8088 |
+| 主数据 | masterdata-service | `/api/v1/masterdata` | master_db | 8080 |
+| 用户目录 | user-service | `/api/v1/users` | user_db | 8086 |
+| 网关 | bone-gateway | — | — | 8888 |
+
+当前仓库为 **模块化单体 + 多进程可选** 混合形态；上表 Vision 行与 As-Is **不一一对应**（例如无独立 `metadata_db`、无 `integration-service:8083`）。**引用端口/库名时以 As-Is 表与 `application.yml` 为准**。
 
 ---
 

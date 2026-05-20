@@ -1,0 +1,161 @@
+openapi: 3.1.0
+info:
+  title: Bone Master Data API
+  version: 1.0.0
+  description: |
+    企业主数据（As-Is）。规范：[Bone-API-规范.md](../Bone-API-规范.md)；
+    详设：[主数据管理模块](../../design/modules/3.%20主数据管理模块详细设计方案.md) §5；
+    同步决策：[ADR-0002](../adr/0002-masterdata-catalog-sync.md)。
+
+    网关前缀：`/api/v1/masterdata` → bone-masterdata :8080。
+
+servers:
+  - url: /api/v1/masterdata
+
+paths:
+  /entities:
+    get:
+      summary: 分页查询主数据实体
+      operationId: listMasterDataEntities
+      tags: [Entity]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: size, in: query, schema: { type: integer, default: 20 } }
+      responses:
+        '200': { description: OK（PageResult.records） }
+    post:
+      summary: 创建主数据实体
+      operationId: createMasterDataEntity
+      tags: [Entity]
+      responses:
+        '201': { description: Created }
+  /entities/convert:
+    post:
+      summary: 从已发布业务元数据实体转换
+      operationId: convertFromBusinessEntity
+      tags: [Entity]
+      parameters:
+        - name: businessEntityId
+          in: query
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200': { description: OK（mdm entity id） }
+        '409': { description: 已存在或 meta 未发布 }
+  /entities/{id}:
+    get:
+      summary: 实体详情
+      operationId: getMasterDataEntity
+      tags: [Entity]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        '200': { description: OK }
+    put:
+      summary: 更新实体
+      operationId: updateMasterDataEntity
+      tags: [Entity]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        '200': { description: OK }
+  /entities/{id}/publish:
+    post:
+      summary: 发布实体
+      operationId: publishMasterDataEntity
+      tags: [Entity]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        '200': { description: OK }
+  /fields:
+    get:
+      summary: 按 masterDataEntityId 列出字段
+      operationId: listMasterDataFields
+      tags: [Field]
+      parameters:
+        - name: masterDataEntityId
+          in: query
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200': { description: OK }
+    post:
+      summary: 创建字段
+      operationId: createMasterDataField
+      tags: [Field]
+      responses:
+        '201': { description: Created }
+  /records:
+    get:
+      summary: 记录分页列表
+      operationId: listMasterDataRecords
+      tags: [Record]
+      responses:
+        '200': { description: OK }
+    post:
+      summary: 导入记录（multipart）
+      operationId: importMasterDataRecords
+      tags: [Record]
+      parameters:
+        - name: masterDataEntityId
+          in: query
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200': { description: OK（id 列表） }
+  /records/export:
+    get:
+      summary: 导出记录
+      operationId: exportMasterDataRecords
+      tags: [Record]
+      parameters:
+        - name: masterDataEntityId
+          in: query
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200': { description: OK（导出内容或 URL） }
+  /records/{id}/publish:
+    post:
+      summary: 发布记录
+      operationId: publishMasterDataRecord
+      tags: [Record]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        '200': { description: OK }
+  /quality/rules:
+    get:
+      summary: 质量规则列表
+      operationId: listDataQualityRules
+      tags: [Quality]
+      responses:
+        '200': { description: OK }
+    post:
+      summary: 创建质量规则
+      operationId: createDataQualityRule
+      tags: [Quality]
+      responses:
+        '201': { description: Created }
+  /quality/check:
+    post:
+      summary: 执行质量检查
+      operationId: performDataQualityCheck
+      tags: [Quality]
+      parameters:
+        - name: masterDataEntityId
+          in: query
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200': { description: OK（report id） }
+  /quality/reports/{id}:
+    get:
+      summary: 质量报告详情
+      operationId: getQualityReport
+      tags: [Quality]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        '200': { description: OK }

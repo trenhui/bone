@@ -73,8 +73,19 @@
 | [`doc/prd/`](../prd/) | 产品需求 |
 | [`doc/design/modules/`](../design/modules/) | 模块详设（API 细节以 OpenAPI + 本目录规范为准） |
 
+## 文档治理
+
+- **审查清单**：[`doc/文档治理-三目录审查子任务.md`](../文档治理-三目录审查子任务.md)
+- **最近审查**：
+  - 2026-05-17：`Bone-DDD`、数据库、前端、测试策略与 OpenAPI 组件对齐。
+  - 2026-05-20 第五轮（与 `doc/design/modules` 第四轮联动）：
+    - [BONE-总体架构](./BONE-总体架构设计方案.md) §12.1 Helm/`bone-chart` 标 **[Vision]**；§22.3 拆 **As-Is 端口表**（对齐 [wiki/03](../wiki/03-本地开发与构建.md)）与 Vision 示意表，废止 `metadata_db` / `integration:8083` 等误导性默认值；
+    - [bone-前端架构](./bone-前端架构.md) E2E 真源统一为 **Playwright**；
+    - [adr/README](./adr/README.md) 标注 `0002` 编号冲突（IAM vs 主数据 catalog sync）。
+
 ## 交叉引用
 
 - **扩展详设**：[design/modules/5](../design/modules/5.%20扩展管理模块详细设计方案.md)  
+- **模块详设索引**：[design/modules/README.md](../design/modules/README.md)  
 - **端口**：[wiki/03-本地开发与构建.md](../wiki/03-本地开发与构建.md)  
 - **全库索引**：[doc/README.md](../README.md)

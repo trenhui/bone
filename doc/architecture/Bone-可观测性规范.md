@@ -1,7 +1,7 @@
 # Bone 平台可观测性规范（Metrics / Trace）
 
 > **文档性质**：指标、链路、SLO 与告警的**统一约定**（日志见 [Bone-日志规范.md](./Bone-日志规范.md)）。  
-> **更新**：2026-05-17  
+> **更新**：2026-05-20  
 > **关联**：[BONE-总体架构设计方案](./BONE-总体架构设计方案.md) §12、[Bone-API-规范.md](./Bone-API-规范.md)（`X-Request-Id`）
 
 ---
@@ -58,9 +58,27 @@
 | 指标 | 说明 |
 |------|------|
 | `bone_extension_deploy_total` | 部署成功/失败 Counter |
-| `bone_integration_execution_duration` | 流程执行 Histogram |
+| `bone_integration_execution_total` | Counter，`status`=`success\|failed` |
+| `bone_integration_execution_duration_seconds` | Histogram，`flow_id`（低基数 ID 桶，非 flow 名） |
+| `bone_integration_connector_test_total` | Counter，`connector_type`，`result` |
+| `bone_integration_dead_letter_gauge` | Gauge，`tenant_id`（INT-10） |
+| `bone_console_overview_refresh_total` | Counter，Shell 概览拉取次数 |
+| `bone_console_overview_staleness_seconds` | Gauge，聚合指标最大滞后（**[Target]**） |
 
-命名：`bone_{domain}_{verb}_{unit}`，小写蛇形。
+命名：`bone_{domain}_{verb}_{unit}`，小写蛇形；标签禁止高基数（用户 ID、原始 URL）。
+
+### 4.2.1 模块 SLI 与指标映射（与详设对齐）
+
+| 模块 | SLI（详设） | 建议指标 / 查询 | 告警（§6） |
+|------|-------------|-----------------|------------|
+| **控制台** | 概览可用率 ≥ 99.9% | `sum(rate(http_server_requests_total{http_route="/api/v1/console/overview",status=~"5.."}[5m])) / sum(rate(http_server_requests_total{http_route="/api/v1/console/overview"}[5m]))` | 5xx > 0.1% · 5m → P2 |
+| **控制台** | 概览 P95 < 300ms | `histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket{http_route="/api/v1/console/overview"}[5m])) by (le))` | P95 > 0.3 · 15m → P2 |
+| **集成** | 流程成功率 ≥ 99.5%/日 | `sum(increase(bone_integration_execution_total{status="failed"}[1d])) / sum(increase(bone_integration_execution_total[1d]))` | > 0.5% · 1d → P1 |
+| **集成** | HTTP 节点 P95 < 2s | `histogram_quantile(0.95, rate(bone_integration_execution_duration_seconds_bucket[5m]))` | > 2 · 15m → P2 |
+| **集成** | 死信积压 ≤ 100/租户 | `bone_integration_dead_letter_gauge` | > 100 · 10m → P1 |
+| **平台** | 可用性 ≥ 99.9% | 网关聚合 5xx（RED） | 见 §6 高 5xx 率 |
+
+详设 SLI 叙述：[控制台 §0](../design/modules/1.%20控制台与仪表盘模块详细设计方案.md#0-可观测性契约slislo--与-readme企业级能力对齐)、[集成 §0](../design/modules/4.%20集成管理模块详细设计方案.md#0-可观测性契约slislo--与-readme契约化集成原则对齐)。
 
 ### 4.3 资源（USE）
 
@@ -132,3 +150,4 @@
 | 日期 | 说明 |
 |------|------|
 | 2026-05-17 | 初版 |
+| 2026-05-20 | §4.2 业务指标与模块 SLI 映射；控制台/集成 PromQL 示例 |
