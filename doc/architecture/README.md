@@ -20,7 +20,7 @@
 |------|------|
 | [Bone-API-规范.md](./Bone-API-规范.md) | URL、信封、分页、头、LRO、幂等 |
 | [Bone-错误码登记.md](./Bone-错误码登记.md) | `errorCode` 台账（真源） |
-| [openapi/](./openapi/) | 公共 OpenAPI 组件 |
+| [openapi/](./openapi/) | 域契约：`iam-v1` · `masterdata-v1` · `metadata-runtime-v1` · `generator-v1` · `extension-v1` |
 
 ### 可观测性与运维
 
@@ -48,7 +48,7 @@
 | [Bone-测试策略.md](./Bone-测试策略.md) | 单测、契约、ArchUnit、CI |
 | [Bone-版本与发布规范.md](./Bone-版本与发布规范.md) | API 版本、发布顺序、回滚 |
 | [Bone-国际化规范.md](./Bone-国际化规范.md) | i18n、时区、errorCode 文案 |
-| [adr/](./adr/) | 架构决策记录（ADR） |
+| [adr/](./adr/) | 架构决策记录（含 [0002 meta→mdm](./adr/0002-masterdata-catalog-sync.md)） |
 
 ### 前端
 
