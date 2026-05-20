@@ -1,127 +1,180 @@
 package com.bone.metadata.engine.analysis;
 
+import com.bone.metadata.engine.model.BusinessRuleMetadata;
 import com.bone.metadata.engine.model.EntityMetadata;
 import com.bone.metadata.engine.model.FieldMetadata;
+import com.bone.metadata.engine.model.RelationshipMetadata;
 import com.bone.metadata.engine.repository.MetadataRepository;
-import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-/** 元数据影响分析器 分析元数据变更对系统的潜在影响，包括依赖实体、工作流和业务规则的影响分析 */
+/** 元数据影响分析器：字段、关系、依赖实体、工作流与业务规则。 */
 public class MetadataImpactAnalyzer {
 
-  private final MetadataRepository metadataRepository;
+  private final MetadataImpactDataAccess dataAccess;
 
-  public MetadataImpactAnalyzer(MetadataRepository metadataRepository) {
-    this.metadataRepository = metadataRepository;
+  public MetadataImpactAnalyzer(MetadataImpactDataAccess dataAccess) {
+    this.dataAccess = dataAccess != null ? dataAccess : MetadataImpactDataAccess.empty();
+  }
+
+  public MetadataImpactAnalyzer(
+      MetadataRepository metadataRepository, List<EntityMetadata> entityCatalog) {
+    this(new RepositoryMetadataImpactDataAccess(metadataRepository, entityCatalog));
   }
 
   /** 分析实体元数据变更的影响 */
   public ImpactAnalysisResult analyzeEntityImpact(
       String tenantId, EntityMetadata oldMetadata, EntityMetadata newMetadata) {
+    Objects.requireNonNull(oldMetadata, "oldMetadata");
+    Objects.requireNonNull(newMetadata, "newMetadata");
     ImpactAnalysisResult result = new ImpactAnalysisResult();
 
-    // 分析字段变更影响
     analyzeFieldChanges(oldMetadata, newMetadata, result);
-
-    // 分析关系变更影响
     analyzeRelationChanges(oldMetadata, newMetadata, result);
 
-    // 分析引用该实体的其他实体
-    analyzeDependentEntities(tenantId, oldMetadata.getApiName(), result);
+    String entityApiName = oldMetadata.getApiName();
+    if (entityApiName != null && !entityApiName.isBlank()) {
+      analyzeDependentEntities(entityApiName, result);
+      analyzeRelatedWorkflows(entityApiName, result);
+    }
 
-    // 分析相关工作流
-    analyzeRelatedWorkflows(tenantId, oldMetadata.getApiName(), result);
-
-    // 分析业务规则影响
-    analyzeBusinessRulesImpact(tenantId, oldMetadata, newMetadata, result);
-
-    // 评估影响级别
+    analyzeBusinessRulesImpact(oldMetadata, newMetadata, result);
     evaluateImpactLevel(result);
-
     return result;
   }
 
-  /** 分析字段变更影响 */
   private void analyzeFieldChanges(
       EntityMetadata oldMetadata, EntityMetadata newMetadata, ImpactAnalysisResult result) {
-    // 分析删除的字段
-    // 使用values()而不是直接使用Map进行stream操作
-    Map<String, FieldMetadata> newFieldsMap =
-        newMetadata.getFields().values().stream()
-            .collect(Collectors.toMap(FieldMetadata::getName, f -> f));
+    Map<String, FieldMetadata> oldFieldsMap = fieldsByName(oldMetadata);
+    Map<String, FieldMetadata> newFieldsMap = fieldsByName(newMetadata);
 
-    // 修复for-each循环，遍历Map的values()而不是直接遍历Map
-    for (FieldMetadata oldField : oldMetadata.getFields().values()) {
+    for (FieldMetadata oldField : oldFieldsMap.values()) {
       if (!newFieldsMap.containsKey(oldField.getName())) {
         result.addDeletedField(oldField.getName());
-        // 由于isPrimaryKey()和isRequired()方法不存在，暂时注释掉这部分检查
-        // 后续可以根据实际的FieldMetadata类结构使用反射或其他方法实现
-        // if (isPrimaryKey(oldField)) {
-        //     result.addCriticalImpact("删除主键字段: " + oldField.getName());
-        // }
-        // if (isRequired(oldField)) {
-        //     result.addHighImpact("删除必填字段: " + oldField.getName());
-        // }
-        // 简化版本：只记录删除字段
-        result.addMediumImpact("删除字段: " + oldField.getName());
+        if (oldField.isPrimaryKey()) {
+          result.addCriticalImpact("删除主键字段: " + oldField.getName());
+        } else if (oldField.isRequired()) {
+          result.addHighImpact("删除必填字段: " + oldField.getName());
+        } else {
+          result.addMediumImpact("删除字段: " + oldField.getName());
+        }
       }
     }
 
-    // 分析修改的字段
-    // 修复Map.stream()调用错误
-    Map<String, FieldMetadata> oldFieldsMap =
-        oldMetadata.getFields().values().stream()
-            .collect(Collectors.toMap(FieldMetadata::getName, f -> f));
-
-    // 修复for-each循环，遍历Map的values()而不是直接遍历Map
-    for (FieldMetadata newField : newMetadata.getFields().values()) {
+    for (FieldMetadata newField : newFieldsMap.values()) {
       FieldMetadata oldField = oldFieldsMap.get(newField.getName());
-      if (oldField != null) {
-        // 简化版本：只记录字段修改，避免使用不存在的方法
-        result.addModifiedField(newField.getName());
-        // 由于getType()、isRequired()和getMaxLength()方法可能不存在，暂时注释掉具体检查
-        // if (!getFieldType(oldField).equals(getFieldType(newField))) {
-        //     result.addHighImpact("字段类型变更: " + newField.getName());
-        // }
-        // if (!isRequired(oldField) && isRequired(newField)) {
-        //     result.addMediumImpact("字段变为必填: " + newField.getName());
-        // }
-        // 简化版本：记录修改字段
-        result.addLowImpact("修改字段: " + newField.getName());
+      if (oldField == null) {
+        result.addAddedField(newField.getName());
+        result.addLowImpact("新增字段: " + newField.getName());
+        continue;
+      }
+      result.addModifiedField(newField.getName());
+      if (!Objects.equals(oldField.getDataType(), newField.getDataType())) {
+        result.addHighImpact("字段类型变更: " + newField.getName());
+      }
+      if (!oldField.isRequired() && newField.isRequired()) {
+        result.addMediumImpact("字段变为必填: " + newField.getName());
+      }
+      if (oldField.isRequired() && !newField.isRequired()) {
+        result.addLowImpact("字段取消必填: " + newField.getName());
       }
     }
   }
 
-  /** 分析关系变更影响 */
   private void analyzeRelationChanges(
       EntityMetadata oldMetadata, EntityMetadata newMetadata, ImpactAnalysisResult result) {
-    // TODO: 实现关系变更分析
+    Map<String, RelationshipMetadata> oldRels = relationsByApiName(oldMetadata);
+    Map<String, RelationshipMetadata> newRels = relationsByApiName(newMetadata);
+
+    for (RelationshipMetadata removed : oldRels.values()) {
+      if (!newRels.containsKey(removed.getApiName())) {
+        result.addHighImpact("删除关系: " + removed.getApiName());
+      }
+    }
+    for (RelationshipMetadata added : newRels.values()) {
+      if (!oldRels.containsKey(added.getApiName())) {
+        result.addMediumImpact("新增关系: " + added.getApiName());
+      }
+    }
+    for (RelationshipMetadata newRel : newRels.values()) {
+      RelationshipMetadata oldRel = oldRels.get(newRel.getApiName());
+      if (oldRel == null) {
+        continue;
+      }
+      if (!Objects.equals(oldRel.getTargetEntity(), newRel.getTargetEntity())
+          || !Objects.equals(oldRel.getType(), newRel.getType())) {
+        result.addHighImpact("关系定义变更: " + newRel.getApiName());
+      }
+    }
   }
 
-  /** 分析依赖该实体的其他实体 */
-  private void analyzeDependentEntities(
-      String tenantId, String entityApiName, ImpactAnalysisResult result) {
-    // TODO: 实现依赖实体分析
+  private void analyzeDependentEntities(String entityApiName, ImpactAnalysisResult result) {
+    for (EntityMetadata entity : dataAccess.findAllEntities()) {
+      if (entity == null || entityApiName.equals(entity.getApiName())) {
+        continue;
+      }
+      for (RelationshipMetadata rel : safeRelationships(entity)) {
+        if (entityApiName.equals(rel.getTargetEntity())) {
+          result.addAffectedEntity(entity.getApiName());
+          result.addMediumImpact(
+              "实体 " + entity.getApiName() + " 的关系 " + rel.getApiName() + " 引用本实体");
+        }
+      }
+    }
   }
 
-  /** 分析相关工作流 */
-  private void analyzeRelatedWorkflows(
-      String tenantId, String entityApiName, ImpactAnalysisResult result) {
-    // TODO: 实现工作流影响分析
+  private void analyzeRelatedWorkflows(String entityApiName, ImpactAnalysisResult result) {
+    for (WorkflowRef workflow : dataAccess.findWorkflowsForEntity(entityApiName)) {
+      result.addAffectedWorkflow(workflow.name());
+      result.addMediumImpact("关联工作流: " + workflow.name());
+    }
   }
 
-  /** 分析业务规则影响 */
   private void analyzeBusinessRulesImpact(
-      String tenantId,
-      EntityMetadata oldMetadata,
-      EntityMetadata newMetadata,
-      ImpactAnalysisResult result) {
-    // TODO: 实现业务规则影响分析
+      EntityMetadata oldMetadata, EntityMetadata newMetadata, ImpactAnalysisResult result) {
+    Set<String> oldRuleNames =
+        safeBusinessRules(oldMetadata).stream()
+            .map(BusinessRuleMetadata::getApiName)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+    Set<String> newRuleNames =
+        safeBusinessRules(newMetadata).stream()
+            .map(BusinessRuleMetadata::getApiName)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet());
+
+    for (String removed : oldRuleNames) {
+      if (!newRuleNames.contains(removed)) {
+        result.addHighImpact("删除业务规则: " + removed);
+      }
+    }
+    for (String added : newRuleNames) {
+      if (!oldRuleNames.contains(added)) {
+        result.addLowImpact("新增业务规则: " + added);
+      }
+    }
+
+    Set<String> removedFields = new HashSet<>(result.getDeletedFields());
+    Set<String> modifiedFields = new HashSet<>(result.getModifiedFields());
+    for (BusinessRuleMetadata rule : safeBusinessRules(oldMetadata)) {
+      if (rule.getDependentFields() == null) {
+        continue;
+      }
+      for (String field : rule.getDependentFields()) {
+        if (removedFields.contains(field)) {
+          result.addHighImpact("业务规则 " + rule.getApiName() + " 依赖已删除字段: " + field);
+        } else if (modifiedFields.contains(field)) {
+          result.addMediumImpact("业务规则 " + rule.getApiName() + " 依赖已修改字段: " + field);
+        }
+      }
+    }
   }
 
-  /** 评估影响级别 */
   private void evaluateImpactLevel(ImpactAnalysisResult result) {
     if (!result.getCriticalImpacts().isEmpty()) {
       result.setImpactLevel(ImpactLevel.CRITICAL);
@@ -134,28 +187,56 @@ public class MetadataImpactAnalyzer {
     }
   }
 
+  private static Map<String, FieldMetadata> fieldsByName(EntityMetadata metadata) {
+    if (metadata.getFields() == null) {
+      return Map.of();
+    }
+    return metadata.getFields().values().stream()
+        .filter(f -> f.getName() != null)
+        .collect(Collectors.toMap(FieldMetadata::getName, f -> f, (a, b) -> a, HashMap::new));
+  }
+
+  private static Map<String, RelationshipMetadata> relationsByApiName(EntityMetadata metadata) {
+    Map<String, RelationshipMetadata> map = new HashMap<>();
+    for (RelationshipMetadata rel : safeRelationships(metadata)) {
+      if (rel.getApiName() != null) {
+        map.put(rel.getApiName(), rel);
+      }
+    }
+    return map;
+  }
+
+  private static List<RelationshipMetadata> safeRelationships(EntityMetadata metadata) {
+    List<RelationshipMetadata> rels = metadata.getRelationships();
+    return rels != null ? rels : List.of();
+  }
+
+  private static List<BusinessRuleMetadata> safeBusinessRules(EntityMetadata metadata) {
+    List<BusinessRuleMetadata> rules = metadata.getBusinessRules();
+    return rules != null ? rules : List.of();
+  }
+
   /** 影响级别枚举 */
   public enum ImpactLevel {
-    CRITICAL, // 严重影响，可能导致系统崩溃
-    HIGH, // 高影响，需要停机更新
-    MEDIUM, // 中等影响，需要注意兼容性
-    LOW // 低影响，几乎无兼容性问题
+    CRITICAL,
+    HIGH,
+    MEDIUM,
+    LOW
   }
 
   /** 影响分析结果 */
   public static class ImpactAnalysisResult {
     private ImpactLevel impactLevel = ImpactLevel.LOW;
-    private List<String> criticalImpacts = new ArrayList<>();
-    private List<String> highImpacts = new ArrayList<>();
-    private List<String> mediumImpacts = new ArrayList<>();
-    private List<String> lowImpacts = new ArrayList<>();
-    private List<String> affectedEntities = new ArrayList<>();
-    private List<String> affectedWorkflows = new ArrayList<>();
-    private List<String> deletedFields = new ArrayList<>();
-    private List<String> addedFields = new ArrayList<>();
-    private List<String> modifiedFields = new ArrayList<>();
+    private List<String> criticalImpacts = new java.util.ArrayList<>();
+    private List<String> highImpacts = new java.util.ArrayList<>();
+    private List<String> mediumImpacts = new java.util.ArrayList<>();
+    private List<String> lowImpacts = new java.util.ArrayList<>();
+    private List<String> affectedEntities = new java.util.ArrayList<>();
+    private List<String> affectedWorkflows = new java.util.ArrayList<>();
+    private List<String> deletedFields = new java.util.ArrayList<>();
+    private List<String> addedFields = new java.util.ArrayList<>();
+    private List<String> modifiedFields = new java.util.ArrayList<>();
 
-    // Getters and setters
     public ImpactLevel getImpactLevel() {
       return impactLevel;
     }
@@ -236,12 +317,10 @@ public class MetadataImpactAnalyzer {
       this.modifiedFields.add(field);
     }
 
-    /** 判断是否有破坏性变更 */
     public boolean hasBreakingChanges() {
       return impactLevel == ImpactLevel.CRITICAL || impactLevel == ImpactLevel.HIGH;
     }
 
-    /** 获取变更摘要 */
     public String getSummary() {
       StringBuilder sb = new StringBuilder();
       sb.append("影响级别: ").append(impactLevel.name()).append("\n");

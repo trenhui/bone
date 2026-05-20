@@ -6,8 +6,11 @@ import com.bone.studio.generator.application.query.qry.ListSyncedTablesQry;
 import com.bone.studio.generator.common.StudioIds;
 import com.bone.studio.generator.domain.data.DatabaseTable;
 import com.bone.studio.generator.domain.data.GenTableMetadata;
+import com.bone.studio.generator.domain.data.DataSource;
+import com.bone.studio.generator.domain.repository.DataSourceRepository;
 import com.bone.studio.generator.domain.repository.GenTableMetadataRepository;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -23,10 +26,15 @@ import org.springframework.transaction.annotation.Transactional;
 public class ListSyncedTablesHandler {
 
   private final GenTableMetadataRepository tableMetadataRepo;
+  private final DataSourceRepository dataSourceRepository;
 
   @Transactional(readOnly = true)
   public List<DatabaseTable> handle(ListSyncedTablesQry qry) {
     Long dataSourcePk = StudioIds.parseRequired(qry.getDataSourceId());
+    DataSource dataSource = dataSourceRepository.findById(dataSourcePk);
+    if (dataSource == null) {
+      return Collections.emptyList();
+    }
     String dataSourceKey = StudioIds.dataSourceKey(dataSourcePk);
     List<GenTableMetadata> rows =
         tableMetadataRepo.findByCriteria(

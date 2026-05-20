@@ -418,6 +418,8 @@ flowchart TD
 
 **易混点**：引擎与平台下可能存在同名业务域（如 integration），文档、日志与监控指标须用 **全限定模块名**。`bone-iam` 默认 HTTP 端口以 **`bone-platform/bone-iam/src/main/resources/application.yml` 中 `server.port` 为准**（当前仓库为 **8081**），勿与 `bone-masterdata` 的 **8080**、`bone-extension-studio` 的 **8088** 等混用（全表见 wiki/03）。**各模块默认端口总表**见 [doc/wiki/03-本地开发与构建.md](../wiki/03-本地开发与构建.md)「常见服务端口」；根 [README.md](../../README.md) 快速开始中的 **8080** 为营销/演示入口示意，非 IAM 真源。
 
+**端口双占（已知冲突）**：`bone-platform/bone-integration` 与 `bone-engine/studio-generator` 默认 `server.port` **均为 8085**；同机调试时**仅启其一**，或通过 `BONE_SERVER_PORT` / `server.port` 改端口。统一入口走 `bone-gateway`（**8888**），由网关按 `/api/v1/{domain}` 转发。详见 [wiki/03 §端口冲突](../wiki/03-本地开发与构建.md)。
+
 ---
 
 ## 第八部分 API 与路由
@@ -463,7 +465,7 @@ flowchart TD
 
 #### 8.3.2 元数据
 
-> **分 As-Is / [Target] / Vision**（真源：[元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §5）。**As-Is**：`bone-metadata-server` :9001 上 catalog REST + `fields:*`（EAV）。实体含 **`delivery_mode`**（GENERATIVE / RUNTIME）。**模式 A** 生成走 **`/api/v1/generate`**（`studio-generator`）。**模式 B** 动态 CRUD 由 `bone-metadata-engine` 提供（`/api/v1/runtime/entities/{code}/records`，META-002B-02）。建模字段**嵌套**在实体下，避免与 EAV `fields:*` 冲突。
+> **分 As-Is / [Target] / Vision**（真源：[元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §5）。**As-Is**：`bone-metadata-server` :9001 上 catalog REST + `fields:*`（EAV）。实体含 **`delivery_mode`**（GENERATIVE / RUNTIME）。**模式 A** 生成统一走 **`/api/v1/generator/**`**（`studio-generator`，见 [Bone-API-规范 §13.1.1](./Bone-API-规范.md#1311-代码生成generator规范路径)；旧 `/api/v1/generate` 已下线）。**模式 B** 动态 CRUD 由 `bone-metadata-engine` 提供（`/api/v1/runtime/entities/{code}/records`，META-002B-02）。建模字段**嵌套**在实体下，避免与 EAV `fields:*` 冲突。
 
 | API 路径 | 方法 | 功能 | 模式 |
 |----------|------|------|------|
@@ -474,12 +476,14 @@ flowchart TD
 | `/api/v1/metadata/entities/{entityId}/fields/{fieldId}` | GET/PUT/DELETE | 字段维护 | A+B |
 | `/api/v1/metadata/relationships` | GET/POST | 实体关系 | A+B |
 | `/api/v1/metadata/relationships/{id}` | GET/PUT/DELETE | 关系维护 | A+B |
-| `/api/v1/generate` | POST | 提交生成任务（**studio-generator**，模式 A） | A |
-| `/api/v1/generate/{taskId}` | GET | 查询生成结果 | A |
+| `/api/v1/generator/data-sources` | GET/POST | 生成器数据源 CRUD（**studio-generator**，模式 A） | A |
+| `/api/v1/generator/templates` | GET/POST | 代码模板（细节见 [API §13.1.1](./Bone-API-规范.md#1311-代码生成generator规范路径)） | A |
+| `/api/v1/generator/code-generation` | POST | Freemarker 异步生成（As-Is） | A |
+| `/api/v1/generator/generation-tasks` | POST | 同步字符串模板生成 | A |
 | `/api/v1/runtime/entities/{code}/records` | GET/POST | 动态列表/创建 **[Target]** | B |
 | `/api/v1/runtime/entities/{code}/records/{id}` | GET/PUT/DELETE | 动态详情/更新/删除 **[Target]** | B |
-| `/api/v1/metadata/templates` | GET/POST | 模板（阶段 0） | Vision |
-| `/api/v1/metadata/templates/{id}` | PUT/DELETE | 模板维护 | Vision |
+| `/api/v1/metadata/templates` | GET/POST | 元数据侧模板（阶段 0；与 generator 模板分离） | Vision |
+| `/api/v1/metadata/templates/{id}` | PUT/DELETE | 元数据侧模板维护 | Vision |
 
 #### 8.3.3 主数据
 
@@ -672,10 +676,12 @@ erDiagram
 
 ### 9.3 IAM 与系统（概念）
 
-- **IAM**：user、role、permission、user_role、role_permission、audit_log。  
-- **系统**：system_config、config_history、alert_rule、alert_event；扩展与集成相关表：extension_point、plugin、plugin_version、plugin_binding、connector、integration_flow、flow_node、flow_connection、integration_log。
+- **IAM**：account、role、permission、account_role、role_permission、audit_log、policy、refresh_token（物理表为 `iam_account`、`iam_account_role` 等；历史 `user` / `user_role` 命名已淘汰，见 [API §13.2 迁移表](./Bone-API-规范.md#132-废弃与迁移)）。  
+- **系统**：sys_config、sys_log、sys_alert_rule、sys_alert_event。  
+- **扩展（Extension Studio）**：exts_extension_point、exts_extension_impl、exts_plugin_version、exts_plugin_execution_log、exts_audit_log。  
+- **集成**：int_connector、int_flow、int_flow_node、int_flow_connection、int_execution_log、int_dead_letter、int_outbox、int_template。
 
-**物理表名** 以 `bone-init.sql` 与各模块迁移脚本为准（可能带模块前缀或租户字段）。
+**物理表名** 以 `bone-init.sql` 与各模块迁移脚本为准（必含 `tenant_id` 等多租户字段，详见 [数据库开发规范](./数据库开发规范.md)）；本节用法仅为概念视图。
 
 ---
 

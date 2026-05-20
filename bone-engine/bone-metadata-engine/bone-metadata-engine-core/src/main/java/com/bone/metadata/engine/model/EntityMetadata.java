@@ -35,7 +35,10 @@ public class EntityMetadata {
   }
 
   /** 关系元数据列表 */
-  private List<RelationshipMetadata> relationships;
+  private List<RelationshipMetadata> relationships = new ArrayList<>();
+
+  /** 业务规则列表 */
+  private List<BusinessRuleMetadata> businessRules = new ArrayList<>();
 
   /** 实体类型 */
   private EntityType type;
@@ -132,24 +135,14 @@ public class EntityMetadata {
     return null;
   }
 
-  /** 获取关系列表（兼容方法） */
+  /** 获取关系列表 */
   public List<RelationshipMetadata> getRelationships() {
-    return new ArrayList<>();
+    return relationships != null ? relationships : List.of();
   }
 
-  /** 获取业务规则列表（兼容方法） */
+  /** 获取业务规则列表 */
   public List<BusinessRuleMetadata> getBusinessRules() {
-    return new ArrayList<>();
-  }
-
-  /** 获取名称（兼容方法） */
-  public String getName() {
-    return null;
-  }
-
-  /** 获取描述（兼容方法） */
-  public String getDescription() {
-    return null;
+    return businessRules != null ? businessRules : List.of();
   }
 
   /** 根据名称获取字段 */

@@ -17,6 +17,7 @@ import { ReloadOutlined, DownloadOutlined, PlusOutlined } from '@ant-design/icon
 import {
   codeGenerationApi,
   dataSourceApi,
+  generationTaskApi,
   metadataEntitySnapshotApi,
   pageRecords,
   tableMetadataApi,
@@ -42,8 +43,7 @@ const CodeGeneration: React.FC = () => {
   const [syncForm] = Form.useForm();
   const [generateForm] = Form.useForm();
   const [dataSourceTables, setDataSourceTables] = useState<any[]>([]);
-  const [metadataSource, setMetadataSource] = useState<'PHYSICAL' | 'CATALOG'>('PHYSICAL');
-  
+
   const {
     dataSources,
     setDataSources,
@@ -52,6 +52,10 @@ const CodeGeneration: React.FC = () => {
     setTables: setSyncedTables,
     selectedTables,
     setSelectedTables,
+    activeDataSourceId,
+    setActiveDataSourceId,
+    metadataSource,
+    setMetadataSource,
   } = useGeneratorStore();
 
   // 加载数据源列表
@@ -68,15 +72,24 @@ const CodeGeneration: React.FC = () => {
     }
   };
 
-  // 加载已同步表列表
-  const loadSyncedTables = async () => {
+  const loadSyncedTables = async (dataSourceId?: string) => {
+    if (metadataSource === 'CATALOG_SNAPSHOT') {
+      return;
+    }
+    const dsId = dataSourceId ?? activeDataSourceId;
+    if (!dsId) {
+      setSyncedTables([]);
+      return;
+    }
     try {
       setLoadingSyncedTables(true);
-      // 暂时使用空数组，后端可能还没有实现获取已同步表列表的 API
-      setSyncedTables([]);
+      const response = await dataSourceApi.listSyncedTables(dsId);
+      const tables = (response.data.data ?? []) as DatabaseTable[];
+      setSyncedTables(tables);
     } catch (error) {
       message.error('加载已同步表失败');
       console.error('加载已同步表失败:', error);
+      setSyncedTables([]);
     } finally {
       setLoadingSyncedTables(false);
     }
@@ -99,9 +112,14 @@ const CodeGeneration: React.FC = () => {
   // 组件挂载时加载数据
   useEffect(() => {
     loadDataSources();
-    loadSyncedTables();
     loadTemplates();
   }, []);
+
+  useEffect(() => {
+    if (metadataSource === 'PHYSICAL_DB' && activeDataSourceId) {
+      void loadSyncedTables(activeDataSourceId);
+    }
+  }, [activeDataSourceId, metadataSource]);
 
   // 处理表选择
   const handleTableSelect = (selectedKeys: React.Key[]) => {
@@ -132,10 +150,26 @@ const CodeGeneration: React.FC = () => {
       }
       
       setLoading(true);
-      await tableMetadataApi.sync(syncData);
-      message.success('表结构同步成功');
+      if (metadataSource === 'CATALOG_SNAPSHOT') {
+        const picked = dataSourceTables.filter((t) =>
+          syncData.tableNames.includes(t.tableName),
+        );
+        setSyncedTables(
+          picked.map((t) => ({
+            tableName: t.tableName,
+            tableComment: t.tableComment ?? '',
+            columns: [],
+          })),
+        );
+        setMetadataSource('CATALOG_SNAPSHOT');
+        message.success('已选用元数据目录实体');
+      } else {
+        await tableMetadataApi.sync(syncData);
+        message.success('表结构同步成功');
+        setActiveDataSourceId(syncData.dataSourceId);
+        await loadSyncedTables(syncData.dataSourceId);
+      }
       setSyncModalVisible(false);
-      loadSyncedTables(); // 刷新已同步表列表
     } catch (error) {
       message.error('同步表结构失败');
       console.error('同步表结构失败:', error);
@@ -195,26 +229,47 @@ const CodeGeneration: React.FC = () => {
       const values = await generateForm.validateFields();
       setLoadingGenerate(true);
       
-      const request = {
-        projectName: values.projectName,
-        basePackage: values.basePackage,
-        moduleName: values.moduleName,
-        dataSourceId: values.dataSourceId,
-        tableNames: selectedTables,
-        templateIds: values.templateIds,
-        genConfig: JSON.stringify({
+      setGenerateProgress(0);
+
+      if (metadataSource === 'CATALOG_SNAPSHOT') {
+        const templateId = Array.isArray(values.templateIds)
+          ? String(values.templateIds[0])
+          : String(values.templateIds);
+        const syncRes = await generationTaskApi.create({
+          templateId,
+          name: values.projectName,
+          basePackage: values.basePackage,
+          moduleName: values.moduleName,
+          metadataSource: 'CATALOG_SNAPSHOT',
+          tenantId: 0,
+          entityCodes: selectedTables,
+          tableNames: selectedTables,
           includeTests: values.includeTests,
           includeDocumentation: values.includeDocumentation,
-        }),
-      };
-      
-      setGenerateProgress(0);
-      const response = await codeGenerationApi.generate(request, {
-        onProgress: setGenerateProgress,
-      });
-      const newTaskId = response.data.data as string;
-      setTaskId(newTaskId);
-      message.success('代码生成成功');
+        });
+        const body = syncRes.data?.data as { generationId?: string; status?: string; message?: string };
+        setTaskId(body?.generationId ?? '');
+        message.success(body?.message ?? '代码生成完成');
+      } else {
+        const request = {
+          projectName: values.projectName,
+          basePackage: values.basePackage,
+          moduleName: values.moduleName,
+          dataSourceId: values.dataSourceId,
+          tableNames: selectedTables,
+          templateIds: values.templateIds,
+          genConfig: JSON.stringify({
+            includeTests: values.includeTests,
+            includeDocumentation: values.includeDocumentation,
+          }),
+        };
+        const response = await codeGenerationApi.generate(request, {
+          onProgress: setGenerateProgress,
+        });
+        const newTaskId = response.data.data as string;
+        setTaskId(newTaskId);
+        message.success('代码生成任务已提交');
+      }
       setConfigModalVisible(false);
       setResultModalVisible(true);
     } catch (error) {
@@ -270,12 +325,30 @@ const CodeGeneration: React.FC = () => {
         <Title level={4}>代码生成</Title>
         
         <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text strong>已同步表列表</Text>
+          <Text strong>
+            {metadataSource === 'CATALOG_SNAPSHOT' ? '已选元数据实体' : '已同步表列表'}
+          </Text>
+          {metadataSource === 'PHYSICAL_DB' && (
+            <Select
+              placeholder="选择数据源以加载已同步表"
+              style={{ minWidth: 240 }}
+              value={activeDataSourceId || undefined}
+              onChange={(id) => {
+                setActiveDataSourceId(id);
+                setSelectedTables([]);
+              }}
+              options={dataSources.map((ds) => ({
+                value: ds.id,
+                label: `${ds.name} (${ds.type})`,
+              }))}
+            />
+          )}
           <Button
             type="primary"
             icon={<ReloadOutlined />}
-            onClick={loadSyncedTables}
+            onClick={() => loadSyncedTables()}
             loading={loadingSyncedTables}
+            disabled={metadataSource === 'PHYSICAL_DB' && !activeDataSourceId}
           >
             刷新列表
           </Button>
@@ -338,17 +411,19 @@ const CodeGeneration: React.FC = () => {
           <Form.Item label="元数据来源">
             <Select
               value={metadataSource}
-              onChange={(v: 'PHYSICAL' | 'CATALOG') => {
+              onChange={(v: 'PHYSICAL_DB' | 'CATALOG_SNAPSHOT') => {
                 setMetadataSource(v);
                 setDataSourceTables([]);
+                setSyncedTables([]);
+                setSelectedTables([]);
                 syncForm.setFieldValue('tableNames', []);
-                if (v === 'CATALOG') {
+                if (v === 'CATALOG_SNAPSHOT') {
                   void handleLoadCatalogEntities();
                 }
               }}
               options={[
-                { value: 'PHYSICAL', label: '物理数据源' },
-                { value: 'CATALOG', label: '元数据目录（已发布 meta_*）' },
+                { value: 'PHYSICAL_DB', label: '物理数据源' },
+                { value: 'CATALOG_SNAPSHOT', label: '元数据目录（已发布 meta_*）' },
               ]}
             />
           </Form.Item>
@@ -356,15 +431,15 @@ const CodeGeneration: React.FC = () => {
           <Form.Item
             name="dataSourceId"
             label="数据源"
-            rules={[{ required: metadataSource === 'PHYSICAL', message: '请选择数据源' }]}
+            rules={[{ required: metadataSource === 'PHYSICAL_DB', message: '请选择数据源' }]}
           >
             <Select
               placeholder="请选择数据源"
               showSearch
               optionFilterProp="children"
-              disabled={metadataSource === 'CATALOG'}
+              disabled={metadataSource === 'CATALOG_SNAPSHOT'}
               onChange={async (dataSourceId) => {
-                if (metadataSource !== 'PHYSICAL' || !dataSourceId) {
+                if (metadataSource !== 'PHYSICAL_DB' || !dataSourceId) {
                   setDataSourceTables([]);
                   return;
                 }
@@ -448,19 +523,22 @@ const CodeGeneration: React.FC = () => {
             includeDocumentation: true,
           }}
         >
-          <Form.Item
-            name="dataSourceId"
-            label="数据源"
-            rules={[{ required: true, message: '请选择数据源' }]}
-          >
-            <Select placeholder="请选择数据源" showSearch optionFilterProp="children">
-              {dataSources?.map((ds) => (
-                <Option key={ds.id} value={ds.id}>
-                  {ds.name} ({ds.type})
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
+          {metadataSource === 'PHYSICAL_DB' && (
+            <Form.Item
+              name="dataSourceId"
+              label="数据源"
+              rules={[{ required: true, message: '请选择数据源' }]}
+              initialValue={activeDataSourceId || undefined}
+            >
+              <Select placeholder="请选择数据源" showSearch optionFilterProp="children">
+                {dataSources?.map((ds) => (
+                  <Option key={ds.id} value={ds.id}>
+                    {ds.name} ({ds.type})
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          )}
 
           <Form.Item
             name="projectName"

@@ -503,7 +503,8 @@ OpenAPI 草案：[openapi/extension-v1.yaml](./openapi/extension-v1.yaml)（本�
 | GET/POST | `/api/v1/generator/data-sources` | 数据源 CRUD |
 | POST | `/api/v1/generator/data-sources/{id}:test-connection` | 连接测试 |
 | GET | `/api/v1/generator/data-sources/{id}/tables` | 物理库表发现（JDBC） |
-| POST | `/api/v1/generator/data-sources/{id}/tables:sync` | 同步表结构到 `gen_*` |
+| GET | `/api/v1/generator/data-sources/{id}/synced-tables` | 已同步表（`gen_table_metadata`） |
+| POST | `/api/v1/generator/data-sources/{id}/tables:sync` | 同步表结构到 `gen_*`（body 可选 `tableNames`） |
 | GET | `/api/v1/generator/metadata-entity-snapshots` | 已发布 `meta_*` 快照分页（`CATALOG_SNAPSHOT` 选型） |
 | GET/POST | `/api/v1/generator/templates` | 模板 CRUD；`POST …/{id}:publish` 发布 |
 | POST | `/api/v1/generator/code-generation` | Freemarker 异步生成（As-Is） |

@@ -177,14 +177,14 @@ public class FieldMetadata {
     return false;
   }
 
-  /** 是否是显示名称字段（兼容方法） */
+  /** 是否是显示名称字段 */
   public boolean isDisplayName() {
-    return false;
+    return displayName;
   }
 
-  /** 是否是主键字段（兼容方法） */
+  /** 是否是主键字段 */
   public boolean isPrimaryKey() {
-    return false;
+    return primaryKey;
   }
 
   /** 获取API名称 */

@@ -39,6 +39,14 @@ async function main() {
   const cap = await readJson(capRes);
   step('GET /capabilities', capRes.ok && cap.success === true, `status=${capRes.status}`);
 
+  const snapRes = await fetch(`${API_BASE}/metadata-entity-snapshots?page=1&size=5`);
+  const snap = await readJson(snapRes);
+  step(
+    'GET /metadata-entity-snapshots',
+    snapRes.ok && snap.success === true,
+    `status=${snapRes.status}`,
+  );
+
   result.ok = true;
   console.log(JSON.stringify(result, null, 2));
 }

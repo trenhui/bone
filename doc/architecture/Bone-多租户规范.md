@@ -8,12 +8,12 @@
 
 ## 1. 概念
 
-| 字段 | 说明 |
-|------|------|
-| `tenant_id` | 租户隔离主键；表列 + JWT claim |
-| `biz_identity_code` | 租户下业务身份/条线；细粒度隔离 |
+| 字段 | 说明 | 落地形态（As-Is） |
+|------|------|-------------------|
+| `tenant_id` | 租户隔离主键；表列 + JWT claim | **必落库**：所有业务表强制；见 [数据库开发规范 §1](./数据库开发规范.md) |
+| `biz_identity_code` | 租户下业务身份/条线；细粒度隔离 | **As-Is：仅上下文/JWT**（`BizIdentityContext`、`ExtensibleObject.bizIdentityCode`），**默认不进 DDL**；如需表级落库须模块详设说明并补 DDL（**[Target]**） |
 
-所有业务表（除平台级字典）须含上述列，见数据库规范。
+> **重要差异**：当前 `bone-init.sql` 与 `TenantAbstractEntity` **不含** `biz_identity_code` 列；该字段作为 JWT/上下文/扩展元数据传递。若模块业务必须按 `biz_identity_code` 物理分区或建唯一约束，须先提 ADR 并在 `数据库开发规范` 登记字段约束（避免一刀切引入空列）。
 
 ---
 
@@ -52,8 +52,8 @@ TenantContext.setBizIdentityCode(...);
 
 | 规则 | 说明 |
 |------|------|
-| 查询 | 所有业务查询带 `tenant_id`（及需要的 `biz_identity_code`） |
-| 写入 | 插入时从上下文填充，禁止客户端指定他人租户 |
+| 查询 | 所有业务查询带 `tenant_id`；`biz_identity_code` **仅当表已落库该列**时附加过滤，否则在应用层按上下文判断 |
+| 写入 | 插入时从上下文填充 `tenant_id`，禁止客户端指定他人租户；`biz_identity_code` 写入需先确认 DDL 已包含该列 |
 | 跨租户 | 仅平台超管角色；须审计 + Scope `platform:*` |
 | 缓存 Key | `{tenantId}:{bizCode}:...`（见 [Bone-缓存规范](./Bone-缓存规范.md)） |
 
@@ -83,6 +83,7 @@ TenantContext.setBizIdentityCode(...);
 - [ ] MDC 有 `tenantId`  
 - [ ] 缓存/MQ 带租户维度  
 - [ ] 跨租户测试用例  
+- [ ] 如需 `biz_identity_code` 物理落库：已提 ADR + 更新 `数据库开发规范`  
 
 ---
 
@@ -91,3 +92,4 @@ TenantContext.setBizIdentityCode(...);
 | 日期 | 说明 |
 |------|------|
 | 2026-05-17 | 初版；对齐总体架构 §8.5 |
+| 2026-05-20 | 明确 `biz_identity_code` 默认仅在 JWT/上下文，不强制落库；需落库须 ADR |

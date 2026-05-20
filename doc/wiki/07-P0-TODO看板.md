@@ -136,7 +136,7 @@
 
 | ID | 位置 | 描述 | 状态 | 优先级 |
 |----|------|------|------|--------|
-| SM-01 | `MetadataImpactAnalyzer` | 关系/依赖/工作流/规则影响分析 | open | P2 |
+| SM-01 | `MetadataImpactAnalyzer` | 关系/依赖/工作流/规则影响分析 | done | P2 |
 
 ---
 
