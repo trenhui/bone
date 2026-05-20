@@ -1,0 +1,100 @@
+openapi: 3.1.0
+info:
+  title: Bone Integration API
+  version: 1.0.0
+  description: |
+    集成引擎（As-Is · INT-09 同步 MVP）。规范：[Bone-API-规范.md](../Bone-API-规范.md)；
+    详设：[集成管理模块](../../design/modules/4.%20集成管理模块详细设计方案.md) §5。
+
+    网关前缀：`/api/v1/integration` → bone-integration :8085。
+
+servers:
+  - url: /api/v1/integration
+
+paths:
+  /flows:
+    get:
+      summary: 分页查询流程
+      operationId: listIntegrationFlows
+      tags: [Flow]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: size, in: query, schema: { type: integer, default: 20 } }
+      responses:
+        '200': { description: OK（PageResult.records） }
+    post:
+      summary: 创建流程
+      operationId: createIntegrationFlow
+      tags: [Flow]
+      responses:
+        '201': { description: Created }
+  /flows/{id}:
+    get:
+      summary: 流程详情
+      operationId: getIntegrationFlow
+      tags: [Flow]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        '200': { description: OK }
+  /flows/{id}/activate:
+    post:
+      summary: 激活流程
+      operationId: activateIntegrationFlow
+      tags: [Flow]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        '200': { description: OK }
+  /connectors:
+    get:
+      summary: 分页查询连接器
+      operationId: listConnectors
+      tags: [Connector]
+      responses:
+        '200': { description: OK }
+    post:
+      summary: 创建连接器
+      operationId: createConnector
+      tags: [Connector]
+      responses:
+        '201': { description: Created }
+  /connectors/{id}/test:
+    post:
+      summary: 测试连接器
+      operationId: testConnector
+      tags: [Connector]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        '200': { description: OK }
+        '501': { description: 连接器类型未实现（INT_CONNECTOR_NOT_IMPLEMENTED） }
+  /executions:
+    post:
+      summary: 执行流程（同步 MVP）
+      operationId: executeIntegrationFlow
+      tags: [Monitor]
+      responses:
+        '200': { description: OK（execution id） }
+    get:
+      summary: 分页查询执行日志
+      operationId: listExecutions
+      tags: [Monitor]
+      responses:
+        '200': { description: OK }
+  /executions/{id}:
+    get:
+      summary: 执行详情
+      operationId: getExecution
+      tags: [Monitor]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+      responses:
+        '200': { description: OK }
+  /statistics:
+    get:
+      summary: 流程统计
+      operationId: getIntegrationStatistics
+      tags: [Monitor]
+      responses:
+        '200': { description: OK }

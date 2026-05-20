@@ -164,7 +164,8 @@ throw new BizException(ExtensionErrorCode.PLUGIN_NOT_FOUND, pluginId);
 | `MD_RECORD_NOT_PUBLISHED` | 409 | 记录未发布 |
 | `MD_QUALITY_REPORT_NOT_IMPLEMENTED` | 501 | 质量报告查询未实现 |
 | `MD_RECORD_EXPORT_NOT_IMPLEMENTED` | 501 | 主数据记录导出未实现 |
-| `MD_ENTITY_CONVERT_NOT_IMPLEMENTED` | 501 | 业务实体转主数据未实现 |
+| `MD_META_ENTITY_NOT_FOUND` | 404 | 元数据实体不存在 |
+| `MD_META_ENTITY_NOT_PUBLISHED` | 422 | 仅已发布元数据实体可转换为主数据 |
 
 ### EXT_
 

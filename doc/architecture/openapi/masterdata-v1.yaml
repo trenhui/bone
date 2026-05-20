@@ -41,7 +41,7 @@ paths:
           schema: { type: integer, format: int64 }
       responses:
         '200': { description: OK（mdm entity id） }
-        '409': { description: 已存在或 meta 未发布 }
+        '422': { description: meta 未发布（MD_META_ENTITY_NOT_PUBLISHED） }
   /entities/{id}:
     get:
       summary: 实体详情

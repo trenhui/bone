@@ -33,4 +33,6 @@ components:
 | [extension-v1.yaml](./extension-v1.yaml) | bone-extension-studio | `/api/v1/extension` |
 | [generator-v1.yaml](./generator-v1.yaml) | studio-generator | `/api/v1/generator` |
 | [iam-v1.yaml](./iam-v1.yaml) | bone-iam | `/api/v1/iam` |
+| [masterdata-v1.yaml](./masterdata-v1.yaml) | bone-masterdata | `/api/v1/masterdata` |
+| [integration-v1.yaml](./integration-v1.yaml) | bone-integration | `/api/v1/integration` |
 | [metadata-runtime-v1.yaml](./metadata-runtime-v1.yaml) | bone-metadata-server（模式 B） | `/api/v1/runtime` |

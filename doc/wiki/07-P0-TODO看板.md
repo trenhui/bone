@@ -57,8 +57,8 @@
 | MD-01 | `DataQualityController` | 质量报告查询（`mdm_qcheck_report` + `GET …/reports/{id}`） | done | P1 |
 | MD-02 | `MasterDataRecordController` | 主数据记录 JSON 导出 | done | P1 |
 | MD-03 | `MasterDataEntityController` | 元数据实体 ID → `md_entity` 转换 | done | P1 |
-| MD-04 | `ConvertFromBusinessEntityHandler` | `convert` 幂等（同 `businessEntityId` 返回已有 mdm id）+ 仅已发布 `meta_entity` 可转 | open | P1 |
-| MD-05 | OpenAPI | `masterdata-v1.yaml` 登记 §5 As-Is 路径 | wip | P2 |
+| MD-04 | `ConvertFromBusinessEntityHandler` | `convert` 幂等（同 `businessEntityId` 返回已有 mdm id）+ 仅已发布 `meta_entity` 可转 | done | P1 |
+| MD-05 | OpenAPI | `masterdata-v1.yaml` 登记 §5 As-Is 路径 | done | P2 |
 
 ---
 
@@ -82,8 +82,8 @@
 | IAM-03 | `ArchitectureTest` | ArchUnit 分层 + 空仓储接口；`AuthService` 允许 Spring Security | done | P0 |
 | IAM-04 | `AccountController` / `RoleController` | 详情 API 接 QueryHandler（非空占位） | done | P1 |
 | IAM-05 | `bone-iam-app` | 分页对齐 `PageResult.records` + 查询参数 `size` | done | P1 |
-| IAM-06 | `TenantController` | 多租户 CRUD（商业版） | open | P2 |
-| IAM-07 | `AuditController` | 审计设置持久化 | open | P2 |
+| IAM-06 | `TenantController` | 多租户 CRUD（商业版） | done | P2 |
+| IAM-07 | `AuditController` | 审计设置持久化（`iam_audit_settings`） | done | P2 |
 | IAM-08 | SSO / MFA | IdP 联邦与 MFA | open | P2 |
 | IAM-09 | 契约 | `iam-v1.yaml` + Gateway IT | done | P2 |
 
