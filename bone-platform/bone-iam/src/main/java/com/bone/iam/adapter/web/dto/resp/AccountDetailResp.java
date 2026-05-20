@@ -14,6 +14,7 @@ public class AccountDetailResp {
     private String avatarUrl;
     private Integer status;
     private Boolean isAdmin;
+    private Long[] roleIds;
     private LocalDateTime lastLoginAt;
     private String lastLoginIp;
     private LocalDateTime createdAt;

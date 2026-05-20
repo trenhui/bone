@@ -1,6 +1,7 @@
 package com.bone.iam.application.command.handler;
 
 import com.bone.core.usecase.Capability;
+import com.bone.iam.application.service.AccountRoleBindingService;
 import com.bone.iam.domain.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -20,9 +21,11 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class DeleteAccountHandler {
     private final AccountRepository accountRepository;
+    private final AccountRoleBindingService accountRoleBindingService;
 
     @Transactional
     public void handle(Long id) {
+        accountRoleBindingService.replaceBindings(id, null, new Long[0]);
         accountRepository.deleteById(id);
     }
 }

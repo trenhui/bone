@@ -1,6 +1,7 @@
 package com.bone.iam.application.command.handler;
 
 import com.bone.iam.application.command.cmd.UpdateAccountCmd;
+import com.bone.iam.application.service.AccountRoleBindingService;
 import com.bone.iam.domain.account.Account;
 import com.bone.iam.domain.account.vo.AccountStatus;
 import com.bone.iam.domain.repository.AccountRepository;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UpdateAccountHandler {
     private final AccountRepository accountRepository;
+    private final AccountRoleBindingService accountRoleBindingService;
 
     @Transactional
     public void handle(UpdateAccountCmd cmd) {
@@ -29,5 +31,9 @@ public class UpdateAccountHandler {
             }
         }
         accountRepository.update(account);
+        if (cmd.getRoleIds() != null) {
+            accountRoleBindingService.replaceBindings(
+                    account.getId(), account.getTenantId(), cmd.getRoleIds());
+        }
     }
 }

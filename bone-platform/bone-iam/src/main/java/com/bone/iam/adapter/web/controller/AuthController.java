@@ -9,6 +9,8 @@ import com.bone.iam.adapter.web.dto.resp.LoginResp;
 import com.bone.iam.application.command.cmd.LoginCmd;
 import com.bone.iam.application.usecase.standard.LoginUseCase;
 import com.bone.iam.domain.repository.AccountRepository;
+import com.bone.iam.common.IamErrorCodes;
+import com.bone.iam.infrastructure.config.IamSsoProperties;
 import com.bone.iam.infrastructure.config.JwtConfig;
 import com.bone.iam.application.query.handler.AccountAuthoritiesQueryHandler;
 import com.bone.iam.infrastructure.security.JwtTokenService;
@@ -17,8 +19,11 @@ import com.bone.iam.infrastructure.security.RefreshTokenService;
 import com.bone.iam.infrastructure.security.TokenBlacklistService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Duration;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -42,6 +47,7 @@ public class AuthController {
     private final AccountRepository accountRepository;
     private final AccountAuthoritiesQueryHandler accountAuthoritiesQueryHandler;
     private final JwtConfig jwtConfig;
+    private final IamSsoProperties iamSsoProperties;
 
     @PostMapping("/login")
     public ApiResponse<LoginResp> login(@RequestBody LoginReq req) {
@@ -81,14 +87,25 @@ public class AuthController {
 
     @GetMapping("/sso/config")
     public ApiResponse<Map<String, Object>> getSsoConfig() {
-        return ApiResponse.success(Map.of(
-                "enabled", false,
-                "providers", new String[] {"oauth2", "saml", "ldap"}));
+        Map<String, Object> config = new LinkedHashMap<>();
+        config.put("enabled", iamSsoProperties.isEnabled());
+        config.put("provider", iamSsoProperties.getProvider());
+        config.put("authorizationUrl", iamSsoProperties.getAuthorizationUrl());
+        config.put("clientId", iamSsoProperties.getClientId());
+        config.put("supportedProviders", List.of("oauth2", "saml", "ldap"));
+        return ApiResponse.success(config);
     }
 
     @GetMapping("/sso/callback")
-    public ApiResponse<LoginResp> ssoCallback(
+    public ResponseEntity<ApiResponse<LoginResp>> ssoCallback(
             @RequestParam String code, @RequestParam(required = false) String state) {
-        return ApiResponse.success(null);
+        if (!iamSsoProperties.isEnabled()) {
+            return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
+                    .body(ApiResponse.error(
+                            501,
+                            IamErrorCodes.SSO_NOT_CONFIGURED + ": SSO 未配置，请设置 bone.iam.sso.enabled=true"));
+        }
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED)
+                .body(ApiResponse.error(501, IamErrorCodes.SSO_NOT_CONFIGURED + ": IdP 回调处理尚未实现"));
     }
 }

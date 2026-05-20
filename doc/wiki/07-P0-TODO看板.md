@@ -45,6 +45,8 @@
 | INT-11 | `CamelFlowCompiler` | `int_flow_node` → Camel 路由（Choice/并行；HTTP 组件已迁入） | done | P2 |
 | INT-12 | 模块收敛 | 删除 `bone-engine/bone-integration`，唯一服务 `bone-platform-integration` | done | P0 |
 | INT-SEC-01 | `SecurityConfig` | `BONE_INTEGRATION_JWT_ENABLED=true` 时 `/integration/**` 需 IAM JWT | done | P1 |
+| INT-OBS-01 | `IntegrationExecutionMetrics` | `bone_integration_execution_*` + `connector_test_total` + `dead_letter_gauge` | done | P2 |
+| INT-OBS-02 | OpenAPI + Gateway | `integration-v1.yaml` + `IntegrationGatewayRouteIT` | done | P2 |
 
 **建议**：对外 API 在未实现前返回 **501** + 明确错误码，避免「假成功」。
 
@@ -84,8 +86,9 @@
 | IAM-05 | `bone-iam-app` | 分页对齐 `PageResult.records` + 查询参数 `size` | done | P1 |
 | IAM-06 | `TenantController` | 多租户 CRUD（商业版） | done | P2 |
 | IAM-07 | `AuditController` | 审计设置持久化（`iam_audit_settings`） | done | P2 |
-| IAM-08 | SSO / MFA | IdP 联邦与 MFA | open | P2 |
+| IAM-08 | SSO / MFA | 社区版：`sso/config` + `sso/callback`/`mfa/*` 501 契约；IdP 联邦 **[Target]** | done | P2 |
 | IAM-09 | 契约 | `iam-v1.yaml` + Gateway IT | done | P2 |
+| IAM-10 | `CreateAccountHandler` / `UpdateAccountHandler` | `iam_account_role` 绑定 + 详情返回 `roleIds` | done | P1 |
 
 ---
 

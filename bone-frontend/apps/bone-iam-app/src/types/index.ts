@@ -25,6 +25,8 @@ export interface Account {
   deleted: boolean;
   version?: number;
   roles?: Role[];
+  /** 详情 API 返回的绑定角色 ID */
+  roleIds?: number[];
 }
 
 /**

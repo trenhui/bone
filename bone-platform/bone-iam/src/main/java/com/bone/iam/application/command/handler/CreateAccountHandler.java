@@ -1,6 +1,7 @@
 package com.bone.iam.application.command.handler;
 
 import com.bone.iam.application.command.cmd.CreateAccountCmd;
+import com.bone.iam.application.service.AccountRoleBindingService;
 import com.bone.iam.domain.account.Account;
 import com.bone.iam.domain.account.vo.Email;
 import com.bone.iam.domain.account.vo.Username;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CreateAccountHandler {
     private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AccountRoleBindingService accountRoleBindingService;
 
     @Transactional
     public Long handle(CreateAccountCmd cmd) {
@@ -27,6 +29,8 @@ public class CreateAccountHandler {
         Account account = Account.create(accountId, username, passwordHash, email,
                 cmd.getPhone(), cmd.getRealName(), cmd.getTenantId());
         accountRepository.save(account);
+        accountRoleBindingService.replaceBindings(
+                account.getId(), account.getTenantId(), cmd.getRoleIds());
         return account.getId();
     }
 }

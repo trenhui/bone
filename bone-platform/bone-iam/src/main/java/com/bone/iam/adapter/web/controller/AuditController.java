@@ -7,6 +7,7 @@ import com.bone.iam.application.query.dto.AuditLogDTO;
 import com.bone.iam.application.query.qry.AuditLogListQry;
 import com.bone.iam.application.usecase.standard.AuditLogQueryUseCase;
 import com.bone.iam.adapter.web.dto.resp.AuditSettingsResp;
+import com.bone.iam.infrastructure.persistence.AuditSettingsRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,6 +24,7 @@ import java.util.Map;
 public class AuditController {
 
     private final AuditLogQueryUseCase auditLogQueryUseCase;
+    private final AuditSettingsRepository auditSettingsRepository;
 
     /**
      * 分页查询审计日志
@@ -51,13 +53,7 @@ public class AuditController {
      */
     @GetMapping("/settings")
     public ApiResponse<AuditSettingsResp> settings() {
-        AuditSettingsResp resp = new AuditSettingsResp();
-        resp.setRetentionDays(30);
-        resp.setAutoArchiveEnabled(true);
-        resp.setArchiveAfterDays(15);
-        resp.setStorageType("DATABASE");
-        resp.setWormEnabled(false);
-        return ApiResponse.success(resp);
+        return ApiResponse.success(auditSettingsRepository.findByTenant(auditSettingsRepository.resolveTenantId()));
     }
 
     /**
@@ -65,7 +61,7 @@ public class AuditController {
      */
     @PutMapping("/settings")
     public ApiResponse<Void> updateSettings(@RequestBody Map<String, Object> settings) {
-        // 保存审计设置逻辑
+        auditSettingsRepository.upsert(auditSettingsRepository.resolveTenantId(), settings);
         return ApiResponse.success();
     }
 }

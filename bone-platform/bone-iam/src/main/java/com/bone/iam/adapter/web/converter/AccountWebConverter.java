@@ -44,6 +44,7 @@ public class AccountWebConverter {
         resp.setAvatarUrl(dto.getAvatarUrl());
         resp.setStatus(dto.getStatus());
         resp.setIsAdmin(dto.getIsAdmin());
+        resp.setRoleIds(dto.getRoleIds());
         resp.setLastLoginAt(dto.getLastLoginAt());
         resp.setLastLoginIp(dto.getLastLoginIp());
         resp.setCreatedAt(dto.getCreatedAt());

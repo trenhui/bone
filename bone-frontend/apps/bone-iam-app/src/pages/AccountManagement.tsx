@@ -67,17 +67,32 @@ const AccountManagement: React.FC = () => {
     setIsModalVisible(true);
   };
 
-  const handleEdit = (account: Account) => {
+  const handleEdit = async (account: Account) => {
     setIsEditMode(true);
     setCurrentAccount(account);
-    form.setFieldsValue({
-      email: account.email,
-      phone: account.phone,
-      realName: account.realName,
-      status: account.status,
-      roleIds: account.roles?.map((role) => role.id) || [],
-    });
     setIsModalVisible(true);
+    try {
+      const detail = await api.getAccount(account.id);
+      const roleIds =
+        detail.code === 200 && detail.data?.roleIds?.length
+          ? detail.data.roleIds
+          : account.roleIds ?? account.roles?.map((role) => role.id) ?? [];
+      form.setFieldsValue({
+        email: account.email,
+        phone: account.phone,
+        realName: account.realName,
+        status: account.status,
+        roleIds,
+      });
+    } catch {
+      form.setFieldsValue({
+        email: account.email,
+        phone: account.phone,
+        realName: account.realName,
+        status: account.status,
+        roleIds: account.roleIds ?? account.roles?.map((role) => role.id) ?? [],
+      });
+    }
   };
 
   const handleDelete = async (id: number) => {

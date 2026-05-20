@@ -16,6 +16,8 @@ public class AccountDTO {
     private Integer status;
     private Boolean isAdmin;
     private Long tenantId;
+    /** 绑定的角色 ID 列表（来自 iam_account_role） */
+    private Long[] roleIds;
     private LocalDateTime lastLoginAt;
     private String lastLoginIp;
     private LocalDateTime createdAt;
