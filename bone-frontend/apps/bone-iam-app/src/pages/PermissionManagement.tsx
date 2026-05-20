@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Button, Modal, Form, Input, message, Popconfirm, Space } from 'antd';
+import { Table, Button, Modal, Form, Input, AutoComplete, message, Popconfirm, Space } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
 import * as api from '../services/api';
 import { unwrapPage } from '../utils/pageResult';
 import type { Permission, CreatePermissionRequest, UpdatePermissionRequest } from '../types';
+import { BONE_PERMISSION_CODE_CATALOG } from '../constants/bonePermissionCodes';
 
 const PermissionManagement: React.FC = () => {
   const [permissions, setPermissions] = useState<Permission[]>([]);
@@ -36,6 +37,23 @@ const PermissionManagement: React.FC = () => {
   useEffect(() => {
     fetchPermissions();
   }, [page, pageSize, keyword]);
+
+  const handleCatalogCodeSelect = (code: string) => {
+    const entry = BONE_PERMISSION_CODE_CATALOG.find((item) => item.code === code);
+    if (!entry) {
+      return;
+    }
+    const segments = code.split(':');
+    const action = segments.length > 1 ? segments[segments.length - 1] : '';
+    const resourceType = segments.length > 2 ? segments.slice(1, -1).join(':') : segments[0] ?? entry.domain;
+    form.setFieldsValue({
+      code: entry.code,
+      name: entry.name,
+      resourceType,
+      action,
+      description: `[${entry.maturity}] ${entry.domain} 域平台权限`,
+    });
+  };
 
   const handleAdd = () => {
     setIsEditMode(false);
@@ -180,9 +198,25 @@ const PermissionManagement: React.FC = () => {
           <Form.Item
             name="code"
             label="权限编码"
-            rules={[{ required: true, message: '请输入权限编码!' }]}
+            rules={[{ required: true, message: '请选择或输入权限编码!' }]}
+            extra="与 IAM 详设 §3.7 / JWT authorities 一致；可从平台目录选择或自定义"
           >
-            <Input placeholder="请输入权限编码" disabled={isEditMode} />
+            {isEditMode ? (
+              <Input disabled />
+            ) : (
+              <AutoComplete
+                placeholder="选择推荐编码或输入自定义（domain:resource:action）"
+                options={BONE_PERMISSION_CODE_CATALOG.map((item) => ({
+                  value: item.code,
+                  label: `${item.code} — ${item.name} [${item.maturity}]`,
+                }))}
+                onSelect={handleCatalogCodeSelect}
+                filterOption={(input, option) =>
+                  String(option?.value ?? '').toLowerCase().includes(input.toLowerCase())
+                  || String(option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                }
+              />
+            )}
           </Form.Item>
           <Form.Item
             name="description"

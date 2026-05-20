@@ -6,3 +6,4 @@ export * from './masterdata';
 export * from './integration';
 export * from './system';
 export * from './extension';
+export * from './bonePermissionCodes';
