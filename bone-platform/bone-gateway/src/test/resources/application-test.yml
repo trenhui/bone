@@ -1,4 +1,4 @@
-# Gateway 集成测试：挂载 extension / generator 路由，上游由 Mock HTTP Server 提供
+# Gateway 集成测试：挂载 extension / generator / iam 路由，上游由 Mock HTTP Server 提供
 spring:
   cloud:
     gateway:
@@ -11,3 +11,7 @@ spring:
           uri: ${generator.mock-uri}
           predicates:
             - Path=/api/v1/generator/**
+        - id: bone-iam
+          uri: ${iam.mock-uri}
+          predicates:
+            - Path=/api/v1/iam/**

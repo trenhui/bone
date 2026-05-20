@@ -17,27 +17,26 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
-/**
- * 验证 Gateway 将 {@code /api/v1/generator/**} 转发至 studio-generator（含冒号动作路径）。
- */
+/** 验证 Gateway 将 {@code /api/v1/iam/**} 转发至 bone-iam。 */
 @SpringBootTest(
         classes = BoneGatewayApplication.class,
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @AutoConfigureWebTestClient
 @ActiveProfiles("test")
-class GeneratorGatewayRouteIT {
+class IamGatewayRouteIT {
 
-    private static HttpServer mockGenerator;
+    private static HttpServer mockIam;
     private static HttpServer deadExtension;
-    private static HttpServer deadIam;
-    private static int mockGeneratorPort;
+    private static HttpServer deadGenerator;
+    private static int mockIamPort;
     private static int deadExtensionPort;
-    private static int deadIamPort;
+    private static int deadGeneratorPort;
     private static final AtomicReference<String> lastPath = new AtomicReference<>();
     private static final AtomicReference<String> lastMethod = new AtomicReference<>();
 
@@ -46,10 +45,10 @@ class GeneratorGatewayRouteIT {
 
     @BeforeAll
     static void startMocks() throws IOException {
-        mockGenerator = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-        mockGenerator.createContext("/", GeneratorGatewayRouteIT::handleGenerator);
-        mockGenerator.start();
-        mockGeneratorPort = mockGenerator.getAddress().getPort();
+        mockIam = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        mockIam.createContext("/", IamGatewayRouteIT::handleIam);
+        mockIam.start();
+        mockIamPort = mockIam.getAddress().getPort();
 
         deadExtension = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         deadExtension.createContext("/", exchange -> {
@@ -59,61 +58,65 @@ class GeneratorGatewayRouteIT {
         deadExtension.start();
         deadExtensionPort = deadExtension.getAddress().getPort();
 
-        deadIam = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-        deadIam.createContext("/", exchange -> {
+        deadGenerator = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        deadGenerator.createContext("/", exchange -> {
             exchange.sendResponseHeaders(404, -1);
             exchange.close();
         });
-        deadIam.start();
-        deadIamPort = deadIam.getAddress().getPort();
+        deadGenerator.start();
+        deadGeneratorPort = deadGenerator.getAddress().getPort();
     }
 
     @AfterAll
     static void stopMocks() {
-        if (mockGenerator != null) {
-            mockGenerator.stop(0);
+        if (mockIam != null) {
+            mockIam.stop(0);
         }
         if (deadExtension != null) {
             deadExtension.stop(0);
         }
-        if (deadIam != null) {
-            deadIam.stop(0);
+        if (deadGenerator != null) {
+            deadGenerator.stop(0);
         }
     }
 
     @DynamicPropertySource
     static void registerUris(DynamicPropertyRegistry registry) {
-        registry.add("generator.mock-uri", () -> "http://127.0.0.1:" + mockGeneratorPort);
+        registry.add("iam.mock-uri", () -> "http://127.0.0.1:" + mockIamPort);
         registry.add("extension.studio.mock-uri", () -> "http://127.0.0.1:" + deadExtensionPort);
-        registry.add("iam.mock-uri", () -> "http://127.0.0.1:" + deadIamPort);
+        registry.add("generator.mock-uri", () -> "http://127.0.0.1:" + deadGeneratorPort);
     }
 
-    private static void handleGenerator(HttpExchange exchange) throws IOException {
+    private static void handleIam(HttpExchange exchange) throws IOException {
         lastPath.set(exchange.getRequestURI().getPath());
         lastMethod.set(exchange.getRequestMethod());
         String path = exchange.getRequestURI().getPath();
         String method = exchange.getRequestMethod();
         byte[] body;
         int status = 200;
-        if (path.endsWith("/data-sources") && "GET".equals(method)) {
+        if (path.endsWith("/accounts") && "GET".equals(method)) {
             body =
                     """
                     {"success":true,"code":200,"message":"ok","data":{"records":[],"total":0,"page":1,"size":10}}
                     """
                             .getBytes(StandardCharsets.UTF_8);
-        } else if (path.contains(":test-connection") && "POST".equals(method)) {
-            body = "{\"success\":true,\"code\":200,\"data\":true}".getBytes(StandardCharsets.UTF_8);
-        } else if (path.endsWith("/capabilities") && "GET".equals(method)) {
-            body = "{\"success\":true,\"code\":200,\"data\":[]}".getBytes(StandardCharsets.UTF_8);
-        } else if (path.endsWith("/code-generation") && "POST".equals(method)) {
+        } else if (path.matches(".*/roles/[^/]+$") && "GET".equals(method)) {
             body =
-                    "{\"success\":true,\"code\":202,\"data\":{\"operationId\":\"op-gen-1\",\"taskId\":\"op-gen-1\"}}"
+                    """
+                    {"success":true,"code":200,"data":{"id":1,"name":"admin","permissionCodes":["iam:read"]}}
+                    """
                             .getBytes(StandardCharsets.UTF_8);
-            status = 202;
-            exchange.getResponseHeaders().add("Location", "/api/v1/generator/operations/op-gen-1");
-        } else if (path.contains("/operations/") && "GET".equals(method)) {
+        } else if (path.endsWith("/login") && "POST".equals(method)) {
             body =
-                    "{\"success\":true,\"code\":200,\"data\":{\"done\":true,\"progress\":100,\"result\":{\"status\":\"SUCCESS\"}}}"
+                    "{\"success\":true,\"code\":200,\"data\":{\"token\":\"mock-token\",\"expiresIn\":3600}}"
+                            .getBytes(StandardCharsets.UTF_8);
+        } else if (path.contains("/accounts/") && path.endsWith("/enable") && "POST".equals(method)) {
+            body = "{\"success\":true,\"code\":200,\"data\":true}".getBytes(StandardCharsets.UTF_8);
+        } else if (path.endsWith("/audit/logs") && "GET".equals(method)) {
+            body =
+                    """
+                    {"success":true,"code":200,"data":{"records":[],"total":0,"page":1,"size":20}}
+                    """
                             .getBytes(StandardCharsets.UTF_8);
         } else {
             status = 404;
@@ -127,12 +130,12 @@ class GeneratorGatewayRouteIT {
     }
 
     @Test
-    void routesDataSourcesListThroughGateway() {
+    void routesAccountsListThroughGateway() {
         lastPath.set(null);
         webTestClient
                 .get()
                 .uri(uriBuilder -> uriBuilder
-                        .path("/api/v1/generator/data-sources")
+                        .path("/api/v1/iam/accounts")
                         .queryParam("page", "1")
                         .queryParam("size", "10")
                         .build())
@@ -145,16 +148,51 @@ class GeneratorGatewayRouteIT {
                 .jsonPath("$.data.records")
                 .isArray();
 
-        assertEquals("/api/v1/generator/data-sources", lastPath.get());
+        assertEquals("/api/v1/iam/accounts", lastPath.get());
         assertEquals("GET", lastMethod.get());
     }
 
     @Test
-    void routesTestConnectionColonActionThroughGateway() {
+    void routesRoleDetailThroughGateway() {
+        lastPath.set(null);
+        webTestClient
+                .get()
+                .uri("/api/v1/iam/roles/1")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.data.name")
+                .isEqualTo("admin");
+
+        assertEquals("/api/v1/iam/roles/1", lastPath.get());
+    }
+
+    @Test
+    void routesLoginThroughGateway() {
         lastPath.set(null);
         webTestClient
                 .post()
-                .uri("/api/v1/generator/data-sources/ds-1:test-connection")
+                .uri("/api/v1/iam/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue("{\"username\":\"admin\",\"password\":\"123456\"}")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.data.token")
+                .isEqualTo("mock-token");
+
+        assertEquals("/api/v1/iam/login", lastPath.get());
+        assertEquals("POST", lastMethod.get());
+    }
+
+    @Test
+    void routesAccountEnableThroughGateway() {
+        lastPath.set(null);
+        webTestClient
+                .post()
+                .uri("/api/v1/iam/accounts/42/enable")
                 .exchange()
                 .expectStatus()
                 .isOk()
@@ -163,46 +201,22 @@ class GeneratorGatewayRouteIT {
                 .isEqualTo(true);
 
         assertNotNull(lastPath.get());
-        assertTrue(lastPath.get().contains(":test-connection"));
-        assertEquals("POST", lastMethod.get());
+        assertTrue(lastPath.get().endsWith("/accounts/42/enable"));
     }
 
     @Test
-    void routesCapabilitiesThroughGateway() {
+    void routesAuditLogsThroughGateway() {
         lastPath.set(null);
         webTestClient
                 .get()
-                .uri("/api/v1/generator/capabilities")
+                .uri("/api/v1/iam/audit/logs")
                 .exchange()
                 .expectStatus()
                 .isOk()
                 .expectBody()
-                .jsonPath("$.success")
-                .isEqualTo(true);
+                .jsonPath("$.data.records")
+                .isArray();
 
-        assertEquals("/api/v1/generator/capabilities", lastPath.get());
-    }
-
-    @Test
-    void routesCodeGenerationLroThroughGateway() {
-        lastPath.set(null);
-        webTestClient
-                .post()
-                .uri("/api/v1/generator/code-generation")
-                .exchange()
-                .expectStatus()
-                .isAccepted()
-                .expectHeader()
-                .exists("Location");
-
-        webTestClient
-                .get()
-                .uri("/api/v1/generator/operations/op-gen-1")
-                .exchange()
-                .expectStatus()
-                .isOk()
-                .expectBody()
-                .jsonPath("$.data.done")
-                .isEqualTo(true);
+        assertEquals("/api/v1/iam/audit/logs", lastPath.get());
     }
 }

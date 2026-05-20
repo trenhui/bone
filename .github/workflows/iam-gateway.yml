@@ -1,0 +1,44 @@
+name: IAM Gateway Contract
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'bone-platform/bone-gateway/**'
+      - 'bone-platform/bone-iam/**'
+      - 'doc/architecture/openapi/iam-v1.yaml'
+      - 'scripts/ci/validate-iam-openapi.sh'
+      - '.github/workflows/iam-gateway.yml'
+  pull_request:
+    paths:
+      - 'bone-platform/bone-gateway/**'
+      - 'bone-platform/bone-iam/**'
+      - 'doc/architecture/openapi/iam-v1.yaml'
+      - 'scripts/ci/validate-iam-openapi.sh'
+      - '.github/workflows/iam-gateway.yml'
+
+jobs:
+  openapi-lint:
+    name: OpenAPI Lint (iam-v1)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - run: bash scripts/ci/validate-iam-openapi.sh
+
+  gateway-iam-it:
+    name: IamGatewayRouteIT
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Install bone-core
+        run: mvn -pl bone-framework/bone-core install -DskipTests -q
+      - name: Gateway route tests
+        run: mvn -pl bone-platform/bone-gateway -Dtest='*GatewayRouteIT' test
