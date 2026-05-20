@@ -300,8 +300,20 @@ Entity<ID>
 |------|------|
 | **D0** | 核心业务逻辑：纯 Java + `java.util`；Lombok 限 `@Getter`、私有 `@NoArgsConstructor`；禁止 `@Setter`/`@Data` |
 | **D1** | 允许 **bone-metadata-sdk** 的 `@Table`、`@Id`、`@GeneratedValue` 等；禁止 Spring / Jackson / JPA。**禁止**在领域类型上新增其它持久化/Web 注解；若 SDK 升级带来新注解，须经架构评审再纳入「D1 白名单」 |
+| **D2（基础设施基类例外）** | `bone-core` 的 `AbstractEntity`、`TenantAbstractEntity`、PO（`*PO.java`）等**框架基类与持久化对象**允许使用 `@Data`、`@AllArgsConstructor` 等便利注解；该例外**不向业务聚合根/实体传染**。新增此类例外须在 `bone-framework` 模块评审登记 |
 
 **聚合**：小聚合、工厂方法、领域行为、事件过去式命名。**扩展点**：多租户/多场景用 **bone-extension-sdk**，禁止超长 `if-else`。
+
+### 17.1 空值与 Optional 约定（与 `CLAUDE.md` 对齐）
+
+| 场景 | 约定 |
+|------|------|
+| 仓储查询返回 | **禁止返回 `null`**，返回 `Optional<T>`（`findById` 等）或抛 `DomainException`（聚合不变量强制存在时） |
+| Application/Adapter 内部返回 | 集合返回空集合（`List.of()`），单对象按业务语义返回 `Optional` 或显式 DTO；**禁止**用 `null` 表达「未找到」 |
+| 字段 / Setter | 领域字段是否可空在工厂方法或 `Value Object` 构造中显式校验；JSON 序列化层不依赖 `null` 表达业务语义 |
+| 三方/遗留 ACL | 在 `infrastructure.gateway` 适配器内**立即**把外部 `null` 转为 `Optional` 或抛错，不让 `null` 漂入应用/领域层 |
+
+ArchUnit 建议：对 `domain.repository.*Repository` 中签名做 `returnsOptionalOrCollection()` 类断言，逐步收敛。
 
 ---
 

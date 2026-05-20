@@ -84,7 +84,7 @@
 |-----|------|
 | `backend-quality` | `mvn spotless:check` + `mvn clean verify -DskipITs=true` |
 | `backend-security` | OWASP Dependency-Check（`failBuildOnCVSS=7`） |
-| `frontend-quality` | `bone-frontend` 下 lint + build（**pnpm**） |
+| `frontend-quality` | `bone-frontend` 下 lint + build；**CI 主栈 pnpm**（与本地 npm workspaces 共存，详见 [bone-前端架构 §8](./bone-前端架构.md)） |
 | `docker-build` | 镜像构建（按需） |
 
 **蓝图**：根聚合不含 `bone-blueprint`；本地 `mvn -f bone-blueprint/pom.xml test`（见 [wiki/08](../wiki/08-blueprint与主工程对齐.md)）。`scripts/ci-local.sh` 可能包含额外检查，注释以脚本为准。
