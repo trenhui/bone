@@ -6,7 +6,9 @@ import com.bone.studio.generator.application.command.cmd.*;
 import com.bone.studio.generator.application.query.qry.GetDataSourceListQry;
 import com.bone.studio.generator.application.query.qry.DataSourceByIdQry;
 import com.bone.studio.generator.application.command.cmd.SyncTableMetadataCmd;
+import com.bone.studio.generator.application.query.handler.ListSyncedTablesHandler;
 import com.bone.studio.generator.application.query.handler.LoadTablesHandler;
+import com.bone.studio.generator.application.query.qry.ListSyncedTablesQry;
 import com.bone.studio.generator.application.query.qry.LoadTablesQry;
 import com.bone.studio.generator.application.usecase.GetDataSourceByIdUseCase;
 import com.bone.studio.generator.application.usecase.GetDataSourceListUseCase;
@@ -34,6 +36,7 @@ public class DataSourceController {
     private final GetDataSourceListUseCase getDataSourceListUseCase;
     private final GetDataSourceByIdUseCase getDataSourceByIdUseCase;
     private final LoadTablesHandler loadTablesHandler;
+    private final ListSyncedTablesHandler listSyncedTablesHandler;
     private final SyncTableMetadataUseCase syncTableMetadataUseCase;
 
     @PostMapping
@@ -72,9 +75,21 @@ public class DataSourceController {
         return ApiResponse.success(loadTablesHandler.handle(query));
     }
 
+    /** 已写入 gen_table_metadata 的表（供生成页勾选） */
+    @GetMapping("/{id}/synced-tables")
+    public ApiResponse<List<DatabaseTable>> listSyncedTables(@PathVariable String id) {
+        ListSyncedTablesQry qry = ListSyncedTablesQry.builder().dataSourceId(id).build();
+        return ApiResponse.success(listSyncedTablesHandler.handle(qry));
+    }
+
     @PostMapping("/{id}/tables:sync")
-    public ApiResponse<Void> syncTables(@PathVariable String id) {
-        SyncTableMetadataCmd cmd = SyncTableMetadataCmd.builder().dataSourceId(id).build();
+    public ApiResponse<Void> syncTables(
+            @PathVariable String id, @RequestBody(required = false) SyncTableMetadataCmd body) {
+        SyncTableMetadataCmd cmd =
+                SyncTableMetadataCmd.builder()
+                        .dataSourceId(id)
+                        .tableNames(body != null ? body.getTableNames() : null)
+                        .build();
         syncTableMetadataUseCase.execute(cmd);
         return ApiResponse.success();
     }

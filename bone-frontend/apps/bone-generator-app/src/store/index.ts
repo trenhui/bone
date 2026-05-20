@@ -11,6 +11,8 @@ interface GeneratorStore {
   tables: DatabaseTable[];
   selectedTables: string[];
   loadingTables: boolean;
+  activeDataSourceId: string;
+  metadataSource: 'PHYSICAL_DB' | 'CATALOG_SNAPSHOT';
   
   // 代码生成相关状态
   generateRequest: GenerateCodeRequest;
@@ -25,6 +27,8 @@ interface GeneratorStore {
   setTables: (tables: DatabaseTable[]) => void;
   setSelectedTables: (tableNames: string[]) => void;
   setLoadingTables: (loading: boolean) => void;
+  setActiveDataSourceId: (id: string) => void;
+  setMetadataSource: (source: 'PHYSICAL_DB' | 'CATALOG_SNAPSHOT') => void;
   
   setGenerateRequest: (request: Partial<GenerateCodeRequest>) => void;
   setGenerateResponse: (response: CodeGenerationResponse | null) => void;
@@ -43,6 +47,8 @@ export const useGeneratorStore = create<GeneratorStore>((set) => ({
   tables: [],
   selectedTables: [],
   loadingTables: false,
+  activeDataSourceId: '',
+  metadataSource: 'PHYSICAL_DB',
   
   generateRequest: {
     templateId: '1',
@@ -65,6 +71,8 @@ export const useGeneratorStore = create<GeneratorStore>((set) => ({
   setTables: (tables) => set({ tables }),
   setSelectedTables: (selectedTables) => set({ selectedTables }),
   setLoadingTables: (loadingTables) => set({ loadingTables }),
+  setActiveDataSourceId: (activeDataSourceId) => set({ activeDataSourceId }),
+  setMetadataSource: (metadataSource) => set({ metadataSource }),
   
   setGenerateRequest: (request) => set((state) => ({
     generateRequest: { ...state.generateRequest, ...request }
@@ -80,6 +88,8 @@ export const useGeneratorStore = create<GeneratorStore>((set) => ({
     tables: [],
     selectedTables: [],
     loadingTables: false,
+    activeDataSourceId: '',
+    metadataSource: 'PHYSICAL_DB',
     generateRequest: {
       templateId: '1',
       name: '',

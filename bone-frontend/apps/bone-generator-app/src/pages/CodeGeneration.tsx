@@ -9,7 +9,6 @@ import {
   Card,
   Typography,
   Table,
-  Divider,
   Modal,
   Space,
   Progress,
@@ -374,9 +373,9 @@ const CodeGeneration: React.FC = () => {
                     setLoading(true);
                     const tables = await handleLoadDataSourceTables(dataSourceId);
                     // 只保留必要字段，彻底消除循环引用
-                    const processedTables = tables.map(table => ({
+                    const processedTables = (tables as DatabaseTable[]).map((table) => ({
                       tableName: table.tableName,
-                      tableComment: table.tableComment
+                      tableComment: table.tableComment,
                     }));
                     setDataSourceTables(processedTables);
                     syncForm.setFieldValue('tableNames', []);

@@ -12,7 +12,6 @@ const { Password } = Input;
 const DataSourceManagement: React.FC = () => {
   const [form] = Form.useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [isTestModalVisible, setIsTestModalVisible] = useState(false);
   const [editingDataSource, setEditingDataSource] = useState<DataSource | null>(null);
   const [loading, setLoading] = useState(false);
   const [testLoading, setTestLoading] = useState(false);
@@ -194,11 +193,11 @@ const DataSourceManagement: React.FC = () => {
       dataIndex: 'type',
       key: 'type',
       render: (type: string) => {
-        const typeMap = {
+        const typeMap: Record<string, string> = {
           mysql: 'MySQL',
           postgresql: 'PostgreSQL',
         };
-        return typeMap[type] || type;
+        return typeMap[type] ?? type;
       },
     },
     {
@@ -216,11 +215,11 @@ const DataSourceManagement: React.FC = () => {
       dataIndex: 'status',
       key: 'status',
       render: (status: string) => {
-        const statusMap = {
+        const statusMap: Record<string, string> = {
           ACTIVE: '激活',
           INACTIVE: '未激活',
         };
-        return statusMap[status] || status;
+        return statusMap[status] ?? status;
       },
     },
     {

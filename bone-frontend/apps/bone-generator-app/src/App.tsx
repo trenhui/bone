@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 import { Layout, Menu, Typography } from 'antd';
 import DataSourceManagement from './pages/DataSourceManagement';

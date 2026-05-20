@@ -36,11 +36,13 @@ export const dataSourceApi = {
 
   listTables: (id: string) => api.get(`${G}/data-sources/${id}/tables`),
 
-  syncTables: (id: string, data: { tableNames?: string[] }) =>
+  syncTables: (id: string, data?: { tableNames?: string[] }) =>
     api.post(`${G}/data-sources/${id}/tables:sync`, {
       dataSourceId: id,
-      ...data,
+      tableNames: data?.tableNames,
     }),
+
+  listSyncedTables: (id: string) => api.get(`${G}/data-sources/${id}/synced-tables`),
 };
 
 export const metadataEntitySnapshotApi = {

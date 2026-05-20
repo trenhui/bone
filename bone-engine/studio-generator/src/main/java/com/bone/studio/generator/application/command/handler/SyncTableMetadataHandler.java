@@ -17,6 +17,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import org.springframework.util.CollectionUtils;
 
 @Component
 @RequiredArgsConstructor
@@ -36,6 +39,16 @@ public class SyncTableMetadataHandler {
         }
 
         List<DatabaseTable> dbTables = metadataGateway.loadTables(dataSource);
+        if (!CollectionUtils.isEmpty(cmd.getTableNames())) {
+            Set<String> wanted =
+                    cmd.getTableNames().stream()
+                            .filter(n -> n != null && !n.isBlank())
+                            .collect(Collectors.toSet());
+            dbTables =
+                    dbTables.stream()
+                            .filter(t -> wanted.contains(t.getTableName()))
+                            .toList();
+        }
         String dataSourceKey = StudioIds.dataSourceKey(dataSourcePk);
 
         for (DatabaseTable dbTable : dbTables) {
