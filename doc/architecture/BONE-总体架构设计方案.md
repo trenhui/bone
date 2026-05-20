@@ -460,8 +460,13 @@ flowchart TD
 | `/api/v1/iam/roles/{id}` | PUT/DELETE | 更新/删除角色 | 管理员 |
 | `/api/v1/iam/roles/{id}/permissions` | POST | 分配权限 | 管理员 |
 | `/api/v1/iam/permissions` | GET | 权限列表 | 管理员 |
-| `/api/v1/iam/sso/config` | POST | SSO 配置 | 管理员 |
+| `/api/v1/iam/sso/config` | GET | 获取 SSO 配置（占位） | 管理员 |
+| `/api/v1/iam/sso/callback` | GET | SSO IdP 回调（**Stub / [Target]**） | 匿名 |
 | `/api/v1/iam/audit/logs` | GET | 审计日志 | 管理员 |
+| `/api/v1/iam/audit/settings` | GET/PUT | 审计设置（**PUT [Target]**） | 管理员 |
+| `/api/v1/iam/tenants` | GET/POST | 租户管理（**[Target]** / 商业版） | 系统管理员 |
+
+> **As-Is/Target 边界**：`sso/config` 当前仅返回占位配置；企业 IdP 联邦 = **[Target]**（IAM 详设 §1.4）。SSO 写入与回调实现见 [IAM 详设](../design/modules/6.%20IAM%E8%B4%A6%E5%8F%B7%E6%9D%83%E9%99%90%E7%AE%A1%E7%90%86%E6%A8%A1%E5%9D%97%E8%AF%A6%E7%BB%86%E8%AE%BE%E8%AE%A1%E6%96%B9%E6%A1%88.md) §5.1。
 
 #### 8.3.2 元数据
 

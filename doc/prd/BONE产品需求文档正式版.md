@@ -1082,21 +1082,28 @@ Scenario: 创建权限
   When 用户点击“创建权限”，填写权限名称、代码、描述
   Then 系统保存权限，返回权限ID
 
-Scenario: 管理权限分配
+Scenario: 管理权限分配（As-Is · RBAC）
   Given 用户已创建权限
-  When 用户将权限分配给角色或用户
-  Then 系统保存权限分配
+  When 用户将权限分配给角色
+  Then 系统保存「角色-权限」分配（`iam_role_permission`）
 
 Scenario: 查看权限分配
-  Given 用户已创建权限并分配
-  When 用户访问“权限分配”页面
-  Then 系统显示权限的分配情况（分配给哪些角色或用户）
+  Given 用户已创建权限并完成角色绑定
+  When 用户访问"权限分配"页面
+  Then 系统显示权限被哪些角色引用
+
+Scenario: 分配权限给账号（[Target]）
+  Given 业务需要绕过角色直接授权
+  When 调用 `iam_account_permission` 直连授权 API
+  Then 系统保存直连授权
+  Note: MVP 仅支持 RBAC（经角色），账号直连 = [Target]；落地前 IAM 详设须新增表与 API
 ```
 
 **业务规则**
-- 权限代码必须唯一
-- 权限类型包括：菜单权限、操作权限、数据权限
-- 支持权限的层级结构
+- 权限编码（`code`）全局唯一；`iam_permission` 为**平台级目录**，不带 `tenant_id`
+- 权限类型：`MENU` / `OPERATION` / `DATA`（数据权限 As-Is 仅在 UI 标识，引擎级强校验 [Target]）
+- 支持权限的树形层级结构（`parent_id`）
+- 账号直连授权（用户级权限）= **[Target]**；As-Is 仅经角色，详见 IAM 详设 §1.4 能力成熟度矩阵
 
 ---
 
