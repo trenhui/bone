@@ -47,5 +47,5 @@ BONE MVP 需统一各微服务鉴权方式；避免每域自建用户表与权�
 
 ## 合规与迁移
 
-- As-Is：`JwtTokenService` 对 admin 种子写入扩展域 scopes；**[Target]** 从 DB 加载角色权限全集。
+- **As-Is（2026-05-20）**：`AccountAuthoritiesQueryHandler` 经 `iam_account_role` → `iam_role_permission` → `iam_permission.code` 解析；`LoginHandler` / `refresh` 写入 JWT `scopes`；`bone-init.sql` 预置 SUPER_ADMIN 绑定；无绑定管理员回退 `DefaultPermissionCodes`。
 - 新增权限码须同步：init 数据 / 迁移、`BonePermissionCodes`、消费方 `@PreAuthorize`。

@@ -146,6 +146,21 @@ CREATE TABLE iam_audit_log (
     KEY idx_iam_audit_tenant (tenant_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='IAM审计日志';
 
+CREATE TABLE iam_audit_settings (
+    id                      BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id               BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    retention_days          INT             NOT NULL DEFAULT 30 COMMENT '日志保留天数',
+    auto_archive_enabled    TINYINT(1)      NOT NULL DEFAULT 1 COMMENT '是否自动归档',
+    archive_after_days      INT             NOT NULL DEFAULT 15 COMMENT '归档阈值天数',
+    storage_type            VARCHAR(32)     NOT NULL DEFAULT 'DATABASE' COMMENT '存储类型',
+    worm_enabled            TINYINT(1)      NOT NULL DEFAULT 0 COMMENT 'WORM 合规',
+    created_at              DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at              DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    version                 INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_iam_audit_settings_tenant (tenant_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='IAM 审计策略配置';
+
 CREATE TABLE iam_policy (
     id                  BIGINT          NOT NULL COMMENT '策略主键（Snowflake）',
     tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
@@ -193,6 +208,25 @@ VALUES
 
 INSERT INTO iam_account_role (id, tenant_id, account_id, role_id)
 VALUES (1, 0, 1, 1);
+
+INSERT INTO iam_permission (id, code, name, resource_type, resource_path, action, type, sort_order, description)
+VALUES
+    (1, 'iam:accounts:read', 'IAM-账号查看', 'iam', 'accounts', 'read', 'OPERATION', 10, '平台权限目录'),
+    (2, 'iam:accounts:write', 'IAM-账号维护', 'iam', 'accounts', 'write', 'OPERATION', 20, NULL),
+    (3, 'iam:roles:read', 'IAM-角色查看', 'iam', 'roles', 'read', 'OPERATION', 30, NULL),
+    (4, 'iam:roles:write', 'IAM-角色维护', 'iam', 'roles', 'write', 'OPERATION', 40, NULL),
+    (5, 'iam:permissions:read', 'IAM-权限查看', 'iam', 'permissions', 'read', 'OPERATION', 50, NULL),
+    (6, 'iam:permissions:write', 'IAM-权限维护', 'iam', 'permissions', 'write', 'OPERATION', 60, NULL),
+    (7, 'metadata:read', '元数据-读', 'metadata', '*', 'read', 'OPERATION', 70, NULL),
+    (8, 'metadata:write', '元数据-写', 'metadata', '*', 'write', 'OPERATION', 80, NULL),
+    (9, 'extension:points:read', '扩展点-读', 'extension', 'points', 'read', 'OPERATION', 90, NULL),
+    (10, 'extension:points:write', '扩展点-写', 'extension', 'points', 'write', 'OPERATION', 100, NULL),
+    (11, 'extension:plugins:deploy', '插件-部署', 'extension', 'plugins', 'deploy', 'OPERATION', 110, NULL);
+
+INSERT INTO iam_role_permission (id, role_id, permission_id)
+VALUES
+    (1, 1, 1), (2, 1, 2), (3, 1, 3), (4, 1, 4), (5, 1, 5), (6, 1, 6),
+    (7, 1, 7), (8, 1, 8), (9, 1, 9), (10, 1, 10), (11, 1, 11);
 
 -- ============================================================
 -- 2. System
@@ -1093,13 +1127,15 @@ DROP TABLE IF EXISTS md_entity;
 
 CREATE TABLE md_entity (
     id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    meta_entity_id      BIGINT          DEFAULT NULL COMMENT '来源 meta_entity.id（ADR-0002）',
     name                VARCHAR(200)    NOT NULL COMMENT '实体名称',
     description         TEXT            DEFAULT NULL COMMENT '描述',
     category            VARCHAR(100)    DEFAULT NULL COMMENT '分类',
     status              VARCHAR(32)     NOT NULL DEFAULT 'DRAFT' COMMENT '状态',
     created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
     updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
-    PRIMARY KEY (id)
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_md_entity_meta (meta_entity_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据实体（运行时兼容）';
 
 CREATE TABLE md_record (

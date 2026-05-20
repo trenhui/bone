@@ -1,15 +1,16 @@
 package com.bone.iam.infrastructure.security;
 
 import com.bone.iam.infrastructure.config.JwtConfig;
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.stereotype.Component;
-
-import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import javax.crypto.SecretKey;
+import org.springframework.stereotype.Component;
 
 @Component
 public class JwtTokenService {
@@ -22,38 +23,57 @@ public class JwtTokenService {
     }
 
     public String generateToken(Long accountId, String username) {
+        return generateToken(accountId, username, 0L, DefaultPermissionCodes.adminFallback());
+    }
+
+    public String generateToken(Long accountId, String username, Long tenantId, List<String> scopes) {
+        List<String> safeScopes = scopes == null ? List.of() : scopes;
         return Jwts.builder()
                 .subject(username)
                 .claim("userId", String.valueOf(accountId))
-                .claim("tenantId", "0")
-                .claim(
-                        "scopes",
-                        List.of(
-                                "extension:points:read",
-                                "extension:points:write",
-                                "extension:plugins:deploy"))
+                .claim("tenantId", String.valueOf(tenantId != null ? tenantId : 0L))
+                .claim("scopes", safeScopes)
                 .expiration(new Date(System.currentTimeMillis() + jwtConfig.getExpirationMs()))
                 .signWith(signingKey)
                 .compact();
     }
 
     public Optional<JwtPrincipal> parse(String rawToken) {
+        return parseClaims(rawToken).map(this::toPrincipal);
+    }
+
+    public Optional<Claims> parseClaims(String rawToken) {
         try {
             String token = stripPrefix(rawToken);
-            var payload = Jwts.parser()
+            Claims payload = Jwts.parser()
                     .verifyWith(signingKey)
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
-            String userId = payload.get("userId", String.class);
             String username = payload.getSubject();
             if (username == null || username.isBlank()) {
                 return Optional.empty();
             }
-            return Optional.of(new JwtPrincipal(userId, username));
+            return Optional.of(payload);
         } catch (Exception ignored) {
             return Optional.empty();
         }
+    }
+
+    private JwtPrincipal toPrincipal(Claims payload) {
+        String userId = payload.get("userId", String.class);
+        String username = payload.getSubject();
+        String tenantId = payload.get("tenantId", String.class);
+        return new JwtPrincipal(userId, username, tenantId, readScopes(payload));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<String> readScopes(Claims payload) {
+        Object raw = payload.get("scopes");
+        if (raw instanceof List<?> list) {
+            return list.stream().map(String::valueOf).toList();
+        }
+        return Collections.emptyList();
     }
 
     public String stripBearerToken(String token) {
@@ -71,6 +91,5 @@ public class JwtTokenService {
         return token.trim();
     }
 
-    public record JwtPrincipal(String userId, String username) {}
+    public record JwtPrincipal(String userId, String username, String tenantId, List<String> scopes) {}
 }
-

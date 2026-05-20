@@ -112,6 +112,8 @@ class IamGatewayRouteIT {
                             .getBytes(StandardCharsets.UTF_8);
         } else if (path.contains("/accounts/") && path.endsWith("/enable") && "POST".equals(method)) {
             body = "{\"success\":true,\"code\":200,\"data\":true}".getBytes(StandardCharsets.UTF_8);
+        } else if (path.endsWith("/sso/config") && "GET".equals(method)) {
+            body = "{\"success\":true,\"code\":200,\"data\":{\"enabled\":false}}".getBytes(StandardCharsets.UTF_8);
         } else if (path.endsWith("/audit/logs") && "GET".equals(method)) {
             body =
                     """
@@ -202,6 +204,23 @@ class IamGatewayRouteIT {
 
         assertNotNull(lastPath.get());
         assertTrue(lastPath.get().endsWith("/accounts/42/enable"));
+    }
+
+    @Test
+    void routesSsoConfigThroughGateway() {
+        lastPath.set(null);
+        webTestClient
+                .get()
+                .uri("/api/v1/iam/sso/config")
+                .exchange()
+                .expectStatus()
+                .isOk()
+                .expectBody()
+                .jsonPath("$.data.enabled")
+                .isEqualTo(false);
+
+        assertEquals("/api/v1/iam/sso/config", lastPath.get());
+        assertEquals("GET", lastMethod.get());
     }
 
     @Test

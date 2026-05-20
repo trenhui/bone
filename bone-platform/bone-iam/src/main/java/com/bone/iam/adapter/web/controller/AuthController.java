@@ -10,7 +10,9 @@ import com.bone.iam.application.command.cmd.LoginCmd;
 import com.bone.iam.application.usecase.standard.LoginUseCase;
 import com.bone.iam.domain.repository.AccountRepository;
 import com.bone.iam.infrastructure.config.JwtConfig;
+import com.bone.iam.application.query.handler.AccountAuthoritiesQueryHandler;
 import com.bone.iam.infrastructure.security.JwtTokenService;
+import java.util.List;
 import com.bone.iam.infrastructure.security.RefreshTokenService;
 import com.bone.iam.infrastructure.security.TokenBlacklistService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,6 +40,7 @@ public class AuthController {
     private final RefreshTokenService refreshTokenService;
     private final TokenBlacklistService tokenBlacklistService;
     private final AccountRepository accountRepository;
+    private final AccountAuthoritiesQueryHandler accountAuthoritiesQueryHandler;
     private final JwtConfig jwtConfig;
 
     @PostMapping("/login")
@@ -67,7 +70,10 @@ public class AuthController {
         if (account == null) {
             return ApiResponse.error(401, "账户不存在或已禁用");
         }
-        String accessToken = jwtTokenService.generateToken(account.getId(), account.getUsername().value());
+        List<String> scopes = accountAuthoritiesQueryHandler.resolvePermissionCodes(
+                account.getId(), account.isAdmin());
+        String accessToken = jwtTokenService.generateToken(
+                account.getId(), account.getUsername().value(), account.getTenantId(), scopes);
         return ApiResponse.success(Map.of(
                 "accessToken", accessToken,
                 "refreshToken", rotated.get("refreshToken")));
