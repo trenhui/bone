@@ -38,6 +38,8 @@ bone:
 integration:
   camel:
     enabled: true
+    # INT-11：true 时 FlowExecutionService 走 Camel 编译路由；默认 false 保持线性运行时
+    execution-enabled: ${BONE_INTEGRATION_CAMEL_EXECUTION:false}
   flow:
     max.nodes: 50
     execution.timeout: 300

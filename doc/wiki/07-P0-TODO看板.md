@@ -42,7 +42,7 @@
 | INT-08 | `RestClientImpl` | REST/HTTP/HTTPS 连接器真实 `HttpClient` 调用 | done | P1 |
 | INT-09 | `LinearSyncFlowRuntime` | **同步 MVP**：请求线程内 START→HTTP→END（`ExecuteFlowHandler` 写回执行日志） | done | P1 |
 | INT-10 | 领域事件 | `int_outbox` + 信封 + 中继（`BONE_INTEGRATION_OUTBOX_MQ_ENABLED` 切 RocketMQ） | done | P2 |
-| INT-11 | `CamelFlowCompiler` | `int_flow_node` → Camel 路由（Choice/并行；HTTP 组件已迁入） | open | P2 |
+| INT-11 | `CamelFlowCompiler` | `int_flow_node` → Camel 路由（Choice/并行；HTTP 组件已迁入） | done | P2 |
 | INT-12 | 模块收敛 | 删除 `bone-engine/bone-integration`，唯一服务 `bone-platform-integration` | done | P0 |
 | INT-SEC-01 | `SecurityConfig` | `BONE_INTEGRATION_JWT_ENABLED=true` 时 `/integration/**` 需 IAM JWT | done | P1 |
 

@@ -19,7 +19,7 @@
 1. **废止并删除** `bone-engine/bone-integration`（自 `bone-engine/pom.xml` 移除模块）。
 2. **唯一集成服务**：`bone-platform/bone-integration`（`:8085`，`/api/v1/integration/**`）。
 3. **Camel 资产**：将无 TPA 依赖的 HTTP 组件与 `CamelIntegrationContext` 迁入平台 `infrastructure/camel/`；完整图编排（Choice/并行等）登记 **INT-11**，按 `int_flow_node` 逐步落地。
-4. **执行路径**：当前 **INT-09** 线性同步执行（`LinearSyncFlowRuntime`）；Camel 编译执行在 INT-11 接入前不启用。
+4. **执行路径**：默认 **INT-09** 线性同步（`LinearSyncFlowRuntime`）；**INT-11** Camel 编译执行由 `integration.camel.execution-enabled=true` 启用（`CamelFlowCompiler` + `CamelFlowRuntime`）。
 
 ## 后果
 

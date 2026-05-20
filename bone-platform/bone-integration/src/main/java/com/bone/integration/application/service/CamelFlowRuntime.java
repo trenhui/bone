@@ -5,31 +5,30 @@ import com.bone.integration.domain.execution.IntegrationLog;
 import com.bone.integration.domain.flow.FlowConnection;
 import com.bone.integration.domain.flow.FlowNode;
 import com.bone.integration.domain.flow.IntegrationFlow;
-import com.bone.integration.domain.model.flow.vo.NodeType;
 import com.bone.integration.domain.service.FlowService;
+import com.bone.integration.infrastructure.camel.CamelFlowCompiler;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.apache.camel.CamelContext;
+import org.apache.camel.ProducerTemplate;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
-/** 线性拓扑同步执行（INT-09，Camel 未启用时的默认运行时）。 */
+/** Camel 编译路由执行（INT-11，需 {@code integration.camel.execution-enabled=true}）。 */
 @Service
-@ConditionalOnProperty(
-        prefix = "integration.camel",
-        name = "execution-enabled",
-        havingValue = "false",
-        matchIfMissing = true)
+@Primary
+@ConditionalOnProperty(prefix = "integration.camel", name = "execution-enabled", havingValue = "true")
 @RequiredArgsConstructor
-public class LinearSyncFlowRuntime implements FlowRuntime {
+public class CamelFlowRuntime implements FlowRuntime {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final FlowService flowService;
-    private final FlowNodeExecutor flowNodeExecutor;
+    private final CamelFlowCompiler camelFlowCompiler;
 
     @Override
     public void execute(IntegrationLog log, IntegrationFlow flow) {
@@ -38,20 +37,21 @@ public class LinearSyncFlowRuntime implements FlowRuntime {
         List<FlowConnection> connections = flowService.getFlowConnections(flow.getId());
 
         try {
-            Object context = parseInput(log.getInputData());
-            FlowNode current = findStartNode(nodes);
-            int guard = nodes.size() + 2;
-
-            while (current != null && current.getType() != NodeType.END && guard-- > 0) {
-                context = flowNodeExecutor.execute(current, context);
-                current = nextNode(current, connections, nodes);
+            if (!camelFlowCompiler.isReady()) {
+                throw new DomainException("Camel 运行时未就绪");
             }
-
-            if (current == null || current.getType() != NodeType.END) {
-                log.fail("流程未到达结束节点");
-            } else {
-                log.complete(stringify(context));
+            try {
+                camelFlowCompiler.compile(flow, nodes, connections);
+            } catch (Exception compileEx) {
+                throw new DomainException("流程 Camel 编译失败: " + compileEx.getMessage());
             }
+            CamelContext camelContext = camelFlowCompiler.getCamelContext();
+            Object input = parseInput(log.getInputData());
+            Object result;
+            try (ProducerTemplate template = camelContext.createProducerTemplate()) {
+                result = template.requestBody(camelFlowCompiler.endpointUri(flow.getId()), input);
+            }
+            log.complete(stringify(result));
         } catch (DomainException ex) {
             log.fail(ex.getMessage());
         } catch (Exception ex) {
@@ -59,25 +59,8 @@ public class LinearSyncFlowRuntime implements FlowRuntime {
         }
     }
 
-    private static FlowNode findStartNode(List<FlowNode> nodes) {
-        return nodes.stream()
-                .filter(n -> n.getType() == NodeType.START)
-                .findFirst()
-                .orElseThrow(() -> new DomainException("流程缺少开始节点"));
-    }
-
-    private static FlowNode nextNode(FlowNode current, List<FlowConnection> connections, List<FlowNode> nodes) {
-        Optional<FlowConnection> link = connections.stream()
-                .filter(c -> current.getId().equals(c.getSourceNodeId()))
-                .findFirst();
-        if (link.isEmpty()) {
-            return null;
-        }
-        Long targetId = link.get().getTargetNodeId();
-        return nodes.stream()
-                .filter(n -> targetId.equals(n.getId()))
-                .findFirst()
-                .orElse(null);
+    CamelContext getCamelContext() {
+        return camelFlowCompiler.getCamelContext();
     }
 
     private static Object parseInput(String inputData) {

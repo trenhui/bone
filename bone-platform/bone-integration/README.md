@@ -22,7 +22,7 @@ mvn -pl :bone-platform-integration test
 |------|------|
 | `LinearSyncFlowRuntime` | 默认执行器（INT-09）：线性拓扑 + REST 节点 |
 | `CamelIntegrationContext` | Camel 上下文 + `extend-http` 组件（自 legacy 抽取） |
-| `CamelFlowCompiler` | INT-11 占位：将 `int_flow_node` 编译为 Camel 路由 |
+| `CamelFlowCompiler` | INT-11：`int_flow_node` → Camel 路由（choice/multicast；`integration.camel.execution-enabled=true` 启用） |
 
 ## 领域事件 Outbox（INT-10）
 

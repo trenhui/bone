@@ -13,7 +13,6 @@ import com.bone.integration.domain.service.ConnectorService;
 import com.bone.integration.domain.service.FlowService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -38,8 +37,13 @@ class LinearSyncFlowRuntimeTest {
     @Mock
     private ConnectorService connectorService;
 
-    @InjectMocks
     private LinearSyncFlowRuntime linearSyncFlowRuntime;
+
+    @org.junit.jupiter.api.BeforeEach
+    void initRuntime() {
+        linearSyncFlowRuntime =
+                new LinearSyncFlowRuntime(flowService, new FlowNodeExecutor(connectorRepository, connectorService));
+    }
 
     @Test
     void execute_completesLinearHttpFlow() {
