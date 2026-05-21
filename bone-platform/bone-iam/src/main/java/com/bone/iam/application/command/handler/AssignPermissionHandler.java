@@ -1,6 +1,8 @@
 package com.bone.iam.application.command.handler;
 
 import com.bone.iam.application.command.cmd.AssignPermissionCmd;
+import com.bone.iam.application.service.RolePermissionBindingService;
+import com.bone.iam.domain.repository.RoleRepository;
 import com.bone.core.usecase.Capability;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -19,9 +21,18 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @RequiredArgsConstructor
 public class AssignPermissionHandler {
+
+    private final RoleRepository roleRepository;
+    private final RolePermissionBindingService rolePermissionBindingService;
+
     @Transactional
     public void handle(AssignPermissionCmd cmd) {
-        // 这里需要实现角色权限分配逻辑
-        // 由于使用SDK动态代理，具体实现会由SDK处理
+        if (cmd == null || cmd.getRoleId() == null) {
+            throw new IllegalArgumentException("角色 ID 不能为空");
+        }
+        if (roleRepository.findById(cmd.getRoleId()) == null) {
+            throw new RuntimeException("角色不存在: " + cmd.getRoleId());
+        }
+        rolePermissionBindingService.replaceBindings(cmd.getRoleId(), cmd.getPermissionIds());
     }
 }

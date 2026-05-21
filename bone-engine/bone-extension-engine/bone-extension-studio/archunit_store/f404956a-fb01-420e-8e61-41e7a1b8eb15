@@ -1,0 +1,5 @@
+Class <com.bone.engine.extension.studio.domain.store.ExtPointStore> does reside in a package '..domain.store..' in (ExtPointStore.java:0)
+Class <com.bone.engine.extension.studio.domain.store.ExtensionStore> does reside in a package '..domain.store..' in (ExtensionStore.java:0)
+Class <com.bone.engine.extension.studio.domain.store.PluginExecutionLogStore> does reside in a package '..domain.store..' in (PluginExecutionLogStore.java:0)
+Class <com.bone.engine.extension.studio.domain.store.PluginVersionStore> does reside in a package '..domain.store..' in (PluginVersionStore.java:0)
+Class <com.bone.engine.extension.studio.domain.store.StudioAuditStore> does reside in a package '..domain.store..' in (StudioAuditStore.java:0)

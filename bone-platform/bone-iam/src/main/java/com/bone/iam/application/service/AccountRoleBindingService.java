@@ -3,6 +3,7 @@ package com.bone.iam.application.service;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.iam.domain.account.AccountRole;
 import com.bone.iam.domain.repository.AccountRoleRepository;
+import com.bone.iam.infrastructure.security.AuthorityCacheEvictionService;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AccountRoleBindingService {
 
     private final AccountRoleRepository accountRoleRepository;
+    private final AuthorityCacheEvictionService authorityCacheEvictionService;
 
     @Transactional
     public void replaceBindings(Long accountId, Long tenantId, Long[] roleIds) {
@@ -30,18 +32,18 @@ public class AccountRoleBindingService {
                 .getSqlExecutor()
                 .delete("DELETE FROM iam_account_role WHERE account_id = ?", accountId);
 
-        if (roleIds == null || roleIds.length == 0) {
-            return;
+        if (roleIds != null && roleIds.length > 0) {
+            List<AccountRole> links = Arrays.stream(roleIds)
+                    .filter(Objects::nonNull)
+                    .distinct()
+                    .map(roleId -> AccountRole.of(
+                            DistributedIdGenerator.generateLongId(), safeTenant, accountId, roleId))
+                    .collect(Collectors.toCollection(ArrayList::new));
+            if (!links.isEmpty()) {
+                accountRoleRepository.batchInsert(links);
+            }
         }
-        List<AccountRole> links = Arrays.stream(roleIds)
-                .filter(Objects::nonNull)
-                .distinct()
-                .map(roleId -> AccountRole.of(
-                        DistributedIdGenerator.generateLongId(), safeTenant, accountId, roleId))
-                .collect(Collectors.toCollection(ArrayList::new));
-        if (!links.isEmpty()) {
-            accountRoleRepository.batchInsert(links);
-        }
+        authorityCacheEvictionService.evictAccount(accountId);
     }
 
     @Transactional(readOnly = true)

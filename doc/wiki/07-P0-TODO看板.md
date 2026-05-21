@@ -89,6 +89,7 @@
 | IAM-08 | SSO / MFA | 社区版：`sso/config` + `sso/callback`/`mfa/*` 501 契约；IdP 联邦 **[Target]** | done | P2 |
 | IAM-09 | 契约 | `iam-v1.yaml` + Gateway IT | done | P2 |
 | IAM-10 | `CreateAccountHandler` / `UpdateAccountHandler` | `iam_account_role` 绑定 + 详情返回 `roleIds` | done | P1 |
+| IAM-11 | `AssignPermissionHandler` | `iam_role_permission` 绑定 + 权限码 Redis 缓存失效 | done | P1 |
 
 ---
 

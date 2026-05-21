@@ -3,10 +3,10 @@ package com.bone.iam.application.query.handler;
 import com.bone.iam.domain.account.AccountRole;
 import com.bone.iam.domain.permission.Permission;
 import com.bone.iam.domain.role.RolePermission;
+import com.bone.iam.infrastructure.security.AuthorityCacheEvictionService;
 import com.bone.iam.infrastructure.security.DefaultPermissionCodes;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -21,11 +21,23 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AccountAuthoritiesQueryHandler {
 
+    private final AuthorityCacheEvictionService authorityCacheEvictionService;
+
     @Transactional(readOnly = true)
     public List<String> resolvePermissionCodes(Long accountId, boolean adminAccount) {
         if (accountId == null) {
             return List.of();
         }
+        return authorityCacheEvictionService
+                .get(accountId)
+                .orElseGet(() -> {
+                    List<String> resolved = resolveFromDatabase(accountId, adminAccount);
+                    authorityCacheEvictionService.put(accountId, resolved);
+                    return resolved;
+                });
+    }
+
+    private List<String> resolveFromDatabase(Long accountId, boolean adminAccount) {
         List<AccountRole> accountRoles = QueryBuilder.from(AccountRole.class)
                 .where(AccountRole::getAccountId)
                 .eq(accountId)

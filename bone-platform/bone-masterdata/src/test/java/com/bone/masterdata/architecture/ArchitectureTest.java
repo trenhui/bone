@@ -1,8 +1,10 @@
 package com.bone.masterdata.architecture;
 
+import com.bone.architecture.BoneDddArchRules;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchRule;
+import com.tngtech.archunit.library.freeze.FreezingArchRule;
 import org.junit.jupiter.api.Test;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
@@ -46,6 +48,16 @@ public class ArchitectureTest {
                         "jakarta..",
                         "com.fasterxml.jackson..");
         rule.check(classes);
+    }
+
+    @Test
+    void noNewUseCaseClasses() {
+        FreezingArchRule.freeze(BoneDddArchRules.noUseCaseClassesInApplication()).check(classes);
+    }
+
+    @Test
+    void noApplicationUseCasePackage() {
+        FreezingArchRule.freeze(BoneDddArchRules.noApplicationUseCasePackage()).check(classes);
     }
 
     @Test

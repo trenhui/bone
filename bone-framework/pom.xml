@@ -10,6 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
     <modules>
         <module>bone-core</module>
+        <module>bone-architecture-test</module>
         <module>bone-utils</module>
         <module>bone-datasource</module>
         <module>bone-security</module>

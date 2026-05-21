@@ -105,6 +105,12 @@
             <version>1.2.1</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.bone</groupId>
+            <artifactId>bone-architecture-test</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
         
         <!-- Flyway 数据库迁移 -->
         <dependency>

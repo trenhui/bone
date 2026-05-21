@@ -1,0 +1,6 @@
+Class <com.bone.integration.application.usecase.standard.ConnectorPageQueryUseCase> does reside in a package '..application.usecase..' in (ConnectorPageQueryUseCase.java:0)
+Class <com.bone.integration.application.usecase.standard.CreateConnectorUseCase> does reside in a package '..application.usecase..' in (CreateConnectorUseCase.java:0)
+Class <com.bone.integration.application.usecase.standard.CreateFlowUseCase> does reside in a package '..application.usecase..' in (CreateFlowUseCase.java:0)
+Class <com.bone.integration.application.usecase.standard.FlowPageQueryUseCase> does reside in a package '..application.usecase..' in (FlowPageQueryUseCase.java:0)
+Class <com.bone.integration.application.usecase.standard.UpdateConnectorUseCase> does reside in a package '..application.usecase..' in (UpdateConnectorUseCase.java:0)
+Class <com.bone.integration.application.usecase.standard.UpdateFlowUseCase> does reside in a package '..application.usecase..' in (UpdateFlowUseCase.java:0)

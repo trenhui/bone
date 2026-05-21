@@ -1,0 +1,4 @@
+#
+#Thu May 21 10:20:56 CST 2026
+no\ classes\ should\ reside\ in\ a\ package\ '..application.usecase..',\ because\ DDD\ \u00A714.3\:\ forbid\ application/usecase\ package=63f8ab09-0ae5-41b1-a95b-ec8d62fbebe7
+no\ classes\ that\ reside\ in\ a\ package\ '..application..'\ should\ have\ simple\ name\ ending\ with\ 'UseCase',\ because\ DDD\ \u00A714.3\:\ forbid\ *UseCase;\ Controller\ injects\ Handler=a61534a1-8dac-4ce7-8577-b53255222c39

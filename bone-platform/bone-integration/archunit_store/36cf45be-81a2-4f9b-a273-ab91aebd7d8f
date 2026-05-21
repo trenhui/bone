@@ -1,0 +1,6 @@
+Class <com.bone.integration.application.usecase.standard.ConnectorPageQueryUseCase> has simple name ending with 'UseCase' in (ConnectorPageQueryUseCase.java:0)
+Class <com.bone.integration.application.usecase.standard.CreateConnectorUseCase> has simple name ending with 'UseCase' in (CreateConnectorUseCase.java:0)
+Class <com.bone.integration.application.usecase.standard.CreateFlowUseCase> has simple name ending with 'UseCase' in (CreateFlowUseCase.java:0)
+Class <com.bone.integration.application.usecase.standard.FlowPageQueryUseCase> has simple name ending with 'UseCase' in (FlowPageQueryUseCase.java:0)
+Class <com.bone.integration.application.usecase.standard.UpdateConnectorUseCase> has simple name ending with 'UseCase' in (UpdateConnectorUseCase.java:0)
+Class <com.bone.integration.application.usecase.standard.UpdateFlowUseCase> has simple name ending with 'UseCase' in (UpdateFlowUseCase.java:0)

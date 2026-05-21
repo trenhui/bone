@@ -403,7 +403,7 @@ adapter/web → application → domain ← infrastructure
 ## 11. 给 AI 助手的关键提示
 
 1. **不要破坏分层依赖**：修改代码时，`domain` 层不能引入 Spring/MyBatis 等框架依赖；`application` 层不能直接调用 `infrastructure` 实现类。
-2. **保持 CQRS**：写操作使用 `*CommandHandler` 并在方法上加 `@Transactional`；读操作使用 `*QueryHandler`，保持只读。
+2. **保持 CQRS（v3.6 冻结）**：写操作使用 `*CommandHandler` + `@Transactional`；读操作使用 `*QueryHandler`（只读）。**禁止**新增 `application/usecase`、`*UseCase`、`com.bone.core.usecase.*`；Controller **直接注入 Handler**。`application/service` 仅允许 [DDD §14.3.1](doc/architecture/Bone-DDD-最终实践方案.md) 白名单（S1/S2/S3）。模块是否适用全量 DDD 看 **性质**（`bone-extension-studio`、`studio-generator` 属应用模块），见 DDD §14.4。
 3. **统一响应格式**：Controller 返回统一使用 `ApiResponse<T>` 或 `PageResult<T>`，避免裸返回领域对象。
 4. **租户与审计字段**：新增实体应继承 `TenantAbstractEntity`（若需多租户）或 `AbstractEntity`；不要遗漏 `tenantId` 与审计字段的填充。
 5. **命名约定**：

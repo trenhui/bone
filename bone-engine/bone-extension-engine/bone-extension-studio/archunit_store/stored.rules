@@ -1,0 +1,4 @@
+#
+#Thu May 21 10:20:51 CST 2026
+no\ classes\ should\ reside\ in\ a\ package\ '..domain.store..',\ because\ DDD\ \u00A714.5\:\ new\ code\ uses\ domain.repository\ only=f404956a-fb01-420e-8e61-41e7a1b8eb15
+no\ classes\ that\ reside\ in\ a\ package\ '..application..'\ should\ have\ simple\ name\ ending\ with\ 'UseCase',\ because\ DDD\ \u00A714.3\:\ forbid\ *UseCase;\ Controller\ injects\ Handler=ffa4cfc0-41d5-4241-86ae-6c1e8c39e58f

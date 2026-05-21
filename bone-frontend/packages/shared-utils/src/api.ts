@@ -3,7 +3,7 @@ export interface ApiClient {
   post<T>(url: string, body?: unknown): Promise<T>;
 }
 
-export function createApiClient(_baseUrl?: string): ApiClient {
+export function createApiClient(): ApiClient {
   return {
     get: async () => undefined as never,
     post: async () => undefined as never,
