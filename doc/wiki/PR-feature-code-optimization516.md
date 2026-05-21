@@ -3,7 +3,7 @@
 > **创建 MR**：https://gitee.com/meishan315/bone/pulls/new?source_branch=feature/code-optimization516&target_branch=master  
 > **推送**（本机）：`git push -u origin feature/code-optimization516`
 
-## 1. 变更摘要（33 commits）
+## 1. 变更摘要（36 commits · 推送前以 `git log master..HEAD` 为准）
 
 | 类别 | 代表 commit | 说明 |
 |------|-------------|------|
@@ -11,7 +11,8 @@
 | IAM | `07fa6e95`、`89862c35`、`c61a829e` | Tenant CRUD、审计设置、RBAC JWT scopes、iam-v1.yaml |
 | 主数据/集成 | `b56daa1e` | convert 幂等+发布校验、integration metrics、Gateway IT |
 | 元数据/生成器/扩展 | `e826b7b5`、`ddd364e7`、`fd48127f` 等 | 引擎、Generator、Camel 路由 |
-| 平台/构建 | `30cf9b51`、`2cfc9488` | 模块顺序、bone-tool 移除 |
+| 平台/构建 | `30cf9b51`、`2cfc9488`、`a7862ed8` | 模块顺序、bone-tool 移除、共享 ArchUnit |
+| 前端 chore | `066f6dd0` | shared-services/utils ESLint、extension-api indent |
 
 ## 2. 本地验证（Agent 2026-05-21）
 
