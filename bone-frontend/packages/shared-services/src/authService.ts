@@ -1,5 +1,7 @@
 export const authService = {
   getToken: (): string | null => null,
-  setToken: (_token: string): void => undefined,
+  setToken: (token: string): void => {
+    void token;
+  },
   clearToken: (): void => undefined,
 };

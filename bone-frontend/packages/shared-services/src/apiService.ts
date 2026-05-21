@@ -1,3 +1,6 @@
 export const apiService = {
-  request: async <T>(_url: string): Promise<T> => undefined as never,
+  request: async <T>(url: string): Promise<T> => {
+    void url;
+    return undefined as never;
+  },
 };

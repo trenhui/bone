@@ -563,11 +563,11 @@ export async function listExecutionLogs(params?: {
     params?.page != null
       ? { pluginId: params.pluginId, status: params.status, page: params.page, size: params.size ?? 20 }
       : {
-          pluginId: params?.pluginId,
-          status: params?.status,
-          cursor: params?.cursor,
-          limit: params?.limit ?? 20,
-        };
+        pluginId: params?.pluginId,
+        status: params?.status,
+        cursor: params?.cursor,
+        limit: params?.limit ?? 20,
+      };
   const res = await client.get<StudioApiResponse<ExecutionLogPage>>(`${EXTENSION_BASE}/execution-logs`, {
     params: query,
   });

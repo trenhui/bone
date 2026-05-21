@@ -22,7 +22,8 @@
 | `mvn test -pl bone-platform/bone-masterdata -Dtest=MasterDataEntityControllerTest` | ✅ 7 tests（含 convert） |
 | `mvn test -pl bone-platform/bone-gateway -Dtest=IamGatewayRouteIT,IntegrationGatewayRouteIT` | ✅ 10 tests |
 | `mvn test -pl bone-platform/bone-masterdata -am`（全模块） | ⚠️ 10 errors（Mockito inline / `NoClassDefFound` 等**既有** Controller 测，非本次 convert 专项） |
-| `mvn test -pl bone-platform/bone-integration -am` | 见 CI / 本机复跑 |
+| `mvn test -pl bone-platform/bone-integration -am` | ✅ 27 tests |
+| `npm run lint`（bone-frontend） | ⚠️ `bone-generator-app` 等仍有 indent/quotes（合并前本机 `--fix` 或单独 chore） |
 
 **合并前建议**（本机完整复现）：
 
