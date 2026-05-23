@@ -3,9 +3,9 @@ package com.bone.engine.extension.studio.config;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.ProblemDetail;
 import com.bone.engine.extension.studio.common.StudioErrorCodes;
-import com.bone.engine.extension.studio.controller.StudioApiResponses;
-import com.bone.engine.extension.studio.service.IdempotencyConflictException;
-import com.bone.engine.extension.studio.service.OptimisticLockException;
+import com.bone.engine.extension.studio.application.service.StudioCommandResponses;
+import com.bone.engine.extension.studio.common.exception.IdempotencyConflictException;
+import com.bone.engine.extension.studio.common.exception.OptimisticLockException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -16,14 +16,14 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 /** Studio API 统一异常 → {@link ApiResponse} + {@link ProblemDetail}。 */
-@RestControllerAdvice(basePackages = "com.bone.engine.extension.studio.controller")
+@RestControllerAdvice(basePackages = "com.bone.engine.extension.studio.adapter.web.controller")
 public class StudioWebExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(StudioWebExceptionHandler.class);
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<ProblemDetail>> forbidden(AccessDeniedException ex) {
-        return StudioApiResponses.problem(HttpStatus.FORBIDDEN, StudioErrorCodes.FORBIDDEN, "无权限访问");
+        return StudioCommandResponses.problem(HttpStatus.FORBIDDEN, StudioErrorCodes.FORBIDDEN, "无权限访问");
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
@@ -38,25 +38,25 @@ public class StudioWebExceptionHandler {
 
     @ExceptionHandler(IdempotencyConflictException.class)
     public ResponseEntity<ApiResponse<ProblemDetail>> idempotencyConflict(IdempotencyConflictException ex) {
-        return StudioApiResponses.problem(
+        return StudioCommandResponses.problem(
                 HttpStatus.CONFLICT, StudioErrorCodes.IDEMPOTENCY_CONFLICT, ex.getMessage());
     }
 
     @ExceptionHandler(OptimisticLockException.class)
     public ResponseEntity<ApiResponse<ProblemDetail>> optimisticLock(OptimisticLockException ex) {
-        return StudioApiResponses.problem(
+        return StudioCommandResponses.problem(
                 HttpStatus.PRECONDITION_FAILED, StudioErrorCodes.PRECONDITION_FAILED, ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<ProblemDetail>> internal(Exception ex) {
         log.error("[API] unhandled traceId={}", MDC.get(StudioRequestContextFilter.TRACE_ID), ex);
-        return StudioApiResponses.problem(
+        return StudioCommandResponses.problem(
                 HttpStatus.INTERNAL_SERVER_ERROR, StudioErrorCodes.INTERNAL_ERROR, "服务内部错误");
     }
 
     private static ResponseEntity<ApiResponse<ProblemDetail>> problem(
             HttpStatus status, String errorCode, String detail) {
-        return StudioApiResponses.problem(status, errorCode, detail);
+        return StudioCommandResponses.problem(status, errorCode, detail);
     }
 }

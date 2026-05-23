@@ -1,7 +1,7 @@
 package com.bone.masterdata.application.query.handler;
 
 import com.bone.masterdata.application.query.dto.DataQualityRuleDTO;
-import com.bone.masterdata.application.query.qry.DataQualityRuleListQry;
+import com.bone.masterdata.application.query.qry.DataQualityRuleListQuery;
 import com.bone.masterdata.domain.quality.DataQualityRule;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 public class DataQualityRuleListQueryHandler {
 
     @Transactional(readOnly = true)
-    public List<DataQualityRuleDTO> handle(DataQualityRuleListQry qry) {
+    public List<DataQualityRuleDTO> handle(DataQualityRuleListQuery qry) {
         List<DataQualityRule> rules = QueryBuilder.from(DataQualityRule.class)
                 .where(DataQualityRule::getMasterDataEntityId)
                 .eq(qry.getMasterDataEntityId())

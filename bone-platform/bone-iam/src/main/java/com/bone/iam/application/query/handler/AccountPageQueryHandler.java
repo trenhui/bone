@@ -2,7 +2,7 @@ package com.bone.iam.application.query.handler;
 
 import com.bone.core.model.PageResult;
 import com.bone.iam.application.query.dto.AccountDTO;
-import com.bone.iam.application.query.qry.AccountPageQry;
+import com.bone.iam.application.query.qry.AccountPageQuery;
 import com.bone.iam.domain.account.Account;
 import com.bone.iam.domain.account.vo.AccountStatus;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;
@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AccountPageQueryHandler {
     @Transactional(readOnly = true)
-    public PageResult<AccountDTO> handle(AccountPageQry qry) {
+    public PageResult<AccountDTO> handle(AccountPageQuery qry) {
         FluentQuery<Account> query = QueryBuilder.from(Account.class);
 
         if (qry.getKeyword() != null && !qry.getKeyword().isEmpty()) {

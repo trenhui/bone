@@ -3,7 +3,7 @@ package com.bone.metadata.engine.exception;
 import java.util.Map;
 
 /** 验证异常类 用于表示验证过程中的错误 */
-public class ValidationException extends BaseBusinessException {
+public class ValidationException extends MetadataEngineBizException {
 
   private static final long serialVersionUID = 1L;
 

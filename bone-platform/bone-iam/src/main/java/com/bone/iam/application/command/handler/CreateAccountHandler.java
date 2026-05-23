@@ -1,6 +1,6 @@
 package com.bone.iam.application.command.handler;
 
-import com.bone.iam.application.command.cmd.CreateAccountCmd;
+import com.bone.iam.application.command.cmd.CreateAccountCommand;
 import com.bone.iam.application.service.AccountRoleBindingService;
 import com.bone.iam.domain.account.Account;
 import com.bone.iam.domain.account.vo.Email;
@@ -20,7 +20,7 @@ public class CreateAccountHandler {
     private final AccountRoleBindingService accountRoleBindingService;
 
     @Transactional
-    public Long handle(CreateAccountCmd cmd) {
+    public Long handle(CreateAccountCommand cmd) {
         Long accountId = DistributedIdGenerator.generateLongId();
         Username username = Username.of(cmd.getUsername());
         Email email = Email.of(cmd.getEmail());

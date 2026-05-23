@@ -11,11 +11,10 @@ bone-blueprint-go/
 │   ├── rpc/              # RPC 服务
 │   ├── schedule/         # 定时任务
 │   └── web/              # Web 控制器
-├── application/          # 应用层
-│   ├── command/          # 命令处理
+├── application/          # 应用层（Controller 直注 Handler，无 usecase 包）
+│   ├── command/          # 命令：cmd + handler
 │   ├── event/            # 事件处理
-│   ├── query/            # 查询处理
-│   └── usecase/          # 用例
+│   └── query/            # 查询：qry + handler + dto
 ├── domain/               # 领域层
 │   ├── exception/        # 领域异常
 │   ├── extension/        # 扩展点

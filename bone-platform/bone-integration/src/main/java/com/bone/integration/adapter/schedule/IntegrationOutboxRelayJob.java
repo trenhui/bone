@@ -1,7 +1,7 @@
 package com.bone.integration.adapter.schedule;
 
 import com.bone.integration.application.event.outbox.IntegrationOutboxRelay;
-import com.bone.integration.infrastructure.config.IntegrationOutboxProperties;
+import com.bone.integration.application.config.IntegrationOutboxProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;

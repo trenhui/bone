@@ -1,24 +1,43 @@
 package com.bone.integration.architecture;
 
 import com.bone.architecture.BoneDddArchRules;
-import com.tngtech.archunit.core.domain.JavaClasses;
+import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.library.freeze.FreezingArchRule;
 
-import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
-import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
-
 /**
- * 架构守护测试 - 确保 DDD 依赖规则不被违反。
+ * bone-integration 架构守护 — 统一来自 {@link BoneDddArchRules}（《Bone-DDD》§21 附录 B.3）。
  *
- * <p>平台集成使用 Metadata SDK {@link com.bone.metadata.sdk.Repository}，领域层允许依赖
- * {@code com.bone.metadata.sdk..}；仓储实现由 SDK 代理生成，无 {@code *RepositoryImpl} 类。
+ * <p>首次集成或基线收缩命令见 {@code bone-framework/bone-architecture-test/README.md}。
  */
-@AnalyzeClasses(packages = "com.bone.integration")
+@AnalyzeClasses(packages = "com.bone.integration", importOptions = ImportOption.DoNotIncludeTests.class)
 public class ArchitectureTest {
 
+    // P0-1
+    @ArchTest
+    static final ArchRule domain_independent = BoneDddArchRules.domainMustNotDependOnOuterLayers();
+
+    @ArchTest
+    static final ArchRule application_no_infra =
+            BoneDddArchRules.applicationMustNotDependOnInfrastructure();
+
+    // P0-5
+    @ArchTest
+    static final ArchRule domain_no_query_builder = BoneDddArchRules.domainMustNotUseQueryBuilder();
+
+    // P0-6
+    @ArchTest
+    static final ArchRule command_no_query_builder =
+            BoneDddArchRules.commandHandlersMustNotUseQueryBuilder();
+
+    // P0-4 + §18.2
+    @ArchTest
+    static final ArchRule repository_methods_whitelist =
+            BoneDddArchRules.domainRepositoriesShouldOnlyDeclareWhitelistedMethods();
+
+    // P0-7 + §14.3
     @ArchTest
     static final ArchRule no_new_use_cases =
             FreezingArchRule.freeze(BoneDddArchRules.noUseCaseClassesInApplication());
@@ -28,73 +47,19 @@ public class ArchitectureTest {
             FreezingArchRule.freeze(BoneDddArchRules.noApplicationUseCasePackage());
 
     @ArchTest
-    static void domainLayerShouldNotDependOnOuterLayers(JavaClasses classes) {
-        ArchRule rule = noClasses()
-                .that()
-                .resideInAPackage("..domain..")
-                .should()
-                .dependOnClassesThat()
-                .resideInAnyPackage("..adapter..", "..application..", "..infrastructure..");
+    static final ArchRule no_bone_core_usecase = BoneDddArchRules.noBoneCoreUseCaseApiDependency();
 
-        rule.check(classes);
-    }
+    // §14.5
+    @ArchTest
+    static final ArchRule no_new_domain_store =
+            FreezingArchRule.freeze(BoneDddArchRules.noNewDomainStorePackage());
+
+    // §16.3
+    @ArchTest
+    static final ArchRule no_custom_business_exception =
+            FreezingArchRule.freeze(BoneDddArchRules.noCustomBusinessException());
 
     @ArchTest
-    static void domainLayerShouldOnlyDependOnAllowedPackages(JavaClasses classes) {
-        ArchRule rule = classes()
-                .that()
-                .resideInAPackage("..domain..")
-                .should()
-                .onlyDependOnClassesThat()
-                .resideInAnyPackage(
-                        "..domain..",
-                        "java..",
-                        "com.bone.core..",
-                        "com.bone.metadata.sdk..",
-                        "lombok..",
-                        "org.springframework.lang..",
-                        "org.springframework.stereotype..");
-
-        rule.check(classes);
-    }
-
-    @ArchTest
-    static void domainServiceShouldResideInDomain(JavaClasses classes) {
-        ArchRule rule = classes()
-                .that()
-                .haveNameMatching(".*Service")
-                .and()
-                .resideOutsideOfPackage("..adapter..")
-                .and()
-                .resideOutsideOfPackage("..application..")
-                .and()
-                .resideOutsideOfPackage("..infrastructure..")
-                .should()
-                .resideInAPackage("..domain..");
-
-        rule.check(classes);
-    }
-
-    @ArchTest
-    static void repositoryInterfacesShouldBeInDomain(JavaClasses classes) {
-        ArchRule rule = classes()
-                .that()
-                .haveNameMatching(".*Repository")
-                .should()
-                .resideInAPackage("..domain..");
-
-        rule.check(classes);
-    }
-
-    @ArchTest
-    static void repositoryImplementationsShouldBeInInfrastructure(JavaClasses classes) {
-        ArchRule rule = classes()
-                .that()
-                .haveNameMatching(".*RepositoryImpl")
-                .should()
-                .resideInAPackage("..infrastructure..")
-                .allowEmptyShould(true);
-
-        rule.check(classes);
-    }
+    static final ArchRule no_business_exception_suffix =
+            FreezingArchRule.freeze(BoneDddArchRules.noBusinessExceptionSuffix());
 }

@@ -14,7 +14,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Table("iam_permission")
 public class Permission extends AggregateRoot<Long> {
-    private Long id;
     private String code;
     private String name;
     private String description;

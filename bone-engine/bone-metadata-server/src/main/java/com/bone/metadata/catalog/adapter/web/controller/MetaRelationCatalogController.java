@@ -2,15 +2,15 @@ package com.bone.metadata.catalog.adapter.web.controller;
 
 import com.bone.core.result.ApiResponse;
 import com.bone.core.result.PageResult;
-import com.bone.metadata.catalog.application.command.cmd.CreateMetaRelationCmd;
-import com.bone.metadata.catalog.application.command.cmd.UpdateMetaRelationCmd;
+import com.bone.metadata.catalog.application.command.cmd.CreateMetaRelationCommand;
+import com.bone.metadata.catalog.application.command.cmd.UpdateMetaRelationCommand;
 import com.bone.metadata.catalog.application.command.handler.CreateMetaRelationHandler;
 import com.bone.metadata.catalog.application.command.handler.DeleteMetaRelationHandler;
 import com.bone.metadata.catalog.application.command.handler.UpdateMetaRelationHandler;
 import com.bone.metadata.catalog.application.query.dto.MetaRelationDTO;
 import com.bone.metadata.catalog.application.query.handler.MetaRelationDetailQueryHandler;
 import com.bone.metadata.catalog.application.query.handler.MetaRelationPageQueryHandler;
-import com.bone.metadata.catalog.application.query.qry.MetaRelationPageQry;
+import com.bone.metadata.catalog.application.query.qry.MetaRelationPageQuery;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -28,19 +28,19 @@ public class MetaRelationCatalogController {
   private final MetaRelationDetailQueryHandler metaRelationDetailQueryHandler;
 
   @PostMapping
-  public ApiResponse<Long> create(@Valid @RequestBody CreateMetaRelationCmd cmd) {
+  public ApiResponse<Long> create(@Valid @RequestBody CreateMetaRelationCommand cmd) {
     return ApiResponse.success(createMetaRelationHandler.handle(cmd));
   }
 
   @PutMapping("/{id}")
   public ApiResponse<Void> update(
-      @PathVariable Long id, @Valid @RequestBody UpdateMetaRelationCmd cmd) {
+      @PathVariable Long id, @Valid @RequestBody UpdateMetaRelationCommand cmd) {
     updateMetaRelationHandler.handle(id, cmd);
     return ApiResponse.success();
   }
 
   @GetMapping
-  public ApiResponse<PageResult<MetaRelationDTO>> page(MetaRelationPageQry qry) {
+  public ApiResponse<PageResult<MetaRelationDTO>> page(MetaRelationPageQuery qry) {
     return ApiResponse.success(metaRelationPageQueryHandler.handle(qry));
   }
 

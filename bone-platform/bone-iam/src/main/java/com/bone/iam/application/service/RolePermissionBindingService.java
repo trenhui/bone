@@ -3,7 +3,7 @@ package com.bone.iam.application.service;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.iam.domain.repository.RolePermissionRepository;
 import com.bone.iam.domain.role.RolePermission;
-import com.bone.iam.infrastructure.security.AuthorityCacheEvictionService;
+import com.bone.iam.domain.gateway.AccountAuthorityCache;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class RolePermissionBindingService {
 
     private final RolePermissionRepository rolePermissionRepository;
-    private final AuthorityCacheEvictionService authorityCacheEvictionService;
+    private final AccountAuthorityCache accountAuthorityCache;
 
     @Transactional
     public void replaceBindings(Long roleId, Long[] permissionIds) {
@@ -31,7 +31,7 @@ public class RolePermissionBindingService {
                 .delete("DELETE FROM iam_role_permission WHERE role_id = ?", roleId);
 
         if (permissionIds == null || permissionIds.length == 0) {
-            authorityCacheEvictionService.evictAccountsForRole(roleId);
+            accountAuthorityCache.evictAccountsForRole(roleId);
             return;
         }
         List<RolePermission> links = Arrays.stream(permissionIds)
@@ -43,6 +43,6 @@ public class RolePermissionBindingService {
         if (!links.isEmpty()) {
             rolePermissionRepository.batchInsert(links);
         }
-        authorityCacheEvictionService.evictAccountsForRole(roleId);
+        accountAuthorityCache.evictAccountsForRole(roleId);
     }
 }

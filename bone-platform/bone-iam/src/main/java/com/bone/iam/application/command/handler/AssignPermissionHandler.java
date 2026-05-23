@@ -1,9 +1,9 @@
 package com.bone.iam.application.command.handler;
 
-import com.bone.iam.application.command.cmd.AssignPermissionCmd;
+import com.bone.iam.application.command.cmd.AssignPermissionCommand;
 import com.bone.iam.application.service.RolePermissionBindingService;
 import com.bone.iam.domain.repository.RoleRepository;
-import com.bone.core.usecase.Capability;
+import com.bone.core.capability.Capability;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,7 +26,7 @@ public class AssignPermissionHandler {
     private final RolePermissionBindingService rolePermissionBindingService;
 
     @Transactional
-    public void handle(AssignPermissionCmd cmd) {
+    public void handle(AssignPermissionCommand cmd) {
         if (cmd == null || cmd.getRoleId() == null) {
             throw new IllegalArgumentException("角色 ID 不能为空");
         }

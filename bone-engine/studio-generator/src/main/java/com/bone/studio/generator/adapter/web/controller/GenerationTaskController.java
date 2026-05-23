@@ -2,7 +2,7 @@ package com.bone.studio.generator.adapter.web.controller;
 
 import com.bone.core.result.ApiResponse;
 import com.bone.studio.generator.application.command.cmd.GenerateCodeCommand;
-import com.bone.studio.generator.application.usecase.standard.GenerateCodeUseCase;
+import com.bone.studio.generator.application.command.handler.GenerateCodeHandler;
 import com.bone.studio.generator.common.GeneratorApiPaths;
 import com.bone.studio.generator.domain.code.CodeGenerationResponse;
 import lombok.RequiredArgsConstructor;
@@ -17,10 +17,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class GenerationTaskController {
 
-  private final GenerateCodeUseCase generateCodeUseCase;
+  private final GenerateCodeHandler generateCodeHandler;
 
   @PostMapping
   public ApiResponse<CodeGenerationResponse> create(@RequestBody GenerateCodeCommand command) {
-    return ApiResponse.success(generateCodeUseCase.execute(command));
+    return ApiResponse.success(generateCodeHandler.handle(command));
   }
 }

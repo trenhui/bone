@@ -1,9 +1,9 @@
 package com.bone.integration.application.command.handler;
 
 import com.bone.core.exception.DomainException;
-import com.bone.core.usecase.Capability;
+import com.bone.core.capability.Capability;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.integration.application.command.cmd.ExecuteFlowCmd;
+import com.bone.integration.application.command.cmd.ExecuteFlowCommand;
 import com.bone.integration.application.event.IntegrationDomainEventPublisher;
 import com.bone.integration.domain.execution.IntegrationLog;
 import com.bone.integration.domain.flow.IntegrationFlow;
@@ -34,7 +34,7 @@ public class ExecuteFlowHandler {
     private final IntegrationDomainEventPublisher domainEventPublisher;
 
     @Transactional
-    public Long handle(ExecuteFlowCmd cmd) {
+    public Long handle(ExecuteFlowCommand cmd) {
         IntegrationFlow flow = flowRepository.findById(cmd.flowId());
         if (flow == null) {
             throw new DomainException("流程不存在");

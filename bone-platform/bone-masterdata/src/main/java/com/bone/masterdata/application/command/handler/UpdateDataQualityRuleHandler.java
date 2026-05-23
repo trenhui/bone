@@ -1,7 +1,7 @@
 package com.bone.masterdata.application.command.handler;
 
-import com.bone.core.usecase.Capability;
-import com.bone.masterdata.application.command.cmd.UpdateDataQualityRuleCmd;
+import com.bone.core.capability.Capability;
+import com.bone.masterdata.application.command.cmd.UpdateDataQualityRuleCommand;
 import com.bone.core.exception.NotFoundException;
 import com.bone.masterdata.domain.quality.DataQualityRule;
 import com.bone.masterdata.domain.model.quality.vo.RuleName;
@@ -27,7 +27,7 @@ public class UpdateDataQualityRuleHandler {
     private final DataQualityRuleRepository dataQualityRuleRepository;
 
     @Transactional
-    public void handle(UpdateDataQualityRuleCmd cmd) {
+    public void handle(UpdateDataQualityRuleCommand cmd) {
         DataQualityRule rule = dataQualityRuleRepository.findById(cmd.getId());
         if (rule == null) {
             throw NotFoundException.of("数据质量规则不存在");

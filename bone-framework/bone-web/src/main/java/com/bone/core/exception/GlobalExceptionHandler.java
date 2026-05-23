@@ -69,6 +69,12 @@ public class GlobalExceptionHandler {
         if (ex instanceof ServiceException) {
             return serviceExceptionHandler((ServiceException) ex);
         }
+        if (ex instanceof SystemException) {
+            return systemExceptionHandler((SystemException) ex);
+        }
+        if (ex instanceof InfrastructureException) {
+            return infrastructureExceptionHandler((InfrastructureException) ex);
+        }
 
         if (ex instanceof BizException) {
             return bizExceptionHandler((BizException) ex);
@@ -186,6 +192,18 @@ public class GlobalExceptionHandler {
     public ApiResponse<?> serviceExceptionHandler(ServiceException ex) {
         log.info("[serviceExceptionHandler]", ex);
         return ApiResponse.error(ex.getCode(), ex.getMessage());
+    }
+
+    @ExceptionHandler(value = SystemException.class)
+    public ApiResponse<?> systemExceptionHandler(SystemException ex) {
+        log.error("[systemExceptionHandler]", ex);
+        return ApiResponse.error(INTERNAL_SERVER_ERROR.getCode(), ex.getMessage());
+    }
+
+    @ExceptionHandler(value = InfrastructureException.class)
+    public ApiResponse<?> infrastructureExceptionHandler(InfrastructureException ex) {
+        log.error("[infrastructureExceptionHandler]", ex);
+        return ApiResponse.error(INTERNAL_SERVER_ERROR.getCode(), ex.getMessage());
     }
 
     /**

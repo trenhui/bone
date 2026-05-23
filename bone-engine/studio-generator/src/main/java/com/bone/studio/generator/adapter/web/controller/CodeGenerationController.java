@@ -2,10 +2,10 @@ package com.bone.studio.generator.adapter.web.controller;
 
 import com.bone.core.result.ApiResponse;
 import com.bone.studio.generator.application.command.cmd.CreateCodeGenerationCommand;
+import com.bone.studio.generator.application.command.handler.CreateCodeGenerationHandler;
 import com.bone.studio.generator.application.dto.GeneratorOperationView;
 import com.bone.studio.generator.application.service.CodeGenerationAsyncService;
 import com.bone.studio.generator.application.service.GenerationTaskOperationService;
-import com.bone.studio.generator.application.usecase.CreateCodeGenerationUseCase;
 import com.bone.studio.generator.common.GeneratorApiPaths;
 import com.bone.studio.generator.config.GeneratorProperties;
 import java.net.URI;
@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class CodeGenerationController {
 
-    private final CreateCodeGenerationUseCase createCodeGenerationUseCase;
+    private final CreateCodeGenerationHandler createCodeGenerationHandler;
     private final CodeGenerationAsyncService codeGenerationAsyncService;
     private final GenerationTaskOperationService operationService;
     private final GeneratorProperties generatorProperties;
@@ -37,7 +37,7 @@ public class CodeGenerationController {
             @RequestBody CreateCodeGenerationCommand command,
             @RequestParam(required = false) Boolean sync) {
         if (resolveSync(sync)) {
-            String taskId = createCodeGenerationUseCase.execute(command);
+            String taskId = createCodeGenerationHandler.handle(command);
             return ResponseEntity.ok(ApiResponse.success(taskId));
         }
         String taskId = codeGenerationAsyncService.submit(command);

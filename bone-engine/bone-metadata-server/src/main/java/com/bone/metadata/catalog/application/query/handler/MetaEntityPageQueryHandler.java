@@ -3,7 +3,7 @@ package com.bone.metadata.catalog.application.query.handler;
 import com.bone.core.result.PageResult;
 import com.bone.metadata.catalog.application.query.dto.MetaEntityDTO;
 import com.bone.metadata.catalog.application.query.mapper.CatalogDtoMapper;
-import com.bone.metadata.catalog.application.query.qry.MetaEntityPageQry;
+import com.bone.metadata.catalog.application.query.qry.MetaEntityPageQuery;
 import com.bone.metadata.catalog.common.CatalogPageMapper;
 import com.bone.metadata.catalog.common.CatalogTenantSupport;
 import com.bone.metadata.catalog.domain.model.MetaEntity;
@@ -20,7 +20,7 @@ public class MetaEntityPageQueryHandler {
   private final MetaEntityRepository metaEntityRepository;
 
   @Transactional(readOnly = true)
-  public PageResult<MetaEntityDTO> handle(MetaEntityPageQry qry) {
+  public PageResult<MetaEntityDTO> handle(MetaEntityPageQuery qry) {
     long tenantId = CatalogTenantSupport.currentTenantId();
     var query =
         metaEntityRepository

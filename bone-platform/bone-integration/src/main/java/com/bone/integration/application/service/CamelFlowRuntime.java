@@ -1,19 +1,17 @@
 package com.bone.integration.application.service;
 
 import com.bone.core.exception.DomainException;
+import com.bone.integration.application.port.CamelFlowExecutionPort;
 import com.bone.integration.domain.execution.IntegrationLog;
 import com.bone.integration.domain.flow.FlowConnection;
 import com.bone.integration.domain.flow.FlowNode;
 import com.bone.integration.domain.flow.IntegrationFlow;
 import com.bone.integration.domain.service.FlowService;
-import com.bone.integration.infrastructure.camel.CamelFlowCompiler;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
-import org.apache.camel.CamelContext;
-import org.apache.camel.ProducerTemplate;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
@@ -28,7 +26,7 @@ public class CamelFlowRuntime implements FlowRuntime {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final FlowService flowService;
-    private final CamelFlowCompiler camelFlowCompiler;
+    private final CamelFlowExecutionPort camelFlowExecution;
 
     @Override
     public void execute(IntegrationLog log, IntegrationFlow flow) {
@@ -37,30 +35,23 @@ public class CamelFlowRuntime implements FlowRuntime {
         List<FlowConnection> connections = flowService.getFlowConnections(flow.getId());
 
         try {
-            if (!camelFlowCompiler.isReady()) {
+            if (!camelFlowExecution.isReady()) {
                 throw new DomainException("Camel 运行时未就绪");
             }
             try {
-                camelFlowCompiler.compile(flow, nodes, connections);
+                camelFlowExecution.compile(flow, nodes, connections);
             } catch (Exception compileEx) {
                 throw new DomainException("流程 Camel 编译失败: " + compileEx.getMessage());
             }
-            CamelContext camelContext = camelFlowCompiler.getCamelContext();
             Object input = parseInput(log.getInputData());
-            Object result;
-            try (ProducerTemplate template = camelContext.createProducerTemplate()) {
-                result = template.requestBody(camelFlowCompiler.endpointUri(flow.getId()), input);
-            }
+            Object result =
+                    camelFlowExecution.executeOnEndpoint(camelFlowExecution.endpointUri(flow.getId()), input);
             log.complete(stringify(result));
         } catch (DomainException ex) {
             log.fail(ex.getMessage());
         } catch (Exception ex) {
             log.fail(ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName());
         }
-    }
-
-    CamelContext getCamelContext() {
-        return camelFlowCompiler.getCamelContext();
     }
 
     private static Object parseInput(String inputData) {

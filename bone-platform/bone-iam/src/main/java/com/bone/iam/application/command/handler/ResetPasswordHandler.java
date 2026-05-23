@@ -1,6 +1,6 @@
 package com.bone.iam.application.command.handler;
 
-import com.bone.iam.application.command.cmd.ResetPasswordCmd;
+import com.bone.iam.application.command.cmd.ResetPasswordCommand;
 import com.bone.iam.domain.account.Account;
 import com.bone.iam.domain.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +15,7 @@ public class ResetPasswordHandler {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
-    public void handle(ResetPasswordCmd cmd) {
+    public void handle(ResetPasswordCommand cmd) {
         Account account = accountRepository.findById(cmd.getId());
         if (account == null) {
             throw new RuntimeException("账户不存在");

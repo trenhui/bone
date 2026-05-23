@@ -1,8 +1,8 @@
 package com.bone.masterdata.application.command.handler;
 
-import com.bone.core.usecase.Capability;
+import com.bone.core.capability.Capability;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.masterdata.application.command.cmd.CreateDataQualityRuleCmd;
+import com.bone.masterdata.application.command.cmd.CreateDataQualityRuleCommand;
 import com.bone.masterdata.domain.quality.DataQualityRule;
 import com.bone.masterdata.domain.model.quality.vo.RuleName;
 import com.bone.masterdata.domain.model.quality.vo.RuleSeverity;
@@ -30,7 +30,7 @@ public class CreateDataQualityRuleHandler {
     private final MasterDataEntityRepository entityRepository;
 
     @Transactional
-    public Long handle(CreateDataQualityRuleCmd cmd) {
+    public Long handle(CreateDataQualityRuleCommand cmd) {
         if (entityRepository.findById(cmd.getMasterDataEntityId()) == null) {
             throw NotFoundException.of("主数据实体不存在");
         }

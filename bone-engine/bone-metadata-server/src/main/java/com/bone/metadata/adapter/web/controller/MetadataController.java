@@ -1,4 +1,4 @@
-package com.bone.metadata.controller;
+package com.bone.metadata.adapter.web.controller;
 
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.metadata.sdk.domain.model.AllocationContext;

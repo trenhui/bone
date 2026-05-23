@@ -1,6 +1,6 @@
 package com.bone.studio.generator.application.command.handler;
 
-import com.bone.core.usecase.Capability;
+import com.bone.core.capability.Capability;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
 import com.bone.metadata.sdk.query.criteria.Criteria;

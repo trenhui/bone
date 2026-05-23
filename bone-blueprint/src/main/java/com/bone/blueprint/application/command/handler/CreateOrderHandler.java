@@ -2,8 +2,8 @@ package com.bone.blueprint.application.command.handler;
 
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.order.OrderItem;
-import com.bone.blueprint.infrastructure.annotation.Capability;
 import com.bone.blueprint.domain.repository.OrderRepository;
+import com.bone.core.capability.Capability;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

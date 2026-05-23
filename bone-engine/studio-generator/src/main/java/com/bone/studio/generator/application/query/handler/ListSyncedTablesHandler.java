@@ -1,8 +1,8 @@
 package com.bone.studio.generator.application.query.handler;
 
-import com.bone.core.usecase.Capability;
+import com.bone.core.capability.Capability;
 import com.bone.metadata.sdk.query.criteria.Criteria;
-import com.bone.studio.generator.application.query.qry.ListSyncedTablesQry;
+import com.bone.studio.generator.application.query.qry.ListSyncedTablesQuery;
 import com.bone.studio.generator.common.StudioIds;
 import com.bone.studio.generator.domain.data.DatabaseTable;
 import com.bone.studio.generator.domain.data.GenTableMetadata;
@@ -29,7 +29,7 @@ public class ListSyncedTablesHandler {
   private final DataSourceRepository dataSourceRepository;
 
   @Transactional(readOnly = true)
-  public List<DatabaseTable> handle(ListSyncedTablesQry qry) {
+  public List<DatabaseTable> handle(ListSyncedTablesQuery qry) {
     Long dataSourcePk = StudioIds.parseRequired(qry.getDataSourceId());
     DataSource dataSource = dataSourceRepository.findById(dataSourcePk);
     if (dataSource == null) {

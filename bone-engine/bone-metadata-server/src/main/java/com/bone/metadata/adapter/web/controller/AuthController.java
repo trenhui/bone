@@ -1,4 +1,4 @@
-package com.bone.metadata.controller;
+package com.bone.metadata.adapter.web.controller;
 
 import com.bone.metadata.security.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;

@@ -1,14 +1,14 @@
 package com.bone.masterdata.adapter.web.controller;
 
-import com.bone.masterdata.application.command.cmd.CreateDataQualityRuleCmd;
-import com.bone.masterdata.application.command.cmd.PerformDataQualityCheckCmd;
+import com.bone.masterdata.application.command.cmd.CreateDataQualityRuleCommand;
+import com.bone.masterdata.application.command.cmd.PerformDataQualityCheckCommand;
 import com.bone.masterdata.application.command.handler.CreateDataQualityRuleHandler;
 import com.bone.masterdata.application.command.handler.PerformDataQualityCheckHandler;
 import com.bone.masterdata.application.query.dto.DataQualityRuleDTO;
 import com.bone.masterdata.application.query.dto.QualityReportDTO;
 import com.bone.masterdata.application.query.handler.DataQualityRuleListQueryHandler;
 import com.bone.masterdata.application.query.handler.GetQualityReportQueryHandler;
-import com.bone.masterdata.application.query.qry.DataQualityRuleListQry;
+import com.bone.masterdata.application.query.qry.DataQualityRuleListQuery;
 import com.bone.core.result.ApiResponse;
 import com.bone.core.web.PlatformApiPaths;
 import lombok.RequiredArgsConstructor;
@@ -26,20 +26,20 @@ public class DataQualityController {
     private final GetQualityReportQueryHandler getQualityReportQueryHandler;
 
     @PostMapping("/rules")
-    public ApiResponse<Long> createRule(@RequestBody CreateDataQualityRuleCmd cmd) {
+    public ApiResponse<Long> createRule(@RequestBody CreateDataQualityRuleCommand cmd) {
         Long id = createRuleHandler.handle(cmd);
         return ApiResponse.success(id);
     }
 
     @GetMapping("/rules")
-    public ApiResponse<List<DataQualityRuleDTO>> listRules(DataQualityRuleListQry qry) {
+    public ApiResponse<List<DataQualityRuleDTO>> listRules(DataQualityRuleListQuery qry) {
         List<DataQualityRuleDTO> rules = ruleListQueryHandler.handle(qry);
         return ApiResponse.success(rules);
     }
 
     @PostMapping("/check")
     public ApiResponse<Long> performCheck(@RequestParam("masterDataEntityId") Long masterDataEntityId) {
-        PerformDataQualityCheckCmd cmd = new PerformDataQualityCheckCmd();
+        PerformDataQualityCheckCommand cmd = new PerformDataQualityCheckCommand();
         cmd.setMasterDataEntityId(masterDataEntityId);
         Long reportId = performCheckHandler.handle(cmd);
         return ApiResponse.success(reportId);

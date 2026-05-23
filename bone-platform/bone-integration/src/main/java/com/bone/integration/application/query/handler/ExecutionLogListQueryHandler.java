@@ -2,7 +2,7 @@ package com.bone.integration.application.query.handler;
 
 import com.bone.core.model.PageResult;
 import com.bone.integration.application.query.dto.ExecutionLogDTO;
-import com.bone.integration.application.query.qry.ExecutionLogListQry;
+import com.bone.integration.application.query.qry.ExecutionLogListQuery;
 import com.bone.integration.domain.execution.IntegrationLog;
 import com.bone.integration.domain.model.execution.vo.ExecutionStatus;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;
@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 public class ExecutionLogListQueryHandler {
 
     @Transactional(readOnly = true)
-    public PageResult<ExecutionLogDTO> handle(ExecutionLogListQry qry) {
+    public PageResult<ExecutionLogDTO> handle(ExecutionLogListQuery qry) {
         FluentQuery<IntegrationLog> query = QueryBuilder.from(IntegrationLog.class);
 
         if (qry.flowId() != null) {

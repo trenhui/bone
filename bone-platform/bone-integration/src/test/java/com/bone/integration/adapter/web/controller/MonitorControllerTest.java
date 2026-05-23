@@ -1,12 +1,12 @@
 package com.bone.integration.adapter.web.controller;
 
 import com.bone.core.model.PageResult;
-import com.bone.integration.application.command.cmd.ExecuteFlowCmd;
+import com.bone.integration.application.command.cmd.ExecuteFlowCommand;
 import com.bone.integration.application.command.handler.ExecuteFlowHandler;
 import com.bone.integration.application.query.dto.ExecutionLogDTO;
 import com.bone.integration.application.query.dto.FlowStatisticsDTO;
 import com.bone.integration.application.query.handler.ExecutionLogListQueryHandler;
-import com.bone.integration.application.query.qry.ExecutionLogListQry;
+import com.bone.integration.application.query.qry.ExecutionLogListQuery;
 import com.bone.integration.domain.execution.IntegrationLog;
 import com.bone.integration.domain.flow.IntegrationFlow;
 import com.bone.integration.domain.model.execution.vo.ExecutionStatus;
@@ -50,7 +50,7 @@ class MonitorControllerTest {
 
     @Test
     void execute_delegatesToHandler() {
-        ExecuteFlowCmd cmd = new ExecuteFlowCmd(1L, "{\"k\":\"v\"}");
+        ExecuteFlowCommand cmd = new ExecuteFlowCommand(1L, "{\"k\":\"v\"}");
         when(executeFlowHandler.handle(cmd)).thenReturn(99L);
 
         var response = monitorController.execute(cmd);
@@ -61,7 +61,7 @@ class MonitorControllerTest {
 
     @Test
     void listExecutions_returnsPage() {
-        ExecutionLogListQry qry = new ExecutionLogListQry(1, 10, 1L, null);
+        ExecutionLogListQuery qry = new ExecutionLogListQuery(1, 10, 1L, null);
         PageResult<ExecutionLogDTO> page =
                 PageResult.of(Collections.emptyList(), 0L, 1, 10);
         when(executionLogListQueryHandler.handle(qry)).thenReturn(page);

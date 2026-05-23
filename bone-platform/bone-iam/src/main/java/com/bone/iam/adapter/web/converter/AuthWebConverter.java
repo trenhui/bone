@@ -2,7 +2,7 @@ package com.bone.iam.adapter.web.converter;
 
 import com.bone.iam.adapter.web.dto.req.LoginReq;
 import com.bone.iam.adapter.web.dto.resp.LoginResp;
-import com.bone.iam.application.command.cmd.LoginCmd;
+import com.bone.iam.application.command.cmd.LoginCommand;
 import com.bone.iam.domain.account.Account;
 import org.springframework.stereotype.Component;
 
@@ -10,8 +10,8 @@ import java.util.Map;
 
 @Component
 public class AuthWebConverter {
-    public LoginCmd toLoginCmd(LoginReq req) {
-        LoginCmd cmd = new LoginCmd();
+    public LoginCommand toLoginCommand(LoginReq req) {
+        LoginCommand cmd = new LoginCommand();
         cmd.setUsername(req.getUsername());
         cmd.setPassword(req.getPassword());
         return cmd;

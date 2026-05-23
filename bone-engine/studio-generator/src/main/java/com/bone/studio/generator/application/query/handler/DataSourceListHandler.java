@@ -1,7 +1,7 @@
 package com.bone.studio.generator.application.query.handler;
 
-import com.bone.core.usecase.Capability;
-import com.bone.studio.generator.application.query.qry.DataSourceListQry;
+import com.bone.core.capability.Capability;
+import com.bone.studio.generator.application.query.qry.DataSourceListQuery;
 import com.bone.studio.generator.domain.data.DataSource;
 import com.bone.studio.generator.domain.repository.DataSourceRepository;
 import org.springframework.data.domain.Page;
@@ -21,7 +21,7 @@ public class DataSourceListHandler {
     }
 
     @Transactional(readOnly = true)
-    public Page<DataSource> handle(DataSourceListQry query) {
+    public Page<DataSource> handle(DataSourceListQuery query) {
         // 简化实现，返回空的 Page 对象
         return new org.springframework.data.domain.PageImpl<>(java.util.Collections.emptyList());
     }

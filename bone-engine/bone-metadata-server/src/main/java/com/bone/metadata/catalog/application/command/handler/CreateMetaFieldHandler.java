@@ -2,12 +2,13 @@ package com.bone.metadata.catalog.application.command.handler;
 
 import com.bone.core.exception.BizException;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.metadata.catalog.application.command.cmd.CreateMetaFieldCmd;
+import com.bone.metadata.catalog.application.command.cmd.CreateMetaFieldCommand;
 import com.bone.metadata.catalog.common.CatalogTenantSupport;
 import com.bone.metadata.catalog.domain.model.MetaEntity;
 import com.bone.metadata.catalog.domain.model.MetaField;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
 import com.bone.metadata.catalog.domain.repository.MetaFieldRepository;
+import com.bone.metadata.sdk.query.criteria.Criteria;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,19 +21,17 @@ public class CreateMetaFieldHandler {
   private final MetaEntityRepository metaEntityRepository;
 
   @Transactional
-  public Long handle(CreateMetaFieldCmd cmd) {
+  public Long handle(CreateMetaFieldCommand cmd) {
     MetaEntity entity = metaEntityRepository.findById(cmd.getEntityId());
     if (entity == null) {
       throw BizException.of("所属实体不存在: " + cmd.getEntityId());
     }
-    var dup =
-        metaFieldRepository
-            .where(MetaField::getEntityId)
-            .eq(cmd.getEntityId())
-            .and(MetaField::getCode)
-            .eq(cmd.getCode())
-            .list();
-    if (!dup.isEmpty()) {
+    long dup =
+        metaFieldRepository.countByCriteria(
+            Criteria.<MetaField>create()
+                .eq("entityId", cmd.getEntityId())
+                .eq("code", cmd.getCode()));
+    if (dup > 0) {
       throw BizException.of("字段编码已存在: " + cmd.getCode());
     }
     Long id = DistributedIdGenerator.generateLongId();

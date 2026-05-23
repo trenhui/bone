@@ -6,7 +6,7 @@ import com.bone.masterdata.domain.entity.MasterDataField;
 import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityName;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
 import com.bone.masterdata.domain.repository.MasterDataFieldRepository;
-import com.bone.metadata.sdk.query.dsl.QueryBuilder;
+import com.bone.metadata.sdk.query.criteria.Criteria;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -18,11 +18,10 @@ public class MasterDataEntityService {
     private final MasterDataFieldRepository fieldRepository;
 
     public MasterDataEntity createEntity(Long id, MasterDataEntityName name, String description, String category) {
-        boolean exists = QueryBuilder.from(MasterDataEntity.class)
-                .where(MasterDataEntity::getName)
-                .eq(name)
-                .exists();
-        if (exists) {
+        long existing =
+                entityRepository.countByCriteria(
+                        Criteria.<MasterDataEntity>create().eq("name", name));
+        if (existing > 0) {
             throw new DomainException("主数据实体名称已存在");
         }
         return MasterDataEntity.create(id, null, name, description, category);
@@ -38,9 +37,9 @@ public class MasterDataEntityService {
     }
 
     public int getFieldCount(Long entityId) {
-        return (int) QueryBuilder.from(MasterDataField.class)
-                .where(MasterDataField::getMasterDataEntityId)
-                .eq(entityId)
-                .count();
+        return fieldRepository
+                .countByCriteria(
+                        Criteria.<MasterDataField>create().eq("masterDataEntityId", entityId))
+                .intValue();
     }
 }

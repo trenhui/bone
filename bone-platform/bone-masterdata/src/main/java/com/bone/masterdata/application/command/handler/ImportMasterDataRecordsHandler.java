@@ -1,13 +1,13 @@
 package com.bone.masterdata.application.command.handler;
 
-import com.bone.core.usecase.Capability;
+import com.bone.core.capability.Capability;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.masterdata.application.command.cmd.ImportMasterDataRecordsCmd;
+import com.bone.masterdata.application.command.cmd.ImportMasterDataRecordsCommand;
 import com.bone.masterdata.domain.record.MasterDataRecord;
 import com.bone.masterdata.domain.repository.MasterDataRecordRepository;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
 import com.bone.core.exception.NotFoundException;
-import com.bone.masterdata.infrastructure.util.ExcelUtils;
+import com.bone.masterdata.domain.gateway.MasterDataExcelImportPort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,17 +30,16 @@ import java.util.List;
 public class ImportMasterDataRecordsHandler {
     private final MasterDataRecordRepository recordRepository;
     private final MasterDataEntityRepository entityRepository;
+    private final MasterDataExcelImportPort masterDataExcelImportPort;
 
     @Transactional
-    public List<Long> handle(ImportMasterDataRecordsCmd cmd) {
+    public List<Long> handle(ImportMasterDataRecordsCommand cmd) {
         if (entityRepository.findById(cmd.getMasterDataEntityId()) == null) {
             throw NotFoundException.of("主数据实体不存在");
         }
 
-        List<MasterDataRecord> records = ExcelUtils.parseExcelFile(
-                cmd.getFile(),
-                cmd.getMasterDataEntityId()
-        );
+        List<MasterDataRecord> records =
+                masterDataExcelImportPort.parseRecords(cmd.getFile(), cmd.getMasterDataEntityId());
 
         records.forEach(record -> {
             if (record.getId() == null) {

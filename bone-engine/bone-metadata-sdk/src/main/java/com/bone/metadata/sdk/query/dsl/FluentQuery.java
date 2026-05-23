@@ -1,5 +1,6 @@
 package com.bone.metadata.sdk.query.dsl;
 
+import com.bone.core.annotation.ReadSideOnly;
 import com.bone.core.model.PageResult;
 import com.bone.metadata.sdk.query.dsl.condition.Condition;
 import com.bone.metadata.sdk.query.dsl.join.Join;
@@ -15,6 +16,7 @@ import java.util.stream.Stream;
  * 流畅查询接口 - 提供类型安全的链式调用查询API
  * 基于业界最佳实践，支持连续 and/or 链式调用
  */
+@ReadSideOnly
 public interface FluentQuery<T> {
 
     // ===== 条件查询 =====

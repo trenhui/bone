@@ -3,7 +3,7 @@ package com.bone.system.application.query.handler;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import com.bone.system.application.query.dto.LogDTO;
-import com.bone.system.application.query.qry.LogPageQry;
+import com.bone.system.application.query.qry.LogPageQuery;
 import com.bone.system.common.result.PageResult;
 import com.bone.system.domain.model.log.SystemLog;
 import com.bone.system.domain.model.log.vo.LogLevel;
@@ -27,7 +27,7 @@ public class LogQueryHandler {
     }
 
     @Transactional(readOnly = true)
-    public PageResult<LogDTO> page(LogPageQry qry) {
+    public PageResult<LogDTO> page(LogPageQuery qry) {
         FluentQuery<SystemLog> query = QueryBuilder.from(SystemLog.class);
 
         if (qry.getKeyword() != null && !qry.getKeyword().isBlank()) {

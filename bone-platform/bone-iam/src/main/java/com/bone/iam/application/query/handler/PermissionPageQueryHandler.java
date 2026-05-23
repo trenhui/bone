@@ -2,7 +2,7 @@ package com.bone.iam.application.query.handler;
 
 import com.bone.core.model.PageResult;
 import com.bone.iam.application.query.dto.PermissionDTO;
-import com.bone.iam.application.query.qry.PermissionPageQry;
+import com.bone.iam.application.query.qry.PermissionPageQuery;
 import com.bone.iam.domain.permission.Permission;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class PermissionPageQueryHandler {
     @Transactional(readOnly = true)
-    public PageResult<PermissionDTO> handle(PermissionPageQry qry) {
+    public PageResult<PermissionDTO> handle(PermissionPageQuery qry) {
         FluentQuery<Permission> query = QueryBuilder.from(Permission.class);
 
         if (qry.getKeyword() != null && !qry.getKeyword().isEmpty()) {

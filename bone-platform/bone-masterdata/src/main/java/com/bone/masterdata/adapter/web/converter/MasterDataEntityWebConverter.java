@@ -3,15 +3,15 @@ package com.bone.masterdata.adapter.web.converter;
 import com.bone.masterdata.adapter.web.dto.req.CreateMasterDataEntityReq;
 import com.bone.masterdata.adapter.web.dto.req.UpdateMasterDataEntityReq;
 import com.bone.masterdata.adapter.web.dto.resp.MasterDataEntityDetailResp;
-import com.bone.masterdata.application.command.cmd.CreateMasterDataEntityCmd;
-import com.bone.masterdata.application.command.cmd.UpdateMasterDataEntityCmd;
+import com.bone.masterdata.application.command.cmd.CreateMasterDataEntityCommand;
+import com.bone.masterdata.application.command.cmd.UpdateMasterDataEntityCommand;
 import com.bone.masterdata.application.query.dto.MasterDataEntityDTO;
 import org.springframework.stereotype.Component;
 
 @Component
 public class MasterDataEntityWebConverter {
 
-    public CreateMasterDataEntityReq toReq(CreateMasterDataEntityCmd cmd) {
+    public CreateMasterDataEntityReq toReq(CreateMasterDataEntityCommand cmd) {
         CreateMasterDataEntityReq req = new CreateMasterDataEntityReq();
         req.setName(cmd.getName());
         req.setDescription(cmd.getDescription());
@@ -19,15 +19,15 @@ public class MasterDataEntityWebConverter {
         return req;
     }
 
-    public CreateMasterDataEntityCmd toCmd(CreateMasterDataEntityReq req) {
-        return CreateMasterDataEntityCmd.builder()
+    public CreateMasterDataEntityCommand toCommand(CreateMasterDataEntityReq req) {
+        return CreateMasterDataEntityCommand.builder()
                 .name(req.getName())
                 .description(req.getDescription())
                 .category(req.getCategory())
                 .build();
     }
 
-    public UpdateMasterDataEntityReq toReq(UpdateMasterDataEntityCmd cmd) {
+    public UpdateMasterDataEntityReq toReq(UpdateMasterDataEntityCommand cmd) {
         UpdateMasterDataEntityReq req = new UpdateMasterDataEntityReq();
         req.setName(cmd.getName());
         req.setDescription(cmd.getDescription());
@@ -35,8 +35,8 @@ public class MasterDataEntityWebConverter {
         return req;
     }
 
-    public UpdateMasterDataEntityCmd toCmd(Long id, UpdateMasterDataEntityReq req) {
-        return UpdateMasterDataEntityCmd.builder()
+    public UpdateMasterDataEntityCommand toCommand(Long id, UpdateMasterDataEntityReq req) {
+        return UpdateMasterDataEntityCommand.builder()
                 .id(id)
                 .name(req.getName())
                 .description(req.getDescription())

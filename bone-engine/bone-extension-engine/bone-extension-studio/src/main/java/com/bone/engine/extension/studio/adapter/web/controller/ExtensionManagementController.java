@@ -1,4 +1,4 @@
-package com.bone.engine.extension.studio.controller;
+package com.bone.engine.extension.studio.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
@@ -10,15 +10,14 @@ import com.bone.engine.extension.studio.domain.model.StudioAuditEntry;
 import com.bone.engine.extension.studio.domain.model.StudioOperation;
 import com.bone.engine.extension.studio.config.ExtensionStudioProperties;
 import com.bone.engine.extension.studio.security.ExtensionScopes;
-import com.bone.engine.extension.studio.service.ExtPointService;
-import com.bone.engine.extension.studio.service.ExtensionService;
-import com.bone.engine.extension.studio.service.PluginExecutionLogService;
-import com.bone.engine.extension.studio.service.StudioAuditService;
-import com.bone.engine.extension.studio.service.StudioIdempotencyService;
-import com.bone.engine.extension.studio.service.StudioLroService;
-import com.bone.engine.extension.studio.domain.store.StudioAuditStore;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.bone.engine.extension.studio.application.command.handler.ExtPointCommandHandler;
+import com.bone.engine.extension.studio.application.command.handler.ExtensionStudioCommandHandler;
+import com.bone.engine.extension.studio.application.query.handler.StudioAuditQueryHandler;
+import com.bone.engine.extension.studio.application.query.handler.StudioOperationQueryHandler;
+import com.bone.engine.extension.studio.application.command.handler.PluginExecutionLogCommandHandler;
+import com.bone.engine.extension.studio.application.query.handler.ExtPointQueryHandler;
+import com.bone.engine.extension.studio.application.query.handler.ExtensionQueryHandler;
+import com.bone.engine.extension.studio.application.query.handler.PluginExecutionLogQueryHandler;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -53,15 +52,15 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RequiredArgsConstructor
 public class ExtensionManagementController {
 
-    private final ExtPointService extPointService;
-    private final ExtensionService extensionService;
-    private final PluginExecutionLogService executionLogService;
+    private final ExtPointQueryHandler extPointQueryHandler;
+    private final ExtPointCommandHandler extPointCommandHandler;
+    private final ExtensionQueryHandler extensionQueryHandler;
+    private final ExtensionStudioCommandHandler extensionStudioCommandHandler;
+    private final PluginExecutionLogQueryHandler pluginExecutionLogQueryHandler;
+    private final PluginExecutionLogCommandHandler pluginExecutionLogCommandHandler;
+    private final StudioOperationQueryHandler studioOperationQueryHandler;
+    private final StudioAuditQueryHandler studioAuditQueryHandler;
     private final ExtensionStudioProperties studioProperties;
-    private final StudioAuditService auditService;
-    private final StudioAuditStore auditStore;
-    private final StudioIdempotencyService idempotencyService;
-    private final StudioLroService lroService;
-    private final ObjectMapper objectMapper;
 
     @GetMapping("/points")
     @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_READ + "')")
@@ -73,17 +72,17 @@ public class ExtensionManagementController {
             @RequestParam(required = false) Integer size) {
         List<ExtPoint> points;
         if (hasText(keyword)) {
-            points = extPointService.searchExtPoints(keyword);
+            points = extPointQueryHandler.searchExtPoints(keyword);
         } else if (hasText(domain) && hasText(category)) {
-            points = extPointService.findExtPointsByDomain(domain).stream()
+            points = extPointQueryHandler.findExtPointsByDomain(domain).stream()
                     .filter(p -> category.equals(p.getCategory()))
                     .toList();
         } else if (hasText(domain)) {
-            points = extPointService.findExtPointsByDomain(domain);
+            points = extPointQueryHandler.findExtPointsByDomain(domain);
         } else if (hasText(category)) {
-            points = extPointService.findExtPointsByCategory(category);
+            points = extPointQueryHandler.findExtPointsByCategory(category);
         } else {
-            points = extPointService.findAllExtPoints();
+            points = extPointQueryHandler.findAllExtPoints();
         }
         if (page != null || size != null) {
             return ResponseEntity.ok(
@@ -95,7 +94,7 @@ public class ExtensionManagementController {
     @GetMapping("/points/{id}")
     @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_READ + "')")
     public ResponseEntity<ApiResponse<ExtPoint>> getPoint(@PathVariable Long id) {
-        ExtPoint point = extPointService.findExtPointById(id);
+        ExtPoint point = extPointQueryHandler.findExtPointById(id);
         if (point == null) {
             return notFound("扩展点不存在");
         }
@@ -107,22 +106,8 @@ public class ExtensionManagementController {
     public ResponseEntity<ApiResponse<ExtPoint>> createPoint(
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @RequestBody ExtPoint body)
-            throws JsonProcessingException {
-        if (body == null || !hasText(body.getName()) || !hasText(body.getInterfaceName())) {
-            return badRequest("扩展点名称与 interfaceName 不能为空");
-        }
-        String path = "/api/v1/extension/points";
-        String fingerprint = StudioIdempotencyService.fingerprint(objectMapper.writeValueAsString(body));
-        var replay = idempotencyService.<ExtPoint>replay(idempotencyKey, "POST", path, fingerprint);
-        if (replay.isPresent()) {
-            return replay.get();
-        }
-        ExtPoint saved = extPointService.saveExtPoint(body);
-        auditService.success("ext_point.create", "ext_point", String.valueOf(saved.getId()));
-        ResponseEntity<ApiResponse<ExtPoint>> response =
-                StudioHttpSupport.created(StudioHttpSupport.resourceLocation("points", saved.getId()), "创建扩展点成功", saved);
-        idempotencyService.remember(idempotencyKey, "POST", path, fingerprint, response);
-        return response;
+            throws com.fasterxml.jackson.core.JsonProcessingException {
+        return extPointCommandHandler.createPoint(idempotencyKey, body);
     }
 
     @PutMapping("/points/{id}")
@@ -131,21 +116,14 @@ public class ExtensionManagementController {
             @PathVariable Long id,
             @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
             @RequestBody ExtPoint body) {
-        Integer expected = StudioHttpSupport.parseIfMatchVersion(ifMatch).orElse(null);
-        ExtPoint updated = extPointService.updateExtPoint(id, body, expected);
-        if (updated == null) {
-            return notFound("扩展点不存在");
-        }
-        auditService.success("ext_point.update", "ext_point", String.valueOf(id));
-        return StudioHttpSupport.ok("更新扩展点成功", updated);
+        return extPointCommandHandler.updatePoint(
+                id, body, StudioHttpSupport.parseIfMatchVersion(ifMatch).orElse(null));
     }
 
     @DeleteMapping("/points/{id}")
     @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_WRITE + "')")
     public ResponseEntity<Void> deletePoint(@PathVariable Long id) {
-        extPointService.deleteExtPoint(id);
-        auditService.success("ext_point.delete", "ext_point", String.valueOf(id));
-        return ResponseEntity.noContent().build();
+        return extPointCommandHandler.deletePoint(id);
     }
 
     @PostMapping("/points/{id}:enable")
@@ -170,13 +148,13 @@ public class ExtensionManagementController {
             @RequestParam(required = false) Integer size) {
         List<Extension> plugins;
         if (hasText(keyword)) {
-            plugins = extensionService.searchExtensions(keyword);
+            plugins = extensionQueryHandler.searchExtensions(keyword);
         } else if (extPointId != null) {
-            plugins = extensionService.findExtensionsByExtPointId(extPointId);
+            plugins = extensionQueryHandler.findExtensionsByExtPointId(extPointId);
         } else if (hasText(tenantCode)) {
-            plugins = extensionService.findExtensionsByTenantCode(tenantCode);
+            plugins = extensionQueryHandler.findExtensionsByTenantCode(tenantCode);
         } else {
-            plugins = extensionService.findAllExtensions();
+            plugins = extensionQueryHandler.findAllExtensions();
         }
         if (page != null || size != null) {
             return ResponseEntity.ok(
@@ -188,7 +166,7 @@ public class ExtensionManagementController {
     @GetMapping("/plugins/{id}")
     @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_READ + "')")
     public ResponseEntity<ApiResponse<Extension>> getPlugin(@PathVariable Long id) {
-        Extension extension = extensionService.findExtensionById(id);
+        Extension extension = extensionQueryHandler.findExtensionById(id);
         if (extension == null) {
             return notFound("插件不存在");
         }
@@ -198,7 +176,7 @@ public class ExtensionManagementController {
     @GetMapping("/plugins/{id}/doc")
     @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_READ + "')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getPluginDoc(@PathVariable Long id) {
-        Extension extension = extensionService.findExtensionById(id);
+        Extension extension = extensionQueryHandler.findExtensionById(id);
         if (extension == null) {
             return notFound("插件不存在");
         }
@@ -221,27 +199,8 @@ public class ExtensionManagementController {
     public ResponseEntity<ApiResponse<Extension>> createPlugin(
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @RequestBody Extension body)
-            throws JsonProcessingException {
-        try {
-            if (body == null || body.getExtPointId() == null || !hasText(body.getName()) || !hasText(body.getClassName())) {
-                return badRequest("extPointId、name、className 不能为空");
-            }
-            String path = "/api/v1/extension/plugins";
-            String fingerprint = StudioIdempotencyService.fingerprint(objectMapper.writeValueAsString(body));
-            var replay = idempotencyService.<Extension>replay(idempotencyKey, "POST", path, fingerprint);
-            if (replay.isPresent()) {
-                return replay.get();
-            }
-            Extension saved = extensionService.saveExtension(body);
-            auditService.success("plugin.create", "plugin", String.valueOf(saved.getId()));
-            ResponseEntity<ApiResponse<Extension>> response =
-                    StudioHttpSupport.created(
-                            StudioHttpSupport.resourceLocation("plugins", saved.getId()), "创建插件成功", saved);
-            idempotencyService.remember(idempotencyKey, "POST", path, fingerprint, response);
-            return response;
-        } catch (IllegalArgumentException ex) {
-            return badRequest(ex.getMessage());
-        }
+            throws com.fasterxml.jackson.core.JsonProcessingException {
+        return extensionStudioCommandHandler.createPlugin(idempotencyKey, body);
     }
 
     @PutMapping("/plugins/{id}")
@@ -250,21 +209,14 @@ public class ExtensionManagementController {
             @PathVariable Long id,
             @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
             @RequestBody Extension body) {
-        Integer expected = StudioHttpSupport.parseIfMatchVersion(ifMatch).orElse(null);
-        Extension updated = extensionService.updateExtension(id, body, expected);
-        if (updated == null) {
-            return notFound("插件不存在");
-        }
-        auditService.success("plugin.update", "plugin", String.valueOf(id));
-        return StudioHttpSupport.ok("更新插件成功", updated);
+        return extensionStudioCommandHandler.updatePlugin(
+                id, body, StudioHttpSupport.parseIfMatchVersion(ifMatch).orElse(null));
     }
 
     @DeleteMapping("/plugins/{id}")
     @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_WRITE + "')")
     public ResponseEntity<Void> deletePlugin(@PathVariable Long id) {
-        extensionService.deleteExtension(id);
-        auditService.success("plugin.delete", "plugin", String.valueOf(id));
-        return ResponseEntity.noContent().build();
+        return extensionStudioCommandHandler.deletePlugin(id);
     }
 
     @GetMapping("/plugins/{id}/versions")
@@ -272,7 +224,7 @@ public class ExtensionManagementController {
     public ResponseEntity<ApiResponse<List<PluginVersion>>> listPluginVersions(@PathVariable Long id) {
         try {
             return ResponseEntity.ok(
-                    ApiResponse.success("获取插件版本列表成功", extensionService.listPluginVersions(id)));
+                    ApiResponse.success("获取插件版本列表成功", extensionQueryHandler.listPluginVersions(id)));
         } catch (IllegalArgumentException ex) {
             return notFound(ex.getMessage());
         }
@@ -289,25 +241,8 @@ public class ExtensionManagementController {
             @RequestParam("className") String className,
             @RequestParam(value = "description", required = false) String description,
             @RequestParam(value = "pluginId", required = false) Long pluginId) {
-        try {
-            String path = "/api/v1/extension/plugins:upload";
-            String fingerprint = StudioIdempotencyService.fingerprint(
-                    name + "|" + version + "|" + className + "|" + extPointId + "|" + pluginId + "|" + file.getSize());
-            var replay = idempotencyService.<Extension>replay(idempotencyKey, "POST", path, fingerprint);
-            if (replay.isPresent()) {
-                return replay.get();
-            }
-            Extension saved = extensionService.uploadPluginArtifact(
-                    file, extPointId, name, version, className, description, pluginId);
-            auditService.success("plugin.upload", "plugin", String.valueOf(saved.getId()));
-            ResponseEntity<ApiResponse<Extension>> response =
-                    StudioHttpSupport.created(
-                            StudioHttpSupport.resourceLocation("plugins", saved.getId()), "上传插件成功", saved);
-            idempotencyService.remember(idempotencyKey, "POST", path, fingerprint, response);
-            return response;
-        } catch (IllegalArgumentException | IllegalStateException ex) {
-            return badRequest(ex.getMessage());
-        }
+        return extensionStudioCommandHandler.uploadPlugin(
+                idempotencyKey, file, extPointId, name, version, className, description, pluginId);
     }
 
     @PostMapping("/plugins/{id}:deploy")
@@ -316,35 +251,13 @@ public class ExtensionManagementController {
             @PathVariable Long id,
             @RequestParam(required = false) Boolean sync,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
-        String path = "/api/v1/extension/plugins/" + id + ":deploy";
-        String fingerprint = StudioIdempotencyService.fingerprint("");
-        var replay = idempotencyService.replay(idempotencyKey, "POST", path, fingerprint);
-        if (replay.isPresent()) {
-            return replay.get();
-        }
-        if (resolveDeploySync(sync)) {
-            ResponseEntity<ApiResponse<Extension>> response = lifecycle(id, true, "部署");
-            idempotencyService.remember(idempotencyKey, "POST", path, fingerprint, response);
-            return response;
-        }
-        Extension extension = extensionService.findExtensionById(id);
-        if (extension == null) {
-            return notFound("插件不存在");
-        }
-        String operationId = lroService.startPluginDeploy(id);
-        Map<String, Object> accepted = new LinkedHashMap<>();
-        accepted.put("operationId", operationId);
-        ResponseEntity<ApiResponse<Map<String, Object>>> response =
-                StudioHttpSupport.accepted(
-                        StudioHttpSupport.operationLocation(operationId), "部署任务已接受", accepted);
-        idempotencyService.remember(idempotencyKey, "POST", path, fingerprint, response);
-        return response;
+        return extensionStudioCommandHandler.deployPlugin(id, sync, idempotencyKey);
     }
 
     @GetMapping("/operations/{operationId}")
     @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.PLUGINS_DEPLOY + "')")
     public ResponseEntity<ApiResponse<StudioOperation>> getOperation(@PathVariable String operationId) {
-        StudioOperation operation = lroService.getOperation(operationId);
+        StudioOperation operation = studioOperationQueryHandler.getOperation(operationId);
         if (operation == null) {
             return notFound("操作不存在");
         }
@@ -354,7 +267,7 @@ public class ExtensionManagementController {
     @PostMapping("/plugins/{id}:undeploy")
     @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.PLUGINS_DEPLOY + "')")
     public ResponseEntity<ApiResponse<Extension>> undeployPlugin(@PathVariable Long id) {
-        return lifecycle(id, false, "卸载");
+        return extensionStudioCommandHandler.undeployPlugin(id);
     }
 
     @PostMapping("/plugins/{id}:rollback")
@@ -363,43 +276,14 @@ public class ExtensionManagementController {
             @PathVariable Long id,
             @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @RequestBody(required = false) Map<String, Object> body)
-            throws JsonProcessingException {
-        try {
-            String path = "/api/v1/extension/plugins/" + id + ":rollback";
-            String fingerprint = StudioIdempotencyService.fingerprint(
-                    body != null ? objectMapper.writeValueAsString(body) : "");
-            var replay = idempotencyService.<Extension>replay(idempotencyKey, "POST", path, fingerprint);
-            if (replay.isPresent()) {
-                return replay.get();
-            }
-            String version = body != null && body.get("version") != null ? body.get("version").toString() : null;
-            extensionService.rollbackExtension(id, version);
-            Extension extension = extensionService.findExtensionById(id);
-            auditService.success("plugin.rollback", "plugin", String.valueOf(id));
-            ResponseEntity<ApiResponse<Extension>> response =
-                    StudioHttpSupport.ok("回滚插件成功", extension);
-            idempotencyService.remember(idempotencyKey, "POST", path, fingerprint, response);
-            return response;
-        } catch (IllegalArgumentException ex) {
-            auditService.failure("plugin.rollback", "plugin", String.valueOf(id), ex.getMessage());
-            return badRequest(ex.getMessage());
-        }
+            throws com.fasterxml.jackson.core.JsonProcessingException {
+        return extensionStudioCommandHandler.rollbackPlugin(id, idempotencyKey, body);
     }
 
     @PostMapping("/plugins/{id}:publish-runtime")
     @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.PLUGINS_DEPLOY + "')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> publishRuntime(@PathVariable Long id) {
-        try {
-            boolean published = extensionService.publishRuntime(id);
-            Map<String, Object> data = new LinkedHashMap<>();
-            data.put("id", id);
-            data.put("published", published);
-            auditService.success("plugin.publish_runtime", "plugin", String.valueOf(id));
-            return ResponseEntity.ok(ApiResponse.success("发布运行时元数据成功", data));
-        } catch (IllegalArgumentException | IllegalStateException ex) {
-            auditService.failure("plugin.publish_runtime", "plugin", String.valueOf(id), ex.getMessage());
-            return badRequest(ex.getMessage());
-        }
+        return extensionStudioCommandHandler.publishRuntime(id);
     }
 
     @PostMapping("/plugins/{id}:bind")
@@ -413,34 +297,21 @@ public class ExtensionManagementController {
         if (extPointId == null) {
             return badRequest("extensionPointId 不能为空");
         }
-        Extension extension = extensionService.findExtensionById(id);
-        if (extension == null) {
-            return notFound("插件不存在");
-        }
-        extension.setExtPointId(Long.valueOf(extPointId.toString()));
-        extensionService.updateExtension(id, extension);
-        return ResponseEntity.ok(ApiResponse.success("绑定扩展点成功", extension));
+        return extensionStudioCommandHandler.bindPlugin(id, Long.valueOf(extPointId.toString()));
     }
 
     @PostMapping("/plugins/{id}:unbind")
     @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_WRITE + "')")
     public ResponseEntity<ApiResponse<Extension>> unbindPlugin(@PathVariable Long id) {
-        Extension extension = extensionService.findExtensionById(id);
-        if (extension == null) {
-            return notFound("插件不存在");
-        }
-        if (extension.isEnabled()) {
-            extensionService.undeployExtension(id);
-        }
-        return ResponseEntity.ok(ApiResponse.success("解除绑定成功", extension));
+        return extensionStudioCommandHandler.unbindPlugin(id);
     }
 
     @GetMapping("/overview")
     @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_READ + "')")
     public ResponseEntity<ApiResponse<Map<String, Object>>> overview() {
-        Map<String, Object> data = executionLogService.overview(
-                extPointService.findAllExtPoints().size(),
-                extensionService.findAllExtensions().size(),
+        Map<String, Object> data = pluginExecutionLogQueryHandler.overview(
+                extPointQueryHandler.findAllExtPoints().size(),
+                extensionQueryHandler.findAllExtensions().size(),
                 studioProperties.getRuntimeSync().isEnabled());
         return ResponseEntity.ok(ApiResponse.success("获取扩展概览成功", data));
     }
@@ -459,7 +330,7 @@ public class ExtensionManagementController {
             durationMs = Long.valueOf(body.get("durationMs").toString());
         }
         String errorMessage = body.get("errorMessage") != null ? body.get("errorMessage").toString() : null;
-        return executionLogService
+        return pluginExecutionLogCommandHandler
                 .ingestFromRuntime(className, methodName, status, durationMs, errorMessage)
                 .map(log -> ResponseEntity.ok(ApiResponse.success("执行日志已记录", log)))
                 .orElseGet(() -> notFound("未找到 className 对应的插件: " + className));
@@ -478,15 +349,15 @@ public class ExtensionManagementController {
         if (page != null) {
             int safePage = Math.max(1, page);
             int safeSize = size != null ? Math.min(100, Math.max(1, size)) : 20;
-            List<PluginExecutionLog> list = executionLogService.query(pluginId, status, safePage, safeSize);
-            long total = executionLogService.count(pluginId, status);
+            List<PluginExecutionLog> list = pluginExecutionLogQueryHandler.query(pluginId, status, safePage, safeSize);
+            long total = pluginExecutionLogQueryHandler.count(pluginId, status);
             return ResponseEntity.ok(
                     ApiResponse.success(
                             "获取执行日志成功", PageResult.of(list, total, safePage, safeSize)));
         }
         int safeLimit = limit != null ? Math.min(100, Math.max(1, limit)) : 20;
         PageResult<PluginExecutionLog> result =
-                executionLogService.queryByCursor(pluginId, status, cursor, safeLimit);
+                pluginExecutionLogQueryHandler.queryByCursor(pluginId, status, cursor, safeLimit);
         if (result.getNextCursor() != null) {
             String nextLink = "/api/v1/extension/execution-logs?cursor="
                     + result.getNextCursor()
@@ -506,11 +377,7 @@ public class ExtensionManagementController {
     @PostMapping("/plugins/{id}:simulate")
     @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.PLUGINS_DEPLOY + "')")
     public ResponseEntity<ApiResponse<PluginExecutionLog>> simulatePlugin(@PathVariable Long id) {
-        try {
-            return ResponseEntity.ok(ApiResponse.success("模拟调用成功", extensionService.simulatePluginExecution(id)));
-        } catch (IllegalArgumentException | IllegalStateException ex) {
-            return badRequest(ex.getMessage());
-        }
+        return extensionStudioCommandHandler.simulatePlugin(id);
     }
 
     @GetMapping("/audit-logs")
@@ -523,7 +390,7 @@ public class ExtensionManagementController {
             HttpServletResponse response) {
         int safeLimit = Math.min(100, Math.max(1, limit));
         PageResult<StudioAuditEntry> result =
-                auditStore.queryByCursor(action, resourceType, cursor, safeLimit);
+                studioAuditQueryHandler.queryByCursor(action, resourceType, cursor, safeLimit);
         if (result.getNextCursor() != null) {
             StringBuilder link = new StringBuilder("/api/v1/extension/audit-logs?cursor=")
                     .append(result.getNextCursor())
@@ -550,48 +417,15 @@ public class ExtensionManagementController {
         config.put("maxCpuCores", 0.5);
         config.put("timeoutSeconds", 30);
         config.put("syncEnabled", studioProperties.getRuntimeSync().isEnabled());
-        config.putAll(executionLogService.overview(
-                extPointService.findAllExtPoints().size(),
-                extensionService.findAllExtensions().size(),
+        config.putAll(pluginExecutionLogQueryHandler.overview(
+                extPointQueryHandler.findAllExtPoints().size(),
+                extensionQueryHandler.findAllExtensions().size(),
                 studioProperties.getRuntimeSync().isEnabled()));
         return ResponseEntity.ok(ApiResponse.success("获取沙箱配置成功", config));
     }
 
     private ResponseEntity<ApiResponse<ExtPoint>> togglePoint(Long id, boolean enabled) {
-        ExtPoint updated = extPointService.enableExtPoint(id, enabled);
-        if (updated == null) {
-            return notFound("扩展点不存在");
-        }
-        auditService.success(enabled ? "ext_point.enable" : "ext_point.disable", "ext_point", String.valueOf(id));
-        return ResponseEntity.ok(
-                ApiResponse.success((enabled ? "启用" : "禁用") + "扩展点成功", updated));
-    }
-
-    private ResponseEntity<ApiResponse<Extension>> lifecycle(Long id, boolean deploy, String action) {
-        String auditAction = deploy ? "plugin.deploy" : "plugin.undeploy";
-        try {
-            if (deploy) {
-                extensionService.deployExtension(id);
-            } else {
-                extensionService.undeployExtension(id);
-            }
-            Extension extension = extensionService.findExtensionById(id);
-            auditService.success(auditAction, "plugin", String.valueOf(id));
-            return StudioHttpSupport.ok(action + "插件成功", extension);
-        } catch (IllegalArgumentException | IllegalStateException ex) {
-            auditService.failure(auditAction, "plugin", String.valueOf(id), ex.getMessage());
-            return badRequest(ex.getMessage());
-        }
-    }
-
-    private boolean resolveDeploySync(Boolean syncParam) {
-        if (!studioProperties.getLro().isDeployEnabled()) {
-            return true;
-        }
-        if (syncParam != null) {
-            return syncParam;
-        }
-        return studioProperties.getLro().isDeploySyncByDefault();
+        return extPointCommandHandler.enablePoint(id, enabled);
     }
 
     private static boolean hasText(String value) {

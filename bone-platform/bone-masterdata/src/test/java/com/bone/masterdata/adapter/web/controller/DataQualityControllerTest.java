@@ -1,15 +1,16 @@
 package com.bone.masterdata.adapter.web.controller;
 
-import com.bone.masterdata.application.command.cmd.PerformDataQualityCheckCmd;
+import com.bone.masterdata.application.command.cmd.PerformDataQualityCheckCommand;
 import com.bone.masterdata.application.command.handler.CreateDataQualityRuleHandler;
 import com.bone.masterdata.application.command.handler.PerformDataQualityCheckHandler;
 import com.bone.masterdata.application.query.handler.DataQualityRuleListQueryHandler;
-import com.bone.masterdata.application.query.qry.DataQualityRuleListQry;
+import com.bone.masterdata.application.query.qry.DataQualityRuleListQuery;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -21,6 +22,7 @@ import java.util.Collections;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class DataQualityControllerTest {
 
     @Mock
@@ -39,7 +41,6 @@ class DataQualityControllerTest {
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
         mockMvc = MockMvcBuilders.standaloneSetup(dataQualityController).build();
     }
 
@@ -58,7 +59,7 @@ class DataQualityControllerTest {
 
     @Test
     void testListRules() throws Exception {
-        when(ruleListQueryHandler.handle(any(DataQualityRuleListQry.class))).thenReturn(Collections.emptyList());
+        when(ruleListQueryHandler.handle(any(DataQualityRuleListQuery.class))).thenReturn(Collections.emptyList());
 
         mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/masterdata/quality/rules")
                         .param("masterDataEntityId", "1"))
@@ -69,7 +70,7 @@ class DataQualityControllerTest {
 
     @Test
     void testPerformCheck() throws Exception {
-        when(performCheckHandler.handle(any(PerformDataQualityCheckCmd.class))).thenReturn(1L);
+        when(performCheckHandler.handle(any(PerformDataQualityCheckCommand.class))).thenReturn(1L);
 
         mockMvc.perform(MockMvcRequestBuilders.post("/api/v1/masterdata/quality/check")
                         .param("masterDataEntityId", "1"))

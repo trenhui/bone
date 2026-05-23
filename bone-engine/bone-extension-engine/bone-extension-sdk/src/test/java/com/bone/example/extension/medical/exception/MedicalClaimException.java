@@ -1,6 +1,6 @@
 package com.bone.example.extension.medical.exception;
 
-import com.bone.engine.extension.api.exception.BusinessException;
+import com.bone.engine.extension.api.exception.ExtensionBizException;
 
 /**
  * 医疗理赔异常类
@@ -8,7 +8,7 @@ import com.bone.engine.extension.api.exception.BusinessException;
  * 提供医疗理赔领域特有的异常功能和业务方法
  * 包含理赔ID作为核心业务字段
  */
-public class MedicalClaimException extends BusinessException {
+public class MedicalClaimException extends ExtensionBizException {
     private static final long serialVersionUID = 1L;
     
     // 理赔ID，医疗理赔业务的核心标识

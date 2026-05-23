@@ -4,14 +4,14 @@ import com.bone.core.exception.DomainException;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
-import com.bone.integration.application.command.cmd.CreateFlowCmd;
-import com.bone.integration.application.command.cmd.UpdateFlowCmd;
+import com.bone.integration.application.command.cmd.CreateFlowCommand;
+import com.bone.integration.application.command.cmd.UpdateFlowCommand;
 import com.bone.integration.application.query.dto.FlowDTO;
-import com.bone.integration.application.query.qry.FlowPageQry;
-import com.bone.integration.application.usecase.standard.CreateFlowUseCase;
-import com.bone.integration.application.usecase.standard.FlowPageQueryUseCase;
+import com.bone.integration.application.query.qry.FlowPageQuery;
+import com.bone.integration.application.command.handler.CreateFlowHandler;
+import com.bone.integration.application.query.handler.FlowPageQueryHandler;
 import com.bone.integration.application.event.IntegrationDomainEventPublisher;
-import com.bone.integration.application.usecase.standard.UpdateFlowUseCase;
+import com.bone.integration.application.command.handler.UpdateFlowHandler;
 import com.bone.integration.domain.flow.FlowConnection;
 import com.bone.integration.domain.flow.FlowNode;
 import com.bone.integration.domain.flow.IntegrationFlow;
@@ -27,28 +27,28 @@ import java.util.stream.Collectors;
 @RequestMapping(PlatformApiPaths.INTEGRATION_V1 + "/flows")
 @RequiredArgsConstructor
 public class FlowController {
-    private final CreateFlowUseCase createFlowUseCase;
-    private final UpdateFlowUseCase updateFlowUseCase;
-    private final FlowPageQueryUseCase flowPageQueryUseCase;
+    private final CreateFlowHandler createFlowHandler;
+    private final UpdateFlowHandler updateFlowHandler;
+    private final FlowPageQueryHandler flowPageQueryHandler;
     private final IntegrationFlowRepository flowRepository;
     private final FlowService flowService;
     private final IntegrationDomainEventPublisher domainEventPublisher;
 
     @PostMapping
-    public ApiResponse<Long> create(@RequestBody CreateFlowCmd cmd) {
-        Long id = createFlowUseCase.execute(cmd);
+    public ApiResponse<Long> create(@RequestBody CreateFlowCommand cmd) {
+        Long id = createFlowHandler.handle(cmd);
         return ApiResponse.success(id);
     }
 
     @PutMapping("/{id}")
-    public ApiResponse<Void> update(@PathVariable Long id, @RequestBody UpdateFlowCmd cmd) {
-        updateFlowUseCase.execute(new UpdateFlowCmd(id, cmd.name(), cmd.description(), cmd.nodes(), cmd.connections()));
+    public ApiResponse<Void> update(@PathVariable Long id, @RequestBody UpdateFlowCommand cmd) {
+        updateFlowHandler.handle(new UpdateFlowCommand(id, cmd.name(), cmd.description(), cmd.nodes(), cmd.connections()));
         return ApiResponse.success();
     }
 
     @GetMapping
-    public ApiResponse<PageResult<FlowDTO>> page(FlowPageQry qry) {
-        PageResult<FlowDTO> result = flowPageQueryUseCase.execute(qry);
+    public ApiResponse<PageResult<FlowDTO>> page(FlowPageQuery qry) {
+        PageResult<FlowDTO> result = flowPageQueryHandler.handle(qry);
         return ApiResponse.success(result);
     }
 

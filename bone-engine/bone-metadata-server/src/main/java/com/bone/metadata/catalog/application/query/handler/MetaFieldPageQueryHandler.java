@@ -3,7 +3,7 @@ package com.bone.metadata.catalog.application.query.handler;
 import com.bone.core.result.PageResult;
 import com.bone.metadata.catalog.application.query.dto.MetaFieldDTO;
 import com.bone.metadata.catalog.application.query.mapper.CatalogDtoMapper;
-import com.bone.metadata.catalog.application.query.qry.MetaFieldPageQry;
+import com.bone.metadata.catalog.application.query.qry.MetaFieldPageQuery;
 import com.bone.metadata.catalog.common.CatalogPageMapper;
 import com.bone.metadata.catalog.domain.model.MetaField;
 import com.bone.metadata.catalog.domain.repository.MetaFieldRepository;
@@ -19,7 +19,7 @@ public class MetaFieldPageQueryHandler {
   private final MetaFieldRepository metaFieldRepository;
 
   @Transactional(readOnly = true)
-  public PageResult<MetaFieldDTO> handle(MetaFieldPageQry qry) {
+  public PageResult<MetaFieldDTO> handle(MetaFieldPageQuery qry) {
     var query = metaFieldRepository.query();
     if (qry.getEntityId() != null) {
       query = query.where(MetaField::getEntityId).eq(qry.getEntityId());

@@ -3,16 +3,16 @@ package com.bone.masterdata.adapter.web.converter;
 import com.bone.masterdata.adapter.web.dto.req.CreateMasterDataFieldReq;
 import com.bone.masterdata.adapter.web.dto.req.UpdateMasterDataFieldReq;
 import com.bone.masterdata.adapter.web.dto.resp.MasterDataFieldDetailResp;
-import com.bone.masterdata.application.command.cmd.CreateMasterDataFieldCmd;
-import com.bone.masterdata.application.command.cmd.UpdateMasterDataFieldCmd;
+import com.bone.masterdata.application.command.cmd.CreateMasterDataFieldCommand;
+import com.bone.masterdata.application.command.cmd.UpdateMasterDataFieldCommand;
 import com.bone.masterdata.application.query.dto.MasterDataFieldDTO;
 import org.springframework.stereotype.Component;
 
 @Component
 public class MasterDataFieldWebConverter {
 
-    public CreateMasterDataFieldCmd toCmd(CreateMasterDataFieldReq req) {
-        return CreateMasterDataFieldCmd.builder()
+    public CreateMasterDataFieldCommand toCommand(CreateMasterDataFieldReq req) {
+        return CreateMasterDataFieldCommand.builder()
                 .masterDataEntityId(req.getMasterDataEntityId())
                 .name(req.getName())
                 .type(req.getType())
@@ -23,8 +23,8 @@ public class MasterDataFieldWebConverter {
                 .build();
     }
 
-    public UpdateMasterDataFieldCmd toCmd(Long id, UpdateMasterDataFieldReq req) {
-        return UpdateMasterDataFieldCmd.builder()
+    public UpdateMasterDataFieldCommand toCommand(Long id, UpdateMasterDataFieldReq req) {
+        return UpdateMasterDataFieldCommand.builder()
                 .id(id)
                 .name(req.getName())
                 .type(req.getType())

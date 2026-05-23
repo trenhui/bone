@@ -1,8 +1,8 @@
 package com.bone.integration.application.command.handler;
 
 import com.bone.core.exception.DomainException;
-import com.bone.core.usecase.Capability;
-import com.bone.integration.application.command.cmd.UpdateConnectorCmd;
+import com.bone.core.capability.Capability;
+import com.bone.integration.application.command.cmd.UpdateConnectorCommand;
 import com.bone.integration.domain.connector.Connector;
 import com.bone.integration.domain.model.connector.vo.ConnectorType;
 import com.bone.integration.domain.repository.ConnectorRepository;
@@ -27,7 +27,7 @@ public class UpdateConnectorHandler {
     private final ConnectorService connectorService;
 
     @Transactional
-    public void handle(UpdateConnectorCmd cmd) {
+    public void handle(UpdateConnectorCommand cmd) {
         Connector connector = connectorRepository.findById(cmd.id());
         if (connector == null) {
             throw new DomainException("连接器不存在");

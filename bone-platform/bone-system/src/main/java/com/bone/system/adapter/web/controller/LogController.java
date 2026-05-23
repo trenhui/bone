@@ -1,14 +1,13 @@
 package com.bone.system.adapter.web.controller;
 
+import com.bone.core.web.PlatformApiPaths;
 import com.bone.system.adapter.web.converter.LogWebConverter;
 import com.bone.system.adapter.web.dto.req.CreateLogReq;
 import com.bone.system.adapter.web.dto.req.LogPageReq;
 import com.bone.system.adapter.web.dto.resp.LogResp;
-import com.bone.system.application.usecase.standard.CreateLogUseCase;
-import com.bone.system.application.usecase.standard.LogByIdQueryUseCase;
-import com.bone.system.application.usecase.standard.LogPageQueryUseCase;
+import com.bone.system.application.command.handler.LogCommandHandler;
 import com.bone.system.application.query.dto.LogDTO;
-import com.bone.core.web.PlatformApiPaths;
+import com.bone.system.application.query.handler.LogQueryHandler;
 import com.bone.system.common.result.ApiResponse;
 import com.bone.system.common.result.PageResult;
 import io.swagger.v3.oas.annotations.Operation;
@@ -25,28 +24,28 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping(PlatformApiPaths.SYSTEM_V1 + "/logs")
 @RequiredArgsConstructor
 public class LogController {
-    private final CreateLogUseCase createLogUseCase;
-    private final LogByIdQueryUseCase logByIdQueryUseCase;
-    private final LogPageQueryUseCase logPageQueryUseCase;
+
+    private final LogCommandHandler logCommandHandler;
+    private final LogQueryHandler logQueryHandler;
     private final LogWebConverter logWebConverter;
 
     @Operation(summary = "创建日志")
     @PostMapping
     public ApiResponse<Long> create(@Valid @RequestBody CreateLogReq req) {
-        return ApiResponse.success(createLogUseCase.execute(logWebConverter.toCmd(req)));
+        return ApiResponse.success(logCommandHandler.handle(logWebConverter.toCommand(req)));
     }
 
     @Operation(summary = "根据ID获取日志")
     @GetMapping("/{id}")
     public ApiResponse<LogResp> getById(@PathVariable Long id) {
-        LogDTO dto = logByIdQueryUseCase.execute(id);
+        LogDTO dto = logQueryHandler.getById(id);
         return ApiResponse.success(dto != null ? logWebConverter.toResp(dto) : null);
     }
 
     @Operation(summary = "分页查询日志列表")
     @GetMapping("/page")
     public ApiResponse<PageResult<LogResp>> page(LogPageReq req) {
-        PageResult<LogDTO> pageResult = logPageQueryUseCase.execute(logWebConverter.toQry(req));
+        PageResult<LogDTO> pageResult = logQueryHandler.page(logWebConverter.toQuery(req));
         return ApiResponse.success(pageResult.map(logWebConverter::toResp));
     }
 }

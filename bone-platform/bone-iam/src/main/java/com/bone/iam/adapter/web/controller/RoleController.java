@@ -3,17 +3,17 @@ package com.bone.iam.adapter.web.controller;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.core.model.PageResult;
-import com.bone.iam.application.command.cmd.AssignPermissionCmd;
-import com.bone.iam.application.command.cmd.CreateRoleCmd;
-import com.bone.iam.application.command.cmd.UpdateRoleCmd;
-import com.bone.iam.application.usecase.standard.CreateRoleUseCase;
-import com.bone.iam.application.usecase.standard.AssignPermissionUseCase;
-import com.bone.iam.application.usecase.standard.UpdateRoleUseCase;
-import com.bone.iam.application.usecase.standard.DeleteRoleUseCase;
-import com.bone.iam.application.usecase.standard.RolePageQueryUseCase;
+import com.bone.iam.application.command.cmd.AssignPermissionCommand;
+import com.bone.iam.application.command.cmd.CreateRoleCommand;
+import com.bone.iam.application.command.cmd.UpdateRoleCommand;
+import com.bone.iam.application.command.handler.CreateRoleHandler;
+import com.bone.iam.application.command.handler.AssignPermissionHandler;
+import com.bone.iam.application.command.handler.UpdateRoleHandler;
+import com.bone.iam.application.command.handler.DeleteRoleHandler;
+import com.bone.iam.application.query.handler.RolePageQueryHandler;
 import com.bone.iam.application.query.dto.PermissionDTO;
 import com.bone.iam.application.query.dto.RoleDTO;
-import com.bone.iam.application.query.qry.RolePageQry;
+import com.bone.iam.application.query.qry.RolePageQuery;
 import com.bone.iam.adapter.web.dto.req.CreateRoleReq;
 import com.bone.iam.adapter.web.dto.resp.RoleDetailResp;
 import com.bone.iam.adapter.web.converter.RoleWebConverter;
@@ -30,25 +30,25 @@ import java.util.List;
 @RequestMapping(PlatformApiPaths.IAM_V1 + "/roles")
 @RequiredArgsConstructor
 public class RoleController {
-    private final CreateRoleUseCase createRoleUseCase;
-    private final AssignPermissionUseCase assignPermissionUseCase;
-    private final UpdateRoleUseCase updateRoleUseCase;
-    private final DeleteRoleUseCase deleteRoleUseCase;
-    private final RolePageQueryUseCase rolePageQueryUseCase;
+    private final CreateRoleHandler createRoleHandler;
+    private final AssignPermissionHandler assignPermissionHandler;
+    private final UpdateRoleHandler updateRoleHandler;
+    private final DeleteRoleHandler deleteRoleHandler;
+    private final RolePageQueryHandler rolePageQueryHandler;
     private final RolePermissionsQueryHandler rolePermissionsQueryHandler;
     private final RoleDetailQueryHandler roleDetailQueryHandler;
     private final RoleWebConverter roleWebConverter;
 
     @PostMapping
     public ApiResponse<Long> create(@RequestBody CreateRoleReq req) {
-        CreateRoleCmd cmd = roleWebConverter.toCreateRoleCmd(req);
-        Long roleId = createRoleUseCase.execute(cmd);
+        CreateRoleCommand cmd = roleWebConverter.toCreateRoleCommand(req);
+        Long roleId = createRoleHandler.handle(cmd);
         return ApiResponse.success(roleId);
     }
 
     @GetMapping
-    public ApiResponse<PageResult<RoleDTO>> page(RolePageQry qry) {
-        PageResult<RoleDTO> result = rolePageQueryUseCase.execute(qry);
+    public ApiResponse<PageResult<RoleDTO>> page(RolePageQuery qry) {
+        PageResult<RoleDTO> result = rolePageQueryHandler.handle(qry);
         return ApiResponse.success(result);
     }
 
@@ -63,26 +63,26 @@ public class RoleController {
 
     @PutMapping("/{id}")
     public ApiResponse<Void> update(@PathVariable Long id, @RequestBody CreateRoleReq req) {
-        UpdateRoleCmd cmd = new UpdateRoleCmd();
+        UpdateRoleCommand cmd = new UpdateRoleCommand();
         cmd.setId(id);
         cmd.setName(req.getName());
         cmd.setDescription(req.getDescription());
-        updateRoleUseCase.execute(cmd);
+        updateRoleHandler.handle(cmd);
         return ApiResponse.success();
     }
 
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id) {
-        deleteRoleUseCase.execute(id);
+        deleteRoleHandler.handle(id);
         return ApiResponse.success();
     }
 
     @PostMapping("/{id}/permissions")
     public ApiResponse<Void> assignPermissions(@PathVariable Long id, @RequestBody Long[] permissionIds) {
-        AssignPermissionCmd cmd = new AssignPermissionCmd();
+        AssignPermissionCommand cmd = new AssignPermissionCommand();
         cmd.setRoleId(id);
         cmd.setPermissionIds(permissionIds);
-        assignPermissionUseCase.execute(cmd);
+        assignPermissionHandler.handle(cmd);
         return ApiResponse.success();
     }
 

@@ -13,7 +13,7 @@ import org.springframework.web.filter.CorsFilter;
 
 @SpringBootApplication
 @EnableConfigurationProperties(GeneratorProperties.class)
-@ComponentScan(basePackages = {"com.bone.studio.generator", "com.bone.metadata.sdk"})
+@ComponentScan(basePackages = {"com.bone.studio.generator", "com.bone.metadata.sdk", "com.bone.core.capability"})
 @EnableSqlRepositories(
     basePackages = {
       "com.bone.studio.generator.domain.repository",

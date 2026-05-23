@@ -2,18 +2,18 @@ package com.bone.masterdata.adapter.web.controller;
 
 import com.bone.core.result.ApiResponse;
 import com.bone.core.result.PageResult;
-import com.bone.masterdata.application.command.cmd.ImportMasterDataRecordsCmd;
+import com.bone.masterdata.application.command.cmd.ImportMasterDataRecordsCommand;
 import com.bone.masterdata.application.query.dto.MasterDataRecordDTO;
-import com.bone.masterdata.application.query.qry.MasterDataRecordListQry;
-import com.bone.masterdata.application.usecase.standard.ImportMasterDataRecordsUseCase;
-import com.bone.masterdata.application.usecase.standard.PublishMasterDataRecordUseCase;
+import com.bone.masterdata.application.query.qry.MasterDataRecordListQuery;
+import com.bone.masterdata.application.command.handler.ImportMasterDataRecordsHandler;
+import com.bone.masterdata.application.command.handler.PublishMasterDataRecordHandler;
 import com.bone.masterdata.application.query.handler.ExportMasterDataRecordsQueryHandler;
-import com.bone.masterdata.application.usecase.standard.MasterDataRecordListQueryUseCase;
-import org.junit.jupiter.api.BeforeEach;
+import com.bone.masterdata.application.query.handler.MasterDataRecordListQueryHandler;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Collections;
@@ -22,16 +22,17 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 public class MasterDataRecordControllerTest {
 
     @Mock
-    private ImportMasterDataRecordsUseCase importMasterDataRecordsUseCase;
+    private ImportMasterDataRecordsHandler importMasterDataRecordsHandler;
 
     @Mock
-    private MasterDataRecordListQueryUseCase masterDataRecordListQueryUseCase;
+    private MasterDataRecordListQueryHandler masterDataRecordListQueryHandler;
 
     @Mock
-    private PublishMasterDataRecordUseCase publishMasterDataRecordUseCase;
+    private PublishMasterDataRecordHandler publishMasterDataRecordHandler;
 
     @Mock
     private ExportMasterDataRecordsQueryHandler exportMasterDataRecordsQueryHandler;
@@ -42,24 +43,19 @@ public class MasterDataRecordControllerTest {
     @InjectMocks
     private MasterDataRecordController masterDataRecordController;
 
-    @BeforeEach
-    public void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
-
     @Test
     public void testImportRecords() {
         // 准备测试数据
         Long masterDataEntityId = 1L;
 
-        ImportMasterDataRecordsCmd cmd = new ImportMasterDataRecordsCmd();
+        ImportMasterDataRecordsCommand cmd = new ImportMasterDataRecordsCommand();
         cmd.setMasterDataEntityId(masterDataEntityId);
         cmd.setFile(file);
 
         List<Long> recordIds = Collections.singletonList(1L);
 
         // 模拟依赖
-        when(importMasterDataRecordsUseCase.execute(cmd)).thenReturn(recordIds);
+        when(importMasterDataRecordsHandler.handle(cmd)).thenReturn(recordIds);
 
         // 执行测试
         ApiResponse<List<Long>> apiResponse = masterDataRecordController.importRecords(masterDataEntityId, file);
@@ -67,13 +63,13 @@ public class MasterDataRecordControllerTest {
         // 验证结果
         assertEquals(true, apiResponse.isSuccess());
         assertEquals(recordIds, apiResponse.getData());
-        verify(importMasterDataRecordsUseCase, times(1)).execute(cmd);
+        verify(importMasterDataRecordsHandler, times(1)).handle(cmd);
     }
 
     @Test
     public void testList() {
         // 准备测试数据
-        MasterDataRecordListQry qry = new MasterDataRecordListQry();
+        MasterDataRecordListQuery qry = new MasterDataRecordListQuery();
         qry.setMasterDataEntityId(1L);
         qry.setPageNum(1);
         qry.setPageSize(10);
@@ -81,7 +77,7 @@ public class MasterDataRecordControllerTest {
         PageResult<MasterDataRecordDTO> pageResult = PageResult.of(Collections.emptyList(), 0, 1, 10);
 
         // 模拟依赖
-        when(masterDataRecordListQueryUseCase.execute(qry)).thenReturn(pageResult);
+        when(masterDataRecordListQueryHandler.handle(qry)).thenReturn(pageResult);
 
         // 执行测试
         ApiResponse<PageResult<MasterDataRecordDTO>> apiResponse = masterDataRecordController.list(qry);
@@ -89,7 +85,7 @@ public class MasterDataRecordControllerTest {
         // 验证结果
         assertEquals(true, apiResponse.isSuccess());
         assertEquals(pageResult, apiResponse.getData());
-        verify(masterDataRecordListQueryUseCase, times(1)).execute(qry);
+        verify(masterDataRecordListQueryHandler, times(1)).handle(qry);
     }
 
     @Test
@@ -102,7 +98,7 @@ public class MasterDataRecordControllerTest {
 
         // 验证结果
         assertEquals(true, apiResponse.isSuccess());
-        verify(publishMasterDataRecordUseCase, times(1)).execute(recordId);
+        verify(publishMasterDataRecordHandler, times(1)).handle(recordId);
     }
 
     @Test

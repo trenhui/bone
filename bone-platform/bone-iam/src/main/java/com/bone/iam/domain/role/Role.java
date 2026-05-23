@@ -1,6 +1,6 @@
 package com.bone.iam.domain.role;
 
-import com.bone.core.domain.AggregateRoot;
+import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.iam.domain.role.event.RoleCreatedEvent;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import lombok.AccessLevel;
@@ -12,9 +12,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Table("iam_role")
-public class Role extends AggregateRoot<Long> {
-    private Long id;
-    private Long tenantId;
+public class Role extends TenantAggregateRoot<Long> {
     private String name;
     private String code;
     private int type;
@@ -29,7 +27,7 @@ public class Role extends AggregateRoot<Long> {
         role.code = code;
         role.description = description;
         role.type = type;
-        role.tenantId = tenantId;
+        role.setTenantId(tenantId);
         role.parentRoleId = parentRoleId;
         role.createdAt = LocalDateTime.now();
         role.updatedAt = LocalDateTime.now();

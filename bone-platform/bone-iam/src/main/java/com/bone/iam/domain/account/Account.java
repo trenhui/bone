@@ -1,6 +1,6 @@
 package com.bone.iam.domain.account;
 
-import com.bone.core.domain.AggregateRoot;
+import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.iam.domain.account.event.AccountCreatedEvent;
 import com.bone.iam.domain.account.event.AccountDisabledEvent;
 import com.bone.iam.domain.account.event.AccountEnabledEvent;
@@ -19,10 +19,11 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Table("iam_account")
-public class Account extends AggregateRoot<Long> {
+/**
+ * 多租户账户聚合根样板：{@link TenantAggregateRoot} + IAM 域内 {@link LocalDateTime} 审计字段。
+ */
+public class Account extends TenantAggregateRoot<Long> {
 
-    private Long id;
-    private Long tenantId;
     private Username username;
     private String passwordHash;
     private Email email;
@@ -42,8 +43,8 @@ public class Account extends AggregateRoot<Long> {
     public static Account create(Long id, Username username, String passwordHash, Email email,
                                   String phone, String realName, Long tenantId) {
         Account account = new Account();
-        account.id = id;
-        account.tenantId = tenantId;
+        account.setId(id);
+        account.setTenantId(tenantId);
         account.username = username;
         account.passwordHash = passwordHash;
         account.email = email;
@@ -67,7 +68,7 @@ public class Account extends AggregateRoot<Long> {
         this.loginFailCount = 0;
         this.lockedAt = null;
         this.updatedAt = LocalDateTime.now();
-        addDomainEvent(new AccountEnabledEvent(this.id));
+        addDomainEvent(new AccountEnabledEvent(getId()));
     }
 
     public void disable() {
@@ -76,7 +77,7 @@ public class Account extends AggregateRoot<Long> {
         }
         this.status = AccountStatus.DISABLED;
         this.updatedAt = LocalDateTime.now();
-        addDomainEvent(new AccountDisabledEvent(this.id));
+        addDomainEvent(new AccountDisabledEvent(getId()));
     }
 
     public void recordLoginSuccess(String ip) {
@@ -91,7 +92,7 @@ public class Account extends AggregateRoot<Long> {
         if (this.loginFailCount >= 5) {
             this.status = AccountStatus.LOCKED;
             this.lockedAt = LocalDateTime.now().plusMinutes(30);
-            addDomainEvent(new AccountLockedEvent(this.id, this.lockedAt));
+            addDomainEvent(new AccountLockedEvent(getId(), this.lockedAt));
         }
         this.updatedAt = LocalDateTime.now();
     }
@@ -100,7 +101,7 @@ public class Account extends AggregateRoot<Long> {
         this.passwordHash = newPasswordHash;
         this.passwordUpdatedAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
-        addDomainEvent(new PasswordChangedEvent(this.id));
+        addDomainEvent(new PasswordChangedEvent(getId()));
     }
 
     public void updateProfile(String realName, String phone, String avatarUrl) {

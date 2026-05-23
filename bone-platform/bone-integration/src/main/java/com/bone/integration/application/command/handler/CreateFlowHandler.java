@@ -1,8 +1,8 @@
 package com.bone.integration.application.command.handler;
 
-import com.bone.core.usecase.Capability;
+import com.bone.core.capability.Capability;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.integration.application.command.cmd.CreateFlowCmd;
+import com.bone.integration.application.command.cmd.CreateFlowCommand;
 import com.bone.integration.application.event.IntegrationDomainEventPublisher;
 import com.bone.integration.domain.flow.FlowConnection;
 import com.bone.integration.domain.flow.FlowNode;
@@ -38,7 +38,7 @@ public class CreateFlowHandler {
     private final IntegrationDomainEventPublisher domainEventPublisher;
 
     @Transactional
-    public Long handle(CreateFlowCmd cmd) {
+    public Long handle(CreateFlowCommand cmd) {
         flowService.validateFlowName(cmd.name(), null);
         Long flowId = DistributedIdGenerator.generateLongId();
         IntegrationFlow flow = IntegrationFlow.create(flowId, cmd.name(), cmd.description());

@@ -1,7 +1,7 @@
 package com.bone.engine.extension.studio.config;
 
 import com.bone.engine.extension.api.model.sync.ExtensionRoutingMetadata;
-import com.bone.engine.extension.studio.domain.store.ExtPointStore;
+import com.bone.engine.extension.studio.domain.repository.ExtPointRepository;
 import com.bone.engine.extension.studio.sync.RuntimeExtensionSyncService;
 import com.bone.engine.extension.support.config.ExtensionMetadataRedisConfiguration;
 import com.bone.engine.extension.support.sync.ExtensionMetadataKeys;
@@ -56,8 +56,8 @@ public class ExtensionStudioSyncConfiguration {
 
   @Bean
     public RuntimeExtensionSyncService runtimeExtensionSyncService(
-            ExtensionMetadataStore metadataStore, ExtPointStore extPointStore) {
-        return new RuntimeExtensionSyncService(metadataStore, extPointStore);
+            ExtensionMetadataStore metadataStore, ExtPointRepository extPointRepository) {
+        return new RuntimeExtensionSyncService(metadataStore, extPointRepository);
     }
 
   private static String resolveRefreshChannel(ExtensionStudioProperties properties) {

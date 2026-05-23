@@ -1,8 +1,8 @@
 package com.bone.system.application.command.handler;
 
-import com.bone.core.usecase.Capability;
+import com.bone.core.capability.Capability;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.system.application.command.cmd.CreateLogCmd;
+import com.bone.system.application.command.cmd.CreateLogCommand;
 import com.bone.system.domain.model.log.SystemLog;
 import com.bone.system.domain.model.log.vo.LogLevel;
 import com.bone.system.domain.repository.SystemLogRepository;
@@ -26,7 +26,7 @@ public class LogCommandHandler {
     private final SystemLogRepository systemLogRepository;
 
     @Transactional
-    public Long handle(CreateLogCmd cmd) {
+    public Long handle(CreateLogCommand cmd) {
         Long logId = DistributedIdGenerator.generateLongId();
         SystemLog log = SystemLog.create(
                 logId,

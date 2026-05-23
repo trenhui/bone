@@ -1,7 +1,7 @@
 package com.bone.web.controller;
 
 import com.bone.core.result.ApiResponse;
-import com.bone.core.usecase.HandlerRegistry;
+import com.bone.core.capability.HandlerRegistry;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;

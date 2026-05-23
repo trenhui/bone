@@ -7,77 +7,91 @@ import com.bone.iam.adapter.web.converter.AccountWebConverter;
 import com.bone.iam.adapter.web.dto.req.CreateAccountReq;
 import com.bone.iam.adapter.web.dto.req.UpdateAccountReq;
 import com.bone.iam.adapter.web.dto.resp.AccountDetailResp;
-import com.bone.iam.application.command.cmd.DisableAccountCmd;
-import com.bone.iam.application.command.cmd.EnableAccountCmd;
-import com.bone.iam.application.command.cmd.ResetPasswordCmd;
-import com.bone.iam.application.usecase.standard.CreateAccountUseCase;
-import com.bone.iam.application.usecase.standard.UpdateAccountUseCase;
-import com.bone.iam.application.usecase.standard.EnableAccountUseCase;
-import com.bone.iam.application.usecase.standard.DisableAccountUseCase;
-import com.bone.iam.application.usecase.standard.ResetPasswordUseCase;
-import com.bone.iam.application.usecase.standard.AccountPageQueryUseCase;
-import com.bone.iam.application.usecase.standard.DeleteAccountUseCase;
+import com.bone.iam.application.command.cmd.DisableAccountCommand;
+import com.bone.iam.application.command.cmd.EnableAccountCommand;
+import com.bone.iam.application.command.cmd.ResetPasswordCommand;
+import com.bone.iam.application.command.handler.CreateAccountHandler;
+import com.bone.iam.application.command.handler.UpdateAccountHandler;
+import com.bone.iam.application.command.handler.EnableAccountHandler;
+import com.bone.iam.application.command.handler.DisableAccountHandler;
+import com.bone.iam.application.command.handler.ResetPasswordHandler;
+import com.bone.iam.application.query.handler.AccountPageQueryHandler;
+import com.bone.iam.application.command.handler.DeleteAccountHandler;
 import com.bone.iam.application.query.dto.AccountDTO;
 import com.bone.iam.application.query.handler.AccountDetailQueryHandler;
-import com.bone.iam.application.query.qry.AccountPageQry;
+import com.bone.iam.application.query.qry.AccountPageQuery;
+import java.util.ArrayList;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+@Slf4j
 @RestController
 @RequestMapping(PlatformApiPaths.IAM_V1 + "/accounts")
 @RequiredArgsConstructor
 public class AccountController {
 
-    private final CreateAccountUseCase createAccountUseCase;
-    private final UpdateAccountUseCase updateAccountUseCase;
-    private final EnableAccountUseCase enableAccountUseCase;
-    private final DisableAccountUseCase disableAccountUseCase;
-    private final ResetPasswordUseCase resetPasswordUseCase;
-    private final AccountPageQueryUseCase accountPageQueryUseCase;
-    private final DeleteAccountUseCase deleteAccountUseCase;
+    /** 单次导出最多返回的账号数（避免一次性把整张表拉到内存）。 */
+    private static final int EXPORT_MAX_SIZE = 10000;
+
+    private final CreateAccountHandler createAccountHandler;
+    private final UpdateAccountHandler updateAccountHandler;
+    private final EnableAccountHandler enableAccountHandler;
+    private final DisableAccountHandler disableAccountHandler;
+    private final ResetPasswordHandler resetPasswordHandler;
+    private final AccountPageQueryHandler accountPageQueryHandler;
+    private final DeleteAccountHandler deleteAccountHandler;
     private final AccountWebConverter accountWebConverter;
     private final AccountDetailQueryHandler accountDetailQueryHandler;
 
     @PostMapping
     public ApiResponse<Long> create(@RequestBody CreateAccountReq req) {
-        Long id = createAccountUseCase.execute(accountWebConverter.toCreateAccountCmd(req));
+        Long id = createAccountHandler.handle(accountWebConverter.toCreateAccountCommand(req));
         return ApiResponse.success(id);
     }
 
     @PutMapping("/{id}")
     public ApiResponse<Void> update(@PathVariable Long id, @RequestBody UpdateAccountReq req) {
-        updateAccountUseCase.execute(accountWebConverter.toUpdateAccountCmd(id, req));
+        updateAccountHandler.handle(accountWebConverter.toUpdateAccountCommand(id, req));
         return ApiResponse.success();
     }
 
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id) {
-        deleteAccountUseCase.execute(id);
+        deleteAccountHandler.handle(id);
         return ApiResponse.success();
     }
 
     @PostMapping("/{id}/enable")
     public ApiResponse<Void> enable(@PathVariable Long id) {
-        EnableAccountCmd cmd = new EnableAccountCmd();
+        EnableAccountCommand cmd = new EnableAccountCommand();
         cmd.setId(id);
-        enableAccountUseCase.execute(cmd);
+        enableAccountHandler.handle(cmd);
         return ApiResponse.success();
     }
 
     @PostMapping("/{id}/disable")
     public ApiResponse<Void> disable(@PathVariable Long id) {
-        DisableAccountCmd cmd = new DisableAccountCmd();
+        DisableAccountCommand cmd = new DisableAccountCommand();
         cmd.setId(id);
-        disableAccountUseCase.execute(cmd);
+        disableAccountHandler.handle(cmd);
         return ApiResponse.success();
     }
 
     @PostMapping("/{id}/reset-password")
-    public ApiResponse<Void> resetPassword(@PathVariable Long id, @RequestBody ResetPasswordCmd cmd) {
+    public ApiResponse<Void> resetPassword(@PathVariable Long id, @RequestBody ResetPasswordCommand cmd) {
         cmd.setId(id);
-        resetPasswordUseCase.execute(cmd);
+        resetPasswordHandler.handle(cmd);
         return ApiResponse.success();
     }
 
@@ -91,37 +105,43 @@ public class AccountController {
     }
 
     @GetMapping
-    public ApiResponse<PageResult<AccountDTO>> page(AccountPageQry qry) {
-        PageResult<AccountDTO> result = accountPageQueryUseCase.execute(qry);
+    public ApiResponse<PageResult<AccountDTO>> page(AccountPageQuery qry) {
+        PageResult<AccountDTO> result = accountPageQueryHandler.handle(qry);
         return ApiResponse.success(result);
     }
 
-    /**
-     * 导入用户
-     * 支持批量导入用户，用于系统初始化或数据迁移
-     */
+    /** 批量导入账号；失败项跳过并写日志，返回成功数量。 */
     @PostMapping("/import")
-    public ApiResponse<Integer> importAccounts(@RequestBody java.util.List<CreateAccountReq> list) {
-        int count = 0;
+    public ApiResponse<Integer> importAccounts(@RequestBody List<CreateAccountReq> list) {
+        if (list == null || list.isEmpty()) {
+            return ApiResponse.success(0);
+        }
+        List<String> failures = new ArrayList<>();
+        int success = 0;
         for (CreateAccountReq req : list) {
             try {
-                createAccountUseCase.execute(accountWebConverter.toCreateAccountCmd(req));
-                count++;
-            } catch (Exception e) {
-                // 记录导入失败，继续处理其他
+                createAccountHandler.handle(accountWebConverter.toCreateAccountCommand(req));
+                success++;
+            } catch (RuntimeException e) {
+                failures.add(req.getUsername() + ": " + e.getMessage());
+                log.warn("import account failed: username={}", req.getUsername(), e);
             }
         }
-        return ApiResponse.success(count);
+        if (!failures.isEmpty()) {
+            log.warn("import accounts finished: success={}, failed={}", success, failures.size());
+        }
+        return ApiResponse.success(success);
     }
 
-    /**
-     * 导出用户
-     * 导出所有用户信息，支持过滤条件
-     */
+    /** 导出账号；最大返回 {@value #EXPORT_MAX_SIZE} 条，超出请用过滤条件分批导出。 */
     @GetMapping("/export")
-    public ApiResponse<java.util.List<AccountDTO>> export(AccountPageQry qry) {
-        qry.setSize(10000); // 导出全部
-        PageResult<AccountDTO> result = accountPageQueryUseCase.execute(qry);
+    public ApiResponse<List<AccountDTO>> export(AccountPageQuery qry) {
+        qry.setSize(EXPORT_MAX_SIZE);
+        PageResult<AccountDTO> result = accountPageQueryHandler.handle(qry);
+        if (result.getTotal() > EXPORT_MAX_SIZE) {
+            log.warn("account export truncated: total={}, returned={}",
+                    result.getTotal(), result.getRecords().size());
+        }
         return ApiResponse.success(result.getRecords());
     }
 }

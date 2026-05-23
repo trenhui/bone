@@ -1,7 +1,7 @@
 package com.bone.studio.generator.application.query.handler;
 
-import com.bone.core.usecase.Capability;
-import com.bone.studio.generator.application.query.qry.DataSourceByIdQry;
+import com.bone.core.capability.Capability;
+import com.bone.studio.generator.application.query.qry.DataSourceByIdQuery;
 import com.bone.studio.generator.common.StudioIds;
 import com.bone.studio.generator.domain.data.DataSource;
 import com.bone.studio.generator.domain.repository.DataSourceRepository;
@@ -19,7 +19,7 @@ public class DataSourceByIdHandler {
     }
 
     @Transactional(readOnly = true)
-    public DataSource handle(DataSourceByIdQry query) {
+    public DataSource handle(DataSourceByIdQuery query) {
         Long id = StudioIds.parseRequired(query.getId());
         DataSource dataSource = dataSourceRepository.findById(id);
         if (dataSource == null) {

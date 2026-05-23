@@ -6,12 +6,12 @@ import com.bone.system.adapter.web.dto.req.CreateAlertRuleReq;
 import com.bone.system.adapter.web.dto.req.UpdateAlertRuleReq;
 import com.bone.system.adapter.web.dto.resp.AlertEventResp;
 import com.bone.system.adapter.web.dto.resp.AlertRuleResp;
-import com.bone.system.application.command.cmd.CreateAlertRuleCmd;
-import com.bone.system.application.command.cmd.UpdateAlertRuleCmd;
+import com.bone.system.application.command.cmd.CreateAlertRuleCommand;
+import com.bone.system.application.command.cmd.UpdateAlertRuleCommand;
 import com.bone.system.application.query.dto.AlertEventDTO;
 import com.bone.system.application.query.dto.AlertRuleDTO;
-import com.bone.system.application.query.qry.AlertEventPageQry;
-import com.bone.system.application.query.qry.AlertRulePageQry;
+import com.bone.system.application.query.qry.AlertEventPageQuery;
+import com.bone.system.application.query.qry.AlertRulePageQuery;
 import org.mapstruct.Mapper;
 
 /**
@@ -20,13 +20,13 @@ import org.mapstruct.Mapper;
 @Mapper
 public interface AlertWebConverter {
 
-    CreateAlertRuleCmd toCmd(CreateAlertRuleReq req);
+    CreateAlertRuleCommand toCommand(CreateAlertRuleReq req);
 
-    UpdateAlertRuleCmd toCmd(UpdateAlertRuleReq req);
+    UpdateAlertRuleCommand toCommand(UpdateAlertRuleReq req);
 
-    AlertRulePageQry toQry(AlertRulePageReq req);
+    AlertRulePageQuery toQuery(AlertRulePageReq req);
 
-    AlertEventPageQry toQry(AlertEventPageReq req);
+    AlertEventPageQuery toQuery(AlertEventPageReq req);
 
     AlertRuleResp toResp(AlertRuleDTO dto);
 

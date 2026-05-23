@@ -1,7 +1,7 @@
 package com.bone.masterdata.application.command.handler;
 
-import com.bone.core.usecase.Capability;
-import com.bone.masterdata.application.command.cmd.UpdateMasterDataEntityCmd;
+import com.bone.core.capability.Capability;
+import com.bone.masterdata.application.command.cmd.UpdateMasterDataEntityCommand;
 import com.bone.masterdata.domain.entity.MasterDataEntity;
 import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityName;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
@@ -27,7 +27,7 @@ public class UpdateMasterDataEntityHandler {
     private final MasterDataEntityRepository entityRepository;
 
     @Transactional
-    public void handle(UpdateMasterDataEntityCmd cmd) {
+    public void handle(UpdateMasterDataEntityCommand cmd) {
         MasterDataEntity entity = entityRepository.findById(cmd.getId());
         if (entity == null) {
             throw NotFoundException.of("主数据实体不存在");

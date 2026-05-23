@@ -1,7 +1,7 @@
 package com.bone.masterdata.application.command.handler;
 
-import com.bone.core.usecase.Capability;
-import com.bone.masterdata.application.command.cmd.UpdateMasterDataFieldCmd;
+import com.bone.core.capability.Capability;
+import com.bone.masterdata.application.command.cmd.UpdateMasterDataFieldCommand;
 import com.bone.core.exception.NotFoundException;
 import com.bone.masterdata.domain.entity.MasterDataField;
 import com.bone.masterdata.domain.model.field.vo.FieldName;
@@ -26,7 +26,7 @@ public class UpdateMasterDataFieldHandler {
     private final MasterDataFieldRepository masterDataFieldRepository;
 
     @Transactional
-    public void handle(UpdateMasterDataFieldCmd cmd) {
+    public void handle(UpdateMasterDataFieldCommand cmd) {
         MasterDataField field = masterDataFieldRepository.findById(cmd.getId());
         if (field == null) {
             throw NotFoundException.of("主数据字段不存在");

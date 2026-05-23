@@ -107,9 +107,11 @@ public class TestConfig {
     @Bean
     public RedisConnectionFactory redisConnectionFactory() {
         RedisStandaloneConfiguration config = new RedisStandaloneConfiguration();
-        config.setHostName("localhost");
-        config.setPort(6379);
-        return new LettuceConnectionFactory(config);
+        config.setHostName(environment.getProperty("spring.data.redis.host", "localhost"));
+        config.setPort(environment.getProperty("spring.data.redis.port", Integer.class, 6379));
+        LettuceConnectionFactory factory = new LettuceConnectionFactory(config);
+        factory.setValidateConnection(false);
+        return factory;
     }
 
     // Mock Redis 相关配置保持不变

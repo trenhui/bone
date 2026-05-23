@@ -3,10 +3,11 @@ package com.bone.engine.extension.studio.integration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
+import com.bone.engine.extension.studio.domain.gateway.ExtensionReadPort;
 import com.bone.engine.extension.studio.domain.model.ExtPoint;
 import com.bone.engine.extension.studio.domain.model.Extension;
-import com.bone.engine.extension.studio.domain.store.ExtPointStore;
-import com.bone.engine.extension.studio.domain.store.ExtensionStore;
+import com.bone.engine.extension.studio.domain.repository.ExtPointRepository;
+import com.bone.engine.extension.studio.domain.repository.ExtensionRepository;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,10 +46,13 @@ class StudioMetadataMysqlIT {
     }
 
     @Autowired
-    private ExtPointStore extPointStore;
+    private ExtPointRepository extPointRepository;
 
     @Autowired
-    private ExtensionStore extensionStore;
+    private ExtensionRepository extensionRepository;
+
+    @Autowired
+    private ExtensionReadPort extensionReadPort;
 
     @Test
     void saveExtPointAndExtensionAgainstMysql() {
@@ -57,17 +61,17 @@ class StudioMetadataMysqlIT {
         point.setInterfaceName("com.bone.test.MysqlItExtPoint");
         point.setDomain("test");
         point.setEnabled(true);
-        extPointStore.save(point);
+        extPointRepository.save(point);
         assertNotNull(point.getId());
 
         Extension extension = Extension.create(
                 point.getId(), "MySQL 实现", "mysql it", "com.bone.test.MysqlItImpl");
-        extensionStore.save(extension);
+        extensionRepository.save(extension);
         assertNotNull(extension.getId());
 
-        ExtPoint loaded = extPointStore.findByInterfaceName("com.bone.test.MysqlItExtPoint");
+        ExtPoint loaded = extPointRepository.findByInterfaceName("com.bone.test.MysqlItExtPoint");
         assertNotNull(loaded);
         assertEquals("MySQL IT 扩展点", loaded.getName());
-        assertEquals(1, extensionStore.findByExtPointId(point.getId()).size());
+        assertEquals(1, extensionReadPort.findByExtPointId(point.getId()).size());
     }
 }

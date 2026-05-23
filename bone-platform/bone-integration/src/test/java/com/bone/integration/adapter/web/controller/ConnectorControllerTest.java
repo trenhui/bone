@@ -2,13 +2,13 @@ package com.bone.integration.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
-import com.bone.integration.application.command.cmd.CreateConnectorCmd;
-import com.bone.integration.application.command.cmd.UpdateConnectorCmd;
+import com.bone.integration.application.command.cmd.CreateConnectorCommand;
+import com.bone.integration.application.command.cmd.UpdateConnectorCommand;
 import com.bone.integration.application.query.dto.ConnectorDTO;
-import com.bone.integration.application.query.qry.ConnectorPageQry;
-import com.bone.integration.application.usecase.standard.ConnectorPageQueryUseCase;
-import com.bone.integration.application.usecase.standard.CreateConnectorUseCase;
-import com.bone.integration.application.usecase.standard.UpdateConnectorUseCase;
+import com.bone.integration.application.query.qry.ConnectorPageQuery;
+import com.bone.integration.application.query.handler.ConnectorPageQueryHandler;
+import com.bone.integration.application.command.handler.CreateConnectorHandler;
+import com.bone.integration.application.command.handler.UpdateConnectorHandler;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -27,21 +27,21 @@ import static org.mockito.Mockito.when;
 class ConnectorControllerTest {
 
     @Mock
-    private CreateConnectorUseCase createConnectorUseCase;
+    private CreateConnectorHandler createConnectorHandler;
 
     @Mock
-    private UpdateConnectorUseCase updateConnectorUseCase;
+    private UpdateConnectorHandler updateConnectorHandler;
 
     @Mock
-    private ConnectorPageQueryUseCase connectorPageQueryUseCase;
+    private ConnectorPageQueryHandler connectorPageQueryHandler;
 
     @InjectMocks
     private ConnectorController connectorController;
 
     @Test
-    void create_delegatesToUseCase() {
-        CreateConnectorCmd cmd = new CreateConnectorCmd("http-conn", "HTTP", Map.of("url", "http://localhost"));
-        when(createConnectorUseCase.execute(cmd)).thenReturn(1L);
+    void create_delegatesToHandler() {
+        CreateConnectorCommand cmd = new CreateConnectorCommand("http-conn", "HTTP", Map.of("url", "http://localhost"));
+        when(createConnectorHandler.handle(cmd)).thenReturn(1L);
 
         ApiResponse<Long> response = connectorController.create(cmd);
 
@@ -50,21 +50,21 @@ class ConnectorControllerTest {
     }
 
     @Test
-    void update_delegatesToUseCase() {
+    void update_delegatesToHandler() {
         Long id = 1L;
-        UpdateConnectorCmd cmd = new UpdateConnectorCmd(id, "updated", "HTTP", Map.of());
+        UpdateConnectorCommand cmd = new UpdateConnectorCommand(id, "updated", "HTTP", Map.of());
 
         ApiResponse<Void> response = connectorController.update(id, cmd);
 
         assertTrue(response.isSuccess());
-        verify(updateConnectorUseCase).execute(new UpdateConnectorCmd(id, "updated", "HTTP", Map.of()));
+        verify(updateConnectorHandler).handle(new UpdateConnectorCommand(id, "updated", "HTTP", Map.of()));
     }
 
     @Test
     void page_returnsResult() {
-        ConnectorPageQry qry = new ConnectorPageQry(1, 10, null, null, null);
+        ConnectorPageQuery qry = new ConnectorPageQuery(1, 10, null, null, null);
         PageResult<ConnectorDTO> page = PageResult.of(Collections.emptyList(), 0L, 1, 10);
-        when(connectorPageQueryUseCase.execute(qry)).thenReturn(page);
+        when(connectorPageQueryHandler.handle(qry)).thenReturn(page);
 
         ApiResponse<PageResult<ConnectorDTO>> response = connectorController.page(qry);
 

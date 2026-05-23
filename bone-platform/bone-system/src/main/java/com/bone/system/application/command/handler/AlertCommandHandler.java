@@ -1,13 +1,12 @@
 package com.bone.system.application.command.handler;
 
-import com.bone.core.usecase.Capability;
+import com.bone.core.capability.Capability;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.metadata.sdk.query.dsl.QueryBuilder;
-import com.bone.system.application.command.cmd.CreateAlertRuleCmd;
-import com.bone.system.application.command.cmd.DisableAlertRuleCmd;
-import com.bone.system.application.command.cmd.EnableAlertRuleCmd;
-import com.bone.system.application.command.cmd.ResolveAlertCmd;
-import com.bone.system.application.command.cmd.UpdateAlertRuleCmd;
+import com.bone.system.application.command.cmd.CreateAlertRuleCommand;
+import com.bone.system.application.command.cmd.DisableAlertRuleCommand;
+import com.bone.system.application.command.cmd.EnableAlertRuleCommand;
+import com.bone.system.application.command.cmd.ResolveAlertCommand;
+import com.bone.system.application.command.cmd.UpdateAlertRuleCommand;
 import com.bone.system.common.exception.NotFoundException;
 import com.bone.system.domain.alert.AlertEvent;
 import com.bone.system.domain.alert.AlertRule;
@@ -37,7 +36,7 @@ public class AlertCommandHandler {
     private final AlertEventRepository alertEventRepository;
 
     @Transactional
-    public Long handle(CreateAlertRuleCmd cmd) {
+    public Long handle(CreateAlertRuleCommand cmd) {
         Long ruleId = DistributedIdGenerator.generateLongId();
         AlertRule rule = AlertRule.create(
                 ruleId,
@@ -54,7 +53,7 @@ public class AlertCommandHandler {
     }
 
     @Transactional
-    public void handle(UpdateAlertRuleCmd cmd) {
+    public void handle(UpdateAlertRuleCommand cmd) {
         AlertRule rule = alertRuleRepository.findById(cmd.getId());
         if (rule == null) {
             throw new NotFoundException("告警规则不存在: " + cmd.getId());
@@ -72,7 +71,7 @@ public class AlertCommandHandler {
     }
 
     @Transactional
-    public void handle(EnableAlertRuleCmd cmd) {
+    public void handle(EnableAlertRuleCommand cmd) {
         AlertRule rule = alertRuleRepository.findById(cmd.getId());
         if (rule == null) {
             throw new NotFoundException("告警规则不存在: " + cmd.getId());
@@ -82,7 +81,7 @@ public class AlertCommandHandler {
     }
 
     @Transactional
-    public void handle(DisableAlertRuleCmd cmd) {
+    public void handle(DisableAlertRuleCommand cmd) {
         AlertRule rule = alertRuleRepository.findById(cmd.getId());
         if (rule == null) {
             throw new NotFoundException("告警规则不存在: " + cmd.getId());
@@ -126,7 +125,7 @@ public class AlertCommandHandler {
     }
 
     @Transactional
-    public void handle(ResolveAlertCmd cmd) {
+    public void handle(ResolveAlertCommand cmd) {
         AlertEvent event = alertEventRepository.findById(cmd.getId());
         if (event == null) {
             throw new NotFoundException("告警事件不存在: " + cmd.getId());

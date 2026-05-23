@@ -1,5 +1,7 @@
 package com.bone.iam.infrastructure.security;
 
+import com.bone.iam.domain.gateway.AccessTokenIssuer;
+import com.bone.iam.domain.permission.DefaultPermissionCodes;
 import com.bone.iam.infrastructure.config.JwtConfig;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -13,7 +15,7 @@ import javax.crypto.SecretKey;
 import org.springframework.stereotype.Component;
 
 @Component
-public class JwtTokenService {
+public class JwtTokenService implements AccessTokenIssuer {
     private final JwtConfig jwtConfig;
     private final SecretKey signingKey;
 
@@ -24,6 +26,11 @@ public class JwtTokenService {
 
     public String generateToken(Long accountId, String username) {
         return generateToken(accountId, username, 0L, DefaultPermissionCodes.adminFallback());
+    }
+
+    @Override
+    public String issueAccessToken(Long accountId, String username, Long tenantId, List<String> scopes) {
+        return generateToken(accountId, username, tenantId, scopes);
     }
 
     public String generateToken(Long accountId, String username, Long tenantId, List<String> scopes) {

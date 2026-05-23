@@ -105,39 +105,13 @@ public final class ReservedQueryBuilder {
                 updates);
     }
 
-    /**
-     * H2 专用的 UPSERT（批量 MERGE）语法生成
-     */
-//    private static String buildH2Upsert(List<String> columns, List<String> keys) {
-//        String columnList = String.join(", ", columns);
-//        String keyList = String.join(", ", keys);
-//        String values = getNamedParameters(columns);
-//        return String.format(
-//                "MERGE INTO ext_data_reserved (%s) KEY (%s) VALUES (%s)",
-//                columnList,
-//                keyList,
-//                values);
-//    }
-
+    /** H2 单语句 MERGE（避免分号触发 SqlSecurityGuard） */
     private static String buildH2Upsert(List<String> columns, List<String> keys) {
-        String whereClause = keys.stream()
-                .map(k -> k + " = :" + k)
-                .collect(Collectors.joining(" AND "));
-
-        String updateClause = columns.stream()
-                .filter(c -> !keys.contains(c))
-                .map(c -> c + " = :" + c)
-                .collect(Collectors.joining(", "));
-
-        String insertCols = String.join(", ", columns);
-        String insertVals = columns.stream().map(c -> ":" + c).collect(Collectors.joining(", "));
-
-        return "-- Try UPDATE first\n" +
-                "UPDATE ext_data_reserved SET " + updateClause + " WHERE " + whereClause + ";\n" +
-                "-- If not updated, then INSERT\n" +
-                "INSERT INTO ext_data_reserved (" + insertCols + ")\n" +
-                "SELECT " + insertVals + "\n" +
-                "WHERE NOT EXISTS (SELECT 1 FROM ext_data_reserved WHERE " + whereClause + ")";
+        return String.format(
+                "MERGE INTO ext_data_reserved (%s) KEY (%s) VALUES (%s)",
+                String.join(", ", columns),
+                String.join(", ", keys),
+                getNamedParameters(columns));
     }
 
 

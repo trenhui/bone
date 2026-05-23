@@ -2,7 +2,7 @@ package com.bone.iam.application.query.handler;
 
 import com.bone.core.model.PageResult;
 import com.bone.iam.application.query.dto.TenantDTO;
-import com.bone.iam.application.query.qry.TenantPageQry;
+import com.bone.iam.application.query.qry.TenantPageQuery;
 import com.bone.iam.domain.tenant.Tenant;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class TenantPageQueryHandler {
 
-    public PageResult<TenantDTO> handle(TenantPageQry qry) {
+    public PageResult<TenantDTO> handle(TenantPageQuery qry) {
         FluentQuery<Tenant> query = QueryBuilder.from(Tenant.class);
         if (qry.getCode() != null && !qry.getCode().isBlank()) {
             query.where(Tenant::getCode).like("%" + qry.getCode() + "%");

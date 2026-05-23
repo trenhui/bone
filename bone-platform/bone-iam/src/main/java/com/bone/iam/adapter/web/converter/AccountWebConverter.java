@@ -3,16 +3,16 @@ package com.bone.iam.adapter.web.converter;
 import com.bone.iam.adapter.web.dto.req.CreateAccountReq;
 import com.bone.iam.adapter.web.dto.req.UpdateAccountReq;
 import com.bone.iam.adapter.web.dto.resp.AccountDetailResp;
-import com.bone.iam.application.command.cmd.CreateAccountCmd;
-import com.bone.iam.application.command.cmd.UpdateAccountCmd;
+import com.bone.iam.application.command.cmd.CreateAccountCommand;
+import com.bone.iam.application.command.cmd.UpdateAccountCommand;
 import com.bone.iam.application.query.dto.AccountDTO;
 import org.springframework.stereotype.Component;
 
 @Component
 public class AccountWebConverter {
 
-    public CreateAccountCmd toCreateAccountCmd(CreateAccountReq req) {
-        CreateAccountCmd cmd = new CreateAccountCmd();
+    public CreateAccountCommand toCreateAccountCommand(CreateAccountReq req) {
+        CreateAccountCommand cmd = new CreateAccountCommand();
         cmd.setUsername(req.getUsername());
         cmd.setPassword(req.getPassword());
         cmd.setEmail(req.getEmail());
@@ -23,8 +23,8 @@ public class AccountWebConverter {
         return cmd;
     }
 
-    public UpdateAccountCmd toUpdateAccountCmd(Long id, UpdateAccountReq req) {
-        UpdateAccountCmd cmd = new UpdateAccountCmd();
+    public UpdateAccountCommand toUpdateAccountCommand(Long id, UpdateAccountReq req) {
+        UpdateAccountCommand cmd = new UpdateAccountCommand();
         cmd.setId(id);
         cmd.setEmail(req.getEmail());
         cmd.setPhone(req.getPhone());

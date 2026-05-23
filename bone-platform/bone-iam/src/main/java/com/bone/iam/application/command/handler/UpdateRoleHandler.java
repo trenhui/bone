@@ -1,8 +1,8 @@
 package com.bone.iam.application.command.handler;
 
 import com.bone.core.exception.NotFoundException;
-import com.bone.core.usecase.Capability;
-import com.bone.iam.application.command.cmd.UpdateRoleCmd;
+import com.bone.core.capability.Capability;
+import com.bone.iam.application.command.cmd.UpdateRoleCommand;
 import com.bone.iam.domain.role.Role;
 import com.bone.iam.domain.repository.RoleRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +25,7 @@ public class UpdateRoleHandler {
     private final RoleRepository roleRepository;
 
     @Transactional
-    public void handle(UpdateRoleCmd cmd) {
+    public void handle(UpdateRoleCommand cmd) {
         Role role = roleRepository.findById(cmd.getId());
         if (role == null) {
             throw new NotFoundException("角色不存在");

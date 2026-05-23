@@ -1,8 +1,8 @@
 package com.bone.iam.application.command.handler;
 
 import com.bone.core.exception.NotFoundException;
-import com.bone.core.usecase.Capability;
-import com.bone.iam.application.command.cmd.UpdatePermissionCmd;
+import com.bone.core.capability.Capability;
+import com.bone.iam.application.command.cmd.UpdatePermissionCommand;
 import com.bone.iam.domain.permission.Permission;
 import com.bone.iam.domain.repository.PermissionRepository;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +25,7 @@ public class UpdatePermissionHandler {
     private final PermissionRepository permissionRepository;
 
     @Transactional
-    public void handle(UpdatePermissionCmd cmd) {
+    public void handle(UpdatePermissionCommand cmd) {
         Permission permission = permissionRepository.findById(cmd.getId());
         if (permission == null) {
             throw new NotFoundException("权限不存在");

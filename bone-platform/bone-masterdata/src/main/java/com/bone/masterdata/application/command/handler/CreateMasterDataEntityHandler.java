@@ -1,13 +1,13 @@
 package com.bone.masterdata.application.command.handler;
 
 import com.bone.core.exception.BizException;
-import com.bone.core.usecase.Capability;
+import com.bone.core.capability.Capability;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.masterdata.application.command.cmd.CreateMasterDataEntityCmd;
+import com.bone.masterdata.application.command.cmd.CreateMasterDataEntityCommand;
 import com.bone.masterdata.domain.entity.MasterDataEntity;
 import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityName;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
-import com.bone.metadata.sdk.query.dsl.QueryBuilder;
+import com.bone.metadata.sdk.query.criteria.Criteria;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,14 +27,13 @@ public class CreateMasterDataEntityHandler {
     private final MasterDataEntityRepository entityRepository;
 
     @Transactional
-    public Long handle(CreateMasterDataEntityCmd cmd) {
+    public Long handle(CreateMasterDataEntityCommand cmd) {
         MasterDataEntityName entityName = MasterDataEntityName.of(cmd.getName());
 
-        boolean exists = QueryBuilder.from(MasterDataEntity.class)
-                .where(MasterDataEntity::getName)
-                .eq(entityName)
-                .exists();
-        if (exists) {
+        long existing =
+                entityRepository.countByCriteria(
+                        Criteria.<MasterDataEntity>create().eq("name", entityName));
+        if (existing > 0) {
             throw BizException.of("主数据实体名称已存在");
         }
 

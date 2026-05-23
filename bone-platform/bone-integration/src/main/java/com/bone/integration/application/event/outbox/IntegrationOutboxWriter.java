@@ -5,7 +5,7 @@ import com.bone.core.tenant.context.TenantContext;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.integration.domain.outbox.IntegrationOutboxRecord;
 import com.bone.integration.domain.repository.IntegrationOutboxRepository;
-import com.bone.integration.infrastructure.config.IntegrationOutboxProperties;
+import com.bone.integration.application.config.IntegrationOutboxProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

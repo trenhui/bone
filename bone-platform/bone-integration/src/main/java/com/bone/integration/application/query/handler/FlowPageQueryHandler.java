@@ -2,7 +2,7 @@ package com.bone.integration.application.query.handler;
 
 import com.bone.core.model.PageResult;
 import com.bone.integration.application.query.dto.FlowDTO;
-import com.bone.integration.application.query.qry.FlowPageQry;
+import com.bone.integration.application.query.qry.FlowPageQuery;
 import com.bone.integration.domain.flow.IntegrationFlow;
 import com.bone.integration.domain.model.flow.vo.FlowStatus;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;
@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 public class FlowPageQueryHandler {
 
     @Transactional(readOnly = true)
-    public PageResult<FlowDTO> handle(FlowPageQry qry) {
+    public PageResult<FlowDTO> handle(FlowPageQuery qry) {
         FluentQuery<IntegrationFlow> query = QueryBuilder.from(IntegrationFlow.class);
 
         if (qry.keyword() != null && !qry.keyword().isBlank()) {

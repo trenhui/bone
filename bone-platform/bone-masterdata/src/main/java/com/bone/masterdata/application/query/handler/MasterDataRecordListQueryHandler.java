@@ -2,7 +2,7 @@ package com.bone.masterdata.application.query.handler;
 
 import com.bone.core.result.PageResult;
 import com.bone.masterdata.application.query.dto.MasterDataRecordDTO;
-import com.bone.masterdata.application.query.qry.MasterDataRecordListQry;
+import com.bone.masterdata.application.query.qry.MasterDataRecordListQuery;
 import com.bone.masterdata.domain.model.record.vo.MasterDataRecordStatus;
 import com.bone.masterdata.domain.record.MasterDataRecord;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;
@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
 public class MasterDataRecordListQueryHandler {
 
     @Transactional(readOnly = true)
-    public PageResult<MasterDataRecordDTO> handle(MasterDataRecordListQry qry) {
+    public PageResult<MasterDataRecordDTO> handle(MasterDataRecordListQuery qry) {
         FluentQuery<MasterDataRecord> query = QueryBuilder.from(MasterDataRecord.class);
 
         if (qry.getMasterDataEntityId() != null) {

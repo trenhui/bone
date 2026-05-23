@@ -51,7 +51,7 @@ public class Condition {
 
     // 静态初始化块：配置 LIKE 模板
     static {
-        // MySQL/OceanBase/H2 - CONCAT 风格，需要 ESCAPE '\\\\'
+        // MySQL/OceanBase - CONCAT 风格，需要 ESCAPE '\\\\'
         Function<LikeContext, String> mysqlLike = ctx -> {
             String notKeyword = ctx.notLike ? "NOT " : "";
             return String.format("%s %sLIKE CONCAT('%s', :%s, '%s') ESCAPE '\\\\'",
@@ -59,7 +59,14 @@ public class Condition {
         };
         LIKE_TEMPLATES.put(DatabaseType.MYSQL, mysqlLike);
         LIKE_TEMPLATES.put(DatabaseType.OceanBase, mysqlLike);
-        LIKE_TEMPLATES.put(DatabaseType.H2, mysqlLike);
+
+        // H2（MySQL 兼容模式）不支持 ESCAPE '\\\\' 写法，省略 ESCAPE 子句
+        Function<LikeContext, String> h2Like = ctx -> {
+            String notKeyword = ctx.notLike ? "NOT " : "";
+            return String.format("%s %sLIKE CONCAT('%s', :%s, '%s')",
+                    ctx.column, notKeyword, ctx.prefix, ctx.paramName, ctx.suffix);
+        };
+        LIKE_TEMPLATES.put(DatabaseType.H2, h2Like);
 
         // PostgreSQL - 使用标准LIKE语法，参数值需要预先处理
         Function<LikeContext, String> postgresLike = ctx -> {

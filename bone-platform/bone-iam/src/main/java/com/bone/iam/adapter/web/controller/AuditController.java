@@ -4,8 +4,8 @@ import com.bone.core.model.ApiResponse;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.core.model.PageResult;
 import com.bone.iam.application.query.dto.AuditLogDTO;
-import com.bone.iam.application.query.qry.AuditLogListQry;
-import com.bone.iam.application.usecase.standard.AuditLogQueryUseCase;
+import com.bone.iam.application.query.qry.AuditLogListQuery;
+import com.bone.iam.application.query.handler.AuditLogListQueryHandler;
 import com.bone.iam.adapter.web.dto.resp.AuditSettingsResp;
 import com.bone.iam.infrastructure.persistence.AuditSettingsRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AuditController {
 
-    private final AuditLogQueryUseCase auditLogQueryUseCase;
+    private final AuditLogListQueryHandler auditLogListQueryHandler;
     private final AuditSettingsRepository auditSettingsRepository;
 
     /**
@@ -31,8 +31,8 @@ public class AuditController {
      * 支持按用户、操作类型、时间范围等条件过滤
      */
     @GetMapping("/logs")
-    public ApiResponse<PageResult<AuditLogDTO>> logs(AuditLogListQry qry) {
-        PageResult<AuditLogDTO> result = auditLogQueryUseCase.execute(qry);
+    public ApiResponse<PageResult<AuditLogDTO>> logs(AuditLogListQuery qry) {
+        PageResult<AuditLogDTO> result = auditLogListQueryHandler.handle(qry);
         return ApiResponse.success(result);
     }
 
@@ -41,9 +41,9 @@ public class AuditController {
      * 支持导出为Excel或CSV格式
      */
     @GetMapping("/logs/export")
-    public ApiResponse<List<AuditLogDTO>> export(AuditLogListQry qry) {
+    public ApiResponse<List<AuditLogDTO>> export(AuditLogListQuery qry) {
         qry.setSize(10000); // 导出全部
-        PageResult<AuditLogDTO> result = auditLogQueryUseCase.execute(qry);
+        PageResult<AuditLogDTO> result = auditLogListQueryHandler.handle(qry);
         return ApiResponse.success(result.getRecords());
     }
 

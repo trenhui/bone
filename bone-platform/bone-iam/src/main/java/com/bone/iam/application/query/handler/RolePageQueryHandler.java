@@ -2,7 +2,7 @@ package com.bone.iam.application.query.handler;
 
 import com.bone.core.model.PageResult;
 import com.bone.iam.application.query.dto.RoleDTO;
-import com.bone.iam.application.query.qry.RolePageQry;
+import com.bone.iam.application.query.qry.RolePageQuery;
 import com.bone.iam.domain.role.Role;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RolePageQueryHandler {
     @Transactional(readOnly = true)
-    public PageResult<RoleDTO> handle(RolePageQry qry) {
+    public PageResult<RoleDTO> handle(RolePageQuery qry) {
         FluentQuery<Role> query = QueryBuilder.from(Role.class);
 
         if (qry.getKeyword() != null && !qry.getKeyword().isEmpty()) {

@@ -4,12 +4,12 @@ import com.bone.studio.generator.application.command.cmd.CreateDataSourceCommand
 import com.bone.studio.generator.application.command.cmd.DeleteDataSourceCommand;
 import com.bone.studio.generator.application.command.cmd.TestDataSourceConnectionCommand;
 import com.bone.studio.generator.application.command.cmd.UpdateDataSourceCommand;
-import com.bone.studio.generator.application.query.qry.GetDataSourceListQry;
-import com.bone.studio.generator.application.usecase.GetDataSourceListUseCase;
-import com.bone.studio.generator.application.usecase.TestDataSourceConnectionUseCase;
-import com.bone.studio.generator.application.usecase.standard.CreateDataSourceUseCase;
-import com.bone.studio.generator.application.usecase.standard.DeleteDataSourceUseCase;
-import com.bone.studio.generator.application.usecase.standard.UpdateDataSourceUseCase;
+import com.bone.studio.generator.application.query.qry.GetDataSourceListQuery;
+import com.bone.studio.generator.application.query.handler.GetDataSourceListQueryHandler;
+import com.bone.studio.generator.application.command.handler.TestDataSourceConnectionHandler;
+import com.bone.studio.generator.application.command.handler.CreateDataSourceHandler;
+import com.bone.studio.generator.application.command.handler.DeleteDataSourceHandler;
+import com.bone.studio.generator.application.command.handler.UpdateDataSourceHandler;
 import com.bone.studio.generator.domain.data.DataSource;
 import com.bone.core.model.PageResult;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,19 +33,19 @@ class DataSourceControllerTest {
     private TestRestTemplate restTemplate;
 
     @Autowired
-    private CreateDataSourceUseCase createDataSourceUseCase;
+    private CreateDataSourceHandler createDataSourceHandler;
 
     @Autowired
-    private UpdateDataSourceUseCase updateDataSourceUseCase;
+    private UpdateDataSourceHandler updateDataSourceHandler;
 
     @Autowired
-    private DeleteDataSourceUseCase deleteDataSourceUseCase;
+    private DeleteDataSourceHandler deleteDataSourceHandler;
 
     @Autowired
-    private TestDataSourceConnectionUseCase testDataSourceConnectionUseCase;
+    private TestDataSourceConnectionHandler testDataSourceConnectionHandler;
 
     @Autowired
-    private GetDataSourceListUseCase getDataSourceListUseCase;
+    private GetDataSourceListQueryHandler queryHandler;
 
     private String baseUrl;
 
@@ -78,12 +78,12 @@ class DataSourceControllerTest {
 
     @Test
     void testGetDataSourceList() {
-        GetDataSourceListQry query = GetDataSourceListQry.builder()
+        GetDataSourceListQuery query = GetDataSourceListQuery.builder()
                 .page(1)
                 .size(10)
                 .build();
 
-        PageResult<DataSource> result = getDataSourceListUseCase.execute(query);
+        PageResult<DataSource> result = queryHandler.handle(query);
 
         assertNotNull(result);
         assertNotNull(result.getRecords());
@@ -101,16 +101,16 @@ class DataSourceControllerTest {
                 .password("123456")
                 .build();
 
-        String dataSourceId = createDataSourceUseCase.execute(createCommand);
+        String dataSourceId = createDataSourceHandler.handle(createCommand);
         assertNotNull(dataSourceId);
         assertFalse(dataSourceId.isEmpty());
 
-        GetDataSourceListQry query = GetDataSourceListQry.builder()
+        GetDataSourceListQuery query = GetDataSourceListQuery.builder()
                 .page(1)
                 .size(100)
                 .build();
 
-        PageResult<DataSource> result = getDataSourceListUseCase.execute(query);
+        PageResult<DataSource> result = queryHandler.handle(query);
         assertNotNull(result);
         assertNotNull(result.getRecords());
 
@@ -131,7 +131,7 @@ class DataSourceControllerTest {
                 .password("123456")
                 .build();
 
-        String dataSourceId = createDataSourceUseCase.execute(createCommand);
+        String dataSourceId = createDataSourceHandler.handle(createCommand);
 
         UpdateDataSourceCommand updateCommand = UpdateDataSourceCommand.builder()
                 .id(dataSourceId)
@@ -144,7 +144,7 @@ class DataSourceControllerTest {
                 .password("123456")
                 .build();
 
-        String result = updateDataSourceUseCase.execute(updateCommand);
+        String result = updateDataSourceHandler.handle(updateCommand);
         assertNotNull(result);
     }
 
@@ -160,25 +160,25 @@ class DataSourceControllerTest {
                 .password("123456")
                 .build();
 
-        String dataSourceId = createDataSourceUseCase.execute(createCommand);
+        String dataSourceId = createDataSourceHandler.handle(createCommand);
 
-        GetDataSourceListQry queryBeforeDelete = GetDataSourceListQry.builder()
+        GetDataSourceListQuery queryBeforeDelete = GetDataSourceListQuery.builder()
                 .page(1)
                 .size(100)
                 .build();
-        PageResult<DataSource> resultBeforeDelete = getDataSourceListUseCase.execute(queryBeforeDelete);
+        PageResult<DataSource> resultBeforeDelete = queryHandler.handle(queryBeforeDelete);
         long countBefore = resultBeforeDelete.getRecords().size();
 
         DeleteDataSourceCommand deleteCommand = DeleteDataSourceCommand.builder()
                 .id(dataSourceId)
                 .build();
-        deleteDataSourceUseCase.execute(deleteCommand);
+        deleteDataSourceHandler.handle(deleteCommand);
 
-        GetDataSourceListQry queryAfterDelete = GetDataSourceListQry.builder()
+        GetDataSourceListQuery queryAfterDelete = GetDataSourceListQuery.builder()
                 .page(1)
                 .size(100)
                 .build();
-        PageResult<DataSource> resultAfterDelete = getDataSourceListUseCase.execute(queryAfterDelete);
+        PageResult<DataSource> resultAfterDelete = queryHandler.handle(queryAfterDelete);
         long countAfter = resultAfterDelete.getRecords().size();
 
         assertEquals(countBefore - 1, countAfter);
@@ -196,13 +196,13 @@ class DataSourceControllerTest {
                 .password("mysql123")
                 .build();
 
-        String dataSourceId = createDataSourceUseCase.execute(createCommand);
+        String dataSourceId = createDataSourceHandler.handle(createCommand);
 
         TestDataSourceConnectionCommand command = TestDataSourceConnectionCommand.builder()
                 .id(dataSourceId)
                 .build();
 
-        boolean result = testDataSourceConnectionUseCase.execute(command);
+        boolean result = testDataSourceConnectionHandler.handle(command);
         assertTrue(result);
     }
 }

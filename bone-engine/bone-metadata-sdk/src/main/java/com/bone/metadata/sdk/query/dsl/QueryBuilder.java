@@ -1,5 +1,6 @@
 package com.bone.metadata.sdk.query.dsl;
 
+import com.bone.core.annotation.ReadSideOnly;
 import com.bone.metadata.sdk.sql.executor.SqlExecutor;
 
 import java.util.Objects;
@@ -7,6 +8,7 @@ import java.util.Objects;
 /**
  * 查询构建器工厂 - 创建类型安全的流畅查询
  */
+@ReadSideOnly
 public class QueryBuilder {
 
     private static SqlExecutor sqlExecutor;

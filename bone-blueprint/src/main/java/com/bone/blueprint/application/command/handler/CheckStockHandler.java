@@ -2,7 +2,7 @@ package com.bone.blueprint.application.command.handler;
 
 import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.order.OrderItem;
-import com.bone.blueprint.infrastructure.annotation.Capability;
+import com.bone.core.capability.Capability;
 import com.bone.core.exception.DomainException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

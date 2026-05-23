@@ -2,8 +2,8 @@ package com.bone.metadata.catalog.adapter.web.controller;
 
 import com.bone.core.result.ApiResponse;
 import com.bone.core.result.PageResult;
-import com.bone.metadata.catalog.application.command.cmd.CreateMetaEntityCmd;
-import com.bone.metadata.catalog.application.command.cmd.UpdateMetaEntityCmd;
+import com.bone.metadata.catalog.application.command.cmd.CreateMetaEntityCommand;
+import com.bone.metadata.catalog.application.command.cmd.UpdateMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.handler.CreateMetaEntityHandler;
 import com.bone.metadata.catalog.application.command.handler.DeleteMetaEntityHandler;
 import com.bone.metadata.catalog.application.command.handler.PublishMetaEntityHandler;
@@ -11,7 +11,7 @@ import com.bone.metadata.catalog.application.command.handler.UpdateMetaEntityHan
 import com.bone.metadata.catalog.application.query.dto.MetaEntityDTO;
 import com.bone.metadata.catalog.application.query.handler.MetaEntityDetailQueryHandler;
 import com.bone.metadata.catalog.application.query.handler.MetaEntityPageQueryHandler;
-import com.bone.metadata.catalog.application.query.qry.MetaEntityPageQry;
+import com.bone.metadata.catalog.application.query.qry.MetaEntityPageQuery;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -30,19 +30,19 @@ public class MetaEntityCatalogController {
   private final MetaEntityDetailQueryHandler metaEntityDetailQueryHandler;
 
   @PostMapping
-  public ApiResponse<Long> create(@Valid @RequestBody CreateMetaEntityCmd cmd) {
+  public ApiResponse<Long> create(@Valid @RequestBody CreateMetaEntityCommand cmd) {
     return ApiResponse.success(createMetaEntityHandler.handle(cmd));
   }
 
   @PutMapping("/{id}")
   public ApiResponse<Void> update(
-      @PathVariable Long id, @Valid @RequestBody UpdateMetaEntityCmd cmd) {
+      @PathVariable Long id, @Valid @RequestBody UpdateMetaEntityCommand cmd) {
     updateMetaEntityHandler.handle(id, cmd);
     return ApiResponse.success();
   }
 
   @GetMapping
-  public ApiResponse<PageResult<MetaEntityDTO>> page(MetaEntityPageQry qry) {
+  public ApiResponse<PageResult<MetaEntityDTO>> page(MetaEntityPageQuery qry) {
     return ApiResponse.success(metaEntityPageQueryHandler.handle(qry));
   }
 

@@ -4,9 +4,9 @@ import com.bone.core.util.DistributedIdGenerator;
 import com.bone.masterdata.domain.entity.MasterDataEntity;
 import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityName;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
-import com.bone.masterdata.infrastructure.gateway.MetaEntityReadGateway;
-import com.bone.masterdata.infrastructure.gateway.MetaEntityReadGateway.MetaEntityRow;
-import com.bone.metadata.sdk.query.dsl.QueryBuilder;
+import com.bone.masterdata.domain.gateway.MetaEntityCatalogPort;
+import com.bone.masterdata.domain.gateway.MetaEntityCatalogPort.MetaEntityRow;
+import com.bone.metadata.sdk.query.criteria.Criteria;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -20,20 +20,18 @@ import org.springframework.transaction.annotation.Transactional;
 public class ConvertFromBusinessEntityHandler {
 
     private final MasterDataEntityRepository entityRepository;
-    private final MetaEntityReadGateway metaEntityReadGateway;
+    private final MetaEntityCatalogPort metaEntityCatalogPort;
 
     @Transactional
     public Long handle(Long metaEntityId) {
         List<MasterDataEntity> existing =
-                QueryBuilder.from(MasterDataEntity.class)
-                        .where(MasterDataEntity::getMetaEntityId)
-                        .eq(metaEntityId)
-                        .list();
+                entityRepository.findByCriteria(
+                        Criteria.<MasterDataEntity>create().eq("metaEntityId", metaEntityId));
         if (!existing.isEmpty()) {
             return existing.get(0).getId();
         }
 
-        MetaEntityRow meta = metaEntityReadGateway.requirePublished(metaEntityId);
+        MetaEntityRow meta = metaEntityCatalogPort.requirePublished(metaEntityId);
         String displayName =
                 meta.displayName() != null && !meta.displayName().isBlank()
                         ? meta.displayName()

@@ -1,9 +1,9 @@
 package com.bone.studio.generator.adapter.web.controller;
 
 import com.bone.studio.generator.application.command.cmd.CreateCodeTemplateCommand;
-import com.bone.studio.generator.application.query.qry.GetCodeTemplateListQry;
-import com.bone.studio.generator.application.usecase.CreateCodeTemplateUseCase;
-import com.bone.studio.generator.application.usecase.GetCodeTemplateListUseCase;
+import com.bone.studio.generator.application.query.qry.GetCodeTemplateListQuery;
+import com.bone.studio.generator.application.command.handler.CreateCodeTemplateHandler;
+import com.bone.studio.generator.application.query.handler.GetCodeTemplateListQueryHandler;
 import com.bone.studio.generator.domain.data.CodeTemplate;
 import com.bone.core.model.PageResult;
 import org.junit.jupiter.api.Test;
@@ -28,10 +28,10 @@ class CodeTemplateControllerTest {
     private TestRestTemplate restTemplate;
 
     @Autowired
-    private CreateCodeTemplateUseCase createCodeTemplateUseCase;
+    private CreateCodeTemplateHandler createCodeTemplateHandler;
 
     @Autowired
-    private GetCodeTemplateListUseCase getCodeTemplateListUseCase;
+    private GetCodeTemplateListQueryHandler queryHandler;
 
     private String baseUrl;
 
@@ -60,12 +60,12 @@ class CodeTemplateControllerTest {
 
     @Test
     void testGetCodeTemplateList() {
-        GetCodeTemplateListQry query = GetCodeTemplateListQry.builder()
+        GetCodeTemplateListQuery query = GetCodeTemplateListQuery.builder()
                 .page(1)
                 .size(10)
                 .build();
 
-        PageResult<CodeTemplate> result = getCodeTemplateListUseCase.execute(query);
+        PageResult<CodeTemplate> result = queryHandler.handle(query);
 
         assertNotNull(result);
         assertNotNull(result.getRecords());
@@ -73,12 +73,12 @@ class CodeTemplateControllerTest {
 
     @Test
     void testGetCodeTemplateListContainsData() {
-        GetCodeTemplateListQry query = GetCodeTemplateListQry.builder()
+        GetCodeTemplateListQuery query = GetCodeTemplateListQuery.builder()
                 .page(1)
                 .size(100)
                 .build();
 
-        PageResult<CodeTemplate> result = getCodeTemplateListUseCase.execute(query);
+        PageResult<CodeTemplate> result = queryHandler.handle(query);
 
         assertNotNull(result);
         assertNotNull(result.getRecords());

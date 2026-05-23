@@ -2,7 +2,7 @@ package com.bone.iam.application.query.handler;
 
 import com.bone.core.model.PageResult;
 import com.bone.iam.application.query.dto.AuditLogDTO;
-import com.bone.iam.application.query.qry.AuditLogListQry;
+import com.bone.iam.application.query.qry.AuditLogListQuery;
 import com.bone.iam.domain.audit.AuditLog;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AuditLogListQueryHandler {
     @Transactional(readOnly = true)
-    public PageResult<AuditLogDTO> handle(AuditLogListQry qry) {
+    public PageResult<AuditLogDTO> handle(AuditLogListQuery qry) {
         FluentQuery<AuditLog> query = QueryBuilder.from(AuditLog.class);
 
         if (qry.getUserId() != null) {

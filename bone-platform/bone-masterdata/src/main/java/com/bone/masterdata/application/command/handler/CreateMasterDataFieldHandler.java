@@ -1,15 +1,14 @@
 package com.bone.masterdata.application.command.handler;
 
-import com.bone.core.usecase.Capability;
+import com.bone.core.capability.Capability;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.masterdata.application.command.cmd.CreateMasterDataFieldCmd;
+import com.bone.masterdata.application.command.cmd.CreateMasterDataFieldCommand;
 import com.bone.masterdata.domain.entity.MasterDataField;
 import com.bone.masterdata.domain.model.field.vo.FieldCode;
 import com.bone.masterdata.domain.model.field.vo.FieldName;
 import com.bone.masterdata.domain.repository.MasterDataFieldRepository;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
-import com.bone.metadata.sdk.query.dsl.FluentQuery;
-import com.bone.metadata.sdk.query.dsl.QueryBuilder;
+import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.core.exception.BizException;
 import com.bone.core.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -33,17 +32,17 @@ public class CreateMasterDataFieldHandler {
     private final MasterDataEntityRepository entityRepository;
 
     @Transactional
-    public Long handle(CreateMasterDataFieldCmd cmd) {
+    public Long handle(CreateMasterDataFieldCommand cmd) {
         if (entityRepository.findById(cmd.getMasterDataEntityId()) == null) {
             throw NotFoundException.of("主数据实体不存在");
         }
 
-        boolean exists = QueryBuilder.from(MasterDataField.class)
-                .where(MasterDataField::getMasterDataEntityId).eq(cmd.getMasterDataEntityId())
-                .and(MasterDataField::getName)
-                .eq(FieldName.of(cmd.getName()))
-                .exists();
-        if (exists) {
+        long existing =
+                fieldRepository.countByCriteria(
+                        Criteria.<MasterDataField>create()
+                                .eq("masterDataEntityId", cmd.getMasterDataEntityId())
+                                .eq("name", FieldName.of(cmd.getName())));
+        if (existing > 0) {
             throw BizException.of("字段名称已存在");
         }
 

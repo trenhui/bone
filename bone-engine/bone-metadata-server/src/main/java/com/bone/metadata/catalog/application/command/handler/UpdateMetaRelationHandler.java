@@ -1,7 +1,7 @@
 package com.bone.metadata.catalog.application.command.handler;
 
 import com.bone.core.exception.BizException;
-import com.bone.metadata.catalog.application.command.cmd.UpdateMetaRelationCmd;
+import com.bone.metadata.catalog.application.command.cmd.UpdateMetaRelationCommand;
 import com.bone.metadata.catalog.domain.model.MetaEntityRelation;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRelationRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +15,7 @@ public class UpdateMetaRelationHandler {
   private final MetaEntityRelationRepository relationRepository;
 
   @Transactional
-  public void handle(Long id, UpdateMetaRelationCmd cmd) {
+  public void handle(Long id, UpdateMetaRelationCommand cmd) {
     MetaEntityRelation relation = relationRepository.findById(id);
     if (relation == null) {
       throw BizException.of("关系不存在: " + id);

@@ -1,7 +1,7 @@
 package com.bone.studio.generator.application.query.handler;
 
-import com.bone.core.usecase.Capability;
-import com.bone.studio.generator.application.query.qry.LoadTablesQry;
+import com.bone.core.capability.Capability;
+import com.bone.studio.generator.application.query.qry.LoadTablesQuery;
 import com.bone.studio.generator.domain.data.DatabaseTable;
 import com.bone.studio.generator.domain.service.CodeGeneratorService;
 import org.springframework.stereotype.Component;
@@ -19,7 +19,7 @@ public class LoadTablesHandler {
     }
 
     @Transactional(readOnly = true)
-    public List<DatabaseTable> handle(LoadTablesQry query) {
+    public List<DatabaseTable> handle(LoadTablesQuery query) {
         return codeGeneratorService.loadTables(query.getDataSourceId());
     }
 }

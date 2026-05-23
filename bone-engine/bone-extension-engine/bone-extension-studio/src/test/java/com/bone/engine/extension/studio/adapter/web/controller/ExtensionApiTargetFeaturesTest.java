@@ -1,4 +1,4 @@
-package com.bone.engine.extension.studio.controller;
+package com.bone.engine.extension.studio.adapter.web.controller;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;

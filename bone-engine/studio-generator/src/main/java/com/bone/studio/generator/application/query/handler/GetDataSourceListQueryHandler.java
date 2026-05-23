@@ -1,7 +1,7 @@
 package com.bone.studio.generator.application.query.handler;
 
 import com.bone.core.model.PageResult;
-import com.bone.studio.generator.application.query.qry.GetDataSourceListQry;
+import com.bone.studio.generator.application.query.qry.GetDataSourceListQuery;
 import com.bone.studio.generator.domain.data.DataSource;
 import com.bone.studio.generator.domain.repository.DataSourceRepository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
@@ -16,7 +16,7 @@ public class GetDataSourceListQueryHandler {
 
     private final DataSourceRepository dataSourceRepository;
 
-    public PageResult<DataSource> handle(GetDataSourceListQry qry) {
+    public PageResult<DataSource> handle(GetDataSourceListQuery qry) {
         int pageNo = qry.getPage() != null ? qry.getPage() : 1;
         int pageSize = qry.getSize() != null ? qry.getSize() : 10;
         Criteria<DataSource> criteria = Criteria.<DataSource>create().page(pageNo, pageSize);

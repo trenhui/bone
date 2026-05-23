@@ -3,10 +3,10 @@ package com.bone.masterdata.adapter.web.controller;
 import com.bone.core.result.ApiResponse;
 import com.bone.core.result.PageResult;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.masterdata.application.command.cmd.CreateMasterDataEntityCmd;
-import com.bone.masterdata.application.command.cmd.UpdateMasterDataEntityCmd;
+import com.bone.masterdata.application.command.cmd.CreateMasterDataEntityCommand;
+import com.bone.masterdata.application.command.cmd.UpdateMasterDataEntityCommand;
 import com.bone.masterdata.application.query.dto.MasterDataEntityDTO;
-import com.bone.masterdata.application.query.qry.MasterDataEntityPageQry;
+import com.bone.masterdata.application.query.qry.MasterDataEntityPageQuery;
 import com.bone.masterdata.domain.entity.MasterDataEntity;
 import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityName;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
@@ -52,7 +52,7 @@ public class MasterDataEntityControllerTest {
 
     @Test
     public void testCreate() {
-        CreateMasterDataEntityCmd cmd = CreateMasterDataEntityCmd.builder()
+        CreateMasterDataEntityCommand cmd = CreateMasterDataEntityCommand.builder()
                 .name("测试实体")
                 .description("测试主数据实体")
                 .category("default")
@@ -73,7 +73,7 @@ public class MasterDataEntityControllerTest {
         MasterDataEntity entity = newEntity("原始实体");
         masterDataEntityRepository.save(entity);
 
-        UpdateMasterDataEntityCmd cmd = UpdateMasterDataEntityCmd.builder()
+        UpdateMasterDataEntityCommand cmd = UpdateMasterDataEntityCommand.builder()
                 .id(entity.getId())
                 .name("更新后的实体")
                 .description("更新后的描述")
@@ -95,7 +95,7 @@ public class MasterDataEntityControllerTest {
             masterDataEntityRepository.save(newEntity("测试实体" + i));
         }
 
-        MasterDataEntityPageQry qry = new MasterDataEntityPageQry();
+        MasterDataEntityPageQuery qry = new MasterDataEntityPageQuery();
         qry.setPageNum(1);
         qry.setPageSize(10);
 

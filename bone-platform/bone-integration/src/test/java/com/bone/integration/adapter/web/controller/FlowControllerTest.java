@@ -2,14 +2,14 @@ package com.bone.integration.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
-import com.bone.integration.application.command.cmd.CreateFlowCmd;
-import com.bone.integration.application.command.cmd.UpdateFlowCmd;
+import com.bone.integration.application.command.cmd.CreateFlowCommand;
+import com.bone.integration.application.command.cmd.UpdateFlowCommand;
 import com.bone.integration.application.query.dto.FlowDTO;
-import com.bone.integration.application.query.qry.FlowPageQry;
+import com.bone.integration.application.query.qry.FlowPageQuery;
 import com.bone.integration.application.event.IntegrationDomainEventPublisher;
-import com.bone.integration.application.usecase.standard.CreateFlowUseCase;
-import com.bone.integration.application.usecase.standard.FlowPageQueryUseCase;
-import com.bone.integration.application.usecase.standard.UpdateFlowUseCase;
+import com.bone.integration.application.command.handler.CreateFlowHandler;
+import com.bone.integration.application.query.handler.FlowPageQueryHandler;
+import com.bone.integration.application.command.handler.UpdateFlowHandler;
 import com.bone.integration.domain.flow.IntegrationFlow;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
 import com.bone.integration.domain.service.FlowService;
@@ -31,13 +31,13 @@ import static org.mockito.Mockito.when;
 class FlowControllerTest {
 
     @Mock
-    private CreateFlowUseCase createFlowUseCase;
+    private CreateFlowHandler createFlowHandler;
 
     @Mock
-    private UpdateFlowUseCase updateFlowUseCase;
+    private UpdateFlowHandler updateFlowHandler;
 
     @Mock
-    private FlowPageQueryUseCase flowPageQueryUseCase;
+    private FlowPageQueryHandler flowPageQueryHandler;
 
     @Mock
     private IntegrationFlowRepository flowRepository;
@@ -52,9 +52,9 @@ class FlowControllerTest {
     private FlowController flowController;
 
     @Test
-    void create_delegatesToUseCase() {
-        CreateFlowCmd cmd = new CreateFlowCmd("flow-a", "desc", List.of(), List.of());
-        when(createFlowUseCase.execute(cmd)).thenReturn(1L);
+    void create_delegatesToHandler() {
+        CreateFlowCommand cmd = new CreateFlowCommand("flow-a", "desc", List.of(), List.of());
+        when(createFlowHandler.handle(cmd)).thenReturn(1L);
 
         ApiResponse<Long> response = flowController.create(cmd);
 
@@ -64,9 +64,9 @@ class FlowControllerTest {
 
     @Test
     void page_returnsResult() {
-        FlowPageQry qry = new FlowPageQry(1, 10, null, null);
+        FlowPageQuery qry = new FlowPageQuery(1, 10, null, null);
         PageResult<FlowDTO> page = PageResult.of(Collections.emptyList(), 0L, 1, 10);
-        when(flowPageQueryUseCase.execute(qry)).thenReturn(page);
+        when(flowPageQueryHandler.handle(qry)).thenReturn(page);
 
         ApiResponse<PageResult<FlowDTO>> response = flowController.page(qry);
 

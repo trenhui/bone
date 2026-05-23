@@ -1,8 +1,8 @@
 package com.bone.masterdata.application.command.handler;
 
-import com.bone.core.usecase.Capability;
+import com.bone.core.capability.Capability;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.masterdata.application.command.cmd.CreateMasterDataRecordCmd;
+import com.bone.masterdata.application.command.cmd.CreateMasterDataRecordCommand;
 import com.bone.core.exception.NotFoundException;
 import com.bone.masterdata.domain.entity.MasterDataEntity;
 import com.bone.masterdata.domain.record.MasterDataRecord;
@@ -29,7 +29,7 @@ public class CreateMasterDataRecordHandler {
     private final MasterDataEntityRepository masterDataEntityRepository;
 
     @Transactional
-    public Long handle(CreateMasterDataRecordCmd cmd) {
+    public Long handle(CreateMasterDataRecordCommand cmd) {
         MasterDataEntity entity = masterDataEntityRepository.findById(cmd.getMasterDataEntityId());
         if (entity == null) {
             throw NotFoundException.of("主数据实体不存在");

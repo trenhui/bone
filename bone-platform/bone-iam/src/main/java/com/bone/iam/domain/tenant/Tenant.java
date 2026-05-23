@@ -12,7 +12,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Table("iam_tenant")
 public class Tenant extends AggregateRoot<Long> {
-    private Long id;
     private String name;
     private String code;
     private int level;
@@ -23,7 +22,7 @@ public class Tenant extends AggregateRoot<Long> {
 
     public static Tenant create(Long id, String name, String code, int level, String adminEmail) {
         Tenant tenant = new Tenant();
-        tenant.id = id;
+        tenant.setId(id);
         tenant.name = name;
         tenant.code = code;
         tenant.level = level;

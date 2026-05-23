@@ -1,5 +1,6 @@
 package com.bone.integration.infrastructure.observability;
 
+import com.bone.integration.application.port.IntegrationExecutionRecorder;
 import com.bone.integration.domain.execution.IntegrationLog;
 import com.bone.integration.domain.model.execution.vo.ExecutionStatus;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -14,7 +15,7 @@ import org.springframework.stereotype.Component;
 /** 集成业务指标（对齐 Bone-可观测性规范 §4.2）。 */
 @Component
 @RequiredArgsConstructor
-public class IntegrationExecutionMetrics {
+public class IntegrationExecutionMetrics implements IntegrationExecutionRecorder {
 
     private final MeterRegistry meterRegistry;
     private final ConcurrentHashMap<Long, AtomicLong> deadLetterByTenant = new ConcurrentHashMap<>();

@@ -1,13 +1,13 @@
 package com.bone.iam.application.command.handler;
 
-import com.bone.iam.application.command.cmd.LoginCmd;
+import com.bone.iam.application.command.cmd.LoginCommand;
 import com.bone.iam.domain.service.AuthService;
 import com.bone.iam.domain.account.Account;
 import com.bone.iam.application.query.handler.AccountAuthoritiesQueryHandler;
-import com.bone.iam.infrastructure.security.JwtTokenService;
-import com.bone.iam.infrastructure.security.RefreshTokenService;
+import com.bone.iam.domain.gateway.AccessTokenIssuer;
+import com.bone.iam.domain.gateway.RefreshTokenIssuer;
 import java.util.List;
-import com.bone.core.usecase.Capability;
+import com.bone.core.capability.Capability;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -28,11 +28,11 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class LoginHandler {
     private final AuthService authService;
-    private final JwtTokenService jwtTokenService;
-    private final RefreshTokenService refreshTokenService;
+    private final AccessTokenIssuer accessTokenIssuer;
+    private final RefreshTokenIssuer refreshTokenIssuer;
     private final AccountAuthoritiesQueryHandler accountAuthoritiesQueryHandler;
 
-    public Map<String, Object> handle(LoginCmd cmd) {
+    public Map<String, Object> handle(LoginCommand cmd) {
         Account account = authService.authenticate(cmd.getUsername(), cmd.getPassword());
         if (account == null) {
             throw new RuntimeException("用户名或密码错误");
@@ -40,9 +40,9 @@ public class LoginHandler {
 
         List<String> scopes = accountAuthoritiesQueryHandler.resolvePermissionCodes(
                 account.getId(), account.isAdmin());
-        String token = jwtTokenService.generateToken(
+        String token = accessTokenIssuer.issueAccessToken(
                 account.getId(), account.getUsername().value(), account.getTenantId(), scopes);
-        String refreshToken = refreshTokenService.issue(account.getId(), account.getTenantId());
+        String refreshToken = refreshTokenIssuer.issue(account.getId(), account.getTenantId());
         Map<String, Object> result = new HashMap<>();
         result.put("token", token);
         result.put("refreshToken", refreshToken);

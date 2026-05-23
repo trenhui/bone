@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.bone.iam.application.command.cmd.AssignPermissionCmd;
+import com.bone.iam.application.command.cmd.AssignPermissionCommand;
 import com.bone.iam.application.service.RolePermissionBindingService;
 import com.bone.iam.domain.role.Role;
 import com.bone.iam.domain.repository.RoleRepository;
@@ -28,7 +28,7 @@ class AssignPermissionHandlerTest {
 
     @Test
     void handleAssignsPermissionsWhenRoleExists() {
-        AssignPermissionCmd cmd = new AssignPermissionCmd();
+        AssignPermissionCommand cmd = new AssignPermissionCommand();
         cmd.setRoleId(1L);
         cmd.setPermissionIds(new Long[] {10L, 11L});
         when(roleRepository.findById(1L))
@@ -41,7 +41,7 @@ class AssignPermissionHandlerTest {
 
     @Test
     void handleRejectsMissingRole() {
-        AssignPermissionCmd cmd = new AssignPermissionCmd();
+        AssignPermissionCommand cmd = new AssignPermissionCommand();
         cmd.setRoleId(99L);
         when(roleRepository.findById(99L)).thenReturn(null);
 

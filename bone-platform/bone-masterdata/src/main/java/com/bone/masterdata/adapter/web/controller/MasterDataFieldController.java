@@ -1,10 +1,10 @@
 package com.bone.masterdata.adapter.web.controller;
 
-import com.bone.masterdata.application.command.cmd.CreateMasterDataFieldCmd;
+import com.bone.masterdata.application.command.cmd.CreateMasterDataFieldCommand;
 import com.bone.masterdata.application.command.handler.CreateMasterDataFieldHandler;
 import com.bone.masterdata.application.query.dto.MasterDataFieldDTO;
 import com.bone.masterdata.application.query.handler.MasterDataFieldListQueryHandler;
-import com.bone.masterdata.application.query.qry.MasterDataFieldListQry;
+import com.bone.masterdata.application.query.qry.MasterDataFieldListQuery;
 import com.bone.core.result.ApiResponse;
 import com.bone.core.web.PlatformApiPaths;
 import lombok.RequiredArgsConstructor;
@@ -20,14 +20,14 @@ public class MasterDataFieldController {
     private final MasterDataFieldListQueryHandler listQueryHandler;
 
     @PostMapping
-    public ApiResponse<Long> create(@RequestBody CreateMasterDataFieldCmd cmd) {
+    public ApiResponse<Long> create(@RequestBody CreateMasterDataFieldCommand cmd) {
         Long id = createHandler.handle(cmd);
         return ApiResponse.success(id);
     }
 
     @GetMapping
     public ApiResponse<List<MasterDataFieldDTO>> list(@RequestParam("masterDataEntityId") Long masterDataEntityId) {
-        MasterDataFieldListQry qry = new MasterDataFieldListQry();
+        MasterDataFieldListQuery qry = new MasterDataFieldListQuery();
         qry.setMasterDataEntityId(masterDataEntityId);
         List<MasterDataFieldDTO> dtos = listQueryHandler.handle(qry);
         return ApiResponse.success(dtos);

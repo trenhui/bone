@@ -3,14 +3,14 @@ package com.bone.iam.adapter.web.controller;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.core.model.PageResult;
-import com.bone.iam.application.command.cmd.CreatePermissionCmd;
-import com.bone.iam.application.command.cmd.UpdatePermissionCmd;
-import com.bone.iam.application.usecase.standard.CreatePermissionUseCase;
-import com.bone.iam.application.usecase.standard.UpdatePermissionUseCase;
-import com.bone.iam.application.usecase.standard.DeletePermissionUseCase;
-import com.bone.iam.application.usecase.standard.PermissionPageQueryUseCase;
+import com.bone.iam.application.command.cmd.CreatePermissionCommand;
+import com.bone.iam.application.command.cmd.UpdatePermissionCommand;
+import com.bone.iam.application.command.handler.CreatePermissionHandler;
+import com.bone.iam.application.command.handler.UpdatePermissionHandler;
+import com.bone.iam.application.command.handler.DeletePermissionHandler;
+import com.bone.iam.application.query.handler.PermissionPageQueryHandler;
 import com.bone.iam.application.query.dto.PermissionDTO;
-import com.bone.iam.application.query.qry.PermissionPageQry;
+import com.bone.iam.application.query.qry.PermissionPageQuery;
 import com.bone.iam.adapter.web.dto.req.CreatePermissionReq;
 import com.bone.iam.adapter.web.converter.PermissionWebConverter;
 import com.bone.iam.domain.permission.Permission;
@@ -28,23 +28,23 @@ import java.util.stream.Collectors;
 @RequestMapping(PlatformApiPaths.IAM_V1 + "/permissions")
 @RequiredArgsConstructor
 public class PermissionController {
-    private final CreatePermissionUseCase createPermissionUseCase;
-    private final UpdatePermissionUseCase updatePermissionUseCase;
-    private final DeletePermissionUseCase deletePermissionUseCase;
-    private final PermissionPageQueryUseCase permissionPageQueryUseCase;
+    private final CreatePermissionHandler createPermissionHandler;
+    private final UpdatePermissionHandler updatePermissionHandler;
+    private final DeletePermissionHandler deletePermissionHandler;
+    private final PermissionPageQueryHandler permissionPageQueryHandler;
     private final PermissionWebConverter permissionWebConverter;
     private final PermissionRepository permissionRepository;
 
     @PostMapping
     public ApiResponse<Long> create(@RequestBody CreatePermissionReq req) {
-        CreatePermissionCmd cmd = permissionWebConverter.toCreatePermissionCmd(req);
-        Long permissionId = createPermissionUseCase.execute(cmd);
+        CreatePermissionCommand cmd = permissionWebConverter.toCreatePermissionCommand(req);
+        Long permissionId = createPermissionHandler.handle(cmd);
         return ApiResponse.success(permissionId);
     }
 
     @GetMapping
-    public ApiResponse<PageResult<PermissionDTO>> page(PermissionPageQry qry) {
-        PageResult<PermissionDTO> result = permissionPageQueryUseCase.execute(qry);
+    public ApiResponse<PageResult<PermissionDTO>> page(PermissionPageQuery qry) {
+        PageResult<PermissionDTO> result = permissionPageQueryHandler.handle(qry);
         return ApiResponse.success(result);
     }
 
@@ -93,7 +93,7 @@ public class PermissionController {
 
     @PutMapping("/{id}")
     public ApiResponse<Void> update(@PathVariable Long id, @RequestBody CreatePermissionReq req) {
-        UpdatePermissionCmd cmd = new UpdatePermissionCmd();
+        UpdatePermissionCommand cmd = new UpdatePermissionCommand();
         cmd.setId(id);
         cmd.setName(req.getName());
         cmd.setDescription(req.getDescription());
@@ -103,13 +103,13 @@ public class PermissionController {
         cmd.setParentId(req.getParentId());
         cmd.setType(req.getType());
         cmd.setSortOrder(req.getSortOrder());
-        updatePermissionUseCase.execute(cmd);
+        updatePermissionHandler.handle(cmd);
         return ApiResponse.success();
     }
 
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id) {
-        deletePermissionUseCase.execute(id);
+        deletePermissionHandler.handle(id);
         return ApiResponse.success();
     }
 

@@ -1,169 +1,68 @@
 package com.bone.blueprint;
 
-import com.tngtech.archunit.core.domain.JavaClasses;
-import com.tngtech.archunit.core.importer.ClassFileImporter;
+import com.bone.architecture.BoneDddArchRules;
 import com.tngtech.archunit.core.importer.ImportOption;
+import com.tngtech.archunit.junit.AnalyzeClasses;
+import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
-import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
+import com.tngtech.archunit.library.freeze.FreezingArchRule;
 
-import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
-import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
+/**
+ * bone-blueprint 架构守护（参考样板）。
+ *
+ * <p>真源：{@code doc/architecture/Bone-DDD-最终实践方案.md} §12（P0 七条）+ §21。
+ * 共享规则在 {@link BoneDddArchRules}，所有应用模块复用同一份。
+ *
+ * <p>首次集成 / 收缩基线见 {@code bone-framework/bone-architecture-test/README.md}。
+ */
+@AnalyzeClasses(packages = "com.bone.blueprint", importOptions = ImportOption.DoNotIncludeTests.class)
+public class ArchitectureTest {
 
-/** 样例工程与当前 DDD 门禁未完全对齐，待 Capability/Transactional 治理后启用。 */
-@Disabled("blueprint sample: arch rules pending alignment with bone-platform modules")
-class ArchitectureTest {
+    // P0-1：依赖方向
+    @ArchTest
+    static final ArchRule domain_independent = BoneDddArchRules.domainMustNotDependOnOuterLayers();
 
-    private final JavaClasses classes = new ClassFileImporter()
-            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-            .importPackages("com.bone.blueprint");
+    @ArchTest
+    static final ArchRule application_no_infra =
+            BoneDddArchRules.applicationMustNotDependOnInfrastructure();
 
-    @Test
-    void testAdapterLayerDependencies() {
-        ArchRule rule = classes()
-                .that().resideInAPackage("..adapter..")
-                .should().onlyDependOnClassesThat()
-                .resideInAnyPackage(
-                        "..adapter..",
-                        "..application..",
-                        "java..",
-                        "lombok..",
-                        "org.springframework..",
-                        "javax..",
-                        "com.bone.core..",
-                        "com.bone.engine..",
-                        "com.bone.metadata.."
-                );
-        rule.check(classes);
-    }
+    // P0-5：domain 不可使用 QueryBuilder
+    @ArchTest
+    static final ArchRule domain_no_query_builder = BoneDddArchRules.domainMustNotUseQueryBuilder();
 
-    @Test
-    void testApplicationLayerDependencies() {
-        ArchRule rule = classes()
-                .that().resideInAPackage("..application..")
-                .should().onlyDependOnClassesThat()
-                .resideInAnyPackage(
-                        "..application..",
-                        "..domain..",
-                        "java..",
-                        "lombok..",
-                        "org.springframework..",
-                        "javax..",
-                        "com.bone.core..",
-                        "com.bone.engine..",
-                        "com.bone.metadata.."
-                );
-        rule.check(classes);
-    }
+    // P0-6：CommandHandler 禁用 QueryBuilder
+    @ArchTest
+    static final ArchRule command_no_query_builder =
+            BoneDddArchRules.commandHandlersMustNotUseQueryBuilder();
 
-    @Test
-    void testDomainLayerDependencies() {
-        ArchRule rule = classes()
-                .that().resideInAPackage("..domain..")
-                .should().onlyDependOnClassesThat()
-                .resideInAnyPackage(
-                        "..domain..",
-                        "java..",
-                        "lombok..",
-                        "com.bone.core..",
-                        "com.bone.metadata.."
-                );
-        rule.check(classes);
-    }
+    // P0-4 + §18.2：仓储方法白名单
+    @ArchTest
+    static final ArchRule repository_methods_whitelist =
+            BoneDddArchRules.domainRepositoriesShouldOnlyDeclareWhitelistedMethods();
 
-    @Test
-    void testInfrastructureLayerDependencies() {
-        ArchRule rule = classes()
-                .that().resideInAPackage("..infrastructure..")
-                .should().onlyDependOnClassesThat()
-                .resideInAnyPackage(
-                        "..infrastructure..",
-                        "..domain..",
-                        "java..",
-                        "lombok..",
-                        "org.springframework..",
-                        "javax..",
-                        "com.bone.core..",
-                        "com.bone.engine..",
-                        "com.bone.metadata.."
-                );
-        rule.check(classes);
-    }
+    // P0-7 + §14.3：禁止 UseCase（三件套）
+    @ArchTest
+    static final ArchRule no_new_use_cases =
+            FreezingArchRule.freeze(BoneDddArchRules.noUseCaseClassesInApplication());
 
-    @Test
-    void testDomainShouldNotDependOnApplication() {
-        ArchRule rule = noClasses()
-                .that().resideInAPackage("..domain..")
-                .should().dependOnClassesThat()
-                .resideInAPackage("..application..");
-        rule.check(classes);
-    }
+    @ArchTest
+    static final ArchRule no_usecase_package =
+            FreezingArchRule.freeze(BoneDddArchRules.noApplicationUseCasePackage());
 
-    @Test
-    void testDomainShouldNotDependOnAdapter() {
-        ArchRule rule = noClasses()
-                .that().resideInAPackage("..domain..")
-                .should().dependOnClassesThat()
-                .resideInAPackage("..adapter..");
-        rule.check(classes);
-    }
+    @ArchTest
+    static final ArchRule no_bone_core_usecase = BoneDddArchRules.noBoneCoreUseCaseApiDependency();
 
-    @Test
-    void testDomainShouldNotDependOnInfrastructure() {
-        ArchRule rule = noClasses()
-                .that().resideInAPackage("..domain..")
-                .should().dependOnClassesThat()
-                .resideInAPackage("..infrastructure..");
-        rule.check(classes);
-    }
+    // §14.5：禁止新增 domain.store 包
+    @ArchTest
+    static final ArchRule no_new_domain_store =
+            FreezingArchRule.freeze(BoneDddArchRules.noNewDomainStorePackage());
 
-    @Test
-    void testDomainShouldNotHaveSpringAnnotations() {
-        ArchRule rule = noClasses()
-                .that().resideInAPackage("..domain..")
-                .should().beAnnotatedWith("org.springframework.stereotype.Service")
-                .orShould().beAnnotatedWith("org.springframework.stereotype.Component")
-                .orShould().beAnnotatedWith("org.springframework.stereotype.Repository")
-                .orShould().beAnnotatedWith("org.springframework.stereotype.Controller")
-                .orShould().beAnnotatedWith("org.springframework.web.bind.annotation.RestController")
-                .orShould().beAnnotatedWith("org.springframework.transaction.annotation.Transactional")
-                .orShould().beAnnotatedWith("org.springframework.beans.factory.annotation.Autowired");
-        rule.check(classes);
-    }
+    // §16.3：禁止模块自建 BusinessException
+    @ArchTest
+    static final ArchRule no_custom_business_exception =
+            FreezingArchRule.freeze(BoneDddArchRules.noCustomBusinessException());
 
-    @Test
-    void testRepositoryShouldNotHaveCustomMethods() {
-        ArchRule rule = classes()
-                .that().resideInAPackage("..domain.repository..")
-                .should().haveSimpleNameEndingWith("Repository")
-                .andShould().beInterfaces();
-        rule.check(classes);
-    }
-
-    @Test
-    void testCommandHandlersShouldHaveTransactional() {
-        ArchRule rule = classes()
-                .that().resideInAPackage("..application.command.handler..")
-                .and().haveSimpleNameEndingWith("Handler")
-                .should().beAnnotatedWith("org.springframework.transaction.annotation.Transactional");
-        rule.check(classes);
-    }
-
-    @Test
-    void testQueryHandlersShouldHaveReadOnlyTransactional() {
-        ArchRule rule = classes()
-                .that().resideInAPackage("..application.query.handler..")
-                .and().haveSimpleNameEndingWith("Handler")
-                .should().beAnnotatedWith("org.springframework.transaction.annotation.Transactional");
-        rule.check(classes);
-    }
-
-    @Test
-    void testControllersShouldHaveRestController() {
-        ArchRule rule = classes()
-                .that().resideInAPackage("..adapter.web.controller..")
-                .should().beAnnotatedWith("org.springframework.web.bind.annotation.RestController");
-        rule.check(classes);
-    }
+    @ArchTest
+    static final ArchRule no_business_exception_suffix =
+            FreezingArchRule.freeze(BoneDddArchRules.noBusinessExceptionSuffix());
 }

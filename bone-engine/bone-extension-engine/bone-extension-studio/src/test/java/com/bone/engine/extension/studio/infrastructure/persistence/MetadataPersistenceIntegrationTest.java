@@ -3,9 +3,11 @@ package com.bone.engine.extension.studio.infrastructure.persistence;
 import com.bone.engine.extension.studio.domain.model.ExtPoint;
 import com.bone.engine.extension.studio.domain.model.Extension;
 import com.bone.engine.extension.studio.domain.model.StudioAuditEntry;
-import com.bone.engine.extension.studio.domain.store.ExtPointStore;
-import com.bone.engine.extension.studio.domain.store.ExtensionStore;
-import com.bone.engine.extension.studio.domain.store.StudioAuditStore;
+import com.bone.engine.extension.studio.domain.gateway.ExtPointReadPort;
+import com.bone.engine.extension.studio.domain.gateway.ExtensionReadPort;
+import com.bone.engine.extension.studio.domain.repository.ExtPointRepository;
+import com.bone.engine.extension.studio.domain.repository.ExtensionRepository;
+import com.bone.engine.extension.studio.domain.repository.StudioAuditRepository;
 import com.bone.engine.extension.studio.infrastructure.persistence.entity.ExtStudioAuditLog;
 import com.bone.engine.extension.studio.infrastructure.persistence.repository.ExtStudioAuditLogRepository;
 import com.bone.engine.extension.studio.infrastructure.persistence.repository.ExtStudioExtensionImplRepository;
@@ -25,29 +27,35 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class MetadataPersistenceIntegrationTest {
 
     @Autowired
-    private ExtPointStore extPointStore;
+    private ExtPointRepository extPointPort;
 
     @Autowired
-    private ExtensionStore extensionStore;
+    private ExtPointReadPort extPointReadPort;
 
     @Autowired
-    private ExtStudioExtensionPointRepository extPointRepository;
+    private ExtensionRepository extensionPort;
 
     @Autowired
-    private ExtStudioExtensionImplRepository extensionRepository;
+    private ExtensionReadPort extensionReadPort;
 
     @Autowired
-    private StudioAuditStore auditStore;
+    private ExtStudioExtensionPointRepository extStudioExtPointRepository;
+
+    @Autowired
+    private ExtStudioExtensionImplRepository extStudioExtensionRepository;
+
+    @Autowired
+    private StudioAuditRepository auditRepository;
 
     @Autowired
     private ExtStudioAuditLogRepository auditLogRepository;
 
     @Test
     void contextLoadsRepositoriesAndStores() {
-        assertNotNull(extPointStore);
-        assertNotNull(extensionStore);
-        assertNotNull(extPointRepository);
-        assertNotNull(extensionRepository);
+        assertNotNull(extPointPort);
+        assertNotNull(extensionPort);
+        assertNotNull(extStudioExtPointRepository);
+        assertNotNull(extStudioExtensionRepository);
     }
 
     @Test
@@ -57,7 +65,7 @@ class MetadataPersistenceIntegrationTest {
         point.setInterfaceName("com.bone.test.IntegrationExtPoint");
         point.setDomain("test");
         point.setEnabled(true);
-        extPointStore.save(point);
+        extPointPort.save(point);
         assertNotNull(point.getId());
 
         Extension extension =
@@ -68,18 +76,18 @@ class MetadataPersistenceIntegrationTest {
                         "com.bone.test.IntegrationImpl");
         extension.setBizCode("TEST");
         extension.setConfig("{\"traffic\":80,\"condition\":\"#data != null\"}");
-        extensionStore.save(extension);
+        extensionPort.save(extension);
 
-        assertFalse(extPointStore.findAll().isEmpty());
-        assertEquals(1, extensionStore.findByExtPointId(point.getId()).size());
+        assertFalse(extPointReadPort.findAll().isEmpty());
+        assertEquals(1, extensionReadPort.findByExtPointId(point.getId()).size());
 
-        ExtPoint loaded = extPointStore.findByInterfaceName("com.bone.test.IntegrationExtPoint");
+        ExtPoint loaded = extPointPort.findByInterfaceName("com.bone.test.IntegrationExtPoint");
         assertNotNull(loaded);
         assertEquals("集成测试扩展点", loaded.getName());
 
         extension.setEnabled(false);
-        extensionStore.update(extension);
-        Extension reloaded = extensionStore.findById(extension.getId());
+        extensionPort.save(extension);
+        Extension reloaded = extensionPort.findById(extension.getId());
         assertNotNull(reloaded);
         assertFalse(reloaded.isEnabled());
         assertTrue(reloaded.getConfig().contains("traffic"));
@@ -93,7 +101,7 @@ class MetadataPersistenceIntegrationTest {
         entry.setResourceType("plugin");
         entry.setResourceId("99");
         entry.setResult("SUCCESS");
-        auditStore.save(entry);
+        auditRepository.save(entry);
         assertNotNull(entry.getId());
 
         ExtStudioAuditLog row = auditLogRepository.findById(entry.getId());

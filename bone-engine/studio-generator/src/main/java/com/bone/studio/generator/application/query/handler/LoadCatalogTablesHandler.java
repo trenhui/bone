@@ -1,8 +1,8 @@
 package com.bone.studio.generator.application.query.handler;
 
 import com.bone.core.model.PageResult;
-import com.bone.core.usecase.Capability;
-import com.bone.studio.generator.application.query.qry.LoadCatalogTablesQry;
+import com.bone.core.capability.Capability;
+import com.bone.studio.generator.application.query.qry.LoadCatalogTablesQuery;
 import com.bone.studio.generator.domain.data.DatabaseTable;
 import com.bone.studio.generator.domain.gateway.CatalogMetadataGateway;
 import java.util.List;
@@ -23,7 +23,7 @@ public class LoadCatalogTablesHandler {
   private final CatalogMetadataGateway catalogMetadataGateway;
 
   @Transactional(readOnly = true)
-  public PageResult<DatabaseTable> handle(LoadCatalogTablesQry qry) {
+  public PageResult<DatabaseTable> handle(LoadCatalogTablesQuery qry) {
     int page = Math.max(qry.getPage(), 1);
     int size = Math.min(Math.max(qry.getSize(), 1), 100);
 

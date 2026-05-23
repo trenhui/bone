@@ -1,6 +1,6 @@
 package com.bone.iam.domain.audit;
 
-import com.bone.core.domain.AggregateRoot;
+import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.iam.domain.audit.event.AuditLogCreatedEvent;
 import com.bone.iam.domain.audit.vo.OperationType;
 import com.bone.metadata.sdk.domain.annotation.Table;
@@ -13,9 +13,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Table("iam_audit_log")
-public class AuditLog extends AggregateRoot<Long> {
-    private Long id;
-    private Long tenantId;
+public class AuditLog extends TenantAggregateRoot<Long> {
     private Long userId;
     private OperationType operation;
     private String resourceId;
@@ -31,7 +29,7 @@ public class AuditLog extends AggregateRoot<Long> {
                                   String resourceType, String ip, String userAgent,
                                   String parameters, String result, Integer duration) {
         AuditLog auditLog = new AuditLog();
-        auditLog.tenantId = tenantId;
+        auditLog.setTenantId(tenantId);
         auditLog.userId = userId;
         auditLog.operation = operation;
         auditLog.resourceId = resourceId;

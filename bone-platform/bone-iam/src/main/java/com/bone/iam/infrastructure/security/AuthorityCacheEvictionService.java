@@ -1,6 +1,7 @@
 package com.bone.iam.infrastructure.security;
 
 import com.bone.iam.domain.account.AccountRole;
+import com.bone.iam.domain.gateway.AccountAuthorityCache;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import java.time.Duration;
 import java.util.Arrays;
@@ -16,7 +17,7 @@ import org.springframework.stereotype.Service;
  * 账号权限码 Redis 缓存（[Target] 30min TTL）。无 Redis 时退化为直查 DB。
  */
 @Service
-public class AuthorityCacheEvictionService {
+public class AuthorityCacheEvictionService implements AccountAuthorityCache {
 
     static final String KEY_PREFIX = "iam:authz:scopes:account:";
     static final String EMPTY_MARKER = "__EMPTY__";
@@ -28,6 +29,7 @@ public class AuthorityCacheEvictionService {
         this.redisTemplate = redisTemplate;
     }
 
+    @Override
     public Optional<List<String>> get(Long accountId) {
         if (redisTemplate == null || accountId == null) {
             return Optional.empty();
@@ -42,6 +44,7 @@ public class AuthorityCacheEvictionService {
         return Optional.of(Arrays.stream(raw.split(",")).filter(s -> !s.isBlank()).toList());
     }
 
+    @Override
     public void put(Long accountId, List<String> scopes) {
         if (redisTemplate == null || accountId == null) {
             return;
@@ -51,6 +54,7 @@ public class AuthorityCacheEvictionService {
         redisTemplate.opsForValue().set(KEY_PREFIX + accountId, value, DEFAULT_TTL);
     }
 
+    @Override
     public void evictAccount(Long accountId) {
         if (redisTemplate == null || accountId == null) {
             return;
@@ -59,6 +63,7 @@ public class AuthorityCacheEvictionService {
     }
 
     /** 角色权限或账号-角色变更后，失效持有该角色的所有账号缓存。 */
+    @Override
     public void evictAccountsForRole(Long roleId) {
         if (redisTemplate == null || roleId == null) {
             return;

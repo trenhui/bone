@@ -4,7 +4,7 @@ import com.bone.integration.application.event.port.IntegrationMessageSender;
 import com.bone.integration.domain.outbox.IntegrationOutboxRecord;
 import com.bone.integration.domain.outbox.OutboxStatus;
 import com.bone.integration.domain.repository.IntegrationOutboxRepository;
-import com.bone.integration.infrastructure.config.IntegrationOutboxProperties;
+import com.bone.integration.application.config.IntegrationOutboxProperties;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

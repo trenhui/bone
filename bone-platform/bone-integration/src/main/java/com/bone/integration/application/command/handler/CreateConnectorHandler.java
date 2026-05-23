@@ -1,8 +1,8 @@
 package com.bone.integration.application.command.handler;
 
-import com.bone.core.usecase.Capability;
+import com.bone.core.capability.Capability;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.integration.application.command.cmd.CreateConnectorCmd;
+import com.bone.integration.application.command.cmd.CreateConnectorCommand;
 import com.bone.integration.application.event.IntegrationDomainEventPublisher;
 import com.bone.integration.domain.connector.Connector;
 import com.bone.integration.domain.model.connector.vo.ConnectorType;
@@ -29,7 +29,7 @@ public class CreateConnectorHandler {
     private final IntegrationDomainEventPublisher domainEventPublisher;
 
     @Transactional
-    public Long handle(CreateConnectorCmd cmd) {
+    public Long handle(CreateConnectorCommand cmd) {
         connectorService.validateConnectorName(cmd.name(), null);
         Long connectorId = DistributedIdGenerator.generateLongId();
         ConnectorType type = ConnectorType.fromString(cmd.type());

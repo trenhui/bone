@@ -1,12 +1,11 @@
 package com.bone.system.application.command.handler;
 
-import com.bone.core.usecase.Capability;
+import com.bone.core.capability.Capability;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.metadata.sdk.query.dsl.FluentQuery;
-import com.bone.metadata.sdk.query.dsl.QueryBuilder;
-import com.bone.system.application.command.cmd.CreateConfigCmd;
-import com.bone.system.application.command.cmd.UpdateConfigCmd;
-import com.bone.system.common.exception.BusinessException;
+import com.bone.metadata.sdk.query.criteria.Criteria;
+import com.bone.system.application.command.cmd.CreateConfigCommand;
+import com.bone.system.application.command.cmd.UpdateConfigCommand;
+import com.bone.core.exception.BizException;
 import com.bone.system.common.exception.NotFoundException;
 import com.bone.system.domain.config.SystemConfig;
 import com.bone.system.domain.model.config.vo.ConfigKey;
@@ -33,15 +32,14 @@ public class ConfigCommandHandler {
     private final SystemConfigRepository systemConfigRepository;
 
     @Transactional
-    public Long handle(CreateConfigCmd cmd) {
+    public Long handle(CreateConfigCommand cmd) {
         ConfigKey configKey = ConfigKey.of(cmd.getConfigKey());
 
-        // 使用 QueryBuilder 构建查询条件
-        SystemConfig existingConfig = QueryBuilder.from(SystemConfig.class)
-                .where(SystemConfig::getConfigKey).eq(configKey)
-                .single();
+        SystemConfig existingConfig =
+                systemConfigRepository.findOneByCriteria(
+                        Criteria.<SystemConfig>create().eq("configKey", configKey));
         if (existingConfig != null) {
-            throw new BusinessException("配置键已存在: " + cmd.getConfigKey());
+            throw BizException.of("配置键已存在: " + cmd.getConfigKey());
         }
 
         Long configId = DistributedIdGenerator.generateLongId();
@@ -59,10 +57,8 @@ public class ConfigCommandHandler {
     }
 
     @Transactional
-    public void handle(UpdateConfigCmd cmd) {
-        SystemConfig config = QueryBuilder.from(SystemConfig.class)
-                .where(SystemConfig::getId).eq(cmd.getId())
-                .single();
+    public void handle(UpdateConfigCommand cmd) {
+        SystemConfig config = systemConfigRepository.findById(cmd.getId());
         if (config == null) {
             throw new NotFoundException("配置不存在: " + cmd.getId());
         }
@@ -80,9 +76,7 @@ public class ConfigCommandHandler {
 
     @Transactional
     public void delete(Long id) {
-        SystemConfig config = QueryBuilder.from(SystemConfig.class)
-                .where(SystemConfig::getId).eq(id)
-                .single();
+        SystemConfig config = systemConfigRepository.findById(id);
         if (config != null) {
             systemConfigRepository.deleteById(config.getId());
         }

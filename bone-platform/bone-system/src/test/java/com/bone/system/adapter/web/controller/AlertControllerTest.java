@@ -4,25 +4,17 @@ import com.bone.system.adapter.web.converter.AlertWebConverter;
 import com.bone.system.adapter.web.dto.req.AlertRulePageReq;
 import com.bone.system.adapter.web.dto.req.CreateAlertRuleReq;
 import com.bone.system.adapter.web.dto.req.UpdateAlertRuleReq;
+import com.bone.system.application.command.cmd.UpdateAlertRuleCommand;
 import com.bone.system.adapter.web.dto.resp.AlertEventResp;
 import com.bone.system.adapter.web.dto.resp.AlertRuleResp;
-import com.bone.system.application.command.cmd.CreateAlertRuleCmd;
-import com.bone.system.application.command.cmd.DisableAlertRuleCmd;
-import com.bone.system.application.command.cmd.EnableAlertRuleCmd;
-import com.bone.system.application.command.cmd.ResolveAlertCmd;
+import com.bone.system.application.command.cmd.CreateAlertRuleCommand;
+import com.bone.system.application.command.cmd.DisableAlertRuleCommand;
+import com.bone.system.application.command.cmd.EnableAlertRuleCommand;
+import com.bone.system.application.command.cmd.ResolveAlertCommand;
+import com.bone.system.application.command.handler.AlertCommandHandler;
 import com.bone.system.application.query.dto.AlertEventDTO;
 import com.bone.system.application.query.dto.AlertRuleDTO;
-import com.bone.system.application.usecase.standard.AlertEventByIdQueryUseCase;
-import com.bone.system.application.usecase.standard.AlertEventPageQueryUseCase;
-import com.bone.system.application.usecase.standard.AlertRuleByIdQueryUseCase;
-import com.bone.system.application.usecase.standard.AlertRulePageQueryUseCase;
-import com.bone.system.application.usecase.standard.CreateAlertEventUseCase;
-import com.bone.system.application.usecase.standard.CreateAlertRuleUseCase;
-import com.bone.system.application.usecase.standard.DeleteAlertRuleUseCase;
-import com.bone.system.application.usecase.standard.DisableAlertRuleUseCase;
-import com.bone.system.application.usecase.standard.EnableAlertRuleUseCase;
-import com.bone.system.application.usecase.standard.ResolveAlertUseCase;
-import com.bone.system.application.usecase.standard.UpdateAlertRuleUseCase;
+import com.bone.system.application.query.handler.AlertQueryHandler;
 import com.bone.system.common.result.ApiResponse;
 import com.bone.system.common.result.PageResult;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,8 +24,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -45,37 +35,10 @@ import static org.mockito.Mockito.when;
 public class AlertControllerTest {
 
     @Mock
-    private CreateAlertRuleUseCase createAlertRuleUseCase;
+    private AlertCommandHandler alertCommandHandler;
 
     @Mock
-    private UpdateAlertRuleUseCase updateAlertRuleUseCase;
-
-    @Mock
-    private EnableAlertRuleUseCase enableAlertRuleUseCase;
-
-    @Mock
-    private DisableAlertRuleUseCase disableAlertRuleUseCase;
-
-    @Mock
-    private DeleteAlertRuleUseCase deleteAlertRuleUseCase;
-
-    @Mock
-    private CreateAlertEventUseCase createAlertEventUseCase;
-
-    @Mock
-    private ResolveAlertUseCase resolveAlertUseCase;
-
-    @Mock
-    private AlertRuleByIdQueryUseCase alertRuleByIdQueryUseCase;
-
-    @Mock
-    private AlertRulePageQueryUseCase alertRulePageQueryUseCase;
-
-    @Mock
-    private AlertEventByIdQueryUseCase alertEventByIdQueryUseCase;
-
-    @Mock
-    private AlertEventPageQueryUseCase alertEventPageQueryUseCase;
+    private AlertQueryHandler alertQueryHandler;
 
     private AlertController alertController;
 
@@ -83,19 +46,7 @@ public class AlertControllerTest {
     public void setUp() {
         MockitoAnnotations.openMocks(this);
         AlertWebConverter alertWebConverter = Mappers.getMapper(AlertWebConverter.class);
-        alertController = new AlertController(
-                createAlertRuleUseCase,
-                updateAlertRuleUseCase,
-                enableAlertRuleUseCase,
-                disableAlertRuleUseCase,
-                deleteAlertRuleUseCase,
-                createAlertEventUseCase,
-                resolveAlertUseCase,
-                alertRuleByIdQueryUseCase,
-                alertRulePageQueryUseCase,
-                alertEventByIdQueryUseCase,
-                alertEventPageQueryUseCase,
-                alertWebConverter);
+        alertController = new AlertController(alertCommandHandler, alertQueryHandler, alertWebConverter);
     }
 
     @Test
@@ -107,13 +58,13 @@ public class AlertControllerTest {
         req.setAlertLevel("WARNING");
 
         Long ruleId = 1L;
-        when(createAlertRuleUseCase.execute(any(CreateAlertRuleCmd.class))).thenReturn(ruleId);
+        when(alertCommandHandler.handle(any(CreateAlertRuleCommand.class))).thenReturn(ruleId);
 
         ApiResponse<Long> apiResponse = alertController.createRule(req);
 
         assertTrue(apiResponse.isSuccess());
         assertEquals(ruleId, apiResponse.getData());
-        verify(createAlertRuleUseCase, times(1)).execute(any(CreateAlertRuleCmd.class));
+        verify(alertCommandHandler, times(1)).handle(any(CreateAlertRuleCommand.class));
     }
 
     @Test
@@ -127,35 +78,35 @@ public class AlertControllerTest {
         ApiResponse<Void> apiResponse = alertController.updateRule(req);
 
         assertTrue(apiResponse.isSuccess());
-        verify(updateAlertRuleUseCase, times(1)).execute(any());
+        verify(alertCommandHandler, times(1)).handle(any(UpdateAlertRuleCommand.class));
     }
 
     @Test
     public void testEnableRule() {
         ApiResponse<Void> apiResponse = alertController.enableRule(1L);
         assertTrue(apiResponse.isSuccess());
-        verify(enableAlertRuleUseCase, times(1)).execute(any(EnableAlertRuleCmd.class));
+        verify(alertCommandHandler, times(1)).handle(any(EnableAlertRuleCommand.class));
     }
 
     @Test
     public void testDisableRule() {
         ApiResponse<Void> apiResponse = alertController.disableRule(1L);
         assertTrue(apiResponse.isSuccess());
-        verify(disableAlertRuleUseCase, times(1)).execute(any(DisableAlertRuleCmd.class));
+        verify(alertCommandHandler, times(1)).handle(any(DisableAlertRuleCommand.class));
     }
 
     @Test
     public void testDeleteRule() {
         ApiResponse<Void> apiResponse = alertController.deleteRule(1L);
         assertTrue(apiResponse.isSuccess());
-        verify(deleteAlertRuleUseCase, times(1)).execute(1L);
+        verify(alertCommandHandler, times(1)).delete(1L);
     }
 
     @Test
     public void testGetRuleById() {
         Long ruleId = 1L;
         AlertRuleDTO dto = AlertRuleDTO.builder().id(ruleId).name("test").build();
-        when(alertRuleByIdQueryUseCase.execute(ruleId)).thenReturn(dto);
+        when(alertQueryHandler.getRuleById(ruleId)).thenReturn(dto);
 
         ApiResponse<AlertRuleResp> apiResponse = alertController.getRuleById(ruleId);
 
@@ -169,7 +120,7 @@ public class AlertControllerTest {
         req.setPageNum(1);
         req.setPageSize(10);
 
-        when(alertRulePageQueryUseCase.execute(any()))
+        when(alertQueryHandler.pageRules(any()))
                 .thenReturn(PageResult.of(Collections.emptyList(), 0, 1, 10));
 
         ApiResponse<PageResult<AlertRuleResp>> apiResponse = alertController.pageRules(req);
@@ -180,7 +131,7 @@ public class AlertControllerTest {
 
     @Test
     public void testCreateEvent() {
-        when(createAlertEventUseCase.execute(any())).thenReturn(1L);
+        when(alertCommandHandler.createAlertEvent(1L, 100.0)).thenReturn(1L);
 
         ApiResponse<Long> apiResponse = alertController.createEvent(1L, 100.0);
 
@@ -192,14 +143,14 @@ public class AlertControllerTest {
     public void testResolveEvent() {
         ApiResponse<Void> apiResponse = alertController.resolveEvent(1L);
         assertTrue(apiResponse.isSuccess());
-        verify(resolveAlertUseCase, times(1)).execute(any(ResolveAlertCmd.class));
+        verify(alertCommandHandler, times(1)).handle(any(ResolveAlertCommand.class));
     }
 
     @Test
     public void testGetEventById() {
         Long eventId = 1L;
         AlertEventDTO dto = AlertEventDTO.builder().id(eventId).alertRuleId(1L).build();
-        when(alertEventByIdQueryUseCase.execute(eventId)).thenReturn(dto);
+        when(alertQueryHandler.getEventById(eventId)).thenReturn(dto);
 
         ApiResponse<AlertEventResp> apiResponse = alertController.getEventById(eventId);
 
@@ -209,7 +160,7 @@ public class AlertControllerTest {
 
     @Test
     public void testPageEvents() {
-        when(alertEventPageQueryUseCase.execute(any(int[].class)))
+        when(alertQueryHandler.pageEvents(1, 10))
                 .thenReturn(PageResult.of(Collections.emptyList(), 0, 1, 10));
 
         com.bone.system.adapter.web.dto.req.AlertEventPageReq req =

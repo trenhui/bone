@@ -1,7 +1,7 @@
 package com.bone.system.infrastructure.config;
 
+import com.bone.core.exception.BizException;
 import com.bone.core.exception.DomainException;
-import com.bone.system.common.exception.BusinessException;
 import com.bone.system.common.exception.NotFoundException;
 import com.bone.system.common.exception.SystemException;
 import com.bone.system.common.result.ApiResponse;
@@ -23,11 +23,11 @@ public class GlobalExceptionHandler {
         return ApiResponse.error(400, e.getMessage());
     }
 
-    @ExceptionHandler(BusinessException.class)
+    @ExceptionHandler(BizException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ApiResponse<Void> handleBusinessException(BusinessException e) {
-        log.warn("Business exception: {}", e.getMessage());
-        return ApiResponse.error(400, e.getMessage());
+    public ApiResponse<Void> handleBizException(BizException e) {
+        log.warn("Biz exception [{}]: {}", e.getCode(), e.getMessage());
+        return ApiResponse.error(e.getCode() > 0 ? e.getCode() : 400, e.getMessage());
     }
 
     @ExceptionHandler(NotFoundException.class)

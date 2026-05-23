@@ -1,6 +1,6 @@
 package com.bone.iam.application.command.handler;
 
-import com.bone.iam.application.command.cmd.DisableAccountCmd;
+import com.bone.iam.application.command.cmd.DisableAccountCommand;
 import com.bone.iam.domain.account.Account;
 import com.bone.iam.domain.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +13,7 @@ public class DisableAccountHandler {
     private final AccountRepository accountRepository;
 
     @Transactional
-    public void handle(DisableAccountCmd cmd) {
+    public void handle(DisableAccountCommand cmd) {
         Account account = accountRepository.findById(cmd.getId());
         if (account == null) {
             throw new RuntimeException("账户不存在");

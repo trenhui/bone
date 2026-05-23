@@ -9,8 +9,7 @@ import com.bone.masterdata.domain.model.quality.vo.RuleName;
 import com.bone.masterdata.domain.model.quality.vo.RuleSeverity;
 import com.bone.masterdata.domain.repository.DataQualityRuleRepository;
 import com.bone.masterdata.domain.repository.MasterDataRecordRepository;
-import com.bone.metadata.sdk.query.dsl.FluentQuery;
-import com.bone.metadata.sdk.query.dsl.QueryBuilder;
+import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.core.exception.DomainException;
 import lombok.RequiredArgsConstructor;
 
@@ -41,14 +40,15 @@ public class DataQualityService {
         QualityCheck check = QualityCheck.create(checkId, masterDataEntityId);
 
         // 获取实体的所有规则
-        List<DataQualityRule> rules = QueryBuilder.from(DataQualityRule.class)
-                .where(DataQualityRule::getMasterDataEntityId).eq(masterDataEntityId)
-                .list();
+        List<DataQualityRule> rules =
+                ruleRepository.findByCriteria(
+                        Criteria.<DataQualityRule>create()
+                                .eq("masterDataEntityId", masterDataEntityId));
 
-        // 获取实体的所有记录
-        List<MasterDataRecord> records = QueryBuilder.from(MasterDataRecord.class)
-                .where(MasterDataRecord::getMasterDataEntityId).eq(masterDataEntityId)
-                .list();
+        List<MasterDataRecord> records =
+                recordRepository.findByCriteria(
+                        Criteria.<MasterDataRecord>create()
+                                .eq("masterDataEntityId", masterDataEntityId));
 
         // 执行质量检查逻辑（简化实现）
         int totalRecords = records.size();

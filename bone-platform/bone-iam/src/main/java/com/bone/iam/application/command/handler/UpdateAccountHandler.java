@@ -1,6 +1,6 @@
 package com.bone.iam.application.command.handler;
 
-import com.bone.iam.application.command.cmd.UpdateAccountCmd;
+import com.bone.iam.application.command.cmd.UpdateAccountCommand;
 import com.bone.iam.application.service.AccountRoleBindingService;
 import com.bone.iam.domain.account.Account;
 import com.bone.iam.domain.account.vo.AccountStatus;
@@ -16,7 +16,7 @@ public class UpdateAccountHandler {
     private final AccountRoleBindingService accountRoleBindingService;
 
     @Transactional
-    public void handle(UpdateAccountCmd cmd) {
+    public void handle(UpdateAccountCommand cmd) {
         Account account = accountRepository.findById(cmd.getId());
         if (account == null) {
             throw new RuntimeException("账户不存在");

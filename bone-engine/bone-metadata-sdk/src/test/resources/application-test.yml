@@ -2,14 +2,18 @@ spring:
   config:
     activate:
       on-profile: test
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
   sql:
     init:
       # 由 ExternalScriptExecutor 按 sql/{h2|mysql}/ 加载，避免与根目录 schema.sql 重复建表
       mode: never
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/extTest?useSSL=false&autoReconnect=true&characterEncoding=utf8}
-    username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:mysql123}
+    # 默认 H2 内存库（CI/本地无需 MySQL）；连 MySQL 时设置 DB_URL 并可选 DB_TYPE=MYSQL
+    url: ${DB_URL:jdbc:h2:mem:extTest;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE}
+    username: ${DB_USERNAME:sa}
+    password: ${DB_PASSWORD:}
     hikari:
       maximum-pool-size: 5
       connection-timeout: 3000
@@ -27,7 +31,7 @@ metadata:
           batch: true
           max-rows: 5000
       database:
-        type: MYSQL
+        type: ${DB_TYPE:H2}
         auto-detect-dialect: true
         default-ds: primary
         batch-size: 500

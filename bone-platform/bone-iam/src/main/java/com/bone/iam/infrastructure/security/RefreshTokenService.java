@@ -1,5 +1,6 @@
 package com.bone.iam.infrastructure.security;
 
+import com.bone.iam.domain.gateway.RefreshTokenIssuer;
 import com.bone.iam.infrastructure.config.JwtConfig;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -19,11 +20,12 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @RequiredArgsConstructor
-public class RefreshTokenService {
+public class RefreshTokenService implements RefreshTokenIssuer {
 
     private final NamedParameterJdbcTemplate jdbcTemplate;
     private final JwtConfig jwtConfig;
 
+    @Override
     public String issue(Long accountId, Long tenantId) {
         String raw = UUID.randomUUID().toString().replace("-", "");
         String hash = sha256(raw);
@@ -43,6 +45,7 @@ public class RefreshTokenService {
         return raw;
     }
 
+    @Override
     public Map<String, String> rotate(String rawRefreshToken) {
         String hash = sha256(rawRefreshToken);
         Map<String, Object> row = jdbcTemplate.query(
@@ -76,6 +79,7 @@ public class RefreshTokenService {
         return Map.of("accountId", String.valueOf(accountId), "refreshToken", newRaw);
     }
 
+    @Override
     public void revoke(String rawRefreshToken) {
         if (rawRefreshToken == null || rawRefreshToken.isBlank()) {
             return;

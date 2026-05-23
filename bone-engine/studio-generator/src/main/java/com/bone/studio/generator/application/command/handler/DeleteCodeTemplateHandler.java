@@ -1,6 +1,6 @@
 package com.bone.studio.generator.application.command.handler;
 
-import com.bone.core.usecase.Capability;
+import com.bone.core.capability.Capability;
 import com.bone.studio.generator.application.command.cmd.DeleteCodeTemplateCommand;
 import com.bone.studio.generator.domain.repository.CodeTemplateRepository;
 import lombok.RequiredArgsConstructor;

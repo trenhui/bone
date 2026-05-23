@@ -1,6 +1,6 @@
 package com.bone.blueprint.domain.order;
 
-import com.bone.core.domain.AggregateRoot;
+import com.bone.core.domain.AuditableAggregateRoot;
 import com.bone.core.exception.DomainException;
 import com.bone.metadata.sdk.domain.annotation.Table;
 import com.bone.blueprint.domain.order.event.OrderCancelledEvent;
@@ -27,27 +27,17 @@ import java.util.List;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 @Table("t_order")
-public class Order extends AggregateRoot<Long> {
+public class Order extends AuditableAggregateRoot<Long> {
 
     /**
      * 订单金额上限
      */
     private static final BigDecimal MAX_ORDER_AMOUNT = new BigDecimal("1000000");
 
-    private Long id;
     private Long customerId;
     private List<OrderItem> items = new ArrayList<>();
     private BigDecimal totalAmount;
     private OrderStatus status;
-
-    /**
-     * 获取订单ID
-     * 
-     * @return 订单ID
-     */
-    public Long getId() {
-        return id;
-    }
 
     /**
      * 获取客户ID
@@ -90,7 +80,7 @@ public class Order extends AggregateRoot<Long> {
             throw new DomainException("订单至少需要一个商品项");
         }
         Order order = new Order();
-        order.id = id;
+        order.setId(id);
         order.customerId = customerId;
         order.items = new ArrayList<>(items);
         order.recalculateTotal();

@@ -4,11 +4,10 @@ import com.bone.system.adapter.web.converter.LogWebConverter;
 import com.bone.system.adapter.web.dto.req.CreateLogReq;
 import com.bone.system.adapter.web.dto.req.LogPageReq;
 import com.bone.system.adapter.web.dto.resp.LogResp;
-import com.bone.system.application.command.cmd.CreateLogCmd;
+import com.bone.system.application.command.cmd.CreateLogCommand;
+import com.bone.system.application.command.handler.LogCommandHandler;
 import com.bone.system.application.query.dto.LogDTO;
-import com.bone.system.application.usecase.standard.CreateLogUseCase;
-import com.bone.system.application.usecase.standard.LogByIdQueryUseCase;
-import com.bone.system.application.usecase.standard.LogPageQueryUseCase;
+import com.bone.system.application.query.handler.LogQueryHandler;
 import com.bone.system.common.result.ApiResponse;
 import com.bone.system.common.result.PageResult;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,13 +28,10 @@ import static org.mockito.Mockito.when;
 public class LogControllerTest {
 
     @Mock
-    private CreateLogUseCase createLogUseCase;
+    private LogCommandHandler logCommandHandler;
 
     @Mock
-    private LogByIdQueryUseCase logByIdQueryUseCase;
-
-    @Mock
-    private LogPageQueryUseCase logPageQueryUseCase;
+    private LogQueryHandler logQueryHandler;
 
     private LogController logController;
 
@@ -43,36 +39,29 @@ public class LogControllerTest {
     public void setUp() {
         MockitoAnnotations.openMocks(this);
         LogWebConverter logWebConverter = Mappers.getMapper(LogWebConverter.class);
-        logController = new LogController(createLogUseCase, logByIdQueryUseCase, logPageQueryUseCase, logWebConverter);
+        logController = new LogController(logCommandHandler, logQueryHandler, logWebConverter);
     }
 
     @Test
     public void testCreate() {
         CreateLogReq req = new CreateLogReq();
+        req.setContent("test log");
         req.setLogLevel("INFO");
-        req.setServiceName("bone-system");
-        req.setContent("Test log");
 
-        Long logId = 1L;
-        when(createLogUseCase.execute(any(CreateLogCmd.class))).thenReturn(logId);
+        when(logCommandHandler.handle(any(CreateLogCommand.class))).thenReturn(1L);
 
         ApiResponse<Long> apiResponse = logController.create(req);
 
         assertTrue(apiResponse.isSuccess());
-        assertEquals(logId, apiResponse.getData());
-        verify(createLogUseCase, times(1)).execute(any(CreateLogCmd.class));
+        assertEquals(1L, apiResponse.getData());
+        verify(logCommandHandler, times(1)).handle(any(CreateLogCommand.class));
     }
 
     @Test
     public void testGetById() {
         Long logId = 1L;
-        LogDTO dto = new LogDTO();
-        dto.setId(logId);
-        dto.setLogLevel("INFO");
-        dto.setServiceName("bone-system");
-        dto.setContent("Test log");
-
-        when(logByIdQueryUseCase.execute(logId)).thenReturn(dto);
+        LogDTO dto = LogDTO.builder().id(logId).content("test").build();
+        when(logQueryHandler.getById(logId)).thenReturn(dto);
 
         ApiResponse<LogResp> apiResponse = logController.getById(logId);
 
@@ -86,7 +75,7 @@ public class LogControllerTest {
         req.setPageNum(1);
         req.setPageSize(10);
 
-        when(logPageQueryUseCase.execute(any()))
+        when(logQueryHandler.page(any()))
                 .thenReturn(PageResult.of(Collections.emptyList(), 0, 1, 10));
 
         ApiResponse<PageResult<LogResp>> apiResponse = logController.page(req);

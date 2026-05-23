@@ -1,7 +1,7 @@
 package com.bone.metadata.catalog.application.command.handler;
 
 import com.bone.core.exception.BizException;
-import com.bone.metadata.catalog.application.command.cmd.UpdateMetaFieldCmd;
+import com.bone.metadata.catalog.application.command.cmd.UpdateMetaFieldCommand;
 import com.bone.metadata.catalog.domain.model.MetaField;
 import com.bone.metadata.catalog.domain.repository.MetaFieldRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +15,7 @@ public class UpdateMetaFieldHandler {
   private final MetaFieldRepository metaFieldRepository;
 
   @Transactional
-  public void handle(Long id, UpdateMetaFieldCmd cmd) {
+  public void handle(Long id, UpdateMetaFieldCommand cmd) {
     MetaField field = metaFieldRepository.findById(id);
     if (field == null) {
       throw BizException.of("字段不存在: " + id);

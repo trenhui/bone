@@ -3,7 +3,7 @@ package com.bone.metadata.engine.exception;
 import java.util.Map;
 
 /** 规则执行异常类 用于表示规则执行过程中的错误 */
-public class RuleExecutionException extends BaseBusinessException {
+public class RuleExecutionException extends MetadataEngineBizException {
 
   private static final long serialVersionUID = 1L;
 

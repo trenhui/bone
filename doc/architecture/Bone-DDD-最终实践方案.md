@@ -4,25 +4,14 @@
 > **结构**：**第一部分**为与具体框架解耦的**业界共识与架构原则（北向星）**；**第二部分**为 **Bone 平台工程落地**（包结构、铁律、SDK、极简策略）。修订时先对齐原则，再调整落地条文。  
 > **定位说明**：本文是 **Bone 仓库内 DDD 与分层门禁的权威规范**，对齐主流 DDD/整洁架构共识，并含 **D1 元数据注解** 等工程折中；**非**全行业唯一标准，复杂域请结合 ADR 裁剪。  
 > **关联文档**：[BONE-总体架构设计方案.md](./BONE-总体架构设计方案.md)（平台总体架构、NFR、安全与数据一致性策略，与本方案互补）；[README.md](./README.md) 为架构文档索引；模块详设见 [doc/design/modules/README.md](../design/modules/README.md)。  
-> **版本**：3.6 | **日期**：2026-05-21
+> **版本**：**4.1** | **日期**：2026-05-21  
+> **分册索引**：[ddd/README.md](./ddd/README.md)（原则 / 工程落地 / CQRS / 附录 / **补充条文与示例**）  
+> **近期 ADR**：[0011 AggregateRoot 继承链](./adr/0011-aggregate-root-inheritance.md)、[0012 SystemException 层次](./adr/0012-system-exception-hierarchy.md)
 >
-> **v3.6 关键变更（规范冻结 — 减少反复返工）**：
-> - 新增 [§0 规范稳定性契约](#0-规范稳定性契约)：区分**新代码 Profile**与**存量 Grandfather**；破坏性变更须 ADR + 下游文档同步清单。
-> - 补齐 [§12.1.1 SDK 豁免](#1211-sdk--框架库豁免p0-4567)、[§14.3.1 application/service](#1431-applicationservice-白名单)、[§14.5 Store→Repository](#145-store--repository-迁移)、[§17.2 持久化对象决策树](#172-持久化对象决策树)。
-> - 附录 B 升为 **v3.6 执行矩阵**（批次 / Owner / 完成定义）；`bone-blueprint` 标注为**迁移中参考**，非终态样板。
-> - 共享门禁：`bone-architecture-test` 模块 + ArchUnit **Freezing**（存量登记、禁止新增违规）。
->
-> **v3.5 关键变更（适用范围按性质判定）**：
-> - 新增 [§14.4 模块适用性](#144-模块适用性按性质而非物理位置)，**适用范围按「模块性质」判定**（应用 / SDK / 基础设施），**不再以** `bone-platform/` / `bone-engine/` 物理目录划分。
-> - `bone-engine/bone-extension-engine/bone-extension-studio`、`bone-engine/studio-generator` 等**控制面 BFF**明确归类为**应用模块**，完全适用 §12 P0 全 7 条 + §14.1/14.3 + §21 ArchUnit 规则集。
-> - §12.1 标题修正为「全局七条」（与 v3.4 P0-7 一致），并显式标注**仅对应用模块强制**；SDK 库豁免 P0-4/5/6/7。
-> - 附录 B.2 模块符合度矩阵按 §14.4 三类（应用 / 引擎 SDK / 基础设施）重组，列出每个模块的物理位置、`*UseCase` 存量、自造 UseCase 类型、`application/service` 存量、端口命名 gap。
->
-> **v3.4 关键变更（去 UseCase）**：
-> - **禁止**新代码引入 `application/usecase` 包；Controller 必须**直接注入** `*CommandHandler` / `*QueryHandler`。
-> - `bone-core` 的 `UseCaseExecutor` / `@UseCase` 注解标 **`@Deprecated`（计划 2026-12-31 删除）**；存量 `*UseCase` 类按 §22 迁移路径下沉为 Handler 调用。
-> - §20 编排相关章节同步收紧，**禁止「UseCase 门面」**；AI/Flow 能力发现请走 `@Capability` 或独立 capability 注册表，不复用 UseCase 名义。
-> - 详情见 [§14.3 应用层结构（强制）](#143-应用层结构强制)、[§22 演进路径](#22-演进建议三阶段)、[附录 B 废止登记](#附录-b废止登记)。
+> **使用说明**：
+> - 本方案为**稳定规范**，**不再附迁移时间表 / 批次 / Owner**。**凡不符合本规范的代码均须迁移**；落地节奏由各模块负责人在内部排期，不写入本文。  
+> - **新代码**：必须 100% 满足 [§0 规范稳定性契约](#0-规范稳定性契约) + [§12 铁律](#12-铁律p0-必守)，由 ArchUnit 共享规则库（`bone-framework/bone-architecture-test`）在 CI 强制。  
+> - **历史变更**：删除（仓库 Git 历史可查）。本文只描述「最终态」。
 
 ---
 
@@ -119,7 +108,15 @@
 
 ### 5.4 跨上下文一致性（与平台架构对齐）
 
-跨聚合、跨限界上下文的**强一致**应为例外；默认采用 **最终一致**（领域事件、集成事件、Outbox、Saga/补偿等）。具体模式选择与 **幂等、重试、死信** 要求见 **[总体架构设计方案](./BONE-总体架构设计方案.md)** 第二十七部分等章节，本文不重复展开。
+跨聚合、跨限界上下文的**强一致**应为例外；默认采用 **最终一致**（领域事件、集成事件、Outbox、Saga/补偿等）。具体模式选择与 **幂等、重试、死信** 要求见 **[总体架构设计方案](./BONE-总体架构设计方案.md)** 第二十七部分等章节。
+
+| 场景 | Bone 默认模式 | 实现位置 |
+|------|--------------|----------|
+| 单聚合内强一致 | `@Transactional` on `*CommandHandler` | `application.command.handler` |
+| 跨聚合同模块 | 领域事件 → `AFTER_COMMIT` 发布 + Outbox（可选） | `infrastructure` + `DomainEventPublisher` |
+| 跨模块 / 跨服务 | 集成事件（`*IntegrationEvent` 后缀）→ MQ / Saga | `infrastructure`、integration 模块 |
+
+领域事件发布最小模式见 [ddd/07-supplements.md §3.3.1](./ddd/07-supplements.md#331-领域事件发布最小模式)。
 
 ---
 
@@ -168,32 +165,33 @@
 
 ## 0. 规范稳定性契约
 
-> **目的**：避免「规范周更 → 应用模块反复改结构」。v3.6 起，下列条款**冻结**；后续仅允许**收缩存量违规**或**追加 ADR 批准的例外**，不得再引入第三套应用层形态。
+> 本节是 Bone 仓库内 DDD 与分层门禁的**唯一稳定面**。规范一旦发布即视为**最终态**，不分「过渡期」「Grandfather」「批次」。**凡不符合本规范的代码均须迁移**；CI 门禁拒绝新增违规。
 
-### 0.1 新代码 Profile（强制，PR 拦截）
+### 0.1 新代码强制 Profile（PR 拦截）
 
-适用于 [§14.4](#144-模块适用性按性质而非物理位置) 认定的**应用 / 控制面 BFF** 模块：
+适用于 [§14.4](#144-模块适用性按性质而非物理位置) 认定的**应用 / 控制面 BFF** 模块。模块性质**仅按 §14.4 三类（应用 / SDK / 基础设施）判定**，不以 `bone-platform/` vs `bone-engine/` 目录推断适用性。
 
 | 维度 | 要求 |
 |------|------|
 | 分层 | §14.1 标准树（或 §14.2 极简树） |
-| 应用层 | 仅 `command` / `query` / `event` / `integration` / §14.3.1 白名单内的 `service` |
-| 入站 | Controller → `*CommandHandler` / `*QueryHandler`（或 ADR 批准的 `*Orchestrator`） |
-| 禁止 | `application/usecase/**`、`*UseCase`、`com.bone.core.usecase.*`、自造 `@UseCase` 注解 |
-| 命名 | 命令后缀统一 `*Command`（**禁止**新代码 `*Cmd`）；端口统一 `*Repository`（**禁止**新代码 `domain.store.*Store`） |
-| 门禁 | §12 P0 + `bone-architecture-test` ArchUnit（含 Freezing，见 §21） |
+| 应用层 | 基础包 `command` / `query`；可选 `event` / `integration` / 满足 §14.3.1 约束的 `service`；ADR 例外可加 `orchestration`（§14.3） |
+| 入站 | Controller → `*CommandHandler` / `*QueryHandler`（或 ADR 批准的 `*Orchestrator`）；**禁止** Controller 直接注入 `application/service` |
+| 命名 | 命令后缀 `*Command`、查询后缀 `*Query`；端口包 `domain/repository/`，接口 `*Repository`；异常 `com.bone.core.exception.BizException`（禁 `*Cmd`、`*Qry`、`*Store`、自建 `BusinessException`） |
+| 禁止 | `application/usecase/**`、`*UseCase`、任何自造 `@UseCase` / `UseCaseExecutor`；**禁止**业务模块依赖已删除的 `com.bone.core.usecase.*` |
+| AI/Flow | 能力发现仅用 `com.bone.core.capability.@Capability` + `HandlerRegistry`（§20） |
+| 门禁 | §12 P0 + `bone-framework/bone-architecture-test` 共享 ArchUnit 规则（见 §21） |
 
-### 0.2 存量 Grandfather（登记制，只减不增）
+### 0.2 存量不符合规范代码的处理
 
-- 附录 [B.2](#b2-模块符合度与迁移矩阵v36-执行) 列出的 `*UseCase`、`domain/store`、顶层 `controller/` 等：**不得新增类/包**；删除一项即从 Freezing 基线中移除对应条目。
-- **截止**：`*UseCase` 与 `bone-core.usecase.*` 依赖在 **2026-12-31** 前清零（见 §22.1）。
-- **例外扩张**：仅能通过 ADR（含模块 Owner 签字 + 回滚方案）。
+- **统一原则**：不符合本规范的代码（含但不限于 `*UseCase` 类、`application/usecase/**` 包、`domain/store/*Store`、Controller 直注 `*UseCase`、命令后缀 `*Cmd`、查询后缀 `*Qry`、模块根包下的 `controller/`、自造 `@UseCase` 注解、自建 `BusinessException`）**一律迁移**到符合规范的形态；落地节奏由模块 Maintainer 在内部安排，**不在本文规定**。
+- **CI 防回退**：通过 `FreezingArchRule` 登记存量违规快照；**新增**违规直接 CI 失败。基线随每次迁移收缩，**不允许扩张**。
+- **例外登记**：规范允许的例外（如 §14.3 `*Orchestrator`、§17.D2 框架基类新增）统一按 [§0.4](#04-例外登记的统一形态) 登记。破坏性变更 ADR 模板见 [adr/0000-template.md](./adr/0000-template.md)。
+- **命名**：子包 `cmd/`、`qry/` **仅作短目录名**；类名后缀必须为 `*Command` / `*Query`（禁 `*Cmd` / `*Qry` 类名）。
 
 ### 0.3 破坏性变更流程
 
-1. 在 `doc/architecture/adr/` 新增 ADR（动机、影响模块、迁移步骤、回滚）。  
-2. 同步更新本方案版本号与「关键变更」摘要。  
-3. **必须**同步的下游文档（任一项涉及则更新）：
+1. 在 `doc/architecture/adr/` 新增 ADR（动机、影响模块、迁移路径、回滚）。  
+2. 同步以下下游文档（任一项涉及则更新）：
 
 | 文档 | 路径 |
 |------|------|
@@ -202,11 +200,21 @@
 | 蓝图 / 生成器 | `bone-blueprint`、`studio-generator` 模板与 README |
 | API 规范（若影响异常/响应） | `doc/architecture/Bone-API-规范.md` |
 
-4. 先合并 **ArchUnit / CI** 与文档，再启动业务代码批量迁移（避免「代码已改、规范又变」）。
+3. **先合并** ArchUnit / CI 规则与文档，**再启动**业务代码迁移；避免「代码已改、规范又变」。
 
-### 0.4 模块性质判定（冻结规则）
+### 0.4 例外登记的统一形态
 
-**仅**按 [§14.4](#144-模块适用性按性质而非物理位置) 三张表增删模块名；**不再**以 `bone-platform/` vs `bone-engine/` 目录推断适用性。
+> 全文各处提到的「例外」统一按**影响半径**登记，避免读者每次回忆走哪个流程。
+
+| 影响半径 | 登记形式 | 典型场景 |
+|----------|----------|----------|
+| **跨模块 / 平台级** | `doc/architecture/adr/` 新增 ADR | §14.3 `*Orchestrator`；§0.3 破坏性变更；§17 D2 框架基类新增例外 |
+| **单模块内** | 模块 `README.md` 例外列表 | §18.1 自增主键例外；§14.4 模块性质边界用例 |
+| **类内决策 / 工程折中** | 类级 / 方法级 Javadoc 标注理由 | §14.3.1 应用服务类别（S1/S2/S3）；§12.1 P0-6「读己之写」CommandHandler 特例 |
+
+- **同一规范的例外升级**：单模块例外若被第二个模块复用，须升级为 ADR。
+- **例外不堆积**：每条例外**必须**注明「何种条件下可拆除」；架构组复核时拆除过期例外（复核节奏由架构组自行掌握，不在本文规定）。
+- **ADR 不为「规避规范」开口子**：若例外仅为绕过条款而无业务理由，应拒绝。
 
 ---
 
@@ -224,9 +232,9 @@
 
 | 原则维度 | Bone 落点 |
 |----------|-----------|
-| 边界与数据所有权 | 上下文 → 模块或 `domain.{context}`；跨边界经 ACL / 契约 API / 事件 |
+| 边界与数据所有权 | 一上下文对应一个 Maven 模块（`com.bone.{module}`）；跨边界经 ACL / 契约 API / 事件 |
 | 通用语言 | 术语表 + 命令/事件/REST 命名一致 |
-| 防腐 | `domain.gateway`（或等价端口包），`infrastructure` 实现；禁止应用层直连 Feign **实现类型** |
+| 防腐 | `domain/gateway/` 定义端口，`infrastructure/gateway/` 实现；禁止应用层直连 Feign **实现类型** |
 | 一致性 | 一事务一改一个聚合根；跨聚合默认最终一致 |
 | 读写分离 | 写走聚合 + 仓储；读走 `Criteria` / `QueryBuilder` + 投影 DTO |
 
@@ -234,17 +242,17 @@
 
 ## 12. 铁律（P0 必守）
 
-### 12.1 P0 — 全局七条（CI / ArchUnit 建议硬门禁）
+### 12.1 P0 — 全局七条（CI / ArchUnit 硬门禁）
 
 > **适用范围**：本节 P0 七条**仅强制适用于「应用 / 控制面 BFF」模块**（详见 [§14.4](#144-模块适用性按性质而非物理位置)）。SDK / 框架库豁免 P0-4/5/6/7。
 
 1. **依赖方向**：`adapter → application → domain ← infrastructure`，禁止反向依赖；**application 层禁止** import **infrastructure** 具体实现类（须经 **domain 端口** 或 **adapter 已解析的 Bean** 注入接口实现，与总体架构方案中依赖倒置一致）。  
-2. **领域规则**：状态流转、不变量在 **聚合根或领域服务**；应用层只做编排与事务边界——**禁止在 Handler 内实现仅属于某一聚合的业务不变量**（可做的仅为用例级前置校验，如参数组合、权限已判定等）。  
+2. **领域规则**：状态流转、不变量在 **聚合根或领域服务**；应用层只做编排与事务边界——**禁止在 Handler 内实现仅属于某一聚合的业务不变量**（可做的仅为用例级前置校验，如参数组合、ACL 权限是否已判定通过等）。  
 3. **外部系统**：仅经 **端口 + infrastructure 实现**；`domain` / `application` 不依赖 Feign、HttpClient、MQ Producer **实现类型**。  
 4. **写侧仓储**：`domain.repository` 只做聚合 **加载与持久化**（如 `save`、`remove`、`findById`）；**禁止**在仓储接口上增加组合条件列表/分页等查询方法。  
 5. **读侧查询**：凡 **WHERE 含多个业务条件**、**分页/排序**、**Join/子查询/聚合报表** 的读路径，统一用 **`Criteria` / `QueryBuilder`**，结果映射到 `application.query.dto`（或 `projection`）；**禁止在 `domain` 包内**使用查询构建器。仅按 **主键或单一业务键** 加载聚合（如 `findById`、§18.2 白名单方法）仍走仓储，不视为本条「读侧复杂查询」。  
 6. **CQRS**：CommandHandler 内 **禁止** 使用 `QueryBuilder`（特例「读己之写」须注释 + 评审）。**QueryHandler** 建议标注 **`@Transactional(readOnly = true)`**（或框架等价只读事务），且 **禁止** 调用写侧仓储修改聚合。
-7. **应用层单层（v3.4）**：**禁止** 新增 `application/usecase/**` 包与 `*UseCase` 类；Controller **必须**直接注入 `*CommandHandler` / `*QueryHandler`（编排例外见 [§14.3](#143-应用层结构强制)）。**禁止** 新代码 import `com.bone.core.usecase.UseCaseExecutor` 与 `@UseCase`。
+7. **应用层单层**：**禁止** `application/usecase/**` 包与 `*UseCase` 类；Controller **直接注入** `*CommandHandler` / `*QueryHandler` / `*Orchestrator`（编排例外见 [§14.3](#143-应用层结构强制)），**禁止** 直接注入 `application/service`。**禁止**任何模块 import 已删除的 `com.bone.core.usecase.*` 或自造 `@UseCase` / `UseCaseExecutor`。
 
 #### 12.1.1 SDK / 框架库豁免（P0-4/5/6/7）
 
@@ -258,7 +266,7 @@
 | P0-4 写侧仓储方法收敛 | **强制** | **豁免**（SDK 自身 `Repository` SPI 除外） |
 | P0-5 读侧 QueryBuilder 位置 | **强制** | **豁免** |
 | P0-6 Command 禁 QueryBuilder | **强制** | **豁免**（无 CommandHandler） |
-| P0-7 禁止 UseCase | **强制** | **豁免**（无 application 层）；但 `bone-core` 中 `UseCaseExecutor`/`@UseCase` 仍 **@Deprecated** 且业务模块不得新增引用 |
+| P0-7 禁止 UseCase | **强制** | **豁免**（非应用 / 控制面 BFF，无 Controller 业务 API）；`com.bone.core.usecase.*` **已从 bone-core 删除**，业务模块**不得**引用 |
 | §14.1 包结构 | **强制** | **豁免**（按 SPI/库习惯组织） |
 | §14.3 应用层 | **强制** | **豁免** |
 | §17 D0/D1/D2 | 建议 | **强制**（元数据注解白名单） |
@@ -273,17 +281,27 @@
 
 每个上下文具备：**名称**、**职责一句**、**对外契约**、**数据所有权**。
 
-- **单体**：一上下文对应 `com.bone.{module}` 或 `domain.{context}`；禁止跨上下文直接引用对方聚合 **类型**。  
+- **单体**：一上下文对应一个 Maven 模块（`com.bone.{module}`）；禁止跨上下文直接引用对方聚合 **类型**。  
 - **多部署**：一上下文一服务边界；不默认共享写库。
 
 ### 13.2 通用语言
 
-- **L0 / 小模块**：至少在模块 README 中固定**核心术语中英对照与禁用同义词**（可视为一页纸级术语表）。  
-- **L1 起**：建议维护 `doc/glossary.md` 或 Wiki，命令、事件、REST 与表字段、消息字段对齐（与 **§22 演进 L1**「术语表 + 上下文职责说明」一致；**勿与 §23 混淆**——§23 为极简交付心态，非术语表章节）。
+- **小模块**：至少在模块 README 中固定**核心术语中英对照与禁用同义词**（一页纸级术语表）。  
+- **大模块 / 跨模块**：维护 `doc/glossary.md` 或 Wiki，命令、事件、REST 与表字段、消息字段对齐。
 
 ### 13.3 上下文映射（轻量）
 
 与邻域标注 **合作 / 客户-供应 / 防腐 / 发布语言** 之一；跨边界不经隐式共享写路径。
+
+### 13.4 多租户在 DDD 中的约定
+
+| 约定 | 说明 |
+|------|------|
+| 写侧 | 多租户实体优先 `TenantAbstractEntity`；聚合根 + 租户 + 事件用 `TenantAggregateRoot`（ADR-0011） |
+| 仓储 | `findById` 等须在实现层结合 `TenantContext` 过滤；禁止跨租户无审计的批量写 |
+| 读侧 | `QueryBuilder` 条件**必须**含 `tenantId`（或等价隔离键），见 [Bone-API-规范](./Bone-API-规范.md) |
+| 事件 | 领域/集成事件载荷**应**携带 `tenantId` |
+| 打洞 | 平台超管跨租户查询须在模块 README 登记，Handler 内显式校验角色 |
 
 ---
 
@@ -304,13 +322,16 @@ com.bone.{module}/
 │   └── schedule/
 ├── application/
 │   ├── command/
-│   │   ├── cmd/
+│   │   ├── cmd/                   # 目录短名 cmd/ 保留；类名必须 *Command（禁 *Cmd 类名）
 │   │   └── handler/
 │   ├── query/
-│   │   ├── qry/
+│   │   ├── qry/                   # 目录短名 qry/ 保留；类名必须 *Query（禁 *Qry 类名）
 │   │   ├── handler/
 │   │   └── dto/
-│   └── integration/               # 可选：入站消息编排等
+│   ├── event/                     # 可选：领域事件订阅 / 应用事件转发
+│   ├── integration/               # 可选：入站消息编排（MQ / Kafka 消费）
+│   ├── orchestration/             # ADR 例外：跨 Handler 编排（§14.3）
+│   └── service/                   # §14.3.1 约束（共享逻辑，禁 Controller 直注）
 ├── domain/
 │   ├── {aggregate}/
 │   ├── repository/
@@ -318,6 +339,9 @@ com.bone.{module}/
 │   └── gateway/
 └── infrastructure/
     ├── persistence/
+    │   ├── entity/                # *PO（D2，§17.2）
+    │   ├── converter/             # PO ↔ domain 互转
+    │   └── repository/            # *RepositoryImpl
     ├── gateway/
     ├── config/
     └── query/
@@ -325,91 +349,116 @@ com.bone.{module}/
 
 ### 14.2 极简树（小模块默认够用）
 
-仅 **Web + 一聚合** 时，可只保留：`adapter/web`、`application/command` + `application/query`、`domain/{aggregate}` + `domain/repository`；无外部系统则暂不建 `gateway`。读极简单时仍建议保留 `query` 包，避免把列表查询塞回 `CommandHandler`。
+仅 **Web + 一聚合** 时，可只保留以下包：
+
+- `adapter/web/`
+- `application/command/`、`application/query/`
+- `domain/{aggregate}/`、`domain/repository/`
+- `infrastructure/persistence/`（如需 PO 映射或仓储实现）
+
+无外部系统则暂不建 `gateway`。读极简单时仍建议保留 `query` 包，避免把列表查询塞回 `CommandHandler`。
 
 **分组原则**：按 **业务/聚合** 分包，不按「全 entities / 全 vo」横切。
 
-### 14.3 应用层结构（强制 — v3.4 去 UseCase）
+### 14.3 应用层结构（强制）
 
-**唯一允许的应用层包**：
+**允许的应用层包**（按角色划分）：
 
-```text
-application/
-├── command/{cmd,handler}/
-├── query/{qry,handler,dto}/
-├── event/                          # 应用事件（可选）
-└── integration/                    # 入站消息编排（可选；归 application 而非 adapter）
-```
+| 包 | 角色 | 必选 / 可选 |
+|----|------|-------------|
+| `application/command/{cmd,handler}/` | 写用例 | **必选**（凡有写操作） |
+| `application/query/{qry,handler,dto}/` | 读用例 | **必选**（凡有读操作） |
+| `application/event/` | 应用事件（领域事件订阅/转发） | 可选 |
+| `application/integration/` | 入站消息编排（如 MQ 消费、Kafka Source） | 可选 |
+| `application/orchestration/` | 跨多 Handler 编排（`*Orchestrator`） | **ADR 例外** |
+| `application/service/` | 多 Handler 共享逻辑（`*Service`） | **§14.3.1 约束** |
 
 **禁止**（PR/ArchUnit 拦截）：
 
 | 禁项 | 替代方案 |
 |------|----------|
-| `application/usecase/**`（任何子目录，含 `standard/`、`simple/`） | 删除该层；Controller 直接注入对应 `*CommandHandler` / `*QueryHandler` |
-| 类名 `*UseCase` | 改名为 `*CommandHandler` / `*QueryHandler`；若仅是命名差异，**合并**到现有 Handler，不留空壳 |
-| Controller 注入 `*UseCase` | Controller 注入 Handler；事务边界仍在 Handler 上 |
-| `com.bone.core.usecase.UseCaseExecutor` / `@UseCase` 新引用 | 已 `@Deprecated`；新代码不得 import |
-| 「UseCase 仅 delegate 到 Handler」的薄门面 | 反模式；本来就属于规范禁止的「无业务规则的空壳层」 |
+| `application/usecase/**`（任何子目录） | 删除；Controller 直接注入对应 `*CommandHandler` / `*QueryHandler` |
+| 类名 `*UseCase` | 改名为 `*CommandHandler` / `*QueryHandler`；纯 delegate 直接合并到现有 Handler，不留空壳 |
+| Controller 注入 `*UseCase` 或 `application/service/*Service` | Controller 仅注入 Handler / Orchestrator；事务边界仍在 Handler |
+| **业务模块** import `com.bone.core.usecase.*` | **禁止**（包已从 bone-core 删除） |
+| 自造 `@UseCase` 注解 / `UseCaseExecutor` 接口 | **禁止**；按本规范删除并改 Controller 直注 Handler |
+| 「UseCase 仅 delegate 到 Handler」的薄门面 | 反模式：违反 §15「无业务规则的空壳层」 |
 
-**为什么去 UseCase**（决策依据）：
+**决策依据**：
 
-1. **职责重复**：在 Bone 既有 §15 应用层职责（编排 + 事务边界）的前提下，`*UseCase → *Handler` 的两层调用 95% 是 1:1 delegate，无新增语义。
-2. **认知成本**：Controller → UseCase → Handler → Domain 比 Controller → Handler → Domain 多一层，对外部贡献者与生成器都是负担。
-3. **与 §14 / §24 一致**：原 §14.1 树本就只有 `command/query`，UseCase 是事实上的「第二套形态」；规范化 = 收敛到一套。
-4. **AI / Flow 能力发现**不依赖 UseCase 类型：用 `@Capability` 或独立 capability 注册表（§20）即可，不应复用「UseCase」名义混淆 DDD 用例与 AI 能力两层语义。
+1. **职责重复**：在 §15 应用层职责（编排 + 事务边界）下，`*UseCase → *Handler` 多为 1:1 delegate，无新增语义。
+2. **认知成本**：Controller → UseCase → Handler → Domain 比 Controller → Handler → Domain 多一层，对人/AI/生成器都是负担。
+3. **形态收敛**：§14.1 标准树原本仅 `command/query`，UseCase 是事实上的第二套形态，本规范明确收敛为一套。
+4. **AI / Flow 能力发现** 用 `@Capability` 即可（§20），不应复用「UseCase」名义混淆 DDD 用例与 AI 能力两层语义。
 
-**例外**（须 ADR）：
+**例外**（按 [§0.4](#04-例外登记的统一形态) 登记 ADR）：
 
-- 仅当出现「跨多个聚合 Handler 编排 + 无法在单一 Handler 表达事务/补偿」时，可新增 **`application/orchestration/*Orchestrator`**（注意：**不叫 UseCase**），并在 ADR 写明：编排步骤、补偿策略、是否引入 Saga。
+- 仅当「跨 2+ 聚合 Handler 编排 + 无法在单一 Handler 表达事务/补偿」时，可使用 **`application/orchestration/*Orchestrator`**（**不叫 UseCase**），ADR 写明编排步骤、补偿策略、是否引入 Saga。
+- **反例**（不构成例外，应改写为单 Handler 或 Orchestrator 内联）：
+  - 「Handler A 同步调用 Handler B」且 B 仅复用查询 → 把查询下沉到共享 `application/service/*Service`（§14.3.1）。
+  - 「多个 Handler 顺序调用、无补偿」→ 合并到一个 Handler，或抽取共享 `*Service`；不必引入 Orchestrator。
 
-> 与 [§20 Flow / AI 编排](#20-flow--ai-编排可选) 串联：能力声明走 `@Capability`，业务执行走 Handler（必要时 Orchestrator）。
+> 能力声明走 `@Capability`，业务执行走 Handler（必要时 Orchestrator）；详见 [§20](#20-flow--ai-编排可选)。
 
-#### 14.3.1 `application/service` 白名单
+#### 14.3.1 `application/service` 约束
 
-§14.3 未列出 `application/service/`，但允许多个 Handler **共享**非门面型逻辑。新代码仅允许下列用途（须类级 Javadoc 标明类别）：
+`application/service/` 用于多个 Handler **共享**非门面型逻辑。**两条铁律 + 两条建议**即可：
 
-| 类别 | 允许 | 禁止 |
-|------|------|------|
-| **S1 绑定/协调** | 多 Handler 复用的权限绑定、关联表维护（如 `AccountRoleBindingService`） | 仅 `handler.handle(cmd)` 一行 delegate |
-| **S2 流程运行时** | 技术编排引擎封装（如 `FlowExecutionService`、`FlowRuntime`），无 HTTP 入站 | 替代 CommandHandler 承载业务用例 |
-| **S3 缓存/失效** | 横切缓存失效、权限快照刷新（如 `AuthorityCacheEvictionService`） | 承载聚合不变量 |
+**铁律**（CR / ArchUnit）：
 
-- **事务**：写事务边界仍在 `*CommandHandler`（或 §14.3 的 `*Orchestrator`）；`application/service` 方法默认**不加** `@Transactional`，除非 S2 明确文档化。  
-- **依赖**：可依赖 `domain` 端口与**其他** Handler；**禁止**依赖 `infrastructure` 实现类。  
-- **命名**：`*Service`；**禁止** `*UseCase`、`*Manager`（除非遗留 ADR）。
+1. **禁止** `Controller` 直接注入 `application/service/*Service`（入站统一为 Handler / Orchestrator，见 §12.1 P0-7）。
+2. **禁止** `*Service` 承载聚合不变量（不变量在聚合根或领域服务，见 §12.1 P0-2）。
 
-#### 14.4 模块适用性（按**性质**而非物理位置）
+**建议**（CR 经验，不机器拦截）：
 
-DDD 规范是否适用，**按模块性质判定**，不以 `bone-platform/` / `bone-engine/` 目录划分。
+- 命名 `*Service`；避免 `*Manager`（除非遗留 ADR）。
+- 默认**不加** `@Transactional`（写事务边界仍在 `*CommandHandler` / `*Orchestrator`）；若必须，须在类级 Javadoc 说明。
+- 依赖 `domain` 端口与其他 Handler；不依赖 `infrastructure` 实现类。
 
-| 性质 | 判定标准 | 规范适用度 | 仓库示例 |
-|------|----------|------------|----------|
-| **应用 / 控制面 BFF** | 对外提供 REST API；含 Controller + 业务编排 + 持久化；服务于人类用户或前端 | **完全适用**：§12 P0 全 7 条 + §14.1/14.2/14.3 包结构 + §21 ArchUnit 7 条规则集 | `bone-platform/bone-iam`、`bone-platform/bone-masterdata`、`bone-platform/bone-integration`、`bone-platform/bone-system`、`bone-platform/bone-notification`、**`bone-engine/bone-extension-engine/bone-extension-studio`**（扩展控制台 BFF）、**`bone-engine/studio-generator`**（代码生成控制台 BFF）、`bone-blueprint`（参考样板） |
-| **引擎 SDK / 框架库** | 被业务模块依赖、无 Controller、提供 SPI/注解/工具类 | **部分适用**：§12.1.1（依赖向内）+ §17 D0/D1/D2 + §19 ACL；**豁免** §14（包结构按 SPI/库习惯）、§14.3（无 application 概念）、§21 中 P0-4/5/6/7 | `bone-framework/bone-core`、`bone-framework/bone-web`、`bone-engine/bone-metadata-sdk`、`bone-engine/bone-metadata-engine`、`bone-engine/bone-extension-engine/bone-extension-sdk`、`bone-engine/bone-workflow`、`bone-sdk/*` |
-| **基础设施服务** | 纯技术中转，无业务规则 | **部分适用**：依赖方向 + 配置规范；**豁免** §14、§21 业务相关规则 | `bone-platform/bone-gateway`、`bone-platform/bone-file`（若仅做对象存储中转） |
+**参考分类**（类级 Javadoc **必须**包含 `S1` / `S2` / `S3` 之一，供 CR 与 AI 生成校验）：
+
+| 标签 | 典型用途 | 仓库示例 |
+|------|----------|----------|
+| `S1 绑定/协调` | 多 Handler 复用的权限绑定、关联表维护 | `AccountRoleBindingService` |
+| `S2 流程运行时` | 技术编排引擎封装，无 HTTP 入站 | `FlowExecutionService`、`FlowRuntime` |
+| `S3 缓存/失效` | 横切缓存失效、权限快照刷新 | `AuthorityCacheEvictionService` |
+
+> 反模式：仅 `handler.handle(cmd)` 一行 delegate 的 Service —— 直接删除，调用方改注入 Handler。
+
+### 14.4 模块适用性（按**性质**而非物理位置）
+
+DDD 规范是否适用，**按模块性质判定**，不以 `bone-platform/` / `bone-engine/` 目录划分。仓库快照见 [附录 B.1](#b1-模块适用性快照)。
+
+| 性质 | 判定标准 | 规范适用度 |
+|------|----------|------------|
+| **应用 / 控制面 BFF** | 对外提供 REST API；含 Controller + 业务编排 + 持久化；服务于人类用户或前端 | **完全适用**：§12 P0 全 7 条 + §14（全套包结构与命名）+ §16.3 异常 + §17 D0/D1/D2 + §21 ArchUnit 规则集 |
+| **引擎 SDK / 框架库** | 被业务模块依赖、无 Controller、提供 SPI/注解/工具类 | **部分适用**：§12.1.1（依赖向内）+ §17 D0/D1/D2 + §19 ACL；**豁免** §14（包结构按 SPI/库习惯）、§14.3（无 application 概念）、§21 中 P0-4/5/6/7 |
+| **基础设施服务** | 纯技术中转，无业务规则 | **部分适用**：依赖方向 + 配置规范；**豁免** §14、§21 业务相关规则 |
 
 **判定通用规则**：
 
-1. **看 Controller**：有 `@RestController` 且暴露业务路径 → **应用模块**，全规范  
-2. **看依赖方向**：被业务模块 `import` → **SDK / 框架**，可豁免包结构  
+1. **看 Controller**：有 `@RestController` 且暴露业务路径 → **应用模块**，全规范
+2. **看依赖方向**：被业务模块 `import` → **SDK / 框架**，可豁免包结构
 3. **混合情况**：含 SDK 子模块和 Studio 子模块（如 `bone-extension-engine`）→ **按子模块**分别判定，**Studio = 应用，SDK = 引擎**
 
-**门禁**：豁免模块的新增写 ADR 说明；任何"应用模块伪装成引擎以逃避规范"在 CR 阻断。
+**门禁**：新增豁免模块或扩大豁免范围须按 [§0.4](#04-例外登记的统一形态) 写 ADR；任何「应用模块伪装成引擎以逃避规范」在 CR 阻断。
 
-**示例（不容歧义）**：
+**判定示例（不容歧义）**：
 
-- `bone-extension-engine/bone-extension-studio` = **应用**（暴露 `/api/v1/extension/*`）→ 必须 ArchitectureTest + 不得有 `*UseCase` + 端口命名 `Repository`
-- `bone-extension-engine/bone-extension-sdk` = **SDK**（被业务进程 import）→ 守 D0/D1 即可
-- `studio-generator` = **应用**（暴露 `/api/v1/generator/*`）→ 必须 ArchitectureTest + 删除自造 `UseCaseExecutor`/`@UseCase` + UseCase 全量迁移
+- `bone-extension-engine/bone-extension-studio` = **应用**（暴露 `/api/v1/extension/*`）→ 完全适用 §12 P0；持久化端口命名 `*Repository`，包 `domain/repository/`。
+- `bone-extension-engine/bone-extension-sdk` = **SDK**（被业务进程 import）→ 守 §17 D0/D1 即可。
+- `studio-generator` = **应用**（暴露 `/api/v1/generator/*`）→ 完全适用 §12 P0；不得存在自造 `@UseCase` / `UseCaseExecutor` 类型与 `*UseCase` 类。
 
-#### 14.5 `Store` → `Repository` 迁移
+### 14.5 持久化端口命名（强制）
 
-| 阶段 | 规则 |
+| 维度 | 规则 |
 |------|------|
-| **新代码（v3.6 起）** | 持久化端口**仅** `domain/repository/*Repository`；**禁止**新增 `domain/store/*Store` |
-| **存量别名期** | 至 **2026-11-30**：允许保留 `*Store` 接口，但须在模块 README 列出清单；实现类仍在 `infrastructure/persistence` |
-| **迁移动作** | 接口重命名 `FooStore` → `FooRepository`；包 `domain.store` → `domain.repository`；调用方批量替换；ArchUnit 在别名期结束后启用 `noClassesInPackage("..domain.store..")` |
-| **典型模块** | `bone-extension-studio`（`ExtPointStore` 等）见附录 B **Batch D** |
+| 包 | `domain/repository/`（**唯一**）；**禁止** `domain/store/` 或任何同义包名 |
+| 接口命名 | `*Repository`（如 `OrderRepository`）；**禁止** `*Store`、`*Dao`、`*Mapper` 作为领域端口名 |
+| 实现位置 | `infrastructure/persistence/repository/`（或 SDK 代理生成） |
+| 与 §18.2 联动 | 仅允许聚合保存 / 删除 / 按 ID 加载（`save` / `saveAll` / `remove` / `removeAll` / `findById` / `findAllById` / `existsById`），加 §18.2 单键白名单（`findBy*` / `existsBy*` 前缀） |
+
+> 既有 `*Store` / `domain.store/` 视为不符合规范，按 [§0.2](#02-存量不符合规范代码的处理) 一律迁移；CI 由 `BoneDddArchRules.noNewDomainStorePackage()` 拦截新增。
 
 ---
 
@@ -417,10 +466,10 @@ DDD 规范是否适用，**按模块性质判定**，不以 `bone-platform/` / `
 
 | 层 | 职责 | 禁止 |
 |----|------|------|
-| **adapter** | 协议转换、入参校验、路由；**Controller 直接注入** `*CommandHandler` / `*QueryHandler` | 业务规则、直接调仓储实现、注入 `*UseCase`（§14.3 已废止） |
-| **application** | 用例编排、**写事务边界**（`@Transactional` 置于 CommandHandler 或等价边界）、调领域与端口 | **实现**本属聚合内的业务不变量、直接 SQL、**直接**依赖 infrastructure **实现类**；**新增 `application/usecase` 包或 `*UseCase` 类** |
+| **adapter** | 协议转换、入参校验、路由；**Controller 直接注入** `*CommandHandler` / `*QueryHandler` / `*Orchestrator` | 业务规则；直接调仓储实现；注入 `*UseCase` 或 `application/service/*Service` |
+| **application** | 用例编排、**写事务边界**（`@Transactional` 置于 CommandHandler 或等价边界）、调领域与端口 | 实现本属聚合内的业务不变量；直接拼写/执行 SQL；直接依赖 infrastructure 实现类；`application/usecase` 包或 `*UseCase` 类 |
 | **domain** | 规则、聚合、事件、端口定义 | Spring/JPA/MyBatis/Jackson、查询构建器 |
-| **infrastructure** | ACL 实现、SDK 配置、技术适配 | 领域业务规则 |
+| **infrastructure** | ACL 实现、SDK 配置、技术适配；持久化 `*PO` / `*Converter` / `*RepositoryImpl` | 领域业务规则 |
 
 ---
 
@@ -428,37 +477,62 @@ DDD 规范是否适用，**按模块性质判定**，不以 `bone-platform/` / `
 
 ### 16.1 模块职责（摘要）
 
-| 模块 | 职责 |
+| 模块 | 职责（实际类一览）|
 |------|------|
-| **bone-core** | `AggregateRoot`、`AbstractEntity`、`TenantAbstractEntity`、`ApiResponse`、`PageResult`、`TenantContext`、`DomainException`、`DistributedIdGenerator` 等 |
-| **bone-metadata-sdk** | `@EnableSqlRepositories`、`Repository<T,ID>`、`QueryBuilder` / `FluentQuery`、`@Table` 等 |
+| **bone-core** | 实体基类：`Entity`、`AbstractEntity`、`TenantAbstractEntity`、`AggregateRoot`；响应：`ApiResponse`、`PageResult`；上下文：`TenantContext`；异常根：`BizException`、`DomainException`、`NotFoundException`、`InvalidRequestException`、`SystemException` 等（§16.3）；ID：`DistributedIdGenerator`；事件：`DomainEvent` |
+| **bone-metadata-sdk** | `@EnableSqlRepositories`、`Repository<T,ID>`、`QueryBuilder` / `FluentQuery`、`@Table` / `@Id` / `@GeneratedValue` 等 |
 | **bone-extension-sdk** | `@ExtensionPoint` / `@Extension` |
 | **bone-security** | 认证、JWT、密码编码等 |
 
-### 16.2 实体继承
+### 16.2 实体继承（按代码实际）
 
-```
+bone-core 中实体基类形成**两条平行链**（非单一链），业务实体须**二选一**：
+
+```text
 Entity<ID>
-  ↑ AbstractEntity<ID>
-  ↑ TenantAbstractEntity<ID>
-聚合根：AggregateRoot<ID>（常用 Long 雪花或模块内统一值对象 ID）
+    ├── AggregateRoot<ID>                 // 领域事件（默认聚合根）
+    │       └── TenantAggregateRoot<ID>   // + tenantId（多租户聚合根，阶段 1）
+    ├── AbstractEntity<ID>                // Date 审计 + 软删
+    │       └── AuditableAggregateRoot<ID> // + domainEvents（Date 审计聚合根）
+    └── TenantAbstractEntity<ID>          // + tenantId（com.bone.core.tenant）
 ```
 
-- **多租户**：`TenantAbstractEntity` + `TenantContext` 传递与清理。  
+| 选用基类 | 适用场景 | 业务实体等级 |
+|----------|----------|------------|
+| `extends AggregateRoot<ID>` | 聚合根 + 领域事件；审计字段自管（如 IAM `LocalDateTime`） | D1 |
+| `extends TenantAggregateRoot<ID>` | 多租户聚合根 + 事件；`setTenantId`；审计自管 | D1 |
+| `extends AuditableAggregateRoot<ID>` | 聚合根 + 框架 `Date` 审计 + 事件 | D1 |
+| `extends TenantAbstractEntity<ID>` | 多租户非聚合根 / 简单 CRUD | D1 |
+| `extends AbstractEntity<ID>` | 单租户非聚合根 | D1 |
+| `extends Entity<ID>` | 极简 | D1 |
+
+- IAM 等使用 `LocalDateTime` 的模块**暂不**继承 `AuditableAggregateRoot`/`TenantAbstractEntity` 作聚合根（见 [ADR-0011](./adr/0011-aggregate-root-inheritance.md) 阶段 2）。
 - **元数据注解**：仅 **bone-metadata-sdk**（见 §17 D1），禁止 JPA `@Entity` 等。
+- **D 等级**：上述基类均属 D2（含 `@Data` 等便利注解）；业务实体属 D1；继承产生的 setter 不算违反 D0/D1，见 §17 D2 注脚。
 
-### 16.3 异常与 API（建议）
+### 16.3 异常与 API（规范）
 
-> **HTTP 与错误体真源**：[Bone-API-规范.md](./Bone-API-规范.md)（Problem Details、错误码台账、201/204/412、LRO、幂等等）。下表仅规定**抛出层级**；Controller **不得**手写错误 JSON，由全局异常处理器转规范响应（API 规范 §12）。
+> **HTTP 与错误体真源**：[Bone-API-规范.md](./Bone-API-规范.md)（Problem Details、错误码台账、201/204/412、LRO、幂等等）。Controller **不得**手写错误 JSON，由全局异常处理器转规范响应（API 规范 §12）。
 
-| 异常 | 层级 | 说明 |
-|------|------|------|
-| `DomainException` | domain | **聚合/值对象规则被违反**时抛出 |
-| `BizException`、`NotFoundException` | application | 用例级失败、资源不存在（**非**领域不变量已能表达时） |
+bone-core 提供的异常类型（`com.bone.core.exception.*`）：
+
+| 异常 | 主要抛出层 | 说明 |
+|------|-----------|------|
+| `DomainException` | domain | 聚合 / 值对象规则被违反 |
+| `BizException` | application | 业务（用例级）异常**根类**，含错误码；用例失败 / 跨聚合策略拒绝 |
+| `NotFoundException` | application | 资源不存在（非领域不变量场景） |
+| `IdempotentException` | application | 幂等键冲突 / 重复提交 |
 | `InvalidRequestException` | adapter | 入参协议不合法 |
-| `ServiceException`、`SystemException` | infrastructure | 技术故障、下游错误封装 |
+| `InfrastructureException` | infrastructure | 基础设施故障的统一抽象 |
+| `SystemException` | infrastructure | 系统级故障；**继承 `InfrastructureException`**（ADR-0012），由全局处理器映射 5xx |
+| `ServiceException` | infrastructure | 下游服务调用失败 |
+| `DistributedLockException` / `LockAcquireFailedException` | infrastructure | 分布式锁相关 |
 
-**边界**：若规则属于「仅在该聚合内成立」，优先 **DomainException**；跨聚合编排失败或应用策略拒绝可用 **BizException**（错误码与 API 规范台账一致）。统一 `ApiResponse<T>`、`PageResult<T>`（bone-core）。
+**强制要求**：
+
+- **业务（用例级）异常**统一以 `com.bone.core.exception.BizException` 为根类（`SystemException` 等可继承）。**禁止**模块自建 `BusinessException` / `*BusinessException`（ArchUnit `noCustomBusinessException` 拦截）。
+- 若规则属于「仅在该聚合内成立」，优先 **`DomainException`**；跨聚合编排失败或应用策略拒绝用 **`BizException`**（错误码与 API 规范台账一致）。
+- 统一响应：`ApiResponse<T>` / `PageResult<T>`（bone-core）。
 
 ---
 
@@ -466,11 +540,13 @@ Entity<ID>
 
 | 级别 | 说明 |
 |------|------|
-| **D0** | 核心业务逻辑：纯 Java + `java.util`；Lombok 限 `@Getter`、私有 `@NoArgsConstructor`；禁止 `@Setter`/`@Data` |
-| **D1** | 允许 **bone-metadata-sdk** 的 `@Table`、`@Id`、`@GeneratedValue` 等；禁止 Spring / Jackson / JPA。**禁止**在领域类型上新增其它持久化/Web 注解；若 SDK 升级带来新注解，须经架构评审再纳入「D1 白名单」 |
-| **D2（基础设施基类例外）** | `bone-core` 的 `AbstractEntity`、`TenantAbstractEntity`、PO（`*PO.java`）等**框架基类与持久化对象**允许使用 `@Data`、`@AllArgsConstructor` 等便利注解；该例外**不向业务聚合根/实体传染**。新增此类例外须在 `bone-framework` 模块评审登记 |
+| **D0** | 核心业务逻辑：纯 Java + `java.util`；Lombok 仅 `@Getter` + 私有 `@NoArgsConstructor`；**禁止** `@Setter`/`@Data`/`@AllArgsConstructor` |
+| **D1** | 在 D0 基础上，**额外允许** `bone-metadata-sdk` 的 `@Table`、`@Id`、`@GeneratedValue` 等元数据注解；**同样禁止** `@Setter`/`@Data`/Spring/Jackson/JPA 注解。若 SDK 升级带来新注解，须经架构评审纳入「D1 白名单」 |
+| **D2（基础设施基类例外）** | `bone-core` 的 `AbstractEntity`、`TenantAbstractEntity`、PO（`*PO.java`）等**框架基类与持久化对象**允许 `@Data`、`@AllArgsConstructor` 等便利注解。新增此类例外按 [§0.4](#04-例外登记的统一形态) 在 `bone-framework` 模块 README + ADR 登记 |
 
-**聚合**：小聚合、工厂方法、领域行为、事件过去式命名。**扩展点**：多租户/多场景用 **bone-extension-sdk**，禁止超长 `if-else`。
+> **D2 继承注脚**：业务实体继承 D2 基类（如 `AbstractEntity`、`TenantAbstractEntity`、`AggregateRoot` 的父类 `Entity`）后，通过 Lombok `@Data` 在**编译期获得** setter。这是工程折中，**不视为违反 D0/D1**；但业务代码**不得调用** setter，状态变更必须经领域行为。CR 审查为主；后续可酌情加 PMD/SpotBugs 自定义规则辅助（非强制）。
+
+**聚合**：小聚合、工厂方法、领域行为、事件过去式命名。**扩展点**：跨场景的可插拔逻辑用 **bone-extension-sdk** 的 `@ExtensionPoint` / `@Extension`，禁止超长 `if-else`。
 
 ### 17.1 空值与 Optional 约定（与 `CLAUDE.md` 对齐）
 
@@ -478,10 +554,10 @@ Entity<ID>
 |------|------|
 | 仓储查询返回 | **禁止返回 `null`**，返回 `Optional<T>`（`findById` 等）或抛 `DomainException`（聚合不变量强制存在时） |
 | Application/Adapter 内部返回 | 集合返回空集合（`List.of()`），单对象按业务语义返回 `Optional` 或显式 DTO；**禁止**用 `null` 表达「未找到」 |
-| 字段 / Setter | 领域字段是否可空在工厂方法或 `Value Object` 构造中显式校验；JSON 序列化层不依赖 `null` 表达业务语义 |
+| 聚合 / 值对象 | 字段是否可空在工厂方法或值对象构造中显式校验；状态变更经领域行为而非 setter；JSON 序列化层不依赖 `null` 表达业务语义 |
 | 三方/遗留 ACL | 在 `infrastructure.gateway` 适配器内**立即**把外部 `null` 转为 `Optional` 或抛错，不让 `null` 漂入应用/领域层 |
 
-ArchUnit 建议：对 `domain.repository.*Repository` 中签名做 `returnsOptionalOrCollection()` 类断言，逐步收敛。
+> ArchUnit 建议：对 `domain.repository.*Repository` 中方法签名加 `returnsOptionalOrCollection()` 类断言；该规则非 P0，由各模块按需引入。
 
 ### 17.2 持久化对象决策树
 
@@ -501,8 +577,8 @@ ArchUnit 建议：对 `domain.repository.*Repository` 中签名做 `returnsOptio
 | 场景 | 放置 | 示例 |
 |------|------|------|
 | 元数据驱动聚合 | `domain` + D1 注解 | IAM `Account` |
-| Studio 表映射（过渡期） | `infrastructure/.../entity/*` + Converter | `ExtStudioExtensionPoint` |
-| 内存实现 | `infrastructure/persistence/InMemory*` 实现 `domain.repository` 或过渡期 `domain.store` | extension-studio |
+| 非 SDK 表映射 / 遗留 JPA | `infrastructure/.../entity/*PO` + Converter | `ExtStudioExtensionPoint` |
+| 内存实现 | `infrastructure/persistence/InMemory*` 实现 `domain.repository` | extension-studio |
 
 ---
 
@@ -512,17 +588,17 @@ ArchUnit 建议：对 `domain.repository.*Repository` 中签名做 `returnsOptio
 
 - **默认**：应用层生成全局 ID（推荐 `DistributedIdGenerator`），传入聚合工厂；**领域不**依赖 ID 生成器。  
 - **主键策略**：**默认禁止**以数据库 **`IDENTITY` / 自增列** 作为**领域主标识**（避免与分布式 ID、跨库迁移、合并冲突处理不一致）。  
-- **例外**：遗留表或强约束场景必须使用自增时，须在 **模块 README 或 ADR 登记**（表名、字段、范围、退役计划），且领域层仍不直接依赖 ID 生成技术；新表 **原则上不新开** 自增领域主键。
+- **例外**：遗留表或强约束场景必须使用自增时，按 [§0.4](#04-例外登记的统一形态) 在模块 README 登记（表名、字段、范围、退役计划），且领域层仍不直接依赖 ID 生成技术；新表 **原则上不新开** 自增领域主键。
 
 ### 18.2 写侧 Repository
 
 子接口 **仅继承** SDK 基 `Repository`，**不新增**带 **多个业务条件组合**、分页、排序、Join 的方法（此类一律走读侧 §18.3）。
 
-**单键辅助方法（可选、须收敛）**：仅允许 **单一路径键** 的 `existsByXxx` / `findByBusinessKey`（**单一**等值条件、语义为业务外键或唯一码），**禁止** `findByStatusAndType` 等形式。具体方法名须在 **模块内 ArchUnit 白名单或模块 README 列表**中列出；新增须走评审，避免仓储接口再度膨胀。
+**单键辅助方法（可选）**：仅允许 **单一等值条件** 的 `existsByXxx` / `findByXxx`，语义须为业务外键或唯一码（如 `findByCode`、`existsByEmail`）。**禁止** `findByStatusAndType` 等多条件组合形式（ArchUnit `domainRepositoriesShouldOnlyDeclareWhitelistedMethods` 拦截 `findBy*And*` 等）。新增方法在 PR 评审中按本条判定，不另设模块级二次白名单。
 
 ### 18.3 读侧
 
-`QueryBuilder.from(Entity.class)` 或等价 `Criteria`；复杂 SQL 放 `infrastructure.query`。`QueryBuilder` **禁止**出现在 `domain` 与 `application.command.handler`。
+`QueryBuilder.from(Entity.class)` 或等价 `FluentQuery` / `Criteria`；读侧 DSL 类型须标注 `@ReadSideOnly`（`bone-core`），ArchUnit 按注解依赖检测。复杂 SQL 放 `infrastructure.query`。读侧 DSL **禁止**出现在 `domain` 与 `application.command.handler`。
 
 ### 18.4 启动扫描（参考）
 
@@ -544,187 +620,236 @@ public class Application { }
 
 若使用 Flow、`@Capability` 等：
 
-- **能力声明**：在 `*CommandHandler` / `*QueryHandler`（或 §14.3 例外的 `*Orchestrator`）上加 `@Capability` 元数据；**禁止**为「让 AI 发现」而新建 `*UseCase` 门面。
+- **能力声明**：在 `*CommandHandler` / `*QueryHandler` / `*Orchestrator` 上加 `@Capability` 元数据；**禁止**为「让 AI 发现」而新建 `*UseCase` 门面。
 - **能力发现**：通过独立的 capability 注册表（如 `bone-core` 的能力扫描器）按注解汇总，**与 DDD 用例命名解耦**。
-- **执行入口**：Flow / AI 调度统一通过注入 Handler/Orchestrator 调用，遵循 §15 事务边界。
+- **执行入口**：Flow / AI 调度统一通过注入 Handler / Orchestrator 调用，遵循 §15 事务边界。
 - **底线**：编排能力**不替代**聚合与 §12 铁律；命名对齐通用语言。
-
-> v3.4 起，**已彻底废止** `application/usecase/**` 与 `com.bone.core.usecase.UseCaseExecutor` / `@UseCase`；相关迁移见 [§22 演进](#22-演进建议三阶段) 与 [附录 B](#附录-b废止登记)。
 
 ---
 
 ## 21. 测试与 CI
 
-**共享规则库**：`bone-framework/bone-architecture-test`（`BoneDddArchRules`），各应用模块 `test` 依赖引用，避免每模块复制规则。
+**共享规则库**：`bone-framework/bone-architecture-test`（`BoneDddArchRules`），各应用模块以 `test` scope 依赖引用，避免每模块复制规则。
 
 **ArchUnit 最小规则集**（每应用模块 `src/test/java/.../architecture/ArchitectureTest.java`，**与 §12 P0 一一对应**）：
 
-1. `domain` 不依赖 `adapter` / `application` / `infrastructure`（P0-1）
-2. `application` 不依赖 `..infrastructure..` 具体类（P0-1，仅依赖 `domain` 端口与 `bone-core`）
-3. `..domain..` 不依赖 `QueryBuilder`（P0-5）
-4. `..application.command.handler..` 不依赖 `QueryBuilder`（P0-6）
-5. `..domain.repository..` 接口方法名仅 `save/remove/findById/existsByXxx/findByBusinessKey`（P0-4 + §18.2）
-6. **禁止新增 `*UseCase` / `application/usecase/**`**（P0-7）— 对存量模块使用 **`FreezingArchRule`**（基线文件 `src/test/resources/archunit_store/`），仅失败于**新增**违规
-7. **禁止业务模块新增 `com.bone.core.usecase.*` 依赖**（P0-7）；`studio-generator` 另禁自造 `com.bone.studio.generator.application.usecase.UseCase` 注解的新引用
+| # | 规则方法（`BoneDddArchRules.*`） | 对应规范 |
+|---|----------------------------------|----------|
+| 1 | `domainMustNotDependOnOuterLayers` | P0-1 |
+| 2 | `applicationMustNotDependOnInfrastructure` | P0-1 |
+| 3 | `domainMustNotUseQueryBuilder` | P0-5 |
+| 4 | `commandHandlersMustNotUseQueryBuilder` | P0-6 |
+| 5 | `domainRepositoriesShouldOnlyDeclareWhitelistedMethods` | P0-4 + §18.2 |
+| 6 | `noUseCaseClassesInApplication` + `noApplicationUseCasePackage` | P0-7 + §14.3 |
+| 7 | `noBoneCoreUseCaseApiDependency`；`studio-generator` 加 `noStudioGeneratorUseCaseAnnotation` | P0-7 |
+| 8 | `noNewDomainStorePackage` | §14.5 |
+| 9 | `noCustomBusinessException` | §16.3 |
+| 10 | `noBusinessExceptionSuffix` | §16.3 |
+
+读侧检测：`domainMustNotUseQueryBuilder` / `commandHandlersMustNotUseQueryBuilder` 拦截对 `@ReadSideOnly` 类型的依赖（非写死类名）。`noBoneCoreUseCaseApiDependency` **不 freeze**（防回滚、无存量命中）。
+
+**存量违规处理**：使用 `FreezingArchRule` 登记当前违规快照（基线 `archunit_store/`），仅拦截**新增**；迁移后基线收缩，**不允许扩张**。
 
 ```java
-// 示例：P0-7 冻结存量、拦截新增
 @ArchTest
 static final ArchRule no_new_use_cases =
     FreezingArchRule.freeze(BoneDddArchRules.noUseCaseClassesInApplication());
 ```
 
-> 模块覆盖与批次：见 [附录 B.2](#b2-模块符合度与迁移矩阵v36-执行)。**Batch A** 合并共享规则库后，各模块运行一次 `mvn test -Dtest=ArchitectureTest` 生成/更新 Freezing 基线。
+> 首次集成或基线更新：`mvn test -Dtest=ArchitectureTest -Darchunit.freeze.store.default.allowStoreCreation=true`。详见 `bone-framework/bone-architecture-test/README.md`。
 
 **单测**：聚合与值对象规则（无容器）；**集成测**：用例与端口（Testcontainers 等）；**跨服务**：契约测试（OpenAPI / Pact 等）。**覆盖率**：与仓库质量门禁对齐，核心域优先提高阈值。
 
 ---
 
-## 22. 演进建议（三阶段）
-
-1. **L0**：满足 P0；**Controller 直接注入 Handler**（§14.3）；已存在的 `application/usecase` 标记 `@Deprecated` 并停止扩张。
-2. **L1**：术语表 + 上下文职责说明（对齐第一部分 §2）；**完成 `*UseCase` → Handler 收敛**，删除空壳门面与 `application/usecase` 目录。
-3. **L2**：跨上下文事件、读模型独立演进（对齐第一部分 §5.2）；必要时按 §14.3 例外引入 `*Orchestrator`；编排类能力（Flow、AI 等）按需引入，见 §20。
-
-### 22.1 `*UseCase` → Handler 迁移指南（v3.4）
-
-| 现状形态 | 迁移动作 |
-|----------|----------|
-| `*UseCase` 仅 delegate 到同名 `*Handler`（占多数） | **删除** `*UseCase`；Controller 改注入 `*Handler`；测试同步 rename |
-| `*UseCase` 在 delegate 前包含 1–2 行参数装配 | 把装配逻辑下沉到 `adapter/web/converter` 或 Handler 入参；删 UseCase |
-| `*UseCase` 调用 2+ 个 Handler（真有编排） | 改名为 `*Orchestrator`，放在 `application/orchestration/`；附 ADR 说明编排理由 |
-| `*UseCase` 已被 AI/Flow 通过 `@UseCase` 发现 | 改为在 Handler/Orchestrator 上加 `@Capability`；调度方按 `@Capability` 发现 |
-| 模块所有 UseCase 迁完 | 删除 `application/usecase` 目录；移除该模块对 `bone-core.usecase.*` 的依赖 |
-
-**截止节点**：建议 L1 模块在 **2026-12-31** 前完成；`bone-core` 的 `UseCaseExecutor` / `@UseCase` 同日删除。**新模块自始禁止使用**。
-
----
-
-## 23. 极简 / 轻量 / 低成本（Bone 默认心态）
+## 22. 极简 / 轻量 / 低成本（Bone 默认心态）
 
 | 做法 | 建议 |
 |------|------|
-| **CQRS** | 保留 command/query 分包；不默认独立读库、事件投影。 |
-| **应用层** | Controller → Handler → Domain **三层即可**；**不引入** UseCase；`application/service` 仅 §14.3.1 白名单。 |
+| **CQRS** | 保留 `command/query` 分包；不默认独立读库、事件投影。 |
+| **应用层** | 默认 Controller → Handler → Domain **三步**（即 adapter → application → domain）；**不引入** UseCase；`application/service` 仅按 §14.3.1 约束；编排复杂时按 §14.3 ADR 加 `*Orchestrator`。 |
 | **扩展点 / ACL / MQ / RPC / 定时** | 无真实需求则不建。 |
-| **战略文档** | 小模块一页纸；术语表 L1 再补。 |
+| **战略文档** | 小模块一页纸术语表起步。 |
 | **领域事件** | 无跨聚合协调时可少发。 |
 
-**bone-blueprint** 为全特性参考；新建业务对齐 **§14.2（极简包）+ §12.1（P0 铁律）+ §14.3（去 UseCase）**，再按 §22 加码。
+**bone-blueprint** 为全特性参考样板；新建业务对齐 **§14.2 极简包 + §12.1 P0 铁律 + §14.3 应用层结构**，按需求再扩。
+
+### 22.1 新模块快速入门（5 步）
+
+> 新建一个**应用 / 控制面 BFF** 模块时，按以下顺序操作即可满足本规范。复杂用例再按对应章节扩展。
+
+1. **定边界**：在模块 `README.md` 写一页纸：上下文名称、职责一句、对外契约、数据所有权（[§13.1](#131-限界上下文)）；核心术语 5–20 条对照表（[§13.2](#132-通用语言)）。
+2. **起包结构**：按 [§14.2](#142-极简树小模块默认够用) 极简树创建 `adapter/web/`、`application/command/`、`application/query/`、`domain/{aggregate}/`、`domain/repository/`；持久化层按 [§17.2](#172-持久化对象决策树) 决策树放 D1（元数据驱动）或 `infrastructure/persistence/entity/` 的 PO（遗留映射）。
+3. **写第一个用例**：Controller → `CreateXxxCommandHandler` → 聚合根工厂方法 → `XxxRepository.save(...)`；命名遵守 [§23](#23-命名约定)；异常按 [§16.3](#163-异常与-api规范) 选择（聚合不变量用 `DomainException`，用例级失败用 `BizException`，资源不存在用 `NotFoundException`，**禁止**自建 `BusinessException`）。
+4. **接 ArchUnit**：`pom.xml` 加 `bone-architecture-test` 测试依赖；复制 [附录 B.3 模板](#b3-archunit-模板bone-architecture-test) 到 `src/test/java/<module>/architecture/ArchitectureTest.java`，把包名改成本模块；首次跑 `-Darchunit.freeze.store.default.allowStoreCreation=true` 生成基线后提交 Git。
+5. **持续守护**：日常 CI 不开启 `allowStoreCreation`；任何例外按 [§0.4](#04-例外登记的统一形态) 按影响半径登记；每次重构后 freeze 基线**只收缩、不扩张**。
+
+> 不在以上 5 步默认范围内的（事件发布、ACL、Orchestrator、Flow / AI）按需引入，并对应阅读 §3.3 / §19 / §14.3 / §20。
+
+### 22.2 AI / Agentic 生成守则
+
+1. 禁止生成 `*UseCase`、`application/usecase/**`、模块自建 `*BusinessException`。
+2. 禁止在 `domain/**` 使用 `@Data` / `@Setter`；状态变更经领域行为。
+3. 修改 `domain/**` 后 ArchUnit freeze 基线**只收缩、不扩张**。
+4. 跨 2+ 聚合编排须产出 `*Orchestrator` + ADR 草稿，不得新增 UseCase 门面。
+5. 不得修改 `BizException` / `DomainException` / `InfrastructureException` 根类型语义（ADR 流程除外）。
+
+代码示例与适应度指标见 [ddd/07-supplements.md](./ddd/07-supplements.md)。
 
 ---
 
-## 24. 命名约定
+## 23. 命名约定
 
 | 类型 | 示例 | 备注 |
 |------|------|------|
-| 命令 | `CreateOrderCommand` | **v3.6 新代码统一 `*Command`**；存量 `*Cmd` 随 Handler 迁移逐步改名，不再双轨 |
-| 查询 | `OrderByIdQry` | 与 `query/qry/` 对齐 |
-| 处理器 | `CreateOrderCommandHandler`、`OrderByIdQryHandler` | `command/handler/`、`query/handler/` |
+| 命令 | `CreateOrderCommand` | **新代码唯一后缀 `*Command`**；禁 `*Cmd` 等其它后缀 |
+| 查询 | `OrderByIdQuery` | **新代码唯一后缀 `*Query`**；禁 `*Qry` |
+| 处理器 | `CreateOrderCommandHandler`、`OrderByIdQueryHandler` | 位于 `command/handler/`、`query/handler/` |
 | 领域事件 | `OrderPaidEvent` | 过去式 |
+| 集成事件 | `OrderPaidIntegrationEvent` | 跨边界契约；后缀 `IntegrationEvent` |
 | 编排器（例外） | `OrderRefundOrchestrator` | 仅 §14.3 例外允许；放 `application/orchestration/` |
-| ~~用例（已废止）~~ | ~~`CreateOrderUseCase`~~ | **v3.4 禁止**新代码使用（§14.3）；存量按 §22.1 迁移 |
+| 端口（仓储） | `OrderRepository` | §14.5：禁 `*Store`/`*Dao`/`*Mapper` 作领域端口 |
+| 应用服务（受约束） | `OrderShippingService` | §14.3.1：禁 Controller 直注、禁承载聚合不变量；禁 `*Manager` |
 
 ---
 
-## 25. 修订与 Owner
+## 24. 修订与 Owner
 
-边界变更：**先更新术语表与第一部分相关认知**，再改第二部分门禁与代码。
+- **唯一权威**：架构组；规则变更须 [§0.3](#03-破坏性变更流程) 流程。
+- **边界变更**：先更新术语表与第一部分相关认知，再改第二部分门禁与代码。
 
 ---
 
 ## 附录 A：与旧 Bone-Blueprint 版本号的关系
 
-历史版本号（v7 / v9.5 / v16.3 / v24 等）仅表示过往迭代；**门禁以第二部分** §12（铁律）、§14～§24 中与**结构、领域持久化、ACL、测试、演进、极简、命名**相关的条文为准（§10～§11 为 Bone 目标与对齐摘要，非逐条 CI）。产品文档中「Bone-Blueprint」可与本方案同义指称。
+历史版本号（v7 / v9.5 / v16.3 / v24 等）仅表示过往迭代；**门禁以第二部分** §12（铁律）、§14～§23 中与**结构、领域持久化、ACL、测试、极简、命名**相关的条文为准（§10～§11 为 Bone 目标与对齐摘要，非逐条 CI）。产品文档中「Bone-Blueprint」可与本方案同义指称。
 
 ---
 
-## 附录 B：废止登记
+## 附录 B：模块适用性快照与不符合规范的处置
 
-### B.1 v3.4：去 UseCase
+> 本附录**只描述客观分类与处置形态**，不规定时间、批次、Owner。落地排期由各模块 Maintainer 在内部跟踪。
 
-| 项 | 状态 | 截止 | 替代 / 迁移 |
-|----|------|------|--------------|
-| 新代码新增 `application/usecase/**` 包 | **禁止**（PR 拦截） | v3.4 起即时 | 直接写 `*CommandHandler` / `*QueryHandler` |
-| 新代码新增 `*UseCase` 类 | **禁止**（PR 拦截） | v3.4 起即时 | 同上；多 Handler 组合用 `*Orchestrator`（§14.3 例外） |
-| Controller 注入 `*UseCase` | **禁止**（新代码） | v3.4 起即时 | 注入 Handler；事务边界在 Handler 上 |
-| `com.bone.core.usecase.UseCaseExecutor` | **`@Deprecated`** → **删除** | 2026-12-31 | 删除接口；业务模块取消依赖 |
-| `com.bone.core.usecase.@UseCase` | **`@Deprecated`** → **删除** | 2026-12-31 | 改用 `@Capability`（AI/Flow 能力发现）或纯 `@Service`/`@Component` |
-| 存量 `*UseCase` 类（IAM / masterdata / integration / system / studio-generator / blueprint） | **登记 + 迁移** | 2026-12-31 | 按 [§22.1 迁移指南](#221-usecase--handler-迁移指南-v34) |
-| `application/usecase/standard/`、`application/usecase/simple/` 子目录 | **删除** | 同上 | 内容合并到 `command/handler` 或 `query/handler` |
+### B.1 模块适用性快照
 
-### B.2 模块符合度与迁移矩阵（v3.6 执行）
+#### B.1.1 应用 / 控制面 BFF（完全适用 §14.4）
 
-**完成定义（DoD）**：① 无新增 `*UseCase`（ArchUnit Freezing 无新违规）② Controller 不注入 `*UseCase` ③ 已引入 `ArchitectureTest` + `bone-architecture-test` ④ 模块 README 勾选本表对应批次。
+| 模块 | 物理位置 |
+|------|----------|
+| `bone-platform/bone-iam` | bone-platform/ |
+| `bone-platform/bone-masterdata` | bone-platform/ |
+| `bone-platform/bone-integration` | bone-platform/ |
+| `bone-platform/bone-system` | bone-platform/ |
+| `bone-platform/bone-notification` | bone-platform/ |
+| `bone-engine/bone-extension-engine/bone-extension-studio` | bone-engine/（按 §14.4 性质判定为应用） |
+| `bone-engine/studio-generator` | bone-engine/（按 §14.4 性质判定为应用） |
+| `bone-blueprint` | 根目录（参考样板） |
 
-#### B.2.0 迁移批次（冻结排期）
+#### B.1.2 引擎 SDK / 框架库（按 §12.1.1 豁免 + §17 强制）
 
-| 批次 | 范围 | 内容 | 目标日期 | Owner |
-|------|------|------|----------|-------|
-| **A** | 平台 | `bone-architecture-test`、`bone-core` 废弃 UseCase、各模块 ArchUnit + Freezing 基线 | 2026-05-31 | 架构组 |
-| **B** | bone-platform 四模块 | IAM / masterdata / integration / system：删 `*UseCase`、Controller→Handler | 2026-09-30 | 各模块 Maintainer |
-| **C** | studio-generator | 删自造 `UseCase`/`UseCaseExecutor`；迁 Handler；统一 `*Command` | 2026-09-30 | Studio 组 |
-| **D** | bone-extension-studio | `store→repository`、`controller`→`adapter/web`、CQRS 分包 | 2026-11-30 | 扩展引擎组 |
-| **E** | bone-blueprint | 删除 UseCase 示例；生成模板对齐 §14.1（**在 Batch B 完成后**） | 2026-12-31 | 架构组 |
+| 模块 | 备注 |
+|------|------|
+| `bone-framework/bone-core` | 提供 `com.bone.core.capability`（`@Capability`、`HandlerRegistry`）；**已删除** `UseCaseExecutor` / `@UseCase` |
+| `bone-framework/bone-web` / `bone-security` / `bone-utils` / `bone-datasource` | 工具 / 基础设施类 |
+| `bone-engine/bone-metadata-sdk` / `bone-metadata-server` / `bone-metadata-engine` | metadata SPI |
+| `bone-engine/bone-extension-engine/bone-extension-sdk` | 业务进程内嵌 SDK |
+| `bone-engine/bone-workflow`、`bone-procurement` | 引擎库 |
+| `bone-sdk/*` | 客户端 SDK |
 
-#### B.2.1 应用 / 控制面 BFF（**完全适用 §12 P0 全 7 条**）
+#### B.1.3 基础设施服务（依用例判定；默认豁免 §14）
 
-| 模块 | 批次 | ArchitectureTest | `*UseCase` 存量 | 自造 UseCase | `application/service` | 端口 | 主要 gap |
-|------|------|-----------------|-----------------|--------------|----------------------|------|----------|
-| `bone-iam` | B | ✅ 部分 | 19 | — | 2（S1 合规） | `repository` | Freezing 基线；删 UseCase |
-| `bone-masterdata` | B | ✅ | 10 | — | — | `repository` | 同上 |
-| `bone-integration` | B | ✅ | 7 | — | 5（S2 流程运行时） | 混用 | UseCase + 端口统一 |
-| `bone-system` | B | A 起补齐 | 14 | — | — | — | 新建 ArchUnit |
-| `bone-notification` | B | A 起补齐 | 0 | — | — | — | 新建 ArchUnit |
-| **`bone-extension-studio`** | D | A 起补齐 | 0 | — | — | **`store`** | 结构迁移 §14.5 |
-| **`studio-generator`** | C | A 起补齐 | 21+ | **自造注解** | 1 | — | 删自造类型 + UseCase |
-| `bone-blueprint` | E | ✅ | 5 | — | — | `repository` | **迁移中参考**，非终态样板 |
+| 模块 | 备注 |
+|------|------|
+| `bone-platform/bone-gateway` | 纯路由 / 协议转换，无业务模型 |
+| `bone-platform/bone-file` | 若仅对象存储中转可豁免；含业务规则按应用处理 |
 
-#### B.2.2 引擎 SDK / 框架库（**仅适用 §12.1.1 + §17；豁免 §14、§21 业务规则**）
+### B.2 不符合规范代码的处置形态
 
-| 模块 | 物理位置 | 强制项 | 备注 |
-|------|----------|--------|------|
-| `bone-framework/bone-core` | bone-framework/ | D0/D1/D2、依赖向内 | `@UseCase` / `UseCaseExecutor` 已 `@Deprecated`（v3.4） |
-| `bone-framework/bone-web` / `bone-security` / `bone-utils` / `bone-datasource` | bone-framework/ | 同上 | 工具/基础设施类 |
-| `bone-engine/bone-metadata-sdk` / `bone-metadata-server` / `bone-metadata-engine` | bone-engine/ | 同上 | metadata SPI |
-| `bone-engine/bone-extension-engine/bone-extension-sdk` | bone-engine/ | 同上 | 业务进程内嵌 SDK |
-| `bone-engine/bone-workflow`、`bone-procurement` | bone-engine/ | 同上 | 引擎库 |
-| `bone-sdk/*` | bone-sdk/ | 同上 | 客户端 SDK |
-
-#### B.2.3 基础设施服务（**依用例判定；默认豁免 §14**）
-
-| 模块 | 物理位置 | 备注 |
-|------|----------|------|
-| `bone-platform/bone-gateway` | bone-platform/ | 纯路由 / 协议转换，无业务模型 |
-| `bone-platform/bone-file` | bone-platform/ | 若仅对象存储中转可豁免；含业务规则按应用处理 |
-
-> **新模块**自始按 [§14.4](#144-模块适用性按性质而非物理位置) 性质判定 + §14.1 + §14.3 构建，**不进入**本矩阵的「待迁移」清单。
+| 不符合规范形态 | 处置 | 推荐工具 |
+|----------------|------|---------|
+| `*UseCase` 仅 delegate 到同名 `*Handler` | 删除 `*UseCase`；Controller 改注入 `*Handler`，测试同步 rename | `scripts/migrate-usecase-to-handler.py` |
+| `*UseCase` 在 delegate 前含参数装配 | 装配下沉到 `adapter/web/converter` 或 Handler 入参；删 `*UseCase` | 手工 + 上述脚本 |
+| `*UseCase` 调用 2+ 个 Handler（真编排） | 改名 `*Orchestrator` 放 `application/orchestration/`；ADR 记录编排步骤、补偿、Saga | 手工 |
+| `*UseCase` 被 AI/Flow 通过 `@UseCase` 发现 | 在 Handler / Orchestrator 上加 `@Capability`；调度方按 `@Capability` 发现 | 手工 |
+| `application/usecase/**` 目录残留 | 全部清空后删除目录；**禁止**再引用已删除的 `com.bone.core.usecase.*` | `scripts/migrate-usecase-to-handler.py` |
+| 自造 `@UseCase` 注解 / `UseCaseExecutor` 接口 | 整体删除；调用方按上面四类分别迁移 | 手工 |
+| `domain/store/*Store` | 接口重命名 `*Repository`，包改名 `domain/repository/`；调用方批量替换 | `scripts/migrate-extension-studio-store-to-repository.py` 可改造为通用模板 |
+| **模块根包**下的 `controller/`（如 `com.bone.xxx.controller.*`，**不在** `adapter/web/controller/`） | 迁移到 `adapter/web/controller/`；按 §14.1 重组 `dto/request\|response`、`assembler/` | `git mv` + StrReplace |
+| 命名 `*Cmd` / `*Qry` | 类名重命名为 `*Command` / `*Query`；子包 `cmd/` / `qry/` 可保留作短目录名（§14.1） | `scripts/ddd-rename-cmd-qry.py <module> --apply` |
+| 模块自建 `BusinessException` / `*BusinessException` | 全部改用 `com.bone.core.exception.BizException` 或 `*BizException` 后缀（如 `MetadataEngineBizException`、`ExtensionBizException`）；删除自建 `BusinessException` 类 | 手工 + ArchUnit `noBusinessExceptionSuffix` |
+| `Controller` 直接注入 `application/service/*Service` | Controller 改注入 `*CommandHandler` / `*QueryHandler` / `*Orchestrator`；`*Service` 仅供 Handler 内部复用 | `scripts/migrate-extension-studio-service-to-application.py`（模板） |
+| 缺少 ArchUnit 守护（新模块或老模块） | 使用 `scripts/ddd-archtest-template.py <module> <root-package> [--extra-archunit ...]` 一行生成 `ArchitectureTest`，再 `allowStoreCreation=true` 生成基线 | `scripts/ddd-archtest-template.py` |
 
 ### B.3 ArchUnit 模板（`bone-architecture-test`）
 
+> **使用说明**：
+> 1. 将下方 `com.bone.iam` 替换为本模块根包（如 `com.bone.masterdata`、`com.bone.system` 等）。
+> 2. 所有 `FreezingArchRule.freeze(...)` 包裹的规则需要先生成基线再提交：`mvn test -pl <module> -Dtest=ArchitectureTest -Darchunit.freeze.store.default.allowStoreCreation=true`。基线放在 `<module>/archunit_store/`，提交入库。
+> 3. **Freeze 策略（2026-05-22）**：`application_no_infra`、`repository_methods_whitelist`、`noBoneCoreUseCaseApiDependency`、QueryBuilder 禁令 **不 freeze**（直接门禁）；`noUseCase*`、`noNewDomainStore`、`noCustomBusinessException*` **继续 freeze** 防回潮。见 `bone-architecture-test/README.md`。
+
 ```java
 import com.bone.architecture.BoneDddArchRules;
+import com.tngtech.archunit.core.importer.ImportOption;
+import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.library.freeze.FreezingArchRule;
 
+@AnalyzeClasses(packages = "com.bone.iam", importOptions = ImportOption.DoNotIncludeTests.class)
 class ArchitectureTest {
 
-    @ArchTest
-    static final ArchRule domain_independent = BoneDddArchRules.domainMustNotDependOnOuterLayers();
+    // P0-1
+    @ArchTest static final ArchRule domain_independent =
+            BoneDddArchRules.domainMustNotDependOnOuterLayers();
 
-    @ArchTest
-    static final ArchRule no_new_use_cases =
+    @ArchTest static final ArchRule application_no_infra =
+            BoneDddArchRules.applicationMustNotDependOnInfrastructure();
+
+    // P0-5
+    @ArchTest static final ArchRule domain_no_query_builder =
+            BoneDddArchRules.domainMustNotUseQueryBuilder();
+
+    // P0-6
+    @ArchTest static final ArchRule command_no_query_builder =
+            BoneDddArchRules.commandHandlersMustNotUseQueryBuilder();
+
+    // P0-4 + §18.2（仓储方法名白名单）
+    @ArchTest static final ArchRule repository_methods_whitelist =
+            BoneDddArchRules.domainRepositoriesShouldOnlyDeclareWhitelistedMethods();
+
+    // P0-7 + §14.3
+    @ArchTest static final ArchRule no_new_use_cases =
             FreezingArchRule.freeze(BoneDddArchRules.noUseCaseClassesInApplication());
 
-    @ArchTest
-    static final ArchRule no_usecase_package =
+    @ArchTest static final ArchRule no_usecase_package =
             FreezingArchRule.freeze(BoneDddArchRules.noApplicationUseCasePackage());
+
+    @ArchTest static final ArchRule no_bone_core_usecase =
+            BoneDddArchRules.noBoneCoreUseCaseApiDependency();
+
+    // §14.5
+    @ArchTest static final ArchRule no_new_domain_store =
+            FreezingArchRule.freeze(BoneDddArchRules.noNewDomainStorePackage());
+
+    // §16.3
+    @ArchTest static final ArchRule no_custom_business_exception =
+            FreezingArchRule.freeze(BoneDddArchRules.noCustomBusinessException());
+
+    @ArchTest static final ArchRule no_business_exception_suffix =
+            FreezingArchRule.freeze(BoneDddArchRules.noBusinessExceptionSuffix());
 }
 ```
 
-`studio-generator` 额外：`BoneDddArchRules.noStudioGeneratorUseCaseAnnotation()`.
+`studio-generator` 额外：`BoneDddArchRules.noStudioGeneratorUseCaseAnnotation()`。
 
-**Freezing 基线**：文件位于各模块根目录 `archunit_store/`（须提交 Git）。首次生成：`mvn test -Dtest=ArchitectureTest -Darchunit.freeze.store.default.allowStoreCreation=true`（见 `bone-framework/bone-architecture-test/README.md`）。
+**Freezing 基线**：各模块根目录 `archunit_store/`，须提交 Git。
+
+| 场景 | 命令 |
+|------|------|
+| 首次生成 | `mvn test -pl <module> -Dtest=ArchitectureTest -Darchunit.freeze.store.default.allowStoreCreation=true` |
+| **收缩基线**（存量违规已消除） | `mvn test -pl <module> -Dtest=ArchitectureTest -Darchunit.freeze.store.default.allowStoreUpdate=true` |
+| 全量覆盖快照（慎用） | `-Darchunit.freeze.store.default.refreeze=true`（见 `bone-architecture-test/README.md`） |
+
+详见 `bone-framework/bone-architecture-test/README.md`。
 
 本文结束。

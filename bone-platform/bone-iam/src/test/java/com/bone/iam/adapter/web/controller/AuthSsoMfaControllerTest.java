@@ -7,7 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.bone.iam.application.query.handler.AccountAuthoritiesQueryHandler;
-import com.bone.iam.application.usecase.standard.LoginUseCase;
+import com.bone.iam.application.command.handler.LoginHandler;
 import com.bone.iam.domain.repository.AccountRepository;
 import com.bone.iam.infrastructure.config.IamSsoProperties;
 import com.bone.iam.infrastructure.config.JwtConfig;
@@ -27,7 +27,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 class AuthSsoMfaControllerTest {
 
     @Mock
-    private LoginUseCase loginUseCase;
+    private LoginHandler loginHandler;
 
     @Mock
     private com.bone.iam.adapter.web.converter.AuthWebConverter authWebConverter;
@@ -57,7 +57,7 @@ class AuthSsoMfaControllerTest {
         IamSsoProperties ssoProperties = new IamSsoProperties();
         AuthController authController =
                 new AuthController(
-                        loginUseCase,
+                        loginHandler,
                         authWebConverter,
                         jwtTokenService,
                         refreshTokenService,

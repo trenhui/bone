@@ -1,10 +1,10 @@
 package com.bone.studio.generator.application.command.handler;
 
-import com.bone.core.usecase.Capability;
+import com.bone.core.capability.Capability;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
 import com.bone.metadata.sdk.query.criteria.Criteria;
-import com.bone.studio.generator.application.command.cmd.SyncTableMetadataCmd;
+import com.bone.studio.generator.application.command.cmd.SyncTableMetadataCommand;
 import com.bone.studio.generator.common.StudioIds;
 import com.bone.studio.generator.domain.data.DataSource;
 import com.bone.studio.generator.domain.data.DatabaseTable;
@@ -31,7 +31,7 @@ public class SyncTableMetadataHandler {
     private final GenTableMetadataRepository tableMetadataRepo;
 
     @Transactional
-    public void handle(SyncTableMetadataCmd cmd) {
+    public void handle(SyncTableMetadataCommand cmd) {
         Long dataSourcePk = StudioIds.parseRequired(cmd.getDataSourceId());
         DataSource dataSource = dataSourceRepository.findById(dataSourcePk);
         if (dataSource == null) {

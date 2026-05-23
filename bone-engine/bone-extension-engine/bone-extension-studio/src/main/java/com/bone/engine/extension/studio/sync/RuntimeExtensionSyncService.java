@@ -3,7 +3,7 @@ package com.bone.engine.extension.studio.sync;
 import com.bone.engine.extension.api.model.sync.ExtensionRoutingMetadata;
 import com.bone.engine.extension.studio.domain.model.ExtPoint;
 import com.bone.engine.extension.studio.domain.model.Extension;
-import com.bone.engine.extension.studio.domain.store.ExtPointStore;
+import com.bone.engine.extension.studio.domain.repository.ExtPointRepository;
 import com.bone.engine.extension.support.sync.ExtensionCodeResolver;
 import com.bone.engine.extension.support.sync.ExtensionMetadataStore;
 import com.bone.engine.extension.support.sync.ExtensionRuntimeConfig;
@@ -25,11 +25,11 @@ public class RuntimeExtensionSyncService {
     private static final Logger log = LoggerFactory.getLogger(RuntimeExtensionSyncService.class);
 
     private final ExtensionMetadataStore metadataStore;
-    private final ExtPointStore extPointStore;
+    private final ExtPointRepository extPointRepository;
 
-    public RuntimeExtensionSyncService(ExtensionMetadataStore metadataStore, ExtPointStore extPointStore) {
+    public RuntimeExtensionSyncService(ExtensionMetadataStore metadataStore, ExtPointRepository extPointRepository) {
         this.metadataStore = metadataStore;
-        this.extPointStore = extPointStore;
+        this.extPointRepository = extPointRepository;
     }
 
     public boolean publish(@NonNull Extension extension) {
@@ -104,7 +104,7 @@ public class RuntimeExtensionSyncService {
         if (extension.getExtPointId() == null) {
             return null;
         }
-        return extPointStore.findById(extension.getExtPointId());
+        return extPointRepository.findById(extension.getExtPointId());
     }
 
     private ExtensionRoutingMetadata toMetadata(Extension extension, String extensionPoint) {

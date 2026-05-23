@@ -3,7 +3,7 @@ package com.bone.system.application.query.handler;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import com.bone.system.application.query.dto.ConfigDTO;
-import com.bone.system.application.query.qry.ConfigPageQry;
+import com.bone.system.application.query.qry.ConfigPageQuery;
 import com.bone.system.common.result.PageResult;
 import com.bone.system.domain.config.SystemConfig;
 import com.bone.system.domain.repository.SystemConfigRepository;
@@ -35,7 +35,7 @@ public class ConfigQueryHandler {
     }
 
     @Transactional(readOnly = true)
-    public PageResult<ConfigDTO> page(ConfigPageQry qry) {
+    public PageResult<ConfigDTO> page(ConfigPageQuery qry) {
         FluentQuery<SystemConfig> query = QueryBuilder.from(SystemConfig.class);
 
         if (qry.getKeyword() != null && !qry.getKeyword().isBlank()) {

@@ -2,14 +2,14 @@ package com.bone.iam.adapter.web.converter;
 
 import com.bone.iam.adapter.web.dto.req.CreateRoleReq;
 import com.bone.iam.adapter.web.dto.resp.RoleDetailResp;
-import com.bone.iam.application.command.cmd.CreateRoleCmd;
+import com.bone.iam.application.command.cmd.CreateRoleCommand;
 import com.bone.iam.application.query.dto.RoleDetailDTO;
 import org.springframework.stereotype.Component;
 
 @Component
 public class RoleWebConverter {
-    public CreateRoleCmd toCreateRoleCmd(CreateRoleReq req) {
-        CreateRoleCmd cmd = new CreateRoleCmd();
+    public CreateRoleCommand toCreateRoleCommand(CreateRoleReq req) {
+        CreateRoleCommand cmd = new CreateRoleCommand();
         cmd.setName(req.getName());
         cmd.setCode(req.getCode());
         cmd.setDescription(req.getDescription());

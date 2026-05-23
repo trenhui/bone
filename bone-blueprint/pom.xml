@@ -143,6 +143,14 @@
             <version>1.2.1</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- Bone 共享 ArchUnit 规则（《Bone-DDD》§21） -->
+        <dependency>
+            <groupId>com.bone</groupId>
+            <artifactId>bone-architecture-test</artifactId>
+            <version>1.0.0</version>
+            <scope>test</scope>
+        </dependency>
         
         <!-- Spring Cloud Alibaba -->
         <dependency>

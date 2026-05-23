@@ -1,8 +1,8 @@
 package com.bone.masterdata.application.command.handler;
 
-import com.bone.core.usecase.Capability;
+import com.bone.core.capability.Capability;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.masterdata.application.command.cmd.PerformDataQualityCheckCmd;
+import com.bone.masterdata.application.command.cmd.PerformDataQualityCheckCommand;
 import com.bone.masterdata.domain.quality.QualityCheck;
 import com.bone.masterdata.domain.quality.QualityReport;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
@@ -32,7 +32,7 @@ public class PerformDataQualityCheckHandler {
     private final MasterDataEntityRepository entityRepository;
 
     @Transactional
-    public Long handle(PerformDataQualityCheckCmd cmd) {
+    public Long handle(PerformDataQualityCheckCommand cmd) {
         if (entityRepository.findById(cmd.getMasterDataEntityId()) == null) {
             throw NotFoundException.of("主数据实体不存在");
         }

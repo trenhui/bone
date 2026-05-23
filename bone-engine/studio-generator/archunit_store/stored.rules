@@ -1,4 +1,11 @@
 #
-#Thu May 21 10:20:52 CST 2026
+#Thu May 21 13:10:49 CST 2026
+classes\ that\ are\ interfaces\ and\ have\ simple\ name\ ending\ with\ 'Repository'\ and\ reside\ in\ a\ package\ '..domain.repository..'\ should\ only\ declare\ whitelisted\ repository\ methods=0c856003-8fa6-4269-ab5e-5b57a9e7595c
+no\ classes\ that\ reside\ outside\ of\ package\ 'com.bone.studio.generator.application.usecase..'\ should\ depend\ on\ classes\ that\ reside\ in\ a\ package\ 'com.bone.studio.generator.application.usecase..',\ because\ studio-generator\ must\ not\ export\ custom\ UseCase\ SPI\ to\ other\ modules=9dda16bb-b7f2-4b45-8c19-65f63b9afb82
 no\ classes\ should\ reside\ in\ a\ package\ '..application.usecase..',\ because\ DDD\ \u00A714.3\:\ forbid\ application/usecase\ package=fe1d05a8-4e02-4d19-924a-4a81aa63f3da
+no\ classes\ should\ reside\ in\ a\ package\ '..domain.store..',\ because\ DDD\ \u00A714.5\:\ new\ code\ uses\ domain.repository\ only=eeb409c3-ae54-407f-95cb-8d38259746f8
+no\ classes\ that\ reside\ outside\ of\ package\ 'com.bone.core..'\ should\ have\ simple\ name\ ending\ with\ 'BusinessException',\ because\ DDD\ \u00A716.3\:\ prefer\ *BizException\ or\ extend\ com.bone.core.exception.BizException=21c0d607-b5fa-4109-815b-ce8e26058dda
+no\ classes\ that\ reside\ outside\ of\ package\ 'com.bone.core..'\ should\ depend\ on\ classes\ that\ reside\ in\ a\ package\ 'com.bone.core.usecase..',\ because\ DDD\ P0-7\:\ com.bone.core.usecase\ was\ removed;\ use\ Handler\ +\ com.bone.core.capability=1d1f2b47-a248-4d7c-97ac-c700dd90171c
+no\ classes\ that\ reside\ outside\ of\ package\ 'com.bone.core..'\ should\ have\ simple\ name\ 'BusinessException',\ because\ DDD\ \u00A716.3\:\ business\ exception\ is\ com.bone.core.exception.BizException=9dc3e4fd-7dc2-4d0c-8017-f45eda9187b4
 no\ classes\ that\ reside\ in\ a\ package\ '..application..'\ should\ have\ simple\ name\ ending\ with\ 'UseCase',\ because\ DDD\ \u00A714.3\:\ forbid\ *UseCase;\ Controller\ injects\ Handler=b0f48f45-eb33-463f-a261-c7b34f7c30eb
+no\ classes\ that\ reside\ in\ a\ package\ '..application..'\ should\ depend\ on\ classes\ that\ reside\ in\ any\ package\ ['..infrastructure..'],\ because\ DDD\ P0-1\:\ application\ must\ not\ depend\ on\ infrastructure\ implementations=3c38a2b3-a8b0-4455-89fc-5a329e267845

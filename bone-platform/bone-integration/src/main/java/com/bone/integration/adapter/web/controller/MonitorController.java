@@ -4,12 +4,12 @@ import com.bone.core.exception.DomainException;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
-import com.bone.integration.application.command.cmd.ExecuteFlowCmd;
+import com.bone.integration.application.command.cmd.ExecuteFlowCommand;
 import com.bone.integration.application.command.handler.ExecuteFlowHandler;
 import com.bone.integration.application.query.dto.ExecutionLogDTO;
 import com.bone.integration.application.query.dto.FlowStatisticsDTO;
 import com.bone.integration.application.query.handler.ExecutionLogListQueryHandler;
-import com.bone.integration.application.query.qry.ExecutionLogListQry;
+import com.bone.integration.application.query.qry.ExecutionLogListQuery;
 import com.bone.integration.domain.execution.IntegrationLog;
 import com.bone.integration.domain.flow.IntegrationFlow;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
@@ -29,13 +29,13 @@ public class MonitorController {
     private final FlowMonitorService flowMonitorService;
 
     @PostMapping("/executions")
-    public ApiResponse<Long> execute(@RequestBody ExecuteFlowCmd cmd) {
+    public ApiResponse<Long> execute(@RequestBody ExecuteFlowCommand cmd) {
         Long id = executeFlowHandler.handle(cmd);
         return ApiResponse.success(id);
     }
 
     @GetMapping("/executions")
-    public ApiResponse<PageResult<ExecutionLogDTO>> listExecutions(ExecutionLogListQry qry) {
+    public ApiResponse<PageResult<ExecutionLogDTO>> listExecutions(ExecutionLogListQuery qry) {
         PageResult<ExecutionLogDTO> result = executionLogListQueryHandler.handle(qry);
         return ApiResponse.success(result);
     }
@@ -64,7 +64,7 @@ public class MonitorController {
         if (log == null) {
             throw new DomainException("执行记录不存在");
         }
-        ExecuteFlowCmd cmd = new ExecuteFlowCmd(log.getFlowId(), log.getInputData());
+        ExecuteFlowCommand cmd = new ExecuteFlowCommand(log.getFlowId(), log.getInputData());
         Long newId = executeFlowHandler.handle(cmd);
         return ApiResponse.success(newId);
     }

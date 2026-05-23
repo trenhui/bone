@@ -2,7 +2,7 @@ package com.bone.metadata.catalog.application.command.handler;
 
 import com.bone.core.exception.BizException;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.metadata.catalog.application.command.cmd.CreateMetaRelationCmd;
+import com.bone.metadata.catalog.application.command.cmd.CreateMetaRelationCommand;
 import com.bone.metadata.catalog.common.CatalogTenantSupport;
 import com.bone.metadata.catalog.domain.model.MetaEntity;
 import com.bone.metadata.catalog.domain.model.MetaEntityRelation;
@@ -20,7 +20,7 @@ public class CreateMetaRelationHandler {
   private final MetaEntityRepository metaEntityRepository;
 
   @Transactional
-  public Long handle(CreateMetaRelationCmd cmd) {
+  public Long handle(CreateMetaRelationCommand cmd) {
     requireEntity(cmd.getSourceEntityId());
     requireEntity(cmd.getTargetEntityId());
     Long id = DistributedIdGenerator.generateLongId();

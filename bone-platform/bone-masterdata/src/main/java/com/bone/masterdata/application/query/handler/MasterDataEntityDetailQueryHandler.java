@@ -2,7 +2,7 @@ package com.bone.masterdata.application.query.handler;
 
 import com.bone.core.exception.NotFoundException;
 import com.bone.masterdata.application.query.dto.MasterDataEntityDTO;
-import com.bone.masterdata.application.query.qry.MasterDataEntityByIdQry;
+import com.bone.masterdata.application.query.qry.MasterDataEntityByIdQuery;
 import com.bone.masterdata.domain.entity.MasterDataEntity;
 import com.bone.masterdata.domain.entity.MasterDataField;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
@@ -17,7 +17,7 @@ public class MasterDataEntityDetailQueryHandler {
     private final MasterDataEntityRepository entityRepository;
 
     @Transactional(readOnly = true)
-    public MasterDataEntityDTO handle(MasterDataEntityByIdQry qry) {
+    public MasterDataEntityDTO handle(MasterDataEntityByIdQuery qry) {
         MasterDataEntity entity = entityRepository.findById(qry.getId());
         if (entity == null) {
             throw new NotFoundException("主数据实体不存在");

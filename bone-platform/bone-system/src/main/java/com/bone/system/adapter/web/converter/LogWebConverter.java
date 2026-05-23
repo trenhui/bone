@@ -3,9 +3,9 @@ package com.bone.system.adapter.web.converter;
 import com.bone.system.adapter.web.dto.req.CreateLogReq;
 import com.bone.system.adapter.web.dto.req.LogPageReq;
 import com.bone.system.adapter.web.dto.resp.LogResp;
-import com.bone.system.application.command.cmd.CreateLogCmd;
+import com.bone.system.application.command.cmd.CreateLogCommand;
 import com.bone.system.application.query.dto.LogDTO;
-import com.bone.system.application.query.qry.LogPageQry;
+import com.bone.system.application.query.qry.LogPageQuery;
 import org.mapstruct.Mapper;
 
 /**
@@ -14,9 +14,9 @@ import org.mapstruct.Mapper;
 @Mapper
 public interface LogWebConverter {
 
-    CreateLogCmd toCmd(CreateLogReq req);
+    CreateLogCommand toCommand(CreateLogReq req);
 
-    LogPageQry toQry(LogPageReq req);
+    LogPageQuery toQuery(LogPageReq req);
 
     LogResp toResp(LogDTO dto);
 }

@@ -1,9 +1,9 @@
 package com.bone.integration.application.command.handler;
 
 import com.bone.core.exception.DomainException;
-import com.bone.core.usecase.Capability;
+import com.bone.core.capability.Capability;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.integration.application.command.cmd.UpdateFlowCmd;
+import com.bone.integration.application.command.cmd.UpdateFlowCommand;
 import com.bone.integration.domain.flow.FlowConnection;
 import com.bone.integration.domain.flow.FlowNode;
 import com.bone.integration.domain.flow.IntegrationFlow;
@@ -37,7 +37,7 @@ public class UpdateFlowHandler {
     private final FlowService flowService;
 
     @Transactional
-    public void handle(UpdateFlowCmd cmd) {
+    public void handle(UpdateFlowCommand cmd) {
         IntegrationFlow flow = flowRepository.findById(cmd.id());
         if (flow == null) {
             throw new DomainException("流程不存在");

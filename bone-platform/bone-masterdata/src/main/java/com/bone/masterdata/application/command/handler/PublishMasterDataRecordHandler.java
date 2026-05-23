@@ -1,6 +1,6 @@
 package com.bone.masterdata.application.command.handler;
 
-import com.bone.core.usecase.Capability;
+import com.bone.core.capability.Capability;
 import com.bone.core.exception.NotFoundException;
 import com.bone.masterdata.domain.record.MasterDataRecord;
 import com.bone.masterdata.domain.repository.MasterDataRecordRepository;

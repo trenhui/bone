@@ -453,7 +453,7 @@ public class ExtensionPointController {
 
     @PostMapping
     public ResponseEntity<ApiResponse<Long>> create(@Valid @RequestBody CreateExtPointReq req) {
-        Long id = createHandler.execute(ExtPointAssembler.toCmd(req));
+        Long id = createHandler.execute(extPointAssembler.toCreateCommand(req));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(id));
     }
 }

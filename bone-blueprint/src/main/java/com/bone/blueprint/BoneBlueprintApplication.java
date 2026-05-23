@@ -1,12 +1,14 @@
 package com.bone.blueprint;
 
-import com.bone.metadata.sdk.domain.annotation.EnableSqlRepositories;
 import com.bone.engine.extension.api.annotation.EnableExtensionPoints;
+import com.bone.metadata.sdk.domain.annotation.EnableSqlRepositories;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
+@ComponentScan(basePackages = {"com.bone.blueprint", "com.bone.core.capability", "com.bone.web"})
 @EnableDiscoveryClient
 @EnableSqlRepositories(basePackages = "com.bone.blueprint.domain.repository")
 @EnableExtensionPoints(basePackages = "com.bone.blueprint.domain.service")

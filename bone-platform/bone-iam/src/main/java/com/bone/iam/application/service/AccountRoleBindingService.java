@@ -3,7 +3,7 @@ package com.bone.iam.application.service;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.iam.domain.account.AccountRole;
 import com.bone.iam.domain.repository.AccountRoleRepository;
-import com.bone.iam.infrastructure.security.AuthorityCacheEvictionService;
+import com.bone.iam.domain.gateway.AccountAuthorityCache;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AccountRoleBindingService {
 
     private final AccountRoleRepository accountRoleRepository;
-    private final AuthorityCacheEvictionService authorityCacheEvictionService;
+    private final AccountAuthorityCache accountAuthorityCache;
 
     @Transactional
     public void replaceBindings(Long accountId, Long tenantId, Long[] roleIds) {
@@ -43,7 +43,7 @@ public class AccountRoleBindingService {
                 accountRoleRepository.batchInsert(links);
             }
         }
-        authorityCacheEvictionService.evictAccount(accountId);
+        accountAuthorityCache.evictAccount(accountId);
     }
 
     @Transactional(readOnly = true)

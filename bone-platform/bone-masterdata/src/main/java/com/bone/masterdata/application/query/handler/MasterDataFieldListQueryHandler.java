@@ -1,7 +1,7 @@
 package com.bone.masterdata.application.query.handler;
 
 import com.bone.masterdata.application.query.dto.MasterDataFieldDTO;
-import com.bone.masterdata.application.query.qry.MasterDataFieldListQry;
+import com.bone.masterdata.application.query.qry.MasterDataFieldListQuery;
 import com.bone.masterdata.domain.entity.MasterDataField;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 public class MasterDataFieldListQueryHandler {
 
     @Transactional(readOnly = true)
-    public List<MasterDataFieldDTO> handle(MasterDataFieldListQry qry) {
+    public List<MasterDataFieldDTO> handle(MasterDataFieldListQuery qry) {
         FluentQuery<MasterDataField> query = QueryBuilder.from(MasterDataField.class);
 
         if (qry.getMasterDataEntityId() != null) {

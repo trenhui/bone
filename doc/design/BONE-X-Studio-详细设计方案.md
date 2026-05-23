@@ -509,7 +509,7 @@ Response:
 | **产品能力、模块边界、里程碑** | [`doc/prd/BONE产品需求文档正式版.md`](../prd/BONE产品需求文档正式版.md) | 「元数据应用工厂」与 PRD 中**应用生成 / 企业集成 / 扩展运行时**对齐；控制台、IAM、系统管理等与 PRD 第 4 章模块一致。 |
 | **总体架构、多租户、NFR、跨服务一致性** | [`doc/architecture/BONE-总体架构设计方案.md`](../architecture/BONE-总体架构设计方案.md) | 与《Bone-DDD》§5.4 交叉引用；跨聚合默认最终一致。 |
 
-**Application 层入口**：平台模块与生成物默认采用 **`CommandHandler` / `QueryHandler` + cmd/qry**（见《Bone-DDD》§14、§18）；**不强制**独立的 `UseCase` 门面（《Bone-DDD》§20）；Studio 若输出 UseCase 类，仅视为**可选编排壳**，事务与不变量仍须在 Handler 或领域层满足 P0。
+**Application 层入口**：平台模块与生成物**一律**采用 **`CommandHandler` / `QueryHandler` + `*Command` / `*Query`**（子包目录可保留 `cmd/`、`qry/`，见《Bone-DDD》§14.1）；**禁止** `*UseCase` / `application/usecase/**` / 自造 `@UseCase` / `UseCaseExecutor`（《Bone-DDD》§12.1 P0-7、§14.3）。跨多聚合编排走 `application/orchestration/*Orchestrator`（ADR 例外，《Bone-DDD》§14.3）；AI / Flow 能力发现走 `com.bone.core.capability.@Capability`（《Bone-DDD》§20）。
 
 ### 5. 领域驱动设计规范
 

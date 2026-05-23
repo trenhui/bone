@@ -2,7 +2,7 @@
 
 -- 创建 users 表
 CREATE TABLE users (
-    id BIGINT PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255),
     role_id BIGINT,
     created_at DATETIME,
@@ -48,4 +48,18 @@ CREATE TABLE sys_role_permission (
     role_id BIGINT NOT NULL COMMENT '角色ID',
     perm_id BIGINT NOT NULL COMMENT '权限ID',
     PRIMARY KEY (role_id, perm_id)
+);
+
+-- 销售记录测试表（与 mysql/schema.sql 对齐）
+CREATE TABLE sales_record (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    category VARCHAR(50) NOT NULL,
+    amount DECIMAL(15, 2) NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    region VARCHAR(50),
+    product_name VARCHAR(100),
+    quantity INT,
+    is_deleted BOOLEAN DEFAULT FALSE
 );

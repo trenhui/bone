@@ -39,3 +39,18 @@ INSERT INTO roles (id, role_name, description) VALUES
 (5, 'HR_ADMIN', 'Employee data management permissions'),
 (6, 'READ_ONLY', 'Global read access without write capabilities');
 
+-- 分页/聚合测试数据集（与 mysql/data.sql 对齐）
+INSERT INTO roles (id, role_name, description) VALUES
+(20000, 'ROOT_ADMIN', '最高级系统管理员'),
+(20001, 'SEC_ADMIN', '安全管理员'),
+(20002, 'ACCOUNTANT', '会计角色'),
+(20003, 'HR_LEAD',   'HR主管'),
+(20004, 'DEPT_LEADER','部门领导');
+
+INSERT INTO users (id, name, role_id, created_at, created_by, updated_at, updated_by, deleted) VALUES
+(20000, 'Alpha',   20000, NOW(), 20000, NOW(), 20000, 0),
+(20001, 'Beta',    20000, NOW(), 20000, NOW(), 20000, 0),
+(20002, 'Gamma',   20000, NOW(), 20000, NOW(), 20000, 0),
+(20003, 'Delta',   20000, NOW(), 20000, NOW(), 20000, 0),
+(20004, 'Epsilon', 20000, NOW(), 20000, NOW(), 20000, 0);
+

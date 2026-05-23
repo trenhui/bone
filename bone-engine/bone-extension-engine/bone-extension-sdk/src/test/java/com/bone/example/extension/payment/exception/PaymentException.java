@@ -1,6 +1,6 @@
 package com.bone.example.extension.payment.exception;
 
-import com.bone.engine.extension.api.exception.BusinessException;
+import com.bone.engine.extension.api.exception.ExtensionBizException;
 
 /**
  * 支付异常类
@@ -8,7 +8,7 @@ import com.bone.engine.extension.api.exception.BusinessException;
  * 提供支付领域特有的异常功能和业务方法
  * 推荐使用静态工厂方法创建异常实例，提高代码可读性
  */
-public class PaymentException extends BusinessException {
+public class PaymentException extends ExtensionBizException {
     private static final long serialVersionUID = 1L;
     
     /**

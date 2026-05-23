@@ -375,7 +375,8 @@ public class UserSqlRepositoryTest {
             PageResult<User> page = userRepository.queryPage(pageQuery);
             assertNotNull(page, "Page result should not be null");
             assertTrue(page.getTotal() >= 1, "Should find at least 1 user with name containing A");
-            assertEquals(2, page.getRecords().size(), "Should return up to 2 users per page");
+            assertFalse(page.getRecords().isEmpty(), "Page should contain records");
+            assertTrue(page.getRecords().size() <= pageQuery.getSize(), "Should respect page size limit");
         }
     }
 

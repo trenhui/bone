@@ -9,51 +9,30 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * 聚合根基类
- *
- * @param <ID> 主键ID类型
+ * 聚合根基类（领域事件）。审计字段见 {@link com.bone.core.domain.entity.AbstractEntity} /
+ * {@link com.bone.core.tenant.TenantAbstractEntity}；需审计的聚合可继承 {@link AuditableAggregateRoot}（ADR-0011 阶段 2）。
  */
 @Getter
 public abstract class AggregateRoot<ID> extends Entity<ID> {
 
-    /**
-     * 领域事件列表
-     */
     @Transient
     private final List<DomainEvent> domainEvents = new ArrayList<>();
 
-    /**
-     * 添加领域事件
-     *
-     * @param event 领域事件
-     */
     protected void addDomainEvent(DomainEvent event) {
         if (event != null) {
             domainEvents.add(event);
         }
     }
 
-    /**
-     * 获取所有领域事件（只读）
-     *
-     * @return 领域事件列表
-     */
     public List<DomainEvent> getDomainEvents() {
         return Collections.unmodifiableList(domainEvents);
     }
 
-    /**
-     * 清空领域事件
-     */
     public void clearDomainEvents() {
         domainEvents.clear();
     }
 
-    /**
-     * 设置ID（供SDK回填使用）
-     *
-     * @param id ID值
-     */
+    /** 供 SDK 回填主键 */
     public void setId(ID id) {
         super.setId(id);
     }

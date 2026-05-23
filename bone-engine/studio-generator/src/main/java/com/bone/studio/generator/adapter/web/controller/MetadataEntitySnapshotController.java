@@ -3,7 +3,7 @@ package com.bone.studio.generator.adapter.web.controller;
 import com.bone.core.result.ApiResponse;
 import com.bone.core.model.PageResult;
 import com.bone.studio.generator.application.query.handler.LoadCatalogTablesHandler;
-import com.bone.studio.generator.application.query.qry.LoadCatalogTablesQry;
+import com.bone.studio.generator.application.query.qry.LoadCatalogTablesQuery;
 import com.bone.studio.generator.common.GeneratorApiPaths;
 import com.bone.studio.generator.domain.data.DatabaseTable;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +24,7 @@ public class MetadataEntitySnapshotController {
   private final LoadCatalogTablesHandler loadCatalogTablesHandler;
 
   @GetMapping
-  public ApiResponse<PageResult<DatabaseTable>> list(LoadCatalogTablesQry qry) {
+  public ApiResponse<PageResult<DatabaseTable>> list(LoadCatalogTablesQuery qry) {
     return ApiResponse.success(loadCatalogTablesHandler.handle(qry));
   }
 }

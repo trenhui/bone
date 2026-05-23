@@ -3,7 +3,7 @@ package com.bone.metadata.engine.exception;
 import java.util.Map;
 
 /** 实体未找到异常类 用于表示实体查找失败的错误 */
-public class EntityNotFoundException extends BaseBusinessException {
+public class EntityNotFoundException extends MetadataEngineBizException {
 
   private static final long serialVersionUID = 1L;
 

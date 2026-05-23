@@ -1,84 +1,56 @@
 package com.bone.masterdata.architecture;
 
 import com.bone.architecture.BoneDddArchRules;
-import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
+import com.tngtech.archunit.junit.AnalyzeClasses;
+import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.library.freeze.FreezingArchRule;
-import org.junit.jupiter.api.Test;
 
-import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
-import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
-
+/**
+ * bone-masterdata 架构守护 — 统一来自 {@link BoneDddArchRules}（《Bone-DDD》§21 附录 B.3）。
+ */
+@AnalyzeClasses(packages = "com.bone.masterdata", importOptions = ImportOption.DoNotIncludeTests.class)
 public class ArchitectureTest {
 
-    private final com.tngtech.archunit.core.domain.JavaClasses classes = new ClassFileImporter()
-            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-            .importPackages("com.bone.masterdata");
+    @ArchTest
+    static final ArchRule domain_independent = BoneDddArchRules.domainMustNotDependOnOuterLayers();
 
-    @Test
-    void domainLayerShouldNotDependOnApplicationOrAdapter() {
-        ArchRule rule = noClasses()
-                .that()
-                .resideInAPackage("..domain..")
-                .should()
-                .dependOnClassesThat()
-                .resideInAnyPackage("..application..", "..adapter..");
-        rule.check(classes);
-    }
+    @ArchTest
+    static final ArchRule application_no_infra =
+            BoneDddArchRules.applicationMustNotDependOnInfrastructure();
 
-    @Test
-    void applicationLayerMayUseDomainCoreAndMetadataSdk() {
-        ArchRule rule = classes()
-                .that()
-                .resideInAPackage("..application..")
-                .should()
-                .onlyDependOnClassesThat()
-                .resideInAnyPackage(
-                        "..domain..",
-                        "..application..",
-                        "..common..",
-                        "com.bone.core..",
-                        "com.bone.metadata.sdk..",
-                        "..infrastructure..",
-                        "java..",
-                        "org.springframework..",
-                        "org.slf4j..",
-                        "lombok..",
-                        "jakarta..",
-                        "com.fasterxml.jackson..");
-        rule.check(classes);
-    }
+    @ArchTest
+    static final ArchRule domain_no_query_builder = BoneDddArchRules.domainMustNotUseQueryBuilder();
 
-    @Test
-    void noNewUseCaseClasses() {
-        FreezingArchRule.freeze(BoneDddArchRules.noUseCaseClassesInApplication()).check(classes);
-    }
+    @ArchTest
+    static final ArchRule command_no_query_builder =
+            BoneDddArchRules.commandHandlersMustNotUseQueryBuilder();
 
-    @Test
-    void noApplicationUseCasePackage() {
-        FreezingArchRule.freeze(BoneDddArchRules.noApplicationUseCasePackage()).check(classes);
-    }
+    @ArchTest
+    static final ArchRule repository_methods_whitelist =
+            BoneDddArchRules.domainRepositoriesShouldOnlyDeclareWhitelistedMethods();
 
-    @Test
-    void adapterLayerMayUseApplicationDomainAndCore() {
-        ArchRule rule = classes()
-                .that()
-                .resideInAPackage("..adapter..")
-                .should()
-                .onlyDependOnClassesThat()
-                .resideInAnyPackage(
-                        "..adapter..",
-                        "..application..",
-                        "..domain..",
-                        "..common..",
-                        "com.bone.core..",
-                        "java..",
-                        "org.springframework..",
-                        "org.slf4j..",
-                        "lombok..",
-                        "jakarta..",
-                        "io.swagger..");
-        rule.check(classes);
-    }
+    @ArchTest
+    static final ArchRule no_new_use_cases =
+            FreezingArchRule.freeze(BoneDddArchRules.noUseCaseClassesInApplication());
+
+    @ArchTest
+    static final ArchRule no_usecase_package =
+            FreezingArchRule.freeze(BoneDddArchRules.noApplicationUseCasePackage());
+
+    @ArchTest
+    static final ArchRule no_bone_core_usecase = BoneDddArchRules.noBoneCoreUseCaseApiDependency();
+
+    @ArchTest
+    static final ArchRule no_new_domain_store =
+            FreezingArchRule.freeze(BoneDddArchRules.noNewDomainStorePackage());
+
+    @ArchTest
+    static final ArchRule no_custom_business_exception =
+            FreezingArchRule.freeze(BoneDddArchRules.noCustomBusinessException());
+
+    @ArchTest
+    static final ArchRule no_business_exception_suffix =
+            FreezingArchRule.freeze(BoneDddArchRules.noBusinessExceptionSuffix());
 }

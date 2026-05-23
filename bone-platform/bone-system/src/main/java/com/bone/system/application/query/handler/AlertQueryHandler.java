@@ -4,7 +4,7 @@ import com.bone.metadata.sdk.query.dsl.FluentQuery;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import com.bone.system.application.query.dto.AlertEventDTO;
 import com.bone.system.application.query.dto.AlertRuleDTO;
-import com.bone.system.application.query.qry.AlertRulePageQry;
+import com.bone.system.application.query.qry.AlertRulePageQuery;
 import com.bone.system.common.result.PageResult;
 import com.bone.system.domain.alert.AlertEvent;
 import com.bone.system.domain.alert.AlertRule;
@@ -30,7 +30,7 @@ public class AlertQueryHandler {
     }
 
     @Transactional(readOnly = true)
-    public PageResult<AlertRuleDTO> pageRules(AlertRulePageQry qry) {
+    public PageResult<AlertRuleDTO> pageRules(AlertRulePageQuery qry) {
         FluentQuery<AlertRule> query = QueryBuilder.from(AlertRule.class);
 
         if (qry.getKeyword() != null && !qry.getKeyword().isBlank()) {

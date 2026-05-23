@@ -2,15 +2,15 @@ package com.bone.metadata.catalog.adapter.web.controller;
 
 import com.bone.core.result.ApiResponse;
 import com.bone.core.result.PageResult;
-import com.bone.metadata.catalog.application.command.cmd.CreateMetaFieldCmd;
-import com.bone.metadata.catalog.application.command.cmd.UpdateMetaFieldCmd;
+import com.bone.metadata.catalog.application.command.cmd.CreateMetaFieldCommand;
+import com.bone.metadata.catalog.application.command.cmd.UpdateMetaFieldCommand;
 import com.bone.metadata.catalog.application.command.handler.CreateMetaFieldHandler;
 import com.bone.metadata.catalog.application.command.handler.DeleteMetaFieldHandler;
 import com.bone.metadata.catalog.application.command.handler.UpdateMetaFieldHandler;
 import com.bone.metadata.catalog.application.query.dto.MetaFieldDTO;
 import com.bone.metadata.catalog.application.query.handler.MetaFieldDetailQueryHandler;
 import com.bone.metadata.catalog.application.query.handler.MetaFieldPageQueryHandler;
-import com.bone.metadata.catalog.application.query.qry.MetaFieldPageQry;
+import com.bone.metadata.catalog.application.query.qry.MetaFieldPageQuery;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -29,7 +29,7 @@ public class MetaFieldCatalogController {
 
   @PostMapping
   public ApiResponse<Long> create(
-      @PathVariable Long entityId, @Valid @RequestBody CreateMetaFieldCmd cmd) {
+      @PathVariable Long entityId, @Valid @RequestBody CreateMetaFieldCommand cmd) {
     cmd.setEntityId(entityId);
     return ApiResponse.success(createMetaFieldHandler.handle(cmd));
   }
@@ -38,14 +38,14 @@ public class MetaFieldCatalogController {
   public ApiResponse<Void> update(
       @PathVariable Long entityId,
       @PathVariable Long fieldId,
-      @Valid @RequestBody UpdateMetaFieldCmd cmd) {
+      @Valid @RequestBody UpdateMetaFieldCommand cmd) {
     updateMetaFieldHandler.handle(fieldId, cmd);
     return ApiResponse.success();
   }
 
   @GetMapping
   public ApiResponse<PageResult<MetaFieldDTO>> page(
-      @PathVariable Long entityId, MetaFieldPageQry qry) {
+      @PathVariable Long entityId, MetaFieldPageQuery qry) {
     qry.setEntityId(entityId);
     return ApiResponse.success(metaFieldPageQueryHandler.handle(qry));
   }

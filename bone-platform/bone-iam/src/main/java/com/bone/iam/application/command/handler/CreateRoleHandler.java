@@ -1,9 +1,9 @@
 package com.bone.iam.application.command.handler;
 
-import com.bone.iam.application.command.cmd.CreateRoleCmd;
+import com.bone.iam.application.command.cmd.CreateRoleCommand;
 import com.bone.iam.domain.role.Role;
 import com.bone.iam.domain.repository.RoleRepository;
-import com.bone.core.usecase.Capability;
+import com.bone.core.capability.Capability;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +24,7 @@ public class CreateRoleHandler {
     private final RoleRepository roleRepository;
 
     @Transactional
-    public Long handle(CreateRoleCmd cmd) {
+    public Long handle(CreateRoleCommand cmd) {
         String code = cmd.getCode();
         if (code == null || code.isBlank()) {
             code = cmd.getName() == null ? "" : cmd.getName().trim()

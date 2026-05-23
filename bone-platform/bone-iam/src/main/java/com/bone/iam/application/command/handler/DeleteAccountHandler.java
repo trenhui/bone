@@ -1,6 +1,6 @@
 package com.bone.iam.application.command.handler;
 
-import com.bone.core.usecase.Capability;
+import com.bone.core.capability.Capability;
 import com.bone.iam.application.service.AccountRoleBindingService;
 import com.bone.iam.domain.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;

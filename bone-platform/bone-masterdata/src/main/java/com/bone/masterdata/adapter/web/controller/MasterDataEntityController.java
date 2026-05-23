@@ -1,15 +1,15 @@
 package com.bone.masterdata.adapter.web.controller;
 
-import com.bone.masterdata.application.command.cmd.CreateMasterDataEntityCmd;
-import com.bone.masterdata.application.command.cmd.UpdateMasterDataEntityCmd;
-import com.bone.masterdata.application.usecase.standard.CreateMasterDataEntityUseCase;
-import com.bone.masterdata.application.usecase.standard.UpdateMasterDataEntityUseCase;
-import com.bone.masterdata.application.usecase.standard.PublishMasterDataEntityUseCase;
-import com.bone.masterdata.application.usecase.standard.MasterDataEntityPageQueryUseCase;
-import com.bone.masterdata.application.usecase.standard.MasterDataEntityDetailQueryUseCase;
+import com.bone.masterdata.application.command.cmd.CreateMasterDataEntityCommand;
+import com.bone.masterdata.application.command.cmd.UpdateMasterDataEntityCommand;
+import com.bone.masterdata.application.command.handler.CreateMasterDataEntityHandler;
+import com.bone.masterdata.application.command.handler.UpdateMasterDataEntityHandler;
+import com.bone.masterdata.application.command.handler.PublishMasterDataEntityHandler;
+import com.bone.masterdata.application.query.handler.MasterDataEntityPageQueryHandler;
+import com.bone.masterdata.application.query.handler.MasterDataEntityDetailQueryHandler;
 import com.bone.masterdata.application.query.dto.MasterDataEntityDTO;
-import com.bone.masterdata.application.query.qry.MasterDataEntityByIdQry;
-import com.bone.masterdata.application.query.qry.MasterDataEntityPageQry;
+import com.bone.masterdata.application.query.qry.MasterDataEntityByIdQuery;
+import com.bone.masterdata.application.query.qry.MasterDataEntityPageQuery;
 import com.bone.core.result.ApiResponse;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.core.result.PageResult;
@@ -21,43 +21,43 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping(PlatformApiPaths.MASTERDATA_V1 + "/entities")
 @RequiredArgsConstructor
 public class MasterDataEntityController {
-    private final CreateMasterDataEntityUseCase createMasterDataEntityUseCase;
-    private final UpdateMasterDataEntityUseCase updateMasterDataEntityUseCase;
-    private final PublishMasterDataEntityUseCase publishMasterDataEntityUseCase;
-    private final MasterDataEntityPageQueryUseCase masterDataEntityPageQueryUseCase;
-    private final MasterDataEntityDetailQueryUseCase masterDataEntityDetailQueryUseCase;
+    private final CreateMasterDataEntityHandler createMasterDataEntityHandler;
+    private final UpdateMasterDataEntityHandler updateMasterDataEntityHandler;
+    private final PublishMasterDataEntityHandler publishMasterDataEntityHandler;
+    private final MasterDataEntityPageQueryHandler masterDataEntityPageQueryHandler;
+    private final MasterDataEntityDetailQueryHandler masterDataEntityDetailQueryHandler;
     private final ConvertFromBusinessEntityHandler convertFromBusinessEntityHandler;
 
     @PostMapping
-    public ApiResponse<Long> create(@RequestBody CreateMasterDataEntityCmd cmd) {
-        Long id = createMasterDataEntityUseCase.execute(cmd);
+    public ApiResponse<Long> create(@RequestBody CreateMasterDataEntityCommand cmd) {
+        Long id = createMasterDataEntityHandler.handle(cmd);
         return ApiResponse.success(id);
     }
 
     @PutMapping("/{id}")
-    public ApiResponse<Void> update(@PathVariable Long id, @RequestBody UpdateMasterDataEntityCmd cmd) {
+    public ApiResponse<Void> update(@PathVariable Long id, @RequestBody UpdateMasterDataEntityCommand cmd) {
         cmd.setId(id);
-        updateMasterDataEntityUseCase.execute(cmd);
+        updateMasterDataEntityHandler.handle(cmd);
         return ApiResponse.success();
     }
 
     @GetMapping
-    public ApiResponse<PageResult<MasterDataEntityDTO>> list(MasterDataEntityPageQry qry) {
-        PageResult<MasterDataEntityDTO> result = masterDataEntityPageQueryUseCase.execute(qry);
+    public ApiResponse<PageResult<MasterDataEntityDTO>> list(MasterDataEntityPageQuery qry) {
+        PageResult<MasterDataEntityDTO> result = masterDataEntityPageQueryHandler.handle(qry);
         return ApiResponse.success(result);
     }
 
     @GetMapping("/{id}")
     public ApiResponse<MasterDataEntityDTO> detail(@PathVariable Long id) {
-        MasterDataEntityByIdQry qry = new MasterDataEntityByIdQry();
+        MasterDataEntityByIdQuery qry = new MasterDataEntityByIdQuery();
         qry.setId(id);
-        MasterDataEntityDTO dto = masterDataEntityDetailQueryUseCase.execute(qry);
+        MasterDataEntityDTO dto = masterDataEntityDetailQueryHandler.handle(qry);
         return ApiResponse.success(dto);
     }
 
     @PostMapping("/{id}/publish")
     public ApiResponse<Void> publish(@PathVariable Long id) {
-        publishMasterDataEntityUseCase.execute(id);
+        publishMasterDataEntityHandler.handle(id);
         return ApiResponse.success();
     }
 

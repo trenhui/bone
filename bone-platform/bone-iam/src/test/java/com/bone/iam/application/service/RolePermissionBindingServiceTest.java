@@ -8,7 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.iam.domain.repository.RolePermissionRepository;
-import com.bone.iam.infrastructure.security.AuthorityCacheEvictionService;
+import com.bone.iam.domain.gateway.AccountAuthorityCache;
 import com.bone.metadata.sdk.sql.executor.SqlExecutor;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,7 +23,7 @@ class RolePermissionBindingServiceTest {
     private RolePermissionRepository rolePermissionRepository;
 
     @Mock
-    private AuthorityCacheEvictionService authorityCacheEvictionService;
+    private AccountAuthorityCache accountAuthorityCache;
 
     @Mock
     private SqlExecutor sqlExecutor;
@@ -39,7 +39,7 @@ class RolePermissionBindingServiceTest {
 
         verify(sqlExecutor).delete(anyString(), eq(1L));
         verify(rolePermissionRepository).batchInsert(any());
-        verify(authorityCacheEvictionService).evictAccountsForRole(1L);
+        verify(accountAuthorityCache).evictAccountsForRole(1L);
     }
 
     @Test
@@ -50,6 +50,6 @@ class RolePermissionBindingServiceTest {
 
         verify(sqlExecutor).delete(anyString(), eq(2L));
         verify(rolePermissionRepository, never()).batchInsert(any());
-        verify(authorityCacheEvictionService).evictAccountsForRole(2L);
+        verify(accountAuthorityCache).evictAccountsForRole(2L);
     }
 }

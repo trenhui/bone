@@ -1,7 +1,7 @@
 package com.bone.studio.generator.application.query.handler;
 
-import com.bone.core.usecase.Capability;
-import com.bone.studio.generator.application.query.qry.DataSourceTablesQry;
+import com.bone.core.capability.Capability;
+import com.bone.studio.generator.application.query.qry.DataSourceTablesQuery;
 import com.bone.studio.generator.common.StudioIds;
 import com.bone.studio.generator.domain.data.DataSource;
 import com.bone.studio.generator.domain.data.DatabaseTable;
@@ -22,7 +22,7 @@ public class DataSourceTablesHandler {
     private final DatabaseMetadataGateway metadataGateway;
 
     @Transactional(readOnly = true)
-    public List<DatabaseTable> handle(DataSourceTablesQry query) {
+    public List<DatabaseTable> handle(DataSourceTablesQuery query) {
         Long id = StudioIds.parseRequired(query.getDataSourceId());
         DataSource dataSource = dataSourceRepository.findById(id);
         if (dataSource == null) {

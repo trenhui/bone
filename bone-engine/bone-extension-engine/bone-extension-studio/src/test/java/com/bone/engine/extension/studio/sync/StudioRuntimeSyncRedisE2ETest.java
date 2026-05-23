@@ -5,8 +5,8 @@ import com.bone.engine.extension.api.model.sync.ExtensionRoutingMetadata;
 import com.bone.engine.extension.core.router.DefaultExtensionPointRouter;
 import com.bone.engine.extension.studio.domain.model.ExtPoint;
 import com.bone.engine.extension.studio.domain.model.Extension;
-import com.bone.engine.extension.studio.infrastructure.persistence.InMemoryExtPointStore;
-import com.bone.engine.extension.studio.infrastructure.persistence.InMemoryExtensionStore;
+import com.bone.engine.extension.studio.infrastructure.persistence.InMemoryStudioExtPointRepository;
+import com.bone.engine.extension.studio.infrastructure.persistence.InMemoryStudioExtensionRepository;
 import com.bone.engine.extension.support.config.ExtensionMetadataRedisConfiguration;
 import com.bone.engine.extension.support.context.BizContext;
 import com.bone.engine.extension.support.expression.SpELExpressionEvaluator;
@@ -68,15 +68,15 @@ class StudioRuntimeSyncRedisE2ETest {
                 redisConfig.extensionMetadataIndexRedisTemplate(connectionFactory);
         metadataStore = new RedisExtensionMetadataStore(valueTemplate, indexTemplate, REFRESH_CHANNEL);
 
-        InMemoryExtPointStore extPointStore = new InMemoryExtPointStore();
-        InMemoryExtensionStore extensionStore = new InMemoryExtensionStore();
-        syncService = new RuntimeExtensionSyncService(metadataStore, extPointStore);
+        InMemoryStudioExtPointRepository extPointRepository = new InMemoryStudioExtPointRepository();
+        InMemoryStudioExtensionRepository extensionRepository = new InMemoryStudioExtensionRepository();
+        syncService = new RuntimeExtensionSyncService(metadataStore, extPointRepository);
 
         ExtPoint point = new ExtPoint();
         point.setName("Redis E2E");
         point.setInterfaceName(EXT_POINT);
         point.setEnabled(true);
-        extPointStore.save(point);
+        extPointRepository.save(point);
 
         Extension extension =
                 Extension.create(
@@ -86,7 +86,7 @@ class StudioRuntimeSyncRedisE2ETest {
                         "com.bone.test.HighImpl");
         extension.setBizCode("BIZ");
         extension.setConfig("{\"code\":\"HIGH\",\"traffic\":100}");
-        extensionStore.save(extension);
+        extensionRepository.save(extension);
 
         localRepo = new InMemoryExtensionRepository();
         localRepo.registerExtension(
