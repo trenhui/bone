@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Card,
-  Table,
   Button,
   Modal,
   Form,
@@ -16,11 +15,11 @@ import {
 } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { ProTable } from '@ant-design/pro-components';
+import type { ProColumns } from '@ant-design/pro-components';
 import type {
   MasterDataField,
   MasterDataEntity,
   CreateMasterDataFieldReq,
-  UpdateMasterDataFieldReq
 } from '../types';
 import { masterDataFieldApi, masterDataEntityApi } from '../services/api';
 
@@ -38,8 +37,7 @@ const FieldManagement: React.FC = () => {
   const [entities, setEntities] = useState<MasterDataEntity[]>([]);
   const [selectedEntityId, setSelectedEntityId] = useState<number | null>(null);
 
-  // 获取实体列表
-  const fetchEntities = async () => {
+  const fetchEntities = useCallback(async () => {
     try {
       const response = await masterDataEntityApi.page({ pageSize: 100 });
       if (response.code === 200) {
@@ -50,13 +48,12 @@ const FieldManagement: React.FC = () => {
       } else {
         message.error(response.message);
       }
-    } catch (error) {
+    } catch {
       message.error('获取实体列表失败');
     }
-  };
+  }, [selectedEntityId]);
 
-  // 获取字段列表
-  const fetchFields = async (entityId: number) => {
+  const fetchFields = useCallback(async (entityId: number) => {
     setLoading(true);
     try {
       const response = await masterDataFieldApi.listByEntityId(entityId);
@@ -65,22 +62,22 @@ const FieldManagement: React.FC = () => {
       } else {
         message.error(response.message);
       }
-    } catch (error) {
+    } catch {
       message.error('获取字段列表失败');
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchEntities();
   }, []);
 
   useEffect(() => {
+    void fetchEntities();
+  }, [fetchEntities]);
+
+  useEffect(() => {
     if (selectedEntityId) {
-      fetchFields(selectedEntityId);
+      void fetchFields(selectedEntityId);
     }
-  }, [selectedEntityId]);
+  }, [selectedEntityId, fetchFields]);
 
   // 打开创建模态框
   const handleAdd = () => {
@@ -220,7 +217,7 @@ const FieldManagement: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: MasterDataField) => (
+      render: (_: unknown, record: MasterDataField) => (
         <Space size="middle">
           <Button
             type="primary"
@@ -270,7 +267,7 @@ const FieldManagement: React.FC = () => {
 
         {/* 字段列表 */}
         <ProTable
-          columns={columns}
+          columns={columns as ProColumns<MasterDataField>[]}
           dataSource={fields}
           loading={loading}
           pagination={{ pageSize: 10 }}

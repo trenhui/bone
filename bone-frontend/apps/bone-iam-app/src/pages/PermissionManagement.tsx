@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Table, Button, Modal, Form, Input, AutoComplete, message, Popconfirm, Space } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
 import * as api from '../services/api';
@@ -18,25 +18,25 @@ const PermissionManagement: React.FC = () => {
   const [currentPermission, setCurrentPermission] = useState<Permission | null>(null);
   const [form] = Form.useForm();
 
-  const fetchPermissions = async () => {
+  const fetchPermissions = useCallback(async () => {
     setLoading(true);
     try {
       const response = await api.getPermissions(page, pageSize);
       if (response.code === 200) {
-        const { records, total } = unwrapPage(response.data);
+        const { records, total: newTotal } = unwrapPage(response.data);
         setPermissions(records);
-        setTotal(total);
+        setTotal(newTotal);
       }
     } catch {
       message.error('获取权限列表失败');
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, pageSize]);
 
   useEffect(() => {
-    fetchPermissions();
-  }, [page, pageSize, keyword]);
+    void fetchPermissions();
+  }, [fetchPermissions, keyword]);
 
   const handleCatalogCodeSelect = (code: string) => {
     const entry = BONE_PERMISSION_CODE_CATALOG.find((item) => item.code === code);
@@ -133,7 +133,7 @@ const PermissionManagement: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: Permission) => (
+      render: (_: unknown, record: Permission) => (
         <Space size="middle">
           <Button icon={<EditOutlined />} onClick={() => handleEdit(record)} />
           <Popconfirm

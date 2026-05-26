@@ -23,7 +23,7 @@ export interface ShellMenuItem {
 export const MenuConfigContext = createContext<{
   menuConfig: ShellMenuItem[];
   updateMenuConfig: (key: string, enabled: boolean) => void;
-}>({
-  menuConfig: [],
-  updateMenuConfig: () => {},
-});
+    }>({
+      menuConfig: [],
+      updateMenuConfig: () => {},
+    });

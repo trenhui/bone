@@ -182,7 +182,7 @@ bone-frontend/
 | `AggregateRoot` | 聚合根标记接口 | - | [AggregateRoot.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/domain/AggregateRoot.java) |
 | `DomainEvent` | 领域事件基类 | - | [DomainEvent.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/domain/DomainEvent.java) |
 | `TransmittableThreadLocal` | 可传递的线程本地变量 | - | [TransmittableThreadLocal.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/threadlocal/TransmittableThreadLocal.java) |
-| `UseCaseExecutor` | 用例执行器 | - | [UseCaseExecutor.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/usecase/UseCaseExecutor.java) |
+| `@Capability` / `HandlerRegistry` | AI/Flow 能力发现（`com.bone.core.capability`） | - | [Capability.java](bone-framework/bone-core/src/main/java/com/bone/core/capability/Capability.java) |
 
 #### 4.1.2 关键注解
 
@@ -280,10 +280,11 @@ adapter/web → application → domain ← infrastructure
 |----------|----------|------|
 | 聚合根 | `{名词}` | `User` |
 | 值对象 | `{名词}` | `Username` |
-| 命令 | `{动作}{对象}Command` | `CreateUserCommand` |
-| 查询 | `{对象}{条件}Qry` | `UserByIdQry` |
-| 命令处理器 | `{命令名}Handler` | `CreateUserCommandHandler` |
-| 查询处理器 | `{查询名}Handler` | `UserByIdQryHandler` |
+| 命令 | `{动作}{对象}Command`（**禁** `*Cmd` 类名） | `CreateUserCommand` |
+| 查询 | `{对象}{条件}Query`（**禁** `*Qry` 类名；adapter 入参用 `*Req`/`*Qry`） | `UserByIdQuery` |
+| 命令处理器 | `{命令名}CommandHandler` | `CreateUserCommandHandler` |
+| 查询处理器 | `{查询名}QueryHandler` | `UserByIdQueryHandler` |
+| 入站门面（条件） | `{聚合名}Facade`（仅 §14.3.2 F1/F2/F3 条件下追加） | `OrderFacade` |
 
 ---
 
@@ -490,7 +491,7 @@ npm run preview               # Vite preview
 ### 12.1 给开发者的关键提示
 
 1. **不要破坏分层依赖**：修改代码时，`domain` 层不能引入 Spring/MyBatis 等框架依赖；`application` 层不能直接调用 `infrastructure` 实现类
-2. **保持 CQRS**：写操作使用 `*CommandHandler` 并在方法上加 `@Transactional`；读操作使用 `*QueryHandler`，保持只读
+2. **保持 CQRS**：写操作使用 `*CommandHandler` + `@Transactional`；读操作使用 `*QueryHandler`（只读）。Controller **禁止**直接注入 `application/service`、`domain/service`（领域服务）、`domain/repository`；满足 [DDD §14.3.2](doc/architecture/Bone-DDD-最终实践方案.md) 条件时可加 `*Facade` 作入站门面，但不取代 Handler
 3. **统一响应格式**：Controller 返回统一使用 `ApiResponse<T>` 或 `PageResult<T>`，避免裸返回领域对象
 4. **租户与审计字段**：新增实体应继承 `TenantAbstractEntity`（若需多租户）或 `AbstractEntity`；不要遗漏 `tenantId` 与审计字段的填充
 5. **前端微应用约束**：

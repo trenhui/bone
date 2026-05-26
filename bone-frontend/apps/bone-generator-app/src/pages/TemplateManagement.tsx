@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Table, Button, Modal, Form, Input, Select, message, Typography, Space, Card } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import { pageRecords, templateApi } from '../services/api';
@@ -7,95 +7,98 @@ const { Title, Text } = Typography;
 const { TextArea } = Input;
 const { Option } = Select;
 
+interface TemplateItem {
+  id: number;
+  name: string;
+  code: string;
+  type: string;
+  language: string;
+  engine: string;
+  version: string;
+  status: 'ACTIVE' | 'INACTIVE' | string;
+  content?: string;
+  description?: string;
+}
+
 const TemplateManagement: React.FC = () => {
-  const [templates, setTemplates] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<TemplateItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<any>(null);
+  const [editingTemplate, setEditingTemplate] = useState<TemplateItem | null>(null);
   const [form] = Form.useForm();
-  const [previewTemplate, setPreviewTemplate] = useState<any>(null);
+  const [previewTemplate, setPreviewTemplate] = useState<TemplateItem | null>(null);
 
-  // 加载模板列表
-  const loadTemplates = async () => {
+  const loadTemplates = useCallback(async () => {
     try {
       setLoading(true);
       const response = await templateApi.getList({ page: 1, size: 100 });
-      setTemplates(pageRecords(response.data.data));
+      setTemplates(pageRecords(response.data.data) as unknown as TemplateItem[]);
     } catch (error) {
       message.error('加载模板失败');
       console.error('加载模板失败:', error);
     } finally {
       setLoading(false);
     }
-  };
-
-  // 组件挂载时加载模板列表
-  useEffect(() => {
-    loadTemplates();
   }, []);
 
-  // 处理新增模板
-  const handleAddTemplate = () => {
+  useEffect(() => {
+    void loadTemplates();
+  }, [loadTemplates]);
+
+  const handleAddTemplate = (): void => {
     form.resetFields();
     setEditingTemplate(null);
     setModalVisible(true);
   };
 
-  // 处理编辑模板
-  const handleEditTemplate = (template: any) => {
+  const handleEditTemplate = (template: TemplateItem): void => {
     form.setFieldsValue(template);
     setEditingTemplate(template);
     setModalVisible(true);
   };
 
-  // 处理删除模板
-  const handleDeleteTemplate = async (id: number) => {
+  const handleDeleteTemplate = async (id: number): Promise<void> => {
     try {
       await templateApi.delete(id);
       message.success('模板删除成功');
-      loadTemplates();
+      void loadTemplates();
     } catch (error) {
       message.error('模板删除失败');
       console.error('模板删除失败:', error);
     }
   };
 
-  // 处理预览模板
-  const handlePreviewTemplate = (template: any) => {
+  const handlePreviewTemplate = (template: TemplateItem): void => {
     setPreviewTemplate(template);
     setPreviewModalVisible(true);
   };
 
-  // 处理保存模板
-  const handleSaveTemplate = async () => {
+  const handleSaveTemplate = async (): Promise<void> => {
     try {
       const values = await form.validateFields();
-      
+
       if (editingTemplate) {
-        // 更新模板
         await templateApi.update(editingTemplate.id, values);
         message.success('模板更新成功');
       } else {
-        // 创建模板
         await templateApi.create(values);
         message.success('模板创建成功');
       }
-      
+
       setModalVisible(false);
-      loadTemplates();
+      void loadTemplates();
     } catch (error) {
       message.error('保存模板失败');
       console.error('保存模板失败:', error);
     }
   };
 
-  // 处理发布模板
-  const handlePublishTemplate = async (id: number) => {
+  const handlePublishTemplate = async (id: number): Promise<void> => {
     try {
       await templateApi.publish(id);
       message.success('模板发布成功');
-      loadTemplates();
+      void loadTemplates();
     } catch (error) {
       message.error('模板发布失败');
       console.error('模板发布失败:', error);
@@ -147,7 +150,7 @@ const TemplateManagement: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: any) => (
+      render: (_: unknown, record: TemplateItem) => (
         <Space size="middle">
           <Button
             icon={<EyeOutlined />}

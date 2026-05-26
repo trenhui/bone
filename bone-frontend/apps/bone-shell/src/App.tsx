@@ -36,7 +36,7 @@ import {
   type ShellMenuItem,
 } from './shellContext';
 
-function App() {
+function App(): JSX.Element {
   const [collapsed, setCollapsed] = useState(false);
   const [user, setUser] = useState(() => {
     // 从localStorage中读取用户信息
@@ -59,6 +59,8 @@ function App() {
 
   useEffect(() => {
     applyTheme(theme);
+    // 仅初始化一次：随后的 theme 变化由下方 effect 处理
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -154,6 +156,8 @@ function App() {
         props: microAppProps('bone-generator-app'),
       },
     ]);
+    // microAppProps 是基于 user/theme 的纯派生值，无需显式列入依赖
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, theme]);
 
   const toggleTheme = () => {
@@ -180,7 +184,7 @@ function App() {
   // 登录处理
   const [requirePasswordChange, setRequirePasswordChange] = useState(false);
 
-  const handleLogin = async (values: any) => {
+  const handleLogin = async (values: { username: string; password: string }): Promise<void> => {
     // 说明：这里先打通最小闭环（主应用登录 -> token 落地 -> 进入 IAM 微应用）
     setRequirePasswordChange(false);
     try {
@@ -203,8 +207,9 @@ function App() {
       setUser(userInfo);
       localStorage.setItem('bone-user', JSON.stringify(userInfo));
       message.success('登录成功');
-    } catch (e: any) {
-      message.error(e?.response?.data?.message || '登录失败，请检查用户名或密码');
+    } catch (e: unknown) {
+      const err = e as { response?: { data?: { message?: string } } };
+      message.error(err?.response?.data?.message || '登录失败，请检查用户名或密码');
     }
   };
 
@@ -228,135 +233,139 @@ function App() {
 
   return (
     <BoneAppProvider themeMode={theme}>
-    <ThemeContext.Provider value={{ theme, resolvedTheme, toggleTheme }}>
-      <LayoutContext.Provider value={{ layoutMode, toggleLayoutMode }}>
-        <MenuConfigContext.Provider value={{ menuConfig, updateMenuConfig }}>
-          <div className={`app-container ${resolvedTheme}`}>
-            <Router>
-              {!user ? (
-                <LoginPage 
-                  onLogin={handleLogin} 
-                  requirePasswordChange={requirePasswordChange}
-                  onPasswordChange={(_newPassword: string) => {
-                    message.success('密码修改成功，请重新登录');
-                    setRequirePasswordChange(false);
-                  }}
-                />
-              ) : (
-                <Layout style={{ minHeight: '100vh' }}>
-                  {layoutMode !== 'top' && (
-                    <Sider 
-                      collapsible 
-                      collapsed={collapsed} 
-                      onCollapse={(value) => setCollapsed(value)}
-                      theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
-                    >
-                      <div className="logo" />
-                      <Menu 
-            theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
-            mode="inline" 
-            defaultSelectedKeys={['dashboard']}
-            items={enabledMenus.map(item => ({
-              key: item.key,
-              icon: item.icon,
-              label: <Link to={item.path}>{item.label}</Link>
-            }))}
-          />
-                    </Sider>
-                  )}
-                  <Layout className="site-layout">
-                    <Header 
-                      className={`site-layout-background ${resolvedTheme === 'dark' ? 'dark-header' : ''}`} 
-                      style={{ padding: 0 }}
-                    >
-                      <div className="header-left">
-                        {layoutMode === 'top' && (
-                          <Menu 
-                            theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
-                            mode="horizontal" 
-                            defaultSelectedKeys={['dashboard']}
-                            style={{ lineHeight: '64px' }}
-                            items={enabledMenus.map(item => ({
-                              key: item.key,
-                              icon: item.icon,
-                              label: <Link to={item.path}>{item.label}</Link>
-                            }))}
-                          />
-                        )}
-                      </div>
-                      <div className="header-right">
-                        <Space size="middle">
-                          <Tooltip title={`切换主题（当前：${themePreferenceLabel(theme)}）`}>
-                            <Button 
-                              type="text" 
-                              icon={resolvedTheme === 'light' ? <MoonOutlined /> : <SunOutlined />}
-                              onClick={toggleTheme}
-                              className="header-button"
+      <ThemeContext.Provider value={{ theme, resolvedTheme, toggleTheme }}>
+        <LayoutContext.Provider value={{ layoutMode, toggleLayoutMode }}>
+          <MenuConfigContext.Provider value={{ menuConfig, updateMenuConfig }}>
+            <div className={`app-container ${resolvedTheme}`}>
+              <Router>
+                {!user ? (
+                  <LoginPage
+                    onLogin={handleLogin}
+                    requirePasswordChange={requirePasswordChange}
+                    onPasswordChange={() => {
+                      message.success('密码修改成功，请重新登录');
+                      setRequirePasswordChange(false);
+                    }}
+                  />
+                ) : (
+                  <Layout style={{ minHeight: '100vh' }}>
+                    {layoutMode !== 'top' && (
+                      <Sider
+                        collapsible
+                        collapsed={collapsed}
+                        onCollapse={(value) => setCollapsed(value)}
+                        theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
+                      >
+                        <div className="logo" />
+                        <Menu
+                          theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
+                          mode="inline"
+                          defaultSelectedKeys={['dashboard']}
+                          items={enabledMenus.map(item => ({
+                            key: item.key,
+                            icon: item.icon,
+                            label: <Link to={item.path}>{item.label}</Link>
+                          }))}
+                        />
+                      </Sider>
+                    )}
+                    <Layout className="site-layout">
+                      <Header
+                        className={`site-layout-background ${resolvedTheme === 'dark' ? 'dark-header' : ''}`}
+                        style={{ padding: 0 }}
+                      >
+                        <div className="header-left">
+                          {layoutMode === 'top' && (
+                            <Menu
+                              theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
+                              mode="horizontal"
+                              defaultSelectedKeys={['dashboard']}
+                              style={{ lineHeight: '64px' }}
+                              items={enabledMenus.map(item => ({
+                                key: item.key,
+                                icon: item.icon,
+                                label: <Link to={item.path}>{item.label}</Link>
+                              }))}
                             />
-                          </Tooltip>
-                          <Tooltip title="切换布局模式">
-                            <Button 
-                              type="text" 
-                              icon={<LayoutOutlined />}
-                              onClick={toggleLayoutMode}
-                              className="header-button"
-                            />
-                          </Tooltip>
-                          <MenuConfig />
-                          <Dropdown menu={{ items: userMenu(handleLogout) }} placement="bottomRight">
-            <Button type="text" className="user-button">
-              <Avatar size="small" icon={<UserOutlined />} />
-              <span className="user-name">{user?.name}</span>
-            </Button>
-          </Dropdown>
-                        </Space>
-                      </div>
-                    </Header>
-                    <Content
-                      className={`site-layout-background ${resolvedTheme === 'dark' ? 'dark-content' : ''}`}
-                      style={{
-                        margin: '24px 16px',
-                        padding: 24,
-                        minHeight: 280,
-                      }}
-                    >
-                      <Routes>
-                        <Route path="/" element={<DashboardPage />} />
-                        <Route path="/iam" element={<MicroAppContainer />} />
-                        <Route path="/iam/*" element={<MicroAppContainer />} />
-                        <Route path="/metadata" element={<MicroAppContainer />} />
-                        <Route path="/metadata/*" element={<MicroAppContainer />} />
-                        <Route path="/masterdata" element={<MicroAppContainer />} />
-                        <Route path="/masterdata/*" element={<MicroAppContainer />} />
-                        <Route path="/integration" element={<MicroAppContainer />} />
-                        <Route path="/integration/*" element={<MicroAppContainer />} />
-                        <Route path="/system" element={<MicroAppContainer />} />
-                        <Route path="/system/*" element={<MicroAppContainer />} />
-                        <Route path="/extension" element={<MicroAppContainer />} />
-                        <Route path="/extension/*" element={<MicroAppContainer />} />
-                        <Route path="/generator" element={<MicroAppContainer />} />
-                        <Route path="/generator/*" element={<MicroAppContainer />} />
-                        <Route path="*" element={<Navigate to="/" replace />} />
-                      </Routes>
-                    </Content>
+                          )}
+                        </div>
+                        <div className="header-right">
+                          <Space size="middle">
+                            <Tooltip title={`切换主题（当前：${themePreferenceLabel(theme)}）`}>
+                              <Button
+                                type="text"
+                                icon={resolvedTheme === 'light' ? <MoonOutlined /> : <SunOutlined />}
+                                onClick={toggleTheme}
+                                className="header-button"
+                              />
+                            </Tooltip>
+                            <Tooltip title="切换布局模式">
+                              <Button
+                                type="text"
+                                icon={<LayoutOutlined />}
+                                onClick={toggleLayoutMode}
+                                className="header-button"
+                              />
+                            </Tooltip>
+                            <MenuConfig />
+                            <Dropdown menu={{ items: userMenu(handleLogout) }} placement="bottomRight">
+                              <Button type="text" className="user-button">
+                                <Avatar size="small" icon={<UserOutlined />} />
+                                <span className="user-name">{user?.name}</span>
+                              </Button>
+                            </Dropdown>
+                          </Space>
+                        </div>
+                      </Header>
+                      <Content
+                        className={`site-layout-background ${resolvedTheme === 'dark' ? 'dark-content' : ''}`}
+                        style={{
+                          margin: '24px 16px',
+                          padding: 24,
+                          minHeight: 280,
+                        }}
+                      >
+                        <Routes>
+                          <Route path="/" element={<DashboardPage />} />
+                          <Route path="/iam" element={<MicroAppContainer />} />
+                          <Route path="/iam/*" element={<MicroAppContainer />} />
+                          <Route path="/metadata" element={<MicroAppContainer />} />
+                          <Route path="/metadata/*" element={<MicroAppContainer />} />
+                          <Route path="/masterdata" element={<MicroAppContainer />} />
+                          <Route path="/masterdata/*" element={<MicroAppContainer />} />
+                          <Route path="/integration" element={<MicroAppContainer />} />
+                          <Route path="/integration/*" element={<MicroAppContainer />} />
+                          <Route path="/system" element={<MicroAppContainer />} />
+                          <Route path="/system/*" element={<MicroAppContainer />} />
+                          <Route path="/extension" element={<MicroAppContainer />} />
+                          <Route path="/extension/*" element={<MicroAppContainer />} />
+                          <Route path="/generator" element={<MicroAppContainer />} />
+                          <Route path="/generator/*" element={<MicroAppContainer />} />
+                          <Route path="*" element={<Navigate to="/" replace />} />
+                        </Routes>
+                      </Content>
+                    </Layout>
                   </Layout>
-                </Layout>
-              )}
-            </Router>
-          </div>
-        </MenuConfigContext.Provider>
-      </LayoutContext.Provider>
-    </ThemeContext.Provider>
+                )}
+              </Router>
+            </div>
+          </MenuConfigContext.Provider>
+        </LayoutContext.Provider>
+      </ThemeContext.Provider>
     </BoneAppProvider>
   );
 }
 
-// 登录页面
-function LoginPage({ onLogin, requirePasswordChange, onPasswordChange }: any) {
+interface LoginPageProps {
+  onLogin: (values: { username: string; password: string }) => void | Promise<void>;
+  requirePasswordChange: boolean;
+  onPasswordChange: (newPassword: string) => void;
+}
+
+function LoginPage({ onLogin, requirePasswordChange, onPasswordChange }: LoginPageProps): JSX.Element {
   const [form] = Form.useForm();
   const { resolvedTheme } = useContext(ThemeContext);
 
-  // 设置默认值
   useEffect(() => {
     form.setFieldsValue({
       username: 'admin',
@@ -364,7 +373,7 @@ function LoginPage({ onLogin, requirePasswordChange, onPasswordChange }: any) {
     });
   }, [form]);
 
-  const handleSubmit = (values: any) => {
+  const handleSubmit = (values: { username: string; password: string }): void => {
     onLogin(values);
   };
 
@@ -407,11 +416,15 @@ function LoginPage({ onLogin, requirePasswordChange, onPasswordChange }: any) {
   );
 }
 
-// 强制修改密码页面
-function PasswordChangePage({ theme, onPasswordChange }: any) {
+interface PasswordChangePageProps {
+  theme: 'light' | 'dark';
+  onPasswordChange: (newPassword: string) => void;
+}
+
+function PasswordChangePage({ theme, onPasswordChange }: PasswordChangePageProps): JSX.Element {
   const [form] = Form.useForm();
 
-  const handleSubmit = (values: any) => {
+  const handleSubmit = (values: { newPassword: string; confirmPassword: string }): void => {
     if (values.newPassword !== values.confirmPassword) {
       message.error('两次输入的密码不一致');
       return;
@@ -459,8 +472,7 @@ function PasswordChangePage({ theme, onPasswordChange }: any) {
   );
 }
 
-// 菜单配置组件
-function MenuConfig() {
+function MenuConfig(): JSX.Element {
   const { menuConfig, updateMenuConfig } = useContext(MenuConfigContext);
   const { resolvedTheme } = useContext(ThemeContext);
 
@@ -488,8 +500,7 @@ function MenuConfig() {
   );
 }
 
-// 用户菜单
-function userMenu(onLogout: any) {
+function userMenu(onLogout: () => void): Array<{ key: string; icon: JSX.Element; label: string; onClick?: () => void }> {
   return [
     {
       key: 'profile',
@@ -506,8 +517,7 @@ function userMenu(onLogout: any) {
 }
 
 
-// 微应用容器
-function MicroAppContainer() {
+function MicroAppContainer(): JSX.Element {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(false);
 

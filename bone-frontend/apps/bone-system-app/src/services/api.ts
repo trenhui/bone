@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import axios from 'axios';
 import type {
   SystemConfig,
@@ -136,18 +137,18 @@ export const logApi = {
     return response.data;
   },
 
-  searchLogs: async (params: any) => {
+  searchLogs: async (params: Record<string, unknown>) => {
     const response = await api.post<ApiResponse<PageResult<SystemLog>>>('/system/logs/search', params);
     return response.data;
   },
 
-  exportLogs: async (params: any) => {
+  exportLogs: async (params: Record<string, unknown>) => {
     const response = await api.get('/system/logs/export', { params, responseType: 'blob' });
     return response;
   },
 
-  analyzeLogs: async (params: any) => {
-    const response = await api.post<ApiResponse<any>>('/system/logs/analyze', params);
+  analyzeLogs: async (params: Record<string, unknown>) => {
+    const response = await api.post<ApiResponse<unknown>>('/system/logs/analyze', params);
     return response.data;
   },
 };
@@ -169,7 +170,7 @@ export const systemApi = {
     return response.data;
   },
 
-  deploy: async (config: any) => {
+  deploy: async (config: Record<string, unknown>) => {
     const response = await api.post<ApiResponse<void>>('/system/deploy', config);
     return response.data;
   },

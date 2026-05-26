@@ -18,6 +18,12 @@ Bone DDD 共享 ArchUnit 规则（`BoneDddArchRules`），真源见 `doc/archite
 | `noNewDomainStorePackage()` | §14.5 |
 | `noCustomBusinessException()` | §16.3 |
 | `noBusinessExceptionSuffix()` | §16.3 |
+| `adapterControllersMustNotDependOnApplicationService()` | P0-7 + §15 |
+| `adapterControllersMustNotDependOnDomainRepository()` | §15 |
+| `commandHandlersShouldBeNamedCommandHandler()` | §23 |
+| `queryHandlersShouldBeNamedQueryHandler()` | §23 |
+| `commandHandlersShouldBeTransactional()` | §15 |
+| `queryHandlersShouldBeReadOnlyTransactional()` | §12.1 P0-6 |
 
 读侧 DSL 通过 `@com.bone.core.annotation.ReadSideOnly` 标注（如 `QueryBuilder`、`FluentQuery`），规则 `domainMustNotUseQueryBuilder` / `commandHandlersMustNotUseQueryBuilder` 检测对该注解类型的依赖。
 
@@ -44,13 +50,14 @@ mvn test -pl <module> -Dtest=ArchitectureTest \
 
 6. **`noBoneCoreUseCaseApiDependency`**：不纳入 freeze（包已删除，无存量命中，作防回滚保险）。
 
-### 建议 freeze 策略（2026-05-22）
+### 建议 freeze 策略（2026-05-23）
 
 | 规则 | 建议 |
 |------|------|
 | `applicationMustNotDependOnInfrastructure` | **不 freeze**（ACL 整改后应 0 违规；直接门禁） |
 | `domainRepositoriesShouldOnlyDeclareWhitelistedMethods` | **不 freeze**（空仓储 / ReadPort 拆分后应 0 违规） |
 | `domainMustNotDependOnOuterLayers` / QueryBuilder 禁令 | **不 freeze** |
+| `adapterControllers*` / Handler 命名 / 事务（#11–#16） | **`bone-blueprint` 不 freeze**；其它应用模块 **freeze 存量** |
 | `noUseCase*` / `noNewDomainStore` / `noCustomBusinessException*` | **freeze**（防历史形态回潮） |
 
 `@AnalyzeClasses` **必须**加 `importOptions = ImportOption.DoNotIncludeTests.class`，否则 `src/test` 下位于 `application.*` 的测试类会误触发 P0-1。

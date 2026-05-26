@@ -1,5 +1,7 @@
-import axios from 'axios';
-import type { PageResult } from './types';
+import axios, { type AxiosResponse } from 'axios';
+import type { ApiResponse, DataSource, DatabaseTable, PageResult } from './types';
+
+type Resp<T = unknown> = Promise<AxiosResponse<ApiResponse<T>>>;
 
 /** 空字符串时使用相对路径，由 vite.config 代理到 studio-generator :8085 */
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? '';
@@ -21,28 +23,29 @@ export function pageRecords<T>(page?: PageResult<T> | { list?: T[]; records?: T[
 }
 
 export const dataSourceApi = {
-  getList: (params: { page: number; size: number; name?: string; type?: string; status?: string }) =>
+  getList: (params: { page: number; size: number; name?: string; type?: string; status?: string }): Resp<PageResult<DataSource>> =>
     api.get(`${G}/data-sources`, { params }),
 
-  getById: (id: string) => api.get(`${G}/data-sources/${id}`),
+  getById: (id: string): Resp<DataSource> => api.get(`${G}/data-sources/${id}`),
 
-  create: (data: Record<string, unknown>) => api.post(`${G}/data-sources`, data),
+  create: (data: Record<string, unknown>): Resp<DataSource> => api.post(`${G}/data-sources`, data),
 
-  update: (id: string, data: Record<string, unknown>) => api.put(`${G}/data-sources/${id}`, data),
+  update: (id: string, data: Record<string, unknown>): Resp<DataSource> => api.put(`${G}/data-sources/${id}`, data),
 
-  delete: (id: string) => api.delete(`${G}/data-sources/${id}`),
+  delete: (id: string): Resp<void> => api.delete(`${G}/data-sources/${id}`),
 
-  testConnection: (id: string) => api.post(`${G}/data-sources/${id}:test-connection`),
+  testConnection: (id: string): Resp<{ success?: boolean; message?: string }> =>
+    api.post(`${G}/data-sources/${id}:test-connection`),
 
-  listTables: (id: string) => api.get(`${G}/data-sources/${id}/tables`),
+  listTables: (id: string): Resp<DatabaseTable[]> => api.get(`${G}/data-sources/${id}/tables`),
 
-  syncTables: (id: string, data?: { tableNames?: string[] }) =>
+  syncTables: (id: string, data?: { tableNames?: string[] }): Resp<{ syncedCount?: number }> =>
     api.post(`${G}/data-sources/${id}/tables:sync`, {
       dataSourceId: id,
       tableNames: data?.tableNames,
     }),
 
-  listSyncedTables: (id: string) => api.get(`${G}/data-sources/${id}/synced-tables`),
+  listSyncedTables: (id: string): Resp<DatabaseTable[]> => api.get(`${G}/data-sources/${id}/synced-tables`),
 };
 
 export const metadataEntitySnapshotApi = {
@@ -52,22 +55,24 @@ export const metadataEntitySnapshotApi = {
     tenantId?: number;
     entityCodes?: string;
     keyword?: string;
-  }) => api.get(`${G}/metadata-entity-snapshots`, { params }),
+  }): Resp<PageResult<Record<string, unknown>>> =>
+    api.get(`${G}/metadata-entity-snapshots`, { params }),
 };
 
 export const templateApi = {
-  getList: (params: { page: number; size: number; type?: string; status?: string }) =>
+  getList: (params: { page: number; size: number; type?: string; status?: string }): Resp<PageResult<Record<string, unknown>>> =>
     api.get(`${G}/templates`, { params }),
 
-  getById: (id: number) => api.get(`${G}/templates/${id}`),
+  getById: (id: number): Resp<Record<string, unknown>> => api.get(`${G}/templates/${id}`),
 
-  create: (data: Record<string, unknown>) => api.post(`${G}/templates`, data),
+  create: (data: Record<string, unknown>): Resp<Record<string, unknown>> => api.post(`${G}/templates`, data),
 
-  update: (id: number, data: Record<string, unknown>) => api.put(`${G}/templates/${id}`, data),
+  update: (id: number, data: Record<string, unknown>): Resp<Record<string, unknown>> =>
+    api.put(`${G}/templates/${id}`, data),
 
-  delete: (id: number) => api.delete(`${G}/templates/${id}`),
+  delete: (id: number): Resp<void> => api.delete(`${G}/templates/${id}`),
 
-  publish: (id: number) => api.post(`${G}/templates/${id}:publish`),
+  publish: (id: number): Resp<void> => api.post(`${G}/templates/${id}:publish`),
 };
 
 /** @deprecated 使用 templateApi */
@@ -82,9 +87,10 @@ export type GeneratorOperation = {
   error?: { errorCode?: string; detail?: string };
 };
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const sleep = (ms: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, ms));
 
-export async function getGeneratorOperation(operationId: string) {
+export async function getGeneratorOperation(operationId: string): Promise<GeneratorOperation> {
   const res = await api.get(`${G}/operations/${operationId}`);
   return res.data?.data as GeneratorOperation;
 }
@@ -120,12 +126,19 @@ export type CodeGenerationOptions = {
 };
 
 export const codeGenerationApi = {
-  async generate(data: Record<string, unknown>, opts?: CodeGenerationOptions) {
+  async generate(
+    data: Record<string, unknown>,
+    opts?: CodeGenerationOptions,
+  ): Resp<string | Record<string, unknown>> {
     const params = opts?.sync != null ? { sync: opts.sync } : undefined;
-    const res = await api.post(`${G}/code-generation`, data, {
-      params,
-      validateStatus: (s) => s === 200 || s === 202,
-    });
+    const res = await api.post<ApiResponse<{ operationId?: string; taskId?: string }>>(
+      `${G}/code-generation`,
+      data,
+      {
+        params,
+        validateStatus: (s: number) => s === 200 || s === 202,
+      },
+    );
     if (res.status === 202) {
       const operationId =
         res.data?.data?.operationId ??
@@ -136,35 +149,45 @@ export const codeGenerationApi = {
       }
       opts?.onProgress?.(0);
       await pollGeneratorOperationUntilDone(operationId, { onProgress: opts?.onProgress });
-      return { ...res, data: { ...res.data, data: operationId } };
+      return {
+        ...res,
+        data: { ...res.data, data: operationId },
+      } as AxiosResponse<ApiResponse<string>>;
     }
-    return res;
+    return res as AxiosResponse<ApiResponse<Record<string, unknown>>>;
   },
 
-  getTaskStatus: (taskId: string) => api.get(`${G}/code-generation/tasks/${taskId}/status`),
+  getTaskStatus: (taskId: string): Resp<{ status?: string; progress?: number }> =>
+    api.get(`${G}/code-generation/tasks/${taskId}/status`),
 
-  downloadCode: (taskId: string) =>
+  downloadCode: (taskId: string): Promise<AxiosResponse<Blob>> =>
     api.get(`${G}/code-generation/tasks/${taskId}/download`, { responseType: 'blob' }),
 };
 
 export const generationTaskApi = {
-  create: (data: Record<string, unknown>) => api.post(`${G}/generation-tasks`, data),
+  create: (data: Record<string, unknown>): Resp<{ taskId?: string }> =>
+    api.post(`${G}/generation-tasks`, data),
 };
 
 export const tableMetadataApi = {
-  sync: (data: { dataSourceId: string; tableNames?: string[] }) =>
+  sync: (data: { dataSourceId: string; tableNames?: string[] }): Resp<{ syncedCount?: number }> =>
     dataSourceApi.syncTables(data.dataSourceId, { tableNames: data.tableNames }),
 
-  getDataSourceTables: (dataSourceId: string) => dataSourceApi.listTables(dataSourceId),
+  getDataSourceTables: (dataSourceId: string): Resp<DatabaseTable[]> =>
+    dataSourceApi.listTables(dataSourceId),
 };
 
 export const codeGeneratorApi = {
-  loadPhysicalTables: (dataSourceId: string) => dataSourceApi.listTables(dataSourceId),
+  loadPhysicalTables: (dataSourceId: string): Resp<DatabaseTable[]> =>
+    dataSourceApi.listTables(dataSourceId),
 
-  loadCatalogEntities: (params?: { tenantId?: number; entityCodes?: string }) =>
+  loadCatalogEntities: (
+    params?: { tenantId?: number; entityCodes?: string },
+  ): Resp<PageResult<Record<string, unknown>>> =>
     metadataEntitySnapshotApi.list({ page: 1, size: 500, ...params }),
 
-  generate: (data: Record<string, unknown>) => generationTaskApi.create(data),
+  generate: (data: Record<string, unknown>): Resp<{ taskId?: string }> =>
+    generationTaskApi.create(data),
 };
 
 export default api;

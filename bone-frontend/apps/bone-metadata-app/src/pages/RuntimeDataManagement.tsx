@@ -89,6 +89,8 @@ const RuntimeDataManagement: React.FC = () => {
         setEntityCode(runtimePublished[0].code);
       }
     });
+    // entityCode 仅用于首次为空时初始化，不应作为依赖
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   useEffect(() => {
@@ -103,6 +105,8 @@ const RuntimeDataManagement: React.FC = () => {
           setFields(normalizePage(res.data).list);
         }
       });
+    // 仅当 selectedEntity.id 变化时重新加载字段
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedEntity?.id]);
 
   const load = useCallback(async () => {
@@ -229,6 +233,8 @@ const RuntimeDataManagement: React.FC = () => {
       ),
     });
     return cols;
+    // handleDelete/openEdit 为稳定的页面级函数引用，加入会导致循环
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [writableFields, entityCode]);
 
   const renderFieldInput = (field: MetaField) => {

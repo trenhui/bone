@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Card,
-  Table,
   Button,
   Modal,
   Form,
@@ -12,21 +11,19 @@ import {
   Space,
   Tag,
   Descriptions,
-  DatePicker
 } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, RocketOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { ProTable } from '@ant-design/pro-components';
+import type { ProColumns } from '@ant-design/pro-components';
 import type {
   MasterDataEntity,
   CreateMasterDataEntityReq,
-  UpdateMasterDataEntityReq,
   MasterDataEntityPageQry
 } from '../types';
 import { masterDataEntityApi } from '../services/api';
 
 const { Option } = Select;
 const { TextArea } = Input;
-const { RangePicker } = DatePicker;
 
 const EntityManagement: React.FC = () => {
   const [form] = Form.useForm();
@@ -41,8 +38,7 @@ const EntityManagement: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
   const [searchParams, setSearchParams] = useState<MasterDataEntityPageQry>({});
 
-  // 获取实体列表
-  const fetchEntities = async () => {
+  const fetchEntities = useCallback(async () => {
     setLoading(true);
     try {
       const response = await masterDataEntityApi.page({
@@ -56,16 +52,16 @@ const EntityManagement: React.FC = () => {
       } else {
         message.error(response.message);
       }
-    } catch (error) {
+    } catch {
       message.error('获取实体列表失败');
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, pageSize, searchParams]);
 
   useEffect(() => {
-    fetchEntities();
-  }, [page, pageSize, searchParams]);
+    void fetchEntities();
+  }, [fetchEntities]);
 
   // 打开创建模态框
   const handleAdd = () => {
@@ -163,12 +159,12 @@ const EntityManagement: React.FC = () => {
   // 状态标签
   const getStatusTag = (status: string) => {
     switch (status) {
-      case 'DRAFT':
-        return <Tag color="blue">草稿</Tag>;
-      case 'PUBLISHED':
-        return <Tag color="green">已发布</Tag>;
-      default:
-        return <Tag>{status}</Tag>;
+    case 'DRAFT':
+      return <Tag color="blue">草稿</Tag>;
+    case 'PUBLISHED':
+      return <Tag color="green">已发布</Tag>;
+    default:
+      return <Tag>{status}</Tag>;
     }
   };
 
@@ -207,7 +203,7 @@ const EntityManagement: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: MasterDataEntity) => (
+      render: (_: unknown, record: MasterDataEntity) => (
         <Space size="middle">
           <Button
             type="primary"
@@ -279,7 +275,7 @@ const EntityManagement: React.FC = () => {
 
         {/* 实体列表 */}
         <ProTable
-          columns={columns}
+          columns={columns as ProColumns<MasterDataEntity>[]}
           dataSource={data}
           loading={loading}
           pagination={{

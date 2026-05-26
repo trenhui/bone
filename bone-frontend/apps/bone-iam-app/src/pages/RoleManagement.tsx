@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Table, Button, Modal, Form, Input, Select, message, Popconfirm, Space } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
 import * as api from '../services/api';
 import { unwrapPage } from '../utils/pageResult';
-import type { Role, CreateRoleRequest, UpdateRoleRequest } from '../types';
+import type { Permission, Role, CreateRoleRequest, UpdateRoleRequest } from '../types';
 
 const { Option } = Select;
 
 const RoleManagement: React.FC = () => {
   const [roles, setRoles] = useState<Role[]>([]);
-  const [permissions, setPermissions] = useState<any[]>([]);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -20,23 +20,23 @@ const RoleManagement: React.FC = () => {
   const [currentRole, setCurrentRole] = useState<Role | null>(null);
   const [form] = Form.useForm();
 
-  const fetchRoles = async () => {
+  const fetchRoles = useCallback(async () => {
     setLoading(true);
     try {
       const response = await api.getRoles(page, pageSize);
       if (response.code === 200) {
-        const { records, total } = unwrapPage(response.data);
+        const { records, total: newTotal } = unwrapPage(response.data);
         setRoles(records);
-        setTotal(total);
+        setTotal(newTotal);
       }
     } catch {
       message.error('获取角色列表失败');
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, pageSize]);
 
-  const fetchPermissions = async () => {
+  const fetchPermissions = useCallback(async () => {
     try {
       const response = await api.getPermissions(1, 200);
       if (response.code === 200) {
@@ -45,12 +45,12 @@ const RoleManagement: React.FC = () => {
     } catch {
       message.error('获取权限列表失败');
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchRoles();
-    fetchPermissions();
-  }, [page, pageSize, keyword]);
+    void fetchRoles();
+    void fetchPermissions();
+  }, [fetchRoles, fetchPermissions, keyword]);
 
   const handleAdd = () => {
     setIsEditMode(false);
@@ -120,13 +120,13 @@ const RoleManagement: React.FC = () => {
       title: '权限数量',
       dataIndex: 'permissions',
       key: 'permissions',
-      render: (permissions: any[]) => (permissions || []).length
+      render: (perms: unknown[]) => (perms || []).length
     },
     { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt' },
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: Role) => (
+      render: (_: unknown, record: Role) => (
         <Space size="middle">
           <Button icon={<EditOutlined />} onClick={() => handleEdit(record)} />
           <Popconfirm

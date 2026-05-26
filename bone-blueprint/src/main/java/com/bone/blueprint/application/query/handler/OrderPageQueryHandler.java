@@ -3,63 +3,47 @@ package com.bone.blueprint.application.query.handler;
 import com.bone.blueprint.application.query.dto.OrderDto;
 import com.bone.blueprint.application.query.qry.OrderPageQuery;
 import com.bone.blueprint.domain.order.Order;
-import com.bone.blueprint.domain.order.OrderItem;
-import com.bone.blueprint.domain.repository.OrderRepository;
+import com.bone.blueprint.domain.order.valueobject.OrderStatus;
 import com.bone.core.result.PageResult;
+import com.bone.metadata.sdk.query.dsl.FluentQuery;
+import com.bone.metadata.sdk.query.dsl.QueryBuilder;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 @Component
 @RequiredArgsConstructor
 public class OrderPageQueryHandler {
-    
-    private final OrderRepository orderRepository;
-    
+
     @Transactional(readOnly = true)
     public PageResult<OrderDto> handle(OrderPageQuery query) {
-        // 这里应该使用查询构建器或SQL执行查询
-        // 简化实现，实际应该使用分页查询
-        List<Order> orders = getOrdersByQuery(query);
-        
-        List<OrderDto> orderDtos = orders.stream()
-                .map(this::toOrderDto)
-                .collect(Collectors.toList());
-        
-        // 简化实现，返回空的PageResult
-        return PageResult.of(orderDtos, (long) orderDtos.size(), query.getPageNum(), query.getPageSize());
+        FluentQuery<Order> fluentQuery = QueryBuilder.from(Order.class);
+
+        if (query.getCustomerId() != null) {
+            fluentQuery.where(Order::getCustomerId).eq(query.getCustomerId());
+        }
+        if (query.getStatus() != null && !query.getStatus().isBlank()) {
+            OrderStatus status = OrderStatus.valueOf(query.getStatus());
+            fluentQuery.where(Order::getStatus).eq(status);
+        }
+
+        int pageNum = query.getPageNum() != null ? query.getPageNum() : 1;
+        int pageSize = query.getPageSize() != null ? query.getPageSize() : 10;
+
+        com.bone.core.model.PageResult<Order> page =
+                fluentQuery.orderByDesc(Order::getCreatedAt).page(pageNum, pageSize);
+
+        List<OrderDto> records = page.getRecords().stream().map(this::toSummaryDto).toList();
+        return PageResult.of(records, page.getTotal(), pageNum, pageSize);
     }
-    
-    private List<Order> getOrdersByQuery(OrderPageQuery query) {
-        // 模拟实现，实际应该从数据库查询
-        return List.of();
-    }
-    
-    private OrderDto toOrderDto(Order order) {
-        List<OrderDto.OrderItemDto> itemDtos = order.getItems().stream()
-                .map(this::toOrderItemDto)
-                .collect(Collectors.toList());
-        
+
+    private OrderDto toSummaryDto(Order order) {
         return OrderDto.builder()
                 .id(order.getId())
                 .customerId(order.getCustomerId())
                 .totalAmount(order.getTotalAmount())
                 .status(order.getStatus().name())
-                .items(itemDtos)
-                .build();
-    }
-    
-    private OrderDto.OrderItemDto toOrderItemDto(OrderItem item) {
-        return OrderDto.OrderItemDto.builder()
-                .id(item.getId())
-                .productId(item.getProductId())
-                .productName(item.getProductName())
-                .quantity(item.getQuantity())
-                .unitPrice(item.getUnitPrice())
-                .subtotal(item.getSubtotal())
                 .build();
     }
 }

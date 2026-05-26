@@ -1,3 +1,7 @@
+/* eslint-disable @typescript-eslint/explicit-module-boundary-types --
+   Return types are conveyed via Axios' generic `<never, ApiResponse<T>>` annotation
+   that flows through the response interceptor; adding explicit return annotations
+   would duplicate the generic and reduce readability without adding type safety. */
 import axios from 'axios';
 import type {
   ApiResponse, PageResult,

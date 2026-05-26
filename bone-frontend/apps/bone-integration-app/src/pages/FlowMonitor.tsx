@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Card, Table, Button, Modal, message, Tabs, Descriptions, Tag, Badge } from 'antd';
-import { ReloadOutlined, EyeOutlined, BarChartOutlined } from '@ant-design/icons';
+import { ReloadOutlined, EyeOutlined } from '@ant-design/icons';
 import { monitorApi } from '../services/api';
 import type { IntegrationLog, FlowStatistics } from '../types';
 
@@ -16,39 +16,39 @@ export const FlowMonitor: React.FC = () => {
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
 
-  const fetchExecutions = async () => {
+  const fetchExecutions = useCallback(async () => {
     setLoading(true);
     try {
       const response = await monitorApi.getExecutions({ pageNum: page, pageSize });
-      setExecutions(response.data.data.list);
-      setTotal(response.data.data.total);
-    } catch (error) {
+      setExecutions(response.data.list);
+      setTotal(response.data.total);
+    } catch {
       message.error('获取执行记录失败');
     } finally {
       setLoading(false);
     }
-  };
-
-  const fetchStatistics = async () => {
-    try {
-      const response = await monitorApi.getStatistics();
-      setStatistics(response.data.data);
-    } catch (error) {
-      message.error('获取统计数据失败');
-    }
-  };
-
-  useEffect(() => {
-    fetchExecutions();
-    fetchStatistics();
   }, [page, pageSize]);
 
-  const handleRetry = async (id: number) => {
+  const fetchStatistics = useCallback(async () => {
+    try {
+      const response = await monitorApi.getStatistics();
+      setStatistics(response.data);
+    } catch {
+      message.error('获取统计数据失败');
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchExecutions();
+    void fetchStatistics();
+  }, [fetchExecutions, fetchStatistics]);
+
+  const handleRetry = async (id: number): Promise<void> => {
     try {
       await monitorApi.retryExecution(id);
       message.success('重试成功');
-      fetchExecutions();
-    } catch (error) {
+      void fetchExecutions();
+    } catch {
       message.error('重试失败');
     }
   };
@@ -60,27 +60,27 @@ export const FlowMonitor: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'SUCCESS':
-        return 'green';
-      case 'FAILED':
-        return 'red';
-      case 'RUNNING':
-        return 'blue';
-      default:
-        return 'gray';
+    case 'SUCCESS':
+      return 'green';
+    case 'FAILED':
+      return 'red';
+    case 'RUNNING':
+      return 'blue';
+    default:
+      return 'gray';
     }
   };
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'SUCCESS':
-        return '成功';
-      case 'FAILED':
-        return '失败';
-      case 'RUNNING':
-        return '运行中';
-      default:
-        return status;
+    case 'SUCCESS':
+      return '成功';
+    case 'FAILED':
+      return '失败';
+    case 'RUNNING':
+      return '运行中';
+    default:
+      return status;
     }
   };
 
@@ -111,7 +111,7 @@ export const FlowMonitor: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: IntegrationLog) => (
+      render: (_: unknown, record: IntegrationLog) => (
         <div>
           <Button
             type="link"

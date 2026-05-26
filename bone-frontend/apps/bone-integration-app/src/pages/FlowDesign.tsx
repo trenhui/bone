@@ -1,13 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Card, Button, Modal, Form, Input, Select, message, Tabs, Tooltip } from 'antd';
-import { PlusOutlined, SaveOutlined, PlayCircleOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { Graph, Addon, Shape } from '@antv/x6';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Card, Button, Modal, Form, Input, message, Tabs } from 'antd';
+import { PlusOutlined, PlayCircleOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Graph, Shape, type Node } from '@antv/x6';
 import { Snapline } from '@antv/x6-plugin-snapline';
 import { Dnd } from '@antv/x6-plugin-dnd';
 import { flowApi } from '../services/api';
 import type { IntegrationFlow, CreateFlowReq, UpdateFlowReq } from '../types';
 
-const { Option } = Select;
 const { TextArea } = Input;
 const { TabPane } = Tabs;
 
@@ -56,29 +55,28 @@ export const FlowDesign: React.FC = () => {
     { value: 'CONDITION', label: '条件' },
   ];
 
-  const fetchFlows = async () => {
+  const fetchFlows = useCallback(async () => {
     setLoading(true);
     try {
       const response = await flowApi.getFlows({ pageNum: page, pageSize });
-      setFlows(response.data.data.list);
-      setTotal(response.data.data.total);
-    } catch (error) {
+      setFlows(response.data.list);
+      setTotal(response.data.total);
+    } catch {
       message.error('获取流程列表失败');
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, pageSize]);
 
   useEffect(() => {
-    fetchFlows();
-  }, [page, pageSize]);
+    void fetchFlows();
+  }, [fetchFlows]);
 
   useEffect(() => {
     if (graphRef.current) {
       const newGraph = new Graph({
         container: graphRef.current,
         grid: { size: 10, visible: true },
-        snapline: true,
         connecting: {
           router: { name: 'manhattan' },
           connector: { name: 'rounded' },
@@ -175,10 +173,10 @@ export const FlowDesign: React.FC = () => {
   const handleTest = async (id: number) => {
     try {
       const response = await flowApi.testFlow(id, { test: 'data' });
-      if (response.data.data.success) {
+      if (response.data.success) {
         message.success('测试成功');
       } else {
-        message.error(`测试失败: ${response.data.data.error}`);
+        message.error(`测试失败: ${response.data.error ?? '未知错误'}`);
       }
     } catch (error) {
       message.error('测试失败');
@@ -214,15 +212,24 @@ export const FlowDesign: React.FC = () => {
       // 从画布中获取节点和连接
       const cells = graph.getCells();
       const nodes = cells
-        .filter(cell => cell.isNode())
-        .map(node => ({
-          id: node.data.id,
-          name: node.attrs.label.text,
-          type: node.data.type || 'HTTP',
-          config: node.data.config || {},
-          positionX: node.position.x,
-          positionY: node.position.y,
-        }));
+        .filter((cell) => cell.isNode())
+        .map((cell) => {
+          const node = cell as Node;
+          const pos = node.getPosition();
+          const data = (node.getData() ?? {}) as {
+            id?: number;
+            type?: string;
+            config?: Record<string, unknown>;
+          };
+          return {
+            id: data.id,
+            name: String(node.getAttrByPath('label/text') ?? ''),
+            type: data.type ?? 'HTTP',
+            config: data.config ?? {},
+            positionX: pos.x,
+            positionY: pos.y,
+          };
+        });
       
       const connections = cells
         .filter(cell => cell.isEdge())
@@ -241,7 +248,14 @@ export const FlowDesign: React.FC = () => {
         const updateData: UpdateFlowReq = {
           name: values.name,
           description: values.description,
-          nodes,
+          nodes: nodes.map((n) => ({
+            id: n.id,
+            name: n.name,
+            type: n.type,
+            config: n.config,
+            positionX: n.positionX,
+            positionY: n.positionY,
+          })),
           connections,
         };
         await flowApi.updateFlow(currentFlow.id, updateData);
@@ -250,8 +264,18 @@ export const FlowDesign: React.FC = () => {
         const createData: CreateFlowReq = {
           name: values.name,
           description: values.description,
-          nodes,
-          connections,
+          nodes: nodes.map(({ name, type, config, positionX, positionY }) => ({
+            name,
+            type,
+            config,
+            positionX,
+            positionY,
+          })),
+          connections: connections.map(({ sourceNodeId, targetNodeId, condition }) => ({
+            sourceNodeId,
+            targetNodeId,
+            condition,
+          })),
         };
         await flowApi.createFlow(createData);
         message.success('创建成功');
@@ -293,7 +317,7 @@ export const FlowDesign: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: IntegrationFlow) => (
+      render: (_: unknown, record: IntegrationFlow) => (
         <div>
           <Button
             type="link"

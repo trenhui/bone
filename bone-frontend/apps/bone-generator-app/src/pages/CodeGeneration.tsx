@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Form,
   Select,
@@ -37,12 +37,12 @@ const CodeGeneration: React.FC = () => {
   const [resultModalVisible, setResultModalVisible] = useState(false);
   const [syncModalVisible, setSyncModalVisible] = useState(false);
   const [configModalVisible, setConfigModalVisible] = useState(false);
-  const [templates, setTemplates] = useState<any[]>([]);
+  const [templates, setTemplates] = useState<Array<Record<string, unknown>>>([]);
   const [taskId, setTaskId] = useState<string>('');
   const [generateProgress, setGenerateProgress] = useState(0);
   const [syncForm] = Form.useForm();
   const [generateForm] = Form.useForm();
-  const [dataSourceTables, setDataSourceTables] = useState<any[]>([]);
+  const [dataSourceTables, setDataSourceTables] = useState<DatabaseTable[]>([]);
 
   const {
     dataSources,
@@ -58,8 +58,7 @@ const CodeGeneration: React.FC = () => {
     setMetadataSource,
   } = useGeneratorStore();
 
-  // 加载数据源列表
-  const loadDataSources = async () => {
+  const loadDataSources = useCallback(async () => {
     try {
       setLoadingDataSources(true);
       const response = await dataSourceApi.getList({ page: 1, size: 100 });
@@ -70,33 +69,34 @@ const CodeGeneration: React.FC = () => {
     } finally {
       setLoadingDataSources(false);
     }
-  };
+  }, [setDataSources, setLoadingDataSources]);
 
-  const loadSyncedTables = async (dataSourceId?: string) => {
-    if (metadataSource === 'CATALOG_SNAPSHOT') {
-      return;
-    }
-    const dsId = dataSourceId ?? activeDataSourceId;
-    if (!dsId) {
-      setSyncedTables([]);
-      return;
-    }
-    try {
-      setLoadingSyncedTables(true);
-      const response = await dataSourceApi.listSyncedTables(dsId);
-      const tables = (response.data.data ?? []) as DatabaseTable[];
-      setSyncedTables(tables);
-    } catch (error) {
-      message.error('加载已同步表失败');
-      console.error('加载已同步表失败:', error);
-      setSyncedTables([]);
-    } finally {
-      setLoadingSyncedTables(false);
-    }
-  };
+  const loadSyncedTables = useCallback(
+    async (dataSourceId?: string) => {
+      if (metadataSource === 'CATALOG_SNAPSHOT') {
+        return;
+      }
+      const dsId = dataSourceId ?? activeDataSourceId;
+      if (!dsId) {
+        setSyncedTables([]);
+        return;
+      }
+      try {
+        setLoadingSyncedTables(true);
+        const response = await dataSourceApi.listSyncedTables(dsId);
+        setSyncedTables(response.data.data ?? []);
+      } catch (error) {
+        message.error('加载已同步表失败');
+        console.error('加载已同步表失败:', error);
+        setSyncedTables([]);
+      } finally {
+        setLoadingSyncedTables(false);
+      }
+    },
+    [metadataSource, activeDataSourceId, setSyncedTables],
+  );
 
-  // 加载模板列表
-  const loadTemplates = async () => {
+  const loadTemplates = useCallback(async () => {
     try {
       setLoadingTemplates(true);
       const response = await templateApi.getList({ page: 1, size: 100 });
@@ -107,19 +107,18 @@ const CodeGeneration: React.FC = () => {
     } finally {
       setLoadingTemplates(false);
     }
-  };
-
-  // 组件挂载时加载数据
-  useEffect(() => {
-    loadDataSources();
-    loadTemplates();
   }, []);
+
+  useEffect(() => {
+    void loadDataSources();
+    void loadTemplates();
+  }, [loadDataSources, loadTemplates]);
 
   useEffect(() => {
     if (metadataSource === 'PHYSICAL_DB' && activeDataSourceId) {
       void loadSyncedTables(activeDataSourceId);
     }
-  }, [activeDataSourceId, metadataSource]);
+  }, [activeDataSourceId, metadataSource, loadSyncedTables]);
 
   // 处理表选择
   const handleTableSelect = (selectedKeys: React.Key[]) => {
@@ -199,9 +198,12 @@ const CodeGeneration: React.FC = () => {
         tenantId: 0,
       });
       const page = response.data.data;
-      const tables: DatabaseTable[] = pageRecords(page);
+      const records = pageRecords(page) as Array<{ tableName?: string; tableComment?: string }>;
       setDataSourceTables(
-        tables.map((t) => ({ tableName: t.tableName, tableComment: t.tableComment })),
+        records.map((t) => ({
+          tableName: String(t.tableName ?? ''),
+          tableComment: String(t.tableComment ?? ''),
+        })),
       );
       syncForm.setFieldValue('tableNames', []);
     } catch (error) {
@@ -315,7 +317,7 @@ const CodeGeneration: React.FC = () => {
       title: '列数',
       dataIndex: 'columns',
       key: 'columns',
-      render: (columns: any[]) => columns.length,
+      render: (columns: unknown[]) => columns.length,
     },
   ];
 
@@ -446,9 +448,8 @@ const CodeGeneration: React.FC = () => {
                 if (dataSourceId) {
                   try {
                     setLoading(true);
-                    const tables = await handleLoadDataSourceTables(dataSourceId);
-                    // 只保留必要字段，彻底消除循环引用
-                    const processedTables = (tables as DatabaseTable[]).map((table) => ({
+                    const tables = (await handleLoadDataSourceTables(dataSourceId)) ?? [];
+                    const processedTables: DatabaseTable[] = tables.map((table) => ({
                       tableName: table.tableName,
                       tableComment: table.tableComment,
                     }));
@@ -575,8 +576,8 @@ const CodeGeneration: React.FC = () => {
               loading={loadingTemplates}
             >
               {templates && templates.map((template) => (
-                <Option key={template.id} value={template.id}>
-                  {template.name} ({template.type})
+                <Option key={String(template.id)} value={template.id as React.Key}>
+                  {String(template.name)} ({String(template.type)})
                 </Option>
               ))}
             </Select>

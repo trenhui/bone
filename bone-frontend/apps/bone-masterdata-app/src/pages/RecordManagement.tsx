@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Card,
-  Table,
   Button,
   Modal,
   Form,
@@ -13,17 +12,15 @@ import {
   Tag,
   Descriptions,
   Upload,
-  Spin
 } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, DownloadOutlined, CheckCircleOutlined, CloseCircleOutlined, InboxOutlined } from '@ant-design/icons';
+import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, DownloadOutlined, CheckCircleOutlined, InboxOutlined } from '@ant-design/icons';
 import { ProTable } from '@ant-design/pro-components';
+import type { ProColumns } from '@ant-design/pro-components';
+import type { ColumnsType } from 'antd/es/table';
 import type {
   MasterDataRecord,
   MasterDataEntity,
   MasterDataField,
-  UpdateMasterDataRecordReq,
-  MasterDataRecordListQry,
-  ImportResult
 } from '../types';
 import { masterDataRecordApi, masterDataEntityApi, masterDataFieldApi } from '../services/api';
 
@@ -47,8 +44,7 @@ const RecordManagement: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [importLoading, setImportLoading] = useState(false);
 
-  // 获取实体列表
-  const fetchEntities = async () => {
+  const fetchEntities = useCallback(async () => {
     try {
       const response = await masterDataEntityApi.page({ pageSize: 100 });
       if (response.code === 200) {
@@ -59,13 +55,12 @@ const RecordManagement: React.FC = () => {
       } else {
         message.error(response.message);
       }
-    } catch (error) {
+    } catch {
       message.error('获取实体列表失败');
     }
-  };
+  }, [selectedEntityId]);
 
-  // 获取字段列表
-  const fetchFields = async (entityId: number) => {
+  const fetchFields = useCallback(async (entityId: number) => {
     try {
       const response = await masterDataFieldApi.listByEntityId(entityId);
       if (response.code === 200) {
@@ -73,13 +68,12 @@ const RecordManagement: React.FC = () => {
       } else {
         message.error(response.message);
       }
-    } catch (error) {
+    } catch {
       message.error('获取字段列表失败');
     }
-  };
+  }, []);
 
-  // 获取记录列表
-  const fetchRecords = async () => {
+  const fetchRecords = useCallback(async () => {
     if (!selectedEntityId) return;
     setLoading(true);
     try {
@@ -95,23 +89,23 @@ const RecordManagement: React.FC = () => {
       } else {
         message.error(response.message);
       }
-    } catch (error) {
+    } catch {
       message.error('获取记录列表失败');
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedEntityId, selectedStatus, page, pageSize]);
 
   useEffect(() => {
-    fetchEntities();
-  }, []);
+    void fetchEntities();
+  }, [fetchEntities]);
 
   useEffect(() => {
     if (selectedEntityId) {
-      fetchFields(selectedEntityId);
-      fetchRecords();
+      void fetchFields(selectedEntityId);
+      void fetchRecords();
     }
-  }, [selectedEntityId, selectedStatus, page, pageSize]);
+  }, [selectedEntityId, fetchFields, fetchRecords]);
 
   // 打开创建模态框
   const handleAdd = () => {
@@ -133,23 +127,16 @@ const RecordManagement: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  // 打开查看模态框
-  const handleView = (record: MasterDataRecord) => {
-    setCurrentRecord(record);
-    setIsViewModalOpen(true);
-  };
-
-  // 删除记录
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: number): Promise<void> => {
     try {
       const response = await masterDataRecordApi.delete(id);
       if (response.code === 200) {
         message.success('删除成功');
-        fetchRecords();
+        void fetchRecords();
       } else {
         message.error(response.message);
       }
-    } catch (error) {
+    } catch {
       message.error('删除失败');
     }
   };
@@ -259,14 +246,14 @@ const RecordManagement: React.FC = () => {
   // 状态标签
   const getStatusTag = (status: string) => {
     switch (status) {
-      case 'DRAFT':
-        return <Tag color="blue">草稿</Tag>;
-      case 'PUBLISHED':
-        return <Tag color="green">已发布</Tag>;
-      case 'ARCHIVED':
-        return <Tag color="gray">已归档</Tag>;
-      default:
-        return <Tag>{status}</Tag>;
+    case 'DRAFT':
+      return <Tag color="blue">草稿</Tag>;
+    case 'PUBLISHED':
+      return <Tag color="green">已发布</Tag>;
+    case 'ARCHIVED':
+      return <Tag color="gray">已归档</Tag>;
+    default:
+      return <Tag>{status}</Tag>;
     }
   };
 
@@ -275,30 +262,30 @@ const RecordManagement: React.FC = () => {
     return fields.map(field => {
       let formItem;
       switch (field.type) {
-        case 'STRING':
-        case 'TEXT':
-          formItem = field.type === 'TEXT' ? (
-            <TextArea rows={4} placeholder={`请输入${field.name}`} />
-          ) : (
-            <Input placeholder={`请输入${field.name}`} />
-          );
-          break;
-        case 'NUMBER':
-          formItem = <Input type="number" placeholder={`请输入${field.name}`} />;
-          break;
-        case 'DATE':
-          formItem = <Input type="date" placeholder={`请选择${field.name}`} />;
-          break;
-        case 'BOOLEAN':
-          formItem = (
-            <Select placeholder={`请选择${field.name}`}>
-              <Option value={true}>是</Option>
-              <Option value={false}>否</Option>
-            </Select>
-          );
-          break;
-        default:
-          formItem = <Input placeholder={`请输入${field.name}`} />;
+      case 'STRING':
+      case 'TEXT':
+        formItem = field.type === 'TEXT' ? (
+          <TextArea rows={4} placeholder={`请输入${field.name}`} />
+        ) : (
+          <Input placeholder={`请输入${field.name}`} />
+        );
+        break;
+      case 'NUMBER':
+        formItem = <Input type="number" placeholder={`请输入${field.name}`} />;
+        break;
+      case 'DATE':
+        formItem = <Input type="date" placeholder={`请选择${field.name}`} />;
+        break;
+      case 'BOOLEAN':
+        formItem = (
+          <Select placeholder={`请选择${field.name}`}>
+            <Option value={true}>是</Option>
+            <Option value={false}>否</Option>
+          </Select>
+        );
+        break;
+      default:
+        formItem = <Input placeholder={`请输入${field.name}`} />;
       }
       return (
         <Form.Item
@@ -314,8 +301,8 @@ const RecordManagement: React.FC = () => {
   };
 
   // 动态生成表格列
-  const generateTableColumns = () => {
-    const columns = [
+  const generateTableColumns = (): ColumnsType<MasterDataRecord> => {
+    const columns: ColumnsType<MasterDataRecord> = [
       {
         title: '记录ID',
         dataIndex: 'id',
@@ -347,7 +334,7 @@ const RecordManagement: React.FC = () => {
       {
         title: '操作',
         key: 'action',
-        render: (_: any, record: MasterDataRecord) => (
+        render: (_: unknown, record: MasterDataRecord) => (
           <Space size="middle">
             <Button
               type="primary"
@@ -445,7 +432,7 @@ const RecordManagement: React.FC = () => {
 
         {/* 记录列表 */}
         <ProTable
-          columns={generateTableColumns()}
+          columns={generateTableColumns() as ProColumns<MasterDataRecord>[]}
           dataSource={records}
           loading={loading}
           pagination={{
@@ -489,7 +476,7 @@ const RecordManagement: React.FC = () => {
             <Descriptions column={2}>
               {fields.map(field => (
                 <Descriptions.Item key={field.id} label={field.name}>
-                  {currentRecord.data[field.name] || '-'}
+                  {String(currentRecord.data[field.name] ?? '-')}
                 </Descriptions.Item>
               ))}
               <Descriptions.Item label="状态">{getStatusTag(currentRecord.status)}</Descriptions.Item>

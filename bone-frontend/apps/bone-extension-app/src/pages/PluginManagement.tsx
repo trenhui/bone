@@ -33,7 +33,9 @@ import {
   listExtPoints,
   listPluginVersions,
   listPlugins,
+  newIdempotencyKey,
   publishPluginRuntime,
+  type StudioPageResult,
   rollbackPlugin,
   simulatePlugin,
   updatePlugin,
@@ -46,6 +48,9 @@ import {
 
 const PluginManagement: React.FC = () => {
   const [plugins, setPlugins] = useState<ExtensionRow[]>([]);
+  const [pluginTotal, setPluginTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [extPoints, setExtPoints] = useState<ExtPointRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
@@ -70,12 +75,22 @@ const PluginManagement: React.FC = () => {
     pluginId?: number;
   }>();
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (p: number, ps: number) => {
     setLoading(true);
     try {
-      const [pluginRows, pointRows] = await Promise.all([listPlugins(), listExtPoints()]);
-      setPlugins(pluginRows);
-      setExtPoints(pointRows);
+      const [pluginResult, pointResult] = await Promise.all([
+        listPlugins({ page: p, size: ps }),
+        listExtPoints(),
+      ]);
+      const pluginList = Array.isArray(pluginResult)
+        ? pluginResult
+        : (pluginResult as StudioPageResult<ExtensionRow>).records;
+      const pluginCount = Array.isArray(pluginResult)
+        ? pluginResult.length
+        : (pluginResult as StudioPageResult<ExtensionRow>).total ?? pluginList.length;
+      setPlugins(pluginList);
+      setPluginTotal(pluginCount);
+      setExtPoints(Array.isArray(pointResult) ? pointResult : pointResult.records);
     } catch (e) {
       message.error(formatStudioError(e, '加载插件失败'));
     } finally {
@@ -84,8 +99,8 @@ const PluginManagement: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    load(page, pageSize);
+  }, [load, page, pageSize]);
 
   const extPointName = (extPointId: number) =>
     extPoints.find((p) => p.id === extPointId)?.name ?? String(extPointId);
@@ -156,11 +171,11 @@ const PluginManagement: React.FC = () => {
         await updatePlugin(editing.id, values, { version: editing.version });
         message.success('更新成功');
       } else {
-        await createPlugin(values);
+        await createPlugin(values, { idempotencyKey: newIdempotencyKey() });
         message.success('创建成功');
       }
       setModalOpen(false);
-      load();
+      load(page, pageSize);
     } catch (e) {
       message.error(formatStudioError(e, '保存失败'));
     }
@@ -184,7 +199,7 @@ const PluginManagement: React.FC = () => {
       });
       message.success('上传成功');
       setUploadOpen(false);
-      load();
+      load(page, pageSize);
     } catch (e) {
       message.error(formatStudioError(e, '上传失败'));
     }
@@ -198,7 +213,7 @@ const PluginManagement: React.FC = () => {
         await deployPlugin(record.id, false, { sync: true });
         hide();
         message.success('已卸载');
-        load();
+        load(page, pageSize);
       } catch (e) {
         hide();
         message.error(formatStudioError(e, '卸载失败'));
@@ -215,7 +230,7 @@ const PluginManagement: React.FC = () => {
           setDeploying((prev) => (prev ? { ...prev, progress } : null)),
       });
       message.success('部署成功');
-      load();
+      load(page, pageSize);
     } catch (e) {
       message.error(formatStudioError(e, '部署失败'));
     } finally {
@@ -248,7 +263,7 @@ const PluginManagement: React.FC = () => {
       if (selectedPlugin?.id === pluginId) {
         await openVersions({ ...selectedPlugin, id: pluginId });
       }
-      load();
+      load(page, pageSize);
     } catch (e) {
       message.error(formatStudioError(e, '回滚失败'));
     }
@@ -258,7 +273,7 @@ const PluginManagement: React.FC = () => {
     try {
       await deletePlugin(id);
       message.success('已删除');
-      load();
+      load(page, pageSize);
     } catch (e) {
       message.error(formatStudioError(e, '删除失败'));
     }
@@ -386,11 +401,26 @@ const PluginManagement: React.FC = () => {
         <Button icon={<UploadOutlined />} onClick={() => openUpload()}>
           上传 JAR
         </Button>
-        <Button icon={<ReloadOutlined />} onClick={load}>
+        <Button icon={<ReloadOutlined />} onClick={() => load(page, pageSize)}>
           刷新
         </Button>
       </Space>
-      <Table rowKey="id" loading={loading} columns={columns} dataSource={plugins} pagination={{ pageSize: 10 }} />
+      <Table
+        rowKey="id"
+        loading={loading}
+        columns={columns}
+        dataSource={plugins}
+        pagination={{
+          current: page,
+          pageSize,
+          total: pluginTotal,
+          showSizeChanger: true,
+          onChange: (p, ps) => {
+            setPage(p);
+            setPageSize(ps);
+          },
+        }}
+      />
 
       <Modal
         title={editing ? '编辑插件' : '注册插件'}

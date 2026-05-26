@@ -1,0 +1,5 @@
+ExtPointQueryHandler must declare @Transactional on class or handle()/execute() method
+ExtensionQueryHandler must declare @Transactional on class or handle()/execute() method
+PluginExecutionLogQueryHandler must declare @Transactional on class or handle()/execute() method
+StudioAuditQueryHandler must declare @Transactional on class or handle()/execute() method
+StudioOperationQueryHandler must declare @Transactional on class or handle()/execute() method

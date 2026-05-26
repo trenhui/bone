@@ -22,6 +22,11 @@ const apiClient = axios.create({
   }
 });
 
+apiClient.interceptors.response.use(
+  (response) => response.data,
+  (error) => Promise.reject(error)
+);
+
 // 连接器相关 API
 export const connectorApi = {
   // 获取连接器列表
@@ -93,7 +98,7 @@ export const flowApi = {
   },
   
   // 测试流程
-  testFlow: (id: number, inputData: any): Promise<ApiResponse<{ success: boolean; output: any; error?: string }>> => {
+  testFlow: (id: number, inputData: unknown): Promise<ApiResponse<{ success: boolean; output: unknown; error?: string }>> => {
     return apiClient.post(`/flows/${id}/test`, { inputData });
   },
   
@@ -108,7 +113,7 @@ export const flowApi = {
   },
   
   // 获取流程版本历史
-  getFlowVersions: (id: number): Promise<ApiResponse<any[]>> => {
+  getFlowVersions: (id: number): Promise<ApiResponse<Array<Record<string, unknown>>>> => {
     return apiClient.get(`/flows/${id}/versions`);
   }
 };
@@ -126,7 +131,7 @@ export const monitorApi = {
   },
   
   // 获取执行日志
-  getExecutionLogs: (id: number): Promise<ApiResponse<any[]>> => {
+  getExecutionLogs: (id: number): Promise<ApiResponse<Array<Record<string, unknown>>>> => {
     return apiClient.get(`/executions/${id}/logs`);
   },
   

@@ -65,4 +65,33 @@ public class ArchitectureTest {
     @ArchTest
     static final ArchRule no_business_exception_suffix =
             FreezingArchRule.freeze(BoneDddArchRules.noBusinessExceptionSuffix());
+
+    // P0-7 + §15：adapter 入站约束（参考样板不 freeze，须 0 违规）
+    @ArchTest
+    static final ArchRule adapter_no_application_service =
+            BoneDddArchRules.adapterControllersMustNotDependOnApplicationService();
+
+    @ArchTest
+    static final ArchRule adapter_no_domain_repository =
+            BoneDddArchRules.adapterControllersMustNotDependOnDomainRepository();
+
+    @ArchTest
+    static final ArchRule adapter_no_domain_service =
+            BoneDddArchRules.adapterControllersMustNotDependOnDomainService();
+
+    // §23 + §15：Handler 命名与事务边界（参考样板不 freeze）
+    @ArchTest
+    static final ArchRule command_handler_naming =
+            BoneDddArchRules.commandHandlersShouldBeNamedCommandHandler();
+
+    @ArchTest
+    static final ArchRule query_handler_naming = BoneDddArchRules.queryHandlersShouldBeNamedQueryHandler();
+
+    @ArchTest
+    static final ArchRule command_handler_transactional =
+            BoneDddArchRules.commandHandlersShouldBeTransactional();
+
+    @ArchTest
+    static final ArchRule query_handler_transactional =
+            BoneDddArchRules.queryHandlersShouldBeReadOnlyTransactional();
 }

@@ -6,7 +6,9 @@ import com.bone.metadata.sdk.domain.annotation.Table;
 import com.bone.blueprint.domain.order.event.OrderCancelledEvent;
 import com.bone.blueprint.domain.order.event.OrderCreatedEvent;
 import com.bone.blueprint.domain.order.event.OrderPaidEvent;
+import com.bone.blueprint.domain.order.valueobject.Money;
 import com.bone.blueprint.domain.order.valueobject.OrderStatus;
+import java.time.Instant;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -32,7 +34,7 @@ public class Order extends AuditableAggregateRoot<Long> {
     /**
      * 订单金额上限
      */
-    private static final BigDecimal MAX_ORDER_AMOUNT = new BigDecimal("1000000");
+    private static final Money MAX_ORDER_AMOUNT = Money.of(new BigDecimal("1000000"));
 
     private Long customerId;
     private List<OrderItem> items = new ArrayList<>();
@@ -84,11 +86,11 @@ public class Order extends AuditableAggregateRoot<Long> {
         order.customerId = customerId;
         order.items = new ArrayList<>(items);
         order.recalculateTotal();
-        if (order.totalAmount.compareTo(MAX_ORDER_AMOUNT) > 0) {
+        if (Money.of(order.totalAmount).greaterThan(MAX_ORDER_AMOUNT)) {
             throw new DomainException("订单金额超过限制");
         }
         order.status = OrderStatus.CREATED;
-        order.addDomainEvent(new OrderCreatedEvent(order));
+        order.addDomainEvent(new OrderCreatedEvent(order.getId(), order.getCustomerId(), Instant.now()));
         return order;
     }
 
@@ -144,7 +146,7 @@ public class Order extends AuditableAggregateRoot<Long> {
             throw new DomainException("只有新建状态的订单可以支付");
         }
         this.status = OrderStatus.PAID;
-        addDomainEvent(new OrderPaidEvent(this));
+        addDomainEvent(new OrderPaidEvent(getId(), customerId, totalAmount, Instant.now()));
     }
 
     /**
@@ -160,7 +162,7 @@ public class Order extends AuditableAggregateRoot<Long> {
             throw new DomainException("订单已取消");
         }
         this.status = OrderStatus.CANCELLED;
-        addDomainEvent(new OrderCancelledEvent(this));
+        addDomainEvent(new OrderCancelledEvent(getId(), Instant.now()));
     }
 
     /**

@@ -1,5 +1,17 @@
 {
   "root": true,
+  "ignorePatterns": [
+    "dist/",
+    "build/",
+    "node_modules/",
+    "coverage/",
+    "*.config.js",
+    "*.config.ts",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "e2e-*.mjs",
+    "scripts/**"
+  ],
   "env": {
     "browser": true,
     "es2021": true,

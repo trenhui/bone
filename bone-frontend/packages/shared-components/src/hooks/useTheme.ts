@@ -1,3 +1,3 @@
-export function useTheme() {
-  return { mode: 'light' as const };
+export function useTheme(): { mode: 'light' | 'dark' } {
+  return { mode: 'light' };
 }

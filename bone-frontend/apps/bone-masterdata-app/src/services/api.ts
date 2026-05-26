@@ -136,7 +136,7 @@ export const masterDataRecordApi = {
   detail: (id: number): Promise<ApiResponse<MasterDataRecord>> => {
     return apiClient.get(`${MD}/records/${id}`);
   },
-  create: (masterDataEntityId: number, data: Record<string, any>): Promise<ApiResponse<MasterDataRecord>> => {
+  create: (masterDataEntityId: number, data: Record<string, unknown>): Promise<ApiResponse<MasterDataRecord>> => {
     return apiClient.post(`${MD}/records/entity/${masterDataEntityId}`, data);
   },
   update: (id: number, data: UpdateMasterDataRecordReq): Promise<ApiResponse<MasterDataRecord>> => {
@@ -180,7 +180,8 @@ export const qualityCheckApi = {
 };
 
 export const qualityResultApi = {
-  listByRecordId: (_masterDataRecordId: number): Promise<ApiResponse<DataQualityResult[]>> => {
+  listByRecordId: (masterDataRecordId: number): Promise<ApiResponse<DataQualityResult[]>> => {
+    void masterDataRecordId;
     return Promise.reject(new Error('MD quality result API not implemented'));
   },
 };

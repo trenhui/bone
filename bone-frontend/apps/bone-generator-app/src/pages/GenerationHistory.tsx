@@ -1,29 +1,44 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Table, Button, Modal, Typography, Space, DatePicker, Select, Input, message, Card } from 'antd';
 import { DownloadOutlined, EyeOutlined } from '@ant-design/icons';
+import type { Dayjs } from 'dayjs';
 import { codeGenerationApi } from '../services/api';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
+type DateRange = [Dayjs | null, Dayjs | null] | null;
+
+interface GenerationHistoryItem {
+  id: number;
+  projectName: string;
+  basePackage: string;
+  moduleName: string;
+  generateTime: string;
+  status: 'SUCCESS' | 'FAILED';
+  fileCount: number;
+  taskId: string;
+}
+
 const GenerationHistory: React.FC = () => {
-  const [history, setHistory] = useState<any[]>([]);
+  const [history, setHistory] = useState<GenerationHistoryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
-  const [selectedHistory, setSelectedHistory] = useState<any>(null);
-  const [searchParams, setSearchParams] = useState({
+  const [selectedHistory, setSelectedHistory] = useState<GenerationHistoryItem | null>(null);
+  const [searchParams, setSearchParams] = useState<{
+    projectName: string;
+    status: string;
+    timeRange: DateRange;
+  }>({
     projectName: '',
     status: '',
-    timeRange: null as any,
+    timeRange: null,
   });
 
-  // 加载生成历史
-  const loadHistory = async () => {
+  const loadHistory = useCallback(async () => {
     try {
       setLoading(true);
-      // 这里需要根据后端API调整，暂时使用模拟数据
-      // 实际项目中应该调用后端API获取历史记录
-      const mockHistory = [
+      const mockHistory: GenerationHistoryItem[] = [
         {
           id: 1,
           projectName: 'demo-project',
@@ -52,15 +67,13 @@ const GenerationHistory: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  // 组件挂载时加载生成历史
-  useEffect(() => {
-    loadHistory();
   }, []);
 
-  // 处理查看详情
-  const handleViewDetail = (item: any) => {
+  useEffect(() => {
+    void loadHistory();
+  }, [loadHistory]);
+
+  const handleViewDetail = (item: GenerationHistoryItem): void => {
     setSelectedHistory(item);
     setDetailModalVisible(true);
   };
@@ -122,7 +135,7 @@ const GenerationHistory: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: any) => (
+      render: (_: unknown, record: GenerationHistoryItem) => (
         <Space size="middle">
           <Button
             icon={<EyeOutlined />}

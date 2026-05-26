@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Table, Button, Modal, Form, Input, Select, message, Space, Card, Typography, Divider } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
 import { dataSourceApi, pageRecords } from '../services/api';
@@ -28,8 +28,7 @@ const DataSourceManagement: React.FC = () => {
     { value: 'postgresql', label: 'PostgreSQL' },
   ];
 
-  // 加载数据源列表
-  const loadDataSources = async () => {
+  const loadDataSources = useCallback(async () => {
     try {
       setLoadingDataSources(true);
       const response = await dataSourceApi.getList({ page: 1, size: 100 });
@@ -40,7 +39,7 @@ const DataSourceManagement: React.FC = () => {
     } finally {
       setLoadingDataSources(false);
     }
-  };
+  }, [setDataSources, setLoadingDataSources]);
 
   // 监听数据库类型变化，自动设置默认端口
   const typeValue = Form.useWatch('type', form);
@@ -48,23 +47,22 @@ const DataSourceManagement: React.FC = () => {
     if (typeValue) {
       let defaultPort = '';
       switch (typeValue) {
-        case 'mysql':
-          defaultPort = '3306';
-          break;
-        case 'postgresql':
-          defaultPort = '5432';
-          break;
-        default:
-          defaultPort = '3306';
+      case 'mysql':
+        defaultPort = '3306';
+        break;
+      case 'postgresql':
+        defaultPort = '5432';
+        break;
+      default:
+        defaultPort = '3306';
       }
       form.setFieldsValue({ port: defaultPort });
     }
   }, [typeValue, form]);
 
-  // 组件挂载时加载数据源列表
   useEffect(() => {
-    loadDataSources();
-  }, []);
+    void loadDataSources();
+  }, [loadDataSources]);
 
   // 打开新增模态框
   const showAddModal = () => {
@@ -106,15 +104,14 @@ const DataSourceManagement: React.FC = () => {
       } else {
         // 创建临时数据源
         const createResponse = await dataSourceApi.create(values);
-        dataSourceId = createResponse.data.data;
+        dataSourceId = createResponse.data.data?.id ?? '';
       }
-      
-      // 测试连接
+
       const response = await dataSourceApi.testConnection(dataSourceId);
-      if (response.data.code === 200 && response.data.data) {
+      if (response.data.code === 200 && response.data.data?.success !== false) {
         message.success('连接成功');
       } else {
-        message.error('连接失败: ' + response.data.message);
+        message.error('连接失败: ' + (response.data.message ?? ''));
       }
       
       // 如果是新增的临时数据源，测试完成后删除
@@ -225,7 +222,7 @@ const DataSourceManagement: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: DataSource) => (
+      render: (_: unknown, record: DataSource) => (
         <Space size="middle">
           <Button
             type="primary"

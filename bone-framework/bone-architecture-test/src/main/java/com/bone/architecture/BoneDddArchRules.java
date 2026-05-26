@@ -3,6 +3,7 @@ package com.bone.architecture;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaMethod;
+import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
@@ -31,6 +32,8 @@ public final class BoneDddArchRules {
 
     /** §18.2 禁止的多条件组合片段（方法名中出现即违规）。 */
     private static final Set<String> REPOSITORY_METHOD_FORBIDDEN_FRAGMENTS = Set.of("And", "Or");
+
+    private static final String TRANSACTIONAL = "org.springframework.transaction.annotation.Transactional";
 
     private BoneDddArchRules() {}
 
@@ -150,6 +153,108 @@ public final class BoneDddArchRules {
                 .because("DDD §16.3: prefer *BizException or extend com.bone.core.exception.BizException");
     }
 
+    /** §12.1 P0-7 + §15：Controller 禁止直接注入 {@code application.service}。 */
+    public static ArchRule adapterControllersMustNotDependOnApplicationService() {
+        return noClasses()
+                .that()
+                .resideInAPackage("..adapter..controller..")
+                .should()
+                .dependOnClassesThat()
+                .resideInAPackage("..application.service..")
+                .allowEmptyShould(true)
+                .because("DDD P0-7 + §15: adapter must not inject application/service");
+    }
+
+    /** §15：Controller 禁止直接注入 {@code domain.repository} 写侧仓储。 */
+    public static ArchRule adapterControllersMustNotDependOnDomainRepository() {
+        return noClasses()
+                .that()
+                .resideInAPackage("..adapter..controller..")
+                .should()
+                .dependOnClassesThat()
+                .resideInAPackage("..domain.repository..")
+                .allowEmptyShould(true)
+                .because("DDD §15: adapter must not inject domain.repository; use Handler");
+    }
+
+    /**
+     * P0-7 + §15：Controller 禁止直接注入 {@code domain.service} 领域服务。
+     *
+     * <p>领域服务只能由 {@code *CommandHandler} / {@code *QueryHandler} / {@code *Orchestrator}
+     * 在应用层编排时调用，不允许 adapter 层越层直接依赖，以保持分层边界清晰。
+     */
+    public static ArchRule adapterControllersMustNotDependOnDomainService() {
+        return noClasses()
+                .that()
+                .resideInAPackage("..adapter..controller..")
+                .should()
+                .dependOnClassesThat()
+                .resideInAPackage("..domain.service..")
+                .allowEmptyShould(true)
+                .because("DDD P0-7 + §15: adapter must not inject domain.service; use Handler");
+    }
+
+    /** §23：{@code application.command.handler} 下类名必须以 {@code CommandHandler} 结尾。 */
+    public static ArchRule commandHandlersShouldBeNamedCommandHandler() {
+        return classes()
+                .that()
+                .resideInAPackage("..application.command.handler..")
+                .and()
+                .areNotInterfaces()
+                .and()
+                .doNotHaveModifier(JavaModifier.ABSTRACT)
+                .should()
+                .haveSimpleNameEndingWith("CommandHandler")
+                .allowEmptyShould(true)
+                .because("DDD §23: command handler classes must be named *CommandHandler");
+    }
+
+    /** §23：{@code application.query.handler} 下类名必须以 {@code QueryHandler} 结尾。 */
+    public static ArchRule queryHandlersShouldBeNamedQueryHandler() {
+        return classes()
+                .that()
+                .resideInAPackage("..application.query.handler..")
+                .and()
+                .areNotInterfaces()
+                .and()
+                .doNotHaveModifier(JavaModifier.ABSTRACT)
+                .should()
+                .haveSimpleNameEndingWith("QueryHandler")
+                .allowEmptyShould(true)
+                .because("DDD §23: query handler classes must be named *QueryHandler");
+    }
+
+    /** §12.1 + §15：写侧 Handler 须在类或 {@code handle}/{@code execute} 方法上标注 {@code @Transactional}。 */
+    public static ArchRule commandHandlersShouldBeTransactional() {
+        return classes()
+                .that()
+                .resideInAPackage("..application.command.handler..")
+                .and()
+                .areNotInterfaces()
+                .and()
+                .doNotHaveModifier(JavaModifier.ABSTRACT)
+                .should(haveTransactionalOnClassOrEntryMethod())
+                .allowEmptyShould(true)
+                .because("DDD §15: write transaction boundary on *CommandHandler");
+    }
+
+    /**
+     * §12.1 P0-6：读侧 Handler 建议 {@code @Transactional(readOnly = true)}；规则至少要求存在
+     * {@code @Transactional}（类或 {@code handle}/{@code execute} 方法）。
+     */
+    public static ArchRule queryHandlersShouldBeReadOnlyTransactional() {
+        return classes()
+                .that()
+                .resideInAPackage("..application.query.handler..")
+                .and()
+                .areNotInterfaces()
+                .and()
+                .doNotHaveModifier(JavaModifier.ABSTRACT)
+                .should(haveTransactionalOnClassOrEntryMethod())
+                .allowEmptyShould(true)
+                .because("DDD §12.1 P0-6: QueryHandler should use @Transactional(readOnly = true)");
+    }
+
     /** §15 + §18.2：领域仓储接口方法名白名单（含 {@code existsBy*}/{@code findBy*} 前缀）。 */
     public static ArchRule domainRepositoriesShouldOnlyDeclareWhitelistedMethods() {
         return classes()
@@ -199,6 +304,26 @@ public final class BoneDddArchRules {
             }
         }
         return false;
+    }
+
+    private static ArchCondition<JavaClass> haveTransactionalOnClassOrEntryMethod() {
+        return new ArchCondition<>("declare @Transactional on class or handle/execute method") {
+            @Override
+            public void check(JavaClass item, ConditionEvents events) {
+                if (item.isAnnotatedWith(TRANSACTIONAL)) {
+                    return;
+                }
+                boolean entryMethodTransactional = item.getMethods().stream()
+                        .filter(method -> "handle".equals(method.getName()) || "execute".equals(method.getName()))
+                        .anyMatch(method -> method.isAnnotatedWith(TRANSACTIONAL));
+                if (!entryMethodTransactional) {
+                    String message = String.format(
+                            "%s must declare @Transactional on class or handle()/execute() method",
+                            item.getSimpleName());
+                    events.add(SimpleConditionEvent.violated(item, message));
+                }
+            }
+        };
     }
 
     private static DescribedPredicate<JavaClass> areAnnotatedWithReadSideOnly() {

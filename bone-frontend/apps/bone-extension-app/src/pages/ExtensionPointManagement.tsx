@@ -18,6 +18,8 @@ import {
   deleteExtPoint,
   formatStudioError,
   listExtPoints,
+  newIdempotencyKey,
+  type StudioPageResult,
   postExtPointEnable,
   updateExtPoint,
   type ExtPointPayload,
@@ -26,15 +28,26 @@ import {
 
 const ExtensionPointManagement: React.FC = () => {
   const [rows, setRows] = useState<ExtPointRow[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [loading, setLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<ExtPointRow | null>(null);
   const [form] = Form.useForm<ExtPointPayload>();
 
-  const load = useCallback(async () => {
+  const load = useCallback(async (p: number, ps: number) => {
     setLoading(true);
     try {
-      setRows(await listExtPoints());
+      const result = await listExtPoints({ page: p, size: ps });
+      if (Array.isArray(result)) {
+        setRows(result);
+        setTotal(result.length);
+      } else {
+        const pageResult = result as StudioPageResult<ExtPointRow>;
+        setRows(pageResult.records);
+        setTotal(pageResult.total ?? pageResult.records.length);
+      }
     } catch (e) {
       message.error(formatStudioError(e, '加载扩展点失败'));
     } finally {
@@ -43,8 +56,8 @@ const ExtensionPointManagement: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    load(page, pageSize);
+  }, [load, page, pageSize]);
 
   const openCreate = () => {
     setEditing(null);
@@ -73,11 +86,11 @@ const ExtensionPointManagement: React.FC = () => {
         await updateExtPoint(editing.id, values, { version: editing.version });
         message.success('更新成功');
       } else {
-        await createExtPoint(values);
+        await createExtPoint(values, { idempotencyKey: newIdempotencyKey() });
         message.success('创建成功');
       }
       setModalOpen(false);
-      load();
+      load(page, pageSize);
     } catch (e) {
       message.error(formatStudioError(e, '保存失败'));
     }
@@ -87,7 +100,7 @@ const ExtensionPointManagement: React.FC = () => {
     try {
       await postExtPointEnable(record.id, enable);
       message.success(enable ? '已启用' : '已禁用');
-      load();
+      load(page, pageSize);
     } catch (e) {
       message.error(formatStudioError(e, '操作失败'));
     }
@@ -97,7 +110,7 @@ const ExtensionPointManagement: React.FC = () => {
     try {
       await deleteExtPoint(id);
       message.success('已删除');
-      load();
+      load(page, pageSize);
     } catch (e) {
       message.error(formatStudioError(e, '删除失败'));
     }
@@ -149,11 +162,26 @@ const ExtensionPointManagement: React.FC = () => {
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
           新建扩展点
         </Button>
-        <Button icon={<ReloadOutlined />} onClick={load}>
+        <Button icon={<ReloadOutlined />} onClick={() => load(page, pageSize)}>
           刷新
         </Button>
       </Space>
-      <Table rowKey="id" loading={loading} columns={columns} dataSource={rows} pagination={{ pageSize: 10 }} />
+      <Table
+        rowKey="id"
+        loading={loading}
+        columns={columns}
+        dataSource={rows}
+        pagination={{
+          current: page,
+          pageSize,
+          total,
+          showSizeChanger: true,
+          onChange: (p, ps) => {
+            setPage(p);
+            setPageSize(ps);
+          },
+        }}
+      />
       <Modal
         title={editing ? '编辑扩展点' : '新建扩展点'}
         open={modalOpen}

@@ -29,9 +29,9 @@ export interface TableColumn {
 export interface DatabaseTable {
   tableName: string;
   tableComment: string;
-  columns: TableColumn[];
-  primaryKey: string;
-  indexes: string[];
+  columns?: TableColumn[];
+  primaryKey?: string;
+  indexes?: string[];
 }
 
 // 代码生成请求类型
@@ -41,7 +41,7 @@ export interface GenerateCodeRequest {
   description?: string;
   language: string;
   framework: string;
-  parameters?: Record<string, any>;
+  parameters?: Record<string, unknown>;
   tags?: string[];
   outputFormat?: string;
   outputPath?: string;

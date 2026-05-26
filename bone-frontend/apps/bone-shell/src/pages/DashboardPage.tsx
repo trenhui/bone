@@ -49,7 +49,7 @@ function formatBytes(bytes: number): string {
   return `${mb.toFixed(1)} MB`;
 }
 
-export default function DashboardPage() {
+export default function DashboardPage(): JSX.Element {
   const { theme, resolvedTheme } = useContext(ThemeContext);
   const { layoutMode } = useContext(LayoutContext);
   const { token } = antdTheme.useToken();

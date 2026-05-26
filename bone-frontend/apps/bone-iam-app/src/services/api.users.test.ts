@@ -11,13 +11,13 @@ const apiSource = readFileSync(
 /** 校验 IAM 前端 API 与后端 AccountController（/api/v1/iam/accounts）对齐 */
 describe('iam api account paths', () => {
   it('uses v1 base and /accounts paths', () => {
-    expect(apiSource).toContain("'/api/v1/iam'");
-    expect(apiSource).toContain("'/accounts'");
+    expect(apiSource).toContain('\'/api/v1/iam\'');
+    expect(apiSource).toContain('\'/accounts\'');
   });
 
   it('declares audit log endpoints under /audit', () => {
-    expect(apiSource).toContain("'/audit/logs'");
-    expect(apiSource).toContain("'/audit/settings'");
+    expect(apiSource).toContain('\'/audit/logs\'');
+    expect(apiSource).toContain('\'/audit/settings\'');
   });
 
   it('uses size query param for pagination', () => {

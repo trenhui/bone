@@ -37,6 +37,8 @@ const FieldManagement: React.FC = () => {
         }
       }
     });
+    // entityId 仅用于首次为空时初始化，不应作为依赖
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const load = useCallback(async () => {

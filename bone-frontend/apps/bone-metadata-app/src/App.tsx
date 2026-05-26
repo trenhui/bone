@@ -29,7 +29,7 @@ const breadcrumbMap: Record<string, string> = {
   '/metadata/template': '模板管理',
 };
 
-function AppLayout({ user: _user }: AppProps) {
+function AppLayout(): JSX.Element {
   const location = useLocation();
   const pageTitle = breadcrumbMap[location.pathname] ?? '实体管理';
 
@@ -106,10 +106,11 @@ function Placeholder({ title }: { title: string }) {
   );
 }
 
-function App(props: AppProps) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function App(_props: AppProps): JSX.Element {
   return (
     <Router>
-      <AppLayout {...props} />
+      <AppLayout />
     </Router>
   );
 }

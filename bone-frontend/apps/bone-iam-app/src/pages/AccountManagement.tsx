@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Table, Button, Modal, Form, Input, Select, message, Popconfirm, Space, Tag } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, LockOutlined, UnlockOutlined, KeyOutlined } from '@ant-design/icons';
 import * as api from '../services/api';
 import { unwrapPage } from '../utils/pageResult';
-import type { Account, CreateAccountRequest, UpdateAccountRequest } from '../types';
+import type { Account, CreateAccountRequest, Role, UpdateAccountRequest } from '../types';
 
 const { Option } = Select;
 
@@ -15,7 +15,7 @@ const statusMap: Record<number, { text: string; color: string }> = {
 
 const AccountManagement: React.FC = () => {
   const [accounts, setAccounts] = useState<Account[]>([]);
-  const [roles, setRoles] = useState<any[]>([]);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(false);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -28,23 +28,23 @@ const AccountManagement: React.FC = () => {
   const [form] = Form.useForm();
   const [resetPwdForm] = Form.useForm();
 
-  const fetchAccounts = async () => {
+  const fetchAccounts = useCallback(async () => {
     setLoading(true);
     try {
       const response = await api.getAccounts(page, pageSize, keyword);
       if (response.code === 200) {
-        const { records, total } = unwrapPage(response.data);
+        const { records, total: newTotal } = unwrapPage(response.data);
         setAccounts(records);
-        setTotal(total);
+        setTotal(newTotal);
       }
     } catch {
       message.error('获取账号列表失败');
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, pageSize, keyword]);
 
-  const fetchRoles = async () => {
+  const fetchRoles = useCallback(async () => {
     try {
       const response = await api.getRoles(1, 100);
       if (response.code === 200) {
@@ -53,12 +53,12 @@ const AccountManagement: React.FC = () => {
     } catch {
       message.error('获取角色列表失败');
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchAccounts();
-    fetchRoles();
-  }, [page, pageSize, keyword]);
+    void fetchAccounts();
+    void fetchRoles();
+  }, [fetchAccounts, fetchRoles]);
 
   const handleAdd = () => {
     setIsEditMode(false);
@@ -214,7 +214,7 @@ const AccountManagement: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: Account) => (
+      render: (_: unknown, record: Account) => (
         <Space size="middle">
           <Button icon={<EditOutlined />} onClick={() => handleEdit(record)} />
           <Button

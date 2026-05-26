@@ -1,7 +1,8 @@
 import React from 'react';
 import { Layout, Menu, Breadcrumb, theme } from 'antd';
-import { AppstoreOutlined, SafetyOutlined, SettingOutlined } from '@ant-design/icons';
+import { AppstoreOutlined, DashboardOutlined, SafetyOutlined, SettingOutlined } from '@ant-design/icons';
 import { BrowserRouter, Routes, Route, useLocation, Link } from 'react-router-dom';
+import ExtensionOverview from '@/pages/ExtensionOverview';
 import ExtensionPointManagement from '@/pages/ExtensionPointManagement';
 import PluginManagement from '@/pages/PluginManagement';
 import SandboxManagement from '@/pages/SandboxManagement';
@@ -9,7 +10,7 @@ import './App.css';
 
 const { Content, Sider } = Layout;
 
-type MenuKey = 'point' | 'plugin' | 'sandbox';
+type MenuKey = 'overview' | 'point' | 'plugin' | 'sandbox';
 
 const AppContent: React.FC = () => {
   const location = useLocation();
@@ -20,10 +21,12 @@ const AppContent: React.FC = () => {
   const selectedKey = (): MenuKey => {
     if (location.pathname.includes('plugin')) return 'plugin';
     if (location.pathname.includes('sandbox')) return 'sandbox';
-    return 'point';
+    if (location.pathname.includes('point')) return 'point';
+    return 'overview';
   };
 
   const breadcrumbLabel: Record<MenuKey, string> = {
+    overview: '概览',
     point: '扩展点管理',
     plugin: '插件管理',
     sandbox: '沙箱管理',
@@ -50,6 +53,11 @@ const AppContent: React.FC = () => {
           selectedKeys={[key]}
           style={{ borderRight: 0 }}
           items={[
+            {
+              key: 'overview',
+              icon: <DashboardOutlined />,
+              label: <Link to="/extension">概览</Link>,
+            },
             {
               key: 'point',
               icon: <SettingOutlined />,
@@ -83,10 +91,11 @@ const AppContent: React.FC = () => {
             }}
           >
             <Routes>
+              <Route path="/extension" element={<ExtensionOverview />} />
               <Route path="/extension/point" element={<ExtensionPointManagement />} />
               <Route path="/extension/plugin" element={<PluginManagement />} />
               <Route path="/extension/sandbox" element={<SandboxManagement />} />
-              <Route path="*" element={<ExtensionPointManagement />} />
+              <Route path="*" element={<ExtensionOverview />} />
             </Routes>
           </div>
         </Content>

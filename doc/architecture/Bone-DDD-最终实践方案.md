@@ -1,12 +1,12 @@
 # Bone 领域驱动设计（DDD）统一实践方案
 
 > **唯一权威**：本文档置于 `doc/architecture/`，为 Bone 仓库内 **DDD 与分层门禁** 的唯一权威规范（与同目录总体架构、数据库规范并列维护）。  
-> **结构**：**第一部分**为与具体框架解耦的**业界共识与架构原则（北向星）**；**第二部分**为 **Bone 平台工程落地**（包结构、铁律、SDK、极简策略）。修订时先对齐原则，再调整落地条文。  
+> **结构**：**第一部分**为业界共识与架构原则（北向星），含 **§10 Bone 上下文映射参考**（将 §2.3 原则实例化为 Bone 各上下文关系图）；**第二部分**为 **Bone 平台工程落地**（包结构、铁律、SDK、极简策略）。修订时先对齐原则，再调整落地条文。  
 > **定位说明**：本文是 **Bone 仓库内 DDD 与分层门禁的权威规范**，对齐主流 DDD/整洁架构共识，并含 **D1 元数据注解** 等工程折中；**非**全行业唯一标准，复杂域请结合 ADR 裁剪。  
 > **关联文档**：[BONE-总体架构设计方案.md](./BONE-总体架构设计方案.md)（平台总体架构、NFR、安全与数据一致性策略，与本方案互补）；[README.md](./README.md) 为架构文档索引；模块详设见 [doc/design/modules/README.md](../design/modules/README.md)。  
-> **版本**：**4.1** | **日期**：2026-05-21  
+> **版本**：**4.3** | **日期**：2026-05-26  
 > **分册索引**：[ddd/README.md](./ddd/README.md)（原则 / 工程落地 / CQRS / 附录 / **补充条文与示例**）  
-> **近期 ADR**：[0011 AggregateRoot 继承链](./adr/0011-aggregate-root-inheritance.md)、[0012 SystemException 层次](./adr/0012-system-exception-hierarchy.md)
+> **近期 ADR**：[0011 AggregateRoot 继承链](./adr/0011-aggregate-root-inheritance.md)、[0012 SystemException 层次](./adr/0012-system-exception-hierarchy.md)、[0013 extension-studio 读侧 ReadPort](./adr/0013-extension-studio-repository-read-side.md)
 >
 > **使用说明**：
 > - 本方案为**稳定规范**，**不再附迁移时间表 / 批次 / Owner**。**凡不符合本规范的代码均须迁移**；落地节奏由各模块负责人在内部排期，不写入本文。  
@@ -46,6 +46,7 @@
 
 - 与相邻上下文的关系**显式标注**（合作、客户–供应方、防腐层、开放主机服务、发布语言等）。  
 - 跨边界集成**不依赖**对方内部模型；经 **API / 事件契约 / 防腐层** 完成。
+- **Bone 各上下文的具体映射关系**见 [§10 Bone 上下文映射（参考）](#10-bone-上下文映射参考)。
 
 ### 2.4 子域类型（推荐）
 
@@ -157,6 +158,102 @@
 
 ---
 
+## 10. Bone 上下文映射（参考）
+
+> 本节是 §2.3 上下文映射原则在 Bone 仓库内的具体实例化，将通用原则落地为可读的关系图与可执行的边界守护建议。**维护人**：架构组；随系统演进更新。
+
+### 10.1 限界上下文与子域类型
+
+| 上下文 | 核心职责 | 子域类型 | 主要聚合根（示例） |
+|--------|----------|----------|-------------------|
+| **IAM** | 身份、认证、授权；用户 / 角色 / 权限生命周期管理 | 通用域 | `User`、`Role`、`Permission` |
+| **MasterData** | 主数据建模、数据质量治理、记录管控 | 核心域 | `MasterEntity`、`MasterRecord` |
+| **Integration** | 多协议连接器、流程编排、执行日志 | 核心域 | `Connector`、`Flow`、`FlowExecution` |
+| **Extension** | 扩展点注册、插件生命周期管理 | 核心域 | `ExtensionPoint`、`Plugin` |
+| **System** | 系统配置、运维日志、监控告警 | 通用域 | `SysConfig`、`SysLog` |
+| **Notification** | 通知渠道、消息发送记录 | 支撑域 | `NotificationRecord` |
+| **Generator** | 代码生成模板、数据源、生成任务历史 | 支撑域 | `Template`、`GenerationTask` |
+
+### 10.2 上下文映射图
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  bone-framework  共享内核（Shared Kernel）                                        │
+│  bone-core / bone-web / bone-security / bone-datasource                          │
+│  bone-metadata-sdk  遵奉者（Conformist，D1 工程折中，见 §4.1 / §17）              │
+└────────────────────────────────┬─────────────────────────────────────────────────┘
+                                 │ 所有应用模块 Maven 依赖
+        ┌────────────────────────┼────────────────────────────────┐
+        ▼                        ▼                                ▼
+┌──────────────┐         ┌──────────────┐               ┌─────────────────────────┐
+│   Gateway    │         │     IAM      │               │  bone-extension-sdk     │
+│  (纯路由BFF) │         │ (port 8081)  │               │  共享内核（SPI）         │
+└──────┬───────┘         └──────┬───────┘               └───────────┬─────────────┘
+       │                        │                                   │
+       │ 路由（无业务语义）       │ OHS / JWT                         │ SPI（@ExtensionPoint）
+       │                        │ 下游须 ACL 防腐                    │
+       ├──── 路由 ──────────────►│◄── ACL ── 所有应用上下文           ▼
+       │                        │                       ┌──────────────────────┐
+       ├── 路由 ──► ┌────────────┴────────────┐         │  Extension Studio     │
+       │            │      MasterData         │  C-S    │  (扩展引擎应用)        │
+       │            │  （主数据，核心域）       │──MQ/ACL►│                       │
+       │            └────────────┬────────────┘         └──────────────────────┘
+       │                         │ C-S (MQ / ACL)
+       ├── 路由 ──► ┌─────────────▼───────────┐
+       │            │      Integration        │──── 扩展点SPI ─────►Extension
+       │            │  (集成引擎, port 8085)   │
+       │            └─────────────────────────┘
+       │
+       ├── 路由 ──► ┌─────────────────────────┐
+       │            │         System           │──── OHS ──────────►所有（配置/日志）
+       │            │  (系统管理, port 8083)    │
+       │            └─────────────────────────┘
+       │
+       ├── 路由 ──► ┌─────────────────────────┐
+       │            │      Notification        │◄─── C-S / ACL ─────IAM（用户信息）
+       │            └─────────────────────────┘
+       │
+       └── 路由 ──► ┌─────────────────────────┐
+                    │       Generator          │◄─── C-S / ACL ─────MasterData / Extension
+                    └─────────────────────────┘
+```
+
+### 10.3 跨上下文集成关系明细
+
+| 上游（U） | 下游（D） | 关系模式 | 集成方式 | 防腐要求 |
+|-----------|-----------|----------|----------|----------|
+| bone-framework | 所有模块 | **共享内核** | Maven 依赖 | 变更须全平台架构评审；任何模块不可私自修改 |
+| bone-metadata-sdk | 所有应用模块 | **遵奉者**（D1 折中） | Maven 依赖 + `@Table`/`@Id` 注解 | 不可混入 JPA/Hibernate 注解；见 §4.1 / §17 |
+| bone-extension-sdk | Extension Studio + 业务嵌入进程 | **共享内核** | Maven 依赖 | SPI 接口变更须向下兼容 |
+| IAM | 所有应用上下文 | **OHS（开放主机服务）** | JWT Token + `/api/v1/iam/` REST | 下游须 ACL 转换；**禁止直接依赖 `com.bone.iam.domain.*`** |
+| MasterData | Integration | **客户–供应方（C-S）** | 集成事件（MQ）或 REST ACL | Integration 须 ACL 隔离；不持有 MasterData 聚合对象 |
+| Integration | Extension | **客户–供应方（C-S）** | 扩展点 SPI（extension-sdk） | 经 SPI 接口调用；不依赖 Extension domain 包 |
+| System | 所有 | **OHS** | REST + SkyWalking 日志采集 | 仅消费技术指标；无业务耦合 |
+| IAM | Notification | **客户–供应方（C-S）** | REST ACL | Notification 通过 ACL 获取用户联系方式；不持 IAM domain 模型 |
+| MasterData / Extension | Generator | **客户–供应方（C-S）** | REST ACL | Generator 通过 ACL 消费元数据与扩展描述 |
+| bone-gateway | 所有应用上下文 | **纯路由（无业务语义）** | HTTP 反向代理 | 不持有任何业务模型；不做跨上下文聚合逻辑 |
+
+### 10.4 跨上下文边界 ArchUnit 守护（推荐，按需添加）
+
+目前跨上下文边界主要依赖代码评审约束。随各模块集成关系明确，推荐在**下游模块**的 `ArchitectureTest` 中逐步添加越界依赖拦截规则：
+
+```java
+// 示例：Integration 模块禁止直接 import IAM 或 MasterData 的 domain 包
+// 跨上下文集成须通过公开 API jar 或集成事件契约，而非直接依赖对方 domain 类
+@ArchTest
+static final ArchRule no_direct_iam_domain_dependency =
+    noClasses()
+        .should()
+        .dependOnClassesThat()
+        .resideInAPackage("com.bone.iam.domain..")
+        .allowEmptyShould(true)
+        .because("跨上下文集成须经 IAM 公开 API，禁止直接依赖其 domain 包（§10.4）");
+```
+
+> **使用说明**：此类规则**不统一放入 `BoneDddArchRules`**（跨模块 classpath 通常未加载对方内部类，规则会空命中），而是在各自下游模块 `ArchitectureTest` 中**按需自行添加**；优先在新建跨上下文集成关系时同步落地，存量按需覆盖。
+
+---
+
 # 第二部分　Bone 平台工程落地
 
 本部分规定 **Bone** 仓库内模块的**可执行约束**与推荐结构。**价值排序**：以**第一部分**为演进北向星；**交付门禁**以**第二部分**为准。二者常规不互斥（如纯 POJO 理想与 **D1** 元数据注解的取舍，已在第一部分 §4.1 与第二部分 §17 显式衔接）；若仍存张力，在评审中记录取舍理由。
@@ -165,7 +262,7 @@
 
 ## 0. 规范稳定性契约
 
-> 本节是 Bone 仓库内 DDD 与分层门禁的**唯一稳定面**。规范一旦发布即视为**最终态**，不分「过渡期」「Grandfather」「批次」。**凡不符合本规范的代码均须迁移**；CI 门禁拒绝新增违规。
+> 本节是 Bone 仓库内 DDD 与分层门禁的**唯一稳定面**。新代码须满足下列条文；**存量违规**通过 `FreezingArchRule` 登记快照，CI 拦截**新增**违规，迁移完成后收缩基线。
 
 ### 0.1 新代码强制 Profile（PR 拦截）
 
@@ -174,9 +271,9 @@
 | 维度 | 要求 |
 |------|------|
 | 分层 | §14.1 标准树（或 §14.2 极简树） |
-| 应用层 | 基础包 `command` / `query`；可选 `event` / `integration` / 满足 §14.3.1 约束的 `service`；ADR 例外可加 `orchestration`（§14.3） |
-| 入站 | Controller → `*CommandHandler` / `*QueryHandler`（或 ADR 批准的 `*Orchestrator`）；**禁止** Controller 直接注入 `application/service` |
-| 命名 | 命令后缀 `*Command`、查询后缀 `*Query`；端口包 `domain/repository/`，接口 `*Repository`；异常 `com.bone.core.exception.BizException`（禁 `*Cmd`、`*Qry`、`*Store`、自建 `BusinessException`） |
+| 应用层 | 基础包 `command` / `query`；可选 `event` / `integration` / 满足 §14.3.1 约束的 `service`；ADR 例外可加 `orchestration`（§14.3）；满足 §14.3.2 F1/F2/F3 可加 `facade` |
+| 入站 | Controller → `*CommandHandler` / `*QueryHandler`（或 ADR 批准的 `*Orchestrator`，或 §14.3.2 条件下的 `*Facade`）；**禁止** Controller 直接注入 `application/service`、`domain/service`（领域服务）、`domain/repository`（ArchUnit 见 §21 #11/#12/#17） |
+| 命名 | 应用层命令/查询类名 `*Command` / `*Query`（禁 `*Cmd` / `*Qry`）；Handler 类名 `*CommandHandler` / `*QueryHandler`；adapter 入参 DTO 见 [§23](#23-命名约定) 分层表；端口 `domain/repository/*Repository`；异常 `BizException` |
 | 禁止 | `application/usecase/**`、`*UseCase`、任何自造 `@UseCase` / `UseCaseExecutor`；**禁止**业务模块依赖已删除的 `com.bone.core.usecase.*` |
 | AI/Flow | 能力发现仅用 `com.bone.core.capability.@Capability` + `HandlerRegistry`（§20） |
 | 门禁 | §12 P0 + `bone-framework/bone-architecture-test` 共享 ArchUnit 规则（见 §21） |
@@ -234,7 +331,7 @@
 |----------|-----------|
 | 边界与数据所有权 | 一上下文对应一个 Maven 模块（`com.bone.{module}`）；跨边界经 ACL / 契约 API / 事件 |
 | 通用语言 | 术语表 + 命令/事件/REST 命名一致 |
-| 防腐 | `domain/gateway/` 定义端口，`infrastructure/gateway/` 实现；禁止应用层直连 Feign **实现类型** |
+| 防腐 | `domain/gateway/` 定义出站 ACL 与读侧 `*ReadPort`（§18.5）；`infrastructure/gateway/` 或 `infrastructure/persistence/` 实现；禁止应用层直连 Feign **实现类型** |
 | 一致性 | 一事务一改一个聚合根；跨聚合默认最终一致 |
 | 读写分离 | 写走聚合 + 仓储；读走 `Criteria` / `QueryBuilder` + 投影 DTO |
 
@@ -252,7 +349,7 @@
 4. **写侧仓储**：`domain.repository` 只做聚合 **加载与持久化**（如 `save`、`remove`、`findById`）；**禁止**在仓储接口上增加组合条件列表/分页等查询方法。  
 5. **读侧查询**：凡 **WHERE 含多个业务条件**、**分页/排序**、**Join/子查询/聚合报表** 的读路径，统一用 **`Criteria` / `QueryBuilder`**，结果映射到 `application.query.dto`（或 `projection`）；**禁止在 `domain` 包内**使用查询构建器。仅按 **主键或单一业务键** 加载聚合（如 `findById`、§18.2 白名单方法）仍走仓储，不视为本条「读侧复杂查询」。  
 6. **CQRS**：CommandHandler 内 **禁止** 使用 `QueryBuilder`（特例「读己之写」须注释 + 评审）。**QueryHandler** 建议标注 **`@Transactional(readOnly = true)`**（或框架等价只读事务），且 **禁止** 调用写侧仓储修改聚合。
-7. **应用层单层**：**禁止** `application/usecase/**` 包与 `*UseCase` 类；Controller **直接注入** `*CommandHandler` / `*QueryHandler` / `*Orchestrator`（编排例外见 [§14.3](#143-应用层结构强制)），**禁止** 直接注入 `application/service`。**禁止**任何模块 import 已删除的 `com.bone.core.usecase.*` 或自造 `@UseCase` / `UseCaseExecutor`。
+7. **应用层单层**（禁止无意义薄门面）：**禁止** `application/usecase/**` 包与 `*UseCase` 类；Controller **直接注入** `*CommandHandler` / `*QueryHandler` / `*Orchestrator`（编排例外见 [§14.3](#143-应用层结构强制)）或 `*Facade`（有条件的入站门面，见 [§14.3.2](#1432-applicationfacade-约束条件追加非默认)，不同于被禁止的无意义 UseCase 薄门面）；**禁止**直接注入 `application/service`、`domain/service`（领域服务）、`domain/repository`（写侧仓储）。**禁止**任何模块 import 已删除的 `com.bone.core.usecase.*` 或自造 `@UseCase` / `UseCaseExecutor`。
 
 #### 12.1.1 SDK / 框架库豁免（P0-4/5/6/7）
 
@@ -331,6 +428,7 @@ com.bone.{module}/
 │   ├── event/                     # 可选：领域事件订阅 / 应用事件转发
 │   ├── integration/               # 可选：入站消息编排（MQ / Kafka 消费）
 │   ├── orchestration/             # ADR 例外：跨 Handler 编排（§14.3）
+│   ├── facade/                    # 条件追加：多入口 / SDK 门面（§14.3.2）
 │   └── service/                   # §14.3.1 约束（共享逻辑，禁 Controller 直注）
 ├── domain/
 │   ├── {aggregate}/
@@ -366,11 +464,12 @@ com.bone.{module}/
 
 | 包 | 角色 | 必选 / 可选 |
 |----|------|-------------|
-| `application/command/{cmd,handler}/` | 写用例 | **必选**（凡有写操作） |
-| `application/query/{qry,handler,dto}/` | 读用例 | **必选**（凡有读操作） |
+| `application/command/{cmd,handler}/` | 写用例执行器（`*CommandHandler`） | **必选**（凡有写操作） |
+| `application/query/{qry,handler,dto}/` | 读用例执行器（`*QueryHandler`） | **必选**（凡有读操作） |
 | `application/event/` | 应用事件（领域事件订阅/转发） | 可选 |
 | `application/integration/` | 入站消息编排（如 MQ 消费、Kafka Source） | 可选 |
 | `application/orchestration/` | 跨多 Handler 编排（`*Orchestrator`） | **ADR 例外** |
+| `application/facade/` | 多入口 / Client SDK 入站门面（`*Facade`） | **§14.3.2 条件追加** |
 | `application/service/` | 多 Handler 共享逻辑（`*Service`） | **§14.3.1 约束** |
 
 **禁止**（PR/ArchUnit 拦截）：
@@ -379,10 +478,11 @@ com.bone.{module}/
 |------|----------|
 | `application/usecase/**`（任何子目录） | 删除；Controller 直接注入对应 `*CommandHandler` / `*QueryHandler` |
 | 类名 `*UseCase` | 改名为 `*CommandHandler` / `*QueryHandler`；纯 delegate 直接合并到现有 Handler，不留空壳 |
-| Controller 注入 `*UseCase` 或 `application/service/*Service` | Controller 仅注入 Handler / Orchestrator；事务边界仍在 Handler |
+| Controller 注入 `application/service/*Service` | Controller 仅注入 Handler / Orchestrator / Facade（§14.3.2）；事务边界仍在 Handler |
+| Controller 注入 `domain/service/*`（领域服务）或 `domain/repository/*`（写侧仓储） | **禁止**；经 Handler 编排后间接调用，不直接穿透到 domain 层（ArchUnit #12、#17） |
 | **业务模块** import `com.bone.core.usecase.*` | **禁止**（包已从 bone-core 删除） |
 | 自造 `@UseCase` 注解 / `UseCaseExecutor` 接口 | **禁止**；按本规范删除并改 Controller 直注 Handler |
-| 「UseCase 仅 delegate 到 Handler」的薄门面 | 反模式：违反 §15「无业务规则的空壳层」 |
+| 无触发条件（F1/F2/F3 均不满足）的 Facade 门面 | 反模式；删除 Facade，Controller 改直注 Handler（见 §14.3.2）|
 
 **决策依据**：
 
@@ -404,10 +504,10 @@ com.bone.{module}/
 
 `application/service/` 用于多个 Handler **共享**非门面型逻辑。**两条铁律 + 两条建议**即可：
 
-**铁律**（CR / ArchUnit）：
+**铁律**：
 
-1. **禁止** `Controller` 直接注入 `application/service/*Service`（入站统一为 Handler / Orchestrator，见 §12.1 P0-7）。
-2. **禁止** `*Service` 承载聚合不变量（不变量在聚合根或领域服务，见 §12.1 P0-2）。
+1. **禁止** `Controller` 直接注入 `application/service/*Service`（入站统一为 Handler / Orchestrator，见 §12.1 P0-7）——**ArchUnit #11 机器拦截**。
+2. **禁止** `*Service` 承载聚合不变量（不变量在聚合根或领域服务，见 §12.1 P0-2）——**CR 拦截**，ArchUnit 无对应规则。
 
 **建议**（CR 经验，不机器拦截）：
 
@@ -415,7 +515,7 @@ com.bone.{module}/
 - 默认**不加** `@Transactional`（写事务边界仍在 `*CommandHandler` / `*Orchestrator`）；若必须，须在类级 Javadoc 说明。
 - 依赖 `domain` 端口与其他 Handler；不依赖 `infrastructure` 实现类。
 
-**参考分类**（类级 Javadoc **必须**包含 `S1` / `S2` / `S3` 之一，供 CR 与 AI 生成校验）：
+**参考分类**（建议在类级 Javadoc 注明 `S1` / `S2` / `S3` 之一，供 CR 与 AI 生成校验；CR 约束，ArchUnit 不拦截）：
 
 | 标签 | 典型用途 | 仓库示例 |
 |------|----------|----------|
@@ -424,6 +524,38 @@ com.bone.{module}/
 | `S3 缓存/失效` | 横切缓存失效、权限快照刷新 | `AuthorityCacheEvictionService` |
 
 > 反模式：仅 `handler.handle(cmd)` 一行 delegate 的 Service —— 直接删除，调用方改注入 Handler。
+
+#### 14.3.2 `application/facade` 约束（条件追加，非默认）
+
+`application/facade/` 为**可选入站门面层**，仅在满足以下任一触发条件时追加；默认**不建**。
+
+**触发条件（满足任一即可追加）**：
+
+| 编号 | 条件 | 典型场景 |
+|------|------|---------|
+| **F1** | 同一组用例被 **≥ 2 个入站适配器**复用（HTTP + Dubbo/Feign + MQ + Scheduler） | RPC Provider 与 Controller 需调用同一批 CommandHandler |
+| **F2** | 模块对外发布**稳定 Client SDK jar**，需要独立的 `*ServiceI` 接口定义 | `client/api/XxxServiceI` 由 Facade 实现，消费方依赖接口 jar |
+| **F3** | 单个 Controller 构造函数注入的 Handler 数量 **> 7**，影响可读性 | 大型聚合（如权限、订单）的 Controller |
+
+不满足以上任一条件时，**不应**建 Facade；Controller 直接注入 Handler。
+
+**铁律**：
+
+1. **Facade 不写领域业务规则**（CR）：聚合不变量、状态流转、业务决策**必须**在 domain；Facade 只做应用级协调（参数组装、权限前置、路由到 Handler）。
+2. **Facade 不持有写事务**（CR）：`@Transactional` 的写边界**仍在 `*CommandHandler`**；Facade 若标 `@Transactional` 须在类级 Javadoc 注明原因（`@Transactional(readOnly = true)` 读汇聚除外）。
+3. **不取代 Handler**（CR）：Facade 内部**必须**路由到对应 `*CommandHandler` / `*QueryHandler`（或 `*Orchestrator`）；禁止在 Facade 内直接操作 Repository / Domain / Infrastructure。
+4. **触发条件不满足则删除**（CR）：若 Facade 每个方法仅一行 `handler.handle(cmd)` 且 F1/F2/F3 均不满足 → 删除 Facade，Controller 改直注 Handler。
+
+**建议**：
+
+- 类命名 `*Facade`；按**业务域/模块**聚合（如 `OrderFacade` 覆盖订单域全部入站用例），不必为每个用例建独立 Facade，也不应建一个覆盖全模块所有聚合的单一 Facade。
+- Facade 允许承载**应用级**横切逻辑（入口级幂等检查、批量参数预校验等），但此类逻辑**必须无领域语义**。
+- Controller 注入 `*Facade` 不触发 ArchUnit #11（#11 仅拦截 `..application.service..`，`..application.facade..` 不在拦截范围；其余 §14.3.2 铁律由 CR 保证）。
+- Facade 可向下调用 `*Orchestrator`（跨聚合编排场景：Controller → Facade → Orchestrator → Handler → Domain）。
+
+**与 COLA 的对照**：
+
+> `*Facade` ≡ COLA `AppService`（应用层入站门面）；`*CommandHandler` ≡ COLA `CmdExe`（用例执行器）。两者共存且职责互补：Facade 解决**入口复用与聚合注入**，Handler 承担**用例执行与事务边界**，Facade **不能替代** Handler。COLA 里 AppService 也是条件存在的（有 Client SDK / 多入口时才有价值），与本节判定逻辑一致。
 
 ### 14.4 模块适用性（按**性质**而非物理位置）
 
@@ -466,7 +598,7 @@ DDD 规范是否适用，**按模块性质判定**，不以 `bone-platform/` / `
 
 | 层 | 职责 | 禁止 |
 |----|------|------|
-| **adapter** | 协议转换、入参校验、路由；**Controller 直接注入** `*CommandHandler` / `*QueryHandler` / `*Orchestrator` | 业务规则；直接调仓储实现；注入 `*UseCase` 或 `application/service/*Service` |
+| **adapter** | 协议转换、入参校验、路由；**Controller 直接注入** `*CommandHandler` / `*QueryHandler` / `*Orchestrator`；满足 §14.3.2 F1/F2/F3 时可注入 `*Facade` | 业务规则；注入 `*UseCase`、`application/service/*Service`、`domain/service/*`（领域服务）、`domain/repository/*Repository`；直接操作持久化 |
 | **application** | 用例编排、**写事务边界**（`@Transactional` 置于 CommandHandler 或等价边界）、调领域与端口 | 实现本属聚合内的业务不变量；直接拼写/执行 SQL；直接依赖 infrastructure 实现类；`application/usecase` 包或 `*UseCase` 类 |
 | **domain** | 规则、聚合、事件、端口定义 | Spring/JPA/MyBatis/Jackson、查询构建器 |
 | **infrastructure** | ACL 实现、SDK 配置、技术适配；持久化 `*PO` / `*Converter` / `*RepositoryImpl` | 领域业务规则 |
@@ -608,6 +740,29 @@ bone-core 提供的异常类型（`com.bone.core.exception.*`）：
 public class Application { }
 ```
 
+### 18.5 读侧端口（`*ReadPort`，ADR-0013）
+
+当列表/搜索/统计等读操作**不宜**或**无法**用 `QueryBuilder`（§18.3）表达时（如内存仓储、元数据混合持久化、专用读模型），在 **`domain/gateway/*ReadPort`** 声明读侧专用端口；`*QueryHandler` 只依赖 `*ReadPort`，写侧仍用 `domain/repository/*Repository` 白名单方法（§18.2）。实现类可在 `infrastructure/persistence/` **同一类**双接口实现（`implements XxxRepository, XxxReadPort`）。
+
+**读路径决策树**：
+
+```text
+需要读取领域数据？
+├─ 主键 / 单业务键加载聚合 → 写侧 Repository.findById / findByCode（§18.2）
+├─ 多条件 / 分页 / 排序 / Join / 报表 → QueryBuilder + @ReadSideOnly（§18.3）
+├─ 列表 / 搜索 / count，且 QueryBuilder 不适用 → domain/gateway/*ReadPort（本条）
+└─ 跨限界上下文 / 外部系统 → ACL Gateway（§19）或集成事件投影
+```
+
+**`domain/gateway/` 包内职责区分**（命名后缀区分，勿混用）：
+
+| 后缀 / 用途 | 示例 | 职责 |
+|-------------|------|------|
+| `*ReadPort` | `ExtPointReadPort` | **模块内**读侧：列表、搜索、统计 |
+| `*Gateway` / `*Port`（出站） | `PaymentGateway`、`InventoryGateway` | **跨边界**出站 ACL（外部 HTTP/RPC/MQ） |
+
+新增读方法**只加在 `*ReadPort`**，禁止回写到 `*Repository` 规避白名单。首版见 [ADR-0013](./adr/0013-extension-studio-repository-read-side.md)（`bone-extension-studio`）。
+
 ---
 
 ## 19. ACL（Bone）
@@ -645,8 +800,17 @@ public class Application { }
 | 8 | `noNewDomainStorePackage` | §14.5 |
 | 9 | `noCustomBusinessException` | §16.3 |
 | 10 | `noBusinessExceptionSuffix` | §16.3 |
+| 11 | `adapterControllersMustNotDependOnApplicationService` | P0-7 + §15（仅拦截 `..application.service..`；`..application.facade..` 不受此规则限制） |
+| 12 | `adapterControllersMustNotDependOnDomainRepository` | §15 |
+| 13 | `commandHandlersShouldBeNamedCommandHandler` | §23 |
+| 14 | `queryHandlersShouldBeNamedQueryHandler` | §23 |
+| 15 | `commandHandlersShouldBeTransactional` | §15 |
+| 16 | `queryHandlersShouldBeReadOnlyTransactional` | §12.1 P0-6（建议） |
+| 17 | `adapterControllersMustNotDependOnDomainService` | P0-7 + §15（Controller 禁直注 `domain/service` 领域服务） |
 
 读侧检测：`domainMustNotUseQueryBuilder` / `commandHandlersMustNotUseQueryBuilder` 拦截对 `@ReadSideOnly` 类型的依赖（非写死类名）。`noBoneCoreUseCaseApiDependency` **不 freeze**（防回滚、无存量命中）。
+
+**Freeze 建议**（2026-05-23）：`applicationMustNotDependOnInfrastructure`、仓储白名单、QueryBuilder 禁令、adapter/Handler 命名与事务规则在 **`bone-blueprint` 参考样板不 freeze**（须 0 违规）；其它应用模块对上述 #11–#17 规则 **freeze 存量**，迁移后 `allowStoreUpdate=true` 收缩基线。`noUseCase*` / `noNewDomainStore` / `noCustomBusinessException*` 继续 freeze 防回潮。
 
 **存量违规处理**：使用 `FreezingArchRule` 登记当前违规快照（基线 `archunit_store/`），仅拦截**新增**；迁移后基线收缩，**不允许扩张**。
 
@@ -667,7 +831,7 @@ static final ArchRule no_new_use_cases =
 | 做法 | 建议 |
 |------|------|
 | **CQRS** | 保留 `command/query` 分包；不默认独立读库、事件投影。 |
-| **应用层** | 默认 Controller → Handler → Domain **三步**（即 adapter → application → domain）；**不引入** UseCase；`application/service` 仅按 §14.3.1 约束；编排复杂时按 §14.3 ADR 加 `*Orchestrator`。 |
+| **应用层** | 默认 Controller → Handler → Domain **三步**（adapter → application → domain）；**不引入** UseCase；满足 §14.3.2 F1/F2/F3 时按条件追加 `*Facade`；`application/service` 仅按 §14.3.1 约束；跨聚合编排按 §14.3 ADR 加 `*Orchestrator`。 |
 | **扩展点 / ACL / MQ / RPC / 定时** | 无真实需求则不建。 |
 | **战略文档** | 小模块一页纸术语表起步。 |
 | **领域事件** | 无跨聚合协调时可少发。 |
@@ -693,6 +857,7 @@ static final ArchRule no_new_use_cases =
 3. 修改 `domain/**` 后 ArchUnit freeze 基线**只收缩、不扩张**。
 4. 跨 2+ 聚合编排须产出 `*Orchestrator` + ADR 草稿，不得新增 UseCase 门面。
 5. 不得修改 `BizException` / `DomainException` / `InfrastructureException` 根类型语义（ADR 流程除外）。
+6. 生成 `*Facade` 前须验证触发条件（§14.3.2 F1/F2/F3）；生成时在类级 Javadoc 注明触发条件编号；禁止在 Facade 内写领域规则或直接依赖 Repository/Domain。
 
 代码示例与适应度指标见 [ddd/07-supplements.md](./ddd/07-supplements.md)。
 
@@ -700,16 +865,35 @@ static final ArchRule no_new_use_cases =
 
 ## 23. 命名约定
 
+### 23.1 分层命名（应用层 vs adapter DTO）
+
+| 层级 / 包 | 命令 | 查询 | 说明 |
+|-----------|------|------|------|
+| `application/command/cmd/` | `*Command` | — | **禁** `*Cmd` 类名；目录名 `cmd/` 可保留 |
+| `application/query/qry/` | — | `*Query` | **禁** `*Qry` 类名；目录名 `qry/` 可保留 |
+| `application/command/handler/` | — | — | 类名 **必须** `*CommandHandler` |
+| `application/query/handler/` | — | — | 类名 **必须** `*QueryHandler` |
+| `adapter/web/dto/request/` 或 `adapter/web/dto/` | `*Req` | `*Qry`（可选） | 与 [Bone-API-规范](./Bone-API-规范.md) §12 对齐；**仅 adapter 入参**，非 application 层 Query 对象 |
+| `adapter/web/dto/response/` | — | `*Resp` | REST 出参 |
+
+> **易混点**：`FlowPageQuery`（application）与 `ExtPointPageQry`（adapter 入参）可并存；禁止把 application 层查询类命名为 `*Qry`。
+
+### 23.2 其它命名
+
 | 类型 | 示例 | 备注 |
 |------|------|------|
-| 命令 | `CreateOrderCommand` | **新代码唯一后缀 `*Command`**；禁 `*Cmd` 等其它后缀 |
-| 查询 | `OrderByIdQuery` | **新代码唯一后缀 `*Query`**；禁 `*Qry` |
-| 处理器 | `CreateOrderCommandHandler`、`OrderByIdQueryHandler` | 位于 `command/handler/`、`query/handler/` |
 | 领域事件 | `OrderPaidEvent` | 过去式 |
 | 集成事件 | `OrderPaidIntegrationEvent` | 跨边界契约；后缀 `IntegrationEvent` |
 | 编排器（例外） | `OrderRefundOrchestrator` | 仅 §14.3 例外允许；放 `application/orchestration/` |
-| 端口（仓储） | `OrderRepository` | §14.5：禁 `*Store`/`*Dao`/`*Mapper` 作领域端口 |
+| 入站门面（条件） | `OrderFacade` | 仅 §14.3.2 F1/F2/F3 条件下追加；放 `application/facade/`；禁止叫 `*AppService` / `*Service` |
+| 写侧端口 | `OrderRepository` | §14.5：禁 `*Store`/`*Dao`/`*Mapper` |
+| 读侧端口 | `OrderReadPort` | §18.5：列表/搜索/统计 |
+| 出站 ACL | `PaymentGateway` | §19 |
 | 应用服务（受约束） | `OrderShippingService` | §14.3.1：禁 Controller 直注、禁承载聚合不变量；禁 `*Manager` |
+
+> **与 COLA 术语对照**（仅供跨框架沟通参考，不改 Bone 命名规范）：
+> `*CommandHandler` ≡ COLA `*CmdExe`；`*QueryHandler` ≡ COLA `*QryExe`；`*Facade` ≡ COLA `AppService`（入站门面）；`application/service/*Service`（S1/S2/S3）无 COLA 直接等价物（COLA 里此类逻辑通常内聚在 CmdExe/DomainService 内）。
+> Bone 选用全词 `*CommandHandler` / `*QueryHandler` 而非 COLA 缩写 `*CmdExe` / `*QryExe`，原因：与 CQRS/MediatR/Axon 业界通用术语对齐；全词命名在 Code Review、日志、堆栈中可读性更优；`Executor` 缩写在 Java 生态与 `java.util.concurrent.Executor` 存在语义歧义。
 
 ---
 
@@ -722,7 +906,7 @@ static final ArchRule no_new_use_cases =
 
 ## 附录 A：与旧 Bone-Blueprint 版本号的关系
 
-历史版本号（v7 / v9.5 / v16.3 / v24 等）仅表示过往迭代；**门禁以第二部分** §12（铁律）、§14～§23 中与**结构、领域持久化、ACL、测试、极简、命名**相关的条文为准（§10～§11 为 Bone 目标与对齐摘要，非逐条 CI）。产品文档中「Bone-Blueprint」可与本方案同义指称。
+历史版本号（v7 / v9.5 / v16.3 / v24 等）仅表示过往迭代；**门禁以第二部分** §12（铁律）、§14～§23 中与**结构、领域持久化、ACL、测试、极简、命名**相关的条文为准（**第二部分** §10「目标」～§11「与第一部分对齐」为 Bone 目标与对齐摘要，非逐条 CI）。产品文档中「Bone-Blueprint」可与本方案同义指称。
 
 ---
 
@@ -778,6 +962,7 @@ static final ArchRule no_new_use_cases =
 | 命名 `*Cmd` / `*Qry` | 类名重命名为 `*Command` / `*Query`；子包 `cmd/` / `qry/` 可保留作短目录名（§14.1） | `scripts/ddd-rename-cmd-qry.py <module> --apply` |
 | 模块自建 `BusinessException` / `*BusinessException` | 全部改用 `com.bone.core.exception.BizException` 或 `*BizException` 后缀（如 `MetadataEngineBizException`、`ExtensionBizException`）；删除自建 `BusinessException` 类 | 手工 + ArchUnit `noBusinessExceptionSuffix` |
 | `Controller` 直接注入 `application/service/*Service` | Controller 改注入 `*CommandHandler` / `*QueryHandler` / `*Orchestrator`；`*Service` 仅供 Handler 内部复用 | `scripts/migrate-extension-studio-service-to-application.py`（模板） |
+| `Controller` 直接注入 `domain/service/*`（领域服务） | Controller 改注入对应 Handler；领域服务由 Handler 在应用层编排调用（ArchUnit #17 机器拦截） | 手工 + ArchUnit `adapterControllersMustNotDependOnDomainService` |
 | 缺少 ArchUnit 守护（新模块或老模块） | 使用 `scripts/ddd-archtest-template.py <module> <root-package> [--extra-archunit ...]` 一行生成 `ArchitectureTest`，再 `allowStoreCreation=true` 生成基线 | `scripts/ddd-archtest-template.py` |
 
 ### B.3 ArchUnit 模板（`bone-architecture-test`）
@@ -785,7 +970,7 @@ static final ArchRule no_new_use_cases =
 > **使用说明**：
 > 1. 将下方 `com.bone.iam` 替换为本模块根包（如 `com.bone.masterdata`、`com.bone.system` 等）。
 > 2. 所有 `FreezingArchRule.freeze(...)` 包裹的规则需要先生成基线再提交：`mvn test -pl <module> -Dtest=ArchitectureTest -Darchunit.freeze.store.default.allowStoreCreation=true`。基线放在 `<module>/archunit_store/`，提交入库。
-> 3. **Freeze 策略（2026-05-22）**：`application_no_infra`、`repository_methods_whitelist`、`noBoneCoreUseCaseApiDependency`、QueryBuilder 禁令 **不 freeze**（直接门禁）；`noUseCase*`、`noNewDomainStore`、`noCustomBusinessException*` **继续 freeze** 防回潮。见 `bone-architecture-test/README.md`。
+> 3. **Freeze 策略（2026-05-26）**：`application_no_infra`、`repository_methods_whitelist`、`noBoneCoreUseCaseApiDependency`、QueryBuilder 禁令 **不 freeze**（直接门禁）；`noUseCase*`、`noNewDomainStore`、`noCustomBusinessException*` **继续 freeze** 防回潮；**`adapter_no_*`（#11/#12/#17）、Handler 命名与事务规则（#13–#16）在非 `bone-blueprint` 模块首次接入时 freeze 存量**，迁移后收缩基线。见 `bone-architecture-test/README.md`。
 
 ```java
 import com.bone.architecture.BoneDddArchRules;
@@ -837,6 +1022,28 @@ class ArchitectureTest {
 
     @ArchTest static final ArchRule no_business_exception_suffix =
             FreezingArchRule.freeze(BoneDddArchRules.noBusinessExceptionSuffix());
+
+    // P0-7 + §15 + §23（参考样板 bone-blueprint：以下 7 条不 freeze；其它模块 freeze 存量）
+    @ArchTest static final ArchRule adapter_no_application_service =
+            BoneDddArchRules.adapterControllersMustNotDependOnApplicationService();
+
+    @ArchTest static final ArchRule adapter_no_domain_repository =
+            BoneDddArchRules.adapterControllersMustNotDependOnDomainRepository();
+
+    @ArchTest static final ArchRule adapter_no_domain_service =
+            BoneDddArchRules.adapterControllersMustNotDependOnDomainService();
+
+    @ArchTest static final ArchRule command_handler_naming =
+            BoneDddArchRules.commandHandlersShouldBeNamedCommandHandler();
+
+    @ArchTest static final ArchRule query_handler_naming =
+            BoneDddArchRules.queryHandlersShouldBeNamedQueryHandler();
+
+    @ArchTest static final ArchRule command_handler_transactional =
+            BoneDddArchRules.commandHandlersShouldBeTransactional();
+
+    @ArchTest static final ArchRule query_handler_transactional =
+            BoneDddArchRules.queryHandlersShouldBeReadOnlyTransactional();
 }
 ```
 

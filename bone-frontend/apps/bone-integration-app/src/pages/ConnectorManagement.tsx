@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Card, Table, Button, Modal, Form, Input, Select, message, Popconfirm } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, ReloadOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { connectorApi } from '../services/api';
@@ -26,22 +26,22 @@ export const ConnectorManagement: React.FC = () => {
     { value: 'MQ', label: '消息队列' },
   ];
 
-  const fetchConnectors = async () => {
+  const fetchConnectors = useCallback(async () => {
     setLoading(true);
     try {
       const response = await connectorApi.getConnectors({ pageNum: page, pageSize });
-      setConnectors(response.data.data.list);
-      setTotal(response.data.data.total);
-    } catch (error) {
+      setConnectors(response.data.list);
+      setTotal(response.data.total);
+    } catch {
       message.error('获取连接器列表失败');
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, pageSize]);
 
   useEffect(() => {
-    fetchConnectors();
-  }, [page, pageSize]);
+    void fetchConnectors();
+  }, [fetchConnectors]);
 
   const handleAdd = () => {
     setIsEdit(false);
@@ -74,10 +74,10 @@ export const ConnectorManagement: React.FC = () => {
   const handleTest = async (id: number) => {
     try {
       const response = await connectorApi.testConnector(id);
-      if (response.data.data.success) {
+      if (response.data.success) {
         message.success('测试成功');
       } else {
-        message.error(`测试失败: ${response.data.data.message}`);
+        message.error(`测试失败: ${response.data.message}`);
       }
     } catch (error) {
       message.error('测试失败');
@@ -171,7 +171,7 @@ export const ConnectorManagement: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: Connector) => (
+      render: (_: unknown, record: Connector) => (
         <div>
           <Button
             type="link"

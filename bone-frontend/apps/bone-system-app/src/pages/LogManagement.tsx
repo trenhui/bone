@@ -23,10 +23,26 @@ import {
 } from '@ant-design/icons';
 import type { SystemLog } from '@/types';
 import { logApi } from '@/services/api';
-import dayjs from 'dayjs';
+import dayjs, { Dayjs } from 'dayjs';
 
 const { RangePicker } = DatePicker;
 const { Option } = Select;
+
+interface LogSearchFormValues {
+  level?: string;
+  service?: string;
+  keyword?: string;
+  dateRange?: [Dayjs, Dayjs];
+}
+
+interface LogAnalyzeResult {
+  totalCount?: number;
+  errorCount?: number;
+  warnCount?: number;
+  errorRate?: number;
+  hotServices?: Array<{ service: string; count: number }>;
+  errorDistribution?: Array<{ type: string; count: number }>;
+}
 
 const LogManagementPage: React.FC = () => {
   const [logs, setLogs] = useState<SystemLog[]>([]);
@@ -35,10 +51,10 @@ const LogManagementPage: React.FC = () => {
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedLog, setSelectedLog] = useState<SystemLog | null>(null);
   const [analyzeModalVisible, setAnalyzeModalVisible] = useState(false);
-  const [analyzeResult, setAnalyzeResult] = useState<any>(null);
+  const [analyzeResult, setAnalyzeResult] = useState<LogAnalyzeResult | null>(null);
   const [form] = Form.useForm();
 
-  const fetchLogs = async (page = 1, pageSize = 20, filters: any = {}) => {
+  const fetchLogs = async (page = 1, pageSize = 20, filters: Record<string, unknown> = {}): Promise<void> => {
     setLoading(true);
     try {
       const params = {
@@ -55,7 +71,7 @@ const LogManagementPage: React.FC = () => {
           total: response.data.total,
         });
       }
-    } catch (error) {
+    } catch {
       message.error('获取日志失败');
     } finally {
       setLoading(false);
@@ -64,11 +80,12 @@ const LogManagementPage: React.FC = () => {
 
   useEffect(() => {
     fetchLogs();
+    // 仅在组件挂载时执行一次
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleSearch = async () => {
-    const values = await form.validateFields();
-    const filters: any = {
+  const buildFilters = (values: LogSearchFormValues): Record<string, unknown> => {
+    const filters: Record<string, unknown> = {
       level: values.level,
       service: values.service,
       keyword: values.keyword,
@@ -77,32 +94,28 @@ const LogManagementPage: React.FC = () => {
       filters.startTime = values.dateRange[0].format('YYYY-MM-DD HH:mm:ss');
       filters.endTime = values.dateRange[1].format('YYYY-MM-DD HH:mm:ss');
     }
-    fetchLogs(1, pagination.pageSize, filters);
+    return filters;
   };
 
-  const handleReset = () => {
+  const handleSearch = async (): Promise<void> => {
+    const values = await form.validateFields();
+    fetchLogs(1, pagination.pageSize, buildFilters(values));
+  };
+
+  const handleReset = (): void => {
     form.resetFields();
     fetchLogs();
   };
 
-  const handleViewDetail = (log: SystemLog) => {
+  const handleViewDetail = (log: SystemLog): void => {
     setSelectedLog(log);
     setDetailModalVisible(true);
   };
 
-  const handleExport = async () => {
+  const handleExport = async (): Promise<void> => {
     try {
       const values = form.getFieldsValue();
-      const filters: any = {
-        level: values.level,
-        service: values.service,
-        keyword: values.keyword,
-      };
-      if (values.dateRange) {
-        filters.startTime = values.dateRange[0].format('YYYY-MM-DD HH:mm:ss');
-        filters.endTime = values.dateRange[1].format('YYYY-MM-DD HH:mm:ss');
-      }
-      const response = await logApi.exportLogs(filters);
+      const response = await logApi.exportLogs(buildFilters(values));
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -110,29 +123,20 @@ const LogManagementPage: React.FC = () => {
       document.body.appendChild(link);
       link.click();
       message.success('导出日志成功');
-    } catch (error) {
+    } catch {
       message.error('导出日志失败');
     }
   };
 
-  const handleAnalyze = async () => {
+  const handleAnalyze = async (): Promise<void> => {
     try {
       const values = form.getFieldsValue();
-      const filters: any = {
-        level: values.level,
-        service: values.service,
-        keyword: values.keyword,
-      };
-      if (values.dateRange) {
-        filters.startTime = values.dateRange[0].format('YYYY-MM-DD HH:mm:ss');
-        filters.endTime = values.dateRange[1].format('YYYY-MM-DD HH:mm:ss');
-      }
-      const response = await logApi.analyzeLogs(filters);
+      const response = await logApi.analyzeLogs(buildFilters(values));
       if (response.code === 200) {
-        setAnalyzeResult(response.data);
+        setAnalyzeResult(response.data as LogAnalyzeResult);
         setAnalyzeModalVisible(true);
       }
-    } catch (error) {
+    } catch {
       message.error('分析日志失败');
     }
   };
@@ -184,7 +188,7 @@ const LogManagementPage: React.FC = () => {
       title: '操作',
       key: 'action',
       width: 100,
-      render: (_: any, record: SystemLog) => (
+      render: (_: unknown, record: SystemLog) => (
         <Button type="link" onClick={() => handleViewDetail(record)}>
           详情
         </Button>
@@ -252,16 +256,7 @@ const LogManagementPage: React.FC = () => {
             showTotal: (total) => `共 ${total} 条`,
             onChange: (page, pageSize) => {
               const values = form.getFieldsValue();
-              const filters: any = {
-                level: values.level,
-                service: values.service,
-                keyword: values.keyword,
-              };
-              if (values.dateRange) {
-                filters.startTime = values.dateRange[0].format('YYYY-MM-DD HH:mm:ss');
-                filters.endTime = values.dateRange[1].format('YYYY-MM-DD HH:mm:ss');
-              }
-              fetchLogs(page, pageSize, filters);
+              fetchLogs(page, pageSize, buildFilters(values));
             },
           }}
           scroll={{ x: 1200 }}
@@ -331,7 +326,7 @@ const LogManagementPage: React.FC = () => {
             {analyzeResult.hotServices && (
               <Card title="热门服务" style={{ marginBottom: 16 }}>
                 <ul>
-                  {analyzeResult.hotServices.map((item: any, index: number) => (
+                  {analyzeResult.hotServices.map((item, index) => (
                     <li key={index}>{item.service}: {item.count} 条</li>
                   ))}
                 </ul>
@@ -340,7 +335,7 @@ const LogManagementPage: React.FC = () => {
             {analyzeResult.errorDistribution && (
               <Card title="错误分布">
                 <ul>
-                  {analyzeResult.errorDistribution.map((item: any, index: number) => (
+                  {analyzeResult.errorDistribution.map((item, index) => (
                     <li key={index}>{item.type}: {item.count} 次</li>
                   ))}
                 </ul>

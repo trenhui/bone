@@ -157,7 +157,7 @@ const SystemConfigPage: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: SystemConfig) => (
+      render: (_: unknown, record: SystemConfig) => (
         <Space>
           <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
             编辑

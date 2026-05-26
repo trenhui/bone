@@ -1,20 +1,11 @@
 package com.bone.blueprint.domain.order.event;
 
-import com.bone.blueprint.domain.order.Order;
 import com.bone.core.domain.DomainEvent;
 
-public class OrderCancelledEvent implements DomainEvent {
-    private final Order order;
-    
-    public OrderCancelledEvent(Order order) {
-        this.order = order;
-    }
-    
-    public Order getOrder() {
-        return order;
-    }
-    
-    public Long getOrderId() {
-        return order.getId();
-    }
+import java.time.Instant;
+
+/**
+ * 订单已取消（领域事实，瘦载荷）。
+ */
+public record OrderCancelledEvent(Long orderId, Instant occurredAt) implements DomainEvent {
 }

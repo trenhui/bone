@@ -7,10 +7,10 @@ import { FlowMonitor } from './pages/FlowMonitor';
 import './App.css';
 
 interface AppProps {
-  user?: any;
+  user?: Record<string, unknown>;
 }
 
-export const App: React.FC<AppProps> = ({ user: _user }) => {
+export const App: React.FC<AppProps> = () => {
   return (
     <Router>
       <AppLayout>

@@ -31,6 +31,7 @@ import {
   listExecutionLogs,
   listExtPoints,
   listPlugins,
+  newIdempotencyKey,
   publishPluginRuntime,
   updateExtPoint,
 } from './extensionApi';
@@ -48,8 +49,24 @@ describe('extensionApi', () => {
       data: { success: true, data: [{ id: 1, name: 'p1', enabled: true }] },
     });
     const rows = await listExtPoints();
-    expect(mockGet).toHaveBeenCalledWith('/v1/extension/points');
+    expect(mockGet).toHaveBeenCalledWith('/v1/extension/points', { params: undefined });
     expect(rows).toHaveLength(1);
+  });
+
+  it('listExtPoints with page returns PageResult shape', async () => {
+    mockGet.mockResolvedValue({
+      data: {
+        success: true,
+        data: { records: [{ id: 1, name: 'p1', enabled: true }], total: 1, page: 1, size: 10 },
+      },
+    });
+    const page = await listExtPoints({ page: 1, size: 10 });
+    expect(mockGet).toHaveBeenCalledWith('/v1/extension/points', { params: { page: 1, size: 10 } });
+    expect(Array.isArray(page)).toBe(false);
+    if (!Array.isArray(page)) {
+      expect(page.records).toHaveLength(1);
+      expect(page.total).toBe(1);
+    }
   });
 
   it('createExtPoint calls POST /v1/extension/points', async () => {
@@ -62,6 +79,25 @@ describe('extensionApi', () => {
       { name: 'n', interfaceName: 'com.X' },
       { headers: {} },
     );
+  });
+
+  it('createExtPoint sends Idempotency-Key when provided', async () => {
+    mockPost.mockResolvedValue({
+      data: { success: true, data: { id: 3, name: 'n', interfaceName: 'com.Y', enabled: true } },
+    });
+    await createExtPoint(
+      { name: 'n', interfaceName: 'com.Y' },
+      { idempotencyKey: 'test-idem-key' },
+    );
+    expect(mockPost).toHaveBeenCalledWith(
+      '/v1/extension/points',
+      { name: 'n', interfaceName: 'com.Y' },
+      { headers: { 'Idempotency-Key': 'test-idem-key' } },
+    );
+  });
+
+  it('newIdempotencyKey returns non-empty string', () => {
+    expect(newIdempotencyKey().length).toBeGreaterThan(8);
   });
 
   it('deployPlugin sync calls POST with sync=true', async () => {

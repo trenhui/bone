@@ -1,0 +1,5 @@
+Class <com.bone.integration.application.command.handler.CreateConnectorHandler> does not have simple name ending with 'CommandHandler' in (CreateConnectorHandler.java:0)
+Class <com.bone.integration.application.command.handler.CreateFlowHandler> does not have simple name ending with 'CommandHandler' in (CreateFlowHandler.java:0)
+Class <com.bone.integration.application.command.handler.ExecuteFlowHandler> does not have simple name ending with 'CommandHandler' in (ExecuteFlowHandler.java:0)
+Class <com.bone.integration.application.command.handler.UpdateConnectorHandler> does not have simple name ending with 'CommandHandler' in (UpdateConnectorHandler.java:0)
+Class <com.bone.integration.application.command.handler.UpdateFlowHandler> does not have simple name ending with 'CommandHandler' in (UpdateFlowHandler.java:0)

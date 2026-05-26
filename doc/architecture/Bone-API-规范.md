@@ -462,7 +462,7 @@ public class ExtensionPointController {
 | 规则 | 说明 |
 |------|------|
 | 包路径 | `adapter.web.controller` |
-| 入参 | `*Req` / `*Qry`；`@Valid` |
+| 入参 | `*Req` / `*Qry`（**adapter 层** REST 入参 DTO，见《Bone-DDD》§23.1）；`@Valid` |
 | 出参 | `*Resp`；不直接返回领域实体 |
 | 事务 | 仅在 `application.command.handler` |
 | 文档 | `@Operation` + `@Tag`（SpringDoc） |

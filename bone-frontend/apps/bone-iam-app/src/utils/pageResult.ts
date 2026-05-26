@@ -1,7 +1,9 @@
 import type { PageResult } from '../types';
 
 /** 对齐 bone-core PageResult（records + total） */
-export function unwrapPage<T>(page: PageResult<T> | null | undefined) {
+export function unwrapPage<T>(
+  page: PageResult<T> | null | undefined,
+): { records: T[]; total: number } {
   if (!page) {
     return { records: [] as T[], total: 0 };
   }

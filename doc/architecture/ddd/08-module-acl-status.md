@@ -26,6 +26,10 @@
 | `TenantAggregateRoot` | `Account`、`Role`、`AuditLog` |
 | `AggregateRoot` | `Tenant`、`Permission` |
 
+## ArchUnit 规则扩展（2026-05-23，DDD v4.2）
+
+新增 6 条共享规则（#11–#16）：adapter 禁直注 `application/service` 与 `domain/repository`；Handler 命名 `*CommandHandler`/`*QueryHandler`；写/读 Handler 事务边界。`bone-blueprint` **不 freeze**（参考样板须 0 违规）；其它应用模块 freeze 存量后随迁移收缩。
+
 ## ArchUnit freeze 策略（2026-05-22 统一）
 
 | 规则 | freeze |

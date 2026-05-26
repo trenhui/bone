@@ -134,8 +134,8 @@ const EntityManagement: React.FC = () => {
           </Button>
           {record.deliveryMode === META_DELIVERY_RUNTIME &&
             record.status === META_ENTITY_PUBLISHED && (
-              <Link to={`/metadata/runtime?entity=${encodeURIComponent(record.code)}`}>运行时数据</Link>
-            )}
+            <Link to={`/metadata/runtime?entity=${encodeURIComponent(record.code)}`}>运行时数据</Link>
+          )}
           {record.status === 0 && (
             <Button
               type="link"

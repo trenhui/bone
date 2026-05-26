@@ -1,9 +1,8 @@
-// 连接器相关类型
 export interface Connector {
   id: number;
   name: string;
   type: string;
-  config: Record<string, any>;
+  config: Record<string, unknown>;
   status: string;
   createdAt: string;
   updatedAt: string;
@@ -12,22 +11,21 @@ export interface Connector {
 export interface CreateConnectorReq {
   name: string;
   type: string;
-  config: Record<string, any>;
+  config: Record<string, unknown>;
 }
 
 export interface UpdateConnectorReq {
   name: string;
   type: string;
-  config: Record<string, any>;
+  config: Record<string, unknown>;
 }
 
-// 流程相关类型
 export interface FlowNode {
   id: number;
   flowId: number;
   name: string;
   type: string;
-  config: Record<string, any>;
+  config: Record<string, unknown>;
   positionX: number;
   positionY: number;
   createdAt: string;
@@ -61,7 +59,7 @@ export interface CreateFlowReq {
   nodes: {
     name: string;
     type: string;
-    config: Record<string, any>;
+    config: Record<string, unknown>;
     positionX: number;
     positionY: number;
   }[];
@@ -79,7 +77,7 @@ export interface UpdateFlowReq {
     id?: number;
     name: string;
     type: string;
-    config: Record<string, any>;
+    config: Record<string, unknown>;
     positionX: number;
     positionY: number;
   }[];

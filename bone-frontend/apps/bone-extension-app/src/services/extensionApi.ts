@@ -100,9 +100,14 @@ client.interceptors.response.use(
   (error) => {
     const body = error.response?.data as StudioApiResponse<unknown> | undefined;
     if (body) {
-      return Promise.reject(
-        toStudioError(body.message || '请求失败', body, error.response?.status),
-      );
+      const status = error.response?.status;
+      const fallback =
+        status === 412
+          ? '数据已被他人修改，请刷新后重试'
+          : status === 409
+            ? '幂等冲突或资源状态冲突'
+            : body.message || '请求失败';
+      return Promise.reject(toStudioError(fallback, body, status));
     }
     const traceId = error.response?.headers?.['x-trace-id'] as string | undefined;
     if (traceId) {
@@ -151,11 +156,29 @@ export type ExtensionRow = {
   version?: number;
 };
 
+export type StudioPageResult<T> = {
+  records: T[];
+  total?: number;
+  page?: number;
+  size?: number;
+  pages?: number;
+  hasNext?: boolean;
+  hasPrevious?: boolean;
+};
+
 export type StudioWriteOptions = {
   /** 乐观锁：对应服务端 ETag / If-Match */
   version?: number;
   idempotencyKey?: string;
 };
+
+/** 写操作幂等键（RFC 7231 Idempotency-Key）。 */
+export function newIdempotencyKey(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `idem-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+}
 
 export function ifMatchHeader(version?: number): Record<string, string> {
   if (version == null) {
@@ -196,9 +219,47 @@ export type ExtensionPayload = {
   enabled?: boolean;
 };
 
-export async function listExtPoints(): Promise<ExtPointRow[]> {
-  const res = await client.get<StudioApiResponse<ExtPointRow[]>>(`${EXTENSION_BASE}/points`);
-  return assertSuccess(res) ?? [];
+export type ListExtPointsParams = {
+  keyword?: string;
+  domain?: string;
+  category?: string;
+  page?: number;
+  size?: number;
+};
+
+function unwrapListPage<T>(data: T[] | StudioPageResult<T> | null | undefined): T[] {
+  if (!data) {
+    return [];
+  }
+  if (Array.isArray(data)) {
+    return data;
+  }
+  return data.records ?? [];
+}
+
+export async function listExtPoints(
+  params?: ListExtPointsParams,
+): Promise<ExtPointRow[] | StudioPageResult<ExtPointRow>> {
+  const res = await client.get<StudioApiResponse<ExtPointRow[] | StudioPageResult<ExtPointRow>>>(
+    `${EXTENSION_BASE}/points`,
+    { params },
+  );
+  const data = assertSuccess(res);
+  if (params?.page != null || params?.size != null) {
+    const page = (data && typeof data === 'object' && 'records' in data
+      ? data
+      : { records: unwrapListPage(data), total: unwrapListPage(data).length }) as StudioPageResult<ExtPointRow>;
+    return {
+      records: page.records ?? [],
+      total: page.total,
+      page: page.page ?? params.page,
+      size: page.size ?? params.size,
+      pages: page.pages,
+      hasNext: page.hasNext,
+      hasPrevious: page.hasPrevious,
+    };
+  }
+  return unwrapListPage(data);
 }
 
 export async function createExtPoint(
@@ -240,9 +301,35 @@ export async function postExtPointEnable(id: number, enable: boolean): Promise<v
   assertSuccess(res);
 }
 
-export async function listPlugins(): Promise<ExtensionRow[]> {
-  const res = await client.get<StudioApiResponse<ExtensionRow[]>>(`${EXTENSION_BASE}/plugins`);
-  return assertSuccess(res) ?? [];
+export type ListPluginsParams = {
+  extPointId?: number;
+  page?: number;
+  size?: number;
+};
+
+export async function listPlugins(
+  params?: ListPluginsParams,
+): Promise<ExtensionRow[] | StudioPageResult<ExtensionRow>> {
+  const res = await client.get<StudioApiResponse<ExtensionRow[] | StudioPageResult<ExtensionRow>>>(
+    `${EXTENSION_BASE}/plugins`,
+    { params },
+  );
+  const data = assertSuccess(res);
+  if (params?.page != null || params?.size != null) {
+    const page = (data && typeof data === 'object' && 'records' in data
+      ? data
+      : { records: unwrapListPage(data), total: unwrapListPage(data).length }) as StudioPageResult<ExtensionRow>;
+    return {
+      records: page.records ?? [],
+      total: page.total,
+      page: page.page ?? params.page,
+      size: page.size ?? params.size,
+      pages: page.pages,
+      hasNext: page.hasNext,
+      hasPrevious: page.hasPrevious,
+    };
+  }
+  return unwrapListPage(data);
 }
 
 export async function createPlugin(

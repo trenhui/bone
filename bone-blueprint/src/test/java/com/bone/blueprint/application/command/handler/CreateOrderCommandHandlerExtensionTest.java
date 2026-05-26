@@ -5,6 +5,8 @@ import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.repository.OrderRepository;
 import com.bone.blueprint.domain.extension.order.OrderPriceCalculator;
+import com.bone.core.domain.event.DomainEventPublisher;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -34,10 +36,18 @@ class CreateOrderCommandHandlerExtensionTest {
     
     @Mock
     private OrderPriceCalculator priceCalculator;
-    
+
+    @Mock
+    private DomainEventPublisher domainEventPublisher;
+
     @InjectMocks
     private CreateOrderCommandHandler handler;
-    
+
+    @BeforeEach
+    void stubSave() {
+        when(orderRepository.save(any(Order.class))).thenAnswer(inv -> inv.getArgument(0, Order.class).getId());
+    }
+
     @Test
     void testHandleWithStandardPrice() {
         CreateOrderCommand.OrderItemDto itemDto = CreateOrderCommand.OrderItemDto.builder()

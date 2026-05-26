@@ -1,0 +1,2 @@
+AccountAuthoritiesQueryHandler must declare @Transactional on class or handle()/execute() method
+TenantPageQueryHandler must declare @Transactional on class or handle()/execute() method

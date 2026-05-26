@@ -34,10 +34,10 @@ const Home: React.FC = () => {
 };
 
 interface AppProps {
-  user?: any;
+  user?: Record<string, unknown>;
 }
 
-const App: React.FC<AppProps> = ({ user }) => {
+const App: React.FC<AppProps> = () => {
   return (
     <Router>
       <AppLayout>

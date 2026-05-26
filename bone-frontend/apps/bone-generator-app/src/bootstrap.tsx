@@ -10,14 +10,18 @@ declare global {
   }
 }
 
-// 微前端生命周期
+interface QiankunMountProps {
+  container?: HTMLElement;
+  [key: string]: unknown;
+}
+
 let root: ReactDOM.Root | null = null;
 
-export const bootstrap = async () => {
+export const bootstrap = async (): Promise<void> => {
   console.log('Bone Generator App bootstraped');
 };
 
-export const mount = async (props: any) => {
+export const mount = async (props: QiankunMountProps): Promise<void> => {
   console.log('Bone Generator App mounted with props:', props);
   const container = props.container || document.getElementById('root');
   root = ReactDOM.createRoot(container!);
@@ -28,7 +32,7 @@ export const mount = async (props: any) => {
   );
 };
 
-export const unmount = async () => {
+export const unmount = async (): Promise<void> => {
   console.log('Bone Generator App unmounted');
   if (root) {
     root.unmount();
@@ -36,7 +40,7 @@ export const unmount = async () => {
   }
 };
 
-export const update = async (props: any) => {
+export const update = async (props: QiankunMountProps): Promise<void> => {
   console.log('Bone Generator App updated with props:', props);
 };
 

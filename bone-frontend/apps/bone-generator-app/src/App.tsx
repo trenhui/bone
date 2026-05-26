@@ -8,7 +8,7 @@ import GenerationHistory from './pages/GenerationHistory';
 const { Header, Content, Sider } = Layout;
 const { Title } = Typography;
 
-function App() {
+function App(): JSX.Element {
   return (
     <Router>
       <Layout style={{ minHeight: '100vh' }}>

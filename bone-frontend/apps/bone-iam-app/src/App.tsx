@@ -8,7 +8,7 @@ import AuditLog from './pages/AuditLog';
 import Auth from './pages/Auth';
 
 interface AppProps {
-  user?: any;
+  user?: Record<string, unknown>;
 }
 
 const App: React.FC<AppProps> = () => {

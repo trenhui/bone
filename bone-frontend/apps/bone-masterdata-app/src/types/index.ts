@@ -50,7 +50,7 @@ export interface QualityCheck {
 export interface QualityReport {
   id: number;
   qualityCheckId: number;
-  reportData: Record<string, any>;
+  reportData: Record<string, unknown>;
   issueCount: number;
   createdAt: string;
 }
@@ -68,7 +68,7 @@ export interface DataQualityResult {
 export interface MasterDataRecord {
   id: number;
   masterDataEntityId: number;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
   status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
   createdAt: string;
   updatedAt: string;
@@ -76,13 +76,13 @@ export interface MasterDataRecord {
 }
 
 // API 响应类型
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   code: number;
   message: string;
   data: T;
 }
 
-export interface PageResult<T = any> {
+export interface PageResult<T = unknown> {
   list: T[];
   total: number;
   pageNum: number;
@@ -139,7 +139,7 @@ export interface UpdateDataQualityRuleReq {
 }
 
 export interface UpdateMasterDataRecordReq {
-  data: Record<string, any>;
+  data: Record<string, unknown>;
 }
 
 // 查询参数类型

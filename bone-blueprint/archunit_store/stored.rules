@@ -1,10 +1,7 @@
 #
-#Thu May 21 15:12:21 CST 2026
-classes\ that\ are\ interfaces\ and\ have\ simple\ name\ ending\ with\ 'Repository'\ and\ reside\ in\ a\ package\ '..domain.repository..'\ should\ only\ declare\ whitelisted\ repository\ methods=48c59d1c-bd59-494b-b17b-ffdd0ccb5c10
-no\ classes\ should\ reside\ in\ a\ package\ '..application.usecase..',\ because\ DDD\ \u00A714.3\:\ forbid\ application/usecase\ package=8ffd82b0-787d-4569-af76-ce3acc817148
-no\ classes\ should\ reside\ in\ a\ package\ '..domain.store..',\ because\ DDD\ \u00A714.5\:\ new\ code\ uses\ domain.repository\ only=11397fa8-924f-4c64-8d9d-af34c44a8623
-no\ classes\ that\ reside\ outside\ of\ package\ 'com.bone.core..'\ should\ have\ simple\ name\ ending\ with\ 'BusinessException',\ because\ DDD\ \u00A716.3\:\ prefer\ *BizException\ or\ extend\ com.bone.core.exception.BizException=362a1cc7-d51c-4564-88db-d731a1fcb7c3
-no\ classes\ that\ reside\ outside\ of\ package\ 'com.bone.core..'\ should\ depend\ on\ classes\ that\ reside\ in\ a\ package\ 'com.bone.core.usecase..',\ because\ DDD\ P0-7\:\ com.bone.core.usecase\ was\ removed;\ use\ Handler\ +\ com.bone.core.capability=a073bd71-986e-4836-9286-e1e7f69baffd
-no\ classes\ that\ reside\ outside\ of\ package\ 'com.bone.core..'\ should\ have\ simple\ name\ 'BusinessException',\ because\ DDD\ \u00A716.3\:\ business\ exception\ is\ com.bone.core.exception.BizException=b35d114e-90da-409e-961b-f38f24e8f9ab
-no\ classes\ that\ reside\ in\ a\ package\ '..application..'\ should\ depend\ on\ classes\ that\ reside\ in\ any\ package\ ['..infrastructure..'],\ because\ DDD\ P0-1\:\ application\ must\ not\ depend\ on\ infrastructure\ implementations=8c3f8bbf-97c3-4ef6-9db3-9e1a592c6f4a
-no\ classes\ that\ reside\ in\ a\ package\ '..application..'\ should\ have\ simple\ name\ ending\ with\ 'UseCase',\ because\ DDD\ \u00A714.3\:\ forbid\ *UseCase;\ Controller\ injects\ Handler=efc359ac-5c38-4f3f-bce5-8296c8b42220
+#Sat May 23 12:15:46 CST 2026
+no\ classes\ should\ reside\ in\ a\ package\ '..application.usecase..',\ because\ DDD\ \u00A714.3\:\ forbid\ application/usecase\ package=d7dc8025-c9a4-46b9-aa39-f70c88b789b9
+no\ classes\ should\ reside\ in\ a\ package\ '..domain.store..',\ because\ DDD\ \u00A714.5\:\ new\ code\ uses\ domain.repository\ only=cb124afd-cb80-47b1-81a8-35e8f26f01ad
+no\ classes\ that\ reside\ outside\ of\ package\ 'com.bone.core..'\ should\ have\ simple\ name\ ending\ with\ 'BusinessException',\ because\ DDD\ \u00A716.3\:\ prefer\ *BizException\ or\ extend\ com.bone.core.exception.BizException=c8e3d243-5d22-48be-aaba-20052cb02f96
+no\ classes\ that\ reside\ outside\ of\ package\ 'com.bone.core..'\ should\ have\ simple\ name\ 'BusinessException',\ because\ DDD\ \u00A716.3\:\ business\ exception\ is\ com.bone.core.exception.BizException=ce34b9ec-59ab-43aa-9939-6442b3f9a3c4
+no\ classes\ that\ reside\ in\ a\ package\ '..application..'\ should\ have\ simple\ name\ ending\ with\ 'UseCase',\ because\ DDD\ \u00A714.3\:\ forbid\ *UseCase;\ Controller\ injects\ Handler=43b15adf-8131-404c-befc-b4311822fbb8

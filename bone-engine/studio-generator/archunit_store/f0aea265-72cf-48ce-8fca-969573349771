@@ -1,0 +1,4 @@
+PreviewTemplateHandler must declare @Transactional on class or handle()/execute() method
+ResolvedInputs must declare @Transactional on class or handle()/execute() method
+TestDataSourceConnectionHandler must declare @Transactional on class or handle()/execute() method
+ValidateTemplateHandler must declare @Transactional on class or handle()/execute() method

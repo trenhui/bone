@@ -115,7 +115,7 @@ const AppContent: React.FC = () => {
 };
 
 interface AppProps {
-  user?: Record<string, any>;
+  user?: Record<string, unknown>;
 }
 
 const App: React.FC<AppProps> = () => {

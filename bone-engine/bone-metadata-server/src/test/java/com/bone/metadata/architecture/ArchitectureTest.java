@@ -62,4 +62,33 @@ public class ArchitectureTest {
     @ArchTest
     static final ArchRule no_business_exception_suffix =
             FreezingArchRule.freeze(BoneDddArchRules.noBusinessExceptionSuffix());
+
+  // P0-7 + §15 + §23（存量 freeze，迁移后收缩基线）
+  @ArchTest
+  static final ArchRule adapter_no_application_service =
+      FreezingArchRule.freeze(BoneDddArchRules.adapterControllersMustNotDependOnApplicationService());
+
+  @ArchTest
+  static final ArchRule adapter_no_domain_repository =
+      FreezingArchRule.freeze(BoneDddArchRules.adapterControllersMustNotDependOnDomainRepository());
+
+  @ArchTest
+  static final ArchRule adapter_no_domain_service =
+      FreezingArchRule.freeze(BoneDddArchRules.adapterControllersMustNotDependOnDomainService());
+
+  @ArchTest
+  static final ArchRule command_handler_naming =
+      FreezingArchRule.freeze(BoneDddArchRules.commandHandlersShouldBeNamedCommandHandler());
+
+  @ArchTest
+  static final ArchRule query_handler_naming =
+      FreezingArchRule.freeze(BoneDddArchRules.queryHandlersShouldBeNamedQueryHandler());
+
+  @ArchTest
+  static final ArchRule command_handler_transactional =
+      FreezingArchRule.freeze(BoneDddArchRules.commandHandlersShouldBeTransactional());
+
+  @ArchTest
+  static final ArchRule query_handler_transactional =
+      FreezingArchRule.freeze(BoneDddArchRules.queryHandlersShouldBeReadOnlyTransactional());
 }

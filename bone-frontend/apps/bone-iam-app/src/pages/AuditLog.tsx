@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Table, Input, DatePicker, message } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import * as api from '../services/api';
@@ -16,25 +16,25 @@ const AuditLogPage: React.FC = () => {
   const [keyword, setKeyword] = useState('');
 
 
-  const fetchAuditLogs = async () => {
+  const fetchAuditLogs = useCallback(async () => {
     setLoading(true);
     try {
       const response = await api.getAuditLogs({ page, pageSize });
       if (response.code === 200) {
-        const { records, total } = unwrapPage(response.data);
+        const { records, total: newTotal } = unwrapPage(response.data);
         setAuditLogs(records);
-        setTotal(total);
+        setTotal(newTotal);
       }
     } catch {
       message.error('获取审计日志失败');
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, pageSize]);
 
   useEffect(() => {
-    fetchAuditLogs();
-  }, [page, pageSize]);
+    void fetchAuditLogs();
+  }, [fetchAuditLogs]);
 
   const columns = [
     { title: '用户ID', dataIndex: 'userId', key: 'userId', width: 90 },

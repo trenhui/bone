@@ -206,7 +206,7 @@ const MonitorAlertPage: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: AlertRule) => (
+      render: (_: unknown, record: AlertRule) => (
         <Space>
           <Button type="link" icon={<EditOutlined />} onClick={() => handleEditRule(record)}>
             编辑

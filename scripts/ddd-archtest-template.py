@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-为各应用模块生成统一的 ArchitectureTest，复用 BoneDddArchRules 9 条规则
+为各应用模块生成统一的 ArchitectureTest，复用 BoneDddArchRules 16 条规则
 （《Bone-DDD》§21 附录 B.3）。
 
 用法：
@@ -87,6 +87,31 @@ public class ArchitectureTest {{
     @ArchTest
     static final ArchRule no_business_exception_suffix =
             FreezingArchRule.freeze(BoneDddArchRules.noBusinessExceptionSuffix());
+
+    // P0-7 + §15 + §23（存量 freeze，迁移后收缩基线）
+    @ArchTest
+    static final ArchRule adapter_no_application_service =
+            FreezingArchRule.freeze(BoneDddArchRules.adapterControllersMustNotDependOnApplicationService());
+
+    @ArchTest
+    static final ArchRule adapter_no_domain_repository =
+            FreezingArchRule.freeze(BoneDddArchRules.adapterControllersMustNotDependOnDomainRepository());
+
+    @ArchTest
+    static final ArchRule command_handler_naming =
+            FreezingArchRule.freeze(BoneDddArchRules.commandHandlersShouldBeNamedCommandHandler());
+
+    @ArchTest
+    static final ArchRule query_handler_naming =
+            FreezingArchRule.freeze(BoneDddArchRules.queryHandlersShouldBeNamedQueryHandler());
+
+    @ArchTest
+    static final ArchRule command_handler_transactional =
+            FreezingArchRule.freeze(BoneDddArchRules.commandHandlersShouldBeTransactional());
+
+    @ArchTest
+    static final ArchRule query_handler_transactional =
+            FreezingArchRule.freeze(BoneDddArchRules.queryHandlersShouldBeReadOnlyTransactional());
 }}
 '''
 

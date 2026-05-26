@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   Card,
-  Table,
   Button,
   Modal,
   Form,
@@ -17,11 +16,11 @@ import {
 } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import { ProTable } from '@ant-design/pro-components';
+import type { ProColumns } from '@ant-design/pro-components';
 import type {
   DataQualityRule,
   MasterDataEntity,
   CreateDataQualityRuleReq,
-  UpdateDataQualityRuleReq,
   QualityCheck,
   QualityReport
 } from '../types';
@@ -40,14 +39,13 @@ const QualityRuleManagement: React.FC = () => {
   const [currentReport, setCurrentReport] = useState<QualityReport | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [checkLoading, setCheckLoading] = useState(false);
+  const [, setCheckLoading] = useState(false);
   const [rules, setRules] = useState<DataQualityRule[]>([]);
   const [entities, setEntities] = useState<MasterDataEntity[]>([]);
   const [selectedEntityId, setSelectedEntityId] = useState<number | null>(null);
   const [qualityChecks, setQualityChecks] = useState<QualityCheck[]>([]);
 
-  // 获取实体列表
-  const fetchEntities = async () => {
+  const fetchEntities = useCallback(async () => {
     try {
       const response = await masterDataEntityApi.page({ pageSize: 100 });
       if (response.code === 200) {
@@ -58,52 +56,54 @@ const QualityRuleManagement: React.FC = () => {
       } else {
         message.error(response.message);
       }
-    } catch (error) {
+    } catch {
       message.error('获取实体列表失败');
     }
-  };
+  }, [selectedEntityId]);
 
-  // 获取规则列表
-  const fetchRules = async () => {
+  const fetchRules = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await dataQualityRuleApi.page({ masterDataEntityId: selectedEntityId });
+      const response = await dataQualityRuleApi.page({
+        masterDataEntityId: selectedEntityId ?? undefined,
+      });
       if (response.code === 200) {
         setRules(response.data.list);
       } else {
         message.error(response.message);
       }
-    } catch (error) {
+    } catch {
       message.error('获取规则列表失败');
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedEntityId]);
 
-  // 获取质量检查历史
-  const fetchQualityChecks = async () => {
+  const fetchQualityChecks = useCallback(async () => {
     try {
-      const response = await qualityCheckApi.page({ masterDataEntityId: selectedEntityId });
+      const response = await qualityCheckApi.page({
+        masterDataEntityId: selectedEntityId ?? undefined,
+      });
       if (response.code === 200) {
         setQualityChecks(response.data.list);
       } else {
         message.error(response.message);
       }
-    } catch (error) {
+    } catch {
       message.error('获取质量检查历史失败');
     }
-  };
+  }, [selectedEntityId]);
 
   useEffect(() => {
-    fetchEntities();
-  }, []);
+    void fetchEntities();
+  }, [fetchEntities]);
 
   useEffect(() => {
     if (selectedEntityId) {
-      fetchRules();
-      fetchQualityChecks();
+      void fetchRules();
+      void fetchQualityChecks();
     }
-  }, [selectedEntityId]);
+  }, [selectedEntityId, fetchRules, fetchQualityChecks]);
 
   // 打开创建模态框
   const handleAdd = () => {
@@ -234,14 +234,14 @@ const QualityRuleManagement: React.FC = () => {
   // 状态标签
   const getStatusTag = (status: string) => {
     switch (status) {
-      case 'ERROR':
-        return <Tag color="red">错误</Tag>;
-      case 'WARNING':
-        return <Tag color="orange">警告</Tag>;
-      case 'INFO':
-        return <Tag color="blue">信息</Tag>;
-      default:
-        return <Tag>{status}</Tag>;
+    case 'ERROR':
+      return <Tag color="red">错误</Tag>;
+    case 'WARNING':
+      return <Tag color="orange">警告</Tag>;
+    case 'INFO':
+      return <Tag color="blue">信息</Tag>;
+    default:
+      return <Tag>{status}</Tag>;
     }
   };
 
@@ -291,7 +291,7 @@ const QualityRuleManagement: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      render: (_: any, record: DataQualityRule) => (
+      render: (_: unknown, record: DataQualityRule) => (
         <Space size="middle">
           <Button
             type="primary"
@@ -346,7 +346,7 @@ const QualityRuleManagement: React.FC = () => {
 
         {/* 规则列表 */}
         <ProTable
-          columns={columns}
+          columns={columns as ProColumns<DataQualityRule>[]}
           dataSource={rules}
           loading={loading}
           pagination={{ pageSize: 10 }}
@@ -372,20 +372,20 @@ const QualityRuleManagement: React.FC = () => {
                 title: '结束时间',
                 dataIndex: 'endTime',
                 key: 'endTime',
-                render: (endTime: string) => endTime || '-'
+                render: (_, record) => record.endTime || '-'
               },
               {
                 title: '状态',
                 dataIndex: 'status',
                 key: 'status',
-                render: (status: string) => {
+                render: (_, record) => {
                   const statusMap = {
                     PENDING: <Tag color="blue">待处理</Tag>,
                     RUNNING: <Tag color="yellow">运行中</Tag>,
                     COMPLETED: <Tag color="green">已完成</Tag>,
                     FAILED: <Tag color="red">失败</Tag>
                   };
-                  return statusMap[status as keyof typeof statusMap] || <Tag>{status}</Tag>;
+                  return statusMap[record.status as keyof typeof statusMap] || <Tag>{record.status}</Tag>;
                 }
               },
               {

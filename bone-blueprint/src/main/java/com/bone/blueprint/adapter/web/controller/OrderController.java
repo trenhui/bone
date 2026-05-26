@@ -7,16 +7,21 @@ import com.bone.blueprint.application.command.cmd.CancelOrderCommand;
 import com.bone.blueprint.application.command.cmd.CreateOrderCommand;
 import com.bone.blueprint.application.command.cmd.PayOrderCommand;
 import com.bone.blueprint.application.query.qry.OrderDetailQuery;
+import com.bone.blueprint.application.query.qry.OrderPageQuery;
 import com.bone.blueprint.application.command.handler.CancelOrderCommandHandler;
 import com.bone.blueprint.application.command.handler.CreateOrderCommandHandler;
 import com.bone.blueprint.application.command.handler.PayOrderCommandHandler;
+import com.bone.blueprint.application.query.dto.OrderDto;
 import com.bone.blueprint.application.query.handler.OrderDetailQueryHandler;
+import com.bone.blueprint.application.query.handler.OrderPageQueryHandler;
 import com.bone.core.result.ApiResponse;
+import com.bone.core.result.PageResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import javax.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,7 +39,14 @@ public class OrderController {
     private final PayOrderCommandHandler payOrderCommandHandler;
     private final CancelOrderCommandHandler cancelOrderCommandHandler;
     private final OrderDetailQueryHandler orderDetailQueryHandler;
+    private final OrderPageQueryHandler orderPageQueryHandler;
     private final OrderAssembler orderAssembler;
+
+    @Operation(summary = "分页查询订单", description = "按客户、状态分页查询订单列表")
+    @GetMapping
+    public ApiResponse<PageResult<OrderDto>> page(@ModelAttribute OrderPageQuery query) {
+        return ApiResponse.success(orderPageQueryHandler.handle(query));
+    }
 
     @Operation(summary = "创建订单", description = "创建新的订单")
     @PostMapping
