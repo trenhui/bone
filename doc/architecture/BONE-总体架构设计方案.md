@@ -5,7 +5,7 @@
 > **文档性质**：`doc/architecture/` 目录下**平台总体**架构与技术方案权威文档；本版在 v2.0 整合稿基础上，按 **C4、SRE（SLO/SLI）、Well-Architected、API 工程化、韧性模式、零信任与 SDL、数据一致性模式** 等业界最佳实践做了系统化补强。  
 > **文档沿革**：2026-05-15 起，原并行 `doc/arch` 方案已废止并合并至本文；2026-05-15 起本文迁入 `doc/architecture/`，与前端架构、UI 规范同目录索引；后续架构变更仅维护本文。  
 > **与实现关系**：愿景、分层、能力边界与非功能基线以本文为准；**具体 API 路径、表名 DDL** 与仓库不一致时以 **OpenAPI、`bone-init.sql`、各模块代码** 为准；**§7** 给出 Maven 模块映射。  
-> **版本**：v2.1 Best-Practice（最佳实践完整版） | **日期**：2026-05-15 | **最近修订**：2026-05-20 | **状态**：发布
+> **版本**：v2.2 Best-Practice（最佳实践完整版） | **日期**：2026-05-15 | **最近修订**：2026-05-27 | **状态**：发布
 
 ---
 
@@ -179,6 +179,52 @@
 | **集成引擎** | 连接器与流程编排 | 承载「企业集成」 |
 
 协同顺序（README）：**元数据定义骨架 → 主数据保质量 → ExtPoint 注入差异 → 集成连外部**。ExtPoint 与元数据分工见 [扩展详设](../design/modules/5.%20扩展管理模块详细设计方案.md) §1.5。
+
+### 3.2.1 扩展管理模块实现符合度（As-Is 快照，2026-05-27）
+
+> **详设真源**：[扩展管理详设 v2.5](../design/modules/5.%20扩展管理模块详细设计方案.md) §2；**机器证据**：[`doc/_generated/extension/`](../_generated/extension/)（`collect.py --check`）；**未落地**：[`backlog.yaml`](../../tools/extension-compliance-collector/backlog.yaml)。
+
+| 层次 | 仓库 | As-Is（可验收） | 未完成（[Target]/[Vision]） |
+|------|------|-----------------|---------------------------|
+| **运行时 SDK** | `bone-extension-sdk` | 四级路由、`ExtensionExecutionGuard` 舱壁/超时、宿主 `@EnableExtensionPoints` | 按插件熔断、Micrometer RED、字节码热载 |
+| **控制面 API** | `bone-extension-studio` :**8088** | 扩展点/插件 CRUD、JAR 上传、`:deploy` LRO、`:publish-runtime`、幂等 409、If-Match 412、审计/执行日志游标、ArchUnit | PATCH、Redis 集群幂等、`deployment_status` DDL、制品鉴权下载 |
+| **控制台微应用** | `bone-extension-app` :**3008** | 概览/扩展点/插件管理、观测「沙箱」页（执行日志+审计，**非** Wasm）；`extensionApi` 覆盖 deploy/LRO/upload/rollback/simulate；Vitest + 可选 e2e | UI 未封装 `:bind`/`:unbind`（后端已有）；Wasm「沙箱」属 [Vision] |
+| **网关** | `bone-gateway` :**8888** | `/api/v1/extension/**` 转发 Studio | — |
+
+**结论**：在详设 **As-Is 边界**内，扩展模块**后端控制面 + SDK 运行时 + 控制台主流程已实现**；**不等于**产品全量（字节码热载、插件市场、Wasm、RED 指标等见 Backlog）。JAR 上传**仅归档**，实现类须已在宿主 classpath（见详设 §1.1/§4.2）。
+
+**容器视图**（C4 Container · 与 [扩展详设 §5.2](../design/modules/5.%20扩展管理模块详细设计方案.md#52-架构as-is) 同源）：
+
+```mermaid
+flowchart TB
+  User((运维 / 开发者))
+
+  subgraph CP["管控面 Control Plane"]
+    FE["bone-extension-app :3008"]
+    GW["bone-gateway :8888"]
+    ST["bone-extension-studio :8088"]
+  end
+
+  subgraph INF["基础设施"]
+    DB[(MySQL · exts_*)]
+    Redis[(Redis · 选配)]
+  end
+
+  subgraph DP["数据面 Data Plane（业务宿主 JVM）"]
+    Host["Host App"]
+    SDK["bone-extension-sdk<br/>四级路由 + 舱壁"]
+    Host -. "嵌入" .- SDK
+  end
+
+  User -->|浏览器| FE
+  FE -->|/api/v1/extension/**| GW --> ST
+  ST --> DB
+  ST -->|publish-runtime| Redis
+  Redis -. "订阅路由元数据" .-> SDK
+  SDK -->|execution-logs:ingest| ST
+```
+
+**关键边界**：业务请求**不经过** `ST`；`ST` 只承担管控与日志聚合。`Redis` 不可用时退化为单进程内存同步（仅 Studio JVM 内可见）。
 
 ### 3.3 七大价值流与关键事件
 
@@ -410,7 +456,8 @@ flowchart TD
 |----------|-------------------|
 | 元数据能力族 | **sdk**（数据面，A+B 共用）· **server**（catalog + EAV，:9001）· **engine**（模式 B，选配）· **studio-generator**（模式 A）— [对照](../design/modules/元数据能力-实现映射与竞品对照.md) §1.3 |
 | 元数据 `delivery_mode` | `meta_entity.delivery_mode`：`0` GENERATIVE / `1` RUNTIME（As-Is 已落库；RUNTIME 动态 API 见 META-002B-02） |
-| 扩展引擎 | `bone-engine/bone-extension-engine/*` |
+| 扩展引擎 | `bone-engine/bone-extension-engine/*`（`bone-extension-sdk` 运行时 + `bone-extension-studio` 控制面 **8088**） |
+| 扩展控制台微应用 | `bone-frontend/apps/bone-extension-app`（Qiankun 子应用 **3008**，代理网关 **8888**） |
 | 集成引擎 | `bone-platform/bone-integration` |
 | IAM、主数据、系统、网关等 | `bone-platform/bone-iam`、`bone-masterdata`、`bone-system`、`bone-gateway` 等 |
 | 框架 | `bone-framework/*` |
@@ -431,7 +478,10 @@ flowchart TD
 | /dashboard | 控制台 |
 | /metadata | 元数据 |
 | /masterdata | 主数据 |
-| /extension | 扩展 |
+| /extension | 扩展（微应用 `bone-extension-app`） |
+| /extension/point | 扩展点管理（As-Is） |
+| /extension/plugin | 插件（扩展实现）管理：上传、部署 LRO、回滚、运行时发布（As-Is） |
+| /extension/sandbox | 执行日志与审计观测（As-Is；**非** Wasm 运行时，见 [扩展详设 §7.5](../design/modules/5.%20扩展管理模块详细设计方案.md#75-可观测与审计-api)） |
 | /integration | 集成 |
 | /iam | IAM |
 | /system | 系统管理 |
@@ -504,14 +554,31 @@ flowchart TD
 
 #### 8.3.4 扩展
 
-| API 路径 | 方法 | 功能 |
-|----------|------|------|
-| `/api/v1/extension/points` | GET/POST | 扩展点 |
-| `/api/v1/extension/points/{id}` | PUT/DELETE | 扩展点维护 |
-| `/api/v1/extension/plugins` | GET/POST | 插件列表/上传 |
-| `/api/v1/extension/plugins/{id}:deploy` | POST | 部署 |
-| `/api/v1/extension/plugins/{id}:undeploy` | POST | 卸载 |
-| `/api/v1/extension/plugins/{id}:rollback` | POST | 回滚 |
+> **OpenAPI 真源**：[extension-v1.yaml](./openapi/extension-v1.yaml)；**完整路径表**见 [扩展详设 §7](../design/modules/5.%20扩展管理模块详细设计方案.md#7-api设计)。下列为平台索引（**As-Is** 已实现 unless 标注 [Target]）。
+
+| API 路径 | 方法 | 功能 | As-Is |
+|----------|------|------|-------|
+| `/api/v1/extension/points` | GET/POST | 扩展点列表/创建（201+Location） | ✓ |
+| `/api/v1/extension/points/{id}` | GET/PUT/DELETE | 详情/更新（If-Match）/删除（204） | ✓ |
+| `/api/v1/extension/points/{id}` | PATCH | 部分更新 | [Target] |
+| `/api/v1/extension/points/{id}:enable`、`:disable` | POST | 启停 | ✓ |
+| `/api/v1/extension/plugins` | GET/POST | 扩展实现（插件）列表/创建 | ✓ |
+| `/api/v1/extension/plugins:upload` | POST | JAR 上传（multipart，归档） | ✓ |
+| `/api/v1/extension/plugins/{id}` | GET/PUT/DELETE | 详情/更新/删除 | ✓ |
+| `/api/v1/extension/plugins/{id}/versions` | GET | 制品版本列表 | ✓ |
+| `/api/v1/extension/plugins/{id}:deploy` | POST | 部署（默认 **202** LRO；`?sync=true` → 200） | ✓ |
+| `/api/v1/extension/operations/{operationId}` | GET | LRO 轮询 | ✓ |
+| `/api/v1/extension/plugins/{id}:undeploy` | POST | 卸载 | ✓ |
+| `/api/v1/extension/plugins/{id}:rollback` | POST | 回滚 | ✓ |
+| `/api/v1/extension/plugins/{id}:bind`、`:unbind` | POST | 绑定/解绑扩展点 | ✓（API）；控制台 UI [Target] |
+| `/api/v1/extension/plugins/{id}:publish-runtime` | POST | 发布路由元数据（Redis/内存） | ✓ |
+| `/api/v1/extension/plugins/{id}:simulate` | POST | 沙箱模拟调用 | ✓ |
+| `/api/v1/extension/overview` | GET | 控制台概览统计 | ✓ |
+| `/api/v1/extension/execution-logs` | GET | 执行日志（游标） | ✓ |
+| `/api/v1/extension/execution-logs:ingest` | POST | SDK 上报 | ✓ |
+| `/api/v1/extension/audit-logs` | GET | 审计日志（游标） | ✓ |
+| `/api/v1/extension/sandbox/config` | GET | 观测策略配置 | ✓ |
+| `/api/v1/extension/plugins/{id}/versions/{ver}:download` | GET | 鉴权制品下载 | [Target] |
 
 #### 8.3.5 集成
 
@@ -807,6 +874,7 @@ erDiagram
 | 格式 | Spotless + Google Java Format |
 | 静态分析 | Checkstyle、PMD、SpotBugs（模块级绑定） |
 | 测试与架构 | JUnit 5、Mockito、**ArchUnit** 分层规则 |
+| **Docs-as-Code** | 模块 As-Is 由收集器扫描 → `doc/_generated/{module}/` + CI `--check`（首发：[扩展](../design/modules/5.%20扩展管理模块详细设计方案.md)、[蓝图](../../bone-blueprint/README.md)；模板：[Docs-as-Code-模块合规模板](./Docs-as-Code-模块合规模板.md)） |
 | 覆盖率 | 核心模块阈值与 CI 联动，逐步提高 |
 | 依赖 | 锁定 BOM、定期升级与安全基线 |
 | **SBOM 与签名** | 构建产出 CycloneDX SPDX；镜像 **cosign** 签名，部署前校验 |
@@ -822,9 +890,9 @@ erDiagram
 | 阶段 | 核心任务 |
 |------|----------|
 | 阶段 0 | 控制台、元数据、IAM |
-| 阶段 1 | 主数据、扩展管理 |
+| 阶段 1 | 主数据、扩展管理（**As-Is**：扩展 Studio/SDK + `bone-extension-app` 主流程已落地，见 §3.2.1；[Target] 见扩展 Backlog） |
 | 阶段 2 | 集成、系统管理 |
-| 阶段 3 | 插件生态与开放 API |
+| 阶段 3 | 插件生态与开放 API（Wasm 市场、字节码热载等 [Vision]，见扩展详设 §12） |
 
 ### 15.2 测试矩阵
 
@@ -1201,6 +1269,7 @@ components:
 | `bone-masterdata` | `/api/v1/masterdata/**` | `bone` | **8080** |
 | `bone-metadata-server` | `/api/v1/metadata/**`、`/api/v1/runtime/**` | `bone` | **9001** |
 | `bone-extension-studio` | `/api/v1/extension/**` | `bone` | **8088** |
+| `bone-extension-app`（前端） | 浏览器 `/extension/**` → 代理 `/api/v1/extension/**` | — | **3008**（Vite dev） |
 | `studio-generator` | `/api/v1/generator/**` | `bone` | **8085** ⚠ 与 integration 同端口 |
 | `bone-gateway` | 聚合转发 | — | **8888** |
 
