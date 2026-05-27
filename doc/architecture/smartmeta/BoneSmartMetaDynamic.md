@@ -73,7 +73,7 @@
 
 1. **可视化建模（Studio UI）**：
     - 使用 react-flow + dnd-kit 拖拽定义实体/字段/关系。
-    - 生成 JSON 元数据（参考 4.1），提交到后端 `MetadataAppService.java`。
+    - 生成 JSON 元数据（参考 4.1），通过 REST 提交到后端 Controller，由 `*CommandHandler` 处理（命名遵循《Bone-DDD》§23，禁止 `*AppService` 命名）。
    ```tsx
    // src/components/EntityDesigner.tsx
    import { useState } from 'react';
@@ -226,7 +226,7 @@
 
 1. **可视化建模**：
     - React + Next.js UI，拖拽生成 DSL (YAML/JSON)。
-    - 提交到 `MetadataAppService.java`。
+    - 通过 REST 提交到后端 Controller，由对应 `*CommandHandler` 处理（命名遵循《Bone-DDD》§23，禁止 `*AppService`）。
 
 2. **AI 代码生成**：
     - LangChain 分析 DSL，生成模板。

@@ -11,7 +11,7 @@
 
 ## 背景
 
-- PRD 要求「业务实体 → 主数据实体」能力；As-Is 已实现 `POST /api/v1/masterdata/entities/convert?businessEntityId=`（`ConvertFromBusinessEntityHandler`）。
+- PRD 要求「业务实体 → 主数据实体」能力；As-Is 已实现 `POST /api/v1/masterdata/entities/convert?businessEntityId=`（`ConvertFromBusinessEntityCommandHandler`）。
 - `meta_*`（应用生成 / catalog）与 `mdm_*`（SSOT 治理）**不得**无规范双写，否则血缘不可追溯、质量规则与集成出口分裂。
 - 业界常见三种范式：一次性复制、领域事件同步、只读联邦视图。
 

@@ -59,7 +59,7 @@
 | MD-01 | `DataQualityController` | 质量报告查询（`mdm_qcheck_report` + `GET …/reports/{id}`） | done | P1 |
 | MD-02 | `MasterDataRecordController` | 主数据记录 JSON 导出 | done | P1 |
 | MD-03 | `MasterDataEntityController` | 元数据实体 ID → `md_entity` 转换 | done | P1 |
-| MD-04 | `ConvertFromBusinessEntityHandler` | `convert` 幂等（同 `businessEntityId` 返回已有 mdm id）+ 仅已发布 `meta_entity` 可转 | done | P1 |
+| MD-04 | `ConvertFromBusinessEntityCommandHandler` | `convert` 幂等（同 `businessEntityId` 返回已有 mdm id）+ 仅已发布 `meta_entity` 可转 | done | P1 |
 | MD-05 | OpenAPI | `masterdata-v1.yaml` 登记 §5 As-Is 路径 | done | P2 |
 
 ---
@@ -88,8 +88,8 @@
 | IAM-07 | `AuditController` | 审计设置持久化（`iam_audit_settings`） | done | P2 |
 | IAM-08 | SSO / MFA | 社区版：`sso/config` + `sso/callback`/`mfa/*` 501 契约；IdP 联邦 **[Target]** | done | P2 |
 | IAM-09 | 契约 | `iam-v1.yaml` + Gateway IT | done | P2 |
-| IAM-10 | `CreateAccountHandler` / `UpdateAccountHandler` | `iam_account_role` 绑定 + 详情返回 `roleIds` | done | P1 |
-| IAM-11 | `AssignPermissionHandler` | `iam_role_permission` 绑定 + 权限码 Redis 缓存失效 | done | P1 |
+| IAM-10 | `CreateAccountCommandHandler` / `UpdateAccountCommandHandler` | `iam_account_role` 绑定 + 详情返回 `roleIds` | done | P1 |
+| IAM-11 | `AssignPermissionCommandHandler` | `iam_role_permission` 绑定 + 权限码 Redis 缓存失效 | done | P1 |
 
 ---
 
@@ -104,7 +104,7 @@
 | EXT-MVP-03 | `bone-extension-studio-ui` | 已删除目录；以 `bone-extension-app` 为准 | done | P1 |
 | EXT-MVP-04 | Studio + IAM | `/api/**` JWT 鉴权（`bone.iam.jwt`，CORS 含 3008） | done | P1 |
 | EXT-MVP-05 | `bone-extension-studio` | `points`/`plugins` 支持 `page`/`size`（兼容全量列表） | done | P2 |
-| EXT-MVP-06 | Studio | `rollback` 版本回滚（`ExtensionServiceImpl.rollbackExtension`） | done | P2 |
+| EXT-MVP-06 | Studio | `rollback` 版本回滚（`ExtensionStudioCommandHandler.rollback`） | done | P2 |
 | EXT-MVP-07 | Studio | LRO 部署：`POST …:deploy` → **202** + `GET /operations/{id}`（`StudioLroService`） | done | P2 |
 | EXT-MVP-08 | Studio | 幂等写 + `If-Match` 乐观锁（`StudioIdempotencyService`，412/409） | done | P2 |
 | EXT-MVP-09 | `bone-extension-sdk` | 执行防护 `ExtensionExecutionGuard`（超时/并发可配置） | done | P2 |
