@@ -535,6 +535,26 @@ export async function rollbackPlugin(pluginId: number, version?: string): Promis
   return assertSuccess(res);
 }
 
+/**
+ * 绑定插件到指定扩展点（POST :bind）。
+ * 后端契约：body `{ extensionPointId }`（兼容 `extPointId`）。
+ */
+export async function bindPlugin(pluginId: number, extPointId: number): Promise<ExtensionRow> {
+  const res = await client.post<StudioApiResponse<ExtensionRow>>(
+    `${EXTENSION_BASE}/plugins/${pluginId}:bind`,
+    { extensionPointId: extPointId },
+  );
+  return assertSuccess(res);
+}
+
+/** 解绑插件（POST :unbind），保留实现元数据但清空 extPoint 归属。 */
+export async function unbindPlugin(pluginId: number): Promise<ExtensionRow> {
+  const res = await client.post<StudioApiResponse<ExtensionRow>>(
+    `${EXTENSION_BASE}/plugins/${pluginId}:unbind`,
+  );
+  return assertSuccess(res);
+}
+
 export type SandboxConfig = {
   runtime: string;
   maxMemoryMb: number;

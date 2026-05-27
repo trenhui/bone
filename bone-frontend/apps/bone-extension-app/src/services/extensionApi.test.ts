@@ -24,6 +24,7 @@ vi.mock('axios', () => ({
 
 import {
   StudioApiError,
+  bindPlugin,
   createExtPoint,
   deployPlugin,
   ifMatchHeader,
@@ -33,6 +34,7 @@ import {
   listPlugins,
   newIdempotencyKey,
   publishPluginRuntime,
+  unbindPlugin,
   updateExtPoint,
 } from './extensionApi';
 
@@ -155,6 +157,27 @@ describe('extensionApi', () => {
     });
     await publishPluginRuntime(1);
     expect(mockPost).toHaveBeenCalledWith('/v1/extension/plugins/1:publish-runtime');
+  });
+
+  it('bindPlugin POSTs extensionPointId payload', async () => {
+    mockPost.mockResolvedValue({
+      data: { success: true, data: { id: 7, extPointId: 12 } },
+    });
+    const row = await bindPlugin(7, 12);
+    expect(mockPost).toHaveBeenCalledWith(
+      '/v1/extension/plugins/7:bind',
+      { extensionPointId: 12 },
+    );
+    expect(row).toMatchObject({ id: 7, extPointId: 12 });
+  });
+
+  it('unbindPlugin POSTs without body', async () => {
+    mockPost.mockResolvedValue({
+      data: { success: true, data: { id: 7, extPointId: 0 } },
+    });
+    const row = await unbindPlugin(7);
+    expect(mockPost).toHaveBeenCalledWith('/v1/extension/plugins/7:unbind');
+    expect(row).toMatchObject({ id: 7, extPointId: 0 });
   });
 
   it('listPlugins throws when API returns success=false', async () => {

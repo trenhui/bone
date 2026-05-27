@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
   Button,
   Drawer,
+  Dropdown,
   Form,
   Input,
   InputNumber,
@@ -16,7 +17,10 @@ import {
   message,
 } from 'antd';
 import {
+  ApiOutlined,
   CloudUploadOutlined,
+  DisconnectOutlined,
+  EllipsisOutlined,
   HistoryOutlined,
   PlusOutlined,
   ReloadOutlined,
@@ -25,7 +29,9 @@ import {
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile } from 'antd/es/upload';
+import type { MenuProps } from 'antd';
 import {
+  bindPlugin,
   createPlugin,
   deletePlugin,
   deployPlugin,
@@ -38,6 +44,7 @@ import {
   type StudioPageResult,
   rollbackPlugin,
   simulatePlugin,
+  unbindPlugin,
   updatePlugin,
   uploadPlugin,
   type ExtensionPayload,
@@ -45,6 +52,8 @@ import {
   type ExtPointRow,
   type PluginVersionRow,
 } from '@/services/extensionApi';
+
+const UNBOUND_EXT_POINT_ID = 0;
 
 const PluginManagement: React.FC = () => {
   const [plugins, setPlugins] = useState<ExtensionRow[]>([]);
@@ -65,6 +74,9 @@ const PluginManagement: React.FC = () => {
     null,
   );
   const [undeployingId, setUndeployingId] = useState<number | null>(null);
+  const [bindTarget, setBindTarget] = useState<ExtensionRow | null>(null);
+  const [bindForm] = Form.useForm<{ extPointId: number }>();
+  const [bindSubmitting, setBindSubmitting] = useState(false);
   const [form] = Form.useForm<ExtensionPayload>();
   const [uploadForm] = Form.useForm<{
     extPointId: number;
@@ -102,8 +114,15 @@ const PluginManagement: React.FC = () => {
     load(page, pageSize);
   }, [load, page, pageSize]);
 
-  const extPointName = (extPointId: number) =>
-    extPoints.find((p) => p.id === extPointId)?.name ?? String(extPointId);
+  const extPointName = (extPointId: number) => {
+    if (!extPointId || extPointId === UNBOUND_EXT_POINT_ID) {
+      return '未绑定';
+    }
+    return extPoints.find((p) => p.id === extPointId)?.name ?? `#${extPointId}`;
+  };
+
+  const isBound = (record: ExtensionRow) =>
+    record.extPointId != null && record.extPointId !== UNBOUND_EXT_POINT_ID;
 
   const openCreate = () => {
     setEditing(null);
@@ -279,14 +298,94 @@ const PluginManagement: React.FC = () => {
     }
   };
 
+  const openBind = (record: ExtensionRow) => {
+    setBindTarget(record);
+    bindForm.resetFields();
+    bindForm.setFieldsValue({
+      extPointId: isBound(record) ? record.extPointId : (extPoints[0]?.id ?? 0),
+    });
+  };
+
+  const handleBindSubmit = async () => {
+    if (!bindTarget) return;
+    const { extPointId } = await bindForm.validateFields();
+    setBindSubmitting(true);
+    try {
+      await bindPlugin(bindTarget.id, extPointId);
+      message.success(`已绑定到「${extPointName(extPointId)}」`);
+      setBindTarget(null);
+      load(page, pageSize);
+    } catch (e) {
+      message.error(formatStudioError(e, '绑定失败'));
+    } finally {
+      setBindSubmitting(false);
+    }
+  };
+
+  const handleUnbind = async (record: ExtensionRow) => {
+    try {
+      await unbindPlugin(record.id);
+      message.success('已解绑');
+      load(page, pageSize);
+    } catch (e) {
+      message.error(formatStudioError(e, '解绑失败'));
+    }
+  };
+
+  const buildMoreMenu = (record: ExtensionRow): MenuProps['items'] => {
+    const items: NonNullable<MenuProps['items']> = [
+      {
+        key: 'bind',
+        icon: <ApiOutlined />,
+        label: isBound(record) ? '重新绑定扩展点…' : '绑定扩展点…',
+        onClick: () => openBind(record),
+      },
+    ];
+    if (isBound(record)) {
+      items.push({
+        key: 'unbind',
+        icon: <DisconnectOutlined />,
+        danger: true,
+        disabled: record.enabled,
+        label: record.enabled ? (
+          <span>解绑扩展点（请先卸载）</span>
+        ) : (
+          <Popconfirm
+            title={`解绑「${record.name}」与「${extPointName(record.extPointId)}」？`}
+            description="解绑后插件将不参与该扩展点路由，需重新绑定后才能再次部署到该点。"
+            onConfirm={() => handleUnbind(record)}
+            okText="解绑"
+            cancelText="取消"
+          >
+            <span>解绑扩展点</span>
+          </Popconfirm>
+        ),
+      });
+    }
+    if (record.enabled) {
+      items.push({
+        key: 'simulate',
+        icon: <ReloadOutlined />,
+        label: '模拟调用',
+        onClick: () => handleSimulate(record.id),
+      });
+    }
+    return items;
+  };
+
   const columns: ColumnsType<ExtensionRow> = [
     { title: 'ID', dataIndex: 'id', width: 72 },
     { title: '名称', dataIndex: 'name', ellipsis: true },
     {
       title: '扩展点',
       dataIndex: 'extPointId',
-      width: 140,
-      render: (id: number) => extPointName(id),
+      width: 160,
+      render: (id: number) =>
+        id && id !== UNBOUND_EXT_POINT_ID ? (
+          extPointName(id)
+        ) : (
+          <Tag color="warning">未绑定</Tag>
+        ),
     },
     { title: '实现类', dataIndex: 'className', ellipsis: true },
     { title: '优先级', dataIndex: 'priority', width: 80 },
@@ -302,58 +401,65 @@ const PluginManagement: React.FC = () => {
       title: '操作',
       key: 'action',
       width: 360,
-      render: (_, record) => (
-        <Space size="small" wrap>
-          <Button type="link" size="small" onClick={() => openEdit(record)}>
-            编辑
-          </Button>
-          <Button type="link" size="small" icon={<HistoryOutlined />} onClick={() => openVersions(record)}>
-            版本
-          </Button>
-          <Button type="link" size="small" icon={<UploadOutlined />} onClick={() => openUpload(record)}>
-            上传包
-          </Button>
-          {record.enabled ? (
+      render: (_, record) => {
+        const deployDisabled = !isBound(record) && !record.enabled;
+        return (
+          <Space size="small" wrap>
+            <Button type="link" size="small" onClick={() => openEdit(record)}>
+              编辑
+            </Button>
+            <Button type="link" size="small" icon={<HistoryOutlined />} onClick={() => openVersions(record)}>
+              版本
+            </Button>
+            <Button type="link" size="small" icon={<UploadOutlined />} onClick={() => openUpload(record)}>
+              上传包
+            </Button>
+            {record.enabled ? (
+              <Button
+                type="link"
+                size="small"
+                loading={undeployingId === record.id}
+                disabled={(!!deploying || undeployingId != null) && undeployingId !== record.id}
+                onClick={() => handleDeploy(record, false)}
+              >
+                卸载
+              </Button>
+            ) : (
+              <Button
+                type="link"
+                size="small"
+                loading={deploying?.id === record.id}
+                disabled={
+                  deployDisabled ||
+                  ((!!deploying || undeployingId != null) && deploying?.id !== record.id)
+                }
+                title={deployDisabled ? '请先绑定扩展点再部署' : undefined}
+                onClick={() => handleDeploy(record, true)}
+              >
+                部署
+              </Button>
+            )}
             <Button
               type="link"
               size="small"
-              loading={undeployingId === record.id}
-              disabled={(!!deploying || undeployingId != null) && undeployingId !== record.id}
-              onClick={() => handleDeploy(record, false)}
+              icon={<CloudUploadOutlined />}
+              onClick={() => handlePublish(record.id)}
             >
-              卸载
+              推送运行时
             </Button>
-          ) : (
-            <Button
-              type="link"
-              size="small"
-              loading={deploying?.id === record.id}
-              disabled={(!!deploying || undeployingId != null) && deploying?.id !== record.id}
-              onClick={() => handleDeploy(record, true)}
-            >
-              部署
-            </Button>
-          )}
-          <Button
-            type="link"
-            size="small"
-            icon={<CloudUploadOutlined />}
-            onClick={() => handlePublish(record.id)}
-          >
-            推送运行时
-          </Button>
-          {record.enabled && (
-            <Button type="link" size="small" onClick={() => handleSimulate(record.id)}>
-              模拟调用
-            </Button>
-          )}
-          <Popconfirm title="确认删除？" onConfirm={() => handleDelete(record.id)}>
-            <Button type="link" size="small" danger>
-              删除
-            </Button>
-          </Popconfirm>
-        </Space>
-      ),
+            <Dropdown menu={{ items: buildMoreMenu(record) }} trigger={['click']}>
+              <Button type="link" size="small" icon={<EllipsisOutlined />}>
+                更多
+              </Button>
+            </Dropdown>
+            <Popconfirm title="确认删除？" onConfirm={() => handleDelete(record.id)}>
+              <Button type="link" size="small" danger>
+                删除
+              </Button>
+            </Popconfirm>
+          </Space>
+        );
+      },
     },
   ];
 
@@ -562,6 +668,50 @@ const PluginManagement: React.FC = () => {
           size="small"
         />
       </Drawer>
+
+      <Modal
+        title={bindTarget ? `绑定扩展点 — ${bindTarget.name}` : '绑定扩展点'}
+        open={!!bindTarget}
+        onOk={handleBindSubmit}
+        confirmLoading={bindSubmitting}
+        onCancel={() => setBindTarget(null)}
+        okText="确认绑定"
+        cancelText="取消"
+        destroyOnClose
+        width={520}
+      >
+        {bindTarget ? (
+          <Form form={bindForm} layout="vertical" preserve={false}>
+            {isBound(bindTarget) && (
+              <p style={{ color: 'rgba(0,0,0,0.55)', marginBottom: 16 }}>
+                当前绑定：<strong>{extPointName(bindTarget.extPointId)}</strong>
+                ，选择新的扩展点将覆盖原绑定。
+              </p>
+            )}
+            <Form.Item
+              name="extPointId"
+              label="目标扩展点"
+              rules={[{ required: true, message: '请选择目标扩展点' }]}
+            >
+              <Select
+                placeholder="选择扩展点"
+                showSearch
+                optionFilterProp="label"
+                options={extPoints
+                  .filter((p) => p.enabled !== false)
+                  .map((p) => ({
+                    value: p.id,
+                    label: `${p.name} (#${p.id})`,
+                  }))}
+                notFoundContent="没有可用扩展点，请先到「扩展点管理」启用"
+              />
+            </Form.Item>
+            <p style={{ color: 'rgba(0,0,0,0.45)', fontSize: 12 }}>
+              提示：绑定后插件仍处于「未部署」状态，需在表格中执行「部署」才能进入路由。
+            </p>
+          </Form>
+        ) : null}
+      </Modal>
     </>
   );
 };

@@ -188,7 +188,7 @@
 |------|------|-----------------|---------------------------|
 | **运行时 SDK** | `bone-extension-sdk` | 四级路由、`ExtensionExecutionGuard` 舱壁/超时、宿主 `@EnableExtensionPoints` | 按插件熔断、Micrometer RED、字节码热载 |
 | **控制面 API** | `bone-extension-studio` :**8088** | 扩展点/插件 CRUD、JAR 上传、`:deploy` LRO、`:publish-runtime`、幂等 409、If-Match 412、审计/执行日志游标、ArchUnit | PATCH、Redis 集群幂等、`deployment_status` DDL、制品鉴权下载 |
-| **控制台微应用** | `bone-extension-app` :**3008** | 概览/扩展点/插件管理、观测「沙箱」页（执行日志+审计，**非** Wasm）；`extensionApi` 覆盖 deploy/LRO/upload/rollback/simulate；Vitest + 可选 e2e | UI 未封装 `:bind`/`:unbind`（后端已有）；Wasm「沙箱」属 [Vision] |
+| **控制台微应用** | `bone-extension-app` :**3008** | 概览/扩展点/插件管理（含 `:bind`/`:unbind` 弹窗、未绑定时部署按钮自动禁用）、观测「沙箱」页（执行日志+审计，**非** Wasm）；`extensionApi` 覆盖 deploy/LRO/upload/rollback/simulate/bind/unbind；Vitest + 可选 e2e | 制品鉴权下载入口（依赖后端 `:download` [Target]）；Wasm「沙箱」属 [Vision] |
 | **网关** | `bone-gateway` :**8888** | `/api/v1/extension/**` 转发 Studio | — |
 
 **结论**：在详设 **As-Is 边界**内，扩展模块**后端控制面 + SDK 运行时 + 控制台主流程已实现**；**不等于**产品全量（字节码热载、插件市场、Wasm、RED 指标等见 Backlog）。JAR 上传**仅归档**，实现类须已在宿主 classpath（见详设 §1.1/§4.2）。
@@ -480,7 +480,7 @@ flowchart TD
 | /masterdata | 主数据 |
 | /extension | 扩展（微应用 `bone-extension-app`） |
 | /extension/point | 扩展点管理（As-Is） |
-| /extension/plugin | 插件（扩展实现）管理：上传、部署 LRO、回滚、运行时发布（As-Is） |
+| /extension/plugin | 插件（扩展实现）管理：上传、部署 LRO、回滚、运行时发布、`:bind`/`:unbind` 弹窗（As-Is） |
 | /extension/sandbox | 执行日志与审计观测（As-Is；**非** Wasm 运行时，见 [扩展详设 §7.5](../design/modules/5.%20扩展管理模块详细设计方案.md#75-可观测与审计-api)） |
 | /integration | 集成 |
 | /iam | IAM |
@@ -570,7 +570,7 @@ flowchart TD
 | `/api/v1/extension/operations/{operationId}` | GET | LRO 轮询 | ✓ |
 | `/api/v1/extension/plugins/{id}:undeploy` | POST | 卸载 | ✓ |
 | `/api/v1/extension/plugins/{id}:rollback` | POST | 回滚 | ✓ |
-| `/api/v1/extension/plugins/{id}:bind`、`:unbind` | POST | 绑定/解绑扩展点 | ✓（API）；控制台 UI [Target] |
+| `/api/v1/extension/plugins/{id}:bind`、`:unbind` | POST | 绑定/解绑扩展点 | ✓（API + 控制台 UI） |
 | `/api/v1/extension/plugins/{id}:publish-runtime` | POST | 发布路由元数据（Redis/内存） | ✓ |
 | `/api/v1/extension/plugins/{id}:simulate` | POST | 沙箱模拟调用 | ✓ |
 | `/api/v1/extension/overview` | GET | 控制台概览统计 | ✓ |
