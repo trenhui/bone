@@ -6,13 +6,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import com.bone.iam.application.query.handler.AccountAuthoritiesQueryHandler;
 import com.bone.iam.application.command.handler.LoginCommandHandler;
-import com.bone.iam.domain.repository.AccountRepository;
+import com.bone.iam.application.command.handler.RefreshTokenCommandHandler;
 import com.bone.iam.infrastructure.config.IamSsoProperties;
 import com.bone.iam.infrastructure.config.JwtConfig;
 import com.bone.iam.infrastructure.security.JwtTokenService;
-import com.bone.iam.infrastructure.security.RefreshTokenService;
 import com.bone.iam.infrastructure.security.TokenBlacklistService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,16 +34,10 @@ class AuthSsoMfaControllerTest {
     private JwtTokenService jwtTokenService;
 
     @Mock
-    private RefreshTokenService refreshTokenService;
+    private RefreshTokenCommandHandler refreshTokenCommandHandler;
 
     @Mock
     private TokenBlacklistService tokenBlacklistService;
-
-    @Mock
-    private AccountRepository accountRepository;
-
-    @Mock
-    private AccountAuthoritiesQueryHandler accountAuthoritiesQueryHandler;
 
     @Mock
     private JwtConfig jwtConfig;
@@ -58,12 +50,10 @@ class AuthSsoMfaControllerTest {
         AuthController authController =
                 new AuthController(
                         loginCommandHandler,
+                        refreshTokenCommandHandler,
                         authWebConverter,
                         jwtTokenService,
-                        refreshTokenService,
                         tokenBlacklistService,
-                        accountRepository,
-                        accountAuthoritiesQueryHandler,
                         jwtConfig,
                         ssoProperties);
         mockMvc = MockMvcBuilders.standaloneSetup(authController, new MfaController()).build();

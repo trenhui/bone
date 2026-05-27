@@ -10,14 +10,17 @@ import com.bone.iam.application.command.handler.DisableTenantCommandHandler;
 import com.bone.iam.application.command.handler.EnableTenantCommandHandler;
 import com.bone.iam.application.command.handler.UpdateTenantCommandHandler;
 import com.bone.iam.application.query.dto.TenantDTO;
+import com.bone.iam.application.query.handler.TenantDetailQueryHandler;
 import com.bone.iam.application.query.handler.TenantPageQueryHandler;
 import com.bone.iam.application.query.qry.TenantPageQuery;
-import com.bone.iam.domain.repository.TenantRepository;
-import com.bone.iam.domain.tenant.Tenant;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping(PlatformApiPaths.IAM_V1 + "/tenants")
@@ -29,7 +32,7 @@ public class TenantController {
     private final EnableTenantCommandHandler enableTenantCommandHandler;
     private final DisableTenantCommandHandler disableTenantCommandHandler;
     private final TenantPageQueryHandler tenantPageQueryHandler;
-    private final TenantRepository tenantRepository;
+    private final TenantDetailQueryHandler tenantDetailQueryHandler;
 
     @GetMapping
     public ApiResponse<PageResult<TenantDTO>> list(TenantPageQuery qry) {
@@ -43,18 +46,7 @@ public class TenantController {
 
     @GetMapping("/{id}")
     public ApiResponse<TenantDTO> detail(@PathVariable Long id) {
-        Tenant tenant = tenantRepository.findById(id);
-        if (tenant == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "租户不存在");
-        }
-        TenantDTO dto = new TenantDTO();
-        dto.setId(tenant.getId());
-        dto.setName(tenant.getName());
-        dto.setCode(tenant.getCode());
-        dto.setLevel(tenant.getLevel());
-        dto.setStatus(tenant.getStatus());
-        dto.setAdminEmail(tenant.getAdminEmail());
-        return ApiResponse.success(dto);
+        return ApiResponse.success(tenantDetailQueryHandler.handle(id));
     }
 
     @PutMapping("/{id}")

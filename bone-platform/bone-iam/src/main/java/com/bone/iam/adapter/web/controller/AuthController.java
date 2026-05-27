@@ -7,19 +7,18 @@ import com.bone.iam.adapter.web.dto.req.LoginReq;
 import com.bone.iam.adapter.web.dto.req.RefreshTokenReq;
 import com.bone.iam.adapter.web.dto.resp.LoginResp;
 import com.bone.iam.application.command.cmd.LoginCommand;
+import com.bone.iam.application.command.cmd.RefreshTokenCommand;
 import com.bone.iam.application.command.handler.LoginCommandHandler;
-import com.bone.iam.domain.repository.AccountRepository;
+import com.bone.iam.application.command.handler.RefreshTokenCommandHandler;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.infrastructure.config.IamSsoProperties;
 import com.bone.iam.infrastructure.config.JwtConfig;
-import com.bone.iam.application.query.handler.AccountAuthoritiesQueryHandler;
 import com.bone.iam.infrastructure.security.JwtTokenService;
-import java.util.List;
-import com.bone.iam.infrastructure.security.RefreshTokenService;
 import com.bone.iam.infrastructure.security.TokenBlacklistService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Duration;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -40,12 +39,10 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final LoginCommandHandler loginCommandHandler;
+    private final RefreshTokenCommandHandler refreshTokenCommandHandler;
     private final AuthWebConverter authWebConverter;
     private final JwtTokenService jwtTokenService;
-    private final RefreshTokenService refreshTokenService;
     private final TokenBlacklistService tokenBlacklistService;
-    private final AccountRepository accountRepository;
-    private final AccountAuthoritiesQueryHandler accountAuthoritiesQueryHandler;
     private final JwtConfig jwtConfig;
     private final IamSsoProperties iamSsoProperties;
 
@@ -70,19 +67,9 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public ApiResponse<Map<String, String>> refreshToken(@RequestBody RefreshTokenReq req) {
-        Map<String, String> rotated = refreshTokenService.rotate(req.getRefreshToken());
-        long accountId = Long.parseLong(rotated.get("accountId"));
-        var account = accountRepository.findById(accountId);
-        if (account == null) {
-            return ApiResponse.error(401, "账户不存在或已禁用");
-        }
-        List<String> scopes = accountAuthoritiesQueryHandler.resolvePermissionCodes(
-                account.getId(), account.isAdmin());
-        String accessToken = jwtTokenService.generateToken(
-                account.getId(), account.getUsername().value(), account.getTenantId(), scopes);
-        return ApiResponse.success(Map.of(
-                "accessToken", accessToken,
-                "refreshToken", rotated.get("refreshToken")));
+        RefreshTokenCommand cmd = new RefreshTokenCommand();
+        cmd.setRefreshToken(req.getRefreshToken());
+        return ApiResponse.success(refreshTokenCommandHandler.handle(cmd));
     }
 
     @GetMapping("/sso/config")
