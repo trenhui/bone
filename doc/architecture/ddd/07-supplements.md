@@ -26,7 +26,7 @@ public class OrderController {
     private final CreateOrderCommandHandler createOrderHandler;
 
     @PostMapping("/orders")
-    public ApiResponse<Long> create(@Valid @RequestBody CreateOrderRequest req) {
+    public ApiResponse<Long> create(@Valid @RequestBody CreateOrderReq req) {
         var cmd = OrderWebAssembler.toCommand(req);
         return ApiResponse.success(createOrderHandler.handle(cmd));
     }
@@ -71,7 +71,7 @@ public interface AccessTokenIssuer {
 
 // application 仅依赖端口
 @RequiredArgsConstructor
-public class LoginHandler {
+public class LoginCommandHandler {
     private final AccessTokenIssuer accessTokenIssuer;
     // ...
 }
