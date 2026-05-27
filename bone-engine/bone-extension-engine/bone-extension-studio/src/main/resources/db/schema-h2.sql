@@ -60,6 +60,7 @@ CREATE TABLE IF NOT EXISTS exts_plugin_version (
     file_size           BIGINT,
     checksum            VARCHAR(64)     NOT NULL,
     is_active           BOOLEAN         NOT NULL DEFAULT FALSE,
+    deployment_status   VARCHAR(20)     NOT NULL DEFAULT 'STAGED',
     change_log          VARCHAR(500),
     created_by          BIGINT,
     updated_by          BIGINT,

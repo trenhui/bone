@@ -8,6 +8,8 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
@@ -42,6 +44,10 @@ public class PluginArtifactService {
             throw new IllegalArgumentException("仅支持 JAR 插件包");
         }
 
+        try (InputStream in = file.getInputStream()) {
+            JarMagicValidator.validate(in);
+        }
+
         Path pluginDir = storageRoot.resolve(String.valueOf(pluginId));
         Files.createDirectories(pluginDir);
         String safeVersion = version.trim().replaceAll("[^a-zA-Z0-9._-]", "_");
@@ -52,10 +58,36 @@ public class PluginArtifactService {
         }
 
         byte[] bytes = Files.readAllBytes(target);
-        return new StoredArtifact(
-                target.toString(),
-                bytes.length,
-                sha256(bytes));
+        String logicalPath = pluginId + "/" + safeVersion + ".jar";
+        return new StoredArtifact(logicalPath, bytes.length, sha256(bytes));
+    }
+
+    /** 将库中逻辑路径或历史绝对路径解析为可读文件路径。 */
+    public Path resolveArtifactPath(String filePath) {
+        if (!StringUtils.hasText(filePath)) {
+            throw new IllegalArgumentException("制品路径为空");
+        }
+        Path candidate = Path.of(filePath.trim());
+        if (candidate.isAbsolute()) {
+            return candidate.normalize();
+        }
+        Path resolved = storageRoot.resolve(candidate).normalize();
+        if (!resolved.startsWith(storageRoot)) {
+            throw new IllegalArgumentException("非法制品路径");
+        }
+        return resolved;
+    }
+
+    public Resource openArtifact(String filePath) throws IOException {
+        Path path = resolveArtifactPath(filePath);
+        if (!Files.isRegularFile(path)) {
+            throw new IllegalArgumentException("制品文件不存在");
+        }
+        Resource resource = new UrlResource(path.toUri());
+        if (!resource.exists() || !resource.isReadable()) {
+            throw new IllegalArgumentException("制品文件不可读");
+        }
+        return resource;
     }
 
     public int getMaxVersionsPerPlugin() {
@@ -71,5 +103,6 @@ public class PluginArtifactService {
         }
     }
 
+    /** @param filePath 逻辑相对路径（推荐）或历史绝对路径 */
     public record StoredArtifact(String filePath, long fileSize, String checksum) {}
 }

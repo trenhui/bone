@@ -2,6 +2,8 @@ package com.bone.engine.extension.studio.application.command.handler;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.engine.extension.studio.application.service.StudioAuditService;
+import com.bone.engine.extension.studio.application.service.StudioPatchSupport;
+import java.util.Map;
 import com.bone.engine.extension.studio.application.service.StudioCommandResponses;
 import com.bone.engine.extension.studio.application.service.StudioIdempotencyService;
 import com.bone.engine.extension.studio.application.service.StudioIdempotentExecutor;
@@ -41,6 +43,19 @@ public class ExtPointCommandHandler {
     @Transactional
     public ExtPoint updateExtPoint(Long id, ExtPoint extPoint) {
         return updateExtPoint(id, extPoint, null);
+    }
+
+    @Transactional
+    public ExtPoint patchExtPoint(Long id, Map<String, Object> patch, Integer expectedVersion) {
+        ExtPoint existing = extPointRepository.findById(id);
+        if (existing == null) {
+            return null;
+        }
+        StudioVersionSupport.assertExpected(expectedVersion, existing.getVersion());
+        StudioPatchSupport.applyToExtPoint(existing, patch);
+        existing.setVersion(StudioVersionSupport.nextVersion(existing.getVersion()));
+        extPointRepository.save(existing);
+        return existing;
     }
 
     @Transactional
@@ -115,6 +130,20 @@ public class ExtPointCommandHandler {
         }
         auditService.success("ext_point.update", "ext_point", String.valueOf(id));
         return StudioCommandResponses.ok("更新扩展点成功", updated);
+    }
+
+    public ResponseEntity<ApiResponse<ExtPoint>> patchPoint(
+            Long id, Map<String, Object> body, Integer expectedVersion) {
+        try {
+            ExtPoint updated = patchExtPoint(id, body, expectedVersion);
+            if (updated == null) {
+                return StudioCommandResponses.notFound("扩展点不存在");
+            }
+            auditService.success("ext_point.patch", "ext_point", String.valueOf(id));
+            return StudioCommandResponses.ok("部分更新扩展点成功", updated);
+        } catch (IllegalArgumentException ex) {
+            return StudioCommandResponses.badRequest(ex.getMessage());
+        }
     }
 
     public ResponseEntity<Void> deletePoint(Long id) {

@@ -36,4 +36,14 @@ bash scripts/ci/collect-extension-compliance.sh --sync-doc
 
 ## CI
 
-`.github/workflows/extension-studio.yml` 的 `docs-compliance` job 会执行 `--check`。
+`.github/workflows/extension-studio.yml` 的 `docs-compliance` job：
+
+1. 重新生成 `compliance.json` 并与仓库提交版本 `--check`（禁止手改 `_generated`）
+2. 校验详设 `EXT_COMPLIANCE_*` 标记块是否与当前收集器一致（PR 前须在本地 `--sync-doc`）
+
+**PR 检查清单**（扩展 Studio / OpenAPI / backlog.yaml）：
+
+```bash
+bash scripts/ci/collect-extension-compliance.sh --sync-doc
+python3 tools/extension-compliance-collector/collect.py --check
+```

@@ -3,6 +3,7 @@ package com.bone.engine.extension.studio.infrastructure.persistence.converter;
 import com.bone.engine.extension.studio.domain.model.ExtPoint;
 import com.bone.engine.extension.studio.domain.model.Extension;
 import com.bone.engine.extension.studio.domain.model.PluginExecutionLog;
+import com.bone.engine.extension.studio.domain.model.DeploymentStatus;
 import com.bone.engine.extension.studio.domain.model.PluginVersion;
 import com.bone.engine.extension.studio.domain.model.StudioAuditEntry;
 import com.bone.engine.extension.studio.infrastructure.persistence.entity.ExtStudioAuditLog;
@@ -142,6 +143,10 @@ public final class StudioPersistenceConverter {
         row.setFileSize(domain.getFileSize());
         row.setChecksum(domain.getChecksum());
         row.setIsActive(domain.isActive());
+        row.setDeploymentStatus(
+                StringUtils.hasText(domain.getDeploymentStatus())
+                        ? domain.getDeploymentStatus()
+                        : DeploymentStatus.STAGED.name());
         row.setChangeLog(domain.getChangeLog());
         applyAuditDefaults(row);
         if (domain.getCreatedAt() != null) {
@@ -160,6 +165,7 @@ public final class StudioPersistenceConverter {
         domain.setFileSize(row.getFileSize() != null ? row.getFileSize() : 0L);
         domain.setChecksum(row.getChecksum());
         domain.setActive(Boolean.TRUE.equals(row.getIsActive()));
+        domain.setDeploymentStatus(row.getDeploymentStatus());
         domain.setChangeLog(row.getChangeLog());
         domain.setCreatedAt(toLocalDateTime(row.getCreatedAt()));
         return domain;

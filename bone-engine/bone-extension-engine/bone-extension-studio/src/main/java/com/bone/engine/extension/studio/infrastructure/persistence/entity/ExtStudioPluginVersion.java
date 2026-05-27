@@ -42,6 +42,9 @@ public class ExtStudioPluginVersion extends AbstractEntity<Long> {
     @Column(name = "is_active")
     private Boolean isActive = false;
 
+    @Column(name = "deployment_status")
+    private String deploymentStatus = "STAGED";
+
     @Column(name = "change_log")
     private String changeLog;
 }

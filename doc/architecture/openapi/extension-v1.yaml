@@ -53,6 +53,14 @@ paths:
       responses:
         '200': { description: OK }
         '412': { description: Precondition Failed（[Target] 乐观锁） }
+    patch:
+      summary: 部分更新扩展点
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200': { description: OK }
+        '412': { description: Precondition Failed }
     delete:
       summary: 删除扩展点
       parameters:
@@ -99,6 +107,13 @@ paths:
         - $ref: '#/components/parameters/IfMatch'
       responses:
         '200': { description: OK }
+    patch:
+      summary: 部分更新扩展实现
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '200': { description: OK }
     delete:
       summary: 删除扩展实现
       parameters:
@@ -113,6 +128,15 @@ paths:
       responses:
         '201': { description: Created }
         '200': { description: OK（As-Is） }
+  /plugins/{id}/versions/{ver}:download:
+    get:
+      summary: 下载制品 JAR（鉴权，逻辑路径）
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
+        - { name: ver, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: application/octet-stream }
+        '404': { description: 插件或版本不存在 }
   /plugins/{id}:deploy:
     post:
       summary: 部署/激活扩展实现

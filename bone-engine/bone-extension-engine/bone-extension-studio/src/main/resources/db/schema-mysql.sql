@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS exts_plugin_version (
     file_size           BIGINT          DEFAULT NULL,
     checksum            VARCHAR(64)     NOT NULL,
     is_active           TINYINT(1)      NOT NULL DEFAULT 0,
+    deployment_status   VARCHAR(20)     NOT NULL DEFAULT 'STAGED',
     change_log          VARCHAR(500)    DEFAULT NULL,
     created_by          BIGINT          DEFAULT NULL,
     updated_by          BIGINT          DEFAULT NULL,

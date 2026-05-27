@@ -2,23 +2,11 @@
 # 已落地能力勿写入此文件；As-Is 由 collect.py 从 OpenAPI/源码派生。
 
 items:
-  - id: patch-partial-update
-    tier: Target
-    title: PATCH 部分更新
-    reference: API 规范 §2.4
-    tracking: 详设 §7.2/§7.3；当前仅 PUT 全量
-
   - id: idempotency-redis-cluster
     tier: Target
     title: Idempotency Redis 集群幂等
     reference: API 规范 §8
     tracking: 当前 StudioIdempotencyService 进程内 24h TTL
-
-  - id: deployment-status-ddl
-    tier: Target
-    title: deployment_status DDL + 状态机落库
-    reference: 详设 §3.3
-    tracking: DeploymentStatus 枚举已就位；bone-init.sql 未建列
 
   - id: red-metrics-micrometer
     tier: Target
@@ -31,24 +19,6 @@ items:
     title: 字节码热载 / 独立 ClassLoader 隔离
     reference: 详设 §4.4
     tracking: As-Is 仅路由元数据热更；JAR 归档不加载字节码
-
-  - id: artifact-download-auth-url
-    tier: Target
-    title: 制品下载鉴权 URL
-    reference: API 规范 §14.4
-    tracking: file_path 仍为绝对路径；:download [Target]
-
-  - id: mime-magic-number
-    tier: Target
-    title: MIME magic-number + 病毒/依赖扫描
-    reference: API 规范 §14.4
-    tracking: As-Is 仅 .jar 扩展名校验
-
-  - id: rollout-percent-traffic-merge
-    tier: Target
-    title: rollout_percent ↔ config_json.traffic 收敛
-    reference: 详设 §4.3 / §6.2
-    tracking: 须 ADR 二选一后清理冗余列
 
   - id: resilience4j-circuit
     tier: Target

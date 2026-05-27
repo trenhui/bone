@@ -24,6 +24,7 @@ import {
   HistoryOutlined,
   PlusOutlined,
   ReloadOutlined,
+  DownloadOutlined,
   RollbackOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
@@ -50,6 +51,7 @@ import {
   type ExtensionPayload,
   type ExtensionRow,
   type ExtPointRow,
+  downloadPluginVersion,
   type PluginVersionRow,
 } from '@/services/extensionApi';
 
@@ -463,8 +465,23 @@ const PluginManagement: React.FC = () => {
     },
   ];
 
+  const handleDownloadVersion = async (pluginId: number, version: string) => {
+    try {
+      await downloadPluginVersion(pluginId, version);
+      message.success('制品下载已开始');
+    } catch (e) {
+      message.error(formatStudioError(e, '下载失败'));
+    }
+  };
+
   const versionColumns: ColumnsType<PluginVersionRow> = [
     { title: '版本', dataIndex: 'version', width: 100 },
+    {
+      title: '部署状态',
+      dataIndex: 'deploymentStatus',
+      width: 110,
+      render: (status?: string) => (status ? <Tag>{status}</Tag> : '—'),
+    },
     {
       title: '状态',
       dataIndex: 'active',
@@ -483,18 +500,29 @@ const PluginManagement: React.FC = () => {
     {
       title: '操作',
       key: 'action',
-      width: 100,
-      render: (_, row) =>
-        row.active ? null : (
+      width: 160,
+      render: (_, row) => (
+        <Space size="small">
           <Button
             type="link"
             size="small"
-            icon={<RollbackOutlined />}
-            onClick={() => selectedPlugin && handleRollback(selectedPlugin.id, row.version)}
+            icon={<DownloadOutlined />}
+            onClick={() => selectedPlugin && handleDownloadVersion(selectedPlugin.id, row.version)}
           >
-            回滚
+            下载
           </Button>
-        ),
+          {!row.active && selectedPlugin ? (
+            <Button
+              type="link"
+              size="small"
+              icon={<RollbackOutlined />}
+              onClick={() => handleRollback(selectedPlugin.id, row.version)}
+            >
+              回滚
+            </Button>
+          ) : null}
+        </Space>
+      ),
     },
   ];
 

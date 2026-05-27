@@ -104,6 +104,17 @@ def build_as_is_checks() -> list[dict]:
     execution_guard = _grep_files(SDK_JAVA, r"class ExtensionExecutionGuard")
     lro = _grep_files(STUDIO_JAVA, r"class StudioLroService")
     idempotency = _grep_files(STUDIO_JAVA, r"class StudioIdempotencyService")
+    if_match = _grep_files(STUDIO_JAVA, r"parseIfMatchVersion|If-Match|412")
+    created_201 = _grep_files(STUDIO_JAVA, r"created\(|ResponseEntity\.status\(HttpStatus\.CREATED\)")
+    request_id = _grep_files(STUDIO_JAVA, r"StudioRequestContextFilter|X-Request-Id")
+    patch_mapping = _grep_files(STUDIO_JAVA, r"@PatchMapping")
+    jar_magic = _grep_files(STUDIO_JAVA, r"class JarMagicValidator")
+    download_endpoint = _grep_files(STUDIO_JAVA, r":download|downloadPluginVersion")
+    deployment_status = _grep_files(STUDIO_JAVA, r"deployment_status|DeploymentStatus")
+    adr_rollout = ROOT / "doc/architecture/adr/0014-extension-rollout-traffic-canonical.md"
+    rollout_adr = (
+        [str(adr_rollout.relative_to(ROOT))] if adr_rollout.exists() else []
+    )
 
     return [
         {
@@ -144,6 +155,64 @@ def build_as_is_checks() -> list[dict]:
             "title": "Idempotency-Key（进程内）",
             "status": "as_is",
             "evidence": {"java": idempotency},
+        },
+        {
+            "id": "if-match-412",
+            "title": "PUT If-Match / 412 Precondition Failed",
+            "status": "as_is",
+            "evidence": {"java": if_match},
+        },
+        {
+            "id": "post-201-location",
+            "title": "POST 201 + Location",
+            "status": "as_is",
+            "evidence": {"java": created_201},
+        },
+        {
+            "id": "x-request-id",
+            "title": "X-Request-Id 回显 + traceId",
+            "status": "as_is",
+            "evidence": {"java": request_id},
+        },
+        {
+            "id": "patch-partial-update",
+            "title": "PATCH 部分更新（points/plugins）",
+            "status": "as_is",
+            "evidence": {"java": patch_mapping},
+        },
+        {
+            "id": "deployment-status-ddl",
+            "title": "deployment_status DDL + 状态机落库",
+            "status": "as_is",
+            "evidence": {
+                "java": deployment_status,
+                "ddl": (
+                    ["bone-init.sql"]
+                    if "deployment_status" in _read(ROOT / "bone-init.sql")
+                    else []
+                ),
+            },
+        },
+        {
+            "id": "mime-magic-number",
+            "title": "JAR magic-number 校验",
+            "status": "as_is",
+            "evidence": {"java": jar_magic},
+        },
+        {
+            "id": "artifact-download-auth-url",
+            "title": "制品鉴权下载 GET :download",
+            "status": "as_is",
+            "evidence": {"java": download_endpoint},
+        },
+        {
+            "id": "rollout-percent-traffic-merge",
+            "title": "rollout_percent ↔ config_json.traffic 收敛（ADR-0014）",
+            "status": "as_is",
+            "evidence": {
+                "adr": rollout_adr,
+                "java": _grep_files(STUDIO_JAVA, r"setRolloutPercent\(cfg\.getTraffic"),
+            },
         },
     ]
 
@@ -229,10 +298,11 @@ def render_backlog_md(items: list[dict], generated_at: str) -> str:
 
 
 def render_as_is_embed(checks: list[dict], generated_at: str) -> str:
-    """详设附录 C 内嵌块（简短）。"""
+    """详设附录 C 内嵌块（简短；不含时间戳，避免 CI 无意义漂移）。"""
+    _ = generated_at  # 仅写入 compliance.json / _generated/*.md
     lines = [
-        f"> **CI 派生**（{generated_at} UTC）· 完整 JSON 见 "
-        f"[`doc/_generated/extension/compliance.json`](../../_generated/extension/compliance.json)",
+        "> **CI 派生**（时间戳见 "
+        "[`compliance.json`](../../_generated/extension/compliance.json) `generated_at`）",
         "",
         "| ID | 能力 | 证据 |",
         "|----|------|------|",
@@ -255,9 +325,10 @@ def render_as_is_embed(checks: list[dict], generated_at: str) -> str:
 
 
 def render_backlog_embed(items: list[dict], generated_at: str) -> str:
+    _ = generated_at
     lines = [
-        f"> **维护源**：[`tools/extension-compliance-collector/backlog.yaml`](../../../tools/extension-compliance-collector/backlog.yaml)  ",
-        f"> **生成时间**：{generated_at} UTC · 已落地项**不得**写入 backlog，见 [附录 C](#附录-c-as-is-证据ci-派生) 与 §2 符合度矩阵。",
+        "> **维护源**：[`tools/extension-compliance-collector/backlog.yaml`](../../../tools/extension-compliance-collector/backlog.yaml)  ",
+        "> **已落地项不得写入 backlog**；验收见 [附录 C](#附录-c-as-is-证据ci-派生) 与 §2 符合度矩阵。",
         "",
         "| Tier | ID | 项 | 引用 | 跟踪 |",
         "|------|-----|-----|------|------|",

@@ -483,9 +483,26 @@ export type PluginVersionRow = {
   fileSize: number;
   checksum: string;
   active: boolean;
+  deploymentStatus?: string;
   changeLog?: string;
   createdAt?: string;
 };
+
+/** 下载指定版本的 JAR 制品（带 Bearer Token）。 */
+export async function downloadPluginVersion(pluginId: number, version: string): Promise<void> {
+  const safeVer = encodeURIComponent(version);
+  const res = await client.get<Blob>(
+    `${EXTENSION_BASE}/plugins/${pluginId}/versions/${safeVer}:download`,
+    { responseType: 'blob' },
+  );
+  const blob = res.data;
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `plugin-${pluginId}-${version}.jar`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
 
 export async function listPluginVersions(pluginId: number): Promise<PluginVersionRow[]> {
   const res = await client.get<StudioApiResponse<PluginVersionRow[]>>(

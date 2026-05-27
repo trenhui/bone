@@ -32,6 +32,8 @@ CREATE TABLE iam_tenant (
     level               TINYINT         NOT NULL DEFAULT 0 COMMENT '租户等级',
     status              TINYINT         NOT NULL DEFAULT 1 COMMENT '状态',
     admin_email         VARCHAR(200)    NOT NULL COMMENT '管理员邮箱',
+    max_accounts        INT             DEFAULT NULL COMMENT '账号配额上限，NULL=不限制',
+    max_roles           INT             DEFAULT NULL COMMENT '角色配额上限，NULL=不限制',
     created_by           BIGINT          DEFAULT NULL COMMENT '创建人ID',
     updated_by           BIGINT          DEFAULT NULL COMMENT '修改人ID',
     created_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
@@ -199,6 +201,7 @@ CREATE TABLE iam_refresh_token (
     KEY idx_iam_refresh_account (account_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='刷新令牌表';
 
+-- BONE_IAM_DEMO_PASSWORD_ACK: 演示账号 admin 默认口令为 123456（仅开发/CI 允许；生产须改密）
 INSERT INTO iam_account (id, tenant_id, username, password_hash, email, real_name, status, is_admin)
 VALUES (1, 0, 'admin', '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG', 'admin@bone.com', '系统管理员', 1, 1);
 
@@ -222,12 +225,17 @@ VALUES
     (8, 'metadata:write', '元数据-写', 'metadata', '*', 'write', 'OPERATION', 80, NULL),
     (9, 'extension:points:read', '扩展点-读', 'extension', 'points', 'read', 'OPERATION', 90, NULL),
     (10, 'extension:points:write', '扩展点-写', 'extension', 'points', 'write', 'OPERATION', 100, NULL),
-    (11, 'extension:plugins:deploy', '插件-部署', 'extension', 'plugins', 'deploy', 'OPERATION', 110, NULL);
+    (11, 'extension:plugins:deploy', '插件-部署', 'extension', 'plugins', 'deploy', 'OPERATION', 110, NULL),
+    (12, 'iam:audit:read', 'IAM-审计查看', 'iam', 'audit', 'read', 'OPERATION', 120, NULL),
+    (13, 'iam:audit:write', 'IAM-审计设置', 'iam', 'audit', 'write', 'OPERATION', 130, NULL),
+    (14, 'iam:tenants:read', 'IAM-租户查看', 'iam', 'tenants', 'read', 'OPERATION', 140, NULL),
+    (15, 'iam:tenants:write', 'IAM-租户维护', 'iam', 'tenants', 'write', 'OPERATION', 150, NULL);
 
 INSERT INTO iam_role_permission (id, role_id, permission_id)
 VALUES
     (1, 1, 1), (2, 1, 2), (3, 1, 3), (4, 1, 4), (5, 1, 5), (6, 1, 6),
-    (7, 1, 7), (8, 1, 8), (9, 1, 9), (10, 1, 10), (11, 1, 11);
+    (7, 1, 7), (8, 1, 8), (9, 1, 9), (10, 1, 10), (11, 1, 11),
+    (12, 1, 12), (13, 1, 13), (14, 1, 14), (15, 1, 15);
 
 -- ============================================================
 -- 2. System
@@ -672,6 +680,7 @@ CREATE TABLE exts_plugin_version (
     file_size           BIGINT          DEFAULT NULL COMMENT '文件大小',
     checksum            VARCHAR(64)     NOT NULL COMMENT '校验和',
     is_active           TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否当前激活版本',
+    deployment_status   VARCHAR(20)     NOT NULL DEFAULT 'STAGED' COMMENT '制品状态 UPLOADED/VALIDATED/STAGED/ACTIVE/DEPRECATED',
     change_log          VARCHAR(500)    DEFAULT NULL COMMENT '变更说明',
     created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
     updated_by          BIGINT          DEFAULT NULL COMMENT '修改人ID',

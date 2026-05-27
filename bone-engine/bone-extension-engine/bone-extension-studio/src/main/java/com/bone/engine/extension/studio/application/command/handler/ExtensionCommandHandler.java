@@ -3,10 +3,13 @@ package com.bone.engine.extension.studio.application.command.handler;
 import com.bone.engine.extension.studio.application.service.PluginArtifactService;
 import com.bone.engine.extension.studio.application.service.PluginArtifactService.StoredArtifact;
 import com.bone.engine.extension.studio.application.service.StudioVersionSupport;
+import com.bone.engine.extension.studio.application.service.StudioPatchSupport;
+import com.bone.engine.extension.studio.domain.model.DeploymentStatus;
 import com.bone.engine.extension.studio.domain.model.ExtPoint;
 import com.bone.engine.extension.studio.domain.model.Extension;
 import com.bone.engine.extension.studio.domain.model.PluginExecutionLog;
 import com.bone.engine.extension.studio.domain.model.PluginVersion;
+import java.util.Map;
 import com.bone.engine.extension.studio.domain.gateway.PluginVersionReadPort;
 import com.bone.engine.extension.studio.domain.repository.ExtPointRepository;
 import com.bone.engine.extension.studio.domain.repository.ExtensionRepository;
@@ -59,6 +62,22 @@ public class ExtensionCommandHandler {
     @Transactional
     public Extension updateExtension(Long id, Extension extension) {
         return updateExtension(id, extension, null);
+    }
+
+    @Transactional
+    public Extension patchExtension(Long id, Map<String, Object> patch, Integer expectedVersion) {
+        Extension existing = extensionRepository.findById(id);
+        if (existing == null) {
+            return null;
+        }
+        StudioVersionSupport.assertExpected(expectedVersion, existing.getVersion());
+        StudioPatchSupport.applyToExtension(existing, patch);
+        if (existing.getExtPointId() != null && extPointRepository.findById(existing.getExtPointId()) == null) {
+            throw new IllegalArgumentException("关联扩展点不存在: " + existing.getExtPointId());
+        }
+        existing.setVersion(StudioVersionSupport.nextVersion(existing.getVersion()));
+        extensionRepository.save(existing);
+        return existing;
     }
 
     @Transactional
@@ -138,6 +157,7 @@ public class ExtensionCommandHandler {
         try {
             extension.enable();
             extensionRepository.save(extension);
+            markActiveVersionDeployment(id, DeploymentStatus.ACTIVE);
             boolean published = publishRuntime(id);
             logSuccess(extension, "DEPLOY", System.currentTimeMillis() - start, "{\"published\":" + published + "}");
             return published;
@@ -157,6 +177,7 @@ public class ExtensionCommandHandler {
             }
             extension.disable();
             extensionRepository.save(extension);
+            markActiveVersionDeployment(id, DeploymentStatus.STAGED);
             logSuccess(extension, "UNDEPLOY", System.currentTimeMillis() - start, null);
             return true;
         } catch (RuntimeException ex) {
@@ -223,7 +244,12 @@ public class ExtensionCommandHandler {
         }
 
         for (PluginVersion v : versions) {
-            v.setActive(v.getId().equals(target.getId()));
+            boolean isTarget = v.getId().equals(target.getId());
+            v.setActive(isTarget);
+            v.setDeploymentStatus(
+                    isTarget
+                            ? (wasEnabled ? DeploymentStatus.ACTIVE : DeploymentStatus.STAGED)
+                            : DeploymentStatus.DEPRECATED);
             pluginVersionRepository.save(v);
         }
 
@@ -297,6 +323,7 @@ public class ExtensionCommandHandler {
             StoredArtifact artifact = pluginArtifactService.store(extension.getId(), ver, file);
             for (PluginVersion v : pluginVersionReadPort.findByPluginId(extension.getId())) {
                 v.setActive(false);
+                v.setDeploymentStatus(DeploymentStatus.DEPRECATED);
                 pluginVersionRepository.save(v);
             }
 
@@ -307,6 +334,8 @@ public class ExtensionCommandHandler {
             pluginVersion.setFileSize(artifact.fileSize());
             pluginVersion.setChecksum(artifact.checksum());
             pluginVersion.setActive(true);
+            pluginVersion.setDeploymentStatus(
+                    extension.isEnabled() ? DeploymentStatus.ACTIVE : DeploymentStatus.STAGED);
             pluginVersion.setChangeLog("upload");
             pluginVersionRepository.save(pluginVersion);
 
@@ -345,9 +374,18 @@ public class ExtensionCommandHandler {
             return;
         }
         try {
-            Files.deleteIfExists(Path.of(filePath));
-        } catch (IOException ex) {
+            Files.deleteIfExists(pluginArtifactService.resolveArtifactPath(filePath));
+        } catch (IOException | IllegalArgumentException ex) {
             log.warn("删除插件文件失败: {}", filePath, ex);
+        }
+    }
+
+    private void markActiveVersionDeployment(Long pluginId, DeploymentStatus status) {
+        for (PluginVersion v : pluginVersionReadPort.findByPluginId(pluginId)) {
+            if (v.isActive()) {
+                v.setDeploymentStatus(status);
+                pluginVersionRepository.save(v);
+            }
         }
     }
     private String mergeArtifactConfig(String existing, PluginVersion version) {

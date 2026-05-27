@@ -2,6 +2,7 @@ package com.bone.engine.extension.studio.application.command.handler;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.engine.extension.studio.application.query.handler.ExtensionQueryHandler;
+import com.bone.engine.extension.studio.application.service.PluginArtifactService;
 import com.bone.engine.extension.studio.application.service.StudioAuditService;
 import com.bone.engine.extension.studio.application.service.StudioCommandResponses;
 import com.bone.engine.extension.studio.application.service.StudioIdempotencyService;
@@ -10,6 +11,12 @@ import com.bone.engine.extension.studio.application.service.StudioLroService;
 import com.bone.engine.extension.studio.config.ExtensionStudioProperties;
 import com.bone.engine.extension.studio.domain.model.Extension;
 import com.bone.engine.extension.studio.domain.model.PluginExecutionLog;
+import com.bone.engine.extension.studio.domain.model.PluginVersion;
+import com.bone.engine.extension.studio.domain.repository.PluginVersionRepository;
+import java.io.IOException;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.LinkedHashMap;
@@ -31,6 +38,8 @@ public class ExtensionStudioCommandHandler {
 
     private final ExtensionCommandHandler extensionCommandHandler;
     private final ExtensionQueryHandler extensionQueryHandler;
+    private final PluginVersionRepository pluginVersionRepository;
+    private final PluginArtifactService pluginArtifactService;
     private final StudioIdempotentExecutor idempotentExecutor;
     private final StudioAuditService auditService;
     private final StudioLroService lroService;
@@ -78,6 +87,42 @@ public class ExtensionStudioCommandHandler {
         }
         auditService.success("plugin.update", "plugin", String.valueOf(id));
         return StudioCommandResponses.ok("更新插件成功", updated);
+    }
+
+    public ResponseEntity<ApiResponse<Extension>> patchPlugin(
+            Long id, Map<String, Object> body, Integer expectedVersion) {
+        try {
+            Extension updated = extensionCommandHandler.patchExtension(id, body, expectedVersion);
+            if (updated == null) {
+                return StudioCommandResponses.notFound("插件不存在");
+            }
+            auditService.success("plugin.patch", "plugin", String.valueOf(id));
+            return StudioCommandResponses.ok("部分更新插件成功", updated);
+        } catch (IllegalArgumentException ex) {
+            return StudioCommandResponses.badRequest(ex.getMessage());
+        }
+    }
+
+    public ResponseEntity<Resource> downloadPluginVersion(Long pluginId, String version) {
+        if (extensionQueryHandler.findExtensionById(pluginId) == null) {
+            return ResponseEntity.notFound().build();
+        }
+        PluginVersion pv = pluginVersionRepository.findByPluginVersion(pluginId, version);
+        if (pv == null) {
+            return ResponseEntity.notFound().build();
+        }
+        try {
+            Resource resource = pluginArtifactService.openArtifact(pv.getFilePath());
+            String filename = pluginId + "-" + version.replaceAll("[^a-zA-Z0-9._-]", "_") + ".jar";
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                    .body(resource);
+        } catch (IllegalArgumentException ex) {
+            return ResponseEntity.notFound().build();
+        } catch (IOException ex) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     public ResponseEntity<Void> deletePlugin(Long id) {

@@ -30,6 +30,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.core.io.Resource;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -117,6 +119,16 @@ public class ExtensionManagementController {
             @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
             @RequestBody ExtPoint body) {
         return extPointCommandHandler.updatePoint(
+                id, body, StudioHttpSupport.parseIfMatchVersion(ifMatch).orElse(null));
+    }
+
+    @PatchMapping("/points/{id}")
+    @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_WRITE + "')")
+    public ResponseEntity<ApiResponse<ExtPoint>> patchPoint(
+            @PathVariable Long id,
+            @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
+            @RequestBody Map<String, Object> body) {
+        return extPointCommandHandler.patchPoint(
                 id, body, StudioHttpSupport.parseIfMatchVersion(ifMatch).orElse(null));
     }
 
@@ -211,6 +223,23 @@ public class ExtensionManagementController {
             @RequestBody Extension body) {
         return extensionStudioCommandHandler.updatePlugin(
                 id, body, StudioHttpSupport.parseIfMatchVersion(ifMatch).orElse(null));
+    }
+
+    @PatchMapping("/plugins/{id}")
+    @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_WRITE + "')")
+    public ResponseEntity<ApiResponse<Extension>> patchPlugin(
+            @PathVariable Long id,
+            @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
+            @RequestBody Map<String, Object> body) {
+        return extensionStudioCommandHandler.patchPlugin(
+                id, body, StudioHttpSupport.parseIfMatchVersion(ifMatch).orElse(null));
+    }
+
+    @GetMapping("/plugins/{id}/versions/{ver}:download")
+    @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.PLUGINS_DEPLOY + "')")
+    public ResponseEntity<Resource> downloadPluginVersion(
+            @PathVariable Long id, @PathVariable("ver") String version) {
+        return extensionStudioCommandHandler.downloadPluginVersion(id, version);
     }
 
     @DeleteMapping("/plugins/{id}")

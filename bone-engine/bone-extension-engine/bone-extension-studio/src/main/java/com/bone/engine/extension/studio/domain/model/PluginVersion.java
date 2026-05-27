@@ -12,6 +12,8 @@ public class PluginVersion extends Entity<Long> {
     private long fileSize;
     private String checksum;
     private boolean active;
+    /** 制品部署状态（对齐 {@link com.bone.engine.extension.studio.domain.model.DeploymentStatus}） */
+    private String deploymentStatus;
     private String changeLog;
     private LocalDateTime createdAt = LocalDateTime.now();
 
@@ -61,6 +63,18 @@ public class PluginVersion extends Entity<Long> {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+
+    public String getDeploymentStatus() {
+        return deploymentStatus;
+    }
+
+    public void setDeploymentStatus(String deploymentStatus) {
+        this.deploymentStatus = deploymentStatus;
+    }
+
+    public void setDeploymentStatus(DeploymentStatus status) {
+        this.deploymentStatus = status != null ? status.name() : null;
     }
 
     public String getChangeLog() {

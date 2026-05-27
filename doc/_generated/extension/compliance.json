@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-27T02:13:41Z",
+  "generated_at": "2026-05-27T06:13:44Z",
   "module": "extension",
   "as_is": [
     {
@@ -73,29 +73,116 @@
           "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioIdempotencyService.java"
         ]
       }
+    },
+    {
+      "id": "if-match-412",
+      "title": "PUT If-Match / 412 Precondition Failed",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/StudioHttpSupport.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioCommandResponses.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioVersionSupport.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/common/exception/OptimisticLockException.java"
+        ]
+      }
+    },
+    {
+      "id": "post-201-location",
+      "title": "POST 201 + Location",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtPointCommandHandler.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtensionStudioCommandHandler.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioCommandResponses.java"
+        ]
+      }
+    },
+    {
+      "id": "x-request-id",
+      "title": "X-Request-Id 回显 + traceId",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioAuditService.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioCommandResponses.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioLroService.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/config/StudioRequestContextFilter.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/config/StudioWebExceptionHandler.java"
+        ]
+      }
+    },
+    {
+      "id": "patch-partial-update",
+      "title": "PATCH 部分更新（points/plugins）",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java"
+        ]
+      }
+    },
+    {
+      "id": "deployment-status-ddl",
+      "title": "deployment_status DDL + 状态机落库",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtensionCommandHandler.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/DeploymentStatus.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/PluginVersion.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/infrastructure/persistence/converter/StudioPersistenceConverter.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/infrastructure/persistence/entity/ExtStudioPluginVersion.java"
+        ],
+        "ddl": [
+          "bone-init.sql"
+        ]
+      }
+    },
+    {
+      "id": "mime-magic-number",
+      "title": "JAR magic-number 校验",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/JarMagicValidator.java"
+        ]
+      }
+    },
+    {
+      "id": "artifact-download-auth-url",
+      "title": "制品鉴权下载 GET :download",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtensionStudioCommandHandler.java"
+        ]
+      }
+    },
+    {
+      "id": "rollout-percent-traffic-merge",
+      "title": "rollout_percent ↔ config_json.traffic 收敛（ADR-0014）",
+      "status": "as_is",
+      "evidence": {
+        "adr": [
+          "doc/architecture/adr/0014-extension-rollout-traffic-canonical.md"
+        ],
+        "java": [
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/infrastructure/persistence/converter/StudioPersistenceConverter.java"
+        ]
+      }
     }
   ],
   "backlog": [
-    {
-      "id": "patch-partial-update",
-      "tier": "Target",
-      "title": "PATCH 部分更新",
-      "reference": "API 规范 §2.4",
-      "tracking": "详设 §7.2/§7.3；当前仅 PUT 全量"
-    },
     {
       "id": "idempotency-redis-cluster",
       "tier": "Target",
       "title": "Idempotency Redis 集群幂等",
       "reference": "API 规范 §8",
       "tracking": "当前 StudioIdempotencyService 进程内 24h TTL"
-    },
-    {
-      "id": "deployment-status-ddl",
-      "tier": "Target",
-      "title": "deployment_status DDL + 状态机落库",
-      "reference": "详设 §3.3",
-      "tracking": "DeploymentStatus 枚举已就位；bone-init.sql 未建列"
     },
     {
       "id": "red-metrics-micrometer",
@@ -110,27 +197,6 @@
       "title": "字节码热载 / 独立 ClassLoader 隔离",
       "reference": "详设 §4.4",
       "tracking": "As-Is 仅路由元数据热更；JAR 归档不加载字节码"
-    },
-    {
-      "id": "artifact-download-auth-url",
-      "tier": "Target",
-      "title": "制品下载鉴权 URL",
-      "reference": "API 规范 §14.4",
-      "tracking": "file_path 仍为绝对路径；:download [Target]"
-    },
-    {
-      "id": "mime-magic-number",
-      "tier": "Target",
-      "title": "MIME magic-number + 病毒/依赖扫描",
-      "reference": "API 规范 §14.4",
-      "tracking": "As-Is 仅 .jar 扩展名校验"
-    },
-    {
-      "id": "rollout-percent-traffic-merge",
-      "tier": "Target",
-      "title": "rollout_percent ↔ config_json.traffic 收敛",
-      "reference": "详设 §4.3 / §6.2",
-      "tracking": "须 ADR 二选一后清理冗余列"
     },
     {
       "id": "resilience4j-circuit",

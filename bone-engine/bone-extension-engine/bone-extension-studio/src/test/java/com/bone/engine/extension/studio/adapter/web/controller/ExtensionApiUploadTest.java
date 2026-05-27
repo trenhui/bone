@@ -30,7 +30,7 @@ class ExtensionApiUploadTest {
                         "file",
                         "demo-plugin.jar",
                         "application/java-archive",
-                        "dummy-jar-content".getBytes());
+                        minimalJarBytes());
 
         mockMvc.perform(
                         multipart("/api/v1/extension/plugins:upload")
@@ -44,5 +44,15 @@ class ExtensionApiUploadTest {
                 .andExpect(jsonPath("$.data.id").isNumber())
                 .andExpect(jsonPath("$.data.name").value("上传测试插件"))
                 .andExpect(jsonPath("$.data.className").value("com.bone.test.UploadedPlugin"));
+    }
+
+    /** 最小合法 ZIP/JAR 本地头（PK\\x03\\x04），满足 magic-number 校验。 */
+    private static byte[] minimalJarBytes() {
+        return new byte[] {
+            0x50, 0x4b, 0x03, 0x04, 0x0a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x50, 0x4b, 0x05, 0x06, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x1c, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+        };
     }
 }
