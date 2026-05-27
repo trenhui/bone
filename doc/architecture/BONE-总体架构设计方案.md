@@ -284,7 +284,7 @@ flowchart TD
 | 元数据相关服务 | 实体/字段/关系/模板/生成任务 | Spring Boot + Bone Metadata SDK + bone-datasource（动态/多库路由） |
 | 主数据服务 | 主数据实体、质量、记录、发布 | 同上（持久化与查询以 Metadata SDK 为主路径） |
 | 集成服务 | 连接器、流程、执行历史 | 编排引擎（如 Camel）与团队封装 |
-| 扩展服务 | 扩展点、插件元数据、发布回滚 | 类加载隔离 / Wasm 等为增强路线 |
+| 扩展服务 | 扩展点、插件元数据、发布回滚 | **As-Is**：元数据热更 + 四级路由 + 执行舱壁（[`bone-extension-engine`](../../bone-engine/bone-extension-engine/README.md)）；**[Target]** 字节码热载/独立 ClassLoader；**[Vision]** Wasm — 见 [扩展管理详设 v2.5 §4.4/§12](../design/modules/5.%20扩展管理模块详细设计方案.md#44-隔离与治理) |
 | IAM 服务 | 认证、授权、审计 | `bone-platform/bone-iam`：**Spring Security + JWT**（见模块 `pom.xml`）；行业包等可另用 **SA-Token**（如 `bone-business/tpa-saas`），勿在文档中混为同一默认栈 |
 | 各引擎 | 领域内核计算 | 与平台服务 Jar 依赖或进程分离 |
 
@@ -294,7 +294,7 @@ flowchart TD
 2. **代码生成**：建模 → 发布 → 选模板 → 异步生成任务 → 产物存储（DB/对象存储）→ 下载。  
 3. **集成执行**：配连接器 → 设计流程 → 测试 → 激活 → 运行监控与执行日志。  
 4. **主数据**：定义实体与质量规则 → 导入 → 质检 → 发布 → 对外 API 消费。  
-5. **扩展**：事件触发扩展点 → 引擎调度插件 → 隔离执行 → 结果回传与观测。
+5. **扩展**：事件触发扩展点 → 引擎按 `BizContext` 四级路由调度实现 → **As-Is** 同进程舱壁/超时执行 → 结果回传与观测（**[Target]** 独立 ClassLoader / 熔断；**[Vision]** Wasm，见 [扩展管理详设 §4.4](../design/modules/5.%20扩展管理模块详细设计方案.md#44-隔离与治理)）。
 
 ---
 

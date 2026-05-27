@@ -9,7 +9,7 @@ Bone 四大引擎之一：在**不修改核心代码**的前提下，通过标�
 | [bone-extension-sdk/README.md](./bone-extension-sdk/README.md) | 业务/平台开发 | 注解、路由、`BizContext`、示例与 FAQ（篇幅较长，作参考手册） |
 | [docs/使用指南.md](./docs/使用指南.md) | 接入与运维 | **推荐路径**：依赖、`@EnableExtensionPoints`、五分钟上手、配置与排错 |
 | [docs/README.md](./docs/README.md) | — | 文档索引 |
-| [doc/design/modules/5. 扩展管理模块详细设计方案.md](../../doc/design/modules/5.%20扩展管理模块详细设计方案.md) | 产品/架构 | 详设 **v2.1**（As-Is / [Target] / [Vision] 分层） |
+| [doc/design/modules/5. 扩展管理模块详细设计方案.md](../../doc/design/modules/5.%20扩展管理模块详细设计方案.md) | 产品/架构 | 详设 **v2.5**（Docs-as-Code：附录 A=Backlog、附录 C=CI 派生 As-Is） |
 | [Bone-DDD 最终实践方案](../../doc/architecture/Bone-DDD-最终实践方案.md) | 全栈开发 | 分层与持久化 P0（扩展实现仍须符合平台规约） |
 
 **事实来源**：`bone-extension-sdk/src/main/java`、测试包 `com.bone.example.extension`；勿在仓库中恢复已删除的长篇「设计方案」副本。
@@ -18,18 +18,18 @@ Bone 四大引擎之一：在**不修改核心代码**的前提下，通过标�
 
 | 模块 | 角色 | 默认端口（开发） |
 |------|------|------------------|
-| **bone-extension-sdk** | 运行时：扩展点注册、代理调用、路由（租户/业务/场景/SpEL）、类加载隔离、事件与指标 | 嵌入业务进程 |
+| **bone-extension-sdk** | 运行时：扩展点注册、代理调用、四级路由（精确/表达式/模糊/默认）、执行舱壁与超时、事件与指标 | 嵌入业务进程 |
 | **bone-extension-studio** | 控制面：扩展点/扩展实现（控制台称插件）、JAR 制品与路由发布 | **8088**（`BONE_EXTENSION_STUDIO_PORT`） |
 | **bone-extension-app**（前端） | 扩展管理微应用 | **3008** |
 
 ## 核心能力（摘要）
 
 1. **扩展点契约**：`@ExtensionPoint` 接口 + `@Extension` 实现；业务侧注入接口调用，框架代理路由。
-2. **上下文路由**：`BizContext`（租户、业务域、场景等）+ 精确匹配 / SpEL / 默认实现；支持优先级与缓存。
-3. **生命周期**：插件打包部署、启停、灰度与卸载；与 Studio 协同（以当前实现为准）。
-4. **隔离与治理**：独立类加载、依赖冲突检测思路、异常隔离与降级。
-5. **可观测**：调用次数/耗时等指标、链路追踪集成点、结构化日志（见 SDK 配置）。
-6. **动态配置**：扩展参数外部化（如 Nacos），按租户/插件维度生效。
+2. **上下文路由**：`BizContext`（租户、业务域、场景等）+ 四级路由（**精确 → 表达式 → 模糊 → 默认**）；支持优先级与缓存。
+3. **生命周期**：插件元数据登记、启停、灰度（`config_json.traffic` 0–100）与卸载；与 Studio 协同（路由元数据热更新）。
+4. **隔离与治理**（**As-Is**）：JVM 同进程、全局 Semaphore 舱壁 + `Future.get(timeout)`（`ExtensionExecutionGuard`）；**字节码热载 / 独立 ClassLoader / 依赖冲突检测属 [Target]**，详见详设 §4.4。
+5. **可观测**：执行日志上报 Studio、操作审计、`traceId` 透传；Micrometer 指标为 [Target]。
+6. **动态配置**：扩展参数外部化（如 Nacos），按租户/插件维度生效（[Target]）。
 
 ## 运行时流程（概念）
 

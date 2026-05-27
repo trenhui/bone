@@ -1,0 +1,185 @@
+{
+  "generated_at": "2026-05-27T02:13:41Z",
+  "module": "extension",
+  "as_is": [
+    {
+      "id": "delete-204",
+      "title": "DELETE 返回 204 无 body",
+      "status": "as_is",
+      "evidence": {
+        "openapi": {
+          "openapi_file": "doc/architecture/openapi/extension-v1.yaml",
+          "delete_operations_with_204": 2,
+          "paths": [
+            "/points/{id}",
+            "/plugins/{id}"
+          ]
+        },
+        "java_noContent": [
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtPointCommandHandler.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtensionStudioCommandHandler.java"
+        ]
+      }
+    },
+    {
+      "id": "idempotency-409",
+      "title": "幂等键冲突 409 COMMON_IDEMPOTENCY_CONFLICT",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioIdempotencyService.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/common/StudioErrorCodes.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/common/exception/IdempotencyConflictException.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/config/StudioWebExceptionHandler.java"
+        ]
+      }
+    },
+    {
+      "id": "archunit-studio",
+      "title": "Studio ArchUnit 分层守护",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/test/java/com/bone/engine/extension/studio/architecture/ArchitectureTest.java"
+        ]
+      }
+    },
+    {
+      "id": "execution-guard",
+      "title": "SDK 执行舱壁与超时",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-extension-engine/bone-extension-sdk/src/main/java/com/bone/engine/extension/core/executor/ExtensionExecutionGuard.java"
+        ]
+      }
+    },
+    {
+      "id": "lro-deploy",
+      "title": "LRO 部署 operationId",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioLroService.java"
+        ]
+      }
+    },
+    {
+      "id": "idempotency-key",
+      "title": "Idempotency-Key（进程内）",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioIdempotencyService.java"
+        ]
+      }
+    }
+  ],
+  "backlog": [
+    {
+      "id": "patch-partial-update",
+      "tier": "Target",
+      "title": "PATCH 部分更新",
+      "reference": "API 规范 §2.4",
+      "tracking": "详设 §7.2/§7.3；当前仅 PUT 全量"
+    },
+    {
+      "id": "idempotency-redis-cluster",
+      "tier": "Target",
+      "title": "Idempotency Redis 集群幂等",
+      "reference": "API 规范 §8",
+      "tracking": "当前 StudioIdempotencyService 进程内 24h TTL"
+    },
+    {
+      "id": "deployment-status-ddl",
+      "tier": "Target",
+      "title": "deployment_status DDL + 状态机落库",
+      "reference": "详设 §3.3",
+      "tracking": "DeploymentStatus 枚举已就位；bone-init.sql 未建列"
+    },
+    {
+      "id": "red-metrics-micrometer",
+      "tier": "Target",
+      "title": "RED 指标 (Micrometer)",
+      "reference": "API 规范 §10 + 可观测性规范 §4.2.1",
+      "tracking": "extension_invoke_* 等未注册"
+    },
+    {
+      "id": "bytecode-hotload-classloader",
+      "tier": "Target",
+      "title": "字节码热载 / 独立 ClassLoader 隔离",
+      "reference": "详设 §4.4",
+      "tracking": "As-Is 仅路由元数据热更；JAR 归档不加载字节码"
+    },
+    {
+      "id": "artifact-download-auth-url",
+      "tier": "Target",
+      "title": "制品下载鉴权 URL",
+      "reference": "API 规范 §14.4",
+      "tracking": "file_path 仍为绝对路径；:download [Target]"
+    },
+    {
+      "id": "mime-magic-number",
+      "tier": "Target",
+      "title": "MIME magic-number + 病毒/依赖扫描",
+      "reference": "API 规范 §14.4",
+      "tracking": "As-Is 仅 .jar 扩展名校验"
+    },
+    {
+      "id": "rollout-percent-traffic-merge",
+      "tier": "Target",
+      "title": "rollout_percent ↔ config_json.traffic 收敛",
+      "reference": "详设 §4.3 / §6.2",
+      "tracking": "须 ADR 二选一后清理冗余列"
+    },
+    {
+      "id": "resilience4j-circuit",
+      "tier": "Target",
+      "title": "Resilience4j 按插件熔断",
+      "reference": "详设 §4.4",
+      "tracking": "当前 ExtensionExecutionGuard 全局 Semaphore"
+    },
+    {
+      "id": "archunit-shrink-freeze",
+      "tier": "Target",
+      "title": "ArchUnit freeze 基线持续收缩",
+      "reference": "Bone-DDD §21",
+      "tracking": "ArchitectureTest 已启用；迁移后只缩不扩"
+    },
+    {
+      "id": "integration-events",
+      "tier": "Target",
+      "title": "ExtensionDeployedIntegrationEvent 等集成事件",
+      "reference": "Bone-消息与事件规范",
+      "tracking": "详设 §4.5"
+    },
+    {
+      "id": "wasm-runtime",
+      "tier": "Vision",
+      "title": "Wasm/WASI 运行时",
+      "reference": "详设 §12.1",
+      "tracking": "—"
+    },
+    {
+      "id": "plugin-marketplace",
+      "tier": "Vision",
+      "title": "插件市场",
+      "reference": "详设 §12.2",
+      "tracking": "ext_marketplace_item 未入 init"
+    },
+    {
+      "id": "plugin-dependency-graph",
+      "tier": "Vision",
+      "title": "插件依赖图",
+      "reference": "详设 §12.3",
+      "tracking": "—"
+    },
+    {
+      "id": "resource-metering",
+      "tier": "Vision",
+      "title": "资源计量",
+      "reference": "详设 §12.4",
+      "tracking": "ext_plugin_resource_usage 未入 init"
+    }
+  ]
+}

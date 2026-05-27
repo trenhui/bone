@@ -12,6 +12,7 @@
 | [design/modules/元数据能力-实现映射与竞品对照.md](./design/modules/元数据能力-实现映射与竞品对照.md) | **元数据 sdk/server/engine** 定义、协作、API As-Is、竞品 |
 | [文档治理-三目录审查子任务.md](./文档治理-三目录审查子任务.md) | PRD / 架构 / 详设 **审查子任务与 DDL 单轨口径** |
 | [wiki/](./wiki/) | 本地构建、模块地图、P0 看板、Blueprint 对齐 |
+| [_generated/](./_generated/) | **CI 派生**（勿手改）：扩展模块 As-Is 证据与 Backlog |
 | [Agenticx编程/](./Agenticx编程/) | Agentic 工程指南（运行时见 `.claude/`） |
 | 引擎源码 | [bone-engine/README.md](../bone-engine/README.md)（Metadata SDK、扩展、集成等模块索引） |
 

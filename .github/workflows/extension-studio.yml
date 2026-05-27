@@ -9,6 +9,10 @@ on:
       - 'bone-frontend/apps/bone-extension-app/**'
       - 'doc/architecture/openapi/extension-v1.yaml'
       - 'doc/architecture/openapi/components/**'
+      - 'doc/_generated/extension/**'
+      - 'doc/design/modules/5. 扩展管理模块详细设计方案.md'
+      - 'tools/extension-compliance-collector/**'
+      - 'scripts/ci/collect-extension-compliance.sh'
       - '.github/workflows/extension-studio.yml'
   pull_request:
     paths:
@@ -17,9 +21,26 @@ on:
       - 'bone-frontend/apps/bone-extension-app/**'
       - 'doc/architecture/openapi/extension-v1.yaml'
       - 'doc/architecture/openapi/components/**'
+      - 'doc/_generated/extension/**'
+      - 'doc/design/modules/5. 扩展管理模块详细设计方案.md'
+      - 'tools/extension-compliance-collector/**'
+      - 'scripts/ci/collect-extension-compliance.sh'
       - '.github/workflows/extension-studio.yml'
 
 jobs:
+  docs-compliance:
+    name: Extension Docs-as-Code (compliance.json)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Generate compliance artifacts
+        run: bash scripts/ci/collect-extension-compliance.sh --sync-doc
+      - name: Verify committed _generated matches workspace
+        run: python3 tools/extension-compliance-collector/collect.py --check
+
   openapi-lint:
     name: OpenAPI Lint (extension-v1)
     runs-on: ubuntu-latest
