@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 )
 @Component
 @RequiredArgsConstructor
-public class UpdateRoleHandler {
+public class UpdateRoleCommandHandler {
     private final RoleRepository roleRepository;
 
     @Transactional

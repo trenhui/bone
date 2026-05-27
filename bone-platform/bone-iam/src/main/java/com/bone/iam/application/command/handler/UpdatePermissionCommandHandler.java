@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 )
 @Component
 @RequiredArgsConstructor
-public class UpdatePermissionHandler {
+public class UpdatePermissionCommandHandler {
     private final PermissionRepository permissionRepository;
 
     @Transactional

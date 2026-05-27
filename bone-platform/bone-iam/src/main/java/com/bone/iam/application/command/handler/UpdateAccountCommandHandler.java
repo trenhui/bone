@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
-public class UpdateAccountHandler {
+public class UpdateAccountCommandHandler {
     private final AccountRepository accountRepository;
     private final AccountRoleBindingService accountRoleBindingService;
 

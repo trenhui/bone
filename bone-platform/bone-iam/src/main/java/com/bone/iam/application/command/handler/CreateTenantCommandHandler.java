@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
-public class CreateTenantHandler {
+public class CreateTenantCommandHandler {
 
     private final TenantRepository tenantRepository;
 

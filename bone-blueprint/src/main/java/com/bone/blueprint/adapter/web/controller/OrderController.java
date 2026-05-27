@@ -1,8 +1,8 @@
 package com.bone.blueprint.adapter.web.controller;
 
 import com.bone.blueprint.adapter.web.assembler.OrderAssembler;
-import com.bone.blueprint.adapter.web.dto.request.CreateOrderRequest;
-import com.bone.blueprint.adapter.web.dto.response.OrderDetailResponse;
+import com.bone.blueprint.adapter.web.dto.request.CreateOrderReq;
+import com.bone.blueprint.adapter.web.dto.response.OrderDetailResp;
 import com.bone.blueprint.application.command.cmd.CancelOrderCommand;
 import com.bone.blueprint.application.command.cmd.CreateOrderCommand;
 import com.bone.blueprint.application.command.cmd.PayOrderCommand;
@@ -51,7 +51,7 @@ public class OrderController {
     @Operation(summary = "创建订单", description = "创建新的订单")
     @PostMapping
     public ApiResponse<Long> create(
-            @Parameter(description = "订单创建请求") @Valid @RequestBody CreateOrderRequest request) {
+            @Parameter(description = "订单创建请求") @Valid @RequestBody CreateOrderReq request) {
         CreateOrderCommand command = orderAssembler.toCreateOrderCommand(request);
         return ApiResponse.success(createOrderCommandHandler.handle(command));
     }
@@ -74,9 +74,9 @@ public class OrderController {
 
     @Operation(summary = "查询订单详情", description = "根据订单ID查询订单详情")
     @GetMapping("/{id}")
-    public ApiResponse<OrderDetailResponse> getById(@Parameter(description = "订单ID") @PathVariable Long id) {
+    public ApiResponse<OrderDetailResp> getById(@Parameter(description = "订单ID") @PathVariable Long id) {
         OrderDetailQuery query = orderAssembler.toOrderDetailQuery(id);
-        OrderDetailResponse response = orderAssembler.toOrderDetailResponse(orderDetailQueryHandler.handle(query));
+        OrderDetailResp response = orderAssembler.toOrderDetailResp(orderDetailQueryHandler.handle(query));
         return ApiResponse.success(response);
     }
 }

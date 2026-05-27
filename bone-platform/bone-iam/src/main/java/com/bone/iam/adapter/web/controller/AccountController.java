@@ -10,13 +10,13 @@ import com.bone.iam.adapter.web.dto.resp.AccountDetailResp;
 import com.bone.iam.application.command.cmd.DisableAccountCommand;
 import com.bone.iam.application.command.cmd.EnableAccountCommand;
 import com.bone.iam.application.command.cmd.ResetPasswordCommand;
-import com.bone.iam.application.command.handler.CreateAccountHandler;
-import com.bone.iam.application.command.handler.UpdateAccountHandler;
-import com.bone.iam.application.command.handler.EnableAccountHandler;
-import com.bone.iam.application.command.handler.DisableAccountHandler;
-import com.bone.iam.application.command.handler.ResetPasswordHandler;
+import com.bone.iam.application.command.handler.CreateAccountCommandHandler;
+import com.bone.iam.application.command.handler.UpdateAccountCommandHandler;
+import com.bone.iam.application.command.handler.EnableAccountCommandHandler;
+import com.bone.iam.application.command.handler.DisableAccountCommandHandler;
+import com.bone.iam.application.command.handler.ResetPasswordCommandHandler;
 import com.bone.iam.application.query.handler.AccountPageQueryHandler;
-import com.bone.iam.application.command.handler.DeleteAccountHandler;
+import com.bone.iam.application.command.handler.DeleteAccountCommandHandler;
 import com.bone.iam.application.query.dto.AccountDTO;
 import com.bone.iam.application.query.handler.AccountDetailQueryHandler;
 import com.bone.iam.application.query.qry.AccountPageQuery;
@@ -44,31 +44,31 @@ public class AccountController {
     /** 单次导出最多返回的账号数（避免一次性把整张表拉到内存）。 */
     private static final int EXPORT_MAX_SIZE = 10000;
 
-    private final CreateAccountHandler createAccountHandler;
-    private final UpdateAccountHandler updateAccountHandler;
-    private final EnableAccountHandler enableAccountHandler;
-    private final DisableAccountHandler disableAccountHandler;
-    private final ResetPasswordHandler resetPasswordHandler;
+    private final CreateAccountCommandHandler createAccountCommandHandler;
+    private final UpdateAccountCommandHandler updateAccountCommandHandler;
+    private final EnableAccountCommandHandler enableAccountCommandHandler;
+    private final DisableAccountCommandHandler disableAccountCommandHandler;
+    private final ResetPasswordCommandHandler resetPasswordCommandHandler;
     private final AccountPageQueryHandler accountPageQueryHandler;
-    private final DeleteAccountHandler deleteAccountHandler;
+    private final DeleteAccountCommandHandler deleteAccountCommandHandler;
     private final AccountWebConverter accountWebConverter;
     private final AccountDetailQueryHandler accountDetailQueryHandler;
 
     @PostMapping
     public ApiResponse<Long> create(@RequestBody CreateAccountReq req) {
-        Long id = createAccountHandler.handle(accountWebConverter.toCreateAccountCommand(req));
+        Long id = createAccountCommandHandler.handle(accountWebConverter.toCreateAccountCommand(req));
         return ApiResponse.success(id);
     }
 
     @PutMapping("/{id}")
     public ApiResponse<Void> update(@PathVariable Long id, @RequestBody UpdateAccountReq req) {
-        updateAccountHandler.handle(accountWebConverter.toUpdateAccountCommand(id, req));
+        updateAccountCommandHandler.handle(accountWebConverter.toUpdateAccountCommand(id, req));
         return ApiResponse.success();
     }
 
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id) {
-        deleteAccountHandler.handle(id);
+        deleteAccountCommandHandler.handle(id);
         return ApiResponse.success();
     }
 
@@ -76,7 +76,7 @@ public class AccountController {
     public ApiResponse<Void> enable(@PathVariable Long id) {
         EnableAccountCommand cmd = new EnableAccountCommand();
         cmd.setId(id);
-        enableAccountHandler.handle(cmd);
+        enableAccountCommandHandler.handle(cmd);
         return ApiResponse.success();
     }
 
@@ -84,14 +84,14 @@ public class AccountController {
     public ApiResponse<Void> disable(@PathVariable Long id) {
         DisableAccountCommand cmd = new DisableAccountCommand();
         cmd.setId(id);
-        disableAccountHandler.handle(cmd);
+        disableAccountCommandHandler.handle(cmd);
         return ApiResponse.success();
     }
 
     @PostMapping("/{id}/reset-password")
     public ApiResponse<Void> resetPassword(@PathVariable Long id, @RequestBody ResetPasswordCommand cmd) {
         cmd.setId(id);
-        resetPasswordHandler.handle(cmd);
+        resetPasswordCommandHandler.handle(cmd);
         return ApiResponse.success();
     }
 
@@ -120,7 +120,7 @@ public class AccountController {
         int success = 0;
         for (CreateAccountReq req : list) {
             try {
-                createAccountHandler.handle(accountWebConverter.toCreateAccountCommand(req));
+                createAccountCommandHandler.handle(accountWebConverter.toCreateAccountCommand(req));
                 success++;
             } catch (RuntimeException e) {
                 failures.add(req.getUsername() + ": " + e.getMessage());

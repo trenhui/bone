@@ -10,6 +10,7 @@ import java.util.List;
 import com.bone.core.capability.Capability;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,12 +27,13 @@ import java.util.Map;
 )
 @Component
 @RequiredArgsConstructor
-public class LoginHandler {
+public class LoginCommandHandler {
     private final AuthService authService;
     private final AccessTokenIssuer accessTokenIssuer;
     private final RefreshTokenIssuer refreshTokenIssuer;
     private final AccountAuthoritiesQueryHandler accountAuthoritiesQueryHandler;
 
+    @Transactional
     public Map<String, Object> handle(LoginCommand cmd) {
         Account account = authService.authenticate(cmd.getUsername(), cmd.getPassword());
         if (account == null) {

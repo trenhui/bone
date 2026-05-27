@@ -18,9 +18,9 @@ bone-blueprint/
 │   │   │   │   │   │   └── OrderController.java
 │   │   │   │   │   ├── dto/
 │   │   │   │   │   │   ├── req/
-│   │   │   │   │   │   │   └── CreateOrderRequest.java
+│   │   │   │   │   │   │   └── CreateOrderReq.java
 │   │   │   │   │   │   └── resp/
-│   │   │   │   │   │       └── OrderDetailResponse.java
+│   │   │   │   │   │       └── OrderDetailResp.java
 │   │   │   │   │   ├── assembler/
 │   │   │   │   │   │   └── OrderAssembler.java
 │   │   │   │   │   └── exception/

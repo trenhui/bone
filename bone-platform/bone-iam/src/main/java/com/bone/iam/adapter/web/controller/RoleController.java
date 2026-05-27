@@ -6,10 +6,10 @@ import com.bone.core.model.PageResult;
 import com.bone.iam.application.command.cmd.AssignPermissionCommand;
 import com.bone.iam.application.command.cmd.CreateRoleCommand;
 import com.bone.iam.application.command.cmd.UpdateRoleCommand;
-import com.bone.iam.application.command.handler.CreateRoleHandler;
-import com.bone.iam.application.command.handler.AssignPermissionHandler;
-import com.bone.iam.application.command.handler.UpdateRoleHandler;
-import com.bone.iam.application.command.handler.DeleteRoleHandler;
+import com.bone.iam.application.command.handler.CreateRoleCommandHandler;
+import com.bone.iam.application.command.handler.AssignPermissionCommandHandler;
+import com.bone.iam.application.command.handler.UpdateRoleCommandHandler;
+import com.bone.iam.application.command.handler.DeleteRoleCommandHandler;
 import com.bone.iam.application.query.handler.RolePageQueryHandler;
 import com.bone.iam.application.query.dto.PermissionDTO;
 import com.bone.iam.application.query.dto.RoleDTO;
@@ -30,10 +30,10 @@ import java.util.List;
 @RequestMapping(PlatformApiPaths.IAM_V1 + "/roles")
 @RequiredArgsConstructor
 public class RoleController {
-    private final CreateRoleHandler createRoleHandler;
-    private final AssignPermissionHandler assignPermissionHandler;
-    private final UpdateRoleHandler updateRoleHandler;
-    private final DeleteRoleHandler deleteRoleHandler;
+    private final CreateRoleCommandHandler createRoleCommandHandler;
+    private final AssignPermissionCommandHandler assignPermissionCommandHandler;
+    private final UpdateRoleCommandHandler updateRoleCommandHandler;
+    private final DeleteRoleCommandHandler deleteRoleCommandHandler;
     private final RolePageQueryHandler rolePageQueryHandler;
     private final RolePermissionsQueryHandler rolePermissionsQueryHandler;
     private final RoleDetailQueryHandler roleDetailQueryHandler;
@@ -42,7 +42,7 @@ public class RoleController {
     @PostMapping
     public ApiResponse<Long> create(@RequestBody CreateRoleReq req) {
         CreateRoleCommand cmd = roleWebConverter.toCreateRoleCommand(req);
-        Long roleId = createRoleHandler.handle(cmd);
+        Long roleId = createRoleCommandHandler.handle(cmd);
         return ApiResponse.success(roleId);
     }
 
@@ -67,13 +67,13 @@ public class RoleController {
         cmd.setId(id);
         cmd.setName(req.getName());
         cmd.setDescription(req.getDescription());
-        updateRoleHandler.handle(cmd);
+        updateRoleCommandHandler.handle(cmd);
         return ApiResponse.success();
     }
 
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id) {
-        deleteRoleHandler.handle(id);
+        deleteRoleCommandHandler.handle(id);
         return ApiResponse.success();
     }
 
@@ -82,7 +82,7 @@ public class RoleController {
         AssignPermissionCommand cmd = new AssignPermissionCommand();
         cmd.setRoleId(id);
         cmd.setPermissionIds(permissionIds);
-        assignPermissionHandler.handle(cmd);
+        assignPermissionCommandHandler.handle(cmd);
         return ApiResponse.success();
     }
 

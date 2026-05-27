@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 )
 @Component
 @RequiredArgsConstructor
-public class AssignPermissionHandler {
+public class AssignPermissionCommandHandler {
 
     private final RoleRepository roleRepository;
     private final RolePermissionBindingService rolePermissionBindingService;

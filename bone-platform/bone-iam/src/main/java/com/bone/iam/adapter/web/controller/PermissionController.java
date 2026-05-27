@@ -5,9 +5,9 @@ import com.bone.core.web.PlatformApiPaths;
 import com.bone.core.model.PageResult;
 import com.bone.iam.application.command.cmd.CreatePermissionCommand;
 import com.bone.iam.application.command.cmd.UpdatePermissionCommand;
-import com.bone.iam.application.command.handler.CreatePermissionHandler;
-import com.bone.iam.application.command.handler.UpdatePermissionHandler;
-import com.bone.iam.application.command.handler.DeletePermissionHandler;
+import com.bone.iam.application.command.handler.CreatePermissionCommandHandler;
+import com.bone.iam.application.command.handler.UpdatePermissionCommandHandler;
+import com.bone.iam.application.command.handler.DeletePermissionCommandHandler;
 import com.bone.iam.application.query.handler.PermissionPageQueryHandler;
 import com.bone.iam.application.query.dto.PermissionDTO;
 import com.bone.iam.application.query.qry.PermissionPageQuery;
@@ -28,9 +28,9 @@ import java.util.stream.Collectors;
 @RequestMapping(PlatformApiPaths.IAM_V1 + "/permissions")
 @RequiredArgsConstructor
 public class PermissionController {
-    private final CreatePermissionHandler createPermissionHandler;
-    private final UpdatePermissionHandler updatePermissionHandler;
-    private final DeletePermissionHandler deletePermissionHandler;
+    private final CreatePermissionCommandHandler createPermissionCommandHandler;
+    private final UpdatePermissionCommandHandler updatePermissionCommandHandler;
+    private final DeletePermissionCommandHandler deletePermissionCommandHandler;
     private final PermissionPageQueryHandler permissionPageQueryHandler;
     private final PermissionWebConverter permissionWebConverter;
     private final PermissionRepository permissionRepository;
@@ -38,7 +38,7 @@ public class PermissionController {
     @PostMapping
     public ApiResponse<Long> create(@RequestBody CreatePermissionReq req) {
         CreatePermissionCommand cmd = permissionWebConverter.toCreatePermissionCommand(req);
-        Long permissionId = createPermissionHandler.handle(cmd);
+        Long permissionId = createPermissionCommandHandler.handle(cmd);
         return ApiResponse.success(permissionId);
     }
 
@@ -103,13 +103,13 @@ public class PermissionController {
         cmd.setParentId(req.getParentId());
         cmd.setType(req.getType());
         cmd.setSortOrder(req.getSortOrder());
-        updatePermissionHandler.handle(cmd);
+        updatePermissionCommandHandler.handle(cmd);
         return ApiResponse.success();
     }
 
     @DeleteMapping("/{id}")
     public ApiResponse<Void> delete(@PathVariable Long id) {
-        deletePermissionHandler.handle(id);
+        deletePermissionCommandHandler.handle(id);
         return ApiResponse.success();
     }
 

@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 )
 @Component
 @RequiredArgsConstructor
-public class CreateRoleHandler {
+public class CreateRoleCommandHandler {
     private final RoleRepository roleRepository;
 
     @Transactional

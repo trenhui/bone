@@ -5,10 +5,10 @@ import com.bone.core.model.PageResult;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.iam.application.command.cmd.CreateTenantCommand;
 import com.bone.iam.application.command.cmd.UpdateTenantCommand;
-import com.bone.iam.application.command.handler.CreateTenantHandler;
-import com.bone.iam.application.command.handler.DisableTenantHandler;
-import com.bone.iam.application.command.handler.EnableTenantHandler;
-import com.bone.iam.application.command.handler.UpdateTenantHandler;
+import com.bone.iam.application.command.handler.CreateTenantCommandHandler;
+import com.bone.iam.application.command.handler.DisableTenantCommandHandler;
+import com.bone.iam.application.command.handler.EnableTenantCommandHandler;
+import com.bone.iam.application.command.handler.UpdateTenantCommandHandler;
 import com.bone.iam.application.query.dto.TenantDTO;
 import com.bone.iam.application.query.handler.TenantPageQueryHandler;
 import com.bone.iam.application.query.qry.TenantPageQuery;
@@ -24,10 +24,10 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class TenantController {
 
-    private final CreateTenantHandler createTenantHandler;
-    private final UpdateTenantHandler updateTenantHandler;
-    private final EnableTenantHandler enableTenantHandler;
-    private final DisableTenantHandler disableTenantHandler;
+    private final CreateTenantCommandHandler createTenantCommandHandler;
+    private final UpdateTenantCommandHandler updateTenantCommandHandler;
+    private final EnableTenantCommandHandler enableTenantCommandHandler;
+    private final DisableTenantCommandHandler disableTenantCommandHandler;
     private final TenantPageQueryHandler tenantPageQueryHandler;
     private final TenantRepository tenantRepository;
 
@@ -38,7 +38,7 @@ public class TenantController {
 
     @PostMapping
     public ApiResponse<Long> create(@RequestBody CreateTenantCommand cmd) {
-        return ApiResponse.success(createTenantHandler.handle(cmd));
+        return ApiResponse.success(createTenantCommandHandler.handle(cmd));
     }
 
     @GetMapping("/{id}")
@@ -60,19 +60,19 @@ public class TenantController {
     @PutMapping("/{id}")
     public ApiResponse<Void> update(@PathVariable Long id, @RequestBody UpdateTenantCommand cmd) {
         cmd.setId(id);
-        updateTenantHandler.handle(cmd);
+        updateTenantCommandHandler.handle(cmd);
         return ApiResponse.success();
     }
 
     @PostMapping("/{id}/enable")
     public ApiResponse<Void> enable(@PathVariable Long id) {
-        enableTenantHandler.handle(id);
+        enableTenantCommandHandler.handle(id);
         return ApiResponse.success();
     }
 
     @PostMapping("/{id}/disable")
     public ApiResponse<Void> disable(@PathVariable Long id) {
-        disableTenantHandler.handle(id);
+        disableTenantCommandHandler.handle(id);
         return ApiResponse.success();
     }
 }

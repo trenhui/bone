@@ -1,12 +1,12 @@
 package com.bone.blueprint.adapter.rpc;
 
-import com.bone.blueprint.adapter.rpc.dto.CreateOrderRpcRequest;
-import com.bone.blueprint.adapter.rpc.dto.CreateOrderRpcResponse;
+import com.bone.blueprint.adapter.rpc.dto.CreateOrderRpcReq;
+import com.bone.blueprint.adapter.rpc.dto.CreateOrderRpcResp;
 import com.bone.blueprint.application.command.cmd.CreateOrderCommand;
-import com.bone.blueprint.application.query.dto.OrderDto;
-import com.bone.blueprint.application.query.qry.OrderDetailQuery;
 import com.bone.blueprint.application.command.handler.CreateOrderCommandHandler;
+import com.bone.blueprint.application.query.dto.OrderDto;
 import com.bone.blueprint.application.query.handler.OrderDetailQueryHandler;
+import com.bone.blueprint.application.query.qry.OrderDetailQuery;
 import com.bone.core.result.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -35,8 +35,8 @@ public class OrderRpcService {
 
     @Operation(summary = "创建订单", description = "创建新的订单")
     @PostMapping
-    public ApiResponse<CreateOrderRpcResponse> createOrder(
-            @Parameter(description = "订单创建请求") @RequestBody CreateOrderRpcRequest request) {
+    public ApiResponse<CreateOrderRpcResp> createOrder(
+            @Parameter(description = "订单创建请求") @RequestBody CreateOrderRpcReq request) {
         try {
             List<CreateOrderCommand.OrderItemDto> items = request.getItems().stream()
                     .map(item -> CreateOrderCommand.OrderItemDto.builder()
@@ -54,14 +54,14 @@ public class OrderRpcService {
 
             Long orderId = createOrderCommandHandler.handle(command);
 
-            CreateOrderRpcResponse response = new CreateOrderRpcResponse();
+            CreateOrderRpcResp response = new CreateOrderRpcResp();
             response.setOrderId(orderId);
             response.setSuccess(true);
             response.setStatus("SUCCESS");
             return ApiResponse.success(response);
         } catch (Exception e) {
             log.error("创建订单失败: customerId={}", request.getCustomerId(), e);
-            CreateOrderRpcResponse response = new CreateOrderRpcResponse();
+            CreateOrderRpcResp response = new CreateOrderRpcResp();
             response.setSuccess(false);
             response.setErrorMsg(e.getMessage());
             response.setStatus("FAILED");

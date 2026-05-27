@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 )
 @Component
 @RequiredArgsConstructor
-public class DeletePermissionHandler {
+public class DeletePermissionCommandHandler {
     private final PermissionRepository permissionRepository;
 
     @Transactional

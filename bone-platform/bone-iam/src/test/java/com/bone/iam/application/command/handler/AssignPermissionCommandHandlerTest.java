@@ -15,7 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class AssignPermissionHandlerTest {
+class AssignPermissionCommandHandlerTest {
 
     @Mock
     private RoleRepository roleRepository;
@@ -24,7 +24,7 @@ class AssignPermissionHandlerTest {
     private RolePermissionBindingService rolePermissionBindingService;
 
     @InjectMocks
-    private AssignPermissionHandler assignPermissionHandler;
+    private AssignPermissionCommandHandler assignPermissionCommandHandler;
 
     @Test
     void handleAssignsPermissionsWhenRoleExists() {
@@ -34,7 +34,7 @@ class AssignPermissionHandlerTest {
         when(roleRepository.findById(1L))
                 .thenReturn(Role.create("admin", "SUPER_ADMIN", "test", 1, 0L, null));
 
-        assignPermissionHandler.handle(cmd);
+        assignPermissionCommandHandler.handle(cmd);
 
         verify(rolePermissionBindingService).replaceBindings(1L, cmd.getPermissionIds());
     }
@@ -45,6 +45,6 @@ class AssignPermissionHandlerTest {
         cmd.setRoleId(99L);
         when(roleRepository.findById(99L)).thenReturn(null);
 
-        assertThrows(RuntimeException.class, () -> assignPermissionHandler.handle(cmd));
+        assertThrows(RuntimeException.class, () -> assignPermissionCommandHandler.handle(cmd));
     }
 }

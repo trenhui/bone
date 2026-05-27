@@ -7,7 +7,7 @@ import com.bone.iam.adapter.web.dto.req.LoginReq;
 import com.bone.iam.adapter.web.dto.req.RefreshTokenReq;
 import com.bone.iam.adapter.web.dto.resp.LoginResp;
 import com.bone.iam.application.command.cmd.LoginCommand;
-import com.bone.iam.application.command.handler.LoginHandler;
+import com.bone.iam.application.command.handler.LoginCommandHandler;
 import com.bone.iam.domain.repository.AccountRepository;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.infrastructure.config.IamSsoProperties;
@@ -39,7 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final LoginHandler loginHandler;
+    private final LoginCommandHandler loginCommandHandler;
     private final AuthWebConverter authWebConverter;
     private final JwtTokenService jwtTokenService;
     private final RefreshTokenService refreshTokenService;
@@ -52,7 +52,7 @@ public class AuthController {
     @PostMapping("/login")
     public ApiResponse<LoginResp> login(@RequestBody LoginReq req) {
         LoginCommand cmd = authWebConverter.toLoginCommand(req);
-        Map<String, Object> result = loginHandler.handle(cmd);
+        Map<String, Object> result = loginCommandHandler.handle(cmd);
         return ApiResponse.success(authWebConverter.toLoginResp(result));
     }
 

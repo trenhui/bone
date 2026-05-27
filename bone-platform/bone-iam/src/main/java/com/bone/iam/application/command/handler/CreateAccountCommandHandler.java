@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
-public class CreateAccountHandler {
+public class CreateAccountCommandHandler {
     private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
     private final AccountRoleBindingService accountRoleBindingService;

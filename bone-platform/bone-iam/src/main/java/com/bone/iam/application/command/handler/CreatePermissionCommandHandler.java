@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 )
 @Component
 @RequiredArgsConstructor
-public class CreatePermissionHandler {
+public class CreatePermissionCommandHandler {
     private final PermissionRepository permissionRepository;
 
     @Transactional

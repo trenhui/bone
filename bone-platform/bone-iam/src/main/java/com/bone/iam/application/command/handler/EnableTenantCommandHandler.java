@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
-public class EnableTenantHandler {
+public class EnableTenantCommandHandler {
 
     private final TenantRepository tenantRepository;
 
