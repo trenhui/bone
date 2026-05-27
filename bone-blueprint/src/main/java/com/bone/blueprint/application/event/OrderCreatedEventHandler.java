@@ -12,6 +12,6 @@ public class OrderCreatedEventHandler {
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void handle(OrderCreatedEvent event) {
-        log.info("订单已创建: orderId={}, customerId={}", event.orderId(), event.customerId());
+        log.info("订单已创建: orderId={}, tenantId={}", event.orderId(), event.tenantId());
     }
 }

@@ -1,6 +1,7 @@
 package com.bone.blueprint.application.command.handler;
 
 import com.bone.blueprint.application.command.cmd.PayOrderCommand;
+import com.bone.blueprint.application.event.outbox.OrderOutboxWriter;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.order.OrderItem;
 import com.bone.blueprint.domain.repository.OrderRepository;
@@ -34,6 +35,9 @@ class PayOrderCommandHandlerTest {
     @Mock
     private DomainEventPublisher domainEventPublisher;
 
+    @Mock
+    private OrderOutboxWriter orderOutboxWriter;
+
     @InjectMocks
     private PayOrderCommandHandler handler;
 
@@ -42,7 +46,7 @@ class PayOrderCommandHandlerTest {
     @BeforeEach
     void setUp() {
         OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
-        order = Order.create(1L, 1L, Collections.singletonList(item));
+        order = Order.create(1L, 0L, 1L, Collections.singletonList(item));
     }
 
     @Test
@@ -55,9 +59,9 @@ class PayOrderCommandHandlerTest {
         handler.handle(command);
 
         assertEquals(com.bone.blueprint.domain.order.valueobject.OrderStatus.PAID, order.getStatus());
-        verify(orderRepository, times(1)).findById(1L);
         verify(orderRepository, times(1)).save(any(Order.class));
         verify(domainEventPublisher, times(1)).publishAll(any());
+        verify(orderOutboxWriter, times(1)).appendOrderPaid(any());
     }
 
     @Test
@@ -69,8 +73,8 @@ class PayOrderCommandHandlerTest {
 
         assertThrows(NotFoundException.class, () -> handler.handle(command));
 
-        verify(orderRepository, times(1)).findById(1L);
         verify(orderRepository, never()).save(any(Order.class));
+        verify(orderOutboxWriter, never()).appendOrderPaid(any());
     }
 
     @Test
@@ -84,7 +88,6 @@ class PayOrderCommandHandlerTest {
 
         assertThrows(DomainException.class, () -> handler.handle(command));
 
-        verify(orderRepository, times(1)).findById(1L);
         verify(orderRepository, never()).save(any(Order.class));
     }
 }

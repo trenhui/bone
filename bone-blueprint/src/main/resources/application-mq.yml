@@ -1,0 +1,11 @@
+# 启用 RocketMQ Outbox 中继：spring.profiles.active=mq
+spring:
+  rocketmq:
+    name-server: ${BONE_ROCKETMQ_NAMESERVER:localhost:9876}
+    producer:
+      group: bone-blueprint-producer
+
+bone:
+  blueprint:
+    outbox:
+      mq-enabled: true

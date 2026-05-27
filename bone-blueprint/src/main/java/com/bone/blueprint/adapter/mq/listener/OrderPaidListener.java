@@ -7,9 +7,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
- * 订单支付监听器
+ * 入站 MQ 示范：外部系统以「订单 ID」触发支付（与 Outbox 发出的集成事件不同）。
  * <p>
- * 监听订单支付消息，处理订单支付逻辑
+ * 生产环境消费 {@link OrderPaidIntegrationEvent} 请使用 {@link OrderPaidIntegrationMqListener}。
  * </p>
  */
 @Slf4j

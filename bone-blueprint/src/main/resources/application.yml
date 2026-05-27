@@ -19,6 +19,15 @@ bone:
   metadata:
     enabled: true
     scan-packages: com.bone.blueprint.domain
+  blueprint:
+    outbox:
+      enabled: true
+      mq-enabled: false
+      batch-size: 50
+      max-retries: 5
+      order-paid-topic: bone.order.paid
+      consumer-group: bone-blueprint-order-paid-consumer
+      relay-delay-ms: 5000
 
 server:
   port: 8082

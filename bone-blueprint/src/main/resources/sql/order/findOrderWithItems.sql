@@ -15,6 +15,8 @@ FROM
 LEFT JOIN
     t_order_item oi ON o.id = oi.order_id
 WHERE
-    o.id = #{orderId}
+    o.id = :orderId
+AND
+    o.tenant_id = :tenantId
 AND
     o.deleted = 0

@@ -1,6 +1,6 @@
 package com.bone.blueprint.application.support;
 
-import com.bone.core.domain.AuditableAggregateRoot;
+import com.bone.core.domain.AggregateRoot;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.metadata.sdk.Repository;
 
@@ -11,7 +11,7 @@ public final class AggregatePersistence {
 
     private AggregatePersistence() {}
 
-    public static <T extends AuditableAggregateRoot<ID>, ID> ID saveAndPublishEvents(
+    public static <T extends AggregateRoot<ID>, ID> ID saveAndPublishEvents(
             Repository<T, ID> repository, DomainEventPublisher eventPublisher, T aggregate) {
         ID id = repository.save(aggregate);
         eventPublisher.publishAll(aggregate.getDomainEvents());
@@ -19,7 +19,7 @@ public final class AggregatePersistence {
         return id;
     }
 
-    public static <T extends AuditableAggregateRoot<ID>, ID> void updateAndPublishEvents(
+    public static <T extends AggregateRoot<ID>, ID> void updateAndPublishEvents(
             Repository<T, ID> repository, DomainEventPublisher eventPublisher, T aggregate) {
         repository.save(aggregate);
         eventPublisher.publishAll(aggregate.getDomainEvents());

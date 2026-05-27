@@ -35,6 +35,13 @@ public final class Money {
         return new Money(amount.add(other.amount));
     }
 
+    public Money multiply(int quantity) {
+        if (quantity <= 0) {
+            throw new DomainException("数量必须大于0");
+        }
+        return new Money(amount.multiply(BigDecimal.valueOf(quantity)));
+    }
+
     public boolean greaterThan(Money other) {
         Objects.requireNonNull(other, "other");
         return amount.compareTo(other.amount) > 0;

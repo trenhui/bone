@@ -15,6 +15,12 @@ class MoneyTest {
     }
 
     @Test
+    void multiply() {
+        Money unit = Money.of(new BigDecimal("10"));
+        assertEquals(new BigDecimal("30"), unit.multiply(3).toBigDecimal());
+    }
+
+    @Test
     void addAndCompare() {
         Money a = Money.of(new BigDecimal("100"));
         Money b = Money.of(new BigDecimal("50"));

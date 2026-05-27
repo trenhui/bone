@@ -35,8 +35,13 @@
 ### 库存协作策略（本样板）
 
 1. **创建订单**：`checkStock` → 持久化 → `reserveStock`（同事务内编排）
-2. **支付订单**：聚合 `pay()` → `AFTER_COMMIT` → `confirmStock` + 发布集成事件
+2. **支付订单**：聚合 `pay()` → 同事务写 **Outbox** → `AFTER_COMMIT` → `confirmStock` → 定时任务中继 MQ
 3. **取消订单**：聚合 `cancel()` → `AFTER_COMMIT` → `releaseStock`
+
+### 多租户
+
+- 聚合根继承 `TenantAggregateRoot`；写/读路径经 `TenantSupport` / `TenantContext` 隔离。
+- HTTP 演示：请求头 `X-Tenant-Id: 1001`（见 `TenantContextFilter`）。
 
 ## 文档
 
@@ -51,10 +56,14 @@
 |------|------|
 | **`@Capability` + `HandlerRegistry`（可选）** | 编排侧发现 Handler 元数据；**Adapter 直接调 Handler**，无强制 UseCase 门面，见方案 §20 |
 | **领域事件 + AFTER_COMMIT** | 瘦载荷 `record` 事件 + `SpringDomainEventPublisher` + 应用层订阅 |
-| **集成事件** | `OrderPaidIntegrationEvent` 与领域事件分离 |
+| **Outbox** | `bp_outbox` + `OrderOutboxWriter` / `OrderOutboxRelay` / `OrderOutboxRelayJob` |
+| **集成事件** | `OrderPaidIntegrationEvent` 与领域事件分离，经 Outbox 中继 |
+| **多租户** | `TenantAggregateRoot` + `QueryBuilder` 强制 `tenantId` + `X-Tenant-Id` 过滤器 |
+| **值对象 Money** | 金额规则集中在 `Money`（`Order` / `OrderItem` 领域计算） |
+| **读侧 Join** | `OrderReadPort` + `findOrderWithItems.sql` 扁平投影 → `OrderDetailAssembler` |
 | **扩展点** | 多实现价格计算器（VIP/企业/促销等） |
 | **Feign + `InventoryGateway`** | ACL 出站调用 + 预留/确认/释放流程 |
-| **CQRS 读侧** | `OrderPageQueryHandler` 使用 `QueryBuilder` |
+| **CQRS 读侧** | 列表 `QueryBuilder`；详情 SQL 投影 |
 | **MQ / 定时任务 / RPC** | 入站适配器形态示例 |
 
 无对应需求时，**不必**在新模块中复制上述结构。
@@ -71,6 +80,23 @@
 6. `infrastructure/config` + `infrastructure/event`：元数据、Spring 配置、事件发布实现  
 
 **先不要**：扩展点矩阵、Feign、MQ、Schedule、RPC、`@Capability` 注册表——等业务或集成真的需要再加。
+
+## RocketMQ Outbox 中继
+
+| 模式 | 配置 | 行为 |
+|------|------|------|
+| 开发默认 | `bone.blueprint.outbox.mq-enabled=false` | `LoggingOrderMessageSender` 打结构化日志 |
+| MQ | `spring.profiles.active=mq` + NameServer | `RocketMqOrderMessageSender` + `OrderPaidIntegrationMqListener` |
+
+```bash
+# 启动（需本地 RocketMQ NameServer :9876）
+java -jar target/bone-blueprint-1.0.0.jar --spring.profiles.active=mq
+
+# 或环境变量
+export BONE_ROCKETMQ_NAMESERVER=localhost:9876
+```
+
+支付成功后：同事务写 `bp_outbox` → 定时 `OrderOutboxRelayJob` → Topic `bone.order.paid` → 下游消费。
 
 ## 构建与测试
 

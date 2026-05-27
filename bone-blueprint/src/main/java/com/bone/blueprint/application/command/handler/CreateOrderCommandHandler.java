@@ -2,22 +2,23 @@ package com.bone.blueprint.application.command.handler;
 
 import com.bone.blueprint.application.command.cmd.CreateOrderCommand;
 import com.bone.blueprint.application.support.AggregatePersistence;
+import com.bone.blueprint.application.support.TenantSupport;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.order.OrderItem;
+import com.bone.blueprint.domain.order.valueobject.Money;
 import com.bone.blueprint.domain.repository.OrderRepository;
 import com.bone.blueprint.domain.extension.order.OrderPriceCalculator;
 import com.bone.core.capability.Capability;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
 import com.bone.core.util.DistributedIdGenerator;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -48,6 +49,7 @@ public class CreateOrderCommandHandler {
         }
 
         long orderId = DistributedIdGenerator.generateLongId();
+        long tenantId = TenantSupport.currentTenantId();
 
         List<OrderItem> items = cmd.getItems().stream()
                 .map(dto -> OrderItem.create(
@@ -59,14 +61,14 @@ public class CreateOrderCommandHandler {
                         dto.getUnitPrice()))
                 .collect(Collectors.toList());
 
-        Order order = Order.create(orderId, cmd.getCustomerId(), items);
+        Order order = Order.create(orderId, tenantId, cmd.getCustomerId(), items);
 
         OrderPriceCalculator.OrderPriceRequest request = OrderPriceCalculator.OrderPriceRequest.builder()
                 .baseAmount(order.getTotalAmount())
                 .shippingFee(BigDecimal.ZERO)
                 .build();
         BigDecimal finalPrice = priceCalculator.calculate(request);
-        order.updateTotalAmount(finalPrice);
+        order.updateTotalAmount(Money.of(finalPrice));
 
         for (OrderItem item : order.getItems()) {
             inventoryGateway.reserveStock(orderId, item.getProductId(), item.getQuantity());
