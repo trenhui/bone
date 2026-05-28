@@ -1,6 +1,7 @@
 package com.bone.iam.application.command.handler;
 
 import com.bone.iam.application.command.cmd.CreateRoleCommand;
+import com.bone.iam.application.service.TenantQuotaEnforcer;
 import com.bone.iam.domain.role.Role;
 import com.bone.iam.domain.repository.RoleRepository;
 import com.bone.core.capability.Capability;
@@ -22,9 +23,12 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CreateRoleCommandHandler {
     private final RoleRepository roleRepository;
+    private final TenantQuotaEnforcer tenantQuotaEnforcer;
 
     @Transactional
     public Long handle(CreateRoleCommand cmd) {
+        long tenantId = cmd.getTenantId() != null ? cmd.getTenantId() : 0L;
+        tenantQuotaEnforcer.assertCanAddRole(tenantId);
         String code = cmd.getCode();
         if (code == null || code.isBlank()) {
             code = cmd.getName() == null ? "" : cmd.getName().trim()

@@ -1,0 +1,216 @@
+{
+  "generated_at": "2026-05-28T01:08:54Z",
+  "module": "console",
+  "as_is": [
+    {
+      "id": "controller-single-source",
+      "title": "ConsoleController 单一真源（bone-system）",
+      "status": "as_is",
+      "evidence": {
+        "controller": [
+          "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/ConsoleController.java"
+        ],
+        "iam_duplicate_removed": true
+      }
+    },
+    {
+      "id": "cqrs-handler",
+      "title": "CQRS Query Handler 编排（readOnly）",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/ConsoleController.java",
+          "bone-platform/bone-system/src/main/java/com/bone/system/application/query/handler/ConsoleOverviewQueryHandler.java",
+          "bone-platform/bone-system/src/main/java/com/bone/system/application/query/handler/QuickActionsQueryHandler.java"
+        ]
+      }
+    },
+    {
+      "id": "gateway-ports",
+      "title": "出站端口（ServiceHealth/ResourceUsage/KeyMetrics）",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-platform/bone-system/src/main/java/com/bone/system/application/query/handler/ConsoleOverviewQueryHandler.java",
+          "bone-platform/bone-system/src/main/java/com/bone/system/domain/gateway/KeyMetricsGateway.java",
+          "bone-platform/bone-system/src/main/java/com/bone/system/domain/gateway/ResourceUsageGateway.java",
+          "bone-platform/bone-system/src/main/java/com/bone/system/domain/gateway/ServiceHealthGateway.java",
+          "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/gateway/JdbcKeyMetricsGateway.java",
+          "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/gateway/JvmResourceUsageGateway.java",
+          "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/gateway/LocalActuatorServiceHealthGateway.java"
+        ]
+      }
+    },
+    {
+      "id": "graceful-degradation",
+      "title": "keyMetrics graceful degradation（单表异常容错为 0）",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/gateway/JdbcKeyMetricsGateway.java"
+        ],
+        "test": [
+          "bone-platform/bone-system/src/test/java/com/bone/system/infrastructure/gateway/JdbcKeyMetricsGatewayTest.java"
+        ]
+      }
+    },
+    {
+      "id": "method-security",
+      "title": "方法级 @PreAuthorize('sys:console:read') + SecurityConfig",
+      "status": "as_is",
+      "evidence": {
+        "preauthorize_on_controller": true,
+        "enable_method_security": true,
+        "jwt_filter": [
+          "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/security/JwtAuthenticationFilter.java"
+        ],
+        "security_test": [
+          "bone-platform/bone-system/src/test/java/com/bone/system/adapter/web/controller/ConsoleSecurityTest.java"
+        ]
+      }
+    },
+    {
+      "id": "frontend-route-guard",
+      "title": "bone-shell 首页 SYS_CONSOLE_READ 路由守卫",
+      "status": "as_is",
+      "evidence": {
+        "authorized_component": true,
+        "sys_console_read_in_app": true,
+        "jwt_test": true
+      }
+    },
+    {
+      "id": "permission-code",
+      "title": "sys:console:read 权限码四处对齐",
+      "status": "as_is",
+      "evidence": {
+        "ddl_id_18": true,
+        "frontend_const": true,
+        "admin_fallback": true,
+        "controller_doc": [
+          "bone-platform/bone-system/src/main/java/com/bone/system/adapter/web/controller/ConsoleController.java",
+          "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/config/SecurityConfig.java",
+          "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/security/JwtPrincipal.java"
+        ]
+      }
+    },
+    {
+      "id": "domain-read-vos",
+      "title": "读侧值对象位于 domain.model.console（ArchUnit 友好）",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-platform/bone-system/src/main/java/com/bone/system/domain/model/console/ConsoleOverview.java",
+          "bone-platform/bone-system/src/main/java/com/bone/system/domain/model/console/KeyMetrics.java",
+          "bone-platform/bone-system/src/main/java/com/bone/system/domain/model/console/QuickAction.java",
+          "bone-platform/bone-system/src/main/java/com/bone/system/domain/model/console/ResourceUsage.java",
+          "bone-platform/bone-system/src/main/java/com/bone/system/domain/model/console/ServiceStatus.java"
+        ]
+      }
+    },
+    {
+      "id": "micrometer-counter",
+      "title": "概览刷新 Micrometer 计数器（SLO 真源）",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-platform/bone-system/src/main/java/com/bone/system/application/query/handler/ConsoleOverviewQueryHandler.java"
+        ]
+      }
+    },
+    {
+      "id": "openapi-spec",
+      "title": "OpenAPI 契约 console-v1.yaml（5 个 GET 端点）",
+      "status": "as_is",
+      "evidence": {
+        "file_exists": true,
+        "paths_overview": true,
+        "paths_quick_actions": true,
+        "permission_in_yaml": true,
+        "preauthorize_as_is_in_yaml": true,
+        "bearer_security": true
+      }
+    },
+    {
+      "id": "cnsl-ddl-only",
+      "title": "cnsl_* 表 DDL-only（运行时无引用）",
+      "status": "as_is",
+      "evidence": {
+        "ddl_present": true,
+        "no_java_reference": true
+      }
+    }
+  ],
+  "backlog": [
+    {
+      "id": "remote-service-probe",
+      "tier": "Target",
+      "title": "远端服务真探活（替换 LocalActuatorServiceHealthGateway 的 UNKNOWN）",
+      "reference": "详设 §1.4 / §3.3.4",
+      "tracking": "P0 · 接服务注册中心或网关主动探活"
+    },
+    {
+      "id": "cross-db-metrics",
+      "tier": "Target",
+      "title": "prod 分库部署时跨库 keyMetrics 聚合（通过 Gateway/Feign 调各服务只读 API）",
+      "reference": "详设 §3.3.3 / §11.2",
+      "tracking": "P0 · 当前默认连共享库 bone；分库时退化为 0（graceful degradation）"
+    },
+    {
+      "id": "cpu-disk-metrics",
+      "tier": "Target",
+      "title": "节点 CPU / 磁盘使用率",
+      "reference": "详设 §1.4",
+      "tracking": "P1 · OperatingSystemMXBean 或 node_exporter"
+    },
+    {
+      "id": "alerts-feed",
+      "tier": "Target",
+      "title": "alerts[] 接入 sys_alert_event",
+      "reference": "详设 §1.4 / §2.1",
+      "tracking": "P1 · 与 AlertController 串联"
+    },
+    {
+      "id": "recent-access",
+      "tier": "Target",
+      "title": "cnsl_recent_access 表通过 Web 拦截器写入",
+      "reference": "详设 §2.3 / §4",
+      "tracking": "P1 · 新增 RecentAccessRecorder"
+    },
+    {
+      "id": "quick-action-table",
+      "tier": "Target",
+      "title": "quick-actions 改为 cnsl_quick_action 表驱动（多租户/角色过滤）",
+      "reference": "详设 §2.3",
+      "tracking": "P2 · 新增 cnsl_quick_action 表 + Handler"
+    },
+    {
+      "id": "prometheus-grafana",
+      "tier": "Vision",
+      "title": "Prometheus 抓取 + Grafana 面板",
+      "reference": "详设 §3.2 / §9",
+      "tracking": "—"
+    },
+    {
+      "id": "configurable-dashboard",
+      "tier": "Vision",
+      "title": "可配置仪表盘（Widget CRUD / 拖拽布局 / 时间范围）",
+      "reference": "详设 §2.2 / §5.2-§5.4",
+      "tracking": "—"
+    },
+    {
+      "id": "ai-layout",
+      "tier": "Vision",
+      "title": "AI 智能布局与 Widget 异常检测",
+      "reference": "详设 §10.4.1",
+      "tracking": "—"
+    },
+    {
+      "id": "standalone-console-service",
+      "tier": "Vision",
+      "title": "拆出独立 bone-console 微服务",
+      "reference": "详设 §10.1 / §10.6",
+      "tracking": "—"
+    }
+  ]
+}

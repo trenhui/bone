@@ -6,8 +6,11 @@ import com.bone.core.util.DistributedIdGenerator;
 import com.bone.metadata.catalog.common.CatalogPageMapper;
 import com.bone.metadata.catalog.common.CatalogTenantSupport;
 import com.bone.metadata.engine.runtime.JdbcRuntimeRecordService;
+import java.net.URI;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,7 +21,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 模式 B：已发布 RUNTIME 实体的动态 CRUD（META-002B） */
+/**
+ * 模式 B：已发布 RUNTIME 实体的动态 CRUD（META-002B）。
+ *
+ * <p>权限 scope：read → {@code metadata:read}，write → {@code metadata:write}。
+ */
 @RestController
 @RequestMapping("/api/v1/runtime/entities/{entityCode}/records")
 @RequiredArgsConstructor
@@ -27,6 +34,7 @@ public class RuntimeRecordController {
   private final JdbcRuntimeRecordService runtimeRecordService;
 
   @GetMapping
+  @PreAuthorize("hasAuthority('metadata:read')")
   public ApiResponse<PageResult<Map<String, Object>>> page(
       @PathVariable String entityCode,
       @RequestParam(defaultValue = "1") int page,
@@ -37,6 +45,7 @@ public class RuntimeRecordController {
   }
 
   @GetMapping("/{id}")
+  @PreAuthorize("hasAuthority('metadata:read')")
   public ApiResponse<Map<String, Object>> get(
       @PathVariable String entityCode, @PathVariable String id) {
     long tenantId = CatalogTenantSupport.currentTenantId();
@@ -44,14 +53,21 @@ public class RuntimeRecordController {
   }
 
   @PostMapping
-  public ApiResponse<Map<String, Object>> create(
+  @PreAuthorize("hasAuthority('metadata:write')")
+  public ResponseEntity<ApiResponse<Map<String, Object>>> create(
       @PathVariable String entityCode, @RequestBody Map<String, Object> body) {
     long tenantId = CatalogTenantSupport.currentTenantId();
     long newId = DistributedIdGenerator.generateLongId();
-    return ApiResponse.success(runtimeRecordService.create(entityCode, tenantId, body, newId));
+    Map<String, Object> created =
+        runtimeRecordService.create(entityCode, tenantId, body, newId);
+    Object pk = created != null ? created.getOrDefault("id", newId) : newId;
+    return ResponseEntity.created(
+            URI.create("/api/v1/runtime/entities/" + entityCode + "/records/" + pk))
+        .body(ApiResponse.success(created));
   }
 
   @PutMapping("/{id}")
+  @PreAuthorize("hasAuthority('metadata:write')")
   public ApiResponse<Map<String, Object>> update(
       @PathVariable String entityCode,
       @PathVariable String id,
@@ -61,6 +77,7 @@ public class RuntimeRecordController {
   }
 
   @DeleteMapping("/{id}")
+  @PreAuthorize("hasAuthority('metadata:write')")
   public ApiResponse<Void> delete(@PathVariable String entityCode, @PathVariable String id) {
     long tenantId = CatalogTenantSupport.currentTenantId();
     runtimeRecordService.delete(entityCode, tenantId, id);

@@ -12,12 +12,19 @@ import com.bone.engine.extension.studio.config.ExtensionStudioProperties;
 import com.bone.engine.extension.studio.security.ExtensionScopes;
 import com.bone.engine.extension.studio.application.command.handler.ExtPointCommandHandler;
 import com.bone.engine.extension.studio.application.command.handler.ExtensionStudioCommandHandler;
+import com.bone.engine.extension.studio.application.command.handler.MarketplaceInstallCommandHandler;
+import com.bone.engine.extension.studio.application.query.dto.DeploymentStateView;
+import com.bone.engine.extension.studio.application.query.dto.PluginDependencyGraph;
+import com.bone.engine.extension.studio.domain.model.MarketplaceItem;
+import com.bone.engine.extension.studio.application.query.handler.DeploymentStateQueryHandler;
+import com.bone.engine.extension.studio.application.query.handler.PluginDependencyGraphQueryHandler;
 import com.bone.engine.extension.studio.application.query.handler.StudioAuditQueryHandler;
 import com.bone.engine.extension.studio.application.query.handler.StudioOperationQueryHandler;
 import com.bone.engine.extension.studio.application.command.handler.PluginExecutionLogCommandHandler;
 import com.bone.engine.extension.studio.application.query.handler.ExtPointQueryHandler;
 import com.bone.engine.extension.studio.application.query.handler.ExtensionQueryHandler;
 import com.bone.engine.extension.studio.application.query.handler.PluginExecutionLogQueryHandler;
+import com.bone.engine.extension.studio.domain.gateway.MarketplaceCatalog;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -63,6 +70,10 @@ public class ExtensionManagementController {
     private final StudioOperationQueryHandler studioOperationQueryHandler;
     private final StudioAuditQueryHandler studioAuditQueryHandler;
     private final ExtensionStudioProperties studioProperties;
+    private final DeploymentStateQueryHandler deploymentStateQueryHandler;
+    private final PluginDependencyGraphQueryHandler pluginDependencyGraphQueryHandler;
+    private final MarketplaceCatalog marketplaceCatalog;
+    private final MarketplaceInstallCommandHandler marketplaceInstallCommandHandler;
 
     @GetMapping("/points")
     @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_READ + "')")
@@ -434,6 +445,44 @@ public class ExtensionManagementController {
             response.setHeader("Link", "<" + link + ">; rel=\"next\"");
         }
         return ResponseEntity.ok(ApiResponse.success("获取审计日志成功", result));
+    }
+
+    @GetMapping("/plugins/{id}/deployment-state")
+    @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_READ + "')")
+    public ResponseEntity<ApiResponse<DeploymentStateView>> deploymentState(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(
+                    ApiResponse.success("获取部署状态成功", deploymentStateQueryHandler.load(id)));
+        } catch (IllegalArgumentException ex) {
+            return notFound(ex.getMessage());
+        }
+    }
+
+    @GetMapping("/dependency-graph")
+    @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_READ + "')")
+    public ResponseEntity<ApiResponse<PluginDependencyGraph>> dependencyGraph(
+            @RequestParam(required = false) Long extPointId) {
+        return ResponseEntity.ok(
+                ApiResponse.success("获取依赖图成功", pluginDependencyGraphQueryHandler.load(extPointId)));
+    }
+
+    @GetMapping("/marketplace")
+    @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_READ + "')")
+    public ResponseEntity<ApiResponse<List<MarketplaceItem>>> marketplaceList(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String category) {
+        return ResponseEntity.ok(
+                ApiResponse.success("获取插件市场列表成功", marketplaceCatalog.list(keyword, category)));
+    }
+
+    @PostMapping("/marketplace/{itemId}:install")
+    @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_WRITE + "')")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> marketplaceInstall(
+            @PathVariable String itemId, @RequestBody(required = false) Map<String, Object> body) {
+        Long extPointId = body != null && body.get("extPointId") != null
+                ? Long.valueOf(body.get("extPointId").toString())
+                : null;
+        return marketplaceInstallCommandHandler.install(itemId, extPointId);
     }
 
     @GetMapping("/sandbox/config")

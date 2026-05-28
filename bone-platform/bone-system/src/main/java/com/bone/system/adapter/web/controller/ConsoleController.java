@@ -1,139 +1,75 @@
 package com.bone.system.adapter.web.controller;
 
 import com.bone.core.web.PlatformApiPaths;
+import com.bone.system.application.query.handler.ConsoleOverviewQueryHandler;
+import com.bone.system.application.query.handler.QuickActionsQueryHandler;
 import com.bone.system.common.result.ApiResponse;
-import io.micrometer.core.instrument.MeterRegistry;
+import com.bone.system.domain.model.console.ConsoleOverview;
+import com.bone.system.domain.model.console.KeyMetrics;
+import com.bone.system.domain.model.console.QuickAction;
+import com.bone.system.domain.model.console.ResourceUsage;
+import com.bone.system.domain.model.console.ServiceStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.actuate.health.HealthEndpoint;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
- * 控制台与仪表盘聚合接口（对齐 {@code doc/design/modules/1. 控制台与仪表盘模块详细设计方案.md} §5）。
- * 当前由 bone-system 承载；后续可拆分为独立 console 服务。
+ * 控制台与仪表盘聚合接口（详设 §5.1 As-Is 单一真源）。
+ *
+ * <p><b>权限契约</b>：所有端点要求 {@code sys:console:read}（详设 §5.0 / §5.1）。
+ * 自 v2.0.1 起方法级 {@code @PreAuthorize} 已启用，由 {@code SecurityConfig +
+ * JwtAuthenticationFilter} 解析 IAM 颁发的 JWT 后强制校验。
+ *
+ * <p>所有数据通过 {@code application.query.handler.*} 编排 {@code domain.gateway.*}
+ * 出站端口获取，遵循 CQRS Handler-only 架构（《Bone-DDD》§14 / §20）。
  */
-@Tag(name = "控制台", description = "系统概览、服务状态、资源与快捷操作")
+@Tag(name = "控制台", description = "系统概览、服务状态、资源使用、关键指标、快捷操作")
 @RestController
 @RequestMapping(PlatformApiPaths.CONSOLE_V1)
 @RequiredArgsConstructor
+@PreAuthorize("hasAuthority('sys:console:read')")
 public class ConsoleController {
 
-    private final HealthEndpoint healthEndpoint;
-    private final MeterRegistry meterRegistry;
+    private final ConsoleOverviewQueryHandler consoleOverviewQueryHandler;
+    private final QuickActionsQueryHandler quickActionsQueryHandler;
 
-    @Operation(summary = "获取系统概览（聚合服务、资源、关键指标）")
+    @Operation(summary = "获取系统概览（聚合服务、资源、关键指标）",
+            description = "权限码 `sys:console:read`。前端 `bone-shell` 默认 30s 轮询。")
     @GetMapping("/overview")
-    public ApiResponse<Map<String, Object>> overview() {
-        meterRegistry.counter("bone_console_overview_refresh_total").increment();
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("services", serviceStatuses());
-        body.put("resourceUsage", resourceUsage());
-        body.put("keyMetrics", keyMetrics());
-        body.put("alerts", List.of());
-        body.put("updatedAt", Instant.now().toString());
-        return ApiResponse.success(body);
+    public ApiResponse<ConsoleOverview> overview() {
+        return ApiResponse.success(consoleOverviewQueryHandler.handle());
     }
 
-    @Operation(summary = "获取各微服务状态摘要")
+    @Operation(summary = "获取各微服务状态摘要",
+            description = "权限码 `sys:console:read`。当前仅本进程 Actuator 真实，远端为 `UNKNOWN`（[Target] 接入服务注册中心后真探测）。")
     @GetMapping("/services")
-    public ApiResponse<List<Map<String, Object>>> services() {
-        return ApiResponse.success(serviceStatuses());
+    public ApiResponse<List<ServiceStatus>> services() {
+        return ApiResponse.success(consoleOverviewQueryHandler.handleServices());
     }
 
-    @Operation(summary = "获取资源使用情况（当前节点 JVM 指标）")
+    @Operation(summary = "获取节点资源使用情况（JVM）",
+            description = "权限码 `sys:console:read`。CPU/磁盘字段为 [Target] 占位。")
     @GetMapping("/resources")
-    public ApiResponse<Map<String, Object>> resources() {
-        return ApiResponse.success(resourceUsage());
+    public ApiResponse<ResourceUsage> resources() {
+        return ApiResponse.success(consoleOverviewQueryHandler.handleResources());
     }
 
-    @Operation(summary = "获取关键业务指标占位与 JVM 指标")
+    @Operation(summary = "获取关键业务指标",
+            description = "权限码 `sys:console:read`。按 DDL 表存在性做最佳努力 COUNT；单表失败容错为 0。")
     @GetMapping("/metrics")
-    public ApiResponse<Map<String, Object>> metrics() {
-        return ApiResponse.success(keyMetrics());
+    public ApiResponse<KeyMetrics> metrics() {
+        return ApiResponse.success(consoleOverviewQueryHandler.handleMetrics());
     }
 
-    @Operation(summary = "获取快速操作列表（与主应用导航对齐）")
+    @Operation(summary = "获取快速操作列表（与 bone-shell 微应用路由对齐）",
+            description = "权限码 `sys:console:read`。当前为静态配置，[Target] 后改为 `cnsl_quick_action` 表驱动。")
     @GetMapping("/quick-actions")
-    public ApiResponse<List<Map<String, String>>> quickActions() {
-        List<Map<String, String>> actions = new ArrayList<>();
-        actions.add(action("iam", "账号权限管理", "/iam", "UserOutlined"));
-        actions.add(action("metadata", "元数据管理", "/metadata", "DatabaseOutlined"));
-        actions.add(action("masterdata", "主数据管理", "/masterdata", "DatabaseOutlined"));
-        actions.add(action("integration", "集成管理", "/integration", "LinkOutlined"));
-        actions.add(action("system", "系统管理", "/system", "SettingOutlined"));
-        actions.add(action("extension", "扩展管理", "/extension", "AppstoreOutlined"));
-        return ApiResponse.success(actions);
-    }
-
-    private static Map<String, String> action(String id, String title, String path, String icon) {
-        Map<String, String> m = new LinkedHashMap<>();
-        m.put("id", id);
-        m.put("title", title);
-        m.put("path", path);
-        m.put("icon", icon);
-        return m;
-    }
-
-    private List<Map<String, Object>> serviceStatuses() {
-        String localStatus = healthEndpoint.health().getStatus().getCode();
-        List<Map<String, Object>> list = new ArrayList<>();
-        list.add(svc("IAM", "bone-iam", "8081", localStatus));
-        list.add(svc("元数据", "bone-metadata-server", "—", "unknown"));
-        list.add(svc("主数据", "bone-masterdata", "—", "unknown"));
-        list.add(svc("集成", "bone-integration", "—", "unknown"));
-        list.add(svc("系统管理", "bone-system", "8083", localStatus));
-        list.add(svc("扩展 Studio", "bone-extension-studio", "8088", "unknown"));
-        return list;
-    }
-
-    private static Map<String, Object> svc(String displayName, String code, String port, String status) {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("name", displayName);
-        m.put("serviceCode", code);
-        m.put("port", port);
-        m.put("status", status);
-        m.put("latencyMs", 0);
-        return m;
-    }
-
-    private Map<String, Object> resourceUsage() {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("cpuPercent", 0);
-        m.put("memoryUsedBytes", (long) getGauge("jvm.memory.used", 0));
-        m.put("memoryMaxBytes", (long) getGauge("jvm.memory.max", 0));
-        m.put("diskUsedPercent", 0);
-        m.put("updatedAt", Instant.now().toString());
-        return m;
-    }
-
-    private Map<String, Object> keyMetrics() {
-        Map<String, Object> m = new LinkedHashMap<>();
-        m.put("userCount", 0);
-        m.put("entityCount", 0);
-        m.put("integrationFlowCount", 0);
-        m.put("extensionPluginCount", 0);
-        m.put("orderCount", 0);
-        m.put("transactionAmount", 0);
-        m.put("jvmThreadsLive", (long) getGauge("jvm.threads.live", 0));
-        m.put("jvmThreadsDaemon", (long) getGauge("jvm.threads.daemon", 0));
-        m.put("updatedAt", Instant.now().toString());
-        return m;
-    }
-
-    private double getGauge(String name, double defaultValue) {
-        try {
-            return meterRegistry.get(name).gauge().value();
-        } catch (Exception e) {
-            return defaultValue;
-        }
+    public ApiResponse<List<QuickAction>> quickActions() {
+        return ApiResponse.success(quickActionsQueryHandler.handle());
     }
 }

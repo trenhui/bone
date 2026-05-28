@@ -25,6 +25,7 @@ import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -55,24 +56,28 @@ public class AccountController {
     private final AccountDetailQueryHandler accountDetailQueryHandler;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('iam:accounts:write')")
     public ApiResponse<Long> create(@RequestBody CreateAccountReq req) {
         Long id = createAccountCommandHandler.handle(accountWebConverter.toCreateAccountCommand(req));
         return ApiResponse.success(id);
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('iam:accounts:write')")
     public ApiResponse<Void> update(@PathVariable Long id, @RequestBody UpdateAccountReq req) {
         updateAccountCommandHandler.handle(accountWebConverter.toUpdateAccountCommand(id, req));
         return ApiResponse.success();
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('iam:accounts:write')")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         deleteAccountCommandHandler.handle(id);
         return ApiResponse.success();
     }
 
     @PostMapping("/{id}/enable")
+    @PreAuthorize("hasAuthority('iam:accounts:write')")
     public ApiResponse<Void> enable(@PathVariable Long id) {
         EnableAccountCommand cmd = new EnableAccountCommand();
         cmd.setId(id);
@@ -81,6 +86,7 @@ public class AccountController {
     }
 
     @PostMapping("/{id}/disable")
+    @PreAuthorize("hasAuthority('iam:accounts:write')")
     public ApiResponse<Void> disable(@PathVariable Long id) {
         DisableAccountCommand cmd = new DisableAccountCommand();
         cmd.setId(id);
@@ -89,6 +95,7 @@ public class AccountController {
     }
 
     @PostMapping("/{id}/reset-password")
+    @PreAuthorize("hasAuthority('iam:accounts:write')")
     public ApiResponse<Void> resetPassword(@PathVariable Long id, @RequestBody ResetPasswordCommand cmd) {
         cmd.setId(id);
         resetPasswordCommandHandler.handle(cmd);
@@ -96,6 +103,7 @@ public class AccountController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('iam:accounts:read')")
     public ApiResponse<AccountDetailResp> detail(@PathVariable Long id) {
         AccountDetailResp resp = accountDetailQueryHandler
                 .handle(id)
@@ -105,6 +113,7 @@ public class AccountController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('iam:accounts:read')")
     public ApiResponse<PageResult<AccountDTO>> page(AccountPageQuery qry) {
         PageResult<AccountDTO> result = accountPageQueryHandler.handle(qry);
         return ApiResponse.success(result);
@@ -112,6 +121,7 @@ public class AccountController {
 
     /** 批量导入账号；失败项跳过并写日志，返回成功数量。 */
     @PostMapping("/import")
+    @PreAuthorize("hasAuthority('iam:accounts:write')")
     public ApiResponse<Integer> importAccounts(@RequestBody List<CreateAccountReq> list) {
         if (list == null || list.isEmpty()) {
             return ApiResponse.success(0);
@@ -135,6 +145,7 @@ public class AccountController {
 
     /** 导出账号；最大返回 {@value #EXPORT_MAX_SIZE} 条，超出请用过滤条件分批导出。 */
     @GetMapping("/export")
+    @PreAuthorize("hasAuthority('iam:accounts:read')")
     public ApiResponse<List<AccountDTO>> export(AccountPageQuery qry) {
         qry.setSize(EXPORT_MAX_SIZE);
         PageResult<AccountDTO> result = accountPageQueryHandler.handle(qry);

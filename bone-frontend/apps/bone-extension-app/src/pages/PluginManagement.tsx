@@ -39,6 +39,8 @@ import {
   formatStudioError,
   listExtPoints,
   listPluginVersions,
+  getDeploymentState,
+  type DeploymentStateView,
   listPlugins,
   newIdempotencyKey,
   publishPluginRuntime,
@@ -54,6 +56,7 @@ import {
   downloadPluginVersion,
   type PluginVersionRow,
 } from '@/services/extensionApi';
+import DeploymentStateDiagram from '@/pages/DeploymentStateDiagram';
 
 const UNBOUND_EXT_POINT_ID = 0;
 
@@ -67,6 +70,7 @@ const PluginManagement: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [versionDrawerOpen, setVersionDrawerOpen] = useState(false);
+  const [deploymentState, setDeploymentState] = useState<DeploymentStateView | null>(null);
   const [versionLoading, setVersionLoading] = useState(false);
   const [versions, setVersions] = useState<PluginVersionRow[]>([]);
   const [selectedPlugin, setSelectedPlugin] = useState<ExtensionRow | null>(null);
@@ -160,8 +164,14 @@ const PluginManagement: React.FC = () => {
     setSelectedPlugin(plugin);
     setVersionDrawerOpen(true);
     setVersionLoading(true);
+    setDeploymentState(null);
     try {
-      setVersions(await listPluginVersions(plugin.id));
+      const [vs, state] = await Promise.all([
+        listPluginVersions(plugin.id),
+        getDeploymentState(plugin.id).catch(() => null),
+      ]);
+      setVersions(vs);
+      setDeploymentState(state);
     } catch (e) {
       message.error(formatStudioError(e, '加载版本失败'));
     } finally {
@@ -687,6 +697,8 @@ const PluginManagement: React.FC = () => {
           ) : null
         }
       >
+        <DeploymentStateDiagram state={deploymentState} />
+        <div style={{ height: 16 }} />
         <Table
           rowKey="id"
           loading={versionLoading}

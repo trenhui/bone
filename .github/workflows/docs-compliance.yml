@@ -1,0 +1,111 @@
+name: Docs-as-Code Compliance
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'tools/**/*-compliance-collector/**'
+      - 'doc/_generated/**'
+      - 'doc/design/modules/1. 控制台与仪表盘模块详细设计方案.md'
+      - 'doc/design/modules/2. 元数据管理模块详细设计方案.md'
+      - 'doc/design/modules/3. 主数据管理模块详细设计方案.md'
+      - 'doc/design/modules/4. 集成管理模块详细设计方案.md'
+      - 'doc/design/modules/5. 扩展管理模块详细设计方案.md'
+      - 'doc/design/modules/6. IAM账号权限管理模块详细设计方案.md'
+      - 'doc/design/modules/8.Studio Generator 详细设计方案.md'
+      - 'doc/architecture/openapi/*.yaml'
+      - 'bone-platform/bone-iam/**'
+      - 'bone-platform/bone-system/**'
+      - 'bone-platform/bone-integration/**'
+      - 'bone-platform/bone-masterdata/**'
+      - 'bone-engine/bone-metadata-server/**'
+      - 'bone-engine/bone-metadata-sdk/**'
+      - 'bone-engine/studio-generator/**'
+      - 'tools/compliance_lib.py'
+      - 'bone-init.sql'
+      - 'scripts/ci/collect-*-compliance.sh'
+      - 'scripts/ci/test-console-security.sh'
+      - 'scripts/ci/validate-console-openapi.sh'
+      - 'scripts/lib/e2e-jwt.sh'
+      - 'scripts/verify-three-modules-e2e.sh'
+      - '.github/workflows/docs-compliance.yml'
+  pull_request:
+    paths:
+      - 'tools/**/*-compliance-collector/**'
+      - 'doc/_generated/**'
+      - 'doc/design/modules/1. 控制台与仪表盘模块详细设计方案.md'
+      - 'doc/design/modules/2. 元数据管理模块详细设计方案.md'
+      - 'doc/design/modules/3. 主数据管理模块详细设计方案.md'
+      - 'doc/design/modules/4. 集成管理模块详细设计方案.md'
+      - 'doc/design/modules/5. 扩展管理模块详细设计方案.md'
+      - 'doc/design/modules/6. IAM账号权限管理模块详细设计方案.md'
+      - 'doc/design/modules/8.Studio Generator 详细设计方案.md'
+      - 'doc/architecture/openapi/*.yaml'
+      - 'bone-platform/bone-iam/**'
+      - 'bone-platform/bone-system/**'
+      - 'bone-platform/bone-integration/**'
+      - 'bone-platform/bone-masterdata/**'
+      - 'bone-engine/bone-metadata-server/**'
+      - 'bone-engine/bone-metadata-sdk/**'
+      - 'bone-engine/studio-generator/**'
+      - 'tools/compliance_lib.py'
+      - 'bone-init.sql'
+      - 'scripts/ci/collect-*-compliance.sh'
+      - 'scripts/ci/test-console-security.sh'
+      - 'scripts/ci/validate-console-openapi.sh'
+      - 'scripts/lib/e2e-jwt.sh'
+      - 'scripts/verify-three-modules-e2e.sh'
+      - '.github/workflows/docs-compliance.yml'
+
+jobs:
+  compliance:
+    name: All module compliance.json
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Regenerate and verify (8 modules)
+        run: bash scripts/ci/collect-all-compliance.sh --check
+      - name: Validate console OpenAPI
+        run: bash scripts/ci/validate-console-openapi.sh
+      - name: Console @PreAuthorize unit tests
+        run: bash scripts/ci/test-console-security.sh
+      - name: IAM init demo password ACK gate
+        run: bash scripts/ci/check-iam-init-demo-password.sh
+      - name: Verify extension design doc GENERATED blocks
+        run: |
+          cp "doc/design/modules/5. 扩展管理模块详细设计方案.md" /tmp/ext-design-before.md
+          python3 tools/extension-compliance-collector/collect.py --sync-doc
+          diff -q /tmp/ext-design-before.md "doc/design/modules/5. 扩展管理模块详细设计方案.md"
+      - name: Verify IAM design doc GENERATED blocks
+        run: |
+          cp "doc/design/modules/6. IAM账号权限管理模块详细设计方案.md" /tmp/iam-design-before.md
+          python3 tools/iam-compliance-collector/collect.py --sync-doc
+          diff -q /tmp/iam-design-before.md "doc/design/modules/6. IAM账号权限管理模块详细设计方案.md"
+      - name: Verify metadata design doc GENERATED blocks
+        run: |
+          cp "doc/design/modules/2. 元数据管理模块详细设计方案.md" /tmp/meta-design-before.md
+          python3 tools/metadata-compliance-collector/collect.py --sync-doc
+          diff -q /tmp/meta-design-before.md "doc/design/modules/2. 元数据管理模块详细设计方案.md"
+      - name: Verify masterdata design doc GENERATED blocks
+        run: |
+          cp "doc/design/modules/3. 主数据管理模块详细设计方案.md" /tmp/mdm-design-before.md
+          python3 tools/masterdata-compliance-collector/collect.py --sync-doc
+          diff -q /tmp/mdm-design-before.md "doc/design/modules/3. 主数据管理模块详细设计方案.md"
+      - name: Verify integration design doc GENERATED blocks
+        run: |
+          cp "doc/design/modules/4. 集成管理模块详细设计方案.md" /tmp/int-design-before.md
+          python3 tools/integration-compliance-collector/collect.py --sync-doc
+          diff -q /tmp/int-design-before.md "doc/design/modules/4. 集成管理模块详细设计方案.md"
+      - name: Verify generator design doc GENERATED blocks
+        run: |
+          cp "doc/design/modules/8.Studio Generator 详细设计方案.md" /tmp/gen-design-before.md
+          python3 tools/generator-compliance-collector/collect.py --sync-doc
+          diff -q /tmp/gen-design-before.md "doc/design/modules/8.Studio Generator 详细设计方案.md"

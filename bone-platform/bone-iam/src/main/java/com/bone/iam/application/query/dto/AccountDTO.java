@@ -20,6 +20,7 @@ public class AccountDTO {
     private Long[] roleIds;
     private LocalDateTime lastLoginAt;
     private String lastLoginIp;
+    private LocalDateTime passwordUpdatedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

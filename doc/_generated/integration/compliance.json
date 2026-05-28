@@ -1,0 +1,97 @@
+{
+  "generated_at": "2026-05-27T09:42:30Z",
+  "module": "integration",
+  "as_is": [
+    {
+      "id": "openapi-integration",
+      "title": "integration-v1 OpenAPI",
+      "status": "as_is",
+      "evidence": {
+        "openapi": {
+          "openapi_file": "/Users/renhui.trh/wps/bone/doc/architecture/openapi/integration-v1.yaml",
+          "path_count": 8,
+          "paths_sample": [
+            "/flows",
+            "/flows/{id}",
+            "/flows/{id}/activate",
+            "/connectors",
+            "/connectors/{id}/test",
+            "/executions",
+            "/executions/{id}",
+            "/statistics"
+          ]
+        }
+      }
+    },
+    {
+      "id": "rest-controllers",
+      "title": "Connector / Flow / Monitor 控制器",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/ConnectorController.java",
+          "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/FlowController.java",
+          "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/MonitorController.java"
+        ]
+      }
+    },
+    {
+      "id": "archunit",
+      "title": "bone-integration ArchUnit",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-platform/bone-integration/src/test/java/com/bone/integration/architecture/ArchitectureTest.java"
+        ]
+      }
+    },
+    {
+      "id": "int-ddl",
+      "title": "int_* 表在 bone-init",
+      "status": "as_is",
+      "evidence": {
+        "int_flow": true,
+        "int_connector": true,
+        "int_execution_log": true
+      }
+    },
+    {
+      "id": "command-handlers",
+      "title": "CQRS CommandHandler 写侧",
+      "status": "as_is",
+      "evidence": {
+        "java": []
+      }
+    }
+  ],
+  "backlog": [
+    {
+      "id": "flow-versioning",
+      "tier": "Target",
+      "title": "集成流程版本化与灰度发布",
+      "reference": "详设 §4",
+      "tracking": "int_flow 单版本激活策略待完善"
+    },
+    {
+      "id": "dlq-replay-ui",
+      "tier": "Target",
+      "title": "死信队列控制台重放",
+      "reference": "详设 §5",
+      "tracking": "int_dead_letter 有表无完整 REST"
+    },
+    {
+      "id": "connector-secret-vault",
+      "tier": "Target",
+      "title": "连接器密钥外部化（Vault/KMS）",
+      "reference": "Bone-安全开发规范",
+      "tracking": "配置 JSON 仍可能含明文占位"
+    },
+    {
+      "id": "distributed-tracing",
+      "tier": "Vision",
+      "title": "流程节点级 Trace 与 Span 关联",
+      "reference": "可观测性规范",
+      "tracking": "—"
+    }
+  ]
+}

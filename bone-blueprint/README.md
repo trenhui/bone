@@ -50,6 +50,18 @@
 - 测试说明：[TEST_GUIDE.md](./TEST_GUIDE.md)  
 - **§23 极简 / 低成本**：新建业务应优先对齐 **§14.2 + P0（§12.1）**，按需再引入本模块里的演示能力。
 
+### Docs-as-Code（合规模板）
+
+| 真源 | 位置 |
+|------|------|
+| As-Is 能力（CI 派生） | [`doc/_generated/blueprint/`](../doc/_generated/blueprint/) |
+| 未落地 Backlog | [`tools/blueprint-compliance-collector/backlog.yaml`](../tools/blueprint-compliance-collector/backlog.yaml) |
+| 平台模板 | [Docs-as-Code-模块合规模板](../doc/architecture/Docs-as-Code-模块合规模板.md) |
+
+```bash
+bash scripts/ci/collect-blueprint-compliance.sh
+```
+
 ## 本模块里「全量演示」包含什么
 
 | 能力 | 用途 |

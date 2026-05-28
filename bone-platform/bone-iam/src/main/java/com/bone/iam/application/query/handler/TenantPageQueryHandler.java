@@ -9,11 +9,13 @@ import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
 public class TenantPageQueryHandler {
 
+    @Transactional(readOnly = true)
     public PageResult<TenantDTO> handle(TenantPageQuery qry) {
         FluentQuery<Tenant> query = QueryBuilder.from(Tenant.class);
         if (qry.getCode() != null && !qry.getCode().isBlank()) {
@@ -37,6 +39,8 @@ public class TenantPageQueryHandler {
         dto.setLevel(tenant.getLevel());
         dto.setStatus(tenant.getStatus());
         dto.setAdminEmail(tenant.getAdminEmail());
+        dto.setMaxAccounts(tenant.getMaxAccounts());
+        dto.setMaxRoles(tenant.getMaxRoles());
         return dto;
     }
 }

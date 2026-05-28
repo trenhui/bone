@@ -19,6 +19,15 @@ public final class DefaultPermissionCodes {
                 "iam:accounts:read",
                 "iam:accounts:write",
                 "iam:roles:read",
-                "iam:roles:write");
+                "iam:roles:write",
+                "iam:permissions:read",
+                "iam:permissions:write",
+                "iam:audit:read",
+                "iam:audit:write",
+                "iam:tenants:read",
+                "iam:tenants:write",
+                "iam:sessions:read",
+                "iam:sessions:write",
+                "sys:console:read");
     }
 }

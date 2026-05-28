@@ -93,7 +93,7 @@
 | `extension` | bone-extension-studio | `EXT_` | 扩展点、插件 |
 | `integration` | bone-integration | `INT_` | 连接器、流程 |
 | `system` | bone-system | `SYS_` | 配置、告警 |
-| `console` | 聚合读接口 | — | **只读** BFF，禁止写模型 |
+| `console` | bone-system（聚合读） | `SYS_` | **只读** BFF；OpenAPI：[console-v1.yaml](./openapi/console-v1.yaml) |
 
 ### 2.4 HTTP 方法与状态码
 

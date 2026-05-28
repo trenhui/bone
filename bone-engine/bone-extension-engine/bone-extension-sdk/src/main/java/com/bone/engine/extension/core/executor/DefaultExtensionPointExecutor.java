@@ -1,6 +1,7 @@
 package com.bone.engine.extension.core.executor;
 
 import com.bone.engine.extension.api.spi.ExtensionPointExecutor;
+import com.bone.engine.extension.core.metrics.ExtensionMetricsCollector;
 import com.bone.engine.extension.core.security.ExtensionPermissionManager;
 import com.bone.engine.extension.support.context.BizContext;
 import com.bone.engine.extension.support.studio.StudioExecutionLogReporter;
@@ -38,12 +39,19 @@ public class DefaultExtensionPointExecutor implements ExtensionPointExecutor {
     @Nullable
     private ExtensionExecutionGuard executionGuard;
 
+    @Nullable
+    private ExtensionMetricsCollector metricsCollector;
+
     public void setStudioReporter(@Nullable StudioExecutionLogReporter studioReporter) {
         this.studioReporter = studioReporter;
     }
 
     public void setExecutionGuard(@Nullable ExtensionExecutionGuard executionGuard) {
         this.executionGuard = executionGuard;
+    }
+
+    public void setMetricsCollector(@Nullable ExtensionMetricsCollector metricsCollector) {
+        this.metricsCollector = metricsCollector;
     }
 
     /**
@@ -79,15 +87,19 @@ public class DefaultExtensionPointExecutor implements ExtensionPointExecutor {
                 throw new SecurityException(errorMsg);
             }
 
+            String bulkheadKey = implementation.getClass().getSimpleName();
+            String extPoint = resolveExtPointName(implementation);
+
             // 4. 执行扩展点方法（可选舱壁 + 超时）
             T result =
                     executionGuard != null
                             ? executionGuard.execute(
-                                    () -> invokeForGuard(implementation, method, args))
+                                    () -> invokeForGuard(implementation, method, args), bulkheadKey)
                             : executeMethod(implementation, method, args);
 
             // 5. 记录执行完成信息
             long executionTime = System.currentTimeMillis() - startTime;
+            recordMetrics(extPoint, bulkheadKey, "success", executionTime);
             log.info("Extension point execution successful: {}.{} completed in {}ms", 
                     extensionClassName, methodName, executionTime);
             reportToStudio(extensionClassName, methodName, executionTime, true, null);
@@ -96,12 +108,22 @@ public class DefaultExtensionPointExecutor implements ExtensionPointExecutor {
         } catch (SecurityException ex) {
             // 5. 处理权限异常
             long executionTime = System.currentTimeMillis() - startTime;
+            recordMetrics(
+                    resolveExtPointName(implementation),
+                    implementation.getClass().getSimpleName(),
+                    "error",
+                    executionTime);
             handleSecurityException(ex, extensionClassName, methodName, startTime);
             reportToStudio(extensionClassName, methodName, executionTime, false, ex.getMessage());
             throw ex;
         } catch (Exception e) {
             // 6. 处理其他异常
             long executionTime = System.currentTimeMillis() - startTime;
+            recordMetrics(
+                    resolveExtPointName(implementation),
+                    implementation.getClass().getSimpleName(),
+                    "error",
+                    executionTime);
             handleExecutionException(e, extensionClassName, methodName, startTime);
             reportToStudio(extensionClassName, methodName, executionTime, false, e.getMessage());
             throw e;
@@ -192,6 +214,21 @@ public class DefaultExtensionPointExecutor implements ExtensionPointExecutor {
         
         log.error("Execution exception in extension point: {}.{} after {}ms",
                 className, methodName, executionTime, e);
+    }
+
+    private void recordMetrics(String extPoint, String impl, String status, long durationMs) {
+        if (metricsCollector != null) {
+            metricsCollector.recordInvoke(extPoint, impl, status, durationMs);
+        }
+    }
+
+    private static String resolveExtPointName(Object implementation) {
+        for (Class<?> iface : implementation.getClass().getInterfaces()) {
+            if (iface.isInterface()) {
+                return iface.getName();
+            }
+        }
+        return implementation.getClass().getName();
     }
 
     private void reportToStudio(

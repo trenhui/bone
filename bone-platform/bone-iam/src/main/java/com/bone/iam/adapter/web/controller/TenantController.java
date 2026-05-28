@@ -5,15 +5,20 @@ import com.bone.core.model.PageResult;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.iam.application.command.cmd.CreateTenantCommand;
 import com.bone.iam.application.command.cmd.UpdateTenantCommand;
+import com.bone.iam.application.command.cmd.UpdateTenantQuotaCommand;
 import com.bone.iam.application.command.handler.CreateTenantCommandHandler;
+import com.bone.iam.application.command.handler.DeleteTenantCommandHandler;
 import com.bone.iam.application.command.handler.DisableTenantCommandHandler;
 import com.bone.iam.application.command.handler.EnableTenantCommandHandler;
 import com.bone.iam.application.command.handler.UpdateTenantCommandHandler;
+import com.bone.iam.application.command.handler.UpdateTenantQuotaCommandHandler;
 import com.bone.iam.application.query.dto.TenantDTO;
 import com.bone.iam.application.query.handler.TenantDetailQueryHandler;
 import com.bone.iam.application.query.handler.TenantPageQueryHandler;
 import com.bone.iam.application.query.qry.TenantPageQuery;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,23 +38,29 @@ public class TenantController {
     private final DisableTenantCommandHandler disableTenantCommandHandler;
     private final TenantPageQueryHandler tenantPageQueryHandler;
     private final TenantDetailQueryHandler tenantDetailQueryHandler;
+    private final DeleteTenantCommandHandler deleteTenantCommandHandler;
+    private final UpdateTenantQuotaCommandHandler updateTenantQuotaCommandHandler;
 
     @GetMapping
+    @PreAuthorize("hasAuthority('iam:tenants:read')")
     public ApiResponse<PageResult<TenantDTO>> list(TenantPageQuery qry) {
         return ApiResponse.success(tenantPageQueryHandler.handle(qry));
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('iam:tenants:write')")
     public ApiResponse<Long> create(@RequestBody CreateTenantCommand cmd) {
         return ApiResponse.success(createTenantCommandHandler.handle(cmd));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('iam:tenants:read')")
     public ApiResponse<TenantDTO> detail(@PathVariable Long id) {
         return ApiResponse.success(tenantDetailQueryHandler.handle(id));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('iam:tenants:write')")
     public ApiResponse<Void> update(@PathVariable Long id, @RequestBody UpdateTenantCommand cmd) {
         cmd.setId(id);
         updateTenantCommandHandler.handle(cmd);
@@ -57,14 +68,32 @@ public class TenantController {
     }
 
     @PostMapping("/{id}/enable")
+    @PreAuthorize("hasAuthority('iam:tenants:write')")
     public ApiResponse<Void> enable(@PathVariable Long id) {
         enableTenantCommandHandler.handle(id);
         return ApiResponse.success();
     }
 
     @PostMapping("/{id}/disable")
+    @PreAuthorize("hasAuthority('iam:tenants:write')")
     public ApiResponse<Void> disable(@PathVariable Long id) {
         disableTenantCommandHandler.handle(id);
+        return ApiResponse.success();
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('iam:tenants:write')")
+    public ApiResponse<Void> delete(@PathVariable Long id) {
+        deleteTenantCommandHandler.handle(id);
+        return ApiResponse.success();
+    }
+
+    @PutMapping("/{id}/quota")
+    @PreAuthorize("hasAuthority('iam:tenants:write')")
+    public ApiResponse<Void> updateQuota(
+            @PathVariable Long id, @RequestBody UpdateTenantQuotaCommand cmd) {
+        cmd.setId(id);
+        updateTenantQuotaCommandHandler.handle(cmd);
         return ApiResponse.success();
     }
 }

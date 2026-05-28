@@ -1,0 +1,98 @@
+{
+  "generated_at": "2026-05-27T09:42:30Z",
+  "module": "generator",
+  "as_is": [
+    {
+      "id": "openapi-generator",
+      "title": "generator-v1 OpenAPI",
+      "status": "as_is",
+      "evidence": {
+        "openapi": {
+          "openapi_file": "/Users/renhui.trh/wps/bone/doc/architecture/openapi/generator-v1.yaml",
+          "path_count": 10,
+          "paths_sample": [
+            "/data-sources",
+            "/data-sources/{id}",
+            "/data-sources/{id}/tables",
+            "/templates",
+            "/metadata-entity-snapshots",
+            "/code-generation",
+            "/code-generation/tasks/{taskId}/status",
+            "/operations/{operationId}"
+          ]
+        }
+      }
+    },
+    {
+      "id": "generation-controllers",
+      "title": "生成/模板/数据源/任务 REST",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/CodeGenerationController.java",
+          "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/CodeTemplateController.java",
+          "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/DataSourceController.java",
+          "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/GenerationTaskController.java",
+          "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/GeneratorOperationController.java"
+        ]
+      }
+    },
+    {
+      "id": "archunit",
+      "title": "studio-generator ArchUnit",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/studio-generator/src/test/java/com/bone/studio/generator/architecture/ArchitectureTest.java"
+        ]
+      }
+    },
+    {
+      "id": "gen-ddl",
+      "title": "gen_* 表在 bone-init §6",
+      "status": "as_is",
+      "evidence": {
+        "gen_generation_task": true,
+        "any_gen": false
+      }
+    },
+    {
+      "id": "command-handlers",
+      "title": "DDD CommandHandler 写侧",
+      "status": "as_is",
+      "evidence": {
+        "java": []
+      }
+    }
+  ],
+  "backlog": [
+    {
+      "id": "generation-task-persistence",
+      "tier": "Target",
+      "title": "生成任务全持久化与 LRO 对齐",
+      "reference": "详设 §6",
+      "tracking": "部分任务仍内存态或短 TTL"
+    },
+    {
+      "id": "template-versioning",
+      "tier": "Target",
+      "title": "代码模板 SemVer 与回滚",
+      "reference": "详设 §4",
+      "tracking": "CodeTemplate 版本字段待统一"
+    },
+    {
+      "id": "openapi-generator-v1-ci",
+      "tier": "Target",
+      "title": "generator-v1.yaml 与 Controller 路径 100% diff 门禁",
+      "reference": "Bone-API-规范 §15",
+      "tracking": "契约测试覆盖子集"
+    },
+    {
+      "id": "ai-codegen",
+      "tier": "Vision",
+      "title": "AI 辅助生成与审查",
+      "reference": "BONE X Studio",
+      "tracking": "—"
+    }
+  ]
+}

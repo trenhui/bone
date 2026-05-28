@@ -2,6 +2,7 @@ package com.bone.engine.extension.studio.application.service;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.engine.extension.studio.common.exception.IdempotencyConflictException;
+import com.bone.engine.extension.studio.domain.gateway.StudioIdempotencyStore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -10,30 +11,26 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.HexFormat;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.MDC;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-/**
- * 进程内幂等缓存（[Target] Bone-API-规范 §8）；生产可替换为 Redis。
- */
+/** 幂等服务：默认进程内存储，配置 {@code bone.extension.studio.idempotency.backend=redis} 时使用 Redis。 */
 @Service
 public class StudioIdempotencyService {
 
     private static final Duration TTL = Duration.ofHours(24);
 
     private final ObjectMapper objectMapper;
-    private final Map<String, Entry> cache = new ConcurrentHashMap<>();
+    private final StudioIdempotencyStore store;
 
-    public StudioIdempotencyService(ObjectMapper objectMapper) {
+    public StudioIdempotencyService(ObjectMapper objectMapper, StudioIdempotencyStore store) {
         this.objectMapper = objectMapper.copy().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        this.store = store;
     }
 
     public static String fingerprint(String raw) {
@@ -65,18 +62,17 @@ public class StudioIdempotencyService {
         if (!hasKey(idempotencyKey)) {
             return Optional.empty();
         }
-        purgeExpired();
         String key = scopeKey(idempotencyKey, method, path);
-        Entry entry = cache.get(key);
-        if (entry == null) {
+        Optional<StudioIdempotencyStore.Snapshot> snapshot = store.find(key);
+        if (snapshot.isEmpty()) {
             return Optional.empty();
         }
+        StudioIdempotencyStore.Snapshot entry = snapshot.get();
         if (!entry.requestFingerprint().equals(requestFingerprint)) {
             throw new IdempotencyConflictException("Idempotency-Key 已用于不同请求体");
         }
         try {
             JsonNode snap = objectMapper.readTree(entry.snapshotJson());
-            @SuppressWarnings("unchecked")
             ApiResponse<T> body =
                     objectMapper.convertValue(
                             snap.get("body"),
@@ -89,7 +85,6 @@ public class StudioIdempotencyService {
             }
             return Optional.of(builder.body(body));
         } catch (JsonProcessingException ex) {
-            cache.remove(key);
             return Optional.empty();
         }
     }
@@ -111,20 +106,17 @@ public class StudioIdempotencyService {
                 snap.put("location", location);
             }
             snap.set("body", toJsonBody(response.getBody()));
-            cache.put(
+            store.put(
                     scopeKey(idempotencyKey, method, path),
-                    new Entry(Instant.now(), requestFingerprint, objectMapper.writeValueAsString(snap)));
+                    new StudioIdempotencyStore.Snapshot(
+                            requestFingerprint, objectMapper.writeValueAsString(snap)),
+                    TTL);
         } catch (JsonProcessingException ignored) {
             // skip cache on serialization failure
         }
     }
 
-    private void purgeExpired() {
-        Instant cutoff = Instant.now().minus(TTL);
-        cache.entrySet().removeIf(e -> e.getValue().createdAt().isBefore(cutoff));
-    }
-
-  private ObjectNode toJsonBody(ApiResponse<?> body) {
+    private ObjectNode toJsonBody(ApiResponse<?> body) {
         ObjectNode node = objectMapper.createObjectNode();
         node.put("success", body.getSuccess());
         node.put("code", body.getCode());
@@ -139,6 +131,4 @@ public class StudioIdempotencyService {
     private static String nullToEmpty(String value) {
         return value == null ? "" : value;
     }
-
-    private record Entry(Instant createdAt, String requestFingerprint, String snapshotJson) {}
 }

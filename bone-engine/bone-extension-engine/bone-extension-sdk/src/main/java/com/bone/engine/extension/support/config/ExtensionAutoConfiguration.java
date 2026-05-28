@@ -12,6 +12,7 @@ import com.bone.engine.extension.core.metrics.ExtensionAlarmService;
 import com.bone.engine.extension.core.metrics.ExtensionMetricsAlarm;
 import com.bone.engine.extension.core.metrics.ExtensionMetricsCollector;
 import com.bone.engine.extension.core.metrics.LoggingExtensionAlarmService;
+import com.bone.engine.extension.support.metrics.ExtensionMetricsBridge;
 import com.bone.engine.extension.core.register.ExtensionRegister;
 import com.bone.engine.extension.core.router.DefaultExtensionPointRouter;
 import com.bone.engine.extension.support.expression.SpELExpressionEvaluator;
@@ -149,6 +150,13 @@ public class ExtensionAutoConfiguration implements ImportAware {
     @ConditionalOnMissingBean
     public ExtensionMetricsCollector extensionMetricsCollector(io.micrometer.core.instrument.MeterRegistry meterRegistry) {
         return new ExtensionMetricsCollector(meterRegistry);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public ExtensionMetricsBridge extensionMetricsBridge(
+            org.springframework.beans.factory.ObjectProvider<ExtensionMetricsCollector> metricsCollector) {
+        return new ExtensionMetricsBridge(metricsCollector);
     }
 
     @Bean

@@ -1,0 +1,41 @@
+[
+  {
+    "id": "discount.percentage-promo",
+    "name": "百分比促销",
+    "description": "基于订单金额的固定百分比折扣实现（示例）。",
+    "version": "1.0.0",
+    "vendor": "Bone Official",
+    "category": "discount",
+    "tags": ["promotion", "discount", "sample"],
+    "extPointInterface": "com.bone.example.PromotionExt",
+    "className": "com.bone.example.impl.PercentagePromotionImpl",
+    "homepage": "https://github.com/bone-platform/bone",
+    "installed": false
+  },
+  {
+    "id": "discount.fixed-amount",
+    "name": "立减促销",
+    "description": "满 N 元立减 M 元的促销示例实现。",
+    "version": "1.0.0",
+    "vendor": "Bone Official",
+    "category": "discount",
+    "tags": ["promotion", "discount", "sample"],
+    "extPointInterface": "com.bone.example.PromotionExt",
+    "className": "com.bone.example.impl.FixedAmountPromotionImpl",
+    "homepage": "https://github.com/bone-platform/bone",
+    "installed": false
+  },
+  {
+    "id": "audit.skywalking-bridge",
+    "name": "SkyWalking 链路桥接",
+    "description": "把扩展执行日志桥接到 SkyWalking trace（示例占位）。",
+    "version": "0.1.0",
+    "vendor": "Bone Community",
+    "category": "observability",
+    "tags": ["observability", "tracing"],
+    "extPointInterface": "com.bone.example.AuditBridgeExt",
+    "className": "com.bone.community.audit.SkywalkingBridgeImpl",
+    "homepage": "https://github.com/bone-platform/bone",
+    "installed": false
+  }
+]

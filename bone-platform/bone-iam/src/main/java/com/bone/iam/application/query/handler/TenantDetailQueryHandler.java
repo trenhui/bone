@@ -27,6 +27,8 @@ public class TenantDetailQueryHandler {
         dto.setLevel(tenant.getLevel());
         dto.setStatus(tenant.getStatus());
         dto.setAdminEmail(tenant.getAdminEmail());
+        dto.setMaxAccounts(tenant.getMaxAccounts());
+        dto.setMaxRoles(tenant.getMaxRoles());
         return dto;
     }
 }

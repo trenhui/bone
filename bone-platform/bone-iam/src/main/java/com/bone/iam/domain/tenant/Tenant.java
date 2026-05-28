@@ -17,6 +17,10 @@ public class Tenant extends AggregateRoot<Long> {
     private int level;
     private int status;
     private String adminEmail;
+    /** 账号配额，{@code null} 表示不限制（社区版 As-Is 列）。 */
+    private Integer maxAccounts;
+    /** 角色配额，{@code null} 表示不限制。 */
+    private Integer maxRoles;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -47,6 +51,12 @@ public class Tenant extends AggregateRoot<Long> {
 
     public void disable() {
         this.status = 0;
+        this.updatedAt = LocalDateTime.now();
+    }
+
+    public void updateQuota(Integer maxAccounts, Integer maxRoles) {
+        this.maxAccounts = maxAccounts;
+        this.maxRoles = maxRoles;
         this.updatedAt = LocalDateTime.now();
     }
 }

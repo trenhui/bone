@@ -1,10 +1,47 @@
 import axios from 'axios';
 
+/**
+ * 后端契约：`bone-system` `ConsoleController#overview`（详设 §3.3.2 / §5.1）。
+ * 字段命名与 `com.bone.system.domain.model.console.*` 值对象一一对应。
+ */
+export type ServiceStatus = {
+  name?: string;
+  serviceCode?: string;
+  port?: string;
+  status?: string;
+  latencyMs?: number;
+};
+
+export type ResourceUsage = {
+  memoryUsedBytes?: number;
+  memoryMaxBytes?: number;
+  cpuPercent?: number;
+  diskUsedPercent?: number;
+  updatedAt?: string;
+};
+
+export type KeyMetrics = {
+  userCount?: number;
+  entityCount?: number;
+  integrationFlowCount?: number;
+  extensionPluginCount?: number;
+  orderCount?: number;
+  transactionAmount?: number;
+  jvmThreadsLive?: number;
+  jvmThreadsDaemon?: number;
+  updatedAt?: string;
+};
+
+export type ConsoleAlert = {
+  message?: string;
+  level?: string;
+};
+
 export type ConsoleOverview = {
-  services?: Array<{ name?: string; serviceCode?: string; status?: string }>;
-  resourceUsage?: Record<string, number>;
-  keyMetrics?: Record<string, number | string>;
-  alerts?: Array<{ message?: string; level?: string }>;
+  services?: ServiceStatus[];
+  resourceUsage?: ResourceUsage;
+  keyMetrics?: KeyMetrics;
+  alerts?: ConsoleAlert[];
   updatedAt?: string;
 };
 

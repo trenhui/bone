@@ -27,10 +27,14 @@ import {
   bindPlugin,
   createExtPoint,
   deployPlugin,
+  getDeploymentState,
+  getDependencyGraph,
   ifMatchHeader,
+  installMarketplaceItem,
   listAuditLogs,
   listExecutionLogs,
   listExtPoints,
+  listMarketplaceItems,
   listPlugins,
   newIdempotencyKey,
   publishPluginRuntime,
@@ -225,6 +229,59 @@ describe('extensionApi', () => {
       { name: 'n', interfaceName: 'com.X' },
       { headers: { 'If-Match': '"v2"' } },
     );
+  });
+
+  it('getDeploymentState GETs /plugins/{id}/deployment-state', async () => {
+    mockGet.mockResolvedValue({
+      data: {
+        success: true,
+        data: {
+          pluginId: 5,
+          currentStatus: 'ACTIVE',
+          allStates: ['UPLOADED', 'ACTIVE'],
+          transitions: [{ from: 'UPLOADED', to: 'ACTIVE' }],
+          versionStates: [],
+        },
+      },
+    });
+    const state = await getDeploymentState(5);
+    expect(mockGet).toHaveBeenCalledWith('/v1/extension/plugins/5/deployment-state');
+    expect(state.currentStatus).toBe('ACTIVE');
+    expect(state.transitions).toHaveLength(1);
+  });
+
+  it('getDependencyGraph GETs /dependency-graph with optional extPointId', async () => {
+    mockGet.mockResolvedValue({
+      data: {
+        success: true,
+        data: { nodes: [], edges: [] },
+      },
+    });
+    await getDependencyGraph(42);
+    expect(mockGet).toHaveBeenCalledWith('/v1/extension/dependency-graph', {
+      params: { extPointId: 42 },
+    });
+    await getDependencyGraph();
+    expect(mockGet).toHaveBeenLastCalledWith('/v1/extension/dependency-graph', { params: undefined });
+  });
+
+  it('listMarketplaceItems passes search params', async () => {
+    mockGet.mockResolvedValue({
+      data: { success: true, data: [] },
+    });
+    await listMarketplaceItems({ keyword: 'promo', category: 'discount' });
+    expect(mockGet).toHaveBeenCalledWith('/v1/extension/marketplace', {
+      params: { keyword: 'promo', category: 'discount' },
+    });
+  });
+
+  it('installMarketplaceItem POSTs install endpoint', async () => {
+    mockPost.mockResolvedValue({
+      data: { success: true, data: { pluginId: 10, itemId: 'sample.foo', extPointId: 3 } },
+    });
+    const result = await installMarketplaceItem('sample.foo', 3);
+    expect(mockPost).toHaveBeenCalledWith('/v1/extension/marketplace/sample.foo:install', { extPointId: 3 });
+    expect(result.pluginId).toBe(10);
   });
 
   it('listPlugins surfaces ProblemDetail traceId', async () => {

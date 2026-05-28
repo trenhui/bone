@@ -18,6 +18,9 @@ public class ExtensionStudioProperties {
   @NestedConfigurationProperty
   private final LroConfig lro = new LroConfig();
 
+  @NestedConfigurationProperty
+  private final IdempotencyConfig idempotency = new IdempotencyConfig();
+
   public RuntimeSyncConfig getRuntimeSync() {
     return runtimeSync;
   }
@@ -32,6 +35,10 @@ public class ExtensionStudioProperties {
 
   public LroConfig getLro() {
     return lro;
+  }
+
+  public IdempotencyConfig getIdempotency() {
+    return idempotency;
   }
 
   public static class SecurityConfig {
@@ -91,6 +98,29 @@ public class ExtensionStudioProperties {
 
     public void setDeploySyncByDefault(boolean deploySyncByDefault) {
       this.deploySyncByDefault = deploySyncByDefault;
+    }
+  }
+
+  public static class IdempotencyConfig {
+    /** memory | redis */
+    private String backend = "memory";
+
+    private String keyPrefix = "bone:ext:idem:";
+
+    public String getBackend() {
+      return backend;
+    }
+
+    public void setBackend(String backend) {
+      this.backend = backend;
+    }
+
+    public String getKeyPrefix() {
+      return keyPrefix;
+    }
+
+    public void setKeyPrefix(String keyPrefix) {
+      this.keyPrefix = keyPrefix;
     }
   }
 

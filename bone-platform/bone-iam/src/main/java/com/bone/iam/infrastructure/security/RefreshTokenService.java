@@ -1,5 +1,8 @@
 package com.bone.iam.infrastructure.security;
 
+import com.bone.core.exception.BizException;
+import com.bone.core.util.DistributedIdGenerator;
+import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.domain.gateway.RefreshTokenIssuer;
 import com.bone.iam.infrastructure.config.JwtConfig;
 import java.nio.charset.StandardCharsets;
@@ -17,6 +20,8 @@ import org.springframework.stereotype.Service;
 
 /**
  * 刷新令牌：明文仅返回客户端一次，库内仅存 SHA-256 哈希（对齐 {@code iam_refresh_token.token_hash}）。
+ *
+ * <p>轮换时写入 {@code replaced_by}；若已撤销且 {@code replaced_by} 非空再次被使用，视为复用攻击并吊销该账号全部 refresh。
  */
 @Service
 @RequiredArgsConstructor
@@ -29,7 +34,7 @@ public class RefreshTokenService implements RefreshTokenIssuer {
     public String issue(Long accountId, Long tenantId) {
         String raw = UUID.randomUUID().toString().replace("-", "");
         String hash = sha256(raw);
-        long id = System.currentTimeMillis();
+        long id = DistributedIdGenerator.generateLongId();
         Instant expires = Instant.now().plusMillis(jwtConfig.getRefreshExpirationMs());
         jdbcTemplate.update(
                 """
@@ -50,7 +55,8 @@ public class RefreshTokenService implements RefreshTokenIssuer {
         String hash = sha256(rawRefreshToken);
         Map<String, Object> row = jdbcTemplate.query(
                 """
-                SELECT account_id, expires_at, is_revoked FROM iam_refresh_token
+                SELECT account_id, tenant_id, expires_at, is_revoked, replaced_by
+                FROM iam_refresh_token
                 WHERE token_hash = :hash LIMIT 1
                 """,
                 new MapSqlParameterSource("hash", hash),
@@ -60,13 +66,24 @@ public class RefreshTokenService implements RefreshTokenIssuer {
                     }
                     return Map.of(
                             "accountId", rs.getLong("account_id"),
+                            "tenantId", rs.getLong("tenant_id"),
                             "expiresAt", rs.getTimestamp("expires_at"),
-                            "revoked", rs.getInt("is_revoked"));
+                            "revoked", rs.getInt("is_revoked"),
+                            "replacedBy", rs.getString("replaced_by"));
                 });
         if (row == null) {
             throw new IllegalArgumentException("无效的刷新令牌");
         }
-        if (((Number) row.get("revoked")).intValue() != 0) {
+        int revoked = ((Number) row.get("revoked")).intValue();
+        String replacedBy = (String) row.get("replacedBy");
+        if (revoked != 0) {
+            if (replacedBy != null && !replacedBy.isBlank()) {
+                Long accountId = ((Number) row.get("accountId")).longValue();
+                revokeAllActiveForAccount(accountId);
+                throw BizException.of(
+                        401,
+                        IamErrorCodes.REFRESH_TOKEN_REUSE + ": 检测到刷新令牌复用，已吊销该账号全部会话");
+            }
             throw new IllegalArgumentException("刷新令牌已撤销");
         }
         Timestamp expiresAt = (Timestamp) row.get("expiresAt");
@@ -74,8 +91,32 @@ public class RefreshTokenService implements RefreshTokenIssuer {
             throw new IllegalArgumentException("刷新令牌已过期");
         }
         Long accountId = ((Number) row.get("accountId")).longValue();
-        revokeByHash(hash);
-        String newRaw = issue(accountId, 0L);
+        Long tenantId = ((Number) row.get("tenantId")).longValue();
+
+        String newRaw = UUID.randomUUID().toString().replace("-", "");
+        String newHash = sha256(newRaw);
+        jdbcTemplate.update(
+                """
+                UPDATE iam_refresh_token
+                SET is_revoked = 1, replaced_by = :replacedBy
+                WHERE token_hash = :hash
+                """,
+                new MapSqlParameterSource().addValue("replacedBy", newHash).addValue("hash", hash));
+
+        long id = DistributedIdGenerator.generateLongId();
+        Instant expires = Instant.now().plusMillis(jwtConfig.getRefreshExpirationMs());
+        jdbcTemplate.update(
+                """
+                INSERT INTO iam_refresh_token (id, tenant_id, account_id, token_hash, expires_at, is_revoked)
+                VALUES (:id, :tenantId, :accountId, :hash, :expiresAt, 0)
+                """,
+                new MapSqlParameterSource()
+                        .addValue("id", id)
+                        .addValue("tenantId", tenantId)
+                        .addValue("accountId", accountId)
+                        .addValue("hash", newHash)
+                        .addValue("expiresAt", Timestamp.from(expires)));
+
         return Map.of("accountId", String.valueOf(accountId), "refreshToken", newRaw);
     }
 
@@ -91,6 +132,15 @@ public class RefreshTokenService implements RefreshTokenIssuer {
         jdbcTemplate.update(
                 "UPDATE iam_refresh_token SET is_revoked = 1 WHERE token_hash = :hash",
                 new MapSqlParameterSource("hash", hash));
+    }
+
+    private void revokeAllActiveForAccount(long accountId) {
+        jdbcTemplate.update(
+                """
+                UPDATE iam_refresh_token SET is_revoked = 1
+                WHERE account_id = :accountId AND is_revoked = 0
+                """,
+                new MapSqlParameterSource("accountId", accountId));
     }
 
     private static String sha256(String value) {

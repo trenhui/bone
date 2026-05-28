@@ -418,6 +418,7 @@ adapter/web → application → domain ← infrastructure
    - Shell 不直接使用 `vite-plugin-qiankun`，运行时通过 Qiankun JS API 加载微应用。
 7. **格式化**：修改 Java 文件后，建议执行 `mvn spotless:apply` 保持格式一致。
 8. **文档语言**：项目注释与文档以**中文**为主，新增代码注释请使用中文。
+9. **Docs-as-Code（模块合规）**：平台模板见 [Docs-as-Code-模块合规模板](doc/architecture/Docs-as-Code-模块合规模板.md)。**扩展**：`tools/extension-compliance-collector` + 详设附录 A/C；**blueprint**：`tools/blueprint-compliance-collector` + `doc/_generated/blueprint/`。已落地能力**勿**写入各模块 `backlog.yaml`；PR 须提交对应 `_generated` 并通过 `collect.py --check`。
 
 ---
 

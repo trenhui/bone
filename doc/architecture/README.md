@@ -21,6 +21,8 @@
 | [Bone-API-规范.md](./Bone-API-规范.md) | URL、信封、分页、头、LRO、幂等 |
 | [Bone-错误码登记.md](./Bone-错误码登记.md) | `errorCode` 台账（真源） |
 | [openapi/](./openapi/) | 域契约：`iam-v1` · `masterdata-v1` · `integration-v1` · `metadata-runtime-v1` · `generator-v1` · `extension-v1` |
+| [Docs-as-Code-模块合规模板.md](./Docs-as-Code-模块合规模板.md) | 详设 As-Is / Backlog SSOT + CI 收集器注册表 |
+| [_generated/](../_generated/) | CI 派生合规产物（`extension` · `blueprint`） |
 
 ### 可观测性与运维
 

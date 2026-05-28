@@ -1,0 +1,24 @@
+items:
+  - id: generation-task-persistence
+    tier: Target
+    title: 生成任务全持久化与 LRO 对齐
+    reference: 详设 §6
+    tracking: 部分任务仍内存态或短 TTL
+
+  - id: template-versioning
+    tier: Target
+    title: 代码模板 SemVer 与回滚
+    reference: 详设 §4
+    tracking: CodeTemplate 版本字段待统一
+
+  - id: openapi-generator-v1-ci
+    tier: Target
+    title: generator-v1.yaml 与 Controller 路径 100% diff 门禁
+    reference: Bone-API-规范 §15
+    tracking: 契约测试覆盖子集
+
+  - id: ai-codegen
+    tier: Vision
+    title: AI 辅助生成与审查
+    reference: BONE X Studio
+    tracking: —

@@ -35,12 +35,18 @@ import {
   ThemeContext,
   type ShellMenuItem,
 } from './shellContext';
+import Authorized from './auth/Authorized';
+import { PermissionCodes, clearScopes, persistScopesFromToken } from './auth/jwt';
 
 function App(): JSX.Element {
   const [collapsed, setCollapsed] = useState(false);
   const [user, setUser] = useState(() => {
     // 从localStorage中读取用户信息
     const savedUser = localStorage.getItem('bone-user');
+    if (savedUser) {
+      // 刷新页面后恢复 JWT scopes，供 <Authorized> 路由守卫使用。
+      persistScopesFromToken(localStorage.getItem('token'));
+    }
     return savedUser ? JSON.parse(savedUser) : null;
   });
   const [theme, setTheme] = useState<Theme>(() => readStoredTheme());
@@ -200,6 +206,8 @@ function App(): JSX.Element {
       const username = resp.data.data?.account?.username || values.username;
       if (token) {
         localStorage.setItem('token', token);
+        // 解析 JWT scopes 落地缓存，供 <Authorized> 路由守卫使用（详设 §5.0）。
+        persistScopesFromToken(token);
       }
       localStorage.setItem('username', username);
 
@@ -224,6 +232,7 @@ function App(): JSX.Element {
       localStorage.removeItem('bone-user');
       localStorage.removeItem('token');
       localStorage.removeItem('username');
+      clearScopes();
       message.success('退出登录成功');
     }
   };
@@ -326,7 +335,14 @@ function App(): JSX.Element {
                         }}
                       >
                         <Routes>
-                          <Route path="/" element={<DashboardPage />} />
+                          <Route
+                            path="/"
+                            element={
+                              <Authorized required={PermissionCodes.SYS_CONSOLE_READ}>
+                                <DashboardPage />
+                              </Authorized>
+                            }
+                          />
                           <Route path="/iam" element={<MicroAppContainer />} />
                           <Route path="/iam/*" element={<MicroAppContainer />} />
                           <Route path="/metadata" element={<MicroAppContainer />} />

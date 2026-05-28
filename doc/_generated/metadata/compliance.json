@@ -1,0 +1,259 @@
+{
+  "module": "metadata",
+  "generated_at": "2026-05-28T01:19:07Z",
+  "as_is": [
+    {
+      "id": "meta-ddl-five-tables",
+      "title": "meta_* 五表在 bone-init.sql",
+      "status": "as_is",
+      "evidence": {
+        "expected": [
+          "meta_entity",
+          "meta_field",
+          "meta_entity_relation",
+          "meta_code_template",
+          "meta_data_quality_rule"
+        ],
+        "present": [
+          "meta_code_template",
+          "meta_data_quality_rule",
+          "meta_entity",
+          "meta_entity_relation",
+          "meta_field"
+        ],
+        "missing": [],
+        "delivery_mode_column": true
+      }
+    },
+    {
+      "id": "catalog-rest-controllers",
+      "title": "catalog REST（Meta*CatalogController）",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaFieldCatalogController.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaRelationCatalogController.java"
+        ]
+      }
+    },
+    {
+      "id": "eav-fields-api",
+      "title": "EAV fields:search|allocate（MetadataController）",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/adapter/web/controller/MetadataController.java"
+        ],
+        "preauthorize": {
+          "eav_controller_files": [
+            "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/adapter/web/controller/MetadataController.java"
+          ],
+          "catalog_controller_files": [
+            "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+            "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaFieldCatalogController.java",
+            "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaRelationCatalogController.java"
+          ],
+          "runtime_controller_files": [
+            "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/web/RuntimeRecordController.java"
+          ],
+          "scopes_found": [
+            ")"
+          ]
+        }
+      }
+    },
+    {
+      "id": "runtime-crud-api",
+      "title": "模式 B RuntimeRecordController + OpenAPI",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/web/RuntimeRecordController.java"
+        ],
+        "openapi": {
+          "openapi_file": "doc/architecture/openapi/metadata-runtime-v1.yaml",
+          "paths": [
+            "/entities/{entityCode}/records",
+            "/entities/{entityCode}/records/{id}"
+          ],
+          "methods": {
+            "/entities/{entityCode}/records": [
+              "GET"
+            ],
+            "/entities/{entityCode}/records/{id}": [
+              "GET",
+              "PUT"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "runtime-jdbc-service",
+      "title": "JdbcRuntimeRecordService + CatalogRuntimeEntityProvider",
+      "status": "as_is",
+      "evidence": {
+        "engine": [
+          "bone-engine/bone-metadata-engine/bone-metadata-engine-core/src/main/java/com/bone/metadata/engine/runtime/JdbcRuntimeRecordService.java"
+        ],
+        "server": [
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/CatalogRuntimeEntityProvider.java"
+        ],
+        "adr": [
+          "doc/architecture/adr/0015-metadata-runtime-jdbc-via-engine.md"
+        ]
+      }
+    },
+    {
+      "id": "generator-catalog-snapshot",
+      "title": "generator CATALOG_SNAPSHOT 直读 meta_*",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/MetadataEntitySnapshotController.java",
+          "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/infrastructure/gateway/CatalogMetadataGatewayImpl.java"
+        ]
+      }
+    },
+    {
+      "id": "catalog-abstract-entity",
+      "title": "catalog 聚合根 extends AbstractEntity（ADR-0016）",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/domain/model/MetaEntity.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/domain/model/MetaField.java"
+        ],
+        "adr": [
+          "doc/architecture/adr/0016-metadata-catalog-abstract-entity-tenant.md"
+        ]
+      }
+    },
+    {
+      "id": "catalog-runtime-preauthorize",
+      "title": "catalog + runtime Controller @PreAuthorize（metadata:read|write）",
+      "status": "as_is",
+      "evidence": {
+        "preauthorize": {
+          "eav_controller_files": [
+            "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/adapter/web/controller/MetadataController.java"
+          ],
+          "catalog_controller_files": [
+            "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+            "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaFieldCatalogController.java",
+            "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaRelationCatalogController.java"
+          ],
+          "runtime_controller_files": [
+            "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/web/RuntimeRecordController.java"
+          ],
+          "scopes_found": [
+            ")"
+          ]
+        }
+      }
+    },
+    {
+      "id": "catalog-runtime-201-location",
+      "title": "catalog + runtime POST 201 Created + Location（AIP-133）",
+      "status": "as_is",
+      "evidence": {
+        "created": {
+          "catalog_controller_files": [
+            "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+            "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaFieldCatalogController.java",
+            "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaRelationCatalogController.java"
+          ],
+          "runtime_controller_files": [
+            "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/web/RuntimeRecordController.java"
+          ],
+          "eav_controller_files": [
+            "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/adapter/web/controller/MetadataController.java"
+          ]
+        }
+      }
+    },
+    {
+      "id": "eav-allocate-201",
+      "title": "fields:allocate 返回 201（EAV 局部符合 AIP-133）",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/adapter/web/controller/MetadataController.java"
+        ]
+      }
+    }
+  ],
+  "backlog": [
+    {
+      "id": "catalog-if-match-etag",
+      "tier": "Target",
+      "title": "catalog PUT If-Match / 412（AIP-154）",
+      "reference": "详设 §5.A",
+      "tracking": "与 meta_*.version 字段同步"
+    },
+    {
+      "id": "catalog-idempotency-key",
+      "tier": "Target",
+      "title": "publish / fields:allocate Idempotency-Key 窗口",
+      "reference": "详设 §5.A · 复用 extension StudioIdempotencyStore",
+      "tracking": "P1"
+    },
+    {
+      "id": "catalog-publish-scope",
+      "tier": "Target",
+      "title": "publish 拆出独立 metadata:publish scope（当前临时复用 write）",
+      "reference": "详设 §5.0 · IAM §4.3",
+      "tracking": "与 IAM 权限码登记同步"
+    },
+    {
+      "id": "catalog-problem-detail",
+      "tier": "Target",
+      "title": "失败信封统一改 RFC 7807 ProblemDetail（含 META_* 错误码）",
+      "reference": "详设 §5.A · Bone-API §11",
+      "tracking": "P1"
+    },
+    {
+      "id": "catalog-redis-cache",
+      "tier": "Target",
+      "title": "已发布 meta_entity Redis 短 TTL 缓存",
+      "reference": "详设 §7",
+      "tracking": "QPS 达标后"
+    },
+    {
+      "id": "runtime-query-params",
+      "tier": "Target",
+      "title": "runtime 列裁剪 / 过滤 / 排序 query 参数",
+      "reference": "详设 §5.A · §5.3.2",
+      "tracking": "P1"
+    },
+    {
+      "id": "entity-versions-api",
+      "tier": "Vision",
+      "title": "GET /entities/{id}/versions 版本历史",
+      "reference": "详设 §5.1 P1",
+      "tracking": "META-00x"
+    },
+    {
+      "id": "smartql-http",
+      "tier": "Vision",
+      "title": "SmartQL / 规则 HTTP 暴露",
+      "reference": "详设 §2.4 · SmartMeta §9",
+      "tracking": "engine-core 已具备库能力"
+    },
+    {
+      "id": "metadata-template-rest",
+      "tier": "Vision",
+      "title": "meta_code_template REST（归口 generator）",
+      "reference": "详设 §5.5",
+      "tracking": "与 §8 generator 对齐"
+    },
+    {
+      "id": "engine-sdk-meta-table-executor",
+      "tier": "Target",
+      "title": "sdk MetaTableExecutor SPI，engine 收敛离 JDBC",
+      "reference": "ADR-0015 收敛路线",
+      "tracking": "P1"
+    }
+  ]
+}

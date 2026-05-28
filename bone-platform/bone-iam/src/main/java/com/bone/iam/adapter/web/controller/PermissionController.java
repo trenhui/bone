@@ -17,6 +17,7 @@ import com.bone.iam.application.query.handler.PermissionTreeQueryHandler;
 import com.bone.iam.application.query.qry.PermissionPageQuery;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -39,6 +40,7 @@ public class PermissionController {
     private final PermissionWebConverter permissionWebConverter;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('iam:permissions:write')")
     public ApiResponse<Long> create(@RequestBody CreatePermissionReq req) {
         CreatePermissionCommand cmd = permissionWebConverter.toCreatePermissionCommand(req);
         Long permissionId = createPermissionCommandHandler.handle(cmd);
@@ -46,17 +48,20 @@ public class PermissionController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('iam:permissions:read')")
     public ApiResponse<PageResult<PermissionDTO>> page(PermissionPageQuery qry) {
         PageResult<PermissionDTO> result = permissionPageQueryHandler.handle(qry);
         return ApiResponse.success(result);
     }
 
     @GetMapping("/tree")
+    @PreAuthorize("hasAuthority('iam:permissions:read')")
     public ApiResponse<List<PermissionDTO>> tree() {
         return ApiResponse.success(permissionTreeQueryHandler.handle());
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('iam:permissions:write')")
     public ApiResponse<Void> update(@PathVariable Long id, @RequestBody CreatePermissionReq req) {
         UpdatePermissionCommand cmd = new UpdatePermissionCommand();
         cmd.setId(id);
@@ -73,12 +78,14 @@ public class PermissionController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('iam:permissions:write')")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         deletePermissionCommandHandler.handle(id);
         return ApiResponse.success();
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('iam:permissions:read')")
     public ApiResponse<PermissionDTO> detail(@PathVariable Long id) {
         return ApiResponse.success(permissionDetailQueryHandler.handle(id));
     }

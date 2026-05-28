@@ -10,4 +10,6 @@ public class TenantDTO {
     private Integer level;
     private Integer status;
     private String adminEmail;
+    private Integer maxAccounts;
+    private Integer maxRoles;
 }

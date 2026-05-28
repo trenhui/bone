@@ -87,11 +87,22 @@ public class Account extends TenantAggregateRoot<Long> {
         this.updatedAt = LocalDateTime.now();
     }
 
+    /** 默认阈值：5 次失败 → 锁定 30 分钟（沿用历史调用方）。 */
     public void recordLoginFailure() {
+        recordLoginFailure(5, 30);
+    }
+
+    /**
+     * 失败计数 +1；累计达到 {@code threshold} 时进入 LOCKED 状态，{@code lockedAt} 设为当前时间 + {@code lockMinutes}。
+     *
+     * @param threshold    锁定阈值（&lt;= 0 表示不锁定，仅计数）
+     * @param lockMinutes  锁定持续分钟数
+     */
+    public void recordLoginFailure(int threshold, int lockMinutes) {
         this.loginFailCount++;
-        if (this.loginFailCount >= 5) {
+        if (threshold > 0 && this.loginFailCount >= threshold) {
             this.status = AccountStatus.LOCKED;
-            this.lockedAt = LocalDateTime.now().plusMinutes(30);
+            this.lockedAt = LocalDateTime.now().plusMinutes(Math.max(1, lockMinutes));
             addDomainEvent(new AccountLockedEvent(getId(), this.lockedAt));
         }
         this.updatedAt = LocalDateTime.now();

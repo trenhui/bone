@@ -2,10 +2,12 @@ package com.bone.iam.application.command.handler;
 
 import com.bone.iam.application.command.cmd.CreateAccountCommand;
 import com.bone.iam.application.service.AccountRoleBindingService;
+import com.bone.iam.application.service.TenantQuotaEnforcer;
 import com.bone.iam.domain.account.Account;
 import com.bone.iam.domain.account.vo.Email;
 import com.bone.iam.domain.account.vo.Username;
 import com.bone.iam.domain.repository.AccountRepository;
+import com.bone.iam.domain.service.PasswordPolicyValidator;
 import com.bone.core.util.DistributedIdGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,9 +20,14 @@ public class CreateAccountCommandHandler {
     private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
     private final AccountRoleBindingService accountRoleBindingService;
+    private final PasswordPolicyValidator passwordPolicyValidator;
+    private final TenantQuotaEnforcer tenantQuotaEnforcer;
 
     @Transactional
     public Long handle(CreateAccountCommand cmd) {
+        passwordPolicyValidator.assertAcceptable(cmd.getPassword());
+        long tenantId = cmd.getTenantId() != null ? cmd.getTenantId() : 0L;
+        tenantQuotaEnforcer.assertCanAddAccount(tenantId);
         Long accountId = DistributedIdGenerator.generateLongId();
         Username username = Username.of(cmd.getUsername());
         Email email = Email.of(cmd.getEmail());

@@ -10,10 +10,11 @@ import java.util.Map;
 
 @Component
 public class AuthWebConverter {
-    public LoginCommand toLoginCommand(LoginReq req) {
+    public LoginCommand toLoginCommand(LoginReq req, String clientIp) {
         LoginCommand cmd = new LoginCommand();
         cmd.setUsername(req.getUsername());
         cmd.setPassword(req.getPassword());
+        cmd.setClientIp(clientIp);
         return cmd;
     }
 
@@ -21,6 +22,8 @@ public class AuthWebConverter {
         LoginResp resp = new LoginResp();
         resp.setToken((String) result.get("token"));
         resp.setRefreshToken((String) result.get("refreshToken"));
+        Object requireChange = result.get("requirePasswordChange");
+        resp.setRequirePasswordChange(requireChange instanceof Boolean b ? b : Boolean.FALSE);
 
         Account account = (Account) result.get("account");
         LoginResp.AccountInfo accountInfo = new LoginResp.AccountInfo();

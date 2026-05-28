@@ -229,13 +229,17 @@ VALUES
     (12, 'iam:audit:read', 'IAM-审计查看', 'iam', 'audit', 'read', 'OPERATION', 120, NULL),
     (13, 'iam:audit:write', 'IAM-审计设置', 'iam', 'audit', 'write', 'OPERATION', 130, NULL),
     (14, 'iam:tenants:read', 'IAM-租户查看', 'iam', 'tenants', 'read', 'OPERATION', 140, NULL),
-    (15, 'iam:tenants:write', 'IAM-租户维护', 'iam', 'tenants', 'write', 'OPERATION', 150, NULL);
+    (15, 'iam:tenants:write', 'IAM-租户维护', 'iam', 'tenants', 'write', 'OPERATION', 150, NULL),
+    (16, 'iam:sessions:read', 'IAM-会话查看', 'iam', 'sessions', 'read', 'OPERATION', 160, '查看 refresh token 在线会话'),
+    (17, 'iam:sessions:write', 'IAM-会话吊销', 'iam', 'sessions', 'write', 'OPERATION', 170, '强制下线/吊销 refresh token'),
+    (18, 'sys:console:read', 'SYS-控制台查看', 'system', 'console', 'read', 'OPERATION', 180, '查看平台概览/服务状态/关键指标/快捷操作');
 
 INSERT INTO iam_role_permission (id, role_id, permission_id)
 VALUES
     (1, 1, 1), (2, 1, 2), (3, 1, 3), (4, 1, 4), (5, 1, 5), (6, 1, 6),
     (7, 1, 7), (8, 1, 8), (9, 1, 9), (10, 1, 10), (11, 1, 11),
-    (12, 1, 12), (13, 1, 13), (14, 1, 14), (15, 1, 15);
+    (12, 1, 12), (13, 1, 13), (14, 1, 14), (15, 1, 15),
+    (16, 1, 16), (17, 1, 17), (18, 1, 18);
 
 -- ============================================================
 -- 2. System

@@ -83,7 +83,7 @@ public class ExtensionPointProxy<T> implements InvocationHandler, Serializable {
 
         // 5. 执行目标方法
         // 使用 ExtPointInvocationHandler.invoke 替代原生反射，以获得统一的性能监控和异常处理能力。
-        return ExtPointInvocationHandler.invoke(extension, method, args);
+        return ExtPointInvocationHandler.invoke(extension, method, args, extensionPoint.getName());
     }
 
     /**

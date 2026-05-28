@@ -5,9 +5,13 @@ spring:
   application:
     name: bone-system
   datasource:
-    url: jdbc:mysql://localhost:3306/bone_system?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    # 默认连接平台共享库 `bone`（与 IAM / Metadata / Integration / Extension 同库），
+    # 这是控制台 keyMetrics 跨表 COUNT(iam_account / meta_entity / int_flow / exts_plugin_version) 的前置条件。
+    # 若运维选择分库（如 `bone_system`），keyMetrics 会按 graceful degradation 退化为 0，
+    # 详见详设 §3.3.3 与 §11.2「[Target] 跨库指标聚合」。
+    url: jdbc:mysql://${BONE_DB_HOST:localhost}:${BONE_DB_PORT:3306}/${BONE_DB_NAME:bone}?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     driver-class-name: com.mysql.cj.jdbc.Driver
-    username: root
+    username: ${BONE_DB_USERNAME:root}
     password: ${BONE_DB_PASSWORD:}
   jpa:
     hibernate:

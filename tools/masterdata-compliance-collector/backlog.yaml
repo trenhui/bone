@@ -1,0 +1,24 @@
+items:
+  - id: catalog-sync-adr-full
+    tier: Target
+    title: ADR-0002 目录同步全链路（metadata ↔ masterdata）
+    reference: ADR-0002
+    tracking: 部分实体仍手工登记
+
+  - id: quality-rule-engine
+    tier: Target
+    title: 质量规则引擎与批量质检任务
+    reference: 详设 §4
+    tracking: DataQualityController 为子集 API
+
+  - id: publish-workflow
+    tier: Target
+    title: 主数据发布审批工作流
+    reference: 详设 §5
+    tracking: 状态机未落库
+
+  - id: golden-record-merge
+    tier: Vision
+    title: 黄金记录合并与匹配
+    reference: 详设 §6
+    tracking: —

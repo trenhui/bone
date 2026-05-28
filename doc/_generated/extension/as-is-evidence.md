@@ -1,6 +1,6 @@
 # 扩展模块 As-Is 证据（CI 派生）
 
-> **生成时间**：2026-05-27T06:13:44Z（UTC）  
+> **生成时间**：2026-05-27T09:42:29Z（UTC）  
 > **勿手改**：由 `tools/extension-compliance-collector/collect.py` 生成。
 
 | ID | 能力 | 证据摘要 |
@@ -15,10 +15,16 @@
 | `post-201-location` | POST 201 + Location | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtPointCommandHandler.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtensionStudioCommandHandler.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioCommandResponses.java` |
 | `x-request-id` | X-Request-Id 回显 + traceId | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioAuditService.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioCommandResponses.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioLroService.java`；… |
 | `patch-partial-update` | PATCH 部分更新（points/plugins） | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java` |
-| `deployment-status-ddl` | deployment_status DDL + 状态机落库 | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtensionCommandHandler.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/DeploymentStatus.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/PluginVersion.java`；… |
+| `deployment-status-ddl` | deployment_status DDL + 状态机落库 | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtensionCommandHandler.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/DeploymentStateQueryHandler.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/PluginDependencyGraphQueryHandler.java`；… |
 | `mime-magic-number` | JAR magic-number 校验 | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/JarMagicValidator.java` |
 | `artifact-download-auth-url` | 制品鉴权下载 GET :download | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtensionStudioCommandHandler.java` |
 | `rollout-percent-traffic-merge` | rollout_percent ↔ config_json.traffic 收敛（ADR-0014） | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/infrastructure/persistence/converter/StudioPersistenceConverter.java` |
+| `red-metrics-micrometer` | RED 指标 extension_invoke_* / deploy / LRO | 源码：`bone-engine/bone-extension-engine/bone-extension-sdk/src/main/java/com/bone/engine/extension/core/metrics/ExtensionMetricsCollector.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/observability/StudioExtensionMetrics.java` |
+| `idempotency-redis-cluster` | Idempotency Redis（可配置 backend=redis） | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioIdempotencyService.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/gateway/StudioIdempotencyStore.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/infrastructure/idempotency/RedisStudioIdempotencyStore.java` |
+| `per-plugin-bulkhead` | 按插件舱壁 + extension_bulkhead_rejected_total | 源码：`bone-engine/bone-extension-engine/bone-extension-sdk/src/main/java/com/bone/engine/extension/core/executor/ExtensionExecutionGuard.java`, `bone-engine/bone-extension-engine/bone-extension-sdk/src/main/java/com/bone/engine/extension/core/metrics/ExtensionMetricsCollector.java`, `bone-engine/bone-extension-engine/bone-extension-sdk/src/main/java/com/bone/engine/extension/support/config/ExtensionExecutionProperties.java` |
+| `deployment-state-machine-api` | 部署状态机视图 GET /plugins/{id}/deployment-state | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/DeploymentStateQueryHandler.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/DeploymentStateMachine.java` |
+| `plugin-dependency-graph-api` | 插件依赖图 GET /dependency-graph | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/PluginDependencyGraphQueryHandler.java` |
+| `plugin-marketplace-v1` | 插件市场 v1（静态 JSON 目录 + :install） | 源码：`bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/MarketplaceInstallCommandHandler.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/gateway/MarketplaceCatalog.java`, `bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/infrastructure/marketplace/JsonResourceMarketplaceCatalog.java` |
 
 ## 明细
 
@@ -150,6 +156,9 @@
 {
   "java": [
     "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtensionCommandHandler.java",
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/DeploymentStateQueryHandler.java",
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/PluginDependencyGraphQueryHandler.java",
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/DeploymentStateMachine.java",
     "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/DeploymentStatus.java",
     "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/PluginVersion.java",
     "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/infrastructure/persistence/converter/StudioPersistenceConverter.java",
@@ -191,6 +200,76 @@
   ],
   "java": [
     "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/infrastructure/persistence/converter/StudioPersistenceConverter.java"
+  ]
+}
+```
+
+### `red-metrics-micrometer` — RED 指标 extension_invoke_* / deploy / LRO
+
+```json
+{
+  "java": [
+    "bone-engine/bone-extension-engine/bone-extension-sdk/src/main/java/com/bone/engine/extension/core/metrics/ExtensionMetricsCollector.java",
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/observability/StudioExtensionMetrics.java"
+  ]
+}
+```
+
+### `idempotency-redis-cluster` — Idempotency Redis（可配置 backend=redis）
+
+```json
+{
+  "java": [
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioIdempotencyService.java",
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/gateway/StudioIdempotencyStore.java",
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/infrastructure/idempotency/RedisStudioIdempotencyStore.java"
+  ]
+}
+```
+
+### `per-plugin-bulkhead` — 按插件舱壁 + extension_bulkhead_rejected_total
+
+```json
+{
+  "java": [
+    "bone-engine/bone-extension-engine/bone-extension-sdk/src/main/java/com/bone/engine/extension/core/executor/ExtensionExecutionGuard.java",
+    "bone-engine/bone-extension-engine/bone-extension-sdk/src/main/java/com/bone/engine/extension/core/metrics/ExtensionMetricsCollector.java",
+    "bone-engine/bone-extension-engine/bone-extension-sdk/src/main/java/com/bone/engine/extension/support/config/ExtensionExecutionProperties.java"
+  ]
+}
+```
+
+### `deployment-state-machine-api` — 部署状态机视图 GET /plugins/{id}/deployment-state
+
+```json
+{
+  "java": [
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/DeploymentStateQueryHandler.java",
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/DeploymentStateMachine.java"
+  ]
+}
+```
+
+### `plugin-dependency-graph-api` — 插件依赖图 GET /dependency-graph
+
+```json
+{
+  "java": [
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/PluginDependencyGraphQueryHandler.java"
+  ]
+}
+```
+
+### `plugin-marketplace-v1` — 插件市场 v1（静态 JSON 目录 + :install）
+
+```json
+{
+  "java": [
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/MarketplaceInstallCommandHandler.java",
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/gateway/MarketplaceCatalog.java",
+    "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/infrastructure/marketplace/JsonResourceMarketplaceCatalog.java"
   ]
 }
 ```

@@ -1,10 +1,11 @@
 package com.bone.iam.application.query.handler;
 
 import com.bone.iam.domain.account.AccountRole;
-import com.bone.iam.domain.permission.Permission;
-import com.bone.iam.domain.role.RolePermission;
 import com.bone.iam.domain.gateway.AccountAuthorityCache;
 import com.bone.iam.domain.permission.DefaultPermissionCodes;
+import com.bone.iam.domain.permission.Permission;
+import com.bone.iam.domain.role.RolePermission;
+import com.bone.iam.domain.service.RoleHierarchyResolver;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AccountAuthoritiesQueryHandler {
 
     private final AccountAuthorityCache accountAuthorityCache;
+    private final RoleHierarchyResolver roleHierarchyResolver;
 
     @Transactional(readOnly = true)
     public List<String> resolvePermissionCodes(Long accountId, boolean adminAccount) {
@@ -45,11 +47,14 @@ public class AccountAuthoritiesQueryHandler {
         if (accountRoles.isEmpty()) {
             return adminAccount ? DefaultPermissionCodes.adminFallback() : List.of();
         }
-        List<Long> roleIds =
+        List<Long> directRoleIds =
                 accountRoles.stream().map(AccountRole::getRoleId).distinct().toList();
+        // 展开 parent_role_id 闭包，使继承角色的权限码自动并入（详设 §3.2 / IAM-22）。
+        Set<Long> closure = roleHierarchyResolver.resolveClosure(directRoleIds);
+        List<Long> closureRoleIds = List.copyOf(closure);
         List<RolePermission> rolePermissions = QueryBuilder.from(RolePermission.class)
                 .where(RolePermission::getRoleId)
-                .in(roleIds)
+                .in(closureRoleIds)
                 .list();
         if (rolePermissions.isEmpty()) {
             return adminAccount ? DefaultPermissionCodes.adminFallback() : List.of();

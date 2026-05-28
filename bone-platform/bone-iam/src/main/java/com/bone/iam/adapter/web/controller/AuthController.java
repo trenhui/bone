@@ -47,10 +47,23 @@ public class AuthController {
     private final IamSsoProperties iamSsoProperties;
 
     @PostMapping("/login")
-    public ApiResponse<LoginResp> login(@RequestBody LoginReq req) {
-        LoginCommand cmd = authWebConverter.toLoginCommand(req);
+    public ApiResponse<LoginResp> login(@RequestBody LoginReq req, HttpServletRequest request) {
+        LoginCommand cmd = authWebConverter.toLoginCommand(req, resolveClientIp(request));
         Map<String, Object> result = loginCommandHandler.handle(cmd);
         return ApiResponse.success(authWebConverter.toLoginResp(result));
+    }
+
+    /** 优先 {@code X-Forwarded-For} 链首段，回退到 {@link HttpServletRequest#getRemoteAddr()}（含 IPv6）。 */
+    private static String resolveClientIp(HttpServletRequest request) {
+        if (request == null) {
+            return null;
+        }
+        String forwarded = request.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            int comma = forwarded.indexOf(',');
+            return (comma > 0 ? forwarded.substring(0, comma) : forwarded).trim();
+        }
+        return request.getRemoteAddr();
     }
 
     @PostMapping("/logout")

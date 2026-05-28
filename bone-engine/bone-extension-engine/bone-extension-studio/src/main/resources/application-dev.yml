@@ -16,6 +16,8 @@ bone:
       runtime-sync:
         enabled: true
         refresh-channel: bone:ext:metadata:refresh
+      idempotency:
+        backend: redis
 
 logging:
   level:

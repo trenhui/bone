@@ -47,7 +47,7 @@ bone:
         password: ${BONE_DB_PASSWORD:}
   iam:
     jwt:
-      secret-key: ${BONE_JWT_SECRET:change-me-change-me-change-me-change-me-32bytes}
+      secret-key: ${BONE_IAM_JWT_SECRET_KEY:${BONE_JWT_SECRET:change-me-change-me-change-me-change-me-32bytes}}
       expiration-ms: ${BONE_JWT_EXPIRATION_MS:7200000}
       refresh-expiration-ms: ${BONE_JWT_REFRESH_EXPIRATION_MS:604800000}
       token-prefix: "Bearer "

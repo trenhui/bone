@@ -716,3 +716,90 @@ export async function simulatePlugin(pluginId: number): Promise<ExecutionLogRow>
   );
   return assertSuccess(res);
 }
+
+/**
+ * 部署状态机视图（详设 v2.5 §3.3）。
+ */
+export type DeploymentStateView = {
+  pluginId: number;
+  activeVersion?: string | null;
+  currentStatus?: string;
+  allStates: string[];
+  transitions: { from: string; to: string }[];
+  versionStates: { version: string; status?: string; active: boolean }[];
+};
+
+export async function getDeploymentState(pluginId: number): Promise<DeploymentStateView> {
+  const res = await client.get<StudioApiResponse<DeploymentStateView>>(
+    `${EXTENSION_BASE}/plugins/${pluginId}/deployment-state`,
+  );
+  return assertSuccess(res);
+}
+
+/** 依赖图（详设 §12.3）。 */
+export type DependencyNode = {
+  id: number;
+  name: string;
+  className?: string;
+  extPointId?: number;
+  enabled: boolean;
+  deploymentStatus?: string | null;
+};
+
+export type DependencyEdge = {
+  fromId: number;
+  toName: string;
+  resolved: boolean;
+};
+
+export type DependencyGraphView = {
+  nodes: DependencyNode[];
+  edges: DependencyEdge[];
+};
+
+export async function getDependencyGraph(extPointId?: number): Promise<DependencyGraphView> {
+  const res = await client.get<StudioApiResponse<DependencyGraphView>>(
+    `${EXTENSION_BASE}/dependency-graph`,
+    { params: extPointId != null ? { extPointId } : undefined },
+  );
+  return assertSuccess(res);
+}
+
+/** 插件市场（详设 §12.2）。 */
+export type MarketplaceItem = {
+  id: string;
+  name: string;
+  description?: string;
+  version?: string;
+  vendor?: string;
+  category?: string;
+  tags?: string[];
+  extPointInterface?: string;
+  className?: string;
+  homepage?: string;
+  installed: boolean;
+};
+
+export async function listMarketplaceItems(params?: {
+  keyword?: string;
+  category?: string;
+}): Promise<MarketplaceItem[]> {
+  const res = await client.get<StudioApiResponse<MarketplaceItem[]>>(
+    `${EXTENSION_BASE}/marketplace`,
+    { params },
+  );
+  return assertSuccess(res) ?? [];
+}
+
+export async function installMarketplaceItem(
+  itemId: string,
+  extPointId?: number,
+): Promise<{ pluginId: number; itemId: string; extPointId?: number }> {
+  const res = await client.post<
+    StudioApiResponse<{ pluginId: number; itemId: string; extPointId?: number }>
+  >(
+    `${EXTENSION_BASE}/marketplace/${encodeURIComponent(itemId)}:install`,
+    extPointId != null ? { extPointId } : {},
+  );
+  return assertSuccess(res);
+}

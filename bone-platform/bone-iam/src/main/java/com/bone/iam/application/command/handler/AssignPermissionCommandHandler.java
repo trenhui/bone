@@ -1,7 +1,11 @@
 package com.bone.iam.application.command.handler;
 
+import com.bone.core.exception.BizException;
+import com.bone.core.tenant.context.TenantContext;
 import com.bone.iam.application.command.cmd.AssignPermissionCommand;
 import com.bone.iam.application.service.RolePermissionBindingService;
+import com.bone.iam.common.IamErrorCodes;
+import com.bone.iam.domain.role.Role;
 import com.bone.iam.domain.repository.RoleRepository;
 import com.bone.core.capability.Capability;
 import lombok.RequiredArgsConstructor;
@@ -30,9 +34,20 @@ public class AssignPermissionCommandHandler {
         if (cmd == null || cmd.getRoleId() == null) {
             throw new IllegalArgumentException("角色 ID 不能为空");
         }
-        if (roleRepository.findById(cmd.getRoleId()) == null) {
+        Role role = roleRepository.findById(cmd.getRoleId());
+        if (role == null) {
             throw new RuntimeException("角色不存在: " + cmd.getRoleId());
         }
+        assertCallerMayManageRole(role);
         rolePermissionBindingService.replaceBindings(cmd.getRoleId(), cmd.getPermissionIds());
+    }
+
+    /** 非平台租户（tenantId &gt; 0）只能操作本租户角色，防 IDOR。 */
+    static void assertCallerMayManageRole(Role role) {
+        Long callerTenant = TenantContext.getTenantId();
+        if (callerTenant != null && callerTenant != 0L && !callerTenant.equals(role.getTenantId())) {
+            throw BizException.of(
+                    403, IamErrorCodes.TENANT_ACCESS_DENIED + ": 无权操作其他租户的角色");
+        }
     }
 }

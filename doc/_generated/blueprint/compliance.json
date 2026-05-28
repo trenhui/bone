@@ -1,0 +1,163 @@
+{
+  "generated_at": "2026-05-27T09:42:30Z",
+  "module": "blueprint",
+  "as_is": [
+    {
+      "id": "archunit",
+      "title": "ArchUnit 分层（BoneDddArchRules）",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-blueprint/src/test/java/com/bone/blueprint/ArchitectureTest.java"
+        ]
+      }
+    },
+    {
+      "id": "outbox",
+      "title": "Transactional Outbox（bp_outbox）",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/schedule/OrderOutboxRelayJob.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/command/handler/PayOrderCommandHandler.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/event/outbox/OrderOutboxRelay.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/event/outbox/OrderOutboxWriter.java"
+        ],
+        "schema_has_bp_outbox": true
+      }
+    },
+    {
+      "id": "tenant",
+      "title": "多租户 TenantAggregateRoot + 过滤器",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/command/handler/CreateOrderCommandHandler.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/event/outbox/OrderOutboxWriter.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/query/handler/OrderDetailQueryHandler.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/query/handler/OrderPageQueryHandler.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/support/OrderLookup.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/support/TenantSupport.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/domain/order/Order.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/infrastructure/config/web/TenantContextFilter.java"
+        ]
+      }
+    },
+    {
+      "id": "money-vo",
+      "title": "Money 值对象",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-blueprint/src/main/java/com/bone/blueprint/domain/order/valueobject/Money.java"
+        ]
+      }
+    },
+    {
+      "id": "read-port",
+      "title": "CQRS 读侧 OrderReadPort + SQL 投影",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/query/handler/OrderDetailQueryHandler.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/query/support/OrderDetailAssembler.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/domain/gateway/OrderReadPort.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/infrastructure/query/OrderReadPortImpl.java"
+        ],
+        "sql": [
+          "bone-blueprint/src/main/resources/sql/order/findOrderWithItems.sql"
+        ]
+      }
+    },
+    {
+      "id": "domain-events",
+      "title": "领域事件 AFTER_COMMIT 发布",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/command/handler/CancelOrderCommandHandler.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/command/handler/CreateOrderCommandHandler.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/command/handler/PayOrderCommandHandler.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/event/OrderCancelledEventHandler.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/event/OrderCreatedEventHandler.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/event/OrderPaidEventHandler.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/support/AggregatePersistence.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/infrastructure/event/SpringDomainEventPublisher.java"
+        ]
+      }
+    },
+    {
+      "id": "cqrs-handlers",
+      "title": "CommandHandler / QueryHandler 分离",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/mq/listener/OrderPaidIntegrationMqListener.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/mq/listener/OrderPaidListener.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/rpc/OrderRpcService.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/schedule/CancelExpiredOrderJob.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/web/controller/OrderController.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/command/handler/CancelOrderCommandHandler.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/command/handler/CheckStockCommandHandler.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/command/handler/CreateOrderCommandHandler.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/command/handler/PayOrderCommandHandler.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/query/handler/OrderDetailQueryHandler.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/query/handler/OrderPageQueryHandler.java"
+        ]
+      }
+    },
+    {
+      "id": "integration-event",
+      "title": "集成事件与领域事件分离",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/mq/listener/OrderPaidIntegrationMqListener.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/mq/listener/OrderPaidListener.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/command/handler/PayOrderCommandHandler.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/event/outbox/OrderOutboxEnvelopeFactory.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/event/outbox/OrderOutboxWriter.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/integration/OrderIntegrationEventPublisher.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/integration/event/OrderPaidIntegrationEvent.java"
+        ]
+      }
+    }
+  ],
+  "backlog": [
+    {
+      "id": "order-openapi-v1",
+      "tier": "Target",
+      "title": "订单 API OpenAPI 契约（extension-v1 同级）",
+      "reference": "Bone-API-规范 §15",
+      "tracking": "当前仅 Controller + README；无 orders-v1.yaml"
+    },
+    {
+      "id": "outbox-cluster-dedup",
+      "tier": "Target",
+      "title": "Outbox Relay 多实例去重/Leader 选举",
+      "reference": "详设级 Outbox 最佳实践",
+      "tracking": "OrderOutboxRelayJob 默认可多副本重复扫表"
+    },
+    {
+      "id": "inventory-saga-compensation",
+      "tier": "Target",
+      "title": "库存预留失败补偿 Saga",
+      "reference": "DDD 跨上下文一致性",
+      "tracking": "创建订单 check+reserve 失败时无自动补偿编排"
+    },
+    {
+      "id": "pay-idempotency-key",
+      "tier": "Target",
+      "title": "支付命令幂等键（API / 应用层）",
+      "reference": "Bone-API-规范 §8",
+      "tracking": "PayOrderCommandHandler 无 Idempotency-Key"
+    },
+    {
+      "id": "read-model-projection-db",
+      "tier": "Vision",
+      "title": "订单读模型独立库/物化视图",
+      "reference": "CQRS 进阶",
+      "tracking": "当前 SQL 投影同库 Join"
+    }
+  ]
+}

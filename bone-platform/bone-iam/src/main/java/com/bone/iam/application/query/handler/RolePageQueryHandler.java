@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import static com.bone.iam.application.query.handler.AccountPageQueryHandler.resolveTenantFilter;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,8 +27,10 @@ public class RolePageQueryHandler {
                        .or(Role::getDescription).like(qry.getKeyword());
         }
 
-        if (qry.getTenantId() != null) {
-            query.where(Role::getTenantId).eq(qry.getTenantId());
+        // 租户隔离：见 AccountPageQueryHandler#resolveTenantFilter（详设 §3.4 / §4.8）。
+        Long effectiveTenant = resolveTenantFilter(qry.getTenantId());
+        if (effectiveTenant != null) {
+            query.where(Role::getTenantId).eq(effectiveTenant);
         }
 
         PageResult<Role> result = query.orderByDesc(Role::getCreatedAt)

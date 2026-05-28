@@ -115,6 +115,28 @@ def build_as_is_checks() -> list[dict]:
     rollout_adr = (
         [str(adr_rollout.relative_to(ROOT))] if adr_rollout.exists() else []
     )
+    red_metrics = _grep_files(
+        SDK_JAVA, r"extension_invoke_total|extension_router_no_match_total"
+    )
+    redis_idempotency = _grep_files(
+        STUDIO_JAVA,
+        r"class RedisStudioIdempotencyStore|interface StudioIdempotencyStore|idempotency\.backend",
+    )
+    per_plugin_bulkhead = _grep_files(
+        SDK_JAVA, r"perPluginBulkheadEnabled|recordBulkheadRejected"
+    )
+    deployment_state_machine = _grep_files(
+        STUDIO_JAVA,
+        r"class DeploymentStateMachine|class DeploymentStateQueryHandler|deployment-state",
+    )
+    dependency_graph = _grep_files(
+        STUDIO_JAVA,
+        r"class PluginDependencyGraphQueryHandler|dependency-graph",
+    )
+    marketplace = _grep_files(
+        STUDIO_JAVA,
+        r"class JsonResourceMarketplaceCatalog|class MarketplaceInstallCommandHandler|interface MarketplaceCatalog",
+    )
 
     return [
         {
@@ -213,6 +235,42 @@ def build_as_is_checks() -> list[dict]:
                 "adr": rollout_adr,
                 "java": _grep_files(STUDIO_JAVA, r"setRolloutPercent\(cfg\.getTraffic"),
             },
+        },
+        {
+            "id": "red-metrics-micrometer",
+            "title": "RED 指标 extension_invoke_* / deploy / LRO",
+            "status": "as_is",
+            "evidence": {"java": red_metrics + _grep_files(STUDIO_JAVA, r"class StudioExtensionMetrics")},
+        },
+        {
+            "id": "idempotency-redis-cluster",
+            "title": "Idempotency Redis（可配置 backend=redis）",
+            "status": "as_is",
+            "evidence": {"java": redis_idempotency},
+        },
+        {
+            "id": "per-plugin-bulkhead",
+            "title": "按插件舱壁 + extension_bulkhead_rejected_total",
+            "status": "as_is",
+            "evidence": {"java": per_plugin_bulkhead},
+        },
+        {
+            "id": "deployment-state-machine-api",
+            "title": "部署状态机视图 GET /plugins/{id}/deployment-state",
+            "status": "as_is",
+            "evidence": {"java": deployment_state_machine},
+        },
+        {
+            "id": "plugin-dependency-graph-api",
+            "title": "插件依赖图 GET /dependency-graph",
+            "status": "as_is",
+            "evidence": {"java": dependency_graph},
+        },
+        {
+            "id": "plugin-marketplace-v1",
+            "title": "插件市场 v1（静态 JSON 目录 + :install）",
+            "status": "as_is",
+            "evidence": {"java": marketplace},
         },
     ]
 

@@ -1,0 +1,186 @@
+openapi: 3.1.0
+info:
+  title: Bone Console API
+  version: 1.0.0
+  description: |
+    控制台与仪表盘聚合读接口（As-Is · Dashboard Aggregator MVP）。
+    规范：[Bone-API-规范.md](../Bone-API-规范.md) §2.3 `console` 域；
+    详设：[控制台模块](../../design/modules/1.%20控制台与仪表盘模块详细设计方案.md) §5。
+
+    **权限码**：所有端点要求 `sys:console:read`（IAM `iam_permission.id=18`）。
+    **鉴权落地（As-Is）**：bone-system ConsoleController 类级 PreAuthorize(sys:console:read)；
+    JwtAuthenticationFilter 解析 IAM JWT scopes claim。未认证 401、缺权限 403。
+
+    **网关前缀**：`/api/v1/console` → bone-system :8083（v2.0 单一真源；`Authorization` 头透传）。
+
+servers:
+  - url: /api/v1/console
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        code: { type: integer, example: 200 }
+        message: { type: string, example: success }
+        data: {}
+    ServiceStatus:
+      type: object
+      properties:
+        name: { type: string, description: 显示名称 }
+        serviceCode: { type: string, description: 服务编码，如 bone-iam }
+        port: { type: string, description: 默认端口 }
+        status:
+          type: string
+          description: UP / DOWN / OUT_OF_SERVICE / UNKNOWN（远端 [Target] 前多为 UNKNOWN）
+        latencyMs: { type: integer, format: int64 }
+    ResourceUsage:
+      type: object
+      properties:
+        memoryUsedBytes: { type: integer, format: int64 }
+        memoryMaxBytes: { type: integer, format: int64 }
+        cpuPercent: { type: number, description: '[Target] 占位，当前为 0' }
+        diskUsedPercent: { type: number, description: '[Target] 占位，当前为 0' }
+        updatedAt: { type: string, format: date-time }
+    KeyMetrics:
+      type: object
+      properties:
+        userCount: { type: integer, format: int64, description: iam_account COUNT }
+        entityCount: { type: integer, format: int64, description: meta_entity COUNT }
+        integrationFlowCount: { type: integer, format: int64, description: int_flow COUNT }
+        extensionPluginCount: { type: integer, format: int64, description: exts_plugin_version is_active=1 }
+        orderCount: { type: integer, format: int64, description: '[Target] 占位' }
+        transactionAmount: { type: integer, format: int64, description: '[Target] 占位' }
+        jvmThreadsLive: { type: integer, format: int64 }
+        jvmThreadsDaemon: { type: integer, format: int64 }
+        updatedAt: { type: string, format: date-time }
+    ConsoleOverview:
+      type: object
+      properties:
+        services:
+          type: array
+          items: { $ref: '#/components/schemas/ServiceStatus' }
+        resourceUsage: { $ref: '#/components/schemas/ResourceUsage' }
+        keyMetrics: { $ref: '#/components/schemas/KeyMetrics' }
+        alerts:
+          type: array
+          description: '[Target] 接入 sys_alert_event 前恒为空数组'
+          items: { type: object }
+        updatedAt: { type: string, format: date-time }
+    QuickAction:
+      type: object
+      required: [id, title, path]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        path: { type: string, description: bone-shell 微应用路由 }
+        icon: { type: string, description: Ant Design 图标名 }
+
+security:
+  - bearerAuth: []
+
+paths:
+  /overview:
+    get:
+      summary: 获取系统概览（聚合）
+      operationId: getConsoleOverview
+      tags: [Console]
+      description: |
+        权限码 `sys:console:read`。前端 bone-shell 默认 30s 轮询。
+        计数器 `bone_console_overview_refresh_total`（Micrometer）。
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/ConsoleOverview' }
+        '401':
+          description: 未提供有效 JWT 或 Token 已过期
+        '403':
+          description: JWT 有效但 scopes 中缺少 sys:console:read
+  /services:
+    get:
+      summary: 获取各微服务状态摘要
+      operationId: listConsoleServices
+      tags: [Console]
+      description: |
+        权限码 `sys:console:read`。当前仅本进程 Actuator 状态真实，远端为 UNKNOWN。
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/ServiceStatus' }
+  /resources:
+    get:
+      summary: 获取节点资源使用（JVM）
+      operationId: getConsoleResources
+      tags: [Console]
+      description: 权限码 `sys:console:read`。
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/ResourceUsage' }
+  /metrics:
+    get:
+      summary: 获取关键业务指标
+      operationId: getConsoleMetrics
+      tags: [Console]
+      description: |
+        权限码 `sys:console:read`。按 DDL 表存在性最佳努力 COUNT；单表失败容错为 0。
+        需数据源连共享库 `bone`（见 application-prod.yml 注释）。
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data: { $ref: '#/components/schemas/KeyMetrics' }
+  /quick-actions:
+    get:
+      summary: 获取快捷操作列表
+      operationId: listConsoleQuickActions
+      tags: [Console]
+      description: |
+        权限码 `sys:console:read`。当前为静态配置，与 bone-shell 路由对齐。
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/QuickAction' }

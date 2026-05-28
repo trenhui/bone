@@ -1,0 +1,32 @@
+# bone-blueprint [Target] / [Vision] — 勿写已落地演示能力
+
+items:
+  - id: order-openapi-v1
+    tier: Target
+    title: 订单 API OpenAPI 契约（extension-v1 同级）
+    reference: Bone-API-规范 §15
+    tracking: 当前仅 Controller + README；无 orders-v1.yaml
+
+  - id: outbox-cluster-dedup
+    tier: Target
+    title: Outbox Relay 多实例去重/Leader 选举
+    reference: 详设级 Outbox 最佳实践
+    tracking: OrderOutboxRelayJob 默认可多副本重复扫表
+
+  - id: inventory-saga-compensation
+    tier: Target
+    title: 库存预留失败补偿 Saga
+    reference: DDD 跨上下文一致性
+    tracking: 创建订单 check+reserve 失败时无自动补偿编排
+
+  - id: pay-idempotency-key
+    tier: Target
+    title: 支付命令幂等键（API / 应用层）
+    reference: Bone-API-规范 §8
+    tracking: PayOrderCommandHandler 无 Idempotency-Key
+
+  - id: read-model-projection-db
+    tier: Vision
+    title: 订单读模型独立库/物化视图
+    reference: CQRS 进阶
+    tracking: 当前 SQL 投影同库 Join

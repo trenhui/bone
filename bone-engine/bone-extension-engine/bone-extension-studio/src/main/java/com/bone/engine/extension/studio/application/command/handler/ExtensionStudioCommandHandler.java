@@ -9,6 +9,7 @@ import com.bone.engine.extension.studio.application.service.StudioIdempotencySer
 import com.bone.engine.extension.studio.application.service.StudioIdempotentExecutor;
 import com.bone.engine.extension.studio.application.service.StudioLroService;
 import com.bone.engine.extension.studio.config.ExtensionStudioProperties;
+import com.bone.engine.extension.studio.observability.StudioExtensionMetrics;
 import com.bone.engine.extension.studio.domain.model.Extension;
 import com.bone.engine.extension.studio.domain.model.PluginExecutionLog;
 import com.bone.engine.extension.studio.domain.model.PluginVersion;
@@ -45,6 +46,7 @@ public class ExtensionStudioCommandHandler {
     private final StudioLroService lroService;
     private final ExtensionStudioProperties studioProperties;
     private final ObjectMapper objectMapper;
+    private final StudioExtensionMetrics studioMetrics;
 
     public ResponseEntity<ApiResponse<Extension>> createPlugin(String idempotencyKey, Extension body)
             throws JsonProcessingException {
@@ -279,6 +281,7 @@ public class ExtensionStudioCommandHandler {
 
     private ResponseEntity<ApiResponse<Extension>> lifecycle(Long id, boolean deploy, String action) {
         String auditAction = deploy ? "plugin.deploy" : "plugin.undeploy";
+        String metricAction = deploy ? "deploy" : "undeploy";
         try {
             if (deploy) {
                 extensionCommandHandler.deployExtension(id);
@@ -287,9 +290,11 @@ public class ExtensionStudioCommandHandler {
             }
             Extension extension = extensionQueryHandler.findExtensionById(id);
             auditService.success(auditAction, "plugin", String.valueOf(id));
+            studioMetrics.recordDeploy(metricAction, "success");
             return StudioCommandResponses.ok(action + "插件成功", extension);
         } catch (IllegalArgumentException | IllegalStateException ex) {
             auditService.failure(auditAction, "plugin", String.valueOf(id), ex.getMessage());
+            studioMetrics.recordDeploy(metricAction, "failure");
             return StudioCommandResponses.badRequest(ex.getMessage());
         }
     }

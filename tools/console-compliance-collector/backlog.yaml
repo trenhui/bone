@@ -1,0 +1,62 @@
+# bone-system 控制台模块 [Target] / [Vision] Backlog
+# 真源：详设 §1.4 能力矩阵；落地后从此处移除并升级 §1.4 状态为 As-Is。
+
+- id: remote-service-probe
+  tier: Target
+  title: 远端服务真探活（替换 LocalActuatorServiceHealthGateway 的 UNKNOWN）
+  reference: 详设 §1.4 / §3.3.4
+  tracking: P0 · 接服务注册中心或网关主动探活
+
+- id: cross-db-metrics
+  tier: Target
+  title: prod 分库部署时跨库 keyMetrics 聚合（通过 Gateway/Feign 调各服务只读 API）
+  reference: 详设 §3.3.3 / §11.2
+  tracking: P0 · 当前默认连共享库 bone；分库时退化为 0（graceful degradation）
+
+- id: cpu-disk-metrics
+  tier: Target
+  title: 节点 CPU / 磁盘使用率
+  reference: 详设 §1.4
+  tracking: P1 · OperatingSystemMXBean 或 node_exporter
+
+- id: alerts-feed
+  tier: Target
+  title: alerts[] 接入 sys_alert_event
+  reference: 详设 §1.4 / §2.1
+  tracking: P1 · 与 AlertController 串联
+
+- id: recent-access
+  tier: Target
+  title: cnsl_recent_access 表通过 Web 拦截器写入
+  reference: 详设 §2.3 / §4
+  tracking: P1 · 新增 RecentAccessRecorder
+
+- id: quick-action-table
+  tier: Target
+  title: quick-actions 改为 cnsl_quick_action 表驱动（多租户/角色过滤）
+  reference: 详设 §2.3
+  tracking: P2 · 新增 cnsl_quick_action 表 + Handler
+
+- id: prometheus-grafana
+  tier: Vision
+  title: Prometheus 抓取 + Grafana 面板
+  reference: 详设 §3.2 / §9
+  tracking: —
+
+- id: configurable-dashboard
+  tier: Vision
+  title: 可配置仪表盘（Widget CRUD / 拖拽布局 / 时间范围）
+  reference: 详设 §2.2 / §5.2-§5.4
+  tracking: —
+
+- id: ai-layout
+  tier: Vision
+  title: AI 智能布局与 Widget 异常检测
+  reference: 详设 §10.4.1
+  tracking: —
+
+- id: standalone-console-service
+  tier: Vision
+  title: 拆出独立 bone-console 微服务
+  reference: 详设 §10.1 / §10.6
+  tracking: —

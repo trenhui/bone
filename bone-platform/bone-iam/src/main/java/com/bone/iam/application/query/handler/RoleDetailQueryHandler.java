@@ -1,5 +1,6 @@
 package com.bone.iam.application.query.handler;
 
+import com.bone.core.tenant.context.TenantContext;
 import com.bone.iam.application.query.dto.RoleDetailDTO;
 import com.bone.iam.domain.role.Role;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
@@ -21,6 +22,11 @@ public class RoleDetailQueryHandler {
                 .where(Role::getId)
                 .eq(id)
                 .first()
+                // 租户隔离：非平台租户不可查看其他租户的角色详情（防 IDOR）。详设 §3.4 / §4.8。
+                .filter(role -> {
+                    Long caller = TenantContext.getTenantId();
+                    return caller == null || caller == 0L || caller.equals(role.getTenantId());
+                })
                 .map(role -> {
                     RoleDetailDTO dto = new RoleDetailDTO();
                     dto.setId(role.getId());

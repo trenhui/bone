@@ -1,0 +1,60 @@
+# 元数据模块 Backlog — 仅 [Target] / [Vision]（已落地项写在 collect.py as_is 扫描）
+- id: catalog-if-match-etag
+  tier: Target
+  title: catalog PUT If-Match / 412（AIP-154）
+  reference: 详设 §5.A
+  tracking: 与 meta_*.version 字段同步
+
+- id: catalog-idempotency-key
+  tier: Target
+  title: publish / fields:allocate Idempotency-Key 窗口
+  reference: 详设 §5.A · 复用 extension StudioIdempotencyStore
+  tracking: P1
+
+- id: catalog-publish-scope
+  tier: Target
+  title: publish 拆出独立 metadata:publish scope（当前临时复用 write）
+  reference: 详设 §5.0 · IAM §4.3
+  tracking: 与 IAM 权限码登记同步
+
+- id: catalog-problem-detail
+  tier: Target
+  title: 失败信封统一改 RFC 7807 ProblemDetail（含 META_* 错误码）
+  reference: 详设 §5.A · Bone-API §11
+  tracking: P1
+
+- id: catalog-redis-cache
+  tier: Target
+  title: 已发布 meta_entity Redis 短 TTL 缓存
+  reference: 详设 §7
+  tracking: QPS 达标后
+
+- id: runtime-query-params
+  tier: Target
+  title: runtime 列裁剪 / 过滤 / 排序 query 参数
+  reference: 详设 §5.A · §5.3.2
+  tracking: P1
+
+- id: entity-versions-api
+  tier: Vision
+  title: GET /entities/{id}/versions 版本历史
+  reference: 详设 §5.1 P1
+  tracking: META-00x
+
+- id: smartql-http
+  tier: Vision
+  title: SmartQL / 规则 HTTP 暴露
+  reference: 详设 §2.4 · SmartMeta §9
+  tracking: engine-core 已具备库能力
+
+- id: metadata-template-rest
+  tier: Vision
+  title: meta_code_template REST（归口 generator）
+  reference: 详设 §5.5
+  tracking: 与 §8 generator 对齐
+
+- id: engine-sdk-meta-table-executor
+  tier: Target
+  title: sdk MetaTableExecutor SPI，engine 收敛离 JDBC
+  reference: ADR-0015 收敛路线
+  tracking: P1

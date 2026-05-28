@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.engine.extension.studio.common.exception.IdempotencyConflictException;
+import com.bone.engine.extension.studio.infrastructure.idempotency.InMemoryStudioIdempotencyStore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,7 +20,7 @@ class StudioIdempotencyServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new StudioIdempotencyService(new ObjectMapper());
+        service = new StudioIdempotencyService(new ObjectMapper(), new InMemoryStudioIdempotencyStore());
         MDC.put("tenantId", "1");
         MDC.put("userId", "u1");
     }

@@ -1,5 +1,5 @@
 #
-#Sat May 23 12:15:28 CST 2026
+#Thu May 28 09:17:41 CST 2026
 classes\ that\ reside\ in\ a\ package\ '..application.command.handler..'\ and\ are\ not\ interfaces\ and\ do\ not\ have\ modifier\ ABSTRACT\ should\ declare\ @Transactional\ on\ class\ or\ handle/execute\ method,\ because\ DDD\ \u00A715\:\ write\ transaction\ boundary\ on\ *CommandHandler=6c416115-0e7d-46ad-bc69-c467a951f374
 no\ classes\ that\ reside\ in\ a\ package\ '..adapter..controller..'\ should\ depend\ on\ classes\ that\ reside\ in\ a\ package\ '..application.service..',\ because\ DDD\ P0-7\ +\ \u00A715\:\ adapter\ must\ not\ inject\ application/service=a0c8fac1-164b-4618-8187-f756da71e125
 no\ classes\ should\ reside\ in\ a\ package\ '..domain.store..',\ because\ DDD\ \u00A714.5\:\ new\ code\ uses\ domain.repository\ only=7578f1a8-e363-4ac4-aa92-c6aa502f943c
@@ -9,6 +9,7 @@ no\ classes\ that\ reside\ outside\ of\ package\ 'com.bone.core..'\ should\ have
 classes\ that\ are\ interfaces\ and\ have\ simple\ name\ ending\ with\ 'Repository'\ and\ reside\ in\ a\ package\ '..domain.repository..'\ should\ only\ declare\ whitelisted\ repository\ methods=e87dd59a-23b4-4d87-9941-61407995dca7
 no\ classes\ should\ reside\ in\ a\ package\ '..application.usecase..',\ because\ DDD\ \u00A714.3\:\ forbid\ application/usecase\ package=21e68af8-9fbd-43ab-8ed4-9258c0148f27
 classes\ that\ reside\ in\ a\ package\ '..application.query.handler..'\ and\ are\ not\ interfaces\ and\ do\ not\ have\ modifier\ ABSTRACT\ should\ declare\ @Transactional\ on\ class\ or\ handle/execute\ method,\ because\ DDD\ \u00A712.1\ P0-6\:\ QueryHandler\ should\ use\ @Transactional(readOnly\ \=\ true)=b5706551-dca2-4a52-a2e6-fdbe5ad8510b
+no\ classes\ that\ reside\ in\ a\ package\ '..adapter..controller..'\ should\ depend\ on\ classes\ that\ reside\ in\ a\ package\ '..domain.service..',\ because\ DDD\ P0-7\ +\ \u00A715\:\ adapter\ must\ not\ inject\ domain.service;\ use\ Handler=9f588ddd-f58b-44f8-9af2-c09229038718
 classes\ that\ reside\ in\ a\ package\ '..application.query.handler..'\ and\ are\ not\ interfaces\ and\ do\ not\ have\ modifier\ ABSTRACT\ should\ have\ simple\ name\ ending\ with\ 'QueryHandler',\ because\ DDD\ \u00A723\:\ query\ handler\ classes\ must\ be\ named\ *QueryHandler=43679868-65a4-46f3-95fc-4018de7beca6
 no\ classes\ that\ reside\ in\ a\ package\ '..adapter..controller..'\ should\ depend\ on\ classes\ that\ reside\ in\ a\ package\ '..domain.repository..',\ because\ DDD\ \u00A715\:\ adapter\ must\ not\ inject\ domain.repository;\ use\ Handler=70a06ce8-2e76-47f4-9e03-ecae6005a421
 no\ classes\ that\ reside\ in\ a\ package\ '..application..'\ should\ depend\ on\ classes\ that\ reside\ in\ any\ package\ ['..infrastructure..'],\ because\ DDD\ P0-1\:\ application\ must\ not\ depend\ on\ infrastructure\ implementations=7a1f8207-eab7-4939-8cfb-6b83498af66a

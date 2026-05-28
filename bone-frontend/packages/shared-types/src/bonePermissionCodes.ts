@@ -25,6 +25,14 @@ export const BonePermissionCodes = {
   IAM_PERMISSIONS_READ: 'iam:permissions:read',
   IAM_PERMISSIONS_WRITE: 'iam:permissions:write',
   IAM_AUDIT_READ: 'iam:audit:read',
+  IAM_AUDIT_WRITE: 'iam:audit:write',
+  IAM_TENANTS_READ: 'iam:tenants:read',
+  IAM_TENANTS_WRITE: 'iam:tenants:write',
+  IAM_SESSIONS_READ: 'iam:sessions:read',
+  IAM_SESSIONS_WRITE: 'iam:sessions:write',
+
+  // System / Console（bone-system 控制台聚合 API）
+  SYS_CONSOLE_READ: 'sys:console:read',
 
   // 元数据（bone-metadata-server @PreAuthorize）
   METADATA_READ: 'metadata:read',
@@ -59,6 +67,12 @@ export const BONE_PERMISSION_CODE_CATALOG: ReadonlyArray<{
   { code: BonePermissionCodes.IAM_PERMISSIONS_READ, name: 'IAM-权限查看', domain: 'iam', maturity: 'As-Is' },
   { code: BonePermissionCodes.IAM_PERMISSIONS_WRITE, name: 'IAM-权限维护', domain: 'iam', maturity: 'As-Is' },
   { code: BonePermissionCodes.IAM_AUDIT_READ, name: 'IAM-审计查看', domain: 'iam', maturity: 'As-Is' },
+  { code: BonePermissionCodes.IAM_AUDIT_WRITE, name: 'IAM-审计设置', domain: 'iam', maturity: 'As-Is' },
+  { code: BonePermissionCodes.IAM_TENANTS_READ, name: 'IAM-租户查看', domain: 'iam', maturity: 'As-Is' },
+  { code: BonePermissionCodes.IAM_TENANTS_WRITE, name: 'IAM-租户维护', domain: 'iam', maturity: 'As-Is' },
+  { code: BonePermissionCodes.IAM_SESSIONS_READ, name: 'IAM-会话查看', domain: 'iam', maturity: 'As-Is' },
+  { code: BonePermissionCodes.IAM_SESSIONS_WRITE, name: 'IAM-会话吊销', domain: 'iam', maturity: 'As-Is' },
+  { code: BonePermissionCodes.SYS_CONSOLE_READ, name: 'SYS-控制台查看', domain: 'system', maturity: 'As-Is' },
   { code: BonePermissionCodes.METADATA_READ, name: '元数据-读', domain: 'metadata', maturity: 'As-Is' },
   { code: BonePermissionCodes.METADATA_WRITE, name: '元数据-写', domain: 'metadata', maturity: 'As-Is' },
   { code: BonePermissionCodes.EXTENSION_POINTS_READ, name: '扩展点-读', domain: 'extension', maturity: 'As-Is' },

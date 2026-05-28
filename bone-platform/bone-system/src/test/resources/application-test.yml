@@ -1,3 +1,9 @@
+bone:
+  iam:
+    jwt:
+      # 测试用固定密钥，便于在测试代码里用同样 secret 生成 JWT
+      secret-key: test-secret-test-secret-test-secret-test-secret-32bytes
+
 spring:
   application:
     name: bone-system-test

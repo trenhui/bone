@@ -31,6 +31,8 @@ components:
 | 文件 | 服务 | 前缀 |
 |------|------|------|
 | [extension-v1.yaml](./extension-v1.yaml) | bone-extension-studio | `/api/v1/extension` |
+
+> **扩展模块 As-Is 合规**：OpenAPI 与 Studio 实现对照由 CI 收集器派生，见 [`doc/_generated/extension/`](../../_generated/extension/) 与 `tools/extension-compliance-collector/`（详设 v2.5 附录 C）。
 | [generator-v1.yaml](./generator-v1.yaml) | studio-generator | `/api/v1/generator` |
 | [iam-v1.yaml](./iam-v1.yaml) | bone-iam | `/api/v1/iam` |
 | [masterdata-v1.yaml](./masterdata-v1.yaml) | bone-masterdata | `/api/v1/masterdata` |

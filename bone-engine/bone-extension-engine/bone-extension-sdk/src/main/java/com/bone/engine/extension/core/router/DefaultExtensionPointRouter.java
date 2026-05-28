@@ -6,6 +6,7 @@ import com.bone.engine.extension.api.spi.ExtensionPointRouter;
 import com.bone.engine.extension.api.spi.ExtensionRepository;
 import com.bone.engine.extension.core.cache.CacheManager;
 import com.bone.engine.extension.support.context.BizContext;
+import com.bone.engine.extension.support.metrics.ExtensionMetricsBridge;
 import com.bone.engine.extension.support.expression.AviatorExpressionEvaluator;
 import com.bone.engine.extension.support.expression.SpELExpressionEvaluator;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -213,8 +214,12 @@ public final class DefaultExtensionPointRouter implements ExtensionPointRouter {
         }
 
         // 无匹配 → 抛明确异常
-        throw new RouterException(RouterException.Type.NO_MATCH,
-                String.format("四级路由均无匹配 | 扩展点: %s | 维度: %s",
+        ExtensionMetricsBridge.optional()
+                .ifPresent(metrics -> metrics.recordRouterNoMatch(extPointClass.getName()));
+        throw new RouterException(
+                RouterException.Type.NO_MATCH,
+                String.format(
+                        "四级路由均无匹配 | 扩展点: %s | 维度: %s",
                         extPointClass.getName(), context.buildSummary()));
     }
 

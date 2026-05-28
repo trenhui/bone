@@ -34,6 +34,7 @@ spring:
           uri: ${BONE_SYSTEM_URI:http://localhost:8083}
           predicates:
             - Path=/api/v1/system/**
+        # 控制台与 bone-system 同上游；Authorization 头默认透传（bone-system JwtAuthenticationFilter 验签）
         - id: bone-console
           uri: ${BONE_SYSTEM_URI:http://localhost:8083}
           predicates:

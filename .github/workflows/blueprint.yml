@@ -1,0 +1,54 @@
+name: Bone Blueprint
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'bone-blueprint/**'
+      - 'bone-framework/bone-architecture-test/**'
+      - 'bone-framework/bone-core/**'
+      - 'doc/_generated/blueprint/**'
+      - 'tools/blueprint-compliance-collector/**'
+      - 'scripts/ci/collect-blueprint-compliance.sh'
+      - '.github/workflows/blueprint.yml'
+  pull_request:
+    paths:
+      - 'bone-blueprint/**'
+      - 'bone-framework/bone-architecture-test/**'
+      - 'bone-framework/bone-core/**'
+      - 'doc/_generated/blueprint/**'
+      - 'tools/blueprint-compliance-collector/**'
+      - 'scripts/ci/collect-blueprint-compliance.sh'
+      - '.github/workflows/blueprint.yml'
+
+jobs:
+  docs-compliance:
+    name: Blueprint Docs-as-Code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify compliance.json
+        run: |
+          python3 tools/blueprint-compliance-collector/collect.py
+          python3 tools/blueprint-compliance-collector/collect.py --check
+
+  test:
+    name: Blueprint Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Install dependencies (bone-core + architecture-test)
+        run: |
+          mvn install -DskipTests -pl bone-framework/bone-core --batch-mode
+          mvn install -DskipTests -pl bone-framework/bone-architecture-test --batch-mode
+      - name: Test bone-blueprint
+        working-directory: bone-blueprint
+        run: mvn test --batch-mode

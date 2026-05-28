@@ -12,10 +12,17 @@ import com.bone.metadata.catalog.application.query.handler.MetaFieldDetailQueryH
 import com.bone.metadata.catalog.application.query.handler.MetaFieldPageQueryHandler;
 import com.bone.metadata.catalog.application.query.qry.MetaFieldPageQuery;
 import jakarta.validation.Valid;
+import java.net.URI;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-/** 元数据目录：建模字段 API（嵌套于实体，与 EAV /api/v1/metadata/fields:* 分离） */
+/**
+ * 元数据目录：建模字段 API（嵌套于实体，与 EAV /api/v1/metadata/fields:* 分离）。
+ *
+ * <p>权限 scope：read → {@code metadata:read}，write → {@code metadata:write}。
+ */
 @RestController
 @RequestMapping("/api/v1/metadata/entities/{entityId}/fields")
 @RequiredArgsConstructor
@@ -28,13 +35,18 @@ public class MetaFieldCatalogController {
   private final MetaFieldDetailQueryHandler metaFieldDetailQueryHandler;
 
   @PostMapping
-  public ApiResponse<Long> create(
+  @PreAuthorize("hasAuthority('metadata:write')")
+  public ResponseEntity<ApiResponse<Long>> create(
       @PathVariable Long entityId, @Valid @RequestBody CreateMetaFieldCommand cmd) {
     cmd.setEntityId(entityId);
-    return ApiResponse.success(createMetaFieldHandler.handle(cmd));
+    Long id = createMetaFieldHandler.handle(cmd);
+    return ResponseEntity.created(
+            URI.create("/api/v1/metadata/entities/" + entityId + "/fields/" + id))
+        .body(ApiResponse.success(id));
   }
 
   @PutMapping("/{fieldId}")
+  @PreAuthorize("hasAuthority('metadata:write')")
   public ApiResponse<Void> update(
       @PathVariable Long entityId,
       @PathVariable Long fieldId,
@@ -44,6 +56,7 @@ public class MetaFieldCatalogController {
   }
 
   @GetMapping
+  @PreAuthorize("hasAuthority('metadata:read')")
   public ApiResponse<PageResult<MetaFieldDTO>> page(
       @PathVariable Long entityId, MetaFieldPageQuery qry) {
     qry.setEntityId(entityId);
@@ -51,12 +64,14 @@ public class MetaFieldCatalogController {
   }
 
   @GetMapping("/{fieldId}")
+  @PreAuthorize("hasAuthority('metadata:read')")
   public ApiResponse<MetaFieldDTO> detail(
       @PathVariable Long entityId, @PathVariable Long fieldId) {
     return ApiResponse.success(metaFieldDetailQueryHandler.handle(entityId, fieldId));
   }
 
   @DeleteMapping("/{fieldId}")
+  @PreAuthorize("hasAuthority('metadata:write')")
   public ApiResponse<Void> delete(@PathVariable Long entityId, @PathVariable Long fieldId) {
     deleteMetaFieldHandler.handle(fieldId);
     return ApiResponse.success();

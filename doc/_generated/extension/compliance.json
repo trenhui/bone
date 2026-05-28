@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-27T06:13:44Z",
+  "generated_at": "2026-05-27T09:42:29Z",
   "module": "extension",
   "as_is": [
     {
@@ -131,6 +131,9 @@
       "evidence": {
         "java": [
           "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/ExtensionCommandHandler.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/DeploymentStateQueryHandler.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/PluginDependencyGraphQueryHandler.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/DeploymentStateMachine.java",
           "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/DeploymentStatus.java",
           "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/PluginVersion.java",
           "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/infrastructure/persistence/converter/StudioPersistenceConverter.java",
@@ -174,23 +177,79 @@
           "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/infrastructure/persistence/converter/StudioPersistenceConverter.java"
         ]
       }
-    }
-  ],
-  "backlog": [
-    {
-      "id": "idempotency-redis-cluster",
-      "tier": "Target",
-      "title": "Idempotency Redis 集群幂等",
-      "reference": "API 规范 §8",
-      "tracking": "当前 StudioIdempotencyService 进程内 24h TTL"
     },
     {
       "id": "red-metrics-micrometer",
-      "tier": "Target",
-      "title": "RED 指标 (Micrometer)",
-      "reference": "API 规范 §10 + 可观测性规范 §4.2.1",
-      "tracking": "extension_invoke_* 等未注册"
+      "title": "RED 指标 extension_invoke_* / deploy / LRO",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-extension-engine/bone-extension-sdk/src/main/java/com/bone/engine/extension/core/metrics/ExtensionMetricsCollector.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/observability/StudioExtensionMetrics.java"
+        ]
+      }
     },
+    {
+      "id": "idempotency-redis-cluster",
+      "title": "Idempotency Redis（可配置 backend=redis）",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/service/StudioIdempotencyService.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/gateway/StudioIdempotencyStore.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/infrastructure/idempotency/RedisStudioIdempotencyStore.java"
+        ]
+      }
+    },
+    {
+      "id": "per-plugin-bulkhead",
+      "title": "按插件舱壁 + extension_bulkhead_rejected_total",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-extension-engine/bone-extension-sdk/src/main/java/com/bone/engine/extension/core/executor/ExtensionExecutionGuard.java",
+          "bone-engine/bone-extension-engine/bone-extension-sdk/src/main/java/com/bone/engine/extension/core/metrics/ExtensionMetricsCollector.java",
+          "bone-engine/bone-extension-engine/bone-extension-sdk/src/main/java/com/bone/engine/extension/support/config/ExtensionExecutionProperties.java"
+        ]
+      }
+    },
+    {
+      "id": "deployment-state-machine-api",
+      "title": "部署状态机视图 GET /plugins/{id}/deployment-state",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/DeploymentStateQueryHandler.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/model/DeploymentStateMachine.java"
+        ]
+      }
+    },
+    {
+      "id": "plugin-dependency-graph-api",
+      "title": "插件依赖图 GET /dependency-graph",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/adapter/web/controller/ExtensionManagementController.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/query/handler/PluginDependencyGraphQueryHandler.java"
+        ]
+      }
+    },
+    {
+      "id": "plugin-marketplace-v1",
+      "title": "插件市场 v1（静态 JSON 目录 + :install）",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/application/command/handler/MarketplaceInstallCommandHandler.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/domain/gateway/MarketplaceCatalog.java",
+          "bone-engine/bone-extension-engine/bone-extension-studio/src/main/java/com/bone/engine/extension/studio/infrastructure/marketplace/JsonResourceMarketplaceCatalog.java"
+        ]
+      }
+    }
+  ],
+  "backlog": [
     {
       "id": "bytecode-hotload-classloader",
       "tier": "Target",
@@ -203,7 +262,7 @@
       "tier": "Target",
       "title": "Resilience4j 按插件熔断",
       "reference": "详设 §4.4",
-      "tracking": "当前 ExtensionExecutionGuard 全局 Semaphore"
+      "tracking": "已落地按插件 JDK 舱壁 + extension_bulkhead_rejected_total；熔断器/CircuitBreaker 仍待 Resilience4j"
     },
     {
       "id": "archunit-shrink-freeze",
@@ -227,18 +286,11 @@
       "tracking": "—"
     },
     {
-      "id": "plugin-marketplace",
+      "id": "plugin-marketplace-remote",
       "tier": "Vision",
-      "title": "插件市场",
+      "title": "插件市场（OCI / 远端仓库）",
       "reference": "详设 §12.2",
-      "tracking": "ext_marketplace_item 未入 init"
-    },
-    {
-      "id": "plugin-dependency-graph",
-      "tier": "Vision",
-      "title": "插件依赖图",
-      "reference": "详设 §12.3",
-      "tracking": "—"
+      "tracking": "v1 已落地静态 JSON 目录（marketplace/items.json）；远端 OCI / 凭证 / 评分仍待"
     },
     {
       "id": "resource-metering",

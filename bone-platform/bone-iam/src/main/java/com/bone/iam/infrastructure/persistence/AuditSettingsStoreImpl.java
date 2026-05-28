@@ -1,8 +1,8 @@
 package com.bone.iam.infrastructure.persistence;
 
-import com.bone.core.tenant.context.TenantContext;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.iam.adapter.web.dto.resp.AuditSettingsResp;
+import com.bone.iam.domain.audit.AuditSettings;
+import com.bone.iam.domain.gateway.AuditSettingsStore;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -11,11 +11,13 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @RequiredArgsConstructor
-public class AuditSettingsRepository {
+public class AuditSettingsStoreImpl implements AuditSettingsStore {
 
     private final JdbcTemplate jdbcTemplate;
 
-    public AuditSettingsResp findByTenant(Long tenantId) {
+    @Override
+    public AuditSettings findByTenantId(Long tenantId) {
+        long effectiveTenant = tenantId != null ? tenantId : 0L;
         return jdbcTemplate.query(
                         """
                         SELECT retention_days, auto_archive_enabled, archive_after_days,
@@ -25,22 +27,18 @@ public class AuditSettingsRepository {
                         """,
                         rs -> {
                             if (!rs.next()) {
-                                return Optional.<AuditSettingsResp>empty();
+                                return Optional.<AuditSettings>empty();
                             }
-                            AuditSettingsResp resp = new AuditSettingsResp();
-                            resp.setRetentionDays(rs.getInt("retention_days"));
-                            resp.setAutoArchiveEnabled(rs.getBoolean("auto_archive_enabled"));
-                            resp.setArchiveAfterDays(rs.getInt("archive_after_days"));
-                            resp.setStorageType(rs.getString("storage_type"));
-                            resp.setWormEnabled(rs.getBoolean("worm_enabled"));
-                            return Optional.of(resp);
+                            return Optional.of(mapRow(rs));
                         },
-                        tenantId)
+                        effectiveTenant)
                 .orElseGet(this::defaults);
     }
 
+    @Override
     public void upsert(Long tenantId, Map<String, Object> settings) {
-        AuditSettingsResp current = findByTenant(tenantId);
+        long effectiveTenant = tenantId != null ? tenantId : 0L;
+        AuditSettings current = findByTenantId(effectiveTenant);
         int retention =
                 settings.containsKey("retentionDays")
                         ? ((Number) settings.get("retentionDays")).intValue()
@@ -48,7 +46,7 @@ public class AuditSettingsRepository {
         boolean autoArchive =
                 settings.containsKey("autoArchiveEnabled")
                         ? Boolean.TRUE.equals(settings.get("autoArchiveEnabled"))
-                        : Boolean.TRUE.equals(current.getAutoArchiveEnabled());
+                        : Boolean.TRUE.equals(current.isAutoArchiveEnabled());
         int archiveAfter =
                 settings.containsKey("archiveAfterDays")
                         ? ((Number) settings.get("archiveAfterDays")).intValue()
@@ -60,7 +58,7 @@ public class AuditSettingsRepository {
         boolean worm =
                 settings.containsKey("wormEnabled")
                         ? Boolean.TRUE.equals(settings.get("wormEnabled"))
-                        : Boolean.TRUE.equals(current.getWormEnabled());
+                        : current.isWormEnabled();
 
         int updated =
                 jdbcTemplate.update(
@@ -75,7 +73,7 @@ public class AuditSettingsRepository {
                         archiveAfter,
                         storageType,
                         worm ? 1 : 0,
-                        tenantId);
+                        effectiveTenant);
         if (updated == 0) {
             jdbcTemplate.update(
                     """
@@ -85,7 +83,7 @@ public class AuditSettingsRepository {
                     VALUES (?, ?, ?, ?, ?, ?, ?, 0)
                     """,
                     DistributedIdGenerator.generateLongId(),
-                    tenantId,
+                    effectiveTenant,
                     retention,
                     autoArchive ? 1 : 0,
                     archiveAfter,
@@ -94,18 +92,23 @@ public class AuditSettingsRepository {
         }
     }
 
-    public Long resolveTenantId() {
-        Long tenantId = TenantContext.getTenantId();
-        return tenantId != null ? tenantId : 0L;
+    private static AuditSettings mapRow(java.sql.ResultSet rs) throws java.sql.SQLException {
+        return AuditSettings.builder()
+                .retentionDays(rs.getInt("retention_days"))
+                .autoArchiveEnabled(rs.getBoolean("auto_archive_enabled"))
+                .archiveAfterDays(rs.getInt("archive_after_days"))
+                .storageType(rs.getString("storage_type"))
+                .wormEnabled(rs.getBoolean("worm_enabled"))
+                .build();
     }
 
-    private AuditSettingsResp defaults() {
-        AuditSettingsResp resp = new AuditSettingsResp();
-        resp.setRetentionDays(30);
-        resp.setAutoArchiveEnabled(true);
-        resp.setArchiveAfterDays(15);
-        resp.setStorageType("DATABASE");
-        resp.setWormEnabled(false);
-        return resp;
+    private AuditSettings defaults() {
+        return AuditSettings.builder()
+                .retentionDays(30)
+                .autoArchiveEnabled(true)
+                .archiveAfterDays(15)
+                .storageType("DATABASE")
+                .wormEnabled(false)
+                .build();
     }
 }

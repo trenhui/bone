@@ -1,16 +1,25 @@
 import React from 'react';
 import { Layout, Menu, Breadcrumb, theme } from 'antd';
-import { AppstoreOutlined, DashboardOutlined, SafetyOutlined, SettingOutlined } from '@ant-design/icons';
+import {
+  AppstoreOutlined,
+  ApartmentOutlined,
+  DashboardOutlined,
+  SafetyOutlined,
+  SettingOutlined,
+  ShopOutlined,
+} from '@ant-design/icons';
 import { BrowserRouter, Routes, Route, useLocation, Link } from 'react-router-dom';
 import ExtensionOverview from '@/pages/ExtensionOverview';
 import ExtensionPointManagement from '@/pages/ExtensionPointManagement';
 import PluginManagement from '@/pages/PluginManagement';
 import SandboxManagement from '@/pages/SandboxManagement';
+import DependencyGraph from '@/pages/DependencyGraph';
+import Marketplace from '@/pages/Marketplace';
 import './App.css';
 
 const { Content, Sider } = Layout;
 
-type MenuKey = 'overview' | 'point' | 'plugin' | 'sandbox';
+type MenuKey = 'overview' | 'point' | 'plugin' | 'sandbox' | 'graph' | 'marketplace';
 
 const AppContent: React.FC = () => {
   const location = useLocation();
@@ -19,6 +28,8 @@ const AppContent: React.FC = () => {
   } = theme.useToken();
 
   const selectedKey = (): MenuKey => {
+    if (location.pathname.includes('marketplace')) return 'marketplace';
+    if (location.pathname.includes('dependency')) return 'graph';
     if (location.pathname.includes('plugin')) return 'plugin';
     if (location.pathname.includes('sandbox')) return 'sandbox';
     if (location.pathname.includes('point')) return 'point';
@@ -30,6 +41,8 @@ const AppContent: React.FC = () => {
     point: '扩展点管理',
     plugin: '插件管理',
     sandbox: '沙箱管理',
+    graph: '依赖图',
+    marketplace: '插件市场',
   };
 
   const key = selectedKey();
@@ -69,6 +82,16 @@ const AppContent: React.FC = () => {
               label: <Link to="/extension/plugin">插件管理</Link>,
             },
             {
+              key: 'graph',
+              icon: <ApartmentOutlined />,
+              label: <Link to="/extension/dependency">依赖图</Link>,
+            },
+            {
+              key: 'marketplace',
+              icon: <ShopOutlined />,
+              label: <Link to="/extension/marketplace">插件市场</Link>,
+            },
+            {
               key: 'sandbox',
               icon: <SafetyOutlined />,
               label: <Link to="/extension/sandbox">沙箱管理</Link>,
@@ -94,6 +117,8 @@ const AppContent: React.FC = () => {
               <Route path="/extension" element={<ExtensionOverview />} />
               <Route path="/extension/point" element={<ExtensionPointManagement />} />
               <Route path="/extension/plugin" element={<PluginManagement />} />
+              <Route path="/extension/dependency" element={<DependencyGraph />} />
+              <Route path="/extension/marketplace" element={<Marketplace />} />
               <Route path="/extension/sandbox" element={<SandboxManagement />} />
               <Route path="*" element={<ExtensionOverview />} />
             </Routes>

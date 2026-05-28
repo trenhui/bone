@@ -10,4 +10,6 @@
 | [0012](./0012-system-exception-hierarchy.md) | SystemException 归属基础设施异常链 |
 | [0013](./0013-extension-studio-repository-read-side.md) | extension-studio 仓储读侧拆 ReadPort |
 | [0014](./0014-iam-localdatetime-audit.md) | bone-iam LocalDateTime 审计策略 |
+| [0015](./0015-metadata-runtime-jdbc-via-engine.md) | 元数据模式 B 运行时 JDBC（engine） |
+| [0016](./0016-metadata-catalog-abstract-entity-tenant.md) | 元数据 catalog AbstractEntity + tenantId |
 | [0013](./0013-extension-studio-repository-read-side.md) | extension-studio 仓储读侧 gateway 拆分 |

@@ -2,18 +2,6 @@
 # 已落地能力勿写入此文件；As-Is 由 collect.py 从 OpenAPI/源码派生。
 
 items:
-  - id: idempotency-redis-cluster
-    tier: Target
-    title: Idempotency Redis 集群幂等
-    reference: API 规范 §8
-    tracking: 当前 StudioIdempotencyService 进程内 24h TTL
-
-  - id: red-metrics-micrometer
-    tier: Target
-    title: RED 指标 (Micrometer)
-    reference: API 规范 §10 + 可观测性规范 §4.2.1
-    tracking: extension_invoke_* 等未注册
-
   - id: bytecode-hotload-classloader
     tier: Target
     title: 字节码热载 / 独立 ClassLoader 隔离
@@ -24,7 +12,7 @@ items:
     tier: Target
     title: Resilience4j 按插件熔断
     reference: 详设 §4.4
-    tracking: 当前 ExtensionExecutionGuard 全局 Semaphore
+    tracking: 已落地按插件 JDK 舱壁 + extension_bulkhead_rejected_total；熔断器/CircuitBreaker 仍待 Resilience4j
 
   - id: archunit-shrink-freeze
     tier: Target
@@ -44,17 +32,11 @@ items:
     reference: 详设 §12.1
     tracking: —
 
-  - id: plugin-marketplace
+  - id: plugin-marketplace-remote
     tier: Vision
-    title: 插件市场
+    title: 插件市场（OCI / 远端仓库）
     reference: 详设 §12.2
-    tracking: ext_marketplace_item 未入 init
-
-  - id: plugin-dependency-graph
-    tier: Vision
-    title: 插件依赖图
-    reference: 详设 §12.3
-    tracking: —
+    tracking: v1 已落地静态 JSON 目录（marketplace/items.json）；远端 OCI / 凭证 / 评分仍待
 
   - id: resource-metering
     tier: Vision

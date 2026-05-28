@@ -14,6 +14,12 @@ public class ExtensionExecutionProperties {
     /** 全局并发上限（舱壁） */
     private int bulkheadMaxConcurrent = 64;
 
+    /** 按插件实现类名隔离舱壁（语义对齐 Resilience4j per-instance bulkhead） */
+    private boolean perPluginBulkheadEnabled = true;
+
+    /** 单插件并发上限 */
+    private int perPluginBulkheadMaxConcurrent = 8;
+
     public boolean isGuardEnabled() {
         return guardEnabled;
     }
@@ -36,5 +42,21 @@ public class ExtensionExecutionProperties {
 
     public void setBulkheadMaxConcurrent(int bulkheadMaxConcurrent) {
         this.bulkheadMaxConcurrent = bulkheadMaxConcurrent;
+    }
+
+    public boolean isPerPluginBulkheadEnabled() {
+        return perPluginBulkheadEnabled;
+    }
+
+    public void setPerPluginBulkheadEnabled(boolean perPluginBulkheadEnabled) {
+        this.perPluginBulkheadEnabled = perPluginBulkheadEnabled;
+    }
+
+    public int getPerPluginBulkheadMaxConcurrent() {
+        return perPluginBulkheadMaxConcurrent;
+    }
+
+    public void setPerPluginBulkheadMaxConcurrent(int perPluginBulkheadMaxConcurrent) {
+        this.perPluginBulkheadMaxConcurrent = perPluginBulkheadMaxConcurrent;
     }
 }

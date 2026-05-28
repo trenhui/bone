@@ -21,6 +21,7 @@ import com.bone.iam.application.query.handler.RoleDetailQueryHandler;
 import com.bone.iam.application.query.handler.RolePermissionsQueryHandler;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -40,6 +41,7 @@ public class RoleController {
     private final RoleWebConverter roleWebConverter;
 
     @PostMapping
+    @PreAuthorize("hasAuthority('iam:roles:write')")
     public ApiResponse<Long> create(@RequestBody CreateRoleReq req) {
         CreateRoleCommand cmd = roleWebConverter.toCreateRoleCommand(req);
         Long roleId = createRoleCommandHandler.handle(cmd);
@@ -47,12 +49,14 @@ public class RoleController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAuthority('iam:roles:read')")
     public ApiResponse<PageResult<RoleDTO>> page(RolePageQuery qry) {
         PageResult<RoleDTO> result = rolePageQueryHandler.handle(qry);
         return ApiResponse.success(result);
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('iam:roles:read')")
     public ApiResponse<RoleDetailResp> detail(@PathVariable Long id) {
         RoleDetailResp resp = roleDetailQueryHandler
                 .handle(id)
@@ -62,6 +66,7 @@ public class RoleController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('iam:roles:write')")
     public ApiResponse<Void> update(@PathVariable Long id, @RequestBody CreateRoleReq req) {
         UpdateRoleCommand cmd = new UpdateRoleCommand();
         cmd.setId(id);
@@ -72,12 +77,14 @@ public class RoleController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('iam:roles:write')")
     public ApiResponse<Void> delete(@PathVariable Long id) {
         deleteRoleCommandHandler.handle(id);
         return ApiResponse.success();
     }
 
     @PostMapping("/{id}/permissions")
+    @PreAuthorize("hasAuthority('iam:roles:write')")
     public ApiResponse<Void> assignPermissions(@PathVariable Long id, @RequestBody Long[] permissionIds) {
         AssignPermissionCommand cmd = new AssignPermissionCommand();
         cmd.setRoleId(id);
@@ -87,6 +94,7 @@ public class RoleController {
     }
 
     @GetMapping("/{id}/permissions")
+    @PreAuthorize("hasAuthority('iam:roles:read')")
     public ApiResponse<List<PermissionDTO>> getPermissions(@PathVariable Long id) {
         return ApiResponse.success(rolePermissionsQueryHandler.handle(id));
     }

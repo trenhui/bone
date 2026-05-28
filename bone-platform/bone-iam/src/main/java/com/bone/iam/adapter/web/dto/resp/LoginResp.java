@@ -8,6 +8,8 @@ import java.time.LocalDateTime;
 public class LoginResp {
     private String token;
     private String refreshToken;
+    /** 为 true 时表示当前密码为弱口令/默认口令，客户端应引导改密（详设 IAM-14）。 */
+    private Boolean requirePasswordChange;
     private AccountInfo account;
 
     @Data

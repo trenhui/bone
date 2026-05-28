@@ -7,6 +7,7 @@ import com.bone.engine.extension.studio.application.query.handler.ExtensionQuery
 import com.bone.engine.extension.studio.config.StudioRequestContextFilter;
 import com.bone.engine.extension.studio.domain.model.Extension;
 import com.bone.engine.extension.studio.domain.model.StudioOperation;
+import com.bone.engine.extension.studio.observability.StudioExtensionMetrics;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -26,6 +27,7 @@ public class StudioLroService {
     private final ExtensionCommandHandler extensionCommandHandler;
     private final ExtensionQueryHandler extensionQueryHandler;
     private final StudioAuditService auditService;
+    private final StudioExtensionMetrics studioMetrics;
     private final Map<String, StudioOperation> operations = new ConcurrentHashMap<>();
     private final ExecutorService executor = Executors.newCachedThreadPool(r -> {
         Thread t = new Thread(r, "studio-lro");
@@ -36,10 +38,12 @@ public class StudioLroService {
     public StudioLroService(
             ExtensionCommandHandler extensionCommandHandler,
             ExtensionQueryHandler extensionQueryHandler,
-            StudioAuditService auditService) {
+            StudioAuditService auditService,
+            StudioExtensionMetrics studioMetrics) {
         this.extensionCommandHandler = extensionCommandHandler;
         this.extensionQueryHandler = extensionQueryHandler;
         this.auditService = auditService;
+        this.studioMetrics = studioMetrics;
     }
 
     public String startPluginDeploy(Long pluginId) {
@@ -52,6 +56,7 @@ public class StudioLroService {
         op.setProgress(0);
         op.setCreatedAt(Instant.now());
         operations.put(operationId, op);
+        studioMetrics.recordLro(TYPE_PLUGIN_DEPLOY, "accepted");
 
         Map<String, String> mdc = MDC.getCopyOfContextMap();
         executor.submit(
@@ -87,6 +92,8 @@ public class StudioLroService {
             op.setDone(true);
             op.setCompletedAt(Instant.now());
             auditService.success("plugin.deploy", "plugin", String.valueOf(pluginId));
+            studioMetrics.recordLro(TYPE_PLUGIN_DEPLOY, "success");
+            studioMetrics.recordDeploy("deploy", "success");
         } catch (Exception ex) {
             ProblemDetail detail = ProblemDetail.of(StudioErrorCodes.STATE_INVALID, 409, ex.getMessage());
             String traceId = MDC.get(StudioRequestContextFilter.TRACE_ID);
@@ -96,6 +103,8 @@ public class StudioLroService {
             op.setProgress(100);
             op.setCompletedAt(Instant.now());
             auditService.failure("plugin.deploy", "plugin", String.valueOf(pluginId), ex.getMessage());
+            studioMetrics.recordLro(TYPE_PLUGIN_DEPLOY, "failure");
+            studioMetrics.recordDeploy("deploy", "failure");
         }
     }
 }

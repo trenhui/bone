@@ -7,6 +7,8 @@ import com.bone.system.common.exception.SystemException;
 import com.bone.system.common.result.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -42,6 +44,25 @@ public class GlobalExceptionHandler {
     public ApiResponse<Void> handleSystemException(SystemException e) {
         log.error("System exception", e);
         return ApiResponse.error(500, e.getMessage());
+    }
+
+    /**
+     * 方法级 {@code @PreAuthorize} 失败 → 403。必须显式处理，
+     * 否则会被下方 {@code @ExceptionHandler(Exception.class)} 兜底为 500。
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public ApiResponse<Void> handleAccessDeniedException(AccessDeniedException e) {
+        log.warn("Access denied: {}", e.getMessage());
+        return ApiResponse.error(403, "Forbidden");
+    }
+
+    /** 认证失败 → 401（Spring Security 通常在 filter 层就处理，留兜底）。 */
+    @ExceptionHandler(AuthenticationException.class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    public ApiResponse<Void> handleAuthenticationException(AuthenticationException e) {
+        log.warn("Authentication failed: {}", e.getMessage());
+        return ApiResponse.error(401, "Unauthorized");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

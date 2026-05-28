@@ -1,18 +1,31 @@
 openapi: 3.1.0
 info:
   title: Bone IAM API
-  version: 1.0.0
+  version: 1.1.0
   description: |
-    身份与访问管理（As-Is）。规范见 Bone-API-规范.md §13.1；
-    详设：doc/design/modules/6. IAM账号权限管理模块详细设计方案.md。
+    身份与访问管理（As-Is，**契约真源**）。规范见 Bone-API-规范.md §13.1；
+    详设：doc/design/modules/6. IAM账号权限管理模块详细设计方案.md（§5 与本 yaml 单源约束）。
+
+    认证：JWT Bearer（claim `scopes` = 权限码列表）；管理 API 经 `@EnableMethodSecurity`
+    + `@PreAuthorize("hasAuthority('iam:…')")` 校验细粒度权限码。
+    租户：`tenantId` 仅来自 JWT claim，写入 `TenantContext`，禁止 Body 覆盖。
 
     网关前缀：`/api/v1/iam` → bone-iam :8081。
 servers:
   - url: /api/v1/iam
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - bearerAuth: []
 paths:
   /login:
     post:
-      summary: 用户登录
+      summary: 用户登录（公开）
+      security: []
       responses:
         '200': { description: OK（ApiResponse + token） }
   /logout:
@@ -28,16 +41,20 @@ paths:
   /accounts:
     get:
       summary: 分页查询账号
+      description: 权限码 `iam:accounts:read`；非平台租户自动按 JWT tenantId 过滤。
       parameters:
         - { name: page, in: query, schema: { type: integer, default: 1 } }
         - { name: size, in: query, schema: { type: integer, default: 10 } }
         - { name: username, in: query, schema: { type: string } }
       responses:
         '200': { description: OK（PageResult.records） }
+        '403': { description: 缺少 iam:accounts:read }
     post:
       summary: 创建账号
+      description: 权限码 `iam:accounts:write`。
       responses:
         '200': { description: OK }
+        '403': { description: 缺少 iam:accounts:write }
   /accounts/{id}:
     get:
       summary: 账号详情
@@ -78,6 +95,52 @@ paths:
         - { name: id, in: path, required: true, schema: { type: string } }
       responses:
         '200': { description: OK }
+  /me:
+    get:
+      summary: 当前账号资料 + scopes
+      description: 仅需"已认证"，无独立权限码。
+      responses:
+        '200': { description: OK }
+        '401': { description: 未登录 / 会话失效 }
+    put:
+      summary: 自助更新昵称 / 手机 / 头像
+      description: 仅可更新当前登录账号；密码改动走 `/me/change-password`。
+      responses:
+        '200': { description: OK }
+        '401': { description: 未登录 }
+  /me/change-password:
+    post:
+      summary: 自助改密（校验旧密码 + 弱口令策略）
+      description: 不会自动吊销 refresh token；如需"改密即下线"前端需另调 `/accounts/{id}/sessions`。
+      responses:
+        '200': { description: OK }
+        '401': { description: 未登录 或 原密码错误 }
+        '400': { description: IAM_WEAK_PASSWORD }
+  /accounts/{accountId}/sessions:
+    get:
+      summary: 账号活跃 + 历史 refresh token 会话
+      description: 权限码 `iam:sessions:read`；脱敏，不返回 token_hash。
+      parameters:
+        - { name: accountId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: 撤销账号下全部活跃 refresh token（"踢人下线"）
+      description: 权限码 `iam:sessions:write`。
+      parameters:
+        - { name: accountId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /sessions/{id}:
+    delete:
+      summary: 撤销单条 refresh token
+      description: 权限码 `iam:sessions:write`；跨租户被拒绝。
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+        '403': { description: IAM_TENANT_ACCESS_DENIED }
+        '404': { description: IAM_SESSION_NOT_FOUND }
   /accounts/import:
     post:
       summary: 批量导入账号
@@ -95,7 +158,8 @@ paths:
         '200': { description: OK }
   /sso/callback:
     get:
-      summary: SSO 回调（未配置 IdP 时 501）
+      summary: SSO 回调（未配置 IdP 时 501，公开）
+      security: []
       responses:
         '501': { description: IAM_SSO_NOT_CONFIGURED }
   /mfa/status:
@@ -116,10 +180,12 @@ paths:
   /roles:
     get:
       summary: 角色列表
+      description: 权限码 `iam:roles:read`。
       responses:
         '200': { description: OK }
     post:
       summary: 创建角色
+      description: 权限码 `iam:roles:write`。
       responses:
         '200': { description: OK }
   /roles/{id}:
@@ -157,10 +223,12 @@ paths:
   /permissions:
     get:
       summary: 权限列表
+      description: 权限码 `iam:permissions:read`。
       responses:
         '200': { description: OK }
     post:
       summary: 创建权限
+      description: 权限码 `iam:permissions:write`。
       responses:
         '200': { description: OK }
   /permissions/tree:
@@ -178,19 +246,95 @@ paths:
   /audit/logs:
     get:
       summary: 审计日志分页
+      description: 权限码 `iam:audit:read`；非平台租户自动按 JWT tenantId 过滤。
       responses:
         '200': { description: OK }
+        '403': { description: 缺少 iam:audit:read }
   /audit/logs/export:
     get:
-      summary: 导出审计日志
+      summary: 导出审计日志 CSV
+      description: |
+        权限码 `iam:audit:read`；返回 `text/csv;charset=utf-8` + UTF-8 BOM，
+        `Content-Disposition=attachment; filename=iam-audit-logs.csv`，单次最多 10000 行。
       responses:
-        '200': { description: OK }
+        '200':
+          description: CSV 文件
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
   /audit/settings:
     get:
       summary: 获取审计设置
+      description: 权限码 `iam:audit:read`。
       responses:
         '200': { description: OK }
     put:
       summary: 更新审计设置
+      description: 权限码 `iam:audit:write`。
       responses:
         '200': { description: OK }
+  /tenants:
+    get:
+      summary: 租户列表（平台超管）
+      description: 权限码 `iam:tenants:read`（仅平台超管角色拥有）。
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: size, in: query, schema: { type: integer, default: 10 } }
+      responses:
+        '200': { description: OK }
+        '403': { description: 缺少 iam:tenants:read }
+    post:
+      summary: 创建租户
+      description: 权限码 `iam:tenants:write`。
+      responses:
+        '200': { description: OK }
+  /tenants/{id}:
+    get:
+      summary: 租户详情
+      description: 权限码 `iam:tenants:read`。
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    put:
+      summary: 更新租户
+      description: 权限码 `iam:tenants:write`。
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: 删除租户（级联清理 IAM 子表 + 软删租户）
+      description: 权限码 `iam:tenants:write`；禁止删除平台租户 id=0。
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+        '400': { description: IAM_TENANT_DELETE_FORBIDDEN（平台租户） }
+  /tenants/{id}/enable:
+    post:
+      summary: 启用租户
+      description: 权限码 `iam:tenants:write`。
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /tenants/{id}/disable:
+    post:
+      summary: 禁用租户
+      description: 权限码 `iam:tenants:write`。
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+  /tenants/{id}/quota:
+    put:
+      summary: 更新租户配额（maxAccounts / maxRoles）
+      description: 权限码 `iam:tenants:write`；`null` 表示不限制。
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: OK }
+        '400': { description: 配额非法 }

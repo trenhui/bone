@@ -10,6 +10,8 @@
 | [../adr/0011-aggregate-root-inheritance.md](../adr/0011-aggregate-root-inheritance.md) | AggregateRoot 继承 AbstractEntity |
 | [../adr/0012-system-exception-hierarchy.md](../adr/0012-system-exception-hierarchy.md) | SystemException 层次 |
 | [../adr/0013-extension-studio-repository-read-side.md](../adr/0013-extension-studio-repository-read-side.md) | 读侧 ReadPort（§18.5） |
+| [../adr/0015-metadata-runtime-jdbc-via-engine.md](../adr/0015-metadata-runtime-jdbc-via-engine.md) | 模式 B 运行时 JDBC（元数据 ADR-MS-001） |
+| [../adr/0016-metadata-catalog-abstract-entity-tenant.md](../adr/0016-metadata-catalog-abstract-entity-tenant.md) | catalog 聚合根 AbstractEntity + tenantId（ADR-MS-002） |
 | [../../bone-framework/bone-architecture-test/README.md](../../../bone-framework/bone-architecture-test/README.md) | ArchUnit 规则与 freeze 命令 |
 
 **阅读顺序**：新模块 → 主文档 §22.1 → 07-supplements 示例 → 接入 ArchUnit 附录 B.3。
