@@ -1,7 +1,10 @@
 package com.bone.metadata.adapter.web.controller;
 
 import com.bone.core.web.PlatformApiPaths;
+import com.bone.metadata.catalog.application.idempotency.CatalogIdempotencyService;
 import com.bone.metadata.sdk.domain.model.AllocationContext;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.bone.metadata.sdk.domain.model.FieldMetadata;
 import com.bone.metadata.sdk.metadata.api.MetadataService;
 import com.bone.metadata.sdk.metadata.client.FieldsByNamesRequest;
@@ -13,6 +16,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -30,7 +34,11 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "元数据管理", description = "扩展字段全生命周期管理")
 public class MetadataController {
 
+  private static final String ALLOCATE_PATH = PlatformApiPaths.METADATA_V1 + "/fields:allocate";
+
   private final MetadataService metadataService;
+  private final CatalogIdempotencyService catalogIdempotencyService;
+  private final ObjectMapper objectMapper;
 
   /** 复合查询扩展字段 POST /api/v1/metadata/fields:search */
   @PostMapping("/fields:search")
@@ -115,6 +123,7 @@ public class MetadataController {
       })
   @PreAuthorize("hasAuthority('metadata:write')")
   public ResponseEntity<List<FieldMetadata>> allocateAndPersistFields(
+      @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
       @Parameter(
               description = "批量创建字段请求实体列表",
               required = true,
@@ -123,9 +132,24 @@ public class MetadataController {
                       array = @ArraySchema(schema = @Schema(implementation = FieldMetadata.class))))
           @Valid
           @RequestBody
-          List<FieldMetadata> toCreate) {
+          List<FieldMetadata> toCreate)
+      throws JsonProcessingException {
+    String fingerprint =
+        CatalogIdempotencyService.fingerprint(objectMapper.writeValueAsString(toCreate));
+    var bodyType =
+        objectMapper.getTypeFactory().constructCollectionType(List.class, FieldMetadata.class);
+    Optional<ResponseEntity<List<FieldMetadata>>> replay =
+        catalogIdempotencyService.replayRawBody(
+            idempotencyKey, "POST", ALLOCATE_PATH, fingerprint, bodyType);
+    if (replay.isPresent()) {
+      return replay.get();
+    }
     List<FieldMetadata> created = metadataService.allocateAndPersistFields(toCreate);
-    return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    ResponseEntity<List<FieldMetadata>> response =
+        ResponseEntity.status(HttpStatus.CREATED).body(created);
+    catalogIdempotencyService.rememberRawBody(
+        idempotencyKey, "POST", ALLOCATE_PATH, fingerprint, response);
+    return response;
   }
 
   /** GET /api/v1/metadata/health */

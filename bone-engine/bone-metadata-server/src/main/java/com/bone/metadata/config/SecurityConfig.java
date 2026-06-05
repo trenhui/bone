@@ -57,6 +57,8 @@ public class SecurityConfig {
 
   private List<GrantedAuthority> getApiKeyAuthorities() {
     return List.of(
-        new SimpleGrantedAuthority("metadata:read"), new SimpleGrantedAuthority("metadata:write"));
+        new SimpleGrantedAuthority("metadata:read"),
+        new SimpleGrantedAuthority("metadata:write"),
+        new SimpleGrantedAuthority("metadata:publish"));
   }
 }

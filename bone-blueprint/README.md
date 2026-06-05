@@ -62,6 +62,14 @@
 bash scripts/ci/collect-blueprint-compliance.sh
 ```
 
+### REST 契约（OpenAPI）
+
+| 项 | 位置 |
+|----|------|
+| 契约文件 | [`doc/architecture/openapi/blueprint-orders-v1.yaml`](../doc/architecture/openapi/blueprint-orders-v1.yaml) |
+| 前缀 | `/api/v1/orders` |
+| 创建语义 | `201 Created` + `Location: /api/v1/orders/{id}` |
+
 ## 本模块里「全量演示」包含什么
 
 | 能力 | 用途 |

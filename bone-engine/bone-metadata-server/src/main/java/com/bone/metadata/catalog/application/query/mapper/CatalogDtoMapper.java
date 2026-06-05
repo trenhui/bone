@@ -28,6 +28,7 @@ public final class CatalogDtoMapper {
     dto.setStatusLabel(MetaEntityStatus.fromCode(e.getStatus()).name());
     dto.setSortOrder(e.getSortOrder());
     dto.setIcon(e.getIcon());
+    dto.setVersion(e.getVersion());
     return dto;
   }
 
@@ -43,6 +44,7 @@ public final class CatalogDtoMapper {
     dto.setRequired(f.getRequired());
     dto.setUnique(f.getUnique());
     dto.setSortOrder(f.getSortOrder());
+    dto.setVersion(f.getVersion());
     return dto;
   }
 
@@ -58,6 +60,7 @@ public final class CatalogDtoMapper {
     dto.setForeignKeyField(r.getForeignKeyField());
     dto.setRequired(r.getRequired());
     dto.setCascadeType(r.getCascadeType());
+    dto.setVersion(r.getVersion());
     return dto;
   }
 }

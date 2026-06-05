@@ -7,3 +7,15 @@ spring:
 
 server:
   port: 9001
+
+# catalog / runtime 横切（缓存、幂等）；集群部署可改为 redis
+bone:
+  metadata:
+    catalog:
+      runtime-entity-cache-ttl: 60s
+      runtime-entity-cache:
+        backend: memory
+        key-prefix: "bone:metadata:runtime-entity:"
+      idempotency:
+        backend: memory
+        key-prefix: "bone:metadata:idempotency:"

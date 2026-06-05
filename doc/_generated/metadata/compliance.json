@@ -1,6 +1,6 @@
 {
   "module": "metadata",
-  "generated_at": "2026-05-28T01:19:07Z",
+  "generated_at": "2026-05-28T02:36:14Z",
   "as_is": [
     {
       "id": "meta-ddl-five-tables",
@@ -182,51 +182,143 @@
           "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/adapter/web/controller/MetadataController.java"
         ]
       }
-    }
-  ],
-  "backlog": [
+    },
     {
-      "id": "catalog-if-match-etag",
-      "tier": "Target",
-      "title": "catalog PUT If-Match / 412（AIP-154）",
-      "reference": "详设 §5.A",
-      "tracking": "与 meta_*.version 字段同步"
+      "id": "catalog-if-match-entity",
+      "title": "meta_entity PUT/publish If-Match + 412（AIP-154）",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaFieldCatalogController.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaRelationCatalogController.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/application/command/handler/PublishMetaEntityHandler.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/application/command/handler/UpdateMetaEntityHandler.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/application/command/handler/UpdateMetaFieldHandler.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/application/command/handler/UpdateMetaRelationHandler.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/common/CatalogVersionSupport.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/common/exception/CatalogOptimisticLockException.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/config/GlobalExceptionHandler.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/web/RuntimeRecordController.java"
+        ]
+      }
     },
     {
       "id": "catalog-idempotency-key",
-      "tier": "Target",
-      "title": "publish / fields:allocate Idempotency-Key 窗口",
-      "reference": "详设 §5.A · 复用 extension StudioIdempotencyStore",
-      "tracking": "P1"
+      "title": "publish + fields:allocate Idempotency-Key（24h 进程内）",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/adapter/web/controller/MetadataController.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/application/idempotency/CatalogIdempotencyService.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/common/exception/CatalogIdempotencyConflictException.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/web/RuntimeRecordController.java"
+        ]
+      }
     },
     {
-      "id": "catalog-publish-scope",
-      "tier": "Target",
-      "title": "publish 拆出独立 metadata:publish scope（当前临时复用 write）",
-      "reference": "详设 §5.0 · IAM §4.3",
-      "tracking": "与 IAM 权限码登记同步"
-    },
-    {
-      "id": "catalog-problem-detail",
-      "tier": "Target",
-      "title": "失败信封统一改 RFC 7807 ProblemDetail（含 META_* 错误码）",
-      "reference": "详设 §5.A · Bone-API §11",
-      "tracking": "P1"
-    },
-    {
-      "id": "catalog-redis-cache",
-      "tier": "Target",
-      "title": "已发布 meta_entity Redis 短 TTL 缓存",
-      "reference": "详设 §7",
-      "tracking": "QPS 达标后"
+      "id": "metadata-problem-detail",
+      "title": "GlobalExceptionHandler → ApiResponse<ProblemDetail>",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/common/CatalogApiResponses.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/config/GlobalExceptionHandler.java"
+        ]
+      }
     },
     {
       "id": "runtime-query-params",
-      "tier": "Target",
-      "title": "runtime 列裁剪 / 过滤 / 排序 query 参数",
-      "reference": "详设 §5.A · §5.3.2",
-      "tracking": "P1"
+      "title": "runtime 列表 fields/sort/q 查询参数",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-metadata-engine/bone-metadata-engine-core/src/main/java/com/bone/metadata/engine/runtime/JdbcRuntimeRecordService.java",
+          "bone-engine/bone-metadata-engine/bone-metadata-engine-core/src/main/java/com/bone/metadata/engine/runtime/RuntimePageQuery.java",
+          "bone-engine/bone-metadata-engine/bone-metadata-engine-core/src/main/java/com/bone/metadata/engine/runtime/RuntimeQuerySupport.java"
+        ],
+        "server": [
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/web/RuntimeRecordController.java"
+        ]
+      }
     },
+    {
+      "id": "runtime-if-match",
+      "title": "runtime PUT If-Match（物理表 version 列）",
+      "status": "as_is",
+      "evidence": {
+        "engine": [
+          "bone-engine/bone-metadata-engine/bone-metadata-engine-core/src/main/java/com/bone/metadata/engine/runtime/JdbcRuntimeRecordService.java"
+        ],
+        "server": [
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaFieldCatalogController.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaRelationCatalogController.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/common/CatalogHttpSupport.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/adapter/web/RuntimeRecordController.java"
+        ]
+      }
+    },
+    {
+      "id": "catalog-runtime-entity-cache",
+      "title": "已发布 RUNTIME 实体 Caffeine 缓存（默认 60s）",
+      "status": "as_is",
+      "evidence": {
+        "java": []
+      }
+    },
+    {
+      "id": "metadata-publish-scope",
+      "title": "metadata:publish 权限码 + publish hasAnyAuthority",
+      "status": "as_is",
+      "evidence": {
+        "ddl": {
+          "permission": true
+        },
+        "java": [
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaEntityCatalogController.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/config/SecurityConfig.java"
+        ]
+      }
+    },
+    {
+      "id": "catalog-redis-cache",
+      "title": "RUNTIME 实体 Redis 缓存（配置 backend=redis + StringRedisTemplate）",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/config/CatalogInfrastructureConfiguration.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/runtime/RedisCachedRuntimeEntityCatalog.java"
+        ]
+      }
+    },
+    {
+      "id": "catalog-idempotency-redis",
+      "title": "Idempotency-Key Redis 存储（配置 idempotency.backend=redis）",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/infrastructure/idempotency/RedisCatalogIdempotencyStore.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/config/CatalogInfrastructureConfiguration.java"
+        ]
+      }
+    },
+    {
+      "id": "catalog-field-relation-version",
+      "title": "meta_field / meta_entity_relation version + If-Match PUT",
+      "status": "as_is",
+      "evidence": {
+        "ddl": {
+          "meta_field_version": true
+        },
+        "java": [
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaFieldCatalogController.java"
+        ]
+      }
+    }
+  ],
+  "backlog": [
     {
       "id": "entity-versions-api",
       "tier": "Vision",

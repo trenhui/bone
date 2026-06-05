@@ -8,7 +8,6 @@ import com.bone.metadata.catalog.domain.model.MetaField;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
 import com.bone.metadata.catalog.domain.repository.MetaFieldRepository;
 import com.bone.metadata.engine.runtime.PublishedRuntimeEntity;
-import com.bone.metadata.engine.runtime.RuntimeEntityCatalog;
 import com.bone.metadata.engine.runtime.RuntimeFieldColumn;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,12 +18,11 @@ import org.springframework.stereotype.Component;
 /** 从 catalog（meta_*）解析已发布 RUNTIME 实体，供 engine 动态 CRUD 使用 */
 @Component
 @RequiredArgsConstructor
-public class CatalogRuntimeEntityProvider implements RuntimeEntityCatalog {
+public class CatalogRuntimeEntityProvider {
 
   private final MetaEntityRepository metaEntityRepository;
   private final MetaFieldRepository metaFieldRepository;
 
-  @Override
   public Optional<PublishedRuntimeEntity> findPublishedRuntime(String entityCode, long tenantId) {
     List<MetaEntity> found =
         metaEntityRepository

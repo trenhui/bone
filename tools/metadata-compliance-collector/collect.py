@@ -291,6 +291,122 @@ def build_as_is_checks() -> list[dict]:
                 ),
             },
         },
+        {
+            "id": "catalog-if-match-entity",
+            "title": "meta_entity PUT/publish If-Match + 412（AIP-154）",
+            "status": "as_is",
+            "evidence": {
+                "java": _grep_files(
+                    SERVER_JAVA,
+                    r"CatalogVersionSupport|CatalogOptimisticLockException|HttpHeaders\.IF_MATCH",
+                ),
+            },
+        },
+        {
+            "id": "catalog-idempotency-key",
+            "title": "publish + fields:allocate Idempotency-Key（24h 进程内）",
+            "status": "as_is",
+            "evidence": {
+                "java": _grep_files(
+                    SERVER_JAVA,
+                    r"CatalogIdempotencyService|Idempotency-Key",
+                ),
+            },
+        },
+        {
+            "id": "metadata-problem-detail",
+            "title": "GlobalExceptionHandler → ApiResponse<ProblemDetail>",
+            "status": "as_is",
+            "evidence": {
+                "java": _grep_files(
+                    SERVER_JAVA,
+                    r"CatalogApiResponses|ApiResponse\.fail|ProblemDetail",
+                ),
+            },
+        },
+        {
+            "id": "runtime-query-params",
+            "title": "runtime 列表 fields/sort/q 查询参数",
+            "status": "as_is",
+            "evidence": {
+                "java": _grep_files(
+                    ENGINE_JAVA,
+                    r"RuntimePageQuery|RuntimeQuerySupport",
+                ),
+                "server": _grep_files(
+                    SERVER_JAVA,
+                    r"RuntimePageQuery\.parse|@RequestParam.*fields",
+                ),
+            },
+        },
+        {
+            "id": "runtime-if-match",
+            "title": "runtime PUT If-Match（物理表 version 列）",
+            "status": "as_is",
+            "evidence": {
+                "engine": _grep_files(ENGINE_JAVA, r"expectedVersion|META_PRECONDITION_FAILED"),
+                "server": _grep_files(SERVER_JAVA, r"HttpHeaders\.IF_MATCH.*RuntimeRecordController|parseIfMatchVersion"),
+            },
+        },
+        {
+            "id": "catalog-runtime-entity-cache",
+            "title": "已发布 RUNTIME 实体 Caffeine 缓存（默认 60s）",
+            "status": "as_is",
+            "evidence": {
+                "java": _grep_files(SERVER_JAVA, r"CachedCatalogRuntimeEntityProvider"),
+            },
+        },
+        {
+            "id": "metadata-publish-scope",
+            "title": "metadata:publish 权限码 + publish hasAnyAuthority",
+            "status": "as_is",
+            "evidence": {
+                "ddl": {"permission": "metadata:publish" in _read(INIT_SQL)},
+                "java": _grep_files(
+                    SERVER_JAVA,
+                    r"metadata:publish|hasAnyAuthority\('metadata:publish'",
+                ),
+            },
+        },
+        {
+            "id": "catalog-redis-cache",
+            "title": "RUNTIME 实体 Redis 缓存（配置 backend=redis + StringRedisTemplate）",
+            "status": "as_is",
+            "evidence": {
+                "java": _grep_files(
+                    SERVER_JAVA,
+                    r"RedisCachedRuntimeEntityCatalog|runtime-entity-cache",
+                ),
+            },
+        },
+        {
+            "id": "catalog-idempotency-redis",
+            "title": "Idempotency-Key Redis 存储（配置 idempotency.backend=redis）",
+            "status": "as_is",
+            "evidence": {
+                "java": _grep_files(
+                    SERVER_JAVA,
+                    r"RedisCatalogIdempotencyStore|idempotency:\s*\n\s*backend",
+                ),
+            },
+        },
+        {
+            "id": "catalog-field-relation-version",
+            "title": "meta_field / meta_entity_relation version + If-Match PUT",
+            "status": "as_is",
+            "evidence": {
+                "ddl": {
+                    "meta_field_version": "meta_field" in _read(INIT_SQL)
+                    and "version" in _read(INIT_SQL).split("CREATE TABLE meta_field")[1].split(
+                        "CREATE TABLE"
+                    )[0],
+                },
+                "java": _grep_files(
+                    SERVER_JAVA,
+                    r"MetaField.*version|MetaEntityRelation.*version|MetaFieldCatalogController",
+                ),
+            },
+        },
     ]
 
 

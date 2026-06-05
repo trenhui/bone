@@ -16,6 +16,7 @@ BACKLOG_YAML = COLLECTOR_DIR / "backlog.yaml"
 MAIN_JAVA = ROOT / "bone-blueprint" / "src" / "main" / "java"
 TEST_JAVA = ROOT / "bone-blueprint" / "src" / "test" / "java"
 RESOURCES = ROOT / "bone-blueprint" / "src" / "main" / "resources"
+OPENAPI = ROOT / "doc" / "architecture" / "openapi" / "blueprint-orders-v1.yaml"
 
 
 def _read(path: Path) -> str:
@@ -55,9 +56,39 @@ def load_backlog() -> list[dict]:
     return items
 
 
+def _scan_openapi_paths(openapi: Path) -> dict:
+    text = _read(openapi)
+    paths = re.findall(r"^  (/[^\n:]+):\s*$", text, re.MULTILINE)
+    return {
+        "openapi_file": str(openapi.relative_to(ROOT)) if openapi.exists() else "",
+        "path_count": len(paths),
+        "paths_sample": paths[:8],
+    }
+
+
 def build_as_is_checks() -> list[dict]:
     schema = _read(RESOURCES / "schema.sql")
     return [
+        {
+            "id": "openapi-blueprint-orders",
+            "title": "blueprint-orders-v1 OpenAPI",
+            "status": "as_is",
+            "evidence": {"openapi": _scan_openapi_paths(OPENAPI)},
+        },
+        {
+            "id": "adapter-rest-contract",
+            "title": "adapter 入参/出参 DTO + 201 Location",
+            "status": "as_is",
+            "evidence": {
+                "java": _grep_files(
+                    MAIN_JAVA,
+                    r"OrderPageQry|OrderSummaryResp|ResponseEntity\.created",
+                ),
+                "jakarta_validation": _grep_files(
+                    MAIN_JAVA, r"jakarta\.validation"
+                )[:5],
+            },
+        },
         {
             "id": "archunit",
             "title": "ArchUnit 分层（BoneDddArchRules）",
@@ -148,6 +179,11 @@ def render_as_is_md(checks: list[dict], generated_at: str) -> str:
         parts = []
         if ev.get("schema_has_bp_outbox"):
             parts.append("schema: bp_outbox")
+        openapi = ev.get("openapi")
+        if isinstance(openapi, dict) and openapi.get("path_count"):
+            parts.append(f"OpenAPI {openapi['path_count']} paths")
+        if ev.get("jakarta_validation"):
+            parts.append("jakarta.validation")
         if ev.get("java"):
             parts.append(f"{len(ev['java'])} 个 Java 文件")
         if ev.get("sql"):

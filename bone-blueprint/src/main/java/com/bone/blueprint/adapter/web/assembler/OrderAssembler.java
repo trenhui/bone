@@ -1,18 +1,25 @@
 package com.bone.blueprint.adapter.web.assembler;
 
 import com.bone.blueprint.adapter.web.dto.request.CreateOrderReq;
+import com.bone.blueprint.adapter.web.dto.request.OrderPageQry;
 import com.bone.blueprint.adapter.web.dto.response.OrderDetailResp;
+import com.bone.blueprint.adapter.web.dto.response.OrderSummaryResp;
 import com.bone.blueprint.application.command.cmd.CancelOrderCommand;
 import com.bone.blueprint.application.command.cmd.CreateOrderCommand;
 import com.bone.blueprint.application.command.cmd.PayOrderCommand;
 import com.bone.blueprint.application.query.dto.OrderDto;
 import com.bone.blueprint.application.query.qry.OrderDetailQuery;
+import com.bone.blueprint.application.query.qry.OrderPageQuery;
 import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring")
 public interface OrderAssembler {
 
     CreateOrderCommand toCreateOrderCommand(CreateOrderReq request);
+
+    OrderPageQuery toOrderPageQuery(OrderPageQry qry);
+
+    OrderSummaryResp toOrderSummaryResp(OrderDto orderDto);
 
     default PayOrderCommand toPayOrderCommand(Long orderId) {
         PayOrderCommand command = new PayOrderCommand();

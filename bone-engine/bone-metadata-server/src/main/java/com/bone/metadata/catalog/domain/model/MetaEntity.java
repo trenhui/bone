@@ -110,11 +110,8 @@ public class MetaEntity extends AbstractEntity<Long> {
     if (deliveryMode != null) {
       this.deliveryMode = deliveryMode;
     }
+    bumpVersion();
     this.setUpdatedAt(new Date());
-  }
-
-  public MetaDeliveryMode deliveryModeEnum() {
-    return MetaDeliveryMode.fromCode(deliveryMode);
   }
 
   public void publish() {
@@ -122,7 +119,16 @@ public class MetaEntity extends AbstractEntity<Long> {
       throw new DomainException("实体已发布");
     }
     this.status = MetaEntityStatus.PUBLISHED.getCode();
+    bumpVersion();
     this.setUpdatedAt(new Date());
+  }
+
+  private void bumpVersion() {
+    this.version = (this.version == null ? 0 : this.version) + 1;
+  }
+
+  public MetaDeliveryMode deliveryModeEnum() {
+    return MetaDeliveryMode.fromCode(deliveryMode);
   }
 
   public MetaEntityStatus statusEnum() {

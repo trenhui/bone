@@ -223,6 +223,7 @@ VALUES
     (6, 'iam:permissions:write', 'IAM-权限维护', 'iam', 'permissions', 'write', 'OPERATION', 60, NULL),
     (7, 'metadata:read', '元数据-读', 'metadata', '*', 'read', 'OPERATION', 70, NULL),
     (8, 'metadata:write', '元数据-写', 'metadata', '*', 'write', 'OPERATION', 80, NULL),
+    (19, 'metadata:publish', '元数据-发布', 'metadata', '*', 'publish', 'OPERATION', 85, 'catalog 实体 publish'),
     (9, 'extension:points:read', '扩展点-读', 'extension', 'points', 'read', 'OPERATION', 90, NULL),
     (10, 'extension:points:write', '扩展点-写', 'extension', 'points', 'write', 'OPERATION', 100, NULL),
     (11, 'extension:plugins:deploy', '插件-部署', 'extension', 'plugins', 'deploy', 'OPERATION', 110, NULL),
@@ -239,7 +240,7 @@ VALUES
     (1, 1, 1), (2, 1, 2), (3, 1, 3), (4, 1, 4), (5, 1, 5), (6, 1, 6),
     (7, 1, 7), (8, 1, 8), (9, 1, 9), (10, 1, 10), (11, 1, 11),
     (12, 1, 12), (13, 1, 13), (14, 1, 14), (15, 1, 15),
-    (16, 1, 16), (17, 1, 17), (18, 1, 18);
+    (16, 1, 16), (17, 1, 17), (18, 1, 18), (19, 1, 19);
 
 -- ============================================================
 -- 2. System
@@ -543,6 +544,7 @@ CREATE TABLE meta_field (
     created_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
     updated_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
     UNIQUE KEY uk_meta_f_entity_code (entity_id, code),
     KEY idx_meta_f_entity (entity_id)
@@ -565,6 +567,7 @@ CREATE TABLE meta_entity_relation (
     created_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
     updated_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
     deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
     PRIMARY KEY (id),
     UNIQUE KEY uk_meta_er_name (tenant_id, name),
     KEY idx_meta_er_source (source_entity_id),

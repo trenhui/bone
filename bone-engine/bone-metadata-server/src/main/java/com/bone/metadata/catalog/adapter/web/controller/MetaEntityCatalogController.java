@@ -12,9 +12,14 @@ import com.bone.metadata.catalog.application.query.dto.MetaEntityDTO;
 import com.bone.metadata.catalog.application.query.handler.MetaEntityDetailQueryHandler;
 import com.bone.metadata.catalog.application.query.handler.MetaEntityPageQueryHandler;
 import com.bone.metadata.catalog.application.query.qry.MetaEntityPageQuery;
+import com.bone.metadata.catalog.application.idempotency.CatalogIdempotencyService;
+import com.bone.metadata.catalog.common.CatalogHttpSupport;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
 import java.net.URI;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -24,6 +29,8 @@ import org.springframework.web.bind.annotation.*;
  *
  * <p>权限 scope：read → {@code metadata:read}，write/publish → {@code metadata:write}（
  * Target 态发布操作可独立为 {@code metadata:publish}，见详设 §5.1）。
+ *
+ * <p>横切：创建 {@code 201+Location}；更新 {@code If-Match → 412}；发布 {@code Idempotency-Key}。
  */
 @RestController
 @RequestMapping("/api/v1/metadata/entities")
@@ -36,6 +43,8 @@ public class MetaEntityCatalogController {
   private final PublishMetaEntityHandler publishMetaEntityHandler;
   private final MetaEntityPageQueryHandler metaEntityPageQueryHandler;
   private final MetaEntityDetailQueryHandler metaEntityDetailQueryHandler;
+  private final CatalogIdempotencyService catalogIdempotencyService;
+  private final ObjectMapper objectMapper;
 
   @PostMapping
   @PreAuthorize("hasAuthority('metadata:write')")
@@ -47,10 +56,16 @@ public class MetaEntityCatalogController {
 
   @PutMapping("/{id}")
   @PreAuthorize("hasAuthority('metadata:write')")
-  public ApiResponse<Void> update(
-      @PathVariable Long id, @Valid @RequestBody UpdateMetaEntityCommand cmd) {
-    updateMetaEntityHandler.handle(id, cmd);
-    return ApiResponse.success();
+  public ResponseEntity<ApiResponse<Void>> update(
+      @PathVariable Long id,
+      @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
+      @Valid @RequestBody UpdateMetaEntityCommand cmd) {
+    Integer version =
+        updateMetaEntityHandler.handle(
+            id, cmd, CatalogHttpSupport.parseIfMatchVersion(ifMatch).orElse(null));
+    return ResponseEntity.ok()
+        .eTag(CatalogHttpSupport.formatEtag(version))
+        .body(ApiResponse.success());
   }
 
   @GetMapping
@@ -61,15 +76,38 @@ public class MetaEntityCatalogController {
 
   @GetMapping("/{id}")
   @PreAuthorize("hasAuthority('metadata:read')")
-  public ApiResponse<MetaEntityDTO> detail(@PathVariable Long id) {
-    return ApiResponse.success(metaEntityDetailQueryHandler.handle(id));
+  public ResponseEntity<ApiResponse<MetaEntityDTO>> detail(@PathVariable Long id) {
+    MetaEntityDTO dto = metaEntityDetailQueryHandler.handle(id);
+    return ResponseEntity.ok()
+        .eTag(CatalogHttpSupport.formatEtag(dto.getVersion()))
+        .body(ApiResponse.success(dto));
   }
 
   @PostMapping("/{id}/publish")
-  @PreAuthorize("hasAuthority('metadata:write')")
-  public ApiResponse<Void> publish(@PathVariable Long id) {
-    publishMetaEntityHandler.handle(id);
-    return ApiResponse.success();
+  @PreAuthorize("hasAnyAuthority('metadata:publish', 'metadata:write')")
+  public ResponseEntity<ApiResponse<Void>> publish(
+      @PathVariable Long id,
+      @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
+      @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
+    String path = "/api/v1/metadata/entities/" + id + "/publish";
+    String fingerprint = CatalogIdempotencyService.fingerprint("");
+    var apiVoidType =
+        objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, Void.class);
+    Optional<ResponseEntity<ApiResponse<Void>>> replay =
+        catalogIdempotencyService.replay(idempotencyKey, "POST", path, fingerprint, apiVoidType);
+    if (replay.isPresent()) {
+      return replay.get();
+    }
+    Integer version =
+        publishMetaEntityHandler.handle(
+            id, CatalogHttpSupport.parseIfMatchVersion(ifMatch).orElse(null));
+    ResponseEntity<ApiResponse<Void>> response =
+        ResponseEntity.ok()
+            .eTag(CatalogHttpSupport.formatEtag(version))
+            .body(ApiResponse.success());
+    catalogIdempotencyService.rememberApiResponse(
+        idempotencyKey, "POST", path, fingerprint, response);
+    return response;
   }
 
   @DeleteMapping("/{id}")

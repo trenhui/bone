@@ -38,3 +38,6 @@ components:
 | [masterdata-v1.yaml](./masterdata-v1.yaml) | bone-masterdata | `/api/v1/masterdata` |
 | [integration-v1.yaml](./integration-v1.yaml) | bone-integration | `/api/v1/integration` |
 | [metadata-runtime-v1.yaml](./metadata-runtime-v1.yaml) | bone-metadata-server（模式 B） | `/api/v1/runtime` |
+| [blueprint-orders-v1.yaml](./blueprint-orders-v1.yaml) | bone-blueprint（DDD 样板） | `/api/v1/orders` |
+
+> **blueprint As-Is**：[`doc/_generated/blueprint/`](../../_generated/blueprint/) · `tools/blueprint-compliance-collector/`

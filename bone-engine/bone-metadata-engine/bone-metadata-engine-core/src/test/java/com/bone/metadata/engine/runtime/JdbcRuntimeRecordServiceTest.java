@@ -28,7 +28,8 @@ class JdbcRuntimeRecordServiceTest {
         .execute(
             "CREATE TABLE demo_order ("
                 + "id BIGINT PRIMARY KEY, tenant_id BIGINT NOT NULL, "
-                + "order_no VARCHAR(64) NOT NULL, amount DOUBLE, deleted SMALLINT NOT NULL DEFAULT 0)");
+                + "order_no VARCHAR(64) NOT NULL, amount DOUBLE, version INT NOT NULL DEFAULT 0, "
+                + "deleted SMALLINT NOT NULL DEFAULT 0)");
     RuntimeEntityCatalog catalog =
         (code, tenantId) -> {
           if (!"demo_order".equals(code)) {
@@ -62,5 +63,27 @@ class JdbcRuntimeRecordServiceTest {
   void shouldRejectUnknownEntity() {
     assertThrows(
         RuntimeRecordException.class, () -> service.page("unknown", 1L, 1, 10));
+  }
+
+  @Test
+  void shouldFilterAndSortWithQueryParams() {
+    service.create("demo_order", 1L, Map.of("order_no", "O-A", "amount", 10), 1L);
+    service.create("demo_order", 1L, Map.of("order_no", "O-B", "amount", 20), 2L);
+
+    var query = RuntimePageQuery.parse("order_no,amount", "amount", "order_no:O-B");
+    var page = service.page("demo_order", 1L, 1, 10, query);
+
+    assertEquals(1, page.getRecords().size());
+    assertEquals("O-B", page.getRecords().get(0).get("order_no"));
+  }
+
+  @Test
+  void shouldRejectVersionMismatchOnUpdate() {
+    service.create("demo_order", 1L, Map.of("order_no", "O-1", "amount", 1), 100L);
+    assertThrows(
+        RuntimeRecordException.class,
+        () ->
+            service.update(
+                "demo_order", 1L, "100", Map.of("amount", 2), 999));
   }
 }

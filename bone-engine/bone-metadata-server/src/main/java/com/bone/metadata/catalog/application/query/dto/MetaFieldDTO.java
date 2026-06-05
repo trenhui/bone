@@ -14,4 +14,6 @@ public class MetaFieldDTO {
   private Boolean required;
   private Boolean unique;
   private Integer sortOrder;
+  /** 乐观锁版本（PUT 使用 If-Match: "v{version}"） */
+  private Integer version;
 }

@@ -43,6 +43,9 @@ public class MetaEntityRelation extends AbstractEntity<Long> {
   @Column(name = "cascade_type")
   private String cascadeType;
 
+  @Column(name = "version", nullable = false)
+  private Integer version;
+
   public static MetaEntityRelation create(
       Long id,
       Long tenantId,
@@ -58,6 +61,7 @@ public class MetaEntityRelation extends AbstractEntity<Long> {
     r.targetEntityId = targetEntityId;
     r.type = relationType;
     r.required = false;
+    r.version = 0;
     Date now = new Date();
     r.setCreatedAt(now);
     r.setUpdatedAt(now);
@@ -82,6 +86,11 @@ public class MetaEntityRelation extends AbstractEntity<Long> {
       this.required = required;
     }
     this.cascadeType = cascadeType;
+    bumpVersion();
     this.setUpdatedAt(new Date());
+  }
+
+  private void bumpVersion() {
+    this.version = (this.version == null ? 0 : this.version) + 1;
   }
 }

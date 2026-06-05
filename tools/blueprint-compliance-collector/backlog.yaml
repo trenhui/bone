@@ -1,12 +1,6 @@
 # bone-blueprint [Target] / [Vision] — 勿写已落地演示能力
 
 items:
-  - id: order-openapi-v1
-    tier: Target
-    title: 订单 API OpenAPI 契约（extension-v1 同级）
-    reference: Bone-API-规范 §15
-    tracking: 当前仅 Controller + README；无 orders-v1.yaml
-
   - id: outbox-cluster-dedup
     tier: Target
     title: Outbox Relay 多实例去重/Leader 选举

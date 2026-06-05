@@ -11,9 +11,11 @@ import com.bone.metadata.catalog.application.query.dto.MetaRelationDTO;
 import com.bone.metadata.catalog.application.query.handler.MetaRelationDetailQueryHandler;
 import com.bone.metadata.catalog.application.query.handler.MetaRelationPageQueryHandler;
 import com.bone.metadata.catalog.application.query.qry.MetaRelationPageQuery;
+import com.bone.metadata.catalog.common.CatalogHttpSupport;
 import jakarta.validation.Valid;
 import java.net.URI;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -23,8 +25,6 @@ import org.springframework.web.bind.annotation.*;
  *
  * <p>类名 {@code MetaRelation*}（短称）与 DDL 表 {@code meta_entity_relation} / 领域聚合根 {@code
  * MetaEntityRelation} 对齐；HTTP 路径仍用语义化 {@code relationships}。
- *
- * <p>权限 scope：read → {@code metadata:read}，write → {@code metadata:write}。
  */
 @RestController
 @RequestMapping("/api/v1/metadata/relationships")
@@ -48,10 +48,16 @@ public class MetaRelationCatalogController {
 
   @PutMapping("/{id}")
   @PreAuthorize("hasAuthority('metadata:write')")
-  public ApiResponse<Void> update(
-      @PathVariable Long id, @Valid @RequestBody UpdateMetaRelationCommand cmd) {
-    updateMetaRelationHandler.handle(id, cmd);
-    return ApiResponse.success();
+  public ResponseEntity<ApiResponse<Void>> update(
+      @PathVariable Long id,
+      @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
+      @Valid @RequestBody UpdateMetaRelationCommand cmd) {
+    Integer version =
+        updateMetaRelationHandler.handle(
+            id, cmd, CatalogHttpSupport.parseIfMatchVersion(ifMatch).orElse(null));
+    return ResponseEntity.ok()
+        .eTag(CatalogHttpSupport.formatEtag(version))
+        .body(ApiResponse.success());
   }
 
   @GetMapping
@@ -62,8 +68,11 @@ public class MetaRelationCatalogController {
 
   @GetMapping("/{id}")
   @PreAuthorize("hasAuthority('metadata:read')")
-  public ApiResponse<MetaRelationDTO> detail(@PathVariable Long id) {
-    return ApiResponse.success(metaRelationDetailQueryHandler.handle(id));
+  public ResponseEntity<ApiResponse<MetaRelationDTO>> detail(@PathVariable Long id) {
+    MetaRelationDTO dto = metaRelationDetailQueryHandler.handle(id);
+    return ResponseEntity.ok()
+        .eTag(CatalogHttpSupport.formatEtag(dto.getVersion()))
+        .body(ApiResponse.success(dto));
   }
 
   @DeleteMapping("/{id}")

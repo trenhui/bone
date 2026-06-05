@@ -73,6 +73,13 @@ public class ApiResponse<T> implements Serializable {
         return new ApiResponse<>(500, message, null);
     }
 
+    /**
+     * 失败响应（HTTP 状态码 + 消息 + 详情体，如 {@link com.bone.core.model.ProblemDetail}）
+     */
+    public static <T> ApiResponse<T> fail(int code, String message, T data) {
+        return new ApiResponse<>(code, message, data);
+    }
+
     public boolean isSuccess() {
         return code == 200;
     }

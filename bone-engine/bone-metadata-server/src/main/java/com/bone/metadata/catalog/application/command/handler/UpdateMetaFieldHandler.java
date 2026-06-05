@@ -2,6 +2,7 @@ package com.bone.metadata.catalog.application.command.handler;
 
 import com.bone.core.exception.BizException;
 import com.bone.metadata.catalog.application.command.cmd.UpdateMetaFieldCommand;
+import com.bone.metadata.catalog.common.CatalogVersionSupport;
 import com.bone.metadata.catalog.domain.model.MetaField;
 import com.bone.metadata.catalog.domain.repository.MetaFieldRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,11 +16,12 @@ public class UpdateMetaFieldHandler {
   private final MetaFieldRepository metaFieldRepository;
 
   @Transactional
-  public void handle(Long id, UpdateMetaFieldCommand cmd) {
+  public Integer handle(Long id, UpdateMetaFieldCommand cmd, Integer expectedVersion) {
     MetaField field = metaFieldRepository.findById(id);
     if (field == null) {
       throw BizException.of("字段不存在: " + id);
     }
+    CatalogVersionSupport.assertExpected(expectedVersion, field.getVersion());
     field.update(
         cmd.getDisplayName(),
         cmd.getType(),
@@ -30,5 +32,6 @@ public class UpdateMetaFieldHandler {
         cmd.getComment(),
         cmd.getSortOrder());
     metaFieldRepository.update(field);
+    return field.getVersion();
   }
 }

@@ -240,7 +240,7 @@ mvn spring-boot:run
 
 ### 创建订单
 ```bash
-POST /api/orders
+POST /api/v1/orders
 Content-Type: application/json
 
 {
@@ -254,21 +254,27 @@ Content-Type: application/json
     }
   ]
 }
+# 201 Created + Location: /api/v1/orders/{id}，body: { "data": { "id": ... } }
 ```
 
 ### 支付订单
 ```bash
-POST /api/orders/{id}/pay
+POST /api/v1/orders/{id}/pay
 ```
 
 ### 取消订单
 ```bash
-POST /api/orders/{id}/cancel
+POST /api/v1/orders/{id}/cancel
 ```
 
 ### 查询订单详情
 ```bash
-GET /api/orders/{id}
+GET /api/v1/orders/{id}
+```
+
+### 分页查询订单
+```bash
+GET /api/v1/orders?customerId=1&status=PAID&pageNum=1&pageSize=10
 ```
 
 ## 总结

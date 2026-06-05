@@ -28,23 +28,36 @@ public class JdbcRuntimeRecordService {
 
   public PageResult<Map<String, Object>> page(
       String entityCode, long tenantId, int page, int size) {
+    return page(entityCode, tenantId, page, size, RuntimePageQuery.EMPTY);
+  }
+
+  public PageResult<Map<String, Object>> page(
+      String entityCode, long tenantId, int page, int size, RuntimePageQuery query) {
     PublishedRuntimeEntity entity = requireRuntimeEntity(entityCode, tenantId);
     int safePage = Math.max(1, page);
     int safeSize = Math.min(Math.max(1, size), 200);
     int offset = (safePage - 1) * safeSize;
 
+    RuntimePageQuery effective = query == null ? RuntimePageQuery.EMPTY : query;
     String table = quoteTable(entity.physicalTableName());
-    String where = buildTenantWhere(entity, tenantId);
+    MapSqlParameterSource params = tenantParams(entity, tenantId);
+    String filterClause = RuntimeQuerySupport.buildFilterClause(entity, effective, params);
+    String where = buildTenantWhere(entity, tenantId) + filterClause;
+
     String countSql = "SELECT COUNT(*) FROM " + table + where;
+    List<String> selectCols = RuntimeQuerySupport.resolveSelectColumns(entity, effective);
+    String selectList = selectCols.size() == 1 && "*".equals(selectCols.get(0))
+        ? "*"
+        : String.join(", ", selectCols);
     String listSql =
-        "SELECT * FROM "
+        "SELECT "
+            + selectList
+            + " FROM "
             + table
             + where
-            + " ORDER BY `"
-            + sanitizeIdentifier(entity.primaryKeyColumn())
-            + "` DESC LIMIT :limit OFFSET :offset";
+            + RuntimeQuerySupport.buildOrderBy(entity, effective)
+            + " LIMIT :limit OFFSET :offset";
 
-    MapSqlParameterSource params = tenantParams(entity, tenantId);
     Long total = jdbc.queryForObject(countSql, params, Long.class);
     params.addValue("limit", safeSize);
     params.addValue("offset", offset);
@@ -99,34 +112,64 @@ public class JdbcRuntimeRecordService {
 
   public Map<String, Object> update(
       String entityCode, long tenantId, String recordId, Map<String, Object> body) {
+    return update(entityCode, tenantId, recordId, body, null);
+  }
+
+  public Map<String, Object> update(
+      String entityCode,
+      long tenantId,
+      String recordId,
+      Map<String, Object> body,
+      Integer expectedVersion) {
     PublishedRuntimeEntity entity = requireRuntimeEntity(entityCode, tenantId);
     Map<String, Object> payload = filterWritable(entity, body);
     payload.remove(entity.primaryKeyColumn());
 
-    if (payload.isEmpty()) {
+    boolean versioned = entityHasColumn(entity, "version");
+    if (expectedVersion != null && !versioned) {
+      throw new RuntimeRecordException(
+          "META_RUNTIME_INVALID_QUERY", "物理表无 version 列，不支持 If-Match");
+    }
+
+    if (payload.isEmpty() && !(versioned && expectedVersion != null)) {
       return getById(entityCode, tenantId, recordId);
     }
 
-    String setClause =
-        payload.keySet().stream()
-            .map(c -> "`" + sanitizeIdentifier(c) + "` = :" + c)
-            .collect(Collectors.joining(", "));
+    List<String> setParts = new ArrayList<>();
+    for (String c : payload.keySet()) {
+      setParts.add("`" + sanitizeIdentifier(c) + "` = :" + c);
+    }
+    if (versioned) {
+      setParts.add("`version` = `version` + 1");
+    }
+    String setClause = String.join(", ", setParts);
+    if (setClause.isEmpty() && versioned) {
+      setClause = "`version` = `version` + 1";
+    }
+
     String pk = sanitizeIdentifier(entity.primaryKeyColumn());
+    StringBuilder where = new StringBuilder(buildTenantWhere(entity, tenantId));
+    where.append(" AND `").append(pk).append("` = :pk");
+    if (versioned && expectedVersion != null) {
+      where.append(" AND `version` = :expectedVersion");
+    }
+
     String sql =
-        "UPDATE "
-            + quoteTable(entity.physicalTableName())
-            + " SET "
-            + setClause
-            + buildTenantWhere(entity, tenantId)
-            + " AND `"
-            + pk
-            + "` = :pk";
+        "UPDATE " + quoteTable(entity.physicalTableName()) + " SET " + setClause + where;
 
     MapSqlParameterSource params = new MapSqlParameterSource(payload);
     params.addValue("pk", parsePkValue(recordId));
     addTenantParam(entity, tenantId, params);
+    if (versioned && expectedVersion != null) {
+      params.addValue("expectedVersion", expectedVersion);
+    }
     int updated = jdbc.update(sql, params);
     if (updated == 0) {
+      if (versioned && expectedVersion != null) {
+        throw new RuntimeRecordException(
+            "META_PRECONDITION_FAILED",
+            "版本冲突：If-Match v" + expectedVersion + " 与当前记录不一致");
+      }
       throw new RuntimeRecordException("META_RUNTIME_RECORD_NOT_FOUND", "记录不存在: " + recordId);
     }
     return getById(entityCode, tenantId, recordId);

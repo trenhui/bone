@@ -2,12 +2,13 @@ package com.bone.blueprint.adapter.web.controller;
 
 import com.bone.blueprint.adapter.web.assembler.OrderAssembler;
 import com.bone.blueprint.adapter.web.dto.request.CreateOrderReq;
+import com.bone.blueprint.adapter.web.dto.request.OrderPageQry;
 import com.bone.blueprint.adapter.web.dto.response.OrderDetailResp;
+import com.bone.blueprint.adapter.web.dto.response.OrderSummaryResp;
 import com.bone.blueprint.application.command.cmd.CancelOrderCommand;
 import com.bone.blueprint.application.command.cmd.CreateOrderCommand;
 import com.bone.blueprint.application.command.cmd.PayOrderCommand;
 import com.bone.blueprint.application.query.qry.OrderDetailQuery;
-import com.bone.blueprint.application.query.qry.OrderPageQuery;
 import com.bone.blueprint.application.command.handler.CancelOrderCommandHandler;
 import com.bone.blueprint.application.command.handler.CreateOrderCommandHandler;
 import com.bone.blueprint.application.command.handler.PayOrderCommandHandler;
@@ -19,8 +20,12 @@ import com.bone.core.result.PageResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import javax.validation.Valid;
+import jakarta.validation.Valid;
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,7 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "订单管理", description = "提供订单相关的Web接口")
 @RestController
-@RequestMapping("/api/orders")
+@RequestMapping("/api/v1/orders")
 @RequiredArgsConstructor
 public class OrderController {
 
@@ -44,16 +49,22 @@ public class OrderController {
 
     @Operation(summary = "分页查询订单", description = "按客户、状态分页查询订单列表")
     @GetMapping
-    public ApiResponse<PageResult<OrderDto>> page(@ModelAttribute OrderPageQuery query) {
-        return ApiResponse.success(orderPageQueryHandler.handle(query));
+    public ApiResponse<PageResult<OrderSummaryResp>> page(@Valid @ModelAttribute OrderPageQry qry) {
+        PageResult<OrderDto> page = orderPageQueryHandler.handle(orderAssembler.toOrderPageQuery(qry));
+        List<OrderSummaryResp> rows =
+                page.getList().stream().map(orderAssembler::toOrderSummaryResp).toList();
+        return ApiResponse.success(
+                PageResult.of(rows, page.getTotal(), page.getPageNum(), page.getPageSize()));
     }
 
-    @Operation(summary = "创建订单", description = "创建新的订单")
+    @Operation(summary = "创建订单", description = "创建新的订单，返回 201 与资源 Location")
     @PostMapping
-    public ApiResponse<Long> create(
+    public ResponseEntity<ApiResponse<Map<String, Object>>> create(
             @Parameter(description = "订单创建请求") @Valid @RequestBody CreateOrderReq request) {
         CreateOrderCommand command = orderAssembler.toCreateOrderCommand(request);
-        return ApiResponse.success(createOrderCommandHandler.handle(command));
+        Long id = createOrderCommandHandler.handle(command);
+        return ResponseEntity.created(URI.create("/api/v1/orders/" + id))
+                .body(ApiResponse.success(Map.of("id", id)));
     }
 
     @Operation(summary = "支付订单", description = "支付指定的订单")

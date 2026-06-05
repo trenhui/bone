@@ -1,7 +1,41 @@
 {
-  "generated_at": "2026-05-27T09:42:30Z",
+  "generated_at": "2026-06-03T02:27:01Z",
   "module": "blueprint",
   "as_is": [
+    {
+      "id": "openapi-blueprint-orders",
+      "title": "blueprint-orders-v1 OpenAPI",
+      "status": "as_is",
+      "evidence": {
+        "openapi": {
+          "openapi_file": "doc/architecture/openapi/blueprint-orders-v1.yaml",
+          "path_count": 3,
+          "paths_sample": [
+            "/{id}",
+            "/{id}/pay",
+            "/{id}/cancel"
+          ]
+        }
+      }
+    },
+    {
+      "id": "adapter-rest-contract",
+      "title": "adapter 入参/出参 DTO + 201 Location",
+      "status": "as_is",
+      "evidence": {
+        "java": [
+          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/web/assembler/OrderAssembler.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/web/controller/OrderController.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/web/dto/request/OrderPageQry.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/web/dto/response/OrderSummaryResp.java"
+        ],
+        "jakarta_validation": [
+          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/web/controller/OrderController.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/web/dto/request/CreateOrderReq.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/web/dto/request/OrderPageQry.java"
+        ]
+      }
+    },
     {
       "id": "archunit",
       "title": "ArchUnit 分层（BoneDddArchRules）",
@@ -124,13 +158,6 @@
     }
   ],
   "backlog": [
-    {
-      "id": "order-openapi-v1",
-      "tier": "Target",
-      "title": "订单 API OpenAPI 契约（extension-v1 同级）",
-      "reference": "Bone-API-规范 §15",
-      "tracking": "当前仅 Controller + README；无 orders-v1.yaml"
-    },
     {
       "id": "outbox-cluster-dedup",
       "tier": "Target",

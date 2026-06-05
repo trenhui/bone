@@ -11,9 +11,11 @@ import com.bone.metadata.catalog.application.query.dto.MetaFieldDTO;
 import com.bone.metadata.catalog.application.query.handler.MetaFieldDetailQueryHandler;
 import com.bone.metadata.catalog.application.query.handler.MetaFieldPageQueryHandler;
 import com.bone.metadata.catalog.application.query.qry.MetaFieldPageQuery;
+import com.bone.metadata.catalog.common.CatalogHttpSupport;
 import jakarta.validation.Valid;
 import java.net.URI;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -47,12 +49,17 @@ public class MetaFieldCatalogController {
 
   @PutMapping("/{fieldId}")
   @PreAuthorize("hasAuthority('metadata:write')")
-  public ApiResponse<Void> update(
+  public ResponseEntity<ApiResponse<Void>> update(
       @PathVariable Long entityId,
       @PathVariable Long fieldId,
+      @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
       @Valid @RequestBody UpdateMetaFieldCommand cmd) {
-    updateMetaFieldHandler.handle(fieldId, cmd);
-    return ApiResponse.success();
+    Integer version =
+        updateMetaFieldHandler.handle(
+            fieldId, cmd, CatalogHttpSupport.parseIfMatchVersion(ifMatch).orElse(null));
+    return ResponseEntity.ok()
+        .eTag(CatalogHttpSupport.formatEtag(version))
+        .body(ApiResponse.success());
   }
 
   @GetMapping
@@ -65,9 +72,12 @@ public class MetaFieldCatalogController {
 
   @GetMapping("/{fieldId}")
   @PreAuthorize("hasAuthority('metadata:read')")
-  public ApiResponse<MetaFieldDTO> detail(
+  public ResponseEntity<ApiResponse<MetaFieldDTO>> detail(
       @PathVariable Long entityId, @PathVariable Long fieldId) {
-    return ApiResponse.success(metaFieldDetailQueryHandler.handle(entityId, fieldId));
+    MetaFieldDTO dto = metaFieldDetailQueryHandler.handle(entityId, fieldId);
+    return ResponseEntity.ok()
+        .eTag(CatalogHttpSupport.formatEtag(dto.getVersion()))
+        .body(ApiResponse.success(dto));
   }
 
   @DeleteMapping("/{fieldId}")

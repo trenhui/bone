@@ -14,4 +14,6 @@ public class MetaRelationDTO {
   private String foreignKeyField;
   private Boolean required;
   private String cascadeType;
+  /** 乐观锁版本（PUT 使用 If-Match: "v{version}"） */
+  private Integer version;
 }

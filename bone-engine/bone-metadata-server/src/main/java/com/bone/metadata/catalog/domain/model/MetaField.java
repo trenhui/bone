@@ -58,6 +58,9 @@ public class MetaField extends AbstractEntity<Long> {
   @Column(name = "sort_order", nullable = false)
   private Integer sortOrder;
 
+  @Column(name = "version", nullable = false)
+  private Integer version;
+
   public static MetaField create(
       Long id,
       Long tenantId,
@@ -79,6 +82,7 @@ public class MetaField extends AbstractEntity<Long> {
     f.pk = false;
     f.indexed = false;
     f.sortOrder = 0;
+    f.version = 0;
     Date now = new Date();
     f.setCreatedAt(now);
     f.setUpdatedAt(now);
@@ -105,6 +109,11 @@ public class MetaField extends AbstractEntity<Long> {
     if (sortOrder != null) {
       this.sortOrder = sortOrder;
     }
+    bumpVersion();
     this.setUpdatedAt(new Date());
+  }
+
+  private void bumpVersion() {
+    this.version = (this.version == null ? 0 : this.version) + 1;
   }
 }
