@@ -12,56 +12,57 @@ import org.springframework.stereotype.Service;
 @Service
 public class StudioAuditService {
 
-    private static final Logger log = LoggerFactory.getLogger(StudioAuditService.class);
+  private static final Logger log = LoggerFactory.getLogger(StudioAuditService.class);
 
-    private final StudioAuditRepository auditRepository;
+  private final StudioAuditRepository auditRepository;
 
-    public StudioAuditService(StudioAuditRepository auditRepository) {
-        this.auditRepository = auditRepository;
+  public StudioAuditService(StudioAuditRepository auditRepository) {
+    this.auditRepository = auditRepository;
+  }
+
+  public void record(
+      String action, String resourceType, String resourceId, String result, String detail) {
+    String traceId = MDC.get(StudioRequestContextFilter.TRACE_ID);
+    String userId = MDC.get("userId");
+    String tenantId = MDC.get("tenantId");
+    log.info(
+        "[Audit] traceId={} tenantId={} userId={} action={} resourceType={} resourceId={} result={} detail={}",
+        traceId,
+        tenantId,
+        userId,
+        action,
+        resourceType,
+        resourceId,
+        result,
+        detail);
+    StudioAuditEntry entry = new StudioAuditEntry();
+    entry.setTraceId(traceId);
+    entry.setTenantId(parseTenantId(tenantId));
+    entry.setUserId(userId);
+    entry.setAction(action);
+    entry.setResourceType(resourceType);
+    entry.setResourceId(resourceId);
+    entry.setResult(result);
+    entry.setDetail(detail);
+    auditRepository.save(entry);
+  }
+
+  public void success(String action, String resourceType, String resourceId) {
+    record(action, resourceType, resourceId, "SUCCESS", null);
+  }
+
+  public void failure(String action, String resourceType, String resourceId, String detail) {
+    record(action, resourceType, resourceId, "FAILED", detail);
+  }
+
+  private static long parseTenantId(String tenantId) {
+    if (tenantId == null || tenantId.isBlank()) {
+      return 0L;
     }
-
-    public void record(String action, String resourceType, String resourceId, String result, String detail) {
-        String traceId = MDC.get(StudioRequestContextFilter.TRACE_ID);
-        String userId = MDC.get("userId");
-        String tenantId = MDC.get("tenantId");
-        log.info(
-                "[Audit] traceId={} tenantId={} userId={} action={} resourceType={} resourceId={} result={} detail={}",
-                traceId,
-                tenantId,
-                userId,
-                action,
-                resourceType,
-                resourceId,
-                result,
-                detail);
-        StudioAuditEntry entry = new StudioAuditEntry();
-        entry.setTraceId(traceId);
-        entry.setTenantId(parseTenantId(tenantId));
-        entry.setUserId(userId);
-        entry.setAction(action);
-        entry.setResourceType(resourceType);
-        entry.setResourceId(resourceId);
-        entry.setResult(result);
-        entry.setDetail(detail);
-        auditRepository.save(entry);
+    try {
+      return Long.parseLong(tenantId);
+    } catch (NumberFormatException ex) {
+      return 0L;
     }
-
-    public void success(String action, String resourceType, String resourceId) {
-        record(action, resourceType, resourceId, "SUCCESS", null);
-    }
-
-    public void failure(String action, String resourceType, String resourceId, String detail) {
-        record(action, resourceType, resourceId, "FAILED", detail);
-    }
-
-    private static long parseTenantId(String tenantId) {
-        if (tenantId == null || tenantId.isBlank()) {
-            return 0L;
-        }
-        try {
-            return Long.parseLong(tenantId);
-        } catch (NumberFormatException ex) {
-            return 0L;
-        }
-    }
+  }
 }

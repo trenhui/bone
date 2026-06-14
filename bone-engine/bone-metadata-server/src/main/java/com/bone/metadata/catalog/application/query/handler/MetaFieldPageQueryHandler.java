@@ -1,6 +1,6 @@
 package com.bone.metadata.catalog.application.query.handler;
 
-import com.bone.core.result.PageResult;
+import com.bone.core.model.PageResult;
 import com.bone.metadata.catalog.application.query.dto.MetaFieldDTO;
 import com.bone.metadata.catalog.application.query.mapper.CatalogDtoMapper;
 import com.bone.metadata.catalog.application.query.qry.MetaFieldPageQuery;
@@ -31,7 +31,8 @@ public class MetaFieldPageQueryHandler {
         query = query.where(MetaField::getName).like("%" + qry.getKeyword().trim() + "%");
       }
     }
-    var sdkPage = query.orderByAsc(MetaField::getSortOrder).page(qry.getPageNum(), qry.getPageSize());
+    var sdkPage =
+        query.orderByAsc(MetaField::getSortOrder).page(qry.getPageNum(), qry.getPageSize());
     return CatalogPageMapper.toApiPage(sdkPage, CatalogDtoMapper::toDto);
   }
 }

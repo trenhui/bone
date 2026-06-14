@@ -10,6 +10,10 @@ public class CreateMetaRelationCommand {
   @NotNull private Long sourceEntityId;
   @NotNull private Long targetEntityId;
   @NotBlank private String type;
+
+  /** relationType 别名，兼容前端传参 */
+  private String relationType;
+
   private Long sourceFieldId;
   private Long targetFieldId;
   private String foreignKeyField;

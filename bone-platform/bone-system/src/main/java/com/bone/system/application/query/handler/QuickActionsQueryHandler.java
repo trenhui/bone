@@ -13,18 +13,18 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 public class QuickActionsQueryHandler {
 
-    @Transactional(readOnly = true)
-    public List<QuickAction> handle() {
-        return List.of(
-                quick("iam", "账号权限管理", "/iam", "UserOutlined"),
-                quick("metadata", "元数据管理", "/metadata", "DatabaseOutlined"),
-                quick("masterdata", "主数据管理", "/masterdata", "DatabaseOutlined"),
-                quick("integration", "集成管理", "/integration", "LinkOutlined"),
-                quick("system", "系统管理", "/system", "SettingOutlined"),
-                quick("extension", "扩展管理", "/extension", "AppstoreOutlined"));
-    }
+  @Transactional(readOnly = true)
+  public List<QuickAction> handle() {
+    return List.of(
+        quick("iam", "账号权限管理", "/iam", "UserOutlined"),
+        quick("metadata", "元数据管理", "/metadata", "DatabaseOutlined"),
+        quick("masterdata", "主数据管理", "/masterdata", "DatabaseOutlined"),
+        quick("integration", "集成管理", "/integration", "LinkOutlined"),
+        quick("system", "系统管理", "/system", "SettingOutlined"),
+        quick("extension", "扩展管理", "/extension", "AppstoreOutlined"));
+  }
 
-    private static QuickAction quick(String id, String title, String path, String icon) {
-        return QuickAction.builder().id(id).title(title).path(path).icon(icon).build();
-    }
+  private static QuickAction quick(String id, String title, String path, String icon) {
+    return QuickAction.builder().id(id).title(title).path(path).icon(icon).build();
+  }
 }

@@ -12,26 +12,26 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class StudioIdempotentExecutor {
 
-    private final StudioIdempotencyService idempotencyService;
+  private final StudioIdempotencyService idempotencyService;
 
-    public <T> ResponseEntity<ApiResponse<T>> execute(
-            String idempotencyKey,
-            String method,
-            String path,
-            String fingerprint,
-            Supplier<ResponseEntity<ApiResponse<T>>> action) {
-        Optional<ResponseEntity<ApiResponse<T>>> replay =
-                idempotencyService.replay(idempotencyKey, method, path, fingerprint);
-        if (replay.isPresent()) {
-            return replay.get();
-        }
-        ResponseEntity<ApiResponse<T>> response = action.get();
-        idempotencyService.remember(idempotencyKey, method, path, fingerprint, response);
-        return response;
+  public <T> ResponseEntity<ApiResponse<T>> execute(
+      String idempotencyKey,
+      String method,
+      String path,
+      String fingerprint,
+      Supplier<ResponseEntity<ApiResponse<T>>> action) {
+    Optional<ResponseEntity<ApiResponse<T>>> replay =
+        idempotencyService.replay(idempotencyKey, method, path, fingerprint);
+    if (replay.isPresent()) {
+      return replay.get();
     }
+    ResponseEntity<ApiResponse<T>> response = action.get();
+    idempotencyService.remember(idempotencyKey, method, path, fingerprint, response);
+    return response;
+  }
 
-    public <T> Optional<ResponseEntity<ApiResponse<T>>> tryReplay(
-            String idempotencyKey, String method, String path, String fingerprint) {
-        return idempotencyService.replay(idempotencyKey, method, path, fingerprint);
-    }
+  public <T> Optional<ResponseEntity<ApiResponse<T>>> tryReplay(
+      String idempotencyKey, String method, String path, String fingerprint) {
+    return idempotencyService.replay(idempotencyKey, method, path, fingerprint);
+  }
 }

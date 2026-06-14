@@ -13,23 +13,19 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
-import java.util.Date;
-
 @EqualsAndHashCode(callSuper = true)
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
 @Table("users")
 public class User extends AbstractEntity<Long> {
-    private String name;
-    private Long roleId;
+  private String name;
+  private Long roleId;
 
-    /**
-     * 实体的主键id，使用自定义生成策略
-     */
-    @Schema(description = "主键id")
-    @JsonSerialize(using = ToStringSerializer.class)
-    @Id
-    @GeneratedValue(strategy = GenerationStrategy.CUSTOM)
-    private Long id;
+  /** 实体的主键id，使用自定义生成策略 */
+  @Schema(description = "主键id")
+  @JsonSerialize(using = ToStringSerializer.class)
+  @Id
+  @GeneratedValue(strategy = GenerationStrategy.CUSTOM)
+  private Long id;
 }

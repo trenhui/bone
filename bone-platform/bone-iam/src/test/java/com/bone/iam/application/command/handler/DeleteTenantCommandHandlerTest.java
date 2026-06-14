@@ -18,29 +18,25 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class DeleteTenantCommandHandlerTest {
 
-    @Mock
-    private TenantRepository tenantRepository;
+  @Mock private TenantRepository tenantRepository;
 
-    @Mock
-    private TenantDeletionGateway tenantDeletionGateway;
+  @Mock private TenantDeletionGateway tenantDeletionGateway;
 
-    @InjectMocks
-    private DeleteTenantCommandHandler deleteTenantCommandHandler;
+  @InjectMocks private DeleteTenantCommandHandler deleteTenantCommandHandler;
 
-    @Test
-    void deletesTenantAfterPurge() {
-        when(tenantRepository.findById(10L))
-                .thenReturn(Tenant.create(10L, "t", "T10", 1, "a@t.com"));
+  @Test
+  void deletesTenantAfterPurge() {
+    when(tenantRepository.findById(10L)).thenReturn(Tenant.create(10L, "t", "T10", 1, "a@t.com"));
 
-        deleteTenantCommandHandler.handle(10L);
+    deleteTenantCommandHandler.handle(10L);
 
-        verify(tenantDeletionGateway).purgeTenantData(10L);
-        verify(tenantRepository).deleteById(10L);
-    }
+    verify(tenantDeletionGateway).purgeTenantData(10L);
+    verify(tenantRepository).deleteById(10L);
+  }
 
-    @Test
-    void rejectsPlatformTenantDelete() {
-        assertThrows(BizException.class, () -> deleteTenantCommandHandler.handle(0L));
-        verify(tenantDeletionGateway, never()).purgeTenantData(0L);
-    }
+  @Test
+  void rejectsPlatformTenantDelete() {
+    assertThrows(BizException.class, () -> deleteTenantCommandHandler.handle(0L));
+    verify(tenantDeletionGateway, never()).purgeTenantData(0L);
+  }
 }

@@ -12,9 +12,9 @@ import lombok.Value;
 @Builder
 public class ServiceStatus {
 
-    String name;
-    String serviceCode;
-    String port;
-    String status;
-    long latencyMs;
+  String name;
+  String serviceCode;
+  String port;
+  String status;
+  long latencyMs;
 }

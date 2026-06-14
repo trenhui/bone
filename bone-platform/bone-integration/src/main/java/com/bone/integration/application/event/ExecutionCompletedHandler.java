@@ -11,24 +11,24 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ExecutionCompletedHandler {
 
-    private final IntegrationEventFollowUp followUp;
+  private final IntegrationEventFollowUp followUp;
 
-    public void handle(ExecutionCompletedEvent event) {
-        log.info(
-                "Execution completed: executionId={}, flowId={}, success={}",
-                event.executionId(),
-                event.flowId(),
-                event.success());
-        if (!event.success()) {
-            followUp.notifyHigh(
-                    "execution.failed.alert",
-                    "flowId=" + event.flowId() + ", error=" + event.errorMessage(),
-                    String.valueOf(event.executionId()));
-        } else {
-            log.debug(
-                    "Execution metrics placeholder: executionId={}, flowId={}",
-                    event.executionId(),
-                    event.flowId());
-        }
+  public void handle(ExecutionCompletedEvent event) {
+    log.info(
+        "Execution completed: executionId={}, flowId={}, success={}",
+        event.executionId(),
+        event.flowId(),
+        event.success());
+    if (!event.success()) {
+      followUp.notifyHigh(
+          "execution.failed.alert",
+          "flowId=" + event.flowId() + ", error=" + event.errorMessage(),
+          String.valueOf(event.executionId()));
+    } else {
+      log.debug(
+          "Execution metrics placeholder: executionId={}, flowId={}",
+          event.executionId(),
+          event.flowId());
     }
+  }
 }

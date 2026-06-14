@@ -18,10 +18,7 @@ class JdbcRuntimeRecordServiceTest {
 
   @BeforeEach
   void setUp() {
-    var db =
-        new EmbeddedDatabaseBuilder()
-            .setType(EmbeddedDatabaseType.H2)
-            .build();
+    var db = new EmbeddedDatabaseBuilder().setType(EmbeddedDatabaseType.H2).build();
     var jdbc = new NamedParameterJdbcTemplate(db);
     jdbc.getJdbcTemplate().execute("DROP TABLE IF EXISTS demo_order");
     jdbc.getJdbcTemplate()
@@ -61,8 +58,7 @@ class JdbcRuntimeRecordServiceTest {
 
   @Test
   void shouldRejectUnknownEntity() {
-    assertThrows(
-        RuntimeRecordException.class, () -> service.page("unknown", 1L, 1, 10));
+    assertThrows(RuntimeRecordException.class, () -> service.page("unknown", 1L, 1, 10));
   }
 
   @Test
@@ -82,8 +78,6 @@ class JdbcRuntimeRecordServiceTest {
     service.create("demo_order", 1L, Map.of("order_no", "O-1", "amount", 1), 100L);
     assertThrows(
         RuntimeRecordException.class,
-        () ->
-            service.update(
-                "demo_order", 1L, "100", Map.of("amount", 2), 999));
+        () -> service.update("demo_order", 1L, "100", Map.of("amount", 2), 999));
   }
 }

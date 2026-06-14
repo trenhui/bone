@@ -5,19 +5,19 @@ import java.lang.annotation.*;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Capability {
-    String name();
+  String name();
 
-    String description();
+  String description();
 
-    String inputSchema();
+  String inputSchema();
 
-    String outputSchema();
+  String outputSchema();
 
-    boolean idempotent() default false;
+  boolean idempotent() default false;
 
-    int cost() default 1;
+  int cost() default 1;
 
-    boolean retryable() default true;
+  boolean retryable() default true;
 
-    int timeout() default 30;
+  int timeout() default 30;
 }

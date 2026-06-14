@@ -6,9 +6,9 @@ import lombok.Data;
 @Data
 public class AuditSettingsDTO {
 
-    private Integer retentionDays;
-    private Boolean autoArchiveEnabled;
-    private Integer archiveAfterDays;
-    private String storageType;
-    private Boolean wormEnabled;
+  private Integer retentionDays;
+  private Boolean autoArchiveEnabled;
+  private Integer archiveAfterDays;
+  private String storageType;
+  private Boolean wormEnabled;
 }

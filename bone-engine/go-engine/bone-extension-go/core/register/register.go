@@ -296,15 +296,16 @@ func (e *DefaultExtension) Execute(ctx *model.Context) (*model.Result, error) {
 	case func(ctx *model.Context) (*model.Result, error):
 		return impl(ctx)
 	case func(ctx *extension.Context) error:
+		dataMap, _ := ctx.Data.(map[string]interface{})
 		extCtx := &extension.Context{
 			Context: ctx.Context,
-			Data:    ctx.Data,
+			Data:    dataMap,
 			Result:  ctx.Result,
 			Error:   ctx.Error,
 		}
 		err := impl(extCtx)
 		if err != nil {
-			return &model.Result{Success: false, Error: err.Error()}, err
+			return &model.Result{Success: false, Error: err}, err
 		}
 		return &model.Result{Success: true, Data: extCtx.Result}, nil
 	default:

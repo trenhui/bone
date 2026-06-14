@@ -8,18 +8,18 @@ import org.springframework.stereotype.Component;
 @Primary
 public class SsoClientImpl implements SsoClient {
 
-    @Override
-    public boolean authenticate(String username, String password) {
-        return false;
-    }
+  @Override
+  public boolean authenticate(String username, String password) {
+    return false;
+  }
 
-    @Override
-    public String getRedirectUrl() {
-        return "";
-    }
+  @Override
+  public String getRedirectUrl() {
+    return "";
+  }
 
-    @Override
-    public String processCallback(String code) {
-        return "";
-    }
+  @Override
+  public String processCallback(String code) {
+    return "";
+  }
 }

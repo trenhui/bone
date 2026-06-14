@@ -1,9 +1,10 @@
 package com.bone.masterdata.adapter.web.dto.req;
 
+import java.util.Map;
 import lombok.Data;
 
 @Data
 public class CreateMasterDataRecordReq {
-    private Long masterDataEntityId;
-    private String data;
+  private Long masterDataEntityId;
+  private Map<String, Object> data;
 }

@@ -1,7 +1,7 @@
 package com.bone.metadata.catalog.common;
 
+import com.bone.core.model.ApiResponse;
 import com.bone.core.model.ProblemDetail;
-import com.bone.core.result.ApiResponse;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +18,6 @@ public final class CatalogApiResponses {
     if (traceId != null && !traceId.isBlank()) {
       body.setTraceId(traceId);
     }
-    return ResponseEntity.status(status)
-        .body(ApiResponse.fail(status.value(), detail, body));
+    return ResponseEntity.status(status).body(ApiResponse.fail(status.value(), detail, body));
   }
 }

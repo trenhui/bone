@@ -4,56 +4,46 @@ import com.bone.core.enums.ErrorCode;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
-/**
- * 业务逻辑异常 Exception
- */
+/** 业务逻辑异常 Exception */
 @Data
 @EqualsAndHashCode(callSuper = true)
 public final class ServiceException extends RuntimeException {
 
-    /**
-     * 业务错误码
-     *
-     */
-    private Integer code;
-    /**
-     * 错误提示
-     */
-    private String message;
+  /** 业务错误码 */
+  private Integer code;
 
-    /**
-     * 空构造方法，避免反序列化问题
-     */
-    public ServiceException() {
-    }
+  /** 错误提示 */
+  private String message;
 
-    public ServiceException(ErrorCode errorCode) {
-        this.code = errorCode.getCode();
-        this.message = errorCode.getMsg();
-    }
+  /** 空构造方法，避免反序列化问题 */
+  public ServiceException() {}
 
-    public ServiceException(Integer code, String message) {
-        this.code = code;
-        this.message = message;
-    }
+  public ServiceException(ErrorCode errorCode) {
+    this.code = errorCode.getCode();
+    this.message = errorCode.getMsg();
+  }
 
-    public Integer getCode() {
-        return code;
-    }
+  public ServiceException(Integer code, String message) {
+    this.code = code;
+    this.message = message;
+  }
 
-    public ServiceException setCode(Integer code) {
-        this.code = code;
-        return this;
-    }
+  public Integer getCode() {
+    return code;
+  }
 
-    @Override
-    public String getMessage() {
-        return message;
-    }
+  public ServiceException setCode(Integer code) {
+    this.code = code;
+    return this;
+  }
 
-    public ServiceException setMessage(String message) {
-        this.message = message;
-        return this;
-    }
+  @Override
+  public String getMessage() {
+    return message;
+  }
 
+  public ServiceException setMessage(String message) {
+    this.message = message;
+    return this;
+  }
 }

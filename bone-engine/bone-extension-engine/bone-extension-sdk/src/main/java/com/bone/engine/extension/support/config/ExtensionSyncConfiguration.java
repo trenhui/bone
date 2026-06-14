@@ -33,16 +33,17 @@ public class ExtensionSyncConfiguration {
   @Bean
   @ConditionalOnBean(name = ExtensionMetadataRedisConfiguration.METADATA_REDIS_TEMPLATE_BEAN)
   @ConditionalOnMissingBean(ExtensionMetadataStore.class)
-    public ExtensionMetadataStore redisExtensionMetadataStore(
-            @Qualifier(ExtensionMetadataRedisConfiguration.METADATA_REDIS_TEMPLATE_BEAN)
-                    RedisTemplate<String, ExtensionRoutingMetadata> metadataRedisTemplate,
-            @Qualifier(ExtensionMetadataRedisConfiguration.METADATA_INDEX_REDIS_TEMPLATE_BEAN)
-                    StringRedisTemplate metadataIndexRedisTemplate,
-            ExtensionProperties properties) {
-        String channel = resolveRefreshChannel(properties);
-        log.info("Using RedisExtensionMetadataStore, refresh channel={}", channel);
-        return new RedisExtensionMetadataStore(metadataRedisTemplate, metadataIndexRedisTemplate, channel);
-    }
+  public ExtensionMetadataStore redisExtensionMetadataStore(
+      @Qualifier(ExtensionMetadataRedisConfiguration.METADATA_REDIS_TEMPLATE_BEAN)
+          RedisTemplate<String, ExtensionRoutingMetadata> metadataRedisTemplate,
+      @Qualifier(ExtensionMetadataRedisConfiguration.METADATA_INDEX_REDIS_TEMPLATE_BEAN)
+          StringRedisTemplate metadataIndexRedisTemplate,
+      ExtensionProperties properties) {
+    String channel = resolveRefreshChannel(properties);
+    log.info("Using RedisExtensionMetadataStore, refresh channel={}", channel);
+    return new RedisExtensionMetadataStore(
+        metadataRedisTemplate, metadataIndexRedisTemplate, channel);
+  }
 
   @Bean
   @ConditionalOnMissingBean(ExtensionMetadataStore.class)

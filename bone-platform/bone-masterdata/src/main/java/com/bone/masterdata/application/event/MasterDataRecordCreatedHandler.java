@@ -9,10 +9,9 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @Component
 public class MasterDataRecordCreatedHandler {
 
-    @TransactionalEventListener
-    public void handle(MasterDataRecordCreatedEvent event) {
-        log.info("主数据记录创建事件: entityId={}, recordId={}",
-                event.entityId(), event.recordId());
-        // 这里可以添加业务逻辑
-    }
+  @TransactionalEventListener
+  public void handle(MasterDataRecordCreatedEvent event) {
+    log.info("主数据记录创建事件: entityId={}, recordId={}", event.entityId(), event.recordId());
+    // 这里可以添加业务逻辑
+  }
 }

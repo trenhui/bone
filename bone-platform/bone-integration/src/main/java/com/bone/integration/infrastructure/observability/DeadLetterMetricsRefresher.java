@@ -13,25 +13,25 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class DeadLetterMetricsRefresher {
 
-    private final JdbcTemplate jdbcTemplate;
-    private final IntegrationExecutionMetrics metrics;
+  private final JdbcTemplate jdbcTemplate;
+  private final IntegrationExecutionMetrics metrics;
 
-    @Scheduled(fixedDelayString = "${bone.integration.metrics.dead-letter-refresh-ms:60000}")
-    public void refresh() {
-        List<Map<String, Object>> rows =
-                jdbcTemplate.queryForList(
-                        """
+  @Scheduled(fixedDelayString = "${bone.integration.metrics.dead-letter-refresh-ms:60000}")
+  public void refresh() {
+    List<Map<String, Object>> rows =
+        jdbcTemplate.queryForList(
+            """
                         SELECT tenant_id AS tenantId, COUNT(*) AS cnt
                         FROM int_dead_letter
                         WHERE deleted = 0 AND status IN ('PENDING', 'RETRYING')
                         GROUP BY tenant_id
                         """);
-        Map<Long, Long> pending = new HashMap<>();
-        for (Map<String, Object> row : rows) {
-            long tenantId = ((Number) row.get("tenantId")).longValue();
-            long count = ((Number) row.get("cnt")).longValue();
-            pending.put(tenantId, count);
-        }
-        metrics.refreshDeadLetterGauges(pending);
+    Map<Long, Long> pending = new HashMap<>();
+    for (Map<String, Object> row : rows) {
+      long tenantId = ((Number) row.get("tenantId")).longValue();
+      long count = ((Number) row.get("cnt")).longValue();
+      pending.put(tenantId, count);
     }
+    metrics.refreshDeadLetterGauges(pending);
+  }
 }

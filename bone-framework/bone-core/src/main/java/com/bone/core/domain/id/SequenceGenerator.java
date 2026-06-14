@@ -9,8 +9,11 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE, ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface SequenceGenerator {
-    String name();
-    String sequenceName();
-    int initialValue() default 1;
-    int allocationSize() default 50;
+  String name();
+
+  String sequenceName();
+
+  int initialValue() default 1;
+
+  int allocationSize() default 50;
 }

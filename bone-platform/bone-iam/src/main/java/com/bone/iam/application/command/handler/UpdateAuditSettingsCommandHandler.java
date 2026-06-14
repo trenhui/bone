@@ -11,14 +11,14 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UpdateAuditSettingsCommandHandler {
 
-    private final AuditSettingsStore auditSettingsStore;
+  private final AuditSettingsStore auditSettingsStore;
 
-    @Transactional
-    public void handle(UpdateAuditSettingsCommand cmd) {
-        if (cmd == null || cmd.getSettings() == null || cmd.getSettings().isEmpty()) {
-            throw new IllegalArgumentException("审计设置不能为空");
-        }
-        Long tenantId = TenantContext.getTenantId();
-        auditSettingsStore.upsert(tenantId != null ? tenantId : 0L, cmd.getSettings());
+  @Transactional
+  public void handle(UpdateAuditSettingsCommand cmd) {
+    if (cmd == null || cmd.getSettings() == null || cmd.getSettings().isEmpty()) {
+      throw new IllegalArgumentException("审计设置不能为空");
     }
+    Long tenantId = TenantContext.getTenantId();
+    auditSettingsStore.upsert(tenantId != null ? tenantId : 0L, cmd.getSettings());
+  }
 }

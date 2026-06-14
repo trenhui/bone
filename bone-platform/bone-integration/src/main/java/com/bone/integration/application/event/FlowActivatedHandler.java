@@ -11,13 +11,11 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class FlowActivatedHandler {
 
-    private final IntegrationEventFollowUp followUp;
+  private final IntegrationEventFollowUp followUp;
 
-    public void handle(FlowActivatedEvent event) {
-        log.info("Flow activated: id={}, name={}", event.flowId(), event.name());
-        followUp.notifyInfo(
-                "flow.activated.notify",
-                "name=" + event.name(),
-                String.valueOf(event.flowId()));
-    }
+  public void handle(FlowActivatedEvent event) {
+    log.info("Flow activated: id={}, name={}", event.flowId(), event.name());
+    followUp.notifyInfo(
+        "flow.activated.notify", "name=" + event.name(), String.valueOf(event.flowId()));
+  }
 }

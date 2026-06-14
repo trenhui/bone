@@ -22,6 +22,10 @@ public class CreateMetaFieldHandler {
 
   @Transactional
   public Long handle(CreateMetaFieldCommand cmd) {
+    // 兼容前端传 fieldType 而非 type 的情况
+    if (cmd.getType() == null && cmd.getFieldType() != null) {
+      cmd.setType(cmd.getFieldType());
+    }
     MetaEntity entity = metaEntityRepository.findById(cmd.getEntityId());
     if (entity == null) {
       throw BizException.of("所属实体不存在: " + cmd.getEntityId());

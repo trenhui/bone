@@ -74,10 +74,7 @@
         <!-- Bone 内部模块版本 -->
         <bone-core.version>1.0.0</bone-core.version>
         <bone-metadata-sdk.version>1.0.0</bone-metadata-sdk.version>
-        <bone-auth.version>1.0.0</bone-auth.version>
-        <bone-auth-sdk.version>1.0.0</bone-auth-sdk.version>
-        <bone-codegen.version>1.0.0</bone-codegen.version>
-        
+
         <!-- 静态代码分析 -->
         <spotless.version>2.43.0</spotless.version>
     </properties>
@@ -135,22 +132,7 @@
             </dependency>
             <dependency>
                 <groupId>com.bone</groupId>
-                <artifactId>bone-auth</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.bone</groupId>
-                <artifactId>bone-codegen</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.bone</groupId>
                 <artifactId>bone-metadata-sdk</artifactId>
-                <version>${project.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.bone</groupId>
-                <artifactId>bone-auth-sdk</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
@@ -314,6 +296,7 @@
                         <source>${java.version}</source>
                         <target>${java.version}</target>
                         <encoding>${project.build.sourceEncoding}</encoding>
+                        <useIncrementalCompilation>false</useIncrementalCompilation>
                         <annotationProcessorPaths>
                             <path>
                                 <groupId>org.projectlombok</groupId>
@@ -324,6 +307,11 @@
                                 <groupId>org.mapstruct</groupId>
                                 <artifactId>mapstruct-processor</artifactId>
                                 <version>${mapstruct.version}</version>
+                            </path>
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok-mapstruct-binding</artifactId>
+                                <version>0.2.0</version>
                             </path>
                         </annotationProcessorPaths>
                         <compilerArgs>
@@ -397,6 +385,14 @@
                             </googleJavaFormat>
                         </java>
                     </configuration>
+                    <executions>
+                        <execution>
+                            <phase>validate</phase>
+                            <goals>
+                                <goal>check</goal>
+                            </goals>
+                        </execution>
+                    </executions>
                 </plugin>
             </plugins>
         </pluginManagement>
@@ -410,6 +406,10 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

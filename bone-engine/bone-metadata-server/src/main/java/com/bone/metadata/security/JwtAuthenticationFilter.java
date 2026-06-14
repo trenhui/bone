@@ -44,7 +44,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         var auth = new UsernamePasswordAuthenticationToken(username, null, authorities);
         SecurityContextHolder.getContext().setAuthentication(auth);
       } catch (JwtException ex) {
-        SecurityContextHolder.clearContext();
+        // JWT 解析失败时不清除已有的认证信息（可能由 APIKeyFilter 设置）
+        // 仅当 SecurityContext 中没有认证时才记录
+        if (SecurityContextHolder.getContext().getAuthentication() == null) {
+          SecurityContextHolder.clearContext();
+        }
       }
     }
     filterChain.doFilter(request, response);

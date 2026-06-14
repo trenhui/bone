@@ -7,26 +7,27 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/bone-engine/bone-blueprint-go/application/command/cmd"
-	"github.com/bone-engine/bone-blueprint-go/application/command/handler"
+	commandhandler "github.com/bone-engine/bone-blueprint-go/application/command/handler"
 	"github.com/bone-engine/bone-blueprint-go/application/query/qry"
+	queryhandler "github.com/bone-engine/bone-blueprint-go/application/query/handler"
 )
 
 // OrderController 订单控制器
 type OrderController struct {
-	createOrderHandler  *handler.CreateOrderCommandHandler
-	payOrderHandler     *handler.PayOrderCommandHandler
-	cancelOrderHandler  *handler.CancelOrderCommandHandler
-	detailQueryHandler  *handler.OrderDetailQueryHandler
-	pageQueryHandler    *handler.OrderPageQueryHandler
+	createOrderHandler  *commandhandler.CreateOrderCommandHandler
+	payOrderHandler     *commandhandler.PayOrderCommandHandler
+	cancelOrderHandler  *commandhandler.CancelOrderCommandHandler
+	detailQueryHandler  *queryhandler.OrderDetailQueryHandler
+	pageQueryHandler    *queryhandler.OrderPageQueryHandler
 }
 
 // NewOrderController 创建订单控制器
 func NewOrderController(
-	createOrderHandler *handler.CreateOrderCommandHandler,
-	payOrderHandler *handler.PayOrderCommandHandler,
-	cancelOrderHandler *handler.CancelOrderCommandHandler,
-	detailQueryHandler *handler.OrderDetailQueryHandler,
-	pageQueryHandler *handler.OrderPageQueryHandler,
+	createOrderHandler *commandhandler.CreateOrderCommandHandler,
+	payOrderHandler *commandhandler.PayOrderCommandHandler,
+	cancelOrderHandler *commandhandler.CancelOrderCommandHandler,
+	detailQueryHandler *queryhandler.OrderDetailQueryHandler,
+	pageQueryHandler *queryhandler.OrderPageQueryHandler,
 ) *OrderController {
 	return &OrderController{
 		createOrderHandler:  createOrderHandler,
@@ -57,7 +58,7 @@ func (c *OrderController) CreateOrder(ctx *gin.Context) {
 		return
 	}
 
-	order, err := c.createOrderHandler.Handle(ctx, &req)
+	order, err := c.createOrderHandler.Handle(ctx.Request.Context(), &req)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -76,7 +77,7 @@ func (c *OrderController) GetOrderDetail(ctx *gin.Context) {
 	}
 
 	query := &qry.OrderDetailQuery{OrderID: id}
-	order, err := c.detailQueryHandler.Handle(ctx, query)
+	order, err := c.detailQueryHandler.Handle(ctx.Request.Context(), query)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -93,7 +94,7 @@ func (c *OrderController) GetOrderList(ctx *gin.Context) {
 		return
 	}
 
-	orders, total, err := c.pageQueryHandler.Handle(ctx, &query)
+	orders, total, err := c.pageQueryHandler.Handle(ctx.Request.Context(), &query)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -148,7 +149,7 @@ func (c *OrderController) CancelOrder(ctx *gin.Context) {
 	}
 	req.OrderID = id
 
-	order, err := c.cancelOrderHandler.Handle(ctx, &req)
+	order, err := c.cancelOrderHandler.Handle(ctx.Request.Context(), &req)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -1,368 +1,364 @@
 package com.bone.metadata.sdk.query.dsl.context;
 
 import com.bone.metadata.sdk.query.dsl.FluentQuery;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
 
-/**
- * 查询上下文管理类 - 存储和管理查询的所有状态信息
- */
+/** 查询上下文管理类 - 存储和管理查询的所有状态信息 */
 public class QueryContext<T> {
 
-    private final Class<T> entityClass;
-    private final String entityAlias;
-    private final FluentQuery<T> fluentQuery;
-    private final List<Condition> conditions = new ArrayList<>();
-    private final List<Order> orders = new ArrayList<>();
-    private final List<Join> joins = new ArrayList<>();
-    private final List<String> groupByFields = new ArrayList<>();
-    private Integer limit;
-    private Integer offset;
-    private Join currentJoin;
-    private String currentLogicalOperator = "AND";
+  private final Class<T> entityClass;
+  private final String entityAlias;
+  private final FluentQuery<T> fluentQuery;
+  private final List<Condition> conditions = new ArrayList<>();
+  private final List<Order> orders = new ArrayList<>();
+  private final List<Join> joins = new ArrayList<>();
+  private final List<String> groupByFields = new ArrayList<>();
+  private Integer limit;
+  private Integer offset;
+  private Join currentJoin;
+  private String currentLogicalOperator = "AND";
 
-    // 在 QueryContext 类中添加分组支持
-    private final Stack<String> groupStack = new Stack<>();
-    private boolean inGroup = false;
+  // 在 QueryContext 类中添加分组支持
+  private final Stack<String> groupStack = new Stack<>();
+  private boolean inGroup = false;
 
-    public QueryContext(Class<T> entityClass, String entityAlias, FluentQuery<T> fluentQuery) {
-        this.entityClass = entityClass;
-        this.entityAlias = entityAlias;
-        this.fluentQuery = fluentQuery;
+  public QueryContext(Class<T> entityClass, String entityAlias, FluentQuery<T> fluentQuery) {
+    this.entityClass = entityClass;
+    this.entityAlias = entityAlias;
+    this.fluentQuery = fluentQuery;
+  }
+
+  // 内部类：条件定义
+  public static class Condition {
+    private String fieldName;
+    private String operator;
+    private Object value1;
+    private Object value2;
+    private boolean or = false;
+    private boolean having = false;
+
+    public String getFieldName() {
+      return fieldName;
     }
 
-    // 内部类：条件定义
-    public static class Condition {
-        private String fieldName;
-        private String operator;
-        private Object value1;
-        private Object value2;
-        private boolean or = false;
-        private boolean having = false;
-
-        public String getFieldName() {
-            return fieldName;
-        }
-
-        public void setFieldName(String fieldName) {
-            this.fieldName = fieldName;
-        }
-
-        public String getOperator() {
-            return operator;
-        }
-
-        public void setOperator(String operator) {
-            this.operator = operator;
-        }
-
-        public Object getValue1() {
-            return value1;
-        }
-
-        public void setValue1(Object value1) {
-            this.value1 = value1;
-        }
-
-        public Object getValue2() {
-            return value2;
-        }
-
-        public void setValue2(Object value2) {
-            this.value2 = value2;
-        }
-
-        public boolean isOr() {
-            return or;
-        }
-
-        public void setOr(boolean or) {
-            this.or = or;
-        }
-
-        public boolean isHaving() {
-            return having;
-        }
-
-        public void setHaving(boolean having) {
-            this.having = having;
-        }
+    public void setFieldName(String fieldName) {
+      this.fieldName = fieldName;
     }
 
-    // 内部类：排序定义
-    public static class Order {
-        private String fieldName;
-        private boolean asc = true;
-
-        public Order(String fieldName, boolean asc) {
-            this.fieldName = fieldName;
-            this.asc = asc;
-        }
-
-        public String getFieldName() {
-            return fieldName;
-        }
-
-        public boolean isAsc() {
-            return asc;
-        }
+    public String getOperator() {
+      return operator;
     }
 
-    // 内部类：关联查询定义
-    public static class Join {
-        private Class<?> joinClass;
-        private String joinEntityAlias;
-        private JoinType joinType;
-        private final List<JoinCondition> joinConditions = new ArrayList<>();
-
-        public Class<?> getJoinClass() {
-            return joinClass;
-        }
-
-        public void setJoinClass(Class<?> joinClass) {
-            this.joinClass = joinClass;
-        }
-
-        public String getJoinEntityAlias() {
-            return joinEntityAlias;
-        }
-
-        public void setJoinEntityAlias(String joinEntityAlias) {
-            this.joinEntityAlias = joinEntityAlias;
-        }
-
-        public JoinType getJoinType() {
-            return joinType;
-        }
-
-        public void setJoinType(JoinType joinType) {
-            this.joinType = joinType;
-        }
-
-        public List<JoinCondition> getJoinConditions() {
-            return joinConditions;
-        }
-
-        public void addJoinCondition(JoinCondition joinCondition) {
-            this.joinConditions.add(joinCondition);
-        }
-
-        // 内部类：关联条件定义
-        public static class JoinCondition {
-            private String entityField;
-            private String operator;
-            private String joinEntityField;
-            private Object value;
-            private boolean or = false;
-
-            public String getEntityField() {
-                return entityField;
-            }
-
-            public void setEntityField(String entityField) {
-                this.entityField = entityField;
-            }
-
-            public String getOperator() {
-                return operator;
-            }
-
-            public void setOperator(String operator) {
-                this.operator = operator;
-            }
-
-            public String getJoinEntityField() {
-                return joinEntityField;
-            }
-
-            public void setJoinEntityField(String joinEntityField) {
-                this.joinEntityField = joinEntityField;
-            }
-
-            public Object getValue() {
-                return value;
-            }
-
-            public void setValue(Object value) {
-                this.value = value;
-            }
-
-            public boolean isOr() {
-                return or;
-            }
-
-            public void setOr(boolean or) {
-                this.or = or;
-            }
-        }
+    public void setOperator(String operator) {
+      this.operator = operator;
     }
 
-    // 关联类型枚举
-    public enum JoinType {
-        INNER, LEFT, RIGHT, FULL
+    public Object getValue1() {
+      return value1;
     }
 
-    // Getter方法
-    public Class<T> getEntityClass() {
-        return entityClass;
+    public void setValue1(Object value1) {
+      this.value1 = value1;
     }
 
-    public String getEntityAlias() {
-        return entityAlias;
+    public Object getValue2() {
+      return value2;
     }
 
-    public FluentQuery<T> getFluentQuery() {
-        return fluentQuery;
+    public void setValue2(Object value2) {
+      this.value2 = value2;
     }
 
-    public List<Condition> getConditions() {
-        return conditions;
+    public boolean isOr() {
+      return or;
     }
 
-    public List<Order> getOrders() {
-        return orders;
+    public void setOr(boolean or) {
+      this.or = or;
     }
 
-    public List<Join> getJoins() {
-        return joins;
+    public boolean isHaving() {
+      return having;
     }
 
-    public List<String> getGroupByFields() {
-        return groupByFields;
+    public void setHaving(boolean having) {
+      this.having = having;
+    }
+  }
+
+  // 内部类：排序定义
+  public static class Order {
+    private String fieldName;
+    private boolean asc = true;
+
+    public Order(String fieldName, boolean asc) {
+      this.fieldName = fieldName;
+      this.asc = asc;
     }
 
-    public Integer getLimit() {
-        return limit;
+    public String getFieldName() {
+      return fieldName;
     }
 
-    public void setLimit(Integer limit) {
-        this.limit = limit;
+    public boolean isAsc() {
+      return asc;
+    }
+  }
+
+  // 内部类：关联查询定义
+  public static class Join {
+    private Class<?> joinClass;
+    private String joinEntityAlias;
+    private JoinType joinType;
+    private final List<JoinCondition> joinConditions = new ArrayList<>();
+
+    public Class<?> getJoinClass() {
+      return joinClass;
     }
 
-    public Integer getOffset() {
-        return offset;
+    public void setJoinClass(Class<?> joinClass) {
+      this.joinClass = joinClass;
     }
 
-    public void setOffset(Integer offset) {
-        this.offset = offset;
+    public String getJoinEntityAlias() {
+      return joinEntityAlias;
     }
 
-    public Join getCurrentJoin() {
-        return currentJoin;
+    public void setJoinEntityAlias(String joinEntityAlias) {
+      this.joinEntityAlias = joinEntityAlias;
     }
 
-    public String getCurrentLogicalOperator() {
-        return currentLogicalOperator;
+    public JoinType getJoinType() {
+      return joinType;
     }
 
-    public void setCurrentLogicalOperator(String currentLogicalOperator) {
-        this.currentLogicalOperator = currentLogicalOperator;
+    public void setJoinType(JoinType joinType) {
+      this.joinType = joinType;
     }
 
-    public void openGroup(String operator) {
-        groupStack.push(operator);
-        inGroup = true;
-        // 这里可以添加分组开始标记到条件中
+    public List<JoinCondition> getJoinConditions() {
+      return joinConditions;
     }
 
-    public void closeGroup() {
-        if (!groupStack.isEmpty()) {
-            groupStack.pop();
-        }
-        inGroup = groupStack.isEmpty();
-        // 这里可以添加分组结束标记到条件中
+    public void addJoinCondition(JoinCondition joinCondition) {
+      this.joinConditions.add(joinCondition);
     }
 
-    public String getCurrentGroupOperator() {
-        return groupStack.isEmpty() ? null : groupStack.peek();
+    // 内部类：关联条件定义
+    public static class JoinCondition {
+      private String entityField;
+      private String operator;
+      private String joinEntityField;
+      private Object value;
+      private boolean or = false;
+
+      public String getEntityField() {
+        return entityField;
+      }
+
+      public void setEntityField(String entityField) {
+        this.entityField = entityField;
+      }
+
+      public String getOperator() {
+        return operator;
+      }
+
+      public void setOperator(String operator) {
+        this.operator = operator;
+      }
+
+      public String getJoinEntityField() {
+        return joinEntityField;
+      }
+
+      public void setJoinEntityField(String joinEntityField) {
+        this.joinEntityField = joinEntityField;
+      }
+
+      public Object getValue() {
+        return value;
+      }
+
+      public void setValue(Object value) {
+        this.value = value;
+      }
+
+      public boolean isOr() {
+        return or;
+      }
+
+      public void setOr(boolean or) {
+        this.or = or;
+      }
+    }
+  }
+
+  // 关联类型枚举
+  public enum JoinType {
+    INNER,
+    LEFT,
+    RIGHT,
+    FULL
+  }
+
+  // Getter方法
+  public Class<T> getEntityClass() {
+    return entityClass;
+  }
+
+  public String getEntityAlias() {
+    return entityAlias;
+  }
+
+  public FluentQuery<T> getFluentQuery() {
+    return fluentQuery;
+  }
+
+  public List<Condition> getConditions() {
+    return conditions;
+  }
+
+  public List<Order> getOrders() {
+    return orders;
+  }
+
+  public List<Join> getJoins() {
+    return joins;
+  }
+
+  public List<String> getGroupByFields() {
+    return groupByFields;
+  }
+
+  public Integer getLimit() {
+    return limit;
+  }
+
+  public void setLimit(Integer limit) {
+    this.limit = limit;
+  }
+
+  public Integer getOffset() {
+    return offset;
+  }
+
+  public void setOffset(Integer offset) {
+    this.offset = offset;
+  }
+
+  public Join getCurrentJoin() {
+    return currentJoin;
+  }
+
+  public String getCurrentLogicalOperator() {
+    return currentLogicalOperator;
+  }
+
+  public void setCurrentLogicalOperator(String currentLogicalOperator) {
+    this.currentLogicalOperator = currentLogicalOperator;
+  }
+
+  public void openGroup(String operator) {
+    groupStack.push(operator);
+    inGroup = true;
+    // 这里可以添加分组开始标记到条件中
+  }
+
+  public void closeGroup() {
+    if (!groupStack.isEmpty()) {
+      groupStack.pop();
+    }
+    inGroup = groupStack.isEmpty();
+    // 这里可以添加分组结束标记到条件中
+  }
+
+  public String getCurrentGroupOperator() {
+    return groupStack.isEmpty() ? null : groupStack.peek();
+  }
+
+  public boolean isInGroup() {
+    return inGroup;
+  }
+
+  // 添加条件
+  public void addCondition(Condition condition) {
+    this.conditions.add(condition);
+  }
+
+  // 添加排序
+  public void addOrder(Order order) {
+    this.orders.add(order);
+  }
+
+  // 添加关联查询
+  public <J> void addJoin(Class<J> joinClass, String joinEntityAlias, JoinType joinType) {
+    Join join = new Join();
+    join.setJoinClass(joinClass);
+    join.setJoinEntityAlias(joinEntityAlias);
+    join.setJoinType(joinType);
+    this.joins.add(join);
+    this.currentJoin = join;
+  }
+
+  // 添加分组字段
+  public void addGroupByFields(String... fieldNames) {
+    for (String fieldName : fieldNames) {
+      this.groupByFields.add(fieldName);
+    }
+  }
+
+  /** 创建一个新的查询上下文，复制当前上下文的所有信息，但移除排序和分页相关信息 用于优化count查询性能 */
+  @SuppressWarnings("unchecked")
+  public QueryContext<T> cloneWithoutOrderLimit() {
+    QueryContext<T> newContext =
+        new QueryContext<>(this.entityClass, this.entityAlias, this.fluentQuery);
+
+    // 复制条件
+    for (Condition condition : this.conditions) {
+      Condition newCondition = new Condition();
+      newCondition.setFieldName(condition.getFieldName());
+      newCondition.setOperator(condition.getOperator());
+      newCondition.setValue1(condition.getValue1());
+      newCondition.setValue2(condition.getValue2());
+      newCondition.setOr(condition.isOr());
+      newCondition.setHaving(condition.isHaving());
+      newContext.addCondition(newCondition);
     }
 
-    public boolean isInGroup() {
-        return inGroup;
+    // 复制关联信息
+    for (Join join : this.joins) {
+      Join newJoin = new Join();
+      newJoin.setJoinClass(join.getJoinClass());
+      newJoin.setJoinEntityAlias(join.getJoinEntityAlias());
+      newJoin.setJoinType(join.getJoinType());
+
+      // 复制关联条件
+      for (Join.JoinCondition joinCondition : join.getJoinConditions()) {
+        Join.JoinCondition newJoinCondition = new Join.JoinCondition();
+        newJoinCondition.setEntityField(joinCondition.getEntityField());
+        newJoinCondition.setOperator(joinCondition.getOperator());
+        newJoinCondition.setJoinEntityField(joinCondition.getJoinEntityField());
+        newJoinCondition.setValue(joinCondition.getValue());
+        newJoinCondition.setOr(joinCondition.isOr());
+        newJoin.addJoinCondition(newJoinCondition);
+      }
+
+      newContext.getJoins().add(newJoin);
     }
 
-    // 添加条件
-    public void addCondition(Condition condition) {
-        this.conditions.add(condition);
-    }
+    // 复制分组字段
+    newContext.addGroupByFields(this.groupByFields.toArray(new String[0]));
 
-    // 添加排序
-    public void addOrder(Order order) {
-        this.orders.add(order);
-    }
+    return newContext;
+  }
 
-    // 添加关联查询
-    public <J> void addJoin(Class<J> joinClass, String joinEntityAlias, JoinType joinType) {
-        Join join = new Join();
-        join.setJoinClass(joinClass);
-        join.setJoinEntityAlias(joinEntityAlias);
-        join.setJoinType(joinType);
-        this.joins.add(join);
-        this.currentJoin = join;
-    }
-
-    // 添加分组字段
-    public void addGroupByFields(String... fieldNames) {
-        for (String fieldName : fieldNames) {
-            this.groupByFields.add(fieldName);
-        }
-    }
-
-    /**
-     * 创建一个新的查询上下文，复制当前上下文的所有信息，但移除排序和分页相关信息
-     * 用于优化count查询性能
-     */
-    @SuppressWarnings("unchecked")
-    public QueryContext<T> cloneWithoutOrderLimit() {
-        QueryContext<T> newContext = new QueryContext<>(this.entityClass, this.entityAlias, this.fluentQuery);
-
-        // 复制条件
-        for (Condition condition : this.conditions) {
-            Condition newCondition = new Condition();
-            newCondition.setFieldName(condition.getFieldName());
-            newCondition.setOperator(condition.getOperator());
-            newCondition.setValue1(condition.getValue1());
-            newCondition.setValue2(condition.getValue2());
-            newCondition.setOr(condition.isOr());
-            newCondition.setHaving(condition.isHaving());
-            newContext.addCondition(newCondition);
-        }
-
-        // 复制关联信息
-        for (Join join : this.joins) {
-            Join newJoin = new Join();
-            newJoin.setJoinClass(join.getJoinClass());
-            newJoin.setJoinEntityAlias(join.getJoinEntityAlias());
-            newJoin.setJoinType(join.getJoinType());
-
-            // 复制关联条件
-            for (Join.JoinCondition joinCondition : join.getJoinConditions()) {
-                Join.JoinCondition newJoinCondition = new Join.JoinCondition();
-                newJoinCondition.setEntityField(joinCondition.getEntityField());
-                newJoinCondition.setOperator(joinCondition.getOperator());
-                newJoinCondition.setJoinEntityField(joinCondition.getJoinEntityField());
-                newJoinCondition.setValue(joinCondition.getValue());
-                newJoinCondition.setOr(joinCondition.isOr());
-                newJoin.addJoinCondition(newJoinCondition);
-            }
-
-            newContext.getJoins().add(newJoin);
-        }
-
-        // 复制分组字段
-        newContext.addGroupByFields(this.groupByFields.toArray(new String[0]));
-
-        return newContext;
-    }
-
-    /**
-     * 创建投影查询的上下文
-     */
-    public QueryContext<T> cloneForProjection(String fieldName) {
-        QueryContext<T> newContext = cloneWithoutOrderLimit();
-        // 这里可以添加投影特定的逻辑
-        return newContext;
-    }
+  /** 创建投影查询的上下文 */
+  public QueryContext<T> cloneForProjection(String fieldName) {
+    QueryContext<T> newContext = cloneWithoutOrderLimit();
+    // 这里可以添加投影特定的逻辑
+    return newContext;
+  }
 }

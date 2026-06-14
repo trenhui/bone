@@ -23,64 +23,62 @@ import org.springframework.test.web.servlet.MockMvc;
 @ActiveProfiles("in-memory")
 class ExtensionApiPatchDownloadTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+  @Autowired private MockMvc mockMvc;
 
-    @Test
-    @DisplayName("PATCH /points/{id} 仅更新 description")
-    void patchPoint_partialUpdate() throws Exception {
-        mockMvc.perform(
-                        patch("/api/v1/extension/points/1")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"description\":\"PATCH 局部更新\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.description").value("PATCH 局部更新"));
-    }
+  @Test
+  @DisplayName("PATCH /points/{id} 仅更新 description")
+  void patchPoint_partialUpdate() throws Exception {
+    mockMvc
+        .perform(
+            patch("/api/v1/extension/points/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"description\":\"PATCH 局部更新\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data.description").value("PATCH 局部更新"));
+  }
 
-    @Test
-    @DisplayName("PATCH /plugins/{id} 仅更新 priority")
-    void patchPlugin_partialUpdate() throws Exception {
-        mockMvc.perform(
-                        patch("/api/v1/extension/plugins/1")
-                                .contentType(MediaType.APPLICATION_JSON)
-                                .content("{\"priority\":42}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.priority").value(42));
-    }
+  @Test
+  @DisplayName("PATCH /plugins/{id} 仅更新 priority")
+  void patchPlugin_partialUpdate() throws Exception {
+    mockMvc
+        .perform(
+            patch("/api/v1/extension/plugins/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"priority\":42}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data.priority").value(42));
+  }
 
-    @Test
-    @DisplayName("GET /plugins/{id}/versions/{ver}:download 返回制品流")
-    void downloadPluginVersion_returnsAttachment() throws Exception {
-        MockMultipartFile jar =
-                new MockMultipartFile(
-                        "file",
-                        "dl-test.jar",
-                        "application/java-archive",
-                        minimalJarBytes());
+  @Test
+  @DisplayName("GET /plugins/{id}/versions/{ver}:download 返回制品流")
+  void downloadPluginVersion_returnsAttachment() throws Exception {
+    MockMultipartFile jar =
+        new MockMultipartFile("file", "dl-test.jar", "application/java-archive", minimalJarBytes());
 
-        mockMvc.perform(
-                        multipart("/api/v1/extension/plugins:upload")
-                                .file(jar)
-                                .param("pluginId", "1")
-                                .param("name", "默认促销实现")
-                                .param("className", "com.bone.example.DefaultPricingExtension")
-                                .param("version", "dl-1.0"))
-                .andExpect(status().isCreated());
+    mockMvc
+        .perform(
+            multipart("/api/v1/extension/plugins:upload")
+                .file(jar)
+                .param("pluginId", "1")
+                .param("name", "默认促销实现")
+                .param("className", "com.bone.example.DefaultPricingExtension")
+                .param("version", "dl-1.0"))
+        .andExpect(status().isCreated());
 
-        mockMvc.perform(
-                        get("/api/v1/extension/plugins/1/versions/dl-1.0:download"))
-                .andExpect(status().isOk())
-                .andExpect(header().exists("Content-Disposition"));
-    }
+    mockMvc
+        .perform(get("/api/v1/extension/plugins/1/versions/dl-1.0:download"))
+        .andExpect(status().isOk())
+        .andExpect(header().exists("Content-Disposition"));
+  }
 
-    private static byte[] minimalJarBytes() {
-        return new byte[] {
-            0x50, 0x4b, 0x03, 0x04, 0x0a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-            0x50, 0x4b, 0x05, 0x06, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x1c, 0x00,
-            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-        };
-    }
+  private static byte[] minimalJarBytes() {
+    return new byte[] {
+      0x50, 0x4b, 0x03, 0x04, 0x0a, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x50, 0x4b, 0x05, 0x06, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x1c, 0x00,
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+    };
+  }
 }

@@ -4,4 +4,5 @@ import com.bone.engine.extension.studio.infrastructure.persistence.entity.ExtStu
 import com.bone.metadata.sdk.Repository;
 
 /** 插件执行日志 Metadata 仓储 */
-public interface ExtStudioPluginExecutionLogRepository extends Repository<ExtStudioPluginExecutionLog, Long> {}
+public interface ExtStudioPluginExecutionLogRepository
+    extends Repository<ExtStudioPluginExecutionLog, Long> {}

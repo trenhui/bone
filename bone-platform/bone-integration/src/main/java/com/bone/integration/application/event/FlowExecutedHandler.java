@@ -11,20 +11,20 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class FlowExecutedHandler {
 
-    private final IntegrationEventFollowUp followUp;
+  private final IntegrationEventFollowUp followUp;
 
-    public void handle(FlowExecutedEvent event) {
-        log.info(
-                "Flow executed: id={}, executionId={}, success={}, message={}",
-                event.flowId(),
-                event.executionId(),
-                event.success(),
-                event.message());
-        if (!event.success()) {
-            followUp.notifyHigh(
-                    "flow.execution.failed.alert",
-                    "executionId=" + event.executionId() + ", message=" + event.message(),
-                    String.valueOf(event.flowId()));
-        }
+  public void handle(FlowExecutedEvent event) {
+    log.info(
+        "Flow executed: id={}, executionId={}, success={}, message={}",
+        event.flowId(),
+        event.executionId(),
+        event.success(),
+        event.message());
+    if (!event.success()) {
+      followUp.notifyHigh(
+          "flow.execution.failed.alert",
+          "executionId=" + event.executionId() + ", message=" + event.message(),
+          String.valueOf(event.flowId()));
     }
+  }
 }

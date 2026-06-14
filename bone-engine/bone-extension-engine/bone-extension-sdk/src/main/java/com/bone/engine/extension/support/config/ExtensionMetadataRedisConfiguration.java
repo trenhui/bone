@@ -19,16 +19,18 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 @ConditionalOnBean(RedisConnectionFactory.class)
 public class ExtensionMetadataRedisConfiguration {
 
-    public static final String METADATA_REDIS_TEMPLATE_BEAN = "extensionMetadataRedisTemplate";
-    public static final String METADATA_INDEX_REDIS_TEMPLATE_BEAN = "extensionMetadataIndexRedisTemplate";
+  public static final String METADATA_REDIS_TEMPLATE_BEAN = "extensionMetadataRedisTemplate";
+  public static final String METADATA_INDEX_REDIS_TEMPLATE_BEAN =
+      "extensionMetadataIndexRedisTemplate";
 
-    @Bean(name = METADATA_INDEX_REDIS_TEMPLATE_BEAN)
-    @ConditionalOnMissingBean(name = METADATA_INDEX_REDIS_TEMPLATE_BEAN)
-    public StringRedisTemplate extensionMetadataIndexRedisTemplate(RedisConnectionFactory connectionFactory) {
-        return new StringRedisTemplate(connectionFactory);
-    }
+  @Bean(name = METADATA_INDEX_REDIS_TEMPLATE_BEAN)
+  @ConditionalOnMissingBean(name = METADATA_INDEX_REDIS_TEMPLATE_BEAN)
+  public StringRedisTemplate extensionMetadataIndexRedisTemplate(
+      RedisConnectionFactory connectionFactory) {
+    return new StringRedisTemplate(connectionFactory);
+  }
 
-    @Bean(name = METADATA_REDIS_TEMPLATE_BEAN)
+  @Bean(name = METADATA_REDIS_TEMPLATE_BEAN)
   @ConditionalOnMissingBean(name = METADATA_REDIS_TEMPLATE_BEAN)
   public RedisTemplate<String, ExtensionRoutingMetadata> extensionMetadataRedisTemplate(
       RedisConnectionFactory connectionFactory, ObjectMapper objectMapper) {

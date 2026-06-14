@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class AssignPermissionCommand {
-    private Long roleId;
-    private Long[] permissionIds;
+  private Long roleId;
+  private Long[] permissionIds;
 }

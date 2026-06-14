@@ -5,6 +5,8 @@ import com.bone.studio.generator.domain.data.CodeTemplate;
 import com.bone.studio.generator.domain.data.GenTableMetadata;
 
 public interface FileGenerator {
-    boolean supports(String templateType);
-    GeneratedFile generate(GenTableMetadata table, CodeTemplate template, String basePackage, String moduleName);
+  boolean supports(String templateType);
+
+  GeneratedFile generate(
+      GenTableMetadata table, CodeTemplate template, String basePackage, String moduleName);
 }

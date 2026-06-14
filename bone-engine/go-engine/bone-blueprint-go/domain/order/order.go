@@ -2,7 +2,9 @@ package order
 
 import (
 	"errors"
+	"math/rand"
 	"strconv"
+	"sync/atomic"
 	"time"
 )
 
@@ -90,6 +92,11 @@ func (o *Order) Pay() error {
 	return nil
 }
 
+// GetID 获取订单ID
+func (o Order) GetID() interface{} {
+	return o.ID
+}
+
 // Cancel 取消订单
 func (o *Order) Cancel() error {
 	if o.Status == OrderStatusPaid {
@@ -112,14 +119,16 @@ func (o *Order) Cancel() error {
 	return nil
 }
 
-// GetID 获取订单ID
-func (o *Order) GetID() interface{} {
-	return o.ID
+var orderNoCounter int64
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
 }
 
 // generateOrderNo 生成订单号
 func generateOrderNo() string {
 	timestamp := time.Now().Format("20060102150405")
-	random := time.Now().UnixNano() % 10000
-	return timestamp + "-" + time.Now().Format("0405") + "-" + strconv.Itoa(int(random))
+	counter := atomic.AddInt64(&orderNoCounter, 1)
+	random := rand.Intn(10000)
+	return timestamp + "-" + strconv.Itoa(random) + "-" + strconv.Itoa(int(counter))
 }

@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/bone-engine/bone-blueprint-go/domain/order"
 	"github.com/bone-engine/bone-blueprint-go/domain/repository"
 )
 
@@ -36,20 +35,20 @@ func (j *CancelExpiredOrderJob) Run() error {
 	log.Printf("Found %d expired orders", len(expiredOrders))
 
 	// 取消过期订单
-	for _, order := range expiredOrders {
-		if err := order.Cancel(); err != nil {
-			log.Printf("Error canceling order %d: %v", order.ID, err)
+	for _, ord := range expiredOrders {
+		if err := ord.Cancel(); err != nil {
+			log.Printf("Error canceling order %d: %v", ord.ID, err)
 			continue
 		}
 
 		// 保存订单
-		_, err := j.orderRepo.Update(ctx, order)
+		_, err := j.orderRepo.Update(ctx, ord)
 		if err != nil {
-			log.Printf("Error updating order %d: %v", order.ID, err)
+			log.Printf("Error updating order %d: %v", ord.ID, err)
 			continue
 		}
 
-		log.Printf("Canceled expired order: %d, OrderNo: %s", order.ID, order.OrderNo)
+		log.Printf("Canceled expired order: %d, OrderNo: %s", ord.ID, ord.OrderNo)
 	}
 
 	log.Println("Cancel expired order job completed")

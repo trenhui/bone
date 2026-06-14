@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+
 /** 进程内幂等存储（单节点联调默认，TTL 24h）。 */
 public class InMemoryCatalogIdempotencyStore implements CatalogIdempotencyStore {
 
@@ -25,7 +26,8 @@ public class InMemoryCatalogIdempotencyStore implements CatalogIdempotencyStore 
   public void put(String scopeKey, Snapshot snapshot, Duration ttl) {
     cache.put(
         scopeKey,
-        new TimedSnapshot(Instant.now(), ttl, snapshot.requestFingerprint(), snapshot.snapshotJson()));
+        new TimedSnapshot(
+            Instant.now(), ttl, snapshot.requestFingerprint(), snapshot.snapshotJson()));
   }
 
   private void purgeExpired() {
@@ -33,7 +35,8 @@ public class InMemoryCatalogIdempotencyStore implements CatalogIdempotencyStore 
     cache.entrySet().removeIf(e -> e.getValue().expiresAt().isBefore(now));
   }
 
-  private record TimedSnapshot(Instant createdAt, Duration ttl, String fingerprint, String snapshotJson) {
+  private record TimedSnapshot(
+      Instant createdAt, Duration ttl, String fingerprint, String snapshotJson) {
     Instant expiresAt() {
       return createdAt.plus(ttl);
     }

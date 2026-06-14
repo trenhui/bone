@@ -36,38 +36,36 @@ class MetadataOverlayExtensionRepositoryTest {
             .build());
   }
 
-    @Test
-    void overlayCanDisableExtensionForRouting() {
-        metadataStore.save(
-                ExtensionRoutingMetadata.builder()
-                        .extensionPoint(EXT_POINT)
-                        .code("IMPL_A")
-                        .enabled(false)
-                        .build());
+  @Test
+  void overlayCanDisableExtensionForRouting() {
+    metadataStore.save(
+        ExtensionRoutingMetadata.builder()
+            .extensionPoint(EXT_POINT)
+            .code("IMPL_A")
+            .enabled(false)
+            .build());
 
-        assertTrue(local.getEnabledExtensions(EXT_POINT).stream().findAny().isPresent());
-        assertFalse(repository.getEnabledExtensions(EXT_POINT).stream().findAny().isPresent());
-    }
+    assertTrue(local.getEnabledExtensions(EXT_POINT).stream().findAny().isPresent());
+    assertFalse(repository.getEnabledExtensions(EXT_POINT).stream().findAny().isPresent());
+  }
 
-    @Test
-    void overlayDoesNotMutateUnderlyingDefinition() {
-        metadataStore.save(
-                ExtensionRoutingMetadata.builder()
-                        .extensionPoint(EXT_POINT)
-                        .code("IMPL_A")
-                        .priority(1)
-                        .traffic(10)
-                        .enabled(false)
-                        .build());
+  @Test
+  void overlayDoesNotMutateUnderlyingDefinition() {
+    metadataStore.save(
+        ExtensionRoutingMetadata.builder()
+            .extensionPoint(EXT_POINT)
+            .code("IMPL_A")
+            .priority(1)
+            .traffic(10)
+            .enabled(false)
+            .build());
 
-        ExtensionDefinition underlying =
-                local.getExtensionByCode(EXT_POINT, "IMPL_A").orElseThrow();
-        assertTrue(underlying.isEnabled());
-        assertEquals(100, underlying.getPriority());
+    ExtensionDefinition underlying = local.getExtensionByCode(EXT_POINT, "IMPL_A").orElseThrow();
+    assertTrue(underlying.isEnabled());
+    assertEquals(100, underlying.getPriority());
 
-        ExtensionDefinition overlaid =
-                repository.getExtensionByCode(EXT_POINT, "IMPL_A").orElseThrow();
-        assertFalse(overlaid.isEnabled());
-        assertEquals(1, overlaid.getPriority());
-    }
+    ExtensionDefinition overlaid = repository.getExtensionByCode(EXT_POINT, "IMPL_A").orElseThrow();
+    assertFalse(overlaid.isEnabled());
+    assertEquals(1, overlaid.getPriority());
+  }
 }

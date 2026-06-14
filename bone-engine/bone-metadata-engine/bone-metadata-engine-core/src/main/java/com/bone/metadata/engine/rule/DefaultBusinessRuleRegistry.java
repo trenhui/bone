@@ -8,8 +8,10 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 /** 业务规则注册表默认实现 提供业务规则的完整管理功能 */
+@Component
 public class DefaultBusinessRuleRegistry implements BusinessRuleRegistry {
   private static final Logger log = LoggerFactory.getLogger(DefaultBusinessRuleRegistry.class);
 

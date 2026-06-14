@@ -10,12 +10,10 @@ import lombok.*;
 @AllArgsConstructor
 @Schema(description = "租户实体基类")
 public class TenantAbstractDTO<ID> extends AbstractDTO<ID> {
-    /**租户id*/
-    @Schema(description = "租户id")
-    private ID tenantId;
+  /** 租户id */
+  @Schema(description = "租户id")
+  private ID tenantId;
 
-    @Schema(description = "租户Code")
-    private String tenantCode;
+  @Schema(description = "租户Code")
+  private String tenantCode;
 }
-
-

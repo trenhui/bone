@@ -9,14 +9,11 @@ public class ExtensionStudioProperties {
   @NestedConfigurationProperty
   private final RuntimeSyncConfig runtimeSync = new RuntimeSyncConfig();
 
-  @NestedConfigurationProperty
-  private final ArtifactConfig artifact = new ArtifactConfig();
+  @NestedConfigurationProperty private final ArtifactConfig artifact = new ArtifactConfig();
 
-  @NestedConfigurationProperty
-  private final SecurityConfig security = new SecurityConfig();
+  @NestedConfigurationProperty private final SecurityConfig security = new SecurityConfig();
 
-  @NestedConfigurationProperty
-  private final LroConfig lro = new LroConfig();
+  @NestedConfigurationProperty private final LroConfig lro = new LroConfig();
 
   @NestedConfigurationProperty
   private final IdempotencyConfig idempotency = new IdempotencyConfig();
@@ -79,9 +76,7 @@ public class ExtensionStudioProperties {
     /** 是否对 :deploy 启用 LRO */
     private boolean deployEnabled = true;
 
-    /**
-     * true：:deploy 默认同步 200（联调/契约测试）；false：默认 202 异步（生产推荐）。
-     */
+    /** true：:deploy 默认同步 200（联调/契约测试）；false：默认 202 异步（生产推荐）。 */
     private boolean deploySyncByDefault = false;
 
     public boolean isDeployEnabled() {

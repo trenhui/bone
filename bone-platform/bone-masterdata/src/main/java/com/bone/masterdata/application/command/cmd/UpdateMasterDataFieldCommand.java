@@ -10,12 +10,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UpdateMasterDataFieldCommand {
-    private Long id;
-    private String name;
-    private String type;
-    private Integer length;
-    private Boolean required;
-    private String defaultValue;
-    private String description;
-    private Integer sortOrder;
+  private Long id;
+  private String name;
+  private String type;
+  private Integer length;
+  private Boolean required;
+  private String defaultValue;
+  private String description;
+  private Integer sortOrder;
 }

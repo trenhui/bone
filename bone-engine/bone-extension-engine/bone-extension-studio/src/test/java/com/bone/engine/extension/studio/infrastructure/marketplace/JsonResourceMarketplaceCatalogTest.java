@@ -13,8 +13,8 @@ import org.springframework.core.io.ByteArrayResource;
 
 class JsonResourceMarketplaceCatalogTest {
 
-    private static final String JSON =
-            """
+  private static final String JSON =
+      """
             [
               {
                 "id":"sample.foo",
@@ -43,31 +43,32 @@ class JsonResourceMarketplaceCatalogTest {
             ]
             """;
 
-    private JsonResourceMarketplaceCatalog newCatalog() {
-        return new JsonResourceMarketplaceCatalog(new ObjectMapper(), new ByteArrayResource(JSON.getBytes()));
-    }
+  private JsonResourceMarketplaceCatalog newCatalog() {
+    return new JsonResourceMarketplaceCatalog(
+        new ObjectMapper(), new ByteArrayResource(JSON.getBytes()));
+  }
 
-    @Test
-    @DisplayName("list 不带过滤返回全部条目")
-    void listAll() {
-        List<MarketplaceItem> items = newCatalog().list(null, null);
-        assertEquals(2, items.size());
-    }
+  @Test
+  @DisplayName("list 不带过滤返回全部条目")
+  void listAll() {
+    List<MarketplaceItem> items = newCatalog().list(null, null);
+    assertEquals(2, items.size());
+  }
 
-    @Test
-    @DisplayName("按 keyword/category 过滤")
-    void listWithFilter() {
-        JsonResourceMarketplaceCatalog catalog = newCatalog();
-        assertEquals(1, catalog.list("foo", null).size());
-        assertEquals(1, catalog.list(null, "discount").size());
-        assertEquals(0, catalog.list("foo", "observability").size());
-    }
+  @Test
+  @DisplayName("按 keyword/category 过滤")
+  void listWithFilter() {
+    JsonResourceMarketplaceCatalog catalog = newCatalog();
+    assertEquals(1, catalog.list("foo", null).size());
+    assertEquals(1, catalog.list(null, "discount").size());
+    assertEquals(0, catalog.list("foo", "observability").size());
+  }
 
-    @Test
-    @DisplayName("findById 命中与未命中")
-    void findById() {
-        JsonResourceMarketplaceCatalog catalog = newCatalog();
-        assertTrue(catalog.findById("sample.foo").isPresent());
-        assertFalse(catalog.findById("missing").isPresent());
-    }
+  @Test
+  @DisplayName("findById 命中与未命中")
+  void findById() {
+    JsonResourceMarketplaceCatalog catalog = newCatalog();
+    assertTrue(catalog.findById("sample.foo").isPresent());
+    assertFalse(catalog.findById("missing").isPresent());
+  }
 }

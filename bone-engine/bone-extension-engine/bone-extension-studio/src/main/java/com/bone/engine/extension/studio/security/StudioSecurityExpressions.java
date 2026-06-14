@@ -11,30 +11,30 @@ import org.springframework.stereotype.Component;
 @Component("studioSecurity")
 public class StudioSecurityExpressions {
 
-    private final ExtensionStudioProperties studioProperties;
+  private final ExtensionStudioProperties studioProperties;
 
-    public StudioSecurityExpressions(ExtensionStudioProperties studioProperties) {
-        this.studioProperties = studioProperties;
-    }
+  public StudioSecurityExpressions(ExtensionStudioProperties studioProperties) {
+    this.studioProperties = studioProperties;
+  }
 
-    public boolean hasScope(String scope) {
-        if (studioProperties.getSecurity().isPermitUnauthenticated()) {
-            return true;
-        }
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) {
-            return false;
-        }
-        Collection<? extends GrantedAuthority> authorities = auth.getAuthorities();
-        if (authorities == null || authorities.isEmpty()) {
-            return false;
-        }
-        for (GrantedAuthority authority : authorities) {
-            String value = authority.getAuthority();
-            if ("*".equals(value) || scope.equals(value) || ("SCOPE_" + scope).equals(value)) {
-                return true;
-            }
-        }
-        return false;
+  public boolean hasScope(String scope) {
+    if (studioProperties.getSecurity().isPermitUnauthenticated()) {
+      return true;
     }
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (auth == null || !auth.isAuthenticated()) {
+      return false;
+    }
+    Collection<? extends GrantedAuthority> authorities = auth.getAuthorities();
+    if (authorities == null || authorities.isEmpty()) {
+      return false;
+    }
+    for (GrantedAuthority authority : authorities) {
+      String value = authority.getAuthority();
+      if ("*".equals(value) || scope.equals(value) || ("SCOPE_" + scope).equals(value)) {
+        return true;
+      }
+    }
+    return false;
+  }
 }

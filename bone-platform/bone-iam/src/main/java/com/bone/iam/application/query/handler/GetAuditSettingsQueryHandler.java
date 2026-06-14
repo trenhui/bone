@@ -11,18 +11,18 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class GetAuditSettingsQueryHandler {
 
-    private final AuditSettingsStore auditSettingsStore;
+  private final AuditSettingsStore auditSettingsStore;
 
-    @Transactional(readOnly = true)
-    public AuditSettingsDTO handle() {
-        Long tenantId = TenantContext.getTenantId();
-        var settings = auditSettingsStore.findByTenantId(tenantId != null ? tenantId : 0L);
-        AuditSettingsDTO dto = new AuditSettingsDTO();
-        dto.setRetentionDays(settings.getRetentionDays());
-        dto.setAutoArchiveEnabled(settings.isAutoArchiveEnabled());
-        dto.setArchiveAfterDays(settings.getArchiveAfterDays());
-        dto.setStorageType(settings.getStorageType());
-        dto.setWormEnabled(settings.isWormEnabled());
-        return dto;
-    }
+  @Transactional(readOnly = true)
+  public AuditSettingsDTO handle() {
+    Long tenantId = TenantContext.getTenantId();
+    var settings = auditSettingsStore.findByTenantId(tenantId != null ? tenantId : 0L);
+    AuditSettingsDTO dto = new AuditSettingsDTO();
+    dto.setRetentionDays(settings.getRetentionDays());
+    dto.setAutoArchiveEnabled(settings.isAutoArchiveEnabled());
+    dto.setArchiveAfterDays(settings.getArchiveAfterDays());
+    dto.setStorageType(settings.getStorageType());
+    dto.setWormEnabled(settings.isWormEnabled());
+    return dto;
+  }
 }

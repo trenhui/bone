@@ -9,9 +9,9 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @Component
 public class MasterDataEntityPublishedHandler {
 
-    @TransactionalEventListener
-    public void handle(MasterDataEntityPublishedEvent event) {
-        log.info("主数据实体发布事件: id={}", event.id().value());
-        // 这里可以添加业务逻辑，比如同步到其他系统等
-    }
+  @TransactionalEventListener
+  public void handle(MasterDataEntityPublishedEvent event) {
+    log.info("主数据实体发布事件: id={}", event.id().value());
+    // 这里可以添加业务逻辑，比如同步到其他系统等
+  }
 }

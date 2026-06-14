@@ -1,7 +1,7 @@
 package com.bone.metadata.catalog.adapter.web.controller;
 
-import com.bone.core.result.ApiResponse;
-import com.bone.core.result.PageResult;
+import com.bone.core.model.ApiResponse;
+import com.bone.core.model.PageResult;
 import com.bone.metadata.catalog.application.command.cmd.CreateMetaFieldCommand;
 import com.bone.metadata.catalog.application.command.cmd.UpdateMetaFieldCommand;
 import com.bone.metadata.catalog.application.command.handler.CreateMetaFieldHandler;

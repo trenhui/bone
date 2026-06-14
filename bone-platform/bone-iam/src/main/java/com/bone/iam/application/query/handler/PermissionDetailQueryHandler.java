@@ -12,20 +12,21 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class PermissionDetailQueryHandler {
 
-    @Transactional(readOnly = true)
-    public PermissionDTO handle(Long id) {
-        Permission permission = QueryBuilder.from(Permission.class)
-                .where(Permission::getId)
-                .eq(id)
-                .first()
-                .orElseThrow(() -> NotFoundException.of("权限不存在"));
-        PermissionDTO dto = new PermissionDTO();
-        dto.setId(permission.getId());
-        dto.setCode(permission.getCode());
-        dto.setName(permission.getName());
-        dto.setResourceType(permission.getResourceType());
-        dto.setResourcePath(permission.getResourcePath());
-        dto.setAction(permission.getAction());
-        return dto;
-    }
+  @Transactional(readOnly = true)
+  public PermissionDTO handle(Long id) {
+    Permission permission =
+        QueryBuilder.from(Permission.class)
+            .where(Permission::getId)
+            .eq(id)
+            .first()
+            .orElseThrow(() -> NotFoundException.of("权限不存在"));
+    PermissionDTO dto = new PermissionDTO();
+    dto.setId(permission.getId());
+    dto.setCode(permission.getCode());
+    dto.setName(permission.getName());
+    dto.setResourceType(permission.getResourceType());
+    dto.setResourcePath(permission.getResourcePath());
+    dto.setAction(permission.getAction());
+    return dto;
+  }
 }

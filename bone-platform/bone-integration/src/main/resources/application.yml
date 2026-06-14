@@ -21,6 +21,11 @@ spring:
     producer:
       group: bone-integration-producer
 
+metadata:
+  sdk:
+    appcode: bone-integration
+    deploymentMode: EMBEDDED
+
 bone:
   integration:
     outbox:
@@ -33,7 +38,7 @@ bone:
       jwt-enabled: ${BONE_INTEGRATION_JWT_ENABLED:false}
   iam:
     jwt:
-      secret-key: ${BONE_IAM_JWT_SECRET:change-me-change-me-change-me-change-me-32bytes}
+      secret-key: ${BONE_IAM_JWT_SECRET_KEY:${BONE_JWT_SECRET:}}
 
 integration:
   camel:
@@ -55,13 +60,13 @@ integration:
 alert:
   policies:
     INFO:
-      channels: []
+      channels: [LOG]
     MEDIUM:
-      channels: [EMAIL]
+      channels: [EMAIL, LOG]
     HIGH:
-      channels: [DINGTALK, EMAIL]
+      channels: [DINGTALK, EMAIL, LOG]
     CRITICAL:
-      channels: [DINGTALK, SMS, EMAIL]
+      channels: [DINGTALK, SMS, EMAIL, LOG]
   channels:
     mail:
       enabled: ${BONE_ALERT_MAIL_ENABLED:false}
@@ -70,7 +75,7 @@ alert:
         - ${BONE_ALERT_MAIL_TO:ops@bone.local}
     dingtalk:
       enabled: ${BONE_ALERT_DINGTALK_ENABLED:false}
-      webhook: ${DINGTALK_WEBHOOK:}
+      webhook: ${DINGTALK_WEBHOOK:https://placeholder.local}
       secret: ${DINGTALK_SECRET:}
     sms:
       enabled: ${BONE_ALERT_SMS_ENABLED:false}

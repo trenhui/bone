@@ -7,6 +7,10 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+  # 开发环境启用 H2 控制台
+  h2:
+    console:
+      enabled: true
 
 bone:
   extension:
@@ -18,6 +22,10 @@ bone:
         refresh-channel: bone:ext:metadata:refresh
       idempotency:
         backend: redis
+  iam:
+    jwt:
+      # 开发环境默认密钥，生产环境必须通过环境变量注入
+      secret-key: ${BONE_IAM_JWT_SECRET:${BONE_JWT_SECRET:dev-only-secret-key-minimum-32-bytes-long}}
 
 logging:
   level:

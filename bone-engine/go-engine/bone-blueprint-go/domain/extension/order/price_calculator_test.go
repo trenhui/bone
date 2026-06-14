@@ -3,6 +3,7 @@ package order
 import (
 	"testing"
 
+	"github.com/bone-engine/bone-blueprint-go/domain/order"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,9 +22,9 @@ func TestDefaultOrderPriceCalculator(t *testing.T) {
 		{2, 1, 50.0, 50.0},
 	}
 
-	orderItems := make([]OrderItem, len(items))
+	orderItems := make([]order.OrderItem, len(items))
 	for i, item := range items {
-		orderItems[i] = OrderItem{
+		orderItems[i] = order.OrderItem{
 			ProductID: item.ProductID,
 			Quantity:  item.Quantity,
 			Price:     item.Price,
@@ -31,7 +32,7 @@ func TestDefaultOrderPriceCalculator(t *testing.T) {
 		}
 	}
 
-	testOrder, _ := NewOrder(1, orderItems)
+	testOrder, _ := order.NewOrder(1, orderItems)
 
 	// 测试计算价格
 	price, err := calc.Calculate(testOrder)
@@ -60,9 +61,9 @@ func TestMemberOrderPriceCalculator(t *testing.T) {
 		{2, 1, 50.0, 50.0},
 	}
 
-	orderItems := make([]OrderItem, len(items))
+	orderItems := make([]order.OrderItem, len(items))
 	for i, item := range items {
-		orderItems[i] = OrderItem{
+		orderItems[i] = order.OrderItem{
 			ProductID: item.ProductID,
 			Quantity:  item.Quantity,
 			Price:     item.Price,
@@ -70,7 +71,7 @@ func TestMemberOrderPriceCalculator(t *testing.T) {
 		}
 	}
 
-	testOrder, _ := NewOrder(1, orderItems)
+	testOrder, _ := order.NewOrder(1, orderItems)
 
 	// 测试计算价格
 	price, err := calc.Calculate(testOrder)
@@ -99,9 +100,9 @@ func TestVipOrderPriceCalculator(t *testing.T) {
 		{2, 1, 50.0, 50.0},
 	}
 
-	orderItems := make([]OrderItem, len(items))
+	orderItems := make([]order.OrderItem, len(items))
 	for i, item := range items {
-		orderItems[i] = OrderItem{
+		orderItems[i] = order.OrderItem{
 			ProductID: item.ProductID,
 			Quantity:  item.Quantity,
 			Price:     item.Price,
@@ -109,7 +110,7 @@ func TestVipOrderPriceCalculator(t *testing.T) {
 		}
 	}
 
-	testOrder, _ := NewOrder(1, orderItems)
+	testOrder, _ := order.NewOrder(1, orderItems)
 
 	// 测试计算价格
 	price, err := calc.Calculate(testOrder)
@@ -138,9 +139,9 @@ func TestEnterpriseOrderPriceCalculator(t *testing.T) {
 		{2, 1, 50.0, 50.0},
 	}
 
-	orderItems := make([]OrderItem, len(items))
+	orderItems := make([]order.OrderItem, len(items))
 	for i, item := range items {
-		orderItems[i] = OrderItem{
+		orderItems[i] = order.OrderItem{
 			ProductID: item.ProductID,
 			Quantity:  item.Quantity,
 			Price:     item.Price,
@@ -148,7 +149,7 @@ func TestEnterpriseOrderPriceCalculator(t *testing.T) {
 		}
 	}
 
-	testOrder, _ := NewOrder(1, orderItems)
+	testOrder, _ := order.NewOrder(1, orderItems)
 
 	// 测试计算价格
 	price, err := calc.Calculate(testOrder)
@@ -177,9 +178,9 @@ func TestPromotionOrderPriceCalculator(t *testing.T) {
 		{2, 1, 50.0, 50.0},
 	}
 
-	orderItems := make([]OrderItem, len(items))
+	orderItems := make([]order.OrderItem, len(items))
 	for i, item := range items {
-		orderItems[i] = OrderItem{
+		orderItems[i] = order.OrderItem{
 			ProductID: item.ProductID,
 			Quantity:  item.Quantity,
 			Price:     item.Price,
@@ -187,7 +188,7 @@ func TestPromotionOrderPriceCalculator(t *testing.T) {
 		}
 	}
 
-	testOrder, _ := NewOrder(1, orderItems)
+	testOrder, _ := order.NewOrder(1, orderItems)
 
 	// 测试计算价格
 	price, err := calc.Calculate(testOrder)

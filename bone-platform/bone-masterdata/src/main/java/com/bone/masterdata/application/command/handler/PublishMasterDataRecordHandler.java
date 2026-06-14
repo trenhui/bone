@@ -16,21 +16,20 @@ import org.springframework.transaction.annotation.Transactional;
     idempotent = true,
     cost = 2,
     retryable = false,
-    timeout = 20
-)
+    timeout = 20)
 @Component
 @RequiredArgsConstructor
 public class PublishMasterDataRecordHandler {
-    private final MasterDataRecordRepository masterDataRecordRepository;
+  private final MasterDataRecordRepository masterDataRecordRepository;
 
-    @Transactional
-    public void handle(Long id) {
-        MasterDataRecord record = masterDataRecordRepository.findById(id);
-        if (record == null) {
-            throw NotFoundException.of("主数据记录不存在");
-        }
-
-        record.publish();
-        masterDataRecordRepository.update(record);
+  @Transactional
+  public void handle(Long id) {
+    MasterDataRecord record = masterDataRecordRepository.findById(id);
+    if (record == null) {
+      throw NotFoundException.of("主数据记录不存在");
     }
+
+    record.publish();
+    masterDataRecordRepository.update(record);
+  }
 }

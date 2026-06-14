@@ -6,8 +6,8 @@ import lombok.Data;
 @Data
 public class UpdateMyProfileCommand {
 
-    private Long accountId;
-    private String realName;
-    private String phone;
-    private String avatarUrl;
+  private Long accountId;
+  private String realName;
+  private String phone;
+  private String avatarUrl;
 }

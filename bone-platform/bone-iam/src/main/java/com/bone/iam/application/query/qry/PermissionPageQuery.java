@@ -8,7 +8,7 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class PermissionPageQuery extends PageParam {
-    private String keyword;
-    private PermissionType type;
-    private Long parentId;
+  private String keyword;
+  private PermissionType type;
+  private Long parentId;
 }

@@ -1,19 +1,19 @@
-//package com.bone.metadata.sdk.query.dsl.util;
+// package com.bone.metadata.sdk.query.dsl.util;
 //
-//import com.github.benmanes.caffeine.cache.Cache;
-//import com.github.benmanes.caffeine.cache.Caffeine;
+// import com.github.benmanes.caffeine.cache.Cache;
+// import com.github.benmanes.caffeine.cache.Caffeine;
 //
-//import java.beans.Introspector;
-//import java.lang.invoke.SerializedLambda;
-//import java.lang.reflect.Method;
-//import java.util.concurrent.TimeUnit;
-//import java.util.function.Function;
+// import java.beans.Introspector;
+// import java.lang.invoke.SerializedLambda;
+// import java.lang.reflect.Method;
+// import java.util.concurrent.TimeUnit;
+// import java.util.function.Function;
 //
-///**
+/// **
 // * Lambda表达式工具类 - 用于从Lambda表达式中提取字段名
 // * 使用Caffeine缓存提高性能
 // */
-//public class LambdaUtils {
+// public class LambdaUtils {
 //
 //    // 使用Caffeine缓存提高Lambda表达式解析性能
 //    private static final Cache<String, String> FIELD_NAME_CACHE = Caffeine.newBuilder()
@@ -70,7 +70,8 @@
 //        } else if (methodName.startsWith("is")) {
 //            return Introspector.decapitalize(methodName.substring(2));
 //        }
-//        throw new IllegalArgumentException("Invalid method name for field extraction: " + methodName);
+//        throw new IllegalArgumentException("Invalid method name for field extraction: " +
+// methodName);
 //    }
 //
 //    /**
@@ -79,4 +80,4 @@
 //    private static <T, R> String generateCacheKey(Function<T, R> fieldGetter) {
 //        return fieldGetter.getClass().getName() + "_" + fieldGetter.hashCode();
 //    }
-//}
+// }

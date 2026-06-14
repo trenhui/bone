@@ -1,20 +1,20 @@
-//package com.bone.metadata.sdk.query.dsl;
+// package com.bone.metadata.sdk.query.dsl;
 //
-//import com.bone.core.model.PageResult;
-//import com.bone.metadata.sdk.domain.query.CompiledQuery;
-//import com.bone.metadata.sdk.sql.executor.SqlExecutor;
-//import org.springframework.dao.DataAccessException;
-//import org.springframework.dao.EmptyResultDataAccessException;
+// import com.bone.core.model.PageResult;
+// import com.bone.metadata.sdk.domain.query.CompiledQuery;
+// import com.bone.metadata.sdk.sql.executor.SqlExecutor;
+// import org.springframework.dao.DataAccessException;
+// import org.springframework.dao.EmptyResultDataAccessException;
 //
-//import java.util.*;
-//import java.util.function.Function;
-//import java.util.stream.Collectors;
+// import java.util.*;
+// import java.util.function.Function;
+// import java.util.stream.Collectors;
 //
-///**
+/// **
 // * 增强的SqlExecutor适配器
 // * 提供类型安全的API、批量操作和更好的错误处理
 // */
-//public class SqlExecutorAdapter {
+// public class SqlExecutorAdapter {
 //
 //    private final SqlExecutor sqlExecutor;
 //
@@ -53,7 +53,8 @@
 //                case 0 -> Optional.empty();
 //                case 1 -> Optional.of(results.get(0));
 //                default -> {
-//                    System.err.printf("Warning: Query returned %d results but expected single%n", results.size());
+//                    System.err.printf("Warning: Query returned %d results but expected single%n",
+// results.size());
 //                    yield Optional.of(results.get(0));
 //                }
 //            };
@@ -67,7 +68,8 @@
 //    /**
 //     * 执行查询并映射结果
 //     */
-//    public <T, R> List<R> queryAndMap(CompiledQuery query, Class<T> entityClass, Function<T, R> mapper) {
+//    public <T, R> List<R> queryAndMap(CompiledQuery query, Class<T> entityClass, Function<T, R>
+// mapper) {
 //        List<T> results = query(query, entityClass);
 //        return results.stream().map(mapper).collect(Collectors.toList());
 //    }
@@ -324,4 +326,4 @@
 //            return super.getMessage() + " [SQL: " + query.getSql() + "]";
 //        }
 //    }
-//}
+// }

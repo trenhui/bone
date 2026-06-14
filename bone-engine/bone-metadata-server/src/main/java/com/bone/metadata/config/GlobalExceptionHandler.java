@@ -2,8 +2,8 @@ package com.bone.metadata.config;
 
 import com.bone.core.exception.BizException;
 import com.bone.core.exception.DomainException;
+import com.bone.core.model.ApiResponse;
 import com.bone.core.model.ProblemDetail;
-import com.bone.core.result.ApiResponse;
 import com.bone.metadata.catalog.common.CatalogApiResponses;
 import com.bone.metadata.catalog.common.MetaErrorCodes;
 import com.bone.metadata.catalog.common.exception.CatalogIdempotencyConflictException;
@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -26,12 +27,22 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionHandler {
 
   @ExceptionHandler(MethodArgumentNotValidException.class)
-  public ResponseEntity<ApiResponse<ProblemDetail>> handleValidation(MethodArgumentNotValidException ex) {
+  public ResponseEntity<ApiResponse<ProblemDetail>> handleValidation(
+      MethodArgumentNotValidException ex) {
     String detail =
         ex.getBindingResult().getFieldErrors().stream()
             .map(err -> err.getField() + ": " + err.getDefaultMessage())
             .collect(Collectors.joining(", "));
-    return CatalogApiResponses.problem(HttpStatus.BAD_REQUEST, MetaErrorCodes.VALIDATION_FAILED, detail);
+    return CatalogApiResponses.problem(
+        HttpStatus.BAD_REQUEST, MetaErrorCodes.VALIDATION_FAILED, detail);
+  }
+
+  @ExceptionHandler(HttpMessageNotReadableException.class)
+  public ResponseEntity<ApiResponse<ProblemDetail>> handleMessageNotReadable(
+      HttpMessageNotReadableException ex) {
+    String detail = ex.getMostSpecificCause().getMessage();
+    return CatalogApiResponses.problem(
+        HttpStatus.BAD_REQUEST, MetaErrorCodes.VALIDATION_FAILED, detail);
   }
 
   @ExceptionHandler(RuntimeRecordException.class)
@@ -40,8 +51,8 @@ public class GlobalExceptionHandler {
         switch (ex.getErrorCode()) {
           case "META_RUNTIME_RECORD_NOT_FOUND" -> HttpStatus.NOT_FOUND;
           case "META_PRECONDITION_FAILED" -> HttpStatus.PRECONDITION_FAILED;
-          case "META_RUNTIME_INVALID_QUERY", "META_RUNTIME_INVALID_IDENTIFIER" ->
-              HttpStatus.BAD_REQUEST;
+          case "META_RUNTIME_INVALID_QUERY", "META_RUNTIME_INVALID_IDENTIFIER" -> HttpStatus
+              .BAD_REQUEST;
           default -> HttpStatus.BAD_REQUEST;
         };
     return CatalogApiResponses.problem(status, ex.getErrorCode(), ex.getMessage());
@@ -49,12 +60,14 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(BizException.class)
   public ResponseEntity<ApiResponse<ProblemDetail>> handleBiz(BizException ex) {
-    return CatalogApiResponses.problem(HttpStatus.BAD_REQUEST, MetaErrorCodes.BIZ_ERROR, ex.getMessage());
+    return CatalogApiResponses.problem(
+        HttpStatus.BAD_REQUEST, MetaErrorCodes.BIZ_ERROR, ex.getMessage());
   }
 
   @ExceptionHandler(DomainException.class)
   public ResponseEntity<ApiResponse<ProblemDetail>> handleDomain(DomainException ex) {
-    return CatalogApiResponses.problem(HttpStatus.CONFLICT, MetaErrorCodes.DOMAIN_ERROR, ex.getMessage());
+    return CatalogApiResponses.problem(
+        HttpStatus.CONFLICT, MetaErrorCodes.DOMAIN_ERROR, ex.getMessage());
   }
 
   @ExceptionHandler(CatalogOptimisticLockException.class)
@@ -73,7 +86,8 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(FieldConflictException.class)
   public ResponseEntity<ApiResponse<ProblemDetail>> handleFieldConflict(FieldConflictException ex) {
-    return CatalogApiResponses.problem(HttpStatus.CONFLICT, MetaErrorCodes.FIELD_CONFLICT, ex.getMessage());
+    return CatalogApiResponses.problem(
+        HttpStatus.CONFLICT, MetaErrorCodes.FIELD_CONFLICT, ex.getMessage());
   }
 
   @ExceptionHandler(TooManyRequestsException.class)

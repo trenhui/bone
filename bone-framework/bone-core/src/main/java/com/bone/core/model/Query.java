@@ -1,4 +1,3 @@
 package com.bone.core.model;
 
-public interface Query {
-}
+public interface Query {}

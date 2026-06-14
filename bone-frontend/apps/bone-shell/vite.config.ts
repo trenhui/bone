@@ -1,12 +1,17 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import qiankun from 'vite-plugin-qiankun'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    qiankun('bone-shell', { useDevMode: true }),
+  ],
   server: {
     port: 3000,
     host: '0.0.0.0',
+    cors: true,
     proxy: {
       // 扩展：经 Gateway 统一入口（Studio 直连可改为 8088）
       '/api/v1/extension': {

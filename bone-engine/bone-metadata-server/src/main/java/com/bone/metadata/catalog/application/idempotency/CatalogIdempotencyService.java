@@ -1,6 +1,6 @@
 package com.bone.metadata.catalog.application.idempotency;
 
-import com.bone.core.result.ApiResponse;
+import com.bone.core.model.ApiResponse;
 import com.bone.metadata.catalog.common.exception.CatalogIdempotencyConflictException;
 import com.bone.metadata.catalog.domain.gateway.CatalogIdempotencyStore;
 import com.fasterxml.jackson.core.JsonProcessingException;

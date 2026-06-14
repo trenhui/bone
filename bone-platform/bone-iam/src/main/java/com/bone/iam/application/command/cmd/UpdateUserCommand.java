@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class UpdateUserCommand {
-    private String id;
-    private String email;
-    private Long[] roleIds;
+  private String id;
+  private String email;
+  private Long[] roleIds;
 }

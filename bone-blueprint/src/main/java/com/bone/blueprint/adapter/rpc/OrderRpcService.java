@@ -7,7 +7,7 @@ import com.bone.blueprint.application.command.handler.CreateOrderCommandHandler;
 import com.bone.blueprint.application.query.dto.OrderDto;
 import com.bone.blueprint.application.query.handler.OrderDetailQueryHandler;
 import com.bone.blueprint.application.query.qry.OrderDetailQuery;
-import com.bone.core.result.ApiResponse;
+import com.bone.core.model.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;

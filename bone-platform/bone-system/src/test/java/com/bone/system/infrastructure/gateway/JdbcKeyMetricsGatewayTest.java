@@ -18,37 +18,38 @@ import org.springframework.jdbc.core.JdbcTemplate;
 @ExtendWith(MockitoExtension.class)
 class JdbcKeyMetricsGatewayTest {
 
-    @Mock
-    JdbcTemplate jdbcTemplate;
+  @Mock JdbcTemplate jdbcTemplate;
 
-    @Test
-    void countsHappyPath() {
-        when(jdbcTemplate.queryForObject(contains("iam_account"), eq(Long.class))).thenReturn(10L);
-        when(jdbcTemplate.queryForObject(contains("meta_entity"), eq(Long.class))).thenReturn(20L);
-        when(jdbcTemplate.queryForObject(contains("int_flow"), eq(Long.class))).thenReturn(30L);
-        when(jdbcTemplate.queryForObject(contains("exts_plugin_version"), eq(Long.class))).thenReturn(40L);
+  @Test
+  void countsHappyPath() {
+    when(jdbcTemplate.queryForObject(contains("iam_account"), eq(Long.class))).thenReturn(10L);
+    when(jdbcTemplate.queryForObject(contains("meta_entity"), eq(Long.class))).thenReturn(20L);
+    when(jdbcTemplate.queryForObject(contains("int_flow"), eq(Long.class))).thenReturn(30L);
+    when(jdbcTemplate.queryForObject(contains("exts_plugin_version"), eq(Long.class)))
+        .thenReturn(40L);
 
-        KeyMetrics dto = new JdbcKeyMetricsGateway(jdbcTemplate, new SimpleMeterRegistry()).collect();
+    KeyMetrics dto = new JdbcKeyMetricsGateway(jdbcTemplate, new SimpleMeterRegistry()).collect();
 
-        assertThat(dto.getUserCount()).isEqualTo(10);
-        assertThat(dto.getEntityCount()).isEqualTo(20);
-        assertThat(dto.getIntegrationFlowCount()).isEqualTo(30);
-        assertThat(dto.getExtensionPluginCount()).isEqualTo(40);
-    }
+    assertThat(dto.getUserCount()).isEqualTo(10);
+    assertThat(dto.getEntityCount()).isEqualTo(20);
+    assertThat(dto.getIntegrationFlowCount()).isEqualTo(30);
+    assertThat(dto.getExtensionPluginCount()).isEqualTo(40);
+  }
 
-    @Test
-    void singleTableFailureDoesNotPropagate() {
-        when(jdbcTemplate.queryForObject(contains("iam_account"), eq(Long.class)))
-                .thenThrow(new DataAccessResourceFailureException("boom"));
-        when(jdbcTemplate.queryForObject(contains("meta_entity"), eq(Long.class))).thenReturn(2L);
-        when(jdbcTemplate.queryForObject(contains("int_flow"), eq(Long.class))).thenReturn(3L);
-        when(jdbcTemplate.queryForObject(contains("exts_plugin_version"), eq(Long.class))).thenReturn(4L);
+  @Test
+  void singleTableFailureDoesNotPropagate() {
+    when(jdbcTemplate.queryForObject(contains("iam_account"), eq(Long.class)))
+        .thenThrow(new DataAccessResourceFailureException("boom"));
+    when(jdbcTemplate.queryForObject(contains("meta_entity"), eq(Long.class))).thenReturn(2L);
+    when(jdbcTemplate.queryForObject(contains("int_flow"), eq(Long.class))).thenReturn(3L);
+    when(jdbcTemplate.queryForObject(contains("exts_plugin_version"), eq(Long.class)))
+        .thenReturn(4L);
 
-        KeyMetrics dto = new JdbcKeyMetricsGateway(jdbcTemplate, new SimpleMeterRegistry()).collect();
+    KeyMetrics dto = new JdbcKeyMetricsGateway(jdbcTemplate, new SimpleMeterRegistry()).collect();
 
-        assertThat(dto.getUserCount()).isZero();
-        assertThat(dto.getEntityCount()).isEqualTo(2);
-        assertThat(dto.getIntegrationFlowCount()).isEqualTo(3);
-        assertThat(dto.getExtensionPluginCount()).isEqualTo(4);
-    }
+    assertThat(dto.getUserCount()).isZero();
+    assertThat(dto.getEntityCount()).isEqualTo(2);
+    assertThat(dto.getIntegrationFlowCount()).isEqualTo(3);
+    assertThat(dto.getExtensionPluginCount()).isEqualTo(4);
+  }
 }

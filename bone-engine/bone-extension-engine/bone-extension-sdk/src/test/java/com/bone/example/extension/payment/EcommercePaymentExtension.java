@@ -3,146 +3,147 @@ package com.bone.example.extension.payment;
 import com.bone.engine.extension.api.annotation.Extension;
 import com.bone.engine.extension.api.annotation.ExtensionDoc;
 import com.bone.engine.extension.support.context.BizContext;
+import com.bone.example.extension.result.ValidationResult;
+import java.math.BigDecimal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-
-import java.math.BigDecimal;
-
-import com.bone.example.extension.result.ValidationResult;
 
 /**
  * 电商支付扩展点实现类
- * <p>
- * 提供电商场景下的支付处理逻辑，包括支付金额计算、手续费应用等功能
+ *
+ * <p>提供电商场景下的支付处理逻辑，包括支付金额计算、手续费应用等功能
  */
 @Extension(
-        name = "电商支付扩展实现",
-        description = "处理电商场景下的支付请求",
-        tenant = "ECOMMERCE",        // 必须加！
-        bizCode = "PAYMENT",         // 强烈建议加！
-        useCase = "ONLINE_TRADE",
-        scenario = "WECHAT",
-        order = 20,
-        weight = 100
-)
+    name = "电商支付扩展实现",
+    description = "处理电商场景下的支付请求",
+    tenant = "ECOMMERCE", // 必须加！
+    bizCode = "PAYMENT", // 强烈建议加！
+    useCase = "ONLINE_TRADE",
+    scenario = "WECHAT",
+    order = 20,
+    weight = 100)
 @ExtensionDoc(
     description = "专为电商平台设计的支付扩展实现，提供符合电商场景特点的支付计算和处理功能",
-    note = "该扩展具有中等优先级(20)，确保在特定领域扩展之后但在默认实现之前执行\n使用说明：当支付请求来源于电商平台且商户ID以'ECOM'开头时自动应用此扩展\n最佳实践：\n1. 确保支付计算精确到小数点后两位\n2. 在处理大量订单时注意性能优化\n3. 关键计算结果应记录日志以便追踪"
-)
+    note =
+        "该扩展具有中等优先级(20)，确保在特定领域扩展之后但在默认实现之前执行\n使用说明：当支付请求来源于电商平台且商户ID以'ECOM'开头时自动应用此扩展\n最佳实践：\n1. 确保支付计算精确到小数点后两位\n2. 在处理大量订单时注意性能优化\n3. 关键计算结果应记录日志以便追踪")
 public class EcommercePaymentExtension implements PaymentExtPoint {
-    // 日志记录器
-    private static final Logger logger = LoggerFactory.getLogger(EcommercePaymentExtension.class);
-    
-    // 常量定义
-    private static final String ECOMMERCE_PREFIX = "ECOM"; // 电商平台订单ID前缀
-    private static final BigDecimal FEE_RATE = new BigDecimal("0.02"); // 电商场景手续费率2%
-    private static final String DEFAULT_CURRENCY = "CNY"; // 默认货币类型
+  // 日志记录器
+  private static final Logger logger = LoggerFactory.getLogger(EcommercePaymentExtension.class);
 
-    /**
-     * 支付前验证
-     * <p>
-     * 在支付前对请求进行验证，确保支付参数的有效性
-     * 
-     * @param context 支付上下文，包含支付请求信息
-     * @return 验证结果
-     */
-    @Override
-    public ValidationResult prePayValidate(final BizContext<PaymentTestRequest> context) {
-        logger.info("开始执行电商支付前置验证");
-        // 检查上下文是否有效
-        if (context == null || context.getData() == null) {
-            logger.warn("支付上下文或请求数据为空");
-            return ValidationResult.fail("INVALID_CONTEXT", "支付上下文或请求数据不能为空");
-        }
-        
-        PaymentTestRequest request = context.getData();
-        
-        // 验证订单ID是否为电商平台
-        String orderId = request.getOrderId();
-        if (orderId == null || !orderId.startsWith(ECOMMERCE_PREFIX)) {
-            logger.warn("无效的电商平台订单ID: {}", orderId);
-            return ValidationResult.fail("INVALID_ECOMMERCE_ORDER_ID", "无效的电商平台订单ID");
-        }
-        
-        // 验证金额有效性
-        if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            return ValidationResult.fail("INVALID_AMOUNT", "支付金额必须大于零");
-        }
-        
-        // 所有验证通过
-        logger.info("电商支付前置验证通过，订单ID: {}", orderId);
-        return ValidationResult.success();
+  // 常量定义
+  private static final String ECOMMERCE_PREFIX = "ECOM"; // 电商平台订单ID前缀
+  private static final BigDecimal FEE_RATE = new BigDecimal("0.02"); // 电商场景手续费率2%
+  private static final String DEFAULT_CURRENCY = "CNY"; // 默认货币类型
+
+  /**
+   * 支付前验证
+   *
+   * <p>在支付前对请求进行验证，确保支付参数的有效性
+   *
+   * @param context 支付上下文，包含支付请求信息
+   * @return 验证结果
+   */
+  @Override
+  public ValidationResult prePayValidate(final BizContext<PaymentTestRequest> context) {
+    logger.info("开始执行电商支付前置验证");
+    // 检查上下文是否有效
+    if (context == null || context.getData() == null) {
+      logger.warn("支付上下文或请求数据为空");
+      return ValidationResult.fail("INVALID_CONTEXT", "支付上下文或请求数据不能为空");
     }
 
-    /**
-     * 计算支付金额
-     * <p>
-     * 根据电商场景的业务规则计算最终支付金额，包括手续费等
-     * 
-     * @param context 包含支付请求信息的业务上下文
-     * @return 支付计算结果对象，包含计算后的金额和明细
-     */
-    @Override
-    public PaymentCalculationResult calculatePayment(final BizContext<PaymentTestRequest> context) {
-        logger.info("开始计算电商支付金额");
-        
-        // 参数校验
-        if (context == null || context.getData() == null) {
-            logger.error("支付上下文或请求数据为空");
-            throw new IllegalArgumentException("支付上下文或请求数据不能为空");
-        }
-        
-        PaymentTestRequest request = context.getData();
-        
-        // 获取原始金额
-        BigDecimal originalAmount = request.getAmount();
-        
-        // 计算电商场景下的手续费（商品总价的2%）
-        BigDecimal feeAmount = originalAmount.multiply(FEE_RATE).setScale(2, java.math.RoundingMode.HALF_UP);
-        
-        // 计算最终支付金额
-        BigDecimal finalAmount = originalAmount.add(feeAmount);
-        
-        logger.info("电商支付金额计算完成，订单ID: {}, 原始金额: {}, 手续费: {}, 最终金额: {}",
-                request.getOrderId(), originalAmount, feeAmount, finalAmount);
-        
-        // 使用builder模式创建支付计算结果对象
-        return PaymentCalculationResult.builder()
-                .originalAmount(originalAmount)
-                .finalAmount(finalAmount)
-                .feeAmount(feeAmount)
-                .taxAmount(BigDecimal.ZERO) // 电商场景暂不考虑税费
-                .currency(DEFAULT_CURRENCY)
-                .build();
+    PaymentTestRequest request = context.getData();
+
+    // 验证订单ID是否为电商平台
+    String orderId = request.getOrderId();
+    if (orderId == null || !orderId.startsWith(ECOMMERCE_PREFIX)) {
+      logger.warn("无效的电商平台订单ID: {}", orderId);
+      return ValidationResult.fail("INVALID_ECOMMERCE_ORDER_ID", "无效的电商平台订单ID");
     }
 
-    /**
-     * 支付后处理
-     * <p>
-     * 在支付完成后执行额外的处理逻辑，如订单更新、通知发送等
-     * 
-     * @param context 支付结果上下文
-     */
-    @Override
-    public void postPayProcess(final BizContext<PaymentResult> context) {
-        logger.info("开始执行电商支付后处理");
-        
-        // 参数校验
-        if (context == null || context.getData() == null) {
-            logger.warn("支付后处理上下文或数据为空");
-            return;
-        }
-        
-        PaymentResult paymentResult = context.getData();
-        
-        // 仅在支付成功时进行后续处理
-        if (paymentResult.isSuccess()) {
-            logger.info("电商支付成功，执行后续处理");
-            // 实际应用中可以执行订单状态更新等操作
-            // 例如：更新订单状态、发送通知等
-        } else {
-            logger.warn("电商支付失败，跳过后续处理");
-        }
+    // 验证金额有效性
+    if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+      return ValidationResult.fail("INVALID_AMOUNT", "支付金额必须大于零");
     }
+
+    // 所有验证通过
+    logger.info("电商支付前置验证通过，订单ID: {}", orderId);
+    return ValidationResult.success();
+  }
+
+  /**
+   * 计算支付金额
+   *
+   * <p>根据电商场景的业务规则计算最终支付金额，包括手续费等
+   *
+   * @param context 包含支付请求信息的业务上下文
+   * @return 支付计算结果对象，包含计算后的金额和明细
+   */
+  @Override
+  public PaymentCalculationResult calculatePayment(final BizContext<PaymentTestRequest> context) {
+    logger.info("开始计算电商支付金额");
+
+    // 参数校验
+    if (context == null || context.getData() == null) {
+      logger.error("支付上下文或请求数据为空");
+      throw new IllegalArgumentException("支付上下文或请求数据不能为空");
+    }
+
+    PaymentTestRequest request = context.getData();
+
+    // 获取原始金额
+    BigDecimal originalAmount = request.getAmount();
+
+    // 计算电商场景下的手续费（商品总价的2%）
+    BigDecimal feeAmount =
+        originalAmount.multiply(FEE_RATE).setScale(2, java.math.RoundingMode.HALF_UP);
+
+    // 计算最终支付金额
+    BigDecimal finalAmount = originalAmount.add(feeAmount);
+
+    logger.info(
+        "电商支付金额计算完成，订单ID: {}, 原始金额: {}, 手续费: {}, 最终金额: {}",
+        request.getOrderId(),
+        originalAmount,
+        feeAmount,
+        finalAmount);
+
+    // 使用builder模式创建支付计算结果对象
+    return PaymentCalculationResult.builder()
+        .originalAmount(originalAmount)
+        .finalAmount(finalAmount)
+        .feeAmount(feeAmount)
+        .taxAmount(BigDecimal.ZERO) // 电商场景暂不考虑税费
+        .currency(DEFAULT_CURRENCY)
+        .build();
+  }
+
+  /**
+   * 支付后处理
+   *
+   * <p>在支付完成后执行额外的处理逻辑，如订单更新、通知发送等
+   *
+   * @param context 支付结果上下文
+   */
+  @Override
+  public void postPayProcess(final BizContext<PaymentResult> context) {
+    logger.info("开始执行电商支付后处理");
+
+    // 参数校验
+    if (context == null || context.getData() == null) {
+      logger.warn("支付后处理上下文或数据为空");
+      return;
+    }
+
+    PaymentResult paymentResult = context.getData();
+
+    // 仅在支付成功时进行后续处理
+    if (paymentResult.isSuccess()) {
+      logger.info("电商支付成功，执行后续处理");
+      // 实际应用中可以执行订单状态更新等操作
+      // 例如：更新订单状态、发送通知等
+    } else {
+      logger.warn("电商支付失败，跳过后续处理");
+    }
+  }
 }

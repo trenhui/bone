@@ -9,13 +9,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
-@Capability(name = "deleteCodeTemplate", description = "删除代码模板", inputSchema = "{}", outputSchema = "{}")
+@Capability(
+    name = "deleteCodeTemplate",
+    description = "删除代码模板",
+    inputSchema = "{}",
+    outputSchema = "{}")
 public class DeleteCodeTemplateHandler {
 
-    private final CodeTemplateRepository codeTemplateRepository;
+  private final CodeTemplateRepository codeTemplateRepository;
 
-    @Transactional
-    public boolean handle(DeleteCodeTemplateCommand command) {
-        return codeTemplateRepository.deleteById(command.getId());
-    }
+  @Transactional
+  public boolean handle(DeleteCodeTemplateCommand command) {
+    return codeTemplateRepository.deleteById(command.getId());
+  }
 }

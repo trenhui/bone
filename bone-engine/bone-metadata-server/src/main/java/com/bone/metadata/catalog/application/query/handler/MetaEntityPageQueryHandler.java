@@ -1,6 +1,6 @@
 package com.bone.metadata.catalog.application.query.handler;
 
-import com.bone.core.result.PageResult;
+import com.bone.core.model.PageResult;
 import com.bone.metadata.catalog.application.query.dto.MetaEntityDTO;
 import com.bone.metadata.catalog.application.query.mapper.CatalogDtoMapper;
 import com.bone.metadata.catalog.application.query.qry.MetaEntityPageQuery;
@@ -22,11 +22,7 @@ public class MetaEntityPageQueryHandler {
   @Transactional(readOnly = true)
   public PageResult<MetaEntityDTO> handle(MetaEntityPageQuery qry) {
     long tenantId = CatalogTenantSupport.currentTenantId();
-    var query =
-        metaEntityRepository
-            .query()
-            .where(MetaEntity::getTenantId)
-            .eq(tenantId);
+    var query = metaEntityRepository.query().where(MetaEntity::getTenantId).eq(tenantId);
     if (StringUtils.hasText(qry.getKeyword())) {
       query = query.and(MetaEntity::getName).like("%" + qry.getKeyword().trim() + "%");
     }

@@ -11,15 +11,15 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class EnableTenantCommandHandler {
 
-    private final TenantRepository tenantRepository;
+  private final TenantRepository tenantRepository;
 
-    @Transactional
-    public void handle(Long id) {
-        Tenant tenant = tenantRepository.findById(id);
-        if (tenant == null) {
-            throw NotFoundException.of("租户不存在");
-        }
-        tenant.enable();
-        tenantRepository.save(tenant);
+  @Transactional
+  public void handle(Long id) {
+    Tenant tenant = tenantRepository.findById(id);
+    if (tenant == null) {
+      throw NotFoundException.of("租户不存在");
     }
+    tenant.enable();
+    tenantRepository.save(tenant);
+  }
 }

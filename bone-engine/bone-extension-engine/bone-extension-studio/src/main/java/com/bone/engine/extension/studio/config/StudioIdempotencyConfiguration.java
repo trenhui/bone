@@ -15,26 +15,24 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 @Configuration
 public class StudioIdempotencyConfiguration {
 
-    @Bean
-    @Primary
-    @ConditionalOnProperty(
-            prefix = "bone.extension.studio.idempotency",
-            name = "backend",
-            havingValue = "redis")
-    @ConditionalOnBean(StringRedisTemplate.class)
-    public StudioIdempotencyStore redisStudioIdempotencyStore(
-            StringRedisTemplate redisTemplate,
-            ObjectMapper objectMapper,
-            ExtensionStudioProperties properties) {
-        return new RedisStudioIdempotencyStore(
-                redisTemplate,
-                objectMapper,
-                properties.getIdempotency().getKeyPrefix());
-    }
+  @Bean
+  @Primary
+  @ConditionalOnProperty(
+      prefix = "bone.extension.studio.idempotency",
+      name = "backend",
+      havingValue = "redis")
+  @ConditionalOnBean(StringRedisTemplate.class)
+  public StudioIdempotencyStore redisStudioIdempotencyStore(
+      StringRedisTemplate redisTemplate,
+      ObjectMapper objectMapper,
+      ExtensionStudioProperties properties) {
+    return new RedisStudioIdempotencyStore(
+        redisTemplate, objectMapper, properties.getIdempotency().getKeyPrefix());
+  }
 
-    @Bean
-    @ConditionalOnMissingBean(StudioIdempotencyStore.class)
-    public StudioIdempotencyStore inMemoryStudioIdempotencyStore() {
-        return new InMemoryStudioIdempotencyStore();
-    }
+  @Bean
+  @ConditionalOnMissingBean(StudioIdempotencyStore.class)
+  public StudioIdempotencyStore inMemoryStudioIdempotencyStore() {
+    return new InMemoryStudioIdempotencyStore();
+  }
 }

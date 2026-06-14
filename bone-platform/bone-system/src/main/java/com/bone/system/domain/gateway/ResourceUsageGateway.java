@@ -9,5 +9,5 @@ import com.bone.system.domain.model.console.ResourceUsage;
  */
 public interface ResourceUsageGateway {
 
-    ResourceUsage snapshot();
+  ResourceUsage snapshot();
 }

@@ -7,14 +7,12 @@ spring:
     version: 2.5.0
   profiles:
     active: enterprise
-  main:
-    allow-bean-definition-overriding: true
 
 # 数据源配置
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:5432/bone_smartmeta?currentSchema=${TENANT_ID:public}
     username: ${DB_USERNAME:smartmeta_user}
-    password: ${DB_PASSWORD:smartmeta_pass}
+    password: ${DB_PASSWORD:}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 20

@@ -1,49 +1,47 @@
 package com.bone.masterdata.application.query.handler;
 
-import com.bone.core.result.PageResult;
+import com.bone.core.model.PageResult;
 import com.bone.masterdata.application.query.dto.MasterDataRecordDTO;
 import com.bone.masterdata.application.query.qry.MasterDataRecordPageQuery;
 import com.bone.masterdata.domain.record.MasterDataRecord;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
 public class MasterDataRecordPageQueryHandler {
 
-    @Transactional(readOnly = true)
-    public PageResult<MasterDataRecordDTO> handle(MasterDataRecordPageQuery qry) {
-        FluentQuery<MasterDataRecord> query = QueryBuilder.from(MasterDataRecord.class);
+  @Transactional(readOnly = true)
+  public PageResult<MasterDataRecordDTO> handle(MasterDataRecordPageQuery qry) {
+    FluentQuery<MasterDataRecord> query = QueryBuilder.from(MasterDataRecord.class);
 
-        if (qry.getMasterDataEntityId() != null) {
-            query.where(MasterDataRecord::getMasterDataEntityId).eq(qry.getMasterDataEntityId());
-        }
-
-        com.bone.core.model.PageResult<MasterDataRecord> result = query.orderByDesc(MasterDataRecord::getCreatedAt)
-                .page(qry.getPageNum(), qry.getPageSize());
-
-        List<MasterDataRecordDTO> dtoList = result.getRecords().stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
-
-        return PageResult.of(dtoList, result.getTotal(), result.getPage(), result.getSize());
+    if (qry.getMasterDataEntityId() != null) {
+      query.where(MasterDataRecord::getMasterDataEntityId).eq(qry.getMasterDataEntityId());
     }
 
-    private MasterDataRecordDTO toDto(MasterDataRecord record) {
-        return MasterDataRecordDTO.builder()
-                .id(record.getId())
-                .masterDataEntityId(record.getMasterDataEntityId())
-                .data(record.getData())
-                .status(record.getStatus().name())
-                .createdAt(record.getCreatedAt())
-                .updatedAt(record.getUpdatedAt())
-                .publishTime(record.getPublishTime())
-                .build();
-    }
+    com.bone.core.model.PageResult<MasterDataRecord> result =
+        query.orderByDesc(MasterDataRecord::getCreatedAt).page(qry.getPageNum(), qry.getPageSize());
+
+    List<MasterDataRecordDTO> dtoList =
+        result.getRecords().stream().map(this::toDto).collect(Collectors.toList());
+
+    return PageResult.of(dtoList, result.getTotal(), result.getPage(), result.getSize());
+  }
+
+  private MasterDataRecordDTO toDto(MasterDataRecord record) {
+    return MasterDataRecordDTO.builder()
+        .id(record.getId())
+        .masterDataEntityId(record.getMasterDataEntityId())
+        .data(record.getData())
+        .status(record.getStatus().name())
+        .createdAt(record.getCreatedAt())
+        .updatedAt(record.getUpdatedAt())
+        .publishTime(record.getPublishTime())
+        .build();
+  }
 }

@@ -26,75 +26,79 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class PluginDependencyGraphQueryHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(PluginDependencyGraphQueryHandler.class);
+  private static final Logger log =
+      LoggerFactory.getLogger(PluginDependencyGraphQueryHandler.class);
 
-    private final ExtensionQueryHandler extensionQueryHandler;
-    private final ObjectMapper objectMapper;
+  private final ExtensionQueryHandler extensionQueryHandler;
+  private final ObjectMapper objectMapper;
 
-    public PluginDependencyGraph load(Long extPointId) {
-        List<Extension> plugins = extPointId == null
-                ? extensionQueryHandler.findAllExtensions()
-                : extensionQueryHandler.findExtensionsByExtPointId(extPointId);
+  public PluginDependencyGraph load(Long extPointId) {
+    List<Extension> plugins =
+        extPointId == null
+            ? extensionQueryHandler.findAllExtensions()
+            : extensionQueryHandler.findExtensionsByExtPointId(extPointId);
 
-        Map<String, Extension> byName = new HashMap<>();
-        for (Extension plugin : plugins) {
-            if (plugin.getName() != null) {
-                byName.put(plugin.getName(), plugin);
-            }
-        }
-
-        List<PluginDependencyGraph.Node> nodes = new ArrayList<>();
-        List<PluginDependencyGraph.Edge> edges = new ArrayList<>();
-        for (Extension plugin : plugins) {
-            String deployStatus = resolveDeploymentStatus(plugin);
-            nodes.add(new PluginDependencyGraph.Node(
-                    plugin.getId(),
-                    plugin.getName(),
-                    plugin.getClassName(),
-                    plugin.getExtPointId(),
-                    plugin.isEnabled(),
-                    deployStatus));
-            for (String dep : parseDependencies(plugin.getConfig())) {
-                edges.add(new PluginDependencyGraph.Edge(plugin.getId(), dep, byName.containsKey(dep)));
-            }
-        }
-        return new PluginDependencyGraph(nodes, edges);
+    Map<String, Extension> byName = new HashMap<>();
+    for (Extension plugin : plugins) {
+      if (plugin.getName() != null) {
+        byName.put(plugin.getName(), plugin);
+      }
     }
 
-    private String resolveDeploymentStatus(Extension plugin) {
-        try {
-            List<PluginVersion> versions = extensionQueryHandler.listPluginVersions(plugin.getId());
-            return versions.stream()
-                    .filter(PluginVersion::isActive)
-                    .map(PluginVersion::getDeploymentStatus)
-                    .findFirst()
-                    .orElse(null);
-        } catch (IllegalArgumentException ex) {
-            return null;
-        }
+    List<PluginDependencyGraph.Node> nodes = new ArrayList<>();
+    List<PluginDependencyGraph.Edge> edges = new ArrayList<>();
+    for (Extension plugin : plugins) {
+      String deployStatus = resolveDeploymentStatus(plugin);
+      nodes.add(
+          new PluginDependencyGraph.Node(
+              plugin.getId(),
+              plugin.getName(),
+              plugin.getClassName(),
+              plugin.getExtPointId(),
+              plugin.isEnabled(),
+              deployStatus));
+      for (String dep : parseDependencies(plugin.getConfig())) {
+        edges.add(new PluginDependencyGraph.Edge(plugin.getId(), dep, byName.containsKey(dep)));
+      }
     }
+    return new PluginDependencyGraph(nodes, edges);
+  }
 
-    private List<String> parseDependencies(String configJson) {
-        if (configJson == null || configJson.isBlank()) {
-            return List.of();
-        }
-        try {
-            JsonNode node = objectMapper.readTree(configJson);
-            JsonNode deps = node.get("dependencies");
-            if (deps == null || !deps.isArray()) {
-                return List.of();
-            }
-            List<String> result = new ArrayList<>();
-            deps.forEach(d -> {
-                String text = d.asText(null);
-                if (text != null && !text.isBlank()) {
-                    result.add(text);
-                }
-            });
-            return result;
-        } catch (Exception ex) {
-            log.debug("解析 dependencies 失败 pluginId={} : {}", null, ex.getMessage());
-            return List.of();
-        }
+  private String resolveDeploymentStatus(Extension plugin) {
+    try {
+      List<PluginVersion> versions = extensionQueryHandler.listPluginVersions(plugin.getId());
+      return versions.stream()
+          .filter(PluginVersion::isActive)
+          .map(PluginVersion::getDeploymentStatus)
+          .findFirst()
+          .orElse(null);
+    } catch (IllegalArgumentException ex) {
+      return null;
     }
+  }
+
+  private List<String> parseDependencies(String configJson) {
+    if (configJson == null || configJson.isBlank()) {
+      return List.of();
+    }
+    try {
+      JsonNode node = objectMapper.readTree(configJson);
+      JsonNode deps = node.get("dependencies");
+      if (deps == null || !deps.isArray()) {
+        return List.of();
+      }
+      List<String> result = new ArrayList<>();
+      deps.forEach(
+          d -> {
+            String text = d.asText(null);
+            if (text != null && !text.isBlank()) {
+              result.add(text);
+            }
+          });
+      return result;
+    } catch (Exception ex) {
+      log.debug("解析 dependencies 失败 pluginId={} : {}", null, ex.getMessage());
+      return List.of();
+    }
+  }
 }

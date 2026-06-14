@@ -1,18 +1,18 @@
 package com.bone.metadata.catalog.adapter.web.controller;
 
-import com.bone.core.result.ApiResponse;
-import com.bone.core.result.PageResult;
+import com.bone.core.model.ApiResponse;
+import com.bone.core.model.PageResult;
 import com.bone.metadata.catalog.application.command.cmd.CreateMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.UpdateMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.handler.CreateMetaEntityHandler;
 import com.bone.metadata.catalog.application.command.handler.DeleteMetaEntityHandler;
 import com.bone.metadata.catalog.application.command.handler.PublishMetaEntityHandler;
 import com.bone.metadata.catalog.application.command.handler.UpdateMetaEntityHandler;
+import com.bone.metadata.catalog.application.idempotency.CatalogIdempotencyService;
 import com.bone.metadata.catalog.application.query.dto.MetaEntityDTO;
 import com.bone.metadata.catalog.application.query.handler.MetaEntityDetailQueryHandler;
 import com.bone.metadata.catalog.application.query.handler.MetaEntityPageQueryHandler;
 import com.bone.metadata.catalog.application.query.qry.MetaEntityPageQuery;
-import com.bone.metadata.catalog.application.idempotency.CatalogIdempotencyService;
 import com.bone.metadata.catalog.common.CatalogHttpSupport;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
@@ -27,8 +27,8 @@ import org.springframework.web.bind.annotation.*;
 /**
  * 元数据目录：实体建模 API（与扩展字段 /api/v1/metadata/fields:* 分离）。
  *
- * <p>权限 scope：read → {@code metadata:read}，write/publish → {@code metadata:write}（
- * Target 态发布操作可独立为 {@code metadata:publish}，见详设 §5.1）。
+ * <p>权限 scope：read → {@code metadata:read}，write/publish → {@code metadata:write}（ Target 态发布操作可独立为
+ * {@code metadata:publish}，见详设 §5.1）。
  *
  * <p>横切：创建 {@code 201+Location}；更新 {@code If-Match → 412}；发布 {@code Idempotency-Key}。
  */

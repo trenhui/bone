@@ -4,19 +4,23 @@ import java.util.Date;
 
 /**
  * 审计数据接口
- * @param <U>
  *
+ * @param <U>
  */
 public interface Auditable<U> {
-    U getCreatedBy();
-    void setCreatedBy(U createdBy);
+  U getCreatedBy();
 
-    Date getCreatedAt();
-    void setCreatedAt(Date createdAt);
+  void setCreatedBy(U createdBy);
 
-    U getUpdatedBy();
-    void setUpdatedBy(U updatedBy);
+  Date getCreatedAt();
 
-    Date getUpdatedAt();
-    void setUpdatedAt(Date updatedAt);
+  void setCreatedAt(Date createdAt);
+
+  U getUpdatedBy();
+
+  void setUpdatedBy(U updatedBy);
+
+  Date getUpdatedAt();
+
+  void setUpdatedAt(Date updatedAt);
 }

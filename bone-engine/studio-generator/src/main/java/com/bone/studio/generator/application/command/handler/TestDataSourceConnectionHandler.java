@@ -11,17 +11,21 @@ import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
-@Capability(name = "testDataSourceConnection", description = "测试数据源连接", inputSchema = "{}", outputSchema = "{}")
+@Capability(
+    name = "testDataSourceConnection",
+    description = "测试数据源连接",
+    inputSchema = "{}",
+    outputSchema = "{}")
 public class TestDataSourceConnectionHandler {
 
-    private final DataSourceRepository dataSourceRepository;
-    private final DatabaseMetadataGateway metadataGateway;
+  private final DataSourceRepository dataSourceRepository;
+  private final DatabaseMetadataGateway metadataGateway;
 
-    public boolean handle(TestDataSourceConnectionCommand command) {
-        DataSource dataSource = dataSourceRepository.findById(StudioIds.parseRequired(command.getId()));
-        if (dataSource == null) {
-            throw new IllegalArgumentException("数据源不存在: " + command.getId());
-        }
-        return metadataGateway.testConnection(dataSource);
+  public boolean handle(TestDataSourceConnectionCommand command) {
+    DataSource dataSource = dataSourceRepository.findById(StudioIds.parseRequired(command.getId()));
+    if (dataSource == null) {
+      throw new IllegalArgumentException("数据源不存在: " + command.getId());
     }
+    return metadataGateway.testConnection(dataSource);
+  }
 }

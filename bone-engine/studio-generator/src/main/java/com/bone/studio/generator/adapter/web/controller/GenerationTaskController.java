@@ -1,6 +1,6 @@
 package com.bone.studio.generator.adapter.web.controller;
 
-import com.bone.core.result.ApiResponse;
+import com.bone.core.model.ApiResponse;
 import com.bone.studio.generator.application.command.cmd.GenerateCodeCommand;
 import com.bone.studio.generator.application.command.handler.GenerateCodeHandler;
 import com.bone.studio.generator.common.GeneratorApiPaths;

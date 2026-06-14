@@ -14,18 +14,18 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UpdateMyProfileCommandHandler {
 
-    private final AccountRepository accountRepository;
+  private final AccountRepository accountRepository;
 
-    @Transactional
-    public void handle(UpdateMyProfileCommand cmd) {
-        if (cmd.getAccountId() == null) {
-            throw BizException.of(401, IamErrorCodes.PROFILE_OWNERSHIP_DENIED);
-        }
-        Account account = accountRepository.findById(cmd.getAccountId());
-        if (account == null) {
-            throw BizException.of(404, IamErrorCodes.PROFILE_OWNERSHIP_DENIED);
-        }
-        account.updateProfile(cmd.getRealName(), cmd.getPhone(), cmd.getAvatarUrl());
-        accountRepository.update(account);
+  @Transactional
+  public void handle(UpdateMyProfileCommand cmd) {
+    if (cmd.getAccountId() == null) {
+      throw BizException.of(401, IamErrorCodes.PROFILE_OWNERSHIP_DENIED);
     }
+    Account account = accountRepository.findById(cmd.getAccountId());
+    if (account == null) {
+      throw BizException.of(404, IamErrorCodes.PROFILE_OWNERSHIP_DENIED);
+    }
+    account.updateProfile(cmd.getRealName(), cmd.getPhone(), cmd.getAvatarUrl());
+    accountRepository.update(account);
+  }
 }

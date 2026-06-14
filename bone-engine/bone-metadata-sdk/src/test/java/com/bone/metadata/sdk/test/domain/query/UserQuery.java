@@ -1,19 +1,13 @@
 package com.bone.metadata.sdk.test.domain.query;
 
-
 import com.bone.core.model.Query;
 import com.bone.core.model.SortableParam;
 import com.bone.metadata.sdk.domain.annotation.QueryField;
 import io.swagger.v3.oas.annotations.media.Schema;
+import java.time.LocalDateTime;
 import lombok.*;
 
-import java.time.LocalDateTime;
-
-/**
- *
- * 用户查询对象
- *
- */
+/** 用户查询对象 */
 @EqualsAndHashCode(callSuper = true)
 @Schema(description = "用户查询对象")
 @Data
@@ -22,34 +16,34 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class UserQuery extends SortableParam implements Query {
 
-    private Long id;
+  private Long id;
 
-    @QueryField("name")
-    private String userName;
+  @QueryField("name")
+  private String userName;
 
-    private Long roleId;
+  private Long roleId;
 
-    private String roleName;
+  private String roleName;
 
-    private String permCode;
+  private String permCode;
 
-    private String permName;
+  private String permName;
 
-    private String permPath;
+  private String permPath;
 
-    private String bizCode;
+  private String bizCode;
 
-    private Integer permType;
+  private Integer permType;
 
-    private Integer sortOrder;
+  private Integer sortOrder;
 
-    private LocalDateTime createdAt;
+  private LocalDateTime createdAt;
 
-    private Long createdBy;
+  private Long createdBy;
 
-    private LocalDateTime updatedAt;
+  private LocalDateTime updatedAt;
 
-    private Long updatedBy;
+  private Long updatedBy;
 
-    private Integer deleted;
+  private Integer deleted;
 }

@@ -12,23 +12,23 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TenantDetailQueryHandler {
 
-    private final TenantRepository tenantRepository;
+  private final TenantRepository tenantRepository;
 
-    @Transactional(readOnly = true)
-    public TenantDTO handle(Long id) {
-        Tenant tenant = tenantRepository.findById(id);
-        if (tenant == null) {
-            throw NotFoundException.of("租户不存在");
-        }
-        TenantDTO dto = new TenantDTO();
-        dto.setId(tenant.getId());
-        dto.setName(tenant.getName());
-        dto.setCode(tenant.getCode());
-        dto.setLevel(tenant.getLevel());
-        dto.setStatus(tenant.getStatus());
-        dto.setAdminEmail(tenant.getAdminEmail());
-        dto.setMaxAccounts(tenant.getMaxAccounts());
-        dto.setMaxRoles(tenant.getMaxRoles());
-        return dto;
+  @Transactional(readOnly = true)
+  public TenantDTO handle(Long id) {
+    Tenant tenant = tenantRepository.findById(id);
+    if (tenant == null) {
+      throw NotFoundException.of("租户不存在");
     }
+    TenantDTO dto = new TenantDTO();
+    dto.setId(tenant.getId());
+    dto.setName(tenant.getName());
+    dto.setCode(tenant.getCode());
+    dto.setLevel(tenant.getLevel());
+    dto.setStatus(tenant.getStatus());
+    dto.setAdminEmail(tenant.getAdminEmail());
+    dto.setMaxAccounts(tenant.getMaxAccounts());
+    dto.setMaxRoles(tenant.getMaxRoles());
+    return dto;
+  }
 }

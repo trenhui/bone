@@ -8,6 +8,7 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface TrackPerformance {
-    String category() default "GENERAL";
-    boolean logResult() default false;
+  String category() default "GENERAL";
+
+  boolean logResult() default false;
 }

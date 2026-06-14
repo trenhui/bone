@@ -8,9 +8,9 @@ import lombok.Value;
 @Builder
 public class AuditSettings {
 
-    int retentionDays;
-    boolean autoArchiveEnabled;
-    int archiveAfterDays;
-    String storageType;
-    boolean wormEnabled;
+  int retentionDays;
+  boolean autoArchiveEnabled;
+  int archiveAfterDays;
+  String storageType;
+  boolean wormEnabled;
 }

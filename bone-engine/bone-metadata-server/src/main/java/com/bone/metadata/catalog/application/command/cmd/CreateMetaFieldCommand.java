@@ -11,4 +11,7 @@ public class CreateMetaFieldCommand {
   @NotBlank private String code;
   @NotBlank private String displayName;
   @NotBlank private String type;
+
+  /** fieldType 别名，兼容前端传参 */
+  private String fieldType;
 }

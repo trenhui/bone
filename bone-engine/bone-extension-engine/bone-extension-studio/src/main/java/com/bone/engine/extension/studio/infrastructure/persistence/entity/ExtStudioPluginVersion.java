@@ -17,34 +17,34 @@ import lombok.NoArgsConstructor;
 @Table("exts_plugin_version")
 public class ExtStudioPluginVersion extends AbstractEntity<Long> {
 
-    @Id
-    @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
+  private Long id;
 
-    @Column(name = "tenant_id")
-    private Long tenantId = 0L;
+  @Column(name = "tenant_id")
+  private Long tenantId = 0L;
 
-    @Column(name = "plugin_id")
-    private Long pluginId;
+  @Column(name = "plugin_id")
+  private Long pluginId;
 
-    @Column(name = "release_version")
-    private String releaseVersion;
+  @Column(name = "release_version")
+  private String releaseVersion;
 
-    @Column(name = "file_path")
-    private String filePath;
+  @Column(name = "file_path")
+  private String filePath;
 
-    @Column(name = "file_size")
-    private Long fileSize;
+  @Column(name = "file_size")
+  private Long fileSize;
 
-    @Column(name = "checksum")
-    private String checksum;
+  @Column(name = "checksum")
+  private String checksum;
 
-    @Column(name = "is_active")
-    private Boolean isActive = false;
+  @Column(name = "is_active")
+  private Boolean isActive = false;
 
-    @Column(name = "deployment_status")
-    private String deploymentStatus = "STAGED";
+  @Column(name = "deployment_status")
+  private String deploymentStatus = "STAGED";
 
-    @Column(name = "change_log")
-    private String changeLog;
+  @Column(name = "change_log")
+  private String changeLog;
 }

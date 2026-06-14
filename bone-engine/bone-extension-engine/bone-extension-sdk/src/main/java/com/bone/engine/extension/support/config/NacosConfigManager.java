@@ -1,25 +1,25 @@
-//package com.bone.engine.extension.support.config;
+// package com.bone.engine.extension.support.config;
 //
-//import com.alibaba.cloud.nacos.NacosConfigProperties;
-//import com.alibaba.nacos.api.config.ConfigService;
-//import com.alibaba.nacos.api.config.listener.Listener;
-//import com.alibaba.nacos.api.exception.NacosException;
-//import org.apache.commons.lang3.StringUtils;
-//import org.slf4j.Logger;
-//import org.slf4j.LoggerFactory;
-//import org.springframework.beans.factory.InitializingBean;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.core.env.ConfigurableEnvironment;
-//import org.springframework.core.env.PropertiesPropertySource;
-//import org.springframework.stereotype.Component;
+// import com.alibaba.cloud.nacos.NacosConfigProperties;
+// import com.alibaba.nacos.api.config.ConfigService;
+// import com.alibaba.nacos.api.config.listener.Listener;
+// import com.alibaba.nacos.api.exception.NacosException;
+// import org.apache.commons.lang3.StringUtils;
+// import org.slf4j.Logger;
+// import org.slf4j.LoggerFactory;
+// import org.springframework.beans.factory.InitializingBean;
+// import org.springframework.beans.factory.annotation.Autowired;
+// import org.springframework.core.env.ConfigurableEnvironment;
+// import org.springframework.core.env.PropertiesPropertySource;
+// import org.springframework.stereotype.Component;
 //
-//import java.io.IOException;
-//import java.io.StringReader;
-//import java.util.Properties;
-//import java.util.concurrent.Executor;
-//import java.util.concurrent.ScheduledThreadPoolExecutor;
+// import java.io.IOException;
+// import java.io.StringReader;
+// import java.util.Properties;
+// import java.util.concurrent.Executor;
+// import java.util.concurrent.ScheduledThreadPoolExecutor;
 //
-///**
+/// **
 // * Nacos配置管理器
 // * <p>
 // * 继承自ExtensionConfigManager，集成Nacos配置中心，支持配置的动态更新
@@ -28,8 +28,8 @@
 // * @author Bone Engine Team
 // * @version 1.0.0
 // */
-//@Component
-//public class NacosConfigManager extends ExtensionConfigManager implements InitializingBean {
+// @Component
+// public class NacosConfigManager extends ExtensionConfigManager implements InitializingBean {
 //
 //    private static final Logger log = LoggerFactory.getLogger(NacosConfigManager.class);
 //
@@ -66,7 +66,8 @@
 //    private void initNacosConfig() {
 //        try {
 //            // 读取Nacos配置
-//            String config = configService.getConfig(EXTENSION_CONFIG_DATA_ID, EXTENSION_CONFIG_GROUP, DEFAULT_TIMEOUT);
+//            String config = configService.getConfig(EXTENSION_CONFIG_DATA_ID,
+// EXTENSION_CONFIG_GROUP, DEFAULT_TIMEOUT);
 //            if (StringUtils.isNotBlank(config)) {
 //                loadNacosConfig(config);
 //            }
@@ -86,7 +87,8 @@
 //     */
 //    private void registerConfigListener() {
 //        try {
-//            configService.addListener(EXTENSION_CONFIG_DATA_ID, EXTENSION_CONFIG_GROUP, new Listener() {
+//            configService.addListener(EXTENSION_CONFIG_DATA_ID, EXTENSION_CONFIG_GROUP, new
+// Listener() {
 //                @Override
 //                public void receiveConfigInfo(String configInfo) {
 //                    if (StringUtils.isNotBlank(configInfo)) {
@@ -147,7 +149,8 @@
 //     */
 //    private void updateSpringEnvironment(Properties properties) {
 //        // 创建新的PropertySource
-//        PropertiesPropertySource propertySource = new PropertiesPropertySource("nacos-extension-config", properties);
+//        PropertiesPropertySource propertySource = new
+// PropertiesPropertySource("nacos-extension-config", properties);
 //
 //        // 先移除旧的配置（如果存在）
 //        String propertySourceName = "nacos-extension-config";
@@ -174,7 +177,8 @@
 //    public boolean publishConfigToNacos(String key, String value) {
 //        try {
 //            // 获取当前配置
-//            String currentConfig = configService.getConfig(EXTENSION_CONFIG_DATA_ID, EXTENSION_CONFIG_GROUP, DEFAULT_TIMEOUT);
+//            String currentConfig = configService.getConfig(EXTENSION_CONFIG_DATA_ID,
+// EXTENSION_CONFIG_GROUP, DEFAULT_TIMEOUT);
 //            Properties properties = new Properties();
 //
 //            if (StringUtils.isNotBlank(currentConfig)) {
@@ -214,7 +218,8 @@
 //    public boolean removeConfigFromNacos(String key) {
 //        try {
 //            // 获取当前配置
-//            String currentConfig = configService.getConfig(EXTENSION_CONFIG_DATA_ID, EXTENSION_CONFIG_GROUP, DEFAULT_TIMEOUT);
+//            String currentConfig = configService.getConfig(EXTENSION_CONFIG_DATA_ID,
+// EXTENSION_CONFIG_GROUP, DEFAULT_TIMEOUT);
 //
 //            if (StringUtils.isBlank(currentConfig)) {
 //                return true;
@@ -260,4 +265,4 @@
 //            super();
 //        }
 //    }
-//}
+// }

@@ -1,7 +1,7 @@
 package com.bone.engine.extension.studio.infrastructure.persistence;
 
-import com.bone.engine.extension.studio.domain.model.PluginVersion;
 import com.bone.engine.extension.studio.domain.gateway.PluginVersionReadPort;
+import com.bone.engine.extension.studio.domain.model.PluginVersion;
 import com.bone.engine.extension.studio.domain.repository.PluginVersionRepository;
 import com.bone.engine.extension.studio.infrastructure.persistence.converter.StudioPersistenceConverter;
 import com.bone.engine.extension.studio.infrastructure.persistence.entity.ExtStudioPluginVersion;
@@ -15,71 +15,78 @@ import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Repository;
 
 @Repository
-@ConditionalOnProperty(prefix = "bone.extension.studio.persistence", name = "mode", havingValue = "metadata")
-public class MetadataPluginVersionRepository implements PluginVersionRepository, PluginVersionReadPort {
+@ConditionalOnProperty(
+    prefix = "bone.extension.studio.persistence",
+    name = "mode",
+    havingValue = "metadata")
+public class MetadataPluginVersionRepository
+    implements PluginVersionRepository, PluginVersionReadPort {
 
-    private final ExtStudioPluginVersionRepository repository;
+  private final ExtStudioPluginVersionRepository repository;
 
-    public MetadataPluginVersionRepository(ExtStudioPluginVersionRepository repository) {
-        this.repository = repository;
+  public MetadataPluginVersionRepository(ExtStudioPluginVersionRepository repository) {
+    this.repository = repository;
+  }
+
+  @Override
+  public List<PluginVersion> findByPluginId(Long pluginId) {
+    if (pluginId == null) {
+      return List.of();
     }
+    Criteria<ExtStudioPluginVersion> criteria =
+        Criteria.<ExtStudioPluginVersion>create()
+            .eq(ExtStudioPluginVersion::getPluginId, pluginId)
+            .orderByDesc(ExtStudioPluginVersion::getCreatedAt);
+    return repository.findByCriteria(criteria).stream()
+        .map(StudioPersistenceConverter::toPluginVersionDomain)
+        .sorted(Comparator.comparing(PluginVersion::getCreatedAt).reversed())
+        .collect(Collectors.toList());
+  }
 
-    @Override
-    public List<PluginVersion> findByPluginId(Long pluginId) {
-        if (pluginId == null) {
-            return List.of();
-        }
-        Criteria<ExtStudioPluginVersion> criteria = Criteria.<ExtStudioPluginVersion>create()
-                .eq(ExtStudioPluginVersion::getPluginId, pluginId)
-                .orderByDesc(ExtStudioPluginVersion::getCreatedAt);
-        return repository.findByCriteria(criteria).stream()
-                .map(StudioPersistenceConverter::toPluginVersionDomain)
-                .sorted(Comparator.comparing(PluginVersion::getCreatedAt).reversed())
-                .collect(Collectors.toList());
+  @Override
+  @Nullable
+  public PluginVersion findByPluginVersion(Long pluginId, String version) {
+    if (pluginId == null || version == null) {
+      return null;
     }
+    Criteria<ExtStudioPluginVersion> criteria =
+        Criteria.<ExtStudioPluginVersion>create()
+            .eq(ExtStudioPluginVersion::getPluginId, pluginId)
+            .eq(ExtStudioPluginVersion::getReleaseVersion, version);
+    List<ExtStudioPluginVersion> rows = repository.findByCriteria(criteria);
+    return rows.isEmpty() ? null : StudioPersistenceConverter.toPluginVersionDomain(rows.get(0));
+  }
 
-    @Override
-    @Nullable
-    public PluginVersion findByPluginVersion(Long pluginId, String version) {
-        if (pluginId == null || version == null) {
-            return null;
-        }
-        Criteria<ExtStudioPluginVersion> criteria = Criteria.<ExtStudioPluginVersion>create()
-                .eq(ExtStudioPluginVersion::getPluginId, pluginId)
-                .eq(ExtStudioPluginVersion::getReleaseVersion, version);
-        List<ExtStudioPluginVersion> rows = repository.findByCriteria(criteria);
-        return rows.isEmpty() ? null : StudioPersistenceConverter.toPluginVersionDomain(rows.get(0));
+  @Override
+  @Nullable
+  public PluginVersion findActiveByPluginId(Long pluginId) {
+    if (pluginId == null) {
+      return null;
     }
+    Criteria<ExtStudioPluginVersion> criteria =
+        Criteria.<ExtStudioPluginVersion>create()
+            .eq(ExtStudioPluginVersion::getPluginId, pluginId)
+            .eq(ExtStudioPluginVersion::getIsActive, true);
+    List<ExtStudioPluginVersion> rows = repository.findByCriteria(criteria);
+    return rows.isEmpty() ? null : StudioPersistenceConverter.toPluginVersionDomain(rows.get(0));
+  }
 
-    @Override
-    @Nullable
-    public PluginVersion findActiveByPluginId(Long pluginId) {
-        if (pluginId == null) {
-            return null;
-        }
-        Criteria<ExtStudioPluginVersion> criteria = Criteria.<ExtStudioPluginVersion>create()
-                .eq(ExtStudioPluginVersion::getPluginId, pluginId)
-                .eq(ExtStudioPluginVersion::getIsActive, true);
-        List<ExtStudioPluginVersion> rows = repository.findByCriteria(criteria);
-        return rows.isEmpty() ? null : StudioPersistenceConverter.toPluginVersionDomain(rows.get(0));
+  @Override
+  public PluginVersion save(PluginVersion version) {
+    ExtStudioPluginVersion row = StudioPersistenceConverter.toPluginVersionEntity(version);
+    if (row.getId() == null) {
+      repository.insert(row);
+    } else if (repository.findById(row.getId()) != null) {
+      repository.update(row);
+    } else {
+      repository.insert(row);
     }
+    version.setId(row.getId());
+    return version;
+  }
 
-    @Override
-    public PluginVersion save(PluginVersion version) {
-        ExtStudioPluginVersion row = StudioPersistenceConverter.toPluginVersionEntity(version);
-        if (row.getId() == null) {
-            repository.insert(row);
-        } else if (repository.findById(row.getId()) != null) {
-            repository.update(row);
-        } else {
-            repository.insert(row);
-        }
-        version.setId(row.getId());
-        return version;
-    }
-
-    @Override
-    public boolean remove(Long id) {
-        return id != null && repository.deleteById(id);
-    }
+  @Override
+  public boolean remove(Long id) {
+    return id != null && repository.deleteById(id);
+  }
 }

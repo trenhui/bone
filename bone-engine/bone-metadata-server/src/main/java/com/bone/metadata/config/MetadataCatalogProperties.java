@@ -19,6 +19,7 @@ public class MetadataCatalogProperties {
   public static class RuntimeEntityCache {
     /** memory（Caffeine，默认）或 redis（集群）。 */
     private String backend = "memory";
+
     private String keyPrefix = "bone:metadata:runtime-entity:";
   }
 
@@ -26,6 +27,7 @@ public class MetadataCatalogProperties {
   public static class Idempotency {
     /** memory（默认）或 redis（集群）。 */
     private String backend = "memory";
+
     private String keyPrefix = "bone:metadata:idempotency:";
   }
 }

@@ -25,65 +25,72 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class RevokeSessionCommandHandlerTest {
 
-    @Mock
-    RefreshTokenSessionStore sessionStore;
+  @Mock RefreshTokenSessionStore sessionStore;
 
-    @Mock
-    AccountAuthorityCache accountAuthorityCache;
+  @Mock AccountAuthorityCache accountAuthorityCache;
 
-    @InjectMocks
-    RevokeSessionCommandHandler handler;
+  @InjectMocks RevokeSessionCommandHandler handler;
 
-    @AfterEach
-    void cleanCtx() {
-        TenantContext.clear();
-    }
+  @AfterEach
+  void cleanCtx() {
+    TenantContext.clear();
+  }
 
-    @Test
-    void revokeOneEvictsAuthorityCache() {
-        Session session = Session.builder()
-                .id(7L).accountId(99L).tenantId(0L).revoked(false)
-                .expiresAt(LocalDateTime.now().plusHours(1)).createdAt(LocalDateTime.now())
-                .build();
-        when(sessionStore.findById(7L)).thenReturn(Optional.of(session));
-        when(sessionStore.revoke(7L)).thenReturn(1);
+  @Test
+  void revokeOneEvictsAuthorityCache() {
+    Session session =
+        Session.builder()
+            .id(7L)
+            .accountId(99L)
+            .tenantId(0L)
+            .revoked(false)
+            .expiresAt(LocalDateTime.now().plusHours(1))
+            .createdAt(LocalDateTime.now())
+            .build();
+    when(sessionStore.findById(7L)).thenReturn(Optional.of(session));
+    when(sessionStore.revoke(7L)).thenReturn(1);
 
-        handler.revokeOne(7L);
+    handler.revokeOne(7L);
 
-        verify(sessionStore).revoke(7L);
-        verify(accountAuthorityCache).evictAccount(99L);
-    }
+    verify(sessionStore).revoke(7L);
+    verify(accountAuthorityCache).evictAccount(99L);
+  }
 
-    @Test
-    void revokeAllCascadesToCache() {
-        when(sessionStore.revokeAllForAccount(99L)).thenReturn(3);
+  @Test
+  void revokeAllCascadesToCache() {
+    when(sessionStore.revokeAllForAccount(99L)).thenReturn(3);
 
-        int affected = handler.revokeAllForAccount(99L);
+    int affected = handler.revokeAllForAccount(99L);
 
-        assertThat(affected).isEqualTo(3);
-        verify(accountAuthorityCache).evictAccount(99L);
-    }
+    assertThat(affected).isEqualTo(3);
+    verify(accountAuthorityCache).evictAccount(99L);
+  }
 
-    @Test
-    void crossTenantRevokeRejected() {
-        TenantContext.setTenantId(2L);
-        Session session = Session.builder()
-                .id(7L).accountId(99L).tenantId(1L).revoked(false)
-                .expiresAt(LocalDateTime.now().plusHours(1)).createdAt(LocalDateTime.now())
-                .build();
-        when(sessionStore.findById(7L)).thenReturn(Optional.of(session));
+  @Test
+  void crossTenantRevokeRejected() {
+    TenantContext.setTenantId(2L);
+    Session session =
+        Session.builder()
+            .id(7L)
+            .accountId(99L)
+            .tenantId(1L)
+            .revoked(false)
+            .expiresAt(LocalDateTime.now().plusHours(1))
+            .createdAt(LocalDateTime.now())
+            .build();
+    when(sessionStore.findById(7L)).thenReturn(Optional.of(session));
 
-        assertThatThrownBy(() -> handler.revokeOne(7L))
-                .isInstanceOf(BizException.class)
-                .hasMessageContaining(IamErrorCodes.TENANT_ACCESS_DENIED);
-        verify(sessionStore, never()).revoke(eq(7L));
-    }
+    assertThatThrownBy(() -> handler.revokeOne(7L))
+        .isInstanceOf(BizException.class)
+        .hasMessageContaining(IamErrorCodes.TENANT_ACCESS_DENIED);
+    verify(sessionStore, never()).revoke(eq(7L));
+  }
 
-    @Test
-    void missingSessionThrows404() {
-        when(sessionStore.findById(7L)).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> handler.revokeOne(7L))
-                .isInstanceOf(BizException.class)
-                .hasMessageContaining(IamErrorCodes.SESSION_NOT_FOUND);
-    }
+  @Test
+  void missingSessionThrows404() {
+    when(sessionStore.findById(7L)).thenReturn(Optional.empty());
+    assertThatThrownBy(() -> handler.revokeOne(7L))
+        .isInstanceOf(BizException.class)
+        .hasMessageContaining(IamErrorCodes.SESSION_NOT_FOUND);
+  }
 }

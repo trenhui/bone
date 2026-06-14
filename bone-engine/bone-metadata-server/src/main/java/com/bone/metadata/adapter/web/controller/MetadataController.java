@@ -3,11 +3,11 @@ package com.bone.metadata.adapter.web.controller;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.metadata.catalog.application.idempotency.CatalogIdempotencyService;
 import com.bone.metadata.sdk.domain.model.AllocationContext;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.bone.metadata.sdk.domain.model.FieldMetadata;
 import com.bone.metadata.sdk.metadata.api.MetadataService;
 import com.bone.metadata.sdk.metadata.client.FieldsByNamesRequest;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.*;
@@ -25,8 +25,8 @@ import org.springframework.web.bind.annotation.*;
 /**
  * 元数据服务 REST 控制器
  *
- * <p>1. POST /api/v1/metadata/fields:search — 复合查询 2. POST /api/v1/metadata/fields:searchByNames
- * 3. POST /api/v1/metadata/fields:allocate — 批量创建 4. GET /api/v1/metadata/health — 健康检查（公开）
+ * <p>1. POST /api/v1/metadata/fields:search — 复合查询 2. POST /api/v1/metadata/fields:searchByNames 3.
+ * POST /api/v1/metadata/fields:allocate — 批量创建 4. GET /api/v1/metadata/health — 健康检查（公开）
  */
 @RestController
 @RequestMapping(PlatformApiPaths.METADATA_V1)

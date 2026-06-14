@@ -8,8 +8,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME) // 必须在运行时可见
 @Target(ElementType.METHOD) // 只允许在方法上使用
 public @interface Auditable {
-    /**
-     * 审计操作描述（默认使用方法名）
-     */
-    String value() default "";
+  /** 审计操作描述（默认使用方法名） */
+  String value() default "";
 }

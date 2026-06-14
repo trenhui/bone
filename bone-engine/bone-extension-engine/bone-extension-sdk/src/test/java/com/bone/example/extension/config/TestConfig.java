@@ -13,15 +13,11 @@ import org.springframework.core.env.Environment;
 
 @Configuration
 @EnableAutoConfiguration
-@ImportAutoConfiguration({
-        ExtensionAutoConfiguration.class
-})
+@ImportAutoConfiguration({ExtensionAutoConfiguration.class})
 @ComponentScan({"com.bone.example.extension", "com.bone.engine.extension"})
 @EnableConfigurationProperties(ExtensionProperties.class)
-@EnableExtensionPoints(basePackages={"com.bone.example.extension", "com.bone.engine.extension"})
+@EnableExtensionPoints(basePackages = {"com.bone.example.extension", "com.bone.engine.extension"})
 public class TestConfig {
 
-    @Autowired
-    private Environment environment;
-
+  @Autowired private Environment environment;
 }

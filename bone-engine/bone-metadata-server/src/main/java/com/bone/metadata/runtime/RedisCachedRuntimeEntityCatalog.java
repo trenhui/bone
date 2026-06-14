@@ -36,7 +36,8 @@ public class RedisCachedRuntimeEntityCatalog
         return Optional.empty();
       }
       try {
-        return Optional.of(objectMapper.readValue(raw, CachedPayload.class).toEntity(entityCode, tenantId));
+        return Optional.of(
+            objectMapper.readValue(raw, CachedPayload.class).toEntity(entityCode, tenantId));
       } catch (JsonProcessingException ex) {
         log.warn("RUNTIME 实体缓存反序列化失败，删除 key={}", redisKey);
         redis.delete(redisKey);
@@ -45,7 +46,8 @@ public class RedisCachedRuntimeEntityCatalog
     Optional<PublishedRuntimeEntity> loaded = delegate.findPublishedRuntime(entityCode, tenantId);
     try {
       if (loaded.isPresent()) {
-        redis.opsForValue()
+        redis
+            .opsForValue()
             .set(redisKey, objectMapper.writeValueAsString(CachedPayload.from(loaded.get())), ttl);
       } else {
         redis.opsForValue().set(redisKey, EMPTY_MARKER, Duration.ofSeconds(15));

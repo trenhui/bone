@@ -63,8 +63,7 @@ public class CatalogRuntimeEntityProvider {
     }
 
     return Optional.of(
-        new PublishedRuntimeEntity(
-            entity.getCode(), entity.getTableName(), pk, tenantId, columns));
+        new PublishedRuntimeEntity(entity.getCode(), entity.getTableName(), pk, tenantId, columns));
   }
 
   /** 供 Controller 默认租户 */

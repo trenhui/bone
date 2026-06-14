@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class ResetPasswordCommand {
-    private Long id;
-    private String newPassword;
+  private Long id;
+  private String newPassword;
 }

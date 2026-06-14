@@ -6,5 +6,5 @@ import lombok.Data;
 @Data
 public class UpdateAuditSettingsCommand {
 
-    private Map<String, Object> settings;
+  private Map<String, Object> settings;
 }

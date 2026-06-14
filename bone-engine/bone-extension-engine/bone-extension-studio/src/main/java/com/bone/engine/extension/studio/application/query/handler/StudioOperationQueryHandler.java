@@ -10,9 +10,9 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class StudioOperationQueryHandler {
 
-    private final StudioLroService lroService;
+  private final StudioLroService lroService;
 
-    public StudioOperation getOperation(String operationId) {
-        return lroService.getOperation(operationId);
-    }
+  public StudioOperation getOperation(String operationId) {
+    return lroService.getOperation(operationId);
+  }
 }

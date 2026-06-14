@@ -7,7 +7,10 @@ import (
 
 type Context struct {
 	context.Context
-	Values map[string]interface{}
+	Values  map[string]interface{}
+	Data    interface{}
+	Result  interface{}
+	Error   error
 }
 
 func NewContext(ctx context.Context) *Context {
@@ -24,6 +27,12 @@ func (c *Context) Get(key string) (interface{}, bool) {
 
 func (c *Context) Set(key string, value interface{}) {
 	c.Values[key] = value
+}
+
+type ExtensionPointMetadata struct {
+	Name        string
+	Description string
+	Required    bool
 }
 
 type ExtensionPoint struct {

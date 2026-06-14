@@ -16,44 +16,49 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class DeploymentStateQueryHandler {
 
-    private final ExtensionQueryHandler extensionQueryHandler;
+  private final ExtensionQueryHandler extensionQueryHandler;
 
-    public DeploymentStateView load(Long pluginId) {
-        Extension plugin = extensionQueryHandler.findExtensionById(pluginId);
-        if (plugin == null) {
-            throw new IllegalArgumentException("插件不存在: " + pluginId);
-        }
-        List<PluginVersion> versions = extensionQueryHandler.listPluginVersions(pluginId);
-        PluginVersion active = versions.stream().filter(PluginVersion::isActive).findFirst().orElse(null);
-        DeploymentStatus current = parseStatus(active != null ? active.getDeploymentStatus() : null);
-
-        return new DeploymentStateView(
-                pluginId,
-                active != null ? active.getVersion() : null,
-                current != null ? current.name() : (plugin.isEnabled() ? "ACTIVE" : "UPLOADED"),
-                DeploymentStateMachine.allStates().stream().map(Enum::name).toList(),
-                buildTransitions(),
-                versions.stream()
-                        .map(v -> new DeploymentStateView.VersionState(
-                                v.getVersion(), v.getDeploymentStatus(), v.isActive()))
-                        .toList());
+  public DeploymentStateView load(Long pluginId) {
+    Extension plugin = extensionQueryHandler.findExtensionById(pluginId);
+    if (plugin == null) {
+      throw new IllegalArgumentException("插件不存在: " + pluginId);
     }
+    List<PluginVersion> versions = extensionQueryHandler.listPluginVersions(pluginId);
+    PluginVersion active =
+        versions.stream().filter(PluginVersion::isActive).findFirst().orElse(null);
+    DeploymentStatus current = parseStatus(active != null ? active.getDeploymentStatus() : null);
 
-    private static List<DeploymentStateView.Transition> buildTransitions() {
-        return DeploymentStateMachine.allStates().stream()
-                .flatMap(state -> DeploymentStateMachine.nextStates(state).stream()
-                        .map(next -> new DeploymentStateView.Transition(state.name(), next.name())))
-                .toList();
-    }
+    return new DeploymentStateView(
+        pluginId,
+        active != null ? active.getVersion() : null,
+        current != null ? current.name() : (plugin.isEnabled() ? "ACTIVE" : "UPLOADED"),
+        DeploymentStateMachine.allStates().stream().map(Enum::name).toList(),
+        buildTransitions(),
+        versions.stream()
+            .map(
+                v ->
+                    new DeploymentStateView.VersionState(
+                        v.getVersion(), v.getDeploymentStatus(), v.isActive()))
+            .toList());
+  }
 
-    private static DeploymentStatus parseStatus(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        try {
-            return DeploymentStatus.valueOf(value);
-        } catch (IllegalArgumentException ex) {
-            return null;
-        }
+  private static List<DeploymentStateView.Transition> buildTransitions() {
+    return DeploymentStateMachine.allStates().stream()
+        .flatMap(
+            state ->
+                DeploymentStateMachine.nextStates(state).stream()
+                    .map(next -> new DeploymentStateView.Transition(state.name(), next.name())))
+        .toList();
+  }
+
+  private static DeploymentStatus parseStatus(String value) {
+    if (value == null || value.isBlank()) {
+      return null;
     }
+    try {
+      return DeploymentStatus.valueOf(value);
+    } catch (IllegalArgumentException ex) {
+      return null;
+    }
+  }
 }

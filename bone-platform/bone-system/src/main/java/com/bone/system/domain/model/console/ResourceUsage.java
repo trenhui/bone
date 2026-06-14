@@ -9,9 +9,9 @@ import lombok.Value;
 @Builder
 public class ResourceUsage {
 
-    long memoryUsedBytes;
-    long memoryMaxBytes;
-    double cpuPercent;
-    double diskUsedPercent;
-    Instant updatedAt;
+  long memoryUsedBytes;
+  long memoryMaxBytes;
+  double cpuPercent;
+  double diskUsedPercent;
+  Instant updatedAt;
 }

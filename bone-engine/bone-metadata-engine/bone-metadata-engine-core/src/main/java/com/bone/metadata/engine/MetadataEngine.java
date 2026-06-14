@@ -1,6 +1,7 @@
 package com.bone.metadata.engine;
 
 import com.bone.metadata.engine.model.EntityMetadata;
+import com.bone.metadata.engine.platform.MetadataPlatformBridge;
 import com.bone.metadata.engine.processor.MetadataProcessor;
 import com.bone.metadata.engine.registry.MetadataRegistry;
 import com.bone.metadata.engine.repository.MetadataRepository;
@@ -8,7 +9,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import com.bone.metadata.engine.platform.MetadataPlatformBridge;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEvent;
@@ -46,7 +46,7 @@ public class MetadataEngine implements InitializingBean {
   public MetadataEngine(
       MetadataRegistry metadataRegistry,
       MetadataRepository metadataRepository,
-      MetadataProcessor metadataProcessor,
+      @org.springframework.lang.Nullable MetadataProcessor metadataProcessor,
       ApplicationEventPublisher eventPublisher) {
     this.metadataRegistry = metadataRegistry;
     this.metadataRepository = metadataRepository;
@@ -142,7 +142,8 @@ public class MetadataEngine implements InitializingBean {
     if (metadataPlatformBridge == null) {
       return;
     }
-    log.info("MetadataPlatformBridge active: {}", metadataPlatformBridge.getClass().getSimpleName());
+    log.info(
+        "MetadataPlatformBridge active: {}", metadataPlatformBridge.getClass().getSimpleName());
   }
 
   private void initializeOperationMetadata() {

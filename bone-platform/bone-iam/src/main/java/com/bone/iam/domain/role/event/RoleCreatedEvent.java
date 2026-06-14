@@ -6,11 +6,11 @@ import lombok.Getter;
 
 @Getter
 public class RoleCreatedEvent implements DomainEvent {
-    private final Long roleId;
-    private final String roleName;
+  private final Long roleId;
+  private final String roleName;
 
-    public RoleCreatedEvent(Role role) {
-        this.roleId = role.getId();
-        this.roleName = role.getName();
-    }
+  public RoleCreatedEvent(Role role) {
+    this.roleId = role.getId();
+    this.roleName = role.getName();
+  }
 }

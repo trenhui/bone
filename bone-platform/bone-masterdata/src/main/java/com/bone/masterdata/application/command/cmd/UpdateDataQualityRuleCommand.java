@@ -10,10 +10,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UpdateDataQualityRuleCommand {
-    private Long id;
-    private String name;
-    private String ruleType;
-    private String ruleConfig;
-    private String severity;
-    private String description;
+  private Long id;
+  private String name;
+  private String ruleType;
+  private String ruleConfig;
+  private String severity;
+  private String description;
 }

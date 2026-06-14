@@ -12,8 +12,7 @@ final class RuntimeQuerySupport {
 
   private RuntimeQuerySupport() {}
 
-  static List<String> resolveSelectColumns(
-      PublishedRuntimeEntity entity, RuntimePageQuery query) {
+  static List<String> resolveSelectColumns(PublishedRuntimeEntity entity, RuntimePageQuery query) {
     Set<String> allowed = allowedDataColumns(entity);
     String pk = entity.primaryKeyColumn();
     if (query == null || query.selectFields() == null || query.selectFields().isEmpty()) {
@@ -23,8 +22,7 @@ final class RuntimeQuerySupport {
     for (String field : query.selectFields()) {
       String code = sanitize(field);
       if (!allowed.contains(code) && !code.equals(pk)) {
-        throw new RuntimeRecordException(
-            "META_RUNTIME_INVALID_QUERY", "fields 含未建模列: " + field);
+        throw new RuntimeRecordException("META_RUNTIME_INVALID_QUERY", "fields 含未建模列: " + field);
       }
       cols.add(code);
     }

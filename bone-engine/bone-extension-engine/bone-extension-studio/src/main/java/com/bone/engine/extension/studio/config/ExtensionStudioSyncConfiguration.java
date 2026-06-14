@@ -13,11 +13,11 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.util.StringUtils;
@@ -36,16 +36,17 @@ public class ExtensionStudioSyncConfiguration {
   @Bean
   @ConditionalOnBean(RedisConnectionFactory.class)
   @ConditionalOnMissingBean(ExtensionMetadataStore.class)
-    public ExtensionMetadataStore studioRedisMetadataStore(
-            @Qualifier(ExtensionMetadataRedisConfiguration.METADATA_REDIS_TEMPLATE_BEAN)
-                    RedisTemplate<String, ExtensionRoutingMetadata> metadataRedisTemplate,
-            @Qualifier(ExtensionMetadataRedisConfiguration.METADATA_INDEX_REDIS_TEMPLATE_BEAN)
-                    StringRedisTemplate metadataIndexRedisTemplate,
-            ExtensionStudioProperties properties) {
-        String channel = resolveRefreshChannel(properties);
-        log.info("Studio runtime-sync: RedisExtensionMetadataStore, channel={}", channel);
-        return new RedisExtensionMetadataStore(metadataRedisTemplate, metadataIndexRedisTemplate, channel);
-    }
+  public ExtensionMetadataStore studioRedisMetadataStore(
+      @Qualifier(ExtensionMetadataRedisConfiguration.METADATA_REDIS_TEMPLATE_BEAN)
+          RedisTemplate<String, ExtensionRoutingMetadata> metadataRedisTemplate,
+      @Qualifier(ExtensionMetadataRedisConfiguration.METADATA_INDEX_REDIS_TEMPLATE_BEAN)
+          StringRedisTemplate metadataIndexRedisTemplate,
+      ExtensionStudioProperties properties) {
+    String channel = resolveRefreshChannel(properties);
+    log.info("Studio runtime-sync: RedisExtensionMetadataStore, channel={}", channel);
+    return new RedisExtensionMetadataStore(
+        metadataRedisTemplate, metadataIndexRedisTemplate, channel);
+  }
 
   @Bean
   @ConditionalOnMissingBean(ExtensionMetadataStore.class)
@@ -55,10 +56,10 @@ public class ExtensionStudioSyncConfiguration {
   }
 
   @Bean
-    public RuntimeExtensionSyncService runtimeExtensionSyncService(
-            ExtensionMetadataStore metadataStore, ExtPointRepository extPointRepository) {
-        return new RuntimeExtensionSyncService(metadataStore, extPointRepository);
-    }
+  public RuntimeExtensionSyncService runtimeExtensionSyncService(
+      ExtensionMetadataStore metadataStore, ExtPointRepository extPointRepository) {
+    return new RuntimeExtensionSyncService(metadataStore, extPointRepository);
+  }
 
   private static String resolveRefreshChannel(ExtensionStudioProperties properties) {
     String configured = properties.getRuntimeSync().getRefreshChannel();

@@ -17,6 +17,7 @@ public class MetaEntityDTO {
   private String statusLabel;
   private Integer sortOrder;
   private String icon;
+
   /** 乐观锁版本（PUT 使用 If-Match: "v{version}"） */
   private Integer version;
 }

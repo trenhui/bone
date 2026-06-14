@@ -14,24 +14,24 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class DeleteTenantCommandHandler {
 
-    private static final long PLATFORM_TENANT_ID = 0L;
+  private static final long PLATFORM_TENANT_ID = 0L;
 
-    private final TenantRepository tenantRepository;
-    private final TenantDeletionGateway tenantDeletionGateway;
+  private final TenantRepository tenantRepository;
+  private final TenantDeletionGateway tenantDeletionGateway;
 
-    @Transactional
-    public void handle(Long id) {
-        if (id == null) {
-            throw new IllegalArgumentException("租户 ID 不能为空");
-        }
-        if (id == PLATFORM_TENANT_ID) {
-            throw BizException.of(400, IamErrorCodes.TENANT_DELETE_FORBIDDEN + ": 禁止删除平台租户");
-        }
-        Tenant tenant = tenantRepository.findById(id);
-        if (tenant == null) {
-            throw NotFoundException.of("租户不存在");
-        }
-        tenantDeletionGateway.purgeTenantData(id);
-        tenantRepository.deleteById(id);
+  @Transactional
+  public void handle(Long id) {
+    if (id == null) {
+      throw new IllegalArgumentException("租户 ID 不能为空");
     }
+    if (id == PLATFORM_TENANT_ID) {
+      throw BizException.of(400, IamErrorCodes.TENANT_DELETE_FORBIDDEN + ": 禁止删除平台租户");
+    }
+    Tenant tenant = tenantRepository.findById(id);
+    if (tenant == null) {
+      throw NotFoundException.of("租户不存在");
+    }
+    tenantDeletionGateway.purgeTenantData(id);
+    tenantRepository.deleteById(id);
+  }
 }

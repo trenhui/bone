@@ -1,4 +1,3 @@
 package com.bone.core.datasource.tenant;
 
-public class TenantInterceptor {
-}
+public class TenantInterceptor {}

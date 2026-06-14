@@ -16,8 +16,7 @@ class CatalogVersionSupportTest {
   @Test
   void assertExpected_throws412OnMismatch() {
     assertThrows(
-        CatalogOptimisticLockException.class,
-        () -> CatalogVersionSupport.assertExpected(1, 2));
+        CatalogOptimisticLockException.class, () -> CatalogVersionSupport.assertExpected(1, 2));
   }
 
   @Test

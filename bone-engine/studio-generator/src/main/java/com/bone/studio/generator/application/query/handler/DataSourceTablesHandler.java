@@ -7,27 +7,30 @@ import com.bone.studio.generator.domain.data.DataSource;
 import com.bone.studio.generator.domain.data.DatabaseTable;
 import com.bone.studio.generator.domain.gateway.DatabaseMetadataGateway;
 import com.bone.studio.generator.domain.repository.DataSourceRepository;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
 @Component
 @RequiredArgsConstructor
-@Capability(name = "getDataSourceTables", description = "获取数据源表列表", inputSchema = "{}", outputSchema = "{}")
+@Capability(
+    name = "getDataSourceTables",
+    description = "获取数据源表列表",
+    inputSchema = "{}",
+    outputSchema = "{}")
 public class DataSourceTablesHandler {
 
-    private final DataSourceRepository dataSourceRepository;
-    private final DatabaseMetadataGateway metadataGateway;
+  private final DataSourceRepository dataSourceRepository;
+  private final DatabaseMetadataGateway metadataGateway;
 
-    @Transactional(readOnly = true)
-    public List<DatabaseTable> handle(DataSourceTablesQuery query) {
-        Long id = StudioIds.parseRequired(query.getDataSourceId());
-        DataSource dataSource = dataSourceRepository.findById(id);
-        if (dataSource == null) {
-            throw new IllegalArgumentException("数据源不存在: " + query.getDataSourceId());
-        }
-        return metadataGateway.loadTables(dataSource);
+  @Transactional(readOnly = true)
+  public List<DatabaseTable> handle(DataSourceTablesQuery query) {
+    Long id = StudioIds.parseRequired(query.getDataSourceId());
+    DataSource dataSource = dataSourceRepository.findById(id);
+    if (dataSource == null) {
+      throw new IllegalArgumentException("数据源不存在: " + query.getDataSourceId());
     }
+    return metadataGateway.loadTables(dataSource);
+  }
 }

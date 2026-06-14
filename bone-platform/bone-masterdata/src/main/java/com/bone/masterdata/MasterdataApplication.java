@@ -7,7 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 @EnableSqlRepositories(basePackages = "com.bone.masterdata.domain.repository")
 public class MasterdataApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(MasterdataApplication.class, args);
-    }
+  public static void main(String[] args) {
+    SpringApplication.run(MasterdataApplication.class, args);
+  }
 }

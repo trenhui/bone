@@ -6,5 +6,5 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor(staticName = "of")
 public class PermissionId {
-    private final String value;
+  private final String value;
 }

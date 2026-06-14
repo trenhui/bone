@@ -1,6 +1,6 @@
 package com.bone.metadata.catalog.application.query.handler;
 
-import com.bone.core.result.PageResult;
+import com.bone.core.model.PageResult;
 import com.bone.metadata.catalog.application.query.dto.MetaRelationDTO;
 import com.bone.metadata.catalog.application.query.mapper.CatalogDtoMapper;
 import com.bone.metadata.catalog.application.query.qry.MetaRelationPageQuery;
@@ -22,11 +22,7 @@ public class MetaRelationPageQueryHandler {
   @Transactional(readOnly = true)
   public PageResult<MetaRelationDTO> handle(MetaRelationPageQuery qry) {
     long tenantId = CatalogTenantSupport.currentTenantId();
-    var query =
-        relationRepository
-            .query()
-            .where(MetaEntityRelation::getTenantId)
-            .eq(tenantId);
+    var query = relationRepository.query().where(MetaEntityRelation::getTenantId).eq(tenantId);
     if (qry.getSourceEntityId() != null) {
       query = query.and(MetaEntityRelation::getSourceEntityId).eq(qry.getSourceEntityId());
     }
@@ -36,7 +32,8 @@ public class MetaRelationPageQueryHandler {
     if (StringUtils.hasText(qry.getKeyword())) {
       query = query.and(MetaEntityRelation::getName).like("%" + qry.getKeyword().trim() + "%");
     }
-    var sdkPage = query.orderByDesc(MetaEntityRelation::getId).page(qry.getPageNum(), qry.getPageSize());
+    var sdkPage =
+        query.orderByDesc(MetaEntityRelation::getId).page(qry.getPageNum(), qry.getPageSize());
     return CatalogPageMapper.toApiPage(sdkPage, CatalogDtoMapper::toDto);
   }
 }

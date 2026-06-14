@@ -3,180 +3,183 @@ package com.bone.metadata.sdk.query.criteria;
 import com.bone.core.enums.Operator;
 import com.bone.metadata.sdk.domain.enums.DatabaseType;
 import com.bone.metadata.sdk.support.config.MetadataSdkContext;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
-/**
- * 查询条件模型，支持主表(m)和扩展表(ext)前缀。
- */
+/** 查询条件模型，支持主表(m)和扩展表(ext)前缀。 */
 @Slf4j
 @Data
 public class Condition {
-    /**
-     * 字段（snakecase）
-     */
-    private final String fieldName;
+  /** 字段（snakecase） */
+  private final String fieldName;
 
-    /**
-     * 物理列名（snake_case）
-     */
-    private final String column;
+  /** 物理列名（snake_case） */
+  private final String column;
 
-    /**
-     * 参数名
-     */
-    private final String paramName;
-    /**
-     * 操作符
-     */
-    private final Operator operator;
-    /**
-     * 参数值数组
-     */
-    private final Object[] values;
-    /**
-     * 是否扩展表字段
-     */
-    private final boolean extension;
+  /** 参数名 */
+  private final String paramName;
 
-    // LIKE 模板：数据库类型 -> SQL 生成函数
-    private static final Map<DatabaseType, Function<LikeContext, String>> LIKE_TEMPLATES = new HashMap<>();
+  /** 操作符 */
+  private final Operator operator;
 
-    // LIKE 上下文（传递列名、参数名、前后缀）
-    private record LikeContext(String column, String paramName, String prefix, String suffix, boolean notLike) {}
+  /** 参数值数组 */
+  private final Object[] values;
 
-    // 静态初始化块：配置 LIKE 模板
-    static {
-        // MySQL/OceanBase - CONCAT 风格，需要 ESCAPE '\\\\'
-        Function<LikeContext, String> mysqlLike = ctx -> {
-            String notKeyword = ctx.notLike ? "NOT " : "";
-            return String.format("%s %sLIKE CONCAT('%s', :%s, '%s') ESCAPE '\\\\'",
-                    ctx.column, notKeyword, ctx.prefix, ctx.paramName, ctx.suffix);
+  /** 是否扩展表字段 */
+  private final boolean extension;
+
+  // LIKE 模板：数据库类型 -> SQL 生成函数
+  private static final Map<DatabaseType, Function<LikeContext, String>> LIKE_TEMPLATES =
+      new HashMap<>();
+
+  // LIKE 上下文（传递列名、参数名、前后缀）
+  private record LikeContext(
+      String column, String paramName, String prefix, String suffix, boolean notLike) {}
+
+  // 静态初始化块：配置 LIKE 模板
+  static {
+    // MySQL/OceanBase - CONCAT 风格，需要 ESCAPE '\\\\'
+    Function<LikeContext, String> mysqlLike =
+        ctx -> {
+          String notKeyword = ctx.notLike ? "NOT " : "";
+          return String.format(
+              "%s %sLIKE CONCAT('%s', :%s, '%s') ESCAPE '\\\\'",
+              ctx.column, notKeyword, ctx.prefix, ctx.paramName, ctx.suffix);
         };
-        LIKE_TEMPLATES.put(DatabaseType.MYSQL, mysqlLike);
-        LIKE_TEMPLATES.put(DatabaseType.OceanBase, mysqlLike);
+    LIKE_TEMPLATES.put(DatabaseType.MYSQL, mysqlLike);
+    LIKE_TEMPLATES.put(DatabaseType.OceanBase, mysqlLike);
 
-        // H2（MySQL 兼容模式）不支持 ESCAPE '\\\\' 写法，省略 ESCAPE 子句
-        Function<LikeContext, String> h2Like = ctx -> {
-            String notKeyword = ctx.notLike ? "NOT " : "";
-            return String.format("%s %sLIKE CONCAT('%s', :%s, '%s')",
-                    ctx.column, notKeyword, ctx.prefix, ctx.paramName, ctx.suffix);
+    // H2（MySQL 兼容模式）不支持 ESCAPE '\\\\' 写法，省略 ESCAPE 子句
+    Function<LikeContext, String> h2Like =
+        ctx -> {
+          String notKeyword = ctx.notLike ? "NOT " : "";
+          return String.format(
+              "%s %sLIKE CONCAT('%s', :%s, '%s')",
+              ctx.column, notKeyword, ctx.prefix, ctx.paramName, ctx.suffix);
         };
-        LIKE_TEMPLATES.put(DatabaseType.H2, h2Like);
+    LIKE_TEMPLATES.put(DatabaseType.H2, h2Like);
 
-        // PostgreSQL - 使用标准LIKE语法，参数值需要预先处理
-        Function<LikeContext, String> postgresLike = ctx -> {
-            String notKeyword = ctx.notLike ? "NOT " : "";
-            return String.format("%s %sLIKE :%s ESCAPE '\\\\'", ctx.column, notKeyword, ctx.paramName);
+    // PostgreSQL - 使用标准LIKE语法，参数值需要预先处理
+    Function<LikeContext, String> postgresLike =
+        ctx -> {
+          String notKeyword = ctx.notLike ? "NOT " : "";
+          return String.format(
+              "%s %sLIKE :%s ESCAPE '\\\\'", ctx.column, notKeyword, ctx.paramName);
         };
-        LIKE_TEMPLATES.put(DatabaseType.POSTGRESQL, postgresLike);
+    LIKE_TEMPLATES.put(DatabaseType.POSTGRESQL, postgresLike);
 
-        // Oracle - 使用标准LIKE语法，参数值需要预先处理
-        Function<LikeContext, String> oracleLike = ctx -> {
-            String notKeyword = ctx.notLike ? "NOT " : "";
-            return String.format("%s %sLIKE :%s ESCAPE '\\\\'", ctx.column, notKeyword, ctx.paramName);
+    // Oracle - 使用标准LIKE语法，参数值需要预先处理
+    Function<LikeContext, String> oracleLike =
+        ctx -> {
+          String notKeyword = ctx.notLike ? "NOT " : "";
+          return String.format(
+              "%s %sLIKE :%s ESCAPE '\\\\'", ctx.column, notKeyword, ctx.paramName);
         };
-        LIKE_TEMPLATES.put(DatabaseType.ORACLE, oracleLike);
+    LIKE_TEMPLATES.put(DatabaseType.ORACLE, oracleLike);
 
-        // SQL Server - 使用标准LIKE语法，参数值需要预先处理
-        Function<LikeContext, String> sqlServerLike = ctx -> {
-            String notKeyword = ctx.notLike ? "NOT " : "";
-            return String.format("%s %sLIKE :%s ESCAPE '\\\\'", ctx.column, notKeyword, ctx.paramName);
+    // SQL Server - 使用标准LIKE语法，参数值需要预先处理
+    Function<LikeContext, String> sqlServerLike =
+        ctx -> {
+          String notKeyword = ctx.notLike ? "NOT " : "";
+          return String.format(
+              "%s %sLIKE :%s ESCAPE '\\\\'", ctx.column, notKeyword, ctx.paramName);
         };
-        LIKE_TEMPLATES.put(DatabaseType.SQLSERVER, sqlServerLike);
+    LIKE_TEMPLATES.put(DatabaseType.SQLSERVER, sqlServerLike);
 
-        // 达梦 - CONCAT 风格，需要 ESCAPE '\\'
-        Function<LikeContext, String> dmLike = ctx -> {
-            String notKeyword = ctx.notLike ? "NOT " : "";
-            return String.format("%s %sLIKE CONCAT('%s', :%s, '%s') ESCAPE '\\'",
-                    ctx.column, notKeyword, ctx.prefix, ctx.paramName, ctx.suffix);
+    // 达梦 - CONCAT 风格，需要 ESCAPE '\\'
+    Function<LikeContext, String> dmLike =
+        ctx -> {
+          String notKeyword = ctx.notLike ? "NOT " : "";
+          return String.format(
+              "%s %sLIKE CONCAT('%s', :%s, '%s') ESCAPE '\\'",
+              ctx.column, notKeyword, ctx.prefix, ctx.paramName, ctx.suffix);
         };
-        LIKE_TEMPLATES.put(DatabaseType.DM, dmLike);
+    LIKE_TEMPLATES.put(DatabaseType.DM, dmLike);
+  }
+
+  public Condition(
+      String fieldName,
+      String column,
+      String paramName,
+      Operator operator,
+      boolean extension,
+      Object... values) {
+    this.fieldName = fieldName;
+    this.column = column;
+    this.paramName = paramName;
+    this.operator = operator;
+    this.extension = extension;
+    this.values = values;
+  }
+
+  public Condition(
+      String fieldName, String column, String paramName, Operator operator, Object... values) {
+    this.fieldName = fieldName;
+    this.column = column;
+    this.paramName = paramName;
+    this.operator = operator;
+    this.extension = false;
+    this.values = values;
+  }
+
+  /** 生成 SQL 片段，自动选择 m. 或 ext. 前缀 */
+  public String toSql() {
+    String alias = extension ? "ext" : "m";
+    String col = alias + "." + column;
+    return switch (operator) {
+      case EQ -> String.format("%s = :%s", col, paramName);
+      case NE -> String.format("%s <> :%s", col, paramName);
+      case GT -> String.format("%s > :%s", col, paramName);
+      case GTE -> String.format("%s >= :%s", col, paramName);
+      case LT -> String.format("%s < :%s", col, paramName);
+      case LTE -> String.format("%s <= :%s", col, paramName);
+      case LIKE -> buildLikeSql(col, "%%", "%%", false);
+      case NOT_LIKE -> buildLikeSql(col, "%%", "%%", true);
+      case LIKE_LEFT -> buildLikeSql(col, "%%", "", false);
+      case LIKE_RIGHT -> buildLikeSql(col, "", "%%", false);
+      case IN -> String.format("%s IN (:%s)", col, paramName);
+      case NOT_IN -> String.format("%s NOT IN (:%s)", col, paramName);
+      case BETWEEN -> String.format("%s BETWEEN :%s_0 AND :%s_1", col, paramName, paramName);
+      case IS_NULL -> String.format("%s IS NULL", col);
+      case IS_NOT_NULL -> String.format("%s IS NOT NULL", col);
+      default -> throw new IllegalStateException("Unsupported operator " + operator);
+    };
+  }
+
+  /** 构建 LIKE SQL 片段，适配数据库方言 */
+  private String buildLikeSql(String column, String prefix, String suffix, boolean notLike) {
+    DatabaseType dbType = getCurrentDatabaseType();
+
+    // 对于PostgreSQL、Oracle、SQL Server，使用标准LIKE语法
+    // 参数值需要在设置参数时预先处理好通配符
+    if (dbType == DatabaseType.POSTGRESQL
+        || dbType == DatabaseType.ORACLE
+        || dbType == DatabaseType.SQLSERVER) {
+      String notKeyword = notLike ? "NOT " : "";
+      return String.format("%s %sLIKE :%s ESCAPE '\\\\'", column, notKeyword, paramName);
     }
 
-    public Condition(String fieldName, String column, String paramName, Operator operator, boolean extension, Object... values) {
-        this.fieldName = fieldName;
-        this.column = column;
-        this.paramName = paramName;
-        this.operator = operator;
-        this.extension = extension;
-        this.values = values;
+    // 对于MySQL、达梦等使用CONCAT的数据库
+    LikeContext ctx = new LikeContext(column, paramName, prefix, suffix, notLike);
+    Function<LikeContext, String> template = LIKE_TEMPLATES.get(dbType);
+    if (template == null) {
+      template = LIKE_TEMPLATES.get(DatabaseType.MYSQL);
+      log.warn("未找到数据库类型 {} 的LIKE模板，使用MySQL默认模板", dbType);
     }
 
-    public Condition(String fieldName, String column, String paramName, Operator operator, Object... values) {
-        this.fieldName = fieldName;
-        this.column = column;
-        this.paramName = paramName;
-        this.operator = operator;
-        this.extension = false;
-        this.values = values;
+    return template.apply(ctx);
+  }
+
+  /** 获取当前数据库类型 */
+  private static DatabaseType getCurrentDatabaseType() {
+    try {
+      return MetadataSdkContext.getDatabaseType();
+    } catch (Exception e) {
+      log.warn("无法获取数据库类型，fallback to MySQL", e);
+      return DatabaseType.MYSQL;
     }
-
-    /**
-     * 生成 SQL 片段，自动选择 m. 或 ext. 前缀
-     */
-    public String toSql() {
-        String alias = extension ? "ext" : "m";
-        String col = alias + "." + column;
-        return switch (operator) {
-            case EQ -> String.format("%s = :%s", col, paramName);
-            case NE -> String.format("%s <> :%s", col, paramName);
-            case GT -> String.format("%s > :%s", col, paramName);
-            case GTE -> String.format("%s >= :%s", col, paramName);
-            case LT -> String.format("%s < :%s", col, paramName);
-            case LTE -> String.format("%s <= :%s", col, paramName);
-            case LIKE -> buildLikeSql(col, "%%", "%%", false);
-            case NOT_LIKE -> buildLikeSql(col, "%%", "%%", true);
-            case LIKE_LEFT -> buildLikeSql(col, "%%", "", false);
-            case LIKE_RIGHT -> buildLikeSql(col, "", "%%", false);
-            case IN -> String.format("%s IN (:%s)", col, paramName);
-            case NOT_IN -> String.format("%s NOT IN (:%s)", col, paramName);
-            case BETWEEN -> String.format("%s BETWEEN :%s_0 AND :%s_1", col, paramName, paramName);
-            case IS_NULL -> String.format("%s IS NULL", col);
-            case IS_NOT_NULL -> String.format("%s IS NOT NULL", col);
-            default -> throw new IllegalStateException("Unsupported operator " + operator);
-        };
-    }
-
-    /**
-     * 构建 LIKE SQL 片段，适配数据库方言
-     */
-    private String buildLikeSql(String column, String prefix, String suffix, boolean notLike) {
-        DatabaseType dbType = getCurrentDatabaseType();
-
-        // 对于PostgreSQL、Oracle、SQL Server，使用标准LIKE语法
-        // 参数值需要在设置参数时预先处理好通配符
-        if (dbType == DatabaseType.POSTGRESQL ||
-                dbType == DatabaseType.ORACLE ||
-                dbType == DatabaseType.SQLSERVER) {
-            String notKeyword = notLike ? "NOT " : "";
-            return String.format("%s %sLIKE :%s ESCAPE '\\\\'", column, notKeyword, paramName);
-        }
-
-        // 对于MySQL、达梦等使用CONCAT的数据库
-        LikeContext ctx = new LikeContext(column, paramName, prefix, suffix, notLike);
-        Function<LikeContext, String> template = LIKE_TEMPLATES.get(dbType);
-        if (template == null) {
-            template = LIKE_TEMPLATES.get(DatabaseType.MYSQL);
-            log.warn("未找到数据库类型 {} 的LIKE模板，使用MySQL默认模板", dbType);
-        }
-
-        return template.apply(ctx);
-    }
-
-    /**
-     * 获取当前数据库类型
-     */
-    private static DatabaseType getCurrentDatabaseType() {
-        try {
-            return MetadataSdkContext.getDatabaseType();
-        } catch (Exception e) {
-            log.warn("无法获取数据库类型，fallback to MySQL", e);
-            return DatabaseType.MYSQL;
-        }
-    }
+  }
 }

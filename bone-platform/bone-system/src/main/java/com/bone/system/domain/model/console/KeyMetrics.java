@@ -9,13 +9,13 @@ import lombok.Value;
 @Builder
 public class KeyMetrics {
 
-    long userCount;
-    long entityCount;
-    long integrationFlowCount;
-    long extensionPluginCount;
-    long orderCount;
-    long transactionAmount;
-    long jvmThreadsLive;
-    long jvmThreadsDaemon;
-    Instant updatedAt;
+  long userCount;
+  long entityCount;
+  long integrationFlowCount;
+  long extensionPluginCount;
+  long orderCount;
+  long transactionAmount;
+  long jvmThreadsLive;
+  long jvmThreadsDaemon;
+  Instant updatedAt;
 }

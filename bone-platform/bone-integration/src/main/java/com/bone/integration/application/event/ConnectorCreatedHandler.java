@@ -11,17 +11,17 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ConnectorCreatedHandler {
 
-    private final IntegrationEventFollowUp followUp;
+  private final IntegrationEventFollowUp followUp;
 
-    public void handle(ConnectorCreatedEvent event) {
-        log.info(
-                "Connector created: id={}, name={}, type={}",
-                event.connectorId(),
-                event.name(),
-                event.type());
-        followUp.notifyInfo(
-                "connector.created.notify",
-                "name=" + event.name() + ", type=" + event.type(),
-                String.valueOf(event.connectorId()));
-    }
+  public void handle(ConnectorCreatedEvent event) {
+    log.info(
+        "Connector created: id={}, name={}, type={}",
+        event.connectorId(),
+        event.name(),
+        event.type());
+    followUp.notifyInfo(
+        "connector.created.notify",
+        "name=" + event.name() + ", type=" + event.type(),
+        String.valueOf(event.connectorId()));
+  }
 }

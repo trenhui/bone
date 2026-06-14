@@ -1,25 +1,30 @@
 package com.bone.iam.domain.account.vo;
 
 public enum AccountStatus {
-    DISABLED(0, "禁用"),
-    ENABLED(1, "启用"),
-    LOCKED(2, "锁定");
+  DISABLED(0, "禁用"),
+  ENABLED(1, "启用"),
+  LOCKED(2, "锁定");
 
-    private final int code;
-    private final String description;
+  private final int code;
+  private final String description;
 
-    AccountStatus(int code, String description) {
-        this.code = code;
-        this.description = description;
+  AccountStatus(int code, String description) {
+    this.code = code;
+    this.description = description;
+  }
+
+  public int getCode() {
+    return code;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public static AccountStatus of(int code) {
+    for (AccountStatus status : values()) {
+      if (status.code == code) return status;
     }
-
-    public int getCode() { return code; }
-    public String getDescription() { return description; }
-
-    public static AccountStatus of(int code) {
-        for (AccountStatus status : values()) {
-            if (status.code == code) return status;
-        }
-        throw new IllegalArgumentException("无效的状态码: " + code);
-    }
+    throw new IllegalArgumentException("无效的状态码: " + code);
+  }
 }

@@ -1,10 +1,15 @@
 --- #################### 数据库相关配置 ####################
 spring:
+  main:
+    allow-circular-references: true
+  sql:
+    init:
+      mode: never
   datasource:
     url: jdbc:mysql://localhost:3306/bone?useSSL=false&autoReconnect=true&characterEncoding=utf8
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
-    password: ${BONE_DB_PASSWORD:}
+    password: ${BONE_DB_PASSWORD:mysql123}
     # 指定为HikariDataSource
     type: com.zaxxer.hikari.HikariDataSource
     # hikari连接池配置
@@ -46,7 +51,7 @@ sql:
 # 服务端配置
 security:
   auth-mode: api-key # 测试环境使用api-key，生产环境改为jwt
-  api-key: ${API_KEY:}
+  api-key: ${API_KEY:bone-metadata-default-key}
 
 metadata:
   sdk:

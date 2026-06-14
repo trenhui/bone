@@ -4,9 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"time"
 
 	"github.com/bone-engine/bone-blueprint-go/domain/order"
+
+	_ "github.com/mattn/go-sqlite3"
 )
 
 // SimpleOrderRepository 简化版订单仓储
@@ -22,19 +23,19 @@ func NewSimpleOrderRepository(db *sql.DB) *SimpleOrderRepository {
 }
 
 // Insert 插入订单
-func (r *SimpleOrderRepository) Insert(ctx context.Context, order *order.Order) (int64, error) {
+func (r *SimpleOrderRepository) Insert(ctx context.Context, ord *order.Order) (int64, error) {
 	query := `
 		INSERT INTO "order" (order_no, customer_id, total_amount, status, create_time, update_time)
 		VALUES (?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := r.db.ExecContext(ctx, query,
-		order.OrderNo,
-		order.CustomerID,
-		order.TotalAmount,
-		order.Status,
-		order.CreateTime,
-		order.UpdateTime,
+		ord.OrderNo,
+		ord.CustomerID,
+		ord.TotalAmount,
+		ord.Status,
+		ord.CreateTime,
+		ord.UpdateTime,
 	)
 	if err != nil {
 		return 0, err
@@ -44,7 +45,7 @@ func (r *SimpleOrderRepository) Insert(ctx context.Context, order *order.Order) 
 }
 
 // Update 更新订单
-func (r *SimpleOrderRepository) Update(ctx context.Context, order *order.Order) (bool, error) {
+func (r *SimpleOrderRepository) Update(ctx context.Context, ord *order.Order) (bool, error) {
 	query := `
 		UPDATE "order"
 		SET status = ?, update_time = ?, pay_time = ?, cancel_time = ?
@@ -52,11 +53,11 @@ func (r *SimpleOrderRepository) Update(ctx context.Context, order *order.Order) 
 	`
 
 	result, err := r.db.ExecContext(ctx, query,
-		order.Status,
-		order.UpdateTime,
-		order.PayTime,
-		order.CancelTime,
-		order.ID,
+		ord.Status,
+		ord.UpdateTime,
+		ord.PayTime,
+		ord.CancelTime,
+		ord.ID,
 	)
 	if err != nil {
 		return false, err
@@ -173,11 +174,11 @@ func (r *SimpleOrderRepository) FindByOrderNo(ctx context.Context, orderNo strin
 
 // FindWithItems 查询订单及其订单项
 func (r *SimpleOrderRepository) FindWithItems(ctx context.Context, orderID int64) (*order.Order, error) {
-	order, err := r.FindById(ctx, orderID)
+	ord, err := r.FindById(ctx, orderID)
 	if err != nil {
 		return nil, err
 	}
-	if order == nil {
+	if ord == nil {
 		return nil, nil
 	}
 
@@ -210,8 +211,8 @@ func (r *SimpleOrderRepository) FindWithItems(ctx context.Context, orderID int64
 		items = append(items, item)
 	}
 
-	order.Items = items
-	return order, nil
+	ord.Items = items
+	return ord, nil
 }
 
 // FindByCustomerID 查询客户的订单
@@ -279,8 +280,7 @@ func (r *SimpleOrderRepository) CountByCustomerID(ctx context.Context, customerI
 }
 
 // SaveWithItems 保存订单及其订单项
-func (r *SimpleOrderRepository) SaveWithItems(ctx context.Context, order *order.Order) error {
-	// 开始事务
+func (r *SimpleOrderRepository) SaveWithItems(ctx context.Context, ord *order.Order) error {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -292,21 +292,19 @@ func (r *SimpleOrderRepository) SaveWithItems(ctx context.Context, order *order.
 		}
 	}()
 
-	// 保存订单
-	if order.ID == 0 {
-		// 插入订单
+	if ord.ID == 0 {
 		query := `
 			INSERT INTO "order" (order_no, customer_id, total_amount, status, create_time, update_time)
 			VALUES (?, ?, ?, ?, ?, ?)
 		`
 
 		result, err := tx.ExecContext(ctx, query,
-			order.OrderNo,
-			order.CustomerID,
-			order.TotalAmount,
-			order.Status,
-			order.CreateTime,
-			order.UpdateTime,
+			ord.OrderNo,
+			ord.CustomerID,
+			ord.TotalAmount,
+			ord.Status,
+			ord.CreateTime,
+			ord.UpdateTime,
 		)
 		if err != nil {
 			return err
@@ -316,9 +314,8 @@ func (r *SimpleOrderRepository) SaveWithItems(ctx context.Context, order *order.
 		if err != nil {
 			return err
 		}
-		order.ID = id
+		ord.ID = id
 	} else {
-		// 更新订单
 		query := `
 			UPDATE "order"
 			SET status = ?, update_time = ?, pay_time = ?, cancel_time = ?
@@ -326,33 +323,31 @@ func (r *SimpleOrderRepository) SaveWithItems(ctx context.Context, order *order.
 		`
 
 		_, err := tx.ExecContext(ctx, query,
-			order.Status,
-			order.UpdateTime,
-			order.PayTime,
-			order.CancelTime,
-			order.ID,
+			ord.Status,
+			ord.UpdateTime,
+			ord.PayTime,
+			ord.CancelTime,
+			ord.ID,
 		)
 		if err != nil {
 			return err
 		}
 	}
 
-	// 保存订单项
-	for i := range order.Items {
-		order.Items[i].OrderID = order.ID
-		if order.Items[i].ID == 0 {
-			// 插入订单项
+	for i := range ord.Items {
+		ord.Items[i].OrderID = ord.ID
+		if ord.Items[i].ID == 0 {
 			query := `
 				INSERT INTO order_item (order_id, product_id, quantity, price, subtotal)
 				VALUES (?, ?, ?, ?, ?)
 			`
 
 			result, err := tx.ExecContext(ctx, query,
-				order.Items[i].OrderID,
-				order.Items[i].ProductID,
-				order.Items[i].Quantity,
-				order.Items[i].Price,
-				order.Items[i].Subtotal,
+				ord.Items[i].OrderID,
+				ord.Items[i].ProductID,
+				ord.Items[i].Quantity,
+				ord.Items[i].Price,
+				ord.Items[i].Subtotal,
 			)
 			if err != nil {
 				return err
@@ -362,10 +357,64 @@ func (r *SimpleOrderRepository) SaveWithItems(ctx context.Context, order *order.
 			if err != nil {
 				return err
 			}
-			order.Items[i].ID = id
+			ord.Items[i].ID = id
 		}
 	}
 
-	// 提交事务
 	return tx.Commit()
+}
+
+// NewSimpleSQLiteDB 创建SQLite数据库连接
+func NewSimpleSQLiteDB(dsn string) (*sql.DB, error) {
+	db, err := sql.Open("sqlite3", dsn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open database: %w", err)
+	}
+
+	// 创建表
+	err = createTables(db)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create tables: %w", err)
+	}
+
+	return db, nil
+}
+
+// createTables 创建数据库表
+func createTables(db *sql.DB) error {
+	orderTable := `
+		CREATE TABLE IF NOT EXISTS "order" (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			order_no TEXT NOT NULL UNIQUE,
+			customer_id INTEGER NOT NULL,
+			total_amount REAL NOT NULL,
+			status TEXT NOT NULL,
+			create_time DATETIME NOT NULL,
+			update_time DATETIME NOT NULL,
+			pay_time DATETIME,
+			cancel_time DATETIME
+		);
+	`
+	_, err := db.Exec(orderTable)
+	if err != nil {
+		return err
+	}
+
+	orderItemTable := `
+		CREATE TABLE IF NOT EXISTS order_item (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			order_id INTEGER NOT NULL,
+			product_id INTEGER NOT NULL,
+			quantity INTEGER NOT NULL,
+			price REAL NOT NULL,
+			subtotal REAL NOT NULL,
+			FOREIGN KEY (order_id) REFERENCES "order"(id)
+		);
+	`
+	_, err = db.Exec(orderItemTable)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

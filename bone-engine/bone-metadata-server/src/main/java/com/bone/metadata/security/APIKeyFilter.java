@@ -30,22 +30,26 @@ public class APIKeyFilter extends OncePerRequestFilter {
       HttpServletRequest request, HttpServletResponse response, FilterChain chain)
       throws IOException, ServletException {
 
+    // 如果已有认证（由 JwtAuthenticationFilter 设置），直接放行
+    if (SecurityContextHolder.getContext().getAuthentication() != null
+        && SecurityContextHolder.getContext().getAuthentication().isAuthenticated()) {
+      chain.doFilter(request, response);
+      return;
+    }
+
     String apiKey = request.getHeader(headerName);
 
-    if (StringUtils.isEmpty(apiKey)) {
-      response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Missing API Key");
-      return;
+    if (StringUtils.hasText(apiKey)) {
+      if (validApiKey.equals(apiKey)) {
+        UsernamePasswordAuthenticationToken auth =
+            new UsernamePasswordAuthenticationToken("api-key-user", null, authorities);
+        SecurityContextHolder.getContext().setAuthentication(auth);
+      } else {
+        response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid API Key");
+        return;
+      }
     }
 
-    if (!validApiKey.equals(apiKey)) {
-      response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid API Key");
-      return;
-    }
-
-    UsernamePasswordAuthenticationToken auth =
-        new UsernamePasswordAuthenticationToken("api-key-user", null, authorities);
-
-    SecurityContextHolder.getContext().setAuthentication(auth);
     chain.doFilter(request, response);
   }
 }

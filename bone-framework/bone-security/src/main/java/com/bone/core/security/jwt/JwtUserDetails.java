@@ -1,4 +1,3 @@
 package com.bone.core.security.jwt;
 
-public class JwtUserDetails {
-}
+public class JwtUserDetails {}

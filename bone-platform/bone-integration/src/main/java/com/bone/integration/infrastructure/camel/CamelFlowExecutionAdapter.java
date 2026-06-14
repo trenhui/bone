@@ -14,28 +14,28 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class CamelFlowExecutionAdapter implements CamelFlowExecutionPort {
 
-    private final CamelFlowCompiler camelFlowCompiler;
+  private final CamelFlowCompiler camelFlowCompiler;
 
-    @Override
-    public boolean isReady() {
-        return camelFlowCompiler.isReady();
-    }
+  @Override
+  public boolean isReady() {
+    return camelFlowCompiler.isReady();
+  }
 
-    @Override
-    public String endpointUri(Long flowId) {
-        return camelFlowCompiler.endpointUri(flowId);
-    }
+  @Override
+  public String endpointUri(Long flowId) {
+    return camelFlowCompiler.endpointUri(flowId);
+  }
 
-    @Override
-    public void compile(IntegrationFlow flow, List<FlowNode> nodes, List<FlowConnection> connections)
-            throws Exception {
-        camelFlowCompiler.compile(flow, nodes, connections);
-    }
+  @Override
+  public void compile(IntegrationFlow flow, List<FlowNode> nodes, List<FlowConnection> connections)
+      throws Exception {
+    camelFlowCompiler.compile(flow, nodes, connections);
+  }
 
-    @Override
-    public Object executeOnEndpoint(String endpointUri, Object input) throws Exception {
-        try (ProducerTemplate template = camelFlowCompiler.getCamelContext().createProducerTemplate()) {
-            return template.requestBody(endpointUri, input);
-        }
+  @Override
+  public Object executeOnEndpoint(String endpointUri, Object input) throws Exception {
+    try (ProducerTemplate template = camelFlowCompiler.getCamelContext().createProducerTemplate()) {
+      return template.requestBody(endpointUri, input);
     }
+  }
 }

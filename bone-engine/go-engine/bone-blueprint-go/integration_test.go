@@ -3,71 +3,12 @@ package main
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	_ "github.com/mattn/go-sqlite3"
-	"log"
-	"time"
+	"testing"
 
 	"github.com/bone-engine/bone-blueprint-go/domain/order"
 	"github.com/bone-engine/bone-blueprint-go/infrastructure/repository"
+	_ "github.com/mattn/go-sqlite3"
 )
-
-func main() {
-	fmt.Println("========================================")
-	fmt.Println("   Bone Blueprint Go 完整集成测试")
-	fmt.Println("========================================")
-	fmt.Println()
-
-	// 1. 初始化数据库
-	fmt.Println("[步骤 1] 初始化数据库...")
-	db, err := setupTestDB()
-	if err != nil {
-		log.Fatalf("数据库初始化失败: %v", err)
-	}
-	defer db.Close()
-	fmt.Println("   ✓ 数据库初始化成功")
-	fmt.Println()
-
-	// 2. 初始化仓储
-	fmt.Println("[步骤 2] 初始化仓储...")
-	repo := repository.NewSimpleOrderRepository(db)
-	fmt.Println("   ✓ 仓储初始化成功")
-	fmt.Println()
-
-	// 3. 测试订单创建
-	fmt.Println("[步骤 3] 测试订单创建...")
-	testCreateOrder(repo)
-	fmt.Println()
-
-	// 4. 测试订单查询
-	fmt.Println("[步骤 4] 测试订单查询...")
-	testQueryOrder(repo)
-	fmt.Println()
-
-	// 5. 测试订单更新
-	fmt.Println("[步骤 5] 测试订单更新...")
-	testUpdateOrder(repo)
-	fmt.Println()
-
-	// 6. 测试订单删除
-	fmt.Println("[步骤 6] 测试订单删除...")
-	testDeleteOrder(repo)
-	fmt.Println()
-
-	// 7. 测试扩展点功能
-	fmt.Println("[步骤 7] 测试扩展点功能...")
-	testExtensionPoint()
-	fmt.Println()
-
-	// 8. 测试多种价格计算策略
-	fmt.Println("[步骤 8] 测试多种价格计算策略...")
-	testPriceCalculators()
-	fmt.Println()
-
-	fmt.Println("========================================")
-	fmt.Println("   完整集成测试完成!")
-	fmt.Println("========================================")
-}
 
 func setupTestDB() (*sql.DB, error) {
 	db, err := sql.Open("sqlite3", ":memory:")
@@ -110,144 +51,133 @@ func setupTestDB() (*sql.DB, error) {
 	return db, nil
 }
 
-func testCreateOrder(repo *repository.SimpleOrderRepository) {
+func TestIntegration_CreateOrder(t *testing.T) {
+	db, err := setupTestDB()
+	if err != nil {
+		t.Fatalf("数据库初始化失败: %v", err)
+	}
+	defer db.Close()
+
+	repo := repository.NewSimpleOrderRepository(db)
+
 	items := []order.OrderItem{
-		{
-			ProductID: 1,
-			Quantity:  2,
-			Price:     100.0,
-			Subtotal:  200.0,
-		},
-		{
-			ProductID: 2,
-			Quantity:  1,
-			Price:     50.0,
-			Subtotal:  50.0,
-		},
+		{ProductID: 1, Quantity: 2, Price: 100.0, Subtotal: 200.0},
+		{ProductID: 2, Quantity: 1, Price: 50.0, Subtotal: 50.0},
 	}
 
 	testOrder, err := order.NewOrder(1, items)
 	if err != nil {
-		log.Fatalf("创建订单失败: %v", err)
+		t.Fatalf("创建订单失败: %v", err)
 	}
 
 	err = repo.SaveWithItems(context.Background(), testOrder)
 	if err != nil {
-		log.Fatalf("保存订单失败: %v", err)
+		t.Fatalf("保存订单失败: %v", err)
 	}
 
-	fmt.Println("   ✓ 订单创建成功")
-	fmt.Printf("   • 订单ID: %d\n", testOrder.ID)
-	fmt.Printf("   • 订单号: %s\n", testOrder.OrderNo)
-	fmt.Printf("   • 总金额: %.2f\n", testOrder.TotalAmount)
+	if testOrder.ID == 0 {
+		t.Error("订单ID应该不为0")
+	}
+
+	if testOrder.TotalAmount != 250.0 {
+		t.Errorf("总金额不匹配: got %.2f, want 250.00", testOrder.TotalAmount)
+	}
 }
 
-func testQueryOrder(repo *repository.SimpleOrderRepository) {
-	// 创建测试订单
+func TestIntegration_QueryOrder(t *testing.T) {
+	db, err := setupTestDB()
+	if err != nil {
+		t.Fatalf("数据库初始化失败: %v", err)
+	}
+	defer db.Close()
+
+	repo := repository.NewSimpleOrderRepository(db)
+
 	items := []order.OrderItem{
-		{
-			ProductID: 1,
-			Quantity:  1,
-			Price:     100.0,
-			Subtotal:  100.0,
-		},
+		{ProductID: 1, Quantity: 1, Price: 100.0, Subtotal: 100.0},
 	}
 
 	testOrder, _ := order.NewOrder(1, items)
 	repo.SaveWithItems(context.Background(), testOrder)
 
-	// 测试按ID查询
 	found, err := repo.FindById(context.Background(), testOrder.ID)
 	if err != nil {
-		log.Fatalf("查询订单失败: %v", err)
+		t.Fatalf("查询订单失败: %v", err)
 	}
-	if found != nil {
-		fmt.Println("   ✓ 按ID查询成功")
+	if found == nil {
+		t.Fatal("未找到订单")
 	}
-
-	// 测试按客户ID查询
-	customerOrders, err := repo.FindByCustomerID(context.Background(), 1, 1, 10)
-	if err != nil {
-		log.Fatalf("查询客户订单失败: %v", err)
+	if found.ID != testOrder.ID {
+		t.Errorf("订单ID不匹配: got %d, want %d", found.ID, testOrder.ID)
 	}
-	fmt.Printf("   ✓ 按客户ID查询成功，找到 %d 个订单\n", len(customerOrders))
-
-	// 测试统计
-	count, err := repo.CountByCustomerID(context.Background(), 1)
-	if err != nil {
-		log.Fatalf("统计订单数量失败: %v", err)
-	}
-	fmt.Printf("   ✓ 统计订单数量成功，总数: %d\n", count)
 }
 
-func testUpdateOrder(repo *repository.SimpleOrderRepository) {
-	// 创建测试订单
+func TestIntegration_UpdateOrder(t *testing.T) {
+	db, err := setupTestDB()
+	if err != nil {
+		t.Fatalf("数据库初始化失败: %v", err)
+	}
+	defer db.Close()
+
+	repo := repository.NewSimpleOrderRepository(db)
+
 	items := []order.OrderItem{
-		{
-			ProductID: 1,
-			Quantity:  1,
-			Price:     100.0,
-			Subtotal:  100.0,
-		},
+		{ProductID: 1, Quantity: 1, Price: 100.0, Subtotal: 100.0},
 	}
 
 	testOrder, _ := order.NewOrder(1, items)
 	repo.SaveWithItems(context.Background(), testOrder)
 
-	// 测试支付订单
-	err := testOrder.Pay()
+	err = testOrder.Pay()
 	if err != nil {
-		log.Fatalf("支付订单失败: %v", err)
+		t.Fatalf("支付订单失败: %v", err)
 	}
 
 	updated, err := repo.Update(context.Background(), testOrder)
 	if err != nil {
-		log.Fatalf("更新订单失败: %v", err)
+		t.Fatalf("更新订单失败: %v", err)
 	}
-
-	if updated {
-		fmt.Println("   ✓ 订单更新成功")
-		fmt.Printf("   • 新状态: %s\n", testOrder.Status)
-		fmt.Printf("   • 支付时间: %s\n", testOrder.PayTime.Format(time.RFC3339))
+	if !updated {
+		t.Error("订单应该被更新")
+	}
+	if testOrder.Status != order.OrderStatusPaid {
+		t.Errorf("订单状态不匹配: got %s, want %s", testOrder.Status, order.OrderStatusPaid)
 	}
 }
 
-func testDeleteOrder(repo *repository.SimpleOrderRepository) {
-	// 创建测试订单
+func TestIntegration_DeleteOrder(t *testing.T) {
+	db, err := setupTestDB()
+	if err != nil {
+		t.Fatalf("数据库初始化失败: %v", err)
+	}
+	defer db.Close()
+
+	repo := repository.NewSimpleOrderRepository(db)
+
 	items := []order.OrderItem{
-		{
-			ProductID: 1,
-			Quantity:  1,
-			Price:     100.0,
-			Subtotal:  100.0,
-		},
+		{ProductID: 1, Quantity: 1, Price: 100.0, Subtotal: 100.0},
 	}
 
 	testOrder, _ := order.NewOrder(1, items)
 	repo.SaveWithItems(context.Background(), testOrder)
 
-	// 测试删除
 	deleted, err := repo.Delete(context.Background(), testOrder.ID)
 	if err != nil {
-		log.Fatalf("删除订单失败: %v", err)
+		t.Fatalf("删除订单失败: %v", err)
+	}
+	if !deleted {
+		t.Error("订单应该被删除")
 	}
 
-	if deleted {
-		fmt.Println("   ✓ 订单删除成功")
-
-		// 验证删除
-		found, _ := repo.FindById(context.Background(), testOrder.ID)
-		if found == nil {
-			fmt.Println("   ✓ 验证删除成功，订单已不存在")
-		}
+	found, _ := repo.FindById(context.Background(), testOrder.ID)
+	if found != nil {
+		t.Error("订单应该不存在")
 	}
 }
 
-func testExtensionPoint() {
-	// 模拟扩展点管理器
+func TestIntegration_ExtensionPoint(t *testing.T) {
 	manager := NewExtensionManager()
 
-	// 注册扩展
 	manager.Register(Extension{
 		ID:       "default-calc",
 		Point:    "OrderPriceCalculator",
@@ -274,7 +204,6 @@ func testExtensionPoint() {
 		},
 	})
 
-	// 创建测试订单
 	items := []order.OrderItem{
 		{ProductID: 1, Quantity: 2, Price: 100.0, Subtotal: 200.0},
 		{ProductID: 2, Quantity: 1, Price: 50.0, Subtotal: 50.0},
@@ -282,53 +211,23 @@ func testExtensionPoint() {
 
 	testOrder, _ := order.NewOrder(1, items)
 
-	// 测试新客户
 	ctx1 := NewExtensionContext()
 	ctx1.Set("order", testOrder)
 	ctx1.Set("userLevel", "")
 	result1, _ := manager.Execute("OrderPriceCalculator", ctx1)
-	fmt.Printf("   ✓ 新客户价格: %.2f\n", result1.(float64))
+	if result1.(float64) != 250.0 {
+		t.Errorf("新客户价格不匹配: got %.2f, want 250.00", result1.(float64))
+	}
 
-	// 测试会员客户
 	ctx2 := NewExtensionContext()
 	ctx2.Set("order", testOrder)
 	ctx2.Set("userLevel", "MEMBER")
 	result2, _ := manager.Execute("OrderPriceCalculator", ctx2)
-	fmt.Printf("   ✓ 会员客户价格: %.2f (9折)\n", result2.(float64))
-}
-
-func testPriceCalculators() {
-	// 创建测试订单
-	items := []order.OrderItem{
-		{ProductID: 1, Quantity: 2, Price: 100.0, Subtotal: 200.0},
-		{ProductID: 2, Quantity: 1, Price: 50.0, Subtotal: 50.0},
+	if result2.(float64) != 225.0 {
+		t.Errorf("会员价格不匹配: got %.2f, want 225.00", result2.(float64))
 	}
-
-	testOrder, _ := order.NewOrder(1, items)
-	originalPrice := testOrder.TotalAmount
-
-	// 默认价格计算器
-	defaultPrice := originalPrice
-	fmt.Printf("   ✓ 默认价格: %.2f (无折扣)\n", defaultPrice)
-
-	// 会员价格计算器
-	memberPrice := originalPrice * 0.9
-	fmt.Printf("   ✓ 会员价格: %.2f (9折, 节省 %.2f)\n", memberPrice, originalPrice-memberPrice)
-
-	// VIP价格计算器
-	vipPrice := originalPrice * 0.8
-	fmt.Printf("   ✓ VIP价格: %.2f (8折, 节省 %.2f)\n", vipPrice, originalPrice-vipPrice)
-
-	// 企业价格计算器
-	enterprisePrice := originalPrice * 0.75
-	fmt.Printf("   ✓ 企业价格: %.2f (7.5折, 节省 %.2f)\n", enterprisePrice, originalPrice-enterprisePrice)
-
-	// 促销价格计算器
-	promotionPrice := originalPrice * 0.95
-	fmt.Printf("   ✓ 促销价格: %.2f (9.5折, 节省 %.2f)\n", promotionPrice, originalPrice-promotionPrice)
 }
 
-// 模拟扩展点管理器
 type ExtensionManager struct {
 	extensions map[string][]Extension
 }
@@ -375,7 +274,6 @@ func (m *ExtensionManager) Execute(point string, ctx *ExtensionContext) (interfa
 		return nil, nil
 	}
 
-	// 按优先级排序
 	for i := 0; i < len(extensions)-1; i++ {
 		for j := i + 1; j < len(extensions); j++ {
 			if extensions[i].Priority > extensions[j].Priority {
@@ -384,7 +282,6 @@ func (m *ExtensionManager) Execute(point string, ctx *ExtensionContext) (interfa
 		}
 	}
 
-	// 执行第一个能处理的扩展
 	for _, ext := range extensions {
 		result, err := ext.Handler(ctx)
 		if err == nil && result != nil {

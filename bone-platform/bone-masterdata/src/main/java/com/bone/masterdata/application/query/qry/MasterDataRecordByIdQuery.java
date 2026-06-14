@@ -10,5 +10,5 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MasterDataRecordByIdQuery {
-    private Long id;
+  private Long id;
 }

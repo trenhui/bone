@@ -1,8 +1,61 @@
+/* ============================================================
+   Bone Shell — 全局样式
+   使用 --bone-color-* CSS 变量，由 @bone/ui applyThemeCss 注入
+   支持亮/暗双主题自动切换，无需 .dark 选择器硬编码
+   ============================================================ */
+
+/* ── Sider Logo ───────────────────────────────────────────── */
 .logo {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--bone-color-border);
+  gap: 10px;
+}
+
+.logo-icon {
+  width: 32px;
   height: 32px;
-  margin: 16px;
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--bone-color-primary);
   border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.logo-text .main {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--bone-color-text);
+}
+
+.logo-text .sub {
+  font-size: 10px;
+  color: var(--bone-color-text-tertiary);
+  font-weight: 400;
+}
+
+/* ── Header ───────────────────────────────────────────────── */
+.site-layout-background {
+  background: var(--bone-color-bg-container);
+}
+
+.dark-header {
+  background: var(--bone-color-bg-container) !important;
+}
+
+.dark-content {
+  background: var(--bone-color-bg-layout) !important;
 }
 
 .header-right {
@@ -11,60 +64,78 @@
   display: flex;
   align-items: center;
   height: 100%;
+  gap: 4px;
 }
 
 .header-left {
   float: left;
   margin-left: 24px;
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.page-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--bone-color-text);
+}
+
+.header-button,
+.user-button {
+  color: var(--bone-color-text-secondary);
+}
+
+.header-button:hover,
+.user-button:hover {
+  background: var(--bone-color-bg-secondary);
+  color: var(--bone-color-text);
 }
 
 .user-button {
   display: flex;
   align-items: center;
-  color: rgba(255, 255, 255, 0.65);
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.user-button:hover {
+  background: var(--bone-color-bg-secondary);
 }
 
 .user-name {
   margin-left: 8px;
+  color: var(--bone-color-text);
 }
 
-.header-button {
-  color: rgba(255, 255, 255, 0.65);
+/* ── 通知按钮 Badge ────────────────────────────────────────── */
+.notification-btn {
+  position: relative;
 }
 
-/* 主题样式 */
-.app-container.light {
-  background-color: #f0f2f5;
+.notification-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 8px;
+  height: 8px;
+  background: var(--bone-color-error);
+  border-radius: 50%;
 }
 
-.app-container.dark {
-  background-color: #141414;
+/* ── 主题容器 ──────────────────────────────────────────────── */
+.app-container {
+  background-color: var(--bone-color-bg-layout);
 }
 
-.dark-header {
-  background-color: #1f1f1f !important;
-}
-
-.dark-content {
-  background-color: #1f1f1f !important;
-  color: #ffffff;
-}
-
-/* 登录页面 */
+/* ── 登录页 ────────────────────────────────────────────────── */
 .login-container {
   min-height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 20px;
-}
-
-.login-container.light {
-  background-color: #f0f2f5;
-}
-
-.login-container.dark {
-  background-color: #141414;
+  background-color: var(--bone-color-bg-layout);
 }
 
 .login-card {
@@ -80,19 +151,14 @@
 .login-tip {
   margin-top: 16px;
   font-size: 12px;
-  color: #8c8c8c;
+  color: var(--bone-color-text-tertiary);
   text-align: center;
 }
 
-/* 菜单配置 */
+/* ── 菜单配置 Popover ──────────────────────────────────────── */
 .menu-config {
   width: 200px;
   padding: 16px;
-}
-
-.menu-config.dark {
-  background-color: #1f1f1f;
-  color: #ffffff;
 }
 
 .menu-config h3 {
@@ -100,6 +166,7 @@
   margin-bottom: 16px;
   font-size: 14px;
   font-weight: 500;
+  color: var(--bone-color-text);
 }
 
 .menu-config-item {
@@ -107,19 +174,13 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
+  color: var(--bone-color-text);
 }
 
-/* 仪表盘 */
+/* ── 仪表盘 ────────────────────────────────────────────────── */
 .dashboard {
   padding: 24px 0;
-}
-
-.dashboard.light {
-  color: #262626;
-}
-
-.dashboard.dark {
-  color: #ffffff;
+  color: var(--bone-color-text);
 }
 
 .dashboard-header {
@@ -130,49 +191,27 @@
   font-size: 28px;
   font-weight: 600;
   margin-bottom: 8px;
-}
-
-.dashboard-updated {
-  font-size: 12px;
-  color: #888;
-  margin-top: 4px;
-}
-
-.status-empty {
-  color: #999;
-  font-size: 13px;
+  color: var(--bone-color-text);
 }
 
 .dashboard-header p {
   font-size: 16px;
   margin-bottom: 16px;
-  color: #666;
+  color: var(--bone-color-text-secondary);
 }
 
-.app-container.dark .dashboard-header p {
-  color: #b0b0b0;
+.dashboard-updated {
+  font-size: 12px;
+  color: var(--bone-color-text-tertiary);
+  margin-top: 4px;
 }
 
-.dashboard-info {
-  display: flex;
-  gap: 32px;
-  margin-bottom: 32px;
-  padding: 16px;
-  background-color: rgba(0, 0, 0, 0.05);
-  border-radius: 8px;
-  display: inline-block;
+.status-empty {
+  color: var(--bone-color-text-tertiary);
+  font-size: 13px;
 }
 
-.dashboard.dark .dashboard-info {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
-.info-item {
-  margin: 0 16px;
-  font-size: 14px;
-}
-
-/* 系统概览 */
+/* ── 系统概览卡片 ──────────────────────────────────────────── */
 .stats-section {
   margin-bottom: 32px;
 }
@@ -183,6 +222,7 @@
   margin-bottom: 16px;
   display: flex;
   align-items: center;
+  color: var(--bone-color-text);
 }
 
 .stats-cards {
@@ -192,27 +232,18 @@
 }
 
 .stat-card {
-  background: white;
+  background: var(--bone-color-bg-container);
   border-radius: 8px;
   padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   display: flex;
   align-items: center;
   transition: all 0.3s ease;
 }
 
-.app-container.dark .stat-card {
-  background-color: #2c2c2c;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
 .stat-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   transform: translateY(-2px);
-}
-
-.app-container.dark .stat-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
 .stat-icon {
@@ -234,18 +265,15 @@
   font-size: 24px;
   font-weight: 600;
   margin-bottom: 4px;
+  color: var(--bone-color-text);
 }
 
 .stat-title {
   font-size: 14px;
-  color: #666;
+  color: var(--bone-color-text-secondary);
 }
 
-.app-container.dark .stat-title {
-  color: #b0b0b0;
-}
-
-/* 网格布局 */
+/* ── 仪表盘面板 ────────────────────────────────────────────── */
 .dashboard-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -259,20 +287,29 @@
   }
 }
 
-/* 面板样式 */
 .dashboard-section {
-  background: white;
+  background: var(--bone-color-bg-container);
   border-radius: 8px;
   padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
-.app-container.dark .dashboard-section {
-  background-color: #2c2c2c;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+/* ── 仪表盘信息栏 ──────────────────────────────────────────── */
+.dashboard-info {
+  display: inline-block;
+  margin-bottom: 32px;
+  padding: 16px;
+  background-color: var(--bone-color-border-secondary);
+  border-radius: 8px;
 }
 
-/* 服务状态 */
+.info-item {
+  margin: 0 16px;
+  font-size: 14px;
+  color: var(--bone-color-text);
+}
+
+/* ── 服务状态列表 ──────────────────────────────────────────── */
 .status-list {
   margin-top: 16px;
 }
@@ -281,11 +318,7 @@
   display: flex;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.app-container.dark .status-item {
-  border-bottom-color: #3c3c3c;
+  border-bottom: 1px solid var(--bone-color-border-secondary);
 }
 
 .status-item:last-child {
@@ -295,6 +328,7 @@
 .status-service {
   flex: 1;
   font-size: 14px;
+  color: var(--bone-color-text);
 }
 
 .status-indicator {
@@ -306,14 +340,10 @@
 
 .status-text {
   font-size: 14px;
-  color: #666;
+  color: var(--bone-color-text-secondary);
 }
 
-.app-container.dark .status-text {
-  color: #b0b0b0;
-}
-
-/* 最近活动 */
+/* ── 最近活动 ──────────────────────────────────────────────── */
 .activity-list {
   margin-top: 16px;
 }
@@ -322,11 +352,7 @@
   display: flex;
   align-items: flex-start;
   padding: 12px 0;
-  border-bottom: 1px solid #f0f0f0;
-}
-
-.app-container.dark .activity-item {
-  border-bottom-color: #3c3c3c;
+  border-bottom: 1px solid var(--bone-color-border-secondary);
 }
 
 .activity-item:last-child {
@@ -336,27 +362,25 @@
 .activity-time {
   width: 80px;
   font-size: 12px;
-  color: #999;
+  color: var(--bone-color-text-tertiary);
   flex-shrink: 0;
 }
 
 .activity-content {
   flex: 1;
   font-size: 14px;
+  color: var(--bone-color-text);
 }
 
 .activity-action {
   display: block;
   margin-bottom: 4px;
+  color: var(--bone-color-text);
 }
 
 .activity-user {
   font-size: 12px;
-  color: #999;
-}
-
-.app-container.dark .activity-user {
-  color: #777;
+  color: var(--bone-color-text-tertiary);
 }
 
 .activity-status {
@@ -368,26 +392,16 @@
 }
 
 .activity-status.success {
-  background-color: #f6ffed;
-  color: #52c41a;
-}
-
-.app-container.dark .activity-status.success {
-  background-color: #1a2e1a;
-  color: #73d13d;
+  background-color: var(--bone-color-success-bg);
+  color: var(--bone-color-success);
 }
 
 .activity-status.failed {
-  background-color: #fff2f0;
-  color: #f5222d;
+  background-color: var(--bone-color-error-bg);
+  color: var(--bone-color-error);
 }
 
-.app-container.dark .activity-status.failed {
-  background-color: #2e1a1a;
-  color: #ff4d4f;
-}
-
-/* 快捷操作 */
+/* ── 快捷操作 ──────────────────────────────────────────────── */
 .quick-actions {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -400,34 +414,24 @@
   flex-direction: column;
   align-items: center;
   padding: 20px;
-  background: #f5f5f5;
+  background: var(--bone-color-border-secondary);
   border-radius: 8px;
   text-decoration: none;
-  color: #333;
+  color: var(--bone-color-text);
   transition: all 0.3s ease;
 }
 
-.app-container.dark .quick-action-item {
-  background-color: #3c3c3c;
-  color: #e0e0e0;
-}
-
 .quick-action-item:hover {
-  background: #e6f7ff;
+  background: var(--bone-color-info-bg);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.app-container.dark .quick-action-item:hover {
-  background-color: #2a4365;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .quick-action-icon {
   width: 48px;
   height: 48px;
   border-radius: 8px;
-  background: #1890ff;
+  background: var(--bone-color-primary);
   color: white;
   display: flex;
   align-items: center;
@@ -441,16 +445,16 @@
   font-weight: 500;
 }
 
-/* 响应式设计 */
+/* ── 响应式 ────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .dashboard-cards {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .header-left {
     margin-left: 16px;
   }
-  
+
   .header-right {
     margin-right: 16px;
   }
@@ -460,15 +464,15 @@
   .dashboard-cards {
     grid-template-columns: 1fr;
   }
-  
+
   .header-left {
     margin-left: 8px;
   }
-  
+
   .header-right {
     margin-right: 8px;
   }
-  
+
   .user-name {
     display: none;
   }

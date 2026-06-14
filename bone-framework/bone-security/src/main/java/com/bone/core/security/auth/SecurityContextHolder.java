@@ -1,4 +1,3 @@
 package com.bone.core.security.auth;
 
-public class SecurityContextHolder {
-}
+public class SecurityContextHolder {}

@@ -1,10 +1,14 @@
 package com.bone.masterdata.application.command.cmd;
 
 import lombok.Data;
-import org.springframework.web.multipart.MultipartFile;
 
 @Data
 public class ImportMasterDataRecordsCommand {
-    private Long masterDataEntityId;
-    private MultipartFile file;
+  private Long masterDataEntityId;
+
+  /** 上传文件的原始文件名 */
+  private String originalFilename;
+
+  /** 上传文件的输入流（由 adapter 层从 MultipartFile 转换） */
+  private java.io.InputStream dataStream;
 }

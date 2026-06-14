@@ -1,4 +1,3 @@
 package com.bone.core.datasource.dynamic;
 
-public class DynamicDataSource {
-}
+public class DynamicDataSource {}

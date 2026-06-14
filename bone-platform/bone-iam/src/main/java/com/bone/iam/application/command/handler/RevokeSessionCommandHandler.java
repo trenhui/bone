@@ -17,37 +17,37 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class RevokeSessionCommandHandler {
 
-    private final RefreshTokenSessionStore sessionStore;
-    private final AccountAuthorityCache accountAuthorityCache;
+  private final RefreshTokenSessionStore sessionStore;
+  private final AccountAuthorityCache accountAuthorityCache;
 
-    public void revokeOne(Long sessionId) {
-        if (sessionId == null) {
-            throw BizException.of(400, IamErrorCodes.SESSION_NOT_FOUND);
-        }
-        Optional<Session> session = sessionStore.findById(sessionId);
-        Session target = session.orElseThrow(
-                () -> BizException.of(404, IamErrorCodes.SESSION_NOT_FOUND));
-        assertSameTenant(target.getTenantId());
-        sessionStore.revoke(sessionId);
-        accountAuthorityCache.evictAccount(target.getAccountId());
+  public void revokeOne(Long sessionId) {
+    if (sessionId == null) {
+      throw BizException.of(400, IamErrorCodes.SESSION_NOT_FOUND);
     }
+    Optional<Session> session = sessionStore.findById(sessionId);
+    Session target =
+        session.orElseThrow(() -> BizException.of(404, IamErrorCodes.SESSION_NOT_FOUND));
+    assertSameTenant(target.getTenantId());
+    sessionStore.revoke(sessionId);
+    accountAuthorityCache.evictAccount(target.getAccountId());
+  }
 
-    public int revokeAllForAccount(Long accountId) {
-        if (accountId == null) {
-            return 0;
-        }
-        int affected = sessionStore.revokeAllForAccount(accountId);
-        accountAuthorityCache.evictAccount(accountId);
-        return affected;
+  public int revokeAllForAccount(Long accountId) {
+    if (accountId == null) {
+      return 0;
     }
+    int affected = sessionStore.revokeAllForAccount(accountId);
+    accountAuthorityCache.evictAccount(accountId);
+    return affected;
+  }
 
-    private static void assertSameTenant(Long sessionTenantId) {
-        Long current = TenantContext.getTenantId();
-        if (current == null || current == 0L) {
-            return;
-        }
-        if (sessionTenantId == null || !sessionTenantId.equals(current)) {
-            throw BizException.of(403, IamErrorCodes.TENANT_ACCESS_DENIED + ": 跨租户会话操作被拒绝");
-        }
+  private static void assertSameTenant(Long sessionTenantId) {
+    Long current = TenantContext.getTenantId();
+    if (current == null || current == 0L) {
+      return;
     }
+    if (sessionTenantId == null || !sessionTenantId.equals(current)) {
+      throw BizException.of(403, IamErrorCodes.TENANT_ACCESS_DENIED + ": 跨租户会话操作被拒绝");
+    }
+  }
 }

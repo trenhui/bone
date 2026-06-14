@@ -4,37 +4,35 @@ import com.bone.core.threadlocal.TransmittableThreadLocal;
 
 /**
  * 当前业务身份上下文信息
+ *
  * @author renhui.trh
  */
 public class BizIdentityContext {
 
-    /**
-     * 支持父子线程之间的数据传递
-     */
-    private static final TransmittableThreadLocal<String>  Biz_Identity_CONTEXT  = new TransmittableThreadLocal<>();
+  /** 支持父子线程之间的数据传递 */
+  private static final TransmittableThreadLocal<String> Biz_Identity_CONTEXT =
+      new TransmittableThreadLocal<>();
 
-    /**
-     * 设置当前业务身份信息
-     *
-     * @param bizIdentityCode  业务身份
-     */
-    public static void setBizIdentityCode(String bizIdentityCode ) {
-        Biz_Identity_CONTEXT.set(bizIdentityCode);
-    }
+  /**
+   * 设置当前业务身份信息
+   *
+   * @param bizIdentityCode 业务身份
+   */
+  public static void setBizIdentityCode(String bizIdentityCode) {
+    Biz_Identity_CONTEXT.set(bizIdentityCode);
+  }
 
-    /**
-     * 获取当前登陆用户信息
-     *
-     * @return user 用户信息
-     */
-    public  static String getBizIdentityCode() {
-        return Biz_Identity_CONTEXT.get();
-    }
+  /**
+   * 获取当前登陆用户信息
+   *
+   * @return user 用户信息
+   */
+  public static String getBizIdentityCode() {
+    return Biz_Identity_CONTEXT.get();
+  }
 
-    /**
-     * 清除用户信息
-     */
-    public static void clear() {
-        Biz_Identity_CONTEXT.remove();
-    }
+  /** 清除用户信息 */
+  public static void clear() {
+    Biz_Identity_CONTEXT.remove();
+  }
 }

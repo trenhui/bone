@@ -7,13 +7,13 @@ import lombok.Getter;
 
 @Getter
 public class DeleteContext {
-    private final TableMetadata table;
-    private final Criteria<?> criteria;
-    private final AllocationContext extContext;
+  private final TableMetadata table;
+  private final Criteria<?> criteria;
+  private final AllocationContext extContext;
 
-    public DeleteContext(TableMetadata table, Criteria<?> criteria, AllocationContext extContext) {
-        this.table = table;
-        this.criteria = criteria;
-        this.extContext = extContext;
-    }
+  public DeleteContext(TableMetadata table, Criteria<?> criteria, AllocationContext extContext) {
+    this.table = table;
+    this.criteria = criteria;
+    this.extContext = extContext;
+  }
 }

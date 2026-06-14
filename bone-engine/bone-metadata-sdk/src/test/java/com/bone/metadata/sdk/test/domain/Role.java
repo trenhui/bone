@@ -13,14 +13,13 @@ import lombok.NoArgsConstructor;
 @Data
 @Table("roles")
 public class Role extends Entity<Long> {
-    private String roleName;
-    private String description;
+  private String roleName;
+  private String description;
 
-    // Fixed constructor with correct parameter types
-    public Role(Long id, String roleName, String description) {
-        super(id);
-        this.roleName = roleName;
-        this.description = description;
-    }
+  // Fixed constructor with correct parameter types
+  public Role(Long id, String roleName, String description) {
+    super(id);
+    this.roleName = roleName;
+    this.description = description;
+  }
 }
-

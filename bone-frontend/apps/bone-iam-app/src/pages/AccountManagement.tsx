@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Table, Button, Modal, Form, Input, Select, message, Popconfirm, Space, Tag } from 'antd';
+import { Table, Button, Modal, Form, Input, Select, App as AntApp, Popconfirm, Space, Tag } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined, LockOutlined, UnlockOutlined, KeyOutlined } from '@ant-design/icons';
 import * as api from '../services/api';
 import { unwrapPage } from '../utils/pageResult';
@@ -27,6 +27,7 @@ const AccountManagement: React.FC = () => {
   const [isResetPwdModalVisible, setIsResetPwdModalVisible] = useState(false);
   const [form] = Form.useForm();
   const [resetPwdForm] = Form.useForm();
+  const { message: antMessage } = AntApp.useApp();
 
   const fetchAccounts = useCallback(async () => {
     setLoading(true);
@@ -37,8 +38,8 @@ const AccountManagement: React.FC = () => {
         setAccounts(records);
         setTotal(newTotal);
       }
-    } catch {
-      message.error('获取账号列表失败');
+    } catch (err) {
+      console.error('获取账号列表失败', err);
     } finally {
       setLoading(false);
     }
@@ -50,8 +51,8 @@ const AccountManagement: React.FC = () => {
       if (response.code === 200) {
         setRoles(unwrapPage(response.data).records);
       }
-    } catch {
-      message.error('获取角色列表失败');
+    } catch (err) {
+      console.error('获取角色列表失败', err);
     }
   }, []);
 
@@ -99,11 +100,11 @@ const AccountManagement: React.FC = () => {
     try {
       const response = await api.deleteAccount(id);
       if (response.code === 200) {
-        message.success('删除账号成功');
+        antMessage.success('删除账号成功');
         fetchAccounts();
       }
     } catch {
-      message.error('删除账号失败');
+      antMessage.error('删除账号失败');
     }
   };
 
@@ -111,14 +112,14 @@ const AccountManagement: React.FC = () => {
     try {
       if (account.status === 1) {
         await api.disableAccount(account.id);
-        message.success('账号已禁用');
+        antMessage.success('账号已禁用');
       } else {
         await api.enableAccount(account.id);
-        message.success('账号已启用');
+        antMessage.success('账号已启用');
       }
       fetchAccounts();
     } catch {
-      message.error('操作失败');
+      antMessage.error('操作失败');
     }
   };
 
@@ -133,11 +134,11 @@ const AccountManagement: React.FC = () => {
       const values = await resetPwdForm.validateFields();
       if (currentAccount) {
         await api.resetAccountPassword(currentAccount.id, { password: values.password });
-        message.success('密码重置成功');
+        antMessage.success('密码重置成功');
         setIsResetPwdModalVisible(false);
       }
     } catch {
-      message.error('密码重置失败');
+      antMessage.error('密码重置失败');
     }
   };
 
@@ -154,9 +155,11 @@ const AccountManagement: React.FC = () => {
         };
         const response = await api.updateAccount(currentAccount.id, updateData);
         if (response.code === 200) {
-          message.success('更新账号成功');
+          antMessage.success('更新账号成功');
           setIsModalVisible(false);
           fetchAccounts();
+        } else {
+          antMessage.error(response.message || '更新账号失败');
         }
       } else {
         const createData: CreateAccountRequest = {
@@ -170,13 +173,18 @@ const AccountManagement: React.FC = () => {
         };
         const response = await api.createAccount(createData);
         if (response.code === 200) {
-          message.success('创建账号成功');
+          antMessage.success('创建账号成功');
           setIsModalVisible(false);
           fetchAccounts();
+        } else {
+          antMessage.error(response.message || '创建账号失败');
         }
       }
-    } catch {
-      message.error('操作失败');
+    } catch (err: unknown) {
+      const msg = (err as { displayMessage?: string })?.displayMessage
+        || (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+        || '操作失败';
+      antMessage.error(msg);
     }
   };
 
@@ -268,8 +276,8 @@ const AccountManagement: React.FC = () => {
             <Input placeholder="请输入用户名" />
           </Form.Item>
           {!isEditMode && (
-            <Form.Item name="password" label="密码" rules={[{ required: true, message: '请输入密码!' }]}>
-              <Input.Password placeholder="请输入密码" />
+            <Form.Item name="password" label="密码" rules={[{ required: true, message: '请输入密码!' }, { min: 8, message: '密码长度至少8位!' }]}>
+              <Input.Password placeholder="请输入密码（至少8位）" />
             </Form.Item>
           )}
           <Form.Item name="email" label="邮箱" rules={[{ required: true, message: '请输入邮箱!' }, { type: 'email', message: '请输入正确的邮箱格式!' }]}>
@@ -301,8 +309,8 @@ const AccountManagement: React.FC = () => {
       </Modal>
       <Modal title="重置密码" open={isResetPwdModalVisible} onOk={handleResetPasswordSubmit} onCancel={() => setIsResetPwdModalVisible(false)}>
         <Form form={resetPwdForm} layout="vertical">
-          <Form.Item name="password" label="新密码" rules={[{ required: true, message: '请输入新密码!' }, { min: 6, message: '密码至少6位!' }]}>
-            <Input.Password placeholder="请输入新密码" />
+          <Form.Item name="password" label="新密码" rules={[{ required: true, message: '请输入新密码!' }, { min: 8, message: '密码长度至少8位!' }]}>
+            <Input.Password placeholder="请输入新密码（至少8位）" />
           </Form.Item>
         </Form>
       </Modal>

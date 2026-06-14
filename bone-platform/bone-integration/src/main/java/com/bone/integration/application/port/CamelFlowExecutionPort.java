@@ -12,13 +12,13 @@ import java.util.List;
  */
 public interface CamelFlowExecutionPort {
 
-    boolean isReady();
+  boolean isReady();
 
-    String endpointUri(Long flowId);
+  String endpointUri(Long flowId);
 
-    void compile(IntegrationFlow flow, List<FlowNode> nodes, List<FlowConnection> connections)
-            throws Exception;
+  void compile(IntegrationFlow flow, List<FlowNode> nodes, List<FlowConnection> connections)
+      throws Exception;
 
-    /** 在已编译的 direct endpoint 上同步执行并返回 body。 */
-    Object executeOnEndpoint(String endpointUri, Object input) throws Exception;
+  /** 在已编译的 direct endpoint 上同步执行并返回 body。 */
+  Object executeOnEndpoint(String endpointUri, Object input) throws Exception;
 }

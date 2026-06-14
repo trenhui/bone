@@ -12,12 +12,11 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class RocketMqIntegrationMessageSender implements IntegrationMessageSender {
 
-    private final RocketMQTemplate rocketMQTemplate;
+  private final RocketMQTemplate rocketMQTemplate;
 
-    @Override
-    public void send(String topic, String partitionKey, String envelopeJson) {
-        rocketMQTemplate.syncSend(
-                topic,
-                MessageBuilder.withPayload(envelopeJson).setHeader("KEYS", partitionKey).build());
-    }
+  @Override
+  public void send(String topic, String partitionKey, String envelopeJson) {
+    rocketMQTemplate.syncSend(
+        topic, MessageBuilder.withPayload(envelopeJson).setHeader("KEYS", partitionKey).build());
+  }
 }

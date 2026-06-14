@@ -1,7 +1,7 @@
 package com.bone.studio.generator.application.query.handler;
 
-import com.bone.core.model.PageResult;
 import com.bone.core.capability.Capability;
+import com.bone.core.model.PageResult;
 import com.bone.studio.generator.application.query.qry.LoadCatalogTablesQuery;
 import com.bone.studio.generator.domain.data.DatabaseTable;
 import com.bone.studio.generator.domain.gateway.CatalogMetadataGateway;

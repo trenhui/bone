@@ -12,15 +12,15 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UpdateTenantCommandHandler {
 
-    private final TenantRepository tenantRepository;
+  private final TenantRepository tenantRepository;
 
-    @Transactional
-    public void handle(UpdateTenantCommand cmd) {
-        Tenant tenant = tenantRepository.findById(cmd.getId());
-        if (tenant == null) {
-            throw NotFoundException.of("租户不存在");
-        }
-        tenant.update(cmd.getName(), cmd.getAdminEmail(), cmd.getLevel() != null ? cmd.getLevel() : 0);
-        tenantRepository.save(tenant);
+  @Transactional
+  public void handle(UpdateTenantCommand cmd) {
+    Tenant tenant = tenantRepository.findById(cmd.getId());
+    if (tenant == null) {
+      throw NotFoundException.of("租户不存在");
     }
+    tenant.update(cmd.getName(), cmd.getAdminEmail(), cmd.getLevel() != null ? cmd.getLevel() : 0);
+    tenantRepository.save(tenant);
+  }
 }

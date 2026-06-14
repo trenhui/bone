@@ -1,6 +1,6 @@
 package com.bone.metadata.catalog.common;
 
-import com.bone.core.result.PageResult;
+import com.bone.core.model.PageResult;
 import java.util.List;
 import java.util.function.Function;
 

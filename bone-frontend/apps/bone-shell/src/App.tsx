@@ -1,13 +1,22 @@
-import { useEffect, useState, useContext } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
-import { Layout, Menu, Button, Avatar, Dropdown, Space, message, Form, Input, Card, Switch, Popover, Tooltip } from 'antd';
+import { useEffect, useState, useContext, useMemo, Component, ReactNode } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { Layout, Menu, Button, Avatar, Dropdown, Space, message, Form, Input, Card, Switch, Popover, Tooltip, Badge, Result } from 'antd';
 const { Password } = Input;
 import axios from 'axios';
+import { registerMicroApps, start as startQiankun, addGlobalUncaughtErrorHandler } from 'qiankun';
 import {
   UserOutlined, LogoutOutlined, DashboardOutlined, UserAddOutlined,
   LockOutlined, DatabaseOutlined, LinkOutlined, SettingOutlined,
   SunOutlined, MoonOutlined, AppstoreOutlined, CodeOutlined,
   LayoutOutlined, SettingOutlined as SettingIcon,
+  SafetyCertificateOutlined, AuditOutlined, TeamOutlined,
+  FileTextOutlined, PartitionOutlined, ApiOutlined, ThunderboltOutlined,
+  ClusterOutlined, OrderedListOutlined, ReconciliationOutlined,
+  BranchesOutlined, ControlOutlined, HistoryOutlined,
+  NodeIndexOutlined, NodeCollapseOutlined, UnorderedListOutlined,
+  CoffeeOutlined, ProfileOutlined,
+  LineChartOutlined, AlertOutlined, CloudOutlined, CloudServerOutlined,
+  BellOutlined,
 } from '@ant-design/icons';
 import {
   applyTheme,
@@ -18,13 +27,7 @@ import {
   themePreferenceLabel,
   type Theme,
 } from '@bone/ui';
-import { initGlobalState, registerMicroApps, start } from 'qiankun';
 import './App.css';
-
-const boneGlobalActions = initGlobalState({
-  themeMode: readStoredTheme(),
-  user: null,
-});
 
 const { Header, Sider, Content } = Layout;
 
@@ -52,16 +55,122 @@ function App(): JSX.Element {
   const [theme, setTheme] = useState<Theme>(() => readStoredTheme());
   const resolvedTheme = resolveThemeMode(theme);
   const [layoutMode, setLayoutMode] = useState<'side' | 'top' | 'mix'>('side');
+  const [currentPageTitle, setCurrentPageTitle] = useState<string>('');
+
   const [menuConfig, setMenuConfig] = useState<ShellMenuItem[]>([
-    { key: 'dashboard', label: '首页', icon: <DashboardOutlined />, path: '/', enabled: true },
-    { key: 'iam', label: 'IAM管理', icon: <UserAddOutlined />, path: '/iam', enabled: true },
-    { key: 'metadata', label: '元数据管理', icon: <DatabaseOutlined />, path: '/metadata', enabled: true },
-    { key: 'masterdata', label: '主数据管理', icon: <DatabaseOutlined />, path: '/masterdata', enabled: true },
-    { key: 'integration', label: '集成管理', icon: <LinkOutlined />, path: '/integration', enabled: true },
-    { key: 'system', label: '系统管理', icon: <SettingOutlined />, path: '/system', enabled: true },
-    { key: 'extension', label: '扩展管理', icon: <AppstoreOutlined />, path: '/extension', enabled: true },
-    { key: 'generator', label: '代码生成', icon: <CodeOutlined />, path: '/generator', enabled: true },
+    { key: 'dashboard', label: '首页仪表盘', icon: <DashboardOutlined />, path: '/', enabled: true },
+    {
+      key: 'iam',
+      label: 'IAM 管理',
+      icon: <UserAddOutlined />,
+      enabled: true,
+      children: [
+        { key: 'iam-accounts', label: '用户管理', icon: <UserOutlined />, path: '/iam', hash: '/accounts', enabled: true },
+        { key: 'iam-roles', label: '角色管理', icon: <TeamOutlined />, path: '/iam', hash: '/roles', enabled: true },
+        { key: 'iam-permissions', label: '权限管理', icon: <SafetyCertificateOutlined />, path: '/iam', hash: '/permissions', enabled: true },
+        { key: 'iam-audit', label: '审计日志', icon: <AuditOutlined />, path: '/iam', hash: '/audit-logs', enabled: true },
+        { key: 'iam-tenants', label: '租户管理', icon: <PartitionOutlined />, path: '/iam', hash: '/tenants', enabled: true },
+      ],
+    },
+    {
+      key: 'metadata',
+      label: '元数据管理',
+      icon: <DatabaseOutlined />,
+      enabled: true,
+      children: [
+        { key: 'metadata-entities', label: '实体管理', icon: <ApiOutlined />, path: '/metadata', hash: '/entities', enabled: true },
+        { key: 'metadata-fields', label: '字段管理', icon: <OrderedListOutlined />, path: '/metadata', hash: '/fields', enabled: true },
+        { key: 'metadata-relations', label: '关系管理', icon: <BranchesOutlined />, path: '/metadata', hash: '/relations', enabled: true },
+        { key: 'metadata-runtime', label: '运行时数据', icon: <ThunderboltOutlined />, path: '/metadata', hash: '/runtime', enabled: true },
+      ],
+    },
+    {
+      key: 'masterdata',
+      label: '主数据管理',
+      icon: <ClusterOutlined />,
+      enabled: true,
+      children: [
+        { key: 'masterdata-entities', label: '实体管理', icon: <ApiOutlined />, path: '/masterdata', hash: '/entities', enabled: true },
+        { key: 'masterdata-fields', label: '字段管理', icon: <OrderedListOutlined />, path: '/masterdata', hash: '/fields', enabled: true },
+        { key: 'masterdata-rules', label: '质量规则', icon: <ReconciliationOutlined />, path: '/masterdata', hash: '/rules', enabled: true },
+        { key: 'masterdata-records', label: '记录管理', icon: <FileTextOutlined />, path: '/masterdata', hash: '/records', enabled: true },
+      ],
+    },
+    {
+      key: 'integration',
+      label: '集成管理',
+      icon: <LinkOutlined />,
+      enabled: true,
+      children: [
+        { key: 'integration-connectors', label: '连接器管理', icon: <NodeIndexOutlined />, path: '/integration', hash: '/connectors', enabled: true },
+        { key: 'integration-flows', label: '流程编排', icon: <ControlOutlined />, path: '/integration', hash: '/flows', enabled: true },
+        { key: 'integration-monitor', label: '运行监控', icon: <LineChartOutlined />, path: '/integration', hash: '/monitor', enabled: true },
+      ],
+    },
+    {
+      key: 'extension',
+      label: '扩展管理',
+      icon: <AppstoreOutlined />,
+      enabled: true,
+      children: [
+        { key: 'extension-points', label: '扩展点目录', icon: <NodeCollapseOutlined />, path: '/extension', hash: '/points', enabled: true },
+        { key: 'extension-plugins', label: '插件仓库', icon: <UnorderedListOutlined />, path: '/extension', hash: '/plugins', enabled: true },
+        { key: 'extension-deploy', label: '部署管理', icon: <CloudServerOutlined />, path: '/extension', hash: '/deploy', enabled: true },
+        { key: 'extension-graph', label: '依赖图谱', icon: <BranchesOutlined />, path: '/extension', hash: '/graph', enabled: true },
+        { key: 'extension-market', label: '低代码市场', icon: <CoffeeOutlined />, path: '/extension', hash: '/market', enabled: true },
+        { key: 'extension-logs', label: '运行日志', icon: <ProfileOutlined />, path: '/extension', hash: '/logs', enabled: true },
+      ],
+    },
+    {
+      key: 'generator',
+      label: '代码生成',
+      icon: <CodeOutlined />,
+      enabled: true,
+      children: [
+        { key: 'generator-datasources', label: '数据源管理', icon: <DatabaseOutlined />, path: '/generator', hash: '/datasources', enabled: true },
+        { key: 'generator-generate', label: '代码生成', icon: <CodeOutlined />, path: '/generator', hash: '/generate', enabled: true },
+        { key: 'generator-templates', label: '模板管理', icon: <FileTextOutlined />, path: '/generator', hash: '/templates', enabled: true },
+        { key: 'generator-history', label: '生成历史', icon: <HistoryOutlined />, path: '/generator', hash: '/history', enabled: true },
+      ],
+    },
+    {
+      key: 'system',
+      label: '系统管理',
+      icon: <SettingOutlined />,
+      enabled: true,
+      children: [
+        { key: 'system-config', label: '系统配置', icon: <ControlOutlined />, path: '/system', hash: '/config', enabled: true },
+        { key: 'system-alerts', label: '监控告警', icon: <AlertOutlined />, path: '/system', hash: '/alerts', enabled: true },
+        { key: 'system-logs', label: '日志管理', icon: <CloudOutlined />, path: '/system', hash: '/logs', enabled: true },
+        { key: 'system-k8s', label: 'K8s 部署', icon: <CloudServerOutlined />, path: '/system', hash: '/k8s', enabled: true },
+      ],
+    },
   ]);
+
+  useEffect(() => {
+    const path = window.location.pathname;
+    const hash = window.location.hash;
+    
+    const findTitle = (items: ShellMenuItem[]): string => {
+      for (const item of items) {
+        if (item.path === path) {
+          if (hash && item.children) {
+            const child = item.children.find(c => c.hash === hash);
+            if (child) return `${item.label} - ${child.label}`;
+          }
+          return item.label;
+        }
+        if (item.children) {
+          const found = findTitle(item.children);
+          if (found) return found;
+        }
+      }
+      return '';
+    };
+    
+    const title = findTitle(menuConfig);
+    setCurrentPageTitle(title);
+  }, [menuConfig]);
 
   useEffect(() => {
     applyTheme(theme);
@@ -72,99 +181,78 @@ function App(): JSX.Element {
   useEffect(() => {
     applyTheme(theme);
     publishThemeChange(theme);
-    boneGlobalActions.setGlobalState({ themeMode: theme, user });
   }, [theme, user]);
 
+  // 初始化 qiankun 微应用（登录后执行，仅注册一次）
   useEffect(() => {
-    // 启动 qiankun
-    // qiankun 类型定义未覆盖 Vite importEntry 钩子，运行时仍生效
-    start({
-      sandbox: {
-        strictStyleIsolation: true,
-        experimentalStyleIsolation: true,
-      },
-      importEntry: {
-        getTemplate: (tpl: string) => {
-          let processedTpl = tpl.replace(/<script[^>]*react-refresh[^>]*>.*?<\/script>/gis, '');
-          processedTpl = processedTpl.replace(/<script[^>]*type="module"[^>]*>.*?<\/script>/gis, '');
-          processedTpl = processedTpl.replace(/<script[^>]*vite[^>]*>.*?<\/script>/gis, '');
-          return processedTpl;
-        },
-        getScriptValue: (scriptText: string) => {
-          if (
-            scriptText.includes('react-refresh') ||
-            scriptText.includes('injectIntoGlobalHook') ||
-            scriptText.includes('vite/client')
-          ) {
-            return '';
-          }
-          return scriptText;
-        },
-      },
-    } as Parameters<typeof start>[0]);
-  }, []);
+    if (!user) return;
 
-  const microAppProps = (name: string) => ({
-    name,
-    user,
-    themeMode: theme,
-  });
+    const token = localStorage.getItem('token') || '';
 
-  useEffect(() => {
-    registerMicroApps([
+    const microApps = [
       {
         name: 'bone-iam-app',
-        entry: 'http://localhost:3003',
-        container: '#micro-app-container',
+        entry: import.meta.env.VITE_IAM_APP_ENTRY || '//localhost:3003',
+        container: '#subapp-viewport',
         activeRule: '/iam',
-        props: microAppProps('bone-iam-app'),
+        props: { token },
       },
       {
         name: 'bone-metadata-app',
-        entry: 'http://localhost:3004',
-        container: '#micro-app-container',
+        entry: import.meta.env.VITE_METADATA_APP_ENTRY || '//localhost:3004',
+        container: '#subapp-viewport',
         activeRule: '/metadata',
-        props: microAppProps('bone-metadata-app'),
+        props: { token },
       },
       {
         name: 'bone-masterdata-app',
-        entry: 'http://localhost:3005',
-        container: '#micro-app-container',
+        entry: import.meta.env.VITE_MASTERDATA_APP_ENTRY || '//localhost:3005',
+        container: '#subapp-viewport',
         activeRule: '/masterdata',
-        props: microAppProps('bone-masterdata-app'),
+        props: { token },
       },
       {
         name: 'bone-integration-app',
-        entry: 'http://localhost:3006',
-        container: '#micro-app-container',
+        entry: import.meta.env.VITE_INTEGRATION_APP_ENTRY || '//localhost:3006',
+        container: '#subapp-viewport',
         activeRule: '/integration',
-        props: microAppProps('bone-integration-app'),
+        props: { token },
       },
       {
         name: 'bone-system-app',
-        entry: 'http://localhost:3007',
-        container: '#micro-app-container',
+        entry: import.meta.env.VITE_SYSTEM_APP_ENTRY || '//localhost:3007',
+        container: '#subapp-viewport',
         activeRule: '/system',
-        props: microAppProps('bone-system-app'),
+        props: { token },
       },
       {
         name: 'bone-extension-app',
-        entry: 'http://localhost:3008',
-        container: '#micro-app-container',
+        entry: import.meta.env.VITE_EXTENSION_APP_ENTRY || '//localhost:3008',
+        container: '#subapp-viewport',
         activeRule: '/extension',
-        props: microAppProps('bone-extension-app'),
+        props: { token },
       },
       {
         name: 'bone-generator-app',
-        entry: 'http://localhost:3009',
-        container: '#micro-app-container',
+        entry: import.meta.env.VITE_GENERATOR_APP_ENTRY || '//localhost:3009',
+        container: '#subapp-viewport',
         activeRule: '/generator',
-        props: microAppProps('bone-generator-app'),
+        props: { token },
       },
-    ]);
-    // microAppProps 是基于 user/theme 的纯派生值，无需显式列入依赖
+    ];
+
+    registerMicroApps(microApps);
+
+    addGlobalUncaughtErrorHandler((event: Event | string) => {
+      console.error('[qiankun] 微应用加载异常:', event);
+    });
+
+    startQiankun({
+      prefetch: 'all',
+      sandbox: { strictStyleIsolation: false, experimentalStyleIsolation: true },
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, theme]);
+  }, [user]);
 
   const toggleTheme = () => {
     const cycle: Theme[] = ['system', 'light', 'dark'];
@@ -180,12 +268,28 @@ function App(): JSX.Element {
     setLayoutMode(modes[nextIndex]);
   };
 
-  // 更新菜单配置
+  // 递归更新菜单配置（支持子菜单）
   const updateMenuConfig = (key: string, enabled: boolean) => {
-    setMenuConfig((prev) =>
-      prev.map((item) => (item.key === key ? { ...item, enabled } : item)),
-    );
+    const updateRecursive = (items: ShellMenuItem[]): ShellMenuItem[] =>
+      items.map((item) => {
+        if (item.key === key) {
+          return { ...item, enabled };
+        }
+        if (item.children) {
+          return { ...item, children: updateRecursive(item.children) };
+        }
+        return item;
+      });
+    setMenuConfig((prev) => updateRecursive(prev));
   };
+
+  // 递归过滤启用的菜单项
+  const filterEnabled = (items: ShellMenuItem[]): ShellMenuItem[] =>
+    items
+      .filter((item) => item.enabled)
+      .map((item) =>
+        item.children ? { ...item, children: filterEnabled(item.children) } : item,
+      );
 
   // 登录处理
   const [requirePasswordChange, setRequirePasswordChange] = useState(false);
@@ -237,8 +341,26 @@ function App(): JSX.Element {
     }
   };
 
-  // 过滤启用的菜单
-  const enabledMenus = menuConfig.filter(item => item.enabled);
+  // 处理叶子菜单点击的跳转逻辑
+  const handleMenuClick = (info: { key: string }, navigate: (path: string) => void) => {
+    const findItemByKey = (items: ShellMenuItem[]): ShellMenuItem | undefined => {
+      for (const item of items) {
+        if (item.key === info.key) return item;
+        if (item.children) {
+          const found = findItemByKey(item.children);
+          if (found) return found;
+        }
+      }
+      return undefined;
+    };
+    const item = findItemByKey(menuConfig);
+    if (item?.path) {
+      // 使用字符串形式导航，确保 pathname 和 hash 正确设置
+      // item.hash 格式为 "/accounts"，拼接为 "/iam#/accounts"
+      const fullPath = item.hash ? `${item.path}#${item.hash}` : item.path;
+      navigate(fullPath);
+    }
+  };
 
   return (
     <BoneAppProvider themeMode={theme}>
@@ -257,111 +379,21 @@ function App(): JSX.Element {
                     }}
                   />
                 ) : (
-                  <Layout style={{ minHeight: '100vh' }}>
-                    {layoutMode !== 'top' && (
-                      <Sider
-                        collapsible
-                        collapsed={collapsed}
-                        onCollapse={(value) => setCollapsed(value)}
-                        theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
-                      >
-                        <div className="logo" />
-                        <Menu
-                          theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
-                          mode="inline"
-                          defaultSelectedKeys={['dashboard']}
-                          items={enabledMenus.map(item => ({
-                            key: item.key,
-                            icon: item.icon,
-                            label: <Link to={item.path}>{item.label}</Link>
-                          }))}
-                        />
-                      </Sider>
-                    )}
-                    <Layout className="site-layout">
-                      <Header
-                        className={`site-layout-background ${resolvedTheme === 'dark' ? 'dark-header' : ''}`}
-                        style={{ padding: 0 }}
-                      >
-                        <div className="header-left">
-                          {layoutMode === 'top' && (
-                            <Menu
-                              theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
-                              mode="horizontal"
-                              defaultSelectedKeys={['dashboard']}
-                              style={{ lineHeight: '64px' }}
-                              items={enabledMenus.map(item => ({
-                                key: item.key,
-                                icon: item.icon,
-                                label: <Link to={item.path}>{item.label}</Link>
-                              }))}
-                            />
-                          )}
-                        </div>
-                        <div className="header-right">
-                          <Space size="middle">
-                            <Tooltip title={`切换主题（当前：${themePreferenceLabel(theme)}）`}>
-                              <Button
-                                type="text"
-                                icon={resolvedTheme === 'light' ? <MoonOutlined /> : <SunOutlined />}
-                                onClick={toggleTheme}
-                                className="header-button"
-                              />
-                            </Tooltip>
-                            <Tooltip title="切换布局模式">
-                              <Button
-                                type="text"
-                                icon={<LayoutOutlined />}
-                                onClick={toggleLayoutMode}
-                                className="header-button"
-                              />
-                            </Tooltip>
-                            <MenuConfig />
-                            <Dropdown menu={{ items: userMenu(handleLogout) }} placement="bottomRight">
-                              <Button type="text" className="user-button">
-                                <Avatar size="small" icon={<UserOutlined />} />
-                                <span className="user-name">{user?.name}</span>
-                              </Button>
-                            </Dropdown>
-                          </Space>
-                        </div>
-                      </Header>
-                      <Content
-                        className={`site-layout-background ${resolvedTheme === 'dark' ? 'dark-content' : ''}`}
-                        style={{
-                          margin: '24px 16px',
-                          padding: 24,
-                          minHeight: 280,
-                        }}
-                      >
-                        <Routes>
-                          <Route
-                            path="/"
-                            element={
-                              <Authorized required={PermissionCodes.SYS_CONSOLE_READ}>
-                                <DashboardPage />
-                              </Authorized>
-                            }
-                          />
-                          <Route path="/iam" element={<MicroAppContainer />} />
-                          <Route path="/iam/*" element={<MicroAppContainer />} />
-                          <Route path="/metadata" element={<MicroAppContainer />} />
-                          <Route path="/metadata/*" element={<MicroAppContainer />} />
-                          <Route path="/masterdata" element={<MicroAppContainer />} />
-                          <Route path="/masterdata/*" element={<MicroAppContainer />} />
-                          <Route path="/integration" element={<MicroAppContainer />} />
-                          <Route path="/integration/*" element={<MicroAppContainer />} />
-                          <Route path="/system" element={<MicroAppContainer />} />
-                          <Route path="/system/*" element={<MicroAppContainer />} />
-                          <Route path="/extension" element={<MicroAppContainer />} />
-                          <Route path="/extension/*" element={<MicroAppContainer />} />
-                          <Route path="/generator" element={<MicroAppContainer />} />
-                          <Route path="/generator/*" element={<MicroAppContainer />} />
-                          <Route path="*" element={<Navigate to="/" replace />} />
-                        </Routes>
-                      </Content>
-                    </Layout>
-                  </Layout>
+                  <MainLayout
+                    collapsed={collapsed}
+                    setCollapsed={setCollapsed}
+                    resolvedTheme={resolvedTheme}
+                    layoutMode={layoutMode}
+                    menuConfig={menuConfig}
+                    filterEnabled={filterEnabled}
+                    handleMenuClick={handleMenuClick}
+                    handleLogout={handleLogout}
+                    user={user}
+                    theme={theme}
+                    toggleTheme={toggleTheme}
+                    toggleLayoutMode={toggleLayoutMode}
+                    currentPageTitle={currentPageTitle}
+                  />
                 )}
               </Router>
             </div>
@@ -369,6 +401,221 @@ function App(): JSX.Element {
         </LayoutContext.Provider>
       </ThemeContext.Provider>
     </BoneAppProvider>
+  );
+}
+
+// 主布局组件（放在 Router 内部以便使用 useNavigate/useLocation）
+interface MainLayoutProps {
+  collapsed: boolean;
+  setCollapsed: (value: boolean) => void;
+  resolvedTheme: 'light' | 'dark';
+  layoutMode: 'side' | 'top' | 'mix';
+  menuConfig: ShellMenuItem[];
+  filterEnabled: (items: ShellMenuItem[]) => ShellMenuItem[];
+  handleMenuClick: (info: { key: string }, navigate: (path: string) => void) => void;
+  handleLogout: () => void;
+  user: { name: string } | null;
+  theme: Theme;
+  toggleTheme: () => void;
+  toggleLayoutMode: () => void;
+  currentPageTitle: string;
+}
+
+function MainLayout(props: MainLayoutProps): JSX.Element {
+  const {
+    collapsed, setCollapsed, resolvedTheme, layoutMode,
+    menuConfig, filterEnabled, handleMenuClick,
+    handleLogout, user, theme, toggleTheme, toggleLayoutMode,
+    currentPageTitle,
+  } = props;
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [openKeys, setOpenKeys] = useState<string[]>([]);
+
+  const enabledMenus = useMemo(() => filterEnabled(menuConfig), [menuConfig, filterEnabled]);
+
+  // 基于当前 pathname + hash 计算 selectedKey 和 openKey
+  const { selectedKey, parentKey } = useMemo(() => {
+    const { pathname, hash } = location;
+    const currentPath = pathname;
+    const currentHash = hash.replace('#', '');
+    let sKey = 'dashboard';
+    let pKey = '';
+
+    if (currentPath === '/' || currentPath === '') {
+      sKey = 'dashboard';
+    } else {
+      for (const group of menuConfig) {
+        if (!group.children) continue;
+        for (const child of group.children) {
+          if (child.path === currentPath && child.hash === `/${currentHash}`) {
+            sKey = child.key;
+            pKey = group.key;
+            return { selectedKey: sKey, parentKey: pKey };
+          }
+        }
+        // 未精确匹配 hash 时，回退到该分组的第一个子菜单
+        const firstChild = group.children.find(c => c.path === currentPath);
+        if (firstChild) {
+          sKey = firstChild.key;
+          pKey = group.key;
+        }
+      }
+    }
+    return { selectedKey: sKey, parentKey: pKey };
+  }, [location, menuConfig]);
+
+  // 初始化展开父分组
+  useEffect(() => {
+    if (parentKey && !openKeys.includes(parentKey)) {
+      setOpenKeys([parentKey]);
+    }
+    if (!parentKey) {
+      setOpenKeys([]);
+    }
+  }, [parentKey]);
+
+  // 将 ShellMenuItem[] 转换为 antd Menu items
+  const buildMenuItems = (items: ShellMenuItem[]): any[] =>
+    items.map((item) => {
+      if (item.children && item.children.length > 0) {
+        return {
+          key: item.key,
+          icon: item.icon,
+          label: item.label,
+          children: buildMenuItems(item.children),
+        };
+      }
+      return {
+        key: item.key,
+        icon: item.icon,
+        label: item.label,
+      };
+    });
+
+  const menuItems = buildMenuItems(enabledMenus);
+
+  const onMenuClick = (info: { key: string }) => {
+    handleMenuClick(info, navigate);
+  };
+
+  const onOpenChange = (keys: string[]) => {
+    // 手风琴效果：一次只展开一个分组
+    const newOpenKeys = keys.filter(k => !openKeys.includes(k));
+    if (newOpenKeys.length > 0) {
+      setOpenKeys(newOpenKeys);
+    } else {
+      setOpenKeys(keys);
+    }
+  };
+
+  return (
+    <Layout style={{ minHeight: '100vh' }}>
+      {layoutMode !== 'top' && (
+        <Sider
+          collapsible
+          collapsed={collapsed}
+          onCollapse={(value) => setCollapsed(value)}
+          theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
+        >
+          <div className="logo">
+            <div className="logo-icon">B</div>
+            {!collapsed && (
+              <div className="logo-text">
+                <span className="main">Bone Admin</span>
+                <span className="sub">企业级快速开发平台</span>
+              </div>
+            )}
+          </div>
+          <Menu
+            theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
+            mode="inline"
+            selectedKeys={[selectedKey]}
+            openKeys={openKeys}
+            onOpenChange={onOpenChange}
+            onClick={onMenuClick}
+            items={menuItems}
+          />
+        </Sider>
+      )}
+      <Layout className="site-layout">
+        <Header
+          className={`site-layout-background ${resolvedTheme === 'dark' ? 'dark-header' : ''}`}
+          style={{ padding: 0, height: '56px', lineHeight: '56px' }}
+        >
+          <div className="header-left">
+            {layoutMode === 'top' ? (
+              <Menu
+                theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
+                mode="horizontal"
+                selectedKeys={[selectedKey]}
+                openKeys={openKeys}
+                onOpenChange={onOpenChange}
+                onClick={onMenuClick}
+                style={{ lineHeight: '56px' }}
+                items={menuItems}
+              />
+            ) : (
+              <div className="page-title">
+                {currentPageTitle || 'BONE 平台控制台'}
+              </div>
+            )}
+          </div>
+          <div className="header-right">
+            <Tooltip title="通知 (3)">
+              <Button type="text" className="header-button notification-btn">
+                <Badge count={3} size="small">
+                  <BellOutlined style={{ fontSize: 15 }} />
+                </Badge>
+              </Button>
+            </Tooltip>
+            <Tooltip title={`切换主题（当前：${themePreferenceLabel(theme)}）`}>
+              <Button
+                type="text"
+                icon={resolvedTheme === 'light' ? <MoonOutlined /> : <SunOutlined />}
+                onClick={toggleTheme}
+                className="header-button"
+              />
+            </Tooltip>
+            <MenuConfig />
+            <Dropdown menu={{ items: userMenu(handleLogout) }} placement="bottomRight">
+              <Button type="text" className="user-button">
+                <Avatar size="small" icon={<UserOutlined />} />
+                <span className="user-name">{user?.name}</span>
+              </Button>
+            </Dropdown>
+          </div>
+        </Header>
+        <Content
+          className={`site-layout-background ${resolvedTheme === 'dark' ? 'dark-content' : ''}`}
+          style={{
+            margin: '24px 16px',
+            padding: 24,
+            minHeight: 280,
+          }}
+        >
+          <Routes>
+            <Route
+              path="/"
+              element={
+                <Authorized required={PermissionCodes.SYS_CONSOLE_READ}>
+                  <DashboardPage />
+                </Authorized>
+              }
+            />
+            {/* qiankun 微应用挂载容器：所有微应用路由都渲染此容器 */}
+            <Route path="/iam/*" element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>} />
+            <Route path="/metadata/*" element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>} />
+            <Route path="/masterdata/*" element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>} />
+            <Route path="/integration/*" element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>} />
+            <Route path="/system/*" element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>} />
+            <Route path="/extension/*" element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>} />
+            <Route path="/generator/*" element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Content>
+      </Layout>
+    </Layout>
   );
 }
 
@@ -384,7 +631,7 @@ function LoginPage({ onLogin, requirePasswordChange, onPasswordChange }: LoginPa
 
   useEffect(() => {
     form.setFieldsValue({
-      username: 'admin',
+      username: '',
       password: ''
     });
   }, [form]);
@@ -492,20 +739,28 @@ function MenuConfig(): JSX.Element {
   const { menuConfig, updateMenuConfig } = useContext(MenuConfigContext);
   const { resolvedTheme } = useContext(ThemeContext);
 
+  const renderItem = (item: ShellMenuItem, level: number = 0): JSX.Element => (
+    <div key={item.key}>
+      <div
+        className="menu-config-item"
+        style={{ paddingLeft: `${level * 16}px` }}
+      >
+        <span style={{ fontWeight: item.children ? 600 : 400 }}>{item.label}</span>
+        <Switch
+          checked={item.enabled}
+          onChange={(checked) => updateMenuConfig(item.key, checked)}
+        />
+      </div>
+      {item.children && item.children.map(child => renderItem(child, level + 1))}
+    </div>
+  );
+
   return (
     <Popover
       content={
         <div className={`menu-config ${resolvedTheme}`}>
           <h3>菜单配置</h3>
-          {menuConfig.map(item => (
-            <div key={item.key} className="menu-config-item">
-              <span>{item.label}</span>
-              <Switch
-                checked={item.enabled}
-                onChange={(checked) => updateMenuConfig(item.key, checked)}
-              />
-            </div>
-          ))}
+          {menuConfig.map(item => renderItem(item))}
         </div>
       }
       title="菜单配置"
@@ -532,73 +787,39 @@ function userMenu(onLogout: () => void): Array<{ key: string; icon: JSX.Element;
   ];
 }
 
-
-function MicroAppContainer(): JSX.Element {
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    // 模拟微应用加载
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-      // 检查微应用是否加载成功
-      const container = document.getElementById('micro-app-container');
-      if (container && container.children.length === 0) {
-        setError(true);
-      }
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  return (
-    <div style={{ position: 'relative', width: '100%', minHeight: '400px' }}>
-      {/* 微应用容器 */}
-      <div id="micro-app-container" style={{ width: '100%', height: '100%', minHeight: '400px' }} />
-      
-      {/* 加载状态 */}
-      {isLoading && (
-        <div style={{ 
-          position: 'absolute', 
-          top: 0, 
-          left: 0, 
-          right: 0, 
-          bottom: 0, 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          backgroundColor: 'rgba(255, 255, 255, 0.8)',
-          zIndex: 1000
-        }}>
-          <div style={{ textAlign: 'center' }}>
-            <p>正在加载应用...</p>
-          </div>
-        </div>
-      )}
-      
-      {/* 错误状态 */}
-      {!isLoading && error && (
-        <div style={{ 
-          position: 'absolute', 
-          top: 0, 
-          left: 0, 
-          right: 0, 
-          bottom: 0, 
-          display: 'flex', 
-          justifyContent: 'center', 
-          alignItems: 'center', 
-          backgroundColor: 'rgba(255, 255, 255, 0.9)',
-          zIndex: 1000
-        }}>
-          <div style={{ textAlign: 'center' }}>
-            <p style={{ fontSize: '18px', marginBottom: '16px' }}>应用未启动</p>
-            <p style={{ color: '#666', marginBottom: '24px' }}>请启动对应的微应用后再访问此页面</p>
-            <Button type="primary" onClick={() => window.location.reload()}>刷新页面</Button>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+/** 微应用加载错误边界，防止子应用异常导致整个 Shell 崩溃 */
+interface MicroAppErrorBoundaryProps {
+  children: ReactNode;
 }
+
+interface MicroAppErrorBoundaryState {
+  hasError: boolean;
+}
+
+class MicroAppErrorBoundary extends Component<MicroAppErrorBoundaryProps, MicroAppErrorBoundaryState> {
+  constructor(props: MicroAppErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(): MicroAppErrorBoundaryState {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <Result
+          status="error"
+          title="微应用加载失败"
+          subTitle="请检查微应用服务是否正常运行"
+          extra={<Button type="primary" onClick={() => window.location.reload()}>刷新重试</Button>}
+        />
+      );
+    }
+    return this.props.children;
+  }
+}
+
 
 export default App;

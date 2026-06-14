@@ -7,11 +7,11 @@ import org.slf4j.LoggerFactory;
 /** 默认空实现：宿主未注入 SDK 桥接时使用。 */
 public class NoopMetadataPlatformBridge implements MetadataPlatformBridge {
 
-    private static final Logger log = LoggerFactory.getLogger(NoopMetadataPlatformBridge.class);
+  private static final Logger log = LoggerFactory.getLogger(NoopMetadataPlatformBridge.class);
 
-    @Override
-    public Optional<String> loadPublishedEntityJson(Long tenantId, String entityCode) {
-        log.debug("MetadataPlatformBridge noop: tenantId={}, entityCode={}", tenantId, entityCode);
-        return Optional.empty();
-    }
+  @Override
+  public Optional<String> loadPublishedEntityJson(Long tenantId, String entityCode) {
+    log.debug("MetadataPlatformBridge noop: tenantId={}, entityCode={}", tenantId, entityCode);
+    return Optional.empty();
+  }
 }

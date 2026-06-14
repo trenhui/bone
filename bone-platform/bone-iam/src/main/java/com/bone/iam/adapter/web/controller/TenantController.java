@@ -3,9 +3,10 @@ package com.bone.iam.adapter.web.controller;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import com.bone.core.web.PlatformApiPaths;
-import com.bone.iam.application.command.cmd.CreateTenantCommand;
-import com.bone.iam.application.command.cmd.UpdateTenantCommand;
-import com.bone.iam.application.command.cmd.UpdateTenantQuotaCommand;
+import com.bone.iam.adapter.web.converter.TenantWebConverter;
+import com.bone.iam.adapter.web.dto.req.CreateTenantReq;
+import com.bone.iam.adapter.web.dto.req.UpdateTenantQuotaReq;
+import com.bone.iam.adapter.web.dto.req.UpdateTenantReq;
 import com.bone.iam.application.command.handler.CreateTenantCommandHandler;
 import com.bone.iam.application.command.handler.DeleteTenantCommandHandler;
 import com.bone.iam.application.command.handler.DisableTenantCommandHandler;
@@ -32,68 +33,68 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class TenantController {
 
-    private final CreateTenantCommandHandler createTenantCommandHandler;
-    private final UpdateTenantCommandHandler updateTenantCommandHandler;
-    private final EnableTenantCommandHandler enableTenantCommandHandler;
-    private final DisableTenantCommandHandler disableTenantCommandHandler;
-    private final TenantPageQueryHandler tenantPageQueryHandler;
-    private final TenantDetailQueryHandler tenantDetailQueryHandler;
-    private final DeleteTenantCommandHandler deleteTenantCommandHandler;
-    private final UpdateTenantQuotaCommandHandler updateTenantQuotaCommandHandler;
+  private final CreateTenantCommandHandler createTenantCommandHandler;
+  private final UpdateTenantCommandHandler updateTenantCommandHandler;
+  private final EnableTenantCommandHandler enableTenantCommandHandler;
+  private final DisableTenantCommandHandler disableTenantCommandHandler;
+  private final TenantPageQueryHandler tenantPageQueryHandler;
+  private final TenantDetailQueryHandler tenantDetailQueryHandler;
+  private final DeleteTenantCommandHandler deleteTenantCommandHandler;
+  private final UpdateTenantQuotaCommandHandler updateTenantQuotaCommandHandler;
+  private final TenantWebConverter tenantWebConverter;
 
-    @GetMapping
-    @PreAuthorize("hasAuthority('iam:tenants:read')")
-    public ApiResponse<PageResult<TenantDTO>> list(TenantPageQuery qry) {
-        return ApiResponse.success(tenantPageQueryHandler.handle(qry));
-    }
+  @GetMapping
+  @PreAuthorize("hasAuthority('iam:tenants:read')")
+  public ApiResponse<PageResult<TenantDTO>> list(TenantPageQuery qry) {
+    return ApiResponse.success(tenantPageQueryHandler.handle(qry));
+  }
 
-    @PostMapping
-    @PreAuthorize("hasAuthority('iam:tenants:write')")
-    public ApiResponse<Long> create(@RequestBody CreateTenantCommand cmd) {
-        return ApiResponse.success(createTenantCommandHandler.handle(cmd));
-    }
+  @PostMapping
+  @PreAuthorize("hasAuthority('iam:tenants:write')")
+  public ApiResponse<Long> create(@RequestBody CreateTenantReq req) {
+    return ApiResponse.success(
+        createTenantCommandHandler.handle(tenantWebConverter.toCreateTenantCommand(req)));
+  }
 
-    @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('iam:tenants:read')")
-    public ApiResponse<TenantDTO> detail(@PathVariable Long id) {
-        return ApiResponse.success(tenantDetailQueryHandler.handle(id));
-    }
+  @GetMapping("/{id}")
+  @PreAuthorize("hasAuthority('iam:tenants:read')")
+  public ApiResponse<TenantDTO> detail(@PathVariable Long id) {
+    return ApiResponse.success(tenantDetailQueryHandler.handle(id));
+  }
 
-    @PutMapping("/{id}")
-    @PreAuthorize("hasAuthority('iam:tenants:write')")
-    public ApiResponse<Void> update(@PathVariable Long id, @RequestBody UpdateTenantCommand cmd) {
-        cmd.setId(id);
-        updateTenantCommandHandler.handle(cmd);
-        return ApiResponse.success();
-    }
+  @PutMapping("/{id}")
+  @PreAuthorize("hasAuthority('iam:tenants:write')")
+  public ApiResponse<Void> update(@PathVariable Long id, @RequestBody UpdateTenantReq req) {
+    updateTenantCommandHandler.handle(tenantWebConverter.toUpdateTenantCommand(id, req));
+    return ApiResponse.success();
+  }
 
-    @PostMapping("/{id}/enable")
-    @PreAuthorize("hasAuthority('iam:tenants:write')")
-    public ApiResponse<Void> enable(@PathVariable Long id) {
-        enableTenantCommandHandler.handle(id);
-        return ApiResponse.success();
-    }
+  @PostMapping("/{id}/enable")
+  @PreAuthorize("hasAuthority('iam:tenants:write')")
+  public ApiResponse<Void> enable(@PathVariable Long id) {
+    enableTenantCommandHandler.handle(id);
+    return ApiResponse.success();
+  }
 
-    @PostMapping("/{id}/disable")
-    @PreAuthorize("hasAuthority('iam:tenants:write')")
-    public ApiResponse<Void> disable(@PathVariable Long id) {
-        disableTenantCommandHandler.handle(id);
-        return ApiResponse.success();
-    }
+  @PostMapping("/{id}/disable")
+  @PreAuthorize("hasAuthority('iam:tenants:write')")
+  public ApiResponse<Void> disable(@PathVariable Long id) {
+    disableTenantCommandHandler.handle(id);
+    return ApiResponse.success();
+  }
 
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('iam:tenants:write')")
-    public ApiResponse<Void> delete(@PathVariable Long id) {
-        deleteTenantCommandHandler.handle(id);
-        return ApiResponse.success();
-    }
+  @DeleteMapping("/{id}")
+  @PreAuthorize("hasAuthority('iam:tenants:write')")
+  public ApiResponse<Void> delete(@PathVariable Long id) {
+    deleteTenantCommandHandler.handle(id);
+    return ApiResponse.success();
+  }
 
-    @PutMapping("/{id}/quota")
-    @PreAuthorize("hasAuthority('iam:tenants:write')")
-    public ApiResponse<Void> updateQuota(
-            @PathVariable Long id, @RequestBody UpdateTenantQuotaCommand cmd) {
-        cmd.setId(id);
-        updateTenantQuotaCommandHandler.handle(cmd);
-        return ApiResponse.success();
-    }
+  @PutMapping("/{id}/quota")
+  @PreAuthorize("hasAuthority('iam:tenants:write')")
+  public ApiResponse<Void> updateQuota(
+      @PathVariable Long id, @RequestBody UpdateTenantQuotaReq req) {
+    updateTenantQuotaCommandHandler.handle(tenantWebConverter.toUpdateTenantQuotaCommand(id, req));
+    return ApiResponse.success();
+  }
 }

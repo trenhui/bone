@@ -5,6 +5,7 @@ import lombok.Data;
 
 @Data
 public class UpdateMetaFieldCommand {
+  private String name;
   @NotBlank private String displayName;
   @NotBlank private String type;
   private Integer length;

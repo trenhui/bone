@@ -12,16 +12,16 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class MetadataEnginePlatformAutoConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean(MetadataPlatformBridge.class)
-    @ConditionalOnClass(QueryBuilder.class)
-    public MetadataPlatformBridge sdkMetadataPlatformBridge() {
-        return new SdkMetadataPlatformBridge();
-    }
+  @Bean
+  @ConditionalOnMissingBean(MetadataPlatformBridge.class)
+  @ConditionalOnClass(QueryBuilder.class)
+  public MetadataPlatformBridge sdkMetadataPlatformBridge() {
+    return new SdkMetadataPlatformBridge();
+  }
 
-    @Bean
-    @ConditionalOnMissingBean(MetadataPlatformBridge.class)
-    public MetadataPlatformBridge noopMetadataPlatformBridge() {
-        return new NoopMetadataPlatformBridge();
-    }
+  @Bean
+  @ConditionalOnMissingBean(MetadataPlatformBridge.class)
+  public MetadataPlatformBridge noopMetadataPlatformBridge() {
+    return new NoopMetadataPlatformBridge();
+  }
 }

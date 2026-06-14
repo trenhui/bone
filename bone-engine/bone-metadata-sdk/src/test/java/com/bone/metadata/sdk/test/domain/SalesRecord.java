@@ -2,10 +2,9 @@ package com.bone.metadata.sdk.test.domain;
 
 import com.bone.core.domain.entity.Entity;
 import com.bone.metadata.sdk.domain.annotation.Table;
-import lombok.*;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import lombok.*;
 
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
@@ -15,21 +14,21 @@ import java.time.LocalDateTime;
 @Builder
 public class SalesRecord extends Entity<Long> {
 
-    private String category;
+  private String category;
 
-    private BigDecimal amount;
+  private BigDecimal amount;
 
-    private BigDecimal price;
+  private BigDecimal price;
 
-    private String status;
+  private String status;
 
-    private LocalDateTime createdAt;
+  private LocalDateTime createdAt;
 
-    private String region;
+  private String region;
 
-    private String productName;
+  private String productName;
 
-    private Integer quantity;
+  private Integer quantity;
 
-    private Boolean isDeleted;
+  private Boolean isDeleted;
 }

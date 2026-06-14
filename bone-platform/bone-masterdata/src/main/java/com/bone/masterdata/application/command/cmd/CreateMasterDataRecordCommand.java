@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateMasterDataRecordCommand {
-    private Long masterDataEntityId;
-    private String data;
+  private Long masterDataEntityId;
+  private String data;
 }

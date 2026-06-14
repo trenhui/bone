@@ -21,6 +21,10 @@ public class CreateMetaRelationHandler {
 
   @Transactional
   public Long handle(CreateMetaRelationCommand cmd) {
+    // 兼容前端传 relationType 而非 type 的情况
+    if (cmd.getType() == null && cmd.getRelationType() != null) {
+      cmd.setType(cmd.getRelationType());
+    }
     requireEntity(cmd.getSourceEntityId());
     requireEntity(cmd.getTargetEntityId());
     Long id = DistributedIdGenerator.generateLongId();

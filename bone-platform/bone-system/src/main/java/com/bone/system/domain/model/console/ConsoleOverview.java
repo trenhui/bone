@@ -10,12 +10,12 @@ import lombok.Value;
 @Builder
 public class ConsoleOverview {
 
-    List<ServiceStatus> services;
-    ResourceUsage resourceUsage;
-    KeyMetrics keyMetrics;
+  List<ServiceStatus> services;
+  ResourceUsage resourceUsage;
+  KeyMetrics keyMetrics;
 
-    /** 平台级告警占位；接入 {@code sys_alert_event} 后填充（[Target]）。 */
-    List<Object> alerts;
+  /** 平台级告警占位；接入 {@code sys_alert_event} 后填充（[Target]）。 */
+  List<Object> alerts;
 
-    Instant updatedAt;
+  Instant updatedAt;
 }

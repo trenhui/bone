@@ -1,9 +1,9 @@
 package com.bone.engine.extension.studio.application.service;
 
 import com.bone.core.model.ProblemDetail;
-import com.bone.engine.extension.studio.common.StudioErrorCodes;
 import com.bone.engine.extension.studio.application.command.handler.ExtensionCommandHandler;
 import com.bone.engine.extension.studio.application.query.handler.ExtensionQueryHandler;
+import com.bone.engine.extension.studio.common.StudioErrorCodes;
 import com.bone.engine.extension.studio.config.StudioRequestContextFilter;
 import com.bone.engine.extension.studio.domain.model.Extension;
 import com.bone.engine.extension.studio.domain.model.StudioOperation;
@@ -22,89 +22,91 @@ import org.springframework.stereotype.Service;
 @Service
 public class StudioLroService {
 
-    private static final String TYPE_PLUGIN_DEPLOY = "plugin.deploy";
+  private static final String TYPE_PLUGIN_DEPLOY = "plugin.deploy";
 
-    private final ExtensionCommandHandler extensionCommandHandler;
-    private final ExtensionQueryHandler extensionQueryHandler;
-    private final StudioAuditService auditService;
-    private final StudioExtensionMetrics studioMetrics;
-    private final Map<String, StudioOperation> operations = new ConcurrentHashMap<>();
-    private final ExecutorService executor = Executors.newCachedThreadPool(r -> {
-        Thread t = new Thread(r, "studio-lro");
-        t.setDaemon(true);
-        return t;
-    });
+  private final ExtensionCommandHandler extensionCommandHandler;
+  private final ExtensionQueryHandler extensionQueryHandler;
+  private final StudioAuditService auditService;
+  private final StudioExtensionMetrics studioMetrics;
+  private final Map<String, StudioOperation> operations = new ConcurrentHashMap<>();
+  private final ExecutorService executor =
+      Executors.newCachedThreadPool(
+          r -> {
+            Thread t = new Thread(r, "studio-lro");
+            t.setDaemon(true);
+            return t;
+          });
 
-    public StudioLroService(
-            ExtensionCommandHandler extensionCommandHandler,
-            ExtensionQueryHandler extensionQueryHandler,
-            StudioAuditService auditService,
-            StudioExtensionMetrics studioMetrics) {
-        this.extensionCommandHandler = extensionCommandHandler;
-        this.extensionQueryHandler = extensionQueryHandler;
-        this.auditService = auditService;
-        this.studioMetrics = studioMetrics;
+  public StudioLroService(
+      ExtensionCommandHandler extensionCommandHandler,
+      ExtensionQueryHandler extensionQueryHandler,
+      StudioAuditService auditService,
+      StudioExtensionMetrics studioMetrics) {
+    this.extensionCommandHandler = extensionCommandHandler;
+    this.extensionQueryHandler = extensionQueryHandler;
+    this.auditService = auditService;
+    this.studioMetrics = studioMetrics;
+  }
+
+  public String startPluginDeploy(Long pluginId) {
+    String operationId = "op-" + UUID.randomUUID().toString().replace("-", "");
+    StudioOperation op = new StudioOperation();
+    op.setOperationId(operationId);
+    op.setType(TYPE_PLUGIN_DEPLOY);
+    op.setResourceId(pluginId);
+    op.setDone(false);
+    op.setProgress(0);
+    op.setCreatedAt(Instant.now());
+    operations.put(operationId, op);
+    studioMetrics.recordLro(TYPE_PLUGIN_DEPLOY, "accepted");
+
+    Map<String, String> mdc = MDC.getCopyOfContextMap();
+    executor.submit(
+        () -> {
+          if (mdc != null) {
+            MDC.setContextMap(mdc);
+          }
+          runDeploy(operationId, pluginId);
+          MDC.clear();
+        });
+    return operationId;
+  }
+
+  public StudioOperation getOperation(String operationId) {
+    return operations.get(operationId);
+  }
+
+  private void runDeploy(String operationId, Long pluginId) {
+    StudioOperation op = operations.get(operationId);
+    if (op == null) {
+      return;
     }
-
-    public String startPluginDeploy(Long pluginId) {
-        String operationId = "op-" + UUID.randomUUID().toString().replace("-", "");
-        StudioOperation op = new StudioOperation();
-        op.setOperationId(operationId);
-        op.setType(TYPE_PLUGIN_DEPLOY);
-        op.setResourceId(pluginId);
-        op.setDone(false);
-        op.setProgress(0);
-        op.setCreatedAt(Instant.now());
-        operations.put(operationId, op);
-        studioMetrics.recordLro(TYPE_PLUGIN_DEPLOY, "accepted");
-
-        Map<String, String> mdc = MDC.getCopyOfContextMap();
-        executor.submit(
-                () -> {
-                    if (mdc != null) {
-                        MDC.setContextMap(mdc);
-                    }
-                    runDeploy(operationId, pluginId);
-                    MDC.clear();
-                });
-        return operationId;
+    try {
+      op.setProgress(20);
+      extensionCommandHandler.deployExtension(pluginId);
+      op.setProgress(90);
+      Extension extension = extensionQueryHandler.findExtensionById(pluginId);
+      Map<String, Object> result = new LinkedHashMap<>();
+      result.put("id", extension != null ? extension.getId() : pluginId);
+      result.put("enabled", extension != null && extension.isEnabled());
+      op.setResult(result);
+      op.setProgress(100);
+      op.setDone(true);
+      op.setCompletedAt(Instant.now());
+      auditService.success("plugin.deploy", "plugin", String.valueOf(pluginId));
+      studioMetrics.recordLro(TYPE_PLUGIN_DEPLOY, "success");
+      studioMetrics.recordDeploy("deploy", "success");
+    } catch (Exception ex) {
+      ProblemDetail detail = ProblemDetail.of(StudioErrorCodes.STATE_INVALID, 409, ex.getMessage());
+      String traceId = MDC.get(StudioRequestContextFilter.TRACE_ID);
+      detail.setTraceId(traceId);
+      op.setError(detail);
+      op.setDone(true);
+      op.setProgress(100);
+      op.setCompletedAt(Instant.now());
+      auditService.failure("plugin.deploy", "plugin", String.valueOf(pluginId), ex.getMessage());
+      studioMetrics.recordLro(TYPE_PLUGIN_DEPLOY, "failure");
+      studioMetrics.recordDeploy("deploy", "failure");
     }
-
-    public StudioOperation getOperation(String operationId) {
-        return operations.get(operationId);
-    }
-
-    private void runDeploy(String operationId, Long pluginId) {
-        StudioOperation op = operations.get(operationId);
-        if (op == null) {
-            return;
-        }
-        try {
-            op.setProgress(20);
-            extensionCommandHandler.deployExtension(pluginId);
-            op.setProgress(90);
-            Extension extension = extensionQueryHandler.findExtensionById(pluginId);
-            Map<String, Object> result = new LinkedHashMap<>();
-            result.put("id", extension != null ? extension.getId() : pluginId);
-            result.put("enabled", extension != null && extension.isEnabled());
-            op.setResult(result);
-            op.setProgress(100);
-            op.setDone(true);
-            op.setCompletedAt(Instant.now());
-            auditService.success("plugin.deploy", "plugin", String.valueOf(pluginId));
-            studioMetrics.recordLro(TYPE_PLUGIN_DEPLOY, "success");
-            studioMetrics.recordDeploy("deploy", "success");
-        } catch (Exception ex) {
-            ProblemDetail detail = ProblemDetail.of(StudioErrorCodes.STATE_INVALID, 409, ex.getMessage());
-            String traceId = MDC.get(StudioRequestContextFilter.TRACE_ID);
-            detail.setTraceId(traceId);
-            op.setError(detail);
-            op.setDone(true);
-            op.setProgress(100);
-            op.setCompletedAt(Instant.now());
-            auditService.failure("plugin.deploy", "plugin", String.valueOf(pluginId), ex.getMessage());
-            studioMetrics.recordLro(TYPE_PLUGIN_DEPLOY, "failure");
-            studioMetrics.recordDeploy("deploy", "failure");
-        }
-    }
+  }
 }

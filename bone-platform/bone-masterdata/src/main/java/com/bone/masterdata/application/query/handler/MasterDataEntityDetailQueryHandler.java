@@ -14,29 +14,31 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @RequiredArgsConstructor
 public class MasterDataEntityDetailQueryHandler {
-    private final MasterDataEntityRepository entityRepository;
+  private final MasterDataEntityRepository entityRepository;
 
-    @Transactional(readOnly = true)
-    public MasterDataEntityDTO handle(MasterDataEntityByIdQuery qry) {
-        MasterDataEntity entity = entityRepository.findById(qry.getId());
-        if (entity == null) {
-            throw new NotFoundException("主数据实体不存在");
-        }
+  @Transactional(readOnly = true)
+  public MasterDataEntityDTO handle(MasterDataEntityByIdQuery qry) {
+    MasterDataEntity entity = entityRepository.findById(qry.getId());
+    if (entity == null) {
+      throw new NotFoundException("主数据实体不存在");
+    }
 
-        int fieldCount = (int) QueryBuilder.from(MasterDataField.class)
+    int fieldCount =
+        (int)
+            QueryBuilder.from(MasterDataField.class)
                 .where(MasterDataField::getMasterDataEntityId)
                 .eq(entity.getId())
                 .count();
 
-        return MasterDataEntityDTO.builder()
-                .id(entity.getId())
-                .name(entity.getName().value())
-                .description(entity.getDescription())
-                .category(entity.getCategory())
-                .status(entity.getStatus().name())
-                .createdAt(entity.getCreatedAt())
-                .updatedAt(entity.getUpdatedAt())
-                .fieldCount(fieldCount)
-                .build();
-    }
+    return MasterDataEntityDTO.builder()
+        .id(entity.getId())
+        .name(entity.getName().value())
+        .description(entity.getDescription())
+        .category(entity.getCategory())
+        .status(entity.getStatus().name())
+        .createdAt(entity.getCreatedAt())
+        .updatedAt(entity.getUpdatedAt())
+        .fieldCount(fieldCount)
+        .build();
+  }
 }

@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MasterDataFieldListQuery {
-    private Long masterDataEntityId;
-    private String keyword;
+  private Long masterDataEntityId;
+  private String keyword;
 }

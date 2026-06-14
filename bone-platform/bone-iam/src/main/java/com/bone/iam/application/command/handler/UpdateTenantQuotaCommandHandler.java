@@ -12,24 +12,24 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UpdateTenantQuotaCommandHandler {
 
-    private final TenantRepository tenantRepository;
+  private final TenantRepository tenantRepository;
 
-    @Transactional
-    public void handle(UpdateTenantQuotaCommand cmd) {
-        if (cmd == null || cmd.getId() == null) {
-            throw new IllegalArgumentException("租户 ID 不能为空");
-        }
-        if (cmd.getMaxAccounts() != null && cmd.getMaxAccounts() < 0) {
-            throw new IllegalArgumentException("maxAccounts 不能为负数");
-        }
-        if (cmd.getMaxRoles() != null && cmd.getMaxRoles() < 0) {
-            throw new IllegalArgumentException("maxRoles 不能为负数");
-        }
-        Tenant tenant = tenantRepository.findById(cmd.getId());
-        if (tenant == null) {
-            throw NotFoundException.of("租户不存在");
-        }
-        tenant.updateQuota(cmd.getMaxAccounts(), cmd.getMaxRoles());
-        tenantRepository.save(tenant);
+  @Transactional
+  public void handle(UpdateTenantQuotaCommand cmd) {
+    if (cmd == null || cmd.getId() == null) {
+      throw new IllegalArgumentException("租户 ID 不能为空");
     }
+    if (cmd.getMaxAccounts() != null && cmd.getMaxAccounts() < 0) {
+      throw new IllegalArgumentException("maxAccounts 不能为负数");
+    }
+    if (cmd.getMaxRoles() != null && cmd.getMaxRoles() < 0) {
+      throw new IllegalArgumentException("maxRoles 不能为负数");
+    }
+    Tenant tenant = tenantRepository.findById(cmd.getId());
+    if (tenant == null) {
+      throw NotFoundException.of("租户不存在");
+    }
+    tenant.updateQuota(cmd.getMaxAccounts(), cmd.getMaxRoles());
+    tenantRepository.save(tenant);
+  }
 }

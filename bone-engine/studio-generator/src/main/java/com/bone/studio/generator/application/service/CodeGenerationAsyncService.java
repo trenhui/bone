@@ -13,33 +13,33 @@ import org.springframework.stereotype.Service;
 @Service
 public class CodeGenerationAsyncService {
 
-    private static final Logger log = LoggerFactory.getLogger(CodeGenerationAsyncService.class);
+  private static final Logger log = LoggerFactory.getLogger(CodeGenerationAsyncService.class);
 
-    private final CreateCodeGenerationHandler createCodeGenerationHandler;
-    private final ExecutorService executor;
+  private final CreateCodeGenerationHandler createCodeGenerationHandler;
+  private final ExecutorService executor;
 
-    public CodeGenerationAsyncService(CreateCodeGenerationHandler createCodeGenerationHandler) {
-        this.createCodeGenerationHandler = createCodeGenerationHandler;
-        AtomicInteger seq = new AtomicInteger();
-        this.executor =
-                Executors.newCachedThreadPool(
-                        r -> {
-                            Thread t = new Thread(r, "gen-code-async-" + seq.incrementAndGet());
-                            t.setDaemon(true);
-                            return t;
-                        });
-    }
+  public CodeGenerationAsyncService(CreateCodeGenerationHandler createCodeGenerationHandler) {
+    this.createCodeGenerationHandler = createCodeGenerationHandler;
+    AtomicInteger seq = new AtomicInteger();
+    this.executor =
+        Executors.newCachedThreadPool(
+            r -> {
+              Thread t = new Thread(r, "gen-code-async-" + seq.incrementAndGet());
+              t.setDaemon(true);
+              return t;
+            });
+  }
 
-    public String submit(CreateCodeGenerationCommand command) {
-        String taskId = createCodeGenerationHandler.startPending(command);
-        executor.submit(
-                () -> {
-                    try {
-                        createCodeGenerationHandler.executeByTaskId(taskId, command);
-                    } catch (Exception ex) {
-                        log.warn("Async code generation failed for taskId={}", taskId, ex);
-                    }
-                });
-        return taskId;
-    }
+  public String submit(CreateCodeGenerationCommand command) {
+    String taskId = createCodeGenerationHandler.startPending(command);
+    executor.submit(
+        () -> {
+          try {
+            createCodeGenerationHandler.executeByTaskId(taskId, command);
+          } catch (Exception ex) {
+            log.warn("Async code generation failed for taskId={}", taskId, ex);
+          }
+        });
+    return taskId;
+  }
 }

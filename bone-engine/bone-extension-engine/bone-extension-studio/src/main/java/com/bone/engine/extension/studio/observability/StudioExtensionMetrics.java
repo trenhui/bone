@@ -7,21 +7,19 @@ import org.springframework.stereotype.Component;
 @Component
 public class StudioExtensionMetrics {
 
-    private final MeterRegistry meterRegistry;
+  private final MeterRegistry meterRegistry;
 
-    public StudioExtensionMetrics(MeterRegistry meterRegistry) {
-        this.meterRegistry = meterRegistry;
-    }
+  public StudioExtensionMetrics(MeterRegistry meterRegistry) {
+    this.meterRegistry = meterRegistry;
+  }
 
-    public void recordDeploy(String action, String status) {
-        meterRegistry
-                .counter("extension_deploy_total", "action", action, "status", status)
-                .increment();
-    }
+  public void recordDeploy(String action, String status) {
+    meterRegistry.counter("extension_deploy_total", "action", action, "status", status).increment();
+  }
 
-    public void recordLro(String operation, String result) {
-        meterRegistry
-                .counter("extension_lro_operation_total", "operation", operation, "result", result)
-                .increment();
-    }
+  public void recordLro(String operation, String result) {
+    meterRegistry
+        .counter("extension_lro_operation_total", "operation", operation, "result", result)
+        .increment();
+  }
 }

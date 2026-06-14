@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UpdateMasterDataRecordCommand {
-    private Long id;
-    private String data;
+  private Long id;
+  private String data;
 }

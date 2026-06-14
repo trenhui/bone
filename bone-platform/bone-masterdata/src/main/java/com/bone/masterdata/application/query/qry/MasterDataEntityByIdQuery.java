@@ -4,5 +4,5 @@ import lombok.Data;
 
 @Data
 public class MasterDataEntityByIdQuery {
-    private Long id;
+  private Long id;
 }

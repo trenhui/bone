@@ -17,7 +17,7 @@ export const BonePermissionDomain = {
 
 /** As-Is：后端已引用或 JWT 种子已包含 */
 export const BonePermissionCodes = {
-  // IAM（管理面 · 建议登记到 iam_permission）
+  // IAM（管理面 · 与后端 DefaultPermissionCodes 和数据库 iam_permission.code 一致）
   IAM_ACCOUNTS_READ: 'iam:accounts:read',
   IAM_ACCOUNTS_WRITE: 'iam:accounts:write',
   IAM_ROLES_READ: 'iam:roles:read',

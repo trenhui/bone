@@ -4,8 +4,8 @@ import lombok.Data;
 
 @Data
 public class CreateTenantCommand {
-    private String name;
-    private String code;
-    private Integer level;
-    private String adminEmail;
+  private String name;
+  private String code;
+  private Integer level;
+  private String adminEmail;
 }

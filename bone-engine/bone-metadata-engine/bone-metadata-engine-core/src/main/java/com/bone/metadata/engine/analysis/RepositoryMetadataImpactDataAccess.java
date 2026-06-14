@@ -28,7 +28,8 @@ public class RepositoryMetadataImpactDataAccess implements MetadataImpactDataAcc
     if (entityApiName == null || entityApiName.isBlank()) {
       return List.of();
     }
-    List<WorkflowMetadata> workflows = metadataRepository.findWorkflowsByEntityApiName(entityApiName);
+    List<WorkflowMetadata> workflows =
+        metadataRepository.findWorkflowsByEntityApiName(entityApiName);
     List<WorkflowRef> refs = new ArrayList<>();
     for (WorkflowMetadata workflow : workflows) {
       if (workflow == null) {

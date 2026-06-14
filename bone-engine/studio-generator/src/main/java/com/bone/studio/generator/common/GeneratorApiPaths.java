@@ -23,5 +23,20 @@ public final class GeneratorApiPaths {
   /** LRO 轮询（operationId = taskId） */
   public static final String OPERATIONS = V1_PREFIX + "/operations";
 
+  /** 物理库表发现（简写路径） */
+  public static final String TABLES = V1_PREFIX + "/tables";
+
+  /** 表元数据同步（简写路径） */
+  public static final String TABLES_METADATA = V1_PREFIX + "/tables/metadata";
+
+  /** 代码生成（简写路径） */
+  public static final String GENERATIONS = V1_PREFIX + "/generations";
+
+  /** 同步代码生成（简写路径） */
+  public static final String GENERATE = V1_PREFIX + "/generate";
+
+  /** 生成历史（简写路径） */
+  public static final String HISTORY = V1_PREFIX + "/history";
+
   private GeneratorApiPaths() {}
 }

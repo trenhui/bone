@@ -9,10 +9,13 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @Component
 public class DataQualityRuleCreatedHandler {
 
-    @TransactionalEventListener
-    public void handle(DataQualityRuleCreatedEvent event) {
-        log.info("数据质量规则创建事件: entityId={}, ruleId={}, name={}",
-                event.entityId(), event.ruleId(), event.ruleName());
-        // 这里可以添加业务逻辑
-    }
+  @TransactionalEventListener
+  public void handle(DataQualityRuleCreatedEvent event) {
+    log.info(
+        "数据质量规则创建事件: entityId={}, ruleId={}, name={}",
+        event.entityId(),
+        event.ruleId(),
+        event.ruleName());
+    // 这里可以添加业务逻辑
+  }
 }

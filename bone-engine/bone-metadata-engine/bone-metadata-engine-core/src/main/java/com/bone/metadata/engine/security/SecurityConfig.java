@@ -3,8 +3,8 @@ package com.bone.metadata.engine.security;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-/** 安全配置类 集成所有安全相关组件到Spring应用程序 */
-@Configuration
+/** 安全组件配置类 集成所有安全相关组件到Spring应用程序 */
+@Configuration("metadataEngineSecurityConfig")
 public class SecurityConfig {
 
   /** 注意：当前配置仅包含自定义安全组件，不依赖Spring Security框架 如果需要完整的Spring Security功能，需要在pom.xml中添加相应依赖 */

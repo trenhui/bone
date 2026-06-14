@@ -1,26 +1,23 @@
 package com.bone.system.adapter.web.dto.resp;
 
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
-
-/**
- * 配置响应
- */
+/** 配置响应 */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ConfigResp {
-    private Long id;
-    private String configKey;
-    private String configValue;
-    private String description;
-    private String configType;
-    private boolean encrypted;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
+  private Long id;
+  private String configKey;
+  private String configValue;
+  private String description;
+  private String configType;
+  private boolean encrypted;
+  private LocalDateTime createdAt;
+  private LocalDateTime updatedAt;
 }

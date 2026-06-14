@@ -4,41 +4,40 @@ import com.bone.iam.adapter.web.dto.req.LoginReq;
 import com.bone.iam.adapter.web.dto.resp.LoginResp;
 import com.bone.iam.application.command.cmd.LoginCommand;
 import com.bone.iam.domain.account.Account;
-import org.springframework.stereotype.Component;
-
 import java.util.Map;
+import org.springframework.stereotype.Component;
 
 @Component
 public class AuthWebConverter {
-    public LoginCommand toLoginCommand(LoginReq req, String clientIp) {
-        LoginCommand cmd = new LoginCommand();
-        cmd.setUsername(req.getUsername());
-        cmd.setPassword(req.getPassword());
-        cmd.setClientIp(clientIp);
-        return cmd;
-    }
+  public LoginCommand toLoginCommand(LoginReq req, String clientIp) {
+    LoginCommand cmd = new LoginCommand();
+    cmd.setUsername(req.getUsername());
+    cmd.setPassword(req.getPassword());
+    cmd.setClientIp(clientIp);
+    return cmd;
+  }
 
-    public LoginResp toLoginResp(Map<String, Object> result) {
-        LoginResp resp = new LoginResp();
-        resp.setToken((String) result.get("token"));
-        resp.setRefreshToken((String) result.get("refreshToken"));
-        Object requireChange = result.get("requirePasswordChange");
-        resp.setRequirePasswordChange(requireChange instanceof Boolean b ? b : Boolean.FALSE);
+  public LoginResp toLoginResp(Map<String, Object> result) {
+    LoginResp resp = new LoginResp();
+    resp.setToken((String) result.get("token"));
+    resp.setRefreshToken((String) result.get("refreshToken"));
+    Object requireChange = result.get("requirePasswordChange");
+    resp.setRequirePasswordChange(requireChange instanceof Boolean b ? b : Boolean.FALSE);
 
-        Account account = (Account) result.get("account");
-        LoginResp.AccountInfo accountInfo = new LoginResp.AccountInfo();
-        accountInfo.setId(account.getId());
-        accountInfo.setUsername(account.getUsername().value());
-        accountInfo.setEmail(account.getEmail().value());
-        accountInfo.setPhone(account.getPhone());
-        accountInfo.setRealName(account.getRealName());
-        accountInfo.setAvatarUrl(account.getAvatarUrl());
-        accountInfo.setStatus(account.getStatus().getCode());
-        accountInfo.setIsAdmin(account.isAdmin());
-        accountInfo.setLastLoginAt(account.getLastLoginAt());
-        accountInfo.setCreatedAt(account.getCreatedAt());
-        resp.setAccount(accountInfo);
+    Account account = (Account) result.get("account");
+    LoginResp.AccountInfo accountInfo = new LoginResp.AccountInfo();
+    accountInfo.setId(account.getId());
+    accountInfo.setUsername(account.getUsername().value());
+    accountInfo.setEmail(account.getEmail().value());
+    accountInfo.setPhone(account.getPhone());
+    accountInfo.setRealName(account.getRealName());
+    accountInfo.setAvatarUrl(account.getAvatarUrl());
+    accountInfo.setStatus(account.getStatus().getCode());
+    accountInfo.setIsAdmin(account.isAdmin());
+    accountInfo.setLastLoginAt(account.getLastLoginAt());
+    accountInfo.setCreatedAt(account.getCreatedAt());
+    resp.setAccount(accountInfo);
 
-        return resp;
-    }
+    return resp;
+  }
 }

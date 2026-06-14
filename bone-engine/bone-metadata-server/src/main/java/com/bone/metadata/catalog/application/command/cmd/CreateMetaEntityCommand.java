@@ -11,7 +11,9 @@ public class CreateMetaEntityCommand {
   private String description;
   @NotBlank private String tableName;
   private Integer type;
+
   /** 0-GENERATIVE（默认） 1-RUNTIME */
   private Integer deliveryMode;
+
   private String icon;
 }

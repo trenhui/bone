@@ -7,128 +7,135 @@ import com.bone.metadata.sdk.extension.ColumnAllocator;
 import com.bone.metadata.sdk.extension.repository.FieldMetadataRepository;
 import com.bone.metadata.sdk.metadata.api.MetadataService;
 import com.bone.metadata.sdk.support.cache.FieldCache;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Isolation;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 public class EmbeddedMetadataService implements MetadataService {
-    private final ColumnAllocator allocator;
-    private final FieldMetadataRepository fieldMetadataRepository;
+  private final ColumnAllocator allocator;
+  private final FieldMetadataRepository fieldMetadataRepository;
 
-    @Autowired
-    public EmbeddedMetadataService(ColumnAllocator allocator, FieldMetadataRepository fieldMetadataRepository) {
-        this.allocator = allocator;
-        this.fieldMetadataRepository = fieldMetadataRepository;
+  @Autowired
+  public EmbeddedMetadataService(
+      ColumnAllocator allocator, FieldMetadataRepository fieldMetadataRepository) {
+    this.allocator = allocator;
+    this.fieldMetadataRepository = fieldMetadataRepository;
+  }
+
+  public List<FieldMetadata> findExtensionFields(AllocationContext ctx) {
+    return fieldMetadataRepository.findByContext(ctx);
+  }
+
+  public List<FieldMetadata> findExtensionFieldsByNames(
+      AllocationContext ctx, List<String> logicalNames) {
+    if (logicalNames == null || logicalNames.isEmpty()) {
+      return List.of();
     }
 
-    public List<FieldMetadata> findExtensionFields(AllocationContext ctx) {
-        return fieldMetadataRepository.findByContext(ctx);
+    List<String> sortedNames = logicalNames.stream().sorted().toList();
+    String key =
+        String.join(
+            "|",
+            ctx.getTenantId().toString(),
+            ctx.getAppCode(),
+            ctx.getBizIdentityCode(),
+            ctx.getEntityType(),
+            String.join(",", sortedNames));
+
+    String cacheKey = ctx.getAppCode() + "." + ctx.getEntityType();
+
+    // 先查精细缓存
+    List<FieldMetadata> cached = FieldCache.getByCacheKey(key);
+    if (cached != null && !cached.isEmpty()) {
+      return cached;
     }
 
-    public List<FieldMetadata> findExtensionFieldsByNames(AllocationContext ctx, List<String> logicalNames) {
-        if (logicalNames == null || logicalNames.isEmpty()) {
-            return List.of();
-        }
+    // 缓存未命中，查数据库
+    List<FieldMetadata> newMetadata =
+        fieldMetadataRepository.findByContextAndNames(ctx, sortedNames);
 
-        List<String> sortedNames = logicalNames.stream().sorted().toList();
-        String key = String.join("|",
-                ctx.getTenantId().toString(),
-                ctx.getAppCode(),
-                ctx.getBizIdentityCode(),
-                ctx.getEntityType(),
-                String.join(",", sortedNames)
-        );
+    // 更新粗粒度缓存（合并）
+    FieldCache.mergeFieldMetadataCache(cacheKey, newMetadata);
 
-        String cacheKey = ctx.getAppCode() + "." + ctx.getEntityType();
+    // 写入精细粒度缓存并返回
+    FieldCache.putToCache(key, newMetadata);
+    return newMetadata;
+  }
 
-        // 先查精细缓存
-        List<FieldMetadata> cached = FieldCache.getByCacheKey(key);
-        if (cached != null && !cached.isEmpty()) {
-            return cached;
-        }
-
-        // 缓存未命中，查数据库
-        List<FieldMetadata> newMetadata = fieldMetadataRepository.findByContextAndNames(ctx, sortedNames);
-
-        // 更新粗粒度缓存（合并）
-        FieldCache.mergeFieldMetadataCache(cacheKey, newMetadata);
-
-        // 写入精细粒度缓存并返回
-        FieldCache.putToCache(key, newMetadata);
-        return newMetadata;
+  /**
+   * 预分配并持久化扩展字段元数据。
+   *
+   * @param fields 字段的数据类型
+   * @return 新增的 FieldMetadata 列表
+   */
+  @Transactional(
+      propagation = Propagation.REQUIRES_NEW,
+      isolation = Isolation.REPEATABLE_READ,
+      rollbackFor = Exception.class)
+  public List<FieldMetadata> allocateAndPersistFields(List<FieldMetadata> fields) {
+    if (fields == null || fields.isEmpty()) {
+      return Collections.emptyList();
     }
 
+    // 1. 按数据类型分组
+    Map<DataType, List<FieldMetadata>> groupedFields =
+        fields.stream().collect(Collectors.groupingBy(f -> DataType.valueOf(f.getDataType())));
 
-    /**
-     * 预分配并持久化扩展字段元数据。
-     *
-     * @param fields 字段的数据类型
-     * @return 新增的 FieldMetadata 列表
-     */
-    @Transactional(
-            propagation = Propagation.REQUIRES_NEW,
-            isolation = Isolation.REPEATABLE_READ,
-            rollbackFor = Exception.class
-    )
-    public List<FieldMetadata> allocateAndPersistFields(List<FieldMetadata> fields) {
-        if (fields == null || fields.isEmpty()) {
-            return Collections.emptyList();
-        }
+    List<FieldMetadata> results = new ArrayList<>();
+    FieldMetadata fieldMetadata = fields.get(0);
+    AllocationContext ctx =
+        AllocationContext.of(
+            fieldMetadata.getTenantId(),
+            fieldMetadata.getAppCode(),
+            fieldMetadata.getBizIdentityCode(),
+            fieldMetadata.getEntityType());
+    // 2. 按数据类型批量分配
+    groupedFields.forEach(
+        (dataType, fieldGroup) -> {
 
-        // 1. 按数据类型分组
-        Map<DataType, List<FieldMetadata>> groupedFields = fields.stream()
-                .collect(Collectors.groupingBy(f -> DataType.valueOf(f.getDataType())));
+          // 分配物理列名
+          List<String> columns = allocator.allocate(ctx, dataType, fieldGroup.size());
 
+          // 更新字段元数据
+          IntStream.range(0, fieldGroup.size())
+              .forEach(
+                  i -> {
+                    FieldMetadata field = fieldGroup.get(i);
+                    validateField(field);
+                    field.setColumnName(columns.get(i));
+                    field.setExtension(true);
+                  });
 
-        List<FieldMetadata> results = new ArrayList<>();
-        FieldMetadata fieldMetadata = fields.get(0);
-        AllocationContext ctx = AllocationContext.of(fieldMetadata.getTenantId(), fieldMetadata.getAppCode(), fieldMetadata.getBizIdentityCode(), fieldMetadata.getEntityType());
-        // 2. 按数据类型批量分配
-        groupedFields.forEach((dataType, fieldGroup) -> {
-
-            // 分配物理列名
-            List<String> columns = allocator.allocate(ctx, dataType, fieldGroup.size());
-
-            // 更新字段元数据
-            IntStream.range(0, fieldGroup.size()).forEach(i -> {
-                FieldMetadata field = fieldGroup.get(i);
-                validateField(field);
-                field.setColumnName(columns.get(i));
-                field.setExtension(true);
-            });
-
-            results.addAll(fieldGroup);
+          results.addAll(fieldGroup);
         });
 
-        // 3. 批量保存
-        fieldMetadataRepository.batchSave(results);
-        return results;
-    }
+    // 3. 批量保存
+    fieldMetadataRepository.batchSave(results);
+    return results;
+  }
 
-
-    private void validateField(FieldMetadata field) {
-        if (field.getColumnName() != null && !field.getColumnName().isBlank()) {
-            throw new IllegalStateException(
-                    String.format("Field [%s] already allocated column [%s]",
-                            field.getName(), field.getColumnName()));
-        }
+  private void validateField(FieldMetadata field) {
+    if (field.getColumnName() != null && !field.getColumnName().isBlank()) {
+      throw new IllegalStateException(
+          String.format(
+              "Field [%s] already allocated column [%s]", field.getName(), field.getColumnName()));
     }
+  }
 
-    /**
-     * 健康检查方法
-     *
-     * @return 元数据服务是否健康
-     */
-    @Override
-    public boolean isHealthy() {
-        return true;
-    }
+  /**
+   * 健康检查方法
+   *
+   * @return 元数据服务是否健康
+   */
+  @Override
+  public boolean isHealthy() {
+    return true;
+  }
 }

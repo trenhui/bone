@@ -3,8 +3,8 @@ package com.bone.core.web;
 /**
  * 平台 REST 路径唯一前缀（见 doc/architecture/Bone-API-规范.md §2、§13.2）。
  *
- * <p>集成服务 {@code server.servlet.context-path=/api} 时，Controller 使用 {@link #INTEGRATION_V1}
- *（完整 URL 为 {@code /api/v1/integration/**}）。
+ * <p>集成服务 {@code server.servlet.context-path=/api} 时，Controller 使用 {@link #INTEGRATION_V1} （完整 URL
+ * 为 {@code /api/v1/integration/**}）。
  */
 public final class PlatformApiPaths {
 

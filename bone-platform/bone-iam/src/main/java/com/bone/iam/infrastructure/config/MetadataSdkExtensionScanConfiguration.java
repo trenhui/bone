@@ -10,8 +10,8 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 @ComponentScan(
-        basePackages = {
-            "com.bone.metadata.sdk.extension",
-            "com.bone.metadata.sdk.extension.repository"
-        })
+    basePackages = {
+      "com.bone.metadata.sdk.extension",
+      "com.bone.metadata.sdk.extension.repository"
+    })
 public class MetadataSdkExtensionScanConfiguration {}

@@ -5,29 +5,27 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * 封装处理后的 SQL 语句和参数，确保结果不可变。
- */
+/** 封装处理后的 SQL 语句和参数，确保结果不可变。 */
 public class ProcessedSql {
-    private final String sql;
-    private final Map<String, Object> effectiveParams;
+  private final String sql;
+  private final Map<String, Object> effectiveParams;
 
-    /**
-     * 构造函数。
-     *
-     * @param sql             处理后的 SQL 语句
-     * @param effectiveParams 处理后的参数映射
-     */
-    public ProcessedSql(String sql, Map<String, Object> effectiveParams) {
-        this.sql = Objects.requireNonNull(sql, "SQL must not be null");
-        this.effectiveParams = Collections.unmodifiableMap(new HashMap<>(effectiveParams));
-    }
+  /**
+   * 构造函数。
+   *
+   * @param sql 处理后的 SQL 语句
+   * @param effectiveParams 处理后的参数映射
+   */
+  public ProcessedSql(String sql, Map<String, Object> effectiveParams) {
+    this.sql = Objects.requireNonNull(sql, "SQL must not be null");
+    this.effectiveParams = Collections.unmodifiableMap(new HashMap<>(effectiveParams));
+  }
 
-    public String getSql() {
-        return sql;
-    }
+  public String getSql() {
+    return sql;
+  }
 
-    public Map<String, Object> getEffectiveParams() {
-        return effectiveParams;
-    }
+  public Map<String, Object> getEffectiveParams() {
+    return effectiveParams;
+  }
 }

@@ -1,8 +1,8 @@
 package com.bone.engine.extension.studio.application.query.handler;
 
 import com.bone.core.model.PageResult;
-import com.bone.engine.extension.studio.domain.model.StudioAuditEntry;
 import com.bone.engine.extension.studio.domain.gateway.StudioAuditReadPort;
+import com.bone.engine.extension.studio.domain.model.StudioAuditEntry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -11,11 +11,11 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class StudioAuditQueryHandler {
 
-    private final StudioAuditReadPort studioAuditReadPort;
+  private final StudioAuditReadPort studioAuditReadPort;
 
-    public PageResult<StudioAuditEntry> queryByCursor(
-            String action, String resourceType, String cursor, int limit) {
-        int safeLimit = Math.min(100, Math.max(1, limit));
-        return studioAuditReadPort.queryByCursor(action, resourceType, cursor, safeLimit);
-    }
+  public PageResult<StudioAuditEntry> queryByCursor(
+      String action, String resourceType, String cursor, int limit) {
+    int safeLimit = Math.min(100, Math.max(1, limit));
+    return studioAuditReadPort.queryByCursor(action, resourceType, cursor, safeLimit);
+  }
 }

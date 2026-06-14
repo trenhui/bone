@@ -18,26 +18,20 @@ spring:
     driverClassName: org.h2.Driver
     username: sa
     password: 
-  
-  jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
-    hibernate:
-      ddl-auto: none
-    show-sql: false
-  
-  # H2控制台
+
+  # H2控制台（仅开发环境使用，生产环境应禁用）
   h2:
     console:
-      enabled: true
+      enabled: ${H2_CONSOLE_ENABLED:false}
       path: /h2-console
       settings:
-        web-allow-others: true
+        web-allow-others: false
 
 # 与 bone-iam 对齐的 JWT（生产环境请外部化 secretKey）
 bone:
   iam:
     jwt:
-      secret-key: ${BONE_IAM_JWT_SECRET:change-me-change-me-change-me-change-me-32bytes}
+      secret-key: ${BONE_IAM_JWT_SECRET:${BONE_JWT_SECRET:}}
       header-name: Authorization
       token-prefix: "Bearer "
   extension:

@@ -6,9 +6,9 @@ import java.util.List;
 /** 扩展点读侧端口（ADR-0013）。 */
 public interface ExtPointReadPort {
 
-    List<ExtPoint> findAll();
+  List<ExtPoint> findAll();
 
-    List<ExtPoint> search(String keyword);
+  List<ExtPoint> search(String keyword);
 
-    long count();
+  long count();
 }

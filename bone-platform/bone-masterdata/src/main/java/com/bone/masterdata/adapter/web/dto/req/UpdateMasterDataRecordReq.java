@@ -1,8 +1,9 @@
 package com.bone.masterdata.adapter.web.dto.req;
 
+import java.util.Map;
 import lombok.Data;
 
 @Data
 public class UpdateMasterDataRecordReq {
-    private String data;
+  private Map<String, Object> data;
 }

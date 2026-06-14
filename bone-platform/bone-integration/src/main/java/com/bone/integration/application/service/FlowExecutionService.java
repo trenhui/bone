@@ -1,8 +1,8 @@
 package com.bone.integration.application.service;
 
+import com.bone.integration.application.port.IntegrationExecutionRecorder;
 import com.bone.integration.domain.execution.IntegrationLog;
 import com.bone.integration.domain.flow.IntegrationFlow;
-import com.bone.integration.application.port.IntegrationExecutionRecorder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -11,11 +11,11 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class FlowExecutionService {
 
-    private final FlowRuntime flowRuntime;
-    private final IntegrationExecutionRecorder executionRecorder;
+  private final FlowRuntime flowRuntime;
+  private final IntegrationExecutionRecorder executionRecorder;
 
-    public void execute(IntegrationLog log, IntegrationFlow flow) {
-        flowRuntime.execute(log, flow);
-        executionRecorder.record(log);
-    }
+  public void execute(IntegrationLog log, IntegrationFlow flow) {
+    flowRuntime.execute(log, flow);
+    executionRecorder.record(log);
+  }
 }

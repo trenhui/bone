@@ -9,7 +9,13 @@ import org.springframework.scheduling.annotation.EnableAsync;
 /**
  * @author renhui.trh
  */
-@SpringBootApplication
+@SpringBootApplication(
+    exclude = {
+      org.springframework.boot.actuate.autoconfigure.jdbc
+          .DataSourceHealthContributorAutoConfiguration.class,
+      org.springframework.boot.autoconfigure.security.oauth2.resource.servlet
+          .OAuth2ResourceServerAutoConfiguration.class
+    })
 @ConfigurationPropertiesScan
 @EnableAsync
 @EnableSqlRepositories(basePackages = "com.bone.metadata.catalog.domain.repository")

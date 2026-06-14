@@ -18,41 +18,45 @@ import org.springframework.test.web.servlet.MockMvc;
 @ActiveProfiles("in-memory")
 class ExtensionManagementControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+  @Autowired private MockMvc mockMvc;
 
-    @Test
-    void overview_returnsApiResponseWithTraceHeader() throws Exception {
-        mockMvc.perform(get("/api/v1/extension/overview"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(header().exists("X-Trace-Id"));
-    }
+  @Test
+  void overview_returnsApiResponseWithTraceHeader() throws Exception {
+    mockMvc
+        .perform(get("/api/v1/extension/overview"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(header().exists("X-Trace-Id"));
+  }
 
-    @Test
-    void listPoints_returns200() throws Exception {
-        mockMvc.perform(get("/api/v1/extension/points"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true));
-    }
+  @Test
+  void listPoints_returns200() throws Exception {
+    mockMvc
+        .perform(get("/api/v1/extension/points"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true));
+  }
 
-    @Test
-    void executionLogs_defaultCursorPagination() throws Exception {
-        mockMvc.perform(get("/api/v1/extension/execution-logs").param("limit", "5"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.records").isArray());
-    }
+  @Test
+  void executionLogs_defaultCursorPagination() throws Exception {
+    mockMvc
+        .perform(get("/api/v1/extension/execution-logs").param("limit", "5"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data.records").isArray());
+  }
 
-    @Test
-    void auditLogs_afterDeploy_containsEntry() throws Exception {
-        mockMvc.perform(
-                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post(
-                                "/api/v1/extension/plugins/1:deploy"))
-                .andExpect(status().isOk());
-        mockMvc.perform(get("/api/v1/extension/audit-logs").param("limit", "10"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.records[0].action").value("plugin.deploy"));
-    }
+  @Test
+  void auditLogs_afterDeploy_containsEntry() throws Exception {
+    mockMvc
+        .perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post(
+                "/api/v1/extension/plugins/1:deploy"))
+        .andExpect(status().isOk());
+    mockMvc
+        .perform(get("/api/v1/extension/audit-logs").param("limit", "10"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.success").value(true))
+        .andExpect(jsonPath("$.data.records[0].action").value("plugin.deploy"));
+  }
 }

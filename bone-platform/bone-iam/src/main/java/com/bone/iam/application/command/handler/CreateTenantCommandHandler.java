@@ -14,23 +14,22 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CreateTenantCommandHandler {
 
-    private final TenantRepository tenantRepository;
+  private final TenantRepository tenantRepository;
 
-    @Transactional
-    public Long handle(CreateTenantCommand cmd) {
-        long existing =
-                tenantRepository.countByCriteria(
-                        Criteria.<Tenant>create().eq("code", cmd.getCode()));
-        if (existing > 0) {
-            throw BizException.of(409, "租户编码已存在");
-        }
-        Tenant tenant =
-                Tenant.create(
-                        DistributedIdGenerator.generateLongId(),
-                        cmd.getName(),
-                        cmd.getCode(),
-                        cmd.getLevel() != null ? cmd.getLevel() : 0,
-                        cmd.getAdminEmail());
-        return tenantRepository.save(tenant);
+  @Transactional
+  public Long handle(CreateTenantCommand cmd) {
+    long existing =
+        tenantRepository.countByCriteria(Criteria.<Tenant>create().eq("code", cmd.getCode()));
+    if (existing > 0) {
+      throw BizException.of(409, "租户编码已存在");
     }
+    Tenant tenant =
+        Tenant.create(
+            DistributedIdGenerator.generateLongId(),
+            cmd.getName(),
+            cmd.getCode(),
+            cmd.getLevel() != null ? cmd.getLevel() : 0,
+            cmd.getAdminEmail() != null ? cmd.getAdminEmail() : "");
+    return tenantRepository.save(tenant);
+  }
 }

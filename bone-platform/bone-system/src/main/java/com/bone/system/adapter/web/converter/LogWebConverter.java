@@ -8,15 +8,13 @@ import com.bone.system.application.query.dto.LogDTO;
 import com.bone.system.application.query.qry.LogPageQuery;
 import org.mapstruct.Mapper;
 
-/**
- * 日志Web转换器
- */
+/** 日志Web转换器 */
 @Mapper
 public interface LogWebConverter {
 
-    CreateLogCommand toCommand(CreateLogReq req);
+  CreateLogCommand toCommand(CreateLogReq req);
 
-    LogPageQuery toQuery(LogPageReq req);
+  LogPageQuery toQuery(LogPageReq req);
 
-    LogResp toResp(LogDTO dto);
+  LogResp toResp(LogDTO dto);
 }

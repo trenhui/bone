@@ -1,6 +1,6 @@
 package com.bone.studio.generator.adapter.web.controller;
 
-import com.bone.core.result.ApiResponse;
+import com.bone.core.model.ApiResponse;
 import com.bone.studio.generator.application.dto.GeneratorOperationView;
 import com.bone.studio.generator.application.service.GenerationTaskOperationService;
 import com.bone.studio.generator.common.GeneratorApiPaths;
@@ -17,14 +17,14 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class GeneratorOperationController {
 
-    private final GenerationTaskOperationService operationService;
+  private final GenerationTaskOperationService operationService;
 
-    @GetMapping("/{operationId}")
-    public ApiResponse<GeneratorOperationView> getOperation(@PathVariable String operationId) {
-        GeneratorOperationView view = operationService.toOperationView(operationId);
-        if (view == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "操作不存在");
-        }
-        return ApiResponse.success(view);
+  @GetMapping("/{operationId}")
+  public ApiResponse<GeneratorOperationView> getOperation(@PathVariable String operationId) {
+    GeneratorOperationView view = operationService.toOperationView(operationId);
+    if (view == null) {
+      throw new ResponseStatusException(HttpStatus.NOT_FOUND, "操作不存在");
     }
+    return ApiResponse.success(view);
+  }
 }

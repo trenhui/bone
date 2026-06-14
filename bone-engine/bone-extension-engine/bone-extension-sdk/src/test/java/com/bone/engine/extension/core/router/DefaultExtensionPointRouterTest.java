@@ -168,12 +168,7 @@ class DefaultExtensionPointRouterTest {
 
     DefaultExtensionPointRouter isolatedRouter =
         new DefaultExtensionPointRouter(
-            strictRepo,
-            new SpELExpressionEvaluator(),
-            1000,
-            Duration.ofMinutes(10),
-            true,
-            null);
+            strictRepo, new SpELExpressionEvaluator(), 1000, Duration.ofMinutes(10), true, null);
 
     BizContext<ClaimPayload> ctx =
         BizContext.<ClaimPayload>builder()

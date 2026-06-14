@@ -13,18 +13,18 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class SessionListQueryHandler {
 
-    private final RefreshTokenSessionStore sessionStore;
+  private final RefreshTokenSessionStore sessionStore;
 
-    @Transactional(readOnly = true)
-    public List<Session> handle(Long accountId) {
-        List<Session> sessions = sessionStore.listByAccountId(accountId);
-        Long current = TenantContext.getTenantId();
-        if (current == null || current == 0L) {
-            return sessions;
-        }
-        // 非平台租户只能看到本租户的会话；防越权（详设 §3.4）。
-        return sessions.stream()
-                .filter(s -> s.getTenantId() != null && s.getTenantId().equals(current))
-                .toList();
+  @Transactional(readOnly = true)
+  public List<Session> handle(Long accountId) {
+    List<Session> sessions = sessionStore.listByAccountId(accountId);
+    Long current = TenantContext.getTenantId();
+    if (current == null || current == 0L) {
+      return sessions;
     }
+    // 非平台租户只能看到本租户的会话；防越权（详设 §3.4）。
+    return sessions.stream()
+        .filter(s -> s.getTenantId() != null && s.getTenantId().equals(current))
+        .toList();
+  }
 }

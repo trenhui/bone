@@ -14,21 +14,19 @@ import com.bone.system.application.query.qry.AlertEventPageQuery;
 import com.bone.system.application.query.qry.AlertRulePageQuery;
 import org.mapstruct.Mapper;
 
-/**
- * 告警Web转换器
- */
+/** 告警Web转换器 */
 @Mapper
 public interface AlertWebConverter {
 
-    CreateAlertRuleCommand toCommand(CreateAlertRuleReq req);
+  CreateAlertRuleCommand toCommand(CreateAlertRuleReq req);
 
-    UpdateAlertRuleCommand toCommand(UpdateAlertRuleReq req);
+  UpdateAlertRuleCommand toCommand(UpdateAlertRuleReq req);
 
-    AlertRulePageQuery toQuery(AlertRulePageReq req);
+  AlertRulePageQuery toQuery(AlertRulePageReq req);
 
-    AlertEventPageQuery toQuery(AlertEventPageReq req);
+  AlertEventPageQuery toQuery(AlertEventPageReq req);
 
-    AlertRuleResp toResp(AlertRuleDTO dto);
+  AlertRuleResp toResp(AlertRuleDTO dto);
 
-    AlertEventResp toResp(AlertEventDTO dto);
+  AlertEventResp toResp(AlertEventDTO dto);
 }

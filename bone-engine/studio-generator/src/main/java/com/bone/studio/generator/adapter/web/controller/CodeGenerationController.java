@@ -1,6 +1,6 @@
 package com.bone.studio.generator.adapter.web.controller;
 
-import com.bone.core.result.ApiResponse;
+import com.bone.core.model.ApiResponse;
 import com.bone.studio.generator.application.command.cmd.CreateCodeGenerationCommand;
 import com.bone.studio.generator.application.command.handler.CreateCodeGenerationHandler;
 import com.bone.studio.generator.application.dto.GeneratorOperationView;
@@ -27,53 +27,53 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class CodeGenerationController {
 
-    private final CreateCodeGenerationHandler createCodeGenerationHandler;
-    private final CodeGenerationAsyncService codeGenerationAsyncService;
-    private final GenerationTaskOperationService operationService;
-    private final GeneratorProperties generatorProperties;
+  private final CreateCodeGenerationHandler createCodeGenerationHandler;
+  private final CodeGenerationAsyncService codeGenerationAsyncService;
+  private final GenerationTaskOperationService operationService;
+  private final GeneratorProperties generatorProperties;
 
-    @PostMapping
-    public ResponseEntity<ApiResponse<?>> createCodeGeneration(
-            @RequestBody CreateCodeGenerationCommand command,
-            @RequestParam(required = false) Boolean sync) {
-        if (resolveSync(sync)) {
-            String taskId = createCodeGenerationHandler.handle(command);
-            return ResponseEntity.ok(ApiResponse.success(taskId));
-        }
-        String taskId = codeGenerationAsyncService.submit(command);
-        Map<String, Object> accepted = new LinkedHashMap<>();
-        accepted.put("operationId", taskId);
-        accepted.put("taskId", taskId);
-        String location = GeneratorApiPaths.V1_PREFIX + "/operations/" + taskId;
-        return ResponseEntity.status(HttpStatus.ACCEPTED)
-                .location(URI.create(location))
-                .body(ApiResponse.success(accepted));
+  @PostMapping
+  public ResponseEntity<ApiResponse<?>> createCodeGeneration(
+      @RequestBody CreateCodeGenerationCommand command,
+      @RequestParam(required = false) Boolean sync) {
+    if (resolveSync(sync)) {
+      String taskId = createCodeGenerationHandler.handle(command);
+      return ResponseEntity.ok(ApiResponse.success(taskId));
     }
+    String taskId = codeGenerationAsyncService.submit(command);
+    Map<String, Object> accepted = new LinkedHashMap<>();
+    accepted.put("operationId", taskId);
+    accepted.put("taskId", taskId);
+    String location = GeneratorApiPaths.V1_PREFIX + "/operations/" + taskId;
+    return ResponseEntity.status(HttpStatus.ACCEPTED)
+        .location(URI.create(location))
+        .body(ApiResponse.success(accepted));
+  }
 
-    @GetMapping("/tasks/{taskId}/download")
-    public void downloadCode(@PathVariable String taskId) {
-        // [Target] MinIO 产物下载
-    }
+  @GetMapping("/tasks/{taskId}/download")
+  public void downloadCode(@PathVariable String taskId) {
+    // [Target] MinIO 产物下载
+  }
 
-    @GetMapping("/tasks/{taskId}/status")
-    public ApiResponse<String> getTaskStatus(@PathVariable String taskId) {
-        GeneratorOperationView view = operationService.toOperationView(taskId);
-        if (view == null) {
-            return ApiResponse.success("UNKNOWN");
-        }
-        if (view.getResult() != null && view.getResult().get("status") != null) {
-            return ApiResponse.success(view.getResult().get("status").toString());
-        }
-        return ApiResponse.success(view.isDone() ? "FAILED" : "PROCESSING");
+  @GetMapping("/tasks/{taskId}/status")
+  public ApiResponse<String> getTaskStatus(@PathVariable String taskId) {
+    GeneratorOperationView view = operationService.toOperationView(taskId);
+    if (view == null) {
+      return ApiResponse.success("UNKNOWN");
     }
+    if (view.getResult() != null && view.getResult().get("status") != null) {
+      return ApiResponse.success(view.getResult().get("status").toString());
+    }
+    return ApiResponse.success(view.isDone() ? "FAILED" : "PROCESSING");
+  }
 
-    private boolean resolveSync(Boolean syncParam) {
-        if (!generatorProperties.getLro().isCodeGenerationEnabled()) {
-            return true;
-        }
-        if (syncParam != null) {
-            return syncParam;
-        }
-        return generatorProperties.getLro().isCodeGenerationSyncByDefault();
+  private boolean resolveSync(Boolean syncParam) {
+    if (!generatorProperties.getLro().isCodeGenerationEnabled()) {
+      return true;
     }
+    if (syncParam != null) {
+      return syncParam;
+    }
+    return generatorProperties.getLro().isCodeGenerationSyncByDefault();
+  }
 }

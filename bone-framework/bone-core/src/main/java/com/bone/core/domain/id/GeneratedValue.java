@@ -9,6 +9,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.FIELD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface GeneratedValue {
-    GenerationStrategy strategy() default GenerationStrategy.IDENTITY;
-    String generator() default ""; // 用于指定自定义生成器，例如类名
+  GenerationStrategy strategy() default GenerationStrategy.IDENTITY;
+
+  String generator() default ""; // 用于指定自定义生成器，例如类名
 }

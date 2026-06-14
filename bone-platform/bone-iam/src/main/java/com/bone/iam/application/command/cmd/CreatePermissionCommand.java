@@ -5,13 +5,13 @@ import lombok.Data;
 
 @Data
 public class CreatePermissionCommand {
-    private String code;
-    private String name;
-    private String description;
-    private String resourceType;
-    private String resourcePath;
-    private String action;
-    private Long parentId;
-    private PermissionType type;
-    private int sortOrder;
+  private String code;
+  private String name;
+  private String description;
+  private String resourceType;
+  private String resourcePath;
+  private String action;
+  private Long parentId;
+  private PermissionType type;
+  private int sortOrder;
 }

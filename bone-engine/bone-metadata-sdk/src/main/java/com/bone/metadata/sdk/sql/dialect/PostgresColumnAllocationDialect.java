@@ -4,30 +4,28 @@ import com.bone.metadata.sdk.domain.enums.DatabaseType;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.QueryTimeoutException;
 
-/**
- * PostgreSQL 方言实现
- */
+/** PostgreSQL 方言实现 */
 public class PostgresColumnAllocationDialect implements ColumnAllocationDialect {
 
-    @Override
-    public DatabaseType getDatabaseType() {
-        return DatabaseType.POSTGRESQL;
-    }
+  @Override
+  public DatabaseType getDatabaseType() {
+    return DatabaseType.POSTGRESQL;
+  }
 
-    @Override
-    public String getSkipLockedClause() {
-        // PostgreSQL 在 SELECT … FOR UPDATE 后面直接使用 SKIP LOCKED
-        return " FOR UPDATE SKIP LOCKED";
-    }
+  @Override
+  public String getSkipLockedClause() {
+    // PostgreSQL 在 SELECT … FOR UPDATE 后面直接使用 SKIP LOCKED
+    return " FOR UPDATE SKIP LOCKED";
+  }
 
-    @Override
-    public String getForUpdateClause() {
-        return " FOR UPDATE";
-    }
+  @Override
+  public String getForUpdateClause() {
+    return " FOR UPDATE";
+  }
 
-    @Override
-    public String getInsertSQL() {
-        return """
+  @Override
+  public String getInsertSQL() {
+    return """
                 INSERT INTO column_allocation (
                   tenant_id, app_code, biz_identity_code, entity_type,
                   data_type, column_name, column_index, status, version, created_at, created_by
@@ -44,20 +42,21 @@ public class PostgresColumnAllocationDialect implements ColumnAllocationDialect 
                   recycled_at = CASE WHEN EXCLUDED.status = 'RECYCLED'
                                     THEN CURRENT_TIMESTAMP(3) ELSE NULL END
                 """;
-    }
+  }
 
-    @Override
-    public String getPurgeSQL(int days) {
-        return """
-                DELETE FROM column_allocation 
+  @Override
+  public String getPurgeSQL(int days) {
+    return """
+                DELETE FROM column_allocation
                 WHERE status = 'RECYCLED'
                   AND recycled_at < (CURRENT_TIMESTAMP - INTERVAL '%d days')
-                """.formatted(days);
-    }
+                """
+        .formatted(days);
+  }
 
-    @Override
-    public String getArchiveSQL(int days) {
-        return """
+  @Override
+  public String getArchiveSQL(int days) {
+    return """
                 WITH moved_rows AS (
                   DELETE FROM column_allocation
                   WHERE updated_at < (CURRENT_TIMESTAMP - INTERVAL '%d days')
@@ -65,15 +64,16 @@ public class PostgresColumnAllocationDialect implements ColumnAllocationDialect 
                 )
                 INSERT INTO column_allocation_history
                 SELECT * FROM moved_rows;
-                """.formatted(days);
-    }
+                """
+        .formatted(days);
+  }
 
-    @Override
-    public boolean isLockTimeout(DataAccessException e) {
-        if (e instanceof QueryTimeoutException) return true;
-        Throwable cause = e.getCause();
-        return true;
-//        return (cause instanceof PSQLException
-//                && ((PSQLException) cause).getSQLState().equals("55P03"));
-    }
+  @Override
+  public boolean isLockTimeout(DataAccessException e) {
+    if (e instanceof QueryTimeoutException) return true;
+    Throwable cause = e.getCause();
+    return true;
+    //        return (cause instanceof PSQLException
+    //                && ((PSQLException) cause).getSQLState().equals("55P03"));
+  }
 }

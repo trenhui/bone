@@ -20,14 +20,23 @@ const api = axios.create({
 
 // 请求拦截器 - 添加Token
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  let token = localStorage.getItem('token');
+  // 备用：从 URL 查询参数读取 token
+  if (!token) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlToken = urlParams.get('token');
+    if (urlToken) {
+      token = urlToken;
+      localStorage.setItem('token', urlToken);
+    }
+  }
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
 });
 
-// 响应拦截器 - 处理401未授权
+// 响应拦截器 - 处理错误
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
@@ -35,6 +44,11 @@ api.interceptors.response.use(
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
       window.location.href = '/login';
+    }
+    // 优先使用后端返回的 ApiResponse 中的错误信息
+    const backendMessage = error.response?.data?.message;
+    if (backendMessage) {
+      error.displayMessage = backendMessage;
     }
     return Promise.reject(error);
   }

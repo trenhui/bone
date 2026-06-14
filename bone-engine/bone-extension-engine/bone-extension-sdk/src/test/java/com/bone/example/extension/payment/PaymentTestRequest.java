@@ -9,6 +9,6 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PaymentTestRequest extends PaymentRequest {
-    private String couponId;
-    private int pointsToDeduct;
+  private String couponId;
+  private int pointsToDeduct;
 }

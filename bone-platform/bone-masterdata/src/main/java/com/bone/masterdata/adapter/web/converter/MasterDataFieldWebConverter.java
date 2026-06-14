@@ -11,43 +11,43 @@ import org.springframework.stereotype.Component;
 @Component
 public class MasterDataFieldWebConverter {
 
-    public CreateMasterDataFieldCommand toCommand(CreateMasterDataFieldReq req) {
-        return CreateMasterDataFieldCommand.builder()
-                .masterDataEntityId(req.getMasterDataEntityId())
-                .name(req.getName())
-                .type(req.getType())
-                .length(req.getLength())
-                .required(req.getRequired())
-                .defaultValue(req.getDefaultValue())
-                .description(req.getDescription())
-                .build();
-    }
+  public CreateMasterDataFieldCommand toCommand(CreateMasterDataFieldReq req) {
+    return CreateMasterDataFieldCommand.builder()
+        .masterDataEntityId(req.getMasterDataEntityId())
+        .name(req.getName())
+        .type(req.getType())
+        .length(req.getLength())
+        .required(req.getRequired())
+        .defaultValue(req.getDefaultValue())
+        .description(req.getDescription())
+        .build();
+  }
 
-    public UpdateMasterDataFieldCommand toCommand(Long id, UpdateMasterDataFieldReq req) {
-        return UpdateMasterDataFieldCommand.builder()
-                .id(id)
-                .name(req.getName())
-                .type(req.getType())
-                .length(req.getLength())
-                .required(req.getRequired())
-                .defaultValue(req.getDefaultValue())
-                .description(req.getDescription())
-                .sortOrder(req.getSortOrder())
-                .build();
-    }
+  public UpdateMasterDataFieldCommand toCommand(Long id, UpdateMasterDataFieldReq req) {
+    return UpdateMasterDataFieldCommand.builder()
+        .id(id)
+        .name(req.getName())
+        .type(req.getType())
+        .length(req.getLength())
+        .required(req.getRequired())
+        .defaultValue(req.getDefaultValue())
+        .description(req.getDescription())
+        .sortOrder(req.getSortOrder())
+        .build();
+  }
 
-    public MasterDataFieldDetailResp toResp(MasterDataFieldDTO dto) {
-        return MasterDataFieldDetailResp.builder()
-                .id(dto.getId())
-                .masterDataEntityId(dto.getMasterDataEntityId())
-                .name(dto.getName())
-                .code(dto.getCode())
-                .type(dto.getType())
-                .length(dto.getLength())
-                .required(dto.getRequired())
-                .defaultValue(dto.getDefaultValue())
-                .description(dto.getDescription())
-                .sortOrder(dto.getSortOrder())
-                .build();
-    }
+  public MasterDataFieldDetailResp toResp(MasterDataFieldDTO dto) {
+    return MasterDataFieldDetailResp.builder()
+        .id(dto.getId())
+        .masterDataEntityId(dto.getMasterDataEntityId())
+        .name(dto.getName())
+        .code(dto.getCode())
+        .type(dto.getType())
+        .length(dto.getLength())
+        .required(dto.getRequired())
+        .defaultValue(dto.getDefaultValue())
+        .description(dto.getDescription())
+        .sortOrder(dto.getSortOrder())
+        .build();
+  }
 }

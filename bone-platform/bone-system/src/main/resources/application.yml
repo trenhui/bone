@@ -39,7 +39,7 @@ bone:
       # 必须与 bone-iam `bone.iam.jwt.secret-key` 一致；
       # 生产环境通过环境变量 BONE_IAM_JWT_SECRET_KEY 注入。
       # 与 bone-iam 一致：优先 BONE_IAM_JWT_SECRET_KEY，兼容历史变量 BONE_JWT_SECRET
-      secret-key: ${BONE_IAM_JWT_SECRET_KEY:${BONE_JWT_SECRET:change-me-change-me-change-me-change-me-32bytes}}
+      secret-key: ${BONE_IAM_JWT_SECRET_KEY:${BONE_JWT_SECRET:}}
       token-prefix: "Bearer "
       header-name: Authorization
   system:

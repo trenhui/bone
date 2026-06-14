@@ -8,8 +8,8 @@ import lombok.Value;
 @Builder
 public class QuickAction {
 
-    String id;
-    String title;
-    String path;
-    String icon;
+  String id;
+  String title;
+  String path;
+  String icon;
 }

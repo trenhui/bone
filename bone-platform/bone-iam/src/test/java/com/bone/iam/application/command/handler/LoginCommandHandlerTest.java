@@ -14,6 +14,8 @@ import com.bone.core.exception.BizException;
 import com.bone.iam.application.command.cmd.LoginCommand;
 import com.bone.iam.application.config.IamPasswordProperties;
 import com.bone.iam.application.query.handler.AccountAuthoritiesQueryHandler;
+import com.bone.iam.application.service.AuthService;
+import com.bone.iam.application.service.PasswordPolicyValidator;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.domain.account.Account;
 import com.bone.iam.domain.account.vo.AccountStatus;
@@ -22,8 +24,6 @@ import com.bone.iam.domain.account.vo.Username;
 import com.bone.iam.domain.gateway.AccessTokenIssuer;
 import com.bone.iam.domain.gateway.RefreshTokenIssuer;
 import com.bone.iam.domain.repository.AccountRepository;
-import com.bone.iam.domain.service.AuthService;
-import com.bone.iam.domain.service.PasswordPolicyValidator;
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -32,208 +32,201 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-/**
- * 登录失败锁定 / 密码到期 / 成功清零 三条主路径的纯单测（不拉起 Spring）。
- */
+/** 登录失败锁定 / 密码到期 / 成功清零 三条主路径的纯单测（不拉起 Spring）。 */
 @ExtendWith(MockitoExtension.class)
 class LoginCommandHandlerTest {
 
-    @Mock
-    AuthService authService;
+  @Mock AuthService authService;
 
-    @Mock
-    AccountRepository accountRepository;
+  @Mock AccountRepository accountRepository;
 
-    @Mock
-    AccessTokenIssuer accessTokenIssuer;
+  @Mock AccessTokenIssuer accessTokenIssuer;
 
-    @Mock
-    RefreshTokenIssuer refreshTokenIssuer;
+  @Mock RefreshTokenIssuer refreshTokenIssuer;
 
-    @Mock
-    AccountAuthoritiesQueryHandler accountAuthoritiesQueryHandler;
+  @Mock AccountAuthoritiesQueryHandler accountAuthoritiesQueryHandler;
 
-    @Mock
-    PasswordPolicyValidator passwordPolicyValidator;
+  @Mock PasswordPolicyValidator passwordPolicyValidator;
 
-    IamPasswordProperties passwordProperties;
+  IamPasswordProperties passwordProperties;
 
-    LoginCommandHandler handler;
+  LoginCommandHandler handler;
 
-    @BeforeEach
-    void setUp() {
-        passwordProperties = new IamPasswordProperties();
-        passwordProperties.setLockoutThreshold(3);
-        passwordProperties.setLockoutMinutes(15);
-        passwordProperties.setMaxAgeDays(90);
-        handler = new LoginCommandHandler(
-                authService,
-                accountRepository,
-                accessTokenIssuer,
-                refreshTokenIssuer,
-                accountAuthoritiesQueryHandler,
-                passwordPolicyValidator,
-                passwordProperties);
+  @BeforeEach
+  void setUp() {
+    passwordProperties = new IamPasswordProperties();
+    passwordProperties.setLockoutThreshold(3);
+    passwordProperties.setLockoutMinutes(15);
+    passwordProperties.setMaxAgeDays(90);
+    handler =
+        new LoginCommandHandler(
+            authService,
+            accountRepository,
+            accessTokenIssuer,
+            refreshTokenIssuer,
+            accountAuthoritiesQueryHandler,
+            passwordPolicyValidator,
+            passwordProperties);
+  }
+
+  @Test
+  void successfulLoginIssuesTokensAndClearsFailures() {
+    Account account = mkAccount();
+    setField(account, "loginFailCount", 2);
+    when(authService.findByUsername("alice")).thenReturn(Optional.of(account));
+    when(authService.matches("good-pass", account)).thenReturn(true);
+    when(accountAuthoritiesQueryHandler.resolvePermissionCodes(anyLong(), anyBoolean()))
+        .thenReturn(List.of("iam:accounts:read"));
+    when(accessTokenIssuer.issueAccessToken(anyLong(), any(), any(), any())).thenReturn("ACCESS");
+    when(refreshTokenIssuer.issue(anyLong(), any())).thenReturn("REFRESH");
+    when(passwordPolicyValidator.requiresPasswordChange("good-pass")).thenReturn(false);
+
+    LoginCommand cmd = new LoginCommand();
+    cmd.setUsername("alice");
+    cmd.setPassword("good-pass");
+    cmd.setClientIp("10.0.0.1");
+
+    Map<String, Object> result = handler.handle(cmd);
+
+    assertThat(result.get("token")).isEqualTo("ACCESS");
+    assertThat(result.get("refreshToken")).isEqualTo("REFRESH");
+    assertThat(result.get("requirePasswordChange")).isEqualTo(false);
+    verify(accountRepository, times(1)).update(account);
+    assertThat(account.getLoginFailCount()).isZero();
+    assertThat(account.getLastLoginIp()).isEqualTo("10.0.0.1");
+  }
+
+  @Test
+  void unknownUsernameThrowsLoginFailed() {
+    when(authService.findByUsername("ghost")).thenReturn(Optional.empty());
+    LoginCommand cmd = new LoginCommand();
+    cmd.setUsername("ghost");
+    cmd.setPassword("x");
+
+    assertThatThrownBy(() -> handler.handle(cmd))
+        .isInstanceOf(BizException.class)
+        .hasMessageContaining(IamErrorCodes.LOGIN_FAILED);
+    verify(accountRepository, never()).update(any());
+  }
+
+  @Test
+  void wrongPasswordIncrementsFailureAndPersists() {
+    Account account = mkAccount();
+    when(authService.findByUsername("alice")).thenReturn(Optional.of(account));
+    when(authService.matches("bad", account)).thenReturn(false);
+
+    LoginCommand cmd = new LoginCommand();
+    cmd.setUsername("alice");
+    cmd.setPassword("bad");
+
+    assertThatThrownBy(() -> handler.handle(cmd))
+        .isInstanceOf(BizException.class)
+        .hasMessageContaining(IamErrorCodes.LOGIN_FAILED);
+    verify(accountRepository, times(1)).update(account);
+    assertThat(account.getLoginFailCount()).isEqualTo(1);
+  }
+
+  @Test
+  void exceedingThresholdLocksAccount() {
+    Account account = mkAccount();
+    setField(account, "loginFailCount", 2);
+    when(authService.findByUsername("alice")).thenReturn(Optional.of(account));
+    when(authService.matches("bad", account)).thenReturn(false);
+
+    LoginCommand cmd = new LoginCommand();
+    cmd.setUsername("alice");
+    cmd.setPassword("bad");
+
+    assertThatThrownBy(() -> handler.handle(cmd))
+        .isInstanceOf(BizException.class)
+        .hasMessageContaining(IamErrorCodes.LOGIN_FAILED);
+    assertThat(account.getStatus()).isEqualTo(AccountStatus.LOCKED);
+    assertThat(account.getLockedAt()).isAfter(LocalDateTime.now());
+  }
+
+  @Test
+  void lockedAccountRefusesEvenWithCorrectPassword() {
+    Account account = mkAccount();
+    setField(account, "loginFailCount", 5);
+    setField(account, "status", AccountStatus.LOCKED);
+    setField(account, "lockedAt", LocalDateTime.now().plusMinutes(10));
+    when(authService.findByUsername("alice")).thenReturn(Optional.of(account));
+
+    LoginCommand cmd = new LoginCommand();
+    cmd.setUsername("alice");
+    cmd.setPassword("good");
+
+    assertThatThrownBy(() -> handler.handle(cmd))
+        .isInstanceOf(BizException.class)
+        .hasMessageContaining(IamErrorCodes.ACCOUNT_LOCKED);
+    verify(authService, never()).matches(any(), any());
+  }
+
+  @Test
+  void disabledAccountRefused() {
+    Account account = mkAccount();
+    setField(account, "status", AccountStatus.DISABLED);
+    when(authService.findByUsername("alice")).thenReturn(Optional.of(account));
+
+    LoginCommand cmd = new LoginCommand();
+    cmd.setUsername("alice");
+    cmd.setPassword("good");
+
+    assertThatThrownBy(() -> handler.handle(cmd))
+        .isInstanceOf(BizException.class)
+        .hasMessageContaining(IamErrorCodes.ACCOUNT_DISABLED);
+  }
+
+  @Test
+  void expiredPasswordFlagsRequireChange() {
+    Account account = mkAccount();
+    setField(account, "passwordUpdatedAt", LocalDateTime.now().minusDays(120));
+    when(authService.findByUsername("alice")).thenReturn(Optional.of(account));
+    when(authService.matches("good-pass", account)).thenReturn(true);
+    when(accountAuthoritiesQueryHandler.resolvePermissionCodes(anyLong(), anyBoolean()))
+        .thenReturn(List.of());
+    when(accessTokenIssuer.issueAccessToken(anyLong(), any(), any(), any())).thenReturn("ACCESS");
+    when(refreshTokenIssuer.issue(anyLong(), any())).thenReturn("REFRESH");
+    when(passwordPolicyValidator.requiresPasswordChange("good-pass")).thenReturn(false);
+
+    LoginCommand cmd = new LoginCommand();
+    cmd.setUsername("alice");
+    cmd.setPassword("good-pass");
+
+    Map<String, Object> result = handler.handle(cmd);
+    assertThat(result.get("requirePasswordChange")).isEqualTo(true);
+  }
+
+  private static Account mkAccount() {
+    Account account =
+        Account.create(
+            10L, Username.of("alice"), "hash", Email.of("a@b.com"), "13800000000", "Alice", 1L);
+    setField(account, "id", 10L);
+    return account;
+  }
+
+  private static void setField(Object obj, String name, Object value) {
+    try {
+      Field f = findField(obj.getClass(), name);
+      f.setAccessible(true);
+      f.set(obj, value);
+    } catch (ReflectiveOperationException e) {
+      throw new IllegalStateException(e);
     }
+  }
 
-    @Test
-    void successfulLoginIssuesTokensAndClearsFailures() {
-        Account account = mkAccount();
-        setField(account, "loginFailCount", 2);
-        when(authService.findByUsername("alice")).thenReturn(Optional.of(account));
-        when(authService.matches("good-pass", account)).thenReturn(true);
-        when(accountAuthoritiesQueryHandler.resolvePermissionCodes(anyLong(), anyBoolean()))
-                .thenReturn(List.of("iam:accounts:read"));
-        when(accessTokenIssuer.issueAccessToken(anyLong(), any(), any(), any())).thenReturn("ACCESS");
-        when(refreshTokenIssuer.issue(anyLong(), any())).thenReturn("REFRESH");
-        when(passwordPolicyValidator.requiresPasswordChange("good-pass")).thenReturn(false);
-
-        LoginCommand cmd = new LoginCommand();
-        cmd.setUsername("alice");
-        cmd.setPassword("good-pass");
-        cmd.setClientIp("10.0.0.1");
-
-        Map<String, Object> result = handler.handle(cmd);
-
-        assertThat(result.get("token")).isEqualTo("ACCESS");
-        assertThat(result.get("refreshToken")).isEqualTo("REFRESH");
-        assertThat(result.get("requirePasswordChange")).isEqualTo(false);
-        verify(accountRepository, times(1)).update(account);
-        assertThat(account.getLoginFailCount()).isZero();
-        assertThat(account.getLastLoginIp()).isEqualTo("10.0.0.1");
+  private static Field findField(Class<?> cls, String name) throws NoSuchFieldException {
+    Class<?> c = cls;
+    while (c != null) {
+      try {
+        return c.getDeclaredField(name);
+      } catch (NoSuchFieldException ignored) {
+        c = c.getSuperclass();
+      }
     }
-
-    @Test
-    void unknownUsernameThrowsLoginFailed() {
-        when(authService.findByUsername("ghost")).thenReturn(Optional.empty());
-        LoginCommand cmd = new LoginCommand();
-        cmd.setUsername("ghost");
-        cmd.setPassword("x");
-
-        assertThatThrownBy(() -> handler.handle(cmd))
-                .isInstanceOf(BizException.class)
-                .hasMessageContaining(IamErrorCodes.LOGIN_FAILED);
-        verify(accountRepository, never()).update(any());
-    }
-
-    @Test
-    void wrongPasswordIncrementsFailureAndPersists() {
-        Account account = mkAccount();
-        when(authService.findByUsername("alice")).thenReturn(Optional.of(account));
-        when(authService.matches("bad", account)).thenReturn(false);
-
-        LoginCommand cmd = new LoginCommand();
-        cmd.setUsername("alice");
-        cmd.setPassword("bad");
-
-        assertThatThrownBy(() -> handler.handle(cmd))
-                .isInstanceOf(BizException.class)
-                .hasMessageContaining(IamErrorCodes.LOGIN_FAILED);
-        verify(accountRepository, times(1)).update(account);
-        assertThat(account.getLoginFailCount()).isEqualTo(1);
-    }
-
-    @Test
-    void exceedingThresholdLocksAccount() {
-        Account account = mkAccount();
-        setField(account, "loginFailCount", 2);
-        when(authService.findByUsername("alice")).thenReturn(Optional.of(account));
-        when(authService.matches("bad", account)).thenReturn(false);
-
-        LoginCommand cmd = new LoginCommand();
-        cmd.setUsername("alice");
-        cmd.setPassword("bad");
-
-        assertThatThrownBy(() -> handler.handle(cmd))
-                .isInstanceOf(BizException.class)
-                .hasMessageContaining(IamErrorCodes.LOGIN_FAILED);
-        assertThat(account.getStatus()).isEqualTo(AccountStatus.LOCKED);
-        assertThat(account.getLockedAt()).isAfter(LocalDateTime.now());
-    }
-
-    @Test
-    void lockedAccountRefusesEvenWithCorrectPassword() {
-        Account account = mkAccount();
-        setField(account, "loginFailCount", 5);
-        setField(account, "status", AccountStatus.LOCKED);
-        setField(account, "lockedAt", LocalDateTime.now().plusMinutes(10));
-        when(authService.findByUsername("alice")).thenReturn(Optional.of(account));
-
-        LoginCommand cmd = new LoginCommand();
-        cmd.setUsername("alice");
-        cmd.setPassword("good");
-
-        assertThatThrownBy(() -> handler.handle(cmd))
-                .isInstanceOf(BizException.class)
-                .hasMessageContaining(IamErrorCodes.ACCOUNT_LOCKED);
-        verify(authService, never()).matches(any(), any());
-    }
-
-    @Test
-    void disabledAccountRefused() {
-        Account account = mkAccount();
-        setField(account, "status", AccountStatus.DISABLED);
-        when(authService.findByUsername("alice")).thenReturn(Optional.of(account));
-
-        LoginCommand cmd = new LoginCommand();
-        cmd.setUsername("alice");
-        cmd.setPassword("good");
-
-        assertThatThrownBy(() -> handler.handle(cmd))
-                .isInstanceOf(BizException.class)
-                .hasMessageContaining(IamErrorCodes.ACCOUNT_DISABLED);
-    }
-
-    @Test
-    void expiredPasswordFlagsRequireChange() {
-        Account account = mkAccount();
-        setField(account, "passwordUpdatedAt", LocalDateTime.now().minusDays(120));
-        when(authService.findByUsername("alice")).thenReturn(Optional.of(account));
-        when(authService.matches("good-pass", account)).thenReturn(true);
-        when(accountAuthoritiesQueryHandler.resolvePermissionCodes(anyLong(), anyBoolean()))
-                .thenReturn(List.of());
-        when(accessTokenIssuer.issueAccessToken(anyLong(), any(), any(), any())).thenReturn("ACCESS");
-        when(refreshTokenIssuer.issue(anyLong(), any())).thenReturn("REFRESH");
-        when(passwordPolicyValidator.requiresPasswordChange("good-pass")).thenReturn(false);
-
-        LoginCommand cmd = new LoginCommand();
-        cmd.setUsername("alice");
-        cmd.setPassword("good-pass");
-
-        Map<String, Object> result = handler.handle(cmd);
-        assertThat(result.get("requirePasswordChange")).isEqualTo(true);
-    }
-
-    private static Account mkAccount() {
-        Account account = Account.create(
-                10L, Username.of("alice"), "hash", Email.of("a@b.com"), "13800000000", "Alice", 1L);
-        setField(account, "id", 10L);
-        return account;
-    }
-
-    private static void setField(Object obj, String name, Object value) {
-        try {
-            Field f = findField(obj.getClass(), name);
-            f.setAccessible(true);
-            f.set(obj, value);
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    private static Field findField(Class<?> cls, String name) throws NoSuchFieldException {
-        Class<?> c = cls;
-        while (c != null) {
-            try {
-                return c.getDeclaredField(name);
-            } catch (NoSuchFieldException ignored) {
-                c = c.getSuperclass();
-            }
-        }
-        throw new NoSuchFieldException(name);
-    }
+    throw new NoSuchFieldException(name);
+  }
 }

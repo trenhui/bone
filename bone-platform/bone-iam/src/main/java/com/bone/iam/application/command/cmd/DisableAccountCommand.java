@@ -4,5 +4,5 @@ import lombok.Data;
 
 @Data
 public class DisableAccountCommand {
-    private Long id;
+  private Long id;
 }

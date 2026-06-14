@@ -11,19 +11,17 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ConnectorTestedHandler {
 
-    private final IntegrationEventFollowUp followUp;
+  private final IntegrationEventFollowUp followUp;
 
-    public void handle(ConnectorTestedEvent event) {
-        log.info(
-                "Connector tested: connectorId={}, success={}, message={}",
-                event.connectorId(),
-                event.success(),
-                event.message());
-        if (!event.success()) {
-            followUp.notifyHigh(
-                    "connector.test.failed.alert",
-                    event.message(),
-                    String.valueOf(event.connectorId()));
-        }
+  public void handle(ConnectorTestedEvent event) {
+    log.info(
+        "Connector tested: connectorId={}, success={}, message={}",
+        event.connectorId(),
+        event.success(),
+        event.message());
+    if (!event.success()) {
+      followUp.notifyHigh(
+          "connector.test.failed.alert", event.message(), String.valueOf(event.connectorId()));
     }
+  }
 }

@@ -11,10 +11,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateDataQualityRuleCommand {
-    private Long masterDataEntityId;
-    private String name;
-    private String type;
-    private String expression;
-    private RuleSeverity severity;
-    private String description;
+  private Long masterDataEntityId;
+  private String name;
+  private String type;
+  private String expression;
+  private RuleSeverity severity;
+  private String description;
 }

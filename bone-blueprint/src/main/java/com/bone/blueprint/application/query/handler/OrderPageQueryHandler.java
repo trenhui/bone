@@ -5,7 +5,7 @@ import com.bone.blueprint.application.query.qry.OrderPageQuery;
 import com.bone.blueprint.application.support.TenantSupport;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.order.valueobject.OrderStatus;
-import com.bone.core.result.PageResult;
+import com.bone.core.model.PageResult;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import java.util.List;

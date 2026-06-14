@@ -10,6 +10,11 @@ CREATE DATABASE IF NOT EXISTS bone
     DEFAULT COLLATE utf8mb4_unicode_ci;
 USE bone;
 
+-- 确保连接字符集正确，防止中文乱码
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
+SET character_set_connection=utf8mb4;
+
 -- ============================================================
 -- 1. IAM
 -- ============================================================
@@ -203,7 +208,7 @@ CREATE TABLE iam_refresh_token (
 
 -- BONE_IAM_DEMO_PASSWORD_ACK: 演示账号 admin 默认口令为 123456（仅开发/CI 允许；生产须改密）
 INSERT INTO iam_account (id, tenant_id, username, password_hash, email, real_name, status, is_admin)
-VALUES (1, 0, 'admin', '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG', 'admin@bone.com', '系统管理员', 1, 1);
+VALUES (1, 0, 'admin', '$2a$10$nZLjv4A8i.Q64tYZxrXVTuPQJ.g337OkdOx8rAKnKJL3a2dqdKR8q', 'admin@bone.com', '系统管理员', 1, 1);
 
 INSERT INTO iam_role (id, tenant_id, name, code, type, description)
 VALUES
@@ -308,14 +313,15 @@ CREATE TABLE sys_alert_event (
     id                  BIGINT          NOT NULL COMMENT '事件主键（Snowflake）',
     tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
     rule_id             BIGINT          NOT NULL COMMENT '告警规则ID',
+    rule_name           VARCHAR(100)    DEFAULT NULL COMMENT '规则名称',
     alert_level         VARCHAR(20)     NOT NULL COMMENT '告警级别',
     metric_name         VARCHAR(100)    NOT NULL COMMENT '指标名称',
     current_value       DECIMAL(20,4)   NOT NULL COMMENT '当前值',
     threshold_value     DECIMAL(20,4)   NOT NULL COMMENT '阈值',
     message             VARCHAR(500)    NOT NULL COMMENT '告警消息',
-    status              VARCHAR(20)     NOT NULL DEFAULT 'OPEN' COMMENT 'OPEN/ACK/RESOLVED',
-    resolved_at       DATETIME(3)     DEFAULT NULL COMMENT '恢复时间',
-    created_at         DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    status              VARCHAR(20)     NOT NULL DEFAULT 'TRIGGERED' COMMENT 'TRIGGERED/RESOLVED',
+    resolved_at         DATETIME(3)     DEFAULT NULL COMMENT '恢复时间',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
     PRIMARY KEY (id),
     KEY idx_sys_alert_event_rule (rule_id),
     KEY idx_sys_alert_event_status (status),
@@ -1166,3 +1172,33 @@ CREATE TABLE md_record (
     PRIMARY KEY (id),
     KEY idx_md_record_entity (master_data_entity_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据记录（运行时兼容）';
+
+CREATE TABLE IF NOT EXISTS md_field (
+    id                      BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    master_data_entity_id   BIGINT          NOT NULL COMMENT '主数据实体ID',
+    name                    VARCHAR(200)    NOT NULL COMMENT '字段名称',
+    code                    VARCHAR(200)    NOT NULL COMMENT '字段编码',
+    type                    VARCHAR(50)     NOT NULL COMMENT '字段类型',
+    length                  INT             DEFAULT NULL COMMENT '字段长度',
+    required                TINYINT(1)      DEFAULT 0 COMMENT '是否必填',
+    default_value           VARCHAR(500)    DEFAULT NULL COMMENT '默认值',
+    description             TEXT            DEFAULT NULL COMMENT '描述',
+    sort_order              INT             DEFAULT 0 COMMENT '排序',
+    created_at              DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    created_by              BIGINT          DEFAULT NULL COMMENT '创建人',
+    updated_at              DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    updated_by              BIGINT          DEFAULT NULL COMMENT '修改人',
+    deleted                 TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    PRIMARY KEY (id),
+    KEY idx_md_field_entity (master_data_entity_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据字段';
+
+-- ============================================================
+-- 增量迁移：修复实体与表结构不一致
+-- ============================================================
+
+-- sys_alert_event: 添加 rule_name 列（AlertEvent 实体需要）
+ALTER TABLE sys_alert_event ADD COLUMN IF NOT EXISTS rule_name VARCHAR(100) DEFAULT NULL COMMENT '规则名称' AFTER rule_id;
+
+-- sys_alert_event: 修改 status 默认值从 'OPEN' 改为 'TRIGGERED'（对齐 AlertStatus 枚举）
+ALTER TABLE sys_alert_event ALTER COLUMN status SET DEFAULT 'TRIGGERED';

@@ -6,9 +6,9 @@ import lombok.Data;
 @Data
 @Builder
 public class GetDataSourceListQuery {
-    private Integer page;
-    private Integer size;
-    private String name;
-    private String type;
-    private String status;
+  private Integer page;
+  private Integer size;
+  private String name;
+  private String type;
+  private String status;
 }

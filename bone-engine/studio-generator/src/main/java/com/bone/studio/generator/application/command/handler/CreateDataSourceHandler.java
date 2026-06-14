@@ -14,27 +14,33 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@Capability(name = "createDataSource", description = "创建数据源", inputSchema = "{}", outputSchema = "{}")
+@Capability(
+    name = "createDataSource",
+    description = "创建数据源",
+    inputSchema = "{}",
+    outputSchema = "{}")
 public class CreateDataSourceHandler {
 
-    private final DataSourceRepository dataSourceRepository;
+  private final DataSourceRepository dataSourceRepository;
 
-    @Transactional
-    public String handle(CreateDataSourceCommand command) {
-        log.info("创建数据源 name={}, type={}, host={}", command.getName(), command.getType(), command.getHost());
-        Long id = DistributedIdGenerator.generateLongId();
-        int port = Integer.parseInt(command.getPort().trim());
-        DataSource dataSource = DataSource.create(
-                id,
-                0L,
-                command.getName(),
-                command.getType(),
-                command.getHost(),
-                port,
-                command.getDatabase(),
-                command.getUsername(),
-                command.getPassword());
-        dataSourceRepository.insert(dataSource);
-        return StudioIds.toExternal(id);
-    }
+  @Transactional
+  public String handle(CreateDataSourceCommand command) {
+    log.info(
+        "创建数据源 name={}, type={}, host={}", command.getName(), command.getType(), command.getHost());
+    Long id = DistributedIdGenerator.generateLongId();
+    int port = Integer.parseInt(command.getPort().trim());
+    DataSource dataSource =
+        DataSource.create(
+            id,
+            0L,
+            command.getName(),
+            command.getType(),
+            command.getHost(),
+            port,
+            command.getDatabase(),
+            command.getUsername(),
+            command.getPassword());
+    dataSourceRepository.insert(dataSource);
+    return StudioIds.toExternal(id);
+  }
 }

@@ -17,34 +17,34 @@ import lombok.NoArgsConstructor;
 @Table("exts_plugin_execution_log")
 public class ExtStudioPluginExecutionLog extends AbstractEntity<Long> {
 
-    @Id
-    @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
+  private Long id;
 
-    @Column(name = "tenant_id")
-    private Long tenantId = 0L;
+  @Column(name = "tenant_id")
+  private Long tenantId = 0L;
 
-    @Column(name = "plugin_id")
-    private Long pluginId;
+  @Column(name = "plugin_id")
+  private Long pluginId;
 
-    @Column(name = "extension_point_id")
-    private Long extensionPointId;
+  @Column(name = "extension_point_id")
+  private Long extensionPointId;
 
-    @Column(name = "execution_id")
-    private String executionId;
+  @Column(name = "execution_id")
+  private String executionId;
 
-    @Column(name = "status")
-    private String status;
+  @Column(name = "status")
+  private String status;
 
-    @Column(name = "input_data")
-    private String inputData;
+  @Column(name = "input_data")
+  private String inputData;
 
-    @Column(name = "output_data")
-    private String outputData;
+  @Column(name = "output_data")
+  private String outputData;
 
-    @Column(name = "error_message")
-    private String errorMessage;
+  @Column(name = "error_message")
+  private String errorMessage;
 
-    @Column(name = "duration_ms")
-    private Long durationMs;
+  @Column(name = "duration_ms")
+  private Long durationMs;
 }

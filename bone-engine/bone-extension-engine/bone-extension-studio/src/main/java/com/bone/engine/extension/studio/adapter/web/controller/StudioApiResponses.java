@@ -7,13 +7,13 @@ import org.springframework.http.ResponseEntity;
 /** 适配层委托至 {@link StudioCommandResponses}。 */
 public final class StudioApiResponses {
 
-    private StudioApiResponses() {}
+  private StudioApiResponses() {}
 
-    public static <T> ResponseEntity<ApiResponse<T>> badRequest(String message) {
-        return StudioCommandResponses.badRequest(message);
-    }
+  public static <T> ResponseEntity<ApiResponse<T>> badRequest(String message) {
+    return StudioCommandResponses.badRequest(message);
+  }
 
-    public static <T> ResponseEntity<ApiResponse<T>> notFound(String message) {
-        return StudioCommandResponses.notFound(message);
-    }
+  public static <T> ResponseEntity<ApiResponse<T>> notFound(String message) {
+    return StudioCommandResponses.notFound(message);
+  }
 }

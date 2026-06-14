@@ -5,7 +5,6 @@ import (
 
 	"github.com/bone-engine/bone-blueprint-go/application/command/cmd"
 	"github.com/bone-engine/bone-blueprint-go/application/command/handler"
-	"github.com/bone-engine/bone-blueprint-go/domain/order"
 )
 
 // CreateOrderRpcRequest 创建订单RPC请求

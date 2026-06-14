@@ -1,16 +1,32 @@
-import { createMicroAppViteConfig } from '../../config/createMicroAppViteConfig';
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import qiankun from 'vite-plugin-qiankun'
+import path from 'path'
 
-/**
- * 开发代理：默认经 bone-gateway（8888）转发至 studio-generator（8085）。
- * 直连：`BONE_API_PROXY_TARGET=http://localhost:8085 npm run dev`
- */
-const apiProxyTarget =
-  process.env.BONE_API_PROXY_TARGET ??
-  process.env.VITE_API_PROXY_TARGET ??
-  'http://localhost:8888';
-
-export default createMicroAppViteConfig({
-  appName: 'bone-generator-app',
-  port: 3009,
-  apiProxyTarget,
-});
+export default defineConfig({
+  plugins: [
+    react({ fastRefresh: false }),
+    qiankun('bone-generator-app', { useDevMode: true }),
+  ],
+  resolve: {
+    alias: {
+      'vite-plugin-qiankun/helper': path.resolve(__dirname, '../../node_modules/vite-plugin-qiankun/dist/helper.js'),
+    },
+  },
+  server: {
+    port: 3009,
+    host: '0.0.0.0',
+    cors: true,
+    origin: 'http://localhost:3009',
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8888',
+        changeOrigin: true,
+      },
+    },
+  },
+  build: {
+    outDir: 'dist',
+    sourcemap: true,
+  },
+})

@@ -1,10 +1,11 @@
 package com.bone.core.exception;
 
 public class DistributedLockException extends RuntimeException {
-    public DistributedLockException(String message) {
-        super(message);
-    }
-    public DistributedLockException(String message, Throwable cause) {
-        super(message, cause);
-    }
+  public DistributedLockException(String message) {
+    super(message);
+  }
+
+  public DistributedLockException(String message, Throwable cause) {
+    super(message, cause);
+  }
 }

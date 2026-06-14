@@ -7,8 +7,11 @@ import com.bone.studio.generator.domain.data.DatabaseTable;
 import java.util.List;
 
 public interface CodeGeneratorService {
-    CodeGenerationResponse generateCode(CodeGenerationRequest request);
-    boolean testConnection(DataSource dataSource);
-    List<DatabaseTable> loadTables(String dataSourceId);
-    List<DatabaseTable> loadCatalogTables(Long tenantId, List<String> entityCodes);
+  CodeGenerationResponse generateCode(CodeGenerationRequest request);
+
+  boolean testConnection(DataSource dataSource);
+
+  List<DatabaseTable> loadTables(String dataSourceId);
+
+  List<DatabaseTable> loadCatalogTables(Long tenantId, List<String> entityCodes);
 }

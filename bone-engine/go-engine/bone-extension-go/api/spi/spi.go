@@ -8,6 +8,7 @@ import (
 
 type Extension interface {
 	Name() string
+	Priority() int
 	Init(ctx context.Context) error
 	Destroy(ctx context.Context) error
 }

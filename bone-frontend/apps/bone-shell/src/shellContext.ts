@@ -16,8 +16,10 @@ export interface ShellMenuItem {
   key: string;
   label: string;
   icon: ReactNode;
-  path: string;
+  path?: string;
+  hash?: string;
   enabled: boolean;
+  children?: ShellMenuItem[];
 }
 
 export const MenuConfigContext = createContext<{

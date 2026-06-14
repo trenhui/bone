@@ -11,16 +11,13 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ExecutionStartedHandler {
 
-    private final IntegrationEventFollowUp followUp;
+  private final IntegrationEventFollowUp followUp;
 
-    public void handle(ExecutionStartedEvent event) {
-        log.info(
-                "Execution started: executionId={}, flowId={}",
-                event.executionId(),
-                event.flowId());
-        followUp.notifyInfo(
-                "execution.started.notify",
-                "flowId=" + event.flowId(),
-                String.valueOf(event.executionId()));
-    }
+  public void handle(ExecutionStartedEvent event) {
+    log.info("Execution started: executionId={}, flowId={}", event.executionId(), event.flowId());
+    followUp.notifyInfo(
+        "execution.started.notify",
+        "flowId=" + event.flowId(),
+        String.valueOf(event.executionId()));
+  }
 }

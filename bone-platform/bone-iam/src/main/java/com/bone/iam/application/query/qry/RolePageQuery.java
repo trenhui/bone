@@ -7,6 +7,6 @@ import lombok.EqualsAndHashCode;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class RolePageQuery extends PageParam {
-    private String keyword;
-    private Long tenantId;
+  private String keyword;
+  private Long tenantId;
 }

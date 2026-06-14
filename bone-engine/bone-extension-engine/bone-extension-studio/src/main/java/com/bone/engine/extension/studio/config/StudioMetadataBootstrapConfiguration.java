@@ -16,54 +16,55 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
-/**
- * Studio 控制面 Metadata 引导：排除完整 {@code MetadataAutoConfiguration}，仅保留 SQL Repository 所需 Bean。
- */
+/** Studio 控制面 Metadata 引导：排除完整 {@code MetadataAutoConfiguration}，仅保留 SQL Repository 所需 Bean。 */
 @Configuration
-@ConditionalOnProperty(prefix = "bone.extension.studio.persistence", name = "mode", havingValue = "metadata")
+@ConditionalOnProperty(
+    prefix = "bone.extension.studio.persistence",
+    name = "mode",
+    havingValue = "metadata")
 @EnableConfigurationProperties(MetadataSdkProperties.class)
 @ComponentScan(
-        basePackages = {
-            "com.bone.metadata.sdk.extension",
-            "com.bone.metadata.sdk.extension.repository"
-        })
+    basePackages = {
+      "com.bone.metadata.sdk.extension",
+      "com.bone.metadata.sdk.extension.repository"
+    })
 public class StudioMetadataBootstrapConfiguration {
 
-    @Bean
-    public MetadataSdkContext metadataSdkContext(
-            MetadataSdkProperties props, DataSourceProperties dsProps) {
-        return new MetadataSdkContext(props, dsProps);
-    }
+  @Bean
+  public MetadataSdkContext metadataSdkContext(
+      MetadataSdkProperties props, DataSourceProperties dsProps) {
+    return new MetadataSdkContext(props, dsProps);
+  }
 
-    @Bean
-    public DistributedLockUtil distributedLockUtil() {
-        return new DistributedLockUtil();
-    }
+  @Bean
+  public DistributedLockUtil distributedLockUtil() {
+    return new DistributedLockUtil();
+  }
 
-    @Bean
-    @Primary
-    public MetadataService studioMetadataService() {
-        return new MetadataService() {
-            @Override
-            public List<FieldMetadata> findExtensionFields(AllocationContext context) {
-                return Collections.emptyList();
-            }
+  @Bean
+  @Primary
+  public MetadataService studioMetadataService() {
+    return new MetadataService() {
+      @Override
+      public List<FieldMetadata> findExtensionFields(AllocationContext context) {
+        return Collections.emptyList();
+      }
 
-            @Override
-            public List<FieldMetadata> findExtensionFieldsByNames(
-                    AllocationContext context, List<String> logicalNames) {
-                return Collections.emptyList();
-            }
+      @Override
+      public List<FieldMetadata> findExtensionFieldsByNames(
+          AllocationContext context, List<String> logicalNames) {
+        return Collections.emptyList();
+      }
 
-            @Override
-            public List<FieldMetadata> allocateAndPersistFields(List<FieldMetadata> fields) {
-                return Collections.emptyList();
-            }
+      @Override
+      public List<FieldMetadata> allocateAndPersistFields(List<FieldMetadata> fields) {
+        return Collections.emptyList();
+      }
 
-            @Override
-            public boolean isHealthy() {
-                return true;
-            }
-        };
-    }
+      @Override
+      public boolean isHealthy() {
+        return true;
+      }
+    };
+  }
 }

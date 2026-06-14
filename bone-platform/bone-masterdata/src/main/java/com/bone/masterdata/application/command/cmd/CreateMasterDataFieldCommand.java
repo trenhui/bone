@@ -10,11 +10,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateMasterDataFieldCommand {
-    private Long masterDataEntityId;
-    private String name;
-    private String type;
-    private Integer length;
-    private Boolean required;
-    private String defaultValue;
-    private String description;
+  private Long masterDataEntityId;
+  private String name;
+  private String code;
+  private String type;
+  private Integer length;
+  private Boolean required;
+  private String defaultValue;
+  private String description;
 }

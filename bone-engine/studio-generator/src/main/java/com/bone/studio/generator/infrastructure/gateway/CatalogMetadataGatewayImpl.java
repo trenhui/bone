@@ -21,6 +21,7 @@ import org.springframework.util.StringUtils;
 public class CatalogMetadataGatewayImpl implements CatalogMetadataGateway {
 
   private static final int PUBLISHED = 1;
+
   /** 0-GENERATIVE：参与标准 CRUD 代码生成；1-RUNTIME 走 engine 动态 API */
   private static final int DELIVERY_RUNTIME = 1;
 

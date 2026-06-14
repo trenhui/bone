@@ -16,24 +16,24 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class JvmResourceUsageGateway implements ResourceUsageGateway {
 
-    private final MeterRegistry meterRegistry;
+  private final MeterRegistry meterRegistry;
 
-    @Override
-    public ResourceUsage snapshot() {
-        return ResourceUsage.builder()
-                .memoryUsedBytes((long) gauge("jvm.memory.used", 0))
-                .memoryMaxBytes((long) gauge("jvm.memory.max", 0))
-                .cpuPercent(0)
-                .diskUsedPercent(0)
-                .updatedAt(Instant.now())
-                .build();
-    }
+  @Override
+  public ResourceUsage snapshot() {
+    return ResourceUsage.builder()
+        .memoryUsedBytes((long) gauge("jvm.memory.used", 0))
+        .memoryMaxBytes((long) gauge("jvm.memory.max", 0))
+        .cpuPercent(0)
+        .diskUsedPercent(0)
+        .updatedAt(Instant.now())
+        .build();
+  }
 
-    private double gauge(String name, double defaultValue) {
-        try {
-            return meterRegistry.get(name).gauge().value();
-        } catch (Exception e) {
-            return defaultValue;
-        }
+  private double gauge(String name, double defaultValue) {
+    try {
+      return meterRegistry.get(name).gauge().value();
+    } catch (Exception e) {
+      return defaultValue;
     }
+  }
 }

@@ -20,51 +20,54 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class JsonResourceMarketplaceCatalog implements MarketplaceCatalog {
 
-    private static final String DEFAULT_LOCATION = "marketplace/items.json";
+  private static final String DEFAULT_LOCATION = "marketplace/items.json";
 
-    private final List<MarketplaceItem> items;
+  private final List<MarketplaceItem> items;
 
-    @Autowired
-    public JsonResourceMarketplaceCatalog(ObjectMapper objectMapper) {
-        this(objectMapper, new ClassPathResource(DEFAULT_LOCATION));
+  @Autowired
+  public JsonResourceMarketplaceCatalog(ObjectMapper objectMapper) {
+    this(objectMapper, new ClassPathResource(DEFAULT_LOCATION));
+  }
+
+  JsonResourceMarketplaceCatalog(ObjectMapper objectMapper, Resource resource) {
+    this.items = load(objectMapper, resource);
+  }
+
+  @Override
+  public List<MarketplaceItem> list(String keyword, String category) {
+    String kw = keyword == null ? "" : keyword.trim().toLowerCase(Locale.ROOT);
+    String cat = category == null ? "" : category.trim().toLowerCase(Locale.ROOT);
+    return items.stream()
+        .filter(
+            item ->
+                kw.isEmpty()
+                    || (item.name() != null && item.name().toLowerCase(Locale.ROOT).contains(kw))
+                    || (item.description() != null
+                        && item.description().toLowerCase(Locale.ROOT).contains(kw)))
+        .filter(
+            item ->
+                cat.isEmpty() || (item.category() != null && item.category().equalsIgnoreCase(cat)))
+        .toList();
+  }
+
+  @Override
+  public Optional<MarketplaceItem> findById(String id) {
+    if (id == null || id.isBlank()) {
+      return Optional.empty();
     }
+    return items.stream().filter(item -> id.equals(item.id())).findFirst();
+  }
 
-    JsonResourceMarketplaceCatalog(ObjectMapper objectMapper, Resource resource) {
-        this.items = load(objectMapper, resource);
+  private static List<MarketplaceItem> load(ObjectMapper objectMapper, Resource resource) {
+    if (!resource.exists()) {
+      log.warn("Marketplace catalog not found: {}", resource);
+      return List.of();
     }
-
-    @Override
-    public List<MarketplaceItem> list(String keyword, String category) {
-        String kw = keyword == null ? "" : keyword.trim().toLowerCase(Locale.ROOT);
-        String cat = category == null ? "" : category.trim().toLowerCase(Locale.ROOT);
-        return items.stream()
-                .filter(item -> kw.isEmpty()
-                        || (item.name() != null && item.name().toLowerCase(Locale.ROOT).contains(kw))
-                        || (item.description() != null
-                                && item.description().toLowerCase(Locale.ROOT).contains(kw)))
-                .filter(item -> cat.isEmpty()
-                        || (item.category() != null && item.category().equalsIgnoreCase(cat)))
-                .toList();
+    try (InputStream in = resource.getInputStream()) {
+      return objectMapper.readValue(in, new TypeReference<List<MarketplaceItem>>() {});
+    } catch (IOException ex) {
+      log.warn("Marketplace catalog parse failed: {}", ex.getMessage());
+      return List.of();
     }
-
-    @Override
-    public Optional<MarketplaceItem> findById(String id) {
-        if (id == null || id.isBlank()) {
-            return Optional.empty();
-        }
-        return items.stream().filter(item -> id.equals(item.id())).findFirst();
-    }
-
-    private static List<MarketplaceItem> load(ObjectMapper objectMapper, Resource resource) {
-        if (!resource.exists()) {
-            log.warn("Marketplace catalog not found: {}", resource);
-            return List.of();
-        }
-        try (InputStream in = resource.getInputStream()) {
-            return objectMapper.readValue(in, new TypeReference<List<MarketplaceItem>>() {});
-        } catch (IOException ex) {
-            log.warn("Marketplace catalog parse failed: {}", ex.getMessage());
-            return List.of();
-        }
-    }
+  }
 }

@@ -10,20 +10,24 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
-@Capability(name = "updateCodeTemplate", description = "更新代码模板", inputSchema = "{}", outputSchema = "{}")
+@Capability(
+    name = "updateCodeTemplate",
+    description = "更新代码模板",
+    inputSchema = "{}",
+    outputSchema = "{}")
 public class UpdateCodeTemplateHandler {
 
-    private final CodeTemplateRepository codeTemplateRepository;
+  private final CodeTemplateRepository codeTemplateRepository;
 
-    @Transactional
-    public Long handle(UpdateCodeTemplateCommand command) {
-        CodeTemplate template = codeTemplateRepository.findById(command.getId());
-        if (template == null) {
-            throw new IllegalArgumentException("模板不存在: " + command.getId());
-        }
-        
-        template.updateContent(command.getContent());
-        codeTemplateRepository.save(template);
-        return template.getId();
+  @Transactional
+  public Long handle(UpdateCodeTemplateCommand command) {
+    CodeTemplate template = codeTemplateRepository.findById(command.getId());
+    if (template == null) {
+      throw new IllegalArgumentException("模板不存在: " + command.getId());
     }
+
+    template.updateContent(command.getContent());
+    codeTemplateRepository.save(template);
+    return template.getId();
+  }
 }

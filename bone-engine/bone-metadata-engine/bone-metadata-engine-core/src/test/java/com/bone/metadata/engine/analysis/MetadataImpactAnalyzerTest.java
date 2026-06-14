@@ -66,8 +66,7 @@ class MetadataImpactAnalyzerTest {
 
   @Test
   void businessRuleDependingOnDeletedFieldIsHighImpact() {
-    BusinessRuleMetadata rule =
-        BusinessRuleMetadata.builder().apiName("validateAmount").build();
+    BusinessRuleMetadata rule = BusinessRuleMetadata.builder().apiName("validateAmount").build();
     rule.addDependentField("amount");
 
     EntityMetadata oldMeta = entity("Invoice", field("amount", false, true));
@@ -78,8 +77,7 @@ class MetadataImpactAnalyzerTest {
         analyzer.analyzeEntityImpact("0", oldMeta, newMeta);
 
     assertEquals(MetadataImpactAnalyzer.ImpactLevel.HIGH, result.getImpactLevel());
-    assertTrue(
-        result.getHighImpacts().stream().anyMatch(s -> s.contains("validateAmount")));
+    assertTrue(result.getHighImpacts().stream().anyMatch(s -> s.contains("validateAmount")));
   }
 
   private static EntityMetadata entity(String apiName, Object... parts) {

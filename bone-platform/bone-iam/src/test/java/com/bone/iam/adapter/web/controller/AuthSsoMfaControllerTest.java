@@ -24,70 +24,67 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 @ExtendWith(MockitoExtension.class)
 class AuthSsoMfaControllerTest {
 
-    @Mock
-    private LoginCommandHandler loginCommandHandler;
+  @Mock private LoginCommandHandler loginCommandHandler;
 
-    @Mock
-    private com.bone.iam.adapter.web.converter.AuthWebConverter authWebConverter;
+  @Mock private com.bone.iam.adapter.web.converter.AuthWebConverter authWebConverter;
 
-    @Mock
-    private JwtTokenService jwtTokenService;
+  @Mock private JwtTokenService jwtTokenService;
 
-    @Mock
-    private RefreshTokenCommandHandler refreshTokenCommandHandler;
+  @Mock private RefreshTokenCommandHandler refreshTokenCommandHandler;
 
-    @Mock
-    private TokenBlacklistService tokenBlacklistService;
+  @Mock private TokenBlacklistService tokenBlacklistService;
 
-    @Mock
-    private JwtConfig jwtConfig;
+  @Mock private JwtConfig jwtConfig;
 
-    private MockMvc mockMvc;
+  private MockMvc mockMvc;
 
-    @BeforeEach
-    void setUp() {
-        IamSsoProperties ssoProperties = new IamSsoProperties();
-        AuthController authController =
-                new AuthController(
-                        loginCommandHandler,
-                        refreshTokenCommandHandler,
-                        authWebConverter,
-                        jwtTokenService,
-                        tokenBlacklistService,
-                        jwtConfig,
-                        ssoProperties);
-        mockMvc = MockMvcBuilders.standaloneSetup(authController, new MfaController()).build();
-    }
+  @BeforeEach
+  void setUp() {
+    IamSsoProperties ssoProperties = new IamSsoProperties();
+    AuthController authController =
+        new AuthController(
+            loginCommandHandler,
+            refreshTokenCommandHandler,
+            authWebConverter,
+            jwtTokenService,
+            tokenBlacklistService,
+            jwtConfig,
+            ssoProperties);
+    mockMvc = MockMvcBuilders.standaloneSetup(authController, new MfaController()).build();
+  }
 
-    @Test
-    void ssoConfigReturnsDisabledByDefault() throws Exception {
-        mockMvc.perform(get("/api/v1/iam/sso/config"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.enabled").value(false));
-    }
+  @Test
+  void ssoConfigReturnsDisabledByDefault() throws Exception {
+    mockMvc
+        .perform(get("/api/v1/iam/sso/config"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.enabled").value(false));
+  }
 
-    @Test
-    void ssoCallbackReturns501WhenDisabled() throws Exception {
-        mockMvc.perform(get("/api/v1/iam/sso/callback").param("code", "test-code"))
-                .andExpect(status().isNotImplemented())
-                .andExpect(jsonPath("$.code").value(501))
-                .andExpect(jsonPath("$.message", containsString("IAM_SSO_NOT_CONFIGURED")));
-    }
+  @Test
+  void ssoCallbackReturns501WhenDisabled() throws Exception {
+    mockMvc
+        .perform(get("/api/v1/iam/sso/callback").param("code", "test-code"))
+        .andExpect(status().isNotImplemented())
+        .andExpect(jsonPath("$.code").value(501))
+        .andExpect(jsonPath("$.message", containsString("IAM_SSO_NOT_CONFIGURED")));
+  }
 
-    @Test
-    void mfaStatusReturnsDisabled() throws Exception {
-        mockMvc.perform(get("/api/v1/iam/mfa/status"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.enabled").value(false))
-                .andExpect(jsonPath("$.data.enrolled").value(false));
-    }
+  @Test
+  void mfaStatusReturnsDisabled() throws Exception {
+    mockMvc
+        .perform(get("/api/v1/iam/mfa/status"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.data.enabled").value(false))
+        .andExpect(jsonPath("$.data.enrolled").value(false));
+  }
 
-    @Test
-    void mfaEnrollReturns501() throws Exception {
-        mockMvc.perform(post("/api/v1/iam/mfa/enroll")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
-                .andExpect(status().isNotImplemented())
-                .andExpect(jsonPath("$.code").value(501));
-    }
+  @Test
+  void mfaEnrollReturns501() throws Exception {
+    mockMvc
+        .perform(
+            post("/api/v1/iam/mfa/enroll").contentType(MediaType.APPLICATION_JSON).content("{}"))
+        .andExpect(status().isNotImplemented())
+        .andExpect(jsonPath("$.code").value(501));
+  }
 }

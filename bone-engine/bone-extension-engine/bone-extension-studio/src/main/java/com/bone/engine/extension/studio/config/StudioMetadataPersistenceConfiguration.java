@@ -5,16 +5,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 
-/**
- * Metadata SDK 表持久化（扩展点/插件/版本/执行日志）。
- */
+/** Metadata SDK 表持久化（扩展点/插件/版本/执行日志）。 */
 @Configuration
-@ConditionalOnProperty(prefix = "bone.extension.studio.persistence", name = "mode", havingValue = "metadata")
-@EnableSqlRepositories(basePackages = "com.bone.engine.extension.studio.infrastructure.persistence.repository")
+@ConditionalOnProperty(
+    prefix = "bone.extension.studio.persistence",
+    name = "mode",
+    havingValue = "metadata")
+@EnableSqlRepositories(
+    basePackages = "com.bone.engine.extension.studio.infrastructure.persistence.repository")
 @Slf4j
 public class StudioMetadataPersistenceConfiguration {
 
-    public StudioMetadataPersistenceConfiguration() {
-        log.info("Studio persistence mode: metadata (Bone Metadata SDK)");
-    }
+  public StudioMetadataPersistenceConfiguration() {
+    log.info("Studio persistence mode: metadata (Bone Metadata SDK)");
+  }
 }

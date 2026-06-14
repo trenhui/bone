@@ -7,23 +7,21 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Capability(
-        name = "DeleteRole",
-        description = "删除角色（逻辑删除）",
-        inputSchema = "{\"id\": \"long\"}",
-        outputSchema = "{\"success\": \"boolean\"}",
-        idempotent = true,
-        cost = 1,
-        retryable = true,
-        timeout = 5
-)
+    name = "DeleteRole",
+    description = "删除角色（逻辑删除）",
+    inputSchema = "{\"id\": \"long\"}",
+    outputSchema = "{\"success\": \"boolean\"}",
+    idempotent = true,
+    cost = 1,
+    retryable = true,
+    timeout = 5)
 @Component
 @RequiredArgsConstructor
 public class DeleteRoleCommandHandler {
-    private final RoleRepository roleRepository;
+  private final RoleRepository roleRepository;
 
-    @Transactional
-    public void handle(Long id) {
-        roleRepository.deleteById(id);
-    }
+  @Transactional
+  public void handle(Long id) {
+    roleRepository.deleteById(id);
+  }
 }
-

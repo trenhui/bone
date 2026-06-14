@@ -6,5 +6,5 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor(staticName = "of")
 public class RoleId {
-    private final String value;
+  private final String value;
 }

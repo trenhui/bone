@@ -10,20 +10,21 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class CodeGenerationTaskService {
 
-    private final CreateCodeGenerationHandler createCodeGenerationHandler;
+  private final CreateCodeGenerationHandler createCodeGenerationHandler;
 
-    @Async
-    public void executeTask(CreateCodeGenerationCommand command, CodeGenerationCallback callback) {
-        try {
-            String taskId = createCodeGenerationHandler.handle(command);
-            callback.onSuccess(taskId);
-        } catch (Exception e) {
-            callback.onFailure(e);
-        }
+  @Async
+  public void executeTask(CreateCodeGenerationCommand command, CodeGenerationCallback callback) {
+    try {
+      String taskId = createCodeGenerationHandler.handle(command);
+      callback.onSuccess(taskId);
+    } catch (Exception e) {
+      callback.onFailure(e);
     }
+  }
 
-    public interface CodeGenerationCallback {
-        void onSuccess(String taskId);
-        void onFailure(Exception e);
-    }
+  public interface CodeGenerationCallback {
+    void onSuccess(String taskId);
+
+    void onFailure(Exception e);
+  }
 }

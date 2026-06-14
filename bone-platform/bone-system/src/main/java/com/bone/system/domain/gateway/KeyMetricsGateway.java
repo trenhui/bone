@@ -9,5 +9,5 @@ import com.bone.system.domain.model.console.KeyMetrics;
  */
 public interface KeyMetricsGateway {
 
-    KeyMetrics collect();
+  KeyMetrics collect();
 }

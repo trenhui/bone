@@ -10,13 +10,20 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-/**
- * 模式 B：基于已发布元数据对物理表执行动态 CRUD（经 bone-metadata-sdk 同源 JDBC）。
- */
+
+/** 模式 B：基于已发布元数据对物理表执行动态 CRUD（经 bone-metadata-sdk 同源 JDBC）。 */
 public class JdbcRuntimeRecordService {
 
   private static final Set<String> SYSTEM_COLUMNS =
-      Set.of("id", "tenant_id", "created_at", "updated_at", "created_by", "updated_by", "deleted", "version");
+      Set.of(
+          "id",
+          "tenant_id",
+          "created_at",
+          "updated_at",
+          "created_by",
+          "updated_by",
+          "deleted",
+          "version");
 
   private final NamedParameterJdbcTemplate jdbc;
   private final RuntimeEntityCatalog catalog;
@@ -46,9 +53,10 @@ public class JdbcRuntimeRecordService {
 
     String countSql = "SELECT COUNT(*) FROM " + table + where;
     List<String> selectCols = RuntimeQuerySupport.resolveSelectColumns(entity, effective);
-    String selectList = selectCols.size() == 1 && "*".equals(selectCols.get(0))
-        ? "*"
-        : String.join(", ", selectCols);
+    String selectList =
+        selectCols.size() == 1 && "*".equals(selectCols.get(0))
+            ? "*"
+            : String.join(", ", selectCols);
     String listSql =
         "SELECT "
             + selectList
@@ -101,9 +109,17 @@ public class JdbcRuntimeRecordService {
     }
 
     List<String> cols = new ArrayList<>(payload.keySet());
-    String colList = cols.stream().map(c -> "`" + sanitizeIdentifier(c) + "`").collect(Collectors.joining(", "));
+    String colList =
+        cols.stream().map(c -> "`" + sanitizeIdentifier(c) + "`").collect(Collectors.joining(", "));
     String valList = cols.stream().map(c -> ":" + c).collect(Collectors.joining(", "));
-    String sql = "INSERT INTO " + quoteTable(entity.physicalTableName()) + " (" + colList + ") VALUES (" + valList + ")";
+    String sql =
+        "INSERT INTO "
+            + quoteTable(entity.physicalTableName())
+            + " ("
+            + colList
+            + ") VALUES ("
+            + valList
+            + ")";
 
     MapSqlParameterSource params = new MapSqlParameterSource(payload);
     jdbc.update(sql, params);
@@ -127,8 +143,7 @@ public class JdbcRuntimeRecordService {
 
     boolean versioned = entityHasColumn(entity, "version");
     if (expectedVersion != null && !versioned) {
-      throw new RuntimeRecordException(
-          "META_RUNTIME_INVALID_QUERY", "物理表无 version 列，不支持 If-Match");
+      throw new RuntimeRecordException("META_RUNTIME_INVALID_QUERY", "物理表无 version 列，不支持 If-Match");
     }
 
     if (payload.isEmpty() && !(versioned && expectedVersion != null)) {
@@ -154,8 +169,7 @@ public class JdbcRuntimeRecordService {
       where.append(" AND `version` = :expectedVersion");
     }
 
-    String sql =
-        "UPDATE " + quoteTable(entity.physicalTableName()) + " SET " + setClause + where;
+    String sql = "UPDATE " + quoteTable(entity.physicalTableName()) + " SET " + setClause + where;
 
     MapSqlParameterSource params = new MapSqlParameterSource(payload);
     params.addValue("pk", parsePkValue(recordId));
@@ -167,8 +181,7 @@ public class JdbcRuntimeRecordService {
     if (updated == 0) {
       if (versioned && expectedVersion != null) {
         throw new RuntimeRecordException(
-            "META_PRECONDITION_FAILED",
-            "版本冲突：If-Match v" + expectedVersion + " 与当前记录不一致");
+            "META_PRECONDITION_FAILED", "版本冲突：If-Match v" + expectedVersion + " 与当前记录不一致");
       }
       throw new RuntimeRecordException("META_RUNTIME_RECORD_NOT_FOUND", "记录不存在: " + recordId);
     }
@@ -216,8 +229,7 @@ public class JdbcRuntimeRecordService {
         .orElseThrow(
             () ->
                 new RuntimeRecordException(
-                    "META_RUNTIME_ENTITY_NOT_FOUND",
-                    "未找到已发布的 RUNTIME 实体: " + entityCode));
+                    "META_RUNTIME_ENTITY_NOT_FOUND", "未找到已发布的 RUNTIME 实体: " + entityCode));
   }
 
   private static Map<String, Object> filterWritable(

@@ -3,11 +3,9 @@ package com.bone.system.application.query.qry;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
-/**
- * 根据ID查询配置
- */
+/** 根据ID查询配置 */
 @Data
 public class ConfigByIdQuery {
-    @NotNull(message = "配置ID不能为空")
-    private Long id;
+  @NotNull(message = "配置ID不能为空")
+  private Long id;
 }

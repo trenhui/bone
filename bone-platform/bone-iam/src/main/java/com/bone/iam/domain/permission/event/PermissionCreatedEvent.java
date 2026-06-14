@@ -6,11 +6,11 @@ import lombok.Getter;
 
 @Getter
 public class PermissionCreatedEvent implements DomainEvent {
-    private final Long permissionId;
-    private final String permissionCode;
+  private final Long permissionId;
+  private final String permissionCode;
 
-    public PermissionCreatedEvent(Permission permission) {
-        this.permissionId = permission.getId();
-        this.permissionCode = permission.getCode();
-    }
+  public PermissionCreatedEvent(Permission permission) {
+    this.permissionId = permission.getId();
+    this.permissionCode = permission.getCode();
+  }
 }

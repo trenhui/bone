@@ -15,15 +15,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class CapabilityController {
 
-    private final HandlerRegistry handlerRegistry;
+  private final HandlerRegistry handlerRegistry;
 
-    @GetMapping
-    public ApiResponse<?> getAllCapabilities() {
-        return ApiResponse.success(handlerRegistry.getAllCapabilities());
-    }
+  @GetMapping
+  public ApiResponse<?> getAllCapabilities() {
+    return ApiResponse.success(handlerRegistry.getAllCapabilities());
+  }
 
-    @GetMapping("/{name}")
-    public ApiResponse<?> getCapability(@PathVariable String name) {
-        return ApiResponse.success(handlerRegistry.findCapability(name).orElse(null));
-    }
+  @GetMapping("/{name}")
+  public ApiResponse<?> getCapability(@PathVariable String name) {
+    return ApiResponse.success(handlerRegistry.findCapability(name).orElse(null));
+  }
 }

@@ -31,62 +31,62 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(PlatformApiPaths.IAM_V1 + "/permissions")
 @RequiredArgsConstructor
 public class PermissionController {
-    private final CreatePermissionCommandHandler createPermissionCommandHandler;
-    private final UpdatePermissionCommandHandler updatePermissionCommandHandler;
-    private final DeletePermissionCommandHandler deletePermissionCommandHandler;
-    private final PermissionPageQueryHandler permissionPageQueryHandler;
-    private final PermissionTreeQueryHandler permissionTreeQueryHandler;
-    private final PermissionDetailQueryHandler permissionDetailQueryHandler;
-    private final PermissionWebConverter permissionWebConverter;
+  private final CreatePermissionCommandHandler createPermissionCommandHandler;
+  private final UpdatePermissionCommandHandler updatePermissionCommandHandler;
+  private final DeletePermissionCommandHandler deletePermissionCommandHandler;
+  private final PermissionPageQueryHandler permissionPageQueryHandler;
+  private final PermissionTreeQueryHandler permissionTreeQueryHandler;
+  private final PermissionDetailQueryHandler permissionDetailQueryHandler;
+  private final PermissionWebConverter permissionWebConverter;
 
-    @PostMapping
-    @PreAuthorize("hasAuthority('iam:permissions:write')")
-    public ApiResponse<Long> create(@RequestBody CreatePermissionReq req) {
-        CreatePermissionCommand cmd = permissionWebConverter.toCreatePermissionCommand(req);
-        Long permissionId = createPermissionCommandHandler.handle(cmd);
-        return ApiResponse.success(permissionId);
-    }
+  @PostMapping
+  @PreAuthorize("hasAuthority('iam:permissions:write')")
+  public ApiResponse<Long> create(@RequestBody CreatePermissionReq req) {
+    CreatePermissionCommand cmd = permissionWebConverter.toCreatePermissionCommand(req);
+    Long permissionId = createPermissionCommandHandler.handle(cmd);
+    return ApiResponse.success(permissionId);
+  }
 
-    @GetMapping
-    @PreAuthorize("hasAuthority('iam:permissions:read')")
-    public ApiResponse<PageResult<PermissionDTO>> page(PermissionPageQuery qry) {
-        PageResult<PermissionDTO> result = permissionPageQueryHandler.handle(qry);
-        return ApiResponse.success(result);
-    }
+  @GetMapping
+  @PreAuthorize("hasAuthority('iam:permissions:read')")
+  public ApiResponse<PageResult<PermissionDTO>> page(PermissionPageQuery qry) {
+    PageResult<PermissionDTO> result = permissionPageQueryHandler.handle(qry);
+    return ApiResponse.success(result);
+  }
 
-    @GetMapping("/tree")
-    @PreAuthorize("hasAuthority('iam:permissions:read')")
-    public ApiResponse<List<PermissionDTO>> tree() {
-        return ApiResponse.success(permissionTreeQueryHandler.handle());
-    }
+  @GetMapping("/tree")
+  @PreAuthorize("hasAuthority('iam:permissions:read')")
+  public ApiResponse<List<PermissionDTO>> tree() {
+    return ApiResponse.success(permissionTreeQueryHandler.handle());
+  }
 
-    @PutMapping("/{id}")
-    @PreAuthorize("hasAuthority('iam:permissions:write')")
-    public ApiResponse<Void> update(@PathVariable Long id, @RequestBody CreatePermissionReq req) {
-        UpdatePermissionCommand cmd = new UpdatePermissionCommand();
-        cmd.setId(id);
-        cmd.setName(req.getName());
-        cmd.setDescription(req.getDescription());
-        cmd.setResourceType(req.getResourceType());
-        cmd.setResourcePath(req.getResourcePath());
-        cmd.setAction(req.getAction());
-        cmd.setParentId(req.getParentId());
-        cmd.setType(req.getType());
-        cmd.setSortOrder(req.getSortOrder());
-        updatePermissionCommandHandler.handle(cmd);
-        return ApiResponse.success();
-    }
+  @PutMapping("/{id}")
+  @PreAuthorize("hasAuthority('iam:permissions:write')")
+  public ApiResponse<Void> update(@PathVariable Long id, @RequestBody CreatePermissionReq req) {
+    UpdatePermissionCommand cmd = new UpdatePermissionCommand();
+    cmd.setId(id);
+    cmd.setName(req.getName());
+    cmd.setDescription(req.getDescription());
+    cmd.setResourceType(req.getResourceType());
+    cmd.setResourcePath(req.getResourcePath());
+    cmd.setAction(req.getAction());
+    cmd.setParentId(req.getParentId());
+    cmd.setType(req.getType());
+    cmd.setSortOrder(req.getSortOrder());
+    updatePermissionCommandHandler.handle(cmd);
+    return ApiResponse.success();
+  }
 
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('iam:permissions:write')")
-    public ApiResponse<Void> delete(@PathVariable Long id) {
-        deletePermissionCommandHandler.handle(id);
-        return ApiResponse.success();
-    }
+  @DeleteMapping("/{id}")
+  @PreAuthorize("hasAuthority('iam:permissions:write')")
+  public ApiResponse<Void> delete(@PathVariable Long id) {
+    deletePermissionCommandHandler.handle(id);
+    return ApiResponse.success();
+  }
 
-    @GetMapping("/{id}")
-    @PreAuthorize("hasAuthority('iam:permissions:read')")
-    public ApiResponse<PermissionDTO> detail(@PathVariable Long id) {
-        return ApiResponse.success(permissionDetailQueryHandler.handle(id));
-    }
+  @GetMapping("/{id}")
+  @PreAuthorize("hasAuthority('iam:permissions:read')")
+  public ApiResponse<PermissionDTO> detail(@PathVariable Long id) {
+    return ApiResponse.success(permissionDetailQueryHandler.handle(id));
+  }
 }

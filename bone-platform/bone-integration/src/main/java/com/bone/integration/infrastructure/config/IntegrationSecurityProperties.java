@@ -8,8 +8,6 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "bone.integration.security")
 @Data
 public class IntegrationSecurityProperties {
-    /**
-     * 为 true 时 {@code /integration/**} 需 IAM JWT；开发默认 false。
-     */
-    private boolean jwtEnabled = false;
+  /** 为 true 时 {@code /integration/**} 需 IAM JWT；开发默认 false。 */
+  private boolean jwtEnabled = false;
 }

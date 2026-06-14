@@ -10,17 +10,15 @@ import com.bone.system.application.query.dto.ConfigDTO;
 import com.bone.system.application.query.qry.ConfigPageQuery;
 import org.mapstruct.Mapper;
 
-/**
- * 配置Web转换器
- */
+/** 配置Web转换器 */
 @Mapper
 public interface ConfigWebConverter {
 
-    CreateConfigCommand toCommand(CreateConfigReq req);
+  CreateConfigCommand toCommand(CreateConfigReq req);
 
-    UpdateConfigCommand toCommand(UpdateConfigReq req);
+  UpdateConfigCommand toCommand(UpdateConfigReq req);
 
-    ConfigPageQuery toQuery(ConfigPageReq req);
+  ConfigPageQuery toQuery(ConfigPageReq req);
 
-    ConfigResp toResp(ConfigDTO dto);
+  ConfigResp toResp(ConfigDTO dto);
 }

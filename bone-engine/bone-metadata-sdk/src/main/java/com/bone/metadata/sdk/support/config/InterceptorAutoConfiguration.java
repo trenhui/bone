@@ -14,41 +14,39 @@ import org.springframework.context.annotation.Configuration;
 @EnableConfigurationProperties(MetadataSdkProperties.class)
 public class InterceptorAutoConfiguration {
 
+  @Bean
+  @ConditionalOnMissingBean(SecurityInterceptor.class)
+  public SecurityInterceptor securityInterceptor(MetaPermissionService permissionService) {
+    return new SecurityInterceptor(permissionService);
+  }
 
-    @Bean
-    @ConditionalOnMissingBean(SecurityInterceptor.class)
-    public SecurityInterceptor securityInterceptor(MetaPermissionService permissionService) {
-        return new SecurityInterceptor(permissionService);
-    }
+  @Bean
+  @ConditionalOnMissingBean(SqlExecutionInterceptor.class)
+  public SqlExecutionInterceptor sqlExecutionInterceptor(MetadataSdkProperties props) {
+    return new SqlExecutionInterceptor(props);
+  }
 
-    @Bean
-    @ConditionalOnMissingBean(SqlExecutionInterceptor.class)
-    public SqlExecutionInterceptor sqlExecutionInterceptor(MetadataSdkProperties props) {
-        return new SqlExecutionInterceptor(props);
-    }
+  @Bean
+  @ConditionalOnMissingBean(ExtensionMonitorInterceptor.class)
+  public ExtensionMonitorInterceptor extensionMonitorInterceptor() {
+    return new ExtensionMonitorInterceptor();
+  }
 
-    @Bean
-    @ConditionalOnMissingBean(ExtensionMonitorInterceptor.class)
-    public ExtensionMonitorInterceptor extensionMonitorInterceptor() {
-        return new ExtensionMonitorInterceptor();
-    }
+  @Bean
+  @ConditionalOnMissingBean(PerformanceInterceptor.class)
+  public PerformanceInterceptor performanceInterceptor() {
+    return new PerformanceInterceptor();
+  }
 
+  @Bean
+  @ConditionalOnMissingBean(AuditService.class)
+  public AuditService loggingAuditService() {
+    return new LoggingAuditService();
+  }
 
-    @Bean
-    @ConditionalOnMissingBean(PerformanceInterceptor.class)
-    public PerformanceInterceptor performanceInterceptor() {
-        return new PerformanceInterceptor();
-    }
-
-    @Bean
-    @ConditionalOnMissingBean(AuditService.class)
-    public AuditService loggingAuditService() {
-        return new LoggingAuditService();
-    }
-
-    @Bean
-    @ConditionalOnMissingBean(MetaPermissionService.class)
-    public MetaPermissionService metaPermissionService() {
-        return new DefaultMetaPermissionService();
-    }
+  @Bean
+  @ConditionalOnMissingBean(MetaPermissionService.class)
+  public MetaPermissionService metaPermissionService() {
+    return new DefaultMetaPermissionService();
+  }
 }

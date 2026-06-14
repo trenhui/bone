@@ -1,7 +1,7 @@
 package com.bone.metadata.runtime.adapter.web;
 
-import com.bone.core.result.ApiResponse;
-import com.bone.core.result.PageResult;
+import com.bone.core.model.ApiResponse;
+import com.bone.core.model.PageResult;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.metadata.catalog.application.idempotency.CatalogIdempotencyService;
 import com.bone.metadata.catalog.common.CatalogHttpSupport;
@@ -80,11 +80,10 @@ public class RuntimeRecordController {
       @RequestBody Map<String, Object> body)
       throws JsonProcessingException {
     String path = "/api/v1/runtime/entities/" + entityCode + "/records";
-    String fingerprint = CatalogIdempotencyService.fingerprint(objectMapper.writeValueAsString(body));
+    String fingerprint =
+        CatalogIdempotencyService.fingerprint(objectMapper.writeValueAsString(body));
     var apiType =
-        objectMapper
-            .getTypeFactory()
-            .constructParametricType(ApiResponse.class, Map.class);
+        objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, Map.class);
     Optional<ResponseEntity<ApiResponse<Map<String, Object>>>> replay =
         catalogIdempotencyService.replay(idempotencyKey, "POST", path, fingerprint, apiType);
     if (replay.isPresent()) {
@@ -93,8 +92,7 @@ public class RuntimeRecordController {
 
     long tenantId = CatalogTenantSupport.currentTenantId();
     long newId = DistributedIdGenerator.generateLongId();
-    Map<String, Object> created =
-        runtimeRecordService.create(entityCode, tenantId, body, newId);
+    Map<String, Object> created = runtimeRecordService.create(entityCode, tenantId, body, newId);
     Object pk = created != null ? created.getOrDefault("id", newId) : newId;
     ResponseEntity<ApiResponse<Map<String, Object>>> response =
         ResponseEntity.created(

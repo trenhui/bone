@@ -5,19 +5,20 @@ import java.util.List;
 import org.springframework.util.StringUtils;
 
 /** 模式 B 列表查询参数（fields / sort / q）。 */
-public record RuntimePageQuery(List<String> selectFields, List<SortSpec> sortSpecs, FilterSpec filter) {
+public record RuntimePageQuery(
+    List<String> selectFields, List<SortSpec> sortSpecs, FilterSpec filter) {
 
   public static final RuntimePageQuery EMPTY = new RuntimePageQuery(null, null, null);
 
   public static RuntimePageQuery parse(String fields, String sort, String q) {
-  List<String> select = parseFields(fields);
-  List<SortSpec> sorts = parseSort(sort);
-  FilterSpec filter = parseFilter(q);
-  if (select.isEmpty() && sorts.isEmpty() && filter == null) {
-    return EMPTY;
-  }
-  return new RuntimePageQuery(
-      select.isEmpty() ? null : select, sorts.isEmpty() ? null : sorts, filter);
+    List<String> select = parseFields(fields);
+    List<SortSpec> sorts = parseSort(sort);
+    FilterSpec filter = parseFilter(q);
+    if (select.isEmpty() && sorts.isEmpty() && filter == null) {
+      return EMPTY;
+    }
+    return new RuntimePageQuery(
+        select.isEmpty() ? null : select, sorts.isEmpty() ? null : sorts, filter);
   }
 
   private static List<String> parseFields(String fields) {

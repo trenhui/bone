@@ -4,4 +4,5 @@ import com.bone.engine.extension.studio.infrastructure.persistence.entity.ExtStu
 import com.bone.metadata.sdk.Repository;
 
 /** 扩展点 Metadata 仓储 */
-public interface ExtStudioExtensionPointRepository extends Repository<ExtStudioExtensionPoint, Long> {}
+public interface ExtStudioExtensionPointRepository
+    extends Repository<ExtStudioExtensionPoint, Long> {}

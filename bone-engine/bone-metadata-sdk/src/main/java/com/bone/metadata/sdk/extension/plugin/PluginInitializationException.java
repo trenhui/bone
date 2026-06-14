@@ -1,11 +1,11 @@
 package com.bone.metadata.sdk.extension.plugin;
 
 public class PluginInitializationException extends RuntimeException {
-    public PluginInitializationException(String message) {
-        super(message);
-    }
+  public PluginInitializationException(String message) {
+    super(message);
+  }
 
-    public PluginInitializationException(String message, Throwable cause) {
-        super(message, cause);
-    }
+  public PluginInitializationException(String message, Throwable cause) {
+    super(message, cause);
+  }
 }

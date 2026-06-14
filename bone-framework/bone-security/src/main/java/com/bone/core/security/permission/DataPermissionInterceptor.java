@@ -1,4 +1,3 @@
 package com.bone.core.security.permission;
 
-public class DataPermissionInterceptor {
-}
+public class DataPermissionInterceptor {}

@@ -4,8 +4,7 @@ import lombok.Data;
 
 @Data
 public class UpdateRoleCommand {
-    private Long id;
-    private String name;
-    private String description;
+  private Long id;
+  private String name;
+  private String description;
 }
-

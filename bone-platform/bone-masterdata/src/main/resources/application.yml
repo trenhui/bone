@@ -11,8 +11,13 @@ spring:
       ddl-auto: update
     show-sql: true
 
+metadata:
+  sdk:
+    appcode: bone-masterdata
+    deploymentMode: EMBEDDED
+
 server:
-  port: 8080
+  port: 8084
   servlet:
     context-path: /
 

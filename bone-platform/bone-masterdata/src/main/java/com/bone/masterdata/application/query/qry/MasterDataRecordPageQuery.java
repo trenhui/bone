@@ -10,11 +10,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class MasterDataRecordPageQuery {
-    @Builder.Default
-    private Integer pageNum = 1;
-    @Builder.Default
-    private Integer pageSize = 10;
-    private Long masterDataEntityId;
-    private String keyword;
-    private String status;
+  @Builder.Default private Integer pageNum = 1;
+  @Builder.Default private Integer pageSize = 10;
+  private Long masterDataEntityId;
+  private String keyword;
+  private String status;
 }

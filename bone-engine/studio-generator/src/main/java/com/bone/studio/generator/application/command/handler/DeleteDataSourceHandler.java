@@ -10,13 +10,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
-@Capability(name = "deleteDataSource", description = "删除数据源", inputSchema = "{}", outputSchema = "{}")
+@Capability(
+    name = "deleteDataSource",
+    description = "删除数据源",
+    inputSchema = "{}",
+    outputSchema = "{}")
 public class DeleteDataSourceHandler {
 
-    private final DataSourceRepository dataSourceRepository;
+  private final DataSourceRepository dataSourceRepository;
 
-    @Transactional
-    public boolean handle(DeleteDataSourceCommand command) {
-        return dataSourceRepository.deleteById(StudioIds.parseRequired(command.getId()));
-    }
+  @Transactional
+  public boolean handle(DeleteDataSourceCommand command) {
+    return dataSourceRepository.deleteById(StudioIds.parseRequired(command.getId()));
+  }
 }

@@ -6,11 +6,11 @@ import lombok.Getter;
 
 @Getter
 public class AuditLogCreatedEvent implements DomainEvent {
-    private final Long auditLogId;
-    private final String operation;
+  private final Long auditLogId;
+  private final String operation;
 
-    public AuditLogCreatedEvent(AuditLog auditLog) {
-        this.auditLogId = auditLog.getId();
-        this.operation = auditLog.getOperation().name();
-    }
+  public AuditLogCreatedEvent(AuditLog auditLog) {
+    this.auditLogId = auditLog.getId();
+    this.operation = auditLog.getOperation().name();
+  }
 }

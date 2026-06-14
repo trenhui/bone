@@ -17,59 +17,59 @@ import lombok.NoArgsConstructor;
 @Table("exts_extension_impl")
 public class ExtStudioExtensionImpl extends AbstractEntity<Long> {
 
-    @Id
-    @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
+  private Long id;
 
-    @Column(name = "tenant_id")
-    private Long tenantId = 0L;
+  @Column(name = "tenant_id")
+  private Long tenantId = 0L;
 
-    @Column(name = "extension_point_id")
-    private Long extensionPointId;
+  @Column(name = "extension_point_id")
+  private Long extensionPointId;
 
-    @Column(name = "impl_name")
-    private String implName;
+  @Column(name = "impl_name")
+  private String implName;
 
-    @Column(name = "impl_code")
-    private String implCode;
+  @Column(name = "impl_code")
+  private String implCode;
 
-    @Column(name = "description")
-    private String description;
+  @Column(name = "description")
+  private String description;
 
-    @Column(name = "class_name")
-    private String className;
+  @Column(name = "class_name")
+  private String className;
 
-    @Column(name = "tenant_code")
-    private String tenantCode;
+  @Column(name = "tenant_code")
+  private String tenantCode;
 
-    @Column(name = "biz_code")
-    private String bizCode;
+  @Column(name = "biz_code")
+  private String bizCode;
 
-    @Column(name = "use_case")
-    private String useCase;
+  @Column(name = "use_case")
+  private String useCase;
 
-    @Column(name = "scenario")
-    private String scenario;
+  @Column(name = "scenario")
+  private String scenario;
 
-    @Column(name = "user_group")
-    private String userGroup;
+  @Column(name = "user_group")
+  private String userGroup;
 
-    @Column(name = "priority")
-    private Integer priority;
+  @Column(name = "priority")
+  private Integer priority;
 
-    @Column(name = "config_json")
-    private String configJson;
+  @Column(name = "config_json")
+  private String configJson;
 
-    /** 1=启用 0=禁用 */
-    @Column(name = "status")
-    private Integer status;
+  /** 1=启用 0=禁用 */
+  @Column(name = "status")
+  private Integer status;
 
-    @Column(name = "is_default")
-    private Boolean isDefault;
+  @Column(name = "is_default")
+  private Boolean isDefault;
 
-    @Column(name = "rollout_percent")
-    private Integer rolloutPercent;
+  @Column(name = "rollout_percent")
+  private Integer rolloutPercent;
 
-    @Column(name = "version")
-    private Integer version = 0;
+  @Column(name = "version")
+  private Integer version = 0;
 }

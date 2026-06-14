@@ -6,5 +6,5 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor(staticName = "of")
 public class AuditLogId {
-    private final Long value;
+  private final Long value;
 }

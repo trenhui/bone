@@ -12,19 +12,19 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class GetQualityReportQueryHandler {
 
-    private final QualityReportRepository qualityReportRepository;
+  private final QualityReportRepository qualityReportRepository;
 
-    @Transactional(readOnly = true)
-    public QualityReportDTO handle(Long reportId) {
-        QualityReport report = qualityReportRepository.findById(reportId);
-        if (report == null) {
-            throw NotFoundException.of("质量报告不存在: " + reportId);
-        }
-        return new QualityReportDTO(
-                report.getId(),
-                report.getQualityCheckId(),
-                report.getReportData(),
-                report.getIssueCount(),
-                report.getCreatedAt());
+  @Transactional(readOnly = true)
+  public QualityReportDTO handle(Long reportId) {
+    QualityReport report = qualityReportRepository.findById(reportId);
+    if (report == null) {
+      throw NotFoundException.of("质量报告不存在: " + reportId);
     }
+    return new QualityReportDTO(
+        report.getId(),
+        report.getQualityCheckId(),
+        report.getReportData(),
+        report.getIssueCount(),
+        report.getCreatedAt());
+  }
 }
