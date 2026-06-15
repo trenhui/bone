@@ -13,9 +13,8 @@ export default defineConfig({
     host: '0.0.0.0',
     cors: true,
     proxy: {
-      // 扩展：经 Gateway 统一入口（Studio 直连可改为 8088）
       '/api/v1/extension': {
-        target: process.env.BONE_EXTENSION_PROXY_TARGET ?? 'http://localhost:8888',
+        target: 'http://localhost:8088',
         changeOrigin: true,
       },
       '/api/v1/iam': {
@@ -23,7 +22,7 @@ export default defineConfig({
         changeOrigin: true,
       },
       '/api/v1/masterdata': {
-        target: 'http://localhost:8080',
+        target: 'http://localhost:8084',
         changeOrigin: true,
       },
       '/api/v1/system': {
@@ -36,10 +35,11 @@ export default defineConfig({
       },
       '/api/v1/integration': {
         target: 'http://localhost:8085',
+        rewrite: (path) => path.replace(/^\/api\/v1\/integration/, '/api/v1/integration'),
         changeOrigin: true,
       },
       '/api/v1/generator': {
-        target: process.env.BONE_GENERATOR_PROXY_TARGET ?? 'http://localhost:8888',
+        target: 'http://localhost:8086',
         changeOrigin: true,
       },
       '/api/v1/metadata': {

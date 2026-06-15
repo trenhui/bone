@@ -44,12 +44,6 @@ bone:
     enabled: true
     mode: EMBEDDED
     scan-packages: com.bone.iam.domain
-    embedded:
-      datasource:
-        driver-class-name: com.mysql.cj.jdbc.Driver
-        url: jdbc:mysql://localhost:3306/bone?useSSL=false&autoReconnect=true&characterEncoding=utf8&allowPublicKeyRetrieval=true
-        username: root
-        password: ${BONE_DB_PASSWORD:}
   iam:
     jwt:
       secret-key: ${BONE_IAM_JWT_SECRET_KEY:${BONE_JWT_SECRET:}}

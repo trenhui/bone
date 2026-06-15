@@ -55,7 +55,7 @@ public class ExtensionCommandHandler {
       throw new IllegalArgumentException("关联扩展点不存在: " + extension.getExtPointId());
     }
     if (extension.getVersion() == null) {
-      extension.setVersion("1");
+      extension.setVersion(1);
     }
     return extensionRepository.save(extension);
   }
@@ -83,7 +83,7 @@ public class ExtensionCommandHandler {
   }
 
   @Transactional
-  public Extension updateExtension(Long id, Extension extension, String expectedVersion) {
+  public Extension updateExtension(Long id, Extension extension, Integer expectedVersion) {
     Extension existing = extensionRepository.findById(id);
     if (existing == null) {
       return null;

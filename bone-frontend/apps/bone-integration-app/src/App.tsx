@@ -13,9 +13,10 @@ export const App: React.FC = () => {
       <Router>
         <AppLayout>
           <Routes>
+          <Route path="/connectors" element={<ConnectorManagement />} />
+            <Route path="/flows" element={<FlowDesign />} />
+            <Route path="/monitor" element={<FlowMonitor />} />
             <Route path="/" element={<ConnectorManagement />} />
-            <Route path="/flow-design" element={<FlowDesign />} />
-            <Route path="/flow-monitor" element={<FlowMonitor />} />
           </Routes>
         </AppLayout>
       </Router>

@@ -1,21 +1,25 @@
 package com.bone.integration.adapter.web.controller;
 
-import com.bone.core.exception.DomainException;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.integration.application.command.cmd.CreateConnectorCommand;
+import com.bone.integration.application.command.cmd.DeleteConnectorCommand;
+import com.bone.integration.application.command.cmd.DisableConnectorCommand;
+import com.bone.integration.application.command.cmd.EnableConnectorCommand;
+import com.bone.integration.application.command.cmd.TestConnectorCommand;
 import com.bone.integration.application.command.cmd.UpdateConnectorCommand;
 import com.bone.integration.application.command.handler.CreateConnectorHandler;
+import com.bone.integration.application.command.handler.DeleteConnectorHandler;
+import com.bone.integration.application.command.handler.DisableConnectorHandler;
+import com.bone.integration.application.command.handler.EnableConnectorHandler;
+import com.bone.integration.application.command.handler.TestConnectorHandler;
 import com.bone.integration.application.command.handler.UpdateConnectorHandler;
-import com.bone.integration.application.event.IntegrationDomainEventPublisher;
 import com.bone.integration.application.query.dto.ConnectorDTO;
+import com.bone.integration.application.query.handler.ConnectorDetailQueryHandler;
 import com.bone.integration.application.query.handler.ConnectorPageQueryHandler;
+import com.bone.integration.application.query.qry.ConnectorDetailQuery;
 import com.bone.integration.application.query.qry.ConnectorPageQuery;
-import com.bone.integration.application.service.ConnectorService;
-import com.bone.integration.domain.connector.Connector;
-import com.bone.integration.domain.repository.ConnectorRepository;
-import com.bone.integration.infrastructure.observability.IntegrationExecutionMetrics;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -26,10 +30,11 @@ public class ConnectorController {
   private final CreateConnectorHandler createConnectorHandler;
   private final UpdateConnectorHandler updateConnectorHandler;
   private final ConnectorPageQueryHandler connectorPageQueryHandler;
-  private final ConnectorRepository connectorRepository;
-  private final ConnectorService connectorService;
-  private final IntegrationDomainEventPublisher domainEventPublisher;
-  private final IntegrationExecutionMetrics integrationMetrics;
+  private final ConnectorDetailQueryHandler connectorDetailQueryHandler;
+  private final DeleteConnectorHandler deleteConnectorHandler;
+  private final TestConnectorHandler testConnectorHandler;
+  private final EnableConnectorHandler enableConnectorHandler;
+  private final DisableConnectorHandler disableConnectorHandler;
 
   @PostMapping
   public ApiResponse<Long> create(@RequestBody CreateConnectorCommand cmd) {
@@ -52,59 +57,31 @@ public class ConnectorController {
 
   @GetMapping("/{id}")
   public ApiResponse<ConnectorDTO> detail(@PathVariable Long id) {
-    Connector connector = connectorRepository.findById(id);
-    if (connector == null) {
-      throw new DomainException("连接器不存在");
-    }
-    ConnectorDTO dto =
-        new ConnectorDTO(
-            connector.getId(),
-            connector.getName(),
-            connector.getType().name(),
-            connector.getConfig(),
-            connector.getStatus().name());
+    ConnectorDTO dto = connectorDetailQueryHandler.handle(new ConnectorDetailQuery(id));
     return ApiResponse.success(dto);
   }
 
   @DeleteMapping("/{id}")
   public ApiResponse<Void> delete(@PathVariable Long id) {
-    connectorRepository.deleteById(id);
+    deleteConnectorHandler.handle(new DeleteConnectorCommand(id));
     return ApiResponse.success();
   }
 
   @PostMapping("/{id}/test")
   public ApiResponse<Boolean> test(@PathVariable Long id) {
-    Connector connector = connectorRepository.findById(id);
-    if (connector == null) {
-      throw new DomainException("连接器不存在");
-    }
-    boolean success = connectorService.testConnector(connector);
-    integrationMetrics.recordConnectorTest(connector.getType().name(), success);
-    String message = success ? "连接测试成功" : "连接测试失败";
-    connector.recordTestResult(success, message);
-    domainEventPublisher.publishFrom(connector);
+    Boolean success = testConnectorHandler.handle(new TestConnectorCommand(id));
     return ApiResponse.success(success);
   }
 
   @PostMapping("/{id}/enable")
   public ApiResponse<Void> enable(@PathVariable Long id) {
-    Connector connector = connectorRepository.findById(id);
-    if (connector == null) {
-      throw new DomainException("连接器不存在");
-    }
-    connector.enable();
-    connectorRepository.save(connector);
+    enableConnectorHandler.handle(new EnableConnectorCommand(id));
     return ApiResponse.success();
   }
 
   @PostMapping("/{id}/disable")
   public ApiResponse<Void> disable(@PathVariable Long id) {
-    Connector connector = connectorRepository.findById(id);
-    if (connector == null) {
-      throw new DomainException("连接器不存在");
-    }
-    connector.disable();
-    connectorRepository.save(connector);
+    disableConnectorHandler.handle(new DisableConnectorCommand(id));
     return ApiResponse.success();
   }
 }

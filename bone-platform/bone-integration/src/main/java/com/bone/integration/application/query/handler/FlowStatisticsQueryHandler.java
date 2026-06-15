@@ -22,7 +22,7 @@ public class FlowStatisticsQueryHandler {
   @Transactional(readOnly = true)
   public FlowStatisticsDTO handle(FlowStatisticsQuery query) {
     IntegrationFlow flow =
-        QueryBuilder.from(IntegrationFlow.class).where(IntegrationFlow::getId).eq(query.flowId()).first();
+        QueryBuilder.from(IntegrationFlow.class).where(IntegrationFlow::getId).eq(query.flowId()).first().orElse(null);
     if (flow == null) {
       throw new DomainException("流程不存在");
     }

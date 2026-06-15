@@ -7,9 +7,10 @@ import PluginManagement from '@/pages/PluginManagement';
 import SandboxManagement from '@/pages/SandboxManagement';
 import DependencyGraph from '@/pages/DependencyGraph';
 import Marketplace from '@/pages/Marketplace';
+import DeploymentStateDiagram from '@/pages/DeploymentStateDiagram';
 import './App.css';
 
-type MenuKey = 'overview' | 'point' | 'plugin' | 'sandbox' | 'graph' | 'marketplace';
+type MenuKey = 'overview' | 'point' | 'plugin' | 'deploy' | 'sandbox' | 'graph' | 'marketplace' | 'logs';
 
 const AppContent: React.FC = () => {
   const location = useLocation();
@@ -19,11 +20,13 @@ const AppContent: React.FC = () => {
 
   const selectedKey = (): MenuKey => {
     const path = location.pathname;
-    if (path.includes('marketplace')) return 'marketplace';
+    if (path.includes('market')) return 'marketplace';
     if (path.includes('graph')) return 'graph';
     if (path.includes('plugin')) return 'plugin';
     if (path.includes('sandbox')) return 'sandbox';
+    if (path.includes('deploy')) return 'deploy';
     if (path.includes('point')) return 'point';
+    if (path.includes('logs')) return 'logs';
     return 'overview';
   };
 
@@ -34,6 +37,8 @@ const AppContent: React.FC = () => {
     sandbox: '沙箱管理',
     graph: '依赖图',
     marketplace: '插件市场',
+    deploy: '部署管理',
+    logs: '运行日志',
   };
 
   const key = selectedKey();
@@ -54,11 +59,13 @@ const AppContent: React.FC = () => {
       >
         <Routes>
           <Route path="/overview" element={<ExtensionOverview />} />
-          <Route path="/point" element={<ExtensionPointManagement />} />
-          <Route path="/plugin" element={<PluginManagement />} />
+          <Route path="/points" element={<ExtensionPointManagement />} />
+          <Route path="/plugins" element={<PluginManagement />} />
           <Route path="/sandbox" element={<SandboxManagement />} />
           <Route path="/graph" element={<DependencyGraph />} />
-          <Route path="/marketplace" element={<Marketplace />} />
+          <Route path="/market" element={<Marketplace />} />
+          <Route path="/deploy" element={<DeploymentStateDiagram />} />
+          <Route path="/logs" element={<PluginManagement />} />
           <Route path="*" element={<ExtensionOverview />} />
         </Routes>
       </div>

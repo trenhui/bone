@@ -14,7 +14,7 @@ public class ExecutionDetailQueryHandler {
 
   @Transactional(readOnly = true)
   public ExecutionLogDTO handle(ExecutionDetailQuery query) {
-    IntegrationLog log = QueryBuilder.from(IntegrationLog.class).where(IntegrationLog::getId).eq(query.id()).first();
+    IntegrationLog log = QueryBuilder.from(IntegrationLog.class).where(IntegrationLog::getId).eq(query.id()).first().orElse(null);
     if (log == null) {
       throw new DomainException("执行记录不存在");
     }

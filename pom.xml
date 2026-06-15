@@ -20,6 +20,7 @@
         <module>bone-engine</module>
         <module>bone-platform</module>
         <module>bone-sdk</module>
+        <module>bone-blueprint</module>
     </modules>
 
     <name>Bone Boot</name>

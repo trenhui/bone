@@ -12,11 +12,11 @@ function App(): JSX.Element {
     <AntdApp>
       <Router>
         <Routes>
-          <Route path="/entity" element={<EntityManagement />} />
-          <Route path="/field" element={<FieldManagement />} />
-          <Route path="/relation" element={<RelationManagement />} />
+          <Route path="/entities" element={<EntityManagement />} />
+          <Route path="/fields" element={<FieldManagement />} />
+          <Route path="/relations" element={<RelationManagement />} />
           <Route path="/runtime" element={<RuntimeDataManagement />} />
-          <Route path="/" element={<Navigate to="/entity" replace />} />
+          <Route path="/" element={<Navigate to="/entities" replace />} />
         </Routes>
       </Router>
     </AntdApp>

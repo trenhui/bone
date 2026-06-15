@@ -44,33 +44,30 @@ api.interceptors.response.use(
 
 // 系统配置 API
 export const systemConfigApi = {
-  getConfig: async () => {
-    const response = await api.get<ApiResponse<SystemConfig[]>>('/system/config');
+  getConfig: async (params?: { keyword?: string; pageNum?: number; pageSize?: number }) => {
+    const p = { page: params?.pageNum ?? 1, size: params?.pageSize ?? 100, keyword: params?.keyword ?? '' };
+    const response = await api.get<ApiResponse<PageResult<SystemConfig>>>('/system/config/page', { params: p });
     return response.data;
   },
 
-  updateConfig: async (config: SystemConfig) => {
-    const response = await api.put<ApiResponse<void>>('/system/config', config);
+  getConfigDetail: async (id: number) => {
+    const response = await api.get<ApiResponse<SystemConfig>>(`/system/config/${id}`);
     return response.data;
   },
 
-  getConfigHistory: async (configId: number) => {
-    const response = await api.get<ApiResponse<ConfigHistory[]>>(`/system/config/history?configId=${configId}`);
+  createConfig: async (data: { configKey: string; configValue: string; configType: string; description?: string }) => {
+    const response = await api.post<ApiResponse<number>>('/system/config', data);
     return response.data;
   },
 
-  importConfig: async (file: File) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    const response = await api.post<ApiResponse<void>>('/system/config/import', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
+  updateConfig: async (data: { id: number; configKey: string; configValue: string; configType: string }) => {
+    const response = await api.put<ApiResponse<void>>('/system/config', data);
     return response.data;
   },
 
-  exportConfig: async () => {
-    const response = await api.get('/system/config/export', { responseType: 'blob' });
-    return response;
+  deleteConfig: async (id: number) => {
+    const response = await api.delete<ApiResponse<void>>(`/system/config/${id}`);
+    return response.data;
   },
 };
 
@@ -87,37 +84,46 @@ export const monitorApi = {
   },
 
   getAlertRules: async (params: { pageNum: number; pageSize: number }) => {
-    const response = await api.get<ApiResponse<PageResult<AlertRule>>>('/system/alerts', { params });
+    const response = await api.get<ApiResponse<PageResult<AlertRule>>>('/system/alert/rules/page', {
+      params: { page: params.pageNum, size: params.pageSize },
+    });
     return response.data;
   },
 
-  createAlertRule: async (rule: AlertRule) => {
-    const response = await api.post<ApiResponse<void>>('/system/alerts', rule);
+  getAlertRule: async (id: number) => {
+    const response = await api.get<ApiResponse<AlertRule>>(`/system/alert/rules/${id}`);
     return response.data;
   },
 
-  updateAlertRule: async (id: number, rule: AlertRule) => {
-    const response = await api.put<ApiResponse<void>>(`/system/alerts/${id}`, rule);
+  createAlertRule: async (rule: { name: string; metricName: string; thresholdValue: number; alertLevel: string }) => {
+    const response = await api.post<ApiResponse<number>>('/system/alert/rules', rule);
+    return response.data;
+  },
+
+  updateAlertRule: async (rule: { id: number; name: string; metricName: string; thresholdValue: number; alertLevel: string }) => {
+    const response = await api.put<ApiResponse<void>>('/system/alert/rules', rule);
     return response.data;
   },
 
   deleteAlertRule: async (id: number) => {
-    const response = await api.delete<ApiResponse<void>>(`/system/alerts/${id}`);
+    const response = await api.delete<ApiResponse<void>>(`/system/alert/rules/${id}`);
     return response.data;
   },
 
   enableAlertRule: async (id: number) => {
-    const response = await api.post<ApiResponse<void>>(`/system/alerts/${id}/enable`);
+    const response = await api.post<ApiResponse<void>>(`/system/alert/rules/${id}/enable`);
     return response.data;
   },
 
   disableAlertRule: async (id: number) => {
-    const response = await api.post<ApiResponse<void>>(`/system/alerts/${id}/disable`);
+    const response = await api.post<ApiResponse<void>>(`/system/alert/rules/${id}/disable`);
     return response.data;
   },
 
   getAlertEvents: async (params: { pageNum: number; pageSize: number }) => {
-    const response = await api.get<ApiResponse<PageResult<AlertEvent>>>('/system/alert-events', { params });
+    const response = await api.get<ApiResponse<PageResult<AlertEvent>>>('/system/alert/events/page', {
+      params: { page: params.pageNum, size: params.pageSize },
+    });
     return response.data;
   },
 };
@@ -133,50 +139,38 @@ export const logApi = {
     startTime?: string;
     endTime?: string;
   }) => {
-    const response = await api.get<ApiResponse<PageResult<SystemLog>>>('/system/logs', { params });
+    const response = await api.get<ApiResponse<PageResult<SystemLog>>>('/system/logs/page', {
+      params: { page: params.pageNum, size: params.pageSize, keyword: params.keyword },
+    });
     return response.data;
   },
 
-  searchLogs: async (params: Record<string, unknown>) => {
-    const response = await api.post<ApiResponse<PageResult<SystemLog>>>('/system/logs/search', params);
-    return response.data;
-  },
-
-  exportLogs: async (params: Record<string, unknown>) => {
-    const response = await api.get('/system/logs/export', { params, responseType: 'blob' });
-    return response;
-  },
-
-  analyzeLogs: async (params: Record<string, unknown>) => {
-    const response = await api.post<ApiResponse<unknown>>('/system/logs/analyze', params);
+  createLog: async (data: { logLevel: string; serviceName: string; content: string }) => {
+    const response = await api.post<ApiResponse<number>>('/system/logs', data);
     return response.data;
   },
 };
 
-// 系统管理 API
-export const systemApi = {
-  getInfo: async () => {
-    const response = await api.get<ApiResponse<SystemInfo>>('/system/info');
+// 控制台 API（由 bone-system 提供）
+export const consoleApi = {
+  getOverview: async () => {
+    const response = await api.get<ApiResponse<unknown>>('/console/overview');
     return response.data;
   },
-
-  restart: async () => {
-    const response = await api.post<ApiResponse<void>>('/system/restart');
+  getServices: async () => {
+    const response = await api.get<ApiResponse<unknown>>('/console/services');
     return response.data;
   },
-
-  shutdown: async () => {
-    const response = await api.post<ApiResponse<void>>('/system/shutdown');
+  getResources: async () => {
+    const response = await api.get<ApiResponse<unknown>>('/console/resources');
     return response.data;
   },
-
-  deploy: async (config: Record<string, unknown>) => {
-    const response = await api.post<ApiResponse<void>>('/system/deploy', config);
+  getMetrics: async () => {
+    const response = await api.get<ApiResponse<Metrics>>('/console/metrics');
     return response.data;
   },
-
-  upgrade: async (version: string) => {
-    const response = await api.post<ApiResponse<void>>('/system/upgrade', { version });
+  getQuickActions: async () => {
+    const response = await api.get<ApiResponse<unknown>>('/console/quick-actions');
     return response.data;
   },
 };

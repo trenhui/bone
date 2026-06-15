@@ -11,11 +11,11 @@ const App: React.FC = () => {
     <AntdApp>
       <Router>
         <Routes>
-          <Route path="/entity" element={<EntityManagement />} />
-          <Route path="/field" element={<FieldManagement />} />
-          <Route path="/quality" element={<QualityRuleManagement />} />
-          <Route path="/record" element={<RecordManagement />} />
-          <Route path="/" element={<Navigate to="/entity" replace />} />
+          <Route path="/entities" element={<EntityManagement />} />
+          <Route path="/fields" element={<FieldManagement />} />
+          <Route path="/rules" element={<QualityRuleManagement />} />
+          <Route path="/records" element={<RecordManagement />} />
+          <Route path="/" element={<Navigate to="/entities" replace />} />
         </Routes>
       </Router>
     </AntdApp>

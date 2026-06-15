@@ -53,7 +53,7 @@ public final class StudioPersistenceConverter {
     domain.setDomain(row.getBizDomain());
     domain.setCategory(row.getCategory());
     domain.setEnabled("ENABLED".equalsIgnoreCase(row.getStatus()));
-    domain.setVersion(row.getVersion() != null ? String.valueOf(row.getVersion()) : "1");
+    domain.setVersion(row.getVersion() != null ? row.getVersion() : 1);
     return domain;
   }
 
@@ -99,7 +99,7 @@ public final class StudioPersistenceConverter {
     domain.setEnabled(row.getStatus() != null && row.getStatus() == 1);
     domain.setCreatedAt(toLocalDateTime(row.getCreatedAt()));
     domain.setUpdatedAt(toLocalDateTime(row.getUpdatedAt()));
-    domain.setVersion(row.getVersion() != null ? String.valueOf(row.getVersion()) : "1");
+    domain.setVersion(row.getVersion() != null ? row.getVersion() : 1);
     return domain;
   }
 

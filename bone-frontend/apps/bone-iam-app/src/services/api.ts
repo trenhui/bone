@@ -5,12 +5,13 @@
 import axios from 'axios';
 import type {
   ApiResponse, PageResult,
-  Account, Role, Permission, AuditLog,
+  Account, Role, Permission, AuditLog, Tenant,
   LoginRequest, LoginResponse,
   CreateAccountRequest, UpdateAccountRequest, ResetPasswordRequest,
   CreateRoleRequest, UpdateRoleRequest,
   CreatePermissionRequest, UpdatePermissionRequest,
   AuditSettings, RefreshTokenRequest,
+  CreateTenantRequest, UpdateTenantRequest, UpdateTenantQuotaRequest,
 } from '../types';
 
 const api = axios.create({
@@ -275,5 +276,57 @@ export const getAuditSettings = () =>
  */
 export const updateAuditSettings = (data: Partial<AuditSettings>) =>
   api.put<never, ApiResponse<void>>('/audit/settings', data);
+
+// ==================== 租户管理 ====================
+
+/**
+ * 分页查询租户列表
+ */
+export const getTenants = (page = 1, pageSize = 10, keyword?: string) =>
+  api.get<never, ApiResponse<PageResult<Tenant>>>('/tenants', {
+    params: { page, size: pageSize, keyword },
+  });
+
+/**
+ * 获取租户详情
+ */
+export const getTenant = (id: number) =>
+  api.get<never, ApiResponse<Tenant>>(`/tenants/${id}`);
+
+/**
+ * 创建租户
+ */
+export const createTenant = (data: CreateTenantRequest) =>
+  api.post<never, ApiResponse<number>>('/tenants', data);
+
+/**
+ * 更新租户
+ */
+export const updateTenant = (id: number, data: UpdateTenantRequest) =>
+  api.put<never, ApiResponse<void>>(`/tenants/${id}`, data);
+
+/**
+ * 删除租户
+ */
+export const deleteTenant = (id: number) =>
+  api.delete<never, ApiResponse<void>>(`/tenants/${id}`);
+
+/**
+ * 启用租户
+ */
+export const enableTenant = (id: number) =>
+  api.post<never, ApiResponse<void>>(`/tenants/${id}/enable`);
+
+/**
+ * 禁用租户
+ */
+export const disableTenant = (id: number) =>
+  api.post<never, ApiResponse<void>>(`/tenants/${id}/disable`);
+
+/**
+ * 更新租户配额
+ */
+export const updateTenantQuota = (id: number, data: UpdateTenantQuotaRequest) =>
+  api.put<never, ApiResponse<void>>(`/tenants/${id}/quota`, data);
 
 export default api;

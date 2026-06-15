@@ -12,11 +12,11 @@ const App: React.FC = () => {
     <AntdApp>
       <Router>
         <Routes>
-          <Route path="/system-config" element={<SystemConfig />} />
-          <Route path="/monitor-alert" element={<MonitorAlert />} />
+          <Route path="/config" element={<SystemConfig />} />
+          <Route path="/alerts" element={<MonitorAlert />} />
           <Route path="/logs" element={<LogManagement />} />
-          <Route path="/deployment" element={<SystemDeployment />} />
-          <Route path="/" element={<Navigate to="/system-config" replace />} />
+          <Route path="/k8s" element={<SystemDeployment />} />
+          <Route path="/" element={<Navigate to="/config" replace />} />
         </Routes>
       </Router>
     </AntdApp>

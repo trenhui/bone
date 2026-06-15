@@ -4,6 +4,7 @@ import { App as AntdApp } from 'antd';
 import AccountManagement from './pages/AccountManagement';
 import RoleManagement from './pages/RoleManagement';
 import PermissionManagement from './pages/PermissionManagement';
+import TenantManagement from './pages/TenantManagement';
 import AuditLog from './pages/AuditLog';
 import Auth from './pages/Auth';
 
@@ -23,6 +24,7 @@ const App: React.FC = () => {
           <Route path="/login" element={<Auth />} />
           <Route path="/accounts" element={<ProtectedRoute><AccountManagement /></ProtectedRoute>} />
           <Route path="/roles" element={<ProtectedRoute><RoleManagement /></ProtectedRoute>} />
+          <Route path="/tenants" element={<ProtectedRoute><TenantManagement /></ProtectedRoute>} />
           <Route path="/permissions" element={<ProtectedRoute><PermissionManagement /></ProtectedRoute>} />
           <Route path="/audit-logs" element={<ProtectedRoute><AuditLog /></ProtectedRoute>} />
           <Route path="/" element={<Navigate to="/accounts" replace />} />

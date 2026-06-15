@@ -11,11 +11,11 @@ function App(): JSX.Element {
     <AntdApp>
       <Router>
         <Routes>
-          <Route path="/data-sources" element={<DataSourceManagement />} />
-          <Route path="/code-generation" element={<CodeGeneration />} />
+          <Route path="/datasources" element={<DataSourceManagement />} />
+          <Route path="/generate" element={<CodeGeneration />} />
           <Route path="/templates" element={<TemplateManagement />} />
           <Route path="/history" element={<GenerationHistory />} />
-          <Route path="/" element={<Navigate to="/data-sources" replace />} />
+          <Route path="/" element={<Navigate to="/datasources" replace />} />
         </Routes>
       </Router>
     </AntdApp>

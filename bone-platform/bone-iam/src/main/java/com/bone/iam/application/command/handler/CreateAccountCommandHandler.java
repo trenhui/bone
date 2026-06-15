@@ -2,13 +2,13 @@ package com.bone.iam.application.command.handler;
 
 import com.bone.iam.application.command.cmd.CreateAccountCommand;
 import com.bone.iam.application.service.AccountRoleBindingService;
+import com.bone.iam.application.service.AuthService;
 import com.bone.iam.application.service.PasswordPolicyValidator;
 import com.bone.iam.application.service.TenantQuotaEnforcer;
 import com.bone.iam.domain.account.Account;
 import com.bone.iam.domain.account.vo.Email;
 import com.bone.iam.domain.account.vo.Username;
 import com.bone.iam.domain.repository.AccountRepository;
-import com.bone.iam.domain.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;

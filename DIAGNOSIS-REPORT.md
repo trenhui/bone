@@ -48,6 +48,17 @@
 | 异常处理符合 RFC 7807 | `IamExceptionHandler.java` | 添加 ProblemDetail 结构，包含 traceId、errors |
 | 配置外部化 | `application.yml` | 数据库、Redis 端口支持环境变量注入 |
 
+### ✅ Flyway 依赖移除（P1）- 已优化
+
+| 优化项 | 修改文件 | 说明 |
+|--------|----------|------|
+| 移除 Flyway 依赖 | `bone-iam/pom.xml` | 删除 flyway-core 和 flyway-mysql 依赖 |
+| 移除 Flyway 依赖 | `bone-masterdata/pom.xml` | 删除 flyway-core 和 flyway-mysql 依赖 |
+| 移除 Flyway 依赖 | `bone-system/pom.xml` | 删除 flyway-core 和 flyway-mysql 依赖 |
+| 移除 Flyway 配置 | `bone-iam/application.yml` | 删除 `spring.flyway.enabled: false` |
+| 移除 Flyway 配置 | `bone-masterdata/application.yml` | 删除 `spring.flyway.enabled: false` |
+| 移除 Flyway 配置 | `bone-system/application.yml` | 删除 `spring.flyway.enabled: false` |
+
 ---
 
 ## 待优化项（需进一步评估）
@@ -63,7 +74,6 @@
 
 | 问题 | 建议 |
 |------|------|
-| Flyway 引入但未启用 | 二选一：启用 Flyway 或移除依赖 |
 | 数据源重复配置 | 统一 `spring.datasource` 和 `bone.metadata.embedded.datasource` |
 
 ### P2 - 代码质量
@@ -72,13 +82,14 @@
 |------|------|
 | Account 审计字段手动赋值 | 利用基类自动填充或 @PrePersist |
 | 缺少 OpenAPI 文档 | 引入 springdoc-openapi，添加 @Operation 注解 |
+| Converter 手写样板 | 引入 MapStruct（parent POM 已声明 1.5.5） |
 
 ### P2 - DevOps
 
 | 问题 | 建议 |
 |------|------|
 | 缺少 CI/CD 流水线 | 建立 GitHub Actions / GitLab CI |
-| Spring Boot Admin 未启用 | 引入依赖并配置 |
+| Debug 代码残留 | `DatabaseFixController`、`DatabaseDebugTool` 生产应禁用 |
 
 ---
 

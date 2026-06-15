@@ -233,6 +233,53 @@ export interface SsoConfig {
   providers: string[];
 }
 
+// ==================== 租户管理相关类型 ====================
+
+/**
+ * 租户信息
+ */
+export interface Tenant {
+  id: number;
+  name: string;
+  code: string;
+  level: number;
+  status: number; // 0=禁用, 1=启用
+  adminEmail: string;
+  maxAccounts?: number;
+  maxRoles?: number;
+  createdBy?: number;
+  updatedBy?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * 创建租户请求
+ */
+export interface CreateTenantRequest {
+  name: string;
+  code: string;
+  level?: number;
+  adminEmail?: string;
+}
+
+/**
+ * 更新租户请求
+ */
+export interface UpdateTenantRequest {
+  name: string;
+  level?: number;
+  adminEmail?: string;
+}
+
+/**
+ * 更新租户配额请求
+ */
+export interface UpdateTenantQuotaRequest {
+  maxAccounts?: number;
+  maxRoles?: number;
+}
+
 // ==================== 通用响应类型 ====================
 
 /**

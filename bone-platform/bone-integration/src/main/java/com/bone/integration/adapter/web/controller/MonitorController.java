@@ -1,6 +1,5 @@
 package com.bone.integration.adapter.web.controller;
 
-import com.bone.core.exception.DomainException;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import com.bone.core.web.PlatformApiPaths;
