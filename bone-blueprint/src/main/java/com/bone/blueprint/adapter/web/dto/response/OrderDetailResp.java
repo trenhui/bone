@@ -9,21 +9,21 @@ import lombok.Data;
 @Data
 @Builder
 public class OrderDetailResp {
-    private Long id;
-    private Long customerId;
-    private BigDecimal totalAmount;
-    private String status;
-    private LocalDateTime createdAt;
-    private List<OrderItemResp> items;
+  private Long id;
+  private Long customerId;
+  private BigDecimal totalAmount;
+  private String status;
+  private LocalDateTime createdAt;
+  private List<OrderItemResp> items;
 
-    @Data
-    @Builder
-    public static class OrderItemResp {
-        private Long id;
-        private Long productId;
-        private String productName;
-        private Integer quantity;
-        private BigDecimal unitPrice;
-        private BigDecimal subtotal;
-    }
+  @Data
+  @Builder
+  public static class OrderItemResp {
+    private Long id;
+    private Long productId;
+    private String productName;
+    private Integer quantity;
+    private BigDecimal unitPrice;
+    private BigDecimal subtotal;
+  }
 }

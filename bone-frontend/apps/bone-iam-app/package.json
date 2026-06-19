@@ -10,10 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@bone/ui": "1.0.0",
     "@ant-design/pro-components": "^2.6.27",
+    "@bone/ui": "1.0.0",
     "antd": "^5.12.8",
     "axios": "^1.6.7",
+    "dayjs": "^1.11.21",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.22.3"

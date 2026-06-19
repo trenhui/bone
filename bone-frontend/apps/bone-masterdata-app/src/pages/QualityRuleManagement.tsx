@@ -6,7 +6,6 @@ import {
   Form,
   Input,
   Select,
-  message,
   Popconfirm,
   Space,
   Tag,
@@ -25,11 +24,13 @@ import type {
   QualityReport
 } from '../types';
 import { dataQualityRuleApi, masterDataEntityApi, qualityCheckApi } from '../services/api';
+import { useMessage } from '../App';
 
 const { Option } = Select;
 const { TextArea } = Input;
 
 const QualityRuleManagement: React.FC = () => {
+  const message = useMessage();
   const [form] = Form.useForm();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);

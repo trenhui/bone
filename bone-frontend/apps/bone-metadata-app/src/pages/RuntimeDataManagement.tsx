@@ -362,7 +362,7 @@ const RuntimeDataManagement: React.FC = () => {
         onCancel={() => setModalOpen(false)}
         onOk={handleSubmit}
         width={560}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical">
           {writableFields.length === 0 ? (

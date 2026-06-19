@@ -62,6 +62,13 @@ public class ConfigController {
     return ApiResponse.success(dto != null ? configWebConverter.toResp(dto) : null);
   }
 
+  @Operation(summary = "查询配置列表")
+  @GetMapping
+  public ApiResponse<PageResult<ConfigResp>> list(ConfigPageReq req) {
+    PageResult<ConfigDTO> pageResult = configQueryHandler.page(configWebConverter.toQuery(req));
+    return ApiResponse.success(pageResult.map(configWebConverter::toResp));
+  }
+
   @Operation(summary = "分页查询配置列表")
   @GetMapping("/page")
   public ApiResponse<PageResult<ConfigResp>> page(ConfigPageReq req) {

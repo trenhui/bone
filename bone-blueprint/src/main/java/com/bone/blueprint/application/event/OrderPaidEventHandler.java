@@ -12,24 +12,22 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
-/**
- * 订单支付成功后续处理（AFTER_COMMIT）：确认库存扣减。集成事件经 Outbox 异步中继。
- */
+/** 订单支付成功后续处理（AFTER_COMMIT）：确认库存扣减。集成事件经 Outbox 异步中继。 */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class OrderPaidEventHandler {
 
-    private final OrderRepository orderRepository;
-    private final InventoryGateway inventoryGateway;
+  private final OrderRepository orderRepository;
+  private final InventoryGateway inventoryGateway;
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handle(OrderPaidEvent event) {
-        log.info("订单支付成功: orderId={}, tenantId={}", event.orderId(), event.tenantId());
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  public void handle(OrderPaidEvent event) {
+    log.info("订单支付成功: orderId={}, tenantId={}", event.orderId(), event.tenantId());
 
-        Order order = OrderLookup.requireById(orderRepository, event.orderId());
-        for (OrderItem item : order.getItems()) {
-            inventoryGateway.confirmStock(event.orderId(), item.getProductId(), item.getQuantity());
-        }
+    Order order = OrderLookup.requireById(orderRepository, event.orderId());
+    for (OrderItem item : order.getItems()) {
+      inventoryGateway.confirmStock(event.orderId(), item.getProductId(), item.getQuantity());
     }
+  }
 }

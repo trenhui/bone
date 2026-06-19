@@ -13,11 +13,11 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @RequiredArgsConstructor
 public class OrderCancelledEventHandler {
 
-    private final InventoryGateway inventoryGateway;
+  private final InventoryGateway inventoryGateway;
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handle(OrderCancelledEvent event) {
-        log.info("订单已取消，释放库存预留: orderId={}", event.orderId());
-        inventoryGateway.releaseStock(event.orderId());
-    }
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  public void handle(OrderCancelledEvent event) {
+    log.info("订单已取消，释放库存预留: orderId={}", event.orderId());
+    inventoryGateway.releaseStock(event.orderId());
+  }
 }

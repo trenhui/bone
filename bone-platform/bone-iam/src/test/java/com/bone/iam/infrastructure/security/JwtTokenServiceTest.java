@@ -2,11 +2,16 @@ package com.bone.iam.infrastructure.security;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-import com.bone.iam.infrastructure.config.JwtConfig;
+import com.bone.core.security.jwt.JwtConfig;
+import com.bone.core.security.jwt.JwtTokenService;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.core.env.Profiles;
 
 class JwtTokenServiceTest {
 
@@ -14,7 +19,9 @@ class JwtTokenServiceTest {
 
   @BeforeEach
   void setUp() {
-    JwtConfig config = new JwtConfig();
+    ConfigurableEnvironment env = mock(ConfigurableEnvironment.class);
+    when(env.acceptsProfiles(Profiles.of("prod"))).thenReturn(false);
+    JwtConfig config = new JwtConfig(env);
     config.setSecretKey("test-secret-key-at-least-32-bytes-long!!");
     config.setExpirationMs(3_600_000L);
     config.setTokenPrefix("Bearer ");

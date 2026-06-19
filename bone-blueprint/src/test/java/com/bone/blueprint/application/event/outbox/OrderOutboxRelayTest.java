@@ -1,5 +1,13 @@
 package com.bone.blueprint.application.event.outbox;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.bone.blueprint.application.config.OrderOutboxProperties;
 import com.bone.blueprint.application.integration.port.OrderMessageSender;
 import com.bone.blueprint.domain.outbox.OrderOutboxRecord;
@@ -15,85 +23,80 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class OrderOutboxRelayTest {
 
-    @Mock
-    private OrderOutboxProperties properties;
+  @Mock private OrderOutboxProperties properties;
 
-    @Mock
-    private OrderOutboxRepository outboxRepository;
+  @Mock private OrderOutboxRepository outboxRepository;
 
-    @Mock
-    private OrderMessageSender messageSender;
+  @Mock private OrderMessageSender messageSender;
 
-    @InjectMocks
-    private OrderOutboxRelay relay;
+  @InjectMocks private OrderOutboxRelay relay;
 
-    private OrderOutboxRecord record;
+  private OrderOutboxRecord record;
 
-    @BeforeEach
-    void setUp() {
-        when(properties.isEnabled()).thenReturn(true);
-        when(properties.getBatchSize()).thenReturn(10);
-        when(properties.getMaxRetries()).thenReturn(3);
-        record = OrderOutboxRecord.pending(
-                1L, 100L, "evt-1", "OrderPaidIntegrationEvent", "bone.order.paid", "100", "{\"orderId\":1}");
-    }
+  @BeforeEach
+  void setUp() {
+    when(properties.isEnabled()).thenReturn(true);
+    when(properties.getBatchSize()).thenReturn(10);
+    when(properties.getMaxRetries()).thenReturn(3);
+    record =
+        OrderOutboxRecord.pending(
+            1L,
+            100L,
+            "evt-1",
+            "OrderPaidIntegrationEvent",
+            "bone.order.paid",
+            "100",
+            "{\"orderId\":1}");
+  }
 
-    @Test
-    void relayPendingMarksSentOnSuccess() {
-        when(outboxRepository.findByCriteria(any())).thenReturn(List.of(record));
+  @Test
+  void relayPendingMarksSentOnSuccess() {
+    when(outboxRepository.findByCriteria(any())).thenReturn(List.of(record));
 
-        int sent = relay.relayPending();
+    int sent = relay.relayPending();
 
-        assertEquals(1, sent);
-        verify(messageSender, times(1)).send("bone.order.paid", "100", record.getEnvelopeJson());
-        verify(outboxRepository, times(1)).update(record);
-        assertEquals(OutboxStatus.SENT, record.getStatus());
-    }
+    assertEquals(1, sent);
+    verify(messageSender, times(1)).send("bone.order.paid", "100", record.getEnvelopeJson());
+    verify(outboxRepository, times(1)).update(record);
+    assertEquals(OutboxStatus.SENT, record.getStatus());
+  }
 
-    @Test
-    void relayPendingRetriesBeforeFailed() {
-        when(outboxRepository.findByCriteria(any())).thenReturn(List.of(record));
-        doThrow(new RuntimeException("mq down")).when(messageSender).send(any(), any(), any());
+  @Test
+  void relayPendingRetriesBeforeFailed() {
+    when(outboxRepository.findByCriteria(any())).thenReturn(List.of(record));
+    doThrow(new RuntimeException("mq down")).when(messageSender).send(any(), any(), any());
 
-        int sent = relay.relayPending();
+    int sent = relay.relayPending();
 
-        assertEquals(0, sent);
-        assertEquals(OutboxStatus.PENDING, record.getStatus());
-        assertEquals(1, record.getRetryCount());
-        verify(outboxRepository, times(1)).update(record);
-    }
+    assertEquals(0, sent);
+    assertEquals(OutboxStatus.PENDING, record.getStatus());
+    assertEquals(1, record.getRetryCount());
+    verify(outboxRepository, times(1)).update(record);
+  }
 
-    @Test
-    void relayPendingMarksFailedAfterMaxRetries() {
-        record.incrementRetry();
-        record.incrementRetry();
-        when(outboxRepository.findByCriteria(any())).thenReturn(List.of(record));
-        doThrow(new RuntimeException("mq down")).when(messageSender).send(any(), any(), any());
+  @Test
+  void relayPendingMarksFailedAfterMaxRetries() {
+    record.incrementRetry();
+    record.incrementRetry();
+    when(outboxRepository.findByCriteria(any())).thenReturn(List.of(record));
+    doThrow(new RuntimeException("mq down")).when(messageSender).send(any(), any(), any());
 
-        relay.relayPending();
+    relay.relayPending();
 
-        assertEquals(OutboxStatus.FAILED, record.getStatus());
-    }
+    assertEquals(OutboxStatus.FAILED, record.getStatus());
+  }
 
-    @Test
-    void relayPendingSkipsWhenDisabled() {
-        when(properties.isEnabled()).thenReturn(false);
+  @Test
+  void relayPendingSkipsWhenDisabled() {
+    when(properties.isEnabled()).thenReturn(false);
 
-        int sent = relay.relayPending();
+    int sent = relay.relayPending();
 
-        assertEquals(0, sent);
-        verify(outboxRepository, never()).findByCriteria(any());
-    }
+    assertEquals(0, sent);
+    verify(outboxRepository, never()).findByCriteria(any());
+  }
 }

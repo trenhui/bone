@@ -5,6 +5,5 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 public record OrderPaidEvent(
-        Long orderId, Long tenantId, Long customerId, BigDecimal amount, Instant occurredAt)
-        implements DomainEvent {
-}
+    Long orderId, Long tenantId, Long customerId, BigDecimal amount, Instant occurredAt)
+    implements DomainEvent {}

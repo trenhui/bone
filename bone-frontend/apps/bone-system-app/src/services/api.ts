@@ -12,8 +12,19 @@ import type {
   PageResult,
 } from '@/types';
 
+// 模块级内存 token，由 qiankun mount 生命周期写入，优先于 localStorage
+let _qiankunToken: string | null = null;
+
+/** 供 main.tsx 在 qiankun mount 时调用，将 props.token 写入内存 */
+export function setQiankunToken(token: string | null) {
+  _qiankunToken = token;
+  if (token) {
+    localStorage.setItem('token', token);
+  }
+}
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
+  baseURL: (import.meta.env.VITE_API_BASE_URL || '') + '/api/v1',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -22,7 +33,10 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
+    // 优先级：qiankun 内存 token > window 全局 token > localStorage
+    const token = _qiankunToken
+      || (window as unknown as Record<string, string>).__BONE_TOKEN__
+      || localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -35,8 +49,9 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      // qiankun 微应用中不直接跳转 /login，而是通知主应用处理
+      const event = new CustomEvent('bone:auth:expired', { detail: { status: 401 } });
+      window.dispatchEvent(event);
     }
     return Promise.reject(error);
   }
@@ -171,6 +186,30 @@ export const consoleApi = {
   },
   getQuickActions: async () => {
     const response = await api.get<ApiResponse<unknown>>('/console/quick-actions');
+    return response.data;
+  },
+};
+
+// 系统部署 API
+export const systemApi = {
+  getInfo: async () => {
+    const response = await api.get<ApiResponse<SystemInfo>>('/system/info');
+    return response.data;
+  },
+  deploy: async (data: Record<string, unknown>) => {
+    const response = await api.post<ApiResponse<unknown>>('/system/deploy', data);
+    return response.data;
+  },
+  upgrade: async (version: string) => {
+    const response = await api.post<ApiResponse<unknown>>('/system/upgrade', { version });
+    return response.data;
+  },
+  restart: async () => {
+    const response = await api.post<ApiResponse<unknown>>('/system/restart');
+    return response.data;
+  },
+  shutdown: async () => {
+    const response = await api.post<ApiResponse<unknown>>('/system/shutdown');
     return response.data;
   },
 };

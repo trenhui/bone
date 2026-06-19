@@ -14,13 +14,13 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CancelOrderCommandHandler {
 
-    private final OrderRepository orderRepository;
-    private final DomainEventPublisher domainEventPublisher;
+  private final OrderRepository orderRepository;
+  private final DomainEventPublisher domainEventPublisher;
 
-    @Transactional
-    public void handle(CancelOrderCommand cmd) {
-        Order order = OrderLookup.requireById(orderRepository, cmd.getOrderId());
-        order.cancel();
-        AggregatePersistence.updateAndPublishEvents(orderRepository, domainEventPublisher, order);
-    }
+  @Transactional
+  public void handle(CancelOrderCommand cmd) {
+    Order order = OrderLookup.requireById(orderRepository, cmd.getOrderId());
+    order.cancel();
+    AggregatePersistence.updateAndPublishEvents(orderRepository, domainEventPublisher, order);
+  }
 }

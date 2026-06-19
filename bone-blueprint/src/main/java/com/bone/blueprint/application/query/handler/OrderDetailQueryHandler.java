@@ -15,13 +15,12 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class OrderDetailQueryHandler {
 
-    private final OrderReadPort orderReadPort;
+  private final OrderReadPort orderReadPort;
 
-    @Transactional(readOnly = true)
-    public OrderDto handle(OrderDetailQuery query) {
-        long tenantId = TenantSupport.currentTenantId();
-        List<OrderWithItemsRow> rows =
-                orderReadPort.findOrderWithItems(tenantId, query.getOrderId());
-        return OrderDetailAssembler.fromRows(rows);
-    }
+  @Transactional(readOnly = true)
+  public OrderDto handle(OrderDetailQuery query) {
+    long tenantId = TenantSupport.currentTenantId();
+    List<OrderWithItemsRow> rows = orderReadPort.findOrderWithItems(tenantId, query.getOrderId());
+    return OrderDetailAssembler.fromRows(rows);
+  }
 }

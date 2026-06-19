@@ -15,6 +15,7 @@ public class MasterDataFieldWebConverter {
     return CreateMasterDataFieldCommand.builder()
         .masterDataEntityId(req.getMasterDataEntityId())
         .name(req.getName())
+        .code(req.getCode())
         .type(req.getType())
         .length(req.getLength())
         .required(req.getRequired())

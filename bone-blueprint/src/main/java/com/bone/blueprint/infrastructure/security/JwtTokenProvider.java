@@ -1,54 +1,38 @@
 package com.bone.blueprint.infrastructure.security;
 
 import com.bone.blueprint.domain.security.TokenProvider;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import com.bone.core.security.jwt.JwtTokenService;
+import com.bone.core.security.jwt.JwtPrincipal;
+import java.util.List;
 import org.springframework.stereotype.Component;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-
+/**
+ * bone-blueprint JWT 实现。委托给框架层的 {@link JwtTokenService}。
+ */
 @Component
 public class JwtTokenProvider implements TokenProvider {
-    
-    private final String secretKey = "your-secret-key";
-    private final long validityInMilliseconds = 3600000; // 1小时
-    
-    @Override
-    public String createToken(String username) {
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("username", username);
-        
-        Date now = new Date();
-        Date validity = new Date(now.getTime() + validityInMilliseconds);
-        
-        return Jwts.builder()
-                .setClaims(claims)
-                .setIssuedAt(now)
-                .setExpiration(validity)
-                .signWith(SignatureAlgorithm.HS256, secretKey)
-                .compact();
-    }
-    
-    @Override
-    public String getUsername(String token) {
-        Claims claims = Jwts.parser()
-                .setSigningKey(secretKey)
-                .parseClaimsJws(token)
-                .getBody();
-        
-        return claims.get("username", String.class);
-    }
-    
-    @Override
-    public boolean validateToken(String token) {
-        try {
-            Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
-    }
+
+  private final JwtTokenService jwtTokenService;
+
+  public JwtTokenProvider(JwtTokenService jwtTokenService) {
+    this.jwtTokenService = jwtTokenService;
+  }
+
+  @Override
+  public String createToken(String username) {
+    // blueprint 示例：使用默认租户和空 scopes
+    return jwtTokenService.generateToken(0L, username, 0L, List.of());
+  }
+
+  @Override
+  public String getUsername(String token) {
+    return jwtTokenService.parse(token)
+        .map(JwtPrincipal::username)
+        .orElse(null);
+  }
+
+  @Override
+  public boolean validateToken(String token) {
+    return jwtTokenService.parse(token).isPresent();
+  }
 }

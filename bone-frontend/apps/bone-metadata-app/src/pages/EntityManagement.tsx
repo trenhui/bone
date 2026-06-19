@@ -211,7 +211,7 @@ const EntityManagement: React.FC = () => {
         open={modalOpen}
         onOk={handleSubmit}
         onCancel={() => setModalOpen(false)}
-        destroyOnClose
+        destroyOnHidden
         width={560}
       >
         <Form form={form} layout="vertical">

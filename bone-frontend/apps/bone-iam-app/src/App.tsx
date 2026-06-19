@@ -6,6 +6,7 @@ import RoleManagement from './pages/RoleManagement';
 import PermissionManagement from './pages/PermissionManagement';
 import TenantManagement from './pages/TenantManagement';
 import AuditLog from './pages/AuditLog';
+import AuditSettings from './pages/AuditSettings';
 import Auth from './pages/Auth';
 
 const App: React.FC = () => {
@@ -27,6 +28,7 @@ const App: React.FC = () => {
           <Route path="/tenants" element={<ProtectedRoute><TenantManagement /></ProtectedRoute>} />
           <Route path="/permissions" element={<ProtectedRoute><PermissionManagement /></ProtectedRoute>} />
           <Route path="/audit-logs" element={<ProtectedRoute><AuditLog /></ProtectedRoute>} />
+          <Route path="/audit-settings" element={<ProtectedRoute><AuditSettings /></ProtectedRoute>} />
           <Route path="/" element={<Navigate to="/accounts" replace />} />
           <Route path="*" element={<Navigate to="/accounts" />} />
         </Routes>

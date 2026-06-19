@@ -4,5 +4,5 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class BoneMetadataConfiguration {
-    // 元数据配置
+  // 元数据配置
 }

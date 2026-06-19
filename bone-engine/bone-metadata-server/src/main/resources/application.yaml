@@ -12,7 +12,7 @@ spring:
     url: jdbc:mysql://localhost:3306/bone?useSSL=false&autoReconnect=true&characterEncoding=utf8
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: root
-    password: ${BONE_DB_PASSWORD:mysql123}
+    password: ${BONE_DB_PASSWORD}
 
 server:
   port: 9001
@@ -25,6 +25,7 @@ management:
       enabled: false
 
 security:
+  enabled: ${SECURITY_ENABLED:false}
   auth-mode: api-key
   api-key: ${API_KEY:bone-metadata-default-key}
 

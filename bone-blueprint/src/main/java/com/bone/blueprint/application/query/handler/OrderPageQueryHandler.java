@@ -17,36 +17,36 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class OrderPageQueryHandler {
 
-    @Transactional(readOnly = true)
-    public PageResult<OrderDto> handle(OrderPageQuery query) {
-        long tenantId = TenantSupport.currentTenantId();
-        FluentQuery<Order> fluentQuery =
-                QueryBuilder.from(Order.class).where(Order::getTenantId).eq(tenantId);
+  @Transactional(readOnly = true)
+  public PageResult<OrderDto> handle(OrderPageQuery query) {
+    long tenantId = TenantSupport.currentTenantId();
+    FluentQuery<Order> fluentQuery =
+        QueryBuilder.from(Order.class).where(Order::getTenantId).eq(tenantId);
 
-        if (query.getCustomerId() != null) {
-            fluentQuery.where(Order::getCustomerId).eq(query.getCustomerId());
-        }
-        if (query.getStatus() != null && !query.getStatus().isBlank()) {
-            OrderStatus status = OrderStatus.valueOf(query.getStatus());
-            fluentQuery.where(Order::getStatus).eq(status);
-        }
-
-        int pageNum = query.getPageNum() != null ? query.getPageNum() : 1;
-        int pageSize = query.getPageSize() != null ? query.getPageSize() : 10;
-
-        com.bone.core.model.PageResult<Order> page =
-                fluentQuery.orderByDesc(Order::getCreatedAt).page(pageNum, pageSize);
-
-        List<OrderDto> records = page.getRecords().stream().map(this::toSummaryDto).toList();
-        return PageResult.of(records, page.getTotal(), pageNum, pageSize);
+    if (query.getCustomerId() != null) {
+      fluentQuery.where(Order::getCustomerId).eq(query.getCustomerId());
+    }
+    if (query.getStatus() != null && !query.getStatus().isBlank()) {
+      OrderStatus status = OrderStatus.valueOf(query.getStatus());
+      fluentQuery.where(Order::getStatus).eq(status);
     }
 
-    private OrderDto toSummaryDto(Order order) {
-        return OrderDto.builder()
-                .id(order.getId())
-                .customerId(order.getCustomerId())
-                .totalAmount(order.getTotalAmount())
-                .status(order.getStatus().name())
-                .build();
-    }
+    int pageNum = query.getPageNum() != null ? query.getPageNum() : 1;
+    int pageSize = query.getPageSize() != null ? query.getPageSize() : 10;
+
+    com.bone.core.model.PageResult<Order> page =
+        fluentQuery.orderByDesc(Order::getCreatedAt).page(pageNum, pageSize);
+
+    List<OrderDto> records = page.getRecords().stream().map(this::toSummaryDto).toList();
+    return PageResult.of(records, page.getTotal(), pageNum, pageSize);
+  }
+
+  private OrderDto toSummaryDto(Order order) {
+    return OrderDto.builder()
+        .id(order.getId())
+        .customerId(order.getCustomerId())
+        .totalAmount(order.getTotalAmount())
+        .status(order.getStatus().name())
+        .build();
+  }
 }

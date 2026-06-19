@@ -10,18 +10,17 @@ import org.springframework.stereotype.Component;
 @Component
 public class OrderOutboxEnvelopeFactory {
 
-    private final ObjectMapper objectMapper =
-            new ObjectMapper().registerModule(new JavaTimeModule());
+  private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
-    public String newEventId() {
-        return UUID.randomUUID().toString();
-    }
+  public String newEventId() {
+    return UUID.randomUUID().toString();
+  }
 
-    public String toJson(OrderPaidIntegrationEvent event) {
-        try {
-            return objectMapper.writeValueAsString(event);
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Outbox 信封序列化失败", e);
-        }
+  public String toJson(OrderPaidIntegrationEvent event) {
+    try {
+      return objectMapper.writeValueAsString(event);
+    } catch (JsonProcessingException e) {
+      throw new IllegalStateException("Outbox 信封序列化失败", e);
     }
+  }
 }

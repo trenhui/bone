@@ -11,6 +11,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -23,6 +24,9 @@ public class SecurityConfig {
   @Value("${security.api-key:}")
   private String apiKey;
 
+  @Value("${security.enabled:false}")
+  private boolean securityEnabled;
+
   private final JwtUtil jwtUtil;
 
   public SecurityConfig(JwtUtil jwtUtil) {
@@ -32,22 +36,35 @@ public class SecurityConfig {
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
     http.csrf(csrf -> csrf.disable())
-        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-        .authorizeHttpRequests(
-            auth ->
-                auth.requestMatchers("/api/v1/metadata/health")
-                    .permitAll()
-                    .requestMatchers("/v1/auth/**")
-                    .permitAll()
-                    .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**")
-                    .permitAll()
-                    .anyRequest()
-                    .authenticated())
-        .addFilterBefore(
-            new JwtAuthenticationFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
-        .addFilterAfter(
-            new APIKeyFilter("X-API-Key", apiKey, getApiKeyAuthorities()),
-            JwtAuthenticationFilter.class);
+        .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+    if (!securityEnabled) {
+      // 安全关闭时：URL 全放行 + 匿名主体携带全部权限，使 @PreAuthorize 通过
+      http.authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+          .anonymous(
+              anon ->
+                  anon.key("anonymous-key")
+                      .principal("anonymous")
+                      .authorities(
+                          AuthorityUtils.createAuthorityList(
+                              "metadata:read", "metadata:write", "metadata:publish")));
+    } else {
+      http.authorizeHttpRequests(
+              auth ->
+                  auth.requestMatchers("/api/v1/metadata/health")
+                      .permitAll()
+                      .requestMatchers("/v1/auth/**")
+                      .permitAll()
+                      .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**")
+                      .permitAll()
+                      .anyRequest()
+                      .authenticated())
+          .addFilterBefore(
+              new JwtAuthenticationFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class)
+          .addFilterAfter(
+              new APIKeyFilter("X-API-Key", apiKey, getApiKeyAuthorities()),
+              JwtAuthenticationFilter.class);
+    }
     return http.build();
   }
 

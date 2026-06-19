@@ -8,7 +8,7 @@ spring:
     # 默认连共享库 `bone`；keyMetrics 跨表 COUNT 依赖此库存在 iam_*/meta_*/int_*/exts_* 表（详设 §3.3.3）。
     url: jdbc:mysql://${BONE_DB_HOST:localhost}:${BONE_DB_PORT:3306}/${BONE_DB_NAME:bone}?useSSL=false&autoReconnect=true&characterEncoding=utf8
     username: ${BONE_DB_USERNAME:root}
-    password: ${BONE_DB_PASSWORD:}
+    password: ${BONE_DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -39,7 +39,7 @@ bone:
       # 必须与 bone-iam `bone.iam.jwt.secret-key` 一致；
       # 生产环境通过环境变量 BONE_IAM_JWT_SECRET_KEY 注入。
       # 与 bone-iam 一致：优先 BONE_IAM_JWT_SECRET_KEY，兼容历史变量 BONE_JWT_SECRET
-      secret-key: ${BONE_IAM_JWT_SECRET_KEY:${BONE_JWT_SECRET:}}
+      secret-key: ${BONE_IAM_JWT_SECRET_KEY}
       token-prefix: "Bearer "
       header-name: Authorization
   system:

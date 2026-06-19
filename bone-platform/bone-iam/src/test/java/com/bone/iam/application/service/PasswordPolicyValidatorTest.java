@@ -1,4 +1,4 @@
-package com.bone.iam.domain.service;
+package com.bone.iam.application.service;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;

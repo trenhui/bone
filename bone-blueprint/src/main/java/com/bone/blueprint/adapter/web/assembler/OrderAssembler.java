@@ -15,29 +15,29 @@ import org.mapstruct.Mapper;
 @Mapper(componentModel = "spring")
 public interface OrderAssembler {
 
-    CreateOrderCommand toCreateOrderCommand(CreateOrderReq request);
+  CreateOrderCommand toCreateOrderCommand(CreateOrderReq request);
 
-    OrderPageQuery toOrderPageQuery(OrderPageQry qry);
+  OrderPageQuery toOrderPageQuery(OrderPageQry qry);
 
-    OrderSummaryResp toOrderSummaryResp(OrderDto orderDto);
+  OrderSummaryResp toOrderSummaryResp(OrderDto orderDto);
 
-    default PayOrderCommand toPayOrderCommand(Long orderId) {
-        PayOrderCommand command = new PayOrderCommand();
-        command.setOrderId(orderId);
-        return command;
-    }
+  default PayOrderCommand toPayOrderCommand(Long orderId) {
+    PayOrderCommand command = new PayOrderCommand();
+    command.setOrderId(orderId);
+    return command;
+  }
 
-    default CancelOrderCommand toCancelOrderCommand(Long orderId) {
-        CancelOrderCommand command = new CancelOrderCommand();
-        command.setOrderId(orderId);
-        return command;
-    }
+  default CancelOrderCommand toCancelOrderCommand(Long orderId) {
+    CancelOrderCommand command = new CancelOrderCommand();
+    command.setOrderId(orderId);
+    return command;
+  }
 
-    default OrderDetailQuery toOrderDetailQuery(Long orderId) {
-        OrderDetailQuery query = new OrderDetailQuery();
-        query.setOrderId(orderId);
-        return query;
-    }
+  default OrderDetailQuery toOrderDetailQuery(Long orderId) {
+    OrderDetailQuery query = new OrderDetailQuery();
+    query.setOrderId(orderId);
+    return query;
+  }
 
-    OrderDetailResp toOrderDetailResp(OrderDto orderDto);
+  OrderDetailResp toOrderDetailResp(OrderDto orderDto);
 }

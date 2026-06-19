@@ -35,7 +35,6 @@ export default defineConfig({
       },
       '/api/v1/integration': {
         target: 'http://localhost:8085',
-        rewrite: (path) => path.replace(/^\/api\/v1\/integration/, '/api/v1/integration'),
         changeOrigin: true,
       },
       '/api/v1/generator': {

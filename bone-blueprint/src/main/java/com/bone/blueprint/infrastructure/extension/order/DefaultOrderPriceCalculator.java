@@ -1,7 +1,7 @@
 package com.bone.blueprint.infrastructure.extension.order;
 
-import com.bone.engine.extension.api.annotation.Extension;
 import com.bone.blueprint.domain.extension.order.OrderPriceCalculator;
+import com.bone.engine.extension.api.annotation.Extension;
 import java.math.BigDecimal;
 
 @Extension(
@@ -10,11 +10,10 @@ import java.math.BigDecimal;
     tenant = "*",
     bizCode = "ecommerce",
     useCase = "order",
-    scenario = "standard"
-)
+    scenario = "standard")
 public class DefaultOrderPriceCalculator implements OrderPriceCalculator {
-    @Override
-    public BigDecimal calculate(OrderPriceCalculator.OrderPriceRequest request) {
-        return request.getBaseAmount().add(request.getShippingFee());
-    }
+  @Override
+  public BigDecimal calculate(OrderPriceCalculator.OrderPriceRequest request) {
+    return request.getBaseAmount().add(request.getShippingFee());
+  }
 }

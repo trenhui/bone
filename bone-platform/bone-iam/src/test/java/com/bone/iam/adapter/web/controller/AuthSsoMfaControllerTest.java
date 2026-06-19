@@ -9,8 +9,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.bone.iam.application.command.handler.LoginCommandHandler;
 import com.bone.iam.application.command.handler.RefreshTokenCommandHandler;
 import com.bone.iam.infrastructure.config.IamSsoProperties;
-import com.bone.iam.infrastructure.config.JwtConfig;
-import com.bone.iam.infrastructure.security.JwtTokenService;
+import com.bone.core.security.jwt.JwtConfig;
+import com.bone.iam.infrastructure.security.IamJwtTokenService;
 import com.bone.iam.infrastructure.security.TokenBlacklistService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,7 +28,7 @@ class AuthSsoMfaControllerTest {
 
   @Mock private com.bone.iam.adapter.web.converter.AuthWebConverter authWebConverter;
 
-  @Mock private JwtTokenService jwtTokenService;
+  @Mock private IamJwtTokenService jwtTokenService;
 
   @Mock private RefreshTokenCommandHandler refreshTokenCommandHandler;
 

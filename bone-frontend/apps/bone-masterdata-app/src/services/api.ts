@@ -24,6 +24,17 @@ import type {
 
 const MD = '/api/v1/masterdata';
 
+// 模块级内存 token，由 qiankun mount 生命周期写入，优先于 localStorage
+let _qiankunToken: string | null = null;
+
+/** 供 main.tsx 在 qiankun mount 时调用，将 props.token 写入内存 */
+export function setQiankunToken(token: string | null) {
+  _qiankunToken = token;
+  if (token) {
+    localStorage.setItem('token', token);
+  }
+}
+
 // 创建axios实例（开发走 Vite 代理 → masterdata :8080）
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '',
@@ -33,14 +44,16 @@ const apiClient = axios.create({
   }
 });
 
-// 请求拦截器
+// 请求拦截器 - 添加Token
 apiClient.interceptors.request.use(
   config => {
-    // 可以在这里添加认证信息
-    // const token = localStorage.getItem('token');
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
+    // 优先级：qiankun 内存 token > window 全局 token > localStorage
+    const token = _qiankunToken
+      || (window as unknown as Record<string, string>).__BONE_TOKEN__
+      || localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   error => {
@@ -87,13 +100,14 @@ export const masterDataEntityApi = {
 // 主数据字段相关API
 export const masterDataFieldApi = {
   listByEntityId: (masterDataEntityId: number): Promise<ApiResponse<MasterDataField[]>> => {
-    return apiClient.get(`${MD}/fields`, { params: { masterDataEntityId } });
+    return apiClient.get(`${MD}/entities/${masterDataEntityId}/fields`);
   },
   detail: (id: number): Promise<ApiResponse<MasterDataField>> => {
     return apiClient.get(`${MD}/fields/${id}`);
   },
   create: (data: CreateMasterDataFieldReq): Promise<ApiResponse<MasterDataField>> => {
-    return apiClient.post(`${MD}/fields`, data);
+    const entityId = data.masterDataEntityId;
+    return apiClient.post(`${MD}/entities/${entityId}/fields`, data);
   },
   update: (id: number, data: UpdateMasterDataFieldReq): Promise<ApiResponse<MasterDataField>> => {
     return apiClient.put(`${MD}/fields/${id}`, data);

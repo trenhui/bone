@@ -30,50 +30,52 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class OrderRpcService {
 
-    private final CreateOrderCommandHandler createOrderCommandHandler;
-    private final OrderDetailQueryHandler orderDetailQueryHandler;
+  private final CreateOrderCommandHandler createOrderCommandHandler;
+  private final OrderDetailQueryHandler orderDetailQueryHandler;
 
-    @Operation(summary = "创建订单", description = "创建新的订单")
-    @PostMapping
-    public ApiResponse<CreateOrderRpcResp> createOrder(
-            @Parameter(description = "订单创建请求") @RequestBody CreateOrderRpcReq request) {
-        try {
-            List<CreateOrderCommand.OrderItemDto> items = request.getItems().stream()
-                    .map(item -> CreateOrderCommand.OrderItemDto.builder()
-                            .productId(item.getProductId())
-                            .productName(item.getProductName())
-                            .quantity(item.getQuantity())
-                            .unitPrice(item.getUnitPrice())
-                            .build())
-                    .collect(Collectors.toList());
+  @Operation(summary = "创建订单", description = "创建新的订单")
+  @PostMapping
+  public ApiResponse<CreateOrderRpcResp> createOrder(
+      @Parameter(description = "订单创建请求") @RequestBody CreateOrderRpcReq request) {
+    try {
+      List<CreateOrderCommand.OrderItemDto> items =
+          request.getItems().stream()
+              .map(
+                  item ->
+                      CreateOrderCommand.OrderItemDto.builder()
+                          .productId(item.getProductId())
+                          .productName(item.getProductName())
+                          .quantity(item.getQuantity())
+                          .unitPrice(item.getUnitPrice())
+                          .build())
+              .collect(Collectors.toList());
 
-            CreateOrderCommand command = CreateOrderCommand.builder()
-                    .customerId(request.getCustomerId())
-                    .items(items)
-                    .build();
+      CreateOrderCommand command =
+          CreateOrderCommand.builder().customerId(request.getCustomerId()).items(items).build();
 
-            Long orderId = createOrderCommandHandler.handle(command);
+      Long orderId = createOrderCommandHandler.handle(command);
 
-            CreateOrderRpcResp response = new CreateOrderRpcResp();
-            response.setOrderId(orderId);
-            response.setSuccess(true);
-            response.setStatus("SUCCESS");
-            return ApiResponse.success(response);
-        } catch (Exception e) {
-            log.error("创建订单失败: customerId={}", request.getCustomerId(), e);
-            CreateOrderRpcResp response = new CreateOrderRpcResp();
-            response.setSuccess(false);
-            response.setErrorMsg(e.getMessage());
-            response.setStatus("FAILED");
-            return ApiResponse.success(response);
-        }
+      CreateOrderRpcResp response = new CreateOrderRpcResp();
+      response.setOrderId(orderId);
+      response.setSuccess(true);
+      response.setStatus("SUCCESS");
+      return ApiResponse.success(response);
+    } catch (Exception e) {
+      log.error("创建订单失败: customerId={}", request.getCustomerId(), e);
+      CreateOrderRpcResp response = new CreateOrderRpcResp();
+      response.setSuccess(false);
+      response.setErrorMsg(e.getMessage());
+      response.setStatus("FAILED");
+      return ApiResponse.success(response);
     }
+  }
 
-    @Operation(summary = "根据ID查询订单", description = "根据订单ID查询订单详情")
-    @GetMapping("/{orderId}")
-    public ApiResponse<OrderDto> getOrderById(@Parameter(description = "订单ID") @PathVariable Long orderId) {
-        OrderDetailQuery query = new OrderDetailQuery();
-        query.setOrderId(orderId);
-        return ApiResponse.success(orderDetailQueryHandler.handle(query));
-    }
+  @Operation(summary = "根据ID查询订单", description = "根据订单ID查询订单详情")
+  @GetMapping("/{orderId}")
+  public ApiResponse<OrderDto> getOrderById(
+      @Parameter(description = "订单ID") @PathVariable Long orderId) {
+    OrderDetailQuery query = new OrderDetailQuery();
+    query.setOrderId(orderId);
+    return ApiResponse.success(orderDetailQueryHandler.handle(query));
+  }
 }

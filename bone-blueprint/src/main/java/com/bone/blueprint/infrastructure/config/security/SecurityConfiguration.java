@@ -4,5 +4,5 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class SecurityConfiguration {
-    // 安全配置
+  // 安全配置
 }

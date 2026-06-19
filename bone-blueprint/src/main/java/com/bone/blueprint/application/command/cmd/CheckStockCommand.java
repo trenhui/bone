@@ -8,12 +8,12 @@ import lombok.Value;
 @Builder
 public class CheckStockCommand {
 
-    List<Item> items;
+  List<Item> items;
 
-    @Value
-    @Builder
-    public static class Item {
-        Long productId;
-        Integer quantity;
-    }
+  @Value
+  @Builder
+  public static class Item {
+    Long productId;
+    Integer quantity;
+  }
 }

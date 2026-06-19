@@ -167,7 +167,7 @@ const RelationManagement: React.FC = () => {
         open={modalOpen}
         onOk={handleSubmit}
         onCancel={() => setModalOpen(false)}
-        destroyOnClose
+        destroyOnHidden
         width={520}
       >
         <Form form={form} layout="vertical">

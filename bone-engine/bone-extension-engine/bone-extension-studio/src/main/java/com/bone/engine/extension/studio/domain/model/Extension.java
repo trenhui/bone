@@ -1,6 +1,7 @@
 package com.bone.engine.extension.studio.domain.model;
 
 import com.bone.core.domain.entity.Entity;
+import com.fasterxml.jackson.annotation.JsonSetter;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -186,5 +187,24 @@ public class Extension extends Entity<Long> {
 
   public void setVersion(Integer version) {
     this.version = version;
+  }
+
+  /** 兼容前端传入字符串版本号（如 "1.0"），取整数部分 */
+  @JsonSetter("version")
+  public void setVersionFromJson(Object versionValue) {
+    if (versionValue == null) {
+      this.version = null;
+    } else if (versionValue instanceof Integer i) {
+      this.version = i;
+    } else if (versionValue instanceof Number n) {
+      this.version = n.intValue();
+    } else {
+      String s = versionValue.toString().trim();
+      try {
+        this.version = Integer.parseInt(s.contains(".") ? s.substring(0, s.indexOf(".")) : s);
+      } catch (NumberFormatException e) {
+        this.version = 1;
+      }
+    }
   }
 }

@@ -10,8 +10,8 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @Component
 public class OrderCreatedEventHandler {
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handle(OrderCreatedEvent event) {
-        log.info("订单已创建: orderId={}, tenantId={}", event.orderId(), event.tenantId());
-    }
+  @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+  public void handle(OrderCreatedEvent event) {
+    log.info("订单已创建: orderId={}, tenantId={}", event.orderId(), event.tenantId());
+  }
 }

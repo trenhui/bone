@@ -10,10 +10,10 @@ import org.springframework.context.annotation.Configuration;
 @RequiredArgsConstructor
 public class BlueprintQueryConfiguration {
 
-    private final SqlExecutor sqlExecutor;
+  private final SqlExecutor sqlExecutor;
 
-    @PostConstruct
-    public void initQueryBuilder() {
-        QueryBuilder.initialize(sqlExecutor);
-    }
+  @PostConstruct
+  public void initQueryBuilder() {
+    QueryBuilder.initialize(sqlExecutor);
+  }
 }

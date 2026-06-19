@@ -71,7 +71,8 @@ public class MasterDataRecordControllerTest {
     when(masterDataRecordListQueryHandler.handle(qry)).thenReturn(pageResult);
 
     // 执行测试
-    ApiResponse<PageResult<MasterDataRecordDTO>> apiResponse = masterDataRecordController.list(qry);
+    ApiResponse<PageResult<MasterDataRecordDTO>> apiResponse =
+        masterDataRecordController.list(1L, qry);
 
     // 验证结果
     assertEquals(true, apiResponse.isSuccess());

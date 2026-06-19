@@ -17,21 +17,22 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class PayOrderCommandHandler {
 
-    private final OrderRepository orderRepository;
-    private final DomainEventPublisher domainEventPublisher;
-    private final OrderOutboxWriter orderOutboxWriter;
+  private final OrderRepository orderRepository;
+  private final DomainEventPublisher domainEventPublisher;
+  private final OrderOutboxWriter orderOutboxWriter;
 
-    @Transactional
-    public void handle(PayOrderCommand cmd) {
-        Order order = OrderLookup.requireById(orderRepository, cmd.getOrderId());
-        order.pay();
-        AggregatePersistence.updateAndPublishEvents(orderRepository, domainEventPublisher, order);
+  @Transactional
+  public void handle(PayOrderCommand cmd) {
+    Order order = OrderLookup.requireById(orderRepository, cmd.getOrderId());
+    order.pay();
+    AggregatePersistence.updateAndPublishEvents(orderRepository, domainEventPublisher, order);
 
-        orderOutboxWriter.appendOrderPaid(OrderPaidIntegrationEvent.fromDomain(
-                order.getId(),
-                order.getTenantId(),
-                order.getCustomerId(),
-                order.getTotalAmount(),
-                Instant.now()));
-    }
+    orderOutboxWriter.appendOrderPaid(
+        OrderPaidIntegrationEvent.fromDomain(
+            order.getId(),
+            order.getTenantId(),
+            order.getCustomerId(),
+            order.getTotalAmount(),
+            Instant.now()));
+  }
 }

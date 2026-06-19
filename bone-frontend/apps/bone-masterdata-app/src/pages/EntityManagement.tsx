@@ -6,7 +6,6 @@ import {
   Form,
   Input,
   Select,
-  message,
   Popconfirm,
   Space,
   Tag,
@@ -21,11 +20,13 @@ import type {
   MasterDataEntityPageQry
 } from '../types';
 import { masterDataEntityApi } from '../services/api';
+import { useMessage } from '../App';
 
 const { Option } = Select;
 const { TextArea } = Input;
 
 const EntityManagement: React.FC = () => {
+  const message = useMessage();
   const [form] = Form.useForm();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);

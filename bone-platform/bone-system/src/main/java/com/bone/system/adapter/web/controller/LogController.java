@@ -40,6 +40,13 @@ public class LogController {
     return ApiResponse.success(dto != null ? logWebConverter.toResp(dto) : null);
   }
 
+  @Operation(summary = "查询日志列表")
+  @GetMapping
+  public ApiResponse<PageResult<LogResp>> list(LogPageReq req) {
+    PageResult<LogDTO> pageResult = logQueryHandler.page(logWebConverter.toQuery(req));
+    return ApiResponse.success(pageResult.map(logWebConverter::toResp));
+  }
+
   @Operation(summary = "分页查询日志列表")
   @GetMapping("/page")
   public ApiResponse<PageResult<LogResp>> page(LogPageReq req) {

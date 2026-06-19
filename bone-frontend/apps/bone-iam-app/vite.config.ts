@@ -1,12 +1,22 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import qiankun from 'vite-plugin-qiankun'
 import path from 'path'
+
+function removeReactRefreshPlugin(): Plugin {
+  return {
+    name: 'remove-react-refresh',
+    transformIndexHtml(html) {
+      return html.replace(/<script type="module">import\s*\{[^}]*\}\s*from\s*["']\/@react-refresh["'];[\s\S]*?<\/script>/g, '');
+    },
+  };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
     react({ fastRefresh: false }),
+    removeReactRefreshPlugin(),
     qiankun('bone-iam-app', { useDevMode: true }),
   ],
   resolve: {
@@ -19,6 +29,7 @@ export default defineConfig({
     host: '0.0.0.0',
     cors: true,
     origin: 'http://localhost:3003',
+    hmr: { overlay: false },
     proxy: {
       '/api': {
         target: 'http://localhost:8081',

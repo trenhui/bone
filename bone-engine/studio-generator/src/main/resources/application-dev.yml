@@ -3,7 +3,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/bone?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&characterEncoding=utf8&useUnicode=true
     username: root
-    password: ${BONE_DB_PASSWORD:bone_dev_pass}
+    password: ${BONE_DB_PASSWORD:mysql123}
 
 logging:
   level:

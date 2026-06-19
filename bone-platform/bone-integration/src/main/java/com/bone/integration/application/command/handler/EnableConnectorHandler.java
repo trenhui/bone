@@ -19,7 +19,11 @@ public class EnableConnectorHandler {
   @Transactional
   public void handle(EnableConnectorCommand cmd) {
     Connector connector =
-        QueryBuilder.from(Connector.class).where(Connector::getId).eq(cmd.id()).first().orElse(null);
+        QueryBuilder.from(Connector.class)
+            .where(Connector::getId)
+            .eq(cmd.id())
+            .first()
+            .orElse(null);
     if (connector == null) {
       throw new DomainException("连接器不存在");
     }

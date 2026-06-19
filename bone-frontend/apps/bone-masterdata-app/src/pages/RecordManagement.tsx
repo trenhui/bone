@@ -6,7 +6,6 @@ import {
   Form,
   Input,
   Select,
-  message,
   Popconfirm,
   Space,
   Tag,
@@ -23,11 +22,13 @@ import type {
   MasterDataField,
 } from '../types';
 import { masterDataRecordApi, masterDataEntityApi, masterDataFieldApi } from '../services/api';
+import { useMessage } from '../App';
 
 const { Option } = Select;
 const { TextArea } = Input;
 
 const RecordManagement: React.FC = () => {
+  const message = useMessage();
   const [form] = Form.useForm();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);

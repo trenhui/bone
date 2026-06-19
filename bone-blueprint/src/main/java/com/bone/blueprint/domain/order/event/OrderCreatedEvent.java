@@ -4,5 +4,4 @@ import com.bone.core.domain.DomainEvent;
 import java.time.Instant;
 
 public record OrderCreatedEvent(Long orderId, Long tenantId, Long customerId, Instant occurredAt)
-        implements DomainEvent {
-}
+    implements DomainEvent {}

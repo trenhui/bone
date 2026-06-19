@@ -1,59 +1,58 @@
 package com.bone.blueprint.infrastructure.extension.order;
 
-import com.bone.blueprint.domain.extension.order.OrderPriceCalculator;
-import org.junit.jupiter.api.Test;
-
-import java.math.BigDecimal;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import com.bone.blueprint.domain.extension.order.OrderPriceCalculator;
+import java.math.BigDecimal;
+import org.junit.jupiter.api.Test;
 
 class EnterpriseOrderPriceCalculatorTest {
 
-    private final EnterpriseOrderPriceCalculator calculator = new EnterpriseOrderPriceCalculator();
+  private final EnterpriseOrderPriceCalculator calculator = new EnterpriseOrderPriceCalculator();
 
-    @Test
-    void testCalculateWithDiscount() {
-        OrderPriceCalculator.OrderPriceRequest request = OrderPriceCalculator.OrderPriceRequest.builder()
-                .baseAmount(new BigDecimal("100"))
-                .build();
+  @Test
+  void testCalculateWithDiscount() {
+    OrderPriceCalculator.OrderPriceRequest request =
+        OrderPriceCalculator.OrderPriceRequest.builder().baseAmount(new BigDecimal("100")).build();
 
-        BigDecimal result = calculator.calculate(request);
+    BigDecimal result = calculator.calculate(request);
 
-        assertEquals(0, new BigDecimal("70").compareTo(result));
-    }
+    assertEquals(0, new BigDecimal("70").compareTo(result));
+  }
 
-    @Test
-    void testCalculateWithShippingFee() {
-        OrderPriceCalculator.OrderPriceRequest request = OrderPriceCalculator.OrderPriceRequest.builder()
-                .baseAmount(new BigDecimal("100"))
-                .shippingFee(new BigDecimal("10"))
-                .build();
+  @Test
+  void testCalculateWithShippingFee() {
+    OrderPriceCalculator.OrderPriceRequest request =
+        OrderPriceCalculator.OrderPriceRequest.builder()
+            .baseAmount(new BigDecimal("100"))
+            .shippingFee(new BigDecimal("10"))
+            .build();
 
-        BigDecimal result = calculator.calculate(request);
+    BigDecimal result = calculator.calculate(request);
 
-        assertEquals(0, new BigDecimal("77").compareTo(result));
-    }
+    assertEquals(0, new BigDecimal("77").compareTo(result));
+  }
 
-    @Test
-    void testCalculateWithLargeAmount() {
-        OrderPriceCalculator.OrderPriceRequest request = OrderPriceCalculator.OrderPriceRequest.builder()
-                .baseAmount(new BigDecimal("100000"))
-                .shippingFee(new BigDecimal("500"))
-                .build();
+  @Test
+  void testCalculateWithLargeAmount() {
+    OrderPriceCalculator.OrderPriceRequest request =
+        OrderPriceCalculator.OrderPriceRequest.builder()
+            .baseAmount(new BigDecimal("100000"))
+            .shippingFee(new BigDecimal("500"))
+            .build();
 
-        BigDecimal result = calculator.calculate(request);
+    BigDecimal result = calculator.calculate(request);
 
-        assertEquals(0, new BigDecimal("70350").compareTo(result));
-    }
+    assertEquals(0, new BigDecimal("70350").compareTo(result));
+  }
 
-    @Test
-    void testCalculateWithZeroAmount() {
-        OrderPriceCalculator.OrderPriceRequest request = OrderPriceCalculator.OrderPriceRequest.builder()
-                .baseAmount(new BigDecimal("0"))
-                .build();
+  @Test
+  void testCalculateWithZeroAmount() {
+    OrderPriceCalculator.OrderPriceRequest request =
+        OrderPriceCalculator.OrderPriceRequest.builder().baseAmount(new BigDecimal("0")).build();
 
-        BigDecimal result = calculator.calculate(request);
+    BigDecimal result = calculator.calculate(request);
 
-        assertEquals(0, new BigDecimal("0").compareTo(result));
-    }
+    assertEquals(0, new BigDecimal("0").compareTo(result));
+  }
 }

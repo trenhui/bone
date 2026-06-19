@@ -4,5 +4,5 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class ExtensionConfiguration {
-    // 扩展点配置
+  // 扩展点配置
 }

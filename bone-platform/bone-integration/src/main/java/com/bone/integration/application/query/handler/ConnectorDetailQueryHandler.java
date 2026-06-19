@@ -15,7 +15,11 @@ public class ConnectorDetailQueryHandler {
   @Transactional(readOnly = true)
   public ConnectorDTO handle(ConnectorDetailQuery query) {
     Connector connector =
-        QueryBuilder.from(Connector.class).where(Connector::getId).eq(query.id()).first().orElse(null);
+        QueryBuilder.from(Connector.class)
+            .where(Connector::getId)
+            .eq(query.id())
+            .first()
+            .orElse(null);
     if (connector == null) {
       throw new DomainException("连接器不存在");
     }

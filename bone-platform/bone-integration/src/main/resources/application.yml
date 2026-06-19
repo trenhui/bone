@@ -1,20 +1,18 @@
 server:
   port: 8085
-  servlet:
-    context-path: /api
 
 spring:
   application:
     name: bone-integration
   datasource:
-    url: jdbc:mysql://localhost:3306/bone?useSSL=false&autoReconnect=true&characterEncoding=utf8
+    url: jdbc:mysql://localhost:3306/bone?useSSL=false&autoReconnect=true&characterEncoding=utf8&allowPublicKeyRetrieval=true
     username: root
-    password: ${BONE_DB_PASSWORD:}
+    password: ${BONE_DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
   redis:
     host: localhost
     port: 6379
-    password: ${BONE_REDIS_PASSWORD:}
+    password: ${BONE_REDIS_PASSWORD}
     database: 0
   rocketmq:
     name-server: localhost:9876
@@ -38,7 +36,7 @@ bone:
       jwt-enabled: ${BONE_INTEGRATION_JWT_ENABLED:false}
   iam:
     jwt:
-      secret-key: ${BONE_IAM_JWT_SECRET_KEY:${BONE_JWT_SECRET:}}
+      secret-key: ${BONE_IAM_JWT_SECRET_KEY}
 
 integration:
   camel:

@@ -16,10 +16,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableExtensionPoints(basePackages = "com.bone.blueprint.domain.service")
 public class BoneBlueprintApplication {
 
-    public static void main(String[] args) {
-        SpringApplication.run(BoneBlueprintApplication.class, args);
-    }
+  public static void main(String[] args) {
+    SpringApplication.run(BoneBlueprintApplication.class, args);
+  }
 }
-
-
-

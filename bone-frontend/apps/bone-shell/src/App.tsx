@@ -1,6 +1,6 @@
 import { useEffect, useState, useContext, useMemo, Component, ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
-import { Layout, Menu, Button, Avatar, Dropdown, Space, message, Form, Input, Card, Switch, Popover, Tooltip, Badge, Result } from 'antd';
+import { Layout, Menu, Button, Avatar, Dropdown, Space, App as AntdApp, Form, Input, Card, Switch, Popover, Tooltip, Badge, Result } from 'antd';
 const { Password } = Input;
 import axios from 'axios';
 import { registerMicroApps, start as startQiankun, addGlobalUncaughtErrorHandler } from 'qiankun';
@@ -42,6 +42,17 @@ import Authorized from './auth/Authorized';
 import { PermissionCodes, clearScopes, persistScopesFromToken } from './auth/jwt';
 
 function App(): JSX.Element {
+  return (
+    <BoneAppProvider themeMode="system">
+      <AntdApp>
+        <AppContent />
+      </AntdApp>
+    </BoneAppProvider>
+  );
+}
+
+function AppContent(): JSX.Element {
+  const { message: messageApi } = AntdApp.useApp();
   const [collapsed, setCollapsed] = useState(false);
   const [user, setUser] = useState(() => {
     // 从localStorage中读取用户信息
@@ -69,6 +80,7 @@ function App(): JSX.Element {
         { key: 'iam-roles', label: '角色管理', icon: <TeamOutlined />, path: '/iam', hash: '/roles', enabled: true },
         { key: 'iam-permissions', label: '权限管理', icon: <SafetyCertificateOutlined />, path: '/iam', hash: '/permissions', enabled: true },
         { key: 'iam-audit', label: '审计日志', icon: <AuditOutlined />, path: '/iam', hash: '/audit-logs', enabled: true },
+        { key: 'iam-audit-settings', label: '审计设置', icon: <SettingOutlined />, path: '/iam', hash: '/audit-settings', enabled: true },
         { key: 'iam-tenants', label: '租户管理', icon: <PartitionOutlined />, path: '/iam', hash: '/tenants', enabled: true },
       ],
     },
@@ -249,8 +261,30 @@ function App(): JSX.Element {
 
     startQiankun({
       prefetch: 'all',
-      sandbox: { strictStyleIsolation: false, experimentalStyleIsolation: true },
+      sandbox: {
+        strictStyleIsolation: false,
+        experimentalStyleIsolation: true,
+        // 禁用 localStorage 代理，让微应用直接访问真实 localStorage
+        // 这样微应用可以通过 localStorage.getItem('token') 读取 Shell 写入的 token
+        patchGlobalVal: true,
+        looseSandbox: true,
+      },
     });
+
+    // 监听微应用发出的认证过期事件，统一由 Shell 处理登出
+    const handleAuthExpired = () => {
+      setUser(null);
+      localStorage.removeItem('bone-user');
+      localStorage.removeItem('token');
+      localStorage.removeItem('username');
+      delete (window as unknown as Record<string, string>).__BONE_TOKEN__;
+      clearScopes();
+    };
+    window.addEventListener('bone:auth:expired', handleAuthExpired);
+
+    return () => {
+      window.removeEventListener('bone:auth:expired', handleAuthExpired);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
@@ -303,13 +337,15 @@ function App(): JSX.Element {
         password: values.password,
       });
       if (resp?.data?.code !== 200) {
-        message.error(resp?.data?.message || '登录失败');
+        messageApi.error(resp?.data?.message || '登录失败');
         return;
       }
       const token = resp.data.data?.token;
       const username = resp.data.data?.account?.username || values.username;
       if (token) {
         localStorage.setItem('token', token);
+        // 同时写入 window 全局变量，确保 qiankun 沙箱中的微应用也能读取
+        (window as unknown as Record<string, string>).__BONE_TOKEN__ = token;
         // 解析 JWT scopes 落地缓存，供 <Authorized> 路由守卫使用（详设 §5.0）。
         persistScopesFromToken(token);
       }
@@ -318,10 +354,10 @@ function App(): JSX.Element {
       const userInfo = { name: username, forceChangePassword: false };
       setUser(userInfo);
       localStorage.setItem('bone-user', JSON.stringify(userInfo));
-      message.success('登录成功');
+      messageApi.success('登录成功');
     } catch (e: unknown) {
       const err = e as { response?: { data?: { message?: string } } };
-      message.error(err?.response?.data?.message || '登录失败，请检查用户名或密码');
+      messageApi.error(err?.response?.data?.message || '登录失败，请检查用户名或密码');
     }
   };
 
@@ -336,8 +372,9 @@ function App(): JSX.Element {
       localStorage.removeItem('bone-user');
       localStorage.removeItem('token');
       localStorage.removeItem('username');
+      delete (window as unknown as Record<string, string>).__BONE_TOKEN__;
       clearScopes();
-      message.success('退出登录成功');
+      messageApi.success('退出登录成功');
     }
   };
 
@@ -363,7 +400,6 @@ function App(): JSX.Element {
   };
 
   return (
-    <BoneAppProvider themeMode={theme}>
       <ThemeContext.Provider value={{ theme, resolvedTheme, toggleTheme }}>
         <LayoutContext.Provider value={{ layoutMode, toggleLayoutMode }}>
           <MenuConfigContext.Provider value={{ menuConfig, updateMenuConfig }}>
@@ -374,7 +410,7 @@ function App(): JSX.Element {
                     onLogin={handleLogin}
                     requirePasswordChange={requirePasswordChange}
                     onPasswordChange={() => {
-                      message.success('密码修改成功，请重新登录');
+                      messageApi.success('密码修改成功，请重新登录');
                       setRequirePasswordChange(false);
                     }}
                   />
@@ -400,7 +436,6 @@ function App(): JSX.Element {
           </MenuConfigContext.Provider>
         </LayoutContext.Provider>
       </ThemeContext.Provider>
-    </BoneAppProvider>
   );
 }
 
@@ -685,15 +720,16 @@ interface PasswordChangePageProps {
 }
 
 function PasswordChangePage({ theme, onPasswordChange }: PasswordChangePageProps): JSX.Element {
+  const { message: messageApi } = AntdApp.useApp();
   const [form] = Form.useForm();
 
   const handleSubmit = (values: { newPassword: string; confirmPassword: string }): void => {
     if (values.newPassword !== values.confirmPassword) {
-      message.error('两次输入的密码不一致');
+      messageApi.error('两次输入的密码不一致');
       return;
     }
     if (values.newPassword.length < 6) {
-      message.error('密码长度至少6位');
+      messageApi.error('密码长度至少6位');
       return;
     }
     onPasswordChange(values.newPassword);

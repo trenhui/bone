@@ -21,6 +21,12 @@
             <artifactId>bone-core</artifactId>
             <version>${bone-core.version}</version>
         </dependency>
+        <!-- bone-security -->
+        <dependency>
+            <groupId>com.bone</groupId>
+            <artifactId>bone-security</artifactId>
+            <version>${bone-core.version}</version>
+        </dependency>
 
         <!-- bone-metadata-sdk -->
         <dependency>

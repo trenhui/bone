@@ -7,16 +7,16 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "bone.blueprint.outbox")
 public class OrderOutboxProperties {
 
-    private boolean enabled = true;
+  private boolean enabled = true;
 
-    /** true 时通过 RocketMQ 中继；false 时仅结构化日志（开发默认）。 */
-    private boolean mqEnabled = false;
+  /** true 时通过 RocketMQ 中继；false 时仅结构化日志（开发默认）。 */
+  private boolean mqEnabled = false;
 
-    private int batchSize = 50;
+  private int batchSize = 50;
 
-    private int maxRetries = 5;
+  private int maxRetries = 5;
 
-    private String orderPaidTopic = "bone.order.paid";
+  private String orderPaidTopic = "bone.order.paid";
 
-    private String consumerGroup = "bone-blueprint-order-paid-consumer";
+  private String consumerGroup = "bone-blueprint-order-paid-consumer";
 }

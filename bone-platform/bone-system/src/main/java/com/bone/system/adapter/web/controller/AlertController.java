@@ -79,6 +79,14 @@ public class AlertController {
     return ApiResponse.success(dto != null ? alertWebConverter.toResp(dto) : null);
   }
 
+  @Operation(summary = "查询告警规则列表")
+  @GetMapping("/rules")
+  public ApiResponse<PageResult<AlertRuleResp>> listRules(AlertRulePageReq req) {
+    PageResult<AlertRuleDTO> pageResult =
+        alertQueryHandler.pageRules(alertWebConverter.toQuery(req));
+    return ApiResponse.success(pageResult.map(alertWebConverter::toResp));
+  }
+
   @Operation(summary = "分页查询告警规则列表")
   @GetMapping("/rules/page")
   public ApiResponse<PageResult<AlertRuleResp>> pageRules(AlertRulePageReq req) {
@@ -108,6 +116,14 @@ public class AlertController {
   public ApiResponse<AlertEventResp> getEventById(@PathVariable Long id) {
     AlertEventDTO dto = alertQueryHandler.getEventById(id);
     return ApiResponse.success(dto != null ? alertWebConverter.toResp(dto) : null);
+  }
+
+  @Operation(summary = "查询告警事件列表")
+  @GetMapping("/events")
+  public ApiResponse<PageResult<AlertEventResp>> listEvents(AlertEventPageReq req) {
+    PageResult<AlertEventDTO> pageResult =
+        alertQueryHandler.pageEvents(req.getPageNum(), req.getPageSize());
+    return ApiResponse.success(pageResult.map(alertWebConverter::toResp));
   }
 
   @Operation(summary = "分页查询告警事件列表")

@@ -11,13 +11,13 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class OrderOutboxRelayJob {
 
-    private final OrderOutboxRelay orderOutboxRelay;
+  private final OrderOutboxRelay orderOutboxRelay;
 
-    @Scheduled(fixedDelayString = "${bone.blueprint.outbox.relay-delay-ms:5000}")
-    public void relay() {
-        int sent = orderOutboxRelay.relayPending();
-        if (sent > 0) {
-            log.info("Outbox 中继完成: sent={}", sent);
-        }
+  @Scheduled(fixedDelayString = "${bone.blueprint.outbox.relay-delay-ms:5000}")
+  public void relay() {
+    int sent = orderOutboxRelay.relayPending();
+    if (sent > 0) {
+      log.info("Outbox 中继完成: sent={}", sent);
     }
+  }
 }

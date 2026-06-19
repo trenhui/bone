@@ -183,7 +183,7 @@ const FieldManagement: React.FC = () => {
         open={modalOpen}
         onOk={handleSubmit}
         onCancel={() => setModalOpen(false)}
-        destroyOnClose
+        destroyOnHidden
       >
         <Form form={form} layout="vertical">
           {!editing && (

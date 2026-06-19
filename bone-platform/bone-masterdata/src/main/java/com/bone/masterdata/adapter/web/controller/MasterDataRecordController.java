@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@RequestMapping(PlatformApiPaths.MASTERDATA_V1 + "/records")
+@RequestMapping(PlatformApiPaths.MASTERDATA_V1 + "/entities")
 @RequiredArgsConstructor
 public class MasterDataRecordController {
   private final CreateMasterDataRecordHandler createMasterDataRecordHandler;
@@ -41,15 +41,19 @@ public class MasterDataRecordController {
   private final MasterDataRecordWebConverter converter;
   private final MasterDataRecordRepository masterDataRecordRepository;
 
-  @PostMapping
-  public ApiResponse<Long> create(@RequestBody CreateMasterDataRecordReq req) {
+  @PostMapping("/{entityId}/records")
+  public ApiResponse<Long> create(
+      @PathVariable Long entityId, @RequestBody CreateMasterDataRecordReq req) {
+    req.setMasterDataEntityId(entityId);
     CreateMasterDataRecordCommand cmd = converter.toCommand(req);
     Long id = createMasterDataRecordHandler.handle(cmd);
     return ApiResponse.success(id);
   }
 
-  @GetMapping
-  public ApiResponse<PageResult<MasterDataRecordDTO>> list(MasterDataRecordListQuery qry) {
+  @GetMapping("/{entityId}/records")
+  public ApiResponse<PageResult<MasterDataRecordDTO>> list(
+      @PathVariable Long entityId, MasterDataRecordListQuery qry) {
+    qry.setMasterDataEntityId(entityId);
     // 分页参数默认值：pageNum 从1开始
     if (qry.getPageNum() <= 0) {
       qry.setPageNum(1);
@@ -61,14 +65,14 @@ public class MasterDataRecordController {
     return ApiResponse.success(result);
   }
 
-  @GetMapping("/{id}")
+  @GetMapping("/records/{id}")
   public ApiResponse<MasterDataRecordDTO> detail(@PathVariable Long id) {
     MasterDataRecordByIdQuery qry = MasterDataRecordByIdQuery.builder().id(id).build();
     MasterDataRecordDTO dto = masterDataRecordDetailQueryHandler.handle(qry);
     return ApiResponse.success(dto);
   }
 
-  @PutMapping("/{id}")
+  @PutMapping("/records/{id}")
   public ApiResponse<Void> update(
       @PathVariable Long id, @RequestBody UpdateMasterDataRecordReq req) {
     UpdateMasterDataRecordCommand cmd = converter.toCommand(id, req);
@@ -76,18 +80,18 @@ public class MasterDataRecordController {
     return ApiResponse.success();
   }
 
-  @DeleteMapping("/{id}")
+  @DeleteMapping("/records/{id}")
   public ApiResponse<Void> delete(@PathVariable Long id) {
     masterDataRecordRepository.deleteById(id);
     return ApiResponse.success();
   }
 
-  @PostMapping("/import")
+  @PostMapping("/{entityId}/records/import")
   public ApiResponse<List<Long>> importRecords(
-      @RequestParam Long masterDataEntityId, @RequestParam MultipartFile file) {
+      @PathVariable Long entityId, @RequestParam MultipartFile file) {
     try {
       ImportMasterDataRecordsCommand cmd = new ImportMasterDataRecordsCommand();
-      cmd.setMasterDataEntityId(masterDataEntityId);
+      cmd.setMasterDataEntityId(entityId);
       cmd.setOriginalFilename(file.getOriginalFilename());
       cmd.setDataStream(file.getInputStream());
       List<Long> ids = importMasterDataRecordsHandler.handle(cmd);
@@ -97,14 +101,14 @@ public class MasterDataRecordController {
     }
   }
 
-  @PostMapping("/{id}/publish")
+  @PostMapping("/records/{id}/publish")
   public ApiResponse<Void> publish(@PathVariable Long id) {
     publishMasterDataRecordHandler.handle(id);
     return ApiResponse.success();
   }
 
-  @GetMapping("/export")
-  public ApiResponse<String> export(@RequestParam("masterDataEntityId") Long masterDataEntityId) {
-    return ApiResponse.success(exportMasterDataRecordsQueryHandler.handle(masterDataEntityId));
+  @GetMapping("/{entityId}/records/export")
+  public ApiResponse<String> export(@PathVariable Long entityId) {
+    return ApiResponse.success(exportMasterDataRecordsQueryHandler.handle(entityId));
   }
 }

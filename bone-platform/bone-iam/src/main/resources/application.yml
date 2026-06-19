@@ -9,7 +9,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/bone?useSSL=false&autoReconnect=true&characterEncoding=utf8&allowPublicKeyRetrieval=true
     username: root
-    password: ${BONE_DB_PASSWORD:}
+    password: ${BONE_DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
   redis:
     host: ${BONE_REDIS_HOST:localhost}
@@ -37,8 +37,8 @@ bone:
     allowed-origins: ${BONE_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3003}
   minio:
     endpoint: ${BONE_MINIO_ENDPOINT:http://localhost:9000}
-    access-key: ${BONE_MINIO_ACCESS_KEY:}
-    secret-key: ${BONE_MINIO_SECRET_KEY:}
+    access-key: ${BONE_MINIO_ACCESS_KEY:minioadmin}
+    secret-key: ${BONE_MINIO_SECRET_KEY:minioadmin}
     bucket-name: ${BONE_MINIO_BUCKET_NAME:audit-logs}
   metadata:
     enabled: true
@@ -46,7 +46,7 @@ bone:
     scan-packages: com.bone.iam.domain
   iam:
     jwt:
-      secret-key: ${BONE_IAM_JWT_SECRET_KEY:${BONE_JWT_SECRET:}}
+      secret-key: ${BONE_IAM_JWT_SECRET_KEY}
       expiration-ms: ${BONE_JWT_EXPIRATION_MS:7200000}
       refresh-expiration-ms: ${BONE_JWT_REFRESH_EXPIRATION_MS:604800000}
       token-prefix: "Bearer "

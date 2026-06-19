@@ -9,26 +9,26 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Capability(
-        name = "CheckStock",
-        description = "检查商品库存是否充足",
-        inputSchema = "{\"items\": [{\"productId\": \"long\", \"quantity\": \"int\"}]}",
-        outputSchema = "{\"success\": \"boolean\"}",
-        idempotent = true,
-        cost = 2,
-        retryable = true,
-        timeout = 10)
+    name = "CheckStock",
+    description = "检查商品库存是否充足",
+    inputSchema = "{\"items\": [{\"productId\": \"long\", \"quantity\": \"int\"}]}",
+    outputSchema = "{\"success\": \"boolean\"}",
+    idempotent = true,
+    cost = 2,
+    retryable = true,
+    timeout = 10)
 @Component
 @RequiredArgsConstructor
 public class CheckStockCommandHandler {
 
-    private final InventoryGateway inventoryGateway;
+  private final InventoryGateway inventoryGateway;
 
-    @Transactional(readOnly = true)
-    public void handle(CheckStockCommand command) {
-        for (CheckStockCommand.Item item : command.getItems()) {
-            if (!inventoryGateway.checkStock(item.getProductId(), item.getQuantity())) {
-                throw BizException.of("商品库存不足: " + item.getProductId());
-            }
-        }
+  @Transactional(readOnly = true)
+  public void handle(CheckStockCommand command) {
+    for (CheckStockCommand.Item item : command.getItems()) {
+      if (!inventoryGateway.checkStock(item.getProductId(), item.getQuantity())) {
+        throw BizException.of("商品库存不足: " + item.getProductId());
+      }
     }
+  }
 }

@@ -4,6 +4,7 @@ import com.bone.core.model.ApiResponse;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.masterdata.adapter.web.converter.DataQualityWebConverter;
 import com.bone.masterdata.adapter.web.dto.req.CreateDataQualityRuleReq;
+import com.bone.masterdata.adapter.web.dto.req.PerformDataQualityCheckReq;
 import com.bone.masterdata.application.command.cmd.CreateDataQualityRuleCommand;
 import com.bone.masterdata.application.command.cmd.PerformDataQualityCheckCommand;
 import com.bone.masterdata.application.command.handler.CreateDataQualityRuleHandler;
@@ -20,6 +21,7 @@ import com.bone.masterdata.domain.quality.QualityReport;
 import com.bone.masterdata.domain.repository.QualityCheckRepository;
 import com.bone.masterdata.domain.repository.QualityReportRepository;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
+import jakarta.validation.Valid;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -51,7 +53,9 @@ public class DataQualityController {
   }
 
   @PostMapping("/checks")
-  public ApiResponse<Long> performCheck(@RequestBody PerformDataQualityCheckCommand cmd) {
+  public ApiResponse<Long> performCheck(@Valid @RequestBody PerformDataQualityCheckReq req) {
+    PerformDataQualityCheckCommand cmd = new PerformDataQualityCheckCommand();
+    cmd.setMasterDataEntityId(req.getMasterDataEntityId());
     Long reportId = performCheckHandler.handle(cmd);
     return ApiResponse.success(reportId);
   }

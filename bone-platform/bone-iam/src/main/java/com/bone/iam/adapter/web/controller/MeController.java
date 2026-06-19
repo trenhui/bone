@@ -12,8 +12,8 @@ import com.bone.iam.application.command.handler.ChangeMyPasswordCommandHandler;
 import com.bone.iam.application.command.handler.UpdateMyProfileCommandHandler;
 import com.bone.iam.application.query.handler.AccountDetailQueryHandler;
 import com.bone.iam.common.IamErrorCodes;
-import com.bone.iam.infrastructure.security.CurrentAccountResolver;
-import com.bone.iam.infrastructure.security.JwtTokenService;
+import com.bone.core.security.jwt.JwtPrincipal;
+import com.bone.iam.infrastructure.security.IamCurrentAccountResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -42,7 +42,7 @@ public class MeController {
 
   @GetMapping
   public ApiResponse<MeResp> me() {
-    JwtTokenService.JwtPrincipal principal = requirePrincipal();
+    JwtPrincipal principal = requirePrincipal();
     Long accountId = parseAccountId(principal);
     return ApiResponse.success(
         accountDetailQueryHandler
@@ -90,12 +90,12 @@ public class MeController {
     return ApiResponse.success();
   }
 
-  private static JwtTokenService.JwtPrincipal requirePrincipal() {
-    return CurrentAccountResolver.currentPrincipal()
+  private static JwtPrincipal requirePrincipal() {
+    return IamCurrentAccountResolver.currentPrincipal()
         .orElseThrow(() -> BizException.of(401, IamErrorCodes.PROFILE_OWNERSHIP_DENIED + ": 未登录"));
   }
 
-  private static Long parseAccountId(JwtTokenService.JwtPrincipal principal) {
+  private static Long parseAccountId(JwtPrincipal principal) {
     try {
       return Long.parseLong(principal.userId());
     } catch (NumberFormatException e) {

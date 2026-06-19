@@ -6,15 +6,15 @@ import lombok.Data;
 
 @Data
 public class CreateOrderRpcReq {
-    private String tenantId;
-    private Long customerId;
-    private List<OrderItemRpcReq> items;
+  private String tenantId;
+  private Long customerId;
+  private List<OrderItemRpcReq> items;
 
-    @Data
-    public static class OrderItemRpcReq {
-        private Long productId;
-        private String productName;
-        private Integer quantity;
-        private BigDecimal unitPrice;
-    }
+  @Data
+  public static class OrderItemRpcReq {
+    private Long productId;
+    private String productName;
+    private Integer quantity;
+    private BigDecimal unitPrice;
+  }
 }

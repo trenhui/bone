@@ -14,15 +14,28 @@ import type {
   CreateTenantRequest, UpdateTenantRequest, UpdateTenantQuotaRequest,
 } from '../types';
 
+// 模块级内存 token，由 qiankun mount 生命周期写入，优先于 localStorage
+let _qiankunToken: string | null = null;
+
+/** 供 main.tsx 在 qiankun mount 时调用，将 props.token 写入内存 */
+export function setQiankunToken(token: string | null) {
+  _qiankunToken = token;
+  if (token) {
+    localStorage.setItem('token', token);
+  }
+}
+
 const api = axios.create({
-  baseURL: '/api/v1/iam',
+  baseURL: (import.meta.env.VITE_API_BASE_URL || '') + '/api/v1/iam',
   timeout: 10000,
 });
 
 // 请求拦截器 - 添加Token
 api.interceptors.request.use((config) => {
-  let token = localStorage.getItem('token');
-  // 备用：从 URL 查询参数读取 token
+  // 优先级：qiankun 内存 token > window 全局 token > localStorage > URL 参数
+  let token = _qiankunToken
+    || (window as unknown as Record<string, string>).__BONE_TOKEN__
+    || localStorage.getItem('token');
   if (!token) {
     const urlParams = new URLSearchParams(window.location.search);
     const urlToken = urlParams.get('token');
@@ -42,9 +55,10 @@ api.interceptors.response.use(
   (response) => response.data,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('refreshToken');
-      window.location.href = '/login';
+      // qiankun 微应用中不直接跳转 /login，而是通知主应用处理
+      // 避免在沙箱中 window.location.href 导致整个应用跳转
+      const event = new CustomEvent('bone:auth:expired', { detail: { status: 401 } });
+      window.dispatchEvent(event);
     }
     // 优先使用后端返回的 ApiResponse 中的错误信息
     const backendMessage = error.response?.data?.message;
@@ -236,8 +250,9 @@ export const getAuditLogs = (params: {
   page?: number;
   pageSize?: number;
   userId?: number;
-  action?: string;
+  operation?: string;
   resourceType?: string;
+  result?: string;
   startTime?: string;
   endTime?: string;
 }) => {
@@ -260,6 +275,7 @@ export const exportAuditLogs = (params?: {
   userId?: number;
   action?: string;
   resourceType?: string;
+  result?: string;
   startTime?: string;
   endTime?: string;
 }) =>
