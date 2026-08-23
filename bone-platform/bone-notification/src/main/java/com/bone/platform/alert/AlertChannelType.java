@@ -5,5 +5,6 @@ public enum AlertChannelType {
   DINGTALK,
   SMS,
   WEBHOOK,
-  LOG
+  LOG,
+  IN_APP
 }

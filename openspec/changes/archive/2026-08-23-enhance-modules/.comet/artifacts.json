@@ -1,0 +1,9 @@
+{
+  "openspec_proposal": "openspec/changes/enhance-modules/proposal.md",
+  "openspec_design": "openspec/changes/enhance-modules/design.md",
+  "openspec_tasks": "openspec/changes/enhance-modules/tasks.md",
+  "design_document": "docs/superpowers/design/enhance-modules.md",
+  "build_plan": "docs/superpowers/plans/2026-08-23-enhance-modules.md",
+  "build_tasks_complete": "openspec/changes/enhance-modules/tasks.md",
+  "archive_directory": "openspec/changes/archive/2026-08-23-enhance-modules"
+}

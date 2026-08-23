@@ -1,0 +1,24 @@
+server:
+  port: 8107
+
+spring:
+  application:
+    name: bone-file
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 60MB
+
+bone:
+  file:
+    minio:
+      endpoint: ${BONE_MINIO_ENDPOINT:http://localhost:9000}
+      access-key: ${BONE_MINIO_ACCESS_KEY:minioadmin}
+      secret-key: ${BONE_MINIO_SECRET_KEY:minioadmin}
+      bucket: ${BONE_MINIO_BUCKET:platform-files}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

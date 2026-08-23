@@ -65,7 +65,7 @@ const AppContent: React.FC = () => {
           <Route path="/graph" element={<DependencyGraph />} />
           <Route path="/market" element={<Marketplace />} />
           <Route path="/deploy" element={<DeploymentStateDiagram />} />
-          <Route path="/logs" element={<PluginManagement />} />
+          <Route path="/logs" element={<SandboxManagement />} />
           <Route path="*" element={<ExtensionOverview />} />
         </Routes>
       </div>

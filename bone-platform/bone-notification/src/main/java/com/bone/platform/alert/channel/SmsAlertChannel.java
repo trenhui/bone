@@ -1,10 +1,12 @@
 package com.bone.platform.alert.channel;
 
+import com.bone.platform.alert.AlertChannel;
+import com.bone.platform.alert.AlertChannelType;
+import com.bone.platform.alert.AlertException;
 import com.bone.platform.alert.AlertMessage;
 import com.bone.platform.alert.SmsService;
 import com.bone.platform.alert.autoconfigure.AlertProperties;
 import java.util.Map;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
@@ -12,8 +14,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 @Service
 @ConditionalOnProperty(value = "alert.channels.sms.enabled", havingValue = "true")
-@RequiredArgsConstructor
-public class SmsAlertChannel {
+public class SmsAlertChannel implements AlertChannel {
   private final SmsService smsService;
   private final AlertProperties.SmsConfig config;
 
@@ -28,12 +29,18 @@ public class SmsAlertChannel {
     this.config = config;
   }
 
+  @Override
+  public AlertChannelType channelType() {
+    return AlertChannelType.SMS;
+  }
+
   /**
    * 发送短信方法
    *
    * @param message AlertMessage 消息对象，包含要发送的内容和等级
    */
-  public void send(AlertMessage message) {
+  @Override
+  public void send(AlertMessage message) throws AlertException {
     // 格式化短信内容，包含消息的等级和具体内容
     String content = "[%s] %s".formatted(message.getLevel(), message.getContent());
 
