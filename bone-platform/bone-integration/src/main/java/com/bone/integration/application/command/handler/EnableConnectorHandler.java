@@ -4,7 +4,6 @@ import com.bone.core.exception.DomainException;
 import com.bone.integration.application.command.cmd.EnableConnectorCommand;
 import com.bone.integration.domain.connector.Connector;
 import com.bone.integration.domain.repository.ConnectorRepository;
-import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,12 +17,7 @@ public class EnableConnectorHandler {
 
   @Transactional
   public void handle(EnableConnectorCommand cmd) {
-    Connector connector =
-        QueryBuilder.from(Connector.class)
-            .where(Connector::getId)
-            .eq(cmd.id())
-            .first()
-            .orElse(null);
+    Connector connector = connectorRepository.findById(cmd.id());
     if (connector == null) {
       throw new DomainException("连接器不存在");
     }

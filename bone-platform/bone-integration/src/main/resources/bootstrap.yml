@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: bone-integration
+  profiles:
+    active: ${BONE_PROFILE:dev}
+  cloud:
+    nacos:
+      config:
+        enabled: ${BONE_NACOS_ENABLED:false}
+        server-addr: ${BONE_NACOS_ADDR:localhost:8848}
+        namespace: ${BONE_NACOS_NAMESPACE:}
+        group: BONE
+        file-extension: yaml
+        shared-configs:
+          - data-id: bone-common.yaml
+            group: BONE
+            refresh: true

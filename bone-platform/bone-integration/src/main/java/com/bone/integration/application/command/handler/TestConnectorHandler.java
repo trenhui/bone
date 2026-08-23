@@ -2,10 +2,10 @@ package com.bone.integration.application.command.handler;
 
 import com.bone.core.exception.DomainException;
 import com.bone.integration.application.command.cmd.TestConnectorCommand;
+import com.bone.integration.application.port.IntegrationExecutionRecorder;
 import com.bone.integration.application.service.ConnectorService;
 import com.bone.integration.domain.connector.Connector;
-import com.bone.integration.infrastructure.observability.IntegrationExecutionMetrics;
-import com.bone.metadata.sdk.query.dsl.QueryBuilder;
+import com.bone.integration.domain.repository.ConnectorRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,16 +16,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class TestConnectorHandler {
 
   private final ConnectorService connectorService;
-  private final IntegrationExecutionMetrics integrationMetrics;
+  private final ConnectorRepository connectorRepository;
+  private final IntegrationExecutionRecorder integrationMetrics;
 
   @Transactional
   public Boolean handle(TestConnectorCommand cmd) {
-    Connector connector =
-        QueryBuilder.from(Connector.class)
-            .where(Connector::getId)
-            .eq(cmd.id())
-            .first()
-            .orElse(null);
+    Connector connector = connectorRepository.findById(cmd.id());
     if (connector == null) {
       throw new DomainException("连接器不存在");
     }

@@ -37,7 +37,7 @@ public class IntegrationOutboxWriter {
   private void persist(DomainEvent event, IntegrationEventRegistration registration) {
     IntegrationEventEnvelope envelope = envelopeFactory.create(event, registration);
     String json = envelopeFactory.toJson(envelope);
-    Long tenantId = TenantContext.getTenantId();
+    Long tenantId = TenantContext.getTenantIdAsLong();
     String partitionKey = String.valueOf(tenantId != null ? tenantId : 0L);
     IntegrationOutboxRecord record =
         IntegrationOutboxRecord.pending(

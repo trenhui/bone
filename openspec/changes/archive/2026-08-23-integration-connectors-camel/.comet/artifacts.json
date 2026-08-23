@@ -1,0 +1,9 @@
+{
+  "openspec_proposal": "openspec/changes/integration-connectors-camel/proposal.md",
+  "openspec_design": "openspec/changes/integration-connectors-camel/design.md",
+  "openspec_tasks": "openspec/changes/integration-connectors-camel/tasks.md",
+  "design_document": "docs/superpowers/design/integration-connectors-camel.md",
+  "build_plan": "docs/superpowers/plans/2026-08-23-integration-connectors-camel.md",
+  "build_tasks_complete": "openspec/changes/integration-connectors-camel/tasks.md",
+  "archive_directory": "openspec/changes/archive/2026-08-23-integration-connectors-camel"
+}

@@ -2,7 +2,7 @@ package com.bone.integration.adapter.web.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -11,11 +11,13 @@ import com.bone.integration.application.command.cmd.ExecuteFlowCommand;
 import com.bone.integration.application.command.handler.ExecuteFlowHandler;
 import com.bone.integration.application.query.dto.ExecutionLogDTO;
 import com.bone.integration.application.query.dto.FlowStatisticsDTO;
+import com.bone.integration.application.query.handler.ExecutionDetailQueryHandler;
 import com.bone.integration.application.query.handler.ExecutionLogListQueryHandler;
+import com.bone.integration.application.query.handler.FlowStatisticsQueryHandler;
+import com.bone.integration.application.query.qry.ExecutionDetailQuery;
 import com.bone.integration.application.query.qry.ExecutionLogListQuery;
+import com.bone.integration.application.query.qry.FlowStatisticsQuery;
 import com.bone.integration.application.service.FlowMonitorService;
-import com.bone.integration.domain.execution.IntegrationLog;
-import com.bone.integration.domain.flow.IntegrationFlow;
 import com.bone.integration.domain.model.execution.vo.ExecutionStatus;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
 import com.bone.integration.domain.repository.IntegrationLogRepository;
@@ -38,6 +40,8 @@ class MonitorControllerTest {
   @Mock private IntegrationFlowRepository flowRepository;
 
   @Mock private FlowMonitorService flowMonitorService;
+  @Mock private ExecutionDetailQueryHandler executionDetailQueryHandler;
+  @Mock private FlowStatisticsQueryHandler flowStatisticsQueryHandler;
 
   @InjectMocks private MonitorController monitorController;
 
@@ -66,10 +70,9 @@ class MonitorControllerTest {
 
   @Test
   void getExecution_mapsDomainToDto() {
-    IntegrationLog log = IntegrationLog.create(1L, 2L, "{}");
-    log.start();
-    log.complete("ok");
-    when(logRepository.findById(1L)).thenReturn(log);
+    ExecutionLogDTO dto =
+        new ExecutionLogDTO(1L, 2L, ExecutionStatus.SUCCESS.name(), null, null, "{}", "ok", null);
+    when(executionDetailQueryHandler.handle(any(ExecutionDetailQuery.class))).thenReturn(dto);
 
     var response = monitorController.getExecution(1L);
 
@@ -81,13 +84,8 @@ class MonitorControllerTest {
 
   @Test
   void getStatistics_aggregatesByFlowId() {
-    IntegrationFlow flow = IntegrationFlow.create(10L, "demo", "desc");
-    flow.activate();
-    when(flowRepository.findById(10L)).thenReturn(flow);
-    when(flowMonitorService.getExecutionCount(10L)).thenReturn(5L);
-    when(flowMonitorService.getSuccessCount(10L)).thenReturn(4L);
-    when(flowMonitorService.getFailureCount(10L)).thenReturn(1L);
-    when(flowMonitorService.getSuccessRate(10L)).thenReturn(80.0);
+    FlowStatisticsDTO stats = new FlowStatisticsDTO(10L, "demo", 5L, 4L, 1L, 80.0);
+    when(flowStatisticsQueryHandler.handle(any(FlowStatisticsQuery.class))).thenReturn(stats);
 
     var response = monitorController.getStatistics(10L);
 
@@ -95,6 +93,6 @@ class MonitorControllerTest {
     FlowStatisticsDTO dto = response.getData();
     assertEquals(10L, dto.flowId());
     assertEquals(5L, dto.executionCount());
-    verify(flowMonitorService).getSuccessRate(eq(10L));
+    verify(flowStatisticsQueryHandler).handle(any(FlowStatisticsQuery.class));
   }
 }

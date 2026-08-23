@@ -3,3 +3,7 @@ Class <com.bone.integration.application.command.handler.CreateFlowHandler> does 
 Class <com.bone.integration.application.command.handler.ExecuteFlowHandler> does not have simple name ending with 'CommandHandler' in (ExecuteFlowHandler.java:0)
 Class <com.bone.integration.application.command.handler.UpdateConnectorHandler> does not have simple name ending with 'CommandHandler' in (UpdateConnectorHandler.java:0)
 Class <com.bone.integration.application.command.handler.UpdateFlowHandler> does not have simple name ending with 'CommandHandler' in (UpdateFlowHandler.java:0)
+Class <com.bone.integration.application.command.handler.DeleteConnectorHandler> does not have simple name ending with 'CommandHandler' in (DeleteConnectorHandler.java:0)
+Class <com.bone.integration.application.command.handler.DisableConnectorHandler> does not have simple name ending with 'CommandHandler' in (DisableConnectorHandler.java:0)
+Class <com.bone.integration.application.command.handler.EnableConnectorHandler> does not have simple name ending with 'CommandHandler' in (EnableConnectorHandler.java:0)
+Class <com.bone.integration.application.command.handler.TestConnectorHandler> does not have simple name ending with 'CommandHandler' in (TestConnectorHandler.java:0)

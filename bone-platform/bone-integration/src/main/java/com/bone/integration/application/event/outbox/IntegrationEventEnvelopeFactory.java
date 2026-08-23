@@ -55,7 +55,7 @@ public class IntegrationEventEnvelopeFactory {
   }
 
   private long tenantIdOrDefault() {
-    Long tenantId = TenantContext.getTenantId();
+    Long tenantId = TenantContext.getTenantIdAsLong();
     return tenantId != null ? tenantId : 0L;
   }
 

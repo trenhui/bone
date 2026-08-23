@@ -50,9 +50,16 @@ export const FlowDesign: React.FC = () => {
     { value: 'START', label: '开始' },
     { value: 'END', label: '结束' },
     { value: 'HTTP', label: 'HTTP 请求' },
-    { value: 'DB', label: '数据库操作' },
+    { value: 'JDBC', label: '数据库操作' },
+    { value: 'FTP', label: 'FTP' },
+    { value: 'MQ', label: '消息队列' },
+    { value: 'TRANSFORM', label: '转换' },
+    { value: 'DECISION', label: '条件分支' },
+    { value: 'PARALLEL', label: '并行' },
     { value: 'SCRIPT', label: '脚本' },
-    { value: 'CONDITION', label: '条件' },
+    { value: 'LOG', label: '日志' },
+    { value: 'WAIT', label: '等待' },
+    { value: 'LOOP', label: '循环' },
   ];
 
   const fetchFlows = useCallback(async () => {

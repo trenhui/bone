@@ -24,6 +24,21 @@ export const ConnectorManagement: React.FC = () => {
     { value: 'JDBC', label: '数据库' },
     { value: 'FTP', label: 'FTP' },
     { value: 'MQ', label: '消息队列' },
+    { value: 'HTTP', label: 'HTTP' },
+    { value: 'HTTPS', label: 'HTTPS' },
+    { value: 'REDIS', label: 'Redis' },
+    { value: 'ELASTICSEARCH', label: 'Elasticsearch' },
+    { value: 'MONGO_DB', label: 'MongoDB' },
+    { value: 'S3', label: 'S3 / MinIO' },
+    { value: 'SFTP', label: 'SFTP' },
+    { value: 'FILE', label: '文件' },
+    { value: 'SMTP', label: 'SMTP' },
+    { value: 'POP3', label: 'POP3' },
+    { value: 'IMAP', label: 'IMAP' },
+    { value: 'KAFKA', label: 'Kafka' },
+    { value: 'RABBITMQ', label: 'RabbitMQ' },
+    { value: 'AZURE_BLOB', label: 'Azure Blob' },
+    { value: 'GOOGLE_CLOUD_STORAGE', label: 'GCS' },
   ];
 
   const fetchConnectors = useCallback(async () => {

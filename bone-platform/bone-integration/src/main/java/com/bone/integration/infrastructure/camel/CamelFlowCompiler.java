@@ -166,15 +166,92 @@ public class CamelFlowCompiler {
 
   private Object runLinearChain(FlowNode start, Object context, FlowGraph graph) {
     FlowNode current = start;
-    int guard = 32;
+    int guard = 64;
     while (current != null && !graph.isTerminal(current) && guard-- > 0) {
-      if (current.getType() == NodeType.DECISION || current.getType() == NodeType.PARALLEL) {
-        throw new DomainException("分支内暂不支持嵌套 DECISION/PARALLEL 节点");
+      if (current.getType() == NodeType.DECISION) {
+        context = runNestedDecision(current, context, graph);
+        current = resolveDecisionNext(current, context, graph);
+      } else if (current.getType() == NodeType.PARALLEL) {
+        context = runNestedParallel(current, context, graph);
+        current = findMergeAfterParallel(current, graph);
+      } else {
+        context = flowNodeExecutor.execute(current, context);
+        current = graph.singleNext(current);
       }
-      context = flowNodeExecutor.execute(current, context);
-      current = graph.singleNext(current);
     }
     return context;
+  }
+
+  /** 嵌套 DECISION：同步执行命中分支（递归支持嵌套）。 */
+  private Object runNestedDecision(FlowNode node, Object context, FlowGraph graph) {
+    Object result = context;
+    for (FlowConnection link : graph.outgoing(node)) {
+      String whenExpr = normalizeWhen(link.getCondition());
+      if (whenExpr == null || evaluateCondition(whenExpr, context)) {
+        result = runLinearChain(graph.requireNode(link.getTargetNodeId()), context, graph);
+        break;
+      }
+    }
+    return result;
+  }
+
+  /** 嵌套 PARALLEL：同步执行各分支并汇聚结果。 */
+  private Object runNestedParallel(FlowNode node, Object context, FlowGraph graph) {
+    java.util.List<Object> results = new java.util.ArrayList<>();
+    for (FlowConnection link : graph.outgoing(node)) {
+      FlowNode target = graph.requireNode(link.getTargetNodeId());
+      results.add(runLinearChain(target, context, graph));
+    }
+    return results;
+  }
+
+  /** 评估 Simple 条件表达式（默认按 body 字符串相等兜底）。 */
+  private boolean evaluateCondition(String normalizedExpr, Object body) {
+    try {
+      Object result =
+          getCamelContext()
+              .resolveLanguage("simple")
+              .createExpression(normalizedExpr)
+              .evaluate(
+                  new org.apache.camel.support.DefaultExchange(getCamelContext()),
+                  org.apache.camel.ExchangePattern.InOut)
+              .getBody();
+      return Boolean.TRUE.equals(result);
+    } catch (Exception ex) {
+      // 兜底：按 body 字符串相等比较
+      String bodyStr = body == null ? "" : String.valueOf(body);
+      String expected = extractLiteral(normalizedExpr);
+      return expected != null && bodyStr.equals(expected);
+    }
+  }
+
+  private String extractLiteral(String normalizedExpr) {
+    int idx = normalizedExpr.lastIndexOf('\'');
+    if (idx > 0 && normalizedExpr.charAt(idx - 1) == '\\') {
+      return null;
+    }
+    int start = normalizedExpr.indexOf('\'');
+    int end = normalizedExpr.lastIndexOf('\'');
+    if (start >= 0 && end > start) {
+      return normalizedExpr.substring(start + 1, end);
+    }
+    return null;
+  }
+
+  /** 选择 DECISION 命中分支；无命中取无条件 otherwise 分支，再兜底 singleNext。 */
+  private FlowNode resolveDecisionNext(FlowNode node, Object context, FlowGraph graph) {
+    for (FlowConnection link : graph.outgoing(node)) {
+      String whenExpr = normalizeWhen(link.getCondition());
+      if (whenExpr != null && evaluateCondition(whenExpr, context)) {
+        return graph.requireNode(link.getTargetNodeId());
+      }
+    }
+    for (FlowConnection link : graph.outgoing(node)) {
+      if (link.getCondition() == null || link.getCondition().isBlank()) {
+        return graph.requireNode(link.getTargetNodeId());
+      }
+    }
+    return graph.singleNext(node);
   }
 
   /** PARALLEL 之后若各分支汇聚到同一节点，则继续主编排。 */
