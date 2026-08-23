@@ -3,6 +3,8 @@ import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Navig
 import { Layout, Menu, Button, Avatar, Dropdown, Space, App as AntdApp, Form, Input, Card, Switch, Popover, Tooltip, Badge, Result } from 'antd';
 const { Password } = Input;
 import axios from 'axios';
+import { createApiClient, notificationService } from '@bone/shared-services';
+import type { MenuNode } from '@bone/shared-types';
 import { registerMicroApps, start as startQiankun, addGlobalUncaughtErrorHandler } from 'qiankun';
 import {
   UserOutlined, LogoutOutlined, DashboardOutlined, UserAddOutlined,
@@ -16,7 +18,7 @@ import {
   NodeIndexOutlined, NodeCollapseOutlined, UnorderedListOutlined,
   CoffeeOutlined, ProfileOutlined,
   LineChartOutlined, AlertOutlined, CloudOutlined, CloudServerOutlined,
-  BellOutlined,
+  BellOutlined, ApartmentOutlined, MenuOutlined,
 } from '@ant-design/icons';
 import {
   applyTheme,
@@ -27,11 +29,13 @@ import {
   themePreferenceLabel,
   type Theme,
 } from '@bone/ui';
+import { globalEventBus } from '@bone/core-event-bus';
 import './App.css';
 
 const { Header, Sider, Content } = Layout;
 
 import DashboardPage from './pages/DashboardPage';
+import ProfilePage from './pages/Profile';
 import {
   LayoutContext,
   MenuConfigContext,
@@ -39,7 +43,7 @@ import {
   type ShellMenuItem,
 } from './shellContext';
 import Authorized from './auth/Authorized';
-import { PermissionCodes, clearScopes, persistScopesFromToken } from './auth/jwt';
+import { PermissionCodes, clearScopes, persistScopesFromToken, readScopes } from './auth/jwt';
 
 function App(): JSX.Element {
   return (
@@ -49,6 +53,32 @@ function App(): JSX.Element {
       </AntdApp>
     </BoneAppProvider>
   );
+}
+
+/**
+ * 将后端 MenuNode[] 转换为 Shell 前端菜单结构。
+ * 后端已按当前用户角色过滤；此处仅做渲染映射 + 兜底。
+ */
+function buildMenuFromNodes(nodes: MenuNode[]): ShellMenuItem[] {
+  const iconMap: Record<string, JSX.Element> = {
+    DashboardOutlined: <DashboardOutlined />,
+    UserAddOutlined: <UserAddOutlined />,
+    DatabaseOutlined: <DatabaseOutlined />,
+    LinkOutlined: <LinkOutlined />,
+    AppstoreOutlined: <AppstoreOutlined />,
+    CodeOutlined: <CodeOutlined />,
+    SettingOutlined: <SettingOutlined />,
+  };
+  return nodes.map((node) => ({
+    key: node.id,
+    label: node.name,
+    icon: node.icon ? (iconMap[node.icon] ?? <AppstoreOutlined />) : undefined,
+    path: node.path,
+    enabled: true,
+    children: node.children && node.children.length > 0
+      ? buildMenuFromNodes(node.children)
+      : undefined,
+  }));
 }
 
 function AppContent(): JSX.Element {
@@ -82,6 +112,8 @@ function AppContent(): JSX.Element {
         { key: 'iam-audit', label: '审计日志', icon: <AuditOutlined />, path: '/iam', hash: '/audit-logs', enabled: true },
         { key: 'iam-audit-settings', label: '审计设置', icon: <SettingOutlined />, path: '/iam', hash: '/audit-settings', enabled: true },
         { key: 'iam-tenants', label: '租户管理', icon: <PartitionOutlined />, path: '/iam', hash: '/tenants', enabled: true },
+        { key: 'iam-organizations', label: '组织机构', icon: <ApartmentOutlined />, path: '/iam', hash: '/organizations', enabled: true },
+        { key: 'iam-menus', label: '菜单管理', icon: <MenuOutlined />, path: '/iam', hash: '/menus', enabled: true },
       ],
     },
     {
@@ -190,9 +222,29 @@ function AppContent(): JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 动态菜单：拉取 IAM 当前用户菜单树（后端已完成角色过滤），失败保留本地 fallback。
+  // 依赖 iam-org-menu-baseline 提供 GET /api/v1/iam/menu/current；未就绪时静默回退。
   useEffect(() => {
-    applyTheme(theme);
-    publishThemeChange(theme);
+    if (!user) return;
+    const api = createApiClient('/api/v1/iam');
+    api
+      .get<never, MenuNode[]>('/menu/current')
+      .then((nodes) => {
+        if (Array.isArray(nodes) && nodes.length > 0) {
+          setMenuConfig(buildMenuFromNodes(nodes));
+        }
+      })
+      .catch(() => {
+        // 后端未提供菜单接口时，保留静态 fallback（menuConfig 初始值）
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  useEffect(() => {
+    // 将全局事件总线挂到 window，供各微应用共享同一实例后订阅
+    (window as unknown as Record<string, unknown>).__BONE_EVENT_BUS__ = globalEventBus;
+    // 通过 core/event-bus 跨应用广播主题/语言变更（接入示例）
+    globalEventBus.emit('bone:theme:change', { theme, locale: 'zh-CN' });
   }, [theme, user]);
 
   // 初始化 qiankun 微应用（登录后执行，仅注册一次）
@@ -201,55 +253,75 @@ function AppContent(): JSX.Element {
 
     const token = localStorage.getItem('token') || '';
 
+    // 构建全局上下文，通过 qiankun props 下发给各微应用
+    const globalContext = {
+      token,
+      user: user ? {
+        id: user.id,
+        username: user.username,
+        realName: user.realName,
+        avatarUrl: user.avatarUrl,
+        tenantId: user.tenantId ?? 0,
+        tenantName: user.tenantName,
+        isAdmin: user.isAdmin ?? false,
+      } : null,
+      permissions: readScopes() ? { codes: readScopes(), roles: [] } : null,
+      theme: resolveThemeMode(theme) === 'dark' ? 'dark' : 'light',
+      locale: 'zh-CN' as const,
+    };
+
+    // 同时写入 window，供未通过 props 接收的微应用读取
+    (window as unknown as Record<string, unknown>).__BONE_GLOBAL_CONTEXT__ = globalContext;
+
     const microApps = [
       {
         name: 'bone-iam-app',
         entry: import.meta.env.VITE_IAM_APP_ENTRY || '//localhost:3003',
         container: '#subapp-viewport',
         activeRule: '/iam',
-        props: { token },
+        props: globalContext,
       },
       {
         name: 'bone-metadata-app',
         entry: import.meta.env.VITE_METADATA_APP_ENTRY || '//localhost:3004',
         container: '#subapp-viewport',
         activeRule: '/metadata',
-        props: { token },
+        props: globalContext,
       },
       {
         name: 'bone-masterdata-app',
         entry: import.meta.env.VITE_MASTERDATA_APP_ENTRY || '//localhost:3005',
         container: '#subapp-viewport',
         activeRule: '/masterdata',
-        props: { token },
+        props: globalContext,
       },
       {
         name: 'bone-integration-app',
         entry: import.meta.env.VITE_INTEGRATION_APP_ENTRY || '//localhost:3006',
         container: '#subapp-viewport',
         activeRule: '/integration',
-        props: { token },
+        props: globalContext,
       },
       {
         name: 'bone-system-app',
         entry: import.meta.env.VITE_SYSTEM_APP_ENTRY || '//localhost:3007',
         container: '#subapp-viewport',
         activeRule: '/system',
-        props: { token },
+        props: globalContext,
       },
       {
         name: 'bone-extension-app',
         entry: import.meta.env.VITE_EXTENSION_APP_ENTRY || '//localhost:3008',
         container: '#subapp-viewport',
         activeRule: '/extension',
-        props: { token },
+        props: globalContext,
       },
       {
         name: 'bone-generator-app',
         entry: import.meta.env.VITE_GENERATOR_APP_ENTRY || '//localhost:3009',
         container: '#subapp-viewport',
         activeRule: '/generator',
-        props: { token },
+        props: globalContext,
       },
     ];
 
@@ -351,7 +423,18 @@ function AppContent(): JSX.Element {
       }
       localStorage.setItem('username', username);
 
-      const userInfo = { name: username, forceChangePassword: false };
+      const account = resp.data.data?.account || {};
+      const userInfo = {
+        id: account.id,
+        username: account.username || username,
+        realName: account.realName || username,
+        avatarUrl: account.avatarUrl || null,
+        tenantId: account.tenantId ?? 0,
+        tenantName: account.tenantName || '',
+        isAdmin: account.isAdmin ?? false,
+        name: username,
+        forceChangePassword: false,
+      };
       setUser(userInfo);
       localStorage.setItem('bone-user', JSON.stringify(userInfo));
       messageApi.success('登录成功');
@@ -466,6 +549,16 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
   const navigate = useNavigate();
   const location = useLocation();
   const [openKeys, setOpenKeys] = useState<string[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // 拉取通知未读计数（notification 模块就绪后生效，失败回退 0）
+  useEffect(() => {
+    if (!user) return;
+    notificationService
+      .getUnreadCount()
+      .then((n) => setUnreadCount(n))
+      .catch(() => setUnreadCount(0));
+  }, [user]);
 
   const enabledMenus = useMemo(() => filterEnabled(menuConfig), [menuConfig, filterEnabled]);
 
@@ -597,9 +690,9 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
             )}
           </div>
           <div className="header-right">
-            <Tooltip title="通知 (3)">
+            <Tooltip title={`通知（${unreadCount} 条未读）`}>
               <Button type="text" className="header-button notification-btn">
-                <Badge count={3} size="small">
+                <Badge count={unreadCount} size="small">
                   <BellOutlined style={{ fontSize: 15 }} />
                 </Badge>
               </Button>
@@ -613,7 +706,7 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
               />
             </Tooltip>
             <MenuConfig />
-            <Dropdown menu={{ items: userMenu(handleLogout) }} placement="bottomRight">
+            <Dropdown menu={{ items: userMenu(handleLogout, () => navigate('/profile')) }} placement="bottomRight">
               <Button type="text" className="user-button">
                 <Avatar size="small" icon={<UserOutlined />} />
                 <span className="user-name">{user?.name}</span>
@@ -638,14 +731,43 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
                 </Authorized>
               }
             />
-            {/* qiankun 微应用挂载容器：所有微应用路由都渲染此容器 */}
-            <Route path="/iam/*" element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>} />
-            <Route path="/metadata/*" element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>} />
-            <Route path="/masterdata/*" element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>} />
-            <Route path="/integration/*" element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>} />
-            <Route path="/system/*" element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>} />
-            <Route path="/extension/*" element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>} />
-            <Route path="/generator/*" element={<MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary>} />
+            <Route
+              path="/profile"
+              element={
+                <Authorized required={PermissionCodes.SYS_CONSOLE_READ}>
+                  <ProfilePage user={user} />
+                </Authorized>
+              }
+            />
+            {/* qiankun 微应用挂载容器：所有微应用路由都渲染此容器（前端登录态守卫，后端 @PreAuthorize 兜底） */}
+            <Route
+              path="/iam/*"
+              element={<Authorized required={PermissionCodes.SYS_CONSOLE_READ}><MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary></Authorized>}
+            />
+            <Route
+              path="/metadata/*"
+              element={<Authorized required={PermissionCodes.SYS_CONSOLE_READ}><MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary></Authorized>}
+            />
+            <Route
+              path="/masterdata/*"
+              element={<Authorized required={PermissionCodes.SYS_CONSOLE_READ}><MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary></Authorized>}
+            />
+            <Route
+              path="/integration/*"
+              element={<Authorized required={PermissionCodes.SYS_CONSOLE_READ}><MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary></Authorized>}
+            />
+            <Route
+              path="/system/*"
+              element={<Authorized required={PermissionCodes.SYS_CONSOLE_READ}><MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary></Authorized>}
+            />
+            <Route
+              path="/extension/*"
+              element={<Authorized required={PermissionCodes.SYS_CONSOLE_READ}><MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary></Authorized>}
+            />
+            <Route
+              path="/generator/*"
+              element={<Authorized required={PermissionCodes.SYS_CONSOLE_READ}><MicroAppErrorBoundary><div id="subapp-viewport" /></MicroAppErrorBoundary></Authorized>}
+            />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Content>
@@ -807,12 +929,13 @@ function MenuConfig(): JSX.Element {
   );
 }
 
-function userMenu(onLogout: () => void): Array<{ key: string; icon: JSX.Element; label: string; onClick?: () => void }> {
+function userMenu(onLogout: () => void, onProfile: () => void): Array<{ key: string; icon: JSX.Element; label: string; onClick?: () => void }> {
   return [
     {
       key: 'profile',
       icon: <UserOutlined />,
       label: '个人中心',
+      onClick: onProfile,
     },
     {
       key: 'logout',

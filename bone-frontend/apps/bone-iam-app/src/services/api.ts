@@ -2,7 +2,7 @@
    Return types are conveyed via Axios' generic `<never, ApiResponse<T>>` annotation
    that flows through the response interceptor; adding explicit return annotations
    would duplicate the generic and reduce readability without adding type safety. */
-import axios from 'axios';
+import { createApiClient, setQiankunToken } from '@bone/shared-services';
 import type {
   ApiResponse, PageResult,
   Account, Role, Permission, AuditLog, Tenant,
@@ -14,60 +14,10 @@ import type {
   CreateTenantRequest, UpdateTenantRequest, UpdateTenantQuotaRequest,
 } from '../types';
 
-// 模块级内存 token，由 qiankun mount 生命周期写入，优先于 localStorage
-let _qiankunToken: string | null = null;
+// 重新导出，保持向后兼容（其他文件可能引用了 setQiankunToken）
+export { setQiankunToken };
 
-/** 供 main.tsx 在 qiankun mount 时调用，将 props.token 写入内存 */
-export function setQiankunToken(token: string | null) {
-  _qiankunToken = token;
-  if (token) {
-    localStorage.setItem('token', token);
-  }
-}
-
-const api = axios.create({
-  baseURL: (import.meta.env.VITE_API_BASE_URL || '') + '/api/v1/iam',
-  timeout: 10000,
-});
-
-// 请求拦截器 - 添加Token
-api.interceptors.request.use((config) => {
-  // 优先级：qiankun 内存 token > window 全局 token > localStorage > URL 参数
-  let token = _qiankunToken
-    || (window as unknown as Record<string, string>).__BONE_TOKEN__
-    || localStorage.getItem('token');
-  if (!token) {
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlToken = urlParams.get('token');
-    if (urlToken) {
-      token = urlToken;
-      localStorage.setItem('token', urlToken);
-    }
-  }
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// 响应拦截器 - 处理错误
-api.interceptors.response.use(
-  (response) => response.data,
-  (error) => {
-    if (error.response?.status === 401) {
-      // qiankun 微应用中不直接跳转 /login，而是通知主应用处理
-      // 避免在沙箱中 window.location.href 导致整个应用跳转
-      const event = new CustomEvent('bone:auth:expired', { detail: { status: 401 } });
-      window.dispatchEvent(event);
-    }
-    // 优先使用后端返回的 ApiResponse 中的错误信息
-    const backendMessage = error.response?.data?.message;
-    if (backendMessage) {
-      error.displayMessage = backendMessage;
-    }
-    return Promise.reject(error);
-  }
-);
+const api = createApiClient('/api/v1/iam');
 
 // ==================== 认证相关 ====================
 
@@ -346,3 +296,77 @@ export const updateTenantQuota = (id: number, data: UpdateTenantQuotaRequest) =>
   api.put<never, ApiResponse<void>>(`/tenants/${id}/quota`, data);
 
 export default api;
+
+// ==================== 组织机构管理 ====================
+
+export interface DeptNode {
+  id: number;
+  name: string;
+  parentId: number | null;
+  orderNo?: number;
+  status?: number;
+  children?: DeptNode[];
+}
+
+export interface DeptReq {
+  name: string;
+  parentId?: number | null;
+  orderNo?: number;
+  status?: number;
+}
+
+/** 获取组织机构树 */
+export const getDeptTree = (keyword?: string) =>
+  api.get<never, ApiResponse<DeptNode[]>>('/depts/tree', { params: { keyword } });
+
+/** 创建组织机构节点 */
+export const createDept = (data: DeptReq) =>
+  api.post<never, ApiResponse<number>>('/depts', data);
+
+/** 更新组织机构节点 */
+export const updateDept = (id: number, data: DeptReq) =>
+  api.put<never, ApiResponse<void>>(`/depts/${id}`, data);
+
+/** 删除组织机构节点 */
+export const deleteDept = (id: number) =>
+  api.delete<never, ApiResponse<void>>(`/depts/${id}`);
+
+// ==================== 菜单管理 ====================
+
+export interface MenuNodeItem {
+  id: number;
+  name: string;
+  parentId: number | null;
+  path?: string;
+  icon?: string;
+  orderNo?: number;
+  permission?: string;
+  type?: number;
+  children?: MenuNodeItem[];
+}
+
+export interface MenuReq {
+  name: string;
+  parentId?: number | null;
+  path?: string;
+  icon?: string;
+  orderNo?: number;
+  permission?: string;
+  type?: number;
+}
+
+/** 获取菜单树 */
+export const getMenuTree = (keyword?: string) =>
+  api.get<never, ApiResponse<MenuNodeItem[]>>('/menus/tree', { params: { keyword } });
+
+/** 创建菜单节点 */
+export const createMenu = (data: MenuReq) =>
+  api.post<never, ApiResponse<number>>('/menus', data);
+
+/** 更新菜单节点 */
+export const updateMenu = (id: number, data: MenuReq) =>
+  api.put<never, ApiResponse<void>>(`/menus/${id}`, data);
+
+/** 删除菜单节点 */
+export const deleteMenu = (id: number) =>
+  api.delete<never, ApiResponse<void>>(`/menus/${id}`);
