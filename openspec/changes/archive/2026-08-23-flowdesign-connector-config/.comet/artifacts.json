@@ -1,0 +1,9 @@
+{
+  "openspec_proposal": "openspec/changes/flowdesign-connector-config/proposal.md",
+  "openspec_design": "openspec/changes/flowdesign-connector-config/design.md",
+  "openspec_tasks": "openspec/changes/flowdesign-connector-config/tasks.md",
+  "design_document": "docs/superpowers/design/flowdesign-connector-config.md",
+  "build_plan": "docs/superpowers/plans/2026-08-23-flowdesign-connector-config.md",
+  "build_tasks_complete": "openspec/changes/flowdesign-connector-config/tasks.md",
+  "archive_directory": "openspec/changes/archive/2026-08-23-flowdesign-connector-config"
+}

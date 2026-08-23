@@ -1,14 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Card, Button, Modal, Form, Input, message, Tabs } from 'antd';
+import { Card, Button, Modal, Form, Input, message, Tabs, Select } from 'antd';
 import { PlusOutlined, PlayCircleOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { Graph, Shape, type Node } from '@antv/x6';
 import { Snapline } from '@antv/x6-plugin-snapline';
-import { Dnd } from '@antv/x6-plugin-dnd';
-import { flowApi } from '../services/api';
-import type { IntegrationFlow, CreateFlowReq, UpdateFlowReq } from '../types';
+import { flowApi, connectorApi } from '../services/api';
+import type { IntegrationFlow, CreateFlowReq, UpdateFlowReq, Connector } from '../types';
 
 const { TextArea } = Input;
 const { TabPane } = Tabs;
+const { Option } = Select;
 
 // 注册自定义节点
 Shape.Rect.define({
@@ -45,6 +45,18 @@ export const FlowDesign: React.FC = () => {
   const [total, setTotal] = useState(0);
   const [graph, setGraph] = useState<Graph | null>(null);
   const graphRef = useRef<HTMLDivElement>(null);
+  const [connectors, setConnectors] = useState<Connector[]>([]);
+  const [nodeConfigVisible, setNodeConfigVisible] = useState(false);
+  const [editingNode, setEditingNode] = useState<Node | null>(null);
+  const [nodeForm] = Form.useForm();
+
+  // 加载连接器列表（供节点配置面板绑定）
+  useEffect(() => {
+    connectorApi
+      .getConnectors({ pageNum: 1, pageSize: 100 })
+      .then((res) => setConnectors(res.data.list ?? []))
+      .catch(() => setConnectors([]));
+  }, []);
 
   const nodeTypes = [
     { value: 'START', label: '开始' },
@@ -96,12 +108,10 @@ export const FlowDesign: React.FC = () => {
       // 添加网格和对齐线插件
       newGraph.use(new Snapline());
 
-      // 添加拖拽插件
-      const dnd = new Dnd({
-        target: newGraph,
-        scaled: false,
+      // 双击节点打开配置面板
+      newGraph.on('node:dblclick', ({ node }) => {
+        openNodeConfig(node);
       });
-      newGraph.use(dnd);
 
       setGraph(newGraph);
 
@@ -116,6 +126,72 @@ export const FlowDesign: React.FC = () => {
     setCurrentFlow(null);
     form.resetFields();
     setModalVisible(true);
+  };
+
+  // ===== 节点配置面板 =====
+
+  const openNodeConfig = (node: Node) => {
+    const data = (node.getData() ?? {}) as {
+      id?: number;
+      type?: string;
+      config?: Record<string, unknown>;
+    };
+    setEditingNode(node);
+    nodeForm.setFieldsValue({
+      name: String(node.getAttrByPath('label/text') ?? ''),
+      type: data.type ?? 'HTTP',
+      connectorId: data.config?.connectorId ?? undefined,
+      configJson: data.config ? JSON.stringify(data.config, null, 2) : '{}',
+    });
+    setNodeConfigVisible(true);
+  };
+
+  const saveNodeConfig = async () => {
+    try {
+      const values = await nodeForm.validateFields();
+      if (!editingNode) return;
+      const data = (editingNode.getData() ?? {}) as {
+        id?: number;
+        type?: string;
+        config?: Record<string, unknown>;
+      };
+      const config: Record<string, unknown> = { ...(data.config ?? {}) };
+      if (values.connectorId) {
+        config.connectorId = values.connectorId;
+      }
+      try {
+        const parsed = JSON.parse(values.configJson || '{}');
+        Object.assign(config, parsed);
+      } catch {
+        // 忽略非法 JSON，保留已填写的字段
+      }
+      editingNode.setData({ ...data, type: values.type, config });
+      editingNode.setAttrByPath('label/text', values.name);
+      message.success('节点配置已保存');
+      setNodeConfigVisible(false);
+    } catch {
+      // 校验未通过，保持打开
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    if (!graph) return;
+    const nodeType = e.dataTransfer.getData('nodeType') || 'HTTP';
+    const nodeLabel = e.dataTransfer.getData('nodeLabel') || nodeType;
+    const point = graph.clientToLocal({ x: e.clientX, y: e.clientY });
+    const added = graph.addNode({
+      shape: 'custom-rect',
+      x: point.x - 60,
+      y: point.y - 30,
+      width: 120,
+      height: 60,
+      attrs: {
+        label: { text: nodeLabel },
+      },
+      data: { id: undefined, type: nodeType, config: {} },
+    });
+    openNodeConfig(added);
   };
 
   const handleEdit = async (flow: IntegrationFlow) => {
@@ -434,7 +510,11 @@ export const FlowDesign: React.FC = () => {
                 ))}
               </div>
               {/* 画布 */}
-              <div style={{ flex: 1, position: 'relative' }}>
+              <div
+                style={{ flex: 1, position: 'relative' }}
+                onDrop={handleDrop}
+                onDragOver={(e) => e.preventDefault()}
+              >
                 <div
                   ref={graphRef}
                   style={{ width: '100%', height: '100%', background: '#fff' }}
@@ -460,6 +540,42 @@ export const FlowDesign: React.FC = () => {
             </Form>
           </TabPane>
         </Tabs>
+      </Modal>
+
+      {/* 节点配置面板 */}
+      <Modal
+        title="节点配置"
+        open={nodeConfigVisible}
+        onOk={saveNodeConfig}
+        onCancel={() => setNodeConfigVisible(false)}
+        width={480}
+      >
+        <Form form={nodeForm} layout="vertical">
+          <Form.Item name="name" label="节点名称" rules={[{ required: true, message: '请输入节点名称' }]}>
+            <Input placeholder="请输入节点名称" />
+          </Form.Item>
+          <Form.Item name="type" label="节点类型" rules={[{ required: true, message: '请选择节点类型' }]}>
+            <Select placeholder="请选择节点类型">
+              {nodeTypes.map((t) => (
+                <Option key={t.value} value={t.value}>
+                  {t.label}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item name="connectorId" label="绑定连接器（可选）">
+            <Select placeholder="请选择要绑定的连接器" allowClear>
+              {connectors.map((c) => (
+                <Option key={c.id} value={c.id}>
+                  {c.name}（{c.type}）
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+          <Form.Item name="configJson" label="节点参数（JSON）">
+            <TextArea rows={6} placeholder='{"url": "https://example.com", "method": "POST"}' />
+          </Form.Item>
+        </Form>
       </Modal>
     </div>
   );
