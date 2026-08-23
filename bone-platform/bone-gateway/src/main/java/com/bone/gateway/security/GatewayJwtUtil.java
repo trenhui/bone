@@ -1,0 +1,87 @@
+package com.bone.gateway.security;
+
+import com.bone.gateway.config.GatewayJwtProperties;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Optional;
+import javax.crypto.SecretKey;
+import lombok.Getter;
+import org.springframework.stereotype.Component;
+
+/** 网关侧 JWT 校验。与下游共享同一对称密钥与 claim 结构（userId/tenantId/scopes/subject）。 */
+@Component
+public class GatewayJwtUtil {
+
+  private final GatewayJwtProperties properties;
+  private final SecretKey signingKey;
+
+  public GatewayJwtUtil(GatewayJwtProperties properties) {
+    this.properties = properties;
+    this.signingKey =
+        Keys.hmacShaKeyFor(properties.getSecretKey().getBytes(StandardCharsets.UTF_8));
+  }
+
+  /** 从 Authorization 原始值解析并校验 token，成功返回 principal。 */
+  public Optional<GatewayPrincipal> parse(String rawHeader) {
+    if (rawHeader == null || rawHeader.isBlank()) {
+      return Optional.empty();
+    }
+    String token = stripPrefix(rawHeader);
+    if (token.isEmpty()) {
+      return Optional.empty();
+    }
+    try {
+      Claims payload =
+          Jwts.parser().verifyWith(signingKey).build().parseSignedClaims(token).getPayload();
+      String subject = payload.getSubject();
+      if (subject == null || subject.isBlank()) {
+        return Optional.empty();
+      }
+      GatewayPrincipal principal =
+          new GatewayPrincipal(
+              payload.get("userId", String.class),
+              subject,
+              payload.get("tenantId", String.class),
+              readScopes(payload));
+      return Optional.of(principal);
+    } catch (Exception ignored) {
+      return Optional.empty();
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private static List<String> readScopes(Claims payload) {
+    Object raw = payload.get("scopes");
+    if (raw instanceof List<?> list) {
+      return list.stream().map(String::valueOf).toList();
+    }
+    return java.util.Collections.emptyList();
+  }
+
+  private String stripPrefix(String token) {
+    String prefix = properties.getTokenPrefix();
+    if (prefix != null && !prefix.isBlank() && token.startsWith(prefix)) {
+      return token.substring(prefix.length()).trim();
+    }
+    return token.trim();
+  }
+
+  /** 鉴权结果载体。 */
+  @Getter
+  public static class GatewayPrincipal {
+    private final String userId;
+    private final String username;
+    private final String tenantId;
+    private final List<String> scopes;
+
+    public GatewayPrincipal(String userId, String username, String tenantId, List<String> scopes) {
+      this.userId = userId;
+      this.username = username;
+      this.tenantId = tenantId;
+      this.scopes = scopes;
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "openspec_proposal": "openspec/changes/gateway-auth-ratelimit/proposal.md",
+  "openspec_design": "openspec/changes/gateway-auth-ratelimit/design.md",
+  "openspec_tasks": "openspec/changes/gateway-auth-ratelimit/tasks.md",
+  "design_document": "docs/superpowers/design/gateway-auth-ratelimit.md",
+  "build_plan": "docs/superpowers/plans/2026-08-23-gateway-auth-ratelimit.md",
+  "build_tasks_complete": "openspec/changes/gateway-auth-ratelimit/tasks.md",
+  "archive_directory": "openspec/changes/archive/2026-08-23-gateway-auth-ratelimit"
+}

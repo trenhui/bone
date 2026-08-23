@@ -52,6 +52,31 @@ spring:
           predicates:
             - Path=/api/v1/metadata/**, /api/v1/runtime/**
 
+# 网关统一鉴权（JWT 密钥与 bone-iam 等签发模块共享）
+bone:
+  gateway:
+    jwt:
+      secret-key: ${BONE_JWT_SECRET:${BONE_IAM_JWT_SECRET_KEY:change-me-change-me-change-me-change-me-32bytes}}
+      whitelist:
+        - /api/v1/iam/auth/login
+        - /actuator/
+        - /favicon.ico
+    ratelimit:
+      enabled: false
+      capacity: 100
+      window-seconds: 60
+      by-ip: true
+      by-user: true
+    resilience:
+      enabled: true
+
+spring:
+  data:
+    redis:
+      host: ${BONE_REDIS_HOST:localhost}
+      port: ${BONE_REDIS_PORT:6379}
+      timeout: 3000ms
+
 management:
   endpoints:
     web:
