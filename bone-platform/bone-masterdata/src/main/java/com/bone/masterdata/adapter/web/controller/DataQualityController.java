@@ -18,8 +18,6 @@ import com.bone.masterdata.application.query.handler.GetQualityReportQueryHandle
 import com.bone.masterdata.application.query.qry.DataQualityRuleListQuery;
 import com.bone.masterdata.domain.quality.QualityCheck;
 import com.bone.masterdata.domain.quality.QualityReport;
-import com.bone.masterdata.domain.repository.QualityCheckRepository;
-import com.bone.masterdata.domain.repository.QualityReportRepository;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -36,8 +34,6 @@ public class DataQualityController {
   private final PerformDataQualityCheckHandler performCheckHandler;
   private final GetQualityReportQueryHandler getQualityReportQueryHandler;
   private final DataQualityWebConverter converter;
-  private final QualityCheckRepository qualityCheckRepository;
-  private final QualityReportRepository qualityReportRepository;
 
   @PostMapping("/rules")
   public ApiResponse<Long> createRule(@RequestBody CreateDataQualityRuleReq req) {

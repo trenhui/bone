@@ -7,6 +7,7 @@ import com.bone.masterdata.application.command.cmd.CreateMasterDataEntityCommand
 import com.bone.masterdata.application.command.cmd.UpdateMasterDataEntityCommand;
 import com.bone.masterdata.application.command.handler.ConvertFromBusinessEntityHandler;
 import com.bone.masterdata.application.command.handler.CreateMasterDataEntityHandler;
+import com.bone.masterdata.application.command.handler.DeleteMasterDataEntityHandler;
 import com.bone.masterdata.application.command.handler.PublishMasterDataEntityHandler;
 import com.bone.masterdata.application.command.handler.UpdateMasterDataEntityHandler;
 import com.bone.masterdata.application.query.dto.MasterDataEntityDTO;
@@ -14,7 +15,6 @@ import com.bone.masterdata.application.query.handler.MasterDataEntityDetailQuery
 import com.bone.masterdata.application.query.handler.MasterDataEntityPageQueryHandler;
 import com.bone.masterdata.application.query.qry.MasterDataEntityByIdQuery;
 import com.bone.masterdata.application.query.qry.MasterDataEntityPageQuery;
-import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,7 +28,7 @@ public class MasterDataEntityController {
   private final MasterDataEntityPageQueryHandler masterDataEntityPageQueryHandler;
   private final MasterDataEntityDetailQueryHandler masterDataEntityDetailQueryHandler;
   private final ConvertFromBusinessEntityHandler convertFromBusinessEntityHandler;
-  private final MasterDataEntityRepository masterDataEntityRepository;
+  private final DeleteMasterDataEntityHandler deleteMasterDataEntityHandler;
 
   @PostMapping
   public ApiResponse<Long> create(@RequestBody CreateMasterDataEntityCommand cmd) {
@@ -73,7 +73,7 @@ public class MasterDataEntityController {
 
   @DeleteMapping("/{id}")
   public ApiResponse<Void> delete(@PathVariable Long id) {
-    masterDataEntityRepository.deleteById(id);
+    deleteMasterDataEntityHandler.handle(id);
     return ApiResponse.success();
   }
 }

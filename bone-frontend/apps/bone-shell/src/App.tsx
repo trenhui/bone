@@ -138,6 +138,7 @@ function AppContent(): JSX.Element {
         { key: 'masterdata-fields', label: '字段管理', icon: <OrderedListOutlined />, path: '/masterdata', hash: '/fields', enabled: true },
         { key: 'masterdata-rules', label: '质量规则', icon: <ReconciliationOutlined />, path: '/masterdata', hash: '/rules', enabled: true },
         { key: 'masterdata-records', label: '记录管理', icon: <FileTextOutlined />, path: '/masterdata', hash: '/records', enabled: true },
+        { key: 'masterdata-quality-results', label: '质量结果', icon: <AlertOutlined />, path: '/masterdata', hash: '/quality-results', enabled: true },
       ],
     },
     {

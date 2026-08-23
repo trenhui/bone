@@ -11,3 +11,5 @@ Class <com.bone.masterdata.application.command.handler.UpdateDataQualityRuleHand
 Class <com.bone.masterdata.application.command.handler.UpdateMasterDataEntityHandler> does not have simple name ending with 'CommandHandler' in (UpdateMasterDataEntityHandler.java:0)
 Class <com.bone.masterdata.application.command.handler.UpdateMasterDataFieldHandler> does not have simple name ending with 'CommandHandler' in (UpdateMasterDataFieldHandler.java:0)
 Class <com.bone.masterdata.application.command.handler.UpdateMasterDataRecordHandler> does not have simple name ending with 'CommandHandler' in (UpdateMasterDataRecordHandler.java:0)
+Class <com.bone.masterdata.application.command.handler.DeleteMasterDataEntityHandler> does not have simple name ending with 'CommandHandler' in (DeleteMasterDataEntityHandler.java:0)
+Class <com.bone.masterdata.application.command.handler.DeleteMasterDataRecordHandler> does not have simple name ending with 'CommandHandler' in (DeleteMasterDataRecordHandler.java:0)

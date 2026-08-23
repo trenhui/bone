@@ -11,6 +11,7 @@ import com.bone.masterdata.application.command.cmd.CreateMasterDataRecordCommand
 import com.bone.masterdata.application.command.cmd.ImportMasterDataRecordsCommand;
 import com.bone.masterdata.application.command.cmd.UpdateMasterDataRecordCommand;
 import com.bone.masterdata.application.command.handler.CreateMasterDataRecordHandler;
+import com.bone.masterdata.application.command.handler.DeleteMasterDataRecordHandler;
 import com.bone.masterdata.application.command.handler.ImportMasterDataRecordsHandler;
 import com.bone.masterdata.application.command.handler.PublishMasterDataRecordHandler;
 import com.bone.masterdata.application.command.handler.UpdateMasterDataRecordHandler;
@@ -20,7 +21,6 @@ import com.bone.masterdata.application.query.handler.MasterDataRecordDetailQuery
 import com.bone.masterdata.application.query.handler.MasterDataRecordListQueryHandler;
 import com.bone.masterdata.application.query.qry.MasterDataRecordByIdQuery;
 import com.bone.masterdata.application.query.qry.MasterDataRecordListQuery;
-import com.bone.masterdata.domain.repository.MasterDataRecordRepository;
 import java.io.IOException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +39,7 @@ public class MasterDataRecordController {
   private final PublishMasterDataRecordHandler publishMasterDataRecordHandler;
   private final ExportMasterDataRecordsQueryHandler exportMasterDataRecordsQueryHandler;
   private final MasterDataRecordWebConverter converter;
-  private final MasterDataRecordRepository masterDataRecordRepository;
+  private final DeleteMasterDataRecordHandler deleteMasterDataRecordHandler;
 
   @PostMapping("/{entityId}/records")
   public ApiResponse<Long> create(
@@ -82,7 +82,7 @@ public class MasterDataRecordController {
 
   @DeleteMapping("/records/{id}")
   public ApiResponse<Void> delete(@PathVariable Long id) {
-    masterDataRecordRepository.deleteById(id);
+    deleteMasterDataRecordHandler.handle(id);
     return ApiResponse.success();
   }
 
@@ -109,6 +109,8 @@ public class MasterDataRecordController {
 
   @GetMapping("/{entityId}/records/export")
   public ApiResponse<String> export(@PathVariable Long entityId) {
-    return ApiResponse.success(exportMasterDataRecordsQueryHandler.handle(entityId));
+    // 注意：不能用 ApiResponse.success(String)（会命中 message 重载导致 data 为 null），
+    // 需显式使用双参形式携带字符串数据
+    return ApiResponse.success("导出成功", exportMasterDataRecordsQueryHandler.handle(entityId));
   }
 }

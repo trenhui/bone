@@ -5,6 +5,7 @@ import EntityManagement from './pages/EntityManagement';
 import FieldManagement from './pages/FieldManagement';
 import QualityRuleManagement from './pages/QualityRuleManagement';
 import RecordManagement from './pages/RecordManagement';
+import QualityResult from './pages/QualityResult';
 
 type MessageApi = ReturnType<typeof AntdApp.useApp>['message'];
 
@@ -31,6 +32,7 @@ const AppContent: React.FC = () => {
           <Route path="/fields" element={<FieldManagement />} />
           <Route path="/rules" element={<QualityRuleManagement />} />
           <Route path="/records" element={<RecordManagement />} />
+          <Route path="/quality-results" element={<QualityResult />} />
           <Route path="/" element={<Navigate to="/entities" replace />} />
         </Routes>
       </Router>

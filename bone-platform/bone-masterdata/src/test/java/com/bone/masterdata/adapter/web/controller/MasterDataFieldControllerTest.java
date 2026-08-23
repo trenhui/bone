@@ -3,6 +3,8 @@ package com.bone.masterdata.adapter.web.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import com.bone.masterdata.adapter.web.converter.MasterDataFieldWebConverter;
+import com.bone.masterdata.adapter.web.dto.req.CreateMasterDataFieldReq;
 import com.bone.masterdata.application.command.cmd.CreateMasterDataFieldCommand;
 import com.bone.masterdata.application.command.handler.CreateMasterDataFieldHandler;
 import com.bone.masterdata.application.query.handler.MasterDataFieldListQueryHandler;
@@ -27,6 +29,8 @@ class MasterDataFieldControllerTest {
 
   @Mock private MasterDataFieldListQueryHandler listQueryHandler;
 
+  @Mock private MasterDataFieldWebConverter converter;
+
   @InjectMocks private MasterDataFieldController masterDataFieldController;
 
   private MockMvc mockMvc;
@@ -38,11 +42,14 @@ class MasterDataFieldControllerTest {
 
   @Test
   void testCreate() throws Exception {
+    CreateMasterDataFieldCommand command = new CreateMasterDataFieldCommand();
+    command.setMasterDataEntityId(1L);
+    when(converter.toCommand(any(CreateMasterDataFieldReq.class))).thenReturn(command);
     when(createHandler.handle(any(CreateMasterDataFieldCommand.class))).thenReturn(1L);
 
     mockMvc
         .perform(
-            MockMvcRequestBuilders.post("/api/v1/masterdata/fields")
+            MockMvcRequestBuilders.post("/api/v1/masterdata/entities/1/fields")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     "{\"name\":\"测试字段\",\"type\":\"STRING\",\"masterDataEntityId\":1,\"length\":64,\"required\":true}"))
@@ -57,9 +64,7 @@ class MasterDataFieldControllerTest {
         .thenReturn(Collections.emptyList());
 
     mockMvc
-        .perform(
-            MockMvcRequestBuilders.get("/api/v1/masterdata/fields")
-                .param("masterDataEntityId", "1"))
+        .perform(MockMvcRequestBuilders.get("/api/v1/masterdata/entities/1/fields"))
         .andExpect(MockMvcResultMatchers.status().isOk())
         .andExpect(MockMvcResultMatchers.jsonPath("$.code").value(200))
         .andExpect(MockMvcResultMatchers.jsonPath("$.data").isArray());

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { createApiClient, setQiankunToken } from '@bone/shared-services';
 import type {
   ApiResponse,
   PageResult,
@@ -22,55 +22,12 @@ import type {
   ImportResult
 } from '../types';
 
+export { setQiankunToken };
+
 const MD = '/api/v1/masterdata';
 
-// 模块级内存 token，由 qiankun mount 生命周期写入，优先于 localStorage
-let _qiankunToken: string | null = null;
-
-/** 供 main.tsx 在 qiankun mount 时调用，将 props.token 写入内存 */
-export function setQiankunToken(token: string | null) {
-  _qiankunToken = token;
-  if (token) {
-    localStorage.setItem('token', token);
-  }
-}
-
-// 创建axios实例（开发走 Vite 代理 → masterdata :8080）
-const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || '',
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
-
-// 请求拦截器 - 添加Token
-apiClient.interceptors.request.use(
-  config => {
-    // 优先级：qiankun 内存 token > window 全局 token > localStorage
-    const token = _qiankunToken
-      || (window as unknown as Record<string, string>).__BONE_TOKEN__
-      || localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  error => {
-    return Promise.reject(error);
-  }
-);
-
-// 响应拦截器
-apiClient.interceptors.response.use(
-  response => {
-    return response.data;
-  },
-  error => {
-    console.error('API Error:', error);
-    return Promise.reject(error);
-  }
-);
+// 创建 axios 实例（开发走 Vite 代理 → 网关 :8888）
+const apiClient = createApiClient('');
 
 // 主数据实体相关API
 export const masterDataEntityApi = {
@@ -195,8 +152,7 @@ export const qualityCheckApi = {
 
 export const qualityResultApi = {
   listByRecordId: (masterDataRecordId: number): Promise<ApiResponse<DataQualityResult[]>> => {
-    void masterDataRecordId;
-    return Promise.reject(new Error('MD quality result API not implemented'));
+    return apiClient.get(`${MD}/quality-results`, { params: { recordId: masterDataRecordId } });
   },
 };
 

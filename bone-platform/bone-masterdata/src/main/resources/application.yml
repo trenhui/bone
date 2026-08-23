@@ -6,10 +6,6 @@ spring:
     username: root
     password: ${BONE_DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
-  jpa:
-    hibernate:
-      ddl-auto: update
-    show-sql: true
 
 metadata:
   sdk:

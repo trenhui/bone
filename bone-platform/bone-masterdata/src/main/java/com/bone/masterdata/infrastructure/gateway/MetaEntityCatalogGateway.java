@@ -19,7 +19,8 @@ public class MetaEntityCatalogGateway implements MetaEntityCatalogPort {
 
   @Override
   public MetaEntityRow requirePublished(Long metaEntityId) {
-    Long tenantId = TenantContext.getTenantId() != null ? TenantContext.getTenantId() : 0L;
+    Long tenantId =
+        TenantContext.getTenantIdAsLong() != null ? TenantContext.getTenantIdAsLong() : 0L;
     Optional<MetaEntityRow> row =
         jdbcTemplate.query(
             """
