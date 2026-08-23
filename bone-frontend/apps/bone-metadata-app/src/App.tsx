@@ -1,7 +1,10 @@
 import React from 'react';
 import { App as AntdApp } from 'antd';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import ApplicationManagement from './pages/ApplicationManagement';
+import ModuleManagement from './pages/ModuleManagement';
 import EntityManagement from './pages/EntityManagement';
+import EntityDetail from './pages/EntityDetail';
 import FieldManagement from './pages/FieldManagement';
 import RelationManagement from './pages/RelationManagement';
 import RuntimeDataManagement from './pages/RuntimeDataManagement';
@@ -12,11 +15,21 @@ function App(): JSX.Element {
     <AntdApp>
       <Router>
         <Routes>
+          {/* 应用 → 模块 → 领域建模（企业级架构） */}
+          <Route path="/apps" element={<ApplicationManagement />} />
+          <Route path="/apps/:appId/modules" element={<ModuleManagement />} />
+          <Route path="/apps/:appId/modules/:moduleId/entities" element={<EntityManagement />} />
+          <Route path="/apps/:appId/modules/:moduleId/entities/:id" element={<EntityDetail />} />
+          <Route path="/apps/:appId/modules/:moduleId/entities/:id/data" element={<RuntimeDataManagement />} />
+          <Route path="/apps/:appId/modules/:moduleId/relations" element={<RelationManagement />} />
+          {/* 兼容旧路径 */}
           <Route path="/entities" element={<EntityManagement />} />
+          <Route path="/entities/:id" element={<EntityDetail />} />
+          <Route path="/entities/:id/data" element={<RuntimeDataManagement />} />
           <Route path="/fields" element={<FieldManagement />} />
           <Route path="/relations" element={<RelationManagement />} />
           <Route path="/runtime" element={<RuntimeDataManagement />} />
-          <Route path="/" element={<Navigate to="/entities" replace />} />
+          <Route path="/" element={<Navigate to="/apps" replace />} />
         </Routes>
       </Router>
     </AntdApp>

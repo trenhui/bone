@@ -88,6 +88,13 @@
             <artifactId>bone-core</artifactId>
             <version>1.0.0</version>
         </dependency>
+
+        <!-- bone-security（JWT 框架抽象，复用 JwtTokenService / AbstractJwtAuthenticationFilter） -->
+        <dependency>
+            <groupId>com.bone</groupId>
+            <artifactId>bone-security</artifactId>
+            <version>1.0.0</version>
+        </dependency>
         
         <!-- Bone Metadata SDK -->
         <dependency>

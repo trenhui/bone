@@ -9,14 +9,21 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <modules>
-        <!-- metadata-sdk 须先于 extension-studio（EMBEDDED 持久化依赖） -->
+        <!--
+            模块构建顺序约束：
+            bone-metadata-sdk 须先于 bone-extension-studio 构建。
+            原因：extension-studio 采用 EMBEDDED 持久化模式（见
+            StudioMetadataPersistenceConfiguration 的 @EnableSqlRepositories），
+            进程内复用 metadata-sdk 的 Repository/RowMapper 能力，编译期
+            直接依赖 metadata-sdk 的类。Maven 反应堆会自动拓扑排序，
+            此处显式排列仅为可读性，请勿将 extension-studio 前移至 metadata-sdk 之前。
+        -->
         <module>bone-metadata-sdk</module>
         <module>bone-extension-engine/bone-extension-sdk</module>
         <module>bone-extension-engine/bone-extension-studio</module>
         <module>bone-metadata-server</module>
         <module>bone-metadata-engine</module>
         <module>studio-generator</module>
-
     </modules>
     <artifactId>bone-engine</artifactId>
     <packaging>pom</packaging>

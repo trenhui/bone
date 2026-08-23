@@ -24,11 +24,24 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: Code Format Check
+      - name: Code Format Check (Spotless)
         run: mvn spotless:check --batch-mode
 
-      - name: Build & Test
+      - name: Build, Test & ArchUnit (verify, skip ITs)
         run: mvn clean verify --batch-mode -DskipITs=true
+
+      - name: Generate JaCoCo Coverage Report
+        run: mvn jacoco:report --batch-mode
+
+      - name: JaCoCo Coverage Check (≥70% line)
+        run: mvn jacoco:check --batch-mode
+
+      - name: Upload JaCoCo Coverage Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: jacoco-coverage
+          path: '**/target/site/jacoco/**'
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v4
@@ -64,6 +77,111 @@ jobs:
           name: dependency-check-report
           path: '**/target/dependency-check-report.html'
 
+  # 集成测试 job：仅 PR 时触发，使用 Testcontainers (MySQL 8 + Redis 7)
+  backend-integration:
+    name: Backend Integration Tests
+    runs-on: ubuntu-latest
+    needs: backend-quality
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Run Integration Tests (Testcontainers MySQL 8 + Redis 7)
+        run: mvn clean verify --batch-mode -Dspring.profiles.active=test
+        env:
+          # Testcontainers 使用 Docker，GitHub runner 已预装 Docker
+          TESTCONTAINERS_RYUK_DISABLED: 'true'
+
+      - name: Upload Integration Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-failsafe-reports
+          path: '**/target/failsafe-reports/*.xml'
+
+      - name: Upload Integration JaCoCo Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-jacoco-coverage
+          path: '**/target/site/jacoco/**'
+
+  # OpenAPI diff 契约检查 job：仅 PR 时触发，检测破坏性变更
+  openapi-diff:
+    name: OpenAPI Contract Diff Check
+    runs-on: ubuntu-latest
+    needs: backend-quality
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 需要完整历史以对比 main 分支
+
+      - name: Set up JDK ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: 'temurin'
+
+      - name: Checkout main branch OpenAPI specs
+        run: |
+          mkdir -p /tmp/openapi-main
+          git fetch origin ${{ github.base_ref }}:main-ref
+          # 将 main 分支的 openapi 目录复制到临时目录
+          git show main-ref:doc/architecture/openapi/ > /dev/null 2>&1 || true
+          git worktree add --detach /tmp/openapi-main-wt main-ref 2>/dev/null || true
+          if [ -d /tmp/openapi-main-wt/doc/architecture/openapi ]; then
+            cp -r /tmp/openapi-main-wt/doc/architecture/openapi/* /tmp/openapi-main/
+          else
+            echo "WARNING: main branch has no openapi directory; skipping diff"
+          fi
+
+      - name: Run OpenAPI Diff (oasdiff)
+        run: |
+          # 安装 oasdiff（Go 工具，单二进制）
+          OASDIFF_VERSION="0.10.0"
+          curl -sSL "https://github.com/Tufin/oasdiff/releases/download/v${OASDIFF_VERSION}/oasdiff_${OASDIFF_VERSION}_linux_amd64.tar.gz" \
+            | tar -xz -C /tmp oasdiff
+          chmod +x /tmp/oasdiff
+
+          OPENAPI_DIR="doc/architecture/openapi"
+          MAIN_DIR="/tmp/openapi-main"
+          HAS_BREAKING=0
+
+          if [ ! -d "$MAIN_DIR" ] || [ -z "$(ls -A $MAIN_DIR 2>/dev/null)" ]; then
+            echo "No baseline OpenAPI specs found on main; skipping diff check."
+            exit 0
+          fi
+
+          # 对比每个 *-v1.yaml 契约文件
+          for spec in "$OPENAPI_DIR"/*-v1.yaml; do
+            [ -f "$spec" ] || continue
+            filename=$(basename "$spec")
+            base_spec="$MAIN_DIR/$filename"
+            if [ ! -f "$base_spec" ]; then
+              echo "INFO: $filename is new (no baseline); skipping diff."
+              continue
+            fi
+            echo "=== Diffing $filename ==="
+            # breaking 检测：如果有破坏性变更，exit code = 1
+            /tmp/oasdiff breaking "$base_spec" "$spec" || HAS_BREAKING=1
+            # 变更摘要（changelog，不失败）
+            /tmp/oasdiff changelog "$base_spec" "$spec" || true
+          done
+
+          if [ $HAS_BREAKING -eq 1 ]; then
+            echo "::error::Breaking OpenAPI changes detected! See diff output above."
+            exit 1
+          fi
+          echo "No breaking OpenAPI changes detected."
+
   frontend-quality:
     name: Frontend Quality Check
     runs-on: ubuntu-latest
@@ -77,34 +195,33 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 8
-          run_install: false
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+          cache: 'npm'
+          cache-dependency-path: bone-frontend/package-lock.json
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci
+
+      - name: Type Check
+        run: npm run typecheck
 
       - name: Lint
-        run: pnpm run lint
+        run: npm run lint
 
-      - name: Build Shell
-        run: pnpm --filter bone-shell run build
+      - name: Unit Tests (Vitest)
+        run: npm run test
+
+      - name: Test Coverage (Vitest + c8)
+        run: npm run test:coverage
+
+      - name: Upload Frontend Coverage Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage
+          path: bone-frontend/coverage/**
+
+      - name: Build All Apps
+        run: npm run build:apps
 
   docker-build:
     name: Docker Build & Scan
@@ -113,10 +230,37 @@ jobs:
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     strategy:
       matrix:
-        module:
-          - bone-iam
-          - bone-system
-          - bone-masterdata
+        include:
+          # bone-platform 平台服务
+          - module: bone-iam
+            module-path: bone-platform/bone-iam
+            artifact-id: bone-iam
+          - module: bone-system
+            module-path: bone-platform/bone-system
+            artifact-id: bone-system
+          - module: bone-masterdata
+            module-path: bone-platform/bone-masterdata
+            artifact-id: bone-masterdata
+          - module: bone-gateway
+            module-path: bone-platform/bone-gateway
+            artifact-id: bone-gateway
+          - module: bone-integration
+            module-path: bone-platform/bone-integration
+            artifact-id: bone-platform-integration
+          # bone-engine 引擎服务
+          - module: bone-metadata-server
+            module-path: bone-engine/bone-metadata-server
+            artifact-id: bone-metadata-server
+          - module: bone-extension-studio
+            module-path: bone-engine/bone-extension-engine/bone-extension-studio
+            artifact-id: bone-extension-studio
+          - module: studio-generator
+            module-path: bone-engine/studio-generator
+            artifact-id: bone-studio-generator
+          # 脚手架
+          - module: bone-blueprint
+            module-path: bone-blueprint
+            artifact-id: bone-blueprint
     steps:
       - uses: actions/checkout@v4
 
@@ -127,7 +271,8 @@ jobs:
         run: |
           docker build \
             -f ./docker/Dockerfile \
-            --build-arg MODULE=${{ matrix.module }} \
+            --build-arg MODULE_PATH=${{ matrix.module-path }} \
+            --build-arg ARTIFACT_ID=${{ matrix.artifact-id }} \
             -t bone/${{ matrix.module }}:${{ github.sha }} \
             .
 

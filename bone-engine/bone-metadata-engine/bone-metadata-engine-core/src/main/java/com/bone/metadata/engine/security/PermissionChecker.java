@@ -1,6 +1,7 @@
 package com.bone.metadata.engine.security;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
@@ -28,12 +29,12 @@ public class PermissionChecker {
       return true;
     }
 
-    // 实际项目中，这里应该从权限系统中检查用户对实体的权限
-    // 例如：return permissionService.hasPermission(authentication.getName(), entityName,
-    // permissionType);
-
-    // 为了测试方便，暂时允许所有用户访问所有实体
-    return true;
+    // 默认拒绝（deny-by-default）：非管理员/非 system 用户必须显式经权限服务校验。
+    // 已知限制：尚未接入 IAM 权限服务（PermissionServicePort），
+    // 当前 deny-by-default 是故意的安全策略——无显式授权即拒绝。
+    // 接入权限服务后，替换为：
+    // return permissionService.hasPermission(authentication.getName(), entityName, permissionType);
+    return false;
   }
 
   /**
@@ -60,12 +61,13 @@ public class PermissionChecker {
       return true;
     }
 
-    // 实际项目中，这里应该从权限系统中检查用户对字段的权限
-    // 例如：return permissionService.hasFieldPermission(authentication.getName(), entityName,
+    // 默认拒绝（deny-by-default）：非管理员/非 system 用户必须显式经权限服务校验。
+    // 已知限制：尚未接入 IAM 权限服务（PermissionServicePort），
+    // 当前 deny-by-default 是故意的安全策略——无显式授权即拒绝。
+    // 接入权限服务后，替换为：
+    // return permissionService.hasFieldPermission(authentication.getName(), entityName,
     // fieldName, permissionType);
-
-    // 为了测试方便，暂时允许所有用户访问所有字段
-    return true;
+    return false;
   }
 
   /**
@@ -81,11 +83,12 @@ public class PermissionChecker {
       return Arrays.asList("*");
     }
 
-    // 实际项目中，这里应该从权限系统中获取用户可读的字段列表
-    // 例如：return permissionService.getReadableFields(authentication.getName(), entityName);
-
-    // 为了测试方便，暂时返回*表示可以读取所有字段
-    return Arrays.asList("*");
+    // 默认拒绝（deny-by-default）：非管理员/非 system 用户无显式授权时返回空字段集。
+    // 已知限制：尚未接入 IAM 权限服务（PermissionServicePort），
+    // 当前返回空列表是故意的安全策略——无显式授权即不可读。
+    // 接入权限服务后，替换为：
+    // return permissionService.getReadableFields(authentication.getName(), entityName);
+    return Collections.emptyList();
   }
 
   /**

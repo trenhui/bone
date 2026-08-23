@@ -2,6 +2,7 @@ package com.bone.iam.adapter.web.controller;
 
 import com.bone.core.exception.BizException;
 import com.bone.core.model.ApiResponse;
+import com.bone.core.security.jwt.JwtConfig;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.iam.adapter.web.converter.AuthWebConverter;
 import com.bone.iam.adapter.web.dto.req.LoginReq;
@@ -12,7 +13,6 @@ import com.bone.iam.application.command.cmd.RefreshTokenCommand;
 import com.bone.iam.application.command.handler.LoginCommandHandler;
 import com.bone.iam.application.command.handler.RefreshTokenCommandHandler;
 import com.bone.iam.common.IamErrorCodes;
-import com.bone.core.security.jwt.JwtConfig;
 import com.bone.iam.infrastructure.config.IamSsoProperties;
 import com.bone.iam.infrastructure.security.IamJwtTokenService;
 import com.bone.iam.infrastructure.security.TokenBlacklistService;

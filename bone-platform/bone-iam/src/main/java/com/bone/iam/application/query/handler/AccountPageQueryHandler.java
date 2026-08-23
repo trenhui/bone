@@ -61,7 +61,7 @@ public class AccountPageQueryHandler {
    * </ul>
    */
   static Long resolveTenantFilter(Long fromQuery) {
-    Long fromContext = TenantContext.getTenantId();
+    Long fromContext = TenantContext.getTenantIdAsLong();
     if (fromContext != null && fromContext != 0L) {
       return fromContext;
     }

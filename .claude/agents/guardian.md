@@ -30,7 +30,7 @@ model: claude-sonnet-4-6
 - [ ] 没有硬编码密钥、密码等敏感信息
 
 ### 安全检查（OWASP Top 10）
-- [ ] 没有 SQL 注入风险（使用 MyBatis 参数绑定）
+- [ ] 没有 SQL 注入风险（使用 bone-metadata-sdk 参数绑定）
 - [ ] 没有 XSS 风险（前端正确转义）
 - [ ] 没有 CSRF 风险
 - [ ] 敏感操作有权限检查

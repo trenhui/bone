@@ -1,0 +1,8 @@
+{
+  "openspec_proposal": "openspec/changes/iam-org-menu-baseline/proposal.md",
+  "openspec_design": "openspec/changes/iam-org-menu-baseline/design.md",
+  "openspec_tasks": "openspec/changes/iam-org-menu-baseline/tasks.md",
+  "design_document": "docs/superpowers/design/iam-org-menu-baseline.md",
+  "build_plan": "docs/superpowers/plans/2026-08-23-iam-org-menu-baseline.md",
+  "archive_directory": "openspec/changes/archive/2026-08-23-iam-org-menu-baseline"
+}

@@ -28,6 +28,15 @@ public class Account extends TenantAggregateRoot<Long> {
   @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
   private Long id;
 
+  /**
+   * 子类重新声明了 id 字段（@Getter 不会生成 setter），若缺省则 setId() 继承自父类仅设置 {@code Entity.id}，导致 create() 后
+   * getId() 返回 null（字段遮蔽）。此处显式 override 到子类字段。
+   */
+  @Override
+  public void setId(Long id) {
+    this.id = id;
+  }
+
   private Username username;
   private String passwordHash;
   private Email email;

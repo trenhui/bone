@@ -10,7 +10,7 @@ public final class TenantSupport {
   private TenantSupport() {}
 
   public static long currentTenantId() {
-    Long tenantId = TenantContext.getTenantId();
+    Long tenantId = TenantContext.getTenantIdAsLong();
     return tenantId != null ? tenantId : DEFAULT_TENANT_ID;
   }
 }

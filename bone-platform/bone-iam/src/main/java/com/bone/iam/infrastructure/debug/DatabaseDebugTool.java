@@ -4,12 +4,14 @@ import com.bone.metadata.sdk.support.config.MetadataSdkContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-/** 临时调试工具：检查数据库中的数据 */
+/** 临时调试工具：检查数据库中的数据 - 仅在 dev 环境运行 */
 @Component
 @Slf4j
+@Profile("dev")
 public class DatabaseDebugTool implements CommandLineRunner {
 
   @Autowired private JdbcTemplate jdbcTemplate;

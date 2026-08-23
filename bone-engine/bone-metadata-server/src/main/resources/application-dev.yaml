@@ -62,7 +62,7 @@ management:
 # 日志文件配置
 logging:
   level:
-    # 配置自己写的 MyBatis Mapper 打印日志
+    # 数据访问层日志打印级别
     com.bone.lowcode.dal.mysql: debug
 
 metadata:

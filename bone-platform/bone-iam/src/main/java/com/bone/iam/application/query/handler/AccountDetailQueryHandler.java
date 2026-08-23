@@ -24,7 +24,7 @@ public class AccountDetailQueryHandler {
         // 租户隔离：非平台租户不允许查看其他租户的账号详情（防 IDOR）。详设 §3.4 / §4.8。
         .filter(
             account -> {
-              Long caller = TenantContext.getTenantId();
+              Long caller = TenantContext.getTenantIdAsLong();
               return caller == null || caller == 0L || caller.equals(account.getTenantId());
             })
         .map(

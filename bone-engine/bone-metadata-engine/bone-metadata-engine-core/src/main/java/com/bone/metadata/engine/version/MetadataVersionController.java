@@ -163,13 +163,20 @@ public class MetadataVersionController {
   /** 检查关系兼容性 */
   private void checkRelationsCompatibility(
       EntityMetadata oldMetadata, EntityMetadata newMetadata, VersionCompatibilityReport report) {
-    // TODO: 实现关系兼容性检查
+    // 已知限制：当前 EntityMetadata 尚未提供 getRelationships() 方法，
+    // 关系兼容性检查被跳过。版本升级时关系删除/变更不会被检测为破坏性变更。
+    // 待 EntityMetadata 补充关系元数据后实现：遍历旧关系集合，检测被移除或
+    // 类型变更的关系，标记为破坏性变更。
   }
 
   /** 检查业务规则兼容性 */
   private void checkRulesCompatibility(
       EntityMetadata oldMetadata, EntityMetadata newMetadata, VersionCompatibilityReport report) {
-    // TODO: 实现业务规则兼容性检查
+    // 已知限制：当前 EntityMetadata.getValidationRules() 返回 List<Object>，
+    // 缺乏规则名称/类型的标准化访问方式，规则兼容性检查被跳过。
+    // 版本升级时规则删除/变更不会被检测为破坏性变更。
+    // 待 ValidationRuleMetadata 接口标准化后实现：遍历旧规则集合，
+    // 检测被移除或触发条件变更的规则，标记为破坏性或次要变更。
   }
 
   /** 版本变更类型枚举 */

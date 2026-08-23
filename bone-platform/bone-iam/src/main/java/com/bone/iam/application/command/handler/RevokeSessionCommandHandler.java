@@ -42,7 +42,7 @@ public class RevokeSessionCommandHandler {
   }
 
   private static void assertSameTenant(Long sessionTenantId) {
-    Long current = TenantContext.getTenantId();
+    Long current = TenantContext.getTenantIdAsLong();
     if (current == null || current == 0L) {
       return;
     }

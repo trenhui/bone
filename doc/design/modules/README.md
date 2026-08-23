@@ -21,7 +21,7 @@
 - **Docs-as-Code**：As-Is / Backlog 由 `tools/*-compliance-collector` 派生至 [`doc/_generated/`](../../_generated/README.md)；PR 前 `bash scripts/ci/collect-all-compliance.sh --sync-doc`。
 - **最近审查**：
   - 2026-05-17 第一/二轮：As-Is/Vision 分层、模块路径与端口真源、§5 与 Controller 1:1 对照。
-  - 2026-05-20 第三轮（业界最佳实践）：每模块文首补 **HTTP 真源 + 错误码前缀**；控制台/集成新增 **SLI/SLO 契约**；集成/主数据/元数据新增 **§5.0/§5.A 横切约定**；主数据 ↔ [ADR-0002](../../architecture/adr/0002-masterdata-catalog-sync.md)；平台契约 ↔ [Bone-API-规范 §8.1](../../architecture/Bone-API-规范.md#81-模块横切约定索引详设-50)、[Bone-可观测性规范 §4.2.1](../../architecture/Bone-可观测性规范.md#421-模块-sli-与指标映射与详设对齐)。
+  - 2026-05-20 第三轮（业界最佳实践）：每模块文首补 **HTTP 真源 + 错误码前缀**；控制台/集成新增 **SLI/SLO 契约**；集成/主数据/元数据新增 **§5.0/§5.A 横切约定**；主数据 ↔ [ADR-0017](../../architecture/adr/0017-masterdata-catalog-sync.md)；平台契约 ↔ [Bone-API-规范 §8.1](../../architecture/Bone-API-规范.md#81-模块横切约定索引详设-50)、[Bone-可观测性规范 §4.2.1](../../architecture/Bone-可观测性规范.md#421-模块-sli-与指标映射与详设对齐)。
   - 2026-05-20 第四轮（结构瘦身 · DRY）：
     - **§6/§7/§8/§9 通用 boilerplate** 收敛至架构文档（[`Bone-API-规范`](../../architecture/Bone-API-规范.md)、[`Bone-多租户规范`](../../architecture/Bone-多租户规范.md)、[`Bone-测试策略`](../../architecture/Bone-测试策略.md)、[`Bone-可观测性规范`](../../architecture/Bone-可观测性规范.md)），各模块仅保留**特有项**；
     - **§10 工程结构**：模块 1/2/3/4/6 删除 200+ 行虚构 directory tree 与"命名规范"逐类描述，统一指向 [`Bone-DDD-最终实践方案 §14`](../../architecture/Bone-DDD-最终实践方案.md) 与 `bone-blueprint`；
@@ -35,13 +35,14 @@
 |------|------|-------------------|--------------|------------------|-----|
 | 1 | [控制台](./1.%20控制台与仪表盘模块详细设计方案.md)（**v2.0**） | `bone-system` `/api/v1/console/*` | [`_generated/console`](../../_generated/console/) | **8083** | §4.3 |
 | 2 | [元数据](./2.%20元数据管理模块详细设计方案.md) · [**对照**](./元数据能力-实现映射与竞品对照.md) | sdk + server + engine | [`_generated/metadata`](../../_generated/metadata/) + 详设 `META_COMPLIANCE_*` | **9001** | §4.4 |
-| 3 | [主数据](./3.%20主数据管理模块详细设计方案.md) | `bone-masterdata` | [`_generated/masterdata`](../../_generated/masterdata/) + 详设 `MDM_COMPLIANCE_*` | **8080** | §4.5 |
+| 3 | [主数据](./3.%20主数据管理模块详细设计方案.md) | `bone-masterdata` | [`_generated/masterdata`](../../_generated/masterdata/) + 详设 `MDM_COMPLIANCE_*` | **8084** | §4.5 |
 | 4 | [集成](./4.%20集成管理模块详细设计方案.md) | `bone-integration` | [`_generated/integration`](../../_generated/integration/) + 详设 `INT_COMPLIANCE_*` | **8085** | §4.7 |
 | 5 | [扩展](./5.%20扩展管理模块详细设计方案.md)（**v2.5**） | extension-engine + studio | [`_generated/extension`](../../_generated/extension/) + 详设附录 A/C | Studio **8088** | §4.6 |
 | 6 | [IAM](./6.%20IAM账号权限管理模块详细设计方案.md) | `bone-iam` | [`_generated/iam`](../../_generated/iam/) + 详设附录 A/C | **8081** | §4.8 |
 | 7 | [系统管理](./7.%20系统管理模块详细设计方案.md) | `bone-system` | —（与控制台同进程，见 console 收集器） | **8083** | §4.9 |
-| 8 | [Studio Generator](./8.Studio%20Generator%20详细设计方案.md) | `studio-generator` | [`_generated/generator`](../../_generated/generator/) + 详设 `GEN_COMPLIANCE_*` | **8085** | §4 + Studio |
+| 8 | [Studio Generator](./8.Studio%20Generator%20详细设计方案.md) | `studio-generator` | [`_generated/generator`](../../_generated/generator/) + 详设 `GEN_COMPLIANCE_*` | **8086** | §4 + Studio |
 | 9 | [SmartMeta](./9.%20SmartMeta%20引擎模块技术说明.md) | `bone-metadata-engine` | — | 随宿主 | 引擎能力 |
+| 10 | [应用与模块管理](./10.%20应用与模块管理详细设计方案.md) | `bone-platform` 平台注册中心 | — | N/A | §4 |
 
 **跨模块**： [BONE X Studio 详细设计](../BONE-X-Studio-详细设计方案.md)
 

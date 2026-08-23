@@ -31,4 +31,4 @@ PRD 定义三种隔离：行级 `tenant_id`（默认）、独立 Schema、独立
 ## 合规与迁移
 
 - [Target] 扩展 `iam_tenant` 列 + `TenantController`。
-- MyBatis 拦截器 / 数据源路由按 `isolation_mode` 分支。
+- bone-metadata-sdk 拦截器 / 数据源路由按 `isolation_mode` 分支。

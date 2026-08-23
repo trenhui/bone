@@ -71,7 +71,7 @@
 | DOC-01 | `doc/design/modules/*` | 详设与 README 设计原则对齐；As-Is/Vision 分层 | done | P1 |
 | DOC-02 | `Bone-API-规范` §8.1 | 模块横切约定索引 | done | P1 |
 | DOC-03 | `Bone-可观测性规范` §4.2.1 | 控制台/集成 SLI + PromQL | done | P1 |
-| DOC-04 | `adr/0002-masterdata-catalog-sync` | meta → mdm 同步 ADR | done | P1 |
+| DOC-04 | `adr/0017-masterdata-catalog-sync` | meta → mdm 同步 ADR | done | P1 |
 
 ---
 
@@ -126,7 +126,7 @@
 | META-VIS-01 | `bone-metadata-server` catalog | 实体/关系 REST：`/api/v1/metadata/entities`、`…/entities/{id}/fields`、`…/relationships` | done | P0 |
 | META-VIS-02 | `bone-metadata-app` :3004 | 建模 UI CRUD；代理 **9001** + `VITE_API_KEY` | done | P0 |
 | META-VIS-03 | `studio-generator` | 物理库 + **CATALOG_SNAPSHOT**；`GET /api/v1/generator/metadata-entity-snapshots`、`GET …/data-sources/{id}/tables` | done | P0 |
-| META-VIS-04 | `bone-generator-app` | 与 generator :8085 API 对齐 | done | P1 |
+| META-VIS-04 | `bone-generator-app` | 与 generator :8086 API 对齐 | done | P1 |
 | GEN-TEST-01 | `studio-generator` | H2 `schema-test.sql` + 数据源/模板 Controller 集成测试 | done | P2 |
 | GEN-MVP-01 | `bone-gateway` + `bone-generator-app` | `GeneratorGatewayRouteIT`；Vite 代理 **8888**；`e2e:api` / `e2e:ui` | done | P2 |
 | GEN-MVP-02 | `studio-generator` | LRO `POST /code-generation` 202 + `GET /operations/{taskId}`；OpenAPI `generator-v1.yaml` | done | P2 |

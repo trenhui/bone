@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,26 +13,32 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 数据库修复控制器 - 用于修复初始化数据问题 */
+/** 数据库修复控制器 - 仅在 dev 环境暴露，生产环境不加载 */
 @RestController
 @RequestMapping("/api/v1/iam/debug")
 @RequiredArgsConstructor
 @Slf4j
+@Profile("dev")
 public class DatabaseFixController {
 
   private final JdbcTemplate jdbcTemplate;
   private final PasswordEncoder passwordEncoder;
 
-  /** 重置admin密码为123456 */
+  /** 重置admin密码（口令来源：环境变量 BONE_IAM_DEFAULT_PASSWORD，未配置则跳过以避免明文泄露） */
   @PostMapping("/reset-admin-password")
   public ApiResponse<String> resetAdminPassword() {
     try {
-      String encoded = passwordEncoder.encode("123456");
+      String defaultPassword = System.getenv("BONE_IAM_DEFAULT_PASSWORD");
+      if (defaultPassword == null || defaultPassword.isEmpty()) {
+        log.warn("未配置 BONE_IAM_DEFAULT_PASSWORD，跳过 admin 密码重置以避免硬编码明文口令");
+        return ApiResponse.success("admin 密码未重置：缺少 BONE_IAM_DEFAULT_PASSWORD 环境变量");
+      }
+      String encoded = passwordEncoder.encode(defaultPassword);
       jdbcTemplate.update(
           "UPDATE iam_account SET password_hash = ?, login_fail_count = 0, locked_at = NULL WHERE username = 'admin'",
           encoded);
       log.info("已重置admin密码, new hash={}", encoded);
-      return ApiResponse.success("已重置admin密码为123456");
+      return ApiResponse.success("已重置admin密码（口令来源：环境变量，未硬编码明文）");
     } catch (Exception e) {
       log.error("重置密码失败: {}", e.getMessage(), e);
       return ApiResponse.error("RESET_FAILED", "重置密码失败: " + e.getMessage());

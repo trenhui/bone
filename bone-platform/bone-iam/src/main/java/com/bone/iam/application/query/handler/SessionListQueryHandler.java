@@ -18,7 +18,7 @@ public class SessionListQueryHandler {
   @Transactional(readOnly = true)
   public List<Session> handle(Long accountId) {
     List<Session> sessions = sessionStore.listByAccountId(accountId);
-    Long current = TenantContext.getTenantId();
+    Long current = TenantContext.getTenantIdAsLong();
     if (current == null || current == 0L) {
       return sessions;
     }

@@ -5,10 +5,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.stereotype.Component;
 
 /** 操作注册表 负责管理所有业务操作的元数据 */
+@Slf4j
 @Component
 public class OperationRegistry implements InitializingBean {
 
@@ -40,7 +42,7 @@ public class OperationRegistry implements InitializingBean {
       metadataRepository.saveOperation(operation);
     } catch (Exception e) {
       // 如果存储失败，仅记录日志，不影响内存注册
-      e.printStackTrace();
+      log.warn("操作元数据持久化失败，仅保留内存注册: {}", operation, e);
     }
   }
 
@@ -91,7 +93,7 @@ public class OperationRegistry implements InitializingBean {
       }
     } catch (Exception e) {
       // 如果加载失败，仅记录日志
-      e.printStackTrace();
+      log.warn("加载动态操作元数据失败: {}", e.getMessage(), e);
     }
   }
 

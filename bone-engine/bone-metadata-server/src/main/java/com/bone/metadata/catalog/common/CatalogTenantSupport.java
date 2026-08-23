@@ -8,7 +8,7 @@ public final class CatalogTenantSupport {
   private CatalogTenantSupport() {}
 
   public static long currentTenantId() {
-    Long tenantId = TenantContext.getTenantId();
+    Long tenantId = TenantContext.getTenantIdAsLong();
     return tenantId != null ? tenantId : 1L;
   }
 }

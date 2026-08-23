@@ -1,14 +1,12 @@
 package com.bone.blueprint.infrastructure.security;
 
 import com.bone.blueprint.domain.security.TokenProvider;
-import com.bone.core.security.jwt.JwtTokenService;
 import com.bone.core.security.jwt.JwtPrincipal;
+import com.bone.core.security.jwt.JwtTokenService;
 import java.util.List;
 import org.springframework.stereotype.Component;
 
-/**
- * bone-blueprint JWT 实现。委托给框架层的 {@link JwtTokenService}。
- */
+/** bone-blueprint JWT 实现。委托给框架层的 {@link JwtTokenService}。 */
 @Component
 public class JwtTokenProvider implements TokenProvider {
 
@@ -26,9 +24,7 @@ public class JwtTokenProvider implements TokenProvider {
 
   @Override
   public String getUsername(String token) {
-    return jwtTokenService.parse(token)
-        .map(JwtPrincipal::username)
-        .orElse(null);
+    return jwtTokenService.parse(token).map(JwtPrincipal::username).orElse(null);
   }
 
   @Override

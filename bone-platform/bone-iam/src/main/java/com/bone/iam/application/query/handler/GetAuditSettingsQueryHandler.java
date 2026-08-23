@@ -15,7 +15,7 @@ public class GetAuditSettingsQueryHandler {
 
   @Transactional(readOnly = true)
   public AuditSettingsDTO handle() {
-    Long tenantId = TenantContext.getTenantId();
+    Long tenantId = TenantContext.getTenantIdAsLong();
     var settings = auditSettingsStore.findByTenantId(tenantId != null ? tenantId : 0L);
     AuditSettingsDTO dto = new AuditSettingsDTO();
     dto.setRetentionDays(settings.getRetentionDays());

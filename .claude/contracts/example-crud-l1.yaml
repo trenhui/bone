@@ -143,6 +143,8 @@ guardrails:
 
   naming_convention:
     controller: "*Controller"
-    service: "*Service"
-    mapper: "*Mapper"
-    dto: "*DTO"
+    command_handler: "*CommandHandler"
+    query_handler: "*QueryHandler"
+    repository: "*Repository"
+    dto_req: "*Req"
+    dto_resp: "*Resp"

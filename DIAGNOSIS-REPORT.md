@@ -320,7 +320,7 @@ account.updatedAt = LocalDateTime.now();
 
 **问题**：`TenantAggregateRoot` 基类可能已提供审计字段自动填充。
 
-**优化建议**：利用 `AbstractEntity` / `TenantAbstractEntity` 的审计字段自动填充机制，或通过 `@PrePersist` / Spring Data JPA Listener 统一处理。
+**优化建议**：利用 `AbstractEntity` / `TenantAbstractEntity` 的审计字段自动填充机制，或通过 bone-metadata-sdk 的仓储拦截器统一处理。
 
 ---
 

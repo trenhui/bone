@@ -6,10 +6,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.bone.core.security.jwt.JwtConfig;
 import com.bone.iam.application.command.handler.LoginCommandHandler;
 import com.bone.iam.application.command.handler.RefreshTokenCommandHandler;
 import com.bone.iam.infrastructure.config.IamSsoProperties;
-import com.bone.core.security.jwt.JwtConfig;
 import com.bone.iam.infrastructure.security.IamJwtTokenService;
 import com.bone.iam.infrastructure.security.TokenBlacklistService;
 import org.junit.jupiter.api.BeforeEach;

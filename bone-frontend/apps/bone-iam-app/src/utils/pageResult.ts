@@ -7,6 +7,6 @@ export function unwrapPage<T>(
   if (!page) {
     return { records: [] as T[], total: 0 };
   }
-  const records = page.records ?? page.data ?? [];
+  const records: T[] = (page.records ?? page.data ?? []) as T[];
   return { records, total: page.total ?? 0 };
 }

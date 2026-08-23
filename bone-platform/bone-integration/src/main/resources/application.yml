@@ -100,4 +100,57 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+# Resilience4j（Servlet 栈）：外部 HTTP/连接器调用的熔断与重试
+# 已知限制：当前仅做默认值兜底；实际 Connector/Flow 调用点需显式添加
+#   @CircuitBreaker(name = "connectorHttp", fallbackMethod = "...") @Retry(name = "connectorHttp")
+# 才会生效；未标注时此配置无作用，仅为后续接入提供统一契约。
+resilience4j:
+  circuitbreaker:
+    instances:
+      connectorHttp:
+        register-health-indicator: true
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 20
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        ignore-exceptions:
+          - java.lang.IllegalArgumentException
+      flowExecution:
+        register-health-indicator: true
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 50
+        minimum-number-of-calls: 10
+        failure-rate-threshold: 30
+        wait-duration-in-open-state: 15s
+        permitted-number-of-calls-in-half-open-state: 5
+  retry:
+    instances:
+      connectorHttp:
+        max-attempts: 3
+        wait-duration: 200ms
+        retry-exceptions:
+          - java.net.SocketTimeoutException
+          - java.net.ConnectException
+          - org.springframework.web.client.ResourceAccessException
+      flowExecution:
+        max-attempts: 2
+        wait-duration: 500ms
+  timelimiter:
+    instances:
+      connectorHttp:
+        timeout-duration: 10s
+        cancel-running-future: true
+      flowExecution:
+        timeout-duration: 300s
+        cancel-running-future: true

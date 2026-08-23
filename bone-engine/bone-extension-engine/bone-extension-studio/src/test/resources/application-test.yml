@@ -8,9 +8,6 @@ spring:
     init:
       mode: always
       schema-locations: classpath:db/schema-h2.sql
-  jpa:
-    hibernate:
-      ddl-auto: none
 
 metadata:
   sdk:

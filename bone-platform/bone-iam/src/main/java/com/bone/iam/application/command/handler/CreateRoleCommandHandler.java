@@ -30,7 +30,7 @@ public class CreateRoleCommandHandler {
     // 优先使用命令中的 tenantId，其次从 TenantContext 获取，最后默认为 0L
     Long tenantId = cmd.getTenantId();
     if (tenantId == null) {
-      tenantId = TenantContext.getTenantId();
+      tenantId = TenantContext.getTenantIdAsLong();
     }
     if (tenantId == null) {
       tenantId = 0L;

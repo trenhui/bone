@@ -32,9 +32,9 @@
 | 微服务生态 | Spring Cloud 2023.0.3 + Spring Cloud Alibaba 2023.0.1.2 |
 | 数据库 | MySQL 8.0.33 |
 | 连接池 | HikariCP 5.1.0 |
-| ORM | JPA（Hibernate）+ MyBatis（混合使用） |
+| ORM | bone-metadata-sdk（自研 Spring JDBC 仓储抽象，`@EnableSqlRepositories`） |
 | 缓存 | Redis 7.x + Redisson 3.27.2 + Caffeine |
-| 认证授权 | SA-Token 1.39.0 |
+| 认证授权 | Spring Security 6 + JWT（JJWT 0.12.x）；SA-Token 1.39.0 仅 BOM 声明 |
 | API 文档 | SpringDoc OpenAPI 2.3.0（Swagger UI） |
 | 可观测性 | SkyWalking 9.7.0、Spring Boot Admin 3.0.0、Micrometer Prometheus |
 | 工具类 | Lombok 1.18.30、MapStruct 1.5.5.Final、Jackson |
@@ -80,23 +80,21 @@ bone/                          # 根聚合模块
 │   ├── bone-extension-engine/ # 扩展引擎
 │   │   ├── bone-extension-sdk/
 │   │   └── bone-extension-studio/
-│   ├── bone-workflow/         # 工作流引擎
-│   └── bone-procurement/      # 采购/供应链相关引擎
+│   ├── go-engine/             # Bone Metadata Go（Go 版元数据引擎，与 Java 版并存，定位待定）
+│   ├── bone-workflow/         # 工作流引擎（规划中）
+│   └── bone-procurement/      # 采购/供应链相关引擎（规划中）
 ├── bone-platform/             # 企业共享平台服务
 │   ├── bone-iam/              # 身份与访问管理（端口 8081）
-│   ├── bone-gateway/          # API 网关
+│   ├── bone-gateway/          # API 网关（端口 8888，骨架：目前仅 traceId 透传 filter）
 │   ├── bone-masterdata/       # 主数据服务
 │   ├── bone-system/           # 系统管理（端口 8083）
-│   ├── bone-file/             # 文件服务
-│   ├── bone-notification/     # 通知服务
+│   ├── bone-file/             # 文件服务（规划中，暂无实现）
+│   ├── bone-notification/     # 通知服务（目前仅告警通道 Alert）
 │   └── bone-integration/      # 唯一集成服务（:8085，/api/v1/integration）
-│   ├── tpa-saas/              # TPA 后端 Java（在役，逐步切至 tpa-go）
-│   ├── tpa-go/                # TPA 后端 Go（目标主栈，阶段 1 骨架）
-│   ├── tpa-sass-react/        # TPA 管理端 React（目标唯一前端）
-│   └── tpa-sass-vue3/         # TPA 管理端 Vue3（维护至 React parity）
 ├── bone-sdk/                  # 客户端 SDK
 │   ├── bone-client-sdk/
 │   └── bone-openapi-sdk/
+├── bone-blueprint/            # DDD 参考实现（端口 8082，订单示例）
 └── bone-engine/studio-generator/  # Studio 代码生成（DDD 分层，替代原 bone-tool/bone-codegen）
 ```
 
@@ -112,6 +110,7 @@ bone-frontend/
 │   ├── bone-integration-app/  # 集成微应用（端口 3006）
 │   ├── bone-system-app/       # 系统管理微应用（端口 3007）
 │   ├── bone-extension-app/    # 扩展引擎微应用（端口 3008）
+│   └── bone-generator-app/    # Studio 代码生成微应用
 └── packages/
     ├── shared-components/     # @bone/shared-components
     ├── shared-utils/          # @bone/shared-utils
@@ -169,7 +168,7 @@ npm run preview               # Vite preview
 ```
 
 批量启动所有前后端应用的脚本：
-- `bone-frontend/restart-all-apps.sh` — 停止并重启所有 7 个前端应用，日志输出到 `logs/` 目录。
+- `bone-frontend/restart-all-apps.sh` — 停止并重启所有 8 个前端应用，日志输出到 `logs/` 目录。
 - 详细用法见 `bone-frontend/SCRIPT_USAGE.md`。
 
 ### 4.3 开发环境要求
@@ -218,7 +217,7 @@ com.bone.{module}
 │   ├── result/
 │   └── util/
 └── infrastructure/            # 基础设施层（出站适配器）
-    ├── persistence/           # JPA / MyBatis Mapper、PO、仓储实现
+    ├── persistence/           # 基于 bone-metadata-sdk 的仓储实现、PO
     └── ...
 ```
 
@@ -237,7 +236,7 @@ adapter/web → application → domain ← infrastructure
 | 类 | 位置 | 作用 |
 |---|---|---|
 | `AbstractEntity` | `bone-core` | 全局基础实体，包含 `createdAt`、`createdBy`、`updatedAt`、`updatedBy`、`deleted`（软删） |
-| `TenantAbstractEntity` | `bone-core` | 多租户基础实体，增加 `tenantId`、`bizIdentityCode` |
+| `TenantAbstractEntity` | `bone-core` | 多租户基础实体，增加 `tenantId` |
 | `TenantContext` | `bone-core` | 线程级租户上下文传递 |
 | `ApiResponse<T>` | `bone-core` | 统一 REST 响应包装 |
 | `PageResult<T>` | `bone-core` | 统一分页结果包装 |
@@ -247,8 +246,8 @@ adapter/web → application → domain ← infrastructure
 - **CQRS 物理分离**：`command` 包与 `query` 包在同一模块内分离，命令走写模型（带事务），查询走读模型（只读）。
 - **富领域模型**：聚合根使用 `AggregateRoot` / `TenantAggregateRoot`（ADR-0011）+ 工厂方法；读侧 DSL（`QueryBuilder`/`FluentQuery`）须 `@ReadSideOnly`，禁止在 `domain` 与 CommandHandler 使用。
 - **仓储模式**：接口定义在 `domain.repository`，实现放在 `infrastructure.persistence`。
-- **自定义元数据仓储**：`bone-metadata-sdk` 提供 `@EnableSqlRepositories` 机制，类似 Spring Data 但为自研实现。
-- **多租户**：表均含 `tenant_id` 与 `biz_identity_code`，配合 `TenantContext` 实现数据隔离。
+- **自定义元数据仓储**：`bone-metadata-sdk` 提供 `@EnableSqlRepositories` 机制，类似 Spring Data 但为自研实现。**该项目唯一持久化方案，禁止引入 MyBatis-Plus、JPA/Hibernate、MyBatis 等其他 ORM 框架。**
+- **多租户**：表均含 `tenant_id`（租户隔离），配合 `TenantContext` 实现数据隔离；`biz_identity_code` 仅在部署 SQL（`doc/deployment/sql/`）中存在，`bone-init.sql` 未包含。
 - **软删除**：全局逻辑删除字段 `deleted`（TINYINT）。
 
 ### 5.5 详细规范文档
@@ -277,7 +276,7 @@ adapter/web → application → domain ← infrastructure
 
 - 测试类命名：`*Test.java`、`*Tests.java`
 - 排除：`Abstract*.java`
-- 已发现使用 ArchUnit 的模块：`bone-iam`、`bone-masterdata`、`bone-integration`，通过 `ArchitectureTest.java` 强制校验分层依赖。
+- 已发现使用 ArchUnit 的模块（共 8 个）：`bone-blueprint`、`bone-iam`、`bone-masterdata`、`bone-metadata-server`、`studio-generator`、`bone-extension-studio`、`bone-integration`、`bone-system`，通过 `ArchitectureTest.java` + `FreezingArchRule` 强制校验分层依赖。
 - 其他测试覆盖：扩展引擎（PromotionServiceTest 等）、SmartMeta 引擎（ExpressionEngineTest、BusinessRuleEngineTest 等）。
 - **现状**：多数模块已建立 `src/test/java` 目录，但覆盖率总体偏稀疏。
 
@@ -293,23 +292,26 @@ adapter/web → application → domain ← infrastructure
 ### 7.1 格式化
 
 - **Spotless** 2.43.0 + **Google Java Format** 1.17.0
-- 执行：`mvn spotless:apply`
-- 当前仅在 `pluginManagement` 中定义，**未自动绑定到所有模块生命周期**，需显式调用。
+- 执行：`mvn spotless:apply`（格式化）/ `mvn spotless:check`（校验）
+- 在 `bone-parent/pom.xml` 中绑定到 `validate` 阶段（`spotless:check`），所有继承 bone-parent 的模块构建时自动执行格式校验；CI（`.github/workflows/ci.yml`）亦显式调用 `mvn spotless:check`。
 
 ### 7.2 静态分析（按模块配置）
 
-部分模块在 `pom.xml` 中绑定了以下工具到 `validate` 阶段（原 `bone-tool` 已移除，以各子模块配置为准）：
+仅以下两个模块在 `pom.xml` 中配置了静态分析工具（其余平台模块未配置）：
 
-| 工具 | 版本 | 配置 | 说明 |
-|---|---|---|---|
-| Checkstyle | 10.12.7 | `checkstyle.xml` | 120 字符行宽、禁止 Tab、命名规范 |
-| PMD | 6.55.0 | `pmd-ruleset.xml` | EmptyCatchBlock、EqualsNull、UseEqualsToCompareStrings、NullAssignment |
-| SpotBugs | 4.2.3 | Max effort / Medium threshold | Bug 模式检测 |
-| JaCoCo | 0.8.11 | — | 行覆盖率 ≥ 70%，分支覆盖率 ≥ 60%；排除 domain/entity、config、enums、DTO |
+| 模块 | 工具 | 版本 | 阶段 | 说明 |
+|---|---|---|---|---|
+| `bone-metadata-sdk` | Checkstyle | 3.3.0（maven 插件） | 显式调用 | `google_checks.xml`，`failsOnError=false` |
+| `bone-metadata-sdk` | SpotBugs | 4.7.3.0 | 显式调用 | `effort=Max`，`threshold=Low`，`failOnError=false` |
+| `bone-metadata-sdk` | JaCoCo | 0.8.10 | `prepare-package` | PACKAGE 级 LINE 覆盖率 ≥ 80% |
+| `bone-metadata-sdk` | OWASP dependency-check | 8.4.0 | 显式调用 | `failBuildOnCVSS=7` |
+| `bone-extension-sdk` | Checkstyle | 3.3.0（maven 插件） | 显式调用 | 自定义 `checkstyle.xml`，`failsOnError=false` |
+| `bone-extension-sdk` | SpotBugs | 4.6.0.0 | `verify` | `effort=Max`，`threshold=Low` |
+| `bone-extension-sdk` | PMD | 3.21.0（maven 插件） | 显式调用 | 仅声明版本，规则文件按需配置 |
 
 **注意**：
-- 上述质量工具**并非所有模块都继承激活**，以各子模块 `pom.xml` 为准（如 `bone-extension-sdk`）。
-- `bone-extension-sdk/pom.xml` 有独立的 Checkstyle + SpotBugs 配置，且设置了 `failsOnError=false`，规则较宽松。
+- 平台模块（`bone-iam`、`bone-system`、`bone-masterdata`、`bone-integration` 等）**未配置**上述静态分析工具，仅依赖 Spotless 格式校验与 ArchUnit 架构校验。
+- 上述工具均设置 `failsOnError=false` / `failOnError=false`，不会阻断构建。
 
 ### 7.3 前端代码质量
 
@@ -329,10 +331,12 @@ adapter/web → application → domain ← infrastructure
 ### 8.1 表设计共性
 
 所有业务表均包含：
-- `tenant_id` + `biz_identity_code`（租户隔离）
+- `tenant_id`（租户隔离）
 - `created_at`、`created_by`、`updated_at`、`updated_by`（审计）
 - `deleted` TINYINT（软删除）
 - JSON 类型字段（灵活Schema）
+
+> **注意**：`biz_identity_code` 字段在 `bone-metadata-sdk` 代码和部署 SQL（`doc/deployment/sql/bonecore.sql`）中存在，但 `bone-init.sql`（DDL 唯一真源）中尚未包含。
 
 ### 8.2 主要表域
 
@@ -356,7 +360,14 @@ adapter/web → application → domain ← infrastructure
 
 ### 9.1 部署方式
 
-- **当前仓库未包含 Dockerfile 或 docker-compose.yml**，也未发现 CI/CD 流水线（GitHub Actions / GitLab CI）。
+- **Docker**：`docker/Dockerfile` 提供多阶段构建（Maven 构建 + JRE alpine 运行时），非 root 用户运行，含 healthcheck；`docker-compose.yml` 编排 mysql + redis + 各业务服务。
+- **CI/CD**：`.github/workflows/` 下含 6 个 GitHub Actions 工作流：
+  - `ci.yml` — 后端质量检查（spotless:check + verify）+ 前端构建
+  - `iam-gateway.yml` — IAM 与网关模块
+  - `blueprint.yml` — bone-blueprint 模块
+  - `generator-studio.yml` — studio-generator 模块
+  - `extension-studio.yml` — 扩展引擎 studio 模块
+  - `docs-compliance.yml` — 文档合规检查
 - 部署产物为 **Spring Boot 可执行 JAR**（`spring-boot-maven-plugin` repackage）。
 - 启动方式：
   ```bash
@@ -378,7 +389,14 @@ adapter/web → application → domain ← infrastructure
 | 服务 | 端口 |
 |---|---|
 | bone-iam | 8081 |
+| bone-blueprint | 8082 |
 | bone-system | 8083 |
+| bone-masterdata | 8084 |
+| bone-integration | 8085 |
+| studio-generator | 8086 |
+| bone-extension-studio | 8088 |
+| bone-gateway | 8888 |
+| bone-metadata-server | 9001 |
 | bone-shell（前端主应用） | 3000 |
 | bone-iam-app | 3003 |
 | bone-metadata-app | 3004 |
@@ -392,7 +410,7 @@ adapter/web → application → domain ← infrastructure
 ## 10. 安全注意事项
 
 - **默认密码**：`admin` / `123456`，首次部署后**必须**修改。
-- **SA-Token**：用于认证与 SSO，配置需关注 token 有效期与签名密钥。
+- **认证**：Spring Security 6 + JWT（JJWT 0.12.x），需关注 token 有效期与签名密钥；SA-Token 仅在 BOM 中声明，未实际启用。
 - **数据库密码**：部分 `application.yml` 中硬编码了明文密码，生产环境**必须**改为环境变量或配置中心注入。
 - **Redis 密码**：同样存在明文配置，需通过外部化配置处理。
 - **API 文档**：SpringDoc 在生产环境建议关闭或增加认证拦截（`knife4j` 或 Spring Security）。
@@ -419,10 +437,102 @@ adapter/web → application → domain ← infrastructure
 7. **格式化**：修改 Java 文件后，建议执行 `mvn spotless:apply` 保持格式一致。
 8. **文档语言**：项目注释与文档以**中文**为主，新增代码注释请使用中文。
 9. **Docs-as-Code（模块合规）**：平台模板见 [Docs-as-Code-模块合规模板](doc/architecture/Docs-as-Code-模块合规模板.md)。**扩展**：`tools/extension-compliance-collector` + 详设附录 A/C；**blueprint**：`tools/blueprint-compliance-collector` + `doc/_generated/blueprint/`。已落地能力**勿**写入各模块 `backlog.yaml`；PR 须提交对应 `_generated` 并通过 `collect.py --check`。
+10. **持久化方案唯一性（强制）**：所有数据访问**必须**使用自研 `bone-metadata-sdk`（`@EnableSqlRepositories`），**禁止**引入 MyBatis-Plus、JPA / Hibernate、MyBatis 等其他 ORM 框架。新增模块的 `pom.xml` 不得添加上述框架依赖；仓储实现统一基于 `BaseRepository` / `SqlBuilder` 等 SDK 能力。
 
 ---
 
-## 12. 参考索引
+## 12. AI 工程协作体系（V6.1）
+
+> 本节定义 AI 编码工具的协作约束、执行流程和自主权边界。
+
+### 12.1 硬约束清单（CI 强制执行）
+
+| ID | 约束 | 校验方式 | 违反后果 |
+|----|------|---------|---------|
+| HC-001 | 禁止 MyBatis-Plus / JPA / Hibernate / MyBatis | pom.xml 依赖扫描 + grep（排除 MapStruct） | CI 阻断 |
+| HC-002 | domain 层零依赖 Spring/外部框架 | ArchUnit `domainMustNotDependOnOuterLayers` | CI 阻断 |
+| HC-003 | Controller 返回必须用 `ApiResponse<T>` 或 `PageResult<T>` | ArchUnit `controllerMustReturnApiResponse` | CI 阻断 |
+| HC-004 | 禁止硬编码密钥/密码/Token | Gitleaks（`.gitleaks.toml`） | CI 阻断 |
+| HC-005 | 核心模块测试覆盖率 ≥ 70%（初始目标，逐步提到 80%） | JaCoCo `jacoco:check` | CI 阻断 |
+| HC-006 | 数据库访问必须通过 bone-metadata-sdk Repository | pom 依赖扫描 + ArchUnit | CI 阻断 |
+| HC-007 | API 实现与 `doc/architecture/openapi/*-v1.yaml` 一致 | oasdiff（代码生成 vs 设计态） | PR 阻断 |
+| HC-008 | 新增表必须含 `tenant_id` + `created_at` + `updated_at` + `deleted` | DDL 审查（scripts/ci-check.sh） | CI 阻断 |
+
+### 12.2 动态上下文加载路由
+
+AI 执行任务前，按修改路径加载对应上下文文档：
+
+| 修改路径 | 必须加载的上下文 |
+|---------|----------------|
+| `**/domain/**` | `doc/architecture/Bone-DDD-最终实践方案.md` + `doc/design/modules/` 对应模块详设 |
+| `**/adapter/web/**` | `doc/architecture/Bone-API-规范.md` + `doc/architecture/openapi/` 对应 YAML |
+| `**/infrastructure/**` | `doc/architecture/数据库开发规范.md` + `bone-engine/bone-metadata-sdk/README.md` |
+| `**/application/**` | `doc/architecture/Bone-DDD-最终实践方案.md` §14（CQRS） |
+| `bone-frontend/**` | `doc/architecture/bone-前端架构.md` §6（API错误处理/状态管理/微前端通信） |
+| 任何文件 | 本文件（AGENTS.md）§5 + §11 |
+
+### 12.3 AI 自主权分级
+
+| 等级 | 范围 | 审查要求 |
+|------|------|---------|
+| **L0** | 格式化、注释、局部变量重命名、添加 import | 无需审查 |
+| **L1** | 编写单元测试、生成 DTO/Req/Resp、补充 OpenAPI | 必须 `./scripts/check.sh` 通过 |
+| **L2** | 新增 Controller/Handler 方法、修改业务逻辑 | 需 PR 双人 Review |
+| **L3** | 修改 DDL、删除已有代码、升级依赖版本、修改 CI 脚本 | 必须架构师审批 |
+| **L4** | 生产数据库迁移、密钥/证书管理、发布打 tag、修改本节内容 | **完全禁止 AI 执行** |
+
+### 12.4 熔断机制（机器强制）
+
+- Pre-commit hook 记录 `scripts/check.sh` 连续失败次数
+- 第 3 次失败后，hook **物理拒绝执行**，输出：`[MELTDOWN] 架构约束连续失败 3 次，需人工介入。`
+- 清除计数：`rm .git/hooks/.check-fail-count`
+- 这是**机器级熔断**，不依赖 AI 自觉遵守
+
+### 12.5 标准交付流程
+
+```
+P1 需求理解 → 确认所属模块和 Bounded Context
+    ↓
+P2 上下文加载 → 按 §12.2 路由表加载文档
+    ↓
+P3 契约对齐 → 修改/确认 doc/architecture/openapi/ 设计态 YAML
+    ↓ （人工审批：契约变更）
+P4 代码实现 → 按 DDD 分层 + bone-metadata-sdk 实现
+    ↓
+P5 本地自检 → ./scripts/check.sh（≤3 次重试，超过则熔断）
+    ↓
+P6 提交 PR → CI 全量门禁（ArchUnit + JaCoCo + Gitleaks + oasdiff）
+    ↓
+P7 人工 Review → 双人审查 + 架构师审批（L3 变更）
+    ↓
+P8 合并 → 触发 Docs-as-Code 合规收集器更新 _generated/
+```
+
+### 12.6 跨工具入口适配
+
+各 AI 工具的入口文件均薄引用本文件：
+
+| 工具 | 入口文件 | 内容 |
+|------|---------|------|
+| 通用 | `AGENTS.md` | 本文件（唯一真源） |
+| Claude Code | `CLAUDE.md` | `@AGENTS.md`（薄引用） |
+| Cursor | `.cursorrules` | `Read AGENTS.md first.` |
+| Copilot | `.github/copilot-instructions.md` | `See AGENTS.md.` |
+
+### 12.7 与已有资产的关系
+
+| 已有资产 | 定位 | 与本节关系 |
+|---------|------|-----------|
+| `.claude/agents/` | Claude Code 专用 agent 定义 | 引用本节约束，不重复定义 |
+| `.claude/contracts/` | L1/L2 功能契约模板 | 修正 `mapper` → `repository`，引用 HC-001~008 |
+| `.claude/hooks/` | Claude Code 专用钩子 | 保留，与 `scripts/check.sh` 互补 |
+| `tools/*-compliance-collector/` | Docs-as-Code CI 派生 | 保留，在 P8 阶段执行 |
+| `doc/architecture/adr/` | 21 个架构决策 | 约束的决策依据，HC 条目引用 ADR 编号 |
+| ArchUnit `*ArchitectureTest` | 8 个模块的架构测试 | HC-002/003/006 的执行载体 |
+
+---
+
+## 13. 参考索引
 
 | 文件/目录 | 内容 |
 |---|---|

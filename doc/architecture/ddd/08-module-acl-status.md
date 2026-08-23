@@ -1,9 +1,8 @@
-# 应用模块 ArchUnit / ACL 状态（2026-05-22）
+# 应用模块 ArchUnit / ACL 状态快照
 
-> 扫描命令：`mvn test -Dtest=ArchitectureTest`（各应用模块）。  
-> 规则真源：`bone-framework/bone-architecture-test/BoneDddArchRules`。
+> **时效声明（2026-08 更新）**：本文为**历史快照**，记录 2026-05 前后各应用模块的 ACL 整改与 ArchUnit 基线状态，**非实时**。当前架构门禁结果以各模块 CI 的 `ArchitectureTest` 为准（规则真源：`bone-framework/bone-architecture-test/BoneDddArchRules`，见 [Bone-DDD 主文档 §21](../Bone-DDD-最终实践方案.md#21-测试与-ci)）；建议按 [07 适应度仪表盘](./07-supplements.md) **季度复核**并更新本文。
 
-## 已清零 `application → infrastructure` 存量
+## 已清零 `application → infrastructure` 存量（2026-05）
 
 | 模块 | 端口（domain/gateway 或 application/port） | 说明 |
 |------|------------------------------------------|------|
@@ -11,44 +10,24 @@
 | bone-masterdata | `MetaEntityCatalogPort`、`MasterDataExcelImportPort` | catalog 读取、Excel 导入 |
 | bone-integration | `CamelFlowExecutionPort`、`IntegrationExecutionRecorder` 等 | 原已用 application/port |
 
-## ArchitectureTest 通过（本轮验证）
+> ⚠️ 上表为 2026-05 状态：6 月重构曾重新引入违规（如 integration `TestConnectorHandler` 直注 `IntegrationExecutionMetrics`），已随整改修复——快照时效性以头部声明为准。
 
-- bone-iam、bone-masterdata、bone-blueprint、bone-extension-studio
+## ArchitectureTest 通过（截至 2026-08）
 
-## extension-studio 仓储拆分（ADR-0013，2026-05-22）✅
+- 2026-05 已通过：bone-iam、bone-masterdata、bone-blueprint、bone-extension-studio
+- 2026-08 整改后通过：bone-integration、bone-system、studio-generator
+- bone-metadata-server：SDK 库（豁免 P0-4/5/6/7），架构测试 18 项通过
 
-写侧 `domain/repository/*` 仅保留白名单方法；读侧迁入 `domain/gateway/*ReadPort`（`ExtensionReadPort`、`ExtPointReadPort`、`PluginVersionReadPort`、`PluginExecutionLogReadPort`、`StudioAuditReadPort`）。`ArchitectureTest.repository_methods_whitelist` 已去掉 freeze，**37 测试通过**。
+## 关键整改记录（历史）
 
-## bone-iam 聚合根基类（ADR-0011 阶段 1）
-
-| 基类 | 实体 |
-|------|------|
-| `TenantAggregateRoot` | `Account`、`Role`、`AuditLog` |
-| `AggregateRoot` | `Tenant`、`Permission` |
-
-## ArchUnit 规则扩展（2026-05-23，DDD v4.2）
-
-新增 6 条共享规则（#11–#16）：adapter 禁直注 `application/service` 与 `domain/repository`；Handler 命名 `*CommandHandler`/`*QueryHandler`；写/读 Handler 事务边界。`bone-blueprint` **不 freeze**（参考样板须 0 违规）；其它应用模块 freeze 存量后随迁移收缩。
-
-## ArchUnit freeze 策略（2026-05-22 统一）
-
-| 规则 | freeze |
-|------|--------|
-| `applicationMustNotDependOnInfrastructure` | **否**（全应用模块已 ACL 整改） |
-| `domainRepositoriesShouldOnlyDeclareWhitelistedMethods` | **否**（空仓储 / ADR-0013 ReadPort） |
-| `noBoneCoreUseCaseApiDependency` | **否** |
-| `noUseCase*` / `noNewDomainStore` / `noBusinessException*` | **是**（防回潮） |
-
-各模块 `ArchitectureTest` 使用 `importOptions = ImportOption.DoNotIncludeTests.class`（**仅扫描 src/main**，避免测试类误报 application→infrastructure）。
-
-`archunit_store/` 已收缩；`application_no_infra` / 仓储白名单 **直接门禁**。
+- **extension-studio 仓储拆分（ADR-0013，2026-05-22）**：写侧 `domain/repository/*` 仅保留白名单方法；读侧迁入 `domain/gateway/*ReadPort`（`ExtensionReadPort`、`ExtPointReadPort`、`PluginVersionReadPort`、`PluginExecutionLogReadPort`、`StudioAuditReadPort`）。`repository_methods_whitelist` 已去 freeze。
+- **bone-iam 聚合根基类（ADR-0011 阶段 1）**：`TenantAggregateRoot` → `Account`、`Role`、`AuditLog`；`AggregateRoot` → `Tenant`、`Permission`。
+- **仓储 `*And*` 禁令**：`findBy*And*` 已由 ArchRule 拦截（如原 `findByPluginIdAndVersion` → `findByPluginVersion`）。
 
 ## 已知技术债
 
 | 模块 | 项 | 建议 |
 |------|-----|------|
-| bone-iam | `LocalDateTime` 审计统一 | [ADR-0014](../adr/0014-iam-localdatetime-audit.md) 阶段 2 按需 |
+| bone-iam | `LocalDateTime` 审计统一 | [ADR-0018](../adr/0018-iam-localdatetime-audit.md) 阶段 2 按需 |
 
-## 仓储方法 `*And*` 禁令
-
-ArchRule 已拦截 `findBy*And*`（如原 `findByPluginIdAndVersion`）。extension-studio 已改名为 `findByPluginVersion`。
+> **规则与 freeze 策略**（不在本文维护副本，避免与主文档漂移）：见主文档 [§21 测试与 CI](../Bone-DDD-最终实践方案.md#21-测试与-ci) 与 [附录 B.3 ArchUnit 模板](../Bone-DDD-最终实践方案.md#b3-archunit-模板bone-architecture-test)。

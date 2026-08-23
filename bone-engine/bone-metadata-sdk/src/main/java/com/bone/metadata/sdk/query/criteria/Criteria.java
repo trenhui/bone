@@ -591,11 +591,20 @@ public class Criteria<T> {
         parameters.put(paramName + "_0", SqlUtil.toJdbcParameter(cond.getValues()[0]));
         parameters.put(paramName + "_1", SqlUtil.toJdbcParameter(cond.getValues()[1]));
       }
-      case IN, NOT_IN -> parameters.put(
-          paramName,
-          cond.getValues().length > 1
-              ? Arrays.stream(cond.getValues()).map(SqlUtil::toJdbcParameter).toList()
-              : SqlUtil.toJdbcParameter(cond.getValues()[0]));
+      case IN, NOT_IN -> {
+        if (cond.getValues().length == 1
+            && cond.getValues()[0] instanceof Collection<?> collection) {
+          // 单个 Collection 参数（如 Criteria.in("id", idList)）：展开为多值，
+          // 避免 toJdbcParameter 将 Collection 转 JSON 字符串而破坏 NamedParameterJdbcTemplate 的 IN 展开
+          parameters.put(paramName, collection.stream().map(SqlUtil::toJdbcParameter).toList());
+        } else {
+          parameters.put(
+              paramName,
+              cond.getValues().length > 1
+                  ? Arrays.stream(cond.getValues()).map(SqlUtil::toJdbcParameter).toList()
+                  : SqlUtil.toJdbcParameter(cond.getValues()[0]));
+        }
+      }
       case IS_NULL, IS_NOT_NULL -> {
         /* no param */
       }

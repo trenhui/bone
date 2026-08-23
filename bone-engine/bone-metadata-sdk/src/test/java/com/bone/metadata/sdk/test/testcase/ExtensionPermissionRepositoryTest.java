@@ -88,7 +88,7 @@ public class ExtensionPermissionRepositoryTest {
       String entityType, String fieldName, DataType dataType) {
     FieldMetadata metadata = new FieldMetadata();
     metadata.setId(DistributedIdGenerator.generateLongId());
-    metadata.setTenantId(TenantContext.getTenantId());
+    metadata.setTenantId(TenantContext.getTenantIdAsLong());
     metadata.setAppCode("extTest");
     metadata.setBizIdentityCode("bone");
     metadata.setEntityType(entityType);
@@ -118,7 +118,7 @@ public class ExtensionPermissionRepositoryTest {
     // 准备测试环境
     String entityType = "ContinuousTest";
     AllocationContext ctx =
-        new AllocationContext(TenantContext.getTenantId(), "extTest", "bone", entityType);
+        new AllocationContext(TenantContext.getTenantIdAsLong(), "extTest", "bone", entityType);
     DataType dataType = DataType.STRING;
     int maxLimit = 20; // STRING类型限制
 
@@ -181,7 +181,7 @@ public class ExtensionPermissionRepositoryTest {
                 + " and deleted=false",
             Map.of(
                 "tenant_id",
-                TenantContext.getTenantId(),
+                TenantContext.getTenantIdAsLong(),
                 "app_code",
                 "extTest",
                 "biz_identity_code",
@@ -320,7 +320,7 @@ public class ExtensionPermissionRepositoryTest {
                 + " and deleted=false",
             Map.of(
                 "tenant_id",
-                TenantContext.getTenantId(),
+                TenantContext.getTenantIdAsLong(),
                 "app_code",
                 "extTest",
                 "biz_identity_code",

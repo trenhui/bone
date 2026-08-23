@@ -23,6 +23,13 @@ metadata:
     appcode: ${APP_CODE:extTest}
     deployment-mode: EMBEDDED
     slow-query-threshold: 3000
+
+# 关闭统一动态数据源自动配置：测试使用 TestConfig 提供的 H2 直连 DataSource，
+# 避免 UnifiedDataSourceAutoConfiguration 的 @Primary dynamicDataSource 与测试 DataSource 冲突
+bone:
+  metadata:
+    datasource:
+      enabled: false
     sql:
       enabled: true
       executor:

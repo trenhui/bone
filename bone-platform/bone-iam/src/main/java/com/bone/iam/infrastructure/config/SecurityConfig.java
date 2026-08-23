@@ -53,7 +53,8 @@ public class SecurityConfig {
                         "/api/v1/iam/login",
                         "/api/v1/iam/sso/callback",
                         "/api/v1/iam/sso/config",
-                        "/api/v1/iam/debug/**")
+                        "/api/v1/iam/debug/**",
+                        "/api/v1/apps/**")
                     .permitAll()
                     .anyRequest()
                     .authenticated())

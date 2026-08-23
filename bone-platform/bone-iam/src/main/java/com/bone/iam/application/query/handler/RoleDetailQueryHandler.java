@@ -25,7 +25,7 @@ public class RoleDetailQueryHandler {
         // 租户隔离：非平台租户不可查看其他租户的角色详情（防 IDOR）。详设 §3.4 / §4.8。
         .filter(
             role -> {
-              Long caller = TenantContext.getTenantId();
+              Long caller = TenantContext.getTenantIdAsLong();
               return caller == null || caller == 0L || caller.equals(role.getTenantId());
             })
         .map(

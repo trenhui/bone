@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+RED='\033[0;31m'; GREEN='\033[0;32m'; RESET='\033[0m'
+
+echo "🚀 [CI GATE] 全量门禁审查..."
+
+echo "🔍 [1/7] ORM 依赖阻断..."
+if grep -rnE "<artifactId>(mybatis|mybatis-plus|spring-boot-starter-data-jpa|hibernate-core)" \
+    --include="pom.xml" --exclude-dir={.git,target} .; then
+  echo -e "${RED}❌ 非法 ORM 依赖！${RESET}"; exit 1
+fi
+
+echo "🔍 [2/7] ArchUnit 全量架构检查..."
+mvn test -Dtest='*ArchitectureTest' --batch-mode -q
+
+echo "🔍 [3/7] Gitleaks 密钥扫描..."
+gitleaks detect --source . --config .gitleaks.toml --verbose
+
+echo "🔍 [4/7] JaCoCo 覆盖率检查（仅对配置 jacoco 插件的模块生效）..."
+# 现状：jacoco 门禁仅 bone-metadata-sdk（80% 行覆盖）配置；其余应用模块未接入，见 Bone-测试策略.md
+# 目标口径：AGENTS.md HC-005（核心模块 ≥70%，逐步 80%）；全模块铺开后收紧本步
+mvn jacoco:check --batch-mode -q
+
+echo "🔍 [5/7] OpenAPI 契约一致性..."
+echo "  （由 ci.yml 的 openapi-diff job 执行 oasdiff）"
+
+echo "🔍 [6/7] 禁用 ORM import 全量扫描..."
+
+echo "🔍 [7/7] DDL 清单同步检查（bone-init.sql vs 数据库开发规范 §2）..."
+python3 scripts/check-ddl-doc-sync.py || {
+  echo -e "${RED}❌ 表清单与 bone-init.sql 不一致（新增/删除表未同步文档）！${RESET}"
+  exit 1
+}
+if grep -rnE "import\s+org\.apache\.ibatis|import\s+(javax|jakarta)\.persistence|import\s+org\.hibernate|import\s+com\.baomidou" \
+    --include="*.java" --exclude-dir={.git,target,node_modules} .; then
+  echo -e "${RED}❌ 残留禁用 ORM import！${RESET}"; exit 1
+fi
+
+echo -e "${GREEN}✅ CI 全量门禁通过！${RESET}"

@@ -1,21 +1,24 @@
 package com.bone.metadata.engine.multi;
 
-/** 默认多租户上下文持有者实现 提供基本的租户ID管理功能 */
-public class DefaultMultiTenantContextHolder implements MultiTenantContextHolder {
+import com.bone.core.tenant.context.TenantContext;
 
-  private static final ThreadLocal<String> CONTEXT = new ThreadLocal<>();
-  private static final String DEFAULT_TENANT_ID = "default";
+/**
+ * 默认多租户上下文持有者实现。
+ *
+ * <p>委托到 {@link TenantContext}（bone-core 唯一标准实现），不再维护独立的 ThreadLocal， 确保全项目租户上下文一致。
+ */
+public class DefaultMultiTenantContextHolder implements MultiTenantContextHolder {
 
   @Override
   public String getCurrentTenantId() {
-    String tenantId = CONTEXT.get();
+    String tenantId = TenantContext.getTenantId();
     return tenantId != null ? tenantId : getDefaultTenantId();
   }
 
   @Override
   public void setCurrentTenantId(String tenantId) {
     if (tenantId != null && !tenantId.trim().isEmpty()) {
-      CONTEXT.set(tenantId);
+      TenantContext.setTenantId(tenantId);
     } else {
       clear();
     }
@@ -23,11 +26,11 @@ public class DefaultMultiTenantContextHolder implements MultiTenantContextHolder
 
   @Override
   public void clear() {
-    CONTEXT.remove();
+    TenantContext.clear();
   }
 
   @Override
   public String getDefaultTenantId() {
-    return DEFAULT_TENANT_ID;
+    return "default";
   }
 }

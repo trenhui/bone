@@ -228,7 +228,7 @@ ExtPoint 扩展引擎 ──► 个性化逻辑插件化（「怎么差异化」
 | 领域 | 技术方向 |
 |------|----------|
 | 应用框架 | Java 17 · Spring Boot 3.2 · DDD + CQRS 分层 |
-| 数据访问 | **Bone Metadata SDK**（动态仓储/EAV）+ 按需 JPA/MyBatis |
+| 数据访问 | **Bone Metadata SDK**（动态仓储/EAV） |
 | 缓存 | Redis · Redisson · Caffeine |
 | 安全 | Spring Security · JWT · 多租户上下文 |
 | API | REST · OpenAPI · 统一 `/api/v1/{domain}` |
@@ -339,6 +339,8 @@ cd bone-frontend && npm ci && npm run dev
 | 集成 | 点对点定制、成本高 | 连接器 + 可视化编排，显著降低人天 |
 | 数据治理 | 分散核对、质量不可控 | 统一主数据与质量规则 |
 | 架构演进 | 大版本重构、停服风险 | 元数据驱动渐进式演进 |
+
+> **说明**：以下为产品设计目标，非当前实测 SLA 承诺。当前无压测基线，落地后将以基准测试补充数据。SLA 按环境/版本分级：开发环境无 SLA 保证；社区版生产环境 99.5% 可用性、P99 < 2s、100 并发；商业版 99.9% 可用性、P99 < 500ms、1000 并发（[Target]）。详见 [PRD §5.1–5.2](doc/prd/BONE产品需求文档正式版.md)。
 
 ---
 

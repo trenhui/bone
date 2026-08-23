@@ -13,13 +13,13 @@
   "dependencies": {
     "@bone/ui": "1.0.0",
     "@ant-design/icons": "^6.1.1",
-    "@reduxjs/toolkit": "^2.0.0",
     "antd": "^5.12.0",
-    "axios": "^1.6.0",
+    "axios": "^1.7.9",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-redux": "^9.0.0",
-    "react-router-dom": "^6.20.0"
+    "react-router-dom": "^6.20.0",
+    "@bone/shared-services": "1.0.0",
+    "@bone/shared-types": "1.0.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",
@@ -32,6 +32,7 @@
     "eslint-plugin-react-refresh": "^0.4.5",
     "typescript": "^5.2.2",
     "vite": "^5.0.8",
-    "vite-plugin-qiankun": "^1.0.15"
+    "vite-plugin-qiankun": "^1.0.15",
+    "@bone/shared-config": "1.0.0"
   }
 }

@@ -24,11 +24,8 @@ public class TenantContextFilter extends OncePerRequestFilter {
       throws ServletException, IOException {
     String tenantHeader = request.getHeader(TENANT_HEADER);
     if (tenantHeader != null && !tenantHeader.isBlank()) {
-      try {
-        TenantContext.setTenantId(Long.parseLong(tenantHeader.trim()));
-      } catch (NumberFormatException ignored) {
-        // 非法头忽略，走默认租户 0
-      }
+      // 直接以字符串形式设置租户ID（兼容雪花ID与租户编码）
+      TenantContext.setTenantId(tenantHeader.trim());
     }
     try {
       filterChain.doFilter(request, response);

@@ -1,19 +1,24 @@
 # Bone 平台多阶段构建 Dockerfile
 # 使用方式:
-#   docker build -f docker/Dockerfile --build-arg MODULE=bone-iam -t bone/bone-iam:latest .
+#   docker build -f docker/Dockerfile \
+#     --build-arg MODULE_PATH=bone-platform/bone-iam \
+#     --build-arg ARTIFACT_ID=bone-iam \
+#     -t bone/bone-iam:latest .
 
 ARG JAVA_VERSION=17
 ARG MAVEN_VERSION=3.9.6
 
 # 阶段1: Maven 构建
 FROM maven:${MAVEN_VERSION}-eclipse-temurin-${JAVA_VERSION} AS builder
-ARG MODULE=bone-iam
+ARG MODULE_PATH=bone-platform/bone-iam
+ARG ARTIFACT_ID=bone-iam
 
 WORKDIR /build
 COPY pom.xml .
 COPY bone-parent/pom.xml bone-parent/
 COPY bone-framework/pom.xml bone-framework/
 COPY bone-engine/pom.xml bone-engine/
+COPY bone-engine/bone-extension-engine/pom.xml bone-engine/bone-extension-engine/
 COPY bone-platform/pom.xml bone-platform/
 COPY bone-sdk/pom.xml bone-sdk/
 
@@ -21,17 +26,18 @@ COPY bone-sdk/pom.xml bone-sdk/
 RUN mvn dependency:go-offline -B -q || true
 
 COPY . .
-RUN mvn clean package -B -q -pl ${MODULE} -am -DskipTests=true
+RUN mvn clean package -B -q -pl ${MODULE_PATH} -am -DskipTests=true
 
 # 阶段2: 运行时镜像
 FROM eclipse-temurin:${JAVA_VERSION}-jre-alpine
-ARG MODULE=bone-iam
+ARG MODULE_PATH=bone-platform/bone-iam
+ARG ARTIFACT_ID=bone-iam
 
 # 安全: 使用非 root 用户运行
 RUN addgroup -S bone && adduser -S bone -G bone
 
 WORKDIR /app
-COPY --from=builder /build/bone-platform/${MODULE}/target/${MODULE}-*.jar app.jar
+COPY --from=builder /build/${MODULE_PATH}/target/${ARTIFACT_ID}-*.jar app.jar
 
 RUN chown -R bone:bone /app
 USER bone

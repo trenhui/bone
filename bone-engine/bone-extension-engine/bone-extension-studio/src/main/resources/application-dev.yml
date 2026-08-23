@@ -25,7 +25,7 @@ bone:
   iam:
     jwt:
       # 开发环境默认密钥，生产环境必须通过环境变量注入
-      secret-key: ${BONE_IAM_JWT_SECRET:${BONE_JWT_SECRET:dev-only-secret-key-minimum-32-bytes-long}}
+      secret-key: ${BONE_IAM_JWT_SECRET_KEY:${BONE_JWT_SECRET:dev-only-secret-key-minimum-32-bytes-long}}
 
 logging:
   level:

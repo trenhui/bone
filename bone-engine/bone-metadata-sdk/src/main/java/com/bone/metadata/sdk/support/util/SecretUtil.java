@@ -33,17 +33,4 @@ public class SecretUtil {
     SecretKey secretKey = keyGenerator.generateKey();
     return Base64.getEncoder().encodeToString(secretKey.getEncoded());
   }
-
-  public static void main(String[] args) {
-
-    try {
-      String secret = generateAESKey();
-      System.out.println(secret);
-      String encryptedText = encrypt("hello world", secret);
-      System.out.println(encryptedText);
-      System.out.println(decrypt(encryptedText, secret));
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
-  }
 }

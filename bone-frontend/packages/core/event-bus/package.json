@@ -1,9 +1,10 @@
 {
-  "name": "@bone/core/event-bus",
+  "name": "@bone/core-event-bus",
   "version": "1.0.0",
   "description": "Bone Frontend Event Bus - Type-safe communication for micro-frontends",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/index.cjs.js",
+  "module": "dist/index.es.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist"

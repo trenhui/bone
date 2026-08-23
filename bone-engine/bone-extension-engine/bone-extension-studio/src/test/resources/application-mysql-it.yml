@@ -5,9 +5,6 @@ spring:
   autoconfigure:
     exclude:
       - com.bone.metadata.sdk.support.config.MetadataAutoConfiguration
-  jpa:
-    hibernate:
-      ddl-auto: none
 
 metadata:
   sdk:

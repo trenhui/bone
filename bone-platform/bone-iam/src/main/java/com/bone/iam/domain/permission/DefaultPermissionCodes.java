@@ -26,6 +26,10 @@ public final class DefaultPermissionCodes {
         "iam:tenants:write",
         "iam:sessions:read",
         "iam:sessions:write",
+        "iam:depts:read",
+        "iam:depts:write",
+        "iam:menus:read",
+        "iam:menus:write",
         "sys:console:read");
   }
 }

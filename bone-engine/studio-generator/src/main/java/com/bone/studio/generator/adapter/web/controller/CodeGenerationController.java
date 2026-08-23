@@ -38,7 +38,8 @@ public class CodeGenerationController {
       @RequestParam(required = false) Boolean sync) {
     if (resolveSync(sync)) {
       String taskId = createCodeGenerationHandler.handle(command);
-      return ResponseEntity.ok(ApiResponse.success(taskId));
+      // taskId 为字符串数据，success(String) 会命中 message 重载，须用双参形式
+      return ResponseEntity.ok(ApiResponse.success("创建成功", taskId));
     }
     String taskId = codeGenerationAsyncService.submit(command);
     Map<String, Object> accepted = new LinkedHashMap<>();
@@ -59,12 +60,13 @@ public class CodeGenerationController {
   public ApiResponse<String> getTaskStatus(@PathVariable String taskId) {
     GeneratorOperationView view = operationService.toOperationView(taskId);
     if (view == null) {
-      return ApiResponse.success("UNKNOWN");
+      // success(String) 会命中 message 重载，状态字符串须用双参形式放入 data
+      return ApiResponse.success("查询成功", "UNKNOWN");
     }
     if (view.getResult() != null && view.getResult().get("status") != null) {
-      return ApiResponse.success(view.getResult().get("status").toString());
+      return ApiResponse.success("查询成功", view.getResult().get("status").toString());
     }
-    return ApiResponse.success(view.isDone() ? "FAILED" : "PROCESSING");
+    return ApiResponse.success("查询成功", view.isDone() ? "FAILED" : "PROCESSING");
   }
 
   private boolean resolveSync(Boolean syncParam) {

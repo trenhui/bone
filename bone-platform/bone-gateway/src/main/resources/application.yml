@@ -44,7 +44,7 @@ spring:
           predicates:
             - Path=/api/v1/integration/**
         - id: studio-generator
-          uri: ${BONE_GENERATOR_URI:http://localhost:8085}
+          uri: ${BONE_GENERATOR_URI:http://localhost:8086}
           predicates:
             - Path=/api/v1/generator/**
         - id: bone-metadata-server
@@ -56,9 +56,10 @@ spring:
 bone:
   gateway:
     jwt:
-      secret-key: ${BONE_JWT_SECRET:${BONE_IAM_JWT_SECRET_KEY:change-me-change-me-change-me-change-me-32bytes}}
+      secret-key: ${BONE_IAM_JWT_SECRET_KEY:${BONE_JWT_SECRET:dev-only-secret-key-minimum-32-bytes-long}}
       whitelist:
         - /api/v1/iam/auth/login
+        - /api/v1/iam/login
         - /actuator/
         - /favicon.ico
     ratelimit:
@@ -70,7 +71,6 @@ bone:
     resilience:
       enabled: true
 
-spring:
   data:
     redis:
       host: ${BONE_REDIS_HOST:localhost}
@@ -81,4 +81,40 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+# Resilience4j（Reactive 栈）：网关全局路由的熔断配置
+# 已知限制：CircuitBreakerGatewayFilter 目前使用 ReactiveCircuitBreaker 默认工厂；
+# 如需严格对齐下述实例，需在 filter 中显式指定 id="gatewayRoutes" 或改为 Resilience4JCircuitBreakerFactory 直接创建。
+resilience4j:
+  circuitbreaker:
+    instances:
+      gatewayRoutes:
+        register-health-indicator: true
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 50
+        minimum-number-of-calls: 10
+        failure-rate-threshold: 50
+        slow-call-rate-threshold: 60
+        slow-call-duration-threshold: 5s
+        wait-duration-in-open-state: 30s
+        permitted-number-of-calls-in-half-open-state: 5
+  timelimiter:
+    instances:
+      gatewayRoutes:
+        timeout-duration: 30s
+        cancel-running-future: true
+  retry:
+    instances:
+      gatewayRoutes:
+        max-attempts: 2
+        wait-duration: 100ms
+        retry-exceptions:
+          - java.net.ConnectException
+          - java.util.concurrent.TimeoutException

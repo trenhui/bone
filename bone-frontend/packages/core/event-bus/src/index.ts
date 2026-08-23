@@ -2,7 +2,13 @@
 import { SimpleEventBus as ImportedSimpleEventBus, MicroAppMessenger, getEventBus, globalEventBus } from './micro-app-messenger';
 import type { MicroAppMessage } from './micro-app-messenger';
 
-// 重新导出
+// 类型安全的事件总线
+export { TypedEventBus, typedEventBus } from './typedEventBus';
+
+// 全局上下文类型
+export type { GlobalUser, GlobalPermissions, GlobalContext, GlobalContextChangeEvent } from './globalContext';
+
+// 重新导出（兼容旧代码）
 export type { MicroAppMessage };
 export { MicroAppMessenger, getEventBus, globalEventBus };
 export const SimpleEventBus = ImportedSimpleEventBus;

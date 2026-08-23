@@ -9,7 +9,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Optional;
-import java.util.function.Consumer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -18,8 +17,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * 通用 JWT 认证过滤器。解析 Authorization Bearer JWT，写入 Spring Security Context。
- * 各模块可继承后扩展特定行为（如租户绑定、黑名单校验）。
+ * 通用 JWT 认证过滤器。解析 Authorization Bearer JWT，写入 Spring Security Context。 各模块可继承后扩展特定行为（如租户绑定、黑名单校验）。
  */
 @Slf4j
 public abstract class AbstractJwtAuthenticationFilter extends OncePerRequestFilter {

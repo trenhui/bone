@@ -1,0 +1,16 @@
+{
+  "name": "@bone/shared-config",
+  "version": "1.0.0",
+  "description": "BONE shared build config (vite factories)",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "lint": "eslint . --ext ts --report-unused-disable-directives --max-warnings 0"
+  },
+  "dependencies": {
+    "vite": "^5.0.8",
+    "vite-plugin-qiankun": "^1.0.15",
+    "@vitejs/plugin-react": "^4.2.1"
+  }
+}

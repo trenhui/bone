@@ -27,6 +27,18 @@ metadata:
     appcode: bone-iam
     deploymentMode: EMBEDDED
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
 logging:
   level:
     com.bone.iam: info

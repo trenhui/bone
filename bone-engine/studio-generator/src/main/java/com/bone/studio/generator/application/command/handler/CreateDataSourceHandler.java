@@ -1,7 +1,6 @@
 package com.bone.studio.generator.application.command.handler;
 
 import com.bone.core.capability.Capability;
-import com.bone.core.util.DistributedIdGenerator;
 import com.bone.studio.generator.application.command.cmd.CreateDataSourceCommand;
 import com.bone.studio.generator.common.StudioIds;
 import com.bone.studio.generator.domain.data.DataSource;
@@ -27,11 +26,10 @@ public class CreateDataSourceHandler {
   public String handle(CreateDataSourceCommand command) {
     log.info(
         "创建数据源 name={}, type={}, host={}", command.getName(), command.getType(), command.getHost());
-    Long id = DistributedIdGenerator.generateLongId();
     int port = Integer.parseInt(command.getPort().trim());
     DataSource dataSource =
         DataSource.create(
-            id,
+            null,
             0L,
             command.getName(),
             command.getType(),
@@ -40,7 +38,8 @@ public class CreateDataSourceHandler {
             command.getDatabase(),
             command.getUsername(),
             command.getPassword());
-    dataSourceRepository.insert(dataSource);
+    // 分布式 ID 由 SDK 统一生成（insert/save 均会重新生成主键），以返回值为准回传
+    Long id = dataSourceRepository.insert(dataSource);
     return StudioIds.toExternal(id);
   }
 }

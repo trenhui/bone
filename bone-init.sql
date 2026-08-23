@@ -1202,3 +1202,45 @@ ALTER TABLE sys_alert_event ADD COLUMN IF NOT EXISTS rule_name VARCHAR(100) DEFA
 
 -- sys_alert_event: 修改 status 默认值从 'OPEN' 改为 'TRIGGERED'（对齐 AlertStatus 枚举）
 ALTER TABLE sys_alert_event ALTER COLUMN status SET DEFAULT 'TRIGGERED';
+
+-- ============================================================
+-- 9. 应用与模块（bone-platform/bone-application）
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS `bone_application` (
+  `id` BIGINT NOT NULL COMMENT '主键',
+  `tenant_id` BIGINT NOT NULL DEFAULT 0 COMMENT '租户ID',
+  `name` VARCHAR(128) NOT NULL COMMENT '应用名称',
+  `code` VARCHAR(64) NOT NULL COMMENT '应用编码',
+  `description` VARCHAR(512) DEFAULT NULL COMMENT '描述',
+  `icon` VARCHAR(64) DEFAULT 'appstore' COMMENT '图标',
+  `status` TINYINT NOT NULL DEFAULT 0 COMMENT '0-启用 1-停用',
+  `created_by` BIGINT DEFAULT NULL,
+  `created_at` DATETIME(3) NOT NULL,
+  `updated_by` BIGINT DEFAULT NULL,
+  `updated_at` DATETIME(3) DEFAULT NULL,
+  `deleted` TINYINT(1) NOT NULL DEFAULT 0,
+  `version` INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_tenant_id` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='应用表';
+
+CREATE TABLE IF NOT EXISTS `bone_module` (
+  `id` BIGINT NOT NULL COMMENT '主键',
+  `tenant_id` BIGINT NOT NULL DEFAULT 0 COMMENT '租户ID',
+  `app_id` BIGINT NOT NULL COMMENT '所属应用ID',
+  `name` VARCHAR(128) NOT NULL COMMENT '模块名称',
+  `code` VARCHAR(64) NOT NULL COMMENT '模块编码',
+  `description` VARCHAR(512) DEFAULT NULL COMMENT '描述',
+  `status` TINYINT NOT NULL DEFAULT 0 COMMENT '0-启用 1-停用 2-归档',
+  `sort_order` INT NOT NULL DEFAULT 0 COMMENT '排序号',
+  `created_by` BIGINT DEFAULT NULL,
+  `created_at` DATETIME(3) NOT NULL,
+  `updated_by` BIGINT DEFAULT NULL,
+  `updated_at` DATETIME(3) DEFAULT NULL,
+  `deleted` TINYINT(1) NOT NULL DEFAULT 0,
+  `version` INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  KEY `idx_app_id` (`app_id`),
+  KEY `idx_tenant_id` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='模块表';

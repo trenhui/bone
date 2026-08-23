@@ -71,7 +71,7 @@ const RuntimeDataManagement: React.FC = () => {
   );
 
   useEffect(() => {
-    metadataEntityApi.page({ pageNum: 1, pageSize: 500 }).then((res) => {
+    metadataEntityApi.page({ pageNum: 1, pageSize: 50, deliveryMode: 1, status: 1 }).then((res) => {
       if (res.code !== 200) {
         message.error(res.message);
         return;

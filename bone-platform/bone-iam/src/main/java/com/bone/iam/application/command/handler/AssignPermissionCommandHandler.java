@@ -43,7 +43,7 @@ public class AssignPermissionCommandHandler {
 
   /** 非平台租户（tenantId &gt; 0）只能操作本租户角色，防 IDOR。 */
   static void assertCallerMayManageRole(Role role) {
-    Long callerTenant = TenantContext.getTenantId();
+    Long callerTenant = TenantContext.getTenantIdAsLong();
     if (callerTenant != null && callerTenant != 0L && !callerTenant.equals(role.getTenantId())) {
       throw BizException.of(403, IamErrorCodes.TENANT_ACCESS_DENIED + ": 无权操作其他租户的角色");
     }

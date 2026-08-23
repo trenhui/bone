@@ -23,6 +23,13 @@
             <version>${bone-core.version}</version>
         </dependency>
 
+        <!-- bone-security（JWT 框架抽象，复用 JwtTokenService / AbstractJwtAuthenticationFilter） -->
+        <dependency>
+            <groupId>com.bone</groupId>
+            <artifactId>bone-security</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+
         <!-- bone-metadata-sdk -->
         <dependency>
             <groupId>com.bone</groupId>
@@ -77,6 +84,23 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+        <!-- Resilience4j（Servlet 栈）：连接器/流程的熔断、重试与限流 -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-spring-boot2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.github.resilience4j</groupId>
+            <artifactId>resilience4j-micrometer</artifactId>
         </dependency>
 
         <!-- Apache Camel 4.8（INT-11 路由编译） -->

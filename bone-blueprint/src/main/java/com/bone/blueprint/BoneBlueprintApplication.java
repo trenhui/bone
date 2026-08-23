@@ -9,7 +9,13 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
-@ComponentScan(basePackages = {"com.bone.blueprint", "com.bone.core.capability", "com.bone.web"})
+@ComponentScan(
+    basePackages = {
+      "com.bone.blueprint",
+      "com.bone.core.capability",
+      "com.bone.core.security.jwt",
+      "com.bone.web"
+    })
 @EnableDiscoveryClient
 @EnableScheduling
 @EnableSqlRepositories(basePackages = "com.bone.blueprint.domain.repository")

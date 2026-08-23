@@ -2,6 +2,7 @@ package com.bone.iam.adapter.web.controller;
 
 import com.bone.core.exception.BizException;
 import com.bone.core.model.ApiResponse;
+import com.bone.core.security.jwt.JwtPrincipal;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.iam.adapter.web.dto.req.ChangeMyPasswordReq;
 import com.bone.iam.adapter.web.dto.req.UpdateMyProfileReq;
@@ -12,7 +13,6 @@ import com.bone.iam.application.command.handler.ChangeMyPasswordCommandHandler;
 import com.bone.iam.application.command.handler.UpdateMyProfileCommandHandler;
 import com.bone.iam.application.query.handler.AccountDetailQueryHandler;
 import com.bone.iam.common.IamErrorCodes;
-import com.bone.core.security.jwt.JwtPrincipal;
 import com.bone.iam.infrastructure.security.IamCurrentAccountResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;

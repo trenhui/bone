@@ -424,18 +424,22 @@ flowchart TD
 
 ### 6.2 后端
 
-| 技术 | 版本（规划） | 用途 |
-|------|----------------|------|
-| Java | 17+ | 语言 |
-| Spring Boot | 3.2+ | 应用框架 |
-| Spring Cloud / Alibaba | 2023.x | 微服务 |
-| Bone Metadata SDK | 1.x | 元数据持久化与仓储扩展 |
-| MyBatis / JPA | 随父 POM | ORM |
-| RocketMQ、Seata | 按需 | 消息与分布式事务 |
-| Redis、Redisson | 7.x | 缓存与分布式协调 |
-| Sentinel | 按需 | 限流熔断 |
-| Apache Camel | 按需 | 集成编排（若启用） |
-| LiteFlow / Aviator | 按需 | 规则与表达式 |
+| 技术 | 版本（规划） | 状态 | 用途 |
+|------|----------------|------|------|
+| Java | 17+ | ✅ 已落地 | 语言 |
+| Spring Boot | 3.2+ | ✅ 已落地 | 应用框架 |
+| Spring Cloud / Alibaba | 2023.x | ✅ 已落地（BOM） | 微服务 |
+| Bone Metadata SDK | 1.x | ✅ 已落地 | 元数据持久化与仓储扩展（唯一 ORM，禁止 MyBatis / JPA） |
+| RocketMQ | 5.2 | 🟡 可选（integration outbox `BONE_INTEGRATION_OUTBOX_MQ_ENABLED` 开启） | 消息 |
+| Seata | — | ⛔ **未落地**（由 outbox + 最终一致替代；规划中，需 ADR 定案） | 分布式事务 |
+| Redis | 7.x | ✅ 已落地 | 缓存 |
+| Redisson | 3.27 | 🟡 部分（缓存/锁按需；未全模块启用） | 分布式协调 |
+| Sentinel | — | ⛔ 未落地（gateway 限流/熔断用 Spring Cloud CircuitBreaker + resilience4j） | 限流熔断 |
+| Apache Camel | — | 🟡 部分（integration `CamelFlowRuntime` 已启用） | 集成编排 |
+| LiteFlow | — | ⛔ 未落地 | 规则编排 |
+| Aviator | 5.4 | ✅ 已落地（extension 表达式） | 规则与表达式 |
+
+> **状态说明（2026-08 补充）**：状态列区分「已落地 / 部分 / 可选 / 未落地」；⛔ 项为规划中或已被替代方案，落地前不视为平台能力承诺。
 
 ### 6.3 中间件与数据存储
 
@@ -463,9 +467,9 @@ flowchart TD
 | 框架 | `bone-framework/*` |
 | DDD 蓝图 | `bone-blueprint/`（是否纳入根 `pom.xml` 以仓库为准） |
 
-**易混点**：引擎与平台下可能存在同名业务域（如 integration），文档、日志与监控指标须用 **全限定模块名**。`bone-iam` 默认 HTTP 端口以 **`bone-platform/bone-iam/src/main/resources/application.yml` 中 `server.port` 为准**（当前仓库为 **8081**），勿与 `bone-masterdata` 的 **8080**、`bone-extension-studio` 的 **8088** 等混用（全表见 wiki/03）。**各模块默认端口总表**见 [doc/wiki/03-本地开发与构建.md](../wiki/03-本地开发与构建.md)「常见服务端口」；根 [README.md](../../README.md) 快速开始中的 **8080** 为营销/演示入口示意，非 IAM 真源。
+**易混点**：引擎与平台下可能存在同名业务域（如 integration），文档、日志与监控指标须用 **全限定模块名**。`bone-iam` 默认 HTTP 端口以 **`bone-platform/bone-iam/src/main/resources/application.yml` 中 `server.port` 为准**（当前仓库为 **8081**），勿与 `bone-masterdata` 的 **8084**、`bone-extension-studio` 的 **8088** 等混用（全表见 wiki/03）。**各模块默认端口总表**见 [doc/wiki/03-本地开发与构建.md](../wiki/03-本地开发与构建.md)「常见服务端口」；根 [README.md](../../README.md) 快速开始中的 **8080** 为营销/演示入口示意，非 IAM 真源。
 
-**端口双占（已知冲突）**：`bone-platform/bone-integration` 与 `bone-engine/studio-generator` 默认 `server.port` **均为 8085**；同机调试时**仅启其一**，或通过 `BONE_SERVER_PORT` / `server.port` 改端口。统一入口走 `bone-gateway`（**8888**），由网关按 `/api/v1/{domain}` 转发。详见 [wiki/03 §端口冲突](../wiki/03-本地开发与构建.md)。
+**端口（2026-08 校正）**：`bone-integration`=**8085**、`studio-generator`=**8086**、`bone-masterdata`=**8084**（以各模块 `application.yml` 为准）；统一入口走 `bone-gateway`（**8888**），由网关按 `/api/v1/{domain}` 转发。端口总表见 [wiki/03](../wiki/03-本地开发与构建.md)。
 
 ---
 
@@ -1096,7 +1100,7 @@ sequenceDiagram
     participant CG as 代码生成器
     participant DB as 数据库
 
-    C->>GW: POST /api/metadata/entities
+    C->>GW: POST /api/v1/metadata/entities
     GW->>MC: 转发（带租户）
     MC->>EM: 创建实体
     EM->>DB: 持久化
@@ -1105,7 +1109,7 @@ sequenceDiagram
     MC-->>GW: ApiResponse
     GW-->>C: 201/200
 
-    C->>GW: POST /api/metadata/generate
+    C->>GW: POST /api/v1/metadata/generate
     GW->>MC: 提交生成任务
     MC->>CG: 异步生成
     CG->>DB: 读实体与模板
@@ -1213,7 +1217,7 @@ command_mapping:
 ### 22.2 OpenAPI 3 片段（元数据创建实体）
 
 ```yaml
-openapi: 3.0.0
+openapi: 3.1.0
 info:
   title: Metadata Service API
   version: 1.0.0
@@ -1266,14 +1270,13 @@ components:
 | `bone-iam` | `/api/v1/iam/**` | **`bone`**（共享） | **8081** |
 | `bone-system` | `/api/v1/system/**` | `bone` | **8083** |
 | `bone-integration` | `/api/v1/integration/**` | `bone` | **8085** |
-| `bone-masterdata` | `/api/v1/masterdata/**` | `bone` | **8080** |
+| `bone-masterdata` | `/api/v1/masterdata/**` | `bone` | **8084** |
 | `bone-metadata-server` | `/api/v1/metadata/**`、`/api/v1/runtime/**` | `bone` | **9001** |
 | `bone-extension-studio` | `/api/v1/extension/**` | `bone` | **8088** |
 | `bone-extension-app`（前端） | 浏览器 `/extension/**` → 代理 `/api/v1/extension/**` | — | **3008**（Vite dev） |
-| `studio-generator` | `/api/v1/generator/**` | `bone` | **8085** ⚠ 与 integration 同端口 |
+| `studio-generator` | `/api/v1/generator/**` | `bone` | **8086** |
 | `bone-gateway` | 聚合转发 | — | **8888** |
 
-> ⚠ **8085 双占**：`bone-integration` 与 `studio-generator` 同机调试时仅启其一，或改 `server.port` / `BONE_SERVER_PORT`。
 
 **[Vision] 微服务拆分示例**（逻辑库拆分、独立 `*_db`、端口仅为示意，**勿作实施或文档引用依据**）：
 
@@ -1283,7 +1286,7 @@ components:
 | 权限 | authz-service | `/api/v1/authz` | authz_db | 8082 |
 | 集成 | integration-service | `/api/v1/integration` | integration_db | 8085 |
 | 扩展 | extension-service | `/api/v1/extension` | extension_db | 8088 |
-| 主数据 | masterdata-service | `/api/v1/masterdata` | master_db | 8080 |
+| 主数据 | masterdata-service | `/api/v1/masterdata` | master_db | 8084 |
 | 用户目录 | user-service | `/api/v1/users` | user_db | 8086 |
 | 网关 | bone-gateway | — | — | 8888 |
 

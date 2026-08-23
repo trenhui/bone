@@ -23,7 +23,7 @@ public class RemoteMetadataService implements MetadataService {
 
   @Override
   public List<FieldMetadata> findExtensionFields(AllocationContext context) {
-    return metadataServiceClient.findExtensionFields(context);
+    return unwrap(metadataServiceClient.findExtensionFields(context));
   }
 
   @Override
@@ -32,8 +32,9 @@ public class RemoteMetadataService implements MetadataService {
     if (logicalNames == null || logicalNames.isEmpty()) {
       return Collections.emptyList();
     }
-    return metadataServiceClient.findExtensionFieldsByNames(
-        new FieldsByNamesRequest(context, logicalNames));
+    return unwrap(
+        metadataServiceClient.findExtensionFieldsByNames(
+            new FieldsByNamesRequest(context, logicalNames)));
   }
 
   @Override
@@ -42,11 +43,21 @@ public class RemoteMetadataService implements MetadataService {
       if (fields == null || fields.isEmpty()) {
         return Collections.emptyList();
       }
-      return metadataServiceClient.allocateAndPersistFields(fields);
+      return unwrap(metadataServiceClient.allocateAndPersistFields(fields));
     } catch (Exception ex) {
       log.error("allocateAndPersistFields error ", ex);
       throw new FieldAllocationException(ex.getMessage(), ex);
     }
+  }
+
+  /** 解包统一 {@link com.bone.core.model.ApiResponse} 信封，返回业务数据。 */
+  private static List<FieldMetadata> unwrap(
+      com.bone.core.model.ApiResponse<List<FieldMetadata>> response) {
+    if (response == null) {
+      return Collections.emptyList();
+    }
+    List<FieldMetadata> data = response.getData();
+    return data != null ? data : Collections.emptyList();
   }
 
   /**

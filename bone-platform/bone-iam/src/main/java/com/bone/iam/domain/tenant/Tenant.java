@@ -19,6 +19,15 @@ public class Tenant extends AggregateRoot<Long> {
   @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
   private Long id;
 
+  /**
+   * 子类重新声明 id 字段，须显式 override setId 到子类字段，避免字段遮蔽 （父类 setId 只设置 Entity.id，导致 create() 后 getId() 返回
+   * null）。
+   */
+  @Override
+  public void setId(Long id) {
+    this.id = id;
+  }
+
   private String name;
   private String code;
   private int level;

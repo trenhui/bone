@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 /**
  * studio-generator 全局异常处理器。
@@ -15,6 +16,15 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @Slf4j
 @RestControllerAdvice
 public class GeneratorExceptionHandler {
+
+  /** 放行 Spring 内置的状态码异常（404/304 等），保留其 HTTP 状态，避免被兜底处理器转成 500。 */
+  @ExceptionHandler(ResponseStatusException.class)
+  public ResponseEntity<ApiResponse<?>> handleResponseStatus(ResponseStatusException ex) {
+    log.warn("[handleResponseStatus] {} {}", ex.getStatusCode(), ex.getReason());
+    String message = ex.getReason() != null ? ex.getReason() : "请求处理失败";
+    return ResponseEntity.status(ex.getStatusCode())
+        .body(ApiResponse.error(ex.getStatusCode().value(), message));
+  }
 
   @ExceptionHandler(IllegalArgumentException.class)
   public ResponseEntity<ApiResponse<?>> handleBadRequest(IllegalArgumentException ex) {

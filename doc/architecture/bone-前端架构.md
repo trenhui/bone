@@ -122,6 +122,44 @@ apps/<app-name>/src/
 - **测试**：以各应用已配置的 Vitest / Testing Library 为准；关键业务逻辑优先单测。
 - **环境变量**：按应用区分 `.env.development` 等，禁止将密钥写入仓库。
 
+### 6.1 API 错误处理标准
+
+- 所有微应用通过 `@bone/shared-services` 的统一 Axios 实例发起请求。
+- 拦截器统一处理 `ApiResponse`：`success=true` 返回 data，`success=false` 根据错误码展示消息。
+- 401 → 跳转 Shell 登录页；403 → 提示无权限；429 → 限流提示；500 → 通用错误提示。
+- 网络错误自动重试 1 次（仅 GET 请求）。
+
+### 6.2 状态管理规范
+
+- 服务端状态：推荐使用 TanStack Query（React Query），替代手写 loading/error state。
+- 客户端状态：轻量场景用 Zustand，复杂场景用 Redux Toolkit。
+- 跨应用共享状态（用户信息、主题、租户）：通过 Shell `props` 下发，子应用不独立请求。
+
+> **迁移现状（2026-08，非规范）**：状态管理统一方案（`@bone/shared-services` 的 `createApiClient` / `createQueryClient` + React Query + Zustand，见 [STATE_MANAGEMENT_MIGRATION.md](../../bone-frontend/STATE_MANAGEMENT_MIGRATION.md)）正在分应用迁移：
+>
+> | 应用 | 状态 | 说明 |
+> |------|------|------|
+> | `bone-iam-app` | ✅ 已迁移 | React Query |
+> | `bone-masterdata` / `bone-integration` / `bone-system-app` | ✅ 已走 shared-services | 无独立状态库 |
+> | `bone-generator-app` | ⚠️ 三套并存 | React Query + Redux + Zustand，待收敛为 React Query + Zustand |
+> | `bone-shell` / `bone-metadata-app` / `bone-extension-app` | 🕐 待迁移 | 仍 Redux |
+>
+> 迁移完成前，§6.2 为**目标态**；新代码优先按 §6.2 落地（React Query + Zustand），存量 Redux 代码随页面迭代迁移。
+
+### 6.3 微前端通信规范
+
+- `@bone/core/event-bus` 提供类型安全的 `emit<T>()` / `on<T>()` API。
+- 标准事件：`theme-changed`、`user-updated`、`tenant-switched`、`token-expired`。
+- 子应用 mount 时校验 token 有效性，过期时 emit `token-expired` 通知 Shell。
+- 禁止子应用直接修改全局 Store，只能通过事件通知 Shell。
+
+### 6.4 性能标准（目标值）
+
+- 首屏加载（Shell）：LCP < 3s（4G 网络）。
+- 微应用加载：从触发到可交互 < 2s（已预加载）。
+- Bundle 大小限制：单应用 gzip 后 < 500KB。
+- 启用 Qiankun `prefetch: 'all'` 预加载所有微应用。
+
 ## 7. 相关文档
 
 - [`BONE-总体架构设计方案.md`](./BONE-总体架构设计方案.md) — 平台总体架构、NFR、安全与数据一致性策略。

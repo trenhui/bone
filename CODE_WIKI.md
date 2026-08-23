@@ -46,7 +46,7 @@ ExtPoint扩展引擎 → 注入个性化业务逻辑（解决"怎么做"）
 | 微服务生态 | Spring Cloud Alibaba | 2023.0.1.2 |
 | 数据库 | MySQL | 8.0.33 |
 | 连接池 | HikariCP | 5.1.0 |
-| ORM | JPA（Hibernate）+ MyBatis | 混合使用 |
+| ORM | bone-metadata-sdk（自研 Spring JDBC 仓储抽象） | 唯一持久化方案，禁止使用 MyBatis-Plus / JPA / Hibernate / MyBatis |
 | 缓存 | Redis | 7.x |
 | 缓存客户端 | Redisson | 3.27.2 |
 | 认证授权 | SA-Token | 1.39.0 |
@@ -107,34 +107,16 @@ bone/                          # 根聚合模块
 │   └── bone-procurement/      # 采购/供应链相关引擎（集成见 bone-platform/bone-integration）
 ├── bone-platform/             # 企业共享平台服务
 │   ├── bone-iam/              # 身份与访问管理（默认端口 8081，见 doc/wiki/03）
-│   ├── bone-gateway/          # API 网关
+│   ├── bone-gateway/          # API 网关（端口 8888，骨架：仅 traceId 透传 filter）
 │   ├── bone-masterdata/       # 主数据服务
 │   ├── bone-system/           # 系统管理（端口 8083）
-│   ├── bone-file/             # 文件服务
-│   ├── bone-notification/     # 通知服务
+│   ├── bone-file/             # 文件服务（规划中，暂无实现）
+│   ├── bone-notification/     # 通知服务（目前仅告警通道 Alert）
 │   └── bone-integration/      # 唯一集成服务（:8085）
-│   ├── bone-trade/            # 骨架
-│   └── tpa-saas/              # TPA SaaS 业务
-│       ├── bone-auth/
-│       ├── bone-auth-sdk/
-│       ├── bone-core/
-│       ├── bone-dependencies/
-│       ├── bone-log-sdk/
-│       ├── bone-lowcode/
-│       ├── bone-platform/
-│       └── bone-tpa-saas/
-│           ├── bone-tpa/
-│           ├── bone-tpa-sdk/
-│           ├── bone-tpa-push/
-│           ├── bone-tpa-intelligent-adjustment/
-│           ├── bone-tpa-core/
-│           ├── bone-tpa-api/
-│           └── bone-tpa-facade/
 ├── bone-sdk/                  # 客户端 SDK
 │   ├── bone-client-sdk/
 │   └── bone-openapi-sdk/
 ├── bone-engine/studio-generator/  # Studio 代码生成
-│   └── bone-codegen/          # 代码生成器（同样遵循 DDD 分层）
 └── bone-blueprint/            # 项目蓝图示例
 ```
 
@@ -172,25 +154,25 @@ bone-frontend/
 
 | 类名 | 说明 | 关键方法 | 文件路径 |
 |------|------|----------|----------|
-| `AbstractEntity<ID>` | 实体基类，包含审计字段和逻辑删除 | - | [AbstractEntity.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/domain/entity/AbstractEntity.java) |
-| `TenantAbstractEntity` | 多租户基础实体，增加 `tenantId`、`bizIdentityCode` | - | [TenantAbstractEntity.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/tenant/TenantAbstractEntity.java) |
-| `TenantContext` | 线程级租户上下文传递 | - | [TenantContext.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/tenant/context/TenantContext.java) |
-| `ApiResponse<T>` | 统一 REST 响应包装 | `success(T data)`, `error(String message)` | [ApiResponse.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/result/ApiResponse.java) |
-| `PageResult<T>` | 统一分页结果包装 | - | [PageResult.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/result/PageResult.java) |
-| `BizException` | 业务异常 | - | [BizException.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/exception/BizException.java) |
-| `DistributedIdGenerator` | 分布式 ID 生成器 | - | [DistributedIdGenerator.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/util/DistributedIdGenerator.java) |
-| `AggregateRoot` | 聚合根标记接口 | - | [AggregateRoot.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/domain/AggregateRoot.java) |
-| `DomainEvent` | 领域事件基类 | - | [DomainEvent.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/domain/DomainEvent.java) |
-| `TransmittableThreadLocal` | 可传递的线程本地变量 | - | [TransmittableThreadLocal.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/threadlocal/TransmittableThreadLocal.java) |
+| `AbstractEntity<ID>` | 实体基类，包含审计字段和逻辑删除 | - | [AbstractEntity.java](bone-framework/bone-core/src/main/java/com/bone/core/domain/entity/AbstractEntity.java) |
+| `TenantAbstractEntity` | 多租户基础实体，增加 `tenantId`、`bizIdentityCode` | - | [TenantAbstractEntity.java](bone-framework/bone-core/src/main/java/com/bone/core/tenant/TenantAbstractEntity.java) |
+| `TenantContext` | 线程级租户上下文传递 | - | [TenantContext.java](bone-framework/bone-core/src/main/java/com/bone/core/tenant/context/TenantContext.java) |
+| `ApiResponse<T>` | 统一 REST 响应包装 | `success(T data)`, `error(String message)` | [ApiResponse.java](bone-framework/bone-core/src/main/java/com/bone/core/result/ApiResponse.java) |
+| `PageResult<T>` | 统一分页结果包装 | - | [PageResult.java](bone-framework/bone-core/src/main/java/com/bone/core/result/PageResult.java) |
+| `BizException` | 业务异常 | - | [BizException.java](bone-framework/bone-core/src/main/java/com/bone/core/exception/BizException.java) |
+| `DistributedIdGenerator` | 分布式 ID 生成器 | - | [DistributedIdGenerator.java](bone-framework/bone-core/src/main/java/com/bone/core/util/DistributedIdGenerator.java) |
+| `AggregateRoot` | 聚合根标记接口 | - | [AggregateRoot.java](bone-framework/bone-core/src/main/java/com/bone/core/domain/AggregateRoot.java) |
+| `DomainEvent` | 领域事件基类 | - | [DomainEvent.java](bone-framework/bone-core/src/main/java/com/bone/core/domain/DomainEvent.java) |
+| `TransmittableThreadLocal` | 可传递的线程本地变量 | - | [TransmittableThreadLocal.java](bone-framework/bone-core/src/main/java/com/bone/core/threadlocal/TransmittableThreadLocal.java) |
 | `@Capability` / `HandlerRegistry` | AI/Flow 能力发现（`com.bone.core.capability`） | - | [Capability.java](bone-framework/bone-core/src/main/java/com/bone/core/capability/Capability.java) |
 
 #### 4.1.2 关键注解
 
 | 注解名 | 说明 | 文件路径 |
 |--------|------|----------|
-| `@Id` | 标识主键字段 | [Id.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/annotation/Id.java) |
-| `@Deleted` | 标识逻辑删除字段 | [Deleted.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/annotation/Deleted.java) |
-| `@Version` | 标识乐观锁版本字段 | [Version.java](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-framework/bone-core/src/main/java/com/bone/core/annotation/Version.java) |
+| `@Id` | 标识主键字段 | [Id.java](bone-framework/bone-core/src/main/java/com/bone/core/annotation/Id.java) |
+| `@Deleted` | 标识逻辑删除字段 | [Deleted.java](bone-framework/bone-core/src/main/java/com/bone/core/annotation/Deleted.java) |
+| `@Version` | 标识乐观锁版本字段 | [Version.java](bone-framework/bone-core/src/main/java/com/bone/core/annotation/Version.java) |
 
 ### 4.2 核心引擎类
 
@@ -251,7 +233,7 @@ com.bone.{module}
 │   ├── result/
 │   └── util/
 └── infrastructure/            # 基础设施层（出站适配器）
-    ├── persistence/           # JPA / MyBatis Mapper、PO、仓储实现
+    ├── persistence/           # 基于 bone-metadata-sdk 的仓储实现、PO
     └── ...
 ```
 
@@ -338,7 +320,7 @@ npm run preview               # Vite preview
 
 批量启动所有前端应用的脚本：
 - `bone-frontend/restart-all-apps.sh` — 停止并重启所有 7 个前端应用，日志输出到 `logs/` 目录
-- 详细用法见 [SCRIPT_USAGE.md](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-frontend/SCRIPT_USAGE.md)
+- 详细用法见 [SCRIPT_USAGE.md](bone-frontend/SCRIPT_USAGE.md)
 
 ### 6.3 开发环境要求
 
@@ -354,8 +336,11 @@ npm run preview               # Vite preview
 
 | 服务 | 端口 |
 |------|------|
-| bone-iam | 8080 |
+| bone-gateway | 8888 |
+| bone-iam | 8081 |
 | bone-system | 8083 |
+| bone-metadata-server | 9001 |
+| bone-integration | 8085 |
 | bone-shell（前端主应用） | 3000 |
 | bone-iam-app | 3003 |
 | bone-metadata-app | 3004 |
@@ -363,6 +348,7 @@ npm run preview               # Vite preview
 | bone-integration-app | 3006 |
 | bone-system-app | 3007 |
 | bone-extension-app | 3008 |
+| bone-generator-app | 3009 |
 
 ---
 
@@ -447,7 +433,7 @@ npm run preview               # Vite preview
 
 ### 9.3 前端代码质量
 
-- ESLint 配置位于 [.eslintrc.json](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-frontend/.eslintrc.json)
+- ESLint 配置位于 [.eslintrc.json](bone-frontend/.eslintrc.json)
 - Prettier 3.1+ 格式化
 
 ---
@@ -514,12 +500,12 @@ npm run preview               # Vite preview
 
 | 文件/目录 | 内容 |
 |-----------|------|
-| [README.md](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/README.md) | 项目营销概览、快速开始 |
-| [AGENTS.md](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/AGENTS.md) | AI 助手项目指南 |
+| [README.md](README.md) | 项目营销概览、快速开始 |
+| [AGENTS.md](AGENTS.md) | AI 助手项目指南 |
 | [doc/wiki/07-P0-TODO看板.md](doc/wiki/07-P0-TODO看板.md) | 平台未完成项与工程债 |
-| [bone-parent/pom.xml](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-parent/pom.xml) | 依赖版本锁定与全局插件配置 |
-| [bone-init.sql](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-init.sql) | 数据库初始化脚本 |
-| [bone-frontend/package.json](file:///Users/renhui.trh/创业项目/智能理赔/deep-claim/bone-frontend/package.json) | 前端项目配置与工作区定义 |
+| [bone-parent/pom.xml](bone-parent/pom.xml) | 依赖版本锁定与全局插件配置 |
+| [bone-init.sql](bone-init.sql) | 数据库初始化脚本 |
+| [bone-frontend/package.json](bone-frontend/package.json) | 前端项目配置与工作区定义 |
 
 ---
 

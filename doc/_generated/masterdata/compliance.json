@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-27T09:42:30Z",
+  "generated_at": "2026-08-15T04:23:26Z",
   "module": "masterdata",
   "as_is": [
     {
@@ -60,8 +60,8 @@
     {
       "id": "catalog-sync-adr-full",
       "tier": "Target",
-      "title": "ADR-0002 目录同步全链路（metadata ↔ masterdata）",
-      "reference": "ADR-0002",
+      "title": "ADR-0017 目录同步全链路（metadata ↔ masterdata）",
+      "reference": "ADR-0017",
       "tracking": "部分实体仍手工登记"
     },
     {

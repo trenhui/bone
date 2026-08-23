@@ -20,9 +20,13 @@ public final class CurrentAccountResolver {
 
   public static Optional<Long> currentAccountId() {
     return currentPrincipal()
-        .flatMap(p -> {
-          try { return Optional.of(Long.parseLong(p.userId())); }
-          catch (NumberFormatException ignored) { return Optional.empty(); }
-        });
+        .flatMap(
+            p -> {
+              try {
+                return Optional.of(Long.parseLong(p.userId()));
+              } catch (NumberFormatException ignored) {
+                return Optional.empty();
+              }
+            });
   }
 }

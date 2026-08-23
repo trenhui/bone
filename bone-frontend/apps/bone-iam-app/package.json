@@ -11,13 +11,17 @@
   },
   "dependencies": {
     "@ant-design/pro-components": "^2.6.27",
+    "@bone/shared-services": "1.0.0",
+    "@bone/shared-types": "1.0.0",
     "@bone/ui": "1.0.0",
+    "@tanstack/react-query": "^5.51.0",
     "antd": "^5.12.8",
-    "axios": "^1.6.7",
+    "axios": "^1.7.9",
     "dayjs": "^1.11.21",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.22.3"
+    "react-router-dom": "^6.22.3",
+    "@bone/core-event-bus": "1.0.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
@@ -35,6 +39,7 @@
     "typescript": "^5.2.2",
     "vite": "^5.0.8",
     "vite-plugin-qiankun": "^1.0.15",
-    "vitest": "^2.1.9"
+    "vitest": "^2.1.9",
+    "@bone/shared-config": "1.0.0"
   }
 }

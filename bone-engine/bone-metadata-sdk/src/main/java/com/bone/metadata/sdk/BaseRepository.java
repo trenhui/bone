@@ -683,7 +683,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
       bizIdentityCode = BizIdentityContext.getBizIdentityCode();
     }
     return AllocationContext.of(
-        TenantContext.getTenantId(),
+        TenantContext.getTenantIdAsLong(),
         MetadataSdkContext.getAppCode(),
         bizIdentityCode,
         entityClass.getSimpleName());
@@ -783,7 +783,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
       if (extra != null && !extra.isEmpty()) {
         ExtensionContext context =
             ExtensionContext.of(
-                TenantContext.getTenantId(),
+                TenantContext.getTenantIdAsLong(),
                 MetadataSdkContext.getAppCode(),
                 extensible.getBizIdentityCode(),
                 entityClass.getSimpleName(),
@@ -798,7 +798,7 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
     if (entity instanceof Extensible extensible && entity.getId() != null) {
       ExtensionContext context =
           ExtensionContext.of(
-              TenantContext.getTenantId(),
+              TenantContext.getTenantIdAsLong(),
               MetadataSdkContext.getAppCode(),
               extensible.getBizIdentityCode(),
               entityClass.getSimpleName(),

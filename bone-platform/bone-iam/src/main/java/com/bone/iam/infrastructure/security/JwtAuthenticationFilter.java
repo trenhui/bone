@@ -9,9 +9,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-/**
- * IAM JWT 认证过滤器。继承框架抽象类，增加租户上下文绑定。
- */
+/** IAM JWT 认证过滤器。继承框架抽象类，增加租户上下文绑定。 */
 @Component
 @Slf4j
 public class JwtAuthenticationFilter extends AbstractJwtAuthenticationFilter {
@@ -34,11 +32,8 @@ public class JwtAuthenticationFilter extends AbstractJwtAuthenticationFilter {
   protected void onAuthenticated(JwtPrincipal principal, HttpServletRequest request) {
     String tenantId = principal.tenantId();
     if (tenantId != null && !tenantId.isBlank()) {
-      try {
-        TenantContext.setTenantId(Long.parseLong(tenantId));
-      } catch (NumberFormatException ignored) {
-        // ignore
-      }
+      // 直接以字符串形式设置租户ID（兼容雪花ID与租户编码）
+      TenantContext.setTenantId(tenantId);
     }
   }
 

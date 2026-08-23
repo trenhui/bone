@@ -1,45 +1,15 @@
 package com.bone.integration.infrastructure.security;
 
-import com.bone.integration.infrastructure.config.JwtConfig;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.List;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import com.bone.core.security.auth.AbstractJwtAuthenticationFilter;
+import com.bone.core.security.jwt.JwtConfig;
+import com.bone.core.security.jwt.JwtTokenService;
 import org.springframework.stereotype.Component;
-import org.springframework.web.filter.OncePerRequestFilter;
 
+/** 集成服务 JWT 认证过滤器。继承框架抽象类，复用统一的 Token 解析与身份载体。 */
 @Component
-public class JwtAuthenticationFilter extends OncePerRequestFilter {
-  private final JwtTokenService jwtTokenService;
-  private final JwtConfig jwtConfig;
+public class JwtAuthenticationFilter extends AbstractJwtAuthenticationFilter {
 
   public JwtAuthenticationFilter(JwtTokenService jwtTokenService, JwtConfig jwtConfig) {
-    this.jwtTokenService = jwtTokenService;
-    this.jwtConfig = jwtConfig;
-  }
-
-  @Override
-  protected void doFilterInternal(
-      HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-      throws ServletException, IOException {
-    String authHeader = request.getHeader(jwtConfig.getHeaderName());
-    if (authHeader != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-      jwtTokenService
-          .parse(authHeader)
-          .ifPresent(
-              principal -> {
-                var authentication =
-                    new UsernamePasswordAuthenticationToken(principal.username(), null, List.of());
-                authentication.setDetails(
-                    new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-              });
-    }
-    filterChain.doFilter(request, response);
+    super(jwtTokenService, jwtConfig);
   }
 }

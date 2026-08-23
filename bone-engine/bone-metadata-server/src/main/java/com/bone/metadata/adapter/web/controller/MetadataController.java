@@ -58,7 +58,7 @@ public class MetadataController {
         @ApiResponse(responseCode = "500", description = "服务器内部错误")
       })
   @PreAuthorize("hasAnyAuthority('metadata:read')")
-  public ResponseEntity<List<FieldMetadata>> searchFields(
+  public com.bone.core.model.ApiResponse<List<FieldMetadata>> searchFields(
       @Parameter(
               description = "查询条件实体",
               required = true,
@@ -67,7 +67,7 @@ public class MetadataController {
           @RequestBody
           AllocationContext ctx) {
     List<FieldMetadata> result = metadataService.findExtensionFields(ctx);
-    return ResponseEntity.ok(result);
+    return com.bone.core.model.ApiResponse.success(result);
   }
 
   /** POST /api/v1/metadata/fields:searchByNames */
@@ -87,7 +87,7 @@ public class MetadataController {
         @ApiResponse(responseCode = "404", description = "未找到匹配字段")
       })
   @PreAuthorize("hasAnyAuthority('metadata:read')")
-  public ResponseEntity<List<FieldMetadata>> searchFieldsByNames(
+  public com.bone.core.model.ApiResponse<List<FieldMetadata>> searchFieldsByNames(
       @Parameter(
               description = "查询条件实体",
               required = true,
@@ -98,7 +98,7 @@ public class MetadataController {
     AllocationContext ctx = request.getContext();
     List<String> names = request.getLogicalNames();
     List<FieldMetadata> result = metadataService.findExtensionFieldsByNames(ctx, names);
-    return ResponseEntity.ok(result);
+    return com.bone.core.model.ApiResponse.success(result);
   }
 
   /** POST /api/v1/metadata/fields:allocate */
@@ -122,31 +122,40 @@ public class MetadataController {
         @ApiResponse(responseCode = "500", description = "服务器内部错误")
       })
   @PreAuthorize("hasAuthority('metadata:write')")
-  public ResponseEntity<List<FieldMetadata>> allocateAndPersistFields(
-      @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
-      @Parameter(
-              description = "批量创建字段请求实体列表",
-              required = true,
-              content =
-                  @Content(
-                      array = @ArraySchema(schema = @Schema(implementation = FieldMetadata.class))))
-          @Valid
-          @RequestBody
-          List<FieldMetadata> toCreate)
-      throws JsonProcessingException {
+  public ResponseEntity<com.bone.core.model.ApiResponse<List<FieldMetadata>>>
+      allocateAndPersistFields(
+          @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+          @Parameter(
+                  description = "批量创建字段请求实体列表",
+                  required = true,
+                  content =
+                      @Content(
+                          array =
+                              @ArraySchema(schema = @Schema(implementation = FieldMetadata.class))))
+              @Valid
+              @RequestBody
+              List<FieldMetadata> toCreate)
+          throws JsonProcessingException {
     String fingerprint =
         CatalogIdempotencyService.fingerprint(objectMapper.writeValueAsString(toCreate));
     var bodyType =
-        objectMapper.getTypeFactory().constructCollectionType(List.class, FieldMetadata.class);
-    Optional<ResponseEntity<List<FieldMetadata>>> replay =
+        objectMapper
+            .getTypeFactory()
+            .constructParametricType(
+                com.bone.core.model.ApiResponse.class,
+                objectMapper
+                    .getTypeFactory()
+                    .constructCollectionType(List.class, FieldMetadata.class));
+    Optional<ResponseEntity<com.bone.core.model.ApiResponse<List<FieldMetadata>>>> replay =
         catalogIdempotencyService.replayRawBody(
             idempotencyKey, "POST", ALLOCATE_PATH, fingerprint, bodyType);
     if (replay.isPresent()) {
       return replay.get();
     }
     List<FieldMetadata> created = metadataService.allocateAndPersistFields(toCreate);
-    ResponseEntity<List<FieldMetadata>> response =
-        ResponseEntity.status(HttpStatus.CREATED).body(created);
+    ResponseEntity<com.bone.core.model.ApiResponse<List<FieldMetadata>>> response =
+        ResponseEntity.status(HttpStatus.CREATED)
+            .body(com.bone.core.model.ApiResponse.success(created));
     catalogIdempotencyService.rememberRawBody(
         idempotencyKey, "POST", ALLOCATE_PATH, fingerprint, response);
     return response;

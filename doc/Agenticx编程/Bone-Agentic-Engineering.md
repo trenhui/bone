@@ -1055,7 +1055,7 @@ bone/
 人定义意图，AI 负责实现，契约保证质量，CI 担任裁判，Ralph Loop 保障 7×24 小时交付。
 
 ## 🏗️ 技术栈（锁定版本）
-- 后端：Java 21 + Spring Boot 3.5.x + MySQL Connector 9.3.0 + MyBatis Plus 3.5.x
+- 后端：Java 21 + Spring Boot 3.5.x + MySQL Connector 9.3.0 + bone-metadata-sdk（自研 ORM）
 - 前端：React 18.2 + TypeScript 5.8 + Ant Design 5.x + Vite 5.x
 - 测试：JUnit 5 + Testcontainers + JaCoCo (后端)，Vitest + React Testing Library (前端)
 - 覆盖率门禁：≥80% (L2 功能 ≥85%)

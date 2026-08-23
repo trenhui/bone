@@ -36,8 +36,11 @@ public class TenantInterceptor implements HandlerInterceptor {
       HttpServletRequest request, HttpServletResponse response, Object handler) {
     try {
       // 从请求头获取租户ID
-      String tenantIdStr = request.getHeader(TENANT_ID_HEADER);
-      Long tenantId = parseTenantId(tenantIdStr);
+      String tenantId = request.getHeader(TENANT_ID_HEADER);
+      if (tenantId == null || tenantId.isBlank()) {
+        log.debug("未提供租户ID，使用默认租户: {}", DEFAULT_TENANT);
+        tenantId = "0";
+      }
 
       // 从请求头获取业务码
       String bizCode = request.getHeader(BIZ_CODE_HEADER);
@@ -81,26 +84,6 @@ public class TenantInterceptor implements HandlerInterceptor {
   }
 
   /**
-   * 解析租户ID
-   *
-   * @param tenantIdStr 租户ID字符串
-   * @return 租户ID
-   */
-  private Long parseTenantId(String tenantIdStr) {
-    if (tenantIdStr == null || tenantIdStr.isBlank()) {
-      log.debug("未提供租户ID，使用默认租户: {}", DEFAULT_TENANT);
-      return 0L;
-    }
-
-    try {
-      return Long.parseLong(tenantIdStr);
-    } catch (NumberFormatException e) {
-      log.warn("租户ID格式错误: {}, 使用默认租户", tenantIdStr);
-      return 0L;
-    }
-  }
-
-  /**
    * 检查BizContext类是否可用
    *
    * @return 是否可用
@@ -120,12 +103,12 @@ public class TenantInterceptor implements HandlerInterceptor {
    * @param tenantId 租户ID
    * @param bizCode 业务码
    */
-  private void setBizContext(Long tenantId, String bizCode) {
+  private void setBizContext(String tenantId, String bizCode) {
     try {
       Class<?> bizContextClass =
           Class.forName("com.bone.engine.extension.support.context.BizContext");
       Object builder = bizContextClass.getMethod("builder").invoke(null);
-      builder.getClass().getMethod("tenant", String.class).invoke(builder, tenantId.toString());
+      builder.getClass().getMethod("tenant", String.class).invoke(builder, tenantId);
       builder.getClass().getMethod("bizCode", String.class).invoke(builder, bizCode);
       builder.getClass().getMethod("build").invoke(builder);
     } catch (Exception e) {

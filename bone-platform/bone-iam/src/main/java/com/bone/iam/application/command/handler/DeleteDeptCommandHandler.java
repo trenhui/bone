@@ -28,7 +28,7 @@ public class DeleteDeptCommandHandler {
     if (repo.findById(cmd.getId()) == null) {
       throw new IllegalArgumentException("部门不存在: " + cmd.getId());
     }
-    repo.delete(cmd.getId());
+    repo.deleteById(cmd.getId());
     return cmd.getId();
   }
 }

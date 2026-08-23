@@ -38,7 +38,8 @@ class ExtensionApiUploadTest {
                 .param("version", "9.9.9"))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.success").value(true))
-        .andExpect(jsonPath("$.data.id").isNumber())
+        // EntityIdSerializer 将 Long 主键序列化为字符串（避免 JS 精度丢失），故断言字符串而非数字
+        .andExpect(jsonPath("$.data.id").value("3"))
         .andExpect(jsonPath("$.data.name").value("上传测试插件"))
         .andExpect(jsonPath("$.data.className").value("com.bone.test.UploadedPlugin"));
   }

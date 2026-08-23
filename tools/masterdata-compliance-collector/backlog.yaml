@@ -1,8 +1,8 @@
 items:
   - id: catalog-sync-adr-full
     tier: Target
-    title: ADR-0002 目录同步全链路（metadata ↔ masterdata）
-    reference: ADR-0002
+    title: ADR-0017 目录同步全链路（metadata ↔ masterdata）
+    reference: ADR-0017
     tracking: 部分实体仍手工登记
 
   - id: quality-rule-engine

@@ -22,19 +22,6 @@ spring:
       max-lifetime: 1800000
       pool-name: SmartMetaHikariPool
 
-# JPA配置
-  jpa:
-    open-in-view: false
-    hibernate:
-      ddl-auto: validate
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        format_sql: false
-        jdbc.batch_size: 30
-        order_inserts: true
-    show-sql: false
-
 # GraphQL配置
   graphql:
     graphiql:
@@ -176,7 +163,6 @@ logging:
     com.bone.smartmeta.engine: INFO
     com.bone.domains.procurement: INFO
     org.springframework.web: WARN
-    org.hibernate: WARN
     org.camunda: INFO
     org.apache.kafka: WARN
   pattern:

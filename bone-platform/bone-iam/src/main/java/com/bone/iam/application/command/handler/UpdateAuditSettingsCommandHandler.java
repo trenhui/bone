@@ -18,7 +18,7 @@ public class UpdateAuditSettingsCommandHandler {
     if (cmd == null || cmd.getSettings() == null || cmd.getSettings().isEmpty()) {
       throw new IllegalArgumentException("审计设置不能为空");
     }
-    Long tenantId = TenantContext.getTenantId();
+    Long tenantId = TenantContext.getTenantIdAsLong();
     auditSettingsStore.upsert(tenantId != null ? tenantId : 0L, cmd.getSettings());
   }
 }

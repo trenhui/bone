@@ -109,7 +109,24 @@ const FieldManagement: React.FC = () => {
     { title: '名称', dataIndex: 'name', key: 'name' },
     { title: '编码', dataIndex: 'code', key: 'code' },
     { title: '显示名', dataIndex: 'displayName', key: 'displayName' },
-    { title: '类型', dataIndex: 'type', key: 'type' },
+    {
+      title: '类型',
+      dataIndex: 'type',
+      key: 'type',
+      render: (t: string) => {
+        const typeColorMap: Record<string, string> = {
+          STRING: 'green',
+          INTEGER: 'blue',
+          LONG: 'cyan',
+          DECIMAL: 'purple',
+          BOOLEAN: 'orange',
+          TEXT: 'geekblue',
+          DATE: 'magenta',
+          DATETIME: 'volcano',
+        };
+        return <Tag color={typeColorMap[t] ?? 'default'}>{t}</Tag>;
+      },
+    },
     {
       title: '必填',
       dataIndex: 'required',
@@ -126,6 +143,7 @@ const FieldManagement: React.FC = () => {
           </Button>
           <Popconfirm
             title="确认删除？"
+            description="该字段所属实体可能已发布，删除字段可能导致运行时数据异常，请谨慎操作。"
             onConfirm={async () => {
               const res = await metadataFieldApi.delete(entityId!, record.id);
               if (res.code === 200) {
@@ -146,6 +164,9 @@ const FieldManagement: React.FC = () => {
   return (
     <div className="page">
       <Space style={{ marginBottom: 16 }} wrap>
+        <Button type="link" style={{ padding: 0 }} onClick={() => window.location.hash = '#/entities'}>
+          ← 返回实体管理
+        </Button>
         <Select
           style={{ width: 280 }}
           placeholder="选择实体"
@@ -158,6 +179,15 @@ const FieldManagement: React.FC = () => {
             value: e.id,
             label: `${e.displayName} (${e.code})`,
           }))}
+        />
+        <Input.Search
+          placeholder="搜索字段名称"
+          allowClear
+          style={{ width: 240 }}
+          onSearch={(v) => {
+            // TODO: 后端字段列表搜索暂不支持 keyword 参数，预留搜索交互
+            console.log('搜索字段:', v);
+          }}
         />
         <Button type="primary" icon={<PlusOutlined />} onClick={openCreate} disabled={!entityId}>
           新建字段

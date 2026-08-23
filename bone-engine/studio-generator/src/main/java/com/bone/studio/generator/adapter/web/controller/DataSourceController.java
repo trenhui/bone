@@ -41,7 +41,8 @@ public class DataSourceController {
 
   @PostMapping
   public ApiResponse<String> createDataSource(@RequestBody CreateDataSourceCommand command) {
-    return ApiResponse.success(createDataSourceHandler.handle(command));
+    // 注意：success(String) 命中 message 重载，字符串数据须用双参形式
+    return ApiResponse.success("创建成功", createDataSourceHandler.handle(command));
   }
 
   @PutMapping("/{id}")
@@ -58,7 +59,7 @@ public class DataSourceController {
             .username(command.getUsername())
             .password(command.getPassword())
             .build();
-    return ApiResponse.success(updateDataSourceHandler.handle(command));
+    return ApiResponse.success("更新成功", updateDataSourceHandler.handle(command));
   }
 
   @DeleteMapping("/{id}")

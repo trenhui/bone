@@ -27,7 +27,7 @@ public class DeleteMenuCommandHandler {
     if (menuRepository.findById(cmd.getId()) == null) {
       throw new IllegalArgumentException("菜单不存在: " + cmd.getId());
     }
-    menuRepository.delete(cmd.getId());
+    menuRepository.deleteById(cmd.getId());
     return cmd.getId();
   }
 }
