@@ -1,0 +1,9 @@
+{
+  "openspec_proposal": "openspec/changes/system-dict-scheduler/proposal.md",
+  "openspec_design": "openspec/changes/system-dict-scheduler/design.md",
+  "openspec_tasks": "openspec/changes/system-dict-scheduler/tasks.md",
+  "design_document": "docs/superpowers/design/system-dict-scheduler.md",
+  "build_plan": "docs/superpowers/plans/2026-08-23-system-dict-scheduler.md",
+  "build_tasks_complete": "openspec/changes/system-dict-scheduler/tasks.md",
+  "archive_directory": "openspec/changes/archive/2026-08-23-system-dict-scheduler"
+}

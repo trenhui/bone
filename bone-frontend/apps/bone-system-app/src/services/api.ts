@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
-import axios from 'axios';
+import { createApiClient, setQiankunToken } from '@bone/shared-services';
 import type {
   SystemConfig,
   ConfigHistory,
@@ -8,54 +8,15 @@ import type {
   SystemLog,
   Metrics,
   SystemInfo,
+  SysDict,
+  ScheduleTask,
   ApiResponse,
   PageResult,
 } from '@/types';
 
-// 模块级内存 token，由 qiankun mount 生命周期写入，优先于 localStorage
-let _qiankunToken: string | null = null;
+export { setQiankunToken };
 
-/** 供 main.tsx 在 qiankun mount 时调用，将 props.token 写入内存 */
-export function setQiankunToken(token: string | null) {
-  _qiankunToken = token;
-  if (token) {
-    localStorage.setItem('token', token);
-  }
-}
-
-const api = axios.create({
-  baseURL: (import.meta.env.VITE_API_BASE_URL || '') + '/api/v1',
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-api.interceptors.request.use(
-  (config) => {
-    // 优先级：qiankun 内存 token > window 全局 token > localStorage
-    const token = _qiankunToken
-      || (window as unknown as Record<string, string>).__BONE_TOKEN__
-      || localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // qiankun 微应用中不直接跳转 /login，而是通知主应用处理
-      const event = new CustomEvent('bone:auth:expired', { detail: { status: 401 } });
-      window.dispatchEvent(event);
-    }
-    return Promise.reject(error);
-  }
-);
+const api = createApiClient('/api/v1', { headers: { 'Content-Type': 'application/json' } });
 
 // 系统配置 API
 export const systemConfigApi = {
@@ -186,6 +147,58 @@ export const consoleApi = {
   },
   getQuickActions: async () => {
     const response = await api.get<ApiResponse<unknown>>('/console/quick-actions');
+    return response.data;
+  },
+};
+
+// 系统字典 API
+export const dictApi = {
+  getDictsByType: async (type: string) => {
+    const response = await api.get<ApiResponse<SysDict[]>>(`/system/dicts/type/${type}`);
+    return response.data;
+  },
+  getDictPage: async (params: { type?: string; keyword?: string; pageNum?: number; pageSize?: number }) => {
+    const response = await api.get<ApiResponse<PageResult<SysDict>>>('/system/dicts/page', {
+      params: { page: params.pageNum ?? 1, size: params.pageSize ?? 20, type: params.type, keyword: params.keyword },
+    });
+    return response.data;
+  },
+  createDict: async (data: Omit<SysDict, 'id'>) => {
+    const response = await api.post<ApiResponse<number>>('/system/dicts', data);
+    return response.data;
+  },
+  updateDict: async (id: number, data: Partial<SysDict>) => {
+    const response = await api.put<ApiResponse<void>>(`/system/dicts/${id}`, data);
+    return response.data;
+  },
+  deleteDict: async (id: number) => {
+    const response = await api.delete<ApiResponse<void>>(`/system/dicts/${id}`);
+    return response.data;
+  },
+};
+
+// 系统定时任务 API
+export const scheduleTaskApi = {
+  getScheduleTaskPage: async (params: { keyword?: string; status?: string; pageNum?: number; pageSize?: number }) => {
+    const response = await api.get<ApiResponse<PageResult<ScheduleTask>>>('/system/schedule-tasks/page', {
+      params: { page: params.pageNum ?? 1, size: params.pageSize ?? 20, keyword: params.keyword, status: params.status },
+    });
+    return response.data;
+  },
+  createScheduleTask: async (data: { name: string; cron: string; handler: string; status?: string }) => {
+    const response = await api.post<ApiResponse<number>>('/system/schedule-tasks', data);
+    return response.data;
+  },
+  updateScheduleTask: async (id: number, data: { name: string; cron: string; handler: string }) => {
+    const response = await api.put<ApiResponse<void>>(`/system/schedule-tasks/${id}`, data);
+    return response.data;
+  },
+  deleteScheduleTask: async (id: number) => {
+    const response = await api.delete<ApiResponse<void>>(`/system/schedule-tasks/${id}`);
+    return response.data;
+  },
+  toggleScheduleTask: async (id: number, enabled: boolean) => {
+    const response = await api.put<ApiResponse<void>>(`/system/schedule-tasks/${id}/toggle`, null, { params: { enabled } });
     return response.data;
   },
 };

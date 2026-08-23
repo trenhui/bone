@@ -5,7 +5,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 /** Bone系统管理服务主类 */
-@SpringBootApplication
+@SpringBootApplication(scanBasePackages = {"com.bone.system", "com.bone.core.security.jwt"})
 @EnableSqlRepositories(basePackages = "com.bone.system.domain.repository")
 public class SystemApplication {
   public static void main(String[] args) {

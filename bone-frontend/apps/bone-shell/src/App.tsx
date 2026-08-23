@@ -18,7 +18,7 @@ import {
   NodeIndexOutlined, NodeCollapseOutlined, UnorderedListOutlined,
   CoffeeOutlined, ProfileOutlined,
   LineChartOutlined, AlertOutlined, CloudOutlined, CloudServerOutlined,
-  BellOutlined, ApartmentOutlined, MenuOutlined,
+  BellOutlined, ApartmentOutlined, MenuOutlined, ClockCircleOutlined,
 } from '@ant-design/icons';
 import {
   applyTheme,
@@ -187,6 +187,8 @@ function AppContent(): JSX.Element {
         { key: 'system-alerts', label: '监控告警', icon: <AlertOutlined />, path: '/system', hash: '/alerts', enabled: true },
         { key: 'system-logs', label: '日志管理', icon: <CloudOutlined />, path: '/system', hash: '/logs', enabled: true },
         { key: 'system-k8s', label: 'K8s 部署', icon: <CloudServerOutlined />, path: '/system', hash: '/k8s', enabled: true },
+        { key: 'system-dict', label: '字典管理', icon: <OrderedListOutlined />, path: '/system', hash: '/dict', enabled: true },
+        { key: 'system-schedule', label: '定时任务', icon: <ClockCircleOutlined />, path: '/system', hash: '/schedule', enabled: true },
       ],
     },
   ]);

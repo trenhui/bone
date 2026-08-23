@@ -5,6 +5,8 @@ import SystemConfig from './pages/SystemConfig';
 import MonitorAlert from './pages/MonitorAlert';
 import LogManagement from './pages/LogManagement';
 import SystemDeployment from './pages/SystemDeployment';
+import DictManagement from './pages/DictManagement';
+import ScheduleTaskManagement from './pages/ScheduleTaskManagement';
 import './App.css';
 
 const App: React.FC = () => {
@@ -16,6 +18,8 @@ const App: React.FC = () => {
           <Route path="/alerts" element={<MonitorAlert />} />
           <Route path="/logs" element={<LogManagement />} />
           <Route path="/k8s" element={<SystemDeployment />} />
+          <Route path="/dict" element={<DictManagement />} />
+          <Route path="/schedule" element={<ScheduleTaskManagement />} />
           <Route path="/" element={<Navigate to="/config" replace />} />
         </Routes>
       </Router>
