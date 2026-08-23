@@ -38,7 +38,7 @@ const SystemConfigPage: React.FC = () => {
     try {
       const response = await systemConfigApi.getConfig();
       if (response.code === 200) {
-        setConfigs(response.data);
+        setConfigs(response.data.list);
       }
     } catch (error) {
       message.error('获取配置失败');

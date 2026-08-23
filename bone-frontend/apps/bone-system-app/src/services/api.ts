@@ -45,6 +45,25 @@ export const systemConfigApi = {
     const response = await api.delete<ApiResponse<void>>(`/system/config/${id}`);
     return response.data;
   },
+
+  getConfigHistory: async (id: number) => {
+    const response = await api.get<ApiResponse<ConfigHistory[]>>(`/system/config/${id}/history`);
+    return response.data;
+  },
+
+  exportConfig: async () => {
+    const response = await api.post<ApiResponse<Blob>>('/system/config/export', null, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  importConfig: async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await api.post<ApiResponse<void>>('/system/config/import', formData);
+    return response.data;
+  },
 };
 
 // 监控告警 API
@@ -123,6 +142,18 @@ export const logApi = {
 
   createLog: async (data: { logLevel: string; serviceName: string; content: string }) => {
     const response = await api.post<ApiResponse<number>>('/system/logs', data);
+    return response.data;
+  },
+
+  exportLogs: async (params: { service?: string; level?: string; startTime?: string; endTime?: string }) => {
+    const response = await api.post<ApiResponse<Blob>>('/system/logs/export', params, {
+      responseType: 'blob',
+    });
+    return response.data;
+  },
+
+  analyzeLogs: async (params: { service?: string; startTime?: string; endTime?: string }) => {
+    const response = await api.get<ApiResponse<unknown>>('/system/logs/analyze', { params });
     return response.data;
   },
 };

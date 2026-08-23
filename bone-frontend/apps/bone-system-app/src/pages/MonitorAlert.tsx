@@ -93,7 +93,7 @@ const MonitorAlertPage: React.FC = () => {
 
       let response;
       if (editingRule?.id) {
-        response = await monitorApi.updateAlertRule(editingRule.id, ruleData);
+        response = await monitorApi.updateAlertRule({ ...ruleData, id: editingRule.id });
       } else {
         response = await monitorApi.createAlertRule(ruleData);
       }

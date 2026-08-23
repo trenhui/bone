@@ -1,4 +1,7 @@
-import axios, { type AxiosResponse } from 'axios';
+import { createApiClient, setQiankunToken } from '@bone/shared-services';
+import type { AxiosResponse } from 'axios';
+
+export { setQiankunToken };
 
 /**
  * bone-extension-studio REST 客户端。
@@ -54,33 +57,9 @@ export class StudioApiError extends Error {
 /** 规范前缀，见 doc/architecture/Bone-API-规范.md §13.1 */
 const EXTENSION_BASE = '/v1/extension';
 
-// 模块级内存 token，由 qiankun mount 生命周期写入，优先于 localStorage
-let _qiankunToken: string | null = null;
+// 模块级内存 token 由 shared-services 管理
 
-/** 供 main.tsx 在 qiankun mount 时调用，将 props.token 写入内存 */
-export function setQiankunToken(token: string | null) {
-  _qiankunToken = token;
-  if (token) {
-    localStorage.setItem('token', token);
-  }
-}
-
-const client = axios.create({
-  baseURL: (import.meta.env.VITE_API_BASE_URL || '') + '/api',
-  timeout: 20000,
-});
-
-// 请求拦截器 - 添加Token
-client.interceptors.request.use((config) => {
-  // 优先级：qiankun 内存 token > window 全局 token > localStorage
-  const t = _qiankunToken
-    || (window as unknown as Record<string, string>).__BONE_TOKEN__
-    || localStorage.getItem('token');
-  if (t) {
-    config.headers.Authorization = `Bearer ${t}`;
-  }
-  return config;
-});
+const client = createApiClient('/api', { timeout: 20000 });
 
 function parseProblem(body: StudioApiResponse<unknown> | undefined): ProblemDetail | undefined {
   const data = body?.data;

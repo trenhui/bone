@@ -1,0 +1,9 @@
+{
+  "openspec_proposal": "openspec/changes/fix-frontend-type-debt/proposal.md",
+  "openspec_design": "openspec/changes/fix-frontend-type-debt/design.md",
+  "openspec_tasks": "openspec/changes/fix-frontend-type-debt/tasks.md",
+  "design_document": "docs/superpowers/design/fix-frontend-type-debt.md",
+  "build_plan": "docs/superpowers/plans/2026-08-23-fix-frontend-type-debt.md",
+  "build_tasks_complete": "openspec/changes/fix-frontend-type-debt/tasks.md",
+  "archive_directory": "openspec/changes/archive/2026-08-23-fix-frontend-type-debt"
+}

@@ -1,6 +1,6 @@
 import { useEffect, useState, useContext, useMemo, Component, ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
-import { Layout, Menu, Button, Avatar, Dropdown, Space, App as AntdApp, Form, Input, Card, Switch, Popover, Tooltip, Badge, Result } from 'antd';
+import { Layout, Menu, Button, Avatar, Dropdown, App as AntdApp, Form, Input, Card, Switch, Popover, Tooltip, Badge, Result } from 'antd';
 const { Password } = Input;
 import axios from 'axios';
 import { createApiClient, notificationService } from '@bone/shared-services';
@@ -10,7 +10,7 @@ import {
   UserOutlined, LogoutOutlined, DashboardOutlined, UserAddOutlined,
   LockOutlined, DatabaseOutlined, LinkOutlined, SettingOutlined,
   SunOutlined, MoonOutlined, AppstoreOutlined, CodeOutlined,
-  LayoutOutlined, SettingOutlined as SettingIcon,
+  SettingOutlined as SettingIcon,
   SafetyCertificateOutlined, AuditOutlined, TeamOutlined,
   FileTextOutlined, PartitionOutlined, ApiOutlined, ThunderboltOutlined,
   ClusterOutlined, OrderedListOutlined, ReconciliationOutlined,
@@ -23,7 +23,6 @@ import {
 import {
   applyTheme,
   BoneAppProvider,
-  publishThemeChange,
   readStoredTheme,
   resolveThemeMode,
   themePreferenceLabel,
@@ -341,8 +340,6 @@ function AppContent(): JSX.Element {
         experimentalStyleIsolation: true,
         // 禁用 localStorage 代理，让微应用直接访问真实 localStorage
         // 这样微应用可以通过 localStorage.getItem('token') 读取 Shell 写入的 token
-        patchGlobalVal: true,
-        looseSandbox: true,
       },
     });
 
@@ -546,7 +543,7 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
   const {
     collapsed, setCollapsed, resolvedTheme, layoutMode,
     menuConfig, filterEnabled, handleMenuClick,
-    handleLogout, user, theme, toggleTheme, toggleLayoutMode,
+    handleLogout, user, theme, toggleTheme,
     currentPageTitle,
   } = props;
   const navigate = useNavigate();
