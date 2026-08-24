@@ -64,6 +64,12 @@ public class AlertAutoConfiguration {
 
   @Bean
   @ConditionalOnProperty(prefix = "alert.channels.sms", name = "enabled", havingValue = "true")
+  public SmsService smsService(AlertProperties properties) {
+    return new SmsService(properties.getChannels().getSms());
+  }
+
+  @Bean
+  @ConditionalOnProperty(prefix = "alert.channels.sms", name = "enabled", havingValue = "true")
   public SmsAlertChannel smsAlertChannel(AlertProperties properties, SmsService smsService) {
     return new SmsAlertChannel(
         properties.getChannels().getSms(), smsService); // 将 SmsService 注入到 SmsAlertChannel 中

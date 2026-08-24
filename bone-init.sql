@@ -1190,6 +1190,7 @@ DROP TABLE IF EXISTS md_record;
 DROP TABLE IF EXISTS md_entity;
 DROP TABLE IF EXISTS meta_data_lineage;
 DROP TABLE IF EXISTS meta_data_standard;
+DROP TABLE IF EXISTS ntf_message;
 
 CREATE TABLE md_entity (
     id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
@@ -1266,6 +1267,19 @@ CREATE TABLE meta_data_standard (
     KEY idx_std_field (field_code),
     KEY idx_std_tenant (tenant_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数据标准';
+
+CREATE TABLE ntf_message (
+    id                  BIGINT          NOT NULL COMMENT '站内信主键（分布式ID）',
+    user_id             BIGINT          NOT NULL COMMENT '接收用户ID',
+    title               VARCHAR(200)    DEFAULT NULL COMMENT '标题',
+    content             TEXT            DEFAULT NULL COMMENT '内容',
+    level               VARCHAR(20)     DEFAULT NULL COMMENT '级别（INFO/WARN/ERROR）',
+    is_read             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否已读（0=未读 1=已读）',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    PRIMARY KEY (id),
+    KEY idx_ntf_user (user_id),
+    KEY idx_ntf_user_read (user_id, is_read)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='站内信';
 
 -- ============================================================
 -- 增量迁移：修复实体与表结构不一致

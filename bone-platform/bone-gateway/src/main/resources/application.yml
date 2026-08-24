@@ -43,6 +43,15 @@ spring:
           uri: ${BONE_INTEGRATION_URI:http://localhost:8085}
           predicates:
             - Path=/api/v1/integration/**
+        - id: bone-file
+          uri: ${BONE_FILE_URI:http://localhost:8107}
+          predicates:
+            - Path=/api/v1/file/**
+        # bone-notification 为 SDK，REST 端点由宿主 bone-system 暴露
+        - id: bone-notification
+          uri: ${BONE_SYSTEM_URI:http://localhost:8083}
+          predicates:
+            - Path=/api/v1/notification/**
         - id: studio-generator
           uri: ${BONE_GENERATOR_URI:http://localhost:8086}
           predicates:

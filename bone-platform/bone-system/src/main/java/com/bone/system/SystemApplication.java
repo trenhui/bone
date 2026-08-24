@@ -8,8 +8,13 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
 
 /** Bone系统管理服务主类 */
-@SpringBootApplication(scanBasePackages = {"com.bone.system", "com.bone.core.security.jwt"})
-@EnableSqlRepositories(basePackages = "com.bone.system.domain.repository")
+@SpringBootApplication(
+    scanBasePackages = {"com.bone.system", "com.bone.core.security.jwt", "com.bone.platform.alert"})
+@EnableSqlRepositories(
+    basePackages = {
+      "com.bone.system.domain.repository",
+      "com.bone.platform.alert.domain.notification"
+    })
 @Import({MetadataAutoConfiguration.class, SqlRepositoryAutoConfiguration.class})
 public class SystemApplication {
   public static void main(String[] args) {

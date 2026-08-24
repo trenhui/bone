@@ -4,12 +4,22 @@ server:
 spring:
   application:
     name: bone-file
+  datasource:
+    url: jdbc:mysql://${BONE_DB_HOST:localhost}:${BONE_DB_PORT:3306}/${BONE_DB_NAME:bone}?useSSL=false&autoReconnect=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: ${BONE_DB_USERNAME:root}
+    password: ${BONE_DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
   servlet:
     multipart:
       max-file-size: 50MB
       max-request-size: 60MB
 
 bone:
+  iam:
+    jwt:
+      secret-key: ${BONE_IAM_JWT_SECRET_KEY}
+      token-prefix: "Bearer "
+      header-name: Authorization
   file:
     minio:
       endpoint: ${BONE_MINIO_ENDPOINT:http://localhost:9000}

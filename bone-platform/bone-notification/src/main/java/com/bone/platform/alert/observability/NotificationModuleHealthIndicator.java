@@ -4,7 +4,6 @@ import com.bone.platform.alert.autoconfigure.AlertAutoConfiguration;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnEnabledHealthIndicator;
 import org.springframework.stereotype.Component;
 
 /**
@@ -24,7 +23,6 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @ConditionalOnClass(AlertAutoConfiguration.class)
-@ConditionalOnEnabledHealthIndicator("notification")
 public class NotificationModuleHealthIndicator implements HealthIndicator {
 
   @Override
