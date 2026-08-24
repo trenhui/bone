@@ -1,7 +1,6 @@
 package com.bone.metadata.catalog.application.command.handler;
 
 import com.bone.core.exception.BizException;
-import com.bone.core.util.DistributedIdGenerator;
 import com.bone.metadata.catalog.application.command.cmd.CreateMetaRelationCommand;
 import com.bone.metadata.catalog.common.CatalogTenantSupport;
 import com.bone.metadata.catalog.domain.model.MetaEntity;
@@ -27,10 +26,9 @@ public class CreateMetaRelationHandler {
     }
     requireEntity(cmd.getSourceEntityId());
     requireEntity(cmd.getTargetEntityId());
-    Long id = DistributedIdGenerator.generateLongId();
     MetaEntityRelation relation =
         MetaEntityRelation.create(
-            id,
+            null,
             CatalogTenantSupport.currentTenantId(),
             cmd.getName(),
             cmd.getSourceEntityId(),
@@ -45,7 +43,8 @@ public class CreateMetaRelationHandler {
         cmd.getRequired(),
         cmd.getCascadeType());
     relationRepository.insert(relation);
-    return id;
+    // insert 内部由 DISTRIBUTED_ID 生成器生成并回填主键，返回的是数据库实际存储的 id
+    return relation.getId();
   }
 
   private void requireEntity(Long entityId) {

@@ -1,7 +1,6 @@
 package com.bone.metadata.catalog.application.command.handler;
 
 import com.bone.core.exception.BizException;
-import com.bone.core.util.DistributedIdGenerator;
 import com.bone.metadata.catalog.application.command.cmd.CreateMetaFieldCommand;
 import com.bone.metadata.catalog.common.CatalogTenantSupport;
 import com.bone.metadata.catalog.domain.model.MetaEntity;
@@ -38,10 +37,9 @@ public class CreateMetaFieldHandler {
     if (dup > 0) {
       throw BizException.of("字段编码已存在: " + cmd.getCode());
     }
-    Long id = DistributedIdGenerator.generateLongId();
     MetaField field =
         MetaField.create(
-            id,
+            null,
             CatalogTenantSupport.currentTenantId(),
             cmd.getEntityId(),
             cmd.getName(),
@@ -49,6 +47,7 @@ public class CreateMetaFieldHandler {
             cmd.getDisplayName(),
             cmd.getType());
     metaFieldRepository.insert(field);
-    return id;
+    // insert 内部由 DISTRIBUTED_ID 生成器生成并回填主键，返回的是数据库实际存储的 id
+    return field.getId();
   }
 }

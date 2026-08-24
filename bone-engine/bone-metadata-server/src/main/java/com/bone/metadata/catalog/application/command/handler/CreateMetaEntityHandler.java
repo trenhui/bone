@@ -1,7 +1,6 @@
 package com.bone.metadata.catalog.application.command.handler;
 
 import com.bone.core.exception.BizException;
-import com.bone.core.util.DistributedIdGenerator;
 import com.bone.metadata.catalog.application.command.cmd.CreateMetaEntityCommand;
 import com.bone.metadata.catalog.common.CatalogTenantSupport;
 import com.bone.metadata.catalog.domain.enums.MetaDeliveryMode;
@@ -27,7 +26,6 @@ public class CreateMetaEntityHandler {
     if (existing > 0) {
       throw BizException.of("实体编码已存在: " + cmd.getCode());
     }
-    Long id = DistributedIdGenerator.generateLongId();
     int type = cmd.getType() != null ? cmd.getType() : 0;
     int deliveryMode =
         cmd.getDeliveryMode() != null
@@ -35,7 +33,7 @@ public class CreateMetaEntityHandler {
             : MetaDeliveryMode.GENERATIVE.getCode();
     MetaEntity entity =
         MetaEntity.create(
-            id,
+            null,
             tenantId,
             cmd.getName(),
             cmd.getCode(),
@@ -46,6 +44,7 @@ public class CreateMetaEntityHandler {
             deliveryMode,
             cmd.getIcon());
     metaEntityRepository.insert(entity);
-    return id;
+    // insert 内部由 DISTRIBUTED_ID 生成器生成并回填主键，返回的是数据库实际存储的 id
+    return entity.getId();
   }
 }
