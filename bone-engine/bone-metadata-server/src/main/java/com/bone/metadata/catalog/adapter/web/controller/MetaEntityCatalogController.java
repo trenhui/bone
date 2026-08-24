@@ -2,8 +2,12 @@ package com.bone.metadata.catalog.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
+import com.bone.metadata.catalog.application.command.cmd.BatchDeleteMetaEntityCommand;
+import com.bone.metadata.catalog.application.command.cmd.BatchPublishMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.CreateMetaEntityCommand;
 import com.bone.metadata.catalog.application.command.cmd.UpdateMetaEntityCommand;
+import com.bone.metadata.catalog.application.command.handler.BatchDeleteMetaEntityCommandHandler;
+import com.bone.metadata.catalog.application.command.handler.BatchPublishMetaEntityCommandHandler;
 import com.bone.metadata.catalog.application.command.handler.CreateMetaEntityHandler;
 import com.bone.metadata.catalog.application.command.handler.DeleteMetaEntityHandler;
 import com.bone.metadata.catalog.application.command.handler.PublishMetaEntityHandler;
@@ -13,6 +17,7 @@ import com.bone.metadata.catalog.application.query.dto.MetaEntityDTO;
 import com.bone.metadata.catalog.application.query.handler.MetaEntityDetailQueryHandler;
 import com.bone.metadata.catalog.application.query.handler.MetaEntityPageQueryHandler;
 import com.bone.metadata.catalog.application.query.qry.MetaEntityPageQuery;
+import com.bone.metadata.catalog.common.BatchOperateResult;
 import com.bone.metadata.catalog.common.CatalogHttpSupport;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.Valid;
@@ -44,6 +49,8 @@ public class MetaEntityCatalogController {
   private final MetaEntityPageQueryHandler metaEntityPageQueryHandler;
   private final MetaEntityDetailQueryHandler metaEntityDetailQueryHandler;
   private final CatalogIdempotencyService catalogIdempotencyService;
+  private final BatchPublishMetaEntityCommandHandler batchPublishMetaEntityCommandHandler;
+  private final BatchDeleteMetaEntityCommandHandler batchDeleteMetaEntityCommandHandler;
   private final ObjectMapper objectMapper;
 
   @PostMapping
@@ -115,5 +122,19 @@ public class MetaEntityCatalogController {
   public ApiResponse<Void> delete(@PathVariable Long id) {
     deleteMetaEntityHandler.handle(id);
     return ApiResponse.success();
+  }
+
+  @PostMapping("/batch-publish")
+  @PreAuthorize("hasAnyAuthority('metadata:publish', 'metadata:write')")
+  public ApiResponse<BatchOperateResult> batchPublish(
+      @Valid @RequestBody BatchPublishMetaEntityCommand cmd) {
+    return ApiResponse.success(batchPublishMetaEntityCommandHandler.handle(cmd));
+  }
+
+  @PostMapping("/batch-delete")
+  @PreAuthorize("hasAuthority('metadata:write')")
+  public ApiResponse<BatchOperateResult> batchDelete(
+      @Valid @RequestBody BatchDeleteMetaEntityCommand cmd) {
+    return ApiResponse.success(batchDeleteMetaEntityCommandHandler.handle(cmd));
   }
 }
