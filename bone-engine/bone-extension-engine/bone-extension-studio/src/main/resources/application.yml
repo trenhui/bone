@@ -46,6 +46,9 @@ bone:
       scan:
         enabled: true
         base-packages: com.bone.engine.extension.example
+      # 本地联调放行（开发期关闭 JWT 校验；生产环境请保持 false）
+      security:
+        permit-unauthenticated: true
       
       # 缓存配置
       cache:

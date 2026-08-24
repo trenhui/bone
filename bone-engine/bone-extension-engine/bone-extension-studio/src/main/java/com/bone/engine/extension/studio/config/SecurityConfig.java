@@ -2,6 +2,7 @@ package com.bone.engine.extension.studio.config;
 
 import com.bone.engine.extension.studio.security.JwtAuthenticationFilter;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -22,12 +23,14 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
-  private final ExtensionStudioProperties studioProperties;
+  private final boolean permitUnauthenticated;
 
   public SecurityConfig(
-      JwtAuthenticationFilter jwtAuthenticationFilter, ExtensionStudioProperties studioProperties) {
+      JwtAuthenticationFilter jwtAuthenticationFilter,
+      @Value("${bone.extension.studio.security.permit-unauthenticated:false}")
+          boolean permitUnauthenticated) {
     this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-    this.studioProperties = studioProperties;
+    this.permitUnauthenticated = permitUnauthenticated;
   }
 
   @Bean
@@ -46,8 +49,15 @@ public class SecurityConfig {
                   .requestMatchers(
                       "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/api-docs/**")
                   .permitAll();
-              if (studioProperties.getSecurity().isPermitUnauthenticated()) {
-                authorize.requestMatchers("/api/v1/extension/**").permitAll();
+              if (permitUnauthenticated) {
+                // 联调放行：白名单路径需与 Controller 映射一致（/api/v1/extension 单数）
+                authorize
+                    .requestMatchers("/api/v1/extension/**")
+                    .permitAll()
+                    .requestMatchers("/api/v1/marketplace/**")
+                    .permitAll()
+                    .requestMatchers("/api/v1/deployment-status/**")
+                    .permitAll();
               }
               authorize.requestMatchers("/api/**").authenticated().anyRequest().permitAll();
             })
