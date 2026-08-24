@@ -34,7 +34,8 @@ public class MetaField extends AbstractEntity<Long> {
   @Column(name = "length")
   private Integer length;
 
-  @Column(name = "precision")
+  // 用 numeric_precision 规避 MySQL 保留字 precision（metadata-sdk 的 INSERT 列名未转义保留字）
+  @Column(name = "numeric_precision")
   private Integer precision;
 
   @Column(name = "is_required", nullable = false)

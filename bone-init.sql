@@ -576,7 +576,7 @@ CREATE TABLE meta_field (
     display_name        VARCHAR(200)    NOT NULL COMMENT '显示名称',
     type                VARCHAR(50)     NOT NULL COMMENT '字段类型',
     length              INT             DEFAULT NULL COMMENT '字段长度',
-    `precision`         INT             DEFAULT NULL COMMENT '小数精度',
+    numeric_precision   INT             DEFAULT NULL COMMENT '小数精度',
     is_required         TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否必填',
     is_unique           TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否唯一',
     is_pk               TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '是否主键',
