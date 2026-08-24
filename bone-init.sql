@@ -254,6 +254,8 @@ VALUES
 DROP TABLE IF EXISTS sys_alert_event;
 DROP TABLE IF EXISTS sys_alert_rule;
 DROP TABLE IF EXISTS sys_log;
+DROP TABLE IF EXISTS sys_dict;
+DROP TABLE IF EXISTS sys_schedule_task;
 DROP TABLE IF EXISTS sys_config;
 
 CREATE TABLE sys_config (
@@ -288,6 +290,44 @@ CREATE TABLE sys_log (
     KEY idx_sys_log_trace (trace_id),
     KEY idx_sys_log_time (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统日志';
+
+CREATE TABLE sys_dict (
+    id                  BIGINT          NOT NULL COMMENT '字典主键（分布式ID）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    type                VARCHAR(50)     NOT NULL COMMENT '字典类型（DictType 枚举名）',
+    type_name           VARCHAR(100)    DEFAULT NULL COMMENT '类型名称',
+    code                VARCHAR(100)    DEFAULT NULL COMMENT '字典编码',
+    label               VARCHAR(100)    DEFAULT NULL COMMENT '字典显示名',
+    value               VARCHAR(255)    DEFAULT NULL COMMENT '字典值',
+    sort                INT             DEFAULT 0 COMMENT '排序',
+    status              INT             NOT NULL DEFAULT 1 COMMENT '状态（1=启用 0=禁用）',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
+    PRIMARY KEY (id),
+    KEY idx_sys_dict_type (type),
+    KEY idx_sys_dict_code (code),
+    KEY idx_sys_dict_tenant (tenant_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统字典';
+
+CREATE TABLE sys_schedule_task (
+    id                  BIGINT          NOT NULL COMMENT '任务主键（分布式ID）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    name                VARCHAR(100)    NOT NULL COMMENT '任务名称',
+    cron                VARCHAR(100)    DEFAULT NULL COMMENT 'Cron 表达式',
+    handler             VARCHAR(255)    DEFAULT NULL COMMENT '任务处理器',
+    status              VARCHAR(20)     NOT NULL DEFAULT 'DISABLED' COMMENT '任务状态（TaskStatus 枚举名）',
+    last_run_at         DATETIME(3)     DEFAULT NULL COMMENT '上次执行时间',
+    next_run_at         DATETIME(3)     DEFAULT NULL COMMENT '下次执行时间',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁',
+    PRIMARY KEY (id),
+    KEY idx_sys_schedule_status (status),
+    KEY idx_sys_schedule_tenant (tenant_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统定时任务';
 
 CREATE TABLE sys_alert_rule (
     id                  BIGINT          NOT NULL COMMENT '规则主键（Snowflake）',
@@ -338,6 +378,7 @@ DROP TABLE IF EXISTS int_execution_log;
 DROP TABLE IF EXISTS int_dead_letter;
 DROP TABLE IF EXISTS int_template;
 DROP TABLE IF EXISTS int_flow;
+DROP TABLE IF EXISTS int_outbox;
 DROP TABLE IF EXISTS int_connector;
 
 CREATE TABLE int_connector (
@@ -1147,6 +1188,8 @@ CREATE TABLE mdm_qcheck_report (
 
 DROP TABLE IF EXISTS md_record;
 DROP TABLE IF EXISTS md_entity;
+DROP TABLE IF EXISTS meta_data_lineage;
+DROP TABLE IF EXISTS meta_data_standard;
 
 CREATE TABLE md_entity (
     id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
@@ -1193,15 +1236,44 @@ CREATE TABLE IF NOT EXISTS md_field (
     KEY idx_md_field_entity (master_data_entity_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='主数据字段';
 
+CREATE TABLE meta_data_lineage (
+    id                  BIGINT          NOT NULL COMMENT '血缘记录主键（分布式ID）',
+    source_entity       VARCHAR(200)    DEFAULT NULL COMMENT '来源实体',
+    source_field        VARCHAR(200)    DEFAULT NULL COMMENT '来源字段',
+    transform_type      VARCHAR(100)    DEFAULT NULL COMMENT '转换类型',
+    target_entity       VARCHAR(200)    DEFAULT NULL COMMENT '目标实体',
+    target_field        VARCHAR(200)    DEFAULT NULL COMMENT '目标字段',
+    schema_name         VARCHAR(200)    DEFAULT NULL COMMENT 'Schema 名称',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    PRIMARY KEY (id),
+    KEY idx_lineage_source (source_entity),
+    KEY idx_lineage_target (target_entity)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数据血缘记录';
+
+CREATE TABLE meta_data_standard (
+    id                  BIGINT          NOT NULL COMMENT '数据标准主键（分布式ID）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    entity_code         VARCHAR(200)    DEFAULT NULL COMMENT '实体编码',
+    field_code          VARCHAR(200)    DEFAULT NULL COMMENT '字段编码',
+    rule_type           VARCHAR(100)    DEFAULT NULL COMMENT '规则类型',
+    pattern             VARCHAR(500)    DEFAULT NULL COMMENT '规则表达式/模式',
+    ref_code            VARCHAR(200)    DEFAULT NULL COMMENT '引用编码',
+    description         VARCHAR(500)    DEFAULT NULL COMMENT '描述',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    PRIMARY KEY (id),
+    KEY idx_std_entity (entity_code),
+    KEY idx_std_field (field_code),
+    KEY idx_std_tenant (tenant_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='数据标准';
+
 -- ============================================================
 -- 增量迁移：修复实体与表结构不一致
 -- ============================================================
 
--- sys_alert_event: 添加 rule_name 列（AlertEvent 实体需要）
-ALTER TABLE sys_alert_event ADD COLUMN IF NOT EXISTS rule_name VARCHAR(100) DEFAULT NULL COMMENT '规则名称' AFTER rule_id;
-
--- sys_alert_event: 修改 status 默认值从 'OPEN' 改为 'TRIGGERED'（对齐 AlertStatus 枚举）
-ALTER TABLE sys_alert_event ALTER COLUMN status SET DEFAULT 'TRIGGERED';
+-- sys_alert_event 的 rule_name 列与 status 默认值已在上面的 CREATE 段定义，
+-- 全量重建场景下无需增量 ALTER（原 ADD COLUMN IF NOT EXISTS / ALTER COLUMN 为
+-- 非 MySQL 语法且冗余，已移除）。
 
 -- ============================================================
 -- 9. 应用与模块（bone-platform/bone-application）
