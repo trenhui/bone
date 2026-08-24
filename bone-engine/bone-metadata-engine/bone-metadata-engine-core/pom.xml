@@ -90,7 +90,7 @@
         <dependency>
             <groupId>com.bone</groupId>
             <artifactId>bone-architecture-test</artifactId>
-            <version>${project.version}</version>
+            <version>1.0.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
