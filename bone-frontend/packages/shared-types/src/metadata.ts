@@ -30,6 +30,12 @@ export interface MetaField {
   required?: boolean;
   unique?: boolean;
   sortOrder?: number;
+  /** 字段注释（后端 comment 语义） */
+  comment?: string;
+  /** 乐观锁版本 */
+  version?: number;
+  /** 创建时间（展示用） */
+  createdAt?: string;
 }
 
 export interface MetaRelation {
@@ -71,6 +77,12 @@ export interface CreateMetaFieldReq {
   code: string;
   displayName: string;
   type: string;
+  length?: number;
+  required?: boolean;
+  unique?: boolean;
+  sortOrder?: number;
+  /** 字段注释（后端 comment 语义） */
+  comment?: string;
 }
 
 export interface UpdateMetaFieldReq {
@@ -80,6 +92,8 @@ export interface UpdateMetaFieldReq {
   required?: boolean;
   unique?: boolean;
   sortOrder?: number;
+  /** 字段注释（后端 comment 语义） */
+  comment?: string;
 }
 
 export interface CreateMetaRelationReq {
@@ -114,6 +128,21 @@ export const DELIVERY_MODE: Record<number, string> = {
 export const RELATION_TYPES = ['OneToOne', 'OneToMany', 'ManyToOne', 'ManyToMany'];
 
 export const FIELD_TYPES = ['STRING', 'INTEGER', 'LONG', 'DECIMAL', 'BOOLEAN', 'DATE', 'DATETIME', 'TEXT'];
+
+/** 字段类型 → 展示元数据（图标/描述/颜色），用于字段表单与列表 Tag 展示 */
+export const FIELD_TYPE_MAP: Record<
+  string,
+  { icon?: string; desc: string; color: string }
+> = {
+  STRING: { icon: 'Aa', desc: '字符串', color: 'green' },
+  INTEGER: { icon: '#', desc: '整数', color: 'blue' },
+  LONG: { icon: '#', desc: '长整数', color: 'cyan' },
+  DECIMAL: { icon: '.5', desc: '小数', color: 'purple' },
+  BOOLEAN: { icon: 'T/F', desc: '布尔', color: 'orange' },
+  DATE: { icon: '📅', desc: '日期', color: 'magenta' },
+  DATETIME: { icon: '🕐', desc: '日期时间', color: 'volcano' },
+  TEXT: { icon: 'T', desc: '文本', color: 'geekblue' },
+};
 
 /** 模式 B 动态行（物理表列名 → 值） */
 export type RuntimeRecord = Record<string, unknown>;

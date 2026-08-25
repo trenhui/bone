@@ -19,6 +19,9 @@ public class MetaField extends AbstractEntity<Long> {
   @Column(name = "entity_id", nullable = false)
   private Long entityId;
 
+  @Column(name = "module_id")
+  private Long moduleId;
+
   @Column(name = "name", nullable = false)
   private String name;
 
@@ -70,19 +73,55 @@ public class MetaField extends AbstractEntity<Long> {
       String code,
       String displayName,
       String fieldType) {
+    return create(
+        id,
+        tenantId,
+        entityId,
+        name,
+        code,
+        displayName,
+        fieldType,
+        null,
+        false,
+        false,
+        null,
+        null,
+        0,
+        null);
+  }
+
+  public static MetaField create(
+      Long id,
+      Long tenantId,
+      Long entityId,
+      String name,
+      String code,
+      String displayName,
+      String fieldType,
+      Integer length,
+      Boolean required,
+      Boolean unique,
+      String defaultValue,
+      String comment,
+      Integer sortOrder,
+      Long moduleId) {
     MetaField f = new MetaField();
     f.setId(id);
     f.tenantId = tenantId;
     f.entityId = entityId;
+    f.moduleId = moduleId;
     f.name = name;
     f.code = code;
     f.displayName = displayName;
     f.type = fieldType;
-    f.required = false;
-    f.unique = false;
+    f.length = length;
+    f.required = required != null ? required : false;
+    f.unique = unique != null ? unique : false;
     f.pk = false;
     f.indexed = false;
-    f.sortOrder = 0;
+    f.defaultValue = defaultValue;
+    f.comment = comment;
+    f.sortOrder = sortOrder != null ? sortOrder : 0;
     f.version = 0;
     Date now = new Date();
     f.setCreatedAt(now);

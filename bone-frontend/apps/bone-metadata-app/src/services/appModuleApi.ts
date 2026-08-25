@@ -3,11 +3,12 @@ import { createApiClient } from '@bone/shared-services';
 import type { ApiResponse, PageResult } from '../types';
 
 /**
- * 应用与模块管理 API（契约按 doc/design/modules/10. 应用与模块管理详细设计方案.md）
+ * 应用与模块管理 API。
  *
- * 后端 API 当前状态：⏳ Target（未实现）
- * - 调用时会返回 501 或 404
- * - 前端捕获后展示"API 尚未实现"提示 + "使用演示数据"按钮
+ * 领域边界：应用(App)与模块(Module)聚合根归属 IAM 上下文，后端由 IAM 独占提供
+ * （`/api/v1/apps`、`/api/v1/apps/{id}/modules`，经网关路由到 bone-iam）。
+ * metadata 模块只负责实体(Entity)/字段(Field)/关系(Relation)建模，消费 IAM 的
+ * App/Module 作为归属维度。本文件调用的均为 IAM 真后端，不存在"未实现/演示数据兜底"。
  */
 
 export interface BoneApplication {

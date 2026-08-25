@@ -8,6 +8,7 @@ import {
   Select,
   Space,
   Table,
+  Tag,
   message,
 } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';

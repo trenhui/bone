@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  Button, Card, Descriptions, Divider, Form, Input, InputNumber, Modal,
-  Popconfirm, Select, Space, Table, Tag, Typography, message, Badge, Tabs, Tooltip,
+  Button, Card, Descriptions, Form, Input, InputNumber, Modal,
+  Popconfirm, Row, Col, Select, Space, Table, Tag, Typography, message, Badge, Tooltip,
 } from 'antd';
 import {
   PlusOutlined, ArrowLeftOutlined, EditOutlined, DeleteOutlined, FieldStringOutlined,
@@ -13,7 +13,7 @@ import { metadataEntityApi, metadataFieldApi } from '../services/metadataApi';
 import type { MetaEntity, MetaField, CreateMetaFieldReq, UpdateMetaFieldReq } from '../types';
 import { DELIVERY_MODE, ENTITY_STATUS, FIELD_TYPES, FIELD_TYPE_MAP } from '../types';
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 const EntityDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -21,7 +21,6 @@ const EntityDetail: React.FC = () => {
   const [form] = Form.useForm();
   const [entity, setEntity] = useState<MetaEntity | null>(null);
   const [fields, setFields] = useState<MetaField[]>([]);
-  const [loading, setLoading] = useState(false);
   const [fieldLoading, setFieldLoading] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingField, setEditingField] = useState<MetaField | null>(null);
@@ -72,7 +71,7 @@ const EntityDetail: React.FC = () => {
     // 编辑时只允许修改显示名、长度、必填、排序
     form.setFieldsValue({
       displayName: field.displayName,
-      description: field.description,
+      description: field.comment,
       length: field.length,
       required: field.required,
       sortOrder: field.sortOrder ?? 9999,
@@ -94,7 +93,8 @@ const EntityDetail: React.FC = () => {
       if (editingField) {
         const body: UpdateMetaFieldReq = {
           displayName: values.displayName,
-          description: values.description,
+          type: editingField.type,
+          comment: values.description,
           length: values.length,
           required: values.required,
           sortOrder: values.sortOrder,
@@ -115,7 +115,7 @@ const EntityDetail: React.FC = () => {
           type: values.type,
           length: values.length,
           required: values.required,
-          description: values.description,
+          comment: values.description,
           sortOrder: values.sortOrder ?? 9999,
         };
         const res = await metadataFieldApi.create(Number(id), body);
@@ -372,7 +372,7 @@ const EntityDetail: React.FC = () => {
             <Descriptions.Item label="必填">{editingField.required ? '是' : '否'}</Descriptions.Item>
             <Descriptions.Item label="排序号">{editingField.sortOrder ?? '—'}</Descriptions.Item>
             <Descriptions.Item label="创建时间">{editingField.createdAt ?? '—'}</Descriptions.Item>
-            <Descriptions.Item label="描述" span={2}>{editingField.description || '—'}</Descriptions.Item>
+            <Descriptions.Item label="描述" span={2}>{editingField.comment || '—'}</Descriptions.Item>
           </Descriptions>
         )}
       </Modal>

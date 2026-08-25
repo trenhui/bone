@@ -118,7 +118,7 @@ const EntityManagement: React.FC = () => {
       }
     });
     data.forEach((entity) => {
-      const moduleKey = (entity as Record<string, string>).moduleKey || 'uncategorized';
+      const moduleKey = (entity as unknown as Record<string, string>).moduleKey || 'uncategorized';
       if (groups[moduleKey]) {
         groups[moduleKey].entities.push(entity);
       } else {
@@ -252,7 +252,7 @@ const EntityManagement: React.FC = () => {
       width: 70,
       render: (_, record) => (
         <Badge
-          count={(record as Record<string, number>).fieldCount ?? 0}
+          count={(record as unknown as Record<string, number>).fieldCount ?? 0}
           style={{ backgroundColor: '#1890ff' }}
           showZero
         />
@@ -384,17 +384,51 @@ const EntityManagement: React.FC = () => {
         {selectedRowKeys.length > 0 && (
           <Space style={{ marginBottom: 12 }}>
             <Text type="secondary">已选 {selectedRowKeys.length} 项</Text>
-            <Popconfirm title={`确认发布选中的 ${selectedRowKeys.length} 个实体？`} onConfirm={() => {
-              // TODO: 后端 batchPublish API 未实现
-              message.info('批量发布功能待后端实现');
-              setSelectedRowKeys([]);
+            <Popconfirm title={`确认发布选中的 ${selectedRowKeys.length} 个实体？`} onConfirm={async () => {
+              const ids = selectedRowKeys.map(Number);
+              try {
+                const res = await metadataEntityApi.batchPublish(ids);
+                if (res.code === 200) {
+                  const { successCount, failCount, errors } = res.data;
+                  if (failCount === 0) {
+                    message.success(`已批量发布 ${successCount} 个实体`);
+                  } else {
+                    message.warning(`发布成功 ${successCount} 个，失败 ${failCount} 个`);
+                    errors.forEach((e) => console.warn('[batch-publish]', e));
+                  }
+                } else {
+                  message.error(res.message || '批量发布失败');
+                }
+              } catch {
+                message.error('批量发布失败，请确认 bone-metadata-server :9001 已启动');
+              } finally {
+                setSelectedRowKeys([]);
+                load();
+              }
             }}>
               <Button size="small">批量发布</Button>
             </Popconfirm>
-            <Popconfirm title={`确认删除选中的 ${selectedRowKeys.length} 个实体？`} onConfirm={() => {
-              // TODO: 后端 batchDelete API 未实现
-              message.info('批量删除功能待后端实现');
-              setSelectedRowKeys([]);
+            <Popconfirm title={`确认删除选中的 ${selectedRowKeys.length} 个实体？`} onConfirm={async () => {
+              const ids = selectedRowKeys.map(Number);
+              try {
+                const res = await metadataEntityApi.batchDelete(ids);
+                if (res.code === 200) {
+                  const { successCount, failCount, errors } = res.data;
+                  if (failCount === 0) {
+                    message.success(`已批量删除 ${successCount} 个实体`);
+                  } else {
+                    message.warning(`删除成功 ${successCount} 个，失败 ${failCount} 个`);
+                    errors.forEach((e) => console.warn('[batch-delete]', e));
+                  }
+                } else {
+                  message.error(res.message || '批量删除失败');
+                }
+              } catch {
+                message.error('批量删除失败，请确认 bone-metadata-server :9001 已启动');
+              } finally {
+                setSelectedRowKeys([]);
+                load();
+              }
             }}>
               <Button size="small" danger>批量删除</Button>
             </Popconfirm>

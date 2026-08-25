@@ -1,0 +1,13 @@
+{
+  "change": "dd-realign-appmodule-boundary",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "1a012dc6a0edf5991779ee5995f8382096f33ef1b0dc9bd52879cf8a878060c3",
+  "files": [
+    { "path": "openspec/changes/dd-realign-appmodule-boundary/proposal.md", "sha256": "1c37bc409bc8be4fe00e137a83ac5988fd61ed628436d18045296e59cea24d8f" },
+    { "path": "openspec/changes/dd-realign-appmodule-boundary/design.md", "sha256": "4a5f84b3ba1e3bfd70cfd8131aa4dfb7bf578f99a73cd053a7c34f711dcd7604" },
+    { "path": "openspec/changes/dd-realign-appmodule-boundary/tasks.md", "sha256": "fa412fd6f5e588f2763175616377e6041941a6a53cfb2eff7d3e2636e4b3762d" }
+  ]
+}

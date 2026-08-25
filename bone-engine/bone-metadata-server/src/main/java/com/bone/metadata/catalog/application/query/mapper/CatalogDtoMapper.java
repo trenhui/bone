@@ -43,6 +43,8 @@ public final class CatalogDtoMapper {
     dto.setRequired(f.getRequired());
     dto.setUnique(f.getUnique());
     dto.setSortOrder(f.getSortOrder());
+    dto.setComment(f.getComment());
+    dto.setCreatedAt(f.getCreatedAt());
     dto.setVersion(f.getVersion());
     return dto;
   }

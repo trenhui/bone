@@ -45,7 +45,14 @@ public class CreateMetaFieldHandler {
             cmd.getName(),
             cmd.getCode(),
             cmd.getDisplayName(),
-            cmd.getType());
+            cmd.getType(),
+            cmd.getLength(),
+            cmd.getRequired(),
+            cmd.getUnique(),
+            cmd.getDefaultValue(),
+            cmd.getComment(),
+            cmd.getSortOrder(),
+            null);
     metaFieldRepository.insert(field);
     // insert 内部由 DISTRIBUTED_ID 生成器生成并回填主键，返回的是数据库实际存储的 id
     return field.getId();

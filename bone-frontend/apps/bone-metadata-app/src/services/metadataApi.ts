@@ -23,19 +23,28 @@ const RUNTIME = '/api/v1/runtime';
 
 /** 兼容 catalog（list）与 engine 原始分页（records） */
 export function normalizePage<T>(raw: PageResult<T> | PageResultIamCompat<T>): PageResult<T> {
+  const compat = raw as PageResultIamCompat<T>;
+  const legacy = raw as unknown as { page?: number; size?: number };
   return {
-    list: raw.list ?? raw.records ?? [],
+    list: raw.list ?? compat.records ?? [],
     total: raw.total,
-    pageNum: raw.pageNum ?? raw.page ?? 1,
-    pageSize: raw.pageSize ?? raw.size ?? 10,
+    pageNum: raw.pageNum ?? legacy.page ?? 1,
+    pageSize: raw.pageSize ?? legacy.size ?? 10,
   };
 }
 
 const api = createApiClient('', { timeout: 15000 });
 
 export const metadataEntityApi = {
-  page: (params: { pageNum?: number; pageSize?: number; keyword?: string; status?: number }) =>
-    api.get<never, ApiResponse<PageResult<MetaEntity>>>(`${META}/entities`, { params }),
+  page: (params: {
+    pageNum?: number;
+    pageSize?: number;
+    keyword?: string;
+    status?: number;
+    type?: number;
+    deliveryMode?: number;
+    module?: string;
+  }) => api.get<never, ApiResponse<PageResult<MetaEntity>>>(`${META}/entities`, { params }),
 
   detail: (id: number) =>
     api.get<never, ApiResponse<MetaEntity>>(`${META}/entities/${id}`),
@@ -49,7 +58,7 @@ export const metadataEntityApi = {
   publish: (id: number) =>
     api.post<never, ApiResponse<void>>(`${META}/entities/${id}/publish`),
 
-  // TODO: 后端 batchPublish / batchDelete API 尚未在 MetaEntityCatalogController 中实现，以下为预留封装
+  // 批量发布：后端 MetaEntityCatalogController.batchPublish 已实现（部分成功语义）
   batchPublish: (ids: number[]) =>
     api.post<never, ApiResponse<{ successCount: number; failCount: number; errors: unknown[] }>>(`${META}/entities/batch-publish`, { ids }),
 

@@ -16,4 +16,7 @@ public class CreateMetaEntityCommand {
   private Integer deliveryMode;
 
   private String icon;
+
+  /** 所属模块（null 表示未分组） */
+  private Long moduleId;
 }

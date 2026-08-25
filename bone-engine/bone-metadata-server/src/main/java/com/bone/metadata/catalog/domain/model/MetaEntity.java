@@ -43,6 +43,9 @@ public class MetaEntity extends AbstractEntity<Long> {
   @Column(name = "status", nullable = false)
   private Integer status;
 
+  @Column(name = "module_id")
+  private Long moduleId;
+
   @Column(name = "is_builtin", nullable = false)
   private Boolean builtin;
 
@@ -66,6 +69,32 @@ public class MetaEntity extends AbstractEntity<Long> {
       int entityType,
       int deliveryMode,
       String icon) {
+    return create(
+        id,
+        tenantId,
+        name,
+        code,
+        displayName,
+        description,
+        tableName,
+        entityType,
+        deliveryMode,
+        icon,
+        null);
+  }
+
+  public static MetaEntity create(
+      Long id,
+      Long tenantId,
+      String name,
+      String code,
+      String displayName,
+      String description,
+      String tableName,
+      int entityType,
+      int deliveryMode,
+      String icon,
+      Long moduleId) {
     MetaEntity e = new MetaEntity();
     e.setId(id);
     e.tenantId = tenantId;
@@ -81,6 +110,7 @@ public class MetaEntity extends AbstractEntity<Long> {
     e.sortOrder = 0;
     e.version = 0;
     e.icon = icon;
+    e.moduleId = moduleId;
     Date now = new Date();
     e.setCreatedAt(now);
     e.setUpdatedAt(now);

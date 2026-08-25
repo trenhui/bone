@@ -1,4 +1,3 @@
-import React from 'react';
 import { App as AntdApp } from 'antd';
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import ApplicationManagement from './pages/ApplicationManagement';

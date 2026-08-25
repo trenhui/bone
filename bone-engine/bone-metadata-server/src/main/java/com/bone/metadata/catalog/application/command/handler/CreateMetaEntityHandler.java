@@ -6,6 +6,7 @@ import com.bone.metadata.catalog.common.CatalogTenantSupport;
 import com.bone.metadata.catalog.domain.enums.MetaDeliveryMode;
 import com.bone.metadata.catalog.domain.model.MetaEntity;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
+import com.bone.metadata.catalog.domain.service.IamModuleValidator;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -16,10 +17,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class CreateMetaEntityHandler {
 
   private final MetaEntityRepository metaEntityRepository;
+  private final IamModuleValidator iamModuleValidator;
 
   @Transactional
   public Long handle(CreateMetaEntityCommand cmd) {
     long tenantId = CatalogTenantSupport.currentTenantId();
+    if (cmd.getModuleId() != null) {
+      iamModuleValidator.requireExists(cmd.getModuleId());
+    }
     long existing =
         metaEntityRepository.countByCriteria(
             Criteria.<MetaEntity>create().eq("tenantId", tenantId).eq("code", cmd.getCode()));
@@ -42,7 +47,8 @@ public class CreateMetaEntityHandler {
             cmd.getTableName(),
             type,
             deliveryMode,
-            cmd.getIcon());
+            cmd.getIcon(),
+            cmd.getModuleId());
     metaEntityRepository.insert(entity);
     // insert 内部由 DISTRIBUTED_ID 生成器生成并回填主键，返回的是数据库实际存储的 id
     return entity.getId();
