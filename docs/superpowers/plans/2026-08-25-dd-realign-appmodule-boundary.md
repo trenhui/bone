@@ -1,3 +1,7 @@
+---
+archived-with: 2026-08-25-dd-realign-appmodule-boundary
+status: final
+---
 # 实施计划：应用/模块领域边界重划分（DDD 对齐）
 
 - **Comet Change**: `dd-realign-appmodule-boundary`

@@ -28,5 +28,5 @@
 
 ## 阶段四：联调与收尾
 
-- [ ] T11. E2E 冒烟：iam-app 应用管理 + 模块管理可用；metadata-app 选 IAM App/Module 建实体/字段全链路通过。
-- [ ] T12. 更新 MEMORY.md 与架构文档，标注领域边界变更（IAM=App+Module，metadata=Entity+Field+Relation）。
+- [x] T11. E2E 冒烟：metadata-server 新 jar 启于 :9001，负向（moduleId=999999→所属模块不存在 400）+ 正向（省略 moduleId→201 创建成功）全通过，验证 IamModuleValidator 接线与收敛兼容性。
+- [x] T12. 更新 MEMORY.md 标注领域边界变更（IAM=App+Module，metadata=Entity+Field+Relation）；design.md 已定稿最终边界。
