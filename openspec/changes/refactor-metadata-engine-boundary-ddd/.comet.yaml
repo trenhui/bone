@@ -1,6 +1,6 @@
 workflow: full
 language: zh-CN
-phase: verify
+phase: archive
 design_doc: openspec/changes/refactor-metadata-engine-boundary-ddd/design.md
 plan: docs/superpowers/plans/2026-08-25-metadata-engine-boundary-ddd.md
 base_ref: eee5e4668f3f22c123f882d2769ecebd55c8db5c
@@ -12,14 +12,14 @@ review_mode: standard
 auto_transition: true
 isolation: branch
 bound_branch: refactor/metadata-engine-boundary-ddd
-verify_mode: null
-verify_result: pending
+verify_mode: full
+verify_result: pass
 verify_failures: 0
-verification_report: null
+verification_report: docs/superpowers/reports/2026-08-25-metadata-engine-boundary-ddd-verify.md
 branch_status: pending
 created_at: 2026-08-25
-verified_at: null
-archive_confirmation: null
+verified_at: 2026-08-25
+archive_confirmation: pending
 archived: false
 context_compression: null
 direct_override: null
