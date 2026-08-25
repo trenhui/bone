@@ -21,6 +21,27 @@
 | `bone-metadata-engine-core` | `bone-metadata-engine-core` | 引擎实现（`com.bone.metadata.engine`） |
 | `bone-metadata-engine-starter` | `bone-metadata-engine-starter` | Spring Boot 自动装配 |
 
+## 包结构与依赖方向（DDD 端口-适配器）
+
+`bone-metadata-engine-core` 内按边界包重划（物理拆分子模块列为后续可选项）：
+
+```
+com.bone.metadata.engine
+├── spi/        # 端口（ports）：MetadataRepositoryPort / MetadataPlatformBridge，仅接口，零 spring/sdk 依赖
+├── adapter/    # 运行时（runtime）：SdkMetadataRepository / IamMetadataBridge / InMemoryMetadataRepositoryPort（防腐层 ACL）
+├── architecture/  # ArchUnit 增量门禁
+├── metadata/   # 引擎增强视图模型（EntityMetadata / SmartFieldMetadata / WorkflowMetadata 等）
+├── model/      # 领域/规则模型
+├── repository/ # 既有仓储接口与内存实现（兼容保留）
+└── 引擎算法     # expression / rule / calculation / validation / transformation / impact / query
+```
+
+依赖方向：`domain（零依赖）← spi（仅接口）← adapter（依赖 SDK/Spring）← starter（Spring 装配）`。
+
+`SdkMetadataRepository` 经 `bone-metadata-sdk` 的 `Repository<MetaEntityPo, Long>` 读取已发布 `meta_entity`/`meta_field`，
+经 `MetaEntityConverter`（防腐层 ACL）转换为引擎领域模型；多租户统一经 `withTenantEntity/withTenantField` 注入 `tenant_id` 过滤。
+`IamMetadataBridge` 将 `currentTenantId()` 接到 `TenantContext`、`publishEvent()` 接到 Spring `ApplicationEventPublisher`。
+
 ## 构建
 
 ```bash

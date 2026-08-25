@@ -1,0 +1,13 @@
+{
+  "change": "refactor-metadata-engine-boundary-ddd",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "3afe067b92532bc6758180eb522baf6c563dd0ff86205f17a08dd42507a34deb",
+  "files": [
+    { "path": "openspec/changes/refactor-metadata-engine-boundary-ddd/proposal.md", "sha256": "0d6f9fe5f086e338096a6dc284b84ffa1f15ea9c78d8300abfbc545d0ade8fcb" },
+    { "path": "openspec/changes/refactor-metadata-engine-boundary-ddd/design.md", "sha256": "9d9de73726ac95d1ea080b585766fc2003f2f6b8f78fac70e8b15a09a6a1055d" },
+    { "path": "openspec/changes/refactor-metadata-engine-boundary-ddd/tasks.md", "sha256": "77cea3cdecd579af94cd4b0e8538147b86135f7858a397103e34ef1f51a7526f" }
+  ]
+}

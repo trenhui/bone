@@ -5,16 +5,12 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /** 业务规则元数据模型类 用于定义实体的业务验证规则和条件 */
 @Data
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class BusinessRuleMetadata {
   // 基础信息
   private String id;
