@@ -1,3 +1,7 @@
+---
+archived-with: 2026-08-25-refactor-metadata-engine-boundary-ddd
+status: final
+---
 # Implementation Plan: metadata-engine-boundary-ddd
 
 > Comet Classic `full` workflow / `/comet-build` 阶段实施计划
