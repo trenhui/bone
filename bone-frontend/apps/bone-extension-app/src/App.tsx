@@ -7,7 +7,8 @@ import PluginManagement from '@/pages/PluginManagement';
 import SandboxManagement from '@/pages/SandboxManagement';
 import DependencyGraph from '@/pages/DependencyGraph';
 import Marketplace from '@/pages/Marketplace';
-import DeploymentStateDiagram from '@/pages/DeploymentStateDiagram';
+import DeploymentManagementPage from '@/pages/DeploymentManagementPage';
+import ExecutionLogPage from '@/pages/ExecutionLogPage';
 import './App.css';
 
 type MenuKey = 'overview' | 'point' | 'plugin' | 'deploy' | 'sandbox' | 'graph' | 'marketplace' | 'logs';
@@ -64,8 +65,8 @@ const AppContent: React.FC = () => {
           <Route path="/sandbox" element={<SandboxManagement />} />
           <Route path="/graph" element={<DependencyGraph />} />
           <Route path="/market" element={<Marketplace />} />
-          <Route path="/deploy" element={<DeploymentStateDiagram />} />
-          <Route path="/logs" element={<SandboxManagement />} />
+          <Route path="/deploy" element={<DeploymentManagementPage />} />
+          <Route path="/logs" element={<ExecutionLogPage />} />
           <Route path="*" element={<ExtensionOverview />} />
         </Routes>
       </div>

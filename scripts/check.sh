@@ -23,7 +23,7 @@ mvn spotless:check --batch-mode -q || exit_code=$?
 echo -e "${YELLOW}[2/5] 检测变更模块...${RESET}"
 CHANGED_FILES=$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null | grep '\.java$' || true)
 if [ -n "$CHANGED_FILES" ]; then
-  MODULE_PATHS=$(echo "$CHANGED_FILES" | grep 'src/main/java' | sed 's|/src/main/java/.*||' | sort -u)
+  MODULE_PATHS=$(echo "$CHANGED_FILES" | grep 'src/main/java' | sed 's|/src/main/java/.*||' | sort -u || true)
 
   if [ -n "$MODULE_PATHS" ]; then
     PL_ARGS=$(echo "$MODULE_PATHS" | tr '\n' ',' | sed 's/,$//')
