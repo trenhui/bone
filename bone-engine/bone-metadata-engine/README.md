@@ -14,33 +14,32 @@
 | 校验、业务规则、表达式运行时 | 替代 `bone-metadata-server` 的 catalog 管理 API |
 | 与 sdk 协同：`engine` 决策 → `sdk` 执行 | 替代 generator 输出完整 DDD 工程（模式 A 仍需要 generator 作逃逸舱） |
 
-## 模块
+## 模块（物理拆分：domain / ports / runtime / starter）
 
 | 子模块 | artifactId | 说明 |
 |--------|------------|------|
-| `bone-metadata-engine-core` | `bone-metadata-engine-core` | 引擎实现（`com.bone.metadata.engine`） |
+| `bone-metadata-engine-domain` | `bone-metadata-engine-domain` | 领域模型与纯算法（`com.bone.metadata.engine.domain.*`，零依赖） |
+| `bone-metadata-engine-ports` | `bone-metadata-engine-ports` | 端口接口（`com.bone.metadata.engine.ports.*`，仅依赖 domain） |
+| `bone-metadata-engine-runtime` | `bone-metadata-engine-runtime` | 运行时实现（`com.bone.metadata.engine.runtime.*`，SDK/Spring 适配器、引擎算法、数据面） |
 | `bone-metadata-engine-starter` | `bone-metadata-engine-starter` | Spring Boot 自动装配 |
+
+原 `bone-metadata-engine-core` 已按边界拆分并删除。
 
 ## 包结构与依赖方向（DDD 端口-适配器）
 
-`bone-metadata-engine-core` 内按边界包重划（物理拆分子模块列为后续可选项）：
-
 ```
 com.bone.metadata.engine
-├── spi/        # 端口（ports）：MetadataRepositoryPort / MetadataPlatformBridge，仅接口，零 spring/sdk 依赖
-├── adapter/    # 运行时（runtime）：SdkMetadataRepository / IamMetadataBridge / InMemoryMetadataRepositoryPort（防腐层 ACL）
-├── architecture/  # ArchUnit 增量门禁
-├── metadata/   # 引擎增强视图模型（EntityMetadata / SmartFieldMetadata / WorkflowMetadata 等）
-├── model/      # 领域/规则模型
-├── repository/ # 既有仓储接口与内存实现（兼容保留）
-└── 引擎算法     # expression / rule / calculation / validation / transformation / impact / query
+├── domain/     # 领域模型（model / metadata / core / common / annotation / exception / multi / impact），零 Spring/SDK 依赖
+├── ports/      # 端口接口（spi.MetadataRepositoryPort / spi.MetadataPlatformBridge / registry / repository 接口），仅依赖 domain
+├── runtime/    # 运行时实现（adapter 防腐层 / cache / security / query / rule / validation / service / repository 实现 / 引擎算法 / 数据面）
+└── starter/    # Spring 自动装配（config / autoconfigure / platform）
 ```
 
-依赖方向：`domain（零依赖）← spi（仅接口）← adapter（依赖 SDK/Spring）← starter（Spring 装配）`。
+依赖方向：`domain（零依赖）← ports（仅接口，依赖 domain）← runtime（依赖 domain+ports+SDK/Spring）← starter（依赖 runtime）`。
 
-`SdkMetadataRepository` 经 `bone-metadata-sdk` 的 `Repository<MetaEntityPo, Long>` 读取已发布 `meta_entity`/`meta_field`，
-经 `MetaEntityConverter`（防腐层 ACL）转换为引擎领域模型；多租户统一经 `withTenantEntity/withTenantField` 注入 `tenant_id` 过滤。
-`IamMetadataBridge` 将 `currentTenantId()` 接到 `TenantContext`、`publishEvent()` 接到 Spring `ApplicationEventPublisher`。
+`runtime.adapter.SdkMetadataRepository` 经 `bone-metadata-sdk` 的 `Repository<MetaEntityPo, Long>` 读取已发布 `meta_entity`/`meta_field`，
+经 `runtime.adapter.MetaEntityConverter`（防腐层 ACL）转换为引擎领域模型；多租户统一经 `withTenantEntity/withTenantField` 注入 `tenant_id` 过滤。
+`runtime.adapter.IamMetadataBridge` 将 `currentTenantId()` 接到 `TenantContext`、`publishEvent()` 接到 Spring `ApplicationEventPublisher`。
 
 ## 构建
 

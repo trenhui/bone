@@ -1,7 +1,7 @@
 package com.bone.metadata.engine.starter.platform;
 
-import com.bone.metadata.engine.platform.MetadataPlatformBridge;
-import com.bone.metadata.engine.platform.NoopMetadataPlatformBridge;
+import com.bone.metadata.engine.runtime.platform.MetadataPlatformBridge;
+import com.bone.metadata.engine.runtime.platform.NoopMetadataPlatformBridge;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;

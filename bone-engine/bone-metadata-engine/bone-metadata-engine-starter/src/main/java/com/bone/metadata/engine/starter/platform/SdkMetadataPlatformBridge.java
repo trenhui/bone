@@ -1,6 +1,6 @@
 package com.bone.metadata.engine.starter.platform;
 
-import com.bone.metadata.engine.platform.MetadataPlatformBridge;
+import com.bone.metadata.engine.runtime.platform.MetadataPlatformBridge;
 import com.bone.metadata.engine.starter.platform.model.PlatformMetaEntity;
 import com.bone.metadata.engine.starter.platform.model.PlatformMetaField;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;

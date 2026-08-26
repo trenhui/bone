@@ -20,7 +20,6 @@
         <module>bone-metadata-engine-domain</module>
         <module>bone-metadata-engine-ports</module>
         <module>bone-metadata-engine-runtime</module>
-        <module>bone-metadata-engine-core</module>
         <module>bone-metadata-engine-starter</module>
     </modules>
 
