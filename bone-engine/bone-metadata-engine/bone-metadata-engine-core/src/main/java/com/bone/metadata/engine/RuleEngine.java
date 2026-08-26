@@ -938,7 +938,7 @@ public class RuleEngine {
 
   /** 计算异常类 */
   public static class CalculationException
-      extends com.bone.metadata.engine.exception.CalculationException {
+      extends com.bone.metadata.engine.domain.exception.CalculationException {
     public CalculationException(String message) {
       super(message, null, null);
     }

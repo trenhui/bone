@@ -1,4 +1,4 @@
-package com.bone.metadata.engine.exception;
+package com.bone.metadata.engine.domain.exception;
 
 import java.util.Map;
 

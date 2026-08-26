@@ -1,4 +1,4 @@
-package com.bone.metadata.engine.common;
+package com.bone.metadata.engine.domain.common;
 
 /** 错误代码常量类，用于统一管理系统中的错误码 遵循业界最佳实践，将错误代码集中管理，便于维护和扩展 */
 public final class ErrorCodes {

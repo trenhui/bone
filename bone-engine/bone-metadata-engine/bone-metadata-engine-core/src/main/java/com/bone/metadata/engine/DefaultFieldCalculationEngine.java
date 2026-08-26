@@ -1,6 +1,6 @@
 package com.bone.metadata.engine;
 
-import com.bone.metadata.engine.exception.CalculationException;
+import com.bone.metadata.engine.domain.exception.CalculationException;
 import com.bone.metadata.engine.model.DynamicSmartEntity;
 import com.bone.metadata.engine.model.FieldMetadata;
 import com.bone.metadata.engine.util.CommonUtils;

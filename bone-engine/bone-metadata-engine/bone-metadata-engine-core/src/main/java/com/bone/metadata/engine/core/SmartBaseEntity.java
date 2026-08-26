@@ -1,6 +1,6 @@
 package com.bone.metadata.engine.core;
 
-import com.bone.metadata.engine.annotation.SmartEntity;
+import com.bone.metadata.engine.domain.annotation.SmartEntity;
 import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.Arrays;

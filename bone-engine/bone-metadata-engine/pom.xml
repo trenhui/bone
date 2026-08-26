@@ -17,6 +17,9 @@
     <description>智能元数据引擎（原 bone-smartmeta）：动态建模、规则、SmartQL</description>
 
     <modules>
+        <module>bone-metadata-engine-domain</module>
+        <module>bone-metadata-engine-ports</module>
+        <module>bone-metadata-engine-runtime</module>
         <module>bone-metadata-engine-core</module>
         <module>bone-metadata-engine-starter</module>
     </modules>

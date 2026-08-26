@@ -402,7 +402,7 @@ public class CompositeMetadataProcessor implements MetadataProcessor {
       if (className.contains(".groovy.")) {
         return "groovy";
       } else if (entityClass.isAnnotationPresent(
-          com.bone.metadata.engine.annotation.SmartEntity.class)) {
+          com.bone.metadata.engine.domain.annotation.SmartEntity.class)) {
         return "annotation";
       }
     }

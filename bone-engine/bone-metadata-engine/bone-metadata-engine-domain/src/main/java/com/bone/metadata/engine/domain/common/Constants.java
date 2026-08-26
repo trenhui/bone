@@ -1,4 +1,4 @@
-package com.bone.metadata.engine.common;
+package com.bone.metadata.engine.domain.common;
 
 /**
  * 统一常量管理类

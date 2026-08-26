@@ -3,7 +3,7 @@ package com.bone.metadata.engine.service;
 import com.bone.metadata.engine.ExpressionEngine;
 import com.bone.metadata.engine.MetadataEngine;
 import com.bone.metadata.engine.ValidationEngine;
-import com.bone.metadata.engine.common.ErrorCodes;
+import com.bone.metadata.engine.domain.common.ErrorCodes;
 import com.bone.metadata.engine.metadata.*;
 import java.util.ArrayList;
 import java.util.Collections;

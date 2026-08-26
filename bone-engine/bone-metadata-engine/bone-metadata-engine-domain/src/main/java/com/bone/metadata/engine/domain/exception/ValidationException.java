@@ -1,9 +1,9 @@
-package com.bone.metadata.engine.exception;
+package com.bone.metadata.engine.domain.exception;
 
 import java.util.Map;
 
-/** 规则执行异常类 用于表示规则执行过程中的错误 */
-public class RuleExecutionException extends MetadataEngineBizException {
+/** 验证异常类 用于表示验证过程中的错误 */
+public class ValidationException extends MetadataEngineBizException {
 
   private static final long serialVersionUID = 1L;
 
@@ -12,7 +12,7 @@ public class RuleExecutionException extends MetadataEngineBizException {
    *
    * @param message 错误消息
    */
-  public RuleExecutionException(String message) {
+  public ValidationException(String message) {
     super(message);
   }
 
@@ -22,7 +22,7 @@ public class RuleExecutionException extends MetadataEngineBizException {
    * @param message 错误消息
    * @param errorCode 错误码
    */
-  public RuleExecutionException(String message, String errorCode) {
+  public ValidationException(String message, String errorCode) {
     super(message, errorCode);
   }
 
@@ -33,7 +33,7 @@ public class RuleExecutionException extends MetadataEngineBizException {
    * @param errorCode 错误码
    * @param level 异常级别
    */
-  public RuleExecutionException(String message, String errorCode, ExceptionLevel level) {
+  public ValidationException(String message, String errorCode, ExceptionLevel level) {
     super(message, errorCode, level);
   }
 
@@ -43,7 +43,7 @@ public class RuleExecutionException extends MetadataEngineBizException {
    * @param message 错误消息
    * @param cause 根异常
    */
-  public RuleExecutionException(String message, Throwable cause) {
+  public ValidationException(String message, Throwable cause) {
     super(message, cause);
   }
 
@@ -54,7 +54,7 @@ public class RuleExecutionException extends MetadataEngineBizException {
    * @param errorCode 错误码
    * @param cause 根异常
    */
-  public RuleExecutionException(String message, String errorCode, Throwable cause) {
+  public ValidationException(String message, String errorCode, Throwable cause) {
     super(message, errorCode, cause);
   }
 
@@ -66,7 +66,7 @@ public class RuleExecutionException extends MetadataEngineBizException {
    * @param level 异常级别
    * @param cause 根异常
    */
-  public RuleExecutionException(
+  public ValidationException(
       String message, String errorCode, ExceptionLevel level, Throwable cause) {
     super(message, errorCode, level, cause, null);
   }
@@ -80,7 +80,7 @@ public class RuleExecutionException extends MetadataEngineBizException {
    * @param cause 根异常
    * @param context 上下文信息
    */
-  public RuleExecutionException(
+  public ValidationException(
       String message,
       String errorCode,
       ExceptionLevel level,

@@ -1,4 +1,4 @@
-package com.bone.metadata.engine.exception;
+package com.bone.metadata.engine.domain.exception;
 
 /** 查询执行异常，表示在执行SmartQL查询过程中发生的错误 */
 public class QueryExecutionException extends RuntimeException {

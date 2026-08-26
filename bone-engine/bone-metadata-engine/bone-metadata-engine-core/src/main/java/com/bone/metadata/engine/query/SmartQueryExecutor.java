@@ -2,7 +2,7 @@ package com.bone.metadata.engine.query;
 
 import com.bone.metadata.engine.context.UserContext;
 import com.bone.metadata.engine.core.SmartBaseEntity;
-import com.bone.metadata.engine.exception.QueryExecutionException;
+import com.bone.metadata.engine.domain.exception.QueryExecutionException;
 import com.bone.metadata.engine.metadata.EntityMetadata;
 import com.bone.metadata.engine.metadata.MetadataRegistry;
 import com.bone.metadata.engine.model.DynamicSmartEntity;

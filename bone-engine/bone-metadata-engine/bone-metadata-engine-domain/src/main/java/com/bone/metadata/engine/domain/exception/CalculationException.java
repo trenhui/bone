@@ -1,4 +1,4 @@
-package com.bone.metadata.engine.exception;
+package com.bone.metadata.engine.domain.exception;
 
 /** 计算异常类，用于表示字段计算过程中的错误 */
 public class CalculationException extends RuntimeException {

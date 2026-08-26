@@ -1,4 +1,4 @@
-package com.bone.metadata.engine.annotation;
+package com.bone.metadata.engine.domain.annotation;
 
 /** 字段类型枚举 */
 public enum FieldType {
