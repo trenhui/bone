@@ -1,8 +1,8 @@
 package com.bone.metadata.engine.spi;
 
-import com.bone.metadata.engine.metadata.EntityMetadata;
-import com.bone.metadata.engine.metadata.OperationMetadata;
-import com.bone.metadata.engine.metadata.WorkflowMetadata;
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
+import com.bone.metadata.engine.domain.metadata.OperationMetadata;
+import com.bone.metadata.engine.domain.metadata.WorkflowMetadata;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;

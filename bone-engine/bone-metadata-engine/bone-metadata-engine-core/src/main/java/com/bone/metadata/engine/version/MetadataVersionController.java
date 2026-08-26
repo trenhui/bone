@@ -1,7 +1,7 @@
 package com.bone.metadata.engine.version;
 
-import com.bone.metadata.engine.metadata.EntityMetadata;
-import com.bone.metadata.engine.metadata.SmartFieldMetadata;
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
+import com.bone.metadata.engine.domain.metadata.SmartFieldMetadata;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Date;

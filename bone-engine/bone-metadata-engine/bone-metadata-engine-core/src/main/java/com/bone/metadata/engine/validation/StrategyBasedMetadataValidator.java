@@ -1,7 +1,7 @@
 package com.bone.metadata.engine.validation;
 
 import com.bone.metadata.engine.ValidationEngine;
-import com.bone.metadata.engine.metadata.EntityMetadata;
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;

@@ -1,5 +1,8 @@
 package com.bone.metadata.engine.metadata;
 
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
+import com.bone.metadata.engine.domain.metadata.MetadataChangeListener;
+import com.bone.metadata.engine.domain.metadata.SmartFieldMetadata;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;

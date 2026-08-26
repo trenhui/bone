@@ -1,7 +1,7 @@
 package com.bone.metadata.engine;
 
-import com.bone.metadata.engine.model.DynamicSmartEntity;
-import com.bone.metadata.engine.model.FieldMetadata;
+import com.bone.metadata.engine.domain.model.DynamicSmartEntity;
+import com.bone.metadata.engine.domain.model.FieldMetadata;
 
 /** 字段计算引擎接口 负责计算实体中的计算字段值 */
 public interface FieldCalculationEngine {

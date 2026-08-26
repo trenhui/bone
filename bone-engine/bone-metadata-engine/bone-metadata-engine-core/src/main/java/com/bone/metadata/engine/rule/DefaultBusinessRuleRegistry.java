@@ -1,6 +1,6 @@
 package com.bone.metadata.engine.rule;
 
-import com.bone.metadata.engine.model.BusinessRuleMetadata;
+import com.bone.metadata.engine.domain.model.BusinessRuleMetadata;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;

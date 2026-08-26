@@ -1,6 +1,6 @@
 package com.bone.metadata.engine.validation.strategy;
 
-import com.bone.metadata.engine.metadata.EntityMetadata;
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
 import com.bone.metadata.engine.validation.ValidationResult;
 import java.util.Map;
 

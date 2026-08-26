@@ -3,8 +3,8 @@ package com.bone.metadata.engine;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.bone.metadata.engine.model.BusinessRuleMetadata;
-import com.bone.metadata.engine.model.DynamicSmartEntity;
+import com.bone.metadata.engine.domain.model.BusinessRuleMetadata;
+import com.bone.metadata.engine.domain.model.DynamicSmartEntity;
 import com.bone.metadata.engine.rule.BusinessRuleRegistry;
 import java.util.*;
 import org.junit.jupiter.api.BeforeEach;

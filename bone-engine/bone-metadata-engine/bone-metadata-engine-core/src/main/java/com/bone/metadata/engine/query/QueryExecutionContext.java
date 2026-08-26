@@ -1,6 +1,6 @@
 package com.bone.metadata.engine.query;
 
-import com.bone.metadata.engine.metadata.EntityMetadata;
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
 import com.bone.metadata.engine.query.ast.QueryAst;
 
 /** 查询执行上下文，用于在查询执行过程中传递和存储相关信息 */

@@ -1,6 +1,6 @@
 package com.bone.metadata.engine.analysis;
 
-import com.bone.metadata.engine.metadata.WorkflowMetadata;
+import com.bone.metadata.engine.domain.metadata.WorkflowMetadata;
 import com.bone.metadata.engine.repository.MetadataRepository;
 import java.util.ArrayList;
 import java.util.List;
@@ -9,17 +9,17 @@ import java.util.List;
 public class RepositoryMetadataImpactDataAccess implements MetadataImpactDataAccess {
 
   private final MetadataRepository metadataRepository;
-  private final List<com.bone.metadata.engine.model.EntityMetadata> entityCatalog;
+  private final List<com.bone.metadata.engine.domain.model.EntityMetadata> entityCatalog;
 
   public RepositoryMetadataImpactDataAccess(
       MetadataRepository metadataRepository,
-      List<com.bone.metadata.engine.model.EntityMetadata> entityCatalog) {
+      List<com.bone.metadata.engine.domain.model.EntityMetadata> entityCatalog) {
     this.metadataRepository = metadataRepository;
     this.entityCatalog = entityCatalog != null ? List.copyOf(entityCatalog) : List.of();
   }
 
   @Override
-  public List<com.bone.metadata.engine.model.EntityMetadata> findAllEntities() {
+  public List<com.bone.metadata.engine.domain.model.EntityMetadata> findAllEntities() {
     return entityCatalog;
   }
 

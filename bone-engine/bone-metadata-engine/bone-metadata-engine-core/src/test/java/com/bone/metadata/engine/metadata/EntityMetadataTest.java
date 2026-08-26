@@ -2,6 +2,8 @@ package com.bone.metadata.engine.metadata;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
+import com.bone.metadata.engine.domain.metadata.SmartFieldMetadata;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

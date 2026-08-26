@@ -1,6 +1,6 @@
 package com.bone.metadata.engine.security;
 
-import com.bone.metadata.engine.model.EntityMetadata;
+import com.bone.metadata.engine.domain.model.EntityMetadata;
 import java.util.List;
 
 /** 权限评估器接口，负责评估用户对实体、字段和记录的访问权限 根据设计文档中的数据安全配置需求设计 */

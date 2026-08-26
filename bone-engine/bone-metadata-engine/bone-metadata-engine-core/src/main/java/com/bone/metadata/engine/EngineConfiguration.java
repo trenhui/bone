@@ -1,7 +1,7 @@
 package com.bone.metadata.engine;
 
-import com.bone.metadata.engine.model.DefaultMetadataRegistry;
-import com.bone.metadata.engine.model.MetadataRegistry;
+import com.bone.metadata.engine.domain.model.DefaultMetadataRegistry;
+import com.bone.metadata.engine.domain.model.MetadataRegistry;
 import com.bone.metadata.engine.rule.BusinessRuleRegistry;
 import com.bone.metadata.engine.rule.DefaultBusinessRuleRegistry;
 import java.util.HashMap;

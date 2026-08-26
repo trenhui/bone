@@ -2,9 +2,9 @@ package com.bone.metadata.engine.adapter;
 
 import com.bone.metadata.engine.adapter.po.MetaEntityPo;
 import com.bone.metadata.engine.adapter.po.MetaFieldPo;
-import com.bone.metadata.engine.metadata.EntityMetadata;
-import com.bone.metadata.engine.metadata.OperationMetadata;
-import com.bone.metadata.engine.metadata.WorkflowMetadata;
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
+import com.bone.metadata.engine.domain.metadata.OperationMetadata;
+import com.bone.metadata.engine.domain.metadata.WorkflowMetadata;
 import com.bone.metadata.engine.spi.MetadataPlatformBridge;
 import com.bone.metadata.engine.spi.MetadataRepositoryPort;
 import com.bone.metadata.sdk.Repository;

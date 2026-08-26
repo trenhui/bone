@@ -1,6 +1,6 @@
 package com.bone.metadata.engine.analysis;
 
-import com.bone.metadata.engine.model.EntityMetadata;
+import com.bone.metadata.engine.domain.model.EntityMetadata;
 import java.util.Collections;
 import java.util.List;
 

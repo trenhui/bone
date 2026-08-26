@@ -5,7 +5,7 @@ import static org.mockito.Mockito.when;
 
 import com.bone.metadata.engine.adapter.po.MetaEntityPo;
 import com.bone.metadata.engine.adapter.po.MetaFieldPo;
-import com.bone.metadata.engine.metadata.EntityMetadata;
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
 import com.bone.metadata.engine.spi.MetadataPlatformBridge;
 import com.bone.metadata.sdk.Repository;
 import java.util.List;

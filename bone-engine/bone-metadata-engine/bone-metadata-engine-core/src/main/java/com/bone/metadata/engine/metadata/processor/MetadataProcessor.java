@@ -1,6 +1,6 @@
-package com.bone.metadata.engine.metadata.processor;
+package com.bone.metadata.engine.domain.metadata.processor;
 
-import com.bone.metadata.engine.metadata.EntityMetadata;
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
 import java.util.List;
 
 /** 元数据处理器接口 */

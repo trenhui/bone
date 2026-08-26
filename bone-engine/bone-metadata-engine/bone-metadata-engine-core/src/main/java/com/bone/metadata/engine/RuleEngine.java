@@ -1,8 +1,8 @@
 package com.bone.metadata.engine;
 
 // 统一使用metadata包中的类
-import com.bone.metadata.engine.metadata.EntityMetadata;
-import com.bone.metadata.engine.metadata.SmartFieldMetadata;
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
+import com.bone.metadata.engine.domain.metadata.SmartFieldMetadata;
 import com.bone.metadata.engine.rule.CustomFunctionRegistry;
 import com.bone.metadata.engine.rule.EvaluationContextFactory;
 import com.bone.metadata.engine.rule.ExpressionCache;
@@ -483,15 +483,15 @@ public class RuleEngine {
       ValidationResult result) {
     try {
       // 根据规则类型进行验证
-      if (rule instanceof com.bone.metadata.engine.metadata.BusinessRuleMetadata) {
+      if (rule instanceof com.bone.metadata.engine.domain.metadata.BusinessRuleMetadata) {
         validateBusinessRule(
-            (com.bone.metadata.engine.metadata.BusinessRuleMetadata) rule,
+            (com.bone.metadata.engine.domain.metadata.BusinessRuleMetadata) rule,
             entityData,
             context,
             result);
-      } else if (rule instanceof com.bone.metadata.engine.metadata.ValidationRuleMetadata) {
+      } else if (rule instanceof com.bone.metadata.engine.domain.metadata.ValidationRuleMetadata) {
         validateValidationRule(
-            (com.bone.metadata.engine.metadata.ValidationRuleMetadata) rule,
+            (com.bone.metadata.engine.domain.metadata.ValidationRuleMetadata) rule,
             entityData,
             context,
             result);
@@ -513,7 +513,7 @@ public class RuleEngine {
 
   /** 验证业务规则 */
   private void validateBusinessRule(
-      com.bone.metadata.engine.metadata.BusinessRuleMetadata rule,
+      com.bone.metadata.engine.domain.metadata.BusinessRuleMetadata rule,
       Map<String, Object> entityData,
       EvaluationContextFactory.EvaluationContext context,
       ValidationResult result) {
@@ -543,7 +543,7 @@ public class RuleEngine {
 
   /** 验证ValidationRuleMetadata规则 */
   private void validateValidationRule(
-      com.bone.metadata.engine.metadata.ValidationRuleMetadata rule,
+      com.bone.metadata.engine.domain.metadata.ValidationRuleMetadata rule,
       Map<String, Object> entityData,
       EvaluationContextFactory.EvaluationContext context,
       ValidationResult result) {
@@ -641,7 +641,7 @@ public class RuleEngine {
 
   /** 验证规则表达式 */
   private void validateRuleExpression(
-      com.bone.metadata.engine.metadata.BusinessRuleMetadata rule,
+      com.bone.metadata.engine.domain.metadata.BusinessRuleMetadata rule,
       Map<String, Object> entityData,
       EvaluationContextFactory.EvaluationContext context,
       ValidationResult result) {
@@ -684,7 +684,8 @@ public class RuleEngine {
   }
 
   /** 检查规则是否启用 */
-  private boolean isRuleEnabled(com.bone.metadata.engine.metadata.BusinessRuleMetadata rule) {
+  private boolean isRuleEnabled(
+      com.bone.metadata.engine.domain.metadata.BusinessRuleMetadata rule) {
     try {
       // 尝试获取isEnabled字段
       try {
@@ -708,7 +709,7 @@ public class RuleEngine {
   }
 
   /** 获取规则条件 */
-  private String getCondition(com.bone.metadata.engine.metadata.BusinessRuleMetadata rule) {
+  private String getCondition(com.bone.metadata.engine.domain.metadata.BusinessRuleMetadata rule) {
     try {
       Field conditionField = rule.getClass().getDeclaredField("condition");
       conditionField.setAccessible(true);
@@ -719,7 +720,8 @@ public class RuleEngine {
   }
 
   /** 获取规则表达式 */
-  private String getRuleExpression(com.bone.metadata.engine.metadata.ValidationRuleMetadata rule) {
+  private String getRuleExpression(
+      com.bone.metadata.engine.domain.metadata.ValidationRuleMetadata rule) {
     try {
       Field expressionField = rule.getClass().getDeclaredField("expression");
       expressionField.setAccessible(true);
@@ -731,7 +733,7 @@ public class RuleEngine {
 
   /** 获取规则错误消息 */
   private String getRuleErrorMessage(
-      com.bone.metadata.engine.metadata.ValidationRuleMetadata rule) {
+      com.bone.metadata.engine.domain.metadata.ValidationRuleMetadata rule) {
     try {
       Field errorMessageField = rule.getClass().getDeclaredField("errorMessage");
       errorMessageField.setAccessible(true);
@@ -772,15 +774,15 @@ public class RuleEngine {
 
     try {
       // 检查BusinessRuleMetadata类型
-      if (rule instanceof com.bone.metadata.engine.metadata.BusinessRuleMetadata) {
+      if (rule instanceof com.bone.metadata.engine.domain.metadata.BusinessRuleMetadata) {
         return shouldTriggerBusinessRule(
-            (com.bone.metadata.engine.metadata.BusinessRuleMetadata) rule, triggerEvents);
+            (com.bone.metadata.engine.domain.metadata.BusinessRuleMetadata) rule, triggerEvents);
       }
 
       // 检查ValidationRuleMetadata类型
-      if (rule instanceof com.bone.metadata.engine.metadata.ValidationRuleMetadata) {
+      if (rule instanceof com.bone.metadata.engine.domain.metadata.ValidationRuleMetadata) {
         return shouldTriggerValidationRule(
-            (com.bone.metadata.engine.metadata.ValidationRuleMetadata) rule, triggerEvents);
+            (com.bone.metadata.engine.domain.metadata.ValidationRuleMetadata) rule, triggerEvents);
       }
 
       // 尝试通过反射获取触发事件
@@ -802,7 +804,8 @@ public class RuleEngine {
 
   /** 检查业务规则是否应该被触发 */
   private boolean shouldTriggerBusinessRule(
-      com.bone.metadata.engine.metadata.BusinessRuleMetadata rule, List<String> triggerEvents) {
+      com.bone.metadata.engine.domain.metadata.BusinessRuleMetadata rule,
+      List<String> triggerEvents) {
     try {
       // 使用反射获取executionTiming字段
       Field executionTimingField = rule.getClass().getDeclaredField("executionTiming");
@@ -825,7 +828,8 @@ public class RuleEngine {
 
   /** 检查验证规则是否应该被触发 */
   private boolean shouldTriggerValidationRule(
-      com.bone.metadata.engine.metadata.ValidationRuleMetadata rule, List<String> triggerEvents) {
+      com.bone.metadata.engine.domain.metadata.ValidationRuleMetadata rule,
+      List<String> triggerEvents) {
     try {
       // 使用反射获取triggerEvent字段
       Field triggerEventField = rule.getClass().getDeclaredField("triggerEvent");

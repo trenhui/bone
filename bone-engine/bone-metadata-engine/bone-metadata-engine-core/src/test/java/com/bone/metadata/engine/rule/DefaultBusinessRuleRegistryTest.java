@@ -2,7 +2,7 @@ package com.bone.metadata.engine.rule;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.bone.metadata.engine.model.BusinessRuleMetadata;
+import com.bone.metadata.engine.domain.model.BusinessRuleMetadata;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

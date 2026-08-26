@@ -1,7 +1,7 @@
 package com.bone.metadata.engine;
 
-import com.bone.metadata.engine.metadata.EntityMetadata;
-import com.bone.metadata.engine.metadata.SmartFieldMetadata;
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
+import com.bone.metadata.engine.domain.metadata.SmartFieldMetadata;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.*;

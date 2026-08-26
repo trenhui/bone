@@ -1,7 +1,8 @@
 package com.bone.metadata.engine.example;
 
 import com.bone.metadata.engine.MetadataEngine;
-import com.bone.metadata.engine.metadata.*;
+import com.bone.metadata.engine.domain.metadata.*;
+import com.bone.metadata.engine.metadata.OperationRegistry;
 import com.bone.metadata.engine.service.GenericOperationService;
 import java.util.*;
 import org.springframework.beans.factory.annotation.Autowired;

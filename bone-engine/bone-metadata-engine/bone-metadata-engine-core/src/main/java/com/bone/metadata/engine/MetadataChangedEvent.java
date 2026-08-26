@@ -1,6 +1,6 @@
 package com.bone.metadata.engine;
 
-import com.bone.metadata.engine.metadata.EntityMetadata;
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
 import org.springframework.context.ApplicationEvent;
 
 /** 元数据变更事件类 用于在元数据发生变更时发布Spring事件通知 */

@@ -1,10 +1,10 @@
 package com.bone.metadata.engine.config;
 
 import com.bone.metadata.engine.MetadataEngine;
-import com.bone.metadata.engine.metadata.AiMetadata;
-import com.bone.metadata.engine.metadata.EntityMetadata;
-import com.bone.metadata.engine.metadata.SmartFieldMetadata;
-import com.bone.metadata.engine.metadata.ValidationRuleMetadata;
+import com.bone.metadata.engine.domain.metadata.AiMetadata;
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
+import com.bone.metadata.engine.domain.metadata.SmartFieldMetadata;
+import com.bone.metadata.engine.domain.metadata.ValidationRuleMetadata;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;

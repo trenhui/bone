@@ -1,9 +1,9 @@
 package com.bone.metadata.engine.repository;
 
-import com.bone.metadata.engine.metadata.EntityMetadata;
-import com.bone.metadata.engine.metadata.OperationMetadata;
-import com.bone.metadata.engine.metadata.PackageDefinition;
-import com.bone.metadata.engine.metadata.WorkflowMetadata;
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
+import com.bone.metadata.engine.domain.metadata.OperationMetadata;
+import com.bone.metadata.engine.domain.metadata.PackageDefinition;
+import com.bone.metadata.engine.domain.metadata.WorkflowMetadata;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Repository;

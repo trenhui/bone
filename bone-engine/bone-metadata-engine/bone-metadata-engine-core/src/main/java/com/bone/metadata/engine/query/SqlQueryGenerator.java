@@ -1,6 +1,6 @@
 package com.bone.metadata.engine.query;
 
-import com.bone.metadata.engine.metadata.EntityMetadata;
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
 import com.bone.metadata.engine.query.ast.QueryAst;
 import org.springframework.stereotype.Component;
 

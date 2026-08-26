@@ -1,7 +1,7 @@
 package com.bone.metadata.engine.validation;
 
-import com.bone.metadata.engine.metadata.EntityMetadata;
-import com.bone.metadata.engine.metadata.SmartFieldMetadata;
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
+import com.bone.metadata.engine.domain.metadata.SmartFieldMetadata;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -282,12 +282,12 @@ public class DefaultMetadataValidator implements MetadataValidator {
     try {
       // 使用反射获取dataType字段值
       Object dataTypeObj = getFieldValue(field, "dataType");
-      if (dataTypeObj instanceof com.bone.metadata.engine.model.FieldMetadata.DataType) {
-        com.bone.metadata.engine.model.FieldMetadata.DataType dataType =
-            (com.bone.metadata.engine.model.FieldMetadata.DataType) dataTypeObj;
+      if (dataTypeObj instanceof com.bone.metadata.engine.domain.model.FieldMetadata.DataType) {
+        com.bone.metadata.engine.domain.model.FieldMetadata.DataType dataType =
+            (com.bone.metadata.engine.domain.model.FieldMetadata.DataType) dataTypeObj;
 
-        if (dataType == com.bone.metadata.engine.model.FieldMetadata.DataType.STRING
-            || dataType == com.bone.metadata.engine.model.FieldMetadata.DataType.TEXT) {
+        if (dataType == com.bone.metadata.engine.domain.model.FieldMetadata.DataType.STRING
+            || dataType == com.bone.metadata.engine.domain.model.FieldMetadata.DataType.TEXT) {
           Integer maxLength = getFieldMaxLength(field);
           if (maxLength != null && (maxLength <= 0 || maxLength > 1048576)) {
             // 简化实现，只记录日志不添加错误

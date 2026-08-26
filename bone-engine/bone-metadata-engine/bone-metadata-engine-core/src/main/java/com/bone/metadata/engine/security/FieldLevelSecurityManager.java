@@ -1,8 +1,8 @@
 package com.bone.metadata.engine.security;
 
-import com.bone.metadata.engine.metadata.FieldLevelSecurityMetadata;
-import com.bone.metadata.engine.model.EntityMetadata;
-import com.bone.metadata.engine.model.FieldMetadata;
+import com.bone.metadata.engine.domain.metadata.FieldLevelSecurityMetadata;
+import com.bone.metadata.engine.domain.model.EntityMetadata;
+import com.bone.metadata.engine.domain.model.FieldMetadata;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;

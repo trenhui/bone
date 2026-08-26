@@ -3,9 +3,9 @@ package com.bone.metadata.engine;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
-import com.bone.metadata.engine.metadata.EntityMetadata;
-import com.bone.metadata.engine.model.DynamicSmartEntity;
-import com.bone.metadata.engine.model.FieldMetadata;
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
+import com.bone.metadata.engine.domain.model.DynamicSmartEntity;
+import com.bone.metadata.engine.domain.model.FieldMetadata;
 import com.bone.metadata.engine.repository.MetadataRepository;
 import java.util.HashMap;
 import java.util.List;

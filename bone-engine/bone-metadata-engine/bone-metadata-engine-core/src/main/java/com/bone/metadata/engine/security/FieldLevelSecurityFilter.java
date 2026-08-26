@@ -1,6 +1,6 @@
 package com.bone.metadata.engine.security;
 
-import com.bone.metadata.engine.core.SmartBaseEntity;
+import com.bone.metadata.engine.domain.core.SmartBaseEntity;
 import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Component;

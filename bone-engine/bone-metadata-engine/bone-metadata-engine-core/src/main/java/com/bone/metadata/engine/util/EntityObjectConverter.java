@@ -1,8 +1,8 @@
 package com.bone.metadata.engine.util;
 
 import com.bone.metadata.engine.MetadataEngine;
-import com.bone.metadata.engine.model.EntityMetadata;
-import com.bone.metadata.engine.model.FieldMetadata;
+import com.bone.metadata.engine.domain.model.EntityMetadata;
+import com.bone.metadata.engine.domain.model.FieldMetadata;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;

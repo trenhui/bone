@@ -1,10 +1,10 @@
 package com.bone.metadata.engine;
 
-import com.bone.metadata.engine.core.SmartBaseEntity;
+import com.bone.metadata.engine.domain.core.SmartBaseEntity;
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
+import com.bone.metadata.engine.domain.metadata.SmartFieldMetadata;
+import com.bone.metadata.engine.domain.model.DynamicSmartEntity;
 import com.bone.metadata.engine.expression.ExpressionEvaluator;
-import com.bone.metadata.engine.metadata.EntityMetadata;
-import com.bone.metadata.engine.metadata.SmartFieldMetadata;
-import com.bone.metadata.engine.model.DynamicSmartEntity;
 import com.bone.metadata.engine.util.CommonUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.lang.reflect.Method;

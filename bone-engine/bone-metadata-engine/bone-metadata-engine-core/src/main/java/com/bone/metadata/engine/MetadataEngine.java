@@ -1,6 +1,6 @@
 package com.bone.metadata.engine;
 
-import com.bone.metadata.engine.model.EntityMetadata;
+import com.bone.metadata.engine.domain.model.EntityMetadata;
 import com.bone.metadata.engine.platform.MetadataPlatformBridge;
 import com.bone.metadata.engine.processor.MetadataProcessor;
 import com.bone.metadata.engine.registry.MetadataRegistry;
@@ -217,8 +217,8 @@ public class MetadataEngine implements InitializingBean {
 
       if (metadata instanceof EntityMetadata) {
         return ((EntityMetadata) metadata).getApiName();
-      } else if (metadata instanceof com.bone.metadata.engine.metadata.EntityMetadata) {
-        return ((com.bone.metadata.engine.metadata.EntityMetadata) metadata).getApiName();
+      } else if (metadata instanceof com.bone.metadata.engine.domain.metadata.EntityMetadata) {
+        return ((com.bone.metadata.engine.domain.metadata.EntityMetadata) metadata).getApiName();
       } else if (metadata instanceof Map) {
         Object nameObj = ((Map<?, ?>) metadata).get("name");
         if (nameObj != null) {

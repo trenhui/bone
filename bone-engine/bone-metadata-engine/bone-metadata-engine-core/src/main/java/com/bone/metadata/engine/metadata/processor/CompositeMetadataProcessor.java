@@ -1,16 +1,16 @@
-package com.bone.metadata.engine.metadata.processor;
+package com.bone.metadata.engine.domain.metadata.processor;
 
-import com.bone.metadata.engine.metadata.AgentMetadata;
-import com.bone.metadata.engine.metadata.AiMetadata;
-import com.bone.metadata.engine.metadata.CalculatedFieldMetadata;
-import com.bone.metadata.engine.metadata.EntityMetadata;
-import com.bone.metadata.engine.metadata.FieldLevelSecurityMetadata;
-import com.bone.metadata.engine.metadata.IndexMetadata;
+import com.bone.metadata.engine.domain.metadata.AgentMetadata;
+import com.bone.metadata.engine.domain.metadata.AiMetadata;
+import com.bone.metadata.engine.domain.metadata.CalculatedFieldMetadata;
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
+import com.bone.metadata.engine.domain.metadata.FieldLevelSecurityMetadata;
+import com.bone.metadata.engine.domain.metadata.IndexMetadata;
+import com.bone.metadata.engine.domain.metadata.RecordTypeMetadata;
+import com.bone.metadata.engine.domain.metadata.SmartFieldMetadata;
+import com.bone.metadata.engine.domain.metadata.ValidationRuleMetadata;
+import com.bone.metadata.engine.domain.metadata.VirtualFieldMetadata;
 import com.bone.metadata.engine.metadata.MetadataChangeEvent;
-import com.bone.metadata.engine.metadata.RecordTypeMetadata;
-import com.bone.metadata.engine.metadata.SmartFieldMetadata;
-import com.bone.metadata.engine.metadata.ValidationRuleMetadata;
-import com.bone.metadata.engine.metadata.VirtualFieldMetadata;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;

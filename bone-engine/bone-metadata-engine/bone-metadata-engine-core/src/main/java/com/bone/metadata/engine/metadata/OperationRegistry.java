@@ -1,5 +1,6 @@
 package com.bone.metadata.engine.metadata;
 
+import com.bone.metadata.engine.domain.metadata.OperationMetadata;
 import com.bone.metadata.engine.repository.MetadataRepository;
 import java.util.ArrayList;
 import java.util.List;

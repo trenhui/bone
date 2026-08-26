@@ -4,9 +4,9 @@ import com.bone.metadata.engine.ExpressionEngine;
 import com.bone.metadata.engine.MetadataEngine;
 import com.bone.metadata.engine.TransformationEngine;
 import com.bone.metadata.engine.ValidationEngine;
+import com.bone.metadata.engine.domain.metadata.processor.CompositeMetadataProcessor;
 import com.bone.metadata.engine.metadata.MetadataRegistry;
 import com.bone.metadata.engine.metadata.OperationRegistry;
-import com.bone.metadata.engine.metadata.processor.CompositeMetadataProcessor;
 import com.bone.metadata.engine.repository.InMemoryMetadataRepository;
 import com.bone.metadata.engine.repository.MetadataRepository;
 import com.bone.metadata.engine.service.DynamicDataService;
@@ -113,7 +113,7 @@ public class MetadataEngineAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public CompositeMetadataProcessor compositeMetadataProcessor(
-      List<com.bone.metadata.engine.metadata.processor.MetadataProcessor> metadataProcessors,
+      List<com.bone.metadata.engine.domain.metadata.processor.MetadataProcessor> metadataProcessors,
       ApplicationEventPublisher eventPublisher) {
     return new CompositeMetadataProcessor(metadataProcessors, eventPublisher);
   }

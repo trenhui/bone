@@ -1,9 +1,9 @@
 package com.bone.metadata.engine.service.impl;
 
 import com.bone.metadata.engine.MetadataEngine;
-import com.bone.metadata.engine.model.EntityMetadata;
-import com.bone.metadata.engine.model.FieldMetadata;
-import com.bone.metadata.engine.model.RuleResult;
+import com.bone.metadata.engine.domain.model.EntityMetadata;
+import com.bone.metadata.engine.domain.model.FieldMetadata;
+import com.bone.metadata.engine.domain.model.RuleResult;
 import com.bone.metadata.engine.service.BusinessRuleEngine;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;

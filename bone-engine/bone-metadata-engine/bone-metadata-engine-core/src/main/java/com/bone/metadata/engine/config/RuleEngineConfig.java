@@ -38,11 +38,11 @@ public class RuleEngineConfig {
     public com.bone.metadata.engine.validation.ValidationResult validate(
         Object entity, RuleContext context) {
       // 适配器实现，将Object转换为DynamicSmartEntity
-      if (entity instanceof com.bone.metadata.engine.model.DynamicSmartEntity) {
+      if (entity instanceof com.bone.metadata.engine.domain.model.DynamicSmartEntity) {
         com.bone.metadata.engine.validation.ValidationResult result =
             com.bone.metadata.engine.validation.ValidationResult.success();
         delegate.executeValidationRules(
-            (com.bone.metadata.engine.model.DynamicSmartEntity) entity, result);
+            (com.bone.metadata.engine.domain.model.DynamicSmartEntity) entity, result);
         return result;
       }
       return com.bone.metadata.engine.validation.ValidationResult.failure("不支持的实体类型");
@@ -61,44 +61,44 @@ public class RuleEngineConfig {
     }
 
     @Override
-    public java.util.List<com.bone.metadata.engine.model.BusinessRuleMetadata> getApplicableRules(
-        Object entity, String eventType) {
-      if (entity instanceof com.bone.metadata.engine.model.DynamicSmartEntity) {
+    public java.util.List<com.bone.metadata.engine.domain.model.BusinessRuleMetadata>
+        getApplicableRules(Object entity, String eventType) {
+      if (entity instanceof com.bone.metadata.engine.domain.model.DynamicSmartEntity) {
         return delegate.getRulesForEvent(
-            ((com.bone.metadata.engine.model.DynamicSmartEntity) entity).getEntityApiName(),
+            ((com.bone.metadata.engine.domain.model.DynamicSmartEntity) entity).getEntityApiName(),
             eventType);
       }
       return java.util.Collections.emptyList();
     }
 
     @Override
-    public boolean validateRule(com.bone.metadata.engine.model.BusinessRuleMetadata rule) {
+    public boolean validateRule(com.bone.metadata.engine.domain.model.BusinessRuleMetadata rule) {
       return delegate.validateRule(rule);
     }
 
     @Override
     public java.util.List<String> getRuleDependencies(
-        com.bone.metadata.engine.model.BusinessRuleMetadata rule) {
+        com.bone.metadata.engine.domain.model.BusinessRuleMetadata rule) {
       return delegate.getRuleDependencies(rule);
     }
 
     @Override
     public void executeValidationRules(
-        com.bone.metadata.engine.model.DynamicSmartEntity entity,
+        com.bone.metadata.engine.domain.model.DynamicSmartEntity entity,
         com.bone.metadata.engine.validation.ValidationResult result) {
       delegate.executeValidationRules(entity, result);
     }
 
     @Override
     public void executeActionRules(
-        com.bone.metadata.engine.model.DynamicSmartEntity entity, String eventType) {
+        com.bone.metadata.engine.domain.model.DynamicSmartEntity entity, String eventType) {
       delegate.executeActionRules(entity, eventType);
     }
 
     @Override
     public Object executeRule(
-        com.bone.metadata.engine.model.DynamicSmartEntity entity,
-        com.bone.metadata.engine.model.BusinessRuleMetadata rule,
+        com.bone.metadata.engine.domain.model.DynamicSmartEntity entity,
+        com.bone.metadata.engine.domain.model.BusinessRuleMetadata rule,
         java.util.Map<String, Object> context) {
       return delegate.executeRule(entity, rule, context);
     }

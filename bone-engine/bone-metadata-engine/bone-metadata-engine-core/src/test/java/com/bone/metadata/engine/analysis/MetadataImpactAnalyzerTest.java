@@ -3,10 +3,10 @@ package com.bone.metadata.engine.analysis;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.bone.metadata.engine.model.BusinessRuleMetadata;
-import com.bone.metadata.engine.model.EntityMetadata;
-import com.bone.metadata.engine.model.FieldMetadata;
-import com.bone.metadata.engine.model.RelationshipMetadata;
+import com.bone.metadata.engine.domain.model.BusinessRuleMetadata;
+import com.bone.metadata.engine.domain.model.EntityMetadata;
+import com.bone.metadata.engine.domain.model.FieldMetadata;
+import com.bone.metadata.engine.domain.model.RelationshipMetadata;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

@@ -3,8 +3,8 @@ package com.bone.metadata.engine;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.bone.metadata.engine.metadata.BusinessRuleMetadata;
-import com.bone.metadata.engine.metadata.EntityMetadata;
+import com.bone.metadata.engine.domain.metadata.BusinessRuleMetadata;
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
 import com.bone.metadata.engine.rule.CustomFunctionRegistry;
 import com.bone.metadata.engine.rule.EvaluationContextFactory;
 import com.bone.metadata.engine.rule.ExpressionCache;

@@ -1,11 +1,11 @@
 package com.bone.metadata.engine.query;
 
 import com.bone.metadata.engine.context.UserContext;
-import com.bone.metadata.engine.core.SmartBaseEntity;
+import com.bone.metadata.engine.domain.core.SmartBaseEntity;
 import com.bone.metadata.engine.domain.exception.QueryExecutionException;
-import com.bone.metadata.engine.metadata.EntityMetadata;
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
+import com.bone.metadata.engine.domain.model.DynamicSmartEntity;
 import com.bone.metadata.engine.metadata.MetadataRegistry;
-import com.bone.metadata.engine.model.DynamicSmartEntity;
 import com.bone.metadata.engine.query.ast.QueryAst;
 import com.bone.metadata.engine.security.CustomAuthentication;
 import com.bone.metadata.engine.security.FieldLevelSecurityFilter;

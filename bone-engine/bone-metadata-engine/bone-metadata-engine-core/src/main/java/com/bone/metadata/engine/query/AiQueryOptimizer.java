@@ -1,7 +1,7 @@
 package com.bone.metadata.engine.query;
 
 import com.bone.metadata.engine.context.UserContext;
-import com.bone.metadata.engine.metadata.EntityMetadata;
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

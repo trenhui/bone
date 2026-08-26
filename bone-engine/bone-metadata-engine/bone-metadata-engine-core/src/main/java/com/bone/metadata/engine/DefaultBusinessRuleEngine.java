@@ -1,7 +1,7 @@
 package com.bone.metadata.engine;
 
-import com.bone.metadata.engine.model.BusinessRuleMetadata;
-import com.bone.metadata.engine.model.DynamicSmartEntity;
+import com.bone.metadata.engine.domain.model.BusinessRuleMetadata;
+import com.bone.metadata.engine.domain.model.DynamicSmartEntity;
 import com.bone.metadata.engine.rule.BusinessRuleRegistry;
 import com.bone.metadata.engine.validation.ValidationResult;
 import java.util.*;

@@ -1,5 +1,6 @@
 package com.bone.metadata.engine.metadata;
 
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
 import java.time.LocalDateTime;
 import lombok.Getter;
 
