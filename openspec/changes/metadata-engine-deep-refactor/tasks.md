@@ -28,7 +28,7 @@
 
 ## P3：MetadataEngine 归 runtime
 - [x] P3.1 将 `MetadataEngine` 归入 runtime，依赖改为 metadata(domain)+ 合并后 ports
-- [ ] P3.2 清理 invokeIfPossible 等反射兜底；统一双重 EntityMetadata
+- [x] P3.2 清理 invokeIfPossible 等反射兜底（删除 4 个 no-op 反射桩；双重 EntityMetadata 归一归入 P0.1）
 
 ## P4：server 接入调整
 - [x] P4.1 `bone-metadata-server` pom 依赖改为 engine-runtime（原依赖 core 的替换）

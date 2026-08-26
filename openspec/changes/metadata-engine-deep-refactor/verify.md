@@ -42,6 +42,7 @@
 | P0.2 合并重复 platform 端口 | ✅ | 删除 runtime.platform.MetadataPlatformBridge/Noop（1 方法重复版），统一到 ports.spi（3 方法）；MetadataEngine/SdkMetadataPlatformBridge/MetadataEnginePlatformAutoConfiguration 改用 ports.spi；runtime+starter 构建通过 |
 | P0.3 依赖倒置 | ✅（架构已规避） | analysis/OperationRegistry 现位于 runtime，依赖仓储属 runtime 合法职责，无 domain 反向依赖 |
 | P0.4 domain 去 Spring | ✅ | domain 模块 0 个 Spring import，已纯净 |
+| P3.2 清理 MetadataEngine 反射 | ✅ | 删除 invokeIfPossible/invokeIfPossibleReturn/invokeRepositoryMethod/convertToModelEntityMetadata 四个 no-op 反射桩及调用点；runtime 构建通过 |
 
 ## 未完成（可选，非阻塞）
 
