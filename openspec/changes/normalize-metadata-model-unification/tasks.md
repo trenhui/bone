@@ -4,14 +4,14 @@
 
 ## 1. 盘点与映射
 
-- [ ] 1.1 列出 `domain.model` 全部 12 个类及其在 runtime/starter 的全部引用点（约 23 文件），产出一份引用清单；验证清单覆盖 grep 结果
-- [ ] 1.2 建立 `model.FieldMetadata` → `metadata.SmartFieldMetadata` 字段映射表（getApiName/isPrimaryKey/isDisplayName→label 等），写入 design.md 附录；验证映射覆盖 legacy 引擎用到的全部字段访问
-- [ ] 1.3 判定 `model.MetadataRegistry/DefaultMetadataRegistry/PermissionMetadata/EntityPermissionMetadata/RelationshipMetadata` 的归属（迁入 metadata 或确认零引用后删除）；验证每类有明确去向
+- [x] 1.1 列出 `domain.model` 全部 12 个类及其在 runtime/starter 的全部引用点，产出引用清单（21 个 engine 引用文件 + SDK/studio 的 `sdk.domain.model` 独立类不涉及）
+- [x] 1.2 建立 `model.FieldMetadata` → `metadata.SmartFieldMetadata` 字段映射表（getApiName/isPrimaryKey/isDisplayName→label 等），写入 design-doc §1.1
+- [x] 1.3 判定归属：DynamicSmartEntity/RuleResult/PermissionMetadata/RelationshipMetadata/MetadataRegistry/DefaultMetadataRegistry 迁入 metadata；EntityPermissionMetadata/model.OperationMetadata 零引用可删；EntityMetadata/SmartFieldMetadata/FieldMetadata/BusinessRuleMetadata 由 metadata 同名增强类替代
 
 ## 2. 迁移非重复模型类
 
-- [ ] 2.1 将 `model.DynamicSmartEntity`、`model.RuleResult` 迁入 `metadata.*`（更新 package + import），验证引用点编译通过
-- [ ] 2.2 迁移 `model.MetadataRegistry/DefaultMetadataRegistry` 等确认需保留的类到 `metadata.*`，验证引用点编译通过
+- [x] 2.1 将 `model.DynamicSmartEntity`、`model.RuleResult`、`model.PermissionMetadata`、`model.RelationshipMetadata` 迁入 `metadata.*`（更新 package + import），11 个引用文件已更新，domain+runtime+starter 编译通过
+- [x] 2.2 迁移 `model.MetadataRegistry/DefaultMetadataRegistry` 到 `metadata.*`（FieldMetadata→SmartFieldMetadata 签名），并增强 `metadata.EntityMetadata`（entityType/businessRules + getEntityType/getRelationships/getBusinessRules）；domain+runtime+starter 编译通过
 
 ## 3. 迁移重复类引用（legacy 引擎）
 
