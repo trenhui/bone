@@ -1,0 +1,8 @@
+{
+  "openspec_proposal": "openspec/changes/metadata-engine-deep-refactor/proposal.md",
+  "openspec_design": "openspec/changes/metadata-engine-deep-refactor/design.md",
+  "openspec_tasks": "openspec/changes/metadata-engine-deep-refactor/tasks.md",
+  "design_document": "openspec/changes/metadata-engine-deep-refactor/design.md",
+  "handoff_context": "openspec/changes/metadata-engine-deep-refactor/.comet/handoff/design-context.json",
+  "handoff_markdown": "openspec/changes/metadata-engine-deep-refactor/.comet/handoff/design-context.md"
+}
