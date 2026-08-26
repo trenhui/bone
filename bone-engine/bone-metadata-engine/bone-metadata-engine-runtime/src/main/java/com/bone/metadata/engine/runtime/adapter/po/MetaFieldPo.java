@@ -1,4 +1,4 @@
-package com.bone.metadata.engine.adapter.po;
+package com.bone.metadata.engine.runtime.adapter.po;
 
 import com.bone.core.domain.entity.AbstractEntity;
 import com.bone.metadata.sdk.domain.annotation.Column;

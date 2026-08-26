@@ -1,4 +1,4 @@
-package com.bone.metadata.engine.adapter;
+package com.bone.metadata.engine.runtime.adapter;
 
 import com.bone.metadata.engine.domain.metadata.EntityMetadata;
 import com.bone.metadata.engine.domain.metadata.OperationMetadata;

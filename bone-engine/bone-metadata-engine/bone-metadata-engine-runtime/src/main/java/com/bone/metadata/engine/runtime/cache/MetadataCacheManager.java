@@ -1,4 +1,4 @@
-package com.bone.metadata.engine.cache;
+package com.bone.metadata.engine.runtime.cache;
 
 import com.bone.metadata.engine.domain.model.EntityMetadata;
 import java.util.Collection;

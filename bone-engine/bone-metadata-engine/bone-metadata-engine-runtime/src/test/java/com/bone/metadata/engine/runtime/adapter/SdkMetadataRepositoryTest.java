@@ -1,12 +1,12 @@
-package com.bone.metadata.engine.adapter;
+package com.bone.metadata.engine.runtime.adapter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import com.bone.metadata.engine.adapter.po.MetaEntityPo;
-import com.bone.metadata.engine.adapter.po.MetaFieldPo;
 import com.bone.metadata.engine.domain.metadata.EntityMetadata;
 import com.bone.metadata.engine.ports.spi.MetadataPlatformBridge;
+import com.bone.metadata.engine.runtime.adapter.po.MetaEntityPo;
+import com.bone.metadata.engine.runtime.adapter.po.MetaFieldPo;
 import com.bone.metadata.sdk.Repository;
 import java.util.List;
 import java.util.Optional;
