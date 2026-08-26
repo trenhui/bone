@@ -1,6 +1,5 @@
-package com.bone.metadata.engine.domain.model;
+package com.bone.metadata.engine.domain.metadata;
 
-import com.bone.metadata.engine.domain.metadata.RelationshipMetadata;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -153,7 +152,7 @@ public interface MetadataRegistry {
    * @param fieldApiName 字段API名称
    * @return 字段元数据，如果不存在则返回null
    */
-  FieldMetadata getFieldMetadata(String entityApiName, String fieldApiName);
+  SmartFieldMetadata getFieldMetadata(String entityApiName, String fieldApiName);
 
   /**
    * 获取实体的所有字段元数据
@@ -161,7 +160,7 @@ public interface MetadataRegistry {
    * @param entityApiName 实体API名称
    * @return 字段元数据列表
    */
-  List<FieldMetadata> getAllFieldMetadata(String entityApiName);
+  List<SmartFieldMetadata> getAllFieldMetadata(String entityApiName);
 
   /**
    * 获取实体的计算字段元数据
@@ -169,7 +168,7 @@ public interface MetadataRegistry {
    * @param entityApiName 实体API名称
    * @return 计算字段元数据列表
    */
-  List<FieldMetadata> getCalculatedFieldMetadata(String entityApiName);
+  List<SmartFieldMetadata> getCalculatedFieldMetadata(String entityApiName);
 
   /**
    * 获取实体的虚拟字段元数据
@@ -177,7 +176,7 @@ public interface MetadataRegistry {
    * @param entityApiName 实体API名称
    * @return 虚拟字段元数据列表
    */
-  List<FieldMetadata> getVirtualFieldMetadata(String entityApiName);
+  List<SmartFieldMetadata> getVirtualFieldMetadata(String entityApiName);
 
   /**
    * 获取实体的关系元数据
@@ -248,7 +247,7 @@ public interface MetadataRegistry {
      * @param entityApiName 实体API名称
      * @param fieldMetadata 字段元数据
      */
-    void onFieldUpdated(String entityApiName, FieldMetadata fieldMetadata);
+    void onFieldUpdated(String entityApiName, SmartFieldMetadata fieldMetadata);
 
     /**
      * 当关系元数据更新时触发

@@ -20,6 +20,7 @@ public class EntityMetadata implements Cloneable {
   private String description;
   private String label;
   private String domain;
+  private String entityType;
   private LocalDateTime createdAt;
   private LocalDateTime updatedAt;
   private List<String> tags = new ArrayList<>();
@@ -43,6 +44,9 @@ public class EntityMetadata implements Cloneable {
 
   /** 实体操作Map（用于快速查找） */
   private transient Map<String, OperationMetadata> operationMap = new HashMap<>();
+
+  /** 实体业务规则列表（统一建模兼容） */
+  private List<BusinessRuleMetadata> businessRules = new ArrayList<>();
 
   /** 添加操作元数据 */
   public void addOperation(OperationMetadata operation) {
@@ -259,6 +263,51 @@ public class EntityMetadata implements Cloneable {
   /** 设置主键字段 */
   public void setPrimaryKeyField(String primaryKeyField) {
     this.primaryFieldName = primaryKeyField;
+  }
+
+  /** 获取实体类型（统一建模兼容方法） */
+  public String getEntityType() {
+    return entityType;
+  }
+
+  /** 设置实体类型（统一建模兼容方法） */
+  public void setEntityType(String entityType) {
+    this.entityType = entityType;
+  }
+
+  /** 获取关系列表（统一建模兼容方法） */
+  public List<RelationshipMetadata> getRelationships() {
+    List<RelationshipMetadata> list = new ArrayList<>();
+    if (relationships != null) {
+      for (Object value : relationships.values()) {
+        if (value instanceof RelationshipMetadata) {
+          list.add((RelationshipMetadata) value);
+        }
+      }
+    }
+    return list;
+  }
+
+  /** 设置关系列表（统一建模兼容方法） */
+  public void setRelationships(List<RelationshipMetadata> relationshipList) {
+    this.relationships = new HashMap<>();
+    if (relationshipList != null) {
+      for (RelationshipMetadata relationship : relationshipList) {
+        if (relationship.getApiName() != null) {
+          this.relationships.put(relationship.getApiName(), relationship);
+        }
+      }
+    }
+  }
+
+  /** 获取业务规则列表（统一建模兼容方法） */
+  public List<BusinessRuleMetadata> getBusinessRules() {
+    return businessRules;
+  }
+
+  /** 设置业务规则列表（统一建模兼容方法） */
+  public void setBusinessRules(List<BusinessRuleMetadata> businessRules) {
+    this.businessRules = businessRules;
   }
 
   /** 获取字段通过名称 */

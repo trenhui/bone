@@ -1,6 +1,5 @@
-package com.bone.metadata.engine.domain.model;
+package com.bone.metadata.engine.domain.metadata;
 
-import com.bone.metadata.engine.domain.metadata.RelationshipMetadata;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -264,7 +263,7 @@ public class DefaultMetadataRegistry implements MetadataRegistry {
   }
 
   @Override
-  public FieldMetadata getFieldMetadata(String entityApiName, String fieldApiName) {
+  public SmartFieldMetadata getFieldMetadata(String entityApiName, String fieldApiName) {
     EntityMetadata entityMetadata = getEntityMetadata(entityApiName);
     if (entityMetadata == null || entityMetadata.getFields() == null) {
       return null;
@@ -278,7 +277,7 @@ public class DefaultMetadataRegistry implements MetadataRegistry {
   }
 
   @Override
-  public List<FieldMetadata> getAllFieldMetadata(String entityApiName) {
+  public List<SmartFieldMetadata> getAllFieldMetadata(String entityApiName) {
     EntityMetadata entityMetadata = getEntityMetadata(entityApiName);
     if (entityMetadata == null || entityMetadata.getFields() == null) {
       return Collections.emptyList();
@@ -287,7 +286,7 @@ public class DefaultMetadataRegistry implements MetadataRegistry {
   }
 
   @Override
-  public List<FieldMetadata> getCalculatedFieldMetadata(String entityApiName) {
+  public List<SmartFieldMetadata> getCalculatedFieldMetadata(String entityApiName) {
     EntityMetadata entityMetadata = getEntityMetadata(entityApiName);
     if (entityMetadata == null || entityMetadata.getFields() == null) {
       return Collections.emptyList();
@@ -300,7 +299,7 @@ public class DefaultMetadataRegistry implements MetadataRegistry {
   }
 
   @Override
-  public List<FieldMetadata> getVirtualFieldMetadata(String entityApiName) {
+  public List<SmartFieldMetadata> getVirtualFieldMetadata(String entityApiName) {
     EntityMetadata entityMetadata = getEntityMetadata(entityApiName);
     if (entityMetadata == null || entityMetadata.getFields() == null) {
       return Collections.emptyList();
@@ -389,10 +388,8 @@ public class DefaultMetadataRegistry implements MetadataRegistry {
 
     // 构建标签索引
     if (entityMetadata.getTags() != null) {
-      // 假设Tags是Collection类型，正确遍历
-      for (Map.Entry<String, String> tagEntry : entityMetadata.getTags().entrySet()) {
-        if (tagEntry != null && tagEntry.getKey() != null) {
-          String tag = tagEntry.getKey();
+      for (String tag : entityMetadata.getTags()) {
+        if (tag != null) {
           tagIndex.computeIfAbsent(tag, k -> new CopyOnWriteArrayList<>()).add(entityMetadata);
         }
       }
@@ -419,10 +416,8 @@ public class DefaultMetadataRegistry implements MetadataRegistry {
 
     // 从标签索引移除
     if (entityMetadata.getTags() != null) {
-      // 假设Tags是Collection类型，正确遍历
-      for (Map.Entry<String, String> tagEntry : entityMetadata.getTags().entrySet()) {
-        if (tagEntry != null && tagEntry.getKey() != null) {
-          String tag = tagEntry.getKey();
+      for (String tag : entityMetadata.getTags()) {
+        if (tag != null) {
           List<EntityMetadata> tagEntities = tagIndex.get(tag);
           if (tagEntities != null) {
             tagEntities.remove(entityMetadata);
@@ -469,7 +464,7 @@ public class DefaultMetadataRegistry implements MetadataRegistry {
   }
 
   // 通知字段更新事件
-  private void notifyFieldUpdated(String entityApiName, FieldMetadata fieldMetadata) {
+  private void notifyFieldUpdated(String entityApiName, SmartFieldMetadata fieldMetadata) {
     listeners.forEach(
         listener -> {
           try {
