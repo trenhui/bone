@@ -56,6 +56,11 @@
             <artifactId>bone-metadata-engine-core</artifactId>
             <version>1.0.0-SNAPSHOT</version>
         </dependency>
+        <dependency>
+            <groupId>com.bone</groupId>
+            <artifactId>bone-metadata-engine-runtime</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
