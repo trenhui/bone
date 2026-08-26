@@ -2,8 +2,8 @@ package com.bone.metadata.engine;
 
 import com.bone.metadata.engine.domain.model.EntityMetadata;
 import com.bone.metadata.engine.platform.MetadataPlatformBridge;
+import com.bone.metadata.engine.ports.registry.MetadataRegistry;
 import com.bone.metadata.engine.processor.MetadataProcessor;
-import com.bone.metadata.engine.registry.MetadataRegistry;
 import com.bone.metadata.engine.repository.MetadataRepository;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;

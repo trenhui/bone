@@ -3,7 +3,7 @@ package com.bone.metadata.engine.adapter;
 import com.bone.metadata.engine.domain.metadata.EntityMetadata;
 import com.bone.metadata.engine.domain.metadata.OperationMetadata;
 import com.bone.metadata.engine.domain.metadata.WorkflowMetadata;
-import com.bone.metadata.engine.spi.MetadataRepositoryPort;
+import com.bone.metadata.engine.ports.spi.MetadataRepositoryPort;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

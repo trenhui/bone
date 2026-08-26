@@ -49,9 +49,9 @@ public class MetadataEngineAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean(name = "registryMetadataRegistry")
-  public com.bone.metadata.engine.registry.MetadataRegistry registryMetadataRegistry() {
+  public com.bone.metadata.engine.ports.registry.MetadataRegistry registryMetadataRegistry() {
     // 创建registry包的MetadataRegistry实现
-    return new com.bone.metadata.engine.registry.MetadataRegistry() {
+    return new com.bone.metadata.engine.ports.registry.MetadataRegistry() {
       private final Map<String, Object> metadataMap = new ConcurrentHashMap<>();
 
       @Override
@@ -162,7 +162,7 @@ public class MetadataEngineAutoConfiguration {
   @Primary
   @ConditionalOnMissingBean
   public MetadataEngine metadataEngine(
-      com.bone.metadata.engine.registry.MetadataRegistry metadataRegistry,
+      com.bone.metadata.engine.ports.registry.MetadataRegistry metadataRegistry,
       MetadataRepository metadataRepository,
       CompositeMetadataProcessor compositeMetadataProcessor,
       ApplicationEventPublisher eventPublisher) {

@@ -1,4 +1,4 @@
-package com.bone.metadata.engine.spi;
+package com.bone.metadata.engine.ports.spi;
 
 import java.util.Optional;
 

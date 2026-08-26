@@ -1,4 +1,4 @@
-package com.bone.metadata.engine.registry;
+package com.bone.metadata.engine.ports.registry;
 
 /** 元数据注册表接口 负责元数据的注册、查找和管理功能 */
 public interface MetadataRegistry {

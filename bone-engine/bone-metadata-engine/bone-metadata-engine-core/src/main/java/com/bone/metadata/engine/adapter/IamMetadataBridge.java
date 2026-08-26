@@ -2,7 +2,7 @@ package com.bone.metadata.engine.adapter;
 
 import com.bone.core.tenant.context.TenantContext;
 import com.bone.metadata.engine.adapter.po.MetaEntityPo;
-import com.bone.metadata.engine.spi.MetadataPlatformBridge;
+import com.bone.metadata.engine.ports.spi.MetadataPlatformBridge;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.fasterxml.jackson.core.JsonProcessingException;
