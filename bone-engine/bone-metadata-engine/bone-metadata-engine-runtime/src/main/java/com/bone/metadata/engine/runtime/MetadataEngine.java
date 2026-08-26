@@ -149,17 +149,7 @@ public class MetadataEngine implements InitializingBean {
   private void initializeOperationMetadata() {
     try {
       log.info("Initializing operation metadata");
-      // 从仓库加载操作元数据
-      if (metadataRepository != null) {
-        List<?> operationMetadataList =
-            (List<?>) invokeRepositoryMethod(metadataRepository, "findAllOperations");
-        if (operationMetadataList != null) {
-          for (Object metadata : operationMetadataList) {
-            updateCache(metadata);
-          }
-          log.info("Loaded {} operation metadata entries", operationMetadataList.size());
-        }
-      }
+      // 从仓库加载操作元数据（骨架：真实加载由宿主接入后补充）
     } catch (Exception e) {
       log.error("Failed to initialize operation metadata: {}", e.getMessage(), e);
     }
@@ -229,12 +219,6 @@ public class MetadataEngine implements InitializingBean {
         if (nameObj instanceof String) {
           return (String) nameObj;
         }
-      }
-
-      // 尝试通过反射获取name属性
-      Object result = invokeIfPossibleReturn(metadata, "getName");
-      if (result != null) {
-        return result.toString();
       }
 
       // 使用类名作为后备
@@ -325,30 +309,7 @@ public class MetadataEngine implements InitializingBean {
     // 发布元数据变更事件
     notifyMetadataChanged(metadata, MetadataChangeType.CREATE);
 
-    // 如有注册器，同步注册
-    if (metadataRegistry != null) {
-      try {
-        // 尝试调用注册方法（适配不同接口）
-        invokeIfPossible(metadataRegistry, "registerMetadata", metadata);
-      } catch (Exception e) {
-        log.warn("Failed to register metadata with registry: {}", e.getMessage());
-      }
-    }
-
     return metadata;
-  }
-
-  /** 尝试调用对象的方法，捕获所有异常 */
-  private void invokeIfPossible(Object target, String methodName, Object... args) {
-    if (target == null) return;
-
-    try {
-      // 简化实现，实际项目中可使用反射或Spring的MethodInvoker
-      log.debug("Invoking method {} on {}", methodName, target.getClass().getName());
-      // 这里可以根据实际需要实现反射调用
-    } catch (Exception e) {
-      log.warn("Failed to invoke method: {}", e.getMessage());
-    }
   }
 
   /**
@@ -478,22 +439,6 @@ public class MetadataEngine implements InitializingBean {
     // 清除缓存
     entityMetadataCache.remove(entityName);
 
-    // 如果有仓库，尝试从仓库重新加载
-    if (metadataRepository != null) {
-      try {
-        // 尝试从仓库加载
-        Object metadata = invokeRepositoryMethod(metadataRepository, "findById", entityName);
-        if (metadata != null) {
-          entityMetadataMap.put(entityName, metadata);
-          updateCache(metadata);
-          log.info("Reloaded entity metadata from repository: {}", entityName);
-          return metadata;
-        }
-      } catch (Exception e) {
-        log.warn("Failed to reload metadata from repository: {}", e.getMessage());
-      }
-    }
-
     // 返回当前内存中的数据
     Object metadata = entityMetadataMap.get(entityName);
     if (metadata != null) {
@@ -501,13 +446,6 @@ public class MetadataEngine implements InitializingBean {
     }
 
     return metadata;
-  }
-
-  /** 尝试从仓库调用方法 */
-  private Object invokeRepositoryMethod(Object repository, String methodName, Object... args) {
-    // 简化实现，实际项目中可使用反射
-    log.debug("Attempting to invoke {} on repository", methodName);
-    return null;
   }
 
   /**
@@ -519,20 +457,6 @@ public class MetadataEngine implements InitializingBean {
    */
   public Object analyzeMetadataImpact(String oldEntityName, Object newMetadata) {
     try {
-      // 如果有分析器，使用分析器进行分析
-      if (metadataProcessor != null) {
-        try {
-          Object result =
-              invokeIfPossibleReturn(
-                  metadataProcessor, "analyzeImpact", oldEntityName, newMetadata);
-          if (result != null) {
-            return result;
-          }
-        } catch (Exception e) {
-          log.warn("Failed to use processor for impact analysis: {}", e.getMessage());
-        }
-      }
-
       // 默认分析结果
       Map<String, Object> result = new HashMap<>();
       result.put("impactLevel", "LOW");
@@ -545,29 +469,6 @@ public class MetadataEngine implements InitializingBean {
       result.put("impactLevel", "LOW");
       return result;
     }
-  }
-
-  /** 尝试调用对象的方法并返回结果 */
-  private Object invokeIfPossibleReturn(Object target, String methodName, Object... args) {
-    if (target == null) return null;
-
-    try {
-      // 简化实现
-      log.debug("Invoking method {} on {}", methodName, target.getClass().getName());
-      return null;
-    } catch (Exception e) {
-      log.warn("Failed to invoke method: {}", e.getMessage());
-      return null;
-    }
-  }
-
-  /** 转换元数据格式 */
-  private Object convertToModelEntityMetadata(Object metadata) {
-    // 简化实现，实际项目中应实现完整的转换逻辑
-    if (metadata instanceof Map) {
-      return new HashMap<>((Map<?, ?>) metadata);
-    }
-    return new HashMap<String, Object>();
   }
 
   /** 通知元数据变更 */
