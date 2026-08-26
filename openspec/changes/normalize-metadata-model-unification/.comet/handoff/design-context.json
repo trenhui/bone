@@ -1,0 +1,13 @@
+{
+  "change": "normalize-metadata-model-unification",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "02a253503c2099d54be6fc315ead643e4c0bb86343c0527405ff9c31d73b2378",
+  "files": [
+    { "path": "openspec/changes/normalize-metadata-model-unification/proposal.md", "sha256": "012ef2e94fcb354982dcb98f50df41c5a6c3b7cf5b2e293b2eaa9b653228e2a3" },
+    { "path": "openspec/changes/normalize-metadata-model-unification/design.md", "sha256": "53bebc1a9372cc92a6fea49eb05ad7ee33830cdad8a94e0f20291a177b98caac" },
+    { "path": "openspec/changes/normalize-metadata-model-unification/tasks.md", "sha256": "aa141dec54bf4195e67573d3a300f0e473e9d1d0b4b0c486a2970f551ed7c1ac" }
+  ]
+}

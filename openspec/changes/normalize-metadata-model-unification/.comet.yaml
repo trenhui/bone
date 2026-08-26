@@ -1,6 +1,6 @@
 workflow: full
 language: zh-CN
-phase: design
+phase: build
 context_compression: off
 build_mode: null
 build_pause: null
@@ -11,7 +11,7 @@ isolation: current
 verify_mode: null
 auto_transition: true
 base_ref: 9eeec11f1eb7d160c265667ebb290791e5b6a218
-design_doc: null
+design_doc: docs/superpowers/specs/2026-08-26-normalize-metadata-model-design.md
 plan: null
 verify_result: pending
 verify_failures: 0
@@ -23,8 +23,8 @@ archive_confirmation: null
 archived: false
 bound_branch: refactor/metadata-engine-deep-refactor
 direct_override: null
-handoff_context: null
-handoff_hash: null
+handoff_context: openspec/changes/normalize-metadata-model-unification/.comet/handoff/design-context.json
+handoff_hash: 02a253503c2099d54be6fc315ead643e4c0bb86343c0527405ff9c31d73b2378
 classic_profile: full
 classic_migration: 1
 run_id: cc0139be-1ee2-4b62-b5a1-324941218b31
