@@ -62,7 +62,7 @@ public class RuleEngineConfig {
     }
 
     @Override
-    public java.util.List<com.bone.metadata.engine.domain.model.BusinessRuleMetadata>
+    public java.util.List<com.bone.metadata.engine.domain.metadata.BusinessRuleMetadata>
         getApplicableRules(Object entity, String eventType) {
       if (entity instanceof com.bone.metadata.engine.domain.metadata.DynamicSmartEntity) {
         return delegate.getRulesForEvent(
@@ -74,13 +74,14 @@ public class RuleEngineConfig {
     }
 
     @Override
-    public boolean validateRule(com.bone.metadata.engine.domain.model.BusinessRuleMetadata rule) {
+    public boolean validateRule(
+        com.bone.metadata.engine.domain.metadata.BusinessRuleMetadata rule) {
       return delegate.validateRule(rule);
     }
 
     @Override
     public java.util.List<String> getRuleDependencies(
-        com.bone.metadata.engine.domain.model.BusinessRuleMetadata rule) {
+        com.bone.metadata.engine.domain.metadata.BusinessRuleMetadata rule) {
       return delegate.getRuleDependencies(rule);
     }
 
@@ -100,7 +101,7 @@ public class RuleEngineConfig {
     @Override
     public Object executeRule(
         com.bone.metadata.engine.domain.metadata.DynamicSmartEntity entity,
-        com.bone.metadata.engine.domain.model.BusinessRuleMetadata rule,
+        com.bone.metadata.engine.domain.metadata.BusinessRuleMetadata rule,
         java.util.Map<String, Object> context) {
       return delegate.executeRule(entity, rule, context);
     }

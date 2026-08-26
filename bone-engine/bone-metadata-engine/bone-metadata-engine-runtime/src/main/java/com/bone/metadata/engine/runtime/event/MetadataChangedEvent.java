@@ -1,6 +1,6 @@
 package com.bone.metadata.engine.runtime.event;
 
-import com.bone.metadata.engine.domain.model.EntityMetadata;
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
 
 /** 元数据变更事件 当元数据发生变更时触发 */
 public class MetadataChangedEvent {

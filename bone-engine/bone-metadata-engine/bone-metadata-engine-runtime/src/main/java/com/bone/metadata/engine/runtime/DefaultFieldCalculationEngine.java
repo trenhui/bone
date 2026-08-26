@@ -2,7 +2,7 @@ package com.bone.metadata.engine.runtime;
 
 import com.bone.metadata.engine.domain.exception.CalculationException;
 import com.bone.metadata.engine.domain.metadata.DynamicSmartEntity;
-import com.bone.metadata.engine.domain.model.FieldMetadata;
+import com.bone.metadata.engine.domain.metadata.SmartFieldMetadata;
 import com.bone.metadata.engine.runtime.util.CommonUtils;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -67,7 +67,7 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
   }
 
   @Override
-  public Object calculateField(DynamicSmartEntity entity, FieldMetadata fieldMetadata) {
+  public Object calculateField(DynamicSmartEntity entity, SmartFieldMetadata fieldMetadata) {
     try {
       // 检查参数有效性
       if (entity == null || fieldMetadata == null) {
@@ -120,7 +120,7 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
    * @param fieldMetadata the field metadata
    * @return true if the field is calculated
    */
-  private boolean isFieldCalculated(FieldMetadata fieldMetadata) {
+  private boolean isFieldCalculated(SmartFieldMetadata fieldMetadata) {
     if (fieldMetadata == null) {
       return false;
     }
@@ -142,10 +142,10 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
 
     try {
       // 从元数据引擎获取实体的所有字段元数据
-      List<FieldMetadata> allFields = getEntityFields(entity);
+      List<SmartFieldMetadata> allFields = getEntityFields(entity);
 
       // 筛选出可计算字段
-      List<FieldMetadata> calculatedFields =
+      List<SmartFieldMetadata> calculatedFields =
           allFields.stream().filter(this::isFieldCalculated).collect(Collectors.toList());
 
       if (calculatedFields.isEmpty()) {
@@ -157,10 +157,10 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
           "Found {} calculated fields for entity type: {}", calculatedFields.size(), entityType);
 
       // 按照依赖关系排序，确保依赖的字段先计算
-      List<FieldMetadata> sortedFields = sortFieldsByDependency(calculatedFields, entityType);
+      List<SmartFieldMetadata> sortedFields = sortFieldsByDependency(calculatedFields, entityType);
 
       // 计算每个字段
-      for (FieldMetadata field : sortedFields) {
+      for (SmartFieldMetadata field : sortedFields) {
         try {
           Object value = calculateField(entity, field);
           // 使用更通用的方式设置字段值
@@ -183,8 +183,8 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
    * @param entity the dynamic smart entity
    * @return list of field metadata
    */
-  private List<FieldMetadata> getEntityFields(DynamicSmartEntity entity) {
-    List<FieldMetadata> fields = new ArrayList<>();
+  private List<SmartFieldMetadata> getEntityFields(DynamicSmartEntity entity) {
+    List<SmartFieldMetadata> fields = new ArrayList<>();
 
     if (metadataEngine != null) {
       try {
@@ -209,7 +209,7 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
       Object result = getFieldsMethod.invoke(entity);
       if (result instanceof List) {
         @SuppressWarnings("unchecked")
-        List<FieldMetadata> entityFields = (List<FieldMetadata>) result;
+        List<SmartFieldMetadata> entityFields = (List<SmartFieldMetadata>) result;
         fields.addAll(entityFields);
       }
     } catch (Exception e) {
@@ -238,7 +238,7 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
   }
 
   @Override
-  public boolean validateExpression(FieldMetadata fieldMetadata) {
+  public boolean validateExpression(SmartFieldMetadata fieldMetadata) {
     if (fieldMetadata == null) {
       LOGGER.warn("Null fieldMetadata passed to validateExpression");
       return false;
@@ -569,8 +569,9 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
           Object value = getMethod.invoke(current, part);
 
           // 如果获取的值是可计算字段，先计算其值
-          if (value instanceof FieldMetadata && isFieldCalculated((FieldMetadata) value)) {
-            FieldMetadata fieldMeta = (FieldMetadata) value;
+          if (value instanceof SmartFieldMetadata
+              && isFieldCalculated((SmartFieldMetadata) value)) {
+            SmartFieldMetadata fieldMeta = (SmartFieldMetadata) value;
             if (visitedFields.contains(fieldMeta.getApiName())) {
               throw new CalculationException(
                   "Circular dependency in nested field reference",
@@ -675,7 +676,7 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
    * @throws Exception if calculation fails
    */
   private Object evaluateFieldCalculation(
-      DynamicSmartEntity entity, FieldMetadata fieldMetadata, Set<String> visitedFields)
+      DynamicSmartEntity entity, SmartFieldMetadata fieldMetadata, Set<String> visitedFields)
       throws Exception {
     String fieldName = fieldMetadata.getApiName();
 
@@ -861,8 +862,8 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
    * @param entityApiName the entity API name
    * @return sorted list of field metadata
    */
-  private List<FieldMetadata> sortFieldsByDependency(
-      List<FieldMetadata> fields, String entityApiName) {
+  private List<SmartFieldMetadata> sortFieldsByDependency(
+      List<SmartFieldMetadata> fields, String entityApiName) {
     try {
       LOGGER.debug("Sorting {} fields by dependency for entity: {}", fields.size(), entityApiName);
 
@@ -870,7 +871,7 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
       Map<String, Set<String>> dependencyGraph = new HashMap<>();
       Set<String> calculatedFields = new HashSet<>();
 
-      for (FieldMetadata field : fields) {
+      for (SmartFieldMetadata field : fields) {
         String fieldApiName = field.getApiName();
         Set<String> dependencies = new HashSet<>();
 
@@ -909,8 +910,8 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
    * @param fields list of field metadata
    * @return topologically sorted list of field metadata
    */
-  private List<FieldMetadata> topologicalSort(
-      Map<String, Set<String>> dependencyGraph, List<FieldMetadata> fields) {
+  private List<SmartFieldMetadata> topologicalSort(
+      Map<String, Set<String>> dependencyGraph, List<SmartFieldMetadata> fields) {
     List<String> sorted = new ArrayList<>();
     Set<String> visited = new HashSet<>();
     Set<String> visiting = new HashSet<>();
@@ -923,10 +924,10 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
     }
 
     // 根据排序结果重新排序字段列表
-    Map<String, FieldMetadata> fieldMap =
-        fields.stream().collect(Collectors.toMap(FieldMetadata::getApiName, f -> f));
+    Map<String, SmartFieldMetadata> fieldMap =
+        fields.stream().collect(Collectors.toMap(SmartFieldMetadata::getApiName, f -> f));
 
-    List<FieldMetadata> sortedFields = new ArrayList<>();
+    List<SmartFieldMetadata> sortedFields = new ArrayList<>();
     for (String fieldName : sorted) {
       if (fieldMap.containsKey(fieldName)) {
         sortedFields.add(fieldMap.get(fieldName));
@@ -934,7 +935,7 @@ public class DefaultFieldCalculationEngine implements FieldCalculationEngine {
     }
 
     // 添加没有依赖的字段
-    for (FieldMetadata field : fields) {
+    for (SmartFieldMetadata field : fields) {
       if (!sortedFields.contains(field)) {
         sortedFields.add(field);
       }

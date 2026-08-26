@@ -1,9 +1,9 @@
 package com.bone.metadata.engine.runtime.analysis;
 
+import com.bone.metadata.engine.domain.metadata.BusinessRuleMetadata;
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
 import com.bone.metadata.engine.domain.metadata.RelationshipMetadata;
-import com.bone.metadata.engine.domain.model.BusinessRuleMetadata;
-import com.bone.metadata.engine.domain.model.EntityMetadata;
-import com.bone.metadata.engine.domain.model.FieldMetadata;
+import com.bone.metadata.engine.domain.metadata.SmartFieldMetadata;
 import com.bone.metadata.engine.runtime.repository.MetadataRepository;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -50,10 +50,10 @@ public class MetadataImpactAnalyzer {
 
   private void analyzeFieldChanges(
       EntityMetadata oldMetadata, EntityMetadata newMetadata, ImpactAnalysisResult result) {
-    Map<String, FieldMetadata> oldFieldsMap = fieldsByName(oldMetadata);
-    Map<String, FieldMetadata> newFieldsMap = fieldsByName(newMetadata);
+    Map<String, SmartFieldMetadata> oldFieldsMap = fieldsByName(oldMetadata);
+    Map<String, SmartFieldMetadata> newFieldsMap = fieldsByName(newMetadata);
 
-    for (FieldMetadata oldField : oldFieldsMap.values()) {
+    for (SmartFieldMetadata oldField : oldFieldsMap.values()) {
       if (!newFieldsMap.containsKey(oldField.getName())) {
         result.addDeletedField(oldField.getName());
         if (oldField.isPrimaryKey()) {
@@ -66,8 +66,8 @@ public class MetadataImpactAnalyzer {
       }
     }
 
-    for (FieldMetadata newField : newFieldsMap.values()) {
-      FieldMetadata oldField = oldFieldsMap.get(newField.getName());
+    for (SmartFieldMetadata newField : newFieldsMap.values()) {
+      SmartFieldMetadata oldField = oldFieldsMap.get(newField.getName());
       if (oldField == null) {
         result.addAddedField(newField.getName());
         result.addLowImpact("新增字段: " + newField.getName());
@@ -187,13 +187,13 @@ public class MetadataImpactAnalyzer {
     }
   }
 
-  private static Map<String, FieldMetadata> fieldsByName(EntityMetadata metadata) {
+  private static Map<String, SmartFieldMetadata> fieldsByName(EntityMetadata metadata) {
     if (metadata.getFields() == null) {
       return Map.of();
     }
     return metadata.getFields().values().stream()
         .filter(f -> f.getName() != null)
-        .collect(Collectors.toMap(FieldMetadata::getName, f -> f, (a, b) -> a, HashMap::new));
+        .collect(Collectors.toMap(SmartFieldMetadata::getName, f -> f, (a, b) -> a, HashMap::new));
   }
 
   private static Map<String, RelationshipMetadata> relationsByApiName(EntityMetadata metadata) {

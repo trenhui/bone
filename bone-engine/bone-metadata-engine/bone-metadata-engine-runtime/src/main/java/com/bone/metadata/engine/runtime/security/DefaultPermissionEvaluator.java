@@ -1,7 +1,7 @@
 package com.bone.metadata.engine.runtime.security;
 
-import com.bone.metadata.engine.domain.model.EntityMetadata;
-import com.bone.metadata.engine.domain.model.FieldMetadata;
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
+import com.bone.metadata.engine.domain.metadata.SmartFieldMetadata;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -104,7 +104,7 @@ public class DefaultPermissionEvaluator implements PermissionEvaluator {
     // 管理员可以访问所有字段
     if (hasRole(authentication, "ADMIN")) {
       return metadata.getFields().values().stream()
-          .map(FieldMetadata::getApiName)
+          .map(SmartFieldMetadata::getApiName)
           .collect(Collectors.toList());
     }
 
@@ -132,7 +132,7 @@ public class DefaultPermissionEvaluator implements PermissionEvaluator {
 
               return false;
             })
-        .map(FieldMetadata::getApiName)
+        .map(SmartFieldMetadata::getApiName)
         .collect(Collectors.toList());
   }
 
@@ -144,7 +144,7 @@ public class DefaultPermissionEvaluator implements PermissionEvaluator {
       return false;
     }
 
-    FieldMetadata field = metadata.getField(fieldName);
+    SmartFieldMetadata field = metadata.getField(fieldName);
     if (field == null) {
       return false;
     }

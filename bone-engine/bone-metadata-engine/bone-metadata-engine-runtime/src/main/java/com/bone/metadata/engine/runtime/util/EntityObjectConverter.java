@@ -1,7 +1,7 @@
 package com.bone.metadata.engine.runtime.util;
 
-import com.bone.metadata.engine.domain.model.EntityMetadata;
-import com.bone.metadata.engine.domain.model.FieldMetadata;
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
+import com.bone.metadata.engine.domain.metadata.SmartFieldMetadata;
 import com.bone.metadata.engine.runtime.MetadataEngine;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -51,8 +51,8 @@ public class EntityObjectConverter {
 
       // 如果有元数据，使用元数据定义的字段
       if (metadata != null && metadata.getFields() != null) {
-        for (Map.Entry<String, FieldMetadata> entry : metadata.getFields().entrySet()) {
-          FieldMetadata fieldMetadata = entry.getValue();
+        for (Map.Entry<String, SmartFieldMetadata> entry : metadata.getFields().entrySet()) {
+          SmartFieldMetadata fieldMetadata = entry.getValue();
           String fieldName = fieldMetadata.getName();
           Object value = getFieldValue(entity, fieldName);
 
@@ -108,8 +108,8 @@ public class EntityObjectConverter {
       // 创建字段名到apiName的映射（用于反向查找）
       Map<String, String> apiNameToFieldName = new HashMap<>();
       if (metadata != null && metadata.getFields() != null) {
-        for (Map.Entry<String, FieldMetadata> entry : metadata.getFields().entrySet()) {
-          FieldMetadata fieldMetadata = entry.getValue();
+        for (Map.Entry<String, SmartFieldMetadata> entry : metadata.getFields().entrySet()) {
+          SmartFieldMetadata fieldMetadata = entry.getValue();
           if (fieldMetadata.getApiName() != null) {
             apiNameToFieldName.put(fieldMetadata.getApiName(), fieldMetadata.getName());
           }

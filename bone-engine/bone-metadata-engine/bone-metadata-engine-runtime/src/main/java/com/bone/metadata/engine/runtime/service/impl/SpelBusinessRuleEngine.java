@@ -1,8 +1,8 @@
 package com.bone.metadata.engine.runtime.service.impl;
 
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
 import com.bone.metadata.engine.domain.metadata.RuleResult;
-import com.bone.metadata.engine.domain.model.EntityMetadata;
-import com.bone.metadata.engine.domain.model.FieldMetadata;
+import com.bone.metadata.engine.domain.metadata.SmartFieldMetadata;
 import com.bone.metadata.engine.runtime.MetadataEngine;
 import com.bone.metadata.engine.runtime.service.BusinessRuleEngine;
 import java.util.*;
@@ -52,8 +52,8 @@ public class SpelBusinessRuleEngine implements BusinessRuleEngine {
 
       // 执行字段级验证规则
       if (metadata.getFields() != null) {
-        for (Map.Entry<String, FieldMetadata> entry : metadata.getFields().entrySet()) {
-          FieldMetadata fieldMetadata = entry.getValue();
+        for (Map.Entry<String, SmartFieldMetadata> entry : metadata.getFields().entrySet()) {
+          SmartFieldMetadata fieldMetadata = entry.getValue();
           executeFieldRules(fieldMetadata, entityData, context, result);
         }
       }
@@ -122,9 +122,9 @@ public class SpelBusinessRuleEngine implements BusinessRuleEngine {
       // 计算所有计算字段
       if (metadata.getFields() != null) {
         // 按依赖关系排序计算字段
-        List<FieldMetadata> calculatedFields = getCalculatedFieldsSortedByDependency(metadata);
+        List<SmartFieldMetadata> calculatedFields = getCalculatedFieldsSortedByDependency(metadata);
 
-        for (FieldMetadata fieldMetadata : calculatedFields) {
+        for (SmartFieldMetadata fieldMetadata : calculatedFields) {
           if (fieldMetadata.isCalculated() && fieldMetadata.getCalculationExpression() != null) {
             Object value = evaluateExpression(fieldMetadata.getCalculationExpression(), context);
             String fieldKey =
@@ -157,7 +157,7 @@ public class SpelBusinessRuleEngine implements BusinessRuleEngine {
       }
 
       // 查找字段元数据
-      FieldMetadata fieldMetadata = findFieldMetadata(metadata, fieldName);
+      SmartFieldMetadata fieldMetadata = findSmartFieldMetadata(metadata, fieldName);
       if (fieldMetadata == null
           || !fieldMetadata.isCalculated()
           || fieldMetadata.getCalculationExpression() == null) {
@@ -189,8 +189,8 @@ public class SpelBusinessRuleEngine implements BusinessRuleEngine {
 
       // 提取字段级规则
       if (metadata.getFields() != null) {
-        for (Map.Entry<String, FieldMetadata> entry : metadata.getFields().entrySet()) {
-          FieldMetadata fieldMetadata = entry.getValue();
+        for (Map.Entry<String, SmartFieldMetadata> entry : metadata.getFields().entrySet()) {
+          SmartFieldMetadata fieldMetadata = entry.getValue();
           // 这里可以提取字段级的验证规则
         }
       }
@@ -225,7 +225,7 @@ public class SpelBusinessRuleEngine implements BusinessRuleEngine {
   // 私有辅助方法
 
   private void executeFieldRules(
-      FieldMetadata fieldMetadata,
+      SmartFieldMetadata fieldMetadata,
       Map<String, Object> entityData,
       EvaluationContext context,
       RuleResult result) {
@@ -289,11 +289,11 @@ public class SpelBusinessRuleEngine implements BusinessRuleEngine {
     // 实现指定规则的执行逻辑
   }
 
-  private List<FieldMetadata> getCalculatedFieldsSortedByDependency(EntityMetadata metadata) {
-    List<FieldMetadata> calculatedFields = new ArrayList<>();
+  private List<SmartFieldMetadata> getCalculatedFieldsSortedByDependency(EntityMetadata metadata) {
+    List<SmartFieldMetadata> calculatedFields = new ArrayList<>();
 
     if (metadata.getFields() != null) {
-      for (FieldMetadata field : metadata.getFields().values()) {
+      for (SmartFieldMetadata field : metadata.getFields().values()) {
         if (field.isCalculated() && field.getCalculationExpression() != null) {
           calculatedFields.add(field);
         }
@@ -306,19 +306,19 @@ public class SpelBusinessRuleEngine implements BusinessRuleEngine {
     return calculatedFields;
   }
 
-  private FieldMetadata findFieldMetadata(EntityMetadata metadata, String fieldName) {
+  private SmartFieldMetadata findSmartFieldMetadata(EntityMetadata metadata, String fieldName) {
     if (metadata.getFields() == null) {
       return null;
     }
 
     // 先尝试通过名称查找
-    FieldMetadata field = metadata.getFields().get(fieldName);
+    SmartFieldMetadata field = metadata.getFields().get(fieldName);
     if (field != null) {
       return field;
     }
 
     // 再尝试通过apiName查找
-    for (FieldMetadata f : metadata.getFields().values()) {
+    for (SmartFieldMetadata f : metadata.getFields().values()) {
       if (fieldName.equals(f.getApiName())) {
         return f;
       }
@@ -371,17 +371,17 @@ public class SpelBusinessRuleEngine implements BusinessRuleEngine {
   }
 
   private void validateFieldLength(
-      FieldMetadata fieldMetadata, Map<String, Object> entityData, RuleResult result) {
+      SmartFieldMetadata fieldMetadata, Map<String, Object> entityData, RuleResult result) {
     // 实现长度验证逻辑
   }
 
   private void validateFieldRange(
-      FieldMetadata fieldMetadata, Map<String, Object> entityData, RuleResult result) {
+      SmartFieldMetadata fieldMetadata, Map<String, Object> entityData, RuleResult result) {
     // 实现数值范围验证逻辑
   }
 
   private void validateFieldPattern(
-      FieldMetadata fieldMetadata, Map<String, Object> entityData, RuleResult result) {
+      SmartFieldMetadata fieldMetadata, Map<String, Object> entityData, RuleResult result) {
     // 实现正则表达式验证逻辑
   }
 

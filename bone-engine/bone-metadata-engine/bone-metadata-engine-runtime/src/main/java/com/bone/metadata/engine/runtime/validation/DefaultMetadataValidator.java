@@ -280,23 +280,17 @@ public class DefaultMetadataValidator implements MetadataValidator {
 
   private void validateFieldMaxLength(SmartFieldMetadata field) {
     try {
-      // 使用反射获取dataType字段值
-      Object dataTypeObj = getFieldValue(field, "dataType");
-      if (dataTypeObj instanceof com.bone.metadata.engine.domain.model.FieldMetadata.DataType) {
-        com.bone.metadata.engine.domain.model.FieldMetadata.DataType dataType =
-            (com.bone.metadata.engine.domain.model.FieldMetadata.DataType) dataTypeObj;
-
-        if (dataType == com.bone.metadata.engine.domain.model.FieldMetadata.DataType.STRING
-            || dataType == com.bone.metadata.engine.domain.model.FieldMetadata.DataType.TEXT) {
-          Integer maxLength = getFieldMaxLength(field);
-          if (maxLength != null && (maxLength <= 0 || maxLength > 1048576)) {
-            // 简化实现，只记录日志不添加错误
-            String fieldName = field.getApiName();
-            log.warn(
-                "Invalid maxLength for field {}: {} (must be between 1 and 1048576)",
-                fieldName,
-                maxLength);
-          }
+      // 使用 type 字符串判断（metadata.SmartFieldMetadata.type 为 String）
+      String dataType = field.getType();
+      if ("STRING".equalsIgnoreCase(dataType) || "TEXT".equalsIgnoreCase(dataType)) {
+        Integer maxLength = getFieldMaxLength(field);
+        if (maxLength != null && (maxLength <= 0 || maxLength > 1048576)) {
+          // 简化实现，只记录日志不添加错误
+          String fieldName = field.getApiName();
+          log.warn(
+              "Invalid maxLength for field {}: {} (must be between 1 and 1048576)",
+              fieldName,
+              maxLength);
         }
       }
     } catch (Exception e) {

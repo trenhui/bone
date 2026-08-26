@@ -264,4 +264,44 @@ public class SmartFieldMetadata {
   public void setDefaultValue(String defaultValue) {
     this.defaultValue = defaultValue;
   }
+
+  /** 获取字段名（统一建模兼容：FieldMetadata.getName 别名） */
+  public String getName() {
+    return fieldName != null ? fieldName : apiName;
+  }
+
+  /** 获取数据类型（统一建模兼容：FieldMetadata.getDataType 别名） */
+  public String getDataType() {
+    return type;
+  }
+
+  /** 获取计算依赖字段（统一建模兼容：FieldMetadata.getDependentFields 别名） */
+  public java.util.List<String> getDependentFields() {
+    return calculationDependencies;
+  }
+
+  /** 设置计算依赖字段 */
+  public void setDependentFields(java.util.List<String> dependencies) {
+    this.calculationDependencies = dependencies;
+  }
+
+  /** 获取校验表达式（统一建模兼容） */
+  public String getValidationExpression() {
+    return expression != null ? expression : pattern;
+  }
+
+  /** 设置校验表达式 */
+  public void setValidationExpression(String validationExpression) {
+    this.expression = validationExpression;
+  }
+
+  /** 获取错误消息（统一建模兼容） */
+  public String getErrorMessage() {
+    return description;
+  }
+
+  /** 获取权限元数据（统一建模兼容） */
+  public FieldLevelSecurityMetadata getPermissionMetadata() {
+    return null;
+  }
 }

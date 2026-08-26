@@ -1,8 +1,8 @@
 package com.bone.metadata.engine.runtime.security;
 
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
 import com.bone.metadata.engine.domain.metadata.FieldLevelSecurityMetadata;
-import com.bone.metadata.engine.domain.model.EntityMetadata;
-import com.bone.metadata.engine.domain.model.FieldMetadata;
+import com.bone.metadata.engine.domain.metadata.SmartFieldMetadata;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,7 +78,7 @@ public class FieldLevelSecurityManager {
     for (Map.Entry<String, Object> entry : dataMap.entrySet()) {
       String fieldName = entry.getKey();
       Object value = entry.getValue();
-      FieldMetadata field = metadata.getField(fieldName);
+      SmartFieldMetadata field = metadata.getField(fieldName);
 
       // 如果字段不存在，直接保留原始值
       if (field == null) {
@@ -119,7 +119,7 @@ public class FieldLevelSecurityManager {
   private boolean hasFieldPermission(
       CustomAuthentication authentication,
       EntityMetadata entity,
-      FieldMetadata field,
+      SmartFieldMetadata field,
       String operation) {
     // 管理员拥有所有权限
     if (authentication.hasRole("ADMIN")) {
@@ -151,7 +151,7 @@ public class FieldLevelSecurityManager {
   private Object applyDataMasking(
       CustomAuthentication authentication,
       EntityMetadata entity,
-      FieldMetadata field,
+      SmartFieldMetadata field,
       Object value) {
     if (value == null) {
       return null;
@@ -183,7 +183,7 @@ public class FieldLevelSecurityManager {
   }
 
   /** 解密加密字段值 */
-  private Object decryptValue(FieldMetadata field, Object encryptedValue) {
+  private Object decryptValue(SmartFieldMetadata field, Object encryptedValue) {
     try {
       // 实际项目中应该使用加密服务进行解密
       // 这里简化处理，实际应该调用加密服务
@@ -242,7 +242,7 @@ public class FieldLevelSecurityManager {
 
     return metadata.getFields().values().stream()
         .filter(field -> hasFieldPermission(authentication, metadata, field, "READ"))
-        .map(FieldMetadata::getApiName)
+        .map(SmartFieldMetadata::getApiName)
         .collect(Collectors.toList());
   }
 

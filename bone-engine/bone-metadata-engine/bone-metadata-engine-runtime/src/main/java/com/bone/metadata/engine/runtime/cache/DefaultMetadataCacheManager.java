@@ -1,6 +1,6 @@
 package com.bone.metadata.engine.runtime.cache;
 
-import com.bone.metadata.engine.domain.model.EntityMetadata;
+import com.bone.metadata.engine.domain.metadata.EntityMetadata;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;

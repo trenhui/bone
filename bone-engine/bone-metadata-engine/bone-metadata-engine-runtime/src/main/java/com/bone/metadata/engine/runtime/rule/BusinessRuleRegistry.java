@@ -1,6 +1,6 @@
 package com.bone.metadata.engine.runtime.rule;
 
-import com.bone.metadata.engine.domain.model.BusinessRuleMetadata;
+import com.bone.metadata.engine.domain.metadata.BusinessRuleMetadata;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;

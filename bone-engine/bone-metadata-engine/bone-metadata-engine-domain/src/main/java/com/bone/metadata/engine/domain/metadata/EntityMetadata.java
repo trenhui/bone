@@ -317,12 +317,17 @@ public class EntityMetadata implements Cloneable {
     if (field == null) {
       // 尝试不带前缀的字段名
       for (SmartFieldMetadata f : fields.values()) {
-        if (f.getFieldName().equals(fieldName)) {
+        if (f.getFieldName() != null && f.getFieldName().equals(fieldName)) {
           return f;
         }
       }
     }
     return field;
+  }
+
+  /** 获取指定字段（统一建模兼容：EntityMetadata.getField 别名） */
+  public SmartFieldMetadata getField(String fieldName) {
+    return getFieldByName(fieldName);
   }
 
   /** 获取必填字段 */

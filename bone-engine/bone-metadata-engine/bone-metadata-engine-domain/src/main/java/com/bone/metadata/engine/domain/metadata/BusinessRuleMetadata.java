@@ -8,8 +8,29 @@ import lombok.Setter;
 @Setter
 public class BusinessRuleMetadata {
 
+  // 规则ID（统一建模兼容）
+  private String id;
+
+  // 规则API名称（统一建模兼容）
+  private String apiName;
+
   // 规则名称
   private String name;
+
+  // 关联实体API名称（统一建模兼容）
+  private String entityName;
+
+  // 规则类型（统一建模兼容）
+  private String ruleType;
+
+  // 是否启用（统一建模兼容）
+  private boolean active = true;
+
+  // 规则所属领域（统一建模兼容）
+  private String domain;
+
+  // 触发事件列表（统一建模兼容）
+  private java.util.List<String> triggerEvents = new java.util.ArrayList<>();
 
   // 规则标签
   private String label;
@@ -78,5 +99,29 @@ public class BusinessRuleMetadata {
   /** 设置错误消息 */
   public void setErrorMessage(String errorMessage) {
     this.errorMessage = errorMessage;
+  }
+
+  /** 添加触发事件 */
+  public void addTriggerEvent(String event) {
+    if (triggerEvents == null) {
+      triggerEvents = new java.util.ArrayList<>();
+    }
+    if (!triggerEvents.contains(event)) {
+      triggerEvents.add(event);
+    }
+  }
+
+  /** 判断是否触发指定事件 */
+  public boolean triggersEvent(String event) {
+    return triggerEvents != null && triggerEvents.contains(event);
+  }
+
+  /** 获取依赖字段列表（统一建模兼容） */
+  public java.util.List<String> getDependentFields() {
+    java.util.List<String> deps = new java.util.ArrayList<>();
+    if (fieldName != null && !fieldName.isEmpty()) {
+      deps.add(fieldName);
+    }
+    return deps;
   }
 }

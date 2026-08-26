@@ -1,7 +1,7 @@
 package com.bone.metadata.engine.runtime;
 
 import com.bone.metadata.engine.domain.metadata.DynamicSmartEntity;
-import com.bone.metadata.engine.domain.model.FieldMetadata;
+import com.bone.metadata.engine.domain.metadata.SmartFieldMetadata;
 
 /** 字段计算引擎接口 负责计算实体中的计算字段值 */
 public interface FieldCalculationEngine {
@@ -14,7 +14,8 @@ public interface FieldCalculationEngine {
    * @return 计算得到的字段值
    * @throws Exception 计算过程中发生错误时抛出
    */
-  Object calculateField(DynamicSmartEntity entity, FieldMetadata fieldMetadata) throws Exception;
+  Object calculateField(DynamicSmartEntity entity, SmartFieldMetadata fieldMetadata)
+      throws Exception;
 
   /**
    * 计算实体的所有计算字段
@@ -30,7 +31,7 @@ public interface FieldCalculationEngine {
    * @param fieldMetadata 字段元数据
    * @return 字段表达式是否有效
    */
-  boolean validateExpression(FieldMetadata fieldMetadata);
+  boolean validateExpression(SmartFieldMetadata fieldMetadata);
 
   /**
    * 获取表达式中使用的所有字段

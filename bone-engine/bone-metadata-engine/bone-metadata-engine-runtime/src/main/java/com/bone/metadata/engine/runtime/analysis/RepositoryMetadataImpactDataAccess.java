@@ -9,17 +9,17 @@ import java.util.List;
 public class RepositoryMetadataImpactDataAccess implements MetadataImpactDataAccess {
 
   private final MetadataRepository metadataRepository;
-  private final List<com.bone.metadata.engine.domain.model.EntityMetadata> entityCatalog;
+  private final List<com.bone.metadata.engine.domain.metadata.EntityMetadata> entityCatalog;
 
   public RepositoryMetadataImpactDataAccess(
       MetadataRepository metadataRepository,
-      List<com.bone.metadata.engine.domain.model.EntityMetadata> entityCatalog) {
+      List<com.bone.metadata.engine.domain.metadata.EntityMetadata> entityCatalog) {
     this.metadataRepository = metadataRepository;
     this.entityCatalog = entityCatalog != null ? List.copyOf(entityCatalog) : List.of();
   }
 
   @Override
-  public List<com.bone.metadata.engine.domain.model.EntityMetadata> findAllEntities() {
+  public List<com.bone.metadata.engine.domain.metadata.EntityMetadata> findAllEntities() {
     return entityCatalog;
   }
 
