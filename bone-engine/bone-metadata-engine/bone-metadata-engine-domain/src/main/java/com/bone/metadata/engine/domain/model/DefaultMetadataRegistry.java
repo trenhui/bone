@@ -1,5 +1,6 @@
 package com.bone.metadata.engine.domain.model;
 
+import com.bone.metadata.engine.domain.metadata.RelationshipMetadata;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;

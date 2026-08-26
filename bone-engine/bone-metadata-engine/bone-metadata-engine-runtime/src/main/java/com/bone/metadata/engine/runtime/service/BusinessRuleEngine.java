@@ -1,6 +1,6 @@
 package com.bone.metadata.engine.runtime.service;
 
-import com.bone.metadata.engine.domain.model.RuleResult;
+import com.bone.metadata.engine.domain.metadata.RuleResult;
 import java.util.List;
 import java.util.Map;
 

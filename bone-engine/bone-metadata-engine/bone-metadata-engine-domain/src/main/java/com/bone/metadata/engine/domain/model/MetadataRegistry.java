@@ -1,5 +1,6 @@
 package com.bone.metadata.engine.domain.model;
 
+import com.bone.metadata.engine.domain.metadata.RelationshipMetadata;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;

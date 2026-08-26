@@ -1,4 +1,4 @@
-package com.bone.metadata.engine.domain.model;
+package com.bone.metadata.engine.domain.metadata;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.bone.metadata.engine.domain.model;
+package com.bone.metadata.engine.domain.metadata;
 
 import com.bone.metadata.engine.domain.core.SmartBaseEntity;
 import java.io.Serializable;

@@ -1,7 +1,7 @@
 package com.bone.metadata.engine.runtime;
 
 import com.bone.metadata.engine.domain.exception.CalculationException;
-import com.bone.metadata.engine.domain.model.DynamicSmartEntity;
+import com.bone.metadata.engine.domain.metadata.DynamicSmartEntity;
 import com.bone.metadata.engine.domain.model.FieldMetadata;
 import com.bone.metadata.engine.runtime.util.CommonUtils;
 import java.lang.reflect.Field;

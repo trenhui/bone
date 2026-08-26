@@ -1,11 +1,9 @@
-package com.bone.metadata.engine.domain.model;
+package com.bone.metadata.engine.domain.metadata;
 
 import java.util.Map;
 import lombok.Data;
 
-/**
- * 关系元数据模型 注意：此类与org.bone.engine.metadata.model.RelationshipMetadata存在功能重叠 当前版本保持独立实现，后续可考虑统一元数据模型
- */
+/** 关系元数据模型 用于描述实体之间的关联关系。 */
 @Data
 public class RelationshipMetadata {
 

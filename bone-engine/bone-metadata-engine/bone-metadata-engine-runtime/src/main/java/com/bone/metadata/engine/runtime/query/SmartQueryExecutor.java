@@ -2,8 +2,8 @@ package com.bone.metadata.engine.runtime.query;
 
 import com.bone.metadata.engine.domain.core.SmartBaseEntity;
 import com.bone.metadata.engine.domain.exception.QueryExecutionException;
+import com.bone.metadata.engine.domain.metadata.DynamicSmartEntity;
 import com.bone.metadata.engine.domain.metadata.EntityMetadata;
-import com.bone.metadata.engine.domain.model.DynamicSmartEntity;
 import com.bone.metadata.engine.runtime.context.UserContext;
 import com.bone.metadata.engine.runtime.metadata.MetadataRegistry;
 import com.bone.metadata.engine.runtime.query.ast.QueryAst;

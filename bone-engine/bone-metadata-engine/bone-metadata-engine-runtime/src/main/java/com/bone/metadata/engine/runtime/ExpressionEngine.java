@@ -1,9 +1,9 @@
 package com.bone.metadata.engine.runtime;
 
 import com.bone.metadata.engine.domain.core.SmartBaseEntity;
+import com.bone.metadata.engine.domain.metadata.DynamicSmartEntity;
 import com.bone.metadata.engine.domain.metadata.EntityMetadata;
 import com.bone.metadata.engine.domain.metadata.SmartFieldMetadata;
-import com.bone.metadata.engine.domain.model.DynamicSmartEntity;
 import com.bone.metadata.engine.runtime.expression.ExpressionEvaluator;
 import com.bone.metadata.engine.runtime.util.CommonUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;

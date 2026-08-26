@@ -1,5 +1,6 @@
 package com.bone.metadata.engine.domain.model;
 
+import com.bone.metadata.engine.domain.metadata.RelationshipMetadata;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;

@@ -1,8 +1,8 @@
 package com.bone.metadata.engine.runtime.service.impl;
 
+import com.bone.metadata.engine.domain.metadata.RuleResult;
 import com.bone.metadata.engine.domain.model.EntityMetadata;
 import com.bone.metadata.engine.domain.model.FieldMetadata;
-import com.bone.metadata.engine.domain.model.RuleResult;
 import com.bone.metadata.engine.runtime.MetadataEngine;
 import com.bone.metadata.engine.runtime.service.BusinessRuleEngine;
 import java.util.*;

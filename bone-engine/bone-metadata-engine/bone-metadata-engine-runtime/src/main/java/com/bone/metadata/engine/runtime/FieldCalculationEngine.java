@@ -1,6 +1,6 @@
 package com.bone.metadata.engine.runtime;
 
-import com.bone.metadata.engine.domain.model.DynamicSmartEntity;
+import com.bone.metadata.engine.domain.metadata.DynamicSmartEntity;
 import com.bone.metadata.engine.domain.model.FieldMetadata;
 
 /** 字段计算引擎接口 负责计算实体中的计算字段值 */

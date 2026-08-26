@@ -1,6 +1,5 @@
 package com.bone.metadata.engine.domain.metadata;
 
-import com.bone.metadata.engine.domain.model.PermissionMetadata;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;

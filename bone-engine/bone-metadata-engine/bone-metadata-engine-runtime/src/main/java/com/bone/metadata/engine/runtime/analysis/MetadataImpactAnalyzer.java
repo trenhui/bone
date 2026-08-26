@@ -1,9 +1,9 @@
 package com.bone.metadata.engine.runtime.analysis;
 
+import com.bone.metadata.engine.domain.metadata.RelationshipMetadata;
 import com.bone.metadata.engine.domain.model.BusinessRuleMetadata;
 import com.bone.metadata.engine.domain.model.EntityMetadata;
 import com.bone.metadata.engine.domain.model.FieldMetadata;
-import com.bone.metadata.engine.domain.model.RelationshipMetadata;
 import com.bone.metadata.engine.runtime.repository.MetadataRepository;
 import java.util.HashMap;
 import java.util.HashSet;
