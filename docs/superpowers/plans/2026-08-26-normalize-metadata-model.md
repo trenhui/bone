@@ -2,6 +2,7 @@
 change: normalize-metadata-model-unification
 design-doc: docs/superpowers/specs/2026-08-26-normalize-metadata-model-design.md
 base-ref: 5f2a9f9d2b8babf5b81251db4453e4f02127c667
+archived-with: 2026-08-26-normalize-metadata-model-unification
 ---
 
 # Implementation Plan: 统一 metadata 引擎双重建模体系（删除 domain.model）

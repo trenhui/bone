@@ -2,6 +2,8 @@
 comet_change: normalize-metadata-model-unification
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-08-26-normalize-metadata-model-unification
+status: final
 ---
 
 # 深度设计：统一 metadata 引擎双重建模体系
