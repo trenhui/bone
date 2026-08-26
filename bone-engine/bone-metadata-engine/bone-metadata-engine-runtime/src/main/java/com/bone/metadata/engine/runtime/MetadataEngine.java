@@ -2,7 +2,7 @@ package com.bone.metadata.engine.runtime;
 
 import com.bone.metadata.engine.domain.model.EntityMetadata;
 import com.bone.metadata.engine.ports.registry.MetadataRegistry;
-import com.bone.metadata.engine.runtime.platform.MetadataPlatformBridge;
+import com.bone.metadata.engine.ports.spi.MetadataPlatformBridge;
 import com.bone.metadata.engine.runtime.processor.MetadataProcessor;
 import com.bone.metadata.engine.runtime.repository.MetadataRepository;
 import java.util.*;
