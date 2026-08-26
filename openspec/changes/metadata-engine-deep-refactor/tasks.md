@@ -7,11 +7,11 @@
 
 ## 前置 P0：归一与去重（拆分前提）
 - [ ] P0.1 归一 `model/*` ↔ `metadata/*` 重复实体（EntityMetadata/MetadataRegistry/BusinessRuleMetadata/SmartFieldMetadata/OperationMetadata）：统一到 `metadata/*`，删 `model/*`，引用改 metadata，全量编译
-- [ ] P0.2 合并重复端口：`platform/` 与 `spi/` 的 `MetadataPlatformBridge` 合并为单一 ports 接口；`processor/` 与 `metadata/processor/` 的 `MetadataProcessor` 合并或分层
-- [ ] P0.3 消除 domain 内依赖倒置：`analysis/`、`metadata/OperationRegistry` 改经 `MetadataImpactDataAccess`/spi 端口访问仓储
-- [ ] P0.4 domain 算法包去 Spring 注解（expression/rule/calculation/validation/transformation/impact/query）
+- [x] P0.2 合并重复端口：`platform/` 与 `spi/` 的 `MetadataPlatformBridge` 合并为单一 ports 接口（已删除 runtime.platform 重复，统一到 ports.spi，runtime+starter 构建通过）。`processor/` 与 `metadata/processor/` 的 `MetadataProcessor` 为**不同接口**（7 方法 validate/transform vs 5 方法 processAll），非重复，不合并
+- [x] P0.3 消除 domain 内依赖倒置：`analysis/`、`metadata/OperationRegistry` 现位于 runtime，依赖仓储属 runtime 合法职责，无 domain 反向依赖
+- [x] P0.4 domain 算法包去 Spring 注解：domain 模块 0 个 Spring import，已纯净
 
-> **说明**：P0 为拆分前提，但当前以"全部实现类收在 runtime（自包含）"规避了跨模块反向依赖，P0 改为可选归一。P0.1 中 model 与 metadata 的重复类结构不同（model 旧、metadata 新），合并为重大行为重构。
+> **说明**：P0 为拆分前提，但当前以"全部实现类收在 runtime（自包含）"规避了跨模块反向依赖。P0.1 中 model 与 metadata 的重复类**结构不同**（model 旧用 FieldMetadata、metadata 新用 SmartFieldMetadata），分属遗留引擎与现代适配器两条路径，强行合并为重大行为重构，评估后不盲改。
 
 ## P1：建 4 模块骨架
 - [x] P1.1 创建 `bone-metadata-engine-domain`（artifactId: bone-metadata-engine-domain，包 `com.bone.metadata.engine.domain`）

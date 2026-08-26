@@ -35,14 +35,20 @@
 
 - 批量 sed 曾产生 `engine.runtime.runtime.*` / `engine.runtime.domain.*` 双包名，已全局修复（`metadata/processor` 原 core 文件 package 残留 `engine.domain.metadata.processor`）。
 
+## 已完成（补充）
+
+| 任务 | 状态 | 证据 |
+|------|------|------|
+| P0.2 合并重复 platform 端口 | ✅ | 删除 runtime.platform.MetadataPlatformBridge/Noop（1 方法重复版），统一到 ports.spi（3 方法）；MetadataEngine/SdkMetadataPlatformBridge/MetadataEnginePlatformAutoConfiguration 改用 ports.spi；runtime+starter 构建通过 |
+| P0.3 依赖倒置 | ✅（架构已规避） | analysis/OperationRegistry 现位于 runtime，依赖仓储属 runtime 合法职责，无 domain 反向依赖 |
+| P0.4 domain 去 Spring | ✅ | domain 模块 0 个 Spring import，已纯净 |
+
 ## 未完成（可选，非阻塞）
 
 | 任务 | 说明 | 风险 |
 |------|------|------|
-| P0.1 归一 model↔metadata 重复实体 | `EntityMetadata`/`BusinessRuleMetadata`/`OperationMetadata`/`SmartFieldMetadata` 在 model 与 metadata 是**不同结构**（model 旧、metadata 新），合并为重大行为重构，影响 ~20 文件 | 高 |
-| P0.2 合并 platform/processor 重复端口 | 需跨模块移动接口 | 中 |
-| P0.3 消除 analysis 依赖倒置 | 需 SPI 端口重构 | 中 |
-| P0.4 domain 算法包去 Spring 注解 | 需剥离注解 | 中 |
+| P0.1 归一 model↔metadata 重复实体 | `model.EntityMetadata`（用 FieldMetadata）与 `metadata.EntityMetadata`（用 SmartFieldMetadata）**结构不同**，分属遗留引擎与现代适配器两条路径，23 文件引用 model.*。合并=重写遗留引擎用现代模型，重大行为重构 | 高（不盲改） |
+| P0.2 合并 processor 重复端口 | `runtime.processor.MetadataProcessor`（7 方法 validate/transform）与 `runtime.metadata.processor.MetadataProcessor`（5 方法 processAll，用 EntityMetadata）为**不同接口**，非重复 | 非重复不合并 |
 | P3.2 清理 MetadataEngine 反射兜底 | `MetadataEngine` 为遗留简化实现（Object/Maps + invokeIfPossible），非主路径 | 中 |
 | P4.2 server @EnableSqlRepositories 运行时装配验证 | 需完整 Spring 上下文启动 | 低 |
 | P5.2/P5.3 引擎+server 集成测试 | 需 H2 + SDK Repository 引导 | 中 |
