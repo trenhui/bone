@@ -1,10 +1,11 @@
 package com.bone.blueprint.application.command.handler;
 
 import com.bone.blueprint.application.command.cmd.CancelOrderCommand;
-import com.bone.blueprint.application.support.AggregatePersistence;
-import com.bone.blueprint.application.support.OrderLookup;
+import com.bone.blueprint.domain.gateway.AggregatePersister;
+import com.bone.blueprint.domain.gateway.TenantProvider;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.repository.OrderRepository;
+import com.bone.blueprint.domain.service.OrderLookup;
 import com.bone.core.domain.event.DomainEventPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -16,11 +17,15 @@ public class CancelOrderCommandHandler {
 
   private final OrderRepository orderRepository;
   private final DomainEventPublisher domainEventPublisher;
+  private final TenantProvider tenantProvider;
+  private final AggregatePersister aggregatePersister;
 
   @Transactional
   public void handle(CancelOrderCommand cmd) {
-    Order order = OrderLookup.requireById(orderRepository, cmd.getOrderId());
+    Order order =
+        OrderLookup.requireById(
+            orderRepository, cmd.getOrderId(), tenantProvider.currentTenantId());
     order.cancel();
-    AggregatePersistence.updateAndPublishEvents(orderRepository, domainEventPublisher, order);
+    aggregatePersister.updateAndPublishEvents(orderRepository, domainEventPublisher, order);
   }
 }

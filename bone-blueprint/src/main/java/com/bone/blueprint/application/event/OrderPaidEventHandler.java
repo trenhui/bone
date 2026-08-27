@@ -1,11 +1,11 @@
 package com.bone.blueprint.application.event;
 
-import com.bone.blueprint.application.support.OrderLookup;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.order.OrderItem;
 import com.bone.blueprint.domain.order.event.OrderPaidEvent;
 import com.bone.blueprint.domain.repository.OrderRepository;
+import com.bone.blueprint.domain.service.OrderLookup;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -25,7 +25,7 @@ public class OrderPaidEventHandler {
   public void handle(OrderPaidEvent event) {
     log.info("订单支付成功: orderId={}, tenantId={}", event.orderId(), event.tenantId());
 
-    Order order = OrderLookup.requireById(orderRepository, event.orderId());
+    Order order = OrderLookup.requireById(orderRepository, event.orderId(), event.tenantId());
     for (OrderItem item : order.getItems()) {
       inventoryGateway.confirmStock(event.orderId(), item.getProductId(), item.getQuantity());
     }

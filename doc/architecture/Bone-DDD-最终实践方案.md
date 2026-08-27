@@ -27,7 +27,7 @@
 
 ### 参考级（大型模块按需启用）
 - D0/D1/D2 纯净度分级（§17）
-- application/service 三类分类 S1/S2/S3（§14.3.1）
+- application 共享逻辑按性质分流（§14.3.1，**禁止 `application/service`**）
 - Facade 触发条件 F1/F2/F3（§14.3.2）
 - 读侧决策树、持久化对象决策树
 
@@ -308,7 +308,7 @@ static final ArchRule no_direct_iam_domain_dependency =
 | 维度 | 要求 |
 |------|------|
 | 分层 | §14.1 标准树（或 §14.2 极简树） |
-| 应用层 | 基础包 `command` / `query`；可选 `event` / `integration` / 满足 §14.3.1 约束的 `service`；ADR 例外可加 `orchestration`（§14.3）；满足 §14.3.2 F1/F2/F3 可加 `facade` |
+| 应用层 | 基础包 `command` / `query`；可选 `event` / `integration`；ADR 例外可加 `orchestration`（§14.3）；满足 §14.3.2 F1/F2/F3 可加 `facade`；**禁止 `application/service`**（§14.3.1 按性质分流） |
 | 入站 | Controller → `*CommandHandler` / `*QueryHandler`（或 ADR 批准的 `*Orchestrator`，或 §14.3.2 条件下的 `*Facade`）；**禁止** Controller 直接注入 `application/service`、`domain/service`（领域服务）、`domain/repository`（ArchUnit 见 §21 #11/#12/#17） |
 | 命名 | 应用层命令/查询类名 `*Command` / `*Query`（禁 `*Cmd` / `*Qry`）；Handler 类名 `*CommandHandler` / `*QueryHandler`；adapter 入参 DTO 见 [§23](#23-命名约定) 分层表；端口 `domain/repository/*Repository`；异常 `BizException` |
 | 禁止 | `application/usecase/**`、`*UseCase`、任何自造 `@UseCase` / `UseCaseExecutor`；**禁止**业务模块依赖已删除的 `com.bone.core.usecase.*` |
@@ -494,8 +494,8 @@ com.bone.{module}/
 │   ├── event/                     # 可选：领域事件订阅 / 应用事件转发
 │   ├── integration/               # 可选：入站消息编排（MQ / Kafka 消费）
 │   ├── orchestration/             # ADR 例外：跨 Handler 编排（§14.3）
-│   ├── facade/                    # 条件追加：多入口 / SDK 门面（§14.3.2）
-│   └── service/                   # §14.3.1 约束（共享逻辑，禁 Controller 直注）
+│   └── facade/                    # 条件追加：多入口 / SDK 门面（§14.3.2）
+│   # 禁止 application/service——共享逻辑按性质分流（领域规则→domain/service；技术横切→domain 端口+infrastructure 实现，§14.3.1）
 ├── domain/
 │   ├── {aggregate}/
 │   ├── repository/
@@ -536,7 +536,7 @@ com.bone.{module}/
 | `application/integration/` | 入站消息编排（如 MQ 消费、Kafka Source） | 可选 |
 | `application/orchestration/` | 跨多 Handler 编排（`*Orchestrator`） | **ADR 例外** |
 | `application/facade/` | 多入口 / Client SDK 入站门面（`*Facade`） | **§14.3.2 条件追加** |
-| `application/service/` | 多 Handler 共享逻辑（`*Service`） | **§14.3.1 约束** |
+| ~~`application/service/`~~ | ~~多 Handler 共享逻辑（`*Service`）~~ | **反模式，禁止**（§14.3.1：共享逻辑按性质分流 domain / infrastructure） |
 
 **禁止**（PR/ArchUnit 拦截）：
 
@@ -561,35 +561,32 @@ com.bone.{module}/
 
 - 仅当「跨 2+ 聚合 Handler 编排 + 无法在单一 Handler 表达事务/补偿」时，可使用 **`application/orchestration/*Orchestrator`**（**不叫 UseCase**），ADR 写明编排步骤、补偿策略、是否引入 Saga。
 - **反例**（不构成例外，应改写为单 Handler 或 Orchestrator 内联）：
-  - 「Handler A 同步调用 Handler B」且 B 仅复用查询 → 把查询下沉到共享 `application/service/*Service`（§14.3.1）。
-  - 「多个 Handler 顺序调用、无补偿」→ 合并到一个 Handler，或抽取共享 `*Service`；不必引入 Orchestrator。
+  - 「Handler A 同步调用 Handler B」且 B 仅复用查询 → 查询本属读侧，下沉到 `application/query` 复用读端口；不引入 `*Service`。
+  - 「多个 Handler 顺序调用、无补偿」→ 合并到一个 Handler；不必引入 Orchestrator。
 
 > 能力声明走 `@Capability`，业务执行走 Handler（必要时 Orchestrator）；详见 [§20](#20-flow--ai-编排可选)。
 
-#### 14.3.1 `application/service` 约束
+#### 14.3.1 应用层「共享逻辑」按性质分流（禁止 `application/service`）
 
-`application/service/` 用于多个 Handler **共享**非门面型逻辑。**两条铁律 + 两条建议**即可：
+**结论：应用层不设 `*Service`。** AppService 已拆成 `*CommandHandler` / `*QueryHandler`（CQRS 用例执行器），应用层保持**薄**——只含 Handler（编排）+ Command/Query/DTO。任何被多个 Handler 复用的逻辑，**不按「共享」这一事实**决定位置，而**按逻辑性质分流**：
 
-**铁律**：
+| 逻辑性质 | 判断 | 归处 |
+|----------|------|------|
+| **领域规则 / 不变量**（跨聚合或跨实体的纯领域行为） | 是否表达业务规则？ | `domain/service/*DomainService`（领域服务，Handler 编排调用） |
+| **技术横切**（租户上下文、保存+发布事件、调用外部网关） | 依赖具体技术？ | `domain/gateway/*Port`（端口接口）+ `infrastructure/**/*Impl`（实现），Handler 经端口注入 |
+| **用例级编排组合**（多个 Handler 复用的编排步骤） | 是否可并入某 Handler？ | Handler 内联；或 `application/orchestration/*Orchestrator`（ADR 例外） |
 
-1. **禁止** `Controller` 直接注入 `application/service/*Service`（入站统一为 Handler / Orchestrator，见 §12.1 P0-7）——**ArchUnit #11 机器拦截**。
-2. **禁止** `*Service` 承载聚合不变量（不变量在聚合根或领域服务，见 §12.1 P0-2）——**CR 拦截**，ArchUnit 无对应规则。
+**为什么禁止 `application/service`**：
 
-**建议**（CR 经验，不机器拦截）：
+1. **避免「准巨型 Service」反模式回潮**：留一个应用层共享逻辑层，会让领域逻辑「上浮」到应用层、重新长成事务脚本式 Service——正是 DDD 想消灭的。
+2. **可复用逻辑必属两类性质之一**：要么是领域规则（在 `domain`），要么是技术横切（在 `infrastructure` 经端口）。应用层不需要夹在中间的「共享业务层」。
+3. **P0-1 依赖方向**：application 依赖 `domain` 端口（合法），不依赖 `infrastructure` 实现类（P0-1）。技术横切经端口注入恰好满足。
 
-- 命名 `*Service`；避免 `*Manager`（除非遗留 ADR）。
-- 默认**不加** `@Transactional`（写事务边界仍在 `*CommandHandler` / `*Orchestrator`）；若必须，须在类级 Javadoc 说明。
-- 依赖 `domain` 端口与其他 Handler；不依赖 `infrastructure` 实现类。
+**存量示例迁移**（`bone-blueprint`）：
+- 领域规则 `OrderLookup`（租户隔离校验）→ `domain/service/OrderLookup`（领域服务，签名接收 tenantId）。
+- 技术横切 `TenantSupport` / `AggregatePersistence` → `domain/gateway/TenantProvider` / `AggregatePersister`（端口）+ `infrastructure` 实现（Spring bean），Handler 经端口注入。
 
-**参考分类**（建议在类级 Javadoc 注明 `S1` / `S2` / `S3` 之一，供 CR 与 AI 生成校验；CR 约束，ArchUnit 不拦截）：
-
-| 标签 | 典型用途 | 仓库示例 |
-|------|----------|----------|
-| `S1 绑定/协调` | 多 Handler 复用的权限绑定、关联表维护 | `AccountRoleBindingService` |
-| `S2 流程运行时` | 技术编排引擎封装，无 HTTP 入站 | `FlowExecutionService`、`FlowRuntime` |
-| `S3 缓存/失效` | 横切缓存失效、权限快照刷新 | `AuthorityCacheEvictionService` |
-
-> 反模式：仅 `handler.handle(cmd)` 一行 delegate 的 Service —— 直接删除，调用方改注入 Handler。
+> 仍保留一条硬约束：**禁止** `Controller` 直接注入 `domain/service`（领域服务）或 `application/service`（历史遗留包），入站统一为 Handler / Orchestrator / Facade（ArchUnit #11/#12/#17）。`application/service` 若存在于存量模块，应迁移为端口或领域服务后删除。
 
 #### 14.3.2 `application/facade` 约束（条件追加，非默认）
 
@@ -926,7 +923,7 @@ static final ArchRule no_new_use_cases =
 | 做法 | 建议 |
 |------|------|
 | **CQRS** | 保留 `command/query` 分包；不默认独立读库、事件投影。 |
-| **应用层** | 默认 Controller → Handler → Domain **三步**（adapter → application → domain）；**不引入** UseCase；满足 §14.3.2 F1/F2/F3 时按条件追加 `*Facade`；`application/service` 仅按 §14.3.1 约束；跨聚合编排按 §14.3 ADR 加 `*Orchestrator`。 |
+| **应用层** | 默认 Controller → Handler → Domain **三步**（adapter → application → domain）；**不引入** UseCase，**禁止** `application/service`（§14.3.1 按性质分流）；满足 §14.3.2 F1/F2/F3 时按条件追加 `*Facade`；跨聚合编排按 §14.3 ADR 加 `*Orchestrator`。 |
 | **扩展点 / ACL / MQ / RPC / 定时** | 无真实需求则不建。 |
 | **战略文档** | 小模块一页纸术语表起步。 |
 | **领域事件** | 无跨聚合协调时可少发。 |
@@ -987,7 +984,7 @@ static final ArchRule no_new_use_cases =
 | 应用服务（受约束） | `OrderShippingService` | §14.3.1：禁 Controller 直注、禁承载聚合不变量；禁 `*Manager` |
 
 > **与 COLA 术语对照**（仅供跨框架沟通参考，不改 Bone 命名规范）：
-> `*CommandHandler` ≡ COLA `*CmdExe`；`*QueryHandler` ≡ COLA `*QryExe`；`*Facade` ≡ COLA `AppService`（入站门面）；`application/service/*Service`（S1/S2/S3）无 COLA 直接等价物（COLA 里此类逻辑通常内聚在 CmdExe/DomainService 内）。
+> `*CommandHandler` ≡ COLA `*CmdExe`；`*QueryHandler` ≡ COLA `*QryExe`；`*Facade` ≡ COLA `AppService`（入站门面）。Bone **无 `application/service` 层**：COLA 里内聚在 CmdExe/DomainService 的共享逻辑，Bone 按 §14.3.1 性质分流到 `domain/service`（领域）或 `domain/gateway` 端口 + `infrastructure` 实现（技术）。
 > Bone 选用全词 `*CommandHandler` / `*QueryHandler` 而非 COLA 缩写 `*CmdExe` / `*QryExe`，原因：与 CQRS/MediatR/Axon 业界通用术语对齐；全词命名在 Code Review、日志、堆栈中可读性更优；`Executor` 缩写在 Java 生态与 `java.util.concurrent.Executor` 存在语义歧义。
 
 ---
@@ -1056,7 +1053,7 @@ static final ArchRule no_new_use_cases =
 | **模块根包**下的 `controller/`（如 `com.bone.xxx.controller.*`，**不在** `adapter/web/controller/`） | 迁移到 `adapter/web/controller/`；按 §14.1 重组 `dto/request\|response`、`assembler/` | `git mv` + StrReplace |
 | 命名 `*Cmd` / `*Qry` | 类名重命名为 `*Command` / `*Query`；子包 `cmd/` / `qry/` 可保留作短目录名（§14.1） | `scripts/ddd-rename-cmd-qry.py <module> --apply` |
 | 模块自建 `BusinessException` / `*BusinessException` | 全部改用 `com.bone.core.exception.BizException` 或 `*BizException` 后缀（如 `MetadataEngineBizException`、`ExtensionBizException`）；删除自建 `BusinessException` 类 | 手工 + ArchUnit `noBusinessExceptionSuffix` |
-| `Controller` 直接注入 `application/service/*Service` | Controller 改注入 `*CommandHandler` / `*QueryHandler` / `*Orchestrator`；`*Service` 仅供 Handler 内部复用 | `scripts/migrate-extension-studio-service-to-application.py`（模板） |
+| 存量 `application/service/*Service`（应用层共享逻辑） | 按 §14.3.1 性质分流：领域规则→`domain/service`；技术横切→`domain/gateway` 端口 + `infrastructure` 实现，Handler 经端口注入；删除 `application/service` 包 | `scripts/migrate-extension-studio-service-to-application.py`（模板，改造后） |
 | `Controller` 直接注入 `domain/service/*`（领域服务） | Controller 改注入对应 Handler；领域服务由 Handler 在应用层编排调用（ArchUnit #17 机器拦截） | 手工 + ArchUnit `adapterControllersMustNotDependOnDomainService` |
 | 缺少 ArchUnit 守护（新模块或老模块） | 使用 `scripts/ddd-archtest-template.py <module> <root-package> [--extra-archunit ...]` 一行生成 `ArchitectureTest`，再 `allowStoreCreation=true` 生成基线 | `scripts/ddd-archtest-template.py` |
 

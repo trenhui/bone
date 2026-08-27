@@ -95,7 +95,7 @@ bash scripts/ci/collect-blueprint-compliance.sh
 1. `domain/{aggregate}/`：聚合根、实体、值对象、领域事件（按需）  
 2. `domain/repository/`：写侧仓储接口（继承 SDK `Repository`，不堆查询方法）  
 3. `application/command` + `application/query`：命令/查询与 Handler  
-4. `application/support/`：`OrderLookup`（Optional 语义）、`AggregatePersistence`（事件发布）  
+4. `domain/service/` + `infrastructure/`：可复用逻辑按性质分流——领域规则下沉 `domain/service`（如 `OrderLookup` 租户隔离校验），技术横切放 `infrastructure`（如 `AggregatePersistence` 保存+事件发布、`TenantSupport` 租户上下文）  
 5. `adapter/web`：Controller、request/response DTO、Assembler  
 6. `infrastructure/config` + `infrastructure/event`：元数据、Spring 配置、事件发布实现  
 

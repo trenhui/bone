@@ -2,7 +2,7 @@ package com.bone.blueprint.application.query.handler;
 
 import com.bone.blueprint.application.query.dto.OrderDto;
 import com.bone.blueprint.application.query.qry.OrderPageQuery;
-import com.bone.blueprint.application.support.TenantSupport;
+import com.bone.blueprint.domain.gateway.TenantProvider;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.order.valueobject.OrderStatus;
 import com.bone.core.model.PageResult;
@@ -17,9 +17,11 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class OrderPageQueryHandler {
 
+  private final TenantProvider tenantProvider;
+
   @Transactional(readOnly = true)
   public PageResult<OrderDto> handle(OrderPageQuery query) {
-    long tenantId = TenantSupport.currentTenantId();
+    long tenantId = tenantProvider.currentTenantId();
     FluentQuery<Order> fluentQuery =
         QueryBuilder.from(Order.class).where(Order::getTenantId).eq(tenantId);
 

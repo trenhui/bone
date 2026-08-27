@@ -1,10 +1,10 @@
 package com.bone.blueprint.application.command.handler;
 
 import com.bone.blueprint.application.command.cmd.CreateOrderCommand;
-import com.bone.blueprint.application.support.AggregatePersistence;
-import com.bone.blueprint.application.support.TenantSupport;
 import com.bone.blueprint.domain.extension.order.OrderPriceCalculator;
+import com.bone.blueprint.domain.gateway.AggregatePersister;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
+import com.bone.blueprint.domain.gateway.TenantProvider;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.order.OrderItem;
 import com.bone.blueprint.domain.order.valueobject.Money;
@@ -38,6 +38,8 @@ public class CreateOrderCommandHandler {
   private final OrderRepository orderRepository;
   private final InventoryGateway inventoryGateway;
   private final OrderPriceCalculator priceCalculator;
+  private final TenantProvider tenantProvider;
+  private final AggregatePersister aggregatePersister;
   private final DomainEventPublisher domainEventPublisher;
 
   @Transactional
@@ -49,7 +51,7 @@ public class CreateOrderCommandHandler {
     }
 
     long orderId = DistributedIdGenerator.generateLongId();
-    long tenantId = TenantSupport.currentTenantId();
+    long tenantId = tenantProvider.currentTenantId();
 
     List<OrderItem> items =
         cmd.getItems().stream()
@@ -78,6 +80,6 @@ public class CreateOrderCommandHandler {
       inventoryGateway.reserveStock(orderId, item.getProductId(), item.getQuantity());
     }
 
-    return AggregatePersistence.saveAndPublishEvents(orderRepository, domainEventPublisher, order);
+    return aggregatePersister.saveAndPublishEvents(orderRepository, domainEventPublisher, order);
   }
 }

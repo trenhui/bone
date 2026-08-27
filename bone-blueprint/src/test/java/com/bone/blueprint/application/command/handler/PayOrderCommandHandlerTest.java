@@ -10,9 +10,12 @@ import static org.mockito.Mockito.when;
 
 import com.bone.blueprint.application.command.cmd.PayOrderCommand;
 import com.bone.blueprint.application.event.outbox.OrderOutboxWriter;
+import com.bone.blueprint.domain.gateway.AggregatePersister;
+import com.bone.blueprint.domain.gateway.TenantProvider;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.order.OrderItem;
 import com.bone.blueprint.domain.repository.OrderRepository;
+import com.bone.blueprint.infrastructure.persistence.AggregatePersistence;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.DomainException;
 import com.bone.core.exception.NotFoundException;
@@ -23,12 +26,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
 class PayOrderCommandHandlerTest {
 
   @Mock private OrderRepository orderRepository;
+
+  @Mock private TenantProvider tenantProvider;
+
+  @Spy private AggregatePersister aggregatePersister = new AggregatePersistence();
 
   @Mock private DomainEventPublisher domainEventPublisher;
 
