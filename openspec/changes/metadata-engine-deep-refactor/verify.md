@@ -4,7 +4,7 @@
 
 ## 结论
 
-**核心目标（物理拆分 + 删除 core）已完成并通过编译/测试/门禁。** 设计层归一（P0.1 model 统一、P0.2 platform 合并、P3.2 反射清理）均已另行完成并归档。仅剩运行时集成测试（P4.2/P5.2/P5.3）转为 server 层后续任务，非阻塞交付。
+**核心目标（物理拆分 + 删除 core）已完成并通过编译/测试/门禁。** 设计层归一（P0.1 model 统一、P0.2 platform 合并、P3.2 反射清理）均已另行完成并归档。运行时集成测试（P4.2/P5.3）已用真实 MySQL 环境跑通，并修复 2 个真实 bug；P5.2 由 P5.3 覆盖。**全部任务完成。**
 
 ## 已完成
 
@@ -52,13 +52,15 @@
 | P0.2 合并 platform 重复端口 | ✅ | runtime.platform 重复接口删除，统一到 ports.spi |
 | P3.2 清理 MetadataEngine 反射兜底 | ✅ | 删除 4 个 no-op 反射桩及调用点 |
 
-## 剩余（转为 server 层运行时验证，非代码缺陷）
+## 运行时集成测试（2026-08-27 真实 MySQL 环境已通过）
 
-| 任务 | 说明 | 处置 |
+| 任务 | 说明 | 状态 |
 |------|------|------|
-| P4.2 server @EnableSqlRepositories 运行时装配验证 | 需完整 Spring 上下文 + MySQL/Redis 环境启动 server | 转为 server 层运行时验证任务，代码正确性由 mock 单测保障 |
-| P5.2 engine-runtime H2 集成测试 | 需 bootstrap SDK 整套 Repository 基础设施（7+ bean + MetadataService 连锁依赖） | 边际价值低，SdkMetadataRepositoryTest 已 mock 验证、JdbcRuntimeRecordServiceTest 已 H2 测数据面 |
-| P5.3 server"经 engine 读已发布实体"集成测试 | 需真实数据源 + 完整 server 启动 | 转为 server 层运行时验证任务 |
+| P4.2 server @EnableSqlRepositories 运行时装配验证 | server 完整上下文启动 + engine `Repository<MetaEntityPo,Long>`/`Repository<MetaFieldPo,Long>` bean 存在 | ✅ ServerContextLoadsTest 通过；修复 legacy 引擎 JDK 代理注入失败（MetadataApplication 加 proxyTargetClass=true） |
+| P5.2 engine-runtime H2 集成测试 | — | 由 P5.3 覆盖（P5.3 用真实 MySQL 完整验证 SdkMetadataRepository 读路径；H2 版需 bootstrap 整套 SDK 基础设施，边际价值低） |
+| P5.3 server"经 engine 读已发布实体"集成测试 | SdkMetadataRepository.findAllEntities() 经真实 MySQL 读到 30 行已发布实体 | ✅ ServerContextLoadsTest 通过；修复真实映射 bug：MetaFieldPo @Column precision→numeric_precision 对齐 meta_field 真实表列（mock 测试未暴露，真实 MySQL 暴露 Unknown column 'precision'） |
+
+**新增测试**：`bone-metadata-server/src/test/java/com/bone/metadata/ServerContextLoadsTest.java`（@SpringBootTest 全量上下文 + 真实 MySQL，验证 P4.2 bean 装配与 P5.3 读路径）。
 
 ## 验证命令
 
