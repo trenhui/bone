@@ -5,8 +5,9 @@ import com.bone.blueprint.domain.gateway.AggregatePersister;
 import com.bone.blueprint.domain.gateway.TenantProvider;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.repository.OrderRepository;
-import com.bone.blueprint.domain.service.OrderLookup;
 import com.bone.core.domain.event.DomainEventPublisher;
+import com.bone.core.exception.NotFoundException;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,8 +24,10 @@ public class CancelOrderCommandHandler {
   @Transactional
   public void handle(CancelOrderCommand cmd) {
     Order order =
-        OrderLookup.requireById(
-            orderRepository, cmd.getOrderId(), tenantProvider.currentTenantId());
+        Optional.ofNullable(
+                orderRepository.findByIdInTenant(
+                    cmd.getOrderId(), tenantProvider.currentTenantId()))
+            .orElseThrow(() -> new NotFoundException("订单不存在: " + cmd.getOrderId()));
     order.cancel();
     aggregatePersister.updateAndPublishEvents(orderRepository, domainEventPublisher, order);
   }

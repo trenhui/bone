@@ -583,8 +583,9 @@ com.bone.{module}/
 3. **P0-1 依赖方向**：application 依赖 `domain` 端口（合法），不依赖 `infrastructure` 实现类（P0-1）。技术横切经端口注入恰好满足。
 
 **存量示例迁移**（`bone-blueprint`）：
-- 领域规则 `OrderLookup`（租户隔离校验）→ `domain/service/OrderLookup`（领域服务，签名接收 tenantId）。
+- 租户隔离 → **下沉仓储查询层**：`OrderRepository.findByIdInTenant(id, tenantId)`（default 方法，用 SDK `Criteria` 过滤，SQL 层即过滤跨租户订单）；Handler 传入 `TenantProvider.currentTenantId()`。
 - 技术横切 `TenantSupport` / `AggregatePersistence` → `domain/gateway/TenantProvider` / `AggregatePersister`（端口）+ `infrastructure` 实现（Spring bean），Handler 经端口注入。
+- **应用层与领域层都不承载"加载后校验租户"**——多租户隔离属于横切关注点，理想由基础设施（如 SQL 拦截器）统一处理；在 SDK 未内置时，用仓储 default 方法 + Criteria 实现查询层过滤。
 
 > 仍保留一条硬约束：**禁止** `Controller` 直接注入 `domain/service`（领域服务）或 `application/service`（历史遗留包），入站统一为 Handler / Orchestrator / Facade（ArchUnit #11/#12/#17）。`application/service` 若存在于存量模块，应迁移为端口或领域服务后删除。
 

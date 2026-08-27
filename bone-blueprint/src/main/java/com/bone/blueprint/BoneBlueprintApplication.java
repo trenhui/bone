@@ -19,7 +19,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableDiscoveryClient
 @EnableScheduling
 @EnableSqlRepositories(basePackages = "com.bone.blueprint.domain.repository")
-@EnableExtensionPoints(basePackages = "com.bone.blueprint.domain.service")
+@EnableExtensionPoints(basePackages = "com.bone.blueprint.domain.extension")
 public class BoneBlueprintApplication {
 
   public static void main(String[] args) {

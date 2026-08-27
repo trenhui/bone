@@ -54,7 +54,8 @@ class PayOrderCommandHandlerTest {
 
   @Test
   void testHandleSuccess() {
-    when(orderRepository.findById(1L)).thenReturn(order);
+    // tenantProvider mock 返回 0L，故 raw 值 stub（default 方法在 when() 内会被执行，避免 matcher 混用）
+    when(orderRepository.findByIdInTenant(1L, 0L)).thenReturn(order);
 
     PayOrderCommand command = new PayOrderCommand();
     command.setOrderId(1L);
@@ -69,7 +70,7 @@ class PayOrderCommandHandlerTest {
 
   @Test
   void testHandleOrderNotFound() {
-    when(orderRepository.findById(1L)).thenReturn(null);
+    when(orderRepository.findByIdInTenant(1L, 0L)).thenReturn(null);
 
     PayOrderCommand command = new PayOrderCommand();
     command.setOrderId(1L);
@@ -84,7 +85,7 @@ class PayOrderCommandHandlerTest {
   void testHandleAlreadyPaid() {
     order.pay();
     order.clearDomainEvents();
-    when(orderRepository.findById(1L)).thenReturn(order);
+    when(orderRepository.findByIdInTenant(1L, 0L)).thenReturn(order);
 
     PayOrderCommand command = new PayOrderCommand();
     command.setOrderId(1L);
