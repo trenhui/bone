@@ -26,10 +26,18 @@ if [ -n "$CHANGED_FILES" ]; then
   MODULE_PATHS=$(echo "$CHANGED_FILES" | grep 'src/main/java' || true | sed 's|/src/main/java/.*||' | sort -u)
 
   if [ -n "$MODULE_PATHS" ]; then
-    PL_ARGS=$(echo "$MODULE_PATHS" | tr '\n' ',' | sed 's/,$//')
-    echo "  变更模块: $PL_ARGS"
+    echo "  变更模块:"
+    echo "$MODULE_PATHS" | sed 's/^/    - /'
     echo -e "${YELLOW}[2/5] 就近 ArchUnit 架构检查...${RESET}"
-    mvn test -Dtest='*ArchitectureTest' -pl "$PL_ARGS" --batch-mode -q || exit_code=$?
+    # 逐模块用 -f 指定 pom 运行（避免 -pl 在多模块/嵌套模块下 reactor 路径解析不稳）
+    while IFS= read -r MODULE_PATH; do
+      [ -z "$MODULE_PATH" ] && continue
+      POM="$MODULE_PATH/pom.xml"
+      if [ -f "$POM" ]; then
+        echo "  ArchUnit: $MODULE_PATH"
+        mvn -f "$POM" test -Dtest='*ArchitectureTest' --batch-mode -q || exit_code=$?
+      fi
+    done <<< "$MODULE_PATHS"
   fi
 fi
 
