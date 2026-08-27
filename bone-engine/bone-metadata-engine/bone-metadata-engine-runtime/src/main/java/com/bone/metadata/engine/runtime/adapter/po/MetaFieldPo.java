@@ -42,7 +42,7 @@ public class MetaFieldPo extends AbstractEntity<Long> {
   @Column(name = "length")
   private Integer length;
 
-  @Column(name = "precision")
+  @Column(name = "numeric_precision")
   private Integer precision;
 
   @Column(name = "is_required", nullable = false)
