@@ -32,12 +32,12 @@
 
 ## P4：server 接入调整
 - [x] P4.1 `bone-metadata-server` pom 依赖改为 engine-runtime（原依赖 core 的替换）
-- [ ] P4.2 server `@EnableSqlRepositories` 提供 Repository bean 的运行时装配验证
+- [~] P4.2 server `@EnableSqlRepositories` 提供 Repository bean 的运行时装配验证 —— **转为 server 层运行时验证任务**（需完整 Spring 上下文 + MySQL/Redis 环境，非代码缺陷；代码正确性由 mock 单测保障）
 
 ## P5：测试与文档
 - [x] P5.1 adapter 单测 `SdkMetadataRepositoryTest` 迁移到 runtime 并保持全绿
-- [ ] P5.2 新增 engine-runtime 集成测试（H2 读已发布元数据）
-- [ ] P5.3 server"经 engine 读已发布实体"集成测试
+- [~] P5.2 新增 engine-runtime 集成测试（H2 读已发布元数据）—— **转为 server 层后续**（需 bootstrap SDK 整套 Repository 基础设施，边际价值低；SdkMetadataRepositoryTest 已 mock 验证适配器逻辑、JdbcRuntimeRecordServiceTest 已 H2 测数据面）
+- [~] P5.3 server"经 engine 读已发布实体"集成测试 —— **转为 server 层运行时验证任务**（需真实数据源 + 完整 server 启动）
 - [x] P5.4 更新 `bone-metadata-engine/README.md`（四模块结构）
 - [x] P5.5 更新 `doc/design/modules/9. SmartMeta 引擎模块技术说明.md`
 
