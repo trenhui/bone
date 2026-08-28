@@ -4,7 +4,7 @@
 > **结构**：**第一部分**为业界共识与架构原则（北向星），含 **§10 Bone 上下文映射参考**（将 §2.3 原则实例化为 Bone 各上下文关系图）；**第二部分**为 **Bone 平台工程落地**（包结构、铁律、SDK、极简策略）。修订时先对齐原则，再调整落地条文。  
 > **定位说明**：本文是 **Bone 仓库内 DDD 与分层门禁的权威规范**，对齐主流 DDD/整洁架构共识，并含 **D1 元数据注解** 等工程折中；**非**全行业唯一标准，复杂域请结合 ADR 裁剪。  
 > **关联文档**：[BONE-总体架构设计方案.md](./BONE-总体架构设计方案.md)（平台总体架构、NFR、安全与数据一致性策略，与本方案互补）；[README.md](./README.md) 为架构文档索引；模块详设见 [doc/design/modules/README.md](../design/modules/README.md)。  
-> **版本**：**4.3** | **日期**：2026-05-26  
+> **版本**：**4.4** | **日期**：2026-08-28  
 > **分册索引**：[ddd/README.md](./ddd/README.md)（原则 / 工程落地 / CQRS / 附录 / **补充条文与示例**）  
 > **近期 ADR**：[0011 AggregateRoot 继承链](./adr/0011-aggregate-root-inheritance.md)、[0012 SystemException 层次](./adr/0012-system-exception-hierarchy.md)、[0013 extension-studio 读侧 ReadPort](./adr/0013-extension-studio-repository-read-side.md)
 >
@@ -152,7 +152,40 @@
 | 跨聚合同模块 | 领域事件 → `AFTER_COMMIT` 发布 + Outbox（可选） | `infrastructure` + `DomainEventPublisher` |
 | 跨模块 / 跨服务 | 集成事件（`*IntegrationEvent` 后缀）→ MQ / Saga | `infrastructure`、integration 模块 |
 
-领域事件发布最小模式见 [ddd/07-supplements.md §3.3.1](./ddd/07-supplements.md#331-领域事件发布最小模式)。
+领域事件发布最小模式见 [ddd/07-supplements.md §3.3.1](./ddd/07-supplements.md#331-领域事件发布最小模式）。
+
+### 5.5 回调幂等与跨聚合协作（支付场景样板，2026-08 补充）
+
+真实下单支付链路是「回调驱动 + 跨聚合协作」的最佳示范，`bone-blueprint` 已按下列规范落地样板：
+
+**支付作为独立聚合**：支付单（`Payment`）是独立于订单（`Order`）的聚合根，经 `orderId` 关联（聚合间仅以 ID 引用，§3.1）。状态机 `PENDING → PAYING → SUCCESS / FAILED / CLOSED` 完整封装在聚合内，反贫血（§17）。
+
+**回调幂等（关键）**：支付渠道异步通知可能重复，必须在聚合内显式幂等。样板中 `Payment.confirmSuccess(channelTradeNo, paidAmount)` 对**已 SUCCESS** 的支付单再次回调（**同流水号**）返回 `false`（跳过、不抛错、不重复发事件）；**异流水号**则抛 `DomainException`（防篡改覆盖）；对 `FAILED/CLOSED` 的支付单抛 `DomainException`（不允许非法状态迁移）。**幂等键**用渠道流水号 `channelTradeNo`，非业务自增主键。遵循以下硬约束：
+- 幂等判断在**聚合内**（领域规则），不在 Handler 用 `if` 重复判断（反贫血红线 §17）。
+- 幂等成功回调返回 `boolean`（true=真正迁移，false=幂等跳过），Handler 据此决定是否继续下游动作。
+- 领域事件（如 `PaymentSucceededEvent`）在真正迁移时**只发一次**，事件载荷携带 `channelTradeNo` 便于下游关联审计。
+
+**金额一致性校验（支付核心不变量，必须）**：回调确认成功时，**实付金额必须等于应付金额**。`confirmSuccess(channelTradeNo, paidAmount)` 在聚合内校验 `paidAmount == amount`，不等则抛 `DomainException`（拒绝部分支付/金额被篡改的异常入账）。金额比对用 `BigDecimal.compareTo`，不做浮点等值比较。
+
+**并发幂等兜底（生产必做，样板注明）**：应用层幂等（聚合内判断）是「读-改-写」非线程安全，无法完全抵御**并发重复回调**（两次都读到旧状态 → 双发事件）。真实生产**必须**额外兜底二选一：① 乐观锁：`version` 字段 + `UPDATE ... WHERE status='PAYING'`（影响行数 0 则已被处理）；② `channel_trade_no` **唯一索引**，重复写入抛约束冲突。样板仅演示应用层幂等，接入须按场景补数据库级兜底。
+
+**跨聚合协作**：支付单提交后，支付成功经**领域事件**（`PaymentSucceededEvent`）在 `AFTER_COMMIT` 订阅中确认订单（`Order.confirmPaid()`），订单确认本身也幂等（`boolean` 返回值，已 PAID 跳过）。跨聚合写不放在同一事务（§5.3 默认最终一致）；确认订单（本地聚合写，独立事务）与扣库存（远程调用）解耦——远程失败不回滚已提交的订单确认，由补偿/重试处理。
+
+**订单状态机闭环**：订单聚合完整承载生命周期状态机——`CREATED → PAID → SHIPPED → DELIVERED`，分支 `CANCELLED`（CREATED/PAID）、`REFUNDED`（PAID/SHIPPED/DELIVERED 退款）。`confirmPaid/ship/deliver/refund/cancel` 均为领域行为（反贫血 §17），Handler 只编排（加载→调领域→保存）。发货/送达经 `ShipOrderCommandHandler`/`DeliverOrderCommandHandler` + `/api/v1/orders/{id}/ship|deliver` 暴露。
+
+**支付网关防腐**：`PaymentGateway` 出站端口在 `domain/gateway`，实现在 `infrastructure/gateway/payment`，用领域语言声明「预下单」能力（§19），禁止渠道 DTO/异常穿透领域。
+
+**回调命令**：回调经 `HandlePaymentCallbackCommand`（携带 `paymentId` + `channelTradeNo` + `paidAmount` + `success`）驱动，Handler 只做「加载支付单 → 调领域方法（幂等 + 金额校验）→ 保存发布」，不写领域规则。
+
+**退款（支付域必含，幂等 + 金额校验）**：仅**已成功**支付单可退款。`Payment.refund(refundAmount)` 在聚合内：非 SUCCESS 抛错；已退款（`refundedAt != null`）返回 `false`（幂等跳过）；退款金额必须 >0 且 ≤ 已付金额（部分/全额）。退款成功发 `PaymentRefundedEvent`（载荷含 `refundAmount` + `channelTradeNo`），`AFTER_COMMIT` 订阅确认订单退款（`Order.refund()`：PAID/SHIPPED/DELIVERED → REFUNDED）并释放库存（远程，最终一致）。真实退款须调渠道退款接口 + 对账，样板仅本地幂等。
+
+**超时关闭**：未支付单须定时自动关闭（生命周期闭环）。用 `PaymentReadPort.findPayableExpiredBefore(tenantId, before)` 扫描 PENDING/PAYING 超时单（读侧端口承载多条件扫描，避免写仓储堆砌含 `And/Or` 的方法名违反仓储方法白名单），逐笔调 `Payment.close()`。样板 `CloseExpiredPaymentJob` 每 5 分钟执行。
+
+**支付查询（CQRS 读侧）**：支付单详情经 `PaymentReadPort.findById`（读模型直查，不经过写聚合），组装为 `PaymentDto` 供 `PaymentDetailQueryHandler` 返回。读侧用 `*ReadPort`（§18.5），不经写仓储，避免读操作占用写聚合状态机。
+
+**回调验签（安全，必须）**：真实支付渠道回调必须**验签**（HMAC/RSA/证书），防止伪造回调。样板经 `PaymentSignaturePort`（出站/校验端口，防腐层）在 Handler 进入领域前验签——签名不可信抛 `BizException` 拒绝。样板用 `SimulatedPaymentSignatureVerifier` 演示模拟 HMAC（固定共享密钥 + `MessageDigest.isEqual` 常量时间比较）；真实接入时：密钥外部化（配置中心/密钥管理）、加防重放（nonce/时间戳）、按渠道用证书。
+
+> 使用范围：本文为权威规范；`Payment` 上下文标注「参考样板」表示仅在 `bone-blueprint` 落地演示，平台模块按需裁剪，无需复制全部演示能力（§22）。生产接入支付必须补齐：并发幂等兜底、真实渠道验签（防重放）、真实渠道退款/对账、真实渠道适配。
 
 ---
 
@@ -210,6 +243,7 @@
 | **System** | 系统配置、运维日志、监控告警 | 通用域 | `SysConfig`、`SysLog` |
 | **Notification** | 通知渠道、消息发送记录 | 支撑域 | `NotificationRecord` |
 | **Generator** | 代码生成模板、数据源、生成任务历史 | 支撑域 | `Template`、`GenerationTask` |
+| **Payment**（参考样板） | 支付单生命周期：发起、渠道预下单、回调幂等确认 | 支撑域 | `Payment`（`bone-blueprint`） |
 
 ### 10.2 上下文映射图
 
