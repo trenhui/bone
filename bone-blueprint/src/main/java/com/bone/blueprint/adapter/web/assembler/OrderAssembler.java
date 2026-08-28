@@ -6,7 +6,9 @@ import com.bone.blueprint.adapter.web.dto.response.OrderDetailResp;
 import com.bone.blueprint.adapter.web.dto.response.OrderSummaryResp;
 import com.bone.blueprint.application.command.cmd.CancelOrderCommand;
 import com.bone.blueprint.application.command.cmd.CreateOrderCommand;
+import com.bone.blueprint.application.command.cmd.DeliverOrderCommand;
 import com.bone.blueprint.application.command.cmd.PayOrderCommand;
+import com.bone.blueprint.application.command.cmd.ShipOrderCommand;
 import com.bone.blueprint.application.query.dto.OrderDto;
 import com.bone.blueprint.application.query.qry.OrderDetailQuery;
 import com.bone.blueprint.application.query.qry.OrderPageQuery;
@@ -31,6 +33,14 @@ public interface OrderAssembler {
     CancelOrderCommand command = new CancelOrderCommand();
     command.setOrderId(orderId);
     return command;
+  }
+
+  default ShipOrderCommand toShipOrderCommand(Long orderId) {
+    return new ShipOrderCommand(orderId);
+  }
+
+  default DeliverOrderCommand toDeliverOrderCommand(Long orderId) {
+    return new DeliverOrderCommand(orderId);
   }
 
   default OrderDetailQuery toOrderDetailQuery(Long orderId) {

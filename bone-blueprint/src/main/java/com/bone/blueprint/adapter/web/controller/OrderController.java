@@ -10,7 +10,9 @@ import com.bone.blueprint.application.command.cmd.CreateOrderCommand;
 import com.bone.blueprint.application.command.cmd.PayOrderCommand;
 import com.bone.blueprint.application.command.handler.CancelOrderCommandHandler;
 import com.bone.blueprint.application.command.handler.CreateOrderCommandHandler;
+import com.bone.blueprint.application.command.handler.DeliverOrderCommandHandler;
 import com.bone.blueprint.application.command.handler.PayOrderCommandHandler;
+import com.bone.blueprint.application.command.handler.ShipOrderCommandHandler;
 import com.bone.blueprint.application.query.dto.OrderDto;
 import com.bone.blueprint.application.query.handler.OrderDetailQueryHandler;
 import com.bone.blueprint.application.query.handler.OrderPageQueryHandler;
@@ -43,6 +45,8 @@ public class OrderController {
   private final CreateOrderCommandHandler createOrderCommandHandler;
   private final PayOrderCommandHandler payOrderCommandHandler;
   private final CancelOrderCommandHandler cancelOrderCommandHandler;
+  private final ShipOrderCommandHandler shipOrderCommandHandler;
+  private final DeliverOrderCommandHandler deliverOrderCommandHandler;
   private final OrderDetailQueryHandler orderDetailQueryHandler;
   private final OrderPageQueryHandler orderPageQueryHandler;
   private final OrderAssembler orderAssembler;
@@ -80,6 +84,20 @@ public class OrderController {
   public ApiResponse<Void> cancel(@Parameter(description = "订单ID") @PathVariable Long id) {
     CancelOrderCommand command = orderAssembler.toCancelOrderCommand(id);
     cancelOrderCommandHandler.handle(command);
+    return ApiResponse.success();
+  }
+
+  @Operation(summary = "订单发货", description = "对已支付订单发货（PAID → SHIPPED）")
+  @PostMapping("/{id}/ship")
+  public ApiResponse<Void> ship(@Parameter(description = "订单ID") @PathVariable Long id) {
+    shipOrderCommandHandler.handle(orderAssembler.toShipOrderCommand(id));
+    return ApiResponse.success();
+  }
+
+  @Operation(summary = "订单送达", description = "确认已发货订单送达（SHIPPED → DELIVERED）")
+  @PostMapping("/{id}/deliver")
+  public ApiResponse<Void> deliver(@Parameter(description = "订单ID") @PathVariable Long id) {
+    deliverOrderCommandHandler.handle(orderAssembler.toDeliverOrderCommand(id));
     return ApiResponse.success();
   }
 

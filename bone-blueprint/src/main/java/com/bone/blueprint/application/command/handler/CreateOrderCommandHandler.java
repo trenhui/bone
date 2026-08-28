@@ -7,13 +7,11 @@ import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.gateway.TenantProvider;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.order.OrderItem;
-import com.bone.blueprint.domain.order.valueobject.Money;
 import com.bone.blueprint.domain.repository.OrderRepository;
 import com.bone.core.capability.Capability;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
 import com.bone.core.util.DistributedIdGenerator;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -68,13 +66,7 @@ public class CreateOrderCommandHandler {
 
     Order order = Order.create(orderId, tenantId, cmd.getCustomerId(), items);
 
-    OrderPriceCalculator.OrderPriceRequest request =
-        OrderPriceCalculator.OrderPriceRequest.builder()
-            .baseAmount(order.getTotalAmount())
-            .shippingFee(BigDecimal.ZERO)
-            .build();
-    BigDecimal finalPrice = priceCalculator.calculate(request);
-    order.updateTotalAmount(Money.of(finalPrice));
+    order.applyPricing(priceCalculator);
 
     for (OrderItem item : order.getItems()) {
       inventoryGateway.reserveStock(orderId, item.getProductId(), item.getQuantity());

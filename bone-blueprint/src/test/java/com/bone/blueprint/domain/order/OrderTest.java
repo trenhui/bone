@@ -65,13 +65,140 @@ class OrderTest {
   }
 
   @Test
-  void testUpdateTotalAmountWithMoney() {
+  void testApplyPricingUpdatesTotalAmount() {
     OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
     Order order = Order.create(1L, 1L, 1L, Collections.singletonList(item));
 
-    order.updateTotalAmount(
-        com.bone.blueprint.domain.order.valueobject.Money.of(new BigDecimal("300")));
+    order.applyPricing(
+        request ->
+            request.getBaseAmount().add(request.getShippingFee()).add(new BigDecimal("100")));
 
     assertEquals(new BigDecimal("300"), order.getTotalAmount());
+  }
+
+  @Test
+  void testApplyPricingWithNullCalculatorThrows() {
+    OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
+    Order order = Order.create(1L, 1L, 1L, Collections.singletonList(item));
+
+    assertThrows(DomainException.class, () -> order.applyPricing(null));
+  }
+
+  @Test
+  void testAddItemOverLimitThrows() {
+    OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 1, new BigDecimal("400000"));
+    OrderItem extra = OrderItem.create(2L, 1L, 2L, "商品2", 1, new BigDecimal("700000"));
+    Order order = Order.create(1L, 1L, 1L, Collections.singletonList(item));
+
+    assertThrows(DomainException.class, () -> order.addItem(extra));
+  }
+
+  @Test
+  void testConfirmPaidMovesToPaid() {
+    OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
+    Order order = Order.create(1L, 1L, 1L, Collections.singletonList(item));
+
+    boolean migrated = order.confirmPaid();
+
+    assertTrue(migrated);
+    assertEquals(OrderStatus.PAID, order.getStatus());
+    // 创建事件 + 确认支付事件
+    assertEquals(2, order.getDomainEvents().size());
+  }
+
+  @Test
+  void testConfirmPaidIsIdempotent() {
+    OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
+    Order order = Order.create(1L, 1L, 1L, Collections.singletonList(item));
+    order.confirmPaid();
+    order.clearDomainEvents();
+
+    boolean second = order.confirmPaid();
+
+    // 幂等：已 PAID 再次确认返回 false，不重复发事件
+    assertFalse(second);
+    assertEquals(OrderStatus.PAID, order.getStatus());
+    assertEquals(0, order.getDomainEvents().size());
+  }
+
+  @Test
+  void testConfirmPaidOnCancelledThrows() {
+    OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
+    Order order = Order.create(1L, 1L, 1L, Collections.singletonList(item));
+    order.cancel();
+
+    assertThrows(DomainException.class, order::confirmPaid);
+  }
+
+  @Test
+  void testShipOnlyFromPaid() {
+    OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
+    Order order = Order.create(1L, 1L, 1L, Collections.singletonList(item));
+
+    // CREATED 不可发货
+    assertThrows(DomainException.class, order::ship);
+
+    order.confirmPaid();
+    order.ship();
+    assertEquals(OrderStatus.SHIPPED, order.getStatus());
+  }
+
+  @Test
+  void testDeliverOnlyFromShipped() {
+    OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
+    Order order = Order.create(1L, 1L, 1L, Collections.singletonList(item));
+
+    order.confirmPaid();
+    order.ship();
+    order.deliver();
+    assertEquals(OrderStatus.DELIVERED, order.getStatus());
+
+    // 已送达不可再送达
+    assertThrows(DomainException.class, order::deliver);
+  }
+
+  @Test
+  void testCancelShippedThrows() {
+    OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
+    Order order = Order.create(1L, 1L, 1L, Collections.singletonList(item));
+    order.confirmPaid();
+    order.ship();
+
+    assertThrows(DomainException.class, order::cancel);
+  }
+
+  @Test
+  void testRefundOnlyAfterPaid() {
+    OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
+    Order order = Order.create(1L, 1L, 1L, Collections.singletonList(item));
+
+    // 未支付不可退款
+    assertThrows(DomainException.class, order::refund);
+
+    order.confirmPaid();
+    order.refund();
+    assertEquals(OrderStatus.REFUNDED, order.getStatus());
+  }
+
+  @Test
+  void testRefundAfterDelivered() {
+    OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
+    Order order = Order.create(1L, 1L, 1L, Collections.singletonList(item));
+    order.confirmPaid();
+    order.ship();
+    order.deliver();
+
+    order.refund();
+    assertEquals(OrderStatus.REFUNDED, order.getStatus());
+  }
+
+  @Test
+  void testRefundTwiceThrows() {
+    OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
+    Order order = Order.create(1L, 1L, 1L, Collections.singletonList(item));
+    order.confirmPaid();
+    order.refund();
+
+    assertThrows(DomainException.class, order::refund);
   }
 }
