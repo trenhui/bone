@@ -148,19 +148,6 @@ paths:
                   - type: object
                     properties:
                       data: { $ref: '#/components/schemas/OrderDetailResp' }
-  /{id}/pay:
-    post:
-      summary: 支付订单
-      operationId: payOrder
-      tags: [Order]
-      parameters:
-        - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema: { $ref: '#/components/schemas/ApiResponse' }
   /{id}/cancel:
     post:
       summary: 取消订单

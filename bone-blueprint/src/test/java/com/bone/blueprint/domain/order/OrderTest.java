@@ -35,23 +35,14 @@ class OrderTest {
   }
 
   @Test
-  void testPayOrderSuccess() {
+  void testConfirmPaidSuccess() {
     OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
     Order order = Order.create(1L, 1L, 1L, Collections.singletonList(item));
 
-    order.pay();
+    order.confirmPaid();
 
     assertEquals(OrderStatus.PAID, order.getStatus());
     assertEquals(2, order.getDomainEvents().size());
-  }
-
-  @Test
-  void testPayOrderAlreadyPaid() {
-    OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
-    Order order = Order.create(1L, 1L, 1L, Collections.singletonList(item));
-    order.pay();
-
-    assertThrows(DomainException.class, order::pay);
   }
 
   @Test

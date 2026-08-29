@@ -92,7 +92,7 @@ class InitiatePaymentCommandHandlerTest {
   @Test
   void testHandleNonCreatedOrderRejected() {
     Order order = payableOrder();
-    order.pay(); // PAID 状态不可发起支付
+    order.confirmPaid(); // PAID 状态不可发起支付
     when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(orderRepository.findByIdInTenant(100L, 1L)).thenReturn(order);
 

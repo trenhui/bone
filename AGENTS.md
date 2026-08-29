@@ -438,6 +438,13 @@ adapter/web → application → domain ← infrastructure
 8. **文档语言**：项目注释与文档以**中文**为主，新增代码注释请使用中文。
 9. **Docs-as-Code（模块合规）**：平台模板见 [Docs-as-Code-模块合规模板](doc/architecture/Docs-as-Code-模块合规模板.md)。**扩展**：`tools/extension-compliance-collector` + 详设附录 A/C；**blueprint**：`tools/blueprint-compliance-collector` + `doc/_generated/blueprint/`。已落地能力**勿**写入各模块 `backlog.yaml`；PR 须提交对应 `_generated` 并通过 `collect.py --check`。
 10. **持久化方案唯一性（强制）**：所有数据访问**必须**使用自研 `bone-metadata-sdk`（`@EnableSqlRepositories`），**禁止**引入 MyBatis-Plus、JPA / Hibernate、MyBatis 等其他 ORM 框架。新增模块的 `pom.xml` 不得添加上述框架依赖；仓储实现统一基于 `BaseRepository` / `SqlBuilder` 等 SDK 能力。
+11. **简洁输出（ADHD 友好，全场景生效）**：回答直接给答案、可执行、少废话。
+    - **先给答案**：首句直接给结论/下一步动作，不铺垫、不重复问题。
+    - **编号步骤**：多步骤任务用编号列，每步一行、可执行；单列表 ≤5 项，超出分组或表格。
+    - **以具体下一步收尾**：结尾给明确下一步动作，不说"如需帮助请告诉我"。
+    - **时间估算**：用具体数字（"约 3 分钟"），不用"一会儿""很快"。
+    - **砍客套**：不用"好的！""没问题！""希望有帮助！"等开场白/客套；指错不带情绪前缀，就事论事。
+    - **进展可见**：长任务每轮开头 1 句重述当前进度，完成项打勾、剩余项列出。
 
 ---
 

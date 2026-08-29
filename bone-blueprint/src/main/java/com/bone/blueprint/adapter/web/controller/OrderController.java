@@ -7,11 +7,9 @@ import com.bone.blueprint.adapter.web.dto.response.OrderDetailResp;
 import com.bone.blueprint.adapter.web.dto.response.OrderSummaryResp;
 import com.bone.blueprint.application.command.cmd.CancelOrderCommand;
 import com.bone.blueprint.application.command.cmd.CreateOrderCommand;
-import com.bone.blueprint.application.command.cmd.PayOrderCommand;
 import com.bone.blueprint.application.command.handler.CancelOrderCommandHandler;
 import com.bone.blueprint.application.command.handler.CreateOrderCommandHandler;
 import com.bone.blueprint.application.command.handler.DeliverOrderCommandHandler;
-import com.bone.blueprint.application.command.handler.PayOrderCommandHandler;
 import com.bone.blueprint.application.command.handler.ShipOrderCommandHandler;
 import com.bone.blueprint.application.query.dto.OrderDto;
 import com.bone.blueprint.application.query.handler.OrderDetailQueryHandler;
@@ -43,7 +41,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class OrderController {
 
   private final CreateOrderCommandHandler createOrderCommandHandler;
-  private final PayOrderCommandHandler payOrderCommandHandler;
   private final CancelOrderCommandHandler cancelOrderCommandHandler;
   private final ShipOrderCommandHandler shipOrderCommandHandler;
   private final DeliverOrderCommandHandler deliverOrderCommandHandler;
@@ -69,14 +66,6 @@ public class OrderController {
     Long id = createOrderCommandHandler.handle(command);
     return ResponseEntity.created(URI.create("/api/v1/orders/" + id))
         .body(ApiResponse.success(Map.of("id", id)));
-  }
-
-  @Operation(summary = "支付订单", description = "支付指定的订单")
-  @PostMapping("/{id}/pay")
-  public ApiResponse<Void> pay(@Parameter(description = "订单ID") @PathVariable Long id) {
-    PayOrderCommand command = orderAssembler.toPayOrderCommand(id);
-    payOrderCommandHandler.handle(command);
-    return ApiResponse.success();
   }
 
   @Operation(summary = "取消订单", description = "取消指定的订单")
@@ -105,9 +94,9 @@ public class OrderController {
   @GetMapping("/{id}")
   public ApiResponse<OrderDetailResp> getById(
       @Parameter(description = "订单ID") @PathVariable Long id) {
-    OrderDetailQuery query = orderAssembler.toOrderDetailQuery(id);
+    // 与 RPC 侧统一：用不可变查询对象（构造器注入）
     OrderDetailResp response =
-        orderAssembler.toOrderDetailResp(orderDetailQueryHandler.handle(query));
+        orderAssembler.toOrderDetailResp(orderDetailQueryHandler.handle(new OrderDetailQuery(id)));
     return ApiResponse.success(response);
   }
 }

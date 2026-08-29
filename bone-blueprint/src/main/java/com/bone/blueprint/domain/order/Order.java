@@ -96,20 +96,15 @@ public class Order extends TenantAggregateRoot<Long> {
     return Collections.unmodifiableList(items);
   }
 
-  public void pay() {
-    if (this.status != OrderStatus.CREATED) {
-      throw new DomainException("只有新建状态的订单可以支付");
-    }
-    this.status = OrderStatus.PAID;
-    this.updatedAt = new Date();
-    addDomainEvent(
-        new OrderPaidEvent(getId(), getTenantId(), customerId, totalAmount, Instant.now()));
-  }
-
   /**
-   * 支付成功回调后确认订单（真实下单支付链路：支付单 {@code Payment.confirmSuccess} 成功后，由事件 订阅驱动本方法把订单从 CREATED 置为 PAID）。
+   * 确认订单已支付（CREATED → PAID）。
    *
-   * <p>与 {@link #pay()} 状态迁移一致，但语义上由「支付网关回调」触发，作为跨聚合（支付→订单）协作的 确认行为；幂等：已 PAID 的订单再次确认直接返回。
+   * <p>订单聚合**唯一**的支付确认入口，由真实支付链路驱动：支付单 {@code Payment.confirmSuccess} 成功 → {@code
+   * PaymentSucceededEvent} → 订阅方调本方法。
+   *
+   * <p>幂等：已 PAID 的订单再次确认直接返回 {@code false}（跳过、不重复发事件）；非 CREATED 状态抛 {@link DomainException}。
+   *
+   * @return 本次调用是否真正完成状态迁移（false 表示幂等跳过）
    */
   public boolean confirmPaid() {
     if (this.status == OrderStatus.PAID) {
