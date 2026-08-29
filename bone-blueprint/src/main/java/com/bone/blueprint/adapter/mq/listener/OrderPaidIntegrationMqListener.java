@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 /**
  * 消费 Outbox 中继发出的 {@link OrderPaidIntegrationEvent}（下游系统订阅示范）。
  *
- * <p>注意：此处仅记录消费结果，不应再次调用 {@code PayOrderCommandHandler}（避免重复支付）。
+ * <p>注意：此处仅记录消费结果，**不应再次发起支付/确认订单**（避免重复支付）。
  */
 @Slf4j
 @Component

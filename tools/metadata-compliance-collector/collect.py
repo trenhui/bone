@@ -28,7 +28,7 @@ ENGINE_JAVA = (
     ROOT
     / "bone-engine"
     / "bone-metadata-engine"
-    / "bone-metadata-engine-core"
+    / "bone-metadata-engine-runtime"
     / "src"
     / "main"
     / "java"

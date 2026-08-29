@@ -1,0 +1,186 @@
+package com.bone.blueprint.domain.payment;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import com.bone.blueprint.domain.payment.event.PaymentFailedEvent;
+import com.bone.blueprint.domain.payment.event.PaymentRefundedEvent;
+import com.bone.blueprint.domain.payment.event.PaymentSucceededEvent;
+import com.bone.blueprint.domain.payment.valueobject.PaymentChannel;
+import com.bone.blueprint.domain.payment.valueobject.PaymentStatus;
+import com.bone.core.exception.DomainException;
+import java.math.BigDecimal;
+import org.junit.jupiter.api.Test;
+
+class PaymentTest {
+
+  private Payment createPendingPayment() {
+    return Payment.create(
+        1L, 1L, 100L, 200L, new BigDecimal("200"), PaymentChannel.SIMULATED, "http://pay");
+  }
+
+  @Test
+  void testCreateWithInvalidAmount() {
+    assertThrows(
+        DomainException.class,
+        () ->
+            Payment.create(
+                1L, 1L, 100L, 200L, new BigDecimal("0"), PaymentChannel.SIMULATED, "http://pay"));
+  }
+
+  @Test
+  void testCreateWithNullRequiredFields() {
+    assertThrows(
+        DomainException.class,
+        () ->
+            Payment.create(
+                null,
+                1L,
+                100L,
+                200L,
+                new BigDecimal("200"),
+                PaymentChannel.SIMULATED,
+                "http://pay"));
+  }
+
+  @Test
+  void testMarkPayingOnlyFromPending() {
+    Payment payment = createPendingPayment();
+    payment.markPaying();
+    assertEquals(PaymentStatus.PAYING, payment.getStatus());
+
+    // 已 PAYING 再 markPaying 抛异常
+    assertThrows(DomainException.class, payment::markPaying);
+  }
+
+  @Test
+  void testConfirmSuccessMovesToSuccess() {
+    Payment payment = createPendingPayment();
+    payment.markPaying();
+
+    boolean migrated = payment.confirmSuccess("trade-no-001", new BigDecimal("200"));
+
+    assertTrue(migrated);
+    assertEquals(PaymentStatus.SUCCESS, payment.getStatus());
+    assertEquals("trade-no-001", payment.getChannelTradeNo());
+    assertNotNull(payment.getPaidAt());
+    assertEquals(1, payment.getDomainEvents().size());
+    assertInstanceOf(PaymentSucceededEvent.class, payment.getDomainEvents().get(0));
+  }
+
+  @Test
+  void testConfirmSuccessWithAmountMismatchThrows() {
+    Payment payment = createPendingPayment();
+    payment.markPaying();
+
+    // 实付金额与应付金额不一致（部分支付/篡改）→ 拒绝确认
+    assertThrows(
+        DomainException.class, () -> payment.confirmSuccess("trade-no-001", new BigDecimal("199")));
+    assertEquals(PaymentStatus.PAYING, payment.getStatus());
+    assertEquals(0, payment.getDomainEvents().size());
+  }
+
+  @Test
+  void testConfirmSuccessIsIdempotentWithSameTradeNo() {
+    Payment payment = createPendingPayment();
+    payment.confirmSuccess("trade-no-001", new BigDecimal("200"));
+    payment.clearDomainEvents();
+
+    boolean second = payment.confirmSuccess("trade-no-001", new BigDecimal("200"));
+
+    // 幂等：同流水号重复回调不迁移、不抛错、不重复发事件
+    assertFalse(second);
+    assertEquals(PaymentStatus.SUCCESS, payment.getStatus());
+    assertEquals("trade-no-001", payment.getChannelTradeNo());
+    assertEquals(0, payment.getDomainEvents().size());
+  }
+
+  @Test
+  void testConfirmSuccessWithDifferentTradeNoThrows() {
+    Payment payment = createPendingPayment();
+    payment.confirmSuccess("trade-no-001", new BigDecimal("200"));
+
+    // 已成功但回调流水号不同（异常）→ 抛错防止覆盖
+    assertThrows(
+        DomainException.class, () -> payment.confirmSuccess("trade-no-002", new BigDecimal("200")));
+    assertEquals("trade-no-001", payment.getChannelTradeNo());
+  }
+
+  @Test
+  void testConfirmSuccessOnClosedThrows() {
+    Payment payment = createPendingPayment();
+    payment.close();
+
+    assertThrows(
+        DomainException.class, () -> payment.confirmSuccess("trade-no-001", new BigDecimal("200")));
+  }
+
+  @Test
+  void testMarkFailedFromPaying() {
+    Payment payment = createPendingPayment();
+    payment.markPaying();
+
+    payment.markFailed("trade-no-001");
+
+    assertEquals(PaymentStatus.FAILED, payment.getStatus());
+    assertEquals(1, payment.getDomainEvents().size());
+    assertInstanceOf(PaymentFailedEvent.class, payment.getDomainEvents().get(0));
+  }
+
+  @Test
+  void testCloseFromPending() {
+    Payment payment = createPendingPayment();
+    payment.close();
+    assertEquals(PaymentStatus.CLOSED, payment.getStatus());
+  }
+
+  @Test
+  void testCloseSuccessThrows() {
+    Payment payment = createPendingPayment();
+    payment.confirmSuccess("trade-no-001", new BigDecimal("200"));
+
+    assertThrows(DomainException.class, payment::close);
+  }
+
+  @Test
+  void testRefundOnlyFromSuccess() {
+    Payment payment = createPendingPayment();
+    // 未成功不可退款
+    assertThrows(DomainException.class, () -> payment.refund(new BigDecimal("200")));
+
+    payment.confirmSuccess("trade-no-001", new BigDecimal("200"));
+    payment.clearDomainEvents();
+
+    boolean refunded = payment.refund(new BigDecimal("200"));
+
+    assertTrue(refunded);
+    assertNotNull(payment.getRefundedAt());
+    assertEquals(new BigDecimal("200"), payment.getRefundAmount());
+    assertEquals(1, payment.getDomainEvents().size());
+    assertInstanceOf(PaymentRefundedEvent.class, payment.getDomainEvents().get(0));
+  }
+
+  @Test
+  void testRefundAmountValidation() {
+    Payment payment = createPendingPayment();
+    payment.confirmSuccess("trade-no-001", new BigDecimal("200"));
+
+    // 超付金额不可退
+    assertThrows(DomainException.class, () -> payment.refund(new BigDecimal("201")));
+    // 非正金额不可退
+    assertThrows(DomainException.class, () -> payment.refund(new BigDecimal("0")));
+    assertThrows(DomainException.class, () -> payment.refund(null));
+  }
+
+  @Test
+  void testRefundIsIdempotent() {
+    Payment payment = createPendingPayment();
+    payment.confirmSuccess("trade-no-001", new BigDecimal("200"));
+    payment.refund(new BigDecimal("200"));
+    payment.clearDomainEvents();
+
+    boolean second = payment.refund(new BigDecimal("200"));
+
+    assertFalse(second);
+    assertEquals(0, payment.getDomainEvents().size());
+  }
+}

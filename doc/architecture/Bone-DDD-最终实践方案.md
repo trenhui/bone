@@ -4,7 +4,7 @@
 > **结构**：**第一部分**为业界共识与架构原则（北向星），含 **§10 Bone 上下文映射参考**（将 §2.3 原则实例化为 Bone 各上下文关系图）；**第二部分**为 **Bone 平台工程落地**（包结构、铁律、SDK、极简策略）。修订时先对齐原则，再调整落地条文。  
 > **定位说明**：本文是 **Bone 仓库内 DDD 与分层门禁的权威规范**，对齐主流 DDD/整洁架构共识，并含 **D1 元数据注解** 等工程折中；**非**全行业唯一标准，复杂域请结合 ADR 裁剪。  
 > **关联文档**：[BONE-总体架构设计方案.md](./BONE-总体架构设计方案.md)（平台总体架构、NFR、安全与数据一致性策略，与本方案互补）；[README.md](./README.md) 为架构文档索引；模块详设见 [doc/design/modules/README.md](../design/modules/README.md)。  
-> **版本**：**4.3** | **日期**：2026-05-26  
+> **版本**：**4.4** | **日期**：2026-08-28  
 > **分册索引**：[ddd/README.md](./ddd/README.md)（原则 / 工程落地 / CQRS / 附录 / **补充条文与示例**）  
 > **近期 ADR**：[0011 AggregateRoot 继承链](./adr/0011-aggregate-root-inheritance.md)、[0012 SystemException 层次](./adr/0012-system-exception-hierarchy.md)、[0013 extension-studio 读侧 ReadPort](./adr/0013-extension-studio-repository-read-side.md)
 >
@@ -27,7 +27,7 @@
 
 ### 参考级（大型模块按需启用）
 - D0/D1/D2 纯净度分级（§17）
-- application/service 三类分类 S1/S2/S3（§14.3.1）
+- application 共享逻辑按性质分流（§14.3.1，**禁止 `application/service`**）
 - Facade 触发条件 F1/F2/F3（§14.3.2）
 - 读侧决策树、持久化对象决策树
 
@@ -152,7 +152,40 @@
 | 跨聚合同模块 | 领域事件 → `AFTER_COMMIT` 发布 + Outbox（可选） | `infrastructure` + `DomainEventPublisher` |
 | 跨模块 / 跨服务 | 集成事件（`*IntegrationEvent` 后缀）→ MQ / Saga | `infrastructure`、integration 模块 |
 
-领域事件发布最小模式见 [ddd/07-supplements.md §3.3.1](./ddd/07-supplements.md#331-领域事件发布最小模式)。
+领域事件发布最小模式见 [ddd/07-supplements.md §3.3.1](./ddd/07-supplements.md#331-领域事件发布最小模式）。
+
+### 5.5 回调幂等与跨聚合协作（支付场景样板，2026-08 补充）
+
+真实下单支付链路是「回调驱动 + 跨聚合协作」的最佳示范，`bone-blueprint` 已按下列规范落地样板：
+
+**支付作为独立聚合**：支付单（`Payment`）是独立于订单（`Order`）的聚合根，经 `orderId` 关联（聚合间仅以 ID 引用，§3.1）。状态机 `PENDING → PAYING → SUCCESS / FAILED / CLOSED` 完整封装在聚合内，反贫血（§17）。
+
+**回调幂等（关键）**：支付渠道异步通知可能重复，必须在聚合内显式幂等。样板中 `Payment.confirmSuccess(channelTradeNo, paidAmount)` 对**已 SUCCESS** 的支付单再次回调（**同流水号**）返回 `false`（跳过、不抛错、不重复发事件）；**异流水号**则抛 `DomainException`（防篡改覆盖）；对 `FAILED/CLOSED` 的支付单抛 `DomainException`（不允许非法状态迁移）。**幂等键**用渠道流水号 `channelTradeNo`，非业务自增主键。遵循以下硬约束：
+- 幂等判断在**聚合内**（领域规则），不在 Handler 用 `if` 重复判断（反贫血红线 §17）。
+- 幂等成功回调返回 `boolean`（true=真正迁移，false=幂等跳过），Handler 据此决定是否继续下游动作。
+- 领域事件（如 `PaymentSucceededEvent`）在真正迁移时**只发一次**，事件载荷携带 `channelTradeNo` 便于下游关联审计。
+
+**金额一致性校验（支付核心不变量，必须）**：回调确认成功时，**实付金额必须等于应付金额**。`confirmSuccess(channelTradeNo, paidAmount)` 在聚合内校验 `paidAmount == amount`，不等则抛 `DomainException`（拒绝部分支付/金额被篡改的异常入账）。金额比对用 `BigDecimal.compareTo`，不做浮点等值比较。
+
+**并发幂等兜底（生产必做，样板注明）**：应用层幂等（聚合内判断）是「读-改-写」非线程安全，无法完全抵御**并发重复回调**（两次都读到旧状态 → 双发事件）。真实生产**必须**额外兜底二选一：① 乐观锁：`version` 字段 + `UPDATE ... WHERE status='PAYING'`（影响行数 0 则已被处理）；② `channel_trade_no` **唯一索引**，重复写入抛约束冲突。样板仅演示应用层幂等，接入须按场景补数据库级兜底。
+
+**跨聚合协作**：支付单提交后，支付成功经**领域事件**（`PaymentSucceededEvent`）在 `AFTER_COMMIT` 订阅中确认订单（`Order.confirmPaid()`），订单确认本身也幂等（`boolean` 返回值，已 PAID 跳过）。跨聚合写不放在同一事务（§5.3 默认最终一致）；确认订单（本地聚合写，独立事务）与扣库存（远程调用）解耦——远程失败不回滚已提交的订单确认，由补偿/重试处理。
+
+**订单状态机闭环**：订单聚合完整承载生命周期状态机——`CREATED → PAID → SHIPPED → DELIVERED`，分支 `CANCELLED`（CREATED/PAID）、`REFUNDED`（PAID/SHIPPED/DELIVERED 退款）。`confirmPaid/ship/deliver/refund/cancel` 均为领域行为（反贫血 §17），Handler 只编排（加载→调领域→保存）。发货/送达经 `ShipOrderCommandHandler`/`DeliverOrderCommandHandler` + `/api/v1/orders/{id}/ship|deliver` 暴露。
+
+**支付网关防腐**：`PaymentGateway` 出站端口在 `domain/gateway`，实现在 `infrastructure/gateway/payment`，用领域语言声明「预下单」能力（§19），禁止渠道 DTO/异常穿透领域。
+
+**回调命令**：回调经 `HandlePaymentCallbackCommand`（携带 `paymentId` + `channelTradeNo` + `paidAmount` + `success`）驱动，Handler 只做「加载支付单 → 调领域方法（幂等 + 金额校验）→ 保存发布」，不写领域规则。
+
+**退款（支付域必含，幂等 + 金额校验）**：仅**已成功**支付单可退款。`Payment.refund(refundAmount)` 在聚合内：非 SUCCESS 抛错；已退款（`refundedAt != null`）返回 `false`（幂等跳过）；退款金额必须 >0 且 ≤ 已付金额（部分/全额）。退款成功发 `PaymentRefundedEvent`（载荷含 `refundAmount` + `channelTradeNo`），`AFTER_COMMIT` 订阅确认订单退款（`Order.refund()`：PAID/SHIPPED/DELIVERED → REFUNDED）并释放库存（远程，最终一致）。真实退款须调渠道退款接口 + 对账，样板仅本地幂等。
+
+**超时关闭**：未支付单须定时自动关闭（生命周期闭环）。用 `PaymentReadPort.findPayableExpiredBefore(tenantId, before)` 扫描 PENDING/PAYING 超时单（读侧端口承载多条件扫描，避免写仓储堆砌含 `And/Or` 的方法名违反仓储方法白名单），逐笔调 `Payment.close()`。样板 `CloseExpiredPaymentJob` 每 5 分钟执行。
+
+**支付查询（CQRS 读侧）**：支付单详情经 `PaymentReadPort.findById`（读模型直查，不经过写聚合），组装为 `PaymentDto` 供 `PaymentDetailQueryHandler` 返回。读侧用 `*ReadPort`（§18.5），不经写仓储，避免读操作占用写聚合状态机。
+
+**回调验签（安全，必须）**：真实支付渠道回调必须**验签**（HMAC/RSA/证书），防止伪造回调。样板经 `PaymentSignaturePort`（出站/校验端口，防腐层）在 Handler 进入领域前验签——签名不可信抛 `BizException` 拒绝。样板用 `SimulatedPaymentSignatureVerifier` 演示模拟 HMAC（固定共享密钥 + `MessageDigest.isEqual` 常量时间比较）；真实接入时：密钥外部化（配置中心/密钥管理）、加防重放（nonce/时间戳）、按渠道用证书。
+
+> 使用范围：本文为权威规范；`Payment` 上下文标注「参考样板」表示仅在 `bone-blueprint` 落地演示，平台模块按需裁剪，无需复制全部演示能力（§22）。生产接入支付必须补齐：并发幂等兜底、真实渠道验签（防重放）、真实渠道退款/对账、真实渠道适配。
 
 ---
 
@@ -210,6 +243,7 @@
 | **System** | 系统配置、运维日志、监控告警 | 通用域 | `SysConfig`、`SysLog` |
 | **Notification** | 通知渠道、消息发送记录 | 支撑域 | `NotificationRecord` |
 | **Generator** | 代码生成模板、数据源、生成任务历史 | 支撑域 | `Template`、`GenerationTask` |
+| **Payment**（参考样板） | 支付单生命周期：发起、渠道预下单、回调幂等确认 | 支撑域 | `Payment`（`bone-blueprint`） |
 
 ### 10.2 上下文映射图
 
@@ -308,7 +342,7 @@ static final ArchRule no_direct_iam_domain_dependency =
 | 维度 | 要求 |
 |------|------|
 | 分层 | §14.1 标准树（或 §14.2 极简树） |
-| 应用层 | 基础包 `command` / `query`；可选 `event` / `integration` / 满足 §14.3.1 约束的 `service`；ADR 例外可加 `orchestration`（§14.3）；满足 §14.3.2 F1/F2/F3 可加 `facade` |
+| 应用层 | 基础包 `command` / `query`；可选 `event` / `integration`；ADR 例外可加 `orchestration`（§14.3）；满足 §14.3.2 F1/F2/F3 可加 `facade`；**禁止 `application/service`**（§14.3.1 按性质分流） |
 | 入站 | Controller → `*CommandHandler` / `*QueryHandler`（或 ADR 批准的 `*Orchestrator`，或 §14.3.2 条件下的 `*Facade`）；**禁止** Controller 直接注入 `application/service`、`domain/service`（领域服务）、`domain/repository`（ArchUnit 见 §21 #11/#12/#17） |
 | 命名 | 应用层命令/查询类名 `*Command` / `*Query`（禁 `*Cmd` / `*Qry`）；Handler 类名 `*CommandHandler` / `*QueryHandler`；adapter 入参 DTO 见 [§23](#23-命名约定) 分层表；端口 `domain/repository/*Repository`；异常 `BizException` |
 | 禁止 | `application/usecase/**`、`*UseCase`、任何自造 `@UseCase` / `UseCaseExecutor`；**禁止**业务模块依赖已删除的 `com.bone.core.usecase.*` |
@@ -494,8 +528,8 @@ com.bone.{module}/
 │   ├── event/                     # 可选：领域事件订阅 / 应用事件转发
 │   ├── integration/               # 可选：入站消息编排（MQ / Kafka 消费）
 │   ├── orchestration/             # ADR 例外：跨 Handler 编排（§14.3）
-│   ├── facade/                    # 条件追加：多入口 / SDK 门面（§14.3.2）
-│   └── service/                   # §14.3.1 约束（共享逻辑，禁 Controller 直注）
+│   └── facade/                    # 条件追加：多入口 / SDK 门面（§14.3.2）
+│   # 禁止 application/service——共享逻辑按性质分流（领域规则→domain/service；技术横切→domain 端口+infrastructure 实现，§14.3.1）
 ├── domain/
 │   ├── {aggregate}/
 │   ├── repository/
@@ -536,7 +570,7 @@ com.bone.{module}/
 | `application/integration/` | 入站消息编排（如 MQ 消费、Kafka Source） | 可选 |
 | `application/orchestration/` | 跨多 Handler 编排（`*Orchestrator`） | **ADR 例外** |
 | `application/facade/` | 多入口 / Client SDK 入站门面（`*Facade`） | **§14.3.2 条件追加** |
-| `application/service/` | 多 Handler 共享逻辑（`*Service`） | **§14.3.1 约束** |
+| ~~`application/service/`~~ | ~~多 Handler 共享逻辑（`*Service`）~~ | **反模式，禁止**（§14.3.1：共享逻辑按性质分流 domain / infrastructure） |
 
 **禁止**（PR/ArchUnit 拦截）：
 
@@ -561,35 +595,33 @@ com.bone.{module}/
 
 - 仅当「跨 2+ 聚合 Handler 编排 + 无法在单一 Handler 表达事务/补偿」时，可使用 **`application/orchestration/*Orchestrator`**（**不叫 UseCase**），ADR 写明编排步骤、补偿策略、是否引入 Saga。
 - **反例**（不构成例外，应改写为单 Handler 或 Orchestrator 内联）：
-  - 「Handler A 同步调用 Handler B」且 B 仅复用查询 → 把查询下沉到共享 `application/service/*Service`（§14.3.1）。
-  - 「多个 Handler 顺序调用、无补偿」→ 合并到一个 Handler，或抽取共享 `*Service`；不必引入 Orchestrator。
+  - 「Handler A 同步调用 Handler B」且 B 仅复用查询 → 查询本属读侧，下沉到 `application/query` 复用读端口；不引入 `*Service`。
+  - 「多个 Handler 顺序调用、无补偿」→ 合并到一个 Handler；不必引入 Orchestrator。
 
 > 能力声明走 `@Capability`，业务执行走 Handler（必要时 Orchestrator）；详见 [§20](#20-flow--ai-编排可选)。
 
-#### 14.3.1 `application/service` 约束
+#### 14.3.1 应用层「共享逻辑」按性质分流（禁止 `application/service`）
 
-`application/service/` 用于多个 Handler **共享**非门面型逻辑。**两条铁律 + 两条建议**即可：
+**结论：应用层不设 `*Service`。** AppService 已拆成 `*CommandHandler` / `*QueryHandler`（CQRS 用例执行器），应用层保持**薄**——只含 Handler（编排）+ Command/Query/DTO。任何被多个 Handler 复用的逻辑，**不按「共享」这一事实**决定位置，而**按逻辑性质分流**：
 
-**铁律**：
+| 逻辑性质 | 判断 | 归处 |
+|----------|------|------|
+| **领域规则 / 不变量**（跨聚合或跨实体的纯领域行为） | 是否表达业务规则？ | `domain/service/*DomainService`（领域服务，Handler 编排调用） |
+| **技术横切**（租户上下文、保存+发布事件、调用外部网关） | 依赖具体技术？ | `domain/gateway/*Port`（端口接口）+ `infrastructure/**/*Impl`（实现），Handler 经端口注入 |
+| **用例级编排组合**（多个 Handler 复用的编排步骤） | 是否可并入某 Handler？ | Handler 内联；或 `application/orchestration/*Orchestrator`（ADR 例外） |
 
-1. **禁止** `Controller` 直接注入 `application/service/*Service`（入站统一为 Handler / Orchestrator，见 §12.1 P0-7）——**ArchUnit #11 机器拦截**。
-2. **禁止** `*Service` 承载聚合不变量（不变量在聚合根或领域服务，见 §12.1 P0-2）——**CR 拦截**，ArchUnit 无对应规则。
+**为什么禁止 `application/service`**：
 
-**建议**（CR 经验，不机器拦截）：
+1. **避免「准巨型 Service」反模式回潮**：留一个应用层共享逻辑层，会让领域逻辑「上浮」到应用层、重新长成事务脚本式 Service——正是 DDD 想消灭的。
+2. **可复用逻辑必属两类性质之一**：要么是领域规则（在 `domain`），要么是技术横切（在 `infrastructure` 经端口）。应用层不需要夹在中间的「共享业务层」。
+3. **P0-1 依赖方向**：application 依赖 `domain` 端口（合法），不依赖 `infrastructure` 实现类（P0-1）。技术横切经端口注入恰好满足。
 
-- 命名 `*Service`；避免 `*Manager`（除非遗留 ADR）。
-- 默认**不加** `@Transactional`（写事务边界仍在 `*CommandHandler` / `*Orchestrator`）；若必须，须在类级 Javadoc 说明。
-- 依赖 `domain` 端口与其他 Handler；不依赖 `infrastructure` 实现类。
+**存量示例迁移**（`bone-blueprint`）：
+- 租户隔离 → **下沉仓储查询层**：`OrderRepository.findByIdInTenant(id, tenantId)`（default 方法，用 SDK `Criteria` 过滤，SQL 层即过滤跨租户订单）；Handler 传入 `TenantProvider.currentTenantId()`。
+- 技术横切 `TenantSupport` / `AggregatePersistence` → `domain/gateway/TenantProvider` / `AggregatePersister`（端口）+ `infrastructure` 实现（Spring bean），Handler 经端口注入。
+- **应用层与领域层都不承载"加载后校验租户"**——多租户隔离属于横切关注点，理想由基础设施（如 SQL 拦截器）统一处理；在 SDK 未内置时，用仓储 default 方法 + Criteria 实现查询层过滤。
 
-**参考分类**（建议在类级 Javadoc 注明 `S1` / `S2` / `S3` 之一，供 CR 与 AI 生成校验；CR 约束，ArchUnit 不拦截）：
-
-| 标签 | 典型用途 | 仓库示例 |
-|------|----------|----------|
-| `S1 绑定/协调` | 多 Handler 复用的权限绑定、关联表维护 | `AccountRoleBindingService` |
-| `S2 流程运行时` | 技术编排引擎封装，无 HTTP 入站 | `FlowExecutionService`、`FlowRuntime` |
-| `S3 缓存/失效` | 横切缓存失效、权限快照刷新 | `AuthorityCacheEvictionService` |
-
-> 反模式：仅 `handler.handle(cmd)` 一行 delegate 的 Service —— 直接删除，调用方改注入 Handler。
+> 仍保留一条硬约束：**禁止** `Controller` 直接注入 `domain/service`（领域服务）或 `application/service`（历史遗留包），入站统一为 Handler / Orchestrator / Facade（ArchUnit #11/#12/#17）。`application/service` 若存在于存量模块，应迁移为端口或领域服务后删除。
 
 #### 14.3.2 `application/facade` 约束（条件追加，非默认）
 
@@ -926,7 +958,7 @@ static final ArchRule no_new_use_cases =
 | 做法 | 建议 |
 |------|------|
 | **CQRS** | 保留 `command/query` 分包；不默认独立读库、事件投影。 |
-| **应用层** | 默认 Controller → Handler → Domain **三步**（adapter → application → domain）；**不引入** UseCase；满足 §14.3.2 F1/F2/F3 时按条件追加 `*Facade`；`application/service` 仅按 §14.3.1 约束；跨聚合编排按 §14.3 ADR 加 `*Orchestrator`。 |
+| **应用层** | 默认 Controller → Handler → Domain **三步**（adapter → application → domain）；**不引入** UseCase，**禁止** `application/service`（§14.3.1 按性质分流）；满足 §14.3.2 F1/F2/F3 时按条件追加 `*Facade`；跨聚合编排按 §14.3 ADR 加 `*Orchestrator`。 |
 | **扩展点 / ACL / MQ / RPC / 定时** | 无真实需求则不建。 |
 | **战略文档** | 小模块一页纸术语表起步。 |
 | **领域事件** | 无跨聚合协调时可少发。 |
@@ -987,7 +1019,7 @@ static final ArchRule no_new_use_cases =
 | 应用服务（受约束） | `OrderShippingService` | §14.3.1：禁 Controller 直注、禁承载聚合不变量；禁 `*Manager` |
 
 > **与 COLA 术语对照**（仅供跨框架沟通参考，不改 Bone 命名规范）：
-> `*CommandHandler` ≡ COLA `*CmdExe`；`*QueryHandler` ≡ COLA `*QryExe`；`*Facade` ≡ COLA `AppService`（入站门面）；`application/service/*Service`（S1/S2/S3）无 COLA 直接等价物（COLA 里此类逻辑通常内聚在 CmdExe/DomainService 内）。
+> `*CommandHandler` ≡ COLA `*CmdExe`；`*QueryHandler` ≡ COLA `*QryExe`；`*Facade` ≡ COLA `AppService`（入站门面）。Bone **无 `application/service` 层**：COLA 里内聚在 CmdExe/DomainService 的共享逻辑，Bone 按 §14.3.1 性质分流到 `domain/service`（领域）或 `domain/gateway` 端口 + `infrastructure` 实现（技术）。
 > Bone 选用全词 `*CommandHandler` / `*QueryHandler` 而非 COLA 缩写 `*CmdExe` / `*QryExe`，原因：与 CQRS/MediatR/Axon 业界通用术语对齐；全词命名在 Code Review、日志、堆栈中可读性更优；`Executor` 缩写在 Java 生态与 `java.util.concurrent.Executor` 存在语义歧义。
 
 ---
@@ -1056,7 +1088,7 @@ static final ArchRule no_new_use_cases =
 | **模块根包**下的 `controller/`（如 `com.bone.xxx.controller.*`，**不在** `adapter/web/controller/`） | 迁移到 `adapter/web/controller/`；按 §14.1 重组 `dto/request\|response`、`assembler/` | `git mv` + StrReplace |
 | 命名 `*Cmd` / `*Qry` | 类名重命名为 `*Command` / `*Query`；子包 `cmd/` / `qry/` 可保留作短目录名（§14.1） | `scripts/ddd-rename-cmd-qry.py <module> --apply` |
 | 模块自建 `BusinessException` / `*BusinessException` | 全部改用 `com.bone.core.exception.BizException` 或 `*BizException` 后缀（如 `MetadataEngineBizException`、`ExtensionBizException`）；删除自建 `BusinessException` 类 | 手工 + ArchUnit `noBusinessExceptionSuffix` |
-| `Controller` 直接注入 `application/service/*Service` | Controller 改注入 `*CommandHandler` / `*QueryHandler` / `*Orchestrator`；`*Service` 仅供 Handler 内部复用 | `scripts/migrate-extension-studio-service-to-application.py`（模板） |
+| 存量 `application/service/*Service`（应用层共享逻辑） | 按 §14.3.1 性质分流：领域规则→`domain/service`；技术横切→`domain/gateway` 端口 + `infrastructure` 实现，Handler 经端口注入；删除 `application/service` 包 | `scripts/migrate-extension-studio-service-to-application.py`（模板，改造后） |
 | `Controller` 直接注入 `domain/service/*`（领域服务） | Controller 改注入对应 Handler；领域服务由 Handler 在应用层编排调用（ArchUnit #17 机器拦截） | 手工 + ArchUnit `adapterControllersMustNotDependOnDomainService` |
 | 缺少 ArchUnit 守护（新模块或老模块） | 使用 `scripts/ddd-archtest-template.py <module> <root-package> [--extra-archunit ...]` 一行生成 `ArchitectureTest`，再 `allowStoreCreation=true` 生成基线 | `scripts/ddd-archtest-template.py` |
 

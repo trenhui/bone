@@ -1,0 +1,13 @@
+{
+  "change": "metadata-engine-deep-refactor",
+  "phase": "design",
+  "mode": "compact",
+  "canonical_spec": "openspec",
+  "generated_by": "comet-handoff.sh",
+  "context_hash": "c93278b64d24bb55163a46a764fdacf2ae877b23812958578117557f53a77b28",
+  "files": [
+    { "path": "openspec/changes/metadata-engine-deep-refactor/proposal.md", "sha256": "2b55a55cf9905ef379ef5d91f467341dc44eeca881fd35e3bea1bf0a8d73a7f2" },
+    { "path": "openspec/changes/metadata-engine-deep-refactor/design.md", "sha256": "bcbdfd1b9dbb28e4b865c376f7140250671d0df445e52d4e9ba82d09c7290f5b" },
+    { "path": "openspec/changes/metadata-engine-deep-refactor/tasks.md", "sha256": "2f1346cbc541ea4b6609aba156d160d3a6bf01e68970359f4910384bd38e4f94" }
+  ]
+}

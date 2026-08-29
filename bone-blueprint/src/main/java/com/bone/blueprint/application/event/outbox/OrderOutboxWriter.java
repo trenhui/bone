@@ -2,7 +2,7 @@ package com.bone.blueprint.application.event.outbox;
 
 import com.bone.blueprint.application.config.OrderOutboxProperties;
 import com.bone.blueprint.application.integration.event.OrderPaidIntegrationEvent;
-import com.bone.blueprint.application.support.TenantSupport;
+import com.bone.blueprint.domain.gateway.TenantProvider;
 import com.bone.blueprint.domain.outbox.OrderOutboxRecord;
 import com.bone.blueprint.domain.repository.OrderOutboxRepository;
 import com.bone.core.util.DistributedIdGenerator;
@@ -22,13 +22,14 @@ public class OrderOutboxWriter {
   private final OrderOutboxProperties properties;
   private final OrderOutboxRepository outboxRepository;
   private final OrderOutboxEnvelopeFactory envelopeFactory;
+  private final TenantProvider tenantProvider;
 
   @Transactional
   public void appendOrderPaid(OrderPaidIntegrationEvent event) {
     if (!properties.isEnabled() || event == null) {
       return;
     }
-    long tenantId = event.tenantId() != null ? event.tenantId() : TenantSupport.currentTenantId();
+    long tenantId = event.tenantId() != null ? event.tenantId() : tenantProvider.currentTenantId();
     String eventId = envelopeFactory.newEventId();
     String json = envelopeFactory.toJson(event);
     String partitionKey = String.valueOf(tenantId);

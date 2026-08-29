@@ -32,7 +32,8 @@ cd bone-frontend && npm ci && npm run lint && npm run build --workspace=bone-she
 mvn com.diffplug.spotless:spotless-maven-plugin:2.43.0:apply --batch-mode \
   -pl bone-framework,bone-platform,bone-sdk,bone-engine/studio-generator,\
 bone-engine/bone-metadata-sdk,bone-engine/bone-metadata-server,\
-bone-engine/bone-metadata-engine/bone-metadata-engine-core,bone-engine/bone-metadata-engine/bone-metadata-engine-starter,\
+bone-engine/bone-metadata-engine/bone-metadata-engine-domain,bone-engine/bone-metadata-engine/bone-metadata-engine-ports,\
+bone-engine/bone-metadata-engine/bone-metadata-engine-runtime,bone-engine/bone-metadata-engine/bone-metadata-engine-starter,\
 bone-engine/bone-extension-engine/bone-extension-sdk,bone-engine/bone-extension-engine/bone-extension-studio \
   -am
 ```

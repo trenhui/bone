@@ -10,9 +10,12 @@ import static org.mockito.Mockito.when;
 
 import com.bone.blueprint.application.command.cmd.CreateOrderCommand;
 import com.bone.blueprint.domain.extension.order.OrderPriceCalculator;
+import com.bone.blueprint.domain.gateway.AggregatePersister;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
+import com.bone.blueprint.domain.gateway.TenantProvider;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.repository.OrderRepository;
+import com.bone.blueprint.infrastructure.persistence.AggregatePersistence;
 import com.bone.core.domain.event.DomainEventPublisher;
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -21,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,6 +35,10 @@ class CreateOrderCommandHandlerExtensionTest {
   @Mock private InventoryGateway inventoryGateway;
 
   @Mock private OrderPriceCalculator priceCalculator;
+
+  @Mock private TenantProvider tenantProvider;
+
+  @Spy private AggregatePersister aggregatePersister = new AggregatePersistence();
 
   @Mock private DomainEventPublisher domainEventPublisher;
 
@@ -45,18 +53,9 @@ class CreateOrderCommandHandlerExtensionTest {
   @Test
   void testHandleWithStandardPrice() {
     CreateOrderCommand.OrderItemDto itemDto =
-        CreateOrderCommand.OrderItemDto.builder()
-            .productId(1L)
-            .productName("商品1")
-            .quantity(2)
-            .unitPrice(new BigDecimal("100"))
-            .build();
+        new CreateOrderCommand.OrderItemDto(1L, "商品1", 2, new BigDecimal("100"));
 
-    CreateOrderCommand command =
-        CreateOrderCommand.builder()
-            .customerId(1L)
-            .items(Collections.singletonList(itemDto))
-            .build();
+    CreateOrderCommand command = new CreateOrderCommand(1L, Collections.singletonList(itemDto));
 
     when(inventoryGateway.checkStock(anyLong(), anyInt())).thenReturn(true);
     when(priceCalculator.calculate(any())).thenReturn(new BigDecimal("200")); // 标准价格
@@ -71,18 +70,9 @@ class CreateOrderCommandHandlerExtensionTest {
   @Test
   void testHandleWithVipPrice() {
     CreateOrderCommand.OrderItemDto itemDto =
-        CreateOrderCommand.OrderItemDto.builder()
-            .productId(1L)
-            .productName("商品1")
-            .quantity(2)
-            .unitPrice(new BigDecimal("100"))
-            .build();
+        new CreateOrderCommand.OrderItemDto(1L, "商品1", 2, new BigDecimal("100"));
 
-    CreateOrderCommand command =
-        CreateOrderCommand.builder()
-            .customerId(1L)
-            .items(Collections.singletonList(itemDto))
-            .build();
+    CreateOrderCommand command = new CreateOrderCommand(1L, Collections.singletonList(itemDto));
 
     when(inventoryGateway.checkStock(anyLong(), anyInt())).thenReturn(true);
     when(priceCalculator.calculate(any())).thenReturn(new BigDecimal("180")); // VIP 9折
@@ -97,18 +87,9 @@ class CreateOrderCommandHandlerExtensionTest {
   @Test
   void testHandleWithPromotionPrice() {
     CreateOrderCommand.OrderItemDto itemDto =
-        CreateOrderCommand.OrderItemDto.builder()
-            .productId(1L)
-            .productName("商品1")
-            .quantity(2)
-            .unitPrice(new BigDecimal("100"))
-            .build();
+        new CreateOrderCommand.OrderItemDto(1L, "商品1", 2, new BigDecimal("100"));
 
-    CreateOrderCommand command =
-        CreateOrderCommand.builder()
-            .customerId(1L)
-            .items(Collections.singletonList(itemDto))
-            .build();
+    CreateOrderCommand command = new CreateOrderCommand(1L, Collections.singletonList(itemDto));
 
     when(inventoryGateway.checkStock(anyLong(), anyInt())).thenReturn(true);
     when(priceCalculator.calculate(any())).thenReturn(new BigDecimal("160")); // 促销8折
@@ -123,18 +104,9 @@ class CreateOrderCommandHandlerExtensionTest {
   @Test
   void testHandleWithMemberPrice() {
     CreateOrderCommand.OrderItemDto itemDto =
-        CreateOrderCommand.OrderItemDto.builder()
-            .productId(1L)
-            .productName("商品1")
-            .quantity(2)
-            .unitPrice(new BigDecimal("100"))
-            .build();
+        new CreateOrderCommand.OrderItemDto(1L, "商品1", 2, new BigDecimal("100"));
 
-    CreateOrderCommand command =
-        CreateOrderCommand.builder()
-            .customerId(1L)
-            .items(Collections.singletonList(itemDto))
-            .build();
+    CreateOrderCommand command = new CreateOrderCommand(1L, Collections.singletonList(itemDto));
 
     when(inventoryGateway.checkStock(anyLong(), anyInt())).thenReturn(true);
     when(priceCalculator.calculate(any())).thenReturn(new BigDecimal("170")); // 会员85折
@@ -149,18 +121,9 @@ class CreateOrderCommandHandlerExtensionTest {
   @Test
   void testHandleWithEnterprisePrice() {
     CreateOrderCommand.OrderItemDto itemDto =
-        CreateOrderCommand.OrderItemDto.builder()
-            .productId(1L)
-            .productName("商品1")
-            .quantity(2)
-            .unitPrice(new BigDecimal("100"))
-            .build();
+        new CreateOrderCommand.OrderItemDto(1L, "商品1", 2, new BigDecimal("100"));
 
-    CreateOrderCommand command =
-        CreateOrderCommand.builder()
-            .customerId(1L)
-            .items(Collections.singletonList(itemDto))
-            .build();
+    CreateOrderCommand command = new CreateOrderCommand(1L, Collections.singletonList(itemDto));
 
     when(inventoryGateway.checkStock(anyLong(), anyInt())).thenReturn(true);
     when(priceCalculator.calculate(any())).thenReturn(new BigDecimal("140")); // 企业7折

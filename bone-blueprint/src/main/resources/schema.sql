@@ -28,6 +28,28 @@ CREATE TABLE IF NOT EXISTS t_order_item (
     INDEX idx_product_id (product_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 支付单表（支付限界上下文，样板示范）
+CREATE TABLE IF NOT EXISTS bp_payment (
+    id BIGINT PRIMARY KEY COMMENT '雪花算法生成的全局唯一ID',
+    tenant_id BIGINT COMMENT '租户ID',
+    order_id BIGINT NOT NULL COMMENT '关联 t_order.id',
+    customer_id BIGINT NOT NULL,
+    amount DECIMAL(10,2) NOT NULL COMMENT '支付金额',
+    channel VARCHAR(30) NOT NULL COMMENT '支付渠道：SIMULATED/WECHAT/ALIPAY',
+    status VARCHAR(20) NOT NULL COMMENT 'PENDING/PAYING/SUCCESS/FAILED/CLOSED',
+    channel_trade_no VARCHAR(64) DEFAULT NULL COMMENT '渠道流水号（幂等去重键）',
+    pay_url VARCHAR(500) DEFAULT NULL COMMENT '支付链接',
+    paid_at DATETIME(3) DEFAULT NULL,
+    refunded_at DATETIME(3) DEFAULT NULL COMMENT '退款时间',
+    refund_amount DECIMAL(10,2) DEFAULT NULL COMMENT '退款金额',
+    created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+    deleted TINYINT NOT NULL DEFAULT 0,
+    INDEX idx_payment_order_id (order_id),
+    INDEX idx_payment_status (status),
+    INDEX idx_payment_order_channel (order_id, channel)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='支付单';
+
 -- 集成事件 Outbox（蓝图示范）
 CREATE TABLE IF NOT EXISTS bp_outbox (
     id BIGINT PRIMARY KEY COMMENT 'Snowflake ID',

@@ -12,9 +12,12 @@ import static org.mockito.Mockito.when;
 
 import com.bone.blueprint.application.command.cmd.CreateOrderCommand;
 import com.bone.blueprint.domain.extension.order.OrderPriceCalculator;
+import com.bone.blueprint.domain.gateway.AggregatePersister;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
+import com.bone.blueprint.domain.gateway.TenantProvider;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.repository.OrderRepository;
+import com.bone.blueprint.infrastructure.persistence.AggregatePersistence;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
 import java.math.BigDecimal;
@@ -25,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -36,6 +40,10 @@ class CreateOrderCommandHandlerTest {
 
   @Mock private OrderPriceCalculator priceCalculator;
 
+  @Mock private TenantProvider tenantProvider;
+
+  @Spy private AggregatePersister aggregatePersister = new AggregatePersistence();
+
   @Mock private DomainEventPublisher domainEventPublisher;
 
   @InjectMocks private CreateOrderCommandHandler handler;
@@ -45,18 +53,9 @@ class CreateOrderCommandHandlerTest {
   @BeforeEach
   void setUp() {
     CreateOrderCommand.OrderItemDto itemDto =
-        CreateOrderCommand.OrderItemDto.builder()
-            .productId(1L)
-            .productName("商品1")
-            .quantity(2)
-            .unitPrice(new BigDecimal("100"))
-            .build();
+        new CreateOrderCommand.OrderItemDto(1L, "商品1", 2, new BigDecimal("100"));
 
-    command =
-        CreateOrderCommand.builder()
-            .customerId(1L)
-            .items(Collections.singletonList(itemDto))
-            .build();
+    command = new CreateOrderCommand(1L, Collections.singletonList(itemDto));
   }
 
   @Test
@@ -88,23 +87,12 @@ class CreateOrderCommandHandlerTest {
   @Test
   void testHandleMultipleItems() {
     CreateOrderCommand.OrderItemDto item1 =
-        CreateOrderCommand.OrderItemDto.builder()
-            .productId(1L)
-            .productName("商品1")
-            .quantity(2)
-            .unitPrice(new BigDecimal("100"))
-            .build();
+        new CreateOrderCommand.OrderItemDto(1L, "商品1", 2, new BigDecimal("100"));
 
     CreateOrderCommand.OrderItemDto item2 =
-        CreateOrderCommand.OrderItemDto.builder()
-            .productId(2L)
-            .productName("商品2")
-            .quantity(1)
-            .unitPrice(new BigDecimal("50"))
-            .build();
+        new CreateOrderCommand.OrderItemDto(2L, "商品2", 1, new BigDecimal("50"));
 
-    CreateOrderCommand multiItemCommand =
-        CreateOrderCommand.builder().customerId(1L).items(Arrays.asList(item1, item2)).build();
+    CreateOrderCommand multiItemCommand = new CreateOrderCommand(1L, Arrays.asList(item1, item2));
 
     when(inventoryGateway.checkStock(anyLong(), anyInt())).thenReturn(true);
     when(priceCalculator.calculate(any())).thenReturn(new BigDecimal("250"));

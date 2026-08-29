@@ -1,0 +1,72 @@
+package com.bone.blueprint.application.command.handler;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.bone.blueprint.application.command.cmd.CloseExpiredPaymentCommand;
+import com.bone.blueprint.domain.gateway.TenantProvider;
+import com.bone.blueprint.domain.payment.Payment;
+import com.bone.blueprint.domain.payment.valueobject.PaymentChannel;
+import com.bone.blueprint.domain.payment.valueobject.PaymentStatus;
+import com.bone.blueprint.domain.repository.PaymentRepository;
+import com.bone.core.exception.DomainException;
+import com.bone.core.exception.NotFoundException;
+import java.math.BigDecimal;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+@ExtendWith(MockitoExtension.class)
+class CloseExpiredPaymentCommandHandlerTest {
+
+  @Mock private PaymentRepository paymentRepository;
+  @Mock private TenantProvider tenantProvider;
+
+  @InjectMocks private CloseExpiredPaymentCommandHandler handler;
+
+  private Payment payingPayment() {
+    Payment payment =
+        Payment.create(
+            1L, 1L, 100L, 200L, new BigDecimal("200"), PaymentChannel.SIMULATED, "http://pay");
+    payment.markPaying();
+    return payment;
+  }
+
+  @Test
+  void testClosePayingPayment() {
+    Payment payment = payingPayment();
+    when(tenantProvider.currentTenantId()).thenReturn(1L);
+    when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(payment);
+
+    handler.handle(new CloseExpiredPaymentCommand(1L));
+
+    assertEquals(PaymentStatus.CLOSED, payment.getStatus());
+    verify(paymentRepository).save(payment);
+  }
+
+  @Test
+  void testCloseSuccessPaymentThrows() {
+    Payment payment = payingPayment();
+    payment.confirmSuccess("trade-001", new BigDecimal("200")); // SUCCESS 不可关闭
+    when(tenantProvider.currentTenantId()).thenReturn(1L);
+    when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(payment);
+
+    assertThrows(DomainException.class, () -> handler.handle(new CloseExpiredPaymentCommand(1L)));
+    verify(paymentRepository, never()).save(any());
+  }
+
+  @Test
+  void testPaymentNotFound() {
+    when(tenantProvider.currentTenantId()).thenReturn(1L);
+    when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(null);
+
+    assertThrows(NotFoundException.class, () -> handler.handle(new CloseExpiredPaymentCommand(1L)));
+    verify(paymentRepository, never()).save(any());
+  }
+}
