@@ -53,8 +53,8 @@ public class InitiatePaymentCommandHandler {
   public InitiatePaymentResult handle(InitiatePaymentCommand cmd) {
     long tenantId = tenantProvider.currentTenantId();
     Order order =
-        Optional.ofNullable(orderRepository.findByIdInTenant(cmd.getOrderId(), tenantId))
-            .orElseThrow(() -> new NotFoundException("订单不存在: " + cmd.getOrderId()));
+        Optional.ofNullable(orderRepository.findByIdInTenant(cmd.orderId(), tenantId))
+            .orElseThrow(() -> new NotFoundException("订单不存在: " + cmd.orderId()));
     if (order.getStatus() != OrderStatus.CREATED) {
       throw new BizException("只有新建状态的订单可以发起支付: " + order.getStatus());
     }

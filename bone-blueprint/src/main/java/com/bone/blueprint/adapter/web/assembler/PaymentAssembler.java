@@ -18,20 +18,16 @@ public interface PaymentAssembler {
   InitiatePaymentCommand toInitiatePaymentCommand(InitiatePaymentReq req);
 
   default HandlePaymentCallbackCommand toHandlePaymentCallbackCommand(PaymentCallbackReq req) {
-    return HandlePaymentCallbackCommand.builder()
-        .paymentId(req.getPaymentId())
-        .channelTradeNo(req.getChannelTradeNo())
-        .paidAmount(req.getPaidAmount())
-        .signature(req.getSignature())
-        .success(req.isSuccess())
-        .build();
+    return new HandlePaymentCallbackCommand(
+        req.getPaymentId(),
+        req.getChannelTradeNo(),
+        req.getPaidAmount(),
+        req.getSignature(),
+        req.isSuccess());
   }
 
   default RefundPaymentCommand toRefundPaymentCommand(Long paymentId, RefundPaymentReq req) {
-    return RefundPaymentCommand.builder()
-        .paymentId(paymentId)
-        .refundAmount(req.getRefundAmount())
-        .build();
+    return new RefundPaymentCommand(paymentId, req.getRefundAmount());
   }
 
   InitiatePaymentResp toInitiatePaymentResp(InitiatePaymentResult result);

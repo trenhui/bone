@@ -1,12 +1,14 @@
 package com.bone.blueprint.infrastructure.query;
 
 import com.bone.blueprint.domain.gateway.OrderReadPort;
+import com.bone.blueprint.domain.order.read.OrderHeadRow;
 import com.bone.blueprint.domain.order.read.OrderWithItemsRow;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ClassPathResource;
@@ -31,6 +33,20 @@ public class OrderReadPortImpl implements OrderReadPort {
     MapSqlParameterSource params =
         new MapSqlParameterSource().addValue("tenantId", tenantId).addValue("orderId", orderId);
     return jdbcTemplate.query(loadSql(), params, new OrderWithItemsRowMapper());
+  }
+
+  @Override
+  public List<OrderHeadRow> findCreatedExpiredBefore(long tenantId, Instant before) {
+    // 简单单表投影内联 SQL（与 PaymentReadPortImpl 风格一致）；复杂 Join 才外置 SQL 文件
+    String sql =
+        "SELECT id, customer_id, total_amount, status, created_at FROM t_order "
+            + "WHERE tenant_id = :tenantId AND deleted = 0 "
+            + "AND status = 'CREATED' AND created_at < :before";
+    MapSqlParameterSource params =
+        new MapSqlParameterSource()
+            .addValue("tenantId", tenantId)
+            .addValue("before", Timestamp.from(before));
+    return jdbcTemplate.query(sql, params, new OrderHeadRowMapper());
   }
 
   private String loadSql() {
@@ -70,6 +86,23 @@ public class OrderReadPortImpl implements OrderReadPort {
         row.setQuantity(rs.getInt("quantity"));
         row.setUnitPrice(rs.getBigDecimal("unit_price"));
         row.setSubtotal(rs.getBigDecimal("subtotal"));
+      }
+      return row;
+    }
+  }
+
+  private static final class OrderHeadRowMapper implements RowMapper<OrderHeadRow> {
+
+    @Override
+    public OrderHeadRow mapRow(ResultSet rs, int rowNum) throws SQLException {
+      OrderHeadRow row = new OrderHeadRow();
+      row.setOrderId(rs.getLong("id"));
+      row.setCustomerId(rs.getLong("customer_id"));
+      row.setTotalAmount(rs.getBigDecimal("total_amount"));
+      row.setStatus(rs.getString("status"));
+      Timestamp createdAt = rs.getTimestamp("created_at");
+      if (createdAt != null) {
+        row.setCreatedAt(createdAt.toLocalDateTime());
       }
       return row;
     }

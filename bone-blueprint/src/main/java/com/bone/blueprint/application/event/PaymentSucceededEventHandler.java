@@ -69,6 +69,14 @@ public class PaymentSucceededEventHandler {
                 order.getTotalAmount(),
                 Instant.now()));
       }
+    } else {
+      // 状态异常：订单不在 CREATED 却收到支付成功回调（如已被取消/发货）。属「钱-货不一致」异常路径，
+      // 不能静默忽略——至少告警；真实场景应触发告警/自动退款（复用 PaymentRefundedEvent 链路）。
+      log.warn(
+          "订单状态异常仍收到支付成功回调（跳过确认）: orderId={}, status={}, paymentId={}",
+          order.getId(),
+          order.getStatus(),
+          event.paymentId());
     }
   }
 }

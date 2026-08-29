@@ -39,7 +39,7 @@ class RefundPaymentCommandHandlerTest {
   @InjectMocks private RefundPaymentCommandHandler handler;
 
   private RefundPaymentCommand command() {
-    return RefundPaymentCommand.builder().paymentId(1L).refundAmount(new BigDecimal("200")).build();
+    return new RefundPaymentCommand(1L, new BigDecimal("200"));
   }
 
   @Test

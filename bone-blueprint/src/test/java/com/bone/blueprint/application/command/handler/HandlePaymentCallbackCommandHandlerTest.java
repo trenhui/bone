@@ -63,13 +63,8 @@ class HandlePaymentCallbackCommandHandlerTest {
             });
 
     handler.handle(
-        HandlePaymentCallbackCommand.builder()
-            .paymentId(1L)
-            .channelTradeNo("trade-001")
-            .paidAmount(new BigDecimal("200"))
-            .signature("valid-sign")
-            .success(true)
-            .build());
+        new HandlePaymentCallbackCommand(
+            1L, "trade-001", new BigDecimal("200"), "valid-sign", true));
 
     assertEquals(PaymentStatus.SUCCESS, payment.getStatus());
     assertEquals("trade-001", payment.getChannelTradeNo());
@@ -87,13 +82,8 @@ class HandlePaymentCallbackCommandHandlerTest {
         DomainException.class,
         () ->
             handler.handle(
-                HandlePaymentCallbackCommand.builder()
-                    .paymentId(1L)
-                    .channelTradeNo("trade-001")
-                    .paidAmount(new BigDecimal("199")) // 金额不符
-                    .signature("valid-sign")
-                    .success(true)
-                    .build()));
+                new HandlePaymentCallbackCommand(
+                    1L, "trade-001", new BigDecimal("199"), "valid-sign", true))); // 金额不符
     verify(paymentRepository, never()).save(any());
   }
 
@@ -108,13 +98,8 @@ class HandlePaymentCallbackCommandHandlerTest {
         BizException.class,
         () ->
             handler.handle(
-                HandlePaymentCallbackCommand.builder()
-                    .paymentId(1L)
-                    .channelTradeNo("trade-001")
-                    .paidAmount(new BigDecimal("200"))
-                    .signature("forged-sign")
-                    .success(true)
-                    .build()));
+                new HandlePaymentCallbackCommand(
+                    1L, "trade-001", new BigDecimal("200"), "forged-sign", true)));
     verify(paymentRepository, never()).save(any());
   }
 
@@ -125,12 +110,7 @@ class HandlePaymentCallbackCommandHandlerTest {
     when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(payment);
 
     handler.handle(
-        HandlePaymentCallbackCommand.builder()
-            .paymentId(1L)
-            .channelTradeNo("trade-002")
-            .paidAmount(new BigDecimal("200"))
-            .success(false)
-            .build());
+        new HandlePaymentCallbackCommand(1L, "trade-002", new BigDecimal("200"), null, false));
 
     assertEquals(PaymentStatus.FAILED, payment.getStatus());
   }
@@ -147,13 +127,8 @@ class HandlePaymentCallbackCommandHandlerTest {
 
     // 重复成功回调：幂等跳过，不产生新事件
     handler.handle(
-        HandlePaymentCallbackCommand.builder()
-            .paymentId(1L)
-            .channelTradeNo("trade-001")
-            .paidAmount(new BigDecimal("200"))
-            .signature("valid-sign")
-            .success(true)
-            .build());
+        new HandlePaymentCallbackCommand(
+            1L, "trade-001", new BigDecimal("200"), "valid-sign", true));
 
     assertEquals(PaymentStatus.SUCCESS, payment.getStatus());
     // 幂等：聚合内 domainEvents 为空，保存时无新事件可发布
@@ -171,12 +146,8 @@ class HandlePaymentCallbackCommandHandlerTest {
         NotFoundException.class,
         () ->
             handler.handle(
-                HandlePaymentCallbackCommand.builder()
-                    .paymentId(1L)
-                    .channelTradeNo("trade-003")
-                    .paidAmount(new BigDecimal("200"))
-                    .success(true)
-                    .build()));
+                new HandlePaymentCallbackCommand(
+                    1L, "trade-003", new BigDecimal("200"), null, true)));
 
     verify(paymentRepository, never()).save(any());
   }

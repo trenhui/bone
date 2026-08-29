@@ -36,9 +36,8 @@ public class CancelOrderCommandHandler {
   public void handle(CancelOrderCommand cmd) {
     Order order =
         Optional.ofNullable(
-                orderRepository.findByIdInTenant(
-                    cmd.getOrderId(), tenantProvider.currentTenantId()))
-            .orElseThrow(() -> new NotFoundException("订单不存在: " + cmd.getOrderId()));
+                orderRepository.findByIdInTenant(cmd.orderId(), tenantProvider.currentTenantId()))
+            .orElseThrow(() -> new NotFoundException("订单不存在: " + cmd.orderId()));
     order.cancel();
     aggregatePersister.updateAndPublishEvents(orderRepository, domainEventPublisher, order);
   }

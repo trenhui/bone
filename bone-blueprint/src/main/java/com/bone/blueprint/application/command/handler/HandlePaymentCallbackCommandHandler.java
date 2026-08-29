@@ -46,19 +46,18 @@ public class HandlePaymentCallbackCommandHandler {
     long tenantId = tenantProvider.currentTenantId();
     // 以支付单号定位支付单（真实渠道回调通常携带支付单号或渠道流水号）
     Payment payment =
-        Optional.ofNullable(paymentRepository.findByIdInTenant(cmd.getPaymentId(), tenantId))
-            .orElseThrow(() -> new NotFoundException("支付单不存在: paymentId=" + cmd.getPaymentId()));
+        Optional.ofNullable(paymentRepository.findByIdInTenant(cmd.paymentId(), tenantId))
+            .orElseThrow(() -> new NotFoundException("支付单不存在: paymentId=" + cmd.paymentId()));
 
-    if (cmd.isSuccess()) {
+    if (cmd.success()) {
       // 成功回调必须验签（防伪造）；验签失败拒绝确认
-      boolean trusted =
-          paymentSignaturePort.verify(payment, cmd.getPaidAmount(), cmd.getSignature());
+      boolean trusted = paymentSignaturePort.verify(payment, cmd.paidAmount(), cmd.signature());
       if (!trusted) {
         throw new BizException("支付回调签名校验失败");
       }
-      payment.confirmSuccess(cmd.getChannelTradeNo(), cmd.getPaidAmount());
+      payment.confirmSuccess(cmd.channelTradeNo(), cmd.paidAmount());
     } else {
-      payment.markFailed(cmd.getChannelTradeNo());
+      payment.markFailed(cmd.channelTradeNo());
     }
 
     aggregatePersister.updateAndPublishEvents(paymentRepository, domainEventPublisher, payment);

@@ -42,12 +42,12 @@ public class RefundPaymentCommandHandler {
   public void handle(RefundPaymentCommand cmd) {
     long tenantId = tenantProvider.currentTenantId();
     Payment payment =
-        Optional.ofNullable(paymentRepository.findByIdInTenant(cmd.getPaymentId(), tenantId))
-            .orElseThrow(() -> new NotFoundException("支付单不存在: paymentId=" + cmd.getPaymentId()));
+        Optional.ofNullable(paymentRepository.findByIdInTenant(cmd.paymentId(), tenantId))
+            .orElseThrow(() -> new NotFoundException("支付单不存在: paymentId=" + cmd.paymentId()));
 
-    payment.refund(cmd.getRefundAmount());
+    payment.refund(cmd.refundAmount());
 
     aggregatePersister.updateAndPublishEvents(paymentRepository, domainEventPublisher, payment);
-    log.info("支付退款完成: paymentId={}, amount={}", cmd.getPaymentId(), cmd.getRefundAmount());
+    log.info("支付退款完成: paymentId={}, amount={}", cmd.paymentId(), cmd.refundAmount());
   }
 }

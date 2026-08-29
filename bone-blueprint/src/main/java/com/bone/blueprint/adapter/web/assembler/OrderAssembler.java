@@ -22,9 +22,7 @@ public interface OrderAssembler {
   OrderSummaryResp toOrderSummaryResp(OrderDto orderDto);
 
   default CancelOrderCommand toCancelOrderCommand(Long orderId) {
-    CancelOrderCommand command = new CancelOrderCommand();
-    command.setOrderId(orderId);
-    return command;
+    return new CancelOrderCommand(orderId);
   }
 
   default ShipOrderCommand toShipOrderCommand(Long orderId) {

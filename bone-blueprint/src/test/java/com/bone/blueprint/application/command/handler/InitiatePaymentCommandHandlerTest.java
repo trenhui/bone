@@ -50,7 +50,7 @@ class InitiatePaymentCommandHandlerTest {
 
   @BeforeEach
   void setUp() {
-    command = InitiatePaymentCommand.builder().orderId(100L).build();
+    command = new InitiatePaymentCommand(100L);
   }
 
   private Order payableOrder() {

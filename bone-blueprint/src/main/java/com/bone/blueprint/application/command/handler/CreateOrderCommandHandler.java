@@ -42,9 +42,9 @@ public class CreateOrderCommandHandler {
 
   @Transactional
   public Long handle(CreateOrderCommand cmd) {
-    for (CreateOrderCommand.OrderItemDto dto : cmd.getItems()) {
-      if (!inventoryGateway.checkStock(dto.getProductId(), dto.getQuantity())) {
-        throw BizException.of("商品库存不足: " + dto.getProductId());
+    for (CreateOrderCommand.OrderItemDto dto : cmd.items()) {
+      if (!inventoryGateway.checkStock(dto.productId(), dto.quantity())) {
+        throw BizException.of("商品库存不足: " + dto.productId());
       }
     }
 
@@ -52,19 +52,19 @@ public class CreateOrderCommandHandler {
     long tenantId = tenantProvider.currentTenantId();
 
     List<OrderItem> items =
-        cmd.getItems().stream()
+        cmd.items().stream()
             .map(
                 dto ->
                     OrderItem.create(
                         DistributedIdGenerator.generateLongId(),
                         orderId,
-                        dto.getProductId(),
-                        dto.getProductName(),
-                        dto.getQuantity(),
-                        dto.getUnitPrice()))
+                        dto.productId(),
+                        dto.productName(),
+                        dto.quantity(),
+                        dto.unitPrice()))
             .collect(Collectors.toList());
 
-    Order order = Order.create(orderId, tenantId, cmd.getCustomerId(), items);
+    Order order = Order.create(orderId, tenantId, cmd.customerId(), items);
 
     order.applyPricing(priceCalculator);
 

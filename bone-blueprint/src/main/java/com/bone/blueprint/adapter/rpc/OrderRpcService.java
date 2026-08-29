@@ -3,6 +3,7 @@ package com.bone.blueprint.adapter.rpc;
 import com.bone.blueprint.adapter.rpc.assembler.OrderRpcAssembler;
 import com.bone.blueprint.adapter.rpc.dto.CreateOrderRpcReq;
 import com.bone.blueprint.adapter.rpc.dto.CreateOrderRpcResp;
+import com.bone.blueprint.adapter.web.dto.response.OrderDetailResp;
 import com.bone.blueprint.application.command.handler.CreateOrderCommandHandler;
 import com.bone.blueprint.application.query.dto.OrderDto;
 import com.bone.blueprint.application.query.handler.OrderDetailQueryHandler;
@@ -52,9 +53,10 @@ public class OrderRpcService {
 
   @Operation(summary = "根据ID查询订单", description = "根据订单ID查询订单详情")
   @GetMapping("/{orderId}")
-  public ApiResponse<OrderDto> getOrderById(
+  public ApiResponse<OrderDetailResp> getOrderById(
       @Parameter(description = "订单ID") @PathVariable Long orderId) {
-    // 与 web 侧统一：用不可变查询对象（构造器注入）
-    return ApiResponse.success(orderDetailQueryHandler.handle(new OrderDetailQuery(orderId)));
+    // 与 web 侧统一：不可变查询对象 + 复用同一响应 DTO（同服务内 web/rpc 契约一致）
+    OrderDto dto = orderDetailQueryHandler.handle(new OrderDetailQuery(orderId));
+    return ApiResponse.success(orderRpcAssembler.toOrderDetailResp(dto));
   }
 }

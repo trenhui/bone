@@ -3,6 +3,7 @@ package com.bone.blueprint.adapter.web.controller;
 import com.bone.blueprint.adapter.web.assembler.OrderAssembler;
 import com.bone.blueprint.adapter.web.dto.request.CreateOrderReq;
 import com.bone.blueprint.adapter.web.dto.request.OrderPageQry;
+import com.bone.blueprint.adapter.web.dto.response.CreateOrderResp;
 import com.bone.blueprint.adapter.web.dto.response.OrderDetailResp;
 import com.bone.blueprint.adapter.web.dto.response.OrderSummaryResp;
 import com.bone.blueprint.application.command.cmd.CancelOrderCommand;
@@ -23,7 +24,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -60,12 +60,12 @@ public class OrderController {
 
   @Operation(summary = "创建订单", description = "创建新的订单，返回 201 与资源 Location")
   @PostMapping
-  public ResponseEntity<ApiResponse<Map<String, Object>>> create(
+  public ResponseEntity<ApiResponse<CreateOrderResp>> create(
       @Parameter(description = "订单创建请求") @Valid @RequestBody CreateOrderReq request) {
     CreateOrderCommand command = orderAssembler.toCreateOrderCommand(request);
     Long id = createOrderCommandHandler.handle(command);
     return ResponseEntity.created(URI.create("/api/v1/orders/" + id))
-        .body(ApiResponse.success(Map.of("id", id)));
+        .body(ApiResponse.success(CreateOrderResp.builder().id(id).build()));
   }
 
   @Operation(summary = "取消订单", description = "取消指定的订单")

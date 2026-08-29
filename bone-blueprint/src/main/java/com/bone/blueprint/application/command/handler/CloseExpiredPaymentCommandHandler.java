@@ -38,11 +38,11 @@ public class CloseExpiredPaymentCommandHandler {
   public void handle(CloseExpiredPaymentCommand cmd) {
     long tenantId = tenantProvider.currentTenantId();
     Payment payment =
-        Optional.ofNullable(paymentRepository.findByIdInTenant(cmd.getPaymentId(), tenantId))
-            .orElseThrow(() -> new NotFoundException("支付单不存在: paymentId=" + cmd.getPaymentId()));
+        Optional.ofNullable(paymentRepository.findByIdInTenant(cmd.paymentId(), tenantId))
+            .orElseThrow(() -> new NotFoundException("支付单不存在: paymentId=" + cmd.paymentId()));
 
     payment.close();
     paymentRepository.save(payment);
-    log.info("已关闭超时支付单: paymentId={}", cmd.getPaymentId());
+    log.info("已关闭超时支付单: paymentId={}", cmd.paymentId());
   }
 }

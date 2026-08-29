@@ -21,7 +21,7 @@ public class OrderDetailQueryHandler {
   @Transactional(readOnly = true)
   public OrderDto handle(OrderDetailQuery query) {
     long tenantId = tenantProvider.currentTenantId();
-    List<OrderWithItemsRow> rows = orderReadPort.findOrderWithItems(tenantId, query.getOrderId());
+    List<OrderWithItemsRow> rows = orderReadPort.findOrderWithItems(tenantId, query.orderId());
     return OrderDetailAssembler.fromRows(rows);
   }
 }

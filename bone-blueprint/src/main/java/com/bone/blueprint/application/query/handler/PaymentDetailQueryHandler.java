@@ -24,8 +24,8 @@ public class PaymentDetailQueryHandler {
     long tenantId = tenantProvider.currentTenantId();
     PaymentRow row =
         paymentReadPort
-            .findById(tenantId, query.getPaymentId())
-            .orElseThrow(() -> new NotFoundException("支付单不存在: " + query.getPaymentId()));
+            .findById(tenantId, query.paymentId())
+            .orElseThrow(() -> new NotFoundException("支付单不存在: " + query.paymentId()));
     return PaymentAssemblerHelper.toDto(row);
   }
 }

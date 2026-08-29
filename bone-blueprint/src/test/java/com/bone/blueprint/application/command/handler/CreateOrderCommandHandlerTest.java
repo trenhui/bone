@@ -53,18 +53,9 @@ class CreateOrderCommandHandlerTest {
   @BeforeEach
   void setUp() {
     CreateOrderCommand.OrderItemDto itemDto =
-        CreateOrderCommand.OrderItemDto.builder()
-            .productId(1L)
-            .productName("商品1")
-            .quantity(2)
-            .unitPrice(new BigDecimal("100"))
-            .build();
+        new CreateOrderCommand.OrderItemDto(1L, "商品1", 2, new BigDecimal("100"));
 
-    command =
-        CreateOrderCommand.builder()
-            .customerId(1L)
-            .items(Collections.singletonList(itemDto))
-            .build();
+    command = new CreateOrderCommand(1L, Collections.singletonList(itemDto));
   }
 
   @Test
@@ -96,23 +87,12 @@ class CreateOrderCommandHandlerTest {
   @Test
   void testHandleMultipleItems() {
     CreateOrderCommand.OrderItemDto item1 =
-        CreateOrderCommand.OrderItemDto.builder()
-            .productId(1L)
-            .productName("商品1")
-            .quantity(2)
-            .unitPrice(new BigDecimal("100"))
-            .build();
+        new CreateOrderCommand.OrderItemDto(1L, "商品1", 2, new BigDecimal("100"));
 
     CreateOrderCommand.OrderItemDto item2 =
-        CreateOrderCommand.OrderItemDto.builder()
-            .productId(2L)
-            .productName("商品2")
-            .quantity(1)
-            .unitPrice(new BigDecimal("50"))
-            .build();
+        new CreateOrderCommand.OrderItemDto(2L, "商品2", 1, new BigDecimal("50"));
 
-    CreateOrderCommand multiItemCommand =
-        CreateOrderCommand.builder().customerId(1L).items(Arrays.asList(item1, item2)).build();
+    CreateOrderCommand multiItemCommand = new CreateOrderCommand(1L, Arrays.asList(item1, item2));
 
     when(inventoryGateway.checkStock(anyLong(), anyInt())).thenReturn(true);
     when(priceCalculator.calculate(any())).thenReturn(new BigDecimal("250"));
