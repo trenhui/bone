@@ -8,6 +8,7 @@ Bone DDD 共享 ArchUnit 规则（`BoneDddArchRules`），真源见 `doc/archite
 |------|----------|
 | `domainMustNotDependOnOuterLayers()` | P0-1 |
 | `applicationMustNotDependOnInfrastructure()` | P0-1 |
+| `outerLayersMustNotMutateAggregateIdentity()` | §3.1（聚合边界） |
 | `domainMustNotUseQueryBuilder()` | P0-5 |
 | `commandHandlersMustNotUseQueryBuilder()` | P0-6 |
 | `domainRepositoriesShouldOnlyDeclareWhitelistedMethods()` | P0-4 + §18.2 |

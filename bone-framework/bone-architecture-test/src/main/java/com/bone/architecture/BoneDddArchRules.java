@@ -4,8 +4,10 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 import com.tngtech.archunit.base.DescribedPredicate;
+import com.tngtech.archunit.core.domain.AccessTarget;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaMethod;
+import com.tngtech.archunit.core.domain.JavaMethodCall;
 import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
@@ -34,6 +36,12 @@ public final class BoneDddArchRules {
 
   private static final String TRANSACTIONAL =
       "org.springframework.transaction.annotation.Transactional";
+
+  /** bone-core 实体基类 FQN：聚合/实体的最终父类，用于识别「聚合身份 setter」的调用目标。 */
+  private static final String ENTITY_BASE_CLASS = "com.bone.core.domain.entity.Entity";
+
+  /** 聚合身份 setter 名（{@code AggregateRoot.setId} / {@code TenantAggregateRoot.setTenantId}）。 */
+  private static final Set<String> AGGREGATE_IDENTITY_SETTERS = Set.of("setId", "setTenantId");
 
   private BoneDddArchRules() {}
 
@@ -338,5 +346,45 @@ public final class BoneDddArchRules {
         return input.isAnnotatedWith("com.bone.core.annotation.ReadSideOnly");
       }
     };
+  }
+
+  /**
+   * §3.1 聚合边界：外层（application / adapter / infrastructure）<strong>禁止直接调用</strong>聚合/实体的 {@code setId}
+   * / {@code setTenantId}。
+   *
+   * <p><b>为何约束调用方，而不是把 setter 改成 protected</b>：{@code AggregateRoot.setId} 需供 SDK 反射回填 主键，{@code
+   * TenantAggregateRoot.setTenantId} 是实现 {@code Tenantable} 接口的契约方法——二者<strong> 必须保持
+   * public</strong>，降级为 protected 会破坏全平台编译。后果是聚合的身份与租户归属在语言层面
+   * 可被任意外部代码篡改，对多租户系统尤其危险（改租户即越权跨租户访问）。既然无法约束<strong>被调用
+   * 方</strong>，就改为约束<strong>调用方</strong>：只有领域层内部（工厂方法、聚合行为）可设置身份。
+   *
+   * <p>只匹配调用目标是 {@code Entity} 子类的 setter，故 DTO / Builder 上的 {@code setId} 不受影响。
+   */
+  public static ArchRule outerLayersMustNotMutateAggregateIdentity() {
+    return noClasses()
+        .that()
+        .resideInAnyPackage("..application..", "..adapter..", "..infrastructure..")
+        .should()
+        // 注意：DescribedPredicate 是抽象类而非函数式接口，必须写匿名类，不能用 lambda。
+        .callMethodWhere(
+            new DescribedPredicate<JavaMethodCall>("set aggregate id or tenantId") {
+              @Override
+              public boolean test(JavaMethodCall call) {
+                AccessTarget.MethodCallTarget target = call.getTarget();
+                if (!AGGREGATE_IDENTITY_SETTERS.contains(target.getName())) {
+                  return false;
+                }
+                if (!target.getOwner().isAssignableTo(ENTITY_BASE_CLASS)) {
+                  return false;
+                }
+                // 排除「自己设置自己」：基础设施持久化模型（如 Outbox 记录）在自身工厂方法里回填主键是
+                // 正常用法，且它并非业务聚合。真正要防的是外层代码篡改<strong>业务聚合</strong>的
+                // 身份 / 租户归属——那时调用方与目标类型必然不同。
+                return !call.getOriginOwner().equals(call.getTargetOwner());
+              }
+            })
+        .because(
+            "DDD §3.1: aggregate id/tenantId must only be set inside domain — SDK requires the "
+                + "setters to stay public, so callers are constrained instead");
   }
 }
