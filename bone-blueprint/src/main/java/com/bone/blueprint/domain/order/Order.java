@@ -1,11 +1,11 @@
 package com.bone.blueprint.domain.order;
 
-import com.bone.blueprint.domain.extension.order.OrderPriceCalculator;
 import com.bone.blueprint.domain.order.event.OrderCancelledEvent;
 import com.bone.blueprint.domain.order.event.OrderCreatedEvent;
 import com.bone.blueprint.domain.order.event.OrderPaidEvent;
-import com.bone.blueprint.domain.order.valueobject.Money;
+import com.bone.blueprint.domain.order.event.OrderPaymentInconsistentEvent;
 import com.bone.blueprint.domain.order.valueobject.OrderStatus;
+import com.bone.blueprint.domain.shared.valueobject.Money;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.exception.DomainException;
 import com.bone.metadata.sdk.domain.annotation.Table;
@@ -97,6 +97,32 @@ public class Order extends TenantAggregateRoot<Long> {
   }
 
   /**
+   * 是否处于待支付状态（仅 CREATED 可确认支付 / 发起支付）。
+   *
+   * <p>意图揭示命名：外部（Handler / 事件订阅器）用本方法判断「能否支付」，**不要**直接比较 {@code getStatus() ==
+   * OrderStatus.CREATED}——状态解释权归聚合，避免状态机泄漏到应用层（反贫血 §17）。
+   */
+  public boolean isAwaitingPayment() {
+    return this.status == OrderStatus.CREATED;
+  }
+
+  /**
+   * 是否处于可退款状态（PAID / SHIPPED / DELIVERED 且尚未退款）。
+   *
+   * <p>与 {@link #refund()} 的守卫条件严格对应；新增状态时两处须同步修改。
+   */
+  public boolean isRefundable() {
+    return this.status == OrderStatus.PAID
+        || this.status == OrderStatus.SHIPPED
+        || this.status == OrderStatus.DELIVERED;
+  }
+
+  /** 是否已支付（可用于下游判断「钱已到账」）。 */
+  public boolean isPaid() {
+    return this.status == OrderStatus.PAID;
+  }
+
+  /**
    * 确认订单已支付（CREATED → PAID）。
    *
    * <p>订单聚合**唯一**的支付确认入口，由真实支付链路驱动：支付单 {@code Payment.confirmSuccess} 成功 → {@code
@@ -118,6 +144,29 @@ public class Order extends TenantAggregateRoot<Long> {
     addDomainEvent(
         new OrderPaidEvent(getId(), getTenantId(), customerId, totalAmount, Instant.now()));
     return true;
+  }
+
+  /**
+   * 上报「钱货不一致」：支付单已成功（钱已收），但订单当前状态无法确认支付（货未付）。
+   *
+   * <p><b>为何是聚合行为</b>：{@code addDomainEvent} 受保护，且「订单处于何种状态算异常」属订单自身的状态机 知识，判定与事件构造都应归属聚合；Handler
+   * 只负责编排与发布。
+   *
+   * <p><b>本方法不改变订单状态</b>：状态迁移必须由真实业务驱动。异常上报只是把问题<strong>显式化</strong>，
+   * 交由补偿链路处理——绝不能为了「让状态对上」而在此自动改单，那会掩盖真正的资金问题。
+   *
+   * @param paymentId 已成功的支付单号
+   * @param reason 不一致原因（人类可读，随事件透传给下游）
+   */
+  public void reportPaymentInconsistency(long paymentId, String reason) {
+    addDomainEvent(
+        new OrderPaymentInconsistentEvent(
+            getId(),
+            getTenantId(),
+            paymentId,
+            this.status == null ? null : this.status.name(),
+            reason,
+            Instant.now()));
   }
 
   public void cancel() {
@@ -153,36 +202,31 @@ public class Order extends TenantAggregateRoot<Long> {
     this.updatedAt = new Date();
   }
 
-  /** 退款：已支付/已发货/已送达订单可退款（进入 REFUNDED）。 */
+  /** 退款：已支付/已发货/已送达订单可退款（进入 REFUNDED）。守卫条件见 {@link #isRefundable()}。 */
   public void refund() {
-    if (this.status == OrderStatus.CREATED) {
-      throw new DomainException("未支付订单无需退款");
-    }
-    if (this.status == OrderStatus.CANCELLED) {
-      throw new DomainException("已取消订单无需退款");
-    }
     if (this.status == OrderStatus.REFUNDED) {
       throw new DomainException("订单已退款");
+    }
+    if (!isRefundable()) {
+      throw new DomainException("当前状态不支持退款: " + this.status);
     }
     this.status = OrderStatus.REFUNDED;
     this.updatedAt = new Date();
   }
 
   /**
-   * 应用扩展点定价结果：由聚合自身调用价格计算器并更新总金额，避免外部通过 setter 修改聚合状态。
+   * 应用定价结果（扩展点计算后的最终金额）。
    *
-   * <p>此为领域行为（反贫血红线 §17）：Handler 仅编排调用，不直接 setTotalAmount。
+   * <p><b>为何不接收 {@code OrderPriceCalculator}</b>：若让聚合持有并调用扩展点接口，等于把扩展点框架类型
+   * 引入领域层，领域层将依赖「扩展点机制」这一技术设施；且扩展点实现替换时聚合签名需随之变动。改由应用层 调用扩展点算出最终金额，聚合只认 {@link
+   * Money}——扩展点实现可自由替换，领域层零感知。
+   *
+   * <p>金额合法性由 {@link Money} 构造器保证（负数 →「金额不能为负」），本方法仅拦截 null。
    */
-  public void applyPricing(OrderPriceCalculator calculator) {
-    if (calculator == null) {
-      throw new DomainException("价格计算器不能为空");
+  public void applyPricing(Money finalPrice) {
+    if (finalPrice == null) {
+      throw new DomainException("定价结果不能为空");
     }
-    OrderPriceCalculator.OrderPriceRequest request =
-        OrderPriceCalculator.OrderPriceRequest.builder()
-            .baseAmount(getTotalMoney().toBigDecimal())
-            .shippingFee(BigDecimal.ZERO)
-            .build();
-    Money finalPrice = Money.of(calculator.calculate(request));
     this.totalAmount = finalPrice.toBigDecimal();
     this.updatedAt = new Date();
     assertValidTotal();

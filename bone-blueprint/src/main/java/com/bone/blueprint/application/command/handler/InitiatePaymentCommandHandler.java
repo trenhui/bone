@@ -2,11 +2,9 @@ package com.bone.blueprint.application.command.handler;
 
 import com.bone.blueprint.application.command.cmd.InitiatePaymentCommand;
 import com.bone.blueprint.application.command.result.InitiatePaymentResult;
-import com.bone.blueprint.domain.gateway.AggregatePersister;
 import com.bone.blueprint.domain.gateway.PaymentGateway;
 import com.bone.blueprint.domain.gateway.TenantProvider;
 import com.bone.blueprint.domain.order.Order;
-import com.bone.blueprint.domain.order.valueobject.OrderStatus;
 import com.bone.blueprint.domain.payment.Payment;
 import com.bone.blueprint.domain.payment.valueobject.PaymentChannel;
 import com.bone.blueprint.domain.repository.OrderRepository;
@@ -43,7 +41,6 @@ public class InitiatePaymentCommandHandler {
   private final PaymentRepository paymentRepository;
   private final PaymentGateway paymentGateway;
   private final TenantProvider tenantProvider;
-  private final AggregatePersister aggregatePersister;
   private final DomainEventPublisher domainEventPublisher;
 
   /** 下单支付默认渠道（样板模拟）。 */
@@ -55,8 +52,9 @@ public class InitiatePaymentCommandHandler {
     Order order =
         Optional.ofNullable(orderRepository.findByIdInTenant(cmd.orderId(), tenantId))
             .orElseThrow(() -> new NotFoundException("订单不存在: " + cmd.orderId()));
-    if (order.getStatus() != OrderStatus.CREATED) {
-      throw new BizException("只有新建状态的订单可以发起支付: " + order.getStatus());
+    // 用意图揭示的聚合查询方法，而非直接比较枚举（状态解释权归聚合，反贫血 §17）
+    if (!order.isAwaitingPayment()) {
+      throw new BizException("只有待支付状态的订单可以发起支付: " + order.getStatus());
     }
 
     long paymentId = DistributedIdGenerator.generateLongId();
@@ -76,7 +74,8 @@ public class InitiatePaymentCommandHandler {
             payUrl);
     payment.markPaying();
 
-    aggregatePersister.saveAndPublishEvents(paymentRepository, domainEventPublisher, payment);
+    paymentRepository.save(payment);
+    domainEventPublisher.publishFrom(payment);
 
     return new InitiatePaymentResult(payment.getId(), payment.getPayUrl());
   }

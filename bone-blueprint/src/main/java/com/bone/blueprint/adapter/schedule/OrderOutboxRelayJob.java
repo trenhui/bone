@@ -1,6 +1,6 @@
 package com.bone.blueprint.adapter.schedule;
 
-import com.bone.blueprint.application.event.outbox.OrderOutboxRelay;
+import com.bone.blueprint.infrastructure.messaging.outbox.OrderOutboxRelay;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;

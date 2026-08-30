@@ -49,7 +49,7 @@
 3. **支付回调**：`PaymentSignaturePort` **验签** → `Payment.confirmSuccess`（幂等 + 金额一致性校验）→ 发 `PaymentSucceededEvent` → `AFTER_COMMIT` 确认订单（`confirmPaid`）+ `confirmStock` → 同事务写 **Outbox** 中继 `OrderPaidIntegrationEvent`
 4. **查询支付单**：`PaymentReadPort.findById`（读侧直查，CQRS 读模型）
 5. **超时关闭**：`CloseExpiredPaymentJob` 定时扫描 PENDING/PAYING 超时单 → `Payment.close()`
-6. **退款**：`Payment.refund()`（幂等 + 金额校验）→ 发 `PaymentRefundedEvent` → `AFTER_COMMIT` 确认订单退款（`Order.refund()`）+ `releaseStock`
+6. **退款**：`Payment.refund()`（**每单仅一次**；重复**同金额**幂等跳过、`false` + warn 留痕，**金额不一致抛错**；退 0 元 / 超付拒绝）→ 发 `PaymentRefundedEvent` → `AFTER_COMMIT` 确认订单退款（`Order.refund()`）+ `releaseStock`
 7. **取消订单**：聚合 `cancel()` → `AFTER_COMMIT` → `releaseStock`
 8. **发货 / 送达**：`Order.ship()`（仅 PAID → SHIPPED）/ `Order.deliver()`（仅 SHIPPED → DELIVERED），经 `/api/v1/orders/{id}/ship`、`/ship`、`/deliver` 触发
 
@@ -68,8 +68,29 @@
 
 ### 多租户
 
-- 聚合根继承 `TenantAggregateRoot`；写/读路径经 `TenantSupport` / `TenantContext` 隔离。
+- 聚合根继承 `TenantAggregateRoot`；写/读路径经 `TenantProviderAdapter`（实现 `domain/gateway/TenantProvider` 端口）/ `TenantContext` 隔离。
 - HTTP 演示：请求头 `X-Tenant-Id: 1001`（见 `TenantContextFilter`）。
+
+### 写侧标准写法（保存 + 发布事件）
+
+```java
+order.cancel();
+orderRepository.save(order);
+domainEventPublisher.publishFrom(order); // default 方法：publishAll + clearDomainEvents
+```
+
+- `publishFrom` 是 `DomainEventPublisher` 的 default 方法，等价于业界 Spring Data `@DomainEvents` 的显式写法。
+- **不经过任何持久化端口**：原 `AggregatePersister`（需传 `Repository` 入参）已删除——属 Service Locator 反模式，且 `save/update` 两方法实现重复。
+- 不发事件的写操作（如 `Order.ship()`）直接 `repository.save(order)` 即可，无需 `publishFrom`。
+
+### 事件订阅器 `@Transactional` 规则（P1-1）
+
+| 订阅器内是否写库 | 是否加 `@Transactional` | 示例 |
+|------------------|------------------------|------|
+| **是**（改聚合并保存） | **必须加**（AFTER_COMMIT 后开启新事务） | `PaymentSucceededEventHandler`、`PaymentRefundedEventHandler` |
+| 否（只读 + 远程调用） | 不加 | `OrderPaidEventHandler`、`OrderCancelledEventHandler` |
+
+> 领域事件经 `SpringDomainEventPublisher` 同步投递到 Spring 事件总线；`@TransactionalEventListener(AFTER_COMMIT)` 保证**事务提交后才触发**，事务回滚则不会执行。
 
 ## 文档
 
@@ -107,7 +128,7 @@ bash scripts/ci/collect-blueprint-compliance.sh
 | **Outbox** | `bp_outbox` + `OrderOutboxWriter` / `OrderOutboxRelay` / `OrderOutboxRelayJob` |
 | **集成事件** | `OrderPaidIntegrationEvent` 与领域事件分离，经 Outbox 中继 |
 | **多租户** | `TenantAggregateRoot` + `QueryBuilder` 强制 `tenantId` + `X-Tenant-Id` 过滤器 |
-| **值对象 Money** | 金额规则集中在 `Money`（`Order` / `OrderItem` 领域计算） |
+| **值对象 Money** | 金额规则集中在 `Money`（位于 `domain/shared/valueobject`，`Order` / `OrderItem` / **`Payment`** 共用——共享值对象独立成包，避免支付反向依赖订单包） |
 | **读侧 Join** | `OrderReadPort` + `findOrderWithItems.sql` 扁平投影 → `OrderDetailAssembler` |
 | **扩展点** | 多实现价格计算器（VIP/企业/促销等） |
 | **独立支付聚合** | `Payment`（`bp_payment`）+ 状态机 + 幂等/金额校验回调（见下） |
@@ -124,9 +145,10 @@ bash scripts/ci/collect-blueprint-compliance.sh
 1. `domain/{aggregate}/`：聚合根、实体、值对象、领域事件（按需）  
 2. `domain/repository/`：写侧仓储接口（继承 SDK `Repository`，不堆查询方法）  
 3. `application/command` + `application/query`：命令/查询与 Handler  
-4. 多租户隔离下沉仓储层（`OrderRepository.findByIdInTenant`，SDK Criteria 查询过滤）；技术横切经 `domain/gateway` 端口 + `infrastructure` 实现（如 `TenantProvider`/`AggregatePersister`），应用层薄 Handler 经端口注入  
-5. `adapter/web`：Controller、request/response DTO、Assembler  
-6. `infrastructure/config` + `infrastructure/event`：元数据、Spring 配置、事件发布实现  
+4. 多租户隔离下沉仓储层（`OrderRepository.findByIdInTenant`，SDK Criteria 查询过滤）；技术横切经 `domain/gateway` 端口 + `infrastructure` 实现（如 `TenantProvider` → `TenantProviderAdapter`），应用层薄 Handler 经端口注入  
+5. **写侧标准写法**：`repository.save(aggregate)` + `domainEventPublisher.publishFrom(aggregate)`（不设持久化端口）  
+6. `adapter/web`：Controller、request/response DTO、Assembler  
+7. `infrastructure/config` + `infrastructure/event`：元数据、Spring 配置、事件发布实现  
 
 **需要真实支付时再加**：独立 `Payment` 聚合（`bp_payment`）+ `PaymentGateway` 防腐 + 回调幂等 `confirmSuccess` + `PaymentSucceededEvent` 驱动订单确认（跨聚合协作）——完整链路见本模块「真实下单支付场景」示范。
 

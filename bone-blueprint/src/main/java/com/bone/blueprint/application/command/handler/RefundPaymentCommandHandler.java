@@ -1,7 +1,6 @@
 package com.bone.blueprint.application.command.handler;
 
 import com.bone.blueprint.application.command.cmd.RefundPaymentCommand;
-import com.bone.blueprint.domain.gateway.AggregatePersister;
 import com.bone.blueprint.domain.gateway.TenantProvider;
 import com.bone.blueprint.domain.payment.Payment;
 import com.bone.blueprint.domain.repository.PaymentRepository;
@@ -35,7 +34,6 @@ public class RefundPaymentCommandHandler {
 
   private final PaymentRepository paymentRepository;
   private final TenantProvider tenantProvider;
-  private final AggregatePersister aggregatePersister;
   private final DomainEventPublisher domainEventPublisher;
 
   @Transactional
@@ -45,9 +43,19 @@ public class RefundPaymentCommandHandler {
         Optional.ofNullable(paymentRepository.findByIdInTenant(cmd.paymentId(), tenantId))
             .orElseThrow(() -> new NotFoundException("支付单不存在: paymentId=" + cmd.paymentId()));
 
-    payment.refund(cmd.refundAmount());
+    boolean refunded = payment.refund(cmd.refundAmount());
 
-    aggregatePersister.updateAndPublishEvents(paymentRepository, domainEventPublisher, payment);
-    log.info("支付退款完成: paymentId={}, amount={}", cmd.paymentId(), cmd.refundAmount());
+    paymentRepository.save(payment);
+    domainEventPublisher.publishFrom(payment);
+    if (refunded) {
+      log.info("支付退款完成: paymentId={}, amount={}", cmd.paymentId(), cmd.refundAmount());
+    } else {
+      // 幂等跳过（金额完全一致的重复提交）。资金操作不可静默吞掉，留 warn 供对账与告警。
+      log.warn(
+          "支付退款重复提交已幂等跳过: paymentId={}, amount={}, 已退金额={}",
+          cmd.paymentId(),
+          cmd.refundAmount(),
+          payment.getRefundedMoney().toBigDecimal());
+    }
   }
 }

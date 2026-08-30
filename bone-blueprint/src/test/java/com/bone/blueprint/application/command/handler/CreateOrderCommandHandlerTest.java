@@ -12,12 +12,10 @@ import static org.mockito.Mockito.when;
 
 import com.bone.blueprint.application.command.cmd.CreateOrderCommand;
 import com.bone.blueprint.domain.extension.order.OrderPriceCalculator;
-import com.bone.blueprint.domain.gateway.AggregatePersister;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.gateway.TenantProvider;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.repository.OrderRepository;
-import com.bone.blueprint.infrastructure.persistence.AggregatePersistence;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
 import java.math.BigDecimal;
@@ -28,7 +26,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,9 +38,6 @@ class CreateOrderCommandHandlerTest {
   @Mock private OrderPriceCalculator priceCalculator;
 
   @Mock private TenantProvider tenantProvider;
-
-  @Spy private AggregatePersister aggregatePersister = new AggregatePersistence();
-
   @Mock private DomainEventPublisher domainEventPublisher;
 
   @InjectMocks private CreateOrderCommandHandler handler;
@@ -68,10 +62,12 @@ class CreateOrderCommandHandlerTest {
 
     assertNotNull(orderId);
     verify(inventoryGateway, times(1)).checkStock(1L, 2);
-    verify(inventoryGateway, times(1)).reserveStock(anyLong(), anyLong(), anyInt());
+    // 回归防护：库存预留是远程写，已从下单事务移除（避免远程成功+本地回滚的「库存悬挂」），
+    // 改由 OrderCreatedEvent 的 AFTER_COMMIT 订阅器异步执行
+    verify(inventoryGateway, never()).reserveStock(anyLong(), anyLong(), anyInt());
     verify(priceCalculator, times(1)).calculate(any());
     verify(orderRepository, times(1)).save(any(Order.class));
-    verify(domainEventPublisher, times(1)).publishAll(any());
+    verify(domainEventPublisher, times(1)).publishFrom(any(Order.class));
   }
 
   @Test
@@ -102,7 +98,7 @@ class CreateOrderCommandHandlerTest {
 
     assertNotNull(orderId);
     verify(inventoryGateway, times(2)).checkStock(anyLong(), anyInt());
-    verify(inventoryGateway, times(2)).reserveStock(anyLong(), anyLong(), anyInt());
-    verify(domainEventPublisher, times(1)).publishAll(any());
+    verify(inventoryGateway, never()).reserveStock(anyLong(), anyLong(), anyInt());
+    verify(domainEventPublisher, times(1)).publishFrom(any(Order.class));
   }
 }

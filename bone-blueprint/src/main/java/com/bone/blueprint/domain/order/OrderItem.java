@@ -1,6 +1,6 @@
 package com.bone.blueprint.domain.order;
 
-import com.bone.blueprint.domain.order.valueobject.Money;
+import com.bone.blueprint.domain.shared.valueobject.Money;
 import com.bone.core.domain.entity.AbstractEntity;
 import com.bone.core.exception.DomainException;
 import com.bone.metadata.sdk.domain.annotation.Table;

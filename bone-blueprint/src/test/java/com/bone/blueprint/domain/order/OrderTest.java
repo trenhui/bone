@@ -3,6 +3,7 @@ package com.bone.blueprint.domain.order;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.bone.blueprint.domain.order.valueobject.OrderStatus;
+import com.bone.blueprint.domain.shared.valueobject.Money;
 import com.bone.core.exception.DomainException;
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -60,19 +61,27 @@ class OrderTest {
     OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
     Order order = Order.create(1L, 1L, 1L, Collections.singletonList(item));
 
-    order.applyPricing(
-        request ->
-            request.getBaseAmount().add(request.getShippingFee()).add(new BigDecimal("100")));
+    // 应用层调用扩展点算出最终金额后传入，聚合只认 Money（不依赖扩展点接口）
+    order.applyPricing(Money.of(new BigDecimal("300")));
 
     assertEquals(new BigDecimal("300"), order.getTotalAmount());
   }
 
   @Test
-  void testApplyPricingWithNullCalculatorThrows() {
+  void testApplyPricingWithNullMoneyThrows() {
     OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
     Order order = Order.create(1L, 1L, 1L, Collections.singletonList(item));
 
     assertThrows(DomainException.class, () -> order.applyPricing(null));
+  }
+
+  @Test
+  void testApplyPricingNegativeMoneyThrows() {
+    OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
+    Order order = Order.create(1L, 1L, 1L, Collections.singletonList(item));
+
+    // 负数金额由 Money 构造器拦截（领域不变量：金额不可为负）
+    assertThrows(DomainException.class, () -> order.applyPricing(Money.of(new BigDecimal("-1"))));
   }
 
   @Test

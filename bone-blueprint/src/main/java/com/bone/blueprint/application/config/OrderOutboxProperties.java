@@ -18,5 +18,8 @@ public class OrderOutboxProperties {
 
   private String orderPaidTopic = "bone.order.paid";
 
+  /** 「钱货不一致」告警/补偿事件主题：支付成功但订单无法确认支付时投递。 */
+  private String paymentInconsistentTopic = "bone.order.payment-inconsistent";
+
   private String consumerGroup = "bone-blueprint-order-paid-consumer";
 }

@@ -28,6 +28,13 @@ public class ArchitectureTest {
   static final ArchRule application_no_infra =
       BoneDddArchRules.applicationMustNotDependOnInfrastructure();
 
+  // §3.1：聚合身份/租户归属不可被外层篡改。
+  // 框架侧 AggregateRoot.setId / TenantAggregateRoot.setTenantId 因 SDK 反射回填与 Tenantable 契约
+  // 必须保持 public，故改为约束调用方：只有 domain 内部（工厂方法/聚合行为）可设置，杜绝越权改租户。
+  @ArchTest
+  static final ArchRule no_outer_aggregate_identity_mutation =
+      BoneDddArchRules.outerLayersMustNotMutateAggregateIdentity();
+
   // P0-5：domain 不可使用 QueryBuilder
   @ArchTest
   static final ArchRule domain_no_query_builder = BoneDddArchRules.domainMustNotUseQueryBuilder();

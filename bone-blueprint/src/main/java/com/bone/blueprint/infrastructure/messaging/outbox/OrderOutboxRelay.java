@@ -1,10 +1,7 @@
-package com.bone.blueprint.application.event.outbox;
+package com.bone.blueprint.infrastructure.messaging.outbox;
 
 import com.bone.blueprint.application.config.OrderOutboxProperties;
 import com.bone.blueprint.application.integration.port.OrderMessageSender;
-import com.bone.blueprint.domain.outbox.OrderOutboxRecord;
-import com.bone.blueprint.domain.outbox.OutboxStatus;
-import com.bone.blueprint.domain.repository.OrderOutboxRepository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +9,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Outbox 中继：扫描 PENDING 记录投递至 MQ，成功标记 SENT，失败累计重试次数，超限标记 FAILED。
+ *
+ * <p>由定时任务驱动（见 {@code adapter/schedule}）。投递是<strong>至少一次</strong>语义——MQ 已收到但 标记 SENT
+ * 前宕机会重复投递，消费方须幂等。
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor

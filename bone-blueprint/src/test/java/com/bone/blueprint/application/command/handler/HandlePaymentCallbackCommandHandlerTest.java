@@ -9,14 +9,12 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.blueprint.application.command.cmd.HandlePaymentCallbackCommand;
-import com.bone.blueprint.domain.gateway.AggregatePersister;
 import com.bone.blueprint.domain.gateway.PaymentSignaturePort;
 import com.bone.blueprint.domain.gateway.TenantProvider;
 import com.bone.blueprint.domain.payment.Payment;
 import com.bone.blueprint.domain.payment.valueobject.PaymentChannel;
 import com.bone.blueprint.domain.payment.valueobject.PaymentStatus;
 import com.bone.blueprint.domain.repository.PaymentRepository;
-import com.bone.blueprint.infrastructure.persistence.AggregatePersistence;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
 import com.bone.core.exception.DomainException;
@@ -28,7 +26,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,7 +34,6 @@ class HandlePaymentCallbackCommandHandlerTest {
   @Mock private PaymentRepository paymentRepository;
   @Mock private TenantProvider tenantProvider;
   @Mock private PaymentSignaturePort paymentSignaturePort;
-  @Spy private AggregatePersister aggregatePersister = new AggregatePersistence();
   @Mock private DomainEventPublisher domainEventPublisher;
 
   @InjectMocks private HandlePaymentCallbackCommandHandler handler;
@@ -50,7 +46,7 @@ class HandlePaymentCallbackCommandHandlerTest {
   @Test
   void testHandleSuccessConfirmPayment() {
     Payment payment = pendingPayment();
-    // 保存时快照聚合已挂载的事件（AggregatePersistence 保存后会 clearDomainEvents，须在 save 时捕获）
+    // 保存时快照聚合已挂载的事件（publishFrom 会在保存后清空事件列表，须在 save 时捕获）
     AtomicInteger eventCount = new AtomicInteger();
     when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(payment);

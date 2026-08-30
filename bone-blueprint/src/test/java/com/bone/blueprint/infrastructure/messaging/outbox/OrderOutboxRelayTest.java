@@ -1,4 +1,4 @@
-package com.bone.blueprint.application.event.outbox;
+package com.bone.blueprint.infrastructure.messaging.outbox;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -10,9 +10,6 @@ import static org.mockito.Mockito.when;
 
 import com.bone.blueprint.application.config.OrderOutboxProperties;
 import com.bone.blueprint.application.integration.port.OrderMessageSender;
-import com.bone.blueprint.domain.outbox.OrderOutboxRecord;
-import com.bone.blueprint.domain.outbox.OutboxStatus;
-import com.bone.blueprint.domain.repository.OrderOutboxRepository;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

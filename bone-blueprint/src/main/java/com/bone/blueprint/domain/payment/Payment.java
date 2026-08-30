@@ -5,6 +5,7 @@ import com.bone.blueprint.domain.payment.event.PaymentRefundedEvent;
 import com.bone.blueprint.domain.payment.event.PaymentSucceededEvent;
 import com.bone.blueprint.domain.payment.valueobject.PaymentChannel;
 import com.bone.blueprint.domain.payment.valueobject.PaymentStatus;
+import com.bone.blueprint.domain.shared.valueobject.Money;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.exception.DomainException;
 import com.bone.metadata.sdk.domain.annotation.Table;
@@ -46,6 +47,21 @@ public class Payment extends TenantAggregateRoot<Long> {
   private BigDecimal refundAmount;
   private Instant createdAt;
   private Instant updatedAt;
+
+  /**
+   * 应付金额（值对象视图）。
+   *
+   * <p>与 {@code Order.getTotalMoney()} 保持同构：金额一律经 {@link Money} 运算，禁止在领域内裸比 {@code
+   * BigDecimal}，避免样板出现「金额两套口径」。
+   */
+  public Money getAmountMoney() {
+    return amount == null ? Money.zero() : Money.of(amount);
+  }
+
+  /** 已退金额（值对象视图），未退款时为 0。 */
+  public Money getRefundedMoney() {
+    return refundAmount == null ? Money.zero() : Money.of(refundAmount);
+  }
 
   private Payment(
       Long id,
@@ -160,26 +176,45 @@ public class Payment extends TenantAggregateRoot<Long> {
     this.updatedAt = Instant.now();
   }
 
+  /** 是否可发起退款（已成功且尚未退款）。与 {@link #refund} 的前置条件对应。 */
+  public boolean isRefundable() {
+    return this.status == PaymentStatus.SUCCESS && this.refundedAt == null;
+  }
+
   /**
    * 退款（仅已成功支付单可退款）。
    *
-   * <p>幂等：已退款的支付单重复退款直接返回（不重复发事件）；支持部分/全额退款，退款金额不可超过已付 金额且必须为正数。
+   * <p><b>每单仅支持一次退款</b>：本样板不实现分批累计退款（真实业务如需分批，应改为累计 {@code refundedAmount} 并校验 累计额 ≤ 已付金额）。
    *
-   * @param refundAmount 退款金额（≤ 已付金额）
+   * <p>幂等语义（资金操作，不能静默失败）：已退款的支付单重复请求时，若金额与上次**完全一致**视为重复提交， 返回 {@code false}
+   * 跳过；若金额**不一致**则视为新的退款意图（很可能是误操作或对账异常），**抛错**让调用方明确感知， 而非静默吞掉。
+   *
+   * @param refundAmount 退款金额（> 0 且 ≤ 已付金额）
    * @return 本次调用是否真正执行退款（false 表示幂等跳过）
    */
   public boolean refund(BigDecimal refundAmount) {
     if (this.status != PaymentStatus.SUCCESS) {
       throw new DomainException("只有已成功的支付单可以退款");
     }
-    if (this.refundedAt != null) {
-      return false; // 幂等：已退款再次退款直接跳过
-    }
-    if (refundAmount == null || refundAmount.compareTo(BigDecimal.ZERO) <= 0) {
+    // Money 构造即校验：null →「金额不能为空」，负数 →「金额不能为负」
+    Money refundMoney = Money.of(refundAmount);
+    // 0 元是合法的 Money（零元订单），但「退 0 元」在业务上无意义且易掩盖调用方 bug，须显式拒绝。
+    // 注意：不能依赖 Money 拦截——它只拒绝负数。
+    if (refundMoney.isZero()) {
       throw new DomainException("退款金额必须大于0");
     }
-    if (refundAmount.compareTo(this.amount) > 0) {
-      throw new DomainException("退款金额不能超过已付金额");
+    if (this.refundedAt != null) {
+      if (this.refundAmount != null && this.refundAmount.compareTo(refundAmount) != 0) {
+        throw new DomainException(
+            "支付单已退款，且本次退款金额与原退款金额不一致: refunded="
+                + this.refundAmount
+                + ", requested="
+                + refundAmount);
+      }
+      return false; // 幂等：金额完全一致的重复退款直接跳过
+    }
+    if (refundMoney.greaterThan(getAmountMoney())) {
+      throw new DomainException("退款金额不能超过已付金额: refund=" + refundAmount + ", paid=" + this.amount);
     }
     this.refundAmount = refundAmount;
     this.refundedAt = Instant.now();

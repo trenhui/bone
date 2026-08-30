@@ -1,7 +1,6 @@
 package com.bone.blueprint.application.command.handler;
 
 import com.bone.blueprint.application.command.cmd.HandlePaymentCallbackCommand;
-import com.bone.blueprint.domain.gateway.AggregatePersister;
 import com.bone.blueprint.domain.gateway.PaymentSignaturePort;
 import com.bone.blueprint.domain.gateway.TenantProvider;
 import com.bone.blueprint.domain.payment.Payment;
@@ -38,7 +37,6 @@ public class HandlePaymentCallbackCommandHandler {
   private final PaymentRepository paymentRepository;
   private final TenantProvider tenantProvider;
   private final PaymentSignaturePort paymentSignaturePort;
-  private final AggregatePersister aggregatePersister;
   private final DomainEventPublisher domainEventPublisher;
 
   @Transactional
@@ -60,6 +58,7 @@ public class HandlePaymentCallbackCommandHandler {
       payment.markFailed(cmd.channelTradeNo());
     }
 
-    aggregatePersister.updateAndPublishEvents(paymentRepository, domainEventPublisher, payment);
+    paymentRepository.save(payment);
+    domainEventPublisher.publishFrom(payment);
   }
 }

@@ -183,4 +183,41 @@ class PaymentTest {
     assertFalse(second);
     assertEquals(0, payment.getDomainEvents().size());
   }
+
+  /** 资金操作不可静默失败：已退款支付单再次收到<strong>金额不同</strong>的退款请求， 必须抛错让调用方感知（很可能是误操作或对账异常）。 */
+  @Test
+  void testRefundWithDifferentAmountThrows() {
+    Payment payment = createPendingPayment();
+    payment.confirmSuccess("trade-no-001", new BigDecimal("200"));
+    payment.refund(new BigDecimal("50"));
+
+    DomainException ex =
+        assertThrows(DomainException.class, () -> payment.refund(new BigDecimal("80")));
+
+    assertTrue(ex.getMessage().contains("不一致"));
+    // 原退款记录未被覆盖
+    assertEquals(new BigDecimal("50"), payment.getRefundAmount());
+  }
+
+  @Test
+  void testRefundZeroRejected() {
+    Payment payment = createPendingPayment();
+    payment.confirmSuccess("trade-no-001", new BigDecimal("200"));
+
+    // 0 元是合法 Money（零元订单），但退 0 元无意义，须拒绝
+    DomainException ex =
+        assertThrows(DomainException.class, () -> payment.refund(new BigDecimal("0")));
+
+    assertTrue(ex.getMessage().contains("大于0"));
+    assertNull(payment.getRefundedAt());
+  }
+
+  /** 金额统一走 Money 视图，且与已付金额口径一致。 */
+  @Test
+  void testAmountMoneyView() {
+    Payment payment = createPendingPayment();
+
+    assertEquals(new BigDecimal("200"), payment.getAmountMoney().toBigDecimal());
+    assertTrue(payment.getRefundedMoney().isZero());
+  }
 }

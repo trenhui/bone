@@ -9,13 +9,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.blueprint.application.command.cmd.RefundPaymentCommand;
-import com.bone.blueprint.domain.gateway.AggregatePersister;
 import com.bone.blueprint.domain.gateway.TenantProvider;
 import com.bone.blueprint.domain.payment.Payment;
 import com.bone.blueprint.domain.payment.event.PaymentRefundedEvent;
 import com.bone.blueprint.domain.payment.valueobject.PaymentChannel;
 import com.bone.blueprint.domain.repository.PaymentRepository;
-import com.bone.blueprint.infrastructure.persistence.AggregatePersistence;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.DomainException;
 import com.bone.core.exception.NotFoundException;
@@ -25,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -33,7 +30,6 @@ class RefundPaymentCommandHandlerTest {
 
   @Mock private PaymentRepository paymentRepository;
   @Mock private TenantProvider tenantProvider;
-  @Spy private AggregatePersister aggregatePersister = new AggregatePersistence();
   @Mock private DomainEventPublisher domainEventPublisher;
 
   @InjectMocks private RefundPaymentCommandHandler handler;
@@ -50,7 +46,7 @@ class RefundPaymentCommandHandlerTest {
     payment.confirmSuccess("trade-001", new BigDecimal("200"));
     payment.clearDomainEvents(); // 清除支付成功事件，聚焦退款事件
 
-    // 保存时快照聚合已挂载的事件（AggregatePersistence 保存后会 clearDomainEvents，须在 save 时捕获）
+    // 保存时快照聚合已挂载的事件（publishFrom 会在保存后清空事件列表，须在 save 时捕获）
     AtomicReference<Class<?>> eventType = new AtomicReference<>();
     when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(payment);
