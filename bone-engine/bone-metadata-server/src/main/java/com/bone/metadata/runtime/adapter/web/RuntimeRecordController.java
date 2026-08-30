@@ -6,7 +6,7 @@ import com.bone.core.util.DistributedIdGenerator;
 import com.bone.metadata.catalog.application.idempotency.CatalogIdempotencyService;
 import com.bone.metadata.catalog.common.CatalogHttpSupport;
 import com.bone.metadata.catalog.common.CatalogPageMapper;
-import com.bone.metadata.catalog.common.CatalogTenantSupport;
+import com.bone.metadata.catalog.domain.gateway.TenantProvider;
 import com.bone.metadata.engine.runtime.JdbcRuntimeRecordService;
 import com.bone.metadata.engine.runtime.RuntimePageQuery;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -42,6 +42,7 @@ public class RuntimeRecordController {
   private final JdbcRuntimeRecordService runtimeRecordService;
   private final CatalogIdempotencyService catalogIdempotencyService;
   private final ObjectMapper objectMapper;
+  private final TenantProvider tenantProvider;
 
   @GetMapping
   @PreAuthorize("hasAuthority('metadata:read')")
@@ -52,7 +53,7 @@ public class RuntimeRecordController {
       @RequestParam(required = false) String fields,
       @RequestParam(required = false) String sort,
       @RequestParam(required = false) String q) {
-    long tenantId = CatalogTenantSupport.currentTenantId();
+    long tenantId = tenantProvider.currentTenantId();
     RuntimePageQuery query = RuntimePageQuery.parse(fields, sort, q);
     var sdkPage = runtimeRecordService.page(entityCode, tenantId, page, size, query);
     return ApiResponse.success(CatalogPageMapper.toApiPage(sdkPage, row -> row));
@@ -62,7 +63,7 @@ public class RuntimeRecordController {
   @PreAuthorize("hasAuthority('metadata:read')")
   public ResponseEntity<ApiResponse<Map<String, Object>>> get(
       @PathVariable String entityCode, @PathVariable String id) {
-    long tenantId = CatalogTenantSupport.currentTenantId();
+    long tenantId = tenantProvider.currentTenantId();
     Map<String, Object> row = runtimeRecordService.getById(entityCode, tenantId, id);
     Object version = row.get("version");
     ResponseEntity.BodyBuilder builder = ResponseEntity.ok();
@@ -90,7 +91,7 @@ public class RuntimeRecordController {
       return replay.get();
     }
 
-    long tenantId = CatalogTenantSupport.currentTenantId();
+    long tenantId = tenantProvider.currentTenantId();
     long newId = DistributedIdGenerator.generateLongId();
     Map<String, Object> created = runtimeRecordService.create(entityCode, tenantId, body, newId);
     Object pk = created != null ? created.getOrDefault("id", newId) : newId;
@@ -110,7 +111,7 @@ public class RuntimeRecordController {
       @PathVariable String id,
       @RequestHeader(value = HttpHeaders.IF_MATCH, required = false) String ifMatch,
       @RequestBody Map<String, Object> body) {
-    long tenantId = CatalogTenantSupport.currentTenantId();
+    long tenantId = tenantProvider.currentTenantId();
     Map<String, Object> updated =
         runtimeRecordService.update(
             entityCode,
@@ -129,7 +130,7 @@ public class RuntimeRecordController {
   @DeleteMapping("/{id}")
   @PreAuthorize("hasAuthority('metadata:write')")
   public ApiResponse<Void> delete(@PathVariable String entityCode, @PathVariable String id) {
-    long tenantId = CatalogTenantSupport.currentTenantId();
+    long tenantId = tenantProvider.currentTenantId();
     runtimeRecordService.delete(entityCode, tenantId, id);
     return ApiResponse.success();
   }

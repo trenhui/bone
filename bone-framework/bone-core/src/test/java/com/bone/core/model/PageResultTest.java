@@ -73,4 +73,56 @@ class PageResultTest {
     PageResult<String> page = PageResult.of(List.of("a", "b"), 2L, 1, 10);
     assertThat(page.getRecordCount()).isEqualTo(2);
   }
+
+  @Test
+  void of_withPageParamUsesParamPaging() {
+    PageResult<String> page = PageResult.of(List.of("a"), 15L, PageParam.of(2, 5));
+
+    assertThat(page.getPage()).isEqualTo(2);
+    assertThat(page.getSize()).isEqualTo(5);
+    assertThat(page.getPages()).isEqualTo(3);
+  }
+
+  @Test
+  void getOffset_computesSqlOffset() {
+    assertThat(PageResult.of(List.of(), 100L, 1, 10).getOffset()).isEqualTo(0);
+    assertThat(PageResult.of(List.of(), 100L, 3, 10).getOffset()).isEqualTo(20);
+    // 游标分页 page 为 null → offset 不适用，返回 null（调用方须判空，不能当 0 用）
+    assertThat(PageResult.cursorOf(List.of(), "c", 10).getOffset()).isNull();
+  }
+
+  @Test
+  @SuppressWarnings("deprecation")
+  void deprecatedAccessorsAliasNewOnes() {
+    PageResult<String> page = PageResult.of(List.of("a"), 1L, 2, 5);
+
+    assertThat(page.getList()).isEqualTo(page.getRecords());
+    assertThat(page.getPageNum()).isEqualTo(page.getPage());
+    assertThat(page.getPageSize()).isEqualTo(page.getSize());
+  }
+
+  /** map 只转换记录类型，分页元信息（total/page/size）必须原样保留。 */
+  @Test
+  void map_convertsRecordTypeKeepingPagingMeta() {
+    PageResult<Integer> page = PageResult.of(List.of(1, 2, 3), 30L, 2, 10);
+
+    PageResult<String> mapped = page.map(String::valueOf);
+
+    assertThat(mapped.getRecords()).containsExactly("1", "2", "3");
+    assertThat(mapped.getTotal()).isEqualTo(30L);
+    assertThat(mapped.getPage()).isEqualTo(2);
+    assertThat(mapped.getSize()).isEqualTo(10);
+    assertThat(mapped.getPages()).isEqualTo(3);
+  }
+
+  @Test
+  void equalityIsValueBasedAndToStringIncludesMeta() {
+    PageResult<String> a = PageResult.of(List.of("a"), 1L, 1, 10);
+    PageResult<String> b = PageResult.of(List.of("a"), 1L, 1, 10);
+    PageResult<String> c = PageResult.of(List.of("b"), 1L, 1, 10);
+
+    assertThat(a).isEqualTo(b).hasSameHashCodeAs(b);
+    assertThat(a).isNotEqualTo(c);
+    assertThat(a.toString()).contains("records").contains("total");
+  }
 }

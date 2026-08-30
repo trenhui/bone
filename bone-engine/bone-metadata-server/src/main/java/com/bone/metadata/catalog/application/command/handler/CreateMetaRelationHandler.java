@@ -2,7 +2,7 @@ package com.bone.metadata.catalog.application.command.handler;
 
 import com.bone.core.exception.BizException;
 import com.bone.metadata.catalog.application.command.cmd.CreateMetaRelationCommand;
-import com.bone.metadata.catalog.common.CatalogTenantSupport;
+import com.bone.metadata.catalog.domain.gateway.TenantProvider;
 import com.bone.metadata.catalog.domain.model.MetaEntity;
 import com.bone.metadata.catalog.domain.model.MetaEntityRelation;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRelationRepository;
@@ -17,6 +17,7 @@ public class CreateMetaRelationHandler {
 
   private final MetaEntityRelationRepository relationRepository;
   private final MetaEntityRepository metaEntityRepository;
+  private final TenantProvider tenantProvider;
 
   @Transactional
   public Long handle(CreateMetaRelationCommand cmd) {
@@ -29,7 +30,7 @@ public class CreateMetaRelationHandler {
     MetaEntityRelation relation =
         MetaEntityRelation.create(
             null,
-            CatalogTenantSupport.currentTenantId(),
+            tenantProvider.currentTenantId(),
             cmd.getName(),
             cmd.getSourceEntityId(),
             cmd.getTargetEntityId(),

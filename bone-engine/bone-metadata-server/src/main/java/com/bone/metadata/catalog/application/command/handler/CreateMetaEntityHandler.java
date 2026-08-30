@@ -2,8 +2,8 @@ package com.bone.metadata.catalog.application.command.handler;
 
 import com.bone.core.exception.BizException;
 import com.bone.metadata.catalog.application.command.cmd.CreateMetaEntityCommand;
-import com.bone.metadata.catalog.common.CatalogTenantSupport;
 import com.bone.metadata.catalog.domain.enums.MetaDeliveryMode;
+import com.bone.metadata.catalog.domain.gateway.TenantProvider;
 import com.bone.metadata.catalog.domain.model.MetaEntity;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
 import com.bone.metadata.catalog.domain.service.IamModuleValidator;
@@ -18,10 +18,11 @@ public class CreateMetaEntityHandler {
 
   private final MetaEntityRepository metaEntityRepository;
   private final IamModuleValidator iamModuleValidator;
+  private final TenantProvider tenantProvider;
 
   @Transactional
   public Long handle(CreateMetaEntityCommand cmd) {
-    long tenantId = CatalogTenantSupport.currentTenantId();
+    long tenantId = tenantProvider.currentTenantId();
     if (cmd.getModuleId() != null) {
       iamModuleValidator.requireExists(cmd.getModuleId());
     }

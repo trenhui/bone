@@ -1,8 +1,8 @@
 package com.bone.metadata.runtime;
 
-import com.bone.metadata.catalog.common.CatalogTenantSupport;
 import com.bone.metadata.catalog.domain.enums.MetaDeliveryMode;
 import com.bone.metadata.catalog.domain.enums.MetaEntityStatus;
+import com.bone.metadata.catalog.domain.gateway.TenantProvider;
 import com.bone.metadata.catalog.domain.model.MetaEntity;
 import com.bone.metadata.catalog.domain.model.MetaField;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
@@ -22,6 +22,7 @@ public class CatalogRuntimeEntityProvider {
 
   private final MetaEntityRepository metaEntityRepository;
   private final MetaFieldRepository metaFieldRepository;
+  private final TenantProvider tenantProvider;
 
   public Optional<PublishedRuntimeEntity> findPublishedRuntime(String entityCode, long tenantId) {
     List<MetaEntity> found =
@@ -68,6 +69,6 @@ public class CatalogRuntimeEntityProvider {
 
   /** 供 Controller 默认租户 */
   public Optional<PublishedRuntimeEntity> findPublishedRuntime(String entityCode) {
-    return findPublishedRuntime(entityCode, CatalogTenantSupport.currentTenantId());
+    return findPublishedRuntime(entityCode, tenantProvider.currentTenantId());
   }
 }

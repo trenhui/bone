@@ -2,7 +2,7 @@ package com.bone.metadata.catalog.application.command.handler;
 
 import com.bone.core.exception.BizException;
 import com.bone.metadata.catalog.application.command.cmd.CreateMetaFieldCommand;
-import com.bone.metadata.catalog.common.CatalogTenantSupport;
+import com.bone.metadata.catalog.domain.gateway.TenantProvider;
 import com.bone.metadata.catalog.domain.model.MetaEntity;
 import com.bone.metadata.catalog.domain.model.MetaField;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
@@ -18,6 +18,7 @@ public class CreateMetaFieldHandler {
 
   private final MetaFieldRepository metaFieldRepository;
   private final MetaEntityRepository metaEntityRepository;
+  private final TenantProvider tenantProvider;
 
   @Transactional
   public Long handle(CreateMetaFieldCommand cmd) {
@@ -40,7 +41,7 @@ public class CreateMetaFieldHandler {
     MetaField field =
         MetaField.create(
             null,
-            CatalogTenantSupport.currentTenantId(),
+            tenantProvider.currentTenantId(),
             cmd.getEntityId(),
             cmd.getName(),
             cmd.getCode(),

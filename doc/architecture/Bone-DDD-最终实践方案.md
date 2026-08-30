@@ -618,7 +618,10 @@ com.bone.{module}/
 
 **存量示例迁移**（`bone-blueprint`）：
 - 租户隔离 → **下沉仓储查询层**：`OrderRepository.findByIdInTenant(id, tenantId)`（default 方法，用 SDK `Criteria` 过滤，SQL 层即过滤跨租户订单）；Handler 传入 `TenantProvider.currentTenantId()`。
-- 技术横切 `TenantSupport` / `AggregatePersistence` → `domain/gateway/TenantProvider` / `AggregatePersister`（端口）+ `infrastructure` 实现（Spring bean），Handler 经端口注入。
+- 技术横切租户上下文 → `domain/gateway/TenantProvider`（端口）+ `infrastructure/context/TenantProviderAdapter` 实现（命名约定：端口-适配器实现类统一 `Adapter`/`Impl` 后缀，保证「接口→实现」可一键跳转），Handler 经端口注入。
+- **聚合持久化 + 领域事件发布（标准写法）**：`repository.save(aggregate); domainEventPublisher.publishFrom(aggregate);`
+  - `publishFrom` 是 `DomainEventPublisher` 的 **default 方法**（内部 `publishAll` + `clearDomainEvents`），为业界 Spring Data `@DomainEvents` + `@AfterDomainEventPublication` 的显式等价物。
+  - **不设 `AggregatePersister` 端口**：原设计需把 `Repository` 当参数传入端口（Service Locator 反模式），且 `save/update` 两个方法实现完全相同（`Repository.save` 本身即 upsert），制造「该用哪个」的伪决策。**显式两行 > 隐藏的 AOP 魔法**：样板工程要让团队一眼看到事件何时发出。
 - **应用层与领域层都不承载"加载后校验租户"**——多租户隔离属于横切关注点，理想由基础设施（如 SQL 拦截器）统一处理；在 SDK 未内置时，用仓储 default 方法 + Criteria 实现查询层过滤。
 
 > 仍保留一条硬约束：**禁止** `Controller` 直接注入 `domain/service`（领域服务）或 `application/service`（历史遗留包），入站统一为 Handler / Orchestrator / Facade（ArchUnit #11/#12/#17）。`application/service` 若存在于存量模块，应迁移为端口或领域服务后删除。

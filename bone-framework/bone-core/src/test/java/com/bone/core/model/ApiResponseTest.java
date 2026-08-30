@@ -79,4 +79,79 @@ class ApiResponseTest {
     assertThat(resp.getCode()).isEqualTo(500);
     assertThat(resp.getData()).isEqualTo("data");
   }
+
+  /**
+   * 重载歧义固化：{@code success("x")} 命中 {@code success(String message)}（data 为空）， 只有非 String 实参才会走
+   * {@code success(T data)}。误用会导致「数据被当成消息」的静默错误。
+   */
+  @Test
+  void success_withNonStringArgumentHitsDataOverload() {
+    ApiResponse<Integer> resp = ApiResponse.success(42);
+
+    assertThat(resp.getData()).isEqualTo(42);
+    assertThat(resp.getMessage()).isEqualTo(ResultCode.SUCCESS.getMessage());
+    assertThat(resp.getSuccess()).isTrue();
+  }
+
+  /** {@code error(int, String)} 与 {@code error(Integer, String)} 并存：装箱实参才命中后者。 */
+  @Test
+  void error_withBoxedIntegerHitsIntegerOverload() {
+    ApiResponse<Void> resp = ApiResponse.error(Integer.valueOf(1001), "装箱码");
+
+    assertThat(resp.getCode()).isEqualTo(1001);
+    assertThat(resp.getMessage()).isEqualTo("装箱码");
+    assertThat(resp.isError()).isTrue();
+  }
+
+  @Test
+  void error_withMessageAndErrorData() {
+    ApiResponse<ProblemDetail> resp = ApiResponse.error("失败", ProblemDetail.of("E1", 400, "bad"));
+
+    assertThat(resp.isError()).isTrue();
+    assertThat(resp.getCode()).isEqualTo(ResultCode.SERVER_ERROR.getCode());
+    assertThat(resp.getData().getErrorCode()).isEqualTo("E1");
+  }
+
+  /** ResultCode 重载以显式 message 为准，不回落枚举默认消息。 */
+  @Test
+  void error_withResultCodeMessageAndDataOverridesDefaultMessage() {
+    ApiResponse<ProblemDetail> resp =
+        ApiResponse.error(ResultCode.NOT_FOUND, "覆盖默认消息", ProblemDetail.of("E2", 404, "missing"));
+
+    assertThat(resp.getCode()).isEqualTo(404);
+    assertThat(resp.getMessage()).isEqualTo("覆盖默认消息");
+    assertThat(resp.getData().getErrorCode()).isEqualTo("E2");
+  }
+
+  @Test
+  void page_wrapsExistingPageResult() {
+    PageResult<String> pageResult = PageResult.of(List.of("a"), 10L, 1, 5);
+
+    ApiResponse<PageResult<String>> resp = ApiResponse.page(pageResult);
+
+    assertThat(resp.isSuccess()).isTrue();
+    assertThat(resp.getData()).isSameAs(pageResult);
+  }
+
+  /** success 为 null（反序列化不完整等）时按失败处理，避免把未知状态误判为成功。 */
+  @Test
+  void nullSuccessTreatedAsError() {
+    ApiResponse<Void> resp = new ApiResponse<>();
+
+    assertThat(resp.getSuccess()).isNull();
+    assertThat(resp.isSuccess()).isFalse();
+    assertThat(resp.isError()).isTrue();
+  }
+
+  @Test
+  void equalityAndToString() {
+    ApiResponse<String> a = ApiResponse.success("m", "d");
+    a.setTimestamp("fixed");
+    ApiResponse<String> b = ApiResponse.success("m", "d");
+    b.setTimestamp("fixed");
+
+    assertThat(a).isEqualTo(b).hasSameHashCodeAs(b);
+    assertThat(a).isNotEqualTo(ApiResponse.error("m"));
+    assertThat(a.toString()).contains("d");
+  }
 }

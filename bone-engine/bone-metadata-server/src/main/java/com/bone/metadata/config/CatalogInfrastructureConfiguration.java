@@ -1,8 +1,10 @@
 package com.bone.metadata.config;
 
 import com.bone.metadata.catalog.domain.gateway.CatalogIdempotencyStore;
+import com.bone.metadata.catalog.domain.gateway.TenantProvider;
 import com.bone.metadata.catalog.infrastructure.idempotency.InMemoryCatalogIdempotencyStore;
 import com.bone.metadata.catalog.infrastructure.idempotency.RedisCatalogIdempotencyStore;
+import com.bone.metadata.catalog.infrastructure.tenant.TenantProviderAdapter;
 import com.bone.metadata.engine.runtime.RuntimeEntityCatalog;
 import com.bone.metadata.runtime.CaffeineCachedRuntimeEntityCatalog;
 import com.bone.metadata.runtime.CatalogRuntimeEntityProvider;
@@ -41,6 +43,12 @@ public class CatalogInfrastructureConfiguration {
   @ConditionalOnMissingBean(CatalogIdempotencyStore.class)
   public CatalogIdempotencyStore inMemoryCatalogIdempotencyStore() {
     return new InMemoryCatalogIdempotencyStore();
+  }
+
+  /** 租户上下文端口装配。替代原静态工具类 {@code CatalogTenantSupport}——改为注入后可 mock， 便于单测驱动多租户场景。 */
+  @Bean
+  public TenantProvider tenantProviderAdapter() {
+    return new TenantProviderAdapter();
   }
 
   @Bean

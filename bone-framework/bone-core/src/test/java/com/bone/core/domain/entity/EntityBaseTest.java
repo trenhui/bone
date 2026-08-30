@@ -5,8 +5,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.util.Date;
 import org.junit.jupiter.api.Test;
 
-/** AbstractEntity 实体基类测试：默认值、审计字段、软删除 */
-class AbstractEntityTest {
+/**
+ * AbstractEntity 实体基类测试：默认值、审计字段、软删除。
+ *
+ * <p>注意：类名<b>不可为 {@code AbstractEntityTest}</b>——Maven Surefire 默认排除 {@code
+ * Abstract*Test.java}，会使本套用例静默不执行。原名即踩此坑（覆盖率长期为 0），故改名。
+ */
+class EntityBaseTest {
 
   @Test
   void defaultConstructor_setsSoftDeleteFalse() {

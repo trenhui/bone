@@ -5,7 +5,7 @@ import com.bone.metadata.catalog.application.query.dto.MetaEntityDTO;
 import com.bone.metadata.catalog.application.query.mapper.CatalogDtoMapper;
 import com.bone.metadata.catalog.application.query.qry.MetaEntityPageQuery;
 import com.bone.metadata.catalog.common.CatalogPageMapper;
-import com.bone.metadata.catalog.common.CatalogTenantSupport;
+import com.bone.metadata.catalog.domain.gateway.TenantProvider;
 import com.bone.metadata.catalog.domain.model.MetaEntity;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,10 +18,11 @@ import org.springframework.util.StringUtils;
 public class MetaEntityPageQueryHandler {
 
   private final MetaEntityRepository metaEntityRepository;
+  private final TenantProvider tenantProvider;
 
   @Transactional(readOnly = true)
   public PageResult<MetaEntityDTO> handle(MetaEntityPageQuery qry) {
-    long tenantId = CatalogTenantSupport.currentTenantId();
+    long tenantId = tenantProvider.currentTenantId();
     var query = metaEntityRepository.query().where(MetaEntity::getTenantId).eq(tenantId);
     if (StringUtils.hasText(qry.getKeyword())) {
       query = query.and(MetaEntity::getName).like("%" + qry.getKeyword().trim() + "%");
