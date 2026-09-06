@@ -6,6 +6,7 @@ import com.bone.blueprint.domain.order.event.OrderPaidEvent;
 import com.bone.blueprint.domain.order.event.OrderPaymentInconsistentEvent;
 import com.bone.blueprint.domain.order.valueobject.OrderStatus;
 import com.bone.blueprint.domain.shared.valueobject.Money;
+import com.bone.core.annotation.Transient;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.exception.DomainException;
 import com.bone.metadata.sdk.domain.annotation.Table;
@@ -25,14 +26,23 @@ import lombok.NoArgsConstructor;
 @Table("t_order")
 public class Order extends TenantAggregateRoot<Long> {
 
-  private static final Money MAX_ORDER_AMOUNT = Money.of(new BigDecimal("1000000"));
+  @Transient private static final Money MAX_ORDER_AMOUNT = Money.of(new BigDecimal("1000000"));
 
   private Long customerId;
-  private List<OrderItem> items = new ArrayList<>();
+
+  /** 聚合内部集合，由 OrderItemRepository 独立持久化，非 t_order 列（避免 SDK 误映射）。 */
+  @Transient private List<OrderItem> items = new ArrayList<>();
+
   private BigDecimal totalAmount;
   private OrderStatus status;
   private Date createdAt;
   private Date updatedAt;
+
+  /**
+   * 乐观锁版本号（E-9.6）：由 SDK 按列读写；仓储 UPDATE 追加 {@code WHERE version = ?} 的乐观并发保护， 待 SDK 提供等价能力后启用（见模块
+   * README「E-9.6 并发与幂等」登记，当前不声明支持并发写）。
+   */
+  private Long version;
 
   public Money getTotalMoney() {
     return totalAmount == null ? Money.zero() : Money.of(totalAmount);
@@ -50,6 +60,7 @@ public class Order extends TenantAggregateRoot<Long> {
     order.recalculateTotal();
     order.assertValidTotal();
     order.status = OrderStatus.CREATED;
+    order.version = 0L;
     Date now = new Date();
     order.createdAt = now;
     order.updatedAt = now;
@@ -57,6 +68,20 @@ public class Order extends TenantAggregateRoot<Long> {
         new OrderCreatedEvent(
             order.getId(), order.getTenantId(), order.getCustomerId(), Instant.now()));
     return order;
+  }
+
+  /**
+   * 落库后回填真实主键并重建「已创建」事件。
+   *
+   * <p>持久化层在 insert 时会重新分配主键并覆盖构造期预分配的 id，因此 {@link #create} 阶段注册的 {@code OrderCreatedEvent}
+   * 携带的是已被丢弃的预分配 id。若不回填，下游按事件 id 查询明细/预留 库存会查不到数据而静默失效。
+   */
+  public void rebindPersistedIdentity(long persistedId) {
+    this.setId(persistedId);
+    this.clearDomainEvents();
+    this.addDomainEvent(
+        new OrderCreatedEvent(
+            persistedId, this.getTenantId(), this.getCustomerId(), Instant.now()));
   }
 
   public void addItem(OrderItem item) {
