@@ -421,10 +421,10 @@ adapter/web → application → domain ← infrastructure
 ## 11. 给 AI 助手的关键提示
 
 1. **不要破坏分层依赖**：修改代码时，`domain` 层不能引入 Spring/MyBatis 等框架依赖；`application` 层不能直接调用 `infrastructure` 实现类。
-2. **保持 CQRS（v4.2）**：写操作使用 `*CommandHandler` + `@Transactional`；读操作使用 `*QueryHandler`（只读）。**禁止** `application/usecase`、`*UseCase`、自造 `@UseCase`；`com.bone.core.usecase.*` **已从 bone-core 删除**；AI/Flow 能力发现用 `com.bone.core.capability.@Capability`。Controller **直接注入 Handler**（**禁止**直注 `application/service`、`domain/service`（领域服务）、`domain/repository`）；满足 [DDD §14.3.2](doc/architecture/Bone-DDD-最终实践方案.md) F1/F2/F3 条件时可注入 `*Facade`。`application/service` 仅允许 [DDD §14.3.1](doc/architecture/Bone-DDD-最终实践方案.md) 约束（S1/S2/S3）。模块是否适用全量 DDD 看 **性质**（`bone-extension-studio`、`studio-generator` 属应用模块），见 DDD §14.4。
+2. **保持 CQRS（v4.2）**：写操作使用 `*CommandHandler` + `@Transactional`；读操作使用 `*QueryHandler`（只读）。**禁止** `application/usecase`、`*UseCase`、自造 `@UseCase`；`com.bone.core.usecase.*` **已从 bone-core 删除**；AI/Flow 能力发现用 `com.bone.core.capability.@Capability`。Controller **直接注入 Handler**（**禁止**直注 `application/service`、`domain/service`（领域服务）、`domain/repository`）；满足 [DDD E-5.3.2](doc/architecture/Bone-DDD-最终实践方案.md) F1/F2 条件时可注入 `*Facade`。`application/service` 仅允许 [DDD E-5.3.1](doc/architecture/Bone-DDD-最终实践方案.md) 约束（S1/S2/S3）。模块是否适用全量 DDD 看 **性质**（`bone-extension-studio`、`studio-generator` 属应用模块），见 DDD E-5.4。
 3. **统一响应格式**：Controller 返回统一使用 `ApiResponse<T>` 或 `PageResult<T>`，避免裸返回领域对象。
 4. **租户与审计字段**：新增实体应继承 `TenantAbstractEntity`（若需多租户）或 `AbstractEntity`；不要遗漏 `tenantId` 与审计字段的填充。
-5. **命名约定**（分层见 [DDD §23.1](doc/architecture/Bone-DDD-最终实践方案.md)）：
+5. **命名约定**（分层见 [DDD E-13.1](doc/architecture/Bone-DDD-最终实践方案.md)）：
    - 聚合根：`{名词}`
    - 值对象：`{名词}`（如 `Username`）
    - 应用层命令：`{动作}{对象}Command`（如 `CreateUserCommand`）

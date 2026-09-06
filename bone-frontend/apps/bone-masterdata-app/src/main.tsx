@@ -1,4 +1,3 @@
-import React from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { renderWithQiankun, qiankunWindow, type QiankunProps } from 'vite-plugin-qiankun/helper';
 import App from './App';
@@ -22,11 +21,10 @@ function render(props?: QiankunProps) {
   }
 
   root = createRoot(mountNode);
-  root.render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>,
-  );
+  // 注意：antd v5 / @ant-design/pro-components 的工具栏 Tooltip 在 React.StrictMode 下
+  // 会触发 findDOMNode 弃用告警（第三方组件内部行为，仅 dev 控制台噪声，不影响运行）。
+  // 为获得干净的控制台，这里不启用 StrictMode。
+  root.render(<App />);
 }
 
 renderWithQiankun({

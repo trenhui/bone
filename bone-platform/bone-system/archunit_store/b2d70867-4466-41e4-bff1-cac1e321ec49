@@ -1,3 +1,0 @@
-AlertQueryHandler must declare @Transactional on class or handle()/execute() method
-ConfigQueryHandler must declare @Transactional on class or handle()/execute() method
-LogQueryHandler must declare @Transactional on class or handle()/execute() method

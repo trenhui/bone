@@ -52,20 +52,19 @@ public class PaymentReadPortImpl implements PaymentReadPort {
 
     @Override
     public PaymentRow mapRow(ResultSet rs, int rowNum) throws SQLException {
-      PaymentRow row = new PaymentRow();
-      row.setPaymentId(rs.getLong("id"));
-      row.setOrderId(rs.getLong("order_id"));
-      row.setCustomerId(rs.getLong("customer_id"));
-      row.setAmount(rs.getBigDecimal("amount"));
-      row.setChannel(rs.getString("channel"));
-      row.setStatus(rs.getString("status"));
-      row.setChannelTradeNo(rs.getString("channel_trade_no"));
-      row.setPayUrl(rs.getString("pay_url"));
-      row.setPaidAt(toInstant(rs.getTimestamp("paid_at")));
-      row.setRefundedAt(toInstant(rs.getTimestamp("refunded_at")));
-      row.setRefundAmount(rs.getBigDecimal("refund_amount"));
-      row.setCreatedAt(toInstant(rs.getTimestamp("created_at")));
-      return row;
+      return new PaymentRow(
+          rs.getLong("id"),
+          rs.getLong("order_id"),
+          rs.getLong("customer_id"),
+          rs.getBigDecimal("amount"),
+          rs.getString("channel"),
+          rs.getString("status"),
+          rs.getString("channel_trade_no"),
+          rs.getString("pay_url"),
+          toInstant(rs.getTimestamp("paid_at")),
+          toInstant(rs.getTimestamp("refunded_at")),
+          rs.getBigDecimal("refund_amount"),
+          toInstant(rs.getTimestamp("created_at")));
     }
 
     private Instant toInstant(Timestamp ts) {

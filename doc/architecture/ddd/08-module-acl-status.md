@@ -1,6 +1,6 @@
 # 应用模块 ArchUnit / ACL 状态快照
 
-> **时效声明（2026-08 更新）**：本文为**历史快照**，记录 2026-05 前后各应用模块的 ACL 整改与 ArchUnit 基线状态，**非实时**。当前架构门禁结果以各模块 CI 的 `ArchitectureTest` 为准（规则真源：`bone-framework/bone-architecture-test/BoneDddArchRules`，见 [Bone-DDD 主文档 §21](../Bone-DDD-最终实践方案.md#21-测试与-ci)）；建议按 [07 适应度仪表盘](./07-supplements.md) **季度复核**并更新本文。
+> **时效声明（2026-08 更新）**：本文为**历史快照**，记录 2026-05 前后各应用模块的 ACL 整改与 ArchUnit 基线状态，**非实时**。当前架构门禁结果以各模块 CI 的 `ArchitectureTest` 为准（规则真源：`bone-framework/bone-architecture-test/BoneDddArchRules`，见 [Bone-DDD 主文档 G-1](../Bone-DDD-最终实践方案.md#g-1-测试与-ciarchunit-规则集)）；建议按 [07 适应度仪表盘](./07-supplements.md) **季度复核**并更新本文。
 
 ## 已清零 `application → infrastructure` 存量（2026-05）
 
@@ -30,4 +30,4 @@
 |------|-----|------|
 | bone-iam | `LocalDateTime` 审计统一 | [ADR-0018](../adr/0018-iam-localdatetime-audit.md) 阶段 2 按需 |
 
-> **规则与 freeze 策略**（不在本文维护副本，避免与主文档漂移）：见主文档 [§21 测试与 CI](../Bone-DDD-最终实践方案.md#21-测试与-ci) 与 [附录 B.3 ArchUnit 模板](../Bone-DDD-最终实践方案.md#b3-archunit-模板bone-architecture-test)。
+> **规则与 freeze 策略**（不在本文维护副本，避免与主文档漂移）：见主文档 [G-1 测试与 CI](../Bone-DDD-最终实践方案.md#g-1-测试与-ciarchunit-规则集) 与 [附录 B.3 ArchUnit 模板](../Bone-DDD-最终实践方案.md#b3-archunit-模板bone-architecture-test)。

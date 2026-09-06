@@ -26,12 +26,11 @@ public class InMemoryStudioAuditRepository implements StudioAuditRepository, Stu
   private final AtomicLong idSequence = new AtomicLong(1);
 
   @Override
-  public StudioAuditEntry save(StudioAuditEntry entry) {
+  public void save(StudioAuditEntry entry) {
     if (entry.getId() == null) {
       entry.setId(idSequence.getAndIncrement());
     }
     entries.add(entry);
-    return entry;
   }
 
   @Override

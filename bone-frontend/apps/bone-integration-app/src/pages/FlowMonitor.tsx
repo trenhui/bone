@@ -4,8 +4,6 @@ import { ReloadOutlined, EyeOutlined } from '@ant-design/icons';
 import { monitorApi } from '../services/api';
 import type { IntegrationLog, FlowStatistics } from '../types';
 
-const { TabPane } = Tabs;
-
 export const FlowMonitor: React.FC = () => {
   const [executions, setExecutions] = useState<IntegrationLog[]>([]);
   const [statistics, setStatistics] = useState<FlowStatistics[]>([]);
@@ -135,45 +133,55 @@ export const FlowMonitor: React.FC = () => {
     },
   ];
 
+  const tabItems = [
+    {
+      key: 'executions',
+      label: '执行记录',
+      children: (
+        <Card>
+          <Table
+            columns={executionColumns}
+            dataSource={executions}
+            rowKey="id"
+            loading={loading}
+            pagination={{
+              current: page,
+              pageSize,
+              total,
+              onChange: (page) => setPage(page),
+              onShowSizeChange: (_, size) => setPageSize(size),
+            }}
+          />
+        </Card>
+      ),
+    },
+    {
+      key: 'statistics',
+      label: '执行统计',
+      children: (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
+          {statistics.map(stat => (
+            <Card key={stat.flowId} title={stat.flowName}>
+              <Descriptions column={2}>
+                <Descriptions.Item label="总执行次数">{stat.executionCount}</Descriptions.Item>
+                <Descriptions.Item label="成功次数">
+                  <Tag color="green">{stat.successCount}</Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="失败次数">
+                  <Tag color="red">{stat.failureCount}</Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="成功率">{stat.successRate}%</Descriptions.Item>
+              </Descriptions>
+            </Card>
+          ))}
+        </div>
+      ),
+    },
+  ];
+
   return (
     <div>
-      <Tabs defaultActiveKey="executions">
-        <TabPane tab="执行记录" key="executions">
-          <Card>
-            <Table
-              columns={executionColumns}
-              dataSource={executions}
-              rowKey="id"
-              loading={loading}
-              pagination={{
-                current: page,
-                pageSize,
-                total,
-                onChange: (page) => setPage(page),
-                onShowSizeChange: (_, size) => setPageSize(size),
-              }}
-            />
-          </Card>
-        </TabPane>
-        <TabPane tab="执行统计" key="statistics">
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24 }}>
-            {statistics.map(stat => (
-              <Card key={stat.flowId} title={stat.flowName}>
-                <Descriptions column={2}>
-                  <Descriptions.Item label="总执行次数">{stat.executionCount}</Descriptions.Item>
-                  <Descriptions.Item label="成功次数">
-                    <Tag color="green">{stat.successCount}</Tag>
-                  </Descriptions.Item>
-                  <Descriptions.Item label="失败次数">
-                    <Tag color="red">{stat.failureCount}</Tag>
-                  </Descriptions.Item>
-                  <Descriptions.Item label="平均执行时间">{stat.avgExecutionTime}ms</Descriptions.Item>
-                </Descriptions>
-              </Card>
-            ))}
-          </div>
-        </TabPane>
-      </Tabs>
+      <Tabs defaultActiveKey="executions" items={tabItems} />
 
       <Modal
         title="执行详情"

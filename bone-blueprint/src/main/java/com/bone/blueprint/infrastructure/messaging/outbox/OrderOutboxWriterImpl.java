@@ -1,10 +1,12 @@
 package com.bone.blueprint.infrastructure.messaging.outbox;
 
-import com.bone.blueprint.application.config.OrderOutboxProperties;
-import com.bone.blueprint.application.event.outbox.OrderOutboxWriter;
 import com.bone.blueprint.application.integration.event.OrderPaidIntegrationEvent;
 import com.bone.blueprint.application.integration.event.OrderPaymentInconsistentIntegrationEvent;
+import com.bone.blueprint.domain.gateway.OrderOutboxWriter;
 import com.bone.blueprint.domain.gateway.TenantProvider;
+import com.bone.blueprint.domain.order.event.OrderPaidEvent;
+import com.bone.blueprint.domain.order.event.OrderPaymentInconsistentEvent;
+import com.bone.blueprint.infrastructure.config.OrderOutboxProperties;
 import com.bone.core.util.DistributedIdGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,8 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * {@link OrderOutboxWriter} 的基础设施实现：在业务事务内写入 Outbox 表。
  *
- * <p><b>端口在 application、实现在 infrastructure</b>：application 不依赖 infrastructure（P0-1 依赖方向）， 同时 Outbox
- * 这一消息投递机制不侵入 domain 层——三方职责因此分明。
+ * <p><b>端口在 domain、实现在 infrastructure</b>：E-10 出站端口声明于 domain，application 依赖领域接口、 不依赖
+ * infrastructure（P0-1 依赖方向），同时 Outbox 这一消息投递机制不侵入领域业务类型——三方职责因此分明。 载荷先由本实现把领域事件转换为跨边界集成事件（ACL
+ * 职责），再序列化为信封。
  */
 @Slf4j
 @Component
@@ -33,21 +36,36 @@ public class OrderOutboxWriterImpl implements OrderOutboxWriter {
 
   @Transactional
   @Override
-  public void appendOrderPaid(OrderPaidIntegrationEvent event) {
+  public void appendOrderPaid(OrderPaidEvent event) {
     append(
         EVENT_TYPE_ORDER_PAID,
         properties.getOrderPaidTopic(),
-        event,
+        event == null
+            ? null
+            : OrderPaidIntegrationEvent.fromDomain(
+                event.orderId(),
+                event.tenantId(),
+                event.customerId(),
+                event.amount(),
+                event.occurredAt()),
         event == null ? null : event.orderId());
   }
 
   @Transactional
   @Override
-  public void appendPaymentInconsistent(OrderPaymentInconsistentIntegrationEvent event) {
+  public void appendPaymentInconsistent(OrderPaymentInconsistentEvent event) {
     append(
         EVENT_TYPE_PAYMENT_INCONSISTENT,
         properties.getPaymentInconsistentTopic(),
-        event,
+        event == null
+            ? null
+            : OrderPaymentInconsistentIntegrationEvent.fromDomain(
+                event.orderId(),
+                event.tenantId(),
+                event.paymentId(),
+                event.orderStatus(),
+                event.reason(),
+                event.occurredAt()),
         event == null ? null : event.orderId());
   }
 

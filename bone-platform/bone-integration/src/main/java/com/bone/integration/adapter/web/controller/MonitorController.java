@@ -13,6 +13,7 @@ import com.bone.integration.application.query.handler.FlowStatisticsQueryHandler
 import com.bone.integration.application.query.qry.ExecutionDetailQuery;
 import com.bone.integration.application.query.qry.ExecutionLogListQuery;
 import com.bone.integration.application.query.qry.FlowStatisticsQuery;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -52,8 +53,10 @@ public class MonitorController {
   }
 
   @GetMapping("/statistics")
-  public ApiResponse<FlowStatisticsDTO> getStatistics(@RequestParam Long flowId) {
-    FlowStatisticsDTO dto = flowStatisticsQueryHandler.handle(new FlowStatisticsQuery(flowId));
-    return ApiResponse.success(dto);
+  public ApiResponse<List<FlowStatisticsDTO>> getStatistics(
+      @RequestParam(required = false) Long flowId) {
+    List<FlowStatisticsDTO> dtos =
+        flowStatisticsQueryHandler.handle(new FlowStatisticsQuery(flowId));
+    return ApiResponse.success(dtos);
   }
 }

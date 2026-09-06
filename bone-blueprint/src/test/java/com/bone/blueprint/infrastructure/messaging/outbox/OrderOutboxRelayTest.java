@@ -8,8 +8,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.bone.blueprint.application.config.OrderOutboxProperties;
-import com.bone.blueprint.application.integration.port.OrderMessageSender;
+import com.bone.blueprint.domain.gateway.OrderMessageSender;
+import com.bone.blueprint.infrastructure.config.OrderOutboxProperties;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

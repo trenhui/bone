@@ -246,7 +246,7 @@ const EntityDetail: React.FC = () => {
       </Space>
 
       {/* 实体基本信息卡片 */}
-      <Card size="small" style={{ marginBottom: 16 }} bodyStyle={{ padding: 16 }}>
+      <Card size="small" style={{ marginBottom: 16 }} styles={{ body: { padding: 16 } }}>
         <Row gutter={[16, 12]}>
           <Col span={6}>
             <Text type="secondary">编码</Text>

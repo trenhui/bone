@@ -2,22 +2,54 @@ package com.bone.blueprint.domain.payment.read;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import lombok.Data;
+import lombok.Getter;
 
-/** 支付读侧投影行（§18.5 读模型，来自 bp_payment 查询）。 */
-@Data
+/**
+ * 支付读侧投影行（§18.5 读模型，来自 bp_payment 查询）。
+ *
+ * <p>D0（E-8）约束：domain 包内禁止 {@code @Data}/{@code @Setter}，故只暴露 {@code @Getter} + 全参构造器，由读侧 RowMapper
+ * 组装。
+ */
+@Getter
 public class PaymentRow {
 
-  private Long paymentId;
-  private Long orderId;
-  private Long customerId;
-  private BigDecimal amount;
-  private String channel;
-  private String status;
-  private String channelTradeNo;
-  private String payUrl;
-  private Instant paidAt;
-  private Instant refundedAt;
-  private BigDecimal refundAmount;
-  private Instant createdAt;
+  private final Long paymentId;
+  private final Long orderId;
+  private final Long customerId;
+  private final BigDecimal amount;
+  private final String channel;
+  private final String status;
+  private final String channelTradeNo;
+  private final String payUrl;
+  private final Instant paidAt;
+  private final Instant refundedAt;
+  private final BigDecimal refundAmount;
+  private final Instant createdAt;
+
+  public PaymentRow(
+      Long paymentId,
+      Long orderId,
+      Long customerId,
+      BigDecimal amount,
+      String channel,
+      String status,
+      String channelTradeNo,
+      String payUrl,
+      Instant paidAt,
+      Instant refundedAt,
+      BigDecimal refundAmount,
+      Instant createdAt) {
+    this.paymentId = paymentId;
+    this.orderId = orderId;
+    this.customerId = customerId;
+    this.amount = amount;
+    this.channel = channel;
+    this.status = status;
+    this.channelTradeNo = channelTradeNo;
+    this.payUrl = payUrl;
+    this.paidAt = paidAt;
+    this.refundedAt = refundedAt;
+    this.refundAmount = refundAmount;
+    this.createdAt = createdAt;
+  }
 }

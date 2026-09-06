@@ -276,6 +276,7 @@ const EntityManagement: React.FC = () => {
 
         {/* 实体列表 */}
         <ProTable
+          options={false}
           columns={columns as ProColumns<MasterDataEntity>[]}
           dataSource={data}
           loading={loading}

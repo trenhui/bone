@@ -29,11 +29,10 @@ public class MetadataStudioAuditRepository implements StudioAuditRepository, Stu
   }
 
   @Override
-  public StudioAuditEntry save(StudioAuditEntry entry) {
+  public void save(StudioAuditEntry entry) {
     ExtStudioAuditLog row = StudioPersistenceConverter.toAuditLogEntity(entry);
     repository.insert(row);
     entry.setId(row.getId());
-    return entry;
   }
 
   @Override

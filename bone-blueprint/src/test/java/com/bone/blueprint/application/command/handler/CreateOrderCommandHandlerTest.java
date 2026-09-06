@@ -15,6 +15,8 @@ import com.bone.blueprint.domain.extension.order.OrderPriceCalculator;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.gateway.TenantProvider;
 import com.bone.blueprint.domain.order.Order;
+import com.bone.blueprint.domain.order.OrderItem;
+import com.bone.blueprint.domain.order.OrderItemRepository;
 import com.bone.blueprint.domain.repository.OrderRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
@@ -32,6 +34,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class CreateOrderCommandHandlerTest {
 
   @Mock private OrderRepository orderRepository;
+
+  @Mock private OrderItemRepository orderItemRepository;
 
   @Mock private InventoryGateway inventoryGateway;
 
@@ -67,6 +71,7 @@ class CreateOrderCommandHandlerTest {
     verify(inventoryGateway, never()).reserveStock(anyLong(), anyLong(), anyInt());
     verify(priceCalculator, times(1)).calculate(any());
     verify(orderRepository, times(1)).save(any(Order.class));
+    verify(orderItemRepository, times(1)).save(any(OrderItem.class));
     verify(domainEventPublisher, times(1)).publishFrom(any(Order.class));
   }
 
@@ -99,6 +104,7 @@ class CreateOrderCommandHandlerTest {
     assertNotNull(orderId);
     verify(inventoryGateway, times(2)).checkStock(anyLong(), anyInt());
     verify(inventoryGateway, never()).reserveStock(anyLong(), anyLong(), anyInt());
+    verify(orderItemRepository, times(2)).save(any(OrderItem.class));
     verify(domainEventPublisher, times(1)).publishFrom(any(Order.class));
   }
 }

@@ -6,15 +6,15 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.actuate.health.HealthEndpoint;
-import org.springframework.stereotype.Component;
 
 /**
- * 默认 {@link ServiceHealthGateway} 实现。
+ * 占位 {@link ServiceHealthGateway} 实现（已废弃）。
  *
- * <p>仅自报本进程 Actuator {@code health()} 状态；远端服务返回 {@code UNKNOWN}，避免误导用户。 接入服务注册中心（Eureka/Consul）或
- * Gateway 主动探活后替换为 {@code RegistryServiceHealthGateway}（[Target]）。
+ * <p>仅自报本进程 Actuator {@code health()} 状态、远端恒 {@code UNKNOWN}；保留为接入服务注册中心（Eureka/Consul）时的 {@code
+ * RegistryServiceHealthGateway} 参考样板。实际运行已由 {@link HttpProbeServiceHealthGateway}（主动探活）取代。
  */
-@Component
+// 注意：本类不再标注 @Component，避免与 HttpProbeServiceHealthGateway 同接口双 Bean 歧义；如需启用注册中心探活，
+// 改为 @Component 并移除 HttpProbeServiceHealthGateway 的 @Component 即可。
 @RequiredArgsConstructor
 public class LocalActuatorServiceHealthGateway implements ServiceHealthGateway {
 

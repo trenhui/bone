@@ -43,19 +43,28 @@ class PaymentTest {
   }
 
   @Test
-  void testMarkPayingOnlyFromPending() {
+  void testSubmitToChannelOnlyFromPending() {
     Payment payment = createPendingPayment();
-    payment.markPaying();
+    payment.submitToChannel("http://pay");
     assertEquals(PaymentStatus.PAYING, payment.getStatus());
+    assertEquals("http://pay", payment.getPayUrl());
 
-    // 已 PAYING 再 markPaying 抛异常
-    assertThrows(DomainException.class, payment::markPaying);
+    // 已 PAYING 再 submitToChannel 抛异常
+    assertThrows(DomainException.class, () -> payment.submitToChannel("http://pay"));
+  }
+
+  @Test
+  void testSubmitToChannelRejectsBlankUrl() {
+    Payment payment = createPendingPayment();
+    assertThrows(DomainException.class, () -> payment.submitToChannel(null));
+    assertThrows(DomainException.class, () -> payment.submitToChannel("  "));
+    assertEquals(PaymentStatus.PENDING, payment.getStatus());
   }
 
   @Test
   void testConfirmSuccessMovesToSuccess() {
     Payment payment = createPendingPayment();
-    payment.markPaying();
+    payment.submitToChannel("http://pay");
 
     boolean migrated = payment.confirmSuccess("trade-no-001", new BigDecimal("200"));
 
@@ -70,7 +79,7 @@ class PaymentTest {
   @Test
   void testConfirmSuccessWithAmountMismatchThrows() {
     Payment payment = createPendingPayment();
-    payment.markPaying();
+    payment.submitToChannel("http://pay");
 
     // 实付金额与应付金额不一致（部分支付/篡改）→ 拒绝确认
     assertThrows(
@@ -117,7 +126,7 @@ class PaymentTest {
   @Test
   void testMarkFailedFromPaying() {
     Payment payment = createPendingPayment();
-    payment.markPaying();
+    payment.submitToChannel("http://pay");
 
     payment.markFailed("trade-no-001");
 

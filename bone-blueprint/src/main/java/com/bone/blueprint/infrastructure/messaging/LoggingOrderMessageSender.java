@@ -1,6 +1,6 @@
 package com.bone.blueprint.infrastructure.messaging;
 
-import com.bone.blueprint.application.integration.port.OrderMessageSender;
+import com.bone.blueprint.domain.gateway.OrderMessageSender;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;

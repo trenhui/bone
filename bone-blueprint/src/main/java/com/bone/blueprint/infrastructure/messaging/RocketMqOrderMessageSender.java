@@ -1,6 +1,6 @@
 package com.bone.blueprint.infrastructure.messaging;
 
-import com.bone.blueprint.application.integration.port.OrderMessageSender;
+import com.bone.blueprint.domain.gateway.OrderMessageSender;
 import lombok.RequiredArgsConstructor;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

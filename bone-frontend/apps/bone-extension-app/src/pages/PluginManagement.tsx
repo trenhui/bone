@@ -92,6 +92,7 @@ const PluginManagement: React.FC = () => {
     description?: string;
     pluginId?: number;
   }>();
+  const [uploadPlugin, setUploadPlugin] = useState<ExtensionRow | null>(null);
 
   const load = useCallback(async (p: number, ps: number) => {
     setLoading(true);
@@ -132,33 +133,58 @@ const PluginManagement: React.FC = () => {
 
   const openCreate = () => {
     setEditing(null);
-    form.resetFields();
-    form.setFieldsValue({
-      enabled: true,
-      priority: 100,
-      tenantCode: 'DEFAULT',
-      bizCode: '*',
-    });
     setModalOpen(true);
   };
 
+  // 弹窗渲染后再回填表单：Form 挂载后操作实例，避免 useForm 未连接告警
+  useEffect(() => {
+    if (!modalOpen) return;
+    form.resetFields();
+    if (editing) {
+      form.setFieldsValue({
+        extPointId: editing.extPointId,
+        name: editing.name,
+        description: editing.description,
+        className: editing.className,
+        tenantCode: editing.tenantCode,
+        bizCode: editing.bizCode,
+        priority: editing.priority,
+        config: editing.config,
+        enabled: editing.enabled,
+      });
+    } else {
+      form.setFieldsValue({
+        enabled: true,
+        priority: 100,
+        tenantCode: 'DEFAULT',
+        bizCode: '*',
+      });
+    }
+  }, [modalOpen, editing, form]);
+
   const openUpload = (plugin?: ExtensionRow) => {
-    uploadForm.resetFields();
+    setUploadPlugin(plugin ?? null);
     setJarFile(null);
-    if (plugin) {
+    setUploadOpen(true);
+  };
+
+  // 上传弹窗渲染后再回填表单
+  useEffect(() => {
+    if (!uploadOpen) return;
+    uploadForm.resetFields();
+    if (uploadPlugin) {
       uploadForm.setFieldsValue({
-        pluginId: plugin.id,
-        extPointId: plugin.extPointId,
-        name: plugin.name,
-        className: plugin.className,
+        pluginId: uploadPlugin.id,
+        extPointId: uploadPlugin.extPointId,
+        name: uploadPlugin.name,
+        className: uploadPlugin.className,
         version: '',
-        description: plugin.description,
+        description: uploadPlugin.description,
       });
     } else {
       uploadForm.setFieldsValue({ version: '1.0.0' });
     }
-    setUploadOpen(true);
-  };
+  }, [uploadOpen, uploadPlugin, uploadForm]);
 
   const openVersions = async (plugin: ExtensionRow) => {
     setSelectedPlugin(plugin);
@@ -181,17 +207,6 @@ const PluginManagement: React.FC = () => {
 
   const openEdit = (record: ExtensionRow) => {
     setEditing(record);
-    form.setFieldsValue({
-      extPointId: record.extPointId,
-      name: record.name,
-      description: record.description,
-      className: record.className,
-      tenantCode: record.tenantCode,
-      bizCode: record.bizCode,
-      priority: record.priority,
-      config: record.config,
-      enabled: record.enabled,
-    });
     setModalOpen(true);
   };
 
@@ -312,11 +327,16 @@ const PluginManagement: React.FC = () => {
 
   const openBind = (record: ExtensionRow) => {
     setBindTarget(record);
+  };
+
+  // 绑定弹窗渲染后再回填表单：Form 挂载后操作实例，避免 useForm 未连接告警
+  useEffect(() => {
+    if (!bindTarget) return;
     bindForm.resetFields();
     bindForm.setFieldsValue({
-      extPointId: isBound(record) ? record.extPointId : (extPoints[0]?.id ?? 0),
+      extPointId: isBound(bindTarget) ? bindTarget.extPointId : (extPoints[0]?.id ?? 0),
     });
-  };
+  }, [bindTarget, bindForm, extPoints]);
 
   const handleBindSubmit = async () => {
     if (!bindTarget) return;
@@ -572,7 +592,8 @@ const PluginManagement: React.FC = () => {
         onOk={handleSubmit}
         onCancel={() => setModalOpen(false)}
         width={560}
-        destroyOnClose
+        forceRender
+        destroyOnHidden
       >
         <Form form={form} layout="vertical">
           <Form.Item name="extPointId" label="关联扩展点" rules={[{ required: true }]}>
@@ -611,7 +632,8 @@ const PluginManagement: React.FC = () => {
         onOk={handleUpload}
         onCancel={() => setUploadOpen(false)}
         width={560}
-        destroyOnClose
+        forceRender
+        destroyOnHidden
       >
         <Form form={uploadForm} layout="vertical">
           <Form.Item name="pluginId" hidden>
@@ -620,18 +642,18 @@ const PluginManagement: React.FC = () => {
           <Form.Item
             name="extPointId"
             label="关联扩展点"
-            rules={[{ required: !uploadForm.getFieldValue('pluginId'), message: '请选择扩展点' }]}
+            rules={[{ required: !uploadPlugin, message: '请选择扩展点' }]}
           >
             <Select
-              disabled={!!uploadForm.getFieldValue('pluginId')}
+              disabled={!!uploadPlugin}
               options={extPoints.map((p) => ({ value: p.id, label: `${p.name} (#${p.id})` }))}
             />
           </Form.Item>
           <Form.Item name="name" label="插件名称" rules={[{ required: true }]}>
-            <Input disabled={!!uploadForm.getFieldValue('pluginId')} />
+            <Input disabled={!!uploadPlugin} />
           </Form.Item>
           <Form.Item name="className" label="实现类" rules={[{ required: true }]}>
-            <Input disabled={!!uploadForm.getFieldValue('pluginId')} />
+            <Input disabled={!!uploadPlugin} />
           </Form.Item>
           <Form.Item name="version" label="版本号" rules={[{ required: true }]}>
             <Input placeholder="1.0.0" />
@@ -717,7 +739,8 @@ const PluginManagement: React.FC = () => {
         onCancel={() => setBindTarget(null)}
         okText="确认绑定"
         cancelText="取消"
-        destroyOnClose
+        forceRender
+        destroyOnHidden
         width={520}
       >
         {bindTarget ? (

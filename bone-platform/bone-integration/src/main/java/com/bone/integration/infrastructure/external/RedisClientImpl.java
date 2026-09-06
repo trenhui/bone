@@ -44,7 +44,6 @@ public class RedisClientImpl implements ExternalSystemClient {
         Boolean set = redisTemplate.expire(key, java.time.Duration.ofSeconds(seconds));
         return Map.of("expired", Boolean.TRUE.equals(set), "key", key);
       }
-      case "GET":
       default -> {
         Object value = redisTemplate.opsForValue().get(key);
         Map<String, Object> result = new LinkedHashMap<>();

@@ -27,11 +27,14 @@ public class NotificationService {
   }
 
   public long unreadCount(Long userId) {
+    // 该用户未读站内信数。QueryBuilder 的 and().eq(false).count() 组合存在异常，
+    // 改为「按用户拉取 + 内存过滤未读」，数据量小且 list() 已验证可用。
     return QueryBuilder.from(NotificationMessage.class)
         .where(NotificationMessage::getUserId)
         .eq(userId)
-        .and(NotificationMessage::isRead)
-        .eq(false)
+        .list()
+        .stream()
+        .filter(m -> !m.isRead())
         .count();
   }
 

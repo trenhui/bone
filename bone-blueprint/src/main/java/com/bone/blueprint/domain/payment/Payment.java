@@ -49,6 +49,12 @@ public class Payment extends TenantAggregateRoot<Long> {
   private Instant updatedAt;
 
   /**
+   * 乐观锁版本号（E-9.6）：由 SDK 按列读写；仓储 UPDATE 追加 {@code WHERE version = ?} 的乐观并发保护， 待 SDK 提供等价能力后启用（见模块
+   * README「E-9.6 并发与幂等」登记，当前不声明支持并发写）。
+   */
+  private Long version;
+
+  /**
    * 应付金额（值对象视图）。
    *
    * <p>与 {@code Order.getTotalMoney()} 保持同构：金额一律经 {@link Money} 运算，禁止在领域内裸比 {@code
@@ -79,6 +85,7 @@ public class Payment extends TenantAggregateRoot<Long> {
     this.channel = channel;
     this.status = PaymentStatus.PENDING;
     this.payUrl = payUrl;
+    this.version = 0L;
     Instant now = Instant.now();
     this.createdAt = now;
     this.updatedAt = now;
@@ -106,11 +113,20 @@ public class Payment extends TenantAggregateRoot<Long> {
     return new Payment(id, tenantId, orderId, customerId, amount, channel, payUrl);
   }
 
-  /** 已向支付渠道预下单：进入支付中，等待用户完成支付。 */
-  public void markPaying() {
+  /**
+   * 向支付渠道提交并回填支付链接：进入支付中，等待用户完成支付（PENDING → PAYING）。
+   *
+   * <p><b>为何拆为独立行为</b>：渠道预下单是远程调用，须在 DB 事务外执行（见 {@code InitiatePaymentCommandHandler} 两段式），故「回填链接 +
+   * 状态迁移」由本方法在回写事务中完成； 提交前强制校验链接非空，防止渠道返回异常时写入脏数据。
+   */
+  public void submitToChannel(String payUrl) {
     if (this.status != PaymentStatus.PENDING) {
       throw new DomainException("只有新建状态的支付单可以提交支付");
     }
+    if (payUrl == null || payUrl.isBlank()) {
+      throw new DomainException("支付链接不能为空");
+    }
+    this.payUrl = payUrl;
     this.status = PaymentStatus.PAYING;
     this.updatedAt = Instant.now();
   }

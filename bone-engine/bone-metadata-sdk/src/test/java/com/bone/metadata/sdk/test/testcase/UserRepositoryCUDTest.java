@@ -116,6 +116,48 @@ public class UserRepositoryCUDTest {
     assertTrue(users.isEmpty(), "No users should be inserted");
   }
 
+  // ADR-0019：insert() 尊重非空 id（空才生成，非空则尊重）
+  @Test
+  void testInsert_ShouldRespectPresetNonNullId() {
+    // Arrange：预分配 id（模拟应用层构造期确定身份）
+    Long presetId = DistributedIdGenerator.generateLongId();
+    User user = new User();
+    user.setId(presetId);
+    user.setName("PresetIdUser");
+    user.setRoleId(1L);
+    user.setCreatedAt(Timestamp.from(Instant.now()));
+    user.setCreatedBy(1001L);
+    user.setUpdatedAt(Timestamp.from(Instant.now()));
+    user.setUpdatedBy(1001L);
+    user.setDeleted(false);
+
+    // Act
+    Long returnedId = userRepository.insert(user);
+
+    // Assert：返回值与内存态 id 均为预分配值，未被静默覆盖
+    assertEquals(presetId, returnedId, "insert() should return the preset id");
+    assertEquals(presetId, user.getId(), "in-memory id should stay the preset id");
+    User insertedUser = userRepository.findById(presetId);
+    assertNotNull(insertedUser, "Row should be persisted under the preset id");
+    assertEquals("PresetIdUser", insertedUser.getName(), "Name should match");
+  }
+
+  // ADR-0019：id 为空时仍由 SDK 生成（存量行为不变）
+  @Test
+  void testInsert_ShouldGenerateIdWhenNull() {
+    // Arrange
+    User user = createTestUser("NullIdUser", 1L, 1001L, false);
+    user.setId(null);
+
+    // Act
+    Long returnedId = userRepository.insert(user);
+
+    // Assert
+    assertNotNull(returnedId, "insert() should generate an id when it is null");
+    assertEquals(returnedId, user.getId(), "in-memory id should be the generated id");
+    assertNotNull(userRepository.findById(returnedId), "Row should be persisted");
+  }
+
   // 3. Test save operation (insert new user)
   @Test
   void testSave_ShouldInsertNewUser() {

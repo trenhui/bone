@@ -45,7 +45,6 @@ public class MongoClientImpl implements ExternalSystemClient {
           long deleted = coll.deleteMany(filter).getDeletedCount();
           return Map.of("deleted", deleted);
         }
-        case "FIND":
         default -> {
           Document filter =
               params.get("filter") != null

@@ -1,4 +1,0 @@
-ExtPointCommandHandler must declare @Transactional on class or handle()/execute() method
-ExtensionCommandHandler must declare @Transactional on class or handle()/execute() method
-ExtensionStudioCommandHandler must declare @Transactional on class or handle()/execute() method
-PluginExecutionLogCommandHandler must declare @Transactional on class or handle()/execute() method

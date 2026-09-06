@@ -27,14 +27,19 @@ class PaymentDetailQueryHandlerTest {
   @InjectMocks private PaymentDetailQueryHandler handler;
 
   private PaymentRow row() {
-    PaymentRow row = new PaymentRow();
-    row.setPaymentId(1L);
-    row.setOrderId(100L);
-    row.setCustomerId(200L);
-    row.setAmount(new BigDecimal("200"));
-    row.setChannel("SIMULATED");
-    row.setStatus("SUCCESS");
-    return row;
+    return new PaymentRow(
+        1L,
+        100L,
+        200L,
+        new BigDecimal("200"),
+        "SIMULATED",
+        "SUCCESS",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null);
   }
 
   @Test

@@ -27,6 +27,7 @@ public class NotificationMessage extends AggregateRoot<Long> {
   @Column(name = "user_id")
   private Long userId;
 
+  @Column(name = "is_read")
   private boolean read;
 
   @Column(name = "created_at")

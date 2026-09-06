@@ -61,7 +61,7 @@
 
 | 项 | 样板现状 | 生产要求 |
 |----|----------|----------|
-| **并发幂等兜底** | 应用层幂等（聚合内判断） | 须加**乐观锁**（`version` + `UPDATE ... WHERE status='PAYING'`）或 `channel_trade_no` **唯一索引**兜底，防并发回调双写 |
+| **并发幂等兜底** | 聚合已带 `version` 字段 + DDL 含 `version` 列（E-9.6 登记）；回调幂等目前仅应用层聚合内判断 | `WHERE version = ?` 乐观锁（待 SDK 提供能力后启用）或 `channel_trade_no` **唯一索引**兜底，防并发回调双写 |
 | **回调验签** | 模拟 HMAC（固定共享密钥，`SimulatedPaymentSignatureVerifier`） | 真实渠道用 HMAC/RSA/证书 + 密钥外部化 + 防重放（nonce/时间戳） |
 | **真实渠道退款** | `Payment.refund` 仅本地幂等 | 真实退款须调用渠道退款接口 + 对账 |
 | **渠道真实对接** | `SimulatedPaymentGatewayImpl` | 替换为真实渠道适配器 + 协议转换 + 错误语义隔离（§19 ACL） |
@@ -70,6 +70,16 @@
 
 - 聚合根继承 `TenantAggregateRoot`；写/读路径经 `TenantProviderAdapter`（实现 `domain/gateway/TenantProvider` 端口）/ `TenantContext` 隔离。
 - HTTP 演示：请求头 `X-Tenant-Id: 1001`（见 `TenantContextFilter`）。
+
+#### 平台租户打洞登记（E-4.4）
+
+定时任务线程无请求上下文，经 `TenantProvider` 端口取数时由 `TenantProviderAdapter` **显式降级为平台租户并留审计日志**（禁止静默按 `null` 放行）。以下异步入口已按 E-4.4 登记：
+
+| 异步入口 | 作用租户 | 降级/打洞说明 |
+|----------|----------|--------------|
+| `CancelExpiredOrderJob` | 平台租户 `0`（上下文缺失时） | 定时扫描超时订单；已在任务内显式打印 `[打洞]` 日志 |
+| `CloseExpiredPaymentJob` | 平台租户 `0`（上下文缺失时） | 定时关闭超时支付单；已在任务内显式打印 `[打洞]` 日志 |
+| `OrderOutboxRelayJob` | 随事务内租户（Outbox 记录自带 `tenant_id`） | 逐条中继按记录租户发送，不依赖线程上下文 |
 
 ### 写侧标准写法（保存 + 发布事件）
 
@@ -161,7 +171,7 @@ bash scripts/ci/collect-blueprint-compliance.sh
 | 开发默认 | `bone.blueprint.outbox.mq-enabled=false` | `LoggingOrderMessageSender` 打结构化日志 |
 | MQ | `spring.profiles.active=mq` + NameServer | `RocketMqOrderMessageSender` + `OrderPaidIntegrationMqListener` |
 
-> **Outbox 记录归属（工程折中，2026-08-27）**：`OrderOutboxRecord` 作为 `AggregateRoot` 放在 `domain/outbox/`（复用 bone-metadata-sdk 的聚合持久化 + 领域事件机制，避免另起一套基础设施模型）。Outbox 本身是**集成机制**而非订单业务聚合，无领域不变量（仅 PENDING→SENT/FAILED 技术状态）。若未来多模块需要通用 Outbox，应抽到独立基础设施组件，不再占用订单领域包。
+> **Outbox 记录归属（工程折中，2026-08-27）**：`OrderOutboxRecord` 位于 `infrastructure/messaging/outbox/`（原 `domain/outbox/` 包已废弃）。它**不是业务聚合**，仅因复用 bone-metadata-sdk 的聚合持久化与主键回填机制而继承 `AggregateRoot`；无领域不变量（仅 PENDING→SENT/FAILED 技术状态）。若未来多模块需要通用 Outbox，应抽到独立基础设施组件，不再占用订单领域包。
 
 ```bash
 # 启动（需本地 RocketMQ NameServer :9876）

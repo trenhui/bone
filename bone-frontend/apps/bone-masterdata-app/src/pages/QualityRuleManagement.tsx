@@ -351,6 +351,7 @@ const QualityRuleManagement: React.FC = () => {
           dataSource={rules}
           loading={loading}
           pagination={{ pageSize: 10 }}
+          options={{ reload: false, density: false, setting: false }}
           locale={{ emptyText: '请先选择一个实体' }}
         />
 
@@ -358,6 +359,7 @@ const QualityRuleManagement: React.FC = () => {
         <div style={{ marginTop: 24 }}>
           <h3>质量检查历史</h3>
           <ProTable
+            options={{ reload: false, density: false, setting: false }}
             columns={[
               {
                 title: '检查ID',

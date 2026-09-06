@@ -1,58 +1,21 @@
 package com.bone.integration.application.event.outbox;
 
 import com.bone.core.domain.DomainEvent;
-import com.bone.core.tenant.context.TenantContext;
-import com.bone.core.util.DistributedIdGenerator;
-import com.bone.integration.application.config.IntegrationOutboxProperties;
-import com.bone.integration.domain.outbox.IntegrationOutboxRecord;
-import com.bone.integration.domain.repository.IntegrationOutboxRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
-/** 在业务事务内写入 Outbox（INT-10）。 */
-@Component
-@RequiredArgsConstructor
-@Slf4j
-public class IntegrationOutboxWriter {
+/**
+ * Outbox（发件箱）写入端口——<strong>应用层定义，基础设施层实现</strong>。
+ *
+ * <p><b>为何端口在 application 而非 domain</b>：Outbox 解决的是「业务事务与消息投递之间的一致性」， 属应用层的
+ * 集成职责；领域层不应感知消息中间件的存在。实现见 {@code infrastructure/messaging/outbox/IntegrationOutboxWriterImpl}。
+ *
+ * <p><b>为何实现在 infrastructure 而非 domain</b>：Outbox 记录只有 PENDING/SENT/FAILED 的<strong>技术
+ * 状态</strong>，无业务不变量。放领域层会把技术设施概念混入业务领域（原 {@code domain/outbox} 已迁移）。
+ *
+ * <p><b>调用约束（关键）</b>：必须在业务写事务<strong>内</strong>调用，保证「业务状态变更」与「事件待发」 原子提交。若挪到
+ * AFTER_COMMIT，业务已提交而事件未落库，宕机即丢事件——Outbox 模式将完全失效。
+ */
+public interface IntegrationOutboxWriter {
 
-  private final IntegrationOutboxProperties properties;
-  private final IntegrationEventCatalog catalog;
-  private final IntegrationEventEnvelopeFactory envelopeFactory;
-  private final IntegrationOutboxRepository outboxRepository;
-
-  @Transactional
-  public void append(DomainEvent event) {
-    if (!properties.isEnabled() || event == null) {
-      return;
-    }
-    catalog
-        .resolve(event)
-        .ifPresentOrElse(
-            registration -> persist(event, registration),
-            () -> log.warn("未登记的集成领域事件，跳过 Outbox: {}", event.getClass().getName()));
-  }
-
-  private void persist(DomainEvent event, IntegrationEventRegistration registration) {
-    IntegrationEventEnvelope envelope = envelopeFactory.create(event, registration);
-    String json = envelopeFactory.toJson(envelope);
-    Long tenantId = TenantContext.getTenantIdAsLong();
-    String partitionKey = String.valueOf(tenantId != null ? tenantId : 0L);
-    IntegrationOutboxRecord record =
-        IntegrationOutboxRecord.pending(
-            DistributedIdGenerator.generateLongId(),
-            tenantId,
-            envelope.eventId(),
-            registration.eventType(),
-            registration.topic(),
-            partitionKey,
-            json);
-    outboxRepository.save(record);
-    log.debug(
-        "Outbox 已写入: eventType={}, topic={}, eventId={}",
-        registration.eventType(),
-        registration.topic(),
-        envelope.eventId());
-  }
+  /** 在业务事务内登记一条待发记录（事件类型须在 {@link IntegrationEventCatalog} 登记，否则仅记 warn 跳过）。 */
+  void append(DomainEvent event);
 }

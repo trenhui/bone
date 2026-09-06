@@ -477,7 +477,7 @@ npm run preview               # Vite preview
 ### 12.1 给开发者的关键提示
 
 1. **不要破坏分层依赖**：修改代码时，`domain` 层不能引入 Spring/MyBatis 等框架依赖；`application` 层不能直接调用 `infrastructure` 实现类
-2. **保持 CQRS**：写操作使用 `*CommandHandler` + `@Transactional`；读操作使用 `*QueryHandler`（只读）。Controller **禁止**直接注入 `application/service`、`domain/service`（领域服务）、`domain/repository`；满足 [DDD §14.3.2](doc/architecture/Bone-DDD-最终实践方案.md) 条件时可加 `*Facade` 作入站门面，但不取代 Handler
+2. **保持 CQRS**：写操作使用 `*CommandHandler` + `@Transactional`；读操作使用 `*QueryHandler`（只读）。Controller **禁止**直接注入 `application/service`、`domain/service`（领域服务）、`domain/repository`；满足 [DDD E-5.3.2](doc/architecture/Bone-DDD-最终实践方案.md) 条件时可加 `*Facade` 作入站门面，但不取代 Handler
 3. **统一响应格式**：Controller 返回统一使用 `ApiResponse<T>` 或 `PageResult<T>`，避免裸返回领域对象
 4. **租户与审计字段**：新增实体应继承 `TenantAbstractEntity`（若需多租户）或 `AbstractEntity`；不要遗漏 `tenantId` 与审计字段的填充
 5. **前端微应用约束**：

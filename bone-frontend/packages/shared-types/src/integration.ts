@@ -112,6 +112,6 @@ export interface FlowStatistics {
   executionCount: number;
   successCount: number;
   failureCount: number;
-  avgExecutionTime: number;
-  updatedAt: string;
+  /** 成功率（百分比，后端 FlowStatisticsDTO 提供） */
+  successRate: number;
 }

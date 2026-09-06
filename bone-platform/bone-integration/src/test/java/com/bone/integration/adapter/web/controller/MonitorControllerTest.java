@@ -22,6 +22,7 @@ import com.bone.integration.domain.model.execution.vo.ExecutionStatus;
 import com.bone.integration.domain.repository.IntegrationFlowRepository;
 import com.bone.integration.domain.repository.IntegrationLogRepository;
 import java.util.Collections;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -85,12 +86,14 @@ class MonitorControllerTest {
   @Test
   void getStatistics_aggregatesByFlowId() {
     FlowStatisticsDTO stats = new FlowStatisticsDTO(10L, "demo", 5L, 4L, 1L, 80.0);
-    when(flowStatisticsQueryHandler.handle(any(FlowStatisticsQuery.class))).thenReturn(stats);
+    when(flowStatisticsQueryHandler.handle(any(FlowStatisticsQuery.class)))
+        .thenReturn(List.of(stats));
 
     var response = monitorController.getStatistics(10L);
 
     assertTrue(response.isSuccess());
-    FlowStatisticsDTO dto = response.getData();
+    assertEquals(1, response.getData().size());
+    FlowStatisticsDTO dto = response.getData().get(0);
     assertEquals(10L, dto.flowId());
     assertEquals(5L, dto.executionCount());
     verify(flowStatisticsQueryHandler).handle(any(FlowStatisticsQuery.class));

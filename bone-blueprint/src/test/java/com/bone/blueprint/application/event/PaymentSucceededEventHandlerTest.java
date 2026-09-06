@@ -7,7 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.bone.blueprint.application.event.outbox.OrderOutboxWriter;
+import com.bone.blueprint.domain.gateway.OrderOutboxWriter;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.order.OrderItem;
 import com.bone.blueprint.domain.order.event.OrderPaymentInconsistentEvent;
@@ -105,13 +105,15 @@ class PaymentSucceededEventHandlerTest {
     verify(orderRepository, never()).save(any());
     // 订单并未支付，故不得写「订单已支付」Outbox
     verify(orderOutboxWriter, never()).appendOrderPaid(any());
-    // 异常必须留痕：发布「钱货不一致」领域事件，由 OrderPaymentInconsistentEventHandler 落 Outbox
+    // 异常必须留痕：发布「钱货不一致」领域事件，且**同事务内**落 Outbox（v4.7 修正：禁止 AFTER_COMMIT
+    // 另起事务写 Outbox，commit 后崩溃即丢事件）
     assertEquals(
         1,
         order.getDomainEvents().stream()
             .filter(e -> e instanceof OrderPaymentInconsistentEvent)
             .count());
     verify(domainEventPublisher).publishFrom(order);
+    verify(orderOutboxWriter).appendPaymentInconsistent(any());
   }
 
   /** 幂等边界：已支付订单重复回调不算「不一致」，不产生补偿噪声。 */

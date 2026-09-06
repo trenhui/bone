@@ -34,7 +34,7 @@ class CloseExpiredPaymentCommandHandlerTest {
     Payment payment =
         Payment.create(
             1L, 1L, 100L, 200L, new BigDecimal("200"), PaymentChannel.SIMULATED, "http://pay");
-    payment.markPaying();
+    payment.submitToChannel("http://pay");
     return payment;
   }
 

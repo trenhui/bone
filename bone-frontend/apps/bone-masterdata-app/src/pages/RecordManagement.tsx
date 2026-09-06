@@ -433,6 +433,7 @@ const RecordManagement: React.FC = () => {
 
         {/* 记录列表 */}
         <ProTable
+          options={false}
           columns={generateTableColumns() as ProColumns<MasterDataRecord>[]}
           dataSource={records}
           loading={loading}

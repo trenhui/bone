@@ -34,5 +34,5 @@
 
 ## 合规与迁移
 
-- 更新 DDD §16.3 与 `bone-web` `GlobalExceptionHandler`。
+- 更新 DDD E-7.3 与 `bone-web` `GlobalExceptionHandler`。
 - 模块级 `GlobalExceptionHandler` 若只处理 `BizException`，补充 `SystemException` 分支。

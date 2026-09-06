@@ -1,12 +1,10 @@
 package com.bone.blueprint.application.event;
 
 import com.bone.blueprint.domain.gateway.InventoryGateway;
-import com.bone.blueprint.domain.order.Order;
-import com.bone.blueprint.domain.order.OrderItem;
+import com.bone.blueprint.domain.gateway.OrderReadPort;
 import com.bone.blueprint.domain.order.event.OrderCreatedEvent;
-import com.bone.blueprint.domain.repository.OrderRepository;
-import com.bone.core.exception.NotFoundException;
-import java.util.Optional;
+import com.bone.blueprint.domain.order.read.OrderWithItemsRow;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -24,43 +22,51 @@ import org.springframework.transaction.event.TransactionalEventListener;
  * 生产应落「预留失败待处理」记录或触发告警，否则库存与订单会静默不一致。
  *
  * <p><b>为何不加 {@code @Transactional}</b>：本处理器只读库 + 远程调用，无本地写入；开启事务只会让远程调用 期间白占数据库连接。
+ *
+ * <p><b>明细来源</b>：订单明细是 Order 聚合的子实体，随订单在同事务落库（{@code CreateOrderCommandHandler} 显式逐条 {@code
+ * save}）。但订单聚合重载不含级联（SDK 无级联），{@code Order.getItems()} 恒为空，故此处必须走查询侧端口 {@link
+ * OrderReadPort#findOrderWithItems}（联 {@code t_order_item} 投影）读取明细，切勿依赖重载后的聚合。
+ * 明细为空时显式留痕，避免「看起来正常却什么都没做」的静默失败。
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class OrderCreatedEventHandler {
 
-  private final OrderRepository orderRepository;
+  private final OrderReadPort orderReadPort;
   private final InventoryGateway inventoryGateway;
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handle(OrderCreatedEvent event) {
     log.info("订单已创建: orderId={}, tenantId={}", event.orderId(), event.tenantId());
 
-    Order order =
-        Optional.ofNullable(orderRepository.findByIdInTenant(event.orderId(), event.tenantId()))
-            .orElseThrow(() -> new NotFoundException("订单不存在: " + event.orderId()));
+    List<OrderWithItemsRow> rows =
+        orderReadPort.findOrderWithItems(event.tenantId(), event.orderId());
 
-    // 订单必有商品项（Order.create 已强制校验）。此处为空只可能是聚合内明细未被正确加载/持久化——
-    // 若静默跳过，库存将永不预留且<strong>没有任何报错</strong>，问题会长期潜伏直至超卖。
-    // 显式留痕让失败可见：宁可报错，也不要「看起来正常运行却什么都没做」。
-    if (order.getItems().isEmpty()) {
+    // 明细为空（含 LEFT JOIN 无匹配行时 itemId 为 NULL）时显式留痕，避免库存静默不预留。
+    // 订单必有商品项（Order.create 已强制校验），为空只可能是明细未随订单落库；静默跳过会让库存永不预留且毫无报错，
+    // 问题潜伏至超卖才暴露。宁可报错，也不要「看起来正常运行却什么都没做」。
+    boolean hasItem = rows.stream().anyMatch(r -> r.getItemId() != null);
+    if (!hasItem) {
       log.error(
-          "订单商品项为空，库存预留无法执行（疑似聚合明细未级联加载）: orderId={}, tenantId={}",
-          order.getId(),
-          order.getTenantId());
+          "订单商品项为空，库存预留无法执行（疑似明细未随订单落库）: orderId={}, tenantId={}",
+          event.orderId(),
+          event.tenantId());
       return;
     }
 
-    for (OrderItem item : order.getItems()) {
+    for (OrderWithItemsRow row : rows) {
+      if (row.getItemId() == null) {
+        continue;
+      }
       try {
-        inventoryGateway.reserveStock(order.getId(), item.getProductId(), item.getQuantity());
+        inventoryGateway.reserveStock(event.orderId(), row.getProductId(), row.getQuantity());
       } catch (Exception ex) {
         log.error(
             "库存预留失败，需补偿对账: orderId={}, productId={}, quantity={}",
-            order.getId(),
-            item.getProductId(),
-            item.getQuantity(),
+            event.orderId(),
+            row.getProductId(),
+            row.getQuantity(),
             ex);
       }
     }

@@ -306,7 +306,7 @@ const EntityManagement: React.FC = () => {
 
       {/* 左侧模块树（仅非 scoped 模式） */}
       {!isScoped && (
-        <Card size="small" style={{ width: 220, flexShrink: 0 }} bodyStyle={{ padding: 8 }}>
+        <Card size="small" style={{ width: 220, flexShrink: 0 }} styles={{ body: { padding: 8 } }}>
           <Tree
             showIcon
             defaultExpandAll
@@ -449,7 +449,7 @@ const EntityManagement: React.FC = () => {
                 </Space>
               }
               style={{ marginBottom: 12 }}
-              bodyStyle={{ padding: 0 }}
+              styles={{ body: { padding: 0 } }}
             >
               <Table
                 rowKey="id"

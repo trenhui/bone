@@ -2,8 +2,9 @@ package com.bone.blueprint.application.query.support;
 
 import com.bone.blueprint.application.query.dto.OrderDto;
 import com.bone.blueprint.domain.order.Order;
+import com.bone.blueprint.domain.order.read.OrderHeadRow;
 
-/** 订单聚合 → 查询 DTO 组装（application 查询层职责，与 OrderDetailAssembler/PaymentAssemblerHelper 同层）。 */
+/** 订单聚合 / 读模型 → 查询 DTO 组装（application 查询层职责，与 OrderDetailAssembler/PaymentAssemblerHelper 同层）。 */
 public final class OrderSummaryAssembler {
 
   private OrderSummaryAssembler() {}
@@ -14,6 +15,17 @@ public final class OrderSummaryAssembler {
         .customerId(order.getCustomerId())
         .totalAmount(order.getTotalAmount())
         .status(order.getStatus().name())
+        .build();
+  }
+
+  /** 读模型行 → DTO（分页投影走 *ReadPort，不再反序列化写聚合，§18.5）。 */
+  public static OrderDto fromRow(OrderHeadRow row) {
+    return OrderDto.builder()
+        .id(row.getOrderId())
+        .customerId(row.getCustomerId())
+        .totalAmount(row.getTotalAmount())
+        .status(row.getStatus())
+        .createdAt(row.getCreatedAt())
         .build();
   }
 }

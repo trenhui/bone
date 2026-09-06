@@ -54,3 +54,82 @@ CREATE TABLE IF NOT EXISTS column_allocation (
     updated_by        BIGINT,
     updated_at        TIMESTAMP    DEFAULT CURRENT_TIMESTAMP
 );
+
+-- ============================================================
+-- 骨-system 业务表（与 bone-init.sql 对齐，H2 兼容语法）
+-- 缺失会导致 @SpringBootTest 上下文启动失败
+-- （如 TaskSchedulerRegistry 在 ApplicationReadyEvent 查 sys_schedule_task）。
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS sys_log (
+    id          BIGINT       NOT NULL PRIMARY KEY,
+    tenant_id   BIGINT       NOT NULL DEFAULT 0,
+    level       VARCHAR(20)  NOT NULL,
+    service     VARCHAR(100) NOT NULL,
+    content     CLOB         NOT NULL,
+    trace_id    VARCHAR(100),
+    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS sys_dict (
+    id         BIGINT        NOT NULL PRIMARY KEY,
+    tenant_id  BIGINT        NOT NULL DEFAULT 0,
+    type       VARCHAR(50)   NOT NULL,
+    type_name  VARCHAR(100),
+    code       VARCHAR(100),
+    label      VARCHAR(100),
+    `value`    VARCHAR(255),
+    sort       INT           DEFAULT 0,
+    status     INT           NOT NULL DEFAULT 1,
+    created_at TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted    TINYINT       NOT NULL DEFAULT 0,
+    version    INT           NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS sys_schedule_task (
+    id          BIGINT       NOT NULL PRIMARY KEY,
+    tenant_id   BIGINT       NOT NULL DEFAULT 0,
+    name        VARCHAR(100) NOT NULL,
+    cron        VARCHAR(100),
+    handler     VARCHAR(255),
+    status      VARCHAR(20)  NOT NULL DEFAULT 'DISABLED',
+    last_run_at TIMESTAMP,
+    next_run_at TIMESTAMP,
+    created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted     TINYINT      NOT NULL DEFAULT 0,
+    version     INT          NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS sys_alert_rule (
+    id                    BIGINT        NOT NULL PRIMARY KEY,
+    tenant_id             BIGINT        NOT NULL DEFAULT 0,
+    name                  VARCHAR(100)  NOT NULL,
+    description           VARCHAR(255),
+    metric_name           VARCHAR(100)  NOT NULL,
+    threshold_value       DECIMAL(20,4) NOT NULL,
+    alert_level           VARCHAR(20)   NOT NULL,
+    notification_channels CLOB,
+    enabled               TINYINT       NOT NULL DEFAULT 1,
+    created_by            BIGINT,
+    updated_by            BIGINT,
+    created_at            TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at            TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    deleted               TINYINT       NOT NULL DEFAULT 0
+);
+
+CREATE TABLE IF NOT EXISTS sys_alert_event (
+    id              BIGINT        NOT NULL PRIMARY KEY,
+    tenant_id       BIGINT        NOT NULL DEFAULT 0,
+    rule_id         BIGINT        NOT NULL,
+    rule_name       VARCHAR(100),
+    alert_level     VARCHAR(20)   NOT NULL,
+    metric_name     VARCHAR(100)  NOT NULL,
+    current_value   DECIMAL(20,4) NOT NULL,
+    threshold_value DECIMAL(20,4) NOT NULL,
+    message         VARCHAR(500)  NOT NULL,
+    status          VARCHAR(20)   NOT NULL DEFAULT 'TRIGGERED',
+    resolved_at     TIMESTAMP,
+    created_at      TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
+);

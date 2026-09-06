@@ -45,6 +45,8 @@ export function createQiankunViteConfig(name: string, port: number, options: Cre
     resolve: {
       alias: {
         'vite-plugin-qiankun/helper': helper,
+        // 与各微应用 tsconfig 的 `paths: { "@/*": ["./src/*"] }` 对齐，避免 `@/xxx` 运行时解析失败
+        '@': path.resolve(process.cwd(), 'src'),
         ...aliases,
       },
     },

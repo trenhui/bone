@@ -1,9 +1,9 @@
 import { useEffect, useState, useContext, useMemo, Component, ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
-import { Layout, Menu, Button, Avatar, Dropdown, App as AntdApp, Form, Input, Card, Switch, Popover, Tooltip, Badge, Result } from 'antd';
+import { Layout, Menu, Button, Avatar, Dropdown, App as AntdApp, Form, Input, Card, Switch, Popover, Tooltip, Badge, Result, List, Tag, Spin, Empty } from 'antd';
 const { Password } = Input;
 import axios from 'axios';
-import { createApiClient, notificationService } from '@bone/shared-services';
+import { createApiClient, notificationService, type NotificationDTO } from '@bone/shared-services';
 import type { MenuNode } from '@bone/shared-types';
 import { registerMicroApps, start as startQiankun, addGlobalUncaughtErrorHandler } from 'qiankun';
 import {
@@ -43,6 +43,157 @@ import {
 } from './shellContext';
 import Authorized from './auth/Authorized';
 import { PermissionCodes, clearScopes, persistScopesFromToken, readScopes } from './auth/jwt';
+
+/** 通知等级 → antd Tag 颜色 */
+function levelColor(level?: string): string {
+  switch ((level || '').toUpperCase()) {
+    case 'ERROR':
+      return 'red';
+    case 'WARN':
+    case 'WARNING':
+      return 'orange';
+    case 'INFO':
+    default:
+      return 'blue';
+  }
+}
+
+/**
+ * 通知面板：列出当前用户站内信，支持单条/全部标为已读。
+ * 标记已读后通过 onUnreadChange 回调让宿主刷新红点计数。
+ */
+function NotificationPanel({
+  userId,
+  onUnreadChange,
+}: {
+  userId: number;
+  onUnreadChange: () => void;
+}): JSX.Element {
+  const { message } = AntdApp.useApp();
+  const [list, setList] = useState<NotificationDTO[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    notificationService
+      .getMessages(userId, 30)
+      .then((data) => alive && setList(data))
+      .catch(() => alive && setList([]))
+      .finally(() => alive && setLoading(false));
+    return () => {
+      alive = false;
+    };
+  }, [userId]);
+
+  const markOne = async (id: number) => {
+    try {
+      await notificationService.markRead(id);
+      setList((prev) => prev.map((m) => (m.id === id ? { ...m, read: true } : m)));
+      onUnreadChange();
+    } catch {
+      message.error('标记已读失败');
+    }
+  };
+
+  const markAll = async () => {
+    const unread = list.filter((m) => !m.read);
+    if (unread.length === 0) return;
+    try {
+      await Promise.all(unread.map((m) => notificationService.markRead(m.id)));
+      setList((prev) => prev.map((m) => ({ ...m, read: true })));
+      onUnreadChange();
+    } catch {
+      message.error('批量标记已读失败');
+    }
+  };
+
+  const unreadNum = list.filter((m) => !m.read).length;
+
+  return (
+    <div style={{ width: 340 }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 8,
+        }}
+      >
+        <span style={{ fontWeight: 600 }}>
+          通知{unreadNum > 0 ? `（${unreadNum} 条未读）` : ''}
+        </span>
+        <Button type="link" size="small" disabled={unreadNum === 0} onClick={markAll}>
+          全部已读
+        </Button>
+      </div>
+      <Spin spinning={loading}>
+        {list.length === 0 ? (
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description="暂无通知"
+            style={{ padding: '16px 0' }}
+          />
+        ) : (
+          <div style={{ maxHeight: 360, overflowY: 'auto' }}>
+            <List
+              dataSource={list}
+              split={false}
+              renderItem={(m) => (
+                <List.Item
+                  style={{
+                    cursor: m.read ? 'default' : 'pointer',
+                    opacity: m.read ? 0.55 : 1,
+                    padding: '10px 4px',
+                    borderBottom: '1px solid rgba(0,0,0,0.06)',
+                  }}
+                  onClick={() => {
+                    if (!m.read) markOne(m.id);
+                  }}
+                  actions={
+                    m.read
+                      ? []
+                      : [
+                          <Button
+                            type="link"
+                            size="small"
+                            key="r"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              markOne(m.id);
+                            }}
+                          >
+                            标为已读
+                          </Button>,
+                        ]
+                  }
+                >
+                  <List.Item.Meta
+                    title={
+                      <span>
+                        {m.level && (
+                          <Tag color={levelColor(m.level)} style={{ marginRight: 6 }}>
+                            {m.level}
+                          </Tag>
+                        )}
+                        {m.title || '通知'}
+                      </span>
+                    }
+                    description={
+                      <div style={{ fontSize: 12, color: 'rgba(0,0,0,0.65)' }}>
+                        {m.content || ''}
+                      </div>
+                    }
+                  />
+                </List.Item>
+              )}
+            />
+          </div>
+        )}
+      </Spin>
+    </div>
+  );
+}
 
 function App(): JSX.Element {
   return (
@@ -230,7 +381,7 @@ function AppContent(): JSX.Element {
     if (!user) return;
     const api = createApiClient('/api/v1/iam');
     api
-      .get<never, MenuNode[]>('/menu/current')
+      .get<never, MenuNode[]>('/menus/current')
       .then((nodes) => {
         if (Array.isArray(nodes) && nodes.length > 0) {
           setMenuConfig(buildMenuFromNodes(nodes));
@@ -532,7 +683,7 @@ interface MainLayoutProps {
   filterEnabled: (items: ShellMenuItem[]) => ShellMenuItem[];
   handleMenuClick: (info: { key: string }, navigate: (path: string) => void) => void;
   handleLogout: () => void;
-  user: { name: string } | null;
+  user: { id?: number; name: string } | null;
   theme: Theme;
   toggleTheme: () => void;
   toggleLayoutMode: () => void;
@@ -550,14 +701,31 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
   const location = useLocation();
   const [openKeys, setOpenKeys] = useState<string[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifSeq, setNotifSeq] = useState(0);
 
-  // 拉取通知未读计数（notification 模块就绪后生效，失败回退 0）
+  // 点击铃铛标已读后刷新红点计数
+  const refreshUnread = () => {
+    if (user?.id) {
+      notificationService.getUnreadCount(user.id).then(setUnreadCount).catch(() => {});
+    }
+  };
+
+  // 拉取通知未读计数（对齐后端 /messages/unread-count?userId=，失败回退 0）
   useEffect(() => {
-    if (!user) return;
-    notificationService
-      .getUnreadCount()
-      .then((n) => setUnreadCount(n))
-      .catch(() => setUnreadCount(0));
+    if (!user?.id) return;
+    let alive = true;
+    const load = () =>
+      notificationService
+        .getUnreadCount(user.id)
+        .then((n) => alive && setUnreadCount(n))
+        .catch(() => alive && setUnreadCount(0));
+    load();
+    const timer = setInterval(load, 60_000);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
   }, [user]);
 
   const enabledMenus = useMemo(() => filterEnabled(menuConfig), [menuConfig, filterEnabled]);
@@ -690,13 +858,27 @@ function MainLayout(props: MainLayoutProps): JSX.Element {
             )}
           </div>
           <div className="header-right">
-            <Tooltip title={`通知（${unreadCount} 条未读）`}>
+            <Popover
+              open={notifOpen}
+              onOpenChange={(o) => {
+                setNotifOpen(o);
+                if (o) setNotifSeq((s) => s + 1);
+              }}
+              trigger="click"
+              placement="bottomRight"
+              arrow={{ pointAtCenter: true }}
+              content={
+                user?.id ? (
+                  <NotificationPanel key={notifSeq} userId={user.id} onUnreadChange={refreshUnread} />
+                ) : null
+              }
+            >
               <Button type="text" className="header-button notification-btn">
                 <Badge count={unreadCount} size="small">
                   <BellOutlined style={{ fontSize: 15 }} />
                 </Badge>
               </Button>
-            </Tooltip>
+            </Popover>
             <Tooltip title={`切换主题（当前：${themePreferenceLabel(theme)}）`}>
               <Button
                 type="text"

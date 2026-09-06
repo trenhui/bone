@@ -213,9 +213,7 @@ public class CamelFlowCompiler {
               .resolveLanguage("simple")
               .createExpression(normalizedExpr)
               .evaluate(
-                  new org.apache.camel.support.DefaultExchange(getCamelContext()),
-                  org.apache.camel.ExchangePattern.InOut)
-              .getBody();
+                  new org.apache.camel.support.DefaultExchange(getCamelContext()), Object.class);
       return Boolean.TRUE.equals(result);
     } catch (Exception ex) {
       // 兜底：按 body 字符串相等比较

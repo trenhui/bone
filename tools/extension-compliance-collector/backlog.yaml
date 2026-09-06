@@ -17,7 +17,7 @@ items:
   - id: archunit-shrink-freeze
     tier: Target
     title: ArchUnit freeze 基线持续收缩
-    reference: Bone-DDD §21
+    reference: Bone-DDD G-1
     tracking: ArchitectureTest 已启用；迁移后只缩不扩
 
   - id: integration-events

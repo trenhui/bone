@@ -10,7 +10,7 @@
 
 ## 背景
 
-`bone-extension-studio` 的 `domain/repository/*` 含 `findAll`、`search`、`update`、`count` 等方法，违反 DDD §18.2 写侧仓储白名单，长期依赖 ArchUnit freeze 基线容忍。
+`bone-extension-studio` 的 `domain/repository/*` 含 `findAll`、`search`、`update`、`count` 等方法，违反 DDD E-9.2 写侧仓储白名单，长期依赖 ArchUnit freeze 基线容忍。
 
 ## 决策
 

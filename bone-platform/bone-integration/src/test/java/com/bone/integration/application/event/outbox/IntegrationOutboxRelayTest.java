@@ -7,9 +7,10 @@ import static org.mockito.Mockito.when;
 
 import com.bone.integration.application.config.IntegrationOutboxProperties;
 import com.bone.integration.application.event.port.IntegrationMessageSender;
-import com.bone.integration.domain.outbox.IntegrationOutboxRecord;
-import com.bone.integration.domain.outbox.OutboxStatus;
-import com.bone.integration.domain.repository.IntegrationOutboxRepository;
+import com.bone.integration.infrastructure.messaging.outbox.IntegrationOutboxRecord;
+import com.bone.integration.infrastructure.messaging.outbox.IntegrationOutboxRelay;
+import com.bone.integration.infrastructure.messaging.outbox.IntegrationOutboxRepository;
+import com.bone.integration.infrastructure.messaging.outbox.OutboxStatus;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

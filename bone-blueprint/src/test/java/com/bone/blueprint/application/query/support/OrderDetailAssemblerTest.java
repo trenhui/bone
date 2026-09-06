@@ -15,18 +15,19 @@ class OrderDetailAssemblerTest {
 
   @Test
   void fromRowsBuildsNestedDto() {
-    OrderWithItemsRow row1 = new OrderWithItemsRow();
-    row1.setOrderId(1L);
-    row1.setCustomerId(2L);
-    row1.setTotalAmount(new BigDecimal("200"));
-    row1.setStatus("CREATED");
-    row1.setCreatedAt(LocalDateTime.now());
-    row1.setItemId(10L);
-    row1.setProductId(100L);
-    row1.setProductName("A");
-    row1.setQuantity(2);
-    row1.setUnitPrice(new BigDecimal("100"));
-    row1.setSubtotal(new BigDecimal("200"));
+    OrderWithItemsRow row1 =
+        new OrderWithItemsRow(
+            1L,
+            2L,
+            new BigDecimal("200"),
+            "CREATED",
+            LocalDateTime.now(),
+            10L,
+            100L,
+            "A",
+            2,
+            new BigDecimal("100"),
+            new BigDecimal("200"));
 
     OrderDto dto = OrderDetailAssembler.fromRows(List.of(row1));
 

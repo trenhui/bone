@@ -268,6 +268,7 @@ const FieldManagement: React.FC = () => {
 
         {/* 字段列表 */}
         <ProTable
+          options={false}
           columns={columns as ProColumns<MasterDataField>[]}
           dataSource={fields}
           loading={loading}

@@ -32,6 +32,11 @@ public class ArchitectureTest {
   static final ArchRule command_no_query_builder =
       BoneDddArchRules.commandHandlersMustNotUseQueryBuilder();
 
+  // R2 + E-8（A 类强制，不 freeze）：禁外层篡改聚合 setId / setTenantId
+  @ArchTest
+  static final ArchRule aggregate_identity_immutable =
+      BoneDddArchRules.outerLayersMustNotMutateAggregateIdentity();
+
   // P0-4 + §18.2
   @ArchTest
   static final ArchRule repository_methods_whitelist =
@@ -77,19 +82,11 @@ public class ArchitectureTest {
   static final ArchRule adapter_no_domain_service =
       FreezingArchRule.freeze(BoneDddArchRules.adapterControllersMustNotDependOnDomainService());
 
-  @ArchTest
-  static final ArchRule command_handler_naming =
-      FreezingArchRule.freeze(BoneDddArchRules.commandHandlersShouldBeNamedCommandHandler());
+  // v4.5：命名 / 事务四条规则已降级为 warn（tasks 2.5），不再作为 @ArchTest 硬门禁；
+  // 反贫血主判据切换为 R8 聚合纯单测（AggregatePureUnitTestCoverageTest）。
 
+  // P-2.3 + P-10.4（D9）：跨上下文 domain 越界守护；空匹配视为配置错误
   @ArchTest
-  static final ArchRule query_handler_naming =
-      FreezingArchRule.freeze(BoneDddArchRules.queryHandlersShouldBeNamedQueryHandler());
-
-  @ArchTest
-  static final ArchRule command_handler_transactional =
-      FreezingArchRule.freeze(BoneDddArchRules.commandHandlersShouldBeTransactional());
-
-  @ArchTest
-  static final ArchRule query_handler_transactional =
-      FreezingArchRule.freeze(BoneDddArchRules.queryHandlersShouldBeReadOnlyTransactional());
+  static final ArchRule no_cross_context_domain =
+      BoneDddArchRules.noCrossContextDomainDependency("com.bone.system");
 }

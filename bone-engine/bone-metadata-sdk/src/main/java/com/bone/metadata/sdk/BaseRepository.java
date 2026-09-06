@@ -162,9 +162,13 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
     GenerationStrategy strategy = primaryKey.getGenerationStrategy();
 
     if (strategy != GenerationStrategy.IDENTITY) {
-      // 非自增：先生成ID，再批量插入（单条）
-      Object generatedId = sqlExecutor.generateId(strategy, entity);
-      setEntityId(entity, generatedId);
+      // 非自增：仅在 id 为空时生成（ADR-0019：尊重调用方预分配的非空 id，
+      // 与 batchInsert()/ensureIdInitialized() 语义一致——空才生成，非空则尊重）。
+      // 调用方对预置 id 的唯一性负责。
+      if (entity.getId() == null) {
+        Object generatedId = sqlExecutor.generateId(strategy, entity);
+        setEntityId(entity, generatedId);
+      }
       BatchCompiledQuery batch =
           sqlBuilder.buildBatchInsert(entityClass, Collections.singletonList(entity));
       sqlExecutor.batchUpdate(batch);

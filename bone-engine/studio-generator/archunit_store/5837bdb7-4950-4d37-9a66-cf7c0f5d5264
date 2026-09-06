@@ -1,6 +1,0 @@
-Class <com.bone.studio.generator.application.query.handler.DataSourceByIdHandler> does not have simple name ending with 'QueryHandler' in (DataSourceByIdHandler.java:0)
-Class <com.bone.studio.generator.application.query.handler.DataSourceListHandler> does not have simple name ending with 'QueryHandler' in (DataSourceListHandler.java:0)
-Class <com.bone.studio.generator.application.query.handler.DataSourceTablesHandler> does not have simple name ending with 'QueryHandler' in (DataSourceTablesHandler.java:0)
-Class <com.bone.studio.generator.application.query.handler.ListSyncedTablesHandler> does not have simple name ending with 'QueryHandler' in (ListSyncedTablesHandler.java:0)
-Class <com.bone.studio.generator.application.query.handler.LoadCatalogTablesHandler> does not have simple name ending with 'QueryHandler' in (LoadCatalogTablesHandler.java:0)
-Class <com.bone.studio.generator.application.query.handler.LoadTablesHandler> does not have simple name ending with 'QueryHandler' in (LoadTablesHandler.java:0)

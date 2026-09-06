@@ -123,8 +123,12 @@ export default function DashboardPage(): JSX.Element {
 
   if (loading) {
     return (
-      <div className={`dashboard ${resolvedTheme}`} style={{ padding: 48, textAlign: 'center' }}>
-        <Spin size="large" tip="加载控制台数据…" />
+      <div
+        className={`dashboard ${resolvedTheme}`}
+        style={{ padding: 48, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}
+      >
+        <Spin size="large" />
+        <span style={{ color: 'rgba(0,0,0,0.45)' }}>加载控制台数据…</span>
       </div>
     );
   }

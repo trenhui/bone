@@ -44,6 +44,12 @@ public class ArchitectureTest {
   static final ArchRule command_no_query_builder =
       BoneDddArchRules.commandHandlersMustNotUseQueryBuilder();
 
+  // E-9.3（v4.6 主判据）：读侧 DSL 只许出现在 infrastructure/query，application 层禁止依赖。
+  // 参考样板不 freeze，须 0 违规（分页查询已迁移到 OrderReadPort）。
+  @ArchTest
+  static final ArchRule read_side_dsl_only_in_query_layer =
+      BoneDddArchRules.readSideDslOnlyInQueryLayer();
+
   // P0-4 + §18.2：仓储方法白名单
   @ArchTest
   static final ArchRule repository_methods_whitelist =
@@ -88,20 +94,23 @@ public class ArchitectureTest {
   static final ArchRule adapter_no_domain_service =
       BoneDddArchRules.adapterControllersMustNotDependOnDomainService();
 
-  // §23 + §15：Handler 命名与事务边界（参考样板不 freeze）
+  // P-2.3 + P-10.4（D9）：跨上下文 domain 越界守护；空匹配视为配置错误
   @ArchTest
-  static final ArchRule command_handler_naming =
-      BoneDddArchRules.commandHandlersShouldBeNamedCommandHandler();
+  static final ArchRule no_cross_context_domain =
+      BoneDddArchRules.noCrossContextDomainDependency("com.bone.blueprint");
 
+  // R9（v4.6 + v4.7 修正）：一事务一聚合；扫描范围含 application/service 与 orchestration。
+  // 参考样板不 freeze，须 0 违规。
   @ArchTest
-  static final ArchRule query_handler_naming =
-      BoneDddArchRules.queryHandlersShouldBeNamedQueryHandler();
+  static final ArchRule one_aggregate_per_transaction =
+      BoneDddArchRules.oneAggregatePerTransaction();
 
+  // E-4.4（v4.7 补门禁）：租户取值收敛到 TenantProvider 端口，业务层禁止直调 TenantContext。
+  // 参考样板不 freeze，须 0 违规。
   @ArchTest
-  static final ArchRule command_handler_transactional =
-      BoneDddArchRules.commandHandlersShouldBeTransactional();
+  static final ArchRule tenant_context_via_provider =
+      BoneDddArchRules.businessLayersMustNotReadTenantContextDirectly();
 
-  @ArchTest
-  static final ArchRule query_handler_transactional =
-      BoneDddArchRules.queryHandlersShouldBeReadOnlyTransactional();
+  // v4.5：命名 / 事务四条规则已降级为 warn（tasks 2.5），不再作为 @ArchTest 硬门禁；
+  // 反贫血主判据切换为 R8 聚合纯单测（AggregatePureUnitTestCoverageTest）。
 }

@@ -17,6 +17,9 @@ import org.springframework.stereotype.Component;
  *
  * <p>定时扫描仍处于 PENDING/PAYING 且创建时间早于超时阈值的支付单，逐笔下发 {@link CloseExpiredPaymentCommand}（**经应用层 Handler
  * 执行，adapter 不直连 domain 仓储**——与 {@code CancelExpiredOrderJob} 同模式，§15）。
+ *
+ * <p><b>平台租户打洞（E-4.4 登记）</b>：定时任务线程无请求上下文，取数统一降级为平台租户（{@code tenantId=0}，经 {@code TenantProvider}
+ * 端口，由 {@code TenantProviderAdapter} 留审计日志），属本模块 README「多租户 · 平台租户打洞登记」登记项。
  */
 @Slf4j
 @Component
@@ -34,6 +37,8 @@ public class CloseExpiredPaymentJob {
   public void closeExpiredPayments() {
     long tenantId = tenantProvider.currentTenantId();
     Instant before = Instant.now().minusSeconds(PAYMENT_TIMEOUT_MINUTES * 60);
+    log.info(
+        "[打洞] 定时任务以租户 tenantId={} 扫描超时支付单（阈值={}min，E-4.4 打洞登记）", tenantId, PAYMENT_TIMEOUT_MINUTES);
     List<PaymentRow> expired = paymentReadPort.findPayableExpiredBefore(tenantId, before);
     if (expired.isEmpty()) {
       return;
