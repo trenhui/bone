@@ -66,6 +66,14 @@
 | **真实渠道退款** | `Payment.refund` 仅本地幂等 | 真实退款须调用渠道退款接口 + 对账 |
 | **渠道真实对接** | `SimulatedPaymentGatewayImpl` | 替换为真实渠道适配器 + 协议转换 + 错误语义隔离（§19 ACL） |
 
+### E-8.3 订单明细 PO 分离评估（技术债登记）
+
+`Order` 聚合持有需持久化的 `List<OrderItem>` 集合，且明细有独立表 `t_order_item` 与独立写侧仓储 `OrderItemRepository`（位于 `domain.order`，与聚合根同包），命中 E-8.3 的 **S1 退出信号**（聚合持有需持久化集合/嵌套实体，无 SDK 级联落库）。
+
+**当前过渡方案**：D1 充血聚合 + `CreateOrderCommandHandler` 显式逐条 `save(OrderItem)`，明细经 `OrderReadPort.findOrderWithItems`（联表投影）读取；`OrderItemRepository` 落在 `domain.order` 而非 `domain.repository`，使 R9（一事务一聚合）按包计数时只计 `OrderRepository`，语义上表达「明细随订单聚合一同落库」（详见 `OrderItemRepository` 类注释）。
+
+**迁移条件（E-8.3 路径）**：当 SDK 支持聚合级联，或团队决定消除 D1 注解与「为过门禁改包」的折中时，再按 E-8.3 做 PO 分离——建 `OrderItemPO` + `OrderItemConverter`，领域 `OrderItem` 落回 D0，仓储实现改操作 PO。此处为已知点，当下合规、不影响功能。
+
 ### 多租户
 
 - 聚合根继承 `TenantAggregateRoot`；写/读路径经 `TenantProviderAdapter`（实现 `domain/gateway/TenantProvider` 端口）/ `TenantContext` 隔离。

@@ -10,8 +10,8 @@ import com.tngtech.archunit.library.freeze.FreezingArchRule;
 /**
  * bone-blueprint 架构守护（参考样板）。
  *
- * <p>真源：{@code doc/architecture/Bone-DDD-最终实践方案.md} §12（P0 七条）+ §21。 共享规则在 {@link
- * BoneDddArchRules}，所有应用模块复用同一份。
+ * <p>真源：{@code doc/architecture/Bone-DDD-最终实践方案.md} E-3（R1–R9 铁律）+ G-1（ArchUnit 规则集 #1–#22）。 共享规则在
+ * {@link BoneDddArchRules}，所有应用模块复用同一份。
  *
  * <p>首次集成 / 收缩基线见 {@code bone-framework/bone-architecture-test/README.md}。
  */
@@ -94,10 +94,23 @@ public class ArchitectureTest {
   static final ArchRule adapter_no_domain_service =
       BoneDddArchRules.adapterControllersMustNotDependOnDomainService();
 
-  // P-2.3 + P-10.4（D9）：跨上下文 domain 越界守护；空匹配视为配置错误
+  // E-4.1.1：跨上下文 domain 越界守护；空匹配视为配置错误
   @ArchTest
   static final ArchRule no_cross_context_domain =
       BoneDddArchRules.noCrossContextDomainDependency("com.bone.blueprint");
+
+  // E-4.1.1（v4.6）：全模块禁止依赖其它 Bone 上下文的 domain 模型——
+  // 覆盖读侧 QueryHandler 直用 QueryBuilder.from(其它上下文实体) 的穿透路径。
+  // 参考样板不 freeze，须 0 违规；空匹配视为配置错误。
+  @ArchTest
+  static final ArchRule no_cross_context_model =
+      BoneDddArchRules.noCrossContextModelDependency("com.bone.blueprint");
+
+  // E-5.3.1（v4.6 内容禁令）：application/service 只许用例级编排，
+  // 不得 new 领域对象、不得调聚合 setter 改状态（须经工厂方法/仓储与领域行为方法）。
+  @ArchTest
+  static final ArchRule application_services_no_domain_rules =
+      BoneDddArchRules.applicationServicesMustNotOwnDomainRules();
 
   // R9（v4.6 + v4.7 修正）：一事务一聚合；扫描范围含 application/service 与 orchestration。
   // 参考样板不 freeze，须 0 违规。
