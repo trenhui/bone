@@ -53,7 +53,12 @@ CREATE TABLE IF NOT EXISTS bp_payment (
     deleted TINYINT NOT NULL DEFAULT 0,
     INDEX idx_payment_order_id (order_id),
     INDEX idx_payment_status (status),
-    INDEX idx_payment_order_channel (order_id, channel)
+    INDEX idx_payment_order_channel (order_id, channel),
+    -- E-9.6.2 幂等键兜底：channel_trade_no 为渠道回填的流水号（幂等去重键），回填后须全局唯一。
+    -- MySQL 中 NULL 不计入唯一约束，故 PENDING（未回调）行的多个 NULL 不冲突，回调回填后强制唯一，
+    -- 防渠道重复推送同一流水号造成并发双写。运行库若已存在 bp_payment，需执行：
+    -- ALTER TABLE bp_payment ADD UNIQUE KEY uk_bp_payment_tenant_channel (tenant_id, channel_trade_no);
+    UNIQUE KEY uk_bp_payment_tenant_channel (tenant_id, channel_trade_no)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='支付单';
 
 -- 集成事件 Outbox（蓝图示范）
