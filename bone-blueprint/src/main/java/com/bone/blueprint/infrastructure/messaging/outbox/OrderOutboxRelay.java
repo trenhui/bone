@@ -1,6 +1,7 @@
 package com.bone.blueprint.infrastructure.messaging.outbox;
 
 import com.bone.blueprint.domain.gateway.OrderMessageSender;
+import com.bone.blueprint.domain.gateway.OrderOutboxRelayPort;
 import com.bone.blueprint.infrastructure.config.OrderOutboxProperties;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import java.util.List;
@@ -18,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class OrderOutboxRelay {
+public class OrderOutboxRelay implements OrderOutboxRelayPort {
 
   private final OrderOutboxProperties properties;
   private final OrderOutboxRepository outboxRepository;

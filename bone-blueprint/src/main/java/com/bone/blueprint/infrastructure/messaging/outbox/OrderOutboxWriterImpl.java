@@ -1,9 +1,9 @@
 package com.bone.blueprint.infrastructure.messaging.outbox;
 
-import com.bone.blueprint.application.integration.event.OrderPaidIntegrationEvent;
-import com.bone.blueprint.application.integration.event.OrderPaymentInconsistentIntegrationEvent;
 import com.bone.blueprint.domain.gateway.OrderOutboxWriter;
 import com.bone.blueprint.domain.gateway.TenantProvider;
+import com.bone.blueprint.domain.integration.event.OrderPaidIntegrationEvent;
+import com.bone.blueprint.domain.integration.event.OrderPaymentInconsistentIntegrationEvent;
 import com.bone.blueprint.domain.order.event.OrderPaidEvent;
 import com.bone.blueprint.domain.order.event.OrderPaymentInconsistentEvent;
 import com.bone.blueprint.infrastructure.config.OrderOutboxProperties;

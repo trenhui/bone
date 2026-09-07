@@ -1,6 +1,6 @@
 package com.bone.blueprint.adapter.schedule;
 
-import com.bone.blueprint.infrastructure.messaging.outbox.OrderOutboxRelay;
+import com.bone.blueprint.application.orchestration.OrderOutboxRelayOrchestrator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -11,11 +11,11 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class OrderOutboxRelayJob {
 
-  private final OrderOutboxRelay orderOutboxRelay;
+  private final OrderOutboxRelayOrchestrator orderOutboxRelayOrchestrator;
 
   @Scheduled(fixedDelayString = "${bone.blueprint.outbox.relay-delay-ms:5000}")
   public void relay() {
-    int sent = orderOutboxRelay.relayPending();
+    int sent = orderOutboxRelayOrchestrator.relay();
     if (sent > 0) {
       log.info("Outbox 中继完成: sent={}", sent);
     }

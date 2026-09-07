@@ -1,6 +1,6 @@
 package com.bone.blueprint.adapter.mq.listener;
 
-import com.bone.blueprint.application.integration.event.OrderPaidIntegrationEvent;
+import com.bone.blueprint.domain.integration.event.OrderPaidIntegrationEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
