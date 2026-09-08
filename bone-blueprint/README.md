@@ -74,6 +74,13 @@
 
 **迁移条件（E-8.3 路径）**：当 SDK 支持聚合级联，或团队决定消除 D1 注解与「显式逐条 save」的折中时，再按 E-8.3 做 PO 分离——建 `OrderItemPO` + `OrderItemConverter`，领域 `OrderItem` 落回 D0，仓储实现改操作 PO。此处为已知点，当下合规、不影响功能。
 
+### E-9.7 强类型 ID 过渡态登记（存量豁免）
+
+`Order.customerId`、`Payment.orderId` / `customerId` 当前为裸 `Long`。依据 E-9.7 **存量豁免**条款（v4.5 前存量聚合不强制批量改造），当下合规。
+
+- **新模块指引**：**新增强聚合**的跨聚合引用必须使用强类型 ID 值对象（`record OrderId(Long value)` 等，P-3.2 口径：构造期空值校验、无 setter），禁止裸 `Long`——编译期即可拦截「订单 ID / 客户 ID 写反」类静默数据错乱。
+- **本样板改造触发条件**：与 E-8.3 PO 分离联动——强类型 ID 的持久化转换依赖 Converter（E-8.3 第 2 步），而本模块聚合直接落库（无 PO 分层）。待 PO 分离落地后，随 `OrderItemPO` 一并引入 `OrderId` / `CustomerId`，避免二次返工。
+
 ### 多租户
 
 - 聚合根继承 `TenantAggregateRoot`；写/读路径经 `TenantProviderAdapter`（实现 `domain/gateway/TenantProvider` 端口）/ `TenantContext` 隔离。
