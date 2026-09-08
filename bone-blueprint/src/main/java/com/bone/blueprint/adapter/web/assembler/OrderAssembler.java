@@ -22,7 +22,8 @@ public interface OrderAssembler {
   OrderSummaryResp toOrderSummaryResp(OrderDto orderDto);
 
   default CancelOrderCommand toCancelOrderCommand(Long orderId) {
-    return new CancelOrderCommand(orderId);
+    // HTTP 入口：租户由请求上下文提供，命令不携带（定时任务入口才显式传 tenantId）
+    return new CancelOrderCommand(orderId, null);
   }
 
   default ShipOrderCommand toShipOrderCommand(Long orderId) {

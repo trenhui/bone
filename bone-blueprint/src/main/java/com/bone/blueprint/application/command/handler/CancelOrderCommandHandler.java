@@ -32,12 +32,22 @@ public class CancelOrderCommandHandler {
 
   @Transactional
   public void handle(CancelOrderCommand cmd) {
+    long tenantId = resolveTenantId(cmd.tenantId());
     Order order =
-        Optional.ofNullable(
-                orderRepository.findByIdInTenant(cmd.orderId(), tenantProvider.currentTenantId()))
+        Optional.ofNullable(orderRepository.findByIdInTenant(cmd.orderId(), tenantId))
             .orElseThrow(() -> new NotFoundException("订单不存在: " + cmd.orderId()));
     order.cancel();
     orderRepository.save(order);
     domainEventPublisher.publishFrom(order);
+  }
+
+  /**
+   * 租户取值：命令显式携带优先（异步/定时任务入口，E-4.4），否则取当前请求上下文。
+   *
+   * <p>定时任务线程无请求上下文，{@code TenantProvider} 会降级为平台租户（0）。若允许其静默回落，
+   * 全租户扫描任务下发的命令会全部落到平台租户，表现为"任务在跑但一笔都没处理"。
+   */
+  private long resolveTenantId(Long explicitTenantId) {
+    return explicitTenantId != null ? explicitTenantId : tenantProvider.currentTenantId();
   }
 }

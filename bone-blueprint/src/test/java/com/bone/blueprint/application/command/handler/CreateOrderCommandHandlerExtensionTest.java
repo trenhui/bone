@@ -13,7 +13,7 @@ import com.bone.blueprint.domain.extension.order.OrderPriceCalculator;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.gateway.TenantProvider;
 import com.bone.blueprint.domain.order.Order;
-import com.bone.blueprint.domain.order.OrderItemRepository;
+import com.bone.blueprint.domain.repository.OrderItemRepository;
 import com.bone.blueprint.domain.repository.OrderRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
 import java.math.BigDecimal;

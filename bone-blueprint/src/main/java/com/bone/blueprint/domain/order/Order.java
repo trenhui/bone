@@ -70,20 +70,6 @@ public class Order extends TenantAggregateRoot<Long> {
     return order;
   }
 
-  /**
-   * 落库后回填真实主键并重建「已创建」事件。
-   *
-   * <p>持久化层在 insert 时会重新分配主键并覆盖构造期预分配的 id，因此 {@link #create} 阶段注册的 {@code OrderCreatedEvent}
-   * 携带的是已被丢弃的预分配 id。若不回填，下游按事件 id 查询明细/预留 库存会查不到数据而静默失效。
-   */
-  public void rebindPersistedIdentity(long persistedId) {
-    this.setId(persistedId);
-    this.clearDomainEvents();
-    this.addDomainEvent(
-        new OrderCreatedEvent(
-            persistedId, this.getTenantId(), this.getCustomerId(), Instant.now()));
-  }
-
   public void addItem(OrderItem item) {
     if (item == null) {
       throw new DomainException("商品项不能为空");
@@ -117,7 +103,16 @@ public class Order extends TenantAggregateRoot<Long> {
     }
   }
 
-  public List<OrderItem> getItems() {
+  /**
+   * 聚合内的明细集合（<b>包级可见</b>）。
+   *
+   * <p><b>为何不对外公开</b>：SDK 重载聚合不做级联，{@code findById} 得到的订单其 {@code items} 恒为空。 若暴露为 public，调用方会自然写出
+   * {@code order.getItems()} 并拿到空列表——一个"看起来成功、实际什么都没做"的静默错误 （历史上有两个事件订阅器踩过）。明细一律经读侧端口 {@code
+   * OrderReadPort.findOrderWithItems} 获取。
+   *
+   * <p>本方法仅供领域内与同包聚合单测使用，代表"创建期 / 内存态"的明细。
+   */
+  List<OrderItem> getItems() {
     return Collections.unmodifiableList(items);
   }
 

@@ -14,6 +14,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.RowMapper;
@@ -28,6 +29,11 @@ public class OrderReadPortImpl implements OrderReadPort {
 
   private static final String SQL_PATH = "sql/order/findOrderWithItems.sql";
 
+  /** 超时未支付订单扫描（简单单表投影内联 SQL；复杂 Join 才外置 SQL 文件）。 */
+  private static final String EXPIRED_CREATED_SQL =
+      "SELECT tenant_id, id, customer_id, total_amount, status, created_at FROM t_order "
+          + "WHERE deleted = 0 AND status = 'CREATED' AND created_at < :before";
+
   private final NamedParameterJdbcTemplate jdbcTemplate;
 
   private volatile String cachedSql;
@@ -41,16 +47,31 @@ public class OrderReadPortImpl implements OrderReadPort {
 
   @Override
   public List<OrderHeadRow> findCreatedExpiredBefore(long tenantId, Instant before) {
-    // 简单单表投影内联 SQL（与 PaymentReadPortImpl 风格一致）；复杂 Join 才外置 SQL 文件
-    String sql =
-        "SELECT id, customer_id, total_amount, status, created_at FROM t_order "
-            + "WHERE tenant_id = :tenantId AND deleted = 0 "
-            + "AND status = 'CREATED' AND created_at < :before";
     MapSqlParameterSource params =
         new MapSqlParameterSource()
             .addValue("tenantId", tenantId)
             .addValue("before", Timestamp.from(before));
-    return jdbcTemplate.query(sql, params, new OrderHeadRowMapper());
+    return jdbcTemplate.query(
+        EXPIRED_CREATED_SQL + " AND tenant_id = :tenantId", params, new OrderHeadRowMapper());
+  }
+
+  @Override
+  public List<OrderHeadRow> findCreatedExpiredBeforeAllTenants(Instant before) {
+    // 全租户运维扫描：不带 tenant_id 条件；调用方须为已登记的定时任务（README 打洞登记）
+    return jdbcTemplate.query(
+        EXPIRED_CREATED_SQL,
+        new MapSqlParameterSource().addValue("before", Timestamp.from(before)),
+        new OrderHeadRowMapper());
+  }
+
+  @Override
+  public Optional<OrderStatus> findStatusById(long tenantId, long orderId) {
+    String sql =
+        "SELECT status FROM t_order WHERE tenant_id = :tenantId AND id = :orderId AND deleted = 0";
+    MapSqlParameterSource params =
+        new MapSqlParameterSource().addValue("tenantId", tenantId).addValue("orderId", orderId);
+    List<String> statuses = jdbcTemplate.queryForList(sql, params, String.class);
+    return statuses.stream().findFirst().map(OrderStatus::valueOf);
   }
 
   @Override
@@ -72,7 +93,7 @@ public class OrderReadPortImpl implements OrderReadPort {
         jdbcTemplate.queryForObject("SELECT COUNT(*) FROM t_order" + where, params, Long.class);
 
     String pageSql =
-        "SELECT id, customer_id, total_amount, status, created_at FROM t_order"
+        "SELECT tenant_id, id, customer_id, total_amount, status, created_at FROM t_order"
             + where
             + " ORDER BY created_at DESC LIMIT :limit OFFSET :offset";
     params.addValue("limit", pageSize).addValue("offset", (long) (pageNum - 1) * pageSize);
@@ -133,6 +154,7 @@ public class OrderReadPortImpl implements OrderReadPort {
     @Override
     public OrderHeadRow mapRow(ResultSet rs, int rowNum) throws SQLException {
       return new OrderHeadRow(
+          rs.getLong("tenant_id"),
           rs.getLong("id"),
           rs.getLong("customer_id"),
           rs.getBigDecimal("total_amount"),

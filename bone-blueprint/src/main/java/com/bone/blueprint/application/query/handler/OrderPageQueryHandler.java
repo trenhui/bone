@@ -7,6 +7,7 @@ import com.bone.blueprint.domain.gateway.OrderReadPort;
 import com.bone.blueprint.domain.gateway.TenantProvider;
 import com.bone.blueprint.domain.order.read.OrderHeadRow;
 import com.bone.blueprint.domain.order.valueobject.OrderStatus;
+import com.bone.core.exception.InvalidRequestException;
 import com.bone.core.model.PageResult;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -48,7 +49,20 @@ public class OrderPageQueryHandler {
     return PageResult.of(records, page.getTotal(), pageNum, pageSize);
   }
 
+  /**
+   * 解析状态入参：非法值转 {@link InvalidRequestException}（映射 400）。
+   *
+   * <p>直接 {@code OrderStatus.valueOf} 会抛 {@code IllegalArgumentException}，被全局处理器映射成 5xx——
+   * 把「调用方传错参数」报成「服务端故障」，既误导排查也会污染告警。
+   */
   private static OrderStatus parseStatus(String status) {
-    return status == null || status.isBlank() ? null : OrderStatus.valueOf(status);
+    if (status == null || status.isBlank()) {
+      return null;
+    }
+    try {
+      return OrderStatus.valueOf(status);
+    } catch (IllegalArgumentException ex) {
+      throw new InvalidRequestException("订单状态非法: " + status);
+    }
   }
 }

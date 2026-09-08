@@ -9,10 +9,13 @@ import lombok.Getter;
  *
  * <p>D0（E-8）约束：domain 包内禁止 {@code @Data}/{@code @Setter}，故只暴露 {@code @Getter} + 全参构造器，由读侧 RowMapper
  * 组装。
+ *
+ * <p><b>带 {@code tenantId}</b>：定时任务需按扫描到的行<strong>显式携带租户</strong>下发命令（E-4.4 异步分支必须显式传递租户）。
  */
 @Getter
 public class PaymentRow {
 
+  private final Long tenantId;
   private final Long paymentId;
   private final Long orderId;
   private final Long customerId;
@@ -27,6 +30,7 @@ public class PaymentRow {
   private final Instant createdAt;
 
   public PaymentRow(
+      Long tenantId,
       Long paymentId,
       Long orderId,
       Long customerId,
@@ -39,6 +43,7 @@ public class PaymentRow {
       Instant refundedAt,
       BigDecimal refundAmount,
       Instant createdAt) {
+    this.tenantId = tenantId;
     this.paymentId = paymentId;
     this.orderId = orderId;
     this.customerId = customerId;
