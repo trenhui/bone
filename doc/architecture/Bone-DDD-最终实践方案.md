@@ -4,9 +4,11 @@
 > **结构**：本文统一为**三段编号**——**P-**（原则，业界共识，不含 Bone 实现词）、**E-**（工程规范，Bone 平台落地）、**G-**（门禁，ArchUnit / Checkstyle / freeze 台账），消除「第一部分 §10 / 第二部分 §10」双编号歧义。修订时先对齐原则，再调整落地条文。  
 > **定位说明**：本文是 **Bone 仓库内 DDD 与分层门禁的权威规范**，对齐主流 DDD/整洁架构共识，并含 **D1 元数据注解** 等工程折中；**非**全行业唯一标准，复杂域请结合 ADR 裁剪。  
 > **关联文档**：[BONE-总体架构设计方案.md](./BONE-总体架构设计方案.md)（平台总体架构、NFR、安全与数据一致性策略，与本方案互补）；[README.md](./README.md) 为架构文档索引；模块详设见 [doc/design/modules/README.md](../design/modules/README.md)。  
-> **版本**：**4.6** | **日期**：2026-09-05  
+> **版本**：**4.7**（文档定稿 v4.7，2026-09-08）| **日期**：2026-09-08  
 > **分册索引**：[ddd/README.md](./ddd/README.md)（原则 / 工程落地 / CQRS / 附录 / **补充条文与示例**）  
 > **近期 ADR**：[0011 AggregateRoot 继承链](./adr/0011-aggregate-root-inheritance.md)、[0012 SystemException 层次](./adr/0012-system-exception-hierarchy.md)、[0013 extension-studio 读侧 ReadPort](./adr/0013-extension-studio-repository-read-side.md)、[0019 ID 生成契约](./adr/0019-id-generation-contract-respect-non-null-id.md)、[0020 反贫血机制](./adr/0020-anti-anemia-weak-form-strong-behavior.md)、[0021 Outbox 平台化](./adr/0021-outbox-and-consumer-idempotency-platformization.md)、[0022 回调验签端口化](./adr/0022-external-callback-signature-verification-port.md)
+>
+> **v4.7 收敛摘要（2026-09-08）**：本版为**定稿版**：补齐 v4.6 未竟门禁的实现态声明，并把「设计与实现态」显式分离，消除纸面承诺与现实差距。① **门禁落地声明修正**：#20（跨上下文模型依赖）、#22（租户取值收敛）、E-5.3.1 内容禁令已实现并在 **bone-blueprint 严格启用**（21 条全绿）；7 个存量应用模块的接入与 #19 存量收敛按 [G-1](#g-1-测试与-ciarchunit-规则集) freeze 建议（2026-05-23）执行，参考样板之外**暂未全量启用**——本表与实现态以各模块 `ArchitectureTest` 为准；② **规则库可信度缺口（v4.7 登记）**：22 条共享规则当前**无逐条单测**（正/反 fixture），规则库自身不构成可信度验证——列为落地前置项（见 [G-1](#g-1-测试与-ciarchunit-规则集) 单测要求），规则行为盲区（如 R9 跨类委派传播）以单测固化；③ **freeze 台账实现态**：`freeze-ledger.yaml` 与 CI 到期硬失败**尚未实装**（当前 0 个模块存在 `freeze-ledger.yaml`，仅原始基线文件），在实装前按「手工台账 ≥1 项已启动检查」降级执行（见 [B.3.1](#b31-freeze-台账模板违规数单调不增)）；④ [E-9.3](#e-93-读侧v46位置判据替代注解判据--目标态收敛) 双轨**判决定稿**：注解判据降级为 domain 层防回滚，application 层主判据收敛为位置白名单（#19）；⑤ [E-9.2](#e-92-写侧-repository) 实现态改写：返回类型主判据不再引用 M2 整数，允许 `queryBy*` 严格白名单过渡实现；⑥ [P-10.1](#p-101-限界上下文与子域类型) 复核**双向冻结**扩至 B.1.1；⑦ [E-4.4](#e-44-多租户在-ddd-中的约定) 门禁条文补齐至 #22 已启用口径；⑧ [E-4.1.1](#e-411-表归属登记模板v47-新增-定稿供直接复制) 新增**表归属登记模板**（定稿供直接复制）；⑨ [E-0.4](#e-04-例外登记的统一形态) 新增**例外登记模板**；⑩ [E-9.3](#e-93-读侧v46位置判据替代注解判据--目标态收敛) R9 判定口径补「跨类委派传播」盲区标注。
 >
 > **v4.6 收敛摘要（2026-09-05）**：本版为**语义约束补强**，不新增风格规则（命名/后缀类规则反而继续降级）。① 新增 **R9 一事务一聚合**（[E-3.1.2](#e-312-r9-一事务一聚合)）——补齐 v4.5「聚合是一致性边界」有原则无门禁的缺口；② 修 [P-5.4](#p-54-跨上下文一致性事件发布决策表v46按容忍度触发) 决策表**自相矛盾**（进程内事件既要求 Spring Event 又要求 Outbox 落库），改按「容忍度」分档；③ **E-5.3.1 改口**：`{语义}ApplicationService` 由「命名禁令」改为「**内容禁令**」（[E-5.3.1](#e-531-应用层共享逻辑按性质分流--语义applicationservice-内容禁令v46-修订)），承认用例级编排是合法构件，取消三套例外通道；④ **E-4.4 改口**：租户取值从「禁止读线程上下文」改为「**单一取值入口 + 异步显式传递**」，与现实对齐；⑤ 读侧判据由「`@ReadSideOnly` 标记」升级为「**位置白名单**」（[E-9.3](#e-93-读侧v46位置判据替代注解判据--目标态收敛)），并给出读侧 DSL 退出 application 层的目标态；⑥ 新增 [E-8.3 D1 退出条件](#e-83-d1-退出条件与-po-分离迁移路径)、[E-9.6 并发与幂等原语](#e-96-并发控制与幂等原语v46-新增)、[E-9.7 强类型 ID](#e-97-强类型-idv46-新增过渡期约定)、[E-4.1.1 数据所有权判据](#e-411-数据所有权的可执行判据v46-新增)；⑦ **例外与 freeze 收紧**：到期日改为 CI **硬失败**、新增例外预算（单模块 ≤5 条）与 freeze 总量上限、台账 yaml 化（[B.3.1](#b31-freeze-台账模板违规数单调不增)）；⑧ **门禁落地（本版）**：R8 判据由三条强化到**五条**（追加「调用行为方法」「含断言」，堵 `assertEquals(1,1)` 式空测试，见 [E-8](#e-8-领域模型与纯净度d0--d1--d2) 判定口径）；`outerLayersMustNotMutateAggregateIdentity`（#18）补齐到 **bone-blueprint + 全部 8 个应用模块**（此前已实现未启用），判据修正为豁免持久化适配器角色与 PO 映射；`AggregatePureUnitTestGuard` 新增 `verifyAllowingPending` **待补清单**形态供存量模块过渡（只许收缩、防永久豁免）。
 >
@@ -34,7 +36,7 @@
 | R5 | 读侧查询收敛 | 复杂查询走 QueryBuilder / QueryHandler；读路径「两条 + `*ReadPort` 例外」（[E-9.5](#e-95-读侧端口readportadr-0013)） | ArchUnit |
 | R6 | CQRS 与事务边界 | CommandHandler 禁 QueryBuilder；写事务在 Handler | ArchUnit |
 | R7 | 应用层单层 | 禁 UseCase；入站 Controller → Handler / Orchestrator / Facade（[E-5.3](#e-53-应用层结构强制)） | ArchUnit |
-| R8 | 聚合纯单测（Bone 门禁） | 每个聚合根一个**无容器纯单测**（主状态机 + ≥1 拒绝路径） | `AggregatePureUnitTestGuard`（存在性 + ≥1 `@Test` + 无容器 + **调用行为方法 + 含断言**） |
+| R8 | 聚合纯单测（Bone 门禁） | 每个聚合根一个**无容器纯单测**（主状态机 + ≥1 拒绝路径） | `AggregatePureUnitTestGuard`（存在性 + ≥1 `@Test` + 无容器 + **调用行为方法 + 含断言**；**非 G-1 ArchUnit 规则**——由独立测试类守护，故 G-1 表中判据标「—」） |
 | **R9** | **一事务一聚合**（v4.6） | 一个写事务内只持久化**一个**聚合根；跨聚合走事件 / Outbox / Orchestrator | ArchUnit `oneAggregatePerTransaction`（[G-1 #21](#g-1-测试与-ciarchunit-规则集)） |
 
 ## 能力开关 L0–L3（按模块复杂度逐级启用）
@@ -401,6 +403,18 @@ static final ArchRule no_direct_iam_domain_dependency =
 - **例外预算（v4.6 新增）**：单模块 README 例外条目**上限 5 条**；超出须先拆除既有条目或升级为 ADR。理由：例外通道的价值与其数量成反比——当每条硬规则都能找到后门时，规范就退化为参考意见，评审时「总能找到一条例外」。
 - **统一台账**：模块 `README.md` 例外列表为例外唯一登记处，禁止散落在 Confluence / 提交信息 / 口头约定。架构组复核时优先清理临期条目。
 - **ADR 不为「规避规范」开口子**：若例外仅为绕过条款而无业务理由，应拒绝。
+- **例外登记模板（v4.7 定稿，README 例外列表直接复制）**：每条例外一个条目，字段缺一不可（缺字段按无效登记处理，评审驳回）：
+
+```markdown
+<!-- 模块 README「例外登记」段落模板 -->
+## 例外登记
+| # | 规则 | 例外对象 | 业务理由 | 拆除条件 | 到期日 | 续期记录 |
+|---|------|----------|----------|----------|--------|----------|
+| 1 | adapter_no_application_service | `legacy/UserService`（2 处直注） | 结算引擎 Q3 冻结期，随 Q4 重构迁移 | Q4 重构 Controller 改注入 Handler | 2026-12-31 | 无 |
+```
+
+  - **字段说明**：`例外对象`须可定位（类名 + 违规点数）；`理由`须为业务约束而非「历史原因」；`到期日`与 freeze 台账 `dueDate` **同源一致**（一处改两处改，或直接以 yaml 为真源生成）；`续期记录`非空即触发「仅一次续期」检查。
+  - **与 B.3.1 的关系**：README 表格是**人读视图**，`archunit_store/freeze-ledger.yaml` 是**机器真源**；CI 到期硬失败读 yaml（见 [B.3.1](#b31-freeze-台账模板违规数单调不增)），README 与 yaml 不一致时以 yaml 为准并视为文档缺陷。
 
 ---
 
@@ -474,12 +488,16 @@ static final ArchRule no_direct_iam_domain_dependency =
 
 **判定口径**（`BoneDddArchRules.oneAggregatePerTransaction()`）：
 
-1. 扫描 `..application.command.handler..` / `..application.service..` / `..application.orchestration..` 下所有**具体类**的方法（ApplicationService 与 Orchestrator 同为写事务入口，**同样受 R9 约束**——Handler 委托给 ApplicationService 后，仅扫 Handler 将完全不可见，v4.7 修正此盲区）；
-2. 收集方法调用图中对 `..domain.repository..` 接口 `save*` / `remove*` 方法的调用；
+1. 扫描 `..application.command.handler..` / `..application.service..` / `..application.orchestration..` 下所有**具体类**的方法（ApplicationService 与 Orchestrator 同为写事务入口，**同样受 R9 可见性**——扫描范围包含这三个包）；
+2. 收集方法调用图中对 `..domain.repository..` 掠夺者接口 `save*` / `remove*` 方法的调用；
 3. 按**调用目标的 Repository 接口类型**去重计数；
 4. 计数 **> 1** 即违规。
 
 > **为何按 Repository 类型去重、而非按调用次数**：`save(order)` 调两次仍是同一个聚合（幂等 upsert），不构成跨聚合写；而 `save(order)` + `save(payment)` 才是真正的边界越界。按类型去重既准确又不误伤循环。
+>
+> **可见性盲区（v4.7 承认）**：仅扫三个包内的类**之间**的调用链传播——Handler → ApplicationService → 第二 Handler 类的链路虽然可见（两端口 类均在扫描包内，A：A包 A包；B：B包 B包），…
+>
+> **判定口径边界（v4.7 承认）**：本判定扫描的是**调用图**（transitive），覆盖「被扫描类直接或间接调用」的仓储方法；但以下两条残余盲区仍存在，不得宣称 R9 已 100% 覆盖：① 经**跨类回调 / 反射 / 动态代理**触发的仓储调用不可见；② `save` 目标经非 `domain.repository` 仓储接口（如 SDK 原生 `Repository<T,ID>` 直注）写第二聚合时不可见。残余风险由聚合纯单测（R8）与 CR 兜底；**专项单测固化扫描口径**（含上述两条盲区的反例 fixture）列入规则库建设项（[G-1](#g-1-测试与-ciarchunit-规则集) 末段）。
 
 **允许的特例**（须按 [E-0.4](#e-04-例外登记的统一形态) 在方法级 Javadoc 标注理由）：
 
@@ -517,6 +535,18 @@ static final ArchRule no_direct_iam_domain_dependency =
 1. **表归属登记**：每个上下文在模块 `README.md` 维护「本上下文拥有的表」清单（表名 → 用途）。新表创建时同步登记；**一张表只能有一个归属上下文**。跨上下文需要该数据时，走**公开 API** 或**事件投影**，不直接读表。
 2. **跨上下文读禁令**：禁止 `QueryBuilder.from(其他上下文的实体/PO)`、禁止跨上下文 `JOIN`、禁止跨上下文写。机器判定见 `noCrossContextModelDependency()`（[G-1 #20](#g-1-测试与-ciarchunit-规则集)）。
 
+表归属登记的最小样例（IAM，作为各模块模板起点）与登记规则：
+
+```markdown
+## 本上下文拥有的表
+| 表名 | 用途 | 归属聚合 | 备注 |
+|------|------|----------|------|
+| iam_account | 登录账号主表 | Account | 唯一归属：IAM；任何跨上下文读取走公开 API |
+| iam_role | 角色定义 | Role | |
+```
+
+> **为何先做样板**：v4.7 落地核查发现（2026-09-08）四大存量模块 README 均无表归属清单——判据若要求全量启动只会永远停在纸面；先给样板、随迁移逐模块补齐，与 freeze 台账同一推进模式。
+
 **豁免与演进**：模块化单体阶段允许**共库**；共库不等于共享所有权——共库期间的隔离靠上述两条约束 + 代码评审维持，出现 [E-4.6](#e-46-模块化单体--服务拆分信号2026-08-补充) 拆分信号时按表归属清单切库。
 
 ### E-4.2 通用语言
@@ -532,7 +562,7 @@ static final ArchRule no_direct_iam_domain_dependency =
 
 | 约定 | 说明 |
 |------|------|
-| **注入与消费分离**（v4.6 修订） | **注入**：`TenantContext` 由**框架层**（过滤器 / 拦截器 / JWT 解析）统一写入，业务代码**只读不写**。**消费**：Handler / 读侧取值**必须走模块统一取值入口**（端口，如 `domain/gateway/TenantProvider.currentTenantId()`），**禁止**在业务代码中散落 `TenantContext.get*()` 直调 |
+| **注入与消费分离**（v4.6 修订） | **注入**：`TenantContext` 由**框架层**（过滤器 / 拦截器 / JWT 解析）统一写入，业务代码**只读不写**。**消费**：Handler / 读侧取值**必须走模块统一取值入口**（端口，如 `domain/gateway/TenantProvider.currentTenantId()`），**禁止**在业务代码中散落 `TenantContext.get*()` 直调。机器判定见 [G-1 #22](#g-1-测试与-ciarchunit-规则集)（v4.7 补门禁） |
 | **为何改为「单一入口」而非「全链路显式传参」** | v4.5 要求「禁止从线程上下文猜取、必须显式参数化传递」，但线程本地变量恰恰是唯一能在**所有调用深度**无侵入传递租户的机制；全链路显式传参在实践中会退化为两种坏结果：① 大量 Handler 仍直调 `TenantContext`（现状：`bone-iam` 16 处），规范空转；② 为传参而给每个方法加 `tenantId`，污染签名且仍无法覆盖异步分支。**真正要防的不是「读线程上下文」，而是「读得分散、无法审查、异步丢失」**——收敛到单一端口入口后，可在该实现内统一做空值校验、异步传递（`TransmittableThreadLocal` / 装饰器）、越权审计与平台租户打洞登记 |
 | **异步与线程切换** | `@Async`、线程池、MQ 消费、Outbox 中继、定时任务**必须显式传递**租户上下文（装饰器或任务包装器）；进入这些分支时若上下文缺失，**必须失败或显式降级为平台租户并留审计**，禁止静默按 `null` 放行（会导致全租户数据泄漏） |
 | **跨边界显式携带** | 事件载荷、Command、Feign/RPC 调用**必须显式携带** `tenantId`（不依赖对端线程上下文）；这是对「显式参数化」要求的正确适用位置 |
@@ -971,7 +1001,7 @@ bone-core 提供的异常类型（`com.bone.core.exception.*`）：
 
 > **为何以返回类型为主判据**（业界共识：Repository 是「聚合根的集合抽象」）：方法名扫描是**脆弱启发式**——`findByStatusAndType` 被拦住，而 `queryByStatusAndType`、`search(...)` 等同样语义的命名可绕过；反之 `findByCode`（返回单个聚合）本是合法的单键加载，却可能被过严的命名规则误伤。**返回类型**才是「仓储是否越界做查询」的本质判据，且可机器判定、不误杀。
 >
-> **实现状态**：当前 ArchUnit 仅实现「辅助判据（方法名）」；「返回类型」主判据由 CR 按上表判定，**M2 阶段补齐到规则库**，届时方法名规则降为提示 / warn。
+> **实现状态（v4.7 定稿）**：当前 ArchUnit 仅实现「辅助判据（方法名）」；「返回类型」主判据由 CR 按上表判定。实现演进路径：① 近期可先实现「严格白名单」——在现有方法名规则上追加拦截 `queryBy*` / `search*` 前缀（消除最常见绕过），别名前缀扩充须按 [E-0.3](#e-03-破坏性变更流程) 评审；② 完整返回类型主判据（判断方法返回类型是否为聚合根/Optional/boolean/void）仍由 CR 承担，规则库补齐时本行与「辅助判据」行同步改写（方法名规则降为 warn），不再引用里程碑编号——**实现态以本节 + 规则库为准，不引用 M2 整数**，避免纸面承诺与现实差距。
 
 **单键辅助方法（可选）**：仅允许 **单一等值条件** 的 `existsByXxx` / `findByXxx`，语义须为业务外键或唯一码（如 `findByCode`、`existsByEmail`）。新增方法在 PR 评审中按上表**主判据（返回类型）**判定，不另设模块级二次白名单。
 
@@ -986,7 +1016,9 @@ bone-core 提供的异常类型（`com.bone.core.exception.*`）：
 | 注解判据（v4.5，当前实现） | 读侧 DSL 类型标注 `@ReadSideOnly`，检测「谁依赖了被标注的类型」 | **漏标即绕过**：新增一个 DSL 类型忘了标注，所有依赖它的类全部静默放行。这是典型的「标记坏人」式否定检测 |
 | **位置白名单（v4.6 主判据）** | 读侧 DSL **只允许**出现在 `..infrastructure.query..` / `..infrastructure.persistence..`；出现在 `..application..` 即违规 | 无法漏标——按包位置判定，不依赖任何人工标记。误报由白名单显式豁免 |
 
-新增规则 `readSideDslOnlyInQueryLayer()`（[G-1 #19](#g-1-测试与-ciarchunit-规则集)）。**过渡期双轨**：两条规则并存，注解判据保留（防回滚），位置判据以 `FreezingArchRule.freeze()` 登记存量（当前 `application/query/handler` 大量直用 DSL），按附录 B.3.1 台账逐批收敛。
+新增规则 `readSideDslOnlyInQueryLayer()`（[G-1 #19](#g-1-测试与-ciarchunit-规则集)）。**过渡期双轨**：位置判据以 `FreezingArchRule.freeze()` 登记存量（当前 `application/query/handler` 大量直用 DSL），按附录 B.3.1 台账逐批收敛。
+
+**双轨判决（v4.7 定稿）**：注解判据**不再作为 application 层的独立门禁**——其「漏标即静默放行」缺陷已由位置白名单根除，保留双轨只会让「`@ReadSideOnly` 是否要标」成为永久设计分歧。具体处置：① **新增读侧 DSL 类型不强制标注**（位置即判定，不依赖标记）；② 注解判据**仅保留**「domain 层禁用读侧 DSL」的拦截场景（此时按类型注解检测语义更精确）；③ 位置判据为 application / domain 的**唯一主判据**。既有存量 DSL 类型已标注的**不必批量摘除**（无害），随读侧端口化（下方目标态）自然消化。
 
 **目标态：读侧 DSL 退出 `application` 层**（解一条 v4.5 遗留的内在矛盾）：
 
@@ -1245,6 +1277,8 @@ static final ArchRule no_new_use_cases =
 
 #### B.1.1 应用 / 控制面 BFF（完全适用 E-5.4）
 
+> **v4.7 对称冻结（与 [P-10.1] 复核联动）**：本表为**模块形态与适用性快照**，只回答「这类模块按 E-5.4 性质判定为应用、形态上完全适用」；**不作为**任一模块必须启用 E-8 全套门禁强度（契约测试 / Outbox / 完整台账）的依据——后者依赖核心域复核结论（ADR 未出，双向冻结）。**参考样板**：blueprint 规则接入以本方案 [E-13] 样表为唯一口径，其余模块以各模块 `ArchitectureTest` 实际声明为准。
+
 | 模块 | 物理位置 |
 |------|----------|
 | `bone-platform/bone-iam` | bone-platform/ |
@@ -1309,6 +1343,8 @@ static final ArchRule no_new_use_cases =
 | 示例：`repository_methods_whitelist` | 历史 `findByNameAndStatus` 复合查询 3 处 | 拆到 `*ReadPort` 或复合自然键后清零 | 2026-11-30 | 3 |
 
 **CI 校验方式（v4.6 收紧）**：
+
+> **实现状态（v4.7 修订）**：下述 CI 消费机制（`freeze-ledger.yaml` 读取、到期硬失败脚本）**尚未实装**——当前全部模块仅有原始 freeze 基线文件，**0 个模块存在台账 yaml**，CI 中无任何脚本消费它（「NO-CI-IMPL」占位见 [G-1](#g-1-测试与-ciarchunit-规则集) 末段）。在实装前的**降级执行口径**：① 各模块 README 按下方模板手工维护台账（人读视图），至少完成 **1 项启动检查**（存量 freeze 条目按模板登记，到期日如实标注）；② CI 到期硬失败与总量 20 校验在实装前**不构成门禁**，其承诺效力暂由 CR 清单承接；③ 实装的验收标准为「CI 存在脚本消费 freeze-ledger.yaml 并对到期条目硬失败」——在此之前，本节条文属**目标态**而非实现态。
 
 1. **单调不增**：CI 以 `-Darchunit.freeze.store.default.allowStoreUpdate=false`（且 `refreeze=false`）跑 `mvn test`，基线违规数**只减不增**（新增违规即失败；存量清零后基线自动收缩）。
 2. **到期硬失败**：台账 yaml 中**到期日 < 今天**且违规数 > 0 的条目 → **构建失败**。删除 v4.5 的「warn 或按模块排期」——不阻断就等于不存在。
@@ -1434,6 +1470,8 @@ class AggregatePureUnitTestCoverageTest {
 ```
 
 判定五条全满足才算通过：**① 同名 `*Test` 类存在**；**② 至少 1 个 `@Test` 方法**（堵住空类绕过）；**③ 无容器注解**（`@SpringBootTest` / `@DataJpaTest` / `@ExtendWith(SpringExtension.class)` 等）；**④ 调用了聚合的行为方法**（getter 以外的方法调用）；**⑤ 含断言或异常期望**（堵住 `assertEquals(1, 1)` 式空测试）。仅统计 `..domain..` 下的**具体**聚合根——`..domain.outbox..` 等基础设施持久化记录（如 `OrderOutboxRecord`）虽继承 `AggregateRoot`，属技术对象不计入。清单内聚合若已存在合规纯单测会**报错要求移除**（Guard 内置，防止永久豁免）。参考实现见 `bone-blueprint`（`AggregatePureUnitTestCoverageTest`，严格模式，全绿）。
+
+> **规则库自身可信度（v4.7 定稿，落地前置项）**：`BoneDddArchRules` 22 条共享规则**必须**在 `bone-architecture-test` 内建立**逐条单测**（每条至少 1 正 1 反 fixture），作为全部下游模块门禁的可信度真源。理由：下游模块的 `ArchitectureTest` 只覆盖 happy path；#18「已实现未启用 8 个月」的根因即规则库无独立可信度验证。优先固化的口径（含反例 fixture）：① R9 扫描包边界与**跨类委派传播**（Handler→Handler 经非扫描包中转时 R9 失效的反例，见 [E-3.1.2](#e-312-r9--一事务一聚合v46-v47-扫描范围补充)）；② #20 共享内核白名单（`com.bone.metadata.sdk` 等）；③ #18 PO 排除口径（`*PO` / DoNotIncludeTests 不计入）；④ E-5.3.1 内容禁令扫描范围（service / orchestration / facade）。**在逐条单测补齐前，新增规则（#19/#20/#21/#22）不得在更多模块推广接入。**
 
 **Freezing 基线**：各模块根目录 `archunit_store/`，须提交 Git。
 
