@@ -1,6 +1,6 @@
 # 元数据模块 As-Is 证据
 
-> **生成时间**：2026-05-28T02:36:14Z（UTC）  
+> **生成时间**：2026-09-11T01:31:15Z（UTC）  
 > **收集器**：`tools/metadata-compliance-collector/collect.py`
 
 | ID | 能力 | 摘要 |
@@ -24,4 +24,4 @@
 | `metadata-publish-scope` | metadata:publish 权限码 + publish hasAnyAuthority | 源码 × 2 |
 | `catalog-redis-cache` | RUNTIME 实体 Redis 缓存（配置 backend=redis + StringRedisTemplate） | 源码 × 2 |
 | `catalog-idempotency-redis` | Idempotency-Key Redis 存储（配置 idempotency.backend=redis） | 源码 × 2 |
-| `catalog-field-relation-version` | meta_field / meta_entity_relation version + If-Match PUT | 源码 × 1 |
+| `catalog-field-relation-version` | meta_field / meta_entity_relation version + If-Match PUT | 源码 × 2 |

@@ -24,7 +24,7 @@
   - 2026-05-20 第三轮（业界最佳实践）：每模块文首补 **HTTP 真源 + 错误码前缀**；控制台/集成新增 **SLI/SLO 契约**；集成/主数据/元数据新增 **§5.0/§5.A 横切约定**；主数据 ↔ [ADR-0017](../../architecture/adr/0017-masterdata-catalog-sync.md)；平台契约 ↔ [Bone-API-规范 §8.1](../../architecture/Bone-API-规范.md#81-模块横切约定索引详设-50)、[Bone-可观测性规范 §4.2.1](../../architecture/Bone-可观测性规范.md#421-模块-sli-与指标映射与详设对齐)。
   - 2026-05-20 第四轮（结构瘦身 · DRY）：
     - **§6/§7/§8/§9 通用 boilerplate** 收敛至架构文档（[`Bone-API-规范`](../../architecture/Bone-API-规范.md)、[`Bone-多租户规范`](../../architecture/Bone-多租户规范.md)、[`Bone-测试策略`](../../architecture/Bone-测试策略.md)、[`Bone-可观测性规范`](../../architecture/Bone-可观测性规范.md)），各模块仅保留**特有项**；
-    - **§10 工程结构**：模块 1/2/3/4/6 删除 200+ 行虚构 directory tree 与"命名规范"逐类描述，统一指向 [`Bone-DDD-最终实践方案 §14`](../../architecture/Bone-DDD-最终实践方案.md) 与 `bone-blueprint`；
+    - **§10 工程结构**：模块 1/2/3/4/6 删除 200+ 行虚构 directory tree 与"命名规范"逐类描述，统一指向 [`Bone-DDD v5.1.0`](../../architecture/Bone-DDD-最终实践方案.md) 与 `bone-blueprint`；
     - **虚构事实修正**：模块 1 `console-service:8081`（与 IAM 冲突）/ 模块 2 `metadata_db`+`metadata-service` / 模块 7 `bone-chart` Helm 目录 / 模块 7 Prometheus/ELK 全栈 → 全部明确为 **[Vision]**；
     - **术语统一**：模块 8 §8 `Mode A/B` 改为「轻量用例/编排用例」，避免与 README 产品级 **模式 A/B** 混淆；前端 E2E 工具从 `Selenium + TestNG` 改为 **Playwright**；测试覆盖率门禁全部指向 [`Bone-测试策略.md`](../../architecture/Bone-测试策略.md)。
   - 2026-05-20 第四轮续（契约交叉引用）：主数据/集成 OpenAPI（`masterdata-v1` · `integration-v1`）与详设 §0 链指；`MD_*` 错误码与 convert 422 对齐；P0 看板 MD-04/05、IAM-06/07 标 done。

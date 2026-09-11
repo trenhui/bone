@@ -1,6 +1,6 @@
 # Bone 项目 Wiki
 
-面向贡献者与内部协作者的**导航型知识库**。营销与快速上手仍以仓库根目录 [README.md](../../README.md) 为准；代码级速查可配合根目录 [CODE_WIKI.md](../../CODE_WIKI.md) 与 [AGENTS.md](../../AGENTS.md)。
+面向贡献者与内部协作者的**导航型知识库**。营销与快速上手仍以仓库根目录 [README.md](../../README.md) 为准；代码级速查可配合根目录 [CODE_WIKI.md](../CODE_WIKI.md) 与 [AGENTS.md](../../AGENTS.md)。
 
 ---
 
@@ -30,7 +30,7 @@
 
 - **[CLAUDE.md](../../CLAUDE.md)**：面向 Claude Code 的短指南（命令、红线、提交规范）。
 - **[AGENTS.md](../../AGENTS.md)**：面向 AI 助手的完整项目说明（模块、依赖规则、测试与质量）。
-- **[CODE_WIKI.md](../../CODE_WIKI.md)**：技术栈、模块树、关键类、构建与数据库等**单文件长文档**（部分内容可能随版本演进，以本 Wiki 的「模块」页与根 `pom.xml` 为准）。
+- **[CODE_WIKI.md](../CODE_WIKI.md)**：技术栈、模块树、关键类、构建与数据库等**单文件长文档**（部分内容可能随版本演进，以本 Wiki 的「模块」页与根 `pom.xml` 为准）。
 - **[CONTRIBUTING.md](../../CONTRIBUTING.md)**：提交前检查、CI 说明、Spotless / Gitleaks / blueprint 约定。
 - **[doc/README.md](../README.md)**：`doc/` 权威文档与历史废止目录总索引。
 

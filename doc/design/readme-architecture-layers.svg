@@ -1,0 +1,149 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="980" viewBox="0 0 1180 980" font-family="-apple-system,'PingFang SC','Microsoft YaHei','Noto Sans SC',sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#94A3B8"/>
+    </marker>
+  </defs>
+
+  <style>
+    .band { fill:#F8FAFC; stroke:#E2E8F0; }
+    .spine { stroke-width:4; }
+    .tag { font-size:12px; font-weight:600; letter-spacing:2px; fill:#94A3B8; }
+    .q { font-size:20px; font-weight:700; fill:#0F172A; }
+    .eng { font-size:16px; font-weight:700; fill:#0F172A; }
+    .eng-d { font-size:12px; fill:#64748B; }
+    .chip { fill:#FFFFFF; stroke:#CBD5E1; rx:8; }
+    .chip-t { font-size:12.5px; fill:#334155; }
+    .chip-s { font-size:11px; fill:#94A3B8; }
+    .ln { fill:#0F172A; }
+    .lbl { font-size:12.5px; font-weight:600; fill:#475569; }
+    .cap { font-size:12.5px; fill:#94A3B8; }
+    .note { font-size:12px; fill:#64748B; }
+  </style>
+
+  <!-- ================= L1 功能层 ================= -->
+  <g>
+    <rect class="band" x="40" y="36" width="1100" height="150" rx="14"/>
+    <rect class="spine" x="40" y="36" width="4" height="150" rx="2" fill="#2563EB"/>
+    <rect x="64" y="60" width="28" height="4" rx="2" fill="#2563EB"/>
+    <text class="tag" x="64" y="86">L1 · 功能层</text>
+    <text class="q" x="64" y="116">是什么</text>
+    <text class="note" x="64" y="160">统一建模，一套元模型</text>
+    <text class="note" x="64" y="178">两种交付路径</text>
+
+    <text class="eng" x="230" y="68">智能元数据引擎</text>
+    <text class="eng-d" x="230" y="88">Metadata · catalog / EAV · SmartQL</text>
+
+    <rect class="chip" x="230" y="106" width="270" height="58" rx="8"/>
+    <text class="chip-t" x="248" y="130" font-weight="600">模式 A · 源码生成</text>
+    <text class="chip-s" x="248" y="150">studio-generator · :8086 · Git 可审计</text>
+
+    <rect class="chip" x="514" y="106" width="270" height="58" rx="8"/>
+    <text class="chip-t" x="532" y="130" font-weight="600">模式 B · 运行时（MVP 已可用）</text>
+    <text class="chip-s" x="532" y="150">metadata-engine · :9001 · 免生成标准 CRUD</text>
+
+    <rect class="chip" x="798" y="106" width="320" height="58" rx="8"/>
+    <text class="chip-t" x="816" y="130" font-weight="600">catalog / EAV 元模型</text>
+    <text class="chip-s" x="816" y="150">Bone Metadata SDK 统一持久化</text>
+  </g>
+
+  <g>
+    <line x1="590" y1="190" x2="590" y2="224" stroke="#94A3B8" stroke-width="2" marker-end="url(#arr)"/>
+    <text class="lbl" x="612" y="212">定结构</text>
+  </g>
+
+  <!-- ================= L2 数据层 ================= -->
+  <g>
+    <rect class="band" x="40" y="230" width="1100" height="150" rx="14"/>
+    <rect class="spine" x="40" y="230" width="4" height="150" rx="2" fill="#0891B2"/>
+    <rect x="64" y="254" width="28" height="4" rx="2" fill="#0891B2"/>
+    <text class="tag" x="64" y="280">L2 · 数据层</text>
+    <text class="q" x="64" y="310">准全可信</text>
+    <text class="note" x="64" y="354">主数据先收敛</text>
+    <text class="note" x="64" y="372">再谈互联互通</text>
+
+    <text class="eng" x="230" y="262">企业主数据平台</text>
+    <text class="eng-d" x="230" y="282">Masterdata · 主数据治理</text>
+
+    <rect class="chip" x="230" y="300" width="320" height="58" rx="8"/>
+    <text class="chip-t" x="248" y="324" font-weight="600">核心数据一致</text>
+    <text class="chip-s" x="248" y="344">统一编码 · 权威记录与视图</text>
+
+    <rect class="chip" x="564" y="300" width="320" height="58" rx="8"/>
+    <text class="chip-t" x="582" y="324" font-weight="600">数据质量</text>
+    <text class="chip-s" x="582" y="344">清洗 · 校验 · 血缘追溯</text>
+  </g>
+
+  <g>
+    <line x1="590" y1="384" x2="590" y2="418" stroke="#94A3B8" stroke-width="2" marker-end="url(#arr)"/>
+    <text class="lbl" x="612" y="406">承载变化</text>
+  </g>
+
+  <!-- ================= L3 扩展层 ================= -->
+  <g>
+    <rect class="band" x="40" y="424" width="1100" height="150" rx="14"/>
+    <rect class="spine" x="40" y="424" width="4" height="150" rx="2" fill="#7C3AED"/>
+    <rect x="64" y="448" width="28" height="4" rx="2" fill="#7C3AED"/>
+    <text class="tag" x="64" y="474">L3 · 扩展层</text>
+    <text class="q" x="64" y="504">怎么差异化</text>
+    <text class="note" x="64" y="548">变化外置隔离</text>
+    <text class="note" x="64" y="566">主干保持稳定</text>
+
+    <text class="eng" x="230" y="456">ExtPoint 扩展引擎</text>
+    <text class="eng-d" x="230" y="476">Extension · 个性化逻辑插件化</text>
+
+    <rect class="chip" x="230" y="494" width="320" height="58" rx="8"/>
+    <text class="chip-t" x="248" y="518" font-weight="600">扩展点插件化</text>
+    <text class="chip-s" x="248" y="538">扩展点注册 · 版本管理</text>
+
+    <rect class="chip" x="564" y="494" width="320" height="58" rx="8"/>
+    <text class="chip-t" x="582" y="518" font-weight="600">主干零污染</text>
+    <text class="chip-s" x="582" y="538">Clean Core · 定制不进内核</text>
+  </g>
+
+  <g>
+    <line x1="590" y1="578" x2="590" y2="612" stroke="#94A3B8" stroke-width="2" marker-end="url(#arr)"/>
+    <text class="lbl" x="612" y="600">消除孤岛</text>
+  </g>
+
+  <!-- ================= L4 生态层 ================= -->
+  <g>
+    <rect class="band" x="40" y="618" width="1100" height="150" rx="14"/>
+    <rect class="spine" x="40" y="618" width="4" height="150" rx="2" fill="#EA580C"/>
+    <rect x="64" y="642" width="28" height="4" rx="2" fill="#EA580C"/>
+    <text class="tag" x="64" y="668">L4 · 生态层</text>
+    <text class="q" x="64" y="698">和谁交互</text>
+    <text class="note" x="64" y="742">内外系统互联</text>
+    <text class="note" x="64" y="760">事件驱动协同</text>
+
+    <text class="eng" x="230" y="650">集成引擎</text>
+    <text class="eng-d" x="230" y="670">Integration · bone-integration · :8085</text>
+
+    <rect class="chip" x="230" y="688" width="270" height="58" rx="8"/>
+    <text class="chip-t" x="248" y="712" font-weight="600">连接外部系统</text>
+    <text class="chip-s" x="248" y="732">ERP · CRM · OA</text>
+
+    <rect class="chip" x="514" y="688" width="270" height="58" rx="8"/>
+    <text class="chip-t" x="532" y="712" font-weight="600">图 DSL 编排</text>
+    <text class="chip-s" x="532" y="732">Camel 编译器（INT-11）· 默认线性（INT-09）</text>
+
+    <rect class="chip" x="798" y="688" width="320" height="58" rx="8"/>
+    <text class="chip-t" x="816" y="712" font-weight="600">MQ Outbox 中继</text>
+    <text class="chip-s" x="816" y="732">INT-10 · 事件最终一致</text>
+  </g>
+
+  <g>
+    <line x1="590" y1="772" x2="590" y2="806" stroke="#94A3B8" stroke-width="2" marker-end="url(#arr)"/>
+    <text class="lbl" x="612" y="794">支撑交付</text>
+  </g>
+
+  <!-- ================= 交付目标 ================= -->
+  <rect x="40" y="812" width="1100" height="66" rx="14" fill="#0F172A"/>
+  <text x="90" y="852" font-size="17" font-weight="700" fill="#FFFFFF">企业级数字化平台</text>
+  <text x="310" y="852" font-size="13" fill="#94A3B8">Web 控制台（Qiankun 微前端）· 未来多端</text>
+  <text x="1100" y="852" font-size="12" fill="#64748B" text-anchor="end">Build Once, Web First</text>
+
+  <text class="cap" x="40" y="916">一个核心域 + 三个支撑域：自上而下为支撑关系，非数据流水线。</text>
+  <text class="cap" x="40" y="936">模块真源：bone-platform/bone-integration（单一集成进程）· bone-engine/（metadata、extension、studio）</text>
+  <text class="cap" x="1140" y="916" text-anchor="end">Bone Platform Architecture</text>
+</svg>

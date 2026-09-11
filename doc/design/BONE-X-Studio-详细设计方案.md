@@ -251,7 +251,7 @@ graph TD
 |------|----------|----------|
 | **架构治理中心** | 限界上下文设计器 | 拖拽式聚合根设计、关系映射、事件建模 |
 | | AI业务建模引擎 | 自然语言→限界上下文→完整DDD模块生成 |
-| | DDD 脚手架生成器 | 单服务内 **adapter / application / domain / infrastructure** 包结构 + **CQRS**（与《Bone-DDD》§14）；与主 PRD **UI→Service→Engine 三层运行时约束**并存——前者是代码分层，后者是部署与调用的纵向约束 |
+| | DDD 脚手架生成器 | 单服务内 **adapter / application / domain / infrastructure** 包结构 + CQRS（与 Bone-DDD v5.1.0 对齐）；与主 PRD **UI→Service→Engine 三层运行时约束**并存——前者是代码分层，后者是部署与调用的纵向约束 |
 | | 架构守护系统 | 4条铁律+命名+CQRS+扩展点检测，CI阻断 |
 | | CQRS智能分级 | 自动分析查询复杂度，建议L1/L2/L3 |
 | | 扩展点市场 | 企业级扩展能力复用平台 |
@@ -509,7 +509,7 @@ Response:
 | **产品能力、模块边界、里程碑** | [`doc/prd/BONE产品需求文档正式版.md`](../prd/BONE产品需求文档正式版.md) | 「元数据应用工厂」与 PRD 中**应用生成 / 企业集成 / 扩展运行时**对齐；控制台、IAM、系统管理等与 PRD 第 4 章模块一致。 |
 | **总体架构、多租户、NFR、跨服务一致性** | [`doc/architecture/BONE-总体架构设计方案.md`](../architecture/BONE-总体架构设计方案.md) | 与《Bone-DDD》§5.4 交叉引用；跨聚合默认最终一致。 |
 
-**Application 层入口**：平台模块与生成物**一律**采用 **`CommandHandler` / `QueryHandler` + `*Command` / `*Query`**（子包目录可保留 `cmd/`、`qry/`，见《Bone-DDD》§14.1）；**禁止** `*UseCase` / `application/usecase/**` / 自造 `@UseCase` / `UseCaseExecutor`（《Bone-DDD》§12.1 P0-7、§14.3）。跨多聚合编排走 `application/orchestration/*Orchestrator`（ADR 例外，《Bone-DDD》§14.3）；AI / Flow 能力发现走 `com.bone.core.capability.@Capability`（《Bone-DDD》§20）。
+**Application 层入口**：平台模块与生成物默认采用 `CommandHandler` / `QueryHandler` + `*Command` / `*Query`；语义化 `ApplicationService` 也可直接作为单一用例边界，但禁止与同义 Handler 套娃。现有 `*UseCase` / `application/usecase/**` / 自造 `@UseCase` / `UseCaseExecutor` 不新增。跨步骤且需要重试/补偿的流程使用 `application/orchestration/*Orchestrator`；AI / Flow 能力发现使用 `com.bone.core.capability.@Capability`。详见 [Bone-DDD 应用用例边界](../architecture/Bone-DDD-最终实践方案.md#application-use-case-boundary)。
 
 ### 5. 领域驱动设计规范
 

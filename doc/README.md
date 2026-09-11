@@ -23,7 +23,8 @@
 | 总体架构 | [architecture/BONE-总体架构设计方案.md](./architecture/BONE-总体架构设计方案.md) |
 | API / 错误码 / 日志 | [architecture/Bone-API-规范.md](./architecture/Bone-API-规范.md) |
 | 数据库 DDL | [architecture/数据库开发规范.md](./architecture/数据库开发规范.md) |
-| DDD | [architecture/Bone-DDD-最终实践方案.md](./architecture/Bone-DDD-最终实践方案.md) |
+| DDD | [architecture/Bone-DDD-最终实践方案.md](./architecture/Bone-DDD-最终实践方案.md)（v5.0） |
+| 通用语言 | [glossary.md](./glossary.md) |
 | 前端 | [architecture/bone-前端架构.md](./architecture/bone-前端架构.md) |
 | UI | [architecture/frontend/frontend-ui-spec.md](./architecture/frontend/frontend-ui-spec.md) |
 | 数据库 | [architecture/数据库开发规范.md](./architecture/数据库开发规范.md)（含 `bone-init.sql` 表清单） |

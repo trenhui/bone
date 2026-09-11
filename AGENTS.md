@@ -18,6 +18,8 @@
 3. **ExtPoint 扩展引擎**（Extension）— 插件化扩展点机制
 4. **集成引擎**（Integration）— 多协议连接器与流程编排
 
+DDD 战略上，Bone **当前只认定**元数据 / 建模为核心域（[ADR-0023](doc/architecture/adr/0023-core-domain-smart-metadata.md)）；这是一项产品战略决策，不是“DDD 只能有一个核心域”的行业规则。主数据、集成、扩展为支撑域。通用语言见 [doc/glossary.md](doc/glossary.md)。
+
 ---
 
 ## 2. 技术栈
@@ -244,7 +246,7 @@ adapter/web → application → domain ← infrastructure
 ### 5.4 关键设计模式
 
 - **CQRS 物理分离**：`command` 包与 `query` 包在同一模块内分离，命令走写模型（带事务），查询走读模型（只读）。
-- **富领域模型**：聚合根使用 `AggregateRoot` / `TenantAggregateRoot`（ADR-0011）+ 工厂方法；读侧 DSL（`QueryBuilder`/`FluentQuery`）须 `@ReadSideOnly`，禁止在 `domain` 与 CommandHandler 使用。
+- **富领域模型**：聚合根使用 `AggregateRoot` / `TenantAggregateRoot`（ADR-0011）+ 工厂方法；读侧端口目标位置为 `application/query/port`，实现放 `infrastructure/query`；`QueryBuilder` / `FluentQuery` 禁止进入 `domain` 与 application。
 - **仓储模式**：接口定义在 `domain.repository`，实现放在 `infrastructure.persistence`。
 - **自定义元数据仓储**：`bone-metadata-sdk` 提供 `@EnableSqlRepositories` 机制，类似 Spring Data 但为自研实现。**该项目唯一持久化方案，禁止引入 MyBatis-Plus、JPA/Hibernate、MyBatis 等其他 ORM 框架。**
 - **多租户**：表均含 `tenant_id`（租户隔离），配合 `TenantContext` 实现数据隔离；`biz_identity_code` 仅在部署 SQL（`doc/deployment/sql/`）中存在，`bone-init.sql` 未包含。
@@ -421,10 +423,10 @@ adapter/web → application → domain ← infrastructure
 ## 11. 给 AI 助手的关键提示
 
 1. **不要破坏分层依赖**：修改代码时，`domain` 层不能引入 Spring/MyBatis 等框架依赖；`application` 层不能直接调用 `infrastructure` 实现类。
-2. **保持 CQRS（v4.2）**：写操作使用 `*CommandHandler` + `@Transactional`；读操作使用 `*QueryHandler`（只读）。**禁止** `application/usecase`、`*UseCase`、自造 `@UseCase`；`com.bone.core.usecase.*` **已从 bone-core 删除**；AI/Flow 能力发现用 `com.bone.core.capability.@Capability`。Controller **直接注入 Handler**（**禁止**直注 `application/service`、`domain/service`（领域服务）、`domain/repository`）；满足 [DDD E-5.3.2](doc/architecture/Bone-DDD-最终实践方案.md) F1/F2 条件时可注入 `*Facade`。`application/service` 仅允许 [DDD E-5.3.1](doc/architecture/Bone-DDD-最终实践方案.md) 约束（S1/S2/S3）。模块是否适用全量 DDD 看 **性质**（`bone-extension-studio`、`studio-generator` 属应用模块），见 DDD E-5.4。
+2. **保持 CQRS 与单一用例边界（v5.1.0）**：写用例默认使用 `*CommandHandler`，读用例使用 `*QueryHandler`；语义化 `*ApplicationService` 也可直接作为最外层应用用例边界。**一个用例只选一种构件，禁止 Handler 与 ApplicationService 一对一套娃**。写事务位于最外层写用例。新查询走 `QueryHandler → application QueryPort → infrastructure QueryAdapter`，`QueryBuilder` 不进入 application/domain。Controller 禁止直注 `domain/service`、`domain/repository` 或 infrastructure；可注入合法 Handler、ApplicationService、Orchestrator，满足条件时可注入 Facade。现有 `application/usecase` / `*UseCase` 不新增，AI/Flow 能力发现使用 `com.bone.core.capability.@Capability`。详见 [应用用例边界](doc/architecture/Bone-DDD-最终实践方案.md#application-use-case-boundary)。
 3. **统一响应格式**：Controller 返回统一使用 `ApiResponse<T>` 或 `PageResult<T>`，避免裸返回领域对象。
 4. **租户与审计字段**：新增实体应继承 `TenantAbstractEntity`（若需多租户）或 `AbstractEntity`；不要遗漏 `tenantId` 与审计字段的填充。
-5. **命名约定**（分层见 [DDD E-13.1](doc/architecture/Bone-DDD-最终实践方案.md)）：
+5. **命名约定**（属于工程一致性，默认 Advisory；见 [DDD E-13](doc/architecture/Bone-DDD-最终实践方案.md#naming-style)）：
    - 聚合根：`{名词}`
    - 值对象：`{名词}`（如 `Username`）
    - 应用层命令：`{动作}{对象}Command`（如 `CreateUserCommand`）
@@ -490,7 +492,7 @@ AI 执行任务前，按修改路径加载对应上下文文档：
 | `**/domain/**` | `doc/architecture/Bone-DDD-最终实践方案.md` + `doc/design/modules/` 对应模块详设 |
 | `**/adapter/web/**` | `doc/architecture/Bone-API-规范.md` + `doc/architecture/openapi/` 对应 YAML |
 | `**/infrastructure/**` | `doc/architecture/数据库开发规范.md` + `bone-engine/bone-metadata-sdk/README.md` |
-| `**/application/**` | `doc/architecture/Bone-DDD-最终实践方案.md` §14（CQRS） |
+| `**/application/**` | `doc/architecture/Bone-DDD-最终实践方案.md`（应用用例、CQRS、事务与一致性章节） |
 | `bone-frontend/**` | `doc/architecture/bone-前端架构.md` §6（API错误处理/状态管理/微前端通信） |
 | 任何文件 | 本文件（AGENTS.md）§5 + §11 |
 
@@ -564,8 +566,12 @@ P8 合并 → 触发 Docs-as-Code 合规收集器更新 _generated/
 | 文件/目录 | 内容 |
 |---|---|
 | `README.md` | 项目营销概览、快速开始 |
-| `CODE_WIKI.md` | 项目知识库：四大引擎说明、关键类、依赖树、运行说明 |
-| `doc/architecture/Bone-DDD-最终实践方案.md` | DDD 与分层门禁（必读） |
+| `doc/CODE_WIKI.md` | 项目知识库：四大引擎说明、关键类、依赖树、运行说明 |
+| `doc/architecture/Bone-DDD-最终实践方案.md` | DDD 与分层门禁（v5.0.2） |
+| `doc/glossary.md` | 通用语言起步表 |
+| `doc/architecture/adr/0023-core-domain-smart-metadata.md` | Bone 当前核心域 = Metadata |
+| `doc/architecture/adr/0024-ddd-v5-rule-semantics-and-document-split.md` | DDD v5.0 规则语义与文档分册 |
+| `doc/architecture/adr/0025-ddd-v5-0-2-implementation-alignment.md` | DDD v5.0.2 规则标识与实现状态对齐 |
 | `doc/architecture/README.md` | 架构文档索引 |
 | `doc/wiki/07-P0-TODO看板.md` | 平台未完成项与工程债 |
 | `doc/README.md` | `doc/` 总索引 |

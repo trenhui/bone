@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-27T09:42:30Z",
+  "generated_at": "2026-09-11T01:31:15Z",
   "module": "iam",
   "as_is": [
     {
@@ -91,6 +91,8 @@
           "files": [
             "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AccountController.java",
             "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AuditController.java",
+            "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/DeptController.java",
+            "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/MenuController.java",
             "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/PermissionController.java",
             "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/RoleController.java",
             "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/SessionController.java",
@@ -101,6 +103,10 @@
             "iam:accounts:write",
             "iam:audit:read",
             "iam:audit:write",
+            "iam:depts:read",
+            "iam:depts:write",
+            "iam:menus:read",
+            "iam:menus:write",
             "iam:permissions:read",
             "iam:permissions:write",
             "iam:roles:read",
@@ -130,12 +136,18 @@
       "evidence": {
         "java": [
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/AssignPermissionCommandHandler.java",
+          "bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/CreateDeptCommandHandler.java",
+          "bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/CreateMenuCommandHandler.java",
+          "bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/CreateRoleCommandHandler.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/RevokeSessionCommandHandler.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/UpdateAuditSettingsCommandHandler.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/AccountDetailQueryHandler.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/AccountPageQueryHandler.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/AuditLogListQueryHandler.java",
+          "bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/DeptTreeQueryHandler.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/GetAuditSettingsQueryHandler.java",
+          "bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/MenuCurrentQueryHandler.java",
+          "bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/MenuTreeQueryHandler.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/RoleDetailQueryHandler.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/RolePageQueryHandler.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/SessionListQueryHandler.java"
@@ -149,10 +161,8 @@
       "evidence": {
         "java": [
           "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AuthController.java",
-          "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/MeController.java",
-          "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/security/CurrentAccountResolver.java",
+          "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/security/IamJwtTokenService.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/security/JwtAuthenticationFilter.java",
-          "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/security/JwtTokenService.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/security/RefreshTokenService.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/security/TokenBlacklistService.java"
         ]
@@ -187,7 +197,7 @@
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/LoginCommandHandler.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/ResetPasswordCommandHandler.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/config/IamPasswordProperties.java",
-          "bone-platform/bone-iam/src/main/java/com/bone/iam/domain/service/PasswordPolicyValidator.java"
+          "bone-platform/bone-iam/src/main/java/com/bone/iam/application/service/PasswordPolicyValidator.java"
         ]
       }
     },
@@ -280,7 +290,7 @@
       "evidence": {
         "java": [
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/AccountAuthoritiesQueryHandler.java",
-          "bone-platform/bone-iam/src/main/java/com/bone/iam/domain/service/RoleHierarchyResolver.java"
+          "bone-platform/bone-iam/src/main/java/com/bone/iam/application/service/RoleHierarchyResolver.java"
         ]
       }
     },
@@ -309,7 +319,8 @@
           "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/MeController.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/ChangeMyPasswordCommandHandler.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/UpdateMyProfileCommandHandler.java",
-          "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/security/CurrentAccountResolver.java"
+          "bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/MenuCurrentQueryHandler.java",
+          "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/security/IamCurrentAccountResolver.java"
         ]
       }
     },
@@ -377,7 +388,7 @@
         "java_default": [
           "bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/AccountAuthoritiesQueryHandler.java",
           "bone-platform/bone-iam/src/main/java/com/bone/iam/domain/permission/DefaultPermissionCodes.java",
-          "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/security/JwtTokenService.java"
+          "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/security/IamJwtTokenService.java"
         ],
         "frontend": [
           "bone-frontend/packages/shared-types/src/bonePermissionCodes.ts"
