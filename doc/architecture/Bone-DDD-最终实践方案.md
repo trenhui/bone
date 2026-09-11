@@ -222,7 +222,7 @@ Bone 当前业务上下文关系（图与下表以关系表为真源，逐行对
 
 ![Bone 限界上下文映射图](assets/context-map.svg)
 
-> 图注：实线为已登记的正式业务关系；紫色虚线为 OHS / Published Language 母线（IAM、System → 所有应用上下文）；Payment 为 blueprint 样板，虚框隔离、不入产品主链路。原文 ASCII 图中的「Metadata ─C-S→ Extension」在关系表无登记行，本次替换时未收录，待架构组确认后要么补表、要么彻底废弃。
+> 图注：实线为已登记的正式业务关系；紫色虚线为 OHS / Published Language 母线（IAM、System → 所有应用上下文）；Payment 为 blueprint 样板，虚框隔离、不入产品主链路。历史 ASCII 图中的「Metadata ─C-S→ Extension」经代码裁决废弃：`bone-extension-studio` 仅依赖 `bone-metadata-sdk` 的 Table/Column 注解、Criteria 与 Repository 等技术持久化能力，对 `bone-metadata-server` 内部包 import 为 0，按 P-2.2「SDK 与技术依赖不混入 Context Map」不属于业务级 Customer–Supplier 关系，Extension 的上游唯 Integration（Published SPI）。
 
 | 上游 | 下游 | 模式 | 契约 | 下游责任 |
 |------|------|------|------|----------|
@@ -1662,7 +1662,7 @@ adapter 直接把回调报文中的 `paymentId`、`channelTradeNo`、`amount` �
 
 # 附录 F：版本历史
 
-- **v5.1.1（2026-09-11）**：状态对账（不改语义）。① G-1.5 表②：修正 Blueprint 列 `adapterControllersMustNotDependOnApplicationService` 为 Active（实测 0 违规样板、不 freeze），并与 IAM/MasterData/Integration 的 Frozen 事实区分；② G-1.5 表①补登 `noApplicationUseCasePackage`、`noBoneCoreUseCaseApiDependency`、`noStudioGeneratorUseCaseAnnotation`、`noNewDomainStorePackage`、`noCustomBusinessException`、`noBusinessExceptionSuffix`、`noCrossContextDomainDependency`、`applicationServicesMustNotOwnDomainRules` 8 条已在共享规则库与模块测试中启用的规则；③ E-10：认定 `domain/{aggregate}` 平铺分组为合法变体（与 `domain/model/{role}` 二选一），依据 Blueprint/IAM 现行形态；④ E-4.2：标注 Blueprint 读侧为存量形态，新模块按 `application/query/port` 实现；⑤ G-2：freeze 台账 `rule` 标识统一为共享规则名；⑥ E-13.2：`MetadataApi` 标注为目标命名示例；⑦ P-2.4：文本版上下文关系图替换为 `assets/context-map.svg`（依关系表逐行对账绘制，OHS 用母线表达全覆盖）；ASCII 图中「Metadata ─C-S→ Extension」因关系表无登记行未收录，留待确认图/表孰真。
+- **v5.1.1（2026-09-11）**：状态对账（不改语义）。① G-1.5 表②：修正 Blueprint 列 `adapterControllersMustNotDependOnApplicationService` 为 Active（实测 0 违规样板、不 freeze），并与 IAM/MasterData/Integration 的 Frozen 事实区分；② G-1.5 表①补登 `noApplicationUseCasePackage`、`noBoneCoreUseCaseApiDependency`、`noStudioGeneratorUseCaseAnnotation`、`noNewDomainStorePackage`、`noCustomBusinessException`、`noBusinessExceptionSuffix`、`noCrossContextDomainDependency`、`applicationServicesMustNotOwnDomainRules` 8 条已在共享规则库与模块测试中启用的规则；③ E-10：认定 `domain/{aggregate}` 平铺分组为合法变体（与 `domain/model/{role}` 二选一），依据 Blueprint/IAM 现行形态；④ E-4.2：标注 Blueprint 读侧为存量形态，新模块按 `application/query/port` 实现；⑤ G-2：freeze 台账 `rule` 标识统一为共享规则名；⑥ E-13.2：`MetadataApi` 标注为目标命名示例；⑦ P-2.4：文本版上下文关系图替换为 `assets/context-map.svg`（依关系表逐行对账绘制，OHS 用母线表达全覆盖）；⑧ 历史 ASCII 图中「Metadata ─C-S→ Extension」线经代码裁决废弃：`bone-extension-studio` 仅依赖 `bone-metadata-sdk` 的 Table/Column 注解、Criteria 与 Repository 等技术持久化能力，对 `bone-metadata-server` 内部包 import 为 0，按 P-2.2「SDK 与技术依赖不混入 Context Map」不构成业务级 Customer–Supplier 关系，图注已同步，不补关系表。
 - **v5.0.2 追记（2026-09-11，同日第二次复核）**：
   1. E-3.5 参考形态对齐 blueprint 的 `findByIdInTenant`、`Optional.ofNullable(...).orElseThrow` 和 `publishFrom`；事件发布统一为 `publishFrom` 口径，并登记 Outbox“先取载荷后发布”的时序约束。
   2. 逐条登记 12 条 Hard gate 的实现载体与 Active/Frozen/Planned 状态，并补录 Planned 盘点。原变更记录曾将这项状态登记关联到拟议的 `ADR-0026 hard-gate-per-rule-status`；现行 ADR-0026 已用于单文档整合，规则状态以本文 G-1 为准。
