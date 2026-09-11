@@ -182,6 +182,9 @@ canvases/
 .claude/skills/openspec-*/
 # .github/skills 经确认无用，防再生成误提交
 .github/skills/
+# 本地工具配置（Reasonix 权限 / 技能锁），不入库
+reasonix.toml
+skills-lock.json
 
 # 运行时生成文件
 generated/
