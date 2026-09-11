@@ -29,11 +29,12 @@ public class ShipOrderCommandHandler {
   private final TenantProvider tenantProvider;
 
   @Transactional
-  public void handle(ShipOrderCommand cmd) {
+  public void handle(ShipOrderCommand command) {
     Order order =
         Optional.ofNullable(
-                orderRepository.findByIdInTenant(cmd.orderId(), tenantProvider.currentTenantId()))
-            .orElseThrow(() -> new NotFoundException("订单不存在: " + cmd.orderId()));
+                orderRepository.findByIdInTenant(
+                    command.orderId(), tenantProvider.currentTenantId()))
+            .orElseThrow(() -> new NotFoundException("订单不存在: " + command.orderId()));
     order.ship();
     orderRepository.save(order);
   }

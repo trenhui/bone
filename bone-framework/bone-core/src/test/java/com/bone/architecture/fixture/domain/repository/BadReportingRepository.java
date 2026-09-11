@@ -1,0 +1,24 @@
+package com.bone.architecture.fixture.domain.repository;
+
+import com.bone.architecture.fixture.domain.order.OrderAggregate;
+import java.util.List;
+import java.util.Optional;
+
+/** 规则单测夹具：违规仓储——投影 / List / 持久化词汇，用于验证负向拦截。 */
+public interface BadReportingRepository {
+
+  /** 返回 DTO 投影 → 违规（读侧职责）。 */
+  OrderSummaryDto findSummary(Long id);
+
+  /** 返回 {@code List<聚合>} → 违规（批量读应走读侧 QueryBuilder）。 */
+  List<OrderAggregate> findByStatus(String status);
+
+  /** 返回 {@code Optional<聚合>} → 合法。 */
+  Optional<OrderAggregate> findByCode(String code);
+
+  /** 复合自然键返回聚合 → 合法。 */
+  OrderAggregate findByIdInTenant(Long id, Long tenantId);
+
+  /** 持久化词汇入方法名 → 违规。 */
+  void updateStatus(OrderAggregate aggregate);
+}

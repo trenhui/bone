@@ -1,0 +1,132 @@
+package com.bone.iam.domain.account;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.bone.iam.domain.account.event.AccountCreatedEvent;
+import com.bone.iam.domain.account.event.AccountDisabledEvent;
+import com.bone.iam.domain.account.event.AccountEnabledEvent;
+import com.bone.iam.domain.account.event.AccountLockedEvent;
+import com.bone.iam.domain.account.event.PasswordChangedEvent;
+import com.bone.iam.domain.account.vo.AccountStatus;
+import com.bone.iam.domain.account.vo.Email;
+import com.bone.iam.domain.account.vo.Username;
+import org.junit.jupiter.api.Test;
+
+/** {@link Account} 纯单测：启用/禁用防重、登录锁定阈值与凭据/资料更新（无容器）。 */
+class AccountTest {
+
+  private Account createAccount() {
+    return Account.create(
+        1L,
+        Username.of("alice"),
+        "hash-1",
+        Email.of("alice@bone.dev"),
+        "13800000000",
+        "Alice",
+        100L);
+  }
+
+  @Test
+  void testCreateDefaultsToEnabledNonAdmin() {
+    Account account = createAccount();
+
+    assertEquals(AccountStatus.ENABLED, account.getStatus());
+    assertEquals(1L, account.getId());
+    assertEquals(100L, account.getTenantId());
+    assertFalse(account.isAdmin());
+    assertEquals(0, account.getLoginFailCount());
+    assertEquals(1, account.getDomainEvents().size());
+    assertInstanceOf(AccountCreatedEvent.class, account.getDomainEvents().get(0));
+  }
+
+  @Test
+  void testEnableDisableGuardsAndPublishesEvents() {
+    Account account = createAccount();
+    account.clearDomainEvents();
+
+    // 新建即 ENABLED，重复 enable 拒绝
+    assertThrows(IllegalStateException.class, account::enable);
+
+    account.disable();
+    assertEquals(AccountStatus.DISABLED, account.getStatus());
+    assertInstanceOf(AccountDisabledEvent.class, account.getDomainEvents().get(0));
+    // 重复 disable 拒绝
+    assertThrows(IllegalStateException.class, account::disable);
+
+    account.enable();
+    assertEquals(AccountStatus.ENABLED, account.getStatus());
+    assertInstanceOf(AccountEnabledEvent.class, account.getDomainEvents().get(1));
+  }
+
+  @Test
+  void testLoginFailuresLockAtThreshold() {
+    Account account = createAccount();
+    account.clearDomainEvents();
+
+    account.recordLoginFailure(2, 30);
+    assertEquals(1, account.getLoginFailCount());
+    assertEquals(AccountStatus.ENABLED, account.getStatus());
+    assertFalse(account.isLocked());
+
+    account.recordLoginFailure(2, 30);
+    assertEquals(2, account.getLoginFailCount());
+    assertEquals(AccountStatus.LOCKED, account.getStatus());
+    assertTrue(account.isLocked());
+    assertNotNull(account.getLockedAt());
+    assertEquals(1, account.getDomainEvents().size());
+    assertInstanceOf(AccountLockedEvent.class, account.getDomainEvents().get(0));
+  }
+
+  @Test
+  void testRecordLoginSuccessClearsFailureCounter() {
+    Account account = createAccount();
+    for (int i = 0; i < 3; i++) {
+      account.recordLoginFailure(5, 30);
+    }
+
+    account.recordLoginSuccess("192.168.1.1");
+
+    assertEquals(0, account.getLoginFailCount());
+    assertEquals("192.168.1.1", account.getLastLoginIp());
+    assertNotNull(account.getLastLoginAt());
+  }
+
+  @Test
+  void testUpdatePasswordPublishesEvent() {
+    Account account = createAccount();
+    account.clearDomainEvents();
+
+    account.updatePassword("hash-2");
+
+    assertEquals("hash-2", account.getPasswordHash());
+    assertNotNull(account.getPasswordUpdatedAt());
+    assertEquals(1, account.getDomainEvents().size());
+    assertInstanceOf(PasswordChangedEvent.class, account.getDomainEvents().get(0));
+  }
+
+  @Test
+  void testUpdateProfileKeepsAvatarWhenOmitted() {
+    Account account = createAccount();
+
+    account.updateProfile("Alice Ren", "13900000000", null);
+    assertEquals("Alice Ren", account.getRealName());
+    assertNull(account.getAvatarUrl());
+
+    account.updateProfile("Alice Ren2", null, "/avatar/alice.png");
+    assertEquals("Alice Ren2", account.getRealName());
+    assertEquals("/avatar/alice.png", account.getAvatarUrl());
+  }
+
+  @Test
+  void testValueObjectsRejectInvalidInput() {
+    assertThrows(IllegalArgumentException.class, () -> Username.of(" "));
+    assertThrows(IllegalArgumentException.class, () -> Username.of("ab"));
+    assertThrows(IllegalArgumentException.class, () -> Email.of("not-an-email"));
+  }
+}

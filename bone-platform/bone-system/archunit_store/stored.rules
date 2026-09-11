@@ -1,8 +1,9 @@
 #
-#Mon Aug 31 18:25:07 CST 2026
+#Thu Sep 10 18:38:35 CST 2026
 no\ classes\ should\ reside\ in\ a\ package\ '..domain.store..',\ because\ DDD\ \u00A714.5\:\ new\ code\ uses\ domain.repository\ only=53f3028a-f692-48a0-ad62-54ac54a16722
 no\ classes\ that\ reside\ outside\ of\ package\ 'com.bone.core..'\ should\ have\ simple\ name\ ending\ with\ 'BusinessException',\ because\ DDD\ \u00A716.3\:\ prefer\ *BizException\ or\ extend\ com.bone.core.exception.BizException=967219d9-ad5a-43e9-a637-900293de10e3
 no\ classes\ that\ reside\ outside\ of\ package\ 'com.bone.core..'\ should\ depend\ on\ classes\ that\ reside\ in\ a\ package\ 'com.bone.core.usecase..',\ because\ DDD\ P0-7\:\ com.bone.core.usecase\ was\ removed;\ use\ Handler\ +\ com.bone.core.capability=3263bd13-5f0d-480f-9131-f3a3a919f131
+no\ classes\ that\ reside\ in\ a\ package\ '..application.command.handler..'\ should\ depend\ on\ classes\ that\ annotated\ with\ @ReadSideOnly,\ because\ DDD\ P0-6\:\ CommandHandler\ must\ not\ use\ read-side\ DSL=6b459796-8200-41a5-a309-bf390b862d21
 no\ classes\ that\ reside\ outside\ of\ package\ 'com.bone.core..'\ should\ have\ simple\ name\ 'BusinessException',\ because\ DDD\ \u00A716.3\:\ business\ exception\ is\ com.bone.core.exception.BizException=b2ae0aaa-d2ae-4640-9e42-a45575311d0b
 classes\ that\ are\ interfaces\ and\ have\ simple\ name\ ending\ with\ 'Repository'\ and\ reside\ in\ a\ package\ '..domain.repository..'\ should\ only\ declare\ whitelisted\ repository\ methods=a87a07ea-6ac2-4e0c-add6-a96b8afb5043
 no\ classes\ should\ reside\ in\ a\ package\ '..application.usecase..',\ because\ DDD\ \u00A714.3\:\ forbid\ application/usecase\ package=63f8ab09-0ae5-41b1-a95b-ec8d62fbebe7

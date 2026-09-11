@@ -1,8 +1,6 @@
 package com.bone.integration.common.exception;
 
-import com.bone.core.exception.DomainException;
-
-public class NotFoundException extends DomainException {
+public class NotFoundException extends com.bone.core.exception.BizException {
   public NotFoundException(String message) {
     super(message);
   }

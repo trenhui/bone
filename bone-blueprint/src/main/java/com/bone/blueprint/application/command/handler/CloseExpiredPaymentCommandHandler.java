@@ -35,15 +35,16 @@ public class CloseExpiredPaymentCommandHandler {
   private final TenantProvider tenantProvider;
 
   @Transactional
-  public void handle(CloseExpiredPaymentCommand cmd) {
+  public void handle(CloseExpiredPaymentCommand command) {
     // 定时任务为异步入口，必须显式携带租户；缺失时回落当前上下文（仅 HTTP 入口）
-    long tenantId = cmd.tenantId() != null ? cmd.tenantId() : tenantProvider.currentTenantId();
+    long tenantId =
+        command.tenantId() != null ? command.tenantId() : tenantProvider.currentTenantId();
     Payment payment =
-        Optional.ofNullable(paymentRepository.findByIdInTenant(cmd.paymentId(), tenantId))
-            .orElseThrow(() -> new NotFoundException("支付单不存在: paymentId=" + cmd.paymentId()));
+        Optional.ofNullable(paymentRepository.findByIdInTenant(command.paymentId(), tenantId))
+            .orElseThrow(() -> new NotFoundException("支付单不存在: paymentId=" + command.paymentId()));
 
     payment.close();
     paymentRepository.save(payment);
-    log.info("已关闭超时支付单: paymentId={}, tenantId={}", cmd.paymentId(), tenantId);
+    log.info("已关闭超时支付单: paymentId={}, tenantId={}", command.paymentId(), tenantId);
   }
 }

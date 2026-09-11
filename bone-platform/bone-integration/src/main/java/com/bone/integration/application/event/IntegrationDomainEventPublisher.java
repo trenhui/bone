@@ -36,20 +36,16 @@ public class IntegrationDomainEventPublisher {
       return;
     }
     List<DomainEvent> events = new ArrayList<>(aggregate.getDomainEvents());
-    aggregate.clearDomainEvents();
     events.forEach(this::publish);
+    aggregate.clearDomainEvents();
   }
 
   public void publish(DomainEvent event) {
     if (event == null) {
       return;
     }
-    try {
-      outboxWriter.append(event);
-      dispatch(event);
-    } catch (Exception ex) {
-      log.error("领域事件处理失败: type={}", event.getClass().getSimpleName(), ex);
-    }
+    outboxWriter.append(event);
+    dispatch(event);
   }
 
   private void dispatch(DomainEvent event) {

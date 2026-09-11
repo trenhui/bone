@@ -31,11 +31,11 @@ public class CancelOrderCommandHandler {
   private final TenantProvider tenantProvider;
 
   @Transactional
-  public void handle(CancelOrderCommand cmd) {
-    long tenantId = resolveTenantId(cmd.tenantId());
+  public void handle(CancelOrderCommand command) {
+    long tenantId = resolveTenantId(command.tenantId());
     Order order =
-        Optional.ofNullable(orderRepository.findByIdInTenant(cmd.orderId(), tenantId))
-            .orElseThrow(() -> new NotFoundException("订单不存在: " + cmd.orderId()));
+        Optional.ofNullable(orderRepository.findByIdInTenant(command.orderId(), tenantId))
+            .orElseThrow(() -> new NotFoundException("订单不存在: " + command.orderId()));
     order.cancel();
     orderRepository.save(order);
     domainEventPublisher.publishFrom(order);

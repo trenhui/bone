@@ -29,11 +29,12 @@ public class DeliverOrderCommandHandler {
   private final TenantProvider tenantProvider;
 
   @Transactional
-  public void handle(DeliverOrderCommand cmd) {
+  public void handle(DeliverOrderCommand command) {
     Order order =
         Optional.ofNullable(
-                orderRepository.findByIdInTenant(cmd.orderId(), tenantProvider.currentTenantId()))
-            .orElseThrow(() -> new NotFoundException("订单不存在: " + cmd.orderId()));
+                orderRepository.findByIdInTenant(
+                    command.orderId(), tenantProvider.currentTenantId()))
+            .orElseThrow(() -> new NotFoundException("订单不存在: " + command.orderId()));
     order.deliver();
     orderRepository.save(order);
   }

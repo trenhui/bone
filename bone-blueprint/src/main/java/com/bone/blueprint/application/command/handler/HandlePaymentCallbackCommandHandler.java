@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 支付渠道回调用例：按支付单号查找支付单，幂等确认支付成功/失败，保存并发布领域事件。
  *
- * <p><b>验签不在此处</b>：按支付样板（{@code ddd/samples/payment.md} §3）与 ADR-0022，验签是 adapter
+ * <p><b>验签不在此处</b>：按支付样板（{@code Bone-DDD-最终实践方案.md#payment-sample-signature}）与 ADR-0022，验签是 adapter
  * 边界的防腐职责，且必须覆盖<strong>全部</strong>回调分支（成功 / 失败 / 关闭）。放在 Handler 内会导致：① 新增 RPC / MQ 入站通道时容易漏验签；②
  * 仅成功分支验签时，伪造的失败回调可把支付单打成 FAILED， 真实成功回调随后被聚合拒绝（"已失败/已关闭的支付单无法确认成功"）。
  *
@@ -51,24 +51,27 @@ public class HandlePaymentCallbackCommandHandler {
   private final DomainEventPublisher domainEventPublisher;
 
   @Transactional
-  public void handle(HandlePaymentCallbackCommand cmd) {
+  public void handle(HandlePaymentCallbackCommand command) {
     long tenantId = tenantProvider.currentTenantId();
     // 以支付单号定位支付单（真实渠道回调通常携带支付单号或渠道流水号）
     Payment payment =
-        Optional.ofNullable(paymentRepository.findByIdInTenant(cmd.paymentId(), tenantId))
-            .orElseThrow(() -> new NotFoundException("支付单不存在: paymentId=" + cmd.paymentId()));
+        Optional.ofNullable(paymentRepository.findByIdInTenant(command.paymentId(), tenantId))
+            .orElseThrow(() -> new NotFoundException("支付单不存在: paymentId=" + command.paymentId()));
 
-    if (!cmd.success()) {
-      payment.markFailed(cmd.channelTradeNo());
+    if (!command.success()) {
+      payment.markFailed(command.channelTradeNo());
       paymentRepository.save(payment);
       domainEventPublisher.publishFrom(payment);
       return;
     }
 
-    boolean migrated = payment.confirmSuccess(cmd.channelTradeNo(), cmd.paidAmount());
+    boolean migrated = payment.confirmSuccess(command.channelTradeNo(), command.paidAmount());
     if (!migrated) {
       // 幂等跳过（同渠道流水号重复回调）：不写库、不发事件
-      log.info("支付回调幂等跳过: paymentId={}, channelTradeNo={}", cmd.paymentId(), cmd.channelTradeNo());
+      log.info(
+          "支付回调幂等跳过: paymentId={}, channelTradeNo={}",
+          command.paymentId(),
+          command.channelTradeNo());
       return;
     }
 
@@ -82,8 +85,8 @@ public class HandlePaymentCallbackCommandHandler {
       // 按幂等处理（不回滚整个事务、不向上抛 500）——资金不可重复入账，也不可让渠道收到错误后无限重试。
       log.warn(
           "支付回调并发重复已被唯一索引拦截，按幂等跳过: paymentId={}, channelTradeNo={}",
-          cmd.paymentId(),
-          cmd.channelTradeNo(),
+          command.paymentId(),
+          command.channelTradeNo(),
           ex);
       return;
     }

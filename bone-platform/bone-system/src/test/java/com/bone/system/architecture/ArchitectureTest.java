@@ -15,7 +15,7 @@ import com.tngtech.archunit.library.freeze.FreezingArchRule;
 @AnalyzeClasses(packages = "com.bone.system", importOptions = ImportOption.DoNotIncludeTests.class)
 public class ArchitectureTest {
 
-  // P0-1
+  // CORE-02：依赖向内
   @ArchTest
   static final ArchRule domain_independent = BoneDddArchRules.domainMustNotDependOnOuterLayers();
 
@@ -23,26 +23,26 @@ public class ArchitectureTest {
   static final ArchRule application_no_infra =
       BoneDddArchRules.applicationMustNotDependOnInfrastructure();
 
-  // P0-5
+  // CORE-05：domain 禁止读侧 DSL
   @ArchTest
   static final ArchRule domain_no_query_builder = BoneDddArchRules.domainMustNotUseQueryBuilder();
 
-  // P0-6
+  // CORE-05：写用例禁止读侧 DSL
   @ArchTest
   static final ArchRule command_no_query_builder =
-      BoneDddArchRules.commandHandlersMustNotUseQueryBuilder();
+      FreezingArchRule.freeze(BoneDddArchRules.commandHandlersMustNotUseQueryBuilder());
 
-  // R2 + E-8（A 类强制，不 freeze）：禁外层篡改聚合 setId / setTenantId
+  // CORE-02 + E-6（A 类强制，不 freeze）：禁外层篡改聚合 setId / setTenantId
   @ArchTest
   static final ArchRule aggregate_identity_immutable =
       BoneDddArchRules.outerLayersMustNotMutateAggregateIdentity();
 
-  // P0-4 + §18.2
+  // CORE-05 + §18.2
   @ArchTest
   static final ArchRule repository_methods_whitelist =
       BoneDddArchRules.domainRepositoriesShouldOnlyDeclareWhitelistedMethods();
 
-  // P0-7 + §14.3
+  // CORE-04 + §14.3
   @ArchTest
   static final ArchRule no_new_use_cases =
       FreezingArchRule.freeze(BoneDddArchRules.noUseCaseClassesInApplication());
@@ -68,7 +68,7 @@ public class ArchitectureTest {
   static final ArchRule no_business_exception_suffix =
       FreezingArchRule.freeze(BoneDddArchRules.noBusinessExceptionSuffix());
 
-  // P0-7 + §15 + §23（存量 freeze，迁移后收缩基线）
+  // CORE-04 + §15 + §23（存量 freeze，迁移后收缩基线）
   @ArchTest
   static final ArchRule adapter_no_application_service =
       FreezingArchRule.freeze(
@@ -83,7 +83,7 @@ public class ArchitectureTest {
       FreezingArchRule.freeze(BoneDddArchRules.adapterControllersMustNotDependOnDomainService());
 
   // v4.5：命名 / 事务四条规则已降级为 warn（tasks 2.5），不再作为 @ArchTest 硬门禁；
-  // 反贫血主判据切换为 R8 聚合纯单测（AggregatePureUnitTestCoverageTest）。
+  // 聚合纯单测卫生检查使用 TEST-HYGIENE-01（AggregatePureUnitTestCoverageTest）。
 
   // P-2.3 + P-10.4（D9）：跨上下文 domain 越界守护；空匹配视为配置错误
   @ArchTest

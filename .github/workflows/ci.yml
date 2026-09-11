@@ -50,6 +50,9 @@ jobs:
           name: surefire-reports
           path: '**/target/surefire-reports/*.xml'
 
+      - name: DDD Doc↔Code Sync Lint
+        run: /usr/bin/env python3 scripts/ci/check-ddd-doc-code-sync.py
+
   backend-security:
     name: Backend Security Scan
     runs-on: ubuntu-latest

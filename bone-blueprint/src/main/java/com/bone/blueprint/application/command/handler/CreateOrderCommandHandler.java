@@ -56,8 +56,8 @@ public class CreateOrderCommandHandler {
    * </ul>
    */
   @Transactional
-  public Long handle(CreateOrderCommand cmd) {
-    for (CreateOrderCommand.OrderItemDto dto : cmd.items()) {
+  public Long handle(CreateOrderCommand command) {
+    for (CreateOrderCommand.OrderItemDto dto : command.items()) {
       if (!inventoryGateway.checkStock(dto.productId(), dto.quantity())) {
         throw BizException.of("商品库存不足: " + dto.productId());
       }
@@ -69,7 +69,7 @@ public class CreateOrderCommandHandler {
     long tenantId = tenantProvider.currentTenantId();
 
     List<OrderItem> items =
-        cmd.items().stream()
+        command.items().stream()
             .map(
                 dto ->
                     OrderItem.create(
@@ -81,7 +81,7 @@ public class CreateOrderCommandHandler {
                         dto.unitPrice()))
             .collect(Collectors.toList());
 
-    Order order = Order.create(provisionalOrderId, tenantId, cmd.customerId(), items);
+    Order order = Order.create(provisionalOrderId, tenantId, command.customerId(), items);
 
     // 扩展点定价由应用层编排：算出最终金额后交给聚合，聚合不感知扩展点接口（领域层只认 Money）
     OrderPriceCalculator.OrderPriceRequest pricingRequest =

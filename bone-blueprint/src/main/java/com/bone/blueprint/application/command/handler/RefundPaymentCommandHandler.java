@@ -37,24 +37,24 @@ public class RefundPaymentCommandHandler {
   private final DomainEventPublisher domainEventPublisher;
 
   @Transactional
-  public void handle(RefundPaymentCommand cmd) {
+  public void handle(RefundPaymentCommand command) {
     long tenantId = tenantProvider.currentTenantId();
     Payment payment =
-        Optional.ofNullable(paymentRepository.findByIdInTenant(cmd.paymentId(), tenantId))
-            .orElseThrow(() -> new NotFoundException("支付单不存在: paymentId=" + cmd.paymentId()));
+        Optional.ofNullable(paymentRepository.findByIdInTenant(command.paymentId(), tenantId))
+            .orElseThrow(() -> new NotFoundException("支付单不存在: paymentId=" + command.paymentId()));
 
-    boolean refunded = payment.refund(cmd.refundAmount());
+    boolean refunded = payment.refund(command.refundAmount());
 
     paymentRepository.save(payment);
     domainEventPublisher.publishFrom(payment);
     if (refunded) {
-      log.info("支付退款完成: paymentId={}, amount={}", cmd.paymentId(), cmd.refundAmount());
+      log.info("支付退款完成: paymentId={}, amount={}", command.paymentId(), command.refundAmount());
     } else {
       // 幂等跳过（金额完全一致的重复提交）。资金操作不可静默吞掉，留 warn 供对账与告警。
       log.warn(
           "支付退款重复提交已幂等跳过: paymentId={}, amount={}, 已退金额={}",
-          cmd.paymentId(),
-          cmd.refundAmount(),
+          command.paymentId(),
+          command.refundAmount(),
           payment.getRefundedMoney().toBigDecimal());
     }
   }

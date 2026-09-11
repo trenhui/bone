@@ -1,5 +1,6 @@
 package com.bone.metadata.sdk.query.criteria;
 
+import com.bone.core.annotation.ReadSideOnly;
 import com.bone.core.enums.Operator;
 import com.bone.metadata.sdk.domain.annotation.Column;
 import com.bone.metadata.sdk.domain.enums.SortDirection;
@@ -14,6 +15,7 @@ import lombok.Data;
 
 /** 支持主表和扩展表条件、排序与分页的通用查询构造器。 */
 @Data
+@ReadSideOnly
 public class Criteria<T> {
   private final List<Condition> mainConditions = new ArrayList<>();
   private final List<Condition> extConditions = new ArrayList<>();

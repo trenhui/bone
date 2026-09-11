@@ -25,9 +25,17 @@ public class ArchitectureTest {
 
   @ArchTest
   static final ArchRule command_no_query_builder =
-      BoneDddArchRules.commandHandlersMustNotUseQueryBuilder();
+      FreezingArchRule.freeze(BoneDddArchRules.commandHandlersMustNotUseQueryBuilder());
 
-  // R2 + E-8（A 类强制，不 freeze）：禁外层篡改聚合 setId / setTenantId
+  @ArchTest
+  static final ArchRule read_side_dsl_only_in_query_adapter =
+      FreezingArchRule.freeze(BoneDddArchRules.readSideDslOnlyInQueryLayer());
+
+  @ArchTest
+  static final ArchRule business_layers_no_direct_tenant_context =
+      FreezingArchRule.freeze(BoneDddArchRules.businessLayersMustNotReadTenantContextDirectly());
+
+  // CORE-02 + E-6（A 类强制，不 freeze）：禁外层篡改聚合 setId / setTenantId
   @ArchTest
   static final ArchRule aggregate_identity_immutable =
       BoneDddArchRules.outerLayersMustNotMutateAggregateIdentity();
@@ -59,7 +67,7 @@ public class ArchitectureTest {
   static final ArchRule no_business_exception_suffix =
       FreezingArchRule.freeze(BoneDddArchRules.noBusinessExceptionSuffix());
 
-  // P0-7 + §15 + §23（存量 freeze，迁移后收缩基线）
+  // CORE-04 + §15 + §23（存量 freeze，迁移后收缩基线）
   @ArchTest
   static final ArchRule adapter_no_application_service =
       FreezingArchRule.freeze(
@@ -74,7 +82,7 @@ public class ArchitectureTest {
       FreezingArchRule.freeze(BoneDddArchRules.adapterControllersMustNotDependOnDomainService());
 
   // v4.5：命名 / 事务四条规则已降级为 warn（tasks 2.5），不再作为 @ArchTest 硬门禁；
-  // 反贫血主判据切换为 R8 聚合纯单测（AggregatePureUnitTestCoverageTest）。
+  // 聚合纯单测卫生检查使用 TEST-HYGIENE-01（AggregatePureUnitTestCoverageTest）。
 
   // P-2.3 + P-10.4（D9）：跨上下文 domain 越界守护；空匹配视为配置错误
   @ArchTest
