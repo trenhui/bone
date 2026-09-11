@@ -180,6 +180,8 @@ canvases/
 .claude/commands/opsx/
 .claude/rules/
 .claude/skills/openspec-*/
+# .github/skills 经确认无用，防再生成误提交
+.github/skills/
 
 # 运行时生成文件
 generated/
