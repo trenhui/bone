@@ -18,6 +18,8 @@
 3. **ExtPoint 扩展引擎**（Extension）— 插件化扩展点机制
 4. **集成引擎**（Integration）— 多协议连接器与流程编排
 
+DDD 战略上，Bone **当前只认定**元数据 / 建模为核心域（[ADR-0023](doc/architecture/adr/0023-core-domain-smart-metadata.md)）；这是一项产品战略决策，不是“DDD 只能有一个核心域”的行业规则。主数据、集成、扩展为支撑域。通用语言见 [doc/glossary.md](doc/glossary.md)。
+
 ---
 
 ## 2. 技术栈
@@ -244,7 +246,7 @@ adapter/web → application → domain ← infrastructure
 ### 5.4 关键设计模式
 
 - **CQRS 物理分离**：`command` 包与 `query` 包在同一模块内分离，命令走写模型（带事务），查询走读模型（只读）。
-- **富领域模型**：聚合根使用 `AggregateRoot` / `TenantAggregateRoot`（ADR-0011）+ 工厂方法；读侧 DSL（`QueryBuilder`/`FluentQuery`）须 `@ReadSideOnly`，禁止在 `domain` 与 CommandHandler 使用。
+- **富领域模型**：聚合根使用 `AggregateRoot` / `TenantAggregateRoot`（ADR-0011）+ 工厂方法；读侧端口目标位置为 `application/query/port`，实现放 `infrastructure/query`；`QueryBuilder` / `FluentQuery` 禁止进入 `domain` 与 application。
 - **仓储模式**：接口定义在 `domain.repository`，实现放在 `infrastructure.persistence`。
 - **自定义元数据仓储**：`bone-metadata-sdk` 提供 `@EnableSqlRepositories` 机制，类似 Spring Data 但为自研实现。**该项目唯一持久化方案，禁止引入 MyBatis-Plus、JPA/Hibernate、MyBatis 等其他 ORM 框架。**
 - **多租户**：表均含 `tenant_id`（租户隔离），配合 `TenantContext` 实现数据隔离；`biz_identity_code` 仅在部署 SQL（`doc/deployment/sql/`）中存在，`bone-init.sql` 未包含。
@@ -421,10 +423,10 @@ adapter/web → application → domain ← infrastructure
 ## 11. 给 AI 助手的关键提示
 
 1. **不要破坏分层依赖**：修改代码时，`domain` 层不能引入 Spring/MyBatis 等框架依赖；`application` 层不能直接调用 `infrastructure` 实现类。
-2. **保持 CQRS（v4.2）**：写操作使用 `*CommandHandler` + `@Transactional`；读操作使用 `*QueryHandler`（只读）。**禁止** `application/usecase`、`*UseCase`、自造 `@UseCase`；`com.bone.core.usecase.*` **已从 bone-core 删除**；AI/Flow 能力发现用 `com.bone.core.capability.@Capability`。Controller **直接注入 Handler**（**禁止**直注 `application/service`、`domain/service`（领域服务）、`domain/repository`）；满足 [DDD E-5.3.2](doc/architecture/Bone-DDD-最终实践方案.md) F1/F2 条件时可注入 `*Facade`。`application/service` 仅允许 [DDD E-5.3.1](doc/architecture/Bone-DDD-最终实践方案.md) 约束（S1/S2/S3）。模块是否适用全量 DDD 看 **性质**（`bone-extension-studio`、`studio-generator` 属应用模块），见 DDD E-5.4。
+2. **保持 CQRS 与单一用例边界（v5.1.0）**：写用例默认使用 `*CommandHandler`，读用例使用 `*QueryHandler`；语义化 `*ApplicationService` 也可直接作为最外层应用用例边界。**一个用例只选一种构件，禁止 Handler 与 ApplicationService 一对一套娃**。写事务位于最外层写用例。新查询走 `QueryHandler → application QueryPort → infrastructure QueryAdapter`，`QueryBuilder` 不进入 application/domain。Controller 禁止直注 `domain/service`、`domain/repository` 或 infrastructure；可注入合法 Handler、ApplicationService、Orchestrator，满足条件时可注入 Facade。现有 `application/usecase` / `*UseCase` 不新增，AI/Flow 能力发现使用 `com.bone.core.capability.@Capability`。详见 [应用用例边界](doc/architecture/Bone-DDD-最终实践方案.md#application-use-case-boundary)。
 3. **统一响应格式**：Controller 返回统一使用 `ApiResponse<T>` 或 `PageResult<T>`，避免裸返回领域对象。
 4. **租户与审计字段**：新增实体应继承 `TenantAbstractEntity`（若需多租户）或 `AbstractEntity`；不要遗漏 `tenantId` 与审计字段的填充。
-5. **命名约定**（分层见 [DDD E-13.1](doc/architecture/Bone-DDD-最终实践方案.md)）：
+5. **命名约定**（属于工程一致性，默认 Advisory；见 [DDD E-13](doc/architecture/Bone-DDD-最终实践方案.md#naming-style)）：
    - 聚合根：`{名词}`
    - 值对象：`{名词}`（如 `Username`）
    - 应用层命令：`{动作}{对象}Command`（如 `CreateUserCommand`）
@@ -445,6 +447,22 @@ adapter/web → application → domain ← infrastructure
     - **时间估算**：用具体数字（"约 3 分钟"），不用"一会儿""很快"。
     - **砍客套**：不用"好的！""没问题！""希望有帮助！"等开场白/客套；指错不带情绪前缀，就事论事。
     - **进展可见**：长任务每轮开头 1 句重述当前进度，完成项打勾、剩余项列出。
+12. **编码行为准则（先想后写 · 简单优先 · 精准修改 · 目标驱动）**：
+    - **先想后写**：不默默假设。需求有歧义、或存在 ≥2 种合理方案时，**先确认再动手**，并呈现方案与取舍；禁止"猜一个就写"。
+    - **简单优先**：用**能解决今天问题的最少代码**；不做超前设计，不加"将来可能用到"的抽象、配置项或扩展点。
+    - **精准修改**：**只改必须改的**。不顺手重构 / 重命名 / 格式化任务范围外的代码，不顺带"优化"无关文件；发现范围外问题**只登记、不擅改**（另开任务）。
+    - **目标驱动**：用**可验证的验收标准**代替模糊指令——
+      > "Don't tell it what to do, give it success criteria and watch it go." —— Karpathy
+
+      接到任务先明确"怎样算完成"（哪条命令通过、哪个测试变绿、什么输出算对），再动手；收尾时**逐条对照标准自证**，而非只说"已完成"。
+    - **配套技能（CodeBuddy）**：触发判断与防违反（合理化借口表 / 红线清单）见技能 `ai-coding-discipline`（`.codebuddy/skills/ai-coding-discipline/SKILL.md`）。**本条与 §11.13 为规范真源，该技能不重复条文**——规范变更一律改本文件，技能只同步触发条件与防违反部分。
+13. **提交前自检清单（改动入库前逐项确认）**：
+    - ① 分层依赖未破坏（`domain` 零框架依赖、`application` 不直连 `infrastructure`，§5.2）
+    - ② 持久化仅用 `bone-metadata-sdk`（HC-001 / HC-006）
+    - ③ 已执行 `mvn spotless:apply`，格式校验通过
+    - ④ 受影响测试**已实际执行且通过**（非"应该能过"）
+    - ⑤ 未改动任务范围外的文件
+    - ⑥ 注释与文档同步更新，且为中文（§11.8）
 
 ---
 
@@ -474,7 +492,7 @@ AI 执行任务前，按修改路径加载对应上下文文档：
 | `**/domain/**` | `doc/architecture/Bone-DDD-最终实践方案.md` + `doc/design/modules/` 对应模块详设 |
 | `**/adapter/web/**` | `doc/architecture/Bone-API-规范.md` + `doc/architecture/openapi/` 对应 YAML |
 | `**/infrastructure/**` | `doc/architecture/数据库开发规范.md` + `bone-engine/bone-metadata-sdk/README.md` |
-| `**/application/**` | `doc/architecture/Bone-DDD-最终实践方案.md` §14（CQRS） |
+| `**/application/**` | `doc/architecture/Bone-DDD-最终实践方案.md`（应用用例、CQRS、事务与一致性章节） |
 | `bone-frontend/**` | `doc/architecture/bone-前端架构.md` §6（API错误处理/状态管理/微前端通信） |
 | 任何文件 | 本文件（AGENTS.md）§5 + §11 |
 
@@ -498,7 +516,7 @@ AI 执行任务前，按修改路径加载对应上下文文档：
 ### 12.5 标准交付流程
 
 ```
-P1 需求理解 → 确认所属模块和 Bounded Context
+P1 需求理解 → 确认所属模块和 Bounded Context + **定义可验证验收标准**（§11.12 目标驱动）
     ↓
 P2 上下文加载 → 按 §12.2 路由表加载文档
     ↓
@@ -526,6 +544,10 @@ P8 合并 → 触发 Docs-as-Code 合规收集器更新 _generated/
 | Cursor | `.cursorrules` | `Read AGENTS.md first.` |
 | Copilot | `.github/copilot-instructions.md` | `See AGENTS.md.` |
 
+> **禁止用外部通用规范直接覆盖入口文件**：任何"下载第三方 CLAUDE.md 覆盖本地入口"、或把通用 AI 编码准则整体粘贴进
+> `CLAUDE.md` / `.cursorrules` / `copilot-instructions.md` 的做法，都会破坏薄引用架构，并**丢失 §5 / §11 的项目特有约束**
+> （DDD 分层门禁、bone-metadata-sdk 唯一持久化、多租户与软删等）。外部优秀准则一律**先吸收进本文件（AGENTS.md）**，入口文件保持薄引用。
+
 ### 12.7 与已有资产的关系
 
 | 已有资产 | 定位 | 与本节关系 |
@@ -544,8 +566,12 @@ P8 合并 → 触发 Docs-as-Code 合规收集器更新 _generated/
 | 文件/目录 | 内容 |
 |---|---|
 | `README.md` | 项目营销概览、快速开始 |
-| `CODE_WIKI.md` | 项目知识库：四大引擎说明、关键类、依赖树、运行说明 |
-| `doc/architecture/Bone-DDD-最终实践方案.md` | DDD 与分层门禁（必读） |
+| `doc/CODE_WIKI.md` | 项目知识库：四大引擎说明、关键类、依赖树、运行说明 |
+| `doc/architecture/Bone-DDD-最终实践方案.md` | DDD 与分层门禁（v5.0.2） |
+| `doc/glossary.md` | 通用语言起步表 |
+| `doc/architecture/adr/0023-core-domain-smart-metadata.md` | Bone 当前核心域 = Metadata |
+| `doc/architecture/adr/0024-ddd-v5-rule-semantics-and-document-split.md` | DDD v5.0 规则语义与文档分册 |
+| `doc/architecture/adr/0025-ddd-v5-0-2-implementation-alignment.md` | DDD v5.0.2 规则标识与实现状态对齐 |
 | `doc/architecture/README.md` | 架构文档索引 |
 | `doc/wiki/07-P0-TODO看板.md` | 平台未完成项与工程债 |
 | `doc/README.md` | `doc/` 总索引 |

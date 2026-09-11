@@ -55,6 +55,12 @@ public final class BoneDddArchRules {
   /** 聚合身份 setter 名（{@code AggregateRoot.setId} / {@code TenantAggregateRoot.setTenantId}）。 */
   private static final Set<String> AGGREGATE_IDENTITY_SETTERS = Set.of("setId", "setTenantId");
 
+  /** 聚合根基类 FQN（R9 判定：只有聚合根才计入「一事务一聚合」）。 */
+  private static final String AGGREGATE_ROOT_CLASS = "com.bone.core.domain.AggregateRoot";
+
+  /** SDK 仓储基接口 FQN（用于解析仓储的实体泛型参数）。 */
+  private static final String SDK_REPOSITORY_CLASS = "com.bone.metadata.sdk.Repository";
+
   /** R9 判定用：写侧仓储的持久化方法名，出现即视为「持久化了一个聚合」。 */
   private static final Set<String> PERSIST_METHODS =
       Set.of(
@@ -583,8 +589,11 @@ public final class BoneDddArchRules {
    * Orchestrator 后， 直接在 Handler 上扫描 save 调用将完全不可见（v4.6 的盲区）——ApplicationService 同样可能是写事务入口，须受 R9 约束
    * （E-5.3.1 内容禁令 #5）。门禁按「直接调用」判定：Handler → Service → save(A)+save(B) 会在 Service 层被拦截。
    *
-   * <p><b>为何按 Repository 类型去重而非按调用次数</b>：同一聚合 {@code save} 两次仍属单聚合（幂等 upsert），不构成跨聚合写；而 {@code
-   * save(order)} + {@code save(payment)} 才是真正越界。
+   * <p><b>为何按「聚合根类型」而非「Repository 类型」去重（v4.7 修正）</b>：R9 约束的对象是<strong>聚合</strong>，不是仓储接口。
+   * 按仓储计数会把聚合内子实体的仓储（如 {@code OrderItemRepository}）误判为第二个聚合，进而诱导实现方把端口挪出 {@code domain.repository}
+   * 包来"绕过门禁"——既违反 E-5.5，也让规则形同虚设。改为解析 {@code Repository<T, ID>} 的 泛型参数，只有 {@code T} 是 {@code
+   * AggregateRoot} 子类时才计数，{@code Order} + {@code OrderItem} 因此正确地算作一个聚合。<b>按调用次数仍不去重</b>：同一聚合
+   * {@code save} 两次仍属单聚合（幂等 upsert）。
    */
   public static ArchRule oneAggregatePerTransaction() {
     return classes()
@@ -606,7 +615,7 @@ public final class BoneDddArchRules {
       @Override
       public void check(JavaClass item, ConditionEvents events) {
         for (JavaMethod entry : transactionEntryMethods(item)) {
-          Set<String> repositories = new TreeSet<>();
+          Set<String> aggregates = new TreeSet<>();
           for (JavaMethodCall call : entry.getMethodCallsFromSelf()) {
             AccessTarget.MethodCallTarget target = call.getTarget();
             if (!PERSIST_METHODS.contains(target.getName())) {
@@ -615,9 +624,14 @@ public final class BoneDddArchRules {
             if (!isDomainRepository(target.getOwner())) {
               continue;
             }
-            repositories.add(target.getOwner().getSimpleName());
+            // 按「被持久化的聚合根类型」计数：聚合内子实体的仓储不计入（见 persistedAggregateRootKey）
+            String aggregateKey = persistedAggregateRootKey(target.getOwner());
+            if (aggregateKey == null) {
+              continue;
+            }
+            aggregates.add(aggregateKey);
           }
-          if (repositories.size() > 1) {
+          if (aggregates.size() > 1) {
             events.add(
                 SimpleConditionEvent.violated(
                     item,
@@ -625,7 +639,7 @@ public final class BoneDddArchRules {
                         "%s.%s() persists %d aggregate types in one transaction %s — R9: one"
                             + " aggregate per transaction; use domain events / Outbox /"
                             + " Orchestrator for cross-aggregate changes",
-                        item.getSimpleName(), entry.getName(), repositories.size(), repositories)));
+                        item.getSimpleName(), entry.getName(), aggregates.size(), aggregates)));
           }
         }
       }
@@ -651,6 +665,53 @@ public final class BoneDddArchRules {
 
   private static boolean isDomainRepository(JavaClass owner) {
     return owner.isInterface() && owner.getPackageName().contains(".domain.repository");
+  }
+
+  /**
+   * R9 计数键：返回该仓储持久化的<strong>聚合根类型名</strong>；不是聚合根时返回 {@code null}（不计入 R9）。
+   *
+   * <p><b>为何按聚合根类型而非 Repository 类型计数（v4.7 修正）</b>：R9 约束的是「一个事务内只提交一个<strong>聚合</strong> 的变更」。若按
+   * Repository 接口计数，聚合内子实体（如 {@code OrderItem}）的仓储会被误算成第二个"聚合"， 迫使实现方为了让门禁变绿而<strong>把仓储挪出 {@code
+   * domain.repository} 包</strong>——那既违反 E-5.5（端口包唯一）， 又让门禁失去意义（改个包名就能绕过）。按类型判定后，「Order + OrderItem
+   * 同属一个聚合」是自然结论， 包位置回归规范。
+   *
+   * <p><b>解析方式</b>：从仓储接口的 {@code Repository<T, ID>} 泛型实参取 {@code T}，再判断 {@code T} 是否继承 {@code
+   * AggregateRoot}；解析不到泛型时<strong>保守按仓储名计数</strong>（宁可多报，不放过）。
+   */
+  private static String persistedAggregateRootKey(JavaClass repository) {
+    JavaClass entity = resolveRepositoryEntityType(repository);
+    if (entity == null) {
+      return repository.getSimpleName(); // 保守兜底：泛型不可解析时仍计数
+    }
+    return isAggregateRoot(entity) ? entity.getSimpleName() : null;
+  }
+
+  /** 解析仓储接口的实体泛型参数 {@code T}（递归向父接口查找 {@code com.bone.metadata.sdk.Repository}）。 */
+  private static JavaClass resolveRepositoryEntityType(JavaClass repository) {
+    for (JavaType iface : repository.getInterfaces()) {
+      if (SDK_REPOSITORY_CLASS.equals(iface.toErasure().getName())) {
+        if (iface instanceof JavaParameterizedType parameterized) {
+          List<JavaType> args = parameterized.getActualTypeArguments();
+          if (!args.isEmpty()) {
+            return args.get(0).toErasure();
+          }
+        }
+        return null;
+      }
+      JavaClass nested = resolveRepositoryEntityType(iface.toErasure());
+      if (nested != null) {
+        return nested;
+      }
+    }
+    return null;
+  }
+
+  private static boolean isAggregateRoot(JavaClass entity) {
+    if (AGGREGATE_ROOT_CLASS.equals(entity.getName())) {
+      return true;
+    }
+    return entity.getAllRawSuperclasses().stream()
+        .anyMatch(superClass -> AGGREGATE_ROOT_CLASS.equals(superClass.getName()));
   }
 
   /**

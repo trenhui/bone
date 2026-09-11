@@ -1,5 +1,8 @@
 package com.bone.integration.application.event;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
 import com.bone.integration.application.event.outbox.IntegrationOutboxWriter;
@@ -54,5 +57,18 @@ class IntegrationDomainEventPublisherTest {
 
     verify(outboxWriter).append(event);
     verify(flowCreatedHandler).handle(event);
+  }
+
+  @Test
+  void publishFrom_keepsEventsAndPropagatesWhenOutboxAppendFails() {
+    Connector connector =
+        Connector.create(1L, "c1", ConnectorType.HTTP, Map.of("url", "http://localhost"));
+    doThrow(new IllegalStateException("outbox unavailable"))
+        .when(outboxWriter)
+        .append(org.mockito.ArgumentMatchers.any());
+
+    assertThrows(IllegalStateException.class, () -> publisher.publishFrom(connector));
+
+    assertFalse(connector.getDomainEvents().isEmpty(), "耐久交接失败时不能清除聚合事件");
   }
 }

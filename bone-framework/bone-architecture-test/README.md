@@ -1,8 +1,8 @@
 # bone-architecture-test
 
-Bone DDD 共享 ArchUnit 规则（`BoneDddArchRules`），真源见 `doc/architecture/Bone-DDD-最终实践方案.md` §21。
+Bone DDD 共享 ArchUnit 规则（`BoneDddArchRules`）。规范分级见 [Bone-DDD 门禁章节](../../doc/architecture/Bone-DDD-最终实践方案.md#g-1-1-hard-gate)；本 README 描述当前代码能力，不把启发式规则当作领域语义证明。
 
-## 规则清单（与 DDD E-3 R1–R8 对应）
+## 规则清单（v5.0 分级）
 
 | 方法 | 对应规范 |
 |------|----------|
@@ -11,23 +11,23 @@ Bone DDD 共享 ArchUnit 规则（`BoneDddArchRules`），真源见 `doc/archite
 | `outerLayersMustNotMutateAggregateIdentity()` | §3.1（聚合边界） |
 | `domainMustNotUseQueryBuilder()` | P0-5 |
 | `commandHandlersMustNotUseQueryBuilder()` | P0-6 |
-| `domainRepositoriesShouldOnlyDeclareWhitelistedMethods()` | P0-4 + §18.2 |
-| `noUseCaseClassesInApplication()` | P0-7 + §14.3 |
-| `noApplicationUseCasePackage()` | P0-7 + §14.3 |
-| `noBoneCoreUseCaseApiDependency()` | P0-7 |
+| `domainRepositoriesShouldOnlyDeclareWhitelistedMethods()` | Advisory：方法名启发式 |
+| `noUseCaseClassesInApplication()` | Bone 兼容门禁：不新增旧类名 |
+| `noApplicationUseCasePackage()` | Bone 兼容门禁：不新增旧包 |
+| `noBoneCoreUseCaseApiDependency()` | Hard gate：已删除 API 防回滚 |
 | `noStudioGeneratorUseCaseAnnotation()` | studio-generator 专用 |
 | `noNewDomainStorePackage()` | §14.5 |
-| `noCustomBusinessException()` | §16.3 |
-| `noBusinessExceptionSuffix()` | §16.3 |
-| `adapterControllersMustNotDependOnApplicationService()` | P0-7 + §15 |
+| `noCustomBusinessException()` | **待调整**：v5.0 允许项目异常根下的语义子类 |
+| `noBusinessExceptionSuffix()` | Advisory：命名兼容 |
+| `adapterControllersMustNotDependOnApplicationService()` | **待调整**：v5.0 允许合法 ApplicationService 作为用例边界 |
 | `adapterControllersMustNotDependOnDomainRepository()` | §15 |
-| `commandHandlersShouldBeNamedCommandHandler()` | §23 |
-| `queryHandlersShouldBeNamedQueryHandler()` | §23 |
-| `commandHandlersShouldBeTransactional()` | §15 |
-| `queryHandlersShouldBeReadOnlyTransactional()` | §12.1 P0-6 |
+| `commandHandlersShouldBeNamedCommandHandler()` | Advisory：命名 |
+| `queryHandlersShouldBeNamedQueryHandler()` | Advisory：命名 |
+| `commandHandlersShouldBeTransactional()` | Advisory：注解存在不等于代理生效 |
+| `queryHandlersShouldBeReadOnlyTransactional()` | Advisory：只读事务 |
 | `adapterControllersMustNotDependOnDomainService()` | §15（#17） |
 | `noCrossContextDomainDependency(context)` | P-2.3 / D9（跨上下文 domain 越界守护，空匹配即配置错误） |
-| `oneAggregatePerTransaction()` | R9（一事务一聚合，v4.6） |
+| `oneAggregatePerTransaction()` | Advisory：按 Repository/类型扫描，不能证明单聚合实例事务 |
 
 读侧 DSL 通过 `@com.bone.core.annotation.ReadSideOnly` 标注（如 `QueryBuilder`、`FluentQuery`），规则 `domainMustNotUseQueryBuilder` / `commandHandlersMustNotUseQueryBuilder` 检测对该注解类型的依赖。
 
@@ -37,12 +37,12 @@ Bone DDD 共享 ArchUnit 规则（`BoneDddArchRules`），真源见 `doc/archite
 - 目标必须是 `Entity` 子类且**不在** `..infrastructure..` 包（PO 映射豁免）；
 - **持久化适配器角色豁免**：`*Repository` / `*Converter` / `*Mapper` / `*RowMapper` / `*Assembler` / `*Persister`（主键回填、ORM 恢复是其法定职责）；
 - 排除「自己设置自己」。
-详见规范 E-8 反贫血红线补充。
+详见规范 [G-1](../../doc/architecture/Bone-DDD-最终实践方案.md#g-1-测试与-ci)。
 
 ## 用法
 
 1. 模块 `pom.xml` 增加 test 依赖：`bone-architecture-test`、`archunit-junit5`。
-2. 新增 `ArchitectureTest`，对存量违规使用 `FreezingArchRule.freeze(...)`（模板见 DDD 附录 B.3）。
+2. 新增 `ArchitectureTest`，对存量违规使用 `FreezingArchRule.freeze(...)`；接入前先核对规则在 v5.0 中的分级。
 3. **首次**生成基线（模块根目录 `archunit_store/`）：
 
 ```bash

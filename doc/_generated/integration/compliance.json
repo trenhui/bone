@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-27T09:42:30Z",
+  "generated_at": "2026-09-11T01:31:15Z",
   "module": "integration",
   "as_is": [
     {
@@ -9,16 +9,16 @@
       "evidence": {
         "openapi": {
           "openapi_file": "/Users/renhui.trh/wps/bone/doc/architecture/openapi/integration-v1.yaml",
-          "path_count": 8,
+          "path_count": 15,
           "paths_sample": [
+            "/connectors",
+            "/connectors/{id}",
+            "/connectors/{id}/test",
+            "/connectors/{id}/enable",
+            "/connectors/{id}/disable",
             "/flows",
             "/flows/{id}",
-            "/flows/{id}/activate",
-            "/connectors",
-            "/connectors/{id}/test",
-            "/executions",
-            "/executions/{id}",
-            "/statistics"
+            "/flows/{id}/activate"
           ]
         }
       }
@@ -60,7 +60,13 @@
       "title": "CQRS CommandHandler 写侧",
       "status": "as_is",
       "evidence": {
-        "java": []
+        "java": [
+          "bone-platform/bone-integration/src/main/java/com/bone/integration/adapter/web/controller/FlowController.java",
+          "bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/ActivateFlowCommandHandler.java",
+          "bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/DeactivateFlowCommandHandler.java",
+          "bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/DeleteFlowCommandHandler.java",
+          "bone-platform/bone-integration/src/main/java/com/bone/integration/application/command/handler/TestConnectorHandler.java"
+        ]
       }
     }
   ],

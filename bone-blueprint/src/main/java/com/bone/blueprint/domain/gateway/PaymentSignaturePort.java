@@ -1,25 +1,26 @@
 package com.bone.blueprint.domain.gateway;
 
-import com.bone.blueprint.domain.payment.Payment;
 import java.math.BigDecimal;
 
 /**
- * 支付回调验签端口（防腐层，§19）。
+ * 回调验签出站端口（E-10 / ADR-0022）。
  *
- * <p>真实支付渠道回调必须验签（HMAC/RSA/证书）以防伪造。样板用共享密钥模拟 HMAC 验签，演示「回调先验签 再进领域」的安全边界：验签在 adapter
- * 边界完成，校验通过才把可信结果交给 Handler。
+ * <p><b>入参只含回调报文中的标量</b>（支付单号、渠道流水号、金额、签名），<strong>不依赖 {@code Payment} 聚合</strong>：
+ * 验签是对<strong>报文字段</strong>做签名校验，与领域对象无关。这样的签名才能让 adapter 在<strong>进入应用层之前 </strong>完成验签（防腐层职责），也避免
+ * adapter 为了验签去加载聚合。
  *
- * <p>实现位于 {@code infrastructure/gateway/payment/}，domain 不依赖具体签名算法/密钥。
+ * <p><b>覆盖范围</b>：所有渠道回调（成功 / 失败 / 关闭）都必须验签——只验签成功回调是错误示范： 伪造的失败回调可把支付单打成终态，随后真实的成功回调被聚合拒绝。
  */
 public interface PaymentSignaturePort {
 
   /**
    * 校验回调签名是否可信。
    *
-   * @param payment 待确认的支付单（提供 orderId/amount 等参与签名要素）
-   * @param paidAmount 实付金额（签名参与要素）
-   * @param signature 请求携带的签名
-   * @return true=签名可信
+   * @param paymentId 支付单号（报文字段）
+   * @param channelTradeNo 渠道流水号（报文字段）
+   * @param amount 报文中声明的金额
+   * @param signature 渠道签名
+   * @return true 表示签名可信
    */
-  boolean verify(Payment payment, BigDecimal paidAmount, String signature);
+  boolean verify(long paymentId, String channelTradeNo, BigDecimal amount, String signature);
 }

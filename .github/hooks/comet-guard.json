@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "powershell": "bash -c 'bash .github/skills/comet/scripts/comet-hook-guard.sh'"
+      },
+      {
+        "matcher": "create|edit|str_replace_editor|apply_patch",
+        "bash": "node \"/Users/renhui.trh/wps/bone/.github/skills/comet/scripts/comet-hook-router.mjs\" --platform \"github-copilot\" --project-root \"/Users/renhui.trh/wps/bone\"",
+        "powershell": "node \"/Users/renhui.trh/wps/bone/.github/skills/comet/scripts/comet-hook-router.mjs\" --platform \"github-copilot\" --project-root \"/Users/renhui.trh/wps/bone\""
+      }
+    ]
+  }
+}

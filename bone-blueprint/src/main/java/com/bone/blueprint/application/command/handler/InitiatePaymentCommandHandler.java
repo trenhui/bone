@@ -59,7 +59,7 @@ public class InitiatePaymentCommandHandler {
   /** 下单支付默认渠道（样板模拟）。 */
   private static final PaymentChannel CHANNEL = PaymentChannel.SIMULATED;
 
-  public InitiatePaymentResult handle(InitiatePaymentCommand cmd) {
+  public InitiatePaymentResult handle(InitiatePaymentCommand command) {
     long tenantId = tenantProvider.currentTenantId();
     long paymentId = DistributedIdGenerator.generateLongId();
 
@@ -69,8 +69,9 @@ public class InitiatePaymentCommandHandler {
             (TransactionCallback<Payment>)
                 status -> {
                   Order order =
-                      Optional.ofNullable(orderRepository.findByIdInTenant(cmd.orderId(), tenantId))
-                          .orElseThrow(() -> new NotFoundException("订单不存在: " + cmd.orderId()));
+                      Optional.ofNullable(
+                              orderRepository.findByIdInTenant(command.orderId(), tenantId))
+                          .orElseThrow(() -> new NotFoundException("订单不存在: " + command.orderId()));
                   // 用意图揭示的聚合查询方法，而非直接比较枚举（状态解释权归聚合，反贫血 §17）
                   if (!order.isAwaitingPayment()) {
                     throw new BizException("只有待支付状态的订单可以发起支付: " + order.getStatus());

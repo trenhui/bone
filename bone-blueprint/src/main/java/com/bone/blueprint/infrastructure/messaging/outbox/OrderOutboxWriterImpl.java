@@ -1,16 +1,19 @@
 package com.bone.blueprint.infrastructure.messaging.outbox;
 
-import com.bone.blueprint.application.integration.event.OrderPaidIntegrationEvent;
-import com.bone.blueprint.application.integration.event.OrderPaymentInconsistentIntegrationEvent;
 import com.bone.blueprint.domain.gateway.OrderOutboxWriter;
 import com.bone.blueprint.domain.gateway.TenantProvider;
+import com.bone.blueprint.domain.integration.event.OrderPaidIntegrationEvent;
+import com.bone.blueprint.domain.integration.event.OrderPaymentInconsistentIntegrationEvent;
+import com.bone.blueprint.domain.integration.event.PaymentSucceededIntegrationEvent;
 import com.bone.blueprint.domain.order.event.OrderPaidEvent;
 import com.bone.blueprint.domain.order.event.OrderPaymentInconsistentEvent;
+import com.bone.blueprint.domain.payment.event.PaymentSucceededEvent;
 import com.bone.blueprint.infrastructure.config.OrderOutboxProperties;
 import com.bone.core.util.DistributedIdGenerator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -28,13 +31,39 @@ public class OrderOutboxWriterImpl implements OrderOutboxWriter {
   private static final String EVENT_TYPE_ORDER_PAID = "OrderPaidIntegrationEvent";
   private static final String EVENT_TYPE_PAYMENT_INCONSISTENT =
       "OrderPaymentInconsistentIntegrationEvent";
+  private static final String EVENT_TYPE_PAYMENT_SUCCEEDED = "PaymentSucceededIntegrationEvent";
 
   private final OrderOutboxProperties properties;
   private final OrderOutboxRepository outboxRepository;
   private final OrderOutboxEnvelopeFactory envelopeFactory;
   private final TenantProvider tenantProvider;
 
-  @Transactional
+  /**
+   * 支付成功事实入 Outbox（MANDATORY：强制调用方已有事务）。
+   *
+   * <p><b>为何用 MANDATORY</b>：「事件与业务状态同事务」是 Outbox 的唯一价值来源。用默认 REQUIRED 时，
+   * 若调用方没有事务，容器会<strong>悄悄新起一个事务</strong>，原子性被破坏却不报错。MANDATORY 把这条 约束从注释升级为容器级保证：无事务调用直接抛
+   * IllegalTransactionStateException。
+   */
+  @Transactional(propagation = Propagation.MANDATORY)
+  @Override
+  public void appendPaymentSucceeded(PaymentSucceededEvent event) {
+    append(
+        EVENT_TYPE_PAYMENT_SUCCEEDED,
+        properties.getPaymentSucceededTopic(),
+        event == null
+            ? null
+            : PaymentSucceededIntegrationEvent.fromDomain(
+                event.paymentId(),
+                event.tenantId(),
+                event.orderId(),
+                event.amount(),
+                event.channelTradeNo(),
+                event.occurredAt()),
+        event == null ? null : event.paymentId());
+  }
+
+  @Transactional(propagation = Propagation.MANDATORY)
   @Override
   public void appendOrderPaid(OrderPaidEvent event) {
     append(
@@ -51,7 +80,7 @@ public class OrderOutboxWriterImpl implements OrderOutboxWriter {
         event == null ? null : event.orderId());
   }
 
-  @Transactional
+  @Transactional(propagation = Propagation.MANDATORY)
   @Override
   public void appendPaymentInconsistent(OrderPaymentInconsistentEvent event) {
     append(
@@ -74,8 +103,17 @@ public class OrderOutboxWriterImpl implements OrderOutboxWriter {
    *
    * <p><b>为何与业务写同事务</b>：Outbox 模式的全部价值就在「业务状态变更」与「事件待发」的原子性—— 二者同事务提交，才不会出现「业务成功而事件丢失」或「事件已发而业务回滚」。
    */
-  private void append(String eventType, String topic, Object event, Long orderId) {
-    if (!properties.isEnabled() || event == null) {
+  private void append(String eventType, String topic, Object event, Long bizId) {
+    if (event == null) {
+      return;
+    }
+    if (!properties.isEnabled()) {
+      // 关闭 Outbox 等于声明「这些事件可容忍丢失」，必须留痕：静默 return 会让资金/状态事实凭空消失且无人察觉。
+      log.warn(
+          "Outbox 已关闭，集成事件未落库（下游将收不到该事实）: eventType={}, bizId={}。"
+              + "若为生产环境请检查 bone.blueprint.outbox.enabled",
+          eventType,
+          bizId);
       return;
     }
     long tenantId = resolveTenantId(event);
@@ -88,13 +126,16 @@ public class OrderOutboxWriterImpl implements OrderOutboxWriter {
             eventType,
             topic,
             String.valueOf(tenantId),
-            envelopeFactory.toJson(event));
+            envelopeFactory.toJson(eventId, event));
     outboxRepository.save(record);
-    log.debug("Outbox 已写入: eventId={}, eventType={}, orderId={}", eventId, eventType, orderId);
+    log.debug("Outbox 已写入: eventId={}, eventType={}, bizId={}", eventId, eventType, bizId);
   }
 
   /** 事件自带租户则优先用事件携带值（避免跨租户误写），否则回落当前上下文租户。 */
   private long resolveTenantId(Object event) {
+    if (event instanceof PaymentSucceededIntegrationEvent e && e.tenantId() != null) {
+      return e.tenantId();
+    }
     if (event instanceof OrderPaidIntegrationEvent e && e.tenantId() != null) {
       return e.tenantId();
     }

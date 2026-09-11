@@ -1,0 +1,170 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="950" viewBox="0 0 1440 950" font-family="-apple-system,'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans SC',sans-serif">
+  <defs>
+    <linearGradient id="coreGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1e40af"/>
+      <stop offset="1" stop-color="#3b82f6"/>
+    </linearGradient>
+    <marker id="aDark" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#334155"/>
+    </marker>
+    <marker id="aPurple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#7c3aed"/>
+    </marker>
+    <marker id="aCyan" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0891b2"/>
+    </marker>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+  </defs>
+
+  <style>
+    .boxTitle{font-size:15px;font-weight:700;}
+    .boxPath{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:10px;fill:#64748b;}
+    .lang{font-size:10px;fill:#94a3b8;}
+    .pill{font-size:10px;font-weight:600;}
+    .relLabel{font-size:10.5px;fill:#334155;paint-order:stroke;stroke:#f8fafc;stroke-width:5px;stroke-linejoin:round;}
+    .relSub{font-size:9.5px;fill:#64748b;paint-order:stroke;stroke:#f8fafc;stroke-width:4px;stroke-linejoin:round;}
+    .cs{stroke:#334155;stroke-width:2.2;fill:none;}
+    .ohs{stroke:#7c3aed;stroke-width:1.8;stroke-dasharray:6 5;fill:none;}
+    .spi{stroke:#0891b2;stroke-width:2.2;fill:none;}
+  </style>
+
+  <rect width="1440" height="950" fill="#f8fafc"/>
+  <text x="720" y="42" text-anchor="middle" font-size="24" font-weight="700" fill="#0f172a">Bone 限界上下文映射图（Context Map）</text>
+  <text x="720" y="66" text-anchor="middle" font-size="12" fill="#64748b">依据 Bone-DDD-最终实践方案 v5.1.1 · P-2.1 战略分类 / P-2.2 上下文表 / P-2.4 关系表逐行对账绘制</text>
+
+  <!-- ============ 关系线（先画，压框下） ============ -->
+
+  <!-- OHS 母线：IAM + System → 所有应用上下文 -->
+  <path class="ohs" d="M665,216 V300"/>
+  <path class="ohs" d="M1245,216 V300"/>
+  <path class="ohs" d="M170,300 H1330"/>
+  <path class="ohs" d="M245,300 V324" marker-end="url(#aPurple)"/>
+  <path class="ohs" d="M460,300 V592" marker-end="url(#aPurple)"/>
+  <path class="ohs" d="M620,300 V322" marker-end="url(#aPurple)"/>
+  <path class="ohs" d="M975,300 V322" marker-end="url(#aPurple)"/>
+  <path class="ohs" d="M1300,300 V552" marker-end="url(#aPurple)"/>
+  <text class="relLabel" x="700" y="290" fill="#7c3aed" font-weight="600">OHS / Published Language：IAM · System → 所有应用上下文（虚线）</text>
+
+  <!-- Metadata → MasterData（C-S） -->
+  <path class="cs" d="M380,400 H528" marker-end="url(#aDark)"/>
+  <text class="relLabel" x="454" y="386" text-anchor="middle">Customer–Supplier</text>
+  <text class="relSub" x="454" y="418" text-anchor="middle">catalog API / 版本化事件</text>
+
+  <!-- MasterData → Integration（C-S） -->
+  <path class="cs" d="M770,395 H848" marker-end="url(#aDark)"/>
+  <text class="relLabel" x="809" y="372" text-anchor="middle">C-S</text>
+  <text class="relSub" x="809" y="416" text-anchor="middle">REST ACL / 集成事件</text>
+
+  <!-- Metadata → Generator（C-S，绕行折线） -->
+  <path class="cs" d="M300,482 V520 H448 M462,520 H545 V592" marker-end="url(#aDark)"/>
+  <text class="relLabel" x="240" y="548">Customer–Supplier</text>
+  <text class="relSub" x="240" y="563">catalog API / PL</text>
+
+  <!-- Integration → Extension（Published SPI） -->
+  <path class="spi" d="M975,448 V505 H1275 V552" marker-end="url(#aCyan)"/>
+  <text class="relLabel" x="900" y="500" fill="#0e7490" font-weight="600">Published SPI</text>
+  <text class="relSub" x="900" y="515">版本化扩展 SPI · 不暴露 Studio 内部模型</text>
+
+  <!-- IAM → Notification（C-S） -->
+  <path class="cs" d="M540,166 H332" marker-end="url(#aDark)"/>
+  <text class="relLabel" x="436" y="152" text-anchor="middle">C-S · IAM API</text>
+
+  <!-- ============ OHS 上游框 ============ -->
+  <g filter="url(#softShadow)">
+    <rect x="540" y="112" width="250" height="104" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+    <rect x="698" y="124" width="80" height="20" rx="10" fill="#ede9fe" stroke="#7c3aed" stroke-width="1"/>
+    <text class="pill" x="738" y="138" text-anchor="middle" fill="#6d28d9">OHS 上游</text>
+    <text class="boxTitle" x="565" y="156" fill="#0f172a">IAM</text>
+    <text class="pill" x="565" y="176" fill="#475569">通用域</text>
+    <text class="boxPath" x="565" y="198">bone-iam</text>
+  </g>
+
+  <g filter="url(#softShadow)">
+    <rect x="1130" y="112" width="230" height="104" rx="10" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5"/>
+    <rect x="1272" y="124" width="76" height="20" rx="10" fill="#ede9fe" stroke="#7c3aed" stroke-width="1"/>
+    <text class="pill" x="1310" y="138" text-anchor="middle" fill="#6d28d9">OHS 上游</text>
+    <text class="boxTitle" x="1155" y="156" fill="#0f172a">System</text>
+    <text class="pill" x="1155" y="176" fill="#475569">通用域</text>
+    <text class="boxPath" x="1155" y="198">bone-system</text>
+  </g>
+
+  <g filter="url(#softShadow)">
+    <rect x="110" y="120" width="210" height="96" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5"/>
+    <text class="boxTitle" x="133" y="150" fill="#065f46">Notification</text>
+    <text class="pill" x="133" y="169" fill="#047857">支撑域</text>
+    <text class="boxPath" x="133" y="190">bone-notification</text>
+  </g>
+
+  <!-- ============ 主行 ============ -->
+  <g filter="url(#softShadow)">
+    <rect x="110" y="332" width="270" height="150" rx="12" fill="url(#coreGrad)"/>
+    <rect x="290" y="346" width="58" height="20" rx="10" fill="#ffffff" opacity="0.22"/>
+    <text class="pill" x="319" y="360" text-anchor="middle" fill="#ffffff">核心域</text>
+    <text class="boxTitle" x="134" y="382" fill="#ffffff" font-size="17">Metadata</text>
+    <text x="134" y="404" font-size="11" fill="#dbeafe">Smart Metadata · 动态建模与元数据运行时</text>
+    <text x="134" y="424" class="boxPath" fill="#bfdbfe">bone-metadata-server</text>
+    <text x="134" y="440" class="boxPath" fill="#bfdbfe">bone-metadata-engine</text>
+    <text class="lang" x="134" y="464" fill="#93c5fd">MetaEntity · MetaField · MetaRelation</text>
+  </g>
+
+  <g filter="url(#softShadow)">
+    <rect x="540" y="330" width="230" height="118" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5"/>
+    <text class="boxTitle" x="564" y="362" fill="#065f46">MasterData</text>
+    <text class="pill" x="564" y="381" fill="#047857">支撑域</text>
+    <text class="boxPath" x="564" y="403">bone-masterdata</text>
+    <text class="lang" x="564" y="426">MasterEntity · MasterRecord</text>
+  </g>
+
+  <g filter="url(#softShadow)">
+    <rect x="860" y="330" width="230" height="118" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5"/>
+    <text class="boxTitle" x="884" y="362" fill="#065f46">Integration</text>
+    <text class="pill" x="884" y="381" fill="#047857">支撑域</text>
+    <text class="boxPath" x="884" y="403">bone-integration</text>
+    <text class="lang" x="884" y="426">Connector · Flow · FlowExecution</text>
+  </g>
+
+  <!-- ============ 下行 ============ -->
+  <g filter="url(#softShadow)">
+    <rect x="430" y="600" width="240" height="110" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5"/>
+    <text class="boxTitle" x="454" y="632" fill="#065f46">Generator</text>
+    <text class="pill" x="454" y="651" fill="#047857">支撑域</text>
+    <text class="boxPath" x="454" y="674">bone-engine/studio-generator</text>
+    <text class="lang" x="454" y="694">Template · DataSource · GenerationTask</text>
+  </g>
+
+  <g filter="url(#softShadow)">
+    <rect x="1160" y="560" width="230" height="110" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="1.5"/>
+    <text class="boxTitle" x="1184" y="592" fill="#065f46">Extension</text>
+    <text class="pill" x="1184" y="611" fill="#047857">支撑域</text>
+    <text class="boxPath" x="1184" y="634">bone-extension-studio</text>
+    <text class="lang" x="1184" y="654">ExtensionPoint · Plugin · PluginVersion</text>
+  </g>
+
+  <!-- ============ 样板 ============ -->
+  <g>
+    <rect x="640" y="750" width="270" height="86" rx="10" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6 5"/>
+    <text class="boxTitle" x="664" y="782" fill="#475569" font-size="14">Payment</text>
+    <text class="pill" x="756" y="782" fill="#94a3b8">支撑域样板（不入产品主链路）</text>
+    <text class="boxPath" x="664" y="804">bone-blueprint</text>
+    <text class="lang" x="664" y="822">Payment · ChannelTradeNo（演示聚合/回调/幂等）</text>
+  </g>
+
+  <!-- ============ 脚注 ============ -->
+  <text x="110" y="872" font-size="11" fill="#64748b">注 1：按 P-2.4 关系表逐行绘制（表中 7 行关系全部呈现）；原文 ASCII 图中「Metadata ─C-S→ Extension」在关系表无登记行，本图未画，待架构组确认图/表孰真。</text>
+  <text x="110" y="890" font-size="11" fill="#64748b">注 2：Notification 在表中的唯一正式关系为 IAM→Notification（C-S）；Payment 无正式映射，仅作样板隔离展示。</text>
+
+  <!-- ============ 图例 ============ -->
+  <g>
+    <rect x="110" y="906" width="1220" height="32" rx="8" fill="#ffffff" stroke="#e2e8f0"/>
+    <rect x="126" y="914" width="16" height="16" rx="4" fill="url(#coreGrad)"/><text x="150" y="927" font-size="11" fill="#334155">核心域</text>
+    <rect x="216" y="914" width="16" height="16" rx="4" fill="#ecfdf5" stroke="#10b981"/><text x="240" y="927" font-size="11" fill="#334155">支撑域</text>
+    <rect x="306" y="914" width="16" height="16" rx="4" fill="#f8fafc" stroke="#94a3b8"/><text x="330" y="927" font-size="11" fill="#334155">通用域</text>
+    <rect x="396" y="914" width="16" height="16" rx="4" fill="#ffffff" stroke="#94a3b8" stroke-dasharray="4 3"/><text x="420" y="927" font-size="11" fill="#334155">样板</text>
+    <path class="cs" d="M506,922 H546" marker-end="url(#aDark)"/><text x="556" y="927" font-size="11" fill="#334155">Customer–Supplier</text>
+    <path class="ohs" d="M686,922 H726" marker-end="url(#aPurple)"/><text x="736" y="927" font-size="11" fill="#334155">OHS / Published Language</text>
+    <path class="spi" d="M900,922 H940" marker-end="url(#aCyan)"/><text x="950" y="927" font-size="11" fill="#334155">Published SPI（版本化契约）</text>
+    <text x="1150" y="927" font-size="10.5" fill="#94a3b8">v5.1.1 · 2026-09-11</text>
+  </g>
+</svg>

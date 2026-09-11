@@ -41,10 +41,10 @@ class CloseExpiredPaymentCommandHandlerTest {
   @Test
   void testClosePayingPayment() {
     Payment payment = payingPayment();
-    when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(payment);
 
-    handler.handle(new CloseExpiredPaymentCommand(1L));
+    // 定时任务入口：租户由命令显式携带（异步分支不能依赖线程上下文）
+    handler.handle(new CloseExpiredPaymentCommand(1L, 1L));
 
     assertEquals(PaymentStatus.CLOSED, payment.getStatus());
     verify(paymentRepository).save(payment);
@@ -54,19 +54,31 @@ class CloseExpiredPaymentCommandHandlerTest {
   void testCloseSuccessPaymentThrows() {
     Payment payment = payingPayment();
     payment.confirmSuccess("trade-001", new BigDecimal("200")); // SUCCESS 不可关闭
-    when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(payment);
 
-    assertThrows(DomainException.class, () -> handler.handle(new CloseExpiredPaymentCommand(1L)));
+    assertThrows(
+        DomainException.class, () -> handler.handle(new CloseExpiredPaymentCommand(1L, 1L)));
     verify(paymentRepository, never()).save(any());
   }
 
   @Test
   void testPaymentNotFound() {
-    when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(null);
 
-    assertThrows(NotFoundException.class, () -> handler.handle(new CloseExpiredPaymentCommand(1L)));
+    assertThrows(
+        NotFoundException.class, () -> handler.handle(new CloseExpiredPaymentCommand(1L, 1L)));
     verify(paymentRepository, never()).save(any());
+  }
+
+  @Test
+  void testTenantFallsBackToContextWhenCommandOmitsIt() {
+    // HTTP 入口（tenantId=null）仍走 TenantProvider
+    Payment payment = payingPayment();
+    when(tenantProvider.currentTenantId()).thenReturn(1L);
+    when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(payment);
+
+    handler.handle(new CloseExpiredPaymentCommand(1L, null));
+
+    assertEquals(PaymentStatus.CLOSED, payment.getStatus());
   }
 }

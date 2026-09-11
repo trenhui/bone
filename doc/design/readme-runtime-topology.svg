@@ -1,0 +1,130 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1180" height="760" viewBox="0 0 1180 760" font-family="-apple-system,'PingFang SC','Microsoft YaHei','Noto Sans SC',sans-serif">
+  <defs>
+    <marker id="arr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#94A3B8"/>
+    </marker>
+  </defs>
+
+  <style>
+    .grp { fill:#F8FAFC; stroke:#E2E8F0; }
+    .grp-t { font-size:12px; font-weight:600; letter-spacing:1.5px; fill:#94A3B8; }
+    .svc { fill:#FFFFFF; stroke:#CBD5E1; }
+    .svc-t { font-size:12.5px; font-weight:600; fill:#334155; }
+    .svc-p { font-size:11px; font-weight:600; fill:#2563EB; }
+    .svc-d { font-size:10.5px; fill:#94A3B8; }
+    .edge-l { font-size:11.5px; fill:#475569; font-weight:600; }
+    .cap { font-size:12px; fill:#94A3B8; }
+  </style>
+
+  <!-- ============ bone-frontend ============ -->
+  <g>
+    <rect class="grp" x="40" y="52" width="280" height="220" rx="14"/>
+    <text class="grp-t" x="64" y="80">BONE-FRONTEND · QIANKUN 微前端</text>
+    <rect x="64" y="98" width="232" height="70" rx="10" fill="#FFFFFF" stroke="#CBD5E1"/>
+    <text class="svc-t" x="82" y="126">bone-shell 管理端</text>
+    <text class="svc-p" x="82" y="148">:3000</text>
+
+    <rect x="64" y="184" width="232" height="70" rx="10" fill="#FFFFFF" stroke="#CBD5E1"/>
+    <text class="svc-t" x="82" y="212">领域微应用 × N</text>
+    <text class="svc-p" x="82" y="234">:3003–:3009</text>
+    <text class="svc-d" x="172" y="234">集成微应用 :3006</text>
+  </g>
+
+  <!-- ============ 网关 ============ -->
+  <g>
+    <rect x="420" y="102" width="200" height="120" rx="14" fill="#0F172A"/>
+    <text x="446" y="148" font-size="15" font-weight="700" fill="#FFFFFF">bone-gateway</text>
+    <text x="446" y="172" font-size="12" fill="#94A3B8">Spring Cloud Gateway</text>
+    <text x="446" y="196" font-size="13" font-weight="700" fill="#60A5FA">:8888</text>
+  </g>
+
+  <!-- ============ bone-platform 服务组 ============ -->
+  <g>
+    <rect class="grp" x="740" y="52" width="400" height="270" rx="14"/>
+    <text class="grp-t" x="764" y="80">BONE-PLATFORM · 业务服务</text>
+
+    <rect class="svc" x="764" y="96" width="170" height="62" rx="10"/>
+    <text class="svc-t" x="782" y="122">bone-iam</text>
+    <text class="svc-p" x="782" y="142">:8081</text>
+
+    <rect class="svc" x="946" y="96" width="170" height="62" rx="10"/>
+    <text class="svc-t" x="964" y="122">bone-system</text>
+    <text class="svc-d" x="964" y="142">:8083 · 菜单/参数/字典</text>
+
+    <rect class="svc" x="764" y="170" width="170" height="62" rx="10"/>
+    <text class="svc-t" x="782" y="196">bone-integration</text>
+    <text class="svc-p" x="782" y="216">:8085</text>
+
+    <rect class="svc" x="946" y="170" width="170" height="62" rx="10"/>
+    <text class="svc-t" x="964" y="196">bone-masterdata</text>
+    <text class="svc-d" x="964" y="216">:8084 · 主数据治理</text>
+
+    <rect class="svc" x="764" y="244" width="170" height="62" rx="10"/>
+    <text class="svc-t" x="782" y="270">bone-file（规划）</text>
+    <text class="svc-d" x="782" y="290">暂无独立实现</text>
+
+    <rect class="svc" x="946" y="244" width="170" height="62" rx="10"/>
+    <text class="svc-t" x="964" y="270">bone-notification SDK</text>
+    <text class="svc-d" x="964" y="290">REST 由 system 承载</text>
+  </g>
+
+  <!-- ============ bone-engine 引擎组 ============ -->
+  <g>
+    <rect class="grp" x="740" y="352" width="400" height="180" rx="14"/>
+    <text class="grp-t" x="764" y="380">BONE-ENGINE · 引擎服务</text>
+
+    <rect class="svc" x="764" y="396" width="170" height="62" rx="10"/>
+    <text class="svc-t" x="782" y="422">bone-metadata-server</text>
+    <text class="svc-p" x="782" y="442">:9001</text>
+
+    <rect class="svc" x="946" y="396" width="170" height="62" rx="10"/>
+    <text class="svc-t" x="964" y="422">studio-generator</text>
+    <text class="svc-p" x="964" y="442">:8086</text>
+
+    <rect class="svc" x="764" y="470" width="352" height="44" rx="10"/>
+    <text class="svc-t" x="782" y="497">bone-extension-engine（SDK + Runtime）</text>
+  </g>
+
+  <!-- ============ 基础设施 ============ -->
+  <g>
+    <rect class="grp" x="420" y="572" width="720" height="130" rx="14"/>
+    <text class="grp-t" x="444" y="600">基础设施 · docker compose</text>
+
+    <g transform="translate(462,612)">
+      <path d="M0,12 a42,12 0 0 1 84,0" fill="none" stroke="#CBD5E1" stroke-width="1.5"/>
+      <path d="M0,12 v36 a42,12 0 0 0 84,0 v-36" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
+      <ellipse cx="42" cy="12" rx="42" ry="12" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
+      <text class="svc-t" x="42" y="40" text-anchor="middle">MySQL 8</text>
+      <text class="svc-d" x="42" y="76" text-anchor="middle">bone-init.sql</text>
+    </g>
+    <g transform="translate(682,612)">
+      <path d="M0,12 a42,12 0 0 1 84,0" fill="none" stroke="#CBD5E1" stroke-width="1.5"/>
+      <path d="M0,12 v36 a42,12 0 0 0 84,0 v-36" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
+      <ellipse cx="42" cy="12" rx="42" ry="12" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.5"/>
+      <text class="svc-t" x="42" y="40" text-anchor="middle">Redis 7</text>
+      <text class="svc-d" x="42" y="76" text-anchor="middle">IAM 登录必需</text>
+    </g>
+
+    <rect class="svc" x="896" y="618" width="220" height="62" rx="10"/>
+    <text class="svc-t" x="914" y="644">可选 · 按需接入</text>
+    <text class="svc-d" x="914" y="664">RocketMQ · Nacos · Sentinel</text>
+  </g>
+
+  <!-- ============ 连线 ============ -->
+  <g>
+    <line x1="320" y1="162" x2="412" y2="162" stroke="#94A3B8" stroke-width="2" marker-end="url(#arr2)"/>
+    <text class="edge-l" x="332" y="152">REST / Qiankun</text>
+
+    <line x1="620" y1="162" x2="732" y2="162" stroke="#94A3B8" stroke-width="2" marker-end="url(#arr2)"/>
+    <text class="edge-l" x="630" y="152">路由 / 鉴权</text>
+
+    <path d="M520 222 V442 H732" fill="none" stroke="#94A3B8" stroke-width="2" stroke-dasharray="4 4" marker-end="url(#arr2)"/>
+    <text class="edge-l" x="532" y="330">动态 API</text>
+
+    <line x1="940" y1="532" x2="940" y2="564" stroke="#94A3B8" stroke-width="2" marker-end="url(#arr2)"/>
+    <text class="edge-l" x="952" y="552">JDBC · 缓存</text>
+  </g>
+
+  <text class="cap" x="40" y="736">最小启动子集：MySQL + Redis + bone-iam（:8081）+ bone-gateway（:8888）+ bone-shell（:3000）→ admin / 123456</text>
+  <text class="cap" x="1140" y="736" text-anchor="end">端口真源：各模块 application.yml</text>
+</svg>

@@ -1,16 +1,16 @@
 # IAM 模块 As-Is 证据（CI 派生）
 
-> **生成时间**：2026-05-27T09:42:30Z（UTC）  
+> **生成时间**：2026-09-11T01:31:15Z（UTC）  
 > **勿手改**：由 `tools/iam-compliance-collector/collect.py` 生成。
 
 | ID | 能力 | 证据摘要 |
 |----|------|----------|
 | `iam-ddl-tables` | IAM 10 张表全部入 bone-init.sql（含 iam_audit_settings） | DDL：10/10 表 |
 | `iam-openapi-single-source` | iam-v1.yaml 作为 HTTP 契约单源 + bearer JWT 安全声明 | OpenAPI：33 paths；Bearer JWT |
-| `iam-method-security` | @EnableMethodSecurity + @PreAuthorize 方法级鉴权 | @PreAuthorize：6 文件 / 12 权限码；`@EnableMethodSecurity` |
+| `iam-method-security` | @EnableMethodSecurity + @PreAuthorize 方法级鉴权 | @PreAuthorize：8 文件 / 16 权限码；`@EnableMethodSecurity` |
 | `iam-tenant-context-from-jwt` | JwtAuthenticationFilter 写入 TenantContext + finally 清理 | 源码：`bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/security/JwtAuthenticationFilter.java` |
-| `iam-tenant-query-filter` | Query Handler 强制按 TenantContext 过滤（非平台租户） | 源码：`bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/AssignPermissionCommandHandler.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/RevokeSessionCommandHandler.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/UpdateAuditSettingsCommandHandler.java`；… +7 |
-| `iam-jwt-scopes-claim` | JWT claim `scopes`（权限码）+ refresh token + 黑名单 | 源码：`bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AuthController.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/MeController.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/security/CurrentAccountResolver.java`；… +4 |
+| `iam-tenant-query-filter` | Query Handler 强制按 TenantContext 过滤（非平台租户） | 源码：`bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/AssignPermissionCommandHandler.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/CreateDeptCommandHandler.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/CreateMenuCommandHandler.java`；… +13 |
+| `iam-jwt-scopes-claim` | JWT claim `scopes`（权限码）+ refresh token + 黑名单 | 源码：`bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AuthController.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/security/IamJwtTokenService.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/security/JwtAuthenticationFilter.java`；… +2 |
 | `iam-audit-settings` | 审计设置 GET/PUT 经 Handler + AuditSettingsStore | DDL 有表；源码：`bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/schedule/AuditLogCleanupJob.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AuditController.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/UpdateAuditSettingsCommandHandler.java`；… +3 |
 | `iam-password-policy` | 弱口令策略 + 登录 requirePasswordChange | 源码：`bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/converter/AuthWebConverter.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/dto/resp/LoginResp.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/ChangeMyPasswordCommandHandler.java`；… +5 |
 | `iam-refresh-reuse` | Refresh Token 复用检测（replaced_by） | 源码：`bone-platform/bone-iam/src/main/java/com/bone/iam/common/IamErrorCodes.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/security/RefreshTokenService.java` |
@@ -20,9 +20,9 @@
 | `iam-tenant-quota` | 租户配额列 + TenantQuotaEnforcer | 源码：`bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/CreateAccountCommandHandler.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/CreateRoleCommandHandler.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/application/service/TenantQuotaEnforcer.java` |
 | `iam-init-demo-password-gate` | init 演示弱口令 CI ACK 门禁 | — |
 | `iam-login-lockout` | 登录失败锁定（threshold + lockMinutes 可配，含 LOCKED 状态校验） | 源码：`bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/LoginCommandHandler.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/application/config/IamPasswordProperties.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/common/IamErrorCodes.java`；… +1 |
-| `iam-role-hierarchy` | 角色继承闭包求值（parent_role_id，最大深度 5，环检测） | 源码：`bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/AccountAuthoritiesQueryHandler.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/domain/service/RoleHierarchyResolver.java` |
+| `iam-role-hierarchy` | 角色继承闭包求值（parent_role_id，最大深度 5，环检测） | 源码：`bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/AccountAuthoritiesQueryHandler.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/application/service/RoleHierarchyResolver.java` |
 | `iam-sessions-api` | 会话管理 API（在线会话 + 强制下线，iam:sessions:* 权限码） | 源码：`bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/SessionController.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/ChangeMyPasswordCommandHandler.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/RevokeSessionCommandHandler.java`；… +4 |
-| `iam-me-self-service` | 个人信息自助 API（/me + /me/change-password，仅认证不需权限码） | 源码：`bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/MeController.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/ChangeMyPasswordCommandHandler.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/UpdateMyProfileCommandHandler.java`；… +1 |
+| `iam-me-self-service` | 个人信息自助 API（/me + /me/change-password，仅认证不需权限码） | 源码：`bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/MeController.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/ChangeMyPasswordCommandHandler.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/UpdateMyProfileCommandHandler.java`；… +2 |
 | `iam-password-expiry` | 密码到期策略（max-age-days → requirePasswordChange） | 源码：`bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/dto/resp/MeResp.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/LoginCommandHandler.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/application/config/IamPasswordProperties.java`；… +2 |
 | `iam-audit-csv-export` | 审计日志 CSV 导出（UTF-8 BOM + Content-Disposition） | 源码：`bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AuditController.java` |
 | `iam-mfa-sso-501-contract` | MFA / SSO 未启用 501 契约（社区版） | 源码：`bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AuthController.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/MfaController.java`, `bone-platform/bone-iam/src/main/java/com/bone/iam/common/IamErrorCodes.java` |
@@ -120,6 +120,8 @@
     "files": [
       "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AccountController.java",
       "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AuditController.java",
+      "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/DeptController.java",
+      "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/MenuController.java",
       "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/PermissionController.java",
       "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/RoleController.java",
       "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/SessionController.java",
@@ -130,6 +132,10 @@
       "iam:accounts:write",
       "iam:audit:read",
       "iam:audit:write",
+      "iam:depts:read",
+      "iam:depts:write",
+      "iam:menus:read",
+      "iam:menus:write",
       "iam:permissions:read",
       "iam:permissions:write",
       "iam:roles:read",
@@ -159,12 +165,18 @@
 {
   "java": [
     "bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/AssignPermissionCommandHandler.java",
+    "bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/CreateDeptCommandHandler.java",
+    "bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/CreateMenuCommandHandler.java",
+    "bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/CreateRoleCommandHandler.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/RevokeSessionCommandHandler.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/UpdateAuditSettingsCommandHandler.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/AccountDetailQueryHandler.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/AccountPageQueryHandler.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/AuditLogListQueryHandler.java",
+    "bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/DeptTreeQueryHandler.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/GetAuditSettingsQueryHandler.java",
+    "bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/MenuCurrentQueryHandler.java",
+    "bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/MenuTreeQueryHandler.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/RoleDetailQueryHandler.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/RolePageQueryHandler.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/SessionListQueryHandler.java"
@@ -178,10 +190,8 @@
 {
   "java": [
     "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/AuthController.java",
-    "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/MeController.java",
-    "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/security/CurrentAccountResolver.java",
+    "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/security/IamJwtTokenService.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/security/JwtAuthenticationFilter.java",
-    "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/security/JwtTokenService.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/security/RefreshTokenService.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/security/TokenBlacklistService.java"
   ]
@@ -216,7 +226,7 @@
     "bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/LoginCommandHandler.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/ResetPasswordCommandHandler.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/application/config/IamPasswordProperties.java",
-    "bone-platform/bone-iam/src/main/java/com/bone/iam/domain/service/PasswordPolicyValidator.java"
+    "bone-platform/bone-iam/src/main/java/com/bone/iam/application/service/PasswordPolicyValidator.java"
   ]
 }
 ```
@@ -309,7 +319,7 @@
 {
   "java": [
     "bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/AccountAuthoritiesQueryHandler.java",
-    "bone-platform/bone-iam/src/main/java/com/bone/iam/domain/service/RoleHierarchyResolver.java"
+    "bone-platform/bone-iam/src/main/java/com/bone/iam/application/service/RoleHierarchyResolver.java"
   ]
 }
 ```
@@ -338,7 +348,8 @@
     "bone-platform/bone-iam/src/main/java/com/bone/iam/adapter/web/controller/MeController.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/ChangeMyPasswordCommandHandler.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/application/command/handler/UpdateMyProfileCommandHandler.java",
-    "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/security/CurrentAccountResolver.java"
+    "bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/MenuCurrentQueryHandler.java",
+    "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/security/IamCurrentAccountResolver.java"
   ]
 }
 ```
@@ -406,7 +417,7 @@
   "java_default": [
     "bone-platform/bone-iam/src/main/java/com/bone/iam/application/query/handler/AccountAuthoritiesQueryHandler.java",
     "bone-platform/bone-iam/src/main/java/com/bone/iam/domain/permission/DefaultPermissionCodes.java",
-    "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/security/JwtTokenService.java"
+    "bone-platform/bone-iam/src/main/java/com/bone/iam/infrastructure/security/IamJwtTokenService.java"
   ],
   "frontend": [
     "bone-frontend/packages/shared-types/src/bonePermissionCodes.ts"

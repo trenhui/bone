@@ -76,15 +76,6 @@ public class OrderItem extends AbstractEntity<Long> {
     return new OrderItem(id, orderId, productId, productName, quantity, price);
   }
 
-  /**
-   * 落库前回填真实订单 id。
-   *
-   * <p>构造期绑定的是会被持久化层覆盖的预分配订单 id；订单落库取回真实 id 后必须回填，否则明细 {@code order_id} 指向不存在的订单而成为孤儿行。
-   */
-  public void rebindOrderId(long persistedOrderId) {
-    this.orderId = persistedOrderId;
-  }
-
   public void updateQuantity(Integer newQuantity) {
     if (newQuantity == null || newQuantity <= 0) {
       throw new DomainException("商品数量必须大于0");

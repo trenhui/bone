@@ -1,0 +1,150 @@
+#!/usr/bin/env python3
+"""DDD 规范文档 ↔ 代码 符号一致性 lint（防漂移，P1-3）。
+
+检查两类最廉价的漂移——这正是 v5.0.2 复核发现 P0-1/P0-2 的病根：
+
+1. 文档规范正文中引用bone-core / SDK 不存在的 API 符号
+   （如历史案例 publish(aggregate.releaseDomainEvents())）；
+2. 文档残留 v4.x 历史编号被当作现行条文引用
+   （如 E-5.3.1 出现在非兼容区段落作为当前规范）。
+
+设计取向：
+- 只对单一规范正文 doc/architecture/Bone-DDD-最终实践方案.md 生效；
+- API 符号真源从 bone-core 与 bone-sdk 源码自动提取 public 成员，
+  文档里出现「不存在符号 + 调用形态」才告警，注释/术语命中不告警；
+- 默认 warning 模式：有 --strict 才退出非零，便于先挂 CI 观察。
+"""
+
+from __future__ import annotations
+
+import argparse
+import re
+import sys
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parents[2]
+
+# 规范正文范围（标题/引用区排 CHANGELOG 等叙事文件）
+DOC_FILES = [
+    REPO / "doc/architecture/Bone-DDD-最终实践方案.md",
+]
+
+# 符号真源：bone-core 全部 java + SDK 主源
+CODE_GLOBS = [
+    REPO / "bone-framework/bone-core/src/main/java/**/*.java",
+    REPO / "bone-sdk/**/src/main/java/**/*.java",
+]
+
+# —— v4.x 历史编号：作为「当前条文锚点」出现在正文即漂移 ——
+# 注：主文档「兼容入口与迁移说明」章节内的 Legacy 标题属白名单；
+# 07-supplements 等分册正文中以 R# 论证历史的段落允许出现在括号注释里。
+V4_RULE_REF = re.compile(r"(?<![A-Za-z0-9-])R[1-9](?![A-Za-z0-9-])")
+V4_SECTION_REF = re.compile(r"(?<![A-Za-z0-9.-])(?:E-\d+(?:\.\d+)*|G-\d+(?:\.\d+)*|P-\d+(?:\.\d+)*)(?![A-Za-z0-9-])")
+COMPAT_ZONE_HEADING = re.compile(r"^#{1,3}\s*(兼容入口|Legacy)")
+
+# 调用形态提取：publisher.xxx( / aggregate.releaseDomainEvents() / repo.findById(...)
+CALL = re.compile(
+    r"\b(?:(?:domainEventPublisher|eventPublisher|publisher)\.(?P<ev>[a-zA-Z_]\w*)\()"
+    r"|\b(?P<agg>[a-zA-Z_]\w*)\.releaseDomainEvents\(\)"
+    r"|\b(?:(?:orderRepository|repository|repo|[a-zA-Z_]\w*[Rr]epository))\.(?P<repo>[a-zA-Z_]\w*)\("
+    r"|\b(?P<find>findById)\(",
+)
+
+
+def collect_code_symbols() -> set[str]:
+    syms: set[str] = set()
+    for base in ("bone-framework/bone-core", "bone-sdk"):
+        root = REPO / base
+        if not root.exists():
+            continue
+        for java in root.rglob("*.java"):
+            text = java.read_text(encoding="utf-8", errors="ignore")
+            # public/default 方法名
+            syms.update(re.findall(r"\b(?:public|default)\s+(?:[\w<>\[\],.?]+\s+)+(\w+)\s*\(", text))
+            # public final 字段/record 组件
+            syms.update(re.findall(r"\bpublic\s+(?:static\s+)?final\s+[\w<>\[\],.?]+\s+(\w+)", text))
+            # 类型名
+            syms.update(re.findall(r"\b(?:public|final)?\s*(?:abstract\s+)?(?:class|interface|record|enum)\s+(\w+)", text))
+    return syms
+
+
+def compat_zones(lines: list[str]) -> list[tuple[int, int]]:
+    """主文档「兼容入口与迁移说明」章节行号区间（1-based）。"""
+    zones: list[tuple[int, int]] = []
+    start = None
+    for i, ln in enumerate(lines, 1):
+        if ln.startswith("# ") and "兼容入口" in ln:
+            start = i
+        elif start is not None and ln.startswith("# "):
+            zones.append((start, i - 1))
+            start = None
+    if start is not None:
+        zones.append((start, len(lines)))
+    return zones
+
+
+def in_zone(no: int, zones: list[tuple[int, int]]) -> bool:
+    return any(a <= no <= b for a, b in zones)
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--strict", action="store_true", help="发现问题时退出非零（默认仅告警）")
+    ap.add_argument("--v4-refs", action="store_true", help="同时检查 v4 编号残留")
+    args = ap.parse_args()
+
+    code_syms = collect_code_symbols()
+    problems: list[str] = []
+
+    known_aggregate_api = {"addDomainEvent", "getDomainEvents", "clearDomainEvents", "releaseDomainEvents"}
+    known_publisher_api = {"publish", "publishAll", "publishFrom"}
+
+    for doc in DOC_FILES:
+        if not doc.exists():
+            continue
+        lines = doc.read_text(encoding="utf-8", errors="ignore").splitlines()
+        zones = compat_zones(lines) if doc.name.startswith("Bone-DDD") else []
+
+        for no, raw in enumerate(lines, 1):
+            if raw.lstrip().startswith((">", "|", "#")) is False and not raw.strip():
+                continue
+            text = raw
+            # 1) API 调用形态核对
+            for m in CALL.finditer(text):
+                ev, agg, repo_m = m.group("ev"), m.group("agg"), m.group("repo")
+                if ev and ev not in known_publisher_api and ev not in code_syms:
+                    problems.append(f"{doc.name}:{no} 未知 publisher API: .{ev}(")
+                if agg and "releaseDomainEvents" == text[m.start("agg") : m.end("agg") + len(".releaseDomainEvents()")][len(".releaseDomainEvents()") :] if False else False:
+                    pass
+                if ".releaseDomainEvents()" in text:
+                    agg_name = m.group("agg") or "?"
+                    problems.append(
+                        f"{doc.name}:{no} 聚合 API releaseDomainEvents() 不存在于 AggregateRoot"
+                        f"（真源：addDomainEvent/getDomainEvents/clearDomainEvents + publishFrom）[ctx: {agg_name}]"
+                    )
+                if repo_m and repo_m.startswith("find") and repo_m in {"findById", "findByIdInTenant", "findByIdInTenantForUpdate"}:
+                    continue  # 已知仓储方法
+            # 2) v4 编号残留（可选，默认开在 --v4-refs 时）
+            if args.v4_refs and not in_zone(no, zones):
+                if V4_RULE_REF.search(text) and "R1" in text and "铁律" in text:
+                    problems.append(f"{doc.name}:{no} 残留 v4 铁律编号表述：{text.strip()[:80]}")
+                for mm in V4_SECTION_REF.finditer(text):
+                    ref = mm.group(0)
+                    # 兼容历史注释（含「v4」「历史」「曾」字样的行放过）
+                    ctx = text[max(0, mm.start() - 30) : mm.end() + 10]
+                    if re.search(r"(v4|历史|曾用|旧版)", ctx):
+                        continue
+                    problems.append(f"{doc.name}:{no} 疑似 v4 条文编号残留：{ref}")
+
+    if problems:
+        level = "ERROR" if args.strict else "WARN"
+        for p in problems:
+            print(f"[{level}] {p}")
+        print(f"\n共 {len(problems)} 处疑似漂移。" + ("" if args.strict else "（warning 模式，不阻断；修复后可切 --strict）"))
+        return 1 if args.strict else 0
+    print("DDD doc↔code sync lint: OK")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

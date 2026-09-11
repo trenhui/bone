@@ -6,7 +6,7 @@ import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.gateway.TenantProvider;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.order.OrderItem;
-import com.bone.blueprint.domain.order.OrderItemRepository;
+import com.bone.blueprint.domain.repository.OrderItemRepository;
 import com.bone.blueprint.domain.repository.OrderRepository;
 import com.bone.blueprint.domain.shared.valueobject.Money;
 import com.bone.core.capability.Capability;
@@ -56,20 +56,20 @@ public class CreateOrderCommandHandler {
    * </ul>
    */
   @Transactional
-  public Long handle(CreateOrderCommand cmd) {
-    for (CreateOrderCommand.OrderItemDto dto : cmd.items()) {
+  public Long handle(CreateOrderCommand command) {
+    for (CreateOrderCommand.OrderItemDto dto : command.items()) {
       if (!inventoryGateway.checkStock(dto.productId(), dto.quantity())) {
         throw BizException.of("商品库存不足: " + dto.productId());
       }
     }
 
-    // 构造期预分配 id 仅用于建模：持久化层 insert 时会重新分配主键并覆盖该值，
-    // 故一切外键/事件引用都必须在订单落库后以 order.getId() 为准（明细 order_id 同理）。
+    // 身份在构造期确定（ADR-0019 目标态）：SDK 尊重调用方预分配的非空 id，落库后 id 不变，
+    // 因此明细外键与事件载荷可直接使用该 id，无需在落库后回填。
     long provisionalOrderId = DistributedIdGenerator.generateLongId();
     long tenantId = tenantProvider.currentTenantId();
 
     List<OrderItem> items =
-        cmd.items().stream()
+        command.items().stream()
             .map(
                 dto ->
                     OrderItem.create(
@@ -81,7 +81,7 @@ public class CreateOrderCommandHandler {
                         dto.unitPrice()))
             .collect(Collectors.toList());
 
-    Order order = Order.create(provisionalOrderId, tenantId, cmd.customerId(), items);
+    Order order = Order.create(provisionalOrderId, tenantId, command.customerId(), items);
 
     // 扩展点定价由应用层编排：算出最终金额后交给聚合，聚合不感知扩展点接口（领域层只认 Money）
     OrderPriceCalculator.OrderPriceRequest pricingRequest =
@@ -102,17 +102,14 @@ public class CreateOrderCommandHandler {
       order.applyPricing(Money.of(priceCalculator.calculate(pricingRequest)));
     }
 
+    // ADR-0019 已落地：SDK 的 insert/save 对非空主键「空才生成、非空则尊重」，
+    // 故预分配的 id 在落库后保持不变，无需再回填身份或重建事件（原 rebindPersistedIdentity 已删除）。
     orderRepository.save(order);
-    // 落库后取回真实主键：insert 会重新分配并覆盖构造期预分配的 id，因此必须用落库后的 id
-    // 校正身份与领域事件（create 阶段事件携带的是已被丢弃的预分配 id）。
     Long persistedOrderId = order.getId();
-    order.rebindPersistedIdentity(persistedOrderId);
 
     // 明细无级联：须显式逐条持久化，否则 t_order_item 永不写入、下游库存预留静默失效。
-    // 且明细 order_id 必须先回填落库后的真实订单 id——构造期绑定的是会被覆盖的预分配 id，
-    // 直接用会让明细指向不存在的订单（孤儿行），findOrderWithItems 读不到明细。
+    // 明细 order_id 与订单 id 同源（构造期预分配值即最终值），无需二次绑定。
     for (OrderItem item : items) {
-      item.rebindOrderId(persistedOrderId);
       orderItemRepository.save(item);
     }
     domainEventPublisher.publishFrom(order);

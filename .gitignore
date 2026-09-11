@@ -161,6 +161,31 @@ Thumbs.db
 # 本地覆盖契约
 .claude/contracts/*.local.yaml
 
+# AI 工具本地目录与技能（不入库；已入库的仓库资产不受影响）
+.codebuddy/
+.specstory/
+.trae/
+.agents/
+.comet/
+.reasonix/
+.semgrep/
+.workbuddy/
+.wpscomate/
+.codegraph/
+.readme-render/
+canvases/
+.cursorrules
+.cursorindexingignore
+# .claude/ 含仓库资产（agents/、commands/ 已跟踪），仅忽略本地新增子项
+.claude/commands/opsx/
+.claude/rules/
+.claude/skills/openspec-*/
+# .github/skills 经确认无用，防再生成误提交
+.github/skills/
+# 本地工具配置（Reasonix 权限 / 技能锁），不入库
+reasonix.toml
+skills-lock.json
+
 # 运行时生成文件
 generated/
 *.tmp

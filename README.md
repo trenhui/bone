@@ -6,20 +6,22 @@
 ![License](https://img.shields.io/badge/license-MIT-yellow.svg)
 ![JDK](https://img.shields.io/badge/JDK-17+-orange.svg)
 
-> **100% 开源免费 · 元数据驱动 · 四大引擎协同**  
-> **「构建可复用的系统，创造可持续的价值。」** —— 梅山
+> **100% 开源免费 · 元数据驱动 · 四大能力协同**
+> **构建可复用的系统，支撑可持续演进。**
 
 ---
+
+> **开源承诺**：本仓库全部代码以 [MIT](LICENSE) 协议开源、免费使用（含生产环境）。文中提及的「商业版」为未来 **服务形态** 规划（SLA 保障、技术支持等），不改变代码的开源属性。
 
 ## 阅读指引
 
 | 你想了解… | 建议阅读 |
 |-----------|----------|
-| **产品理念、四大引擎与未来能力** | 本文（愿景与路线图） |
+| **产品定位、当前能力与演进方向** | 本文 |
 | **工程实现、API、DDL、本地调试** | [doc/README.md](doc/README.md) → [架构规范](doc/architecture/README.md) · [本地构建](doc/wiki/03-本地开发与构建.md) |
 | **AI 助手 / 贡献者门禁** | [AGENTS.md](AGENTS.md) · [CONTRIBUTING.md](CONTRIBUTING.md) |
 
-**说明**：本文侧重 **理念正确性与演进方向**；具体接口、表结构、端口以仓库内 `doc/` 与 OpenAPI 为准，并随版本持续落地。
+**说明**：本文用于快速了解项目，不代替详细设计。具体接口、表结构、端口和实现状态以 `doc/`、OpenAPI 与代码为准。
 
 ---
 
@@ -28,14 +30,15 @@
 - [项目概述](#项目概述)
 - [设计原则](#设计原则)
 - [核心价值](#核心价值)
-- [四大核心引擎](#四大核心引擎)
-- [协同架构与代码生成](#协同架构与代码生成)
+- [四大能力域](#四大能力域)
+- [协同架构](#协同架构)
 - [技术路线](#技术路线)
 - [演进路线](#演进路线)
 - [快速体验](#快速体验)
-- [目标效能（规划方向）](#目标效能规划方向)
+- [预期收益与验证方式](#预期收益与验证方式)
 - [文档与社区](#文档与社区)
 - [常见问题](#常见问题)
+- [License](#license)
 
 ---
 
@@ -43,22 +46,24 @@
 
 Bone 以 **「Build Once, Natively Everywhere」** 为长期愿景：用**统一元数据**描述业务，用**标准化引擎**承载主数据、扩展与集成，让企业应用从「项目制重复建设」走向「平台化持续演进」。
 
-当前仓库是这一愿景的 **开源参考实现与持续迭代载体**——部分能力已可运行，更多能力在 [演进路线](#演进路线) 中按阶段交付。
+在领域划分上，**元数据 / 建模是核心域**；主数据、扩展和集成是支撑域。四者协同，但不意味着每个域都采用相同的实现方式或独立部署。
+
+当前仓库是这一愿景的开源参考实现：元数据双模式、IAM、主数据、扩展管理和集成等能力已有可运行实现，完整度各不相同；尚未落地的能力在本文中明确标为“规划”或“目标”。
 
 ---
 
 ## 设计原则
 
-以下原则指导架构与产品决策，**不因某一版本实现进度而削弱**：
+以下原则用于指导架构与产品决策：
 
 1. **元数据先行（Metadata-First）**  
-   业务实体、字段、关系、规则应尽量可配置、可版本化，减少硬编码 CRUD 与散落 DDL。
+   业务实体、字段、关系和规则尽量可配置、可版本化；复杂领域逻辑仍保留显式代码，避免为“可配置”牺牲可维护性。
 
 2. **开闭原则（ExtPoint）**  
    核心流程稳定；行业差异、客户定制通过扩展点与插件注入，避免 fork 主干。
 
 3. **单一可信数据源（Master Data）**  
-   客户、组织、物料等核心对象集中治理，对外以 API/SDK 消费，消除多系统副本不一致。
+   客户、组织、物料等核心对象形成权威主数据和统一视图，通过 API/SDK 分发并治理副本一致性。
 
 4. **契约化集成（Integration）**  
    异构系统通过连接器与可编排流程对接；协议适配、幂等、重试、可观测性为一等公民。
@@ -66,8 +71,8 @@ Bone 以 **「Build Once, Natively Everywhere」** 为长期愿景：用**统一
 5. **契约化 API（API-First）**  
    对外统一 `/api/v1/{domain}/**`；错误码、日志、多租户见 [Bone-API-规范](doc/architecture/Bone-API-规范.md)。
 
-6. **工程诚实（Implement in Public）**  
-   愿景写在 README/PRD；落地状态见 [P0 看板](doc/wiki/07-P0-TODO看板.md) 与各模块详设中的 As-Is 标注。
+6. **实现状态可追溯**
+   README 只做概览；落地状态以 [P0 看板](doc/wiki/07-P0-TODO看板.md)、模块详设和测试为准。
 
 ---
 
@@ -76,43 +81,43 @@ Bone 以 **「Build Once, Natively Everywhere」** 为长期愿景：用**统一
 ### 开发效率
 
 - **元数据驱动**：一次建模，驱动数据结构与访问行为；减少重复 CRUD 与样板工程。
-- **双模式交付**（智能元数据引擎核心主张，见下节）：
-  - **模式 A · 生成式**：`sdk` + `server` + [studio-generator](bone-engine/studio-generator/) → 可编译源码进 Git（对标 OutSystems / JHipster）。
-  - **模式 B · 运行时**：`sdk` + [bone-metadata-engine](bone-engine/bone-metadata-engine/) → 按元数据直接提供动态数据访问，**标准场景可不再生成业务 CRUD 代码**（对标 Salesforce 声明式运行时 / Mendix 默认解释执行）。
+- **双模式交付**：按场景选择 **模式 A · 生成式**（源码进 Git，可审计）或 **模式 B · 运行时**（动态 CRUD/API，减少标准代码生成）。详细对比见 [智能元数据引擎](#智能元数据引擎smart-metadata-engine)。
 - **多端统一（愿景）**：一次建模，适配 Web 管理端、移动端 App、小程序——**Web 微前端（Qiankun）为当前主线**，移动端为规划路线。
 
 ### 企业级能力
 
-- **RBAC + 多租户**：行列级权限、租户隔离、SSO（按阶段交付）。
-- **分布式一致性**：跨服务场景采用 Seata（AT/TCC）等方案（平台化集成中）。
-- **可观测性**：链路追踪、指标、审计日志（SkyWalking / Micrometer 等为技术选型方向）。
+- **身份与隔离**：RBAC、JWT 和租户上下文已形成基础能力；列级权限、SSO/MFA 按阶段完善。
+- **一致性策略**：优先使用本地事务、幂等和 Outbox；确需跨服务强一致时再评估 Seata（AT/TCC）。
+- **可观测性**：审计日志和部分指标已落地；链路追踪与统一监控仍在演进。
 
 ---
 
-## 四大核心引擎
+## 四大能力域
 
-Bone 以 **「数据 → 质量 → 功能 → 生态」** 组织四大引擎。下列能力为 **产品目标全集**；实现节奏见各引擎仓库与 [元数据能力对照](doc/design/modules/元数据能力-实现映射与竞品对照.md)。
+Bone 由一个核心域和三个支撑域组成。下文同时标注当前实现与演进目标，避免把路线图当成现状。模块关系见 [元数据能力对照](doc/design/modules/元数据能力-实现映射与竞品对照.md)。
 
 ### 智能元数据引擎（Smart Metadata Engine）
 
-**定位**：平台的「数字大脑」——用 **统一元模型（catalog + EAV）** 描述业务，并支持 **两种等价交付哲学**（可并存、按场景选型）：
+**定位**：平台核心域。用 **统一元模型（catalog + EAV）** 描述业务，并提供两种互补的交付模式：
 
-| 模式 | 一句话 | 主要模块 | 业界参照 |
-|------|--------|----------|----------|
-| **A · 生成式交付** | 元数据 → **生成** 可审计源码 → 编译部署 | `bone-metadata-sdk` + `bone-metadata-server` + **studio-generator** | OutSystems、JHipster、Salesforce DX |
-| **B · 运行时元数据面** | 元数据 → **解释执行** 动态 CRUD/API，无需为每个实体生成 Controller | `bone-metadata-sdk` + **bone-metadata-engine**（+ server 作控制面） | Salesforce 标准对象运行时、Mendix 默认运行时、Directus / Hasura 元数据 API |
+> 术语速览：**catalog**＝实体、字段和关系的登记册；**EAV**＝以“属性—值”记录扩展字段，无需为每个扩展字段修改业务表；**SmartQL**＝面向元模型的查询语言；**逃逸舱**＝标准能力覆盖不到时改用生成代码或手写代码。
+
+| 模式 | 处理方式 | 适用场景 | 主要模块 |
+|------|----------|----------|----------|
+| **A · 生成式交付** | 元数据 → 生成可审计源码 → 编译部署 | 复杂领域逻辑、源码审计、深度定制 | `bone-metadata-sdk` + `bone-metadata-server` + `studio-generator` |
+| **B · 运行时元数据面** | 元数据 → 运行时解释 → 动态 CRUD/API | 配置型实体、运营后台、SaaS 标准对象 | `bone-metadata-sdk` + `bone-metadata-engine` + `bone-metadata-server` |
 
 ```text
                     ┌── 模式 A：生成式（当前主线）
   meta_* 模型 ──────┤     server(catalog) → generator → Java/TS 工程 → sdk 仓储绑定物理表
                     │
-                    └── 模式 B：运行时（战略方向）
+                    └── 模式 B：运行时（MVP 已交付，能力演进中）
                           server(catalog) → engine → 动态 REST / SmartQL → sdk 直接读写库
 ```
 
-**模式 A（生成式）** — 适合：信创/审计要求 **源码入库**、复杂领域逻辑在 Java 中手写、ArchUnit 分层门禁、与 ExtPoint 深度织入。
+**模式 A（生成式）** — 适合要求源码入库、包含复杂领域逻辑或需要与 ExtPoint 深度结合的场景。
 
-**模式 B（运行时）** — 适合：运营后台、配置型实体、多租户 SaaS 标准对象；**引擎成熟后，标准 CRUD 不再依赖 studio-generator**；生成器收窄为「逃逸舱」（DDD 骨架、集成桩、一次性迁移）。
+**模式 B（运行时）** — 适合运营后台、配置型实体和多租户 SaaS 标准对象。**当前状态**：动态记录读写 MVP 已交付（`JdbcRuntimeRecordService` + `/api/v1/runtime/entities/{code}/records`，网关路由已配置，见 [P0 看板 META-002B](doc/wiki/07-P0-TODO看板.md)）；模型发布、热加载和低停机变更仍在演进。模式 B 成熟后，标准 CRUD 可不依赖生成器；生成器继续承担 DDD 骨架和深度定制代码的生成。
 
 **共享能力（两模式共用）**：
 
@@ -120,12 +125,12 @@ Bone 以 **「数据 → 质量 → 功能 → 生态」** 组织四大引擎。
 |----------|------|
 | 平台数据面 | **bone-metadata-sdk**：仓储、EAV 扩展字段、多数据源方言（模式 B 的 JDBC 执行底座） |
 | 建模控制面 | **bone-metadata-server**：catalog REST + 扩展字段 API（`:9001`） |
-| 规则与动态访问 | **bone-metadata-engine**：表达式/校验/SmartQL/动态 CRUD（模式 B 核心，逐步替代「为每张表生成代码」） |
+| 规则与动态访问 | **[bone-metadata-engine](bone-engine/bone-metadata-engine/)**：表达式/校验/SmartQL/动态 CRUD（模式 B 核心，逐步替代「为每张表生成代码」） |
 | 权限与多租户 | 元数据绑定行级租户、列级规则（两模式统一策略） |
 | 运行时演进 | 模型发布、热加载、低停机变更（引擎 + 发布流程分阶段实现） |
-| 交付模式标注 | `meta_entity.delivery_mode`：`GENERATIVE` / `RUNTIME`（**As-Is** 已落库） |
+| 交付模式标注 | `meta_entity.delivery_mode`：`GENERATIVE` / `RUNTIME`（当前已落库） |
 
-**工程锚点**：`bone-metadata-sdk` · `bone-metadata-server` · `bone-metadata-engine` · `studio-generator`（模式 A）· `bone-metadata-app` · `bone-generator-app`
+**相关代码**：[`bone-engine/bone-metadata-sdk`](bone-engine/bone-metadata-sdk/) · [`bone-engine/bone-metadata-server`](bone-engine/bone-metadata-server/) · [`bone-engine/bone-metadata-engine`](bone-engine/bone-metadata-engine/)（模式 B） · [`bone-engine/studio-generator`](bone-engine/studio-generator/)（模式 A） · 前端 [bone-metadata-app](bone-frontend/apps/bone-metadata-app/) · [bone-generator-app](bone-frontend/apps/bone-generator-app/)
 
 > 能力对照与竞品：[元数据能力-实现映射与竞品对照](doc/design/modules/元数据能力-实现映射与竞品对照.md) §1.3、§3.3
 
@@ -133,17 +138,14 @@ Bone 以 **「数据 → 质量 → 功能 → 生态」** 组织四大引擎。
 
 ### 企业主数据平台（Master Data Platform）
 
-**定位**：核心主数据的 **唯一可信源（Single Source of Truth）**。
+**定位**：形成核心主数据的权威记录与统一视图。
 
-| 能力方向 | 说明 |
-|----------|------|
-| 全品类治理 | 客户、供应商、物料、组织、产品等标准编码与字典 |
-| 数据血缘 | 来源、转换、消费全链路可视化与追溯 |
-| 质量管控 | 格式/唯一性/关联性校验，清洗与质量评分 |
-| 服务化交付 | 标准 REST/SDK，避免各系统冗余落库 |
-| 数据资产目录 | 资产全景、归属、用途与合规标注 |
+| 状态 | 能力 |
+|------|------|
+| **当前实现** | 主数据实体与记录管理、业务实体转换、JSON 导出、质量报告查询 |
+| **演进目标** | 多品类治理、血缘追踪、清洗与质量评分、数据资产目录、标准 API/SDK 分发 |
 
-**工程锚点**：`bone-platform/bone-masterdata` · `bone-masterdata-app`
+**相关代码**：[`bone-platform/bone-masterdata`](bone-platform/bone-masterdata/) · [`bone-masterdata-app`](bone-frontend/apps/bone-masterdata-app/)
 
 ---
 
@@ -151,17 +153,14 @@ Bone 以 **「数据 → 质量 → 功能 → 生态」** 组织四大引擎。
 
 **定位**：在 **不修改核心代码** 的前提下生长业务能力。
 
-| 能力方向 | 说明 |
-|----------|------|
-| 标准化扩展点 | 前置/后置/环绕；订单、审批、支付等关键钩子 |
-| 插件生命周期 | 注册、安装、升级、卸载与热部署 |
-| 依赖与隔离 | 版本治理、类加载沙箱 |
-| 扩展可观测 | 调用量、耗时、异常与链路 |
-| 动态参数 | 运行时调整规则阈值与流程节点 |
+| 状态 | 能力 |
+|------|------|
+| **当前实现** | 扩展点路由与缓存、表达式匹配、执行防护；Studio CRUD、版本、部署与回滚 |
+| **演进目标** | 更完整的插件生命周期、制品隔离、沙箱执行、调用链观测和动态参数治理 |
 
 **典型场景**：促销叠加、政务会签、行业 BOM 等。
 
-**工程锚点**：`bone-extension-sdk` · `bone-extension-studio` · `bone-extension-app`
+**相关代码**：[`bone-engine/bone-extension-engine/bone-extension-sdk`](bone-engine/bone-extension-engine/bone-extension-sdk/) · [`bone-engine/bone-extension-engine/bone-extension-studio`](bone-engine/bone-extension-engine/bone-extension-studio/) · 前端 [bone-extension-app](bone-frontend/apps/bone-extension-app/)
 
 ---
 
@@ -169,15 +168,15 @@ Bone 以 **「数据 → 质量 → 功能 → 生态」** 组织四大引擎。
 
 **定位**：打通 ERP / CRM / OA / 协作与消息系统，构建企业数字生态链。
 
-| 能力方向 | 目标 | As-Is（当前仓库） |
+| 能力方向 | 目标 | 当前状态 |
 |----------|------|-------------------|
 | 多协议 | REST、gRPC、SOAP、Kafka、MQTT、JDBC 等 | **REST/HTTP** 已实现；FTP/JDBC/MQ 返回 501 |
 | 连接器工厂 | 标准化连接器 | CRUD + 连接测试（`int_connector`） |
 | 流程编排 | 分支、并行、循环 | **线性** START→HTTP→END（INT-09） |
-| 可靠性 | TCC/重试/幂等/死信 | 执行日志 + 领域事件；MQ Outbox 见 INT-10 |
-| Camel 编排 | 可视化 DSL 执行 | HTTP 组件已迁入平台；完整编译见 INT-11 |
+| 可靠性 | TCC/重试/幂等/死信 | 执行日志 + 领域事件 + **MQ Outbox 中继**（INT-10 已交付，默认落日志，开启 `BONE_INTEGRATION_OUTBOX_MQ_ENABLED` 中继 RocketMQ） |
+| Camel 编排 | 可视化 DSL 执行 | **Camel 编译器已交付**（INT-11）：`int_flow_node` 图 DSL → Camel 路由（choice/multicast）；默认执行仍为线性（INT-09），Camel 执行经 `integration.camel.execution-enabled` 启用 |
 
-**工程锚点**（唯一集成服务，勿与已移除的 engine 模块混淆）：
+**相关代码**（唯一集成服务，勿与已移除的 engine 模块混淆）：
 
 - 后端：[`bone-platform/bone-integration`](bone-platform/bone-integration/)（Maven 构件 `bone-platform-integration`，默认 `:8085`）
 - 前端：[`bone-integration-app`](bone-frontend/apps/bone-integration-app/)（`:3006`，经 Shell `:3000` 加载）
@@ -188,75 +187,26 @@ Bone 以 **「数据 → 质量 → 功能 → 生态」** 组织四大引擎。
 
 ## 协同架构
 
-四大引擎在逻辑上形成闭环；智能元数据引擎在 **模式 A（生成）** 与 **模式 B（运行时）** 之间提供两条「从模型到可运行系统」的路径：
+四大能力域在逻辑上相互支撑；智能元数据引擎通过 **模式 A（生成）** 与 **模式 B（运行时）** 提供两条「从模型到可运行系统」的路径。下图表示能力分层关系，不是数据处理流水线：
 
-```text
-智能元数据引擎 ──► catalog / EAV 元模型（「是什么」）
-        │
-        ├─[模式 A]─► studio-generator ──► 源码工程（Git 可审计）
-        │
-        └─[模式 B]─► metadata-engine ──► 动态 API / SmartQL（免生成标准 CRUD）
-        │
-        ▼
-企业主数据平台 ──► 核心数据一致与质量（「准、全、可信」）
-        │
-        ▼
-ExtPoint 扩展引擎 ──► 个性化逻辑插件化（「怎么差异化」）
-        │
-        ▼
-集成引擎 ──► 连接外部系统（「和谁交互」）
-        │
-        ▼
-企业级数字化平台（Web 控制台 · 未来多端）
-```
+![能力分层协同架构](doc/design/readme-architecture-layers.svg)
 
-- **数据层**：元数据定结构，**sdk** 统一持久化；主数据保质量。  
-- **交付层**：简单域走 **模式 B**；强定制/合规域走 **模式 A**；可混合（同一企业不同系统）。  
-- **功能层**：扩展引擎承载变化，减少主干重构。  
-- **生态层**：集成引擎消除孤岛。
-
-> **物理部署**：集成能力由 **单一进程** `bone-platform/bone-integration` 承载（非独立 engine 服务）。当前执行为 **INT-09 同步线性**（`LinearSyncFlowRuntime`）；Camel 图编排（INT-11）与 MQ 事件（INT-10）按看板分阶段接入。
+> **物理部署**：集成能力由 **单一进程** `bone-platform/bone-integration` 承载（非独立 engine 服务）。执行运行时：**INT-09 同步线性**（`LinearSyncFlowRuntime`）已可用；**INT-11 Camel 编译器**（`CamelFlowCompiler`）与 **INT-10 MQ Outbox** 均已交付，Camel 执行与 MQ 中继分别经 `integration.camel.execution-enabled` / `BONE_INTEGRATION_OUTBOX_MQ_ENABLED` 启用（见 [集成 README](bone-platform/bone-integration/README.md)）。
 
 ---
 
 ## 技术路线
 
-采用 **「主线已选型 + 平台化演进」** 表述，避免将规划中的组件写成已全部落地。
+| 层面 | 当前主线 | 演进方向 |
+|------|----------|----------|
+| 后端 | Java 17、Spring Boot 3.2、DDD + CQRS | 持续强化模块边界与契约测试 |
+| 数据 | Bone Metadata SDK、MySQL、Redis | 元数据发布、热加载与低停机变更 |
+| API 与安全 | REST、OpenAPI、Spring Security、JWT、Gateway | 更细粒度权限与统一治理 |
+| 集成与可靠性 | HTTP、Camel 编译器、Outbox；RocketMQ 可选 | 更多连接器、流程运行时和可观测性 |
+| 前端 | React 18、TypeScript、Vite 5、Ant Design 5、Qiankun | 模型驱动复用与多端适配 |
+| 工程质量 | Spotless、ArchUnit、ESLint、Prettier、Vitest | 提升自动化测试和基准覆盖 |
 
-### 后端（主线 · 持续强化）
-
-| 领域 | 技术方向 |
-|------|----------|
-| 应用框架 | Java 17 · Spring Boot 3.2 · DDD + CQRS 分层 |
-| 数据访问 | **Bone Metadata SDK**（动态仓储/EAV） |
-| 缓存 | Redis · Redisson · Caffeine |
-| 安全 | Spring Security · JWT · 多租户上下文 |
-| API | REST · OpenAPI · 统一 `/api/v1/{domain}` |
-| 网关 | Spring Cloud Gateway（`bone-gateway`） |
-
-### 后端（平台化 · 规划集成）
-
-| 领域 | 技术方向 |
-|------|----------|
-| 服务治理 | Nacos（注册/配置）· Sentinel（流控/熔断） |
-| 消息 | RocketMQ（事务消息、异步解耦） |
-| 分布式事务 | Seata（AT/TCC） |
-| 可观测 | SkyWalking · Micrometer · Prometheus |
-
-### 前端（主线 · 持续强化）
-
-| 领域 | 技术方向 |
-|------|----------|
-| 管理端 | React 18 · TypeScript · Vite 5 · Ant Design 5 |
-| 微前端 | Qiankun · `bone-shell` + 领域微应用 |
-| 质量 | ESLint · Prettier · Vitest |
-
-### 前端（多端 · 规划）
-
-| 领域 | 技术方向 |
-|------|----------|
-| 移动端 | React Native · Expo（与元数据模型共享） |
-| 小程序 | 基于统一 API 的轻量端（规划） |
+Nacos、Sentinel、Seata、SkyWalking 等保留为按部署规模评估的技术选项，不作为所有场景的默认依赖。
 
 ---
 
@@ -264,12 +214,11 @@ ExtPoint 扩展引擎 ──► 个性化逻辑插件化（「怎么差异化」
 
 | 阶段 | 定位 | 重点 |
 |------|------|------|
-| **现在** | Build Once, Natively Everywhere | 元数据 **模式 A**（sdk + server + generator）+ 四大引擎骨架；catalog/EAV、IAM、主数据、扩展、集成可运行 |
-| **1–2 年** | Business Oriented Native Engine | **模式 B** 落地：engine 驱动标准动态 CRUD，生成器收窄；连接器、血缘、热更新、行业模板 |
-| **2–3 年** | 行业方案规模化 | 政务/制造/零售等套件；多端生成与运行时；生态插件市场 |
-| **长期** | Base of Next Enterprise | 企业级开发事实标准；开放联盟与认证体系 |
+| **当前基线** | Build Once, Web First | 模式 A + 模式 B 运行时 MVP；catalog/EAV、IAM、主数据、扩展、集成已有可运行实现 |
+| **下一里程碑** | 强化运行时与工程闭环 | 模型发布/热加载、连接器扩展、数据血缘、统一可观测性和端到端验收 |
+| **后续方向** | 行业与多端复用 | 行业模板、多端适配、插件生态；以真实项目验证后逐步交付 |
 
-交付节奏与工程债：[doc/wiki/07-P0-TODO看板.md](doc/wiki/07-P0-TODO看板.md)。
+具体排期不在 README 承诺；交付状态与工程债见 [P0 看板](doc/wiki/07-P0-TODO看板.md) 和各模块详设。
 
 ---
 
@@ -277,13 +226,19 @@ ExtPoint 扩展引擎 ──► 个性化逻辑插件化（「怎么差异化」
 
 面向贡献者与评估者的 **最小路径**（完整端口见 [本地开发与构建](doc/wiki/03-本地开发与构建.md)）。
 
+**运行时拓扑**（本地快速体验的最小形态；端口真源为各模块 `application.yml`，含网关 `:8888`）：
+
+![运行时拓扑](doc/design/readme-runtime-topology.svg)
+
 ### 环境要求
 
-JDK 17+ · Maven 3.8+ · Node.js 18+ · MySQL 8+ · Git（Redis 按模块需要）
+JDK 17+ · Maven 3.8+ · Node.js 18+ · MySQL 8+ · Redis 7.x（IAM 登录必需） · Git
 
-### 环境变量（可选）
+### 常用环境变量
 
 `BONE_DB_URL` · `BONE_DB_USERNAME` · `BONE_DB_PASSWORD` · `BONE_SERVER_PORT` · `BONE_GATEWAY_PORT`
+
+> `BONE_DB_PASSWORD` 需与 MySQL root 口令一致。IAM、元数据服务等数据库客户端需要该变量；网关不连接数据库。环境变量只在当前终端及其子进程中生效，另开终端时需重新设置。
 
 ### 步骤
 
@@ -291,56 +246,62 @@ JDK 17+ · Maven 3.8+ · Node.js 18+ · MySQL 8+ · Git（Redis 按模块需要�
 git clone https://gitee.com/meishan315/bone.git
 cd bone
 
-# 数据库（DDL 真源：bone-init.sql）
-mysql -u root -p < bone-init.sql
+# 统一口令：与 MySQL root 保持一致；新终端需再次执行
+export BONE_DB_PASSWORD=bone_dev_pass
+
+# 数据库 + 缓存（方式一：docker compose，首次启动自动导入 bone-init.sql）
+docker compose up -d mysql redis
+# 方式二：自备 MySQL/Redis——先手动导 DDL：mysql -u root -p < bone-init.sql
 
 # 后端（全量；仅验集成可用下一行子集）
 mvn clean install -DskipTests
 # mvn clean install -pl bone-platform/bone-integration -am -DskipTests
 
-# IAM（示例）
-cd bone-platform/bone-iam && mvn spring-boot:run
+# IAM（新终端；先重新 export BONE_DB_PASSWORD）
+export BONE_DB_PASSWORD=bone_dev_pass
+cd bone-platform/bone-iam && mvn spring-boot:run -Dspring-boot.run.profiles=dev
+
+# 网关（新终端；shell 前端代理指向 :8888，不启动则登录失败）
+cd bone-platform/bone-gateway && mvn spring-boot:run
 
 # 集成（可选，另开终端；经网关访问见下表）
 # cd bone-platform/bone-integration && mvn spring-boot:run
 
-# 前端 Shell（新终端）
+# 前端 Shell（新终端；仅启动 Shell，功能页需再启动对应微应用）
 cd bone-frontend && npm ci && npm run dev
 ```
-
-可选：`docker compose up -d` 启动 MySQL/Redis（见根目录 `docker-compose.yml`）。
 
 ### 默认入口（本地）
 
 | 入口 | 地址 |
 |------|------|
 | 管理后台 Shell | http://localhost:3000 |
-| 集成微前端 | http://localhost:3006（Qiankun 子应用，亦可从 Shell 菜单进入） |
+| 集成微前端 | http://localhost:3006（需单独启动 `bone-integration-app`，亦可从 Shell 菜单进入） |
 | API 网关（推荐） | http://localhost:8888/api/v1/... |
 | IAM | http://localhost:8081 |
 | 集成 API（直连） | http://localhost:8085/api/v1/integration/... |
 | 元数据服务 | http://localhost:9001 |
+| Studio 生成器 | http://localhost:8086（模式 A 代码生成） |
 
-- **端口冲突**：`bone-platform/bone-integration` 与 `bone-engine/studio-generator` 默认均为 **8085**，同机调试只启其一或改 `server.port` / `BONE_SERVER_PORT`，详见 [本地开发与构建](doc/wiki/03-本地开发与构建.md)
+- **端口速查**：integration `:8085` · studio-generator `:8086` · metadata-server `:9001`，无占用即可并行启动；各模块端口真源为各自 `application.yml` 与 [本地开发与构建](doc/wiki/03-本地开发与构建.md)
 - 默认账号：`admin` / `123456`（首次登录请修改；与 `bone-init.sql` 一致）
+- **口令对齐**：MySQL root 密码由 `BONE_DB_PASSWORD` 注入 docker compose 与 IAM dev profile。若数据卷已使用默认值 `bone_root_pass` 初始化，需在 IAM 所在终端设置 `BONE_DB_PASSWORD=bone_root_pass`
 - DDL 策略：改 [bone-init.sql](bone-init.sql) 后重建库，见 [数据库开发规范](doc/architecture/数据库开发规范.md)
 - 仓库中**无** `bone-admin` 模块；在线演示环境以社区公告为准
 
 ---
 
-## 目标效能（规划方向）
+## 预期收益与验证方式
 
-以下为 **产品设计目标**，用于对齐建设优先级，非对外 SLA 承诺；落地后将以客户案例与基准测试补充数据。
+以下收益是产品假设，不是当前版本的 SLA。项目将通过可复现的基准、交付记录和线上指标验证，避免用缺少样本的百分比或工期承诺替代证据。
 
-| 维度 | 传统模式痛点 | Bone 目标 |
-|------|----------------|-----------|
-| 新功能交付 | 2–3 周编码+联调 | 元数据配置 + 生成，**天级** 可演示 |
-| 多端 | 多套代码分别维护 | **一次建模**，多端生成与同步 |
-| 集成 | 点对点定制、成本高 | 连接器 + 可视化编排，显著降低人天 |
-| 数据治理 | 分散核对、质量不可控 | 统一主数据与质量规则 |
-| 架构演进 | 大版本重构、停服风险 | 元数据驱动渐进式演进 |
-
-> **说明**：以下为产品设计目标，非当前实测 SLA 承诺。当前无压测基线，落地后将以基准测试补充数据。SLA 按环境/版本分级：开发环境无 SLA 保证；社区版生产环境 99.5% 可用性、P99 < 2s、100 并发；商业版 99.9% 可用性、P99 < 500ms、1000 并发（[Target]）。详见 [PRD §5.1–5.2](doc/prd/BONE产品需求文档正式版.md)。
+| 假设 | 验证指标 |
+|------|----------|
+| 元数据双模式减少标准 CRUD 样板 | 同等实体的手写代码量、交付周期、变更失败率 |
+| 统一模型降低多端重复维护 | 模型复用率、重复字段/接口数量、跨端一致性缺陷 |
+| 连接器与流程编排降低点对点集成成本 | 单条集成链路人天、复用连接器比例、重试成功率 |
+| 主数据治理改善数据质量 | 重复率、完整率、规则通过率、问题闭环时长 |
+| 扩展点降低客户化分支成本 | 主干侵入修改量、插件升级成功率、回滚时长 |
 
 ---
 
@@ -371,20 +332,10 @@ cd bone-frontend && npm ci && npm run dev
 
 ---
 
-## 平台愿景
-
-Bone 致力于成为企业数字化转型的 **核心基础设施**：以四大引擎协同，覆盖从数据治理、业务构建到系统集成与扩展的全链路，帮助企业获得 **稳定、可演进、可生态化** 的架构底座。
-
-> **「好的架构，让复杂归于简单；好的开源，让价值自由流动。」** —— 梅山
-
-*元数据驱动 · 一次构建 · 原生体验*
-
----
-
 ## 常见问题
 
 **Q: README 写的功能和代码不一致？**  
-A: 本文描述 **目标架构与路线图**；当前迭代范围见 [P0 看板](doc/wiki/07-P0-TODO看板.md) 与各模块详设。欢迎通过 Issue 参与共建。
+A: README 同时包含当前能力和演进方向，并明确标注两者边界。若概览与代码不一致，以 OpenAPI、代码和测试为准，并通过 Issue 或 PR 修正文档。
 
 **Q: 启动失败？**  
 A: 确认 JDK 17+、MySQL 已导入 `bone-init.sql`、端口无冲突；详见 [本地开发与构建](doc/wiki/03-本地开发与构建.md)。
@@ -398,5 +349,14 @@ A: 仅 **`bone-platform/bone-integration`**（构件 `bone-platform-integration`
 **Q: 如何开发扩展插件？**  
 A: 见 [扩展引擎使用指南](bone-engine/bone-extension-engine/docs/使用指南.md) 与 `bone-extension-sdk` 示例。
 
+**Q: 有可参考的 DDD 工程样板吗？**  
+A: [`bone-blueprint/`](bone-blueprint/) 是官方 DDD 参考实现（订单示例，`:8082`，ArchUnit 门禁 0 违规），新模块建议对照组织代码；另有 Go 对照实现 [`bone-engine/go-engine/`](bone-engine/go-engine/)（实验性）。
+
 **Q: 生产部署？**  
 A: 各模块 Spring Boot 可执行 JAR + 网关；环境变量见 [config/env/README.md](config/env/README.md)。完整生产指引将随 `doc/deployment/` 持续补充。
+
+---
+
+## License
+
+本项目基于 [MIT](LICENSE) 协议开源，可免费商用；授权与版权声明以 LICENSE 文件为准。

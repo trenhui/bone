@@ -1,6 +1,6 @@
 {
   "module": "metadata",
-  "generated_at": "2026-05-28T02:36:14Z",
+  "generated_at": "2026-09-11T01:31:15Z",
   "as_is": [
     {
       "id": "meta-ddl-five-tables",
@@ -313,7 +313,8 @@
           "meta_field_version": true
         },
         "java": [
-          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaFieldCatalogController.java"
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/adapter/web/controller/MetaFieldCatalogController.java",
+          "bone-engine/bone-metadata-server/src/main/java/com/bone/metadata/catalog/application/command/cmd/CreateMetaFieldCommand.java"
         ]
       }
     }

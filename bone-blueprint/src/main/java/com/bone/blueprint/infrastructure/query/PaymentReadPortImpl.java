@@ -19,14 +19,18 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class PaymentReadPortImpl implements PaymentReadPort {
 
+  private static final String COLUMNS =
+      "tenant_id, id, order_id, customer_id, amount, channel, status, channel_trade_no, "
+          + "pay_url, paid_at, refunded_at, refund_amount, created_at";
+
   private final NamedParameterJdbcTemplate jdbcTemplate;
 
   @Override
   public Optional<PaymentRow> findById(long tenantId, long paymentId) {
     String sql =
-        "SELECT id, order_id, customer_id, amount, channel, status, channel_trade_no, "
-            + "pay_url, paid_at, refunded_at, refund_amount, created_at "
-            + "FROM bp_payment WHERE tenant_id = :tenantId AND id = :id AND deleted = 0";
+        "SELECT "
+            + COLUMNS
+            + " FROM bp_payment WHERE tenant_id = :tenantId AND id = :id AND deleted = 0";
     MapSqlParameterSource params =
         new MapSqlParameterSource().addValue("tenantId", tenantId).addValue("id", paymentId);
     List<PaymentRow> rows = jdbcTemplate.query(sql, params, new PaymentRowMapper());
@@ -35,24 +39,49 @@ public class PaymentReadPortImpl implements PaymentReadPort {
 
   @Override
   public List<PaymentRow> findPayableExpiredBefore(long tenantId, Instant before) {
-    String sql =
-        "SELECT id, order_id, customer_id, amount, channel, status, channel_trade_no, "
-            + "pay_url, paid_at, refunded_at, refund_amount, created_at "
-            + "FROM bp_payment "
-            + "WHERE tenant_id = :tenantId AND deleted = 0 "
-            + "AND status IN ('PENDING','PAYING') AND created_at < :before";
     MapSqlParameterSource params =
         new MapSqlParameterSource()
             .addValue("tenantId", tenantId)
             .addValue("before", Timestamp.from(before));
-    return jdbcTemplate.query(sql, params, new PaymentRowMapper());
+    return jdbcTemplate.query(
+        PAYABLE_EXPIRED_SQL + " AND tenant_id = :tenantId", params, new PaymentRowMapper());
   }
+
+  @Override
+  public List<PaymentRow> findPayableExpiredBeforeAllTenants(Instant before) {
+    // 全租户运维扫描：不带 tenant_id 条件；调用方须为已登记的定时任务
+    return jdbcTemplate.query(
+        PAYABLE_EXPIRED_SQL,
+        new MapSqlParameterSource().addValue("before", Timestamp.from(before)),
+        new PaymentRowMapper());
+  }
+
+  @Override
+  public List<PaymentRow> findSuccessCreatedBeforeAllTenants(Instant before) {
+    // 「钱货不一致」对账扫描：已成功的支付单，供调用方核对订单是否已确认支付
+    String sql =
+        "SELECT "
+            + COLUMNS
+            + " FROM bp_payment "
+            + "WHERE deleted = 0 AND status = 'SUCCESS' AND created_at < :before";
+    return jdbcTemplate.query(
+        sql,
+        new MapSqlParameterSource().addValue("before", Timestamp.from(before)),
+        new PaymentRowMapper());
+  }
+
+  private static final String PAYABLE_EXPIRED_SQL =
+      "SELECT "
+          + COLUMNS
+          + " FROM bp_payment "
+          + "WHERE deleted = 0 AND status IN ('PENDING','PAYING') AND created_at < :before";
 
   private static final class PaymentRowMapper implements RowMapper<PaymentRow> {
 
     @Override
     public PaymentRow mapRow(ResultSet rs, int rowNum) throws SQLException {
       return new PaymentRow(
+          rs.getLong("tenant_id"),
           rs.getLong("id"),
           rs.getLong("order_id"),
           rs.getLong("customer_id"),

@@ -8,6 +8,8 @@
 
 ---
 
+> **v5.0 后续口径**：本 ADR 记录 2026-05-22 已实施的历史决策。ADR-0024 将**新增**查询端口的目标位置调整为 `application/query/port/*QueryPort`；现有 `domain/gateway/*ReadPort` 随功能修改渐进迁移，不撤销本 ADR 的历史事实。
+
 ## 背景
 
 `bone-extension-studio` 的 `domain/repository/*` 含 `findAll`、`search`、`update`、`count` 等方法，违反 DDD E-9.2 写侧仓储白名单，长期依赖 ArchUnit freeze 基线容忍。
@@ -21,7 +23,7 @@
 
 ## 理由
 
-- 对齐 P0-4 + §18.2，可逐步收缩 `repository_methods_whitelist` freeze。
+- 将报表/列表查询从写侧 Repository 分离，可逐步收缩 `repository_methods_whitelist` freeze。
 - Studio 为内存/元数据混合持久化，读端口与写仓储同实现类，迁移成本低。
 
 ## 后果
@@ -36,10 +38,10 @@
 
 ## 合规与迁移
 
-- 读侧端口模式已写入《Bone-DDD》**§18.5**（v4.2）；本 ADR 为首发模块记录。
-- 本 ADR 合并时完成 extension-studio 全量拆分；后续新增读方法只加在 `*ReadPort`。
+- 本 ADR 合并时已完成 extension-studio 当时的全量拆分。
+- v5.0 后续新增查询端口使用 application `*QueryPort`；存量 `*ReadPort` 不要求一次性搬包。
 
 ## 相关文档
 
-- [扩展管理模块详细设计方案 v2.5 §5.3](../design/modules/5.%20扩展管理模块详细设计方案.md#53-核心组件) — `*ReadPort` 在核心组件表中的职责说明
-- [Bone-DDD 最终实践方案 §18.5](../Bone-DDD-最终实践方案.md) — 读侧端口模式
+- [扩展管理模块详细设计方案](../../design/modules/5.%20扩展管理模块详细设计方案.md) — 存量 `*ReadPort`
+- [Bone CQRS 与端口位置](../Bone-DDD-最终实践方案.md#cqrs-port-location) — 当前查询端口目标

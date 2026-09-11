@@ -29,6 +29,7 @@ class PaymentDetailQueryHandlerTest {
   private PaymentRow row() {
     return new PaymentRow(
         1L,
+        1L,
         100L,
         200L,
         new BigDecimal("200"),
