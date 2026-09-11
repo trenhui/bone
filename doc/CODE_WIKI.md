@@ -266,7 +266,7 @@ adapter/web → application → domain ← infrastructure
 | 查询 | `{对象}{条件}Query`（**禁** `*Qry` 类名；adapter 入参用 `*Req`/`*Qry`） | `UserByIdQuery` |
 | 命令处理器 | `{命令名}CommandHandler` | `CreateUserCommandHandler` |
 | 查询处理器 | `{查询名}QueryHandler` | `UserByIdQueryHandler` |
-| 入站门面（条件） | `{聚合名}Facade`（仅 §14.3.2 F1/F2/F3 条件下追加） | `OrderFacade` |
+| 入站门面（条件） | `{聚合名}Facade`（仅多入站适配器复用或稳定 Client SDK 契约） | `OrderFacade` |
 
 ---
 
@@ -477,7 +477,7 @@ npm run preview               # Vite preview
 ### 12.1 给开发者的关键提示
 
 1. **不要破坏分层依赖**：修改代码时，`domain` 层不能引入 Spring/MyBatis 等框架依赖；`application` 层不能直接调用 `infrastructure` 实现类
-2. **保持 CQRS**：写操作使用 `*CommandHandler` + `@Transactional`；读操作使用 `*QueryHandler`（只读）。Controller **禁止**直接注入 `application/service`、`domain/service`（领域服务）、`domain/repository`；满足 [DDD E-5.3.2](doc/architecture/Bone-DDD-最终实践方案.md) 条件时可加 `*Facade` 作入站门面，但不取代 Handler
+2. **保持 CQRS 与单一用例边界**：写用例默认使用 `*CommandHandler`，读用例使用 `*QueryHandler`；语义化 `*ApplicationService` 也可直接作为用例边界，但不得与同义 Handler 套娃。Controller 禁止直注 `domain/service`、`domain/repository` 或 infrastructure；满足稳定 SDK 契约或多入站复用条件时可使用 `*Facade`
 3. **统一响应格式**：Controller 返回统一使用 `ApiResponse<T>` 或 `PageResult<T>`，避免裸返回领域对象
 4. **租户与审计字段**：新增实体应继承 `TenantAbstractEntity`（若需多租户）或 `AbstractEntity`；不要遗漏 `tenantId` 与审计字段的填充
 5. **前端微应用约束**：
