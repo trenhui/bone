@@ -19,7 +19,7 @@ Bone DDD 共享 ArchUnit 规则（`BoneDddArchRules`）。规范分级见 [Bone-
 | `noNewDomainStorePackage()` | §14.5 |
 | `noCustomBusinessException()` | **待调整**：v5.0 允许项目异常根下的语义子类 |
 | `noBusinessExceptionSuffix()` | Advisory：命名兼容 |
-| `adapterControllersMustNotDependOnApplicationService()` | **待调整**：v5.0 允许合法 ApplicationService 作为用例边界 |
+| `adapterControllersMustNotDependOnApplicationService()` | ADR-0028：收窄为上帝对象命名守护（Common/Base/Business/*Manager）；不再禁 Controller → 合法 `*ApplicationService` |
 | `adapterControllersMustNotDependOnDomainRepository()` | §15 |
 | `commandHandlersShouldBeNamedCommandHandler()` | Advisory：命名 |
 | `queryHandlersShouldBeNamedQueryHandler()` | Advisory：命名 |

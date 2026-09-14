@@ -182,4 +182,13 @@ public class ArchitectureTest {
   @ArchTest
   static final ArchRule no_cross_context_domain =
       BoneDddArchRules.noCrossContextDomainDependency("com.bone.iam");
+
+  // 《BONE 总体架构设计方案》§4.1.1：模块层级依赖方向（ARCH-LEVEL-01/02）
+  @ArchTest
+  static final ArchRule engine_no_platform =
+      BoneDddArchRules.engineModulesMustNotDependOnPlatform();
+
+  @ArchTest
+  static final ArchRule platform_no_engine_apps =
+      BoneDddArchRules.platformMustNotDependOnEngineApps();
 }

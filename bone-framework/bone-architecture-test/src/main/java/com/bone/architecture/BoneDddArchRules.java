@@ -213,21 +213,20 @@ public final class BoneDddArchRules {
   }
 
   /**
-   * §12.1 P0-7 + §15（E-6）：Controller 禁止直接注入 {@code application.service} 实现，也禁止注入 {@code
-   * ..application..} 层中 {@code *Manager} / {@code Common*} / {@code Base*} / {@code Business*}
-   * 命名的类（上帝对象反模式）。{@code ..application.facade..} / {@code ..application.orchestration..}
+   * <b>ADR-0028（2026-09-14）</b>：方法名沿用历史名但语义已收窄。默认入站边界是语义化 {@code *ApplicationService}（Application
+   * Service First），因此<strong>取消</strong>对 {@code ..application.service..} 的一刀切禁止；仅保留对 {@code
+   * ..application..} 层 {@code *Manager} / {@code Common*} / {@code Base*} / {@code Business*}
+   * 命名（上帝对象反模式）的守护。{@code ..application.facade..} / {@code ..application.orchestration..}
    * 门面与编排层不受影响。
    */
   public static ArchRule adapterControllersMustNotDependOnApplicationService() {
     DescribedPredicate<JavaClass> forbiddenApplicationTargets =
-        resideInAPackage("..application.service..")
-            .or(
-                resideInAPackage("..application..")
-                    .and(
-                        simpleNameStartingWith("Common")
-                            .or(simpleNameStartingWith("Base"))
-                            .or(simpleNameStartingWith("Business"))
-                            .or(simpleNameEndingWith("Manager"))));
+        resideInAPackage("..application..")
+            .and(
+                simpleNameStartingWith("Common")
+                    .or(simpleNameStartingWith("Base"))
+                    .or(simpleNameStartingWith("Business"))
+                    .or(simpleNameEndingWith("Manager")));
     return noClasses()
         .that()
         .resideInAPackage("..adapter..controller..")
@@ -235,8 +234,9 @@ public final class BoneDddArchRules {
         .dependOnClassesThat(forbiddenApplicationTargets)
         .allowEmptyShould(true)
         .because(
-            "DDD P0-7 + §15: adapter must not inject application/service impl or "
-                + "Manager/Common/Base/Business-named application classes; use facade/orchestration");
+            "DDD §15 + ADR-0028: adapter must not inject anemic god-objects "
+                + "(Common/Base/Business/*Manager) in application; a well-named "
+                + "*ApplicationService is a valid default inbound entry");
   }
 
   /** §15：Controller 禁止直接注入 {@code domain.repository} 写侧仓储。 */
@@ -901,5 +901,64 @@ public final class BoneDddArchRules {
     sharedKernel.add(METADATA_SDK_PACKAGE);
     sharedKernel.addAll(Arrays.asList(extraPackages));
     return sharedKernel;
+  }
+
+  /** Engine 模块（建模 / 扩展 / 生成）与 SDK 底座包根。 */
+  private static final String[] ENGINE_PACKAGES = {
+    "com.bone.metadata..", "com.bone.engine.extension..", "com.bone.studio.generator.."
+  };
+
+  /** Platform 可独立部署服务包根（bone-platform/*）。 */
+  private static final String[] PLATFORM_PACKAGES = {
+    "com.bone.iam..",
+    "com.bone.masterdata..",
+    "com.bone.integration..",
+    "com.bone.system..",
+    "com.bone.notification..",
+    "com.bone.gateway.."
+  };
+
+  /** Engine 可部署应用壳包根（不含 SDK 底座，见《BONE 总体架构》§4.1.1 例外 2）。 */
+  private static final String[] ENGINE_APP_PACKAGES = {
+    "com.bone.metadata.server..",
+    "com.bone.metadata.engine..",
+    "com.bone.engine.extension.studio..",
+    "com.bone.studio.generator.."
+  };
+
+  /**
+   * 模块层级规则一（ARCH-LEVEL-01）：Engine 不得依赖 Platform。
+   *
+   * <p>真源：《BONE 总体架构设计方案》§4.1.1 依赖方向。现状应先扫 0 违规后启用；SDK 底座因仅依赖 bone-core，天然通过。
+   */
+  public static ArchRule engineModulesMustNotDependOnPlatform() {
+    return noClasses()
+        .that()
+        .resideInAnyPackage(ENGINE_PACKAGES)
+        .should()
+        .dependOnClassesThat()
+        .resideInAnyPackage(PLATFORM_PACKAGES)
+        .because(
+            "ARCH-LEVEL-01: engine must not depend on platform; direction is "
+                + "Platform -> Engine -> Framework -> Kernel")
+        .allowEmptyShould(true);
+  }
+
+  /**
+   * 模块层级规则二（ARCH-LEVEL-02）：Platform 不得依赖 Engine 可部署应用壳，仅允许依赖 SDK 底座。
+   *
+   * <p>真源：《BONE 总体架构设计方案》§4.1.1 例外 1/2。metadata-sdk / extension-sdk 不在禁用列表， 天然白名单。
+   */
+  public static ArchRule platformMustNotDependOnEngineApps() {
+    return noClasses()
+        .that()
+        .resideInAnyPackage(PLATFORM_PACKAGES)
+        .should()
+        .dependOnClassesThat()
+        .resideInAnyPackage(ENGINE_APP_PACKAGES)
+        .because(
+            "ARCH-LEVEL-02: platform must not depend on engine deployable apps; "
+                + "only the SDK base (metadata-sdk / extension-sdk) may be consumed")
+        .allowEmptyShould(true);
   }
 }

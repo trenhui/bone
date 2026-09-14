@@ -2,8 +2,8 @@
 
 > **单文档决策**：依据 [ADR-0026](./adr/0026-ddd-single-document-consolidation.md)，整合完成后本文是 Bone DDD 原则、工程决策、门禁口径与实施状态唯一、自包含的规范真源。
 > **整合状态**：已完成主文档内容整合、生效引用迁移和原分册删除；本文是 Bone DDD 唯一规范入口与实施状态真源。
-> **版本**：5.1.1（状态对账，2026-09-11）
-> **决策**：[ADR-0024](./adr/0024-ddd-v5-rule-semantics-and-document-split.md)、[ADR-0025](./adr/0025-ddd-v5-0-2-implementation-alignment.md)、[ADR-0026](./adr/0026-ddd-single-document-consolidation.md)
+> **版本**：5.3.1（Application Service First 样板与门禁收敛，2026-09-14）
+> **决策**：[ADR-0024](./adr/0024-ddd-v5-rule-semantics-and-document-split.md)、[ADR-0025](./adr/0025-ddd-v5-0-2-implementation-alignment.md)、[ADR-0026](./adr/0026-ddd-single-document-consolidation.md)、[ADR-0028](./adr/0028-application-service-first-selective-cqrs.md)
 > **通用语言**：[glossary.md](../glossary.md)
 > **版本历史**：[附录 F：版本历史](#version-history)
 
@@ -62,7 +62,7 @@
 
 # 一页纸速览
 
-## 8 条核心规则
+## 10 条核心规则
 
 核心规则使用稳定的 `CORE-*` 标识，避免与 v4.x 的 R1–R9 历史编号混淆。
 
@@ -76,6 +76,8 @@
 | CORE-06 | 默认单聚合实例事务 | 跨聚合默认最终一致；例外说明理由与失败语义 |
 | CORE-07 | 先声明可靠性与并发保证 | Outbox、乐观锁是默认实现，不是唯一实现 |
 | CORE-08 | 门禁不冒充领域证明 | 静态检查证明结构；业务语义由测试和评审证明 |
+| CORE-09 | EAV 只承载扩展字段 | 核心事务、高频查询、聚合字段用物理列；EAV/JSON 仅限可选、动态、长尾扩展属性 |
+| CORE-10 | Metadata 描述模型，不执行业务 | 元数据回答 What（模型定义）；业务规则（How）在应用/领域层执行 |
 
 ## 依赖方向
 
@@ -95,17 +97,19 @@ adapter → application → domain
 ## 默认交付路径
 
 ```text
-写：Controller → CommandHandler/ApplicationService → Repository.load → Aggregate.behavior → Repository.save
-读：Controller → QueryHandler → QueryPort → QueryAdapter → QueryBuilder
+写：Controller → ApplicationService → Repository.load → Aggregate.behavior → Repository.save
+读：Controller → ApplicationService.get()/page() → Repository        （简单读，读模型与 domain 一致）
 跨步骤：Adapter → Orchestrator → 独立事务步骤 → 补偿/重试
 ```
+
+默认使用**语义化 ApplicationService** 作为入站边界（[ADR-0028](./adr/0028-application-service-first-selective-cqrs.md)）。复杂度升级时才引入 `Command` / `Handler`：写意图需显式契约或多入口时加 `Command`，命令异步/跨事务时 `CommandHandler` 落在 Outbox 消费端/任务端，读模型与聚合分歧时 ApplicationService 内升级 QueryPort（复杂读再进 `QueryHandler`）。判据见 [E-3.7](#E-37-入口构件决策)。
 
 ## 裁剪档位
 
 | 档位 | 适用 | 最低要求 |
 |------|------|----------|
 | L0 | 框架、SDK、纯技术服务 | 依赖方向、公开契约、无业务模型污染 |
-| L1 | CRUD 支撑域 | 边界、租户、写仓储、查询端口、基础门禁 |
+| L1 | CRUD 支撑域 | 边界、租户、写仓储、基础门禁（简单读经写仓储 / ApplicationService，复杂读才用 QueryPort） |
 | L2 | 有状态机或复杂规则的应用域 | 聚合行为、纯领域测试、并发策略、领域事件 |
 | L3 | 跨进程不可丢事件、回调、资金流程 | 原子发布、消费幂等、契约测试、补偿与可观测 |
 
@@ -137,6 +141,14 @@ adapter → application → domain
 - 团队愿意投入领域建模和契约治理成本。
 
 纯 CRUD、无演进压力的简单能力可以使用轻量模型，不为“看起来像 DDD”制造聚合、事件和目录。
+
+**复杂度检查**：如果一个模块的全部写操作可以用一个 `*ApplicationService` 的 5–8 个方法清晰表达（create / update / delete + 2–3 个业务操作），且读操作可以用同一服务覆盖，则不应引入 Command / Handler 分层。判断标准是"一个类能不能说清楚这个模块做什么"——能，就不拆。
+
+违反此检查的常见信号：
+
+- 新建模块第一天就生成 `command/`、`commandhandler/`、`query/`、`queryhandler/` 四个空目录；
+- 一个只有 CRUD 的支撑域却有 15+ 个应用层类；
+- ApplicationService 和 CommandHandler 各自只有一个方法且方法体只有一行委派。
 
 ## P-2 战略设计优先
 
@@ -246,9 +258,9 @@ framework、SDK、Gateway 等技术依赖另画技术图，不能混入 Context 
 
 ### P-2.5 核心域
 
-DDD 不限制组织只能有一个 Core Subdomain。核心域表示当前战略差异化投资，可有多个，也可随战略变化。
+DDD 不限制组织只能有一个 Core Subdomain。核心域表示当前战略差异化投资，可有多个，也可随战略变化。详见 [P-2.1 战略分类](#p-21-战略分类)。见 [ADR-0023](./adr/0023-core-domain-smart-metadata.md)。
 
-Bone 当前只认定 Metadata / Smart Metadata 为核心域；这是 Bone 的战略决策，不是行业定律。见 [ADR-0023](./adr/0023-core-domain-smart-metadata.md)。
+**元数据职责边界（CORE-10）**：Metadata 只描述模型（What：Model Definition / Schema / Relationship / Constraint / Version），不执行业务逻辑（How）。业务规则与状态迁移必须落在应用层与领域层；Metadata 的 Runtime / Validator 只是「模型 → 执行」的通道，不内嵌具体业务语义。防止 Metadata 从「建模系统」膨胀为「第二个应用运行时」。
 
 ## P-3 战术建模
 
@@ -446,7 +458,7 @@ CQRS 首先是读写关注点分离：
 
 ### E-0.1 新代码
 
-新代码遵守本文 CORE-01～CORE-08、对应 P/E/G 条文和项目硬约束。
+新代码遵守本文 CORE-01～CORE-10、对应 P/E/G 条文和项目硬约束。
 
 ### E-0.2 存量不符合规范代码的处理
 
@@ -545,27 +557,60 @@ Platform Kernel 只允许实体与聚合基类、审计、租户上下文、统�
 
 应用层执行一个用户或系统用例：建立事务、授权与幂等边界，加载聚合并调用领域行为，持久化结果，调用出站端口，转换用例级失败并协调事件发布。聚合内部不变量仍由 domain 负责。
 
+> **默认入站边界是语义化 ApplicationService**（详见 [E-3.7](#E-37-入口构件决策)，决策依据 [ADR-0028](./adr/0028-application-service-first-selective-cqrs.md)）。Command / Handler 是**复杂度驱动的可选件**，不是默认三件套；读写统一走 ApplicationService，CQRS 指读写职责分离，而非类文件数量翻倍。
+
 ### E-3.1 允许的入口
 
 每个用例只选择一种入口构件：
 
 | 构件 | 适用场景 | 是否可直接作为入站端口 |
 |------|----------|------------------------|
-| `*CommandHandler` | 单个写用例 | 是 |
-| `*QueryHandler` | 单个读用例 | 是 |
-| `{语义}ApplicationService` | 一组高度内聚、共享同一应用级策略的操作 | 是 |
+| `{语义}ApplicationService` | **默认入口**：简单读写 / CRUD / 一组高度内聚、共享同一应用级策略的操作 | 是 |
+| `*CommandHandler` | 单个写用例，且命令需要独立路由、生命周期、异步跨事务或多入口统一执行 | 是 |
+| `*QueryHandler` | 单个复杂读用例（分析/报表/搜索等 read model 场景） | 是 |
 | `*Orchestrator` | 跨步骤、可重试或可补偿的流程 | 是 |
 | `*Facade` | 稳定 Client SDK 契约或多个入站适配器共享用例集合 | 是，但内部只路由到前述构件 |
 
+构件选型遵循"复杂度驱动"：默认 ApplicationService 即可；仅当写意图需显式契约、命令数量多、命令异步化/多入口时引入 Command / CommandHandler，读模型脱离聚合结构时 ApplicationService 内升级 QueryPort，极少数需要独立读路由时引入 QueryHandler（见 [E-3.7](#E-37-入口构件决策) 与 [ADR-0028](./adr/0028-application-service-first-selective-cqrs.md)）。
+
 ### E-3.2 一个用例一个边界
 
-Controller 可直接依赖 Handler 或合法 ApplicationService。禁止：
+Controller 可直接依赖 Handler 或合法 ApplicationService。禁止（含 Ceremonial Architecture 检查）：
 
 - `Controller → Handler → 同义 ApplicationService` 一对一委派；
 - `Controller → ApplicationService → 同义 Handler` 一对一委派；
 - Handler 为复用而调用另一个 Handler；
 - Facade 直接操作 Repository、聚合或 infrastructure；
 - 应用构件实现聚合内部不变量。
+
+**Ceremonial Architecture（仪式感架构）**：当中间层只做透传而不增加事务、策略、路由或生命周期管理时，该层是仪式性的。典型信号：`handle()` 方法体只有一行 `return applicationService.xxx(command);`，或 `ApplicationService.handle()` 只有一行 `repository.save(aggregate)`。Ceremonial 层增加类数量、认知负担和修改点，不增加任何架构能力。Bone 禁止 Ceremonial Architecture。
+
+检测方式：若 `handle()` 方法的有效业务逻辑（排除日志、租户获取等横切）不超过 2 行，且不包含条件分支、事务提交、事件发布或多聚合协调，则判定为 Ceremonial。评审时应删除该层，将调用上移或下推到实际执行层。
+
+**正反例**：
+
+```java
+// ✅ 合法：有事务 + 聚合加载 + 行为调用 + 保存，即使只有 4 行
+@Transactional
+public void handle(ConfirmOrderCommand cmd) {
+    Order order = repository.load(cmd.orderId());
+    order.confirm();
+    repository.save(order);
+}
+
+// ❌ Ceremonial：3 行但全是透传，无独立逻辑
+public void handle(CreateOrderCommand cmd) {
+    log.info("create order");
+    return applicationService.create(cmd);
+}
+
+// ❌ Ceremonial：ApplicationService 只做转发
+public OrderDTO getOrder(OrderId id) {
+    return orderQueryPort.findById(id);  // 一行委派
+}
+```
+
+关键判据不是行数，而是**是否有独立的事务/策略/路由/协调逻辑**。
 
 ApplicationService 合法条件：
 
@@ -603,6 +648,8 @@ Facade 不持有领域规则和写事务，不直接操作 Repository。
 
 > 示例与 `bone-blueprint` 惯用法保持同步：修改样板模块的写用例形态时，必须同步更新本节。
 
+> **以下为 Command + Handler 路径的参考形态**，适用于写意图需显式契约、命令数量较多或异步化的场景（见 E-3.7 决策树）。简单写用例直接使用 ApplicationService，参考 [E-3.7 默认路径](#E-37-入口构件决策)。
+
 ```java
 @Transactional
 public void handle(ConfirmOrderCommand command) {
@@ -635,13 +682,40 @@ public void handle(ConfirmOrderCommand command) {
 
 ### E-3.7 入口构件决策
 
+默认从**语义化 ApplicationService** 出发；按复杂度逐级升级，不为简单 CRUD 预生成 Command / Query 三件套。Application Service First 是 Bone 的默认架构形态，不是"退而求其次"。
+
+**Application Service First 6 条规则**：
+
+| # | 规则 | 判据 |
+|---|------|------|
+| AS-01 | Application Service 是默认的应用入口 | 新模块、新上下文一律从 ApplicationService 开始 |
+| AS-02 | Command 在写意图需要显式契约时引入 | 命令需要跨异步边界传递、多入口统一执行、或需独立版本化契约 |
+| AS-03 | Command Handler 在命令需独立路由 / 生命周期 / 多入口时引入 | 命令进入 Outbox / MQ / Scheduler，或同一 Command 被 REST / Kafka / 定时任务共同消费 |
+| AS-04 | 读用例默认由 ApplicationService 直接处理，与写用例共用同一入口 | 仅当读模型与聚合结构分歧时，升级到 QueryPort；读编排本身复杂（多端口组合）时考虑拆分读方法 |
+| AS-05 | Dedicated Read Model 仅在读复杂度或扩展性要求时引入 | 分析 / 报表 / 搜索等需要独立 read database 或物化视图 |
+| AS-06 | CQRS 是一个光谱，不是开关 | 不存在"全项目 CQRS"或"全项目不 CQRS"的二选一；每个模块按自身复杂度选择光谱上的位置 |
+
+AS-01～AS-06 的优先级高于目录模板：即使 Blueprint 生成器输出了 `command/` 目录，开发者仍应按上述规则判断是否需要——不需要就删掉空目录。
+
 ```text
-单个读请求？
-  └─ 是 → QueryHandler
-单个写请求？
-  └─ 是 → CommandHandler
-一组操作共享明确、稳定的应用级策略？
-  └─ 是 → 语义化 ApplicationService
+简单读写 / CRUD / 后台配置？
+  └─ 是（默认起点）→ 语义化 ApplicationService（读方法、写方法同一入口）
+      │
+      └─ 复杂化后升级：
+
+写侧升级：
+  写意图需要显式契约（intent）或命令数量较多？
+    └─ 是 → 引入 Command
+  命令需独立路由 / 生命周期 / 异步多入口 / 跨事务？
+    └─ 是 → 引入 CommandHandler（命令异步化时，Handler 位于 Outbox 消费端/任务端）
+
+读侧升级：
+  读模型与聚合结构分歧 / 需要定制投影 / 统计报表？
+    └─ 是 → ApplicationService 内引入 QueryPort
+  分析 / 搜索等复杂读，需独立 read model / read database？
+    └─ 是 → QueryHandler → QueryPort → QueryAdapter → QueryBuilder
+
+其他入口：
 跨多个独立事务步骤，并有重试/补偿？
   └─ 是 → Orchestrator
 多个入站协议需要稳定复用同一用例集合？
@@ -649,9 +723,68 @@ public void handle(ConfirmOrderCommand command) {
 否则 → 不新增中间层
 ```
 
+**复杂度与类数量参考**（以 5 个写用例 + 3 个读用例的模块为例）：
+
+| 模式 | 写侧构件 | 读侧构件 | 应用层总类数 |
+|------|----------|----------|-------------|
+| Everything CQRS | 5 Command + 5 Handler | 3 Query + 3 Handler | ~16+ |
+| Application Service First | 1 ApplicationService（5 写方法） | 1 ApplicationService（3 读方法，直查或 QueryPort） | ~3–5 |
+| 选择性 CQRS（写复杂） | 3 Command + 3 Handler + 1 ApplicationService | 1 ApplicationService（3 读方法） | ~8–10 |
+| 选择性 CQRS（读复杂） | 1 ApplicationService（5 写方法） | 1 ApplicationService + QueryPort（多端口组合） | ~5–7 |
+
+每减少一个 Ceremonial 层，减少一个维护点、一个测试点、一个新人理解障碍。Blueprint 生成器应以 "Application Service First" 行为默认输出。
+
+**Blueprint 生成器默认行为**：代码生成器的默认输出为 `Controller → ApplicationService → Repository`。`command/`、`query/handler/`、`query/port/` 目录默认不生成。开发者按本决策树确认需要后手动创建。理由：生成器默认输出的每一层都会成为团队的"标准做法"，错误默认值的影响被模板放大到所有使用该 Blueprint 的模块。
+
+### E-3.8 构件职责速查
+
+| 构件 | 回答的问题 | 职责 | 何时引入 |
+|------|-----------|------|----------|
+| `ApplicationService` | 一个业务用例怎么被协调执行？ | 编排用例：事务/授权/加载聚合/调用行为/保存/发布 | **默认入口** |
+| `Command` | 调用方想让系统做什么？（Intent） | 承载写意图与参数 | 写意图需显式契约 / 命令数量多 |
+| `CommandHandler` | 这个 Command 由谁执行？ | 独立路由 / 生命周期 / 异步 / 多入口 / 限流重试幂等 | 命令需独立执行策略或异步化 |
+| `Read Model` | 查询结构与领域模型不一致怎么办？ | 独立读模型 / 投影 | 读写模型明显分离或需独立读写 |
+
+> **抽象判断准则**：一个抽象是否该存在，不看"是否符合 DDD"，而看**它是否承担了独立职责**。纯透传的 `Handler → service.method()` 是包装层，不是架构。
+
+### E-3.9 场景 × 模式决策矩阵
+
+| 场景 | 推荐模式 | ApplicationService | Command | CommandHandler | QueryPort | ReadModel |
+|------|----------|:---:|:---:|:---:|:---:|:---:|
+| 简单 CRUD / 字典 / 配置 | ApplicationService | ✅ | ❌ | ❌ | ❌ | ❌ |
+| 简单业务规则 | ApplicationService | ✅ | 可选 | ❌ | ❌ | ❌ |
+| 复杂业务动作 / 状态机 | Command + ApplicationService | ✅ | ✅ | 仅异步时 | ❌ | ❌ |
+| MQ / 异步 / 多入口执行 | CommandHandler | ✅ | ✅ | ✅ | ❌ | 可选 |
+| 复杂查询 / 报表 | ApplicationService + QueryPort | ✅ | ❌ | ❌ | ✅ | 可选 |
+| 高性能查询 / 独立读模型 | ApplicationService + QueryPort + ReadModel | ✅ | ❌ | ❌ | ✅ | ✅ |
+| Event Sourcing / 完整读写分离 | Full CQRS | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+### E-3.10 AI/Agent 选型判据
+
+不要让 Agent 猜测要不要 Command/Handler，改用固定问题定档（0 个 YES → ApplicationService；1–2 个 → +Command；3–4 个 → +Handler；复杂读 → ApplicationService + QueryPort；独立读写 → Full CQRS）：
+
+1. 存在明确业务意图（intent）？
+2. 存在复杂状态变化 / 多领域规则组合？
+3. 多个入口触发同一操作（REST/MQ/定时/工作流）？
+4. 需要异步执行（Queue/Retry/DLQ）？
+5. 需要显式幂等 / 限流 / 重试策略？
+6. 读模型明显不同于领域模型（跨聚合/报表）？
+7. 需要独立的读写扩展（专门读库/投影/ES）？
+
+铁律三则：① Blueprint 生成器默认输出 ApplicationService；② Agent/开发按本矩阵与判据选型；③ 命令异步化一律走 **Outbox + 消费端幂等**（[ADR-0021](./adr/0021-outbox-and-consumer-idempotency-platformization.md)），不得在 `@Transactional` 调用方内 inline 持有长事务。
+
 <a id="cqrs-port-location"></a>
 
 ## E-4 CQRS 与端口
+
+**CQRS 的"读写职责分离"是默认语义**（Command 可改状态、Query 不改状态）；但**是否把它实现成 CommandHandler / QueryHandler / ReadModel 的物理结构，由复杂度驱动，且与领域复杂度正交**——DDD 复杂度和 CQRS 复杂度是两个独立维度：
+
+| | 低读写复杂度 | 高读写复杂度 |
+|---|---|---|
+| **低领域复杂度** | ApplicationService（简单 CRUD） | ApplicationService + QueryPort + ReadModel / Cache |
+| **高领域复杂度** | DDD + ApplicationService + Command | Full CQRS |
+
+领域复杂并不强制 Full CQRS（同步单入口带大量规则只是 DDD + ApplicationService + Command）；查询量大也不强制复杂聚合（简单领域配 ApplicationService + QueryPort + ReadModel + Cache 即可）。CQRS 是一个频谱（Light → Selective → Full），不是硬开关。
 
 ### E-4.1 写侧
 
@@ -672,9 +805,19 @@ adapter
 
 ### E-4.2 读侧
 
+简单读默认由 **ApplicationService** 直查（读模型与聚合结构一致时）：
+
 ```text
 adapter
-  → QueryHandler
+  → ApplicationService.get()/page() → Repository       （简单读，读模型与聚合一致）
+```
+
+读模型与聚合结构分歧 / 复杂读（报表、搜索、跨聚合组合）时，ApplicationService 内引入 QueryPort：
+
+```text
+adapter
+  → ApplicationService → QueryPort（多数场景）
+  → QueryHandler（需独立路由 / 异步时）
     → application/query/port/*QueryPort
       ← infrastructure/query/*QueryAdapter
         → Criteria / QueryBuilder / SQL
@@ -687,11 +830,22 @@ adapter
 - domain 不依赖查询 DTO、QueryPort 或查询 DSL。
 - 存量 `domain/gateway/*ReadPort` 随功能修改迁移，不一次性搬包。Blueprint 读侧（`domain/gateway/*ReadPort` + `domain/{aggregate}/read/*Row`）即此存量形态：迁移计划见[附录 A](#migration-ledger)，新模块一律按 `application/query/port` 目标位置实现，不得照抄样板读侧。
 
-所有面向外部调用方的新增读用例默认走 QueryPort。存量按 ID 使用写 Repository 的简单详情查询可以保留，但不得引入分页、Join、统计或 UI 投影逻辑；一旦读模型与聚合结构分歧，即迁移到 QueryPort。
+**读侧统一走 ApplicationService**：读用例与写用例共用同一 ApplicationService 入口，不单独引入 QueryService。简单读由 ApplicationService 直查 Repository；读模型与聚合分歧时，ApplicationService 内部调用 QueryPort 访问数据，不直接持有 SQL / QueryBuilder / Criteria。数据访问隔离仍由 QueryPort → QueryAdapter 保证。禁止绕过 QueryPort 直连基础设施——这会破坏读写端口分离的一致性。
+
+```text
+Controller → ApplicationService → QueryPort → QueryAdapter → SQL/DSL
+                         └→ QueryPort → QueryAdapter（多端口组合时）
+```
+
+当读编排需要组合多个 QueryPort（如"客户详情页"聚合订单+支付+风控数据）时，在 ApplicationService 内拆分独立读方法，不新增独立 QueryService 类。仅在读用例本身需要独立路由、生命周期或异步执行时，才引入 QueryHandler（见 AS-03 的读侧对等场景）。
+
+**判据（ADR-0028）**：默认简单读走 ApplicationService（与写用例共用同一入口）。简单单表分页、按 ID 详情、1:1 映射 DTO 的列表——即使分页——仍可直查写 Repository（见 [D.1.1](#d11-极简-applicationService-样板l1-简单-crud--支撑域) 的 `page()`）。仅当读模型与聚合**结构分歧**时——需要跨聚合组合、Join、统计、UI 定制投影，或其分页/列表结果与聚合列明显不一致（列裁剪、连表、报表）——才在 ApplicationService 内引入 QueryPort。存量按 ID 使用写 Repository 的简单详情查询可以保留；一旦读模型与聚合结构分歧，即按需升级到 QueryPort。
+
+**读侧不需要与写侧对称**：写侧用了 `Command/CommandHandler` 不代表读侧也要 `Query/QueryHandler`。一个复杂列表（Customer + Order + Payment + Risk）不建议硬套 `Query → QueryHandler → Aggregate`；更合适的是 `Controller → ApplicationService → QueryPort → SQL/View → DTO`。读写各自按复杂度独立演进，读/写不必镜像。
 
 CommandHandler 需要读取业务决策数据时，优先加载聚合；确需专用读取时依赖语义化 application 出站端口，并显式说明一致性要求。
 
-查询端口参考：
+查询端口参考（以下为极少数需要独立路由/异步读场景的 QueryHandler 示例；大多数复杂读由 ApplicationService 直接调 QueryPort 即可）：
 
 ```java
 public interface OrderQueryPort {
@@ -837,6 +991,8 @@ Outbox 是 Bone 的默认 Durable 实现。CDC、数据库事务日志或其他�
 
 D1 是 Bone 为 metadata-sdk 提供的受控工程例外。仅当映射简单、白名单注解不引入运行时行为且不扭曲领域结构时使用，不只限于“无行为 CRUD”。
 
+门禁 `domainMustNotDependOnOuterLayers` 的编译期注解白名单**已显式放行** `org.springframework.lang.*`（如 `@NonNull`）、Lombok 与 metadata-sdk 映射注解；若合法 D1 领域类被误判为违规，应先扩展该白名单，而非放宽领域纯净度要求。
+
 ### E-6.3 PO 分离信号
 
 - 需要独立落表的嵌套集合；
@@ -855,6 +1011,16 @@ D1 是 Bone 为 metadata-sdk 提供的受控工程例外。仅当映射简单、
 - 外层不通过 setter 序列修改业务状态；
 - 领域服务只承载纯业务规则；
 - 测试覆盖拒绝路径。
+
+### E-6.5 EAV 与扩展字段边界
+
+Bone 扩展字段支持三种存储模式（预留列默认 / JSON / EAV，见《元数据能力-实现映射与竞品对照》），EAV 为极低频、非推荐首选。为防止 EAV 从扩展能力退化为默认数据模型，定义硬边界（CORE-09）：
+
+**EAV / JSON 扩展字段只允许承载**：可选、动态、长尾扩展属性（租户自定义字段、行业特殊属性、低频业务扩展）。
+
+**禁止进入 EAV / JSON**：核心域字段、事务字段、高频查询字段、聚合/统计字段。此类字段必须建模为物理列（含预留列分配），不得以动态属性实现。
+
+判定优先级：**物理列 > 预留列 > JSON > EAV**；EAV 仅限「无法预知键集合」的极低频场景。
 
 ## E-7 ID 与错误
 
@@ -891,7 +1057,7 @@ D1 是 Bone 为 metadata-sdk 提供的受控工程例外。仅当映射简单、
 
 | 模块性质 | 适用 |
 |----------|------|
-| 应用/BFF | CORE-01～CORE-08 与完整应用分层 |
+| 应用/BFF | CORE-01～CORE-10 与完整应用分层 |
 | SDK/框架库 | 依赖方向、契约、领域纯净度；无应用层则不套 CQRS 目录 |
 | 基础设施服务 | 技术职责与依赖方向；无业务模型则不套聚合规则 |
 | 简单 CRUD 支撑域 | 边界、租户、写仓储、QueryPort；领域行为按真实复杂度 |
@@ -936,7 +1102,7 @@ com.bone.{module}/
     └── integration/                 # 外部 HTTP/RPC/第三方适配器
 ```
 
-这是目标参考结构，不要求存量模块一次性搬包。只创建真实需要的目录；空的 `service`、`orchestration`、`gateway`、`port/out` 不得作为模板占位生成。
+这是**目标参考结构**，展示所有可能的目录。**Blueprint 代码生成器默认只输出 `adapter`、`application/service`（含 ApplicationService）、`domain`、`infrastructure` 四个顶级目录下的最小骨架**；`application/command/`、`application/query/handler/`、`application/orchestration/` 等目录按 E-3.7 决策树的实际需要创建，不预生成空目录。存量不要求一次性搬包；空的 `service`、`orchestration`、`gateway`、`port/out` 不得作为模板占位生成。
 
 顶级目录按依赖方向保持稳定；模块较大时，在 `model`、`command`、`query`、`persistence` 等目录内部再按业务能力或聚合细分，避免全模块只有一个巨大的 `entity`/`service` 横切桶。
 
@@ -1005,8 +1171,8 @@ Req/Message
 
 1. 在 README 定义上下文、Owner、语言、契约和表所有权。
 2. 判断模块性质与 L0–L3 档位。
-3. 选择最小包结构和一个应用用例边界。
-4. 写侧用聚合+Repository，读侧用 QueryHandler+QueryPort。
+3. 选择最小包结构和一个应用用例边界。**默认只创建 Controller + ApplicationService + Repository 三层**；`command/`、`query/handler/`、`query/port/`、`orchestration/` 目录按 E-3.7 决策树的实际需要创建，不预生成空目录。Blueprint 代码生成器应遵循此默认行为。
+4. 写侧用聚合+Repository，读侧默认 ApplicationService 直查；读模型分歧时 ApplicationService 内升级 QueryPort。
 5. 接入 Hard gate；语义规则通过测试和评审验证。
 
 ### E-12.1 新模块完成定义
@@ -1067,6 +1233,17 @@ Req/Message
 | 入站门面 | `OrderFacade` | 符合 E-3.4 的稳定、粗粒度入站契约 |
 | SDK 入站契约 | `MetadataApi` | 新增使用 `*Api`（目标命名示例，非现存类）；存量 `MetadataService` 不追溯 |
 
+**`*Service` 后缀的两种含义**：
+
+| 后缀 | 位置 | 职责 | 典型内容 |
+|------|------|------|----------|
+| `*DomainService` / `*Service`（domain 层） | `domain/service` | 纯业务规则，无 IO、无事务 | 跨聚合定价策略、复杂业务校验 |
+| `*ApplicationService` | `application/service` | 用例编排，有事务、有 IO | 加载聚合、调用行为、保存、发布事件 |
+
+禁止将领域服务命名为 `*ApplicationService`，也禁止在 ApplicationService 中承载聚合内部状态迁移规则。二者不是"简单 vs 复杂"的替代关系，而是不同层的职责分工。
+
+参考：P-3.3 领域服务、E-3.1 允许的入口。
+
 ### E-13.3 端口、适配器与触发器
 
 | 后缀 | 独占语义 | 禁止 |
@@ -1105,6 +1282,14 @@ Req/Message
 ## G-1 测试与 CI
 
 规则实现位于 `bone-framework/bone-architecture-test`；模块实际状态以各自 `ArchitectureTest` 为准。“Hard gate”表示规则适合机器阻断，不代表已在所有模块启用；`FreezingArchRule` 只阻断基线之外的新增违规。
+
+门禁状态分三层，避免把"已定义"误读为"已强制"：
+
+- **Defined**：共享规则库已实现（ArchUnit 规则存在）；
+- **Enforced-in-CI**：模块 `ArchitectureTest` 实际接入，并在 GitHub Actions 等 CI 中运行；
+- **Advisory / Planned**：声明方向但未强制，或仅本地脚本可运行。
+
+凡仅在本地脚本运行、未进入 CI 的规则（如 12a/12b/12c）不得称为"已阻断"；`Active` 仅表示规则已定义在共享规则库，不代表全模块已强制。评审不得把 Planned/Advisory 声称为全仓已证明（见 [G-1.4](#g-14-planned)）。
 
 <a id="g-1-1-hard-gate"></a>
 
@@ -1181,7 +1366,7 @@ Hard gate 只保护结构和明确 API 使用，不证明领域模型正确。
 | `noCustomBusinessException` | Bone 兼容门禁 | 不新增 `BusinessException` 命名冲突异常根（freeze） | 错误码绑定与归属正确 |
 | `noBusinessExceptionSuffix` | Bone 兼容门禁 | 不新增 `*BusinessException` 后缀类（freeze） | 异常语义归属正确 |
 | `applicationServicesMustNotOwnDomainRules` | Hard gate 目标 | ApplicationService 不承载状态迁移决策 | 规则放置是否最优 |
-| `adapterControllersMustNotDependOnApplicationService` | Planned adjustment | 当前禁止 Controller 直注 `application.service` | v5 合法 ApplicationService 用例边界 |
+| `adapterControllersMustNotDependOnApplicationService` | 上帝对象守护（ADR-0028） | 方法名沿用历史名但仅禁 `Common*/Base*/Business*/*Manager` 命名；不再禁 Controller → 合法 `*ApplicationService` | 应用层编排一定正确 |
 | `adapterControllersMustNotDependOnDomainRepository` | Hard gate | Controller 不越层访问写仓储 | Controller 无业务规则 |
 | `adapterControllersMustNotDependOnDomainService` | Hard gate | Controller 不直调领域服务 | 应用编排正确 |
 | `commandHandlersShouldBeNamedCommandHandler` | Advisory | 类后缀一致 | 类承担正确命令语义 |
@@ -1203,9 +1388,30 @@ Hard gate 只保护结构和明确 API 使用，不证明领域模型正确。
 | `commandHandlersMustNotUseQueryBuilder` | Active | Frozen | Frozen | Active | bone-notification、bone-extension-studio Active；System、Metadata Server、Studio Generator Frozen；其余待盘点 |
 | `readSideDslOnlyInQueryLayer` | Active | Frozen | Frozen | Frozen | Planned inventory |
 | `businessLayersMustNotReadTenantContextDirectly` | Active | Frozen | Frozen | Frozen | Planned inventory |
-| `adapterControllersMustNotDependOnApplicationService` | Active（0 违规样板，不 freeze） | Frozen legacy rule | Frozen legacy rule | Frozen legacy rule | Planned adjustment |
+| `adapterControllersMustNotDependOnApplicationService` | Active（仅上帝对象守护，ADR-0028 收窄，不 freeze） | Active（legacy 收敛） | Active | Active | Active |
 
 新增或更新状态必须同时提交对应 `archunit_store`。
+
+### G-1.6 CORE / E 条文与门禁映射
+
+为便于评审“这条原则由哪条门禁实际守住”，下表建立核心条文到其主要 enforcing gate 的映射。空白表示当前仅由语义评审守护，无机器门禁——这正符合 CORE-08：机器门禁证明结构，业务语义仍靠测试和评审。
+
+| 条文 | 主要守护门禁 | 状态 |
+|------|------------|------|
+| CORE-01 边界先于分层 | 无直接门禁（语义 + 模块 README 数据所有权声明） | Semantic |
+| CORE-02 依赖向内 | `domainMustNotDependOnOuterLayers` | Hard gate（部分模块） |
+| CORE-03 领域行为保护不变量 | `applicationServicesMustNotOwnDomainRules`（目标） | Hard gate 目标 |
+| CORE-04 一个用例一个边界 | `adapterControllersMustNotDependOnApplicationService`（收窄为上帝对象守护，ADR-0028） | Hard gate（收窄） |
+| CORE-05 写聚合 / 读投影 | `commandHandlersMustNotUseQueryBuilder`、`readSideDslOnlyInQueryLayer` | Hard gate / 目标 |
+| CORE-06 单聚合事务 | `oneAggregatePerTransaction` | Advisory |
+| CORE-07 可靠性与并发声明 | 无直接门禁（语义 + [E-5](#p-5-cqrs-一致性与可靠性)） | Semantic |
+| CORE-08 门禁不冒充领域证明 | 全文门禁说明 | 文档约定 |
+| CORE-09 EAV 边界 | 无直接门禁（语义 + 评审） | Semantic |
+| CORE-10 Metadata 不执行业务 | 无直接门禁（语义 + 评审） | Semantic |
+| E-3 应用用例边界 | `adapterControllersMustNotDependOnDomainRepository` / `...DomainService` | Hard gate |
+| E-4.2 读侧端口位置 | `readSideDslOnlyInQueryLayer`（目标） | Hard gate 目标 |
+| E-6 D1 纯净度 | `domainMustNotDependOnOuterLayers`（白名单放行编译期注解） | Hard gate |
+| E-7 错误模型 | `noCustomBusinessException` / `noBusinessExceptionSuffix`（freeze） | 兼容门禁 |
 
 ## G-2 Freeze
 
@@ -1222,14 +1428,11 @@ Freeze 用于阻止存量违规继续增加，不把违规永久合法化：
 
 ```yaml
 - rule: adapterControllersMustNotDependOnApplicationService
-  classification: planned-adjustment
-  violations: 2
-  items:
-    - legacy/UserService
-    - legacy/OrderService
-  owner: iam-team
-  removalCondition: "规则按 v5 调整，或 Controller 改为 Handler"
-  dueDate: 2026-12-31
+  classification: adjusted-god-object-guard
+  violations: 0
+  items: []
+  owner: platform-arch
+  removalCondition: "ADR-0028 已收窄为上帝对象命名守护；freeze 条目随规则收窄清零"
   lastRenewal: null
 ```
 
@@ -1465,11 +1668,9 @@ Bone 解决的不是“让每个模块看起来像 DDD”，而是企业平台�
 
 ```text
 Controller
-  → CommandHandler / 语义化 ApplicationService
-    → Repository.load
-    → Aggregate.behavior
-    → Repository.save
-    → 可靠发布（需要时）
+  → 语义化 ApplicationService（默认入口）
+    → Repository.load → Aggregate.behavior → Repository.save → 可靠发布（需要时）
+  （写意图需显式契约 / 命令数多 / 异步多入口时 → 升级 Command / CommandHandler，见 E-3.7）
 ```
 
 - Controller 只做协议转换和统一响应；
@@ -1482,13 +1683,17 @@ Controller
 ## C.4 第一个读用例
 
 ```text
-Controller
-  → QueryHandler
-    → application/query/port/*QueryPort
-      ← infrastructure/query/*QueryAdapter
+简单读（按 ID 详情 / 简单分页）：
+Controller → ApplicationService.get/page → Repository
+
+复杂读（列表 / 搜索 / 统计 / Join / 跨聚合组合）：
+Controller → ApplicationService → QueryPort → QueryAdapter → SQL/DSL
+（需独立路由 / 异步时 → QueryHandler）
 ```
 
-- QueryHandler 返回应用投影，不返回聚合；
+- 默认简单读由 ApplicationService 直查写 Repository，与写用例共用同一入口（见 [E-4.2](#e-42-读侧)）；
+- 仅当读模型与聚合结构分歧时，在 ApplicationService 内调用 `QueryPort`；需要独立路由才引入 `QueryHandler`；
+- QueryPort 返回应用投影，不返回聚合；
 - 列表、搜索、统计和 Join 不进入写侧 Repository；
 - QueryBuilder、Criteria 和 SQL 只在 infrastructure；
 - 查询包含租户隔离；
@@ -1508,18 +1713,22 @@ Controller
 
 ## D.1 最小代码链
 
+**默认路径（Application Service First）**：
+
 ```java
 @RestController
 @RequiredArgsConstructor
 public class OrderController {
-  private final CreateOrderCommandHandler createOrderHandler;
+  private final OrderApplicationService orderService;
 
   @PostMapping("/orders")
   public ApiResponse<Long> create(@Valid @RequestBody CreateOrderReq req) {
-    return ApiResponse.success(createOrderHandler.handle(OrderWebAssembler.toCommand(req)));
+    return ApiResponse.success(orderService.create(req.name(), req.customerId()));
   }
 }
 ```
+
+ApplicationService 编排用例：加载聚合、调用行为、保存、发布事件。完整示例见 E-3.6。选择性 CQRS（Command + Handler）路径见 E-3.6 参考形态。
 
 ```java
 public final class Order extends AuditableAggregateRoot<Long> {
@@ -1562,6 +1771,57 @@ ACL 端口使用本地语言，例如 `AccessTokenIssuer`；application 只依�
 领域事件的最小时序是：聚合记录事件；写用例保存聚合；Durable 场景在清事件前提取载荷并写入同事务 Outbox；Outbox 成功交接后才清事件。发布失败抛 `InfrastructureException` / `SystemException`，不转换成 `BizException`。
 
 ID 生成遵循：`IDENTITY` 由数据库生成；非 `IDENTITY` 尊重调用方提供的非空 ID，否则由 metadata-sdk 生成并回填；创建用例返回持久化确认后的 ID；领域模型不依赖具体生成器。
+
+### D.1.1 极简 ApplicationService 样板（L1 简单 CRUD / 支撑域）
+
+以下为**默认形态**（多数 CRUD、配置、字典、简单主数据）。不使用 `Command` / `Handler` / `QueryHandler`，读写共用一个语义化 `ApplicationService`（详见 [E-3.7](#E-37-入口构件决策) 与 [ADR-0028](./adr/0028-application-service-first-selective-cqrs.md)）：
+
+```java
+@Service
+@Transactional
+public class CustomerApplicationService {
+
+  private final CustomerRepository customerRepository;
+  private final CustomerQueryPort customerQueryPort; // 仅复杂读时引入
+
+  /** L1 简单写：直接编排聚合行为，无需 Command/Handler 三件套 */
+  public CustomerId create(String name, Phone phone) {
+    Customer customer = Customer.create(name, phone);
+    customerRepository.save(customer);
+    return customer.getId();
+  }
+
+  public void update(CustomerId id, String name, Phone phone) {
+    Customer customer = customerRepository.getById(id);
+    customer.update(name, phone);            // 状态迁移在聚合内
+  }
+
+  public void delete(CustomerId id) {
+    customerRepository.deleteById(id);
+  }
+
+  /** 简单读：按 ID 详情 / 简单分页，直查写 Repository，无需 QueryPort */
+  public CustomerDTO get(CustomerId id) {
+    return CustomerDTO.from(customerRepository.getById(id));
+  }
+
+  public PageResult<CustomerDTO> page(CustomerPageQuery query) {
+    return customerRepository.pageByQuery(query).map(CustomerDTO::from);
+  }
+
+  /** 复杂读（列表/搜索/统计/Join）才在内部升级 QueryPort，不新增独立 QueryService */
+  public CustomerDetailDTO detail(CustomerId id) {
+    return customerQueryPort.loadDetail(id);
+  }
+}
+```
+
+要点：
+
+- 默认入口就是 `CustomerApplicationService`，新人一眼看懂"客户业务入口"。
+- 写事务位于最外层 `@Transactional`；状态迁移在 `Customer` 聚合内，ApplicationService 只编排。
+- 简单读与写共用同一服务；仅当读模型与聚合结构分歧时，才在方法内调用 `QueryPort`。
+- 复杂度上升（命令数多 / 多入口 / 异步）再按 [E-3.7](#E-37-入口构件决策) 升级 `Command` / `CommandHandler`。
 
 <a id="payment-sample"></a>
 
@@ -1662,6 +1922,10 @@ adapter 直接把回调报文中的 `paymentId`、`channelTradeNo`、`amount` �
 
 # 附录 F：版本历史
 
+- **v5.3.1（2026-09-14）**：依据 ADR-0028 与「Application Service First + Selective CQRS」方案评审，收敛样板与入门示例的自相矛盾。① 附录 D 新增 D.1.1 极简 ApplicationService（L1）样板，使 Blueprint 默认形态自身体现简单路径，避免重模板被复制放大；② 附录 C.3/C.4 第一个写/读用例改为 ApplicationService 优先，与 E-3.7/E-4.2 对齐；③ G-1.1 明确 Defined / Enforced-in-CI / Advisory 三态，防止把未接入 CI 的规则称为已阻断；④ E-6.2 显式 D1 门禁白名单放行编译期注解，防合法 D1 类误报；⑤ 新增 G-1.6 CORE/E 条文与门禁映射表，提升原则→门禁可追溯性；⑥ 澄清 E-4.2 读侧判据「分页」口径：简单单表分页 / 按 ID 详情 / 1:1 映射 DTO 的列表仍直查写仓储，仅跨聚合、Join、统计、定制投影等结构分歧才升级 QueryPort，与 D.1.1 `page()` 样板对齐。
+- **v5.3.0（2026-09-14）**：Application Service First 强化。① 新增 Ceremonial Architecture（仪式感架构）反模式定义与检测标准（E-3.2）；② 新增 AS-01～AS-06 六条编号规则（E-3.7）；③ 新增复杂度与类数量对比表（E-3.7）；④ Blueprint 代码生成器默认行为约束：默认不生成 command/query 目录（E-3.7、E-12）；⑤ P-1 增加复杂度检查标准，防止过度设计；⑥ E-13.2 区分 `*DomainService` 与 `*ApplicationService` 的职责边界；⑦ 读侧取消 QueryService 独立层级，读用例统一由 ApplicationService 处理，复杂读升级 QueryPort（E-3.7、E-4.2）。依据「Application Service First + Selective CQRS」方案评审。
+- **v5.2.0（2026-09-14）**：确定默认入站边界为**语义化 ApplicationService**，采用「Application Service First + Selective CQRS + Complexity-driven DDD」（ADR-0028）。① E-3：入站边界默认改为 ApplicationService，Command/QueryService/Handler 为复杂度驱动可选件（E-3.1 表、E-3.7 决策流程重写）；② E-3.8 新增构件职责速查（ApplicationService/Command/CommandHandler/ReadModel 各回答什么问题；QueryService 独立类已在 v5.3.0 读侧取消，读侧统一走 ApplicationService + QueryPort），并明确「抽象价值 = 承担独立职责，而非符合 DDD」；③ E-3.9 新增「场景 × 模式」决策矩阵；④ E-3.10 新增 AI/Agent 7 问选型判据（含命令异步化必须走 Outbox + 消费端幂等）；⑤ E-4 新增 DDD 复杂度与 CQRS 复杂度**正交**原则（二维模型，领域复杂≠Full CQRS）；⑥ E-4.2：读侧默认改为 AppService 直查、明确读写不必对称；⑦ 默认交付路径、E-12 新模块 5 步同步；⑧ 门禁口径：用例构件呈现与 rule #19 降为裁定（Advisory），硬门禁只保留不变量。
+- **v5.1.2（2026-09-14）**：新增核心红线 CORE-09（EAV 只承载扩展字段）与 CORE-10（Metadata 描述模型、不执行业务），核心规则从 8 条扩为 10 条；E-6 新增 E-6.5 EAV 边界判定（物理列 > 预留列 > JSON > EAV）；P-2.5 补充元数据职责边界。依据外部架构评审收敛建议。
 - **v5.1.1（2026-09-11）**：状态对账（不改语义）。① G-1.5 表②：修正 Blueprint 列 `adapterControllersMustNotDependOnApplicationService` 为 Active（实测 0 违规样板、不 freeze），并与 IAM/MasterData/Integration 的 Frozen 事实区分；② G-1.5 表①补登 `noApplicationUseCasePackage`、`noBoneCoreUseCaseApiDependency`、`noStudioGeneratorUseCaseAnnotation`、`noNewDomainStorePackage`、`noCustomBusinessException`、`noBusinessExceptionSuffix`、`noCrossContextDomainDependency`、`applicationServicesMustNotOwnDomainRules` 8 条已在共享规则库与模块测试中启用的规则；③ E-10：认定 `domain/{aggregate}` 平铺分组为合法变体（与 `domain/model/{role}` 二选一），依据 Blueprint/IAM 现行形态；④ E-4.2：标注 Blueprint 读侧为存量形态，新模块按 `application/query/port` 实现；⑤ G-2：freeze 台账 `rule` 标识统一为共享规则名；⑥ E-13.2：`MetadataApi` 标注为目标命名示例；⑦ P-2.4：文本版上下文关系图替换为 `assets/context-map.svg`（依关系表逐行对账绘制，OHS 用母线表达全覆盖）；⑧ 历史 ASCII 图中「Metadata ─C-S→ Extension」线经代码裁决废弃：`bone-extension-studio` 仅依赖 `bone-metadata-sdk` 的 Table/Column 注解、Criteria 与 Repository 等技术持久化能力，对 `bone-metadata-server` 内部包 import 为 0，按 P-2.2「SDK 与技术依赖不混入 Context Map」不构成业务级 Customer–Supplier 关系，图注已同步，不补关系表。
 - **v5.0.2 追记（2026-09-11，同日第二次复核）**：
   1. E-3.5 参考形态对齐 blueprint 的 `findByIdInTenant`、`Optional.ofNullable(...).orElseThrow` 和 `publishFrom`；事件发布统一为 `publishFrom` 口径，并登记 Outbox“先取载荷后发布”的时序约束。

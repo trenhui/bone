@@ -88,7 +88,7 @@ public class ArchitectureTest {{
     static final ArchRule no_business_exception_suffix =
             FreezingArchRule.freeze(BoneDddArchRules.noBusinessExceptionSuffix());
 
-    // P0-7 + §15 + §23（存量 freeze，迁移后收缩基线）
+    // §15 + ADR-0028（上帝对象命名守护，存量 freeze，迁移后收缩基线）
     @ArchTest
     static final ArchRule adapter_no_application_service =
             FreezingArchRule.freeze(BoneDddArchRules.adapterControllersMustNotDependOnApplicationService());

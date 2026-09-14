@@ -1,0 +1,2 @@
+Method <com.bone.iam.application.command.handler.CreateTenantCommandHandler.handle(com.bone.iam.application.command.cmd.CreateTenantCommand)> calls method <com.bone.metadata.sdk.query.criteria.Criteria.create()> in (CreateTenantCommandHandler.java:22)
+Method <com.bone.iam.application.command.handler.CreateTenantCommandHandler.handle(com.bone.iam.application.command.cmd.CreateTenantCommand)> calls method <com.bone.metadata.sdk.query.criteria.Criteria.eq(java.lang.String, java.lang.Object)> in (CreateTenantCommandHandler.java:22)

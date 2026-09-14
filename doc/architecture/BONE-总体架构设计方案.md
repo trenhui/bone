@@ -265,6 +265,27 @@ flowchart TB
 
 单模块内：**DDD + CQRS**：`adapter` → `application` → `domain` ← `infrastructure`。
 
+### 4.1.1 模块层级归属与依赖规则（Kernel / Framework / Engine / Platform）
+
+> 与 §4.1 的运行时三层（前端 / 平台服务 / 引擎）视角互补：本节定义**模块依赖方向**的层级语义，约束跨模块依赖，防止 Engine / Platform 分类持续漂移。
+
+**四层语义与当前归属**：
+
+| 层级 | 定义 | 当前归属 | 允许依赖 |
+|------|------|----------|----------|
+| **Kernel** | 跨模块共享契约与抽象（实体基类、统一响应、租户上下文、`*Api` 契约、事件 Envelope） | `bone-core`、各模块 `api` / `contract` 包、共享内核白名单 | 无（JDK + Bone 最小领域抽象） |
+| **Framework** | 横切基础能力（Web 封装、Security、异常、数据源、缓存、事件、可观测） | `bone-framework/*` | Kernel |
+| **Engine** | 可嵌入的运行时引擎（建模 / 扩展 / 生成），提供 SDK 底座与引擎内核 | `bone-engine/*` | Kernel、Framework |
+| **Platform** | 可独立部署的业务服务（自有 API、Domain、Data） | `bone-platform/*` | Kernel、Framework、Engine 的 SDK 底座 |
+
+**依赖方向（强制）**：`Platform → Engine(SDK 底座) → Framework → Kernel`；禁止 `Kernel → Platform`、`Engine → Platform`。执行载体见门禁规则 `engineModulesMustNotDependOnPlatform`、`platformMustNotDependOnEngineApps`。
+
+**角色与物理位置的三处例外（认可现状，物理收敛列入 MVP 后中期项）**：
+
+1. `bone-metadata-sdk` / `bone-extension-sdk` 物理位于 `bone-engine`，但角色是**被任意层依赖的底座**（当前仅依赖 bone-core）。规则上承认其 SDK 底座地位，不因物理位置视为引擎应用。
+2. `bone-metadata-server` / `bone-extension-studio` / `studio-generator` 是可独立部署的**应用壳**，物理位于 `bone-engine`。规则上按 Platform 层约束（不得被 platform 其他服务依赖、不得依赖 platform），物理收敛列入 MVP 后。
+3. `bone-integration` 的 Camel 编译与 Flow 执行能力以**平台服务**形态交付（已收敛为唯一集成服务），不再作为独立 engine 演进。
+
 ### 4.2 逻辑架构（平台视角）
 
 ```mermaid

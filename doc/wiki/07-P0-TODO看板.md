@@ -157,6 +157,18 @@
 
 ---
 
+## 架构收敛（MVP 后中期项）
+
+> 真源：《BONE 总体架构设计方案》§4.1.1（模块层级归属与依赖规则）。**先立语义与规则，不动物理结构**；以下收敛在 `release/mvp-v1.0` 发布后单独立项。
+
+| ID | 位置 | 描述 | 状态 | 优先级 |
+|----|------|------|------|--------|
+| LYR-01 | `bone-engine/bone-metadata-sdk`、`bone-engine/bone-extension-engine/bone-extension-sdk` | SDK 底座迁出 `bone-engine`，独立为底层底座模块（角色已是"被任意层依赖"，物理位置待收敛） | open | P1 |
+| LYR-02 | `bone-engine/bone-metadata-server`、`bone-extension-studio`、`studio-generator` | 可部署应用壳收敛至 Platform 层（规则上已按 Platform 约束，物理位置待收敛） | open | P1 |
+| LYR-03 | `bone-iam` 的 `CreateTenantCommandHandler` | 存量违规：CommandHandler 直用 `Criteria` 做租户编码唯一性检查（违反 CORE-05 / P0-6），已重建 freeze 基线接受存量；修复为走 QueryPort 后收缩基线 | open | P1 |
+
+---
+
 ## 维护约定
 
 - 新增占位实现时**同步**在本表登记一行。  
