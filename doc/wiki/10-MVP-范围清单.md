@@ -132,7 +132,7 @@
 - `bone-metadata-server` 模块全量测试 **38/38 通过**（ArchitectureTest 16 + MetadataManagementControllerTest 4 + MetadataModuleReferenceE2ETest 2 + ServerContextLoadsTest 2 + Catalog* 7 + Iam*Validator 6 + AggregatePureUnitTestCoverage 1）。
 - 关键路径：MVP-01（建模 CRUD 集成）/ MVP-02（模式B运行时，H2 单测）/ MVP-04（租户双层隔离）/ MVP-05（IAM）/ MVP-11（物理对齐代码补全）均验证通过。
 
-**已修复（2026-09-14，本分支 working tree 已落地，待提交）**
+**已修复（2026-09-14，已提交 `release/mvp-v1.0`）**
 
 - 预存在配置债 `engineMetaEntityRepository` / `engineMetaFieldRepository` 重复 bean 注册：**已修复**。`MetadataEngineAutoConfiguration` 的 `@ComponentScan("com.bone.metadata.engine.runtime")` 增加 `excludeFilters = @Filter(ASSIGNABLE_TYPE, EngineSdkRepositoryConfig.class)`，使带 `@EnableSqlRepositories` 的 `EngineSdkRepositoryConfig` 仅由宿主 `@SpringBootApplication(scanBasePackages="com.bone")` 注册一次，`RepositoryRegistrar` 不再报重复注册 ERROR。`bone-metadata-engine-starter` 编译 + spotless 通过。
 - 预存在 `bone-core` 全新 `clean` 编译失败：**已修复**。`bone-core/pom.xml` 显式引入 `spring-tx`（test 作用域）补足 `@Transactional` 夹具依赖；补齐 `BoneDddArchRulesVerificationTest` 及其夹具的引用/类型错误（半成品测试已补全为可编译可运行的 DDD 架构规则校验）。`bone-core clean test` 200 用例全绿。
