@@ -349,7 +349,7 @@
 | 功能 | 社区版 | 商业版 |
 |------|--------|--------|
 | 元数据管理（实体、字段、关系） | ✅ **MVP-2 基线**（catalog REST + 控制台 CRUD；版本历史/转主数据为 P1+） | ✅ |
-| 扩展字段 EAV（sdk + server） | ✅ | ✅ |
+| 扩展字段（预留列/JSON/EAV，sdk + server） | ✅ | ✅ |
 | 代码生成（默认模板） | 🔶（studio-generator） | ✅ |
 | 自定义模板 | ❌ | ✅ |
 | 主数据管理（实体+质量规则） | ❌ | ✅ |
@@ -491,8 +491,8 @@ Scenario: 使用快速入口
 ### 4.4 元数据管理（P0）
 
 > **工程实现映射（单一真源）**：[元数据能力-实现映射与竞品对照.md](../design/modules/元数据能力-实现映射与竞品对照.md)  
-> - **bone-metadata-sdk**：平台数据面（持久化 + 扩展字段 EAV），**模式 A / B 共用**。  
-> - **bone-metadata-server**（`:9001`）：元模型控制面 — 扩展字段 EAV + catalog REST（`/api/v1/metadata/*`）。多应用共享扩展字段时用 `REMOTE`。  
+> - **bone-metadata-sdk**：平台数据面（持久化 + 扩展字段三模式：预留列（默认）/JSON/EAV），**模式 A / B 共用**。  
+> - **bone-metadata-server**（`:9001`）：元模型控制面 — 扩展字段 REST + catalog REST（`/api/v1/metadata/*`）。多应用共享扩展字段时用 `REMOTE`。  
 > - **模式 A · 生成式**：`studio-generator` / `bone-codegen` → 可编译源码进 Git（信创、深度定制、ExtPoint）。  
 > - **模式 B · 运行时**：`bone-metadata-engine` → 按已发布 `meta_*` 提供动态 CRUD / SmartQL / 规则，**标准场景可不生成业务 Controller**（对标 Salesforce 声明式运行时）。  
 > 下文 META-* 验收为目标态；As-Is 见对照文档 §7（**当前主线为模式 A**；模式 B 引擎待接平台）。
@@ -1562,7 +1562,7 @@ flowchart TD
 | 跨端框架 | React Native | 0.74+ | 实现多端适配 |
 | 后端框架 | Spring Boot | 3.2+ | 构建后端服务 |
 | 微服务框架 | Spring Cloud | 2023+ | 微服务治理 |
-| **数据持久化** | **Bone Metadata SDK（自研）** | **1.0.x**（`bone-parent` BOM） | 平台默认持久化：`@EnableSqlRepositories`、Criteria/DSL、扩展字段 EAV、多库适配；**不**等同于控制台「业务实体建模」全套 API。版本以 `bone-metadata-sdk.version` 为准 |
+| **数据持久化** | **Bone Metadata SDK（自研）** | **1.0.x**（`bone-parent` BOM） | 平台默认持久化：`@EnableSqlRepositories`、Criteria/DSL、扩展字段（预留列/JSON/EAV）、多库适配；**不**等同于控制台「业务实体建模」全套 API。版本以 `bone-metadata-sdk.version` 为准 |
 | 服务注册与发现 | Nacos | 2.2+ | 服务管理（按需启用） |
 | 服务熔断与限流 | Sentinel | 2.x（按需） | 系统保护（非所有模块默认引入） |
 | 消息队列 | RocketMQ | 5.1+ | 异步通信（按需） |
@@ -1580,7 +1580,7 @@ flowchart TD
 - **二级缓存**：集成 Redis，支持实体级缓存失效策略（TTL 可配置）。
 - **多数据库方言**：已实现 MySQL、PostgreSQL 方言，信创数据库通过 SQL 重写适配（性能损耗 <30% 可接受）。
 - **分页优化**：支持 `offset/limit` 和 `cursor` 两种分页模式，大数据量场景推荐 cursor。
-- **动态建表**：**[Vision/引擎]** 根据实体定义自动建表等，以 ADR 与 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) 为准；SDK 当前强项为仓储与 EAV，非完整建模运行时。
+- **动态建表**：**[Vision/引擎]** 根据实体定义自动建表等，以 ADR 与 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) 为准；SDK 当前强项为仓储与扩展字段（预留列/JSON/EAV），非完整建模运行时。
 - **性能监控**：集成 Micrometer，暴露 SQL 执行时间、慢查询统计（阈值 >200ms）。
 - **遗留迁移**：个别模块若仍保留 MyBatis 路径，仅作 **ADR 登记的遗留迁移**；新模块默认 **Bone Metadata SDK**（见《Bone-DDD》§5.1.1），不得以 MyBatis-Plus 作为默认栈。
 

@@ -6,6 +6,7 @@ workflow: full
 language: zh-CN
 design_doc: openspec/changes/ddd-spec-v4-5-convergence/design.md
 tasks: openspec/changes/ddd-spec-v4-5-convergence/tasks.md
+archived-with: 2026-09-11-ddd-spec-v4-5-convergence
 ---
 
 # 实施计划：v4.5 DDD 规范收敛 — D11/D12 两条评审修订并入

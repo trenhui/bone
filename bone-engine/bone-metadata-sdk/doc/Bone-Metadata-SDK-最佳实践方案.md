@@ -18,7 +18,7 @@
 6. [SQL 模板与自定义仓储方法](#6-sql-模板与自定义仓储方法)
 7. [元数据服务](#7-元数据服务)
 8. [多租户与动态数据源](#8-多租户与动态数据源)
-9. [扩展字段（EAV / JSON / 预留列）](#9-扩展字段eav--json--预留列)
+9. [扩展字段（预留列 / JSON / EAV）](#9-扩展字段预留列--json--eav)
 10. [安全与合规](#10-安全与合规)
 11. [性能与可观测性](#11-性能与可观测性)
 12. [业务模块接入规范](#12-业务模块接入规范)
@@ -58,7 +58,7 @@ Bone Metadata SDK 是 Bone 平台**默认数据访问层**，为业务/平台模
 
 | 原则 | 业界参照 | Bone 落地 |
 |------|----------|-----------|
-| **元数据为骨架** | Salesforce Custom Object / Field | `TableMetadataResolver` + D1 注解；动态字段走 EAV/预留列 |
+| **元数据为骨架** | Salesforce Custom Object / Field | `TableMetadataResolver` + D1 注解；动态字段走扩展字段三模式（预留列/JSON/EAV） |
 | **仓储抽象** | Spring Data `Repository` | 领域 `XxxRepository extends Repository<Entity, Id>`，禁止手写 JDBC 作为主路径 |
 | **类型安全查询** | QueryDSL Lambda、JOOQ DSL | `Criteria` + `SFunction`；`query.dsl.FluentQuery` |
 | **SQL 显式可控** | MyBatis 模板 | `UnifiedSqlTemplateLoader` + 多解析器（SQL/YAML/MyBatis 片段） |
@@ -286,7 +286,7 @@ DSL API      ──adapter──┘
 
 ---
 
-## 9. 扩展字段（EAV / JSON / 预留列）
+## 9. 扩展字段（预留列 / JSON / EAV）
 
 | 机制 | 类 | 适用 |
 |------|-----|------|

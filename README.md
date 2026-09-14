@@ -6,8 +6,8 @@
 ![License](https://img.shields.io/badge/license-MIT-yellow.svg)
 ![JDK](https://img.shields.io/badge/JDK-17+-orange.svg)
 
-> **100% 开源免费 · 元数据驱动 · 四大能力协同**
-> **构建可复用的系统，支撑可持续演进。**
+> **100% 开源免费 · 元数据驱动 · 四大引擎协同**
+> **「构建可复用的系统，创造可持续的价值。」** —— 梅山
 
 ---
 
@@ -30,12 +30,11 @@
 - [项目概述](#项目概述)
 - [设计原则](#设计原则)
 - [核心价值](#核心价值)
-- [四大能力域](#四大能力域)
+- [四大引擎](#四大引擎)
 - [协同架构](#协同架构)
 - [技术路线](#技术路线)
 - [演进路线](#演进路线)
 - [快速体验](#快速体验)
-- [预期收益与验证方式](#预期收益与验证方式)
 - [文档与社区](#文档与社区)
 - [常见问题](#常见问题)
 - [License](#license)
@@ -46,9 +45,9 @@
 
 Bone 以 **「Build Once, Natively Everywhere」** 为长期愿景：用**统一元数据**描述业务，用**标准化引擎**承载主数据、扩展与集成，让企业应用从「项目制重复建设」走向「平台化持续演进」。
 
-在领域划分上，**元数据 / 建模是核心域**；主数据、扩展和集成是支撑域。四者协同，但不意味着每个域都采用相同的实现方式或独立部署。
+产品层面对外称“四大引擎”；DDD 战略分类上，**元数据 / 建模是当前核心域**，主数据、扩展和集成是支撑域。产品能力与 DDD 投资分类用途不同，并不矛盾。
 
-当前仓库是这一愿景的开源参考实现：元数据双模式、IAM、主数据、扩展管理和集成等能力已有可运行实现，完整度各不相同；尚未落地的能力在本文中明确标为“规划”或“目标”。
+当前仓库是这一愿景的开源参考实现：元数据双模式、IAM、主数据、扩展管理和集成等能力已有代码和启动入口，完整度各不相同；尚未落地的能力在本文中明确标为“规划”或“目标”。
 
 ---
 
@@ -92,15 +91,15 @@ Bone 以 **「Build Once, Natively Everywhere」** 为长期愿景：用**统一
 
 ---
 
-## 四大能力域
+## 四大引擎
 
-Bone 由一个核心域和三个支撑域组成。下文同时标注当前实现与演进目标，避免把路线图当成现状。模块关系见 [元数据能力对照](doc/design/modules/元数据能力-实现映射与竞品对照.md)。
+四大引擎是产品能力视图，不等同于四个 DDD 核心域。下文同时标注当前实现与演进目标，避免把路线图当成现状。模块关系见 [元数据能力对照](doc/design/modules/元数据能力-实现映射与竞品对照.md)。
 
 ### 智能元数据引擎（Smart Metadata Engine）
 
-**定位**：平台核心域。用 **统一元模型（catalog + EAV）** 描述业务，并提供两种互补的交付模式：
+**定位**：平台核心域。用 **统一元模型（catalog）+ 可插拔的扩展字段存储** 描述业务，并提供两种互补的交付模式：
 
-> 术语速览：**catalog**＝实体、字段和关系的登记册；**EAV**＝以“属性—值”记录扩展字段，无需为每个扩展字段修改业务表；**SmartQL**＝面向元模型的查询语言；**逃逸舱**＝标准能力覆盖不到时改用生成代码或手写代码。
+> 术语速览：**catalog**＝实体、字段和关系的登记册；**扩展字段**＝实体的动态扩展属性，SDK 提供三种存储模式——**预留列（默认推荐）**、**JSON 列**、**EAV 键值对**（极低频场景，非推荐首选）；**SmartQL**＝面向元模型的查询语言；**逃逸舱**＝标准能力覆盖不到时改用生成代码或手写代码。
 
 | 模式 | 处理方式 | 适用场景 | 主要模块 |
 |------|----------|----------|----------|
@@ -123,7 +122,7 @@ Bone 由一个核心域和三个支撑域组成。下文同时标注当前实现
 
 | 能力方向 | 说明 |
 |----------|------|
-| 平台数据面 | **bone-metadata-sdk**：仓储、EAV 扩展字段、多数据源方言（模式 B 的 JDBC 执行底座） |
+| 平台数据面 | **bone-metadata-sdk**：仓储、扩展字段三模式（预留列/JSON/EAV，默认预留列，分配失败自动降级 JSON）、多数据源方言（模式 B 的 JDBC 执行底座） |
 | 建模控制面 | **bone-metadata-server**：catalog REST + 扩展字段 API（`:9001`） |
 | 规则与动态访问 | **[bone-metadata-engine](bone-engine/bone-metadata-engine/)**：表达式/校验/SmartQL/动态 CRUD（模式 B 核心，逐步替代「为每张表生成代码」） |
 | 权限与多租户 | 元数据绑定行级租户、列级规则（两模式统一策略） |
@@ -151,7 +150,7 @@ Bone 由一个核心域和三个支撑域组成。下文同时标注当前实现
 
 ### ExtPoint 扩展引擎（Extension Engine）
 
-**定位**：在 **不修改核心代码** 的前提下生长业务能力。
+**定位**：通过预定义扩展点注入差异化逻辑，尽量不修改核心流程代码。
 
 | 状态 | 能力 |
 |------|------|
@@ -170,10 +169,10 @@ Bone 由一个核心域和三个支撑域组成。下文同时标注当前实现
 
 | 能力方向 | 目标 | 当前状态 |
 |----------|------|-------------------|
-| 多协议 | REST、gRPC、SOAP、Kafka、MQTT、JDBC 等 | **REST/HTTP** 已实现；FTP/JDBC/MQ 返回 501 |
+| 多协议 | 按业务需要扩展协议连接器 | **REST/HTTP** 已实现；FTP/JDBC/MQ 返回 501 |
 | 连接器工厂 | 标准化连接器 | CRUD + 连接测试（`int_connector`） |
 | 流程编排 | 分支、并行、循环 | **线性** START→HTTP→END（INT-09） |
-| 可靠性 | TCC/重试/幂等/死信 | 执行日志 + 领域事件 + **MQ Outbox 中继**（INT-10 已交付，默认落日志，开启 `BONE_INTEGRATION_OUTBOX_MQ_ENABLED` 中继 RocketMQ） |
+| 可靠性 | 重试、幂等、死信与最终一致性 | 执行日志 + 领域事件 + **MQ Outbox 中继**（INT-10 已交付，默认落日志，开启 `BONE_INTEGRATION_OUTBOX_MQ_ENABLED` 中继 RocketMQ） |
 | Camel 编排 | 可视化 DSL 执行 | **Camel 编译器已交付**（INT-11）：`int_flow_node` 图 DSL → Camel 路由（choice/multicast）；默认执行仍为线性（INT-09），Camel 执行经 `integration.camel.execution-enabled` 启用 |
 
 **相关代码**（唯一集成服务，勿与已移除的 engine 模块混淆）：
@@ -187,11 +186,11 @@ Bone 由一个核心域和三个支撑域组成。下文同时标注当前实现
 
 ## 协同架构
 
-四大能力域在逻辑上相互支撑；智能元数据引擎通过 **模式 A（生成）** 与 **模式 B（运行时）** 提供两条「从模型到可运行系统」的路径。下图表示能力分层关系，不是数据处理流水线：
+- **元数据引擎**提供统一模型、仓储和两种交付路径。
+- **主数据平台**基于元数据能力治理权威记录和数据质量。
+- **扩展引擎**与**集成引擎**是可按场景组合的支撑能力，不构成必须串行经过的处理链路。
 
-![能力分层协同架构](doc/design/readme-architecture-layers.svg)
-
-> **物理部署**：集成能力由 **单一进程** `bone-platform/bone-integration` 承载（非独立 engine 服务）。执行运行时：**INT-09 同步线性**（`LinearSyncFlowRuntime`）已可用；**INT-11 Camel 编译器**（`CamelFlowCompiler`）与 **INT-10 MQ Outbox** 均已交付，Camel 执行与 MQ 中继分别经 `integration.camel.execution-enabled` / `BONE_INTEGRATION_OUTBOX_MQ_ENABLED` 启用（见 [集成 README](bone-platform/bone-integration/README.md)）。
+物理部署不要求四个独立进程。例如，集成能力由 `bone-platform/bone-integration` 单一进程承载，扩展 SDK 则嵌入业务宿主。
 
 ---
 
@@ -214,7 +213,7 @@ Nacos、Sentinel、Seata、SkyWalking 等保留为按部署规模评估的技术
 
 | 阶段 | 定位 | 重点 |
 |------|------|------|
-| **当前基线** | Build Once, Web First | 模式 A + 模式 B 运行时 MVP；catalog/EAV、IAM、主数据、扩展、集成已有可运行实现 |
+| **当前基线** | Build Once, Web First | 模式 A + 模式 B 运行时 MVP；catalog/扩展字段、IAM、主数据、扩展、集成已有实现 |
 | **下一里程碑** | 强化运行时与工程闭环 | 模型发布/热加载、连接器扩展、数据血缘、统一可观测性和端到端验收 |
 | **后续方向** | 行业与多端复用 | 行业模板、多端适配、插件生态；以真实项目验证后逐步交付 |
 
@@ -226,7 +225,7 @@ Nacos、Sentinel、Seata、SkyWalking 等保留为按部署规模评估的技术
 
 面向贡献者与评估者的 **最小路径**（完整端口见 [本地开发与构建](doc/wiki/03-本地开发与构建.md)）。
 
-**运行时拓扑**（本地快速体验的最小形态；端口真源为各模块 `application.yml`，含网关 `:8888`）：
+**开发环境拓扑**（端口真源为各模块 `application.yml`；最小登录路径见图下注释）：
 
 ![运行时拓扑](doc/design/readme-runtime-topology.svg)
 
@@ -264,6 +263,10 @@ cd bone-platform/bone-iam && mvn spring-boot:run -Dspring-boot.run.profiles=dev
 # 网关（新终端；shell 前端代理指向 :8888，不启动则登录失败）
 cd bone-platform/bone-gateway && mvn spring-boot:run
 
+# 系统服务（新终端；Shell 首页概览和快捷操作依赖 :8083）
+export BONE_DB_PASSWORD=bone_dev_pass
+cd bone-platform/bone-system && mvn spring-boot:run -Dspring-boot.run.profiles=dev
+
 # 集成（可选，另开终端；经网关访问见下表）
 # cd bone-platform/bone-integration && mvn spring-boot:run
 
@@ -271,7 +274,7 @@ cd bone-platform/bone-gateway && mvn spring-boot:run
 cd bone-frontend && npm ci && npm run dev
 ```
 
-### 默认入口（本地）
+### 默认入口（启动对应服务后）
 
 | 入口 | 地址 |
 |------|------|
@@ -283,25 +286,11 @@ cd bone-frontend && npm ci && npm run dev
 | 元数据服务 | http://localhost:9001 |
 | Studio 生成器 | http://localhost:8086（模式 A 代码生成） |
 
-- **端口速查**：integration `:8085` · studio-generator `:8086` · metadata-server `:9001`，无占用即可并行启动；各模块端口真源为各自 `application.yml` 与 [本地开发与构建](doc/wiki/03-本地开发与构建.md)
+- **端口速查**：integration `:8085` · studio-generator `:8086` · metadata-server `:9001`（默认 profile `local`；若以 `dev` profile 启动则为 `:8885`），无占用即可并行启动；各模块端口真源为各自 `application.yml` 与 [本地开发与构建](doc/wiki/03-本地开发与构建.md)
 - 默认账号：`admin` / `123456`（首次登录请修改；与 `bone-init.sql` 一致）
 - **口令对齐**：MySQL root 密码由 `BONE_DB_PASSWORD` 注入 docker compose 与 IAM dev profile。若数据卷已使用默认值 `bone_root_pass` 初始化，需在 IAM 所在终端设置 `BONE_DB_PASSWORD=bone_root_pass`
 - DDL 策略：改 [bone-init.sql](bone-init.sql) 后重建库，见 [数据库开发规范](doc/architecture/数据库开发规范.md)
 - 仓库中**无** `bone-admin` 模块；在线演示环境以社区公告为准
-
----
-
-## 预期收益与验证方式
-
-以下收益是产品假设，不是当前版本的 SLA。项目将通过可复现的基准、交付记录和线上指标验证，避免用缺少样本的百分比或工期承诺替代证据。
-
-| 假设 | 验证指标 |
-|------|----------|
-| 元数据双模式减少标准 CRUD 样板 | 同等实体的手写代码量、交付周期、变更失败率 |
-| 统一模型降低多端重复维护 | 模型复用率、重复字段/接口数量、跨端一致性缺陷 |
-| 连接器与流程编排降低点对点集成成本 | 单条集成链路人天、复用连接器比例、重试成功率 |
-| 主数据治理改善数据质量 | 重复率、完整率、规则通过率、问题闭环时长 |
-| 扩展点降低客户化分支成本 | 主干侵入修改量、插件升级成功率、回滚时长 |
 
 ---
 
@@ -334,8 +323,8 @@ cd bone-frontend && npm ci && npm run dev
 
 ## 常见问题
 
-**Q: README 写的功能和代码不一致？**  
-A: README 同时包含当前能力和演进方向，并明确标注两者边界。若概览与代码不一致，以 OpenAPI、代码和测试为准，并通过 Issue 或 PR 修正文档。
+**Q: 如何判断某项能力是否已经实现？**
+A: 先看本文的“当前状态”，再以 OpenAPI、代码和测试为准；迭代范围见 [P0 看板](doc/wiki/07-P0-TODO看板.md)。
 
 **Q: 启动失败？**  
 A: 确认 JDK 17+、MySQL 已导入 `bone-init.sql`、端口无冲突；详见 [本地开发与构建](doc/wiki/03-本地开发与构建.md)。
@@ -350,7 +339,7 @@ A: 仅 **`bone-platform/bone-integration`**（构件 `bone-platform-integration`
 A: 见 [扩展引擎使用指南](bone-engine/bone-extension-engine/docs/使用指南.md) 与 `bone-extension-sdk` 示例。
 
 **Q: 有可参考的 DDD 工程样板吗？**  
-A: [`bone-blueprint/`](bone-blueprint/) 是官方 DDD 参考实现（订单示例，`:8082`，ArchUnit 门禁 0 违规），新模块建议对照组织代码；另有 Go 对照实现 [`bone-engine/go-engine/`](bone-engine/go-engine/)（实验性）。
+A: [`bone-blueprint/`](bone-blueprint/) 是官方 DDD 参考实现（订单示例，`:8082`，包含 ArchUnit 门禁），新模块建议对照组织代码；另有 Go 对照实现 [`bone-engine/go-engine/`](bone-engine/go-engine/)（实验性）。
 
 **Q: 生产部署？**  
 A: 各模块 Spring Boot 可执行 JAR + 网关；环境变量见 [config/env/README.md](config/env/README.md)。完整生产指引将随 `doc/deployment/` 持续补充。

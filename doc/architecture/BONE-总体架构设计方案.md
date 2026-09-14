@@ -125,7 +125,7 @@
 
 | 原则 | 架构落点 |
 |------|----------|
-| **元数据先行** | 统一 `meta_*` + EAV；应用生成含 **模式 A（生成式）** 与 **模式 B（运行时）**（§3.1、§7、§8.3.2） |
+| **元数据先行** | 统一 `meta_*` + 扩展字段三模式（预留列默认/JSON/EAV，见 §7）；应用生成含 **模式 A（生成式）** 与 **模式 B（运行时）**（§3.1、§7、§8.3.2） |
 | **开闭原则（ExtPoint）** | 行业差异走扩展点 + JAR 插件，**禁止** fork 主干交付变体（§8.3.4、[扩展详设](../design/modules/5.%20扩展管理模块详细设计方案.md) §1.5） |
 | **单一可信数据源** | 主数据平台治理核心对象；元数据 catalog 与 `mdm_*` 边界见 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §8 |
 | **契约化集成** | 连接器、编排、幂等、可观测（§8.3.5、第二十七部分） |
@@ -458,7 +458,7 @@ flowchart TD
 
 | 逻辑组件 | Maven / 目录示例 |
 |----------|-------------------|
-| 元数据能力族 | **sdk**（数据面，A+B 共用）· **server**（catalog + EAV，:9001）· **engine**（模式 B，选配）· **studio-generator**（模式 A）— [对照](../design/modules/元数据能力-实现映射与竞品对照.md) §1.3 |
+| 元数据能力族 | **sdk**（数据面，A+B 共用）· **server**（catalog + 扩展字段，:9001）· **engine**（模式 B，选配）· **studio-generator**（模式 A）— [对照](../design/modules/元数据能力-实现映射与竞品对照.md) §1.3 |
 | 元数据 `delivery_mode` | `meta_entity.delivery_mode`：`0` GENERATIVE / `1` RUNTIME（As-Is 已落库；RUNTIME 动态 API 见 META-002B-02） |
 | 扩展引擎 | `bone-engine/bone-extension-engine/*`（`bone-extension-sdk` 运行时 + `bone-extension-studio` 控制面 **8088**） |
 | 扩展控制台微应用 | `bone-frontend/apps/bone-extension-app`（Qiankun 子应用 **3008**，代理网关 **8888**） |
@@ -524,7 +524,7 @@ flowchart TD
 
 #### 8.3.2 元数据
 
-> **分 As-Is / [Target] / Vision**（真源：[元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §5）。**As-Is**：`bone-metadata-server` :9001 上 catalog REST + `fields:*`（EAV）。实体含 **`delivery_mode`**（GENERATIVE / RUNTIME）。**模式 A** 生成统一走 **`/api/v1/generator/**`**（`studio-generator`，见 [Bone-API-规范 §13.1.1](./Bone-API-规范.md#1311-代码生成generator规范路径)；旧 `/api/v1/generate` 已下线）。**模式 B** 动态 CRUD 由 `bone-metadata-engine` 提供（`/api/v1/runtime/entities/{code}/records`，META-002B-02）。建模字段**嵌套**在实体下，避免与 EAV `fields:*` 冲突。
+> **分 As-Is / [Target] / Vision**（真源：[元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §5）。**As-Is**：`bone-metadata-server` :9001 上 catalog REST + `fields:*`（扩展字段三模式 API）。实体含 **`delivery_mode`**（GENERATIVE / RUNTIME）。**模式 A** 生成统一走 **`/api/v1/generator/**`**（`studio-generator`，见 [Bone-API-规范 §13.1.1](./Bone-API-规范.md#1311-代码生成generator规范路径)；旧 `/api/v1/generate` 已下线）。**模式 B** 动态 CRUD 由 `bone-metadata-engine` 提供（`/api/v1/runtime/entities/{code}/records`，META-002B-02）。建模字段**嵌套**在实体下，避免与扩展字段 `fields:*` 冲突。
 
 | API 路径 | 方法 | 功能 | 模式 |
 |----------|------|------|------|

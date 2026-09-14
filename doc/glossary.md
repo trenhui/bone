@@ -23,8 +23,8 @@
 | 中文 | English | 含义 | 勿混淆 |
 |------|---------|------|--------|
 | 建模实体 | MetaEntity | catalog 中的业务对象定义 | ≠ 运行时某一行业务数据 |
-| 建模字段 | MetaField | catalog 字段定义 | ≠ EAV 扩展字段分配 |
-| 扩展字段（EAV） | Extension field | 给业务表分配的物理扩展列 | ≠ catalog 字段 |
+| 建模字段 | MetaField | catalog 字段定义 | ≠ 扩展字段分配（fields:*） |
+| 扩展字段 | Extension field | 实体动态扩展属性；SDK 三种存储模式：预留列（默认）/JSON/EAV | ≠ catalog 字段 |
 | 运行时 | Metadata runtime | 按模型读写业务数据 | ≠ 代码生成 |
 
 ## 3. 战术构件（跨上下文）

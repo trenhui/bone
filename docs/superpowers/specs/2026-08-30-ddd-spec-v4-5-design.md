@@ -2,6 +2,8 @@
 comet_change: ddd-spec-v4-5-convergence
 role: technical-design
 canonical_spec: openspec
+archived-with: 2026-09-11-ddd-spec-v4-5-convergence
+status: final
 ---
 
 # 技术设计：v4.5 架构门禁重配（M2）

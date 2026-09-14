@@ -76,7 +76,7 @@ bone/                          # 根聚合模块
 │   ├── bone-security/         # 安全组件
 │   └── bone-web/              # Web 层封装（Spring Web、校验、AOP、全局异常）
 ├── bone-engine/               # 四大引擎与核心中间件
-│   ├── bone-metadata-sdk/     # 平台数据面（P0 持久化 + EAV）
+│   ├── bone-metadata-sdk/     # 平台数据面（P0 持久化 + 扩展字段：预留列/JSON/EAV）
 │   ├── bone-metadata-server/  # 扩展字段 REST（:9001，选配）
 │   ├── bone-metadata-engine/  # 智能元数据引擎（core + starter，选配）
 │   ├── bone-extension-engine/ # 扩展引擎

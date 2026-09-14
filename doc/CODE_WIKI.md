@@ -97,8 +97,8 @@ bone/                          # 根聚合模块
 │   ├── bone-security/         # 安全组件
 │   └── bone-web/              # Web 层封装（Spring Web、校验、AOP、全局异常）
 ├── bone-engine/               # 四大引擎与核心中间件
-│   ├── bone-metadata-sdk/     # 平台数据面（P0 持久化 + EAV）
-│   ├── bone-metadata-server/  # :9001 — 扩展字段 EAV（As-Is）+ catalog REST（MVP-2）
+│   ├── bone-metadata-sdk/     # 平台数据面（P0 持久化 + 扩展字段：预留列/JSON/EAV）
+│   ├── bone-metadata-server/  # :9001 — 扩展字段 API（预留列/JSON/EAV，As-Is）+ catalog REST（MVP-2）
 │   ├── bone-metadata-engine/  # 智能元数据引擎（core + starter，选配）
 │   ├── bone-extension-engine/ # 扩展引擎
 │   │   ├── bone-extension-sdk/

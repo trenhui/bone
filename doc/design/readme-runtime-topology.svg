@@ -68,10 +68,10 @@
     <text class="svc-d" x="964" y="290">REST 由 system 承载</text>
   </g>
 
-  <!-- ============ bone-engine 引擎组 ============ -->
+  <!-- ============ bone-engine 引擎与工具 ============ -->
   <g>
     <rect class="grp" x="740" y="352" width="400" height="180" rx="14"/>
-    <text class="grp-t" x="764" y="380">BONE-ENGINE · 引擎服务</text>
+    <text class="grp-t" x="764" y="380">BONE-ENGINE · 引擎与工具</text>
 
     <rect class="svc" x="764" y="396" width="170" height="62" rx="10"/>
     <text class="svc-t" x="782" y="422">bone-metadata-server</text>
@@ -82,7 +82,7 @@
     <text class="svc-p" x="964" y="442">:8086</text>
 
     <rect class="svc" x="764" y="470" width="352" height="44" rx="10"/>
-    <text class="svc-t" x="782" y="497">bone-extension-engine（SDK + Runtime）</text>
+    <text class="svc-t" x="782" y="497">bone-extension-sdk（嵌入业务宿主）</text>
   </g>
 
   <!-- ============ 基础设施 ============ -->

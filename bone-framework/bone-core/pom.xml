@@ -76,6 +76,13 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- 架构规则夹具（SubmitOrderCommandHandler / LegalQueryHandler 等）使用 Spring @Transactional，
+             而 spring-context 为 optional、spring-boot-starter-test 未将其传递进测试 classpath，需显式声明 -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-tx</artifactId>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>com.tngtech.archunit</groupId>
             <artifactId>archunit-junit5</artifactId>

@@ -122,7 +122,7 @@
 | ID | 位置 | 描述 | 状态 | 优先级 |
 |----|------|------|------|--------|
 | META-ASIS-01 | `bone-metadata-server` | 扩展字段 API `/api/v1/metadata/fields:*` | done | P0 |
-| META-ASIS-02 | `bone-metadata-sdk` | 平台 `@EnableSqlRepositories` + EAV | done | P0 |
+| META-ASIS-02 | `bone-metadata-sdk` | 平台 `@EnableSqlRepositories` + 扩展字段三模式（预留列/JSON/EAV） | done | P0 |
 | META-VIS-01 | `bone-metadata-server` catalog | 实体/关系 REST：`/api/v1/metadata/entities`、`…/entities/{id}/fields`、`…/relationships` | done | P0 |
 | META-VIS-02 | `bone-metadata-app` :3004 | 建模 UI CRUD；代理 **9001** + `VITE_API_KEY` | done | P0 |
 | META-VIS-03 | `studio-generator` | 物理库 + **CATALOG_SNAPSHOT**；`GET /api/v1/generator/metadata-entity-snapshots`、`GET …/data-sources/{id}/tables` | done | P0 |

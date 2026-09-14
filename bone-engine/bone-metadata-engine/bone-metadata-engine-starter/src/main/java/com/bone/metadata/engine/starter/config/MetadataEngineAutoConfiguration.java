@@ -4,6 +4,7 @@ import com.bone.metadata.engine.runtime.ExpressionEngine;
 import com.bone.metadata.engine.runtime.MetadataEngine;
 import com.bone.metadata.engine.runtime.TransformationEngine;
 import com.bone.metadata.engine.runtime.ValidationEngine;
+import com.bone.metadata.engine.runtime.adapter.config.EngineSdkRepositoryConfig;
 import com.bone.metadata.engine.runtime.metadata.MetadataRegistry;
 import com.bone.metadata.engine.runtime.metadata.OperationRegistry;
 import com.bone.metadata.engine.runtime.metadata.processor.CompositeMetadataProcessor;
@@ -23,14 +24,27 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Primary;
 
-/** Metadata Engine 自动配置类 负责自动装配所有Metadata Engine组件和配置 */
+/**
+ * Metadata Engine 自动配置类 负责自动装配所有 Metadata Engine 组件和配置。
+ *
+ * <p>注意：{@code EngineSdkRepositoryConfig}（带 {@code @EnableSqlRepositories} 副作用，会为 {@code
+ * MetaEntityPo}/{@code MetaFieldPo} 生成 {@code Repository} 代理 bean）不可被本类的 {@code @ComponentScan}
+ * 重复扫描——宿主（{@code BoneMetadataEngineApplication} 扫 {@code com.bone} 或 {@code bone-metadata-server}
+ * 扫 {@code com.bone.metadata}）已会扫描到它并注册一次。重复扫描会导致同一 {@code Repository} 接口被
+ * {@code @EnableSqlRepositories} 注册两次，触发重复 bean 定义冲突。故此处显式排除。
+ */
 @Slf4j
 @Configuration
 @EnableConfigurationProperties(MetadataEngineProperties.class)
-@ComponentScan(basePackages = "com.bone.metadata.engine.runtime")
+@ComponentScan(
+    basePackages = "com.bone.metadata.engine.runtime",
+    excludeFilters =
+        @Filter(type = FilterType.ASSIGNABLE_TYPE, classes = EngineSdkRepositoryConfig.class))
 public class MetadataEngineAutoConfiguration {
 
   private final MetadataEngineProperties smartMetaProperties;

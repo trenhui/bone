@@ -430,7 +430,7 @@ spring:
 | studio-ai | 8081 | AI建模、自然语言处理 | `/api/v1/ai/generate` | 规划中；勿与 `bone-iam:8081` 混为同一进程 |
 | studio-generator | 8082 | 代码生成、模板管理 | `/api/v1/generate/**` | **`bone-engine/studio-generator`（当前 8085）** |
 | studio-guard | 8083 | 架构守护、规则执行 | `/api/v1/guard/**` | ArchUnit / 契约门禁（CI）；非独立 8083 服务 |
-| studio-metadata | 8084（**勿作端口**） | 元数据能力包（见文首表） | **As-Is** `/api/v1/metadata/**` @ **9001**（EAV + catalog）；代码生成见 generator | sdk + server + engine + generator |
+| studio-metadata | 8084（**勿作端口**） | 元数据能力包（见文首表） | **As-Is** `/api/v1/metadata/**` @ **9001**（扩展字段 fields:* + catalog）；代码生成见 generator | sdk + server + engine + generator |
 
 **4.3.4 引擎层**
 

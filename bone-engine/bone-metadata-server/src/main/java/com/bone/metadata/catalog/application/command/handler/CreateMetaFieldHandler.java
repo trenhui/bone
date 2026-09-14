@@ -2,12 +2,12 @@ package com.bone.metadata.catalog.application.command.handler;
 
 import com.bone.core.exception.BizException;
 import com.bone.metadata.catalog.application.command.cmd.CreateMetaFieldCommand;
+import com.bone.metadata.catalog.application.query.MetaEntityUniquenessQuery;
 import com.bone.metadata.catalog.domain.gateway.TenantProvider;
 import com.bone.metadata.catalog.domain.model.MetaEntity;
 import com.bone.metadata.catalog.domain.model.MetaField;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
 import com.bone.metadata.catalog.domain.repository.MetaFieldRepository;
-import com.bone.metadata.sdk.query.criteria.Criteria;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +18,7 @@ public class CreateMetaFieldHandler {
 
   private final MetaFieldRepository metaFieldRepository;
   private final MetaEntityRepository metaEntityRepository;
+  private final MetaEntityUniquenessQuery metaEntityUniquenessQuery;
   private final TenantProvider tenantProvider;
 
   @Transactional
@@ -30,14 +31,7 @@ public class CreateMetaFieldHandler {
     if (entity == null) {
       throw BizException.of("所属实体不存在: " + cmd.getEntityId());
     }
-    long dup =
-        metaFieldRepository.countByCriteria(
-            Criteria.<MetaField>create()
-                .eq("entityId", cmd.getEntityId())
-                .eq("code", cmd.getCode()));
-    if (dup > 0) {
-      throw BizException.of("字段编码已存在: " + cmd.getCode());
-    }
+    metaEntityUniquenessQuery.assertFieldCodeUnique(cmd.getEntityId(), cmd.getCode());
     MetaField field =
         MetaField.create(
             null,

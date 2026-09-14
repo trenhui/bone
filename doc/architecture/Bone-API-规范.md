@@ -86,7 +86,7 @@
 | domain | 服务 | 错误码前缀（[台账 §3.1](./Bone-错误码登记.md#31-字符串业务码新接口强制)） | 说明 |
 |--------|------|-------------------|------|
 | `iam` | bone-iam | `IAM_` | 认证、用户、角色、权限；OpenAPI：[iam-v1.yaml](./openapi/iam-v1.yaml)（骨架，持续补全） |
-| `metadata` | 元数据（catalog + 扩展字段 EAV，统一 `/api/v1/metadata/**`） | `META_` | 与 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) 一致 |
+| `metadata` | 元数据（catalog + 扩展字段 `fields:*`，统一 `/api/v1/metadata/**`） | `META_` | 与 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) 一致 |
 | `runtime` | bone-metadata-server（模式 B 动态 CRUD） | `META_RUNTIME_` | OpenAPI：[metadata-runtime-v1.yaml](./openapi/metadata-runtime-v1.yaml) |
 | `generator` | studio-generator | `GEN_` | 代码生成；OpenAPI：[generator-v1.yaml](./openapi/generator-v1.yaml) |
 | `masterdata` | bone-masterdata | `MD_` | 主数据、质量；OpenAPI：[masterdata-v1.yaml](./openapi/masterdata-v1.yaml) |
@@ -545,13 +545,13 @@ OpenAPI 草案：[openapi/extension-v1.yaml](./openapi/extension-v1.yaml)（本�
 | 已移除 | `/api/masterdata/*` | `/api/v1/masterdata/*` | — |
 | 已移除 | `/api/system/*`、`/api/console/*` | `/api/v1/system/*`、`/api/v1/console/*` | — |
 | 已移除 | `/api/integration/*`（`context-path=/api`） | `/api/v1/integration/*` | — |
-| 已移除 | `/v1/metadata/*`（EAV，无 `/api` 前缀） | `/api/v1/metadata/*` | — |
+| 已移除 | `/v1/metadata/*`（扩展字段 API，无 `/api` 前缀） | `/api/v1/metadata/*` | — |
 | 过渡 | `ApiResponse` 无 `code` / 本地类 | `com.bone.core.model.ApiResponse` | 2026-09-01 |
 | 过渡 | 成功 `code=0` | `code=200` | 2026-09-01 |
 | 过渡 | 分页 `list` 字段 | `records` | 2026-09-01 |
 | 过渡 | HTTP 200 + `success:false` | HTTP 4xx/5xx | 2026-09-01 |
 
-> **说明**：**As-Is** 含扩展字段 `fields:search|searchByNames|allocate|health`（**动作式** `fields:*`）及 **catalog** `entities`、`…/entities/{entityId}/fields`、`…/relationships`；**模式 B** 动态数据 `/api/v1/runtime/entities/{entityCode}/records`（`delivery_mode=RUNTIME` 且已发布）。**禁止** catalog 与 EAV 共用顶层 `…/fields`，见 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §1.2。
+> **说明**：**As-Is** 含扩展字段 `fields:search|searchByNames|allocate|health`（**动作式** `fields:*`）及 **catalog** `entities`、`…/entities/{entityId}/fields`、`…/relationships`；**模式 B** 动态数据 `/api/v1/runtime/entities/{entityCode}/records`（`delivery_mode=RUNTIME` 且已发布）。**禁止** catalog 与扩展字段 `fields:*` 共用顶层 `…/fields`，见 [元数据能力对照](../design/modules/元数据能力-实现映射与竞品对照.md) §1.2。
 
 ---
 
@@ -723,7 +723,7 @@ OpenAPI 草案：[openapi/extension-v1.yaml](./openapi/extension-v1.yaml)（本�
 | 2026-05-17 | §15 契约测试；§16 索引；消息 Topic 见总体架构 §8.4 |
 | 2026-05-17 | 合并错误码台账与日志规范入本文；§14 附属约定；独立文档仅保留 DB/DDD/openapi |
 | 2026-05-17 | §13.1.1 generator 规范路径；§13.2 全模块迁移表；metadata/generator 双挂载 |
-| 2026-05-17 | §13.2：catalog 字段嵌套路径，与 EAV `fields:*` 区分 |
+| 2026-05-17 | §13.2：catalog 字段嵌套路径，与扩展字段 `fields:*` 区分 |
 | 2026-05-20 | §8.1 模块横切约定索引；链到详设 §5.0 与可观测性 §4.2.1 |
 | 2026-05-17 | 错误码、日志拆至独立文档；§16 增补规范体系建议 |
 | 2026-05-17 | 落地安全/可观测性/消息等独立规范；§16 改为规范索引 |

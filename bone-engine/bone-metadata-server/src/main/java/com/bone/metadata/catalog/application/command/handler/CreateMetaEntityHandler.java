@@ -1,13 +1,12 @@
 package com.bone.metadata.catalog.application.command.handler;
 
-import com.bone.core.exception.BizException;
 import com.bone.metadata.catalog.application.command.cmd.CreateMetaEntityCommand;
+import com.bone.metadata.catalog.application.query.MetaEntityUniquenessQuery;
 import com.bone.metadata.catalog.domain.enums.MetaDeliveryMode;
 import com.bone.metadata.catalog.domain.gateway.TenantProvider;
 import com.bone.metadata.catalog.domain.model.MetaEntity;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
 import com.bone.metadata.catalog.domain.service.IamModuleValidator;
-import com.bone.metadata.sdk.query.criteria.Criteria;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +17,7 @@ public class CreateMetaEntityHandler {
 
   private final MetaEntityRepository metaEntityRepository;
   private final IamModuleValidator iamModuleValidator;
+  private final MetaEntityUniquenessQuery metaEntityUniquenessQuery;
   private final TenantProvider tenantProvider;
 
   @Transactional
@@ -26,12 +26,7 @@ public class CreateMetaEntityHandler {
     if (cmd.getModuleId() != null) {
       iamModuleValidator.requireExists(cmd.getModuleId());
     }
-    long existing =
-        metaEntityRepository.countByCriteria(
-            Criteria.<MetaEntity>create().eq("tenantId", tenantId).eq("code", cmd.getCode()));
-    if (existing > 0) {
-      throw BizException.of("实体编码已存在: " + cmd.getCode());
-    }
+    metaEntityUniquenessQuery.assertEntityCodeUnique(tenantId, cmd.getCode());
     int type = cmd.getType() != null ? cmd.getType() : 0;
     int deliveryMode =
         cmd.getDeliveryMode() != null
