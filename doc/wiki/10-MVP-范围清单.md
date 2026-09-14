@@ -136,8 +136,9 @@
 
 - 预存在配置债 `engineMetaEntityRepository` / `engineMetaFieldRepository` 重复 bean 注册：**已修复**。`MetadataEngineAutoConfiguration` 的 `@ComponentScan("com.bone.metadata.engine.runtime")` 增加 `excludeFilters = @Filter(ASSIGNABLE_TYPE, EngineSdkRepositoryConfig.class)`，使带 `@EnableSqlRepositories` 的 `EngineSdkRepositoryConfig` 仅由宿主 `@SpringBootApplication(scanBasePackages="com.bone")` 注册一次，`RepositoryRegistrar` 不再报重复注册 ERROR。`bone-metadata-engine-starter` 编译 + spotless 通过。
 - 预存在 `bone-core` 全新 `clean` 编译失败：**已修复**。`bone-core/pom.xml` 显式引入 `spring-tx`（test 作用域）补足 `@Transactional` 夹具依赖；补齐 `BoneDddArchRulesVerificationTest` 及其夹具的引用/类型错误（半成品测试已补全为可编译可运行的 DDD 架构规则校验）。`bone-core clean test` 200 用例全绿。
+- **MVP-11 物理对齐未接发布主链路（实机验收发现的真实缺口，2026-09-14）**：`JdbcPhysicalStructureGateway` 实现完整却从未被注入/调用，致 `PublishMetaEntityHandler` 发布时只翻状态、不建物理表，运行时 CRUD 直接 500；且 `MetaEntity.publish()` 对已发布实体抛 409 阻断「加字段再发布加列」。**已修复**：① `CatalogInfrastructureConfiguration` 注册 `PhysicalStructureGateway` Bean；② `PublishMetaEntityHandler` 发布 RUNTIME 实体后置调用 `align(tenantId, code)`；③ `MetaEntity.publish()` 改为幂等（已发布不再抛异常，支持重新部署重新对齐）。实机验收：发布即建表（`meta_customer_e2e_*`）、运行时 CRUD 正常、加字段再发布列数 7→8（ADD COLUMN）且已有数据不丢。已提交 `02d1ffad`。
 
-> 上述两项均为非阻断债务，修复后不影响既有 MVP 验收结论（38/38 仍成立）。
+> 上述三项修复后，MVP 验收主链路（建模→发布建表→运行时 CRUD→加字段再发布加列不丢数据）已端到端实证通过（38/38 单测 + 实机验收均成立）。
 
 ---
 
