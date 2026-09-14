@@ -1,9 +1,13 @@
 package com.bone.metadata.config;
 
 import com.bone.metadata.catalog.domain.gateway.CatalogIdempotencyStore;
+import com.bone.metadata.catalog.domain.gateway.PhysicalStructureGateway;
 import com.bone.metadata.catalog.domain.gateway.TenantProvider;
+import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
+import com.bone.metadata.catalog.domain.repository.MetaFieldRepository;
 import com.bone.metadata.catalog.infrastructure.idempotency.InMemoryCatalogIdempotencyStore;
 import com.bone.metadata.catalog.infrastructure.idempotency.RedisCatalogIdempotencyStore;
+import com.bone.metadata.catalog.infrastructure.physical.JdbcPhysicalStructureGateway;
 import com.bone.metadata.catalog.infrastructure.tenant.TenantProviderAdapter;
 import com.bone.metadata.engine.runtime.RuntimeEntityCatalog;
 import com.bone.metadata.runtime.CaffeineCachedRuntimeEntityCatalog;
@@ -19,6 +23,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 @Configuration
 @EnableConfigurationProperties(MetadataCatalogProperties.class)
@@ -49,6 +54,16 @@ public class CatalogInfrastructureConfiguration {
   @Bean
   public TenantProvider tenantProviderAdapter() {
     return new TenantProviderAdapter();
+  }
+
+  /** MVP-11 物理结构对齐网关：按已发布 RUNTIME 实体模型建表/加列（幂等非破坏 DDL）。 */
+  @Bean
+  public PhysicalStructureGateway physicalStructureGateway(
+      JdbcTemplate jdbcTemplate,
+      MetaEntityRepository metaEntityRepository,
+      MetaFieldRepository metaFieldRepository) {
+    return new JdbcPhysicalStructureGateway(
+        jdbcTemplate, metaEntityRepository, metaFieldRepository);
   }
 
   @Bean

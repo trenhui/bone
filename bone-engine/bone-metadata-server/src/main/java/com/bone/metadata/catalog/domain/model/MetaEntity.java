@@ -146,7 +146,8 @@ public class MetaEntity extends AbstractEntity<Long> {
 
   public void publish() {
     if (MetaEntityStatus.fromCode(this.status) == MetaEntityStatus.PUBLISHED) {
-      throw new DomainException("实体已发布");
+      // 幂等：已发布实体再次发布视为「重新部署」，由调用方触发物理结构重新对齐，不抛异常
+      return;
     }
     this.status = MetaEntityStatus.PUBLISHED.getCode();
     bumpVersion();
