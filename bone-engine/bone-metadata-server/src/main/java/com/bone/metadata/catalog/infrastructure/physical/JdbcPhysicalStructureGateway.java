@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
@@ -27,6 +28,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 public class JdbcPhysicalStructureGateway implements PhysicalStructureGateway {
 
   private static final Pattern IDENT = Pattern.compile("^[a-zA-Z][a-zA-Z0-9_]*$");
+
+  /** 物理表保留列：清列操作一律不得触碰。 */
+  private static final Set<String> RESERVED_COLUMNS =
+      Set.of("id", "tenant_id", "version", "deleted");
 
   private final JdbcTemplate jdbcTemplate;
   private final MetaEntityRepository metaEntityRepository;
@@ -77,6 +82,82 @@ public class JdbcPhysicalStructureGateway implements PhysicalStructureGateway {
       }
     }
     return toPlan(entity.getCode(), table, statements, executed, !exists, execute);
+  }
+
+  @Override
+  public PhysicalStructurePlan dropColumn(long tenantId, String entityCode, String fieldCode) {
+    MetaEntity entity = requireEntity(tenantId, entityCode);
+    String table = requireIdentifier(entity.getTableName(), "tableName");
+    String col = requireIdentifier(fieldCode, "field.code");
+    if (RESERVED_COLUMNS.contains(col)) {
+      return refused(entity, table, "保留列禁止删除: " + col);
+    }
+    boolean stillModeled = activeFieldCodes(entity).contains(col);
+    if (stillModeled) {
+      return refused(entity, table, "字段仍在模型中，禁止删除在用列: " + col);
+    }
+    if (!tableExists(table) || !readExistingColumns(table).contains(col)) {
+      return PhysicalStructurePlan.of(
+          entity.getCode(),
+          table,
+          List.of(),
+          0,
+          PhysicalStructurePlan.STATUS_READY,
+          "物理表或列不存在，无需删除: " + col);
+    }
+    String ddl = buildDropColumn(table, col);
+    jdbcTemplate.execute(ddl);
+    return PhysicalStructurePlan.of(
+        entity.getCode(),
+        table,
+        List.of(ddl),
+        1,
+        PhysicalStructurePlan.STATUS_DROPPED,
+        "已删除物理列: " + col);
+  }
+
+  @Override
+  public PhysicalStructurePlan dropDriftedColumns(long tenantId, String entityCode) {
+    MetaEntity entity = requireEntity(tenantId, entityCode);
+    String table = requireIdentifier(entity.getTableName(), "tableName");
+    if (!tableExists(table)) {
+      return PhysicalStructurePlan.of(
+          entity.getCode(), table, List.of(), 0, PhysicalStructurePlan.STATUS_READY, "物理表不存在，无需清理");
+    }
+    Set<String> activeCodes = activeFieldCodes(entity);
+    List<String> statements = new ArrayList<>();
+    for (String col : readExistingColumns(table)) {
+      if (RESERVED_COLUMNS.contains(col) || activeCodes.contains(col)) {
+        continue;
+      }
+      statements.add(buildDropColumn(table, col));
+    }
+    int executed = 0;
+    for (String ddl : statements) {
+      jdbcTemplate.execute(ddl);
+      executed++;
+    }
+    String status =
+        executed > 0 ? PhysicalStructurePlan.STATUS_RECONCILED : PhysicalStructurePlan.STATUS_READY;
+    String message = executed > 0 ? "已清理 " + executed + " 个孤儿列" : "物理结构与模型一致，无孤儿列";
+    return PhysicalStructurePlan.of(entity.getCode(), table, statements, executed, status, message);
+  }
+
+  /** 当前实体下所有活动（未软删）字段的物理列名集合。 */
+  private Set<String> activeFieldCodes(MetaEntity entity) {
+    return metaFieldRepository.where(MetaField::getEntityId).eq(entity.getId()).list().stream()
+        .filter(f -> !Boolean.TRUE.equals(f.getDeleted()))
+        .map(MetaField::getCode)
+        .collect(Collectors.toCollection(LinkedHashSet::new));
+  }
+
+  private String buildDropColumn(String table, String col) {
+    return "ALTER TABLE `" + table + "` DROP COLUMN `" + col + "`";
+  }
+
+  private PhysicalStructurePlan refused(MetaEntity entity, String table, String reason) {
+    return PhysicalStructurePlan.of(
+        entity.getCode(), table, List.of(), 0, PhysicalStructurePlan.STATUS_REFUSED, reason);
   }
 
   private MetaEntity requireEntity(long tenantId, String entityCode) {

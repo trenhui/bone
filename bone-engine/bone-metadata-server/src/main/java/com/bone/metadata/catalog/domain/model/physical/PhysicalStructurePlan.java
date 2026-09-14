@@ -28,6 +28,21 @@ public record PhysicalStructurePlan(
   public static final String STATUS_NOT_RUNTIME = "NOT_RUNTIME";
   public static final String STATUS_SKIPPED = "SKIPPED";
   public static final String STATUS_FAILED = "FAILED";
+  public static final String STATUS_DROPPED = "DROPPED";
+  public static final String STATUS_RECONCILED = "RECONCILED";
+  public static final String STATUS_REFUSED = "REFUSED";
+
+  /** 便捷工厂：非整表场景（建表 createTable=false）的 DROP / RECONCILE 结果构造。 */
+  public static PhysicalStructurePlan of(
+      String entityCode,
+      String tableName,
+      List<String> statements,
+      int executed,
+      String status,
+      String message) {
+    return new PhysicalStructurePlan(
+        entityCode, tableName, false, statements, executed, status, message);
+  }
 
   public PhysicalStructurePlan withExecuted(int newExecuted) {
     return new PhysicalStructurePlan(
