@@ -57,7 +57,7 @@
             <version>1.0.0</version>
         </dependency>
 
-        <!-- Bone Security（JWT 统一实现，JwtTokenProvider 委托） -->
+        <!-- Bone Security（JwtTokenService 离线验签 / JwtConfig 共享密钥 / AbstractJwtAuthenticationFilter） -->
         <dependency>
             <groupId>com.bone</groupId>
             <artifactId>bone-security</artifactId>
@@ -92,22 +92,25 @@
             <version>1.0.0</version>
         </dependency>
         
-        <!-- JJWT for JWT tokens -->
+        <!-- JJWT：必须与 bone-security 的编译版本一致（0.12.x 的 Jwts.parser() 返回 JwtParserBuilder）。
+             此前硬编码 0.11.5，且显式版本会覆盖 bone-parent 的 dependencyManagement，导致
+             JwtTokenService.parse() 运行时抛 NoSuchMethodError——该缺陷在引入鉴权前是潜伏的（无人调用 parse）。
+             统一取 ${jjwt.version}，与 bone-system / bone-iam 同写法。 -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-api</artifactId>
-            <version>0.11.5</version>
+            <version>${jjwt.version}</version>
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-impl</artifactId>
-            <version>0.11.5</version>
+            <version>${jjwt.version}</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>io.jsonwebtoken</groupId>
             <artifactId>jjwt-jackson</artifactId>
-            <version>0.11.5</version>
+            <version>${jjwt.version}</version>
             <scope>runtime</scope>
         </dependency>
 

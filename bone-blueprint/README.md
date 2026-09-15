@@ -85,6 +85,32 @@
 
 - 聚合根继承 `TenantAggregateRoot`；写/读路径经 `TenantProviderAdapter`（实现 `domain/gateway/TenantProvider` 端口）/ `TenantContext` 隔离。
 - HTTP 演示：请求头 `X-Tenant-Id: 1001`（见 `TenantContextFilter`）。
+- **生产环境该请求头由网关下发**：`bone-gateway` 的 `JwtAuthGlobalFilter` 验签后，用 token 内<strong>已签名</strong>的 `tenantId` claim **覆盖** `X-Tenant-Id`（并注入 `X-User-Id` / `X-Roles`）再转发。所以 `X-Tenant-Id` 是**内部信任头**——只有「绕过网关直连模块端口」时才依赖调用方自律。
+
+### 鉴权（JWT，与平台同范式）
+
+- 本模块**不签发 token，也不调用 IAM**：IAM 用共享密钥 `bone.iam.jwt.secret-key` 签发，各模块用框架 `JwtTokenService` **本地离线验签**。若改成每次请求回调 IAM，就把 IAM 变成了所有服务的可用性单点。
+- `infrastructure/config/security/SecurityConfig` + `infrastructure/security/JwtAuthenticationFilter`（继承框架 `AbstractJwtAuthenticationFilter`，15 行），与 `bone-system` / `bone-integration` / `bone-metadata-server` 等模块写法一致。**没有 `SecurityFilterChain` 会落到 Spring Boot 默认策略（HTTP Basic + 表单登录 + 启动随机密码），接口一律 401**。
+- 所有 `/api/**` 需 `Authorization: Bearer <token>`；`/actuator/**`、`/swagger-ui/**`、`/v3/api-docs/**` 与 CORS 预检放行。
+- **密钥必须与 IAM 一致**，否则会出现「token 明明有效却 401」的假象（日志有 `[JWT] Token 解析失败`）。IAM 的 dev 默认密钥是 `dev-only-secret-key-minimum-32-bytes-long`（可被 `BONE_IAM_JWT_SECRET_KEY` / `BONE_JWT_SECRET` 覆盖）；本模块不配置时会退回 `JwtConfig` 的内置默认值，**两者不同**，必须显式对齐：
+
+```bash
+# 1) 向 IAM 取 token
+TOKEN=$(curl -s -X POST http://localhost:8081/api/v1/iam/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"123456"}' | jq -r '.data.token')
+
+# 2) 用同一个密钥启动本模块（也可设环境变量 BONE_IAM_JWT_SECRET_KEY）
+mvn spring-boot:run \
+  -Dspring-boot.run.arguments="--bone.iam.jwt.secret-key=dev-only-secret-key-minimum-32-bytes-long"
+
+# 3) 访问
+curl -H "Authorization: Bearer $TOKEN" -H 'X-Tenant-Id: 1001' \
+  http://localhost:8082/api/v1/orders
+```
+
+- **生产必须设置** `BONE_IAM_JWT_SECRET_KEY`（≥ 32 字节）：仍用默认密钥时 `JwtConfig` 在 `prod` profile 下**拒绝启动**。
+- **JJWT 版本不能降级**：本模块固定 `${jjwt.version}`（0.12.x），与 `bone-security` 的编译版本一致。若被传递依赖降到 0.11.x，`JwtTokenService.parse()` 会抛 `NoSuchMethodError`，症状同样是「带了有效 token 仍 401/500」。
 
 #### 平台租户打洞登记（E-4.4）
 
@@ -152,14 +178,15 @@ bash scripts/ci/collect-blueprint-compliance.sh
 | **领域事件 + AFTER_COMMIT** | 瘦载荷 `record` 事件 + `SpringDomainEventPublisher` + 应用层订阅 |
 | **Outbox** | `bp_outbox` + `OrderOutboxWriter` / `OrderOutboxRelay` / `OrderOutboxRelayJob` |
 | **集成事件** | `OrderPaidIntegrationEvent` 与领域事件分离，经 Outbox 中继 |
-| **多租户** | `TenantAggregateRoot` + `QueryBuilder` 强制 `tenantId` + `X-Tenant-Id` 过滤器 |
+| **多租户** | `TenantAggregateRoot` + 写侧 `findByIdInTenant`（`QueryParam` 条件，租户缺失即失败关闭）/ 读侧 SQL 显式 `tenant_id = :tenantId` + `X-Tenant-Id` 过滤器（生产由网关按 token claim 覆盖下发） |
+| **JWT 鉴权** | `SecurityConfig` + `JwtAuthenticationFilter`（框架 `AbstractJwtAuthenticationFilter`）；共享密钥离线验签，**不回调 IAM** |
 | **值对象 Money** | 金额规则集中在 `Money`（位于 `domain/shared/valueobject`，`Order` / `OrderItem` / **`Payment`** 共用——共享值对象独立成包，避免支付反向依赖订单包） |
 | **读侧 Join** | `OrderReadPort` + `findOrderWithItems.sql` 扁平投影 → `OrderDetailAssembler` |
 | **扩展点** | 多实现价格计算器（VIP/企业/促销等） |
 | **独立支付聚合** | `Payment`（`bp_payment`）+ 状态机 + 幂等/金额校验回调（见下） |
 | **支付生命周期闭环** | 发起支付 → 渠道预下单 → 回调确认 → **查询**（`PaymentReadPort`）→ **超时关闭**（`CloseExpiredPaymentJob`）→ **退款**（`PaymentRefundedEvent` 驱动订单退款 + 释放库存） |
 | **Feign + `InventoryGateway`** | ACL 出站调用 + 预留/确认/释放流程 |
-| **CQRS 读侧** | 列表 `QueryBuilder`；详情 SQL 投影 |
+| **CQRS 读侧** | 列表 / 详情均经读侧端口 SQL 投影（`OrderReadPort` / `PaymentReadPort`），写侧仓储不承载报表查询 |
 | **MQ / 定时任务 / RPC** | 入站适配器形态示例 |
 | **真实下单支付场景** | 独立 `Payment` 聚合（`bp_payment`）+ 状态机 + `PaymentGateway` 防腐 + **回调幂等**（`confirmSuccess`）+ 领域事件确认订单（跨聚合协作） |
 

@@ -12,7 +12,6 @@ import com.bone.blueprint.application.command.handler.CancelOrderCommandHandler;
 import com.bone.blueprint.application.command.handler.CreateOrderCommandHandler;
 import com.bone.blueprint.application.command.handler.DeliverOrderCommandHandler;
 import com.bone.blueprint.application.command.handler.ShipOrderCommandHandler;
-import com.bone.blueprint.application.query.dto.OrderDto;
 import com.bone.blueprint.application.query.handler.OrderDetailQueryHandler;
 import com.bone.blueprint.application.query.handler.OrderPageQueryHandler;
 import com.bone.blueprint.application.query.qry.OrderDetailQuery;
@@ -23,7 +22,6 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.net.URI;
-import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -51,11 +49,11 @@ public class OrderController {
   @Operation(summary = "分页查询订单", description = "按客户、状态分页查询订单列表")
   @GetMapping
   public ApiResponse<PageResult<OrderSummaryResp>> page(@Valid @ModelAttribute OrderPageQry qry) {
-    PageResult<OrderDto> page = orderPageQueryHandler.handle(orderAssembler.toOrderPageQuery(qry));
-    List<OrderSummaryResp> rows =
-        page.getList().stream().map(orderAssembler::toOrderSummaryResp).toList();
+    // 分页元数据由 PageResult.map 原样透传；不要用 getList/getPageNum/getPageSize（已废弃的旧 API）
     return ApiResponse.success(
-        PageResult.of(rows, page.getTotal(), page.getPageNum(), page.getPageSize()));
+        orderPageQueryHandler
+            .handle(orderAssembler.toOrderPageQuery(qry))
+            .map(orderAssembler::toOrderSummaryResp));
   }
 
   @Operation(summary = "创建订单", description = "创建新的订单，返回 201 与资源 Location")
