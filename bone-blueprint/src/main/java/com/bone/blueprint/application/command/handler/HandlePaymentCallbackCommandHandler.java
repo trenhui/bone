@@ -20,9 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 支付渠道回调用例：按支付单号查找支付单，幂等确认支付成功/失败，保存并发布领域事件。
  *
- * <p><b>验签不在此处</b>：按支付样板（{@code Bone-DDD-最终实践方案.md#payment-sample-signature}）与 ADR-0022，验签是 adapter
- * 边界的防腐职责，且必须覆盖<strong>全部</strong>回调分支（成功 / 失败 / 关闭）。放在 Handler 内会导致：① 新增 RPC / MQ 入站通道时容易漏验签；②
- * 仅成功分支验签时，伪造的失败回调可把支付单打成 FAILED， 真实成功回调随后被聚合拒绝（"已失败/已关闭的支付单无法确认成功"）。
+ * <p><b>验签不在此处</b>：按 ADR-0022，验签是 adapter 边界的防腐职责，且必须覆盖<strong>全部</strong>回调分支（成功 / 失败 / 关闭）。放在
+ * Handler 内会导致：① 新增 RPC / MQ 入站通道时容易漏验签；② 仅成功分支验签时，伪造的失败回调可把支付单打成 FAILED，
+ * 真实成功回调随后被聚合拒绝（"已失败/已关闭的支付单无法确认成功"）。
  *
  * <p><b>Outbox 与业务同事务（P-5.4）</b>：支付成功是不可容忍丢失的资金事实，必须与支付单状态变更在 <strong>同一事务</strong>内落
  * Outbox，再由中继投递。此前仅在 AFTER_COMMIT 监听器中写 Outbox， 支付事务提交后、监听器执行前的崩溃会造成「支付已成功、事件已消失、订单永不确认」且无迹可寻。

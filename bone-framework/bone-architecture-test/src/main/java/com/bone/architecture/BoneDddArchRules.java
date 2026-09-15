@@ -27,8 +27,11 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 /**
- * Bone DDD 共享 ArchUnit 规则（真源：{@code doc/architecture/Bone-DDD-最终实践方案.md} E-3 铁律 R1–R9 与 G-1
- * 规则集；v4.6 起文档采用 P-/E-/G- 三段编号，本节注释中的 §xx 为历史章节号，仅作索引提示）。
+ * Bone DDD 共享 ArchUnit 规则（真源：{@code doc/architecture/Bone-DDD-最终实践方案.md} 的 CORE-01～CORE-10 核心规则与
+ * G-1 门禁规则集）。
+ *
+ * <p>文档自 v4.6 起采用 P-/E-/G- 三段编号（v5 起核心规则改用 {@code CORE-*}）；本类注释中的 {@code §xx} 与 {@code R1–R9} 均为
+ * <b>v4.x 历史章节号</b>，仅作追溯索引，不是现行条文编号，勿据此对外引用。
  *
  * <p>应用模块在 {@code ArchitectureTest} 中组合使用；对存量违规请配合 {@code
  * com.tngtech.archunit.library.freeze.FreezingArchRule}，仅拦截新增。
@@ -213,13 +216,19 @@ public final class BoneDddArchRules {
   }
 
   /**
-   * <b>ADR-0028（2026-09-14）</b>：方法名沿用历史名但语义已收窄。默认入站边界是语义化 {@code *ApplicationService}（Application
-   * Service First），因此<strong>取消</strong>对 {@code ..application.service..} 的一刀切禁止；仅保留对 {@code
+   * <b>ADR-0028（2026-09-14）</b>：默认入站边界是语义化 {@code *ApplicationService}（Application Service
+   * First），因此<strong>取消</strong>对 {@code ..application.service..} 的一刀切禁止；仅守护 {@code
    * ..application..} 层 {@code *Manager} / {@code Common*} / {@code Base*} / {@code Business*}
-   * 命名（上帝对象反模式）的守护。{@code ..application.facade..} / {@code ..application.orchestration..}
-   * 门面与编排层不受影响。
+   * 命名的上帝对象反模式。{@code ..application.facade..} / {@code ..application.orchestration..} 门面与编排层不受影响。
+   *
+   * <p><b>命名说明</b>：本规则原名 {@code adapterControllersMustNotDependOnApplicationService}，其字面含义与
+   * ADR-0028 相反（Controller 依赖合法 {@code *ApplicationService} 恰恰是被允许的），故改名为 {@code
+   * adapterControllersMustNotDependOnGodObjects} 以准确表意；旧名保留为 {@link
+   * #adapterControllersMustNotDependOnApplicationService()} 过渡别名。
+   *
+   * <p>注意：{@code .because(...)} 文案保持不变，以维持各模块 {@code FreezingArchRule} 基线的冻结键稳定。
    */
-  public static ArchRule adapterControllersMustNotDependOnApplicationService() {
+  public static ArchRule adapterControllersMustNotDependOnGodObjects() {
     DescribedPredicate<JavaClass> forbiddenApplicationTargets =
         resideInAPackage("..application..")
             .and(
@@ -237,6 +246,17 @@ public final class BoneDddArchRules {
             "DDD §15 + ADR-0028: adapter must not inject anemic god-objects "
                 + "(Common/Base/Business/*Manager) in application; a well-named "
                 + "*ApplicationService is a valid default inbound entry");
+  }
+
+  /**
+   * 过渡别名：语义已由 {@link #adapterControllersMustNotDependOnGodObjects()} 承载（见 ADR-0028）。保留以兼容尚在 引用旧名的模块
+   * {@code ArchitectureTest} 与工具脚本；新代码请改用新名。
+   *
+   * @deprecated 使用 {@link #adapterControllersMustNotDependOnGodObjects()}
+   */
+  @Deprecated
+  public static ArchRule adapterControllersMustNotDependOnApplicationService() {
+    return adapterControllersMustNotDependOnGodObjects();
   }
 
   /** §15：Controller 禁止直接注入 {@code domain.repository} 写侧仓储。 */

@@ -29,11 +29,13 @@ DOC_FILES = [
     REPO / "doc/architecture/Bone-DDD-最终实践方案.md",
 ]
 
-# 符号真源：bone-core 全部 java + SDK 主源
-CODE_GLOBS = [
-    REPO / "bone-framework/bone-core/src/main/java/**/*.java",
-    REPO / "bone-sdk/**/src/main/java/**/*.java",
-]
+# 符号真源根目录：bone-core + 客户端 SDK + metadata-sdk（Repository / 分页等持久化 API 的真源，
+# 文档大量示例调用 repository.xxx(...)，不纳入此真源则无法校验）
+CODE_BASES = (
+    "bone-framework/bone-core",
+    "bone-sdk",
+    "bone-engine/bone-metadata-sdk",
+)
 
 # —— v4.x 历史编号：作为「当前条文锚点」出现在正文即漂移 ——
 # 注：主文档「兼容入口与迁移说明」章节内的 Legacy 标题属白名单；
@@ -53,7 +55,7 @@ CALL = re.compile(
 
 def collect_code_symbols() -> set[str]:
     syms: set[str] = set()
-    for base in ("bone-framework/bone-core", "bone-sdk"):
+    for base in CODE_BASES:
         root = REPO / base
         if not root.exists():
             continue
@@ -66,6 +68,35 @@ def collect_code_symbols() -> set[str]:
             # 类型名
             syms.update(re.findall(r"\b(?:public|final)?\s*(?:abstract\s+)?(?:class|interface|record|enum)\s+(\w+)", text))
     return syms
+
+
+def collect_repository_methods() -> set[str]:
+    """收集「仓储方法宇宙」：SDK ``Repository`` 基接口 + 全仓 ``*Repository.java`` 声明的方法名。
+
+    文档里的 ``repository.xxx(...)`` 必须命中此集合才算合法。不能退化为「全仓符号并集」——
+    否则 ``FragmentCache.getById`` 之类同名方法会把 ``customerRepository.getById`` 误放行。
+    领域写仓储常声明 SDK 之外的复合键方法（如 ``findByIdInTenant``），一并纳入。
+    """
+    methods: set[str] = set()
+    for java in REPO.rglob("*Repository.java"):
+        text = _strip_java_comments(java.read_text(encoding="utf-8", errors="ignore"))
+        for m in re.finditer(r"(?<![\w.$])(\w+)\s*\(", text):
+            name = m.group(1)
+            if name not in JAVA_KEYWORDS:
+                methods.add(name)
+    return methods
+
+
+# Java 控制/构造关键字：出现即非方法声明名，避免污染仓储方法集合。
+JAVA_KEYWORDS = {
+    "if", "for", "while", "switch", "catch", "return", "new", "super", "this",
+    "else", "do", "try", "synchronized", "assert", "throw", "case", "instanceof",
+}
+
+
+def _strip_java_comments(text: str) -> str:
+    text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
+    return re.sub(r"//[^\n]*", "", text)
 
 
 def compat_zones(lines: list[str]) -> list[tuple[int, int]]:
@@ -94,6 +125,7 @@ def main() -> int:
     args = ap.parse_args()
 
     code_syms = collect_code_symbols()
+    repo_methods = collect_repository_methods()
     problems: list[str] = []
 
     known_aggregate_api = {"addDomainEvent", "getDomainEvents", "clearDomainEvents", "releaseDomainEvents"}
@@ -114,16 +146,15 @@ def main() -> int:
                 ev, agg, repo_m = m.group("ev"), m.group("agg"), m.group("repo")
                 if ev and ev not in known_publisher_api and ev not in code_syms:
                     problems.append(f"{doc.name}:{no} 未知 publisher API: .{ev}(")
-                if agg and "releaseDomainEvents" == text[m.start("agg") : m.end("agg") + len(".releaseDomainEvents()")][len(".releaseDomainEvents()") :] if False else False:
-                    pass
                 if ".releaseDomainEvents()" in text:
-                    agg_name = m.group("agg") or "?"
+                    agg_name = agg or "?"
                     problems.append(
                         f"{doc.name}:{no} 聚合 API releaseDomainEvents() 不存在于 AggregateRoot"
                         f"（真源：addDomainEvent/getDomainEvents/clearDomainEvents + publishFrom）[ctx: {agg_name}]"
                     )
-                if repo_m and repo_m.startswith("find") and repo_m in {"findById", "findByIdInTenant", "findByIdInTenantForUpdate"}:
-                    continue  # 已知仓储方法
+                # 仓储方法必须落在「仓储方法宇宙」（SDK Repository 基接口 + 全仓 *Repository）。
+                if repo_m and repo_m not in repo_methods:
+                    problems.append(f"{doc.name}:{no} 未知仓储方法: .{repo_m}(")
             # 2) v4 编号残留（可选，默认开在 --v4-refs 时）
             if args.v4_refs and not in_zone(no, zones):
                 if V4_RULE_REF.search(text) and "R1" in text and "铁律" in text:

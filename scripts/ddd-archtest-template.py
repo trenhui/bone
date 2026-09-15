@@ -91,7 +91,7 @@ public class ArchitectureTest {{
     // §15 + ADR-0028（上帝对象命名守护，存量 freeze，迁移后收缩基线）
     @ArchTest
     static final ArchRule adapter_no_application_service =
-            FreezingArchRule.freeze(BoneDddArchRules.adapterControllersMustNotDependOnApplicationService());
+            FreezingArchRule.freeze(BoneDddArchRules.adapterControllersMustNotDependOnGodObjects());
 
     @ArchTest
     static final ArchRule adapter_no_domain_repository =

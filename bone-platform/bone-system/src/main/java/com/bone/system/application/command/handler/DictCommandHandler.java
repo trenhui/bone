@@ -3,10 +3,10 @@ package com.bone.system.application.command.handler;
 import com.bone.core.capability.Capability;
 import com.bone.core.exception.BizException;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.system.application.command.cmd.CreateDictCommand;
 import com.bone.system.application.command.cmd.DeleteDictCommand;
 import com.bone.system.application.command.cmd.UpdateDictCommand;
+import com.bone.system.application.query.DictUniquenessQuery;
 import com.bone.system.common.exception.NotFoundException;
 import com.bone.system.domain.dict.SysDict;
 import com.bone.system.domain.dict.vo.DictType;
@@ -30,16 +30,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class DictCommandHandler {
   private final SysDictRepository sysDictRepository;
+  private final DictUniquenessQuery dictUniquenessQuery;
 
   public Long create(CreateDictCommand cmd) {
     DictType type = DictType.of(cmd.getType());
-    SysDict existing =
-        sysDictRepository.findOneByCriteria(
-            Criteria.<SysDict>create()
-                .entityClass(SysDict.class)
-                .eq("type", type)
-                .eq("code", cmd.getCode()));
-    if (existing != null) {
+    if (dictUniquenessQuery.existsByTypeAndCode(type, cmd.getCode())) {
       throw BizException.of("字典项已存在: " + type.value() + "/" + cmd.getCode());
     }
     Long id = DistributedIdGenerator.generateLongId();

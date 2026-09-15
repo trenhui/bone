@@ -8,8 +8,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.core.exception.BizException;
-import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.system.application.command.cmd.CreateConfigCommand;
+import com.bone.system.application.query.ConfigUniquenessQuery;
 import com.bone.system.domain.config.SystemConfig;
 import com.bone.system.domain.model.config.vo.ConfigKey;
 import com.bone.system.domain.model.config.vo.ConfigType;
@@ -25,16 +25,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class ConfigCommandHandlerTest {
 
   @Mock SystemConfigRepository systemConfigRepository;
+  @Mock ConfigUniquenessQuery configUniquenessQuery;
 
   ConfigCommandHandler handler;
 
   @BeforeEach
   void setUp() {
-    handler = new ConfigCommandHandler(systemConfigRepository);
+    handler = new ConfigCommandHandler(systemConfigRepository, configUniquenessQuery);
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   void createConfigSuccessfully() {
     CreateConfigCommand cmd = new CreateConfigCommand();
     cmd.setConfigKey("site.title");
@@ -43,30 +43,21 @@ class ConfigCommandHandlerTest {
     cmd.setDescription("Site title");
     cmd.setEncrypted(false);
 
-    when(systemConfigRepository.findOneByCriteria(any(Criteria.class))).thenReturn(null);
+    when(configUniquenessQuery.existsByConfigKey(any(ConfigKey.class))).thenReturn(false);
 
-    Long result = handler.handle(cmd);
+    handler.handle(cmd);
 
     verify(systemConfigRepository, times(1)).save(any(SystemConfig.class));
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   void duplicateConfigKeyThrows() {
     CreateConfigCommand cmd = new CreateConfigCommand();
     cmd.setConfigKey("site.title");
     cmd.setConfigValue("Bone");
     cmd.setConfigType("SYSTEM");
 
-    SystemConfig existing =
-        SystemConfig.create(
-            1L,
-            ConfigKey.of("site.title"),
-            ConfigValue.of("Bone"),
-            "desc",
-            ConfigType.SYSTEM,
-            false);
-    when(systemConfigRepository.findOneByCriteria(any(Criteria.class))).thenReturn(existing);
+    when(configUniquenessQuery.existsByConfigKey(any(ConfigKey.class))).thenReturn(true);
 
     assertThatThrownBy(() -> handler.handle(cmd))
         .isInstanceOf(BizException.class)

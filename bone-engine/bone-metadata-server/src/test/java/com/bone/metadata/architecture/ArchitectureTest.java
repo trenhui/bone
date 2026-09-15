@@ -73,8 +73,7 @@ public class ArchitectureTest {
   // CORE-04 + §15 + §23（存量 freeze，迁移后收缩基线）
   @ArchTest
   static final ArchRule adapter_no_application_service =
-      FreezingArchRule.freeze(
-          BoneDddArchRules.adapterControllersMustNotDependOnApplicationService());
+      FreezingArchRule.freeze(BoneDddArchRules.adapterControllersMustNotDependOnGodObjects());
 
   @ArchTest
   static final ArchRule adapter_no_domain_repository =

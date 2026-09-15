@@ -33,7 +33,7 @@ jobs:
       - name: Generate JaCoCo Coverage Report
         run: mvn jacoco:report --batch-mode
 
-      - name: JaCoCo Coverage Check (≥70% line)
+      - name: JaCoCo Coverage Check (≥10% instruction, 起步门禁)
         run: mvn jacoco:check --batch-mode
 
       - name: Upload JaCoCo Coverage Report
@@ -50,8 +50,11 @@ jobs:
           name: surefire-reports
           path: '**/target/surefire-reports/*.xml'
 
-      - name: DDD Doc↔Code Sync Lint
-        run: /usr/bin/env python3 scripts/ci/check-ddd-doc-code-sync.py
+      - name: DDD Doc↔Code Sync Lint (blocking)
+        run: /usr/bin/env python3 scripts/ci/check-ddd-doc-code-sync.py --strict
+
+      - name: DDD Doc Drift Lint (blocking)
+        run: /usr/bin/env python3 scripts/check-ddd-doc-drift.py
 
   backend-security:
     name: Backend Security Scan

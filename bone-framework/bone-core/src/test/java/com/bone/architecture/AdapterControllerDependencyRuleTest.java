@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 class AdapterControllerDependencyRuleTest {
 
   private static final ArchRule RULE =
-      BoneDddArchRules.adapterControllersMustNotDependOnApplicationService();
+      BoneDddArchRules.adapterControllersMustNotDependOnGodObjects();
 
   @Test
   void facadeAndOrchestrationOnlyAreAllowed() {

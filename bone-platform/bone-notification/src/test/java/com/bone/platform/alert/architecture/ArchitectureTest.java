@@ -76,7 +76,7 @@ public class ArchitectureTest {
   // P0-7 + §15 + §23
   @ArchTest
   static final ArchRule adapter_no_application_service =
-      BoneDddArchRules.adapterControllersMustNotDependOnApplicationService();
+      BoneDddArchRules.adapterControllersMustNotDependOnGodObjects();
 
   @ArchTest
   static final ArchRule adapter_no_domain_repository =

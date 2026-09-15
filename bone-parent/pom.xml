@@ -464,7 +464,7 @@
                 <groupId>com.diffplug.spotless</groupId>
                 <artifactId>spotless-maven-plugin</artifactId>
             </plugin>
-            <!-- JaCoCo 全局激活：prepare-agent + report + check(≥70% 行覆盖) -->
+            <!-- JaCoCo 全局激活：prepare-agent + report + check（≥10% 指令覆盖，起步目标，见 jacoco.minimum.coverage） -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>

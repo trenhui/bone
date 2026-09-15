@@ -3,9 +3,9 @@ package com.bone.system.application.command.handler;
 import com.bone.core.capability.Capability;
 import com.bone.core.exception.BizException;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.system.application.command.cmd.CreateConfigCommand;
 import com.bone.system.application.command.cmd.UpdateConfigCommand;
+import com.bone.system.application.query.ConfigUniquenessQuery;
 import com.bone.system.common.exception.NotFoundException;
 import com.bone.system.domain.config.SystemConfig;
 import com.bone.system.domain.model.config.vo.ConfigKey;
@@ -30,17 +30,13 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ConfigCommandHandler {
   private final SystemConfigRepository systemConfigRepository;
+  private final ConfigUniquenessQuery configUniquenessQuery;
 
   @Transactional
   public Long handle(CreateConfigCommand cmd) {
     ConfigKey configKey = ConfigKey.of(cmd.getConfigKey());
 
-    SystemConfig existingConfig =
-        systemConfigRepository.findOneByCriteria(
-            Criteria.<SystemConfig>create()
-                .entityClass(SystemConfig.class)
-                .eq("configKey", configKey));
-    if (existingConfig != null) {
+    if (configUniquenessQuery.existsByConfigKey(configKey)) {
       throw BizException.of("配置键已存在: " + cmd.getConfigKey());
     }
 

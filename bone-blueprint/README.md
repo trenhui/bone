@@ -170,7 +170,7 @@ bash scripts/ci/collect-blueprint-compliance.sh
 1. `domain/{aggregate}/`：聚合根、实体、值对象、领域事件（按需）  
 2. `domain/repository/`：写侧仓储接口（继承 SDK `Repository`，不堆查询方法）  
 3. `application/command` + `application/query`：命令/查询与 Handler  
-4. 多租户隔离下沉仓储层（`OrderRepository.findByIdInTenant`，SDK Criteria 查询过滤）；技术横切经 `domain/gateway` 端口 + `infrastructure` 实现（如 `TenantProvider` → `TenantProviderAdapter`），应用层薄 Handler 经端口注入  
+4. 多租户隔离下沉仓储层（`OrderRepository.findByIdInTenant`，bone-core `QueryParam` + `Operator` 条件查询过滤，租户缺失即失败关闭—读侧 DSL 不得进 domain）；技术横切经 `domain/gateway` 端口 + `infrastructure` 实现（如 `TenantProvider` → `TenantProviderAdapter`），应用层薄 Handler 经端口注入  
 5. **写侧标准写法**：`repository.save(aggregate)` + `domainEventPublisher.publishFrom(aggregate)`（不设持久化端口）  
 6. `adapter/web`：Controller、request/response DTO、Assembler  
 7. `infrastructure/config` + `infrastructure/event`：元数据、Spring 配置、事件发布实现  

@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Bone DDD 文档防漂移 lint（P1-3 最小实现）。
 
-两项检查：
-1. v4 编号残留：新文档正文不允许出现 v4.x 的 R1–R9 / 铁律编号（Legacy 兼容章节白名单除外）；
-2. 平台 API 引用真实性：文档代码中调用的 bone-core / SDK 公共方法必须真实存在。
+四项检查：
+1. v4 编号残留：新文档正文不允许出现 v4.x 的 R 加数字编号 / 铁律编号（Legacy 兼容章节白名单除外）；
+2. 平台 API 引用真实性：文档代码里调用的平台方法必须落在白名单内。白名单由
+   `bone-core` 与 `bone-metadata-sdk` 的真实公开方法自动收集（源码缺失时退回静态名单）；
+3. 相对链接可达性：`](./x.md)` 目标文件必须存在；
+4. 内部锚点可达性：`](#x)` 必须能解析到某个标题自动锚或显式 `<a id="x">`，且大小写与目标一致。
 
 用法：python3 scripts/check-ddd-doc-drift.py   （退出码非 0 即失败，供 CI 消费）
 """
@@ -22,11 +25,15 @@ DOC_FILES = [
 LEGACY_ANCHOR = re.compile(r"<a id=\"[^\"]*\"></a>")
 
 V4_NUMBERING = re.compile(
-    r"`R[1-9]`|(?<![A-Za-z0-9-])R[1-9](?![0-9A-Za-z-])铁律|铁律（R[1-9]）|v4\.\d"
+    r"`R[1-9]`"
+    r"|(?<![A-Za-z0-9_-])R[1-9](?![0-9A-Za-z_-])铁律"
+    r"|铁律（R[1-9]）"
+    r"|(?<![A-Za-z0-9_-])R[1-9](?![0-9A-Za-z_])"
+    r"|v4\.\d"
 )
 
-# 从文档里抽取的反引号方法调用 → 必须在真实 API 白名单里。
-API_WHITELIST = {
+# 静态兜底：即使源码暂不可读，也要能挡住明显不存在的平台方法名。
+API_WHITELIST_FALLBACK = {
     "publishFrom",        # DomainEventPublisher default
     "publish",            # DomainEventPublisher
     "publishAll",         # DomainEventPublisher
@@ -39,7 +46,39 @@ API_WHITELIST = {
     "markDeleted",
 }
 
-API_CALL = re.compile(r"(?:aggregate|repository|orderRepository|paymentRepository|repo|eventPublisher|domainEventPublisher)\.(\w+)\(")
+# 白名单真源：这些文件里的公开方法即文档允许出现的平台 API。
+API_SOURCES = [
+    "bone-engine/bone-metadata-sdk/src/main/java/com/bone/metadata/sdk/Repository.java",
+    "bone-engine/bone-metadata-sdk/src/main/java/com/bone/metadata/sdk/BaseRepository.java",
+    "bone-framework/bone-core/src/main/java/com/bone/core/domain/AggregateRoot.java",
+    "bone-framework/bone-core/src/main/java/com/bone/core/domain/event/DomainEventPublisher.java",
+]
+
+_SIGNATURE = re.compile(r"^[\w\s<>,.\[\]?]+?\b(\w+)\s*\(")
+_KEYWORDS = {"if", "for", "while", "switch", "catch", "return", "new", "throw", "synchronized"}
+
+
+def collect_api_symbols():
+    """从真实源码收集公开方法名；返回 (符号集合, 缺失文件列表)。"""
+    symbols = set(API_WHITELIST_FALLBACK)
+    missing = []
+    for rel in API_SOURCES:
+        src = REPO / rel
+        if not src.exists():
+            missing.append(rel)
+            continue
+        for line in src.read_text(encoding="utf-8").splitlines():
+            m = _SIGNATURE.match(line)
+            if m and m.group(1) not in _KEYWORDS:
+                symbols.add(m.group(1))
+    return symbols, missing
+
+
+# 文档里被调用的接收者名（覆盖面有限：新增示范对象名时同步这里，否则该调用不被检查）。
+API_CALL = re.compile(
+    r"(?:aggregate|repository|orderRepository|paymentRepository|repo"
+    r"|eventPublisher|domainEventPublisher)\.(\w+)\("
+)
 
 def check_v4_numbering(text: str, path: Path):
     errors = []
@@ -64,15 +103,16 @@ def strip_code_blocks(text: str):
     code = "\n".join(p for i, p in enumerate(parts) if i % 2 == 1)
     return prose, code
 
-def check_api_calls(text: str, path: Path):
+def check_api_calls(text: str, path: Path, whitelist):
     errors = []
     _, code = strip_code_blocks(text)
     for i, line in enumerate(code.splitlines(), 1):
         for m in API_CALL.finditer(line):
-            if m.group(1) not in API_WHITELIST:
+            if m.group(1) not in whitelist:
                 errors.append(
                     f"{path.relative_to(REPO)}: 文档代码调用未知平台 API「.{m.group(1)}(」"
-                    f"（不在白名单；新增 API 请同步白名单与 bone-core/SDK 真实签名）"
+                    f"（不在白名单；新增 API 请确认 bone-core / SDK 真实签名，"
+                    f"必要时同步 API_SOURCES）"
                 )
     return errors
 
@@ -85,21 +125,84 @@ def check_markdown_links(text: str, path: Path):
                 errors.append(f"{path.relative_to(REPO)}:{i}: 相对链接目标不存在：{target}")
     return errors
 
+def _gh_anchor(heading: str) -> str:
+    """按 GitHub 规则生成标题锚点：小写、空格转连字符、剥离其余标点。"""
+    a = heading.strip().lower().replace(" ", "-")
+    return re.sub(r"[^\w\u4e00-\u9fff\-]", "", a)
+
+
+def check_anchor_links(text: str, path: Path):
+    """校验 `](#anchor)` 能解析到标题自动锚或显式 `<a id="anchor">`，且大小写一致。
+
+    结构规范化（层级调整、章节重排）最容易造成内部断链，此检查守住该回归。
+    GitHub 生成的 HTML id 一律小写，`#E-37-X` 这类写法虽然能通过宽松比较，
+    在实际渲染的页面上却是断链，所以大小写不一致同样报错。
+    """
+    errors = []
+    targets = {}
+    in_fence = False
+    for line in text.splitlines():
+        s = line.strip()
+        if s.startswith("```") or s.startswith("~~~"):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        m = re.match(r"^#{1,6}\s+(.*)$", line)
+        if m:
+            targets[_gh_anchor(m.group(1))] = _gh_anchor(m.group(1))
+        for a in re.findall(r'<a\s+id="([^"]+)"', line):
+            targets[a.lower()] = a
+    in_fence = False
+    for i, line in enumerate(text.splitlines(), 1):
+        s = line.strip()
+        if s.startswith("```") or s.startswith("~~~"):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        # 行内代码片段里的 `](#x)` 是在讲锚点语法本身，不是链接；先剔除再匹配。
+        prose = re.sub(r"`[^`]*`", "", line)
+        for a in re.findall(r"\]\(#([^)]+)\)", prose):
+            target = targets.get(a.lower())
+            if target is None:
+                errors.append(
+                    f"{path.relative_to(REPO)}:{i}: 内部锚点失效 `#({a})`"
+                    f"（无对应标题或显式 <a id>；结构重排后请同步修正）"
+                )
+            elif a != target:
+                errors.append(
+                    f"{path.relative_to(REPO)}:{i}: 内部锚点大小写不一致 `#({a})`"
+                    f"（目标为 `#{target}`；GitHub 的 id 一律小写）"
+                )
+    return errors
+
+
 def main():
     errors = []
+    whitelist, missing = collect_api_symbols()
+    if missing:
+        print(
+            "警告：以下 API 白名单真源缺失，已退回静态名单：" + "、".join(missing),
+            file=sys.stderr,
+        )
     for f in DOC_FILES:
         if not f.exists():
             continue
         text = f.read_text(encoding="utf-8")
         errors += check_v4_numbering(text, f)
-        errors += check_api_calls(text, f)
+        errors += check_api_calls(text, f, whitelist)
         errors += check_markdown_links(text, f)
+        errors += check_anchor_links(text, f)
     if errors:
         print("DDD 文档防漂移检查失败：")
         for e in errors:
             print(f"  - {e}")
         sys.exit(1)
-    print(f"OK: {len(DOC_FILES)} 个 DDD 文档通过防漂移检查（v4 编号 / 平台 API / 相对链接）")
+    print(
+        f"OK: {len(DOC_FILES)} 个 DDD 文档通过防漂移检查"
+        f"（v4 编号 / 平台 API / 相对链接 / 内部锚点；白名单 {len(whitelist)} 个符号）"
+    )
 
 if __name__ == "__main__":
     main()

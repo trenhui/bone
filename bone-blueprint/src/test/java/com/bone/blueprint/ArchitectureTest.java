@@ -84,7 +84,7 @@ public class ArchitectureTest {
   // P0-7 + §15：adapter 入站约束（参考样板不 freeze，须 0 违规）
   @ArchTest
   static final ArchRule adapter_no_application_service =
-      BoneDddArchRules.adapterControllersMustNotDependOnApplicationService();
+      BoneDddArchRules.adapterControllersMustNotDependOnGodObjects();
 
   @ArchTest
   static final ArchRule adapter_no_domain_repository =
