@@ -35,7 +35,7 @@ if [ -n "$CHANGED_FILES" ]; then
       POM="$MODULE_PATH/pom.xml"
       if [ -f "$POM" ]; then
         echo "  ArchUnit: $MODULE_PATH"
-        mvn -f "$POM" test -Dtest='*ArchitectureTest' --batch-mode -q || exit_code=$?
+        mvn -f "$POM" test -Dtest='*ArchitectureTest' -Dsurefire.failIfNoSpecifiedTests=false --batch-mode -q || exit_code=$?
       fi
     done <<< "$MODULE_PATHS"
   fi
