@@ -84,8 +84,8 @@
 ### 多租户
 
 - 聚合根继承 `TenantAggregateRoot`；写/读路径经 `TenantProviderAdapter`（实现 `domain/gateway/TenantProvider` 端口）/ `TenantContext` 隔离。
-- HTTP 演示：请求头 `X-Tenant-Id: 1001`（见 `TenantContextFilter`）。
-- **生产环境该请求头由网关下发**：`bone-gateway` 的 `JwtAuthGlobalFilter` 验签后，用 token 内<strong>已签名</strong>的 `tenantId` claim **覆盖** `X-Tenant-Id`（并注入 `X-User-Id` / `X-Roles`）再转发。所以 `X-Tenant-Id` 是**内部信任头**——只有「绕过网关直连模块端口」时才依赖调用方自律。
+- **租户来源由 token 决定，不由请求头决定**：请求带 token 时，框架 `AbstractJwtAuthenticationFilter` 会把 `X-Tenant-Id` 的**读取值**改写为 token 内<strong>已签名</strong>的 `tenantId` claim，调用方改这个请求头无效（伪造只会被纠正并留 WARN 日志）。只有**无 token 的内部调用**才由调用方提供该头（见 `TenantContextFilter`）。
+- **两处强制校正、互为兜底**：① 经网关时 `bone-gateway` 的 `JwtAuthGlobalFilter` 验签后用 claim **覆盖** `X-Tenant-Id`（并注入 `X-User-Id` / `X-Roles`）；② 直连模块端口时框架过滤器做同样的归一化。因此该头是**内部信任头**：`bone-web` 的 `TenantInterceptor` 与 `bone-metadata-sdk` 的租户数据源路由无论先后都读得到真值。
 
 ### 鉴权（JWT，与平台同范式）
 
@@ -104,10 +104,12 @@ TOKEN=$(curl -s -X POST http://localhost:8081/api/v1/iam/login \
 mvn spring-boot:run \
   -Dspring-boot.run.arguments="--bone.iam.jwt.secret-key=dev-only-secret-key-minimum-32-bytes-long"
 
-# 3) 访问
-curl -H "Authorization: Bearer $TOKEN" -H 'X-Tenant-Id: 1001' \
+# 3) 访问（租户取自 token 的 tenantId claim；IAM 默认 admin 属平台租户 0）
+curl -H "Authorization: Bearer $TOKEN" \
   http://localhost:8082/api/v1/orders
 ```
+
+> 再额外带上 `X-Tenant-Id: 1001` 也不会改变结果——带 token 时框架按 claim 覆盖该头。要演示别的租户，得换一个 `tenantId` claim 对应的 token，而不是改请求头。
 
 - **生产必须设置** `BONE_IAM_JWT_SECRET_KEY`（≥ 32 字节）：仍用默认密钥时 `JwtConfig` 在 `prod` profile 下**拒绝启动**。
 - **JJWT 版本不能降级**：本模块固定 `${jjwt.version}`（0.12.x），与 `bone-security` 的编译版本一致。若被传递依赖降到 0.11.x，`JwtTokenService.parse()` 会抛 `NoSuchMethodError`，症状同样是「带了有效 token 仍 401/500」。
