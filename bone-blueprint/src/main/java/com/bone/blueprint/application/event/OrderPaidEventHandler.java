@@ -1,9 +1,9 @@
 package com.bone.blueprint.application.event;
 
+import com.bone.blueprint.application.query.dto.OrderWithItemsRow;
+import com.bone.blueprint.application.query.port.OrderReadPort;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
-import com.bone.blueprint.domain.gateway.OrderReadPort;
 import com.bone.blueprint.domain.order.event.OrderPaidEvent;
-import com.bone.blueprint.domain.order.read.OrderWithItemsRow;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

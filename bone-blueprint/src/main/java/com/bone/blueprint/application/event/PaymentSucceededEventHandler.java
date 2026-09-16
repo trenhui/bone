@@ -1,6 +1,6 @@
 package com.bone.blueprint.application.event;
 
-import com.bone.blueprint.domain.gateway.OrderOutboxWriter;
+import com.bone.blueprint.application.port.out.OrderOutboxWriter;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.order.event.OrderPaidEvent;
 import com.bone.blueprint.domain.order.event.OrderPaymentInconsistentEvent;
@@ -42,6 +42,16 @@ public class PaymentSucceededEventHandler {
   private final DomainEventPublisher domainEventPublisher;
   private final OrderOutboxWriter orderOutboxWriter;
 
+  /**
+   * 支付成功 → 订单确认（跨聚合两段式）。
+   *
+   * <p><b>为什么必须用 REQUIRES_NEW</b>：支付单写已在独立事务中提交（AFTER_COMMIT 触发），
+   * 订单聚合的确认支付是另一条聚合写路径——两个聚合不能放在同一事务（R9 一事务一聚合）。 REQUIRES_NEW 确保订单确认在全新事务中完成，与支付单事务解耦， 同时 Outbox
+   * 写入（本方法内 {@code orderOutboxWriter.*} 调用）也在该独立事务内原子提交。
+   *
+   * <p>这<strong>不是违规</strong>——禁止的是"在业务主事务内用 REQUIRES_NEW 写幂等表/Outbox"， 这里是 AFTER_COMMIT
+   * 后的独立聚合写，属于两段式编排的唯一正确形态。
+   */
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   @Transactional(propagation = Propagation.REQUIRES_NEW)
   public void handle(PaymentSucceededEvent event) {

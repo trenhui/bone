@@ -1,6 +1,6 @@
 package com.bone.blueprint.infrastructure.context;
 
-import com.bone.blueprint.domain.gateway.TenantProvider;
+import com.bone.blueprint.application.port.out.TenantProvider;
 import com.bone.core.tenant.context.TenantContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

@@ -8,9 +8,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.bone.blueprint.application.command.cmd.HandlePaymentCallbackCommand;
-import com.bone.blueprint.domain.gateway.OrderOutboxWriter;
-import com.bone.blueprint.domain.gateway.TenantProvider;
+import com.bone.blueprint.application.command.cmd.ProcessPaymentCallbackCommand;
+import com.bone.blueprint.application.port.out.OrderOutboxWriter;
+import com.bone.blueprint.application.port.out.TenantProvider;
 import com.bone.blueprint.domain.payment.Payment;
 import com.bone.blueprint.domain.payment.valueobject.PaymentChannel;
 import com.bone.blueprint.domain.payment.valueobject.PaymentStatus;
@@ -36,14 +36,14 @@ import org.springframework.dao.DuplicateKeyException;
  * <p><b>关键断言</b>：支付成功必须与 Outbox 写入<strong>同事务</strong>（P-5.4），且并发重复回调被唯一索引拦截时按幂等处理。
  */
 @ExtendWith(MockitoExtension.class)
-class HandlePaymentCallbackCommandHandlerTest {
+class ProcessPaymentCallbackCommandHandlerTest {
 
   @Mock private PaymentRepository paymentRepository;
   @Mock private TenantProvider tenantProvider;
   @Mock private OrderOutboxWriter orderOutboxWriter;
   @Mock private DomainEventPublisher domainEventPublisher;
 
-  @InjectMocks private HandlePaymentCallbackCommandHandler handler;
+  @InjectMocks private ProcessPaymentCallbackCommandHandler handler;
 
   private Payment pendingPayment() {
     return Payment.create(
@@ -63,7 +63,7 @@ class HandlePaymentCallbackCommandHandlerTest {
               return 1L;
             });
 
-    handler.handle(new HandlePaymentCallbackCommand(1L, "trade-001", new BigDecimal("200"), true));
+    handler.handle(new ProcessPaymentCallbackCommand(1L, "trade-001", new BigDecimal("200"), true));
 
     assertEquals(PaymentStatus.SUCCESS, payment.getStatus());
     assertEquals("trade-001", payment.getChannelTradeNo());
@@ -82,7 +82,7 @@ class HandlePaymentCallbackCommandHandlerTest {
         DomainException.class,
         () ->
             handler.handle(
-                new HandlePaymentCallbackCommand(1L, "trade-001", new BigDecimal("199"), true)));
+                new ProcessPaymentCallbackCommand(1L, "trade-001", new BigDecimal("199"), true)));
     verify(paymentRepository, never()).save(any());
     verify(orderOutboxWriter, never()).appendPaymentSucceeded(any());
   }
@@ -93,7 +93,8 @@ class HandlePaymentCallbackCommandHandlerTest {
     when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(payment);
 
-    handler.handle(new HandlePaymentCallbackCommand(1L, "trade-002", new BigDecimal("200"), false));
+    handler.handle(
+        new ProcessPaymentCallbackCommand(1L, "trade-002", new BigDecimal("200"), false));
 
     assertEquals(PaymentStatus.FAILED, payment.getStatus());
     // 失败回调不产生「支付成功」事实，不应写 Outbox
@@ -109,7 +110,7 @@ class HandlePaymentCallbackCommandHandlerTest {
     when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(payment);
 
-    handler.handle(new HandlePaymentCallbackCommand(1L, "trade-001", new BigDecimal("200"), true));
+    handler.handle(new ProcessPaymentCallbackCommand(1L, "trade-001", new BigDecimal("200"), true));
 
     assertEquals(PaymentStatus.SUCCESS, payment.getStatus());
     // 幂等跳过：不写库、不发事件、不重复落 Outbox
@@ -126,7 +127,7 @@ class HandlePaymentCallbackCommandHandlerTest {
     when(paymentRepository.save(any(Payment.class)))
         .thenThrow(new DuplicateKeyException("uk_bp_payment_tenant_channel"));
 
-    handler.handle(new HandlePaymentCallbackCommand(1L, "trade-001", new BigDecimal("200"), true));
+    handler.handle(new ProcessPaymentCallbackCommand(1L, "trade-001", new BigDecimal("200"), true));
 
     // 按幂等处理：不向上抛 500、不写 Outbox、不发布事件
     verify(orderOutboxWriter, never()).appendPaymentSucceeded(any());
@@ -142,7 +143,7 @@ class HandlePaymentCallbackCommandHandlerTest {
         NotFoundException.class,
         () ->
             handler.handle(
-                new HandlePaymentCallbackCommand(1L, "trade-003", new BigDecimal("200"), true)));
+                new ProcessPaymentCallbackCommand(1L, "trade-003", new BigDecimal("200"), true)));
 
     verify(paymentRepository, never()).save(any());
   }
@@ -153,7 +154,7 @@ class HandlePaymentCallbackCommandHandlerTest {
     when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(payment);
 
-    handler.handle(new HandlePaymentCallbackCommand(1L, "trade-004", new BigDecimal("200"), true));
+    handler.handle(new ProcessPaymentCallbackCommand(1L, "trade-004", new BigDecimal("200"), true));
 
     ArgumentCaptor<com.bone.blueprint.domain.payment.event.PaymentSucceededEvent> captor =
         ArgumentCaptor.forClass(

@@ -1,11 +1,11 @@
 package com.bone.blueprint.application.query.handler;
 
+import com.bone.blueprint.application.port.out.TenantProvider;
 import com.bone.blueprint.application.query.dto.PaymentDto;
+import com.bone.blueprint.application.query.dto.PaymentRow;
+import com.bone.blueprint.application.query.port.PaymentReadPort;
 import com.bone.blueprint.application.query.qry.PaymentDetailQuery;
-import com.bone.blueprint.application.query.support.PaymentAssemblerHelper;
-import com.bone.blueprint.domain.gateway.PaymentReadPort;
-import com.bone.blueprint.domain.gateway.TenantProvider;
-import com.bone.blueprint.domain.payment.read.PaymentRow;
+import com.bone.blueprint.application.query.support.PaymentDetailAssembler;
 import com.bone.core.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -26,6 +26,6 @@ public class PaymentDetailQueryHandler {
         paymentReadPort
             .findById(tenantId, query.paymentId())
             .orElseThrow(() -> new NotFoundException("支付单不存在: " + query.paymentId()));
-    return PaymentAssemblerHelper.toDto(row);
+    return PaymentDetailAssembler.from(row);
   }
 }

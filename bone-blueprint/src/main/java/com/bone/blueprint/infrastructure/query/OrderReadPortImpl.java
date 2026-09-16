@@ -1,8 +1,8 @@
 package com.bone.blueprint.infrastructure.query;
 
-import com.bone.blueprint.domain.gateway.OrderReadPort;
-import com.bone.blueprint.domain.order.read.OrderHeadRow;
-import com.bone.blueprint.domain.order.read.OrderWithItemsRow;
+import com.bone.blueprint.application.query.dto.OrderHeadRow;
+import com.bone.blueprint.application.query.dto.OrderWithItemsRow;
+import com.bone.blueprint.application.query.port.OrderReadPort;
 import com.bone.blueprint.domain.order.valueobject.OrderStatus;
 import com.bone.core.model.PageResult;
 import java.io.IOException;
@@ -65,13 +65,13 @@ public class OrderReadPortImpl implements OrderReadPort {
   }
 
   @Override
-  public Optional<OrderStatus> findStatusById(long tenantId, long orderId) {
+  public Optional<String> findStatusById(long tenantId, long orderId) {
     String sql =
         "SELECT status FROM t_order WHERE tenant_id = :tenantId AND id = :orderId AND deleted = 0";
     MapSqlParameterSource params =
         new MapSqlParameterSource().addValue("tenantId", tenantId).addValue("orderId", orderId);
     List<String> statuses = jdbcTemplate.queryForList(sql, params, String.class);
-    return statuses.stream().findFirst().map(OrderStatus::valueOf);
+    return statuses.stream().findFirst();
   }
 
   @Override

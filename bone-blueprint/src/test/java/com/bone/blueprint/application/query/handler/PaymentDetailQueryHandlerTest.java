@@ -4,11 +4,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
+import com.bone.blueprint.application.port.out.TenantProvider;
 import com.bone.blueprint.application.query.dto.PaymentDto;
+import com.bone.blueprint.application.query.dto.PaymentRow;
+import com.bone.blueprint.application.query.port.PaymentReadPort;
 import com.bone.blueprint.application.query.qry.PaymentDetailQuery;
-import com.bone.blueprint.domain.gateway.PaymentReadPort;
-import com.bone.blueprint.domain.gateway.TenantProvider;
-import com.bone.blueprint.domain.payment.read.PaymentRow;
 import com.bone.core.exception.NotFoundException;
 import java.math.BigDecimal;
 import java.util.Optional;

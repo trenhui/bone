@@ -6,10 +6,10 @@ import com.bone.blueprint.adapter.web.dto.request.PaymentCallbackReq;
 import com.bone.blueprint.adapter.web.dto.request.RefundPaymentReq;
 import com.bone.blueprint.adapter.web.dto.response.InitiatePaymentResp;
 import com.bone.blueprint.adapter.web.dto.response.PaymentDetailResp;
-import com.bone.blueprint.application.command.handler.HandlePaymentCallbackCommandHandler;
+import com.bone.blueprint.application.PaymentApplicationService;
+import com.bone.blueprint.application.command.cmd.InitiatePaymentResult;
 import com.bone.blueprint.application.command.handler.InitiatePaymentCommandHandler;
-import com.bone.blueprint.application.command.handler.RefundPaymentCommandHandler;
-import com.bone.blueprint.application.command.result.InitiatePaymentResult;
+import com.bone.blueprint.application.command.handler.ProcessPaymentCallbackCommandHandler;
 import com.bone.blueprint.application.query.dto.PaymentDto;
 import com.bone.blueprint.application.query.handler.PaymentDetailQueryHandler;
 import com.bone.blueprint.application.query.qry.PaymentDetailQuery;
@@ -28,13 +28,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 支付 Web 接口：发起支付 + 支付回调 + 支付详情查询 + 退款。
+ * 支付 Web 接口。
  *
- * <p>Controller 仅做协议转换与路由（§15 adapter 职责），直接注入 {@code *CommandHandler}/{@code *QueryHandler}（§12
- * P0-7）。
+ * <p><b>入站边界双形态（E-3.7 ApplicationService First）</b>： 退款（单聚合、简单）走 {@link
+ * PaymentApplicationService}；发起支付（两段式远程调用 + 事务拆分）、支付回调（验签 + 幂等状态机）仍走独立 {@code CommandHandler}。
  *
- * <p><b>回调验签在 adapter 边界完成</b>（支付样板 §3 + ADR-0022）：签名不可信直接拒绝，<strong>不进 Handler、不进领域</strong>。 覆盖
- * <strong>全部</strong>分支（成功 / 失败）——只验成功回调时，伪造的失败回调可把支付单打成 FAILED， 真实成功回调随后被聚合拒绝。
+ * <p><b>回调验签在 adapter 边界完成</b>：签名不可信直接拒绝，不进 Handler、不进领域。覆盖全部分支（成功 / 失败）——只验成功回调时，伪造的失败回调可把支付单打成
+ * FAILED，真实成功回调随后被聚合拒绝。
  */
 @Tag(name = "支付管理", description = "提供下单支付、渠道回调、详情查询与退款的Web接口")
 @RestController
@@ -43,8 +43,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class PaymentController {
 
   private final InitiatePaymentCommandHandler initiatePaymentCommandHandler;
-  private final HandlePaymentCallbackCommandHandler handlePaymentCallbackCommandHandler;
-  private final RefundPaymentCommandHandler refundPaymentCommandHandler;
+  private final ProcessPaymentCallbackCommandHandler processPaymentCallbackCommandHandler;
+  private final PaymentApplicationService paymentApplicationService;
   private final PaymentDetailQueryHandler paymentDetailQueryHandler;
   private final PaymentAssembler paymentAssembler;
   private final PaymentSignaturePort paymentSignaturePort;
@@ -60,7 +60,6 @@ public class PaymentController {
   @Operation(summary = "支付回调", description = "支付渠道异步通知支付结果（先验签，再幂等确认）")
   @PostMapping("/callback")
   public ApiResponse<Void> callback(@Valid @RequestBody PaymentCallbackReq request) {
-    // 验签前置到 adapter：成功与失败回调一律验签，不可信直接拒绝（防伪造失败回调把支付单打成终态）
     boolean trusted =
         paymentSignaturePort.verify(
             request.getPaymentId(),
@@ -70,14 +69,14 @@ public class PaymentController {
     if (!trusted) {
       throw new BizException("支付回调签名校验失败");
     }
-    handlePaymentCallbackCommandHandler.handle(
-        paymentAssembler.toHandlePaymentCallbackCommand(request));
+    processPaymentCallbackCommandHandler.handle(
+        paymentAssembler.toProcessPaymentCallbackCommand(request));
     return ApiResponse.success();
   }
 
-  @Operation(summary = "查询支付单", description = "查询支付单详情")
+  @Operation(summary = "查询支付单", description = "按支付单ID查询详情")
   @GetMapping("/{paymentId}")
-  public ApiResponse<PaymentDetailResp> detail(@PathVariable Long paymentId) {
+  public ApiResponse<PaymentDetailResp> getById(@PathVariable Long paymentId) {
     PaymentDto dto = paymentDetailQueryHandler.handle(new PaymentDetailQuery(paymentId));
     return ApiResponse.success(paymentAssembler.toPaymentDetailResp(dto));
   }
@@ -86,7 +85,7 @@ public class PaymentController {
   @PostMapping("/{paymentId}/refund")
   public ApiResponse<Void> refund(
       @PathVariable Long paymentId, @Valid @RequestBody RefundPaymentReq request) {
-    refundPaymentCommandHandler.handle(paymentAssembler.toRefundPaymentCommand(paymentId, request));
+    paymentApplicationService.refund(paymentAssembler.toRefundPaymentCommand(paymentId, request));
     return ApiResponse.success();
   }
 }

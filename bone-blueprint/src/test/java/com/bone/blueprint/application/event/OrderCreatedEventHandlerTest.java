@@ -7,10 +7,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.bone.blueprint.application.query.dto.OrderWithItemsRow;
+import com.bone.blueprint.application.query.port.OrderReadPort;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
-import com.bone.blueprint.domain.gateway.OrderReadPort;
 import com.bone.blueprint.domain.order.event.OrderCreatedEvent;
-import com.bone.blueprint.domain.order.read.OrderWithItemsRow;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;

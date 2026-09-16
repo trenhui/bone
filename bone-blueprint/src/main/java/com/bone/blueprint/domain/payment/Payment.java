@@ -49,8 +49,15 @@ public class Payment extends TenantAggregateRoot<Long> {
   private Instant updatedAt;
 
   /**
-   * 乐观锁版本号（E-9.6）：由 SDK 按列读写；仓储 UPDATE 追加 {@code WHERE version = ?} 的乐观并发保护， 待 SDK 提供等价能力后启用（见模块
-   * README「E-9.6 并发与幂等」登记，当前不声明支持并发写）。
+   * 乐观锁版本号（E-5.3：可并发写聚合必须声明并验证并发策略）。
+   *
+   * <p>与订单对称，支付单也是最易被并发写的聚合（{@code confirmSuccess} 由渠道回调事件驱动、{@code close/refund} 由 REST 或超时 Job
+   * 驱动），采用乐观锁策略（以本列做条件更新阻止丢失更新）。
+   *
+   * <p><b>当前状态（已登记技术债，非已生效）</b>：同 {@code Order}，Bone 元数据 SDK 通用写路径不强制 {@code WHERE version =
+   * ?}，真实并发护栏待 SDK 启用原生 {@code @Version} 后生效。SDK 就绪前并发写不在持久化边界受保护， 已在模块 README「E-5.3 并发与幂等」登记。
+   *
+   * <p>{@code version} 是持久化层托管的并发控制字段，业务代码不得直接读写。
    */
   private Long version;
 

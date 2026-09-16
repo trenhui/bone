@@ -1,5 +1,7 @@
 package com.bone.blueprint;
 
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+
 import com.bone.architecture.BoneDddArchRules;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
@@ -123,6 +125,22 @@ public class ArchitectureTest {
   @ArchTest
   static final ArchRule tenant_context_via_provider =
       BoneDddArchRules.businessLayersMustNotReadTenantContextDirectly();
+
+  // E-4.3 / E-10.2（#5 回归门禁）：domain/gateway 只允许合法 Domain Gateway（业务语言外部能力，
+  // 如账户余额/库存这类业务规则依赖的外部事实）。技术端口（MQ 投递、Outbox 写、Outbox 中继、租户上下文、
+  // 缓存、时钟、通知、文件、幂等等）一律不得进入，必须落 application/port/out。
+  // 白名单即当前合规的全部 Domain Gateway；新增业务网关须同步更新此白名单，否则 CI 拦截。
+  @ArchTest
+  static final ArchRule domain_gateway_only_business_gateways =
+      classes()
+          .that()
+          .resideInAPackage("..domain.gateway..")
+          .should()
+          .haveSimpleName("PaymentGateway")
+          .orShould()
+          .haveSimpleName("InventoryGateway")
+          .orShould()
+          .haveSimpleName("PaymentSignaturePort");
 
   // v4.5：命名 / 事务四条规则已降级为 warn（tasks 2.5），不再作为 @ArchTest 硬门禁；
   // 反贫血主判据切换为 R8 聚合纯单测（AggregatePureUnitTestCoverageTest）。

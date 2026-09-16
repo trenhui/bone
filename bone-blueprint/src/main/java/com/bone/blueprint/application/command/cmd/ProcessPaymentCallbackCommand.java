@@ -15,5 +15,5 @@ import java.math.BigDecimal;
  * @param paidAmount 渠道实付金额（须与应付金额一致，支付核心不变量）
  * @param success 是否支付成功（由已验签的回调报文判定）
  */
-public record HandlePaymentCallbackCommand(
+public record ProcessPaymentCallbackCommand(
     Long paymentId, String channelTradeNo, BigDecimal paidAmount, boolean success) {}

@@ -1,7 +1,7 @@
 package com.bone.blueprint.infrastructure.messaging.outbox;
 
-import com.bone.blueprint.domain.gateway.OrderMessageSender;
-import com.bone.blueprint.domain.gateway.OrderOutboxRelayPort;
+import com.bone.blueprint.application.port.out.OrderMessageSender;
+import com.bone.blueprint.application.port.out.OrderOutboxRelayPort;
 import com.bone.blueprint.infrastructure.config.OrderOutboxProperties;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import java.util.List;

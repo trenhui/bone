@@ -1,11 +1,11 @@
 package com.bone.blueprint.application.query.handler;
 
+import com.bone.blueprint.application.port.out.TenantProvider;
 import com.bone.blueprint.application.query.dto.OrderDto;
+import com.bone.blueprint.application.query.dto.OrderHeadRow;
+import com.bone.blueprint.application.query.port.OrderReadPort;
 import com.bone.blueprint.application.query.qry.OrderPageQuery;
 import com.bone.blueprint.application.query.support.OrderSummaryAssembler;
-import com.bone.blueprint.domain.gateway.OrderReadPort;
-import com.bone.blueprint.domain.gateway.TenantProvider;
-import com.bone.blueprint.domain.order.read.OrderHeadRow;
 import com.bone.blueprint.domain.order.valueobject.OrderStatus;
 import com.bone.core.exception.InvalidRequestException;
 import com.bone.core.model.PageResult;

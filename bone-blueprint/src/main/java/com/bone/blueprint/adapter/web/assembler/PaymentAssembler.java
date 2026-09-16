@@ -5,10 +5,10 @@ import com.bone.blueprint.adapter.web.dto.request.PaymentCallbackReq;
 import com.bone.blueprint.adapter.web.dto.request.RefundPaymentReq;
 import com.bone.blueprint.adapter.web.dto.response.InitiatePaymentResp;
 import com.bone.blueprint.adapter.web.dto.response.PaymentDetailResp;
-import com.bone.blueprint.application.command.cmd.HandlePaymentCallbackCommand;
 import com.bone.blueprint.application.command.cmd.InitiatePaymentCommand;
+import com.bone.blueprint.application.command.cmd.InitiatePaymentResult;
+import com.bone.blueprint.application.command.cmd.ProcessPaymentCallbackCommand;
 import com.bone.blueprint.application.command.cmd.RefundPaymentCommand;
-import com.bone.blueprint.application.command.result.InitiatePaymentResult;
 import com.bone.blueprint.application.query.dto.PaymentDto;
 import org.mapstruct.Mapper;
 
@@ -17,9 +17,9 @@ public interface PaymentAssembler {
 
   InitiatePaymentCommand toInitiatePaymentCommand(InitiatePaymentReq req);
 
-  default HandlePaymentCallbackCommand toHandlePaymentCallbackCommand(PaymentCallbackReq req) {
+  default ProcessPaymentCallbackCommand toProcessPaymentCallbackCommand(PaymentCallbackReq req) {
     // signature 不进应用层：验签已在 Controller 入口完成（adapter 边界防腐，ADR-0022）
-    return new HandlePaymentCallbackCommand(
+    return new ProcessPaymentCallbackCommand(
         req.getPaymentId(), req.getChannelTradeNo(), req.getPaidAmount(), req.isSuccess());
   }
 

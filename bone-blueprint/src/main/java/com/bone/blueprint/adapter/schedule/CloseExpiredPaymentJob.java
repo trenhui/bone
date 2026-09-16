@@ -2,8 +2,8 @@ package com.bone.blueprint.adapter.schedule;
 
 import com.bone.blueprint.application.command.cmd.CloseExpiredPaymentCommand;
 import com.bone.blueprint.application.command.handler.CloseExpiredPaymentCommandHandler;
-import com.bone.blueprint.domain.gateway.PaymentReadPort;
-import com.bone.blueprint.domain.payment.read.PaymentRow;
+import com.bone.blueprint.application.query.dto.PaymentRow;
+import com.bone.blueprint.application.query.port.PaymentReadPort;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

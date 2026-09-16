@@ -1,4 +1,4 @@
-package com.bone.blueprint.application.command.handler;
+package com.bone.blueprint.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -8,7 +8,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.blueprint.application.command.cmd.DeliverOrderCommand;
-import com.bone.blueprint.domain.gateway.TenantProvider;
+import com.bone.blueprint.application.command.cmd.ShipOrderCommand;
+import com.bone.blueprint.application.port.out.TenantProvider;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.order.OrderItem;
 import com.bone.blueprint.domain.order.valueobject.OrderStatus;
@@ -23,13 +24,57 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/** {@link OrderApplicationService} — ship / deliver 用例单元测试。 */
 @ExtendWith(MockitoExtension.class)
-class DeliverOrderCommandHandlerTest {
+class OrderApplicationServiceTest {
 
   @Mock private OrderRepository orderRepository;
   @Mock private TenantProvider tenantProvider;
 
-  @InjectMocks private DeliverOrderCommandHandler handler;
+  @InjectMocks private OrderApplicationService service;
+
+  // ===== ship() =====
+
+  private Order paidOrder() {
+    OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
+    Order order = Order.create(1L, 1L, 1L, Collections.singletonList(item));
+    order.confirmPaid();
+    return order;
+  }
+
+  @Test
+  void ship_fromPaid_success() {
+    Order order = paidOrder();
+    when(tenantProvider.currentTenantId()).thenReturn(1L);
+    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(order);
+
+    service.ship(new ShipOrderCommand(1L));
+
+    assertEquals(OrderStatus.SHIPPED, order.getStatus());
+    verify(orderRepository).save(order);
+  }
+
+  @Test
+  void ship_fromCreated_throws() {
+    OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
+    Order order = Order.create(1L, 1L, 1L, Collections.singletonList(item));
+    when(tenantProvider.currentTenantId()).thenReturn(1L);
+    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(order);
+
+    assertThrows(DomainException.class, () -> service.ship(new ShipOrderCommand(1L)));
+    verify(orderRepository, never()).save(any());
+  }
+
+  @Test
+  void ship_notFound_throws() {
+    when(tenantProvider.currentTenantId()).thenReturn(1L);
+    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(null);
+
+    assertThrows(NotFoundException.class, () -> service.ship(new ShipOrderCommand(1L)));
+    verify(orderRepository, never()).save(any());
+  }
+
+  // ===== deliver() =====
 
   private Order shippedOrder() {
     OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
@@ -40,35 +85,35 @@ class DeliverOrderCommandHandlerTest {
   }
 
   @Test
-  void testDeliverFromShipped() {
+  void deliver_fromShipped_success() {
     Order order = shippedOrder();
     when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(order);
 
-    handler.handle(new DeliverOrderCommand(1L));
+    service.deliver(new DeliverOrderCommand(1L));
 
     assertEquals(OrderStatus.DELIVERED, order.getStatus());
     verify(orderRepository).save(order);
   }
 
   @Test
-  void testDeliverFromPaidThrows() {
+  void deliver_fromPaid_throws() {
     OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
     Order order = Order.create(1L, 1L, 1L, Collections.singletonList(item));
     order.confirmPaid(); // 未发货直接确认送达
     when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(order);
 
-    assertThrows(DomainException.class, () -> handler.handle(new DeliverOrderCommand(1L)));
+    assertThrows(DomainException.class, () -> service.deliver(new DeliverOrderCommand(1L)));
     verify(orderRepository, never()).save(any());
   }
 
   @Test
-  void testDeliverNotFound() {
+  void deliver_notFound_throws() {
     when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(null);
 
-    assertThrows(NotFoundException.class, () -> handler.handle(new DeliverOrderCommand(1L)));
+    assertThrows(NotFoundException.class, () -> service.deliver(new DeliverOrderCommand(1L)));
     verify(orderRepository, never()).save(any());
   }
 }

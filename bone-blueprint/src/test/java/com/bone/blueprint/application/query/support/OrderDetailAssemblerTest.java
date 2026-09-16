@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.bone.blueprint.application.query.dto.OrderDto;
-import com.bone.blueprint.domain.order.read.OrderWithItemsRow;
+import com.bone.blueprint.application.query.dto.OrderWithItemsRow;
 import com.bone.core.exception.NotFoundException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

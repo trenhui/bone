@@ -1,43 +1,38 @@
-package com.bone.blueprint.application.command.handler;
+package com.bone.blueprint.application;
 
 import com.bone.blueprint.application.command.cmd.RefundPaymentCommand;
-import com.bone.blueprint.domain.gateway.TenantProvider;
+import com.bone.blueprint.application.port.out.TenantProvider;
 import com.bone.blueprint.domain.payment.Payment;
 import com.bone.blueprint.domain.repository.PaymentRepository;
-import com.bone.core.capability.Capability;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.NotFoundException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 支付退款用例：加载支付单 → 领域方法 {@code refund}（幂等 + 金额校验）→ 保存发布事件。
+ * 支付用例边界（ApplicationService First）。承载单聚合、无远程调用、无两段式事务的简单用例。
  *
- * <p>退款后的订单状态由 {@code PaymentRefundedEvent} 的 AFTER_COMMIT 订阅确认（跨聚合协作）。
+ * <p>发起支付（两段式远程调用 + 事务拆分）、支付回调（验签 + 幂等状态机）仍保留独立 CommandHandler。
  */
-@Capability(
-    name = "RefundPayment",
-    description = "对已成功支付单发起退款（幂等 + 金额校验）",
-    inputSchema = "{\"paymentId\": \"long\", \"refundAmount\": \"decimal\"}",
-    outputSchema = "{}",
-    idempotent = true,
-    cost = 3,
-    retryable = true,
-    timeout = 30)
 @Slf4j
-@Component
+@Service
 @RequiredArgsConstructor
-public class RefundPaymentCommandHandler {
+public class PaymentApplicationService {
 
   private final PaymentRepository paymentRepository;
   private final TenantProvider tenantProvider;
   private final DomainEventPublisher domainEventPublisher;
 
+  /**
+   * 对已成功支付单发起退款。加载支付单 → 领域方法 {@code refund()}（幂等 + 金额校验）→ 保存发布事件。
+   *
+   * <p>退款后的订单状态由 {@code PaymentRefundedEvent} 的 AFTER_COMMIT 订阅确认（跨聚合协作）。
+   */
   @Transactional
-  public void handle(RefundPaymentCommand command) {
+  public void refund(RefundPaymentCommand command) {
     long tenantId = tenantProvider.currentTenantId();
     Payment payment =
         Optional.ofNullable(paymentRepository.findByIdInTenant(command.paymentId(), tenantId))

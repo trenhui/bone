@@ -1,6 +1,6 @@
-package com.bone.blueprint.domain.gateway;
+package com.bone.blueprint.application.query.port;
 
-import com.bone.blueprint.domain.payment.read.PaymentRow;
+import com.bone.blueprint.application.query.dto.PaymentRow;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;

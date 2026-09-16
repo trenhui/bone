@@ -1,12 +1,16 @@
 package com.bone.blueprint.infrastructure.messaging.outbox;
 
-import com.bone.blueprint.domain.gateway.OrderOutboxWriter;
-import com.bone.blueprint.domain.gateway.TenantProvider;
+import com.bone.blueprint.application.port.out.OrderOutboxWriter;
+import com.bone.blueprint.application.port.out.TenantProvider;
 import com.bone.blueprint.domain.integration.event.OrderPaidIntegrationEvent;
 import com.bone.blueprint.domain.integration.event.OrderPaymentInconsistentIntegrationEvent;
+import com.bone.blueprint.domain.integration.event.PaymentFailedIntegrationEvent;
+import com.bone.blueprint.domain.integration.event.PaymentRefundedIntegrationEvent;
 import com.bone.blueprint.domain.integration.event.PaymentSucceededIntegrationEvent;
 import com.bone.blueprint.domain.order.event.OrderPaidEvent;
 import com.bone.blueprint.domain.order.event.OrderPaymentInconsistentEvent;
+import com.bone.blueprint.domain.payment.event.PaymentFailedEvent;
+import com.bone.blueprint.domain.payment.event.PaymentRefundedEvent;
 import com.bone.blueprint.domain.payment.event.PaymentSucceededEvent;
 import com.bone.blueprint.infrastructure.config.OrderOutboxProperties;
 import com.bone.core.util.DistributedIdGenerator;
@@ -32,6 +36,8 @@ public class OrderOutboxWriterImpl implements OrderOutboxWriter {
   private static final String EVENT_TYPE_PAYMENT_INCONSISTENT =
       "OrderPaymentInconsistentIntegrationEvent";
   private static final String EVENT_TYPE_PAYMENT_SUCCEEDED = "PaymentSucceededIntegrationEvent";
+  private static final String EVENT_TYPE_PAYMENT_REFUNDED = "PaymentRefundedIntegrationEvent";
+  private static final String EVENT_TYPE_PAYMENT_FAILED = "PaymentFailedIntegrationEvent";
 
   private final OrderOutboxProperties properties;
   private final OrderOutboxRepository outboxRepository;
@@ -98,6 +104,41 @@ public class OrderOutboxWriterImpl implements OrderOutboxWriter {
         event == null ? null : event.orderId());
   }
 
+  @Transactional(propagation = Propagation.MANDATORY)
+  @Override
+  public void appendPaymentRefunded(PaymentRefundedEvent event) {
+    append(
+        EVENT_TYPE_PAYMENT_REFUNDED,
+        properties.getPaymentRefundedTopic(),
+        event == null
+            ? null
+            : PaymentRefundedIntegrationEvent.fromDomain(
+                event.paymentId(),
+                event.tenantId(),
+                event.orderId(),
+                event.refundAmount(),
+                event.channelTradeNo(),
+                event.occurredAt()),
+        event == null ? null : event.paymentId());
+  }
+
+  @Transactional(propagation = Propagation.MANDATORY)
+  @Override
+  public void appendPaymentFailed(PaymentFailedEvent event) {
+    append(
+        EVENT_TYPE_PAYMENT_FAILED,
+        properties.getPaymentFailedTopic(),
+        event == null
+            ? null
+            : PaymentFailedIntegrationEvent.fromDomain(
+                event.paymentId(),
+                event.tenantId(),
+                event.orderId(),
+                event.amount(),
+                event.occurredAt()),
+        event == null ? null : event.paymentId());
+  }
+
   /**
    * 写入一条 PENDING 记录。
    *
@@ -140,6 +181,12 @@ public class OrderOutboxWriterImpl implements OrderOutboxWriter {
       return e.tenantId();
     }
     if (event instanceof OrderPaymentInconsistentIntegrationEvent e && e.tenantId() != null) {
+      return e.tenantId();
+    }
+    if (event instanceof PaymentRefundedIntegrationEvent e && e.tenantId() != null) {
+      return e.tenantId();
+    }
+    if (event instanceof PaymentFailedIntegrationEvent e && e.tenantId() != null) {
       return e.tenantId();
     }
     return tenantProvider.currentTenantId();

@@ -1,9 +1,9 @@
 package com.bone.blueprint.application.command.handler;
 
 import com.bone.blueprint.application.command.cmd.InitiatePaymentCommand;
-import com.bone.blueprint.application.command.result.InitiatePaymentResult;
+import com.bone.blueprint.application.command.cmd.InitiatePaymentResult;
+import com.bone.blueprint.application.port.out.TenantProvider;
 import com.bone.blueprint.domain.gateway.PaymentGateway;
-import com.bone.blueprint.domain.gateway.TenantProvider;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.payment.Payment;
 import com.bone.blueprint.domain.payment.valueobject.PaymentChannel;

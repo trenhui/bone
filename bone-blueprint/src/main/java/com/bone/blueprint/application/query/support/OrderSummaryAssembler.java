@@ -1,10 +1,10 @@
 package com.bone.blueprint.application.query.support;
 
 import com.bone.blueprint.application.query.dto.OrderDto;
+import com.bone.blueprint.application.query.dto.OrderHeadRow;
 import com.bone.blueprint.domain.order.Order;
-import com.bone.blueprint.domain.order.read.OrderHeadRow;
 
-/** 订单聚合 / 读模型 → 查询 DTO 组装（application 查询层职责，与 OrderDetailAssembler/PaymentAssemblerHelper 同层）。 */
+/** 订单聚合 / 读模型 → 查询 DTO 组装（application 查询层职责，与 OrderDetailAssembler/PaymentDetailAssembler 同层）。 */
 public final class OrderSummaryAssembler {
 
   private OrderSummaryAssembler() {}

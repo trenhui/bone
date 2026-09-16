@@ -7,7 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.bone.blueprint.domain.gateway.OrderOutboxWriter;
+import com.bone.blueprint.application.port.out.OrderOutboxWriter;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.order.OrderItem;
 import com.bone.blueprint.domain.order.event.OrderPaymentInconsistentEvent;

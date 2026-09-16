@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/rpc/orders")
 @RequiredArgsConstructor
-public class OrderRpcService {
+public class OrderRpcController {
 
   private final CreateOrderCommandHandler createOrderCommandHandler;
   private final OrderDetailQueryHandler orderDetailQueryHandler;

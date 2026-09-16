@@ -1,14 +1,14 @@
 package com.bone.blueprint.application.query.support;
 
 import com.bone.blueprint.application.query.dto.PaymentDto;
-import com.bone.blueprint.domain.payment.read.PaymentRow;
+import com.bone.blueprint.application.query.dto.PaymentRow;
 
-/** 支付读模型 → 查询 DTO 组装（application 查询层职责）。 */
-public final class PaymentAssemblerHelper {
+/** 支付详情读模型 → PaymentDto 组装（与 OrderDetailAssembler 同层）。 */
+public final class PaymentDetailAssembler {
 
-  private PaymentAssemblerHelper() {}
+  private PaymentDetailAssembler() {}
 
-  public static PaymentDto toDto(PaymentRow row) {
+  public static PaymentDto from(PaymentRow row) {
     return PaymentDto.builder()
         .paymentId(row.getPaymentId())
         .orderId(row.getOrderId())

@@ -1,4 +1,4 @@
-package com.bone.blueprint.application.command.handler;
+package com.bone.blueprint.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -9,7 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.blueprint.application.command.cmd.RefundPaymentCommand;
-import com.bone.blueprint.domain.gateway.TenantProvider;
+import com.bone.blueprint.application.port.out.TenantProvider;
 import com.bone.blueprint.domain.payment.Payment;
 import com.bone.blueprint.domain.payment.event.PaymentRefundedEvent;
 import com.bone.blueprint.domain.payment.valueobject.PaymentChannel;
@@ -25,28 +25,28 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+/** {@link PaymentApplicationService} — refund 用例单元测试。 */
 @ExtendWith(MockitoExtension.class)
-class RefundPaymentCommandHandlerTest {
+class PaymentApplicationServiceTest {
 
   @Mock private PaymentRepository paymentRepository;
   @Mock private TenantProvider tenantProvider;
   @Mock private DomainEventPublisher domainEventPublisher;
 
-  @InjectMocks private RefundPaymentCommandHandler handler;
+  @InjectMocks private PaymentApplicationService service;
 
   private RefundPaymentCommand command() {
     return new RefundPaymentCommand(1L, new BigDecimal("200"));
   }
 
   @Test
-  void testRefundSuccess() {
+  void refund_success() {
     Payment payment =
         Payment.create(
             1L, 1L, 100L, 200L, new BigDecimal("200"), PaymentChannel.SIMULATED, "http://pay");
     payment.confirmSuccess("trade-001", new BigDecimal("200"));
-    payment.clearDomainEvents(); // 清除支付成功事件，聚焦退款事件
+    payment.clearDomainEvents();
 
-    // 保存时快照聚合已挂载的事件（publishFrom 会在保存后清空事件列表，须在 save 时捕获）
     AtomicReference<Class<?>> eventType = new AtomicReference<>();
     when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(payment);
@@ -60,7 +60,7 @@ class RefundPaymentCommandHandlerTest {
               return 1L;
             });
 
-    handler.handle(command());
+    service.refund(command());
 
     assertNotNull(payment.getRefundedAt());
     assertEquals(new BigDecimal("200"), payment.getRefundAmount());
@@ -68,24 +68,23 @@ class RefundPaymentCommandHandlerTest {
   }
 
   @Test
-  void testRefundNotSuccessThrows() {
+  void refund_notSuccess_throws() {
     Payment payment =
         Payment.create(
             1L, 1L, 100L, 200L, new BigDecimal("200"), PaymentChannel.SIMULATED, "http://pay");
     when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(payment);
 
-    // 未成功支付单不可退款
-    assertThrows(DomainException.class, () -> handler.handle(command()));
+    assertThrows(DomainException.class, () -> service.refund(command()));
     verify(paymentRepository, never()).save(any());
   }
 
   @Test
-  void testRefundPaymentNotFound() {
+  void refund_paymentNotFound_throws() {
     when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(null);
 
-    assertThrows(NotFoundException.class, () -> handler.handle(command()));
+    assertThrows(NotFoundException.class, () -> service.refund(command()));
     verify(paymentRepository, never()).save(any());
   }
 }

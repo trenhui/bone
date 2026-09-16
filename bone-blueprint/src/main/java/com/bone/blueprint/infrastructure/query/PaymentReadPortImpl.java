@@ -1,7 +1,7 @@
 package com.bone.blueprint.infrastructure.query;
 
-import com.bone.blueprint.domain.gateway.PaymentReadPort;
-import com.bone.blueprint.domain.payment.read.PaymentRow;
+import com.bone.blueprint.application.query.dto.PaymentRow;
+import com.bone.blueprint.application.query.port.PaymentReadPort;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;

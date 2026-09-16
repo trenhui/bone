@@ -3,6 +3,7 @@ package com.bone.blueprint.infrastructure.config;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+/** Outbox 中继配置。 */
 @Data
 @ConfigurationProperties(prefix = "bone.blueprint.outbox")
 public class OrderOutboxProperties {
@@ -23,6 +24,12 @@ public class OrderOutboxProperties {
 
   /** 「钱货不一致」告警/补偿事件主题：支付成功但订单无法确认支付时投递。 */
   private String paymentInconsistentTopic = "bone.order.payment-inconsistent";
+
+  /** 「支付已退款」主题：退款确认同事务落库后中继。 */
+  private String paymentRefundedTopic = "bone.payment.refunded";
+
+  /** 「支付已失败」主题：支付单置 FAILED 同事务落库后中继，下游用于通知用户与告警。 */
+  private String paymentFailedTopic = "bone.payment.failed";
 
   private String consumerGroup = "bone-blueprint-order-paid-consumer";
 }

@@ -1,8 +1,8 @@
 package com.bone.blueprint.application.command.handler;
 
-import com.bone.blueprint.application.command.cmd.HandlePaymentCallbackCommand;
-import com.bone.blueprint.domain.gateway.OrderOutboxWriter;
-import com.bone.blueprint.domain.gateway.TenantProvider;
+import com.bone.blueprint.application.command.cmd.ProcessPaymentCallbackCommand;
+import com.bone.blueprint.application.port.out.OrderOutboxWriter;
+import com.bone.blueprint.application.port.out.TenantProvider;
 import com.bone.blueprint.domain.payment.Payment;
 import com.bone.blueprint.domain.payment.event.PaymentSucceededEvent;
 import com.bone.blueprint.domain.repository.PaymentRepository;
@@ -34,7 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @RequiredArgsConstructor
 @Capability(
-    name = "HandlePaymentCallback",
+    name = "ProcessPaymentCallback",
     description = "处理支付渠道回调：幂等确认支付成功/失败（验签在 adapter 边界完成）",
     inputSchema =
         "{\"paymentId\": \"long\", \"channelTradeNo\": \"string\", \"paidAmount\": \"decimal\", \"success\": \"boolean\"}",
@@ -43,7 +43,7 @@ import org.springframework.transaction.annotation.Transactional;
     cost = 3,
     retryable = true,
     timeout = 30)
-public class HandlePaymentCallbackCommandHandler {
+public class ProcessPaymentCallbackCommandHandler {
 
   private final PaymentRepository paymentRepository;
   private final TenantProvider tenantProvider;
@@ -51,7 +51,7 @@ public class HandlePaymentCallbackCommandHandler {
   private final DomainEventPublisher domainEventPublisher;
 
   @Transactional
-  public void handle(HandlePaymentCallbackCommand command) {
+  public void handle(ProcessPaymentCallbackCommand command) {
     long tenantId = tenantProvider.currentTenantId();
     // 以支付单号定位支付单（真实渠道回调通常携带支付单号或渠道流水号）
     Payment payment =

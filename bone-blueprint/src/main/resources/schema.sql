@@ -2,6 +2,7 @@
 CREATE TABLE IF NOT EXISTS t_order (
     id BIGINT PRIMARY KEY COMMENT '雪花算法生成的全局唯一ID',
     tenant_id BIGINT COMMENT '租户ID',
+    biz_identity_code VARCHAR(64) COMMENT '业务身份编码',
     customer_id BIGINT NOT NULL,
     total_amount DECIMAL(10,2) NOT NULL,
     status VARCHAR(20) NOT NULL,
@@ -18,7 +19,8 @@ CREATE TABLE IF NOT EXISTS t_order (
 -- 订单明细表
 CREATE TABLE IF NOT EXISTS t_order_item (
     id BIGINT PRIMARY KEY COMMENT '雪花算法生成的全局唯一ID',
-    order_id BIGINT NOT NULL COMMENT '关联 t_order.id',
+    biz_identity_code VARCHAR(64) COMMENT '业务身份编码',
+    order_id BIGINT NOT NULL COMMENT '关联 t_order.id（租户隔离经父聚合 t_order.tenant_id 间接保证，DDD 子实体标准做法）',
     product_id BIGINT NOT NULL,
     product_name VARCHAR(200) NOT NULL,
     quantity INT NOT NULL,
@@ -37,6 +39,7 @@ CREATE TABLE IF NOT EXISTS t_order_item (
 CREATE TABLE IF NOT EXISTS bp_payment (
     id BIGINT PRIMARY KEY COMMENT '雪花算法生成的全局唯一ID',
     tenant_id BIGINT COMMENT '租户ID',
+    biz_identity_code VARCHAR(64) COMMENT '业务身份编码',
     order_id BIGINT NOT NULL COMMENT '关联 t_order.id',
     customer_id BIGINT NOT NULL,
     amount DECIMAL(10,2) NOT NULL COMMENT '支付金额',
@@ -65,11 +68,13 @@ CREATE TABLE IF NOT EXISTS bp_payment (
 CREATE TABLE IF NOT EXISTS bp_outbox (
     id BIGINT PRIMARY KEY COMMENT 'Snowflake ID',
     tenant_id BIGINT NOT NULL DEFAULT 0 COMMENT '租户ID',
+    biz_identity_code VARCHAR(64) COMMENT '业务身份编码',
     event_id VARCHAR(36) NOT NULL COMMENT '事件 UUID',
     event_type VARCHAR(80) NOT NULL COMMENT '事件类型',
     topic VARCHAR(200) NOT NULL COMMENT 'MQ Topic',
     partition_key VARCHAR(100) NOT NULL COMMENT '分区键',
     envelope_json JSON NOT NULL COMMENT '消息信封 JSON',
+    schema_version VARCHAR(16) NOT NULL DEFAULT '1.0' COMMENT '事件信封 schema 版本号（Outbox 演进）',
     status VARCHAR(20) NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING/SENT/FAILED',
     retry_count INT NOT NULL DEFAULT 0,
     sent_at DATETIME(3) DEFAULT NULL,

@@ -96,23 +96,6 @@
              此前硬编码 0.11.5，且显式版本会覆盖 bone-parent 的 dependencyManagement，导致
              JwtTokenService.parse() 运行时抛 NoSuchMethodError——该缺陷在引入鉴权前是潜伏的（无人调用 parse）。
              统一取 ${jjwt.version}，与 bone-system / bone-iam 同写法。 -->
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-api</artifactId>
-            <version>${jjwt.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-impl</artifactId>
-            <version>${jjwt.version}</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-jackson</artifactId>
-            <version>${jjwt.version}</version>
-            <scope>runtime</scope>
-        </dependency>
 
         <!-- MySQL Driver -->
         <dependency>
@@ -166,10 +149,6 @@
         </dependency>
 
         <!-- Spring Cloud OpenFeign -->
-        <dependency>
-            <groupId>org.springframework.cloud</groupId>
-            <artifactId>spring-cloud-starter-openfeign</artifactId>
-        </dependency>
     </dependencies>
 
     <build>
@@ -208,9 +187,6 @@
                             <version>0.2.0</version>
                         </path>
                     </annotationProcessorPaths>
-                    <compilerArgs>
-                        <arg>-Amapstruct.defaultComponentModel=spring</arg>
-                    </compilerArgs>
                 </configuration>
                 <executions>
                     <!-- Second compile pass to compile MapStruct generated sources -->

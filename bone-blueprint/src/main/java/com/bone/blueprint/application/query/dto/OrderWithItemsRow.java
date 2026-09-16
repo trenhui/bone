@@ -1,4 +1,4 @@
-package com.bone.blueprint.domain.order.read;
+package com.bone.blueprint.application.query.dto;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

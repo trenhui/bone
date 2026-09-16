@@ -2,7 +2,7 @@
 
 参考实现：**展示 Bone DDD 规范的「能力上限」**，并对齐业界 DDD 战术 + 一致性实践（事件发布、CQRS 读侧、ACL、Optional 语义）。
 
-## 战略设计（§13 最小集）
+## 战略设计（E-1 上下文与数据所有权）
 
 ### 限界上下文
 
@@ -53,7 +53,7 @@
 7. **取消订单**：聚合 `cancel()` → `AFTER_COMMIT` → `releaseStock`
 8. **发货 / 送达**：`Order.ship()`（仅 PAID → SHIPPED）/ `Order.deliver()`（仅 SHIPPED → DELIVERED），经 `/api/v1/orders/{id}/ship`、`/ship`、`/deliver` 触发
 
-> **订单状态机**：`CREATED → PAID → SHIPPED → DELIVERED`，分支 `CANCELLED`（CREATED/PAID）、`REFUNDED`（PAID/SHIPPED/DELIVERED 退款）。`ship/deliver/refund` 为领域行为（反贫血 §17），Handler 仅编排调用。
+> **订单状态机**：`CREATED → PAID → SHIPPED → DELIVERED`，分支 `CANCELLED`（CREATED/PAID）、`REFUNDED`（PAID/SHIPPED/DELIVERED 退款）。`ship/deliver/refund` 为领域行为（反贫血 E-6.4 / CORE-03），Handler 仅编排调用。
 
 ### 支付样板边界说明（业界标准 vs 样板简化）
 
@@ -61,29 +61,31 @@
 
 | 项 | 样板现状 | 生产要求 |
 |----|----------|----------|
-| **并发幂等兜底** | 聚合已带 `version` 字段 + DDL 含 `version` 列（E-9.6 登记）；回调幂等目前仅应用层聚合内判断 | `WHERE version = ?` 乐观锁（待 SDK 提供能力后启用）或 `channel_trade_no` **唯一索引**兜底，防并发回调双写 |
+| **并发与一致性护栏** | 并发策略已声明为<strong>乐观锁</strong>（E-5.3 登记）：聚合带 `version` 列，但 Bone 元数据 SDK 通用写路径（`BaseRepository#update` → `DynamicUpdateBuilder`）<strong>不强制</strong> `WHERE version=?`；且其 `TableMetadataResolver` 虽识别 `@Version` 却未被写路径消费（已核验源码）。加之 `domain`/`application` 层按 P0-5 / E-9.3 禁止依赖 `@ReadSideOnly`（即 `Criteria`），无法在应用/领域层合法构造带版本条件的 `updateByCriteria`——故 DB 级乐观锁<strong>待 SDK 启用原生 `@Version` 后落地（当前未生效）</strong> | 当前真实护栏：① 支付回调并发由 `channel_trade_no` **唯一索引**兜底（幂等去重键，防双写）；② 钱货不一致由 `OrderPaymentInconsistencyJob` 周期对账（仅告警、不改单），补偿"支付成功但订单确认丢失"的窗口；③ 订单/支付单状态机防非法跃迁。SDK 乐观锁就绪前，高并发写同一聚合的丢失更新风险仍属<strong>已知登记项</strong> |
 | **回调验签** | 模拟 HMAC（固定共享密钥，`SimulatedPaymentSignatureVerifier`） | 真实渠道用 HMAC/RSA/证书 + 密钥外部化 + 防重放（nonce/时间戳） |
 | **真实渠道退款** | `Payment.refund` 仅本地幂等 | 真实退款须调用渠道退款接口 + 对账 |
-| **渠道真实对接** | `SimulatedPaymentGatewayImpl` | 替换为真实渠道适配器 + 协议转换 + 错误语义隔离（§19 ACL） |
+| **渠道真实对接** | `SimulatedPaymentGatewayImpl` | 替换为真实渠道适配器 + 协议转换 + 错误语义隔离（E-4.3 ACL 端口 / P-6） |
 
-### E-8.3 订单明细 PO 分离评估（技术债登记）
+### E-6.3 订单明细 PO 分离评估（技术债登记）
 
-`Order` 聚合持有需持久化的 `List<OrderItem>` 集合，且明细有独立表 `t_order_item` 与独立写侧仓储 `OrderItemRepository`（位于 `domain.repository`，与 `OrderRepository` 同包），命中 E-8.3 的 **S1 退出信号**（聚合持有需持久化集合/嵌套实体，无 SDK 级联落库）。
+`Order` 聚合持有需持久化的 `List<OrderItem>` 集合，且明细有独立表 `t_order_item` 与独立写侧仓储 `OrderItemRepository`（位于 `domain.repository`，与 `OrderRepository` 同包），命中 E-6.3 的 **PO 分离信号**（聚合持有需持久化集合/嵌套实体，无 SDK 级联落库）。
 
-**当前过渡方案**：D1 充血聚合 + `CreateOrderCommandHandler` 显式逐条 `save(OrderItem)`，明细经存量 `OrderReadPort.findOrderWithItems`（联表投影）读取。`OrderItem` 是 `Order` 聚合内实体，与 `Order` 同事务落库是在保存同一聚合；现有 R9 扫描只能按 Repository/聚合类型提示风险，不能独立证明事务语义。仓储端口统一放 `domain.repository`，**无需也不允许**靠包位置规避门禁（详见 `OrderItemRepository` 类注释）。新读端口按 v5.0 放 `application/query/port`，存量随功能修改迁移。
+**当前过渡方案**：D1 充血聚合 + `CreateOrderCommandHandler` 显式逐条 `save(OrderItem)`，明细经读侧端口 `OrderReadPort.findOrderWithItems`（联表投影）读取。`OrderItem` 是 `Order` 聚合内实体，与 `Order` 同事务落库是在保存同一聚合；现有 R9 扫描只能按 Repository/聚合类型提示风险，不能独立证明事务语义。仓储端口统一放 `domain.repository`，**无需也不允许**靠包位置规避门禁（详见 `OrderItemRepository` 类注释）。读端口已按 v5.0 迁至 `application/query/port`（`OrderReadPort` / `PaymentReadPort`），配套行 DTO 置于 `application/query/dto`；原 `domain/gateway/*ReadPort` 与 `domain/{order,payment}/read` 已清理，无遗留存量。
 
-**迁移条件（E-8.3 路径）**：当 SDK 支持聚合级联，或团队决定消除 D1 注解与「显式逐条 save」的折中时，再按 E-8.3 做 PO 分离——建 `OrderItemPO` + `OrderItemConverter`，领域 `OrderItem` 落回 D0，仓储实现改操作 PO。此处为已知点，当下合规、不影响功能。
+**与 CORE-11 的偏差（显式登记）**：CORE-11 要求「聚合根是唯一持久化入口，子实体随根落盘，不为子实体建立独立聚合级 Repository」。本模块的 `OrderItemRepository` 与该条字面要求不符，属 **SDK 能力缺失导致的被迫偏差**，而非风格选择：Bone 元数据 SDK **不支持聚合级联落库**，`OrderRepository.save(order)` 不会持久化 `order.items`（且 `items` 标 `@Transient` 以避免 SDK 误映射为 `t_order` 列）。若无显式明细写入路径，订单明细将**静默丢失**。因此「显式逐条 `save(OrderItem)`」是 SDK 约束下的最小可行路径：`OrderItem` 仍是 `Order` 聚合内实体（**未**升格为聚合根），两次 save 在**同一事务**内完成，一致性边界仍等于 `Order` 聚合——CORE-11 的保护目标未被削弱，只是落库入口由「仅根」变为「根 + 子实体同事务双写」。**收敛路径**：SDK 支持聚合级联后即可删除 `OrderItemRepository`、明细随根落盘，恢复 CORE-11 完整合规（与下方 E-6.3 迁移条件同源）。
 
-### E-9.7 强类型 ID 过渡态登记（存量豁免）
+**迁移条件（E-6.3 路径）**：当 SDK 支持聚合级联，或团队决定消除 D1 注解与「显式逐条 save」的折中时，再按 E-6.3 做 PO 分离——建 `OrderItemPO` + `OrderItemConverter`，领域 `OrderItem` 落回 D0，仓储实现改操作 PO。此处为已知点，当下合规、不影响功能。
 
-`Order.customerId`、`Payment.orderId` / `customerId` 当前为裸 `Long`。依据 E-9.7 **存量豁免**条款（v4.5 前存量聚合不强制批量改造），当下合规。
+### E-7.1 强类型 ID 过渡态登记（存量记录）
+
+`Order.customerId`、`Payment.orderId` / `customerId` 当前为裸 `Long`。依据 E-7.1 **存量记录**条款（遗留自增主键按模块登记），当下合规。
 
 - **新模块指引**：**新增强聚合**的跨聚合引用必须使用强类型 ID 值对象（`record OrderId(Long value)` 等，P-3.2 口径：构造期空值校验、无 setter），禁止裸 `Long`——编译期即可拦截「订单 ID / 客户 ID 写反」类静默数据错乱。
-- **本样板改造触发条件**：与 E-8.3 PO 分离联动——强类型 ID 的持久化转换依赖 Converter（E-8.3 第 2 步），而本模块聚合直接落库（无 PO 分层）。待 PO 分离落地后，随 `OrderItemPO` 一并引入 `OrderId` / `CustomerId`，避免二次返工。
+- **本样板改造触发条件**：与 E-6.3 PO 分离联动——强类型 ID 的持久化转换依赖 Converter（E-6.3 的 PO/Converter 分离），而本模块聚合直接落库（无 PO 分层）。待 PO 分离落地后，随 `OrderItemPO` 一并引入 `OrderId` / `CustomerId`，避免二次返工。
 
 ### 多租户
 
-- 聚合根继承 `TenantAggregateRoot`；写/读路径经 `TenantProviderAdapter`（实现 `domain/gateway/TenantProvider` 端口）/ `TenantContext` 隔离。
+- 聚合根继承 `TenantAggregateRoot`；写/读路径经 `TenantProviderAdapter`（实现 `application/port/out/TenantProvider` 端口）/ `TenantContext` 隔离。
 - **租户来源由 token 决定，不由请求头决定**：请求带 token 时，框架 `AbstractJwtAuthenticationFilter` 会把 `X-Tenant-Id` 的**读取值**改写为 token 内<strong>已签名</strong>的 `tenantId` claim，调用方改这个请求头无效（伪造只会被纠正并留 WARN 日志）。只有**无 token 的内部调用**才由调用方提供该头。租户上下文统一由 `bone-web` 的 `TenantInterceptor`（本模块在 `WebMvcConfiguration` 注册）建立——框架内不再另置租户 filter，避免同一规则两处实现、且其中一处读到未归一化的头。
 - **两处强制校正、互为兜底**：① 经网关时 `bone-gateway` 的 `JwtAuthGlobalFilter` 验签后用 claim **覆盖** `X-Tenant-Id`（并注入 `X-User-Id` / `X-Roles`）；② 直连模块端口时框架过滤器做同样的归一化。因此该头是**内部信任头**：`bone-web` 的 `TenantInterceptor` 与 `bone-metadata-sdk` 的租户数据源路由无论先后都读得到真值。
 
@@ -114,9 +116,9 @@ curl -H "Authorization: Bearer $TOKEN" \
 - **生产必须设置** `BONE_IAM_JWT_SECRET_KEY`（≥ 32 字节）：仍用默认密钥时 `JwtConfig` 在 `prod` profile 下**拒绝启动**。
 - **JJWT 版本不能降级**：本模块固定 `${jjwt.version}`（0.12.x），与 `bone-security` 的编译版本一致。若被传递依赖降到 0.11.x，`JwtTokenService.parse()` 会抛 `NoSuchMethodError`，症状同样是「带了有效 token 仍 401/500」。
 
-#### 平台租户打洞登记（E-4.4）
+#### 平台租户打洞登记（E-2 多租户）
 
-定时任务线程无请求上下文，经 `TenantProvider` 端口取数时由 `TenantProviderAdapter` **显式降级为平台租户并留审计日志**（禁止静默按 `null` 放行）。以下异步入口已按 E-4.4 登记：
+定时任务线程无请求上下文，经 `TenantProvider` 端口取数时由 `TenantProviderAdapter` **显式降级为平台租户并留审计日志**（禁止静默按 `null` 放行）。以下异步入口已按 E-2 多租户登记：
 
 | 异步入口 | 作用租户 | 降级/打洞说明 |
 |----------|----------|--------------|
@@ -176,7 +178,7 @@ bash scripts/ci/collect-blueprint-compliance.sh
 
 | 能力 | 用途 |
 |------|------|
-| **`@Capability` + `HandlerRegistry`（可选）** | 编排侧发现 Handler 元数据；**Adapter 直接调 Handler**，无强制 UseCase 门面，见方案 §20 |
+| **`@Capability` + `HandlerRegistry`（可选）** | 编排侧发现 Handler 元数据；**Adapter 直接调 Handler**，无强制 UseCase 门面，见 E-3 应用用例（E-3.7 入口构件决策 / ADR-0028） |
 | **领域事件 + AFTER_COMMIT** | 瘦载荷 `record` 事件 + `SpringDomainEventPublisher` + 应用层订阅 |
 | **Outbox** | `bp_outbox` + `OrderOutboxWriter` / `OrderOutboxRelay` / `OrderOutboxRelayJob` |
 | **集成事件** | `OrderPaidIntegrationEvent` 与领域事件分离，经 Outbox 中继 |
@@ -199,7 +201,7 @@ bash scripts/ci/collect-blueprint-compliance.sh
 1. `domain/{aggregate}/`：聚合根、实体、值对象、领域事件（按需）  
 2. `domain/repository/`：写侧仓储接口（继承 SDK `Repository`，不堆查询方法）  
 3. `application/command` + `application/query`：命令/查询与 Handler  
-4. 多租户隔离下沉仓储层（`OrderRepository.findByIdInTenant`，bone-core `QueryParam` + `Operator` 条件查询过滤，租户缺失即失败关闭—读侧 DSL 不得进 domain）；技术横切经 `domain/gateway` 端口 + `infrastructure` 实现（如 `TenantProvider` → `TenantProviderAdapter`），应用层薄 Handler 经端口注入  
+4. 多租户隔离下沉仓储层（`OrderRepository.findByIdInTenant`，bone-core `QueryParam` + `Operator` 条件查询过滤，租户缺失即失败关闭—读侧 DSL 不得进 domain）；技术横切经 `application/port/out` 端口 + `infrastructure` 实现（如 `TenantProvider` → `TenantProviderAdapter`），应用层薄 Handler 经端口注入  
 5. **写侧标准写法**：`repository.save(aggregate)` + `domainEventPublisher.publishFrom(aggregate)`（不设持久化端口）  
 6. `adapter/web`：Controller、request/response DTO、Assembler  
 7. `infrastructure/config` + `infrastructure/event`：元数据、Spring 配置、事件发布实现  

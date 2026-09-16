@@ -1,7 +1,7 @@
-package com.bone.blueprint.domain.gateway;
+package com.bone.blueprint.application.query.port;
 
-import com.bone.blueprint.domain.order.read.OrderHeadRow;
-import com.bone.blueprint.domain.order.read.OrderWithItemsRow;
+import com.bone.blueprint.application.query.dto.OrderHeadRow;
+import com.bone.blueprint.application.query.dto.OrderWithItemsRow;
 import com.bone.blueprint.domain.order.valueobject.OrderStatus;
 import com.bone.core.model.PageResult;
 import java.time.Instant;
@@ -40,7 +40,7 @@ public interface OrderReadPort {
    *
    * @return 订单不存在（或不可见）时返回 {@code Optional.empty()}
    */
-  Optional<OrderStatus> findStatusById(long tenantId, long orderId);
+  Optional<String> findStatusById(long tenantId, long orderId);
 
   /** 分页查询订单头投影。 */
   PageResult<OrderHeadRow> findOrderPage(

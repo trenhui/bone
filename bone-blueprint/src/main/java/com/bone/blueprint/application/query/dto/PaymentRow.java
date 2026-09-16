@@ -1,4 +1,4 @@
-package com.bone.blueprint.domain.payment.read;
+package com.bone.blueprint.application.query.dto;
 
 import java.math.BigDecimal;
 import java.time.Instant;

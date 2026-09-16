@@ -1,7 +1,7 @@
 package com.bone.blueprint.application.query.support;
 
 import com.bone.blueprint.application.query.dto.OrderDto;
-import com.bone.blueprint.domain.order.read.OrderWithItemsRow;
+import com.bone.blueprint.application.query.dto.OrderWithItemsRow;
 import com.bone.core.exception.NotFoundException;
 import java.util.ArrayList;
 import java.util.List;

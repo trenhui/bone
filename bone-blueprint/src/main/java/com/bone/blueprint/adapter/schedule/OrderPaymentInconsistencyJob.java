@@ -1,9 +1,8 @@
 package com.bone.blueprint.adapter.schedule;
 
-import com.bone.blueprint.domain.gateway.OrderReadPort;
-import com.bone.blueprint.domain.gateway.PaymentReadPort;
-import com.bone.blueprint.domain.order.valueobject.OrderStatus;
-import com.bone.blueprint.domain.payment.read.PaymentRow;
+import com.bone.blueprint.application.query.dto.PaymentRow;
+import com.bone.blueprint.application.query.port.OrderReadPort;
+import com.bone.blueprint.application.query.port.PaymentReadPort;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -27,7 +26,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class PaymentConsistencyCheckJob {
+public class OrderPaymentInconsistencyJob {
 
   private final PaymentReadPort paymentReadPort;
   private final OrderReadPort orderReadPort;
@@ -42,10 +41,9 @@ public class PaymentConsistencyCheckJob {
 
     int inconsistent = 0;
     for (PaymentRow row : succeeded) {
-      Optional<OrderStatus> status =
-          orderReadPort.findStatusById(row.getTenantId(), row.getOrderId());
+      Optional<String> status = orderReadPort.findStatusById(row.getTenantId(), row.getOrderId());
       // 订单不存在：同样属异常（支付成功却没有订单）；仍 CREATED：确认链路未执行
-      if (status.isEmpty() || status.get() == OrderStatus.CREATED) {
+      if (status.isEmpty() || status.get().equals("CREATED")) {
         inconsistent++;
         log.error(
             "钱货不一致：支付单已成功但订单未确认支付，需人工/自动补偿: paymentId={}, orderId={}, tenantId={}, "
@@ -53,7 +51,7 @@ public class PaymentConsistencyCheckJob {
             row.getPaymentId(),
             row.getOrderId(),
             row.getTenantId(),
-            status.map(Enum::name).orElse("NOT_FOUND"),
+            status.orElse("NOT_FOUND"),
             row.getPaidAt());
       }
     }

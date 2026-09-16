@@ -1,9 +1,9 @@
 package com.bone.blueprint.adapter.schedule;
 
+import com.bone.blueprint.application.OrderApplicationService;
 import com.bone.blueprint.application.command.cmd.CancelOrderCommand;
-import com.bone.blueprint.application.command.handler.CancelOrderCommandHandler;
-import com.bone.blueprint.domain.gateway.OrderReadPort;
-import com.bone.blueprint.domain.order.read.OrderHeadRow;
+import com.bone.blueprint.application.query.dto.OrderHeadRow;
+import com.bone.blueprint.application.query.port.OrderReadPort;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component;
 public class CancelExpiredOrderJob {
 
   private final OrderReadPort orderReadPort;
-  private final CancelOrderCommandHandler cancelOrderCommandHandler;
+  private final OrderApplicationService orderApplicationService;
 
   /** 超时阈值（分钟）：订单创建后超过该时长未支付即取消。 */
   private static final long ORDER_TIMEOUT_MINUTES = 30;
@@ -45,8 +45,7 @@ public class CancelExpiredOrderJob {
         expired.size());
     for (OrderHeadRow row : expired) {
       try {
-        cancelOrderCommandHandler.handle(
-            new CancelOrderCommand(row.getOrderId(), row.getTenantId()));
+        orderApplicationService.cancel(new CancelOrderCommand(row.getOrderId(), row.getTenantId()));
       } catch (Exception e) {
         // 记录日志，继续处理下一笔（如状态已迁移导致 cancel 抛错，属预期跳过）
         log.error("取消超时订单失败: orderId={}, tenantId={}", row.getOrderId(), row.getTenantId(), e);

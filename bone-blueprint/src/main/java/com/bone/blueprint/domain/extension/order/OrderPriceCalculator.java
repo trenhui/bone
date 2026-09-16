@@ -1,15 +1,14 @@
 package com.bone.blueprint.domain.extension.order;
 
-import com.bone.engine.extension.api.annotation.ExtensionPoint;
 import java.math.BigDecimal;
 
-@ExtensionPoint(
-    name = "订单价格计算扩展点",
-    description = "不同租户和场景下的订单价格计算",
-    version = "1.0.0",
-    transactional = false,
-    timeout = 10,
-    singleton = true)
+/**
+ * 订单价格计算策略（业务端口，domain 层纯净）。
+ *
+ * <p>扩展引擎的技术契约（{@code @ExtensionPoint} / {@code @Extension}）下沉到 {@code
+ * infrastructure/extension/order/ExtensionOrderPriceCalculator} 子接口——本接口只承载"订单可以有不同的定价策略"
+ * 这一业务概念，domain 层不感知扩展引擎框架的存在。
+ */
 public interface OrderPriceCalculator {
   BigDecimal calculate(OrderPriceRequest request);
 
