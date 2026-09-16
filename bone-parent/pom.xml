@@ -188,7 +188,12 @@
                 <scope>provided</scope>
             </dependency>
 
-            <!-- ===== JWT ===== -->
+            <!-- ===== JWT =====
+                 子模块无需声明 jjwt：依赖 bone-security 即可，版本由此处统一管理。
+                 若确有必要声明，务必用 ${jjwt.version} —— 显式版本会覆盖本 dependencyManagement，
+                 而低于 0.12 与 bone-security 的编译版本不兼容，运行期抛 NoSuchMethodError
+                 （症状是「带有效 token 仍 401/500」，且会被 /error 转发二次掩盖，极难定位）。
+                 bone-security 的 JwtTokenService 构造期会做兼容性探测，让此故障以启动失败的形式暴露。 -->
             <dependency>
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt-api</artifactId>

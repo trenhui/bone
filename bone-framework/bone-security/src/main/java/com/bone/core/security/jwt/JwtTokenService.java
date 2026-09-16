@@ -20,7 +20,30 @@ public class JwtTokenService {
 
   public JwtTokenService(JwtConfig jwtConfig) {
     this.jwtConfig = jwtConfig;
+    assertJjwtCompatible();
     this.signingKey = Keys.hmacShaKeyFor(jwtConfig.getSecretKey().getBytes(StandardCharsets.UTF_8));
+  }
+
+  /**
+   * 启动期探测 jjwt 版本兼容性，把最难定位的运行期故障前置成一条可读错误（与 {@link JwtConfig#validate()} 同一思路）。
+   *
+   * <p><b>为什么必须探测</b>：本类按 jjwt 0.12.x 编译（{@code Jwts.parser()} 返回 {@code JwtParserBuilder}）。
+   * 若消费方依赖树里 jjwt 被降到 0.11.x（典型成因：子模块在 pom 里<strong>硬编码</strong>版本——显式版本会覆盖 {@code bone-parent} 的
+   * dependencyManagement），{@code Jwts.parser()} 会在<strong>运行期</strong>抛 {@code
+   * NoSuchMethodError}。该症状还会被层层掩盖：鉴权失败返 401、Tomcat 转发 {@code /error} 又被鉴权拦成 401，排查者看到的是「带了有效 token
+   * 仍 401」，几乎不会联想到依赖版本。
+   */
+  private static void assertJjwtCompatible() {
+    try {
+      // 仅探测方法能否解析，不使用返回值（无副作用）
+      Jwts.parser();
+    } catch (NoSuchMethodError | NoClassDefFoundError e) {
+      throw new IllegalStateException(
+          "jjwt 版本与 bone-security 不兼容：本类按 0.12.x 编译，当前 classpath 上是更低的版本。"
+              + "请让 jjwt 由 bone-parent 的 dependencyManagement 统一管理（不要硬编码版本）；"
+              + "定位来源可用 mvn dependency:tree -Dincludes=io.jsonwebtoken",
+          e);
+    }
   }
 
   /** 生成 JWT token（含 scopes）。 */
