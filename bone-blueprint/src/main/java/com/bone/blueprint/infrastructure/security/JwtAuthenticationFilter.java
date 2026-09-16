@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
  *
  * <p><b>为什么不自己做租户绑定</b>：框架已经把请求头 {@code X-Tenant-Id} 归一化为 token 内<strong>已签名</strong>的 {@code
  * tenantId} claim（见 {@link AbstractJwtAuthenticationFilter} 类注释），所以本类不必再写租户绑定或 claim↔header
- * 交叉校验——{@code TenantContextFilter} / {@code bone-web} 的 {@code TenantInterceptor}
+ * 交叉校验——{@code bone-web} 的 {@code TenantInterceptor}（本模块在 {@code WebMvcConfiguration} 注册）
  * 原样读该头即可，读到的必是真值。在这里再补一层只会让同一规则出现两处实现、各自演化。
  *
  * <p><b>与 IAM 的关系：不调用 IAM</b>。IAM 负责签发 token（{@code AuthController}）与账号管理，各模块只用共享密钥 （{@code

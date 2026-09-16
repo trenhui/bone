@@ -28,9 +28,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * TenantInterceptor} 用它建立租户上下文，{@code bone-metadata-sdk} 用它做租户数据源路由——若不与 claim 交叉校验， 持有 A 租户 token
  * 的调用方只要改一个请求头就能读写 B 租户数据。
  *
- * <p><b>为何在「头」上做归一化，而不是在下游某个 filter 里 {@code TenantContext.setTenantId} 覆盖</b>： 设置租户上下文的点有三个——模块自有
- * filter（如 {@code TenantContextFilter}，order 常在安全链之前）、 {@code bone-web} 的 MVC 拦截器（在安全链之后）、{@code
- * bone-metadata-sdk} 的数据源路由（读头，不读上下文）。
+ * <p><b>为何在「头」上做归一化，而不是在下游某个 filter 里 {@code TenantContext.setTenantId} 覆盖</b>：
+ * 设置租户上下文的点有三个——模块自有的租户 filter（若有；order 常被排在安全链之前，因而读到的是<strong>未归一化</strong>的头）、 {@code bone-web}
+ * 的 MVC 拦截器（在安全链之后）、{@code bone-metadata-sdk} 的数据源路由（读头，不读上下文）。
  * 它们执行顺序不同、各自独立，在框架层改上下文会被更晚执行的一方用原始头覆盖回去；只有在源头把<strong>头</strong> 改对，才对所有消费者同时生效、且与顺序无关。
  *
  * <p>经网关访问时该头本就被 {@code JwtAuthGlobalFilter} 用同一 claim 覆盖，因此这里属<strong>等价改写、无行为变化</strong>；

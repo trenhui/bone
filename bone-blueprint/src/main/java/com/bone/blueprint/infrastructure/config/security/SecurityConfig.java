@@ -28,8 +28,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  * {@link com.bone.core.security.jwt.JwtTokenService} 本地离线验签（详见 {@code JwtAuthenticationFilter}）。生产
  * profile 下若仍用默认密钥，{@code JwtConfig} 会拒绝启动。
  *
- * <p><b>租户不在本类处理</b>：租户上下文由 {@code TenantContextFilter} 从 {@code X-Tenant-Id} 建立；生产环境该 请求头由网关
- * {@code JwtAuthGlobalFilter} 用 token 内已签名 claim 覆盖。
+ * <p><b>租户不在本类处理</b>：租户上下文由 {@code bone-web} 的 {@code TenantInterceptor}（本模块在 {@code
+ * WebMvcConfiguration} 注册）从 {@code X-Tenant-Id} 建立——该头在安全链内已被归一化为 token 内已签名 claim（见 {@code
+ * JwtAuthenticationFilter}），故拦截器读到的是真值；生产环境该头另由网关 {@code JwtAuthGlobalFilter} 用同一 claim 覆盖。
  *
  * <p><b>未纳入的差异项</b>：{@code bone-system} 等模块在此处额外配置了面向本仓前端的 CORS 白名单；blueprint 没有配套
  * 前端应用，故不复制该段，以免留下无人维护的常量表。确有浏览器直连需求时再按 {@code bone-system} 的 {@code CorsConfigurationSource} 增补。
