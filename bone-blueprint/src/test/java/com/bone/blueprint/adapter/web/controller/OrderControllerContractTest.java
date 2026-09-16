@@ -101,21 +101,21 @@ class OrderControllerContractTest {
   }
 
   /**
-   * 校验失败：信封必须是 {@code success=false, code=400}。
+   * 校验失败：HTTP <strong>400</strong> + 信封 {@code success=false, code=400}。
    *
-   * <p><b>待修项（框架侧，非本模块）</b>：{@code GlobalExceptionHandler} 的校验类处理器返回裸 {@code ApiResponse} 而非 {@code
-   * ResponseEntity}，HTTP 状态因此仍是 <strong>200</strong>，与 API 规范 §2.4「禁止 HTTP 2xx 且 {@code success:
-   * false}」冲突——同一类的 {@code bizExceptionHandler} 已用 {@code ResponseEntity} 给出正确示范。修好前
-   * 本用例只断言信封，改好后应把下面一行换成 {@code status().isBadRequest()}。
+   * <p><b>回归防护</b>：框架 {@code GlobalExceptionHandler} 的校验类处理器曾只返回 {@code ApiResponse} 而不设 HTTP
+   * 状态，错误会以 HTTP 200 送达（违反 API 规范 §2.4「禁止 HTTP 2xx 且 {@code success: false}」）。因此本用例
+   * <strong>同时</strong>断言状态码与信封——只断言其中之一，该缺陷都能重新溜回来。
    */
   @Test
-  void createWithInvalidBodyReturns400Envelope() throws Exception {
+  void createWithInvalidBodyReturns400() throws Exception {
     // 缺 customerId 与 items → 违背 @NotNull / @NotEmpty
     mockMvc
         .perform(
             post("/api/v1/orders")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"customerId\": null, \"items\": []}"))
+        .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.success").value(false))
         .andExpect(jsonPath("$.code").value(400));
   }
