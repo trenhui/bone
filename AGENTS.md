@@ -82,9 +82,7 @@ bone/                          # 根聚合模块
 │   ├── bone-extension-engine/ # 扩展引擎
 │   │   ├── bone-extension-sdk/
 │   │   └── bone-extension-studio/
-│   ├── go-engine/             # Bone Metadata Go（Go 版元数据引擎，与 Java 版并存，定位待定）
-│   ├── bone-workflow/         # 工作流引擎（规划中）
-│   └── bone-procurement/      # 采购/供应链相关引擎（规划中）
+│   └── go-engine/             # Bone Metadata Go（Go 版元数据引擎，与 Java 版并存，定位待定）
 ├── bone-platform/             # 企业共享平台服务
 │   ├── bone-iam/              # 身份与访问管理（端口 8081）
 │   ├── bone-gateway/          # API 网关（端口 8888，骨架：目前仅 traceId 透传 filter）

@@ -100,11 +100,9 @@ bone/                          # 根聚合模块
 │   ├── bone-metadata-sdk/     # 平台数据面（P0 持久化 + 扩展字段：预留列/JSON/EAV）
 │   ├── bone-metadata-server/  # :9001 — 扩展字段 API（预留列/JSON/EAV，As-Is）+ catalog REST（MVP-2）
 │   ├── bone-metadata-engine/  # 智能元数据引擎（core + starter，选配）
-│   ├── bone-extension-engine/ # 扩展引擎
-│   │   ├── bone-extension-sdk/
-│   │   └── bone-extension-studio/
-│   ├── bone-workflow/         # 工作流引擎
-│   └── bone-procurement/      # 采购/供应链相关引擎（集成见 bone-platform/bone-integration）
+│   └── bone-extension-engine/ # 扩展引擎
+│       ├── bone-extension-sdk/
+│       └── bone-extension-studio/
 ├── bone-platform/             # 企业共享平台服务
 │   ├── bone-iam/              # 身份与访问管理（默认端口 8081，见 doc/wiki/03）
 │   ├── bone-gateway/          # API 网关（端口 8888，骨架：仅 traceId 透传 filter）
