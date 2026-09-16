@@ -47,6 +47,26 @@ cd bone-platform/bone-iam && mvn spring-boot:run
 
 完整列表见 [`.env.example`](../../.env.example)。
 
+### 蓝图样板（bone-blueprint :8082）
+
+| 变量 | 用途 |
+|------|------|
+| `BONE_DB_PASSWORD` | **必填**：模块不给默认值，缺失即启动失败（配置规范 §1.4 fail-fast） |
+| `BONE_IAM_JWT_SECRET_KEY` / `BONE_JWT_SECRET` | 必须与 IAM 一致，否则「token 有效却 401」；`prod` 下用默认值会拒绝启动 |
+| `BONE_ROCKETMQ_NAMESERVER` | 仅 `spring.profiles.active=mq` 时需要（默认 `localhost:9876`） |
+
+```bash
+source scripts/dev/load-env.sh
+mvn -pl bone-blueprint spring-boot:run \
+  -Dspring-boot.run.arguments="--bone.iam.jwt.secret-key=dev-only-secret-key-minimum-32-bytes-long"
+```
+
+Outbox 开关为模块配置项（`bone.blueprint.outbox.*`，非环境变量）：`enabled`（关闭即声明事件可丢，会打 WARN）、
+`mq-enabled`（`false` 时以结构化日志代替 MQ）、`max-retries`、`dead-letter-topic`。
+
+> 表结构以 [bone-init.sql](../../bone-init.sql) 为准；模块内**没有**建表脚本，并置 `spring.sql.init.mode: never`
+> 关闭 Spring Boot 的 `schema.sql` 自动执行（避免双轨 DDL）。库与脚本不一致时用 `./scripts/dev/db-init.sh` 全量重建。
+
 ## 与初始化 SQL
 
 - 运行时 DDL + 种子：[bone-init.sql](../../bone-init.sql)（含扩展 Studio 表 `exts_*`）  

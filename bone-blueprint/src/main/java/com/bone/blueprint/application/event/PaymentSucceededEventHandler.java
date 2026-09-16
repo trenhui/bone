@@ -1,6 +1,7 @@
 package com.bone.blueprint.application.event;
 
 import com.bone.blueprint.application.port.out.OrderOutboxWriter;
+import com.bone.blueprint.common.BlueprintErrorCodes;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.order.event.OrderPaidEvent;
 import com.bone.blueprint.domain.order.event.OrderPaymentInconsistentEvent;
@@ -8,7 +9,7 @@ import com.bone.blueprint.domain.payment.event.PaymentSucceededEvent;
 import com.bone.blueprint.domain.repository.OrderRepository;
 import com.bone.core.domain.DomainEvent;
 import com.bone.core.domain.event.DomainEventPublisher;
-import com.bone.core.exception.NotFoundException;
+import com.bone.core.exception.BizException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -64,7 +65,10 @@ public class PaymentSucceededEventHandler {
 
     Order order =
         Optional.ofNullable(orderRepository.findByIdInTenant(event.orderId(), event.tenantId()))
-            .orElseThrow(() -> new NotFoundException("订单不存在: " + event.orderId()));
+            .orElseThrow(
+                () ->
+                    new BizException(
+                        404, BlueprintErrorCodes.ORDER_NOT_FOUND + ": " + event.orderId()));
 
     // 状态异常：订单已不处于待支付状态却收到支付成功回调（如已取消/已发货）。属「钱-货不一致」异常路径，
     // 不能静默忽略——至少告警；真实场景应触发告警/自动退款（复用 PaymentRefundedEvent 链路）。

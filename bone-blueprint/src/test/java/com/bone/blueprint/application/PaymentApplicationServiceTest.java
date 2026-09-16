@@ -15,8 +15,8 @@ import com.bone.blueprint.domain.payment.event.PaymentRefundedEvent;
 import com.bone.blueprint.domain.payment.valueobject.PaymentChannel;
 import com.bone.blueprint.domain.repository.PaymentRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
+import com.bone.core.exception.BizException;
 import com.bone.core.exception.DomainException;
-import com.bone.core.exception.NotFoundException;
 import java.math.BigDecimal;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -84,7 +84,7 @@ class PaymentApplicationServiceTest {
     when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(null);
 
-    assertThrows(NotFoundException.class, () -> service.refund(command()));
+    assertEquals(404, assertThrows(BizException.class, () -> service.refund(command())).getCode());
     verify(paymentRepository, never()).save(any());
   }
 }

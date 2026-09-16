@@ -3,6 +3,7 @@ package com.bone.blueprint.application.command.handler;
 import com.bone.blueprint.application.command.cmd.InitiatePaymentCommand;
 import com.bone.blueprint.application.command.cmd.InitiatePaymentResult;
 import com.bone.blueprint.application.port.out.TenantProvider;
+import com.bone.blueprint.common.BlueprintErrorCodes;
 import com.bone.blueprint.domain.gateway.PaymentGateway;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.payment.Payment;
@@ -12,7 +13,6 @@ import com.bone.blueprint.domain.repository.PaymentRepository;
 import com.bone.core.capability.Capability;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
-import com.bone.core.exception.NotFoundException;
 import com.bone.core.util.DistributedIdGenerator;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -71,10 +71,17 @@ public class InitiatePaymentCommandHandler {
                   Order order =
                       Optional.ofNullable(
                               orderRepository.findByIdInTenant(command.orderId(), tenantId))
-                          .orElseThrow(() -> new NotFoundException("订单不存在: " + command.orderId()));
+                          .orElseThrow(
+                              () ->
+                                  new BizException(
+                                      404,
+                                      BlueprintErrorCodes.ORDER_NOT_FOUND
+                                          + ": "
+                                          + command.orderId()));
                   // 用意图揭示的聚合查询方法，而非直接比较枚举（状态解释权归聚合，反贫血 §17）
                   if (!order.isAwaitingPayment()) {
-                    throw new BizException("只有待支付状态的订单可以发起支付: " + order.getStatus());
+                    throw new BizException(
+                        409, BlueprintErrorCodes.ORDER_STATUS_CONFLICT + ": " + order.getStatus());
                   }
                   Payment payment =
                       Payment.create(
@@ -99,7 +106,8 @@ public class InitiatePaymentCommandHandler {
     } catch (RuntimeException e) {
       closePaymentAfterRemoteFailure(paymentId, tenantId);
       log.error("支付渠道预下单失败，已关闭支付单: paymentId={}", paymentId, e);
-      throw new BizException("支付渠道预下单失败: " + e.getMessage(), e);
+      throw new BizException(
+          502, BlueprintErrorCodes.PAYMENT_CHANNEL_PREPAY_FAILED + ": " + e.getMessage(), e);
     }
 
     // Tx2：回填支付链接，支付单进入 PAYING
@@ -126,6 +134,7 @@ public class InitiatePaymentCommandHandler {
 
   private Payment loadPayment(long paymentId, long tenantId) {
     return Optional.ofNullable(paymentRepository.findByIdInTenant(paymentId, tenantId))
-        .orElseThrow(() -> new NotFoundException("支付单不存在: paymentId=" + paymentId));
+        .orElseThrow(
+            () -> new BizException(404, BlueprintErrorCodes.PAYMENT_NOT_FOUND + ": " + paymentId));
   }
 }

@@ -4,8 +4,15 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/bone?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
     username: root
-    password: ${BONE_DB_PASSWORD:}
+    # 必填变量，不给默认值：缺失时启动即失败（配置与环境规范 §1.4 fail-fast），
+    # 避免用空密码去连库、报出难以定位的认证错误。
+    password: ${BONE_DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
+  # DDL 真源唯一为仓库根 bone-init.sql（数据库开发规范 §1）。模块内不提供建表脚本，
+  # 并显式关掉 Spring Boot 对 schema.sql / data.sql 的自动执行，避免双轨 DDL 漂移。
+  sql:
+    init:
+      mode: never
 
 bone:
   metadata:
@@ -17,7 +24,14 @@ bone:
       mq-enabled: false
       batch-size: 50
       max-retries: 5
-      order-paid-topic: bone.order.paid
+      # Topic 命名遵循《Bone-消息与事件规范》§2：{scope}.{domain}.{resource}_{action}.v{major}
+      order-paid-topic: domain.order.order_paid.v1
+      payment-succeeded-topic: domain.payment.payment_succeeded.v1
+      payment-inconsistent-topic: domain.order.order_payment_inconsistent.v1
+      payment-refunded-topic: domain.payment.payment_refunded.v1
+      payment-failed-topic: domain.payment.payment_failed.v1
+      # 终端失败（超过 max-retries）转投平台死信主题（消息与事件规范 §6）
+      dead-letter-topic: platform.dead_letter.v1
       consumer-group: bone-blueprint-order-paid-consumer
       relay-delay-ms: 5000
 
@@ -38,4 +52,5 @@ management:
 
 logging:
   level:
-    com.bone: DEBUG
+    # 生产默认关 DEBUG（日志规范 §4）；本地排障由 application-dev.yml 覆盖
+    com.bone: INFO

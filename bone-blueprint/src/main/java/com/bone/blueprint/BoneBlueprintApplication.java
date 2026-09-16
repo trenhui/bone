@@ -30,7 +30,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableSqlRepositories(
     basePackages = {
       "com.bone.blueprint.domain.repository",
-      "com.bone.blueprint.infrastructure.messaging.outbox"
+      "com.bone.blueprint.infrastructure.messaging.outbox",
+      "com.bone.blueprint.infrastructure.messaging.idempotency"
     })
 @EnableExtensionPoints(
     basePackages = {

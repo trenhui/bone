@@ -2,7 +2,8 @@ package com.bone.blueprint.application.query.support;
 
 import com.bone.blueprint.application.query.dto.OrderDto;
 import com.bone.blueprint.application.query.dto.OrderWithItemsRow;
-import com.bone.core.exception.NotFoundException;
+import com.bone.blueprint.common.BlueprintErrorCodes;
+import com.bone.core.exception.BizException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,7 +13,7 @@ public final class OrderDetailAssembler {
 
   public static OrderDto fromRows(List<OrderWithItemsRow> rows) {
     if (rows == null || rows.isEmpty()) {
-      throw new NotFoundException("订单不存在");
+      throw new BizException(404, BlueprintErrorCodes.ORDER_NOT_FOUND);
     }
     OrderWithItemsRow head = rows.get(0);
     List<OrderDto.OrderItemDto> items = new ArrayList<>();

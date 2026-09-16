@@ -5,7 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.bone.blueprint.application.query.dto.OrderDto;
 import com.bone.blueprint.application.query.dto.OrderWithItemsRow;
-import com.bone.core.exception.NotFoundException;
+import com.bone.core.exception.BizException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -38,6 +38,8 @@ class OrderDetailAssemblerTest {
 
   @Test
   void fromRowsEmptyThrowsNotFound() {
-    assertThrows(NotFoundException.class, () -> OrderDetailAssembler.fromRows(List.of()));
+    assertEquals(
+        404,
+        assertThrows(BizException.class, () -> OrderDetailAssembler.fromRows(List.of())).getCode());
   }
 }

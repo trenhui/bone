@@ -1,11 +1,12 @@
 package com.bone.blueprint.application.event;
 
 import com.bone.blueprint.application.port.out.OrderOutboxWriter;
+import com.bone.blueprint.common.BlueprintErrorCodes;
 import com.bone.blueprint.domain.payment.Payment;
 import com.bone.blueprint.domain.payment.event.PaymentFailedEvent;
 import com.bone.blueprint.domain.repository.PaymentRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
-import com.bone.core.exception.NotFoundException;
+import com.bone.core.exception.BizException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,7 +48,10 @@ public class PaymentFailedEventHandler {
     // 幂等校验：支付单若已离开 FAILED（补偿恢复后重新成功），不应再发"失败"集成事件。
     Payment payment =
         Optional.ofNullable(paymentRepository.findByIdInTenant(event.paymentId(), event.tenantId()))
-            .orElseThrow(() -> new NotFoundException("支付单不存在: " + event.paymentId()));
+            .orElseThrow(
+                () ->
+                    new BizException(
+                        404, BlueprintErrorCodes.PAYMENT_NOT_FOUND + ": " + event.paymentId()));
     if (!payment.isSuccess()) {
       // Outbox 原子落库——与支付单最终状态在同一事务内。
       orderOutboxWriter.appendPaymentFailed(event);

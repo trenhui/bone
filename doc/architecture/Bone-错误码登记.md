@@ -48,6 +48,7 @@
 | `INT_` | 集成 | bone-integration | `INT_CONNECTOR_TEST_FAILED` |
 | `SYS_` | 系统 | bone-system | `SYS_CONFIG_LOCKED` |
 | `GEN_` | 代码生成 | studio-generator | `GEN_TEMPLATE_INVALID` |
+| `BP_` | 蓝图样板 | bone-blueprint | `BP_ORDER_NOT_FOUND` |
 
 域注册与 URL `domain` 对齐，见 [Bone-API-规范 §2.3](./Bone-API-规范.md#23-域domain注册表)。
 
@@ -215,6 +216,22 @@ throw new BizException(ExtensionErrorCode.PLUGIN_NOT_FOUND, pluginId);
 | `GEN_TEMPLATE_INVALID` | 400 | 模板校验失败 |
 | `GEN_TASK_NOT_FOUND` | 404 | 生成任务不存在 |
 | `GEN_TASK_FAILED` | 500 | 生成任务失败 |
+
+### BP_
+
+| errorCode | HTTP | 说明 |
+|-----------|------|------|
+| `BP_ORDER_NOT_FOUND` | 404 | 订单不存在（含跨租户不可见） |
+| `BP_ORDER_STATUS_CONFLICT` | 409 | 订单当前状态不允许该操作 |
+| `BP_ORDER_STATUS_INVALID` | 400 | 订单状态查询入参非法 |
+| `BP_PAYMENT_NOT_FOUND` | 404 | 支付单不存在（含跨租户不可见） |
+| `BP_PAYMENT_STATUS_CONFLICT` | 409 | 支付单当前状态不允许该操作 |
+| `BP_PAYMENT_SIGNATURE_INVALID` | 401 | 渠道回调签名校验失败（不可信调用方） |
+| `BP_PAYMENT_CHANNEL_PREPAY_FAILED` | 502 | 渠道预下单失败（上游依赖故障） |
+
+> **样板落地范围**：代码常量在 `bone-blueprint/common/BlueprintErrorCodes`；抛出方必须用载码构造器
+> `new BizException(HTTP 状态, 码 + ": " + 说明)`。`BizException(String)` 的默认码是 **500**，用它等于把
+> 「查不到 / 状态冲突 / 参数错」都报成服务端故障（本项目已据此修正 404 与 400 两处误报）。
 
 ---
 

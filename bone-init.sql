@@ -550,6 +550,74 @@ CREATE TABLE int_outbox (
     KEY idx_int_outbox_status (status, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='集成领域事件 Outbox';
 
+-- ============================================================
+-- 蓝图样板（bone-blueprint）：订单 / 支付限界上下文
+-- ============================================================
+
+CREATE TABLE t_order (
+    id                  BIGINT          NOT NULL COMMENT '订单主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    customer_id         BIGINT          NOT NULL COMMENT '客户ID',
+    total_amount        DECIMAL(18,2)   NOT NULL COMMENT '订单总额',
+    status              VARCHAR(20)     NOT NULL COMMENT 'CREATED/PAID/SHIPPED/DELIVERED/CANCELLED/REFUNDED',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本号（CORE-07）',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    updated_by          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    PRIMARY KEY (id),
+    KEY idx_order_tenant_customer (tenant_id, customer_id),
+    KEY idx_order_tenant_status (tenant_id, status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='订单（Order 上下文聚合根）';
+
+-- 明细为 Order 聚合内实体：租户隔离经父聚合 t_order.tenant_id 间接保证，
+-- 故不落 tenant_id 列（子表例外，见 数据库开发规范 §2 说明）。
+CREATE TABLE t_order_item (
+    id                  BIGINT          NOT NULL COMMENT '明细主键（Snowflake）',
+    order_id            BIGINT          NOT NULL COMMENT '关联 t_order.id',
+    product_id          BIGINT          NOT NULL COMMENT '商品ID',
+    product_name        VARCHAR(200)    NOT NULL COMMENT '商品名称',
+    quantity            INT             NOT NULL COMMENT '数量',
+    unit_price          DECIMAL(18,2)   NOT NULL COMMENT '单价',
+    subtotal            DECIMAL(18,2)   NOT NULL COMMENT '小计',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    updated_by          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    PRIMARY KEY (id),
+    KEY idx_order_item_order (order_id),
+    KEY idx_order_item_product (product_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='订单明细（Order 聚合内实体）';
+
+CREATE TABLE bp_payment (
+    id                  BIGINT          NOT NULL COMMENT '支付单主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    order_id            BIGINT          NOT NULL COMMENT '关联 t_order.id',
+    customer_id         BIGINT          NOT NULL COMMENT '客户ID',
+    amount              DECIMAL(18,2)   NOT NULL COMMENT '支付金额',
+    channel             VARCHAR(30)     NOT NULL COMMENT 'SIMULATED/WECHAT/ALIPAY',
+    status              VARCHAR(20)     NOT NULL COMMENT 'PENDING/PAYING/SUCCESS/FAILED/CLOSED',
+    channel_trade_no    VARCHAR(64)     DEFAULT NULL COMMENT '渠道流水号（消费端幂等键）',
+    pay_url             VARCHAR(500)    DEFAULT NULL COMMENT '支付链接',
+    version             INT             NOT NULL DEFAULT 0 COMMENT '乐观锁版本号（CORE-07）',
+    paid_at             DATETIME(3)     DEFAULT NULL COMMENT '支付成功时间',
+    refunded_at         DATETIME(3)     DEFAULT NULL COMMENT '退款时间',
+    refund_amount       DECIMAL(18,2)   DEFAULT NULL COMMENT '退款金额',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    updated_by          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    PRIMARY KEY (id),
+    KEY idx_payment_tenant_order (tenant_id, order_id),
+    KEY idx_payment_tenant_status (tenant_id, status),
+    -- 幂等兜底：渠道回填的 channel_trade_no 回填后须唯一；MySQL 中 NULL 不计入唯一约束，
+    -- 故多个未回调（NULL）行不冲突，回调回填后强制唯一，防渠道重复推送造成并发双写。
+    UNIQUE KEY uk_payment_tenant_channel_trade_no (tenant_id, channel_trade_no)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='支付单（Payment 上下文聚合根）';
+
 CREATE TABLE bp_outbox (
     id                  BIGINT          NOT NULL COMMENT 'Outbox 主键（Snowflake）',
     tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
@@ -558,6 +626,7 @@ CREATE TABLE bp_outbox (
     topic               VARCHAR(200)    NOT NULL COMMENT 'MQ Topic',
     partition_key       VARCHAR(100)    NOT NULL COMMENT '分区键（默认 tenant_id）',
     envelope_json       JSON            NOT NULL COMMENT '消息信封 JSON',
+    schema_version      VARCHAR(16)     NOT NULL DEFAULT '1.0' COMMENT '信封 schema 版本',
     status              VARCHAR(20)     NOT NULL DEFAULT 'PENDING' COMMENT 'PENDING/SENT/FAILED',
     retry_count         INT             NOT NULL DEFAULT 0 COMMENT '中继重试次数',
     sent_at             DATETIME(3)     DEFAULT NULL COMMENT '发送成功时间',
@@ -569,7 +638,26 @@ CREATE TABLE bp_outbox (
     PRIMARY KEY (id),
     UNIQUE KEY uk_bp_outbox_event_id (event_id),
     KEY idx_bp_outbox_status (status, created_at)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='订单领域事件 Outbox';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='蓝图集成事件 Outbox';
+
+-- 消费端幂等去重表（消息与事件规范 §5）：Outbox 为至少一次投递，消费端必须按 eventId 落库去重。
+-- 保留期须 ≥ 最长重试窗口，可按 created_at 定期归档（见 idx_processed_event_created_at）。
+CREATE TABLE bp_processed_event (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    consumer_group      VARCHAR(120)    NOT NULL COMMENT '消费组：同一 eventId 可被不同组各消费一次',
+    event_id            VARCHAR(36)     NOT NULL COMMENT '信封 eventId（幂等键）',
+    topic               VARCHAR(200)    NOT NULL COMMENT '来源 Topic',
+    processed_at        DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '处理完成时间',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    updated_by          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_processed_event_consumer_event (consumer_group, event_id),
+    KEY idx_processed_event_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='消费端幂等去重（eventId）';
 
 CREATE TABLE int_template (
     id                  BIGINT          NOT NULL COMMENT '模板主键（Snowflake）',

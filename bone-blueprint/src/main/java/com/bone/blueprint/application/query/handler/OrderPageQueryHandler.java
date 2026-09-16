@@ -6,8 +6,9 @@ import com.bone.blueprint.application.query.dto.OrderHeadRow;
 import com.bone.blueprint.application.query.port.OrderReadPort;
 import com.bone.blueprint.application.query.qry.OrderPageQuery;
 import com.bone.blueprint.application.query.support.OrderSummaryAssembler;
+import com.bone.blueprint.common.BlueprintErrorCodes;
 import com.bone.blueprint.domain.order.valueobject.OrderStatus;
-import com.bone.core.exception.InvalidRequestException;
+import com.bone.core.exception.BizException;
 import com.bone.core.model.PageResult;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -17,9 +18,10 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 订单分页查询（读侧）。
  *
- * <p><b>读侧实现选择标准</b>（样板约定，§18.5）：无论单表还是多表投影，一律走 {@code domain/gateway/*ReadPort} + 原生 SQL（见 {@code
- * infrastructure/query/OrderReadPortImpl}），读侧 DSL 只许出现在 {@code infrastructure/query}（E-9.3，ArchUnit
- * #19 门禁）。
+ * <p><b>读侧实现选择标准</b>（样板约定，E-4.2）：读侧端口固定在 {@code application/query/port}，实现固定在 {@code
+ * infrastructure/query}（见 {@code infrastructure/query/OrderReadPortImpl}）；{@code QueryBuilder} /
+ * {@code Criteria} / SQL 只许出现在 infrastructure，application 与 domain 都不得依赖查询 DSL（CORE-05，ArchUnit
+ * {@code readSideDslOnlyInQueryLayer} 门禁）。
  *
  * <p>组装统一收敛在 {@code application/query/support} 静态 assembler（{@link OrderSummaryAssembler}），Handler
  * 内不写私有组装方法。
@@ -50,10 +52,12 @@ public class OrderPageQueryHandler {
   }
 
   /**
-   * 解析状态入参：非法值转 {@link InvalidRequestException}（映射 400）。
+   * 解析状态入参：非法值转 {@link BizException}（显式 400 + {@code BP_ORDER_STATUS_INVALID}）。
    *
-   * <p>直接 {@code OrderStatus.valueOf} 会抛 {@code IllegalArgumentException}，被全局处理器映射成 5xx——
-   * 把「调用方传错参数」报成「服务端故障」，既误导排查也会污染告警。
+   * <p>直接 {@code OrderStatus.valueOf} 会抛 {@code IllegalArgumentException}，被全局处理器兜底成 5xx——
+   * 把「调用方传错参数」报成「服务端故障」，既误导排查也会污染告警。注意：必须走 {@code BizException}(HTTP 状态, ...) 这一载码构造器；{@code
+   * BizException(String)} 的默认码是 <strong>500</strong>，而 {@code InvalidRequestException} 更是未被 {@code
+   * GlobalExceptionHandler} 识别， 两者都会把 400 变成 500。
    */
   private static OrderStatus parseStatus(String status) {
     if (status == null || status.isBlank()) {
@@ -62,7 +66,7 @@ public class OrderPageQueryHandler {
     try {
       return OrderStatus.valueOf(status);
     } catch (IllegalArgumentException ex) {
-      throw new InvalidRequestException("订单状态非法: " + status);
+      throw new BizException(400, BlueprintErrorCodes.ORDER_STATUS_INVALID + ": " + status);
     }
   }
 }

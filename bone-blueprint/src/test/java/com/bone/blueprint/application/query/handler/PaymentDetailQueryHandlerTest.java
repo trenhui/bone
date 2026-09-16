@@ -9,7 +9,7 @@ import com.bone.blueprint.application.query.dto.PaymentDto;
 import com.bone.blueprint.application.query.dto.PaymentRow;
 import com.bone.blueprint.application.query.port.PaymentReadPort;
 import com.bone.blueprint.application.query.qry.PaymentDetailQuery;
-import com.bone.core.exception.NotFoundException;
+import com.bone.core.exception.BizException;
 import java.math.BigDecimal;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -61,6 +61,9 @@ class PaymentDetailQueryHandlerTest {
     when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(paymentReadPort.findById(1L, 1L)).thenReturn(Optional.empty());
 
-    assertThrows(NotFoundException.class, () -> handler.handle(new PaymentDetailQuery(1L)));
+    assertEquals(
+        404,
+        assertThrows(BizException.class, () -> handler.handle(new PaymentDetailQuery(1L)))
+            .getCode());
   }
 }

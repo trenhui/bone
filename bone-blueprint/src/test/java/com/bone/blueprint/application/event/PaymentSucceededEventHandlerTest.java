@@ -15,7 +15,7 @@ import com.bone.blueprint.domain.order.valueobject.OrderStatus;
 import com.bone.blueprint.domain.payment.event.PaymentSucceededEvent;
 import com.bone.blueprint.domain.repository.OrderRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
-import com.bone.core.exception.NotFoundException;
+import com.bone.core.exception.BizException;
 import java.math.BigDecimal;
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
@@ -82,7 +82,7 @@ class PaymentSucceededEventHandlerTest {
   void testOrderNotFound() {
     when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(null);
 
-    assertThrows(NotFoundException.class, () -> handler.handle(event()));
+    assertEquals(404, assertThrows(BizException.class, () -> handler.handle(event())).getCode());
     verify(orderRepository, never()).save(any());
   }
 

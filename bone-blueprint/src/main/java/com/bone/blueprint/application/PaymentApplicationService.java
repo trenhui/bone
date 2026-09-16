@@ -2,10 +2,11 @@ package com.bone.blueprint.application;
 
 import com.bone.blueprint.application.command.cmd.RefundPaymentCommand;
 import com.bone.blueprint.application.port.out.TenantProvider;
+import com.bone.blueprint.common.BlueprintErrorCodes;
 import com.bone.blueprint.domain.payment.Payment;
 import com.bone.blueprint.domain.repository.PaymentRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
-import com.bone.core.exception.NotFoundException;
+import com.bone.core.exception.BizException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +37,10 @@ public class PaymentApplicationService {
     long tenantId = tenantProvider.currentTenantId();
     Payment payment =
         Optional.ofNullable(paymentRepository.findByIdInTenant(command.paymentId(), tenantId))
-            .orElseThrow(() -> new NotFoundException("支付单不存在: paymentId=" + command.paymentId()));
+            .orElseThrow(
+                () ->
+                    new BizException(
+                        404, BlueprintErrorCodes.PAYMENT_NOT_FOUND + ": " + command.paymentId()));
 
     boolean refunded = payment.refund(command.refundAmount());
 

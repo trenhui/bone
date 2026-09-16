@@ -44,7 +44,7 @@
 
 ### 库存与支付协作策略（本样板）
 
-1. **创建订单**：`checkStock` → 持久化 → `reserveStock`（同事务内编排）
+1. **创建订单**：`checkStock` → 持久化订单 + 明细 → 发 `OrderCreatedEvent` → **AFTER_COMMIT** 逐条 `reserveStock`（远程调用不占 DB 事务，单条失败仅告警并留痕，见 `OrderCreatedEventHandler`）
 2. **发起支付**：加载订单（校验 CREATED）→ 创建 `Payment`（PENDING）→ `PaymentGateway.preCreatePayment` 预下单 → `markPaying` → 返回支付链接
 3. **支付回调**：`PaymentSignaturePort` **验签** → `Payment.confirmSuccess`（幂等 + 金额一致性校验）→ 发 `PaymentSucceededEvent` → `AFTER_COMMIT` 确认订单（`confirmPaid`）+ `confirmStock` → 同事务写 **Outbox** 中继 `OrderPaidIntegrationEvent`
 4. **查询支付单**：`PaymentReadPort.findById`（读侧直查，CQRS 读模型）
@@ -152,7 +152,7 @@ domainEventPublisher.publishFrom(order); // default 方法：publishAll + clearD
 - 权威约定：[doc/architecture/Bone-DDD-最终实践方案.md](../doc/architecture/Bone-DDD-最终实践方案.md)（原则、Bone 工程决策与门禁口径）
 - 与主工程对齐：[doc/wiki/08-blueprint与主工程对齐.md](../doc/wiki/08-blueprint与主工程对齐.md)  
 - 测试说明：[TEST_GUIDE.md](./TEST_GUIDE.md)  
-- **新模块最小路径**：先定义上下文和数据所有权，再选择一个应用用例边界；写侧走聚合+Repository，读侧走 QueryHandler+QueryPort，按需引入样板能力。
+- **新模块最小路径**：先定义上下文与数据所有权，再选一个应用用例边界。默认 `Controller → ApplicationService → Repository`（读写同一入口：读直查写仓储）；仅当**读模型与聚合分歧**（报表/多表组合）才在 ApplicationService 内引入 `QueryPort`，仅当**命令异步/多入口/需独立路由**才加 `Command(Handler)`。**不要预建 `command/`、`query/handler/` 空目录**（E-3.7 / AS-01～AS-04 / ADR-0028）。
 
 ### Docs-as-Code（合规模板）
 
@@ -191,7 +191,10 @@ bash scripts/ci/collect-blueprint-compliance.sh
 | **支付生命周期闭环** | 发起支付 → 渠道预下单 → 回调确认 → **查询**（`PaymentReadPort`）→ **超时关闭**（`CloseExpiredPaymentJob`）→ **退款**（`PaymentRefundedEvent` 驱动订单退款 + 释放库存） |
 | **Feign + `InventoryGateway`** | ACL 出站调用 + 预留/确认/释放流程 |
 | **CQRS 读侧** | 列表 / 详情均经读侧端口 SQL 投影（`OrderReadPort` / `PaymentReadPort`），写侧仓储不承载报表查询 |
-| **MQ / 定时任务 / RPC** | 入站适配器形态示例 |
+| **MQ / 定时任务 / RPC** | 入站适配器形态示例（MQ 消费端幂等落库、DLQ、消费指标见上节） |
+| **稳定错误码** | `common/BlueprintErrorCodes`（`BP_*`，登记于错误码登记 §6）；抛出统一用 `new BizException(HTTP 状态, 码 + ": " + 说明)`——`BizException(String)` 默认码是 **500**，会把 404/400 报成服务端故障 |
+| **日志与链路** | `RequestContextFilter`（MDC `traceId`/`tenantId`/`userId`/`httpRoute` + 每请求一条 `[API]` INFO + 回显 `X-Request-Id`）；身份在认证过滤器写入（安全链结束会清空 `SecurityContextHolder`） |
+| **DDL 真源** | 表结构只在仓库根 `bone-init.sql`；模块内无建表脚本且 `spring.sql.init.mode: never`，避免双轨 DDL 漂移 |
 | **真实下单支付场景** | 独立 `Payment` 聚合（`bp_payment`）+ 状态机 + `PaymentGateway` 防腐 + **回调幂等**（`confirmSuccess`）+ 领域事件确认订单（跨聚合协作） |
 
 ## 若要「尽量简单」地抄一版
@@ -200,7 +203,7 @@ bash scripts/ci/collect-blueprint-compliance.sh
 
 1. `domain/{aggregate}/`：聚合根、实体、值对象、领域事件（按需）  
 2. `domain/repository/`：写侧仓储接口（继承 SDK `Repository`，不堆查询方法）  
-3. `application/command` + `application/query`：命令/查询与 Handler  
+3. `application/`：语义化 ApplicationService（默认入口，写方法 + 读方法）；写意图需显式契约时才加 `command/cmd` + `command/handler`，读模型分歧时才加 `query/port` + `query/dto`  
 4. 多租户隔离下沉仓储层（`OrderRepository.findByIdInTenant`，bone-core `QueryParam` + `Operator` 条件查询过滤，租户缺失即失败关闭—读侧 DSL 不得进 domain）；技术横切经 `application/port/out` 端口 + `infrastructure` 实现（如 `TenantProvider` → `TenantProviderAdapter`），应用层薄 Handler 经端口注入  
 5. **写侧标准写法**：`repository.save(aggregate)` + `domainEventPublisher.publishFrom(aggregate)`（不设持久化端口）  
 6. `adapter/web`：Controller、request/response DTO、Assembler  
@@ -218,6 +221,16 @@ bash scripts/ci/collect-blueprint-compliance.sh
 | MQ | `spring.profiles.active=mq` + NameServer | `RocketMqOrderMessageSender` + `OrderPaidIntegrationMqListener` |
 
 > **Outbox 记录归属（工程折中，2026-08-27）**：`OrderOutboxRecord` 位于 `infrastructure/messaging/outbox/`（原 `domain/outbox/` 包已废弃）。它**不是业务聚合**，仅因复用 bone-metadata-sdk 的聚合持久化与主键回填机制而继承 `AggregateRoot`；无领域不变量（仅 PENDING→SENT/FAILED 技术状态）。若未来多模块需要通用 Outbox，应抽到独立基础设施组件，不再占用订单领域包。
+
+### 可靠投递的三件套（缺一不可）
+
+| 环节 | 实现 | 规范依据 |
+|------|------|----------|
+| **生产端原子** | `OrderOutboxWriter`（`Propagation.MANDATORY`，强制与业务写同事务）+ 信封含 `eventId`/`eventType`/`topic`/`occurredAt`/`tenantId`/`traceId`/`schemaVersion` | 消息与事件规范 §3/§7 |
+| **中继** | `OrderOutboxRelay`：PENDING → SENT；失败累计重试，**超限转投 `platform.dead_letter.v1`**（信封内已带 `topic`，重放无需回查表）；指标 `bone_mq_send_total{topic,status}` | §6/§9 |
+| **消费端幂等** | `ConsumedEventPort` → `bp_processed_event`（`(consumer_group, event_id)` 唯一键**原子抢占**，非「先查后写」）；抢占与业务动作在**同一事务**（`OrderPaidConsumptionApplicationService`）——否则处理失败重试会被自己的幂等记录挡住而丢事件；指标 `bone_mq_consume_total{topic,status}` | §5/§9、ADR-0021 |
+
+> Topic 命名遵循 §2（`{scope}.{domain}.{resource}_{action}.v{major}`），5 个集成事件已登记 §4 事件注册表。
 
 ```bash
 # 启动（需本地 RocketMQ NameServer :9876）

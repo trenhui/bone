@@ -13,8 +13,8 @@ import com.bone.blueprint.domain.payment.Payment;
 import com.bone.blueprint.domain.payment.valueobject.PaymentChannel;
 import com.bone.blueprint.domain.payment.valueobject.PaymentStatus;
 import com.bone.blueprint.domain.repository.PaymentRepository;
+import com.bone.core.exception.BizException;
 import com.bone.core.exception.DomainException;
-import com.bone.core.exception.NotFoundException;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -65,8 +65,7 @@ class CloseExpiredPaymentCommandHandlerTest {
   void testPaymentNotFound() {
     when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(null);
 
-    assertThrows(
-        NotFoundException.class, () -> handler.handle(new CloseExpiredPaymentCommand(1L, 1L)));
+    assertThrows(BizException.class, () -> handler.handle(new CloseExpiredPaymentCommand(1L, 1L)));
     verify(paymentRepository, never()).save(any());
   }
 

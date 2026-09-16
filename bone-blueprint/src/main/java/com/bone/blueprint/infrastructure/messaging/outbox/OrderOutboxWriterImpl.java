@@ -14,6 +14,7 @@ import com.bone.blueprint.domain.payment.event.PaymentRefundedEvent;
 import com.bone.blueprint.domain.payment.event.PaymentSucceededEvent;
 import com.bone.blueprint.infrastructure.config.OrderOutboxProperties;
 import com.bone.core.util.DistributedIdGenerator;
+import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -167,9 +168,34 @@ public class OrderOutboxWriterImpl implements OrderOutboxWriter {
             eventType,
             topic,
             String.valueOf(tenantId),
-            envelopeFactory.toJson(eventId, event));
+            envelopeFactory.toJson(
+                eventId, eventType, topic, tenantId, resolveOccurredAt(event), event));
     outboxRepository.save(record);
     log.debug("Outbox 已写入: eventId={}, eventType={}, bizId={}", eventId, eventType, bizId);
+  }
+
+  /**
+   * 事实发生时间：优先取集成事件自带时间（= 领域事件注册时刻），供下游排序与对账。
+   *
+   * <p>取不到时回退为落库时刻——二者在同一事务内，差异仅为事务内的处理耗时。
+   */
+  private Instant resolveOccurredAt(Object event) {
+    if (event instanceof PaymentSucceededIntegrationEvent e) {
+      return e.occurredAt();
+    }
+    if (event instanceof OrderPaidIntegrationEvent e) {
+      return e.occurredAt();
+    }
+    if (event instanceof OrderPaymentInconsistentIntegrationEvent e) {
+      return e.occurredAt();
+    }
+    if (event instanceof PaymentRefundedIntegrationEvent e) {
+      return e.occurredAt();
+    }
+    if (event instanceof PaymentFailedIntegrationEvent e) {
+      return e.occurredAt();
+    }
+    return Instant.now();
   }
 
   /** 事件自带租户则优先用事件携带值（避免跨租户误写），否则回落当前上下文租户。 */

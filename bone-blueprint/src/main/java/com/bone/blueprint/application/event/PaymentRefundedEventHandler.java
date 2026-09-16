@@ -1,12 +1,13 @@
 package com.bone.blueprint.application.event;
 
 import com.bone.blueprint.application.port.out.OrderOutboxWriter;
+import com.bone.blueprint.common.BlueprintErrorCodes;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.payment.event.PaymentRefundedEvent;
 import com.bone.blueprint.domain.repository.OrderRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
-import com.bone.core.exception.NotFoundException;
+import com.bone.core.exception.BizException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -47,7 +48,10 @@ public class PaymentRefundedEventHandler {
 
     Order order =
         Optional.ofNullable(orderRepository.findByIdInTenant(event.orderId(), event.tenantId()))
-            .orElseThrow(() -> new NotFoundException("订单不存在: " + event.orderId()));
+            .orElseThrow(
+                () ->
+                    new BizException(
+                        404, BlueprintErrorCodes.ORDER_NOT_FOUND + ": " + event.orderId()));
 
     // 确认订单退款（本地聚合写，独立事务）。
     boolean refunded = false;

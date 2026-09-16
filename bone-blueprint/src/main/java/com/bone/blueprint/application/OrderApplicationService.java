@@ -4,10 +4,11 @@ import com.bone.blueprint.application.command.cmd.CancelOrderCommand;
 import com.bone.blueprint.application.command.cmd.DeliverOrderCommand;
 import com.bone.blueprint.application.command.cmd.ShipOrderCommand;
 import com.bone.blueprint.application.port.out.TenantProvider;
+import com.bone.blueprint.common.BlueprintErrorCodes;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.repository.OrderRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
-import com.bone.core.exception.NotFoundException;
+import com.bone.core.exception.BizException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -45,7 +46,10 @@ public class OrderApplicationService {
     long tenantId = resolveTenantId(command.tenantId());
     Order order =
         Optional.ofNullable(orderRepository.findByIdInTenant(command.orderId(), tenantId))
-            .orElseThrow(() -> new NotFoundException("订单不存在: " + command.orderId()));
+            .orElseThrow(
+                () ->
+                    new BizException(
+                        404, BlueprintErrorCodes.ORDER_NOT_FOUND + ": " + command.orderId()));
     order.cancel();
     orderRepository.save(order);
     domainEventPublisher.publishFrom(order);
@@ -62,7 +66,10 @@ public class OrderApplicationService {
         Optional.ofNullable(
                 orderRepository.findByIdInTenant(
                     command.orderId(), tenantProvider.currentTenantId()))
-            .orElseThrow(() -> new NotFoundException("订单不存在: " + command.orderId()));
+            .orElseThrow(
+                () ->
+                    new BizException(
+                        404, BlueprintErrorCodes.ORDER_NOT_FOUND + ": " + command.orderId()));
     order.ship();
     orderRepository.save(order);
   }
@@ -78,7 +85,10 @@ public class OrderApplicationService {
         Optional.ofNullable(
                 orderRepository.findByIdInTenant(
                     command.orderId(), tenantProvider.currentTenantId()))
-            .orElseThrow(() -> new NotFoundException("订单不存在: " + command.orderId()));
+            .orElseThrow(
+                () ->
+                    new BizException(
+                        404, BlueprintErrorCodes.ORDER_NOT_FOUND + ": " + command.orderId()));
     order.deliver();
     orderRepository.save(order);
   }

@@ -14,8 +14,8 @@ import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.order.OrderItem;
 import com.bone.blueprint.domain.order.valueobject.OrderStatus;
 import com.bone.blueprint.domain.repository.OrderRepository;
+import com.bone.core.exception.BizException;
 import com.bone.core.exception.DomainException;
-import com.bone.core.exception.NotFoundException;
 import java.math.BigDecimal;
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
@@ -70,7 +70,9 @@ class OrderApplicationServiceTest {
     when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(null);
 
-    assertThrows(NotFoundException.class, () -> service.ship(new ShipOrderCommand(1L)));
+    assertEquals(
+        404,
+        assertThrows(BizException.class, () -> service.ship(new ShipOrderCommand(1L))).getCode());
     verify(orderRepository, never()).save(any());
   }
 
@@ -113,7 +115,10 @@ class OrderApplicationServiceTest {
     when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(null);
 
-    assertThrows(NotFoundException.class, () -> service.deliver(new DeliverOrderCommand(1L)));
+    assertEquals(
+        404,
+        assertThrows(BizException.class, () -> service.deliver(new DeliverOrderCommand(1L)))
+            .getCode());
     verify(orderRepository, never()).save(any());
   }
 }

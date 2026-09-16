@@ -21,7 +21,6 @@ import com.bone.blueprint.domain.repository.OrderRepository;
 import com.bone.blueprint.domain.repository.PaymentRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
-import com.bone.core.exception.NotFoundException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -117,7 +116,7 @@ class InitiatePaymentCommandHandlerTest {
     when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(orderRepository.findByIdInTenant(100L, 1L)).thenReturn(null);
 
-    assertThrows(NotFoundException.class, () -> handler.handle(command));
+    assertEquals(404, assertThrows(BizException.class, () -> handler.handle(command)).getCode());
     verify(paymentRepository, never()).save(any());
     verify(paymentGateway, never()).preCreatePayment(anyLong(), anyLong(), any());
   }

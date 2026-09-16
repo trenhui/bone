@@ -83,6 +83,15 @@
 | `ExecutionCompleted` | `domain.integration.execution_completed.v1` | `tenant_id` |
 | `PluginDeployed` | `domain.extension.plugin_deployed.v1` | `tenant_id` |
 | `PluginExecutionFailed` | `domain.extension.plugin_execution_failed.v1` | `tenant_id` |
+| `OrderPaidIntegrationEvent` | `domain.order.order_paid.v1` | `tenant_id` |
+| `OrderPaymentInconsistentIntegrationEvent` | `domain.order.order_payment_inconsistent.v1` | `tenant_id` |
+| `PaymentSucceededIntegrationEvent` | `domain.payment.payment_succeeded.v1` | `tenant_id` |
+| `PaymentRefundedIntegrationEvent` | `domain.payment.payment_refunded.v1` | `tenant_id` |
+| `PaymentFailedIntegrationEvent` | `domain.payment.payment_failed.v1` | `tenant_id` |
+
+> 蓝图（`bone-blueprint`）的 5 个集成事件由 `bp_outbox` 中继；`eventType` 取信封字段同名的集成事件类名。
+> 中继重试超限后转投 `platform.dead_letter.v1`，信封内保留 `topic`，重放时无需回查 Outbox 表。
+> 消费端幂等键落 `bp_processed_event`（`(consumer_group, event_id)` 唯一），是 §5「落库去重」的样板实现。
 
 模块详设附录可扩展；**禁止**未登记临时 Topic。
 
