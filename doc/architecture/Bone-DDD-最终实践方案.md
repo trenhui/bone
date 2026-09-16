@@ -58,8 +58,8 @@
 | CORE-02 | 依赖向内 | domain 不依赖具体运行时技术与 IO 实现；外层经端口依赖内层 |
 | CORE-03 | 领域行为保护不变量 | 状态迁移与业务决策在聚合、值对象或领域服务 |
 | CORE-04 | 一个用例一个应用边界 | Handler、ApplicationService、Orchestrator 不一对一套娃 |
-| CORE-05 | 写侧服务聚合，读侧服务投影 | Repository 不做报表；QueryPort 位于 application |
-| CORE-06 | 默认单聚合实例事务 | 跨聚合默认最终一致；例外说明理由与失败语义 |
+| CORE-05 | 写侧服务聚合，读侧服务投影 | Repository 不做报表 / Join / 投影；查询结果是页面 DTO、统计、跨聚合组合等非聚合本身时，一律走 QueryPort |
+| CORE-06 | 聚合是默认一致性边界 | 跨聚合默认最终一致；同库本地跨聚合事务须声明业务不变量、失败语义与并发成本，并记录例外 |
 | CORE-07 | 先声明可靠性与并发保证 | Outbox、乐观锁是默认实现，不是唯一实现 |
 | CORE-08 | 门禁不冒充领域证明 | 静态检查证明结构；业务语义由测试和评审证明 |
 | CORE-09 | EAV 只承载扩展字段（元数据工程约束） | 核心事务、高频查询、聚合字段用物理列；EAV/JSON 仅限可选、动态、长尾扩展属性 |
@@ -183,7 +183,7 @@
 
 纯 CRUD、无演进压力的简单能力可以使用轻量模型，不为“看起来像 DDD”制造聚合、事件和目录。
 
-**复杂度检查**：如果一个模块的全部写操作可以用一个 `*ApplicationService` 的 5–8 个方法清晰表达（create / update / delete + 2–3 个业务操作），且读操作可以用同一服务覆盖，则不应引入 Command / Handler 分层。判断标准是“一个类能不能说清楚这个模块做什么”——能，就不拆。
+**复杂度检查**：写操作是否由单一 `*ApplicationService` 清晰表达，判断标准是一个类能不能说清楚这个模块做什么——能，就不引入 Command / Handler。方法数量只是辅助信号：create / update / delete + 少量业务操作、读也可由同一服务覆盖，通常是简单信号；但“方法少、各自却带独立执行策略、状态机、异步、多入口或复杂协调”（如 pay / refund / settle）并不因此变简单。判据先看是否存在独立的执行策略、事务、路由或生命周期，其次才看方法数（见 E-3.2）。
 
 > **正面示例**（L0/L1 大多数支撑域和简单核心域都适用）：
 > ```java
@@ -948,7 +948,7 @@ adapter → ApplicationService → QueryPort → QueryAdapter → SQL/DSL
 
 - 新查询端口固定在 `application/query/port`，实现固定在 `infrastructure/query`；结果放 `application/query/dto` 或 `projection`。
 - `QueryBuilder` / `Criteria` / `SQL` 只在 infrastructure；domain 不依赖查询 DTO / QueryPort / 查询 DSL；QueryHandler 返回投影，不返回聚合供外层修改。
-- 存量 `domain/gateway/*ReadPort` 随功能修改迁移（Blueprint 读侧即此存量形态，不得照抄）；新模块按 `application/query/port` 实现。
+- 存量 `domain/gateway/*ReadPort` 随功能修改迁移（`bone-blueprint` 读侧已完成迁移，可作目标形态范例；存量模块不得照抄旧的 `domain/gateway/*ReadPort` 形态）；新模块按 `application/query/port` 实现。
 - **读侧不与写侧对称**（ADR-0028）：写侧用了 `Command/CommandHandler` 不代表读侧也要 `Query/QueryHandler`。复杂列表（如 Customer+Order+Payment+Risk）走 `ApplicationService → QueryPort → SQL/View → DTO`，不硬套 `Query → QueryHandler → Aggregate`；读编排组合多个 QueryPort 时在 ApplicationService 内拆读方法，不新增 QueryService。
 
 读侧参考（多数复杂读由 ApplicationService 直调 QueryPort；只有需要独立路由 / 异步读时才补一层 QueryHandler）：
@@ -987,6 +987,7 @@ public class OrderSearchApplicationService {
 #### E-4.3 ACL 端口
 
 - 领域规则直接需要、且能用本上下文业务语言表达的外部业务能力，可在 `domain/gateway` 定义 **Domain Gateway** 端口；不得放查询投影、消息客户端、缓存、时钟等技术端口。
+  - 判据：**若拿掉该外部系统，业务规则本身仍能表达，就不是 Domain Gateway**。发短信、发 MQ、写缓存/Redis、生成 UUID、取当前时间、记日志等均属技术能力，一律不进 `domain/gateway`；只有像“账户余额是否足以扣款”这类业务规则依赖的外部事实才进。
 - 应用流程需要的通知、时钟、身份生成、幂等、文件等技术能力位于 `application/port/out`；查询能力位于 `application/query/port`。
 - 第三方 HTTP/RPC Client、MQ Producer 等出站实现位于 infrastructure，并负责协议 DTO、错误、超时和空值翻译。
 - 端口按使用者拥有，而不是按实现技术或供应商命名；不存在第二种实现也不是省略端口的理由，是否建端口由隔离边界和测试需求决定。
@@ -1448,6 +1449,8 @@ com.bone.order/
 
 规则实现位于 `bone-framework/bone-architecture-test`；模块实际状态以各自 `ArchitectureTest` 为准。“Hard gate”表示规则适合机器阻断，不代表已在所有模块启用；`FreezingArchRule` 只阻断基线之外的新增违规。
 
+**门禁第一原则：目标是阻止架构退化，不是要求所有代码长成同一种形状。** 简单路径（`Controller → ApplicationService → Repository`）天然合法，不得被“应该有 Command”等理由逼出多余构件；规则只能防止退化，不能反过来定义代码形态（CORE-08）。
+
 门禁状态分三层，避免把“已定义”误读为“已强制”：
 
 - **Defined**：共享规则库已实现（ArchUnit 规则存在）；
@@ -1573,7 +1576,7 @@ Hard gate 只保护结构和明确 API 使用，不证明领域模型正确。
 | CORE-03 领域行为保护不变量 | `applicationServicesMustNotOwnDomainRules`（目标） | Hard gate 目标 |
 | CORE-04 一个用例一个边界 | `adapterControllersMustNotDependOnGodObjects`（原 `...OnApplicationService`，收窄为上帝对象守护，ADR-0028） | Hard gate（收窄） |
 | CORE-05 写聚合 / 读投影 | `commandHandlersMustNotUseQueryBuilder`、`readSideDslOnlyInQueryLayer` | Hard gate / 目标 |
-| CORE-06 单聚合事务 | `oneAggregatePerTransaction` | Advisory |
+| CORE-06 聚合默认一致性边界 | `oneAggregatePerTransaction` | Advisory |
 | CORE-07 可靠性与并发声明 | 无直接门禁（语义 + [E-5 事务、事件与并发](#e-5-事务事件与并发)） | Semantic |
 | CORE-08 门禁不冒充领域证明 | 全文门禁说明 | 文档约定 |
 | CORE-09 EAV 边界 | 无直接门禁（语义 + 评审） | Semantic |
@@ -1638,6 +1641,26 @@ Freeze 用于阻止存量违规继续增加，不把违规永久合法化：
 ```
 
 应用模块至少启用 domain 依赖方向、application 不依赖 infrastructure、domain/Command 禁查询 DSL、Controller 不直连 Repository/领域服务、聚合身份不可被外层修改、禁止遗留 UseCase API，以及统一持久化栈检查。命名、事务注解、Repository 返回类型与跨类委派传播扫描默认作为 Advisory；模块若提升为阻断，必须说明这是工程策略而非 DDD 语义证明。
+
+
+### G-3 HC 硬约束（CI 阻断，完整定义）
+
+以下 8 条硬约束是 Bone 架构门禁的**最外层防线**——违反即 CI 阻断，无豁免通道。原定义位于 `AGENTS.md §12.1`，收归本文以实现单一真源。每条含规则名、判定方式、执行载体与阻断级别：
+
+| 规则 | 内容 | 判定方式 | 执行载体 | 阻断 |
+|------|------|----------|----------|------|
+| **HC-001** | 禁止引入 MyBatis-Plus / JPA / Hibernate / MyBatis | pom.xml 依赖扫描 + grep（排除 MapStruct） | CI `check-ddd-doc-code-sync.py` | ✅ CI |
+| **HC-002** | domain 层零依赖 Spring/外部框架 | ArchUnit 规则 | `domainMustNotDependOnOuterLayers` | ✅ CI |
+| **HC-003** | Controller 返回必须用 `ApiResponse<T>` 或 `PageResult<T>` | ArchUnit 规则 | `controllerMustReturnApiResponse` | ✅ CI |
+| **HC-004** | 禁止硬编码密钥/密码/Token | Gitleaks 扫描 | `.gitleaks.toml` | ✅ CI |
+| **HC-005** | 核心模块测试覆盖率 ≥ 70%（初始目标，逐步提到 80%） | JaCoCo 覆盖率检查 | `jacoco-maven-plugin:check` | ✅ CI |
+| **HC-006** | 数据库访问必须通过 bone-metadata-sdk Repository | pom 依赖扫描 + ArchUnit | 依赖扫描 + `repositoryMustUseSdk` | ✅ CI |
+| **HC-007** | PR 提交的 OpenAPI spec 不得引入 breaking change | OpenAPI diff | oasdiff（PR 级别 base vs head breaking change 检测） | ✅ PR 阻断 |
+| **HC-008** | 新增表必须含 `tenant_id` + `created_at` + `updated_at` + `deleted` | DDL 审查 | `scripts/ci-check.sh` | ✅ CI |
+
+HC-001/HC-002/HC-006 的语义在 E-4.1（仓储白名单）、E-4.2（依赖向内）、持久化栈章节有详细展开；HC-003 对应 Bone-API-规范.md 的统一响应格式；HC-007 的 OpenAPI spec 位于 `openapi/` 子目录，CI 配置见 `.github/workflows/ci.yml`。
+
+> **与 AGENTS.md 的关系**：AGENTS.md §12.1 保留薄引用 + AI 自主权分级（L0~L4），HC 完整定义以本文为准。AGENTS.md 新增 HC-009+ 时必须同步更新本节。
 
 ### G-4 交付验收清单
 
