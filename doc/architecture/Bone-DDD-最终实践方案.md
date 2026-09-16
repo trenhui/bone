@@ -1102,7 +1102,7 @@ Outbox 是 Bone 的默认 Durable 实现。CDC、数据库事务日志或其他�
 | 维度 | 选项 | 定义 |
 |------|------|------|
 | 领域模型纯净度 | D0 Pure | 只依赖 JDK、Bone 最小领域抽象和 domain 端口 |
-| 领域模型纯净度 | D1 Annotated | 允许 metadata-sdk 映射注解、Lombok、`org.springframework.lang` 等白名单编译期注解 |
+| 领域模型纯净度 | D1 Annotated | 允许 metadata-sdk 映射注解、Lombok、`org.springframework.lang` 等编译期注解 |
 | 持久化模型关系 | Shared | 领域对象同时作为 metadata-sdk 持久化对象 |
 | 持久化模型关系 | Separated | infrastructure 使用独立 `*PO` 与 Converter |
 
@@ -1110,9 +1110,9 @@ Outbox 是 Bone 的默认 Durable 实现。CDC、数据库事务日志或其他�
 
 #### E-6.2 D1 使用条件
 
-D1 是 Bone 为 metadata-sdk 提供的受控工程例外。仅当映射简单、白名单注解不引入运行时行为且不扭曲领域结构时使用，不只限于“无行为 CRUD”。
+D1 是 Bone 为 metadata-sdk 提供的受控工程例外。仅当映射简单、所用映射注解不引入运行时行为且不扭曲领域结构时使用，不只限于“无行为 CRUD”。
 
-门禁 `domainMustNotDependOnOuterLayers` 的编译期注解白名单**已显式放行** `org.springframework.lang.*`（如 `@NonNull`）、Lombok 与 metadata-sdk 映射注解；若合法 D1 领域类被误判为违规，应先扩展该白名单，而非放宽领域纯净度要求。
+门禁 `domainMustNotDependOnOuterLayers` 按**包路径**判定：它只拦截 `domain` 对 `..adapter..` / `..application..` / `..infrastructure..` 的依赖，规则内部**不存在也不需要**单独的注解白名单——`org.springframework.lang.*`（如 `@NonNull`）、Lombok 与 metadata-sdk 映射注解本身不在上述三个包内，天然不在拦截范围。若合法 D1 领域类被判违规，先确认它是否真的依赖了外层包：是则改依赖；放宽规则解决不了该类违规。
 
 #### E-6.3 PO 分离信号
 
