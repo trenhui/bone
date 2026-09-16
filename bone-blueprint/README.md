@@ -192,6 +192,7 @@ bash scripts/ci/collect-blueprint-compliance.sh
 | **Feign + `InventoryGateway`** | ACL 出站调用 + 预留/确认/释放流程 |
 | **CQRS 读侧** | 列表 / 详情均经读侧端口 SQL 投影（`OrderReadPort` / `PaymentReadPort`），写侧仓储不承载报表查询 |
 | **MQ / 定时任务 / RPC** | 入站适配器形态示例（MQ 消费端幂等落库、DLQ、消费指标见上节） |
+| **幂等写（`Idempotency-Key`）** | `BlueprintIdempotencyService` + `IdempotencyStore`（落 `bp_idempotency_record`）+ 控制器取头；同键同 body 重放同一响应、同键异 body → 409 `COMMON_IDEMPOTENCY_CONFLICT`、TTL 24h（API 规范 §6.1/§8） |
 | **稳定错误码** | `common/BlueprintErrorCodes`（`BP_*`，登记于错误码登记 §6）；抛出统一用 `new BizException(HTTP 状态, 码 + ": " + 说明)`——`BizException(String)` 默认码是 **500**，会把 404/400 报成服务端故障 |
 | **日志与链路** | `RequestContextFilter`（MDC `traceId`/`tenantId`/`userId`/`httpRoute` + 每请求一条 `[API]` INFO + 回显 `X-Request-Id`）；身份在认证过滤器写入（安全链结束会清空 `SecurityContextHolder`） |
 | **DDL 真源** | 表结构只在仓库根 `bone-init.sql`；模块内无建表脚本且 `spring.sql.init.mode: never`，避免双轨 DDL 漂移 |
@@ -231,6 +232,19 @@ bash scripts/ci/collect-blueprint-compliance.sh
 | **消费端幂等** | `ConsumedEventPort` → `bp_processed_event`（`(consumer_group, event_id)` 唯一键**原子抢占**，非「先查后写」）；抢占与业务动作在**同一事务**（`OrderPaidConsumptionApplicationService`）——否则处理失败重试会被自己的幂等记录挡住而丢事件；指标 `bone_mq_consume_total{topic,status}` | §5/§9、ADR-0021 |
 
 > Topic 命名遵循 §2（`{scope}.{domain}.{resource}_{action}.v{major}`），5 个集成事件已登记 §4 事件注册表。
+
+### 幂等写与 `@Capability` 的两处口径（供其他模块照抄前先读）
+
+**① 幂等写**：机制在应用层（`application/service/BlueprintIdempotencyService`：作用域键 `租户|用户|键|方法|路径`、SHA-256
+载荷指纹、24h TTL、冲突判定），入口在 adapter（`OrderController.create` 先问「该键是否已有响应」）。**为什么不把
+`ResponseEntity` 交给应用 Handler**：那样会让 HTTP 类型穿透应用层（E-10.1）；平台既有 `StudioIdempotencyService` /
+`CatalogIdempotencyService` 是在 Handler 内调用并返回 `ResponseEntity` 的存量形态，本模块是其分层更干净的版本。
+存储用 MySQL（`bp_idempotency_record`）而非平台常见 Redis，因为本模块无 Redis 依赖，语义等价。
+
+**② `@Capability` 只能标在类上**（`@Target(TYPE)`）：所以它天然适配「一个类一个用例」的 `*CommandHandler`，而
+`OrderApplicationService` 这类**承载多个用例的应用服务没法逐个用例标注**——给它加一个类级注解反而会把「多用例服务」
+误报成单一能力边界。因此本模块只有 CommandHandler 带 `@Capability`；若希望 ApplicationService 也能被编排/AI 发现，
+需要框架把注解开放到方法级（待办项，非本模块可解）。
 
 ```bash
 # 启动（需本地 RocketMQ NameServer :9876）

@@ -39,5 +39,10 @@ public final class BlueprintErrorCodes {
   /** 渠道预下单失败（502）——上游依赖故障，重试前先确认渠道侧是否已受理。 */
   public static final String PAYMENT_CHANNEL_PREPAY_FAILED = "BP_PAYMENT_CHANNEL_PREPAY_FAILED";
 
+  // ===== 幂等（复用平台公共码，不另造 BP_ 码）=====
+
+  /** 同一 Idempotency-Key 被用于不同请求体（409）——见错误码登记 §6 `COMMON_`。 */
+  public static final String IDEMPOTENCY_CONFLICT = "COMMON_IDEMPOTENCY_CONFLICT";
+
   private BlueprintErrorCodes() {}
 }

@@ -3,6 +3,8 @@ package com.bone.blueprint.adapter.web.controller;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -11,17 +13,23 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.bone.blueprint.adapter.web.assembler.OrderAssembler;
+import com.bone.blueprint.adapter.web.dto.response.CreateOrderResp;
 import com.bone.blueprint.application.OrderApplicationService;
 import com.bone.blueprint.application.command.cmd.CreateOrderCommand;
 import com.bone.blueprint.application.command.handler.CreateOrderCommandHandler;
 import com.bone.blueprint.application.query.handler.OrderDetailQueryHandler;
 import com.bone.blueprint.application.query.handler.OrderPageQueryHandler;
+import com.bone.blueprint.application.service.BlueprintIdempotencyService;
 import com.bone.blueprint.common.BlueprintErrorCodes;
 import com.bone.core.exception.BizException;
 import com.bone.core.exception.GlobalExceptionHandler;
+import com.bone.core.model.ApiResponse;
+import java.net.URI;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -51,6 +59,8 @@ class OrderControllerContractTest {
       mock(OrderDetailQueryHandler.class);
   private final OrderPageQueryHandler orderPageQueryHandler = mock(OrderPageQueryHandler.class);
   private final OrderAssembler orderAssembler = mock(OrderAssembler.class);
+  private final BlueprintIdempotencyService idempotencyService =
+      mock(BlueprintIdempotencyService.class);
 
   private MockMvc mockMvc;
 
@@ -62,7 +72,8 @@ class OrderControllerContractTest {
             orderApplicationService,
             orderDetailQueryHandler,
             orderPageQueryHandler,
-            orderAssembler);
+            orderAssembler,
+            idempotencyService);
     // 注册全局异常处理器 → 业务异常 → HTTP 状态的翻译也在契约范围内被验证
     mockMvc =
         MockMvcBuilders.standaloneSetup(controller)
@@ -107,6 +118,39 @@ class OrderControllerContractTest {
                 .content("{\"customerId\": null, \"items\": []}"))
         .andExpect(jsonPath("$.success").value(false))
         .andExpect(jsonPath("$.code").value(400));
+  }
+
+  /**
+   * 幂等重放：同一 {@code Idempotency-Key} 的重复提交必须直接返回历史响应，<strong>不再执行用例</strong>。
+   *
+   * <p>回归防护：若把「重放」写成「先执行再判断」，重复提交会真的创建第二张订单——幂等形同虚设。因此断言 {@code createOrderCommandHandler} 从未被调用。
+   */
+  @Test
+  void createWithIdempotencyKeyReplaysStoredResponseWithoutExecuting() throws Exception {
+    when(orderAssembler.toCreateOrderCommand(any())).thenReturn(mock(CreateOrderCommand.class));
+    when(idempotencyService.replay(any(), any(), any(), any()))
+        .thenReturn(
+            Optional.of(
+                ResponseEntity.created(URI.create("/api/v1/orders/42"))
+                    .body(ApiResponse.success(CreateOrderResp.builder().id(42L).build()))));
+
+    String body =
+        """
+        {"customerId": 1, "items": [{"productId": 7, "productName": "样例商品",
+         "quantity": 2, "unitPrice": 10.00}]}
+        """;
+
+    mockMvc
+        .perform(
+            post("/api/v1/orders")
+                .header(BlueprintIdempotencyService.IDEMPOTENCY_KEY_HEADER, "k-1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body))
+        .andExpect(status().isCreated())
+        .andExpect(header().string("Location", "/api/v1/orders/42"))
+        .andExpect(jsonPath("$.data.id").value(42));
+
+    verify(createOrderCommandHandler, never()).handle(any());
   }
 
   @Test

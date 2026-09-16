@@ -23,6 +23,10 @@ out/
 classes/
 generated-sources/
 
+# 例外：DDD 目标态端口包 application/port/out（上面的 out/ 会连它一起忽略，
+# 导致新增端口文件被静默跳过、git add 报 "ignored by .gitignore"）
+!**/application/port/out/
+
 # =========================
 # Java相关文件
 # =========================

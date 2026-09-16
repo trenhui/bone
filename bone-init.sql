@@ -659,6 +659,24 @@ CREATE TABLE bp_processed_event (
     KEY idx_processed_event_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='消费端幂等去重（eventId）';
 
+-- 幂等写快照（API 规范 §6.1/§8）：Idempotency-Key → 响应快照，同键同 body 重放同一响应，同键异 body 返 409
+CREATE TABLE bp_idempotency_record (
+    id                  BIGINT          NOT NULL COMMENT '主键（Snowflake）',
+    tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',
+    scope_key           VARCHAR(255)    NOT NULL COMMENT '作用域键：租户|用户|幂等键|方法|路径',
+    request_fingerprint VARCHAR(64)     NOT NULL COMMENT '请求载荷指纹（SHA-256）',
+    snapshot_json       JSON            NOT NULL COMMENT '响应快照（状态码 / Location / 响应体）',
+    expires_at          DATETIME(3)     NOT NULL COMMENT '过期时间（TTL 24h，过后同一键可复用）',
+    created_by          BIGINT          DEFAULT NULL COMMENT '创建人ID',
+    updated_by          BIGINT          DEFAULT NULL COMMENT '修改人ID',
+    created_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) COMMENT '创建时间',
+    updated_at          DATETIME(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3) COMMENT '更新时间',
+    deleted             TINYINT(1)      NOT NULL DEFAULT 0 COMMENT '逻辑删除',
+    PRIMARY KEY (id),
+    UNIQUE KEY uk_idempotency_tenant_scope (tenant_id, scope_key),
+    KEY idx_idempotency_expires_at (expires_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='幂等请求快照（Idempotency-Key）';
+
 CREATE TABLE int_template (
     id                  BIGINT          NOT NULL COMMENT '模板主键（Snowflake）',
     tenant_id           BIGINT          NOT NULL DEFAULT 0 COMMENT '租户ID',

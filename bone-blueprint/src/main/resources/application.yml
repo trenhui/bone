@@ -34,6 +34,9 @@ bone:
       dead-letter-topic: platform.dead_letter.v1
       consumer-group: bone-blueprint-order-paid-consumer
       relay-delay-ms: 5000
+    idempotency:
+      # 幂等写（Idempotency-Key）：关闭后 /api/v1/orders 的重复提交不再返回历史响应
+      enabled: true
 
 server:
   port: 8082
