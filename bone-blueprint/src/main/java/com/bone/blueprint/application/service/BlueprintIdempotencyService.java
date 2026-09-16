@@ -179,7 +179,7 @@ public class BlueprintIdempotencyService {
   /**
    * 作用域键：{@code 租户|用户|幂等键|方法|路径}。
    *
-   * <p>身份取 MDC（{@code tenantId}/{@code userId}，由 {@code RequestContextFilter} 与认证过滤器写入）。
+   * <p>身份取 MDC（{@code tenantId}/{@code userId}，由 {@code BoneRequestContextFilter} 与认证过滤器写入）。
    */
   public String scopeKey(String idempotencyKey, String method, String path) {
     return nullToEmpty(MDC.get("tenantId"))

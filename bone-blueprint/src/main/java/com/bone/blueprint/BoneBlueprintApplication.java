@@ -12,6 +12,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @ComponentScan(
     basePackages = {
       "com.bone.blueprint",
+      // 框架统一异常处理器（统一信封 + 状态码翻译）在 com.bone.core.exception，
+      // 而它所在的 bone-web 没有任何 auto-config 入口，不显式扫描就等于「错误全变 HTTP 500」
+      // （实机验证过：BizException(404) 未经翻译直接落 servlet 容器 → 500）。
+      "com.bone.core.exception",
       "com.bone.core.capability",
       "com.bone.core.security.jwt",
       "com.bone.web",

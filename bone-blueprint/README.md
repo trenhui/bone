@@ -193,8 +193,9 @@ bash scripts/ci/collect-blueprint-compliance.sh
 | **CQRS 读侧** | 列表 / 详情均经读侧端口 SQL 投影（`OrderReadPort` / `PaymentReadPort`），写侧仓储不承载报表查询 |
 | **MQ / 定时任务 / RPC** | 入站适配器形态示例（MQ 消费端幂等落库、DLQ、消费指标见上节） |
 | **幂等写（`Idempotency-Key`）** | `BlueprintIdempotencyService` + `IdempotencyStore`（落 `bp_idempotency_record`）+ 控制器取头；同键同 body 重放同一响应、同键异 body → 409 `COMMON_IDEMPOTENCY_CONFLICT`、TTL 24h（API 规范 §6.1/§8） |
+| **授权（Scope）** | 端点声明 `@PreAuthorize("hasAuthority('order:orders:read'/'order:orders:write')")`；scope 由 IAM 随 token 下发（API 规范 §9.2） |
 | **稳定错误码** | `common/BlueprintErrorCodes`（`BP_*`，登记于错误码登记 §6）；抛出统一用 `new BizException(HTTP 状态, 码 + ": " + 说明)`——`BizException(String)` 默认码是 **500**，会把 404/400 报成服务端故障 |
-| **日志与链路** | `RequestContextFilter`（MDC `traceId`/`tenantId`/`userId`/`httpRoute` + 每请求一条 `[API]` INFO + 回显 `X-Request-Id`）；身份在认证过滤器写入（安全链结束会清空 `SecurityContextHolder`） |
+| **日志与链路** | `BoneRequestContextFilter`（MDC `traceId`/`tenantId`/`userId`/`httpRoute` + 每请求一条 `[API]` INFO + 回显 `X-Request-Id`）；身份在认证过滤器写入（安全链结束会清空 `SecurityContextHolder`）。**类名带 `Bone` 前缀是必需的**：Spring Boot 自动配置已注册名为 `requestContextFilter` 的 Bean，同名会启动即失败 |
 | **DDL 真源** | 表结构只在仓库根 `bone-init.sql`；模块内无建表脚本且 `spring.sql.init.mode: never`，避免双轨 DDL 漂移 |
 | **真实下单支付场景** | 独立 `Payment` 聚合（`bp_payment`）+ 状态机 + `PaymentGateway` 防腐 + **回调幂等**（`confirmSuccess`）+ 领域事件确认订单（跨聚合协作） |
 
@@ -245,6 +246,22 @@ bash scripts/ci/collect-blueprint-compliance.sh
 `OrderApplicationService` 这类**承载多个用例的应用服务没法逐个用例标注**——给它加一个类级注解反而会把「多用例服务」
 误报成单一能力边界。因此本模块只有 CommandHandler 带 `@Capability`；若希望 ApplicationService 也能被编排/AI 发现，
 需要框架把注解开放到方法级（待办项，非本模块可解）。
+
+### 授权（Scope）
+
+| 端点 | 所需 scope |
+|------|-----------|
+| `GET /api/v1/orders`、`GET /api/v1/orders/{id}` | `order:orders:read` |
+| `POST /api/v1/orders`、`POST /api/v1/orders/{id}/{cancel,ship,deliver}` | `order:orders:write` |
+
+scope 由 IAM 登录时按「账号 → 角色（含继承闭包）→ 权限」解析并写入 JWT 的 `scopes` claim，框架把它映射为 authority，
+`@PreAuthorize("hasAuthority(...)")` 据此判定（认证失败 401 / 无权限 403，见 `SecurityConfig` 的 `exceptionHandling`）。
+权限目录种子在 `bone-init.sql`（`iam_permission` + `iam_role_permission`，管理员角色已授予），管理员另有代码侧回退清单
+`DefaultPermissionCodes#adminFallback`——**本地不必先造角色即可跑通**。照抄本模块时把 scope 换成自己域的命名。
+
+**已知未覆盖（登记，非遗漏）**：① 支付端点（`PaymentController`）尚未声明 scope——该文件正随验签端口迁移一起改动，
+避免同批冲突；② 渠道回调 `POST /api/v1/payments/callback` 目前仍要求认证，而真实渠道无法持有 JWT，生产需改为
+「白名单放行 + 验签即认证」或由网关代签内部凭证——与「验签迁到应用层」是同一次改造。
 
 ```bash
 # 启动（需本地 RocketMQ NameServer :9876）

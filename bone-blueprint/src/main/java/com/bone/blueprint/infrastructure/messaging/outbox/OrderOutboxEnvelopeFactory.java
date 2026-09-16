@@ -70,8 +70,8 @@ public class OrderOutboxEnvelopeFactory {
   /**
    * 取当前请求的 traceId；定时中继等无请求上下文的场景回退为新生成值。
    *
-   * <p>信封在<strong>业务事务内</strong>构造，此时 MDC 已由 {@code RequestContextFilter} 写入 traceId，因此消息可 与产生它的那次
-   * HTTP 调用、日志、{@code ProblemDetail.traceId} 一一对应。
+   * <p>信封在<strong>业务事务内</strong>构造，此时 MDC 已由 {@code BoneRequestContextFilter} 写入 traceId，因此消息可
+   * 与产生它的那次 HTTP 调用、日志、{@code ProblemDetail.traceId} 一一对应。
    */
   private String resolveTraceId() {
     String traceId = MDC.get("traceId");

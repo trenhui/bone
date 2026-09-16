@@ -22,7 +22,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  * Basic + 表单登录 + 启动时打印随机密码——表现为「所有接口莫名其妙 401」。参考样板尤其不能留这个坑： 读者会把 「示例跑不通」当成 DDD 配置写错了。
  *
  * <p><b>策略</b>：无状态（JWT only，无 Session）、关 CSRF（无 Cookie 会话，CSRF 无攻击面）、放行文档与健康检查、 其余端点要求认证。授权细分交给方法级
- * {@code @PreAuthorize}（已由 {@link EnableMethodSecurity} 开启）。
+ * {@code @PreAuthorize}（已由 {@link EnableMethodSecurity} 开启）：订单端点声明 {@code order:orders:read} /
+ * {@code order:orders:write}（见 {@code OrderController}），scope 由 IAM 签发并随 token 带入，框架把 token 的
+ * {@code scopes} claim 映射为 authority。scope 目录与种子见 README 与 {@code bone-init.sql}。
  *
  * <p><b>Token 从哪来</b>：本模块既不签发 token 也不调用 IAM。IAM 用共享密钥 {@code bone.iam.jwt.secret-key} 签发，各模块用
  * {@link com.bone.core.security.jwt.JwtTokenService} 本地离线验签（详见 {@code JwtAuthenticationFilter}）。生产

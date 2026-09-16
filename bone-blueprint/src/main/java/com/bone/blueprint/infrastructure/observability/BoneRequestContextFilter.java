@@ -22,6 +22,13 @@ import org.springframework.web.servlet.HandlerMapping;
  * <p><b>为什么必须有这一层</b>：规范把 MDC 列为<strong>强制</strong>——没有 {@code traceId}，出错时无法把「用户报的那一次请求」
  * 与日志、{@code ProblemDetail.traceId}、下游 MQ 消息串起来；没有 {@code tenantId}/{@code userId}，多租户排障只能靠猜。
  *
+ * <p><b>类名为什么带 {@code Bone} 前缀（不是风格洁癖）</b>：Spring Boot 的 {@code WebMvcAutoConfiguration} 已经注册了一个 名为
+ * {@code requestContextFilter} 的 Bean（框架自带的 {@code
+ * org.springframework.web.filter.RequestContextFilter}）。 若本类简单名取 {@code
+ * RequestContextFilter}，{@code @Component} 的默认 Bean 名会与之同名，启动即抛 {@code
+ * BeanDefinitionOverrideException}——<strong>应用完全起不来</strong>，而单元测试不加载容器，照样全绿。带前缀既避开
+ * 冲突，也与《Bone-日志规范》里给出的示例实现名（{@code BoneRequestContextFilter}）一致。
+ *
  * <p><b>为什么用 {@link Ordered#HIGHEST_PRECEDENCE}</b>：必须早于 Spring Security 过滤链，才能让安全链内部的日志 （含认证失败
  * WARN）也带上 {@code traceId}；同时它是最外层，{@code finally} 里清理 MDC 才不会污染线程池中的后续请求。
  *
@@ -35,7 +42,7 @@ import org.springframework.web.servlet.HandlerMapping;
 @Slf4j
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
-public class RequestContextFilter extends OncePerRequestFilter {
+public class BoneRequestContextFilter extends OncePerRequestFilter {
 
   /** MDC 键名，与《Bone-日志规范》§3 表格一致（下同）。 */
   public static final String MDC_TRACE_ID = "traceId";
@@ -54,7 +61,7 @@ public class RequestContextFilter extends OncePerRequestFilter {
 
   private final String domain;
 
-  public RequestContextFilter(
+  public BoneRequestContextFilter(
       @Value("${spring.application.name:blueprint}") String applicationName) {
     // domain 用于日志分组：bone-blueprint → blueprint
     this.domain =

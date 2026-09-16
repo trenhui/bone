@@ -17,13 +17,16 @@ import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,6 +41,14 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <p><b>入站边界双形态（E-3.7 ApplicationService First）</b>： 简单用例（取消 / 发货 / 送达）走 {@link
  * OrderApplicationService}，复杂用例（创建订单，涉及扩展点）仍走独立 {@code CommandHandler}。一个用例只选一种构件。
+ *
+ * <p><b>授权（API 规范 §9.2）</b>：端点声明 scope——读用 {@code order:orders:read}、写用 {@code
+ * order:orders:write}；scope 来自 IAM 签发的 token（框架把 {@code scopes} claim 映射为 authority）。scope 目录见
+ * README， 权限行由 {@code bone-init.sql} 种子提供并由管理员角色授予。
+ *
+ * <p><b>错误文档（API 规范 §12）</b>：每个端点用 {@code @ApiResponses} 标注典型 {@code errorCode}。注意 Swagger 的单数
+ * 注解与统一信封类 {@link com.bone.core.model.ApiResponse} 同名，故注解写全限定名——直接 import 会与信封类冲突（编译器报 「对
+ * ApiResponse 的引用不明确」）。
  */
 @Tag(name = "订单管理", description = "提供订单相关的Web接口")
 @RestController
@@ -53,6 +64,18 @@ public class OrderController {
   private final BlueprintIdempotencyService idempotencyService;
 
   @Operation(summary = "分页查询订单", description = "按客户、状态分页查询订单列表")
+  @ApiResponses({
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "400",
+        description = "BP_ORDER_STATUS_INVALID: 状态入参非法"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "401",
+        description = "未认证或凭证无效"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "403",
+        description = "缺少 order:orders:read")
+  })
+  @PreAuthorize("hasAuthority('order:orders:read')")
   @GetMapping
   public ApiResponse<PageResult<OrderSummaryResp>> page(@Valid @ModelAttribute OrderPageQry qry) {
     return ApiResponse.success(
@@ -75,6 +98,18 @@ public class OrderController {
       description =
           "创建新的订单，返回 201 与资源 Location。可带 Idempotency-Key：同键 + 同请求体重复提交返回同一响应；"
               + "同键 + 不同请求体返回 409 COMMON_IDEMPOTENCY_CONFLICT（API 规范 §6.1/§8）")
+  @ApiResponses({
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "400",
+        description = "请求参数不正确（校验失败）"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "403",
+        description = "缺少 order:orders:write"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "409",
+        description = "COMMON_IDEMPOTENCY_CONFLICT: 同一幂等键配不同请求体")
+  })
+  @PreAuthorize("hasAuthority('order:orders:write')")
   @PostMapping
   public ResponseEntity<ApiResponse<CreateOrderResp>> create(
       @Parameter(description = "幂等键（UUID v4）；不传则不启用幂等")
@@ -95,14 +130,29 @@ public class OrderController {
     }
 
     Long id = createOrderCommandHandler.handle(command);
+    // 信封 code 必须等于 HTTP 状态码（API 规范 §3.1/§3.2 的创建示例是 "code":201）
     ResponseEntity<ApiResponse<CreateOrderResp>> response =
         ResponseEntity.created(URI.create("/api/v1/orders/" + id))
-            .body(ApiResponse.success(CreateOrderResp.builder().id(id).build()));
+            .body(
+                ApiResponse.success(
+                    HttpStatus.CREATED.value(), CreateOrderResp.builder().id(id).build()));
     idempotencyService.remember(idempotencyKey, method, path, command, response);
     return response;
   }
 
   @Operation(summary = "取消订单", description = "取消指定的订单")
+  @ApiResponses({
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "404",
+        description = "BP_ORDER_NOT_FOUND: 订单不存在或不可见"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "409",
+        description = "BP_ORDER_STATUS_CONFLICT: 当前状态不允许取消"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "403",
+        description = "缺少 order:orders:write")
+  })
+  @PreAuthorize("hasAuthority('order:orders:write')")
   @PostMapping("/{id}/cancel")
   public ApiResponse<Void> cancel(@Parameter(description = "订单ID") @PathVariable Long id) {
     orderApplicationService.cancel(orderAssembler.toCancelOrderCommand(id));
@@ -110,6 +160,18 @@ public class OrderController {
   }
 
   @Operation(summary = "订单发货", description = "对已支付订单发货（PAID → SHIPPED）")
+  @ApiResponses({
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "404",
+        description = "BP_ORDER_NOT_FOUND: 订单不存在或不可见"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "409",
+        description = "BP_ORDER_STATUS_CONFLICT: 当前状态不允许发货"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "403",
+        description = "缺少 order:orders:write")
+  })
+  @PreAuthorize("hasAuthority('order:orders:write')")
   @PostMapping("/{id}/ship")
   public ApiResponse<Void> ship(@Parameter(description = "订单ID") @PathVariable Long id) {
     orderApplicationService.ship(orderAssembler.toShipOrderCommand(id));
@@ -117,6 +179,18 @@ public class OrderController {
   }
 
   @Operation(summary = "订单送达", description = "确认已发货订单送达（SHIPPED → DELIVERED）")
+  @ApiResponses({
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "404",
+        description = "BP_ORDER_NOT_FOUND: 订单不存在或不可见"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "409",
+        description = "BP_ORDER_STATUS_CONFLICT: 当前状态不允许送达"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "403",
+        description = "缺少 order:orders:write")
+  })
+  @PreAuthorize("hasAuthority('order:orders:write')")
   @PostMapping("/{id}/deliver")
   public ApiResponse<Void> deliver(@Parameter(description = "订单ID") @PathVariable Long id) {
     orderApplicationService.deliver(orderAssembler.toDeliverOrderCommand(id));
@@ -124,6 +198,15 @@ public class OrderController {
   }
 
   @Operation(summary = "查询订单详情", description = "根据订单ID查询订单详情")
+  @ApiResponses({
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "404",
+        description = "BP_ORDER_NOT_FOUND: 订单不存在或不可见"),
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(
+        responseCode = "403",
+        description = "缺少 order:orders:read")
+  })
+  @PreAuthorize("hasAuthority('order:orders:read')")
   @GetMapping("/{id}")
   public ApiResponse<OrderDetailResp> getById(
       @Parameter(description = "订单ID") @PathVariable Long id) {

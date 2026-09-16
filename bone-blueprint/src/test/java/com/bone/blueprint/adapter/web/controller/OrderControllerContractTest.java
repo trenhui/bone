@@ -97,6 +97,8 @@ class OrderControllerContractTest {
         .andExpect(status().isCreated())
         .andExpect(header().string("Location", "/api/v1/orders/42"))
         .andExpect(jsonPath("$.success").value(true))
+        // 信封 code 必须等于 HTTP 状态码（API 规范 §3.1/§3.2）：201 场景下 code 也必须是 201
+        .andExpect(jsonPath("$.code").value(201))
         .andExpect(jsonPath("$.data.id").value(42));
   }
 

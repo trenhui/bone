@@ -1,6 +1,6 @@
 package com.bone.blueprint.infrastructure.security;
 
-import com.bone.blueprint.infrastructure.observability.RequestContextFilter;
+import com.bone.blueprint.infrastructure.observability.BoneRequestContextFilter;
 import com.bone.core.security.auth.AbstractJwtAuthenticationFilter;
 import com.bone.core.security.jwt.JwtConfig;
 import com.bone.core.security.jwt.JwtPrincipal;
@@ -27,7 +27,7 @@ import org.springframework.stereotype.Component;
  *
  * <p><b>身份写入 MDC</b>：认证成功后把 {@code userId} / {@code tenantId} 写入 MDC（日志规范 §3），供业务日志与 Access Log
  * 关联。必须在此处写：Spring Security 的安全链一结束就清空 {@code SecurityContextHolder}，外层 {@code
- * RequestContextFilter} 的 {@code finally} 已读不到身份；MDC 的清理由该过滤器统一负责，本类不清理。
+ * BoneRequestContextFilter} 的 {@code finally} 已读不到身份；MDC 的清理由该过滤器统一负责，本类不清理。
  */
 @Component
 public class JwtAuthenticationFilter extends AbstractJwtAuthenticationFilter {
@@ -38,10 +38,10 @@ public class JwtAuthenticationFilter extends AbstractJwtAuthenticationFilter {
 
   @Override
   protected void onAuthenticated(JwtPrincipal principal, HttpServletRequest request) {
-    putIfPresent(RequestContextFilter.MDC_USER_ID, principal.userId());
+    putIfPresent(BoneRequestContextFilter.MDC_USER_ID, principal.userId());
     // 租户取 token 内已签名 claim；该头此时也已被本过滤器归一化为同一值，二者等价
     putIfPresent(
-        RequestContextFilter.MDC_TENANT_ID,
+        BoneRequestContextFilter.MDC_TENANT_ID,
         principal.tenantId() != null ? principal.tenantId() : request.getHeader("X-Tenant-Id"));
   }
 

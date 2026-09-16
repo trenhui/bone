@@ -3,7 +3,7 @@ package com.bone.blueprint.infrastructure.idempotency;
 import com.bone.blueprint.application.port.out.IdempotencyStore;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import java.time.Duration;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -45,7 +45,7 @@ public class IdempotencyStoreAdapter implements IdempotencyStore {
       return Optional.empty();
     }
     IdempotencyRecord record = records.get(0);
-    if (record.expiredAt(Instant.now())) {
+    if (record.expiredAt(LocalDateTime.now())) {
       // 过期即视为不存在：TTL 24h 后同一键可重新使用（API 规范 §6.1）
       log.debug("幂等快照已过期，按未命中处理: scopeKey={}", scopeKey);
       return Optional.empty();
@@ -55,7 +55,8 @@ public class IdempotencyStoreAdapter implements IdempotencyStore {
 
   @Override
   public void put(String scopeKey, Snapshot snapshot, Duration ttl) {
-    Instant expiresAt = Instant.now().plus(ttl);
+    // 用 LocalDateTime（不是 Instant）：SDK TypeConverter 未注册 Instant，写进去读不回来（见 IdempotencyRecord 注释）
+    LocalDateTime expiresAt = LocalDateTime.now().plus(ttl);
     List<IdempotencyRecord> existing =
         repository.findByCriteria(
             Criteria.<IdempotencyRecord>create()

@@ -30,6 +30,8 @@ public final class DefaultPermissionCodes {
         "iam:depts:write",
         "iam:menus:read",
         "iam:menus:write",
+        "order:orders:read",
+        "order:orders:write",
         "sys:console:read");
   }
 }

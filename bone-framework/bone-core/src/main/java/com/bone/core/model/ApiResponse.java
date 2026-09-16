@@ -58,6 +58,17 @@ public class ApiResponse<T> implements Serializable {
     return new ApiResponse<>(true, ResultCode.SUCCESS.getCode(), message, null);
   }
 
+  /**
+   * 成功响应（显式指定 code，必须与 HTTP 状态码一致）。
+   *
+   * <p><b>为什么需要它</b>：API 规范 §3.1 要求「{@code code} <strong>等于 HTTP 状态码</strong>」，§3.2 的创建响应示例即是
+   * {@code "code":201}。而其余 {@code success(...)} 工厂固定返回 {@code code=200}，201 创建场景只能用出「HTTP 201 + 信封
+   * code 200」这种自相矛盾的结果——客户端若按 {@code code} 判断（规范 §3.1「单一真相」下二者本应一致）会得出错误结论。
+   */
+  public static <T> ApiResponse<T> success(int code, T data) {
+    return new ApiResponse<>(true, code, ResultCode.SUCCESS.getMessage(), data);
+  }
+
   // === 错误响应方法 ===
 
   /** 错误响应（最常用） */
