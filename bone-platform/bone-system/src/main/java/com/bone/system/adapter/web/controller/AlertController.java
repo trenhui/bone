@@ -4,17 +4,17 @@ import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.system.adapter.web.converter.AlertWebConverter;
-import com.bone.system.adapter.web.dto.req.AlertEventPageReq;
+import com.bone.system.adapter.web.dto.req.AlertRecordPageReq;
 import com.bone.system.adapter.web.dto.req.AlertRulePageReq;
 import com.bone.system.adapter.web.dto.req.CreateAlertRuleReq;
 import com.bone.system.adapter.web.dto.req.UpdateAlertRuleReq;
-import com.bone.system.adapter.web.dto.resp.AlertEventResp;
+import com.bone.system.adapter.web.dto.resp.AlertRecordResp;
 import com.bone.system.adapter.web.dto.resp.AlertRuleResp;
 import com.bone.system.application.command.cmd.DisableAlertRuleCommand;
 import com.bone.system.application.command.cmd.EnableAlertRuleCommand;
 import com.bone.system.application.command.cmd.ResolveAlertCommand;
 import com.bone.system.application.command.handler.AlertCommandHandler;
-import com.bone.system.application.query.dto.AlertEventDTO;
+import com.bone.system.application.query.dto.AlertRecordDTO;
 import com.bone.system.application.query.dto.AlertRuleDTO;
 import com.bone.system.application.query.handler.AlertQueryHandler;
 import io.swagger.v3.oas.annotations.Operation;
@@ -99,7 +99,7 @@ public class AlertController {
   @PostMapping("/events")
   public ApiResponse<Long> createEvent(
       @RequestParam Long ruleId, @RequestParam Double actualValue) {
-    return ApiResponse.success(alertCommandHandler.createAlertEvent(ruleId, actualValue));
+    return ApiResponse.success(alertCommandHandler.createAlertRecord(ruleId, actualValue));
   }
 
   @Operation(summary = "解决告警事件")
@@ -113,23 +113,23 @@ public class AlertController {
 
   @Operation(summary = "根据ID获取告警事件")
   @GetMapping("/events/{id}")
-  public ApiResponse<AlertEventResp> getEventById(@PathVariable Long id) {
-    AlertEventDTO dto = alertQueryHandler.getEventById(id);
+  public ApiResponse<AlertRecordResp> getEventById(@PathVariable Long id) {
+    AlertRecordDTO dto = alertQueryHandler.getEventById(id);
     return ApiResponse.success(dto != null ? alertWebConverter.toResp(dto) : null);
   }
 
   @Operation(summary = "查询告警事件列表")
   @GetMapping("/events")
-  public ApiResponse<PageResult<AlertEventResp>> listEvents(AlertEventPageReq req) {
-    PageResult<AlertEventDTO> pageResult =
+  public ApiResponse<PageResult<AlertRecordResp>> listEvents(AlertRecordPageReq req) {
+    PageResult<AlertRecordDTO> pageResult =
         alertQueryHandler.pageEvents(req.getPageNum(), req.getPageSize());
     return ApiResponse.success(pageResult.map(alertWebConverter::toResp));
   }
 
   @Operation(summary = "分页查询告警事件列表")
   @GetMapping("/events/page")
-  public ApiResponse<PageResult<AlertEventResp>> pageEvents(AlertEventPageReq req) {
-    PageResult<AlertEventDTO> pageResult =
+  public ApiResponse<PageResult<AlertRecordResp>> pageEvents(AlertRecordPageReq req) {
+    PageResult<AlertRecordDTO> pageResult =
         alertQueryHandler.pageEvents(req.getPageNum(), req.getPageSize());
     return ApiResponse.success(pageResult.map(alertWebConverter::toResp));
   }

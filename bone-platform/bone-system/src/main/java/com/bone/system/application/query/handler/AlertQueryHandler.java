@@ -3,12 +3,12 @@ package com.bone.system.application.query.handler;
 import com.bone.core.model.PageResult;
 import com.bone.metadata.sdk.query.dsl.FluentQuery;
 import com.bone.metadata.sdk.query.dsl.QueryBuilder;
-import com.bone.system.application.query.dto.AlertEventDTO;
+import com.bone.system.application.query.dto.AlertRecordDTO;
 import com.bone.system.application.query.dto.AlertRuleDTO;
 import com.bone.system.application.query.qry.AlertRulePageQuery;
-import com.bone.system.domain.alert.AlertEvent;
+import com.bone.system.domain.alert.AlertRecord;
 import com.bone.system.domain.alert.AlertRule;
-import com.bone.system.domain.repository.AlertEventRepository;
+import com.bone.system.domain.repository.AlertRecordRepository;
 import com.bone.system.domain.repository.AlertRuleRepository;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AlertQueryHandler {
   private final AlertRuleRepository alertRuleRepository;
-  private final AlertEventRepository alertEventRepository;
+  private final AlertRecordRepository alertRecordRepository;
 
   @Transactional(readOnly = true)
   public AlertRuleDTO getRuleById(Long id) {
@@ -54,18 +54,18 @@ public class AlertQueryHandler {
   }
 
   @Transactional(readOnly = true)
-  public AlertEventDTO getEventById(Long id) {
-    AlertEvent event = alertEventRepository.findById(id);
+  public AlertRecordDTO getEventById(Long id) {
+    AlertRecord event = alertRecordRepository.findById(id);
     return event != null ? toEventDTO(event) : null;
   }
 
   @Transactional(readOnly = true)
-  public PageResult<AlertEventDTO> pageEvents(int pageNum, int pageSize) {
-    FluentQuery<AlertEvent> query = QueryBuilder.from(AlertEvent.class);
-    com.bone.core.model.PageResult<AlertEvent> result =
-        query.orderByDesc(AlertEvent::getCreatedAt).page(pageNum, pageSize);
+  public PageResult<AlertRecordDTO> pageEvents(int pageNum, int pageSize) {
+    FluentQuery<AlertRecord> query = QueryBuilder.from(AlertRecord.class);
+    com.bone.core.model.PageResult<AlertRecord> result =
+        query.orderByDesc(AlertRecord::getCreatedAt).page(pageNum, pageSize);
 
-    List<AlertEventDTO> dtoList =
+    List<AlertRecordDTO> dtoList =
         result.getRecords().stream().map(this::toEventDTO).collect(Collectors.toList());
 
     return PageResult.of(dtoList, result.getTotal(), result.getPage(), result.getSize());
@@ -86,8 +86,8 @@ public class AlertQueryHandler {
         .build();
   }
 
-  private AlertEventDTO toEventDTO(AlertEvent event) {
-    return AlertEventDTO.builder()
+  private AlertRecordDTO toEventDTO(AlertRecord event) {
+    return AlertRecordDTO.builder()
         .id(event.getId())
         .alertRuleId(event.getAlertRuleId())
         .ruleName(event.getRuleName())

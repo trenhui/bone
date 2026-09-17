@@ -8,12 +8,12 @@ import com.bone.system.application.command.cmd.EnableAlertRuleCommand;
 import com.bone.system.application.command.cmd.ResolveAlertCommand;
 import com.bone.system.application.command.cmd.UpdateAlertRuleCommand;
 import com.bone.system.common.exception.NotFoundException;
-import com.bone.system.domain.alert.AlertEvent;
+import com.bone.system.domain.alert.AlertRecord;
 import com.bone.system.domain.alert.AlertRule;
 import com.bone.system.domain.model.alert.vo.AlertLevel;
 import com.bone.system.domain.model.alert.vo.MetricName;
 import com.bone.system.domain.model.alert.vo.Threshold;
-import com.bone.system.domain.repository.AlertEventRepository;
+import com.bone.system.domain.repository.AlertRecordRepository;
 import com.bone.system.domain.repository.AlertRuleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -33,7 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AlertCommandHandler {
   private final AlertRuleRepository alertRuleRepository;
-  private final AlertEventRepository alertEventRepository;
+  private final AlertRecordRepository alertRecordRepository;
 
   @Transactional
   public Long handle(CreateAlertRuleCommand cmd) {
@@ -99,7 +99,7 @@ public class AlertCommandHandler {
   }
 
   @Transactional
-  public Long createAlertEvent(Long ruleId, double actualValue) {
+  public Long createAlertRecord(Long ruleId, double actualValue) {
     AlertRule rule = alertRuleRepository.findById(ruleId);
     if (rule == null) {
       throw new NotFoundException("告警规则不存在: " + ruleId);
@@ -110,8 +110,8 @@ public class AlertCommandHandler {
     }
 
     Long eventId = DistributedIdGenerator.generateLongId();
-    AlertEvent event =
-        AlertEvent.create(
+    AlertRecord event =
+        AlertRecord.create(
             eventId,
             ruleId,
             rule.getName(),
@@ -123,18 +123,18 @@ public class AlertCommandHandler {
                 "指标 %s 当前值 %.2f 超过阈值 %.2f",
                 rule.getMetricName().value(), actualValue, rule.getThreshold().value()));
 
-    alertEventRepository.save(event);
+    alertRecordRepository.save(event);
 
     return event.getId();
   }
 
   @Transactional
   public void handle(ResolveAlertCommand cmd) {
-    AlertEvent event = alertEventRepository.findById(cmd.getId());
+    AlertRecord event = alertRecordRepository.findById(cmd.getId());
     if (event == null) {
       throw new NotFoundException("告警事件不存在: " + cmd.getId());
     }
     event.resolve();
-    alertEventRepository.save(event);
+    alertRecordRepository.save(event);
   }
 }

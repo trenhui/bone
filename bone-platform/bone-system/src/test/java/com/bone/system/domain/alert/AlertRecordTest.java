@@ -12,13 +12,13 @@ import com.bone.system.domain.model.alert.vo.AlertStatus;
 import com.bone.system.domain.model.alert.vo.MetricName;
 import org.junit.jupiter.api.Test;
 
-/** {@link AlertEvent} 纯单测：告警事件 TRIGGERED → RESOLVED 生命周期与级别校验（无容器）。 */
-class AlertEventTest {
+/** {@link AlertRecord} 纯单测：告警事件 TRIGGERED → RESOLVED 生命周期与级别校验（无容器）。 */
+class AlertRecordTest {
 
   @Test
   void testCreateStartsAtTriggered() {
-    AlertEvent event =
-        AlertEvent.create(
+    AlertRecord event =
+        AlertRecord.create(
             1L, 10L, "CPU 高占用", "cpu.usage", 95.0, 90.0, AlertLevel.WARNING, "CPU 使用率 95%");
 
     assertEquals(10L, event.getAlertRuleId());
@@ -31,8 +31,8 @@ class AlertEventTest {
 
   @Test
   void testResolveMovesToResolved() {
-    AlertEvent event =
-        AlertEvent.create(
+    AlertRecord event =
+        AlertRecord.create(
             2L, 10L, "CPU 高占用", "cpu.usage", 95.0, 90.0, AlertLevel.WARNING, "CPU 超限");
     assertEquals(0, event.getDomainEvents().size());
 

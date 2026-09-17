@@ -1,4 +1,4 @@
-package com.bone.system.application.query.dto;
+package com.bone.system.adapter.web.dto.resp;
 
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
@@ -6,11 +6,12 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/** 告警事件响应 */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AlertEventDTO {
+public class AlertRecordResp {
   private Long id;
   private Long alertRuleId;
   private String ruleName;

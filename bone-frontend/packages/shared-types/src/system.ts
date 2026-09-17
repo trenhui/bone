@@ -33,7 +33,7 @@ export interface AlertRule {
   updatedAt?: string;
 }
 
-export interface AlertEvent {
+export interface AlertRecord {
   id?: number;
   alertRuleId: number;
   value: number;

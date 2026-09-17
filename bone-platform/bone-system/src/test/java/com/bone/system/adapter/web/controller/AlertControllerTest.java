@@ -13,7 +13,7 @@ import com.bone.system.adapter.web.converter.AlertWebConverter;
 import com.bone.system.adapter.web.dto.req.AlertRulePageReq;
 import com.bone.system.adapter.web.dto.req.CreateAlertRuleReq;
 import com.bone.system.adapter.web.dto.req.UpdateAlertRuleReq;
-import com.bone.system.adapter.web.dto.resp.AlertEventResp;
+import com.bone.system.adapter.web.dto.resp.AlertRecordResp;
 import com.bone.system.adapter.web.dto.resp.AlertRuleResp;
 import com.bone.system.application.command.cmd.CreateAlertRuleCommand;
 import com.bone.system.application.command.cmd.DisableAlertRuleCommand;
@@ -21,7 +21,7 @@ import com.bone.system.application.command.cmd.EnableAlertRuleCommand;
 import com.bone.system.application.command.cmd.ResolveAlertCommand;
 import com.bone.system.application.command.cmd.UpdateAlertRuleCommand;
 import com.bone.system.application.command.handler.AlertCommandHandler;
-import com.bone.system.application.query.dto.AlertEventDTO;
+import com.bone.system.application.query.dto.AlertRecordDTO;
 import com.bone.system.application.query.dto.AlertRuleDTO;
 import com.bone.system.application.query.handler.AlertQueryHandler;
 import java.util.Collections;
@@ -129,7 +129,7 @@ public class AlertControllerTest {
 
   @Test
   public void testCreateEvent() {
-    when(alertCommandHandler.createAlertEvent(1L, 100.0)).thenReturn(1L);
+    when(alertCommandHandler.createAlertRecord(1L, 100.0)).thenReturn(1L);
 
     ApiResponse<Long> apiResponse = alertController.createEvent(1L, 100.0);
 
@@ -147,10 +147,10 @@ public class AlertControllerTest {
   @Test
   public void testGetEventById() {
     Long eventId = 1L;
-    AlertEventDTO dto = AlertEventDTO.builder().id(eventId).alertRuleId(1L).build();
+    AlertRecordDTO dto = AlertRecordDTO.builder().id(eventId).alertRuleId(1L).build();
     when(alertQueryHandler.getEventById(eventId)).thenReturn(dto);
 
-    ApiResponse<AlertEventResp> apiResponse = alertController.getEventById(eventId);
+    ApiResponse<AlertRecordResp> apiResponse = alertController.getEventById(eventId);
 
     assertTrue(apiResponse.isSuccess());
     assertEquals(eventId, apiResponse.getData().getId());
@@ -161,11 +161,11 @@ public class AlertControllerTest {
     when(alertQueryHandler.pageEvents(1, 10))
         .thenReturn(PageResult.of(Collections.emptyList(), 0L, 1, 10));
 
-    com.bone.system.adapter.web.dto.req.AlertEventPageReq req =
-        new com.bone.system.adapter.web.dto.req.AlertEventPageReq();
+    com.bone.system.adapter.web.dto.req.AlertRecordPageReq req =
+        new com.bone.system.adapter.web.dto.req.AlertRecordPageReq();
     req.setPageNum(1);
     req.setPageSize(10);
-    ApiResponse<PageResult<AlertEventResp>> apiResponse = alertController.pageEvents(req);
+    ApiResponse<PageResult<AlertRecordResp>> apiResponse = alertController.pageEvents(req);
 
     assertTrue(apiResponse.isSuccess());
     assertEquals(0, apiResponse.getData().getRecords().size());

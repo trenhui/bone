@@ -4,7 +4,7 @@ import type {
   SystemConfig,
   ConfigHistory,
   AlertRule,
-  AlertEvent,
+  AlertRecord,
   SystemLog,
   Metrics,
   SystemInfo,
@@ -116,7 +116,7 @@ export const monitorApi = {
   },
 
   getAlertEvents: async (params: { pageNum: number; pageSize: number }) => {
-    const response = await api.get<ApiResponse<PageResult<AlertEvent>>>('/system/alert/events/page', {
+    const response = await api.get<ApiResponse<PageResult<AlertRecord>>>('/system/alert/events/page', {
       params: { page: params.pageNum, size: params.pageSize },
     });
     return response.data;

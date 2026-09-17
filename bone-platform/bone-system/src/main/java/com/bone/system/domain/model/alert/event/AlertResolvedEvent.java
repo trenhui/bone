@@ -5,10 +5,10 @@ import java.time.LocalDateTime;
 
 /** 告警解决事件 */
 public record AlertResolvedEvent(
-    Long alertEventId, Long alertRuleId, String ruleName, LocalDateTime eventTime)
+    Long alertRecordId, Long alertRuleId, String ruleName, LocalDateTime eventTime)
     implements DomainEvent {
 
-  public AlertResolvedEvent(Long alertEventId, Long alertRuleId, String ruleName) {
-    this(alertEventId, alertRuleId, ruleName, LocalDateTime.now());
+  public AlertResolvedEvent(Long alertRecordId, Long alertRuleId, String ruleName) {
+    this(alertRecordId, alertRuleId, ruleName, LocalDateTime.now());
   }
 }

@@ -4,7 +4,7 @@ import lombok.Data;
 
 /** 告警事件分页查询 */
 @Data
-public class AlertEventPageQuery {
+public class AlertRecordPageQuery {
   private Long alertRuleId;
   private String alertLevel;
   private String status;

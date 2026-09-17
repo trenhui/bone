@@ -104,7 +104,7 @@
 | 68 | POST | /system/alert/events?ruleId=&actualValue= | - | 创建告警事件 |
 | 69 | POST | /system/alert/events/{id}/resolve | - | 解决告警事件 |
 | 70 | GET | /system/alert/events/{id} | - | 告警事件详情 |
-| 71 | GET | /system/alert/events/page | AlertEventPageReq | 分页查询事件 |
+| 71 | GET | /system/alert/events/page | AlertRecordPageReq | 分页查询事件 |
 | 72 | POST | /system/config | CreateConfigReq | 创建配置 |
 | 73 | PUT | /system/config | UpdateConfigReq | 更新配置 |
 | 74 | DELETE | /system/config/{id} | - | 删除配置 |

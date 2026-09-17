@@ -26,7 +26,7 @@ import {
   CloseCircleOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
-import type { AlertRule, AlertEvent, Metrics, SystemInfo } from '@/types';
+import type { AlertRule, AlertRecord, Metrics, SystemInfo } from '@/types';
 import { monitorApi } from '@/services/api';
 
 const { Option } = Select;
@@ -35,7 +35,7 @@ const MonitorAlertPage: React.FC = () => {
   const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [alertRules, setAlertRules] = useState<AlertRule[]>([]);
-  const [alertEvents, setAlertEvents] = useState<AlertEvent[]>([]);
+  const [alertEvents, setAlertEvents] = useState<AlertRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [ruleModalVisible, setRuleModalVisible] = useState(false);
   const [editingRule, setEditingRule] = useState<AlertRule | null>(null);

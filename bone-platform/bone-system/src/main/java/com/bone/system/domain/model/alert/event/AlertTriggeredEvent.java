@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 /** 告警触发事件 */
 public record AlertTriggeredEvent(
-    Long alertEventId,
+    Long alertRecordId,
     Long alertRuleId,
     String ruleName,
     String metricName,
@@ -18,7 +18,7 @@ public record AlertTriggeredEvent(
     implements DomainEvent {
 
   public AlertTriggeredEvent(
-      Long alertEventId,
+      Long alertRecordId,
       Long alertRuleId,
       String ruleName,
       String metricName,
@@ -27,7 +27,7 @@ public record AlertTriggeredEvent(
       AlertLevel alertLevel,
       String message) {
     this(
-        alertEventId,
+        alertRecordId,
         alertRuleId,
         ruleName,
         metricName,

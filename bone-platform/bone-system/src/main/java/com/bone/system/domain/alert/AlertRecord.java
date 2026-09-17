@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table("sys_alert_event")
-public class AlertEvent extends com.bone.core.domain.AggregateRoot<Long> {
+public class AlertRecord extends com.bone.core.domain.AggregateRoot<Long> {
   @Id
   @GeneratedValue(strategy = GenerationStrategy.DISTRIBUTED_ID)
   private Long id;
@@ -43,7 +43,7 @@ public class AlertEvent extends com.bone.core.domain.AggregateRoot<Long> {
   @Column(name = "resolved_at")
   private LocalDateTime resolveTime;
 
-  public static AlertEvent create(
+  public static AlertRecord create(
       Long id,
       Long alertRuleId,
       String ruleName,
@@ -52,7 +52,7 @@ public class AlertEvent extends com.bone.core.domain.AggregateRoot<Long> {
       double threshold,
       AlertLevel alertLevel,
       String message) {
-    AlertEvent event = new AlertEvent();
+    AlertRecord event = new AlertRecord();
     event.id = id;
     event.alertRuleId = alertRuleId;
     event.ruleName = ruleName;
