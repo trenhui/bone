@@ -584,6 +584,7 @@ CQRS 首先是读写关注点分离：
 - freeze 基线只收缩；
 - 规则语义发生变化时，先修规则 fixture 和声明，再迁移代码；
 - **存量 CommandHandler 迁移**：不强制一次性迁移到 ApplicationService。存量 Handler 在功能修改时评估是否可合并到同义 ApplicationService；新用例一律从 ApplicationService 开始（AS-01）。
+- **迁移度量（建议目标，待架构评审确认）**：以 [G-1.8](#g-18-实施状态指标) 计数为准——新模块一律从 ApplicationService 起（AS-01），不新增独立 `*CommandHandler` / `*QueryHandler`；存量 Handler 在功能修改时优先合并到同义 ApplicationService；建议按季度跟踪「`*ApplicationService` 类数」上升与「`*CommandHandler` 类数」下降，目标为连续两个季度净降幅，避免迁移长期悬置。具体阈值与节奏由架构评审在每个季度初设定。
 
 #### E-0.3 破坏性变更
 
@@ -1072,6 +1073,8 @@ Outbox 是 Bone 的默认 Durable 实现。CDC、数据库事务日志或其他�
 | `traceId` | 端到端追踪标识 |
 | `causationId` | 导致本事件的命令或前序事件标识 |
 | `payload` | 版本化业务载荷 |
+
+`version` 字段的演进规则（当前无机器检查，见 [G-1.4](#g-14-planned) 事件侧 breaking-change 检查缺失）：① **minor**（`1.x → 1.y`，`y` 递增）仅允许向后兼容的增补——新增可选字段、字段约束放宽、新增事件类型；消费端须能忽略未知字段；② **major**（`x → x+1`）表示 breaking change——删除 / 重命名字段、改字段语义或类型、收紧必填——须先发新 major、保留双版本并行期、消费端全部迁移后再弃旧；③ 任何 major 变更须同步更新事件契约登记（topic registry）并在 PR 描述标注 breaking。跨上下文解耦后这是最高频的协作中断源，在补齐 oasdiff 式事件校验前，先以本规则作为人工评审清单固化。
 
 #### E-5.3 并发
 
@@ -1638,10 +1641,10 @@ Hard gate 只保护结构和明确 API 使用，不证明领域模型正确。
 - 并发策略模板；
 - 禁 ORM（banned-dependencies）的 **CI 级**门禁、统一响应契约与 DDL 必备字段的静态门禁 → 即 HC-003 / HC-006 / HC-008 完全缺失的载体，以及 HC-001 缺失的 CI 级载体（本地 pre-commit 与 `ci-check.sh` 已有 import / pom 拦截，见 [G-1.7](#hc-hard-constraints)）；
 - 集成事件契约的 breaking-change 检查：REST 侧已有 oasdiff（HC-007），事件侧（[E-5.2](#e-52-可靠发布) Envelope 的 `version`）目前**无任何兼容性规则**，跨上下文解耦后却最需要它。
-- **`studio-generator` 模板与本文解析出的规范不一致**：现有模板只有 `controller.ftl` / `repository.ftl` / `entity.ftl`（并无 Command / Handler 全家桶，这点不用担心），但 `controller.ftl` 生成的签名直接外吐领域实体——`ApiResponse<${Entity}>`、`ApiResponse<PageResult<${Entity}>>`——与 CORE-05（读侧出投影）和 [E-10.1 各层职责](#e-101-各层职责) 的转换边界冲突。模板需改为「经 ApplicationService 调用 + 返回 adapter 投影 / DTO」，并与 [E-6.6](#e-66-务实对象映射与-mapstruct) 的档位策略对齐后再作为新模块起点。
+- **`studio-generator` 模板与本文解析出的规范不一致**：现有模板只有 `controller.ftl` / `repository.ftl` / `entity.ftl`（并无 Command / Handler 全家桶，这点不用担心），但 `controller.ftl` 生成的签名直接外吐领域实体——`ApiResponse<${Entity}>`、`ApiResponse<PageResult<${Entity}>>`——与 CORE-05（读侧出投影）和 [E-10.1 各层职责](#e-101-各层职责) 的转换边界冲突。模板需改为「经 ApplicationService 调用 + 返回 adapter 投影 / DTO」，并与 [E-6.6](#e-66-务实对象映射与-mapstruct) 的档位策略对齐后再作为新模块起点。建议将其登记为带 **Owner 与发布里程碑**的整改项，在修复前 `controller.ftl` 不得作为新模块起点；修复后需补一条门禁或快照断言，防止模板回退为外吐实体。
 - 仓库内反向引用（代码注释 → 本文）的清理：`bone-blueprint` 部分 JavaDoc 仍引用旧版章节号（原「PO 分离退出信号」与「领域端口包唯一」两处），对应内容现已落在 [E-6.3](#e-63-po-分离信号) 与 [E-4.1](#e-41-写侧)，须随模块改动同步修正。当前所有检查都只覆盖「文档 → 代码」方向，此类「代码 → 文档」漂移无机器载体。
 
-评审不得把 Planned 或 Advisory 声称为全仓已证明。
+评审不得把 Planned 或 Advisory 声称为全仓已证明（门禁状态单真源约束见 [G-1.5](#g-15-规则证明能力与模块启用状态) 开头与 [G-3](#g-3-规则准入) 第 7 条，不得在本节另写一份状态）。
 
 #### G-1.5 规则证明能力与模块启用状态
 
@@ -1730,7 +1733,7 @@ grep -rn <工具名> .github/workflows/
 | **HC-002** | domain 层不依赖 Bone 外层包（adapter / application / infrastructure）；是否依赖 Spring / Jakarta 等框架由 D1 编译期注解白名单另行约定（见 E-6.2），本规则**不**覆盖框架依赖 | ArchUnit `domainMustNotDependOnOuterLayers`（仅按包路径拦截 Bone 三层，不拦截 `org.springframework.*` 等框架包） | Active（已接入模块；`ci.yml` 的 `mvn verify` 执行） |
 | **HC-003** | Controller 返回必须用 `ApiResponse<T>` 或 `PageResult<T>` | **无实现**：`controllerMustReturnApiResponse` 不在共享规则库中 | **Planned** |
 | **HC-004** | 禁止硬编码密钥 / 密码 / Token | `.gitleaks.toml` + `scripts/scan-secrets.sh` / `scripts/check.sh` / `scripts/ci-check.sh`（`[3/7]` gitleaks detect）（本地可跑，**无工作流调用**） | **Manual**（同 [G-1.1](#g-11-hard-gate) 12a） |
-| **HC-005** | 核心模块测试覆盖率门槛 | `jacoco:check` 读取 pom 的 `jacoco.minimum.coverage`：父 POM 默认值 + **模块覆盖**（`bone-metadata-engine-{domain,starter,ports}` 覆盖为 `0`、`bone-metadata-engine-runtime` 为 `0.04`，这四个模块实际不受门禁） | Active；**父 POM 实测门槛为 10% 指令覆盖率，不是 70%**；模块覆盖见左栏 |
+| **HC-005** | 核心模块测试覆盖率门槛 | `jacoco:check` 读取 pom 的 `jacoco.minimum.coverage`：父 POM 默认值 + **模块覆盖**（`bone-metadata-engine-{domain,starter,ports}` 覆盖为 `0`、`bone-metadata-engine-runtime` 为 `0.04`，这四个模块实际不受门禁） | Active；**父 POM 实测门槛为 10% 指令覆盖率，不是 70%**；模块覆盖见左栏。整改建议：这四个模块为 SDK 基础设施层，业务聚合少、以框架 / 映射代码为主，0 覆盖不等价于无保护；建议二选一并在模块 README 登记——① 在对应 pom 显式声明覆盖率豁免并写明理由；② 为关键映射与上下文装配补最小集成测试使覆盖 >0 后再纳入门禁。不得长期以 0 覆盖蒙混，也不因门禁存在就误判这些核心模块已受测试保护 |
 | **HC-006** | 数据库访问必须通过 bone-metadata-sdk Repository | **无实现**：`repositoryMustUseSdk` 不在共享规则库中 | **Planned** |
 | **HC-007** | PR 提交的 OpenAPI spec 不得引入 breaking change | oasdiff（`ci.yml` 的 `openapi-diff` job，base vs head） | Active（PR 阻断） |
 | **HC-008** | 新增表必须含 `tenant_id` + `created_at` + `updated_at` + `deleted` | **无实现**：仓库内没有任何校验**必备列**的载体。`scripts/check-ddl-doc-sync.py` 只比对**表名清单**（`bone-init.sql` vs 数据库开发规范 §2），不读列；`scripts/ci-check.sh` 的 `[7/7]` 调用的就是同一个脚本，并不构成必备字段载体 | **Planned**（同 [G-1.1](#g-11-hard-gate) 12c 后半） |

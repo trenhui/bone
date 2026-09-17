@@ -63,3 +63,10 @@
 - **领域事件判据已统一为两层**（E-5.4 ↔ E-5.2 ↔ glossary 一致）：① 领域层 = 是不是业务语言里的**事实**（**与订阅者无关**，禁止拿"当前没有下游"当豁免理由）；② 发布层 = 是否 `publishFrom()` / 是否 Durable。不要再写成"跨上下文需要感知"。
 - **CORE 表有「类别」列**：CORE-01～08 = 通用 DDD，CORE-09～12 = Bone 工程约束。**CORE 编号禁止重排**（全仓 10+ 处引用）。
 - **实施状态指标口径**（G-1.8，数字不入库，用 `check-ddd-gate-state.py --metrics` 现算）：`git ls-files` 索引内 **`src/main/java`** 下的 `.java` 按后缀计数，**必须排除测试夹具**（`bone-architecture-test` fixture 有 `SubmitOrderUseCase`，会让 `*UseCase` 计数虚增）。实测：CommandHandler **58**、QueryHandler **64**、ApplicationService **3**（全在 blueprint）、UseCase **0**、`domain/repository` 接口 **48**。
+
+## 提交与门禁的运维事实（2026-09-17 实测补充）
+- **`git commit` 一律后台跑**：pre-commit → `scripts/check.sh` 的 `mvn spotless:check`（**不带 `-o`**）本机实测 **~14 分钟**；前台 120s 会被 SIGTERM 杀掉（索引不丢、熔断不计数，重跑即可）。同一命令加 `-o` 只要 1s——差异纯属联网解析。
+- **别把 `mvn -o spotless:check` 的 1 秒成功当证据**：它跑在根聚合 POM 上，几乎不校验子模块。判断"格式是否真的过"要看 pre-commit 的完整输出（重定向到文件，别用 `| tail`，否则拿不到进度与结尾）。
+- **`collect-all-compliance.sh --check` 约 15 分钟**：必须后台跑，前台必被杀。2026-09-17 全 8 模块 up to date。
+- **`.workbuddy/` 在 `.gitignore` 里，但 `memory/MEMORY.md` 已被历史提交跟踪**（`b9285821`）：`git status` 会显示它为 `M`，而 `git add -A` 会对 `.workbuddy` 报 ignored 告警。日常提交按目录显式 `git add` 即可，不要 `-A`。
+- **AGENTS.md 于 2026-09-17 已拆分**（commit `53563456`）：入口 35 行薄引用 + `doc/agents/` 六册（沿用原 §编号）+ `doc/archive/AGENTS-单文件版-2026-09-17.md` 备份。**改 AI 协作规则要改 `doc/agents/`，不要往 `AGENTS.md` 里抄正文**；HC 状态真源只有 G-1.7 一处（`scripts/check-ddd-gate-state.py` 会告警副本）。
