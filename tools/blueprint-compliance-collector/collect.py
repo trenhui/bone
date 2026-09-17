@@ -16,6 +16,8 @@ BACKLOG_YAML = COLLECTOR_DIR / "backlog.yaml"
 MAIN_JAVA = ROOT / "bone-blueprint" / "src" / "main" / "java"
 TEST_JAVA = ROOT / "bone-blueprint" / "src" / "test" / "java"
 RESOURCES = ROOT / "bone-blueprint" / "src" / "main" / "resources"
+# DDL 真源已由模块内 schema.sql 收敛到平台级 bone-init.sql（含 t_order / bp_outbox / bp_payment）
+DDL = ROOT / "bone-init.sql"
 OPENAPI = ROOT / "doc" / "architecture" / "openapi" / "blueprint-orders-v1.yaml"
 
 
@@ -67,7 +69,7 @@ def _scan_openapi_paths(openapi: Path) -> dict:
 
 
 def build_as_is_checks() -> list[dict]:
-    schema = _read(RESOURCES / "schema.sql")
+    schema = _read(DDL)
     return [
         {
             "id": "openapi-blueprint-orders",
@@ -122,10 +124,10 @@ def build_as_is_checks() -> list[dict]:
         },
         {
             "id": "read-port",
-            "title": "CQRS 读侧 OrderReadPort + SQL 投影",
+            "title": "CQRS 读侧 OrderQueryPort + SQL 投影",
             "status": "as_is",
             "evidence": {
-                "java": _grep_files(MAIN_JAVA, r"OrderReadPort|OrderDetailAssembler"),
+                "java": _grep_files(MAIN_JAVA, r"OrderQueryPort|OrderDetailAssembler"),
                 "sql": ["bone-blueprint/src/main/resources/sql/order/findOrderWithItems.sql"]
                 if (RESOURCES / "sql/order/findOrderWithItems.sql").exists()
                 else [],
