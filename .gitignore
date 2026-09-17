@@ -85,6 +85,12 @@ ehthumbs.db
 logs/
 log/
 *.log
+# 例外（必须保留在 log/ 之后）：Java 包名可能就叫 log，
+# 上面的 `log/` 会连源码目录一起吞掉，导致该包从未入库 ——
+# 典型事故：com.bone.system.domain.model.log 被静默忽略，
+# 而引用它的类已提交，clean checkout / CI 编译必然失败。
+!**/src/main/java/**/log/
+!**/src/test/java/**/log/
 nohup.out
 *.pid
 *.seed
@@ -115,6 +121,9 @@ tmp/
 .env.production.local
 *.env
 *.properties
+# 例外：测试资源目录里的 application.properties 是测试夹具，不是本机私有配置，
+# 被 `*.properties` 吞掉会让 clean checkout 少掉测试所需配置。
+!**/src/test/resources/application.properties
 *.secret
 
 # =========================
