@@ -19,7 +19,7 @@ gitleaks detect --source . --config .gitleaks.toml --verbose
 
 echo "🔍 [4/7] JaCoCo 覆盖率检查（仅对配置 jacoco 插件的模块生效）..."
 # 现状：jacoco 门禁仅 bone-metadata-sdk（80% 行覆盖）配置；其余应用模块未接入，见 Bone-测试策略.md
-# 目标口径：AGENTS.md HC-005（核心模块 ≥70%，逐步 80%）；全模块铺开后收紧本步
+# 目标口径：Bone-DDD G-1.7 的 HC-005（当前父 POM 门槛 10% 指令覆盖）；全模块铺开后收紧本步
 mvn jacoco:check --batch-mode -q
 
 echo "🔍 [5/7] OpenAPI 契约一致性..."

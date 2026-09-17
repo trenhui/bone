@@ -30,7 +30,7 @@
 ## 与仓库其他文档的关系
 
 - **[CLAUDE.md](../../CLAUDE.md)**：面向 Claude Code 的短指南（命令、红线、提交规范）。
-- **[AGENTS.md](../../AGENTS.md)**：面向 AI 助手的完整项目说明（模块、依赖规则、测试与质量）。
+- **[AGENTS.md](../../AGENTS.md)**：AI 助手的**薄引用入口**（强制约束 + 路径→上下文路由）；完整说明在 [`doc/agents/`](../agents/README.md)（六份：概览与模块结构 / 构建运行与部署 / 架构分层规范 / 测试与代码质量 / 数据库与安全 / AI 协作与编码准则）。
 - **[CODE_WIKI.md](../CODE_WIKI.md)**：技术栈、模块树、关键类、构建与数据库等**单文件长文档**（部分内容可能随版本演进，以本 Wiki 的「模块」页与根 `pom.xml` 为准）。
 - **[CONTRIBUTING.md](../../CONTRIBUTING.md)**：提交前检查、CI 说明、Spotless / Gitleaks / blueprint 约定。
 - **[doc/README.md](../README.md)**：`doc/` 权威文档与历史废止目录总索引。

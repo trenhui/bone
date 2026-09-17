@@ -116,5 +116,5 @@ Handler 位于**消费端/任务执行端**，而非 REST 调用链。这与 [AD
 1. 新增代码按本 ADR 判据选型；已存在 Handler/QueryPort 的存量代码保留，不一次性重构。
 2. [Bone-DDD v5.2.0](../Bone-DDD-最终实践方案.md) E-3/E-4 同步本决策：E-3 决策流程翻转默认、E-4.2 读侧默认放宽、rule #19 降为裁量。
 3. 共享 `BoneDddArchRules` 与各模块 `ArchitectureTest` 中“强制构件”的 `@ArchTest` 降为 warn/freeze，与“呈现降为裁量”保持一致；不变量硬规则不变。
-4. `AGENTS.md` §11.2 默认入站边界描述同步更新。
+4. `doc/agents/06-AI协作与编码准则.md` §11.2 默认入站边界描述同步更新（原位于 `AGENTS.md` §11.2，2026-09-17 拆分后随文档迁移）。
 5. 本 ADR 进入 [ADR README](./README.md) 索引。

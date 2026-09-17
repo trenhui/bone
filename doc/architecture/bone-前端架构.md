@@ -164,7 +164,7 @@ apps/<app-name>/src/
 
 - [`BONE-总体架构设计方案.md`](./BONE-总体架构设计方案.md) — 平台总体架构、NFR、安全与数据一致性策略。
 - [`frontend/frontend-ui-spec.md`](./frontend/frontend-ui-spec.md) — 设计令牌、**§1.1 实现策略**、Ant Design 映射、布局与无障碍。
-- 根目录 [`AGENTS.md`](../../AGENTS.md) — 全栈模块索引与端口表。
+- 根目录 [`AGENTS.md`](../../AGENTS.md) — 薄引用入口（路径→上下文路由）；全栈模块索引与端口表在 [`doc/agents/01`](../../doc/agents/01-项目概览与模块结构.md) 与 [`doc/agents/02`](../../doc/agents/02-构建运行与部署.md)。
 - [`bone-frontend/START_GUIDE.md`](../../bone-frontend/START_GUIDE.md) — 本地启动步骤。
 - [`bone-frontend/SCRIPT_USAGE.md`](../../bone-frontend/SCRIPT_USAGE.md) — 多应用脚本说明。
 

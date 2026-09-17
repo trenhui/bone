@@ -1,11 +1,12 @@
 # Bone 项目文档索引（`doc/`）
 
-> **新人入口**：优先 [wiki/README.md](./wiki/README.md) → 根 [README.md](../README.md) → [AGENTS.md](../AGENTS.md)。
+> **新人入口**：优先 [wiki/README.md](./wiki/README.md) → 根 [README.md](../README.md) → [AGENTS.md](../AGENTS.md)（薄引用入口）→ [agents/](./agents/README.md)（AI Agent 手册正文）。
 
 ## 权威文档（与实现一致）
 
 | 目录 | 说明 |
 |------|------|
+| [agents/](./agents/README.md) | **AI Agent 手册**（`AGENTS.md` 的拆分正文：概览与模块结构 / 构建运行与部署 / 架构分层规范 / 测试与代码质量 / 数据库与安全 / AI 协作与编码准则） |
 | [architecture/](./architecture/) | **平台架构**：总体方案、DDD 门禁、前端、数据库规范 |
 | [prd/](./prd/) | **产品需求**：主 PRD 与写作模板 |
 | [design/](./design/) | **模块详设**：控制台、元数据、主数据、集成、扩展、IAM、系统、Generator、SmartMeta |
@@ -23,7 +24,7 @@
 | 总体架构 | [architecture/BONE-总体架构设计方案.md](./architecture/BONE-总体架构设计方案.md) |
 | API / 错误码 / 日志 | [architecture/Bone-API-规范.md](./architecture/Bone-API-规范.md) |
 | 数据库 DDL | [architecture/数据库开发规范.md](./architecture/数据库开发规范.md) |
-| DDD | [architecture/Bone-DDD-最终实践方案.md](./architecture/Bone-DDD-最终实践方案.md)（v5.0） |
+| DDD | [architecture/Bone-DDD-最终实践方案.md](./architecture/Bone-DDD-最终实践方案.md)（HC 与门禁状态真源见 `#hc-hard-constraints`） |
 | 通用语言 | [glossary.md](./glossary.md) |
 | 前端 | [architecture/bone-前端架构.md](./architecture/bone-前端架构.md) |
 | UI | [architecture/frontend/frontend-ui-spec.md](./architecture/frontend/frontend-ui-spec.md) |

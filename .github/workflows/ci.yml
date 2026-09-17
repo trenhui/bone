@@ -56,6 +56,9 @@ jobs:
       - name: DDD Doc Drift Lint (blocking)
         run: /usr/bin/env python3 scripts/check-ddd-doc-drift.py
 
+      - name: DDD Gate State Lint (blocking)
+        run: /usr/bin/env python3 scripts/check-ddd-gate-state.py
+
   backend-security:
     name: Backend Security Scan
     runs-on: ubuntu-latest

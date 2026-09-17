@@ -55,7 +55,8 @@ echo -e "${YELLOW}[4/5] 密钥泄露扫描 (Gitleaks)...${RESET}"
 if command -v gitleaks &>/dev/null; then
   gitleaks protect --staged --config .gitleaks.toml --verbose || exit_code=$?
 else
-  echo "  gitleaks 未安装，跳过（CI 会执行）"
+  echo "  gitleaks 未安装，跳过。注意：GitHub Actions 也【不】执行 gitleaks——密钥扫描目前只在"
+  echo "  本机装了 gitleaks 时才生效（HC-004 实测状态为 Manual，见 Bone-DDD-最终实践方案 G-1.7）。"
 fi
 
 echo -e "${YELLOW}[5/5] pom.xml 依赖检查...${RESET}"

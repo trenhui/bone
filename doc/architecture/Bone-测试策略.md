@@ -31,7 +31,7 @@
 | 命名 | `*Test.java` / `*Tests.java` |
 | Domain | 纯逻辑，无 Spring 上下文 |
 | Application | Mock Repository；测用例编排 |
-| 覆盖率 | **已配置模块 ≥80% 行覆盖**（当前 `bone-metadata-sdk`）；其余模块待接入 JaCoCo 门禁（目标对齐 AGENTS.md HC-005 ≥70%，逐步 80%） |
+| 覆盖率 | **已配置模块 ≥80% 行覆盖**（当前 `bone-metadata-sdk`）；其余模块待接入 JaCoCo 门禁（门槛真源见 Bone-DDD `G-1.7` 的 HC-005，当前父 POM 为 10%） |
 
 ---
 

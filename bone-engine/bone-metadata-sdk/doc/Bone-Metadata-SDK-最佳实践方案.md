@@ -50,7 +50,7 @@ Bone Metadata SDK 是 Bone 平台**默认数据访问层**，为业务/平台模
 
 - **bone-datasource**：连接池、多数据源路由、与 Bone 租户配置联动  
 - **bone-metadata-sdk**：在已选数据源上完成 SQL 构建、执行与元数据映射  
-- 业务模块同时依赖两者时，以 **`AGENTS.md` §5.1.1** 为准
+- 业务模块同时依赖两者时，以 **`doc/agents/03-架构分层规范.md` §5.4** 为准
 
 ---
 

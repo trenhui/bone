@@ -41,7 +41,7 @@ mvn clean install -DskipTests=true
 - [ ] `bone-blueprint` 包结构仍符合 DDD 四层（adapter / application / domain / infrastructure）  
 - [ ] `ArchitectureTest` 通过  
 - [ ] 命名与正式 PRD/平台模块 Handler 约定一致（`*CommandHandler` / `*QueryHandler`）  
-- [ ] 持久化路径与 **Bone Metadata SDK** 规约一致（见 AGENTS.md §5.1.1）  
+- [ ] 持久化路径与 **Bone Metadata SDK** 规约一致（见 [03 架构分层规范 §5.4](../agents/03-架构分层规范.md)）  
 - [ ] 若平台层 API 变更，同步更新蓝图示例或 README 说明差异  
 
 ---

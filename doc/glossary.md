@@ -4,6 +4,12 @@
 > **权威**：战略分类、Context Map、战术构件与命名风格统一见 [Bone-DDD-最终实践方案](architecture/Bone-DDD-最终实践方案.md)；核心域决策见 [ADR-0023](architecture/adr/0023-core-domain-smart-metadata.md)。
 > **维护**：新增限界上下文或聚合时，先改本表再写代码。模块级细词放在各模块 README。
 
+> **术语分三层，引用时说清是哪一层**（避免把工程选择当成 DDD 原则、把待实现当成已阻断）：
+>
+> 1. **通用 DDD**——Evans / Vernon 等通行语义：聚合、值对象、领域事件、限界上下文、ACL、CQRS 频谱；
+> 2. **Bone 工程约束**——本平台选型带来的约定（`bone-metadata-sdk` 持久化栈、EAV 仅承载扩展字段、元数据只描述模型、`CORE-09`～`CORE-12`），不适用于其他项目，也不是 DDD 的要求；
+> 3. **机器可证状态**——门禁实测结论（Active / Manual / Planned）。真源是 [Bone-DDD-最终实践方案 §G-1.7](architecture/Bone-DDD-最终实践方案.md#hc-hard-constraints)，其他任何位置的表述都只是副本。
+
 ## 1. 子域与上下文
 
 | 中文 | English | 类型 | 说明 | 禁用同义词 |
@@ -39,7 +45,7 @@
 | 仓储 | Repository | 按 ID 加载/保存聚合，不做报表 |
 | 查询端口 | QueryPort | application 读侧的列表、搜索、统计契约，不走写仓储 |
 | 防腐层 | ACL / Gateway | 外部模型不进入本上下文 |
-| 应用用例边界 | Application Use-case Boundary | CommandHandler、QueryHandler 或语义化 ApplicationService；一个用例只选一种 |
+| 应用用例边界 | Application Use-case Boundary | CommandHandler、QueryHandler 或语义化 ApplicationService；一个用例只选一种。概念上仍是**用例（Use Case）**，实现名一律用 `ApplicationService`，禁新增 `*UseCase` 类 |
 
 ## 4. 领域纯净度与持久化关系
 

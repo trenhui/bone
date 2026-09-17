@@ -499,7 +499,7 @@ npm run preview               # Vite preview
 | 文件/目录 | 内容 |
 |-----------|------|
 | [README.md](README.md) | 项目营销概览、快速开始 |
-| [AGENTS.md](AGENTS.md) | AI 助手项目指南 |
+| [AGENTS.md](../AGENTS.md) | AI 助手薄引用入口；完整说明见 [doc/agents/](agents/README.md) |
 | [doc/wiki/07-P0-TODO看板.md](doc/wiki/07-P0-TODO看板.md) | 平台未完成项与工程债 |
 | [bone-parent/pom.xml](bone-parent/pom.xml) | 依赖版本锁定与全局插件配置 |
 | [bone-init.sql](bone-init.sql) | 数据库初始化脚本 |

@@ -58,6 +58,6 @@ Bone 的产品定位是**元数据驱动的快速开发平台**。真正不可�
 ## 合规与迁移
 
 1. 同步 [Bone-DDD-最终实践方案](../Bone-DDD-最终实践方案.md) P-10、一页纸 L 档、B.1.1。
-2. 同步 [glossary.md](../../glossary.md) 与 `AGENTS.md` §1 一句定位。
+2. 同步 [glossary.md](../../glossary.md) 与 `doc/agents/01-项目概览与模块结构.md` §1 一句定位。
 3. **不改代码、不改表、不改 API**。本 ADR 只定战略分类与门禁投向。
 4. `bone-metadata-server`（有业务 REST）按 E-5.4「看 Controller」归入应用模块；sdk / engine 仍为 SDK / 引擎库。

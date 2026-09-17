@@ -49,7 +49,7 @@ scripts/ci/collect-{module}-compliance.sh
 1. 复制 `tools/extension-compliance-collector/` 为模板，改 `MODULE`、`ROOT` 路径与扫描规则。
 2. 在 `backlog.yaml` **只写未落地项**；已落地项写成 `collect.py` 里的 `as_is` 扫描。
 3. 注册 `scripts/ci/collect-*-compliance.sh` 与 `.github/workflows/*` job（`collect` + `--check`；有详设则加 `diff` GENERATED 块）。
-4. 更新 `doc/_generated/README.md`、`AGENTS.md` §11、文档治理子任务表。
+4. 更新 `doc/_generated/README.md`、`doc/agents/06-AI协作与编码准则.md` §11.9、文档治理子任务表。
 5. PR 说明附：`bash scripts/ci/collect-{module}-compliance.sh --sync-doc` 已执行。
 
 ---

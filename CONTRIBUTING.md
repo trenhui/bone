@@ -69,7 +69,7 @@ bone-engine/bone-extension-engine/bone-extension-sdk,bone-engine/bone-extension-
 | Metadata SDK | [bone-engine/bone-metadata-sdk/README.md](bone-engine/bone-metadata-sdk/README.md)（快速开始）→ [doc/](bone-engine/bone-metadata-sdk/doc/)（使用指南 + 最佳实践） |
 | 元数据三模块定义与协作 | [doc/design/modules/元数据能力-实现映射与竞品对照.md](doc/design/modules/元数据能力-实现映射与竞品对照.md) |
 | 扩展引擎 | [docs/使用指南.md](bone-engine/bone-extension-engine/docs/使用指南.md)（接入）→ [README](bone-engine/bone-extension-engine/README.md)（摘要） |
-| 新人 / AI 总览 | [AGENTS.md](AGENTS.md)、[doc/wiki/](doc/wiki/) |
+| 新人 / AI 总览 | [AGENTS.md](AGENTS.md)（薄引用入口）、[doc/agents/](doc/agents/README.md)（完整说明）、[doc/wiki/](doc/wiki/) |
 
 - 平台未完成项：[doc/wiki/07-P0-TODO看板.md](doc/wiki/07-P0-TODO看板.md)
 - 蓝图与主工程：[doc/wiki/08-blueprint与主工程对齐.md](doc/wiki/08-blueprint与主工程对齐.md)（`bone-blueprint` 为 DDD 参考实现；**不以「Blueprint v×」版本号**为门禁，见 Bone-DDD 附录 A）
