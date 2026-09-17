@@ -5,6 +5,7 @@ import com.bone.blueprint.application.port.out.TenantProvider;
 import com.bone.blueprint.common.BlueprintErrorCodes;
 import com.bone.blueprint.domain.payment.Payment;
 import com.bone.blueprint.domain.repository.PaymentRepository;
+import com.bone.core.annotation.NoDomainEvent;
 import com.bone.core.capability.Capability;
 import com.bone.core.exception.BizException;
 import java.util.Optional;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p>{@code Payment.close()} 不发领域事件，故直接 {@code repository.save}（与 Ship/Deliver 同模式）。
  */
+@NoDomainEvent // Payment.close() 终态不发事件，聚合方法 JavaDoc 已说明豁免理由
 @Capability(
     name = "CloseExpiredPayment",
     description = "关闭超时未支付的支付单",

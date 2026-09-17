@@ -142,6 +142,12 @@ public class ArchitectureTest {
           .orShould()
           .haveSimpleName("package-info");
 
+  // E-5.4（v5.5 补门禁）：application 层 Repository.save() 必须配 publishFrom() 或声明 @NoDomainEvent。
+  // 参考样板不 freeze，须 0 违规；豁免类须确保聚合方法 JavaDoc 说明"不发 DomainEvent"的理由。
+  @ArchTest
+  static final ArchRule save_must_pair_with_publish_or_exempt =
+      BoneDddArchRules.applicationSaveMustPairWithPublishOrExempt();
+
   // v4.5：命名 / 事务四条规则已降级为 warn（tasks 2.5），不再作为 @ArchTest 硬门禁；
   // 反贫血主判据切换为 R8 聚合纯单测（AggregatePureUnitTestCoverageTest）。
 }
