@@ -1,8 +1,8 @@
 package com.bone.iam.adapter.web.converter;
 
-import com.bone.iam.adapter.web.dto.req.CreateTenantReq;
-import com.bone.iam.adapter.web.dto.req.UpdateTenantQuotaReq;
-import com.bone.iam.adapter.web.dto.req.UpdateTenantReq;
+import com.bone.iam.adapter.web.dto.request.CreateTenantReq;
+import com.bone.iam.adapter.web.dto.request.UpdateTenantQuotaReq;
+import com.bone.iam.adapter.web.dto.request.UpdateTenantReq;
 import com.bone.iam.application.command.cmd.CreateTenantCommand;
 import com.bone.iam.application.command.cmd.UpdateTenantCommand;
 import com.bone.iam.application.command.cmd.UpdateTenantQuotaCommand;

@@ -4,7 +4,7 @@ import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.iam.adapter.web.converter.AuditWebConverter;
-import com.bone.iam.adapter.web.dto.resp.AuditSettingsResp;
+import com.bone.iam.adapter.web.dto.response.AuditSettingsResp;
 import com.bone.iam.application.command.cmd.UpdateAuditSettingsCommand;
 import com.bone.iam.application.command.handler.UpdateAuditSettingsCommandHandler;
 import com.bone.iam.application.query.dto.AuditLogDTO;

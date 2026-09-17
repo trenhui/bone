@@ -2,7 +2,7 @@ package com.bone.iam.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.core.web.PlatformApiPaths;
-import com.bone.iam.adapter.web.dto.resp.MfaStatusResp;
+import com.bone.iam.adapter.web.dto.response.MfaStatusResp;
 import com.bone.iam.common.IamErrorCodes;
 import java.util.List;
 import java.util.Map;

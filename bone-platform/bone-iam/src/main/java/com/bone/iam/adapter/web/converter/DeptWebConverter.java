@@ -1,7 +1,7 @@
 package com.bone.iam.adapter.web.converter;
 
-import com.bone.iam.adapter.web.dto.req.CreateDeptReq;
-import com.bone.iam.adapter.web.dto.req.UpdateDeptReq;
+import com.bone.iam.adapter.web.dto.request.CreateDeptReq;
+import com.bone.iam.adapter.web.dto.request.UpdateDeptReq;
 import com.bone.iam.application.command.cmd.CreateDeptCommand;
 import com.bone.iam.application.command.cmd.UpdateDeptCommand;
 import org.springframework.stereotype.Component;

@@ -1,10 +1,12 @@
-package com.bone.iam.adapter.web.dto.resp;
+package com.bone.iam.adapter.web.dto.response;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import lombok.Data;
 
+/** {@code GET /api/v1/iam/me} 响应：当前登录账号的安全脱敏视图。 */
 @Data
-public class AccountDetailResp {
+public class MeResp {
   private Long id;
   private String username;
   private String email;
@@ -13,9 +15,8 @@ public class AccountDetailResp {
   private String avatarUrl;
   private Integer status;
   private Boolean isAdmin;
-  private Long[] roleIds;
+  private Long tenantId;
+  private List<String> scopes;
   private LocalDateTime lastLoginAt;
-  private String lastLoginIp;
-  private LocalDateTime createdAt;
-  private LocalDateTime updatedAt;
+  private LocalDateTime passwordUpdatedAt;
 }

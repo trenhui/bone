@@ -1,4 +1,4 @@
-package com.bone.iam.adapter.web.dto.resp;
+package com.bone.iam.adapter.web.dto.response;
 
 import java.util.List;
 import lombok.Data;

@@ -1,9 +1,9 @@
 package com.bone.iam.adapter.web.converter;
 
-import com.bone.iam.adapter.web.dto.req.CreateAccountReq;
-import com.bone.iam.adapter.web.dto.req.ResetPasswordReq;
-import com.bone.iam.adapter.web.dto.req.UpdateAccountReq;
-import com.bone.iam.adapter.web.dto.resp.AccountDetailResp;
+import com.bone.iam.adapter.web.dto.request.CreateAccountReq;
+import com.bone.iam.adapter.web.dto.request.ResetPasswordReq;
+import com.bone.iam.adapter.web.dto.request.UpdateAccountReq;
+import com.bone.iam.adapter.web.dto.response.AccountDetailResp;
 import com.bone.iam.application.command.cmd.CreateAccountCommand;
 import com.bone.iam.application.command.cmd.ResetPasswordCommand;
 import com.bone.iam.application.command.cmd.UpdateAccountCommand;

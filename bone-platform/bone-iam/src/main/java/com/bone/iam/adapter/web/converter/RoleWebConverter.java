@@ -1,9 +1,9 @@
 package com.bone.iam.adapter.web.converter;
 
-import com.bone.iam.adapter.web.dto.req.AssignPermissionReq;
-import com.bone.iam.adapter.web.dto.req.CreateRoleReq;
-import com.bone.iam.adapter.web.dto.req.UpdateRoleReq;
-import com.bone.iam.adapter.web.dto.resp.RoleDetailResp;
+import com.bone.iam.adapter.web.dto.request.AssignPermissionReq;
+import com.bone.iam.adapter.web.dto.request.CreateRoleReq;
+import com.bone.iam.adapter.web.dto.request.UpdateRoleReq;
+import com.bone.iam.adapter.web.dto.response.RoleDetailResp;
 import com.bone.iam.application.command.cmd.AssignPermissionCommand;
 import com.bone.iam.application.command.cmd.CreateRoleCommand;
 import com.bone.iam.application.command.cmd.UpdateRoleCommand;

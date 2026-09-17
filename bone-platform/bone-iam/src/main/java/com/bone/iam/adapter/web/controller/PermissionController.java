@@ -4,7 +4,7 @@ import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.iam.adapter.web.converter.PermissionWebConverter;
-import com.bone.iam.adapter.web.dto.req.CreatePermissionReq;
+import com.bone.iam.adapter.web.dto.request.CreatePermissionReq;
 import com.bone.iam.application.command.cmd.CreatePermissionCommand;
 import com.bone.iam.application.command.cmd.UpdatePermissionCommand;
 import com.bone.iam.application.command.handler.CreatePermissionCommandHandler;

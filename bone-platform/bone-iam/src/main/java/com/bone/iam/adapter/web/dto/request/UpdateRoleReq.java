@@ -1,4 +1,4 @@
-package com.bone.iam.adapter.web.dto.req;
+package com.bone.iam.adapter.web.dto.request;
 
 import jakarta.validation.constraints.Size;
 import lombok.Data;

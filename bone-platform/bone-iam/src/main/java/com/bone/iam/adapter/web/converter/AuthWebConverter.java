@@ -1,7 +1,7 @@
 package com.bone.iam.adapter.web.converter;
 
-import com.bone.iam.adapter.web.dto.req.LoginReq;
-import com.bone.iam.adapter.web.dto.resp.LoginResp;
+import com.bone.iam.adapter.web.dto.request.LoginReq;
+import com.bone.iam.adapter.web.dto.response.LoginResp;
 import com.bone.iam.application.command.cmd.LoginCommand;
 import com.bone.iam.domain.account.Account;
 import java.util.Map;

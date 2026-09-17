@@ -1,4 +1,4 @@
-package com.bone.iam.adapter.web.dto.req;
+package com.bone.iam.adapter.web.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

@@ -1,6 +1,6 @@
 package com.bone.iam.adapter.web.converter;
 
-import com.bone.iam.adapter.web.dto.resp.AuditSettingsResp;
+import com.bone.iam.adapter.web.dto.response.AuditSettingsResp;
 import com.bone.iam.application.query.dto.AuditSettingsDTO;
 import org.springframework.stereotype.Component;
 

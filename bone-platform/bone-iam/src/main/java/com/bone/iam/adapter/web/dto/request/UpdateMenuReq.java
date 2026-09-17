@@ -1,9 +1,9 @@
-package com.bone.iam.adapter.web.dto.req;
+package com.bone.iam.adapter.web.dto.request;
 
 import lombok.Data;
 
 @Data
-public class CreateMenuReq {
+public class UpdateMenuReq {
   private String name;
   private Long parentId;
   private String path;
@@ -11,5 +11,4 @@ public class CreateMenuReq {
   private Integer orderNo;
   private String permission;
   private Integer type;
-  private Long tenantId;
 }
