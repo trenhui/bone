@@ -4,7 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.bone.masterdata.adapter.web.converter.MasterDataFieldWebConverter;
-import com.bone.masterdata.adapter.web.dto.req.CreateMasterDataFieldReq;
+import com.bone.masterdata.adapter.web.dto.request.CreateMasterDataFieldReq;
 import com.bone.masterdata.application.command.cmd.CreateMasterDataFieldCommand;
 import com.bone.masterdata.application.command.handler.CreateMasterDataFieldHandler;
 import com.bone.masterdata.application.query.handler.MasterDataFieldListQueryHandler;

@@ -3,7 +3,7 @@ package com.bone.masterdata.adapter.web.controller;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.masterdata.adapter.web.converter.MasterDataFieldWebConverter;
-import com.bone.masterdata.adapter.web.dto.req.CreateMasterDataFieldReq;
+import com.bone.masterdata.adapter.web.dto.request.CreateMasterDataFieldReq;
 import com.bone.masterdata.application.command.cmd.CreateMasterDataFieldCommand;
 import com.bone.masterdata.application.command.handler.CreateMasterDataFieldHandler;
 import com.bone.masterdata.application.query.dto.MasterDataFieldDTO;

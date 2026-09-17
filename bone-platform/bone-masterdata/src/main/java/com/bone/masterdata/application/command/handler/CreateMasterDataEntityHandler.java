@@ -4,10 +4,10 @@ import com.bone.core.capability.Capability;
 import com.bone.core.exception.BizException;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.masterdata.application.command.cmd.CreateMasterDataEntityCommand;
+import com.bone.masterdata.application.query.port.MasterDataQueryPort;
 import com.bone.masterdata.domain.entity.MasterDataEntity;
 import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityName;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
-import com.bone.metadata.sdk.query.criteria.Criteria;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,16 +25,13 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class CreateMasterDataEntityHandler {
   private final MasterDataEntityRepository entityRepository;
+  private final MasterDataQueryPort masterDataQueryPort;
 
   @Transactional
   public Long handle(CreateMasterDataEntityCommand cmd) {
     MasterDataEntityName entityName = MasterDataEntityName.of(cmd.getName());
 
-    long existing =
-        entityRepository.countByCriteria(
-            Criteria.<MasterDataEntity>create()
-                .entityClass(MasterDataEntity.class)
-                .eq("name", entityName));
+    long existing = masterDataQueryPort.countEntityByName(entityName);
     if (existing > 0) {
       throw BizException.of("主数据实体名称已存在");
     }

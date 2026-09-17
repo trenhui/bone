@@ -1,13 +1,13 @@
 package com.bone.masterdata.application.command.handler;
 
 import com.bone.core.util.DistributedIdGenerator;
+import com.bone.masterdata.application.query.port.MasterDataQueryPort;
 import com.bone.masterdata.domain.entity.MasterDataEntity;
 import com.bone.masterdata.domain.gateway.MetaEntityCatalogPort;
 import com.bone.masterdata.domain.gateway.MetaEntityCatalogPort.MetaEntityRow;
 import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityName;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
-import com.bone.metadata.sdk.query.criteria.Criteria;
-import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,16 +19,13 @@ public class ConvertFromBusinessEntityHandler {
 
   private final MasterDataEntityRepository entityRepository;
   private final MetaEntityCatalogPort metaEntityCatalogPort;
+  private final MasterDataQueryPort masterDataQueryPort;
 
   @Transactional
   public Long handle(Long metaEntityId) {
-    List<MasterDataEntity> existing =
-        entityRepository.findByCriteria(
-            Criteria.<MasterDataEntity>create()
-                .entityClass(MasterDataEntity.class)
-                .eq("metaEntityId", metaEntityId));
-    if (!existing.isEmpty()) {
-      return existing.get(0).getId();
+    Optional<Long> existingId = masterDataQueryPort.findEntityIdByMetaEntityId(metaEntityId);
+    if (existingId.isPresent()) {
+      return existingId.get();
     }
 
     MetaEntityRow meta = metaEntityCatalogPort.requirePublished(metaEntityId);

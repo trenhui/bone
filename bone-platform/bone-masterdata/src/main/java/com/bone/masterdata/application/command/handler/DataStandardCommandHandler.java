@@ -6,11 +6,11 @@ import com.bone.core.util.DistributedIdGenerator;
 import com.bone.masterdata.application.command.cmd.CreateDataStandardCommand;
 import com.bone.masterdata.application.command.cmd.DeleteDataStandardCommand;
 import com.bone.masterdata.application.command.cmd.UpdateDataStandardCommand;
+import com.bone.masterdata.application.query.port.MasterDataQueryPort;
 import com.bone.masterdata.domain.repository.DataStandardRepository;
 import com.bone.masterdata.domain.standard.DataStandard;
 import com.bone.masterdata.domain.standard.vo.StandardFieldCode;
 import com.bone.masterdata.domain.standard.vo.StandardRuleType;
-import com.bone.metadata.sdk.query.criteria.Criteria;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,15 +30,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class DataStandardCommandHandler {
   private final DataStandardRepository dataStandardRepository;
+  private final MasterDataQueryPort masterDataQueryPort;
 
   public Long create(CreateDataStandardCommand cmd) {
     StandardFieldCode fieldCode = StandardFieldCode.of(cmd.getFieldCode());
     long count =
-        dataStandardRepository.countByCriteria(
-            Criteria.<DataStandard>create()
-                .entityClass(DataStandard.class)
-                .eq("entityCode", cmd.getEntityCode())
-                .eq("fieldCode", fieldCode));
+        masterDataQueryPort.countStandardByEntityCodeAndFieldCode(cmd.getEntityCode(), fieldCode);
     if (count > 0) {
       throw BizException.of("该字段已存在数据标准: " + cmd.getEntityCode() + "/" + cmd.getFieldCode());
     }

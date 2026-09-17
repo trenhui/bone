@@ -1,4 +1,4 @@
-package com.bone.masterdata.adapter.web.dto.req;
+package com.bone.masterdata.adapter.web.dto.request;
 
 import java.util.Map;
 import lombok.Data;

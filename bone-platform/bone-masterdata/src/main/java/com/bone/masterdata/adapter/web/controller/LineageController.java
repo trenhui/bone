@@ -2,7 +2,7 @@ package com.bone.masterdata.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.core.web.PlatformApiPaths;
-import com.bone.masterdata.adapter.web.dto.req.RecordLineageReq;
+import com.bone.masterdata.adapter.web.dto.request.RecordLineageReq;
 import com.bone.masterdata.application.command.cmd.RecordLineageCommand;
 import com.bone.masterdata.application.command.handler.LineageRecordCommandHandler;
 import com.bone.masterdata.application.query.dto.LineageRecordDTO;

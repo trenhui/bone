@@ -1,8 +1,6 @@
 package com.bone.masterdata.infrastructure.config;
 
-import com.bone.masterdata.domain.repository.DataQualityRuleRepository;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
-import com.bone.masterdata.domain.repository.MasterDataFieldRepository;
 import com.bone.masterdata.domain.repository.MasterDataRecordRepository;
 import com.bone.masterdata.domain.service.entity.MasterDataEntityService;
 import com.bone.masterdata.domain.service.quality.DataQualityService;
@@ -16,8 +14,8 @@ public class DomainServiceConfiguration {
 
   @Bean
   public MasterDataEntityService masterDataEntityService(
-      MasterDataEntityRepository entityRepository, MasterDataFieldRepository fieldRepository) {
-    return new MasterDataEntityService(entityRepository, fieldRepository);
+      MasterDataEntityRepository entityRepository) {
+    return new MasterDataEntityService(entityRepository);
   }
 
   @Bean
@@ -27,8 +25,7 @@ public class DomainServiceConfiguration {
   }
 
   @Bean
-  public DataQualityService dataQualityService(
-      DataQualityRuleRepository ruleRepository, MasterDataRecordRepository recordRepository) {
-    return new DataQualityService(ruleRepository, recordRepository);
+  public DataQualityService dataQualityService() {
+    return new DataQualityService();
   }
 }

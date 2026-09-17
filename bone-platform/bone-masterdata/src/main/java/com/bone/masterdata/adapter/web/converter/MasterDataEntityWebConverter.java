@@ -1,8 +1,8 @@
 package com.bone.masterdata.adapter.web.converter;
 
-import com.bone.masterdata.adapter.web.dto.req.CreateMasterDataEntityReq;
-import com.bone.masterdata.adapter.web.dto.req.UpdateMasterDataEntityReq;
-import com.bone.masterdata.adapter.web.dto.resp.MasterDataEntityDetailResp;
+import com.bone.masterdata.adapter.web.dto.request.CreateMasterDataEntityReq;
+import com.bone.masterdata.adapter.web.dto.request.UpdateMasterDataEntityReq;
+import com.bone.masterdata.adapter.web.dto.response.MasterDataEntityDetailResp;
 import com.bone.masterdata.application.command.cmd.CreateMasterDataEntityCommand;
 import com.bone.masterdata.application.command.cmd.UpdateMasterDataEntityCommand;
 import com.bone.masterdata.application.query.dto.MasterDataEntityDTO;

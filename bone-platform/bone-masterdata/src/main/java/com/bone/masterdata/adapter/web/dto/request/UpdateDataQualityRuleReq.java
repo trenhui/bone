@@ -1,11 +1,9 @@
-package com.bone.masterdata.adapter.web.dto.req;
+package com.bone.masterdata.adapter.web.dto.request;
 
 import lombok.Data;
 
 @Data
-public class CreateDataQualityRuleReq {
-  private Long masterDataEntityId;
-  private Long masterDataFieldId;
+public class UpdateDataQualityRuleReq {
   private String name;
   private String ruleType;
   private String ruleConfig;

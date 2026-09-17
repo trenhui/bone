@@ -1,8 +1,8 @@
 package com.bone.masterdata.adapter.web.converter;
 
-import com.bone.masterdata.adapter.web.dto.req.CreateDataStandardReq;
-import com.bone.masterdata.adapter.web.dto.req.UpdateDataStandardReq;
-import com.bone.masterdata.adapter.web.dto.resp.DataStandardResp;
+import com.bone.masterdata.adapter.web.dto.request.CreateDataStandardReq;
+import com.bone.masterdata.adapter.web.dto.request.UpdateDataStandardReq;
+import com.bone.masterdata.adapter.web.dto.response.DataStandardResp;
 import com.bone.masterdata.application.command.cmd.CreateDataStandardCommand;
 import com.bone.masterdata.application.command.cmd.UpdateDataStandardCommand;
 import com.bone.masterdata.application.query.dto.DataStandardDTO;

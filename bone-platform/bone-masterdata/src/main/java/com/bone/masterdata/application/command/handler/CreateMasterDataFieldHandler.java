@@ -5,12 +5,12 @@ import com.bone.core.exception.BizException;
 import com.bone.core.exception.NotFoundException;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.masterdata.application.command.cmd.CreateMasterDataFieldCommand;
+import com.bone.masterdata.application.query.port.MasterDataQueryPort;
 import com.bone.masterdata.domain.entity.MasterDataField;
 import com.bone.masterdata.domain.model.field.vo.FieldCode;
 import com.bone.masterdata.domain.model.field.vo.FieldName;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
 import com.bone.masterdata.domain.repository.MasterDataFieldRepository;
-import com.bone.metadata.sdk.query.criteria.Criteria;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class CreateMasterDataFieldHandler {
   private final MasterDataFieldRepository fieldRepository;
   private final MasterDataEntityRepository entityRepository;
+  private final MasterDataQueryPort masterDataQueryPort;
 
   @Transactional
   public Long handle(CreateMasterDataFieldCommand cmd) {
@@ -38,11 +39,8 @@ public class CreateMasterDataFieldHandler {
     }
 
     long existing =
-        fieldRepository.countByCriteria(
-            Criteria.<MasterDataField>create()
-                .entityClass(MasterDataField.class)
-                .eq("masterDataEntityId", cmd.getMasterDataEntityId())
-                .eq("name", FieldName.of(cmd.getName())));
+        masterDataQueryPort.countFieldByEntityIdAndName(
+            cmd.getMasterDataEntityId(), FieldName.of(cmd.getName()));
     if (existing > 0) {
       throw BizException.of("字段名称已存在");
     }

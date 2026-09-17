@@ -4,7 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.bone.masterdata.adapter.web.converter.DataQualityWebConverter;
-import com.bone.masterdata.adapter.web.dto.req.CreateDataQualityRuleReq;
+import com.bone.masterdata.adapter.web.dto.request.CreateDataQualityRuleReq;
 import com.bone.masterdata.application.command.cmd.CreateDataQualityRuleCommand;
 import com.bone.masterdata.application.command.cmd.PerformDataQualityCheckCommand;
 import com.bone.masterdata.application.command.handler.CreateDataQualityRuleHandler;

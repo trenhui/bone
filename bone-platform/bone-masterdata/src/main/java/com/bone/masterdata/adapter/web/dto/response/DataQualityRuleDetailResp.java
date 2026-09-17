@@ -1,4 +1,4 @@
-package com.bone.masterdata.adapter.web.dto.resp;
+package com.bone.masterdata.adapter.web.dto.response;
 
 import java.util.Date;
 import lombok.Builder;

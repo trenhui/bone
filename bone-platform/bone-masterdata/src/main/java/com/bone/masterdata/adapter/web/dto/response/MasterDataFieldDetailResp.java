@@ -1,20 +1,22 @@
-package com.bone.masterdata.adapter.web.dto.req;
+package com.bone.masterdata.adapter.web.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonAlias;
+import java.util.Date;
+import lombok.Builder;
 import lombok.Data;
 
 @Data
-public class CreateMasterDataFieldReq {
+@Builder
+public class MasterDataFieldDetailResp {
+  private Long id;
   private Long masterDataEntityId;
   private String name;
   private String code;
-
-  @JsonAlias("fieldType")
   private String type;
-
   private Integer length;
   private Boolean required;
   private String defaultValue;
   private String description;
   private Integer sortOrder;
+  private Date createdAt;
+  private Date updatedAt;
 }

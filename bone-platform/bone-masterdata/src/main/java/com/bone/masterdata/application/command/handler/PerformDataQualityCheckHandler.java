@@ -4,12 +4,16 @@ import com.bone.core.capability.Capability;
 import com.bone.core.exception.NotFoundException;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.masterdata.application.command.cmd.PerformDataQualityCheckCommand;
+import com.bone.masterdata.application.query.port.DataQualityQueryPort;
+import com.bone.masterdata.domain.quality.DataQualityRule;
 import com.bone.masterdata.domain.quality.QualityCheck;
 import com.bone.masterdata.domain.quality.QualityReport;
+import com.bone.masterdata.domain.record.MasterDataRecord;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
 import com.bone.masterdata.domain.repository.QualityCheckRepository;
 import com.bone.masterdata.domain.repository.QualityReportRepository;
 import com.bone.masterdata.domain.service.quality.DataQualityService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +34,7 @@ public class PerformDataQualityCheckHandler {
   private final QualityCheckRepository qualityCheckRepository;
   private final QualityReportRepository qualityReportRepository;
   private final MasterDataEntityRepository entityRepository;
+  private final DataQualityQueryPort dataQualityQueryPort;
 
   @Transactional
   public Long handle(PerformDataQualityCheckCommand cmd) {
@@ -38,8 +43,13 @@ public class PerformDataQualityCheckHandler {
     }
 
     Long checkId = DistributedIdGenerator.generateLongId();
+    List<DataQualityRule> rules =
+        dataQualityQueryPort.findRulesByMasterDataEntityId(cmd.getMasterDataEntityId());
+    List<MasterDataRecord> records =
+        dataQualityQueryPort.findRecordsByMasterDataEntityId(cmd.getMasterDataEntityId());
     QualityCheck check =
-        dataQualityService.performQualityCheck(checkId, cmd.getMasterDataEntityId());
+        dataQualityService.performQualityCheck(
+            checkId, cmd.getMasterDataEntityId(), rules, records);
     qualityCheckRepository.insert(check);
 
     Long reportId = DistributedIdGenerator.generateLongId();

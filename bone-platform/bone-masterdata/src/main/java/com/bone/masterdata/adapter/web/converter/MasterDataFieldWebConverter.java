@@ -1,8 +1,8 @@
 package com.bone.masterdata.adapter.web.converter;
 
-import com.bone.masterdata.adapter.web.dto.req.CreateMasterDataFieldReq;
-import com.bone.masterdata.adapter.web.dto.req.UpdateMasterDataFieldReq;
-import com.bone.masterdata.adapter.web.dto.resp.MasterDataFieldDetailResp;
+import com.bone.masterdata.adapter.web.dto.request.CreateMasterDataFieldReq;
+import com.bone.masterdata.adapter.web.dto.request.UpdateMasterDataFieldReq;
+import com.bone.masterdata.adapter.web.dto.response.MasterDataFieldDetailResp;
 import com.bone.masterdata.application.command.cmd.CreateMasterDataFieldCommand;
 import com.bone.masterdata.application.command.cmd.UpdateMasterDataFieldCommand;
 import com.bone.masterdata.application.query.dto.MasterDataFieldDTO;

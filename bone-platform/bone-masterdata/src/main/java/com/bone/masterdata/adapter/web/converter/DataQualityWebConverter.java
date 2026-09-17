@@ -1,8 +1,8 @@
 package com.bone.masterdata.adapter.web.converter;
 
-import com.bone.masterdata.adapter.web.dto.req.CreateDataQualityRuleReq;
-import com.bone.masterdata.adapter.web.dto.req.UpdateDataQualityRuleReq;
-import com.bone.masterdata.adapter.web.dto.resp.DataQualityRuleDetailResp;
+import com.bone.masterdata.adapter.web.dto.request.CreateDataQualityRuleReq;
+import com.bone.masterdata.adapter.web.dto.request.UpdateDataQualityRuleReq;
+import com.bone.masterdata.adapter.web.dto.response.DataQualityRuleDetailResp;
 import com.bone.masterdata.application.command.cmd.CreateDataQualityRuleCommand;
 import com.bone.masterdata.application.command.cmd.UpdateDataQualityRuleCommand;
 import com.bone.masterdata.application.query.dto.DataQualityRuleDTO;

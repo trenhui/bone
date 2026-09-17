@@ -6,17 +6,12 @@ import com.bone.masterdata.domain.quality.DataQualityRule;
 import com.bone.masterdata.domain.quality.QualityCheck;
 import com.bone.masterdata.domain.quality.QualityReport;
 import com.bone.masterdata.domain.record.MasterDataRecord;
-import com.bone.masterdata.domain.repository.DataQualityRuleRepository;
-import com.bone.masterdata.domain.repository.MasterDataRecordRepository;
-import com.bone.metadata.sdk.query.criteria.Criteria;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 
 /** 数据质量领域服务 处理数据质量规则相关的业务逻辑 */
 @RequiredArgsConstructor
 public class DataQualityService {
-  private final DataQualityRuleRepository ruleRepository;
-  private final MasterDataRecordRepository recordRepository;
 
   public DataQualityRule createRule(
       Long id,
@@ -30,21 +25,17 @@ public class DataQualityService {
         id, masterDataEntityId, name, type, expression, severity, description);
   }
 
-  public QualityCheck performQualityCheck(Long checkId, Long masterDataEntityId) {
+  /**
+   * 执行数据质量检查。
+   *
+   * <p>规则与记录的读取属于读侧查询，由应用层（允许使用 Criteria/QueryBuilder）完成并传入；领域服务只负责基于传入数据执行检查计算。
+   */
+  public QualityCheck performQualityCheck(
+      Long checkId,
+      Long masterDataEntityId,
+      List<DataQualityRule> rules,
+      List<MasterDataRecord> records) {
     QualityCheck check = QualityCheck.create(checkId, masterDataEntityId);
-
-    // 获取实体的所有规则
-    List<DataQualityRule> rules =
-        ruleRepository.findByCriteria(
-            Criteria.<DataQualityRule>create()
-                .entityClass(DataQualityRule.class)
-                .eq("masterDataEntityId", masterDataEntityId));
-
-    List<MasterDataRecord> records =
-        recordRepository.findByCriteria(
-            Criteria.<MasterDataRecord>create()
-                .entityClass(MasterDataRecord.class)
-                .eq("masterDataEntityId", masterDataEntityId));
 
     // 执行质量检查逻辑（简化实现）
     int totalRecords = records.size();
