@@ -981,4 +981,71 @@ public final class BoneDddArchRules {
                 + "only the SDK base (metadata-sdk / extension-sdk) may be consumed")
         .allowEmptyShould(true);
   }
+
+  // =========================================================================
+  // E-5.4 DomainEvent 发布前置判断：save() 必须配 publishFrom() 或声明豁免
+  // =========================================================================
+
+  /**
+   * E-5.4（Advisory → Hard gate）：application 层的 CommandHandler / ApplicationService / Orchestrator
+   * 凡调用了 {@code *.Repository.save()}，必须满足以下二选一：
+   *
+   * <ol>
+   *   <li>同一类中也有 {@code publishFrom()} 调用（不管是否在同一方法内——TransactionTemplate 两段式是合法的）
+   *   <li>类级别声明 {@code @NoDomainEvent}，且被注解标记的聚合方法必须在 JavaDoc 中说明豁免理由（E-5.4）
+   * </ol>
+   *
+   * <p>EventHandler 不参与此规则——事件驱动场景下 save → publishFrom 是不同 handler 的独立职责。
+   */
+  public static ArchRule applicationSaveMustPairWithPublishOrExempt() {
+    return classes()
+        .that()
+        .resideInAPackage("..application..")
+        .and()
+        .haveSimpleNameNotEndingWith("EventHandler")
+        .and()
+        .areNotInterfaces()
+        .and()
+        .doNotHaveModifier(JavaModifier.ABSTRACT)
+        .should(savePairedWithPublishFromOrExempt())
+        .as("E-5.4: application 层 Repository.save() 必须配 publishFrom() 或声明 @NoDomainEvent")
+        .because("E-5.4 DomainEvent 发布前置判断：save() 后缺 publishFrom() 既非豁免也无 @NoDomainEvent 视为违规");
+  }
+
+  private static ArchCondition<JavaClass> savePairedWithPublishFromOrExempt() {
+    return new ArchCondition<>(
+        "have publishFrom() call for every Repository.save() call (or use @NoDomainEvent)") {
+      @Override
+      public void check(JavaClass item, ConditionEvents events) {
+        // @NoDomainEvent 注解标记的类整体豁免
+        if (item.isAnnotatedWith("com.bone.core.annotation.NoDomainEvent")) {
+          return;
+        }
+        boolean hasRepositorySave =
+            item.getMethodCallsFromSelf().stream()
+                .anyMatch(
+                    call ->
+                        "save".equals(call.getTarget().getName())
+                            && call.getTarget().getOwner().getName().endsWith("Repository"));
+        if (!hasRepositorySave) {
+          return;
+        }
+        boolean hasPublishFrom =
+            item.getMethodCallsFromSelf().stream()
+                .anyMatch(call -> "publishFrom".equals(call.getTarget().getName()));
+        if (!hasPublishFrom) {
+          events.add(
+              new SimpleConditionEvent(
+                  item,
+                  false,
+                  String.format(
+                      "%s 存在 Repository.save() 但无 publishFrom()。"
+                          + "若该状态迁移属 E-5.4 三类豁免（内部状态迁移/终态/技术中间态），"
+                          + "请在类上声明 @NoDomainEvent 并确保聚合方法 JavaDoc 说明豁免理由；"
+                          + "否则需补充 publishFrom()。",
+                      item.getFullName())));
+        }
+      }
+    };
+  }
 }

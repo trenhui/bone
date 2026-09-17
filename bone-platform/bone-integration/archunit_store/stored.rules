@@ -1,5 +1,5 @@
 #
-#Thu Sep 10 18:38:59 CST 2026
+#Wed Sep 16 18:15:09 CST 2026
 no\ classes\ should\ reside\ in\ a\ package\ '..domain.store..',\ because\ DDD\ \u00A714.5\:\ new\ code\ uses\ domain.repository\ only=dd12a632-cdf9-4946-99ac-3ea1e614de9c
 no\ classes\ that\ reside\ outside\ of\ package\ 'com.bone.core..'\ should\ have\ simple\ name\ ending\ with\ 'BusinessException',\ because\ DDD\ \u00A716.3\:\ prefer\ *BizException\ or\ extend\ com.bone.core.exception.BizException=ae3c10e6-abb3-4df1-a8c4-d2c5602f1132
 no\ classes\ that\ reside\ outside\ of\ package\ 'com.bone.core..'\ should\ depend\ on\ classes\ that\ reside\ in\ a\ package\ 'com.bone.core.usecase..',\ because\ DDD\ P0-7\:\ com.bone.core.usecase\ was\ removed;\ use\ Handler\ +\ com.bone.core.capability=c8122709-9e1b-4504-856b-9604a2a58bc5
@@ -13,4 +13,5 @@ no\ classes\ that\ reside\ in\ a\ package\ '..adapter..controller..'\ should\ de
 no\ classes\ that\ reside\ in\ a\ package\ '..adapter..controller..'\ should\ depend\ on\ classes\ that\ reside\ in\ a\ package\ '..domain.repository..',\ because\ DDD\ \u00A715\:\ adapter\ must\ not\ inject\ domain.repository;\ use\ Handler=556be5e2-2227-4b45-89b0-1fe227a20abb
 no\ classes\ that\ reside\ in\ a\ package\ '..application..'\ should\ have\ simple\ name\ ending\ with\ 'UseCase',\ because\ DDD\ \u00A714.3\:\ forbid\ *UseCase;\ Controller\ injects\ Handler=36cf45be-81a2-4f9b-a273-ab91aebd7d8f
 no\ classes\ that\ reside\ in\ a\ package\ '..application..'\ should\ depend\ on\ classes\ that\ reside\ in\ any\ package\ ['..infrastructure..'],\ because\ DDD\ P0-1\:\ application\ must\ not\ depend\ on\ infrastructure\ implementations=62692c39-9ffe-4503-99b6-c199ecfb2a3e
+no\ classes\ that\ reside\ in\ a\ package\ '..adapter..controller..'\ should\ depend\ on\ classes\ that\ reside\ in\ a\ package\ '..application..'\ and\ simple\ name\ starting\ with\ 'Common'\ or\ simple\ name\ starting\ with\ 'Base'\ or\ simple\ name\ starting\ with\ 'Business'\ or\ simple\ name\ ending\ with\ 'Manager',\ because\ DDD\ \u00A715\ +\ ADR-0028\:\ adapter\ must\ not\ inject\ anemic\ god-objects\ (Common/Base/Business/*Manager)\ in\ application;\ a\ well-named\ *ApplicationService\ is\ a\ valid\ default\ inbound\ entry=462f9c4f-3dd7-45e0-b1aa-05ba30366183
 no\ classes\ that\ have\ simple\ name\ 'IntegrationOutboxRelayJob'\ should\ depend\ on\ classes\ that\ have\ simple\ name\ 'IntegrationOutboxRelay',\ because\ CORE-02\uFF1Aadapter/schedule/*Job\ \u987B\u7ECF\u7AEF\u53E3\uFF0C\u7981\u6B62\u76F4\u6CE8\ infrastructure\ \u5B9E\u73B0=fd6402f9-2e24-41b9-9c48-63601f85e0bb
