@@ -1,26 +1,26 @@
-package com.bone.system.adapter.web.dto.resp;
+package com.bone.system.adapter.web.dto.response;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/** 告警规则响应 */
+/** 告警事件响应 */
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AlertRuleResp {
+public class AlertRecordResp {
   private Long id;
-  private String name;
-  private String description;
+  private Long alertRuleId;
+  private String ruleName;
   private String metricName;
+  private double actualValue;
   private double threshold;
   private String alertLevel;
-  private List<String> notificationChannels;
-  private boolean enabled;
+  private String message;
+  private String status;
   private LocalDateTime createdAt;
-  private LocalDateTime updatedAt;
+  private LocalDateTime resolveTime;
 }

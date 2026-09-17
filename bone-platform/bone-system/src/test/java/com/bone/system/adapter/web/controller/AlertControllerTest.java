@@ -10,11 +10,11 @@ import static org.mockito.Mockito.when;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import com.bone.system.adapter.web.converter.AlertWebConverter;
-import com.bone.system.adapter.web.dto.req.AlertRulePageReq;
-import com.bone.system.adapter.web.dto.req.CreateAlertRuleReq;
-import com.bone.system.adapter.web.dto.req.UpdateAlertRuleReq;
-import com.bone.system.adapter.web.dto.resp.AlertRecordResp;
-import com.bone.system.adapter.web.dto.resp.AlertRuleResp;
+import com.bone.system.adapter.web.dto.request.AlertRulePageReq;
+import com.bone.system.adapter.web.dto.request.CreateAlertRuleReq;
+import com.bone.system.adapter.web.dto.request.UpdateAlertRuleReq;
+import com.bone.system.adapter.web.dto.response.AlertRecordResp;
+import com.bone.system.adapter.web.dto.response.AlertRuleResp;
 import com.bone.system.application.command.cmd.CreateAlertRuleCommand;
 import com.bone.system.application.command.cmd.DisableAlertRuleCommand;
 import com.bone.system.application.command.cmd.EnableAlertRuleCommand;
@@ -161,8 +161,8 @@ public class AlertControllerTest {
     when(alertQueryHandler.pageEvents(1, 10))
         .thenReturn(PageResult.of(Collections.emptyList(), 0L, 1, 10));
 
-    com.bone.system.adapter.web.dto.req.AlertRecordPageReq req =
-        new com.bone.system.adapter.web.dto.req.AlertRecordPageReq();
+    com.bone.system.adapter.web.dto.request.AlertRecordPageReq req =
+        new com.bone.system.adapter.web.dto.request.AlertRecordPageReq();
     req.setPageNum(1);
     req.setPageSize(10);
     ApiResponse<PageResult<AlertRecordResp>> apiResponse = alertController.pageEvents(req);

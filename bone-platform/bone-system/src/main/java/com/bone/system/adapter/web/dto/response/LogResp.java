@@ -1,4 +1,4 @@
-package com.bone.system.adapter.web.dto.resp;
+package com.bone.system.adapter.web.dto.response;
 
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;

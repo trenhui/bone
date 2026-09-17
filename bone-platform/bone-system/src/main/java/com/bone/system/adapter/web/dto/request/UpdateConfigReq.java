@@ -1,4 +1,4 @@
-package com.bone.system.adapter.web.dto.req;
+package com.bone.system.adapter.web.dto.request;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;

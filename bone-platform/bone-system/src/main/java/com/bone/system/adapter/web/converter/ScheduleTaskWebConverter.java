@@ -1,8 +1,8 @@
 package com.bone.system.adapter.web.converter;
 
-import com.bone.system.adapter.web.dto.req.CreateScheduleTaskReq;
-import com.bone.system.adapter.web.dto.req.UpdateScheduleTaskReq;
-import com.bone.system.adapter.web.dto.resp.ScheduleTaskResp;
+import com.bone.system.adapter.web.dto.request.CreateScheduleTaskReq;
+import com.bone.system.adapter.web.dto.request.UpdateScheduleTaskReq;
+import com.bone.system.adapter.web.dto.response.ScheduleTaskResp;
 import com.bone.system.application.command.cmd.CreateScheduleTaskCommand;
 import com.bone.system.application.command.cmd.UpdateScheduleTaskCommand;
 import com.bone.system.application.query.dto.ScheduleTaskDTO;

@@ -193,8 +193,8 @@ com.bone.{module}
 │   ├── controller/            # REST Controller
 │   ├── converter/             # DTO <-> Command/Query 组装器
 │   └── dto/
-│       ├── req/               # 请求 DTO
-│       └── resp/              # 响应 DTO
+│       ├── request/           # 请求 DTO
+│       └── response/          # 响应 DTO
 ├── application/               # 应用层（用例编排）
 │   ├── command/
 │   │   ├── cmd/               # 命令对象

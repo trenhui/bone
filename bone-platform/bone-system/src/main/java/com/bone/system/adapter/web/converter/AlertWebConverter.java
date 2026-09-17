@@ -1,11 +1,11 @@
 package com.bone.system.adapter.web.converter;
 
-import com.bone.system.adapter.web.dto.req.AlertRecordPageReq;
-import com.bone.system.adapter.web.dto.req.AlertRulePageReq;
-import com.bone.system.adapter.web.dto.req.CreateAlertRuleReq;
-import com.bone.system.adapter.web.dto.req.UpdateAlertRuleReq;
-import com.bone.system.adapter.web.dto.resp.AlertRecordResp;
-import com.bone.system.adapter.web.dto.resp.AlertRuleResp;
+import com.bone.system.adapter.web.dto.request.AlertRecordPageReq;
+import com.bone.system.adapter.web.dto.request.AlertRulePageReq;
+import com.bone.system.adapter.web.dto.request.CreateAlertRuleReq;
+import com.bone.system.adapter.web.dto.request.UpdateAlertRuleReq;
+import com.bone.system.adapter.web.dto.response.AlertRecordResp;
+import com.bone.system.adapter.web.dto.response.AlertRuleResp;
 import com.bone.system.application.command.cmd.CreateAlertRuleCommand;
 import com.bone.system.application.command.cmd.UpdateAlertRuleCommand;
 import com.bone.system.application.query.dto.AlertRecordDTO;

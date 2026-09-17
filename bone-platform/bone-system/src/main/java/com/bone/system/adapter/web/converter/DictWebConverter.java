@@ -1,8 +1,8 @@
 package com.bone.system.adapter.web.converter;
 
-import com.bone.system.adapter.web.dto.req.CreateDictReq;
-import com.bone.system.adapter.web.dto.req.UpdateDictReq;
-import com.bone.system.adapter.web.dto.resp.DictResp;
+import com.bone.system.adapter.web.dto.request.CreateDictReq;
+import com.bone.system.adapter.web.dto.request.UpdateDictReq;
+import com.bone.system.adapter.web.dto.response.DictResp;
 import com.bone.system.application.command.cmd.CreateDictCommand;
 import com.bone.system.application.command.cmd.UpdateDictCommand;
 import com.bone.system.application.query.dto.DictDTO;
