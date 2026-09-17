@@ -47,7 +47,7 @@
 1. **创建订单**：`checkStock` → 持久化订单 + 明细 → 发 `OrderCreatedEvent` → **AFTER_COMMIT** 逐条 `reserveStock`（远程调用不占 DB 事务，单条失败仅告警并留痕，见 `OrderCreatedEventHandler`）
 2. **发起支付**：加载订单（校验 CREATED）→ 创建 `Payment`（PENDING）→ `PaymentGateway.preCreatePayment` 预下单 → `markPaying` → 返回支付链接
 3. **支付回调**：`PaymentSignaturePort` **验签** → `Payment.confirmSuccess`（幂等 + 金额一致性校验）→ 发 `PaymentSucceededEvent` → `AFTER_COMMIT` 确认订单（`confirmPaid`）+ `confirmStock` → 同事务写 **Outbox** 中继 `OrderPaidIntegrationEvent`
-4. **查询支付单**：`PaymentReadPort.findById`（读侧直查，CQRS 读模型）
+4. **查询支付单**：`PaymentQueryPort.findById`（读侧直查，CQRS 读模型）
 5. **超时关闭**：`CloseExpiredPaymentJob` 定时扫描 PENDING/PAYING 超时单 → `Payment.close()`
 6. **退款**：`Payment.refund()`（**每单仅一次**；重复**同金额**幂等跳过、`false` + warn 留痕，**金额不一致抛错**；退 0 元 / 超付拒绝）→ 发 `PaymentRefundedEvent` → `AFTER_COMMIT` 确认订单退款（`Order.refund()`）+ `releaseStock`
 7. **取消订单**：聚合 `cancel()` → `AFTER_COMMIT` → `releaseStock`
@@ -70,7 +70,7 @@
 
 `Order` 聚合持有需持久化的 `List<OrderItem>` 集合，且明细有独立表 `t_order_item` 与独立写侧仓储 `OrderItemRepository`（位于 `domain.repository`，与 `OrderRepository` 同包），命中 E-6.3 的 **PO 分离信号**（聚合持有需持久化集合/嵌套实体，无 SDK 级联落库）。
 
-**当前过渡方案**：D1 充血聚合 + `CreateOrderCommandHandler` 显式逐条 `save(OrderItem)`，明细经读侧端口 `OrderReadPort.findOrderWithItems`（联表投影）读取。`OrderItem` 是 `Order` 聚合内实体，与 `Order` 同事务落库是在保存同一聚合；现有 R9 扫描只能按 Repository/聚合类型提示风险，不能独立证明事务语义。仓储端口统一放 `domain.repository`，**无需也不允许**靠包位置规避门禁（详见 `OrderItemRepository` 类注释）。读端口已按 v5.0 迁至 `application/query/port`（`OrderReadPort` / `PaymentReadPort`），配套行 DTO 置于 `application/query/dto`；原 `domain/gateway/*ReadPort` 与 `domain/{order,payment}/read` 已清理，无遗留存量。
+**当前过渡方案**：D1 充血聚合 + `CreateOrderCommandHandler` 显式逐条 `save(OrderItem)`，明细经读侧端口 `OrderQueryPort.findOrderWithItems`（联表投影）读取。`OrderItem` 是 `Order` 聚合内实体，与 `Order` 同事务落库是在保存同一聚合；现有 R9 扫描只能按 Repository/聚合类型提示风险，不能独立证明事务语义。仓储端口统一放 `domain.repository`，**无需也不允许**靠包位置规避门禁（详见 `OrderItemRepository` 类注释）。读端口已按 v5.0 迁至 `application/query/port`（`OrderQueryPort` / `PaymentQueryPort`），配套行 DTO 置于 `application/query/dto`；原 `domain/gateway/*ReadPort` 与 `domain/{order,payment}/read` 已清理，无遗留存量。
 
 **与 CORE-11 的偏差（显式登记）**：CORE-11 要求「聚合根是唯一持久化入口，子实体随根落盘，不为子实体建立独立聚合级 Repository」。本模块的 `OrderItemRepository` 与该条字面要求不符，属 **SDK 能力缺失导致的被迫偏差**，而非风格选择：Bone 元数据 SDK **不支持聚合级联落库**，`OrderRepository.save(order)` 不会持久化 `order.items`（且 `items` 标 `@Transient` 以避免 SDK 误映射为 `t_order` 列）。若无显式明细写入路径，订单明细将**静默丢失**。因此「显式逐条 `save(OrderItem)`」是 SDK 约束下的最小可行路径：`OrderItem` 仍是 `Order` 聚合内实体（**未**升格为聚合根），两次 save 在**同一事务**内完成，一致性边界仍等于 `Order` 聚合——CORE-11 的保护目标未被削弱，只是落库入口由「仅根」变为「根 + 子实体同事务双写」。**收敛路径**：SDK 支持聚合级联后即可删除 `OrderItemRepository`、明细随根落盘，恢复 CORE-11 完整合规（与下方 E-6.3 迁移条件同源）。
 
@@ -82,6 +82,24 @@
 
 - **新模块指引**：**新增强聚合**的跨聚合引用必须使用强类型 ID 值对象（`record OrderId(Long value)` 等，P-3.2 口径：构造期空值校验、无 setter），禁止裸 `Long`——编译期即可拦截「订单 ID / 客户 ID 写反」类静默数据错乱。
 - **本样板改造触发条件**：与 E-6.3 PO 分离联动——强类型 ID 的持久化转换依赖 Converter（E-6.3 的 PO/Converter 分离），而本模块聚合直接落库（无 PO 分层）。待 PO 分离落地后，随 `OrderItemPO` 一并引入 `OrderId` / `CustomerId`，避免二次返工。
+
+### E-10 domain 分组形态登记
+
+本模块 `domain/` 采用 **`domain/{aggregate}` 按聚合平铺**形态，**不采用** `domain/model/{aggregate|entity|valueobject|event}` 按构件角色分组的形态；同一 `domain` 包内**不得混用**两套分组标准。实际子包：
+
+| 子包 | 内容 |
+|---|---|
+| `domain/order`、`domain/payment` | 聚合根（`Order` / `Payment`）与聚合内实体（`OrderItem`） |
+| `{aggregate}/event` | 上下文内领域事件（`OrderPaidEvent` / `PaymentSucceededEvent` 等，过去式） |
+| `{aggregate}/valueobject` | 聚合内值对象（`OrderStatus` / `PaymentStatus` / `PaymentChannel` 等） |
+| `domain/shared/valueobject` | 跨聚合共享值对象（`Money`） |
+| `domain/repository` | 写侧聚合仓储接口（`OrderRepository` / `PaymentRepository` / `OrderItemRepository`） |
+| `domain/gateway` | 外部**业务**能力端口（`InventoryGateway` / `PaymentGateway`），按 E-4.3 只放业务事实 |
+| `domain/extension/order` | 定价策略业务端口（`OrderPriceCalculator`）；扩展引擎技术契约下沉到 `infrastructure/extension/order`，domain 不感知框架 |
+
+E-10 明确该平铺形态为**合法变体而非存量债务**，但要求「选择后在模块 README 登记」——本节即本模块的登记点，供后续评审与 `studio-generator` 生成目标对齐。
+
+**与 E-10 参考结构的另一处偏差（登记）**：参考结构给出 `infrastructure/persistence/OrderRepositoryImpl`（= `domain/repository` 的实现），本模块**不存在 `infrastructure/persistence` 包**——仓储由 Bone 元数据 SDK 的 `@EnableSqlRepositories` **运行时生成代理实现**，没有可手写的实现类。故写侧无 `*Impl`/`*PO` 落点，与 E-6.3 登记的 PO 分离缺口同源。
 
 ### 多租户
 
@@ -185,16 +203,16 @@ bash scripts/ci/collect-blueprint-compliance.sh
 | **多租户** | `TenantAggregateRoot` + 写侧 `findByIdInTenant`（`QueryParam` 条件，租户缺失即失败关闭）/ 读侧 SQL 显式 `tenant_id = :tenantId` + `X-Tenant-Id` 过滤器（生产由网关按 token claim 覆盖下发） |
 | **JWT 鉴权** | `SecurityConfig` + `JwtAuthenticationFilter`（框架 `AbstractJwtAuthenticationFilter`）；共享密钥离线验签，**不回调 IAM** |
 | **值对象 Money** | 金额规则集中在 `Money`（位于 `domain/shared/valueobject`，`Order` / `OrderItem` / **`Payment`** 共用——共享值对象独立成包，避免支付反向依赖订单包） |
-| **读侧 Join** | `OrderReadPort` + `findOrderWithItems.sql` 扁平投影 → `OrderDetailAssembler` |
+| **读侧 Join** | `OrderQueryPort` + `findOrderWithItems.sql` 扁平投影 → `OrderDetailAssembler` |
 | **扩展点** | 多实现价格计算器（VIP/企业/促销等） |
 | **独立支付聚合** | `Payment`（`bp_payment`）+ 状态机 + 幂等/金额校验回调（见下） |
-| **支付生命周期闭环** | 发起支付 → 渠道预下单 → 回调确认 → **查询**（`PaymentReadPort`）→ **超时关闭**（`CloseExpiredPaymentJob`）→ **退款**（`PaymentRefundedEvent` 驱动订单退款 + 释放库存） |
+| **支付生命周期闭环** | 发起支付 → 渠道预下单 → 回调确认 → **查询**（`PaymentQueryPort`）→ **超时关闭**（`CloseExpiredPaymentJob`）→ **退款**（`PaymentRefundedEvent` 驱动订单退款 + 释放库存） |
 | **Feign + `InventoryGateway`** | ACL 出站调用 + 预留/确认/释放流程 |
-| **CQRS 读侧** | 列表 / 详情均经读侧端口 SQL 投影（`OrderReadPort` / `PaymentReadPort`），写侧仓储不承载报表查询 |
+| **CQRS 读侧** | 列表 / 详情均经读侧端口 SQL 投影（`OrderQueryPort` / `PaymentQueryPort`），写侧仓储不承载报表查询 |
 | **MQ / 定时任务 / RPC** | 入站适配器形态示例（MQ 消费端幂等落库、DLQ、消费指标见上节） |
 | **幂等写（`Idempotency-Key`）** | `BlueprintIdempotencyService` + `IdempotencyStore`（落 `bp_idempotency_record`）+ 控制器取头；同键同 body 重放同一响应、同键异 body → 409 `COMMON_IDEMPOTENCY_CONFLICT`、TTL 24h（API 规范 §6.1/§8） |
 | **授权（Scope）** | 端点声明 `@PreAuthorize("hasAuthority('order:orders:read'/'order:orders:write')")`；scope 由 IAM 随 token 下发（API 规范 §9.2） |
-| **稳定错误码** | `common/BlueprintErrorCodes`（`BP_*`，登记于错误码登记 §6）；抛出统一用 `new BizException(HTTP 状态, 码 + ": " + 说明)`——`BizException(String)` 默认码是 **500**，会把 404/400 报成服务端故障 |
+| **稳定错误码** | `common/BlueprintErrorCodes`（`BP_*`，登记于错误码登记 §6）；抛出统一用 `new BizException(HTTP 状态, 码 + ": " + 说明)`——`BizException(String)` 默认码是 **500**，会把 404/400 报成服务端故障。**翻译成 HTTP 状态 + 错误信封由 bone-web 的 `BoneWebExceptionAutoConfiguration` 提供**（该处理器此前没有任何注册入口，是死代码 → 业务异常直落 servlet 容器变 500；已在框架侧补 auto-configuration，模块无需扫描/导入） |
 | **日志与链路** | `BoneRequestContextFilter`（MDC `traceId`/`tenantId`/`userId`/`httpRoute` + 每请求一条 `[API]` INFO + 回显 `X-Request-Id`）；身份在认证过滤器写入（安全链结束会清空 `SecurityContextHolder`）。**类名带 `Bone` 前缀是必需的**：Spring Boot 自动配置已注册名为 `requestContextFilter` 的 Bean，同名会启动即失败 |
 | **DDL 真源** | 表结构只在仓库根 `bone-init.sql`；模块内无建表脚本且 `spring.sql.init.mode: never`，避免双轨 DDL 漂移 |
 | **真实下单支付场景** | 独立 `Payment` 聚合（`bp_payment`）+ 状态机 + `PaymentGateway` 防腐 + **回调幂等**（`confirmSuccess`）+ 领域事件确认订单（跨聚合协作） |
@@ -261,7 +279,15 @@ scope 由 IAM 登录时按「账号 → 角色（含继承闭包）→ 权限」
 
 **已知未覆盖（登记，非遗漏）**：① 支付端点（`PaymentController`）尚未声明 scope——该文件正随验签端口迁移一起改动，
 避免同批冲突；② 渠道回调 `POST /api/v1/payments/callback` 目前仍要求认证，而真实渠道无法持有 JWT，生产需改为
-「白名单放行 + 验签即认证」或由网关代签内部凭证——与「验签迁到应用层」是同一次改造。
+「白名单放行 + 验签即认证」或由网关代签内部凭证——与「验签迁到应用层」是同一次改造；③ **本模块仍无装配级测试**
+（无 `@SpringBootTest` / MockMvc 契约 / Testcontainers 集成测试，`pom.xml` 缺测试依赖）。这不是形式主义：本轮实机验证抓到的
+4 个缺陷中有 3 个（Bean 名与框架冲突导致起不来、统一异常处理器未注册导致错误全变 500、SDK 读路径缺 `Instant` 转换导致读库
+500）**单测全绿也照样存在**——收敛路径是先补「上下文加载 + 一条 HTTP 主链路」，再谈覆盖率阈值。
+
+> **持久化模型的时间字段一律用 `Instant`**（UTC 语义，与领域事件一致），这依赖 bone-metadata-sdk 读路径的
+> `InstantConverter`——它此前缺失，表现为「写得进、读不出」（非空 DATETIME 列读取抛
+> `UnsupportedConversionException: LocalDateTime → Instant`）。该转换器已补入 SDK，时区口径与写入路径
+> （`ReservedColumnsHandler` 的 `atZone(systemDefault)`）对称，往返无损。
 
 ```bash
 # 启动（需本地 RocketMQ NameServer :9876）

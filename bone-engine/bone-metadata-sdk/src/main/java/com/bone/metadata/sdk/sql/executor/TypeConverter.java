@@ -66,6 +66,7 @@ public final class TypeConverter {
     registerConverter(Date.class, new DateConverter());
     registerConverter(LocalDateTime.class, new LocalDateTimeConverter());
     registerConverter(LocalDate.class, new LocalDateConverter());
+    registerConverter(Instant.class, new InstantConverter());
     registerConverter(Timestamp.class, new TimestampConverter());
     registerConverter(Long.class, new BigIntegerConverter());
   }
@@ -270,6 +271,51 @@ public final class TypeConverter {
               return null;
             }
           });
+    }
+  }
+
+  /**
+   * {@code Instant} 转换器。
+   *
+   * <p><b>为什么必须有它</b>:此前 {@code CONVERTERS} 未注册 {@code Instant}，实体/持久化模型里只要有一个 {@code Instant}
+   * 字段，读任何非空 DATETIME 列都会抛 {@code UnsupportedConversionException: LocalDateTime →
+   * Instant}——写进去读不出来， 表现为接口 500（已在 bone-blueprint 的幂等表与支付聚合上实机复现）。
+   *
+   * <p><b>时区口径与写入路径对称</b>：写 {@code Instant} 时 SDK 用 {@code
+   * instant.atZone(ZoneId.systemDefault()).toLocalDateTime()} 落库（见 {@code ReservedColumnsHandler}），
+   * 因此读回时同样按 {@code systemDefault} 还原，往返无损。
+   */
+  static class InstantConverter implements Converter<Instant> {
+    @Override
+    public Instant convert(Object value, Class<Instant> targetType) {
+      if (value instanceof Instant) return (Instant) value;
+      if (value instanceof Timestamp) return ((Timestamp) value).toInstant();
+      if (value instanceof java.util.Date) return ((java.util.Date) value).toInstant();
+      if (value instanceof LocalDateTime) {
+        return ((LocalDateTime) value).atZone(ZoneId.systemDefault()).toInstant();
+      }
+      if (value instanceof OffsetDateTime) return ((OffsetDateTime) value).toInstant();
+      if (value instanceof String) return parseInstant((String) value);
+      throw new TypeConversionException("Unsupported Instant conversion: " + value);
+    }
+
+    private Instant parseInstant(String value) {
+      try {
+        return Instant.parse(value);
+      } catch (DateTimeParseException ignored) {
+        // 兼容 "yyyy-MM-dd HH:mm:ss" 这类本地时间字符串（按 JVM 时区解释）
+        return parseDateTime(
+            value,
+            formatter -> {
+              try {
+                TemporalAccessor temporal = formatter.parse(value);
+                if (temporal instanceof Instant) return (Instant) temporal;
+                return LocalDateTime.from(temporal).atZone(ZoneId.systemDefault()).toInstant();
+              } catch (DateTimeParseException e) {
+                return null;
+              }
+            });
+      }
     }
   }
 

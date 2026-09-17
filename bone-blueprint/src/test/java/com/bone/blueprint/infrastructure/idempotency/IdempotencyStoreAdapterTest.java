@@ -10,7 +10,7 @@ import static org.mockito.Mockito.when;
 
 import com.bone.blueprint.application.port.out.IdempotencyStore;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,7 +42,7 @@ class IdempotencyStoreAdapterTest {
   @Test
   void findReturnsSnapshotWhenNotExpired() {
     when(repository.findByCriteria(any()))
-        .thenReturn(List.of(record(LocalDateTime.now().plus(Duration.ofHours(1)))));
+        .thenReturn(List.of(record(Instant.now().plus(Duration.ofHours(1)))));
 
     IdempotencyStore.Snapshot snapshot = adapter.find(SCOPE_KEY).orElseThrow();
 
@@ -53,7 +53,7 @@ class IdempotencyStoreAdapterTest {
   @Test
   void findTreatsExpiredRecordAsMiss() {
     when(repository.findByCriteria(any()))
-        .thenReturn(List.of(record(LocalDateTime.now().minus(Duration.ofHours(1)))));
+        .thenReturn(List.of(record(Instant.now().minus(Duration.ofHours(1)))));
 
     // 过期后同一 Idempotency-Key 可重新使用（TTL 24h）
     assertTrue(adapter.find(SCOPE_KEY).isEmpty());
@@ -72,24 +72,24 @@ class IdempotencyStoreAdapterTest {
     IdempotencyRecord saved = captor.getValue();
     assertEquals(7L, saved.getTenantId());
     assertEquals("fp-2", saved.getRequestFingerprint());
-    assertFalse(saved.expiredAt(LocalDateTime.now()));
+    assertFalse(saved.expiredAt(Instant.now()));
   }
 
   @Test
   void putRefreshesExistingRecord() {
-    IdempotencyRecord existing = record(LocalDateTime.now().plus(Duration.ofHours(1)));
+    IdempotencyRecord existing = record(Instant.now().plus(Duration.ofHours(1)));
     when(repository.findByCriteria(any())).thenReturn(List.of(existing));
 
     adapter.put(
         SCOPE_KEY, new IdempotencyStore.Snapshot("fp-3", "{\"status\":200}"), Duration.ofHours(24));
 
     assertEquals("fp-3", existing.getRequestFingerprint());
-    assertTrue(existing.getExpiresAt().isAfter(LocalDateTime.now().plus(Duration.ofHours(23))));
+    assertTrue(existing.getExpiresAt().isAfter(Instant.now().plus(Duration.ofHours(23))));
     verify(repository).update(existing);
     verify(repository, never()).insert(any());
   }
 
-  private static IdempotencyRecord record(LocalDateTime expiresAt) {
+  private static IdempotencyRecord record(Instant expiresAt) {
     return IdempotencyRecord.of(7L, SCOPE_KEY, "fp-1", "{\"status\":201}", expiresAt);
   }
 }

@@ -191,7 +191,7 @@ public class RepositoryFactoryBean<T, E, ID>
 
       MethodHandler handler =
           methodHandlers.computeIfAbsent(method, this::createHandlerForMissingMethod);
-      return handler.invoke(args != null ? args : new Object[0]);
+      return handler.invoke(proxy, args != null ? args : new Object[0]);
     }
 
     private MethodHandler createHandlerForMissingMethod(Method method) {
@@ -222,12 +222,21 @@ public class RepositoryFactoryBean<T, E, ID>
     }
   }
 
-  /** 方法处理器接口 */
+  /** 方法处理器接口（{@code proxy} 供默认方法处理器绑定接收者，见 {@link DefaultMethodHandler}）。 */
   private interface MethodHandler {
-    Object invoke(Object[] args) throws Throwable;
+    Object invoke(Object proxy, Object[] args) throws Throwable;
   }
 
-  /** 默认方法处理器 */
+  /**
+   * 默认方法处理器。
+   *
+   * <p><b>为什么必须在调用时把 {@code proxy} 绑到句柄上</b>：{@code lookupDefaultMethodHandle} 返回的是<strong>未绑定
+   * 接收者</strong>的虚方法句柄，其类型为 {@code (仓储接口, 参数...)返回值}；而 {@link MethodHandle#invokeWithArguments}
+   * <strong>不会</strong>自动补接收者，会按调用点类型做 {@code asType}，于是抛出 {@code WrongMethodTypeException: cannot
+   * convert MethodHandle(OrderRepository,Long,Long)Order to (Object,Object)Object}——任何参数的 {@code
+   * default} 仓储方法一调用即 500（已在 bone-blueprint 的 {@code OrderRepository#findByIdInTenant}
+   * 上实机复现）。绑定接收者后句柄类型与调用点一致，任意参数个数均可。
+   */
   private static final class DefaultMethodHandler implements MethodHandler {
     private final MethodHandle handle;
 
@@ -236,8 +245,8 @@ public class RepositoryFactoryBean<T, E, ID>
     }
 
     @Override
-    public Object invoke(Object[] args) throws Throwable {
-      return handle.invokeWithArguments(args);
+    public Object invoke(Object proxy, Object[] args) throws Throwable {
+      return handle.bindTo(proxy).invokeWithArguments(args);
     }
   }
 
@@ -250,7 +259,7 @@ public class RepositoryFactoryBean<T, E, ID>
     }
 
     @Override
-    public Object invoke(Object[] args) throws Throwable {
+    public Object invoke(Object proxy, Object[] args) throws Throwable {
       return handle.invokeWithArguments(args);
     }
   }
@@ -266,7 +275,7 @@ public class RepositoryFactoryBean<T, E, ID>
     }
 
     @Override
-    public Object invoke(Object[] args) {
+    public Object invoke(Object proxy, Object[] args) {
       Map<String, Object> params = extractParameters(method, args);
       SqlProcessor processor = sqlProcessorFactory.getProcessor(sqlTemplate.getSqlTemplateType());
       ProcessedSql processed = processor.process(sqlTemplate.getId(), sqlTemplate.getSql(), params);
