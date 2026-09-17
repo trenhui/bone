@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-27T09:42:29Z",
+  "generated_at": "2026-09-17T03:20:47Z",
   "module": "extension",
   "as_is": [
     {
@@ -268,7 +268,7 @@
       "id": "archunit-shrink-freeze",
       "tier": "Target",
       "title": "ArchUnit freeze 基线持续收缩",
-      "reference": "Bone-DDD §21",
+      "reference": "Bone-DDD G-1",
       "tracking": "ArchitectureTest 已启用；迁移后只缩不扩"
     },
     {
