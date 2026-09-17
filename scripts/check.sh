@@ -23,7 +23,10 @@ mvn spotless:check --batch-mode -q || exit_code=$?
 echo -e "${YELLOW}[2/5] 检测变更模块...${RESET}"
 CHANGED_FILES=$(git diff --cached --name-only --diff-filter=ACM 2>/dev/null | grep '\.java$' || true)
 if [ -n "$CHANGED_FILES" ]; then
-  MODULE_PATHS=$(echo "$CHANGED_FILES" | grep 'src/main/java' || true | sed 's|/src/main/java/.*||' | sort -u)
+  # 注意：`|| true` 必须放在整条管道末尾。管道优先级高于 `||`，若写成 `grep ... || true | sed ...`
+  # 会被解析成 `(grep) || (true | sed)`，sed 拿不到输入，MODULE_PATHS 变成文件全路径，
+  # 导致下面 $MODULE_PATH/pom.xml 恒不存在、ArchUnit 门禁被静默跳过。
+  MODULE_PATHS=$(echo "$CHANGED_FILES" | grep 'src/main/java' | sed 's|/src/main/java/.*||' | sort -u || true)
 
   if [ -n "$MODULE_PATHS" ]; then
     echo "  变更模块:"
