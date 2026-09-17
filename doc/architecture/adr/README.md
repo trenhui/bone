@@ -6,6 +6,18 @@
 
 | ADR | 标题 |
 |-----|------|
+| **0001~0010** | **IAM 模块演进**（以下 10 个 ADR 记录 bone-iam 的架构决策轨迹） |
+| [0001](./0001-database-ddl-single-source.md) | 数据库 DDL 单轨真源（`bone-init.sql`） |
+| [0002](./0002-iam-rbac-jwt-authorities.md) | 默认 RBAC + 权限码作为 JWT authorities |
+| [0003](./0003-iam-five-layer-policy.md) | 五层权限模型分阶段交付 |
+| [0004](./0004-iam-authz-service-evolution.md) | PolicyEvaluator 进程内 → 独立 authz-service |
+| [0005](./0005-iam-jwt-rs256-jwks.md) | JWT HS256 → RS256/EdDSA + JWKS 轮换 |
+| [0006](./0006-iam-tenant-isolation-modes.md) | 多租户隔离三模式切换策略 |
+| [0007](./0007-iam-platform-audit-bus.md) | 平台审计总线（AOP + WORM）落地路径 |
+| [0008](./0008-iam-argon2id-password-hash.md) | 密码哈希 BCrypt → Argon2id 迁移 |
+| [0009](./0009-iam-audit-log-schema-split.md) | `iam_audit_log` 扩列 vs 平台审计总线职责 |
+| [0010](./0010-iam-account-direct-permission.md) | 账号直连权限是否纳入 MVP |
+
 | [0011](./0011-aggregate-root-inheritance.md) | AggregateRoot 继承 AbstractEntity |
 | [0012](./0012-system-exception-hierarchy.md) | SystemException 归属基础设施异常链 |
 | [0013](./0013-extension-studio-repository-read-side.md) | extension-studio 仓储读侧拆 ReadPort |

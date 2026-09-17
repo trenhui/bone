@@ -8,7 +8,7 @@
 |------|------|------|
 | 0 | [README.md](../../README.md) | 产品理念、四大引擎、**元数据双模式**、演进路线 |
 | 1 | [BONE-总体架构设计方案.md](./BONE-总体架构设计方案.md) | 平台总体、模块、NFR（§2.1.1 对齐 README 原则） |
-| 2 | [Bone-DDD-最终实践方案.md](./Bone-DDD-最终实践方案.md)（v5.1.0） | DDD 唯一完整入口：原则、工程决策、门禁、迁移台账、快速入门、样板与版本历史；术语见 [glossary.md](../glossary.md) |
+| 2 | [Bone-DDD-最终实践方案.md](./Bone-DDD-最终实践方案.md)（v5.5.3） | DDD 唯一完整入口：原则、工程决策、门禁、迁移台账、快速入门、样板与版本历史；术语见 [glossary.md](../glossary.md) |
 | 3 | [Bone-API-规范.md](./Bone-API-规范.md) | REST 契约、OpenAPI、契约测试 |
 | 4 | [数据库开发规范.md](./数据库开发规范.md) | DDL 真源 `bone-init.sql` |
 
@@ -84,6 +84,9 @@
     - [BONE-总体架构](./BONE-总体架构设计方案.md) §12.1 Helm/`bone-chart` 标 **[Vision]**；§22.3 拆 **As-Is 端口表**（对齐 [wiki/03](../wiki/03-本地开发与构建.md)）与 Vision 示意表，废止 `metadata_db` / `integration:8083` 等误导性默认值；
     - [bone-前端架构](./bone-前端架构.md) E2E 真源统一为 **Playwright**；
     - [adr/README](./adr/README.md) 标注 `0002` 编号冲突（IAM vs 主数据 catalog sync）。
+    - 2026-09-11 ADR-0026（DDD v5.1.0）：单文档整合决策，废止分册结构。
+    - 2026-09-15 DDD v5.5.3：内容纠错与去重、门禁等级与规则描述对齐实现、锚点契约补齐。
+    - 2026-09-16 HC 硬约束完整定义收归 DDD 规范 G-3 节，README/redocly/openapi 治理整改。
 
 ## 交叉引用
 

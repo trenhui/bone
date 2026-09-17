@@ -109,7 +109,7 @@ paths:
                                 items: { $ref: '#/components/schemas/OrderSummaryResp' }
     post:
       summary: 创建订单
-      operationId: createOrder
+      operationId: create
       tags: [Order]
       requestBody:
         required: true
@@ -133,7 +133,7 @@ paths:
   /{id}:
     get:
       summary: 查询订单详情
-      operationId: getOrderById
+      operationId: getById
       tags: [Order]
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer, format: int64 } }

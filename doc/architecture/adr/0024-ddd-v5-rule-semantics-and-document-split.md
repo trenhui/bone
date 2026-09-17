@@ -99,6 +99,6 @@ Bone-DDD v4.9 在战略设计、聚合、依赖倒置、ACL、CQRS 和架构门�
 
 1. 本次同步主文档、分册、ADR-0023、glossary、AGENTS 和直接引用。
 2. Java 业务代码、ArchUnit 实现、DDL、OpenAPI 和 CI 本轮不修改。
-3. `adapterControllersMustNotDependOnApplicationService`、R9 分级、QueryPort 新位置和异常规则进入迁移台账。
+3. `adapterControllersMustNotDependOnApplicationService`、R9 分级（v4.x 历史编号，语义已归入 CORE-06，见 ADR-0025）、QueryPort 新位置和异常规则进入迁移台账。
 4. 新规则必须先有正反 fixture，再从 blueprint 推广到存量模块。
 5. 历史 `.specstory`、memory 与已归档 OpenSpec 不追溯修改。

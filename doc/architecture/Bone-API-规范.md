@@ -1,4 +1,14 @@
 # Bone 平台 API 规范
+> **与 DDD 规范的关系**：本文定义 HTTP/OpenAPI 层的契约规范，与 `Bone-DDD-最终实践方案.md` 共同构成 Bone 架构双真源。两个文档的语义重叠通过 DDD 规范的 HC 硬约束保持对齐：
+>
+> | API 规范内容 | DDD 规范对应 | 执行载体 |
+> |-------------|-------------|---------|
+> | Controller 返回 `ApiResponse<T>` / `PageResult<T>` | HC-003 | ArchUnit `controllerMustReturnApiResponse` |
+> | API 设计态与实现态一致性 | HC-007 | oasdiff（CI）+ OpenAPI spec（`openapi/`） |
+> | 请求 DTO 不得直传 domain 类型 | E-4.1 / E-4.2 | adapter 层 Assembler + ArchUnit 包依赖方向 |
+> | 多租户头 `X-Tenant-Id` 传递链 | E-10.2 / `TenantProvider` | Spring 过滤器 + TenantContext |
+>
+> API 规范独有的条目（URL 风格、HTTP 方法选择、分页参数、LRO、幂等键等）不重复出现在 DDD 规范，也不受 ArchUnit 硬执行，属于 Engineering Advisory 层级。
 
 > **文档性质**：对外 **HTTP REST** 契约（URL、信封、分页、横切头、OpenAPI、契约测试）。  
 > **更新**：2026-05-20  

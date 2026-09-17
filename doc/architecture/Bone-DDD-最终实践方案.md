@@ -837,6 +837,11 @@ AS-01～AS-06 的优先级高于目录模板。即便 `studio-generator` 生成�
   └─ 是 → Orchestrator
 多个入站协议需要稳定复用同一用例集合？
   └─ 是 → Facade
+集成事件消费（MQ Consumer / Outbox Relay）？
+  ├─ 消费动作有命令/意图语义（需要显式 Command 对象、独立幂等键、可版本化）？
+  │   └─ 是 → Command + CommandHandler
+  └─ 消费动作只是业务状态同步 + 幂等占位（Blueprint 的 OrderPaidConsumptionApplicationService）？
+      └─ 是 → ApplicationService（理由：幂等抢占必须与业务动作共享同一事务，事务边界是应用层职责）
 否则 → 不新增中间层
 ```
 
@@ -1073,7 +1078,44 @@ Outbox 是 Bone 的默认 Durable 实现。CDC、数据库事务日志或其他�
           └─ 跨库/跨上下文 → 状态机 + Outbox + 幂等 + 补偿
 ```
 
-事件发布决策：
+##### DomainEvent 发布前置判断：这个状态迁移应该发事件吗？
+
+DomainEvent 表达**"这个聚合发生了一个跨上下文需要感知的业务事实"**。"每个 save() 都要配 publishFrom()"是典型的 Ceremonial Architecture（E-3.1）——它不会增加正确性，只会制造没人订阅的事件、膨胀 Outbox 表、让 Reviewer 误判缺失 publishFrom() 为 bug。
+
+**以下状态迁移不发 DomainEvent**：
+
+| 类型 | 判定规则 | 代码示例 |
+|---|---|---|
+| **内部状态迁移** | 没有任何下游聚合会以这个状态变化为前置条件触发自己的行为 | `Order.ship()` PAID→SHIPPED、`Order.deliver()` SHIPPED→DELIVERED |
+| **终态到达** | 该状态之后没有更多业务动作，下游不再关心这个聚合的后续 | `Payment.close()` → CLOSED（终态，支付已不存在需要通知的下游） |
+| **技术中间态** | 聚合内部的临时技术状态，不是领域事实 | `Payment.submitToChannel()` PENDING→PAYING（只是"发送请求"，不是领域事实） |
+
+**以下必须发 DomainEvent**：
+
+| 类型 | 判定规则 | 代码示例 |
+|---|---|---|
+| **新实体创建** | 下游可能需要感知新生命周期开始 | `OrderCreatedEvent`、`PaymentSucceededEvent`（由 Payment 聚合在确认成功时发，下游订单感知） |
+| **关键业务状态变更** | 下游可能以此触发自己的业务逻辑 | `OrderPaidEvent`（支付完成→发货触发）、`OrderCancelledEvent`（取消→支付单关闭）、`PaymentRefundedEvent` |
+| **跨聚合协作触发点** | A 聚合的这个动作直接导致 B 聚合需要同步 | 同"关键业务状态变更"，触发机制一致 |
+
+**写 Handler 时的自检清单**：
+
+1. 这个 save() 之后有没有 publishFrom()？
+2. 如果**没有**——这个状态迁移是否属于"内部状态迁移/终态/技术中间态"三类之一？
+3. 如果既不属于三类，也没有 publishFrom()——要么**加事件**，要么**加注释**说明理由。
+
+##### 豁免注释的放置位置与格式
+
+豁免注释**必须放在聚合方法本身的 JavaDoc** 里（不是 Handler 或 ApplicationService 层面），格式统一为 `<p><b>不发 DomainEvent</b>：[具体理由]`。理由要能回答"为什么下游不需要感知"，不能只写"内部状态"或"终态"这种分类标签。
+
+> **Blueprint 合规案例**：
+> - `Payment.close()` JavaDoc：`不发 DomainEvent：CLOSED 是支付单终态，下游不再关心此聚合的后续状态迁移（订单在取消流程中自行关闭支付单，不依赖支付单反向通知）`
+> - `Order.ship()` JavaDoc：`不发 DomainEvent：内部状态迁移，无跨聚合协作需求——订单发货后无任何下游聚合需要以此为前置条件触发自身行为`
+> - `Order.deliver()` JavaDoc：`不发 DomainEvent：内部状态迁移，无跨聚合协作需求——订单送达是生命周期终态的业务确认，不触发任何下游聚合行为`
+>
+> 三个决策都**不需要** publishFrom()，也不违反任何规范。Handler 层面的 `// Payment.close() 不发领域事件` 是辅助提醒，聚合方法 JavaDoc 才是规范要求的位置。
+
+事件发布决策（决定"怎么发"）：
 
 ```text
 事件丢失是否影响业务正确性？
@@ -1220,7 +1262,7 @@ com.bone.{module}/
 │   │   ├── handler/
 │   │   ├── port/
 │   │   └── dto/
-│   ├── service/                     # 可选：语义化 ApplicationService
+│   ├── service/                     # 可选：语义化 ApplicationService + 技术编排类（见 E-4.2 写侧）
 │   ├── orchestration/               # 可选：跨步骤 Orchestrator
 │   └── port/
 │       └── out/                     # 应用需要的技术能力端口
@@ -1241,6 +1283,20 @@ com.bone.{module}/
 ```
 
 这是**目标参考结构**，列出所有可能的目录。`studio-generator` 的目标默认输出是 `adapter`、`application/service`（含 ApplicationService）、`domain`、`infrastructure` 四个顶级目录下的最小骨架（尚未实现，见 E-3.7）；`application/command/`、`application/query/handler/`、`application/orchestration/` 等目录按 E-3.7 决策树的实际需要创建，不预生成空目录。存量代码不要求一次性搬包；空的 `service`、`orchestration`、`gateway`、`port/out` 也不要作为占位生成。
+
+##### application/service 目录的两类类
+
+`application/service/` 下允许两类类共存，但必须满足各自的**依赖方向**与**调用边界**：
+
+| 维度 | 语义化 ApplicationService | 技术能力编排类 |
+|---|---|---|
+| **定位** | 业务用例编排入口（E-3.7 AS-01） | 对 `application/port/out` 多端口的协调编排 |
+| **依赖** | `domain` 层 + `application/port/out` + `application/query/port` | **只**依赖 `application/port/out`，不得碰 `domain` |
+| **调用方** | 仅由 adapter 层 Controller 调用，返回 `ApiResponse<T>` / `PageResult<T>` | 可被 Controller 直接注入，允许返回 `ResponseEntity` 等 HTTP 类型（如幂等快照重放、限流降级） |
+| **契约** | 按 E-3.7 决策树逐步引入；多业务能力时按 E-3.8 拆分 | 必须保持少量（典型模块 ≤2 个），典型场景为幂等、限流、请求快照等横切关注点 |
+| **禁止** | — | 不得直接出现在 `studio-generator` 默认骨架中；默认骨架只生成 ApplicationService |
+
+> **典型技术编排类示例**：`BlueprintIdempotencyService`（幂等 Key 哈希计算 + 快照存储编排），依赖 `application/port/out/IdempotencyStore`，由 Controller 在业务用例执行前后调 `replay()` / `remember()`。
 
 顶级目录按依赖方向保持稳定；模块较大时，在 `model`、`command`、`query`、`persistence` 等目录内部再按业务能力或聚合细分，避免全模块只有一个巨大的 `entity`/`service` 横切桶。
 
@@ -1297,6 +1353,18 @@ Req/Message
 ```
 
 `Repository`、`QueryPort`、`Gateway` 都是出站端口，但服务对象不同：Repository 服务聚合一致性，QueryPort 服务读投影，Gateway 隔离外部业务语义。命名不得互换。
+
+##### domain/service（领域服务）
+
+只在以下条件**同时满足**时创建，**不得**为了对齐目录树而创建空目录或占位类：
+
+1. 行为属于领域逻辑（不是应用层编排、不是技术能力）
+2. 不天然属于某个聚合（纯无状态操作、或跨聚合需要领域决策）
+3. 行为不涉及 IO（涉及外部调用则应放 `application/port/out` 或 `infrastructure`）
+
+典型场景：两个聚合同等重要的领域协作规则判定、纯函数式的领域计算（如运费计算规则、优惠叠加规则）。
+
+> Blueprint 当前没有 `domain/service` 下的类——如果你的模块也没有，不需要创建该目录。领域服务是"最后选择"（先看能不能放进某个聚合，再看能不能建模为值对象），不是领域层的默认服务形态（见 E-13.2 "领域服务是最后选择"）。
 
 #### E-10.3 按聚合的垂直切分样例
 
@@ -1394,6 +1462,7 @@ com.bone.order/
 | 领域事件 | `OrderPaidEvent` | 上下文内已发生事实，使用过去式 |
 | 集成事件 | `OrderPaidIntegrationEvent` | 跨上下文版本化事实 |
 | 应用服务 | `OrderShippingApplicationService` | 可直接作为语义化用例边界，不与同义 Handler 套娃 |
+| 消费型应用服务 | `OrderPaidConsumptionApplicationService` | 集成事件消费的应用用例边界（区别于 `application/event/*EventHandler`——后者处理领域事件的下游动作，消费型 Service 处理**入站集成事件**的幂等+业务动作+事务边界；判定见 E-3.7 "集成事件消费"分支） |
 | 编排器 | `OrderRefundOrchestrator` | 跨聚合、可重试或可补偿流程 |
 | 入站门面 | `OrderFacade` | 符合 E-3.4 的稳定、粗粒度入站契约 |
 | SDK 入站契约 | `MetadataApi` | 新增使用 `*Api`（目标命名示例，非现存类）；存量 `MetadataService` 不追溯 |
@@ -1587,6 +1656,7 @@ Hard gate 只保护结构和明确 API 使用，不证明领域模型正确。
 | E-4.2 读侧端口位置 | `readSideDslOnlyInQueryLayer`（目标） | Hard gate 目标 |
 | E-6 D1 纯净度 | `domainMustNotDependOnOuterLayers`（白名单放行编译期注解） | Hard gate |
 | E-7 错误模型 | `noCustomBusinessException` / `noBusinessExceptionSuffix`（freeze） | 兼容门禁 |
+| E-5.4 DomainEvent 发布前置判断 | `applicationSaveMustPairWithPublishOrExempt()` | Hard gate（参考样板，待全模块推广） |
 
 ### G-2 Freeze
 
