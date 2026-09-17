@@ -3,15 +3,19 @@ package com.bone.blueprint.infrastructure.config;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-/** Outbox 中继配置。 */
+/**
+ * Outbox 中继配置。
+ *
+ * <p>注意：{@code bone.blueprint.outbox.mq-enabled} 与 {@code .consumer-group} 两个配置键<b>不在本类</b>
+ * 声明字段——它们分别由 {@code @ConditionalOnProperty}（3 处）与 {@code @RocketMQMessageListener} /
+ * {@code @Value} 以占位符直接从 Environment 读取（见 {@code OrderPaidIntegrationMqListener}）。
+ * 此处不再声明为无人读取的死字段，避免与占位符形成重复真源。
+ */
 @Data
 @ConfigurationProperties(prefix = "bone.blueprint.outbox")
 public class OrderOutboxProperties {
 
   private boolean enabled = true;
-
-  /** true 时通过 RocketMQ 中继；false 时仅结构化日志（开发默认）。 */
-  private boolean mqEnabled = false;
 
   private int batchSize = 50;
 
@@ -34,6 +38,4 @@ public class OrderOutboxProperties {
 
   /** 死信主题：中继重试超限后转投，人工/工具重放（消息与事件规范 §6）。 */
   private String deadLetterTopic = "platform.dead_letter.v1";
-
-  private String consumerGroup = "bone-blueprint-order-paid-consumer";
 }

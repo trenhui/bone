@@ -18,9 +18,13 @@ public interface PaymentAssembler {
   InitiatePaymentCommand toInitiatePaymentCommand(InitiatePaymentReq req);
 
   default ProcessPaymentCallbackCommand toProcessPaymentCallbackCommand(PaymentCallbackReq req) {
-    // signature 不进应用层：验签已在 Controller 入口完成（adapter 边界防腐，ADR-0022）
+    // signature 带进应用层：验签已收口到 Handler（E-4.2 分层约束，adapter 禁止直引技术端口）
     return new ProcessPaymentCallbackCommand(
-        req.getPaymentId(), req.getChannelTradeNo(), req.getPaidAmount(), req.isSuccess());
+        req.getPaymentId(),
+        req.getChannelTradeNo(),
+        req.getPaidAmount(),
+        req.isSuccess(),
+        req.getSignature());
   }
 
   default RefundPaymentCommand toRefundPaymentCommand(Long paymentId, RefundPaymentReq req) {

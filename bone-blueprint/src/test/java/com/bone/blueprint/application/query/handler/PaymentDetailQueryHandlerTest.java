@@ -6,8 +6,8 @@ import static org.mockito.Mockito.when;
 
 import com.bone.blueprint.application.port.out.TenantProvider;
 import com.bone.blueprint.application.query.dto.PaymentDto;
-import com.bone.blueprint.application.query.dto.PaymentRow;
-import com.bone.blueprint.application.query.port.PaymentReadPort;
+import com.bone.blueprint.application.query.dto.PaymentProjection;
+import com.bone.blueprint.application.query.port.PaymentQueryPort;
 import com.bone.blueprint.application.query.qry.PaymentDetailQuery;
 import com.bone.core.exception.BizException;
 import java.math.BigDecimal;
@@ -21,13 +21,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class PaymentDetailQueryHandlerTest {
 
-  @Mock private PaymentReadPort paymentReadPort;
+  @Mock private PaymentQueryPort paymentQueryPort;
   @Mock private TenantProvider tenantProvider;
 
   @InjectMocks private PaymentDetailQueryHandler handler;
 
-  private PaymentRow row() {
-    return new PaymentRow(
+  private PaymentProjection row() {
+    return new PaymentProjection(
         1L,
         1L,
         100L,
@@ -46,7 +46,7 @@ class PaymentDetailQueryHandlerTest {
   @Test
   void testHandleReturnsDto() {
     when(tenantProvider.currentTenantId()).thenReturn(1L);
-    when(paymentReadPort.findById(1L, 1L)).thenReturn(Optional.of(row()));
+    when(paymentQueryPort.findById(1L, 1L)).thenReturn(Optional.of(row()));
 
     PaymentDto dto = handler.handle(new PaymentDetailQuery(1L));
 
@@ -59,7 +59,7 @@ class PaymentDetailQueryHandlerTest {
   @Test
   void testHandleNotFound() {
     when(tenantProvider.currentTenantId()).thenReturn(1L);
-    when(paymentReadPort.findById(1L, 1L)).thenReturn(Optional.empty());
+    when(paymentQueryPort.findById(1L, 1L)).thenReturn(Optional.empty());
 
     assertEquals(
         404,

@@ -4,9 +4,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.bone.blueprint.application.query.dto.PaymentRow;
-import com.bone.blueprint.application.query.port.OrderReadPort;
-import com.bone.blueprint.application.query.port.PaymentReadPort;
+import com.bone.blueprint.application.query.dto.PaymentProjection;
+import com.bone.blueprint.application.query.port.OrderQueryPort;
+import com.bone.blueprint.application.query.port.PaymentQueryPort;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -29,46 +29,46 @@ import org.mockito.quality.Strictness;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class OrderPaymentInconsistencyJobTest {
 
-  @Mock private PaymentReadPort paymentReadPort;
+  @Mock private PaymentQueryPort paymentQueryPort;
 
-  @Mock private OrderReadPort orderReadPort;
+  @Mock private OrderQueryPort orderQueryPort;
 
   @InjectMocks private OrderPaymentInconsistencyJob job;
 
   @Test
   void looksUpOrderStatusByIdPerTenantWithoutJoin() {
-    when(paymentReadPort.findSuccessCreatedBeforeAllTenants(any()))
+    when(paymentQueryPort.findSuccessCreatedBeforeAllTenants(any()))
         .thenReturn(List.of(paymentRow(777L, 11L, 1L)));
-    when(orderReadPort.findStatusById(777L, 1L)).thenReturn(Optional.of("PAID"));
+    when(orderQueryPort.findStatusById(777L, 1L)).thenReturn(Optional.of("PAID"));
 
     job.checkPaidButOrderNotConfirmed();
 
-    verify(orderReadPort).findStatusById(777L, 1L);
+    verify(orderQueryPort).findStatusById(777L, 1L);
   }
 
   @Test
   void treatsMissingOrderAsInconsistent() {
-    when(paymentReadPort.findSuccessCreatedBeforeAllTenants(any()))
+    when(paymentQueryPort.findSuccessCreatedBeforeAllTenants(any()))
         .thenReturn(List.of(paymentRow(0L, 11L, 2L)));
-    when(orderReadPort.findStatusById(0L, 2L)).thenReturn(Optional.empty());
+    when(orderQueryPort.findStatusById(0L, 2L)).thenReturn(Optional.empty());
 
     // 支付成功却没有订单同样是异常，必须进入告警（此处的可观测性由 error 日志承担）
     job.checkPaidButOrderNotConfirmed();
 
-    verify(orderReadPort).findStatusById(0L, 2L);
+    verify(orderQueryPort).findStatusById(0L, 2L);
   }
 
   @Test
   void handlesEmptyScanResult() {
-    when(paymentReadPort.findSuccessCreatedBeforeAllTenants(any())).thenReturn(List.of());
+    when(paymentQueryPort.findSuccessCreatedBeforeAllTenants(any())).thenReturn(List.of());
 
     job.checkPaidButOrderNotConfirmed();
 
-    verify(paymentReadPort).findSuccessCreatedBeforeAllTenants(any());
+    verify(paymentQueryPort).findSuccessCreatedBeforeAllTenants(any());
   }
 
-  private static PaymentRow paymentRow(Long tenantId, Long paymentId, Long orderId) {
-    return new PaymentRow(
+  private static PaymentProjection paymentRow(Long tenantId, Long paymentId, Long orderId) {
+    return new PaymentProjection(
         tenantId,
         paymentId,
         orderId,

@@ -1,4 +1,4 @@
-package com.bone.blueprint.domain.integration.event;
+package com.bone.blueprint.application.event.integration;
 
 import java.time.Instant;
 

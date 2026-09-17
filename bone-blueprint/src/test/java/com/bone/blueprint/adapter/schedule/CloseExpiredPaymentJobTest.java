@@ -9,8 +9,8 @@ import static org.mockito.Mockito.when;
 
 import com.bone.blueprint.application.command.cmd.CloseExpiredPaymentCommand;
 import com.bone.blueprint.application.command.handler.CloseExpiredPaymentCommandHandler;
-import com.bone.blueprint.application.query.dto.PaymentRow;
-import com.bone.blueprint.application.query.port.PaymentReadPort;
+import com.bone.blueprint.application.query.dto.PaymentProjection;
+import com.bone.blueprint.application.query.port.PaymentQueryPort;
 import com.bone.core.exception.BizException;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -29,7 +29,7 @@ import org.mockito.quality.Strictness;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class CloseExpiredPaymentJobTest {
 
-  @Mock private PaymentReadPort paymentReadPort;
+  @Mock private PaymentQueryPort paymentQueryPort;
 
   @Mock private CloseExpiredPaymentCommandHandler closeExpiredPaymentCommandHandler;
 
@@ -37,7 +37,7 @@ class CloseExpiredPaymentJobTest {
 
   @Test
   void closesEachExpiredPaymentCarryingItsOwnTenant() {
-    when(paymentReadPort.findPayableExpiredBeforeAllTenants(any()))
+    when(paymentQueryPort.findPayableExpiredBeforeAllTenants(any()))
         .thenReturn(List.of(paymentRow(0L, 11L, 1L), paymentRow(888L, 12L, 2L)));
 
     job.closeExpiredPayments();
@@ -52,7 +52,7 @@ class CloseExpiredPaymentJobTest {
 
   @Test
   void continuesWithRemainingRowsWhenOneFails() {
-    when(paymentReadPort.findPayableExpiredBeforeAllTenants(any()))
+    when(paymentQueryPort.findPayableExpiredBeforeAllTenants(any()))
         .thenReturn(List.of(paymentRow(0L, 11L, 1L), paymentRow(0L, 12L, 2L)));
     doThrow(new BizException(409, "BP_PAYMENT_STATUS_CONFLICT: SUCCESS"))
         .when(closeExpiredPaymentCommandHandler)
@@ -63,8 +63,8 @@ class CloseExpiredPaymentJobTest {
     verify(closeExpiredPaymentCommandHandler, times(2)).handle(any());
   }
 
-  private static PaymentRow paymentRow(Long tenantId, Long paymentId, Long orderId) {
-    return new PaymentRow(
+  private static PaymentProjection paymentRow(Long tenantId, Long paymentId, Long orderId) {
+    return new PaymentProjection(
         tenantId,
         paymentId,
         orderId,

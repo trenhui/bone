@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.bone.blueprint.application.query.dto.OrderDto;
-import com.bone.blueprint.application.query.dto.OrderWithItemsRow;
+import com.bone.blueprint.application.query.dto.OrderWithItemsProjection;
 import com.bone.core.exception.BizException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -15,8 +15,8 @@ class OrderDetailAssemblerTest {
 
   @Test
   void fromRowsBuildsNestedDto() {
-    OrderWithItemsRow row1 =
-        new OrderWithItemsRow(
+    OrderWithItemsProjection row1 =
+        new OrderWithItemsProjection(
             1L,
             2L,
             new BigDecimal("200"),

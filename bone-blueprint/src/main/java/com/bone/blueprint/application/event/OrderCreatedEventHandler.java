@@ -1,7 +1,7 @@
 package com.bone.blueprint.application.event;
 
-import com.bone.blueprint.application.query.dto.OrderWithItemsRow;
-import com.bone.blueprint.application.query.port.OrderReadPort;
+import com.bone.blueprint.application.query.dto.OrderWithItemsProjection;
+import com.bone.blueprint.application.query.port.OrderQueryPort;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.order.event.OrderCreatedEvent;
 import java.util.List;
@@ -25,7 +25,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
  *
  * <p><b>明细来源</b>：订单明细是 Order 聚合的子实体，随订单在同事务落库（{@code CreateOrderCommandHandler} 显式逐条 {@code
  * save}）。但订单聚合重载不含级联（SDK 无级联），{@code Order.getItems()} 恒为空，故此处必须走查询侧端口 {@link
- * OrderReadPort#findOrderWithItems}（联 {@code t_order_item} 投影）读取明细，切勿依赖重载后的聚合。
+ * OrderQueryPort#findOrderWithItems}（联 {@code t_order_item} 投影）读取明细，切勿依赖重载后的聚合。
  * 明细为空时显式留痕，避免「看起来正常却什么都没做」的静默失败。
  */
 @Slf4j
@@ -33,15 +33,15 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @RequiredArgsConstructor
 public class OrderCreatedEventHandler {
 
-  private final OrderReadPort orderReadPort;
+  private final OrderQueryPort orderQueryPort;
   private final InventoryGateway inventoryGateway;
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handle(OrderCreatedEvent event) {
     log.info("订单已创建: orderId={}, tenantId={}", event.orderId(), event.tenantId());
 
-    List<OrderWithItemsRow> rows =
-        orderReadPort.findOrderWithItems(event.tenantId(), event.orderId());
+    List<OrderWithItemsProjection> rows =
+        orderQueryPort.findOrderWithItems(event.tenantId(), event.orderId());
 
     // 明细为空（含 LEFT JOIN 无匹配行时 itemId 为 NULL）时显式留痕，避免库存静默不预留。
     // 订单必有商品项（Order.create 已强制校验），为空只可能是明细未随订单落库；静默跳过会让库存永不预留且毫无报错，
@@ -55,7 +55,7 @@ public class OrderCreatedEventHandler {
       return;
     }
 
-    for (OrderWithItemsRow row : rows) {
+    for (OrderWithItemsProjection row : rows) {
       if (row.getItemId() == null) {
         continue;
       }

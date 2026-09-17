@@ -1,7 +1,7 @@
 package com.bone.blueprint.application;
 
+import com.bone.blueprint.application.event.integration.OrderPaidIntegrationEvent;
 import com.bone.blueprint.application.port.out.ConsumedEventPort;
-import com.bone.blueprint.domain.integration.event.OrderPaidIntegrationEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

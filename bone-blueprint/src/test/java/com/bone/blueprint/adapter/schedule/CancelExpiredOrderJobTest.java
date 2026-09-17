@@ -10,8 +10,8 @@ import static org.mockito.Mockito.when;
 
 import com.bone.blueprint.application.OrderApplicationService;
 import com.bone.blueprint.application.command.cmd.CancelOrderCommand;
-import com.bone.blueprint.application.query.dto.OrderHeadRow;
-import com.bone.blueprint.application.query.port.OrderReadPort;
+import com.bone.blueprint.application.query.dto.OrderHeadProjection;
+import com.bone.blueprint.application.query.port.OrderQueryPort;
 import com.bone.core.exception.BizException;
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -36,7 +36,7 @@ import org.mockito.quality.Strictness;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class CancelExpiredOrderJobTest {
 
-  @Mock private OrderReadPort orderReadPort;
+  @Mock private OrderQueryPort orderQueryPort;
 
   @Mock private OrderApplicationService orderApplicationService;
 
@@ -44,7 +44,7 @@ class CancelExpiredOrderJobTest {
 
   @Test
   void cancelsEachExpiredOrderCarryingItsOwnTenant() {
-    when(orderReadPort.findCreatedExpiredBeforeAllTenants(any()))
+    when(orderQueryPort.findCreatedExpiredBeforeAllTenants(any()))
         .thenReturn(List.of(headRow(0L, 1L), headRow(999L, 2L)));
 
     job.cancelExpiredOrders();
@@ -59,7 +59,7 @@ class CancelExpiredOrderJobTest {
 
   @Test
   void continuesWithRemainingRowsWhenOneFails() {
-    when(orderReadPort.findCreatedExpiredBeforeAllTenants(any()))
+    when(orderQueryPort.findCreatedExpiredBeforeAllTenants(any()))
         .thenReturn(List.of(headRow(0L, 1L), headRow(0L, 2L)));
     doThrow(new BizException(409, "BP_ORDER_STATUS_CONFLICT: CANCELLED"))
         .when(orderApplicationService)
@@ -73,19 +73,19 @@ class CancelExpiredOrderJobTest {
 
   @Test
   void scansWithThirtyMinuteThreshold() {
-    when(orderReadPort.findCreatedExpiredBeforeAllTenants(any())).thenReturn(List.of());
+    when(orderQueryPort.findCreatedExpiredBeforeAllTenants(any())).thenReturn(List.of());
 
     job.cancelExpiredOrders();
 
     ArgumentCaptor<Instant> captor = ArgumentCaptor.forClass(Instant.class);
-    verify(orderReadPort).findCreatedExpiredBeforeAllTenants(captor.capture());
+    verify(orderQueryPort).findCreatedExpiredBeforeAllTenants(captor.capture());
     Instant before = captor.getValue();
     assertTrue(before.isBefore(Instant.now().minusSeconds(29 * 60)));
     assertTrue(before.isAfter(Instant.now().minusSeconds(31 * 60)));
   }
 
-  private static OrderHeadRow headRow(Long tenantId, Long orderId) {
-    return new OrderHeadRow(
+  private static OrderHeadProjection headRow(Long tenantId, Long orderId) {
+    return new OrderHeadProjection(
         tenantId, orderId, 3L, new BigDecimal("10.00"), "CREATED", LocalDateTime.now());
   }
 }

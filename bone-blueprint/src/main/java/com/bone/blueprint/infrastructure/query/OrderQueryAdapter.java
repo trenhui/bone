@@ -1,8 +1,8 @@
 package com.bone.blueprint.infrastructure.query;
 
-import com.bone.blueprint.application.query.dto.OrderHeadRow;
-import com.bone.blueprint.application.query.dto.OrderWithItemsRow;
-import com.bone.blueprint.application.query.port.OrderReadPort;
+import com.bone.blueprint.application.query.dto.OrderHeadProjection;
+import com.bone.blueprint.application.query.dto.OrderWithItemsProjection;
+import com.bone.blueprint.application.query.port.OrderQueryPort;
 import com.bone.blueprint.domain.order.valueobject.OrderStatus;
 import com.bone.core.model.PageResult;
 import java.io.IOException;
@@ -23,9 +23,14 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
 
+/**
+ * 订单读侧适配器：{@link OrderQueryPort} 的基础设施实现（E-10.3 {@code infrastructure/query}）。
+ *
+ * <p>读模型直查投影、不加载写聚合；复杂联表 SQL 外置为资源文件，其余为内联常量。
+ */
 @Component
 @RequiredArgsConstructor
-public class OrderReadPortImpl implements OrderReadPort {
+public class OrderQueryAdapter implements OrderQueryPort {
 
   private static final String SQL_PATH = "sql/order/findOrderWithItems.sql";
 
@@ -39,24 +44,14 @@ public class OrderReadPortImpl implements OrderReadPort {
   private volatile String cachedSql;
 
   @Override
-  public List<OrderWithItemsRow> findOrderWithItems(long tenantId, long orderId) {
+  public List<OrderWithItemsProjection> findOrderWithItems(long tenantId, long orderId) {
     MapSqlParameterSource params =
         new MapSqlParameterSource().addValue("tenantId", tenantId).addValue("orderId", orderId);
     return jdbcTemplate.query(loadSql(), params, new OrderWithItemsRowMapper());
   }
 
   @Override
-  public List<OrderHeadRow> findCreatedExpiredBefore(long tenantId, Instant before) {
-    MapSqlParameterSource params =
-        new MapSqlParameterSource()
-            .addValue("tenantId", tenantId)
-            .addValue("before", Timestamp.from(before));
-    return jdbcTemplate.query(
-        EXPIRED_CREATED_SQL + " AND tenant_id = :tenantId", params, new OrderHeadRowMapper());
-  }
-
-  @Override
-  public List<OrderHeadRow> findCreatedExpiredBeforeAllTenants(Instant before) {
+  public List<OrderHeadProjection> findCreatedExpiredBeforeAllTenants(Instant before) {
     // 全租户运维扫描：不带 tenant_id 条件；调用方须为已登记的定时任务（README 打洞登记）
     return jdbcTemplate.query(
         EXPIRED_CREATED_SQL,
@@ -75,9 +70,9 @@ public class OrderReadPortImpl implements OrderReadPort {
   }
 
   @Override
-  public PageResult<OrderHeadRow> findOrderPage(
+  public PageResult<OrderHeadProjection> findOrderPage(
       long tenantId, Long customerId, OrderStatus status, int pageNum, int pageSize) {
-    // 动态条件拼接（ReadPort 内做读侧组装，QueryHandler 只依赖端口）
+    // 动态条件拼接（QueryPort 内做读侧组装，QueryHandler 只依赖端口）
     MapSqlParameterSource params = new MapSqlParameterSource().addValue("tenantId", tenantId);
     StringBuilder where = new StringBuilder(" WHERE tenant_id = :tenantId AND deleted = 0");
     if (customerId != null) {
@@ -97,7 +92,7 @@ public class OrderReadPortImpl implements OrderReadPort {
             + where
             + " ORDER BY created_at DESC LIMIT :limit OFFSET :offset";
     params.addValue("limit", pageSize).addValue("offset", (long) (pageNum - 1) * pageSize);
-    List<OrderHeadRow> rows = jdbcTemplate.query(pageSql, params, new OrderHeadRowMapper());
+    List<OrderHeadProjection> rows = jdbcTemplate.query(pageSql, params, new OrderHeadRowMapper());
     return PageResult.of(rows, total == null ? 0 : total, pageNum, pageSize);
   }
 
@@ -117,10 +112,11 @@ public class OrderReadPortImpl implements OrderReadPort {
     return cachedSql;
   }
 
-  private static final class OrderWithItemsRowMapper implements RowMapper<OrderWithItemsRow> {
+  private static final class OrderWithItemsRowMapper
+      implements RowMapper<OrderWithItemsProjection> {
 
     @Override
-    public OrderWithItemsRow mapRow(ResultSet rs, int rowNum) throws SQLException {
+    public OrderWithItemsProjection mapRow(ResultSet rs, int rowNum) throws SQLException {
       Long orderId = rs.getLong("order_id");
       Long customerId = rs.getLong("customer_id");
       BigDecimal totalAmount = rs.getBigDecimal("total_amount");
@@ -134,7 +130,7 @@ public class OrderReadPortImpl implements OrderReadPort {
       Integer quantity = itemIdBoxed == null ? null : rs.getInt("quantity");
       BigDecimal unitPrice = itemIdBoxed == null ? null : rs.getBigDecimal("unit_price");
       BigDecimal subtotal = itemIdBoxed == null ? null : rs.getBigDecimal("subtotal");
-      return new OrderWithItemsRow(
+      return new OrderWithItemsProjection(
           orderId,
           customerId,
           totalAmount,
@@ -149,11 +145,11 @@ public class OrderReadPortImpl implements OrderReadPort {
     }
   }
 
-  private static final class OrderHeadRowMapper implements RowMapper<OrderHeadRow> {
+  private static final class OrderHeadRowMapper implements RowMapper<OrderHeadProjection> {
 
     @Override
-    public OrderHeadRow mapRow(ResultSet rs, int rowNum) throws SQLException {
-      return new OrderHeadRow(
+    public OrderHeadProjection mapRow(ResultSet rs, int rowNum) throws SQLException {
+      return new OrderHeadProjection(
           rs.getLong("tenant_id"),
           rs.getLong("id"),
           rs.getLong("customer_id"),

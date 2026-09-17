@@ -1,0 +1,55 @@
+# 生产环境配置（prod profile）
+# 与 application.yml 叠加覆盖：收紧安全边界、关闭排障工具、启用链路追踪
+# 启动方式：java -jar xxx.jar --spring.profiles.active=prod
+
+spring:
+  # 收紧 CORS：生产只允许前端网关域名（从环境变量注入，不硬编码）
+  mvc:
+    cors:
+      allowed-origins: ${BONE_CORS_ORIGINS:https://admin.bone.example.com}
+      allowed-methods: GET,POST,PUT,DELETE,PATCH
+      allow-credentials: true
+
+# ==== OpenAPI / Swagger ====
+# 生产必须关闭 swagger-ui 和 API 文档端点（防止暴露内部接口结构）
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+# ==== Actuator 安全 ====
+management:
+  endpoints:
+    web:
+      exposure:
+        # 生产只暴露 health + info + prometheus（metrics 走 Prometheus 拉取）
+        include: health,info,prometheus
+        # 强制关闭敏感端点
+        exclude: env,beans,configprops,mappings,shutdown,trace,heapdump,threaddump
+  endpoint:
+    health:
+      show-details: never
+  health:
+    # 磁盘空间告警阈值
+    diskspace:
+      threshold: 1GB
+      enabled: true
+
+# ==== 日志 ====
+logging:
+  level:
+    # 生产默认 ERROR；线上排障临时调 DEBUG 时须经审批
+    com.bone: ERROR
+    org.springframework: WARN
+  # 结构化日志（供 ELK / Loki 采集）
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+# ==== 自定义生产参数 ====
+bone:
+  blueprint:
+    outbox:
+      # 生产可以加大 relay 批量（500ms 窗口内攒更多）
+      batch-size: 100
+      relay-delay-ms: 2000

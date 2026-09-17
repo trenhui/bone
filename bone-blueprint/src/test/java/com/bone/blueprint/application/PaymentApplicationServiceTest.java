@@ -3,6 +3,7 @@ package com.bone.blueprint.application;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -16,7 +17,6 @@ import com.bone.blueprint.domain.payment.valueobject.PaymentChannel;
 import com.bone.blueprint.domain.repository.PaymentRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
-import com.bone.core.exception.DomainException;
 import java.math.BigDecimal;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
@@ -75,8 +75,9 @@ class PaymentApplicationServiceTest {
     when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(payment);
 
-    assertThrows(DomainException.class, () -> service.refund(command()));
-    verify(paymentRepository, never()).save(any());
+    BizException ex = assertThrows(BizException.class, () -> service.refund(command()));
+    assertEquals(409, ex.getCode());
+    assertTrue(ex.getMessage().contains("PAYMENT_STATUS_CONFLICT"), ex.getMessage());
   }
 
   @Test

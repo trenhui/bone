@@ -187,7 +187,11 @@ public class Payment extends TenantAggregateRoot<Long> {
     addDomainEvent(new PaymentFailedEvent(getId(), getTenantId(), orderId, amount, Instant.now()));
   }
 
-  /** 超时未支付 / 订单取消时关闭支付单。 */
+  /**
+   * 超时未支付 / 订单取消时关闭支付单。
+   *
+   * <p><b>不发 DomainEvent</b>：CLOSED 是支付单终态，下游不再关心此聚合的后续状态迁移 （订单在取消流程中自行关闭支付单，不依赖支付单反向通知）。
+   */
   public void close() {
     if (this.status == PaymentStatus.SUCCESS) {
       throw new DomainException("已成功的支付单不能关闭");

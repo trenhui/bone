@@ -1,8 +1,8 @@
 package com.bone.blueprint.adapter.schedule;
 
-import com.bone.blueprint.application.query.dto.PaymentRow;
-import com.bone.blueprint.application.query.port.OrderReadPort;
-import com.bone.blueprint.application.query.port.PaymentReadPort;
+import com.bone.blueprint.application.query.dto.PaymentProjection;
+import com.bone.blueprint.application.query.port.OrderQueryPort;
+import com.bone.blueprint.application.query.port.PaymentQueryPort;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -28,8 +28,8 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class OrderPaymentInconsistencyJob {
 
-  private final PaymentReadPort paymentReadPort;
-  private final OrderReadPort orderReadPort;
+  private final PaymentQueryPort paymentQueryPort;
+  private final OrderQueryPort orderQueryPort;
 
   /** 宽限期（分钟）：支付成功后允许订单确认的最大滞后，超过即视为不一致。 */
   private static final long CONFIRM_GRACE_MINUTES = 10;
@@ -37,11 +37,11 @@ public class OrderPaymentInconsistencyJob {
   @Scheduled(cron = "0 0/10 * * * ?")
   public void checkPaidButOrderNotConfirmed() {
     Instant before = Instant.now().minusSeconds(CONFIRM_GRACE_MINUTES * 60);
-    List<PaymentRow> succeeded = paymentReadPort.findSuccessCreatedBeforeAllTenants(before);
+    List<PaymentProjection> succeeded = paymentQueryPort.findSuccessCreatedBeforeAllTenants(before);
 
     int inconsistent = 0;
-    for (PaymentRow row : succeeded) {
-      Optional<String> status = orderReadPort.findStatusById(row.getTenantId(), row.getOrderId());
+    for (PaymentProjection row : succeeded) {
+      Optional<String> status = orderQueryPort.findStatusById(row.getTenantId(), row.getOrderId());
       // 订单不存在：同样属异常（支付成功却没有订单）；仍 CREATED：确认链路未执行
       if (status.isEmpty() || status.get().equals("CREATED")) {
         inconsistent++;

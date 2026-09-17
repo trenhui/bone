@@ -2,8 +2,8 @@ package com.bone.blueprint.application.query.handler;
 
 import com.bone.blueprint.application.port.out.TenantProvider;
 import com.bone.blueprint.application.query.dto.OrderDto;
-import com.bone.blueprint.application.query.dto.OrderHeadRow;
-import com.bone.blueprint.application.query.port.OrderReadPort;
+import com.bone.blueprint.application.query.dto.OrderHeadProjection;
+import com.bone.blueprint.application.query.port.OrderQueryPort;
 import com.bone.blueprint.application.query.qry.OrderPageQuery;
 import com.bone.blueprint.application.query.support.OrderSummaryAssembler;
 import com.bone.blueprint.common.BlueprintErrorCodes;
@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
  * 订单分页查询（读侧）。
  *
  * <p><b>读侧实现选择标准</b>（样板约定，E-4.2）：读侧端口固定在 {@code application/query/port}，实现固定在 {@code
- * infrastructure/query}（见 {@code infrastructure/query/OrderReadPortImpl}）；{@code QueryBuilder} /
+ * infrastructure/query}（见 {@code infrastructure/query/OrderQueryAdapter}）；{@code QueryBuilder} /
  * {@code Criteria} / SQL 只许出现在 infrastructure，application 与 domain 都不得依赖查询 DSL（CORE-05，ArchUnit
  * {@code readSideDslOnlyInQueryLayer} 门禁）。
  *
@@ -30,7 +30,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class OrderPageQueryHandler {
 
-  private final OrderReadPort orderReadPort;
+  private final OrderQueryPort orderQueryPort;
   private final TenantProvider tenantProvider;
 
   @Transactional(readOnly = true)
@@ -43,8 +43,8 @@ public class OrderPageQueryHandler {
     int pageNum = query.pageNum() != null ? query.pageNum() : 1;
     int pageSize = query.pageSize() != null ? query.pageSize() : 10;
 
-    PageResult<OrderHeadRow> page =
-        orderReadPort.findOrderPage(tenantId, customerId, status, pageNum, pageSize);
+    PageResult<OrderHeadProjection> page =
+        orderQueryPort.findOrderPage(tenantId, customerId, status, pageNum, pageSize);
 
     List<OrderDto> records =
         page.getRecords().stream().map(OrderSummaryAssembler::fromRow).toList();

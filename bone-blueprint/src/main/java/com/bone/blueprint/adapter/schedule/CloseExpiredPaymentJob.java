@@ -2,8 +2,8 @@ package com.bone.blueprint.adapter.schedule;
 
 import com.bone.blueprint.application.command.cmd.CloseExpiredPaymentCommand;
 import com.bone.blueprint.application.command.handler.CloseExpiredPaymentCommandHandler;
-import com.bone.blueprint.application.query.dto.PaymentRow;
-import com.bone.blueprint.application.query.port.PaymentReadPort;
+import com.bone.blueprint.application.query.dto.PaymentProjection;
+import com.bone.blueprint.application.query.port.PaymentQueryPort;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class CloseExpiredPaymentJob {
 
-  private final PaymentReadPort paymentReadPort;
+  private final PaymentQueryPort paymentQueryPort;
   private final CloseExpiredPaymentCommandHandler closeExpiredPaymentCommandHandler;
 
   /** 超时阈值（分钟）：支付单创建后超过该时长未支付即关闭。 */
@@ -34,12 +34,12 @@ public class CloseExpiredPaymentJob {
   @Scheduled(cron = "0 0/5 * * * ?")
   public void closeExpiredPayments() {
     Instant before = Instant.now().minusSeconds(PAYMENT_TIMEOUT_MINUTES * 60);
-    List<PaymentRow> expired = paymentReadPort.findPayableExpiredBeforeAllTenants(before);
+    List<PaymentProjection> expired = paymentQueryPort.findPayableExpiredBeforeAllTenants(before);
     log.info(
         "[全租户扫描] 超时支付单扫描完成: 阈值={}min, 命中={} 笔（E-4.4 平台运维入口，README 已登记）",
         PAYMENT_TIMEOUT_MINUTES,
         expired.size());
-    for (PaymentRow row : expired) {
+    for (PaymentProjection row : expired) {
       try {
         closeExpiredPaymentCommandHandler.handle(
             new CloseExpiredPaymentCommand(row.getPaymentId(), row.getTenantId()));

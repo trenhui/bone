@@ -1,7 +1,7 @@
 package com.bone.blueprint.application.event;
 
-import com.bone.blueprint.application.query.dto.OrderWithItemsRow;
-import com.bone.blueprint.application.query.port.OrderReadPort;
+import com.bone.blueprint.application.query.dto.OrderWithItemsProjection;
+import com.bone.blueprint.application.query.port.OrderQueryPort;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.order.event.OrderPaidEvent;
 import java.util.List;
@@ -15,7 +15,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
  * 订单支付成功后续处理（AFTER_COMMIT）：确认库存扣减。集成事件经 Outbox 异步中继。
  *
  * <p><b>明细来源</b>：与 {@link OrderCreatedEventHandler} 一致，订单聚合重载不含级联（SDK 无级联）， {@code
- * Order.getItems()} 恒为空，故必须走查询侧端口 {@link OrderReadPort#findOrderWithItems} 读取明细，
+ * Order.getItems()} 恒为空，故必须走查询侧端口 {@link OrderQueryPort#findOrderWithItems} 读取明细，
  * 切勿依赖重载后的聚合。明细为空时显式留痕，避免「看起来正常却什么都没做」的静默失败。
  */
 @Slf4j
@@ -23,15 +23,15 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @RequiredArgsConstructor
 public class OrderPaidEventHandler {
 
-  private final OrderReadPort orderReadPort;
+  private final OrderQueryPort orderQueryPort;
   private final InventoryGateway inventoryGateway;
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void handle(OrderPaidEvent event) {
     log.info("订单支付成功: orderId={}, tenantId={}", event.orderId(), event.tenantId());
 
-    List<OrderWithItemsRow> rows =
-        orderReadPort.findOrderWithItems(event.tenantId(), event.orderId());
+    List<OrderWithItemsProjection> rows =
+        orderQueryPort.findOrderWithItems(event.tenantId(), event.orderId());
 
     // 明细为空（含 LEFT JOIN 无匹配行时 itemId 为 NULL）时显式留痕，避免库存静默不扣减。
     // 订单必有商品项（Order.create 已强制校验），为空只可能是明细未随订单落库；静默跳过会让库存永不扣减且毫无报错，
@@ -45,7 +45,7 @@ public class OrderPaidEventHandler {
       return;
     }
 
-    for (OrderWithItemsRow row : rows) {
+    for (OrderWithItemsProjection row : rows) {
       if (row.getItemId() == null) {
         continue;
       }

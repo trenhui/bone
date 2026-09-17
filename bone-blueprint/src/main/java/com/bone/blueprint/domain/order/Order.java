@@ -119,7 +119,7 @@ public class Order extends TenantAggregateRoot<Long> {
    *
    * <p><b>为何不对外公开</b>：SDK 重载聚合不做级联，{@code findById} 得到的订单其 {@code items} 恒为空。 若暴露为 public，调用方会自然写出
    * {@code order.getItems()} 并拿到空列表——一个"看起来成功、实际什么都没做"的静默错误 （历史上有两个事件订阅器踩过）。明细一律经读侧端口 {@code
-   * OrderReadPort.findOrderWithItems} 获取。
+   * OrderQueryPort.findOrderWithItems} 获取。
    *
    * <p>本方法仅供领域内与同包聚合单测使用，代表"创建期 / 内存态"的明细。
    */
@@ -215,7 +215,11 @@ public class Order extends TenantAggregateRoot<Long> {
     addDomainEvent(new OrderCancelledEvent(getId(), getTenantId(), Instant.now()));
   }
 
-  /** 发货：仅已支付订单可发货（CREATED→PAID→SHIPPED）。 */
+  /**
+   * 发货：仅已支付订单可发货（PAID→SHIPPED）。
+   *
+   * <p><b>不发 DomainEvent</b>：内部状态迁移，无跨聚合协作需求—— 订单发货后无任何下游聚合需要以此为前置条件触发自身行为。
+   */
   public void ship() {
     if (this.status != OrderStatus.PAID) {
       throw new DomainException("只有已支付订单可以发货");
@@ -224,7 +228,11 @@ public class Order extends TenantAggregateRoot<Long> {
     this.updatedAt = new Date();
   }
 
-  /** 送达：仅已发货订单可送达（SHIPPED→DELIVERED）。 */
+  /**
+   * 送达：仅已发货订单可送达（SHIPPED→DELIVERED）。
+   *
+   * <p><b>不发 DomainEvent</b>：内部状态迁移，无跨聚合协作需求—— 订单送达是生命周期终态的业务确认，不触发任何下游聚合行为。
+   */
   public void deliver() {
     if (this.status != OrderStatus.SHIPPED) {
       throw new DomainException("只有已发货订单可以确认送达");

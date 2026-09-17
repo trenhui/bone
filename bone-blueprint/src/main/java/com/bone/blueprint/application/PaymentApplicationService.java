@@ -42,7 +42,13 @@ public class PaymentApplicationService {
                     new BizException(
                         404, BlueprintErrorCodes.PAYMENT_NOT_FOUND + ": " + command.paymentId()));
 
-    boolean refunded = payment.refund(command.refundAmount());
+    boolean refunded;
+    try {
+      refunded = payment.refund(command.refundAmount());
+    } catch (com.bone.core.exception.DomainException ex) {
+      throw new BizException(
+          409, BlueprintErrorCodes.PAYMENT_STATUS_CONFLICT + ": " + ex.getMessage(), ex);
+    }
 
     paymentRepository.save(payment);
     domainEventPublisher.publishFrom(payment);

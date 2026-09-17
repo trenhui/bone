@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 import lombok.Getter;
 
 /**
- * 订单头读模型行（单表投影，供超时扫描等轻量查询使用；复杂 Join 用 {@link OrderWithItemsRow}）。
+ * 订单头读模型行（单表投影，供超时扫描等轻量查询使用；复杂 Join 用 {@link OrderWithItemsProjection}）。
  *
  * <p>D0（E-8）约束：domain 包内禁止 {@code @Data}/{@code @Setter}，故只暴露 {@code @Getter} + 全参构造器，由读侧 RowMapper
  * 组装。
@@ -14,7 +14,7 @@ import lombok.Getter;
  * 不能依赖线程上下文），否则命令在 Handler 内会落到"平台租户"而查不到该行数据。
  */
 @Getter
-public class OrderHeadRow {
+public class OrderHeadProjection {
   private final Long tenantId;
   private final Long orderId;
   private final Long customerId;
@@ -22,7 +22,7 @@ public class OrderHeadRow {
   private final String status;
   private final LocalDateTime createdAt;
 
-  public OrderHeadRow(
+  public OrderHeadProjection(
       Long tenantId,
       Long orderId,
       Long customerId,

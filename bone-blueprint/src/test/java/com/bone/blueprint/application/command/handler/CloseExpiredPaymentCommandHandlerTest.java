@@ -2,6 +2,7 @@ package com.bone.blueprint.application.command.handler;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -14,7 +15,6 @@ import com.bone.blueprint.domain.payment.valueobject.PaymentChannel;
 import com.bone.blueprint.domain.payment.valueobject.PaymentStatus;
 import com.bone.blueprint.domain.repository.PaymentRepository;
 import com.bone.core.exception.BizException;
-import com.bone.core.exception.DomainException;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,8 +56,10 @@ class CloseExpiredPaymentCommandHandlerTest {
     payment.confirmSuccess("trade-001", new BigDecimal("200")); // SUCCESS 不可关闭
     when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(payment);
 
-    assertThrows(
-        DomainException.class, () -> handler.handle(new CloseExpiredPaymentCommand(1L, 1L)));
+    BizException ex =
+        assertThrows(
+            BizException.class, () -> handler.handle(new CloseExpiredPaymentCommand(1L, 1L)));
+    assertTrue(ex.getMessage().contains("已成功"), ex.getMessage());
     verify(paymentRepository, never()).save(any());
   }
 

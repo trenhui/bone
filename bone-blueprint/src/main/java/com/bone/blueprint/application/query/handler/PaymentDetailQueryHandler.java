@@ -2,8 +2,8 @@ package com.bone.blueprint.application.query.handler;
 
 import com.bone.blueprint.application.port.out.TenantProvider;
 import com.bone.blueprint.application.query.dto.PaymentDto;
-import com.bone.blueprint.application.query.dto.PaymentRow;
-import com.bone.blueprint.application.query.port.PaymentReadPort;
+import com.bone.blueprint.application.query.dto.PaymentProjection;
+import com.bone.blueprint.application.query.port.PaymentQueryPort;
 import com.bone.blueprint.application.query.qry.PaymentDetailQuery;
 import com.bone.blueprint.application.query.support.PaymentDetailAssembler;
 import com.bone.blueprint.common.BlueprintErrorCodes;
@@ -17,14 +17,14 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class PaymentDetailQueryHandler {
 
-  private final PaymentReadPort paymentReadPort;
+  private final PaymentQueryPort paymentQueryPort;
   private final TenantProvider tenantProvider;
 
   @Transactional(readOnly = true)
   public PaymentDto handle(PaymentDetailQuery query) {
     long tenantId = tenantProvider.currentTenantId();
-    PaymentRow row =
-        paymentReadPort
+    PaymentProjection row =
+        paymentQueryPort
             .findById(tenantId, query.paymentId())
             .orElseThrow(
                 () ->

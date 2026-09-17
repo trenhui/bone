@@ -2,8 +2,8 @@ package com.bone.blueprint.adapter.schedule;
 
 import com.bone.blueprint.application.OrderApplicationService;
 import com.bone.blueprint.application.command.cmd.CancelOrderCommand;
-import com.bone.blueprint.application.query.dto.OrderHeadRow;
-import com.bone.blueprint.application.query.port.OrderReadPort;
+import com.bone.blueprint.application.query.dto.OrderHeadProjection;
+import com.bone.blueprint.application.query.port.OrderQueryPort;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class CancelExpiredOrderJob {
 
-  private final OrderReadPort orderReadPort;
+  private final OrderQueryPort orderQueryPort;
   private final OrderApplicationService orderApplicationService;
 
   /** 超时阈值（分钟）：订单创建后超过该时长未支付即取消。 */
@@ -38,12 +38,12 @@ public class CancelExpiredOrderJob {
   @Scheduled(cron = "0 0/5 * * * ?") // 每5分钟执行一次
   public void cancelExpiredOrders() {
     Instant before = Instant.now().minusSeconds(ORDER_TIMEOUT_MINUTES * 60);
-    List<OrderHeadRow> expired = orderReadPort.findCreatedExpiredBeforeAllTenants(before);
+    List<OrderHeadProjection> expired = orderQueryPort.findCreatedExpiredBeforeAllTenants(before);
     log.info(
         "[全租户扫描] 超时未支付订单扫描完成: 阈值={}min, 命中={} 笔（E-4.4 平台运维入口，README 已登记）",
         ORDER_TIMEOUT_MINUTES,
         expired.size());
-    for (OrderHeadRow row : expired) {
+    for (OrderHeadProjection row : expired) {
       try {
         orderApplicationService.cancel(new CancelOrderCommand(row.getOrderId(), row.getTenantId()));
       } catch (Exception e) {

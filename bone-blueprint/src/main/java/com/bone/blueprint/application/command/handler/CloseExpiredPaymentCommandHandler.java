@@ -47,7 +47,12 @@ public class CloseExpiredPaymentCommandHandler {
                     new BizException(
                         404, BlueprintErrorCodes.PAYMENT_NOT_FOUND + ": " + command.paymentId()));
 
-    payment.close();
+    try {
+      payment.close();
+    } catch (com.bone.core.exception.DomainException ex) {
+      throw new BizException(
+          409, BlueprintErrorCodes.PAYMENT_STATUS_CONFLICT + ": " + ex.getMessage(), ex);
+    }
     paymentRepository.save(payment);
     log.info("已关闭超时支付单: paymentId={}, tenantId={}", command.paymentId(), tenantId);
   }

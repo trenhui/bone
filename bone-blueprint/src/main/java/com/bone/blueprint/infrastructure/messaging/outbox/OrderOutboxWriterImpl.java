@@ -1,12 +1,12 @@
 package com.bone.blueprint.infrastructure.messaging.outbox;
 
+import com.bone.blueprint.application.event.integration.OrderPaidIntegrationEvent;
+import com.bone.blueprint.application.event.integration.OrderPaymentInconsistentIntegrationEvent;
+import com.bone.blueprint.application.event.integration.PaymentFailedIntegrationEvent;
+import com.bone.blueprint.application.event.integration.PaymentRefundedIntegrationEvent;
+import com.bone.blueprint.application.event.integration.PaymentSucceededIntegrationEvent;
 import com.bone.blueprint.application.port.out.OrderOutboxWriter;
 import com.bone.blueprint.application.port.out.TenantProvider;
-import com.bone.blueprint.domain.integration.event.OrderPaidIntegrationEvent;
-import com.bone.blueprint.domain.integration.event.OrderPaymentInconsistentIntegrationEvent;
-import com.bone.blueprint.domain.integration.event.PaymentFailedIntegrationEvent;
-import com.bone.blueprint.domain.integration.event.PaymentRefundedIntegrationEvent;
-import com.bone.blueprint.domain.integration.event.PaymentSucceededIntegrationEvent;
 import com.bone.blueprint.domain.order.event.OrderPaidEvent;
 import com.bone.blueprint.domain.order.event.OrderPaymentInconsistentEvent;
 import com.bone.blueprint.domain.payment.event.PaymentFailedEvent;

@@ -1,7 +1,7 @@
 package com.bone.blueprint.infrastructure.query;
 
-import com.bone.blueprint.application.query.dto.PaymentRow;
-import com.bone.blueprint.application.query.port.PaymentReadPort;
+import com.bone.blueprint.application.query.dto.PaymentProjection;
+import com.bone.blueprint.application.query.port.PaymentQueryPort;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -14,10 +14,10 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
-/** 支付读侧实现：NamedParameterJdbcTemplate 直查 bp_payment（§18.5 读模型）。 */
+/** 支付读侧适配器：NamedParameterJdbcTemplate 直查 bp_payment（ADR-0028 读模型）。 */
 @Component
 @RequiredArgsConstructor
-public class PaymentReadPortImpl implements PaymentReadPort {
+public class PaymentQueryAdapter implements PaymentQueryPort {
 
   private static final String COLUMNS =
       "tenant_id, id, order_id, customer_id, amount, channel, status, channel_trade_no, "
@@ -26,29 +26,19 @@ public class PaymentReadPortImpl implements PaymentReadPort {
   private final NamedParameterJdbcTemplate jdbcTemplate;
 
   @Override
-  public Optional<PaymentRow> findById(long tenantId, long paymentId) {
+  public Optional<PaymentProjection> findById(long tenantId, long paymentId) {
     String sql =
         "SELECT "
             + COLUMNS
             + " FROM bp_payment WHERE tenant_id = :tenantId AND id = :id AND deleted = 0";
     MapSqlParameterSource params =
         new MapSqlParameterSource().addValue("tenantId", tenantId).addValue("id", paymentId);
-    List<PaymentRow> rows = jdbcTemplate.query(sql, params, new PaymentRowMapper());
+    List<PaymentProjection> rows = jdbcTemplate.query(sql, params, new PaymentRowMapper());
     return rows.stream().findFirst();
   }
 
   @Override
-  public List<PaymentRow> findPayableExpiredBefore(long tenantId, Instant before) {
-    MapSqlParameterSource params =
-        new MapSqlParameterSource()
-            .addValue("tenantId", tenantId)
-            .addValue("before", Timestamp.from(before));
-    return jdbcTemplate.query(
-        PAYABLE_EXPIRED_SQL + " AND tenant_id = :tenantId", params, new PaymentRowMapper());
-  }
-
-  @Override
-  public List<PaymentRow> findPayableExpiredBeforeAllTenants(Instant before) {
+  public List<PaymentProjection> findPayableExpiredBeforeAllTenants(Instant before) {
     // 全租户运维扫描：不带 tenant_id 条件；调用方须为已登记的定时任务
     return jdbcTemplate.query(
         PAYABLE_EXPIRED_SQL,
@@ -57,7 +47,7 @@ public class PaymentReadPortImpl implements PaymentReadPort {
   }
 
   @Override
-  public List<PaymentRow> findSuccessCreatedBeforeAllTenants(Instant before) {
+  public List<PaymentProjection> findSuccessCreatedBeforeAllTenants(Instant before) {
     // 「钱货不一致」对账扫描：已成功的支付单，供调用方核对订单是否已确认支付
     String sql =
         "SELECT "
@@ -76,11 +66,11 @@ public class PaymentReadPortImpl implements PaymentReadPort {
           + " FROM bp_payment "
           + "WHERE deleted = 0 AND status IN ('PENDING','PAYING') AND created_at < :before";
 
-  private static final class PaymentRowMapper implements RowMapper<PaymentRow> {
+  private static final class PaymentRowMapper implements RowMapper<PaymentProjection> {
 
     @Override
-    public PaymentRow mapRow(ResultSet rs, int rowNum) throws SQLException {
-      return new PaymentRow(
+    public PaymentProjection mapRow(ResultSet rs, int rowNum) throws SQLException {
+      return new PaymentProjection(
           rs.getLong("tenant_id"),
           rs.getLong("id"),
           rs.getLong("order_id"),

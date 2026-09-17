@@ -5,7 +5,7 @@ import java.time.Instant;
 import lombok.Getter;
 
 /**
- * 支付读侧投影行（§18.5 读模型，来自 bp_payment 查询）。
+ * 支付读侧投影行（ADR-0028 读模型，来自 bp_payment 查询）。
  *
  * <p>D0（E-8）约束：domain 包内禁止 {@code @Data}/{@code @Setter}，故只暴露 {@code @Getter} + 全参构造器，由读侧 RowMapper
  * 组装。
@@ -13,7 +13,7 @@ import lombok.Getter;
  * <p><b>带 {@code tenantId}</b>：定时任务需按扫描到的行<strong>显式携带租户</strong>下发命令（E-4.4 异步分支必须显式传递租户）。
  */
 @Getter
-public class PaymentRow {
+public class PaymentProjection {
 
   private final Long tenantId;
   private final Long paymentId;
@@ -29,7 +29,7 @@ public class PaymentRow {
   private final BigDecimal refundAmount;
   private final Instant createdAt;
 
-  public PaymentRow(
+  public PaymentProjection(
       Long tenantId,
       Long paymentId,
       Long orderId,

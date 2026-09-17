@@ -114,7 +114,12 @@ public class InitiatePaymentCommandHandler {
     transactionTemplate.executeWithoutResult(
         status -> {
           Payment payment = loadPayment(paymentId, tenantId);
-          payment.submitToChannel(payUrl);
+          try {
+            payment.submitToChannel(payUrl);
+          } catch (com.bone.core.exception.DomainException ex) {
+            throw new BizException(
+                409, BlueprintErrorCodes.PAYMENT_STATUS_CONFLICT + ": " + ex.getMessage(), ex);
+          }
           paymentRepository.save(payment);
           domainEventPublisher.publishFrom(payment);
         });

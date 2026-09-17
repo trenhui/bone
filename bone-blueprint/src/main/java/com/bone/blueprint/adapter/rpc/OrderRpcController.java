@@ -39,7 +39,7 @@ public class OrderRpcController {
 
   @Operation(summary = "创建订单", description = "创建新的订单")
   @PostMapping
-  public ApiResponse<CreateOrderRpcResp> createOrder(
+  public ApiResponse<CreateOrderRpcResp> create(
       @Parameter(description = "订单创建请求") @RequestBody CreateOrderRpcReq request) {
     Long orderId =
         createOrderCommandHandler.handle(orderRpcAssembler.toCreateOrderCommand(request));
@@ -53,7 +53,7 @@ public class OrderRpcController {
 
   @Operation(summary = "根据ID查询订单", description = "根据订单ID查询订单详情")
   @GetMapping("/{orderId}")
-  public ApiResponse<OrderDetailResp> getOrderById(
+  public ApiResponse<OrderDetailResp> getById(
       @Parameter(description = "订单ID") @PathVariable Long orderId) {
     // 与 web 侧统一：不可变查询对象 + 复用同一响应 DTO（同服务内 web/rpc 契约一致）
     OrderDto dto = orderDetailQueryHandler.handle(new OrderDetailQuery(orderId));

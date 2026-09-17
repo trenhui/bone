@@ -1,9 +1,12 @@
-package com.bone.blueprint.domain.gateway;
+package com.bone.blueprint.application.port.out;
 
 import java.math.BigDecimal;
 
 /**
- * 回调验签出站端口（E-10 / ADR-0022）。
+ * 回调验签出站端口（E-10 / ADR-0022 / E-10.2）。
+ *
+ * <p>技术 concern（安全验签），不属于业务网关（domain/gateway 中的 InventoryGateway、PaymentGateway 才是"业务规则依赖的外部事实"）。
+ * 故放 {@code application/port/out}。
  *
  * <p><b>入参只含回调报文中的标量</b>（支付单号、渠道流水号、金额、签名），<strong>不依赖 {@code Payment} 聚合</strong>：
  * 验签是对<strong>报文字段</strong>做签名校验，与领域对象无关。这样的签名才能让 adapter 在<strong>进入应用层之前 </strong>完成验签（防腐层职责），也避免

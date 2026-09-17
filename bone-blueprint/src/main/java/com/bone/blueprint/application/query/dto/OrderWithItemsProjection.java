@@ -11,7 +11,7 @@ import lombok.Getter;
  * 组装。明细列在无明细行时为 {@code null}。
  */
 @Getter
-public class OrderWithItemsRow {
+public class OrderWithItemsProjection {
   private final Long orderId;
   private final Long customerId;
   private final BigDecimal totalAmount;
@@ -24,7 +24,7 @@ public class OrderWithItemsRow {
   private final BigDecimal unitPrice;
   private final BigDecimal subtotal;
 
-  public OrderWithItemsRow(
+  public OrderWithItemsProjection(
       Long orderId,
       Long customerId,
       BigDecimal totalAmount,

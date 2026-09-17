@@ -1,7 +1,7 @@
 package com.bone.blueprint.adapter.mq.listener;
 
 import com.bone.blueprint.application.OrderPaidConsumptionApplicationService;
-import com.bone.blueprint.domain.integration.event.OrderPaidIntegrationEvent;
+import com.bone.blueprint.application.event.integration.OrderPaidIntegrationEvent;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;

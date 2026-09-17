@@ -1,6 +1,6 @@
 package com.bone.blueprint.infrastructure.gateway.payment;
 
-import com.bone.blueprint.domain.gateway.PaymentSignaturePort;
+import com.bone.blueprint.application.port.out.PaymentSignaturePort;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;

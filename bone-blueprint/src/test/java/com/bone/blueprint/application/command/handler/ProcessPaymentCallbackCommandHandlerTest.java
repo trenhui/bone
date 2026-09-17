@@ -3,6 +3,8 @@ package com.bone.blueprint.application.command.handler;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -10,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import com.bone.blueprint.application.command.cmd.ProcessPaymentCallbackCommand;
 import com.bone.blueprint.application.port.out.OrderOutboxWriter;
+import com.bone.blueprint.application.port.out.PaymentSignaturePort;
 import com.bone.blueprint.application.port.out.TenantProvider;
 import com.bone.blueprint.domain.payment.Payment;
 import com.bone.blueprint.domain.payment.valueobject.PaymentChannel;
@@ -31,7 +34,7 @@ import org.springframework.dao.DuplicateKeyException;
 /**
  * 支付回调用例测试。
  *
- * <p><b>不再断言 Handler 内验签</b>：验签已前移到 adapter（ADR-0022，覆盖成功/失败全分支），命令也不再携带 signature。
+ * <p><b>验签在此处（Handler 内）</b>：E-4.2 分层约束，adapter 层禁止直引技术端口，验签收口到 application 层。
  *
  * <p><b>关键断言</b>：支付成功必须与 Outbox 写入<strong>同事务</strong>（P-5.4），且并发重复回调被唯一索引拦截时按幂等处理。
  */
@@ -42,8 +45,14 @@ class ProcessPaymentCallbackCommandHandlerTest {
   @Mock private TenantProvider tenantProvider;
   @Mock private OrderOutboxWriter orderOutboxWriter;
   @Mock private DomainEventPublisher domainEventPublisher;
+  @Mock private PaymentSignaturePort paymentSignaturePort;
 
   @InjectMocks private ProcessPaymentCallbackCommandHandler handler;
+
+  @org.junit.jupiter.api.BeforeEach
+  void setUp() {
+    when(paymentSignaturePort.verify(anyLong(), anyString(), any(), anyString())).thenReturn(true);
+  }
 
   private Payment pendingPayment() {
     return Payment.create(
@@ -63,7 +72,9 @@ class ProcessPaymentCallbackCommandHandlerTest {
               return 1L;
             });
 
-    handler.handle(new ProcessPaymentCallbackCommand(1L, "trade-001", new BigDecimal("200"), true));
+    handler.handle(
+        new ProcessPaymentCallbackCommand(
+            1L, "trade-001", new BigDecimal("200"), true, "test-signature"));
 
     assertEquals(PaymentStatus.SUCCESS, payment.getStatus());
     assertEquals("trade-001", payment.getChannelTradeNo());
@@ -82,7 +93,8 @@ class ProcessPaymentCallbackCommandHandlerTest {
         DomainException.class,
         () ->
             handler.handle(
-                new ProcessPaymentCallbackCommand(1L, "trade-001", new BigDecimal("199"), true)));
+                new ProcessPaymentCallbackCommand(
+                    1L, "trade-001", new BigDecimal("199"), true, "test-signature")));
     verify(paymentRepository, never()).save(any());
     verify(orderOutboxWriter, never()).appendPaymentSucceeded(any());
   }
@@ -94,7 +106,8 @@ class ProcessPaymentCallbackCommandHandlerTest {
     when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(payment);
 
     handler.handle(
-        new ProcessPaymentCallbackCommand(1L, "trade-002", new BigDecimal("200"), false));
+        new ProcessPaymentCallbackCommand(
+            1L, "trade-002", new BigDecimal("200"), false, "test-signature"));
 
     assertEquals(PaymentStatus.FAILED, payment.getStatus());
     // 失败回调不产生「支付成功」事实，不应写 Outbox
@@ -110,7 +123,9 @@ class ProcessPaymentCallbackCommandHandlerTest {
     when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(payment);
 
-    handler.handle(new ProcessPaymentCallbackCommand(1L, "trade-001", new BigDecimal("200"), true));
+    handler.handle(
+        new ProcessPaymentCallbackCommand(
+            1L, "trade-001", new BigDecimal("200"), true, "test-signature"));
 
     assertEquals(PaymentStatus.SUCCESS, payment.getStatus());
     // 幂等跳过：不写库、不发事件、不重复落 Outbox
@@ -127,7 +142,9 @@ class ProcessPaymentCallbackCommandHandlerTest {
     when(paymentRepository.save(any(Payment.class)))
         .thenThrow(new DuplicateKeyException("uk_bp_payment_tenant_channel"));
 
-    handler.handle(new ProcessPaymentCallbackCommand(1L, "trade-001", new BigDecimal("200"), true));
+    handler.handle(
+        new ProcessPaymentCallbackCommand(
+            1L, "trade-001", new BigDecimal("200"), true, "test-signature"));
 
     // 按幂等处理：不向上抛 500、不写 Outbox、不发布事件
     verify(orderOutboxWriter, never()).appendPaymentSucceeded(any());
@@ -143,7 +160,8 @@ class ProcessPaymentCallbackCommandHandlerTest {
         NotFoundException.class,
         () ->
             handler.handle(
-                new ProcessPaymentCallbackCommand(1L, "trade-003", new BigDecimal("200"), true)));
+                new ProcessPaymentCallbackCommand(
+                    1L, "trade-003", new BigDecimal("200"), true, "test-signature")));
 
     verify(paymentRepository, never()).save(any());
   }
@@ -154,7 +172,9 @@ class ProcessPaymentCallbackCommandHandlerTest {
     when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(payment);
 
-    handler.handle(new ProcessPaymentCallbackCommand(1L, "trade-004", new BigDecimal("200"), true));
+    handler.handle(
+        new ProcessPaymentCallbackCommand(
+            1L, "trade-004", new BigDecimal("200"), true, "test-signature"));
 
     ArgumentCaptor<com.bone.blueprint.domain.payment.event.PaymentSucceededEvent> captor =
         ArgumentCaptor.forClass(

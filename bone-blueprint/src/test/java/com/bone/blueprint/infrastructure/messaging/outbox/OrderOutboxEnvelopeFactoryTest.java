@@ -3,7 +3,7 @@ package com.bone.blueprint.infrastructure.messaging.outbox;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import com.bone.blueprint.domain.integration.event.OrderPaidIntegrationEvent;
+import com.bone.blueprint.application.event.integration.OrderPaidIntegrationEvent;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.math.BigDecimal;

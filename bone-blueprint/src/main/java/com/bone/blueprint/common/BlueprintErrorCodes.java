@@ -39,6 +39,10 @@ public final class BlueprintErrorCodes {
   /** 渠道预下单失败（502）——上游依赖故障，重试前先确认渠道侧是否已受理。 */
   public static final String PAYMENT_CHANNEL_PREPAY_FAILED = "BP_PAYMENT_CHANNEL_PREPAY_FAILED";
 
+  /** 渠道回调来源不在白名单（403）——纵深防御：仅允许受信任的支付网关来源命中白名单。 */
+  public static final String PAYMENT_CALLBACK_SOURCE_NOT_ALLOWED =
+      "BP_PAYMENT_CALLBACK_SOURCE_NOT_ALLOWED";
+
   // ===== 幂等（复用平台公共码，不另造 BP_ 码）=====
 
   /** 同一 Idempotency-Key 被用于不同请求体（409）——见错误码登记 §6 `COMMON_`。 */

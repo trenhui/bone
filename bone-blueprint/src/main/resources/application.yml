@@ -19,6 +19,10 @@ bone:
     enabled: true
     scan-packages: com.bone.blueprint.domain
   blueprint:
+    payment:
+      callback:
+        # 回调来源白名单（逗号分隔 IPv4/IPv6）；为空=不限制来源（默认，便于联调）
+        allowed-source-ips: ""
     outbox:
       enabled: true
       mq-enabled: false

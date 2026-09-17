@@ -60,6 +60,9 @@ public class SecurityConfig {
                     .requestMatchers(
                         "/actuator/**", "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**")
                     .permitAll()
+                    // 支付回调为渠道 server-to-server 调用，不要求用户凭证；信任由 Handler 内验签 + 端点来源白名单保证
+                    .requestMatchers("/api/v1/payments/callback")
+                    .permitAll()
                     .anyRequest()
                     .authenticated())
         .exceptionHandling(

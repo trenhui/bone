@@ -11,7 +11,7 @@ import com.bone.metadata.sdk.Repository;
  * 换个包就能变绿，门禁随之失效。正确做法是修正判据：R9 现按<strong>被持久化的聚合根类型</strong>计数， {@code OrderItem} 是 {@code Order}
  * 聚合内的实体（非聚合根），与 {@code Order} 同事务落库属<strong>同一聚合</strong>， 天然合规，无需靠包位置规避。
  *
- * <p><b>读明细走查询侧</b>：下游（如库存预留）读取明细应通过 {@code OrderReadPort.findOrderWithItems}（联表投影）， 而非在本写侧仓储加返回
+ * <p><b>读明细走查询侧</b>：下游（如库存预留）读取明细应通过 {@code OrderQueryPort.findOrderWithItems}（联表投影）， 而非在本写侧仓储加返回
  * {@code List} 的查询方法（违反仓储方法白名单：写侧仓储只返 聚合根 / {@code Optional<聚合根>} / {@code boolean} / {@code
  * void}）。故本接口保持裸接口，仅复用 SDK 的 {@code save/findById} 等基础能力。
  *

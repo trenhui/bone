@@ -1,7 +1,7 @@
 package com.bone.blueprint.application.query.support;
 
 import com.bone.blueprint.application.query.dto.OrderDto;
-import com.bone.blueprint.application.query.dto.OrderWithItemsRow;
+import com.bone.blueprint.application.query.dto.OrderWithItemsProjection;
 import com.bone.blueprint.common.BlueprintErrorCodes;
 import com.bone.core.exception.BizException;
 import java.util.ArrayList;
@@ -11,13 +11,13 @@ public final class OrderDetailAssembler {
 
   private OrderDetailAssembler() {}
 
-  public static OrderDto fromRows(List<OrderWithItemsRow> rows) {
+  public static OrderDto fromRows(List<OrderWithItemsProjection> rows) {
     if (rows == null || rows.isEmpty()) {
       throw new BizException(404, BlueprintErrorCodes.ORDER_NOT_FOUND);
     }
-    OrderWithItemsRow head = rows.get(0);
+    OrderWithItemsProjection head = rows.get(0);
     List<OrderDto.OrderItemDto> items = new ArrayList<>();
-    for (OrderWithItemsRow row : rows) {
+    for (OrderWithItemsProjection row : rows) {
       if (row.getItemId() != null) {
         items.add(
             OrderDto.OrderItemDto.builder()

@@ -13,13 +13,18 @@ import com.bone.blueprint.application.command.handler.ProcessPaymentCallbackComm
 import com.bone.blueprint.application.query.dto.PaymentDto;
 import com.bone.blueprint.application.query.handler.PaymentDetailQueryHandler;
 import com.bone.blueprint.application.query.qry.PaymentDetailQuery;
-import com.bone.blueprint.domain.gateway.PaymentSignaturePort;
+import com.bone.blueprint.common.BlueprintErrorCodes;
 import com.bone.core.exception.BizException;
 import com.bone.core.model.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import java.util.Arrays;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,6 +37,10 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <p><b>入站边界双形态（E-3.7 ApplicationService First）</b>： 退款（单聚合、简单）走 {@link
  * PaymentApplicationService}；发起支付（两段式远程调用 + 事务拆分）、支付回调（验签 + 幂等状态机）仍走独立 {@code CommandHandler}。
+ *
+ * <p><b>授权（API 规范 §9.2）</b>：用户侧端点声明 scope——读用 {@code order:payment:read}、写用 {@code
+ * order:payment:write}（来自 IAM 签发的 token，框架把 {@code scopes} claim 映射为 authority）。回调端点为支付渠道
+ * server-to-server 调用，不要求用户 scope（{@code permitAll}），依赖 Handler 内验签 + 本处<b>来源 IP 白名单</b>纵深防御。
  *
  * <p><b>回调验签在 adapter 边界完成</b>：签名不可信直接拒绝，不进 Handler、不进领域。覆盖全部分支（成功 / 失败）——只验成功回调时，伪造的失败回调可把支付单打成
  * FAILED，真实成功回调随后被聚合拒绝。
@@ -47,9 +56,13 @@ public class PaymentController {
   private final PaymentApplicationService paymentApplicationService;
   private final PaymentDetailQueryHandler paymentDetailQueryHandler;
   private final PaymentAssembler paymentAssembler;
-  private final PaymentSignaturePort paymentSignaturePort;
+
+  /** 回调来源白名单（逗号分隔的 IPv4/IPv6）；为空表示不限制来源（默认，便于联调）。 */
+  @Value("${bone.payment.callback.allowed-source-ips:}")
+  private String allowedSourceIpsRaw;
 
   @Operation(summary = "发起支付", description = "对指定订单发起支付，返回支付链接")
+  @PreAuthorize("hasAuthority('order:payment:write')")
   @PostMapping("/initiate")
   public ApiResponse<InitiatePaymentResp> initiate(@Valid @RequestBody InitiatePaymentReq request) {
     InitiatePaymentResult result =
@@ -57,17 +70,14 @@ public class PaymentController {
     return ApiResponse.success(paymentAssembler.toInitiatePaymentResp(result));
   }
 
-  @Operation(summary = "支付回调", description = "支付渠道异步通知支付结果（先验签，再幂等确认）")
+  @Operation(summary = "支付回调", description = "支付渠道异步通知支付结果（验签已收口到 Handler；来源须命中白名单）")
+  @PreAuthorize("permitAll()")
   @PostMapping("/callback")
-  public ApiResponse<Void> callback(@Valid @RequestBody PaymentCallbackReq request) {
-    boolean trusted =
-        paymentSignaturePort.verify(
-            request.getPaymentId(),
-            request.getChannelTradeNo(),
-            request.getPaidAmount(),
-            request.getSignature());
-    if (!trusted) {
-      throw new BizException("支付回调签名校验失败");
+  public ApiResponse<Void> callback(
+      @Valid @RequestBody PaymentCallbackReq request, HttpServletRequest httpRequest) {
+    if (!isSourceAllowed(httpRequest)) {
+      throw new BizException(
+          403, BlueprintErrorCodes.PAYMENT_CALLBACK_SOURCE_NOT_ALLOWED + ": 回调来源不在白名单");
     }
     processPaymentCallbackCommandHandler.handle(
         paymentAssembler.toProcessPaymentCallbackCommand(request));
@@ -75,6 +85,7 @@ public class PaymentController {
   }
 
   @Operation(summary = "查询支付单", description = "按支付单ID查询详情")
+  @PreAuthorize("hasAuthority('order:payment:read')")
   @GetMapping("/{paymentId}")
   public ApiResponse<PaymentDetailResp> getById(@PathVariable Long paymentId) {
     PaymentDto dto = paymentDetailQueryHandler.handle(new PaymentDetailQuery(paymentId));
@@ -82,10 +93,39 @@ public class PaymentController {
   }
 
   @Operation(summary = "退款", description = "对已成功支付单发起退款")
+  @PreAuthorize("hasAuthority('order:payment:write')")
   @PostMapping("/{paymentId}/refund")
   public ApiResponse<Void> refund(
       @PathVariable Long paymentId, @Valid @RequestBody RefundPaymentReq request) {
     paymentApplicationService.refund(paymentAssembler.toRefundPaymentCommand(paymentId, request));
     return ApiResponse.success();
+  }
+
+  /** 回调来源是否在白名单内（白名单为空则不限制）。 */
+  private boolean isSourceAllowed(HttpServletRequest request) {
+    List<String> allowed = allowedSourceIps();
+    if (allowed.isEmpty()) {
+      return true;
+    }
+    String source = resolveClientIp(request);
+    return allowed.contains(source);
+  }
+
+  private List<String> allowedSourceIps() {
+    if (allowedSourceIpsRaw == null || allowedSourceIpsRaw.isBlank()) {
+      return List.of();
+    }
+    return Arrays.stream(allowedSourceIpsRaw.split(","))
+        .map(String::trim)
+        .filter(s -> !s.isEmpty())
+        .toList();
+  }
+
+  private String resolveClientIp(HttpServletRequest request) {
+    String forwarded = request.getHeader("X-Forwarded-For");
+    if (forwarded != null && !forwarded.isBlank()) {
+      return forwarded.split(",")[0].trim();
+    }
+    return request.getRemoteAddr();
   }
 }

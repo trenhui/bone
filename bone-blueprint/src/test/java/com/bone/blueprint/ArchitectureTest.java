@@ -47,7 +47,7 @@ public class ArchitectureTest {
       BoneDddArchRules.commandHandlersMustNotUseQueryBuilder();
 
   // E-9.3（v4.6 主判据）：读侧 DSL 只许出现在 infrastructure/query，application 层禁止依赖。
-  // 参考样板不 freeze，须 0 违规（分页查询已迁移到 OrderReadPort）。
+  // 参考样板不 freeze，须 0 违规（分页查询已迁移到 OrderQueryPort）。
   @ArchTest
   static final ArchRule read_side_dsl_only_in_query_layer =
       BoneDddArchRules.readSideDslOnlyInQueryLayer();
@@ -140,7 +140,7 @@ public class ArchitectureTest {
           .orShould()
           .haveSimpleName("InventoryGateway")
           .orShould()
-          .haveSimpleName("PaymentSignaturePort");
+          .haveSimpleName("package-info");
 
   // v4.5：命名 / 事务四条规则已降级为 warn（tasks 2.5），不再作为 @ArchTest 硬门禁；
   // 反贫血主判据切换为 R8 聚合纯单测（AggregatePureUnitTestCoverageTest）。

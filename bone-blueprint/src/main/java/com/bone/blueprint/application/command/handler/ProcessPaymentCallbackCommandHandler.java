@@ -2,13 +2,16 @@ package com.bone.blueprint.application.command.handler;
 
 import com.bone.blueprint.application.command.cmd.ProcessPaymentCallbackCommand;
 import com.bone.blueprint.application.port.out.OrderOutboxWriter;
+import com.bone.blueprint.application.port.out.PaymentSignaturePort;
 import com.bone.blueprint.application.port.out.TenantProvider;
+import com.bone.blueprint.common.BlueprintErrorCodes;
 import com.bone.blueprint.domain.payment.Payment;
 import com.bone.blueprint.domain.payment.event.PaymentSucceededEvent;
 import com.bone.blueprint.domain.repository.PaymentRepository;
 import com.bone.core.capability.Capability;
 import com.bone.core.domain.DomainEvent;
 import com.bone.core.domain.event.DomainEventPublisher;
+import com.bone.core.exception.BizException;
 import com.bone.core.exception.NotFoundException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -18,11 +21,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 支付渠道回调用例：按支付单号查找支付单，幂等确认支付成功/失败，保存并发布领域事件。
+ * 支付渠道回调用例：先验签、再幂等确认支付成功/失败，保存并发布领域事件。
  *
- * <p><b>验签不在此处</b>：按 ADR-0022，验签是 adapter 边界的防腐职责，且必须覆盖<strong>全部</strong>回调分支（成功 / 失败 / 关闭）。放在
- * Handler 内会导致：① 新增 RPC / MQ 入站通道时容易漏验签；② 仅成功分支验签时，伪造的失败回调可把支付单打成 FAILED，
- * 真实成功回调随后被聚合拒绝（"已失败/已关闭的支付单无法确认成功"）。
+ * <p><b>验签在此处（application 层）</b>：按 E-4.2 分层约束，adapter 层禁止直引技术端口（PaymentSignaturePort）。 把验签收口到
+ * Handler，HTTP / RPC / MQ 任意入口调用都会自动验签——不会因为新增通道而漏验。
  *
  * <p><b>Outbox 与业务同事务（P-5.4）</b>：支付成功是不可容忍丢失的资金事实，必须与支付单状态变更在 <strong>同一事务</strong>内落
  * Outbox，再由中继投递。此前仅在 AFTER_COMMIT 监听器中写 Outbox， 支付事务提交后、监听器执行前的崩溃会造成「支付已成功、事件已消失、订单永不确认」且无迹可寻。
@@ -35,9 +37,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Capability(
     name = "ProcessPaymentCallback",
-    description = "处理支付渠道回调：幂等确认支付成功/失败（验签在 adapter 边界完成）",
+    description = "处理支付渠道回调：验签 + 幂等确认支付成功/失败",
     inputSchema =
-        "{\"paymentId\": \"long\", \"channelTradeNo\": \"string\", \"paidAmount\": \"decimal\", \"success\": \"boolean\"}",
+        "{\"paymentId\": \"long\", \"channelTradeNo\": \"string\", \"paidAmount\": \"decimal\", \"success\": \"boolean\", \"signature\": \"string\"}",
     outputSchema = "{}",
     idempotent = true,
     cost = 3,
@@ -49,9 +51,21 @@ public class ProcessPaymentCallbackCommandHandler {
   private final TenantProvider tenantProvider;
   private final OrderOutboxWriter orderOutboxWriter;
   private final DomainEventPublisher domainEventPublisher;
+  private final PaymentSignaturePort paymentSignaturePort;
 
   @Transactional
   public void handle(ProcessPaymentCallbackCommand command) {
+    // 验签（所有入口统一在此，不会漏）
+    boolean trusted =
+        paymentSignaturePort.verify(
+            command.paymentId(),
+            command.channelTradeNo(),
+            command.paidAmount(),
+            command.signature());
+    if (!trusted) {
+      throw new BizException(401, BlueprintErrorCodes.PAYMENT_SIGNATURE_INVALID + ": 支付回调签名校验失败");
+    }
+
     long tenantId = tenantProvider.currentTenantId();
     // 以支付单号定位支付单（真实渠道回调通常携带支付单号或渠道流水号）
     Payment payment =
@@ -59,13 +73,39 @@ public class ProcessPaymentCallbackCommandHandler {
             .orElseThrow(() -> new NotFoundException("支付单不存在: paymentId=" + command.paymentId()));
 
     if (!command.success()) {
-      payment.markFailed(command.channelTradeNo());
+      try {
+        payment.markFailed(command.channelTradeNo());
+      } catch (com.bone.core.exception.DomainException ex) {
+        // 状态冲突类 → 转 BizException + 错误码；金额/参数校验类让 DomainException 继续冒泡
+        String msg = ex.getMessage();
+        if (msg != null
+            && (msg.contains("状态")
+                || msg.contains("已成功")
+                || msg.contains("已失败")
+                || msg.contains("已关闭"))) {
+          throw new BizException(409, BlueprintErrorCodes.PAYMENT_STATUS_CONFLICT + ": " + msg, ex);
+        }
+        throw ex;
+      }
       paymentRepository.save(payment);
       domainEventPublisher.publishFrom(payment);
       return;
     }
 
-    boolean migrated = payment.confirmSuccess(command.channelTradeNo(), command.paidAmount());
+    boolean migrated;
+    try {
+      migrated = payment.confirmSuccess(command.channelTradeNo(), command.paidAmount());
+    } catch (com.bone.core.exception.DomainException ex) {
+      String msg = ex.getMessage();
+      if (msg != null
+          && (msg.contains("状态")
+              || msg.contains("已成功")
+              || msg.contains("已失败")
+              || msg.contains("已关闭"))) {
+        throw new BizException(409, BlueprintErrorCodes.PAYMENT_STATUS_CONFLICT + ": " + msg, ex);
+      }
+      throw ex;
+    }
     if (!migrated) {
       // 幂等跳过（同渠道流水号重复回调）：不写库、不发事件
       log.info(
