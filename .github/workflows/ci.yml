@@ -59,6 +59,9 @@ jobs:
       - name: DDD Gate State Lint (blocking)
         run: /usr/bin/env python3 scripts/check-ddd-gate-state.py
 
+      - name: DDD Gate State Tables in sync with gate-state.json (blocking)
+        run: /usr/bin/env python3 scripts/check-ddd-gate-state.py generate --check
+
   backend-security:
     name: Backend Security Scan
     runs-on: ubuntu-latest

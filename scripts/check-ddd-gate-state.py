@@ -45,6 +45,7 @@
 或人工复核该条目。
 """
 
+import json
 import re
 import subprocess
 import sys
@@ -102,6 +103,72 @@ COVERAGE_ROOTS = (
 # 6) AGENTS.md 侧仍持有 HC 状态副本的行（HC 表行）与"无载体却称 ArchUnit 载体"的漂移。
 AGENTS_HC_ROW = re.compile(r"^\|\s*\*{0,2}HC-0\d{2}\*{0,2}\s*\|")
 AGENTS_STALE_CARRIER = re.compile(r"HC-002\s*/\s*003\s*/\s*006|HC-002/003/006")
+
+# 门禁状态表单真源：从 gate-state.json 渲染进文档的注入标记之间（#13 / #16）。
+GATE_STATE = REPO / "doc/architecture/gate-state.json"
+GENERATED_BANNER = (
+    "> ⚠️ 本表由 `doc/architecture/gate-state.json` 自动生成（门禁状态唯一真源），"
+    "请勿手改；改状态请改该 JSON 后运行 `python3 scripts/check-ddd-gate-state.py generate`。"
+)
+
+
+def render_gate_table(spec):
+    """由 gate-state.json 的某张表 spec 渲染 Markdown 表。"""
+    header = "| " + " | ".join(spec["header"]) + " |"
+    sep = spec["sep"]
+    body = "\n".join("| " + " | ".join(r) + " |" for r in spec["rows"])
+    return "\n".join([header, sep, body])
+
+
+def generate_gate_tables(check_only):
+    """把 gate-state.json 渲染进文档的注入标记之间，实现单真源生成（#13）与渲染分离（#16）。
+
+    check_only=True：只比对文档当前内容与应生成内容，不一致则失败（CI 用，防手工改表漂移）；
+    False：就地重写文档的标记区域。
+    """
+    if not GATE_STATE.exists():
+        print("未找到门禁状态真源：{}".format(GATE_STATE), file=sys.stderr)
+        return 1
+    data = json.loads(GATE_STATE.read_text(encoding="utf-8"))
+    text = DOC.read_text(encoding="utf-8")
+    new_text = text
+    missing = []
+    for key, spec in data["tables"].items():
+        start = "<!-- gate-state:{}:start -->".format(key)
+        end = "<!-- gate-state:{}:end -->".format(key)
+        if start not in new_text or end not in new_text:
+            missing.append(key)
+            continue
+        block = GENERATED_BANNER + "\n\n" + render_gate_table(spec)
+        new_text = re.sub(
+            r"{}[\s\S]*?{}".format(re.escape(start), re.escape(end)),
+            start + "\n" + block + "\n" + end,
+            new_text,
+            count=1,
+        )
+    if missing:
+        print(
+            "文档缺少注入标记（需先加 <!-- gate-state:KEY:start/end --> 包围对应表）：{}".format(
+                "、".join(missing)
+            )
+        )
+        return 1
+    if new_text == text:
+        print(
+            "OK: 文档门禁状态表与 gate-state.json 一致（{} 张表，无漂移）".format(
+                len(data["tables"])
+            )
+        )
+        return 0
+    if check_only:
+        print(
+            "文档门禁状态表与 gate-state.json 不一致，请运行 "
+            "`python3 scripts/check-ddd-gate-state.py generate` 重新生成"
+        )
+        return 1
+    DOC.write_text(new_text, encoding="utf-8")
+    print("OK: 已按 gate-state.json 重新生成 {} 张门禁状态表".format(len(data["tables"])))
+    return 0
 
 
 def gh_anchor(heading):
@@ -378,7 +445,8 @@ def collect_metrics():
 
 
 def main():
-    if "--metrics" in sys.argv[1:]:
+    args = sys.argv[1:]
+    if "--metrics" in args:
         metrics, err = collect_metrics()
         if err:
             print(err, file=sys.stderr)
@@ -392,6 +460,9 @@ def main():
             )
         )
         return 0
+
+    if args and args[0] == "generate":
+        return generate_gate_tables(check_only="--check" in args)
 
     if not DOC.exists():
         print("未找到 DDD 规范文档：{}".format(DOC), file=sys.stderr)

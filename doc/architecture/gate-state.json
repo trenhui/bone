@@ -1,0 +1,425 @@
+{
+  "_comment": "门禁状态唯一真源（single source of truth）。Bone-DDD-最终实践方案.md 的 G-1.1 / G-1.5 / G-1.7 状态表由本文件经 scripts/check-ddd-gate-state.py generate 渲染；改状态请改本文件后重跑生成命令，勿手改文档里的表。JSON 而非 YAML：仓库 CI 运行器无 PyYAML，std::json 零依赖更稳。",
+  "version": "5.5.8",
+  "tables": {
+    "g1_1_arch": {
+      "sep": "|---|----------------|---------------------------|----------|",
+      "header": [
+        "#",
+        "Hard gate 条款",
+        "实现（共享规则 / 模块自有）",
+        "启用状态"
+      ],
+      "rows": [
+        [
+          "1",
+          "domain 不依赖 adapter、application、infrastructure",
+          "`domainMustNotDependOnOuterLayers`",
+          "Active（blueprint 等已启用模块）"
+        ],
+        [
+          "2",
+          "application 不依赖 infrastructure 实现",
+          "`applicationMustNotDependOnInfrastructure`",
+          "Active（blueprint 等已启用模块）"
+        ],
+        [
+          "3",
+          "adapter 不直接依赖 infrastructure 实现",
+          "暂无共享规则；integration 出站 Job 存在存量直连",
+          "Frozen；补端口后升级 Active"
+        ],
+        [
+          "4",
+          "domain 不使用 QueryBuilder/Criteria/SQL",
+          "`domainMustNotUseQueryBuilder` + Criteria `@ReadSideOnly`",
+          "Active（blueprint）；其余见模块测试"
+        ],
+        [
+          "5",
+          "Command 用例不使用 QueryBuilder",
+          "`commandHandlersMustNotUseQueryBuilder`",
+          "Active/Frozen 混合，见 G-1.5"
+        ],
+        [
+          "6",
+          "Controller 不直接操作 Repository 或领域服务",
+          "`adapterControllersMustNotDependOnDomainRepository` / `adapterControllersMustNotDependOnDomainService`",
+          "Active（已接入模块）"
+        ],
+        [
+          "7",
+          "禁止业务模块依赖已删除的 `com.bone.core.usecase.*`",
+          "`noBoneCoreUseCaseApiDependency`",
+          "Active（无存量）"
+        ],
+        [
+          "8",
+          "禁止外层业务代码修改聚合 `id` / `tenantId`",
+          "`outerLayersMustNotMutateAggregateIdentity`",
+          "Active（blueprint + 已启用应用模块）"
+        ],
+        [
+          "9",
+          "禁止 JPA、Hibernate、MyBatis、MyBatis-Plus",
+          "`scripts/check.sh`（pre-commit `[3/5]` 扫 ORM import、`[5/5]` 扫 pom 依赖）+ `scripts/ci-check.sh`（`[1/7]` 依赖、`[6/7]` import）本地拦截",
+          "Manual（本地）；**CI 级**载体仍为 Planned：maven-enforcer `bannedDependencies`"
+        ],
+        [
+          "10",
+          "Controller 返回统一响应契约",
+          "暂无 ArchUnit 实现",
+          "Planned：待确定可稳定静态判别的实现"
+        ],
+        [
+          "11",
+          "业务层不直读 TenantContext",
+          "`businessLayersMustNotReadTenantContextDirectly`",
+          "Active（blueprint）；其余 Frozen/Planned"
+        ],
+        [
+          "12a",
+          "通用密钥/Token 扫描",
+          "`scripts/scan-secrets.sh`、`scripts/check.sh`、`scripts/ci-check.sh`（`[3/7]` gitleaks detect）等本地脚本；当前 GitHub Actions 未调用",
+          "Manual / Planned：不得宣称 CI 已阻断"
+        ],
+        [
+          "12b",
+          "租户边界检查",
+          "`businessLayersMustNotReadTenantContextDirectly` + 部分模块测试",
+          "Partial：Blueprint Active，部分模块 Frozen；不能证明所有 SQL 均含租户隔离"
+        ],
+        [
+          "12c",
+          "DDL 必备字段与文档同步",
+          "这是**两件事**：**表名清单同步**由 `scripts/check-ddl-doc-sync.py`（`ci-check.sh` `[7/7]` 调用）本地执行；**必备列（`tenant_id`/`created_at`/`updated_at`/`deleted`）校验**在仓库内**没有任何载体**",
+          "文档同步：Manual（本地，当前 GitHub Actions 未调用）；必备字段：Planned"
+        ],
+        [
+          "12d",
+          "第三方依赖漏洞扫描",
+          "`.github/workflows/ci.yml` 的 OWASP dependency-check（CVSS ≥ 7 失败）",
+          "Active；只扫描依赖 CVE，不是密钥、租户或 DDL 检查"
+        ],
+        [
+          "12e",
+          "聚合保存须配对 `publishFrom()` 或类级 `@NoDomainEvent` 豁免",
+          "`applicationSaveMustPairWithPublishOrExempt`（blueprint 参考样板，未全模块推广；原仅列于 [G-1.5](#g-15-规则证明能力与模块启用状态)，现补入本表）",
+          "Hard gate（blueprint 已启用；其余模块 Planned，待推广）"
+        ]
+      ]
+    },
+    "g1_1_doc": {
+      "sep": "|---|--------------|------|----------|",
+      "header": [
+        "#",
+        "文档门禁条款",
+        "实现",
+        "启用状态"
+      ],
+      "rows": [
+        [
+          "13",
+          "DDD 文档示例引用的 API 符号必须真实存在",
+          "`scripts/ci/check-ddd-doc-code-sync.py --strict`（校验 publisher API / 聚合事件 API / 仓储方法名，符号真源含 `bone-core`、客户端 SDK、`bone-metadata-sdk` 与全仓 `*Repository`）",
+          "Active（`ci.yml` `backend-quality` job 阻断）"
+        ],
+        [
+          "14",
+          "本文自身结构自洽：无 v4.x 编号残留、平台 API 调用真实、相对链接可达、**内部锚点可解析且大小写一致**",
+          "`scripts/check-ddd-doc-drift.py`（四项检查；锚点须解析到标题自动锚或显式 `<a id>`；API 白名单由 `bone-core` / `bone-metadata-sdk` 的真实公开方法派生）",
+          "Active（`ci.yml` `backend-quality` job 阻断）；守护[稳定锚点](#稳定锚点与索引)契约"
+        ],
+        [
+          "15",
+          "**本文声明的门禁状态必须等于 workflow / 规则库 / pom 的真实状态**（编号唯一、锚点契约可解析、覆盖率阈值一致、规则名真实、`Active` 载体不在本地脚本、HC 载体存在、本地已落地的拦截未被写成无实现、覆盖率模块覆盖已声明）",
+          "`scripts/check-ddd-gate-state.py`（登记式反查；`KNOWN_MISSING` 之外的规则名必须真实存在）",
+          "Active（`ci.yml` `backend-quality` job 阻断）"
+        ]
+      ]
+    },
+    "g1_5_rules": {
+      "sep": "|------|------|--------|----------|",
+      "header": [
+        "规则",
+        "分级",
+        "能证明",
+        "不能证明"
+      ],
+      "rows": [
+        [
+          "`domainMustNotDependOnOuterLayers`",
+          "Hard gate",
+          "domain 无外层类型依赖",
+          "领域规则完整"
+        ],
+        [
+          "`applicationMustNotDependOnInfrastructure`",
+          "Hard gate",
+          "application 无具体基础设施依赖",
+          "端口语义合理"
+        ],
+        [
+          "`domainMustNotUseQueryBuilder`",
+          "Hard gate",
+          "domain 不依赖已识别查询 DSL",
+          "所有动态查询都被识别"
+        ],
+        [
+          "`commandHandlersMustNotUseQueryBuilder`",
+          "Hard gate",
+          "已识别 Handler 不直用 DSL",
+          "写用例没有隐式复杂读"
+        ],
+        [
+          "`domainRepositoriesShouldOnlyDeclareWhitelistedMethods`",
+          "Advisory（判据已从方法名升级为返回类型；blueprint、iam、system、masterdata、integration 等模块已接入）",
+          "声明方法的返回类型落在聚合 / `Optional<聚合>` / boolean / void",
+          "Repository 语义一定正确"
+        ],
+        [
+          "`noUseCaseClassesInApplication`",
+          "Bone 兼容门禁",
+          "不新增旧命名形态",
+          "Use Case 概念错误"
+        ],
+        [
+          "`noApplicationUseCasePackage`",
+          "Bone 兼容门禁",
+          "application 无 `usecase` 包（多数模块 freeze 防扩张）",
+          "无其他套娃形态"
+        ],
+        [
+          "`noBoneCoreUseCaseApiDependency`",
+          "Bone 兼容门禁",
+          "无已删除的 `com.bone.core.usecase` 依赖（无存量，Active）",
+          "其他遗留 API 依赖"
+        ],
+        [
+          "`noStudioGeneratorUseCaseAnnotation`",
+          "Bone 兼容门禁",
+          "业务模块不依赖 generator 自造 UseCase SPI（freeze）",
+          "生成代码符合 DDD"
+        ],
+        [
+          "`noNewDomainStorePackage`",
+          "Bone 兼容门禁",
+          "不新增 `domain.store` 包（freeze）",
+          "存量 store 语义正确"
+        ],
+        [
+          "`noCustomBusinessException`",
+          "Bone 兼容门禁",
+          "不新增 `BusinessException` 命名冲突异常根（freeze）",
+          "错误码绑定与归属正确"
+        ],
+        [
+          "`noBusinessExceptionSuffix`",
+          "Bone 兼容门禁",
+          "不新增 `*BusinessException` 后缀类（freeze）",
+          "异常语义归属正确"
+        ],
+        [
+          "`applicationServicesMustNotOwnDomainRules`",
+          "Hard gate 目标",
+          "ApplicationService 不承载状态迁移决策",
+          "规则放置是否最优"
+        ],
+        [
+          "`applicationSaveMustPairWithPublishOrExempt`",
+          "Hard gate（blueprint 参考样板，未全模块推广；**已补入 [G-1.1](#g-11-hard-gate) 12e**）",
+          "聚合保存已配对发布或豁免说明",
+          "豁免理由是否成立、下游是否真的无需感知"
+        ],
+        [
+          "`adapterControllersMustNotDependOnGodObjects`",
+          "上帝对象守护（ADR-0028，旧名 `...OnApplicationService` 保留为过渡别名）",
+          "仅禁 `Common*/Base*/Business*/*Manager` 命名；不再禁 Controller → 合法 `*ApplicationService`",
+          "应用层编排一定正确"
+        ],
+        [
+          "`adapterControllersMustNotDependOnDomainRepository`",
+          "Hard gate",
+          "Controller 不越层访问写仓储",
+          "Controller 无业务规则"
+        ],
+        [
+          "`adapterControllersMustNotDependOnDomainService`",
+          "Hard gate",
+          "Controller 不直调领域服务",
+          "应用编排正确"
+        ],
+        [
+          "`commandHandlersShouldBeNamedCommandHandler`",
+          "Advisory",
+          "类后缀一致",
+          "类承担正确命令语义"
+        ],
+        [
+          "`queryHandlersShouldBeNamedQueryHandler`",
+          "Advisory",
+          "类后缀一致",
+          "查询模型合理"
+        ],
+        [
+          "`commandHandlersShouldBeTransactional`",
+          "Advisory",
+          "注解存在",
+          "事务代理真实生效"
+        ],
+        [
+          "`queryHandlersShouldBeReadOnlyTransactional`",
+          "Advisory",
+          "只读注解存在",
+          "数据库真正只读"
+        ],
+        [
+          "`outerLayersMustNotMutateAggregateIdentity`",
+          "Hard gate",
+          "已识别外层不调用身份 setter",
+          "反射/映射无越权"
+        ],
+        [
+          "`readSideDslOnlyInQueryLayer`",
+          "Hard gate 目标",
+          "DSL 只在基础设施",
+          "查询契约合理"
+        ],
+        [
+          "`noCrossContextModelDependency`",
+          "Hard gate 目标",
+          "已识别跨包模型依赖",
+          "SQL/运行时无越界"
+        ],
+        [
+          "`noCrossContextDomainDependency`",
+          "Hard gate 目标",
+          "已声明根包的 domain 不依赖其他上下文 domain（Shared Kernel 白名单除外，按模块参数化启用）",
+          "白名单合理性、运行时 SQL 越界"
+        ],
+        [
+          "`oneAggregatePerTransaction`",
+          "Advisory",
+          "一个方法直接调用多个 Repository 类型",
+          "单聚合实例事务"
+        ],
+        [
+          "`businessLayersMustNotReadTenantContextDirectly`",
+          "Hard gate 目标",
+          "业务层不直接读上下文",
+          "异步租户传递正确"
+        ],
+        [
+          "`AggregatePureUnitTestGuard`",
+          "Advisory / 卫生检查",
+          "测试类、行为调用、断言形式存在",
+          "不变量完整、反贫血成立"
+        ]
+      ]
+    },
+    "g1_5_modules": {
+      "sep": "|------|-----------|-----|------------|-------------|----------|",
+      "header": [
+        "规则",
+        "Blueprint",
+        "IAM",
+        "MasterData",
+        "Integration",
+        "其他模块"
+      ],
+      "rows": [
+        [
+          "`commandHandlersMustNotUseQueryBuilder`",
+          "Active",
+          "Frozen",
+          "Frozen",
+          "Active",
+          "bone-notification、bone-extension-studio、**bone-system** Active；Metadata Server、Studio Generator Frozen；其余待盘点"
+        ],
+        [
+          "`readSideDslOnlyInQueryLayer`",
+          "Active",
+          "Frozen",
+          "Frozen",
+          "Frozen",
+          "Planned inventory"
+        ],
+        [
+          "`businessLayersMustNotReadTenantContextDirectly`",
+          "Active",
+          "Frozen",
+          "Frozen",
+          "Frozen",
+          "Planned inventory"
+        ],
+        [
+          "`adapterControllersMustNotDependOnGodObjects`（原 `...OnApplicationService`）",
+          "Active（仅上帝对象守护，ADR-0028 收窄，不 freeze）",
+          "Active（legacy 收敛）",
+          "Active",
+          "Active",
+          "Active"
+        ]
+      ]
+    },
+    "g1_7_hc": {
+      "sep": "|------|------|--------------|----------|",
+      "header": [
+        "规则",
+        "内容",
+        "实测判定方式",
+        "实测状态"
+      ],
+      "rows": [
+        [
+          "**HC-001**",
+          "禁止引入 MyBatis-Plus / JPA / Hibernate / MyBatis",
+          "`scripts/check.sh`（pre-commit `[3/5]` 扫 ORM import、`[5/5]` 扫 pom 依赖）+ `scripts/ci-check.sh`（`[1/7]` 依赖、`[6/7]` import）本地拦截；无 `bannedDependencies`、无共享 ArchUnit 规则",
+          "**Manual**（本地载体齐备，缺 CI 载体；同 [G-1.1](#g-11-hard-gate) 9）"
+        ],
+        [
+          "**HC-002**",
+          "domain 层不依赖 Bone 外层包（adapter / application / infrastructure）；是否依赖 Spring / Jakarta 等框架由 D1 编译期注解白名单另行约定（见 E-6.2），本规则**不**覆盖框架依赖",
+          "ArchUnit `domainMustNotDependOnOuterLayers`（仅按包路径拦截 Bone 三层，不拦截 `org.springframework.*` 等框架包）",
+          "Active（已接入模块；`ci.yml` 的 `mvn verify` 执行）"
+        ],
+        [
+          "**HC-003**",
+          "Controller 返回必须用 `ApiResponse<T>` 或 `PageResult<T>`",
+          "**无实现**：`controllerMustReturnApiResponse` 不在共享规则库中",
+          "**Planned**"
+        ],
+        [
+          "**HC-004**",
+          "禁止硬编码密钥 / 密码 / Token",
+          "`.gitleaks.toml` + `scripts/scan-secrets.sh` / `scripts/check.sh` / `scripts/ci-check.sh`（`[3/7]` gitleaks detect）（本地可跑，**无工作流调用**）",
+          "**Manual**（同 [G-1.1](#g-11-hard-gate) 12a）"
+        ],
+        [
+          "**HC-005**",
+          "核心模块测试覆盖率门槛",
+          "`jacoco:check` 读取 pom 的 `jacoco.minimum.coverage`：父 POM 默认值 + **模块覆盖**（`bone-metadata-engine-{domain,starter,ports}` 覆盖为 `0`、`bone-metadata-engine-runtime` 为 `0.04`，这四个模块实际不受门禁）",
+          "Active；**父 POM 实测门槛为 10% 指令覆盖率，不是 70%**；模块覆盖见左栏。整改建议：这四个模块为 SDK 基础设施层，业务聚合少、以框架 / 映射代码为主，0 覆盖不等价于无保护；建议二选一并在模块 README 登记——① 在对应 pom 显式声明覆盖率豁免并写明理由；② 为关键映射与上下文装配补最小集成测试使覆盖 >0 后再纳入门禁。不得长期以 0 覆盖蒙混，也不因门禁存在就误判这些核心模块已受测试保护"
+        ],
+        [
+          "**HC-006**",
+          "数据库访问必须通过 bone-metadata-sdk Repository",
+          "**无实现**：`repositoryMustUseSdk` 不在共享规则库中",
+          "**Planned**"
+        ],
+        [
+          "**HC-007**",
+          "PR 提交的 OpenAPI spec 不得引入 breaking change",
+          "oasdiff（`ci.yml` 的 `openapi-diff` job，base vs head）",
+          "Active（PR 阻断）"
+        ],
+        [
+          "**HC-008**",
+          "新增表必须含 `tenant_id` + `created_at` + `updated_at` + `deleted`",
+          "**无实现**：仓库内没有任何校验**必备列**的载体。`scripts/check-ddl-doc-sync.py` 只比对**表名清单**（`bone-init.sql` vs 数据库开发规范 §2），不读列；`scripts/ci-check.sh` 的 `[7/7]` 调用的就是同一个脚本，并不构成必备字段载体",
+          "**Planned**（同 [G-1.1](#g-11-hard-gate) 12c 后半）"
+        ]
+      ]
+    }
+  }
+}

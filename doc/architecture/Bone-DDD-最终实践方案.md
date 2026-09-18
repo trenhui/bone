@@ -2,7 +2,7 @@
 
 > **单文档决策**：依据 [ADR-0026](./adr/0026-ddd-single-document-consolidation.md)，整合完成后本文是 Bone DDD 原则、工程决策、门禁口径与实施状态唯一、自包含的规范真源。
 > **整合状态**：已完成主文档内容整合、生效引用迁移和原分册删除；本文是 Bone DDD 唯一规范入口与实施状态真源。
-> **版本**：5.5.7（HC 表二次实测纠错：HC-001 本地载体齐备改判 Manual、HC-005 补 4 个模块下调阈值、HC-008 载体误归 → 改判 Planned；门禁状态检查器补「本地载体反查」「HC 载体存在性」「覆盖率模块覆盖」三项并接入 CI；新增 G-1.1 第 15 条文档门禁，2026-09-17）
+> **版本**：5.5.8（按外部评审做减法：AS-01 由「一律」收敛为「默认入口、非唯一入口」并点名异步/定时/长流程入口；CORE-11 与 P-3.5 澄清「1:1 落盘」指单一持久化入口而非「聚合 = 单表」；E-3.3 补长流程 Process Manager / Saga 与 Orchestrator 的边界；E-3.6 补默认 ApplicationService 写路径范例；E-3.10 / E-3.11 标注为工程自动化约束而非 DDD 建模原则；E-4.3 / E-5.4 / E-6.1 各补一句收敛判据；P-2.2 澄清上下文与 Maven 模块不是 1:1，2026-09-17）
 > **决策**：[ADR-0024](./adr/0024-ddd-v5-rule-semantics-and-document-split.md)、[ADR-0025](./adr/0025-ddd-v5-0-2-implementation-alignment.md)、[ADR-0026](./adr/0026-ddd-single-document-consolidation.md)、[ADR-0028](./adr/0028-application-service-first-selective-cqrs.md)
 > **通用语言**：[glossary.md](../glossary.md)
 > **变更记录**：Git 历史 / [CHANGELOG.md](../../CHANGELOG.md)
@@ -67,7 +67,7 @@
 | CORE-08 | 门禁不冒充领域证明 | 静态检查证明结构；业务语义由测试和评审证明 | 通用 DDD | G-1.2、G-1.5、G-2.1 |
 | CORE-09 | EAV 只承载扩展字段（元数据工程约束） | 核心事务、高频查询、聚合字段用物理列；EAV/JSON 仅限可选、动态、长尾扩展属性 | Bone 工程 | E-6.5 |
 | CORE-10 | Metadata 描述模型，不执行业务（元数据工程约束） | 元数据回答 What（模型定义）；业务规则（How）在应用/领域层执行 | Bone 工程 | E-9 |
-| CORE-11 | 聚合最小化与 1:1 落盘 | 聚合只承载必须强一致的不变量；聚合根是唯一持久化入口，子实体/值对象随根落盘。**禁止把子实体提升为独立聚合**；SDK 无聚合级联时，允许「子实体级仓储 + 同一应用事务内显式逐条落盘」的受控过渡形态（条件、限制与登记要求见 [E-4.1](#e-41-写侧)） | Bone 工程 | E-4.1 |
+| CORE-11 | 聚合最小化与 1:1 落盘 | 聚合只承载必须强一致的不变量；聚合根是唯一持久化入口，子实体/值对象随根落盘。**「1:1」指一个聚合一个持久化入口，不是「一个聚合一张表」**——映射可跨多表 / JSON / 文档，只要读写都经聚合根、且不破坏一致性边界。**禁止把子实体提升为独立聚合**；SDK 无聚合级联时，允许「子实体级仓储 + 同一应用事务内显式逐条落盘」的受控过渡形态（条件、限制与登记要求见 [E-4.1](#e-41-写侧)） | Bone 工程 | E-4.1 |
 | CORE-12 | 务实对象映射 | 核心域（L2/L3）`DTO/DO/PO` 分离并用 MapStruct；简单域（L1）允许 Shared / 轻量直转，不因“用了 DDD”强制拆 PO | Bone 工程 | E-6.6 |
 
 > **底线**：门禁（ArchUnit）与 E/G 规范只负责挡住明显的错误和越界，管不了“设计得好不好”——聚合划得对不对、Command 该不该有、模型是否经得起演进，只能靠测试与评审（CORE-08）。规范的作用是减负而不是增负：一旦某条规则逼着人为了合规而合规，它就成了 Ceremonial Architecture，应当删除或降级（E-3.2）。
@@ -97,6 +97,7 @@
 写：Controller → ApplicationService → Repository.findById → Aggregate.behavior → Repository.save
 读：Controller → ApplicationService.get()/page() → Repository        （简单读，读模型与 domain 一致）
 跨步骤：Adapter → Orchestrator → 独立事务步骤 → 补偿/重试
+长流程：流程状态聚合 + Orchestrator 按步推进（每步独立事务，可断点续跑，见 E-3.3）
 ```
 
 默认使用**语义化 ApplicationService** 作为入站边界（[ADR-0028](./adr/0028-application-service-first-selective-cqrs.md)）。复杂度升级时才引入 `Command` / `Handler`：写意图需显式契约或多入口时加 `Command`，命令异步/跨事务时 `CommandHandler` 落在 Outbox 消费端/任务端，读模型与聚合分歧时 ApplicationService 内升级 QueryPort（复杂读再进 `QueryHandler`）。判据见 [E-3.7](#e-37-入口构件决策)。
@@ -269,6 +270,7 @@ Bone 当前只认定 Metadata / Smart Metadata 为核心域；这是当前产品
 
 - 一个模块只能归属一个上下文；
 - 一个上下文可以由多个内聚模块组成；
+- **上下文与 Maven 模块不是 1:1，分层也不在模块这一级**：四层（`adapter` / `application` / `domain` / `infrastructure`）是**模块内部的包结构**（见 [E-10](#e-10-包结构参考)），不是「每个上下文拆成 domain / application / infrastructure 三个 Maven 模块」。单模块多包与按业务内聚拆多模块都合法，但不要在模块层面再复制一层分层——那会同时得到两套跨模块依赖规则。
 - 是否拆服务由发布、团队、伸缩和故障隔离决定。
 - SDK、框架库和网关不因存在 Maven 模块就自动成为限界上下文。
 - 表中模块名是 Maven 模块短名；实际路径以根 `pom.xml` 为准，例如 `bone-engine/bone-extension-engine/bone-extension-studio`。
@@ -381,7 +383,7 @@ Repository 是聚合根的集合抽象：
 - 保存和删除聚合；
 - 不承担分页、报表、Join 或 UI 投影；
 - 接口位于 domain，实现位于 infrastructure；
-- **1:1 落盘**：聚合根是唯一持久化入口，子实体与值对象随根一起落盘；不为子实体建立“独立聚合”级仓储。聚合内明细确需自己的仓储时按同一聚合口径归并，不构成第二个聚合——判据是它只能读写所属聚合的明细，不独立创建聚合、不跨聚合查询，写入口仍由聚合根方法驱动（CORE-11、E-4.1）。该形态**默认不建**：确需时按 E-0.4 记入 ADR 并在模块 README 登记，且它不得跨聚合查询、不得独立创建聚合——机器无法验证这三点判据，因此不登记即视为越界。
+- **1:1 落盘**：聚合根是唯一持久化入口，子实体与值对象随根一起落盘；不为子实体建立“独立聚合”级仓储。**「1:1」限定的是「聚合 ↔ 持久化入口」，不是「聚合 ↔ 数据库表」**：一个聚合可以映射到多张表、JSON 列或文档，只要读写都经聚合根、且不破坏一致性边界（CORE-11），映射形态本身不构成违规——被禁止的是「绕过聚合根分头写」与「把子实体升格为第二个一致性边界」。读取同理只覆盖**加载聚合本身**：按身份或与聚合生命周期一致的单一业务键；合并多聚合、过滤组合、统计与投影一律走 QueryPort（CORE-05）。聚合内明细确需自己的仓储时按同一聚合口径归并，不构成第二个聚合——判据是它只能读写所属聚合的明细，不独立创建聚合、不跨聚合查询，写入口仍由聚合根方法驱动（CORE-11、E-4.1）。该形态**默认不建**：确需时按 E-0.4 记入 ADR 并在模块 README 登记，且它不得跨聚合查询、不得独立创建聚合——机器无法验证这三点判据，因此不登记即视为越界。
 
 #### P-3.6 聚合建模工作法
 
@@ -583,8 +585,8 @@ CQRS 首先是读写关注点分离：
 - 新增代码不得扩大明确的结构违规；
 - freeze 基线只收缩；
 - 规则语义发生变化时，先修规则 fixture 和声明，再迁移代码；
-- **存量 CommandHandler 迁移**：不强制一次性迁移到 ApplicationService。存量 Handler 在功能修改时评估是否可合并到同义 ApplicationService；新用例一律从 ApplicationService 开始（AS-01）。
-- **迁移度量（建议目标，待架构评审确认）**：以 [G-1.8](#g-18-实施状态指标) 计数为准——新模块一律从 ApplicationService 起（AS-01），不新增独立 `*CommandHandler` / `*QueryHandler`；存量 Handler 在功能修改时优先合并到同义 ApplicationService；建议按季度跟踪「`*ApplicationService` 类数」上升与「`*CommandHandler` 类数」下降，目标为连续两个季度净降幅，避免迁移长期悬置。具体阈值与节奏由架构评审在每个季度初设定。
+- **存量 CommandHandler 迁移**：不强制一次性迁移到 ApplicationService。存量 Handler 在功能修改时评估是否可合并到同义 ApplicationService；新用例默认从 ApplicationService 起步（AS-01：默认入口，不是唯一入口——异步消费、定时触发、长流程入口可直接以专用应用构件起步）。
+- **迁移度量（建议目标，待架构评审确认）**：以 [G-1.8](#g-18-实施状态指标) 计数为准——新模块默认从 ApplicationService 起步（AS-01：默认入口而非唯一入口），**不因目录模板预生成** `*CommandHandler` / `*QueryHandler`（确需时按 AS-03 的结构性触发显式创建）；存量 Handler 在功能修改时优先合并到同义 ApplicationService；建议按季度跟踪「`*ApplicationService` 类数」上升与「`*CommandHandler` 类数」下降，目标为连续两个季度净降幅，避免迁移长期悬置。具体阈值与节奏由架构评审在每个季度初设定。
 
 #### E-0.3 破坏性变更
 
@@ -752,6 +754,21 @@ ApplicationService 合法条件：
 
 仅用于跨步骤、重试、超时或补偿流程。每一步使用明确事务边界；技术轮询和 Outbox 中继放 adapter/infrastructure。仅为减少构造参数或统一类名，不新增 Orchestrator。
 
+**短流程编排 ≠ 长流程（Process Manager / Saga）**——两者都叫“编排”，但形态不同，选错会把长流程写成一个假装同步的方法：
+
+| | 短流程编排（Orchestrator） | 长流程 Process Manager / Saga |
+|---|---|---|
+| 时长与触发 | 一次请求内跑完（秒级），调用方在等结果 | 跨请求 / 跨天推进，由事件或定时轮询继续 |
+| 过程状态 | 留在方法栈里，不持久化 | **必须持久化**：当前步、已完成步、重试次数、超时时刻 |
+| 失败与恢复 | 本次失败即回滚或抛错，由调用方重试 | 需断点续跑、超时升级、人工重放 |
+| 补偿 | 单步失败走本地事务回滚 | 显式补偿动作，可为补偿建独立用例 |
+
+判据一句话：**「进程重启后，这个流程还需要继续吗？」需要 → 长流程。**
+
+Bone 里的长流程形态是「**流程状态聚合 + Orchestrator 驱动步骤**」：状态用聚合承载（有不变量与状态机，同 [P-3.1](#p-31-聚合)），推进由 Orchestrator 按步骤执行、每步独立事务，跨上下文的通知走 Outbox + 消费端幂等（[E-5.2](#e-52-可靠发布)、[E-5.5](#e-55-跨步骤流程参考)）。禁止的三种写法：把流程状态藏在流程表外的散字段或静态变量里；用 `REQUIRES_NEW` 把长流程伪造成一个方法（E-3.5）；只靠内存重试而没有任何恢复入口。
+
+命名沿用 [E-13.3](#e-133-端口适配器与触发器)：长流程的驱动构件仍是 `*Orchestrator`，流程状态是普通聚合（用业务语言命名，如 `OrderFulfillment`）；**不引入第二套 `*ProcessManager` / `*Saga` 后缀**——真要引入须先走 E-13.4 命名裁决。
+
 #### E-3.4 Facade
 
 仅在以下场景使用：
@@ -774,7 +791,37 @@ Facade 不持有领域规则和写事务，不直接操作 Repository。
 
 > 示例与 `bone-blueprint` 惯用法保持同步：修改样板模块的写用例形态时，必须同步更新本节。
 
-> **以下为 Command + Handler 路径的参考形态**，适用于写意图需显式契约、命令数量较多或异步化的场景（见 E-3.7 决策树）。简单写用例直接使用 ApplicationService，参考 [E-3.7 默认路径](#e-37-入口构件决策)。
+**默认形态（多数写用例）**：语义化 ApplicationService + 聚合行为 + 写仓储——一个方法一个用例，**不出现 `CommandHandler` 类**。以下形态与 `bone-blueprint` 的 `OrderApplicationService` 保持一致：
+
+```java
+@Service
+@RequiredArgsConstructor
+public class OrderApplicationService {
+
+  private final OrderRepository orderRepository;
+  private final DomainEventPublisher domainEventPublisher;
+  private final TenantProvider tenantProvider;
+
+  /** 取消订单：加载聚合 → 领域行为（cancel() 发布 OrderCancelledEvent）→ 保存 → 发布。 */
+  @Transactional
+  public void cancel(CancelOrderCommand command) {
+    long tenantId =
+        command.tenantId() != null ? command.tenantId() : tenantProvider.currentTenantId();
+    Order order =
+        Optional.ofNullable(orderRepository.findByIdInTenant(command.orderId(), tenantId))
+            .orElseThrow(() -> new BizException(404, BlueprintErrorCodes.ORDER_NOT_FOUND));
+    order.cancel();
+    orderRepository.save(order);
+    domainEventPublisher.publishFrom(order);
+  }
+}
+```
+
+> 三个容易被误读的点：① `*Command` 在这里**只是入参对象**，不是“该建 Handler”的信号（AS-02）；② 方法体「加载 → 行为 → 保存（→ 发布）」就是短流程编排，**不需要**再抽一层 `DomainService`；③ 它若退化成一行 `return otherService.cancel(command);`，那才是 Ceremonial（E-3.2）。
+
+**Command + Handler 形态**（仅当命中 AS-03 的结构性触发：需独立路由 / 生命周期 / 异步多入口）：
+
+> 以下为 Command + Handler 路径的参考形态，适用于写意图需显式契约、命令数量较多或异步化的场景（见 E-3.7 决策树）。简单写用例直接使用上面的 ApplicationService 形态，参考 [E-3.7 默认路径](#e-37-入口构件决策)。
 
 ```java
 @Transactional
@@ -810,16 +857,20 @@ public void handle(ConfirmOrderCommand command) {
 
 默认从**语义化 ApplicationService** 出发；按复杂度逐级升级，不为简单 CRUD 预生成 Command / Query 三件套。Application Service First 是 Bone 的默认架构形态，不是“退而求其次”。
 
+> **「默认」不等于「唯一」**：异步消费、定时触发、长流程这类入口**本身就有独立生命周期**（幂等键、重试、DLQ、多入口路由），直接以 `*CommandHandler` / `*Orchestrator` 起步是正解，不要为了“先 ApplicationService”再造一层 `CommandHandler → ApplicationService` 套娃——那正是本方案要消除的 Ceremonial Architecture（E-3.2）。判据是**入口是否有独立职责**，不是“先起哪个名字”。
+
 **Application Service First 6 条规则**：
 
 | # | 规则 | 判据 |
 |---|------|------|
-| AS-01 | Application Service 是默认的应用入口 | 新模块、新上下文一律从 ApplicationService 开始 |
+| AS-01 | Application Service 是**默认**的应用入口，不是唯一入口 | 新模块、新用例默认从 ApplicationService 起步；**入口自带独立执行生命周期**时直接使用专用构件——MQ 消费 / 定时任务 / 工作流触发 → `*CommandHandler`，跨步骤长流程 → `*Orchestrator`（见 [E-3.3](#e-33-orchestrator)）。反向约束不变：不得为“对齐模板”在 ApplicationService 之上再套一层同义 Handler（E-3.2） |
 | AS-02 | `*Command` / `*Query` 是用例输入的默认载体；可选件是 `*CommandHandler` | 输入对象固定为 application 自有类型，adapter 的 `*Req` / `*Qry` / `*Resp` 不得进入 application；是否再建 Handler 由 AS-03 判定 |
 | AS-03 | Command Handler 在命令需独立路由 / 生命周期 / 多入口时引入 | 命令进入 Outbox / MQ / Scheduler，或同一 Command 被 REST / Kafka / 定时任务共同消费 |
 | AS-04 | 读用例默认由 ApplicationService 直接处理，与写用例共用同一入口 | 仅当读模型与聚合结构分歧时，升级到 QueryPort；读编排本身复杂（多端口组合）时考虑拆分读方法 |
 | AS-05 | Dedicated Read Model 仅在读复杂度或扩展性要求时引入 | 分析 / 报表 / 搜索等需要独立 read database 或物化视图 |
 | AS-06 | CQRS 是频谱，不是开关 | 不存在“全项目 CQRS”或“全项目不 CQRS”的二选一；每个模块按自身复杂度落在频谱的不同位置 |
+
+> **两个概念分开记，别当成一个**：`*Command` 是**用例输入模型**（意图与参数，可独立存在，ApplicationService 直接收它即可）；`*CommandHandler` 是**执行边界**（独立事务、路由、生命周期、幂等）。所以「有 Command」推导不出「要建 Handler」——是否建 Handler 只由 AS-03 的结构性触发决定。同理 `*Query` 是读用例输入模型，Handler 不是它的默认搭档。
 
 AS-01～AS-06 的优先级高于目录模板。即便 `studio-generator` 生成了 `command/` 目录，也要按上面的规则判断是否需要；不需要就删掉空目录。
 
@@ -891,6 +942,8 @@ AS-01～AS-06 的优先级高于目录模板。即便 `studio-generator` 生成�
 #### E-3.10 AI/Agent 选型判据
 
 > 与 [E-3.7 决策树](#e-37-入口构件决策) 等价：决策树适合人工走查，本判据适合 AI Agent 与快速自检。
+>
+> **分类**：E-3.10 / E-3.11 属**工程自动化（AI Coding）约束**，不是 DDD 领域建模原则——判据本体就是 E-3.7 决策树面向 Agent 的展开形式，只约束“生成什么、改多少”。AI 工具链或编程范式变化时允许**单独修订这两节**，不影响 P- 原则与 CORE-01～CORE-08。
 
 **结构性触发（不按 YES 数量打分）**：Q3 多入口、Q4 异步 / 独立执行生命周期、Q5 显式幂等 / 限流 / 重试——任一为真即需 `CommandHandler`；仅命中 Q1/Q2（业务意图 / 复杂规则组合）时最多引入 `Command`，由 ApplicationService 承载。读侧：Q6 → +`QueryPort`；Q7 → +`ReadModel`。命令异步化一律走 **Outbox + 消费端幂等**（[ADR-0021](./adr/0021-outbox-and-consumer-idempotency-platformization.md)）。
 
@@ -1013,6 +1066,8 @@ public class OrderSearchApplicationService {
 > **为什么允许 `findById` 但必须转投影**：`findById` 是**加载写模型**的端口，供命令侧决策与回读（并且按 E-4.1，裸值 `null` 要在应用边界立刻转成 `Optional` 或抛业务异常）。它一旦要**出应用层**就是读路径，返回值必须是投影 / DTO——`public Order getDetail(...)` 这种签名等于把聚合的可变状态和 setter 语义一并交给 Controller（反模式 #8、CORE-05）。**列表与分页同理**：`page()` 这类方法只能用于「读模型与聚合一致」的单表简单读，出现筛选组合、Join、统计、跨聚合、外吐投影列时升级 QueryPort。
 
 #### E-4.3 ACL 端口
+
+**一句话判据**（比记目录位置更好用）：**领域规则需要的外部业务事实 → `domain/gateway`；应用流程需要的技术能力 → `application/port/out`；纯技术实现 → infrastructure，且不为它发明业务抽象。**
 
 - 领域规则直接需要、且能用本上下文业务语言表达的外部业务能力，可在 `domain/gateway` 定义 **Domain Gateway** 端口；不得放查询投影、消息客户端、缓存、时钟等技术端口。
   - 判据：**若拿掉该外部系统，业务规则本身仍能表达，就不是 Domain Gateway**。发短信、发 MQ、写缓存/Redis、生成 UUID、取当前时间、记日志等均属技术能力，一律不进 `domain/gateway`；只有像“账户余额是否足以扣款”这类业务规则依赖的外部事实才进。
@@ -1140,6 +1195,8 @@ Outbox 是 Bone 的默认 Durable 实现。CDC、数据库事务日志或其他�
 > **人类形式与机检形式是两件事，只写一半等于没写**：规则 `applicationSaveMustPairWithPublishOrExempt` 判定一个 application 类时，看的是「类中是否出现过 `publishFrom()` 调用」或「类上是否声明了 `com.bone.core.annotation.NoDomainEvent`」。只按下面的格式在聚合 JavaDoc 里写了理由、却没在 application 类上声明 `@NoDomainEvent`，**门禁照样判红**；反过来只加注解不写理由，则理由无人可查（CORE-08：门禁不冒充领域证明）。
 >
 > 另注意该规则的**粒度是类级**：一个类里只要出现过一处 `publishFrom()`，或类上有 `@NoDomainEvent`，该类其余 `save()` 就不再被检查。所以豁免必须**逐方法**由评审确认理由成立——门禁证明不了"这个状态迁移真的不需要下游感知"。
+>
+> **门禁的证明边界（CORE-08）**：这条规则只回答「这次 save 有没有配对发布、或有没有豁免声明」，**不回答「该不该有事件」**——后者是领域建模判断，归 [G-1.2](#g-12-semantic-review) 语义评审。两个方向都别越界：既不能用它"逼"你为每个状态迁移发明事件（那会制造没人订阅的事件、膨胀 Outbox，E-3.1 的 Ceremonial 反例）；也不能反过来拿"当前没有订阅者"当豁免理由（那是「登记事实、暂不发布」，见上文第二层判据）。
 
 ##### 豁免注释的放置位置与格式
 
@@ -1187,6 +1244,8 @@ Outbox 是 Bone 的默认 Durable 实现。CDC、数据库事务日志或其他�
 | 持久化模型关系 | Separated | infrastructure 使用独立 `*PO` 与 Converter |
 
 `*PO` 不再称为 D2 领域模型：它是 infrastructure 持久化对象，不参与领域纯净度评级。两个维度可以组合，但**组合受档位约束**（[裁剪档位](#裁剪档位)）：L1 简单域允许 `D0 + Shared` 或 `D1 + Shared`；**L2/L3 核心域必须 `D0 + Separated`**，理由见 [E-6.6](#e-66-务实对象映射与-mapstruct)。
+
+> **不用背 D 编号**：实际选型只看档位——**L1 → `Shared`**（`D0` / `D1` 皆可，前提是映射注解不扭曲领域结构）；**L2/L3 → `D0 + Separated`**。`D0/D1` 与 `Shared/Separated` 是**两个正交维度上的术语**，不是四套待记忆的方案；真正的判断依据是「领域模型复杂度 + ORM 映射污染程度 + 持久化复杂度」，编号只是它们的代号。`D1` 是受控工程例外，档位上限为 L1（[E-6.2](#e-62-d1-使用条件)）。
 
 #### E-6.2 D1 使用条件
 
@@ -1521,7 +1580,7 @@ com.bone.order/
 
 **领域服务是“最后选择”而非“领域层默认服务”**。判断顺序：规则属于某个聚合 → 放入该聚合；不属于单个聚合 → 能否建模为值对象；不能 → 才使用领域服务。避免 `OrderService/UserService/PaymentService` 式的贫血堆积（领域服务被滥用的典型信号）。
 
-**编排边界**：`ApplicationService` = 一个业务用例 + 一个主要事务；`Orchestrator` = 多个独立事务步骤 + 状态推进 + 重试 + 补偿。禁止用 `ApplicationService` 互相调用（如 `OrderService → InventoryService → PaymentService`）充当“编排”——跨步骤流程由 Orchestrator 显式编排（见 E-3.5）。
+**编排边界**：`ApplicationService` = 一个业务用例 + 一个主要事务；`Orchestrator` = 多个独立事务步骤 + 状态推进 + 重试 + 补偿。禁止用 `ApplicationService` 互相调用（如 `OrderService → InventoryService → PaymentService`）充当“编排”——跨步骤流程由 Orchestrator 显式编排（见 E-3.5）；短流程与长流程（Process Manager / Saga）的区分见 [E-3.3](#e-33-orchestrator)。
 
 参考：P-3.3 领域服务、E-3.1 允许的入口。
 
@@ -1578,7 +1637,10 @@ com.bone.order/
 
 #### G-1.1 Hard gate
 
-下表随本文版本更新，最近一次盘点见头部版本行；状态变动必须同步本文。`Frozen` 表示存量违规已登记、禁止新增，不代表当前代码已完全符合目标。
+下表随本文版本更新，最近一次盘点见头部版本行；状态变动必须同步本文。`Frozen` 表示存量违规已登记、禁止新增，不代表当前代码已完全符合目标。本节门禁状态表（G-1.1 / G-1.5 / G-1.7）由 `doc/architecture/gate-state.json` 自动生成，属**频繁变动的实时状态**；规范条文（P / E）为手写稳定规范，二者渲染分离——改状态只动 JSON 并重跑 `scripts/check-ddd-gate-state.py generate`，勿手改下表。
+
+<!-- gate-state:g1_1_arch:start -->
+> ⚠️ 本表由 `doc/architecture/gate-state.json` 自动生成（门禁状态唯一真源），请勿手改；改状态请改该 JSON 后运行 `python3 scripts/check-ddd-gate-state.py generate`。
 
 | # | Hard gate 条款 | 实现（共享规则 / 模块自有） | 启用状态 |
 |---|----------------|---------------------------|----------|
@@ -1598,14 +1660,19 @@ com.bone.order/
 | 12c | DDL 必备字段与文档同步 | 这是**两件事**：**表名清单同步**由 `scripts/check-ddl-doc-sync.py`（`ci-check.sh` `[7/7]` 调用）本地执行；**必备列（`tenant_id`/`created_at`/`updated_at`/`deleted`）校验**在仓库内**没有任何载体** | 文档同步：Manual（本地，当前 GitHub Actions 未调用）；必备字段：Planned |
 | 12d | 第三方依赖漏洞扫描 | `.github/workflows/ci.yml` 的 OWASP dependency-check（CVSS ≥ 7 失败） | Active；只扫描依赖 CVE，不是密钥、租户或 DDL 检查 |
 | 12e | 聚合保存须配对 `publishFrom()` 或类级 `@NoDomainEvent` 豁免 | `applicationSaveMustPairWithPublishOrExempt`（blueprint 参考样板，未全模块推广；原仅列于 [G-1.5](#g-15-规则证明能力与模块启用状态)，现补入本表） | Hard gate（blueprint 已启用；其余模块 Planned，待推广） |
+<!-- gate-state:g1_1_arch:end -->
 
 上表为**架构与流程门禁**。下面两条是**对本文档自身**的一致性门禁（示例 API 真实性、本文结构自洽与锚点契约），与架构门禁不同层，单独列出——它们不约束业务代码。
+
+<!-- gate-state:g1_1_doc:start -->
+> ⚠️ 本表由 `doc/architecture/gate-state.json` 自动生成（门禁状态唯一真源），请勿手改；改状态请改该 JSON 后运行 `python3 scripts/check-ddd-gate-state.py generate`。
 
 | # | 文档门禁条款 | 实现 | 启用状态 |
 |---|--------------|------|----------|
 | 13 | DDD 文档示例引用的 API 符号必须真实存在 | `scripts/ci/check-ddd-doc-code-sync.py --strict`（校验 publisher API / 聚合事件 API / 仓储方法名，符号真源含 `bone-core`、客户端 SDK、`bone-metadata-sdk` 与全仓 `*Repository`） | Active（`ci.yml` `backend-quality` job 阻断） |
 | 14 | 本文自身结构自洽：无 v4.x 编号残留、平台 API 调用真实、相对链接可达、**内部锚点可解析且大小写一致** | `scripts/check-ddd-doc-drift.py`（四项检查；锚点须解析到标题自动锚或显式 `<a id>`；API 白名单由 `bone-core` / `bone-metadata-sdk` 的真实公开方法派生） | Active（`ci.yml` `backend-quality` job 阻断）；守护[稳定锚点](#稳定锚点与索引)契约 |
 | 15 | **本文声明的门禁状态必须等于 workflow / 规则库 / pom 的真实状态**（编号唯一、锚点契约可解析、覆盖率阈值一致、规则名真实、`Active` 载体不在本地脚本、HC 载体存在、本地已落地的拦截未被写成无实现、覆盖率模块覆盖已声明） | `scripts/check-ddd-gate-state.py`（登记式反查；`KNOWN_MISSING` 之外的规则名必须真实存在） | Active（`ci.yml` `backend-quality` job 阻断） |
+<!-- gate-state:g1_1_doc:end -->
 
 HC-001～HC-008 的**实现载体与实测状态**见 [G-1.7](#hc-hard-constraints)：其中 HC-003 / HC-006 / HC-008 目前**无机器载体**，HC-001 / HC-004 只有本地脚本可跑（pre-commit 与 `ci-check.sh`，**无工作流调用**）——这五条都不得宣称已被 CI 阻断（CORE-08）。HC-005 虽为 Active，但 4 个模块下调了阈值（见 G-1.7），声称"全模块 ≥10%"同样不成立。
 
@@ -1648,6 +1715,9 @@ Hard gate 只保护结构和明确 API 使用，不证明领域模型正确。
 
 #### G-1.5 规则证明能力与模块启用状态
 
+<!-- gate-state:g1_5_rules:start -->
+> ⚠️ 本表由 `doc/architecture/gate-state.json` 自动生成（门禁状态唯一真源），请勿手改；改状态请改该 JSON 后运行 `python3 scripts/check-ddd-gate-state.py generate`。
+
 | 规则 | 分级 | 能证明 | 不能证明 |
 |------|------|--------|----------|
 | `domainMustNotDependOnOuterLayers` | Hard gate | domain 无外层类型依赖 | 领域规则完整 |
@@ -1678,8 +1748,12 @@ Hard gate 只保护结构和明确 API 使用，不证明领域模型正确。
 | `oneAggregatePerTransaction` | Advisory | 一个方法直接调用多个 Repository 类型 | 单聚合实例事务 |
 | `businessLayersMustNotReadTenantContextDirectly` | Hard gate 目标 | 业务层不直接读上下文 | 异步租户传递正确 |
 | `AggregatePureUnitTestGuard` | Advisory / 卫生检查 | 测试类、行为调用、断言形式存在 | 不变量完整、反贫血成立 |
+<!-- gate-state:g1_5_rules:end -->
 
 “Hard gate 目标”表示规则方向适合硬门禁；是否在模块启用仍以模块测试为准。
+
+<!-- gate-state:g1_5_modules:start -->
+> ⚠️ 本表由 `doc/architecture/gate-state.json` 自动生成（门禁状态唯一真源），请勿手改；改状态请改该 JSON 后运行 `python3 scripts/check-ddd-gate-state.py generate`。
 
 | 规则 | Blueprint | IAM | MasterData | Integration | 其他模块 |
 |------|-----------|-----|------------|-------------|----------|
@@ -1687,6 +1761,7 @@ Hard gate 只保护结构和明确 API 使用，不证明领域模型正确。
 | `readSideDslOnlyInQueryLayer` | Active | Frozen | Frozen | Frozen | Planned inventory |
 | `businessLayersMustNotReadTenantContextDirectly` | Active | Frozen | Frozen | Frozen | Planned inventory |
 | `adapterControllersMustNotDependOnGodObjects`（原 `...OnApplicationService`） | Active（仅上帝对象守护，ADR-0028 收窄，不 freeze） | Active（legacy 收敛） | Active | Active | Active |
+<!-- gate-state:g1_5_modules:end -->
 
 新增或更新状态必须同时提交对应 `archunit_store`。
 
@@ -1727,6 +1802,9 @@ grep -n "public static ArchRule" bone-framework/bone-architecture-test/src/main/
 grep -rn <工具名> .github/workflows/
 ```
 
+<!-- gate-state:g1_7_hc:start -->
+> ⚠️ 本表由 `doc/architecture/gate-state.json` 自动生成（门禁状态唯一真源），请勿手改；改状态请改该 JSON 后运行 `python3 scripts/check-ddd-gate-state.py generate`。
+
 | 规则 | 内容 | 实测判定方式 | 实测状态 |
 |------|------|--------------|----------|
 | **HC-001** | 禁止引入 MyBatis-Plus / JPA / Hibernate / MyBatis | `scripts/check.sh`（pre-commit `[3/5]` 扫 ORM import、`[5/5]` 扫 pom 依赖）+ `scripts/ci-check.sh`（`[1/7]` 依赖、`[6/7]` import）本地拦截；无 `bannedDependencies`、无共享 ArchUnit 规则 | **Manual**（本地载体齐备，缺 CI 载体；同 [G-1.1](#g-11-hard-gate) 9） |
@@ -1737,6 +1815,7 @@ grep -rn <工具名> .github/workflows/
 | **HC-006** | 数据库访问必须通过 bone-metadata-sdk Repository | **无实现**：`repositoryMustUseSdk` 不在共享规则库中 | **Planned** |
 | **HC-007** | PR 提交的 OpenAPI spec 不得引入 breaking change | oasdiff（`ci.yml` 的 `openapi-diff` job，base vs head） | Active（PR 阻断） |
 | **HC-008** | 新增表必须含 `tenant_id` + `created_at` + `updated_at` + `deleted` | **无实现**：仓库内没有任何校验**必备列**的载体。`scripts/check-ddl-doc-sync.py` 只比对**表名清单**（`bone-init.sql` vs 数据库开发规范 §2），不读列；`scripts/ci-check.sh` 的 `[7/7]` 调用的就是同一个脚本，并不构成必备字段载体 | **Planned**（同 [G-1.1](#g-11-hard-gate) 12c 后半） |
+<!-- gate-state:g1_7_hc:end -->
 
 **状态判据（双向，不只是单向升级）**：① 升到 Active 必须先在共享规则库或工作流中存在可复现载体——不得因为"团队按约定在遵守"就标 Active；② 反过来，**本地脚本已真实落地的拦截不得写成 Planned（无实现）**——那会把"已有 pre-commit 拦截"读成"完全没有"（HC-001 曾如此）；③ 被点名的载体必须真的做这件事——把"只比表名清单"的脚本当作"必备字段"载体就是反例（HC-008 曾如此）。③ 无法通用自动化，只能人工复核；② 与「只有本地脚本却称 CI 阻断」互为反向约束，两条都在才能让 `Manual` 中间态稳定。修正本表前，禁止在任何评审或工单中引用本章修正前的旧值。
 
