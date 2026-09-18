@@ -5,6 +5,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -65,12 +67,13 @@ class ProcessPaymentCallbackCommandHandlerTest {
     AtomicInteger eventCount = new AtomicInteger();
     when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(payment);
-    when(paymentRepository.save(any(Payment.class)))
-        .thenAnswer(
+    doAnswer(
             inv -> {
               eventCount.set(((Payment) inv.getArgument(0)).getDomainEvents().size());
-              return 1L;
-            });
+              return null;
+            })
+        .when(paymentRepository)
+        .saveWithVersionCheck(any(Payment.class));
 
     handler.handle(
         new ProcessPaymentCallbackCommand(
@@ -138,9 +141,10 @@ class ProcessPaymentCallbackCommandHandlerTest {
     Payment payment = pendingPayment();
     when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(payment);
-    // 并发重复回调：唯一索引在 UPDATE 时抛约束冲突
-    when(paymentRepository.save(any(Payment.class)))
-        .thenThrow(new DuplicateKeyException("uk_bp_payment_tenant_channel"));
+    // 并发重复回调：唯一索引在 UPDATE 时抛约束冲突（或乐观锁冲突）
+    doThrow(new DuplicateKeyException("uk_bp_payment_tenant_channel"))
+        .when(paymentRepository)
+        .saveWithVersionCheck(any(Payment.class));
 
     handler.handle(
         new ProcessPaymentCallbackCommand(

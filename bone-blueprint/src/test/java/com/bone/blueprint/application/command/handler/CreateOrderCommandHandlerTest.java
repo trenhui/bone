@@ -11,13 +11,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.blueprint.application.command.cmd.CreateOrderCommand;
+import com.bone.blueprint.application.port.out.PricingService;
 import com.bone.blueprint.application.port.out.TenantProvider;
-import com.bone.blueprint.domain.extension.order.OrderPriceCalculator;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.order.OrderItem;
 import com.bone.blueprint.domain.repository.OrderItemRepository;
 import com.bone.blueprint.domain.repository.OrderRepository;
+import com.bone.blueprint.domain.shared.valueobject.Money;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
 import java.math.BigDecimal;
@@ -39,7 +40,7 @@ class CreateOrderCommandHandlerTest {
 
   @Mock private InventoryGateway inventoryGateway;
 
-  @Mock private OrderPriceCalculator priceCalculator;
+  @Mock private PricingService pricingService;
 
   @Mock private TenantProvider tenantProvider;
   @Mock private DomainEventPublisher domainEventPublisher;
@@ -59,7 +60,8 @@ class CreateOrderCommandHandlerTest {
   @Test
   void testHandleSuccess() {
     when(inventoryGateway.checkStock(anyLong(), anyInt())).thenReturn(true);
-    when(priceCalculator.calculate(any())).thenReturn(new BigDecimal("200"));
+    when(pricingService.calculateFinalPrice(any(), anyLong()))
+        .thenReturn(Money.of(new BigDecimal("200")));
     when(orderRepository.save(any(Order.class))).thenReturn(1L);
 
     Long orderId = handler.handle(command);
@@ -69,7 +71,7 @@ class CreateOrderCommandHandlerTest {
     // 回归防护：库存预留是远程写，已从下单事务移除（避免远程成功+本地回滚的「库存悬挂」），
     // 改由 OrderCreatedEvent 的 AFTER_COMMIT 订阅器异步执行
     verify(inventoryGateway, never()).reserveStock(anyLong(), anyLong(), anyInt());
-    verify(priceCalculator, times(1)).calculate(any());
+    verify(pricingService, times(1)).calculateFinalPrice(any(), anyLong());
     verify(orderRepository, times(1)).save(any(Order.class));
     verify(orderItemRepository, times(1)).save(any(OrderItem.class));
     verify(domainEventPublisher, times(1)).publishFrom(any(Order.class));
@@ -96,7 +98,8 @@ class CreateOrderCommandHandlerTest {
     CreateOrderCommand multiItemCommand = new CreateOrderCommand(1L, Arrays.asList(item1, item2));
 
     when(inventoryGateway.checkStock(anyLong(), anyInt())).thenReturn(true);
-    when(priceCalculator.calculate(any())).thenReturn(new BigDecimal("250"));
+    when(pricingService.calculateFinalPrice(any(), anyLong()))
+        .thenReturn(Money.of(new BigDecimal("250")));
     when(orderRepository.save(any(Order.class))).thenReturn(1L);
 
     Long orderId = handler.handle(multiItemCommand);

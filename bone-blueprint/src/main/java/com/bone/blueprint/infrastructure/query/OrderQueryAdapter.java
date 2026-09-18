@@ -60,13 +60,13 @@ public class OrderQueryAdapter implements OrderQueryPort {
   }
 
   @Override
-  public Optional<String> findStatusById(long tenantId, long orderId) {
+  public Optional<OrderStatus> findStatusById(long tenantId, long orderId) {
     String sql =
         "SELECT status FROM t_order WHERE tenant_id = :tenantId AND id = :orderId AND deleted = 0";
     MapSqlParameterSource params =
         new MapSqlParameterSource().addValue("tenantId", tenantId).addValue("orderId", orderId);
     List<String> statuses = jdbcTemplate.queryForList(sql, params, String.class);
-    return statuses.stream().findFirst();
+    return statuses.stream().findFirst().map(OrderStatus::valueOf);
   }
 
   @Override

@@ -51,7 +51,7 @@ class OrderApplicationServiceTest {
     service.ship(new ShipOrderCommand(1L));
 
     assertEquals(OrderStatus.SHIPPED, order.getStatus());
-    verify(orderRepository).save(order);
+    verify(orderRepository).saveWithVersionCheck(order);
   }
 
   @Test
@@ -62,7 +62,7 @@ class OrderApplicationServiceTest {
     when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(order);
 
     assertThrows(DomainException.class, () -> service.ship(new ShipOrderCommand(1L)));
-    verify(orderRepository, never()).save(any());
+    verify(orderRepository, never()).saveWithVersionCheck(any());
   }
 
   @Test
@@ -73,7 +73,7 @@ class OrderApplicationServiceTest {
     assertEquals(
         404,
         assertThrows(BizException.class, () -> service.ship(new ShipOrderCommand(1L))).getCode());
-    verify(orderRepository, never()).save(any());
+    verify(orderRepository, never()).saveWithVersionCheck(any());
   }
 
   // ===== deliver() =====
@@ -95,7 +95,7 @@ class OrderApplicationServiceTest {
     service.deliver(new DeliverOrderCommand(1L));
 
     assertEquals(OrderStatus.DELIVERED, order.getStatus());
-    verify(orderRepository).save(order);
+    verify(orderRepository).saveWithVersionCheck(order);
   }
 
   @Test
@@ -107,7 +107,7 @@ class OrderApplicationServiceTest {
     when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(order);
 
     assertThrows(DomainException.class, () -> service.deliver(new DeliverOrderCommand(1L)));
-    verify(orderRepository, never()).save(any());
+    verify(orderRepository, never()).saveWithVersionCheck(any());
   }
 
   @Test
@@ -119,6 +119,6 @@ class OrderApplicationServiceTest {
         404,
         assertThrows(BizException.class, () -> service.deliver(new DeliverOrderCommand(1L)))
             .getCode());
-    verify(orderRepository, never()).save(any());
+    verify(orderRepository, never()).saveWithVersionCheck(any());
   }
 }

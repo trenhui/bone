@@ -18,7 +18,8 @@ public record OrderPaymentInconsistentIntegrationEvent(
     String orderStatus,
     String reason,
     Instant occurredAt,
-    String schemaVersion) {
+    String schemaVersion)
+    implements IntegrationEnvelope {
 
   public static final String SCHEMA_VERSION = "1.0";
 

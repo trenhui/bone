@@ -1,5 +1,6 @@
 package com.bone.blueprint.infrastructure.messaging.outbox;
 
+import com.bone.blueprint.application.event.integration.IntegrationEnvelope;
 import com.bone.blueprint.application.event.integration.OrderPaidIntegrationEvent;
 import com.bone.blueprint.application.event.integration.OrderPaymentInconsistentIntegrationEvent;
 import com.bone.blueprint.application.event.integration.PaymentFailedIntegrationEvent;
@@ -180,19 +181,7 @@ public class OrderOutboxWriterImpl implements OrderOutboxWriter {
    * <p>取不到时回退为落库时刻——二者在同一事务内，差异仅为事务内的处理耗时。
    */
   private Instant resolveOccurredAt(Object event) {
-    if (event instanceof PaymentSucceededIntegrationEvent e) {
-      return e.occurredAt();
-    }
-    if (event instanceof OrderPaidIntegrationEvent e) {
-      return e.occurredAt();
-    }
-    if (event instanceof OrderPaymentInconsistentIntegrationEvent e) {
-      return e.occurredAt();
-    }
-    if (event instanceof PaymentRefundedIntegrationEvent e) {
-      return e.occurredAt();
-    }
-    if (event instanceof PaymentFailedIntegrationEvent e) {
+    if (event instanceof IntegrationEnvelope e) {
       return e.occurredAt();
     }
     return Instant.now();
@@ -200,19 +189,7 @@ public class OrderOutboxWriterImpl implements OrderOutboxWriter {
 
   /** 事件自带租户则优先用事件携带值（避免跨租户误写），否则回落当前上下文租户。 */
   private long resolveTenantId(Object event) {
-    if (event instanceof PaymentSucceededIntegrationEvent e && e.tenantId() != null) {
-      return e.tenantId();
-    }
-    if (event instanceof OrderPaidIntegrationEvent e && e.tenantId() != null) {
-      return e.tenantId();
-    }
-    if (event instanceof OrderPaymentInconsistentIntegrationEvent e && e.tenantId() != null) {
-      return e.tenantId();
-    }
-    if (event instanceof PaymentRefundedIntegrationEvent e && e.tenantId() != null) {
-      return e.tenantId();
-    }
-    if (event instanceof PaymentFailedIntegrationEvent e && e.tenantId() != null) {
+    if (event instanceof IntegrationEnvelope e && e.tenantId() != null) {
       return e.tenantId();
     }
     return tenantProvider.currentTenantId();

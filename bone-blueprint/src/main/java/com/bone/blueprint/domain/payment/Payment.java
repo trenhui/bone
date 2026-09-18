@@ -5,6 +5,7 @@ import com.bone.blueprint.domain.payment.event.PaymentRefundedEvent;
 import com.bone.blueprint.domain.payment.event.PaymentSucceededEvent;
 import com.bone.blueprint.domain.payment.valueobject.PaymentChannel;
 import com.bone.blueprint.domain.payment.valueobject.PaymentStatus;
+import com.bone.blueprint.domain.shared.exception.StateConflictException;
 import com.bone.blueprint.domain.shared.valueobject.Money;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.exception.DomainException;
@@ -51,15 +52,18 @@ public class Payment extends TenantAggregateRoot<Long> {
   /**
    * 乐观锁版本号（E-5.3：可并发写聚合必须声明并验证并发策略）。
    *
-   * <p>与订单对称，支付单也是最易被并发写的聚合（{@code confirmSuccess} 由渠道回调事件驱动、{@code close/refund} 由 REST 或超时 Job
-   * 驱动），采用乐观锁策略（以本列做条件更新阻止丢失更新）。
+   * <p><b>已生效（v5.6 落地）</b>：领域行为方法末尾调用 {@link #incrementVersion()} 让版本递增为新值； 应用层更新场景统一走 {@code
+   * PaymentRepository#saveWithVersionCheck}，以 {@code WHERE id = ? AND version = entity.version - 1}
+   * 条件更新，数据库层面保证原子。
    *
-   * <p><b>当前状态（已登记技术债，非已生效）</b>：同 {@code Order}，Bone 元数据 SDK 通用写路径不强制 {@code WHERE version =
-   * ?}，真实并发护栏待 SDK 启用原生 {@code @Version} 后生效。SDK 就绪前并发写不在持久化边界受保护， 已在模块 README「E-5.3 并发与幂等」登记。
-   *
-   * <p>{@code version} 是持久化层托管的并发控制字段，业务代码不得直接读写。
+   * <p>version 递增的唯一入口是 {@link #incrementVersion()}，禁止外部直接 setVersion。
    */
   private Long version;
+
+  /** 乐观锁版本递增器——每次状态迁移末尾调用，保证与 saveWithVersionCheck 的 WHERE 条件匹配。 */
+  private void incrementVersion() {
+    this.version = (this.version == null ? 0L : this.version) + 1L;
+  }
 
   /**
    * 应付金额（值对象视图）。
@@ -128,7 +132,7 @@ public class Payment extends TenantAggregateRoot<Long> {
    */
   public void submitToChannel(String payUrl) {
     if (this.status != PaymentStatus.PENDING) {
-      throw new DomainException("只有新建状态的支付单可以提交支付");
+      throw new StateConflictException("只有新建状态的支付单可以提交支付");
     }
     if (payUrl == null || payUrl.isBlank()) {
       throw new DomainException("支付链接不能为空");
@@ -136,6 +140,7 @@ public class Payment extends TenantAggregateRoot<Long> {
     this.payUrl = payUrl;
     this.status = PaymentStatus.PAYING;
     this.updatedAt = Instant.now();
+    incrementVersion();
   }
 
   /**
@@ -158,7 +163,7 @@ public class Payment extends TenantAggregateRoot<Long> {
       return false; // 幂等：同流水号重复回调直接跳过
     }
     if (this.status == PaymentStatus.FAILED || this.status == PaymentStatus.CLOSED) {
-      throw new DomainException("已失败或已关闭的支付单无法确认成功");
+      throw new StateConflictException("已失败或已关闭的支付单无法确认成功");
     }
     if (paidAmount == null || paidAmount.compareTo(this.amount) != 0) {
       throw new DomainException("实付金额与应付金额不一致: paid=" + paidAmount + ", expect=" + this.amount);
@@ -167,6 +172,7 @@ public class Payment extends TenantAggregateRoot<Long> {
     this.channelTradeNo = channelTradeNo;
     this.paidAt = Instant.now();
     this.updatedAt = Instant.now();
+    incrementVersion();
     addDomainEvent(
         new PaymentSucceededEvent(
             getId(), getTenantId(), orderId, amount, channelTradeNo, Instant.now()));
@@ -176,7 +182,7 @@ public class Payment extends TenantAggregateRoot<Long> {
   /** 渠道明确失败。 */
   public void markFailed(String channelTradeNo) {
     if (this.status == PaymentStatus.SUCCESS) {
-      throw new DomainException("已成功的支付单不能标记为失败");
+      throw new StateConflictException("已成功的支付单不能标记为失败");
     }
     if (this.status == PaymentStatus.FAILED || this.status == PaymentStatus.CLOSED) {
       return;
@@ -184,6 +190,7 @@ public class Payment extends TenantAggregateRoot<Long> {
     this.status = PaymentStatus.FAILED;
     this.channelTradeNo = channelTradeNo;
     this.updatedAt = Instant.now();
+    incrementVersion();
     addDomainEvent(new PaymentFailedEvent(getId(), getTenantId(), orderId, amount, Instant.now()));
   }
 
@@ -194,13 +201,14 @@ public class Payment extends TenantAggregateRoot<Long> {
    */
   public void close() {
     if (this.status == PaymentStatus.SUCCESS) {
-      throw new DomainException("已成功的支付单不能关闭");
+      throw new StateConflictException("已成功的支付单不能关闭");
     }
     if (this.status == PaymentStatus.CLOSED) {
       return;
     }
     this.status = PaymentStatus.CLOSED;
     this.updatedAt = Instant.now();
+    incrementVersion();
   }
 
   /** 是否可发起退款（已成功且尚未退款）。与 {@link #refund} 的前置条件对应。 */
@@ -221,7 +229,7 @@ public class Payment extends TenantAggregateRoot<Long> {
    */
   public boolean refund(BigDecimal refundAmount) {
     if (this.status != PaymentStatus.SUCCESS) {
-      throw new DomainException("只有已成功的支付单可以退款");
+      throw new StateConflictException("只有已成功的支付单可以退款");
     }
     // Money 构造即校验：null →「金额不能为空」，负数 →「金额不能为负」
     Money refundMoney = Money.of(refundAmount);
@@ -246,6 +254,7 @@ public class Payment extends TenantAggregateRoot<Long> {
     this.refundAmount = refundAmount;
     this.refundedAt = Instant.now();
     this.updatedAt = Instant.now();
+    incrementVersion();
     addDomainEvent(
         new PaymentRefundedEvent(
             getId(), getTenantId(), orderId, refundAmount, this.channelTradeNo, Instant.now()));

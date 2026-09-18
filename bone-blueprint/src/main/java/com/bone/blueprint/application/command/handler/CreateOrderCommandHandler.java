@@ -1,20 +1,17 @@
 package com.bone.blueprint.application.command.handler;
 
 import com.bone.blueprint.application.command.cmd.CreateOrderCommand;
+import com.bone.blueprint.application.port.out.PricingService;
 import com.bone.blueprint.application.port.out.TenantProvider;
-import com.bone.blueprint.domain.extension.order.OrderPriceCalculator;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.order.OrderItem;
 import com.bone.blueprint.domain.repository.OrderItemRepository;
 import com.bone.blueprint.domain.repository.OrderRepository;
-import com.bone.blueprint.domain.shared.valueobject.Money;
 import com.bone.core.capability.Capability;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.engine.extension.support.context.BizContext;
-import com.bone.engine.extension.support.context.ExtensionContextManager;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +36,7 @@ public class CreateOrderCommandHandler {
   private final OrderRepository orderRepository;
   private final OrderItemRepository orderItemRepository;
   private final InventoryGateway inventoryGateway;
-  private final OrderPriceCalculator priceCalculator;
+  private final PricingService pricingService;
   private final TenantProvider tenantProvider;
   private final DomainEventPublisher domainEventPublisher;
 
@@ -83,24 +80,9 @@ public class CreateOrderCommandHandler {
 
     Order order = Order.create(provisionalOrderId, tenantId, command.customerId(), items);
 
-    // 扩展点定价由应用层编排：算出最终金额后交给聚合，聚合不感知扩展点接口（领域层只认 Money）
-    OrderPriceCalculator.OrderPriceRequest pricingRequest =
-        OrderPriceCalculator.OrderPriceRequest.builder()
-            .baseAmount(order.getTotalMoney().toBigDecimal())
-            .build();
-    // 扩展点代理按 BizContext（租户/业务维度）匹配具体实现；运行期上下文由扩展引擎 ThreadLocal 承载，
-    // 应用层在调用扩展点前显式建立电商下单场景维度（bizCode=ecommerce/useCase=order/scenario=standard），
-    // 命中平台默认计价器，try-with-resources 自动复原。
-    BizContext<Void> pricingContext =
-        BizContext.<Void>builder()
-            .tenant(String.valueOf(tenantId))
-            .bizCode("ecommerce")
-            .useCase("order")
-            .scenario("standard")
-            .build();
-    try (var scope = ExtensionContextManager.with(pricingContext)) {
-      order.applyPricing(Money.of(priceCalculator.calculate(pricingRequest)));
-    }
+    // 扩展点定价由应用层编排：算出最终金额后交给聚合，聚合不感知扩展点接口（领域层只认 Money）。
+    // 上下文装配与扩展点调用收口到 PricingService 端口（实现在基础设施），应用层不再直连扩展引擎。
+    order.applyPricing(pricingService.calculateFinalPrice(order.getTotalMoney(), tenantId));
 
     // ADR-0019 已落地：SDK 的 insert/save 对非空主键「空才生成、非空则尊重」，
     // 故预分配的 id 在落库后保持不变，无需再回填身份或重建事件（原 rebindPersistedIdentity 已删除）。

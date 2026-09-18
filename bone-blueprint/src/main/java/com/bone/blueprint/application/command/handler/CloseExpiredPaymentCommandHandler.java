@@ -55,7 +55,7 @@ public class CloseExpiredPaymentCommandHandler {
       throw new BizException(
           409, BlueprintErrorCodes.PAYMENT_STATUS_CONFLICT + ": " + ex.getMessage(), ex);
     }
-    paymentRepository.save(payment);
+    paymentRepository.saveWithVersionCheck(payment);
     log.info("已关闭超时支付单: paymentId={}, tenantId={}", command.paymentId(), tenantId);
   }
 }

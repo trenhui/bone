@@ -70,7 +70,7 @@ class InitiatePaymentCommandHandlerTest {
             })
         .when(transactionTemplate)
         .executeWithoutResult(any());
-    // save 记录最近一次保存的支付单（供 loadPayment 复用），并快照每次保存时的状态/链接
+    // save / saveWithVersionCheck 都记录保存动作，供 loadPayment 复用并快照每次保存时的状态/链接
     doAnswer(
             inv -> {
               Payment p = inv.getArgument(0);
@@ -81,6 +81,16 @@ class InitiatePaymentCommandHandlerTest {
             })
         .when(paymentRepository)
         .save(any(Payment.class));
+    doAnswer(
+            inv -> {
+              Payment p = inv.getArgument(0);
+              savedPayment = p;
+              savedStatuses.add(p.getStatus());
+              savedPayUrls.add(p.getPayUrl());
+              return null;
+            })
+        .when(paymentRepository)
+        .saveWithVersionCheck(any(Payment.class));
     when(paymentRepository.findByIdInTenant(anyLong(), anyLong())).thenAnswer(inv -> savedPayment);
   }
 
@@ -103,7 +113,8 @@ class InitiatePaymentCommandHandlerTest {
     assertTrue(result.payUrl().contains("order=100"));
 
     // 两段式：Tx1 落 PENDING（payUrl 空），远程成功后 Tx2 回填进入 PAYING
-    verify(paymentRepository, times(2)).save(any(Payment.class));
+    verify(paymentRepository, times(1)).save(any(Payment.class));
+    verify(paymentRepository, times(1)).saveWithVersionCheck(any(Payment.class));
     assertEquals(List.of(PaymentStatus.PENDING, PaymentStatus.PAYING), savedStatuses);
     assertEquals(
         Arrays.asList(null, "https://mock-pay.local/pay?order=100&token=abc"), savedPayUrls);
@@ -143,7 +154,8 @@ class InitiatePaymentCommandHandlerTest {
     assertThrows(BizException.class, () -> handler.handle(command));
 
     // 远程失败补偿：Tx1 落 PENDING，补偿事务将其 CLOSED
-    verify(paymentRepository, times(2)).save(any(Payment.class));
+    verify(paymentRepository, times(1)).save(any(Payment.class));
+    verify(paymentRepository, times(1)).saveWithVersionCheck(any(Payment.class));
     assertEquals(List.of(PaymentStatus.PENDING, PaymentStatus.CLOSED), savedStatuses);
   }
 }

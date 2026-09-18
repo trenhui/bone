@@ -14,7 +14,8 @@ public record PaymentFailedIntegrationEvent(
     Long orderId,
     BigDecimal amount,
     Instant occurredAt,
-    String schemaVersion) {
+    String schemaVersion)
+    implements IntegrationEnvelope {
 
   public static final String SCHEMA_VERSION = "1.0";
 

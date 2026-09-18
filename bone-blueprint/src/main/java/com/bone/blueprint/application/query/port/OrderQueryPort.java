@@ -32,7 +32,7 @@ public interface OrderQueryPort {
    *
    * @return 订单不存在（或不可见）时返回 {@code Optional.empty()}
    */
-  Optional<String> findStatusById(long tenantId, long orderId);
+  Optional<OrderStatus> findStatusById(long tenantId, long orderId);
 
   /** 分页查询订单头投影。 */
   PageResult<OrderHeadProjection> findOrderPage(

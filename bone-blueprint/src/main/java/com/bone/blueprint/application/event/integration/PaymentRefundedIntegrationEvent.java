@@ -15,7 +15,8 @@ public record PaymentRefundedIntegrationEvent(
     BigDecimal refundAmount,
     String channelTradeNo,
     Instant occurredAt,
-    String schemaVersion) {
+    String schemaVersion)
+    implements IntegrationEnvelope {
 
   public static final String SCHEMA_VERSION = "1.0";
 

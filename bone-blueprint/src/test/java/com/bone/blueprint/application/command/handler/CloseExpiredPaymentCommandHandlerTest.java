@@ -47,7 +47,7 @@ class CloseExpiredPaymentCommandHandlerTest {
     handler.handle(new CloseExpiredPaymentCommand(1L, 1L));
 
     assertEquals(PaymentStatus.CLOSED, payment.getStatus());
-    verify(paymentRepository).save(payment);
+    verify(paymentRepository).saveWithVersionCheck(payment);
   }
 
   @Test
@@ -60,7 +60,7 @@ class CloseExpiredPaymentCommandHandlerTest {
         assertThrows(
             BizException.class, () -> handler.handle(new CloseExpiredPaymentCommand(1L, 1L)));
     assertTrue(ex.getMessage().contains("已成功"), ex.getMessage());
-    verify(paymentRepository, never()).save(any());
+    verify(paymentRepository, never()).saveWithVersionCheck(any());
   }
 
   @Test
@@ -68,7 +68,7 @@ class CloseExpiredPaymentCommandHandlerTest {
     when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(null);
 
     assertThrows(BizException.class, () -> handler.handle(new CloseExpiredPaymentCommand(1L, 1L)));
-    verify(paymentRepository, never()).save(any());
+    verify(paymentRepository, never()).saveWithVersionCheck(any());
   }
 
   @Test

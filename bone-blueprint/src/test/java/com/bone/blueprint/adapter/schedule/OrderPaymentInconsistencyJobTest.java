@@ -4,6 +4,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.bone.blueprint.application.port.out.OrderOutboxWriter;
 import com.bone.blueprint.application.query.dto.PaymentProjection;
 import com.bone.blueprint.application.query.port.OrderQueryPort;
 import com.bone.blueprint.application.query.port.PaymentQueryPort;
@@ -33,13 +34,16 @@ class OrderPaymentInconsistencyJobTest {
 
   @Mock private OrderQueryPort orderQueryPort;
 
+  @Mock private OrderOutboxWriter orderOutboxWriter;
+
   @InjectMocks private OrderPaymentInconsistencyJob job;
 
   @Test
   void looksUpOrderStatusByIdPerTenantWithoutJoin() {
     when(paymentQueryPort.findSuccessCreatedBeforeAllTenants(any()))
         .thenReturn(List.of(paymentRow(777L, 11L, 1L)));
-    when(orderQueryPort.findStatusById(777L, 1L)).thenReturn(Optional.of("PAID"));
+    when(orderQueryPort.findStatusById(777L, 1L))
+        .thenReturn(Optional.of(com.bone.blueprint.domain.order.valueobject.OrderStatus.PAID));
 
     job.checkPaidButOrderNotConfirmed();
 
@@ -52,10 +56,12 @@ class OrderPaymentInconsistencyJobTest {
         .thenReturn(List.of(paymentRow(0L, 11L, 2L)));
     when(orderQueryPort.findStatusById(0L, 2L)).thenReturn(Optional.empty());
 
-    // 支付成功却没有订单同样是异常，必须进入告警（此处的可观测性由 error 日志承担）
+    // 支付成功却没有订单同样是异常，必须进入告警（可观测性由 error 日志 + 落 Outbox 共同承担）
     job.checkPaidButOrderNotConfirmed();
 
     verify(orderQueryPort).findStatusById(0L, 2L);
+    // 安全网检出的偏差须同事务落 Outbox，接入统一告警/工单链路（可持久观测，而非仅沉没日志）
+    verify(orderOutboxWriter).appendPaymentInconsistent(any());
   }
 
   @Test

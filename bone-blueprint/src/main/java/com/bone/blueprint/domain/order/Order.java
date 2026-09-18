@@ -14,7 +14,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -35,25 +34,25 @@ public class Order extends TenantAggregateRoot<Long> {
 
   private BigDecimal totalAmount;
   private OrderStatus status;
-  private Date createdAt;
-  private Date updatedAt;
+  private Instant createdAt;
+  private Instant updatedAt;
 
   /**
    * 乐观锁版本号（E-5.3：可并发写聚合必须声明并验证并发策略）。
    *
-   * <p><b>已声明的并发策略</b>：订单是最易被并发写的聚合（{@code confirmPaid} 由支付成功事件驱动、{@code ship/deliver/cancel} 由
-   * REST 驱动，可能并发竞争同一订单），采用<strong>乐观锁</strong>——以本列做 {@code WHERE version = ?} 条件更新，并发提交命中 0
-   * 行即阻止丢失更新。
+   * <p><b>已生效（v5.6 落地）</b>：领域行为方法末尾调用 {@link #incrementVersion()} 让版本递增为新值； 应用层更新场景统一走 {@code
+   * OrderRepository#saveWithVersionCheck}，以 {@code WHERE id = ? AND version = entity.version - 1}
+   * 条件更新，数据库层面保证原子。 并发写命中 0 行时 {@code OrderRepository} 抛 {@code OptimisticLockConflictException}，
+   * 由应用层 catch 后按场景重试或上抛。
    *
-   * <p><b>当前状态（已登记技术债，非已生效）</b>：Bone 元数据 SDK 的通用写路径（{@code BaseRepository#update} → {@code
-   * DynamicUpdateBuilder}）仅按主键更新、<strong>不强制</strong> {@code WHERE version = ?}；其 {@code
-   * TableMetadataResolver} 虽能识别 {@code @Version} 注解并缓存版本列，但写路径并未消费它（已核验源码）。故真实的并发护栏 <strong>待 SDK
-   * 在通用写路径启用原生 {@code @Version}</strong> 后才能落库生效。在 SDK 就绪前，本聚合的并发写 不在持久化边界受保护——属于已知运行时风险，已在模块
-   * README「E-5.3 并发与幂等」登记。
-   *
-   * <p>{@code version} 是持久化层托管的并发控制字段，业务代码不得直接读写。
+   * <p>version 递增的唯一入口是 {@link #incrementVersion()}，禁止外部直接 setVersion。
    */
   private Long version;
+
+  /** 乐观锁版本递增器——每次状态迁移末尾调用，保证与 saveWithVersionCheck 的 WHERE 条件匹配。 */
+  private void incrementVersion() {
+    this.version = (this.version == null ? 0L : this.version) + 1L;
+  }
 
   public Money getTotalMoney() {
     return totalAmount == null ? Money.zero() : Money.of(totalAmount);
@@ -72,7 +71,7 @@ public class Order extends TenantAggregateRoot<Long> {
     order.assertValidTotal();
     order.status = OrderStatus.CREATED;
     order.version = 0L;
-    Date now = new Date();
+    Instant now = Instant.now();
     order.createdAt = now;
     order.updatedAt = now;
     order.addDomainEvent(
@@ -171,7 +170,8 @@ public class Order extends TenantAggregateRoot<Long> {
       throw new DomainException("只有新建状态的订单可以确认支付");
     }
     this.status = OrderStatus.PAID;
-    this.updatedAt = new Date();
+    this.updatedAt = Instant.now();
+    incrementVersion();
     addDomainEvent(
         new OrderPaidEvent(getId(), getTenantId(), customerId, totalAmount, Instant.now()));
     return true;
@@ -211,7 +211,8 @@ public class Order extends TenantAggregateRoot<Long> {
       throw new DomainException("订单已取消");
     }
     this.status = OrderStatus.CANCELLED;
-    this.updatedAt = new Date();
+    this.updatedAt = Instant.now();
+    incrementVersion();
     addDomainEvent(new OrderCancelledEvent(getId(), getTenantId(), Instant.now()));
   }
 
@@ -225,7 +226,8 @@ public class Order extends TenantAggregateRoot<Long> {
       throw new DomainException("只有已支付订单可以发货");
     }
     this.status = OrderStatus.SHIPPED;
-    this.updatedAt = new Date();
+    this.updatedAt = Instant.now();
+    incrementVersion();
   }
 
   /**
@@ -238,7 +240,8 @@ public class Order extends TenantAggregateRoot<Long> {
       throw new DomainException("只有已发货订单可以确认送达");
     }
     this.status = OrderStatus.DELIVERED;
-    this.updatedAt = new Date();
+    this.updatedAt = Instant.now();
+    incrementVersion();
   }
 
   /** 退款：已支付/已发货/已送达订单可退款（进入 REFUNDED）。守卫条件见 {@link #isRefundable()}。 */
@@ -250,7 +253,8 @@ public class Order extends TenantAggregateRoot<Long> {
       throw new DomainException("当前状态不支持退款: " + this.status);
     }
     this.status = OrderStatus.REFUNDED;
-    this.updatedAt = new Date();
+    this.updatedAt = Instant.now();
+    incrementVersion();
   }
 
   /**
@@ -267,7 +271,8 @@ public class Order extends TenantAggregateRoot<Long> {
       throw new DomainException("定价结果不能为空");
     }
     this.totalAmount = finalPrice.toBigDecimal();
-    this.updatedAt = new Date();
+    this.updatedAt = Instant.now();
     assertValidTotal();
+    incrementVersion();
   }
 }

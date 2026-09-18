@@ -8,6 +8,8 @@ import com.bone.blueprint.common.BlueprintErrorCodes;
 import com.bone.blueprint.domain.payment.Payment;
 import com.bone.blueprint.domain.payment.event.PaymentSucceededEvent;
 import com.bone.blueprint.domain.repository.PaymentRepository;
+import com.bone.blueprint.domain.shared.exception.OptimisticLockConflictException;
+import com.bone.blueprint.domain.shared.exception.StateConflictException;
 import com.bone.core.capability.Capability;
 import com.bone.core.domain.DomainEvent;
 import com.bone.core.domain.event.DomainEventPublisher;
@@ -75,19 +77,12 @@ public class ProcessPaymentCallbackCommandHandler {
     if (!command.success()) {
       try {
         payment.markFailed(command.channelTradeNo());
-      } catch (com.bone.core.exception.DomainException ex) {
-        // 状态冲突类 → 转 BizException + 错误码；金额/参数校验类让 DomainException 继续冒泡
-        String msg = ex.getMessage();
-        if (msg != null
-            && (msg.contains("状态")
-                || msg.contains("已成功")
-                || msg.contains("已失败")
-                || msg.contains("已关闭"))) {
-          throw new BizException(409, BlueprintErrorCodes.PAYMENT_STATUS_CONFLICT + ": " + msg, ex);
-        }
-        throw ex;
+      } catch (StateConflictException ex) {
+        // 状态冲突（终态/重复）→ 409；金额/参数校验类仍抛 DomainException 由上层处理
+        throw new BizException(
+            409, BlueprintErrorCodes.PAYMENT_STATUS_CONFLICT + ": " + ex.getMessage(), ex);
       }
-      paymentRepository.save(payment);
+      paymentRepository.saveWithVersionCheck(payment);
       domainEventPublisher.publishFrom(payment);
       return;
     }
@@ -95,16 +90,10 @@ public class ProcessPaymentCallbackCommandHandler {
     boolean migrated;
     try {
       migrated = payment.confirmSuccess(command.channelTradeNo(), command.paidAmount());
-    } catch (com.bone.core.exception.DomainException ex) {
-      String msg = ex.getMessage();
-      if (msg != null
-          && (msg.contains("状态")
-              || msg.contains("已成功")
-              || msg.contains("已失败")
-              || msg.contains("已关闭"))) {
-        throw new BizException(409, BlueprintErrorCodes.PAYMENT_STATUS_CONFLICT + ": " + msg, ex);
-      }
-      throw ex;
+    } catch (StateConflictException ex) {
+      // 状态冲突（终态/重复）→ 409；金额不一致仍抛 DomainException 由上层处理
+      throw new BizException(
+          409, BlueprintErrorCodes.PAYMENT_STATUS_CONFLICT + ": " + ex.getMessage(), ex);
     }
     if (!migrated) {
       // 幂等跳过（同渠道流水号重复回调）：不写库、不发事件
@@ -119,15 +108,17 @@ public class ProcessPaymentCallbackCommandHandler {
     PaymentSucceededEvent succeededEvent = extractEvent(payment, PaymentSucceededEvent.class);
 
     try {
-      paymentRepository.save(payment);
-    } catch (DuplicateKeyException ex) {
-      // 并发重复回调：另一条回调已用同一 channel_trade_no 落库成功，唯一索引拦截本次写入。
-      // 按幂等处理（不回滚整个事务、不向上抛 500）——资金不可重复入账，也不可让渠道收到错误后无限重试。
+      paymentRepository.saveWithVersionCheck(payment);
+    } catch (DuplicateKeyException | OptimisticLockConflictException ex) {
+      // 并发重复：
+      //   - DuplicateKeyException：另一回调已用同一 channel_trade_no 落库，唯一索引拦截；
+      //   - OptimisticLockConflictException：另一事务已修改 version，并发竞争被乐观锁拦截。
+      // 两者均按幂等处理（不回滚事务、不上抛 500）——资金不可重复入账。
       log.warn(
-          "支付回调并发重复已被唯一索引拦截，按幂等跳过: paymentId={}, channelTradeNo={}",
+          "支付回调并发已拦截，按幂等跳过: paymentId={}, channelTradeNo={}, reason={}",
           command.paymentId(),
           command.channelTradeNo(),
-          ex);
+          ex.getClass().getSimpleName());
       return;
     }
 

@@ -120,7 +120,7 @@ public class InitiatePaymentCommandHandler {
             throw new BizException(
                 409, BlueprintErrorCodes.PAYMENT_STATUS_CONFLICT + ": " + ex.getMessage(), ex);
           }
-          paymentRepository.save(payment);
+          paymentRepository.saveWithVersionCheck(payment);
           domainEventPublisher.publishFrom(payment);
         });
 
@@ -133,7 +133,7 @@ public class InitiatePaymentCommandHandler {
         status -> {
           Payment payment = loadPayment(paymentId, tenantId);
           payment.close();
-          paymentRepository.save(payment);
+          paymentRepository.saveWithVersionCheck(payment);
         });
   }
 

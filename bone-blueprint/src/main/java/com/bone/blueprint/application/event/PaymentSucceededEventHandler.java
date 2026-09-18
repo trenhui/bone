@@ -104,7 +104,7 @@ public class PaymentSucceededEventHandler {
     // 确认订单（本地聚合写）：在独立事务中完成，已与支付单事务解耦（AFTER_COMMIT）。
     // confirmPaid() 发布 OrderPaidEvent → 由 OrderPaidEventHandler 统一确认库存（单一职责）。
     boolean paid = order.confirmPaid();
-    orderRepository.save(order);
+    orderRepository.saveWithVersionCheck(order);
     OrderPaidEvent paidEvent = paid ? extractDomainEvent(order, OrderPaidEvent.class) : null;
     domainEventPublisher.publishFrom(order);
 

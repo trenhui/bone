@@ -9,12 +9,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.blueprint.application.command.cmd.CreateOrderCommand;
+import com.bone.blueprint.application.port.out.PricingService;
 import com.bone.blueprint.application.port.out.TenantProvider;
-import com.bone.blueprint.domain.extension.order.OrderPriceCalculator;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.repository.OrderItemRepository;
 import com.bone.blueprint.domain.repository.OrderRepository;
+import com.bone.blueprint.domain.shared.valueobject.Money;
 import com.bone.core.domain.event.DomainEventPublisher;
 import java.math.BigDecimal;
 import java.util.Collections;
@@ -34,7 +35,7 @@ class CreateOrderCommandHandlerExtensionTest {
 
   @Mock private InventoryGateway inventoryGateway;
 
-  @Mock private OrderPriceCalculator priceCalculator;
+  @Mock private PricingService pricingService;
 
   @Mock private TenantProvider tenantProvider;
   @Mock private DomainEventPublisher domainEventPublisher;
@@ -55,12 +56,13 @@ class CreateOrderCommandHandlerExtensionTest {
     CreateOrderCommand command = new CreateOrderCommand(1L, Collections.singletonList(itemDto));
 
     when(inventoryGateway.checkStock(anyLong(), anyInt())).thenReturn(true);
-    when(priceCalculator.calculate(any())).thenReturn(new BigDecimal("200")); // 标准价格
+    when(pricingService.calculateFinalPrice(any(), anyLong()))
+        .thenReturn(Money.of(new BigDecimal("200"))); // 标准价格
 
     Long orderId = handler.handle(command);
 
     assertNotNull(orderId);
-    verify(priceCalculator, times(1)).calculate(any());
+    verify(pricingService, times(1)).calculateFinalPrice(any(), anyLong());
     verify(orderRepository, times(1)).save(any(Order.class));
   }
 
@@ -72,12 +74,13 @@ class CreateOrderCommandHandlerExtensionTest {
     CreateOrderCommand command = new CreateOrderCommand(1L, Collections.singletonList(itemDto));
 
     when(inventoryGateway.checkStock(anyLong(), anyInt())).thenReturn(true);
-    when(priceCalculator.calculate(any())).thenReturn(new BigDecimal("180")); // VIP 9折
+    when(pricingService.calculateFinalPrice(any(), anyLong()))
+        .thenReturn(Money.of(new BigDecimal("180"))); // VIP 9折
 
     Long orderId = handler.handle(command);
 
     assertNotNull(orderId);
-    verify(priceCalculator, times(1)).calculate(any());
+    verify(pricingService, times(1)).calculateFinalPrice(any(), anyLong());
     verify(orderRepository, times(1)).save(any(Order.class));
   }
 
@@ -89,12 +92,13 @@ class CreateOrderCommandHandlerExtensionTest {
     CreateOrderCommand command = new CreateOrderCommand(1L, Collections.singletonList(itemDto));
 
     when(inventoryGateway.checkStock(anyLong(), anyInt())).thenReturn(true);
-    when(priceCalculator.calculate(any())).thenReturn(new BigDecimal("160")); // 促销8折
+    when(pricingService.calculateFinalPrice(any(), anyLong()))
+        .thenReturn(Money.of(new BigDecimal("160"))); // 促销8折
 
     Long orderId = handler.handle(command);
 
     assertNotNull(orderId);
-    verify(priceCalculator, times(1)).calculate(any());
+    verify(pricingService, times(1)).calculateFinalPrice(any(), anyLong());
     verify(orderRepository, times(1)).save(any(Order.class));
   }
 
@@ -106,12 +110,13 @@ class CreateOrderCommandHandlerExtensionTest {
     CreateOrderCommand command = new CreateOrderCommand(1L, Collections.singletonList(itemDto));
 
     when(inventoryGateway.checkStock(anyLong(), anyInt())).thenReturn(true);
-    when(priceCalculator.calculate(any())).thenReturn(new BigDecimal("170")); // 会员85折
+    when(pricingService.calculateFinalPrice(any(), anyLong()))
+        .thenReturn(Money.of(new BigDecimal("170"))); // 会员85折
 
     Long orderId = handler.handle(command);
 
     assertNotNull(orderId);
-    verify(priceCalculator, times(1)).calculate(any());
+    verify(pricingService, times(1)).calculateFinalPrice(any(), anyLong());
     verify(orderRepository, times(1)).save(any(Order.class));
   }
 
@@ -123,12 +128,13 @@ class CreateOrderCommandHandlerExtensionTest {
     CreateOrderCommand command = new CreateOrderCommand(1L, Collections.singletonList(itemDto));
 
     when(inventoryGateway.checkStock(anyLong(), anyInt())).thenReturn(true);
-    when(priceCalculator.calculate(any())).thenReturn(new BigDecimal("140")); // 企业7折
+    when(pricingService.calculateFinalPrice(any(), anyLong()))
+        .thenReturn(Money.of(new BigDecimal("140"))); // 企业7折
 
     Long orderId = handler.handle(command);
 
     assertNotNull(orderId);
-    verify(priceCalculator, times(1)).calculate(any());
+    verify(pricingService, times(1)).calculateFinalPrice(any(), anyLong());
     verify(orderRepository, times(1)).save(any(Order.class));
   }
 }

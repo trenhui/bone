@@ -1,8 +1,11 @@
 package com.bone.blueprint.adapter.schedule;
 
+import com.bone.blueprint.application.port.out.OrderOutboxWriter;
 import com.bone.blueprint.application.query.dto.PaymentProjection;
 import com.bone.blueprint.application.query.port.OrderQueryPort;
 import com.bone.blueprint.application.query.port.PaymentQueryPort;
+import com.bone.blueprint.domain.order.event.OrderPaymentInconsistentEvent;
+import com.bone.blueprint.domain.order.valueobject.OrderStatus;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -10,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * 「钱货不一致」对账扫描（全租户）：支付单已 SUCCESS，但订单在宽限期后仍未确认支付。
@@ -30,29 +34,55 @@ public class OrderPaymentInconsistencyJob {
 
   private final PaymentQueryPort paymentQueryPort;
   private final OrderQueryPort orderQueryPort;
+  private final OrderOutboxWriter orderOutboxWriter;
 
   /** 宽限期（分钟）：支付成功后允许订单确认的最大滞后，超过即视为不一致。 */
   private static final long CONFIRM_GRACE_MINUTES = 10;
 
+  /**
+   * 全租户对账：支付单已 SUCCESS，但订单在宽限期后仍未确认支付。
+   *
+   * <p><b>可观测性闭环</b>：事件驱动路径（{@code PaymentSucceededEventHandler}）在回调时已把偏差落 Outbox，
+   * 但本任务是<strong>进程崩溃 / 订阅失败</strong>场景的安全网——这类偏差事件驱动路径根本不会发生。 因此本任务在检出偏差时，除 error
+   * 日志外，<strong>也同事务落 Outbox</strong>（与事件驱动路径共用同一告警 / 工单 / 自动退款消费链路），使安全网发现同样可持久观测，而非仅沉没在日志中。
+   *
+   * <p><b>为何 {@code @Transactional}</b>：{@code OrderOutboxWriter.appendPaymentInconsistent} 声明
+   * {@code Propagation.MANDATORY}，必须在事务内调用；整段扫描（读 + 落 Outbox）同事务，保证「读到的偏差」与「待发事件」一致。
+   *
+   * <p><b>重复告警是可接受的</b>：未修复的偏差每轮扫描都会重新落 Outbox（eventId 每次新生），下游按 paymentId
+   * 去重即可——这恰恰是把「仍未解决」持续推给告警/工单的正确行为。
+   */
   @Scheduled(cron = "0 0/10 * * * ?")
+  @Transactional
   public void checkPaidButOrderNotConfirmed() {
     Instant before = Instant.now().minusSeconds(CONFIRM_GRACE_MINUTES * 60);
     List<PaymentProjection> succeeded = paymentQueryPort.findSuccessCreatedBeforeAllTenants(before);
 
     int inconsistent = 0;
     for (PaymentProjection row : succeeded) {
-      Optional<String> status = orderQueryPort.findStatusById(row.getTenantId(), row.getOrderId());
+      Optional<OrderStatus> status =
+          orderQueryPort.findStatusById(row.getTenantId(), row.getOrderId());
       // 订单不存在：同样属异常（支付成功却没有订单）；仍 CREATED：确认链路未执行
-      if (status.isEmpty() || status.get().equals("CREATED")) {
+      if (status.isEmpty() || status.get() == OrderStatus.CREATED) {
         inconsistent++;
+        String orderStatus = status.map(OrderStatus::name).orElse("NOT_FOUND");
         log.error(
             "钱货不一致：支付单已成功但订单未确认支付，需人工/自动补偿: paymentId={}, orderId={}, tenantId={}, "
                 + "orderStatus={}, paidAt={}",
             row.getPaymentId(),
             row.getOrderId(),
             row.getTenantId(),
-            status.orElse("NOT_FOUND"),
+            orderStatus,
             row.getPaidAt());
+        // 安全网偏差同事务落 Outbox，接入统一告警/工单/自动退款链路（与事件驱动路径共用）。
+        orderOutboxWriter.appendPaymentInconsistent(
+            new OrderPaymentInconsistentEvent(
+                row.getOrderId(),
+                row.getTenantId(),
+                row.getPaymentId(),
+                orderStatus,
+                "对账扫描：支付成功但订单未确认支付（订单不存在或仍为待支付）",
+                Instant.now()));
       }
     }
 

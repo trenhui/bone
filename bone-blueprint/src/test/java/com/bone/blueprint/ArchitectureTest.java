@@ -1,6 +1,7 @@
 package com.bone.blueprint;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 import com.bone.architecture.BoneDddArchRules;
 import com.tngtech.archunit.core.importer.ImportOption;
@@ -37,9 +38,32 @@ public class ArchitectureTest {
   static final ArchRule no_outer_aggregate_identity_mutation =
       BoneDddArchRules.outerLayersMustNotMutateAggregateIdentity();
 
-  // P0-5：domain 不可使用 QueryBuilder
+  // P0-5：domain 不可使用 QueryBuilder（豁免 ..domain.repository.. ——仓储是 SDK 框架集成点，
+  // 基类 Repository<T,ID> 自带 updateByCriteria(Criteria<T>) 方法签名，子类需调它做版本条件更新）
   @ArchTest
-  static final ArchRule domain_no_query_builder = BoneDddArchRules.domainMustNotUseQueryBuilder();
+  static final ArchRule domain_no_query_builder =
+      noClasses()
+          .that()
+          .resideInAPackage("..domain..")
+          .and()
+          .resideOutsideOfPackage("..domain.repository..")
+          .should()
+          .dependOnClassesThat(annotatedWithReadSideOnly())
+          .because(
+              "DDD P0-5: read-side DSL (@ReadSideOnly) must not appear in domain; "
+                  + "exception: domain.repository is an SDK framework integration point that "
+                  + "inherits updateByCriteria(Criteria<T>) and needs it for optimistic locking");
+
+  private static com.tngtech.archunit.base.DescribedPredicate<
+          com.tngtech.archunit.core.domain.JavaClass>
+      annotatedWithReadSideOnly() {
+    return new com.tngtech.archunit.base.DescribedPredicate<>("annotated with @ReadSideOnly") {
+      @Override
+      public boolean test(com.tngtech.archunit.core.domain.JavaClass input) {
+        return input.isAnnotatedWith("com.bone.core.annotation.ReadSideOnly");
+      }
+    };
+  }
 
   // P0-6：CommandHandler 禁用 QueryBuilder
   @ArchTest
@@ -147,6 +171,53 @@ public class ArchitectureTest {
   @ArchTest
   static final ArchRule save_must_pair_with_publish_or_exempt =
       BoneDddArchRules.applicationSaveMustPairWithPublishOrExempt();
+
+  // P2-4（E-4.4 补充门禁）：全租户扫描（*AllTenants）仅限 schedule 包调用。
+  // 定时任务无请求上下文，TenantProvider 降级为平台租户 0，故全租户方法是平台运维入口——
+  // 禁止 web/handler 等其它入站调用（会导致跨租户数据泄漏或静默"扫描完成"但一笔没处理）。
+  @ArchTest
+  static final ArchRule all_tenants_scan_only_by_schedule =
+      noClasses()
+          .that()
+          .resideOutsideOfPackage("..adapter.schedule..")
+          .and()
+          .resideOutsideOfPackage("..infrastructure.query..")
+          .should()
+          .callMethodWhere(
+              com.tngtech.archunit.core.domain.JavaCall.Predicates.target(
+                  com.tngtech.archunit.core.domain.properties.HasName.Predicates.nameEndingWith(
+                      "AllTenants")))
+          .because(
+              "E-4.4: *AllTenants query methods bypass tenant isolation; "
+                  + "they are admin ops only for scheduled jobs, never web/controllers/handlers");
+
+  // ADR-0028（P6 · CQRS 双构件迁移债）：一个用例只选一种构件，禁止 CommandHandler 与 ApplicationService 套娃。
+  // CommandHandler 不得依赖 *ApplicationService——若需编排应在 ApplicationService 内完成，而非 Handler 套
+  // ApplicationService（双构件）。
+  // 参考样板不 freeze，须 0 违规（当前 blueprint 无此类依赖）。
+  @ArchTest
+  static final ArchRule command_handlers_must_not_depend_on_application_service =
+      noClasses()
+          .that()
+          .resideInAPackage("..application.command.handler..")
+          .should()
+          .dependOnClassesThat(commandHandlerDualArtifactPredicate())
+          .because(
+              "ADR-0028: one use case, one artifact — CommandHandler must not wrap an "
+                  + "ApplicationService (no 套娃 / dual-artifact)");
+
+  private static com.tngtech.archunit.base.DescribedPredicate<
+          com.tngtech.archunit.core.domain.JavaClass>
+      commandHandlerDualArtifactPredicate() {
+    return new com.tngtech.archunit.base.DescribedPredicate<>(
+        "depend on an *ApplicationService in ..application..") {
+      @Override
+      public boolean test(com.tngtech.archunit.core.domain.JavaClass input) {
+        return input.getPackageName().contains(".application.")
+            && input.getSimpleName().endsWith("ApplicationService");
+      }
+    };
+  }
 
   // v4.5：命名 / 事务四条规则已降级为 warn（tasks 2.5），不再作为 @ArchTest 硬门禁；
   // 反贫血主判据切换为 R8 聚合纯单测（AggregatePureUnitTestCoverageTest）。

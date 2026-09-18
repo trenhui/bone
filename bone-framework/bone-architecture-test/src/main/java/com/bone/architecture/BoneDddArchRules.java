@@ -1014,7 +1014,7 @@ public final class BoneDddArchRules {
 
   private static ArchCondition<JavaClass> savePairedWithPublishFromOrExempt() {
     return new ArchCondition<>(
-        "have publishFrom() call for every Repository.save() call (or use @NoDomainEvent)") {
+        "have publishFrom() call for every Repository save/write call (or use @NoDomainEvent)") {
       @Override
       public void check(JavaClass item, ConditionEvents events) {
         // @NoDomainEvent 注解标记的类整体豁免
@@ -1024,9 +1024,12 @@ public final class BoneDddArchRules {
         boolean hasRepositorySave =
             item.getMethodCallsFromSelf().stream()
                 .anyMatch(
-                    call ->
-                        "save".equals(call.getTarget().getName())
-                            && call.getTarget().getOwner().getName().endsWith("Repository"));
+                    call -> {
+                      String name = call.getTarget().getName();
+                      String owner = call.getTarget().getOwner().getName();
+                      return (name.equals("save") || name.startsWith("save"))
+                          && owner.endsWith("Repository");
+                    });
         if (!hasRepositorySave) {
           return;
         }
@@ -1039,7 +1042,7 @@ public final class BoneDddArchRules {
                   item,
                   false,
                   String.format(
-                      "%s 存在 Repository.save() 但无 publishFrom()。"
+                      "%s 存在 Repository 写入（save / saveWithVersionCheck 等）但无 publishFrom()。"
                           + "若该状态迁移属 E-5.4 三类豁免（内部状态迁移/终态/技术中间态），"
                           + "请在类上声明 @NoDomainEvent 并确保聚合方法 JavaDoc 说明豁免理由；"
                           + "否则需补充 publishFrom()。",

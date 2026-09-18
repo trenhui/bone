@@ -59,7 +59,7 @@ class PaymentSucceededEventHandlerTest {
 
     // 订单确认为 PAID，且已持久化
     assertEquals(OrderStatus.PAID, order.getStatus());
-    verify(orderRepository).save(order);
+    verify(orderRepository).saveWithVersionCheck(order);
     // 同事务写 Outbox 集成事件（真实链路此前缺失，本次补齐）
     verify(orderOutboxWriter).appendOrderPaid(any());
   }
@@ -74,7 +74,7 @@ class PaymentSucceededEventHandlerTest {
 
     // 幂等：已 PAID 不再重复确认、不重复保存、不重复写 Outbox
     assertEquals(OrderStatus.PAID, order.getStatus());
-    verify(orderRepository, never()).save(any());
+    verify(orderRepository, never()).saveWithVersionCheck(any());
     verify(orderOutboxWriter, never()).appendOrderPaid(any());
   }
 
@@ -83,7 +83,7 @@ class PaymentSucceededEventHandlerTest {
     when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(null);
 
     assertEquals(404, assertThrows(BizException.class, () -> handler.handle(event())).getCode());
-    verify(orderRepository, never()).save(any());
+    verify(orderRepository, never()).saveWithVersionCheck(any());
   }
 
   /**
@@ -102,7 +102,7 @@ class PaymentSucceededEventHandlerTest {
 
     // 关键：绝不为了「让状态对上」而自动改单——那会掩盖真正的资金问题
     assertEquals(OrderStatus.CANCELLED, order.getStatus());
-    verify(orderRepository, never()).save(any());
+    verify(orderRepository, never()).saveWithVersionCheck(any());
     // 订单并未支付，故不得写「订单已支付」Outbox
     verify(orderOutboxWriter, never()).appendOrderPaid(any());
     // 异常必须留痕：发布「钱货不一致」领域事件，且**同事务内**落 Outbox（v4.7 修正：禁止 AFTER_COMMIT

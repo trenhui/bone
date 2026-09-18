@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -50,15 +51,16 @@ class PaymentApplicationServiceTest {
     AtomicReference<Class<?>> eventType = new AtomicReference<>();
     when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(payment);
-    when(paymentRepository.save(any(Payment.class)))
-        .thenAnswer(
+    doAnswer(
             inv -> {
               Payment saved = inv.getArgument(0);
               if (!saved.getDomainEvents().isEmpty()) {
                 eventType.set(saved.getDomainEvents().get(0).getClass());
               }
-              return 1L;
-            });
+              return null;
+            })
+        .when(paymentRepository)
+        .saveWithVersionCheck(any(Payment.class));
 
     service.refund(command());
 
@@ -86,6 +88,6 @@ class PaymentApplicationServiceTest {
     when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(null);
 
     assertEquals(404, assertThrows(BizException.class, () -> service.refund(command())).getCode());
-    verify(paymentRepository, never()).save(any());
+    verify(paymentRepository, never()).saveWithVersionCheck(any());
   }
 }

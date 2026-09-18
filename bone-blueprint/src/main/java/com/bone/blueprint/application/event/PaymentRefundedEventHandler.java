@@ -57,7 +57,7 @@ public class PaymentRefundedEventHandler {
     boolean refunded = false;
     if (order.isRefundable()) {
       order.refund();
-      orderRepository.save(order);
+      orderRepository.saveWithVersionCheck(order);
       refunded = true;
       domainEventPublisher.publishFrom(order);
     } else {

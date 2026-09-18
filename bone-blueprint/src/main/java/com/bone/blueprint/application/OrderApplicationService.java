@@ -51,7 +51,7 @@ public class OrderApplicationService {
                     new BizException(
                         404, BlueprintErrorCodes.ORDER_NOT_FOUND + ": " + command.orderId()));
     order.cancel();
-    orderRepository.save(order);
+    orderRepository.saveWithVersionCheck(order);
     domainEventPublisher.publishFrom(order);
   }
 
@@ -71,7 +71,7 @@ public class OrderApplicationService {
                     new BizException(
                         404, BlueprintErrorCodes.ORDER_NOT_FOUND + ": " + command.orderId()));
     order.ship();
-    orderRepository.save(order);
+    orderRepository.saveWithVersionCheck(order);
   }
 
   /**
@@ -90,7 +90,7 @@ public class OrderApplicationService {
                     new BizException(
                         404, BlueprintErrorCodes.ORDER_NOT_FOUND + ": " + command.orderId()));
     order.deliver();
-    orderRepository.save(order);
+    orderRepository.saveWithVersionCheck(order);
   }
 
   /**

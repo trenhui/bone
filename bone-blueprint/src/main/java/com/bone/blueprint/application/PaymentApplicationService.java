@@ -50,7 +50,7 @@ public class PaymentApplicationService {
           409, BlueprintErrorCodes.PAYMENT_STATUS_CONFLICT + ": " + ex.getMessage(), ex);
     }
 
-    paymentRepository.save(payment);
+    paymentRepository.saveWithVersionCheck(payment);
     domainEventPublisher.publishFrom(payment);
     if (refunded) {
       log.info("支付退款完成: paymentId={}, amount={}", command.paymentId(), command.refundAmount());
