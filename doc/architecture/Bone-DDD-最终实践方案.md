@@ -1609,6 +1609,24 @@ com.bone.order/
 
 一个后缀只承载一种构件类别。后缀不能替代职责评审，聚合根、实体和值对象一律优先使用 `glossary.md` 中的通用语言。
 
+#### E-13.5 入站适配器命名与协议标记
+
+`adapter/` 已按协议分包（`web` / `messaging` / `rpc` / `schedule`，见 [E-10 包结构参考](#e-10-包结构参考)），**包路径是协议的第一标识**。
+
+| 构件 | 位置 | 命名 |
+|------|------|------|
+| 协议入口 | `adapter/{协议}/controller/` | `*Controller` |
+| 协议装配件 | `adapter/{协议}/assembler/` | `*Assembler`（`*Converter` 留给 infrastructure，见 E-6.6） |
+| 请求 / 响应 DTO | `adapter/{协议}/dto/request\|response/` | `*Req` / `*Qry` / `*Resp`（同 E-13.1，适用于**全部**入站协议，不限于 `web`） |
+
+三条约束：
+
+- **Controller 必须在 `controller/` 子包内**。这不是风格问题：`adapterControllersMustNotDependOnGodObjects` / `...OnDomainRepository` / `...OnDomainService` 三条门禁按 `..adapter..controller..` 匹配，平铺在 `adapter/{协议}/` 根下会**整条逃逸**（现存 4 例：`RuntimeRecordController`、`NotificationController`、`CapabilityController`、`CodeGeneratorServiceImpl`，属待收敛存量）。
+- **类名里的协议标记是例外，不是默认**。仅当同一模块内两个协议暴露同一领域概念、类短名相撞时才加：Spring 默认 `AnnotationBeanNameGenerator` 取类短名（本项目未自定义），`OrderController` 同时在 `adapter/web` 与 `adapter/rpc` 会在启动期抛 `ConflictingBeanDefinitionException`——所以 `OrderRpcController` 是**正确**写法，硬去掉标记反而有害。只有单一协议使用某构件名时不要加。
+- **各协议自持自己的协议 DTO**：`adapter/rpc` 不得 import `adapter/web` 的 DTO。两个平级入站适配器互相依赖，会让"面向人"与"面向服务"的契约演化互相牵制。
+
+存量：IAM / masterdata / system 共 20 个 `*WebConverter` 位于 `adapter/web/converter/`，与 E-6.6 把 `*Converter` 指派给 infrastructure 相冲突（一个后缀承载两个构件类别，违反 E-13.4）。**不追溯**：新增一律用 `*Assembler`，存量随功能修改收敛。
+
 ---
 
 ## 第三部分 门禁与实施状态（G-）

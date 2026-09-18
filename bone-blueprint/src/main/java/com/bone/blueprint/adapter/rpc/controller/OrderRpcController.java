@@ -1,9 +1,9 @@
-package com.bone.blueprint.adapter.rpc;
+package com.bone.blueprint.adapter.rpc.controller;
 
 import com.bone.blueprint.adapter.rpc.assembler.OrderRpcAssembler;
-import com.bone.blueprint.adapter.rpc.dto.CreateOrderRpcReq;
-import com.bone.blueprint.adapter.rpc.dto.CreateOrderRpcResp;
-import com.bone.blueprint.adapter.web.dto.response.OrderDetailResp;
+import com.bone.blueprint.adapter.rpc.dto.request.CreateOrderRpcReq;
+import com.bone.blueprint.adapter.rpc.dto.response.CreateOrderRpcResp;
+import com.bone.blueprint.adapter.rpc.dto.response.OrderDetailResp;
 import com.bone.blueprint.application.command.handler.CreateOrderCommandHandler;
 import com.bone.blueprint.application.query.dto.OrderDto;
 import com.bone.blueprint.application.query.handler.OrderDetailQueryHandler;
@@ -25,6 +25,14 @@ import org.springframework.web.bind.annotation.RestController;
  * 订单 RPC 服务：供其他服务调用。
  *
  * <p>入站适配器（§15）：仅做协议转换与路由，异常交由全局异常处理器统一处理——**不吞异常**（避免把失败伪装成 HTTP 200，掩盖真实错误导致调用方无法感知失败）。
+ *
+ * <p><b>为什么在 {@code controller} 子包</b>：三条 ArchUnit 门禁（{@code
+ * adapterControllersMustNotDependOnGodObjects} / {@code ...OnDomainRepository} / {@code
+ * ...OnDomainService}）按 {@code ..adapter..controller..} 匹配。RPC Controller 若平铺在 {@code adapter/rpc}
+ * 下会**整条逃逸**——与 web 侧包形态对齐后门禁才生效（E-10 协议目录形态）。
+ *
+ * <p><b>为什么契约自持</b>：RPC 的协议 DTO 全部位于 {@code adapter/rpc/dto/**}，不反向依赖 {@code adapter/web} 的 DTO。
+ * 两个平级入站适配器互相依赖会让契约演进互相牵制——web 面向人、RPC 面向服务，两者的演化节奏本就不同。
  */
 @Slf4j
 @Tag(name = "订单RPC服务", description = "提供订单相关的RPC接口，供其他服务调用")

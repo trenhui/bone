@@ -1,4 +1,4 @@
-package com.bone.blueprint.adapter.rpc.dto;
+package com.bone.blueprint.adapter.rpc.dto.request;
 
 import java.math.BigDecimal;
 import java.util.List;

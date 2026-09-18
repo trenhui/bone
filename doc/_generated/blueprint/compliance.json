@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-17T02:23:26Z",
+  "generated_at": "2026-09-18T02:37:58Z",
   "module": "blueprint",
   "as_is": [
     {
@@ -55,6 +55,7 @@
       "evidence": {
         "java": [
           "bone-blueprint/src/main/java/com/bone/blueprint/adapter/schedule/OrderOutboxRelayJob.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/schedule/OrderPaymentInconsistencyJob.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/command/handler/ProcessPaymentCallbackCommandHandler.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/event/PaymentFailedEventHandler.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/event/PaymentRefundedEventHandler.java",
@@ -139,7 +140,7 @@
       "status": "as_is",
       "evidence": {
         "java": [
-          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/rpc/OrderRpcController.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/rpc/controller/OrderRpcController.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/adapter/schedule/CloseExpiredPaymentJob.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/adapter/web/controller/OrderController.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/adapter/web/controller/PaymentController.java",

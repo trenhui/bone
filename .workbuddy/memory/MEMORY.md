@@ -70,3 +70,30 @@
 - **`collect-all-compliance.sh --check` 约 15 分钟**：必须后台跑，前台必被杀。2026-09-17 全 8 模块 up to date。
 - **`.workbuddy/` 在 `.gitignore` 里，但 `memory/MEMORY.md` 已被历史提交跟踪**（`b9285821`）：`git status` 会显示它为 `M`，而 `git add -A` 会对 `.workbuddy` 报 ignored 告警。日常提交按目录显式 `git add` 即可，不要 `-A`。
 - **AGENTS.md 于 2026-09-17 已拆分**（commit `53563456`）：入口 35 行薄引用 + `doc/agents/` 六册（沿用原 §编号）+ `doc/archive/AGENTS-单文件版-2026-09-17.md` 备份。**改 AI 协作规则要改 `doc/agents/`，不要往 `AGENTS.md` 里抄正文**；HC 状态真源只有 G-1.7 一处（`scripts/check-ddd-gate-state.py` 会告警副本）。
+
+## DDD 文档治理：单真源渲染 + 共享文件纪律（2026-09-17 晚，v5.5.8）
+- **状态表已改为「由真源渲染」**：G-1.1 / G-1.5 / G-1.7 三组表由 `doc/architecture/gate-state.json` 经注入标记 `<!-- gate-state:KEY:start/end -->` 生成。**改状态只改 JSON**，然后跑 `python3 scripts/check-ddd-gate-state.py generate`；**手改表内内容必被 CI 打回**。
+- **CI 现有四道 DDD 检查**（`ci.yml` backend-quality）：`scripts/ci/check-ddd-doc-code-sync.py --strict`、`scripts/check-ddd-doc-drift.py`、`scripts/check-ddd-gate-state.py`、**`scripts/check-ddd-gate-state.py generate --check`**（逐字节比对文档表 vs JSON）。改 JSON 不同步文档、或反之，都会红。
+- **原子变更集**：文档注入标记 + `gate-state.json` + `check-ddd-gate-state.py` + `ci.yml`(`generate --check`) 必须**同批提交**——只提交文档会让 CI 找不到真源。
+- **外部评审先比版本再逐条核**：本次长评审引用 v5.3.1（仓库已 v5.5.7），19 条里 **13 条已落地**。核验顺序：版本 → 逐条 → 四档（已落地 / 部分成立 / 不成立 / 不适用）。**不要照做过时建议**。
+- **v5.5.8 语义变更（引用时要按新版）**：AS-01 = 「默认入口，**非唯一入口**」（MQ 消费 / 定时 / 长流程入口可直接用 `*CommandHandler` / `*Orchestrator`）；CORE-11「1:1 落盘」= 聚合 ↔ 持久化入口，**不是** 聚合 ↔ 单表（可跨多表 / JSON / 文档）；E-3.3 新增长流程 = 流程状态聚合 + `*Orchestrator`，**不引入** `*ProcessManager` / `*Saga` 后缀；E-3.6 新增默认 ApplicationService 写路径范例（此前只有 Command+Handler 范例，与"默认路径"自相矛盾）。
+- **格式校验怎么跑才算数**：`mvn -o -pl <module> spotless:check`（真校验）；根聚合 `mvn -o spotless:check` 也**会真校验**（2026-09-18 实测：能抓到 blueprint 的 format violations 并 exit 1，整反应堆约 1–2 分钟）。**但同一命令有时 1 秒返回 0**——那是命中缓存/增量判定的假快，**别把"秒回成功"当"格式已过"的证据**；判定看输出里有没有 `format violations` 与 `BUILD FAILURE`。
+- **改了 `doc/architecture/Bone-DDD-最终实践方案.md` 后**：无需重算 `doc/_generated/` 合规产物（采集器不读该文档，`docs-compliance.yml` 的 `paths` 也不含 `doc/architecture`）。
+
+## 并发会话裁决与提交纪律（2026-09-18 实测）
+- **「静默 ≠ 冻结」**：另一会话的在途改动曾静默 15 小时，却在用户发出新指令的同一分钟被重新激活（实测 `ArchitectureTest.java` mtime 距我检查仅 10 秒）。**每次动手前重测 mtime**：`git status --porcelain | awk '{print $2}' | while read -r f; do [ -f "$f" ] && stat -f "%Sm %N" -t "%m-%d %H:%M:%S" "$f"; done | sort -r | head`。
+- **判「原子变更集」看它是否已完整，而不是看它是否自己写的**：v5.5.8 文档的注入标记 + `gate-state.json` + 检查器 + `ci.yml` 四件套曾被我按「不是我的」搁置一轮；复查发现它已自洽（`generate --check` 5 张表零漂移）→ 作为单个提交落地才是正确的原子化。
+- **`git commit` 的选项必须写在 `--` 之前**：`git commit --only -- <path> -F /tmp/msg.txt` 会把 `-F` 当 pathspec，报 `fatal: /tmp/msg.txt: is outside repository`。正确写法 `git commit -F /tmp/msg.txt --only -- <paths>`。此错不产生提交、不跑钩子、不计熔断。
+- **他人文件导致的 spotless 红：不动手、不清熔断**。主树现在可能因对方编辑中途而整树提交失败；`mvn -o spotless:check` 报的违规文件若属对方，就只记录、不 `spotless:apply`、不提交、**不清 `.git/hooks/.check-fail-count`**（那是对方的失败计数）。
+- **验证「他人未提交的在途改动」**：导出 `git diff HEAD -- . ':(exclude).workbuddy'` + `git ls-files --others --exclude-standard` 打包，在独立 worktree 里 apply 后构建。**绝不在脏主树跑模块测试**——会改写已入库的 `archunit_store/`（114 文件）。快照可能是编辑中途态，失败不可直接归因为对方缺陷。
+- **待裁决的治理分歧（对方重构引入，我未处置）**：blueprint `ArchitectureTest#domain_no_query_builder` 已被改为**内联规则 + 豁免 `..domain.repository..`**（理由：SDK 基接口 `Repository<T,ID>` 自带 `updateByCriteria(Criteria<T>)`）；`BoneDddArchRules` 的 save/publishFrom 规则放宽为 `startsWith("save")`（覆盖 `saveWithVersionCheck`）。这与 `bone-architecture-test/README.md`「参考样板不 freeze、P0-5/P0-6 须 0 违规」冲突，正解仍是 SDK 侧 ReadPort 拆分。
+
+## 入站适配器命名与协议标记（2026-09-18，E-13.5 已入库）
+- **协议由包路径承载**：`adapter/{web|messaging|rpc|schedule}/`，构件统一 `controller/`、`assembler/`、`dto/request|response/`。
+- **`*Controller` 必须在 `controller/` 子包内**：`adapterControllersMustNotDependOnGodObjects` / `...OnDomainRepository` / `...OnDomainService` 三条都按 `..adapter..controller..` 匹配，平铺在 `adapter/{协议}/` 根下**整条逃逸**（实测 55 个 `@RestController` 覆盖 50、逃逸 5）。**剩余 3 个未覆盖**：`metadata.runtime.adapter.web.RuntimeRecordController`、`platform.alert.adapter.web.NotificationController`、`studio.generator.infrastructure.service.CodeGeneratorServiceImpl`。
+- **类名里的协议标记是例外，不是默认，且不能删**：Spring 默认 `AnnotationBeanNameGenerator` 取类短名（本项目未自定义 `BeanNameGenerator`），同模块内两个 `OrderController` → 启动期 `ConflictingBeanDefinitionException`。所以 `OrderRpcController` / `CreateOrderRpcReq` / `OrderRpcAssembler`（MapStruct 生成 `OrderRpcAssemblerImpl`）的 `Rpc` **必须保留**，别当"冗余"删。
+- **`*Assembler`(adapter) / `*Converter`(infrastructure)**：E-6.6 已把 `*Converter` 指派给 infrastructure；iam/masterdata/system 的 20 个 `adapter/web/converter/*WebConverter` 与之冲突（一个后缀两个类别，违反 E-13.4）→ **不追溯**，新增一律 `assembler/`。`Bone-API-规范.md` 早已用 `Assembler`；`doc/agents/03` §5.1 的 `converter/` 已改。
+- **各协议自持协议 DTO**：`adapter/rpc` 不得 import `adapter/web` 的 DTO（原借用 web 的 `OrderDetailResp`，已改自持）。
+- **测量陷阱**：`@RestControllerAdvice` 含 `@RestController` 子串，直接 grep 会多 9 个假阳性；用 `@RestController\b(?!Advice)`。
+- **改 blueprint 源码后必须重算 `doc/_generated/blueprint/`**（`compliance.json` 逐文件列证据路径）：`python3 tools/blueprint-compliance-collector/collect.py`，`--check` 约 90 秒。HEAD 上它因 `7ab5fd66` 已落后一次（漏 `OrderPaymentInconsistencyJob.java`），2026-09-18 一并追平。
+- **⚠ `.claude/agents/skills/backend-java.md` 严重过期且未修（喂 AI agent 的文件，优先处理）**：写 `application.dto` / `application.converter` / `adapter.web.request`，且仍在教 **MyBatis Mapper 接口 + `src/main/resources/mapper/` MyBatis XML**——与本仓库「唯一持久化 bone-metadata-sdk、禁 MyBatis」直接冲突。

@@ -1,4 +1,4 @@
-package com.bone.blueprint.adapter.rpc.dto;
+package com.bone.blueprint.adapter.rpc.dto.response;
 
 import lombok.Data;
 
