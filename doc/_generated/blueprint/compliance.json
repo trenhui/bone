@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-18T02:37:58Z",
+  "generated_at": "2026-09-18T04:59:56Z",
   "module": "blueprint",
   "as_is": [
     {
@@ -140,7 +140,7 @@
       "status": "as_is",
       "evidence": {
         "java": [
-          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/rpc/controller/OrderRpcController.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/rpc/controller/OrderController.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/adapter/schedule/CloseExpiredPaymentJob.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/adapter/web/controller/OrderController.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/adapter/web/controller/PaymentController.java",

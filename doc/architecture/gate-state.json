@@ -1,6 +1,6 @@
 {
   "_comment": "门禁状态唯一真源（single source of truth）。Bone-DDD-最终实践方案.md 的 G-1.1 / G-1.5 / G-1.7 状态表由本文件经 scripts/check-ddd-gate-state.py generate 渲染；改状态请改本文件后重跑生成命令，勿手改文档里的表。JSON 而非 YAML：仓库 CI 运行器无 PyYAML，std::json 零依赖更稳。",
-  "version": "5.5.8",
+  "version": "5.5.9",
   "tables": {
     "g1_1_arch": {
       "sep": "|---|----------------|---------------------------|----------|",
@@ -105,6 +105,12 @@
           "12e",
           "聚合保存须配对 `publishFrom()` 或类级 `@NoDomainEvent` 豁免",
           "`applicationSaveMustPairWithPublishOrExempt`（blueprint 参考样板，未全模块推广；原仅列于 [G-1.5](#g-15-规则证明能力与模块启用状态)，现补入本表）",
+          "Hard gate（blueprint 已启用；其余模块 Planned，待推广）"
+        ],
+        [
+          "12f",
+          "同一模块内 Spring 组件的 bean 名唯一（E-13.0 包表达协议后的正确性门禁）",
+          "`springComponentBeanNamesMustBeUnique`（按 Spring `AnnotationBeanNameGenerator` 同口径推算有效 bean 名：注解显式 `value` 优先，否则类短名首字母小写）",
           "Hard gate（blueprint 已启用；其余模块 Planned，待推广）"
         ]
       ]
@@ -314,6 +320,12 @@
           "Advisory / 卫生检查",
           "测试类、行为调用、断言形式存在",
           "不变量完整、反贫血成立"
+        ],
+        [
+          "`springComponentBeanNamesMustBeUnique`",
+          "Hard gate（**正确性门禁，不是命名风格**：E-13 命名约定默认 Advisory，本条守护的是 bean 名唯一——撞名会让容器启动期抛 `ConflictingBeanDefinitionException`）",
+          "同模块 Spring 组件的有效 bean 名唯一（含 MapStruct 生成类；显式 `value` 优先，否则类短名首字母小写）",
+          "类名是否合适、是否有两个协议合法同名（同名本身不算违规，只要求 bean 名可区分）"
         ]
       ]
     },
@@ -359,6 +371,14 @@
           "Active",
           "Active",
           "Active"
+        ],
+        [
+          "`springComponentBeanNamesMustBeUnique`",
+          "Active",
+          "Planned",
+          "Planned",
+          "Planned",
+          "Planned inventory（实测 18 模块 553 个 Spring 组件当前零冲突，可全模块接线而不破基线）"
         ]
       ]
     },

@@ -2,7 +2,7 @@
 
 > **单文档决策**：依据 [ADR-0026](./adr/0026-ddd-single-document-consolidation.md)，整合完成后本文是 Bone DDD 原则、工程决策、门禁口径与实施状态唯一、自包含的规范真源。
 > **整合状态**：已完成主文档内容整合、生效引用迁移和原分册删除；本文是 Bone DDD 唯一规范入口与实施状态真源。
-> **版本**：5.5.8（按外部评审做减法：AS-01 由「一律」收敛为「默认入口、非唯一入口」并点名异步/定时/长流程入口；CORE-11 与 P-3.5 澄清「1:1 落盘」指单一持久化入口而非「聚合 = 单表」；E-3.3 补长流程 Process Manager / Saga 与 Orchestrator 的边界；E-3.6 补默认 ApplicationService 写路径范例；E-3.10 / E-3.11 标注为工程自动化约束而非 DDD 建模原则；E-4.3 / E-5.4 / E-6.1 各补一句收敛判据；P-2.2 澄清上下文与 Maven 模块不是 1:1，2026-09-17）
+> **版本**：5.5.9（E-13 新增第一原则「包表达边界，类名表达语义」（E-13.0）：协议由包路径声明，类名不再重复承载协议标记，协议标识**下沉到 DI 标识**（显式 bean 名 / MapStruct `implementationName`）；据此把 blueprint 的 4 个 `OrderRpc*` 类去标记（`OrderRpcController` → `OrderController` + `@RestController("rpcOrderController")` 等）；新增正确性门禁 `springComponentBeanNamesMustBeUnique`（G-1.1 12f / G-1.5），把「包表达协议后同模块 bean 名撞车」从启动期失败提前到构建期红；E-13.5 第二条约束按 E-13.0 改写，并登记 `adapter/mq` 包名漂移 1 例，2026-09-17）
 > **决策**：[ADR-0024](./adr/0024-ddd-v5-rule-semantics-and-document-split.md)、[ADR-0025](./adr/0025-ddd-v5-0-2-implementation-alignment.md)、[ADR-0026](./adr/0026-ddd-single-document-consolidation.md)、[ADR-0028](./adr/0028-application-service-first-selective-cqrs.md)
 > **通用语言**：[glossary.md](../glossary.md)
 > **变更记录**：Git 历史 / [CHANGELOG.md](../../CHANGELOG.md)
@@ -36,6 +36,7 @@
 | `#cqrs-port-location` | E-4 CQRS 与端口 | `ADR-0013`、DDD 单文档整合计划 |
 | `#reliable-event-publishing` | E-5 事务、事件与并发 | 本文内部 |
 | `#naming-style` | E-13 命名约定 | `AGENTS.md`、`Bone-API-规范.md`、`8.Studio Generator 详细设计方案` |
+| `#e-13-0` | E-13.0 包表达边界，类名表达语义（总则：协议标记下沉 DI 标识） | `doc/agents/03-架构分层规范.md` |
 | `#context-map-业务限界上下文` | P-2 战略设计优先 | `ADR-0023` |
 | `#g-1-1-hard-gate` | G-1.1 Hard gate | `bone-architecture-test/README.md`、`ADR-0020` |
 | `#g-1-测试与-ci` | G-1 测试与 CI（**标题自动锚**，依赖 `G-1 测试与 CI` 标题文本不变） | `bone-architecture-test/README.md` |
@@ -1538,6 +1539,40 @@ com.bone.order/
 
 命名属于团队工程一致性，不属于 DDD 原则；默认是 Advisory。模块可以为一致性将其升级为阻断规则，但不得宣称后缀能证明 DDD 语义。
 
+#### E-13.0 包表达边界，类名表达语义
+
+<a id="e-13-0"></a>
+
+**第一原则**：**协议类型通过 package 表达边界，业务类型通过 class name 表达语义**。不要用 `Rpc`、`Web`、`Http`、`Domain`、`App` 这类技术后缀重复表达已由包的**位置**说明过的信息。
+
+判据只有一条：**把技术后缀去掉，语义是否由包路径无损承载？**
+
+| 后缀 | 何时是重复（应删） | 何时不是重复（应留） |
+|------|--------------------|----------------------|
+| `Rpc` / `Web`（协议） | 类已位于 `adapter/{协议}/` 下——包路径已声明协议 | 包路径不表达协议时：`infrastructure/integration/XxxRpcClient` 的 `Rpc` 是包未承载的信息 |
+| `Domain` / `App`（层次） | 类已位于 `domain/` / `application/` 下 | `App` 作通用语言名词时：IAM 的 `App`（应用）是业务对象，不是层次标记 |
+| `Http` 等机制词 | 类已在 `adapter/web/` 下且 `Http` 仅指该协议 | `HttpProbeServiceHealthGateway`（`infrastructure/gateway/`）的 `Http` 指**传输机制**，包路径没有声明它 |
+
+**这条原则有代价，必须配机制，不能只记口号。** 包路径承担协议标识后，同一模块的两个协议可以合法地复用同一个业务类名——`adapter/web/controller/OrderController` 与 `adapter/rpc/controller/OrderController` 都是正确写法。类名合法，但 Spring 默认 `AnnotationBeanNameGenerator` 按**类短名**注册 bean（本项目未自定义 `BeanNameGenerator`），两个 `orderController` 会让容器在启动期抛 `ConflictingBeanDefinitionException`。所以**协议标记是下沉到 DI 标识，不是被删掉**：
+
+| 构件 | 消解机制 | blueprint 实例 |
+|------|----------|----------------|
+| 手写组件（`@RestController` / `@Service` / `@Component` …） | 注解显式 `value` = 显式 bean 名 | `@RestController("rpcOrderController")` |
+| MapStruct 装配件 | `implementationName` 指定生成实现类名 | `@Mapper(componentModel = "spring", implementationName = "RpcOrderAssemblerImpl")` |
+| DTO / 值对象 | 无需处理——不注册为 bean，同名不冲突 | `adapter/web` 与 `adapter/rpc` 各有 `OrderDetailResp` |
+
+三条不得反推（这是本原则最容易被用歪的地方）：
+
+- 不得由“两个协议可以同名”推出“所有 RPC 类都要加 `Rpc`”，也不得推出“所有入站类都要加 `Web`”。只有**单一协议**使用某构件名时不必加，加了才是冗余。
+- 不得由“用显式 bean 名消解”推出“类名可以随便重复”。同名只在**同一个领域概念、不同协议**时合法；跨领域概念的撞名要改其中之一。
+- 不得把“标记下沉”读成“标记消失”。`OrderRpcController` 这类写法的问题从来不是“多了 `Rpc`”，而是**标记放错了层**——它属于 DI 标识，不属于类名。
+
+**守护方式**：显式 bean 名与 `implementationName` 都是隐式补充——默认名不撞就不写，漏写既无编译错误也无测试失败（多数模块没有容器级测试），只在启动时炸。故本原则由 `springComponentBeanNamesMustBeUnique` 在**构建期**反查：它按与 Spring 相同的口径推算有效 bean 名，把启动期冲突提前成红色构建。
+
+> **门禁分级**：该规则检查的是**正确性**（bean 名唯一，否则容器起不来），不是命名风格，因此属 **Hard gate**；E-13 其余部分仍是 Advisory（见 G-1.5）。二者不要混为一谈。
+
+E-13.1～E-13.5 是本原则在各层的具体化。
+
 #### E-13.1 命令、查询与协议 DTO
 
 | 层级 / 包 | 后缀 | 唯一语义 |
@@ -1611,21 +1646,24 @@ com.bone.order/
 
 #### E-13.5 入站适配器命名与协议标记
 
-`adapter/` 已按协议分包（`web` / `messaging` / `rpc` / `schedule`，见 [E-10 包结构参考](#e-10-包结构参考)），**包路径是协议的第一标识**。
+`adapter/` 已按协议分包（`web` / `messaging` / `rpc` / `schedule`，见 [E-10 包结构参考](#e-10-包结构参考)），**包路径是协议的第一标识**；类名不再重复声明协议（E-13.0）。
 
 | 构件 | 位置 | 命名 |
 |------|------|------|
-| 协议入口 | `adapter/{协议}/controller/` | `*Controller` |
+| 协议入口 | `adapter/{协议}/controller/` | `*Controller`（不带协议前缀/后缀） |
 | 协议装配件 | `adapter/{协议}/assembler/` | `*Assembler`（`*Converter` 留给 infrastructure，见 E-6.6） |
 | 请求 / 响应 DTO | `adapter/{协议}/dto/request\|response/` | `*Req` / `*Qry` / `*Resp`（同 E-13.1，适用于**全部**入站协议，不限于 `web`） |
 
 三条约束：
 
-- **Controller 必须在 `controller/` 子包内**。这不是风格问题：`adapterControllersMustNotDependOnGodObjects` / `...OnDomainRepository` / `...OnDomainService` 三条门禁按 `..adapter..controller..` 匹配，平铺在 `adapter/{协议}/` 根下会**整条逃逸**（现存 4 例：`RuntimeRecordController`、`NotificationController`、`CapabilityController`、`CodeGeneratorServiceImpl`，属待收敛存量）。
-- **类名里的协议标记是例外，不是默认**。仅当同一模块内两个协议暴露同一领域概念、类短名相撞时才加：Spring 默认 `AnnotationBeanNameGenerator` 取类短名（本项目未自定义），`OrderController` 同时在 `adapter/web` 与 `adapter/rpc` 会在启动期抛 `ConflictingBeanDefinitionException`——所以 `OrderRpcController` 是**正确**写法，硬去掉标记反而有害。只有单一协议使用某构件名时不要加。
+- **Controller 必须在 `controller/` 子包内**。这不是风格问题：`adapterControllersMustNotDependOnGodObjects` / `...OnDomainRepository` / `...OnDomainService` 三条门禁按 `..adapter..controller..` 匹配，平铺在 `adapter/{协议}/` 根下会**整条逃逸**。实测全仓 54 个 `@RestController`（非 `@RestControllerAdvice`），51 个受约束、**3 个逃逸**：`metadata.runtime.adapter.web.RuntimeRecordController`、`platform.alert.adapter.web.NotificationController`、`com.bone.web.controller.CapabilityController`（后者连 `adapter` 段都没有），属待收敛存量。
+- **类名不带协议标记，协议标识下沉到 DI 标识**（E-13.0）。同一模块内两个协议可以合法复用同一个业务类名（`adapter/web/controller/OrderController` 与 `adapter/rpc/controller/OrderController`），冲突不在类名层消解，而在 bean 名层：手写组件用注解显式 `value`（`@RestController("rpcOrderController")`），MapStruct 装配件用 `implementationName`（`implementationName = "RpcOrderAssemblerImpl"`）。两个协议都默认同名却都没写显式标识时，由 `springComponentBeanNamesMustBeUnique` 在构建期拦下——**不要**退回给类名加 `Rpc` / `Web`。
 - **各协议自持自己的协议 DTO**：`adapter/rpc` 不得 import `adapter/web` 的 DTO。两个平级入站适配器互相依赖，会让"面向人"与"面向服务"的契约演化互相牵制。
 
-存量：IAM / masterdata / system 共 20 个 `*WebConverter` 位于 `adapter/web/converter/`，与 E-6.6 把 `*Converter` 指派给 infrastructure 相冲突（一个后缀承载两个构件类别，违反 E-13.4）。**不追溯**：新增一律用 `*Assembler`，存量随功能修改收敛。
+存量（均**不追溯**，新增一律按上表，存量随功能修改收敛）：
+
+- IAM / masterdata / system 共 20 个 `*WebConverter` 位于 `adapter/web/converter/`，与 E-6.6 把 `*Converter` 指派给 infrastructure 相冲突（一个后缀承载两个构件类别，违反 E-13.4）——新增一律用 `*Assembler`。
+- 1 例 MQ 入站适配器落在 `adapter/mq/listener/`（`OrderPaidIntegrationMqListener`），而 E-10 的目标结构与 `infrastructure/messaging/` 用的都是 `messaging`；该类的 `Mq` 标记同样与包路径重复。收敛方向：包名改 `messaging`、类名去 `Mq`（需同步 `doc/architecture/adr/0021-*.md` 内的路径引用，故单独立项而非随手改）。
 
 ---
 
@@ -1678,6 +1716,7 @@ com.bone.order/
 | 12c | DDL 必备字段与文档同步 | 这是**两件事**：**表名清单同步**由 `scripts/check-ddl-doc-sync.py`（`ci-check.sh` `[7/7]` 调用）本地执行；**必备列（`tenant_id`/`created_at`/`updated_at`/`deleted`）校验**在仓库内**没有任何载体** | 文档同步：Manual（本地，当前 GitHub Actions 未调用）；必备字段：Planned |
 | 12d | 第三方依赖漏洞扫描 | `.github/workflows/ci.yml` 的 OWASP dependency-check（CVSS ≥ 7 失败） | Active；只扫描依赖 CVE，不是密钥、租户或 DDL 检查 |
 | 12e | 聚合保存须配对 `publishFrom()` 或类级 `@NoDomainEvent` 豁免 | `applicationSaveMustPairWithPublishOrExempt`（blueprint 参考样板，未全模块推广；原仅列于 [G-1.5](#g-15-规则证明能力与模块启用状态)，现补入本表） | Hard gate（blueprint 已启用；其余模块 Planned，待推广） |
+| 12f | 同一模块内 Spring 组件的 bean 名唯一（E-13.0 包表达协议后的正确性门禁） | `springComponentBeanNamesMustBeUnique`（按 Spring `AnnotationBeanNameGenerator` 同口径推算有效 bean 名：注解显式 `value` 优先，否则类短名首字母小写） | Hard gate（blueprint 已启用；其余模块 Planned，待推广） |
 <!-- gate-state:g1_1_arch:end -->
 
 上表为**架构与流程门禁**。下面两条是**对本文档自身**的一致性门禁（示例 API 真实性、本文结构自洽与锚点契约），与架构门禁不同层，单独列出——它们不约束业务代码。
@@ -1766,6 +1805,7 @@ Hard gate 只保护结构和明确 API 使用，不证明领域模型正确。
 | `oneAggregatePerTransaction` | Advisory | 一个方法直接调用多个 Repository 类型 | 单聚合实例事务 |
 | `businessLayersMustNotReadTenantContextDirectly` | Hard gate 目标 | 业务层不直接读上下文 | 异步租户传递正确 |
 | `AggregatePureUnitTestGuard` | Advisory / 卫生检查 | 测试类、行为调用、断言形式存在 | 不变量完整、反贫血成立 |
+| `springComponentBeanNamesMustBeUnique` | Hard gate（**正确性门禁，不是命名风格**：E-13 命名约定默认 Advisory，本条守护的是 bean 名唯一——撞名会让容器启动期抛 `ConflictingBeanDefinitionException`） | 同模块 Spring 组件的有效 bean 名唯一（含 MapStruct 生成类；显式 `value` 优先，否则类短名首字母小写） | 类名是否合适、是否有两个协议合法同名（同名本身不算违规，只要求 bean 名可区分） |
 <!-- gate-state:g1_5_rules:end -->
 
 “Hard gate 目标”表示规则方向适合硬门禁；是否在模块启用仍以模块测试为准。
@@ -1779,6 +1819,7 @@ Hard gate 只保护结构和明确 API 使用，不证明领域模型正确。
 | `readSideDslOnlyInQueryLayer` | Active | Frozen | Frozen | Frozen | Planned inventory |
 | `businessLayersMustNotReadTenantContextDirectly` | Active | Frozen | Frozen | Frozen | Planned inventory |
 | `adapterControllersMustNotDependOnGodObjects`（原 `...OnApplicationService`） | Active（仅上帝对象守护，ADR-0028 收窄，不 freeze） | Active（legacy 收敛） | Active | Active | Active |
+| `springComponentBeanNamesMustBeUnique` | Active | Planned | Planned | Planned | Planned inventory（实测 18 模块 553 个 Spring 组件当前零冲突，可全模块接线而不破基线） |
 <!-- gate-state:g1_5_modules:end -->
 
 新增或更新状态必须同时提交对应 `archunit_store`。

@@ -8,6 +8,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.AccessTarget;
+import com.tngtech.archunit.core.domain.JavaAnnotation;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaConstructorCall;
 import com.tngtech.archunit.core.domain.JavaMethod;
@@ -21,7 +22,11 @@ import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -1050,5 +1055,129 @@ public final class BoneDddArchRules {
         }
       }
     };
+  }
+
+  // =========================================================================
+  // E-13.0 第二道防线：包表达协议之后，同模块 Spring bean 名必须唯一
+  // =========================================================================
+
+  /** Spring stereotype 注解 FQN；其显式 {@code value()} 即显式 bean 名（E-13.0）。 */
+  private static final List<String> SPRING_STEREOTYPE_ANNOTATIONS =
+      List.of(
+          "org.springframework.stereotype.Component",
+          "org.springframework.stereotype.Service",
+          "org.springframework.stereotype.Repository",
+          "org.springframework.stereotype.Controller",
+          "org.springframework.web.bind.annotation.RestController",
+          "org.springframework.context.annotation.Configuration");
+
+  private static final String SPRING_COMPONENT = "org.springframework.stereotype.Component";
+
+  /**
+   * E-13.0：同一模块内 Spring 组件的**有效 bean 名**必须唯一。
+   *
+   * <p><b>它堵的是什么洞</b>：E-13.0 让包路径承担协议标识后，两个协议可以合法地使用同一个业务类名（{@code
+   * adapter/web/controller/OrderController} 与 {@code adapter/rpc/controller/OrderController}）。类名合法，
+   * 但 Spring 默认 {@code AnnotationBeanNameGenerator} 取**类短名**注册 bean，两个 {@code orderController}
+   * 会让容器在启动期抛 {@code ConflictingBeanDefinitionException}。
+   *
+   * <p><b>为什么必须是机器门禁</b>：消解冲突的两种手段（显式 bean 名、MapStruct {@code implementationName}）
+   * 都是**隐式补充**——默认名不撞就不写。漏写既无编译错误也无测试失败（多数模块没有容器级测试）， 只在启动时炸。本规则按同一口径推算有效 bean 名，把失败从启动期提前到构建期。
+   *
+   * <p><b>判定口径</b>：直接或经元注解标注 {@code @Component} 的**具体类**（含 MapStruct 生成的 {@code *Impl}——生成类带
+   * {@code @Component}，故 {@code implementationName} 的效果自动体现在类短名里）； 注解显式 {@code value()}
+   * 优先，否则取类短名首字母小写（与 {@code Introspector#decapitalize} 一致）。 接口、抽象类、内部类与仅由组合注解标注的类不参与判定。
+   *
+   * <p>空匹配不算配置错误（纯领域模块可以没有任何 Spring 组件），故 {@code allowEmptyShould(true)}。
+   */
+  public static ArchRule springComponentBeanNamesMustBeUnique() {
+    return classes()
+        .that()
+        .areMetaAnnotatedWith(SPRING_COMPONENT)
+        .should(new UniqueSpringBeanNameCondition())
+        .as("E-13.0: 同一模块内 Spring 组件的 bean 名必须唯一")
+        .because(
+            "E-13.0 包表达边界：协议由包路径声明后，同模块两个同名类会按类短名注册 bean，"
+                + "启动期抛 ConflictingBeanDefinitionException；冲突须在 DI 标识上消解"
+                + "（显式 bean 名 / MapStruct implementationName），不要靠类名加协议标记")
+        .allowEmptyShould(true);
+  }
+
+  /** 集合级判定：{@code init} 收全集并按 bean 名分组，{@code check} 逐类报告同组冲突。 */
+  private static final class UniqueSpringBeanNameCondition extends ArchCondition<JavaClass> {
+
+    private final Map<String, List<JavaClass>> classesByBeanName = new LinkedHashMap<>();
+
+    private UniqueSpringBeanNameCondition() {
+      super("have a unique Spring bean name within the module");
+    }
+
+    @Override
+    public void init(Collection<JavaClass> allClasses) {
+      classesByBeanName.clear();
+      for (JavaClass javaClass : allClasses) {
+        effectiveBeanName(javaClass)
+            .ifPresent(
+                beanName ->
+                    classesByBeanName
+                        .computeIfAbsent(beanName, key -> new ArrayList<>())
+                        .add(javaClass));
+      }
+    }
+
+    @Override
+    public void check(JavaClass item, ConditionEvents events) {
+      String beanName = effectiveBeanName(item).orElse(null);
+      if (beanName == null) {
+        return;
+      }
+      List<JavaClass> sameName = classesByBeanName.get(beanName);
+      if (sameName == null || sameName.size() < 2) {
+        return;
+      }
+      events.add(
+          new SimpleConditionEvent(
+              item,
+              false,
+              String.format(
+                  "bean 名 '%s' 被 %d 个类占用：%s。E-13.0：同模块 bean 名必须唯一，"
+                      + "请用显式 bean 名（如 @RestController(\"rpcOrderController\")）或 MapStruct "
+                      + "implementationName 消解，不要改回给类名加协议标记。",
+                  beanName,
+                  sameName.size(),
+                  sameName.stream()
+                      .map(JavaClass::getFullName)
+                      .sorted()
+                      .collect(Collectors.joining("、")))));
+    }
+
+    /** 有效 bean 名：注解显式 value 优先，否则按 `AnnotationBeanNameGenerator` 取类短名首字母小写。 */
+    private static Optional<String> effectiveBeanName(JavaClass javaClass) {
+      if (javaClass.getSimpleName().indexOf('$') >= 0
+          || javaClass.isInterface()
+          || javaClass.getModifiers().contains(JavaModifier.ABSTRACT)
+          || !javaClass.isMetaAnnotatedWith(SPRING_COMPONENT)) {
+        return Optional.empty();
+      }
+      for (JavaAnnotation<JavaClass> annotation : javaClass.getAnnotations()) {
+        if (!SPRING_STEREOTYPE_ANNOTATIONS.contains(annotation.getRawType().getName())) {
+          continue;
+        }
+        Object explicitName = annotation.get("value").orElse(null);
+        if (explicitName instanceof String name && !name.isBlank()) {
+          return Optional.of(name);
+        }
+        break;
+      }
+      return Optional.of(decapitalize(javaClass.getSimpleName()));
+    }
+
+    /** 与 `java.beans.Introspector#decapitalize` 对齐：前两个字母均大写时原样返回。 */
+    private static String decapitalize(String simpleName) {
+      if (simpleName.length() > 1 && Character.isUpperCase(simpleName.charAt(1))) {
+        return simpleName;
+      }
+      return Character.toLowerCase(simpleName.charAt(0)) + simpleName.substring(1);
+    }
   }
 }

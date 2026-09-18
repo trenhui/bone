@@ -1,8 +1,8 @@
 package com.bone.blueprint.adapter.rpc.controller;
 
-import com.bone.blueprint.adapter.rpc.assembler.OrderRpcAssembler;
-import com.bone.blueprint.adapter.rpc.dto.request.CreateOrderRpcReq;
-import com.bone.blueprint.adapter.rpc.dto.response.CreateOrderRpcResp;
+import com.bone.blueprint.adapter.rpc.assembler.OrderAssembler;
+import com.bone.blueprint.adapter.rpc.dto.request.CreateOrderReq;
+import com.bone.blueprint.adapter.rpc.dto.response.CreateOrderResp;
 import com.bone.blueprint.adapter.rpc.dto.response.OrderDetailResp;
 import com.bone.blueprint.application.command.handler.CreateOrderCommandHandler;
 import com.bone.blueprint.application.query.dto.OrderDto;
@@ -33,26 +33,31 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <p><b>为什么契约自持</b>：RPC 的协议 DTO 全部位于 {@code adapter/rpc/dto/**}，不反向依赖 {@code adapter/web} 的 DTO。
  * 两个平级入站适配器互相依赖会让契约演进互相牵制——web 面向人、RPC 面向服务，两者的演化节奏本就不同。
+ *
+ * <p><b>为什么类名不带 {@code Rpc}</b>：协议边界由包路径声明（{@code adapter/rpc/controller/}），类名只表达业务语义（E-13.0）。与 web
+ * 侧 {@code adapter.web.controller.OrderController} 同名是**合法且预期**的——两者是不同协议下的同一个领域概念。类名不带协议标记，
+ * 协议标识下沉到 DI 标识：显式 bean 名 {@code "rpcOrderController"} 避开 Spring 默认按类短名注册导致的 {@code
+ * ConflictingBeanDefinitionException}。该约束由 {@code
+ * BoneDddArchRules.springComponentBeanNamesMustBeUnique} 在构建期守护。
  */
 @Slf4j
 @Tag(name = "订单RPC服务", description = "提供订单相关的RPC接口，供其他服务调用")
-@RestController
+@RestController("rpcOrderController")
 @RequestMapping("/api/rpc/orders")
 @RequiredArgsConstructor
-public class OrderRpcController {
+public class OrderController {
 
   private final CreateOrderCommandHandler createOrderCommandHandler;
   private final OrderDetailQueryHandler orderDetailQueryHandler;
-  private final OrderRpcAssembler orderRpcAssembler;
+  private final OrderAssembler orderAssembler;
 
   @Operation(summary = "创建订单", description = "创建新的订单")
   @PostMapping
-  public ApiResponse<CreateOrderRpcResp> create(
-      @Parameter(description = "订单创建请求") @RequestBody CreateOrderRpcReq request) {
-    Long orderId =
-        createOrderCommandHandler.handle(orderRpcAssembler.toCreateOrderCommand(request));
+  public ApiResponse<CreateOrderResp> create(
+      @Parameter(description = "订单创建请求") @RequestBody CreateOrderReq request) {
+    Long orderId = createOrderCommandHandler.handle(orderAssembler.toCreateOrderCommand(request));
 
-    CreateOrderRpcResp response = new CreateOrderRpcResp();
+    CreateOrderResp response = new CreateOrderResp();
     response.setOrderId(orderId);
     response.setSuccess(true);
     response.setStatus("SUCCESS");
@@ -65,6 +70,6 @@ public class OrderRpcController {
       @Parameter(description = "订单ID") @PathVariable Long orderId) {
     // 与 web 侧统一：不可变查询对象 + 复用同一响应 DTO（同服务内 web/rpc 契约一致）
     OrderDto dto = orderDetailQueryHandler.handle(new OrderDetailQuery(orderId));
-    return ApiResponse.success(orderRpcAssembler.toOrderDetailResp(dto));
+    return ApiResponse.success(orderAssembler.toOrderDetailResp(dto));
   }
 }

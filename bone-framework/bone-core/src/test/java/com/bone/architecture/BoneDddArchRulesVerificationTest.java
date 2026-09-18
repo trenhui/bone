@@ -322,6 +322,42 @@ class BoneDddArchRulesVerificationTest {
         eval(BoneDddArchRules.readSideDslOnlyInQueryLayer(), ReadDslGateway.class).hasViolation());
   }
 
+  // ===== E-13.0 包表达协议后，同模块 bean 名唯一 =====
+
+  @Test
+  void springComponentBeanNamesMustBeUnique_detectsSameSimpleNameAcrossProtocolPackages() {
+    // 夹具：beans.colliding.{web,rpc}.OrderController 同名且都用默认 bean 名
+    EvaluationResult result =
+        BoneDddArchRules.springComponentBeanNamesMustBeUnique()
+            .evaluate(
+                new ClassFileImporter()
+                    .importPackages("com.bone.architecture.fixture.beans.colliding"));
+    assertTrue(result.hasViolation(), report(result));
+    assertTrue(report(result).contains("orderController"), report(result));
+  }
+
+  @Test
+  void springComponentBeanNamesMustBeUnique_allowsExplicitBeanNameDisambiguation() {
+    // 夹具：beans.resolved.rpc.OrderController 显式 @Component("rpcOrderController")，标记下沉 DI 标识
+    EvaluationResult result =
+        BoneDddArchRules.springComponentBeanNamesMustBeUnique()
+            .evaluate(
+                new ClassFileImporter()
+                    .importPackages("com.bone.architecture.fixture.beans.resolved"));
+    assertFalse(result.hasViolation(), report(result));
+  }
+
+  @Test
+  void springComponentBeanNamesMustBeUnique_ignoresNonComponentSameSimpleName() {
+    // 非 Spring 组件不参与判定：beans.noncomponent.{web,rpc}.OrderDetailResp 同名但不注册 bean
+    EvaluationResult result =
+        BoneDddArchRules.springComponentBeanNamesMustBeUnique()
+            .evaluate(
+                new ClassFileImporter()
+                    .importPackages("com.bone.architecture.fixture.beans.noncomponent"));
+    assertFalse(result.hasViolation(), report(result));
+  }
+
   // ===== 供 imported classes 用的引用（编译期固定，运行时按 FQN 导入） =====
 
   /** application 类依赖 com.bone.core.usecase（noBoneCoreUseCaseApiDependency 违例夹具）。 */

@@ -2,7 +2,11 @@
 set -euo pipefail
 
 YELLOW='\033[1;33m'; GREEN='\033[0;32m'; RED='\033[0;31m'; RESET='\033[0m'
-FAIL_COUNT_FILE=".git/hooks/.check-fail-count"
+# worktree 安全：在 `git worktree` 里 `.git` 是**文件**（gitdir 指针），`.git/hooks/...`
+# 会被解析成「Not a directory」，收尾的 `rm -f` 因而失败并触发 set -e 中断提交。
+# 用 git 自己解析 hooks 目录（worktree 下返回共享 hooks 目录的绝对路径），
+# 顺带让熔断计数跨 worktree 共享——它守卫的是人，不是某个检出。
+FAIL_COUNT_FILE="$(git rev-parse --git-path hooks 2>/dev/null || echo .git/hooks)/.check-fail-count"
 MAX_RETRIES=3
 
 # 熔断检查

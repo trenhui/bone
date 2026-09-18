@@ -219,6 +219,14 @@ public class ArchitectureTest {
     };
   }
 
+  // E-13.0（v5.6 补门禁）：包路径表达协议边界后，同模块两个协议的 Controller/Assembler 可合法同名，
+  // 但 Spring 默认按类短名注册 bean，两个 orderController 会启动期抛 ConflictingBeanDefinitionException。
+  // 本规则按同口径推算有效 bean 名（注解显式 value 优先，否则类短名首字母小写），把冲突提前到构建期。
+  // 参考样板不 freeze，须 0 违规——冲突用显式 bean 名 / MapStruct implementationName 消解。
+  @ArchTest
+  static final ArchRule spring_bean_names_unique =
+      BoneDddArchRules.springComponentBeanNamesMustBeUnique();
+
   // v4.5：命名 / 事务四条规则已降级为 warn（tasks 2.5），不再作为 @ArchTest 硬门禁；
   // 反贫血主判据切换为 R8 聚合纯单测（AggregatePureUnitTestCoverageTest）。
 }
