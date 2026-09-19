@@ -6,6 +6,10 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.InitializingBean;
+import org.springframework.context.EnvironmentAware;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 /**
@@ -23,12 +27,39 @@ import org.springframework.stereotype.Component;
  *
  * <p><b>签名字段取自回调报文</b>（而非数据库里的支付单）：真实渠道也是对报文签名，adapter 才能在不查库的前提下 完成验签；金额统一 {@code
  * stripTrailingZeros} 后再签，避免 {@code 200} 与 {@code 200.00} 两种字符串导致签名不一致。
+ *
+ * <p><b>启动告警</b>：本类是<strong>占位实现</strong>——共享密钥硬编码在源码里。它一旦装配进 prod 运行时就是配置事故
+ * （任何人拿到源码即可伪造回调、改变支付单终态），故启动时按 profile 分级留痕（prod 为 {@code ERROR}，其余 {@code
+ * WARN}）；真实接入必须把密钥外部化到配置中心/密钥管理，并换成渠道侧真实验签实现。
  */
+@Slf4j
 @Component
-public class MockPaymentSignaturePortAdapter implements PaymentSignaturePort {
+public class MockPaymentSignaturePortAdapter
+    implements PaymentSignaturePort, EnvironmentAware, InitializingBean {
 
   /** 模拟共享密钥（仅演示；真实接入须外部化）。 */
   private static final String MOCK_SECRET = "bone-blueprint-mock-secret";
+
+  private Environment environment;
+
+  @Override
+  public void setEnvironment(Environment environment) {
+    this.environment = environment;
+  }
+
+  /** 启动期自检：Mock 验签被装配即告警，prod profile 下升级为 ERROR。 */
+  @Override
+  public void afterPropertiesSet() {
+    // 单测直接 new 本类时 environment 为 null（不经过 Spring 生命周期），静默跳过即可。
+    boolean prod = environment != null && environment.acceptsProfiles("prod");
+    String message =
+        "支付回调验签当前装配的是 Mock 实现（共享密钥硬编码在源码中，仅用于演示/本地联调）；" + "生产环境必须外部化密钥并接入渠道真实验签，否则任何持有源码者都可伪造回调";
+    if (prod) {
+      log.error("[配置事故] {}", message);
+    } else {
+      log.warn("{}", message);
+    }
+  }
 
   @Override
   public boolean verify(

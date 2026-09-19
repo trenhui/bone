@@ -42,6 +42,16 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- H2（仅测试）：装配级冒烟测试的进程内数据源。
+             不用 Testcontainers：它依赖 Docker 守护进程与镜像拉取，离线/CI 无网环境直接不可用；
+             而装配级测试要验的是「Spring 能否把全量上下文装配起来」（bean 名冲突 / 缺失依赖 / 循环引用），
+             与真实数据库方言无关。持久化语义仍由 -Pintegration 的本地 MySQL 集成测试覆盖。 -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Spring Security -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

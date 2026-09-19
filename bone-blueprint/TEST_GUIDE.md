@@ -81,7 +81,7 @@ mvn install -pl bone-framework/bone-architecture-test -am -DskipTests
 | 租户取值收敛（E-2） | `businessLayersMustNotReadTenantContextDirectly`、`all_tenants_scan_only_by_schedule` |
 | 读侧 DSL 位置（E-4.2） | `readSideDslOnlyInQueryLayer` |
 | 一事务一聚合（CORE-06 / E-5.1） | `oneAggregatePerTransaction` |
-| 入口边界（CORE-04 / ADR-0028） | `adapterControllersMustNotDependOnGodObjects`、禁止 Handler 与 ApplicationService 套娃 |
+| 入口边界（CORE-04 / ADR-0028） | `adaptersMustNotDependOnGodObjects`、禁止 Handler 与 ApplicationService 套娃 |
 | 跨上下文边界（E-1.3 / P-2.4） | `noCrossContextDomainDependency`、`noCrossContextModelDependency` |
 | 领域行为归属（CORE-03 / E-6.4） | `applicationServicesMustNotOwnDomainRules` |
 | 持久化栈与生命周期（E-5.4） | `applicationSaveMustPairWithPublishOrExempt`、`springComponentBeanNamesMustBeUnique` |

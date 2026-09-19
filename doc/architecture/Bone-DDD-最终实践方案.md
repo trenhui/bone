@@ -1762,7 +1762,7 @@ E-13.1～E-13.5 是本原则在各层的具体化。
 
 三条约束：
 
-- **Controller 必须在 `controller/` 子包内**。这不是风格问题：`adapterControllersMustNotDependOnGodObjects` / `...OnDomainRepository` / `...OnDomainService` 三条门禁按 `..adapter..controller..` 匹配，平铺在 `adapter/{协议}/` 根下会**整条逃逸**。实测全仓 54 个 `@RestController`（非 `@RestControllerAdvice`），51 个受约束、**3 个逃逸**：`metadata.runtime.adapter.web.RuntimeRecordController`、`platform.alert.adapter.web.NotificationController`、`com.bone.web.controller.CapabilityController`（后者连 `adapter` 段都没有），属待收敛存量。
+- **Controller 必须在 `controller/` 子包内**。这不是风格问题：`adaptersMustNotDependOnGodObjects` / `...OnDomainRepository` / `...OnDomainService` 三条门禁的谓词是 `..adapter..`（2026-09-19 由 `..adapter..controller..` **放宽**：旧谓词下 `adapter.schedule` / `messaging` / `rpc` 以及平铺在 `adapter/{协议}/` 根下的控制器会**整条逃逸**、永远绿）。放宽后逃逸面收口——实测全仓 54 个 `@RestController`（非 `@RestControllerAdvice`）中 51 个受约束、3 个逃逸者里 `metadata.runtime.adapter.web.RuntimeRecordController` 与 `platform.alert.adapter.web.NotificationController` 已被纳入覆盖，仅 `com.bone.web.controller.CapabilityController`（连 `adapter` 段都没有）仍逃逸，属待收敛存量。仍要求落在 `controller/` 子包：包结构表达协议边界，且 `..adapter.schedule..` 的受控例外按包判定，命名平铺会让例外边界不可读。
 - **类名不带协议标记，协议标识下沉到 DI 标识**（E-13.0）。同一模块内两个协议可以合法复用同一个业务类名（`adapter/web/controller/OrderController` 与 `adapter/rpc/controller/OrderController`），冲突不在类名层消解，而在 bean 名层：手写组件用注解显式 `value`（`@RestController("rpcOrderController")`），MapStruct 装配件用 `implementationName`（`implementationName = "RpcOrderAssemblerImpl"`）。两个协议都默认同名却都没写显式标识时，由 `springComponentBeanNamesMustBeUnique` 在构建期拦下——**不要**退回给类名加 `Rpc` / `Web`。
 - **各协议自持自己的协议 DTO**：`adapter/rpc` 不得 import `adapter/web` 的 DTO。两个平级入站适配器互相依赖，会让"面向人"与"面向服务"的契约演化互相牵制。
 
@@ -1812,7 +1812,7 @@ E-13.1～E-13.5 是本原则在各层的具体化。
 | 3 | adapter 不直接依赖 infrastructure 实现 | 暂无共享规则；integration 出站 Job 存在存量直连 | Frozen；补端口后升级 Active |
 | 4 | domain 不使用 QueryBuilder/Criteria/SQL | `domainMustNotUseQueryBuilder` + Criteria `@ReadSideOnly` | Active（blueprint）；其余见模块测试 |
 | 5 | Command 用例不使用 QueryBuilder | `commandHandlersMustNotUseQueryBuilder` | Active/Frozen 混合，见 G-1.5 |
-| 6 | Controller 不直接操作 Repository 或领域服务 | `adapterControllersMustNotDependOnDomainRepository` / `adapterControllersMustNotDependOnDomainService` | Active（已接入模块） |
+| 6 | 入站 adapter 不直接操作 Repository 或领域服务（`..adapter.schedule..` 为 ADR-0030 受控例外） | `adaptersMustNotDependOnDomainRepository` / `adaptersMustNotDependOnDomainService` | Active（已接入模块） |
 | 7 | 禁止业务模块依赖已删除的 `com.bone.core.usecase.*` | `noBoneCoreUseCaseApiDependency` | Active（无存量） |
 | 8 | 禁止外层业务代码修改聚合 `id` / `tenantId` | `outerLayersMustNotMutateAggregateIdentity` | Active（blueprint + 已启用应用模块） |
 | 9 | 禁止 JPA、Hibernate、MyBatis、MyBatis-Plus | `scripts/check.sh`（pre-commit `[3/5]` 扫 ORM import、`[5/5]` 扫 pom 依赖）+ `scripts/ci-check.sh`（`[1/7]` 依赖、`[6/7]` import）本地拦截 | Manual（本地）；**CI 级**载体仍为 Planned：maven-enforcer `bannedDependencies` |
@@ -1900,9 +1900,9 @@ Hard gate 只保护结构和明确 API 使用，不证明领域模型正确。
 | `noBusinessExceptionSuffix` | Bone 兼容门禁 | 不新增 `*BusinessException` 后缀类（freeze） | 异常语义归属正确 |
 | `applicationServicesMustNotOwnDomainRules` | Hard gate 目标 | ApplicationService 不承载状态迁移决策 | 规则放置是否最优 |
 | `applicationSaveMustPairWithPublishOrExempt` | Hard gate（blueprint 参考样板，未全模块推广；**已补入 [G-1.1](#g-11-hard-gate) 12e**） | 聚合保存已配对发布或豁免说明 | 豁免理由是否成立、下游是否真的无需感知 |
-| `adapterControllersMustNotDependOnGodObjects` | 上帝对象守护（ADR-0028，旧名 `...OnApplicationService` 保留为过渡别名） | 仅禁 `Common*/Base*/Business*/*Manager` 命名；不再禁 Controller → 合法 `*ApplicationService` | 应用层编排一定正确 |
-| `adapterControllersMustNotDependOnDomainRepository` | Hard gate | Controller 不越层访问写仓储 | Controller 无业务规则 |
-| `adapterControllersMustNotDependOnDomainService` | Hard gate | Controller 不直调领域服务 | 应用编排正确 |
+| `adaptersMustNotDependOnGodObjects`（旧名 `adapterControllersMustNotDependOnGodObjects` / `...OnApplicationService` 保留为过渡别名） | 上帝对象守护（ADR-0028，收窄为 `Common*/Base*/Business*/*Manager`）；谓词 2026-09-19 起为 `..adapter..` | 仅禁 `Common*/Base*/Business*/*Manager` 命名；不再禁 Controller → 合法 `*ApplicationService` | 应用层编排一定正确 |
+| `adaptersMustNotDependOnDomainRepository`（旧名 `adapterControllers...` 保留为过渡别名） | Hard gate | 入站 adapter 不越层访问写仓储（`..adapter.schedule..` 例外：ADR-0030 授权的全租户运维扫描） | 入站构件无业务规则 |
+| `adaptersMustNotDependOnDomainService`（旧名 `adapterControllers...` 保留为过渡别名） | Hard gate | 入站 adapter 不直调领域服务（无 schedule 例外） | 应用编排正确 |
 | `commandHandlersShouldBeNamedCommandHandler` | Advisory | 类后缀一致 | 类承担正确命令语义 |
 | `queryHandlersShouldBeNamedQueryHandler` | Advisory | 类后缀一致 | 查询模型合理 |
 | `commandHandlersShouldBeTransactional` | Advisory | 注解存在 | 事务代理真实生效 |
@@ -1927,7 +1927,7 @@ Hard gate 只保护结构和明确 API 使用，不证明领域模型正确。
 | `commandHandlersMustNotUseQueryBuilder` | Active | Frozen | Frozen | Active | bone-notification、bone-extension-studio、**bone-system** Active；Metadata Server、Studio Generator Frozen；其余待盘点 |
 | `readSideDslOnlyInQueryLayer` | Active | Frozen | Frozen | Frozen | Planned inventory |
 | `businessLayersMustNotReadTenantContextDirectly` | Active | Frozen | Frozen | Frozen | Planned inventory |
-| `adapterControllersMustNotDependOnGodObjects`（原 `...OnApplicationService`） | Active（仅上帝对象守护，ADR-0028 收窄，不 freeze） | Active（legacy 收敛） | Active | Active | Active |
+| `adaptersMustNotDependOnGodObjects`（原 `adapterControllers...OnGodObjects` / `...OnApplicationService`） | Active（仅上帝对象守护，ADR-0028 收窄，不 freeze） | Active（legacy 收敛） | Active | Active | Active |
 | `springComponentBeanNamesMustBeUnique` | Active | Planned | Planned | Planned | Planned inventory（实测 18 模块 553 个 Spring 组件当前零冲突，可全模块接线而不破基线） |
 <!-- gate-state:g1_5_modules:end -->
 
@@ -1942,7 +1942,7 @@ Hard gate 只保护结构和明确 API 使用，不证明领域模型正确。
 | CORE-01 边界先于分层 | 无直接门禁（语义 + 模块 README 数据所有权声明） | Semantic |
 | CORE-02 依赖向内 | `domainMustNotDependOnOuterLayers` | Hard gate（部分模块） |
 | CORE-03 领域行为保护不变量 | `applicationServicesMustNotOwnDomainRules`（目标） | Hard gate 目标 |
-| CORE-04 一个用例一个入口边界 | `adapterControllersMustNotDependOnGodObjects`（原 `...OnApplicationService`，收窄为上帝对象守护，ADR-0028） | Hard gate（收窄） |
+| CORE-04 一个用例一个入口边界 | `adaptersMustNotDependOnGodObjects`（原 `...OnApplicationService`，收窄为上帝对象守护，ADR-0028；谓词 2026-09-19 起为 `..adapter..`） | Hard gate（收窄） |
 | CORE-05 写聚合 / 读投影 | `commandHandlersMustNotUseQueryBuilder`、`readSideDslOnlyInQueryLayer`；ADR-0030 门禁② 已放宽 `domain.repository` 白名单容纳域层投影 / `long` 计数 | Hard gate / 目标（门禁② 已落地） |
 | CORE-06 聚合默认一致性边界 | `oneAggregatePerTransaction` | Advisory |
 | CORE-07 可靠性与并发声明 | 无直接门禁（语义 + [E-5 事务、事件与并发](#e-5-事务事件与并发)） | Semantic |
@@ -1951,7 +1951,7 @@ Hard gate 只保护结构和明确 API 使用，不证明领域模型正确。
 | CORE-10 Metadata 不执行业务 | 无直接门禁（语义 + 评审） | Semantic |
 | CORE-11 聚合最小化与 1:1 落盘 | `domainRepositoriesShouldOnlyDeclareWhitelistedMethods` + `oneAggregatePerTransaction`（按聚合根口径计数） | Advisory / Hard gate 目标 |
 | CORE-12 务实对象映射 | 无直接门禁（语义 + 评审；Shared / Separated 由 E-6.1 维度定义） | Semantic |
-| E-3 应用用例边界 | `adapterControllersMustNotDependOnDomainRepository` / `...DomainService` | Hard gate |
+| E-3 应用用例边界 | `adaptersMustNotDependOnDomainRepository` / `...DomainService` | Hard gate |
 | E-4.2 读侧端口位置 | `readSideDslOnlyInQueryLayer`（目标）；ADR-0030 合并后本聚合读投影驻留 `domain.repository`（由 P0-4 白名单守护，见 G-1.6 门禁②） | Hard gate 目标 |
 | E-2 多租户（端口取值 + 异步显式携带） | `businessLayersMustNotReadTenantContextDirectly`；blueprint 另有 `all_tenants_scan_only_by_schedule` | Hard gate（参考样板 0 违规） |
 | E-6 D1 纯净度 | `domainMustNotDependOnOuterLayers`（白名单放行编译期注解） | Hard gate |
@@ -2032,7 +2032,7 @@ Freeze 用于阻止存量违规继续增加，不把违规永久合法化：
 目标 `freeze-ledger.yaml` 字段：
 
 ```yaml
-- rule: adapterControllersMustNotDependOnApplicationService
+- rule: adaptersMustNotDependOnGodObjects
   classification: adjusted-god-object-guard
   violations: 0
   items: []

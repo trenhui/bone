@@ -23,10 +23,10 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <p>入站适配器（E-10.1）：仅做协议转换与路由，异常交由全局异常处理器统一处理——**不吞异常**（避免把失败伪装成 HTTP 200，掩盖真实错误导致调用方无法感知失败）。
  *
- * <p><b>为什么在 {@code controller} 子包</b>：三条 ArchUnit 门禁（{@code
- * adapterControllersMustNotDependOnGodObjects} / {@code ...OnDomainRepository} / {@code
- * ...OnDomainService}）按 {@code ..adapter..controller..} 匹配。RPC Controller 若平铺在 {@code adapter/rpc}
- * 下会**整条逃逸**——与 web 侧包形态对齐后门禁才生效（E-10 协议目录形态）。
+ * <p><b>为什么在 {@code controller} 子包</b>：三条入站门禁（{@code adaptersMustNotDependOnGodObjects} / {@code
+ * ...OnDomainRepository} / {@code ...OnDomainService}）的谓词是 {@code ..adapter..}（2026-09-19 由 {@code
+ * ..adapter..controller..} 放宽）。放宽后平铺在 {@code adapter/rpc} 下也会被拦下，但仍与 web 侧包形态对齐： 包结构表达协议边界，且 {@code
+ * ..adapter.schedule..} 的受控例外按包判定，形态统一才能让例外边界一眼可读。
  *
  * <p><b>为什么契约自持</b>：RPC 的协议 DTO 全部位于 {@code adapter/rpc/dto/**}，不反向依赖 {@code adapter/web} 的 DTO。
  * 两个平级入站适配器互相依赖会让契约演进互相牵制——web 面向人、RPC 面向服务，两者的演化节奏本就不同。

@@ -114,23 +114,26 @@ public class ArchitectureTest {
   // P0-7 + §15：adapter 入站约束（参考样板不 freeze，须 0 违规）
   @ArchTest
   static final ArchRule adapter_no_application_service =
-      BoneDddArchRules.adapterControllersMustNotDependOnGodObjects();
+      BoneDddArchRules.adaptersMustNotDependOnGodObjects();
 
   @ArchTest
   static final ArchRule adapter_no_domain_repository =
-      BoneDddArchRules.adapterControllersMustNotDependOnDomainRepository();
+      BoneDddArchRules.adaptersMustNotDependOnDomainRepository();
 
   @ArchTest
   static final ArchRule adapter_no_domain_service =
-      BoneDddArchRules.adapterControllersMustNotDependOnDomainService();
+      BoneDddArchRules.adaptersMustNotDependOnDomainService();
 
   // P0-1（本模块专用补门禁）：adapter 全包（不止 controller）不得依赖 domain.repository。
-  // 共享规则 adapterControllersMustNotDependOnDomainRepository 的谓词是 ..adapter..controller..，
-  // 故 adapter.schedule / adapter.messaging / adapter.rpc 全部逃逸且永远绿——曾实测
-  // CancelExpiredOrderJob / OrderPaymentInconsistencyJob 直连 OrderRepository 而门禁全绿。
   //
-  // 授权边界只开在 adapter.schedule：ADR-0030 §2 把「全租户运维扫描」的调用方明确写为定时 Job（现为
-  // CancelExpiredOrderJob / CloseExpiredPaymentJob / OrderPaymentInconsistencyJob 三个）。
+  // 2026-09-19 收口：共享规则 adapterControllersMustNotDependOnDomainRepository 的谓词已从
+  // ..adapter..controller.. 放宽为 ..adapter..（见
+  // BoneDddArchRules#adaptersMustNotDependOnDomainRepository），
+  // 与下面本条等价。保留本条的两个理由：① 共享规则在其它模块是 FreezingArchRule 冻结态（冻结=允许存量违规），
+  // 而参考样板要求 0 违规，本条不冻结，是模块内可读的自证；② 它把「授权边界只开在 adapter.schedule」
+  // 这条 ADR-0030 结论就地写在模块里，避免读者跨模块追溯。授权边界只开在 adapter.schedule：ADR-0030 §2 把
+  // 「全租户运维扫描」的调用方明确写为定时 Job（现为 CancelExpiredOrderJob / CloseExpiredPaymentJob /
+  // OrderPaymentInconsistencyJob 三个）。
   // 用「包」而不是「类名豁免名单」表达边界——名单会随 Job 增加而变长、读起来像历史遗留，且它豁免的是
   // 「依赖」：被列入名单的类仍可自由调用 save/update。写能力的收紧由下一条规则承担。
   @ArchTest

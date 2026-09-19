@@ -1,6 +1,5 @@
 package com.bone.blueprint.infrastructure.extension.order;
 
-import com.bone.blueprint.domain.extension.order.OrderPriceRequest;
 import com.bone.engine.extension.api.annotation.Extension;
 import java.math.BigDecimal;
 
@@ -11,11 +10,10 @@ import java.math.BigDecimal;
     bizCode = "ecommerce",
     useCase = "order",
     scenario = "member")
-public class MemberOrderPriceCalculator implements ExtensionOrderPriceCalculator {
+public class MemberOrderPriceCalculator extends AbstractRateOrderPriceCalculator {
+  /** 会员享受85折优惠 */
   @Override
-  public BigDecimal calculate(OrderPriceRequest request) {
-    BigDecimal total = request.totalBeforeDiscount();
-    // 会员享受85折优惠
-    return total.multiply(new BigDecimal("0.85"));
+  protected BigDecimal discountRate() {
+    return new BigDecimal("0.85");
   }
 }

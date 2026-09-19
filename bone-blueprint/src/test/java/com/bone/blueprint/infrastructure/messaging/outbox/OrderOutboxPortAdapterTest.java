@@ -142,7 +142,6 @@ class OrderOutboxPortAdapterTest {
     when(properties.isEnabled()).thenReturn(true);
     when(properties.getStockActionFailedTopic())
         .thenReturn("domain.order.order_stock_action_failed.v1");
-    when(envelopeFactory.newEventId()).thenReturn("e-stock");
     when(envelopeFactory.toJson(any(), any(), any(), anyLong(), any(), any())).thenReturn("{}");
 
     writer.appendStockActionFailed(event);
@@ -155,11 +154,13 @@ class OrderOutboxPortAdapterTest {
     assertEquals("domain.order.order_stock_action_failed.v1", record.getTopic());
     assertEquals("7", record.getPartitionKey(), "分区键取租户，保证同一租户的事件顺序");
 
-    // 库存失败事件是集成事件契约，信封载荷即它本身（非领域事件中转）
+    // 库存失败事件是集成事件契约，信封载荷即它本身（非领域事件中转）。
+    // eventId 是「租户 × 订单 × 商品 × 动作」派生的确定性幂等键（不是随机 UUID）——
+    // 重复投递同一失败事实时，写侧去重与消费端按 eventId 去重同时生效。
     ArgumentCaptor<Object> payloadCaptor = ArgumentCaptor.forClass(Object.class);
     verify(envelopeFactory)
         .toJson(
-            eq("e-stock"),
+            eq("OrderStockActionFailedIntegrationEvent-7-1-9-预留"),
             eq("OrderStockActionFailedIntegrationEvent"),
             eq("domain.order.order_stock_action_failed.v1"),
             eq(7L),
@@ -169,5 +170,33 @@ class OrderOutboxPortAdapterTest {
         "OrderStockActionFailedIntegrationEvent",
         payloadCaptor.getValue().getClass().getSimpleName(),
         "信封载荷必须是库存失败集成事件本身");
+    // 确定性键的负向证据：不得再走随机 ID 生成
+    verify(envelopeFactory, never()).newEventId();
+  }
+
+  @Test
+  void stockActionFailedIsIdempotentByBusinessIdentity() {
+    OrderStockActionFailedIntegrationEvent first =
+        OrderStockActionFailedIntegrationEvent.fromDomain(
+            1L, 7L, 9L, 2, "预留", "库存服务暂时不可用", Instant.parse("2026-09-16T03:00:00Z"));
+    // 同一事实的重复投递：原因与时间都不同（重试发生在更晚时刻），但业务身份三元组相同
+    OrderStockActionFailedIntegrationEvent retry =
+        OrderStockActionFailedIntegrationEvent.fromDomain(
+            1L, 7L, 9L, 2, "预留", "库存服务仍不可用", Instant.parse("2026-09-16T03:05:00Z"));
+    when(properties.isEnabled()).thenReturn(true);
+    when(properties.getStockActionFailedTopic())
+        .thenReturn("domain.order.order_stock_action_failed.v1");
+    when(envelopeFactory.toJson(any(), any(), any(), anyLong(), any(), any())).thenReturn("{}");
+    // 首次写入后，按 eventId 能查到 1 条
+    when(outboxRepository.countByCriteria(any())).thenReturn(1L);
+
+    writer.appendStockActionFailed(retry);
+
+    verify(outboxRepository, never()).save(any());
+    verify(envelopeFactory, never()).toJson(any(), any(), any(), anyLong(), any(), any());
+    // 首次（查不到时）仍应落库——幂等不能变成「永不落库」
+    when(outboxRepository.countByCriteria(any())).thenReturn(0L);
+    writer.appendStockActionFailed(first);
+    verify(outboxRepository).save(any());
   }
 }

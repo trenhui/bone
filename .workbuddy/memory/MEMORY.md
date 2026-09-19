@@ -6,7 +6,7 @@
 - pre-commit `scripts/check.sh`：`[1/5]` 全反应堆 `spotless:check`（~14min，前台 120s 被杀）；`[2/5]` 只跑变更模块 `*ArchitectureTest`。他人在途格式违规会阻塞 ⇒ 先 `mvn -o -pl <module> spotless:check`。
 - spotless 失败时**直接打印期望 diff ⇒ 照抄手改**，别 `apply`（重排整模块含他人在途文件）；"1 秒返回 0"=缓存命中 ⇒ 删 `target/spotless-index` 重跑。
 - 熔断器：连续失败 3 次写 `.git/hooks/.check-fail-count` 阻提交（需 `rm`）；他人红不清熔断器。判退出码用 `PIPESTATUS[0]`。
-- ⚠ **规则存在 ≠ 规则覆盖**：共享三规则 `adapterControllersMustNotDependOn{DomainRepository|DomainService|GodObjects}` 谓词均 `..adapter..controller..` ⇒ `adapter.schedule/messaging/rpc` **全逃逸永远绿**。凡谓词以 `..X..Y..` 结尾都按此怀疑。
+- ⚠ **规则存在 ≠ 规则覆盖**：凡谓词以 `..X..Y..` 结尾都按逃逸怀疑。实例：共享三入站规则谓词 `..adapter..controller..` ⇒ `adapter.schedule/messaging/rpc` 全逃逸永远绿——**2026-09-19 已收口**：三条改为 `adapters*NotDependOn{GodObjects|DomainRepository|DomainService}`，谓词放宽为 `..adapter..`，仓储规则仅对 `..adapter.schedule..` 开受控例外（ADR-0030 C3），旧名 `adapterControllers*` 保留为 `@Deprecated` 别名（8 个模块仍在调）。**放宽这类谓词前必须实测影响面**：扫全仓「非目标包内是否存在该类依赖」，0 违规才动刀。
 - ⚠ **假绿排查**：「恰好通过」问"判定合规还是没看见它"。`oneAggregatePerTransaction` 对非 `AggregateRoot` 实体返 null ⇒ 子实体 `save` 免检；`FreezingArchRule` 冻结恒绿；`cmd || true | sed` 使检查失退出能力。
 - ⚠ **编程式事务死角**：`TransactionTemplate` lambda 不被 `getMethodCallsFromSelf()` 追 ⇒ 须人工核聚合数。
 - 新门禁必须负向探针验活（临时调违规→报红→还原）；空规则≠要删（`allowEmptyShould(true)` 可能是有意回归门禁）。非 clean 构建删类后 `target/` 残留 `.class` ⇒ bean 名冲突假红，`mvn clean test` 解。
@@ -35,6 +35,9 @@
 - 幂等平台能力 `IdempotencyService`（application 层零 `ResponseEntity`）。集成事件 `fromDomain` 入参须散装标量。
 - adapter 层就地 `@Value`（Mockito 不注入⇒ `ReflectionTestUtils.setField`）。⚠ 带默认值占位符写错键名**静默失效**（实例 IP 白名单永久失效）。
 - **Outbox 写须与业务写同事务 `MANDATORY`** ⇒ AFTER_COMMIT 落 Outbox 须另开 `REQUIRES_NEW`。
+- **Outbox 幂等**：补偿触发器型集成事件（如 `OrderStockActionFailed`）用业务身份派生**确定性 eventId** + 先查后插去重（表无唯一索引，靠「单写者」假设；最终兜底是消费端按 eventId 去重）。事实流型事件仍用随机 UUID。
+- **装配级测试用 H2，不用 Testcontainers**：装配测试验「上下文能否装配」（bean 名冲突/缺失依赖/循环引用/配置前缀），与 DB 方言无关；Testcontainers 需 Docker 守护进程+拉镜像，离线与无网 CI 不可用。持久化语义留给 `-Pintegration` 本地 MySQL 集成测试。坑：`fixedDelay` 型 Job 无法用 `-` 关闭且启动即跑一次，须 `@MockBean` 摘掉，否则在空库上报 `BadSqlGrammarException` 且被吞。
+- **改共享门禁后必查冻结基线**：新谓词=新规则描述=新冻结键；跑完 diff `archunit_store/`，**新增条目必须为空文件**（空=零违规=真绿；非空=把存量违规冻结后放行=假绿）。旧描述的孤儿条目无害但会膨胀。
 
 ## 6. ADR-0030 写侧仓储合并本聚合读
 - 判据：本聚合读（含全租户扫描）→ 域仓储；跨聚合/报表/搜索 → `application/query/port`+`infrastructure/query`。**blueprint 现已无 `*QueryPort`**。

@@ -19,13 +19,13 @@ Bone DDD 共享 ArchUnit 规则（`BoneDddArchRules`）。规范分级见 [Bone-
 | `noNewDomainStorePackage()` | §14.5 |
 | `noCustomBusinessException()` | **待调整**：v5.0 允许项目异常根下的语义子类 |
 | `noBusinessExceptionSuffix()` | Advisory：命名兼容 |
-| `adapterControllersMustNotDependOnGodObjects()` | ADR-0028：收窄为上帝对象命名守护（Common/Base/Business/*Manager）；不再禁 Controller → 合法 `*ApplicationService` |
-| `adapterControllersMustNotDependOnDomainRepository()` | §15 |
+| `adaptersMustNotDependOnGodObjects()` | ADR-0028：收窄为上帝对象命名守护（Common/Base/Business/*Manager）；不再禁 Controller → 合法 `*ApplicationService`。谓词 2026-09-19 起为 `..adapter..`（旧名 `adapterControllers...` 保留为过渡别名） |
+| `adaptersMustNotDependOnDomainRepository()` | §15；谓词 `..adapter..`，仅 `..adapter.schedule..` 为 ADR-0030 受控例外（旧名 `adapterControllers...` 保留为过渡别名） |
 | `commandHandlersShouldBeNamedCommandHandler()` | Advisory：命名 |
 | `queryHandlersShouldBeNamedQueryHandler()` | Advisory：命名 |
 | `commandHandlersShouldBeTransactional()` | Advisory：注解存在不等于代理生效 |
 | `queryHandlersShouldBeReadOnlyTransactional()` | Advisory：只读事务 |
-| `adapterControllersMustNotDependOnDomainService()` | §15（#17） |
+| `adaptersMustNotDependOnDomainService()` | §15（#17）；谓词 `..adapter..`（旧名 `adapterControllers...` 保留为过渡别名） |
 | `noCrossContextDomainDependency(context)` | P-2.3 / D9（跨上下文 domain 越界守护，空匹配即配置错误） |
 | `oneAggregatePerTransaction()` | Advisory：按 Repository/类型扫描，不能证明单聚合实例事务 |
 

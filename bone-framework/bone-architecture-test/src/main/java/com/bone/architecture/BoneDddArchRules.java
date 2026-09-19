@@ -261,12 +261,15 @@ public final class BoneDddArchRules {
    *
    * <p><b>命名说明</b>：本规则原名 {@code adapterControllersMustNotDependOnApplicationService}，其字面含义与
    * ADR-0028 相反（Controller 依赖合法 {@code *ApplicationService} 恰恰是被允许的），故改名为 {@code
-   * adapterControllersMustNotDependOnGodObjects} 以准确表意；旧名保留为 {@link
-   * #adapterControllersMustNotDependOnApplicationService()} 过渡别名。
+   * adaptersMustNotDependOnGodObjects} 以准确表意；旧名保留为过渡别名。
+   *
+   * <p><b>谓词范围（2026-09-19 收口）</b>：原谓词为 {@code ..adapter..controller..}，导致 {@code adapter.schedule}
+   * / {@code adapter.messaging} / {@code adapter.rpc} 等入站构件<strong>全部逃逸、永远绿</strong> （规则存在 ≠
+   * 规则覆盖）。现放宽为 {@code ..adapter..}：任一层级的入站适配器注入上帝对象都会被拦下。
    *
    * <p>注意：{@code .because(...)} 文案保持不变，以维持各模块 {@code FreezingArchRule} 基线的冻结键稳定。
    */
-  public static ArchRule adapterControllersMustNotDependOnGodObjects() {
+  public static ArchRule adaptersMustNotDependOnGodObjects() {
     DescribedPredicate<JavaClass> forbiddenApplicationTargets =
         resideInAPackage("..application..")
             .and(
@@ -276,7 +279,7 @@ public final class BoneDddArchRules {
                     .or(simpleNameEndingWith("Manager")));
     return noClasses()
         .that()
-        .resideInAPackage("..adapter..controller..")
+        .resideInAPackage("..adapter..")
         .should()
         .dependOnClassesThat(forbiddenApplicationTargets)
         .allowEmptyShould(true)
@@ -287,21 +290,42 @@ public final class BoneDddArchRules {
   }
 
   /**
-   * 过渡别名：语义已由 {@link #adapterControllersMustNotDependOnGodObjects()} 承载（见 ADR-0028）。保留以兼容尚在 引用旧名的模块
-   * {@code ArchitectureTest} 与工具脚本；新代码请改用新名。
+   * 过渡别名：语义由 {@link #adaptersMustNotDependOnGodObjects()} 承载（见 ADR-0028）。保留以兼容尚在引用旧名的模块 {@code
+   * ArchitectureTest} 与工具脚本；新代码请改用新名。
    *
-   * @deprecated 使用 {@link #adapterControllersMustNotDependOnGodObjects()}
+   * @deprecated 使用 {@link #adaptersMustNotDependOnGodObjects()}
+   */
+  @Deprecated
+  public static ArchRule adapterControllersMustNotDependOnGodObjects() {
+    return adaptersMustNotDependOnGodObjects();
+  }
+
+  /**
+   * 过渡别名：语义已由 {@link #adaptersMustNotDependOnGodObjects()} 承载（见 ADR-0028）。保留以兼容尚在 引用旧名的模块 {@code
+   * ArchitectureTest} 与工具脚本；新代码请改用新名。
+   *
+   * @deprecated 使用 {@link #adaptersMustNotDependOnGodObjects()}
    */
   @Deprecated
   public static ArchRule adapterControllersMustNotDependOnApplicationService() {
-    return adapterControllersMustNotDependOnGodObjects();
+    return adaptersMustNotDependOnGodObjects();
   }
 
-  /** §15：Controller 禁止直接注入 {@code domain.repository} 写侧仓储。 */
-  public static ArchRule adapterControllersMustNotDependOnDomainRepository() {
+  /**
+   * §15：入站 adapter 禁止直接注入 {@code domain.repository} 写侧仓储。
+   *
+   * <p><b>谓词范围（2026-09-19 收口）</b>：原谓词 {@code ..adapter..controller..} 使 {@code adapter.schedule} /
+   * {@code messaging} / {@code rpc} 全部逃逸。现放宽为 {@code ..adapter..}，仅对 {@code ..adapter.schedule..}
+   * 开一个<strong>受控例外</strong>——全租户运维扫描（超时关单 / 关闭超时支付 / 钱货对账）需直连域仓储，这是 ADR-0030 代价 C3
+   * 已登记的授权形态；其滥用面由模块级 {@code schedule_only_calls_all_tenants_repository_methods} 类规则收紧 （限定只能调
+   * {@code *AllTenants} 方法）。命名由 {@code adapterControllers...} 改为 {@code adapters...} 以匹配新谓词。
+   */
+  public static ArchRule adaptersMustNotDependOnDomainRepository() {
     return noClasses()
         .that()
-        .resideInAPackage("..adapter..controller..")
+        .resideInAPackage("..adapter..")
+        .and()
+        .resideOutsideOfPackage("..adapter.schedule..")
         .should()
         .dependOnClassesThat()
         .resideInAPackage("..domain.repository..")
@@ -310,20 +334,45 @@ public final class BoneDddArchRules {
   }
 
   /**
-   * P0-7 + §15：Controller 禁止直接注入 {@code domain.service} 领域服务。
+   * 过渡别名：语义由 {@link #adaptersMustNotDependOnDomainRepository()} 承载。保留以兼容尚在引用旧名的模块 {@code
+   * ArchitectureTest} 与工具脚本；新代码请改用新名。
+   *
+   * @deprecated 使用 {@link #adaptersMustNotDependOnDomainRepository()}
+   */
+  @Deprecated
+  public static ArchRule adapterControllersMustNotDependOnDomainRepository() {
+    return adaptersMustNotDependOnDomainRepository();
+  }
+
+  /**
+   * P0-7 + §15：入站 adapter 禁止直接注入 {@code domain.service} 领域服务。
    *
    * <p>领域服务只能由 {@code *CommandHandler} / {@code *QueryHandler} / {@code *Orchestrator}
    * 在应用层编排时调用，不允许 adapter 层越层直接依赖，以保持分层边界清晰。
+   *
+   * <p><b>谓词范围（2026-09-19 收口）</b>：与仓储规则同形，由 {@code ..adapter..controller..} 放宽为 {@code
+   * ..adapter..}；此处<strong>不开</strong> schedule 例外——定时任务也没有绕过应用层直调领域服务的授权理由。
    */
-  public static ArchRule adapterControllersMustNotDependOnDomainService() {
+  public static ArchRule adaptersMustNotDependOnDomainService() {
     return noClasses()
         .that()
-        .resideInAPackage("..adapter..controller..")
+        .resideInAPackage("..adapter..")
         .should()
         .dependOnClassesThat()
         .resideInAPackage("..domain.service..")
         .allowEmptyShould(true)
         .because("DDD P0-7 + §15: adapter must not inject domain.service; use Handler");
+  }
+
+  /**
+   * 过渡别名：语义由 {@link #adaptersMustNotDependOnDomainService()} 承载。保留以兼容尚在引用旧名的模块 {@code
+   * ArchitectureTest} 与工具脚本；新代码请改用新名。
+   *
+   * @deprecated 使用 {@link #adaptersMustNotDependOnDomainService()}
+   */
+  @Deprecated
+  public static ArchRule adapterControllersMustNotDependOnDomainService() {
+    return adaptersMustNotDependOnDomainService();
   }
 
   /**

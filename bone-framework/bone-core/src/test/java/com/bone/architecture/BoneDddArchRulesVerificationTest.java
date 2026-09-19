@@ -6,6 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.bone.architecture.fixture.adapter.controller.ControllerUsingDomainService;
 import com.bone.architecture.fixture.adapter.controller.ControllerUsingRepository;
 import com.bone.architecture.fixture.adapter.controller.SpoofingController;
+import com.bone.architecture.fixture.adapter.messaging.MessagingListenerUsingDomainService;
+import com.bone.architecture.fixture.adapter.messaging.MessagingListenerUsingRepository;
+import com.bone.architecture.fixture.adapter.schedule.ScheduleJobUsingRepository;
 import com.bone.architecture.fixture.application.command.handler.OrderCommandProcessor;
 import com.bone.architecture.fixture.application.command.handler.PaymentCommandHandler;
 import com.bone.architecture.fixture.application.command.handler.SubmitOrderCommandHandler;
@@ -185,6 +188,48 @@ class BoneDddArchRulesVerificationTest {
             ControllerUsingDomainService.class,
             Class.forName("com.bone.architecture.fixture.domain.service.TaxDomainService"));
     assertTrue(result.hasViolation(), report(result));
+  }
+
+  // ===== 2026-09-19 谓词放宽（..adapter..controller.. → ..adapter..）的负向探针与受控例外固化 =====
+
+  @Test
+  void adaptersMustNotDependOnDomainRepository_detectsMessagingAdapter() {
+    EvaluationResult result =
+        eval(
+            BoneDddArchRules.adaptersMustNotDependOnDomainRepository(),
+            MessagingListenerUsingRepository.class,
+            com.bone.architecture.fixture.domain.repository.OrderAggregateRepository.class);
+    assertTrue(
+        result.hasViolation(),
+        "谓词放宽为 ..adapter.. 后，adapter.messaging 直注域仓储必须被拦下"
+            + "（放宽前该类形态会整条逃逸、门禁永远绿）\n"
+            + report(result));
+  }
+
+  @Test
+  void adaptersMustNotDependOnDomainRepository_allowsAuthorizedScheduleJob() {
+    EvaluationResult result =
+        eval(
+            BoneDddArchRules.adaptersMustNotDependOnDomainRepository(),
+            ScheduleJobUsingRepository.class,
+            com.bone.architecture.fixture.domain.repository.OrderAggregateRepository.class);
+    assertFalse(
+        result.hasViolation(),
+        "adapter.schedule 是 ADR-0030 代价 C3 授权的全租户运维扫描入口，必须放行——"
+            + "它是受控例外而非疏漏，误改成「连 schedule 一起禁」时本用例必须失败\n"
+            + report(result));
+  }
+
+  @Test
+  void adaptersMustNotDependOnDomainService_detectsMessagingAdapter() {
+    EvaluationResult result =
+        eval(
+            BoneDddArchRules.adaptersMustNotDependOnDomainService(),
+            MessagingListenerUsingDomainService.class,
+            com.bone.architecture.fixture.domain.service.TaxDomainService.class);
+    assertTrue(
+        result.hasViolation(),
+        "领域服务规则无 schedule 例外，且放宽后 adapter.messaging 直调领域服务必须被拦下\n" + report(result));
   }
 
   // ===== §23 命名与事务（v4.5 降级 warn 的两条命名 + 两条事务） =====
