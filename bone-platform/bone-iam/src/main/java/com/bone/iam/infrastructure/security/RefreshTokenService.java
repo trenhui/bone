@@ -10,6 +10,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.HexFormat;
 import java.util.Map;
 import java.util.UUID;
@@ -65,12 +66,15 @@ public class RefreshTokenService implements RefreshTokenIssuer {
               if (!rs.next()) {
                 return null;
               }
-              return Map.of(
-                  "accountId", rs.getLong("account_id"),
-                  "tenantId", rs.getLong("tenant_id"),
-                  "expiresAt", rs.getTimestamp("expires_at"),
-                  "revoked", rs.getInt("is_revoked"),
-                  "replacedBy", rs.getString("replaced_by"));
+              // 不能用 Map.of：replaced_by 对新签发的令牌是 NULL，Map.of 遇到 null 值直接 NPE
+              // （曾导致 /refresh 对任何令牌都 500）。
+              Map<String, Object> data = new HashMap<>();
+              data.put("accountId", rs.getLong("account_id"));
+              data.put("tenantId", rs.getLong("tenant_id"));
+              data.put("expiresAt", rs.getTimestamp("expires_at"));
+              data.put("revoked", rs.getInt("is_revoked"));
+              data.put("replacedBy", rs.getString("replaced_by"));
+              return data;
             });
     if (row == null) {
       throw new IllegalArgumentException("无效的刷新令牌");
@@ -116,7 +120,12 @@ public class RefreshTokenService implements RefreshTokenIssuer {
             .addValue("hash", newHash)
             .addValue("expiresAt", Timestamp.from(expires)));
 
-    return Map.of("accountId", String.valueOf(accountId), "refreshToken", newRaw);
+    // tenantId 必须一并返回：/refresh 与 /login 一样没有 JWT，TenantContext 为空，
+    // 消费侧（RefreshTokenCommandHandler）要靠它显式声明租户后再访问 iam_account，否则被 ADR-0029 失败关闭拦成 500。
+    return Map.of(
+        "accountId", String.valueOf(accountId),
+        "tenantId", String.valueOf(tenantId),
+        "refreshToken", newRaw);
   }
 
   @Override

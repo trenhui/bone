@@ -74,7 +74,7 @@ class CreateAccountCommandHandlerTest {
     cmd.setTenantId(1L);
     cmd.setRoleIds(new Long[] {1L});
 
-    when(authService.findByUsername("newuser")).thenReturn(Optional.empty());
+    when(authService.findByUsernameInTenant("newuser")).thenReturn(Optional.empty());
     when(passwordEncoder.encode("P@ssw0rd123")).thenReturn("hashed-pwd");
 
     // 模拟 save 后 id 被回填
@@ -106,7 +106,7 @@ class CreateAccountCommandHandlerTest {
     Account existing =
         Account.create(
             1L, Username.of("existing"), "hash", Email.of("dup@bone.com"), null, null, 1L);
-    when(authService.findByUsername("existing")).thenReturn(Optional.of(existing));
+    when(authService.findByUsernameInTenant("existing")).thenReturn(Optional.of(existing));
 
     assertThatThrownBy(() -> handler.handle(cmd))
         .isInstanceOf(BizException.class)
@@ -132,7 +132,7 @@ class CreateAccountCommandHandlerTest {
         .isInstanceOf(BizException.class)
         .hasMessageContaining("密码太弱");
 
-    verify(authService, never()).findByUsername(any());
+    verify(authService, never()).findByUsernameInTenant(any());
     verify(accountRepository, never()).save(any());
   }
 
@@ -144,7 +144,7 @@ class CreateAccountCommandHandlerTest {
     cmd.setEmail("u2@bone.com");
     cmd.setTenantId(null);
 
-    when(authService.findByUsername("user2")).thenReturn(Optional.empty());
+    when(authService.findByUsernameInTenant("user2")).thenReturn(Optional.empty());
     when(passwordEncoder.encode("P@ssw0rd123")).thenReturn("hashed");
 
     when(accountRepository.save(any(Account.class)))

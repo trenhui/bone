@@ -5,14 +5,10 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 import com.bone.architecture.BoneDddArchRules;
 import com.tngtech.archunit.core.domain.JavaClasses;
-import com.tngtech.archunit.core.domain.JavaMethod;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
-import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
-import com.tngtech.archunit.lang.ConditionEvents;
-import com.tngtech.archunit.lang.SimpleConditionEvent;
 import com.tngtech.archunit.library.freeze.FreezingArchRule;
 
 @AnalyzeClasses(packages = "com.bone.iam", importOptions = ImportOption.DoNotIncludeTests.class)
@@ -49,8 +45,22 @@ public class ArchitectureTest {
       BoneDddArchRules.applicationMustNotDependOnInfrastructure();
 
   // CORE-05：读侧 DSL 边界
+  //
+  // ADR-0030 后 domain/repository 的 default 方法可承载「本聚合读」（Criteria 就地构造），
+  // 这是 blueprint 的 PaymentRepository / OrderRepository 采用的同款形态（规范 §E-4.1 / ADR-0030 §P4）。
+  // 因此这里与 blueprint 的 ArchitectureTest 保持同一豁免口径：..domain.repository.. 放行，
+  // domain 其余包禁用读侧 DSL。共享规则 BoneDddArchRules.domainMustNotUseQueryBuilder() 未带该豁免，
+  // 故本模块显式重写（而不是改共享规则，避免一次性放宽所有模块）。
   @ArchTest
-  static final ArchRule domain_no_query_builder = BoneDddArchRules.domainMustNotUseQueryBuilder();
+  static final ArchRule domain_no_query_builder =
+      noClasses()
+          .that()
+          .resideInAPackage("..domain..")
+          .and()
+          .resideOutsideOfPackage("..domain.repository..")
+          .should()
+          .dependOnClassesThat()
+          .areAnnotatedWith("com.bone.core.annotation.ReadSideOnly");
 
   @ArchTest
   static final ArchRule command_no_query_builder =
@@ -125,41 +135,10 @@ public class ArchitectureTest {
         .check(classes);
   }
 
-  @ArchTest
-  static void domainRepositoriesShouldNotDeclareCustomMethods(JavaClasses classes) {
-    classes()
-        .that()
-        .areInterfaces()
-        .and()
-        .haveNameMatching(".*Repository")
-        .and()
-        .resideInAPackage("..domain.repository..")
-        .should(notDeclareCustomRepositoryMethods())
-        .check(classes);
-  }
-
-  private static ArchCondition<com.tngtech.archunit.core.domain.JavaClass>
-      notDeclareCustomRepositoryMethods() {
-    return new ArchCondition<>("not declare custom repository methods") {
-      @Override
-      public void check(com.tngtech.archunit.core.domain.JavaClass item, ConditionEvents events) {
-        for (JavaMethod method : item.getMethods()) {
-          if (method.getOwner().isEquivalentTo(Object.class) || method.isConstructor()) {
-            continue;
-          }
-          String name = method.getName();
-          if ("equals".equals(name) || "hashCode".equals(name) || "toString".equals(name)) {
-            continue;
-          }
-          String message =
-              String.format(
-                  "Repository %s declares %s — use Metadata SDK Repository/Criteria",
-                  item.getSimpleName(), method.getName());
-          events.add(SimpleConditionEvent.violated(item, message));
-        }
-      }
-    };
-  }
+  // 原 domainRepositoriesShouldNotDeclareCustomMethods（禁止域仓储声明任何方法）已删除：
+  // ADR-0030 采纳后，域仓储承载「本聚合读」，default 方法正是规范指定的落地形态（§E-4.1 / ADR-0030 §P4），
+  // 该规则与规范直接冲突；其职责已由共享规则 repository_methods_whitelist（按返回类型判定：
+  // 聚合 / Optional<聚合> / 标量 / 域内投影 合规）覆盖，保留两份口径会互相矛盾。
 
   // CORE-04 + §15 + §23（存量 freeze，迁移后收缩基线）
   @ArchTest

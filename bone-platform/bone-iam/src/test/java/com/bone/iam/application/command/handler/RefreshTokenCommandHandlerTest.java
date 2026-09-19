@@ -49,7 +49,7 @@ class RefreshTokenCommandHandlerTest {
         Account.create(1L, Username.of("bob"), "hash", Email.of("b@b.com"), null, null, 0L);
 
     when(refreshTokenIssuer.rotate("old-refresh"))
-        .thenReturn(Map.of("accountId", "1", "refreshToken", "new-refresh"));
+        .thenReturn(Map.of("accountId", "1", "tenantId", "0", "refreshToken", "new-refresh"));
     when(accountRepository.findById(1L)).thenReturn(account);
     when(accountAuthoritiesQueryHandler.resolvePermissionCodes(1L, false))
         .thenReturn(List.of("iam:read"));

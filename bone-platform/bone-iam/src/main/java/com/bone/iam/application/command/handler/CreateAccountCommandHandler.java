@@ -32,8 +32,10 @@ public class CreateAccountCommandHandler {
     Username username = Username.of(cmd.getUsername());
     Email email = Email.of(cmd.getEmail());
 
-    // 检查用户名是否已存在
-    if (authService.findByUsername(username.value()).isPresent()) {
+    // 检查用户名是否已存在（**本租户内**：唯一键是 uk_iam_account_username (tenant_id, username)，
+    // 跨租户允许重名。这里不能用 AuthService#findByUsername —— 那是登录专用的跨租户查找，
+    // 用它查重会把「本租户唯一」错误升级为「全平台唯一」，导致不同租户同名被误判 409。）
+    if (authService.findByUsernameInTenant(username.value()).isPresent()) {
       throw new com.bone.core.exception.BizException(409, "用户名已存在: " + cmd.getUsername());
     }
 

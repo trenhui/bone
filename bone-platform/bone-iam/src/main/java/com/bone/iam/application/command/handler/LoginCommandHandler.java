@@ -2,6 +2,7 @@ package com.bone.iam.application.command.handler;
 
 import com.bone.core.capability.Capability;
 import com.bone.core.exception.BizException;
+import com.bone.core.tenant.context.TenantContextRunner;
 import com.bone.iam.application.command.cmd.LoginCommand;
 import com.bone.iam.application.config.IamPasswordProperties;
 import com.bone.iam.application.query.handler.AccountAuthoritiesQueryHandler;
@@ -55,6 +56,12 @@ public class LoginCommandHandler {
             .findByUsername(cmd.getUsername())
             .orElseThrow(() -> BizException.of(401, IamErrorCodes.LOGIN_FAILED + ": 用户名或密码错误"));
 
+    // TenantContextRunner 对 null tenantId 是快速失败（NPE），而 AuthController 只捕获 BizException，
+    // NPE 会逃逸成 500 —— 这里先判空，按登录失败处理。
+    if (account.getTenantId() == null) {
+      throw BizException.of(401, IamErrorCodes.LOGIN_FAILED + ": 用户名或密码错误");
+    }
+
     if (account.getStatus() == AccountStatus.DISABLED) {
       throw BizException.of(403, IamErrorCodes.ACCOUNT_DISABLED + ": 账号已禁用，请联系管理员");
     }
@@ -69,31 +76,42 @@ public class LoginCommandHandler {
     }
 
     if (!authService.matches(cmd.getPassword(), account)) {
-      account.recordLoginFailure(
-          passwordProperties.getLockoutThreshold(), passwordProperties.getLockoutMinutes());
-      accountRepository.update(account);
+      // 登录请求没有 JWT，TenantContext 为空；写 iam_account 属租户表操作，
+      // 必须按账号所属租户显式声明上下文（ADR-0031 D3），否则被 ADR-0029 失败关闭拦下。
+      TenantContextRunner.runAs(
+          account.getTenantId(),
+          () -> {
+            account.recordLoginFailure(
+                passwordProperties.getLockoutThreshold(), passwordProperties.getLockoutMinutes());
+            accountRepository.update(account);
+          });
       throw BizException.of(401, IamErrorCodes.LOGIN_FAILED + ": 用户名或密码错误");
     }
 
-    account.recordLoginSuccess(cmd.getClientIp());
-    accountRepository.update(account);
+    return TenantContextRunner.callAs(
+        account.getTenantId(),
+        () -> {
+          account.recordLoginSuccess(cmd.getClientIp());
+          accountRepository.update(account);
 
-    List<String> scopes =
-        accountAuthoritiesQueryHandler.resolvePermissionCodes(account.getId(), account.isAdmin());
-    String token =
-        accessTokenIssuer.issueAccessToken(
-            account.getId(), account.getUsername().value(), account.getTenantId(), scopes);
-    String refreshToken = refreshTokenIssuer.issue(account.getId(), account.getTenantId());
+          List<String> scopes =
+              accountAuthoritiesQueryHandler.resolvePermissionCodes(
+                  account.getId(), account.isAdmin());
+          String token =
+              accessTokenIssuer.issueAccessToken(
+                  account.getId(), account.getUsername().value(), account.getTenantId(), scopes);
+          String refreshToken = refreshTokenIssuer.issue(account.getId(), account.getTenantId());
 
-    boolean weak = passwordPolicyValidator.requiresPasswordChange(cmd.getPassword());
-    boolean expired = isPasswordExpired(account);
+          boolean weak = passwordPolicyValidator.requiresPasswordChange(cmd.getPassword());
+          boolean expired = isPasswordExpired(account);
 
-    Map<String, Object> result = new HashMap<>();
-    result.put("token", token);
-    result.put("refreshToken", refreshToken);
-    result.put("account", account);
-    result.put("requirePasswordChange", weak || expired);
-    return result;
+          Map<String, Object> result = new HashMap<>();
+          result.put("token", token);
+          result.put("refreshToken", refreshToken);
+          result.put("account", account);
+          result.put("requirePasswordChange", weak || expired);
+          return result;
+        });
   }
 
   private boolean isPasswordExpired(Account account) {

@@ -169,6 +169,34 @@
 
 ---
 
+## 自动联调回归（2026-09-19/20）
+
+> 交付物：`scripts/verify-mvp-e2e.py`（前后端契约对账 + 主链路验收）、`scripts/dev/restart-mvp-services.sh`（重启 MVP 服务）。
+> 运行：`python3 scripts/verify-mvp-e2e.py --allow-db-write`（默认经网关 `:8888`，需 IAM/System/Metadata/Gateway 已启动）。
+
+**覆盖**：Part A 扫描 `bone-frontend/apps/*/src` 的 API 声明，用 OPTIONS 逐个探测后端是否存在（非 200/404 记为「无法判定」，不计为通过）；Part B 跑验收主流程 7 步 + IAM/System/控制台冒烟，共 44 项断言。
+
+**本轮实测发现并修复的缺陷**（均为联调真实暴露，非静态推断）：
+
+| # | 缺陷 | 根因 | 处置 |
+|---|------|------|------|
+| 1 | IAM/System 多个核心接口 500（账号/角色/菜单/审计/配置/告警） | 服务进程持有 9/19 之前的 `bone-metadata-sdk` jar，新类 `QueryContext$Order` 未加载 → `NoClassDefFoundError` | 重启服务（旧 jar 无法热替换）；新增 `restart-mvp-services.sh` 固化该操作 |
+| 2 | `bone-system` 启动失败 | E-13.3 命名收敛后 `target/classes` 残留旧 `HttpProbeServiceHealthGateway`，与 Adapter 双 bean 冲突 | `mvn -pl bone-platform/bone-system clean` 后重启 |
+| 3 | **登录 500**（阻断全链路） | ADR-0029 落地后 `iam_account` 读路径失败关闭，而登录请求无 JWT、`TenantContext` 为空 | 登录入口改为跨租户查账号（`AccountRepository.findByUsernameForLogin` + `disableTenantFilter()`），查到后经 `TenantContextRunner` 按账号租户声明上下文 |
+| 4 | `/api/v1/iam/refresh` **恒 500** | `RefreshTokenService.rotate` 用 `Map.of` 装载 `replaced_by`（新令牌为 NULL）→ NPE | 改用 `HashMap`；同时 `rotate` 回传 `tenantId`，消费侧显式声明租户 |
+| 5 | 建账号查重被误改为全局 | 复用登录的跨租户查找，与唯一键 `uk_iam_account_username (tenant_id, username)` 冲突 | 新增 `findByUsernameInTenant`（本租户），建账号改用它 |
+| 6 | 网关缺 `/api/v1/apps/**` 路由 | `AppController` 归属 IAM 但前缀非 `/api/v1/iam/**` | 网关 bone-iam 路由增加该前缀 |
+| 7 | 两道 ArchUnit 门禁会红 | IAM 缺 blueprint 的 `..domain.repository..` 豁免；`domainRepositoriesShouldNotDeclareCustomMethods` 与 ADR-0030（域仓储承载本聚合读）直接冲突 | 前者按 blueprint 同口径重写；后者删除，职责交由共享 `repository_methods_whitelist` |
+
+**已知限制（未修，登记）**：
+
+1. **登录按用户名跨租户定位**的前提是 `username` 全局唯一，而 DDL 唯一键为 `(tenant_id, username)`。当前多命中会记 ERROR 并返回 401（不再静默），长期需登录请求携带租户标识后再按 `(username, tenantId)` 查询。
+2. `CreateAccountCommandHandler` 的配额校验与角色绑定仍取请求体/默认 0 租户，与「实际落库租户（取 `TenantContext`）」口径不一致（既有问题，本次未扩大也未收敛）。
+3. 登录失败计数随 `@Transactional` 回滚（既有问题）：`BizException` 触发回滚使 `login_fail_count` 不落库，账号锁定实际未生效。需 `noRollbackFor` 或 `REQUIRES_NEW` 专项修复。
+4. ADR-0029 §6 的跨租户例外清单尚未登记「登录入口」，本清单与代码注释已标注，待 ADR 补登 + 登录审计。
+
+---
+
 ## 维护约定
 
 - 本清单是看板 `done` 项的 **MVP 归属唯一真源**：只加映射、不改看板状态；新功能先落看板登记、再入本清单。

@@ -25,7 +25,9 @@ spring:
         - id: bone-iam
           uri: ${BONE_IAM_URI:http://localhost:8081}
           predicates:
-            - Path=/api/v1/iam/**
+            # AppController（应用/模块）归属 IAM 上下文，但路径前缀是 /api/v1/apps 而非 /api/v1/iam/**。
+            # 未登记会让元数据「应用管理 / 模块管理」页经网关调用时 404（前端只经过网关）。
+            - Path=/api/v1/iam/**, /api/v1/apps/**
         - id: bone-masterdata
           uri: ${BONE_MASTERDATA_URI:http://localhost:8084}
           predicates:
