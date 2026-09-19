@@ -1,4 +1,4 @@
-package com.bone.metadata.catalog.infrastructure.physical;
+package com.bone.metadata.catalog.infrastructure.gateway;
 
 import com.bone.core.exception.DomainException;
 import com.bone.metadata.catalog.domain.gateway.PhysicalStructureGateway;

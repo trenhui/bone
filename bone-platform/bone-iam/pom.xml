@@ -123,6 +123,12 @@
             <artifactId>mockito-core</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- 容器级装配测试（IamContextLoadsTest）用 H2 内存库，不依赖本地 MySQL -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <!-- ArchUnit - 架构测试 -->
         <dependency>

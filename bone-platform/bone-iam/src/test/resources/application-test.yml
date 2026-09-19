@@ -1,18 +1,43 @@
+# 容器级装配测试（IamContextLoadsTest）专用配置。
+#
+# 与 bone-system 的 test profile 同一形态：H2 内存库 + MySQL 兼容模式，不依赖本地 MySQL，
+# 因此 `mvn test` 默认就能跑（不需要 -Pintegration）。
 spring:
+  application:
+    name: bone-iam-test
   datasource:
-    url: jdbc:h2:mem:iamdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    url: jdbc:h2:mem:bone_iam_test;MODE=MySQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE
+    driver-class-name: org.h2.Driver
     username: sa
     password:
-    driver-class-name: org.h2.Driver
-  redis:
-    host: localhost
-    port: 6379
-    password:
-    database: 0
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema-test.sql
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+
+bone:
+  iam:
+    jwt:
+      # 测试用固定密钥（≥32 字节，否则 jjwt 验签失败）
+      secret-key: test-secret-test-secret-test-secret-test-secret-32bytes
+
+metadata:
+  sdk:
+    appcode: bone-iam-test
+    deployment-mode: EMBEDDED
+    sql:
+      database:
+        type: H2
+        auto-detect-dialect: true
 
 server:
-  port: 8080
+  port: 0
 
 logging:
   level:
-    com.bone: debug
+    com.bone: warn
+    org.springframework: warn

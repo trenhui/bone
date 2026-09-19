@@ -1,4 +1,4 @@
-package com.bone.metadata.catalog.infrastructure.physical;
+package com.bone.metadata.catalog.infrastructure.gateway;
 
 import static com.bone.metadata.catalog.domain.model.physical.PhysicalStructurePlan.STATUS_READY;
 import static com.bone.metadata.catalog.domain.model.physical.PhysicalStructurePlan.STATUS_RECONCILED;
