@@ -4,7 +4,7 @@
 > **整合状态**：已完成主文档内容整合、生效引用迁移和原分册删除；本文是 Bone DDD 唯一规范入口与实施状态真源。
 > **版本**：5.5.13（命名收敛落地 + 度量口径批次：① E-13.3 三个 Domain Gateway `<短名>Impl` 存量**已收敛**为 `<短名>GatewayAdapter`——`DatabaseMetadataGatewayAdapter` / `CatalogMetadataGatewayAdapter`（studio-generator，仍在 `infrastructure/gateway`）、`TenantDeletionGatewayAdapter`（IAM，并从 `infrastructure/persistence` 迁至 E-10.2 落点 `infrastructure/gateway`），`doc/_generated/metadata/compliance.json` 已同批重算；未收敛的相邻形态（bone-system 4 个 + metadata-server 1 个自名 `*Gateway`、studio-generator 2 个 `*ReadPortImpl`）就地登记为待裁决并写明理由；② 新增门禁：`check-ddd-doc-code-sync.py` 校验 E-13 命名样例 `` `A` → `B` `` 的右侧类必须真实存在（G-1.1 文档门禁 #13 扩项）——命名小节是最容易被重构打穿的地方，2026-09-18 的 `PaymentGateway` → `SimulatedPaymentGatewayImpl` 即此形态；③ E-0.2 迁移度量由"待定阈值"改为**触达即收敛**纪律，明确不设数字 KPI（阈值型 KPI 会诱发"为达标而合并"的仪式化改造，撞 E-3.2）；④ G-1.8 指标输出**索引 / 工作树双口径**并写明读法（重构期间索引口径会把已删除未提交的文件算进去——实测 `*ApplicationService` 索引 3 / 工作树 2），2026-09-19）
 > **同批追加（5.5.13）**：⑤ 落地 HC-008 的本地载体——新增 `scripts/check-ddl-required-columns.py`（`--check` 拦**新增表**缺 `tenant_id`/`created_at`/`updated_at`/`deleted`，并入 `scripts/ci-check.sh` `[7/7]`）；存量 26 张表的缺口登记在 `doc/architecture/ddl-required-columns-baseline.json`（只可收缩）并**已逐表分类**：18 张 `by-design`（追加型日志 / 聚合子表 / 租户根表 / 全局目录）、8 张待处理（2 张 `gap-candidate` 需走 L3 DDL 审批、6 张待模块 Owner 裁决租户归属）；HC-008 由 Planned 升 **Manual（本地，无 CI workflow）**，G-1.1 12c 同步改写。
-> **同批追加（5.5.13b）**：⑥ 相邻形态第二批收敛——bone-system 4 个 + metadata-server 1 个自名 `*Gateway` 改为 `<短名>GatewayAdapter`（见 E-13.3 存量段），`doc/_generated/console/` 与 `doc/_generated/metadata/` 同批重算；⑦ 门禁抓到的**在途漂移**同步修正：blueprint 的 `OrderQueryPort` 实现已由 `OrderQueryAdapter` 收敛为 `OrderReadRepository`（E-4.4 `@Sql` 通道），E-13.3 与 E-10.3 的样例随改。
+> **同批追加（5.5.13b）**：⑥ 相邻形态第二批收敛——bone-system 4 个 + metadata-server 1 个自名 `*Gateway` 改为 `<短名>GatewayAdapter`（见 E-13.3 存量段），`doc/_generated/console/` 与 `doc/_generated/metadata/` 同批重算；⑦ blueprint 的 `OrderQueryPort` / `OrderReadRepository` 已随 ADR-0030（2026-09-19 采纳）合并进 `OrderRepository`——读投影驻留 `domain/repository` 的域仓储、投影类型置于 `domain/order/projection`，删除原 `*QueryPort` 与读侧 `*Repository`；E-4.1 / E-4.2 / E-4.4 / E-13.3 / E-10.3 与本条样例随改。
 > **决策**：[ADR-0024](./adr/0024-ddd-v5-rule-semantics-and-document-split.md)、[ADR-0025](./adr/0025-ddd-v5-0-2-implementation-alignment.md)、[ADR-0026](./adr/0026-ddd-single-document-consolidation.md)、[ADR-0028](./adr/0028-application-service-first-selective-cqrs.md)
 > **通用语言**：[glossary.md](../glossary.md)
 > **变更记录**：Git 提交历史（本文版本演进见上方「版本」行；平台级发布见根目录 [CHANGELOG.md](../../CHANGELOG.md)）
@@ -65,7 +65,7 @@
 | CORE-02 | 依赖向内 | domain 不依赖具体运行时技术与 IO 实现；外层经端口依赖内层 | 通用 DDD | P-4、E-10.1 |
 | CORE-03 | 领域行为保护不变量 | 状态迁移与业务决策在聚合、值对象或领域服务 | 通用 DDD | P-3.1、E-6.4 |
 | CORE-04 | 一个用例一个入口边界 | 同义构件不一对一套娃；一组内聚用例可由单个 ApplicationService 承载 | 通用 DDD | E-3.2、E-3.7 |
-| CORE-05 | 写侧服务聚合，读侧服务投影 | Repository 不做报表 / Join / 投影；查询结果是页面 DTO、统计、跨聚合组合等非聚合本身时，一律走 QueryPort | 通用 DDD | E-4.1、E-4.2 |
+| CORE-05 | 写侧服务聚合，读侧服务投影 | Repository 不做**跨聚合**报表 / Join / 投影；本聚合内的读投影经 ADR-0030 合并后可驻留 `domain.repository`（返回域层投影类型，见 E-4.1 白名单）。查询结果若为页面 DTO、统计、**跨聚合**组合等非聚合本身时，一律走 QueryPort | 通用 DDD | E-4.1、E-4.2、ADR-0030 |
 | CORE-06 | 聚合是默认一致性边界 | 跨聚合默认最终一致；同库本地跨聚合事务须声明业务不变量、失败语义与并发成本，并记录例外 | 通用 DDD | E-5.1、E-5.4 |
 | CORE-07 | 先声明可靠性与并发保证 | Outbox、乐观锁是默认实现，不是唯一实现 | 通用 DDD | E-5.2、E-5.3 |
 | CORE-08 | 门禁不冒充领域证明 | 静态检查证明结构；业务语义由测试和评审证明 | 通用 DDD | G-1.2、G-1.5、G-2.1 |
@@ -143,7 +143,7 @@
 | 2 | **仪式性架构（Ceremonial Architecture）** | 中间层不承载任何独立能力：没有独立的事务 / 路由 / 异步边界 / 生命周期 / 多聚合协调，且其逻辑能被同义 `ApplicationService` 方法直接承载。判据是「有没有独立能力」，**不是代码行数** | 删除该层（E-3.2） |
 | 3 | **ApplicationService 万能化** | SQL / RPC / 业务规则 / MQ 消费全塞进同一服务 | 规则下沉聚合、查询下沉 QueryPort、IO 走端口 |
 | 4 | **DomainService 万能化** | 在 DomainService 里做 IO 与事务编排 | 领域服务只用领域语言做纯规则（E-13.2） |
-| 5 | **Repository DAO 化** | 仓储接口出现 `findPage` / `statistics` / `search` / 多表 Join | 查询迁 QueryPort；仓储自声明的方法只返回聚合 / `Optional<聚合>` / boolean / void（E-4.1） |
+| 5 | **Repository DAO 化（跨聚合）** | 仓储接口出现**跨聚合**的 `findPage` / `statistics` / `search` / 多表 Join，或返回应用层 DTO / 跨聚合投影 | 跨聚合查询迁 QueryPort；`domain.repository` 自声明的方法只返回聚合 / `Optional<聚合>` / boolean / void / 域层投影 / `long` 计数（E-4.1、ADR-0030），本聚合内读投影经 ADR-0030 合并后可驻留域仓储 |
 | 6 | **Metadata / 规则引擎过度使用** | 把简单逻辑配置化、动态化，无类型安全、难调试、AI 无法识别 | 回退显式代码（CORE-10） |
 | 7 | **AI 盲目生成冗余代码** | 提示词无约束，自动创建大量空层级与转发类 | 按 [E-3.11](#e-311-aiagent-生成与重构纪律) 最小生成 + 抽象质问 |
 | 8 | **贫血模型** | 逻辑写在 Service，聚合退化为纯数据容器（setter 序列改状态） | 状态迁移回落聚合（CORE-03、E-6.4） |
@@ -388,7 +388,7 @@ Repository 是聚合根的集合抽象：
 
 - 按身份或单一业务键加载聚合；
 - 保存和删除聚合；
-- 不承担分页、报表、Join 或 UI 投影；
+- 不承担**跨聚合**分页、报表、Join 或 UI 投影（本聚合内的读投影经 ADR-0030 合并后可驻留 `domain.repository`）；
 - 接口位于 domain，实现位于 infrastructure；
 - **1:1 落盘**：聚合根是唯一持久化入口，子实体与值对象随根一起落盘；不为子实体建立“独立聚合”级仓储。**「1:1」限定的是「聚合 ↔ 持久化入口」，不是「聚合 ↔ 数据库表」**：一个聚合可以映射到多张表、JSON 列或文档，只要读写都经聚合根、且不破坏一致性边界（CORE-11），映射形态本身不构成违规——被禁止的是「绕过聚合根分头写」与「把子实体升格为第二个一致性边界」。读取同理只覆盖**加载聚合本身**：按身份或与聚合生命周期一致的单一业务键；合并多聚合、过滤组合、统计与投影一律走 QueryPort（CORE-05）。聚合内明细确需自己的仓储时按同一聚合口径归并，不构成第二个聚合——判据是它只能读写所属聚合的明细，不独立创建聚合、不跨聚合查询，写入口仍由聚合根方法驱动（CORE-11、E-4.1）。该形态**默认不建**：确需时按 E-0.4 记入 ADR 并在模块 README 登记，且它不得跨聚合查询、不得独立创建聚合——机器无法验证这三点判据，因此不登记即视为越界。
 
@@ -1005,7 +1005,7 @@ adapter
 - 返回聚合、`Optional<聚合>`、boolean 或 void。SDK 的 `findById` 返回裸值，未命中为 `null`，在应用边界立刻转成 `Optional` 或抛业务异常，不要让 `null` 继续往里传。
 - **`boolean` 只表达"这次写操作是否生效"**（存 / 删的受影响语义），不承载**存在性判断**。`existsBy...` 式方法既把读意图塞进写仓储（绕过 CORE-05），又诱导应用层写出"先查后判"的竞态——检查与动作之间存在窗口，并发下结论会失效（E-5.3）。要判断"能不能做"，用聚合内行为 + 原子条件（唯一约束 / 条件更新）表达，不走"先查再写"。
 - Repository 面向聚合根，按 ID 或单一业务键加载，并保存或删除聚合。
-- 多条件、Join、统计，以及**自声明**的分页方法都不进写仓储：`domain.repository` 自己声明的方法，返回类型只允许上一条列出的四种，不得返回 `Page` / DTO / 投影。该约束由规则 `domainRepositoriesShouldOnlyDeclareWhitelistedMethods` 检查，当前级别是 Advisory（见 [G-1.5](#g-15-规则证明能力与模块启用状态)）。仅 SDK `Repository` **继承**的 `pageByCriteria(Criteria)` / `queryPage(PageParam)` 可用于简单单表分页——返回聚合行，再由应用层映射 DTO。
+- **`domain.repository` 自声明方法的返回类型白名单（P0-4，`domainRepositoriesShouldOnlyDeclareWhitelistedMethods`）**：聚合 / `Optional<聚合>` / boolean / void，外加**域层标量** `long` / `Long` / `int` / `Integer`（计数），以及**域层读模型**——`List` / `Optional` / `PageResult` 的元素为包名含 `.domain.` 的投影 / 值对象（如 blueprint `OrderWithItemsProjection` / `OrderHeadProjection`，置于 `domain/<聚合>/projection`）。**应用层 DTO、跨聚合投影、报表 / 统计 / 跨聚合 Join 仍不得进入 `domain.repository`**——这些走 `QueryPort`（CORE-05、E-4.2）。该约束当前级别是 Advisory（见 [G-1.5](#g-15-规则证明能力与模块启用状态)）；仅 SDK `Repository` **继承**的简单单表 `pageByCriteria` / `queryPage` 仍可用，返回聚合行再由应用层映射 DTO。
 - **白名单管「声明」，调用面另有约束**：上一条只约束 `domain.repository` **自己声明**的方法签名；SDK `Repository` **继承**下来的读侧方法（`countByCriteria`、`aggregate` / `aggregateWithPagination`、`findByCriteria`、`pageByCriteria`、`queryPage`、`queryByCondition`、`query`）返回的是计数、统计或行集，不在返回类型白名单管辖范围内，但它们是**同一种读侧能力**。约定：**写路径不查询**——这些方法的调用只允许出现在 `infrastructure/query/*QueryAdapter`（以及 `infrastructure/persistence` 的实现内部），`domain` 与 application 的写方法不得调用。典型反例是用 `countByCriteria(criteria) > 0` 表达存在性判断：它与本条禁止的 `existsBy...` 是同一件事、只是换了入口，同样制造「先查后判」的竞态窗口（E-5.3）。反过来也要防止误读：**「写仓储不混读」指的是不由写仓储返回投影 / DTO / 统计，不等于写仓储不能有读方法**——`load` 本身就是把聚合读出来，禁止它等于无法表达任何写行为。
 - **子实体落盘（CORE-11 的受控形态）**：SDK 当前**不支持聚合级联**——`save(aggregateRoot)` 不会持久化聚合内的集合，集合字段须标 `@Transient`（否则被误映射为根表列），落库靠「子实体级仓储 + **同一应用事务内**显式逐条保存」。这是**受控过渡形态，不是自由选项**，三条限制同时成立才允许：① 该仓储只服务一个聚合根，不得被其他聚合复用；② 不得借它把子实体提升为独立聚合——子实体之间、子实体与外部的一致性仍按 CORE-06 走事件 / Orchestrator，不引入第二个事务边界；③ 子实体读取走查询侧（`*QueryPort` 联表投影或独立投影查询），不在写仓储上加返回 `List` 的查询方法。偏差须在模块 README 登记，并把阻塞项记入 [Bone-Metadata-SDK-能力需求.md](./Bone-Metadata-SDK-能力需求.md)，待 SDK 支持级联或团队决定 PO 分离后按 [E-6.3](#e-63-po-分离信号) 迁移。注意：子实体级仓储返回的是子实体（非聚合），与本条“聚合根唯一持久化入口”及 E-4.1 写仓储返回白名单（`domainRepositoriesShouldOnlyDeclareWhitelistedMethods`，见 [G-1.5](#g-15-规则证明能力与模块启用状态)）存在张力，属本条登记的已知例外；该仓储同样必须按租户过滤、不得被其他聚合复用，且 SDK 级联就绪后须回退为根级 `save`。
 
@@ -1017,11 +1017,11 @@ adapter
 adapter → ApplicationService.get()/page() → Repository
 ```
 
-> 语义口径：`get()` 本质是**加载聚合**（`Repository.findById`）；`page()` 仅限 SDK **继承**的简单单表批量方法（E-4.1）——不等于把写仓储当通用查询入口。出现筛选 / Join / 统计 / 跨聚合 / 外吐投影列时，升级 QueryPort。
+> 语义口径：`get()` 本质是**加载聚合**（`Repository.findById`）；`page()` 限 SDK **继承**的简单单表批量方法（E-4.1），或 `domain.repository` 自声明、返回 `PageResult<域层投影>` 的本聚合读方法（ADR-0030，见 E-4.1 白名单）——不等于把写仓储当通用查询入口。出现筛选 / Join / 统计 / **跨聚合** / 外吐跨聚合投影列时，升级 QueryPort。
 >
 > 直查返回的聚合是**可变领域对象**：它只用于应用层内部决策与命令回读；adapter 可见的返回值必须是应用投影 / DTO，不得把聚合实例（及其 setter 可达的状态）暴露到 Controller——序列化可变聚合等于把状态迁移接口一并开放出去（E-10.1 转换边界）。
 >
-> **通道选择可以收敛在适配器内**：读侧适配器（`infrastructure/query/*QueryAdapter`）允许注入 `domain.repository` 的写侧仓储，代 ApplicationService 完成**返回聚合的简单读**（按 id / 业务键加载、SDK 继承的简单单表分页），再由适配器或应用层映射为投影。这优于让 ApplicationService 自己分辨「有几个仓储、哪条走 SQL」——应用服务只依赖 `QueryPort`。`bone-blueprint` 的 `OrderReadRepository` 即此形态：它既继承 `Repository<Order,Long>`（自带 Criteria 通道）又直接实现 `OrderQueryPort`——`findStatusById` / `findOrderPage` 用 `default` 方法走自身继承的 Criteria（自动租户 + 软删），JOIN 投影与全租户扫描走 `@Sql`；原 `OrderQueryAdapter` 转发层已折叠进该读侧仓储，不再另建。约束不因此放宽：读侧拿到的是**聚合**（仅用于映射成投影），投影映射只发生在读侧 / application，聚合不得透出 adapter；一旦读模型与聚合结构分歧（Join / 统计 / 跨聚合），仍须走 `@Sql` 或独立投影查询，不得在写仓储上加返回 `Page` / DTO / 投影的方法。
+> **本聚合读已合并进写侧仓储（ADR-0030，2026-09-19 启用）**：`domain/repository` 在承载写侧 + 聚合加载之外，可声明返回**域层投影类型**（`List` / `Optional` / `PageResult` 的元素为包名含 `.domain.` 的投影 / 值对象）与 `long` 计数的本聚合读方法——`bone-blueprint` 的 `OrderRepository` 即此形态：`findOrderWithItems`（`@Sql` + `MANUAL` 显式 `tenantId`，返回 `List<OrderWithItemsProjection>`）、`findOrderPage`（Criteria，返回 `PageResult<OrderHeadProjection>`）、`findCreatedExpiredBeforeAllTenants`（`@TenantScope(ALL)` 全租户扫描）都驻留同一接口；投影类型置于 `domain/order/projection`（受 P0-4 白名单放宽容纳，见 E-4.1 / [G-1.6](#g-16-core--e-条文与门禁映射) 门禁②）。读侧适配器（`infrastructure/query/*QueryAdapter`）仍可直接注入该域仓储完成简单聚合读，代 ApplicationService 映射投影，应用服务只依赖 `QueryPort`。约束不因此放宽：跨聚合读 / 报表 / 搜索 / 多聚合组合仍须走 `QueryPort`（见下），聚合不得透出 adapter，投影映射只在读侧 / application 发生。
 
 **复杂读 / 读模型与聚合结构分歧**（报表、搜索、跨聚合组合）在 ApplicationService 内引入 QueryPort：
 
@@ -1039,7 +1039,7 @@ adapter → ApplicationService → QueryPort → QueryAdapter → SQL/DSL
 读侧参考（多数复杂读由 ApplicationService 直调 QueryPort；只有需要独立路由 / 异步读时才补一层 QueryHandler）：
 
 ```java
-public interface OrderQueryPort {
+public interface OrderSearchQueryPort {
   PageResult<OrderSummary> search(OrderSearchCriteria criteria);
 }
 
@@ -1047,14 +1047,14 @@ public interface OrderQueryPort {
 public class OrderSearchApplicationService {
 
   private final OrderRepository orderRepository;
-  private final OrderQueryPort orderQueryPort;
+  private final OrderSearchQueryPort orderSearchQueryPort;
   private final TenantPort tenantProvider;
 
   public OrderSearchApplicationService(
-      OrderRepository orderRepository, OrderQueryPort orderQueryPort,
+      OrderRepository orderRepository, OrderSearchQueryPort orderSearchQueryPort,
       TenantPort tenantProvider) {
     this.orderRepository = orderRepository;
-    this.orderQueryPort = orderQueryPort;
+    this.orderSearchQueryPort = orderSearchQueryPort;
     this.tenantProvider = tenantProvider;
   }
 
@@ -1094,9 +1094,9 @@ public class OrderSearchApplicationService {
 
 #### E-4.4 自定义 SQL 读侧仓储（`@Sql` 通道）
 
-`QueryAdapter` 内部按**通道选用顺序**取数：内置方法 / `Criteria` → DSL `FluentQuery` → `@Sql` 自定义仓储方法。`@Sql` 是**第三类通道，不是默认选择**——它唯一能做的事是表达前两类表达不了的东西（多表 JOIN 扁平投影、聚合统计、全租户扫描），代价是 SDK **不注入租户、不注入软删**，SQL 所见即所得。
+`QueryAdapter` 内部按**通道选用顺序**取数：内置方法 / `Criteria` → DSL `FluentQuery` → `@Sql` 自定义仓储方法。`@Sql` 是**第三类通道，不是默认选择**——它唯一能做的事是表达前两类表达不了的东西（多表 JOIN 扁平投影、聚合统计、全租户扫描）。**租户 / 软删隔离须显式声明 `@TenantScope`**：`AUTO` 由 `TenantSqlRewriter` 按锚点 `/*bone:tenant*/` 注入（fail-closed，缺锚点即拒绝执行）、`MANUAL` 须手写条件、`ALL` 显式退出租户隔离、`BYPASS` 退软删；缺标注或锚点缺失一律拒绝执行，不会"静默放行"（ADR-0030、E-2）。
 
-blueprint 参考实现：`infrastructure/query/OrderReadRepository`（`extends Repository<Order, Long>` + 方法级 `@Sql`）**直接实现** `application/query/port/OrderQueryPort`（2026-09-19 起读侧适配器与 `@Sql` 仓储合一，不再另建 `*QueryAdapter`；`PaymentQueryPort` 仍是 `PaymentQueryAdapter` 形态）。同一个类里，JOIN 投影与全租户扫描走 `@Sql`，而列表分页与状态查询走 `Criteria`——**按方法选通道是正常形态**：这种混合不是不一致，而是把每条 SQL 放进它该在的那层护栏里。
+blueprint 参考实现：`domain/repository/OrderRepository`（`extends Repository<Order, Long>`）**合并**了本聚合读投影（ADR-0030，2026-09-19 启用）——`@Sql` 方法 `findOrderWithItems`（`MANUAL` 显式 `tenantId`）走 JOIN 扁平投影，Criteria 方法 `findOrderPage` 走列表分页，全租户扫描 `findCreatedExpiredBeforeAllTenants` 走 `@TenantScope(ALL)`；跨聚合读仍由 `PaymentQueryPort` → `PaymentQueryAdapter` 承担。**按方法选通道是正常形态**：这种混合不是不一致，而是把每条 SQL 放进它该在的那层护栏里。
 
 **六条硬约束**（前两条是"起不来"，后四条是"起得来但结果错"）：
 
@@ -1104,14 +1104,14 @@ blueprint 参考实现：`infrastructure/query/OrderReadRepository`（`extends R
 |---|------|----------|
 | 1 | 接口简名以 `Repository` 结尾并 `extends` SDK `Repository<T, ID>`，落在 `infrastructure/query` | 不被代理或 Bean 不注册 |
 | 2 | 该包必须显式登记到 `@EnableSqlRepositories(basePackages = {...})` | **注入失败**，而不是"SQL 找不到"——这是排查成本最高的一处误解 |
-| 3 | 租户内查询必须手写 `AND x.tenant_id = #{tenantId}`；全租户须主动省略并经 E-2 登记授权 | 本通道不注入租户 → 静默跨租户越权 |
-| 4 | 软删必须手写 `AND x.deleted = 0`，**且 JOIN 的每个子表都要带** | blueprint 迁到 `@Sql` 前的旧模板 `LEFT JOIN t_order_item oi ON o.id = oi.order_id` 漏了 `oi.deleted = 0`，软删明细一路被 join 出来、无任何报错 |
+| 3 | `@TenantScope(AUTO)` 由 `TenantSqlRewriter` 自动注入租户条件；`@TenantScope(MANUAL)` 须手写 `AND x.tenant_id = #{tenantId}`；全租户须 `@TenantScope(ALL)` 并主动省略、经 E-2 登记授权 | 缺标注 / 锚点缺失即 fail-closed 拒绝执行；`MANUAL` 漏写 → 静默跨租户越权 |
+| 4 | `@TenantScope(AUTO)` 自动注入 `deleted = 0`（含 JOIN 子表）；`@TenantScope(MANUAL)` 须手写 `AND x.deleted = 0`，**且 JOIN 的每个子表都要带** | blueprint 迁到 `@Sql` 前的旧模板 `LEFT JOIN t_order_item oi ON o.id = oi.order_id` 漏了 `oi.deleted = 0`，软删明细一路被 join 出来、无任何报错 |
 | 5 | 投影需有可访问的无参构造器、字段非 `final`，列写显式别名（`o.id AS order_id`） | `SmartRowMapper` 反射填字段失败 / 字段恒为 `null` |
 | 6 | 返回类型不得写 `PageResult<T>`（代理无分页分支） | 结果被误映射；分页须 `countXxx` + `selectXxx ... limit/offset` 两个方法，调用方自行 `PageResult.of` |
 
 > **不在 Java 里拼 SQL**：动态条件一律用 MyBatis 风格标签（`<if>` / `<where>` / `<foreach>`）表达。`#{x}` 求值为 `null` 会抛异常，`${x}` 只允许 `[a-zA-Z0-9_]+`，二者都由 SDK 安全校验兜底——手写 `StringBuilder` 拼条件等于绕开这道护栏。
 
-**模板源二选一，禁止并存**。模板 ID 固定为 `{接口全限定名}.{方法名}`（`RepositoryFactoryBean` 生成代理时拼装并**立即加载**）。默认 `load-priority=annotation-first`，回退链为 `classpath:/sql/<包>/<接口简名>/<方法名>.sql` → `sql-templates/*.yaml`：注解命中后外置文件**永不加载且不报错**，会成为一条悄悄漂移的影子 SQL。
+**模板源二选一，禁止并存**（ADR-0030 门禁③，由 `SqlTemplateGovernanceTest` 守护）。模板 ID 固定为 `{接口全限定名}.{方法名}`（`RepositoryFactoryBean` 生成代理时拼装并**立即加载**）。SDK 默认 `load-priority=classpath-first`：外置 `classpath:/sql/<包>/<接口简名>/<方法名>.sql` 优先，缺失时回退方法内 `@Sql` 注解；外置与注解**内容须一致**，不得一处改了一处没改——否则外置静默覆盖注解形成影子 SQL。改用外置模板**必须先删 `@Sql` 注解**。
 
 | 形态 | 适用 | 判据 |
 |---|---|---|
@@ -1178,11 +1178,11 @@ Outbox 是 Bone 的默认 Durable 实现。CDC、数据库事务日志或其他�
 
 每个可并发写聚合必须声明并验证策略。乐观锁是新聚合的默认候选，不是唯一合法实现。
 
-> **现状提示**：SDK 的通用写路径**尚未自动消费** `@Version`——`update` / `save` 的更新分支只生成 `WHERE <pk> = ?`，既不追加版本条件、也不自增版本。因此乐观锁有两种实现路径：① SDK 自动消费 `@Version`（待 SDK 能力就绪）；② **应用层手动条件更新**（blueprint 样板已验证）——聚合内加 `incrementVersion()` 在所有状态转换中自增版本，仓储提供 `saveWithVersionCheck()` 用 Criteria 组装 `WHERE id = ? AND version = ?` 条件更新，返回受影响行数=0 时抛 `OptimisticLockConflictException`。两者择一，不得混用。
+> **现状提示**：SDK 的通用写路径（`BaseRepository#update` → `DynamicUpdateBuilder`）**已自动消费** `@Version`（D1 落地、D2 由 blueprint 启用）：更新分支改写 `SET version = version + 1` 并追加 `WHERE version = :old`，受影响行数=0 时抛 `OptimisticLockingFailureException`。因此**应用层不再手写版本管理**——聚合内不再调用 `incrementVersion()`，仓储不再提供 `saveWithVersionCheck()`，统一走 SDK `update(entity)`；SDK 异常在应用层翻译为 `OptimisticLockConflictException`。
 
 | 策略 | 适用场景 | 最低必测行为 |
 |------|----------|--------------|
-| 乐观版本锁 | 低到中冲突、交互式写入 | 版本冲突不覆盖新数据，并映射稳定错误（blueprint 样板已实现：`saveWithVersionCheck` 条件更新 + `OptimisticLockConflictException`） |
+| 乐观版本锁 | 低到中冲突、交互式写入 | 版本冲突不覆盖新数据，并映射稳定错误（blueprint 样板已实现：SDK 原生 `@Version` + `update(entity)` + 应用层翻译 `OptimisticLockConflictException`） |
 | 条件更新 | 简单状态机、幂等迁移 | 条件不满足时可区分重复与冲突 |
 | 唯一约束 | 唯一业务键、回调流水 | 并发重复写只有一个成功 |
 | 悲观锁 | 短事务、高冲突且可控 | 锁等待、超时和死锁重试 |
@@ -1206,7 +1206,7 @@ public void ship(ShipOrderCommand command) {
   } catch (DomainException ex) {
     throw BlueprintErrors.of(ORDER_STATUS_CONFLICT, ex.getMessage(), ex);
   }
-  orderRepository.saveWithVersionCheck(order);
+  orderRepository.update(order);
 }
 
 // ❌ 错误：让 DomainException 直接上抛 → HTTP 500
@@ -1214,7 +1214,7 @@ public void ship(ShipOrderCommand command) {
 public void ship(ShipOrderCommand command) {
   Order order = orderRepository.findByIdInTenant(...);
   order.ship();  // DomainException 上抛，框架不处理
-  orderRepository.saveWithVersionCheck(order);
+  orderRepository.update(order);
 }
 ```
 
@@ -1555,7 +1555,7 @@ com.bone.order/
 ├── application/
 │   ├── OrderShippingApplicationService   # 单聚合写用例，默认入口
 │   └── query/
-│       ├── port/OrderQueryPort           # 读模型分歧时才出现
+│       ├── port/*QueryPort           # 跨聚合读端口（读模型分歧时才出现）
 │       └── dto/OrderSummary              # 应用投影
 ├── domain/
 │   ├── Order/                    # 聚合根平铺，非角色子目录
@@ -1565,11 +1565,10 @@ com.bone.order/
 │   │   └── event/OrderShippedEvent.java
 │   └── repository/OrderRepository
 └── infrastructure/
-    ├── persistence/OrderRepositoryImpl   # = domain/repository 的实现
-    └── query/OrderReadRepository         # = application/query/port 的实现（@Sql 通道，见 E-4.4）
+    └── persistence/OrderRepositoryImpl   # = domain/repository/OrderRepository 的实现
 ```
 
-要点：`application` 与 `infrastructure` 均对比 `domain` 找自己的端口实现（`OrderRepositoryImpl` ↔ `OrderRepository`，`OrderReadRepository` ↔ `OrderQueryPort`），一一对应；QueryPort 的实现既可是 `*QueryAdapter`，也可是 E-4.4 登记的 `@Sql` 读侧仓储（blueprint 现行形态）——两种都算落实端口，差别只在取数通道。聚合内部按自身结构组织，事件放 `{aggregate}/event`。只读且极简的用例（无行为、无复杂读）无需出现 `Command` / `Handler` / `QueryPort`，目录也随之省略。
+要点：`application` 与 `infrastructure` 均对比 `domain` 找自己的端口实现（`OrderRepositoryImpl` ↔ `OrderRepository`）——本聚合读投影已合并进 `OrderRepository`（ADR-0030），投影类型置于 `domain/order/projection`；跨聚合读仍走 `QueryPort`（如 `PaymentQueryPort` → `PaymentQueryAdapter`，实现落 `infrastructure/query`）。两种形态都算落实端口，差别只在取数通道。聚合内部按自身结构组织，事件放 `{aggregate}/event`。只读且极简的用例（无行为、无复杂读）无需出现 `Command` / `Handler` / `QueryPort`，目录也随之省略。
 
 ### E-11 Flow / AI
 
@@ -1658,6 +1657,7 @@ E-13.1～E-13.5 是本原则在各层的具体化。
 | `application/command/handler/` | `*CommandHandler` | **可选**：单个写用例入口，仅当需要独立路由 / 异步跨事务 / 多入口统一执行时创建 |
 | `application/query/dto/` | `*Dto` | 读侧输出 DTO（给 adapter 的最终形态） |
 | `application/query/projection/` | `*Projection` | QueryPort 返回的 SQL 行级投影（中间形态，由 Assembler 转 Dto） |
+| `domain/<聚合>/projection/` | `*Projection` | ADR-0030 合并后本聚合读投影（SQL 行级 / 域层读模型），由 `domain/repository` 返回；包名含 `.domain.`，受 P0-4 白名单容纳（E-4.1） |
 | `application/query/qry/` | `*Query` | **可选**：读用例输入对象；参数少即内联到 ApplicationService 方法签名 |
 | `application/query/handler/` | `*QueryHandler` | **可选**：单个读用例入口，仅当读侧需要独立路由 / 生命周期时创建 |
 | `application/port/out/` | `*Port` | 统一出站端口后缀（blueprint 样板：7 个端口全 `*Port`） |
@@ -1706,7 +1706,7 @@ E-13.1～E-13.5 是本原则在各层的具体化。
 
 | 后缀 | 独占语义 | 禁止 |
 |------|----------|------|
-| `*Repository` | **位置即作用域，但两类身份不等价**：`domain/repository` = **DDD 聚合写侧仓储端口**，受 CORE-05 / E-4.1 约束（按 ID 或单一业务键加载聚合、返回类型白名单、不承载报表 / Join / 投影）；`infrastructure/**` = **SDK 技术表访问接口**，供适配器内部使用（Outbox / 幂等 / 消费去重等非聚合表，或 Criteria 表达不了的 JOIN 投影，如 blueprint `OrderReadRepository`），它**不是** DDD 仓储端口、不得被 `domain` / `application` 依赖，也不构成读侧对外端口 | `*Store` / `*Dao` / `*Mapper` 替代命名 |
+| `*Repository` | **位置即作用域，但两类身份不等价**：`domain/repository` = **DDD 聚合写侧仓储端口**，受 CORE-05 / E-4.1 约束（按 ID 或单一业务键加载聚合、返回类型白名单）；ADR-0030 合并后，**本聚合读投影**（返回域层投影类型、`long` 计数）也由它声明，但**不得承载跨聚合报表 / Join / 投影**（CORE-05）。`infrastructure/**` = **SDK 技术表访问接口**，供适配器内部使用（Outbox / 幂等 / 消费去重等非聚合表，或 Criteria 表达不了的 JOIN 投影），它**不是** DDD 仓储端口、不得被 `domain` / `application` 依赖，也不构成读侧对外端口（blueprint 历史形态 `OrderReadRepository` 已随 ADR-0030 合并进 `OrderRepository`） | `*Store` / `*Dao` / `*Mapper` 替代命名 |
 | `*QueryPort` | application 模块内列表、搜索、统计等读侧端口 | 跨边界 ACL |
 | `*Gateway` | 以本上下文语言声明的出站 ACL / Domain Gateway | 模块内查询、技术 Client |
 | `*Adapter` | infrastructure 对某个 application/domain 出站端口的技术实现 | 业务用例入口或领域对象 |
@@ -1719,7 +1719,7 @@ E-13.1～E-13.5 是本原则在各层的具体化。
 **实现类命名规则**（blueprint 样板统一，**出站实现一律 `*Adapter`**——2026-09-19 结清本节此前的"待裁决"）：
 - application 层 `*Port` 接口 → infrastructure 实现类 `<Port短名>Adapter`（`PricingPort` → `PricingPortAdapter`、`TenantPort` → `TenantPortAdapter`；幂等能力已下沉 framework（`com.bone.core.idempotency.IdempotencyStore`））。
 - domain 层 `*Gateway` 接口 → infrastructure 实现类 `<Gateway短名>GatewayAdapter`（blueprint：`PaymentGateway` → `MockPaymentGatewayAdapter`、`InventoryGateway` → `MockInventoryGatewayAdapter`），落点见 [E-10.2](#e-102-portrepository-与-gateway-放置决策)。
-- `*QueryPort` → `*QueryAdapter`（现行样例：`PaymentQueryPort` → `PaymentQueryAdapter`）——稳定惯例，保持不变。**例外**：E-4.4 的 `@Sql` 读侧仓储通道由读取仓储**直接实现** QueryPort（blueprint 的 `OrderQueryPort` 由 `OrderReadRepository` 实现），此时不另建 `*QueryAdapter`；两种形态都算落实端口，同一端口内不得并存两套实现。
+- `*QueryPort` → `*QueryAdapter`（现行样例：`PaymentQueryPort` → `PaymentQueryAdapter`）——稳定惯例，保持不变。**例外（2026-09-19 起已结清）**：原 E-4.4 允许 `@Sql` 读侧仓储直接实现 QueryPort（blueprint 旧形态 `OrderQueryPort` 由 `OrderReadRepository` 实现）；ADR-0030 合并后 blueprint 的读投影已并入 `domain/repository/OrderRepository`、删除 `OrderQueryPort` 与 `OrderReadRepository`，跨聚合读仍走 `QueryPort`（如 `PaymentQueryPort`）——两种历史形态都算落实端口，同一端口内不得并存两套实现。
 - **占位 / Mock 实现统一 `Mock` 前缀**（`MockPaymentGatewayAdapter`、`MockInventoryGatewayAdapter`、`MockPaymentSignaturePortAdapter`），不用 `Simulated*` / `Dummy*` 等自建前缀。
 - **禁止** `*Impl`（暗示"内部实现"而非"端口适配"）、`*Sender` / `*Writer` / `*Provider`（实现方式名而非契约名）。命名分歧按 E-13.4 裁决，不在模块里自行发明第三种后缀。
 
@@ -1941,7 +1941,7 @@ Hard gate 只保护结构和明确 API 使用，不证明领域模型正确。
 | CORE-02 依赖向内 | `domainMustNotDependOnOuterLayers` | Hard gate（部分模块） |
 | CORE-03 领域行为保护不变量 | `applicationServicesMustNotOwnDomainRules`（目标） | Hard gate 目标 |
 | CORE-04 一个用例一个入口边界 | `adapterControllersMustNotDependOnGodObjects`（原 `...OnApplicationService`，收窄为上帝对象守护，ADR-0028） | Hard gate（收窄） |
-| CORE-05 写聚合 / 读投影 | `commandHandlersMustNotUseQueryBuilder`、`readSideDslOnlyInQueryLayer` | Hard gate / 目标 |
+| CORE-05 写聚合 / 读投影 | `commandHandlersMustNotUseQueryBuilder`、`readSideDslOnlyInQueryLayer`；ADR-0030 门禁② 已放宽 `domain.repository` 白名单容纳域层投影 / `long` 计数 | Hard gate / 目标（门禁② 已落地） |
 | CORE-06 聚合默认一致性边界 | `oneAggregatePerTransaction` | Advisory |
 | CORE-07 可靠性与并发声明 | 无直接门禁（语义 + [E-5 事务、事件与并发](#e-5-事务事件与并发)） | Semantic |
 | CORE-08 门禁不冒充领域证明 | 全文门禁说明 | 文档约定 |
@@ -1950,11 +1950,17 @@ Hard gate 只保护结构和明确 API 使用，不证明领域模型正确。
 | CORE-11 聚合最小化与 1:1 落盘 | `domainRepositoriesShouldOnlyDeclareWhitelistedMethods` + `oneAggregatePerTransaction`（按聚合根口径计数） | Advisory / Hard gate 目标 |
 | CORE-12 务实对象映射 | 无直接门禁（语义 + 评审；Shared / Separated 由 E-6.1 维度定义） | Semantic |
 | E-3 应用用例边界 | `adapterControllersMustNotDependOnDomainRepository` / `...DomainService` | Hard gate |
-| E-4.2 读侧端口位置 | `readSideDslOnlyInQueryLayer`（目标） | Hard gate 目标 |
+| E-4.2 读侧端口位置 | `readSideDslOnlyInQueryLayer`（目标）；ADR-0030 合并后本聚合读投影驻留 `domain.repository`（由 P0-4 白名单守护，见 G-1.6 门禁②） | Hard gate 目标 |
 | E-2 多租户（端口取值 + 异步显式携带） | `businessLayersMustNotReadTenantContextDirectly`；blueprint 另有 `all_tenants_scan_only_by_schedule` | Hard gate（参考样板 0 违规） |
 | E-6 D1 纯净度 | `domainMustNotDependOnOuterLayers`（白名单放行编译期注解） | Hard gate |
 | E-7 错误模型 | `noCustomBusinessException` / `noBusinessExceptionSuffix`（freeze） | 兼容门禁 |
 | E-5.4 DomainEvent 发布前置判断 | `applicationSaveMustPairWithPublishOrExempt`（见 [G-1.1](#g-11-hard-gate) 12e / [G-1.5](#g-15-规则证明能力与模块启用状态)） | Hard gate（参考样板，待全模块推广） |
+| ADR-0030 门禁① 读方法须 default / `@Sql` / 外置模板 | `SqlTemplateGovernanceTest`（blueprint 模块级治理测试：读 Java 字节码 + 外置 `.sql`，ArchUnit 看不到资源，故不落 ArchUnit 规则） | Advisory（blueprint 已落地） |
+| ADR-0030 门禁② 域仓储白名单放宽 | `domainRepositoriesShouldOnlyDeclareWhitelistedMethods`（P0-4，已容纳域层投影 / `long` 计数） | Advisory（已落地，见 E-4.1） |
+| ADR-0030 门禁③ `@Sql` 与 `.sql` 禁并存 | `SqlTemplateGovernanceTest`（模板 ID 取 `<接口全限定名>.<方法名>`，两源取交集） | Advisory（blueprint 已落地） |
+| ADR-0030 门禁④ 租户表 `@Sql` 须 `@TenantScope` | `SqlTemplateGovernanceTest`（注解存在性 + `AUTO` 不手写 `tenant_id` + 软删覆盖 `JOIN` 子表） | Advisory（blueprint 已落地） |
+| ADR-0030 门禁⑤ 读方法排除 `oneAggregatePerTransaction` | `oneAggregatePerTransaction`（已改造：`default` 与 `@Sql` 方法按读侧排除） | Advisory（已落地） |
+| ADR-0030 门禁⑥ `FROM` / `JOIN` ⊆ 聚合表集合 | `SqlTemplateGovernanceTest`（表集合取自 E-1.2 数据所有权声明，聚合取自 `Repository<T, ?>` 的 `T`） | Advisory（blueprint 已落地） |
 
 <a id="hc-hard-constraints"></a>
 

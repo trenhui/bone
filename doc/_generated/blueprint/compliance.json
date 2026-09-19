@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-18T22:46:54Z",
+  "generated_at": "2026-09-19T05:16:29Z",
   "module": "blueprint",
   "as_is": [
     {
@@ -87,28 +87,25 @@
     },
     {
       "id": "read-port",
-      "title": "CQRS 读侧 OrderQueryPort + SQL 投影",
+      "title": "CQRS 读侧：域仓储读方法 + 领域投影 + SQL 投影（ADR-0030 合并）",
       "status": "as_is",
       "evidence": {
         "java": [
-          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/schedule/CancelExpiredOrderJob.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/schedule/OrderPaymentInconsistencyJob.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/OrderApplicationService.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/application/event/OrderCreatedEventHandler.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/application/event/OrderPaidEventHandler.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/event/support/OrderItemInventoryExecutor.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/query/dto/OrderDto.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/application/query/port/OrderQueryPort.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/application/query/port/PaymentQueryPort.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/query/port/package-info.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/query/support/OrderDetailAssembler.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/query/support/OrderSummaryAssembler.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/query/support/PaymentDetailAssembler.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/domain/order/Order.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/domain/order/projection/OrderWithItemsProjection.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/domain/repository/OrderItemRepository.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/infrastructure/query/OrderReadRepository.java"
+          "bone-blueprint/src/main/java/com/bone/blueprint/domain/repository/OrderRepository.java"
         ],
-        "sql": []
+        "sql": [
+          "bone-blueprint/src/main/resources/sql/com/bone/blueprint/domain/repository/OrderRepository/findOrderWithItems.sql"
+        ]
       }
     },
     {
@@ -173,7 +170,7 @@
       "tier": "Target",
       "title": "支付命令幂等键（API / 应用层）",
       "reference": "Bone-API-规范 §8",
-      "tracking": "PayOrderCommandHandler 无 Idempotency-Key"
+      "tracking": "PaymentApplicationService 无 Idempotency-Key（ADR-0028 后已无 *CommandHandler）"
     },
     {
       "id": "read-model-projection-db",

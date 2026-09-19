@@ -22,9 +22,9 @@ model: claude-sonnet-4-6
 
 ## 检查清单
 
-### 核心红线检查（来自 CLAUDE.md）
+### 核心红线检查（来自 AGENTS.md）
 - [ ] 没有修改 `generated/` 目录
-- [ ] 测试覆盖率 ≥ 80%（L2 ≥ 85%）
+- [ ] 覆盖率达标：**契约目标**（`.claude/contracts/` 的 `guardrails.coverage`，L1 `>80%` / L2 `>85%`）与**构建门槛**（`bone-parent/pom.xml` 的 `jacoco.minimum.coverage`，模块可下调）分别核对；实测状态见 §G-1.7
 - [ ] 没有返回 `null`（使用 `Optional`）
 - [ ] Contract 所有者与分支所有者一致
 - [ ] 没有硬编码密钥、密码等敏感信息
@@ -39,7 +39,7 @@ model: claude-sonnet-4-6
 - [ ] 圈复杂度不超过限制（L1 ≤ 10, L2 ≤ 8）
 - [ ] 方法行数不超过限制（L1 ≤ 50, L2 ≤ 40）
 - [ ] 类行数不超过限制（L1 ≤ 500, L2 ≤ 400）
-- [ ] 遵循命名规范（Controller/*Controller, Service/*Service 等）
+- [ ] 遵循命名规范（`*Controller` / `*ApplicationService` / `*Repository` / `*Assembler` / `*QueryPort` 等）
 
 ## 输出格式
 
@@ -50,7 +50,7 @@ model: claude-sonnet-4-6
 - 安全检查：通过
 - 契约一致性：100%
 - 核心红线：全部符合
-- 覆盖率：83.5% ≥ 80%
+- 覆盖率：{actual}% ≥ {threshold}%
 
 ### ⚠️  需要确认 (High)
 - [ ] 问题描述

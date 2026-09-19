@@ -1,5 +1,5 @@
 #
-#Thu Sep 10 18:38:34 CST 2026
+#Sat Sep 19 09:51:49 CST 2026
 no\ classes\ that\ reside\ outside\ of\ package\ 'com.bone.studio.generator.application.usecase..'\ should\ depend\ on\ classes\ that\ reside\ in\ a\ package\ 'com.bone.studio.generator.application.usecase..',\ because\ studio-generator\ must\ not\ export\ custom\ UseCase\ SPI\ to\ other\ modules=9dda16bb-b7f2-4b45-8c19-65f63b9afb82
 no\ classes\ should\ reside\ in\ a\ package\ '..domain.store..',\ because\ DDD\ \u00A714.5\:\ new\ code\ uses\ domain.repository\ only=eeb409c3-ae54-407f-95cb-8d38259746f8
 no\ classes\ that\ reside\ outside\ of\ package\ 'com.bone.core..'\ should\ have\ simple\ name\ ending\ with\ 'BusinessException',\ because\ DDD\ \u00A716.3\:\ prefer\ *BizException\ or\ extend\ com.bone.core.exception.BizException=21c0d607-b5fa-4109-815b-ce8e26058dda
@@ -13,3 +13,4 @@ no\ classes\ that\ reside\ in\ a\ package\ '..adapter..controller..'\ should\ de
 no\ classes\ that\ reside\ in\ a\ package\ '..adapter..controller..'\ should\ depend\ on\ classes\ that\ reside\ in\ a\ package\ '..domain.repository..',\ because\ DDD\ \u00A715\:\ adapter\ must\ not\ inject\ domain.repository;\ use\ Handler=78be4155-8873-4be5-9832-6da595c5d39f
 no\ classes\ that\ reside\ in\ a\ package\ '..application..'\ should\ have\ simple\ name\ ending\ with\ 'UseCase',\ because\ DDD\ \u00A714.3\:\ forbid\ *UseCase;\ Controller\ injects\ Handler=b0f48f45-eb33-463f-a261-c7b34f7c30eb
 no\ classes\ that\ reside\ in\ a\ package\ '..application..'\ should\ depend\ on\ classes\ that\ reside\ in\ any\ package\ ['..infrastructure..'],\ because\ DDD\ P0-1\:\ application\ must\ not\ depend\ on\ infrastructure\ implementations=3c38a2b3-a8b0-4455-89fc-5a329e267845
+no\ classes\ that\ reside\ in\ a\ package\ '..adapter..controller..'\ should\ depend\ on\ classes\ that\ reside\ in\ a\ package\ '..application..'\ and\ simple\ name\ starting\ with\ 'Common'\ or\ simple\ name\ starting\ with\ 'Base'\ or\ simple\ name\ starting\ with\ 'Business'\ or\ simple\ name\ ending\ with\ 'Manager',\ because\ DDD\ \u00A715\ +\ ADR-0028\:\ adapter\ must\ not\ inject\ anemic\ god-objects\ (Common/Base/Business/*Manager)\ in\ application;\ a\ well-named\ *ApplicationService\ is\ a\ valid\ default\ inbound\ entry=b10c7164-3d21-4bd4-8ce0-a32eca979f6f

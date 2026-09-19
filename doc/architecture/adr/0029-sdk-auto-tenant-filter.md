@@ -92,7 +92,7 @@ if (tbl.isTenantScoped() && !ctx.tenantFilterDisabled) {
 |------|------------------|------|
 | `findById(id)` | 注入 | 内部构建 `id` criteria |
 | `findOneByCriteria` / `findByCriteria` / `pageByCriteria` / `countByCriteria` | 注入 | caller criteria |
-| `updateByCriteria(entity, c)` / `deleteByCriteria(c)` | 注入 | caller criteria；`saveWithVersionCheck` 走此路径，获租户护栏（须 `TenantContext`） |
+| `updateByCriteria(entity, c)` / `deleteByCriteria(c)` | 注入 | caller criteria（仍提供租户护栏，须 `TenantContext`）；原 `saveWithVersionCheck` 走此路径，D2 已退役为 SDK `update(entity)` |
 | `save(entity)` / `update(entity)`（`DynamicUpdateBuilder` 按 pk） | **不注入（MVP）** | 无 caller criteria，广谱改 `save` 语义风险大；未来加固再评估 |
 | `findByIdIncludingDeleted` / `findByIdsIncludingDeleted` | 注入（与 `findById` 一致） | 仅绕过软删；租户隔离保持开启；跨租户须 `disableTenantFilter()` |
 | `deleteById(id)` / `deleteByIds(List)`（内联 SQL） | 注入 | 入口在 `BaseRepository` 追加 `AND tenant_id = :_sdk_tenant_id`；当前无护栏，必须补 |
@@ -198,7 +198,7 @@ if (tbl.isTenantScoped() && !ctx.tenantFilterDisabled) {
 
 - **现状缺口**：`DynamicUpdateBuilder` WHERE 仅主键，无租户条件（`DynamicUpdateBuilder.java:46-54`），可被误用跨租户改。
 - **建议**：对租户表追加 `AND tenant_id = :_sdk_tenant_id`（来源 context）；跨租户 admin 保存须 `disableTenantFilter()`。权衡：`save` 调用极广，纳入后后台/跨租户保存须先 `setTenantId` 或显式关闭。
-- **说明**：`saveWithVersionCheck` 走 `updateByCriteria`（已在核心范围），本项仅补 `save`/`update` 直写路径。
+- **说明**：原 `saveWithVersionCheck` 走 `updateByCriteria`（已在核心范围），D2 已退役为 SDK `update(entity)`（由 `TenantContext` 提供租户护栏）；本项仅补 `save`/`update` 直写路径的 tenant_id 追加。
 
 ### 3. 后台链路便捷包装（降低逃生舱误用）
 
@@ -220,3 +220,9 @@ if (tbl.isTenantScoped() && !ctx.tenantFilterDisabled) {
 - **SDK 测试**：232 项全过（`TenantFilterInjectorTest` 锁定租户识别 / 失败关闭 / 逃生舱 / caller-EQ 兜底 / 上下文优先 / 插入补值契约）。
 - **业务模块已修**：`OrderOutboxRelayPortAdapter.relayPending()` 与 `IntegrationOutboxRelay.relayBatch()` 已加 `disableTenantFilter()`（跨租户全量扫描 PENDING）。
 - **待办（各业务模块）**：① 7 个模块全量 `mvn test` 回归；② 其余后台查询若既无 `TenantContext` 又未显式 `eq("tenant_id")` 且非 `disableTenantFilter` → 触发 `MissingTenantContextException`（预期失败关闭，须补 `setTenantId`/`disableTenantFilter`）；③ 业务仓储手写 `eq("tenantId",…)` 在 HTTP 路径被 SDK 忽略并 WARN、后台路径作兜底，可逐步移除。
+
+### @Sql / 外置 `.sql` 通道扩展（ADR-0030，2026-09-19）
+
+- **原缺口已关闭**：本 ADR 原先只覆盖 Criteria 通道（SELECT/COUNT/UPDATE/DELETE 构建器自动注入）。`@Sql` / 外置 `.sql` 通道此前完全不经过 `TenantFilterInjector`，是租户隔离的盲区——这正是 ADR-0030「单一仓储合并」决策的**根因**。
+- **新增 `@TenantScope` + `TenantSqlRewriter`**：`bone-metadata-sdk` 在 `@Sql` 通道最终 SQL 上做 fail-closed 注入，复用本 ADR"可信上下文优先 / 失败关闭 / `MissingTenantContextException`"同一不变量。四模式 `AUTO/MANUAL/ALL/BYPASS`；`AUTO` 用锚点标记 `/*bone:tenant*/`（联表须带别名），JOIN 无锚点失败关闭；默认 `MANUAL`（向后兼容）。详见 [ADR-0030](./0030-domain-repository-read-merge.md) §1.3 与 §10.2。
+- **影响与边界**：`@Sql` 读侧仓储（E-4.4）现在可与 Criteria 通道同享租户护栏；但既存 `@Sql` 方法默认 `MANUAL`（不注入），作者须显式选 `AUTO`（放锚点）或 `ALL`/`BYPASS`（登记授权）方获自动注入——避免一次性击碎存量。MANUAL 下"漏写租户条件"由 ADR-0030 §4 的 R4 lint 兜底。

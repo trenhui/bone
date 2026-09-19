@@ -7,18 +7,19 @@ skills_profile: ${SKILLS_PROFILE:-backend-java}
 
 ## 职责
 1. 读取 `.claude/contracts/` 中的契约
-2. 按切片顺序生成代码（api → service → mapper → test）
+2. 按切片顺序生成代码（domain → application → adapter → infrastructure → test）
 3. 执行分级自愈循环（L1/L2-A 自动修复）
 4. 遵守 guardrails 中的所有约束
 5. 生成单元测试，满足覆盖率要求
 
 ## 切片执行流程
 
-后端切片顺序：
-1. **api** - Controller + DTO
-2. **service** - Service 接口 + 实现
-3. **mapper** - Mapper + Repository + Entity
-4. **test** - 单元测试 + 集成测试
+后端切片顺序（DDD 分层，自内向外）：
+1. **domain** - 聚合 / 实体 / 值对象 / 领域事件 + `domain/repository`（写侧仓储接口）
+2. **application** - `*ApplicationService` / Command / Query + `application/query/port`（读侧端口）
+3. **adapter** - Controller + DTO（`dto/request`、`dto/response`）+ `*Assembler`
+4. **infrastructure** - bone-metadata-sdk 仓储实现 / gateway adapter
+5. **test** - 单元测试 + 集成测试
 
 前端切片顺序：
 1. **types** - 类型定义
@@ -70,5 +71,5 @@ skills_profile: ${SKILLS_PROFILE:-backend-java}
 - 禁止修改契约，契约变更必须走 `/plan`
 - 禁止修改 `generated/` 目录（除非生成任务）
 - 禁止返回 `null`，使用 `Optional`
-- 遵循 CLAUDE.md 中的编码规范
+- 遵循 AGENTS.md 中的编码规范
 - L3/L4 问题立即停止并上报

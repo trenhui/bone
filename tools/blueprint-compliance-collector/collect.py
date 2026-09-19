@@ -39,6 +39,15 @@ def _grep_files(root: Path, pattern: str) -> list[str]:
     return sorted(hits)
 
 
+def _sql_file(rel: str) -> list[str]:
+    """单个外置模板的 evidence（相对仓库根路径）；缺失则空列表。"""
+    return (
+        [f"bone-blueprint/src/main/resources/{rel}"]
+        if (RESOURCES / rel).exists()
+        else []
+    )
+
+
 def load_backlog() -> list[dict]:
     text = _read(BACKLOG_YAML)
     items: list[dict] = []
@@ -124,13 +133,17 @@ def build_as_is_checks() -> list[dict]:
         },
         {
             "id": "read-port",
-            "title": "CQRS 读侧 OrderQueryPort + SQL 投影",
+            "title": "CQRS 读侧：域仓储读方法 + 领域投影 + SQL 投影（ADR-0030 合并）",
             "status": "as_is",
             "evidence": {
-                "java": _grep_files(MAIN_JAVA, r"OrderQueryPort|OrderDetailAssembler"),
-                "sql": ["bone-blueprint/src/main/resources/sql/order/findOrderWithItems.sql"]
-                if (RESOURCES / "sql/order/findOrderWithItems.sql").exists()
-                else [],
+                "java": _grep_files(
+                    MAIN_JAVA,
+                    r"OrderDetailAssembler|findOrderWithItems|findOrderPage",
+                ),
+                "sql": _sql_file(
+                    "sql/com/bone/blueprint/domain/repository/OrderRepository"
+                    "/findOrderWithItems.sql"
+                ),
             },
         },
         {

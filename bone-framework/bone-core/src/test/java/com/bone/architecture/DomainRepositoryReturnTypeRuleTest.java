@@ -42,10 +42,9 @@ class DomainRepositoryReturnTypeRuleTest {
     assertTrue(
         details.stream().anyMatch(m -> m.contains("findSummary") && m.contains("OrderSummaryDto")),
         () -> details.toString());
-    // 返回 List<聚合> → 违规
+    // 返回 List<领域类型> → 合法（ADR-0030 R2 放宽：List/Optional/PageResult 可承载领域读模型），不得误报
     assertTrue(
-        details.stream().anyMatch(m -> m.contains("findByStatus") && m.contains("List")),
-        () -> details.toString());
+        details.stream().noneMatch(m -> m.contains("findByStatus")), () -> details.toString());
     // 持久化词汇入方法名 → 违规
     assertTrue(
         details.stream()

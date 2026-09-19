@@ -17,7 +17,7 @@ items:
     tier: Target
     title: 支付命令幂等键（API / 应用层）
     reference: Bone-API-规范 §8
-    tracking: PayOrderCommandHandler 无 Idempotency-Key
+    tracking: PaymentApplicationService 无 Idempotency-Key（ADR-0028 后已无 *CommandHandler）
 
   - id: read-model-projection-db
     tier: Vision

@@ -37,3 +37,5 @@
 | [0027](./0027-module-layer-semantics-before-physical.md) | 模块层级语义先立、物理结构后收（Kernel/Framework/Engine/Platform，**已接受**） |
 | [0028](./0028-application-service-first-selective-cqrs.md) | Application Service First + Selective CQRS（**已接受**） |
 | [0029](./0029-sdk-auto-tenant-filter.md) | SDK 查询/更新/删除自动注入 tenant_id（落实多租户规范 §3，**已接受 / 已实现**） |
+| [0030](./0030-domain-repository-read-merge.md) | 单一仓储 + 外置 `.sql` 优先 + `@TenantScope` 自动租户注入（**草案 · 待架构组批准**） |
+| [0031](./0031-sdk-optimistic-lock-and-async-tenant-context.md) | 写路径租户护栏补全 + SDK 原生乐观锁（`@Version`）+ 异步入口租户声明（**提议 · D0 已落地，D1~D3 待批准**） |

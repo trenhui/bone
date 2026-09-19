@@ -70,6 +70,10 @@ KNOWN_MISSING = {
     "controllerMustReturnApiResponse": "HC-003 无机器载体，G-1.7 标注 Planned",
     "repositoryMustUseSdk": "HC-006 无机器载体，G-1.7 标注 Planned",
 }
+# ADR-0030 门禁①③④⑥ 曾在此登记为"待 P3 落地的 ArchUnit 规则名"。2026-09-19 收官后，
+# 它们的真实载体是 blueprint 的模块级治理测试 `SqlTemplateGovernanceTest`（不是 ArchUnit 规则），
+# 因此 G-1.6 直接写该测试类名、不再引用虚构规则名，对应登记项随之删除。
+# 门禁⑤ 由 ArchUnit `oneAggregatePerTransaction` 承担（改造：default / @Sql 方法按读侧排除）。
 
 # 4) 触发检查的后缀片段：ArchUnit 规则名基本以这些谓词为中缀。
 RULE_NAME = re.compile(r"\b((?:no[A-Z]\w+)|(?:[a-z]\w*(?:Must|Should|Can|Only)[A-Z]\w*))\b")

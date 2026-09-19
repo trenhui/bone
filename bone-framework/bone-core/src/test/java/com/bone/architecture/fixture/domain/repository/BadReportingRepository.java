@@ -10,7 +10,7 @@ public interface BadReportingRepository {
   /** 返回 DTO 投影 → 违规（读侧职责）。 */
   OrderSummaryDto findSummary(Long id);
 
-  /** 返回 {@code List<聚合>} → 违规（批量读应走读侧 QueryBuilder）。 */
+  /** 返回 {@code List<聚合>} → <b>合法</b>（ADR-0030 R2：{@code List} 可承载领域层内的读模型/聚合）。 */
   List<OrderAggregate> findByStatus(String status);
 
   /** 返回 {@code Optional<聚合>} → 合法。 */

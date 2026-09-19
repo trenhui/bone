@@ -43,9 +43,21 @@ import java.util.stream.Collectors;
  */
 public final class BoneDddArchRules {
 
-  /** E-4.1 写侧仓储方法允许的标量返回类型。 */
+  /**
+   * E-4.1 写侧仓储方法允许的标量返回类型。
+   *
+   * <p>ADR-0030 R2 扩展：纳入计数类 {@code long}/{@code Long}/{@code int}/{@code Integer}——领域读模型合并进写侧仓储后，
+   * 部分扫描类方法会返回受影响行数 / 命中计数，属合法标量，不应被「只返回聚合根」判据误伤。
+   */
   private static final Set<String> REPOSITORY_SCALAR_RETURN_TYPES =
-      Set.of("void", "boolean", "java.lang.Boolean");
+      Set.of(
+          "void",
+          "boolean",
+          "java.lang.Boolean",
+          "long",
+          "java.lang.Long",
+          "int",
+          "java.lang.Integer");
 
   /**
    * 禁止进入方法名的两类词汇（E-4.1 主判据补充）：
@@ -67,6 +79,9 @@ public final class BoneDddArchRules {
   /** bone-core 实体基类 FQN：聚合/实体的最终父类，用于识别「聚合身份 setter」的调用目标。 */
   private static final String ENTITY_BASE_CLASS = "com.bone.core.domain.entity.Entity";
 
+  /** bone-core 分页结果类型 FQN（ADR-0030 R2：允许写侧仓储以 {@code PageResult<领域读模型>} 返回分页投影）。 */
+  private static final String PAGE_RESULT_TYPE = "com.bone.core.model.PageResult";
+
   /** E-2 租户上下文 FQN：业务层禁止直调，仅 infrastructure 访问（v4.7 补门禁）。 */
   private static final String TENANT_CONTEXT_CLASS = "com.bone.core.tenant.context.TenantContext";
 
@@ -78,6 +93,14 @@ public final class BoneDddArchRules {
 
   /** SDK 仓储基接口 FQN（用于解析仓储的实体泛型参数）。 */
   private static final String SDK_REPOSITORY_CLASS = "com.bone.metadata.sdk.Repository";
+
+  /**
+   * ADR-0030 R5：SDK 自定义 SQL 注解 FQN。
+   *
+   * <p>读写合并进同一 {@code domain.repository} 接口后，{@code @Sql} 标注的方法属「自定义 SQL 通道」的读形态， 与 {@code
+   * default}（有方法体）读方法一样，不得参与「一事务一聚合」的持久化计数。
+   */
+  private static final String SQL_ANNOTATION = "com.bone.metadata.sdk.domain.annotation.Sql";
 
   /** R9 判定用：写侧仓储的持久化方法名，出现即视为「持久化了一个聚合」。 */
   private static final Set<String> PERSIST_METHODS =
@@ -383,8 +406,13 @@ public final class BoneDddArchRules {
   }
 
   /**
-   * §15 + §18.2（E-4.1 主判据）：写侧仓储是「聚合根的集合抽象」——方法返回类型只能是聚合根 / {@code Optional<聚合根>} / {@code boolean}
-   * / {@code void}；返回投影 / DTO / {@code Page} / {@code List} 即 违规（那是读侧 QueryBuilder 的职责）。
+   * §15 + §18.2（E-4.1 主判据）：写侧仓储是「聚合根的集合抽象」——方法返回类型只能是聚合根 / {@code Optional<聚合根>} / 标量（void、
+   * boolean、Boolean、long、Long、int、Integer）；返回 application DTO / 跨层读模型即违规（那是读侧 QueryBuilder 的职责）。
+   *
+   * <p><b>ADR-0030 R2 扩展</b>：允许以 {@code List} / {@code Optional} / {@code PageResult}
+   * 承载<strong>领域层内的读模型</strong> （投影 / 值对象，必须住在 {@code ..domain..} 内——P0-1 规定 domain 不得依赖
+   * application，故读模型不可能来自 application 层）。 这是「领域读模型合并进写侧仓储」后的必要放宽，并非放开 DTO 泄露：若返回类型来自 {@code
+   * ..application..} 仍判违规。
    *
    * <p>允许复合自然键（如 {@code findByIdInTenant(id, tenantId)}，只要返回聚合）；方法名不得携带持久化词汇 （{@code
    * insert/update/delete/persist/flush/merge}），聚合级动词 {@code save} / {@code remove} 除外。
@@ -464,8 +492,11 @@ public final class BoneDddArchRules {
                     method,
                     String.format(
                         "Repository %s declares method %s returning %s — write-side repositories must "
-                            + "return aggregate root / Optional<aggregate root> / boolean / void; use "
-                            + "QueryBuilder for projections",
+                            + "return aggregate root / Optional<aggregate root> / scalar (void, boolean, "
+                            + "Boolean, long, Long, int, Integer) / List|Optional|PageResult of a domain "
+                            + "read-model (projection or value object living in ..domain..); application "
+                            + "DTOs and cross-layer read models are still forbidden — use QueryBuilder for "
+                            + "those",
                         item.getSimpleName(),
                         name,
                         method.getReturnType().toErasure().getSimpleName())));
@@ -475,8 +506,19 @@ public final class BoneDddArchRules {
     };
   }
 
+  /**
+   * 写侧仓储方法返回类型是否合规（E-4.1 基线 + ADR-0030 R2 扩展）。
+   *
+   * <p><b>基线</b>：聚合根 / {@code Optional<聚合根>} / 标量（void、boolean、Boolean、long、Long、int、Integer）。
+   *
+   * <p><b>ADR-0030 R2 扩展（领域读模型合并进写侧仓储）</b>：允许以 {@code List} / {@code Optional} / {@code PageResult}
+   * 承载<strong>领域层内的读模型</strong>——投影（{@code ..domain..projection..}）与值对象（{@code
+   * ..domain..valueobject..}）。这些类型必须住在 {@code ..domain..} 内：P0-1 规定 domain 不得依赖
+   * application，故读模型不可能来自 application 层，以此与「返回 application DTO」严格区分，守住 E-4.1「写侧不泄露读侧 DTO」的本意。
+   */
   private static boolean returnsAggregateRootOrScalar(JavaMethod method) {
-    JavaClass rawType = method.getReturnType().toErasure();
+    JavaType returnType = method.getReturnType();
+    JavaClass rawType = returnType.toErasure();
     String typeName = rawType.getName();
     if (REPOSITORY_SCALAR_RETURN_TYPES.contains(typeName)) {
       return true;
@@ -484,12 +526,27 @@ public final class BoneDddArchRules {
     if (rawType.isAssignableTo(ENTITY_BASE_CLASS)) {
       return true;
     }
-    if ("java.util.Optional".equals(typeName)) {
-      return method.getReturnType() instanceof JavaParameterizedType parameterized
-          && parameterized.getActualTypeArguments().size() == 1
-          && isEntityType(parameterized.getActualTypeArguments().get(0));
+    if (returnType instanceof JavaParameterizedType parameterized
+        && parameterized.getActualTypeArguments().size() == 1) {
+      JavaType arg = parameterized.getActualTypeArguments().get(0);
+      boolean argOk = isEntityType(arg) || isDomainType(arg);
+      if ("java.util.Optional".equals(typeName)
+          || "java.util.List".equals(typeName)
+          || PAGE_RESULT_TYPE.equals(typeName)) {
+        return argOk;
+      }
     }
     return false;
+  }
+
+  /**
+   * ADR-0030 R2：返回类型的元素住在领域层（包名含 {@code .domain.}）即视为合规读模型（投影 / 值对象）。
+   *
+   * <p>用全限定名包含 {@code .domain.} 判定，而非依赖 classpath 上该类的实际解析——与规则其余部分「按字节码记录的引用匹配」 的口径一致，且天然排除 {@code
+   * com.bone.core.model.PageResult} / {@code java.util.List} 等框架容器自身。
+   */
+  private static boolean isDomainType(JavaType type) {
+    return type instanceof JavaClass clazz && clazz.getName().contains(".domain.");
   }
 
   private static boolean isEntityType(JavaType type) {
@@ -630,6 +687,9 @@ public final class BoneDddArchRules {
    * 包来"绕过门禁"——既违反 E-5.5，也让规则形同虚设。改为解析 {@code Repository<T, ID>} 的 泛型参数，只有 {@code T} 是 {@code
    * AggregateRoot} 子类时才计数，{@code Order} + {@code OrderItem} 因此正确地算作一个聚合。<b>按调用次数仍不去重</b>：同一聚合
    * {@code save} 两次仍属单聚合（幂等 upsert）。
+   *
+   * <p><b>ADR-0030 R5 改造（读写同接口后按写方法语义计数）</b>：{@code default}（有方法体）与 {@code @Sql} 标注的仓储方法
+   * 属读侧/自定义通道，一律不计入持久化计数（见 {@link #isReadSideRepositoryMethod}）；否则「写 + 本聚合读」合并进同一接口后会被误报。
    */
   public static ArchRule oneAggregatePerTransaction() {
     return classes()
@@ -658,6 +718,9 @@ public final class BoneDddArchRules {
               continue;
             }
             if (!isDomainRepository(target.getOwner())) {
+              continue;
+            }
+            if (isReadSideRepositoryMethod(target)) {
               continue;
             }
             // 按「被持久化的聚合根类型」计数：聚合内子实体的仓储不计入（见 persistedAggregateRootKey）
@@ -701,6 +764,27 @@ public final class BoneDddArchRules {
 
   private static boolean isDomainRepository(JavaClass owner) {
     return owner.isInterface() && owner.getPackageName().contains(".domain.repository");
+  }
+
+  /**
+   * ADR-0030 R5：判断被调用的仓储方法是否属于<strong>读侧</strong>，读侧方法不参与「一事务一聚合」计数。
+   *
+   * <p><b>为何要判</b>：ADR-0030 把「写 + 本聚合读」合并进同一 {@code domain.repository} 接口后，写事务入口里出现的
+   * 读方法调用会与写方法混在同一仓储类型上。若仍按 Repository 类型计数，同一聚合的读形态可能被误算成「第二个聚合写入」， 反而逼实现方为了过门禁而拆掉合并形态。
+   *
+   * <p><b>判据</b>：目标方法是 {@code default}（有方法体，即 {@code !ABSTRACT}），或标注了 SDK 的 {@code @Sql} （自定义 SQL
+   * 通道的读形态）。二者都是读侧/自定义通道；SDK 继承来的抽象写方法（{@code save}/{@code update}…）不受影响。
+   *
+   * <p><b>解析不到目标成员时保守放行</b>（返回 {@code false}）——宁可多报，不因解析失败而漏掉真实的多聚合写入。
+   */
+  private static boolean isReadSideRepositoryMethod(AccessTarget.MethodCallTarget target) {
+    return target
+        .resolveMember()
+        .filter(
+            member ->
+                !member.getModifiers().contains(JavaModifier.ABSTRACT)
+                    || member.isAnnotatedWith(SQL_ANNOTATION))
+        .isPresent();
   }
 
   /**
@@ -1058,7 +1142,7 @@ public final class BoneDddArchRules {
                   item,
                   false,
                   String.format(
-                      "%s 存在 Repository 写入（save / saveWithVersionCheck 等）但无 publishFrom()。"
+                      "%s 存在 Repository 写入（save / update 等）但无 publishFrom()。"
                           + "若该状态迁移属 E-5.4 三类豁免（内部状态迁移/终态/技术中间态），"
                           + "请在类上声明 @NoDomainEvent 并确保聚合方法 JavaDoc 说明豁免理由；"
                           + "否则需补充 publishFrom()。",
