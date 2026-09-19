@@ -1,9 +1,8 @@
 package com.bone.blueprint.application.query.port;
 
-import com.bone.blueprint.application.query.dto.PaymentProjection;
+import com.bone.blueprint.application.query.projection.PaymentProjection;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * 支付读侧端口（E-13.3 *QueryPort）。
@@ -11,9 +10,6 @@ import java.util.Optional;
  * <p>读模型直查，不经过写聚合；同时承载超时支付单扫描（供超时关闭定时任务使用），避免写仓储堆砌 多条件查询方法（违反仓储方法白名单）。
  */
 public interface PaymentQueryPort {
-
-  /** 按租户 + 支付单号查询单个支付读模型。 */
-  Optional<PaymentProjection> findById(long tenantId, long paymentId);
 
   /**
    * 查询指定时间之前仍处于待支付/支付中状态的支付单（<b>全租户</b>，供运维型定时任务扫描）。

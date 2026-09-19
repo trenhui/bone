@@ -12,7 +12,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /**
- * E-9.2 主判据：写侧仓储返回类型门禁（M2 2.1）的单元测试。
+ * E-4.1 主判据：写侧仓储返回类型门禁（M2 2.1）的单元测试。
  *
  * <p>测试置于 bone-core（而非 bone-architecture-test）：后者被 bone-core 以 test 作用域依赖，若反向 再加 bone-core 依赖会构成
  * Maven reactor 环。
@@ -49,9 +49,14 @@ class DomainRepositoryReturnTypeRuleTest {
     // 持久化词汇入方法名 → 违规
     assertTrue(
         details.stream()
-            .anyMatch(m -> m.contains("updateStatus") && m.contains("persistence vocabulary")),
+            .anyMatch(m -> m.contains("updateStatus") && m.contains("forbidden vocabulary")),
         () -> details.toString());
-    // 合法方法（复合自然键 / Optional<聚合>）不误报
+    // exists 读侧意图入方法名 → 违规（E-4.1 禁止先查后判竞态）
+    assertTrue(
+        details.stream()
+            .anyMatch(m -> m.contains("existsByCode") && m.contains("forbidden vocabulary")),
+        () -> details.toString());
+    // 合法方法（复合自然键 / Optional<聚合> / boolean remove）不误报
     assertTrue(
         details.stream().noneMatch(m -> m.contains("findByIdInTenant")), () -> details.toString());
     assertTrue(details.stream().noneMatch(m -> m.contains("findByCode")), () -> details.toString());

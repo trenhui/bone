@@ -61,16 +61,16 @@
 
 | 项 | 样板现状 | 生产要求 |
 |----|----------|----------|
-| **并发与一致性护栏** | 并发策略已声明为<strong>乐观锁</strong>（E-5.3 登记）：聚合带 `version` 列，但 Bone 元数据 SDK 通用写路径（`BaseRepository#update` → `DynamicUpdateBuilder`）<strong>不强制</strong> `WHERE version=?`；且其 `TableMetadataResolver` 虽识别 `@Version` 却未被写路径消费（已核验源码）。加之 `domain`/`application` 层按 P0-5 / E-9.3 禁止依赖 `@ReadSideOnly`（即 `Criteria`），无法在应用/领域层合法构造带版本条件的 `updateByCriteria`——故 DB 级乐观锁<strong>待 SDK 启用原生 `@Version` 后落地（当前未生效）</strong> | 当前真实护栏：① 支付回调并发由 `channel_trade_no` **唯一索引**兜底（幂等去重键，防双写）；② 钱货不一致由 `OrderPaymentInconsistencyJob` 周期对账（仅告警、不改单），补偿"支付成功但订单确认丢失"的窗口；③ 订单/支付单状态机防非法跃迁。SDK 乐观锁就绪前，高并发写同一聚合的丢失更新风险仍属<strong>已知登记项</strong> |
-| **回调验签** | 模拟 HMAC（固定共享密钥，`SimulatedPaymentSignatureVerifier`） | 真实渠道用 HMAC/RSA/证书 + 密钥外部化 + 防重放（nonce/时间戳） |
+| **并发与一致性护栏** | 并发策略已声明为<strong>乐观锁</strong>（E-5.3 登记）：聚合带 `version` 列，但 Bone 元数据 SDK 通用写路径（`BaseRepository#update` → `DynamicUpdateBuilder`）<strong>不强制</strong> `WHERE version=?`；且其 `TableMetadataResolver` 虽识别 `@Version` 却未被写路径消费（已核验源码）。加之 `domain`/`application` 层按 P0-5 / E-4.2 禁止依赖 `@ReadSideOnly`（即 `Criteria`），无法在应用/领域层合法构造带版本条件的 `updateByCriteria`——故 DB 级乐观锁<strong>待 SDK 启用原生 `@Version` 后落地（当前未生效）</strong> | 当前真实护栏：① 支付回调并发由 `channel_trade_no` **唯一索引**兜底（幂等去重键，防双写）；② 钱货不一致由 `OrderPaymentInconsistencyJob` 周期对账（仅告警、不改单），补偿"支付成功但订单确认丢失"的窗口；③ 订单/支付单状态机防非法跃迁。SDK 乐观锁就绪前，高并发写同一聚合的丢失更新风险仍属<strong>已知登记项</strong> |
+| **回调验签** | 模拟 HMAC（固定共享密钥，`MockPaymentSignaturePortAdapter`） | 真实渠道用 HMAC/RSA/证书 + 密钥外部化 + 防重放（nonce/时间戳） |
 | **真实渠道退款** | `Payment.refund` 仅本地幂等 | 真实退款须调用渠道退款接口 + 对账 |
-| **渠道真实对接** | `SimulatedPaymentGatewayImpl` | 替换为真实渠道适配器 + 协议转换 + 错误语义隔离（E-4.3 ACL 端口 / P-6） |
+| **渠道真实对接** | `MockPaymentGatewayAdapter` | 替换为真实渠道适配器 + 协议转换 + 错误语义隔离（E-4.3 ACL 端口 / P-6） |
 
 ### E-6.3 订单明细 PO 分离评估（技术债登记）
 
 `Order` 聚合持有需持久化的 `List<OrderItem>` 集合，且明细有独立表 `t_order_item` 与独立写侧仓储 `OrderItemRepository`（位于 `domain.repository`，与 `OrderRepository` 同包），命中 E-6.3 的 **PO 分离信号**（聚合持有需持久化集合/嵌套实体，无 SDK 级联落库）。
 
-**当前过渡方案**：D1 充血聚合 + `CreateOrderCommandHandler` 显式逐条 `save(OrderItem)`，明细经读侧端口 `OrderQueryPort.findOrderWithItems`（联表投影）读取。`OrderItem` 是 `Order` 聚合内实体，与 `Order` 同事务落库是在保存同一聚合；现有 R9 扫描只能按 Repository/聚合类型提示风险，不能独立证明事务语义。仓储端口统一放 `domain.repository`，**无需也不允许**靠包位置规避门禁（详见 `OrderItemRepository` 类注释）。读端口已按 v5.0 迁至 `application/query/port`（`OrderQueryPort` / `PaymentQueryPort`），配套行 DTO 置于 `application/query/dto`；原 `domain/gateway/*ReadPort` 与 `domain/{order,payment}/read` 已清理，无遗留存量。
+**当前过渡方案**：D1 充血聚合 + `OrderApplicationService` 显式逐条 `save(OrderItem)`，明细经读侧端口 `OrderQueryPort.findOrderWithItems`（联表投影）读取。`OrderItem` 是 `Order` 聚合内实体，与 `Order` 同事务落库是在保存同一聚合；现有 CORE-06 扫描只能按 Repository/聚合类型提示风险，不能独立证明事务语义。仓储端口统一放 `domain.repository`，**无需也不允许**靠包位置规避门禁（详见 `OrderItemRepository` 类注释）。读端口已按 v5.0 迁至 `application/query/port`（`OrderQueryPort` / `PaymentQueryPort`），配套行投影置于 `application/query/projection`、出参 DTO 置于 `application/query/dto`；原 `domain/gateway/*ReadPort` 与 `domain/{order,payment}/read` 已清理，无遗留存量。
 
 **与 CORE-11 的偏差（显式登记）**：CORE-11 要求「聚合根是唯一持久化入口，子实体随根落盘，不为子实体建立独立聚合级 Repository」。本模块的 `OrderItemRepository` 与该条字面要求不符，属 **SDK 能力缺失导致的被迫偏差**，而非风格选择：Bone 元数据 SDK **不支持聚合级联落库**，`OrderRepository.save(order)` 不会持久化 `order.items`（且 `items` 标 `@Transient` 以避免 SDK 误映射为 `t_order` 列）。若无显式明细写入路径，订单明细将**静默丢失**。因此「显式逐条 `save(OrderItem)`」是 SDK 约束下的最小可行路径：`OrderItem` 仍是 `Order` 聚合内实体（**未**升格为聚合根），两次 save 在**同一事务**内完成，一致性边界仍等于 `Order` 聚合——CORE-11 的保护目标未被削弱，只是落库入口由「仅根」变为「根 + 子实体同事务双写」。**收敛路径**：SDK 支持聚合级联后即可删除 `OrderItemRepository`、明细随根落盘，恢复 CORE-11 完整合规（与下方 E-6.3 迁移条件同源）。
 
@@ -103,7 +103,7 @@ E-10 明确该平铺形态为**合法变体而非存量债务**，但要求「�
 
 ### 多租户
 
-- 聚合根继承 `TenantAggregateRoot`；写/读路径经 `TenantProviderAdapter`（实现 `application/port/out/TenantProvider` 端口）/ `TenantContext` 隔离。
+- 聚合根继承 `TenantAggregateRoot`；写/读路径经 `TenantPortAdapter`（实现 `application/port/out/TenantPort` 端口）/ `TenantContext` 隔离。
 - **租户来源由 token 决定，不由请求头决定**：请求带 token 时，框架 `AbstractJwtAuthenticationFilter` 会把 `X-Tenant-Id` 的**读取值**改写为 token 内<strong>已签名</strong>的 `tenantId` claim，调用方改这个请求头无效（伪造只会被纠正并留 WARN 日志）。只有**无 token 的内部调用**才由调用方提供该头。租户上下文统一由 `bone-web` 的 `TenantInterceptor`（本模块在 `WebMvcConfiguration` 注册）建立——框架内不再另置租户 filter，避免同一规则两处实现、且其中一处读到未归一化的头。
 - **两处强制校正、互为兜底**：① 经网关时 `bone-gateway` 的 `JwtAuthGlobalFilter` 验签后用 claim **覆盖** `X-Tenant-Id`（并注入 `X-User-Id` / `X-Roles`）；② 直连模块端口时框架过滤器做同样的归一化。因此该头是**内部信任头**：`bone-web` 的 `TenantInterceptor` 与 `bone-metadata-sdk` 的租户数据源路由无论先后都读得到真值。
 
@@ -136,13 +136,17 @@ curl -H "Authorization: Bearer $TOKEN" \
 
 #### 平台租户打洞登记（E-2 多租户）
 
-定时任务线程无请求上下文，经 `TenantProvider` 端口取数时由 `TenantProviderAdapter` **显式降级为平台租户并留审计日志**（禁止静默按 `null` 放行）。以下异步入口已按 E-2 多租户登记：
+定时任务线程无请求上下文，经 `TenantPort` 端口取数时由 `TenantPortAdapter` **显式降级为平台租户并留审计日志**（禁止静默按 `null` 放行）。以下异步入口已按 E-2 多租户登记：
 
 | 异步入口 | 作用租户 | 降级/打洞说明 |
 |----------|----------|--------------|
-| `CancelExpiredOrderJob` | 平台租户 `0`（上下文缺失时） | 定时扫描超时订单；已在任务内显式打印 `[打洞]` 日志 |
-| `CloseExpiredPaymentJob` | 平台租户 `0`（上下文缺失时） | 定时关闭超时支付单；已在任务内显式打印 `[打洞]` 日志 |
+| `CancelExpiredOrderJob` | 平台租户 `0`（上下文缺失时） | 定时扫描超时订单；扫描结果以 `[全租户扫描]` 前缀留痕（`findCreatedExpiredBeforeAllTenants`） |
+| `CloseExpiredPaymentJob` | 平台租户 `0`（上下文缺失时） | 定时关闭超时支付单；扫描结果以 `[全租户扫描]` 前缀留痕（`findPayableExpiredBeforeAllTenants`） |
+| `OrderPaymentInconsistencyJob` | 全部租户（逐行取该行 `tenantId` 查订单状态） | 「钱货不一致」对账；以 `[全租户对账]` 前缀留痕（`findSuccessCreatedBeforeAllTenants`），检出的偏差同事务落 Outbox |
 | `OrderOutboxRelayJob` | 随事务内租户（Outbox 记录自带 `tenant_id`） | 逐条中继按记录租户发送，不依赖线程上下文 |
+
+上述三个扫描任务的**周期与门限均可配置**（`bone.blueprint.schedule.*`）：cron 由 `@Scheduled` 占位符直读，超时阈值 /
+宽限期由 `@Value` 注入（默认订单 30min、支付 30min、对账宽限 10min）。调整超时窗口属运营动作，不需改代码发版。
 
 ### 写侧标准写法（保存 + 发布事件）
 
@@ -196,9 +200,9 @@ bash scripts/ci/collect-blueprint-compliance.sh
 
 | 能力 | 用途 |
 |------|------|
-| **`@Capability` + `HandlerRegistry`（可选）** | 编排侧发现 Handler 元数据；**Adapter 直接调 Handler**，无强制 UseCase 门面，见 E-3 应用用例（E-3.7 入口构件决策 / ADR-0028） |
+| **入站适配器直连应用服务**（`@Capability` / `HandlerRegistry` 已随 Handler 内联移除） |**Adapter 直接调 ApplicationService**，无强制 UseCase 门面，见 E-3 应用用例（E-3.7 入口构件决策 / ADR-0028） |
 | **领域事件 + AFTER_COMMIT** | 瘦载荷 `record` 事件 + `SpringDomainEventPublisher` + 应用层订阅 |
-| **Outbox** | `bp_outbox` + `OrderOutboxWriter` / `OrderOutboxRelay` / `OrderOutboxRelayJob` |
+| **Outbox** | `bp_outbox` + `OrderOutboxPortAdapter` / `OrderOutboxRelay` / `OrderOutboxRelayJob` |
 | **集成事件** | `OrderPaidIntegrationEvent` 与领域事件分离，经 Outbox 中继 |
 | **多租户** | `TenantAggregateRoot` + 写侧 `findByIdInTenant`（`QueryParam` 条件，租户缺失即失败关闭）/ 读侧 SQL 显式 `tenant_id = :tenantId` + `X-Tenant-Id` 过滤器（生产由网关按 token claim 覆盖下发） |
 | **JWT 鉴权** | `SecurityConfig` + `JwtAuthenticationFilter`（框架 `AbstractJwtAuthenticationFilter`）；共享密钥离线验签，**不回调 IAM** |
@@ -210,7 +214,7 @@ bash scripts/ci/collect-blueprint-compliance.sh
 | **Feign + `InventoryGateway`** | ACL 出站调用 + 预留/确认/释放流程 |
 | **CQRS 读侧** | 列表 / 详情均经读侧端口 SQL 投影（`OrderQueryPort` / `PaymentQueryPort`），写侧仓储不承载报表查询 |
 | **MQ / 定时任务 / RPC** | 入站适配器形态示例（MQ 消费端幂等落库、DLQ、消费指标见上节） |
-| **幂等写（`Idempotency-Key`）** | `BlueprintIdempotencyService` + `IdempotencyStore`（落 `bp_idempotency_record`）+ 控制器取头；同键同 body 重放同一响应、同键异 body → 409 `COMMON_IDEMPOTENCY_CONFLICT`、TTL 24h（API 规范 §6.1/§8） |
+| **幂等写（`Idempotency-Key`）** | core `IdempotencyService`（作用域键 `租户|用户|键|方法|路径`、SHA-256 指纹、同键异 body → 409 `COMMON_IDEMPOTENCY_CONFLICT`、TTL 24h）+ 控制器取头；同键同 body 重放同一响应（API 规范 §6.1/§8）。存储由 `IdempotencyStore` 适配（blueprint 样例 `IdempotencyPortAdapter` 落 `bp_idempotency_record`） |
 | **授权（Scope）** | 端点声明 `@PreAuthorize("hasAuthority('order:orders:read'/'order:orders:write')")`；scope 由 IAM 随 token 下发（API 规范 §9.2） |
 | **稳定错误码** | `common/BlueprintErrorCodes`（`BP_*`，登记于错误码登记 §6）；抛出统一用 `new BizException(HTTP 状态, 码 + ": " + 说明)`——`BizException(String)` 默认码是 **500**，会把 404/400 报成服务端故障。**翻译成 HTTP 状态 + 错误信封由 bone-web 的 `BoneWebExceptionAutoConfiguration` 提供**（该处理器此前没有任何注册入口，是死代码 → 业务异常直落 servlet 容器变 500；已在框架侧补 auto-configuration，模块无需扫描/导入） |
 | **日志与链路** | `BoneRequestContextFilter`（MDC `traceId`/`tenantId`/`userId`/`httpRoute` + 每请求一条 `[API]` INFO + 回显 `X-Request-Id`）；身份在认证过滤器写入（安全链结束会清空 `SecurityContextHolder`）。**类名带 `Bone` 前缀是必需的**：Spring Boot 自动配置已注册名为 `requestContextFilter` 的 Bean，同名会启动即失败 |
@@ -223,8 +227,8 @@ bash scripts/ci/collect-blueprint-compliance.sh
 
 1. `domain/{aggregate}/`：聚合根、实体、值对象、领域事件（按需）  
 2. `domain/repository/`：写侧仓储接口（继承 SDK `Repository`，不堆查询方法）  
-3. `application/`：语义化 ApplicationService（默认入口，写方法 + 读方法）；写意图需显式契约时才加 `command/cmd` + `command/handler`，读模型分歧时才加 `query/port` + `query/dto`  
-4. 多租户隔离下沉仓储层（`OrderRepository.findByIdInTenant`，bone-core `QueryParam` + `Operator` 条件查询过滤，租户缺失即失败关闭—读侧 DSL 不得进 domain）；技术横切经 `application/port/out` 端口 + `infrastructure` 实现（如 `TenantProvider` → `TenantProviderAdapter`），应用层薄 Handler 经端口注入  
+3. `application/`：语义化 ApplicationService（默认入口，写方法 + 读方法）；写意图需显式契约时才加 `command` 显式契约 + `command/handler`，读模型分歧时才加 `query/port` + `query/dto`  
+4. 多租户隔离下沉仓储层（`OrderRepository.findByIdInTenant`，bone-core `QueryParam` + `Operator` 条件查询过滤，租户缺失即失败关闭—读侧 DSL 不得进 domain）；技术横切经 `application/port/out` 端口 + `infrastructure` 实现（如 `TenantPort` → `TenantPortAdapter`），由 `*ApplicationService` 经端口注入  
 5. **写侧标准写法**：`repository.save(aggregate)` + `domainEventPublisher.publishFrom(aggregate)`（不设持久化端口）  
 6. `adapter/web`：Controller、request/response DTO、Assembler  
 7. `infrastructure/config` + `infrastructure/event`：元数据、Spring 配置、事件发布实现  
@@ -237,8 +241,8 @@ bash scripts/ci/collect-blueprint-compliance.sh
 
 | 模式 | 配置 | 行为 |
 |------|------|------|
-| 开发默认 | `bone.blueprint.outbox.mq-enabled=false` | `LoggingOrderMessageSender` 打结构化日志 |
-| MQ | `spring.profiles.active=mq` + NameServer | `RocketMqOrderMessageSender` + `OrderPaidIntegrationMqListener` |
+| 开发默认 | `bone.blueprint.outbox.mq-enabled=false` | `LoggingOrderMessagePortAdapter` 打结构化日志 |
+| MQ | `spring.profiles.active=mq` + NameServer | `RocketMqOrderMessagePortAdapter` + `OrderPaidIntegrationListener` |
 
 > **Outbox 记录归属（工程折中，2026-08-27）**：`OrderOutboxRecord` 位于 `infrastructure/messaging/outbox/`（原 `domain/outbox/` 包已废弃）。它**不是业务聚合**，仅因复用 bone-metadata-sdk 的聚合持久化与主键回填机制而继承 `AggregateRoot`；无领域不变量（仅 PENDING→SENT/FAILED 技术状态）。若未来多模块需要通用 Outbox，应抽到独立基础设施组件，不再占用订单领域包。
 
@@ -246,7 +250,7 @@ bash scripts/ci/collect-blueprint-compliance.sh
 
 | 环节 | 实现 | 规范依据 |
 |------|------|----------|
-| **生产端原子** | `OrderOutboxWriter`（`Propagation.MANDATORY`，强制与业务写同事务）+ 信封含 `eventId`/`eventType`/`topic`/`occurredAt`/`tenantId`/`traceId`/`schemaVersion` | 消息与事件规范 §3/§7 |
+| **生产端原子** | `OrderOutboxPortAdapter`（`Propagation.MANDATORY`，强制与业务写同事务）+ 信封含 `eventId`/`eventType`/`topic`/`occurredAt`/`tenantId`/`traceId`/`schemaVersion` | 消息与事件规范 §3/§7 |
 | **中继** | `OrderOutboxRelay`：PENDING → SENT；失败累计重试，**超限转投 `platform.dead_letter.v1`**（信封内已带 `topic`，重放无需回查表）；指标 `bone_mq_send_total{topic,status}` | §6/§9 |
 | **消费端幂等** | `ConsumedEventPort` → `bp_processed_event`（`(consumer_group, event_id)` 唯一键**原子抢占**，非「先查后写」）；抢占与业务动作在**同一事务**（`OrderPaidConsumptionApplicationService`）——否则处理失败重试会被自己的幂等记录挡住而丢事件；指标 `bone_mq_consume_total{topic,status}` | §5/§9、ADR-0021 |
 
@@ -254,16 +258,15 @@ bash scripts/ci/collect-blueprint-compliance.sh
 
 ### 幂等写与 `@Capability` 的两处口径（供其他模块照抄前先读）
 
-**① 幂等写**：机制在应用层（`application/service/BlueprintIdempotencyService`：作用域键 `租户|用户|键|方法|路径`、SHA-256
-载荷指纹、24h TTL、冲突判定），入口在 adapter（`OrderController.create` 先问「该键是否已有响应」）。**为什么不把
-`ResponseEntity` 交给应用 Handler**：那样会让 HTTP 类型穿透应用层（E-10.1）；平台既有 `StudioIdempotencyService` /
-`CatalogIdempotencyService` 是在 Handler 内调用并返回 `ResponseEntity` 的存量形态，本模块是其分层更干净的版本。
+**① 幂等写**：机制在 core `IdempotencyService`（作用域键 `租户|用户|键|方法|路径`、SHA-256
+载荷指纹、24h TTL、冲突判定），入口在 adapter（`OrderController.create` 先问「该键是否已有响应」）。**应用层不出现 HTTP 类型**：
+重放结果以协议无关的 `ReplayedResponse`（状态码 / `Location` / 信封体）表达，由 Controller 渲染成 `ResponseEntity`（E-10.1）；
+平台既有 `StudioIdempotencyService` / `CatalogIdempotencyService` 是在 Handler 内直接收发 `ResponseEntity` 的存量形态，本模块不沿用。
 存储用 MySQL（`bp_idempotency_record`）而非平台常见 Redis，因为本模块无 Redis 依赖，语义等价。
 
-**② `@Capability` 只能标在类上**（`@Target(TYPE)`）：所以它天然适配「一个类一个用例」的 `*CommandHandler`，而
-`OrderApplicationService` 这类**承载多个用例的应用服务没法逐个用例标注**——给它加一个类级注解反而会把「多用例服务」
-误报成单一能力边界。因此本模块只有 CommandHandler 带 `@Capability`；若希望 ApplicationService 也能被编排/AI 发现，
-需要框架把注解开放到方法级（待办项，非本模块可解）。
+**② `@Capability` 在本模块已随 Handler 内联一并移除**：该注解 `@Target(TYPE)` 只能标在类上，天然适配「一个类一个用例」的
+`*CommandHandler`，而 `OrderApplicationService` 这类**承载多个用例的服务没法逐个用例标注**——加一个类级注解会把
+「多用例服务」误报成单一能力边界。若希望 ApplicationService 也能被编排/AI 发现，需要框架把注解开放到方法级（待办项，非本模块可解）。
 
 ### 授权（Scope）
 

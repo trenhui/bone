@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 import lombok.Builder;
 import lombok.Data;
 
-/** 订单列表行响应（adapter 层出参，对齐《Bone-DDD》§23.1 {@code *Resp}）。 */
+/** 订单列表行响应（adapter 层出参，对齐《Bone-DDD》E-13.1 {@code *Resp}）。 */
 @Data
 @Builder
 public class OrderSummaryResp {

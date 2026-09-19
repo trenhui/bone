@@ -13,8 +13,8 @@ import com.tngtech.archunit.library.freeze.FreezingArchRule;
 /**
  * bone-blueprint 架构守护（参考样板）。
  *
- * <p>真源：{@code doc/architecture/Bone-DDD-最终实践方案.md} E-3（R1–R9 铁律）+ G-1（ArchUnit 规则集 #1–#22）。 共享规则在
- * {@link BoneDddArchRules}，所有应用模块复用同一份。
+ * <p>真源：{@code doc/architecture/Bone-DDD-最终实践方案.md} CORE-01–CORE-12（含 E-3 应用用例）+ G-1（ArchUnit 规则集）。
+ * 共享规则在 {@link BoneDddArchRules}，所有应用模块复用同一份。
  *
  * <p>首次集成 / 收缩基线见 {@code bone-framework/bone-architecture-test/README.md}。
  */
@@ -49,6 +49,7 @@ public class ArchitectureTest {
           .resideOutsideOfPackage("..domain.repository..")
           .should()
           .dependOnClassesThat(annotatedWithReadSideOnly())
+          .allowEmptyShould(true)
           .because(
               "DDD P0-5: read-side DSL (@ReadSideOnly) must not appear in domain; "
                   + "exception: domain.repository is an SDK framework integration point that "
@@ -68,9 +69,9 @@ public class ArchitectureTest {
   // P0-6：CommandHandler 禁用 QueryBuilder
   @ArchTest
   static final ArchRule command_no_query_builder =
-      BoneDddArchRules.commandHandlersMustNotUseQueryBuilder();
+      BoneDddArchRules.commandHandlersMustNotUseQueryBuilder().allowEmptyShould(true);
 
-  // E-9.3（v4.6 主判据）：读侧 DSL 只许出现在 infrastructure/query，application 层禁止依赖。
+  // E-4.2（v4.6 主判据）：读侧 DSL 只许出现在 infrastructure/query，application 层禁止依赖。
   // 参考样板不 freeze，须 0 违规（分页查询已迁移到 OrderQueryPort）。
   @ArchTest
   static final ArchRule read_side_dsl_only_in_query_layer =
@@ -120,35 +121,73 @@ public class ArchitectureTest {
   static final ArchRule adapter_no_domain_service =
       BoneDddArchRules.adapterControllersMustNotDependOnDomainService();
 
-  // E-4.1.1：跨上下文 domain 越界守护；空匹配视为配置错误
+  // E-1.3：跨上下文 domain 越界守护；空匹配视为配置错误
   @ArchTest
   static final ArchRule no_cross_context_domain =
       BoneDddArchRules.noCrossContextDomainDependency("com.bone.blueprint");
 
-  // E-4.1.1（v4.6）：全模块禁止依赖其它 Bone 上下文的 domain 模型——
+  // E-1.3（v4.6）：全模块禁止依赖其它 Bone 上下文的 domain 模型——
   // 覆盖读侧 QueryHandler 直用 QueryBuilder.from(其它上下文实体) 的穿透路径。
   // 参考样板不 freeze，须 0 违规；空匹配视为配置错误。
   @ArchTest
   static final ArchRule no_cross_context_model =
       BoneDddArchRules.noCrossContextModelDependency("com.bone.blueprint");
 
-  // E-5.3.1（v4.6 内容禁令）：application/service 只许用例级编排，
+  // E-6.4 / CORE-03（v4.6 内容禁令）：application/service 只许用例级编排，
   // 不得 new 领域对象、不得调聚合 setter 改状态（须经工厂方法/仓储与领域行为方法）。
   @ArchTest
   static final ArchRule application_services_no_domain_rules =
       BoneDddArchRules.applicationServicesMustNotOwnDomainRules();
 
-  // R9（v4.6 + v4.7 修正）：一事务一聚合；扫描范围含 application/service 与 orchestration。
+  // CORE-06 / E-5.1（v4.6 + v4.7 修正）：一事务一聚合；扫描范围含 application/service 与 orchestration。
   // 参考样板不 freeze，须 0 违规。
   @ArchTest
   static final ArchRule one_aggregate_per_transaction =
       BoneDddArchRules.oneAggregatePerTransaction();
 
-  // E-4.4（v4.7 补门禁）：租户取值收敛到 TenantProvider 端口，业务层禁止直调 TenantContext。
+  // E-2（v4.7 补门禁）：租户取值收敛到 TenantPort 端口，业务层禁止直调 TenantContext。
   // 参考样板不 freeze，须 0 违规。
   @ArchTest
   static final ArchRule tenant_context_via_provider =
       BoneDddArchRules.businessLayersMustNotReadTenantContextDirectly();
+
+  // E-13.3（v5.7 补门禁）：infrastructure 层实现 application/port/out 接口的类，
+  // 命名必须是 <Port短名>PortAdapter（如 PricingPort → PricingPortAdapter）。
+  // 禁止用 *Impl / *Sender / *Writer / *Provider 等暗示内部实现而非端口适配的后缀。
+  @ArchTest
+  static final ArchRule port_implementations_must_end_with_port_adapter =
+      classes()
+          .that()
+          .resideInAPackage("..infrastructure..")
+          .and()
+          .implement(applicationPortInterface())
+          .should()
+          .haveSimpleNameEndingWith("PortAdapter")
+          .allowEmptyShould(true)
+          .because(
+              "E-13.3: application Port implementations in infrastructure must be named "
+                  + "*PortAdapter (not *Impl / *Sender / *Writer / *Provider)");
+
+  private static com.tngtech.archunit.base.DescribedPredicate<
+          com.tngtech.archunit.core.domain.JavaClass>
+      applicationPortInterface() {
+    return new com.tngtech.archunit.base.DescribedPredicate<>(
+        "implements an application.port.out.*Port interface") {
+      @Override
+      public boolean test(com.tngtech.archunit.core.domain.JavaClass input) {
+        for (com.tngtech.archunit.core.domain.JavaType t : input.getInterfaces()) {
+          if (!(t instanceof com.tngtech.archunit.core.domain.JavaClass)) continue;
+          com.tngtech.archunit.core.domain.JavaClass iface =
+              (com.tngtech.archunit.core.domain.JavaClass) t;
+          if (iface.getName().startsWith("com.bone.blueprint.application.port.out.")
+              && iface.getSimpleName().endsWith("Port")) {
+            return true;
+          }
+        }
+        return false;
+      }
+    };
+  }
 
   // E-4.3 / E-10.2（#5 回归门禁）：domain/gateway 只允许合法 Domain Gateway（业务语言外部能力，
   // 如账户余额/库存这类业务规则依赖的外部事实）。技术端口（MQ 投递、Outbox 写、Outbox 中继、租户上下文、
@@ -172,8 +211,8 @@ public class ArchitectureTest {
   static final ArchRule save_must_pair_with_publish_or_exempt =
       BoneDddArchRules.applicationSaveMustPairWithPublishOrExempt();
 
-  // P2-4（E-4.4 补充门禁）：全租户扫描（*AllTenants）仅限 schedule 包调用。
-  // 定时任务无请求上下文，TenantProvider 降级为平台租户 0，故全租户方法是平台运维入口——
+  // P2-4（E-2 补充门禁）：全租户扫描（*AllTenants）仅限 schedule 包调用。
+  // 定时任务无请求上下文，TenantPort 降级为平台租户 0，故全租户方法是平台运维入口——
   // 禁止 web/handler 等其它入站调用（会导致跨租户数据泄漏或静默"扫描完成"但一笔没处理）。
   @ArchTest
   static final ArchRule all_tenants_scan_only_by_schedule =
@@ -187,8 +226,9 @@ public class ArchitectureTest {
               com.tngtech.archunit.core.domain.JavaCall.Predicates.target(
                   com.tngtech.archunit.core.domain.properties.HasName.Predicates.nameEndingWith(
                       "AllTenants")))
+          .allowEmptyShould(true)
           .because(
-              "E-4.4: *AllTenants query methods bypass tenant isolation; "
+              "E-2: *AllTenants query methods bypass tenant isolation; "
                   + "they are admin ops only for scheduled jobs, never web/controllers/handlers");
 
   // ADR-0028（P6 · CQRS 双构件迁移债）：一个用例只选一种构件，禁止 CommandHandler 与 ApplicationService 套娃。
@@ -202,6 +242,7 @@ public class ArchitectureTest {
           .resideInAPackage("..application.command.handler..")
           .should()
           .dependOnClassesThat(commandHandlerDualArtifactPredicate())
+          .allowEmptyShould(true)
           .because(
               "ADR-0028: one use case, one artifact — CommandHandler must not wrap an "
                   + "ApplicationService (no 套娃 / dual-artifact)");

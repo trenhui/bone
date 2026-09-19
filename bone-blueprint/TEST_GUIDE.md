@@ -1,291 +1,186 @@
 # Bone-Blueprint 测试指南
 
+> 本文件只描述**当前**实现。目录与类名以仓库实际内容为准，改结构时同步更新本文件。
+> 规范真源：[doc/architecture/Bone-DDD-最终实践方案.md](../doc/architecture/Bone-DDD-最终实践方案.md)。
+
 ## 概述
 
-本项目已按照 DDD 规范完成重构，包含完整的单元测试和架构测试。
+`bone-blueprint` 是 Bone DDD 规范的**参考样板（L3）**：订单 / 支付两个限界上下文，四层结构
+（`adapter` / `application` / `domain` / `infrastructure`），CQRS 读写分离、Outbox 可靠投递、
+多租户隔离、扩展点定价、幂等写与回调验签。
+
+测试共 **33 个测试类**，分三层：领域纯单测、应用/适配器协作测试、ArchUnit 架构门禁。
 
 ## 项目结构
 
-```
+```text
 bone-blueprint/
-├── src/
-│   ├── main/
-│   │   ├── java/com/bone/blueprint/
-│   │   │   ├── BoneBlueprintApplication.java
-│   │   │   ├── adapter/
-│   │   │   │   ├── web/
-│   │   │   │   │   ├── controller/
-│   │   │   │   │   │   └── OrderController.java
-│   │   │   │   │   ├── dto/
-│   │   │   │   │   │   ├── req/
-│   │   │   │   │   │   │   └── CreateOrderReq.java
-│   │   │   │   │   │   └── resp/
-│   │   │   │   │   │       └── OrderDetailResp.java
-│   │   │   │   │   ├── assembler/
-│   │   │   │   │   │   └── OrderAssembler.java
-│   │   │   │   │   └── exception/
-│   │   │   │   │       └── GlobalExceptionHandler.java
-│   │   │   ├── application/
-│   │   │   │   ├── command/
-│   │   │   │   │   ├── cmd/
-│   │   │   │   │   │   ├── CreateOrderCommand.java
-│   │   │   │   │   │   ├── PayOrderCommand.java
-│   │   │   │   │   │   └── CancelOrderCommand.java
-│   │   │   │   │   └── handler/
-│   │   │   │   │       ├── CreateOrderCommandHandler.java
-│   │   │   │   │       ├── PayOrderCommandHandler.java
-│   │   │   │   │       └── CancelOrderCommandHandler.java
-│   │   │   │   └── query/
-│   │   │   │       ├── qry/
-│   │   │   │       │   └── OrderDetailQuery.java
-│   │   │   │       ├── dto/
-│   │   │   │       │   └── OrderDto.java
-│   │   │   │       └── handler/
-│   │   │   │           └── OrderDetailQueryHandler.java
-│   │   │   ├── domain/
-│   │   │   │   ├── order/
-│   │   │   │   │   ├── Order.java
-│   │   │   │   │   ├── OrderItem.java
-│   │   │   │   │   ├── OrderStatus.java
-│   │   │   │   │   └── event/
-│   │   │   │   │       ├── OrderCreatedEvent.java
-│   │   │   │   │       ├── OrderPaidEvent.java
-│   │   │   │   │       └── OrderCancelledEvent.java
-│   │   │   │   ├── service/
-│   │   │   │   │   └── order/
-│   │   │   │   │       └── OrderPriceCalculator.java
-│   │   │   │   ├── gateway/
-│   │   │   │   │   └── InventoryGateway.java
-│   │   │   │   └── repository/
-│   │   │   │       └── OrderRepository.java
-│   │   │   └── infrastructure/
-│   │   │       ├── gateway/
-│   │   │       │   └── InventoryGatewayImpl.java
-│   │   │       └── extension/
-│   │   │           ├── StandardOrderPriceCalculator.java
-│   │   │           └── VipOrderPriceCalculator.java
-│   │   └── resources/
-│   │       ├── application.yml
-│   │       └── schema.sql
-│   └── test/
-│       └── java/com/bone/blueprint/
-│           ├── ArchitectureTest.java
-│           ├── domain/
-│           │   └── order/
-│           │       ├── OrderTest.java
-│           │       └── OrderItemTest.java
-│           ├── application/
-│           │   └── command/
-│           │       └── handler/
-│           │           └── CreateOrderCommandHandlerTest.java
-│           └── infrastructure/
-│               └── extension/
-│                   ├── StandardOrderPriceCalculatorTest.java
-│                   └── VipOrderPriceCalculatorTest.java
-└── pom.xml
+├── src/main/java/com/bone/blueprint/
+│   ├── BoneBlueprintApplication.java
+│   ├── adapter/                          # 入站适配器（只做协议转换与路由）
+│   │   ├── web/       {controller, dto/{request,response}, assembler}
+│   │   ├── rpc/       {controller, dto/{request,response}, assembler}
+│   │   ├── mq/listener/                  # MQ 消费（包名待收敛为 messaging，见 E-13.5）
+│   │   └── schedule/                     # 定时任务 *Job
+│   ├── application/                      # 用例编排（*ApplicationService 平铺在根目录）
+│   │   ├── OrderApplicationService / PaymentApplicationService（ADR-0028 应用服务化，已无 *CommandHandler）
+│   │   ├── command/                      # *Command / *Result（平铺，不建 cmd/ 子包）
+│   │   ├── integration/consumer/         # 入站集成事件消费（幂等抢占 + 业务动作）
+│   │   ├── event/                        # *EventHandler（领域事件订阅）
+│   │   ├── event/integration/            # *IntegrationEvent + IntegrationEnvelope
+│   │   ├── query/{dto, projection, port, support}
+│   │   ├── util/                          # 应用层纯函数工具（DomainEvents）
+│   │   ├── event/support/                 # 事件处理器共用骨架（OrderItemInventoryExecutor）
+│   │   └── port/out/                     # 出站端口（统一 *Port 后缀）
+│   ├── domain/                           # domain/{聚合} 平铺形态（README 已登记）
+│   │   ├── order|payment/{, event/, valueobject/}
+│   │   ├── shared/{valueobject, exception}
+│   │   ├── repository/                   # 写侧聚合仓储（*Repository）
+│   │   ├── gateway/                      # 外部业务能力端口（*Gateway）
+│   │   └── extension/order/              # 定价策略业务端口
+│   ├── infrastructure/                   # 出站适配器（*Adapter / *Impl）
+│   │   ├── {query, messaging/{outbox,idempotency}, idempotency, context, event,
+│   │   │    extension/order, gateway/{payment,mock}, observability, security, config/…}
+│   └── common/BlueprintErrorCodes.java
+├── src/main/resources/
+│   ├── application.yml / application-{dev,mq,prod}.yml
+│   └── sql/order/findOrderWithItems.sql  # 读侧投影 SQL（DDL 真源是仓库根 bone-init.sql）
+└── src/test/java/com/bone/blueprint/     # 见下节
 ```
 
 ## 运行测试
 
-### 编译项目
-
 ```bash
-cd /Users/renhui.trh/wps/bone/bone-blueprint
-mvn clean compile
+cd bone-blueprint
+
+mvn clean compile          # 编译
+mvn test                   # 全量测试
+mvn test -Dtest=ArchitectureTest                # 架构门禁
+mvn test -Dtest='*ApplicationServiceTest'       # 应用层
+mvn test -Dtest='*OrderPriceCalculatorTest'     # 定价扩展点
+mvn test -Dtest='OrderOutboxRelayTest'          # Outbox 中继
 ```
 
-### 运行所有测试
+首次需先安装共享 ArchUnit 规则库（在仓库根执行）：
 
 ```bash
-mvn test
+mvn install -pl bone-framework/bone-architecture-test -am -DskipTests
 ```
 
-### 运行特定测试类
+## 测试分层
 
-```bash
-# 运行领域层测试
-mvn test -Dtest=OrderTest
-mvn test -Dtest=OrderItemTest
+### 架构门禁（`ArchitectureTest`，27 条，须 0 违规）
 
-# 运行应用层测试
-mvn test -Dtest=CreateOrderCommandHandlerTest
-mvn test -Dtest=PayOrderCommandHandlerTest
+本模块是参考样板，**不 freeze**——所有规则必须真实全绿。规则来自共享库
+`BoneDddArchRules`（`bone-framework/bone-architecture-test`），主要覆盖：
 
-# 运行基础设施层测试
-mvn test -Dtest=StandardOrderPriceCalculatorTest
-mvn test -Dtest=VipOrderPriceCalculatorTest
+| 关注点 | 代表规则 |
+|--------|----------|
+| 依赖方向（CORE-02） | `domainMustNotDependOnOuterLayers`、`applicationMustNotDependOnInfrastructure` |
+| 聚合身份 / 租户归属（E-2） | `outerLayersMustNotMutateAggregateIdentity` |
+| 租户取值收敛（E-2） | `businessLayersMustNotReadTenantContextDirectly`、`all_tenants_scan_only_by_schedule` |
+| 读侧 DSL 位置（E-4.2） | `readSideDslOnlyInQueryLayer` |
+| 一事务一聚合（CORE-06 / E-5.1） | `oneAggregatePerTransaction` |
+| 入口边界（CORE-04 / ADR-0028） | `adapterControllersMustNotDependOnGodObjects`、禁止 Handler 与 ApplicationService 套娃 |
+| 跨上下文边界（E-1.3 / P-2.4） | `noCrossContextDomainDependency`、`noCrossContextModelDependency` |
+| 领域行为归属（CORE-03 / E-6.4） | `applicationServicesMustNotOwnDomainRules` |
+| 持久化栈与生命周期（E-5.4） | `applicationSaveMustPairWithPublishOrExempt`、`springComponentBeanNamesMustBeUnique` |
 
-# 运行架构测试
-mvn test -Dtest=ArchitectureTest
-```
+其余规则清单与分级见
+[bone-architecture-test/README.md](../bone-framework/bone-architecture-test/README.md) 与规范
+[G-1.1 Hard gate](../doc/architecture/Bone-DDD-最终实践方案.md#g-1-1-hard-gate)。
 
-## 测试覆盖
+### 规则类单测（根目录）
 
-### 领域层测试
+- `AggregateIdentityRuleEffectivenessTest` —— 验证聚合身份规则确实拦得住（避免门禁空转）
+- `AggregatePureUnitTestCoverageTest` —— 聚合纯单测覆盖检查
+- `ConfigKeysContractTest` —— 配置键契约：源码引用的 `bone.*` 占位符必须在 `application*.yml` 有定义（防"键名写错 → 静默回落默认值"），
+  且 `bone.blueprint.schedule.*` 的定义键必须被引用（防死配置）
 
-1. **OrderTest** - 订单聚合根测试
-   - 创建订单（成功和失败场景）
-   - 支付订单
-   - 取消订单
-   - 添加/删除订单项
-   - 更新订单金额
+### 领域层（`domain/`）
 
-2. **OrderItemTest** - 订单明细实体测试
-   - 创建订单明细（成功和失败场景）
-   - 更新数量
+| 测试 | 锁定内容 |
+|------|----------|
+| `OrderTest` / `OrderItemTest` | 订单状态机（`CREATED → PAID → SHIPPED → DELIVERED`，分支 `CANCELLED` / `REFUNDED`）与拒绝路径 |
+| `PaymentTest` | 支付单状态机、回调幂等、金额一致性、退款幂等 |
+| `MoneyTest` | 金额值对象运算与不变量 |
+| `RepositoryTenantIsolationTest` | 写侧仓储的租户隔离（缺失租户即失败关闭） |
 
-### 应用层测试
+### 应用层（`application/`）
 
-3. **CreateOrderCommandHandlerTest** - 创建订单命令处理器测试
-   - 成功创建订单
-   - 库存不足场景
-   - 多商品项场景
+| 测试 | 锁定内容 |
+|------|----------|
+| `OrderApplicationServiceTest` | 创建订单（库存校验、定价编排、明细逐条落盘）、发货 / 送达 / 取消 |
+| `PaymentApplicationServiceTest` | 发起支付（两段式事务 + 渠道预下单）、回调（验签 + 幂等）、退款、超时关闭 |
+| `integration/consumer/OrderPaidIntegrationEventConsumerTest` | 入站集成事件：幂等抢占 + 业务动作 + 事务边界 |
+| `event/*EventHandlerTest` | 领域事件订阅：`REQUIRES_NEW` / `AFTER_COMMIT` 语义与失败留痕 |
+| `query/support/OrderDetailAssemblerTest` | 读侧投影 → DTO 装配 |
+| `support/IdempotencyServiceTest` | `Idempotency-Key` 幂等（同键同 body 重放、同键异 body 409、TTL 24h） |
 
-4. **PayOrderCommandHandlerTest** - 支付订单命令处理器测试
-   - 成功支付
-   - 订单不存在
-   - 重复支付
+### 适配器层（`adapter/`）
 
-### 基础设施层测试
+| 测试 | 锁定内容 |
+|------|----------|
+| `web/controller/OrderControllerContractTest` | HTTP 契约：`201 + Location`、错误信封与稳定错误码 |
+| `web/controller/PaymentControllerCallbackSourceTest` | 回调来源 IP 白名单：空名单放行、`X-Forwarded-For` 取首段、未命中 `403` **且不进应用层** |
+| `web/assembler/OrderAssemblerTest` | 协议 DTO ↔ 应用对象转换 |
+| `schedule/*JobTest` | 定时任务：**异步租户显式传递**（E-2）、全租户扫描仅限 schedule、Outbox 中继、钱货一致性对账 |
 
-5. **StandardOrderPriceCalculatorTest** - 标准价格计算器测试
-   - 仅基础金额
-   - 包含运费
-   - 大金额计算
+### 基础设施层（`infrastructure/`）
 
-6. **VipOrderPriceCalculatorTest** - VIP价格计算器测试
-   - 9折优惠计算
-   - 包含运费的折扣计算
-   - 验证折扣比例
-
-### 架构测试
-
-7. **ArchitectureTest** - ArchUnit 架构测试
-   - 依赖方向检查
-   - Domain 层纯净性检查
-   - Repository 约束检查
-   - 事务注解检查
-   - Controller 注解检查
-
-## DDD 规范符合性
-
-### 4 条铁律
-
-✅ **铁律 1：依赖方向必须正确**
-- adapter → application → domain ← infrastructure
-- ArchUnit 强制检查
-
-✅ **铁律 2：Domain 必须绝对纯净**
-- 无 Spring 注解
-- 无框架注解（除 bone-metadata-sdk 的 @Table）
-- 仅纯 Java + Lombok
-
-✅ **铁律 3：业务逻辑必须在 Domain**
-- 充血模型
-- 业务规则封装在聚合根
-- 禁止贫血模型
-
-✅ **铁律 4：外部系统必须通过 ACL**
-- InventoryGateway 接口定义
-- InventoryGatewayImpl 实现
-
-### 核心特性
-
-✅ **Repository 空接口**
-- OrderRepository 仅继承基类
-- 无自定义方法
-
-✅ **查询统一入口**
-- 使用 Criteria/QueryBuilder
-- 无自定义查询方法
-
-✅ **ID 生成上移**
-- 应用层使用 DistributedIdGenerator
-- 领域层纯接收
-
-✅ **实体 @Table 显式绑定**
-- 所有实体使用 @Table 注解
-- 显式指定表名
-
-✅ **聚合根包直接化**
-- domain.order 直接包含聚合根
-- 同包放实体、值对象、事件
-
-✅ **领域服务纯净**
-- 无 Spring 注解
-- 纯 POJO
-
-✅ **扩展点替代 if-else**
-- OrderPriceCalculator 扩展点
-- StandardOrderPriceCalculator 实现
-- VipOrderPriceCalculator 实现
+| 测试 | 锁定内容 |
+|------|----------|
+| `extension/order/*OrderPriceCalculatorTest` | 定价扩展点（默认 / VIP / 企业 / 促销 / 会员） |
+| `messaging/outbox/OrderOutboxPortAdapterTest` | Outbox 追加：PENDING 记录、租户取事件自带值、载荷为集成事件而非领域事件 |
+| `messaging/outbox/OrderOutboxEnvelopeFactoryTest` | 信封必填字段与 ISO-8601 时间 |
+| `messaging/outbox/OrderOutboxRelayTest` | PENDING → SENT、超限转死信 |
+| `idempotency/IdempotencyPortAdapterTest` | 幂等快照落库与 TTL 过期语义 |
+| `gateway/payment/MockPaymentSignaturePortAdapterTest` | 回调验签（模拟 HMAC） |
+| `observability/BoneRequestContextFilterTest` | MDC 字段、访问日志用 URI 模板而非原始路径 |
 
 ## 数据库初始化
 
-执行 schema.sql 初始化数据库表：
+DDL **真源唯一**是仓库根 `bone-init.sql`；模块内不提供建表脚本，`spring.sql.init.mode: never`。
 
 ```bash
-mysql -u root -p bone < src/main/resources/schema.sql
+mysql -u root -p bone < bone-init.sql
 ```
 
 ## 启动应用
 
 ```bash
-mvn spring-boot:run
+mvn spring-boot:run      # 默认端口 8082
 ```
 
-应用将在 http://localhost:8082 启动。
+所有 `/api/**` 需 `Authorization: Bearer <token>`（密钥须与 IAM 一致，详见 README「鉴权」一节）。
 
 ## API 端点
 
-### 创建订单
+### 订单（`/api/v1/orders`）
+
 ```bash
+# 创建（Idempotency-Key 可选，支持幂等重放）→ 201 Created + Location: /api/v1/orders/{id}
 POST /api/v1/orders
-Content-Type: application/json
 
-{
-  "customerId": 1,
-  "items": [
-    {
-      "productId": 1,
-      "productName": "商品1",
-      "quantity": 2,
-      "unitPrice": 100.00
-    }
-  ]
-}
-# 201 Created + Location: /api/v1/orders/{id}，body: { "data": { "id": ... } }
-```
-
-### 支付订单
-```bash
-POST /api/v1/orders/{id}/pay
-```
-
-### 取消订单
-```bash
-POST /api/v1/orders/{id}/cancel
-```
-
-### 查询订单详情
-```bash
-GET /api/v1/orders/{id}
-```
-
-### 分页查询订单
-```bash
+# 分页 / 详情
 GET /api/v1/orders?customerId=1&status=PAID&pageNum=1&pageSize=10
+GET /api/v1/orders/{id}
+
+# 状态流转
+POST /api/v1/orders/{id}/cancel
+POST /api/v1/orders/{id}/ship
+POST /api/v1/orders/{id}/deliver
 ```
 
-## 总结
+### 支付（`/api/v1/payments`）
 
-本项目完全符合 DDD 规范要求，包含：
-- ✅ 完整的四层架构
-- ✅ 充血的领域模型
-- ✅ CQRS 分离
-- ✅ 扩展点机制
-- ✅ 完整的单元测试
-- ✅ ArchUnit 架构测试
-- ✅ 符合 4 条铁律
+```bash
+POST /api/v1/payments/initiate          # 发起支付 → 返回支付链接
+POST /api/v1/payments/callback          # 渠道回调（验签 + 幂等）
+GET  /api/v1/payments/{paymentId}       # 查询支付单
+POST /api/v1/payments/{paymentId}/refund
+```
 
-所有测试应该能够正常运行并验证架构的正确性。
+RPC 入站（`/api/rpc/orders`）：`POST /`、`GET /{orderId}`。
+
+契约文件：[doc/architecture/openapi/blueprint-orders-v1.yaml](../doc/architecture/openapi/blueprint-orders-v1.yaml)。

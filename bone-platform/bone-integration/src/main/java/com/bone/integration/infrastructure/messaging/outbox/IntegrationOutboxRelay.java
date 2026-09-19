@@ -32,6 +32,7 @@ public class IntegrationOutboxRelay {
     Criteria<IntegrationOutboxRecord> criteria =
         Criteria.<IntegrationOutboxRecord>create()
             .eq(IntegrationOutboxRecord::getStatus, OutboxStatus.PENDING)
+            .disableTenantFilter() // 中继跨租户全量扫描 PENDING（每条消息自带 tenantId 进入消费逻辑）
             .page(1, properties.getBatchSize());
     List<IntegrationOutboxRecord> pending = outboxRepository.findByCriteria(criteria);
     if (pending == null || pending.isEmpty()) {

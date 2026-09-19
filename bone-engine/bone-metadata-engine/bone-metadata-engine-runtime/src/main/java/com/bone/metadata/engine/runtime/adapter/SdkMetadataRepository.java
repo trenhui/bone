@@ -39,19 +39,22 @@ public class SdkMetadataRepository implements MetadataRepositoryPort {
     this.platformBridge = platformBridge;
   }
 
-  /** 统一追加租户过滤条件（链式 eq，不破坏已有条件）。 */
+  /**
+   * 统一追加租户过滤条件：平台桥提供了租户则按租户隔离；平台级上下文（无 tenantId，如 catalog 全量枚举 / 影响分析） 则关闭租户过滤做跨租户全量读。对应 ADR-0029
+   * 的逃生舱语义——catalog 元数据读本质跨租户。
+   */
   private Criteria<MetaEntityPo> withTenantEntity(Criteria<MetaEntityPo> criteria) {
     return platformBridge
         .currentTenantId()
         .map(tenantId -> criteria.eq("tenantId", tenantId))
-        .orElse(criteria);
+        .orElseGet(() -> criteria.disableTenantFilter());
   }
 
   private Criteria<MetaFieldPo> withTenantField(Criteria<MetaFieldPo> criteria) {
     return platformBridge
         .currentTenantId()
         .map(tenantId -> criteria.eq("tenantId", tenantId))
-        .orElse(criteria);
+        .orElseGet(() -> criteria.disableTenantFilter());
   }
 
   @Override

@@ -2,12 +2,8 @@ package com.bone.blueprint.domain.repository;
 
 import com.bone.blueprint.domain.payment.Payment;
 import com.bone.blueprint.domain.shared.exception.OptimisticLockConflictException;
-import com.bone.core.enums.Operator;
-import com.bone.core.model.PageResult;
-import com.bone.core.model.QueryParam;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
-import java.util.List;
 
 /**
  * 支付单写侧仓储端口。继承 SDK {@link Repository}，由 {@code @EnableSqlRepositories} 代理实现。
@@ -28,23 +24,19 @@ public interface PaymentRepository extends Repository<Payment, Long> {
    *
    * <p>仅返回 {@code id} 与 {@code tenantId} 同时匹配、且未被软删的支付单；跨租户或不存在时返回 {@code null}。
    *
-   * <p><b>前置判空不是冗余防御，而是失败关闭</b>：{@code queryByCondition} 会静默丢弃 {@code null} 值条件，
+   * <p><b>租户隔离下沉到 SQL 层（失败关闭）</b>：用 {@code findOneByCriteria} 把 id 与 tenantId 两条 {@code EQ} 条件一并下发到
+   * SELECT，跨租户支付单在数据库侧被过滤（而非加载后内存校验）。软删过滤由 SDK 默认排除 {@code deleted} 保证，与 {@link #findById} 一致。相比
+   * {@code queryByCondition(...,1,1)}，{@code findOneByCriteria} 只发一条 SELECT、不触发 {@code
+   * countByCriteria}（分页整页命中会额外计数），且与本类 {@link #saveWithVersionCheck} 的 {@code Criteria} 风格一致。
+   *
+   * <p><b>前置判空不是冗余防御，而是失败关闭</b>：{@code Criteria.eq} 会静默丢弃 {@code null} 值条件，
    * 租户缺失时查询退化为跨租户读取——失败开启。故显式补回判空：租户不可知即视为不可访问。
    */
   default Payment findByIdInTenant(Long id, Long tenantId) {
     if (id == null || tenantId == null) {
       return null;
     }
-    PageResult<Payment> page =
-        queryByCondition(
-            List.of(
-                new QueryParam("id", id, Operator.EQ),
-                new QueryParam("tenantId", tenantId, Operator.EQ)),
-            null,
-            1,
-            1,
-            null);
-    return page.getRecords().isEmpty() ? null : page.getRecords().get(0);
+    return findOneByCriteria(Criteria.<Payment>create().eq("id", id).eq("tenantId", tenantId));
   }
 
   /**

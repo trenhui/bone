@@ -3,6 +3,7 @@ package com.bone.studio.generator.adapter.web.controller;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.bone.core.model.PageResult;
+import com.bone.core.tenant.context.TenantContext;
 import com.bone.studio.generator.application.command.cmd.CreateDataSourceCommand;
 import com.bone.studio.generator.application.command.cmd.DeleteDataSourceCommand;
 import com.bone.studio.generator.application.command.cmd.TestDataSourceConnectionCommand;
@@ -14,6 +15,8 @@ import com.bone.studio.generator.application.command.handler.UpdateDataSourceHan
 import com.bone.studio.generator.application.query.handler.GetDataSourceListQueryHandler;
 import com.bone.studio.generator.application.query.qry.GetDataSourceListQuery;
 import com.bone.studio.generator.domain.data.DataSource;
+import com.bone.studio.generator.support.TestTenantContextConfiguration;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +49,14 @@ class DataSourceControllerTest {
 
   @BeforeEach
   void setUp() {
+    // 测试线程直调 Handler / QueryHandler 需自备租户上下文（HTTP 请求由测试过滤器注入）
+    TenantContext.setTenantId(TestTenantContextConfiguration.TEST_TENANT_ID);
     baseUrl = "http://localhost:" + port + "/api/v1/generator/data-sources";
+  }
+
+  @AfterEach
+  void clearTenant() {
+    TenantContext.clear();
   }
 
   @Test

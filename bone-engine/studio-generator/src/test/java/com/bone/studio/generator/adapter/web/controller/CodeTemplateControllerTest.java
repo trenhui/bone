@@ -3,12 +3,16 @@ package com.bone.studio.generator.adapter.web.controller;
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.bone.core.model.PageResult;
+import com.bone.core.tenant.context.TenantContext;
 import com.bone.studio.generator.application.command.cmd.CreateCodeTemplateCommand;
 import com.bone.studio.generator.application.command.handler.CreateCodeTemplateHandler;
 import com.bone.studio.generator.application.query.handler.GetCodeTemplateListQueryHandler;
 import com.bone.studio.generator.application.query.qry.GetCodeTemplateListQuery;
 import com.bone.studio.generator.domain.data.CodeTemplate;
+import com.bone.studio.generator.support.TestTenantContextConfiguration;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -33,6 +37,17 @@ class CodeTemplateControllerTest {
   @jakarta.annotation.PostConstruct
   void setUp() {
     baseUrl = "http://localhost:" + port + "/api/v1/generator/templates";
+  }
+
+  @BeforeEach
+  void setTenant() {
+    // 测试线程直调 QueryHandler 需自备租户上下文（HTTP 请求由测试过滤器注入）
+    TenantContext.setTenantId(TestTenantContextConfiguration.TEST_TENANT_ID);
+  }
+
+  @AfterEach
+  void clearTenant() {
+    TenantContext.clear();
   }
 
   @Test

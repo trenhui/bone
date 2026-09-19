@@ -2,9 +2,10 @@
 
 [← Wiki 首页](./README.md)
 
-> **用途**：与 PRD MoSCoW **P0 = MVP = 阶段0** 对齐的 MVP 范围定义。基于**三方证据交叉**得出：① PRD MoSCoW（P0=MVP）；② [P0 看板](./07-P0-TODO看板.md)（大部分 P0 已 `done`）；③ 代码实况（默认关闭 / 501 / 占位实现）。
+> **用途**：与 PRD MoSCoW **P0 = MVP = 阶段0** 对齐的 MVP 范围定义。基于**四类证据交叉**得出：① PRD MoSCoW（P0=MVP）；② [P0 看板](./07-P0-TODO看板.md)（大部分 P0 已 `done`）；③ 代码实况（默认关闭 / 501 / 占位实现）；④ **DDD 规范 v5.5.12 作为合规判据**（功能能否算"完成"，除功能跑通外还须满足对应条文）。
 > **关联**：[PRD §4 功能需求](../prd/BONE产品需求文档正式版.md) · [07-P0-TODO看板](./07-P0-TODO看板.md) · [根 README](../../README.md)
-> **状态**：评审修订版（2026-09-11：验收流程按代码实证修订；新增 MVP-11；看板治理定为「只加映射、不改状态」）。
+> **状态**：评审修订版（2026-09-19：**对齐 DDD 规范 v5.5.12**——新增「功能模块 × 规范合规落点」与「合规偏差登记」；MVP-02 补记 ADR-0015 持久化例外边界、MVP-04 租户语义对齐 ADR-0029；MVP-10 补装配 / 配置键 / 文档三项质量下沉。2026-09-11：验收流程按代码实证修订；新增 MVP-11；看板治理定为「只加映射、不改状态」）。
+> **规范真源**：[Bone-DDD-最终实践方案.md v5.5.12](../architecture/Bone-DDD-最终实践方案.md)（本次引用的稳定锚点：`#e-44-sql-读侧仓储`、[`#e-37-入口构件决策`](../architecture/Bone-DDD-最终实践方案.md#e-37-入口构件决策)、`#e-2-多租户`）
 
 ---
 
@@ -23,6 +24,7 @@
 2. **只验证一个核心闭环**：主数据 / 扩展 / 集成不进 MVP P0，仅以薄示例证明架构成立（MVP+）。
 3. **默认关闭 / 501 / 演进级一律不进 MVP**：代码看板标 `done` 不等于生产可用（如 Camel 默认 off、连接器 501、Outbox 默认落日志）。
 4. **看板治理**：P0 看板是工程事实清单，**只加映射、不改状态**——MVP 归属由本清单维护，不为迎合 MVP 而篡改 `done` 语义（501 是有意设计、Camel 默认 off 是既定决策），避免重演「声明与实现脱节」。
+5. **合规以规范真源为准，且存量不追溯**：MVP 模块的对错以 [DDD 规范](../architecture/Bone-DDD-最终实践方案.md) 为准——新增步骤默认走语义化 `*ApplicationService` 起步（E-3.7 决策树，不预生成 `Command` / `Handler` 空件）；**存量模块的 `*CommandHandler` / `*QueryHandler` 形态不追溯、不得在评审中判成违规**（规范 E-3 已明示）。反过来，新增代码也不能拿"存量都这么写"当理由继续堆 Handler。
 
 ---
 
@@ -31,16 +33,41 @@
 | ID | 能力域 | 纳入项 | 对应看板 / 现状 | 理由 |
 |----|--------|--------|----------------|------|
 | MVP-01 | 元数据 | catalog：实体 / 字段 / 关系 + 扩展字段（预留列默认 + JSON；EAV 标 `experimental`） | META-VIS-01、META-ASIS-01/02 | 一切能力根；EAV 极低频非推荐，仅保留代码与文档 |
-| MVP-02 | 元数据 | 模式 B 运行时动态 CRUD（`/runtime/entities/{code}/records`） | META-002B-02 | **MVP 验收核心**：建模即刻可用，最快兑现「少写 CRUD」 |
+| MVP-02 | 元数据 | 模式 B 运行时动态 CRUD（`/runtime/entities/{code}/records`） | META-002B-02；持久化见 [ADR-0015](../architecture/adr/0015-metadata-runtime-jdbc-via-engine.md) | **MVP 验收核心**：建模即刻可用，最快兑现「少写 CRUD」。**持久化属登记的例外**：动态表/动态列无法用静态仓储，故允许 Spring JDBC 直写；代价是租户谓词与软删**必须手写**（无自动注入），且该例外不得扩散到其他业务模块 |
 | MVP-03 | 元数据 | `delivery_mode` 标记（GENERATIVE / RUNTIME） | META-002B-01 | 为模式 A 留接口，成本极低 |
-| MVP-04 | 运行底座 | 多租户**双层隔离**：模型定义按 `tenant_id` 过滤（租户间实体互不可见，`CatalogRuntimeEntityProvider`）+ 记录读写强制租户谓词（`buildTenantWhere`） | 已实现（`JdbcRuntimeRecordService` 链路） | 企业平台前提；仅数据层隔离，不含租户管理 UI |
+| MVP-04 | 运行底座 | 多租户**双层隔离**：模型定义按 `tenant_id` 过滤（租户间实体互不可见，`CatalogRuntimeEntityProvider`）+ 记录读写强制租户谓词（`buildTenantWhere`） | 已实现（`JdbcRuntimeRecordService` 链路）；语义见 [ADR-0029](../architecture/adr/0029-sdk-auto-tenant-filter.md) | 企业平台前提；仅数据层隔离，不含租户管理 UI。**失败关闭**：租户上下文缺失时必须拒绝读写（不得退化为「查全表」）；例外通道（运行时动态 SQL）因无 SDK 自动注入，须手写谓词，并由回归用例覆盖「缺租户 → 拒绝」这一分支 |
 | MVP-05 | IAM | RBAC + JWT + 登录 / 账号 / 角色 / 权限绑定 + token 刷新 / 黑名单 | PRD 需求 IAM-001~004（看板对账：IAM-01~05、10、11，均已 done） | 无鉴权不可上线；排除多租户管理（P1 商业版）、SSO/MFA（501 契约） |
 | MVP-06 | 入口 | 网关统一路由 `/api/v1/{domain}/**` | gateway | 访问入口 |
 | MVP-07 | 控制台 | overview / quick-actions + Shell（JVM 指标，非 CPU/磁盘） | DASH-01~03 | 基础入口体验；PRD 自标 CPU/磁盘为 `[Target]` |
 | MVP-08 | 元数据 | 元数据建模 UI（metadata-app） | META-VIS-02 | 让 catalog 可视可用 |
 | MVP-09 | 系统管理 | 配置（含功能开关）/ 监控告警基本盘 / 日志查询 | SYS-001~003 | 基础可运维；排除 K8s（PRD 已由 P0 降 P2） |
-| MVP-10 | 工程闭环 | docker compose 一键起库 + DDL 自动导入；最小四服务（Gateway/IAM/System/Metadata）；实体 API + `fields:*` OpenAPI yaml；`admin/123456` 种子；健康检查；核心流程自动化测试 | 运行底座 | 非功能必须，保证可演示可验证 |
+| MVP-10 | 工程闭环 | docker compose 一键起库 + DDL 自动导入；最小四服务（Gateway/IAM/System/Metadata）；实体 API + `fields:*` OpenAPI yaml；`admin/123456` 种子；健康检查；核心流程自动化测试；**IAM 与各消费模块 JWT 密钥对齐**；**每模块容器级装配测试 + 配置键契约测试 + 文档双 lint** | 运行底座 | 非功能必须，保证可演示可验证；后三项为 2026-09-19 依 [功能模块 × 规范合规落点](#功能模块--规范合规落点对齐-v5512) 追加，属**未完成子项** |
 | MVP-11 | 元数据 | **发布时物理结构对齐**：按已发布模型 diff 物理库——缺表则建、缺列则加（先 dry-run 预览、再执行；原数据保留） | **已实现（2026-09-11 补全 `JdbcPhysicalStructureGateway`：inspect/align、info_schema 只读 diff、CREATE/ADD COLUMN 幂等非破坏 DDL、标识符校验防注入）** | 字段演进是元数据平台灵魂卖点；本次补全后「加字段不丢数据」验收第 3/6 步可真实执行，而非仅状态翻转 |
+
+---
+
+## 功能模块 × 规范合规落点（对齐 v5.5.12）
+
+> 本节回答一个问题：**每个 MVP 模块按最新规范该怎么落地、现在差在哪**。缺陷分两类处理——**本次就改**（影响正确性且改动小）与**登记偏差**（存量命名 / 形态，随下次功能修改收敛，不追溯）。
+
+| ID | 关键路径 | 规范落点 | 本次校准 |
+|----|----------|----------|----------|
+| MVP-01 / 03 / 08 | 元数据建模（实体 / 字段 / 发布）+ 建模 UI | 写侧聚合经 `domain/repository` 加载 / 保存；命令侧要"按自然键读"须放 `application/query/*`，**不能**在 Handler 或 domain 里写读侧 DSL | 已修（原 `CreateMetaEntityHandler` 用 `Criteria` 计数触发 `domainMustNotUseQueryBuilder`，已收敛到 `MetaEntityUniquenessQuery`）；维持 ArchUnit 转绿即可 |
+| MVP-02 | 运行时动态 CRUD | [ADR-0015](../architecture/adr/0015-metadata-runtime-jdbc-via-engine.md) 登记的例外：允许 Spring JDBC 直写动态表；**租户谓词 + 软删必须手写**（无自动注入）；动态条件用标签 / 占位符，禁止 Java 字符串拼接 | 约束已写入纳入项表格（此前只写了路径、没写例外边界）；若出现 JOIN 扁平投影 / 聚合统计，按 [E-4.4](../architecture/Bone-DDD-最终实践方案.md#e-44-sql-读侧仓储) 走 `@Sql` 读侧仓储 |
+| MVP-04 | 双层租户隔离 | [ADR-0029](../architecture/adr/0029-sdk-auto-tenant-filter.md)：写侧 `TenantContext` 优先、为空回退实体字段；读 / 改 / 删上下文缺失 → **失败关闭**；跨租户枚举须显式 `disableTenantFilter()` 并登记 | MVP-04 理由栏已改为失败关闭口径；`businessLayersMustNotReadTenantContextDirectly` 门禁保持不变 |
+| MVP-05 | IAM 鉴权 | 错误码按 `{DOMAIN_PREFIX}_{REASON}` 登记；回调验签按 [ADR-0022](../architecture/adr/0022-external-callback-signature-verification-port.md) | **环境项进 MVP-10**：各消费模块与 IAM 的 JWT 密钥必须对齐——密钥不一致表现为全链路 401，而报错信息看不出是密钥问题 |
+| MVP-07 / 09 | 控制台指标、配置 / 告警 / 日志查询 | 读侧按"有无 JOIN / 投影 / 跨聚合"选通道：单表走 SDK `Criteria`，JOIN / 统计 / 全租户扫描走 `@Sql` 读侧仓储并遵守 E-4.4 六条硬约束 | **待办**：这类查询一旦追加 JOIN，须同时补 `tenant_id` 与 `deleted = 0`（**含 JOIN 子表**），并把包名登记进 `@EnableSqlRepositories` |
+| MVP-10 | 工程闭环 | 质量下沉三项：① 每模块至少一个容器级 `@SpringBootTest` 装配测试（单测不加载容器，Bean 缺失在 `mvn test` 里不暴露）；② 配置键契约测试（`${key:默认}` 键名写错会**静默回落**，无报错无日志）；③ 文档双 lint（`check-ddd-doc-drift.py` + `check-ddd-gate-state.py` + `check-ddd-doc-code-sync.py --strict`） | 三项并入 MVP-10 定义；①②在各 MVP 模块普遍缺失，列为未完成子项 |
+| MVP-11 | 发布时物理结构对齐 | DDL 属基础设施能力：端口在 `domain/gateway`（`PhysicalStructureGateway`）、实现在 `infrastructure/physical`；幂等非破坏 + 标识符校验防注入 | **命名偏差**（见下）：实现类 `JdbcPhysicalStructureGateway` 不符合 E-13.3 的 `<短名>GatewayAdapter` |
+| MVP-P1-02 | 扩展点 | 占位实现统一 `Mock` 前缀（E-13.3）；扩展 SDK 装配成对规则——用扩展的模块「扫 `com.bone.engine.extension` + `@EnableExtensionPoints`」，不用扩展的模块须显式关闭 | 写进本节供 Phase 2 直接开工，避免开工即踩启动失败 |
+
+### 合规偏差登记（存量，不追溯）
+
+| # | 偏差 | 规范条文 | 处置 |
+|---|------|----------|------|
+| 1 | `JdbcPhysicalStructureGateway`（实现 `PhysicalStructureGateway`） | E-13.3：Domain Gateway 实现统一 `<短名>GatewayAdapter` | **2026-09-19 已收敛**为 `JdbcPhysicalStructureGatewayAdapter`（`CatalogInfrastructureConfiguration` 已同步）；遗留：包落点仍在 `infrastructure/physical`，与 E-10.2 的 `infrastructure/gateway` 不一致，登记待评估 |
+| 2 | 元数据 / IAM / System 存量 `*CommandHandler` / `*QueryHandler` | E-3 明示不追溯，不得判成违规 | 保持现状；新增用例按 [E-3.7](../architecture/Bone-DDD-最终实践方案.md#e-37-入口构件决策) 走语义化 ApplicationService |
+| 3 | MVP 模块普遍缺容器级装配测试与配置键契约测试 | G-1：静态规则只证明结构，装配缺陷须由 `@SpringBootTest` 证明 | 登记为 MVP-10 未完成子项，Owner：MVP 交付责任人；补齐前不得宣称"MVP 全链路已被自动化验证" |
 
 ---
 
@@ -95,7 +122,7 @@
 4. 获得**统一运行时 CRUD API**（`/api/v1/runtime/entities/customer/records`）+ **通用动态记录管理页**（`RuntimeDataManagement`，按 `deliveryMode` / 状态过滤）。
 5. 新增 / 查询 / 修改 / 删除客户记录。
 6. 新增一个可选字段并再次发布 → MVP-11 自动加列，**原数据不丢失**。
-7. 验证另一租户无法访问当前租户数据（双层隔离：对方实体列表中看不到该实体；以本租户记录 ID 直接请求返回 404，拒绝越权读取）。
+7. 验证另一租户无法访问当前租户数据（双层隔离：对方实体列表中看不到该实体；以本租户记录 ID 直接请求返回 404，拒绝越权读取）；并验证**失败关闭**——缺失租户上下文的内部调用不得退化为「查全表」，该分支须有回归用例锁死（[MVP-04 / ADR-0029](../architecture/adr/0029-sdk-auto-tenant-filter.md)）。
 
 **此流程通过，即证明 Bone 核心价值；主数据 / 扩展 / 集成只是 MVP+ 薄示例，不阻塞首版。**
 
@@ -145,5 +172,7 @@
 ## 维护约定
 
 - 本清单是看板 `done` 项的 **MVP 归属唯一真源**：只加映射、不改看板状态；新功能先落看板登记、再入本清单。
+- **功能"完成"的判据 = 功能跑通 + 对应规范条文满足**：新增 / 修改 MVP 功能时，先查 [功能模块 × 规范合规落点](#功能模块--规范合规落点对齐-v5512) 找到该行的规范落点；涉及自定义 SQL 的，逐项过 [E-4.4 提交前自检](../architecture/Bone-DDD-最终实践方案.md#提交前自检)（扫描包登记、租户 / 软删条件、模板源未双写、投影无参构造器）。
+- **偏差只许减少**：[合规偏差登记](#合规偏差登记存量不追溯) 每行须有 Owner 与"随下次修改收敛"的时点；不得新增未登记的偏差，也不得把"规范写了"当成"已实现"。
 - MVP-11 已于 2026-09-11 补全实现（见下「复核与自动化测试记录」）；验收第 3/6 步现可真实执行物理对齐，不再依赖手工绑定降级口径。
 - 季度评审与 PRD §4 对照，调整归属或关闭非 P0 项。

@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Min;
 import lombok.Data;
 
 /**
- * 订单分页查询入参（adapter 层 HTTP 入参，对齐《Bone-DDD》§23.1）。
+ * 订单分页查询入参（adapter 层 HTTP 入参，对齐《Bone-DDD》E-13.1）。
  *
  * <p>与 application 层 {@code OrderPageQuery} 区分：本类仅承载 HTTP 查询参数与校验。
  */

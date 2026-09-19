@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
  * 字典项唯一性查询（应用读侧）。
  *
  * <p>同 {@link ConfigUniquenessQuery}：读侧 DSL（{@code Criteria}）只允许出现在应用读侧，写用例与 domain 层禁止
- * 直接依赖（CORE-05 / E-9.3）。
+ * 直接依赖（CORE-05 / E-4.2）。
  */
 @Component
 @RequiredArgsConstructor

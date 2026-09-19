@@ -47,11 +47,16 @@ API_WHITELIST_FALLBACK = {
 }
 
 # 白名单真源：这些文件里的公开方法即文档允许出现的平台 API。
+# 除平台层外，还纳入被本文档正式引为范例的样板模块写侧仓储：文档用它们演示乐观锁
+# （`saveWithVersionCheck`）与写用例收尾，是真实存在的 API，不是编造。
+# 该收集是动态的——样板仓储改名后此处随之更新，不会留成陈旧条目。
 API_SOURCES = [
     "bone-engine/bone-metadata-sdk/src/main/java/com/bone/metadata/sdk/Repository.java",
     "bone-engine/bone-metadata-sdk/src/main/java/com/bone/metadata/sdk/BaseRepository.java",
     "bone-framework/bone-core/src/main/java/com/bone/core/domain/AggregateRoot.java",
     "bone-framework/bone-core/src/main/java/com/bone/core/domain/event/DomainEventPublisher.java",
+    "bone-blueprint/src/main/java/com/bone/blueprint/domain/repository/OrderRepository.java",
+    "bone-blueprint/src/main/java/com/bone/blueprint/domain/repository/PaymentRepository.java",
 ]
 
 _SIGNATURE = re.compile(r"^[\w\s<>,.\[\]?]+?\b(\w+)\s*\(")

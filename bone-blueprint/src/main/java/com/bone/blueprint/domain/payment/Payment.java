@@ -20,8 +20,8 @@ import lombok.NoArgsConstructor;
 /**
  * 支付单聚合根（支付限界上下文）。
  *
- * <p>独立于订单聚合，通过 {@code orderId} 关联订单，遵循「聚合间仅以 ID 引用」原则（§3.1）。支付 成功经 {@link #confirmSuccess(String)}
- * 幂等确认，避免渠道重复回调造成重复入账。
+ * <p>独立于订单聚合，通过 {@code orderId} 关联订单，遵循「聚合间仅以 ID 引用」原则（P-3.1）。支付 成功经 {@link
+ * #confirmSuccess(String)} 幂等确认，避免渠道重复回调造成重复入账。
  *
  * <p>状态机：{@link PaymentStatus#PENDING} → {@link PaymentStatus#PAYING} → {@link
  * PaymentStatus#SUCCESS} / {@link PaymentStatus#FAILED} / {@link PaymentStatus#CLOSED}。
@@ -127,8 +127,8 @@ public class Payment extends TenantAggregateRoot<Long> {
   /**
    * 向支付渠道提交并回填支付链接：进入支付中，等待用户完成支付（PENDING → PAYING）。
    *
-   * <p><b>为何拆为独立行为</b>：渠道预下单是远程调用，须在 DB 事务外执行（见 {@code InitiatePaymentCommandHandler} 两段式），故「回填链接 +
-   * 状态迁移」由本方法在回写事务中完成； 提交前强制校验链接非空，防止渠道返回异常时写入脏数据。
+   * <p><b>为何拆为独立行为</b>：渠道预下单是远程调用，须在 DB 事务外执行（见 {@code PaymentApplicationService#initiate}
+   * 两段式），故「回填链接 + 状态迁移」由本方法在回写事务中完成； 提交前强制校验链接非空，防止渠道返回异常时写入脏数据。
    */
   public void submitToChannel(String payUrl) {
     if (this.status != PaymentStatus.PENDING) {
@@ -259,11 +259,6 @@ public class Payment extends TenantAggregateRoot<Long> {
         new PaymentRefundedEvent(
             getId(), getTenantId(), orderId, refundAmount, this.channelTradeNo, Instant.now()));
     return true;
-  }
-
-  /** 是否处于可发起支付状态（新建或支付中，可重试）。 */
-  public boolean isPayable() {
-    return this.status == PaymentStatus.PENDING || this.status == PaymentStatus.PAYING;
   }
 
   /** 支付单是否已成功（用于订单确认支付的前置判断）。 */

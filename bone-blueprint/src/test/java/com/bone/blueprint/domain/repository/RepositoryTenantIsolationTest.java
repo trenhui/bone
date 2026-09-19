@@ -4,8 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -16,8 +14,8 @@ import com.bone.blueprint.domain.order.OrderItem;
 import com.bone.blueprint.domain.payment.Payment;
 import com.bone.blueprint.domain.payment.valueobject.PaymentChannel;
 import com.bone.core.enums.Operator;
-import com.bone.core.model.PageResult;
-import com.bone.core.model.QueryParam;
+import com.bone.metadata.sdk.query.criteria.Condition;
+import com.bone.metadata.sdk.query.criteria.Criteria;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -27,13 +25,13 @@ import org.mockito.Mockito;
 /**
  * 写侧仓储 {@code findByIdInTenant} 的租户隔离契约测试——锁住「失败关闭」这一安全不变量。
  *
- * <p><b>为什么值得单测</b>：domain 层改用 bone-core {@code QueryParam} + {@code Operator} 之后（CORE-05：读侧 DSL
- * 不得进入 domain），条件表达能力换了实现，但 {@code BaseRepository#buildCriteria} 会<strong>静默丢弃值为 {@code null}
- * 的条件</strong>。一旦调用方漏传租户（事件载荷的 {@code tenantId} 是可为空的 {@code Long}），租户条件会整条消失， 查询退化为「按 id
- * 跨租户读取」——这是多租户系统里最难在功能性测试中暴露、后果最严重的一类退化。
+ * <p><b>为什么值得单测</b>：SDK {@code Criteria} 会<strong>静默丢弃值为 {@code null} 的条件</strong>。一旦调用方漏传租户 （事件载荷的
+ * {@code tenantId} 是可为空的 {@code Long}），租户条件会整条消失，查询退化为「按 id 跨租户读取」——这是多租户系统里最难在功能性测试中暴露、
+ * 后果最严重的一类退化。
  *
  * <p>此处同时验证两件事：① 租户或 id 缺失时<strong>立即返回 null 且不触达查询</strong>（失败关闭）； ② 两者齐全时两条 {@code EQ}
- * 条件都被下发（隔离条件未被优化掉）。
+ * 条件都被下发（隔离条件未被优化掉）。实现改用 {@code findOneByCriteria} 后只发一条 SELECT、不触发 {@code countByCriteria}， 但 SQL
+ * 层租户条件这一不变量不变，故断言从「捕获 {@code QueryParam}」改为「捕获 {@code Criteria} 主条件」。
  */
 class RepositoryTenantIsolationTest {
 
@@ -50,48 +48,47 @@ class RepositoryTenantIsolationTest {
   void orderLookupFailsClosedWithoutTenant() {
     assertNull(orderRepository.findByIdInTenant(ORDER_ID, null));
     assertNull(orderRepository.findByIdInTenant(null, TENANT_ID));
-    verify(orderRepository, never()).queryByCondition(anyList(), any(), any(), any(), any());
+    verify(orderRepository, never()).findOneByCriteria(any());
   }
 
   @Test
   void orderLookupAppliesIdAndTenantConditions() {
     Order order = sampleOrder();
-    doReturn(PageResult.of(List.of(order), 1L, 1, 1))
-        .when(orderRepository)
-        .queryByCondition(anyList(), any(), anyInt(), anyInt(), any());
+    doReturn(order).when(orderRepository).findOneByCriteria(any());
 
     assertSame(order, orderRepository.findByIdInTenant(ORDER_ID, TENANT_ID));
 
-    assertEquals(List.of("id", "tenantId"), capturedFields(orderRepository));
+    assertEquals(List.of("id", "tenantId"), capturedConditions(orderRepository));
   }
 
   @Test
   void paymentLookupFailsClosedWithoutTenant() {
     assertNull(paymentRepository.findByIdInTenant(1L, null));
     assertNull(paymentRepository.findByIdInTenant(null, TENANT_ID));
-    verify(paymentRepository, never()).queryByCondition(anyList(), any(), any(), any(), any());
+    verify(paymentRepository, never()).findOneByCriteria(any());
   }
 
   @Test
   void paymentLookupAppliesIdAndTenantConditions() {
     Payment payment = samplePayment();
-    doReturn(PageResult.of(List.of(payment), 1L, 1, 1))
-        .when(paymentRepository)
-        .queryByCondition(anyList(), any(), anyInt(), anyInt(), any());
+    doReturn(payment).when(paymentRepository).findOneByCriteria(any());
 
     assertSame(payment, paymentRepository.findByIdInTenant(1L, TENANT_ID));
 
-    assertEquals(List.of("id", "tenantId"), capturedFields(paymentRepository));
+    assertEquals(List.of("id", "tenantId"), capturedConditions(paymentRepository));
   }
 
-  /** 捕获仓储下发的条件字段名，并要求每个字段都以 {@code EQ} 精确匹配（租户条件不得被弱化）。 */
+  /** 捕获仓储下发的 {@code Criteria} 主条件，并要求每个字段都以 {@code EQ} 精确匹配（租户条件不得被弱化）。 */
   @SuppressWarnings("unchecked")
-  private static List<String> capturedFields(com.bone.metadata.sdk.Repository<?, Long> repository) {
-    ArgumentCaptor<List<QueryParam>> captor = ArgumentCaptor.forClass(List.class);
-    verify(repository).queryByCondition(captor.capture(), any(), anyInt(), anyInt(), any());
-    List<QueryParam> conditions = captor.getValue();
-    conditions.forEach(param -> assertEquals(Operator.EQ, param.getType(), param.getField()));
-    return conditions.stream().map(QueryParam::getField).toList();
+  private static List<String> capturedConditions(
+      com.bone.metadata.sdk.Repository<?, Long> repository) {
+    ArgumentCaptor<Criteria> captor = ArgumentCaptor.forClass(Criteria.class);
+    verify(repository).findOneByCriteria(captor.capture());
+    Criteria criteria = captor.getValue();
+    List<Condition> conditions = criteria.getMainConditions();
+    conditions.forEach(
+        condition -> assertEquals(Operator.EQ, condition.getOperator(), condition.getFieldName()));
+    return conditions.stream().map(Condition::getFieldName).toList();
   }
 
   private static Order sampleOrder() {

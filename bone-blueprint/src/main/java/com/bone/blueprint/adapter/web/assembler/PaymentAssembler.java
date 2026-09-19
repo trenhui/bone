@@ -5,10 +5,10 @@ import com.bone.blueprint.adapter.web.dto.request.PaymentCallbackReq;
 import com.bone.blueprint.adapter.web.dto.request.RefundPaymentReq;
 import com.bone.blueprint.adapter.web.dto.response.InitiatePaymentResp;
 import com.bone.blueprint.adapter.web.dto.response.PaymentDetailResp;
-import com.bone.blueprint.application.command.cmd.InitiatePaymentCommand;
-import com.bone.blueprint.application.command.cmd.InitiatePaymentResult;
-import com.bone.blueprint.application.command.cmd.ProcessPaymentCallbackCommand;
-import com.bone.blueprint.application.command.cmd.RefundPaymentCommand;
+import com.bone.blueprint.application.command.InitiatePaymentCommand;
+import com.bone.blueprint.application.command.InitiatePaymentResult;
+import com.bone.blueprint.application.command.ProcessPaymentCallbackCommand;
+import com.bone.blueprint.application.command.RefundPaymentCommand;
 import com.bone.blueprint.application.query.dto.PaymentDto;
 import org.mapstruct.Mapper;
 
@@ -18,7 +18,8 @@ public interface PaymentAssembler {
   InitiatePaymentCommand toInitiatePaymentCommand(InitiatePaymentReq req);
 
   default ProcessPaymentCallbackCommand toProcessPaymentCallbackCommand(PaymentCallbackReq req) {
-    // signature 带进应用层：验签已收口到 Handler（E-4.2 分层约束，adapter 禁止直引技术端口）
+    // signature 带进应用层，由 PaymentApplicationService 经 PaymentSignaturePort 验签
+    // （E-4.2 分层约束，adapter 禁止直引技术端口）
     return new ProcessPaymentCallbackCommand(
         req.getPaymentId(),
         req.getChannelTradeNo(),

@@ -90,7 +90,7 @@ public class ArchitectureTest {
   static final ArchRule extra_0 =
       FreezingArchRule.freeze(BoneDddArchRules.noStudioGeneratorUseCaseAnnotation());
 
-  // P-2.3 + P-10.4（D9）：跨上下文 domain 越界守护；空匹配视为配置错误
+  // P-2.3 + P-2.4（D9）：跨上下文 domain 越界守护；空匹配视为配置错误
   @ArchTest
   static final ArchRule no_cross_context_domain =
       BoneDddArchRules.noCrossContextDomainDependency("com.bone.studio.generator");

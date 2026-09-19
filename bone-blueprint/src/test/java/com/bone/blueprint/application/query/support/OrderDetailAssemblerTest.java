@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import com.bone.blueprint.application.query.dto.OrderDto;
-import com.bone.blueprint.application.query.dto.OrderWithItemsProjection;
+import com.bone.blueprint.application.query.projection.OrderWithItemsProjection;
 import com.bone.core.exception.BizException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

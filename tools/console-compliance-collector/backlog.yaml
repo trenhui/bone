@@ -3,7 +3,7 @@
 
 - id: remote-service-probe
   tier: Target
-  title: 远端服务真探活（替换 LocalActuatorServiceHealthGateway 的 UNKNOWN）
+  title: 远端服务真探活（替换 LocalActuatorServiceHealthGatewayAdapter 的 UNKNOWN）
   reference: 详设 §1.4 / §3.3.4
   tracking: P0 · 接服务注册中心或网关主动探活
 

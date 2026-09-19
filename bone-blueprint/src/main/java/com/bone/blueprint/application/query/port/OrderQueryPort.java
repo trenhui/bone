@@ -1,7 +1,7 @@
 package com.bone.blueprint.application.query.port;
 
-import com.bone.blueprint.application.query.dto.OrderHeadProjection;
-import com.bone.blueprint.application.query.dto.OrderWithItemsProjection;
+import com.bone.blueprint.application.query.projection.OrderHeadProjection;
+import com.bone.blueprint.application.query.projection.OrderWithItemsProjection;
 import com.bone.blueprint.domain.order.valueobject.OrderStatus;
 import com.bone.core.model.PageResult;
 import java.time.Instant;
@@ -21,7 +21,7 @@ public interface OrderQueryPort {
   /**
    * 查询指定时间之前仍处于 CREATED 的订单（<b>全租户</b>，供运维型定时任务扫描）。
    *
-   * <p><b>为何需要全租户方法</b>：定时线程没有请求上下文，{@code TenantProvider} 会降级为平台租户（0），
+   * <p><b>为何需要全租户方法</b>：定时线程没有请求上下文，{@code TenantPort} 会降级为平台租户（0），
    * 若仍按"当前租户"扫描，除平台租户外的超时订单将<strong>永不取消</strong>，且日志看起来一切正常。 全租户扫描属"平台运维入口"，调用方须为定时任务并在 README
    * 打洞登记中说明。
    */

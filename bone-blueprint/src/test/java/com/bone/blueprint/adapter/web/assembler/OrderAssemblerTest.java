@@ -4,10 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.bone.blueprint.adapter.web.dto.request.CreateOrderReq;
-import com.bone.blueprint.adapter.web.dto.request.OrderPageQry;
-import com.bone.blueprint.application.command.cmd.CancelOrderCommand;
-import com.bone.blueprint.application.command.cmd.CreateOrderCommand;
-import com.bone.blueprint.application.query.qry.OrderPageQuery;
+import com.bone.blueprint.application.command.CancelOrderCommand;
+import com.bone.blueprint.application.command.CreateOrderCommand;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -41,22 +39,6 @@ class OrderAssemblerTest {
     assertEquals("样例商品", command.items().get(0).productName());
     assertEquals(2, command.items().get(0).quantity());
     assertEquals(new BigDecimal("10.00"), command.items().get(0).unitPrice());
-  }
-
-  @Test
-  void mapsPageQueryKeepingFiltersAndPaging() {
-    OrderPageQry qry = new OrderPageQry();
-    qry.setCustomerId(5L);
-    qry.setStatus("PAID");
-    qry.setPageNum(2);
-    qry.setPageSize(50);
-
-    OrderPageQuery query = assembler.toOrderPageQuery(qry);
-
-    assertEquals(5L, query.customerId());
-    assertEquals("PAID", query.status());
-    assertEquals(2, query.pageNum());
-    assertEquals(50, query.pageSize());
   }
 
   @Test

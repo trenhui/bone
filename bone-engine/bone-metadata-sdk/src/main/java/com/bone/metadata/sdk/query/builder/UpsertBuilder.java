@@ -28,6 +28,7 @@ public class UpsertBuilder implements SqlQueryBuilder<UpsertContext> {
     String table = ctx.getTable().getName();
     Object entity = ctx.getEntity();
     List<ColumnMetadata> cols = ctx.getTable().getColumns();
+    ColumnMetadata tenantCol = ctx.getTable().getTenantIdColumn();
 
     String colsSql = cols.stream().map(ColumnMetadata::getName).collect(Collectors.joining(", "));
     String valsSql = cols.stream().map(c -> ":" + c.getName()).collect(Collectors.joining(", "));
@@ -50,9 +51,12 @@ public class UpsertBuilder implements SqlQueryBuilder<UpsertContext> {
 
     Map<String, Object> params = new LinkedHashMap<>();
     for (var c : cols) {
-      params.put(
-          c.getName(),
-          SqlUtil.toJdbcParameter(ReflectionUtil.getFieldValue(entity, c.getFieldName())));
+      Object value =
+          (tenantCol != null && c == tenantCol)
+              ? SqlUtil.toJdbcParameter(
+                  TenantFilterInjector.resolveInsertTenantValue(ctx.getTable(), entity))
+              : SqlUtil.toJdbcParameter(ReflectionUtil.getFieldValue(entity, c.getFieldName()));
+      params.put(c.getName(), value);
     }
     if (entity instanceof ExtensibleObject ext) {
       @SuppressWarnings("unchecked")
@@ -67,6 +71,7 @@ public class UpsertBuilder implements SqlQueryBuilder<UpsertContext> {
     Object entity = ctx.getEntity();
     List<ColumnMetadata> cols = ctx.getTable().getColumns();
     String pk = ctx.getTable().getPrimaryKey().getName();
+    ColumnMetadata tenantCol = ctx.getTable().getTenantIdColumn();
 
     String colsSql = cols.stream().map(ColumnMetadata::getName).collect(Collectors.joining(", "));
     String valsSql = cols.stream().map(c -> ":" + c.getName()).collect(Collectors.joining(", "));
@@ -91,9 +96,12 @@ public class UpsertBuilder implements SqlQueryBuilder<UpsertContext> {
 
     Map<String, Object> params = new LinkedHashMap<>();
     for (var c : cols) {
-      params.put(
-          c.getName(),
-          SqlUtil.toJdbcParameter(ReflectionUtil.getFieldValue(entity, c.getFieldName())));
+      Object value =
+          (tenantCol != null && c == tenantCol)
+              ? SqlUtil.toJdbcParameter(
+                  TenantFilterInjector.resolveInsertTenantValue(ctx.getTable(), entity))
+              : SqlUtil.toJdbcParameter(ReflectionUtil.getFieldValue(entity, c.getFieldName()));
+      params.put(c.getName(), value);
     }
     if (entity instanceof ExtensibleObject ext) {
       @SuppressWarnings("unchecked")

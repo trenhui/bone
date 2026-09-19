@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-17T03:06:49Z",
+  "generated_at": "2026-09-18T22:39:47Z",
   "module": "console",
   "as_is": [
     {
@@ -35,10 +35,10 @@
           "bone-platform/bone-system/src/main/java/com/bone/system/domain/gateway/KeyMetricsGateway.java",
           "bone-platform/bone-system/src/main/java/com/bone/system/domain/gateway/ResourceUsageGateway.java",
           "bone-platform/bone-system/src/main/java/com/bone/system/domain/gateway/ServiceHealthGateway.java",
-          "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/gateway/HttpProbeServiceHealthGateway.java",
-          "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/gateway/JdbcKeyMetricsGateway.java",
-          "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/gateway/JvmResourceUsageGateway.java",
-          "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/gateway/LocalActuatorServiceHealthGateway.java"
+          "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/gateway/HttpProbeServiceHealthGatewayAdapter.java",
+          "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/gateway/JdbcKeyMetricsGatewayAdapter.java",
+          "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/gateway/JvmResourceUsageGatewayAdapter.java",
+          "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/gateway/LocalActuatorServiceHealthGatewayAdapter.java"
         ]
       }
     },
@@ -48,7 +48,7 @@
       "status": "as_is",
       "evidence": {
         "java": [
-          "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/gateway/JdbcKeyMetricsGateway.java"
+          "bone-platform/bone-system/src/main/java/com/bone/system/infrastructure/gateway/JdbcKeyMetricsGatewayAdapter.java"
         ],
         "test": [
           "bone-platform/bone-system/src/test/java/com/bone/system/infrastructure/gateway/JdbcKeyMetricsGatewayTest.java"
@@ -145,7 +145,7 @@
     {
       "id": "remote-service-probe",
       "tier": "Target",
-      "title": "远端服务真探活（替换 LocalActuatorServiceHealthGateway 的 UNKNOWN）",
+      "title": "远端服务真探活（替换 LocalActuatorServiceHealthGatewayAdapter 的 UNKNOWN）",
       "reference": "详设 §1.4 / §3.3.4",
       "tracking": "P0 · 接服务注册中心或网关主动探活"
     },

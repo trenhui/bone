@@ -13,7 +13,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 /**
  * Outbox 中继任务测试。
  *
- * <p>Job 只是触发器：真正的中继语义（至少一次、重试、死信）在 {@code OrderOutboxRelay}，此处只保证「每轮都调用中继端口」 ——若 Job
+ * <p>Job 只是触发器：真正的中继语义（至少一次、重试、死信）在 {@code OrderOutboxRelayPortAdapter}，此处只保证「每轮都调用中继端口」 ——若 Job
  * 被改成依赖租户上下文或加了前置判断，中继就可能静默停摆。
  */
 @ExtendWith(MockitoExtension.class)

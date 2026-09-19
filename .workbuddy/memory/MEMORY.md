@@ -1,99 +1,71 @@
+# Bone 项目长期记忆（2026-09-18 23:20 再压缩）
 
-## Bone Frontend UI 规范 (2026-06-10)
-- 设计系统位于 `bone-frontend/packages/ui`（包名 `@bone/ui`）
-- 主色已对齐 AntD 5 官方蓝 `#1677FF`，旧版 sky-500 (#0ea5e9) 已废弃
-- 基础字号 14px（后台标准），字体族优先 PingFang SC
-- CSS 变量命名规范：`--bone-color-*`，旧版 `--primary` 等保留为兼容别名
-- 4 类核心组件规范（按钮/表单/表格/弹窗）已整理为可视化文档
+## 1. 构建 / 门禁 / CI
+- **pre-commit → `scripts/check.sh`**：`[1/5] mvn spotless:check` 全反应堆扫描（本机 ~14 分钟，前台 120s 被杀）；`[2/5]` 只对变更模块跑 `*ArchitectureTest`。**任何人在途格式违规都会阻塞别人的提交** → 提交前先 `mvn -o -pl <module> spotless:check`。
+- **spotless「1 秒返回 0」不可信**（命中缓存）→ 删 `target/spotless-index` 重跑；判据看输出有无 `format violations` / `BUILD FAILURE`。格式回写必须 `spotless:apply` 在 worktree 跑 + `diff -rq` 确认只改自己文件。
+- **熔断器**：连续失败 3 次写 `.git/hooks/.check-fail-count`，达 3 阻断全部提交（需 `rm`）。他人文件导致的红：**不清熔断器**。
+- **`check.sh` 的 ArchUnit 曾长期静默跳过**（09-17 修复，原因 `grep ... || true | sed` 被解析为 `(grep) || (true|sed)`）⇒ 修好前的历史提交都没真过 ArchUnit。同坑：`|| true` 放管道末尾；判退出码用 `PIPESTATUS[0]`。
+- **CI**：`ci.yml` 只跑 `main/master/develop`，**不跑 `release/mvp-v1.0`**（该分支后端测试/ArchUnit 从不执行，红灯不暴露；本地 pre-commit 仍会跑）。`iam-gateway.yml`、`docs-compliance.yml` 用 `on.push.paths` 不带分支过滤 ⇒ `release/*` 也触发。
+- `ci.yml` backend-quality 实际调用：`spotless:check`、`mvn verify`（含 ArchUnit）、`jacoco:check`（门槛实测 10%）、`check-ddd-doc-code-sync.py --strict`、`check-ddd-doc-drift.py`、`check-ddd-gate-state.py`(+`generate --check`)。gitleaks / DDL 检查**不在 CI**。
+- `collect-all-compliance.sh --check` ~15 分钟须后台跑。
 
-## 提交与 CI 纪律（2026-09-17）
-- **类型改名/移动必须一个提交落地**：路径（`git mv`）+ 符号声明 + 全部 import/引用 + 单测。只暂存 `git mv` 会被后续任何 `git commit` 连索引扫走，产出「新路径 + 旧符号」的编译中断提交（本仓库已发生过一次）。
-- **提交前用索引树自证**：`TREE=$(git write-tree) && git grep -lE "<旧符号>" $TREE -- <模块>` 必须为空。验证提交是否健康，须 `git worktree add --detach <sha>` 检出后再跑构建，**不要用工作树**（含他人在途改动）。
-- **`scripts/check.sh` 的 ArchUnit 门禁已修复**（2026-09-17）：原第 26 行 `grep ... || true | sed ...` 因管道优先级高于 `||` 被解析为 `(grep) || (true | sed)`，`MODULE_PATHS` 拿到文件全路径 → `[ -f "$POM" ]` 恒假 → ArchUnit 静默跳过；现已把 `|| true` 移到管道末尾。**修好前的历史提交都没真正过过 ArchUnit。**
-- **pre-commit 的 Spotless 是全反应堆级别**：任何人在途的格式违规都会阻塞**别人**的提交（实测被 `CloseExpiredPaymentCommandHandler.java` 第 22 行 `@NoDomainEvent  //` 双空格拦下 13 分钟）。提交前先跑 `mvn -o spotless:check`。
-- **bash 管道 + `||` 的陷阱**：写 `a | b || true` 要放在管道末尾，否则语义变成 `a || (b)`。
-- **docs-compliance CI 是精确比对**：`scripts/ci/collect-all-compliance.sh --check` 只比对 `compliance.json` 的 `as_is` + `backlog`（不看 `generated_at`）。改 `tools/*-compliance-collector/collect.py` 必须同提交 `doc/_generated/<module>/` 生成物；且生成物引用的文件必须已被 git 跟踪，否则 CI 在该提交上重算必然对不上。
-- **判定生成物能否安全提交（免 worktree 法）**：逐条把探针 pattern 分别 `git grep -lE <pat> HEAD -- <root>` 与 `git grep -lE <pat> -- <root>`，命中集合相等 ⇒ 内容改动不影响证据；再确认该模块无新增/删除/改名源文件。
-- **docs-compliance CI 在 HEAD 上曾长期为红**：2026-09-17 实测 blueprint 生成物停在 2026-06-03、console 停在 05-28、extension 停在 05-27、metadata 停在 09-11，与现场重算全部不符。已由 `40fae31d`（blueprint）与 `f412f3d0`（console/extension/metadata）追赶，8 个模块全部通过 `--check`。**改任何模块代码/文档后都要跑对应采集器**，否则 CI 立刻变红。
-- **`--sync-doc` 幂等性必须自证**：CI 的详设块校验等价于「`--sync-doc` 后文件字节不变」，用 sha256 前后比对验证。extension / metadata 两处已验。
-- **判管道退出码禁用 `if cmd | tail`**：退出码来自 `tail`（恒 0），会把失败当成功。用 `PIPESTATUS[0]` 或重定向到文件后取 `$?`。
-- **Gitee SSH 会抖动**：`kex_exchange_identification: read: Connection reset by peer`（180.76.x:22）时重试即可成功，推送脚本应带重试。GitHub 与 Gitee 两个 pushurl 是**顺序**推送，前一个失败不影响后一个已成功的那个。
-- **共享工作树有并发 Agent**：本仓库出现过连续 `reset HEAD~1` 摘掉他人提交的情况。动手改分支前先看 `git reflog`；提交用 `git commit --only <paths>`（pathspec 模式）避免卷入他人暂存内容。
-- **`.gitignore` 通用规则会吞掉源码（已致 P0，2026-09-17 修复于 `3273172a`）**：`log/` 匹配任意层级同名目录 → Java 包 `com.bone.system.domain.model.log` 从未入库，而引用它的类已提交 ⇒ 干净检出编译必断（本地因文件在磁盘上而全绿）。同类 `*.properties` 吞 `src/test/resources/application.properties`。**注意 `.gitignore` 靠后者优先**：文件开头的 `!**/src/main/**` 会被后面靠后的 `log/` 覆盖。排查：`git ls-files --others --ignored --exclude-standard | grep -E "/src/(main|test)/"` + `git check-ignore -v <文件>`。修法：在致害规则**之后**追加窄豁免。
-- **`release/mvp-v1.0` 上两个模块的架构门禁本来就是红的（2026-09-17 实测，与任何单次改动无关）**：bone-masterdata（`domain_no_query_builder` 12 次 + `command_no_query_builder` 14 次）、bone-iam（E-9.3 读侧 DSL ×4 + E-4.4 直调 `TenantContext` ×2）。成因是 `777cb395`（09-11）给 `Criteria` 加 `@ReadSideOnly` 使既有用法瞬间违规却未清理/冻结。
-- **`ci.yml` 只跑 `main`/`master`/`develop`，不跑 `release/mvp-v1.0`** ⇒ 后端测试与架构门禁在这条分支上**从不执行**，红灯不会暴露；而本地 pre-commit 钩子（`scripts/check.sh`，2026-09-17 修复后真跑 ArchUnit）会对变更模块执行 —— **一旦你改动某模块，该模块的既有红灯就会拦住你的提交**。
-- **ArchUnit 的 `FreezingArchRule` 会写 `archunit_store/`**：跑模块测试会更新基线（`stored.rules` + UUID 文件）⇒ 在**主工作树**跑测试会污染并发方的在途基线文件。**验证类构建应放独立 worktree**。
-- **基线政策**（`bone-framework/bone-architecture-test/README.md` L52/L61 + ADR-0027）：`archunit_store/` 入库；**基线只可收缩、禁止扩张**；存量违规按 ADR-0027「freeze 基线接受 + 登记（如 LYR-03），修复后收缩」处理；`allowStoreUpdate=true` 只允许收缩，`refreeze=true` 慎用。
-- **README 明文指定「不 freeze」的两条规则**（`bone-architecture-test/README.md`「建议 freeze 策略」）：`domainMustNotDependOnOuterLayers` / **QueryBuilder 禁令（P0-5 `domainMustNotUseQueryBuilder`、P0-6 `commandHandlersMustNotUseQueryBuilder`）**，以及 `domainRepositoriesShouldOnlyDeclareWhitelistedMethods`（理由写明「空仓储 / **ReadPort 拆分**后应 0 违规」）。⇒ 对这两类规则做 `freeze + 登记` 属**违背项目书面策略**，正解是 ReadPort 拆分。**但现状有例外**：masterdata 的 P0-6 已被 freeze（store `9574f461` 为 0 行＝零容忍）；iam 的 E-9.3 则登记了 **137 行**债务（`720d8a73`）＋ E-4.4 **12 行**（`80242b05`）——即 iam 靠「登记后逐步收敛」双轨变绿。
-- **SDK 基接口把读侧 DSL 焊进了写侧仓储（P0-5/P0-6 的架构根因）**：`com.bone.metadata.sdk.Repository<T,ID>` **自身**声明了 `findByCriteria / findOneByCriteria / countByCriteria / deleteByCriteria / updateByCriteria / aggregate(...)`，全部依赖 `@ReadSideOnly` 的 `Criteria`。全平台 **34 个 `domain.repository` 接口都是空接口**（0 个自定义方法），SDK **不支持派生查询/动态代理**（`BaseRepository` 是具体抽象类，自定义 finder 必须自己 `extends` 它）。⇒ **任何在 `domain` 或 `application.command.handler` 里发起的 SDK 查询都必然撞 P0-5/P0-6**，与作者是否谨慎无关。**不要在 domain / command handler 里做查询**：把查询下沉到 `application/query/port`（新端口）或 `infrastructure/query`（实现）后，再判重/编排。参照物：`bone-system` 的 command handler **0 处** `findBy|countBy|existsBy` 故全绿；`MasterDataRecordService`（只 `findById`+`save`）是领域服务正确范式。
-- **pre-commit 有熔断器，别拿它试错**：`.git/hooks/pre-commit` → `./scripts/check.sh`；连续失败 **3** 次即写 `.git/hooks/.check-fail-count`，达 3 后**阻断全部提交**（需 `rm` 该文件才恢复）。已知会红的模块（如 masterdata 的既有 P0-5/P0-6）**在修复前不要反复试提交**。另注意 `scripts/check.sh` 的 `[1/5] mvn spotless:check` 是**全反应堆**扫描，任何人在途的格式违规都会阻塞你的提交；`[2/5]` 只对**变更模块**跑 `*ArchitectureTest`。
-- **GitHub Actions 触发面容易判错**：`ci.yml` 只跑 `main`/`master`/`develop`，但多个工作流用 `on.push.paths` **且不带分支过滤** ⇒ 在 `release/*` 上推送也会触发。例：`iam-gateway.yml` 监听 `bone-platform/bone-iam/**` + `doc/architecture/openapi/iam-v1.yaml`；`docs-compliance.yml` 监听 `doc/_generated/**` + `tools/**/*-compliance-collector/**`。**改某模块源码时顺带重算 `doc/_generated/<module>/` 是必须的**（否则该分支 CI 变红）。本机无 `gh` 且沙箱网络受限，CI 结论需用户本机核对。
+## 2. Git / 共享工作树纪律
+- **类型改名/移动必须一个提交落地**（`git mv` + 声明 + import + 单测）；只暂存 `git mv` 会被后续 `git commit` 连索引扫走 → 编译中断提交。
+- **提交前索引树自证**：`TREE=$(git write-tree) && git grep -lE "<旧符号>" $TREE -- <模块>` 须为空；验证提交健康用 `git worktree add --detach <sha>`，**不要用工作树**。
+- **`git commit -F /tmp/msg.txt --only -- <paths>`**（选项在 `--` 前）；一律后台跑；避免 `git add -A`。
+- **ArchUnit `FreezingArchRule` 写 `archunit_store/`** ⇒ **绝不在脏主树跑模块测试**（会改写已入库 114 个基线）。验证一律独立 worktree。
+- **复刻主树进 worktree 的标准动作**：`git diff HEAD > p.patch` + `git -C $WT apply`，**未跟踪文件必须另拷**（用 `git -c core.quotepath=false ls-files --others -z`，`git status --porcelain` 会给中文路径加引号导致 `cp` 失败）。空目录不会被列出。
+- **「静默 ≠ 冻结」**：他人在途改动可静默数小时后复活 → 动手前重测 mtime（`stat -f "%Sm %N"`）。
+- Gitee SSH 会抖动（kex reset）重试即可；Gitee/GitHub 两个 pushurl 顺序推送。
 
-## 规范权威性与已知冲突（2026-09-17）
-- **E-13 命名约定默认是 Advisory**，不阻断 CI。原文（`doc/architecture/Bone-DDD-最终实践方案.md` E-13 章节导语）：「命名属于团队工程一致性，不属于 DDD 原则；默认是 Advisory。模块可以为一致性将其升级为阻断规则，但不得宣称后缀能证明 DDD 语义。」→ 报告命名问题时**不得**说成 CI 违规。
-- **⚠ 两份权威文档在 adapter DTO 目录上曾互斥（2026-09-17 已裁定：以 DDD 规范 E-13.1 为准）**：
-  - 裁定结果 → 标准形态为 `adapter/web/dto/request/` + `dto/response/`；`AGENTS.md` §5.1 已改为此写法，iam/masterdata/system 共 64 个文件已迁（F2 改集，待提交）。
-  - 原冲突：`Bone-DDD-最终实践方案.md` E-13.1 = `request/response`（旧代码 `req` 47 / `resp` 17 随 AGENTS.md；`request`/`response` 仅 blueprint 5+5）。
-  - 后续新增模块一律用 `request/` + `response/`，不要再引入 `req/`、`resp/`。
-- **`domain/gateway/*ReadPort` 是已登记存量**（`Legacy-E-9.5 读侧端口`，增量迁移），不是违规；新读侧端口一律 `application/query/port` + `*QueryPort`。
-- **E-10.3 认可 `domain/{aggregate}` 平铺形态**（事件放 `{aggregate}/event`），与 `domain/model/{...}` 角色目录形态并存时属模块内不一致（bone-system 现状：`domain/alert/` 与 `domain/model/alert/` 并存）。
-- **E-13.4 点名 `AlertEvent` 应演进为 `AlertRecord`**（bone-system 的 `AlertEvent` 实为 `AggregateRoot`，映射 `sys_alert_event`，自身发 `AlertResolvedEvent`；职责本就是"记录"）。该条**未登记**在任何 Legacy 表，属规范点名但无跟踪。
-- **`*Store` / `*MockRowMapper` / `*DtoMapper` 多为假阳性**：E-13.3 禁的是「以 `*Store`/`*Dao`/`*Mapper` 替代仓储」，`*IdempotencyStore`（技术端口）、JDBC `RowMapper`、query 侧 DTO 装配器均不适用。规范中 `Assembler` 出现 0 次，故 `*Assembler` 也不是规范用语。
+## 3. ArchUnit / 基线政策
+- `archunit_store/` 入库；**基线只可收缩**；存量违规按 ADR-0027「freeze + 登记（LYR-03），修复后收缩」。
+- **README 明文「不 freeze」**：`domainMustNotDependOnOuterLayers`、P0-5/6（`*MustNotUseQueryBuilder`）、`domainRepositoriesShouldOnlyDeclareWhitelistedMethods` ⇒ 正解是 ReadPort 拆分，不是 freeze。例外：masterdata P0-6 已 freeze；iam 登记 E-9.3 137 行 + E-4.4 12 行债务。
+- **`release/mvp-v1.0` 上本来就是红的**：bone-masterdata（P0-5 ×12 + P0-6 ×14）、bone-iam（E-9.3 ×4 + E-4.4 ×2）。成因 `777cb395` 给 `Criteria` 加 `@ReadSideOnly`。
+- **待裁决分歧（他人引入）**：blueprint `ArchitectureTest#domain_no_query_builder` 被改为内联规则 + 豁免 `..domain.repository..`；`BoneDddArchRules` 的 save/publishFrom 放宽为 `startsWith("save")`。与 README「样板不 freeze」冲突。
+- **空规则不等于要删**：`ArchitectureTest` 里 `command_handlers_must_not_depend_on_application_service`（ADR-0028）当前 0 匹配但带 `allowEmptyShould(true)`，是**有意保留的回归门禁**（防 CommandHandler 复活）；同类无注释的才是治理债。
 
-## SDK 能力真源（评估规范可落地性时必须先看这三处）
-- **`BaseRepository`**：`save(T)` 返回 `ID`（不是 void）、`insert(T)` 返回 `ID`、`update(T)` 返回 `boolean`、`updateByCriteria(T, Criteria)` 返回 `int`；**无聚合级联落库**（`OrderRepository.save(order)` 不会持久化 `order.items`，集合须标 `@Transient`）；**写路径不消费 `@Version`**（`update`/`save` 更新分支只生成 `WHERE pk = ?`，不加版本条件、不自增）⇒ 声明 `version` 列不产生并发保护。
-- **`bone-core` 事件机制**：`DomainEventPublisher.publishFrom(aggregate)`（default 实现＝发布后清空）；豁免用 `com.bone.core.annotation.NoDomainEvent`，**类级**豁免。
-- **`BoneDddArchRules`**：规则名与其判定粒度（如 `applicationSaveMustPairWithPublishOrExempt` 是类级——类里有一处 `publishFrom` 就放过全部 `save`；`domainRepositoriesShouldOnlyDeclareWhitelistedMethods` 只看返回类型 ∈ {聚合, `Optional<聚合>`, `boolean`, `void}`）。
-- **三条已登记 SDK 阻塞**（`doc/architecture/Bone-Metadata-SDK-能力需求.md`）：① `@Version` 乐观锁（P0，E-5.3/CORE-07）；② 聚合级联落库（P1，CORE-11）；③ 强类型 ID 值对象（P2，E-7.1）。
-- **`bone-blueprint` = L3 参考实现，当前 `D1 + Shared`**（`@Table` 直接落在 `Order`/`Payment` 上），并含 `OrderItemRepository`（子实体级仓储）——均已登记为技术债（债主是 SDK），**不是违规，也不是可照抄的范式**；L2/L3 默认仍是 `D0 + Separated`。
-- **`ci.yml` 的 `backend-quality` job 确实调用**：`mvn spotless:check`、`mvn verify`（含 ArchUnit）、`jacoco:check`（门槛 `jacoco.minimum.coverage`，实测 10%）、`check-ddd-doc-code-sync.py --strict`、`check-ddd-doc-drift.py`。gitleaks 与 DDL 检查**不在 CI**（仅本地 `scripts/check.sh`/`scan-secrets.sh`）。
+## 4. SDK 能力真源（评估落地性必看）
+- `com.bone.metadata.sdk.Repository<T,ID>` **自身**声明 `findByCriteria/countBy/updateByCriteria/aggregate(...)`，全依赖 `@ReadSideOnly` 的 `Criteria` ⇒ 读侧 DSL 焊进写侧仓储。**写路径（domain / 应用服务写方法）不查询**，读侧下沉 `application/query/port`。
+- `BaseRepository`：`save/insert` 返 `ID`、`update` 返 `boolean`、`updateByCriteria` 返 `int`；**无聚合级联落库**（集合须 `@Transient`）；**写路径不消费 `@Version`**（只 `WHERE pk=?`）。
+- 34 个 `domain.repository` 全是空接口；SDK **不支持派生查询/动态代理**。
+- `bone-core` 事件：`DomainEventPublisher.publishFrom(aggregate)`；`@NoDomainEvent` 类级豁免。`applicationSaveMustPairWithPublishOrExempt` 是**类级**判定。
+- **三条 SDK 阻塞**：① `@Version` 乐观锁（P0/CORE-07）② 聚合级联落库（P1/CORE-11）③ 强类型 ID（P2/E-7.1）。
+- **`bone-blueprint` = L3 参考实现**：当前 `D1 + Shared` + 子实体级 `OrderItemRepository`——已登记 SDK 技术债，**不是可照抄范式**；L2/L3 默认 `D0 + Separated`。2026-09-18 起 blueprint 已删除全部 `*CommandHandler`/`*QueryHandler`，改语义化 `*ApplicationService`（ADR-0028）。
 
-## DDD 规范文档的三道检查与状态真源（2026-09-17 建立）
-- **三道本地/CI 检查**：`scripts/check-ddd-doc-drift.py`（v4 编号 / 平台 API / 相对链接 / 内部锚点）、`scripts/ci/check-ddd-doc-code-sync.py --strict`（文档符号 ↔ 代码真实性）、`scripts/check-ddd-gate-state.py`（**门禁状态 == 实现真源**，含 WARN 与 `--metrics`）。改文档后**三个都要跑**。
-- **HC 状态唯一真源是 `G-1.7 HC 硬约束与实测状态`（锚点 `#hc-hard-constraints`）**；`G-1.1` 只留"五条不得宣称已 CI 阻断"的单向指针。**HC-003/006/008 = Planned**（无机器载体）；**HC-001/004 = Manual**（`scripts/check.sh` / `scripts/ci-check.sh` 本地拦截，无 workflow 调用）；HC-005 = Active 但**父 POM** 门槛是 **10%**（不是 70%），且 4 个模块下调（`bone-metadata-engine-{domain,ports,starter}=0`、`-runtime=0.04`）。
-- **门禁状态的判据是双向的**（G-1.7 表下）：① 升 Active 必须真有 CI/规则库载体；② **本地脚本已落地的拦截不得写成 Planned**（HC-001 曾如此——把"已有 pre-commit 拦截"读成"完全没有"）；③ **被点名的载体必须真的做这件事**（HC-008 曾把它当作"必备字段"载体，而那个脚本只比对表名清单、不读列）。② 与"只有本地脚本却称 CI 阻断"互为反向约束，两条都在 `Manual` 中间态才稳定；③ 只能人工复核。
-- **`scripts/check-ddd-gate-state.py` 已接入 CI**（`ci.yml` `backend-quality` 的 `DDD Gate State Lint (blocking)`，2026-09-17 架构师确认；G-1.1 第 15 条声明它）。**未**接入 `scripts/check.sh`——熔断器按脚本计失败次数，不宜扩大 pre-commit 失败面。
-- **`AGENTS.md` 已于 2026-09-17 收敛为薄引用**（35 行 / 537 字），并完成拆分：正文在 **`doc/agents/`** 七份（README 索引 + 01 概览与模块结构 / 02 构建运行与部署 / 03 架构分层规范 / 04 测试与代码质量 / 05 数据库与安全 / 06 AI 协作与编码准则）。原单文件 581 行版备份于 `doc/archive/AGENTS-单文件版-2026-09-17.md`。
-  - **拆分文件沿用原章节编号**（`## 5.`、`### 5.2`），历史 `§5.2` / `§11.12` 引用按编号仍可定位 → 不要再做 §-引用全仓替换。
-  - **判据是「加载时机」而非主题**：改 domain 读 03、改基础设施读 05、任何任务读 06。
-  - **§12.1 只留指向 `Bone-DDD-最终实践方案.md#hc-hard-constraints` 的指针**（原 8 行 HC 表已删）；§12.7 三处错标（ArchUnit 载体 / 本地脚本当 CI 载体 / `check-ddl-doc-sync.py` 当必备字段载体）已修。`check-ddd-gate-state.py` 的 AGENTS 反查现为 **WARN 0 条**（收敛前 2 条）。
-  - **入口文件一律不得复制约束或门禁状态**：`.github/copilot-instructions.md` 已同步改为薄引用（原文复制的 4 条里 "coverage >= 70%" 是错值）。`CLAUDE.md` / `.cursorrules` 保持 `@AGENTS.md` / `Read AGENTS.md first.`。
-- **既有断链（未修，仅登记）**：`doc/CODE_WIKI.md` 全篇 25 条相对链接按「仓库根」写但文件在 `doc/`，全部断链；`doc/architecture/bone-前端架构.md:168` 的 `bone-frontend/START_GUIDE.md` 不存在（只有 `SCRIPT_USAGE.md`）。
-- **不要新建独立摘要/导读文件**：主规范**已有**「一页纸速览 + 按角色阅读 + 反模式速查 + 提交前自检」；ADR-0026 是单文档真源，另起副本即新增漂移源。（评审常提的 `Bone-DDD-融合终极版-v9.0.md` **不存在**。）**`.github/PULL_REQUEST_TEMPLATE.md` 已于 2026-09-17 新建**（本地自检命令 + G-4 交付验收四组 + 生成器空目录勾选 + 门禁状态纪律：改 HC 状态必须同 PR 收敛 AGENTS.md 副本）。
-- **领域事件判据已统一为两层**（E-5.4 ↔ E-5.2 ↔ glossary 一致）：① 领域层 = 是不是业务语言里的**事实**（**与订阅者无关**，禁止拿"当前没有下游"当豁免理由）；② 发布层 = 是否 `publishFrom()` / 是否 Durable。不要再写成"跨上下文需要感知"。
-- **CORE 表有「类别」列**：CORE-01～08 = 通用 DDD，CORE-09～12 = Bone 工程约束。**CORE 编号禁止重排**（全仓 10+ 处引用）。
-- **实施状态指标口径**（G-1.8，数字不入库，用 `check-ddd-gate-state.py --metrics` 现算）：`git ls-files` 索引内 **`src/main/java`** 下的 `.java` 按后缀计数，**必须排除测试夹具**（`bone-architecture-test` fixture 有 `SubmitOrderUseCase`，会让 `*UseCase` 计数虚增）。实测：CommandHandler **58**、QueryHandler **64**、ApplicationService **3**（全在 blueprint）、UseCase **0**、`domain/repository` 接口 **48**。
+## 5. 规范权威性与冲突裁定
+- **E-13 命名默认 Advisory**（不阻断 CI）⇒ 报命名问题**不得**说成 CI 违规。
+- **adapter DTO**：`adapter/web/dto/request|response/`（E-13.1 优先于旧 AGENTS.md）；新增一律此形态。
+- `domain/gateway/*ReadPort` 是已登记存量（Legacy-E-9.5），新读侧端口用 `application/query/port` + `*QueryPort`。
+- **入站适配器命名（E-13.0/13.5）**：协议由包路径承载，**类名不带协议标记**，标记下沉 DI 标识。`*Assembler`(adapter) / `*Converter`(infrastructure)。各协议自持 DTO。
+- **`*Controller` 必须在 `controller/` 子包内**（`..adapter..controller..` 匹配，平铺即逃逸）。测量陷阱：`@RestControllerAdvice` 含子串 → 正则 `@RestController\b(?!Advice)`。
+- **新门禁 `springComponentBeanNamesMustBeUnique`（v5.5.9 Hard）**：按 `AnnotationBeanNameGenerator` 口径推算 bean 名，把同名撞车提前到构建期。
+- **配置读取分层（09-18 实证）**：`infrastructure/config/*Properties` 的注入方**只在 infrastructure 内**（`OrderOutboxProperties` 仅被两个 `*PortAdapter` 注入）；**adapter 层读配置一律就地 `@Value` 占位符**（范式 `PaymentController`：`@RequiredArgsConstructor` + 非 final 字段 + `@Value`）。副作用：`@Value` 字段 Mockito 不注入 ⇒ 单测用 `ReflectionTestUtils.setField`。
+- **ADR-0029（提议，待批）** 会让 SDK 对租户表自动注入 `tenant_id`，`TenantContext` 为空即抛 `MissingTenantContextException` ⇒ 三个全租户扫描 Job 须在实施时补逃生舱（`disableTenantFilter()` / `setTenantId`），未批准前不改代码。
 
-## 提交与门禁的运维事实（2026-09-17 实测补充）
-- **`git commit` 一律后台跑**：pre-commit → `scripts/check.sh` 的 `mvn spotless:check`（**不带 `-o`**）本机实测 **~14 分钟**；前台 120s 会被 SIGTERM 杀掉（索引不丢、熔断不计数，重跑即可）。同一命令加 `-o` 只要 1s——差异纯属联网解析。
-- **别把 `mvn -o spotless:check` 的 1 秒成功当证据**：它跑在根聚合 POM 上，几乎不校验子模块。判断"格式是否真的过"要看 pre-commit 的完整输出（重定向到文件，别用 `| tail`，否则拿不到进度与结尾）。
-- **`collect-all-compliance.sh --check` 约 15 分钟**：必须后台跑，前台必被杀。2026-09-17 全 8 模块 up to date。
-- **`.workbuddy/` 在 `.gitignore` 里，但 `memory/MEMORY.md` 已被历史提交跟踪**（`b9285821`）：`git status` 会显示它为 `M`，而 `git add -A` 会对 `.workbuddy` 报 ignored 告警。日常提交按目录显式 `git add` 即可，不要 `-A`。
-- **AGENTS.md 于 2026-09-17 已拆分**（commit `53563456`）：入口 35 行薄引用 + `doc/agents/` 六册（沿用原 §编号）+ `doc/archive/AGENTS-单文件版-2026-09-17.md` 备份。**改 AI 协作规则要改 `doc/agents/`，不要往 `AGENTS.md` 里抄正文**；HC 状态真源只有 G-1.7 一处（`scripts/check-ddd-gate-state.py` 会告警副本）。
+## 6. DDD 文档治理（三道检查 + 单真源）
+- 三道：`scripts/check-ddd-doc-drift.py`、`scripts/ci/check-ddd-doc-code-sync.py --strict`、`scripts/check-ddd-gate-state.py`（+`generate --check`）。改文档后三个都跑。
+- **HC 状态唯一真源 = `Bone-DDD-最终实践方案.md` 的 `G-1.7`**。HC-003/006/008 = Planned；HC-001/004 = Manual；HC-005 = Active 但门槛 10%。状态表由 `doc/architecture/gate-state.json` 渲染，手改必被打回；文档+JSON+脚本+`ci.yml` 同批提交。
+- **入口文件（AGENTS.md / copilot-instructions / CLAUDE.md）不得复制约束或门禁状态**。AGENTS.md 已收敛为 35 行薄引用，正文在 `doc/agents/` 六册（沿用原 § 编号）。
+- **不要新建摘要/导读文件**。领域事件判据两层：① 是不是业务语言的事实（禁以"当前无下游"豁免）② 是否 `publishFrom()` / Durable。CORE 表编号禁止重排（01-08 通用、09-12 工程）。
+- **实测计数口径（G-1.8）**：`--metrics` 现算，排除 `bone-architecture-test` fixture；数字随重构频繁变，引用前必须现跑。
+- docs-compliance CI 精确比对 `compliance.json` 的 `as_is`+`backlog`：改采集器或模块源码后**同提交重算 `doc/_generated/<module>/`**（`tools/blueprint-compliance-collector/collect.py --check` ~90s）。改 `Bone-DDD-最终实践方案.md` 无需重算。
+- 既有断链（仅登记未修）：`doc/CODE_WIKI.md` 25 条相对链接按仓库根写；`doc/architecture/bone-前端架构.md:168` 引用不存在的 `START_GUIDE.md`。
 
-## DDD 文档治理：单真源渲染 + 共享文件纪律（2026-09-17 晚，v5.5.8）
-- **状态表已改为「由真源渲染」**：G-1.1 / G-1.5 / G-1.7 三组表由 `doc/architecture/gate-state.json` 经注入标记 `<!-- gate-state:KEY:start/end -->` 生成。**改状态只改 JSON**，然后跑 `python3 scripts/check-ddd-gate-state.py generate`；**手改表内内容必被 CI 打回**。
-- **CI 现有四道 DDD 检查**（`ci.yml` backend-quality）：`scripts/ci/check-ddd-doc-code-sync.py --strict`、`scripts/check-ddd-doc-drift.py`、`scripts/check-ddd-gate-state.py`、**`scripts/check-ddd-gate-state.py generate --check`**（逐字节比对文档表 vs JSON）。改 JSON 不同步文档、或反之，都会红。
-- **原子变更集**：文档注入标记 + `gate-state.json` + `check-ddd-gate-state.py` + `ci.yml`(`generate --check`) 必须**同批提交**——只提交文档会让 CI 找不到真源。
-- **外部评审先比版本再逐条核**：本次长评审引用 v5.3.1（仓库已 v5.5.7），19 条里 **13 条已落地**。核验顺序：版本 → 逐条 → 四档（已落地 / 部分成立 / 不成立 / 不适用）。**不要照做过时建议**。
-- **v5.5.8 语义变更（引用时要按新版）**：AS-01 = 「默认入口，**非唯一入口**」（MQ 消费 / 定时 / 长流程入口可直接用 `*CommandHandler` / `*Orchestrator`）；CORE-11「1:1 落盘」= 聚合 ↔ 持久化入口，**不是** 聚合 ↔ 单表（可跨多表 / JSON / 文档）；E-3.3 新增长流程 = 流程状态聚合 + `*Orchestrator`，**不引入** `*ProcessManager` / `*Saga` 后缀；E-3.6 新增默认 ApplicationService 写路径范例（此前只有 Command+Handler 范例，与"默认路径"自相矛盾）。
-- **格式校验怎么跑才算数**：`mvn -o -pl <module> spotless:check`（真校验）；根聚合 `mvn -o spotless:check` 也**会真校验**（2026-09-18 实测：能抓到 blueprint 的 format violations 并 exit 1，整反应堆约 1–2 分钟）。**但同一命令有时 1 秒返回 0**——那是命中缓存/增量判定的假快，**别把"秒回成功"当"格式已过"的证据**；判定看输出里有没有 `format violations` 与 `BUILD FAILURE`。
-- **改了 `doc/architecture/Bone-DDD-最终实践方案.md` 后**：无需重算 `doc/_generated/` 合规产物（采集器不读该文档，`docs-compliance.yml` 的 `paths` 也不含 `doc/architecture`）。
+## 7. 错误码 / 集成事件 / 幂等（2026-09-18 落地）
+- **`BizException(int code, …)` 首参是 HTTP 状态**，业务码只能拼进 message；`BizException(String)` 默认 500 ⇒ 用它等于把"查不到/冲突"报成服务端故障。
+- **blueprint 已收口**：`common/BlueprintErrors` = 「码 → HTTP 状态」唯一真源（`Map` + 静态块反射校验 `BlueprintErrorCodes` 全部常量，漏登记即类加载失败）；抛出走 `of/supplier`；`httpStatusOf` **不兜底**。其他模块仍是旧形态，迁移参照 blueprint。
+- **`saveWithVersionCheck` 是 blueprint 本地仓储方法**，不在 `check-ddd-doc-drift.py` 的 `API_SOURCES` ⇒ 文档里当平台 API 演示会变红（已解：文档改为说明性叙述）。
+- 幂等已升格平台能力：`bone-core: com.bone.core.idempotency.IdempotencyService`（出参 `ReplayedResponse`），application 层零 `ResponseEntity`。
+- **信封版本 ≠ 载荷版本**：`application/integration/event/IntegrationEnvelope.CURRENT_SCHEMA_VERSION`（载荷）vs `OrderOutboxEnvelopeFactory.ENVELOPE_SCHEMA_VERSION`（投递封装），不合并。集成事件 `fromDomain` 入参必须是散装标量（避免契约依赖 domain）。
 
-## 并发会话裁决与提交纪律（2026-09-18 实测）
-- **「静默 ≠ 冻结」**：另一会话的在途改动曾静默 15 小时，却在用户发出新指令的同一分钟被重新激活（实测 `ArchitectureTest.java` mtime 距我检查仅 10 秒）。**每次动手前重测 mtime**：`git status --porcelain | awk '{print $2}' | while read -r f; do [ -f "$f" ] && stat -f "%Sm %N" -t "%m-%d %H:%M:%S" "$f"; done | sort -r | head`。
-- **判「原子变更集」看它是否已完整，而不是看它是否自己写的**：v5.5.8 文档的注入标记 + `gate-state.json` + 检查器 + `ci.yml` 四件套曾被我按「不是我的」搁置一轮；复查发现它已自洽（`generate --check` 5 张表零漂移）→ 作为单个提交落地才是正确的原子化。
-- **`git commit` 的选项必须写在 `--` 之前**：`git commit --only -- <path> -F /tmp/msg.txt` 会把 `-F` 当 pathspec，报 `fatal: /tmp/msg.txt: is outside repository`。正确写法 `git commit -F /tmp/msg.txt --only -- <paths>`。此错不产生提交、不跑钩子、不计熔断。
-- **他人文件导致的 spotless 红：不动手、不清熔断**。主树现在可能因对方编辑中途而整树提交失败；`mvn -o spotless:check` 报的违规文件若属对方，就只记录、不 `spotless:apply`、不提交、**不清 `.git/hooks/.check-fail-count`**（那是对方的失败计数）。
-- **验证「他人未提交的在途改动」**：导出 `git diff HEAD -- . ':(exclude).workbuddy'` + `git ls-files --others --exclude-standard` 打包，在独立 worktree 里 apply 后构建。**绝不在脏主树跑模块测试**——会改写已入库的 `archunit_store/`（114 文件）。快照可能是编辑中途态，失败不可直接归因为对方缺陷。
-- **待裁决的治理分歧（对方重构引入，我未处置）**：blueprint `ArchitectureTest#domain_no_query_builder` 已被改为**内联规则 + 豁免 `..domain.repository..`**（理由：SDK 基接口 `Repository<T,ID>` 自带 `updateByCriteria(Criteria<T>)`）；`BoneDddArchRules` 的 save/publishFrom 规则放宽为 `startsWith("save")`（覆盖 `saveWithVersionCheck`）。这与 `bone-architecture-test/README.md`「参考样板不 freeze、P0-5/P0-6 须 0 违规」冲突，正解仍是 SDK 侧 ReadPort 拆分。
+## 8. 配置键 / 占位符（2026-09-18 新增）
+- **带默认值的占位符写错键名会静默生效失败**（Spring 不报错、无日志）。实例：`PaymentController` 读 `bone.payment.callback.allowed-source-ips`，yml 定义在 `bone.blueprint.payment.` 下 ⇒ **支付回调来源 IP 白名单永久失效**（回落到空串＝不限制来源），jacoco 显示该分支 0 覆盖所以从未暴露。已修键名并补 `ConfigKeysContractTest`。
+- **`ConfigKeysContractTest`（模块根）**：扫 `src/main/java` 的 `.java` + `src/main/resources` 的 `*.yml`，用 snakeyaml 展平 `application*.yml`，断言 ①引用的 `bone.*` 键必须已定义 ②`bone.blueprint.schedule.*` 定义键必须被引用（防死配置）。**只做单向全量**：其余 `bone.*` 由 `@ConfigurationProperties` binder 消费，反向断言全是假阳性。源码不可见时 `Assumptions` 跳过。
+- 三 Job 的 cron/门限已配置化（`bone.blueprint.schedule.*`，见 `application.yml`），`dev/prod/mq` 三档未覆盖。
 
-## 入站适配器命名与协议标记（2026-09-18，E-13.5 已入库）
-- **协议由包路径承载**：`adapter/{web|messaging|rpc|schedule}/`，构件统一 `controller/`、`assembler/`、`dto/request|response/`。
-- **`*Controller` 必须在 `controller/` 子包内**：`adapterControllersMustNotDependOnGodObjects` / `...OnDomainRepository` / `...OnDomainService` 三条都按 `..adapter..controller..` 匹配，平铺在 `adapter/{协议}/` 根下**整条逃逸**（实测 55 个 `@RestController` 覆盖 50、逃逸 5）。**剩余 3 个未覆盖**：`metadata.runtime.adapter.web.RuntimeRecordController`、`platform.alert.adapter.web.NotificationController`、`studio.generator.infrastructure.service.CodeGeneratorServiceImpl`。
-- **类名里的协议标记是例外，不是默认，且不能删**：Spring 默认 `AnnotationBeanNameGenerator` 取类短名（本项目未自定义 `BeanNameGenerator`），同模块内两个 `OrderController` → 启动期 `ConflictingBeanDefinitionException`。所以 `OrderRpcController` / `CreateOrderRpcReq` / `OrderRpcAssembler`（MapStruct 生成 `OrderRpcAssemblerImpl`）的 `Rpc` **必须保留**，别当"冗余"删。
-- **`*Assembler`(adapter) / `*Converter`(infrastructure)**：E-6.6 已把 `*Converter` 指派给 infrastructure；iam/masterdata/system 的 20 个 `adapter/web/converter/*WebConverter` 与之冲突（一个后缀两个类别，违反 E-13.4）→ **不追溯**，新增一律 `assembler/`。`Bone-API-规范.md` 早已用 `Assembler`；`doc/agents/03` §5.1 的 `converter/` 已改。
-- **各协议自持协议 DTO**：`adapter/rpc` 不得 import `adapter/web` 的 DTO（原借用 web 的 `OrderDetailResp`，已改自持）。
-- **测量陷阱**：`@RestControllerAdvice` 含 `@RestController` 子串，直接 grep 会多 9 个假阳性；用 `@RestController\b(?!Advice)`。
-- **改 blueprint 源码后必须重算 `doc/_generated/blueprint/`**（`compliance.json` 逐文件列证据路径）：`python3 tools/blueprint-compliance-collector/collect.py`，`--check` 约 90 秒。HEAD 上它因 `7ab5fd66` 已落后一次（漏 `OrderPaymentInconsistencyJob.java`），2026-09-18 一并追平。
-- **⚠ `.claude/agents/skills/backend-java.md` 严重过期且未修（喂 AI agent 的文件，优先处理）**：写 `application.dto` / `application.converter` / `adapter.web.request`，且仍在教 **MyBatis Mapper 接口 + `src/main/resources/mapper/` MyBatis XML**——与本仓库「唯一持久化 bone-metadata-sdk、禁 MyBatis」直接冲突。
+## 9. 其它
+- **`.gitignore` 通用规则会吞源码**（曾致 P0，`3273172a` 修）：`log/` 匹配任意层级吞掉 `...domain.model.log`；`*.properties` 吞测试资源。**靠后者优先**，修法是在致害规则**之后**加窄豁免。排查 `git ls-files --others --ignored --exclude-standard | grep -E "/src/(main|test)/"` + `git check-ignore -v`。
+- `.workbuddy/` 在 `.gitignore`，但 `memory/MEMORY.md` 已被 `b9285821` 跟踪（按目录显式 `git add`）。
+- 前端：设计系统 `@bone/ui`（`bone-frontend/packages/ui`），主色 `#1677FF`，14px，PingFang SC，CSS 变量 `--bone-color-*`。
+- ⚠ `.claude/agents/skills/backend-java.md` **严重过期**（仍在教 MyBatis Mapper + `application.dto`），与「唯一 bone-metadata-sdk」冲突，喂 AI 的文件，优先处理。

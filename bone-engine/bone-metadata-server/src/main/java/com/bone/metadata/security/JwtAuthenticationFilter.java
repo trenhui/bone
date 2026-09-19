@@ -16,8 +16,12 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 /**
- * 自定义 JWT 验证过滤器：拦截 Authorization: Bearer <token> 将 "roles" Claim 转为 SimpleGrantedAuthority 并放入
- * SecurityContext
+ * 自定义 JWT 验证过滤器：拦截 Authorization: Bearer &lt;token&gt; 将 "roles" Claim 转为 SimpleGrantedAuthority
+ * 并放入 SecurityContext。
+ *
+ * <p><b>租户上下文不在此处绑定</b>：租户上下文由 {@code com.bone.metadata.web.TenantContextInterceptor} 在
+ * 与安全开关解耦的路径上始终绑定（无论 {@code security.enabled} 是否开启），本过滤器只负责认证。两者职责分离可避免 "security 关闭即无人写租户上下文" 的
+ * 500（ADR-0029 失败关闭）。
  */
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 

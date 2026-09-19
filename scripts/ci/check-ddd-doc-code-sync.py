@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
 """DDD 规范文档 ↔ 代码 符号一致性 lint（防漂移，P1-3）。
 
-检查两类最廉价的漂移——这正是 v5.0.2 复核发现 P0-1/P0-2 的病根：
+检查三类最廉价的漂移——这正是 v5.0.2 复核发现 P0-1/P0-2 的病根：
 
 1. 文档规范正文中引用bone-core / SDK 不存在的 API 符号
    （如历史案例 publish(aggregate.releaseDomainEvents())）；
 2. 文档残留 v4.x 历史编号被当作现行条文引用
    （如 E-5.3.1 出现在非兼容区段落作为当前规范）。
+3. E-13 命名约定小节的 `A` → `B` 映射样例指向不存在的类
+   （2026-09-18 实测：E-13.3 的 `PaymentGateway` → `SimulatedPaymentGatewayImpl` 中右侧类已被删除，
+   文档却仍把它当"当前规则样例"——命名小节是全文最容易被重构打穿的地方）。
 
 设计取向：
 - 只对单一规范正文 doc/architecture/Bone-DDD-最终实践方案.md 生效；
@@ -18,6 +21,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import sys
 from pathlib import Path
@@ -44,6 +48,17 @@ V4_RULE_REF = re.compile(r"(?<![A-Za-z0-9-])R[1-9](?![A-Za-z0-9-])")
 V4_SECTION_REF = re.compile(r"(?<![A-Za-z0-9.-])(?:E-\d+(?:\.\d+)*|G-\d+(?:\.\d+)*|P-\d+(?:\.\d+)*)(?![A-Za-z0-9-])")
 COMPAT_ZONE_HEADING = re.compile(r"^#{1,3}\s*(兼容入口|Legacy)")
 
+# 3) 命名约定样例：`A` → `B`。右侧是具体类名时必须真实存在；左右两侧都是抽象构件名的
+# 通用模式（如 `Command` → `CommandHandler`）登记在豁免表里。
+NAMING_SAMPLE = re.compile(r"`([A-Za-z][A-Za-z0-9]*)`\s*→\s*`([A-Z][A-Za-z0-9]*)`")
+NAMING_SAMPLE_EXEMPT = {
+    ("Command", "CommandHandler"): "抽象构件名之间的通用映射，不是具体类",
+}
+# 允许把历史改名记录在案（与 v4 编号检查同一取向：显式标为历史/已删除则放过），
+# 否则"已收敛（保留追溯）"这类记录本身会被判红。
+NAMING_SAMPLE_HISTORICAL = re.compile(r"(历史|曾用|旧版|已删除|已收敛|收敛前|改名前)")
+JAVA_PRUNED_DIRS = {"target", "node_modules", ".git", "build", "dist"}
+
 # 调用形态提取：publisher.xxx( / aggregate.releaseDomainEvents() / repo.findById(...)
 CALL = re.compile(
     r"\b(?:(?:domainEventPublisher|eventPublisher|publisher)\.(?P<ev>[a-zA-Z_]\w*)\()"
@@ -68,6 +83,21 @@ def collect_code_symbols() -> set[str]:
             # 类型名
             syms.update(re.findall(r"\b(?:public|final)?\s*(?:abstract\s+)?(?:class|interface|record|enum)\s+(\w+)", text))
     return syms
+
+
+def collect_java_simple_names() -> set[str]:
+    """全仓 .java 的类文件名集合（真源取文件系统，含未提交新增文件）。
+
+    刻意不用 `git ls-files`：改名"先动文件、后 add"是常见工作序，索引口径会把旧名留在集合里、
+    把新名挡在外面，反而放过最该拦的漂移。
+    """
+    names: set[str] = set()
+    for dirpath, dirnames, filenames in os.walk(REPO):
+        dirnames[:] = [d for d in dirnames if d not in JAVA_PRUNED_DIRS]
+        for fn in filenames:
+            if fn.endswith(".java"):
+                names.add(fn[: -len(".java")])
+    return names
 
 
 def collect_repository_methods() -> set[str]:
@@ -126,6 +156,7 @@ def main() -> int:
 
     code_syms = collect_code_symbols()
     repo_methods = collect_repository_methods()
+    java_names = collect_java_simple_names()
     problems: list[str] = []
 
     known_aggregate_api = {"addDomainEvent", "getDomainEvents", "clearDomainEvents", "releaseDomainEvents"}
@@ -166,6 +197,20 @@ def main() -> int:
                     if re.search(r"(v4|历史|曾用|旧版)", ctx):
                         continue
                     problems.append(f"{doc.name}:{no} 疑似 v4 条文编号残留：{ref}")
+            # 3) 命名约定样例 `A` → `B`：右侧类名必须真实存在
+            for mm in NAMING_SAMPLE.finditer(text):
+                left, right = mm.group(1), mm.group(2)
+                if (left, right) in NAMING_SAMPLE_EXEMPT:
+                    continue
+                if len(left) == 1 or len(right) == 1 or "Xxx" in left + right:
+                    continue  # A → B / XxxPlaceholder 之类的字面占位，不是真实类名
+                if NAMING_SAMPLE_HISTORICAL.search(text):
+                    continue
+                if right not in java_names:
+                    problems.append(
+                        f"{doc.name}:{no} 命名样例 `{left}` → `{right}` 的右侧类在仓库中不存在"
+                        f"（改名/删除后未同步文档？）"
+                    )
 
     if problems:
         level = "ERROR" if args.strict else "WARN"

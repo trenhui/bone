@@ -2,7 +2,7 @@ package com.bone.blueprint.adapter.rpc.assembler;
 
 import com.bone.blueprint.adapter.rpc.dto.request.CreateOrderReq;
 import com.bone.blueprint.adapter.rpc.dto.response.OrderDetailResp;
-import com.bone.blueprint.application.command.cmd.CreateOrderCommand;
+import com.bone.blueprint.application.command.CreateOrderCommand;
 import com.bone.blueprint.application.query.dto.OrderDto;
 import org.mapstruct.Mapper;
 

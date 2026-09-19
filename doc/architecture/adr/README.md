@@ -36,3 +36,4 @@
 | [0026](./0026-ddd-single-document-consolidation.md) | DDD v5.1.0 单文档整合（**已接受，取代 ADR-0024 的分册决定**） |
 | [0027](./0027-module-layer-semantics-before-physical.md) | 模块层级语义先立、物理结构后收（Kernel/Framework/Engine/Platform，**已接受**） |
 | [0028](./0028-application-service-first-selective-cqrs.md) | Application Service First + Selective CQRS（**已接受**） |
+| [0029](./0029-sdk-auto-tenant-filter.md) | SDK 查询/更新/删除自动注入 tenant_id（落实多租户规范 §3，**已接受 / 已实现**） |

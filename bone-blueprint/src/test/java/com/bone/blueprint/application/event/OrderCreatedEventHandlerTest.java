@@ -7,8 +7,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.bone.blueprint.application.query.dto.OrderWithItemsProjection;
 import com.bone.blueprint.application.query.port.OrderQueryPort;
+import com.bone.blueprint.application.query.projection.OrderWithItemsProjection;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.order.event.OrderCreatedEvent;
 import java.math.BigDecimal;

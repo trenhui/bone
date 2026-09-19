@@ -177,7 +177,7 @@ public class ArchitectureTest {
   // v4.5：命名 / 事务四条规则已降级为 warn（tasks 2.5），不再作为 @ArchTest 硬门禁；
   // 聚合纯单测卫生检查使用 TEST-HYGIENE-01（AggregatePureUnitTestCoverageTest）。
 
-  // P-2.3 + P-10.4（D9）：跨上下文 domain 越界守护；空匹配视为配置错误
+  // P-2.3 + P-2.4（D9）：跨上下文 domain 越界守护；空匹配视为配置错误
   @ArchTest
   static final ArchRule no_cross_context_domain =
       BoneDddArchRules.noCrossContextDomainDependency("com.bone.iam");

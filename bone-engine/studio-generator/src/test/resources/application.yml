@@ -16,6 +16,9 @@ spring:
       schema-locations: classpath:schema-test.sql
 
 bone:
+  # 同主配置：测试态同样关闭扩展引擎自动配置（详见 src/main/resources/application.yml）
+  extension:
+    enabled: false
   generator:
     lro:
       code-generation-enabled: true

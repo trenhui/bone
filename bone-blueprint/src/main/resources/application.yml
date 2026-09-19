@@ -15,9 +15,9 @@ spring:
       mode: never
 
 bone:
-  metadata:
-    enabled: true
-    scan-packages: com.bone.blueprint.domain
+  # 注意：此处不再有 bone.metadata.enabled / scan-packages——全仓无任何 @ConfigurationProperties 以
+  # bone.metadata 为前缀（SDK 的真前缀是 metadata.sdk.* 与 bone.metadata.datasource.*），写了也不会被绑定，
+  # 属"写了却不生效"的死配置。SDK 相关配置请写 metadata.sdk.*。
   blueprint:
     payment:
       callback:
@@ -41,6 +41,15 @@ bone:
     idempotency:
       # 幂等写（Idempotency-Key）：关闭后 /api/v1/orders 的重复提交不再返回历史响应
       enabled: true
+    schedule:
+      # ① 扫描周期：Spring cron（6 段：秒 分 时 日 月 周），由 @Scheduled 占位符直读
+      cancel-expired-orders-cron: "0 0/5 * * * ?"
+      close-expired-payments-cron: "0 0/5 * * * ?"
+      payment-inconsistency-check-cron: "0 0/10 * * * ?"
+      # ② 扫描门限（分钟）：超时窗口是运营策略，按业务线 / 渠道调整，无需改代码发版
+      order-timeout-minutes: 30
+      payment-timeout-minutes: 30
+      confirm-grace-minutes: 10
 
 server:
   port: 8082

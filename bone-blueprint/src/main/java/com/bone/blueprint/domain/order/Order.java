@@ -80,20 +80,18 @@ public class Order extends TenantAggregateRoot<Long> {
     return order;
   }
 
+  /**
+   * 追加商品项（<b>仅内存态</b>）。
+   *
+   * <p><b>为什么没有配对的 {@code removeItem}</b>：原 {@code removeItem(int index)} 在全仓零引用，且操作的是 {@link
+   * #items} 这个 {@code @Transient} 集合——{@code save} 不会级联、重载也不回填（见 {@link
+   * #getItems()}），删它是留一个"调用成功、实则未持久化"的 陷阱。真要删除明细，当前走的是"重建订单"或读侧之外的写路径。
+   */
   public void addItem(OrderItem item) {
     if (item == null) {
       throw new DomainException("商品项不能为空");
     }
     this.items.add(item);
-    recalculateTotal();
-    assertValidTotal();
-  }
-
-  public void removeItem(int index) {
-    if (index < 0 || index >= items.size()) {
-      throw new DomainException("商品项索引无效");
-    }
-    this.items.remove(index);
     recalculateTotal();
     assertValidTotal();
   }
@@ -130,7 +128,7 @@ public class Order extends TenantAggregateRoot<Long> {
    * 是否处于待支付状态（仅 CREATED 可确认支付 / 发起支付）。
    *
    * <p>意图揭示命名：外部（Handler / 事件订阅器）用本方法判断「能否支付」，**不要**直接比较 {@code getStatus() ==
-   * OrderStatus.CREATED}——状态解释权归聚合，避免状态机泄漏到应用层（反贫血 §17）。
+   * OrderStatus.CREATED}——状态解释权归聚合，避免状态机泄漏到应用层（反贫血 E-6.4）。
    */
   public boolean isAwaitingPayment() {
     return this.status == OrderStatus.CREATED;

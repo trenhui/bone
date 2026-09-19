@@ -10,8 +10,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.bone.blueprint.application.command.cmd.RefundPaymentCommand;
-import com.bone.blueprint.application.port.out.TenantProvider;
+import com.bone.blueprint.application.command.RefundPaymentCommand;
+import com.bone.blueprint.application.port.out.TenantPort;
 import com.bone.blueprint.domain.payment.Payment;
 import com.bone.blueprint.domain.payment.event.PaymentRefundedEvent;
 import com.bone.blueprint.domain.payment.valueobject.PaymentChannel;
@@ -31,7 +31,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 class PaymentApplicationServiceTest {
 
   @Mock private PaymentRepository paymentRepository;
-  @Mock private TenantProvider tenantProvider;
+  @Mock private TenantPort tenantProvider;
   @Mock private DomainEventPublisher domainEventPublisher;
 
   @InjectMocks private PaymentApplicationService service;

@@ -37,12 +37,18 @@ public class BatchInsertBuilder implements BatchQueryBuilder<BatchInsertContext>
     String sql = "INSERT INTO " + table.getName() + " (" + columnList + ") VALUES (" + ph + ")";
 
     var batch = new ArrayList<Map<String, Object>>();
+    ColumnMetadata tenantCol = table.getTenantIdColumn();
     for (var e : ents) {
       var m = new LinkedHashMap<String, Object>();
       for (var c : cols) {
-        m.put(
-            c.getName(),
-            SqlUtil.toJdbcParameter(ReflectionUtil.getFieldValue(e, c.getFieldName())));
+        Object value;
+        if (tenantCol != null && c == tenantCol) {
+          // 插入时从可信 TenantContext 补/校正租户（ADR-0029 建议补充 #1）
+          value = SqlUtil.toJdbcParameter(TenantFilterInjector.resolveInsertTenantValue(table, e));
+        } else {
+          value = SqlUtil.toJdbcParameter(ReflectionUtil.getFieldValue(e, c.getFieldName()));
+        }
+        m.put(c.getName(), value);
       }
       // 扩展属性
       if (e instanceof ExtensibleObject ext) {

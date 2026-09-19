@@ -246,7 +246,7 @@ def build_as_is_checks() -> list[dict]:
             "evidence": {
                 "java": _grep_files(
                     GENERATOR_JAVA,
-                    r"class CatalogMetadataGatewayImpl|MetadataEntitySnapshotController|DELIVERY_RUNTIME",
+                    r"class CatalogMetadataGatewayAdapter|MetadataEntitySnapshotController|DELIVERY_RUNTIME",
                 ),
             },
         },

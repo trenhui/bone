@@ -1,11 +1,11 @@
 # bone-system 控制台 [Target] / [Vision] Backlog
 
-> **生成时间**：2026-09-17T03:06:49Z（UTC）
+> **生成时间**：2026-09-18T22:39:47Z（UTC）
 > **维护源**：[`backlog.yaml`](../../../tools/console-compliance-collector/backlog.yaml)
 
 | Tier | ID | 项 | 引用 | 跟踪 |
 |------|-----|-----|------|------|
-| **Target** | `remote-service-probe` | 远端服务真探活（替换 LocalActuatorServiceHealthGateway 的 UNKNOWN） | 详设 §1.4 / §3.3.4 | P0 · 接服务注册中心或网关主动探活 |
+| **Target** | `remote-service-probe` | 远端服务真探活（替换 LocalActuatorServiceHealthGatewayAdapter 的 UNKNOWN） | 详设 §1.4 / §3.3.4 | P0 · 接服务注册中心或网关主动探活 |
 | **Target** | `cross-db-metrics` | prod 分库部署时跨库 keyMetrics 聚合（通过 Gateway/Feign 调各服务只读 API） | 详设 §3.3.3 / §11.2 | P0 · 当前默认连共享库 bone；分库时退化为 0（graceful degradation） |
 | **Target** | `cpu-disk-metrics` | 节点 CPU / 磁盘使用率 | 详设 §1.4 | P1 · OperatingSystemMXBean 或 node_exporter |
 | **Target** | `alerts-feed` | alerts[] 接入 sys_alert_event | 详设 §1.4 / §2.1 | P1 · 与 AlertController 串联 |

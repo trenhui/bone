@@ -92,7 +92,7 @@ const PluginManagement: React.FC = () => {
     description?: string;
     pluginId?: number;
   }>();
-  const [uploadPlugin, setUploadPlugin] = useState<ExtensionRow | null>(null);
+  const [uploadTarget, setUploadTarget] = useState<ExtensionRow | null>(null);
 
   const load = useCallback(async (p: number, ps: number) => {
     setLoading(true);
@@ -163,7 +163,7 @@ const PluginManagement: React.FC = () => {
   }, [modalOpen, editing, form]);
 
   const openUpload = (plugin?: ExtensionRow) => {
-    setUploadPlugin(plugin ?? null);
+    setUploadTarget(plugin ?? null);
     setJarFile(null);
     setUploadOpen(true);
   };
@@ -172,14 +172,14 @@ const PluginManagement: React.FC = () => {
   useEffect(() => {
     if (!uploadOpen) return;
     uploadForm.resetFields();
-    if (uploadPlugin) {
+    if (uploadTarget) {
       uploadForm.setFieldsValue({
-        pluginId: uploadPlugin.id,
-        extPointId: uploadPlugin.extPointId,
-        name: uploadPlugin.name,
-        className: uploadPlugin.className,
+        pluginId: uploadTarget.id,
+        extPointId: uploadTarget.extPointId,
+        name: uploadTarget.name,
+        className: uploadTarget.className,
         version: '',
-        description: uploadPlugin.description,
+        description: uploadTarget.description,
       });
     } else {
       uploadForm.setFieldsValue({ version: '1.0.0' });
@@ -642,10 +642,10 @@ const PluginManagement: React.FC = () => {
           <Form.Item
             name="extPointId"
             label="关联扩展点"
-            rules={[{ required: !uploadPlugin, message: '请选择扩展点' }]}
+            rules={[{ required: !uploadTarget, message: '请选择扩展点' }]}
           >
             <Select
-              disabled={!!uploadPlugin}
+              disabled={!!uploadTarget}
               options={extPoints.map((p) => ({ value: p.id, label: `${p.name} (#${p.id})` }))}
             />
           </Form.Item>

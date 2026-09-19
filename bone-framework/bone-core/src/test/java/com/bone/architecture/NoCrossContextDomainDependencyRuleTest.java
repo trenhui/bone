@@ -11,7 +11,7 @@ import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.EvaluationResult;
 import org.junit.jupiter.api.Test;
 
-/** P-10.4（D9）：跨上下文 domain 越界依赖拦截（M2 2.2）的单元测试。 */
+/** P-2.4 / E-1.3：跨上下文 domain 越界依赖拦截（M2 2.2）的单元测试。 */
 class NoCrossContextDomainDependencyRuleTest {
 
   private static final String SELF = "com.bone.architecture.fixture.context.mine";

@@ -224,14 +224,20 @@ throw new BizException(ExtensionErrorCode.PLUGIN_NOT_FOUND, pluginId);
 | `BP_ORDER_NOT_FOUND` | 404 | 订单不存在（含跨租户不可见） |
 | `BP_ORDER_STATUS_CONFLICT` | 409 | 订单当前状态不允许该操作 |
 | `BP_ORDER_STATUS_INVALID` | 400 | 订单状态查询入参非法 |
+| `BP_ORDER_STOCK_INSUFFICIENT` | 409 | 下单商品库存不足（同步预校验失败） |
 | `BP_PAYMENT_NOT_FOUND` | 404 | 支付单不存在（含跨租户不可见） |
 | `BP_PAYMENT_STATUS_CONFLICT` | 409 | 支付单当前状态不允许该操作 |
 | `BP_PAYMENT_SIGNATURE_INVALID` | 401 | 渠道回调签名校验失败（不可信调用方） |
 | `BP_PAYMENT_CHANNEL_PREPAY_FAILED` | 502 | 渠道预下单失败（上游依赖故障） |
 
-> **样板落地范围**：代码常量在 `bone-blueprint/common/BlueprintErrorCodes`；抛出方必须用载码构造器
-> `new BizException(HTTP 状态, 码 + ": " + 说明)`。`BizException(String)` 的默认码是 **500**，用它等于把
-> 「查不到 / 状态冲突 / 参数错」都报成服务端故障（本项目已据此修正 404 与 400 两处误报）。
+> **样板落地范围**：码常量在 `bone-blueprint/common/BlueprintErrorCodes`（只承载稳定码字符串与语义）；
+> **「码 → HTTP 状态」的唯一真源是 `bone-blueprint/common/BlueprintErrors` 的 `DEFAULT_HTTP_STATUS` 表**（与本表逐行对应），
+> 抛出方走 `BlueprintErrors.of(码, 上下文)`（或 `orElseThrow` 用的 `BlueprintErrors.supplier(码, 上下文)`），
+> **不在抛出点手写状态数字**。新增码若忘记登记状态，`BlueprintErrors` 类加载即抛 `IllegalStateException`（fail fast）。
+>
+> **为何要收成一张表**：`BizException` 的首参是 HTTP 状态、业务码只能拼进 message，两者天然是两份数据。散在各抛出点手写
+> `new BizException(HTTP 状态, 码 + ": " + 说明)` 时，任一处不一致都无机制发现。`BizException(String)` 的默认码是 **500**，
+> 用它等于把「查不到 / 状态冲突 / 参数错」都报成服务端故障（本项目已据此修正 404、400 与库存不足 500 三处误报）。
 
 ---
 

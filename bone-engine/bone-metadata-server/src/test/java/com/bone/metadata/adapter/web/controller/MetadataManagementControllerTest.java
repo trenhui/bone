@@ -7,9 +7,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.bone.core.tenant.context.TenantContext;
 import com.bone.metadata.MetadataApplication;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -35,6 +38,17 @@ class MetadataManagementControllerTest {
         "spring.datasource.password",
         () -> System.getenv().getOrDefault("BONE_DB_PASSWORD", "mysql123"));
     registry.add("security.enabled", () -> "false");
+  }
+
+  @BeforeEach
+  void setupTenant() {
+    // 测试关闭安全（无 JWT），模拟 JWT 过滤器写入的租户上下文；否则 SDK 对租户表查询触发失败关闭
+    TenantContext.setTenantId(1L);
+  }
+
+  @AfterEach
+  void clearTenant() {
+    TenantContext.clear();
   }
 
   private String createEntity() throws Exception {

@@ -46,6 +46,9 @@ public class ConditionalUpdateBuilder implements SqlQueryBuilder<ConditionalUpda
       String op = cond.getOperator().getSymbol();
       whereClauses.add("m." + col + " " + op + " :" + cond.getParamName());
     }
+
+    // 3.1 租户过滤（可信源 TenantContext；ADR-0029）——须在"缺少更新条件"校验前注入
+    TenantFilterInjector.inject(whereClauses, params, table, crit, true);
     // 不支持扩展表条件
     if (!crit.getExtConditions().isEmpty()) {
       throw new UnsupportedOperationException("ConditionalUpdate 不支持扩展表条件");

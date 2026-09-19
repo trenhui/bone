@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import lombok.Data;
 
-/** 支付渠道回调请求 DTO（模拟真实渠道回调报文，§23.1）。 */
+/** 支付渠道回调请求 DTO（模拟真实渠道回调报文，E-13.1）。 */
 @Data
 public class PaymentCallbackReq {
 

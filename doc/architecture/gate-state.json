@@ -1,6 +1,6 @@
 {
   "_comment": "门禁状态唯一真源（single source of truth）。Bone-DDD-最终实践方案.md 的 G-1.1 / G-1.5 / G-1.7 状态表由本文件经 scripts/check-ddd-gate-state.py generate 渲染；改状态请改本文件后重跑生成命令，勿手改文档里的表。JSON 而非 YAML：仓库 CI 运行器无 PyYAML，std::json 零依赖更稳。",
-  "version": "5.5.9",
+  "version": "5.5.13",
   "tables": {
     "g1_1_arch": {
       "sep": "|---|----------------|---------------------------|----------|",
@@ -92,8 +92,8 @@
         [
           "12c",
           "DDL 必备字段与文档同步",
-          "这是**两件事**：**表名清单同步**由 `scripts/check-ddl-doc-sync.py`（`ci-check.sh` `[7/7]` 调用）本地执行；**必备列（`tenant_id`/`created_at`/`updated_at`/`deleted`）校验**在仓库内**没有任何载体**",
-          "文档同步：Manual（本地，当前 GitHub Actions 未调用）；必备字段：Planned"
+              "这是**两件事**：**表名清单同步**由 `scripts/check-ddl-doc-sync.py`（`ci-check.sh` `[7/7]` 调用）本地执行；**必备列（`tenant_id`/`created_at`/`updated_at`/`deleted`）校验**由 `scripts/check-ddl-required-columns.py --check`（同一 `[7/7]` 调用）本地执行——**新增表**缺列即失败，存量缺口登记在 `doc/architecture/ddl-required-columns-baseline.json`（只可收缩），**尚未逐表分类**",
+              "文档同步：Manual（本地，当前 GitHub Actions 未调用）；必备字段：Manual（本地 `--check` 拦新增表；存量 26 张已逐表分类：18 张 by-design、8 张待处理，见 `doc/architecture/ddl-required-columns-baseline.json`，不得当成「全表已合规」）"
         ],
         [
           "12d",
@@ -126,8 +126,8 @@
       "rows": [
         [
           "13",
-          "DDD 文档示例引用的 API 符号必须真实存在",
-          "`scripts/ci/check-ddd-doc-code-sync.py --strict`（校验 publisher API / 聚合事件 API / 仓储方法名，符号真源含 `bone-core`、客户端 SDK、`bone-metadata-sdk` 与全仓 `*Repository`）",
+          "DDD 文档示例引用的 API 符号必须真实存在；E-13 命名样例（左右各一个反引号类名 + 箭头）的右侧类必须真实存在",
+          "`scripts/ci/check-ddd-doc-code-sync.py --strict`（校验 publisher API / 聚合事件 API / 仓储方法名 / 命名样例类名，符号真源含 `bone-core`、客户端 SDK、`bone-metadata-sdk`、全仓 `*Repository` 与 `.java` 文件名集合）",
           "Active（`ci.yml` `backend-quality` job 阻断）"
         ],
         [
@@ -138,8 +138,8 @@
         ],
         [
           "15",
-          "**本文声明的门禁状态必须等于 workflow / 规则库 / pom 的真实状态**（编号唯一、锚点契约可解析、覆盖率阈值一致、规则名真实、`Active` 载体不在本地脚本、HC 载体存在、本地已落地的拦截未被写成无实现、覆盖率模块覆盖已声明）",
-          "`scripts/check-ddd-gate-state.py`（登记式反查；`KNOWN_MISSING` 之外的规则名必须真实存在）",
+          "**本文声明的门禁状态必须等于 workflow / 规则库 / pom 的真实状态**（编号唯一、锚点契约可解析、覆盖率阈值一致、规则名真实、`Active` 载体不在本地脚本、HC 载体存在、本地已落地的拦截未被写成无实现、覆盖率模块覆盖已声明、状态真源版本与正文版本一致）",
+          "`scripts/check-ddd-gate-state.py`（十项；登记式反查；`KNOWN_MISSING` 之外的规则名必须真实存在）",
           "Active（`ci.yml` `backend-quality` job 阻断）"
         ]
       ]
@@ -436,8 +436,8 @@
         [
           "**HC-008**",
           "新增表必须含 `tenant_id` + `created_at` + `updated_at` + `deleted`",
-          "**无实现**：仓库内没有任何校验**必备列**的载体。`scripts/check-ddl-doc-sync.py` 只比对**表名清单**（`bone-init.sql` vs 数据库开发规范 §2），不读列；`scripts/ci-check.sh` 的 `[7/7]` 调用的就是同一个脚本，并不构成必备字段载体",
-          "**Planned**（同 [G-1.1](#g-11-hard-gate) 12c 后半）"
+          "`scripts/check-ddl-required-columns.py --check`（`ci-check.sh` `[7/7]` 调用，本地无 workflow）：**新增表**缺列即失败；存量缺口登记在 `doc/architecture/ddl-required-columns-baseline.json`、仅可收缩（`scripts/check-ddl-doc-sync.py` 仍只比对表名清单，不读列）",
+          "**Manual**（本地新增表阻断已落地；存量 26 张缺口已逐表分类——18 张 by-design、8 张待处理：2 张 `gap-candidate` 需按 L3 走 DDL 变更审批、6 张待模块 Owner 裁决；不得称全表已合规，同 [G-1.1](#g-11-hard-gate) 12c 后半）"
         ]
       ]
     }

@@ -4,21 +4,22 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.bone.blueprint.application.port.out.OrderOutboxWriter;
-import com.bone.blueprint.application.query.dto.PaymentProjection;
+import com.bone.blueprint.application.port.out.OrderOutboxPort;
 import com.bone.blueprint.application.query.port.OrderQueryPort;
 import com.bone.blueprint.application.query.port.PaymentQueryPort;
+import com.bone.blueprint.application.query.projection.PaymentProjection;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.springframework.test.util.ReflectionTestUtils;
 
 /**
  * 「钱货不一致」对账任务测试。
@@ -34,9 +35,16 @@ class OrderPaymentInconsistencyJobTest {
 
   @Mock private OrderQueryPort orderQueryPort;
 
-  @Mock private OrderOutboxWriter orderOutboxWriter;
+  @Mock private OrderOutboxPort orderOutboxWriter;
 
-  @InjectMocks private OrderPaymentInconsistencyJob job;
+  private OrderPaymentInconsistencyJob job;
+
+  @BeforeEach
+  void setUp() {
+    job = new OrderPaymentInconsistencyJob(paymentQueryPort, orderQueryPort, orderOutboxWriter);
+    // @Value 字段由 Spring 在运行期注入，单测里手工置入（默认 10，与 @Value 占位符默认值一致）
+    ReflectionTestUtils.setField(job, "confirmGraceMinutes", 10L);
+  }
 
   @Test
   void looksUpOrderStatusByIdPerTenantWithoutJoin() {

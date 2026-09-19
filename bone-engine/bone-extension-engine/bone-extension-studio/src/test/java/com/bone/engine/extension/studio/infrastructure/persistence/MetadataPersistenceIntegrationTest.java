@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.bone.core.tenant.context.TenantContext;
 import com.bone.engine.extension.studio.domain.gateway.ExtPointReadPort;
 import com.bone.engine.extension.studio.domain.gateway.ExtensionReadPort;
 import com.bone.engine.extension.studio.domain.model.ExtPoint;
@@ -17,6 +18,8 @@ import com.bone.engine.extension.studio.infrastructure.persistence.entity.ExtStu
 import com.bone.engine.extension.studio.infrastructure.persistence.repository.ExtStudioAuditLogRepository;
 import com.bone.engine.extension.studio.infrastructure.persistence.repository.ExtStudioExtensionImplRepository;
 import com.bone.engine.extension.studio.infrastructure.persistence.repository.ExtStudioExtensionPointRepository;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -42,6 +45,17 @@ class MetadataPersistenceIntegrationTest {
   @Autowired private StudioAuditRepository auditRepository;
 
   @Autowired private ExtStudioAuditLogRepository auditLogRepository;
+
+  @BeforeEach
+  void setupTenant() {
+    // 扩展点 / 审计表为租户表；测试无运行期租户上下文，模拟 JWT 提供的租户（否则 SDK 失败关闭）
+    TenantContext.setTenantId(1L);
+  }
+
+  @AfterEach
+  void clearTenant() {
+    TenantContext.clear();
+  }
 
   @Test
   void contextLoadsRepositoriesAndStores() {

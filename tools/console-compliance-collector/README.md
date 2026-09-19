@@ -29,7 +29,7 @@ python3 tools/console-compliance-collector/collect.py --check
 | `controller-single-source` | 仅 `bone-system` 有 `ConsoleController`；`bone-iam` 副本必须已删除 |
 | `cqrs-handler` | `ConsoleOverviewQueryHandler` / `QuickActionsQueryHandler` 存在 |
 | `gateway-ports` | 三类出站端口接口存在 |
-| `graceful-degradation` | `JdbcKeyMetricsGateway` 与 `singleTableFailureDoesNotPropagate` 测试存在 |
+| `graceful-degradation` | `JdbcKeyMetricsGatewayAdapter` 与 `singleTableFailureDoesNotPropagate` 测试存在 |
 | `method-security` | `ConsoleController` `@PreAuthorize` + `EnableMethodSecurity` + `JwtAuthenticationFilter` + `ConsoleSecurityTest` |
 | `frontend-route-guard` | `bone-shell` `Authorized` + `SYS_CONSOLE_READ` 路由守卫 + `jwt.test.ts` |
 | `permission-code` | `sys:console:read` 在 DDL / 前端常量 / `DefaultPermissionCodes` / Controller 文档四处对齐 |

@@ -9,7 +9,7 @@
 残留、符号真实性、链接与锚点可达——**都覆盖不到"文档声明的门禁状态是否等于真实状态"**，
 所以另立本脚本补这一层。
 
-九项检查：
+十项检查：
 1. 章节编号唯一：`P|E|G` + 数字 的编号不得在两个标题上重复出现；
 2. 稳定锚点契约可解析：`稳定锚点与索引` 表内的每个 `#anchor` 必须落到标题自动锚或显式 `<a id>`；
 3. 覆盖率阈值一致：`HC-005` 行**第一个**百分数即"声明的实测门槛"，必须等于 pom 的
@@ -26,6 +26,8 @@
    「模块覆盖」，否则读者会把默认门槛当成全模块生效；
 9. `--metrics`：输出 G-1.8 定义的实施状态指标（Handler / ApplicationService / UseCase /
    `domain/repository` 计数），口径取自 `git ls-files`，数字不入库。
+10. **状态真源版本一致**：`gate-state.json` 的 `version` 必须等于正文头部声明的版本号——
+    否则「唯一真源」会无声落后于它描述的条文版本（2026-09-19 实测：JSON 4 项全绿却停在 5.5.9）。
 
 另有一项**不阻断**的输出（AGENTS.md 属 §12.3 的 L4，本脚本只提示、不判失败）：
 
@@ -90,6 +92,8 @@ LOCAL_INTERCEPT_PROBES = [
 ]
 # 8) 覆盖率门禁强度：父 POM 之外的模块下调阈值时必须写进 HC-005 行。
 JACOCO_PROP = re.compile(r"<jacoco\.minimum\.coverage>([\d.]+)</jacoco\.minimum\.coverage>")
+# 10) 状态真源版本：gate-state.json 的 version 必须等于正文头部声明的版本号。
+DOC_VERSION = re.compile(r"^>\s*\*\*版本\*\*：\s*(\d+\.\d+\.\d+)")
 COVERAGE_ROOTS = (
     "bone-parent",
     "bone-framework",
@@ -419,46 +423,110 @@ def check_agents_single_source():
     return warnings
 
 
+def check_version_alignment(lines):
+    """10) gate-state.json 的 version 必须等于正文头部声明的版本号。
+
+    没有这条时，状态真源会在无声中落后于它要描述的那一版条文——2026-09-19 实测即
+    `gate-state.json=5.5.9` 而正文已是 `5.5.10`，而当时九项检查全绿。
+    """
+    doc_ver = None
+    for ln in lines[:20]:
+        m = DOC_VERSION.match(ln.strip())
+        if m:
+            doc_ver = m.group(1)
+            break
+    if doc_ver is None:
+        return ["未能在本文头部解析出「> **版本**：x.y.z」版本行，无法核对状态真源版本"]
+    try:
+        state = json.loads(GATE_STATE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return ["读取门禁状态真源失败：{}".format(exc)]
+    state_ver = str(state.get("version", ""))
+    if state_ver != doc_ver:
+        return [
+            "gate-state.json 的 version={} 与本文版本 {} 不一致——状态真源落后于它描述的条文版本；"
+            "须同批更新（改 JSON 后运行 `python3 scripts/check-ddd-gate-state.py generate`）".format(
+                state_ver or "(缺失)", doc_ver
+            )
+        ]
+    return []
+
+
+METRIC_SUFFIXES = {
+    "*CommandHandler 类数": "CommandHandler.java",
+    "*ApplicationService 类数": "ApplicationService.java",
+    "*QueryHandler 类数": "QueryHandler.java",
+    "*UseCase 类数": "UseCase.java",
+}
+
+
 def collect_metrics():
-    """7) G-1.8 实施状态指标；口径取自 git 索引，返回 (指标字典, 错误信息)。"""
+    """7) G-1.8 实施状态指标，返回 (索引口径, 工作树口径, 错误信息)。
+
+    两个口径都给，是因为重构期间只看一个会骗人：索引口径**漏掉未提交新增**（blueprint 内联
+    Handler 时新建的 `*ApplicationService` 还没 add 就不计），同时**保留已在工作树删除的文件**
+    （2026-09-19 实测：`OrderPaidConsumptionApplicationService` 已删、索引里仍在，`*ApplicationService`
+    因此长期报 3）。索引口径是"已提交现状"，工作树口径是"此刻磁盘现状"，二者差集即为在途改动。
+    """
     proc = subprocess.run(
         ["git", "ls-files"], cwd=str(REPO), capture_output=True, text=True
     )
     if proc.returncode != 0:
-        return None, "git ls-files 失败：{}".format(proc.stderr.strip())
+        return None, None, "git ls-files 失败：{}".format(proc.stderr.strip())
     # 只计 src/main/java：测试夹具里刻意造的 *CommandHandler / *UseCase 不算产品代码
     # （bone-architecture-test 的 fixture 会污染计数，实测 UseCase 类数因此从 1 变 0）。
-    files = [
+    tracked = {
         f for f in proc.stdout.splitlines() if f.endswith(".java") and "/src/main/java/" in f
-    ]
+    }
+    on_disk = {f for f in tracked if (REPO / f).exists()}
+    # 工作树口径：tracked 中仍存在 + 未跟踪新增（--others 覆盖新增，--exclude-standard 尊重 .gitignore）
+    others = subprocess.run(
+        ["git", "ls-files", "--others", "--exclude-standard"],
+        cwd=str(REPO),
+        capture_output=True,
+        text=True,
+    )
+    if others.returncode == 0:
+        on_disk |= {
+            f
+            for f in others.stdout.splitlines()
+            if f.endswith(".java") and "/src/main/java/" in f
+        }
 
-    def by_suffix(suffix):
-        return sum(1 for f in files if Path(f).name.endswith(suffix))
+    def snapshot(files):
+        out = {
+            name: sum(1 for f in files if Path(f).name.endswith(suffix))
+            for name, suffix in METRIC_SUFFIXES.items()
+        }
+        out["domain/repository 接口数"] = sum(1 for f in files if "/domain/repository/" in f)
+        return out
 
-    return {
-        "*CommandHandler 类数": by_suffix("CommandHandler.java"),
-        "*ApplicationService 类数": by_suffix("ApplicationService.java"),
-        "*QueryHandler 类数": by_suffix("QueryHandler.java"),
-        "*UseCase 类数": by_suffix("UseCase.java"),
-        "domain/repository 接口数": sum(1 for f in files if "/domain/repository/" in f),
-    }, None
+    return snapshot(tracked), snapshot(on_disk), None
 
 
 def main():
     args = sys.argv[1:]
     if "--metrics" in args:
-        metrics, err = collect_metrics()
+        tracked, on_disk, err = collect_metrics()
         if err:
             print(err, file=sys.stderr)
             return 1
         print("Bone DDD 实施状态指标（口径见 G-1.8；数字不入库，每次现算）")
-        for name, value in metrics.items():
-            print("  {:<26} {}".format(name, value))
+        print("  {:<26} {:>6} {:>10} {:>9}".format("指标", "索引", "工作树", "差值"))
+        for name in tracked:
+            a, b = tracked[name], on_disk[name]
+            print("  {:<26} {:>6} {:>10} {:>+9}".format(name, a, b, b - a))
         print(
             "  {:<26} {}".format(
-                "统计范围", "git ls-files 索引内 src/main/java 的 .java（不含未跟踪文件与测试夹具）"
+                "统计范围", "src/main/java 的 .java（不含测试夹具）；索引口径=已提交现状，工作树口径=此刻磁盘"
             )
         )
+        if tracked != on_disk:
+            print(
+                "  {:<26} {}".format(
+                    "差集含义", "在途改动（未提交新增 / 已删除未提交），两边不一致时以工作树口径读迁移进度"
+                )
+            )
         return 0
 
     if args and args[0] == "generate":
@@ -478,6 +546,7 @@ def main():
     errors += check_hc_script_carriers_exist(lines)
     errors += check_local_intercept_vs_status(lines)
     errors += check_coverage_overrides(lines)
+    errors += check_version_alignment(lines)
 
     warnings = check_agents_single_source()
 
@@ -494,6 +563,7 @@ def main():
     print(
         "OK: 门禁状态检查通过（编号唯一 / 锚点契约可解析 / 覆盖率阈值一致 / 规则名真实 / "
         "Active 载体不在本地脚本 / HC 载体存在 / 本地拦截未被写成无实现 / 覆盖率模块覆盖已声明；"
+        "状态真源版本与正文一致；"
         "Known-missing 登记 {} 条；提示 {} 条）".format(len(KNOWN_MISSING), len(warnings))
     )
     return 0

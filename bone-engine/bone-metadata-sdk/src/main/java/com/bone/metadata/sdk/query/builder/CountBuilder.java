@@ -83,6 +83,9 @@ public class CountBuilder implements SqlQueryBuilder<CountContext> {
       where.add("m.deleted = false");
     }
 
+    // 租户过滤（可信源 TenantContext；ADR-0029）
+    TenantFilterInjector.inject(where, params, tbl, c, true);
+
     if (!where.isEmpty()) {
       sql.append(" WHERE ").append(String.join(" AND ", where));
     }

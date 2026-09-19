@@ -5,6 +5,7 @@ import static com.bone.metadata.catalog.domain.model.physical.PhysicalStructureP
 import static com.bone.metadata.catalog.domain.model.physical.PhysicalStructurePlan.STATUS_REFUSED;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.bone.core.tenant.context.TenantContext;
 import com.bone.metadata.MetadataApplication;
 import com.bone.metadata.catalog.domain.enums.MetaDeliveryMode;
 import com.bone.metadata.catalog.domain.gateway.PhysicalStructureGateway;
@@ -14,6 +15,7 @@ import com.bone.metadata.catalog.domain.model.physical.PhysicalStructurePlan;
 import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
 import com.bone.metadata.catalog.domain.repository.MetaFieldRepository;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -51,8 +53,15 @@ class JdbcPhysicalStructureGatewayTest {
     registry.add("security.enabled", () -> "false");
   }
 
+  @BeforeEach
+  void setupTenant() {
+    // catalog 物理结构对齐按租户隔离；测试中模拟 JWT 提供的租户上下文（TenantContext 为空会触发 SDK 失败关闭）
+    TenantContext.setTenantId(TENANT);
+  }
+
   @AfterEach
   void cleanup() {
+    TenantContext.clear();
     if (tableName != null) {
       jdbcTemplate.execute("DROP TABLE IF EXISTS `" + tableName + "`");
     }

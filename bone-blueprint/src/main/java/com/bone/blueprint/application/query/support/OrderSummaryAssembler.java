@@ -1,22 +1,12 @@
 package com.bone.blueprint.application.query.support;
 
 import com.bone.blueprint.application.query.dto.OrderDto;
-import com.bone.blueprint.application.query.dto.OrderHeadProjection;
-import com.bone.blueprint.domain.order.Order;
+import com.bone.blueprint.application.query.projection.OrderHeadProjection;
 
-/** 订单聚合 / 读模型 → 查询 DTO 组装（application 查询层职责，与 OrderDetailAssembler/PaymentDetailAssembler 同层）。 */
+/** 读模型行 → 查询 DTO 组装（application 查询层职责，与 OrderDetailAssembler/PaymentDetailAssembler 同层）。 */
 public final class OrderSummaryAssembler {
 
   private OrderSummaryAssembler() {}
-
-  public static OrderDto fromOrder(Order order) {
-    return OrderDto.builder()
-        .id(order.getId())
-        .customerId(order.getCustomerId())
-        .totalAmount(order.getTotalAmount())
-        .status(order.getStatus().name())
-        .build();
-  }
 
   /** 读模型行 → DTO（分页投影走 *QueryPort，不再反序列化写聚合）。 */
   public static OrderDto fromRow(OrderHeadProjection row) {

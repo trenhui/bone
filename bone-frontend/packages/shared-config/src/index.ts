@@ -38,7 +38,7 @@ export function createQiankunViteConfig(name: string, port: number, options: Cre
 
   return defineConfig({
     plugins: [
-      react({ fastRefresh: false }),
+      react(),
       removeReactRefreshPlugin(),
       qiankun(name, { useDevMode: true }),
     ],

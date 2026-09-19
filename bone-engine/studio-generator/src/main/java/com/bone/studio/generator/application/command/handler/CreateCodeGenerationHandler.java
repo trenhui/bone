@@ -2,8 +2,6 @@ package com.bone.studio.generator.application.command.handler;
 
 import com.bone.core.capability.Capability;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
-import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.studio.generator.application.command.cmd.CreateCodeGenerationCommand;
 import com.bone.studio.generator.common.StudioIds;
 import com.bone.studio.generator.domain.code.GeneratedFile;
@@ -11,9 +9,10 @@ import com.bone.studio.generator.domain.data.CodeTemplate;
 import com.bone.studio.generator.domain.data.DataSource;
 import com.bone.studio.generator.domain.data.GenTableMetadata;
 import com.bone.studio.generator.domain.data.GenerationTask;
+import com.bone.studio.generator.domain.gateway.GenTableMetadataReadPort;
+import com.bone.studio.generator.domain.gateway.GenerationTaskReadPort;
 import com.bone.studio.generator.domain.repository.CodeTemplateRepository;
 import com.bone.studio.generator.domain.repository.DataSourceRepository;
-import com.bone.studio.generator.domain.repository.GenTableMetadataRepository;
 import com.bone.studio.generator.domain.repository.GenerationTaskRepository;
 import com.bone.studio.generator.domain.service.FileGenerator;
 import java.util.ArrayList;
@@ -33,8 +32,9 @@ import org.springframework.transaction.annotation.Transactional;
 public class CreateCodeGenerationHandler {
 
   private final GenerationTaskRepository generationTaskRepository;
+  private final GenerationTaskReadPort generationTaskReadPort;
   private final DataSourceRepository dataSourceRepository;
-  private final GenTableMetadataRepository tableMetadataRepository;
+  private final GenTableMetadataReadPort genTableMetadataReadPort;
   private final CodeTemplateRepository codeTemplateRepository;
   private final List<FileGenerator> fileGenerators;
 
@@ -100,16 +100,10 @@ public class CreateCodeGenerationHandler {
 
   private GenerationTask loadOrCreateTask(
       String taskId, CreateCodeGenerationCommand command, ResolvedInputs inputs) {
-    try {
-      GenerationTask existing =
-          generationTaskRepository.findOneByCriteria(
-              Criteria.<GenerationTask>create().eq("taskId", taskId));
-      if (existing != null) {
-        existing.markProcessing();
-        return existing;
-      }
-    } catch (MultipleResultsException ex) {
-      throw new IllegalStateException("duplicate generation task: " + taskId, ex);
+    GenerationTask existing = generationTaskReadPort.findByTaskId(taskId).orElse(null);
+    if (existing != null) {
+      existing.markProcessing();
+      return existing;
     }
     return buildPendingTask(taskId, command);
   }
@@ -165,14 +159,9 @@ public class CreateCodeGenerationHandler {
   }
 
   private GenTableMetadata findTableMetadata(Long dataSourceId, String tableName) {
-    try {
-      return tableMetadataRepository.findOneByCriteria(
-          Criteria.<GenTableMetadata>create()
-              .eq("dataSourceId", StudioIds.dataSourceKey(dataSourceId))
-              .eq("originalTableName", tableName));
-    } catch (MultipleResultsException e) {
-      throw new IllegalStateException("duplicate table metadata", e);
-    }
+    return genTableMetadataReadPort
+        .findByDataSourceKeyAndTableName(StudioIds.dataSourceKey(dataSourceId), tableName)
+        .orElse(null);
   }
 
   private record ResolvedInputs(

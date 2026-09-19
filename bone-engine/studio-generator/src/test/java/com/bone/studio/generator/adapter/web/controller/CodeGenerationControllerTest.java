@@ -4,11 +4,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.bone.core.tenant.context.TenantContext;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.studio.generator.domain.data.GenerationTask;
 import com.bone.studio.generator.domain.repository.GenerationTaskRepository;
+import com.bone.studio.generator.support.TestTenantContextConfiguration;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,8 +36,15 @@ class CodeGenerationControllerTest {
 
   @BeforeEach
   void setUp() {
+    // seedSuccessTask 在测试线程直连仓储，需自备租户上下文（HTTP 请求由测试过滤器注入）
+    TenantContext.setTenantId(TestTenantContextConfiguration.TEST_TENANT_ID);
     baseUrl = "http://localhost:" + port + "/api/v1/generator/code-generation";
     seedSuccessTask();
+  }
+
+  @AfterEach
+  void clearTenant() {
+    TenantContext.clear();
   }
 
   @Test

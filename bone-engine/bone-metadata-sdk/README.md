@@ -6,8 +6,9 @@ Bone 平台默认持久化栈：元数据驱动仓储、`Criteria` / DSL 读侧�
 
 | 文档 | 用途 |
 |------|------|
-| [doc/使用指南.md](doc/使用指南.md) | 日常 API：仓储、Criteria、DSL、多数据源、排错 |
-| [doc/Bone-Metadata-SDK-最佳实践方案.md](doc/Bone-Metadata-SDK-最佳实践方案.md) | 架构原则、读写分层、演进路线 |
+| [doc/AGENT-持久化速查手册.md](doc/AGENT-持久化速查手册.md) | **AI / 新同学上手**：决策树、可复制骨架、坑位清单（改造前先看） |
+| [doc/使用指南.md](doc/使用指南.md) | 日常 API：仓储、Criteria、DSL、`@Sql`、多数据源、排错 |
+| [doc/Bone-Metadata-SDK-最佳实践方案.md](doc/Bone-Metadata-SDK-最佳实践方案.md) | 架构原则、读写分层、租户注入、演进路线 |
 | [doc/README.md](doc/README.md) | 文档索引 |
 
 **事实来源**：`src/main/java` 与 `src/test/java`；勿在 `src/main/` 下新增 Markdown 草稿。

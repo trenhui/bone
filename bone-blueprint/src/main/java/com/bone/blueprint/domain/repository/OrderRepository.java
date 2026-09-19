@@ -2,12 +2,8 @@ package com.bone.blueprint.domain.repository;
 
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.shared.exception.OptimisticLockConflictException;
-import com.bone.core.enums.Operator;
-import com.bone.core.model.PageResult;
-import com.bone.core.model.QueryParam;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
-import java.util.List;
 
 /**
  * 订单写侧仓储端口。继承 SDK {@link Repository}，由 {@code @EnableSqlRepositories} 代理实现。
@@ -28,28 +24,24 @@ public interface OrderRepository extends Repository<Order, Long> {
   /**
    * 按 id 加载当前租户可访问的订单。
    *
-   * <p>仅返回 {@code id} 与 {@code tenantId} 同时匹配、且未被软删的订单；跨租户或不存在时返回 {@code null} （与 {@link #findById}
+   * <p>仅返回 {@code id} 与 {@code tenantId} 同时匹配、且未被软删的订单；跨租户或不存在时返回 {@code null}（与 {@link #findById}
    * 的空语义一致）。
    *
-   * <p><b>前置判空不是冗余防御，而是失败关闭</b>：{@code queryByCondition} 会<strong>静默丢弃</strong>值为 {@code null}
-   * 的条件（见 {@code BaseRepository#buildCriteria} 的 {@code value != null} 判断）。若租户缺失， WHERE
-   * 中的租户条件会整条消失，查询退化为「按 id 跨租户读取」——多租户隔离在此<strong>失败开启</strong>。
+   * <p><b>租户隔离下沉到 SQL 层（失败关闭）</b>：用 {@code findOneByCriteria} 把 id 与 tenantId 两条 {@code EQ} 条件一并下发到
+   * SELECT，跨租户订单在数据库侧被过滤（而非加载后内存校验）。软删过滤由 SDK 默认排除 {@code deleted} 保证，与 {@link #findById} 一致。这一不变量由
+   * {@code RepositoryTenantIsolationTest} 白盒锁死： 缺租户时返回 null、且不触达查询。相比 {@code
+   * queryByCondition(...,1,1)}，{@code findOneByCriteria} 只发一条 SELECT、不触发 {@code
+   * countByCriteria}（分页整页命中会额外计数），且与本类 {@link #saveWithVersionCheck} 的 {@code Criteria} 风格一致。
+   *
+   * <p><b>前置判空不是冗余防御</b>：SDK 条件构造（{@code Criteria.eq}）会<strong>静默丢弃</strong> 值为 {@code null}
+   * 的条件。若租户缺失，WHERE 中的租户条件会整条消失，查询退化为「按 id 跨租户读取」——多租户隔离在此<strong>失败开启</strong>。
    * 两者语义<strong>并不等价</strong>，故显式补回：租户不可知即视为不可访问。
    */
   default Order findByIdInTenant(Long id, Long tenantId) {
     if (id == null || tenantId == null) {
       return null;
     }
-    PageResult<Order> page =
-        queryByCondition(
-            List.of(
-                new QueryParam("id", id, Operator.EQ),
-                new QueryParam("tenantId", tenantId, Operator.EQ)),
-            null,
-            1,
-            1,
-            null);
-    return page.getRecords().isEmpty() ? null : page.getRecords().get(0);
+    return findOneByCriteria(Criteria.<Order>create().eq("id", id).eq("tenantId", tenantId));
   }
 
   /**

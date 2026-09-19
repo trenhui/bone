@@ -8,7 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *
  * <p>注意：{@code bone.blueprint.outbox.mq-enabled} 与 {@code .consumer-group} 两个配置键<b>不在本类</b>
  * 声明字段——它们分别由 {@code @ConditionalOnProperty}（3 处）与 {@code @RocketMQMessageListener} /
- * {@code @Value} 以占位符直接从 Environment 读取（见 {@code OrderPaidIntegrationMqListener}）。
+ * {@code @Value} 以占位符直接从 Environment 读取（见 {@code OrderPaidIntegrationListener}）。
  * 此处不再声明为无人读取的死字段，避免与占位符形成重复真源。
  */
 @Data

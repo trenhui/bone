@@ -2,14 +2,13 @@ package com.bone.studio.generator.application.command.handler;
 
 import com.bone.core.capability.Capability;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
-import com.bone.metadata.sdk.query.criteria.Criteria;
 import com.bone.studio.generator.application.command.cmd.SyncTableMetadataCommand;
 import com.bone.studio.generator.common.StudioIds;
 import com.bone.studio.generator.domain.data.DataSource;
 import com.bone.studio.generator.domain.data.DatabaseTable;
 import com.bone.studio.generator.domain.data.GenTableMetadata;
 import com.bone.studio.generator.domain.gateway.DatabaseMetadataGateway;
+import com.bone.studio.generator.domain.gateway.GenTableMetadataReadPort;
 import com.bone.studio.generator.domain.repository.DataSourceRepository;
 import com.bone.studio.generator.domain.repository.GenTableMetadataRepository;
 import java.util.List;
@@ -32,6 +31,7 @@ public class SyncTableMetadataHandler {
   private final DatabaseMetadataGateway metadataGateway;
   private final DataSourceRepository dataSourceRepository;
   private final GenTableMetadataRepository tableMetadataRepo;
+  private final GenTableMetadataReadPort tableMetadataReadPort;
 
   @Transactional
   public void handle(SyncTableMetadataCommand cmd) {
@@ -66,14 +66,8 @@ public class SyncTableMetadataHandler {
   }
 
   private GenTableMetadata findExistingMetadata(String dataSourceKey, String tableName) {
-    try {
-      return tableMetadataRepo.findOneByCriteria(
-          Criteria.<GenTableMetadata>create()
-              .eq("dataSourceId", dataSourceKey)
-              .eq("originalTableName", tableName));
-    } catch (MultipleResultsException e) {
-      throw new IllegalStateException(
-          "duplicate table metadata: " + dataSourceKey + "/" + tableName, e);
-    }
+    return tableMetadataReadPort
+        .findByDataSourceKeyAndTableName(dataSourceKey, tableName)
+        .orElse(null);
   }
 }

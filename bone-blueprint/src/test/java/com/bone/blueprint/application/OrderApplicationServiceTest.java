@@ -3,37 +3,129 @@ package com.bone.blueprint.application;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.bone.blueprint.application.command.cmd.DeliverOrderCommand;
-import com.bone.blueprint.application.command.cmd.ShipOrderCommand;
-import com.bone.blueprint.application.port.out.TenantProvider;
+import com.bone.blueprint.application.command.CreateOrderCommand;
+import com.bone.blueprint.application.command.DeliverOrderCommand;
+import com.bone.blueprint.application.command.ShipOrderCommand;
+import com.bone.blueprint.application.port.out.PricingPort;
+import com.bone.blueprint.application.port.out.TenantPort;
+import com.bone.blueprint.application.query.port.OrderQueryPort;
+import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.order.OrderItem;
 import com.bone.blueprint.domain.order.valueobject.OrderStatus;
+import com.bone.blueprint.domain.repository.OrderItemRepository;
 import com.bone.blueprint.domain.repository.OrderRepository;
+import com.bone.blueprint.domain.shared.valueobject.Money;
+import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
-import com.bone.core.exception.DomainException;
 import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-/** {@link OrderApplicationService} — ship / deliver 用例单元测试。 */
+/**
+ * {@link OrderApplicationService} 单元测试。
+ *
+ * <p>create() 的库存校验、定价编排、明细持久化场景来自原 {@code CreateOrderCommandHandlerTest}， 因 Handler 已内联到本 Service
+ * 而迁移。
+ */
 @ExtendWith(MockitoExtension.class)
 class OrderApplicationServiceTest {
 
+  // ========== 写侧 mock ==========
   @Mock private OrderRepository orderRepository;
-  @Mock private TenantProvider tenantProvider;
+  @Mock private OrderItemRepository orderItemRepository;
+  @Mock private InventoryGateway inventoryGateway;
+  @Mock private PricingPort pricingService;
+  @Mock private DomainEventPublisher domainEventPublisher;
+  @Mock private TenantPort tenantProvider;
+
+  // ========== 读侧 mock ==========
+  @Mock private OrderQueryPort orderQueryPort;
 
   @InjectMocks private OrderApplicationService service;
 
-  // ===== ship() =====
+  // ===================== create() =====================
+
+  @Test
+  void create_success_checksStockPricingAndPersists() {
+    when(tenantProvider.currentTenantId()).thenReturn(1L);
+    when(inventoryGateway.checkStock(anyLong(), anyInt())).thenReturn(true);
+    when(pricingService.calculateFinalPrice(any(), eq(1L)))
+        .thenReturn(Money.of(new BigDecimal("99.00")));
+
+    CreateOrderCommand.OrderItemDto item =
+        new CreateOrderCommand.OrderItemDto(7L, "样例商品", 2, new BigDecimal("50.00"));
+    Long orderId = service.create(new CreateOrderCommand(1L, Collections.singletonList(item)));
+
+    // 成功返回非空 id
+    assertEquals(true, orderId != null);
+    // 库存同步读校验（1 个商品调 1 次）
+    verify(inventoryGateway, times(1)).checkStock(7L, 2);
+    // 回归防护：库存预留是远程写，已从下单事务移除
+    verify(inventoryGateway, never()).reserveStock(anyLong(), anyLong(), anyInt());
+    // 定价扩展点被调用
+    verify(pricingService, times(1)).calculateFinalPrice(any(), eq(1L));
+    // 订单 + 明细持久化
+    verify(orderRepository, times(1)).save(any(Order.class));
+    verify(orderItemRepository, times(1)).save(any(OrderItem.class));
+    // 领域事件发布
+    verify(domainEventPublisher, times(1)).publishFrom(any(Order.class));
+  }
+
+  @Test
+  void create_insufficientStock_throwsAndDoesNotPersist() {
+    org.mockito.Mockito.lenient().when(tenantProvider.currentTenantId()).thenReturn(1L);
+    org.mockito.Mockito.lenient()
+        .when(inventoryGateway.checkStock(anyLong(), anyInt()))
+        .thenReturn(false);
+
+    CreateOrderCommand.OrderItemDto item =
+        new CreateOrderCommand.OrderItemDto(7L, "缺货商品", 2, new BigDecimal("50.00"));
+
+    assertThrows(
+        BizException.class,
+        () -> service.create(new CreateOrderCommand(1L, Collections.singletonList(item))));
+
+    verify(orderRepository, never()).save(any());
+    verify(orderItemRepository, never()).save(any());
+    verify(inventoryGateway, never()).reserveStock(anyLong(), anyLong(), anyInt());
+  }
+
+  @Test
+  void create_multipleItems_checksStockForEach() {
+    when(tenantProvider.currentTenantId()).thenReturn(1L);
+    when(inventoryGateway.checkStock(anyLong(), anyInt())).thenReturn(true);
+    when(pricingService.calculateFinalPrice(any(), eq(1L)))
+        .thenReturn(Money.of(new BigDecimal("200.00")));
+
+    CreateOrderCommand.OrderItemDto i1 =
+        new CreateOrderCommand.OrderItemDto(1L, "商品A", 2, new BigDecimal("50.00"));
+    CreateOrderCommand.OrderItemDto i2 =
+        new CreateOrderCommand.OrderItemDto(2L, "商品B", 1, new BigDecimal("100.00"));
+    Long orderId = service.create(new CreateOrderCommand(1L, List.of(i1, i2)));
+
+    assertEquals(true, orderId != null);
+    // 2 个商品各 check 1 次
+    verify(inventoryGateway, times(2)).checkStock(anyLong(), anyInt());
+    // 2 条明细各 save 1 次
+    verify(orderItemRepository, times(2)).save(any(OrderItem.class));
+    verify(inventoryGateway, never()).reserveStock(anyLong(), anyLong(), anyInt());
+  }
+
+  // ===================== ship() =====================
 
   private Order paidOrder() {
     OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
@@ -61,7 +153,7 @@ class OrderApplicationServiceTest {
     when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(order);
 
-    assertThrows(DomainException.class, () -> service.ship(new ShipOrderCommand(1L)));
+    assertThrows(BizException.class, () -> service.ship(new ShipOrderCommand(1L)));
     verify(orderRepository, never()).saveWithVersionCheck(any());
   }
 
@@ -76,7 +168,7 @@ class OrderApplicationServiceTest {
     verify(orderRepository, never()).saveWithVersionCheck(any());
   }
 
-  // ===== deliver() =====
+  // ===================== deliver() =====================
 
   private Order shippedOrder() {
     OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
@@ -106,7 +198,7 @@ class OrderApplicationServiceTest {
     when(tenantProvider.currentTenantId()).thenReturn(1L);
     when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(order);
 
-    assertThrows(DomainException.class, () -> service.deliver(new DeliverOrderCommand(1L)));
+    assertThrows(BizException.class, () -> service.deliver(new DeliverOrderCommand(1L)));
     verify(orderRepository, never()).saveWithVersionCheck(any());
   }
 

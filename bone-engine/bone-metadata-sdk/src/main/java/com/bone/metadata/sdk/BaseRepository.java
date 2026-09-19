@@ -10,6 +10,7 @@ import com.bone.core.tenant.context.TenantContext;
 import com.bone.core.util.ReflectionUtil;
 import com.bone.metadata.sdk.domain.enums.SortDirection;
 import com.bone.metadata.sdk.domain.exception.MetadataException;
+import com.bone.metadata.sdk.domain.exception.MissingTenantContextException;
 import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
 import com.bone.metadata.sdk.domain.exception.PersistenceException;
 import com.bone.metadata.sdk.domain.exception.UndefinedFieldException;
@@ -362,18 +363,38 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
     String tableName = tableMetadata.getName();
     String primaryKey = tableMetadata.getPrimaryKey().getName();
 
+    // 租户护栏（ADR-0029）：租户表须从可信 TenantContext 注入 tenant_id
+    String tenantGuard = "";
+    Object[] execParams = new Object[] {id};
+    if (tableMetadata.isTenantScoped()) {
+      Long tid = TenantContext.getTenantIdAsLong();
+      if (tid == null) {
+        throw new MissingTenantContextException(tableName);
+      }
+      tenantGuard = " AND " + tableMetadata.getTenantIdColumn().getName() + " = :p1";
+      execParams = new Object[] {id, tid};
+    }
+
     // 检查是否支持软删除
     if (tableMetadata.isSoftDeletable()) {
       // 执行软删除：将deleted字段设置为true
       int affectedRows =
           sqlExecutor.delete(
-              "UPDATE " + tableName + " SET deleted = true WHERE " + primaryKey + " = :p0", id);
+              "UPDATE "
+                  + tableName
+                  + " SET deleted = true WHERE "
+                  + primaryKey
+                  + " = :p0"
+                  + tenantGuard,
+              execParams);
       return affectedRows > 0;
     } else {
       // 使用测试专用的delete方法，跳过防注入检查
       // delete方法将参数绑定为:p0格式
       int affectedRows =
-          sqlExecutor.delete("DELETE FROM " + tableName + " WHERE " + primaryKey + " = :p0", id);
+          sqlExecutor.delete(
+              "DELETE FROM " + tableName + " WHERE " + primaryKey + " = :p0" + tenantGuard,
+              execParams);
       return affectedRows > 0;
     }
   }
@@ -387,15 +408,35 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
     String tableName = tableMetadata.getName();
     String primaryKey = tableMetadata.getPrimaryKey().getName();
 
+    // 租户护栏（ADR-0029）：租户表须从可信 TenantContext 注入 tenant_id
+    String tenantGuard = "";
+    Object[] execParams = new Object[] {ids};
+    if (tableMetadata.isTenantScoped()) {
+      Long tid = TenantContext.getTenantIdAsLong();
+      if (tid == null) {
+        throw new MissingTenantContextException(tableName);
+      }
+      tenantGuard = " AND " + tableMetadata.getTenantIdColumn().getName() + " = :p1";
+      execParams = new Object[] {ids, tid};
+    }
+
     // 检查是否支持软删除
     if (tableMetadata.isSoftDeletable()) {
       // 执行软删除：将deleted字段设置为true
       sqlExecutor.delete(
-          "UPDATE " + tableName + " SET deleted = true WHERE " + primaryKey + " IN (:p0)", ids);
+          "UPDATE "
+              + tableName
+              + " SET deleted = true WHERE "
+              + primaryKey
+              + " IN (:p0)"
+              + tenantGuard,
+          execParams);
     } else {
       // 使用测试专用的delete方法，跳过防注入检查
       // delete方法将参数绑定为:p0格式
-      sqlExecutor.delete("DELETE FROM " + tableName + " WHERE " + primaryKey + " IN (:p0)", ids);
+      sqlExecutor.delete(
+          "DELETE FROM " + tableName + " WHERE " + primaryKey + " IN (:p0)" + tenantGuard,
+          execParams);
     }
   }
 

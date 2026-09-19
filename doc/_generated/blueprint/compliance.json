@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-18T04:59:56Z",
+  "generated_at": "2026-09-18T22:46:54Z",
   "module": "blueprint",
   "as_is": [
     {
@@ -55,16 +55,10 @@
       "evidence": {
         "java": [
           "bone-blueprint/src/main/java/com/bone/blueprint/adapter/schedule/OrderOutboxRelayJob.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/schedule/OrderPaymentInconsistencyJob.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/application/command/handler/ProcessPaymentCallbackCommandHandler.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/application/event/PaymentFailedEventHandler.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/application/event/PaymentRefundedEventHandler.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/application/event/PaymentSucceededEventHandler.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/port/out/OrderOutboxPort.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/port/out/OrderOutboxRelayPort.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/application/port/out/OrderOutboxWriter.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/port/out/package-info.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/infrastructure/messaging/outbox/OrderOutboxRelay.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/infrastructure/messaging/outbox/OrderOutboxWriterImpl.java"
+          "bone-blueprint/src/main/java/com/bone/blueprint/infrastructure/messaging/outbox/OrderOutboxRelayPortAdapter.java"
         ],
         "schema_has_bp_outbox": true
       }
@@ -77,7 +71,7 @@
         "java": [
           "bone-blueprint/src/main/java/com/bone/blueprint/domain/order/Order.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/domain/payment/Payment.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/infrastructure/context/TenantProviderAdapter.java"
+          "bone-blueprint/src/main/java/com/bone/blueprint/infrastructure/context/TenantPortAdapter.java"
         ]
       }
     },
@@ -99,10 +93,11 @@
         "java": [
           "bone-blueprint/src/main/java/com/bone/blueprint/adapter/schedule/CancelExpiredOrderJob.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/adapter/schedule/OrderPaymentInconsistencyJob.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/OrderApplicationService.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/event/OrderCreatedEventHandler.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/event/OrderPaidEventHandler.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/application/query/handler/OrderDetailQueryHandler.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/application/query/handler/OrderPageQueryHandler.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/event/support/OrderItemInventoryExecutor.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/query/dto/OrderDto.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/query/port/OrderQueryPort.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/query/port/PaymentQueryPort.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/query/port/package-info.java",
@@ -111,11 +106,9 @@
           "bone-blueprint/src/main/java/com/bone/blueprint/application/query/support/PaymentDetailAssembler.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/domain/order/Order.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/domain/repository/OrderItemRepository.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/infrastructure/query/OrderQueryAdapter.java"
+          "bone-blueprint/src/main/java/com/bone/blueprint/infrastructure/query/OrderReadRepository.java"
         ],
-        "sql": [
-          "bone-blueprint/src/main/resources/sql/order/findOrderWithItems.sql"
-        ]
+        "sql": []
       }
     },
     {
@@ -127,7 +120,6 @@
           "bone-blueprint/src/main/java/com/bone/blueprint/application/event/OrderCancelledEventHandler.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/event/OrderCreatedEventHandler.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/event/OrderPaidEventHandler.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/application/event/PaymentFailedEventHandler.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/event/PaymentRefundedEventHandler.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/event/PaymentSucceededEventHandler.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/infrastructure/event/SpringDomainEventPublisher.java"
@@ -140,18 +132,8 @@
       "status": "as_is",
       "evidence": {
         "java": [
-          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/rpc/controller/OrderController.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/schedule/CloseExpiredPaymentJob.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/web/controller/OrderController.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/adapter/web/controller/PaymentController.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/application/OrderApplicationService.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/application/PaymentApplicationService.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/application/command/handler/CloseExpiredPaymentCommandHandler.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/application/command/handler/CreateOrderCommandHandler.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/application/command/handler/InitiatePaymentCommandHandler.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/application/command/handler/ProcessPaymentCallbackCommandHandler.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/application/event/OrderCreatedEventHandler.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/application/query/handler/OrderDetailQueryHandler.java"
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/command/package-info.java"
         ]
       }
     },
@@ -161,12 +143,12 @@
       "status": "as_is",
       "evidence": {
         "java": [
-          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/mq/listener/OrderPaidIntegrationMqListener.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/application/OrderPaidConsumptionApplicationService.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/application/event/integration/OrderPaidIntegrationEvent.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/application/event/integration/OrderPaymentInconsistentIntegrationEvent.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/application/event/integration/PaymentSucceededIntegrationEvent.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/infrastructure/messaging/outbox/OrderOutboxWriterImpl.java"
+          "bone-blueprint/src/main/java/com/bone/blueprint/adapter/messaging/listener/OrderPaidIntegrationListener.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/integration/consumer/OrderPaidIntegrationEventConsumer.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/integration/event/OrderPaidIntegrationEvent.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/integration/event/OrderPaymentInconsistentIntegrationEvent.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/integration/event/PaymentSucceededIntegrationEvent.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/infrastructure/messaging/outbox/OrderOutboxPortAdapter.java"
         ]
       }
     }

@@ -4,7 +4,7 @@ import com.bone.architecture.fixture.domain.order.OrderAggregate;
 import java.util.List;
 import java.util.Optional;
 
-/** 规则单测夹具：违规仓储——投影 / List / 持久化词汇，用于验证负向拦截。 */
+/** 规则单测夹具：违规仓储——投影 / List / 持久化词汇 / exists 读意图，用于验证负向拦截。 */
 public interface BadReportingRepository {
 
   /** 返回 DTO 投影 → 违规（读侧职责）。 */
@@ -21,4 +21,7 @@ public interface BadReportingRepository {
 
   /** 持久化词汇入方法名 → 违规。 */
   void updateStatus(OrderAggregate aggregate);
+
+  /** {@code exists} 读侧意图入方法名 → 违规（诱导先查后判竞态；E-4.1 禁止）。 */
+  boolean existsByCode(String code);
 }

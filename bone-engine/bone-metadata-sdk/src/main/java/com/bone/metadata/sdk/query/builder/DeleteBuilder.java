@@ -1,5 +1,7 @@
 package com.bone.metadata.sdk.query.builder;
 
+import com.bone.core.tenant.context.TenantContext;
+import com.bone.metadata.sdk.domain.exception.MissingTenantContextException;
 import com.bone.metadata.sdk.domain.model.AllocationContext;
 import com.bone.metadata.sdk.domain.model.TableMetadata;
 import com.bone.metadata.sdk.domain.query.CompiledQuery;
@@ -35,6 +37,22 @@ public class DeleteBuilder implements SqlQueryBuilder<DeleteContext> {
     // DELETE/UPDATE 语句不使用表别名，需要移除 Condition.toSql() 生成的 m. / ext. 前缀
     String where = rawWhere.replaceAll("(?i)\\bm\\.", "").replaceAll("(?i)\\bext\\.", "");
     where = rawWhere.toUpperCase().startsWith("WHERE") ? where : "WHERE " + where;
+
+    // 3.1 租户过滤（可信源 TenantContext；ADR-0029）
+    if (table.isTenantScoped() && !criteria.isTenantFilterDisabled()) {
+      Long tid = TenantContext.getTenantIdAsLong();
+      if (tid == null) {
+        throw new MissingTenantContextException(table.getName());
+      }
+      String tenantClause =
+          table.getTenantIdColumn().getName() + " = :" + TenantFilterInjector.PARAM;
+      if (where.strip().equalsIgnoreCase("WHERE")) {
+        where = "WHERE " + tenantClause;
+      } else {
+        where = where + " AND " + tenantClause;
+      }
+      mainParams.put(TenantFilterInjector.PARAM, tid);
+    }
 
     // 4. 按顺序收集 SQL 片段
     List<CompiledQuery> segments = new ArrayList<>();

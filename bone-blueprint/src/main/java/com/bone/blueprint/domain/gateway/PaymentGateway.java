@@ -3,7 +3,7 @@ package com.bone.blueprint.domain.gateway;
 import java.math.BigDecimal;
 
 /**
- * 支付渠道出站端口（防腐层 ACL，§19）。
+ * 支付渠道出站端口（防腐层 ACL，E-4.3）。
  *
  * <p>用领域语言声明「预下单」能力，隐藏具体渠道（微信/支付宝/模拟）协议细节。实现位于 {@code
  * infrastructure/gateway/payment/}，application/domain 不依赖第三方实现类型。

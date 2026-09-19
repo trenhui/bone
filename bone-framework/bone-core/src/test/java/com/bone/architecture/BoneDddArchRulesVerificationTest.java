@@ -253,7 +253,7 @@ class BoneDddArchRulesVerificationTest {
     assertTrue(result.hasViolation(), report(result));
   }
 
-  // ===== §3.1 / E-5.3.1 / E-4.4 身份与内容禁令 =====
+  // ===== §3.1 / E-6.4 / E-2 身份与内容禁令 =====
 
   @Test
   void outerLayersMustNotMutateAggregateIdentity_detectsControllerSetId() {

@@ -57,6 +57,11 @@ metadata:
         type: MYSQL
 
 bone:
+  # studio-generator 不消费扩展点（未使用 @EnableExtensionPoints / 无扩展实现），
+  # 关闭 bone-extension-sdk 的 ExtensionAutoConfiguration：否则 classpath 上自动装配会因缺少其依赖的
+  # 自注册 Bean（ExtensionRepositoryFactory 等）导致应用无法启动。
+  extension:
+    enabled: false
   generator:
     lro:
       code-generation-enabled: true

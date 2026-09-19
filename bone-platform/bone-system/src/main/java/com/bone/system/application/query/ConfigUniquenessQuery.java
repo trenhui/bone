@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
  * 系统配置唯一性查询（应用读侧）。
  *
  * <p>读侧 DSL（{@code Criteria}）只允许出现在应用读侧：写用例（command handler）与 domain 层禁止直接依赖读侧 能力（CORE-05 /
- * E-9.3），故「配置键唯一」判定由此读侧服务承载，由写用例调用而非自行查询。
+ * E-4.2），故「配置键唯一」判定由此读侧服务承载，由写用例调用而非自行查询。
  */
 @Component
 @RequiredArgsConstructor

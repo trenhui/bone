@@ -8,9 +8,6 @@ public interface OrderAggregateRepository {
   /** 复合自然键（id + tenantId），返回聚合 → 合法。 */
   OrderAggregate findByIdInTenant(Long id, Long tenantId);
 
-  /** 单键 exists 返回 boolean → 合法。 */
-  boolean existsByCode(String code);
-
-  /** 聚合级动词 remove 返回 void → 合法。 */
-  void remove(OrderAggregate aggregate);
+  /** 聚合级动词 remove 返回 boolean（"是否真正删除"语义）→ 合法。 */
+  boolean remove(Long id);
 }

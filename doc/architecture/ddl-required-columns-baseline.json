@@ -1,0 +1,221 @@
+{
+  "_comment": "HC-008 存量缺口登记（唯一真源）。新增表必须四列齐全，不在此表内即失败；此表内表的缺列集合只可收缩。classification：by-design（缺列是设计取舍）/gap-candidate（疑似漏列，改动属 L3 DDL 变更）/ needs-owner-decision（证据不足待裁决）。by-design 不等于已合规，只表示缺列有可写明的理由。",
+  "_required_columns": [
+    "tenant_id",
+    "created_at",
+    "updated_at",
+    "deleted"
+  ],
+  "tables": {
+    "cnsl_notification": {
+      "missing": [
+        "updated_at",
+        "deleted"
+      ],
+      "classification": "by-design",
+      "note": "站内通知：读状态由 is_read/read_at 表达，不软删"
+    },
+    "cnsl_recent_access": {
+      "missing": [
+        "created_at",
+        "updated_at",
+        "deleted"
+      ],
+      "classification": "by-design",
+      "note": "最近访问记录：只追加，时间列名用 accessed_at（未用 created_at）"
+    },
+    "exts_audit_log": {
+      "missing": [
+        "updated_at",
+        "deleted"
+      ],
+      "classification": "by-design",
+      "note": "扩展审计日志：只追加"
+    },
+    "gen_code_generation_history": {
+      "missing": [
+        "updated_at"
+      ],
+      "classification": "by-design",
+      "note": "生成历史：只追加（started_at/completed_at 代替 updated_at，已有 deleted 列）"
+    },
+    "iam_account_role": {
+      "missing": [
+        "updated_at",
+        "deleted"
+      ],
+      "classification": "by-design",
+      "note": "账户-角色关联表：解绑即删行，无更新语义；租户列已随 role/account 落在同一行"
+    },
+    "iam_audit_log": {
+      "missing": [
+        "updated_at",
+        "deleted"
+      ],
+      "classification": "by-design",
+      "note": "审计日志：只追加，永不更新/软删（更新语义不存在）"
+    },
+    "iam_audit_settings": {
+      "missing": [
+        "deleted"
+      ],
+      "classification": "by-design",
+      "note": "审计配置：更新走 UPDATE、配置删除即重置，不需软删列"
+    },
+    "iam_permission": {
+      "missing": [
+        "tenant_id"
+      ],
+      "classification": "needs-owner-decision",
+      "note": "权限目录：疑似平台级全局目录（角色侧已带租户），需 IAM Owner 裁决"
+    },
+    "iam_refresh_token": {
+      "missing": [
+        "updated_at",
+        "deleted"
+      ],
+      "classification": "by-design",
+      "note": "令牌表：吊销用显式 is_revoked + expires_at 表达，不用 deleted；无字段级更新"
+    },
+    "iam_role_permission": {
+      "missing": [
+        "tenant_id",
+        "updated_at",
+        "deleted"
+      ],
+      "classification": "needs-owner-decision",
+      "note": "角色-权限关联：租户随 iam_role（其有 tenant_id），需 IAM Owner 确认是否要冗余租户列以便直查"
+    },
+    "iam_tenant": {
+      "missing": [
+        "tenant_id"
+      ],
+      "classification": "by-design",
+      "note": "租户根表本身：tenant_id 自指无意义"
+    },
+    "int_execution_log": {
+      "missing": [
+        "updated_at",
+        "deleted"
+      ],
+      "classification": "by-design",
+      "note": "流程执行记录：只追加（started_at/ended_at 即生命周期）"
+    },
+    "md_entity": {
+      "missing": [
+        "tenant_id",
+        "deleted"
+      ],
+      "classification": "needs-owner-decision",
+      "note": "主数据实体定义：疑似全局模板（同 md_field），需 masterdata Owner 裁决"
+    },
+    "md_field": {
+      "missing": [
+        "tenant_id"
+      ],
+      "classification": "by-design",
+      "note": "字段定义：随 md_entity（全局模板级）"
+    },
+    "md_record": {
+      "missing": [
+        "tenant_id",
+        "deleted"
+      ],
+      "classification": "needs-owner-decision",
+      "note": "主数据记录（JSON data 列）：疑似应按租户隔离，需 masterdata Owner 裁决"
+    },
+    "mdm_qcheck_detail": {
+      "missing": [
+        "tenant_id",
+        "created_at",
+        "updated_at",
+        "deleted"
+      ],
+      "classification": "by-design",
+      "note": "质检明细：租户随 check_id；只追加（时间列名 checked_at）"
+    },
+    "mdm_qcheck_report": {
+      "missing": [
+        "tenant_id",
+        "updated_at",
+        "deleted"
+      ],
+      "classification": "by-design",
+      "note": "质检报告：租户随 check_id"
+    },
+    "mdm_qcheck_task": {
+      "missing": [
+        "updated_at",
+        "deleted"
+      ],
+      "classification": "gap-candidate",
+      "note": "质检任务有 status/started_at/completed_at，状态可变却无 updated_at"
+    },
+    "mdm_record_category": {
+      "missing": [
+        "tenant_id",
+        "updated_at",
+        "deleted"
+      ],
+      "classification": "by-design",
+      "note": "记录-分类关联：租户随 record"
+    },
+    "mdm_record_version": {
+      "missing": [
+        "tenant_id",
+        "updated_at",
+        "deleted"
+      ],
+      "classification": "by-design",
+      "note": "记录版本历史：租户随 record，且只追加"
+    },
+    "meta_data_lineage": {
+      "missing": [
+        "tenant_id",
+        "updated_at",
+        "deleted"
+      ],
+      "classification": "needs-owner-decision",
+      "note": "血缘记录：只追加，但租户归属未在 DDL 表达，需元数据 Owner 裁决"
+    },
+    "meta_data_standard": {
+      "missing": [
+        "deleted"
+      ],
+      "classification": "by-design",
+      "note": "数据标准定义：更新走 UPDATE，无软删语义"
+    },
+    "ntf_message": {
+      "missing": [
+        "tenant_id",
+        "updated_at",
+        "deleted"
+      ],
+      "classification": "needs-owner-decision",
+      "note": "站内信：按 user_id 隔离但用户属租户，缺 tenant_id 使跨租户直查无隔离，需通知 Owner 裁决"
+    },
+    "sys_alert_event": {
+      "missing": [
+        "updated_at",
+        "deleted"
+      ],
+      "classification": "gap-candidate",
+      "note": "告警事件有 status/resolved_at，状态可变却无 updated_at（排查/闭环时间无处落）"
+    },
+    "sys_log": {
+      "missing": [
+        "updated_at",
+        "deleted"
+      ],
+      "classification": "by-design",
+      "note": "运行日志：只追加"
+    },
+    "t_order_item": {
+      "missing": [
+        "tenant_id"
+      ],
+      "classification": "by-design",
+      "note": "订单聚合子实体（CORE-11）：租户随 t_order，blueprint README 已登记子实体级仓储"
+    }
+  }
+}

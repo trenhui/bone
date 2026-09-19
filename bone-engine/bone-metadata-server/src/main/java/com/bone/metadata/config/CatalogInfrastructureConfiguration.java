@@ -7,7 +7,7 @@ import com.bone.metadata.catalog.domain.repository.MetaEntityRepository;
 import com.bone.metadata.catalog.domain.repository.MetaFieldRepository;
 import com.bone.metadata.catalog.infrastructure.idempotency.InMemoryCatalogIdempotencyStore;
 import com.bone.metadata.catalog.infrastructure.idempotency.RedisCatalogIdempotencyStore;
-import com.bone.metadata.catalog.infrastructure.physical.JdbcPhysicalStructureGateway;
+import com.bone.metadata.catalog.infrastructure.physical.JdbcPhysicalStructureGatewayAdapter;
 import com.bone.metadata.catalog.infrastructure.tenant.TenantProviderAdapter;
 import com.bone.metadata.engine.runtime.RuntimeEntityCatalog;
 import com.bone.metadata.runtime.CaffeineCachedRuntimeEntityCatalog;
@@ -62,7 +62,7 @@ public class CatalogInfrastructureConfiguration {
       JdbcTemplate jdbcTemplate,
       MetaEntityRepository metaEntityRepository,
       MetaFieldRepository metaFieldRepository) {
-    return new JdbcPhysicalStructureGateway(
+    return new JdbcPhysicalStructureGatewayAdapter(
         jdbcTemplate, metaEntityRepository, metaFieldRepository);
   }
 

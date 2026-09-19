@@ -1,6 +1,7 @@
 package com.bone.engine.extension.studio.infrastructure.persistence.converter;
 
 import com.bone.core.domain.entity.AbstractEntity;
+import com.bone.core.tenant.context.TenantContext;
 import com.bone.engine.extension.studio.domain.model.DeploymentStatus;
 import com.bone.engine.extension.studio.domain.model.ExtPoint;
 import com.bone.engine.extension.studio.domain.model.Extension;
@@ -40,6 +41,7 @@ public final class StudioPersistenceConverter {
     row.setStatus(domain.isEnabled() ? "ENABLED" : "DISABLED");
     row.setVersion(domain.getVersion());
     applyAuditDefaults(row);
+    stampTenant(row);
     return row;
   }
 
@@ -71,6 +73,7 @@ public final class StudioPersistenceConverter {
     row.setUseCase(domain.getUseCase());
     row.setScenario(domain.getScenario());
     row.setUserGroup(domain.getUserGroup());
+    stampTenant(row);
     row.setPriority(domain.getPriority() != null ? domain.getPriority() : 100);
     row.setConfigJson(domain.getConfig());
     row.setStatus(domain.isEnabled() ? 1 : 0);
@@ -235,6 +238,19 @@ public final class StudioPersistenceConverter {
     row.setDetail(entry.getDetail());
     row.setCreatedAt(entry.getCreatedAt() != null ? toDate(entry.getCreatedAt()) : new Date());
     return row;
+  }
+
+  /** 持久化行必须带当前租户（来自 TenantContext）；否则 INSERT/UPDATE 会把 tenant_id 写成默认值 0，与 SDK 注入的租户过滤不匹配。 */
+  private static void stampTenant(AbstractEntity<?> row) {
+    Long tid = TenantContext.getTenantIdAsLong();
+    if (tid == null) {
+      return;
+    }
+    if (row instanceof ExtStudioExtensionImpl impl) {
+      impl.setTenantId(tid);
+    } else if (row instanceof ExtStudioExtensionPoint point) {
+      point.setTenantId(tid);
+    }
   }
 
   private static void applyAuditDefaults(AbstractEntity<?> row) {

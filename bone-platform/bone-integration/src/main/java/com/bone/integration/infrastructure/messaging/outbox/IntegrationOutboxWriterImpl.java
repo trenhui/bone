@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
  * {@link IntegrationOutboxWriter} 的基础设施实现：在业务事务内写入 Outbox 表。
  *
  * <p><b>端口在 application、实现在 infrastructure</b>：application 不依赖 infrastructure（P0-1 依赖方向），同时 Outbox
- * 这一消息投递机制不侵入 domain 层——与 bone-blueprint {@code OrderOutboxWriterImpl} 同一约定。
+ * 这一消息投递机制不侵入 domain 层——与 bone-blueprint {@code OrderOutboxPortAdapter} 同一约定。
  */
 @Component
 @RequiredArgsConstructor

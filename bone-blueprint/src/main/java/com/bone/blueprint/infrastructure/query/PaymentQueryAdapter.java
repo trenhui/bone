@@ -1,93 +1,78 @@
 package com.bone.blueprint.infrastructure.query;
 
-import com.bone.blueprint.application.query.dto.PaymentProjection;
 import com.bone.blueprint.application.query.port.PaymentQueryPort;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import com.bone.blueprint.application.query.projection.PaymentProjection;
+import com.bone.blueprint.domain.payment.Payment;
+import com.bone.blueprint.domain.payment.valueobject.PaymentStatus;
+import com.bone.blueprint.domain.repository.PaymentRepository;
+import com.bone.metadata.sdk.query.criteria.Criteria;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.jdbc.core.RowMapper;
-import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
-import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Component;
 
-/** 支付读侧适配器：NamedParameterJdbcTemplate 直查 bp_payment（ADR-0028 读模型）。 */
+/**
+ * 支付读侧适配器：{@link PaymentQueryPort} 的基础设施实现（E-10.3 {@code infrastructure/query}）。
+ *
+ * <p><b>为何改用 SDK {@link Criteria} 而非手写 JDBC</b>：
+ *
+ * <ol>
+ *   <li>软删由 SDK 自动追加 {@code deleted = 0}，不再依赖每条 SQL 记得写；
+ *   <li>跨租户从「SQL 里恰好没写 {@code tenant_id}」的隐式语义，变成 {@link Criteria#disableTenantFilter()} 的显式逃生舱——会打
+ *       WARN，可在审计侧检索；
+ *   <li>与写侧共用 {@code SqlExecutor}，因此过 {@code SqlSecurityGuard} 与模板安全校验。
+ * </ol>
+ *
+ * <p><b>为何仍保留本端口</b>：调用方是 {@code adapter/schedule} 的定时任务，不得直连 domain 仓储； 且跨租户需要 {@link Criteria}
+ * 这类读侧 DSL，它只允许出现在 query 层。
+ */
 @Component
 @RequiredArgsConstructor
 public class PaymentQueryAdapter implements PaymentQueryPort {
 
-  private static final String COLUMNS =
-      "tenant_id, id, order_id, customer_id, amount, channel, status, channel_trade_no, "
-          + "pay_url, paid_at, refunded_at, refund_amount, created_at";
-
-  private final NamedParameterJdbcTemplate jdbcTemplate;
-
-  @Override
-  public Optional<PaymentProjection> findById(long tenantId, long paymentId) {
-    String sql =
-        "SELECT "
-            + COLUMNS
-            + " FROM bp_payment WHERE tenant_id = :tenantId AND id = :id AND deleted = 0";
-    MapSqlParameterSource params =
-        new MapSqlParameterSource().addValue("tenantId", tenantId).addValue("id", paymentId);
-    List<PaymentProjection> rows = jdbcTemplate.query(sql, params, new PaymentRowMapper());
-    return rows.stream().findFirst();
-  }
+  private final PaymentRepository paymentRepository;
 
   @Override
   public List<PaymentProjection> findPayableExpiredBeforeAllTenants(Instant before) {
-    // 全租户运维扫描：不带 tenant_id 条件；调用方须为已登记的定时任务
-    return jdbcTemplate.query(
-        PAYABLE_EXPIRED_SQL,
-        new MapSqlParameterSource().addValue("before", Timestamp.from(before)),
-        new PaymentRowMapper());
+    // 全租户运维扫描：显式关闭租户过滤（ADR-0029 逃生舱，打 WARN），调用方须为已登记的定时任务
+    Criteria<Payment> criteria =
+        Criteria.<Payment>create()
+            .disableTenantFilter()
+            .in(Payment::getStatus, PaymentStatus.PENDING, PaymentStatus.PAYING)
+            .lt(Payment::getCreatedAt, Timestamp.from(before));
+    return paymentRepository.findByCriteria(criteria).stream()
+        .map(PaymentQueryAdapter::toProjection)
+        .toList();
   }
 
   @Override
   public List<PaymentProjection> findSuccessCreatedBeforeAllTenants(Instant before) {
     // 「钱货不一致」对账扫描：已成功的支付单，供调用方核对订单是否已确认支付
-    String sql =
-        "SELECT "
-            + COLUMNS
-            + " FROM bp_payment "
-            + "WHERE deleted = 0 AND status = 'SUCCESS' AND created_at < :before";
-    return jdbcTemplate.query(
-        sql,
-        new MapSqlParameterSource().addValue("before", Timestamp.from(before)),
-        new PaymentRowMapper());
+    Criteria<Payment> criteria =
+        Criteria.<Payment>create()
+            .disableTenantFilter()
+            .eq(Payment::getStatus, PaymentStatus.SUCCESS)
+            .lt(Payment::getCreatedAt, Timestamp.from(before));
+    return paymentRepository.findByCriteria(criteria).stream()
+        .map(PaymentQueryAdapter::toProjection)
+        .toList();
   }
 
-  private static final String PAYABLE_EXPIRED_SQL =
-      "SELECT "
-          + COLUMNS
-          + " FROM bp_payment "
-          + "WHERE deleted = 0 AND status IN ('PENDING','PAYING') AND created_at < :before";
-
-  private static final class PaymentRowMapper implements RowMapper<PaymentProjection> {
-
-    @Override
-    public PaymentProjection mapRow(ResultSet rs, int rowNum) throws SQLException {
-      return new PaymentProjection(
-          rs.getLong("tenant_id"),
-          rs.getLong("id"),
-          rs.getLong("order_id"),
-          rs.getLong("customer_id"),
-          rs.getBigDecimal("amount"),
-          rs.getString("channel"),
-          rs.getString("status"),
-          rs.getString("channel_trade_no"),
-          rs.getString("pay_url"),
-          toInstant(rs.getTimestamp("paid_at")),
-          toInstant(rs.getTimestamp("refunded_at")),
-          rs.getBigDecimal("refund_amount"),
-          toInstant(rs.getTimestamp("created_at")));
-    }
-
-    private Instant toInstant(Timestamp ts) {
-      return ts == null ? null : ts.toInstant();
-    }
+  private static PaymentProjection toProjection(Payment p) {
+    return new PaymentProjection(
+        p.getTenantId(),
+        p.getId(),
+        p.getOrderId(),
+        p.getCustomerId(),
+        p.getAmount(),
+        p.getChannel() == null ? null : p.getChannel().name(),
+        p.getStatus() == null ? null : p.getStatus().name(),
+        p.getChannelTradeNo(),
+        p.getPayUrl(),
+        p.getPaidAt(),
+        p.getRefundedAt(),
+        p.getRefundAmount(),
+        p.getCreatedAt());
   }
 }

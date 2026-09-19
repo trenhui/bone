@@ -43,13 +43,23 @@ import java.util.stream.Collectors;
  */
 public final class BoneDddArchRules {
 
-  /** E-9.2 写侧仓储方法允许的标量返回类型。 */
+  /** E-4.1 写侧仓储方法允许的标量返回类型。 */
   private static final Set<String> REPOSITORY_SCALAR_RETURN_TYPES =
       Set.of("void", "boolean", "java.lang.Boolean");
 
-  /** 禁止进入方法名的持久化词汇（E-9.2 主判据补充）。聚合级动词 {@code save} / {@code remove} 属 SDK 标准 写法，不在禁用之列。 */
-  private static final Set<String> REPOSITORY_PERSISTENCE_VOCABULARY =
-      Set.of("insert", "update", "delete", "persist", "flush", "merge");
+  /**
+   * 禁止进入方法名的两类词汇（E-4.1 主判据补充）：
+   *
+   * <ul>
+   *   <li><b>持久化实现词汇</b>：{@code insert / update / delete / persist / flush / merge} —
+   *       泄漏了技术实现细节，不属领域语言。
+   *   <li><b>读侧意图词汇</b>：{@code exists} — 把"存在性判断"塞进写仓储，既绕过 CORE-05，又诱导应用层写出"先查后判"竞态。
+   * </ul>
+   *
+   * 聚合级动词 {@code save} / {@code remove} 属 SDK 标准写法，不在禁用之列。
+   */
+  private static final Set<String> REPOSITORY_FORBIDDEN_METHOD_WORDS =
+      Set.of("insert", "update", "delete", "persist", "flush", "merge", "exists");
 
   private static final String TRANSACTIONAL =
       "org.springframework.transaction.annotation.Transactional";
@@ -57,7 +67,7 @@ public final class BoneDddArchRules {
   /** bone-core 实体基类 FQN：聚合/实体的最终父类，用于识别「聚合身份 setter」的调用目标。 */
   private static final String ENTITY_BASE_CLASS = "com.bone.core.domain.entity.Entity";
 
-  /** E-4.4 租户上下文 FQN：业务层禁止直调，仅 infrastructure 访问（v4.7 补门禁）。 */
+  /** E-2 租户上下文 FQN：业务层禁止直调，仅 infrastructure 访问（v4.7 补门禁）。 */
   private static final String TENANT_CONTEXT_CLASS = "com.bone.core.tenant.context.TenantContext";
 
   /** 聚合身份 setter 名（{@code AggregateRoot.setId} / {@code TenantAggregateRoot.setTenantId}）。 */
@@ -373,7 +383,7 @@ public final class BoneDddArchRules {
   }
 
   /**
-   * §15 + §18.2（E-9.2 主判据）：写侧仓储是「聚合根的集合抽象」——方法返回类型只能是聚合根 / {@code Optional<聚合根>} / {@code boolean}
+   * §15 + §18.2（E-4.1 主判据）：写侧仓储是「聚合根的集合抽象」——方法返回类型只能是聚合根 / {@code Optional<聚合根>} / {@code boolean}
    * / {@code void}；返回投影 / DTO / {@code Page} / {@code List} 即 违规（那是读侧 QueryBuilder 的职责）。
    *
    * <p>允许复合自然键（如 {@code findByIdInTenant(id, tenantId)}，只要返回聚合）；方法名不得携带持久化词汇 （{@code
@@ -395,7 +405,7 @@ public final class BoneDddArchRules {
   }
 
   /**
-   * P-2.3 / P-10.4（D9）：跨上下文边界守护——本模块 {@code ..domain..} 禁止直接依赖<strong>其它 Bone 上下文</strong>的 {@code
+   * E-1.3 / P-2.4：跨上下文边界守护——本模块 {@code ..domain..} 禁止直接依赖<strong>其它 Bone 上下文</strong>的 {@code
    * domain} 包（跨上下文集成须经公开 API / 事件契约 / 防腐层，而非直接 import 对方领域模型）。
    *
    * <p><b>判定方式</b>：按依赖目标的全限定名匹配（匹配字节码中记录的引用，与 classpath 无关）；排除 自身模块根包与共享内核包（默认 {@code
@@ -418,7 +428,7 @@ public final class BoneDddArchRules {
         .should()
         .dependOnClassesThat(otherContextDomain)
         .because(
-            "DDD P-2.3 + P-10.4: cross-context integration must go through public API / event "
+            "DDD P-2.3 + P-2.4: cross-context integration must go through public API / event "
                 + "contract / anti-corruption layer, not direct domain-type dependency; empty "
                 + "match means the rule is misconfigured");
   }
@@ -437,13 +447,14 @@ public final class BoneDddArchRules {
             continue;
           }
           String name = method.getName();
-          if (hasPersistenceVocabularyInName(name)) {
+          if (hasForbiddenWordsInName(name)) {
             events.add(
                 SimpleConditionEvent.violated(
                     method,
                     String.format(
-                        "Repository %s declares method %s with persistence vocabulary — write-side "
-                            + "repository methods must read as domain operations",
+                        "Repository %s declares method %s with forbidden vocabulary — write-side "
+                            + "repository methods must read as domain operations; use QueryPort for "
+                            + "read-side queries and atomic constraints for existence checks",
                         item.getSimpleName(), name)));
             continue;
           }
@@ -485,9 +496,9 @@ public final class BoneDddArchRules {
     return type instanceof JavaClass clazz && clazz.isAssignableTo(ENTITY_BASE_CLASS);
   }
 
-  private static boolean hasPersistenceVocabularyInName(String methodName) {
+  private static boolean hasForbiddenWordsInName(String methodName) {
     for (String word : camelCaseWords(methodName)) {
-      if (REPOSITORY_PERSISTENCE_VOCABULARY.contains(word)) {
+      if (REPOSITORY_FORBIDDEN_METHOD_WORDS.contains(word)) {
         return true;
       }
     }
@@ -583,7 +594,7 @@ public final class BoneDddArchRules {
 
   /**
    * 持久化适配器角色豁免：{@code *Repository} / {@code *Converter} / {@code *Mapper} 等类的职责就是 主键回填、ORM 恢复与
-   * PO↔领域对象互转，设置身份是<strong>法定职责</strong>而非篡改——E-9.1 明确 SDK 在 {@code insert} / {@code save}
+   * PO↔领域对象互转，设置身份是<strong>法定职责</strong>而非篡改——E-7.1 明确 SDK 在 {@code insert} / {@code save}
    * 时生成并回填主键，E-8 也承认 ORM 恢复经字段级反射。
    *
    * <p>真正的越权风险在<strong>业务代码</strong>（{@code application} / {@code adapter}）改聚合的租户 归属或主键，那部分不受本豁免影响。
@@ -600,7 +611,7 @@ public final class BoneDddArchRules {
   }
 
   /**
-   * R9（v4.6）：一个写事务内只持久化<strong>一个</strong>聚合根（真源：主规范 E-3.1.2）。
+   * R9（v4.6）：一个写事务内只持久化<strong>一个</strong>聚合根（真源：主规范 E-5.1）。
    *
    * <p><b>为何单列一条</b>：聚合在 DDD 中的定义即「一致性边界」。若一个事务内同时写多个聚合，等于宣称
    * 二者的不变量必须同时成立——那它们本就该是同一个聚合；若不是，则事务边界与一致性边界背离，既放大锁 竞争，又把最终一致伪装成强一致（本地事务只能保证本库原子）。
@@ -612,7 +623,7 @@ public final class BoneDddArchRules {
    *
    * <p><b>为何扫描范围含 service / orchestration（v4.7 修正）</b>：Handler 委托给 ApplicationService /
    * Orchestrator 后， 直接在 Handler 上扫描 save 调用将完全不可见（v4.6 的盲区）——ApplicationService 同样可能是写事务入口，须受 R9 约束
-   * （E-5.3.1 内容禁令 #5）。门禁按「直接调用」判定：Handler → Service → save(A)+save(B) 会在 Service 层被拦截。
+   * （E-6.4 内容禁令 #5）。门禁按「直接调用」判定：Handler → Service → save(A)+save(B) 会在 Service 层被拦截。
    *
    * <p><b>为何按「聚合根类型」而非「Repository 类型」去重（v4.7 修正）</b>：R9 约束的对象是<strong>聚合</strong>，不是仓储接口。
    * 按仓储计数会把聚合内子实体的仓储（如 {@code OrderItemRepository}）误判为第二个聚合，进而诱导实现方把端口挪出 {@code domain.repository}
@@ -740,10 +751,10 @@ public final class BoneDddArchRules {
   }
 
   /**
-   * E-4.4（v4.7 补门禁）：租户取值收敛到模块统一端口（{@code TenantProvider}）。
+   * E-2（v4.7 补门禁）：租户取值收敛到模块统一端口（{@code TenantProvider}）。
    *
    * <p><b>为何新增门禁</b>：规范禁止业务代码散落 {@code TenantContext.get*()} 直调——线程本地直调读得分散、
-   * 无法审计、异步线程丢失，且框架层写入、业务层只读。此前只有条文无门禁（违反 E-9.6 原则：规范不应宣称 尚未具备支撑能力的约束），本版补齐。
+   * 无法审计、异步线程丢失，且框架层写入、业务层只读。此前只有条文无门禁（违反 CORE-08 原则：规范不应宣称 尚未具备支撑能力的约束），本版补齐。
    *
    * <p><b>判定</b>：{@code application} / {@code domain} / {@code adapter} 调用 {@code TenantContext}
    * 任意方法即违规； 仅允许 {@code infrastructure}（写入过滤器、{@code TenantProvider} 端口实现）访问。领域层通过 {@code
@@ -764,20 +775,20 @@ public final class BoneDddArchRules {
             })
         .allowEmptyShould(true)
         .because(
-            "DDD E-4.4: tenant context reads must go through the module's single TenantProvider port"
+            "DDD E-2: tenant context reads must go through the module's single TenantProvider port"
                 + " (domain/gateway) implemented in infrastructure; direct TenantContext calls in"
                 + " application/domain/adapter bypass audit, propagation and null-guards");
   }
 
   /**
-   * E-9.3（v4.6 主判据）：读侧 DSL 只允许出现在基础设施查询层，禁止进入 {@code application}。
+   * E-4.2（v4.6 主判据）：读侧 DSL 只允许出现在基础设施查询层，禁止进入 {@code application}。
    *
    * <p><b>为何用位置判据替代注解判据</b>：注解判据（{@code @ReadSideOnly}）属「标记坏人」式否定检测——新增 一个 DSL
    * 类型忘了标注，所有依赖它的类全部静默放行。位置判据按包路径判定，漏标无法绕过。注解规则 {@link #domainMustNotUseQueryBuilder()} / {@link
    * #commandHandlersMustNotUseQueryBuilder()} 保留为防回滚补充。
    *
    * <p><b>目标态</b>：{@code *QueryHandler} 只依赖读侧端口（{@code *ReadPort}），DSL 实现下沉 {@code
-   * infrastructure/query}。存量在 QueryHandler 中直用 DSL 的代码以 {@code FreezingArchRule} 登记后逐步 收敛（E-9.3
+   * infrastructure/query}。存量在 QueryHandler 中直用 DSL 的代码以 {@code FreezingArchRule} 登记后逐步 收敛（E-4.2
    * 过渡期双轨）。
    */
   public static ArchRule readSideDslOnlyInQueryLayer() {
@@ -788,7 +799,7 @@ public final class BoneDddArchRules {
         .dependOnClassesThat(areReadSideDsl())
         .allowEmptyShould(true)
         .because(
-            "DDD E-9.3: read-side DSL must live in infrastructure/query behind a *ReadPort; "
+            "DDD E-4.2: read-side DSL must live in infrastructure/query behind a *ReadPort; "
                 + "the application layer must not depend on persistence DSL");
   }
 
@@ -803,7 +814,7 @@ public final class BoneDddArchRules {
   }
 
   /**
-   * E-5.3.1（v4.6 内容禁令）：{@code application/service} 可承载<strong>用例级编排</strong>，但不得承载 领域规则——具体禁止两件事：
+   * E-6.4（v4.6 内容禁令）：{@code application/service} 可承载<strong>用例级编排</strong>，但不得承载 领域规则——具体禁止两件事：
    *
    * <ol>
    *   <li>{@code new} 领域对象（须经聚合工厂方法或 Repository 获取）；
@@ -839,7 +850,7 @@ public final class BoneDddArchRules {
                   item,
                   String.format(
                       "%s instantiates domain type %s — application services must obtain domain"
-                          + " objects from aggregate factory methods or a Repository (E-5.3.1)",
+                          + " objects from aggregate factory methods or a Repository (E-6.4)",
                       item.getSimpleName(), owner.getSimpleName())));
         }
         for (JavaMethodCall call : item.getMethodCallsFromSelf()) {
@@ -855,7 +866,7 @@ public final class BoneDddArchRules {
                   item,
                   String.format(
                       "%s calls %s.%s() — application services must change state through domain"
-                          + " behaviour methods, not setters (E-5.3.1 / R2 anti-anemia)",
+                          + " behaviour methods, not setters (E-6.4 / R2 anti-anemia)",
                       item.getSimpleName(), target.getOwner().getSimpleName(), target.getName())));
         }
       }
@@ -870,7 +881,7 @@ public final class BoneDddArchRules {
   }
 
   /**
-   * E-4.1.1（v4.6）：跨上下文<strong>模型</strong>依赖守护——本模块<strong>任何层</strong>（含读侧 QueryHandler 与 {@code
+   * E-1.3（v4.6）：跨上下文<strong>模型</strong>依赖守护——本模块<strong>任何层</strong>（含读侧 QueryHandler 与 {@code
    * infrastructure.query}）均禁止直接依赖其它 Bone 上下文的 {@code domain} 模型类型。
    *
    * <p><b>与 {@link #noCrossContextDomainDependency(String, String...)} 的区别</b>：后者只约束本模块 {@code
@@ -893,7 +904,7 @@ public final class BoneDddArchRules {
         .should()
         .dependOnClassesThat(otherContextDomain)
         .because(
-            "DDD E-4.1.1: data ownership is per context — reading another context's domain model "
+            "DDD E-1.3: data ownership is per context — reading another context's domain model "
                 + "(including read-side queries) must go through public API or event projection; "
                 + "empty match means the rule is misconfigured");
   }

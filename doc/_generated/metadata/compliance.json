@@ -1,6 +1,6 @@
 {
   "module": "metadata",
-  "generated_at": "2026-09-17T03:22:11Z",
+  "generated_at": "2026-09-18T22:24:31Z",
   "as_is": [
     {
       "id": "meta-ddl-five-tables",
@@ -113,7 +113,7 @@
       "evidence": {
         "java": [
           "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/adapter/web/controller/MetadataEntitySnapshotController.java",
-          "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/infrastructure/gateway/CatalogMetadataGatewayImpl.java"
+          "bone-engine/studio-generator/src/main/java/com/bone/studio/generator/infrastructure/gateway/CatalogMetadataGatewayAdapter.java"
         ]
       }
     },

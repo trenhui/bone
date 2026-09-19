@@ -27,6 +27,9 @@ public class Criteria<T> {
   private int pageNo = 1;
   private Class<?> entityClass;
 
+  /** 逃生舱：关闭租户过滤（ADR-0029）。仅限跨租户平台操作，须 platform:* 授权 + 审计。 */
+  private boolean tenantFilterDisabled = false;
+
   private Criteria() {}
 
   public static <T> Criteria<T> create() {
@@ -41,6 +44,12 @@ public class Criteria<T> {
 
   public static <T> Criteria<T> builder() {
     return new Criteria<>();
+  }
+
+  /** 逃生舱：显式关闭租户过滤（ADR-0029）。跨租户平台操作须配合 platform:* 授权 + 审计。 */
+  public Criteria<T> disableTenantFilter() {
+    this.tenantFilterDisabled = true;
+    return this;
   }
 
   /** 分页设置，从1开始 */

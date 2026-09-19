@@ -1,15 +1,15 @@
 package com.bone.blueprint.application.event;
 
-import com.bone.blueprint.application.port.out.OrderOutboxWriter;
+import com.bone.blueprint.application.port.out.OrderOutboxPort;
+import com.bone.blueprint.application.util.DomainEvents;
 import com.bone.blueprint.common.BlueprintErrorCodes;
+import com.bone.blueprint.common.BlueprintErrors;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.order.event.OrderPaidEvent;
 import com.bone.blueprint.domain.order.event.OrderPaymentInconsistentEvent;
 import com.bone.blueprint.domain.payment.event.PaymentSucceededEvent;
 import com.bone.blueprint.domain.repository.OrderRepository;
-import com.bone.core.domain.DomainEvent;
 import com.bone.core.domain.event.DomainEventPublisher;
-import com.bone.core.exception.BizException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,14 +41,14 @@ public class PaymentSucceededEventHandler {
 
   private final OrderRepository orderRepository;
   private final DomainEventPublisher domainEventPublisher;
-  private final OrderOutboxWriter orderOutboxWriter;
+  private final OrderOutboxPort orderOutboxWriter;
 
   /**
    * 支付成功 → 订单确认（跨聚合两段式）。
    *
    * <p><b>为什么必须用 REQUIRES_NEW</b>：支付单写已在独立事务中提交（AFTER_COMMIT 触发），
-   * 订单聚合的确认支付是另一条聚合写路径——两个聚合不能放在同一事务（R9 一事务一聚合）。 REQUIRES_NEW 确保订单确认在全新事务中完成，与支付单事务解耦， 同时 Outbox
-   * 写入（本方法内 {@code orderOutboxWriter.*} 调用）也在该独立事务内原子提交。
+   * 订单聚合的确认支付是另一条聚合写路径——两个聚合不能放在同一事务（CORE-06 一事务一聚合）。 REQUIRES_NEW 确保订单确认在全新事务中完成，与支付单事务解耦， 同时
+   * Outbox 写入（本方法内 {@code orderOutboxWriter.*} 调用）也在该独立事务内原子提交。
    *
    * <p>这<strong>不是违规</strong>——禁止的是"在业务主事务内用 REQUIRES_NEW 写幂等表/Outbox"， 这里是 AFTER_COMMIT
    * 后的独立聚合写，属于两段式编排的唯一正确形态。
@@ -66,9 +66,7 @@ public class PaymentSucceededEventHandler {
     Order order =
         Optional.ofNullable(orderRepository.findByIdInTenant(event.orderId(), event.tenantId()))
             .orElseThrow(
-                () ->
-                    new BizException(
-                        404, BlueprintErrorCodes.ORDER_NOT_FOUND + ": " + event.orderId()));
+                BlueprintErrors.supplier(BlueprintErrorCodes.ORDER_NOT_FOUND, event.orderId()));
 
     // 状态异常：订单已不处于待支付状态却收到支付成功回调（如已取消/已发货）。属「钱-货不一致」异常路径，
     // 不能静默忽略——至少告警；真实场景应触发告警/自动退款（复用 PaymentRefundedEvent 链路）。
@@ -93,7 +91,7 @@ public class PaymentSucceededEventHandler {
           event.paymentId());
       order.reportPaymentInconsistency(event.paymentId(), "订单非待支付状态却收到支付成功回调");
       OrderPaymentInconsistentEvent inconsistent =
-          extractDomainEvent(order, OrderPaymentInconsistentEvent.class);
+          DomainEvents.extract(order.getDomainEvents(), OrderPaymentInconsistentEvent.class);
       domainEventPublisher.publishFrom(order);
       if (inconsistent != null) {
         orderOutboxWriter.appendPaymentInconsistent(inconsistent);
@@ -105,7 +103,8 @@ public class PaymentSucceededEventHandler {
     // confirmPaid() 发布 OrderPaidEvent → 由 OrderPaidEventHandler 统一确认库存（单一职责）。
     boolean paid = order.confirmPaid();
     orderRepository.saveWithVersionCheck(order);
-    OrderPaidEvent paidEvent = paid ? extractDomainEvent(order, OrderPaidEvent.class) : null;
+    OrderPaidEvent paidEvent =
+        paid ? DomainEvents.extract(order.getDomainEvents(), OrderPaidEvent.class) : null;
     domainEventPublisher.publishFrom(order);
 
     // 同事务写 Outbox：保证「订单已支付」与「集成事件待发」原子提交；
@@ -113,14 +112,5 @@ public class PaymentSucceededEventHandler {
     if (paidEvent != null) {
       orderOutboxWriter.appendOrderPaid(paidEvent);
     }
-  }
-
-  /** 从聚合已注册的领域事件中提取指定类型（须在 {@code publishFrom} 清空前调用）。 */
-  private static <T extends DomainEvent> T extractDomainEvent(Order order, Class<T> type) {
-    return order.getDomainEvents().stream()
-        .filter(type::isInstance)
-        .map(type::cast)
-        .findFirst()
-        .orElse(null);
   }
 }

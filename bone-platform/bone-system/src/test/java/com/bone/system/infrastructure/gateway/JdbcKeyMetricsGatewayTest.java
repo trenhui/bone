@@ -28,7 +28,8 @@ class JdbcKeyMetricsGatewayTest {
     when(jdbcTemplate.queryForObject(contains("exts_plugin_version"), eq(Long.class)))
         .thenReturn(40L);
 
-    KeyMetrics dto = new JdbcKeyMetricsGateway(jdbcTemplate, new SimpleMeterRegistry()).collect();
+    KeyMetrics dto =
+        new JdbcKeyMetricsGatewayAdapter(jdbcTemplate, new SimpleMeterRegistry()).collect();
 
     assertThat(dto.getUserCount()).isEqualTo(10);
     assertThat(dto.getEntityCount()).isEqualTo(20);
@@ -45,7 +46,8 @@ class JdbcKeyMetricsGatewayTest {
     when(jdbcTemplate.queryForObject(contains("exts_plugin_version"), eq(Long.class)))
         .thenReturn(4L);
 
-    KeyMetrics dto = new JdbcKeyMetricsGateway(jdbcTemplate, new SimpleMeterRegistry()).collect();
+    KeyMetrics dto =
+        new JdbcKeyMetricsGatewayAdapter(jdbcTemplate, new SimpleMeterRegistry()).collect();
 
     assertThat(dto.getUserCount()).isZero();
     assertThat(dto.getEntityCount()).isEqualTo(2);
