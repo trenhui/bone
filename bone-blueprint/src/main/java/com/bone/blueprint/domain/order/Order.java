@@ -10,6 +10,7 @@ import com.bone.core.annotation.Transient;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.exception.DomainException;
 import com.bone.metadata.sdk.domain.annotation.Table;
+import com.bone.metadata.sdk.domain.annotation.Version;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -40,19 +41,15 @@ public class Order extends TenantAggregateRoot<Long> {
   /**
    * 乐观锁版本号（E-5.3：可并发写聚合必须声明并验证并发策略）。
    *
-   * <p><b>已生效（v5.6 落地）</b>：领域行为方法末尾调用 {@link #incrementVersion()} 让版本递增为新值； 应用层更新场景统一走 {@code
-   * OrderRepository#saveWithVersionCheck}，以 {@code WHERE id = ? AND version = entity.version - 1}
-   * 条件更新，数据库层面保证原子。 并发写命中 0 行时 {@code OrderRepository} 抛 {@code OptimisticLockConflictException}，
-   * 由应用层 catch 后按场景重试或上抛。
+   * <p><b>SDK 原生 @Version（ADR-0031 D2）</b>：由 {@code bone-metadata-sdk} 统一管理—— 写路径 {@code
+   * DynamicUpdateBuilder} 改写 {@code SET version = version + 1}、{@code WHERE version = :old}（old
+   * 取实体加载时值）， {@code BaseRepository.update()} 成功后反射回写实体字段；读路径经 {@code findById} / Criteria 自然加载。
+   * 并发写 0 行由 SDK 抛 {@code OptimisticLockingFailureException}，在应用层翻译为 {@code
+   * OptimisticLockConflictException}。
    *
-   * <p>version 递增的唯一入口是 {@link #incrementVersion()}，禁止外部直接 setVersion。
+   * <p>领域层不再手写版本递增（{@code incrementVersion()} 已随 D2 退役），版本由 SDK 原子维护；{@code create} 仍置初值 0 与库一致。
    */
-  private Long version;
-
-  /** 乐观锁版本递增器——每次状态迁移末尾调用，保证与 saveWithVersionCheck 的 WHERE 条件匹配。 */
-  private void incrementVersion() {
-    this.version = (this.version == null ? 0L : this.version) + 1L;
-  }
+  @Version private Long version;
 
   public Money getTotalMoney() {
     return totalAmount == null ? Money.zero() : Money.of(totalAmount);
@@ -116,7 +113,7 @@ public class Order extends TenantAggregateRoot<Long> {
    *
    * <p><b>为何不对外公开</b>：SDK 重载聚合不做级联，{@code findById} 得到的订单其 {@code items} 恒为空。 若暴露为 public，调用方会自然写出
    * {@code order.getItems()} 并拿到空列表——一个"看起来成功、实际什么都没做"的静默错误 （历史上有两个事件订阅器踩过）。明细一律经读侧端口 {@code
-   * OrderQueryPort.findOrderWithItems} 获取。
+   * OrderRepository.findOrderWithItems} 获取。
    *
    * <p>本方法仅供领域内与同包聚合单测使用，代表"创建期 / 内存态"的明细。
    */
@@ -169,7 +166,6 @@ public class Order extends TenantAggregateRoot<Long> {
     }
     this.status = OrderStatus.PAID;
     this.updatedAt = Instant.now();
-    incrementVersion();
     addDomainEvent(
         new OrderPaidEvent(getId(), getTenantId(), customerId, totalAmount, Instant.now()));
     return true;
@@ -210,7 +206,6 @@ public class Order extends TenantAggregateRoot<Long> {
     }
     this.status = OrderStatus.CANCELLED;
     this.updatedAt = Instant.now();
-    incrementVersion();
     addDomainEvent(new OrderCancelledEvent(getId(), getTenantId(), Instant.now()));
   }
 
@@ -225,7 +220,6 @@ public class Order extends TenantAggregateRoot<Long> {
     }
     this.status = OrderStatus.SHIPPED;
     this.updatedAt = Instant.now();
-    incrementVersion();
   }
 
   /**
@@ -239,7 +233,6 @@ public class Order extends TenantAggregateRoot<Long> {
     }
     this.status = OrderStatus.DELIVERED;
     this.updatedAt = Instant.now();
-    incrementVersion();
   }
 
   /** 退款：已支付/已发货/已送达订单可退款（进入 REFUNDED）。守卫条件见 {@link #isRefundable()}。 */
@@ -252,7 +245,6 @@ public class Order extends TenantAggregateRoot<Long> {
     }
     this.status = OrderStatus.REFUNDED;
     this.updatedAt = Instant.now();
-    incrementVersion();
   }
 
   /**
@@ -271,6 +263,5 @@ public class Order extends TenantAggregateRoot<Long> {
     this.totalAmount = finalPrice.toBigDecimal();
     this.updatedAt = Instant.now();
     assertValidTotal();
-    incrementVersion();
   }
 }

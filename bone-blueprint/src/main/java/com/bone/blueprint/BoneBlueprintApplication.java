@@ -30,7 +30,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 // 不再单列 domain.order：E-10.2 要求领域端口包唯一，订单明细仓储（OrderItemRepository）已归位
 // domain.repository。曾把它挪进聚合包以"通过" CORE-06，属用包位置绕过门禁——CORE-06 已改为按被持久化的
 // 聚合根类型计数，OrderItem 是 Order 聚合内实体（非聚合根），放哪个包都不会变成第二个聚合。
-// infrastructure.query：读侧 @Sql 仓储（OrderReadRepository）。它不在 domain.repository，
+// infrastructure.query：支付读侧 @Sql 仓储（PaymentQueryAdapter）。它不在 domain.repository，
 // 但同样由 SDK 代理生成实现，必须显式登记扫描包，否则 Bean 不注册（表现为注入失败，而非"SQL 找不到"）。
 @EnableSqlRepositories(
     basePackages = {

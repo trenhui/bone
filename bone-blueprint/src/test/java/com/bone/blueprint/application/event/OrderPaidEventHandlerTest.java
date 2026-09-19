@@ -7,10 +7,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.bone.blueprint.application.query.port.OrderQueryPort;
-import com.bone.blueprint.application.query.projection.OrderWithItemsProjection;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.order.event.OrderPaidEvent;
+import com.bone.blueprint.domain.order.projection.OrderWithItemsProjection;
+import com.bone.blueprint.domain.repository.OrderRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Collections;
@@ -30,12 +30,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * <p><b>回归防护 2（静默失败）</b>：明细为空时显式留痕。库存永不扣减却无任何报错是最危险的失败形态—— 表面上支付、发货一切正常，实际库存账实不符，直到盘点才暴露。
  *
  * <p><b>明细来源</b>：聚合重载不含级联（SDK 无级联），{@code Order.getItems()} 恒为空，故本处理器与 {@code
- * OrderCreatedEventHandler} 一致走 {@link OrderQueryPort#findOrderWithItems} 读取明细，不依赖重载后的聚合。
+ * OrderCreatedEventHandler} 一致走 {@link OrderRepository#findOrderWithItems} 读取明细（ADR-0030 合并后读模型同住
+ * {@code OrderRepository}），不依赖重载后的聚合。
  */
 @ExtendWith(MockitoExtension.class)
 class OrderPaidEventHandlerTest {
 
-  @Mock private OrderQueryPort orderQueryPort;
+  @Mock private OrderRepository orderRepository;
 
   @Mock private InventoryGateway inventoryGateway;
 
@@ -48,7 +49,7 @@ class OrderPaidEventHandlerTest {
 
   @Test
   void testConfirmsStockForEachItem() {
-    when(orderQueryPort.findOrderWithItems(1L, 1L)).thenReturn(List.of(row(1L, 1L, 2)));
+    when(orderRepository.findOrderWithItems(1L, 1L)).thenReturn(List.of(row(1L, 1L, 2)));
 
     handler.handle(new OrderPaidEvent(1L, 1L, 1L, new BigDecimal("200"), Instant.now()));
 
@@ -58,7 +59,7 @@ class OrderPaidEventHandlerTest {
   @Test
   void testEmptyItemsDoesNotSilentlyConfirm() {
     // 模拟「明细未随订单落库」的异常状态：读侧无明细行
-    when(orderQueryPort.findOrderWithItems(1L, 1L)).thenReturn(Collections.emptyList());
+    when(orderRepository.findOrderWithItems(1L, 1L)).thenReturn(Collections.emptyList());
 
     handler.handle(new OrderPaidEvent(1L, 1L, 1L, new BigDecimal("200"), Instant.now()));
 

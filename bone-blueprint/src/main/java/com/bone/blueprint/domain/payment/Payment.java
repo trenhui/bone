@@ -10,6 +10,7 @@ import com.bone.blueprint.domain.shared.valueobject.Money;
 import com.bone.core.domain.TenantAggregateRoot;
 import com.bone.core.exception.DomainException;
 import com.bone.metadata.sdk.domain.annotation.Table;
+import com.bone.metadata.sdk.domain.annotation.Version;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Objects;
@@ -52,18 +53,15 @@ public class Payment extends TenantAggregateRoot<Long> {
   /**
    * 乐观锁版本号（E-5.3：可并发写聚合必须声明并验证并发策略）。
    *
-   * <p><b>已生效（v5.6 落地）</b>：领域行为方法末尾调用 {@link #incrementVersion()} 让版本递增为新值； 应用层更新场景统一走 {@code
-   * PaymentRepository#saveWithVersionCheck}，以 {@code WHERE id = ? AND version = entity.version - 1}
-   * 条件更新，数据库层面保证原子。
+   * <p><b>SDK 原生 @Version（ADR-0031 D2）</b>：由 {@code bone-metadata-sdk} 统一管理—— 写路径 {@code
+   * DynamicUpdateBuilder} 改写 {@code SET version = version + 1}、{@code WHERE version = :old}（old
+   * 取实体加载时值）， {@code BaseRepository.update()} 成功后反射回写实体字段；读路径经 {@code findById} / Criteria 自然加载。
+   * 并发写 0 行由 SDK 抛 {@code OptimisticLockingFailureException}，在应用层翻译为 {@code
+   * OptimisticLockConflictException}。
    *
-   * <p>version 递增的唯一入口是 {@link #incrementVersion()}，禁止外部直接 setVersion。
+   * <p>领域层不再手写版本递增（{@code incrementVersion()} 已随 D2 退役），版本由 SDK 原子维护；{@code create} 仍置初值 0 与库一致。
    */
-  private Long version;
-
-  /** 乐观锁版本递增器——每次状态迁移末尾调用，保证与 saveWithVersionCheck 的 WHERE 条件匹配。 */
-  private void incrementVersion() {
-    this.version = (this.version == null ? 0L : this.version) + 1L;
-  }
+  @Version private Long version;
 
   /**
    * 应付金额（值对象视图）。
@@ -140,7 +138,6 @@ public class Payment extends TenantAggregateRoot<Long> {
     this.payUrl = payUrl;
     this.status = PaymentStatus.PAYING;
     this.updatedAt = Instant.now();
-    incrementVersion();
   }
 
   /**
@@ -172,7 +169,6 @@ public class Payment extends TenantAggregateRoot<Long> {
     this.channelTradeNo = channelTradeNo;
     this.paidAt = Instant.now();
     this.updatedAt = Instant.now();
-    incrementVersion();
     addDomainEvent(
         new PaymentSucceededEvent(
             getId(), getTenantId(), orderId, amount, channelTradeNo, Instant.now()));
@@ -190,7 +186,6 @@ public class Payment extends TenantAggregateRoot<Long> {
     this.status = PaymentStatus.FAILED;
     this.channelTradeNo = channelTradeNo;
     this.updatedAt = Instant.now();
-    incrementVersion();
     addDomainEvent(new PaymentFailedEvent(getId(), getTenantId(), orderId, amount, Instant.now()));
   }
 
@@ -208,7 +203,6 @@ public class Payment extends TenantAggregateRoot<Long> {
     }
     this.status = PaymentStatus.CLOSED;
     this.updatedAt = Instant.now();
-    incrementVersion();
   }
 
   /** 是否可发起退款（已成功且尚未退款）。与 {@link #refund} 的前置条件对应。 */
@@ -254,7 +248,6 @@ public class Payment extends TenantAggregateRoot<Long> {
     this.refundAmount = refundAmount;
     this.refundedAt = Instant.now();
     this.updatedAt = Instant.now();
-    incrementVersion();
     addDomainEvent(
         new PaymentRefundedEvent(
             getId(), getTenantId(), orderId, refundAmount, this.channelTradeNo, Instant.now()));

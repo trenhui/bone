@@ -18,6 +18,7 @@ import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
 import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -53,13 +54,13 @@ class PaymentSucceededEventHandlerTest {
   @Test
   void testConfirmPaidWhenCreated() {
     Order order = pendingOrder();
-    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(order);
+    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(Optional.of(order));
 
     handler.handle(event());
 
     // 订单确认为 PAID，且已持久化
     assertEquals(OrderStatus.PAID, order.getStatus());
-    verify(orderRepository).saveWithVersionCheck(order);
+    verify(orderRepository).update(order);
     // 同事务写 Outbox 集成事件（真实链路此前缺失，本次补齐）
     verify(orderOutboxWriter).appendOrderPaid(any());
   }
@@ -68,22 +69,22 @@ class PaymentSucceededEventHandlerTest {
   void testIdempotentWhenAlreadyPaid() {
     Order order = pendingOrder();
     order.confirmPaid(); // 已支付
-    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(order);
+    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(Optional.of(order));
 
     handler.handle(event());
 
     // 幂等：已 PAID 不再重复确认、不重复保存、不重复写 Outbox
     assertEquals(OrderStatus.PAID, order.getStatus());
-    verify(orderRepository, never()).saveWithVersionCheck(any());
+    verify(orderRepository, never()).update(any());
     verify(orderOutboxWriter, never()).appendOrderPaid(any());
   }
 
   @Test
   void testOrderNotFound() {
-    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(null);
+    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(Optional.empty());
 
     assertEquals(404, assertThrows(BizException.class, () -> handler.handle(event())).getCode());
-    verify(orderRepository, never()).saveWithVersionCheck(any());
+    verify(orderRepository, never()).update(any());
   }
 
   /**
@@ -96,13 +97,13 @@ class PaymentSucceededEventHandlerTest {
   void testInconsistentStatePublishesCompensationEvent() {
     Order order = pendingOrder();
     order.cancel(); // CREATED → CANCELLED：回调到达时订单已取消
-    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(order);
+    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(Optional.of(order));
 
     handler.handle(event());
 
     // 关键：绝不为了「让状态对上」而自动改单——那会掩盖真正的资金问题
     assertEquals(OrderStatus.CANCELLED, order.getStatus());
-    verify(orderRepository, never()).saveWithVersionCheck(any());
+    verify(orderRepository, never()).update(any());
     // 订单并未支付，故不得写「订单已支付」Outbox
     verify(orderOutboxWriter, never()).appendOrderPaid(any());
     // 异常必须留痕：发布「钱货不一致」领域事件，且**同事务内**落 Outbox（v4.7 修正：禁止 AFTER_COMMIT
@@ -122,7 +123,7 @@ class PaymentSucceededEventHandlerTest {
     Order order = pendingOrder();
     order.confirmPaid();
     order.clearDomainEvents(); // 清掉 confirmPaid 产生的事件，便于断言本次无新增
-    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(order);
+    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(Optional.of(order));
 
     handler.handle(event());
 

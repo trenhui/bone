@@ -7,9 +7,6 @@ import com.bone.blueprint.application.command.ShipOrderCommand;
 import com.bone.blueprint.application.port.out.PricingPort;
 import com.bone.blueprint.application.port.out.TenantPort;
 import com.bone.blueprint.application.query.dto.OrderDto;
-import com.bone.blueprint.application.query.port.OrderQueryPort;
-import com.bone.blueprint.application.query.projection.OrderHeadProjection;
-import com.bone.blueprint.application.query.projection.OrderWithItemsProjection;
 import com.bone.blueprint.application.query.support.OrderDetailAssembler;
 import com.bone.blueprint.application.query.support.OrderSummaryAssembler;
 import com.bone.blueprint.common.BlueprintErrorCodes;
@@ -17,15 +14,18 @@ import com.bone.blueprint.common.BlueprintErrors;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.order.OrderItem;
+import com.bone.blueprint.domain.order.projection.OrderHeadProjection;
+import com.bone.blueprint.domain.order.projection.OrderWithItemsProjection;
 import com.bone.blueprint.domain.order.valueobject.OrderStatus;
 import com.bone.blueprint.domain.repository.OrderItemRepository;
 import com.bone.blueprint.domain.repository.OrderRepository;
+import com.bone.blueprint.domain.shared.exception.OptimisticLockConflictException;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.DomainException;
 import com.bone.core.model.PageResult;
 import com.bone.core.util.DistributedIdGenerator;
+import com.bone.metadata.sdk.domain.exception.OptimisticLockingFailureException;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -34,16 +34,17 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 订单应用层统一门面（Facade）——所有订单用例的唯一入口。
  *
- * <p><b>适配器只依赖这一个类</b>——Controller / RPC / JobHandler 不需要知道应用层内部实现细节， 读侧走 QueryPort 还是 Repository。
+ * <p><b>适配器只依赖这一个类</b>——Controller / RPC / JobHandler 不需要知道应用层内部实现细节， 读侧直接走 {@link
+ * OrderRepository}（ADR-0030 合并写侧与领域读模型）。
  *
  * <p>内部按关注点选择实现方式：
  *
  * <ul>
  *   <li><b>写操作</b>（create / cancel / ship / deliver）——聚合加载 → 领域方法 → 保存发布。 create
  *       涉及库存校验、扩展点定价、明细持久化等多依赖编排， 但代码量可控（~40 行逻辑）， 直接内联而非再拆一个 Handler 类。
- *   <li><b>读操作</b>（getById / page）——通过 {@link OrderQueryPort} 走读侧模型，{@code @Transactional(readOnly
- *       = true)}。 CQRS 边界在 <strong>port</strong> 层（QueryPort vs Repository）， 不在
- *       <strong>class</strong> 层。
+ *   <li><b>读操作</b>（getById / page）——直接走 {@link OrderRepository}
+ *       的读模型方法，{@code @Transactional(readOnly = true)}。 ADR-0030 将写侧与领域读模型合并进同一仓储，CQRS 边界在
+ *       <strong>仓储</strong> 层（OrderRepository 同时承载写与读），不在 <strong>class</strong> 层。
  * </ul>
  */
 @Service
@@ -57,9 +58,6 @@ public class OrderApplicationService {
   private final PricingPort pricingService;
   private final DomainEventPublisher domainEventPublisher;
   private final TenantPort tenantProvider;
-
-  // ========== 读侧依赖 ==========
-  private final OrderQueryPort orderQueryPort;
 
   // ===================== 写操作 =====================
 
@@ -122,20 +120,24 @@ public class OrderApplicationService {
   public void cancel(CancelOrderCommand command) {
     long tenantId = resolveTenantId(command.tenantId());
     Order order =
-        Optional.ofNullable(orderRepository.findByIdInTenant(command.orderId(), tenantId))
+        orderRepository
+            .findByIdInTenant(command.orderId(), tenantId)
             .orElseThrow(
                 BlueprintErrors.supplier(BlueprintErrorCodes.ORDER_NOT_FOUND, command.orderId()));
     order.cancel();
-    orderRepository.saveWithVersionCheck(order);
+    try {
+      orderRepository.update(order);
+    } catch (OptimisticLockingFailureException ex) {
+      throw new OptimisticLockConflictException("Order", order.getId(), order.getVersion());
+    }
     domainEventPublisher.publishFrom(order);
   }
 
   @Transactional
   public void ship(ShipOrderCommand command) {
     Order order =
-        Optional.ofNullable(
-                orderRepository.findByIdInTenant(
-                    command.orderId(), tenantProvider.currentTenantId()))
+        orderRepository
+            .findByIdInTenant(command.orderId(), tenantProvider.currentTenantId())
             .orElseThrow(
                 BlueprintErrors.supplier(BlueprintErrorCodes.ORDER_NOT_FOUND, command.orderId()));
     try {
@@ -143,15 +145,18 @@ public class OrderApplicationService {
     } catch (DomainException ex) {
       throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_STATUS_CONFLICT, ex.getMessage(), ex);
     }
-    orderRepository.saveWithVersionCheck(order);
+    try {
+      orderRepository.update(order);
+    } catch (OptimisticLockingFailureException ex) {
+      throw new OptimisticLockConflictException("Order", order.getId(), order.getVersion());
+    }
   }
 
   @Transactional
   public void deliver(DeliverOrderCommand command) {
     Order order =
-        Optional.ofNullable(
-                orderRepository.findByIdInTenant(
-                    command.orderId(), tenantProvider.currentTenantId()))
+        orderRepository
+            .findByIdInTenant(command.orderId(), tenantProvider.currentTenantId())
             .orElseThrow(
                 BlueprintErrors.supplier(BlueprintErrorCodes.ORDER_NOT_FOUND, command.orderId()));
     try {
@@ -159,20 +164,24 @@ public class OrderApplicationService {
     } catch (DomainException ex) {
       throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_STATUS_CONFLICT, ex.getMessage(), ex);
     }
-    orderRepository.saveWithVersionCheck(order);
+    try {
+      orderRepository.update(order);
+    } catch (OptimisticLockingFailureException ex) {
+      throw new OptimisticLockConflictException("Order", order.getId(), order.getVersion());
+    }
   }
 
   // ===================== 读操作 =====================
 
-  /** 查询订单详情（含明细行，走读侧 QueryPort）。 */
+  /** 查询订单详情（含明细行，走 OrderRepository 读侧领域模型）。 */
   @Transactional(readOnly = true)
   public OrderDto getById(long orderId) {
     long tenantId = tenantProvider.currentTenantId();
-    List<OrderWithItemsProjection> rows = orderQueryPort.findOrderWithItems(tenantId, orderId);
+    List<OrderWithItemsProjection> rows = orderRepository.findOrderWithItems(tenantId, orderId);
     return OrderDetailAssembler.fromRows(rows);
   }
 
-  /** 分页查询订单（走读侧 QueryPort）。 */
+  /** 分页查询订单（走 OrderRepository 读侧领域模型）。 */
   @Transactional(readOnly = true)
   public PageResult<OrderDto> page(
       Long customerId, String status, Integer pageNum, Integer pageSize) {
@@ -182,7 +191,7 @@ public class OrderApplicationService {
     int size = pageSize != null ? pageSize : 10;
 
     PageResult<OrderHeadProjection> result =
-        orderQueryPort.findOrderPage(tenantId, customerId, parsedStatus, page, size);
+        orderRepository.findOrderPage(tenantId, customerId, parsedStatus, page, size);
 
     List<OrderDto> records =
         result.getRecords().stream().map(OrderSummaryAssembler::fromRow).toList();

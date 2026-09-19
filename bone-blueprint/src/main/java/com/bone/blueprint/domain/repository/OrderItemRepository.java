@@ -11,9 +11,10 @@ import com.bone.metadata.sdk.Repository;
  * 换个包就能变绿，门禁随之失效。正确做法是修正判据：CORE-06 现按<strong>被持久化的聚合根类型</strong>计数， {@code OrderItem} 是 {@code
  * Order} 聚合内的实体（非聚合根），与 {@code Order} 同事务落库属<strong>同一聚合</strong>， 天然合规，无需靠包位置规避。
  *
- * <p><b>读明细走查询侧</b>：下游（如库存预留）读取明细应通过 {@code OrderQueryPort.findOrderWithItems}（联表投影）， 而非在本写侧仓储加返回
- * {@code List} 的查询方法（违反仓储方法白名单：写侧仓储只返 聚合根 / {@code Optional<聚合根>} / {@code boolean} / {@code
- * void}）。故本接口保持裸接口，仅复用 SDK 的 {@code save/findById} 等基础能力。
+ * <p><b>读明细走查询侧</b>：下游（如库存预留）读取明细应通过 {@code OrderRepository.findOrderWithItems}（联表投影）， 而非在本写侧仓储加返回
+ * {@code List<OrderItem>} 的查询方法。ADR-0030
+ * 已放宽写侧仓储白名单允许返回领域读模型（投影/值对象），但本接口仍<strong>有意保持裸接口</strong>—— 明细读模型由 {@code OrderRepository} 以
+ * {@code OrderWithItemsProjection} 投影返回，不在本仓储暴露 {@code OrderItem} 集合，避免与写聚合的权威来源割裂。
  *
  * <p>订单明细表 {@code t_order_item} 无独立多租户列，租户隔离经 {@code t_order.tenant_id} 间接保证，按 {@code orderId}
  * 即可定位（orderId 为全局唯一雪花 ID）。

@@ -3,6 +3,7 @@ package com.bone.blueprint.infrastructure.messaging.outbox;
 import com.bone.blueprint.application.port.out.OrderMessagePort;
 import com.bone.blueprint.application.port.out.OrderOutboxRelayPort;
 import com.bone.blueprint.infrastructure.config.OrderOutboxProperties;
+import com.bone.core.tenant.context.TenantContextRunner;
 import com.bone.metadata.sdk.query.criteria.Criteria;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
@@ -43,7 +44,9 @@ public class OrderOutboxRelayPortAdapter implements OrderOutboxRelayPort {
     }
     int sent = 0;
     for (OrderOutboxRecord record : pending) {
-      if (relayOne(record)) {
+      // 扫描跨租户（上面 disableTenantFilter），但写回 bp_outbox 是租户表操作：SDK 写路径只认 TenantContext，
+      // 定时线程没有请求上下文，不逐条声明租户就会被 ADR-0029 失败关闭拦下（整轮中继全部回滚）。
+      if (TenantContextRunner.callAs(record.getTenantId(), () -> relayOne(record))) {
         sent++;
       }
     }

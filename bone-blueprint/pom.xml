@@ -165,6 +165,11 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
+                <configuration>
+                    <!-- 集成测试（@Tag("integration")）需外部 MySQL，默认 mvn test 不执行，
+                         保持离线门禁可跑；显式运行：mvn -pl bone-blueprint test -Pintegration -->
+                    <excludedGroups>integration</excludedGroups>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -208,4 +213,30 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!-- 集成测试 profile：mvn -pl bone-blueprint test -Pintegration
+             需本机 MySQL（localhost:3306/bone，密码取 BONE_DB_PASSWORD）。 -->
+        <profile>
+            <id>integration</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <version>3.2.5</version>
+                        <configuration>
+                            <!-- 仅供显式运行：只跑 integration 组；覆盖默认的 excludedGroups，
+                                 否则被测组会被基础配置再次排除。 -->
+                            <groups>integration</groups>
+                            <excludedGroups>__never__</excludedGroups>
+                            <!-- 兜底：集成测试类必须以 *Test/*Tests 结尾（父 pom 的 includes 约束）；
+                                 改名导致匹配不到时直接失败，避免「静默跑 0 个用例」的假绿。 -->
+                            <failIfNoTests>true</failIfNoTests>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

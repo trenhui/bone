@@ -4,6 +4,7 @@ import com.bone.blueprint.application.PaymentApplicationService;
 import com.bone.blueprint.application.command.CloseExpiredPaymentCommand;
 import com.bone.blueprint.application.query.port.PaymentQueryPort;
 import com.bone.blueprint.application.query.projection.PaymentProjection;
+import com.bone.core.tenant.context.TenantContextRunner;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -47,8 +48,13 @@ public class CloseExpiredPaymentJob {
     int failed = 0;
     for (PaymentProjection row : expired) {
       try {
-        paymentApplicationService.closeExpired(
-            new CloseExpiredPaymentCommand(row.getPaymentId(), row.getTenantId()));
+        // 调度线程无请求上下文：D2 起写路径改走 SDK update(entity)，租户由 TenantContext 提供，
+        // 必须用 runAs 显式声明租户（ADR-0029 失败关闭），否则 MissingTenantContextException 被下方 catch 静默吞掉。
+        TenantContextRunner.runAs(
+            row.getTenantId(),
+            () ->
+                paymentApplicationService.closeExpired(
+                    new CloseExpiredPaymentCommand(row.getPaymentId(), row.getTenantId())));
         closed++;
       } catch (Exception e) {
         failed++;

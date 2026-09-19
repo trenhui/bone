@@ -1,11 +1,12 @@
 package com.bone.blueprint.adapter.schedule;
 
 import com.bone.blueprint.application.port.out.OrderOutboxPort;
-import com.bone.blueprint.application.query.port.OrderQueryPort;
 import com.bone.blueprint.application.query.port.PaymentQueryPort;
 import com.bone.blueprint.application.query.projection.PaymentProjection;
 import com.bone.blueprint.domain.order.event.OrderPaymentInconsistentEvent;
 import com.bone.blueprint.domain.order.valueobject.OrderStatus;
+import com.bone.blueprint.domain.repository.OrderRepository;
+import com.bone.core.tenant.context.TenantContextRunner;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -34,7 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class OrderPaymentInconsistencyJob {
 
   private final PaymentQueryPort paymentQueryPort;
-  private final OrderQueryPort orderQueryPort;
+  private final OrderRepository orderRepository;
   private final OrderOutboxPort orderOutboxWriter;
 
   /**
@@ -67,7 +68,7 @@ public class OrderPaymentInconsistencyJob {
     int inconsistent = 0;
     for (PaymentProjection row : succeeded) {
       Optional<OrderStatus> status =
-          orderQueryPort.findStatusById(row.getTenantId(), row.getOrderId());
+          orderRepository.findStatusById(row.getTenantId(), row.getOrderId());
       // 订单不存在：同样属异常（支付成功却没有订单）；仍 CREATED：确认链路未执行
       if (status.isEmpty() || status.get() == OrderStatus.CREATED) {
         inconsistent++;
@@ -81,14 +82,19 @@ public class OrderPaymentInconsistencyJob {
             orderStatus,
             row.getPaidAt());
         // 安全网偏差同事务落 Outbox，接入统一告警/工单/自动退款链路（与事件驱动路径共用）。
-        orderOutboxWriter.appendPaymentInconsistent(
-            new OrderPaymentInconsistentEvent(
-                row.getOrderId(),
-                row.getTenantId(),
-                row.getPaymentId(),
-                orderStatus,
-                "对账扫描：支付成功但订单未确认支付（订单不存在或仍为待支付）",
-                Instant.now()));
+        // 定时线程没有请求上下文，而 Outbox 落库走 SDK 写路径（save 内部先按主键+租户探测存在性）：
+        // 不显式声明租户就会被 ADR-0029 失败关闭拦下，本轮的偏差事件全部丢失。
+        TenantContextRunner.runAs(
+            row.getTenantId(),
+            () ->
+                orderOutboxWriter.appendPaymentInconsistent(
+                    new OrderPaymentInconsistentEvent(
+                        row.getOrderId(),
+                        row.getTenantId(),
+                        row.getPaymentId(),
+                        orderStatus,
+                        "对账扫描：支付成功但订单未确认支付（订单不存在或仍为待支付）",
+                        Instant.now())));
       }
     }
 

@@ -2,8 +2,9 @@ package com.bone.blueprint.adapter.schedule;
 
 import com.bone.blueprint.application.OrderApplicationService;
 import com.bone.blueprint.application.command.CancelOrderCommand;
-import com.bone.blueprint.application.query.port.OrderQueryPort;
-import com.bone.blueprint.application.query.projection.OrderHeadProjection;
+import com.bone.blueprint.domain.order.projection.OrderHeadProjection;
+import com.bone.blueprint.domain.repository.OrderRepository;
+import com.bone.core.tenant.context.TenantContextRunner;
 import java.time.Instant;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +31,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class CancelExpiredOrderJob {
 
-  private final OrderQueryPort orderQueryPort;
+  private final OrderRepository orderRepository;
   private final OrderApplicationService orderApplicationService;
 
   /**
@@ -46,12 +47,18 @@ public class CancelExpiredOrderJob {
   @Scheduled(cron = "${bone.blueprint.schedule.cancel-expired-orders-cron:0 0/5 * * * ?}")
   public void cancelExpiredOrders() {
     Instant before = Instant.now().minusSeconds(orderTimeoutMinutes * 60);
-    List<OrderHeadProjection> expired = orderQueryPort.findCreatedExpiredBeforeAllTenants(before);
+    List<OrderHeadProjection> expired = orderRepository.findCreatedExpiredBeforeAllTenants(before);
     int cancelled = 0;
     int failed = 0;
     for (OrderHeadProjection row : expired) {
       try {
-        orderApplicationService.cancel(new CancelOrderCommand(row.getOrderId(), row.getTenantId()));
+        // 调度线程无请求上下文：D2 起写路径改走 SDK update(entity)，租户由 TenantContext 提供，
+        // 必须用 runAs 显式声明租户（ADR-0029 失败关闭），否则 MissingTenantContextException 被下方 catch 静默吞掉。
+        TenantContextRunner.runAs(
+            row.getTenantId(),
+            () ->
+                orderApplicationService.cancel(
+                    new CancelOrderCommand(row.getOrderId(), row.getTenantId())));
         cancelled++;
       } catch (Exception e) {
         failed++;

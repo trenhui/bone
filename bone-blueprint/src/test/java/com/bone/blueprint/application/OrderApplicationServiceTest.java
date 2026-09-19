@@ -16,7 +16,6 @@ import com.bone.blueprint.application.command.DeliverOrderCommand;
 import com.bone.blueprint.application.command.ShipOrderCommand;
 import com.bone.blueprint.application.port.out.PricingPort;
 import com.bone.blueprint.application.port.out.TenantPort;
-import com.bone.blueprint.application.query.port.OrderQueryPort;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.order.OrderItem;
@@ -26,9 +25,11 @@ import com.bone.blueprint.domain.repository.OrderRepository;
 import com.bone.blueprint.domain.shared.valueobject.Money;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
+import com.bone.metadata.sdk.domain.exception.OptimisticLockingFailureException;
 import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -51,9 +52,6 @@ class OrderApplicationServiceTest {
   @Mock private PricingPort pricingService;
   @Mock private DomainEventPublisher domainEventPublisher;
   @Mock private TenantPort tenantProvider;
-
-  // ========== 读侧 mock ==========
-  @Mock private OrderQueryPort orderQueryPort;
 
   @InjectMocks private OrderApplicationService service;
 
@@ -138,12 +136,27 @@ class OrderApplicationServiceTest {
   void ship_fromPaid_success() {
     Order order = paidOrder();
     when(tenantProvider.currentTenantId()).thenReturn(1L);
-    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(order);
+    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(Optional.of(order));
 
     service.ship(new ShipOrderCommand(1L));
 
     assertEquals(OrderStatus.SHIPPED, order.getStatus());
-    verify(orderRepository).saveWithVersionCheck(order);
+    verify(orderRepository).update(order);
+  }
+
+  @Test
+  void ship_optimisticLockConflict_mapsTo409Not500() {
+    Order order = paidOrder();
+    when(tenantProvider.currentTenantId()).thenReturn(1L);
+    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(Optional.of(order));
+    when(orderRepository.update(order))
+        .thenThrow(new OptimisticLockingFailureException("Order", 1L, 0L));
+
+    BizException ex =
+        assertThrows(BizException.class, () -> service.ship(new ShipOrderCommand(1L)));
+
+    // 并发冲突是「可重试的客户端冲突」，必须映射 409；否则会被兜底成 500 污染服务端告警/SLO。
+    assertEquals(409, ex.getCode());
   }
 
   @Test
@@ -151,21 +164,21 @@ class OrderApplicationServiceTest {
     OrderItem item = OrderItem.create(1L, 1L, 1L, "商品1", 2, new BigDecimal("100"));
     Order order = Order.create(1L, 1L, 1L, Collections.singletonList(item));
     when(tenantProvider.currentTenantId()).thenReturn(1L);
-    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(order);
+    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(Optional.of(order));
 
     assertThrows(BizException.class, () -> service.ship(new ShipOrderCommand(1L)));
-    verify(orderRepository, never()).saveWithVersionCheck(any());
+    verify(orderRepository, never()).update(any());
   }
 
   @Test
   void ship_notFound_throws() {
     when(tenantProvider.currentTenantId()).thenReturn(1L);
-    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(null);
+    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(Optional.empty());
 
     assertEquals(
         404,
         assertThrows(BizException.class, () -> service.ship(new ShipOrderCommand(1L))).getCode());
-    verify(orderRepository, never()).saveWithVersionCheck(any());
+    verify(orderRepository, never()).update(any());
   }
 
   // ===================== deliver() =====================
@@ -182,12 +195,12 @@ class OrderApplicationServiceTest {
   void deliver_fromShipped_success() {
     Order order = shippedOrder();
     when(tenantProvider.currentTenantId()).thenReturn(1L);
-    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(order);
+    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(Optional.of(order));
 
     service.deliver(new DeliverOrderCommand(1L));
 
     assertEquals(OrderStatus.DELIVERED, order.getStatus());
-    verify(orderRepository).saveWithVersionCheck(order);
+    verify(orderRepository).update(order);
   }
 
   @Test
@@ -196,21 +209,21 @@ class OrderApplicationServiceTest {
     Order order = Order.create(1L, 1L, 1L, Collections.singletonList(item));
     order.confirmPaid(); // 未发货直接确认送达
     when(tenantProvider.currentTenantId()).thenReturn(1L);
-    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(order);
+    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(Optional.of(order));
 
     assertThrows(BizException.class, () -> service.deliver(new DeliverOrderCommand(1L)));
-    verify(orderRepository, never()).saveWithVersionCheck(any());
+    verify(orderRepository, never()).update(any());
   }
 
   @Test
   void deliver_notFound_throws() {
     when(tenantProvider.currentTenantId()).thenReturn(1L);
-    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(null);
+    when(orderRepository.findByIdInTenant(1L, 1L)).thenReturn(Optional.empty());
 
     assertEquals(
         404,
         assertThrows(BizException.class, () -> service.deliver(new DeliverOrderCommand(1L)))
             .getCode());
-    verify(orderRepository, never()).saveWithVersionCheck(any());
+    verify(orderRepository, never()).update(any());
   }
 }

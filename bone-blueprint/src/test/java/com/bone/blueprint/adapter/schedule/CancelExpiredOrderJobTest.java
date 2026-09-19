@@ -10,10 +10,10 @@ import static org.mockito.Mockito.when;
 
 import com.bone.blueprint.application.OrderApplicationService;
 import com.bone.blueprint.application.command.CancelOrderCommand;
-import com.bone.blueprint.application.query.port.OrderQueryPort;
-import com.bone.blueprint.application.query.projection.OrderHeadProjection;
 import com.bone.blueprint.common.BlueprintErrorCodes;
 import com.bone.blueprint.common.BlueprintErrors;
+import com.bone.blueprint.domain.order.projection.OrderHeadProjection;
+import com.bone.blueprint.domain.repository.OrderRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -43,7 +43,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class CancelExpiredOrderJobTest {
 
-  @Mock private OrderQueryPort orderQueryPort;
+  @Mock private OrderRepository orderRepository;
 
   @Mock private OrderApplicationService orderApplicationService;
 
@@ -51,14 +51,14 @@ class CancelExpiredOrderJobTest {
 
   @BeforeEach
   void setUp() {
-    job = new CancelExpiredOrderJob(orderQueryPort, orderApplicationService);
+    job = new CancelExpiredOrderJob(orderRepository, orderApplicationService);
     // @Value 字段由 Spring 在运行期注入，单测里手工置入（默认 30，与 @Value 占位符默认值一致）
     ReflectionTestUtils.setField(job, "orderTimeoutMinutes", 30L);
   }
 
   @Test
   void cancelsEachExpiredOrderCarryingItsOwnTenant() {
-    when(orderQueryPort.findCreatedExpiredBeforeAllTenants(any()))
+    when(orderRepository.findCreatedExpiredBeforeAllTenants(any()))
         .thenReturn(List.of(headRow(0L, 1L), headRow(999L, 2L)));
 
     job.cancelExpiredOrders();
@@ -73,7 +73,7 @@ class CancelExpiredOrderJobTest {
 
   @Test
   void continuesWithRemainingRowsWhenOneFails() {
-    when(orderQueryPort.findCreatedExpiredBeforeAllTenants(any()))
+    when(orderRepository.findCreatedExpiredBeforeAllTenants(any()))
         .thenReturn(List.of(headRow(0L, 1L), headRow(0L, 2L)));
     doThrow(BlueprintErrors.of(BlueprintErrorCodes.ORDER_STATUS_CONFLICT, "CANCELLED"))
         .when(orderApplicationService)
@@ -87,7 +87,7 @@ class CancelExpiredOrderJobTest {
 
   @Test
   void scansWithDefaultThirtyMinuteThreshold() {
-    when(orderQueryPort.findCreatedExpiredBeforeAllTenants(any())).thenReturn(List.of());
+    when(orderRepository.findCreatedExpiredBeforeAllTenants(any())).thenReturn(List.of());
 
     job.cancelExpiredOrders();
 
@@ -100,7 +100,7 @@ class CancelExpiredOrderJobTest {
   void scansWithConfiguredThresholdWhenOverridden() {
     // 门限必须随配置位移：接错配置键时会命中默认 30，本断言即失败
     ReflectionTestUtils.setField(job, "orderTimeoutMinutes", 45L);
-    when(orderQueryPort.findCreatedExpiredBeforeAllTenants(any())).thenReturn(List.of());
+    when(orderRepository.findCreatedExpiredBeforeAllTenants(any())).thenReturn(List.of());
 
     job.cancelExpiredOrders();
 
@@ -111,7 +111,7 @@ class CancelExpiredOrderJobTest {
 
   private Instant capturedScanBoundary() {
     ArgumentCaptor<Instant> captor = ArgumentCaptor.forClass(Instant.class);
-    verify(orderQueryPort).findCreatedExpiredBeforeAllTenants(captor.capture());
+    verify(orderRepository).findCreatedExpiredBeforeAllTenants(captor.capture());
     return captor.getValue();
   }
 

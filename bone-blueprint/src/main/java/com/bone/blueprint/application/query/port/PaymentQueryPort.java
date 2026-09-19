@@ -14,7 +14,7 @@ public interface PaymentQueryPort {
   /**
    * 查询指定时间之前仍处于待支付/支付中状态的支付单（<b>全租户</b>，供运维型定时任务扫描）。
    *
-   * <p>理由同 {@link OrderQueryPort#findCreatedExpiredBeforeAllTenants}：定时线程无请求上下文，
+   * <p>理由同 {@link OrderRepository#findCreatedExpiredBeforeAllTenants}：定时线程无请求上下文，
    * 按"当前租户"扫描会导致除平台租户外的超时支付单永不关闭。
    */
   List<PaymentProjection> findPayableExpiredBeforeAllTenants(Instant before);

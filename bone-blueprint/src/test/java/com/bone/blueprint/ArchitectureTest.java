@@ -72,7 +72,7 @@ public class ArchitectureTest {
       BoneDddArchRules.commandHandlersMustNotUseQueryBuilder().allowEmptyShould(true);
 
   // E-4.2（v4.6 主判据）：读侧 DSL 只许出现在 infrastructure/query，application 层禁止依赖。
-  // 参考样板不 freeze，须 0 违规（分页查询已迁移到 OrderQueryPort）。
+  // 参考样板不 freeze，须 0 违规（分页/详情读模型已随 ADR-0030 合并进 OrderRepository）。
   @ArchTest
   static final ArchRule read_side_dsl_only_in_query_layer =
       BoneDddArchRules.readSideDslOnlyInQueryLayer();

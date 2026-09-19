@@ -9,8 +9,9 @@ import com.bone.blueprint.domain.order.event.OrderPaidEvent;
 import com.bone.blueprint.domain.order.event.OrderPaymentInconsistentEvent;
 import com.bone.blueprint.domain.payment.event.PaymentSucceededEvent;
 import com.bone.blueprint.domain.repository.OrderRepository;
+import com.bone.blueprint.domain.shared.exception.OptimisticLockConflictException;
 import com.bone.core.domain.event.DomainEventPublisher;
-import java.util.Optional;
+import com.bone.metadata.sdk.domain.exception.OptimisticLockingFailureException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -64,7 +65,8 @@ public class PaymentSucceededEventHandler {
         event.channelTradeNo());
 
     Order order =
-        Optional.ofNullable(orderRepository.findByIdInTenant(event.orderId(), event.tenantId()))
+        orderRepository
+            .findByIdInTenant(event.orderId(), event.tenantId())
             .orElseThrow(
                 BlueprintErrors.supplier(BlueprintErrorCodes.ORDER_NOT_FOUND, event.orderId()));
 
@@ -102,7 +104,11 @@ public class PaymentSucceededEventHandler {
     // 确认订单（本地聚合写）：在独立事务中完成，已与支付单事务解耦（AFTER_COMMIT）。
     // confirmPaid() 发布 OrderPaidEvent → 由 OrderPaidEventHandler 统一确认库存（单一职责）。
     boolean paid = order.confirmPaid();
-    orderRepository.saveWithVersionCheck(order);
+    try {
+      orderRepository.update(order);
+    } catch (OptimisticLockingFailureException ex) {
+      throw new OptimisticLockConflictException("Order", order.getId(), order.getVersion());
+    }
     OrderPaidEvent paidEvent =
         paid ? DomainEvents.extract(order.getDomainEvents(), OrderPaidEvent.class) : null;
     domainEventPublisher.publishFrom(order);

@@ -1,7 +1,10 @@
 package com.bone.blueprint.infrastructure.messaging.outbox;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -10,9 +13,14 @@ import static org.mockito.Mockito.when;
 
 import com.bone.blueprint.application.port.out.OrderMessagePort;
 import com.bone.blueprint.infrastructure.config.OrderOutboxProperties;
+import com.bone.core.tenant.context.TenantContext;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,6 +61,11 @@ class OrderOutboxRelayTest {
     record =
         OrderOutboxRecord.pending(
             1L, 100L, "evt-1", "OrderPaidIntegrationEvent", TOPIC, "100", "{\"orderId\":1}");
+  }
+
+  @AfterEach
+  void tearDown() {
+    TenantContext.clear();
   }
 
   @Test
@@ -98,6 +111,63 @@ class OrderOutboxRelayTest {
     // 终端失败必须转投死信，否则事实只能在表里躺着而无人知晓（消息与事件规范 §6）
     verify(messageSender, times(1))
         .send(DEAD_LETTER_TOPIC, record.getPartitionKey(), record.getEnvelopeJson());
+  }
+
+  /**
+   * 中继线程没有请求上下文，而写回 bp_outbox 是租户表操作：必须逐条以「该记录的租户」执行，否则被 ADR-0029 失败关闭拦下 （整轮中继回滚、每 5
+   * 秒重复失败）。同时锁住「跑完不残留上下文」——线程池复用时不得串租户。
+   */
+  @Test
+  void relayOneRunsInRecordTenantContextAndLeavesNoResidue() {
+    when(outboxRepository.findByCriteria(any())).thenReturn(List.of(record));
+    AtomicReference<String> tenantDuringWrite = new AtomicReference<>();
+    doAnswer(
+            invocation -> {
+              tenantDuringWrite.set(TenantContext.getTenantId());
+              return true;
+            })
+        .when(outboxRepository)
+        .update(record);
+
+    relay.relayPending();
+
+    assertEquals("100", tenantDuringWrite.get());
+    assertNull(TenantContext.getTenantId());
+  }
+
+  /** 一批里含多个租户的记录：每条都必须在自己租户内写回（挡住"整轮只用首条租户包裹"这类回退）。 */
+  @Test
+  void eachRecordIsRelayedUnderItsOwnTenant() {
+    OrderOutboxRecord other =
+        OrderOutboxRecord.pending(
+            2L, 200L, "evt-2", "OrderPaidIntegrationEvent", TOPIC, "200", "{\"orderId\":2}");
+    when(outboxRepository.findByCriteria(any())).thenReturn(List.of(record, other));
+    Map<String, String> tenantByEventId = new HashMap<>();
+    doAnswer(
+            invocation -> {
+              OrderOutboxRecord written = invocation.getArgument(0);
+              tenantByEventId.put(written.getEventId(), TenantContext.getTenantId());
+              return true;
+            })
+        .when(outboxRepository)
+        .update(any());
+
+    relay.relayPending();
+
+    assertEquals("100", tenantByEventId.get("evt-1"));
+    assertEquals("200", tenantByEventId.get("evt-2"));
+    assertNull(TenantContext.getTenantId());
+  }
+
+  /** 写回失败（异常穿出 relayPending）时也必须恢复上下文，否则中继线程会带着残留租户继续跑下一批。 */
+  @Test
+  void contextIsRestoredWhenWriteFails() {
+    when(outboxRepository.findByCriteria(any())).thenReturn(List.of(record));
+    doThrow(new IllegalStateException("db down")).when(outboxRepository).update(any());
+
+    assertThrows(IllegalStateException.class, () -> relay.relayPending());
+
+    assertNull(TenantContext.getTenantId());
   }
 
   @Test

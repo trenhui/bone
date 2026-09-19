@@ -7,8 +7,9 @@ import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.order.Order;
 import com.bone.blueprint.domain.payment.event.PaymentRefundedEvent;
 import com.bone.blueprint.domain.repository.OrderRepository;
+import com.bone.blueprint.domain.shared.exception.OptimisticLockConflictException;
 import com.bone.core.domain.event.DomainEventPublisher;
-import java.util.Optional;
+import com.bone.metadata.sdk.domain.exception.OptimisticLockingFailureException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -47,7 +48,8 @@ public class PaymentRefundedEventHandler {
         event.refundAmount());
 
     Order order =
-        Optional.ofNullable(orderRepository.findByIdInTenant(event.orderId(), event.tenantId()))
+        orderRepository
+            .findByIdInTenant(event.orderId(), event.tenantId())
             .orElseThrow(
                 BlueprintErrors.supplier(BlueprintErrorCodes.ORDER_NOT_FOUND, event.orderId()));
 
@@ -55,7 +57,11 @@ public class PaymentRefundedEventHandler {
     boolean refunded = false;
     if (order.isRefundable()) {
       order.refund();
-      orderRepository.saveWithVersionCheck(order);
+      try {
+        orderRepository.update(order);
+      } catch (OptimisticLockingFailureException ex) {
+        throw new OptimisticLockConflictException("Order", order.getId(), order.getVersion());
+      }
       refunded = true;
       domainEventPublisher.publishFrom(order);
     } else {

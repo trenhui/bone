@@ -1,4 +1,4 @@
-package com.bone.blueprint.application.query.projection;
+package com.bone.blueprint.domain.order.projection;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -7,16 +7,10 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 /**
- * 订单+明细 Join 读模型行（扁平投影，由读侧 SQL 映射）。
+ * 订单 + 明细 Join 读模型（扁平行集：每明细一行、头字段逐行重复；无明细时明细列为 {@code null}，折叠责任只在 {@code OrderDetailAssembler}）。
  *
- * <p>D0（E-8）约束：domain 包内禁止 {@code @Data}/{@code @Setter}，故只暴露 {@code @Getter} + 全参构造器。
- *
- * <p><b>为何补了一个私有无参构造器</b>：本投影由 SDK {@code @Sql} 仓储返回，结果经 {@code SmartRowMapper} 用 {@code
- * BeanUtils.instantiateClass} 创建实例后反射填字段——<strong>必须有可访问的无参构造器</strong>，字段因此去掉 {@code final}。对外仍只有
- * getter。
- *
- * <p><b>列别名必须匹配字段名</b>：{@code SmartRowMapper} 按列标签找字段（下划线转驼峰），故 SQL 里要写 {@code o.id AS order_id}
- * 这类显式别名；明细列在无明细行时为 {@code null}。
+ * <p>两个 SDK 约束：① 必须有可访问的无参构造器（{@code SmartRowMapper} 反射填充），故字段非 {@code final}、对外只暴露 getter；② SQL
+ * 列名必须写成与字段一致的显式别名（{@code o.id AS order_id}）。
  */
 @Getter
 @NoArgsConstructor(access = AccessLevel.PRIVATE)

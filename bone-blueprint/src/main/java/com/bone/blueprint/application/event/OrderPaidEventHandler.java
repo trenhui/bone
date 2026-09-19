@@ -1,9 +1,9 @@
 package com.bone.blueprint.application.event;
 
 import com.bone.blueprint.application.event.support.OrderItemInventoryExecutor;
-import com.bone.blueprint.application.query.port.OrderQueryPort;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.order.event.OrderPaidEvent;
+import com.bone.blueprint.domain.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -21,7 +21,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 @RequiredArgsConstructor
 public class OrderPaidEventHandler {
 
-  private final OrderQueryPort orderQueryPort;
+  private final OrderRepository orderRepository;
   private final InventoryGateway inventoryGateway;
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -29,6 +29,6 @@ public class OrderPaidEventHandler {
     log.info("订单支付成功: orderId={}, tenantId={}", event.orderId(), event.tenantId());
 
     OrderItemInventoryExecutor.forEachItem(
-        orderQueryPort, event.tenantId(), event.orderId(), "确认扣减", inventoryGateway::confirmStock);
+        orderRepository, event.tenantId(), event.orderId(), "确认扣减", inventoryGateway::confirmStock);
   }
 }

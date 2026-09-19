@@ -1,8 +1,8 @@
 package com.bone.blueprint.domain.repository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -29,9 +29,10 @@ import org.mockito.Mockito;
  * {@code tenantId} 是可为空的 {@code Long}），租户条件会整条消失，查询退化为「按 id 跨租户读取」——这是多租户系统里最难在功能性测试中暴露、
  * 后果最严重的一类退化。
  *
- * <p>此处同时验证两件事：① 租户或 id 缺失时<strong>立即返回 null 且不触达查询</strong>（失败关闭）； ② 两者齐全时两条 {@code EQ}
- * 条件都被下发（隔离条件未被优化掉）。实现改用 {@code findOneByCriteria} 后只发一条 SELECT、不触发 {@code countByCriteria}， 但 SQL
- * 层租户条件这一不变量不变，故断言从「捕获 {@code QueryParam}」改为「捕获 {@code Criteria} 主条件」。
+ * <p>此处同时验证三件事：① 租户或 id 缺失时<strong>立即返回 empty 且不触达查询</strong>（失败关闭）； ② 两者齐全时两条 {@code EQ}
+ * 条件都被下发（隔离条件未被优化掉）；③ 乐观锁条件更新同样携带租户条件。 条件都被下发（隔离条件未被优化掉）。实现改用 {@code findOneByCriteria} 后只发一条
+ * SELECT、不触发 {@code countByCriteria}， 但 SQL 层租户条件这一不变量不变，故断言从「捕获 {@code QueryParam}」改为「捕获 {@code
+ * Criteria} 主条件」。
  */
 class RepositoryTenantIsolationTest {
 
@@ -46,8 +47,8 @@ class RepositoryTenantIsolationTest {
 
   @Test
   void orderLookupFailsClosedWithoutTenant() {
-    assertNull(orderRepository.findByIdInTenant(ORDER_ID, null));
-    assertNull(orderRepository.findByIdInTenant(null, TENANT_ID));
+    assertTrue(orderRepository.findByIdInTenant(ORDER_ID, null).isEmpty());
+    assertTrue(orderRepository.findByIdInTenant(null, TENANT_ID).isEmpty());
     verify(orderRepository, never()).findOneByCriteria(any());
   }
 
@@ -56,15 +57,15 @@ class RepositoryTenantIsolationTest {
     Order order = sampleOrder();
     doReturn(order).when(orderRepository).findOneByCriteria(any());
 
-    assertSame(order, orderRepository.findByIdInTenant(ORDER_ID, TENANT_ID));
+    assertSame(order, orderRepository.findByIdInTenant(ORDER_ID, TENANT_ID).orElseThrow());
 
     assertEquals(List.of("id", "tenantId"), capturedConditions(orderRepository));
   }
 
   @Test
   void paymentLookupFailsClosedWithoutTenant() {
-    assertNull(paymentRepository.findByIdInTenant(1L, null));
-    assertNull(paymentRepository.findByIdInTenant(null, TENANT_ID));
+    assertTrue(paymentRepository.findByIdInTenant(1L, null).isEmpty());
+    assertTrue(paymentRepository.findByIdInTenant(null, TENANT_ID).isEmpty());
     verify(paymentRepository, never()).findOneByCriteria(any());
   }
 
@@ -73,18 +74,23 @@ class RepositoryTenantIsolationTest {
     Payment payment = samplePayment();
     doReturn(payment).when(paymentRepository).findOneByCriteria(any());
 
-    assertSame(payment, paymentRepository.findByIdInTenant(1L, TENANT_ID));
+    assertSame(payment, paymentRepository.findByIdInTenant(1L, TENANT_ID).orElseThrow());
 
     assertEquals(List.of("id", "tenantId"), capturedConditions(paymentRepository));
   }
 
-  /** 捕获仓储下发的 {@code Criteria} 主条件，并要求每个字段都以 {@code EQ} 精确匹配（租户条件不得被弱化）。 */
+  /** 捕获查询下发的 {@code Criteria} 主条件。 */
   @SuppressWarnings("unchecked")
   private static List<String> capturedConditions(
       com.bone.metadata.sdk.Repository<?, Long> repository) {
     ArgumentCaptor<Criteria> captor = ArgumentCaptor.forClass(Criteria.class);
     verify(repository).findOneByCriteria(captor.capture());
-    Criteria criteria = captor.getValue();
+    return conditionNames(captor.getValue());
+  }
+
+  /** 要求每个条件都以 {@code EQ} 精确匹配（租户条件不得被弱化）。 */
+  @SuppressWarnings("unchecked")
+  private static List<String> conditionNames(Criteria criteria) {
     List<Condition> conditions = criteria.getMainConditions();
     conditions.forEach(
         condition -> assertEquals(Operator.EQ, condition.getOperator(), condition.getFieldName()));

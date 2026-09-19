@@ -1,70 +1,104 @@
 package com.bone.blueprint.domain.repository;
 
 import com.bone.blueprint.domain.order.Order;
-import com.bone.blueprint.domain.shared.exception.OptimisticLockConflictException;
+import com.bone.blueprint.domain.order.projection.OrderHeadProjection;
+import com.bone.blueprint.domain.order.projection.OrderWithItemsProjection;
+import com.bone.blueprint.domain.order.valueobject.OrderStatus;
+import com.bone.core.model.PageResult;
 import com.bone.metadata.sdk.Repository;
+import com.bone.metadata.sdk.domain.annotation.Param;
+import com.bone.metadata.sdk.domain.annotation.TenantScope;
+import com.bone.metadata.sdk.domain.annotation.TenantScopeMode;
 import com.bone.metadata.sdk.query.criteria.Criteria;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
 
 /**
- * 订单写侧仓储端口。继承 SDK {@link Repository}，由 {@code @EnableSqlRepositories} 代理实现。
+ * 订单仓储（ADR-0030：写侧与本聚合读模型合并为单一仓储）。继承 SDK {@link Repository}，由 {@code @EnableSqlRepositories} 代理实现。
  *
- * <p>多租户隔离下沉到仓储查询层：{@link #findByIdInTenant} 用通用条件查询在 SQL 层附加租户条件，跨租户订单直接被 过滤（返回 {@code
- * null}），而非加载后手动校验。
+ * <p>类内只写契约与陷阱，实现取舍见 ADR-0030：
  *
- * <p><b>乐观锁更新（E-5.3）</b>：{@link #saveWithVersionCheck} 用 SDK {@link Criteria} 组装 {@code WHERE id =
- * ? AND version = ?} 条件更新，行数为 0 即表示被并发修改，抛出 {@link OptimisticLockConflictException}。
- *
- * <p><b>为什么 Repository 层能用 Criteria（@ReadSideOnly）</b>：Repository 是 SDK 框架集成点，基类 {@link Repository}
- * 本身就声明了 {@code updateByCriteria(Criteria<T>)} 方法签名。domain 层 Repository 子类 继承该签名、只在"版本条件更新"这一写侧场景使用
- * Criteria——和业务代码主动依赖读侧 DSL 做查询有本质区别， 已在 {@code ArchitectureTest#domain_no_query_builder} 中对 {@code
- * ..domain.repository..} 包做了豁免。
+ * <ul>
+ *   <li>写：{@link #findByIdInTenant} 租户内加载 + SDK 原生 {@code @Version} 乐观锁（{@code update(entity)} 由
+ *       {@code bone-metadata-sdk} 维护版本，应用层翻译冲突为 {@code OptimisticLockConflictException}）。
+ *   <li>读：返回领域读模型，不向外透出可变聚合；单表读走继承的 Criteria，联表 / 全租户读走外置 {@code .sql}。
+ *   <li>SQL 真源唯一：模板固定为 {@code resources/sql/…/OrderRepository/<方法名>.sql}，<b>禁止再写 {@code @Sql}</b>——
+ *       默认 {@code classpath-first}，两源并存时注解那份永不加载且不报错（影子 SQL），见 ADR-0030 §1.4 / R3。
+ *   <li>租户：{@code @TenantScope} 必须显式标注（缺省 {@link TenantScopeMode#MANUAL} 不报错，但会失去声明）； 只有 {@code
+ *       AUTO} 由 SDK 注入租户，{@code MANUAL} / {@code ALL} 的租户条件与软删全靠 SQL 自己写。 Criteria 方法则显式下发
+ *       tenantId。
+ *   <li>查不到返回 {@code Optional.empty()}，不返回 {@code null}——与 SDK {@code findById} 的 null 语义区分开。
+ *   <li>接口内禁用 {@code static} 与 {@code private} 方法——SDK 代理会为它们加载 SQL 模板导致 Bean 初始化失败；映射逻辑放读模型的静态工厂。
+ * </ul>
  */
 public interface OrderRepository extends Repository<Order, Long> {
 
   /**
-   * 按 id 加载当前租户可访问的订单。
+   * 按 id 加载租户内订单；id / tenantId 为空、跨租户、已软删时返回 {@code Optional.empty()}。
    *
-   * <p>仅返回 {@code id} 与 {@code tenantId} 同时匹配、且未被软删的订单；跨租户或不存在时返回 {@code null}（与 {@link #findById}
-   * 的空语义一致）。
+   * <p><b>不能用 SDK {@code findById} 替代</b>：{@code findById} 的租户取自 {@code TenantContext} 线程变量， 事件订阅 /
+   * 定时任务 / Outbox 中继等异步入口没有上下文，会直接 {@code MissingTenantContextException}；
+   * 且它无法表达「指定租户」。本方法把租户作为显式参数（E-2）。
    *
-   * <p><b>租户隔离下沉到 SQL 层（失败关闭）</b>：用 {@code findOneByCriteria} 把 id 与 tenantId 两条 {@code EQ} 条件一并下发到
-   * SELECT，跨租户订单在数据库侧被过滤（而非加载后内存校验）。软删过滤由 SDK 默认排除 {@code deleted} 保证，与 {@link #findById} 一致。这一不变量由
-   * {@code RepositoryTenantIsolationTest} 白盒锁死： 缺租户时返回 null、且不触达查询。相比 {@code
-   * queryByCondition(...,1,1)}，{@code findOneByCriteria} 只发一条 SELECT、不触发 {@code
-   * countByCriteria}（分页整页命中会额外计数），且与本类 {@link #saveWithVersionCheck} 的 {@code Criteria} 风格一致。
-   *
-   * <p><b>前置判空不是冗余防御</b>：SDK 条件构造（{@code Criteria.eq}）会<strong>静默丢弃</strong> 值为 {@code null}
-   * 的条件。若租户缺失，WHERE 中的租户条件会整条消失，查询退化为「按 id 跨租户读取」——多租户隔离在此<strong>失败开启</strong>。
-   * 两者语义<strong>并不等价</strong>，故显式补回：租户不可知即视为不可访问。
+   * <p><b>失败关闭</b>：{@code Criteria.eq} 会静默丢弃 {@code null} 条件，租户缺失时条件整条消失即退化为跨租户读取，故必须显式判空。
    */
-  default Order findByIdInTenant(Long id, Long tenantId) {
+  default Optional<Order> findByIdInTenant(Long id, Long tenantId) {
     if (id == null || tenantId == null) {
-      return null;
+      return Optional.empty();
     }
-    return findOneByCriteria(Criteria.<Order>create().eq("id", id).eq("tenantId", tenantId));
+    return Optional.ofNullable(
+        findOneByCriteria(
+            Criteria.<Order>create().eq(Order::getId, id).eq(Order::getTenantId, tenantId)));
   }
 
   /**
-   * 乐观锁条件更新（E-5.3 并发护栏）。
+   * 订单头 + 明细扁平投影（每明细一行，头字段逐行重复；无明细时明细列为 {@code null}）。
    *
-   * <p>前置条件：聚合行为方法须先调用 {@code incrementVersion()} 让 {@code entity.version} 递增为新值。 本方法以 {@code
-   * entity.version - 1} 作为 WHERE 条件里的期望旧版本值，数据库层面保证：
+   * <p>MANUAL 租户：SQL 自带 {@code tenant_id} 与子表 {@code deleted = 0}，租户由调用方显式传入。
    *
-   * <pre>{@code
-   * UPDATE t_order SET ..., version = :entity.version  WHERE id = :entity.id AND version = :entity.version - 1
-   * }</pre>
-   *
-   * @param entity 已做状态变更 + incrementVersion 的聚合实例
-   * @throws OptimisticLockConflictException WHERE 条件命中 0 行时抛出（说明已被并发修改）
+   * <p>SQL 见 {@code
+   * resources/sql/com/bone/blueprint/domain/repository/OrderRepository/findOrderWithItems.sql}。
    */
-  default void saveWithVersionCheck(Order entity) {
-    Long version = entity.getVersion();
-    long whereVersion = (version != null && version > 0) ? version - 1 : 0;
+  @TenantScope(TenantScopeMode.MANUAL)
+  List<OrderWithItemsProjection> findOrderWithItems(
+      @Param("tenantId") long tenantId, @Param("orderId") long orderId);
+
+  /** 超时订单扫描（全租户，定时任务专用，授权登记见 E-2）；{@code Instant → Timestamp} 适配在此完成。 */
+  default List<OrderHeadProjection> findCreatedExpiredBeforeAllTenants(Instant before) {
+    return findCreatedExpiredBeforeAllTenantsSql(Timestamp.from(before));
+  }
+
+  /**
+   * 全租户扫描的模板 SQL 实现。
+   *
+   * <p>ALL：定时线程无请求上下文，按"当前租户"扫描只会落到平台租户 0、其余租户超时订单永不取消，故必须显式全租户。
+   *
+   * <p>SQL 见 {@code resources/sql/…/OrderRepository/findCreatedExpiredBeforeAllTenantsSql.sql}。
+   */
+  @TenantScope(TenantScopeMode.ALL)
+  List<OrderHeadProjection> findCreatedExpiredBeforeAllTenantsSql(
+      @Param("before") Timestamp before);
+
+  /** 订单当前状态（对账用）；订单不存在或不可见时返回 {@code Optional.empty()}。 */
+  default Optional<OrderStatus> findStatusById(long tenantId, long orderId) {
+    Order order =
+        findOneByCriteria(
+            Criteria.<Order>create().eq(Order::getId, orderId).eq(Order::getTenantId, tenantId));
+    return Optional.ofNullable(order).map(Order::getStatus);
+  }
+
+  /** 订单头分页；条件用 Criteria 开关表达，租户显式下发，投影映射由 {@link OrderHeadProjection#from} 承担。 */
+  default PageResult<OrderHeadProjection> findOrderPage(
+      long tenantId, Long customerId, OrderStatus status, int pageNum, int pageSize) {
     Criteria<Order> criteria =
-        Criteria.<Order>create().eq("id", entity.getId()).eq("version", whereVersion);
-    int affectedRows = updateByCriteria(entity, criteria);
-    if (affectedRows == 0) {
-      throw new OptimisticLockConflictException("Order", entity.getId(), whereVersion);
-    }
+        Criteria.<Order>create()
+            .eq(Order::getTenantId, tenantId)
+            .eq(customerId != null, Order::getCustomerId, customerId)
+            .eq(status != null, Order::getStatus, status)
+            .orderByDesc(Order::getCreatedAt)
+            .page(pageNum, pageSize);
+    return pageByCriteria(criteria).map(OrderHeadProjection::from);
   }
 }

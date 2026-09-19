@@ -19,6 +19,7 @@ import com.bone.blueprint.domain.repository.PaymentRepository;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.BizException;
 import java.math.BigDecimal;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,7 +51,7 @@ class PaymentApplicationServiceTest {
 
     AtomicReference<Class<?>> eventType = new AtomicReference<>();
     when(tenantProvider.currentTenantId()).thenReturn(1L);
-    when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(payment);
+    when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(Optional.of(payment));
     doAnswer(
             inv -> {
               Payment saved = inv.getArgument(0);
@@ -60,7 +61,7 @@ class PaymentApplicationServiceTest {
               return null;
             })
         .when(paymentRepository)
-        .saveWithVersionCheck(any(Payment.class));
+        .update(any(Payment.class));
 
     service.refund(command());
 
@@ -75,7 +76,7 @@ class PaymentApplicationServiceTest {
         Payment.create(
             1L, 1L, 100L, 200L, new BigDecimal("200"), PaymentChannel.SIMULATED, "http://pay");
     when(tenantProvider.currentTenantId()).thenReturn(1L);
-    when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(payment);
+    when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(Optional.of(payment));
 
     BizException ex = assertThrows(BizException.class, () -> service.refund(command()));
     assertEquals(409, ex.getCode());
@@ -85,9 +86,9 @@ class PaymentApplicationServiceTest {
   @Test
   void refund_paymentNotFound_throws() {
     when(tenantProvider.currentTenantId()).thenReturn(1L);
-    when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(null);
+    when(paymentRepository.findByIdInTenant(1L, 1L)).thenReturn(Optional.empty());
 
     assertEquals(404, assertThrows(BizException.class, () -> service.refund(command())).getCode());
-    verify(paymentRepository, never()).saveWithVersionCheck(any());
+    verify(paymentRepository, never()).update(any());
   }
 }

@@ -7,10 +7,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.bone.blueprint.application.query.port.OrderQueryPort;
-import com.bone.blueprint.application.query.projection.OrderWithItemsProjection;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.order.event.OrderCreatedEvent;
+import com.bone.blueprint.domain.order.projection.OrderWithItemsProjection;
+import com.bone.blueprint.domain.repository.OrderRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -31,12 +31,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * <p><b>回归防护 2（静默失败）</b>：明细为空时必须显式留痕，禁止静默跳过。订单必有商品项（{@code Order.create} 已强制校验），
  * 为空只可能是明细未随订单落库；静默跳过会让库存永不预留且<strong>毫无报错</strong>，问题潜伏至超卖才被发现。 宁可报错，也不要「看起来正常运行却什么都没做」。
  *
- * <p>明细经查询侧 {@link OrderQueryPort#findOrderWithItems} 读取（订单聚合重载不含级联，{@code Order.getItems()} 恒为空）。
+ * <p>明细经查询侧 {@link OrderRepository#findOrderWithItems} 读取（ADR-0030 合并后读模型同住 {@code
+ * OrderRepository}；订单聚合重载不含级联，{@code Order.getItems()} 恒为空）。
  */
 @ExtendWith(MockitoExtension.class)
 class OrderCreatedEventHandlerTest {
 
-  @Mock private OrderQueryPort orderQueryPort;
+  @Mock private OrderRepository orderRepository;
 
   @Mock private InventoryGateway inventoryGateway;
 
@@ -57,7 +58,7 @@ class OrderCreatedEventHandlerTest {
             2,
             new BigDecimal("100"),
             new BigDecimal("200"));
-    when(orderQueryPort.findOrderWithItems(1L, 1L)).thenReturn(Collections.singletonList(row));
+    when(orderRepository.findOrderWithItems(1L, 1L)).thenReturn(Collections.singletonList(row));
 
     handler.handle(new OrderCreatedEvent(1L, 1L, 1L, Instant.now()));
 
@@ -80,7 +81,7 @@ class OrderCreatedEventHandlerTest {
             null,
             null,
             null);
-    when(orderQueryPort.findOrderWithItems(1L, 1L)).thenReturn(List.of(nullRow));
+    when(orderRepository.findOrderWithItems(1L, 1L)).thenReturn(List.of(nullRow));
 
     handler.handle(new OrderCreatedEvent(1L, 1L, 1L, Instant.now()));
 

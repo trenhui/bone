@@ -25,7 +25,7 @@ import com.bone.blueprint.domain.shared.exception.StateConflictException;
 import com.bone.core.domain.event.DomainEventPublisher;
 import com.bone.core.exception.DomainException;
 import com.bone.core.util.DistributedIdGenerator;
-import java.util.Optional;
+import com.bone.metadata.sdk.domain.exception.OptimisticLockingFailureException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DuplicateKeyException;
@@ -92,8 +92,8 @@ public class PaymentApplicationService {
             (TransactionCallback<Payment>)
                 status -> {
                   com.bone.blueprint.domain.order.Order order =
-                      Optional.ofNullable(
-                              orderRepository.findByIdInTenant(command.orderId(), tenantId))
+                      orderRepository
+                          .findByIdInTenant(command.orderId(), tenantId)
                           .orElseThrow(
                               BlueprintErrors.supplier(
                                   BlueprintErrorCodes.ORDER_NOT_FOUND, command.orderId()));
@@ -138,7 +138,12 @@ public class PaymentApplicationService {
             throw BlueprintErrors.of(
                 BlueprintErrorCodes.PAYMENT_STATUS_CONFLICT, ex.getMessage(), ex);
           }
-          paymentRepository.saveWithVersionCheck(payment);
+          try {
+            paymentRepository.update(payment);
+          } catch (OptimisticLockingFailureException ex) {
+            throw new OptimisticLockConflictException(
+                "Payment", payment.getId(), payment.getVersion());
+          }
           domainEventPublisher.publishFrom(payment);
         });
 
@@ -169,7 +174,8 @@ public class PaymentApplicationService {
 
     long tenantId = tenantProvider.currentTenantId();
     Payment payment =
-        Optional.ofNullable(paymentRepository.findByIdInTenant(command.paymentId(), tenantId))
+        paymentRepository
+            .findByIdInTenant(command.paymentId(), tenantId)
             .orElseThrow(
                 BlueprintErrors.supplier(
                     BlueprintErrorCodes.PAYMENT_NOT_FOUND, command.paymentId()));
@@ -184,7 +190,11 @@ public class PaymentApplicationService {
       PaymentFailedEvent failedEvent =
           DomainEvents.extract(payment.getDomainEvents(), PaymentFailedEvent.class);
 
-      paymentRepository.saveWithVersionCheck(payment);
+      try {
+        paymentRepository.update(payment);
+      } catch (OptimisticLockingFailureException ex) {
+        throw new OptimisticLockConflictException("Payment", payment.getId(), payment.getVersion());
+      }
       // 与业务写同事务落 Outbox（与成功路径同形态）：若挪到 AFTER_COMMIT 再写，支付单已提交而事件未落库，
       // 其间崩溃即永久丢失——支付单是终态，没有补偿扫描覆盖它，失败事实会静默消失。
       orderOutboxWriter.appendPaymentFailed(failedEvent);
@@ -212,9 +222,11 @@ public class PaymentApplicationService {
         DomainEvents.extract(payment.getDomainEvents(), PaymentSucceededEvent.class);
 
     try {
-      paymentRepository.saveWithVersionCheck(payment);
-    } catch (DuplicateKeyException | OptimisticLockConflictException ex) {
-      // 并发重复：唯一索引 / 乐观锁拦截，按幂等处理（资金不可重复入账）
+      paymentRepository.update(payment);
+    } catch (OptimisticLockingFailureException | DuplicateKeyException ex) {
+      // SDK 原生乐观锁冲突（ADR-0031 D2）/ 唯一索引冲突：并发重复回调按幂等处理（资金不可重复入账）。
+      // 原 saveWithVersionCheck 抛出的 OptimisticLockConflictException 现由 SDK 的
+      // OptimisticLockingFailureException 替代，二者语义一致——均在此按幂等跳过，保持 catch 行为有效。
       log.warn(
           "支付回调并发已拦截，按幂等跳过: paymentId={}, channelTradeNo={}, reason={}",
           command.paymentId(),
@@ -233,7 +245,8 @@ public class PaymentApplicationService {
   public void refund(RefundPaymentCommand command) {
     long tenantId = tenantProvider.currentTenantId();
     Payment payment =
-        Optional.ofNullable(paymentRepository.findByIdInTenant(command.paymentId(), tenantId))
+        paymentRepository
+            .findByIdInTenant(command.paymentId(), tenantId)
             .orElseThrow(
                 BlueprintErrors.supplier(
                     BlueprintErrorCodes.PAYMENT_NOT_FOUND, command.paymentId()));
@@ -245,7 +258,11 @@ public class PaymentApplicationService {
       throw BlueprintErrors.of(BlueprintErrorCodes.PAYMENT_STATUS_CONFLICT, ex.getMessage(), ex);
     }
 
-    paymentRepository.saveWithVersionCheck(payment);
+    try {
+      paymentRepository.update(payment);
+    } catch (OptimisticLockingFailureException ex) {
+      throw new OptimisticLockConflictException("Payment", payment.getId(), payment.getVersion());
+    }
     domainEventPublisher.publishFrom(payment);
     if (refunded) {
       log.info("支付退款完成: paymentId={}, amount={}", command.paymentId(), command.refundAmount());
@@ -269,7 +286,8 @@ public class PaymentApplicationService {
     long tenantId =
         command.tenantId() != null ? command.tenantId() : tenantProvider.currentTenantId();
     Payment payment =
-        Optional.ofNullable(paymentRepository.findByIdInTenant(command.paymentId(), tenantId))
+        paymentRepository
+            .findByIdInTenant(command.paymentId(), tenantId)
             .orElseThrow(
                 BlueprintErrors.supplier(
                     BlueprintErrorCodes.PAYMENT_NOT_FOUND, command.paymentId()));
@@ -279,7 +297,11 @@ public class PaymentApplicationService {
     } catch (DomainException ex) {
       throw BlueprintErrors.of(BlueprintErrorCodes.PAYMENT_STATUS_CONFLICT, ex.getMessage(), ex);
     }
-    paymentRepository.saveWithVersionCheck(payment);
+    try {
+      paymentRepository.update(payment);
+    } catch (OptimisticLockingFailureException ex) {
+      throw new OptimisticLockConflictException("Payment", payment.getId(), payment.getVersion());
+    }
     log.info("已关闭超时支付单: paymentId={}, tenantId={}", command.paymentId(), tenantId);
   }
 
@@ -299,12 +321,18 @@ public class PaymentApplicationService {
         status -> {
           Payment payment = loadPayment(paymentId, tenantId);
           payment.close();
-          paymentRepository.saveWithVersionCheck(payment);
+          try {
+            paymentRepository.update(payment);
+          } catch (OptimisticLockingFailureException ex) {
+            throw new OptimisticLockConflictException(
+                "Payment", payment.getId(), payment.getVersion());
+          }
         });
   }
 
   private Payment loadPayment(long paymentId, long tenantId) {
-    return Optional.ofNullable(paymentRepository.findByIdInTenant(paymentId, tenantId))
+    return paymentRepository
+        .findByIdInTenant(paymentId, tenantId)
         .orElseThrow(BlueprintErrors.supplier(BlueprintErrorCodes.PAYMENT_NOT_FOUND, paymentId));
   }
 }

@@ -1,7 +1,7 @@
 package com.bone.blueprint.application.event.support;
 
-import com.bone.blueprint.application.query.port.OrderQueryPort;
-import com.bone.blueprint.application.query.projection.OrderWithItemsProjection;
+import com.bone.blueprint.domain.order.projection.OrderWithItemsProjection;
+import com.bone.blueprint.domain.repository.OrderRepository;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 
@@ -17,8 +17,8 @@ import lombok.extern.slf4j.Slf4j;
  *
  * 两份实现一旦各自演进，就会出现「一条链路静默失败、另一条正常」的形态；收敛后规则只有一处可改。
  *
- * <p><b>明细来源</b>：订单明细是 Order 聚合的子实体，但聚合重载不含级联（SDK 无级联），{@code Order.getItems()} 恒为空，故必须走查询侧端口
- * {@link OrderQueryPort#findOrderWithItems} 读取，切勿依赖重载后的聚合。
+ * <p><b>明细来源</b>：订单明细是 Order 聚合的子实体，但聚合重载不含级联（SDK 无级联），{@code Order.getItems()} 恒为空，故必须走领域仓储 {@link
+ * OrderRepository#findOrderWithItems} 读取（ADR-0030 合并后读模型同住 {@code OrderRepository}），切勿依赖重载后的聚合。
  *
  * <p><b>为何不加 {@code @Transactional}</b>：本类只读库 + 远程调用，无本地写入；开启事务只会让远程调用期间白占数据库连接。
  */
@@ -37,19 +37,19 @@ public final class OrderItemInventoryExecutor {
   /**
    * 读取订单明细并逐行执行库存动作。
    *
-   * @param orderQueryPort 读侧端口（明细由 {@code t_order_item} 投影而来）
+   * @param orderRepository 读侧领域仓储（明细由 {@code t_order_item} 投影而来）
    * @param tenantId 事件所属租户
    * @param orderId 订单 ID
    * @param actionName 动作名，仅用于日志措辞（如「预留」「确认扣减」）
    * @param action 远程库存动作（{@code reserveStock} / {@code confirmStock}）
    */
   public static void forEachItem(
-      OrderQueryPort orderQueryPort,
+      OrderRepository orderRepository,
       long tenantId,
       long orderId,
       String actionName,
       StockAction action) {
-    List<OrderWithItemsProjection> rows = orderQueryPort.findOrderWithItems(tenantId, orderId);
+    List<OrderWithItemsProjection> rows = orderRepository.findOrderWithItems(tenantId, orderId);
 
     // 明细为空（含 LEFT JOIN 无匹配行时 itemId 为 NULL）时显式留痕，避免库存静默不同步。
     // 订单必有商品项（Order.create 已强制校验），为空只可能是明细未随订单落库；静默跳过会让库存永不

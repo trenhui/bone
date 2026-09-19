@@ -12,6 +12,21 @@
 | **支付（Payment）** | 支付单生命周期：发起、渠道预下单、回调确认（幂等） | `bp_payment` |
 | **库存（Inventory）** | 库存校验、预留、确认、释放 | 库存服务自有数据（经 ACL 访问） |
 
+### 本上下文拥有的表（E-1.2 数据所有权声明）
+
+**这是机器可读声明**：`SqlTemplateGovernanceTest` 的门禁⑥ 会解析本表，校验本模块自定义 SQL 的 `FROM`/`JOIN`
+表集合必须 ⊆ 对应聚合名下的表——未登记即判违规（跨聚合读应走 `application/query/port` 的 `*QueryPort`）。
+
+| 表名 | 用途 | 归属聚合 |
+|------|------|----------|
+| `t_order` | 订单头（含 `tenant_id`、审计与软删字段） | Order |
+| `t_order_item` | 订单明细，聚合内实体；无独立租户列，租户隔离经 `t_order.tenant_id` 间接保证 | Order |
+| `bp_payment` | 支付单（独立聚合，经 `orderId` 关联订单） | Payment |
+| `bp_outbox` | Outbox 投递记录（可靠投递三件套之一） | —（基础设施表，非聚合） |
+| `bp_idempotency_record` | 幂等请求记录 | —（基础设施表，非聚合） |
+| `bp_processed_event` | 消费去重记录 | —（基础设施表，非聚合） |
+
+
 ### 上下文映射（简图）
 
 ```text
@@ -61,7 +76,7 @@
 
 | 项 | 样板现状 | 生产要求 |
 |----|----------|----------|
-| **并发与一致性护栏** | 并发策略已声明为<strong>乐观锁</strong>（E-5.3 登记）：聚合带 `version` 列，但 Bone 元数据 SDK 通用写路径（`BaseRepository#update` → `DynamicUpdateBuilder`）<strong>不强制</strong> `WHERE version=?`；且其 `TableMetadataResolver` 虽识别 `@Version` 却未被写路径消费（已核验源码）。加之 `domain`/`application` 层按 P0-5 / E-4.2 禁止依赖 `@ReadSideOnly`（即 `Criteria`），无法在应用/领域层合法构造带版本条件的 `updateByCriteria`——故 DB 级乐观锁<strong>待 SDK 启用原生 `@Version` 后落地（当前未生效）</strong> | 当前真实护栏：① 支付回调并发由 `channel_trade_no` **唯一索引**兜底（幂等去重键，防双写）；② 钱货不一致由 `OrderPaymentInconsistencyJob` 周期对账（仅告警、不改单），补偿"支付成功但订单确认丢失"的窗口；③ 订单/支付单状态机防非法跃迁。SDK 乐观锁就绪前，高并发写同一聚合的丢失更新风险仍属<strong>已知登记项</strong> |
+| **并发与一致性护栏** | 并发策略已声明为<strong>乐观锁</strong>（E-5.3 登记）并由 SDK 原生 `@Version` 提供（**D2 已落地**）：`Order`/`Payment` 标注 `@Version`，写路径 `update` 自动 `SET version=version+1` + `WHERE version=:old`，冲突抛 `OptimisticLockingFailureException` 并在应用层翻译为 `OptimisticLockConflictException` | 真实护栏仍然需要：① 支付回调并发由 `channel_trade_no` **唯一索引**兜底（幂等去重键，防双写）；② 钱货不一致由 `OrderPaymentInconsistencyJob` 周期对账（仅告警、不改单）；③ 订单/支付单状态机防非法跃迁。SDK 乐观锁已就绪，高并发写同一聚合的丢失更新由版本冲突拦截，但仍建议结合唯一约束防御 |
 | **回调验签** | 模拟 HMAC（固定共享密钥，`MockPaymentSignaturePortAdapter`） | 真实渠道用 HMAC/RSA/证书 + 密钥外部化 + 防重放（nonce/时间戳） |
 | **真实渠道退款** | `Payment.refund` 仅本地幂等 | 真实退款须调用渠道退款接口 + 对账 |
 | **渠道真实对接** | `MockPaymentGatewayAdapter` | 替换为真实渠道适配器 + 协议转换 + 错误语义隔离（E-4.3 ACL 端口 / P-6） |
@@ -70,7 +85,7 @@
 
 `Order` 聚合持有需持久化的 `List<OrderItem>` 集合，且明细有独立表 `t_order_item` 与独立写侧仓储 `OrderItemRepository`（位于 `domain.repository`，与 `OrderRepository` 同包），命中 E-6.3 的 **PO 分离信号**（聚合持有需持久化集合/嵌套实体，无 SDK 级联落库）。
 
-**当前过渡方案**：D1 充血聚合 + `OrderApplicationService` 显式逐条 `save(OrderItem)`，明细经读侧端口 `OrderQueryPort.findOrderWithItems`（联表投影）读取。`OrderItem` 是 `Order` 聚合内实体，与 `Order` 同事务落库是在保存同一聚合；现有 CORE-06 扫描只能按 Repository/聚合类型提示风险，不能独立证明事务语义。仓储端口统一放 `domain.repository`，**无需也不允许**靠包位置规避门禁（详见 `OrderItemRepository` 类注释）。读端口已按 v5.0 迁至 `application/query/port`（`OrderQueryPort` / `PaymentQueryPort`），配套行投影置于 `application/query/projection`、出参 DTO 置于 `application/query/dto`；原 `domain/gateway/*ReadPort` 与 `domain/{order,payment}/read` 已清理，无遗留存量。
+**当前过渡方案**：D1 充血聚合 + `OrderApplicationService` 显式逐条 `save(OrderItem)`，明细经**域仓储读方法** `OrderRepository.findOrderWithItems`（`@Sql` 联表投影）读取。`OrderItem` 是 `Order` 聚合内实体，与 `Order` 同事务落库是在保存同一聚合；现有 CORE-06 扫描只能按 Repository/聚合类型提示风险，不能独立证明事务语义。仓储端口统一放 `domain.repository`，**无需也不允许**靠包位置规避门禁（详见 `OrderItemRepository` 类注释）。**ADR-0030 合并形态**：订单读侧不再单设 `OrderQueryPort` / `OrderReadRepository`，本聚合读方法（`@Sql` + Criteria）与域层投影（`domain/order/projection/`）并入 `OrderRepository`，应用层直注域仓储；`Payment` 读侧仍走 `application/query/port` 的 `PaymentQueryPort`（配套行投影置于 `application/query/projection`）、出参 DTO 置于 `application/query/dto`；原 `domain/gateway/*ReadPort` 与 `domain/{order,payment}/read` 已清理，无遗留存量。
 
 **与 CORE-11 的偏差（显式登记）**：CORE-11 要求「聚合根是唯一持久化入口，子实体随根落盘，不为子实体建立独立聚合级 Repository」。本模块的 `OrderItemRepository` 与该条字面要求不符，属 **SDK 能力缺失导致的被迫偏差**，而非风格选择：Bone 元数据 SDK **不支持聚合级联落库**，`OrderRepository.save(order)` 不会持久化 `order.items`（且 `items` 标 `@Transient` 以避免 SDK 误映射为 `t_order` 列）。若无显式明细写入路径，订单明细将**静默丢失**。因此「显式逐条 `save(OrderItem)`」是 SDK 约束下的最小可行路径：`OrderItem` 仍是 `Order` 聚合内实体（**未**升格为聚合根），两次 save 在**同一事务**内完成，一致性边界仍等于 `Order` 聚合——CORE-11 的保护目标未被削弱，只是落库入口由「仅根」变为「根 + 子实体同事务双写」。**收敛路径**：SDK 支持聚合级联后即可删除 `OrderItemRepository`、明细随根落盘，恢复 CORE-11 完整合规（与下方 E-6.3 迁移条件同源）。
 
@@ -207,12 +222,12 @@ bash scripts/ci/collect-blueprint-compliance.sh
 | **多租户** | `TenantAggregateRoot` + 写侧 `findByIdInTenant`（`QueryParam` 条件，租户缺失即失败关闭）/ 读侧 SQL 显式 `tenant_id = :tenantId` + `X-Tenant-Id` 过滤器（生产由网关按 token claim 覆盖下发） |
 | **JWT 鉴权** | `SecurityConfig` + `JwtAuthenticationFilter`（框架 `AbstractJwtAuthenticationFilter`）；共享密钥离线验签，**不回调 IAM** |
 | **值对象 Money** | 金额规则集中在 `Money`（位于 `domain/shared/valueobject`，`Order` / `OrderItem` / **`Payment`** 共用——共享值对象独立成包，避免支付反向依赖订单包） |
-| **读侧 Join** | `OrderQueryPort` + `findOrderWithItems.sql` 扁平投影 → `OrderDetailAssembler` |
+| **读侧 Join** | `OrderRepository.findOrderWithItems`（`@Sql`，外置 `OrderRepository/findOrderWithItems.sql` 优先）扁平投影 → 域层投影 → `OrderDetailAssembler`（ADR-0030 合并，无独立读仓储/端口） |
 | **扩展点** | 多实现价格计算器（VIP/企业/促销等） |
 | **独立支付聚合** | `Payment`（`bp_payment`）+ 状态机 + 幂等/金额校验回调（见下） |
 | **支付生命周期闭环** | 发起支付 → 渠道预下单 → 回调确认 → **查询**（`PaymentQueryPort`）→ **超时关闭**（`CloseExpiredPaymentJob`）→ **退款**（`PaymentRefundedEvent` 驱动订单退款 + 释放库存） |
 | **Feign + `InventoryGateway`** | ACL 出站调用 + 预留/确认/释放流程 |
-| **CQRS 读侧** | 列表 / 详情均经读侧端口 SQL 投影（`OrderQueryPort` / `PaymentQueryPort`），写侧仓储不承载报表查询 |
+| **CQRS 读侧** | 订单本聚合读并入域仓储（`OrderRepository` 的 `@Sql` / Criteria 读方法 + `domain/order/projection`，ADR-0030），支付仍走 `PaymentQueryPort`；域仓储不承载跨聚合报表 / Join |
 | **MQ / 定时任务 / RPC** | 入站适配器形态示例（MQ 消费端幂等落库、DLQ、消费指标见上节） |
 | **幂等写（`Idempotency-Key`）** | core `IdempotencyService`（作用域键 `租户|用户|键|方法|路径`、SHA-256 指纹、同键异 body → 409 `COMMON_IDEMPOTENCY_CONFLICT`、TTL 24h）+ 控制器取头；同键同 body 重放同一响应（API 规范 §6.1/§8）。存储由 `IdempotencyStore` 适配（blueprint 样例 `IdempotencyPortAdapter` 落 `bp_idempotency_record`） |
 | **授权（Scope）** | 端点声明 `@PreAuthorize("hasAuthority('order:orders:read'/'order:orders:write')")`；scope 由 IAM 随 token 下发（API 规范 §9.2） |
