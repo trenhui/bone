@@ -9,10 +9,10 @@ import static org.mockito.Mockito.when;
 
 import com.bone.blueprint.application.PaymentApplicationService;
 import com.bone.blueprint.application.command.CloseExpiredPaymentCommand;
-import com.bone.blueprint.application.query.port.PaymentQueryPort;
-import com.bone.blueprint.application.query.projection.PaymentProjection;
 import com.bone.blueprint.common.BlueprintErrorCodes;
 import com.bone.blueprint.common.BlueprintErrors;
+import com.bone.blueprint.domain.payment.projection.PaymentProjection;
+import com.bone.blueprint.domain.repository.PaymentRepository;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
@@ -31,7 +31,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 @MockitoSettings(strictness = Strictness.LENIENT)
 class CloseExpiredPaymentJobTest {
 
-  @Mock private PaymentQueryPort paymentQueryPort;
+  @Mock private PaymentRepository paymentRepository;
 
   @Mock private PaymentApplicationService paymentApplicationService;
 
@@ -39,14 +39,14 @@ class CloseExpiredPaymentJobTest {
 
   @BeforeEach
   void setUp() {
-    job = new CloseExpiredPaymentJob(paymentQueryPort, paymentApplicationService);
+    job = new CloseExpiredPaymentJob(paymentRepository, paymentApplicationService);
     // @Value 字段由 Spring 在运行期注入，单测里手工置入（默认 30，与 @Value 占位符默认值一致）
     ReflectionTestUtils.setField(job, "paymentTimeoutMinutes", 30L);
   }
 
   @Test
   void closesEachExpiredPaymentCarryingItsOwnTenant() {
-    when(paymentQueryPort.findPayableExpiredBeforeAllTenants(any()))
+    when(paymentRepository.findPayableExpiredBeforeAllTenants(any()))
         .thenReturn(List.of(paymentRow(0L, 11L, 1L), paymentRow(888L, 12L, 2L)));
 
     job.closeExpiredPayments();
@@ -61,7 +61,7 @@ class CloseExpiredPaymentJobTest {
 
   @Test
   void continuesWithRemainingRowsWhenOneFails() {
-    when(paymentQueryPort.findPayableExpiredBeforeAllTenants(any()))
+    when(paymentRepository.findPayableExpiredBeforeAllTenants(any()))
         .thenReturn(List.of(paymentRow(0L, 11L, 1L), paymentRow(0L, 12L, 2L)));
     doThrow(BlueprintErrors.of(BlueprintErrorCodes.PAYMENT_STATUS_CONFLICT, "SUCCESS"))
         .when(paymentApplicationService)

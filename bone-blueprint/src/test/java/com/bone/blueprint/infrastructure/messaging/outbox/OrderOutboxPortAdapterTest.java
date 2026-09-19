@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.bone.blueprint.application.integration.event.OrderStockActionFailedIntegrationEvent;
 import com.bone.blueprint.application.port.out.TenantPort;
 import com.bone.blueprint.domain.order.event.OrderPaidEvent;
 import com.bone.blueprint.infrastructure.config.OrderOutboxProperties;
@@ -130,5 +131,43 @@ class OrderOutboxPortAdapterTest {
     writer.appendOrderPaid(null);
 
     verify(outboxRepository, never()).save(any());
+  }
+
+  @Test
+  void appendsStockActionFailedAsIntegrationEventEnvelope() {
+    Instant occurredAt = Instant.parse("2026-09-16T03:00:00Z");
+    OrderStockActionFailedIntegrationEvent event =
+        OrderStockActionFailedIntegrationEvent.fromDomain(
+            1L, 7L, 9L, 2, "预留", "库存服务暂时不可用", occurredAt);
+    when(properties.isEnabled()).thenReturn(true);
+    when(properties.getStockActionFailedTopic())
+        .thenReturn("domain.order.order_stock_action_failed.v1");
+    when(envelopeFactory.newEventId()).thenReturn("e-stock");
+    when(envelopeFactory.toJson(any(), any(), any(), anyLong(), any(), any())).thenReturn("{}");
+
+    writer.appendStockActionFailed(event);
+
+    ArgumentCaptor<OrderOutboxRecord> recordCaptor =
+        ArgumentCaptor.forClass(OrderOutboxRecord.class);
+    verify(outboxRepository).save(recordCaptor.capture());
+    OrderOutboxRecord record = recordCaptor.getValue();
+    assertEquals(OutboxStatus.PENDING, record.getStatus());
+    assertEquals("domain.order.order_stock_action_failed.v1", record.getTopic());
+    assertEquals("7", record.getPartitionKey(), "分区键取租户，保证同一租户的事件顺序");
+
+    // 库存失败事件是集成事件契约，信封载荷即它本身（非领域事件中转）
+    ArgumentCaptor<Object> payloadCaptor = ArgumentCaptor.forClass(Object.class);
+    verify(envelopeFactory)
+        .toJson(
+            eq("e-stock"),
+            eq("OrderStockActionFailedIntegrationEvent"),
+            eq("domain.order.order_stock_action_failed.v1"),
+            eq(7L),
+            eq(occurredAt),
+            payloadCaptor.capture());
+    assertEquals(
+        "OrderStockActionFailedIntegrationEvent",
+        payloadCaptor.getValue().getClass().getSimpleName(),
+        "信封载荷必须是库存失败集成事件本身");
   }
 }

@@ -1,4 +1,4 @@
-package com.bone.blueprint.infrastructure.gateway.payment;
+package com.bone.blueprint.infrastructure.signature;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -10,6 +10,9 @@ import org.junit.jupiter.api.Test;
  * 回调验签 ACL 契约测试（E-10：外部系统集成必须有契约测试）。
  *
  * <p>验证「签名/验签口径一致」与「不可信输入一律拒绝」两类语义：验签是资金链路的入口闸门， 若签名口径（字段顺序、金额格式）两侧不一致，或空值/篡改被放行，伪造回调即可改变支付单终态。
+ *
+ * <p>与 {@code MockPaymentSignaturePortAdapter} 同包（{@code infrastructure/signature}）——它实现的是
+ * application 层 技术端口，不是 domain 业务网关，落点见该类的类注释。
  */
 class MockPaymentSignaturePortAdapterTest {
 

@@ -71,8 +71,11 @@ public class ArchitectureTest {
   static final ArchRule command_no_query_builder =
       BoneDddArchRules.commandHandlersMustNotUseQueryBuilder().allowEmptyShould(true);
 
-  // E-4.2（v4.6 主判据）：读侧 DSL 只许出现在 infrastructure/query，application 层禁止依赖。
-  // 参考样板不 freeze，须 0 违规（分页/详情读模型已随 ADR-0030 合并进 OrderRepository）。
+  // E-4.2（v4.6 主判据）：读侧 DSL（Criteria / @ReadSideOnly）不得出现在 application 层。
+  // 规则只约束 ..application..；domain.repository 是 SDK 框架集成点（见 domain_no_query_builder 的豁免）。
+  // 本模块的读侧 DSL 现落在 domain/repository 与 infrastructure 适配器内——infrastructure/query 已随 ADR-0030 P4
+  // 折叠删除。
+  // 参考样板不 freeze，须 0 违规。
   @ArchTest
   static final ArchRule read_side_dsl_only_in_query_layer =
       BoneDddArchRules.readSideDslOnlyInQueryLayer();
@@ -120,6 +123,62 @@ public class ArchitectureTest {
   @ArchTest
   static final ArchRule adapter_no_domain_service =
       BoneDddArchRules.adapterControllersMustNotDependOnDomainService();
+
+  // P0-1（本模块专用补门禁）：adapter 全包（不止 controller）不得依赖 domain.repository。
+  // 共享规则 adapterControllersMustNotDependOnDomainRepository 的谓词是 ..adapter..controller..，
+  // 故 adapter.schedule / adapter.messaging / adapter.rpc 全部逃逸且永远绿——曾实测
+  // CancelExpiredOrderJob / OrderPaymentInconsistencyJob 直连 OrderRepository 而门禁全绿。
+  //
+  // 授权边界只开在 adapter.schedule：ADR-0030 §2 把「全租户运维扫描」的调用方明确写为定时 Job（现为
+  // CancelExpiredOrderJob / CloseExpiredPaymentJob / OrderPaymentInconsistencyJob 三个）。
+  // 用「包」而不是「类名豁免名单」表达边界——名单会随 Job 增加而变长、读起来像历史遗留，且它豁免的是
+  // 「依赖」：被列入名单的类仍可自由调用 save/update。写能力的收紧由下一条规则承担。
+  @ArchTest
+  static final ArchRule adapter_no_domain_repository_all_packages =
+      noClasses()
+          .that()
+          .resideInAPackage("..adapter..")
+          .and()
+          .resideOutsideOfPackage("..adapter.schedule..")
+          .should()
+          .dependOnClassesThat()
+          .resideInAPackage("..domain.repository..")
+          .allowEmptyShould(true)
+          .because(
+              "入站适配器（web/rpc/messaging）只许依赖 application；"
+                  + "adapter.schedule 是 ADR-0030 授权的平台运维入口，其可用面另由 "
+                  + "schedule_only_calls_all_tenants_repository_methods 收紧");
+
+  // P0-1 延伸（2026-09-19 补）：schedule 拿到域仓储后，也只许用它做全租户运维扫描。
+  // 域仓储在 ADR-0030 合并读写后自带 save/update/delete，「拿到接口就等于同时握有写能力」，而上一条按
+  // 「依赖」设限，对已授权的 schedule 包没有约束力。故这里按「调用的方法名」再收紧一层：只许调以
+  // AllTenants 结尾的方法。后缀口径必须与 all_tenants_scan_only_by_schedule 保持一致（它按同一后缀
+  // 识别全租户入口）——改后缀会让两道门禁同时失效，见 PaymentRepository 类注释。
+  @ArchTest
+  static final ArchRule schedule_only_calls_all_tenants_repository_methods =
+      noClasses()
+          .that()
+          .resideInAPackage("..adapter.schedule..")
+          .should()
+          .callMethodWhere(
+              com.tngtech.archunit.core.domain.JavaCall.Predicates.target(
+                  domainRepositoryMethodNotEndingWithAllTenants()))
+          .because(
+              "adapter.schedule 只许调用 ADR-0030 授权的全租户运维方法（*AllTenants）；"
+                  + "save / update / delete / findByIdInTenant 等写与租户内读不在授权范围内");
+
+  private static com.tngtech.archunit.base.DescribedPredicate<
+          com.tngtech.archunit.core.domain.AccessTarget.CodeUnitCallTarget>
+      domainRepositoryMethodNotEndingWithAllTenants() {
+    return new com.tngtech.archunit.base.DescribedPredicate<>(
+        "a domain.repository method whose name does not end with AllTenants") {
+      @Override
+      public boolean test(com.tngtech.archunit.core.domain.AccessTarget.CodeUnitCallTarget target) {
+        return target.getOwner().getPackageName().equals("com.bone.blueprint.domain.repository")
+            && !target.getName().endsWith("AllTenants");
+      }
+    };
+  }
 
   // E-1.3：跨上下文 domain 越界守护；空匹配视为配置错误
   @ArchTest
@@ -214,13 +273,13 @@ public class ArchitectureTest {
   // P2-4（E-2 补充门禁）：全租户扫描（*AllTenants）仅限 schedule 包调用。
   // 定时任务无请求上下文，TenantPort 降级为平台租户 0，故全租户方法是平台运维入口——
   // 禁止 web/handler 等其它入站调用（会导致跨租户数据泄漏或静默"扫描完成"但一笔没处理）。
+  // 判据是「方法名以 AllTenants 结尾」，与 schedule_only_calls_all_tenants_repository_methods 同口径。
+  // 曾同时豁免 ..infrastructure.query..（支付读侧适配器所在包），该包已随 ADR-0030 P4 折叠删除，豁免一并撤掉。
   @ArchTest
   static final ArchRule all_tenants_scan_only_by_schedule =
       noClasses()
           .that()
           .resideOutsideOfPackage("..adapter.schedule..")
-          .and()
-          .resideOutsideOfPackage("..infrastructure.query..")
           .should()
           .callMethodWhere(
               com.tngtech.archunit.core.domain.JavaCall.Predicates.target(

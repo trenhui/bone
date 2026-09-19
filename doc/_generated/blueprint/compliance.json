@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-09-19T05:16:29Z",
+  "generated_at": "2026-09-19T13:27:55Z",
   "module": "blueprint",
   "as_is": [
     {
@@ -94,7 +94,6 @@
           "bone-blueprint/src/main/java/com/bone/blueprint/application/OrderApplicationService.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/event/support/OrderItemInventoryExecutor.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/query/dto/OrderDto.java",
-          "bone-blueprint/src/main/java/com/bone/blueprint/application/query/port/package-info.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/query/support/OrderDetailAssembler.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/query/support/OrderSummaryAssembler.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/query/support/PaymentDetailAssembler.java",
@@ -141,9 +140,11 @@
       "evidence": {
         "java": [
           "bone-blueprint/src/main/java/com/bone/blueprint/adapter/messaging/listener/OrderPaidIntegrationListener.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/event/OrderPaidEventHandler.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/integration/consumer/OrderPaidIntegrationEventConsumer.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/integration/event/OrderPaidIntegrationEvent.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/integration/event/OrderPaymentInconsistentIntegrationEvent.java",
+          "bone-blueprint/src/main/java/com/bone/blueprint/application/integration/event/OrderStockActionFailedIntegrationEvent.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/application/integration/event/PaymentSucceededIntegrationEvent.java",
           "bone-blueprint/src/main/java/com/bone/blueprint/infrastructure/messaging/outbox/OrderOutboxPortAdapter.java"
         ]

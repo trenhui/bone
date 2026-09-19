@@ -1,15 +1,16 @@
 package com.bone.blueprint.adapter.schedule;
 
+import com.bone.blueprint.application.OrderApplicationService;
 import com.bone.blueprint.application.port.out.OrderOutboxPort;
-import com.bone.blueprint.application.query.port.PaymentQueryPort;
-import com.bone.blueprint.application.query.projection.PaymentProjection;
 import com.bone.blueprint.domain.order.event.OrderPaymentInconsistentEvent;
 import com.bone.blueprint.domain.order.valueobject.OrderStatus;
-import com.bone.blueprint.domain.repository.OrderRepository;
+import com.bone.blueprint.domain.payment.projection.PaymentProjection;
+import com.bone.blueprint.domain.repository.PaymentRepository;
 import com.bone.core.tenant.context.TenantContextRunner;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,14 +29,19 @@ import org.springframework.transaction.annotation.Transactional;
  * 日志 + 计数），真实环境应接告警/工单。
  *
  * <p><b>跨上下文不 JOIN</b>：按 E-1.3，支付与订单是两个上下文，故先查支付单再按 ID 查订单状态，不在 SQL 层跨上下文联表。
+ *
+ * <p><b>两侧取数为何不对称</b>：支付侧扫描是全租户运维入口（{@link PaymentRepository#findSuccessCreatedBeforeAllTenants}），按
+ * ADR-0030 §2 由定时 Job 直接调域仓储；订单侧只是<strong>逐行按 ID 取状态</strong>、属于请求级读语义，故经 {@link
+ * OrderApplicationService#findOrderStatus} 走应用层。 判据是「这次读是不是平台运维旁路」，
+ * 不是「它读的是哪个聚合」——不要据此把订单侧也改成直连域仓储（那会绕开应用层的租户显式化）。
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class OrderPaymentInconsistencyJob {
 
-  private final PaymentQueryPort paymentQueryPort;
-  private final OrderRepository orderRepository;
+  private final PaymentRepository paymentRepository;
+  private final OrderApplicationService orderApplicationService;
   private final OrderOutboxPort orderOutboxWriter;
 
   /**
@@ -63,16 +69,29 @@ public class OrderPaymentInconsistencyJob {
   @Transactional
   public void checkPaidButOrderNotConfirmed() {
     Instant before = Instant.now().minusSeconds(confirmGraceMinutes * 60);
-    List<PaymentProjection> succeeded = paymentQueryPort.findSuccessCreatedBeforeAllTenants(before);
+    List<PaymentProjection> succeeded =
+        paymentRepository.findSuccessCreatedBeforeAllTenants(before);
+    if (succeeded.isEmpty()) {
+      log.info("[全租户对账] 无待对账支付单（宽限={}min）", confirmGraceMinutes);
+      return;
+    }
+
+    // 按租户分组批量取订单状态（一次 IN 查询/租户），避免逐行查库的 N+1（设计说明见类头注释：
+    // 订单侧读仍走应用层以保留租户显式化，故批量取也经 OrderApplicationService）。
+    Map<Long, Long> orderIdToTenantId =
+        succeeded.stream()
+            .collect(
+                Collectors.toMap(
+                    PaymentProjection::getOrderId, PaymentProjection::getTenantId, (a, b) -> a));
+    Map<Long, OrderStatus> statuses = orderApplicationService.findOrderStatuses(orderIdToTenantId);
 
     int inconsistent = 0;
     for (PaymentProjection row : succeeded) {
-      Optional<OrderStatus> status =
-          orderRepository.findStatusById(row.getTenantId(), row.getOrderId());
-      // 订单不存在：同样属异常（支付成功却没有订单）；仍 CREATED：确认链路未执行
-      if (status.isEmpty() || status.get() == OrderStatus.CREATED) {
+      OrderStatus status = statuses.get(row.getOrderId());
+      // 订单不存在（Map 中无该 id）：同样属异常（支付成功却没有订单）；仍 CREATED：确认链路未执行
+      if (status == null || status == OrderStatus.CREATED) {
         inconsistent++;
-        String orderStatus = status.map(OrderStatus::name).orElse("NOT_FOUND");
+        String orderStatus = status == null ? "NOT_FOUND" : status.name();
         log.error(
             "钱货不一致：支付单已成功但订单未确认支付，需人工/自动补偿: paymentId={}, orderId={}, tenantId={}, "
                 + "orderStatus={}, paidAt={}",

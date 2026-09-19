@@ -99,6 +99,7 @@ application/query/port/OrderQueryPort.java    // 见 2.5 取舍
 ```
 
 ### 2.2 删除清单
+> 落地状态（2026-09-19）：Order 侧三条与 `PaymentQueryAdapter` 均**已删除**——OrderReadRepository / OrderQueryPort 见 ADR-0030 P2，`PaymentQueryAdapter` + `PaymentQueryPort` 见 ADR-0030 §10.4（P4）。本节保留原文，仅作设计意图留档。
 - `infrastructure/query/OrderReadRepository.java`
 - `infrastructure/query/PaymentQueryAdapter.java`（同模式，一并折）
 - 原 `OrderQueryAdapter.java`（阶段二已删，确认无残留）

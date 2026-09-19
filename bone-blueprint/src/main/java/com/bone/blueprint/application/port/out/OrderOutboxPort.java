@@ -1,5 +1,6 @@
 package com.bone.blueprint.application.port.out;
 
+import com.bone.blueprint.application.integration.event.OrderStockActionFailedIntegrationEvent;
 import com.bone.blueprint.domain.order.event.OrderPaidEvent;
 import com.bone.blueprint.domain.order.event.OrderPaymentInconsistentEvent;
 import com.bone.blueprint.domain.payment.event.PaymentFailedEvent;
@@ -52,4 +53,15 @@ public interface OrderOutboxPort {
    * <p>与退款/成功相比，失败不直接涉及资金流动，但下游（通知用户、告警监控）仍需感知。
    */
   void appendPaymentFailed(PaymentFailedEvent event);
+
+  /**
+   * 记录「库存动作失败」集成事件（须由 REQUIRES_NEW 的 {@code StockActionFailureRecorder} 在 AFTER_COMMIT 上下文中调用）。
+   *
+   * <p><b>为何是集成事件而非领域事件</b>：库存预留/扣减失败发生在 application 层对 {@code InventoryGateway} 的远程调用，
+   * 不源于任何聚合状态迁移，没有持有它的聚合。它是<strong>可观测性 / 补偿</strong>事件，故直接以集成事件契约入 Outbox， 不再经领域事件中转。
+   *
+   * <p><b>为何独立成方法</b>：使「库存同步断点」与「钱货不一致」「支付失败」等断点一样<strong>可观测、可接告警/工单</strong>，
+   * 补齐最终一致链路上唯一只打日志的缺口（原 {@code OrderItemInventoryExecutor} 的失败路径仅日志，超卖才暴露）。
+   */
+  void appendStockActionFailed(OrderStockActionFailedIntegrationEvent event);
 }

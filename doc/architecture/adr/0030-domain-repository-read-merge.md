@@ -2,7 +2,7 @@
 
 | 项 | 内容 |
 |----|------|
-| **状态** | **已采纳（Accepted）· P1（SDK `@TenantScope` 通道）、P2（blueprint 单一仓储试点）与 P3（规范 + 门禁 R1–R6 + `doc/_generated` 重算）均已落地；P4（可选 jsqlparser、其他模块按 E-0.2 触达收敛）待办**——本 ADR 的"优化"已按批准执行（见 §10 实现记录） |
+| **状态** | **已采纳（Accepted）**：P1（SDK `@TenantScope` 通道）、P2（blueprint 单一仓储试点）、P3（规范 + 门禁 R1–R6 + `doc/_generated` 重算）以及 **P4 的 `PaymentQueryAdapter` 同模式折叠**均已落地；P4 余项（W5 可选语法级注入、其他模块按 E-0.2 触达收敛）待办——本 ADR 的"优化"已按批准执行（见 §10 实现记录） |
 | **日期** | 2026-09-19 |
 | **决策者** | 架构师（本轮方向由架构师拍板；机制来自 [design-single-repository-tenant-scope.md](../design-single-repository-tenant-scope.md)，边界判据与门禁替代来自本 ADR 初稿） |
 | **单一真源** | 本 ADR 是"单一仓储 + `@TenantScope`"的唯一真源；`design-single-repository-tenant-scope.md` 已并入本文，只作机制论证留档，不再单独维护 |
@@ -101,7 +101,7 @@ public interface OrderRepository extends Repository<Order, Long> {
 }
 ```
 
-删除清单：`infrastructure/query/OrderReadRepository`、`OrderQueryPort`；`PaymentQueryAdapter` 在第二阶段同模式折叠（试点只做 Order，先摸 R1–R6 误报）。
+删除清单：`infrastructure/query/OrderReadRepository`、`OrderQueryPort`（P2 已删）；`PaymentQueryAdapter` **与 `PaymentQueryPort` 已于 P4 同模式折叠**（试点先只做 Order 摸 R1–R6 误报，支付随后跟进）→ `application/query/port` 与 `infrastructure/query` 两个包在 blueprint 随之清空删除，`@EnableSqlRepositories(basePackages)` 同步摘除 `infrastructure.query`。
 
 ## 3. 规范改动（同批，缺一不可）
 
@@ -149,7 +149,7 @@ public interface OrderRepository extends Repository<Order, Long> {
 | **P1** | W1 + W2 + W3 + R3 lint + 治理检查 | SDK 租户安全通道与治理就绪 | **已完成**（2026-09-19：`@TenantScope` 四模式 + `TenantSqlRewriter` 锚点注入 + `RepositoryFactoryBean` static 跳过；默认 `classpath-first` 经 SDK 既有配置） |
 | **P2** | blueprint 试点：`OrderRepository` 合并读方法、projection 迁 `domain/order/projection/`、外置 `.sql` 落地、删 `OrderReadRepository`/`OrderQueryPort`、application 改注入、domain 内 `Page<T>`；补读路径租户隔离测试 | 单一仓储试点 | **已完成**（2026-09-19：编译 + `ArchitectureTest` 27/27 通过 + `spotless:check` 通过；DB 集成测试需本地跑） |
 | **P3** | 规范 + 门禁（R1–R6）+ 本 ADR 定稿 + `compliance.json`/`doc/_generated` 重算，**同批提交** | 文档与代码同批 | **已完成**（2026-09-19：`Bone-DDD-最终实践方案.md` 9 条文 + G-1.6 同步；R5 落 ArchUnit、R1/R3/R4/R6 落 `SqlTemplateGovernanceTest`；三道 DDD 门禁复绿） |
-| **P4** | 可选：W5 语法级注入；`PaymentQueryAdapter` 等同模式折叠；其他模块按 E-0.2 触达即收敛 | 全平台统一（不做批量重构） | 待办 |
+| **P4** | 可选：W5 语法级注入；`PaymentQueryAdapter` 等同模式折叠；其他模块按 E-0.2 触达即收敛 | 全平台统一（不做批量重构） | **部分完成**（2026-09-19：blueprint 的 `PaymentQueryPort` / `PaymentQueryAdapter` 同模式折叠进 `PaymentRepository`，见 §10.4；W5 与其他模块待办） |
 
 ## 7. 验收
 
@@ -213,3 +213,28 @@ public interface OrderRepository extends Repository<Order, Long> {
 - **规范同步**：`Bone-DDD-最终实践方案.md` 的 CORE-05 / P-3.5 / E-4.1 / E-4.2 / E-4.4 / E-13.1 / E-13.3 / 反模式 #5 / G-1.6 已按本 ADR §3 同批改写；`doc/_generated/*` 重算；三道 DDD 门禁（`check-ddd-doc-drift` / `check-ddd-doc-code-sync --strict` / `check-ddd-gate-state`）复绿。
 - **ADR-0029 扩面**：ADR-0029 原为 Criteria 通道；本 ADR 的 `@TenantScope`/`TenantSqlRewriter` 将其扩展到 `@Sql`/外置 `.sql` 通道，关闭原"@Sql 不经过 TenantFilterInjector"的缺口——已在 ADR-0029 实现状态补充。
 - **仍未做**：R1–R6 只在 blueprint（试点）接线，其余模块按 E-0.2 触达即收敛（P4）；DB 集成测试需在有库环境执行。
+
+### 10.4 P4 部分落地：支付读侧同模式折叠（2026-09-19）
+
+- **删除**：`application/query/port/PaymentQueryPort`、`application/query/projection/PaymentProjection`、`infrastructure/query/PaymentQueryAdapter`（前两个包随之清空；`BoneBlueprintApplication` 的 `@EnableSqlRepositories` 摘除 `infrastructure.query`）——该模块自此无 `*QueryPort`、无 `infrastructure/query`。
+- **并入**：`domain/repository/PaymentRepository` 新增两个 `default` 方法（Criteria 通道 + `disableTenantFilter()`，方法名后缀 `AllTenants`）：`findPayableExpiredBeforeAllTenants` / `findSuccessCreatedBeforeAllTenants`；行投影迁 `domain/payment/projection/PaymentProjection`（带 `from(Payment)` 工厂）；写侧加载通道 `findByIdInTenant` 不变。
+- **为何这里用 Criteria 而不是 `@Sql`**：两个方法只需过滤本表单列（`status` + `created_at`），Criteria 表达得了；`@Sql` 是第三类通道，只在 JOIN 扁平投影 / 聚合统计 / 全租户扫描「Criteria 表达不了」时才用——而全租户这一条恰好由 `disableTenantFilter()` 表达，因此不必动用外置 SQL。（对比 `OrderRepository.findOrderWithItems`：联表扁平投影，必须 `@Sql`。**同一个域仓储里按方法混用通道是正常形态**，见 E-4.2 / E-4.4。）
+- **调用方**：`CloseExpiredPaymentJob` / `OrderPaymentInconsistencyJob` 改为注入 `PaymentRepository`，与 `CancelExpiredOrderJob` 同形，受 §11 C3 的三道门禁约束。
+- **验证**：`mvn -o -pl bone-blueprint test` 207 tests 全绿（`ArchitectureTest` 规则数 28 → 29）；`archunit_store` 冻结基线未被改写（跑后 `diff -rq` 自证）；新增门禁用**负向探针**验活——临时在 `CancelExpiredOrderJob` 内调 `orderRepository` 的非 `*AllTenants` 方法，`schedule_only_calls_all_tenants_repository_methods` 如期报红，还原后复测复绿（避免"规则存在但从不触发"的假绿）。
+
+---
+
+## 11. 代价登记（2026-09-19 架构审计补充）
+
+> 来源：`bone-blueprint/DDD-最佳实践评估-2026-09-19.md`。以下三条是 D1 / D6 合并决策的**已知代价**与**受控例外**。登记在此，是为了避免后人把「已裁定的权衡」误读为「设计失误」而做无谓重构。
+
+| # | 项 | 具体表现 | 承担方式 |
+|---|----|----------|----------|
+| C1 | **读侧能力最小化护栏消失**（代价） | 读方法并入域仓储后，任何拿到 `OrderRepository` 的调用方都同时握有 `save/update/delete`。`isReadSideRepositoryMethod` 只能在**方法**粒度区分读写，管不了「**谁能持有这个接口**」 | 改由方法命名（`find*` / `@Sql`）+ 代码评审承担。若日后需要恢复护栏，可采用**角色接口**（`OrderRepository extends OrderWriteOps, OrderReadOps`），应用层按需注入窄接口 |
+| C2 | **聚合内实体在事件订阅侧不可达**（代价） | SDK 无级联 → `items` 必须 `@Transient` → 重载不回填 → 订阅器拿不到明细，必须绕道读侧投影（`OrderItemInventoryExecutor` 经 `OrderRepository.findOrderWithItems` 取明细）。结果是**命令语境用查询模型取数**，CQRS 读写在此被反转 | 随 CORE-11（SDK 聚合级联）一并收敛。在此之前**不要**把 `items` 改回可回填——那会让上述骨架静默失效 |
+| C3 | **定时 Job 直连域仓储是被授权的受控形态**（例外） | §2 目标形态中 `findCreatedExpiredBeforeAllTenants` 标 `@TenantScope(ALL)` 并注明「定时 Job：全租户，已登记授权」；因此其调用方直接注入 `domain.repository`。P4 折叠支付读侧后该形态由 1 个类扩为 **3 个类**——`CancelExpiredOrderJob` / `CloseExpiredPaymentJob` / `OrderPaymentInconsistencyJob`，全部落在 `adapter/schedule`。**这不是可推广的范式** | ① `all_tenants_scan_only_by_schedule` 限定「只有 `adapter.schedule` 能调 `*AllTenants`」；② `bone-blueprint` 的 `ArchitectureTest#adapter_no_domain_repository_all_packages` 对 adapter 全包设限，**豁免范围是 `..adapter.schedule..` 整个包**（P4 折叠后由「按类名名单」放宽为「按包」：类名名单会随 Job 增减持续漏改，包级豁免把边界钉在"平台运维入口"这一语义上）；③ 同模块新增 `ArchitectureTest#schedule_only_calls_all_tenants_repository_methods`——**已获域仓储访问权**的 `adapter.schedule` 也只许调用 `*AllTenants` 结尾的方法（域仓储合并读写后自带 `save`/`update`/`delete`，按包授权约束不了调用面，须再按方法名收紧一层）；④ 已登记于 blueprint README「读侧归属规则 + 受控例外」 |
+
+### 11.1 与 §10 实现记录的关系
+
+- C1 / C2 是 D1（单一仓储）与 D6（应用层直注域仓储）**必然带来的**两项能力损失，不影响 CORE-11 的保护目标，故不构成合规缺陷，只是取舍记账。
+- C3 澄清了一处**规则与意图的缺口**：`adapterControllersMustNotDependOnDomainRepository` 的谓词是 `..adapter..controller..`，故 `adapter.schedule` / `adapter.messaging` / `adapter.rpc` 全部逃逸。blueprint 已按 §11 C3 补**两条**本模块专用规则收口（共享规则维持原状，避免影响其他模块）：① 依赖面 `adapter_no_domain_repository_all_packages`（按包豁免）；② 调用面 `schedule_only_calls_all_tenants_repository_methods`（只许 `*AllTenants`）。调用面那条是 P4 折叠后才补的——合并读写使「拿到域仓储 = 拿到写能力」，只做依赖面授权会把 `adapter.schedule` 变成一扇没有闸门的门。

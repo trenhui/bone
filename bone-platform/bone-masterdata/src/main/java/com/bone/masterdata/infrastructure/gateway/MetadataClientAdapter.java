@@ -6,7 +6,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Slf4j
-public class MetadataClientImpl implements MetadataClient {
+public class MetadataClientAdapter implements MetadataClient {
   @Override
   public boolean convertFromBusinessEntity(Long businessEntityId) {
     log.info("从业务实体转换为主数据实体: businessEntityId={}", businessEntityId);

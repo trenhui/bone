@@ -36,6 +36,9 @@ public class OrderOutboxProperties {
   /** 「支付已失败」主题：支付单置 FAILED 同事务落库后中继，下游用于通知用户与告警。 */
   private String paymentFailedTopic = "domain.payment.payment_failed.v1";
 
+  /** 「库存动作失败」主题：库存预留/扣减远程调用失败时中继，下游用于告警与补偿对账（补齐最终一致链路唯一只日志的断点）。 */
+  private String stockActionFailedTopic = "domain.order.order_stock_action_failed.v1";
+
   /** 死信主题：中继重试超限后转投，人工/工具重放（消息与事件规范 §6）。 */
   private String deadLetterTopic = "platform.dead_letter.v1";
 }

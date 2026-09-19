@@ -3,6 +3,7 @@ package com.bone.blueprint.infrastructure.messaging.outbox;
 import com.bone.blueprint.application.integration.event.IntegrationEnvelope;
 import com.bone.blueprint.application.integration.event.OrderPaidIntegrationEvent;
 import com.bone.blueprint.application.integration.event.OrderPaymentInconsistentIntegrationEvent;
+import com.bone.blueprint.application.integration.event.OrderStockActionFailedIntegrationEvent;
 import com.bone.blueprint.application.integration.event.PaymentFailedIntegrationEvent;
 import com.bone.blueprint.application.integration.event.PaymentRefundedIntegrationEvent;
 import com.bone.blueprint.application.integration.event.PaymentSucceededIntegrationEvent;
@@ -40,6 +41,8 @@ public class OrderOutboxPortAdapter implements OrderOutboxPort {
   private static final String EVENT_TYPE_PAYMENT_SUCCEEDED = "PaymentSucceededIntegrationEvent";
   private static final String EVENT_TYPE_PAYMENT_REFUNDED = "PaymentRefundedIntegrationEvent";
   private static final String EVENT_TYPE_PAYMENT_FAILED = "PaymentFailedIntegrationEvent";
+  private static final String EVENT_TYPE_STOCK_ACTION_FAILED =
+      "OrderStockActionFailedIntegrationEvent";
 
   private final OrderOutboxProperties properties;
   private final OrderOutboxRepository outboxRepository;
@@ -139,6 +142,16 @@ public class OrderOutboxPortAdapter implements OrderOutboxPort {
                 event.amount(),
                 event.occurredAt()),
         event == null ? null : event.paymentId());
+  }
+
+  @Transactional(propagation = Propagation.MANDATORY)
+  @Override
+  public void appendStockActionFailed(OrderStockActionFailedIntegrationEvent event) {
+    append(
+        EVENT_TYPE_STOCK_ACTION_FAILED,
+        properties.getStockActionFailedTopic(),
+        event,
+        event == null ? null : event.orderId());
   }
 
   /**

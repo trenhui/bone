@@ -25,7 +25,10 @@ import com.bone.core.exception.DomainException;
 import com.bone.core.model.PageResult;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.metadata.sdk.domain.exception.OptimisticLockingFailureException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -34,8 +37,14 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * 订单应用层统一门面（Facade）——所有订单用例的唯一入口。
  *
- * <p><b>适配器只依赖这一个类</b>——Controller / RPC / JobHandler 不需要知道应用层内部实现细节， 读侧直接走 {@link
+ * <p><b>适配器只依赖这一个类</b>——Controller / RPC / 定时任务不需要知道应用层内部实现细节， 读侧直接走 {@link
  * OrderRepository}（ADR-0030 合并写侧与领域读模型）。
+ *
+ * <p><b>唯一例外（已登记）</b>：全租户运维扫描（{@code *AllTenants} / {@code @TenantScope(ALL)}）由 {@code
+ * adapter.schedule} 的定时任务<strong>直接调用域仓储</strong>——那是 ADR-0030 显式授权、README（E-2）已登记的受控旁路。
+ * 其余入站适配器（web / rpc / messaging）一律不得注入 {@code domain.repository}，由本模块的 {@code
+ * ArchitectureTest#adapter_no_domain_repository_all_packages} 拦截；schedule 拿到仓储后也只许调 {@code
+ * *AllTenants} 方法，由 {@code ArchitectureTest#schedule_only_calls_all_tenants_repository_methods} 收紧。
  *
  * <p>内部按关注点选择实现方式：
  *
@@ -172,6 +181,43 @@ public class OrderApplicationService {
   }
 
   // ===================== 读操作 =====================
+
+  /**
+   * 查询订单当前状态（<b>按传入租户直查</b>，供全租户对账扫描逐行取状态）。
+   *
+   * <p>订单不存在时返回空——调用方须把「查不到」同样视为异常：对账场景下「支付成功却没有订单」本身就是需要 留痕的不一致，不能因取不到状态而静默跳过。
+   */
+  @Transactional(readOnly = true)
+  public Optional<OrderStatus> findOrderStatus(long tenantId, long orderId) {
+    return orderRepository.findStatusById(tenantId, orderId);
+  }
+
+  /**
+   * 批量取订单状态（对账用）：按租户分组后每组一次 IN 查询，避免全租户对账逐行查库（N+1）。
+   *
+   * <p><b>为何仍走应用层</b>：订单侧读语义是「请求级读」，须保留应用层对租户的显式化（见 {@code OrderPaymentInconsistencyJob}
+   * 的设计说明）；故批量取也收敛在应用层，而非让定时任务直连域仓储。
+   *
+   * <p>订单不存在/不可见者不出现在返回 Map 中——调用方须把「查不到」同样视为异常（支付成功却无对应订单）。
+   */
+  @Transactional(readOnly = true)
+  public Map<Long, OrderStatus> findOrderStatuses(Map<Long, Long> orderIdToTenantId) {
+    Map<Long, OrderStatus> result = new HashMap<>();
+    if (orderIdToTenantId == null || orderIdToTenantId.isEmpty()) {
+      return result;
+    }
+    orderIdToTenantId.entrySet().stream()
+        .collect(
+            Collectors.groupingBy(
+                Map.Entry::getValue, Collectors.mapping(Map.Entry::getKey, Collectors.toList())))
+        .forEach(
+            (tenantId, orderIds) -> {
+              for (Order order : orderRepository.findOrdersByTenantAndIds(tenantId, orderIds)) {
+                result.put(order.getId(), order.getStatus());
+              }
+            });
+    return result;
+  }
 
   /** 查询订单详情（含明细行，走 OrderRepository 读侧领域模型）。 */
   @Transactional(readOnly = true)

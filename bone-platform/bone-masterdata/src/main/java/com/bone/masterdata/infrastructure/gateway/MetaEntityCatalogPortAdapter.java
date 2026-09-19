@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 /** {@link MetaEntityCatalogPort} JDBC 实现。 */
 @Component
 @RequiredArgsConstructor
-public class MetaEntityCatalogGateway implements MetaEntityCatalogPort {
+public class MetaEntityCatalogPortAdapter implements MetaEntityCatalogPort {
 
   private final JdbcTemplate jdbcTemplate;
 

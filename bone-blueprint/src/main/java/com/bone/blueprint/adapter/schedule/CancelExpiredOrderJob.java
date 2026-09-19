@@ -16,8 +16,14 @@ import org.springframework.stereotype.Component;
 /**
  * 取消超时未支付订单定时任务。
  *
- * <p>定时扫描仍处于 CREATED 且创建时间早于超时阈值的订单，逐笔下发 {@link CancelOrderCommand}（**经应用服务执行，adapter 不直连 domain
- * 仓储**）。
+ * <p>定时扫描仍处于 CREATED 且创建时间早于超时阈值的订单，逐笔下发 {@link CancelOrderCommand}（经 {@link
+ * OrderApplicationService} 执行）。
+ *
+ * <p><b>本类为何直连域仓储（本模块唯一的受控例外）</b>：扫描入口是全租户方法 {@link
+ * OrderRepository#findCreatedExpiredBeforeAllTenants}（{@code @TenantScope(ALL)}），它是 ADR-0030 显式授权的
+ * <strong>平台运维旁路</strong>——定时线程无请求上下文，按「当前租户」扫描会退化为平台租户 0。该方法按 ADR-0030 §2 目标形态即<strong>由定时 Job
+ * 调用</strong>，并受 {@code all_tenants_scan_only_by_schedule} 与本模块 {@code ArchitectureTest}
+ * 双重约束（仅本类被豁免）；<strong>其余入站适配器（web / rpc / messaging）不得复制此形态</strong>。
  *
  * <p>订单取消后由 {@code OrderCancelledEvent} 的 AFTER_COMMIT 订阅释放库存预留（最终一致）。
  *

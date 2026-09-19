@@ -14,6 +14,7 @@
 ### 现状：验签是支付样板孤例，未下沉平台
 
 - **唯一实现**：`bone-blueprint` 的 `PaymentSignaturePort`（`domain/gateway` 防腐端口）+ `SimulatedPaymentSignatureVerifier`（`infrastructure/gateway/payment`）。
+  > **2026-09-19 补注（现状已变，本条留作当时快照）**：`PaymentSignaturePort` 现位于 `application/port/out`（按 E-10.2 属技术能力端口，不是 domain 业务网关），实现类为 `MockPaymentSignaturePortAdapter` 且落点从 `infrastructure/gateway/payment` 迁到 `infrastructure/signature`；类名 `SimulatedPaymentSignatureVerifier` 已不存在（占位实现统一 `Mock` 前缀，E-13.3）。下文 `:37` / `:31-32` 等行号与 `HandlePaymentCallbackCommandHandler` 同属旧快照，勿按行号定位。
 - **算法**：HMAC-SHA256（`SimulatedPaymentSignatureVerifier.java:37`），常量时间比较 `MessageDigest.isEqual`（`:31-32`）。
 - **密钥**：硬编码 `MOCK_SECRET = "bone-blueprint-mock-secret"`（`:22`，注释明确「仅演示，真实接入须外部化」）——**反模式**，且密钥仅存在于 infrastructure 层（domain 依赖端口、不依赖密钥，方向正确）。
 - **签名放置**：请求 JSON body 的 `signature` 字段（非 HTTP header）。

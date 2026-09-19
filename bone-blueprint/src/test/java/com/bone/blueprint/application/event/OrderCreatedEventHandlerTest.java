@@ -1,12 +1,15 @@
 package com.bone.blueprint.application.event;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.bone.blueprint.application.event.support.StockActionFailureRecorder;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.order.event.OrderCreatedEvent;
 import com.bone.blueprint.domain.order.projection.OrderWithItemsProjection;
@@ -41,6 +44,8 @@ class OrderCreatedEventHandlerTest {
 
   @Mock private InventoryGateway inventoryGateway;
 
+  @Mock private StockActionFailureRecorder stockFailureRecorder;
+
   @InjectMocks private OrderCreatedEventHandler handler;
 
   @Test
@@ -63,6 +68,34 @@ class OrderCreatedEventHandlerTest {
     handler.handle(new OrderCreatedEvent(1L, 1L, 1L, Instant.now()));
 
     verify(inventoryGateway, times(1)).reserveStock(1L, 1L, 2);
+    // 预留成功：不应上报 Outbox
+    verify(stockFailureRecorder, never()).record(any());
+  }
+
+  @Test
+  void testStockReservationFailureRecordedToOutbox() {
+    OrderWithItemsProjection row =
+        new OrderWithItemsProjection(
+            1L,
+            1L,
+            new BigDecimal("200"),
+            "CREATED",
+            LocalDateTime.now(),
+            1L,
+            1L,
+            "商品1",
+            2,
+            new BigDecimal("100"),
+            new BigDecimal("200"));
+    when(orderRepository.findOrderWithItems(1L, 1L)).thenReturn(Collections.singletonList(row));
+    doThrow(new RuntimeException("库存服务暂时不可用"))
+        .when(inventoryGateway)
+        .reserveStock(anyLong(), anyLong(), anyInt());
+
+    handler.handle(new OrderCreatedEvent(1L, 1L, 1L, Instant.now()));
+
+    // 预留失败：失败事实必须落 Outbox（可观测、可补偿对账），不再只打日志
+    verify(stockFailureRecorder, times(1)).record(any());
   }
 
   @Test

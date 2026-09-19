@@ -34,6 +34,8 @@ bone:
       payment-inconsistent-topic: domain.order.order_payment_inconsistent.v1
       payment-refunded-topic: domain.payment.payment_refunded.v1
       payment-failed-topic: domain.payment.payment_failed.v1
+      # 库存动作失败主题：库存预留/扣减远程失败时中继，下游用于告警与补偿对账
+      stock-action-failed-topic: domain.order.order_stock_action_failed.v1
       # 终端失败（超过 max-retries）转投平台死信主题（消息与事件规范 §6）
       dead-letter-topic: platform.dead_letter.v1
       consumer-group: bone-blueprint-order-paid-consumer

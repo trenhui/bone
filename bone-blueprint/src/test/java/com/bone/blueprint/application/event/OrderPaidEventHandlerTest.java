@@ -1,12 +1,15 @@
 package com.bone.blueprint.application.event;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.bone.blueprint.application.event.support.StockActionFailureRecorder;
 import com.bone.blueprint.domain.gateway.InventoryGateway;
 import com.bone.blueprint.domain.order.event.OrderPaidEvent;
 import com.bone.blueprint.domain.order.projection.OrderWithItemsProjection;
@@ -40,6 +43,8 @@ class OrderPaidEventHandlerTest {
 
   @Mock private InventoryGateway inventoryGateway;
 
+  @Mock private StockActionFailureRecorder stockFailureRecorder;
+
   @InjectMocks private OrderPaidEventHandler handler;
 
   private static OrderWithItemsProjection row(Long itemId, Long productId, Integer quantity) {
@@ -54,6 +59,21 @@ class OrderPaidEventHandlerTest {
     handler.handle(new OrderPaidEvent(1L, 1L, 1L, new BigDecimal("200"), Instant.now()));
 
     verify(inventoryGateway, times(1)).confirmStock(1L, 1L, 2);
+    // 扣减成功：不应上报 Outbox
+    verify(stockFailureRecorder, never()).record(any());
+  }
+
+  @Test
+  void testStockConfirmFailureRecordedToOutbox() {
+    when(orderRepository.findOrderWithItems(1L, 1L)).thenReturn(List.of(row(1L, 1L, 2)));
+    doThrow(new RuntimeException("库存服务暂时不可用"))
+        .when(inventoryGateway)
+        .confirmStock(anyLong(), anyLong(), anyInt());
+
+    handler.handle(new OrderPaidEvent(1L, 1L, 1L, new BigDecimal("200"), Instant.now()));
+
+    // 扣减失败：失败事实必须落 Outbox（与预留失败共用告警/工单链路）
+    verify(stockFailureRecorder, times(1)).record(any());
   }
 
   @Test

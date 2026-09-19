@@ -62,7 +62,7 @@
 1. **创建订单**：`checkStock` → 持久化订单 + 明细 → 发 `OrderCreatedEvent` → **AFTER_COMMIT** 逐条 `reserveStock`（远程调用不占 DB 事务，单条失败仅告警并留痕，见 `OrderCreatedEventHandler`）
 2. **发起支付**：加载订单（校验 CREATED）→ 创建 `Payment`（PENDING）→ `PaymentGateway.preCreatePayment` 预下单 → `markPaying` → 返回支付链接
 3. **支付回调**：`PaymentSignaturePort` **验签** → `Payment.confirmSuccess`（幂等 + 金额一致性校验）→ 发 `PaymentSucceededEvent` → `AFTER_COMMIT` 确认订单（`confirmPaid`）+ `confirmStock` → 同事务写 **Outbox** 中继 `OrderPaidIntegrationEvent`
-4. **查询支付单**：`PaymentQueryPort.findById`（读侧直查，CQRS 读模型）
+4. **查询支付单**：`PaymentApplicationService.getById`（经 `PaymentRepository` + `PaymentDetailAssembler`）；全租户运维扫描同样落在 `PaymentRepository` 的 `*AllTenants` 方法上——见下方「读侧归属规则」
 5. **超时关闭**：`CloseExpiredPaymentJob` 定时扫描 PENDING/PAYING 超时单 → `Payment.close()`
 6. **退款**：`Payment.refund()`（**每单仅一次**；重复**同金额**幂等跳过、`false` + warn 留痕，**金额不一致抛错**；退 0 元 / 超付拒绝）→ 发 `PaymentRefundedEvent` → `AFTER_COMMIT` 确认订单退款（`Order.refund()`）+ `releaseStock`
 7. **取消订单**：聚合 `cancel()` → `AFTER_COMMIT` → `releaseStock`
@@ -85,7 +85,7 @@
 
 `Order` 聚合持有需持久化的 `List<OrderItem>` 集合，且明细有独立表 `t_order_item` 与独立写侧仓储 `OrderItemRepository`（位于 `domain.repository`，与 `OrderRepository` 同包），命中 E-6.3 的 **PO 分离信号**（聚合持有需持久化集合/嵌套实体，无 SDK 级联落库）。
 
-**当前过渡方案**：D1 充血聚合 + `OrderApplicationService` 显式逐条 `save(OrderItem)`，明细经**域仓储读方法** `OrderRepository.findOrderWithItems`（`@Sql` 联表投影）读取。`OrderItem` 是 `Order` 聚合内实体，与 `Order` 同事务落库是在保存同一聚合；现有 CORE-06 扫描只能按 Repository/聚合类型提示风险，不能独立证明事务语义。仓储端口统一放 `domain.repository`，**无需也不允许**靠包位置规避门禁（详见 `OrderItemRepository` 类注释）。**ADR-0030 合并形态**：订单读侧不再单设 `OrderQueryPort` / `OrderReadRepository`，本聚合读方法（`@Sql` + Criteria）与域层投影（`domain/order/projection/`）并入 `OrderRepository`，应用层直注域仓储；`Payment` 读侧仍走 `application/query/port` 的 `PaymentQueryPort`（配套行投影置于 `application/query/projection`）、出参 DTO 置于 `application/query/dto`；原 `domain/gateway/*ReadPort` 与 `domain/{order,payment}/read` 已清理，无遗留存量。
+**当前过渡方案**：D1 充血聚合 + `OrderApplicationService` 显式逐条 `save(OrderItem)`，明细经**域仓储读方法** `OrderRepository.findOrderWithItems`（`@Sql` 联表投影）读取。`OrderItem` 是 `Order` 聚合内实体，与 `Order` 同事务落库是在保存同一聚合；现有 CORE-06 扫描只能按 Repository/聚合类型提示风险，不能独立证明事务语义。仓储端口统一放 `domain.repository`，**无需也不允许**靠包位置规避门禁（详见 `OrderItemRepository` 类注释）。**ADR-0030 合并形态**：订单读侧不再单设 `OrderQueryPort` / `OrderReadRepository`，本聚合读方法（`@Sql` + Criteria）与域层投影（`domain/order/projection/`）并入 `OrderRepository`；支付侧亦已按 ADR-0030 §P4 同模式折叠——`PaymentQueryPort` 与 `infrastructure/query/PaymentQueryAdapter` 已删除，两个**全租户运维扫描**方法并入 `PaymentRepository`（Criteria 通道，方法名后缀 `AllTenants`），行投影置于 `domain/payment/projection/`；应用层直注域仓储，出参 DTO 仍在 `application/query/dto`。原 `domain/gateway/*ReadPort` 与 `domain/{order,payment}/read` 已清理，无遗留存量。
 
 **与 CORE-11 的偏差（显式登记）**：CORE-11 要求「聚合根是唯一持久化入口，子实体随根落盘，不为子实体建立独立聚合级 Repository」。本模块的 `OrderItemRepository` 与该条字面要求不符，属 **SDK 能力缺失导致的被迫偏差**，而非风格选择：Bone 元数据 SDK **不支持聚合级联落库**，`OrderRepository.save(order)` 不会持久化 `order.items`（且 `items` 标 `@Transient` 以避免 SDK 误映射为 `t_order` 列）。若无显式明细写入路径，订单明细将**静默丢失**。因此「显式逐条 `save(OrderItem)`」是 SDK 约束下的最小可行路径：`OrderItem` 仍是 `Order` 聚合内实体（**未**升格为聚合根），两次 save 在**同一事务**内完成，一致性边界仍等于 `Order` 聚合——CORE-11 的保护目标未被削弱，只是落库入口由「仅根」变为「根 + 子实体同事务双写」。**收敛路径**：SDK 支持聚合级联后即可删除 `OrderItemRepository`、明细随根落盘，恢复 CORE-11 完整合规（与下方 E-6.3 迁移条件同源）。
 
@@ -96,6 +96,7 @@
 `Order.customerId`、`Payment.orderId` / `customerId` 当前为裸 `Long`。依据 E-7.1 **存量记录**条款（遗留自增主键按模块登记），当下合规。
 
 - **新模块指引**：**新增强聚合**的跨聚合引用必须使用强类型 ID 值对象（`record OrderId(Long value)` 等，P-3.2 口径：构造期空值校验、无 setter），禁止裸 `Long`——编译期即可拦截「订单 ID / 客户 ID 写反」类静默数据错乱。
+- **domain 持久化耦合范围（SDK 偏差边界）**：新增聚合若需持久化，仅允许在**聚合根/实体类**上使用 SDK 的 `@Table` / `@Version` / `@Transient` / `@Id` / `@GeneratedValue` 等元数据注解（已被 E-10 / E-6.3 登记为 SDK 迫使的偏差，非风格选择）。**不要**为普通值对象或领域服务引入持久化注解，**不要**在 `domain` 包内新增查询 DSL（`Criteria`/`QueryBuilder`）——查询通道只在 `infrastructure`（见 E-4.4）。越界即把技术设施混入领域，抄写者须止步于此。
 - **本样板改造触发条件**：与 E-6.3 PO 分离联动——强类型 ID 的持久化转换依赖 Converter（E-6.3 的 PO/Converter 分离），而本模块聚合直接落库（无 PO 分层）。待 PO 分离落地后，随 `OrderItemPO` 一并引入 `OrderId` / `CustomerId`，避免二次返工。
 
 ### E-10 domain 分组形态登记
@@ -108,9 +109,9 @@
 | `{aggregate}/event` | 上下文内领域事件（`OrderPaidEvent` / `PaymentSucceededEvent` 等，过去式） |
 | `{aggregate}/valueobject` | 聚合内值对象（`OrderStatus` / `PaymentStatus` / `PaymentChannel` 等） |
 | `domain/shared/valueobject` | 跨聚合共享值对象（`Money`） |
-| `domain/repository` | 写侧聚合仓储接口（`OrderRepository` / `PaymentRepository` / `OrderItemRepository`） |
-| `domain/gateway` | 外部**业务**能力端口（`InventoryGateway` / `PaymentGateway`），按 E-4.3 只放业务事实 |
-| `domain/extension/order` | 定价策略业务端口（`OrderPriceCalculator`）；扩展引擎技术契约下沉到 `infrastructure/extension/order`，domain 不感知框架 |
+| `domain/repository` | 聚合仓储接口（`OrderRepository` / `PaymentRepository` / `OrderItemRepository`）——ADR-0030 起**写侧 + 本聚合读**同处一个接口；全租户运维入口以 `*AllTenants` 后缀声明 |
+| `domain/gateway` | 外部**业务**能力端口（`InventoryGateway` / `PaymentGateway`），按 E-4.3 只放业务事实；出站实现在 `infrastructure/gateway/{外部系统}` |
+| `domain/extension/order` | 定价策略业务端口（`OrderPriceCalculator`）与其入参模型（`OrderPriceRequest` record）；扩展引擎技术契约下沉到 `infrastructure/extension/order`，domain 不感知框架 |
 
 E-10 明确该平铺形态为**合法变体而非存量债务**，但要求「选择后在模块 README 登记」——本节即本模块的登记点，供后续评审与 `studio-generator` 生成目标对齐。
 
@@ -162,6 +163,24 @@ curl -H "Authorization: Bearer $TOKEN" \
 
 上述三个扫描任务的**周期与门限均可配置**（`bone.blueprint.schedule.*`）：cron 由 `@Scheduled` 占位符直读，超时阈值 /
 宽限期由 `@Value` 注入（默认订单 30min、支付 30min、对账宽限 10min）。调整超时窗口属运营动作，不需改代码发版。
+
+#### 读侧归属规则 + 受控例外
+
+**归属规则（一句话）**：**本聚合读 → 域仓储**（ADR-0030 D2 / D6，**含本聚合的全租户运维扫描**）；
+**跨聚合 / 报表 / 搜索 → `application/query/port/*QueryPort` + `infrastructure/query/*QueryAdapter`**。
+判据是**读的归属与有无读模型分歧**，不是聚合种类。本模块订单与支付两侧都属第一种：订单读并入 `OrderRepository`；
+支付的单笔直查走 `PaymentRepository.findByIdInTenant`，两个全租户扫描走同仓储的 `*AllTenants` default 方法。
+因此本模块**当前不存在任何 `*QueryPort`**——出现跨聚合报表 / 搜索读时，才按规则新建端口与 `infrastructure/query` 实现。
+
+**受控例外（本模块唯一形态，现有 3 个类）**：`adapter/schedule` 下的 `CancelExpiredOrderJob` / `CloseExpiredPaymentJob` /
+`OrderPaymentInconsistencyJob` 直接注入**域仓储**调用其 `*AllTenants` 方法（`@TenantScope(ALL)` 或 Criteria
+`disableTenantFilter()`）。这是 ADR-0030 §2 显式授权的**平台运维旁路**（定时线程无请求上下文，按"当前租户"扫描会退化为平台租户 `0`）。
+它受三道门禁约束：`all_tenants_scan_only_by_schedule`（只有 `adapter.schedule` 能调 `*AllTenants`）、
+`schedule_only_calls_all_tenants_repository_methods`（`adapter.schedule` 调域仓储时，方法名必须 `AllTenants` 结尾——
+域仓储合并读写后自带 `save/update/delete`，光按包授权不够）、本模块
+`ArchitectureTest#adapter_no_domain_repository_all_packages`（adapter 全包不得依赖 `domain.repository`，
+**豁免范围仅限 `..adapter.schedule..` 整个包**，非按类名单）。
+**其余入站适配器（web / rpc / messaging）不得复制此形态。**
 
 ### 写侧标准写法（保存 + 发布事件）
 
@@ -225,9 +244,9 @@ bash scripts/ci/collect-blueprint-compliance.sh
 | **读侧 Join** | `OrderRepository.findOrderWithItems`（`@Sql`，外置 `OrderRepository/findOrderWithItems.sql` 优先）扁平投影 → 域层投影 → `OrderDetailAssembler`（ADR-0030 合并，无独立读仓储/端口） |
 | **扩展点** | 多实现价格计算器（VIP/企业/促销等） |
 | **独立支付聚合** | `Payment`（`bp_payment`）+ 状态机 + 幂等/金额校验回调（见下） |
-| **支付生命周期闭环** | 发起支付 → 渠道预下单 → 回调确认 → **查询**（`PaymentQueryPort`）→ **超时关闭**（`CloseExpiredPaymentJob`）→ **退款**（`PaymentRefundedEvent` 驱动订单退款 + 释放库存） |
+| **支付生命周期闭环** | 发起支付 → 渠道预下单 → 回调确认 → **查询**（`PaymentApplicationService.getById`）→ **超时关闭**（`CloseExpiredPaymentJob`）→ **退款**（`PaymentRefundedEvent` 驱动订单退款 + 释放库存） |
 | **Feign + `InventoryGateway`** | ACL 出站调用 + 预留/确认/释放流程 |
-| **CQRS 读侧** | 订单本聚合读并入域仓储（`OrderRepository` 的 `@Sql` / Criteria 读方法 + `domain/order/projection`，ADR-0030），支付仍走 `PaymentQueryPort`；域仓储不承载跨聚合报表 / Join |
+| **CQRS 读侧** | **本模块无 `*QueryPort`**：订单/支付的本聚合读（`@Sql` / Criteria 读方法 + `domain/{order,payment}/projection`）与全租户运维扫描（`*AllTenants`）全部并入各自域仓储（ADR-0030）；域仓储不承载跨聚合报表 / Join。归属规则与受控例外见下节「读侧归属规则」 |
 | **MQ / 定时任务 / RPC** | 入站适配器形态示例（MQ 消费端幂等落库、DLQ、消费指标见上节） |
 | **幂等写（`Idempotency-Key`）** | core `IdempotencyService`（作用域键 `租户|用户|键|方法|路径`、SHA-256 指纹、同键异 body → 409 `COMMON_IDEMPOTENCY_CONFLICT`、TTL 24h）+ 控制器取头；同键同 body 重放同一响应（API 规范 §6.1/§8）。存储由 `IdempotencyStore` 适配（blueprint 样例 `IdempotencyPortAdapter` 落 `bp_idempotency_record`） |
 | **授权（Scope）** | 端点声明 `@PreAuthorize("hasAuthority('order:orders:read'/'order:orders:write')")`；scope 由 IAM 随 token 下发（API 规范 §9.2） |

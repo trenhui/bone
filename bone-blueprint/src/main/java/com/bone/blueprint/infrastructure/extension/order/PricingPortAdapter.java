@@ -2,6 +2,7 @@ package com.bone.blueprint.infrastructure.extension.order;
 
 import com.bone.blueprint.application.port.out.PricingPort;
 import com.bone.blueprint.domain.extension.order.OrderPriceCalculator;
+import com.bone.blueprint.domain.extension.order.OrderPriceRequest;
 import com.bone.blueprint.domain.shared.valueobject.Money;
 import com.bone.engine.extension.support.context.BizContext;
 import com.bone.engine.extension.support.context.ExtensionContextManager;
@@ -23,10 +24,7 @@ public class PricingPortAdapter implements PricingPort {
 
   @Override
   public Money calculateFinalPrice(Money baseAmount, long tenantId) {
-    OrderPriceCalculator.OrderPriceRequest request =
-        OrderPriceCalculator.OrderPriceRequest.builder()
-            .baseAmount(baseAmount.toBigDecimal())
-            .build();
+    OrderPriceRequest request = OrderPriceRequest.of(baseAmount.toBigDecimal());
     // 扩展点代理按 BizContext（租户 / 业务维度）匹配具体实现；运行期上下文由扩展引擎 ThreadLocal 承载，
     // 调用前显式建立电商下单场景维度（bizCode=ecommerce/useCase=order/scenario=standard），命中平台默认计价器。
     BizContext<Void> pricingContext =

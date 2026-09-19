@@ -47,8 +47,17 @@ import org.springframework.transaction.support.TransactionTemplate;
  *   <li><b>简单写</b>（refund / closeExpired）——聚合加载 → 领域方法 → 保存。
  *   <li><b>读操作</b>（getById）——{@code PaymentDto} 是 {@code bp_payment}
  *       全行的子集，与写聚合<strong>无读模型分歧</strong>， 故直接走 {@link PaymentRepository} + {@link
- *       PaymentDetailAssembler}，不再绕一次读侧投影。 真正有分歧的读（全租户扫描）才走 {@link PaymentQueryPort}。
+ *       PaymentDetailAssembler}，不再绕一次读侧投影。 <strong>全租户运维扫描同理</strong>：它也是本聚合单表读，已随 ADR-0030 P4 并入
+ *       {@link PaymentRepository} 的 {@code *AllTenants} 方法，不再单设读侧端口——判据是「有没有读模型分歧」，不是「读多复杂」。
  * </ul>
+ *
+ * <p><b>本模块唯一的编程式事务点（已登记例外）</b>：{@link #initiate} 的「Tx1 落 PENDING → 事务外调渠道 → Tx2 回填 payUrl」必须用
+ * {@link TransactionTemplate}——远程渠道调用<strong>不得</strong>置于本地事务内（远程慢会拖长事务并占用连接池）。 除此之外的写路径一律声明式
+ * {@code @Transactional}。
+ *
+ * <p><b>为何要写明这一点</b>：{@code oneAggregatePerTransaction} 只扫描类方法体内的<strong>直接</strong>调用 （{@code
+ * getMethodCallsFromSelf()}），不追 {@code execute(...)} 的 lambda 体——编程式事务内部的聚合数量
+ * <strong>不在该门禁覆盖内</strong>。新增编程式事务点时必须人工复核「一个事务只改一个聚合」。
  */
 @Slf4j
 @Service

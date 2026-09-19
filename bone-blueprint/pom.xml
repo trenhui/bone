@@ -96,10 +96,8 @@
             <version>1.0.0</version>
         </dependency>
         
-        <!-- JJWT：必须与 bone-security 的编译版本一致（0.12.x 的 Jwts.parser() 返回 JwtParserBuilder）。
-             此前硬编码 0.11.5，且显式版本会覆盖 bone-parent 的 dependencyManagement，导致
-             JwtTokenService.parse() 运行时抛 NoSuchMethodError——该缺陷在引入鉴权前是潜伏的（无人调用 parse）。
-             统一取 ${jjwt.version}，与 bone-system / bone-iam 同写法。 -->
+        <!-- JJWT：本模块不直接声明依赖，统一取 ${jjwt.version}（须与 bone-security 编译版本一致）。
+             踩坑经过与症状见 README「JJWT 版本不能降级」。 -->
 
         <!-- MySQL Driver -->
         <dependency>
@@ -152,7 +150,6 @@
             <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
         </dependency>
 
-        <!-- Spring Cloud OpenFeign -->
     </dependencies>
 
     <build>

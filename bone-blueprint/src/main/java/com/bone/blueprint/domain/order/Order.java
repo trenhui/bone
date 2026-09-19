@@ -26,7 +26,8 @@ import lombok.NoArgsConstructor;
 @Table("t_order")
 public class Order extends TenantAggregateRoot<Long> {
 
-  @Transient private static final Money MAX_ORDER_AMOUNT = Money.of(new BigDecimal("1000000"));
+  /** 金额上限常量：{@code static} 字段本就不参与 SDK 映射，无需（且不应）标注 {@code @Transient}。 */
+  private static final Money MAX_ORDER_AMOUNT = Money.of(new BigDecimal("1000000"));
 
   private Long customerId;
 

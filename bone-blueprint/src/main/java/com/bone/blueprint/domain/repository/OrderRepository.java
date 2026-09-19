@@ -89,6 +89,23 @@ public interface OrderRepository extends Repository<Order, Long> {
     return Optional.ofNullable(order).map(Order::getStatus);
   }
 
+  /**
+   * 批量取订单状态（对账用，单租户 IN 查询）：全租户对账扫描按租户分组后，每组一次 IN 查询取回该租户下所有待核订单状态，避免逐行 {@link #findStatusById} 的
+   * N+1。
+   *
+   * <p>订单不存在/不可见者不进入返回列表；{@code orderIds} 为空或空列表直接返回空，不下发查询。
+   */
+  @SuppressWarnings("unchecked")
+  default List<Order> findOrdersByTenantAndIds(long tenantId, List<Long> orderIds) {
+    if (orderIds == null || orderIds.isEmpty()) {
+      return List.of();
+    }
+    return findByCriteria(
+        Criteria.<Order>create()
+            .eq(Order::getTenantId, tenantId)
+            .in(Order::getId, orderIds.toArray(new Long[0])));
+  }
+
   /** 订单头分页；条件用 Criteria 开关表达，租户显式下发，投影映射由 {@link OrderHeadProjection#from} 承担。 */
   default PageResult<OrderHeadProjection> findOrderPage(
       long tenantId, Long customerId, OrderStatus status, int pageNum, int pageSize) {

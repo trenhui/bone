@@ -8,7 +8,7 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 @Component
-public class MasterDataExcelImportGateway implements MasterDataExcelImportPort {
+public class MasterDataExcelImportPortAdapter implements MasterDataExcelImportPort {
 
   @Override
   public List<MasterDataRecord> parseRecords(
