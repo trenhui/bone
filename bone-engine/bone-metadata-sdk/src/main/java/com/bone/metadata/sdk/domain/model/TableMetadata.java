@@ -14,7 +14,6 @@ public class TableMetadata {
   @Getter(AccessLevel.NONE)
   private final ColumnMetadata primaryKey; // 缓存的主键列
 
-  @Getter(AccessLevel.NONE)
   private final ColumnMetadata version; // 缓存版本列
 
   @Getter(AccessLevel.NONE)
@@ -65,6 +64,11 @@ public class TableMetadata {
 
   public boolean isTenantScoped() {
     return tenantIdColumn != null;
+  }
+
+  /** 该表是否启用 SDK 原生乐观锁：存在 {@code @Version} 列即启用（ADR-0031 D1）。 */
+  public boolean isVersioned() {
+    return version != null;
   }
 
   public boolean isSoftDeletable() {

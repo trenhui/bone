@@ -20,7 +20,7 @@ public class SqlConfigProperties {
 
   private static final String DEFAULT_BASE_PATH = "classpath:/sql/";
   private static final String DEFAULT_YAML_PATH = "classpath:/sql-templates/";
-  private static final String DEFAULT_LOAD_PRIORITY = "annotation-first";
+  private static final String DEFAULT_LOAD_PRIORITY = "classpath-first";
 
   /** 是否启用 SQL 功能。 */
   private boolean enabled = true;

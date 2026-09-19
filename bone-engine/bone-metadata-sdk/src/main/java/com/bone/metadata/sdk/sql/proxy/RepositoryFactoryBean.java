@@ -1,8 +1,11 @@
 package com.bone.metadata.sdk.sql.proxy;
 
+import com.bone.core.tenant.context.TenantContext;
 import com.bone.metadata.sdk.BaseRepository;
 import com.bone.metadata.sdk.domain.annotation.Param;
 import com.bone.metadata.sdk.domain.annotation.SqlType;
+import com.bone.metadata.sdk.domain.annotation.TenantScope;
+import com.bone.metadata.sdk.domain.annotation.TenantScopeMode;
 import com.bone.metadata.sdk.domain.query.CompiledQuery;
 import com.bone.metadata.sdk.extension.ExtensionCoordinator;
 import com.bone.metadata.sdk.query.SqlBuilder;
@@ -13,12 +16,14 @@ import com.bone.metadata.sdk.sql.processor.SqlProcessorFactory;
 import com.bone.metadata.sdk.sql.template.SqlFragmentLoader;
 import com.bone.metadata.sdk.sql.template.SqlTemplate;
 import com.bone.metadata.sdk.sql.template.SqlTemplateLoader;
+import com.bone.metadata.sdk.sql.tenant.TenantSqlRewriter;
 import com.bone.metadata.sdk.support.util.RepositoryClassUtils;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Proxy;
 import java.util.*;
@@ -141,7 +146,10 @@ public class RepositoryFactoryBean<T, E, ID>
   }
 
   private boolean shouldSkipMethod(Method method) {
-    return method.getDeclaringClass() == Object.class || isBaseRepositoryPublicMethod(method);
+    // 接口 static 方法（如工具性的投影映射）不参与代理，否则会触发 loadTemplate → TemplateNotFoundException 致启动失败。
+    return method.getDeclaringClass() == Object.class
+        || Modifier.isStatic(method.getModifiers())
+        || isBaseRepositoryPublicMethod(method);
   }
 
   private boolean isBaseRepositoryPublicMethod(Method method) {
@@ -280,19 +288,27 @@ public class RepositoryFactoryBean<T, E, ID>
       SqlProcessor processor = sqlProcessorFactory.getProcessor(sqlTemplate.getSqlTemplateType());
       ProcessedSql processed = processor.process(sqlTemplate.getId(), sqlTemplate.getSql(), params);
 
-      CompiledQuery cq = createCompiledQuery(processed);
+      String sql = processed.getSql();
+      Map<String, Object> effectiveParams = new LinkedHashMap<>(processed.getEffectiveParams());
+
+      // @TenantScope(AUTO)：从可信 TenantContext 注入租户条件（失败关闭），调用方不再手写 tenant_id。
+      TenantScope tenantScope = method.getAnnotation(TenantScope.class);
+      if (tenantScope != null && tenantScope.value() == TenantScopeMode.AUTO) {
+        Long tenantId = TenantContext.getTenantIdAsLong();
+        sql =
+            TenantSqlRewriter.rewrite(
+                sql, tenantScope.value(), tenantScope.column(), tenantId, tenantScope.softDelete());
+        effectiveParams.put(TenantSqlRewriter.TENANT_PARAM, tenantId);
+      }
+      effectiveParams.remove("_repoClass");
+
+      CompiledQuery cq = new CompiledQuery(sql, effectiveParams);
       SqlType sqlType = sqlTemplate.getSqlType();
       try {
         return executeQuery(sqlType, cq);
       } catch (RuntimeException ex) {
-        throw createExecutionException(processed.getSql(), ex);
+        throw createExecutionException(sql, ex);
       }
-    }
-
-    private CompiledQuery createCompiledQuery(ProcessedSql processed) {
-      Map<String, Object> queryParams = new HashMap<>(processed.getEffectiveParams());
-      queryParams.remove("_repoClass");
-      return new CompiledQuery(processed.getSql(), queryParams);
     }
 
     private Object executeQuery(SqlType sqlType, CompiledQuery query) {

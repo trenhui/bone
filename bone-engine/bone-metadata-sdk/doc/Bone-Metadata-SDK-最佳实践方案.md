@@ -280,14 +280,15 @@ return executeQuery(sqlTemplate.getSqlType(), cq);   // SELECT/CTE→查询；IN
 
 模板 ID 固定为 `{Repository 接口全限定名}.{方法名}`。
 
-| 优先级（默认） | 来源 | 位置 / 写法 | 模板类型 |
+| 优先级（默认 `classpath-first`） | 来源 | 位置 / 写法 | 模板类型 |
 |---|---|---|---|
-| 1 | 方法注解 `@Sql("...")` | 接口方法上 | MYBATIS |
-| 2（回退） | `classpath:/sql/<包路径>/<接口简名>/<方法名>.sql` | `resources/sql/` | MYBATIS |
-| 3（回退） | `classpath:/sql-templates/<接口简名><方法名>.yaml` | `resources/sql-templates/` | YAML_SQL |
+| 1 | `classpath:/sql/<包路径>/<接口简名>/<方法名>.sql` | `resources/sql/` | MYBATIS |
+| 2（回退） | `classpath:/sql-templates/<接口简名>/<方法名>.yaml` | `resources/sql-templates/` | YAML_SQL |
+| 3（回退） | 方法注解 `@Sql("...")` | 接口方法上 | MYBATIS |
 
-- 由 `metadata.sdk.sql.template.load-priority` 切换 `annotation-first` / `classpath-first`（默认 `annotation-first`）；
-  `fallback-enabled` 控制是否回退。
+- 由 `metadata.sdk.sql.template.load-priority` 切换 `annotation-first` / `classpath-first`（**默认 `classpath-first`**：
+  外置文件优先、注解兜底）；`fallback-enabled` 控制是否回退。
+- **同一方法的注解与 `.sql` 不要并存**：`classpath-first` 下注解会被静默忽略，形成一条悄悄漂移的影子 SQL。
 - 模板按 ID 走 Caffeine 缓存（`cache-size` / `expire-hours`），改文件后需 `refreshTemplate(id)` 或重启。
 - 处理器映射：MYBATIS → `MyBatisSqlProcessor`，YAML_SQL → `DynamicSqlProcessor`（同时是默认），SQL → `PassThroughSqlProcessor`。
 - SQL 操作类型由**首关键字自动判定**（`SELECT/INSERT/UPDATE/DELETE/WITH` → `CTE`）。
@@ -344,14 +345,30 @@ return executeQuery(sqlTemplate.getSqlType(), cq);   // SELECT/CTE→查询；IN
   ⇒ 列标签需能映射到字段名：优先按列名（下划线转驼峰 / `@Column`），再按字段名直接匹配。
   ⇒ JOIN 扁平投影请在 SQL 里写**显式别名**（`t.id AS order_id` → 字段 `orderId`）。
 
-### 6.7 租户与软删：本通道不注入
+### 6.7 租户与软删：由 `@TenantScope` 声明
 
-`@Sql` 按模板原样执行，SDK **不会**追加 `tenant_id`，也**不会**追加 `deleted = 0`：
+`@Sql` 通道**不经过** `TenantFilterInjector`（ADR-0029），租户策略只能靠方法上的 `@TenantScope` 显式声明；
+**未标注等同 `MANUAL`** —— 不注入，SQL 所见即所得。
 
-- 租户内查询：自己写 `AND t.tenant_id = #{tenantId}`。
-- 跨租户扫描（Outbox 中继、定时任务全量扫描）：不写即为全租户 —— 这是本通道的主要用途之一，
-  但必须在应用层登记授权（`platform:*`）与审计，不能"因为 SQL 里没写就当作默认安全"。
-- 软删：自己写 `AND t.deleted = 0`（对比：Criteria/内置方法路径会自动追加）。
+| 模式 | 行为 | 用在哪 |
+|---|---|---|
+| `AUTO` | 从可信 `TenantContext` 注入；无上下文抛 `MissingTenantContextException`（失败关闭） | 绝大多数"当前租户"查询 |
+| `MANUAL` | 不注入，租户条件自己写。**默认值**（向后兼容）；未标注的 `@Sql` 即此模式 | 需自己控制租户谓词位置的老代码 |
+| `ALL` | 不注入、不限租户 | 已登记的跨租户扫描（Outbox 中继、定时任务全量扫描） |
+| `BYPASS` | 跳过滤且不要求 `TenantContext` | 确实要越租户的基础设施链路，须 `platform:*` 授权 + 审计 |
+
+```java
+@TenantScope(value = TenantScopeMode.AUTO,  // 默认 MANUAL
+             column = "t.tenant_id",        // 默认 "tenant_id"；JOIN 必须带别名
+             softDelete = true)             // 默认 false；追加裸列名 AND deleted = 0（仅单表）
+```
+
+- `AUTO` 的注入位置（`TenantSqlRewriter`）：优先把锚点 `/*bone:tenant*/` 替换为 `<column> = :__boneTenantId__`；
+  无锚点的单表简单查询做启发式注入；**无锚点的 JOIN / 子查询直接抛异常要求补锚点**（失败关闭，绝不静默漏注）。
+- 软删默认同样不注入：自己写 `AND t.deleted = 0`，或用 `softDelete = true` 追加
+  （对比：Criteria / 内置方法路径总是自动追加）。
+- `ALL` / `BYPASS` 是显式登记的越租户能力，必须走 `platform:*` 授权与审计，
+  不能"因为 SQL 里没写就当作默认安全"。
 
 ### 6.8 规范与检查
 
@@ -398,8 +415,9 @@ return executeQuery(sqlTemplate.getSqlType(), cq);   // SELECT/CTE→查询；IN
 **逃生舱**：`Criteria.create().disableTenantFilter()` —— 完全退出租户注入（打 WARN）。
 仅限跨租户基础设施扫描（如 Outbox 中继），且必须在应用层保证 `platform:*` 授权 + 审计。
 
-> **例外通道**：`@Sql` 自定义仓储方法**不走** `TenantFilterInjector`，SQL 所见即所得（见 §6.7）。
-> 全租户能力只能来自"SQL 里没写 `tenant_id`"，因此必须显式登记，不能默认安全。
+> **例外通道**：`@Sql` 自定义仓储方法**不走** `TenantFilterInjector`，其租户策略由方法上的 `@TenantScope`
+> 显式声明（见 §6.7）。全租户能力须写成 `@TenantScope(TenantScopeMode.ALL)`（或 `BYPASS`）并显式登记授权与审计，
+> 不再依赖"SQL 里没写 `tenant_id`"这种隐式判据。
 
 ### 8.2 动态数据源
 
@@ -533,7 +551,7 @@ bone-metadata-sdk-test          # 测试 fixtures
 | 仅依赖 AutoConfiguration 不标 `@EnableSqlRepositories` | 仓储 Bean 未注册 |
 | 在 `generated/` 改代码 | CI 红线 |
 | `@Sql` 方法返回 `PageResult<T>` | 代理无分页分支，结果被误映射；应返回 `List<DTO>` + 独立 COUNT，再 `PageResult.of` |
-| `@Sql` 里漏写 `tenant_id` | 本通道不注入租户 → 跨租户越权；仅登记过的跨租户场景可省略（§6.7） |
+| `@Sql` 方法漏标 `@TenantScope` / 漏写租户条件 | 本通道不注入租户（漏标等同 `MANUAL`）→ 跨租户越权；租户内用 `AUTO`（JOIN 须放锚点 `/*bone:tenant*/`），全租户用 `ALL` 并登记授权（§6.7） |
 | `@Sql` 的 DTO 没有无参构造器 | `SmartRowMapper` 用 `BeanUtils.instantiateClass`，抛 `Failed to instantiate` |
 | `#{x}` 传入 `null` | 抛 `SqlProcessingException`；可选条件必须用 `<if test="x != null">` 包住 |
 | `<foreach>` 传数组 | 只认 `Iterable`，数组被静默跳过 |
@@ -556,7 +574,7 @@ metadata:
         type: MYSQL                 # MYSQL|H2|POSTGRESQL|ORACLE|SQLSERVER|SQLITE
         batch-size: 1000
       template:
-        load-priority: annotation-first   # annotation-first | classpath-first
+        load-priority: classpath-first    # annotation-first | classpath-first（默认 classpath-first：外置优先、注解兜底）
         fallback-enabled: true
         base-path: classpath:/sql/
         yaml-path: classpath:/sql-templates/
@@ -600,5 +618,6 @@ metadata:
 |------|------|
 | 2026-05 | 合并 `doc/` 下 5 份方案为本文档；废止多份重复升级/DSL 草案 |
 | 2026-09-18 | 对照 `src/main/java` 校正：新增 §6「`@Sql` 自定义仓储方法」（执行链、动态标签、占位符、片段、返回映射、**PageResult 缺口**、DTO 无参构造器约束、租户不注入）；§8.1 按 ADR-0029 重写租户注入与逃生舱；§5.3 修正 DSL 无 DTO 投影重载；§15 修正配置前缀为 `metadata.sdk` / `metadata.sdk.sql`；§14 补 9 条反模式；新增 [`AGENT-持久化速查手册.md`](./AGENT-持久化速查手册.md) |
+| 2026-09-19 | 补 `@TenantScope`（ADR-0030 引入）：§6.7 重写为「租户与软删由 `@TenantScope` 声明」（四模式表 + 锚点 `/*bone:tenant*/` + 失败关闭 + `softDelete` 仅单表）；§8.1 例外通道改按显式标注；§14 坑表行同步；§15 与 §6.3 修正 `load-priority` **默认值为 `classpath-first`**（原文误作 `annotation-first`）并补「注解与 `.sql` 禁并存」；修正 yaml 模板路径为 `sql-templates/<接口简名>/<方法名>.yaml`；`AGENT-持久化速查手册.md` 新增 §3.5 并同步 §1/§2/§4/§5/§6 |
 
 **已废止（已从仓库删除，见 Git 历史）**：`元数据整体升级方案.md`、`元数据sdk升级方案1/2/3.md`、`DSL查询方案.md`、`README_DSL_QUERY.md`、`SDK优化方案详细版.md` 及 `src/main/` 下各类方案草稿。

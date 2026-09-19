@@ -94,8 +94,35 @@ public final class TableMetadataResolver {
         && !processedFields.contains(field.getName());
   }
 
+  /**
+   * {@code @Version} 字段的合法类型：{@link Number} 子类（Long/Integer/BigInteger…）或原始数值类型。
+   *
+   * <p><b>原始类型不是 {@link Number} 的子类</b>——{@code Number.class.isAssignableFrom(long.class)} 恒为
+   * {@code false}。因此不能只用后者判定，否则 {@code @Version private long version;} / {@code private int
+   * version;} 会在解析期被误拒（写入侧 {@code BaseRepository.toVersionValue} 本就支持这些类型）。
+   */
+  private static boolean isNumericVersionType(Class<?> type) {
+    if (Number.class.isAssignableFrom(type)) {
+      return true;
+    }
+    return type.isPrimitive() && type != boolean.class && type != char.class && type != void.class;
+  }
+
   /** 构建 ColumnMetadata */
   private static ColumnMetadata buildColumnMetadata(Field field) {
+    // @Version 必须是数值类型（Number 子类或原始数值）：乐观锁靠 version = version + 1 与 WHERE version = :old，
+    // String/时间等非数值类型会在 SQL 期才炸且误导；解析期直接拒绝（ADR-0031 D1 评审）
+    if (field.isAnnotationPresent(Version.class) && !isNumericVersionType(field.getType())) {
+      throw new MetadataException(
+          "@Version field must be a Number subtype: "
+              + field.getDeclaringClass().getName()
+              + "."
+              + field.getName()
+              + " ("
+              + field.getType().getSimpleName()
+              + ")");
+    }
+
     Column columnAnn = field.getAnnotation(Column.class);
     String columnName = resolveColumnName(field, columnAnn);
     GenerationStrategy generationStrategy = resolveGenerationStrategy(field);

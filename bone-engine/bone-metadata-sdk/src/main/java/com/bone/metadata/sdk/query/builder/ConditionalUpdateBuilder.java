@@ -27,6 +27,9 @@ public class ConditionalUpdateBuilder implements SqlQueryBuilder<ConditionalUpda
     // 2.1 主表普通列
     for (ColumnMetadata col : table.getColumns()) {
       if (col.isPrimaryKey()) continue;
+      // version 列由 SDK 原生乐观锁独占管理（DynamicUpdateBuilder）：条件更新不 bump、不护栏，
+      // 此处直接跳过，避免把它当普通列覆盖（ADR-0031 D1.6：条件/批量路径不支持乐观锁）
+      if (col.isVersion()) continue;
       Object value =
           SqlUtil.toJdbcParameter(ReflectionUtil.getFieldValue(entity, col.getFieldName()));
       if (value != null) {

@@ -12,6 +12,7 @@ import com.bone.metadata.sdk.domain.enums.SortDirection;
 import com.bone.metadata.sdk.domain.exception.MetadataException;
 import com.bone.metadata.sdk.domain.exception.MissingTenantContextException;
 import com.bone.metadata.sdk.domain.exception.MultipleResultsException;
+import com.bone.metadata.sdk.domain.exception.OptimisticLockingFailureException;
 import com.bone.metadata.sdk.domain.exception.PersistenceException;
 import com.bone.metadata.sdk.domain.exception.UndefinedFieldException;
 import com.bone.metadata.sdk.domain.model.AllocationContext;
@@ -182,6 +183,15 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
       Object newId = sqlExecutor.insert(singleInsert, entityClass);
       setEntityId(entity, newId);
     }
+    // 新插入行 version 应为 0：DB 有 DEFAULT 0，但 insert 显式给列；实体原本为 null 时与库保持一致（ADR-0031 D1）
+    // 按字段声明类型写入（ADR-0031 D1 评审：兼容 Integer/int 等）
+    if (tableMetadata.isVersioned()) {
+      String vf = tableMetadata.getVersion().getFieldName();
+      if (ReflectionUtil.getFieldValue(entity, vf) == null) {
+        ReflectionUtil.setFieldValue(
+            entity, vf, toVersionValue(tableMetadata.getVersion().getType(), 0L));
+      }
+    }
     saveExtensionFields(entity);
     return entity.getId();
   }
@@ -209,8 +219,43 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
         .forEach(
             batch -> {
               sqlExecutor.batchUpdate(sqlBuilder.buildBatchInsert(entityClass, batch));
-              batch.forEach(this::saveExtensionFields);
+              batch.forEach(
+                  e -> {
+                    // 批量插入的 versioned 实体同样回写 0（与单条 insert 对称，否则同实例再 update 会误判冲突）
+                    if (tableMetadata.isVersioned()
+                        && ReflectionUtil.getFieldValue(
+                                e, tableMetadata.getVersion().getFieldName())
+                            == null) {
+                      ReflectionUtil.setFieldValue(
+                          e,
+                          tableMetadata.getVersion().getFieldName(),
+                          toVersionValue(tableMetadata.getVersion().getType(), 0L));
+                    }
+                    this.saveExtensionFields(e);
+                  });
             });
+  }
+
+  /**
+   * 按 {@code @Version} 字段声明类型，把增长后的值转成可写入对象的数值。
+   *
+   * <p>{@link TypeConverter} 不支持 Long→Integer 之类的窄化，而 version 递增通常落在 {Long, Integer, int, short}
+   * 上，故按类型直接强转；其余数值类型（如 BigInteger）退化为 {@link TypeConverter}。
+   */
+  private static Number toVersionValue(Class<?> type, long value) {
+    if (type == long.class || type == Long.class) {
+      return value;
+    }
+    if (type == int.class || type == Integer.class) {
+      return (int) value;
+    }
+    if (type == short.class || type == Short.class) {
+      return (short) value;
+    }
+    if (type == byte.class || type == Byte.class) {
+      return (byte) value;
+    }
+    return (Number) TypeConverter.convert(value, type);
   }
 
   @Override
@@ -218,12 +263,38 @@ public abstract class BaseRepository<T extends Entity<ID>, ID> implements Reposi
   public boolean update(@Valid T entity) {
     Assert.notNull(entity, "Entity must not be null");
     Assert.notNull(entity.getId(), "Entity ID must not be null for update");
+    TableMetadata tableMetadata = TableMetadataResolver.load(entityClass);
     CompiledQuery query = sqlBuilder.buildDynamicUpdate(entityClass, entity);
     int affectedRows = sqlExecutor.update(query);
     saveExtensionFields(entity);
     if (affectedRows == 0) {
+      // 原生乐观锁（ADR-0031 D1）：version 表 0 行 = 冲突/不存在/越租户 → 响亮失败，不静默返回 false
+      if (tableMetadata.isVersioned()) {
+        ColumnMetadata vc = tableMetadata.getVersion();
+        Object oldVersion = ReflectionUtil.getFieldValue(entity, vc.getFieldName());
+        if (oldVersion == null) {
+          // 实体未加载 @Version（SELECT 已含 version 列），不应被误报成"并发冲突"
+          throw new IllegalStateException(
+              "Optimistic lock cannot proceed: @Version field is null on "
+                  + entityClass.getSimpleName()
+                  + " id="
+                  + entity.getId()
+                  + ". Load the entity first (SELECT includes version) before update.");
+        }
+        throw new OptimisticLockingFailureException(
+            entityClass.getSimpleName(), entity.getId(), oldVersion);
+      }
       log.warn("No rows updated for entity id={}", entity.getId());
       return false;
+    }
+    // 成功后回写实体 version = old + 1：否则同一实体连续两次写必然假冲突
+    // 按字段声明类型写入，兼容 Integer/int/short 等（不只 Long）
+    if (tableMetadata.isVersioned()) {
+      ColumnMetadata vc = tableMetadata.getVersion();
+      Object oldVersion = ReflectionUtil.getFieldValue(entity, vc.getFieldName());
+      long base = (oldVersion instanceof Number) ? ((Number) oldVersion).longValue() : 0L;
+      ReflectionUtil.setFieldValue(
+          entity, vc.getFieldName(), toVersionValue(vc.getType(), base + 1));
     }
     return true;
   }

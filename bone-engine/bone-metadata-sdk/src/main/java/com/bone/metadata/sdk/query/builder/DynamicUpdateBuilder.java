@@ -15,6 +15,10 @@ import java.util.List;
 import java.util.Map;
 
 public class DynamicUpdateBuilder implements SqlQueryBuilder<DynamicUpdateContext> {
+
+  /** 乐观锁旧值参数名（ADR-0031 D1）：与安全上下文互不冲突。 */
+  public static final String VERSION_PARAM = "__bone_version_old__";
+
   @Override
   public CompiledQuery build(DynamicUpdateContext ctx) {
     TableMetadata table = ctx.getTable();
@@ -26,6 +30,8 @@ public class DynamicUpdateBuilder implements SqlQueryBuilder<DynamicUpdateContex
 
     for (ColumnMetadata c : table.getColumns()) {
       if (c.isPrimaryKey()) continue;
+      // 版本列不在 SET 里逐字段赋值：它由 SDK 统一自增（version = version + 1），见下方 isVersioned 分支
+      if (c.isVersion()) continue;
       Object v = SqlUtil.toJdbcParameter(ReflectionUtil.getFieldValue(e, c.getFieldName()));
       clauses.add(c.getName() + " = :" + c.getName());
       params.put(c.getName(), v);
@@ -53,6 +59,17 @@ public class DynamicUpdateBuilder implements SqlQueryBuilder<DynamicUpdateContex
           .append(" = :")
           .append(TenantFilterInjector.PARAM);
       params.put(TenantFilterInjector.PARAM, tid);
+    }
+
+    // 原生乐观锁（ADR-0031 D1）：SET version = version + 1，WHERE 携带实体加载时的旧值。
+    // 未标注 @Version 的表不受影响（零向后兼容风险）。
+    if (table.isVersioned()) {
+      ColumnMetadata vc = table.getVersion();
+      clauses.add(vc.getName() + " = " + vc.getName() + " + 1");
+      Object oldVersion =
+          SqlUtil.toJdbcParameter(ReflectionUtil.getFieldValue(e, vc.getFieldName()));
+      whereSql.append(" AND ").append(vc.getName()).append(" = :").append(VERSION_PARAM);
+      params.put(VERSION_PARAM, oldVersion);
     }
 
     params.put(

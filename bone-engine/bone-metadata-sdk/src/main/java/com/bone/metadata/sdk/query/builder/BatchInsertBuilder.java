@@ -48,6 +48,10 @@ public class BatchInsertBuilder implements BatchQueryBuilder<BatchInsertContext>
         } else {
           value = SqlUtil.toJdbcParameter(ReflectionUtil.getFieldValue(e, c.getFieldName()));
         }
+        // @Version 未赋值：DB 有 DEFAULT 0，但 insert 显式给列，置 0 维持一致性（ADR-0031 D1）
+        if (c.isVersion() && value == null) {
+          value = 0L;
+        }
         m.put(c.getName(), value);
       }
       // 扩展属性

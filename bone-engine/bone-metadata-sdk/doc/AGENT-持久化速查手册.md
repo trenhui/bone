@@ -24,10 +24,11 @@
     │
     ├─ 多表 JOIN / 扁平投影 / 报表
     │   └─ @Sql 自定义仓储方法（MyBatis 风格动态 SQL）                 → §3.4  ★首选
+    │       └─ 租户策略必须用 @TenantScope 逐方法显式声明              → §3.5
     │
     └─ 跨租户全表扫描（Outbox 中继 / 定时任务）
         ├─ 走 Criteria/SqlBuilder → 必须显式 disableTenantFilter()      → §4.2
-        └─ 走 @Sql               → SQL 里不写 tenant_id 即可           → §4.2
+        └─ 走 @Sql               → 必须标注 @TenantScope(ALL)          → §4.2
 ```
 
 **一句话判据**：能用内置方法就别写 SQL；要 JOIN/投影就用 `@Sql`；**不要手写 `JdbcTemplate`**（违反平台持久化 P0）。
@@ -45,12 +46,12 @@
 |---|---|---|---|
 | 入口 | `findByCriteria` / `pageByCriteria` | `repo.where(...)` / `QueryBuilder.from(X)` | 接口方法 + `@Sql("...")` |
 | 底层 | `SqlBuilder` → `SqlExecutor` | `SqlExecutor` | `SqlTemplateLoader` → `SqlProcessor` → `SqlExecutor` |
-| 租户注入 | **自动**（ADR-0029） | 同左（走 SqlExecutor/Criteria 编译） | **不注入**，SQL 所见即所得 |
-| 软删过滤 | **自动** `deleted=false` | 自动 | **不注入**，自己写 |
+| 租户注入 | **自动**（ADR-0029） | 同左（走 SqlExecutor/Criteria 编译） | 由 `@TenantScope` 决定：默认 `MANUAL` **不注入**；`AUTO` 自动注入且失败关闭；`ALL` 全租户（§3.5） |
+| 软删过滤 | **自动** `deleted=false` | 自动 | **不注入**，自己写；`@TenantScope(softDelete = true)` 可追加（仅单表，§3.5） |
 | 多表 JOIN | 不适合 | 不适合 | **支持** |
 | 返回 DTO/投影 | 不支持（只能实体） | 不支持（只能实体） | **支持** `List<DTO>` |
 | 分页带 total | `pageByCriteria` → `PageResult` | `page(n,size)` → `PageResult` | **不支持**，见 §5 坑 4 |
-| SQL 位置 | Java（Lambda） | Java（Lambda） | 注解内 或 `resources/sql/...sql` |
+| SQL 位置 | Java（Lambda） | Java（Lambda） | 注解内 或 `resources/sql/<包路径>/<接口简名>/<方法名>.sql`（默认**外置优先**） |
 
 ---
 
@@ -103,26 +104,37 @@ long n = orderRepository.where(Order::getStatus).eq(OrderStatus.PAID).count();
 
 ```java
 @SqlFragment(id = "orderCols", value = "t.id, t.tenant_id, t.status, t.created_at")
-public interface OrderReadRepository extends Repository<Order, Long> {
+public interface OrderRepository extends Repository<Order, Long> {
 
-  // 全租户扫描：不写 tenant_id 就是全租户（跨租户基础设施/定时任务专用）
+  // AUTO：租户条件由 SDK 注入（调用方不再传 tenantId）；缺上下文即失败关闭
+  @TenantScope(TenantScopeMode.AUTO)
+  @Sql("""
+       SELECT <include refid="orderCols"/>
+       FROM t_order t
+       WHERE t.status = #{status}
+       ORDER BY t.created_at DESC
+       """)
+  List<OrderHeadProjection> findRecentByStatus(@Param("status") String status);
+
+  // AUTO + JOIN：必须放锚点 /*bone:tenant*/，否则 SDK 拒绝执行（JOIN 别名歧义）
+  @TenantScope(value = TenantScopeMode.AUTO, column = "t.tenant_id")
+  @Sql("""
+       SELECT t.id AS order_id, i.id AS item_id, i.product_name, i.quantity
+       FROM t_order t
+       LEFT JOIN t_order_item i ON i.order_id = t.id AND i.deleted = 0
+       WHERE t.deleted = 0 /*bone:tenant*/
+         <if test="orderId != null"> AND t.id = #{orderId} </if>
+       """)
+  List<OrderWithItemsProjection> findOrderWithItems(@Param("orderId") Long orderId);
+
+  // ALL：全租户扫描，仅限已登记的运维型定时任务 / Outbox 中继
+  @TenantScope(TenantScopeMode.ALL)
   @Sql("""
        SELECT <include refid="orderCols"/>
        FROM t_order t
        WHERE t.deleted = 0 AND t.status = 'CREATED' AND t.created_at < #{before}
        """)
   List<OrderHeadProjection> findCreatedExpiredBeforeAllTenants(@Param("before") Instant before);
-
-  // 租户内 JOIN 扁平投影
-  @Sql("""
-       SELECT t.id AS order_id, i.id AS item_id, i.product_name, i.quantity
-       FROM t_order t
-       LEFT JOIN t_order_item i ON i.order_id = t.id
-       WHERE t.deleted = 0 AND t.tenant_id = #{tenantId}
-         <if test="orderId != null"> AND t.id = #{orderId} </if>
-       """)
-  List<OrderWithItemsProjection> findOrderWithItems(@Param("tenantId") Long tenantId,
-                                                    @Param("orderId") Long orderId);
 }
 ```
 
@@ -132,6 +144,33 @@ public interface OrderReadRepository extends Repository<Order, Long> {
 - 参数用 `@Param("name")`；不写则用编译期参数名（需 `-parameters`），否则退化为 `arg0`。
 - 列必须**别名成 DTO 字段名**（`t.id AS order_id` → 字段 `orderId`）。
 - DTO 必须有**无参构造器**（见 §5 坑 3）。
+- **每个 `@Sql` 方法都应显式标注 `@TenantScope`**（见 §3.5）：漏标不会报错，但等同于 `MANUAL` 裸奔。
+
+### 3.5 `@Sql` 的租户策略：`@TenantScope`（必看）
+
+`@Sql` 通道**不经过** `TenantFilterInjector`（ADR-0029），所以租户策略只能靠方法上的 `@TenantScope` 声明：
+
+| 模式 | 行为 | 用在哪 |
+|---|---|---|
+| `AUTO` | 从可信 `TenantContext` 注入；**无上下文即抛 `MissingTenantContextException`**（失败关闭） | 绝大多数"当前租户"查询 |
+| `MANUAL` | 不注入，租户条件自己写。**默认值**（向后兼容）；未标注的 `@Sql` 即此模式 | 需自己控制租户谓词位置的老代码 |
+| `ALL` | 不注入、不限租户 | 已登记的运维型定时任务 / Outbox 中继（定时线程无请求上下文，按"当前租户"扫只会落到平台租户 0） |
+| `BYPASS` | 跳过滤且**不要求 `TenantContext`** 的平台逃生舱 | 确实要越租户的基础设施链路，须 `platform:*` 授权 + 审计 |
+
+```java
+@TenantScope(value = TenantScopeMode.AUTO,  // 默认 MANUAL
+             column = "t.tenant_id",        // 默认 "tenant_id"；JOIN 必须带别名
+             softDelete = true)             // 默认 false；true 追加 AND deleted = 0（裸列名，仅单表）
+```
+
+`AUTO` 的注入位置（`TenantSqlRewriter`）：
+
+1. **优先锚点**：SQL 里放 `/*bone:tenant*/`，SDK 替换为 `<column> = :__boneTenantId__`。**JOIN / 子查询必须用锚点**（否则别名歧义）。
+2. **无锚点的简单查询**：单表、无 JOIN/子查询时启发式注入（已有 `WHERE` 就在其后追加 `AND ...`；没有就在 `GROUP BY` / `ORDER BY` 等顶层边界前补 `WHERE`）。
+3. **无锚点的复杂查询**：直接抛 `IllegalStateException` 要求作者补锚点 —— **失败关闭，绝不静默漏注**。
+
+> 实现位置：`RepositoryFactoryBean#invoke` 仅在 `AUTO` 时调用 `TenantSqlRewriter`，
+> 租户值取自 `TenantContext.getTenantIdAsLong()`；因此 `@Sql` 注解与外置 `.sql` 模板**同等生效**。
 
 ---
 
@@ -147,16 +186,18 @@ public interface OrderReadRepository extends Repository<Order, Long> {
 
 INSERT 时 `tenantId` 以 `TenantContext` 为准（与实体值不一致会覆盖并 WARN）。
 
+> `@Sql` 通道**不走**这条注入器，其租户策略由 `@TenantScope` 声明 —— 见 §3.5。
+
 ### 4.2 逃生舱
 
-- Criteria 路径：`Criteria.create().disableTenantFilter()`（跨租户扫描，如 Outbox 中继）。会打 WARN，必须在应用层保证 `platform:*` 授权 + 审计。
-- `@Sql` 路径：**无需任何开关**，SQL 里不写 `tenant_id` 即全租户——这也是它最容易造成越权的地方，必须登记。
+- Criteria / DSL 路径：`Criteria.create().disableTenantFilter()`（跨租户扫描，如 Outbox 中继）。会打 WARN，必须在应用层保证 `platform:*` 授权 + 审计。
+- `@Sql` 路径：显式标注 `@TenantScope(TenantScopeMode.ALL)`（全租户）或 `BYPASS`（不要求上下文）——**不再靠"SQL 里没写 `tenant_id`"隐式达成**，必须登记授权与审计（见 §3.5）。
 
 ### 4.3 软删
 
 `findById` / `findByCriteria` / `pageByCriteria` / `countByCriteria` 自动追加 `deleted = false`；
 要含已删数据用 `findByIdIncludingDeleted` / `findByIdsIncludingDeleted`。
-**`@Sql` 不注入软删**，自己写 `AND t.deleted = 0`。
+**`@Sql` 默认不注入软删**，自己写 `AND t.deleted = 0`；或标注 `@TenantScope(softDelete = true)` 让 SDK 在租户条件后追加（生成的是裸列名 `deleted = 0`，仅适用单表，见 §3.5）。
 
 ---
 
@@ -174,7 +215,7 @@ INSERT 时 `tenantId` 以 `TenantContext` 为准（与实体值不一致会覆�
 | 8 | SQL 里出现 `;` 或 `DROP/ALTER/TRUNCATE/EXEC` | `SqlProcessingException` | 单语句，禁止多语句 |
 | 9 | 字符串参数值含 `;` / `SELECT` 等 | `SqlProcessingException` | 参数化，别拼值 |
 | 10 | `LIKE '%xxx%'` | 可能被 `validateSql` 判为注入 | 用 `LIKE CONCAT('%', #{name}, '%')`（已白名单） |
-| 11 | `@Sql` 方法漏写 `tenant_id` | 跨租户越权 | 除登记过的跨租户场景外，必须写 `AND t.tenant_id = #{tenantId}` |
+| 11 | `@Sql` 方法漏标 `@TenantScope` / 漏写租户条件 | 跨租户越权：漏标等同 `MANUAL`，SDK 不注入 | 逐方法显式标注：租户内用 `@TenantScope(AUTO)`（JOIN 记得放 `/*bone:tenant*/` 锚点）；全租户用 `@TenantScope(ALL)` 并登记授权（§3.5） |
 | 12 | 只看 `Repository` 接口文档猜方法名 | `findOne()` / `findByCriteriaWithPage` / `list(Class)` **都不存在** | 以 `Repository.java`、`FluentQuery.java` 为准 |
 | 13 | 两个 `SqlBuilder` 混 import | 编译过但行为错 | `query.SqlBuilder` 与 `query.dsl.QueryBuilder` 不同类 |
 | 14 | 改了 D1 注解不生效 | 元数据走 Caffeine 缓存 | 重启或失效缓存 |
@@ -192,7 +233,7 @@ metadata:
         type: MYSQL
         batch-size: 1000
       template:
-        load-priority: annotation-first   # annotation-first | classpath-first
+        load-priority: classpath-first    # annotation-first | classpath-first（默认 classpath-first：外置 .sql 优先、注解兜底）
         fallback-enabled: true
         base-path: classpath:/sql/
         yaml-path: classpath:/sql-templates/
