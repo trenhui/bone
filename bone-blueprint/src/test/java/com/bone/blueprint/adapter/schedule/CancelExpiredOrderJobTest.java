@@ -58,7 +58,7 @@ class CancelExpiredOrderJobTest {
 
   @Test
   void cancelsEachExpiredOrderCarryingItsOwnTenant() {
-    when(orderRepository.findCreatedExpiredBeforeAllTenants(any()))
+    when(orderRepository.findExpiredUnpaidOrdersAllTenants(any()))
         .thenReturn(List.of(headRow(0L, 1L), headRow(999L, 2L)));
 
     job.cancelExpiredOrders();
@@ -73,7 +73,7 @@ class CancelExpiredOrderJobTest {
 
   @Test
   void continuesWithRemainingRowsWhenOneFails() {
-    when(orderRepository.findCreatedExpiredBeforeAllTenants(any()))
+    when(orderRepository.findExpiredUnpaidOrdersAllTenants(any()))
         .thenReturn(List.of(headRow(0L, 1L), headRow(0L, 2L)));
     doThrow(BlueprintErrors.of(BlueprintErrorCodes.ORDER_STATUS_CONFLICT, "CANCELLED"))
         .when(orderApplicationService)
@@ -87,7 +87,7 @@ class CancelExpiredOrderJobTest {
 
   @Test
   void scansWithDefaultThirtyMinuteThreshold() {
-    when(orderRepository.findCreatedExpiredBeforeAllTenants(any())).thenReturn(List.of());
+    when(orderRepository.findExpiredUnpaidOrdersAllTenants(any())).thenReturn(List.of());
 
     job.cancelExpiredOrders();
 
@@ -100,7 +100,7 @@ class CancelExpiredOrderJobTest {
   void scansWithConfiguredThresholdWhenOverridden() {
     // 门限必须随配置位移：接错配置键时会命中默认 30，本断言即失败
     ReflectionTestUtils.setField(job, "orderTimeoutMinutes", 45L);
-    when(orderRepository.findCreatedExpiredBeforeAllTenants(any())).thenReturn(List.of());
+    when(orderRepository.findExpiredUnpaidOrdersAllTenants(any())).thenReturn(List.of());
 
     job.cancelExpiredOrders();
 
@@ -111,7 +111,7 @@ class CancelExpiredOrderJobTest {
 
   private Instant capturedScanBoundary() {
     ArgumentCaptor<Instant> captor = ArgumentCaptor.forClass(Instant.class);
-    verify(orderRepository).findCreatedExpiredBeforeAllTenants(captor.capture());
+    verify(orderRepository).findExpiredUnpaidOrdersAllTenants(captor.capture());
     return captor.getValue();
   }
 

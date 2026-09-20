@@ -82,7 +82,7 @@ domain/repository/
 └── OrderItemRepository.java           # 已登记的受控形态，不变
 resources/sql/com/bone/blueprint/domain/repository/OrderRepository/
 ├── findOrderWithItems.sql
-└── findCreatedExpiredBeforeAllTenants.sql
+└── findExpiredUnpaidOrdersAllTenantsBySql.sql
 ```
 
 ```java
@@ -92,7 +92,7 @@ public interface OrderRepository extends Repository<Order, Long> {
   List<OrderWithItemsProjection> findOrderWithItems(@Param("orderId") long orderId);
 
   @TenantScope(ALL)                                    // 定时 Job：全租户，已登记授权
-  List<OrderHeadProjection> findCreatedExpiredBeforeAllTenants(@Param("before") Timestamp before);
+  List<OrderHeadProjection> findExpiredUnpaidOrdersAllTenantsBySql(@Param("before") Timestamp before);
 
   default Page<OrderHeadProjection> pageOrders(OrderSearchQuery q) {   // β：域内分页
     long total = countOrders(q);
@@ -186,7 +186,7 @@ public interface OrderRepository extends Repository<Order, Long> {
 ### 10.1 实际落地形态
 
 - **SDK（P1）**：`bone-metadata-sdk` 新增 `@TenantScope`（四模式 `AUTO/MANUAL/ALL/BYPASS`）+ `TenantSqlRewriter`（锚点标记 `/*bone:tenant*/` 注入）+ `RepositoryFactoryBean` 接入（含 `static` 方法跳过防御）。`loadPriority` 默认 `classpath-first` 复用 SDK 既有配置，翻默认零影响。
-- **blueprint（P2）**：`OrderRepository` 合并写 + 本聚合读（`findOrderWithItems` `@Sql`+`MANUAL` 显式 `tenantId`、`findCreatedExpiredBeforeAllTenants` `@TenantScope(ALL)`、`findStatusById`/`findOrderPage` 走 Criteria）；投影迁 `domain/order/projection/`；外置 `.sql` 落地 `resources/sql/.../OrderRepository/`；删除 `OrderReadRepository` 与 `OrderQueryPort`，application 改直注域仓储。
+- **blueprint（P2）**：`OrderRepository` 合并写 + 本聚合读（`findOrderWithItems` `@Sql`+`MANUAL` 显式 `tenantId`、`findExpiredUnpaidOrdersAllTenants` `@TenantScope(ALL)`、`findStatusById`/`findOrderPage` 走 Criteria）；投影迁 `domain/order/projection/`；外置 `.sql` 落地 `resources/sql/.../OrderRepository/`；删除 `OrderReadRepository` 与 `OrderQueryPort`，application 改直注域仓储。
 - **验证**：`bone-blueprint` 编译通过；`ArchitectureTest` 27/27 通过（P0-4 白名单已放宽容纳域读模型，见 `BoneDddArchRules#returnsAggregateRootOrScalar`）；`spotless:check` 通过；`archunit_store` 冻结基线未变。DB 集成测试（真 `@Sql` 执行）需本地有库环境运行。
 
 ### 10.2 与原草案（§1.3.5）的差异 · 实现取舍
@@ -217,7 +217,7 @@ public interface OrderRepository extends Repository<Order, Long> {
 ### 10.4 P4 部分落地：支付读侧同模式折叠（2026-09-19）
 
 - **删除**：`application/query/port/PaymentQueryPort`、`application/query/projection/PaymentProjection`、`infrastructure/query/PaymentQueryAdapter`（前两个包随之清空；`BoneBlueprintApplication` 的 `@EnableSqlRepositories` 摘除 `infrastructure.query`）——该模块自此无 `*QueryPort`、无 `infrastructure/query`。
-- **并入**：`domain/repository/PaymentRepository` 新增两个 `default` 方法（Criteria 通道 + `disableTenantFilter()`，方法名后缀 `AllTenants`）：`findPayableExpiredBeforeAllTenants` / `findSuccessCreatedBeforeAllTenants`；行投影迁 `domain/payment/projection/PaymentProjection`（带 `from(Payment)` 工厂）；写侧加载通道 `findByIdInTenant` 不变。
+- **并入**：`domain/repository/PaymentRepository` 新增两个 `default` 方法（Criteria 通道 + `disableTenantFilter()`，方法名后缀 `AllTenants`）：`findExpiredOpenPaymentsAllTenants` / `findSettledPaymentsCreatedBeforeAllTenants`；行投影迁 `domain/payment/projection/PaymentProjection`（带 `from(Payment)` 工厂）；写侧加载通道 `findByIdInTenant` 不变。
 - **为何这里用 Criteria 而不是 `@Sql`**：两个方法只需过滤本表单列（`status` + `created_at`），Criteria 表达得了；`@Sql` 是第三类通道，只在 JOIN 扁平投影 / 聚合统计 / 全租户扫描「Criteria 表达不了」时才用——而全租户这一条恰好由 `disableTenantFilter()` 表达，因此不必动用外置 SQL。（对比 `OrderRepository.findOrderWithItems`：联表扁平投影，必须 `@Sql`。**同一个域仓储里按方法混用通道是正常形态**，见 E-4.2 / E-4.4。）
 - **调用方**：`CloseExpiredPaymentJob` / `OrderPaymentInconsistencyJob` 改为注入 `PaymentRepository`，与 `CancelExpiredOrderJob` 同形，受 §11 C3 的三道门禁约束。
 - **验证**：`mvn -o -pl bone-blueprint test` 207 tests 全绿（`ArchitectureTest` 规则数 28 → 29）；`archunit_store` 冻结基线未被改写（跑后 `diff -rq` 自证）；新增门禁用**负向探针**验活——临时在 `CancelExpiredOrderJob` 内调 `orderRepository` 的非 `*AllTenants` 方法，`schedule_only_calls_all_tenants_repository_methods` 如期报红，还原后复测复绿（避免"规则存在但从不触发"的假绿）。
@@ -232,7 +232,7 @@ public interface OrderRepository extends Repository<Order, Long> {
 |---|----|----------|----------|
 | C1 | **读侧能力最小化护栏消失**（代价） | 读方法并入域仓储后，任何拿到 `OrderRepository` 的调用方都同时握有 `save/update/delete`。`isReadSideRepositoryMethod` 只能在**方法**粒度区分读写，管不了「**谁能持有这个接口**」 | 改由方法命名（`find*` / `@Sql`）+ 代码评审承担。若日后需要恢复护栏，可采用**角色接口**（`OrderRepository extends OrderWriteOps, OrderReadOps`），应用层按需注入窄接口 |
 | C2 | **聚合内实体在事件订阅侧不可达**（代价） | SDK 无级联 → `items` 必须 `@Transient` → 重载不回填 → 订阅器拿不到明细，必须绕道读侧投影（`OrderItemInventoryExecutor` 经 `OrderRepository.findOrderWithItems` 取明细）。结果是**命令语境用查询模型取数**，CQRS 读写在此被反转 | 随 CORE-11（SDK 聚合级联）一并收敛。在此之前**不要**把 `items` 改回可回填——那会让上述骨架静默失效 |
-| C3 | **定时 Job 直连域仓储是被授权的受控形态**（例外） | §2 目标形态中 `findCreatedExpiredBeforeAllTenants` 标 `@TenantScope(ALL)` 并注明「定时 Job：全租户，已登记授权」；因此其调用方直接注入 `domain.repository`。P4 折叠支付读侧后该形态由 1 个类扩为 **3 个类**——`CancelExpiredOrderJob` / `CloseExpiredPaymentJob` / `OrderPaymentInconsistencyJob`，全部落在 `adapter/schedule`。**这不是可推广的范式** | ① `all_tenants_scan_only_by_schedule` 限定「只有 `adapter.schedule` 能调 `*AllTenants`」；② `bone-blueprint` 的 `ArchitectureTest#adapter_no_domain_repository_all_packages` 对 adapter 全包设限，**豁免范围是 `..adapter.schedule..` 整个包**（P4 折叠后由「按类名名单」放宽为「按包」：类名名单会随 Job 增减持续漏改，包级豁免把边界钉在"平台运维入口"这一语义上）；③ 同模块新增 `ArchitectureTest#schedule_only_calls_all_tenants_repository_methods`——**已获域仓储访问权**的 `adapter.schedule` 也只许调用 `*AllTenants` 结尾的方法（域仓储合并读写后自带 `save`/`update`/`delete`，按包授权约束不了调用面，须再按方法名收紧一层）；④ 已登记于 blueprint README「读侧归属规则 + 受控例外」 |
+| C3 | **定时 Job 直连域仓储是被授权的受控形态**（例外） | §2 目标形态中 `findExpiredUnpaidOrdersAllTenants` 标 `@TenantScope(ALL)` 并注明「定时 Job：全租户，已登记授权」；因此其调用方直接注入 `domain.repository`。P4 折叠支付读侧后该形态由 1 个类扩为 **3 个类**——`CancelExpiredOrderJob` / `CloseExpiredPaymentJob` / `OrderPaymentInconsistencyJob`，全部落在 `adapter/schedule`。**这不是可推广的范式** | ① `all_tenants_scan_only_by_schedule` 限定「只有 `adapter.schedule` 能调 `*AllTenants`」；② `bone-blueprint` 的 `ArchitectureTest#adapter_no_domain_repository_all_packages` 对 adapter 全包设限，**豁免范围是 `..adapter.schedule..` 整个包**（P4 折叠后由「按类名名单」放宽为「按包」：类名名单会随 Job 增减持续漏改，包级豁免把边界钉在"平台运维入口"这一语义上）；③ 同模块新增 `ArchitectureTest#schedule_only_calls_all_tenants_repository_methods`——**已获域仓储访问权**的 `adapter.schedule` 也只许调用 `*AllTenants` 结尾的方法（域仓储合并读写后自带 `save`/`update`/`delete`，按包授权约束不了调用面，须再按方法名收紧一层）；④ 已登记于 blueprint README「读侧归属规则 + 受控例外」 |
 
 ### 11.1 与 §10 实现记录的关系
 

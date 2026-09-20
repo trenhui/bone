@@ -139,7 +139,7 @@ if (tbl.isTenantScoped() && !ctx.tenantFilterDisabled) {
 - **多模块影响**：改共享 SDK，7 个后端模块全部受影响，需各模块回归（尤其后台/Outbox 链路，见规则 6/7）。
 - **后台链路需改造（具体影响点，已定位并大部分已处理）**：
   - **Outbox 中继（必改）**：`OrderOutboxRelayPortAdapter.relayPending()` / `IntegrationOutboxRelay.relayBatch()` 在后台线程 `findByCriteria(eq(status, PENDING))` 扫描 `OrderOutboxRecord` / `IntegrationOutboxRecord`（均含 `tenant_id` 列 → 判定为租户表）。中继本质跨租户全量扫描，已加 `disableTenantFilter()`（每条消息自带 tenantId 进入消费逻辑）。
-  - **定时任务扫描**：`CancelExpiredOrderJob` / `CloseExpiredPaymentJob` / `OrderPaymentInconsistencyJob` 走 `*AllTenants` 原生读端口（`findCreatedExpiredBeforeAllTenants` 等）+ 显式 `findStatusById(tenantId, id)`，不触发 SDK 注入；其中 `findStatusById` 经 caller `eq("tenant_id")` 走"caller-EQ 兜底"分支，无需改造。
+  - **定时任务扫描**：`CancelExpiredOrderJob` / `CloseExpiredPaymentJob` / `OrderPaymentInconsistencyJob` 走 `*AllTenants` 原生读端口（`findExpiredUnpaidOrdersAllTenants` 等）+ 显式 `findStatusById(tenantId, id)`，不触发 SDK 注入；其中 `findStatusById` 经 caller `eq("tenant_id")` 走"caller-EQ 兜底"分支，无需改造。
   - **消息消费幂等**：`ConsumedEventPortAdapter.tryClaim` 仅 `repository.insert`（唯一键抢占），tenant 来自消息体；INSERT 自动补值逻辑在上下文为空时回退实体值，安全，不触发异常。
   - **跨租户 admin 查询**：存量 `findByIdInTenant(tenantId, id)` / `eq("tenantId", X)` 在 HTTP 线程有 `TenantContext` → 以上下文为准（caller 被忽略 + WARN）；在后台线程无上下文 → 以 caller EQ 兜底（仍单租户）。无需逐一改调用点。
   - 其余后台查询若既无 `TenantContext` 又未显式 `eq("tenant_id")` 且非 `disableTenantFilter` → 触发 `MissingTenantContextException`（预期失败关闭，须补 `setTenantId` / `disableTenantFilter`）。

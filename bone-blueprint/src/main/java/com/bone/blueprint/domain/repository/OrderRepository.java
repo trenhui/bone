@@ -65,20 +65,33 @@ public interface OrderRepository extends Repository<Order, Long> {
   List<OrderWithItemsProjection> findOrderWithItems(
       @Param("tenantId") long tenantId, @Param("orderId") long orderId);
 
-  /** 超时订单扫描（全租户，定时任务专用，授权登记见 E-2）；{@code Instant → Timestamp} 适配在此完成。 */
-  default List<OrderHeadProjection> findCreatedExpiredBeforeAllTenants(Instant before) {
-    return findCreatedExpiredBeforeAllTenantsSql(Timestamp.from(before));
+  /**
+   * 超时未支付订单扫描：{@code status = CREATED}（尚未支付）且 {@code created_at} 早于 {@code before}（调用方传入的 「当前时间 −
+   * 超时窗口」）。
+   *
+   * <p><b>全租户</b>，定时任务专用（授权登记见 E-2）：定时线程无请求上下文，按「当前租户」扫描只会落到平台租户 0，其余租户的超时订单永不取消， 故必须显式全租户。
+   *
+   * <p>方法名后缀 {@code AllTenants} 是{@code all_tenants_scan_only_by_schedule} 的识别判据，不可改（见本包 {@code
+   * package-info}）。{@code Instant → Timestamp} 适配在此完成，调用方只面对领域友好的 {@code Instant}。
+   *
+   * <p>实际取数走 {@link #findExpiredUnpaidOrdersAllTenantsBySql}（外置 SQL 通道）。
+   */
+  default List<OrderHeadProjection> findExpiredUnpaidOrdersAllTenants(Instant before) {
+    return findExpiredUnpaidOrdersAllTenantsBySql(Timestamp.from(before));
   }
 
   /**
-   * 全租户扫描的模板 SQL 实现。
+   * {@link #findExpiredUnpaidOrdersAllTenants} 的模板 SQL 实现（{@code @TenantScope(ALL)} 关闭租户过滤）。
    *
-   * <p>ALL：定时线程无请求上下文，按"当前租户"扫描只会落到平台租户 0、其余租户超时订单永不取消，故必须显式全租户。
+   * <p><b>为何与上面那条并存</b>：JDBC 边界要的是 {@code Timestamp}，而 {@code Instant} 才是调用方（领域 / 适配器）的自然时间类型—— 把
+   * {@code Timestamp.from(...)} 收敛在唯一一处，调用方就不必知道持久层用什么时间类型。
    *
-   * <p>SQL 见 {@code resources/sql/…/OrderRepository/findCreatedExpiredBeforeAllTenantsSql.sql}。
+   * <p><b>{@code AllTenants} 仍留在方法名里</b>：门禁按后缀识别全租户入口，去掉后缀会让「谁在调这个跨租户读」失去防护。
+   *
+   * <p>SQL 见 {@code resources/sql/…/OrderRepository/findExpiredUnpaidOrdersAllTenantsBySql.sql}。
    */
   @TenantScope(TenantScopeMode.ALL)
-  List<OrderHeadProjection> findCreatedExpiredBeforeAllTenantsSql(
+  List<OrderHeadProjection> findExpiredUnpaidOrdersAllTenantsBySql(
       @Param("before") Timestamp before);
 
   /** 订单当前状态（对账用）；订单不存在或不可见时返回 {@code Optional.empty()}。 */

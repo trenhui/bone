@@ -156,9 +156,9 @@ curl -H "Authorization: Bearer $TOKEN" \
 
 | 异步入口 | 作用租户 | 降级/打洞说明 |
 |----------|----------|--------------|
-| `CancelExpiredOrderJob` | 平台租户 `0`（上下文缺失时） | 定时扫描超时订单；扫描结果以 `[全租户扫描]` 前缀留痕（`findCreatedExpiredBeforeAllTenants`） |
-| `CloseExpiredPaymentJob` | 平台租户 `0`（上下文缺失时） | 定时关闭超时支付单；扫描结果以 `[全租户扫描]` 前缀留痕（`findPayableExpiredBeforeAllTenants`） |
-| `OrderPaymentInconsistencyJob` | 全部租户（逐行取该行 `tenantId` 查订单状态） | 「钱货不一致」对账；以 `[全租户对账]` 前缀留痕（`findSuccessCreatedBeforeAllTenants`），检出的偏差同事务落 Outbox |
+| `CancelExpiredOrderJob` | 平台租户 `0`（上下文缺失时） | 定时扫描超时订单；扫描结果以 `[全租户扫描]` 前缀留痕（`findExpiredUnpaidOrdersAllTenants`） |
+| `CloseExpiredPaymentJob` | 平台租户 `0`（上下文缺失时） | 定时关闭超时支付单；扫描结果以 `[全租户扫描]` 前缀留痕（`findExpiredOpenPaymentsAllTenants`） |
+| `OrderPaymentInconsistencyJob` | 全部租户（逐行取该行 `tenantId` 查订单状态） | 「钱货不一致」对账；以 `[全租户对账]` 前缀留痕（`findSettledPaymentsCreatedBeforeAllTenants`），检出的偏差同事务落 Outbox |
 | `OrderOutboxRelayJob` | 随事务内租户（Outbox 记录自带 `tenant_id`） | 逐条中继按记录租户发送，不依赖线程上下文 |
 
 上述三个扫描任务的**周期与门限均可配置**（`bone.blueprint.schedule.*`）：cron 由 `@Scheduled` 占位符直读，超时阈值 /

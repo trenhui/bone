@@ -134,7 +134,7 @@ public interface OrderRepository extends Repository<Order, Long> {
        FROM t_order t
        WHERE t.deleted = 0 AND t.status = 'CREATED' AND t.created_at < #{before}
        """)
-  List<OrderHeadProjection> findCreatedExpiredBeforeAllTenants(@Param("before") Instant before);
+  List<OrderHeadProjection> findExpiredUnpaidOrdersAllTenantsBySql(@Param("before") Timestamp before);
 }
 ```
 

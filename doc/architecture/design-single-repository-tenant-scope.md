@@ -118,7 +118,7 @@ public interface OrderRepository extends Repository<Order, Long> {
 
   // —— 读：全租户扫描 Job（定时线程无上下文）——
   @TenantScope(ALL)                                   // 不注入、不抛
-  List<OrderHeadProjection> findCreatedExpiredBeforeAllTenants(@Param("before") Timestamp before);
+  List<OrderHeadProjection> findExpiredUnpaidOrdersAllTenantsBySql(@Param("before") Timestamp before);
 
   // —— 读：Criteria 默认方法（自动租户，无需 @TenantScope，走既有注入器）——
   default Optional<OrderStatus> findStatusById(long tenantId, long orderId) {

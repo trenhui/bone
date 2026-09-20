@@ -66,7 +66,7 @@ class OrderPaymentInconsistencyJobTest {
 
   @Test
   void looksUpOrderStatusByIdPerTenantWithoutJoin() {
-    when(paymentRepository.findSuccessCreatedBeforeAllTenants(any()))
+    when(paymentRepository.findSettledPaymentsCreatedBeforeAllTenants(any()))
         .thenReturn(List.of(paymentRow(777L, 11L, 1L)));
     when(orderApplicationService.findOrderStatuses(any()))
         .thenReturn(Map.of(1L, com.bone.blueprint.domain.order.valueobject.OrderStatus.PAID));
@@ -79,7 +79,7 @@ class OrderPaymentInconsistencyJobTest {
 
   @Test
   void treatsMissingOrderAsInconsistent() {
-    when(paymentRepository.findSuccessCreatedBeforeAllTenants(any()))
+    when(paymentRepository.findSettledPaymentsCreatedBeforeAllTenants(any()))
         .thenReturn(List.of(paymentRow(0L, 11L, 2L)));
     when(orderApplicationService.findOrderStatuses(any())).thenReturn(Map.of());
 
@@ -97,7 +97,7 @@ class OrderPaymentInconsistencyJobTest {
    */
   @Test
   void appendsInconsistentEventInsideRowTenantContext() {
-    when(paymentRepository.findSuccessCreatedBeforeAllTenants(any()))
+    when(paymentRepository.findSettledPaymentsCreatedBeforeAllTenants(any()))
         .thenReturn(List.of(paymentRow(777L, 11L, 1L)));
     when(orderApplicationService.findOrderStatuses(any())).thenReturn(Map.of());
     AtomicReference<String> tenantDuringAppend = new AtomicReference<>();
@@ -118,7 +118,7 @@ class OrderPaymentInconsistencyJobTest {
   /** 落库失败（异常穿出扫描方法）时也必须恢复上下文，否则定时线程会带着残留租户继续下一行。 */
   @Test
   void contextIsRestoredWhenAppendFails() {
-    when(paymentRepository.findSuccessCreatedBeforeAllTenants(any()))
+    when(paymentRepository.findSettledPaymentsCreatedBeforeAllTenants(any()))
         .thenReturn(List.of(paymentRow(777L, 11L, 1L)));
     when(orderApplicationService.findOrderStatuses(any())).thenReturn(Map.of());
     doThrow(new IllegalStateException("db down"))
@@ -132,11 +132,11 @@ class OrderPaymentInconsistencyJobTest {
 
   @Test
   void handlesEmptyScanResult() {
-    when(paymentRepository.findSuccessCreatedBeforeAllTenants(any())).thenReturn(List.of());
+    when(paymentRepository.findSettledPaymentsCreatedBeforeAllTenants(any())).thenReturn(List.of());
 
     job.checkPaidButOrderNotConfirmed();
 
-    verify(paymentRepository).findSuccessCreatedBeforeAllTenants(any());
+    verify(paymentRepository).findSettledPaymentsCreatedBeforeAllTenants(any());
   }
 
   private static PaymentProjection paymentRow(Long tenantId, Long paymentId, Long orderId) {

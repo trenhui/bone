@@ -20,7 +20,7 @@ import org.springframework.stereotype.Component;
  * OrderApplicationService} 执行）。
  *
  * <p><b>本类为何直连域仓储（本模块唯一的受控例外）</b>：扫描入口是全租户方法 {@link
- * OrderRepository#findCreatedExpiredBeforeAllTenants}（{@code @TenantScope(ALL)}），它是 ADR-0030 显式授权的
+ * OrderRepository#findExpiredUnpaidOrdersAllTenants}（{@code @TenantScope(ALL)}），它是 ADR-0030 显式授权的
  * <strong>平台运维旁路</strong>——定时线程无请求上下文，按「当前租户」扫描会退化为平台租户 0。该方法按 ADR-0030 §2 目标形态即<strong>由定时 Job
  * 调用</strong>，并受 {@code all_tenants_scan_only_by_schedule} 与本模块 {@code ArchitectureTest}
  * 双重约束（仅本类被豁免）；<strong>其余入站适配器（web / rpc / messaging）不得复制此形态</strong>。
@@ -29,7 +29,7 @@ import org.springframework.stereotype.Component;
  *
  * <p><b>全租户扫描（E-2）</b>：定时任务线程无请求上下文，此前用 {@code TenantPort.currentTenantId()} 取到的只会是
  * <strong>降级后的平台租户 0</strong>——结果是除平台租户外的超时订单永不取消，而日志仍显示"扫描完成"。 现改为全租户读端口 {@code
- * findCreatedExpiredBeforeAllTenants}，并把扫描行的 {@code tenantId} <strong>显式携带</strong>进命令
+ * findExpiredUnpaidOrdersAllTenants}，并把扫描行的 {@code tenantId} <strong>显式携带</strong>进命令
  * （异步分支必须显式传租户，不能依赖线程上下文）。
  */
 @Slf4j
@@ -53,7 +53,7 @@ public class CancelExpiredOrderJob {
   @Scheduled(cron = "${bone.blueprint.schedule.cancel-expired-orders-cron:0 0/5 * * * ?}")
   public void cancelExpiredOrders() {
     Instant before = Instant.now().minusSeconds(orderTimeoutMinutes * 60);
-    List<OrderHeadProjection> expired = orderRepository.findCreatedExpiredBeforeAllTenants(before);
+    List<OrderHeadProjection> expired = orderRepository.findExpiredUnpaidOrdersAllTenants(before);
     int cancelled = 0;
     int failed = 0;
     for (OrderHeadProjection row : expired) {

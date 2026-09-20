@@ -21,8 +21,8 @@ import java.util.Optional;
  *
  * <p><b>通道选择：Criteria 而非外置 {@code .sql}</b>——这两条扫描只过滤本表单列，Criteria 已能表达，且租户逃生舱（{@code
  * disableTenantFilter()}）与软删（{@code deleted = 0}）由 SDK 统一处理；写外置 SQL 反而要手写这两件事，多一处漏写的可能。对照 {@link
- * OrderRepository#findCreatedExpiredBeforeAllTenants}：那里同样全租户，但只取 4 列投影，走
- * {@code @Sql}。两条通道并存不是不一致，是按 「Criteria 表达得了就不写 SQL」选的（ADR-0030 §0.3）。
+ * OrderRepository#findExpiredUnpaidOrdersAllTenants}：那里同样全租户，但只取 4 列投影，走 {@code @TenantScope(ALL)}
+ * 的外置 {@code .sql}。两条通道并存不是不一致，是按 「Criteria 表达得了就不写 SQL」选的（ADR-0030 §0.3）。
  *
  * <p><b>方法名后缀 {@code AllTenants} 是门禁判据，不可改</b>：{@code all_tenants_scan_only_by_schedule} 按「方法名以
  * {@code AllTenants} 结尾」识别全租户入口，并把调用方限制在 {@code adapter.schedule}。后缀去掉（例如改成 {@code
@@ -46,12 +46,13 @@ public interface PaymentRepository extends Repository<Payment, Long> {
   }
 
   /**
-   * 指定时间之前仍处于 PENDING / PAYING 的支付单（<b>全租户</b>，供超时关闭定时任务扫描）。
+   * 超时未关闭的支付单（{@code status ∈ {PENDING, PAYING}} 且 {@code created_at} 早于 {@code
+   * before}，<b>全租户</b>），供超时关闭定时任务扫描。
    *
    * <p>{@code disableTenantFilter()} 是 ADR-0029 的显式逃生舱（会打 WARN，可在审计侧检索）；软删仍由 SDK 自动追加。它与 SQL 通道的
    * {@code @TenantScope(ALL)} 角色相同，差别只在通道。
    */
-  default List<PaymentProjection> findPayableExpiredBeforeAllTenants(Instant before) {
+  default List<PaymentProjection> findExpiredOpenPaymentsAllTenants(Instant before) {
     Criteria<Payment> criteria =
         Criteria.<Payment>create()
             .disableTenantFilter()
@@ -61,11 +62,11 @@ public interface PaymentRepository extends Repository<Payment, Long> {
   }
 
   /**
-   * 指定时间之前已 SUCCESS 的支付单（<b>全租户</b>，供「钱货不一致」对账扫描）。
+   * 早于 {@code before} 已 SUCCESS 的支付单（<b>全租户</b>），供「钱货不一致」对账扫描。
    *
    * <p>对账用途：支付单已成功但订单仍停在 CREATED，说明支付成功事件的下游链路（订单确认）未执行成功，必须留痕告警——只打 info 日志会让这类资金异常永久沉没。
    */
-  default List<PaymentProjection> findSuccessCreatedBeforeAllTenants(Instant before) {
+  default List<PaymentProjection> findSettledPaymentsCreatedBeforeAllTenants(Instant before) {
     Criteria<Payment> criteria =
         Criteria.<Payment>create()
             .disableTenantFilter()
