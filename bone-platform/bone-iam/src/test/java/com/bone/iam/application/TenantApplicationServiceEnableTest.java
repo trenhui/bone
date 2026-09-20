@@ -5,7 +5,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.bone.core.exception.NotFoundException;
+import com.bone.core.exception.BizException;
+import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.domain.gateway.TenantDeletionGateway;
 import com.bone.iam.domain.repository.TenantRepository;
 import com.bone.iam.domain.tenant.Tenant;
@@ -40,6 +41,8 @@ class TenantApplicationServiceEnableTest {
     when(tenantRepository.findById(999L)).thenReturn(null);
 
     assertThatThrownBy(() -> tenantApplicationService.enable(999L))
-        .isInstanceOf(NotFoundException.class);
+        .isInstanceOf(BizException.class)
+        .hasFieldOrPropertyWithValue("code", 404)
+        .hasMessageContaining(IamErrorCodes.TENANT_NOT_FOUND);
   }
 }

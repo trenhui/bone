@@ -1,7 +1,7 @@
 package com.bone.iam.application.service;
 
-import com.bone.core.exception.BizException;
 import com.bone.iam.common.IamErrorCodes;
+import com.bone.iam.common.IamErrors;
 import java.util.Locale;
 import java.util.Set;
 import org.springframework.stereotype.Service;
@@ -21,10 +21,10 @@ public class PasswordPolicyValidator {
   /** 创建/重置密码时强制校验；不通过则抛出业务异常。 */
   public void assertAcceptable(String rawPassword) {
     if (rawPassword == null || rawPassword.length() < MIN_LENGTH) {
-      throw BizException.of(400, IamErrorCodes.WEAK_PASSWORD + ": 密码长度至少 " + MIN_LENGTH + " 位");
+      throw IamErrors.of(IamErrorCodes.WEAK_PASSWORD, "密码长度至少 " + MIN_LENGTH + " 位");
     }
     if (isWeak(rawPassword)) {
-      throw BizException.of(400, IamErrorCodes.WEAK_PASSWORD + ": 密码过于简单，请使用更复杂的密码");
+      throw IamErrors.of(IamErrorCodes.WEAK_PASSWORD, "密码过于简单，请使用更复杂的密码");
     }
   }
 

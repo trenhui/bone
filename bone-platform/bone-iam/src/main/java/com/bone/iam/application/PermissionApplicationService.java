@@ -1,11 +1,12 @@
 package com.bone.iam.application;
 
-import com.bone.core.exception.NotFoundException;
 import com.bone.core.model.PageResult;
 import com.bone.iam.application.command.cmd.CreatePermissionCommand;
 import com.bone.iam.application.command.cmd.UpdatePermissionCommand;
 import com.bone.iam.application.query.dto.PermissionDTO;
 import com.bone.iam.application.query.qry.PermissionPageQuery;
+import com.bone.iam.common.IamErrorCodes;
+import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.permission.Permission;
 import com.bone.iam.domain.permission.vo.PermissionType;
 import com.bone.iam.domain.repository.PermissionRepository;
@@ -69,7 +70,7 @@ public class PermissionApplicationService {
   public void update(UpdatePermissionCommand cmd) {
     Permission permission = permissionRepository.findById(cmd.getId());
     if (permission == null) {
-      throw new NotFoundException("权限不存在");
+      throw IamErrors.of(IamErrorCodes.PERMISSION_NOT_FOUND, "权限不存在");
     }
     permission.update(
         cmd.getName(),
@@ -117,7 +118,7 @@ public class PermissionApplicationService {
     Permission permission =
         permissionRepository
             .findPermissionById(id)
-            .orElseThrow(() -> NotFoundException.of("权限不存在"));
+            .orElseThrow(() -> IamErrors.of(IamErrorCodes.PERMISSION_NOT_FOUND, "权限不存在"));
     PermissionDTO dto = new PermissionDTO();
     dto.setId(permission.getId());
     dto.setCode(permission.getCode());

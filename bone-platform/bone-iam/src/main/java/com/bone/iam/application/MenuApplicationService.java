@@ -1,6 +1,5 @@
 package com.bone.iam.application;
 
-import com.bone.core.exception.BizException;
 import com.bone.core.security.auth.CurrentAccountResolver;
 import com.bone.iam.application.command.cmd.CreateMenuCommand;
 import com.bone.iam.application.command.cmd.DeleteMenuCommand;
@@ -10,6 +9,7 @@ import com.bone.iam.application.query.dto.MenuTreeDTO;
 import com.bone.iam.application.query.qry.MenuCurrentQuery;
 import com.bone.iam.application.query.qry.MenuTreeQuery;
 import com.bone.iam.common.IamErrorCodes;
+import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.gateway.TenantProvider;
 import com.bone.iam.domain.menu.Menu;
 import com.bone.iam.domain.repository.MenuRepository;
@@ -118,8 +118,7 @@ public class MenuApplicationService {
     Set<String> scopes =
         CurrentAccountResolver.currentPrincipal()
             .map(p -> new HashSet<>(p.scopes()))
-            .orElseThrow(
-                () -> BizException.of(401, IamErrorCodes.PROFILE_OWNERSHIP_DENIED + ": 未登录"));
+            .orElseThrow(() -> IamErrors.of(IamErrorCodes.PROFILE_OWNERSHIP_DENIED, "未登录"));
 
     List<Menu> visible =
         menuRepository.listAll().stream()

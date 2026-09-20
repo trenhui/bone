@@ -1,9 +1,9 @@
 package com.bone.iam.infrastructure.gateway;
 
-import com.bone.core.exception.BizException;
 import com.bone.core.security.jwt.JwtConfig;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.iam.common.IamErrorCodes;
+import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.gateway.RefreshTokenIssuer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -85,7 +85,7 @@ public class RefreshTokenIssuerGatewayAdapter implements RefreshTokenIssuer {
       if (replacedBy != null && !replacedBy.isBlank()) {
         Long accountId = ((Number) row.get("accountId")).longValue();
         revokeAllActiveForAccount(accountId);
-        throw BizException.of(401, IamErrorCodes.REFRESH_TOKEN_REUSE + ": 检测到刷新令牌复用，已吊销该账号全部会话");
+        throw IamErrors.of(IamErrorCodes.REFRESH_TOKEN_REUSE, "检测到刷新令牌复用，已吊销该账号全部会话");
       }
       throw new IllegalArgumentException("刷新令牌已撤销");
     }

@@ -41,7 +41,7 @@
 | 前缀 | 域 | 服务 | 示例 |
 |------|-----|------|------|
 | `COMMON_` | 平台公共 | — | `COMMON_VALIDATION_FAILED` |
-| `IAM_` | 身份 | bone-iam | `IAM_TOKEN_EXPIRED` |
+| `IAM_` | 身份 | bone-iam | `IAM_LOGIN_FAILED` |
 | `META_` | 元数据 | metadata-server | `META_ENTITY_PUBLISHED` |
 | `MD_` | 主数据 | bone-masterdata | `MD_RECORD_DUPLICATE` |
 | `EXT_` | 扩展 | bone-extension-studio | `EXT_PLUGIN_NOT_DEPLOYED` |
@@ -132,15 +132,47 @@ throw new BizException(ExtensionErrorCode.PLUGIN_NOT_FOUND, pluginId);
 
 | errorCode | HTTP | 说明 |
 |-----------|------|------|
-| `IAM_TOKEN_EXPIRED` | 401 | 访问令牌过期 |
-| `IAM_TOKEN_INVALID` | 401 | 令牌无效 |
-| `IAM_CREDENTIAL_INVALID` | 401 | 用户名或密码错误 |
-| `IAM_USER_NOT_FOUND` | 404 | 用户不存在 |
-| `IAM_USER_DISABLED` | 403 | 用户已禁用 |
-| `IAM_ROLE_NOT_FOUND` | 404 | 角色不存在 |
-| `IAM_PERMISSION_DENIED` | 403 | 缺少权限 |
-| `IAM_SSO_NOT_CONFIGURED` | 501 | SSO/IdP 未配置或未实现 |
-| `IAM_MFA_NOT_AVAILABLE` | 501 | MFA 未启用（社区版） |
+| `IAM_LOGIN_FAILED` | 401 | 用户名或密码错误（不区分账号是否存在，避免账号枚举） |
+| `IAM_ACCOUNT_LOCKED` | 423 | 连续失败次数超限导致账号锁定 |
+| `IAM_ACCOUNT_DISABLED` | 403 | 账号被管理员禁用 |
+| `IAM_REFRESH_TOKEN_REUSE` | 401 | 刷新令牌被复用（疑似泄露），已吊销该账号全部会话 |
+| `IAM_REFRESH_TOKEN_REQUIRED` | 400 | 刷新令牌未提供 |
+| `IAM_REFRESH_TOKEN_INVALID` | 401 | 刷新令牌非法 / 过期 / 信息缺失 |
+| `IAM_REFRESH_TOKEN_ROTATE_FAILED` | 500 | 刷新令牌轮换未产出新令牌（服务端契约破坏） |
+| `IAM_WEAK_PASSWORD` | 400 | 新密码不满足强度策略 |
+| `IAM_PASSWORD_MUST_CHANGE` | 403 | 密码过期或命中弱口令策略，需强制改密 |
+| `IAM_OLD_PASSWORD_MISMATCH` | 401 | 自助改密时旧密码校验失败 |
+| `IAM_ACCOUNT_NOT_FOUND` | 404 | 账号不存在（含跨租户不可见） |
+| `IAM_USERNAME_CONFLICT` | 409 | 本租户内用户名已存在（唯一键 `uk_iam_account_username`） |
+| `IAM_ACCOUNT_STATUS_CONFLICT` | 409 | 账号状态迁移不合法（如对已禁用账号重复禁用） |
+| `IAM_ROLE_NOT_FOUND` | 404 | 角色不存在（含跨租户不可见） |
+| `IAM_PERMISSION_NOT_FOUND` | 404 | 权限不存在（含跨租户不可见） |
+| `IAM_SESSION_NOT_FOUND` | 404 | 会话不存在（含跨租户不可见，与「参数缺失」分属不同语义） |
+| `IAM_SESSION_ID_REQUIRED` | 400 | 会话 id 未提供 |
+| `IAM_PROFILE_OWNERSHIP_DENIED` | 401 | 请求主体与目标账号不一致（越权访问他人 profile） |
+| `IAM_TENANT_ACCESS_DENIED` | 403 | 跨租户访问被拒绝（防 IDOR） |
+| `IAM_TENANT_DELETE_FORBIDDEN` | 400 | 平台租户（id = 0）不允许删除 |
+| `IAM_TENANT_NOT_FOUND` | 404 | 租户不存在 |
+| `IAM_TENANT_CODE_CONFLICT` | 409 | 租户编码已存在 |
+| `IAM_TENANT_QUOTA_EXCEEDED` | 400 | 租户配额（账号数 / 角色数）已达上限 |
+| `IAM_APPLICATION_NOT_FOUND` | 404 | 应用不存在（含跨租户不可见） |
+| `IAM_MODULE_NOT_FOUND` | 404 | 模块不存在（含跨租户不可见） |
+| `IAM_APPLICATION_ID_REQUIRED` | 400 | 授予应用权限时未提供应用 id |
+| `IAM_USER_ID_REQUIRED` | 400 | 授予应用权限时未提供被授权用户 id |
+| `IAM_APP_ROLE_INVALID` | 400 | 传入的应用内角色不是合法取值 |
+| `IAM_SSO_NOT_CONFIGURED` | 501 | SSO / IdP 未配置或回调未实现 |
+| `IAM_MFA_NOT_AVAILABLE` | 501 | MFA 未在当前版本 / IdP 中启用 |
+
+> **落地范围**：码常量在 `bone-iam/common/IamErrorCodes`（只承载稳定码字符串与语义）；
+> **「码 → HTTP 状态」的唯一真源是 `bone-iam/common/IamErrors` 的 `DEFAULT_HTTP_STATUS` 表**（与本表逐行对应），
+> 抛出方走 `IamErrors.of(码, 上下文)`（或 `orElseThrow` 用的 `IamErrors.supplier(码, 上下文)`），
+> **不在抛出点手写状态数字**。新增码若忘记登记状态，`IamErrors` 类加载即抛 `IllegalStateException`（fail fast）。
+>
+> **回填说明**：本节曾长期停留在一份「理想码清单」（`IAM_TOKEN_EXPIRED`、`IAM_CREDENTIAL_INVALID`、
+> `IAM_USER_NOT_FOUND`、`IAM_PERMISSION_DENIED` 等），与代码里实际抛出的码**双向不一致**：清单里的码无人实现、
+> 实现的码无人登记。2026-09-19 依据 `IamErrorCodes` 实际内容整体重写，并消除抛出点的无码异常
+> （`new BizException(NOT_FOUND, "应用不存在")` 与 `NotFoundException.of(...)` 一并收口到 `IamErrors`）。
+
 
 ### META_
 
@@ -247,7 +279,7 @@ throw new BizException(ExtensionErrorCode.PLUGIN_NOT_FOUND, pluginId);
 |------|------|----------------|
 | 参数缺失/格式错误 | 400 | `COMMON_VALIDATION_FAILED` + `errors[]` |
 | 未登录 | 401 | `COMMON_UNAUTHORIZED` / `IAM_*` |
-| 无权限 | 403 | `COMMON_FORBIDDEN` / `IAM_PERMISSION_DENIED` |
+| 无权限 | 403 | `COMMON_FORBIDDEN`（平台统一）/ 域内语义码 |
 | 资源不存在 | 404 | `{DOMAIN}_*_NOT_FOUND` |
 | 状态不允许 | 409 | `{DOMAIN}_*_CONFLICT` / 域内语义码 |
 | 乐观锁冲突 | 409 | `COMMON_CONFLICT` |
@@ -263,3 +295,4 @@ throw new BizException(ExtensionErrorCode.PLUGIN_NOT_FOUND, pluginId);
 | 日期 | 说明 |
 |------|------|
 | 2026-05-17 | 从 Bone-API-规范 §4 独立；台账与流程为本文真源 |
+| 2026-09-19 | 重写 §6 `IAM_` 台账（原清单为未落地的理想码，与代码双向不一致）；同步 §3.1 示例与 §7 速查中的失效码 |

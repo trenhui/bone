@@ -1,11 +1,12 @@
 package com.bone.iam.application;
 
-import com.bone.core.exception.BizException;
 import com.bone.core.model.PageResult;
 import com.bone.iam.application.command.cmd.CreateModuleCommand;
 import com.bone.iam.application.command.cmd.UpdateModuleCommand;
 import com.bone.iam.application.query.dto.ModuleDTO;
 import com.bone.iam.application.query.qry.ModuleListQuery;
+import com.bone.iam.common.IamErrorCodes;
+import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.app.BoneModule;
 import com.bone.iam.domain.repository.BoneModuleRepository;
 import java.util.List;
@@ -28,8 +29,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class ModuleApplicationService {
 
-  private static final int NOT_FOUND = 404;
-
   private final BoneModuleRepository boneModuleRepository;
 
   @Transactional
@@ -43,7 +42,7 @@ public class ModuleApplicationService {
   public void updateModule(UpdateModuleCommand cmd) {
     BoneModule mod = boneModuleRepository.findById(cmd.getId());
     if (mod == null) {
-      throw new BizException(NOT_FOUND, "模块不存在");
+      throw IamErrors.of(IamErrorCodes.MODULE_NOT_FOUND, "模块不存在");
     }
     mod.update(cmd.getName(), cmd.getDescription(), cmd.getStatus());
     boneModuleRepository.save(mod);
@@ -72,7 +71,7 @@ public class ModuleApplicationService {
   public ModuleDTO moduleDetail(Long id) {
     BoneModule entity = boneModuleRepository.findModuleById(id);
     if (entity == null) {
-      throw new BizException(NOT_FOUND, "模块不存在");
+      throw IamErrors.of(IamErrorCodes.MODULE_NOT_FOUND, "模块不存在");
     }
     return toDto(entity);
   }

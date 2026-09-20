@@ -1,6 +1,5 @@
 package com.bone.iam.application;
 
-import com.bone.core.exception.NotFoundException;
 import com.bone.core.model.PageResult;
 import com.bone.iam.application.command.cmd.CreateRoleCommand;
 import com.bone.iam.application.command.cmd.UpdateRoleCommand;
@@ -9,6 +8,8 @@ import com.bone.iam.application.query.dto.RoleDTO;
 import com.bone.iam.application.query.dto.RoleDetailDTO;
 import com.bone.iam.application.query.qry.RolePageQuery;
 import com.bone.iam.application.service.TenantQuotaEnforcer;
+import com.bone.iam.common.IamErrorCodes;
+import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.gateway.TenantProvider;
 import com.bone.iam.domain.permission.Permission;
 import com.bone.iam.domain.repository.RolePermissionRepository;
@@ -59,7 +60,7 @@ public class RoleApplicationService {
   public void update(UpdateRoleCommand cmd) {
     Role role = roleRepository.findById(cmd.getId());
     if (role == null) {
-      throw new NotFoundException("角色不存在");
+      throw IamErrors.of(IamErrorCodes.ROLE_NOT_FOUND, "角色不存在");
     }
     if (cmd.getDescription() != null) {
       role.update(cmd.getDescription());

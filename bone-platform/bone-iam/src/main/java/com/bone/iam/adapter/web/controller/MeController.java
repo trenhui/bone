@@ -1,6 +1,5 @@
 package com.bone.iam.adapter.web.controller;
 
-import com.bone.core.exception.BizException;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.security.jwt.JwtPrincipal;
 import com.bone.core.web.PlatformApiPaths;
@@ -12,6 +11,7 @@ import com.bone.iam.application.command.cmd.ChangeMyPasswordCommand;
 import com.bone.iam.application.command.cmd.UpdateMyProfileCommand;
 import com.bone.iam.application.port.out.CurrentPrincipalPort;
 import com.bone.iam.common.IamErrorCodes;
+import com.bone.iam.common.IamErrors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -64,7 +64,7 @@ public class MeController {
                   resp.setPasswordUpdatedAt(account.getPasswordUpdatedAt());
                   return resp;
                 })
-            .orElseThrow(() -> BizException.of(404, IamErrorCodes.PROFILE_OWNERSHIP_DENIED)));
+            .orElseThrow(() -> IamErrors.of(IamErrorCodes.ACCOUNT_NOT_FOUND)));
   }
 
   @PutMapping
@@ -93,14 +93,14 @@ public class MeController {
   private JwtPrincipal requirePrincipal() {
     return currentPrincipalPort
         .currentPrincipal()
-        .orElseThrow(() -> BizException.of(401, IamErrorCodes.PROFILE_OWNERSHIP_DENIED + ": 未登录"));
+        .orElseThrow(() -> IamErrors.of(IamErrorCodes.PROFILE_OWNERSHIP_DENIED, "未登录"));
   }
 
   private static Long parseAccountId(JwtPrincipal principal) {
     try {
       return Long.parseLong(principal.userId());
     } catch (NumberFormatException e) {
-      throw BizException.of(401, IamErrorCodes.PROFILE_OWNERSHIP_DENIED + ": 无效的会话");
+      throw IamErrors.of(IamErrorCodes.PROFILE_OWNERSHIP_DENIED, "无效的会话");
     }
   }
 }

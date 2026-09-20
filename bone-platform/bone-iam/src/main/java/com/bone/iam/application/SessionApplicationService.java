@@ -1,7 +1,7 @@
 package com.bone.iam.application;
 
-import com.bone.core.exception.BizException;
 import com.bone.iam.common.IamErrorCodes;
+import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.gateway.AccountAuthorityCache;
 import com.bone.iam.domain.gateway.RefreshTokenSessionGateway;
 import com.bone.iam.domain.gateway.TenantProvider;
@@ -32,11 +32,10 @@ public class SessionApplicationService {
   @Transactional
   public void revokeOne(Long sessionId) {
     if (sessionId == null) {
-      throw BizException.of(400, IamErrorCodes.SESSION_NOT_FOUND);
+      throw IamErrors.of(IamErrorCodes.SESSION_ID_REQUIRED, "会话ID不能为空");
     }
     Optional<Session> session = sessionStore.findById(sessionId);
-    Session target =
-        session.orElseThrow(() -> BizException.of(404, IamErrorCodes.SESSION_NOT_FOUND));
+    Session target = session.orElseThrow(() -> IamErrors.of(IamErrorCodes.SESSION_NOT_FOUND));
     assertSameTenant(target.getTenantId());
     sessionStore.revoke(sessionId);
     accountAuthorityCache.evictAccount(target.getAccountId());
@@ -73,7 +72,7 @@ public class SessionApplicationService {
       return;
     }
     if (sessionTenantId == null || !sessionTenantId.equals(current)) {
-      throw BizException.of(403, IamErrorCodes.TENANT_ACCESS_DENIED + ": 跨租户会话操作被拒绝");
+      throw IamErrors.of(IamErrorCodes.TENANT_ACCESS_DENIED, "跨租户会话操作被拒绝");
     }
   }
 }

@@ -1,7 +1,5 @@
 package com.bone.iam.application;
 
-import com.bone.core.exception.BizException;
-import com.bone.core.exception.NotFoundException;
 import com.bone.core.model.PageResult;
 import com.bone.iam.application.command.cmd.AssignPermissionCommand;
 import com.bone.iam.application.command.cmd.ChangeMyPasswordCommand;
@@ -20,6 +18,7 @@ import com.bone.iam.application.service.PasswordPolicyValidator;
 import com.bone.iam.application.service.RolePermissionBindingService;
 import com.bone.iam.application.service.TenantQuotaEnforcer;
 import com.bone.iam.common.IamErrorCodes;
+import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.account.Account;
 import com.bone.iam.domain.account.vo.AccountStatus;
 import com.bone.iam.domain.account.vo.Email;
@@ -72,7 +71,7 @@ public class AccountApplicationService {
     // 跨租户允许重名。这里不能用 AuthService#findByUsername —— 那是登录专用的跨租户查找，
     // 用它查重会把「本租户唯一」错误升级为「全平台唯一」，导致不同租户同名被误判 409。）
     if (authService.findByUsernameInTenant(username.value()).isPresent()) {
-      throw new BizException(409, "用户名已存在: " + cmd.getUsername());
+      throw IamErrors.of(IamErrorCodes.USERNAME_CONFLICT, "用户名已存在: " + cmd.getUsername());
     }
 
     String passwordHash = passwordEncoder.encode(cmd.getPassword());
@@ -91,7 +90,7 @@ public class AccountApplicationService {
   public void update(UpdateAccountCommand cmd) {
     Account account = accountRepository.findById(cmd.getId());
     if (account == null) {
-      throw new RuntimeException("账户不存在");
+      throw IamErrors.of(IamErrorCodes.ACCOUNT_NOT_FOUND, "账户不存在");
     }
     account.updateProfile(cmd.getRealName(), cmd.getPhone(), null);
     if (cmd.getStatus() != null) {
@@ -120,12 +119,12 @@ public class AccountApplicationService {
   public void enable(EnableAccountCommand cmd) {
     Account account = accountRepository.findById(cmd.getId());
     if (account == null) {
-      throw NotFoundException.of("账户不存在");
+      throw IamErrors.of(IamErrorCodes.ACCOUNT_NOT_FOUND, "账户不存在");
     }
     try {
       account.enable();
     } catch (IllegalStateException ex) {
-      throw BizException.of(409, ex.getMessage());
+      throw IamErrors.of(IamErrorCodes.ACCOUNT_STATUS_CONFLICT, ex.getMessage());
     }
     accountRepository.update(account);
   }
@@ -134,12 +133,12 @@ public class AccountApplicationService {
   public void disable(DisableAccountCommand cmd) {
     Account account = accountRepository.findById(cmd.getId());
     if (account == null) {
-      throw NotFoundException.of("账户不存在");
+      throw IamErrors.of(IamErrorCodes.ACCOUNT_NOT_FOUND, "账户不存在");
     }
     try {
       account.disable();
     } catch (IllegalStateException ex) {
-      throw BizException.of(409, ex.getMessage());
+      throw IamErrors.of(IamErrorCodes.ACCOUNT_STATUS_CONFLICT, ex.getMessage());
     }
     accountRepository.update(account);
   }
@@ -149,7 +148,7 @@ public class AccountApplicationService {
     passwordPolicyValidator.assertAcceptable(cmd.getNewPassword());
     Account account = accountRepository.findById(cmd.getId());
     if (account == null) {
-      throw new RuntimeException("账户不存在");
+      throw IamErrors.of(IamErrorCodes.ACCOUNT_NOT_FOUND, "账户不存在");
     }
     String passwordHash = passwordEncoder.encode(cmd.getNewPassword());
     account.updatePassword(passwordHash);
@@ -165,15 +164,15 @@ public class AccountApplicationService {
   @Transactional
   public void changePassword(ChangeMyPasswordCommand cmd) {
     if (cmd.getAccountId() == null) {
-      throw BizException.of(401, IamErrorCodes.PROFILE_OWNERSHIP_DENIED);
+      throw IamErrors.of(IamErrorCodes.PROFILE_OWNERSHIP_DENIED);
     }
     Account account = accountRepository.findById(cmd.getAccountId());
     if (account == null) {
-      throw BizException.of(404, IamErrorCodes.PROFILE_OWNERSHIP_DENIED);
+      throw IamErrors.of(IamErrorCodes.ACCOUNT_NOT_FOUND);
     }
     if (cmd.getOldPassword() == null
         || !passwordEncoder.matches(cmd.getOldPassword(), account.getPasswordHash())) {
-      throw BizException.of(401, IamErrorCodes.OLD_PASSWORD_MISMATCH + ": 原密码不正确");
+      throw IamErrors.of(IamErrorCodes.OLD_PASSWORD_MISMATCH, "原密码不正确");
     }
     passwordPolicyValidator.assertAcceptable(cmd.getNewPassword());
     account.updatePassword(passwordEncoder.encode(cmd.getNewPassword()));
@@ -184,11 +183,11 @@ public class AccountApplicationService {
   @Transactional
   public void updateMyProfile(UpdateMyProfileCommand cmd) {
     if (cmd.getAccountId() == null) {
-      throw BizException.of(401, IamErrorCodes.PROFILE_OWNERSHIP_DENIED);
+      throw IamErrors.of(IamErrorCodes.PROFILE_OWNERSHIP_DENIED);
     }
     Account account = accountRepository.findById(cmd.getAccountId());
     if (account == null) {
-      throw BizException.of(404, IamErrorCodes.PROFILE_OWNERSHIP_DENIED);
+      throw IamErrors.of(IamErrorCodes.ACCOUNT_NOT_FOUND);
     }
     account.updateProfile(cmd.getRealName(), cmd.getPhone(), cmd.getAvatarUrl());
     accountRepository.update(account);
@@ -245,7 +244,7 @@ public class AccountApplicationService {
   private void assertCallerMayManageRole(Role role) {
     Long callerTenant = tenantProvider.currentTenantIdOrNull();
     if (callerTenant != null && callerTenant != 0L && !callerTenant.equals(role.getTenantId())) {
-      throw BizException.of(403, IamErrorCodes.TENANT_ACCESS_DENIED + ": 无权操作其他租户的角色");
+      throw IamErrors.of(IamErrorCodes.TENANT_ACCESS_DENIED, "无权操作其他租户的角色");
     }
   }
 

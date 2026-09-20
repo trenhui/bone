@@ -1,6 +1,5 @@
 package com.bone.iam.application;
 
-import com.bone.core.exception.BizException;
 import com.bone.core.model.PageResult;
 import com.bone.iam.application.command.cmd.CreateApplicationCommand;
 import com.bone.iam.application.command.cmd.GrantAppPermissionCommand;
@@ -8,6 +7,8 @@ import com.bone.iam.application.command.cmd.UpdateApplicationCommand;
 import com.bone.iam.application.query.dto.AppPermissionDTO;
 import com.bone.iam.application.query.dto.ApplicationDTO;
 import com.bone.iam.application.query.qry.ApplicationPageQuery;
+import com.bone.iam.common.IamErrorCodes;
+import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.account.Account;
 import com.bone.iam.domain.app.AppPermission;
 import com.bone.iam.domain.app.BoneApplication;
@@ -35,9 +36,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AppApplicationService {
 
-  private static final int BAD_REQUEST = 400;
-  private static final int NOT_FOUND = 404;
-
   private final BoneApplicationRepository boneApplicationRepository;
   private final AppPermissionRepository appPermissionRepository;
   private final AccountRepository accountRepository;
@@ -54,7 +52,7 @@ public class AppApplicationService {
   public void updateApplication(UpdateApplicationCommand cmd) {
     BoneApplication app = boneApplicationRepository.findById(cmd.getId());
     if (app == null) {
-      throw new BizException(NOT_FOUND, "应用不存在");
+      throw IamErrors.of(IamErrorCodes.APPLICATION_NOT_FOUND, "应用不存在");
     }
     app.update(cmd.getName(), cmd.getDescription(), cmd.getIcon(), cmd.getStatus());
     boneApplicationRepository.save(app);
@@ -82,7 +80,7 @@ public class AppApplicationService {
   public ApplicationDTO applicationDetail(Long id) {
     BoneApplication entity = boneApplicationRepository.findById(id);
     if (entity == null) {
-      throw new BizException(NOT_FOUND, "应用不存在");
+      throw IamErrors.of(IamErrorCodes.APPLICATION_NOT_FOUND, "应用不存在");
     }
     return toDto(entity);
   }
@@ -110,20 +108,20 @@ public class AppApplicationService {
   @Transactional
   public void grantPermission(GrantAppPermissionCommand cmd) {
     if (cmd.getAppId() == null) {
-      throw new BizException(BAD_REQUEST, "应用ID不能为空");
+      throw IamErrors.of(IamErrorCodes.APPLICATION_ID_REQUIRED, "应用ID不能为空");
     }
     if (cmd.getUserId() == null) {
-      throw new BizException(BAD_REQUEST, "用户ID不能为空");
+      throw IamErrors.of(IamErrorCodes.USER_ID_REQUIRED, "用户ID不能为空");
     }
     BoneApplication app = boneApplicationRepository.findById(cmd.getAppId());
     if (app == null) {
-      throw new BizException(NOT_FOUND, "应用不存在");
+      throw IamErrors.of(IamErrorCodes.APPLICATION_NOT_FOUND, "应用不存在");
     }
     AppRole role;
     try {
       role = AppRole.fromExternal(cmd.getRole());
     } catch (IllegalArgumentException e) {
-      throw new BizException(BAD_REQUEST, e.getMessage());
+      throw IamErrors.of(IamErrorCodes.APP_ROLE_INVALID, e.getMessage());
     }
     AppPermission existing =
         appPermissionRepository.findByAppAndUser(cmd.getAppId(), cmd.getUserId()).orElse(null);

@@ -1,8 +1,6 @@
 package com.bone.iam.application;
 
 import com.bone.core.capability.Capability;
-import com.bone.core.exception.BizException;
-import com.bone.core.exception.NotFoundException;
 import com.bone.core.security.jwt.JwtConfig;
 import com.bone.core.tenant.context.TenantContextRunner;
 import com.bone.iam.application.command.cmd.LoginCommand;
@@ -13,6 +11,7 @@ import com.bone.iam.application.service.AuthService;
 import com.bone.iam.application.service.PasswordPolicyValidator;
 import com.bone.iam.application.service.RoleHierarchyResolver;
 import com.bone.iam.common.IamErrorCodes;
+import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.account.Account;
 import com.bone.iam.domain.account.AccountRole;
 import com.bone.iam.domain.account.vo.AccountStatus;
@@ -114,16 +113,16 @@ public class AuthApplicationService {
     Account account =
         authService
             .findByUsername(cmd.getUsername())
-            .orElseThrow(() -> BizException.of(401, IamErrorCodes.LOGIN_FAILED + ": 用户名或密码错误"));
+            .orElseThrow(() -> IamErrors.of(IamErrorCodes.LOGIN_FAILED, "用户名或密码错误"));
 
     // TenantContextRunner 对 null tenantId 是快速失败（NPE），而 AuthController 只捕获 BizException，
     // NPE 会逃逸成 500 —— 这里先判空，按登录失败处理。
     if (account.getTenantId() == null) {
-      throw BizException.of(401, IamErrorCodes.LOGIN_FAILED + ": 用户名或密码错误");
+      throw IamErrors.of(IamErrorCodes.LOGIN_FAILED, "用户名或密码错误");
     }
 
     if (account.getStatus() == AccountStatus.DISABLED) {
-      throw BizException.of(403, IamErrorCodes.ACCOUNT_DISABLED + ": 账号已禁用，请联系管理员");
+      throw IamErrors.of(IamErrorCodes.ACCOUNT_DISABLED, "账号已禁用，请联系管理员");
     }
     if (account.isLocked()) {
       long remainingSec =
@@ -131,8 +130,7 @@ public class AuthApplicationService {
               ? 0
               : Math.max(
                   0, Duration.between(LocalDateTime.now(), account.getLockedAt()).getSeconds());
-      throw BizException.of(
-          423, IamErrorCodes.ACCOUNT_LOCKED + ": 账号已锁定，剩余 " + remainingSec + " 秒");
+      throw IamErrors.of(IamErrorCodes.ACCOUNT_LOCKED, "账号已锁定，剩余 " + remainingSec + " 秒");
     }
 
     if (!authService.matches(cmd.getPassword(), account)) {
@@ -145,7 +143,7 @@ public class AuthApplicationService {
                 passwordProperties.getLockoutThreshold(), passwordProperties.getLockoutMinutes());
             accountRepository.update(account);
           });
-      throw BizException.of(401, IamErrorCodes.LOGIN_FAILED + ": 用户名或密码错误");
+      throw IamErrors.of(IamErrorCodes.LOGIN_FAILED, "用户名或密码错误");
     }
 
     return TenantContextRunner.callAs(
@@ -175,13 +173,13 @@ public class AuthApplicationService {
   @Transactional
   public Map<String, String> refreshToken(RefreshTokenCommand cmd) {
     if (cmd == null || cmd.getRefreshToken() == null || cmd.getRefreshToken().isBlank()) {
-      throw BizException.of(400, "刷新令牌不能为空");
+      throw IamErrors.of(IamErrorCodes.REFRESH_TOKEN_REQUIRED, "刷新令牌不能为空");
     }
     Map<String, String> rotated;
     try {
       rotated = refreshTokenIssuer.rotate(cmd.getRefreshToken());
     } catch (IllegalArgumentException ex) {
-      throw BizException.of(401, ex.getMessage());
+      throw IamErrors.of(IamErrorCodes.REFRESH_TOKEN_INVALID, ex.getMessage());
     }
     // /refresh 与 /login 一样没有 JWT，TenantContext 为空；而 findById 读 iam_account（租户表）
     // 会被 ADR-0029 失败关闭拦下 → 500。租户由 refresh token 自身携带，显式声明后再访问租户表。
@@ -189,7 +187,7 @@ public class AuthApplicationService {
     String rawAccountId = rotated.get("accountId");
     String rawTenantId = rotated.get("tenantId");
     if (rawAccountId == null || rawTenantId == null) {
-      throw BizException.of(401, "刷新令牌无效：缺少账号或租户信息");
+      throw IamErrors.of(IamErrorCodes.REFRESH_TOKEN_INVALID, "缺少账号或租户信息");
     }
     long accountId = Long.parseLong(rawAccountId);
     Long tenantId = Long.valueOf(rawTenantId);
@@ -198,7 +196,7 @@ public class AuthApplicationService {
         () -> {
           Account account = accountRepository.findById(accountId);
           if (account == null) {
-            throw NotFoundException.of("账户不存在或已禁用");
+            throw IamErrors.of(IamErrorCodes.ACCOUNT_NOT_FOUND, "账户不存在或已禁用");
           }
           List<String> scopes = resolvePermissionCodes(account.getId(), account.isAdmin());
           String accessToken =
@@ -206,7 +204,7 @@ public class AuthApplicationService {
                   account.getId(), account.getUsername().value(), account.getTenantId(), scopes);
           String newRefreshToken = rotated.get("refreshToken");
           if (newRefreshToken == null) {
-            throw BizException.of(500, "刷新令牌轮换失败：未返回新的刷新令牌");
+            throw IamErrors.of(IamErrorCodes.REFRESH_TOKEN_ROTATE_FAILED, "未返回新的刷新令牌");
           }
           Map<String, String> result = new HashMap<>();
           result.put("accessToken", accessToken);

@@ -1,7 +1,5 @@
 package com.bone.iam.application;
 
-import com.bone.core.exception.BizException;
-import com.bone.core.exception.NotFoundException;
 import com.bone.core.model.PageResult;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.iam.application.command.cmd.CreateTenantCommand;
@@ -10,6 +8,7 @@ import com.bone.iam.application.command.cmd.UpdateTenantQuotaCommand;
 import com.bone.iam.application.query.dto.TenantDTO;
 import com.bone.iam.application.query.qry.TenantPageQuery;
 import com.bone.iam.common.IamErrorCodes;
+import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.gateway.TenantDeletionGateway;
 import com.bone.iam.domain.repository.TenantRepository;
 import com.bone.iam.domain.tenant.Tenant;
@@ -40,7 +39,7 @@ public class TenantApplicationService {
   public Long create(CreateTenantCommand cmd) {
     Long existing = tenantRepository.countByCode(cmd.getCode());
     if (existing != null && existing > 0) {
-      throw BizException.of(409, "租户编码已存在");
+      throw IamErrors.of(IamErrorCodes.TENANT_CODE_CONFLICT, "租户编码已存在");
     }
     Tenant tenant =
         Tenant.create(
@@ -56,7 +55,7 @@ public class TenantApplicationService {
   public void update(UpdateTenantCommand cmd) {
     Tenant tenant = tenantRepository.findById(cmd.getId());
     if (tenant == null) {
-      throw NotFoundException.of("租户不存在");
+      throw IamErrors.of(IamErrorCodes.TENANT_NOT_FOUND, "租户不存在");
     }
     tenant.update(cmd.getName(), cmd.getAdminEmail(), cmd.getLevel() != null ? cmd.getLevel() : 0);
     tenantRepository.save(tenant);
@@ -68,11 +67,11 @@ public class TenantApplicationService {
       throw new IllegalArgumentException("租户 ID 不能为空");
     }
     if (id == PLATFORM_TENANT_ID) {
-      throw BizException.of(400, IamErrorCodes.TENANT_DELETE_FORBIDDEN + ": 禁止删除平台租户");
+      throw IamErrors.of(IamErrorCodes.TENANT_DELETE_FORBIDDEN, "禁止删除平台租户");
     }
     Tenant tenant = tenantRepository.findById(id);
     if (tenant == null) {
-      throw NotFoundException.of("租户不存在");
+      throw IamErrors.of(IamErrorCodes.TENANT_NOT_FOUND, "租户不存在");
     }
     tenantDeletionGateway.purgeTenantData(id);
     tenantRepository.deleteById(id);
@@ -82,7 +81,7 @@ public class TenantApplicationService {
   public void enable(Long id) {
     Tenant tenant = tenantRepository.findById(id);
     if (tenant == null) {
-      throw NotFoundException.of("租户不存在");
+      throw IamErrors.of(IamErrorCodes.TENANT_NOT_FOUND, "租户不存在");
     }
     tenant.enable();
     tenantRepository.save(tenant);
@@ -92,7 +91,7 @@ public class TenantApplicationService {
   public void disable(Long id) {
     Tenant tenant = tenantRepository.findById(id);
     if (tenant == null) {
-      throw NotFoundException.of("租户不存在");
+      throw IamErrors.of(IamErrorCodes.TENANT_NOT_FOUND, "租户不存在");
     }
     tenant.disable();
     tenantRepository.save(tenant);
@@ -111,7 +110,7 @@ public class TenantApplicationService {
     }
     Tenant tenant = tenantRepository.findById(cmd.getId());
     if (tenant == null) {
-      throw NotFoundException.of("租户不存在");
+      throw IamErrors.of(IamErrorCodes.TENANT_NOT_FOUND, "租户不存在");
     }
     tenant.updateQuota(cmd.getMaxAccounts(), cmd.getMaxRoles());
     tenantRepository.save(tenant);
@@ -132,7 +131,7 @@ public class TenantApplicationService {
   public TenantDTO detail(Long id) {
     Tenant tenant = tenantRepository.findById(id);
     if (tenant == null) {
-      throw NotFoundException.of("租户不存在");
+      throw IamErrors.of(IamErrorCodes.TENANT_NOT_FOUND, "租户不存在");
     }
     return toDto(tenant);
   }

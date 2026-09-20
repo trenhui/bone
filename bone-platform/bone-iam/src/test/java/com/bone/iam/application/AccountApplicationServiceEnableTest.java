@@ -5,8 +5,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.bone.core.exception.NotFoundException;
+import com.bone.core.exception.BizException;
 import com.bone.iam.application.command.cmd.EnableAccountCommand;
+import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.domain.account.Account;
 import com.bone.iam.domain.account.vo.AccountStatus;
 import com.bone.iam.domain.account.vo.Email;
@@ -49,7 +50,9 @@ class AccountApplicationServiceEnableTest {
     cmd.setId(999L);
 
     assertThatThrownBy(() -> accountApplicationService.enable(cmd))
-        .isInstanceOf(NotFoundException.class);
+        .isInstanceOf(BizException.class)
+        .hasFieldOrPropertyWithValue("code", 404)
+        .hasMessageContaining(IamErrorCodes.ACCOUNT_NOT_FOUND);
   }
 
   private static Account mkAccount() {

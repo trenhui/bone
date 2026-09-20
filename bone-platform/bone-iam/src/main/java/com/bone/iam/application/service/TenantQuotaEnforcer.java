@@ -1,7 +1,7 @@
 package com.bone.iam.application.service;
 
-import com.bone.core.exception.BizException;
 import com.bone.iam.common.IamErrorCodes;
+import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.account.Account;
 import com.bone.iam.domain.repository.AccountRepository;
 import com.bone.iam.domain.repository.RoleRepository;
@@ -29,7 +29,7 @@ public class TenantQuotaEnforcer {
     Criteria<Account> criteria = Criteria.<Account>create().eq("tenantId", tenantId);
     long count = accountRepository.countByCriteria(criteria);
     if (count >= tenant.getMaxAccounts()) {
-      throw BizException.of(400, IamErrorCodes.TENANT_QUOTA_EXCEEDED + ": 账号数已达租户配额上限");
+      throw IamErrors.of(IamErrorCodes.TENANT_QUOTA_EXCEEDED, "账号数已达租户配额上限");
     }
   }
 
@@ -41,7 +41,7 @@ public class TenantQuotaEnforcer {
     Criteria<Role> criteria = Criteria.<Role>create().eq("tenantId", tenantId);
     long count = roleRepository.countByCriteria(criteria);
     if (count >= tenant.getMaxRoles()) {
-      throw BizException.of(400, IamErrorCodes.TENANT_QUOTA_EXCEEDED + ": 角色数已达租户配额上限");
+      throw IamErrors.of(IamErrorCodes.TENANT_QUOTA_EXCEEDED, "角色数已达租户配额上限");
     }
   }
 }
