@@ -4,15 +4,22 @@ import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import com.bone.iam.adapter.web.converter.AppWebConverter;
 import com.bone.iam.adapter.web.dto.request.CreateAppReq;
+import com.bone.iam.adapter.web.dto.request.GrantAppPermissionReq;
 import com.bone.iam.adapter.web.dto.request.UpdateAppReq;
+import com.bone.iam.application.app.command.GrantAppPermissionCommand;
 import com.bone.iam.application.app.command.handler.CreateApplicationCommandHandler;
 import com.bone.iam.application.app.command.handler.DeleteApplicationCommandHandler;
+import com.bone.iam.application.app.command.handler.GrantAppPermissionCommandHandler;
+import com.bone.iam.application.app.command.handler.RevokeAppPermissionCommandHandler;
 import com.bone.iam.application.app.command.handler.UpdateApplicationCommandHandler;
+import com.bone.iam.application.app.query.dto.AppPermissionDTO;
 import com.bone.iam.application.app.query.dto.ApplicationDTO;
+import com.bone.iam.application.app.query.handler.AppPermissionListQueryHandler;
 import com.bone.iam.application.app.query.handler.ApplicationPageQueryHandler;
 import com.bone.iam.application.app.query.qry.ApplicationPageQuery;
 import jakarta.validation.Valid;
 import java.net.URI;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -32,6 +39,9 @@ public class AppController {
   private final UpdateApplicationCommandHandler updateApplicationCommandHandler;
   private final DeleteApplicationCommandHandler deleteApplicationCommandHandler;
   private final ApplicationPageQueryHandler applicationPageQueryHandler;
+  private final AppPermissionListQueryHandler appPermissionListQueryHandler;
+  private final GrantAppPermissionCommandHandler grantAppPermissionCommandHandler;
+  private final RevokeAppPermissionCommandHandler revokeAppPermissionCommandHandler;
   private final AppWebConverter appWebConverter;
 
   @GetMapping
@@ -64,6 +74,28 @@ public class AppController {
   @DeleteMapping("/{id}")
   public ApiResponse<Void> delete(@PathVariable Long id) {
     deleteApplicationCommandHandler.handle(id);
+    return ApiResponse.success();
+  }
+
+  @GetMapping("/{id}/permissions")
+  public ApiResponse<List<AppPermissionDTO>> listPermissions(@PathVariable Long id) {
+    return ApiResponse.success(appPermissionListQueryHandler.handle(id));
+  }
+
+  @PostMapping("/{id}/permissions")
+  public ApiResponse<Void> grantPermission(
+      @PathVariable Long id, @Valid @RequestBody GrantAppPermissionReq req) {
+    GrantAppPermissionCommand cmd = new GrantAppPermissionCommand();
+    cmd.setAppId(id);
+    cmd.setUserId(req.getUserId());
+    cmd.setRole(req.getRole());
+    grantAppPermissionCommandHandler.handle(cmd);
+    return ApiResponse.success();
+  }
+
+  @DeleteMapping("/{id}/permissions/{userId}")
+  public ApiResponse<Void> revokePermission(@PathVariable Long id, @PathVariable Long userId) {
+    revokeAppPermissionCommandHandler.handle(id, userId);
     return ApiResponse.success();
   }
 }

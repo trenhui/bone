@@ -1,9 +1,8 @@
 package com.bone.iam.application.query.handler;
 
-import com.bone.core.tenant.context.TenantContext;
 import com.bone.iam.application.query.dto.RoleDetailDTO;
-import com.bone.iam.domain.role.Role;
-import com.bone.metadata.sdk.query.dsl.QueryBuilder;
+import com.bone.iam.domain.gateway.TenantProvider;
+import com.bone.iam.domain.repository.RoleRepository;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -14,18 +13,17 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class RoleDetailQueryHandler {
 
+  private final RoleRepository roleRepository;
   private final RolePermissionsQueryHandler rolePermissionsQueryHandler;
+  private final TenantProvider tenantProvider;
 
   @Transactional(readOnly = true)
   public Optional<RoleDetailDTO> handle(Long id) {
-    return QueryBuilder.from(Role.class)
-        .where(Role::getId)
-        .eq(id)
-        .first()
+    return Optional.ofNullable(roleRepository.findById(id))
         // 租户隔离：非平台租户不可查看其他租户的角色详情（防 IDOR）。详设 §3.4 / §4.8。
         .filter(
             role -> {
-              Long caller = TenantContext.getTenantIdAsLong();
+              Long caller = tenantProvider.currentTenantIdOrNull();
               return caller == null || caller == 0L || caller.equals(role.getTenantId());
             })
         .map(

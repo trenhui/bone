@@ -5,44 +5,40 @@ import com.bone.core.model.PageResult;
 import com.bone.iam.application.app.query.dto.ApplicationDTO;
 import com.bone.iam.application.app.query.qry.ApplicationPageQuery;
 import com.bone.iam.domain.app.BoneApplication;
-import com.bone.metadata.sdk.query.dsl.QueryBuilder;
+import com.bone.iam.domain.repository.BoneApplicationRepository;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * 应用分页 / 详情查询处理器。
+ *
+ * <p><b>E-4.2</b>：本类不持有任何读侧 DSL——关键字与分页条件经 {@link BoneApplicationRepository#findPage}
+ * 这一「本聚合读」通道下发（ADR-0030），DSL 只存在于 {@code ..domain.repository..}。
+ */
 @Component
 @RequiredArgsConstructor
 public class ApplicationPageQueryHandler {
 
+  private final BoneApplicationRepository boneApplicationRepository;
+
   @Transactional(readOnly = true)
   public PageResult<ApplicationDTO> handle(ApplicationPageQuery qry) {
-    var query = QueryBuilder.from(BoneApplication.class);
-    if (qry.getKeyword() != null && !qry.getKeyword().isBlank()) {
-      query.where(
-          w -> {
-            w.and(BoneApplication::getName).like("%" + qry.getKeyword() + "%");
-            w.or(BoneApplication::getCode).like("%" + qry.getKeyword() + "%");
-          });
-    }
-    if (qry.getStatus() != null) {
-      query.where(BoneApplication::getStatus).eq(qry.getStatus());
-    }
-    var result =
-        query
-            .orderByDesc(BoneApplication::getCreatedAt)
-            .page(
-                qry.getPage() != null ? qry.getPage() : 1,
-                qry.getSize() != null ? qry.getSize() : 10);
+    PageResult<BoneApplication> result =
+        boneApplicationRepository.findPage(
+            qry.getKeyword(),
+            qry.getStatus(),
+            qry.getPage() != null ? qry.getPage() : 1,
+            qry.getSize() != null ? qry.getSize() : 10);
     List<ApplicationDTO> list =
         result.getRecords().stream().map(this::toDto).collect(Collectors.toList());
     return PageResult.of(list, result.getTotal(), result.getPage(), result.getSize());
   }
 
   public ApplicationDTO handle(Long id) {
-    BoneApplication entity =
-        QueryBuilder.from(BoneApplication.class).where(BoneApplication::getId).eq(id).single();
+    BoneApplication entity = boneApplicationRepository.findById(id);
     if (entity == null) throw new BizException(404, "应用不存在");
     return toDto(entity);
   }

@@ -3,7 +3,7 @@ package com.bone.iam.application.app.command.handler;
 import com.bone.core.exception.BizException;
 import com.bone.iam.application.app.command.UpdateApplicationCommand;
 import com.bone.iam.domain.app.BoneApplication;
-import com.bone.iam.domain.app.repository.BoneApplicationRepository;
+import com.bone.iam.domain.repository.BoneApplicationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
