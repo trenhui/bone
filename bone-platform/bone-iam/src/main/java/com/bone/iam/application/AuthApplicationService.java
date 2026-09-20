@@ -3,10 +3,12 @@ package com.bone.iam.application;
 import com.bone.core.capability.Capability;
 import com.bone.core.exception.BizException;
 import com.bone.core.exception.NotFoundException;
+import com.bone.core.security.jwt.JwtConfig;
 import com.bone.core.tenant.context.TenantContextRunner;
 import com.bone.iam.application.command.cmd.LoginCommand;
 import com.bone.iam.application.command.cmd.RefreshTokenCommand;
 import com.bone.iam.application.config.IamPasswordProperties;
+import com.bone.iam.application.port.out.TokenBlacklistPort;
 import com.bone.iam.application.service.AuthService;
 import com.bone.iam.application.service.PasswordPolicyValidator;
 import com.bone.iam.application.service.RoleHierarchyResolver;
@@ -64,6 +66,30 @@ public class AuthApplicationService {
   private final IamPasswordProperties passwordProperties;
   private final AccountAuthorityCache accountAuthorityCache;
   private final RoleHierarchyResolver roleHierarchyResolver;
+  private final TokenBlacklistPort tokenBlacklistPort;
+  private final JwtConfig jwtConfig;
+
+  /**
+   * 登出用例：把请求携带的访问令牌拉黑至其自然过期。
+   *
+   * <p>原实现散落在 {@code AuthController}（需注入 {@code infrastructure} 的令牌解析器与黑名单服务，违反 E-10.1）；
+   * 现收口到应用层，入站适配器只传递请求头。令牌非法 / 缺失时静默成功（登出幂等，不泄露令牌有效性）。
+   *
+   * @param authorizationHeader 原始 {@code Authorization} 头（可含 {@code Bearer } 前缀）；可为 null
+   */
+  @Transactional
+  public void logout(String authorizationHeader) {
+    if (authorizationHeader == null || authorizationHeader.isBlank()) {
+      return;
+    }
+    accessTokenIssuer
+        .parse(authorizationHeader)
+        .ifPresent(
+            principal ->
+                tokenBlacklistPort.blacklist(
+                    accessTokenIssuer.stripBearerToken(authorizationHeader),
+                    Duration.ofMillis(jwtConfig.getExpirationMs())));
+  }
 
   /**
    * 登录编排：解析账号 → 检查锁定/禁用 → 校验密码 → 失败计数 / 成功清零 → 颁发 access + refresh token。

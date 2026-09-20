@@ -11,12 +11,9 @@ import com.bone.iam.adapter.web.dto.response.LoginResp;
 import com.bone.iam.application.AuthApplicationService;
 import com.bone.iam.application.command.cmd.LoginCommand;
 import com.bone.iam.application.command.cmd.RefreshTokenCommand;
+import com.bone.iam.application.config.IamSsoProperties;
 import com.bone.iam.common.IamErrorCodes;
-import com.bone.iam.infrastructure.config.IamSsoProperties;
-import com.bone.iam.infrastructure.gateway.AccessTokenIssuerGatewayAdapter;
-import com.bone.iam.infrastructure.security.TokenBlacklistService;
 import jakarta.servlet.http.HttpServletRequest;
-import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +27,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-/** 认证控制器：登录、登出、刷新令牌。 */
+/**
+ * 认证控制器：登录、登出、刷新令牌。
+ *
+ * <p>仅依赖 application 层（{@link AuthApplicationService}、{@link IamSsoProperties} 已按 E-10.2 落在 {@code
+ * application.config}）与框架安全配置（{@link JwtConfig}）——不再注入任何 {@code infrastructure} 类（E-10.1）。
+ */
 @RestController
 @RequestMapping(PlatformApiPaths.IAM_V1)
 @RequiredArgsConstructor
@@ -38,8 +40,6 @@ public class AuthController {
 
   private final AuthApplicationService authApplicationService;
   private final AuthWebConverter authWebConverter;
-  private final AccessTokenIssuerGatewayAdapter jwtTokenService;
-  private final TokenBlacklistService tokenBlacklistService;
   private final JwtConfig jwtConfig;
   private final IamSsoProperties iamSsoProperties;
 
@@ -71,17 +71,7 @@ public class AuthController {
 
   @PostMapping("/logout")
   public ApiResponse<Void> logout(HttpServletRequest request) {
-    String header = request.getHeader(jwtConfig.getHeaderName());
-    if (header != null && !header.isBlank()) {
-      jwtTokenService
-          .parse(header)
-          .ifPresent(
-              principal -> {
-                String raw = jwtTokenService.stripBearerToken(header);
-                tokenBlacklistService.blacklist(
-                    raw, Duration.ofMillis(jwtConfig.getExpirationMs()));
-              });
-    }
+    authApplicationService.logout(request.getHeader(jwtConfig.getHeaderName()));
     return ApiResponse.success();
   }
 

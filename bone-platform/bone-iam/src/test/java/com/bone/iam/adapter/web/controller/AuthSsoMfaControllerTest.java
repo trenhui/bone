@@ -8,9 +8,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.bone.core.security.jwt.JwtConfig;
 import com.bone.iam.application.AuthApplicationService;
-import com.bone.iam.infrastructure.config.IamSsoProperties;
-import com.bone.iam.infrastructure.gateway.AccessTokenIssuerGatewayAdapter;
-import com.bone.iam.infrastructure.security.TokenBlacklistService;
+import com.bone.iam.application.config.IamSsoProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,10 +25,6 @@ class AuthSsoMfaControllerTest {
 
   @Mock private com.bone.iam.adapter.web.converter.AuthWebConverter authWebConverter;
 
-  @Mock private AccessTokenIssuerGatewayAdapter jwtTokenService;
-
-  @Mock private TokenBlacklistService tokenBlacklistService;
-
   @Mock private JwtConfig jwtConfig;
 
   private MockMvc mockMvc;
@@ -39,13 +33,7 @@ class AuthSsoMfaControllerTest {
   void setUp() {
     IamSsoProperties ssoProperties = new IamSsoProperties();
     AuthController authController =
-        new AuthController(
-            authApplicationService,
-            authWebConverter,
-            jwtTokenService,
-            tokenBlacklistService,
-            jwtConfig,
-            ssoProperties);
+        new AuthController(authApplicationService, authWebConverter, jwtConfig, ssoProperties);
     mockMvc = MockMvcBuilders.standaloneSetup(authController, new MfaController()).build();
   }
 

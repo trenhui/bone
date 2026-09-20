@@ -5,6 +5,7 @@ import com.bone.core.security.jwt.JwtConfig;
 import com.bone.core.security.jwt.JwtPrincipal;
 import com.bone.core.security.jwt.JwtTokenService;
 import com.bone.core.tenant.context.TenantContext;
+import com.bone.iam.application.port.out.TokenBlacklistPort;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -13,19 +14,17 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class JwtAuthenticationFilter extends AbstractJwtAuthenticationFilter {
-  private final TokenBlacklistService tokenBlacklistService;
+  private final TokenBlacklistPort tokenBlacklistPort;
 
   public JwtAuthenticationFilter(
-      JwtTokenService jwtTokenService,
-      JwtConfig jwtConfig,
-      TokenBlacklistService tokenBlacklistService) {
+      JwtTokenService jwtTokenService, JwtConfig jwtConfig, TokenBlacklistPort tokenBlacklistPort) {
     super(jwtTokenService, jwtConfig);
-    this.tokenBlacklistService = tokenBlacklistService;
+    this.tokenBlacklistPort = tokenBlacklistPort;
   }
 
   @Override
   protected boolean shouldBlockToken(String rawToken, HttpServletRequest request) {
-    return tokenBlacklistService.isBlacklisted(rawToken);
+    return tokenBlacklistPort.isBlacklisted(rawToken);
   }
 
   @Override

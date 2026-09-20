@@ -10,8 +10,8 @@ import com.bone.iam.adapter.web.dto.response.MeResp;
 import com.bone.iam.application.AccountApplicationService;
 import com.bone.iam.application.command.cmd.ChangeMyPasswordCommand;
 import com.bone.iam.application.command.cmd.UpdateMyProfileCommand;
+import com.bone.iam.application.port.out.CurrentPrincipalPort;
 import com.bone.iam.common.IamErrorCodes;
-import com.bone.iam.infrastructure.security.IamCurrentAccountResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,6 +28,9 @@ import org.springframework.web.bind.annotation.RestController;
  *   <li>{@code PUT /api/v1/iam/me} —— 更新昵称/手机/头像
  *   <li>{@code POST /api/v1/iam/me/change-password} —— 旧密码校验后改密
  * </ul>
+ *
+ * <p>当前主体经 {@link CurrentPrincipalPort}（application 出站端口）获取，不再直接调用 {@code infrastructure.security}
+ * 的静态工具（E-10.1）。
  */
 @RestController
 @RequestMapping(PlatformApiPaths.IAM_V1 + "/me")
@@ -35,6 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class MeController {
 
   private final AccountApplicationService accountApplicationService;
+  private final CurrentPrincipalPort currentPrincipalPort;
 
   @GetMapping
   public ApiResponse<MeResp> me() {
@@ -86,8 +90,9 @@ public class MeController {
     return ApiResponse.success();
   }
 
-  private static JwtPrincipal requirePrincipal() {
-    return IamCurrentAccountResolver.currentPrincipal()
+  private JwtPrincipal requirePrincipal() {
+    return currentPrincipalPort
+        .currentPrincipal()
         .orElseThrow(() -> BizException.of(401, IamErrorCodes.PROFILE_OWNERSHIP_DENIED + ": 未登录"));
   }
 

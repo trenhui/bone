@@ -10,8 +10,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.core.exception.BizException;
+import com.bone.core.security.jwt.JwtConfig;
 import com.bone.iam.application.command.cmd.LoginCommand;
 import com.bone.iam.application.config.IamPasswordProperties;
+import com.bone.iam.application.port.out.TokenBlacklistPort;
 import com.bone.iam.application.service.AuthService;
 import com.bone.iam.application.service.PasswordPolicyValidator;
 import com.bone.iam.application.service.RoleHierarchyResolver;
@@ -62,6 +64,10 @@ class AuthApplicationServiceLoginTest {
 
   @Mock RoleHierarchyResolver roleHierarchyResolver;
 
+  @Mock TokenBlacklistPort tokenBlacklistPort;
+
+  @Mock JwtConfig jwtConfig;
+
   IamPasswordProperties passwordProperties;
 
   AuthApplicationService authApplicationService;
@@ -84,7 +90,9 @@ class AuthApplicationServiceLoginTest {
             passwordPolicyValidator,
             passwordProperties,
             accountAuthorityCache,
-            roleHierarchyResolver);
+            roleHierarchyResolver,
+            tokenBlacklistPort,
+            jwtConfig);
   }
 
   @Test
