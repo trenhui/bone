@@ -1,0 +1,92 @@
+package com.bone.iam.application;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.bone.core.exception.BizException;
+import com.bone.iam.common.IamErrorCodes;
+import com.bone.iam.domain.gateway.AccountAuthorityCache;
+import com.bone.iam.domain.gateway.RefreshTokenSessionGateway;
+import com.bone.iam.domain.gateway.TenantProvider;
+import com.bone.iam.domain.session.Session;
+import java.time.LocalDateTime;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+/** SessionApplicationService 单元测试（原 RevokeSessionCommandHandler 逻辑已内联）。 */
+@ExtendWith(MockitoExtension.class)
+class SessionApplicationServiceRevokeTest {
+
+  @Mock RefreshTokenSessionGateway sessionStore;
+
+  @Mock AccountAuthorityCache accountAuthorityCache;
+
+  @Mock TenantProvider tenantProvider;
+
+  @InjectMocks SessionApplicationService sessionApplicationService;
+
+  @Test
+  void revokeOneEvictsAuthorityCache() {
+    Session session =
+        Session.builder()
+            .id(7L)
+            .accountId(99L)
+            .tenantId(0L)
+            .revoked(false)
+            .expiresAt(LocalDateTime.now().plusHours(1))
+            .createdAt(LocalDateTime.now())
+            .build();
+    when(sessionStore.findById(7L)).thenReturn(Optional.of(session));
+
+    sessionApplicationService.revokeOne(7L);
+
+    verify(sessionStore).revoke(7L);
+    verify(accountAuthorityCache).evictAccount(99L);
+  }
+
+  @Test
+  void revokeAllCascadesToCache() {
+    when(sessionStore.revokeAllForAccount(99L)).thenReturn(3);
+
+    int affected = sessionApplicationService.revokeAllForAccount(99L);
+
+    assertThat(affected).isEqualTo(3);
+    verify(accountAuthorityCache).evictAccount(99L);
+  }
+
+  @Test
+  void crossTenantRevokeRejected() {
+    when(tenantProvider.currentTenantIdOrNull()).thenReturn(2L);
+    Session session =
+        Session.builder()
+            .id(7L)
+            .accountId(99L)
+            .tenantId(1L)
+            .revoked(false)
+            .expiresAt(LocalDateTime.now().plusHours(1))
+            .createdAt(LocalDateTime.now())
+            .build();
+    when(sessionStore.findById(7L)).thenReturn(Optional.of(session));
+
+    assertThatThrownBy(() -> sessionApplicationService.revokeOne(7L))
+        .isInstanceOf(BizException.class)
+        .hasMessageContaining(IamErrorCodes.TENANT_ACCESS_DENIED);
+    verify(sessionStore, never()).revoke(eq(7L));
+  }
+
+  @Test
+  void missingSessionThrows404() {
+    when(sessionStore.findById(7L)).thenReturn(Optional.empty());
+    assertThatThrownBy(() -> sessionApplicationService.revokeOne(7L))
+        .isInstanceOf(BizException.class)
+        .hasMessageContaining(IamErrorCodes.SESSION_NOT_FOUND);
+  }
+}

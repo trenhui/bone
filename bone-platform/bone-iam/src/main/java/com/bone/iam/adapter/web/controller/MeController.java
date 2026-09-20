@@ -7,11 +7,9 @@ import com.bone.core.web.PlatformApiPaths;
 import com.bone.iam.adapter.web.dto.request.ChangeMyPasswordReq;
 import com.bone.iam.adapter.web.dto.request.UpdateMyProfileReq;
 import com.bone.iam.adapter.web.dto.response.MeResp;
+import com.bone.iam.application.AccountApplicationService;
 import com.bone.iam.application.command.cmd.ChangeMyPasswordCommand;
 import com.bone.iam.application.command.cmd.UpdateMyProfileCommand;
-import com.bone.iam.application.command.handler.ChangeMyPasswordCommandHandler;
-import com.bone.iam.application.command.handler.UpdateMyProfileCommandHandler;
-import com.bone.iam.application.query.handler.AccountDetailQueryHandler;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.infrastructure.security.IamCurrentAccountResolver;
 import lombok.RequiredArgsConstructor;
@@ -36,17 +34,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class MeController {
 
-  private final AccountDetailQueryHandler accountDetailQueryHandler;
-  private final UpdateMyProfileCommandHandler updateMyProfileCommandHandler;
-  private final ChangeMyPasswordCommandHandler changeMyPasswordCommandHandler;
+  private final AccountApplicationService accountApplicationService;
 
   @GetMapping
   public ApiResponse<MeResp> me() {
     JwtPrincipal principal = requirePrincipal();
     Long accountId = parseAccountId(principal);
     return ApiResponse.success(
-        accountDetailQueryHandler
-            .handle(accountId)
+        accountApplicationService
+            .detail(accountId)
             .map(
                 account -> {
                   MeResp resp = new MeResp();
@@ -75,7 +71,7 @@ public class MeController {
     cmd.setRealName(req.getRealName());
     cmd.setPhone(req.getPhone());
     cmd.setAvatarUrl(req.getAvatarUrl());
-    updateMyProfileCommandHandler.handle(cmd);
+    accountApplicationService.updateMyProfile(cmd);
     return ApiResponse.success();
   }
 
@@ -86,7 +82,7 @@ public class MeController {
     cmd.setAccountId(accountId);
     cmd.setOldPassword(req.getOldPassword());
     cmd.setNewPassword(req.getNewPassword());
-    changeMyPasswordCommandHandler.handle(cmd);
+    accountApplicationService.changePassword(cmd);
     return ApiResponse.success();
   }
 

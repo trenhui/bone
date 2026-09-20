@@ -1,0 +1,80 @@
+package com.bone.iam.application;
+
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.bone.core.exception.NotFoundException;
+import com.bone.iam.application.command.cmd.DisableAccountCommand;
+import com.bone.iam.domain.account.Account;
+import com.bone.iam.domain.account.vo.AccountStatus;
+import com.bone.iam.domain.account.vo.Email;
+import com.bone.iam.domain.account.vo.Username;
+import com.bone.iam.domain.repository.AccountRepository;
+import java.lang.reflect.Field;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+/** AccountApplicationService#disable 单元测试（原 DisableAccountCommandHandler 逻辑已内联）。 */
+@ExtendWith(MockitoExtension.class)
+class AccountApplicationServiceDisableTest {
+
+  @Mock AccountRepository accountRepository;
+
+  @InjectMocks AccountApplicationService accountApplicationService;
+
+  @Test
+  void disableActiveAccountSuccessfully() {
+    Account account = mkAccount();
+    setField(account, "status", AccountStatus.ENABLED);
+    when(accountRepository.findById(1L)).thenReturn(account);
+
+    DisableAccountCommand cmd = new DisableAccountCommand();
+    cmd.setId(1L);
+
+    accountApplicationService.disable(cmd);
+
+    verify(accountRepository, times(1)).update(account);
+  }
+
+  @Test
+  void disableNonExistentAccountThrowsNotFound() {
+    when(accountRepository.findById(999L)).thenReturn(null);
+
+    DisableAccountCommand cmd = new DisableAccountCommand();
+    cmd.setId(999L);
+
+    assertThatThrownBy(() -> accountApplicationService.disable(cmd))
+        .isInstanceOf(NotFoundException.class);
+  }
+
+  private static Account mkAccount() {
+    return Account.create(1L, Username.of("bob"), "hash", Email.of("b@b.com"), null, null, 0L);
+  }
+
+  private static void setField(Object obj, String name, Object value) {
+    try {
+      Field f = findField(obj.getClass(), name);
+      f.setAccessible(true);
+      f.set(obj, value);
+    } catch (ReflectiveOperationException e) {
+      throw new IllegalStateException(e);
+    }
+  }
+
+  private static Field findField(Class<?> cls, String name) throws NoSuchFieldException {
+    Class<?> c = cls;
+    while (c != null) {
+      try {
+        return c.getDeclaredField(name);
+      } catch (NoSuchFieldException ignored) {
+        c = c.getSuperclass();
+      }
+    }
+    throw new NoSuchFieldException(name);
+  }
+}

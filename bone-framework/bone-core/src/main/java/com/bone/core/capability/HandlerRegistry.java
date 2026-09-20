@@ -1,6 +1,7 @@
 package com.bone.core.capability;
 
 import jakarta.annotation.PostConstruct;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -14,13 +15,17 @@ import org.springframework.aop.support.AopUtils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.stereotype.Component;
+import org.springframework.util.ClassUtils;
 
 /**
- * 扫描带 {@link Capability} 的 Bean，供 Flow / AI 等编排发现。
+ * 扫描带 {@link Capability} 的 Bean / 方法，供 Flow / AI 等编排发现。
  *
  * <p>使用 {@link AopUtils#getTargetClass(Object)} 与 {@link AnnotationUtils#findAnnotation} 处理 CGLIB /
  * JDK 代理：若 Handler 同时带 {@code @Transactional}，Spring 生成代理类时 {@code
  * handler.getClass().getAnnotation(...)} 返回 {@code null}，将导致能力丢失。
+ *
+ * <p>支持两种声明形态：类级（存量 Handler）与方法级（Application Service First，见 ADR-0028 /
+ * AS-01）。方法级此前不可表达，故本次扩展为纯增量、不改变任何既有注册结果。
  */
 @Slf4j
 @Component
@@ -35,28 +40,51 @@ public class HandlerRegistry {
 
   @PostConstruct
   public void init() {
-    Map<String, Object> handlers = applicationContext.getBeansWithAnnotation(Capability.class);
-    handlers.forEach(
-        (beanName, handler) -> {
-          Class<?> targetClass = AopUtils.getTargetClass(handler);
-          Capability annotation = AnnotationUtils.findAnnotation(targetClass, Capability.class);
-          if (annotation == null) {
-            log.warn(
-                "Handler {} declared as Capability bean but annotation missing on target {}",
-                beanName,
-                targetClass.getName());
-            return;
-          }
-          CapabilityRegistration previous =
-              capabilities.putIfAbsent(annotation.name(), toRegistration(annotation, targetClass));
-          if (previous != null) {
-            log.warn(
-                "Duplicate capability name '{}' on {} ignored (already registered by {})",
-                annotation.name(),
-                targetClass.getName(),
-                previous.getDeclaringClass());
-          }
-        });
+    // 1) 类级 @Capability（存量 Handler 形态，向后兼容）。
+    applicationContext
+        .getBeansWithAnnotation(Capability.class)
+        .forEach(
+            (beanName, handler) -> {
+              Class<?> targetClass = AopUtils.getTargetClass(handler);
+              Capability annotation = AnnotationUtils.findAnnotation(targetClass, Capability.class);
+              if (annotation == null) {
+                log.warn(
+                    "Handler {} declared as Capability bean but annotation missing on target {}",
+                    beanName,
+                    targetClass.getName());
+                return;
+              }
+              register(targetClass, annotation);
+            });
+
+    // 2) 方法级 @Capability（Application Service First：用例方法即能力，避免再套同义 Handler）。
+    // 纯增量：此形态此前不可表达，故不可能引入非预期注册。
+    for (String beanName : applicationContext.getBeanDefinitionNames()) {
+      Class<?> declaredType = applicationContext.getType(beanName);
+      if (declaredType == null) {
+        continue;
+      }
+      // 带 @Transactional 的 bean 会被 CGLIB 代理，注解落在原始类的方法上，需回到用户类再取方法。
+      for (Method method : ClassUtils.getUserClass(declaredType).getMethods()) {
+        Capability annotation = AnnotationUtils.findAnnotation(method, Capability.class);
+        if (annotation != null) {
+          register(ClassUtils.getUserClass(declaredType), annotation);
+        }
+      }
+    }
+  }
+
+  /** 注册一项能力；同名以先注册者为准并告警（与历史行为一致）。 */
+  private void register(Class<?> targetClass, Capability annotation) {
+    CapabilityRegistration previous =
+        capabilities.putIfAbsent(annotation.name(), toRegistration(annotation, targetClass));
+    if (previous != null) {
+      log.warn(
+          "Duplicate capability name '{}' on {} ignored (already registered by {})",
+          annotation.name(),
+          targetClass.getName(),
+          previous.getDeclaringClass());
+    }
   }
 
   public List<CapabilityRegistration> getAllCapabilities() {

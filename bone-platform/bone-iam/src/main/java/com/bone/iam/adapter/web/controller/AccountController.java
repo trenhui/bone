@@ -8,17 +8,10 @@ import com.bone.iam.adapter.web.dto.request.CreateAccountReq;
 import com.bone.iam.adapter.web.dto.request.ResetPasswordReq;
 import com.bone.iam.adapter.web.dto.request.UpdateAccountReq;
 import com.bone.iam.adapter.web.dto.response.AccountDetailResp;
+import com.bone.iam.application.AccountApplicationService;
 import com.bone.iam.application.command.cmd.DisableAccountCommand;
 import com.bone.iam.application.command.cmd.EnableAccountCommand;
-import com.bone.iam.application.command.handler.CreateAccountCommandHandler;
-import com.bone.iam.application.command.handler.DeleteAccountCommandHandler;
-import com.bone.iam.application.command.handler.DisableAccountCommandHandler;
-import com.bone.iam.application.command.handler.EnableAccountCommandHandler;
-import com.bone.iam.application.command.handler.ResetPasswordCommandHandler;
-import com.bone.iam.application.command.handler.UpdateAccountCommandHandler;
 import com.bone.iam.application.query.dto.AccountDTO;
-import com.bone.iam.application.query.handler.AccountDetailQueryHandler;
-import com.bone.iam.application.query.handler.AccountPageQueryHandler;
 import com.bone.iam.application.query.qry.AccountPageQuery;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,34 +38,27 @@ public class AccountController {
   /** 单次导出最多返回的账号数（避免一次性把整张表拉到内存）。 */
   private static final int EXPORT_MAX_SIZE = 10000;
 
-  private final CreateAccountCommandHandler createAccountCommandHandler;
-  private final UpdateAccountCommandHandler updateAccountCommandHandler;
-  private final EnableAccountCommandHandler enableAccountCommandHandler;
-  private final DisableAccountCommandHandler disableAccountCommandHandler;
-  private final ResetPasswordCommandHandler resetPasswordCommandHandler;
-  private final AccountPageQueryHandler accountPageQueryHandler;
-  private final DeleteAccountCommandHandler deleteAccountCommandHandler;
+  private final AccountApplicationService accountApplicationService;
   private final AccountWebConverter accountWebConverter;
-  private final AccountDetailQueryHandler accountDetailQueryHandler;
 
   @PostMapping
   @PreAuthorize("hasAuthority('iam:accounts:write')")
   public ApiResponse<Long> create(@RequestBody CreateAccountReq req) {
-    Long id = createAccountCommandHandler.handle(accountWebConverter.toCreateAccountCommand(req));
+    Long id = accountApplicationService.create(accountWebConverter.toCreateAccountCommand(req));
     return ApiResponse.success(id);
   }
 
   @PutMapping("/{id}")
   @PreAuthorize("hasAuthority('iam:accounts:write')")
   public ApiResponse<Void> update(@PathVariable Long id, @RequestBody UpdateAccountReq req) {
-    updateAccountCommandHandler.handle(accountWebConverter.toUpdateAccountCommand(id, req));
+    accountApplicationService.update(accountWebConverter.toUpdateAccountCommand(id, req));
     return ApiResponse.success();
   }
 
   @DeleteMapping("/{id}")
   @PreAuthorize("hasAuthority('iam:accounts:write')")
   public ApiResponse<Void> delete(@PathVariable Long id) {
-    deleteAccountCommandHandler.handle(id);
+    accountApplicationService.delete(id);
     return ApiResponse.success();
   }
 
@@ -81,7 +67,7 @@ public class AccountController {
   public ApiResponse<Void> enable(@PathVariable Long id) {
     EnableAccountCommand cmd = new EnableAccountCommand();
     cmd.setId(id);
-    enableAccountCommandHandler.handle(cmd);
+    accountApplicationService.enable(cmd);
     return ApiResponse.success();
   }
 
@@ -90,14 +76,14 @@ public class AccountController {
   public ApiResponse<Void> disable(@PathVariable Long id) {
     DisableAccountCommand cmd = new DisableAccountCommand();
     cmd.setId(id);
-    disableAccountCommandHandler.handle(cmd);
+    accountApplicationService.disable(cmd);
     return ApiResponse.success();
   }
 
   @PostMapping("/{id}/reset-password")
   @PreAuthorize("hasAuthority('iam:accounts:write')")
   public ApiResponse<Void> resetPassword(@PathVariable Long id, @RequestBody ResetPasswordReq req) {
-    resetPasswordCommandHandler.handle(accountWebConverter.toResetPasswordCommand(id, req));
+    accountApplicationService.resetPassword(accountWebConverter.toResetPasswordCommand(id, req));
     return ApiResponse.success();
   }
 
@@ -105,8 +91,8 @@ public class AccountController {
   @PreAuthorize("hasAuthority('iam:accounts:read')")
   public ApiResponse<AccountDetailResp> detail(@PathVariable Long id) {
     AccountDetailResp resp =
-        accountDetailQueryHandler
-            .handle(id)
+        accountApplicationService
+            .detail(id)
             .map(accountWebConverter::toDetailResp)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "账号不存在"));
     return ApiResponse.success(resp);
@@ -115,7 +101,7 @@ public class AccountController {
   @GetMapping
   @PreAuthorize("hasAuthority('iam:accounts:read')")
   public ApiResponse<PageResult<AccountDTO>> page(AccountPageQuery qry) {
-    PageResult<AccountDTO> result = accountPageQueryHandler.handle(qry);
+    PageResult<AccountDTO> result = accountApplicationService.page(qry);
     return ApiResponse.success(result);
   }
 
@@ -130,7 +116,7 @@ public class AccountController {
     int success = 0;
     for (CreateAccountReq req : list) {
       try {
-        createAccountCommandHandler.handle(accountWebConverter.toCreateAccountCommand(req));
+        accountApplicationService.create(accountWebConverter.toCreateAccountCommand(req));
         success++;
       } catch (RuntimeException e) {
         failures.add(req.getUsername() + ": " + e.getMessage());
@@ -148,7 +134,7 @@ public class AccountController {
   @PreAuthorize("hasAuthority('iam:accounts:read')")
   public ApiResponse<List<AccountDTO>> export(AccountPageQuery qry) {
     qry.setSize(EXPORT_MAX_SIZE);
-    PageResult<AccountDTO> result = accountPageQueryHandler.handle(qry);
+    PageResult<AccountDTO> result = accountApplicationService.page(qry);
     if (result.getTotal() > EXPORT_MAX_SIZE) {
       log.warn(
           "account export truncated: total={}, returned={}",

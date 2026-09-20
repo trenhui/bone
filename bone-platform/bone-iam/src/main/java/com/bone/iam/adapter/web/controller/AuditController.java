@@ -5,11 +5,9 @@ import com.bone.core.model.PageResult;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.iam.adapter.web.converter.AuditWebConverter;
 import com.bone.iam.adapter.web.dto.response.AuditSettingsResp;
+import com.bone.iam.application.AuditApplicationService;
 import com.bone.iam.application.command.cmd.UpdateAuditSettingsCommand;
-import com.bone.iam.application.command.handler.UpdateAuditSettingsCommandHandler;
 import com.bone.iam.application.query.dto.AuditLogDTO;
-import com.bone.iam.application.query.handler.AuditLogListQueryHandler;
-import com.bone.iam.application.query.handler.GetAuditSettingsQueryHandler;
 import com.bone.iam.application.query.qry.AuditLogListQuery;
 import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
@@ -27,16 +25,14 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AuditController {
 
-  private final AuditLogListQueryHandler auditLogListQueryHandler;
-  private final GetAuditSettingsQueryHandler getAuditSettingsQueryHandler;
-  private final UpdateAuditSettingsCommandHandler updateAuditSettingsCommandHandler;
+  private final AuditApplicationService auditApplicationService;
   private final AuditWebConverter auditWebConverter;
 
   /** 分页查询审计日志 支持按用户、操作类型、时间范围等条件过滤 */
   @GetMapping("/logs")
   @PreAuthorize("hasAuthority('iam:audit:read')")
   public ApiResponse<PageResult<AuditLogDTO>> logs(AuditLogListQuery qry) {
-    PageResult<AuditLogDTO> result = auditLogListQueryHandler.handle(qry);
+    PageResult<AuditLogDTO> result = auditApplicationService.listLogs(qry);
     return ApiResponse.success(result);
   }
 
@@ -58,7 +54,7 @@ public class AuditController {
   @PreAuthorize("hasAuthority('iam:audit:read')")
   public ResponseEntity<byte[]> export(AuditLogListQuery qry) {
     qry.setSize(EXPORT_MAX_SIZE);
-    PageResult<AuditLogDTO> result = auditLogListQueryHandler.handle(qry);
+    PageResult<AuditLogDTO> result = auditApplicationService.listLogs(qry);
 
     StringBuilder sb = new StringBuilder();
     sb.append('\uFEFF'); // BOM，让 Excel 直接按 UTF-8 解析
@@ -118,7 +114,7 @@ public class AuditController {
   @GetMapping("/settings")
   @PreAuthorize("hasAuthority('iam:audit:read')")
   public ApiResponse<AuditSettingsResp> settings() {
-    return ApiResponse.success(auditWebConverter.toResp(getAuditSettingsQueryHandler.handle()));
+    return ApiResponse.success(auditWebConverter.toResp(auditApplicationService.getSettings()));
   }
 
   /** 更新审计设置 */
@@ -127,7 +123,7 @@ public class AuditController {
   public ApiResponse<Void> updateSettings(@RequestBody Map<String, Object> settings) {
     UpdateAuditSettingsCommand cmd = new UpdateAuditSettingsCommand();
     cmd.setSettings(settings);
-    updateAuditSettingsCommandHandler.handle(cmd);
+    auditApplicationService.updateSettings(cmd);
     return ApiResponse.success();
   }
 }

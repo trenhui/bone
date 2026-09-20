@@ -8,8 +8,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Import;
 
 @SpringBootApplication(scanBasePackages = {"com.bone.iam", "com.bone.core.security.jwt"})
-@EnableSqlRepositories(
-    basePackages = {"com.bone.iam.domain.repository", "com.bone.iam.domain.app.repository"})
+@EnableSqlRepositories(basePackages = {"com.bone.iam.domain.repository"})
 @Import({MetadataAutoConfiguration.class, SqlRepositoryAutoConfiguration.class})
 public class IamApplication {
   public static void main(String[] args) {

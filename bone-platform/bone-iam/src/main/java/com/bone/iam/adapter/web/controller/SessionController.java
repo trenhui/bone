@@ -2,8 +2,7 @@ package com.bone.iam.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.core.web.PlatformApiPaths;
-import com.bone.iam.application.command.handler.RevokeSessionCommandHandler;
-import com.bone.iam.application.query.handler.SessionListQueryHandler;
+import com.bone.iam.application.SessionApplicationService;
 import com.bone.iam.domain.session.Session;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -29,25 +28,24 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class SessionController {
 
-  private final SessionListQueryHandler sessionListQueryHandler;
-  private final RevokeSessionCommandHandler revokeSessionCommandHandler;
+  private final SessionApplicationService sessionApplicationService;
 
   @GetMapping("/accounts/{accountId}/sessions")
   @PreAuthorize("hasAuthority('iam:sessions:read')")
   public ApiResponse<List<Session>> list(@PathVariable Long accountId) {
-    return ApiResponse.success(sessionListQueryHandler.handle(accountId));
+    return ApiResponse.success(sessionApplicationService.list(accountId));
   }
 
   @DeleteMapping("/sessions/{id}")
   @PreAuthorize("hasAuthority('iam:sessions:write')")
   public ApiResponse<Void> revokeOne(@PathVariable Long id) {
-    revokeSessionCommandHandler.revokeOne(id);
+    sessionApplicationService.revokeOne(id);
     return ApiResponse.success();
   }
 
   @DeleteMapping("/accounts/{accountId}/sessions")
   @PreAuthorize("hasAuthority('iam:sessions:write')")
   public ApiResponse<Integer> revokeAll(@PathVariable Long accountId) {
-    return ApiResponse.success(revokeSessionCommandHandler.revokeAllForAccount(accountId));
+    return ApiResponse.success(sessionApplicationService.revokeAllForAccount(accountId));
   }
 }

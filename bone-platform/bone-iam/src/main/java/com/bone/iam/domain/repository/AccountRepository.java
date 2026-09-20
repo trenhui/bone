@@ -1,8 +1,12 @@
 package com.bone.iam.domain.repository;
 
+import com.bone.core.model.PageResult;
 import com.bone.iam.domain.account.Account;
+import com.bone.iam.domain.account.vo.AccountStatus;
 import com.bone.metadata.sdk.Repository;
 import com.bone.metadata.sdk.query.criteria.Criteria;
+import com.bone.metadata.sdk.query.dsl.FluentQuery;
+import com.bone.metadata.sdk.query.dsl.QueryBuilder;
 import java.util.Optional;
 
 /**
@@ -48,5 +52,34 @@ public interface AccountRepository extends Repository<Account, Long> {
   default Optional<Account> findByUsernameInTenant(String username) {
     return Optional.ofNullable(
         findOneByCriteria(Criteria.<Account>create().eq("username", username)));
+  }
+
+  /**
+   * 账号分页（本聚合读）。
+   *
+   * <p>关键字跨 {@code username} / {@code email} / {@code realName} 三列 OR，须用 {@link
+   * QueryBuilder}；租户过滤值由调用方解析后显式传入。
+   *
+   * @param tenantId 已解析的租户过滤值；{@code null} 表示不加租户条件
+   */
+  default PageResult<Account> findAccountPage(
+      String keyword, AccountStatus status, Long tenantId, int pageNo, int pageSize) {
+    FluentQuery<Account> query = QueryBuilder.from(Account.class);
+    if (keyword != null && !keyword.isEmpty()) {
+      query
+          .where(Account::getUsername)
+          .like(keyword)
+          .or(Account::getEmail)
+          .like(keyword)
+          .or(Account::getRealName)
+          .like(keyword);
+    }
+    if (status != null) {
+      query.where(Account::getStatus).eq(status);
+    }
+    if (tenantId != null) {
+      query.where(Account::getTenantId).eq(tenantId);
+    }
+    return query.orderByDesc(Account::getCreatedAt).page(pageNo, pageSize);
   }
 }

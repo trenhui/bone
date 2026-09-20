@@ -2,8 +2,8 @@ package com.bone.iam.adapter.web.converter;
 
 import com.bone.iam.adapter.web.dto.request.CreateModuleReq;
 import com.bone.iam.adapter.web.dto.request.UpdateModuleReq;
-import com.bone.iam.application.app.command.CreateModuleCommand;
-import com.bone.iam.application.app.command.UpdateModuleCommand;
+import com.bone.iam.application.command.cmd.CreateModuleCommand;
+import com.bone.iam.application.command.cmd.UpdateModuleCommand;
 import org.springframework.stereotype.Component;
 
 @Component

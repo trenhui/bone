@@ -8,10 +8,9 @@ import com.bone.iam.adapter.web.converter.AuthWebConverter;
 import com.bone.iam.adapter.web.dto.request.LoginReq;
 import com.bone.iam.adapter.web.dto.request.RefreshTokenReq;
 import com.bone.iam.adapter.web.dto.response.LoginResp;
+import com.bone.iam.application.AuthApplicationService;
 import com.bone.iam.application.command.cmd.LoginCommand;
 import com.bone.iam.application.command.cmd.RefreshTokenCommand;
-import com.bone.iam.application.command.handler.LoginCommandHandler;
-import com.bone.iam.application.command.handler.RefreshTokenCommandHandler;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.infrastructure.config.IamSsoProperties;
 import com.bone.iam.infrastructure.gateway.AccessTokenIssuerGatewayAdapter;
@@ -37,8 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuthController {
 
-  private final LoginCommandHandler loginCommandHandler;
-  private final RefreshTokenCommandHandler refreshTokenCommandHandler;
+  private final AuthApplicationService authApplicationService;
   private final AuthWebConverter authWebConverter;
   private final AccessTokenIssuerGatewayAdapter jwtTokenService;
   private final TokenBlacklistService tokenBlacklistService;
@@ -50,7 +48,7 @@ public class AuthController {
       @RequestBody LoginReq req, HttpServletRequest request) {
     LoginCommand cmd = authWebConverter.toLoginCommand(req, resolveClientIp(request));
     try {
-      Map<String, Object> result = loginCommandHandler.handle(cmd);
+      Map<String, Object> result = authApplicationService.login(cmd);
       return ResponseEntity.ok(ApiResponse.success(authWebConverter.toLoginResp(result)));
     } catch (BizException ex) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -91,7 +89,7 @@ public class AuthController {
   public ApiResponse<Map<String, String>> refreshToken(@RequestBody RefreshTokenReq req) {
     RefreshTokenCommand cmd = new RefreshTokenCommand();
     cmd.setRefreshToken(req.getRefreshToken());
-    return ApiResponse.success(refreshTokenCommandHandler.handle(cmd));
+    return ApiResponse.success(authApplicationService.refreshToken(cmd));
   }
 
   @GetMapping("/sso/config")

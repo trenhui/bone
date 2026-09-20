@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.bone.iam.application.command.handler.LoginCommandHandler;
+import com.bone.iam.application.AuthApplicationService;
 import com.bone.iam.application.service.AuthService;
 import com.bone.iam.domain.repository.AccountRepository;
 import com.bone.iam.infrastructure.security.JwtAuthenticationFilter;
@@ -33,10 +33,10 @@ class IamContextLoadsTest {
 
   @Autowired private Environment environment;
 
-  /** 容器能起，且登录主链路的关键 Bean 都在（写侧入口 / 应用服务 / 域仓储 / 认证过滤器）。 */
+  /** 容器能起，且登录主链路的关键 Bean 都在（应用服务入口 / 应用服务 / 域仓储 / 认证过滤器）。 */
   @Test
   void criticalBeansArePresent() {
-    assertNotNull(context.getBean(LoginCommandHandler.class), "登录命令处理器未装配");
+    assertNotNull(context.getBean(AuthApplicationService.class), "登录应用服务未装配");
     assertNotNull(context.getBean(AuthService.class), "AuthService 未装配");
     assertNotNull(context.getBean(AccountRepository.class), "AccountRepository 未装配（SDK 仓储未扫描到）");
     assertNotNull(context.getBean(JwtAuthenticationFilter.class), "JWT 认证过滤器未装配");

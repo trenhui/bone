@@ -5,13 +5,10 @@ import com.bone.core.web.PlatformApiPaths;
 import com.bone.iam.adapter.web.converter.DeptWebConverter;
 import com.bone.iam.adapter.web.dto.request.CreateDeptReq;
 import com.bone.iam.adapter.web.dto.request.UpdateDeptReq;
+import com.bone.iam.application.DeptApplicationService;
 import com.bone.iam.application.command.cmd.CreateDeptCommand;
 import com.bone.iam.application.command.cmd.DeleteDeptCommand;
-import com.bone.iam.application.command.handler.CreateDeptCommandHandler;
-import com.bone.iam.application.command.handler.DeleteDeptCommandHandler;
-import com.bone.iam.application.command.handler.UpdateDeptCommandHandler;
 import com.bone.iam.application.query.dto.DeptTreeDTO;
-import com.bone.iam.application.query.handler.DeptTreeQueryHandler;
 import com.bone.iam.application.query.qry.DeptTreeQuery;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -30,37 +27,34 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class DeptController {
 
-  private final CreateDeptCommandHandler createDeptCommandHandler;
-  private final UpdateDeptCommandHandler updateDeptCommandHandler;
-  private final DeleteDeptCommandHandler deleteDeptCommandHandler;
-  private final DeptTreeQueryHandler deptTreeQueryHandler;
+  private final DeptApplicationService deptApplicationService;
   private final DeptWebConverter deptWebConverter;
 
   @PostMapping
   @PreAuthorize("hasAuthority('iam:depts:write')")
   public ApiResponse<Long> create(@RequestBody CreateDeptReq req) {
     CreateDeptCommand cmd = deptWebConverter.toCreateDeptCommand(req);
-    Long deptId = createDeptCommandHandler.handle(cmd);
+    Long deptId = deptApplicationService.create(cmd);
     return ApiResponse.success(deptId);
   }
 
   @PutMapping("/{id}")
   @PreAuthorize("hasAuthority('iam:depts:write')")
   public ApiResponse<Void> update(@PathVariable Long id, @RequestBody UpdateDeptReq req) {
-    updateDeptCommandHandler.handle(deptWebConverter.toUpdateDeptCommand(id, req));
+    deptApplicationService.update(deptWebConverter.toUpdateDeptCommand(id, req));
     return ApiResponse.success();
   }
 
   @DeleteMapping("/{id}")
   @PreAuthorize("hasAuthority('iam:depts:write')")
   public ApiResponse<Void> delete(@PathVariable Long id) {
-    deleteDeptCommandHandler.handle(new DeleteDeptCommand(id));
+    deptApplicationService.delete(new DeleteDeptCommand(id));
     return ApiResponse.success();
   }
 
   @GetMapping("/tree")
   @PreAuthorize("hasAuthority('iam:depts:read')")
   public ApiResponse<List<DeptTreeDTO>> tree(DeptTreeQuery qry) {
-    return ApiResponse.success(deptTreeQueryHandler.handle(qry));
+    return ApiResponse.success(deptApplicationService.tree(qry));
   }
 }

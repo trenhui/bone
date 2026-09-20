@@ -8,16 +8,11 @@ import com.bone.iam.adapter.web.dto.request.AssignPermissionReq;
 import com.bone.iam.adapter.web.dto.request.CreateRoleReq;
 import com.bone.iam.adapter.web.dto.request.UpdateRoleReq;
 import com.bone.iam.adapter.web.dto.response.RoleDetailResp;
+import com.bone.iam.application.AccountApplicationService;
+import com.bone.iam.application.RoleApplicationService;
 import com.bone.iam.application.command.cmd.CreateRoleCommand;
-import com.bone.iam.application.command.handler.AssignPermissionCommandHandler;
-import com.bone.iam.application.command.handler.CreateRoleCommandHandler;
-import com.bone.iam.application.command.handler.DeleteRoleCommandHandler;
-import com.bone.iam.application.command.handler.UpdateRoleCommandHandler;
 import com.bone.iam.application.query.dto.PermissionDTO;
 import com.bone.iam.application.query.dto.RoleDTO;
-import com.bone.iam.application.query.handler.RoleDetailQueryHandler;
-import com.bone.iam.application.query.handler.RolePageQueryHandler;
-import com.bone.iam.application.query.handler.RolePermissionsQueryHandler;
 import com.bone.iam.application.query.qry.RolePageQuery;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -30,27 +25,22 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping(PlatformApiPaths.IAM_V1 + "/roles")
 @RequiredArgsConstructor
 public class RoleController {
-  private final CreateRoleCommandHandler createRoleCommandHandler;
-  private final AssignPermissionCommandHandler assignPermissionCommandHandler;
-  private final UpdateRoleCommandHandler updateRoleCommandHandler;
-  private final DeleteRoleCommandHandler deleteRoleCommandHandler;
-  private final RolePageQueryHandler rolePageQueryHandler;
-  private final RolePermissionsQueryHandler rolePermissionsQueryHandler;
-  private final RoleDetailQueryHandler roleDetailQueryHandler;
+  private final RoleApplicationService roleApplicationService;
+  private final AccountApplicationService accountApplicationService;
   private final RoleWebConverter roleWebConverter;
 
   @PostMapping
   @PreAuthorize("hasAuthority('iam:roles:write')")
   public ApiResponse<Long> create(@RequestBody CreateRoleReq req) {
     CreateRoleCommand cmd = roleWebConverter.toCreateRoleCommand(req);
-    Long roleId = createRoleCommandHandler.handle(cmd);
+    Long roleId = roleApplicationService.create(cmd);
     return ApiResponse.success(roleId);
   }
 
   @GetMapping
   @PreAuthorize("hasAuthority('iam:roles:read')")
   public ApiResponse<PageResult<RoleDTO>> page(RolePageQuery qry) {
-    PageResult<RoleDTO> result = rolePageQueryHandler.handle(qry);
+    PageResult<RoleDTO> result = roleApplicationService.page(qry);
     return ApiResponse.success(result);
   }
 
@@ -58,8 +48,8 @@ public class RoleController {
   @PreAuthorize("hasAuthority('iam:roles:read')")
   public ApiResponse<RoleDetailResp> detail(@PathVariable Long id) {
     RoleDetailResp resp =
-        roleDetailQueryHandler
-            .handle(id)
+        roleApplicationService
+            .detail(id)
             .map(roleWebConverter::toDetailResp)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "角色不存在"));
     return ApiResponse.success(resp);
@@ -68,14 +58,14 @@ public class RoleController {
   @PutMapping("/{id}")
   @PreAuthorize("hasAuthority('iam:roles:write')")
   public ApiResponse<Void> update(@PathVariable Long id, @RequestBody UpdateRoleReq req) {
-    updateRoleCommandHandler.handle(roleWebConverter.toUpdateRoleCommand(id, req));
+    roleApplicationService.update(roleWebConverter.toUpdateRoleCommand(id, req));
     return ApiResponse.success();
   }
 
   @DeleteMapping("/{id}")
   @PreAuthorize("hasAuthority('iam:roles:write')")
   public ApiResponse<Void> delete(@PathVariable Long id) {
-    deleteRoleCommandHandler.handle(id);
+    roleApplicationService.delete(id);
     return ApiResponse.success();
   }
 
@@ -83,13 +73,13 @@ public class RoleController {
   @PreAuthorize("hasAuthority('iam:roles:write')")
   public ApiResponse<Void> assignPermissions(
       @PathVariable Long id, @RequestBody AssignPermissionReq req) {
-    assignPermissionCommandHandler.handle(roleWebConverter.toAssignPermissionCommand(id, req));
+    accountApplicationService.assignPermission(roleWebConverter.toAssignPermissionCommand(id, req));
     return ApiResponse.success();
   }
 
   @GetMapping("/{id}/permissions")
   @PreAuthorize("hasAuthority('iam:roles:read')")
   public ApiResponse<List<PermissionDTO>> getPermissions(@PathVariable Long id) {
-    return ApiResponse.success(rolePermissionsQueryHandler.handle(id));
+    return ApiResponse.success(roleApplicationService.permissions(id));
   }
 }

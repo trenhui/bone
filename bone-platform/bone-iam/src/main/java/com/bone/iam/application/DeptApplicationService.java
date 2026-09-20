@@ -1,0 +1,118 @@
+package com.bone.iam.application;
+
+import com.bone.iam.application.command.cmd.CreateDeptCommand;
+import com.bone.iam.application.command.cmd.DeleteDeptCommand;
+import com.bone.iam.application.command.cmd.UpdateDeptCommand;
+import com.bone.iam.application.query.dto.DeptTreeDTO;
+import com.bone.iam.application.query.qry.DeptTreeQuery;
+import com.bone.iam.domain.dept.Dept;
+import com.bone.iam.domain.gateway.TenantProvider;
+import com.bone.iam.domain.repository.DeptRepository;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/**
+ * 组织机构应用层统一门面（Application Service First）——机构类用例的唯一入口。
+ *
+ * <p>原 {@code application.command.handler.*DeptCommandHandler} 与 {@code
+ * application.query.handler.DeptTreeQueryHandler} 已全量内联进本类。适配器只依赖本类，HTTP 契约保持不变。
+ *
+ * <p>本类不出现读侧 DSL 与 {@code TenantContext}：取数下沉 {@link DeptRepository#listAll()}，租户取值走 {@link
+ * TenantProvider} 端口（E-2 / E-4.2）。
+ */
+@Service
+@RequiredArgsConstructor
+public class DeptApplicationService {
+
+  private final DeptRepository deptRepository;
+  private final TenantProvider tenantProvider;
+
+  @Transactional
+  public Long create(CreateDeptCommand cmd) {
+    Long tenantId = resolveTenantId(cmd.getTenantId());
+    Dept dept =
+        Dept.create(cmd.getName(), cmd.getParentId(), cmd.getOrderNo(), cmd.getStatus(), tenantId);
+    deptRepository.save(dept);
+    return dept.getId();
+  }
+
+  @Transactional
+  public Long update(UpdateDeptCommand cmd) {
+    Dept dept = deptRepository.findById(cmd.getId());
+    if (dept == null) {
+      throw new IllegalArgumentException("部门不存在: " + cmd.getId());
+    }
+    dept.update(cmd.getName(), cmd.getParentId(), cmd.getOrderNo(), cmd.getStatus());
+    deptRepository.update(dept);
+    return dept.getId();
+  }
+
+  @Transactional
+  public Long delete(DeleteDeptCommand cmd) {
+    if (deptRepository.findById(cmd.getId()) == null) {
+      throw new IllegalArgumentException("部门不存在: " + cmd.getId());
+    }
+    deptRepository.deleteById(cmd.getId());
+    return cmd.getId();
+  }
+
+  @Transactional(readOnly = true)
+  public List<DeptTreeDTO> tree(DeptTreeQuery qry) {
+    Long effectiveTenant = resolveTenantFilter(qry.getTenantId());
+    List<Dept> scoped =
+        deptRepository.listAll().stream()
+            .filter(d -> effectiveTenant == null || effectiveTenant.equals(d.getTenantId()))
+            .toList();
+
+    List<DeptTreeDTO> dtoList = scoped.stream().map(DeptApplicationService::toDto).toList();
+
+    Map<Long, List<DeptTreeDTO>> childrenMap =
+        dtoList.stream()
+            .filter(d -> d.getParentId() != null)
+            .collect(Collectors.groupingBy(DeptTreeDTO::getParentId));
+
+    dtoList.forEach(d -> d.setChildren(childrenMap.getOrDefault(d.getId(), new ArrayList<>())));
+
+    return dtoList.stream()
+        .filter(d -> d.getParentId() == null)
+        .sorted(
+            (a, b) ->
+                Integer.compare(
+                    a.getOrderNo() == null ? 0 : a.getOrderNo(),
+                    b.getOrderNo() == null ? 0 : b.getOrderNo()))
+        .toList();
+  }
+
+  private Long resolveTenantId(Long fromCommand) {
+    if (fromCommand != null) {
+      return fromCommand;
+    }
+    Long fromContext = tenantProvider.currentTenantIdOrNull();
+    return fromContext != null ? fromContext : 0L;
+  }
+
+  /** 非平台租户（&gt; 0）强制按其过滤；平台租户（0）/无上下文回退到查询参数（详设 §3.4 / §4.8）。 */
+  private Long resolveTenantFilter(Long fromQuery) {
+    Long fromContext = tenantProvider.currentTenantIdOrNull();
+    if (fromContext != null && fromContext != 0L) {
+      return fromContext;
+    }
+    return fromQuery;
+  }
+
+  private static DeptTreeDTO toDto(Dept d) {
+    DeptTreeDTO dto = new DeptTreeDTO();
+    dto.setId(d.getId());
+    dto.setName(d.getName());
+    dto.setParentId(d.getParentId());
+    dto.setOrderNo(d.getOrderNo());
+    dto.setStatus(d.getStatus());
+    dto.setChildren(new ArrayList<>());
+    return dto;
+  }
+}

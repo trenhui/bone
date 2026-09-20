@@ -7,8 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.bone.core.security.jwt.JwtConfig;
-import com.bone.iam.application.command.handler.LoginCommandHandler;
-import com.bone.iam.application.command.handler.RefreshTokenCommandHandler;
+import com.bone.iam.application.AuthApplicationService;
 import com.bone.iam.infrastructure.config.IamSsoProperties;
 import com.bone.iam.infrastructure.gateway.AccessTokenIssuerGatewayAdapter;
 import com.bone.iam.infrastructure.security.TokenBlacklistService;
@@ -24,13 +23,11 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 @ExtendWith(MockitoExtension.class)
 class AuthSsoMfaControllerTest {
 
-  @Mock private LoginCommandHandler loginCommandHandler;
+  @Mock private AuthApplicationService authApplicationService;
 
   @Mock private com.bone.iam.adapter.web.converter.AuthWebConverter authWebConverter;
 
   @Mock private AccessTokenIssuerGatewayAdapter jwtTokenService;
-
-  @Mock private RefreshTokenCommandHandler refreshTokenCommandHandler;
 
   @Mock private TokenBlacklistService tokenBlacklistService;
 
@@ -43,8 +40,7 @@ class AuthSsoMfaControllerTest {
     IamSsoProperties ssoProperties = new IamSsoProperties();
     AuthController authController =
         new AuthController(
-            loginCommandHandler,
-            refreshTokenCommandHandler,
+            authApplicationService,
             authWebConverter,
             jwtTokenService,
             tokenBlacklistService,

@@ -5,15 +5,10 @@ import com.bone.core.model.PageResult;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.iam.adapter.web.converter.PermissionWebConverter;
 import com.bone.iam.adapter.web.dto.request.CreatePermissionReq;
+import com.bone.iam.application.PermissionApplicationService;
 import com.bone.iam.application.command.cmd.CreatePermissionCommand;
 import com.bone.iam.application.command.cmd.UpdatePermissionCommand;
-import com.bone.iam.application.command.handler.CreatePermissionCommandHandler;
-import com.bone.iam.application.command.handler.DeletePermissionCommandHandler;
-import com.bone.iam.application.command.handler.UpdatePermissionCommandHandler;
 import com.bone.iam.application.query.dto.PermissionDTO;
-import com.bone.iam.application.query.handler.PermissionDetailQueryHandler;
-import com.bone.iam.application.query.handler.PermissionPageQueryHandler;
-import com.bone.iam.application.query.handler.PermissionTreeQueryHandler;
 import com.bone.iam.application.query.qry.PermissionPageQuery;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -31,33 +26,28 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(PlatformApiPaths.IAM_V1 + "/permissions")
 @RequiredArgsConstructor
 public class PermissionController {
-  private final CreatePermissionCommandHandler createPermissionCommandHandler;
-  private final UpdatePermissionCommandHandler updatePermissionCommandHandler;
-  private final DeletePermissionCommandHandler deletePermissionCommandHandler;
-  private final PermissionPageQueryHandler permissionPageQueryHandler;
-  private final PermissionTreeQueryHandler permissionTreeQueryHandler;
-  private final PermissionDetailQueryHandler permissionDetailQueryHandler;
+  private final PermissionApplicationService permissionApplicationService;
   private final PermissionWebConverter permissionWebConverter;
 
   @PostMapping
   @PreAuthorize("hasAuthority('iam:permissions:write')")
   public ApiResponse<Long> create(@RequestBody CreatePermissionReq req) {
     CreatePermissionCommand cmd = permissionWebConverter.toCreatePermissionCommand(req);
-    Long permissionId = createPermissionCommandHandler.handle(cmd);
+    Long permissionId = permissionApplicationService.create(cmd);
     return ApiResponse.success(permissionId);
   }
 
   @GetMapping
   @PreAuthorize("hasAuthority('iam:permissions:read')")
   public ApiResponse<PageResult<PermissionDTO>> page(PermissionPageQuery qry) {
-    PageResult<PermissionDTO> result = permissionPageQueryHandler.handle(qry);
+    PageResult<PermissionDTO> result = permissionApplicationService.page(qry);
     return ApiResponse.success(result);
   }
 
   @GetMapping("/tree")
   @PreAuthorize("hasAuthority('iam:permissions:read')")
   public ApiResponse<List<PermissionDTO>> tree() {
-    return ApiResponse.success(permissionTreeQueryHandler.handle());
+    return ApiResponse.success(permissionApplicationService.tree());
   }
 
   @PutMapping("/{id}")
@@ -73,20 +63,20 @@ public class PermissionController {
     cmd.setParentId(req.getParentId());
     cmd.setType(req.getType());
     cmd.setSortOrder(req.getSortOrder());
-    updatePermissionCommandHandler.handle(cmd);
+    permissionApplicationService.update(cmd);
     return ApiResponse.success();
   }
 
   @DeleteMapping("/{id}")
   @PreAuthorize("hasAuthority('iam:permissions:write')")
   public ApiResponse<Void> delete(@PathVariable Long id) {
-    deletePermissionCommandHandler.handle(id);
+    permissionApplicationService.delete(id);
     return ApiResponse.success();
   }
 
   @GetMapping("/{id}")
   @PreAuthorize("hasAuthority('iam:permissions:read')")
   public ApiResponse<PermissionDTO> detail(@PathVariable Long id) {
-    return ApiResponse.success(permissionDetailQueryHandler.handle(id));
+    return ApiResponse.success(permissionApplicationService.detail(id));
   }
 }

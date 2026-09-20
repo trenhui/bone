@@ -62,9 +62,13 @@ public class ArchitectureTest {
           .dependOnClassesThat()
           .areAnnotatedWith("com.bone.core.annotation.ReadSideOnly");
 
+  // Q1-C 后 `..application.command.handler..` 包已随 Handler 全量内联而消失，规则目标为空 ⇒ allowEmptyShould
+  // 保留该规则作为「有人再引入 CommandHandler 并依赖读侧 DSL」的回归门禁（而非删规则）。
+  // ApplicationService 自身的读侧 DSL 边界由下方 read_side_dsl_only_in_query_adapter 覆盖。
   @ArchTest
   static final ArchRule command_no_query_builder =
-      FreezingArchRule.freeze(BoneDddArchRules.commandHandlersMustNotUseQueryBuilder());
+      FreezingArchRule.freeze(
+          BoneDddArchRules.commandHandlersMustNotUseQueryBuilder().allowEmptyShould(true));
 
   @ArchTest
   static final ArchRule read_side_dsl_only_in_query_adapter =
