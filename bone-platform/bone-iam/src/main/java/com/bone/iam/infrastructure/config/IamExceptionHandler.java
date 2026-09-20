@@ -1,7 +1,6 @@
 package com.bone.iam.infrastructure.config;
 
 import com.bone.core.exception.BizException;
-import com.bone.core.exception.NotFoundException;
 import com.bone.core.model.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.LinkedHashMap;
@@ -28,19 +27,14 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 @RestControllerAdvice
 public class IamExceptionHandler {
 
-  /** 处理资源不存在异常（NotFoundException），返回 404 */
-  @ExceptionHandler(NotFoundException.class)
-  public ResponseEntity<ApiResponse<Map<String, Object>>> handleNotFoundException(
-      NotFoundException ex, HttpServletRequest request) {
-    log.info("[handleNotFoundException] message={}", ex.getMessage());
-    Map<String, Object> problemDetail = buildProblemDetail(404, ex.getMessage(), request);
-    return ResponseEntity.status(404).body(ApiResponse.error(404, ex.getMessage(), problemDetail));
-  }
-
   /**
    * 处理业务异常 BizException
    *
    * <p>HTTP 状态码与 ApiResponse.code 对齐，符合 API 规范"禁止 HTTP 2xx 且 success: false"。
+   *
+   * <p><b>曾有的 {@code @ExceptionHandler(NotFoundException.class)} 已删除</b>：{@code NotFoundException}
+   * 本身是 {@link BizException} 的子类（固定 404），本分支对它的处理与之逐字节等价（同状态、同信封）， 而 IAM 内已无任何抛出点 ——单独挂一个 handler
+   * 只会让人以为还存在第二套「资源不存在」机制。它若再被抛出，本分支即可正确兜住。
    */
   @ExceptionHandler(BizException.class)
   public ResponseEntity<ApiResponse<Map<String, Object>>> handleBizException(

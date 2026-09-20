@@ -64,7 +64,7 @@ public class TenantApplicationService {
   @Transactional
   public void delete(Long id) {
     if (id == null) {
-      throw new IllegalArgumentException("租户 ID 不能为空");
+      throw IamErrors.of(IamErrorCodes.TENANT_ID_REQUIRED, "租户 ID 不能为空");
     }
     if (id == PLATFORM_TENANT_ID) {
       throw IamErrors.of(IamErrorCodes.TENANT_DELETE_FORBIDDEN, "禁止删除平台租户");
@@ -100,13 +100,13 @@ public class TenantApplicationService {
   @Transactional
   public void updateQuota(UpdateTenantQuotaCommand cmd) {
     if (cmd == null || cmd.getId() == null) {
-      throw new IllegalArgumentException("租户 ID 不能为空");
+      throw IamErrors.of(IamErrorCodes.TENANT_ID_REQUIRED, "租户 ID 不能为空");
     }
     if (cmd.getMaxAccounts() != null && cmd.getMaxAccounts() < 0) {
-      throw new IllegalArgumentException("maxAccounts 不能为负数");
+      throw IamErrors.of(IamErrorCodes.TENANT_QUOTA_INVALID, "maxAccounts 不能为负数");
     }
     if (cmd.getMaxRoles() != null && cmd.getMaxRoles() < 0) {
-      throw new IllegalArgumentException("maxRoles 不能为负数");
+      throw IamErrors.of(IamErrorCodes.TENANT_QUOTA_INVALID, "maxRoles 不能为负数");
     }
     Tenant tenant = tenantRepository.findById(cmd.getId());
     if (tenant == null) {

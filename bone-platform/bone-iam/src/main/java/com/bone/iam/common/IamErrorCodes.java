@@ -45,9 +45,6 @@ public final class IamErrorCodes {
   /** 新密码不满足强度策略（也用于账号创建时的初始密码）。 */
   public static final String WEAK_PASSWORD = "IAM_WEAK_PASSWORD";
 
-  /** 密码过期或命中弱口令策略，需强制改密。 */
-  public static final String PASSWORD_MUST_CHANGE = "IAM_PASSWORD_MUST_CHANGE";
-
   /** 自助改密时旧密码校验失败。 */
   public static final String OLD_PASSWORD_MISMATCH = "IAM_OLD_PASSWORD_MISMATCH";
 
@@ -67,6 +64,9 @@ public final class IamErrorCodes {
   /** 角色不存在（含跨租户不可见）。 */
   public static final String ROLE_NOT_FOUND = "IAM_ROLE_NOT_FOUND";
 
+  /** 授予角色权限时未提供角色 id。 */
+  public static final String ROLE_ID_REQUIRED = "IAM_ROLE_ID_REQUIRED";
+
   /** 权限不存在（含跨租户不可见）。 */
   public static final String PERMISSION_NOT_FOUND = "IAM_PERMISSION_NOT_FOUND";
 
@@ -77,6 +77,19 @@ public final class IamErrorCodes {
 
   /** 会话 id 未提供。 */
   public static final String SESSION_ID_REQUIRED = "IAM_SESSION_ID_REQUIRED";
+
+  // ===== 组织（IAM_DEPT_* / IAM_MENU_*）=====
+
+  /** 部门不存在（含跨租户不可见）。 */
+  public static final String DEPT_NOT_FOUND = "IAM_DEPT_NOT_FOUND";
+
+  /** 菜单不存在（含跨租户不可见）。 */
+  public static final String MENU_NOT_FOUND = "IAM_MENU_NOT_FOUND";
+
+  // ===== 审计（IAM_AUDIT_*）=====
+
+  /** 审计设置未提供或为空。 */
+  public static final String AUDIT_SETTINGS_REQUIRED = "IAM_AUDIT_SETTINGS_REQUIRED";
 
   // ===== 当前账号自助（IAM_PROFILE_*）=====
 
@@ -99,6 +112,12 @@ public final class IamErrorCodes {
 
   /** 租户配额（账号数 / 角色数）已达上限。 */
   public static final String TENANT_QUOTA_EXCEEDED = "IAM_TENANT_QUOTA_EXCEEDED";
+
+  /** 租户 id 未提供。 */
+  public static final String TENANT_ID_REQUIRED = "IAM_TENANT_ID_REQUIRED";
+
+  /** 租户配额入参非法（如账号数 / 角色数为负数）。 */
+  public static final String TENANT_QUOTA_INVALID = "IAM_TENANT_QUOTA_INVALID";
 
   // ===== 应用 / 模块（IAM_APPLICATION_* / IAM_MODULE_* / IAM_USER_*）=====
 

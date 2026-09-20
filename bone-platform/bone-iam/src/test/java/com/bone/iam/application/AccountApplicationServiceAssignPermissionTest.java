@@ -1,12 +1,13 @@
 package com.bone.iam.application;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.core.exception.BizException;
 import com.bone.iam.application.command.cmd.AssignPermissionCommand;
 import com.bone.iam.application.service.RolePermissionBindingService;
+import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.domain.gateway.TenantProvider;
 import com.bone.iam.domain.repository.RoleRepository;
 import com.bone.iam.domain.role.Role;
@@ -42,12 +43,25 @@ class AccountApplicationServiceAssignPermissionTest {
   }
 
   @Test
-  void handleRejectsMissingRole() {
+  void handleRejectsMissingRoleIdAsBadRequest() {
+    AssignPermissionCommand cmd = new AssignPermissionCommand();
+
+    assertThatThrownBy(() -> accountApplicationService.assignPermission(cmd))
+        .isInstanceOf(BizException.class)
+        .hasFieldOrPropertyWithValue("code", 400)
+        .hasMessageContaining(IamErrorCodes.ROLE_ID_REQUIRED);
+  }
+
+  @Test
+  void handleRejectsMissingRoleAsNotFound() {
     AssignPermissionCommand cmd = new AssignPermissionCommand();
     cmd.setRoleId(99L);
     when(roleRepository.findById(99L)).thenReturn(null);
 
-    assertThrows(RuntimeException.class, () -> accountApplicationService.assignPermission(cmd));
+    assertThatThrownBy(() -> accountApplicationService.assignPermission(cmd))
+        .isInstanceOf(BizException.class)
+        .hasFieldOrPropertyWithValue("code", 404)
+        .hasMessageContaining(IamErrorCodes.ROLE_NOT_FOUND);
   }
 
   @Test
@@ -59,6 +73,7 @@ class AccountApplicationServiceAssignPermissionTest {
     when(roleRepository.findById(2L))
         .thenReturn(Role.create("other", "OTHER", "other tenant role", 1, 200L, null));
 
-    assertThrows(BizException.class, () -> accountApplicationService.assignPermission(cmd));
+    assertThatThrownBy(() -> accountApplicationService.assignPermission(cmd))
+        .isInstanceOf(BizException.class);
   }
 }

@@ -5,6 +5,8 @@ import com.bone.iam.application.command.cmd.DeleteDeptCommand;
 import com.bone.iam.application.command.cmd.UpdateDeptCommand;
 import com.bone.iam.application.query.dto.DeptTreeDTO;
 import com.bone.iam.application.query.qry.DeptTreeQuery;
+import com.bone.iam.common.IamErrorCodes;
+import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.dept.Dept;
 import com.bone.iam.domain.gateway.TenantProvider;
 import com.bone.iam.domain.repository.DeptRepository;
@@ -45,7 +47,7 @@ public class DeptApplicationService {
   public Long update(UpdateDeptCommand cmd) {
     Dept dept = deptRepository.findById(cmd.getId());
     if (dept == null) {
-      throw new IllegalArgumentException("部门不存在: " + cmd.getId());
+      throw IamErrors.of(IamErrorCodes.DEPT_NOT_FOUND, cmd.getId());
     }
     dept.update(cmd.getName(), cmd.getParentId(), cmd.getOrderNo(), cmd.getStatus());
     deptRepository.update(dept);
@@ -55,7 +57,7 @@ public class DeptApplicationService {
   @Transactional
   public Long delete(DeleteDeptCommand cmd) {
     if (deptRepository.findById(cmd.getId()) == null) {
-      throw new IllegalArgumentException("部门不存在: " + cmd.getId());
+      throw IamErrors.of(IamErrorCodes.DEPT_NOT_FOUND, cmd.getId());
     }
     deptRepository.deleteById(cmd.getId());
     return cmd.getId();

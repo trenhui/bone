@@ -61,7 +61,7 @@ public class MenuApplicationService {
   public Long update(UpdateMenuCommand cmd) {
     Menu menu = menuRepository.findById(cmd.getId());
     if (menu == null) {
-      throw new IllegalArgumentException("菜单不存在: " + cmd.getId());
+      throw IamErrors.of(IamErrorCodes.MENU_NOT_FOUND, cmd.getId());
     }
     menu.update(
         cmd.getName(),
@@ -78,7 +78,7 @@ public class MenuApplicationService {
   @Transactional
   public Long delete(DeleteMenuCommand cmd) {
     if (menuRepository.findById(cmd.getId()) == null) {
-      throw new IllegalArgumentException("菜单不存在: " + cmd.getId());
+      throw IamErrors.of(IamErrorCodes.MENU_NOT_FOUND, cmd.getId());
     }
     menuRepository.deleteById(cmd.getId());
     return cmd.getId();

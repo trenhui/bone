@@ -43,7 +43,6 @@ public final class IamErrors {
           Map.entry(IamErrorCodes.REFRESH_TOKEN_ROTATE_FAILED, 500),
           // 密码
           Map.entry(IamErrorCodes.WEAK_PASSWORD, 400),
-          Map.entry(IamErrorCodes.PASSWORD_MUST_CHANGE, 403),
           Map.entry(IamErrorCodes.OLD_PASSWORD_MISMATCH, 401),
           // 账号
           Map.entry(IamErrorCodes.ACCOUNT_NOT_FOUND, 404),
@@ -51,10 +50,16 @@ public final class IamErrors {
           Map.entry(IamErrorCodes.ACCOUNT_STATUS_CONFLICT, 409),
           // 角色 / 权限
           Map.entry(IamErrorCodes.ROLE_NOT_FOUND, 404),
+          Map.entry(IamErrorCodes.ROLE_ID_REQUIRED, 400),
           Map.entry(IamErrorCodes.PERMISSION_NOT_FOUND, 404),
           // 会话
           Map.entry(IamErrorCodes.SESSION_NOT_FOUND, 404),
           Map.entry(IamErrorCodes.SESSION_ID_REQUIRED, 400),
+          // 组织
+          Map.entry(IamErrorCodes.DEPT_NOT_FOUND, 404),
+          Map.entry(IamErrorCodes.MENU_NOT_FOUND, 404),
+          // 审计
+          Map.entry(IamErrorCodes.AUDIT_SETTINGS_REQUIRED, 400),
           // 当前账号自助
           Map.entry(IamErrorCodes.PROFILE_OWNERSHIP_DENIED, 401),
           // 租户
@@ -63,6 +68,8 @@ public final class IamErrors {
           Map.entry(IamErrorCodes.TENANT_NOT_FOUND, 404),
           Map.entry(IamErrorCodes.TENANT_CODE_CONFLICT, 409),
           Map.entry(IamErrorCodes.TENANT_QUOTA_EXCEEDED, 400),
+          Map.entry(IamErrorCodes.TENANT_ID_REQUIRED, 400),
+          Map.entry(IamErrorCodes.TENANT_QUOTA_INVALID, 400),
           // 应用 / 模块
           Map.entry(IamErrorCodes.APPLICATION_NOT_FOUND, 404),
           Map.entry(IamErrorCodes.MODULE_NOT_FOUND, 404),

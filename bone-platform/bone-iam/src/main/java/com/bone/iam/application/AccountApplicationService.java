@@ -197,11 +197,11 @@ public class AccountApplicationService {
   @Transactional
   public void assignPermission(AssignPermissionCommand cmd) {
     if (cmd == null || cmd.getRoleId() == null) {
-      throw new IllegalArgumentException("角色 ID 不能为空");
+      throw IamErrors.of(IamErrorCodes.ROLE_ID_REQUIRED, "角色 ID 不能为空");
     }
     Role role = roleRepository.findById(cmd.getRoleId());
     if (role == null) {
-      throw new RuntimeException("角色不存在: " + cmd.getRoleId());
+      throw IamErrors.of(IamErrorCodes.ROLE_NOT_FOUND, cmd.getRoleId());
     }
     assertCallerMayManageRole(role);
     rolePermissionBindingService.replaceBindings(cmd.getRoleId(), cmd.getPermissionIds());

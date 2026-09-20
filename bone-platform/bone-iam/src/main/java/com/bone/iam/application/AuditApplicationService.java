@@ -5,6 +5,8 @@ import com.bone.iam.application.command.cmd.UpdateAuditSettingsCommand;
 import com.bone.iam.application.query.dto.AuditLogDTO;
 import com.bone.iam.application.query.dto.AuditSettingsDTO;
 import com.bone.iam.application.query.qry.AuditLogListQuery;
+import com.bone.iam.common.IamErrorCodes;
+import com.bone.iam.common.IamErrors;
 import com.bone.iam.domain.audit.AuditLog;
 import com.bone.iam.domain.gateway.AuditSettingsGateway;
 import com.bone.iam.domain.gateway.TenantProvider;
@@ -71,7 +73,7 @@ public class AuditApplicationService {
   @Transactional
   public void updateSettings(UpdateAuditSettingsCommand cmd) {
     if (cmd == null || cmd.getSettings() == null || cmd.getSettings().isEmpty()) {
-      throw new IllegalArgumentException("审计设置不能为空");
+      throw IamErrors.of(IamErrorCodes.AUDIT_SETTINGS_REQUIRED, "审计设置不能为空");
     }
     auditSettingsGateway.upsert(currentTenantId(), cmd.getSettings());
   }

@@ -1,11 +1,12 @@
 package com.bone.iam.application;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.core.exception.BizException;
+import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.domain.gateway.TenantDeletionGateway;
 import com.bone.iam.domain.repository.TenantRepository;
 import com.bone.iam.domain.tenant.Tenant;
@@ -37,7 +38,10 @@ class TenantApplicationServiceDeleteTest {
 
   @Test
   void rejectsPlatformTenantDelete() {
-    assertThrows(BizException.class, () -> tenantApplicationService.delete(0L));
+    assertThatThrownBy(() -> tenantApplicationService.delete(0L))
+        .isInstanceOf(BizException.class)
+        .hasFieldOrPropertyWithValue("code", 400)
+        .hasMessageContaining(IamErrorCodes.TENANT_DELETE_FORBIDDEN);
     verify(tenantDeletionGateway, never()).purgeTenantData(0L);
   }
 }

@@ -26,7 +26,7 @@
 | 可聚合 | 监控/告警按 `errorCode` 分组，禁止仅依赖中文 `message` |
 | 可 i18n | 前端以 `errorCode` 为键；`message` 为默认中文 fallback |
 | 安全 | `detail` 禁止 SQL、堆栈、内部路径；未知异常 → `COMMON_INTERNAL_ERROR` + 日志记堆栈 |
-| 单一登记 | 新增码必须出现在本文 **§6 台账**；PR 不得只改枚举不改本文 |
+| 单一登记 | 新增码必须出现在本文 **§6 台账**；PR 不得只改码常量 / 状态表不改本文 |
 
 ---
 
@@ -65,41 +65,75 @@
 
 ## 4. Java 实现约定
 
-```java
-// 模块内：com.bone.{module}.common.exception.{Module}ErrorCode
-@Getter
-@RequiredArgsConstructor
-public enum ExtensionErrorCode {
-    PLUGIN_NOT_FOUND("EXT_PLUGIN_NOT_FOUND", 404, "插件不存在"),
-    PLUGIN_NOT_DEPLOYED("EXT_PLUGIN_NOT_DEPLOYED", 409, "插件未部署");
+**每个模块两个构件，同放 `com.bone.{module}.common`**（示例取样板模块 `bone-blueprint`；全仓 6 个模块的实际形态一致）：
 
-    private final String errorCode;
-    private final int httpStatus;
-    private final String defaultMessage;
+```java
+// ① 码常量类：只承载「稳定码字符串 + 语义」，不承载状态、不承载文案
+public final class BlueprintErrorCodes {
+    /** 订单不存在（含跨租户不可见）。 */
+    public static final String ORDER_NOT_FOUND = "BP_ORDER_NOT_FOUND";
+
+    private BlueprintErrorCodes() {}
 }
 
-// 抛出：BizException / ServiceException 携带 errorCode + httpStatus
-throw new BizException(ExtensionErrorCode.PLUGIN_NOT_FOUND, pluginId);
+// ② 状态表 + 工厂：「码 → HTTP 状态」的唯一真源
+public final class BlueprintErrors {
+    private static final Map<String, Integer> DEFAULT_HTTP_STATUS =
+        Map.ofEntries(
+            Map.entry(BlueprintErrorCodes.ORDER_NOT_FOUND, 404),
+            Map.entry(BlueprintErrorCodes.ORDER_STATUS_CONFLICT, 409));
+
+    static { checkEveryCodeRegistered(); }   // 类加载即反射校验，漏登记启动失败
+
+    /** 抛业务异常：状态由表提供，抛出点只表达业务语义。 */
+    public static BizException of(String errorCode, Object detail) { /* ... */ }
+
+    /** 供 Optional.orElseThrow(...) 用的延迟构造器（不为正常分支付构造栈开销）。 */
+    public static Supplier<BizException> supplier(String errorCode, Object detail) { /* ... */ }
+}
+
+// ③ 抛出点：不写状态数字
+throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 ```
+
+| 模块 | 码常量类 | 状态表（「码 → 状态」真源） |
+|------|----------|----------------------------|
+| bone-blueprint | `BlueprintErrorCodes` | `BlueprintErrors` |
+| bone-iam | `IamErrorCodes` | `IamErrors` |
+| bone-system | `SystemErrorCodes` | `SystemErrors` |
+| bone-masterdata | `MasterDataErrorCodes` | 待建 |
+| bone-extension-studio | `StudioErrorCodes` | 待建 |
+| bone-metadata-server / metadata-engine | `MetaErrorCodes` / `ErrorCodes` | 待建 |
+
+**为什么拆两个类**
+
+1. `BizException` 的首参是 **HTTP 状态**（int），业务码只能以字符串拼进 message——「码」与「状态」天然是两份数据。散在各抛出点手写 `new BizException(404, 码 + ": " + 说明)` 时，任一处不一致都没有机制发现。
+2. 状态表集中一处 + 类加载期**反射校验**（`checkEveryCodeRegistered()`）⇒ 漏登记不可能溜到运行期，而不是被全局处理器悄悄兜底成 400/500。
+3. `BizException(String)` 的默认码是 **500**：绕过工厂手写消息，等于把「查不到 / 状态冲突 / 参数错」都报成服务端故障。
+
+**约定**
+
+1. 新功能**只加字符串码**；抛出走 `{Module}Errors.of(码[, 上下文])`，`Optional` 分支用 `supplier(码, 上下文)`。
+2. 未登记状态即 **fail fast**（`IllegalStateException`）；**禁止**给状态表加「默认 400」的兜底。
+3. message 形如 `{码}: {上下文}`（无上下文时仅 `{码}`）⇒ 前端 / 监控 / i18n 以码为键，中文只是 fallback。
+4. 单测同时钉住**状态**与**码**：`hasFieldOrPropertyWithValue("code", 404)` + `hasMessageContaining(码常量)`。
 
 `GlobalExceptionHandler` 组装 `ProblemDetail` 写入 `ApiResponse.data`；**禁止** `catch (Exception e) { return error(e.getMessage()) }` 吞掉业务码。
 
-**目标态**（与存量 `BizException` 整型 `code` 并存迁移）：
-
-1. 枚举提供 `getErrorCode()`（字符串）、`getHttpStatus()`（int）。  
-2. 新功能**只加字符串码**。  
-3. 单测断言响应含 `errorCode`、`traceId`。
+> **本文旧版 §4 描述的是枚举形态**（`{Module}ErrorCode` 枚举持 `errorCode/httpStatus/defaultMessage`，包 `common.exception`），
+> **该写法在全仓零实现**（6 个模块 0 个枚举）：实际已统一收敛为「常量类 + 状态表」。继续把它写成「目标态」会让每个新模块都要在两种写法之间猜，故 2026-09-20 按实际落地形态改写。若日后要改回枚举，须先在一个模块落地，再同步本节与 §5 流程。
 
 ---
 
 ## 5. 新增错误码流程（PR 必做）
 
 ```
-1. 在模块 *ErrorCode 枚举中定义（errorCode + httpStatus + defaultMessage）
-2. 在本文 §6 对应域表格追加一行
-3. OpenAPI @Operation 或 x-errorCodes 补充该码
-4. PR 描述写明「新增 EXT_XXX，HTTP 409」
-5. 单测：断言 ProblemDetail.errorCode、traceId
+1. 在模块 {Module}ErrorCodes 定义码常量（码字符串 + 语义 javadoc）
+2. 在模块 {Module}Errors 的 DEFAULT_HTTP_STATUS 登记「码 → HTTP 状态」（漏登记则启动失败）
+3. 在本文 §6 对应域表格追加一行
+4. OpenAPI @Operation 或 x-errorCodes 补充该码
+5. PR 描述写明「新增 EXT_XXX，HTTP 409」
+6. 单测：断言响应含 errorCode、traceId，并钉住抛出点的 code + 业务码
 ```
 
 | 禁止 | 原因 |
@@ -140,21 +174,26 @@ throw new BizException(ExtensionErrorCode.PLUGIN_NOT_FOUND, pluginId);
 | `IAM_REFRESH_TOKEN_INVALID` | 401 | 刷新令牌非法 / 过期 / 信息缺失 |
 | `IAM_REFRESH_TOKEN_ROTATE_FAILED` | 500 | 刷新令牌轮换未产出新令牌（服务端契约破坏） |
 | `IAM_WEAK_PASSWORD` | 400 | 新密码不满足强度策略 |
-| `IAM_PASSWORD_MUST_CHANGE` | 403 | 密码过期或命中弱口令策略，需强制改密 |
 | `IAM_OLD_PASSWORD_MISMATCH` | 401 | 自助改密时旧密码校验失败 |
 | `IAM_ACCOUNT_NOT_FOUND` | 404 | 账号不存在（含跨租户不可见） |
 | `IAM_USERNAME_CONFLICT` | 409 | 本租户内用户名已存在（唯一键 `uk_iam_account_username`） |
 | `IAM_ACCOUNT_STATUS_CONFLICT` | 409 | 账号状态迁移不合法（如对已禁用账号重复禁用） |
 | `IAM_ROLE_NOT_FOUND` | 404 | 角色不存在（含跨租户不可见） |
+| `IAM_ROLE_ID_REQUIRED` | 400 | 授予角色权限时未提供角色 id |
 | `IAM_PERMISSION_NOT_FOUND` | 404 | 权限不存在（含跨租户不可见） |
 | `IAM_SESSION_NOT_FOUND` | 404 | 会话不存在（含跨租户不可见，与「参数缺失」分属不同语义） |
 | `IAM_SESSION_ID_REQUIRED` | 400 | 会话 id 未提供 |
+| `IAM_DEPT_NOT_FOUND` | 404 | 部门不存在（含跨租户不可见） |
+| `IAM_MENU_NOT_FOUND` | 404 | 菜单不存在（含跨租户不可见） |
+| `IAM_AUDIT_SETTINGS_REQUIRED` | 400 | 审计设置未提供或为空 |
 | `IAM_PROFILE_OWNERSHIP_DENIED` | 401 | 请求主体与目标账号不一致（越权访问他人 profile） |
 | `IAM_TENANT_ACCESS_DENIED` | 403 | 跨租户访问被拒绝（防 IDOR） |
 | `IAM_TENANT_DELETE_FORBIDDEN` | 400 | 平台租户（id = 0）不允许删除 |
 | `IAM_TENANT_NOT_FOUND` | 404 | 租户不存在 |
 | `IAM_TENANT_CODE_CONFLICT` | 409 | 租户编码已存在 |
 | `IAM_TENANT_QUOTA_EXCEEDED` | 400 | 租户配额（账号数 / 角色数）已达上限 |
+| `IAM_TENANT_ID_REQUIRED` | 400 | 租户 id 未提供 |
+| `IAM_TENANT_QUOTA_INVALID` | 400 | 租户配额入参非法（如账号数 / 角色数为负数） |
 | `IAM_APPLICATION_NOT_FOUND` | 404 | 应用不存在（含跨租户不可见） |
 | `IAM_MODULE_NOT_FOUND` | 404 | 模块不存在（含跨租户不可见） |
 | `IAM_APPLICATION_ID_REQUIRED` | 400 | 授予应用权限时未提供应用 id |
@@ -164,14 +203,24 @@ throw new BizException(ExtensionErrorCode.PLUGIN_NOT_FOUND, pluginId);
 | `IAM_MFA_NOT_AVAILABLE` | 501 | MFA 未在当前版本 / IdP 中启用 |
 
 > **落地范围**：码常量在 `bone-iam/common/IamErrorCodes`（只承载稳定码字符串与语义）；
-> **「码 → HTTP 状态」的唯一真源是 `bone-iam/common/IamErrors` 的 `DEFAULT_HTTP_STATUS` 表**（与本表逐行对应），
+> **「码 → HTTP 状态」的唯一真源是 `bone-iam/common/IamErrors` 的 `DEFAULT_HTTP_STATUS` 表**（与本表逐行对应，共 35 行），
 > 抛出方走 `IamErrors.of(码, 上下文)`（或 `orElseThrow` 用的 `IamErrors.supplier(码, 上下文)`），
 > **不在抛出点手写状态数字**。新增码若忘记登记状态，`IamErrors` 类加载即抛 `IllegalStateException`（fail fast）。
+>
+> **抛出点覆盖（2026-09-20）**：application 层的**全部裸异常**已消除（`IllegalArgumentException` /
+> `RuntimeException` 共 11 处）。它们不被 `IamExceptionHandler` 的任何分支匹配，会落到 `Exception` 兜底报成 **500**
+> ——把「参数错 / 查不到」说成服务端故障。现分别归入 `IAM_ROLE_ID_REQUIRED`、`IAM_DEPT_NOT_FOUND`、
+> `IAM_MENU_NOT_FOUND`、`IAM_TENANT_ID_REQUIRED`、`IAM_TENANT_QUOTA_INVALID`、`IAM_AUDIT_SETTINGS_REQUIRED`，
+> 并复用 `IAM_ROLE_NOT_FOUND`。
 >
 > **回填说明**：本节曾长期停留在一份「理想码清单」（`IAM_TOKEN_EXPIRED`、`IAM_CREDENTIAL_INVALID`、
 > `IAM_USER_NOT_FOUND`、`IAM_PERMISSION_DENIED` 等），与代码里实际抛出的码**双向不一致**：清单里的码无人实现、
 > 实现的码无人登记。2026-09-19 依据 `IamErrorCodes` 实际内容整体重写，并消除抛出点的无码异常
 > （`new BizException(NOT_FOUND, "应用不存在")` 与 `NotFoundException.of(...)` 一并收口到 `IamErrors`）。
+>
+> **删除的码**：`IAM_PASSWORD_MUST_CHANGE`(403)——全仓零抛出点、零消费方。密码到期的实际机制是**登录响应标志**
+> `LoginResp.requirePasswordChange`（`AuthApplicationService` 置为 `weak || expired`，前端据此切改密页，详设 IAM-20），
+> 不需要一个错误码；留着只会让人以为还有第二套机制。
 
 
 ### META_
@@ -296,3 +345,4 @@ throw new BizException(ExtensionErrorCode.PLUGIN_NOT_FOUND, pluginId);
 |------|------|
 | 2026-05-17 | 从 Bone-API-规范 §4 独立；台账与流程为本文真源 |
 | 2026-09-19 | 重写 §6 `IAM_` 台账（原清单为未落地的理想码，与代码双向不一致）；同步 §3.1 示例与 §7 速查中的失效码 |
+| 2026-09-20 | §4 按实际落地形态改写（原枚举形态全仓零实现 → 常量类 + 状态表 + fail-fast），§5 流程同步；§6 `IAM_` 新增 6 码、删除 `IAM_PASSWORD_MUST_CHANGE`，并记录 application 层裸异常收口 |
