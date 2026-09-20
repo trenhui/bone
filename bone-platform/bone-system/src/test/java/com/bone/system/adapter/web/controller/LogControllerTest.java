@@ -17,6 +17,7 @@ import com.bone.system.application.command.cmd.CreateLogCommand;
 import com.bone.system.application.command.handler.LogCommandHandler;
 import com.bone.system.application.query.dto.LogDTO;
 import com.bone.system.application.query.handler.LogQueryHandler;
+import com.bone.system.application.service.LogExportApplicationService;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,13 +31,17 @@ public class LogControllerTest {
 
   @Mock private LogQueryHandler logQueryHandler;
 
+  @Mock private LogExportApplicationService logExportApplicationService;
+
   private LogController logController;
 
   @BeforeEach
   public void setUp() {
     MockitoAnnotations.openMocks(this);
     LogWebConverter logWebConverter = Mappers.getMapper(LogWebConverter.class);
-    logController = new LogController(logCommandHandler, logQueryHandler, logWebConverter);
+    logController =
+        new LogController(
+            logCommandHandler, logQueryHandler, logWebConverter, logExportApplicationService);
   }
 
   @Test

@@ -111,8 +111,31 @@ def build_call_re(var: str):
     )
 
 
+# 模块级路径常量，如 `const MD = '/api/v1/masterdata'`：不解析它，所有以 ${MD} 开头的路径都会被跳过
+CONST_RE = re.compile(
+    r"^\s*(?:const|let|var)\s+([A-Za-z_]\w*)\s*=\s*['\"]([^'\"]*)['\"]", re.MULTILINE
+)
+PARAM_RE = re.compile(r"\$\{[^}]*\}")
+
+
+def resolve_path(path: str, consts: dict):
+    """把模板路径解析成可探测的字面路径。
+
+    - 已知常量前缀（如 ${MD}）替换为常量值；
+    - 其余 ${...} 视为路径参数，替换为探针占位 `1`（OPTIONS 按 pattern 匹配，不绑定实参，
+      因此占位值不影响「端点是否存在」的判定）。
+    """
+    for name, val in consts.items():
+        path = path.replace("${" + name + "}", val)
+    return PARAM_RE.sub("1", path)
+
+
 def collect_frontend_paths(frontend_root: str):
-    """返回 [(app, base, method, path)]，跳过含 ${} 模板变量与未声明 base 的路径。"""
+    """返回 [(app, base, method, path)]。
+
+    不做「含 ${ 就跳过」——那会让所有带路径参数的接口（`/entities/${id}/fields`）和所有用常量前缀的
+    应用（masterdata 的 ${MD}）整批逃逸，使「全部命中」变成假绿。
+    """
     out = []
     if not os.path.isdir(frontend_root):
         return out
@@ -139,12 +162,11 @@ def collect_frontend_paths(frontend_root: str):
                 clients = CLIENT_RE.findall(text)
                 if not clients:
                     continue
+                consts = dict(CONST_RE.findall(text))
                 for var, cbase in clients:
                     for method, path in build_call_re(var).findall(text):
-                        if "${" in path:
-                            continue
-                        out.append((app, cbase, method.lower(), path))
-    # 去重
+                        out.append((app, cbase, method.lower(), resolve_path(path, consts)))
+    # 去重（解析后可能出现重复，例如同一接口在多个文件里声明）
     seen, uniq = set(), []
     for item in out:
         if item not in seen:
@@ -174,6 +196,25 @@ def run_contract(base: str, token: str, frontend_root: str, tenant: str):
         check("扫描到前端 API 声明", False, f"未找到任何声明，检查 {frontend_root}")
         return
     check("扫描到前端 API 声明", True, f"{len(paths)} 条")
+
+    # 覆盖度自检：某 app 一条都没扫到，多半是扫描器没识别其写法（而非它没有接口）——
+    # 静默跳过会让「全部命中」变成假绿，必须与显式告警区分开。
+    apps_with_src = [
+        d
+        for d in sorted(os.listdir(frontend_root))
+        if os.path.isdir(os.path.join(frontend_root, d, "src"))
+    ]
+    hit_apps = {p[0] for p in paths}
+    uncovered = [a for a in apps_with_src if a not in hit_apps]
+    print(
+        "  [覆盖] "
+        + ", ".join(f"{a}={sum(1 for p in paths if p[0] == a)}" for a in hit_apps)
+        + (f" | 零覆盖：{', '.join(uncovered)}" if uncovered else "")
+    )
+    if uncovered:
+        check("每个微应用都纳入契约对账", False, f"零覆盖：{', '.join(uncovered)}")
+    else:
+        check("每个微应用都纳入契约对账", True, f"{len(hit_apps)}/{len(apps_with_src)} 个应用")
 
     missing, mismatched, inconclusive = [], [], []
     for app, fbase, method, path in paths:
@@ -570,6 +611,74 @@ def step_module_smoke(base: str, token: str, tenant: str):
         check(name, ok, f"HTTP {st}" + ("" if ok else f" {raw[:120]}"))
 
 
+def pick_first_id(base: str, token: str, tenant: str, list_path: str):
+    """从列表接口取第一个资源的 id，用于填充前端路径里的 ${id}。"""
+    st, raw = http("GET", base + list_path, token=token,
+                   headers={"X-Tenant-Id": str(tenant)}, timeout=15)
+    data = data_of(json_of(raw)) or {}
+    if isinstance(data, dict):
+        records = data.get("records") or data.get("list") or []
+        if records and isinstance(records[0], dict):
+            return records[0].get("id")
+    return None
+
+
+def step_ui_read_paths(base: str, token: str, tenant: str, ent: dict):
+    """Part C：前端页面打开时**真实会调**的读接口（含路径参数），用真实 id/code 跑一遍。
+
+    Part A 只能探测不带模板变量的路径（`/entities`、`/accounts` 之类），而页面真正打开时
+    调用的多是 `/entities/{id}`、`/roles/{id}/permissions` 这类带 id 的路径 —— 这些路径的
+    404 / 500 只有用真实 id 调才发现得了，因此单列一段。
+    """
+    print("\n== Part C 前端页面读链路（真实 id 填充，只读）==")
+    ids = {
+        "account": pick_first_id(base, token, tenant, "/api/v1/iam/accounts?page=1&size=1"),
+        "role": pick_first_id(base, token, tenant, "/api/v1/iam/roles?page=1&size=1"),
+        "permission": pick_first_id(base, token, tenant, "/api/v1/iam/permissions?page=1&size=1"),
+        "config": pick_first_id(base, token, tenant, "/api/v1/system/config/page?page=1&size=1"),
+        "alertRule": pick_first_id(base, token, tenant, "/api/v1/system/alert/rules/page?page=1&size=1"),
+        "app": pick_first_id(base, token, tenant, "/api/v1/apps?page=1&size=1"),
+    }
+    print("  真实 id：" + ", ".join(f"{k}={v}" for k, v in ids.items()))
+
+    # (名称, 前端页面, 路径构造器)
+    cases = [
+        ("实体详情", "元数据 / 实体管理", lambda: f"/api/v1/metadata/entities/{ent['id']}"),
+        ("实体字段列表", "元数据 / 字段管理",
+         lambda: f"/api/v1/metadata/entities/{ent['id']}/fields?page=1&size=20"),
+        ("关系列表", "元数据 / 关系管理", lambda: "/api/v1/metadata/relationships?page=1&size=20"),
+        ("运行时记录列表", "元数据 / 运行时数据管理",
+         lambda: f"/api/v1/runtime/entities/{ent['code']}/records?page=1&size=20"),
+        ("账号详情", "IAM / 账号管理", lambda: f"/api/v1/iam/accounts/{ids['account']}"),
+        ("角色详情", "IAM / 角色管理", lambda: f"/api/v1/iam/roles/{ids['role']}"),
+        ("角色权限", "IAM / 角色管理", lambda: f"/api/v1/iam/roles/{ids['role']}/permissions"),
+        ("权限详情", "IAM / 权限管理", lambda: f"/api/v1/iam/permissions/{ids['permission']}"),
+        ("审计设置", "IAM / 审计设置", lambda: "/api/v1/iam/audit/settings"),
+        ("配置详情", "系统 / 配置管理", lambda: f"/api/v1/system/config/{ids['config']}"),
+        ("配置历史", "系统 / 配置管理", lambda: f"/api/v1/system/config/{ids['config']}/history"),
+        ("告警规则详情", "系统 / 监控告警", lambda: f"/api/v1/system/alert/rules/{ids['alertRule']}"),
+        ("模块列表", "元数据 / 应用模块", lambda: f"/api/v1/apps/{ids['app']}/modules"),
+        ("控制台服务", "控制台", lambda: "/api/v1/console/services"),
+        ("控制台资源", "控制台", lambda: "/api/v1/console/resources"),
+        ("控制台指标", "控制台", lambda: "/api/v1/console/metrics"),
+    ]
+
+    for name, page, builder in cases:
+        try:
+            path = builder()
+        except Exception as e:  # noqa: BLE001
+            check(f"{name}（{page}）", False, f"路径构造失败：{e}")
+            continue
+        if "/None" in path or path.rstrip("/").endswith("None"):
+            print(f"  [SKIP] {name}（{page}）：上游列表为空，取不到真实 id")
+            continue
+        st, raw = http("GET", base + path, token=token,
+                       headers={"X-Tenant-Id": str(tenant)}, timeout=15)
+        parsed = json_of(raw)
+        ok = st == 200 and isinstance(parsed, dict) and parsed.get("success") is not False
+        check(f"{name}（{page}）", ok, f"HTTP {st}" + ("" if ok else f" {raw[:140]}"))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="MVP 全栈自动联调验收")
     ap.add_argument("--gateway", default=DEFAULT_GATEWAY)
@@ -614,6 +723,8 @@ def main() -> int:
         step_add_field_republish(args.gateway, token, ent, rec, db)
         step_tenant_isolation(args.gateway, token, ent, rec, db)
     step_module_smoke(args.gateway, token, args.tenant)
+    if ent:
+        step_ui_read_paths(args.gateway, token, args.tenant, ent)
 
     # 元数据直连（绕过网关）一致性
     st, raw = http("GET", args.metadata + "/api/v1/metadata/entities?page=1&size=1",

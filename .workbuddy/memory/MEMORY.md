@@ -11,6 +11,8 @@
 - ⚠ **编程式事务死角**：`TransactionTemplate` lambda 不被 `getMethodCallsFromSelf()` 追 ⇒ 须人工核聚合数。
 - 新门禁必须负向探针验活（临时调违规→报红→还原）；空规则≠要删（`allowEmptyShould(true)` 可能是有意回归门禁）。非 clean 构建删类后 `target/` 残留 `.class` ⇒ bean 名冲突假红，`mvn clean test` 解。
 - ArchUnit 1.2.1：精确豁免单类 `doNotHaveFullyQualifiedName(...)` 挂 `noClasses().that()`；`JavaCall.Predicates.target(...)` 泛型是 `AccessTarget.CodeUnitCallTarget`。
+- ⚠ **`FreezingArchRule` 基线会因「工具链重编译」失效（2026-09-20 实测，bone-iam 既有红）**：基线按 violation 标识串（含行号+方法名）冻结；重编译后 lambda 归属由 `lambda$N(...)` 漂到外层方法（如 `ApplicationPageQueryHandler.handle(...)`）⇒ 基线匹配不上 ⇒ 报「新违规」，且 ArchUnit 会**删除**基线中「不再出现」的条目（本次 2 个 store 各被删 7 行，已 `git checkout --` 还原）。失败项全在既有类（`ApplicationPageQueryHandler` E-4.2 ×4、`AccountDetailQueryHandler`/`RoleDetailQueryHandler` E-2 ×2），**已用「HEAD 干净 worktree 跑同一条命令」自证与改动无关**。增量编译会掩盖该漂移，`mvn clean` 才暴露 ⇒ 别据此判断自己改坏了门禁，也别把基线改动静默提交。
+- ⚠ **R8 聚合纯单测门禁**：`AggregatePureUnitTestCoverageTest.everyAggregateRootHasAPureUnitTest` 要求每个聚合根有同名 `<Aggregate>Test`（纯单测、无容器）。新增聚合根必须同时补测试，否则构建红。
 
 ## 2. Git / 共享工作树
 - 改名/移动一个提交落地（`git mv`+声明+import+单测）。
@@ -19,7 +21,10 @@
 - 「静默 ≠ 冻结」：他人在途改动可静默数小时后复活 ⇒ 动手前重测 mtime。Maven 须绕沙箱（`dangerouslyDisableSandbox`，`mvn -o` 可跑）。`ci.yml` 只跑 `main/master/develop`（不跑 `release/*`），但 `on.push.paths` 型在 `release/*` 触发；gitleaks/DDL 不在 CI。
 
 ## 3. SDK 真源
-- `Repository<T,ID>` 自身声明 `findByCriteria/countBy/updateByCriteria/aggregate(...)`，依赖 `@ReadSideOnly` 的 `Criteria` ⇒ 读侧 DSL 焊进写侧。**无聚合级联落库**（集合 `@Transient`）、**无派生查询/动态代理**、接口内**禁 `static`/`private` 方法**。
+- `Repository<T,ID>` 自身声明 `findByCriteria/countBy/updateByCriteria/aggregate(...)`，依赖 `@ReadSideOnly` 的 `Criteria` ⇒ 读侧 DSL 焊进写侧。**无聚合级联落库**（集合 `@Transient`）、**无派生查询/动态代理**、接口内**禁 `static`/`private` 方法**（`default` 允许）。
+- ⚠ **本聚合读的落点规则（2026-09-20 落地 IAM `AppPermissionRepository`）**：`Criteria` 只许出现在 (a) `..domain.repository..`（**扁平包，不含 `domain.app.repository` 这类子包**——bone-iam 内联规则 `domain_no_query_builder` 的豁免谓词就是 `..domain.repository..`）的 `default` 方法里，或 (b) `infrastructure/query`。`..application..` 一律不得出现读侧 DSL（E-4.2，`readSideDslOnlyInQueryAdapter`）。先例：`AccountRepository`（DSL default 放 `com.bone.iam.domain.repository`）；对照 `BoneApplicationRepository`（无 DSL，可在 `domain.app.repository`）。
+- ⚠ **SDK 不自动建表**：`MySQLPlugin.generateCreateTableStatement` 只有声明+实现、**全仓无调用方**；表来自仓库根 `bone-init.sql`（手工执行）。新增 `@Table` 聚合必须同步补 DDL 并按 `bone_application` 形态带上 `tenant_id/deleted/version`，否则查询报错。
+- ⚠ **枚举持久化有个 `getCode()` 陷阱**：`SqlUtil.toJdbcParameter` 先反射 `getCode()`，拿到非 null 就把它当参数值落库，否则落 `name()`；读回由 `SmartRowMapper` 兜底 `Enum.valueOf` / `of(int)` / `byCode(int)`。⇒ 若新枚举既想要「小写对外表示」又把访问器命名成 `getCode()`，会变成「code 落库、name 读回」错配。正确做法：对外表示另起名（本次用 `AppRole.externalName()`，库里存 `ADMIN/DEVELOPER/VIEWER`，API 输出小写）。`AccountStatus` 是反面样板（`getCode()`→int，列 tinyint，且配 `of(int)`）。
 - `publishFrom(aggregate)` + `@NoDomainEvent` 类级豁免；`applicationSaveMustPairWithPublishOrExempt` 类级判定。
 - `@TenantScope`：**MANUAL** 默认；软删不自动注入（须手写）；AUTO 无锚点+JOIN → `IllegalStateException`。模板回退：`sql/...` → `sql-templates/...` → `@Sql`。
 - 三条阻塞：`@Version`(已落地)/聚合级联(CORE-11)/强类型ID(E-7.1)。blueprint=L3 参考实现（非照抄范式）；已删全部 `*CommandHandler`/`*QueryHandler`(ADR-0028)。
@@ -35,6 +40,8 @@
 - 幂等平台能力 `IdempotencyService`（application 层零 `ResponseEntity`）。集成事件 `fromDomain` 入参须散装标量。
 - adapter 层就地 `@Value`（Mockito 不注入⇒ `ReflectionTestUtils.setField`）。⚠ 带默认值占位符写错键名**静默失效**（实例 IP 白名单永久失效）。
 - **Outbox 写须与业务写同事务 `MANDATORY`** ⇒ AFTER_COMMIT 落 Outbox 须另开 `REQUIRES_NEW`。
+- ⚠ **404 会被 catch-all 兜成 500（2026-09-20 平台级修复）**：Spring Boot 3/Spring 6 未匹配路由抛 `NoResourceFoundException`（**不是**旧版 `NoHandlerFoundException`，框架 `bone-web` 只 catch 后者=死代码），而各模块 `@ExceptionHandler(Exception.class)` 会把它兜成 500。修法是各 `GlobalExceptionHandler` 补 `NoResourceFoundException→404`。**框架级 advice 经 `AutoConfiguration.imports` 注册但受 `@ConditionalOnMissingBean(name="globalExceptionHandler")` 约束** ⇒ 自带 handler 的模块（system/masterdata/metadata-server）与自造 handler 的模块（studio-generator，只依赖 `bone-core`）都得各自补。附带效应：修好前 OPTIONS 探测会把「真缺失」与「500」都算 inconclusive，掩盖接口缺口（本次契约缺口从 12 暴露为 23）。
+- ⚠ **给 Controller 加构造器参数会打爆手工装配的测试**：`@RequiredArgsConstructor` 加依赖后，`new XxxController(...)` 型单测 test-compile 直接失败（本次 `LogControllerTest`）。改完 grep 一遍 `new <Controller>(`。
 - **Outbox 幂等**：补偿触发器型集成事件（如 `OrderStockActionFailed`）用业务身份派生**确定性 eventId** + 先查后插去重（表无唯一索引，靠「单写者」假设；最终兜底是消费端按 eventId 去重）。事实流型事件仍用随机 UUID。
 - **装配级测试用 H2，不用 Testcontainers**：装配测试验「上下文能否装配」（bean 名冲突/缺失依赖/循环引用/配置前缀），与 DB 方言无关；Testcontainers 需 Docker 守护进程+拉镜像，离线与无网 CI 不可用。持久化语义留给 `-Pintegration` 本地 MySQL 集成测试。坑：`fixedDelay` 型 Job 无法用 `-` 关闭且启动即跑一次，须 `@MockBean` 摘掉，否则在空库上报 `BadSqlGrammarException` 且被吞。
 - **改共享门禁后必查冻结基线**：新谓词=新规则描述=新冻结键；跑完 diff `archunit_store/`，**新增条目必须为空文件**（空=零违规=真绿；非空=把存量违规冻结后放行=假绿）。旧描述的孤儿条目无害但会膨胀。

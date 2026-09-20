@@ -5,16 +5,21 @@ import com.bone.core.web.PlatformApiPaths;
 import com.bone.masterdata.adapter.web.converter.DataQualityWebConverter;
 import com.bone.masterdata.adapter.web.dto.request.CreateDataQualityRuleReq;
 import com.bone.masterdata.adapter.web.dto.request.PerformDataQualityCheckReq;
+import com.bone.masterdata.adapter.web.dto.request.UpdateDataQualityRuleReq;
 import com.bone.masterdata.application.command.cmd.CreateDataQualityRuleCommand;
 import com.bone.masterdata.application.command.cmd.PerformDataQualityCheckCommand;
 import com.bone.masterdata.application.command.handler.CreateDataQualityRuleHandler;
+import com.bone.masterdata.application.command.handler.DeleteDataQualityRuleHandler;
 import com.bone.masterdata.application.command.handler.PerformDataQualityCheckHandler;
+import com.bone.masterdata.application.command.handler.UpdateDataQualityRuleHandler;
 import com.bone.masterdata.application.query.dto.DataQualityReportDTO;
 import com.bone.masterdata.application.query.dto.DataQualityRuleDTO;
 import com.bone.masterdata.application.query.dto.QualityCheckDTO;
 import com.bone.masterdata.application.query.dto.QualityReportDTO;
+import com.bone.masterdata.application.query.handler.DataQualityRuleDetailQueryHandler;
 import com.bone.masterdata.application.query.handler.DataQualityRuleListQueryHandler;
 import com.bone.masterdata.application.query.handler.GetQualityReportQueryHandler;
+import com.bone.masterdata.application.query.qry.DataQualityRuleDetailQuery;
 import com.bone.masterdata.application.query.qry.DataQualityRuleListQuery;
 import com.bone.masterdata.domain.quality.QualityCheck;
 import com.bone.masterdata.domain.quality.QualityReport;
@@ -33,6 +38,9 @@ public class DataQualityController {
   private final DataQualityRuleListQueryHandler ruleListQueryHandler;
   private final PerformDataQualityCheckHandler performCheckHandler;
   private final GetQualityReportQueryHandler getQualityReportQueryHandler;
+  private final DataQualityRuleDetailQueryHandler ruleDetailQueryHandler;
+  private final UpdateDataQualityRuleHandler updateRuleHandler;
+  private final DeleteDataQualityRuleHandler deleteRuleHandler;
   private final DataQualityWebConverter converter;
 
   @PostMapping("/rules")
@@ -48,10 +56,37 @@ public class DataQualityController {
     return ApiResponse.success(rules);
   }
 
+  @GetMapping("/rules/{id}")
+  public ApiResponse<DataQualityRuleDTO> getRule(@PathVariable Long id) {
+    return ApiResponse.success(ruleDetailQueryHandler.handle(new DataQualityRuleDetailQuery(id)));
+  }
+
+  @PutMapping("/rules/{id}")
+  public ApiResponse<Void> updateRule(
+      @PathVariable Long id, @Valid @RequestBody UpdateDataQualityRuleReq req) {
+    updateRuleHandler.handle(converter.toCommand(id, req));
+    return ApiResponse.success();
+  }
+
+  @DeleteMapping("/rules/{id}")
+  public ApiResponse<Void> deleteRule(@PathVariable Long id) {
+    deleteRuleHandler.handle(id);
+    return ApiResponse.success();
+  }
+
   @PostMapping("/checks")
   public ApiResponse<Long> performCheck(@Valid @RequestBody PerformDataQualityCheckReq req) {
     PerformDataQualityCheckCommand cmd = new PerformDataQualityCheckCommand();
     cmd.setMasterDataEntityId(req.getMasterDataEntityId());
+    Long reportId = performCheckHandler.handle(cmd);
+    return ApiResponse.success(reportId);
+  }
+
+  @PostMapping("/check")
+  public ApiResponse<Long> check(
+      @RequestParam(value = "masterDataEntityId", required = false) Long masterDataEntityId) {
+    PerformDataQualityCheckCommand cmd = new PerformDataQualityCheckCommand();
+    cmd.setMasterDataEntityId(masterDataEntityId);
     Long reportId = performCheckHandler.handle(cmd);
     return ApiResponse.success(reportId);
   }

@@ -8,12 +8,14 @@ import com.bone.integration.application.command.handler.ExecuteFlowHandler;
 import com.bone.integration.application.query.dto.ExecutionLogDTO;
 import com.bone.integration.application.query.dto.FlowStatisticsDTO;
 import com.bone.integration.application.query.handler.ExecutionDetailQueryHandler;
+import com.bone.integration.application.query.handler.ExecutionLogLinesQueryHandler;
 import com.bone.integration.application.query.handler.ExecutionLogListQueryHandler;
 import com.bone.integration.application.query.handler.FlowStatisticsQueryHandler;
 import com.bone.integration.application.query.qry.ExecutionDetailQuery;
 import com.bone.integration.application.query.qry.ExecutionLogListQuery;
 import com.bone.integration.application.query.qry.FlowStatisticsQuery;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 public class MonitorController {
   private final ExecuteFlowHandler executeFlowHandler;
   private final ExecutionLogListQueryHandler executionLogListQueryHandler;
+  private final ExecutionLogLinesQueryHandler executionLogLinesQueryHandler;
   private final ExecutionDetailQueryHandler executionDetailQueryHandler;
   private final FlowStatisticsQueryHandler flowStatisticsQueryHandler;
 
@@ -42,6 +45,11 @@ public class MonitorController {
   public ApiResponse<ExecutionLogDTO> getExecution(@PathVariable Long id) {
     ExecutionLogDTO dto = executionDetailQueryHandler.handle(new ExecutionDetailQuery(id));
     return ApiResponse.success(dto);
+  }
+
+  @GetMapping("/executions/{id}/logs")
+  public ApiResponse<List<Map<String, Object>>> executionLogs(@PathVariable Long id) {
+    return ApiResponse.success(executionLogLinesQueryHandler.handle(id));
   }
 
   @PostMapping("/executions/{id}/retry")

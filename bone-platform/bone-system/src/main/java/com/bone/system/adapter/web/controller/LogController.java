@@ -5,15 +5,23 @@ import com.bone.core.model.PageResult;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.system.adapter.web.converter.LogWebConverter;
 import com.bone.system.adapter.web.dto.request.CreateLogReq;
+import com.bone.system.adapter.web.dto.request.LogExportReq;
 import com.bone.system.adapter.web.dto.request.LogPageReq;
 import com.bone.system.adapter.web.dto.response.LogResp;
 import com.bone.system.application.command.handler.LogCommandHandler;
 import com.bone.system.application.query.dto.LogDTO;
 import com.bone.system.application.query.handler.LogQueryHandler;
+import com.bone.system.application.service.LogExportApplicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 /** 日志管理控制器 */
@@ -26,6 +34,9 @@ public class LogController {
   private final LogCommandHandler logCommandHandler;
   private final LogQueryHandler logQueryHandler;
   private final LogWebConverter logWebConverter;
+  private final LogExportApplicationService logExportApplicationService;
+
+  private static final DateTimeFormatter EXPORT_TS = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
 
   @Operation(summary = "创建日志")
   @PostMapping
@@ -52,5 +63,22 @@ public class LogController {
   public ApiResponse<PageResult<LogResp>> page(LogPageReq req) {
     PageResult<LogDTO> pageResult = logQueryHandler.page(logWebConverter.toQuery(req));
     return ApiResponse.success(pageResult.map(logWebConverter::toResp));
+  }
+
+  @Operation(summary = "导出日志（CSV）")
+  @PostMapping("/export")
+  public ResponseEntity<byte[]> export(@RequestBody(required = false) LogExportReq req) {
+    byte[] bytes = logExportApplicationService.exportCsv(logWebConverter.toExportQuery(req));
+    String ts = LocalDateTime.now().format(EXPORT_TS);
+    return ResponseEntity.ok()
+        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"logs-" + ts + ".csv\"")
+        .contentType(MediaType.APPLICATION_OCTET_STREAM)
+        .body(bytes);
+  }
+
+  @Operation(summary = "日志分析概览（总量 + 各级别分布）")
+  @GetMapping("/analyze")
+  public ApiResponse<Map<String, Object>> analyze() {
+    return ApiResponse.success(logQueryHandler.analyze());
   }
 }

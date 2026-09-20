@@ -55,6 +55,21 @@ public class ConfigQueryHandler {
     return PageResult.of(dtoList, result.getTotal(), result.getPage(), result.getSize());
   }
 
+  /**
+   * 全量配置（供快照导出，MVP-09）。
+   *
+   * <p>不分页：配置量级有限（业务配置而非日志），且导出要求一次拿到完整集合。若将来配置项增长到千级以上， 应改为按 {@code configKey} 游标分批，而不是把 limit 调大。
+   */
+  @Transactional(readOnly = true)
+  public List<ConfigDTO> listAll() {
+    return QueryBuilder.from(SystemConfig.class)
+        .orderBy(SystemConfig::getConfigKey, true)
+        .list()
+        .stream()
+        .map(this::toDTO)
+        .collect(Collectors.toList());
+  }
+
   private ConfigDTO toDTO(SystemConfig config) {
     return ConfigDTO.builder()
         .id(config.getId())

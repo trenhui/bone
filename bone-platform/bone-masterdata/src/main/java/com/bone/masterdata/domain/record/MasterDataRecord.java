@@ -61,4 +61,12 @@ public class MasterDataRecord extends AggregateRoot<Long> {
     this.data = data;
     this.updatedAt = LocalDateTime.now();
   }
+
+  public void archive() {
+    if (this.status == MasterDataRecordStatus.ARCHIVED) {
+      throw new DomainException("主数据记录已归档");
+    }
+    this.status = MasterDataRecordStatus.ARCHIVED;
+    this.updatedAt = LocalDateTime.now();
+  }
 }

@@ -4,10 +4,12 @@ import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import com.bone.core.web.PlatformApiPaths;
 import com.bone.masterdata.application.command.cmd.CreateMasterDataEntityCommand;
+import com.bone.masterdata.application.command.cmd.DisableMasterDataEntityCommand;
 import com.bone.masterdata.application.command.cmd.UpdateMasterDataEntityCommand;
 import com.bone.masterdata.application.command.handler.ConvertFromBusinessEntityHandler;
 import com.bone.masterdata.application.command.handler.CreateMasterDataEntityHandler;
 import com.bone.masterdata.application.command.handler.DeleteMasterDataEntityHandler;
+import com.bone.masterdata.application.command.handler.DisableMasterDataEntityHandler;
 import com.bone.masterdata.application.command.handler.PublishMasterDataEntityHandler;
 import com.bone.masterdata.application.command.handler.UpdateMasterDataEntityHandler;
 import com.bone.masterdata.application.query.dto.MasterDataEntityDTO;
@@ -29,6 +31,7 @@ public class MasterDataEntityController {
   private final MasterDataEntityDetailQueryHandler masterDataEntityDetailQueryHandler;
   private final ConvertFromBusinessEntityHandler convertFromBusinessEntityHandler;
   private final DeleteMasterDataEntityHandler deleteMasterDataEntityHandler;
+  private final DisableMasterDataEntityHandler disableMasterDataEntityHandler;
 
   @PostMapping
   public ApiResponse<Long> create(@RequestBody CreateMasterDataEntityCommand cmd) {
@@ -61,6 +64,17 @@ public class MasterDataEntityController {
   @PostMapping("/{id}/publish")
   public ApiResponse<Void> publish(@PathVariable Long id) {
     publishMasterDataEntityHandler.handle(id);
+    return ApiResponse.success();
+  }
+
+  @PostMapping("/{id}/disable")
+  public ApiResponse<Void> disable(
+      @PathVariable Long id, @RequestBody(required = false) DisableMasterDataEntityCommand cmd) {
+    if (cmd == null) {
+      cmd = new DisableMasterDataEntityCommand();
+    }
+    cmd.setId(id);
+    disableMasterDataEntityHandler.handle(cmd);
     return ApiResponse.success();
   }
 

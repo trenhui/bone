@@ -13,6 +13,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @Slf4j
 @RestControllerAdvice
@@ -55,6 +56,20 @@ public class GlobalExceptionHandler {
   public ApiResponse<Void> handleAccessDeniedException(AccessDeniedException e) {
     log.warn("Access denied: {}", e.getMessage());
     return ApiResponse.error(403, "Forbidden");
+  }
+
+  /**
+   * 请求地址不存在 → 404（而非被下方 catch-all 兜底成 500）。
+   *
+   * <p>Spring 6（Boot 3）下未匹配路由抛出 {@link NoResourceFoundException}；本项目开启了 {@code
+   * throw-exception-if-no-handler-found}（bone-web 全局异常处理依赖它），因此该异常会冒泡到此处。 必须显式处理为 404，否则会被
+   * {@code @ExceptionHandler(Exception.class)} 兜底成 500，使「接口不存在」与 「服务器内部错误」语义混淆，也掩盖了契约对账里真正的缺失路由。
+   */
+  @ExceptionHandler(NoResourceFoundException.class)
+  @ResponseStatus(HttpStatus.NOT_FOUND)
+  public ApiResponse<Void> handleNoResourceFoundException(NoResourceFoundException e) {
+    log.warn("No resource found: {}", e.getResourcePath());
+    return ApiResponse.error(404, "请求地址不存在: " + e.getResourcePath());
   }
 
   /** 认证失败 → 401（Spring Security 通常在 filter 层就处理，留兜底）。 */

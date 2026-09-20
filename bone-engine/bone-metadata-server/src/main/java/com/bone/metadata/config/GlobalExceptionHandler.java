@@ -20,6 +20,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /** 全局异常 → HTTP 状态 + {@link ApiResponse}{@code <ProblemDetail>}（对齐 Bone-API §4）。 */
 @RestControllerAdvice
@@ -107,5 +108,19 @@ public class GlobalExceptionHandler {
     log.error("未处理异常", ex);
     return CatalogApiResponses.problem(
         HttpStatus.INTERNAL_SERVER_ERROR, MetaErrorCodes.INTERNAL_ERROR, "服务器内部错误，请稍后重试");
+  }
+
+  /**
+   * 请求地址不存在 → 404（而非被 catch-all 兜底成 500）。
+   *
+   * <p>Spring 6（Boot 3）下未匹配路由抛出 {@link NoResourceFoundException}，必须显式处理，否则会被
+   * {@code @ExceptionHandler(Exception.class)} 兜底成 500，使「接口不存在」与「服务器内部错误」语义混淆。
+   */
+  @ExceptionHandler(NoResourceFoundException.class)
+  public ResponseEntity<ApiResponse<ProblemDetail>> handleNoResourceFound(
+      NoResourceFoundException ex) {
+    log.warn("No resource found: {}", ex.getResourcePath());
+    return CatalogApiResponses.problem(
+        HttpStatus.NOT_FOUND, MetaErrorCodes.NOT_FOUND, "请求地址不存在: " + ex.getResourcePath());
   }
 }

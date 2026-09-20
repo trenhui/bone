@@ -9,6 +9,8 @@ import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.actuate.health.HealthEndpoint;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "系统管理", description = "系统状态和健康检查接口")
@@ -52,5 +54,33 @@ public class SystemController {
     } catch (Exception e) {
       return defaultValue;
     }
+  }
+
+  // ---- 运维类接口（MVP 范围外，返回 501 而非 404，避免前端契约误报）----
+  // 平台自身的部署/升级/重启/关停属于运维动作，MVP 不交付；实现它们会直接操作运行中的实例，
+  // 在联调/生产环境都有误关停风险，因此显式声明「未实现」而非静默缺失。
+
+  @Operation(summary = "部署新版本（运维动作，MVP 未实现）")
+  @PostMapping("/deploy")
+  public ResponseEntity<Void> deploy() {
+    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+  }
+
+  @Operation(summary = "升级版本（运维动作，MVP 未实现）")
+  @PostMapping("/upgrade")
+  public ResponseEntity<Void> upgrade() {
+    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+  }
+
+  @Operation(summary = "重启服务（运维动作，MVP 未实现）")
+  @PostMapping("/restart")
+  public ResponseEntity<Void> restart() {
+    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+  }
+
+  @Operation(summary = "关停服务（运维动作，MVP 未实现）")
+  @PostMapping("/shutdown")
+  public ResponseEntity<Void> shutdown() {
+    return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
   }
 }

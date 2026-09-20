@@ -2,7 +2,8 @@ package com.bone.masterdata.domain.model.entity.vo;
 
 public enum MasterDataEntityStatus {
   DRAFT("草稿"),
-  PUBLISHED("已发布");
+  PUBLISHED("已发布"),
+  DISABLED("已停用");
 
   private final String description;
 

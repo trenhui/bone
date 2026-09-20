@@ -7,18 +7,25 @@ import com.bone.integration.application.command.cmd.ActivateFlowCommand;
 import com.bone.integration.application.command.cmd.CreateFlowCommand;
 import com.bone.integration.application.command.cmd.DeactivateFlowCommand;
 import com.bone.integration.application.command.cmd.DeleteFlowCommand;
+import com.bone.integration.application.command.cmd.ExecuteFlowCommand;
 import com.bone.integration.application.command.cmd.UpdateFlowCommand;
 import com.bone.integration.application.command.handler.ActivateFlowCommandHandler;
 import com.bone.integration.application.command.handler.CreateFlowHandler;
 import com.bone.integration.application.command.handler.DeactivateFlowCommandHandler;
 import com.bone.integration.application.command.handler.DeleteFlowCommandHandler;
+import com.bone.integration.application.command.handler.ExecuteFlowHandler;
 import com.bone.integration.application.command.handler.UpdateFlowHandler;
 import com.bone.integration.application.query.dto.FlowDTO;
 import com.bone.integration.application.query.dto.FlowDetailDTO;
+import com.bone.integration.application.query.dto.FlowVersionDTO;
 import com.bone.integration.application.query.handler.FlowDetailQueryHandler;
 import com.bone.integration.application.query.handler.FlowPageQueryHandler;
+import com.bone.integration.application.query.handler.FlowVersionListQueryHandler;
 import com.bone.integration.application.query.qry.FlowDetailQuery;
 import com.bone.integration.application.query.qry.FlowPageQuery;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,6 +40,9 @@ public class FlowController {
   private final ActivateFlowCommandHandler activateFlowCommandHandler;
   private final DeactivateFlowCommandHandler deactivateFlowCommandHandler;
   private final DeleteFlowCommandHandler deleteFlowCommandHandler;
+  private final ExecuteFlowHandler executeFlowHandler;
+  private final FlowVersionListQueryHandler flowVersionListQueryHandler;
+  private final ObjectMapper objectMapper;
 
   @PostMapping
   public ApiResponse<Long> create(@RequestBody CreateFlowCommand cmd) {
@@ -75,5 +85,25 @@ public class FlowController {
   public ApiResponse<Void> deactivate(@PathVariable Long id) {
     deactivateFlowCommandHandler.handle(new DeactivateFlowCommand(id));
     return ApiResponse.success();
+  }
+
+  @PostMapping("/{id}/test")
+  public ApiResponse<Long> test(
+      @PathVariable Long id, @RequestBody(required = false) Map<String, Object> body) {
+    String inputData = null;
+    if (body != null && body.get("inputData") != null) {
+      try {
+        inputData = objectMapper.writeValueAsString(body.get("inputData"));
+      } catch (Exception e) {
+        inputData = String.valueOf(body.get("inputData"));
+      }
+    }
+    Long executionId = executeFlowHandler.handle(new ExecuteFlowCommand(id, inputData));
+    return ApiResponse.success(executionId);
+  }
+
+  @GetMapping("/{id}/versions")
+  public ApiResponse<List<FlowVersionDTO>> versions(@PathVariable Long id) {
+    return ApiResponse.success(flowVersionListQueryHandler.handle(id));
   }
 }

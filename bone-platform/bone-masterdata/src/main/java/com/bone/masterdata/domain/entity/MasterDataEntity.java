@@ -65,4 +65,20 @@ public class MasterDataEntity extends AggregateRoot<Long> {
     this.category = category;
     this.updatedAt = LocalDateTime.now();
   }
+
+  public void disable() {
+    if (this.status == MasterDataEntityStatus.DISABLED) {
+      throw new DomainException("主数据实体已停用");
+    }
+    this.status = MasterDataEntityStatus.DISABLED;
+    this.updatedAt = LocalDateTime.now();
+  }
+
+  public void enable() {
+    if (this.status != MasterDataEntityStatus.DISABLED) {
+      throw new DomainException("主数据实体未处于停用状态");
+    }
+    this.status = MasterDataEntityStatus.DRAFT;
+    this.updatedAt = LocalDateTime.now();
+  }
 }

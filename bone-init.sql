@@ -1501,3 +1501,21 @@ CREATE TABLE IF NOT EXISTS `bone_module` (
   KEY `idx_app_id` (`app_id`),
   KEY `idx_tenant_id` (`tenant_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='模块表';
+
+CREATE TABLE IF NOT EXISTS `bone_app_permission` (
+  `id` BIGINT NOT NULL COMMENT '主键',
+  `tenant_id` BIGINT NOT NULL DEFAULT 0 COMMENT '租户ID',
+  `app_id` BIGINT NOT NULL COMMENT '应用ID',
+  `user_id` BIGINT NOT NULL COMMENT '用户ID',
+  `role` VARCHAR(32) NOT NULL COMMENT '应用角色：ADMIN / DEVELOPER / VIEWER',
+  `created_by` BIGINT DEFAULT NULL,
+  `created_at` DATETIME(3) NOT NULL,
+  `updated_by` BIGINT DEFAULT NULL,
+  `updated_at` DATETIME(3) DEFAULT NULL,
+  `deleted` TINYINT(1) NOT NULL DEFAULT 0,
+  `version` INT NOT NULL DEFAULT 0,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_app_user` (`app_id`, `user_id`),
+  KEY `idx_user_id` (`user_id`),
+  KEY `idx_tenant_id` (`tenant_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='应用权限表';

@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * studio-generator 全局异常处理器。
@@ -51,5 +52,18 @@ public class GeneratorExceptionHandler {
     log.error("[handleException] 未预期异常", ex);
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
         .body(ApiResponse.error(500, "服务内部错误"));
+  }
+
+  /**
+   * 请求地址不存在 → 404（而非被 catch-all 兜底成 500）。
+   *
+   * <p>Spring 6（Boot 3）下未匹配路由抛出 {@link NoResourceFoundException}；必须显式处理，否则会被
+   * {@code @ExceptionHandler(Exception.class)} 兜底成 500，使「接口不存在」与「服务器内部错误」语义混淆。
+   */
+  @ExceptionHandler(NoResourceFoundException.class)
+  public ResponseEntity<ApiResponse<?>> handleNoResourceFound(NoResourceFoundException ex) {
+    log.warn("[handleNoResourceFound] {}", ex.getResourcePath());
+    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+        .body(ApiResponse.error(404, "请求地址不存在: " + ex.getResourcePath()));
   }
 }

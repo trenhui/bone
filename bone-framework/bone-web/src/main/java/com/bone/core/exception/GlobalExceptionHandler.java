@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * 全局异常处理器，将 Exception 翻译成 ApiResponse + 对应的异常编号。
@@ -187,6 +188,23 @@ public class GlobalExceptionHandler {
         .body(
             ApiResponse.error(
                 NOT_FOUND.getCode(), String.format("请求地址不存在:%s", ex.getRequestURL())));
+  }
+
+  /**
+   * 处理 Spring 6（Boot 3）下未匹配路由抛出的 {@link NoResourceFoundException}。
+   *
+   * <p>Spring 6 用 {@code NoResourceFoundException} 取代了旧版 {@link NoHandlerFoundException}，因此仅捕获后者（见
+   * {@link #noHandlerFoundExceptionHandler}）已无法拦截「接口不存在」的 404，异常会冒泡到 catch-all 兜底成 500。这里补上 {@code
+   * NoResourceFoundException} 的专属处理，使契约对账里「路由缺失」与「服务器内部错误」语义正确区分（HTTP 404 + 错误码信封）。
+   */
+  @ExceptionHandler(NoResourceFoundException.class)
+  public ResponseEntity<ApiResponse<?>> noResourceFoundExceptionHandler(
+      NoResourceFoundException ex) {
+    log.warn("[noResourceFoundExceptionHandler] {}", ex.getResourcePath());
+    return ResponseEntity.status(NOT_FOUND.getCode())
+        .body(
+            ApiResponse.error(
+                NOT_FOUND.getCode(), String.format("请求地址不存在:%s", ex.getResourcePath())));
   }
 
   /**

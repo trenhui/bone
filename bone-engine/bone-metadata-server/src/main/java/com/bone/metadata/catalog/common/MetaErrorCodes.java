@@ -11,6 +11,7 @@ public final class MetaErrorCodes {
   public static final String FIELD_CONFLICT = "META_FIELD_CONFLICT";
   public static final String TOO_MANY_REQUESTS = "META_TOO_MANY_REQUESTS";
   public static final String INTERNAL_ERROR = "META_INTERNAL_ERROR";
+  public static final String NOT_FOUND = "META_NOT_FOUND";
 
   private MetaErrorCodes() {}
 }
