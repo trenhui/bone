@@ -4,7 +4,7 @@ import com.bone.core.exception.BizException;
 import com.bone.core.tenant.context.TenantContext;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.domain.gateway.AccountAuthorityCache;
-import com.bone.iam.domain.gateway.RefreshTokenSessionStore;
+import com.bone.iam.domain.gateway.RefreshTokenSessionGateway;
 import com.bone.iam.domain.session.Session;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class RevokeSessionCommandHandler {
 
-  private final RefreshTokenSessionStore sessionStore;
+  private final RefreshTokenSessionGateway sessionStore;
   private final AccountAuthorityCache accountAuthorityCache;
 
   public void revokeOne(Long sessionId) {

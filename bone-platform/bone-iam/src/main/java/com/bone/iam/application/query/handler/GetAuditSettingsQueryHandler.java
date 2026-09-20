@@ -2,7 +2,7 @@ package com.bone.iam.application.query.handler;
 
 import com.bone.core.tenant.context.TenantContext;
 import com.bone.iam.application.query.dto.AuditSettingsDTO;
-import com.bone.iam.domain.gateway.AuditSettingsStore;
+import com.bone.iam.domain.gateway.AuditSettingsGateway;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class GetAuditSettingsQueryHandler {
 
-  private final AuditSettingsStore auditSettingsStore;
+  private final AuditSettingsGateway auditSettingsStore;
 
   @Transactional(readOnly = true)
   public AuditSettingsDTO handle() {

@@ -1,4 +1,4 @@
-package com.bone.iam.infrastructure.security;
+package com.bone.iam.infrastructure.gateway;
 
 import com.bone.core.security.jwt.JwtConfig;
 import com.bone.core.security.jwt.JwtPrincipal;
@@ -9,11 +9,11 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 @Component
-public class IamJwtTokenService implements AccessTokenIssuer {
+public class AccessTokenIssuerGatewayAdapter implements AccessTokenIssuer {
   private final JwtTokenService delegate;
   private final JwtConfig jwtConfig;
 
-  public IamJwtTokenService(JwtTokenService delegate, JwtConfig jwtConfig) {
+  public AccessTokenIssuerGatewayAdapter(JwtTokenService delegate, JwtConfig jwtConfig) {
     this.delegate = delegate;
     this.jwtConfig = jwtConfig;
   }

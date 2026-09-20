@@ -10,7 +10,7 @@ import com.bone.core.security.jwt.JwtConfig;
 import com.bone.iam.application.command.handler.LoginCommandHandler;
 import com.bone.iam.application.command.handler.RefreshTokenCommandHandler;
 import com.bone.iam.infrastructure.config.IamSsoProperties;
-import com.bone.iam.infrastructure.security.IamJwtTokenService;
+import com.bone.iam.infrastructure.gateway.AccessTokenIssuerGatewayAdapter;
 import com.bone.iam.infrastructure.security.TokenBlacklistService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,7 +28,7 @@ class AuthSsoMfaControllerTest {
 
   @Mock private com.bone.iam.adapter.web.converter.AuthWebConverter authWebConverter;
 
-  @Mock private IamJwtTokenService jwtTokenService;
+  @Mock private AccessTokenIssuerGatewayAdapter jwtTokenService;
 
   @Mock private RefreshTokenCommandHandler refreshTokenCommandHandler;
 

@@ -1,4 +1,4 @@
-package com.bone.iam.infrastructure.security;
+package com.bone.iam.infrastructure.gateway;
 
 import com.bone.core.exception.BizException;
 import com.bone.core.security.jwt.JwtConfig;
@@ -26,7 +26,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @RequiredArgsConstructor
-public class RefreshTokenService implements RefreshTokenIssuer {
+public class RefreshTokenIssuerGatewayAdapter implements RefreshTokenIssuer {
 
   private final NamedParameterJdbcTemplate jdbcTemplate;
   private final JwtConfig jwtConfig;

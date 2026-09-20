@@ -14,7 +14,7 @@ import com.bone.iam.application.command.handler.LoginCommandHandler;
 import com.bone.iam.application.command.handler.RefreshTokenCommandHandler;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.infrastructure.config.IamSsoProperties;
-import com.bone.iam.infrastructure.security.IamJwtTokenService;
+import com.bone.iam.infrastructure.gateway.AccessTokenIssuerGatewayAdapter;
 import com.bone.iam.infrastructure.security.TokenBlacklistService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Duration;
@@ -40,7 +40,7 @@ public class AuthController {
   private final LoginCommandHandler loginCommandHandler;
   private final RefreshTokenCommandHandler refreshTokenCommandHandler;
   private final AuthWebConverter authWebConverter;
-  private final IamJwtTokenService jwtTokenService;
+  private final AccessTokenIssuerGatewayAdapter jwtTokenService;
   private final TokenBlacklistService tokenBlacklistService;
   private final JwtConfig jwtConfig;
   private final IamSsoProperties iamSsoProperties;

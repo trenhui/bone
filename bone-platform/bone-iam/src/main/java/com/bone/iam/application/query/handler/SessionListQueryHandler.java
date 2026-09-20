@@ -1,7 +1,7 @@
 package com.bone.iam.application.query.handler;
 
 import com.bone.core.tenant.context.TenantContext;
-import com.bone.iam.domain.gateway.RefreshTokenSessionStore;
+import com.bone.iam.domain.gateway.RefreshTokenSessionGateway;
 import com.bone.iam.domain.session.Session;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class SessionListQueryHandler {
 
-  private final RefreshTokenSessionStore sessionStore;
+  private final RefreshTokenSessionGateway sessionStore;
 
   @Transactional(readOnly = true)
   public List<Session> handle(Long accountId) {

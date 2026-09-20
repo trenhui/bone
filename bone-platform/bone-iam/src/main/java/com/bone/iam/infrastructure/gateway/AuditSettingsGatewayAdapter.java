@@ -1,8 +1,8 @@
-package com.bone.iam.infrastructure.persistence;
+package com.bone.iam.infrastructure.gateway;
 
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.iam.domain.audit.AuditSettings;
-import com.bone.iam.domain.gateway.AuditSettingsStore;
+import com.bone.iam.domain.gateway.AuditSettingsGateway;
 import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @RequiredArgsConstructor
-public class AuditSettingsStoreImpl implements AuditSettingsStore {
+public class AuditSettingsGatewayAdapter implements AuditSettingsGateway {
 
   private final JdbcTemplate jdbcTemplate;
 

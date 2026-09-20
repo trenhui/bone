@@ -1,6 +1,6 @@
-package com.bone.iam.infrastructure.persistence;
+package com.bone.iam.infrastructure.gateway;
 
-import com.bone.iam.domain.gateway.RefreshTokenSessionStore;
+import com.bone.iam.domain.gateway.RefreshTokenSessionGateway;
 import com.bone.iam.domain.session.Session;
 import java.sql.Timestamp;
 import java.util.List;
@@ -10,10 +10,10 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
-/** {@link RefreshTokenSessionStore} 默认实现：直查 {@code iam_refresh_token}（脱敏，不返回 hash）。 */
+/** {@link RefreshTokenSessionGateway} 默认实现：直查 {@code iam_refresh_token}（脱敏，不返回 hash）。 */
 @Repository
 @RequiredArgsConstructor
-public class RefreshTokenSessionStoreImpl implements RefreshTokenSessionStore {
+public class RefreshTokenSessionGatewayAdapter implements RefreshTokenSessionGateway {
 
   private static final int MAX_LIST_SIZE = 200;
 

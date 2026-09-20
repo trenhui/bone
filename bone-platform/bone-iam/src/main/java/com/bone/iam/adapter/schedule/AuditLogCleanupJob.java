@@ -1,7 +1,7 @@
 package com.bone.iam.adapter.schedule;
 
 import com.bone.iam.domain.audit.AuditSettings;
-import com.bone.iam.domain.gateway.AuditSettingsStore;
+import com.bone.iam.domain.gateway.AuditSettingsGateway;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +18,7 @@ public class AuditLogCleanupJob {
   private static final int DEFAULT_RETENTION_DAYS = 30;
 
   private final JdbcTemplate jdbcTemplate;
-  private final AuditSettingsStore auditSettingsStore;
+  private final AuditSettingsGateway auditSettingsStore;
 
   /** 每日 03:00 执行（可通过 {@code spring.task.scheduling} 覆盖）。 */
   @Scheduled(cron = "${bone.iam.audit.cleanup-cron:0 0 3 * * ?}")

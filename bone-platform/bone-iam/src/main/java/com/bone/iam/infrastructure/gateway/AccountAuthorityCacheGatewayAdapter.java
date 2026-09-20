@@ -1,4 +1,4 @@
-package com.bone.iam.infrastructure.security;
+package com.bone.iam.infrastructure.gateway;
 
 import com.bone.iam.domain.account.AccountRole;
 import com.bone.iam.domain.gateway.AccountAuthorityCache;
@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 
 /** 账号权限码 Redis 缓存（[Target] 30min TTL）。无 Redis 时退化为直查 DB。 */
 @Service
-public class AuthorityCacheEvictionService implements AccountAuthorityCache {
+public class AccountAuthorityCacheGatewayAdapter implements AccountAuthorityCache {
 
   static final String KEY_PREFIX = "iam:authz:scopes:account:";
   static final String EMPTY_MARKER = "__EMPTY__";
@@ -23,7 +23,7 @@ public class AuthorityCacheEvictionService implements AccountAuthorityCache {
 
   private final StringRedisTemplate redisTemplate;
 
-  public AuthorityCacheEvictionService(
+  public AccountAuthorityCacheGatewayAdapter(
       @Autowired(required = false) StringRedisTemplate redisTemplate) {
     this.redisTemplate = redisTemplate;
   }

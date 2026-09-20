@@ -2,7 +2,7 @@ package com.bone.iam.application.command.handler;
 
 import com.bone.core.tenant.context.TenantContext;
 import com.bone.iam.application.command.cmd.UpdateAuditSettingsCommand;
-import com.bone.iam.domain.gateway.AuditSettingsStore;
+import com.bone.iam.domain.gateway.AuditSettingsGateway;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -11,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UpdateAuditSettingsCommandHandler {
 
-  private final AuditSettingsStore auditSettingsStore;
+  private final AuditSettingsGateway auditSettingsStore;
 
   @Transactional
   public void handle(UpdateAuditSettingsCommand cmd) {
