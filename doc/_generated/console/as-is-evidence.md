@@ -1,6 +1,6 @@
 # bone-system 控制台 As-Is 证据（CI 派生）
 
-> **生成时间**：2026-09-20T08:09:00Z（UTC）
+> **生成时间**：2026-09-21T06:26:29Z（UTC）
 > **真源**：`bone-platform/bone-system/.../adapter/web/controller/ConsoleController.java`
 
 | ID | 能力 | 摘要 |
