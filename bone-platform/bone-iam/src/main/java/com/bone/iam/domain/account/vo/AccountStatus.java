@@ -1,5 +1,7 @@
 package com.bone.iam.domain.account.vo;
 
+import com.bone.core.exception.DomainException;
+
 public enum AccountStatus {
   DISABLED(0, "禁用"),
   ENABLED(1, "启用"),
@@ -25,6 +27,6 @@ public enum AccountStatus {
     for (AccountStatus status : values()) {
       if (status.code == code) return status;
     }
-    throw new IllegalArgumentException("无效的状态码: " + code);
+    throw new DomainException("无效的状态码: " + code);
   }
 }

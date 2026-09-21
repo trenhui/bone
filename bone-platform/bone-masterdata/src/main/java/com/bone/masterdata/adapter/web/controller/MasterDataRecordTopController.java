@@ -1,6 +1,5 @@
 package com.bone.masterdata.adapter.web.controller;
 
-import com.bone.core.exception.BizException;
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
 import com.bone.core.web.PlatformApiPaths;
@@ -20,6 +19,8 @@ import com.bone.masterdata.application.query.handler.MasterDataRecordDetailQuery
 import com.bone.masterdata.application.query.handler.MasterDataRecordListQueryHandler;
 import com.bone.masterdata.application.query.qry.MasterDataRecordByIdQuery;
 import com.bone.masterdata.application.query.qry.MasterDataRecordListQuery;
+import com.bone.masterdata.common.MasterDataErrorCodes;
+import com.bone.masterdata.common.MasterDataErrors;
 import java.io.IOException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -110,7 +111,8 @@ public class MasterDataRecordTopController {
       cmd.setDataStream(file.getInputStream());
       return ApiResponse.success(importMasterDataRecordsHandler.handle(cmd));
     } catch (IOException e) {
-      throw BizException.of(400, "读取上传文件失败: " + e.getMessage(), e);
+      throw MasterDataErrors.of(
+          MasterDataErrorCodes.FILE_READ_FAILED, "读取上传文件失败: " + e.getMessage(), e);
     }
   }
 

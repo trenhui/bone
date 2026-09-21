@@ -1,12 +1,14 @@
 package com.bone.iam.domain.account.vo;
 
+import com.bone.core.exception.DomainException;
+
 public record Email(String value) {
   public Email {
     if (value == null || value.isBlank()) {
-      throw new IllegalArgumentException("邮箱不能为空");
+      throw new DomainException("邮箱不能为空");
     }
     if (!value.matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-      throw new IllegalArgumentException("邮箱格式不正确");
+      throw new DomainException("邮箱格式不正确");
     }
   }
 

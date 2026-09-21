@@ -1,11 +1,11 @@
 package com.bone.masterdata.domain.model.field.vo;
 
-import com.bone.core.exception.BizException;
+import com.bone.core.exception.DomainException;
 
 public record MasterDataFieldId(Long value) {
   public MasterDataFieldId {
     if (value == null || value <= 0) {
-      throw BizException.of("主数据字段ID必须大于0");
+      throw new DomainException("主数据字段ID必须大于0");
     }
   }
 

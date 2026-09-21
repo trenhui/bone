@@ -1,11 +1,12 @@
 package com.bone.masterdata.application.command.handler;
 
 import com.bone.core.capability.Capability;
-import com.bone.core.exception.BizException;
 import com.bone.core.exception.NotFoundException;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.masterdata.application.command.cmd.CreateMasterDataFieldCommand;
 import com.bone.masterdata.application.query.port.MasterDataQueryPort;
+import com.bone.masterdata.common.MasterDataErrorCodes;
+import com.bone.masterdata.common.MasterDataErrors;
 import com.bone.masterdata.domain.entity.MasterDataField;
 import com.bone.masterdata.domain.model.field.vo.FieldCode;
 import com.bone.masterdata.domain.model.field.vo.FieldName;
@@ -42,7 +43,7 @@ public class CreateMasterDataFieldHandler {
         masterDataQueryPort.countFieldByEntityIdAndName(
             cmd.getMasterDataEntityId(), FieldName.of(cmd.getName()));
     if (existing > 0) {
-      throw BizException.of("字段名称已存在");
+      throw MasterDataErrors.of(MasterDataErrorCodes.FIELD_NAME_DUPLICATE, "字段名称已存在");
     }
 
     Long fieldId = DistributedIdGenerator.generateLongId();

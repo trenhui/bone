@@ -1,6 +1,8 @@
 package com.bone.masterdata.application.query.handler;
 
 import com.bone.core.exception.NotFoundException;
+import com.bone.masterdata.common.MasterDataErrorCodes;
+import com.bone.masterdata.common.MasterDataErrors;
 import com.bone.masterdata.domain.record.MasterDataRecord;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
 import com.bone.masterdata.domain.repository.MasterDataRecordRepository;
@@ -34,7 +36,7 @@ public class ExportMasterDataRecordsQueryHandler {
     try {
       return MAPPER.writeValueAsString(records);
     } catch (JsonProcessingException e) {
-      throw new IllegalStateException("导出序列化失败", e);
+      throw MasterDataErrors.of(MasterDataErrorCodes.EXPORT_SERIALIZE_FAILED, "导出序列化失败", e);
     }
   }
 }

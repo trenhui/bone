@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.bone.core.exception.DomainException;
 import com.bone.iam.domain.account.event.AccountCreatedEvent;
 import com.bone.iam.domain.account.event.AccountDisabledEvent;
 import com.bone.iam.domain.account.event.AccountEnabledEvent;
@@ -125,8 +126,8 @@ class AccountTest {
 
   @Test
   void testValueObjectsRejectInvalidInput() {
-    assertThrows(IllegalArgumentException.class, () -> Username.of(" "));
-    assertThrows(IllegalArgumentException.class, () -> Username.of("ab"));
-    assertThrows(IllegalArgumentException.class, () -> Email.of("not-an-email"));
+    assertThrows(DomainException.class, () -> Username.of(" "));
+    assertThrows(DomainException.class, () -> Username.of("ab"));
+    assertThrows(DomainException.class, () -> Email.of("not-an-email"));
   }
 }

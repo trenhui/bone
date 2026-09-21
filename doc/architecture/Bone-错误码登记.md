@@ -250,6 +250,16 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | `MD_RECORD_EXPORT_NOT_IMPLEMENTED` | 501 | 主数据记录导出未实现 |
 | `MD_META_ENTITY_NOT_FOUND` | 404 | 元数据实体不存在 |
 | `MD_META_ENTITY_NOT_PUBLISHED` | 422 | 仅已发布元数据实体可转换为主数据 |
+| `MD_ENTITY_ID_REQUIRED` | 400 | 主数据实体ID必填（创建质量规则等） |
+| `MD_ENTITY_NAME_DUPLICATE` | 409 | 主数据实体名称已存在 |
+| `MD_FIELD_NAME_DUPLICATE` | 409 | 字段名称已存在 |
+| `MD_DATA_STANDARD_DUPLICATE` | 409 | 同实体+字段已存在数据标准 |
+| `MD_DATA_STANDARD_NOT_FOUND` | 404 | 数据标准不存在 |
+| `MD_EXPORT_SERIALIZE_FAILED` | 500 | 主数据记录导出序列化失败 |
+| `MD_FILE_EMPTY` | 400 | 上传的Excel文件为空 |
+| `MD_FILE_FORMAT_INVALID` | 400 | 仅支持 .xlsx / .xls 格式 |
+| `MD_FILE_READ_FAILED` | 400 | 读取上传文件失败 |
+| `MD_FILE_PARSE_FAILED` | 400 | 解析Excel文件失败 |
 
 ### EXT_
 
@@ -346,3 +356,4 @@ throw BlueprintErrors.of(BlueprintErrorCodes.ORDER_NOT_FOUND, orderId);
 | 2026-05-17 | 从 Bone-API-规范 §4 独立；台账与流程为本文真源 |
 | 2026-09-19 | 重写 §6 `IAM_` 台账（原清单为未落地的理想码，与代码双向不一致）；同步 §3.1 示例与 §7 速查中的失效码 |
 | 2026-09-20 | §4 按实际落地形态改写（原枚举形态全仓零实现 → 常量类 + 状态表 + fail-fast），§5 流程同步；§6 `IAM_` 新增 6 码、删除 `IAM_PASSWORD_MUST_CHANGE`，并记录 application 层裸异常收口 |
+| 2026-09-21 | §6 `MD_` 台账补齐 10 码（`MD_ENTITY_ID_REQUIRED`/`MD_ENTITY_NAME_DUPLICATE`/`MD_FIELD_NAME_DUPLICATE`/`MD_DATA_STANDARD_DUPLICATE`/`MD_DATA_STANDARD_NOT_FOUND`/`MD_EXPORT_SERIALIZE_FAILED`/`MD_FILE_EMPTY`/`MD_FILE_FORMAT_INVALID`/`MD_FILE_READ_FAILED`/`MD_FILE_PARSE_FAILED`）；对应 `bone-masterdata` 落地 `MasterDataErrors` 状态表 + 收口 application/adapter 层裸 `IllegalArgumentException`/`IllegalStateException`/`BizException.of(String)` 静默 500 为显式状态码 |

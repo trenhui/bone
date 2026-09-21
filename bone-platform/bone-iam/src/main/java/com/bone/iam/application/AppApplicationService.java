@@ -1,5 +1,6 @@
 package com.bone.iam.application;
 
+import com.bone.core.exception.DomainException;
 import com.bone.core.model.PageResult;
 import com.bone.iam.application.command.cmd.CreateApplicationCommand;
 import com.bone.iam.application.command.cmd.GrantAppPermissionCommand;
@@ -120,7 +121,7 @@ public class AppApplicationService {
     AppRole role;
     try {
       role = AppRole.fromExternal(cmd.getRole());
-    } catch (IllegalArgumentException e) {
+    } catch (DomainException e) {
       throw IamErrors.of(IamErrorCodes.APP_ROLE_INVALID, e.getMessage());
     }
     AppPermission existing =

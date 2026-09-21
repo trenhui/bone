@@ -1,12 +1,13 @@
 package com.bone.masterdata.application.command.handler;
 
 import com.bone.core.capability.Capability;
-import com.bone.core.exception.BizException;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.masterdata.application.command.cmd.CreateDataStandardCommand;
 import com.bone.masterdata.application.command.cmd.DeleteDataStandardCommand;
 import com.bone.masterdata.application.command.cmd.UpdateDataStandardCommand;
 import com.bone.masterdata.application.query.port.MasterDataQueryPort;
+import com.bone.masterdata.common.MasterDataErrorCodes;
+import com.bone.masterdata.common.MasterDataErrors;
 import com.bone.masterdata.domain.repository.DataStandardRepository;
 import com.bone.masterdata.domain.standard.DataStandard;
 import com.bone.masterdata.domain.standard.vo.StandardFieldCode;
@@ -37,7 +38,9 @@ public class DataStandardCommandHandler {
     long count =
         masterDataQueryPort.countStandardByEntityCodeAndFieldCode(cmd.getEntityCode(), fieldCode);
     if (count > 0) {
-      throw BizException.of("该字段已存在数据标准: " + cmd.getEntityCode() + "/" + cmd.getFieldCode());
+      throw MasterDataErrors.of(
+          MasterDataErrorCodes.DATA_STANDARD_DUPLICATE,
+          "该字段已存在数据标准: " + cmd.getEntityCode() + "/" + cmd.getFieldCode());
     }
     Long id = DistributedIdGenerator.generateLongId();
     DataStandard standard =
@@ -56,7 +59,8 @@ public class DataStandardCommandHandler {
   public void update(UpdateDataStandardCommand cmd) {
     DataStandard standard = dataStandardRepository.findById(cmd.getId());
     if (standard == null) {
-      throw BizException.of("数据标准不存在: " + cmd.getId());
+      throw MasterDataErrors.of(
+          MasterDataErrorCodes.DATA_STANDARD_NOT_FOUND, "数据标准不存在: " + cmd.getId());
     }
     standard.update(
         StandardRuleType.of(cmd.getRuleType() == null ? 1 : cmd.getRuleType()),

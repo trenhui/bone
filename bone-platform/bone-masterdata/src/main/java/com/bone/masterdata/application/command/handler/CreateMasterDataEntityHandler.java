@@ -1,10 +1,11 @@
 package com.bone.masterdata.application.command.handler;
 
 import com.bone.core.capability.Capability;
-import com.bone.core.exception.BizException;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.masterdata.application.command.cmd.CreateMasterDataEntityCommand;
 import com.bone.masterdata.application.query.port.MasterDataQueryPort;
+import com.bone.masterdata.common.MasterDataErrorCodes;
+import com.bone.masterdata.common.MasterDataErrors;
 import com.bone.masterdata.domain.entity.MasterDataEntity;
 import com.bone.masterdata.domain.model.entity.vo.MasterDataEntityName;
 import com.bone.masterdata.domain.repository.MasterDataEntityRepository;
@@ -33,7 +34,7 @@ public class CreateMasterDataEntityHandler {
 
     long existing = masterDataQueryPort.countEntityByName(entityName);
     if (existing > 0) {
-      throw BizException.of("主数据实体名称已存在");
+      throw MasterDataErrors.of(MasterDataErrorCodes.ENTITY_NAME_DUPLICATE, "主数据实体名称已存在");
     }
 
     Long entityId = DistributedIdGenerator.generateLongId();

@@ -4,6 +4,8 @@ import com.bone.core.capability.Capability;
 import com.bone.core.exception.NotFoundException;
 import com.bone.core.util.DistributedIdGenerator;
 import com.bone.masterdata.application.command.cmd.CreateDataQualityRuleCommand;
+import com.bone.masterdata.common.MasterDataErrorCodes;
+import com.bone.masterdata.common.MasterDataErrors;
 import com.bone.masterdata.domain.model.quality.vo.RuleName;
 import com.bone.masterdata.domain.model.quality.vo.RuleSeverity;
 import com.bone.masterdata.domain.quality.DataQualityRule;
@@ -32,7 +34,7 @@ public class CreateDataQualityRuleHandler {
   @Transactional
   public Long handle(CreateDataQualityRuleCommand cmd) {
     if (cmd.getMasterDataEntityId() == null) {
-      throw new IllegalArgumentException("masterDataEntityId 不能为空");
+      throw MasterDataErrors.of(MasterDataErrorCodes.ENTITY_ID_REQUIRED, "masterDataEntityId 不能为空");
     }
     if (entityRepository.findById(cmd.getMasterDataEntityId()) == null) {
       throw NotFoundException.of("主数据实体不存在");

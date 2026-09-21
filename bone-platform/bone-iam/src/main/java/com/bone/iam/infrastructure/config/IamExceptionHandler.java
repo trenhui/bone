@@ -1,6 +1,7 @@
 package com.bone.iam.infrastructure.config;
 
 import com.bone.core.exception.BizException;
+import com.bone.core.exception.DomainException;
 import com.bone.core.model.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.LinkedHashMap;
@@ -44,6 +45,20 @@ public class IamExceptionHandler {
     Map<String, Object> problemDetail = buildProblemDetail(httpStatus, ex.getMessage(), request);
     return ResponseEntity.status(httpStatus)
         .body(ApiResponse.error(httpStatus, ex.getMessage(), problemDetail));
+  }
+
+  /**
+   * 处理领域异常（domain 层校验 / 业务规则拒绝）。
+   *
+   * <p>domain 抛 {@link DomainException}，由应用层翻译为带业务码的 BizException（README E-5.3.1）。
+   * 本处理器是未被应用层翻译的域异常的兜底，统一返回 400，避免漏到 Exception 兜底成 500。
+   */
+  @ExceptionHandler(DomainException.class)
+  public ResponseEntity<ApiResponse<Map<String, Object>>> handleDomainException(
+      DomainException ex, HttpServletRequest request) {
+    log.info("[handleDomainException] message={}", ex.getMessage());
+    Map<String, Object> problemDetail = buildProblemDetail(400, ex.getMessage(), request);
+    return ResponseEntity.badRequest().body(ApiResponse.error(400, ex.getMessage(), problemDetail));
   }
 
   /** 处理 Spring Security 权限不足异常（@PreAuthorize 拒绝时抛出），返回 403 */

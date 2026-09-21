@@ -1,7 +1,8 @@
 package com.bone.masterdata.infrastructure.util;
 
-import com.bone.core.exception.BizException;
 import com.bone.core.util.DistributedIdGenerator;
+import com.bone.masterdata.common.MasterDataErrorCodes;
+import com.bone.masterdata.common.MasterDataErrors;
 import com.bone.masterdata.domain.record.MasterDataRecord;
 import com.bone.masterdata.infrastructure.config.ExcelConfig;
 import java.io.InputStream;
@@ -14,13 +15,14 @@ public class ExcelUtils {
   public static List<MasterDataRecord> parseExcelStream(
       InputStream inputStream, String originalFilename, Long masterDataEntityId) {
     if (inputStream == null) {
-      throw BizException.of("上传的Excel文件为空");
+      throw MasterDataErrors.of(MasterDataErrorCodes.FILE_EMPTY, "上传的Excel文件为空");
     }
 
     if (originalFilename != null
         && !originalFilename.toLowerCase().endsWith(".xlsx")
         && !originalFilename.toLowerCase().endsWith(".xls")) {
-      throw BizException.of("仅支持 .xlsx 或 .xls 格式的Excel文件");
+      throw MasterDataErrors.of(
+          MasterDataErrorCodes.FILE_FORMAT_INVALID, "仅支持 .xlsx 或 .xls 格式的Excel文件");
     }
 
     List<MasterDataRecord> records = new ArrayList<>();
@@ -57,7 +59,8 @@ public class ExcelUtils {
       }
 
     } catch (Exception e) {
-      throw BizException.of(400, "解析Excel文件失败: " + e.getMessage(), e);
+      throw MasterDataErrors.of(
+          MasterDataErrorCodes.FILE_PARSE_FAILED, "解析Excel文件失败: " + e.getMessage(), e);
     }
 
     return records;

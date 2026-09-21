@@ -1,9 +1,9 @@
 package com.bone.masterdata.infrastructure.gateway;
 
-import com.bone.core.exception.BizException;
 import com.bone.core.exception.NotFoundException;
 import com.bone.core.tenant.context.TenantContext;
 import com.bone.masterdata.common.MasterDataErrorCodes;
+import com.bone.masterdata.common.MasterDataErrors;
 import com.bone.masterdata.domain.gateway.MetaEntityCatalogPort;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -46,8 +46,8 @@ public class MetaEntityCatalogPortAdapter implements MetaEntityCatalogPort {
     }
     MetaEntityRow entity = row.get();
     if (entity.status() != META_STATUS_PUBLISHED) {
-      throw BizException.of(
-          422, MasterDataErrorCodes.META_ENTITY_NOT_PUBLISHED + ": 仅已发布的元数据实体可转换为主数据");
+      throw MasterDataErrors.of(
+          MasterDataErrorCodes.META_ENTITY_NOT_PUBLISHED, "仅已发布的元数据实体可转换为主数据");
     }
     return entity;
   }

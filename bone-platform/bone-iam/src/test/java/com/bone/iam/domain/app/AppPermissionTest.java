@@ -71,7 +71,7 @@ class AppPermissionTest {
 
     assertEquals(AppRole.ADMIN, AppRole.fromExternal("admin"));
     assertEquals(AppRole.DEVELOPER, AppRole.fromExternal("DEVELOPER"));
-    assertThrows(IllegalArgumentException.class, () -> AppRole.fromExternal(null));
-    assertThrows(IllegalArgumentException.class, () -> AppRole.fromExternal("owner"));
+    assertThrows(DomainException.class, () -> AppRole.fromExternal(null));
+    assertThrows(DomainException.class, () -> AppRole.fromExternal("owner"));
   }
 }
