@@ -1,7 +1,7 @@
 package com.bone.iam.application;
 
 import com.bone.core.model.PageResult;
-import com.bone.iam.application.command.cmd.UpdateAuditSettingsCommand;
+import com.bone.iam.application.command.UpdateAuditSettingsCommand;
 import com.bone.iam.application.query.dto.AuditLogDTO;
 import com.bone.iam.application.query.dto.AuditSettingsDTO;
 import com.bone.iam.application.query.qry.AuditLogListQuery;

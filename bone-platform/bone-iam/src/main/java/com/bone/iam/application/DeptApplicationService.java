@@ -1,8 +1,8 @@
 package com.bone.iam.application;
 
-import com.bone.iam.application.command.cmd.CreateDeptCommand;
-import com.bone.iam.application.command.cmd.DeleteDeptCommand;
-import com.bone.iam.application.command.cmd.UpdateDeptCommand;
+import com.bone.iam.application.command.CreateDeptCommand;
+import com.bone.iam.application.command.DeleteDeptCommand;
+import com.bone.iam.application.command.UpdateDeptCommand;
 import com.bone.iam.application.query.dto.DeptTreeDTO;
 import com.bone.iam.application.query.qry.DeptTreeQuery;
 import com.bone.iam.common.IamErrorCodes;

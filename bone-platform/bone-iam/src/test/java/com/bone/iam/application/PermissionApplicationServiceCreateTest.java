@@ -6,7 +6,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.bone.iam.application.command.cmd.CreatePermissionCommand;
+import com.bone.iam.application.command.CreatePermissionCommand;
 import com.bone.iam.domain.permission.Permission;
 import com.bone.iam.domain.permission.vo.PermissionType;
 import com.bone.iam.domain.repository.PermissionRepository;

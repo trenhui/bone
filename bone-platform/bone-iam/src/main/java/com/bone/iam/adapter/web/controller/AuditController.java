@@ -6,7 +6,7 @@ import com.bone.core.web.PlatformApiPaths;
 import com.bone.iam.adapter.web.converter.AuditWebConverter;
 import com.bone.iam.adapter.web.dto.response.AuditSettingsResp;
 import com.bone.iam.application.AuditApplicationService;
-import com.bone.iam.application.command.cmd.UpdateAuditSettingsCommand;
+import com.bone.iam.application.command.UpdateAuditSettingsCommand;
 import com.bone.iam.application.query.dto.AuditLogDTO;
 import com.bone.iam.application.query.qry.AuditLogListQuery;
 import java.nio.charset.StandardCharsets;

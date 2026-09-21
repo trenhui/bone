@@ -6,7 +6,7 @@ import static org.mockito.Mockito.when;
 
 import com.bone.core.exception.BizException;
 import com.bone.iam.application.binding.RolePermissionBindingService;
-import com.bone.iam.application.command.cmd.AssignPermissionCommand;
+import com.bone.iam.application.command.AssignPermissionCommand;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.domain.gateway.TenantProvider;
 import com.bone.iam.domain.repository.RoleRepository;

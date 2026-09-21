@@ -9,7 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.core.exception.BizException;
-import com.bone.iam.application.command.cmd.CreateTenantCommand;
+import com.bone.iam.application.command.CreateTenantCommand;
 import com.bone.iam.domain.gateway.TenantDeletionGateway;
 import com.bone.iam.domain.repository.TenantRepository;
 import org.junit.jupiter.api.Test;

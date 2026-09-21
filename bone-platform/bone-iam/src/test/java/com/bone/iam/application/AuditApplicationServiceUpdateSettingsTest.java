@@ -3,7 +3,7 @@ package com.bone.iam.application;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.bone.core.exception.BizException;
-import com.bone.iam.application.command.cmd.UpdateAuditSettingsCommand;
+import com.bone.iam.application.command.UpdateAuditSettingsCommand;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.domain.gateway.AuditSettingsGateway;
 import com.bone.iam.domain.gateway.TenantProvider;

@@ -10,7 +10,7 @@ import com.bone.iam.adapter.web.dto.request.UpdateRoleReq;
 import com.bone.iam.adapter.web.dto.response.RoleDetailResp;
 import com.bone.iam.application.AccountApplicationService;
 import com.bone.iam.application.RoleApplicationService;
-import com.bone.iam.application.command.cmd.CreateRoleCommand;
+import com.bone.iam.application.command.CreateRoleCommand;
 import com.bone.iam.application.query.dto.PermissionDTO;
 import com.bone.iam.application.query.dto.RoleDTO;
 import com.bone.iam.application.query.qry.RolePageQuery;

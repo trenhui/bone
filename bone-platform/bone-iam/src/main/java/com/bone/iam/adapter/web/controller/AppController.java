@@ -7,7 +7,7 @@ import com.bone.iam.adapter.web.dto.request.CreateAppReq;
 import com.bone.iam.adapter.web.dto.request.GrantAppPermissionReq;
 import com.bone.iam.adapter.web.dto.request.UpdateAppReq;
 import com.bone.iam.application.AppApplicationService;
-import com.bone.iam.application.command.cmd.GrantAppPermissionCommand;
+import com.bone.iam.application.command.GrantAppPermissionCommand;
 import com.bone.iam.application.query.dto.AppPermissionDTO;
 import com.bone.iam.application.query.dto.ApplicationDTO;
 import com.bone.iam.application.query.qry.ApplicationPageQuery;

@@ -1,8 +1,8 @@
 package com.bone.iam.application;
 
 import com.bone.core.model.PageResult;
-import com.bone.iam.application.command.cmd.CreateRoleCommand;
-import com.bone.iam.application.command.cmd.UpdateRoleCommand;
+import com.bone.iam.application.command.CreateRoleCommand;
+import com.bone.iam.application.command.UpdateRoleCommand;
 import com.bone.iam.application.policy.TenantQuotaEnforcer;
 import com.bone.iam.application.query.dto.PermissionDTO;
 import com.bone.iam.application.query.dto.RoleDTO;

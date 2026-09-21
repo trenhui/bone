@@ -3,9 +3,9 @@ package com.bone.iam.adapter.web.converter;
 import com.bone.iam.adapter.web.dto.request.CreateTenantReq;
 import com.bone.iam.adapter.web.dto.request.UpdateTenantQuotaReq;
 import com.bone.iam.adapter.web.dto.request.UpdateTenantReq;
-import com.bone.iam.application.command.cmd.CreateTenantCommand;
-import com.bone.iam.application.command.cmd.UpdateTenantCommand;
-import com.bone.iam.application.command.cmd.UpdateTenantQuotaCommand;
+import com.bone.iam.application.command.CreateTenantCommand;
+import com.bone.iam.application.command.UpdateTenantCommand;
+import com.bone.iam.application.command.UpdateTenantQuotaCommand;
 import org.springframework.stereotype.Component;
 
 @Component

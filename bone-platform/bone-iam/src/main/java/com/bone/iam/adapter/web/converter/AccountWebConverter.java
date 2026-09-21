@@ -4,9 +4,9 @@ import com.bone.iam.adapter.web.dto.request.CreateAccountReq;
 import com.bone.iam.adapter.web.dto.request.ResetPasswordReq;
 import com.bone.iam.adapter.web.dto.request.UpdateAccountReq;
 import com.bone.iam.adapter.web.dto.response.AccountDetailResp;
-import com.bone.iam.application.command.cmd.CreateAccountCommand;
-import com.bone.iam.application.command.cmd.ResetPasswordCommand;
-import com.bone.iam.application.command.cmd.UpdateAccountCommand;
+import com.bone.iam.application.command.CreateAccountCommand;
+import com.bone.iam.application.command.ResetPasswordCommand;
+import com.bone.iam.application.command.UpdateAccountCommand;
 import com.bone.iam.application.query.dto.AccountDTO;
 import org.springframework.stereotype.Component;
 

@@ -1,7 +1,7 @@
 package com.bone.iam.adapter.web.converter;
 
 import com.bone.iam.adapter.web.dto.request.CreatePermissionReq;
-import com.bone.iam.application.command.cmd.CreatePermissionCommand;
+import com.bone.iam.application.command.CreatePermissionCommand;
 import org.springframework.stereotype.Component;
 
 @Component

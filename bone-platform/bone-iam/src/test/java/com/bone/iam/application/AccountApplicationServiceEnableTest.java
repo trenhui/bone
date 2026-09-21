@@ -6,7 +6,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.core.exception.BizException;
-import com.bone.iam.application.command.cmd.EnableAccountCommand;
+import com.bone.iam.application.command.EnableAccountCommand;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.domain.account.Account;
 import com.bone.iam.domain.account.vo.AccountStatus;

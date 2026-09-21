@@ -1,9 +1,9 @@
 package com.bone.iam.application;
 
 import com.bone.core.security.auth.CurrentAccountResolver;
-import com.bone.iam.application.command.cmd.CreateMenuCommand;
-import com.bone.iam.application.command.cmd.DeleteMenuCommand;
-import com.bone.iam.application.command.cmd.UpdateMenuCommand;
+import com.bone.iam.application.command.CreateMenuCommand;
+import com.bone.iam.application.command.DeleteMenuCommand;
+import com.bone.iam.application.command.UpdateMenuCommand;
 import com.bone.iam.application.query.dto.MenuNode;
 import com.bone.iam.application.query.dto.MenuTreeDTO;
 import com.bone.iam.application.query.qry.MenuCurrentQuery;

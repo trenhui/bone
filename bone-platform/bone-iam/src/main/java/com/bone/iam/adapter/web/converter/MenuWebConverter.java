@@ -2,8 +2,8 @@ package com.bone.iam.adapter.web.converter;
 
 import com.bone.iam.adapter.web.dto.request.CreateMenuReq;
 import com.bone.iam.adapter.web.dto.request.UpdateMenuReq;
-import com.bone.iam.application.command.cmd.CreateMenuCommand;
-import com.bone.iam.application.command.cmd.UpdateMenuCommand;
+import com.bone.iam.application.command.CreateMenuCommand;
+import com.bone.iam.application.command.UpdateMenuCommand;
 import org.springframework.stereotype.Component;
 
 @Component

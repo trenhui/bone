@@ -3,7 +3,7 @@ package com.bone.iam.application;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.bone.core.exception.BizException;
-import com.bone.iam.application.command.cmd.UpdateTenantQuotaCommand;
+import com.bone.iam.application.command.UpdateTenantQuotaCommand;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.domain.gateway.TenantDeletionGateway;
 import com.bone.iam.domain.repository.TenantRepository;

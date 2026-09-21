@@ -1,8 +1,8 @@
 package com.bone.iam.application;
 
 import com.bone.core.model.PageResult;
-import com.bone.iam.application.command.cmd.CreateModuleCommand;
-import com.bone.iam.application.command.cmd.UpdateModuleCommand;
+import com.bone.iam.application.command.CreateModuleCommand;
+import com.bone.iam.application.command.UpdateModuleCommand;
 import com.bone.iam.application.query.dto.ModuleDTO;
 import com.bone.iam.application.query.qry.ModuleListQuery;
 import com.bone.iam.common.IamErrorCodes;

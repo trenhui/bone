@@ -11,7 +11,7 @@ import static org.mockito.Mockito.when;
 
 import com.bone.core.exception.BizException;
 import com.bone.core.security.jwt.JwtConfig;
-import com.bone.iam.application.command.cmd.LoginCommand;
+import com.bone.iam.application.command.LoginCommand;
 import com.bone.iam.application.config.IamPasswordProperties;
 import com.bone.iam.application.policy.PasswordPolicyValidator;
 import com.bone.iam.application.port.out.TokenBlacklistPort;

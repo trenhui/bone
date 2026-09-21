@@ -1,8 +1,8 @@
 package com.bone.iam.application;
 
 import com.bone.core.model.PageResult;
-import com.bone.iam.application.command.cmd.CreatePermissionCommand;
-import com.bone.iam.application.command.cmd.UpdatePermissionCommand;
+import com.bone.iam.application.command.CreatePermissionCommand;
+import com.bone.iam.application.command.UpdatePermissionCommand;
 import com.bone.iam.application.query.dto.PermissionDTO;
 import com.bone.iam.application.query.qry.PermissionPageQuery;
 import com.bone.iam.common.IamErrorCodes;

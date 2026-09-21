@@ -2,9 +2,9 @@ package com.bone.iam.application;
 
 import com.bone.core.exception.DomainException;
 import com.bone.core.model.PageResult;
-import com.bone.iam.application.command.cmd.CreateApplicationCommand;
-import com.bone.iam.application.command.cmd.GrantAppPermissionCommand;
-import com.bone.iam.application.command.cmd.UpdateApplicationCommand;
+import com.bone.iam.application.command.CreateApplicationCommand;
+import com.bone.iam.application.command.GrantAppPermissionCommand;
+import com.bone.iam.application.command.UpdateApplicationCommand;
 import com.bone.iam.application.query.dto.AppPermissionDTO;
 import com.bone.iam.application.query.dto.ApplicationDTO;
 import com.bone.iam.application.query.qry.ApplicationPageQuery;

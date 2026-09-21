@@ -6,8 +6,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.bone.core.exception.BizException;
-import com.bone.iam.application.command.cmd.DeleteMenuCommand;
-import com.bone.iam.application.command.cmd.UpdateMenuCommand;
+import com.bone.iam.application.command.DeleteMenuCommand;
+import com.bone.iam.application.command.UpdateMenuCommand;
 import com.bone.iam.common.IamErrorCodes;
 import com.bone.iam.domain.gateway.TenantProvider;
 import com.bone.iam.domain.repository.MenuRepository;

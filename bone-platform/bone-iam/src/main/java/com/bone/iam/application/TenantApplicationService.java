@@ -2,9 +2,9 @@ package com.bone.iam.application;
 
 import com.bone.core.model.PageResult;
 import com.bone.core.util.DistributedIdGenerator;
-import com.bone.iam.application.command.cmd.CreateTenantCommand;
-import com.bone.iam.application.command.cmd.UpdateTenantCommand;
-import com.bone.iam.application.command.cmd.UpdateTenantQuotaCommand;
+import com.bone.iam.application.command.CreateTenantCommand;
+import com.bone.iam.application.command.UpdateTenantCommand;
+import com.bone.iam.application.command.UpdateTenantQuotaCommand;
 import com.bone.iam.application.query.dto.TenantDTO;
 import com.bone.iam.application.query.qry.TenantPageQuery;
 import com.bone.iam.common.IamErrorCodes;
