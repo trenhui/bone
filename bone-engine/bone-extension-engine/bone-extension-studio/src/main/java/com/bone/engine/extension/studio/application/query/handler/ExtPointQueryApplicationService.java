@@ -15,7 +15,7 @@ import org.springframework.util.StringUtils;
 /** 扩展点读侧。 */
 @Component
 @RequiredArgsConstructor
-public class ExtPointQueryHandler {
+public class ExtPointQueryApplicationService {
 
   private final ExtPointReadPort extPointReadPort;
   private final ExtPointRepository extPointRepository;

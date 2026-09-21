@@ -14,9 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
-public class DeploymentStateQueryHandler {
+public class DeploymentStateApplicationService {
 
-  private final ExtensionQueryHandler extensionQueryHandler;
+  private final ExtensionQueryApplicationService extensionQueryHandler;
 
   public DeploymentStateView load(Long pluginId) {
     Extension plugin = extensionQueryHandler.findExtensionById(pluginId);

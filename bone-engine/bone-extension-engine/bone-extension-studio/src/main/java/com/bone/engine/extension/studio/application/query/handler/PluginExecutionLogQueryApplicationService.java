@@ -16,7 +16,7 @@ import org.springframework.util.StringUtils;
 /** 插件执行日志读侧。 */
 @Component
 @RequiredArgsConstructor
-public class PluginExecutionLogQueryHandler {
+public class PluginExecutionLogQueryApplicationService {
 
   private final PluginExecutionLogReadPort logReadPort;
 

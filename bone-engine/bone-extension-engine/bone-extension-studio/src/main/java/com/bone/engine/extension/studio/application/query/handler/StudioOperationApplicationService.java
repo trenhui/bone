@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 /** LRO 操作读侧。 */
 @Component
 @RequiredArgsConstructor
-public class StudioOperationQueryHandler {
+public class StudioOperationApplicationService {
 
   private final StudioLroService lroService;
 

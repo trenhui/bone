@@ -20,10 +20,10 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @Transactional
 @RequiredArgsConstructor
-public class MarketplaceInstallCommandHandler {
+public class MarketplaceInstallApplicationService {
 
   private final MarketplaceCatalog marketplaceCatalog;
-  private final ExtensionCommandHandler extensionCommandHandler;
+  private final ExtensionCommandApplicationService extensionCommandHandler;
   private final ExtPointRepository extPointRepository;
   private final StudioAuditService auditService;
 

@@ -2,19 +2,19 @@ package com.bone.engine.extension.studio.adapter.web.controller;
 
 import com.bone.core.model.ApiResponse;
 import com.bone.core.model.PageResult;
-import com.bone.engine.extension.studio.application.command.handler.ExtPointCommandHandler;
-import com.bone.engine.extension.studio.application.command.handler.ExtensionStudioCommandHandler;
-import com.bone.engine.extension.studio.application.command.handler.MarketplaceInstallCommandHandler;
-import com.bone.engine.extension.studio.application.command.handler.PluginExecutionLogCommandHandler;
+import com.bone.engine.extension.studio.application.command.handler.ExtPointCommandApplicationService;
+import com.bone.engine.extension.studio.application.command.handler.ExtensionStudioApplicationService;
+import com.bone.engine.extension.studio.application.command.handler.MarketplaceInstallApplicationService;
+import com.bone.engine.extension.studio.application.command.handler.PluginExecutionLogCommandApplicationService;
 import com.bone.engine.extension.studio.application.query.dto.DeploymentStateView;
 import com.bone.engine.extension.studio.application.query.dto.PluginDependencyGraph;
-import com.bone.engine.extension.studio.application.query.handler.DeploymentStateQueryHandler;
-import com.bone.engine.extension.studio.application.query.handler.ExtPointQueryHandler;
-import com.bone.engine.extension.studio.application.query.handler.ExtensionQueryHandler;
-import com.bone.engine.extension.studio.application.query.handler.PluginDependencyGraphQueryHandler;
-import com.bone.engine.extension.studio.application.query.handler.PluginExecutionLogQueryHandler;
-import com.bone.engine.extension.studio.application.query.handler.StudioAuditQueryHandler;
-import com.bone.engine.extension.studio.application.query.handler.StudioOperationQueryHandler;
+import com.bone.engine.extension.studio.application.query.handler.DeploymentStateApplicationService;
+import com.bone.engine.extension.studio.application.query.handler.ExtPointQueryApplicationService;
+import com.bone.engine.extension.studio.application.query.handler.ExtensionQueryApplicationService;
+import com.bone.engine.extension.studio.application.query.handler.PluginDependencyGraphApplicationService;
+import com.bone.engine.extension.studio.application.query.handler.PluginExecutionLogQueryApplicationService;
+import com.bone.engine.extension.studio.application.query.handler.StudioAuditApplicationService;
+import com.bone.engine.extension.studio.application.query.handler.StudioOperationApplicationService;
 import com.bone.engine.extension.studio.config.ExtensionStudioProperties;
 import com.bone.engine.extension.studio.domain.gateway.MarketplaceCatalog;
 import com.bone.engine.extension.studio.domain.model.ExtPoint;
@@ -60,19 +60,19 @@ import org.springframework.web.multipart.MultipartFile;
 @RequiredArgsConstructor
 public class ExtensionManagementController {
 
-  private final ExtPointQueryHandler extPointQueryHandler;
-  private final ExtPointCommandHandler extPointCommandHandler;
-  private final ExtensionQueryHandler extensionQueryHandler;
-  private final ExtensionStudioCommandHandler extensionStudioCommandHandler;
-  private final PluginExecutionLogQueryHandler pluginExecutionLogQueryHandler;
-  private final PluginExecutionLogCommandHandler pluginExecutionLogCommandHandler;
-  private final StudioOperationQueryHandler studioOperationQueryHandler;
-  private final StudioAuditQueryHandler studioAuditQueryHandler;
+  private final ExtPointQueryApplicationService extPointQueryHandler;
+  private final ExtPointCommandApplicationService extPointCommandHandler;
+  private final ExtensionQueryApplicationService extensionQueryHandler;
+  private final ExtensionStudioApplicationService extensionStudioCommandHandler;
+  private final PluginExecutionLogQueryApplicationService pluginExecutionLogQueryHandler;
+  private final PluginExecutionLogCommandApplicationService pluginExecutionLogCommandHandler;
+  private final StudioOperationApplicationService studioOperationQueryHandler;
+  private final StudioAuditApplicationService studioAuditQueryHandler;
   private final ExtensionStudioProperties studioProperties;
-  private final DeploymentStateQueryHandler deploymentStateQueryHandler;
-  private final PluginDependencyGraphQueryHandler pluginDependencyGraphQueryHandler;
+  private final DeploymentStateApplicationService deploymentStateQueryHandler;
+  private final PluginDependencyGraphApplicationService pluginDependencyGraphQueryHandler;
   private final MarketplaceCatalog marketplaceCatalog;
-  private final MarketplaceInstallCommandHandler marketplaceInstallCommandHandler;
+  private final MarketplaceInstallApplicationService marketplaceInstallCommandHandler;
 
   @GetMapping("/points")
   @PreAuthorize("@studioSecurity.hasScope('" + ExtensionScopes.POINTS_READ + "')")

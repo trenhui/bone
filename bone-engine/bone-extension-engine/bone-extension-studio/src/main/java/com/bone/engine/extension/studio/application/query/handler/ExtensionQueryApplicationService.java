@@ -20,9 +20,9 @@ import org.springframework.util.StringUtils;
 /** 插件读侧。 */
 @Component
 @RequiredArgsConstructor
-public class ExtensionQueryHandler {
+public class ExtensionQueryApplicationService {
 
-  private static final Logger log = LoggerFactory.getLogger(ExtensionQueryHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(ExtensionQueryApplicationService.class);
 
   private final ExtensionReadPort extensionReadPort;
   private final ExtensionRepository extensionRepository;

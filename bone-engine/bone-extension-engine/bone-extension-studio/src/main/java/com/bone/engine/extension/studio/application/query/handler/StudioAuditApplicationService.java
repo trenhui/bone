@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 /** 审计日志读侧。 */
 @Component
 @RequiredArgsConstructor
-public class StudioAuditQueryHandler {
+public class StudioAuditApplicationService {
 
   private final StudioAuditReadPort studioAuditReadPort;
 

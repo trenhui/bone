@@ -1,7 +1,7 @@
 package com.bone.engine.extension.studio.application.command.handler;
 
 import com.bone.core.model.ApiResponse;
-import com.bone.engine.extension.studio.application.query.handler.ExtensionQueryHandler;
+import com.bone.engine.extension.studio.application.query.handler.ExtensionQueryApplicationService;
 import com.bone.engine.extension.studio.application.service.PluginArtifactService;
 import com.bone.engine.extension.studio.application.service.StudioAuditService;
 import com.bone.engine.extension.studio.application.service.StudioCommandResponses;
@@ -27,16 +27,16 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
-/** 插件写侧编排：幂等、审计、LRO 与 {@link ExtensionCommandHandler} 组合。 */
+/** 插件写侧编排：幂等、审计、LRO 与 {@link ExtensionCommandApplicationService} 组合。 */
 @Component
 @RequiredArgsConstructor
-public class ExtensionStudioCommandHandler {
+public class ExtensionStudioApplicationService {
 
   private static final String PATH_PLUGINS = "/api/v1/extension/plugins";
   private static final String PATH_UPLOAD = "/api/v1/extension/plugins:upload";
 
-  private final ExtensionCommandHandler extensionCommandHandler;
-  private final ExtensionQueryHandler extensionQueryHandler;
+  private final ExtensionCommandApplicationService extensionCommandHandler;
+  private final ExtensionQueryApplicationService extensionQueryHandler;
   private final PluginVersionRepository pluginVersionRepository;
   private final PluginArtifactService pluginArtifactService;
   private final StudioIdempotentExecutor idempotentExecutor;

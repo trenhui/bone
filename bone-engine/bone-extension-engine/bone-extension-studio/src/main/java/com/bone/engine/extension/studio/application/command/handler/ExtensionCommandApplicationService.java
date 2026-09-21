@@ -32,16 +32,17 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Component
 @RequiredArgsConstructor
-public class ExtensionCommandHandler {
+public class ExtensionCommandApplicationService {
 
-  private static final Logger log = LoggerFactory.getLogger(ExtensionCommandHandler.class);
+  private static final Logger log =
+      LoggerFactory.getLogger(ExtensionCommandApplicationService.class);
 
   private final ExtensionRepository extensionRepository;
   private final ExtPointRepository extPointRepository;
   private final PluginVersionRepository pluginVersionRepository;
   private final PluginVersionReadPort pluginVersionReadPort;
   private final PluginArtifactService pluginArtifactService;
-  private final PluginExecutionLogCommandHandler executionLogCommandHandler;
+  private final PluginExecutionLogCommandApplicationService executionLogCommandHandler;
 
   @Autowired(required = false)
   private RuntimeExtensionSyncService runtimeSyncService;

@@ -1,6 +1,6 @@
 package com.bone.engine.extension.studio.config;
 
-import com.bone.engine.extension.studio.application.command.handler.PluginExecutionLogCommandHandler;
+import com.bone.engine.extension.studio.application.command.handler.PluginExecutionLogCommandApplicationService;
 import com.bone.engine.extension.studio.domain.gateway.ExtPointReadPort;
 import com.bone.engine.extension.studio.domain.gateway.ExtensionReadPort;
 import com.bone.engine.extension.studio.domain.model.ExtPoint;
@@ -28,7 +28,7 @@ public class DataInitializer implements ApplicationRunner {
 
   @Autowired private ExtensionReadPort extensionReadPort;
 
-  @Autowired private PluginExecutionLogCommandHandler executionLogCommandHandler;
+  @Autowired private PluginExecutionLogCommandApplicationService executionLogCommandHandler;
 
   @Override
   public void run(ApplicationArguments args) {

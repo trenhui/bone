@@ -24,12 +24,12 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
-public class PluginDependencyGraphQueryHandler {
+public class PluginDependencyGraphApplicationService {
 
   private static final Logger log =
-      LoggerFactory.getLogger(PluginDependencyGraphQueryHandler.class);
+      LoggerFactory.getLogger(PluginDependencyGraphApplicationService.class);
 
-  private final ExtensionQueryHandler extensionQueryHandler;
+  private final ExtensionQueryApplicationService extensionQueryHandler;
   private final ObjectMapper objectMapper;
 
   public PluginDependencyGraph load(Long extPointId) {

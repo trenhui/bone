@@ -14,7 +14,7 @@ import org.springframework.util.StringUtils;
 /** 插件执行日志写侧。 */
 @Component
 @RequiredArgsConstructor
-public class PluginExecutionLogCommandHandler {
+public class PluginExecutionLogCommandApplicationService {
 
   private final PluginExecutionLogRepository logRepository;
   private final ExtensionRepository extensionRepository;

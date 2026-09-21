@@ -1,8 +1,8 @@
 package com.bone.engine.extension.studio.application.service;
 
 import com.bone.core.model.ProblemDetail;
-import com.bone.engine.extension.studio.application.command.handler.ExtensionCommandHandler;
-import com.bone.engine.extension.studio.application.query.handler.ExtensionQueryHandler;
+import com.bone.engine.extension.studio.application.command.handler.ExtensionCommandApplicationService;
+import com.bone.engine.extension.studio.application.query.handler.ExtensionQueryApplicationService;
 import com.bone.engine.extension.studio.common.StudioErrorCodes;
 import com.bone.engine.extension.studio.config.StudioRequestContextFilter;
 import com.bone.engine.extension.studio.domain.model.Extension;
@@ -24,8 +24,8 @@ public class StudioLroService {
 
   private static final String TYPE_PLUGIN_DEPLOY = "plugin.deploy";
 
-  private final ExtensionCommandHandler extensionCommandHandler;
-  private final ExtensionQueryHandler extensionQueryHandler;
+  private final ExtensionCommandApplicationService extensionCommandHandler;
+  private final ExtensionQueryApplicationService extensionQueryHandler;
   private final StudioAuditService auditService;
   private final StudioExtensionMetrics studioMetrics;
   private final Map<String, StudioOperation> operations = new ConcurrentHashMap<>();
@@ -38,8 +38,8 @@ public class StudioLroService {
           });
 
   public StudioLroService(
-      ExtensionCommandHandler extensionCommandHandler,
-      ExtensionQueryHandler extensionQueryHandler,
+      ExtensionCommandApplicationService extensionCommandHandler,
+      ExtensionQueryApplicationService extensionQueryHandler,
       StudioAuditService auditService,
       StudioExtensionMetrics studioMetrics) {
     this.extensionCommandHandler = extensionCommandHandler;

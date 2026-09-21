@@ -22,9 +22,10 @@ import org.springframework.transaction.annotation.Transactional;
 /** 扩展点写侧。 */
 @Component
 @RequiredArgsConstructor
-public class ExtPointCommandHandler {
+public class ExtPointCommandApplicationService {
 
-  private static final Logger log = LoggerFactory.getLogger(ExtPointCommandHandler.class);
+  private static final Logger log =
+      LoggerFactory.getLogger(ExtPointCommandApplicationService.class);
   private static final String PATH_POINTS = "/api/v1/extension/points";
 
   private final ExtPointRepository extPointRepository;
